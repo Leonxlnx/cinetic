@@ -83,7 +83,8 @@ export const Act1: React.FC = () => {
           const p = prog(f, s, s + WORD_IN, E.out);
           // Exit: the entrance reversed, last word first, so the dot's path to the mark is clear.
           const o = OUT + (WORDS.length - 1 - i) * f60(3);
-          const q = prog(f, o, o + f60(14), E.in);
+          const q = prog(f, o, o + f60(14), E.in); // the move accelerates away
+          const fade = prog(f, o, o + f60(14), E.smooth); // the fade eases at both ends: no last-frame pop
           const blur = blurIn(p, 10) + blurOut(q, 8); // blur only while moving fast: Chromium steps small radii
           return (
             <span
@@ -95,7 +96,7 @@ export const Act1: React.FC = () => {
                 left: 0,
                 top: 0,
                 color: mixColor(C.accent, C.ink, prog(f, BEATS[i], BEATS[i] + f60(14), E.smooth)), // arrives in the accent, relaxes to ink
-                opacity: p * (1 - q),
+                opacity: p * (1 - fade),
                 filter: blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : undefined,
                 // arrive/depart: vertical text snaps to whole pixels, so the rise must not creep its last pixels
                 transform: `translate(${x0 + xs[i] + spread(i)}px, ${top + ((1 - arrive(p)) * 0.32 + depart(q) * 0.2) * size}px)`,
