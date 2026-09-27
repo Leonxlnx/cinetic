@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""Build a film palette from one accent, check its contrast, or measure accent coverage on a still.
+
+Neutrals come out tinted toward the accent's hue (or cool / warm on request), for a light or a
+dark stage, each with its OKLCH, hex and contrast against the stage, ready to paste into
+src/brand/tokens.ts. The checks are the ones in references/brand-and-color.md:
+  - statements (ink on the stage) >= 7:1; secondary text (mute) >= 4.5:1; graphics (accent) >= 3:1
+  - accent chroma >= 0.08 (below that it reads as a grey, not a signal)
+  - the neon test: OKLCH L > 0.85 with C > 0.15 glows on ink and vibrates on paper
+  - the accent's lightness band for the stage: 0.50-0.65 on a light stage, 0.70-0.82 on a dark one
+
+Usage:
+  python3 scripts/palette.py --accent '#C13E2E'                          # light stage, tinted to the accent
+  python3 scripts/palette.py --accent 'oklch(0.74 0.15 55)' --stage dark  # dark stage
+  python3 scripts/palette.py --accent '#1F86CD' --temp warm --json out/qa/palette.json
+  python3 scripts/palette.py --cover out/stills/poster.png --accent '#C13E2E'   # accent share of pixels
+
+--temp: neutral (default) tints the greys with the accent's hue; cool uses hue 250, warm hue 75
+(a warm paper is right for a warm, calm brand; the default beige-and-orange pairing is the tell).
+Exit 0 when every check passes, 1 when one fails, 2 on bad input.
+"""
+import argparse
+import json
+import math
+import re
+import sys
+
+
+def srgb_to_lin(c):
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def lin_to_srgb(c):
+    return 12.92 * c if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
+
+
+def oklch_to_lin(L, C, h):
+    a, b = C * math.cos(math.radians(h)), C * math.sin(math.radians(h))
+    l_ = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
+    m_ = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
+    s_ = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3
+    return (4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_,
+            -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_,
+            -0.0041960863 * l_ - 0.7034186147 * m_ + 1.7076147010 * s_)
+
+
+def lin_to_oklch(r, g, b):
+    l_ = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+    m_ = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+    s_ = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+    L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_
+    A = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
+    B = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+    return L, math.hypot(A, B), math.degrees(math.atan2(B, A)) % 360
+
+
+def in_gamut(lin):
+    return all(-1e-4 <= v <= 1 + 1e-4 for v in lin)
+
+
+def oklch_hex(L, C, h):
+    """Hex for an OKLCH colour, reducing chroma until it fits sRGB. Returns (hex, C actually used)."""
+    while C > 0 and not in_gamut(oklch_to_lin(L, C, h)):
+        C = max(0.0, C - 0.002)
+    rgb = [round(255 * lin_to_srgb(min(1.0, max(0.0, v)))) for v in oklch_to_lin(L, C, h)]
+    return '#' + ''.join(f'{v:02X}' for v in rgb), C
+
+
+def parse_colour(s):
+    s = s.strip()
+    m = re.fullmatch(r'#?([0-9a-fA-F]{6})', s)
+    if m:
+        x = m.group(1)
+        return lin_to_oklch(*[srgb_to_lin(int(x[i:i + 2], 16) / 255) for i in (0, 2, 4)])
+    m = re.fullmatch(r'oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)\s*\)', s)
+    if m:
+        L = float(m.group(1)) / (100 if m.group(2) else 1)
+        return L, float(m.group(3)), float(m.group(4))
+    raise ValueError(f'cannot read colour {s!r} (want #RRGGBB or oklch(L C h))')
+
+
+def luminance(hexs):
+    return sum(w * srgb_to_lin(int(hexs[i:i + 2], 16) / 255) for w, i in ((0.2126, 1), (0.7152, 3), (0.0722, 5)))
+
+
+def contrast(a, b):
+    la, lb = sorted((luminance(a), luminance(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def cover(img, accent_hex, radius=0.08):
+    import cv2
+    import numpy as np
+    im = cv2.imread(img)
+    if im is None:
+        raise ValueError(f'cannot read image {img}')
+    rgb = cv2.cvtColor(im, cv2.COLOR_BGR2RGB).astype(np.float32) / 255
+    lin = np.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
+    M1 = np.array([[.4122214708, .5363325363, .0514459929], [.2119034982, .6806995451, .1073969566], [.0883024619, .2817188376, .6299787005]])
+    M2 = np.array([[.2104542553, .7936177850, -.0040720468], [1.9779984951, -2.4285922050, .4505937099], [.0259040371, .7827717662, -.8086757660]])
+    lab = np.cbrt(lin @ M1.T) @ M2.T
+    ref = np.array([srgb_to_lin(int(accent_hex[i:i + 2], 16) / 255) for i in (1, 3, 5)], np.float32)
+    ref_lab = np.cbrt(ref @ M1.T) @ M2.T
+    return float((np.linalg.norm(lab - ref_lab, axis=-1) < radius).mean() * 100)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0], formatter_class=argparse.RawDescriptionHelpFormatter,
+                                 epilog=__doc__.split('\n\n', 1)[1])
+    ap.add_argument('--accent', required=True, help="the one accent: '#RRGGBB' or 'oklch(L C h)'")
+    ap.add_argument('--stage', choices=['light', 'dark'], default='light', help='the ground most shots sit on')
+    ap.add_argument('--temp', choices=['neutral', 'cool', 'warm'], default='neutral', help='tint of the neutrals')
+    ap.add_argument('--meaning', default='<one word>', help='what the accent means, for the token comment')
+    ap.add_argument('--cover', metavar='IMG', help='only measure the share of pixels within OKLab 0.08 of the accent')
+    ap.add_argument('--json', help='also write the palette and checks here')
+    a = ap.parse_args()
+    try:
+        aL, aC, ah = parse_colour(a.accent)
+    except ValueError as e:
+        print(f'palette.py: {e}', file=sys.stderr)
+        return 2
+    acc_hex, _ = oklch_hex(aL, aC, ah)
+
+    if a.cover:
+        try:
+            pct = cover(a.cover, acc_hex)
+        except ValueError as e:
+            print(f'palette.py: {e}', file=sys.stderr)
+            return 2
+        ok = pct <= 8
+        print(f'accent {acc_hex} covers {pct:.2f}% of {a.cover} ({"ok" if ok else "over 8%: fine only on the one designed flood"})')
+        return 0 if ok else 1
+
+    hue = {'neutral': ah, 'cool': 250.0, 'warm': 75.0}[a.temp]
+    tint = 2.2 if a.temp == 'warm' else 1.0  # warm papers carry a little more chroma
+    if a.stage == 'light':
+        spec = [('paper', 0.975, 0.004 * tint, 'the stage'), ('mist', 0.945, 0.005 * tint, 'canvas behind the product'),
+                ('line', 0.885, 0.006, 'hairlines, >= 1.5 px on screen'), ('mute', 0.52, 0.012, 'secondary text'),
+                ('ink2', 0.23, 0.008, 'raised dark surfaces'), ('ink', 0.17, 0.007, 'type and marks')]
+        stage_key, text_key, band = 'paper', 'ink', (0.50, 0.65)
+    else:
+        spec = [('ink', 0.165, 0.008 * tint, 'the stage'), ('ink2', 0.215, 0.009 * tint, 'raised surfaces on the stage'),
+                ('line', 0.31, 0.010, 'hairlines, >= 1.5 px on screen'), ('mute', 0.72, 0.012, 'secondary text'),
+                ('mist', 0.90, 0.006, 'light panels, if any'), ('paper', 0.965, 0.004 * tint, 'type and marks')]
+        stage_key, text_key, band = 'ink', 'paper', (0.70, 0.82)
+    tokens = {}
+    for name, L, C, job in spec:
+        hx, c_used = oklch_hex(L, C, hue)
+        tokens[name] = dict(hex=hx, oklch=[round(L, 3), round(c_used, 4), round(hue, 1)], job=job)
+    tokens['accent'] = dict(hex=acc_hex, oklch=[round(aL, 3), round(aC, 4), round(ah, 1)], job=f'MEANING: "{a.meaning}"')
+    stage = tokens[stage_key]['hex']
+
+    checks = []
+
+    def check(name, ok, detail):
+        checks.append(dict(check=name, pass_=bool(ok), detail=detail))
+
+    r_text = contrast(tokens[text_key]['hex'], stage)
+    r_mute = contrast(tokens['mute']['hex'], stage)
+    r_acc = contrast(acc_hex, stage)
+    check('statements', r_text >= 7, f'{text_key} on {stage_key} {r_text:.1f}:1 (>= 7)')
+    check('secondary text', r_mute >= 4.5, f'mute on {stage_key} {r_mute:.1f}:1 (>= 4.5)')
+    check('accent graphics', r_acc >= 3, f'accent on {stage_key} {r_acc:.1f}:1 (>= 3)')
+    check('accent chroma', aC >= 0.08, f'C {aC:.3f} (>= 0.08, or it reads as a grey)')
+    check('neon', not (aL > 0.85 and aC > 0.15), f'L {aL:.2f} C {aC:.2f} (neon when L > 0.85 and C > 0.15)')
+    in_band = band[0] <= aL <= band[1]
+    fix = ''
+    if not in_band:
+        L2 = min(max(aL, band[0]), band[1])
+        fix = f'; try {oklch_hex(L2, aC, ah)[0]} (L {L2:.2f})'
+    check('accent lightness', in_band, f'L {aL:.2f} for a {a.stage} stage ({band[0]}-{band[1]}){fix}')
+
+    for k, v in tokens.items():
+        r = contrast(v['hex'], stage) if k != stage_key else None
+        v['contrast_on_stage'] = round(r, 2) if r else None
+    width = max(len(k) for k in tokens)
+    print(f'// palette.py --accent {a.accent} --stage {a.stage} --temp {a.temp}')
+    print('export const C = {')
+    for k in ['ink', 'ink2', 'paper', 'mist', 'line', 'mute', 'accent']:
+        v = tokens[k]
+        L, C, h = v['oklch']
+        r = f', {v["contrast_on_stage"]:.1f}:1 on {stage_key}' if v['contrast_on_stage'] else ''
+        print(f"  {k}: '{v['hex']}',{' ' * (width - len(k))} // {v['job']} (OKLCH {L} {C} {h:.0f}{r})")
+    print('};')
+    for c in checks:
+        print(f"  {'ok  ' if c['pass_'] else 'FAIL'} {c['check']}: {c['detail']}", file=sys.stderr)
+    if a.json:
+        json.dump(dict(stage=a.stage, temp=a.temp, tokens=tokens,
+                       checks=[dict(check=c['check'], ok=c['pass_'], detail=c['detail']) for c in checks]),
+                  open(a.json, 'w'), indent=1)
+    return 0 if all(c['pass_'] for c in checks) else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())
