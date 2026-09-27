@@ -10,6 +10,7 @@ Prompt template for one review lens (see `references/review-loop.md`, §5). The 
   - `forensics.json`, from `python3 scripts/forensics.py {{VIDEO}} --cues out/cues.json`;
   - `probe.json` (spec, BT.709 tags, audio stream);
   - `banding.png` (a x12 contrast stretch, with red boxes on banded tiles);
+  - `smear.png` (a x25 contrast stretch of flat fields, for the `smear` check);
   - the watch sheets.
 - Declared cuts, freezes and ignores are listed in `forensics.json` under `declared`. Do not report those.
 - Round {{ROUND}}. Changed since the last round, so check these hardest: {{CHANGED}}
@@ -40,6 +41,7 @@ You hunt technical artifacts: anything a viewer would read as broken, glitchy or
    | `judder` | whole-pixel stairs in a slow move | fractional left/top with a transform; text snapping at the tail of an ease |
    | `sharpness` | a one-frame blur step | an animated CSS blur on a large layer |
    | `banding` | smooth gradients drawn as 8-bit plateaus | CSS gradients; use dithered PNG backdrops |
+   | `smear` | compression smear: blotches of 1-level texture next to clean blocks on a flat field | an 8-bit dither the encoder half kept; re-run the blur with the current `accumulate.py` (`references/finishing.md` §5) |
 
 2. **Hunt what the scripts cannot see.** Scan the watch sheets, then check suspects at full resolution:
    - z-order errors, and lifted items drawn under grounded ones;

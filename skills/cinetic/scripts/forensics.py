@@ -38,6 +38,13 @@ Frames are 0-based and absolute (frame = t * fps). Defaults (every number is a f
                is otherwise calm (a stepped blur ramp)                               warn
   banding      > 3% of the frame in 64 px tiles holding a 1-12 level gradient drawn as
                flat 8-bit plateaus with 1-level contour steps (visible bands)        warn
+  smear        compression smear on a flat field (paper, a solid stage): in a large region
+               held within +-2 of one code value, 16 px blocks of fine 1-level texture
+               sit next to clean ones (the encoder kept a pattern in some blocks and
+               flattened others: streaks and blotches under a 25x stretch). The smeared
+               share of the frame (the lesser of textured and clean, times the region)
+               > 0.2 on >= 2 sampled frames (2 per second, exact luma plane)          fail
+                                                              on one sampled frame   warn
   loop seam    (--loop) last->first change <= max(0.4, 1.5 * median step at the ends)  fail
   determinism  (--against) frames whose change between two renders > max(0.3, 5*median) fail
 
@@ -49,13 +56,15 @@ Declare intended cuts, freezes and effects:
   --cues out/cues.json      the same block under "qa"; events of kind "cut" count as cuts; act
                             boundaries become seams; cue frames and sound events mark hits.
 
-Writes JSON (--json), a x12 banding stretch sheet next to it, and a short summary on stdout.
+Writes JSON (--json), a x12 banding stretch sheet and a x25 smear sheet next to it, and a short
+summary on stdout.
 Exit: 0 no failing check (warnings allowed), 1 a failing check, 2 usage or decode error.
 Needs ffmpeg/ffprobe, numpy and opencv-python.
 """
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from collections import deque
@@ -83,7 +92,7 @@ def probe(path):
     try:
         out = subprocess.run(
             ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries',
-             'stream=width,height,r_frame_rate,nb_frames,duration:format=duration', '-of', 'json', path],
+             'stream=width,height,r_frame_rate,nb_frames,duration,pix_fmt:format=duration', '-of', 'json', path],
             capture_output=True, text=True, check=True).stdout
     except FileNotFoundError:
         die('ffprobe not found on PATH')
@@ -98,7 +107,7 @@ def probe(path):
     dur = float(s.get('duration') or j.get('format', {}).get('duration') or 0)
     nb = s.get('nb_frames')
     n = int(nb) if nb and str(nb).isdigit() else int(round(dur * fps))
-    return dict(w=int(s['width']), h=int(s['height']), fps=fps, frames=n, duration=dur)
+    return dict(w=int(s['width']), h=int(s['height']), fps=fps, frames=n, duration=dur, pix_fmt=s.get('pix_fmt', ''))
 
 
 def decode(path, info, start=0, count=None, pix='rgb24', size=None):
@@ -130,6 +139,107 @@ def decode(path, info, start=0, count=None, pix='rgb24', size=None):
         p.stdout.close()
         p.kill()
         p.wait()
+
+
+def decode_y(path, info, start=0, count=None, every=1):
+    """Yield (frame_index, luma plane as float32 code values) for every `every`-th frame from `start`.
+    The plane is copied as stored (extractplanes, no matrix or range conversion; 10/12-bit sources
+    are scaled to 8-bit code units), so a 1-level step in the file is exactly 1.0 here."""
+    pf = info.get('pix_fmt', '')
+    m = re.search(r'(\d+)(le|be)$', pf)
+    bits = int(m.group(1)) if m else 8
+    yuv = pf.startswith(('yuv', 'yuvj', 'gray', 'nv'))
+    cmd = ['ffmpeg', '-v', 'error', '-nostdin']
+    if start > 0:
+        cmd += ['-ss', f'{(start - 0.5) / info["fps"]:.6f}']
+    cmd += ['-i', path, '-map', '0:v:0']
+    if count:  # count source frames; after the select that is ceil(count / every) sampled ones
+        cmd += ['-frames:v', str(-(-count // every))]
+    sel = f'select=not(mod(n\\,{every}))'
+    out_fmt = 'gray' if bits == 8 else f'gray{bits}le'
+    cmd += ['-vf', f'{sel},extractplanes=y' if yuv else f'{sel},format=gray', '-fps_mode', 'passthrough',
+            '-f', 'rawvideo', '-pix_fmt', out_fmt if yuv else 'gray', '-']
+    w, h = info['w'], info['h']
+    wide = yuv and bits > 8
+    nbytes = w * h * (2 if wide else 1)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    i = start
+    try:
+        while True:
+            buf = p.stdout.read(nbytes)
+            if len(buf) < nbytes:
+                break
+            a = np.frombuffer(buf, '<u2' if wide else np.uint8).reshape(h, w).astype(np.float32)
+            yield i, (a / (1 << (bits - 8)) if wide else a)
+            i += every
+    finally:
+        p.stdout.close()
+        p.kill()
+        p.wait()
+
+
+SMEAR_B = 16  # macroblock size: encoder decisions (keep the texture or flatten it) are made per block
+
+
+def smear_frame(y, min_region=0.01, near=2, mode_min=0.5, tex_hi=0.3, tex_lo=0.02):
+    """Compression smear on flat fields. A region counts as a flat field when the 17x17 neighbourhood
+    of each of its pixels spans <= 3 code values, it covers >= min_region of the frame, one code value
+    holds >= half of it and >= 98% sits within +-near of that value (a truly flat colour, not a
+    gradient, texture or blurred UI). In such a field every 16 px block should look alike: all clean
+    (an exact encode) or all finely textured (uniform dither or grain). Smear is the mix: blocks whose
+    pixels differ from a neighbour on >= tex_hi of the block next to blocks with <= tex_lo. Returns
+    the smeared share of the frame (min(textured, clean) x the field's blocks / all blocks)."""
+    H, W = y.shape
+    y8 = np.clip(np.round(y), 0, 255).astype(np.uint8)
+    k = np.ones((17, 17), np.uint8)
+    flat = ((cv2.dilate(y8, k).astype(np.int16) - cv2.erode(y8, k)) <= 3).astype(np.uint8)
+    n, lab, st, _ = cv2.connectedComponentsWithStats(flat, connectivity=4)
+    diff = np.zeros((H, W), bool)
+    diff[:, :-1] |= np.abs(np.diff(y, axis=1)) > 0.5
+    diff[:-1] |= np.abs(np.diff(y, axis=0)) > 0.5
+    th, tw = H // SMEAR_B, W // SMEAR_B
+    if th == 0 or tw == 0:
+        return dict(area=0.0, patchy=0.0, field=0.0, level=None)
+
+    def blocks(a):
+        return a[:th * SMEAR_B, :tw * SMEAR_B].reshape(th, SMEAR_B, tw, SMEAR_B).mean(axis=(1, 3))
+
+    tex = blocks(diff.astype(np.float32))
+    best = dict(area=0.0, patchy=0.0, field=0.0, level=None)
+    for c in range(1, n):
+        if st[c, cv2.CC_STAT_AREA] < min_region * W * H:
+            continue
+        inside = lab == c
+        full = blocks(inside.astype(np.float32)) >= 0.999
+        if full.sum() < 50:
+            continue
+        hist = np.bincount(y8[inside], minlength=256)
+        mode = int(hist.argmax())
+        if hist[mode] < mode_min * hist.sum() or hist[max(0, mode - near):mode + near + 1].sum() < 0.98 * hist.sum():
+            continue  # a gradient, a texture or soft content: the banding check's business, not this one's
+        t = tex[full]
+        patchy = min(float((t >= tex_hi).mean()), float((t <= tex_lo).mean()))
+        area = patchy * float(full.sum()) / (th * tw)
+        if area > best['area'] or best['level'] is None:
+            best = dict(area=round(area, 4), patchy=round(patchy, 3), field=round(float(full.sum()) / (th * tw), 3),
+                        level=mode)
+    return best
+
+
+def smear_scan(args, info):
+    """Sample frames for the smear check; returns [{frame, area, patchy, field, level, _img}]."""
+    start = max(0, args.from_frame or 0)
+    count = max(1, args.to_frame - start + 1) if args.to_frame is not None else None
+    every = args.smear_every or max(1, int(round(info['fps'] / 2)))
+    out = []
+    for f, y in decode_y(args.video, info, start, count, every):
+        r = smear_frame(y)
+        lvl = r['level'] if r['level'] is not None else float(np.median(y))
+        st = np.clip((y - lvl) * 25 + 128, 0, 255).astype(np.uint8)
+        r['_img'] = cv2.cvtColor(cv2.resize(st, (480, int(480 * info['h'] / info['w'])), interpolation=cv2.INTER_AREA),
+                                 cv2.COLOR_GRAY2BGR)
+        out.append(dict(frame=f, **r))
+    return out
 
 
 # ------------------------------------------------------------------------------------------
@@ -810,6 +920,31 @@ def evaluate(args, info, M, decl):
         cv2.imwrite(args.banding_sheet, tile(ims, 4))
         band_sheet = args.banding_sheet
 
+    # --- compression smear on flat fields
+    smear = [{k: v for k, v in x.items() if k != '_img'} for x in M.get('smear', [])]
+    over = [x for x in smear if x['area'] > args.smear_area and not ignored(x['frame'])]
+    for x in smear:
+        x['flagged'] = x in over
+    if over:
+        sev = 'fail' if len(over) >= 2 else 'warn'
+        worst = max(over, key=lambda x: x['area'])
+        span = f'{over[0]["frame"]}-{over[-1]["frame"]}' if len(over) > 1 else over[0]['frame']
+        add('smear', sev, span, f'compression smear on the flat field (level {worst["level"]}) in {len(over)} sampled '
+            f'frames, up to {worst["area"] * 100:.0f}% of the frame at f{worst["frame"]}: blocks of fine 1-level texture '
+            'next to clean ones (smear sheet). Blurred master: re-run the current scripts/accumulate.py, which rounds '
+            'flat fields exactly; otherwise encode at a lower CRF or 10-bit', frames=[x['frame'] for x in over][:50])
+    smear_sheet = None
+    if M.get('smear') and args.smear_sheet:
+        picks = sorted(M['smear'], key=lambda x: -x['area'])[:4]
+        rest = [x for x in M['smear'] if x not in picks]
+        picks += rest[:: max(1, len(rest) // 4)][:8 - len(picks)]
+        picks.sort(key=lambda x: x['frame'])
+        ims = [label(x['_img'].copy(), f'f{x["frame"]} {x["frame"] / fps:.2f}s',
+                     f'x25 smear {x["area"] * 100:.0f}% (field {x["field"] * 100:.0f}%)') for x in picks]
+        os.makedirs(os.path.dirname(os.path.abspath(args.smear_sheet)), exist_ok=True)
+        cv2.imwrite(args.smear_sheet, tile(ims, 4))
+        smear_sheet = args.smear_sheet
+
     # --- loop seam
     loop = None
     if args.loop:
@@ -866,7 +1001,7 @@ def evaluate(args, info, M, decl):
             'spike_min', 'region_spike_min', 'region_busy', 'spike_ratio', 'spike_add', 'burst_frames', 'flow_explained', 'stall_max', 'stall_moving',
             'hold_mad', 'max_hold', 'frozen_px', 'max_end_hold', 'quiet_window', 'quiet_mad', 'ghost_delta',
             'ghost_px', 'border_delta', 'border_frac', 'sliver_frames', 'judder_window', 'judder_resp',
-            'sharp_ratio', 'sharp_min', 'band_area', 'seam_abs', 'seam_ratio', 'det_min', 'det_ratio')},
+            'sharp_ratio', 'sharp_min', 'band_area', 'smear_area', 'seam_abs', 'seam_ratio', 'det_min', 'det_ratio')},
         'stats': dict(mad_median=round(float(np.median(dd[1:])), 3) if n > 1 else 0,
                       mad_p90=round(float(np.percentile(dd[1:], 90)), 3) if n > 1 else 0,
                       mad_max=round(float(dd.max()), 3), mad_max_frame=int(f0 + int(np.argmax(dd))),
@@ -875,7 +1010,8 @@ def evaluate(args, info, M, decl):
         'flags': flags,
         'checks': dict(spikes=spikes, stalls=stalls, holds=holds, quiet=quiet, ghosts=M['ghosts'],
                        crossings=M['crossings'][:100], borders=borders, judder=judder, sharpness=sharp_steps,
-                       banding=band, banding_sheet=band_sheet, seams=seam_table, loop=loop, determinism=det),
+                       banding=band, banding_sheet=band_sheet, smear=smear, smear_sheet=smear_sheet,
+                       seams=seam_table, loop=loop, determinism=det),
     }
 
 
@@ -898,6 +1034,9 @@ def main():
     ap.add_argument('--no-banding', action='store_true')
     ap.add_argument('--banding-sheet', help='x12 contrast-stretch sheet PNG (default: banding.png next to --json)')
     ap.add_argument('--banding-every', type=int, help='sample one frame per N for banding (default: fps)')
+    ap.add_argument('--no-smear', action='store_true', help='skip the flat-field compression smear check')
+    ap.add_argument('--smear-sheet', help='x25 stretch sheet of the smear samples (default: smear.png next to --json)')
+    ap.add_argument('--smear-every', type=int, help='sample one frame per N for smear (default: fps / 2)')
     ap.add_argument('--curves', help='also write per-frame MAD and sharpness curves to this JSON')
     g = ap.add_argument_group('thresholds (defaults are proven starting points; see references/review-loop.md)')
     g.add_argument('--spike-min', type=float, default=1.0)
@@ -926,6 +1065,8 @@ def main():
     g.add_argument('--sharp-ratio', type=float, default=3.0)
     g.add_argument('--sharp-min', type=float, default=30.0)
     g.add_argument('--band-area', type=float, default=0.03)
+    g.add_argument('--smear-area', type=float, default=0.2,
+                   help='smeared share of the frame that flags a sample (Tessel peaks at 0.15; the smeared sting at 0.29-0.42)')
     g.add_argument('--seam-abs', type=float, default=0.4)
     g.add_argument('--seam-ratio', type=float, default=1.5)
     g.add_argument('--det-min', type=float, default=0.3)
@@ -934,9 +1075,13 @@ def main():
     if args.banding_sheet is None and args.json and not args.no_banding:
         args.banding_sheet = os.path.join(os.path.dirname(os.path.abspath(args.json)), 'banding.png')
 
+    if args.smear_sheet is None and args.json and not args.no_smear:
+        args.smear_sheet = os.path.join(os.path.dirname(os.path.abspath(args.json)), 'smear.png')
+
     info = probe(args.video)
     decl = load_declarations(args)
     M = analyse(args, info)
+    M['smear'] = [] if args.no_smear else smear_scan(args, info)
     res = evaluate(args, info, M, decl)
 
     if args.curves:

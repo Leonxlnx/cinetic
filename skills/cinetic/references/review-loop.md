@@ -33,7 +33,7 @@ Keep each round in its own folder, so later lenses can be told what changed:
 
 ```
 out/qa/round-2/
-  forensics.json  banding.png  av.json  score.json     script reports
+  forensics.json  banding.png  smear.png  av.json  score.json   script reports
   watch_01_f0-239.png ... legibility.png               sheets
   director.json  forensics-lens.json  sound.json  art.json
   verified.json  fixes.md                              verdicts, and what you changed
@@ -96,7 +96,7 @@ bash scripts/grab.sh out/preview.mp4 1739 1740 --out $R/frames       # exact fra
 - `sync`: the hit rate, the median and p90 offsets in frames, `misses`, and `stray_sfx_onsets_f`.
 - `apex`: whoosh peaks against their frames.
 - `visual`: picture peaks against sounds, and strong picture changes (cuts, flashes, the peak of a big move) with no sound within ±3 f; the strongest are warnings.
-- `loudness`, `clicks`, `tail`, and `masking`, which is present only with stems.
+- `loudness` (with the target it gated against and where that came from), `clicks`, `head`, `tail`, and `masking`, which is present only with stems.
 
 Run av-audit with `--stems`. Only then is sync gated, because in the full mix the music hides quiet and soft-attack effects. With the full mix, a low hit rate is only a warning.
 
@@ -215,7 +215,7 @@ Score each dimension 1 to 5. The anchors are for 1, 3 and 5, and 2 and 4 sit bet
 | **Transitions** | crossfades and presets | motivated, but with repeats | velocity-matched cuts, relays and morphs, a signature move used 3 times | director; seam table |
 | **Pacing** | dead holds or cramming | even, with flat energy | one peak per bar, calm between peaks, results held long enough to land | energy curve; holds and quiet flags |
 | **Product truth** | a fake dashboard | real UI, but it shows only the naive version of the feature, or data or states contradict the story | the feature's non-obvious behaviour, shown; data that agrees with itself and with the story (roles, sums, ratios); state changes animate, counters count during the action | art lens; pause test; the story asserts in `data.ts` |
-| **Sound and sync** | stock sounds, or out of lock | synced, but masked or out of key | every event within ±1 f and audible, tuned, the payoff loudest, −14 LUFS and −1 dBTP | `av.json` strict; sound lens |
+| **Sound and sync** | stock sounds, or out of lock | synced, but masked or out of key | every event within ±1 f and audible, tuned, the payoff loudest, on its LUFS target (−14; −16 for a calm brand or a sting) and −1 dBTP | `av.json` strict; sound lens |
 | **Finish** | pops, ghosts, jitter or banding | occasional P1-level artifacts | zero failing forensics checks, explained warnings, clean blur, BT.709 tags | `forensics.json`; `probe` |
 
 Formats without some dimensions score them against the format's own recipe in `references/formats.md`: a muted loop scores Sound and sync as N/A, and a sting's Product truth is its mark.
@@ -281,6 +281,7 @@ Every script threshold in one place. Most can be changed with the flag named in 
 | Judder | a 24 f window of a 256 px patch moving 0.08–0.9 px/f in whole-pixel stairs (rests < 0.15 px, ≥ 2 isolated 1 px jumps, phase-correlation response ≥ 0.7) | warn | `--judder-window`, `--judder-resp`, `--track x,y,w,h` |
 | Sharpness step | a region's Laplacian variance changes ×3 in one frame, steady (< ×1.5) on both sides, and the region is otherwise calm (region d < 1) | warn | `--sharp-ratio`, `--sharp-min` |
 | Banding | > 3% of the frame in 64 px tiles with a 1–12 level gradient drawn as flat plateaus (5×5 range 0 on 50–97%) with 1-level contours | warn | `--band-area`, `--banding-every` |
+| Smear | on a flat field (≥ 1% of the frame, 17×17 range ≤ 3, 98% within ±2 of one value), 16 px blocks of 1-level texture (≥ 30% of pixels differ from a neighbour) next to clean ones (≤ 2%): smeared share of the frame (the lesser of the two × the field) > 0.2, sampled 2 per second on the exact luma plane; the `smear.png` sheet is a ×25 stretch (`references/finishing.md` §5) | **fail** on ≥ 2 samples, warn on one | `--smear-area`, `--smear-every`, `--no-smear` |
 | Loop seam | last → first frame d ≤ max(0.4, 1.5 × median of the 8 steps at each end) | **fail** | `--loop`, `--seam-abs`, `--seam-ratio` |
 | Determinism | per-frame d between two renders > max(0.3, 5 × median) | **fail** | `--against b.mp4` |
 
@@ -295,13 +296,14 @@ Every script threshold in one place. Most can be changed with the flag named in 
 | Apex | whoosh/suck (or `apexFrac`): 30 ms envelope maximum within ±3 f; risers and swells are listed only | warn (stems only) | `--apex-tol` |
 | Visual | isolated events: the clear MAD peak within ±6 f sits −2…+3 f from the sound, or the picture changes on the sound by ≥ 35% of it | warn | `--vis-window` |
 | Silent picture peak | a strong MAD peak (prominence ≥ max(1.5, 4 × median)) with no audio onset or sfx envelope peak within ±3 f | warn | `--peak-tol` |
-| Loudness | integrated −14 ± 1 LUFS; on an excerpt (audio shorter than the film) it is only reported | **fail** | `--lufs`, `--lufs-tol`, `--no-loudness` |
+| Loudness | integrated at the film's target ± 1 LUFS: `--lufs`, else `master.lufs` in `audio/score.json` (−14 by default, −16 for a calm brand or a sting), else −14 and −16 both pass; on an excerpt (audio shorter than the film) it is only reported | **fail** | `--lufs`, `--score`, `--lufs-tol`, `--no-loudness` |
 | True peak | ≤ −1.0 dBTP, on the decoded track | **fail** | `--tp-max` |
 | LRA | 3–8 LU | warn | `--lra` |
 | Payoff | the loudest momentary window falls within 1.5 s after the `payoff` cue | warn | `--payoff <cue>` |
 | Clipping | any sample at full scale | **fail** | |
 | Clicks | > 14 kHz sample > 9× its 20 ms RMS and > 6× its 4 ms RMS, with ≥ 80% of that energy inside 1 ms | warn | |
 | Tail | last 50 ms RMS ≤ −45 dBFS and last 10 ms peak ≤ −60 dBFS (fail); the last 0.5 s quieter than the one before (warn); skipped on an excerpt | **fail** / warn | `--tail-rms`, `--tail-peak` |
+| Head | first 5 ms peak ≤ −40 dBFS: above it, sample 0 clicks (not faded in) or a sound already in progress cuts in mid-action; `master.py` fades in from zero over 3 ms, so a remaining flag is a sound begun before frame 0; skipped on an excerpt | warn | `--head-peak` |
 | Masking (stems) | each effect ≥ +6 dB over the music in its best band (60 ms from onset); below 0 dB is flagged | warn | `--mask-db` |
 | Duration | audio and picture differ by > 1.5 f | warn | |
 
