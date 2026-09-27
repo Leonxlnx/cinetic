@@ -70,14 +70,23 @@ Rules:
 
 ## 4. Stock phrasing to cut
 
-These mark a film as a template. Cut them on sight unless the brand's own voice uses them.
+**Hard bans** (`SKILL.md`). These never appear in copy you write, because they are landing-page grammar and the fastest tells of generated work:
+- **eyebrow or kicker labels** above a headline ("NEW FEATURE", "INTRODUCING", "01 / SPEED");
+- **stacked taglines**: a tagline over or under a headline, or a second statement under the first;
+- **"Introducing…"** in any position;
+- **text walls**: more than one statement readable at once, paragraphs, bullet lists, a list with blurred neighbours;
+- **random filler text**: decorative mono captions, fake metrics, version strings, coordinates and timestamps nobody reads, labels that name the obvious ("DASHBOARD"), lorem ipsum.
 
-- **Openers:** Introducing, Meet, Say hello to, Say goodbye to, Ready to…?, What if…?, Imagine…, One more thing.
+Every word on screen earns its place: it is counted in the §1 budget, held long enough to read (§5), and true on its paused frame. Text inside the product UI follows the same rule: real strings from `data.ts` that the story needs, and nothing added to make a frame look busy.
+
+The rest of this list marks a film as a template too. Cut it on sight unless the brand's own voice uses it.
+
+- **Openers:** Meet, Say hello to, Say goodbye to, Ready to…?, What if…?, Imagine…, One more thing.
 - **Claims:** the future of, reimagined, redefined, next-gen, revolutionary, game-changing, like never before, and more.
 - **Verbs:** unlock, supercharge, streamline, elevate, empower, level up, transform your, harness.
 - **Adjectives:** seamless(ly), effortless(ly), powerful, smart, intelligent, AI-powered, all-in-one, at scale.
 - **Nouns:** workflow, productivity, solution, experience, journey.
-- **Structures:** a feature name as a headline ("Smart Split"); eyebrow or kicker labels ("NEW FEATURE"); a tagline stacked over a headline; three-item lists ("Plan. Track. Win.").
+- **Structures:** a feature name as a headline ("Smart Split"); three-item lists ("Plan. Track. Win.").
 
 ## 5. String audit
 
@@ -105,36 +114,36 @@ grep -rnP "\w'\w|\b1 [a-z]+s\b|lorem|ipsum|TODO|FIXME|Acme|John Doe|example\.com
 
 ## 6. One family, chosen for the brand
 
-- **Choose the family for the brand's personality**, from the table in `references/brand-and-color.md` §2: a warm text serif for a calm, literary brand, a tight grotesk for a fast tool, a rounded face for a playful one. The starter's Geist is a stand-in marked `// cinetic:placeholder`, and `lint-film.mjs` fails until you replace it or keep it on purpose. Why a local variable font: the axis lets you pick 440 exactly, local files render identically offline, and one family makes display, UI and wordmark agree.
-- **Compare before you commit.** Render the name and the key statement in two or three candidates and compare the numerals, the "a", "g" and "t", and the width at display size. The ubiquitous UI default families read as "template" unless you chose them for a reason.
-- **Install and load it** (verified with `@fontsource-variable/newsreader` 5.3.0 in the starter):
+- **Choose the family for the brand's personality**, from the table in `references/brand-and-color.md` §2: a humanist sans for a calm brand, a tight grotesk for a fast tool, a rounded sans for a playful one, a neo-grotesk for a premium one. It is always a clean sans, plus a mono if the product needs one, because serif and italic are hard bans when you invent the look. The starter's Geist is a stand-in marked `// cinetic:placeholder`, and `lint-film.mjs` fails until you replace it or keep it on purpose. Why a local variable font: the axis lets you pick 640 exactly, local files render identically offline, and one family makes display, UI and wordmark agree.
+- **Compare before you commit.** Render the name and the key statement in two or three candidate sans faces and compare the numerals, the "a", "g" and "t", and the width at display size. The ubiquitous UI default families read as "template" unless you chose them for a reason.
+- **Install and load it** (verified with `@fontsource-variable/schibsted-grotesk` 5.3.0 in the starter: `tsc` and a rendered still):
 
 ```bash
-npm i @fontsource-variable/newsreader @fontsource-variable/jetbrains-mono   # names: brand-and-color.md §2
+npm i @fontsource-variable/schibsted-grotesk @fontsource-variable/jetbrains-mono   # names: brand-and-color.md §2
 ```
 ```ts
 // src/brand/fonts.ts: bundled with the film; only FontGate imports this file
-import '@fontsource-variable/newsreader'; // calm, literary: the brand's one family
+import '@fontsource-variable/schibsted-grotesk'; // fast, exact: the brand's one family
 import '@fontsource-variable/jetbrains-mono'; // numbers and code only
 
 // src/brand/tokens.ts: the CSS family is "<Name> Variable"; FACES lists every weight in use,
 // because FontGate waits for exactly these before anything renders or measures
 export const FONT = {
-  text: '"Newsreader Variable", Georgia, serif', // the film's one family (any style); typeStyle and measure.ts read it
+  text: '"Schibsted Grotesk Variable", system-ui, sans-serif', // the film's one family; typeStyle and measure.ts read it
   mono: '"JetBrains Mono Variable", ui-monospace, monospace',
 };
-export const FACES = ['400 16px "Newsreader Variable"', '440 16px "Newsreader Variable"', '400 16px "JetBrains Mono Variable"'];
+export const FACES = ['450 16px "Schibsted Grotesk Variable"', '640 16px "Schibsted Grotesk Variable"', '400 16px "JetBrains Mono Variable"'];
 export const TYPE = {
-  display: { size: 120, weight: 440, track: -0.015, lead: 1.0 }, // serifs want less negative tracking than sans
-  secondary: { size: 48, weight: 400, track: -0.01, lead: 1.15 },
-  ui: { size: 26, weight: 400, track: 0, lead: 1.3 },
+  display: { size: 116, weight: 640, track: -0.04, lead: 1.0 },
+  secondary: { size: 48, weight: 450, track: -0.02, lead: 1.15 },
+  ui: { size: 26, weight: 450, track: -0.01, lead: 1.3 },
 };
 ```
-  A weight outside the package's axis silently falls back to the nearest one, so check the range in its `index.css` (`font-weight: 200 800` for Newsreader). In HyperFrames, copy the `.woff2` into `fonts/` instead (`assets/hyperframes-starter/fonts/README.md`).
-- **Two weights** from the variable axis, for example 440 for display and 400 for text. Never animate weight on text that reflows (a chip whose weight changes pushes the rest of the line).
+  A weight outside the package's axis silently falls back to the nearest one, so check the range in its `index.css` (`font-weight: 400 900` for Schibsted Grotesk, so nothing lighter than 400). In HyperFrames, copy the `.woff2` into `fonts/` instead (`assets/hyperframes-starter/fonts/README.md`).
+- **Two weights** from the variable axis, for example 640 for display and 450 for text. Never animate weight on text that reflows (a chip whose weight changes pushes the rest of the line).
 - **Mono** only for code, terminal output or aligned data, unless the brand's voice is a mono (the "raw, mechanical" row). Mono timestamps in a consumer UI read as a developer-tool tell.
-- **Serif and humanist faces** are right when the personality is warm, literary or calm and you chose them for that reason. Serif or italic used as generic "elegance", and condensed display faces used for "impact", are the generated-look tells; otherwise take emphasis from size or motion.
-- **One token per role.** If display is 440 / −0.015 em, it is exactly that in every scene. Near-miss values across scenes (430, 440, 460; −0.01, −0.015, −0.02) read as "almost matched".
+- **No serif, no italic.** Both are hard bans when you invent the look, and so is a skew that fakes an italic, because serif or italic "elegance" is what generated work reaches for (condensed display faces for "impact" are the same tell). Personality comes from which sans you pick, its weight, case and tracking; emphasis comes from size or motion. A serif the brand supplies is the exception (`references/brand-and-color.md` §1).
+- **One token per role.** If display is 640 / −0.04 em, it is exactly that in every scene. Near-miss values across scenes (620, 640, 660; −0.035, −0.04, −0.045) read as "almost matched".
 - **Numerals.** `fontVariantNumeric: 'tabular-nums'` on anything that counts, changes or aligns, so counters don't jitter in width.
 
 **Tracking tightens as size grows:**
@@ -298,5 +307,5 @@ lines.map((text, i) => {
 - **`@remotion/layout-utils`**, if you use it:
   - `fitText({text, withinWidth, fontFamily, fontWeight, letterSpacing})` returns `{fontSize}`; it measures at 100 px and scales.
   - `fitTextOnNLines({text, maxLines, maxBoxWidth, fontFamily, fontWeight, letterSpacing, maxFontSize})` returns `{fontSize, lines}`. It binary-searches the size and breaks greedily on single spaces, so you don't choose the breaks; prefer hand-set lines for statements.
-  - `letterSpacing` is a string (`'-0.05em'`), and `fontFamily` is the loaded family name (`'Newsreader Variable'`).
+  - `letterSpacing` is a string (`'-0.05em'`), and `fontFamily` is the loaded family name (`'Schibsted Grotesk Variable'`).
   - **The cache gotcha.** Measurements go into a module-level cache that is never cleared. Its key is text, family, weight, size, letterSpacing, textTransform and additionalStyles, but *not* `fontVariantNumeric`, so a tabular and a proportional measurement of the same string collide. A measurement taken before the font loads is cached with the fallback width for the rest of the render. Call these functions only inside `FontGate`, and pass `validateFontIsLoaded: true`, which throws when the fallback face measures identically (it needs more than 4 distinct characters to tell).

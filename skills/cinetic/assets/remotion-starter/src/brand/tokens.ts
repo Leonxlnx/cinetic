@@ -25,7 +25,7 @@ export const C = {
 // cinetic:placeholder - the family is the starter's stand-in: choose one for this brand (fonts.ts
 // says how), set FONT and FACES to its CSS family name ("<Name> Variable"), then delete this line.
 export const FONT = {
-  text: '"Geist Variable", "Geist", system-ui, sans-serif', // the film's one family (any style); typeStyle and measure.ts read it
+  text: '"Geist Variable", "Geist", system-ui, sans-serif', // the film's one sans, for every role; typeStyle and measure.ts read it
   mono: '"Geist Mono Variable", "Geist Mono", ui-monospace, monospace',
 };
 
