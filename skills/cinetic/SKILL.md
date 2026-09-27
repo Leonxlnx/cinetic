@@ -17,12 +17,37 @@ You are directing a short film, not animating a web page. Picture, copy and soun
 
 The target is a film people watch twice: one idea the product owns, told in pictures, where every frame looks chosen and nothing is there to fill space.
 - **Substance before polish.** Show the specific, clever thing this product does, the thing a simpler product wouldn't. Flawless motion around a generic claim still loses to a rough film that makes the viewer think "oh, that's smart".
-- **Its own look.** Every brand gets a visual language derived from its name, its product and its personality. Restraint means no decoration; it does not mean one minimal house style for everything.
+- **Its own look.** Every brand gets a visual language derived from its name, its product and its personality, inside the Hard bans below. Restraint means no decoration; it does not mean one minimal house style for everything.
+- **Ultra clean and smooth.** Clean, modern frames, with creative ideas and choreography. Every move is eased, weighted and smooth at 60 fps: no jitter, no pops and no effects standing in for ideas.
 - **Visual, not narrated.** The idea reads with the sound off; the words confirm what the picture already said.
 - **Weight and stillness.** Motion has mass, arrives on the beat and then rests, so the fast moments land.
 - **Sound that makes the picture feel better:** every hit is caused by something you can see.
 - **Restraint over decoration.** When in doubt, remove.
 - **Proof, not impression.** The process below exists because none of this can be judged in the editor or the Studio: you only know once you have watched the actual render and measured it.
+
+## Hard bans
+
+When you invent the look, none of these appear, ever. They are the fastest tells of generated work, and this skill exists to make films that don't look generated. `lint-film.mjs` checks the tokens and styles for them, and the critics check the frames.
+- **Words:**
+  - eyebrow or kicker labels above a headline;
+  - stacked taglines, and "Introducing…";
+  - text walls, and random filler text: decorative mono captions, fake metrics, labels nobody needs, lorem ipsum.
+
+  Every word on screen earns its place.
+- **Type:** serif typefaces, and italic or oblique styles, including a skew that fakes one. Use one clean, modern sans, plus a mono for code or numbers if the product needs one.
+- **Colour:**
+  - orange, amber, beige, cream, tan or sand, as an accent, a paper or a glow;
+  - neon: very bright, saturated accents, glows, bloom and halos;
+  - purple, violet or indigo, and purple-to-blue or any multi-hue gradient;
+  - glassmorphism.
+- **Decoration:**
+  - emoji and stock icons;
+  - sparkles standing for "AI", particles, confetti, lens flares and code rain;
+  - bouncy overshoot on anything that isn't landing.
+
+What remains is plenty: ink and paper (light or dark, neutral or cool), one accent with a meaning from any hue family outside the banned ones (red, green, teal, blue, yellow), one sans, and motion that is ultra clean and smooth, eased, weighted, motion-blurred and free of jitter. The creativity goes into the idea, the device and the choreography, not into effects.
+
+If the user supplies a brand that includes one of these (their serif wordmark, their orange), the brand wins, because it is their identity rather than a default. Record it in `BRIEF.md` so the critics don't flag it, and mark the lines that set it with `// cinetic:brand-supplied <what>` so the lint accepts them.
 
 ## 1. Formats and defaults
 
@@ -56,7 +81,7 @@ Every step writes a file, and every gate is a check you actually run. Work inlin
 - Choose the engine:
   - Remotion by default.
   - HyperFrames if the user already has a HyperFrames project, wants HTML/GSAP, or needs `--batch` renders driven by variables.
-- Write the defaults you will hold yourself to into `BRIEF.md`: no eyebrow labels, no stacked taglines, no emoji, no stock icons, no lorem ipsum, no telltale generated palettes, no serif or italic unless the brand calls for it. Critics are later prompted with this file word for word, so it doubles as the QA contract.
+- Copy the hard bans (above) into `BRIEF.md`, plus any brand-supplied exceptions. Critics are later prompted with this file word for word, so it doubles as the QA contract.
 - Scaffold the project: `bash <skill>/scripts/new-film.sh films/<name> --fps 60 --bpm 120 --size 1920x1080 [--engine hyperframes]`. Pass `--link-modules <dir>/node_modules` to reuse an existing install instead of running `npm install`.
 - **Gate:** `BRIEF.md` has a spec line, for example `1920x1080@60, 30s, 120BPM, audio: synthesized`.
 
@@ -91,13 +116,13 @@ Read `references/concept-and-story.md` now.
 Read `references/brand-and-color.md` and the type section of `references/copy-and-type.md`.
 - The starter's palette, fonts, mark and demo name are stand-ins marked `// cinetic:placeholder`, and `lint-film.mjs` reports an error until every marker is gone. Apply the user's brand, or invent one for this film, then delete the markers. A film that keeps the starter's look looks like every other film made from it.
 - **Personality first.** Write three adjectives for the brand, then derive the choices from them. This mapping is in `references/brand-and-color.md` §2:
-  - the typeface: pick the family for this brand from `@fontsource-variable/*` (install what you need); Geist is only the starter's stand-in;
+  - the typeface: pick the sans for this brand from `@fontsource-variable/*` (install what you need); Geist is only the starter's stand-in;
   - weight and case;
-  - the stage (light or dark: a dev tool or a fire-named brand often wants dark), its temperature and the accent's hue;
+  - the stage (light or dark: a dev tool or a fire-named brand often wants dark), neutral or cool, and the accent's hue from the allowed families;
   - the motion character, from crisp to unhurried.
 
   A calm notes app and a fast CI tool should not share a look.
-- Write `src/brand/tokens.ts` (`python3 scripts/palette.py --accent '#…' --stage dark` builds the neutrals and checks contrast):
+- Write `src/brand/tokens.ts` (`python3 scripts/palette.py --accent '#…' --stage dark` builds the neutrals, checks contrast and refuses a banned hue):
   - colours: an ink, a paper, 2–4 neutrals, and one accent with its meaning in a comment;
   - type: one family at 2 weights, plus a mono if you need one;
   - a type scale;
@@ -196,8 +221,9 @@ These rules ban the tells of generated work, not personality. Two films made wit
 - Show one line at a time. No eyebrow or kicker labels and no stacked taglines, because that is landing-page grammar.
 
 **Type**
-- Choose one family for the brand's personality, at 2 weights, plus an optional mono, shipped as local variable fonts (`@fontsource-variable/*`). A well-made sans is the usual answer. A serif or a humanist face is right when the personality is warm, literary or calm and you chose it for that reason.
-  - Serif or italic used as generic "elegance", and condensed display faces, are generated-look tells.
+- Choose one clean, modern sans for the brand's personality, at 2 weights, plus an optional mono, shipped as local variable fonts (`@fontsource-variable/*`). No serif and no italic (see Hard bans).
+  - Personality comes from the sans you pick, its weight, case and spacing: a humanist sans at a light weight for calm, a tight grotesk for fast, a rounded sans for friendly.
+  - Condensed display faces are a generated-look tell.
   - The ubiquitous UI default families, the starter's stand-in included, read as "template" unless you chose them on purpose.
   - Weight carries tone: a calm brand rarely wants a heavy grotesk wordmark.
 - Get emphasis from size or motion.
@@ -209,13 +235,8 @@ These rules ban the tells of generated work, not personality. Two films made wit
 - Blur text only on entry, and only while it moves fast: statements 14 → 0 px, body lines 8 px, through `blurIn` (clear by 60% of the eased move, because Chromium steps blur radii and renders anything under ~0.75 px fully sharp). Text lands sharp and is never left readable-but-blurred for more than 6 f.
 
 **Colour** (`references/brand-and-color.md`)
-- Any hue is fine when it is chosen for a reason. Avoid the telltale generated palettes:
-  - indigo or violet-to-blue gradients;
-  - neon on black;
-  - glassmorphism;
-  - beige with an orange default;
-  - rainbow multi-hue gradients.
-- Tint the neutrals cool or toward the accent, and keep ink as ink. New things arrive in the accent and relax to neutral over 10–30 f, which is how colour says "just happened".
+- Pick one accent from an allowed hue family (red, green, teal, blue, yellow) for a stated reason. Everything in the Hard bans is out: orange, amber, beige and cream, neon, purple, violet or indigo, multi-hue gradients and glassmorphism.
+- Tint the neutrals cool or keep them neutral, never warm or beige, and keep ink as ink. New things arrive in the accent and relax to neutral over 10–30 f, which is how colour says "just happened".
 - No glow, halo or bloom.
   - Shadows are `0 20–40px 60–120px rgba(0,0,0,.12–.22)`.
   - Dark surfaces get a 1 px top hairline at 8–12% white.
@@ -306,8 +327,9 @@ The tokens live in `src/lib/anim.ts` (`E`, `SPR`, `tw`, `prog`, `mix`, `lmix`, `
 
 A film uses about 3 easing characters. Linear is only for drift.
 
-Springs (`SPR`, as damping/stiffness/mass): `snap` 18/260/0.7 (small overshoot), `pop` 11/180/0.6 (playful), `soft` 26/120/1 (no overshoot), `heavy` 30/90/1.4 (weighty).
-- **Damping.** Default to critical damping or more: damping ≥ 2√(stiffness·mass). Keep 1–7% overshoot for impacts, and use at most 2 "landing" springs per film, because a bounce everywhere reads as a toy.
+Springs (`SPR`, as damping/stiffness/mass): `snap` 18/260/0.7 (small overshoot), `pop` 11/180/0.6 (a landing only), `soft` 26/120/1 (no overshoot), `heavy` 30/90/1.4 (weighty).
+- **Damping.** Everything is eased or critically damped: damping ≥ 2√(stiffness·mass). Overshoot (1–7%) belongs only to a true landing, an object arriving at a surface or a lock, at most 2 per film, because a bounce anywhere else reads as a toy.
+- **Smoothness is a ship gate.** Jitter, pixel-snap stairs, single-frame pops and stall-then-lurch block the ship however good the idea is: zero `forensics.py` fails and Finish at 5 (§8).
 - **Clamp.** Clamp overshoot wherever it could collide with other geometry or drive a value negative. Snap to rest when `|1 − s| < 0.01`.
 - **`Easing.spring({damping:200})`** starts at zero velocity, so it is not a replacement for expo-out.
 
@@ -427,7 +449,7 @@ Read each file when its step comes up. Don't read them all at once.
 | Need | Tool |
 |---|---|
 | a project from the starter | `scripts/new-film.sh` |
-| static bans, a leftover placeholder brand | `scripts/lint-film.mjs` |
+| static bans and hard bans, a leftover placeholder brand | `scripts/lint-film.mjs` |
 | grid, holds, gaps, word budget; text in the safe area | `scripts/grid-check.ts`; `scripts/layout-audit.sh` |
 | a palette from one accent, contrast, accent coverage on a still | `scripts/palette.py` |
 | gradients that don't band | `scripts/dither-gradient.py` |

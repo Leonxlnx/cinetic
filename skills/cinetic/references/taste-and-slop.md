@@ -3,19 +3,35 @@
 The full list of things that make motion design look cheap, templated or generated, one line each with its fix. Read it at Step 2 before the style stills, then search it during every review round. Numbers are proven defaults at 1920×1080 and 60 fps, starting points rather than dogma.
 
 **How to use it**
-- **When you invent, every entry applies.** When the user supplies a brand (colours, typeface, logo, footage, voice), the brand wins over any entry about that element; the rest still apply.
+- **The hard bans come first** (HB1–HB11 below). A hard-ban violation on any frame is a P0 in review, unless `BRIEF.md` lists it as brand-supplied.
+- **When you invent, every entry applies.** When the user supplies a brand (colours, typeface, logo, footage, voice), the brand wins over any entry about that element, hard bans included, and each such exception is written in `BRIEF.md`; the rest still apply.
 - **Cite the ID.** Critics put the ID at the start of an issue's `problem` field ("F4: expo-out fade-out on the lockup, 55% gone in 1 f"), so fixes can be traced and repeat offenders counted.
 - **Search by group**, for example `grep -n '^- \*\*F' references/taste-and-slop.md` for motion, or by word (`grep -n -i 'glow'`).
 - **Look for the fix, not just the tell.** Each fix names a number or a file to check it with.
 
-**Groups:** [A Concept](#a-concept-and-story) · [B Copy](#b-copy) · [C Type](#c-type) · [D Colour](#d-colour-and-surface) · [E Layout](#e-layout-and-framing) · [F Motion](#f-motion-and-easing) · [G Transitions](#g-transitions) · [H Camera](#h-camera) · [I UI](#i-ui-depiction) · [J Sound](#j-sound) · [K Pacing](#k-pacing) · [L Finishing](#l-finishing)
+**Groups:** [HB Hard bans](#hard-bans) · [A Concept](#a-concept-and-story) · [B Copy](#b-copy) · [C Type](#c-type) · [D Colour](#d-colour-and-surface) · [E Layout](#e-layout-and-framing) · [F Motion](#f-motion-and-easing) · [G Transitions](#g-transitions) · [H Camera](#h-camera) · [I UI](#i-ui-depiction) · [J Sound](#j-sound) · [K Pacing](#k-pacing) · [L Finishing](#l-finishing)
 
 ---
+
+## Hard bans
+
+These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appears on any frame. `scripts/lint-film.mjs` catches what it can in the code (rule names in brackets), and the critics check the frames for the rest.
+- **HB1 Eyebrow or kicker labels** above a headline ("NEW FEATURE", "01 / SPEED"). **Fix:** delete them; hierarchy comes from size and order of appearance.
+- **HB2 Stacked taglines, and "Introducing…".** A tagline over or under a headline; a second statement under the first; any "Introducing". **Fix:** one line at a time, opening inside the problem (`references/copy-and-type.md` §4).
+- **HB3 Text walls and filler text.** Two statements readable at once, paragraphs, bullet lists; decorative mono captions, fake metrics, version strings, labels nobody needs, lorem ipsum. **Fix:** every word is counted, held and true on its paused frame, or it goes.
+- **HB4 Serif and italic.** Serif typefaces; italic or oblique styles, including a skew that fakes one [`serif`, `italic`]. **Fix:** one clean, modern sans chosen for the personality, plus a mono if needed; emphasis from size or motion (`references/brand-and-color.md` §2).
+- **HB5 Orange, amber, beige, cream, tan or sand**, as an accent, a paper or a glow [`banned-color`]. **Fix:** an accent from red, green, teal, blue or yellow; a neutral or cool paper (the OKLCH regions are in `references/brand-and-color.md` §8).
+- **HB6 Neon.** Very bright, saturated accents; glows, bloom and halos [`banned-color`, `glow`]. **Fix:** lower the lightness or chroma; black shadows only (`0 28px 90px rgba(0,0,0,.16)`), and on ink a luminance step plus a 1 px hairline.
+- **HB7 Purple, violet or indigo**, and purple-to-blue or any multi-hue gradient [`banned-color`, `gradient-multihue`]. **Fix:** one flat accent with a written meaning; stages are tonal fields in one hue.
+- **HB8 Glassmorphism.** Backdrop blur, a 10–20% white fill, a 1 px white border [`glass`]. **Fix:** an opaque surface with one soft shadow.
+- **HB9 Emoji and stock icons** [`emoji`, `stock-decoration`]. **Fix:** draw what the product itself shows; icons only where the real product UI has them.
+- **HB10 Effects standing in for ideas.** Sparkles for "AI", particles, confetti, lens flares, code rain [`stock-decoration`, `emoji`]. **Fix:** the product's real behaviour, shown; every element names its job.
+- **HB11 Bouncy overshoot on anything that isn't landing.** **Fix:** everything eased or critically damped; overshoot of 1–7% only on a true landing, an object arriving at a surface or a lock, at most 2 per film (F3).
 
 ## A. Concept and story
 - **A1 Feature tour.** Feature, feature, feature, logo; the viewer has nothing to remember. **Fix:** problem → turn → promise; run the deletion test both ways (`references/concept-and-story.md` §4).
 - **A2 Wrong first frame.** Opening on "Introducing…", a question, the logo or a blank frame. **Fix:** open inside the problem; felt by 1 s, stated by 2 s.
-- **A3 Borrowed props.** A rocket, lightbulb, globe with arcs, up-and-right chart, floating phone, sparkle for AI, shield for security. **Fix:** the ownership test; build every image from the product's own objects.
+- **A3 Borrowed props.** A rocket, lightbulb, globe with arcs, up-and-right chart, floating phone, sparkle for AI (HB10), shield for security. **Fix:** the ownership test; build every image from the product's own objects.
 - **A4 A style posing as an idea.** "Bold, kinetic, minimal, 3D." **Fix:** write Idea / Device / Grammar first; the style follows from them.
 - **A5 Demo without a cause, or a rushed result.** UI moves because the timeline says so, or the result is on screen 11 f before a whip. **Fix:** cause → action → result, with the result held ≥ 36 f + 6 f per word.
 - **A6 The device drops out.** It blinks out for 4 f at a cut, or changes size or colour across a seam. **Fix:** full opacity through every seam; hand it over on a shared prop.
@@ -24,20 +40,20 @@ The full list of things that make motion design look cheap, templated or generat
 - **A9 An oversimplified feature.** The film would be just as true of a dumber product: an even split for an itemised one, a list for a ranking. **Fix:** the specificity test; the proof shows the non-obvious behaviour (`references/concept-and-story.md` §3–4).
 
 ## B. Copy
-- **B1 Landing-page grammar.** Eyebrow or kicker labels, a tagline stacked over a headline, all-caps micro labels. **Fix:** delete them; hierarchy comes from size and order of appearance.
-- **B2 Stock phrasing and punctuation.** Seamless, unlock, supercharge, AI-powered, next-gen, "the future of"; exclamation marks, emoji, rhetorical questions. **Fix:** callback copy built from the film's own words; statements end in a period (`references/copy-and-type.md` §3–4).
+- **B1 Landing-page grammar.** Eyebrow or kicker labels and stacked taglines (HB1, HB2), all-caps micro labels. **Fix:** delete them; hierarchy comes from size and order of appearance.
+- **B2 Stock phrasing and punctuation.** Seamless, unlock, supercharge, AI-powered, next-gen, "the future of"; exclamation marks, emoji (HB9), rhetorical questions. **Fix:** callback copy built from the film's own words; statements end in a period (`references/copy-and-type.md` §3–4).
 - **B3 A feature name as a headline.** "Smart Split." **Fix:** say what changes for the viewer in ≤ 5 words.
-- **B4 Text wall.** More than one statement readable at once, such as a list with blurred neighbours. **Fix:** one line at a time; neighbours masked to unreadable slivers.
+- **B4 Text wall.** More than one statement readable at once, such as a list with blurred neighbours (HB3). **Fix:** one line at a time; neighbours masked to unreadable slivers.
 - **B5 Over budget.** More than 35 words per 30 s, more than 5 words per line, more than 2 lines per shot. **Fix:** cut adjectives first, then whole lines.
 - **B6 Microcopy asked to carry meaning.** A 14–16 px toast readable for 6 f. **Fix:** ≥ 22 px on screen and held for its reading time, or treat it as texture that carries nothing.
 - **B7 Proofing bugs.** "1 clashes", mixed brand casing, straight quotes, lorem, "John Doe", example domains. **Fix:** the plural helper and the string audit (`references/copy-and-type.md` §5).
 
 ## C. Type
-- **C1 Generated-look faces.** Serif or italic as instant "elegance", or a condensed display face for "impact", when the brand didn't ask for either. **Fix:** one family chosen for the personality (`references/brand-and-color.md` §2); emphasis from size, weight contrast or motion.
+- **C1 Generated-look faces.** Serif or italic as instant "elegance" (HB4), or a condensed display face for "impact". **Fix:** one clean sans chosen for the personality (`references/brand-and-color.md` §2); emphasis from size, weight contrast or motion.
 - **C2 An unchosen default, or a fallback.** A ubiquitous UI default family picked by nobody, or a fallback face visible on any frame. **Fix:** choose the family on purpose, ship it locally (`@fontsource-variable/*`), gate it with `FontGate`.
 - **C3 Near-miss tokens.** Display weights 590, 600 and 620, or tracking −0.04, −0.05 and −0.06, across scenes. **Fix:** one display token (for example 600 / −0.045 em), reused everywhere.
 - **C4 Flat scale.** Everything at 48–64 px. **Fix:** statements 88–128 px, emphasis 1.5–1.7× that, headline to secondary ≥ 2:1.
-- **C5 Faux italics from 3D shear.** Roll applied before tilt leans all UI text by ~18°. **Fix:** write `perspective() rotateZ() rotateX()` so the roll stays rigid; total shear ≤ 7°.
+- **C5 Faux italics from 3D shear.** Roll applied before tilt leans all UI text by ~18°, an accidental HB4. **Fix:** write `perspective() rotateZ() rotateX()` so the roll stays rigid; total shear ≤ 7°.
 - **C6 Glyph collisions.** Overshoot closes a word space ("Everythingfits"), a period hangs 13 px under the baseline, a cover leaks glyph tops. **Fix:** clamp at the lock; place with `inkBox` and `baselineOf` after fonts load; pad covers by 8 px.
 - **C7 Blur-dissolve on every word.** Or readable text left blurred for more than 6 f. **Fix:** blur only on entry (statements 14 → 0 px, body lines 8 → 0 px, through `blurIn` so it clears by 60% of a 26 f `E.out` move); land sharp.
 - **C8 Jittering numbers.** Counters whose width changes, or mono timestamps in a consumer UI. **Fix:** tabular figures in the one family; digits roll 6–8 f each.
@@ -45,12 +61,12 @@ The full list of things that make motion design look cheap, templated or generat
 - **C10 A reveal that misspells.** A letter or sweep reveal passes through another word, or a half-drawn glyph reads as a different letter. **Fix:** reveal names by whole word or with a mask; list the reveal's prefixes and check those frames (`references/copy-and-type.md` §8).
 
 ## D. Colour and surface
-- **D1 Generated gradients.** Indigo or violet → blue, rainbow multi-hue, mesh blobs, aurora washes, gradient text. **Fix:** one flat accent with a written meaning; stages are tonal fields in the palette (`references/brand-and-color.md` §12).
-- **D2 Neon on black.** Anything at OKLCH L > 0.85 with C > 0.15 on an ink stage. **Fix:** lower the lightness or chroma; the accent is a signal, not a light source.
-- **D3 The beige default.** A beige or cream ground with an orange or terracotta accent. **Fix:** cool or accent-tinted neutrals (paper around `#F7F8F8`); warm only when the brand is warm.
-- **D4 Glass and glow.** Backdrop blur with a 10–20% white fill and a 1 px white border; glows, halos, bloom, an outer glow on text. **Fix:** one soft shadow on paper (`0 28px 90px rgba(0,0,0,.16)`); on ink, a luminance step plus a 1 px top hairline at 8–12% white.
+- **D1 Generated gradients.** Indigo or violet → blue, rainbow multi-hue, mesh blobs, aurora washes, gradient text (HB7). **Fix:** one flat accent with a written meaning; stages are tonal fields in the palette (`references/brand-and-color.md` §12).
+- **D2 Neon on black.** An accent in the neon region (L ≥ 0.85 with C ≥ 0.15, L ≥ 0.80 with C ≥ 0.18, or C ≥ 0.27) on an ink stage (HB6). **Fix:** lower the lightness or chroma; the accent is a signal, not a light source.
+- **D3 The beige default.** A beige or cream ground with an orange or terracotta accent (HB5). **Fix:** neutral or cool papers (around `#F7F8F8`) and an accent from an allowed family; warm only when the brand supplied it.
+- **D4 Glass and glow.** Backdrop blur with a 10–20% white fill and a 1 px white border; glows, halos, bloom, an outer glow on text (HB6, HB8). **Fix:** one soft shadow on paper (`0 28px 90px rgba(0,0,0,.16)`); on ink, a luminance step plus a 1 px top hairline at 8–12% white.
 - **D5 An accent without a meaning.** Used everywhere, used for two opposite meanings, or two near-identical reds in the code. **Fix:** one token, one meaning, ≤ 8% of pixels, one flood; measure it with the coverage script.
-- **D6 Filler decoration.** Particles, bokeh, starfields, code or ASCII rain, ghost text at 3–8%, grain that does nothing or changes per scene. **Fix:** every element names its job (reveal, route, validate, emphasise) or is cut; grain is none, or global 1.5–2% keyed to the output frame.
+- **D6 Filler decoration.** Particles, bokeh, starfields, code or ASCII rain (HB10), ghost text at 3–8%, grain that does nothing or changes per scene. **Fix:** every element names its job (reveal, route, validate, emphasise) or is cut; grain is none, or global 1.5–2% keyed to the output frame.
 - **D7 Muddy washes.** A white radial wash turns ink cards into grey buttons; a dull grey stage with a colour cast. **Fix:** ink stays ink; veil at 80–85% only where type sits.
 - **D8 Pure black holes.** Full-frame `#000` stages that crush under encoding. **Fix:** ink at OKLCH L 0.15–0.18, tinted 0.003–0.008 chroma toward the accent.
 - **D9 House-style convergence.** The starter's or Tessel's typeface, palette or mark, a block-and-accent-dot mark, or a light paper stage kept because the starter had one. **Fix:** three adjectives → family, stage, accent and shapes, then a sheet of 6–10 mark directions (`references/brand-and-color.md` §2, §4).
@@ -67,7 +83,7 @@ The full list of things that make motion design look cheap, templated or generat
 ## F. Motion and easing
 - **F1 The default entrance.** Everything fades in, or enters with `y: 30, opacity: 0`. **Fix:** one reveal system per role, with physical entrances: a mask sweep, a birth from a gap, a morph.
 - **F2 Uniform timing.** Every move 0.4–0.5 s on one out-curve. **Fix:** duration = 0.35 s + 1.35 ms per px (camera clamped to 0.6–2.4 s); the slowest move ≥ 3× the fastest; about 3 easing characters per film.
-- **F3 Bounce everywhere.** Back-out, elastic, overshoot on every card. **Fix:** critical damping by default; 1–7% overshoot on impacts only; ≤ 2 landing springs per film.
+- **F3 Bounce everywhere.** Back-out, elastic, overshoot on every card, a "playful" pop on a badge (HB11). **Fix:** critical damping or an ease by default; 1–7% overshoot only on a true landing; ≤ 2 landing springs per film.
 - **F4 Easing the wrong way.** Ease-in entrances, ease-out exits, expo-out fade-outs (a card at 55% in one frame), a 6 f expo-in fade that vanishes in 1 f. **Fix:** entrances decay, exits accelerate; fades run 10–14 f on `E.smooth`.
 - **F5 Half-sine punches.** A pulse on a hard window: velocity clunks at both ends and a peak 6–8 f after its sound. **Fix:** `hitPulse(t, 2, 5)` for every punch and tick.
 - **F6 Linear zooms and walls.** Scale lerped linearly; a camera that stops dead (1.46 → 0.17 px/f in one frame). **Fix:** `lmix` for scale; `E.rest` for moves that end at rest.
@@ -91,7 +107,7 @@ The full list of things that make motion design look cheap, templated or generat
 - **H5 Moves too fast to blur.** An element crossing 150–1,000 px in a frame: blur turns it into a long smear with stepped copies. **Fix:** keep any one element under about 60–80 px/f; faster than that, redesign the move (a cut on the beat, a match cut, a mask wipe, a shorter distance). `measure-speed.py` names the frames.
 
 ## I. UI depiction
-- **I1 Generic or pictured UI.** Fake KPIs, up-and-right charts, random numbers, stock icons, a screenshot zoomed until soft. **Fix:** the product's own surfaces as real components with named data from one module (`references/product-ui.md`).
+- **I1 Generic or pictured UI.** Fake KPIs, up-and-right charts, random numbers, stock icons (HB9), a screenshot zoomed until soft. **Fix:** the product's own surfaces as real components with named data from one module (`references/product-ui.md`).
 - **I2 Data that disagrees.** A date on the wrong weekday, stale labels after a move, a counter saying 7 over 12 items, the product replanning the past. **Fix:** derive every label from `data.ts` and assert it.
 - **I3 State that doesn't count.** A counter frozen during the action, then flipped in one frame. **Fix:** decrement on each visible event, computed on whole frames (`fd`).
 - **I4 Z-order bugs.** A badge bitten by the next avatar, a lifted card drawn under a grounded one, a toast over the result. **Fix:** paint sorted by z; badges get a 2 px ring in the background colour.
