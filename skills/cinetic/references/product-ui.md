@@ -1,6 +1,6 @@
 # Product UI in motion
 
-Covers showing a real product on screen: one data module with asserts, layout derived from data, state transitions (FLIP inserts, counters, rolling labels, chips), cursor physics, typing cadence, walkthrough chapters, and the pause test. Read it before building any act that shows the product, and before a UI-truth review.
+Covers showing a real product on screen: the smart part, one data module whose asserts hold the story's facts, legible framing, layout derived from data, state transitions (FLIP inserts, counters, rolling labels, chips), cursor physics, typing cadence, walkthrough chapters, and the pause test. Read it before building any act that shows the product, and before a UI-truth review.
 
 The numbers are proven defaults from shipped films. The product's real behaviour wins over any of them: if the app animates a row in 150 ms, show that.
 
@@ -22,15 +22,18 @@ The numbers are proven defaults from shipped films. The product's real behaviour
 - **Named, specific, consistent data.** Real-sounding names, amounts and times that agree with each other. No fake KPIs, up-and-to-the-right charts, lorem ipsum, stock icons or generic dashboards: those read as "any product".
 - **Cause → action → result.** Every product action has a visible cause (a click, a typed request, an incoming event), the action itself, and a result that holds ≥ 36 f before the camera leaves. One element carries the action per shot.
 - **The UI survives a pause.** Any frame could be a screenshot of the real app: correct dates, consistent counts, labels that match positions (§8).
+- **Show the smart part.** The proof beat shows the feature's non-trivial behaviour, because that is the whole point of a feature video: per-item assignment rather than an even split, proportional allocation of shared costs, conflict resolution, ranking rather than listing, only the future replanned. Take it from the "unlike the obvious version, it…" line in `TREATMENT.md` (`references/concept-and-story.md` §2). Restraint applies to decoration, never to the product's intelligence: a film that shows a simpler behaviour than the product has undersells it, however well it moves.
+- **Fill the frame.** The UI must be readable at 1080p and on a phone (the 480 px legibility sheet). Frame the product full-bleed, or push the camera in until the part doing the work fills most of the frame; a small card floating in empty space reads as a slide and its type is unreadable when the film is embedded. Text that carries the story is ≥ 22 px after camera scale (28 preferred, §3).
 
 ## 2. The data module
 
-All content lives in `src/app/data.ts`. Labels, counts and positions are derived from it, and asserts at module load make wrong data fail the render (and `export-cues.ts`) instead of shipping.
+All content lives in `src/app/data.ts`. Labels, counts and positions are derived from it, and asserts at module load make wrong data fail the render (and `export-cues.ts`) instead of shipping. Two kinds of assert belong here: the data is internally true (dates, weekdays, ids, plurals), and the data agrees with the story the film tells (who paid, what the headline number is, what a ratio claims).
 
 ```ts
 // src/app/data.ts: every label, count and position on screen derives from this file
 export type YMD = [number, number, number];
 export type Invoice = { id: string; client: string; cents: number; due: YMD; paid: boolean };
+export type Reminder = { invoice: string; status: 'queued' | 'sent' };
 
 export const TODAY: YMD = [2026, 9, 14];
 export const INVOICES: Invoice[] = [
@@ -39,6 +42,13 @@ export const INVOICES: Invoice[] = [
   { id: 'inv-0138', client: 'Kestrel Studio', cents: 96_000, due: [2026, 9, 11], paid: true },
   { id: 'inv-0143', client: 'Okafor Legal', cents: 310_000, due: [2026, 9, 18], paid: false },
 ];
+export const REMINDERS: Reminder[] = [
+  { invoice: 'inv-0141', status: 'sent' },
+  { invoice: 'inv-0142', status: 'sent' },
+  { invoice: 'inv-0143', status: 'queued' }, // sends on the payoff beat
+];
+// The story's facts, in one place, so the copy and the pictures can be checked against them.
+export const STORY = { reminders: 3, headline: '$5,365.00 open', daysBefore: 31, daysAfter: 6, sooner: 5 };
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 /** Weekday from the calendar, never typed by hand (a fixed date is deterministic; Date.now is not). */
@@ -46,6 +56,7 @@ export const dow = ([y, m, d]: YMD) => DOW[new Date(Date.UTC(y, m - 1, d)).getUT
 export const plural = (n: number, one: string, many: string) => (n === 0 ? `No ${many}` : `${n} ${n === 1 ? one : many}`);
 export const money = (cents: number) =>
   `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const byId = (id: string) => INVOICES.find((i) => i.id === id);
 
 export const OPEN = INVOICES.filter((i) => !i.paid);
 export const OPEN_TOTAL = OPEN.reduce((a, i) => a + i.cents, 0);
@@ -53,12 +64,28 @@ export const OPEN_TOTAL = OPEN.reduce((a, i) => a + i.cents, 0);
 const assert = (ok: boolean, msg: string) => {
   if (!ok) throw new Error(`data.ts: ${msg}`);
 };
+// the data is internally true
 assert(dow(TODAY) === 'Mon', 'TODAY must be a Monday (the film says "this week")');
 assert(new Set(INVOICES.map((i) => i.id)).size === INVOICES.length, 'duplicate ids');
-assert(OPEN.length === 3, 'the copy says three open invoices');
 assert(plural(1, 'invoice', 'invoices') === '1 invoice', 'plural helper');
 assert(OPEN.every((i) => dow(i.due) !== 'Sat' && dow(i.due) !== 'Sun'), 'an invoice falls due on a weekend');
+// the data agrees with the story
+assert(REMINDERS.length === STORY.reminders && OPEN.length === STORY.reminders, 'the copy says three open invoices, three reminders');
+assert(REMINDERS.every((r) => byId(r.invoice)?.paid === false), 'a client who already paid never gets a reminder');
+assert(STORY.headline.startsWith(money(OPEN_TOTAL)), 'the headline total is the sum of the open invoices');
+assert(Math.round(STORY.daysBefore / STORY.daysAfter) === STORY.sooner, '"5x sooner" must match 31 days -> 6 days');
+// no number twice in one frame: list what each shot shows, derived from the data
+const shot = (name: string, shown: string[]) => assert(new Set(shown).size === shown.length, `${name}: a number appears twice in one frame`);
+shot('proof', [money(OPEN_TOTAL), ...OPEN.map((i) => money(i.cents)), plural(REMINDERS.length, 'reminder', 'reminders')]);
 ```
+
+What the story asserts catch, each a defect that is easy to ship and obvious to a viewer:
+- **Roles and states.** The person or record that already acted doesn't appear as still owing, pending or unsent.
+- **Sums and headlines.** A total in the copy is the sum of what is on screen, to the cent.
+- **Ratios.** A stated multiple matches the numbers beside it: "40× faster" next to 12:30 → 0:15 is wrong (that is 50×). Compute the claim from the data, or assert it.
+- **Before and after counts.** What the "before" shows and what the "after" promises (3 open → 0 open, 12 clashes → 0) come from the same lists.
+- **One number, once per frame.** The same figure shown twice at once (a total in the header and again in a caption) reads as a mistake. List each shot's visible numbers and assert they are unique.
+- **Order.** A list the copy calls sorted or ranked is sorted by the value shown.
 
 - **Before and after share ids.** When the product changes things, write the states as lists (`BEFORE`, `AFTER`, `FINAL`) whose items share ids, so an item can travel between layouts and keep its label. Assert what the after state promises: no overlaps, everything inside the visible window, counts that match the copy.
 - **The product only changes the future.** Assert that nothing before "now" moved: replanning the past was a real UI-truth defect in Tessel.
@@ -249,6 +276,7 @@ Pause on any frame and check it as a screenshot. Run this on the act contact she
 
 - Dates and weekdays agree (asserted in `data.ts`); times sit where their labels say.
 - Every count matches what is visible, and counts change while the events happen.
+- The frame agrees with the story: who acted, what is owed or done, totals and stated ratios; no number appears twice in one frame (§2).
 - Plurals, casing and brand names are right; no placeholder strings.
 - Every number uses tabular figures; nothing jitters in width.
 - Labels travel with their items; nothing shows a stale value after a move.
