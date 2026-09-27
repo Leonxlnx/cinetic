@@ -4,7 +4,7 @@ Prompt template for the refute pass (see `references/review-loop.md`, §6). The 
 
 ## Context
 
-- Film: {{FILM}}, {{SPEC}}. Project root: {{ROOT}}. Read `src/timeline.ts` and the files the issues name.
+- Film: {{FILM}}, {{SPEC}}. Project root: {{ROOT}}. Read `BRIEF.md` (its hard bans and brand-supplied exceptions), `src/timeline.ts` and the files the issues name.
 - File under review: {{VIDEO}}. Frames are 0-based: frame = t × {{FPS}}.
 - QA folder for this round: {{QA}}, with `forensics.json`, `av.json` and the sheets.
 - Work only inside {{WORKDIR}}.
@@ -36,6 +36,7 @@ For each issue, try to refute it. Treat it as a claim, not a fact.
 
 - Evidence means frame numbers plus a measurement or a clearly described image. "Looks fine" is not evidence either way.
 - You may lower or raise a priority when the evidence shows it: **P0** is visible on a key beat or breaks the story, **P1** is noticeable on a normal viewing, **P2** is visible only on pause.
+- **Hard-ban issues** (IDs HB1–HB11) stay P0 wherever they show: do not reject or lower one because it is brief, small or off a key beat. Reject it only when the frames don't show it, or when `BRIEF.md` lists that exact thing as brand-supplied.
 - Do not add new issues. List anything new you notice in `overall`.
 
 ## Return
