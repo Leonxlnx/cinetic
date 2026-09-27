@@ -23,6 +23,7 @@ The frame counts and curves are proven defaults from shipped films (Tessel's are
 - **One signature move derived from the mark,** used three times: open, middle, close. In Tessel it was the red "now" dot growing into a flood or collapsing into a point.
 - **Seams land on the grid.** Act changes on downbeats; the cut frame (or the frame a flood fills the screen) is where the sound hits (`references/timing-grid.md`).
 - **Pick the seam from the story moment**, then its energy (§2), then check it against its failure mode (§4).
+- **No element crosses the frame faster than about 60–80 px/f.** Motion blur makes fast motion read as motion only up to a point: past it, a 240° shutter smears an element into a streak longer than itself, and the samples that fit in a frame show as stepped copies. A whip that needs 300 px/f is a seam that wants to be a cut on the beat, a match cut, a mask wipe, or a shorter distance with the rest of the travel hidden behind the cut. `measure-speed.py` lists the frames over 80 px/f (`too_fast`) when the master renders; design them away before that.
 
 ## 2. Energy
 
@@ -54,8 +55,8 @@ export const exitSpeed = (D: number, T: number, ease: Ease = E.in) => D * (ease(
 /** Distance an incoming move over T frames needs to start at v px/f. */
 export const entryDistance = (v: number, T: number, ease: Ease = E.out) => v / (ease(1 / T) - ease(0));
 
-// exit 300 px over 24 f on E.in -> 71.6 px/f at the cut; the entry over 90 f on E.out then travels
-// entryDistance(71.6, 90) = about 1050 px, in the same screen direction
+// exit 300 px over 24 f on E.in -> 71.7 px/f at the cut, just inside the ~80 px/f ceiling; the entry
+// over 90 f on E.out then travels entryDistance(71.7, 90) = about 1050 px, in the same screen direction
 ```
 
 `E.in` and `E.out` are exact mirror images, so an exit and an entry with the same distance and duration also match; the helpers let the two sides differ.
@@ -167,6 +168,7 @@ Two more tools, used inside seams rather than as seams: **luminance flips** (whi
 | Dissolving two layers that both fade over black | at the midpoint luminance is 0.5·B + 0.25·A, a 25% dip | fade only the incoming layer over a fully opaque outgoing one |
 | Glitch or RGB split, light leak, film burn, swirl, ripple, dreamy zoom, flash through white, page burn | preset gimmicks with no story reason | a seam from §4 |
 | The same iris or wipe three times | it becomes a preset | the signature move three times, everything else ≤ 2 |
+| A whip or fling above ~80 px/f | blur can't make it read: a long smear with stepped copies | a cut on the beat, a match cut, a mask wipe, or a shorter move |
 | Two copies of one object cross-fading | a translucent double image | morph one object; swap content at the apex |
 
 ## 6. `@remotion/transitions` and the grid

@@ -25,17 +25,26 @@ Remotion always renders the picture muted; ffmpeg attaches the sound; two script
 |---|---|---|---|
 | Preview | `bash scripts/render.sh Film out/preview.mp4 --preview` | CRF 20, x264 veryfast, BT.709 tags | 1× |
 | Sharp master | `bash scripts/render.sh Film out/film.mp4` | CRF 14, x264 slow, BT.709 tags | ~1.2× |
-| Blurred master | `bash scripts/render.sh Film out/film.mp4 --blur` | sharp pass → speed → sub-frames → float accumulate | 5–15× |
+| Blurred master | `bash scripts/render.sh Film out/film.mp4 --blur` | sharp pass → speed → sub-frames → float accumulate | 3–8× typical; `--budget` caps it |
 | One act | `... --blur --frames 600-839` | the same, on a film-frame range; audio from the same range | per act |
 | Chunked | `bash scripts/render-chunks.sh Film out/film.mp4 4` | N browsers at concurrency 1, joined with `-c copy` | often faster on GPU-heavy scenes |
 
 Useful flags: `--no-audio` for silent loops, `--audio FILE`, `--build-audio` (reruns `scripts/export-cues.ts` and `scripts/audio/score.py` first, stems included), `--concurrency N`, `--keep` (keeps `sharp.mp4`, `sub.mp4` and `picture.mp4` for inspection), and `-- <args>` to pass anything through to every `remotion render` call (for example `-- --image-format=png`). `render.sh` warns when a file in `src/` is newer than the soundtrack, because a retimed picture with an old WAV is the most common sync bug.
 
-Use the preview for every review round. Render the blurred master when the round's picture changes are done, not after each fix.
+**Spend the blur once.** A blurred master costs tens of minutes; a preview costs a few.
+- **Iterate on `--preview` renders.** Every critique round reviews a preview (`references/review-loop.md` §1).
+- **Render the blurred master once, at the end,** after the last critique round. It then gets a check (forensics, av-audit, the fastest frames at full size), not another round.
+- **A small fix re-renders only its range.** Render the changed act with `--blur --frames A-B` and splice it (§7) instead of re-blurring the film.
+- **Variants.** A 9:16 or 1:1 re-layout with identical timing reuses the master's samples: `render.sh Film9x16 out/film-9x16.mp4 --blur --samples-from out/samples.json` (register a `Film9x16Sub` composition like `FilmSub`, at the variant's size), or `deliver.sh --variants Film9x16 --variant-samples out/samples.json`. A variant whose fastest motion is ≤ 12 px/f renders sharp.
+- **Read the estimate.** Before the sub-frame pass `render.sh --blur` prints the multiple and the minutes it expects, from the sharp pass's measured speed. Over 8× it suggests `--budget 6`, which caps the samples per frame so the total stays within 6× the frame count; the capped frames get a shorter shutter (below) and are listed.
+- **Rule of thumb:** on 4 CPUs, a 10 s film at 60 fps and 6× (3,600 sub-frames) takes about 7 minutes end to end on the starter's simple frames (a sub-frame renders in about the time of a sharp frame, 0.05 s here, and accumulating it costs about 0.75 of that again), and 10–15 minutes on dense UI, whose frames render two to three times slower.
+- **Don't edit `src/` while a render runs.** `render.sh` bundles once at the start, prints the frozen bundle's path, renders every pass from it, and warns at the end if anything in `src/` changed meanwhile, because the file it wrote shows the source as it was. Edit freely once it has finished, or work in a copy of the project.
 
 ## 2. Motion blur is a render pass
 
 Anything that moves faster than about 12 px per frame at 60 fps strobes without blur: the eye sees discrete copies instead of motion. Launch films almost always have such moments (whips, floods, flying cards, drops). `measure-speed.py` prints the peak speed, so you do not have to guess.
+
+Blur has a ceiling too. Past about 60–80 px/f a 240° shutter smears an element into a streak 40–50+ px long, and the samples that fit in one frame show as stepped copies along it: the "artificial smear" a viewer reads as a glitch. Keep any one element under that speed and redesign faster moves (a cut on the beat, a match cut, a mask wipe, a shorter distance; `references/transitions.md`). `measure-speed.py` lists the frames over 80 px/f as `too_fast`, and `render.sh` repeats the warning before it spends the time.
 
 ### Why not in the browser
 
@@ -77,20 +86,34 @@ n = 1                                             if speed < 2 px/f   (renders o
 n = clamp(ceil((shutter/360) · speed / step), 4, 48)   otherwise; shutter 240°, step 3 px
 ```
 
-| Peak speed (px/f) | 2–18 | 30 | 60 | 120 | ≥ 216 |
-|---|---|---|---|---|---|
-| Samples | 4 | 7 | 14 | 27 | 48 (cap) |
+| Peak speed (px/f) | 2–18 | 30 | 60 | 80 | 120 | ≥ 144 |
+|---|---|---|---|---|---|---|
+| Samples | 4 | 7 | 14 | 18 | 27 | 32 (cap) |
 
-Above the cap (216 px/f with a 3 px step), neighbouring samples sit more than 3 px apart and edges show faint steps; the script prints a note. Either raise `--max` or accept it on a 1–3 frame whip, where nobody sees it.
+Above the cap (144 px/f with a 3 px step), 32 samples can't stay 3 px apart across a 240° shutter. Those frames get a **shorter shutter** instead (`shutters` in the samples JSON, read by `src/blur.ts`), just long enough that the samples stay 3 px apart: a shorter, clean streak rather than a long one with stepped copies. `--no-short-shutter` keeps the full shutter. Either way the move is over the ceiling above and wants a redesign.
 
 ### Measuring speed (`measure-speed.py`)
 
-- **Robust maximum, not a percentile.** Dense Farneback flow reports the k-th fastest moving pixel (k = max(30 px, 0.1% of moving pixels)); pyramidal Lucas–Kanade corner tracks with a forward-backward check under 1 px report the 2nd-fastest track. The larger wins. A 95th percentile under-reads small fast objects (a dot, a caret, one word) by about 2×, and that is exactly where stamped copies show.
-- **The shutter straddles the frame**, so frame f takes the faster of its incoming and outgoing move.
-- **A ±2 frame temporal max filter** stops the count flickering (4 → 34 → 4 reads as blur strobing on and off).
-- **Floors** for ranges you know are fast but flow cannot see: `--floor 1210-1260:16`, or `render.sh --floor ...`. Flow's blind spots are an edge with no 2D structure (a flat band wiping across the full frame reads about 0) and a small flat object jumping more than about 300 px/f at 1080p (both trackers lose it). It sometimes over-reads flat regions next to edges; that only costs time.
+Every over-read costs render time for nothing, so only motion the flow can vouch for counts.
+- **Consistent flow only.** Dense Farneback flow is computed both ways; a pixel counts only where following it forward and back returns to the start (within 0.5 px + 10%). Flat interiors, occluded edges and aliased repeats (a grid of look-alike tiles) fail that test; they were what made a raw maximum read 2–3× too fast. The dense speed is the k-th fastest consistent moving pixel (k = max(30 px, 0.1%)), which still catches a small fast object (a dot, a caret, one word).
+- **Consistent tracks, at a high percentile.** Pyramidal Lucas–Kanade corner tracks with a forward-backward error under 1 px count only when at least two neighbours within 64 px move the same way; the 90th percentile of those is the sparse speed, not the maximum. The larger of dense and sparse wins.
+- **No one-frame spikes.** A frame more than 1.25× faster than both neighbours stands only when dense and sparse agree within 30% (a peaky whip does; an object entering from off-frame, whose edge the dense flow misreads, does not). Otherwise it takes its faster neighbour.
+- **Cuts contribute nothing.** A pair where most pixels change (`--cut-frac 0.5`) and the flow can't explain it (a hard cut, a flash, a full-frame luminance flip) is listed under `cuts` and takes no speed; a whip pan changes most pixels too, but the flow explains it, so it keeps its speed. Smaller unexplained changes are `suspect_cuts`; with `--cues`, those away from act boundaries are flagged, because sub-frames only stay on one side of a cut that is an act boundary.
+- **The shutter straddles the frame**, so frame f takes the faster of its incoming and outgoing move, and a **±2 frame temporal max filter** stops the count flickering (4 → 34 → 4 reads as blur strobing on and off).
+- **Floors** for ranges you know are fast but flow can't see: `--floor 1210-1260:16`, or `render.sh --floor ...`. Flow's blind spots are an edge with no 2D structure (a flat band wiping across the full frame reads about 0) and a small flat object jumping more than about 300 px/f at 1080p (both trackers lose it).
 - **Analytic speed**: if the timeline can export true screen velocity, pass `--analytic out/speed.json` (`{"speed": [px/f per frame]}` or `{"ranges": [{"from", "to", "speed"}]}`); the larger of flow and analytic wins.
-- **Suspect cuts.** Big changes the flow cannot explain (hard cuts, floods, flashes) keep their measured speed, because a flood edge really is fast and over-sampling a cut only costs time. With `--cues out/cues.json`, the ones away from act boundaries are listed so you can check them.
+- **Re-deciding without re-measuring.** Pass an earlier samples JSON instead of a video (`measure-speed.py out/samples.json out/samples-6x.json --budget 6`) to recompute the groups from its saved speed track; `render.sh --samples-from F --budget X` does this.
+
+Measured against the previous robust-maximum version on the same files:
+
+| Film | Frames | Before | Now | What changed |
+|---|---|---|---|---|
+| Starter demo, before its landings were slowed (the dome's drop: analytic 98.5 px/f at its fastest) | 540 | 2,531 (4.7×); the drop read 274 px/f | 1,689 (3.1×); the drop reads 98 px/f, the block 166 (analytic 165) | flat-shape and entering-edge misreads gone |
+| A 25 s teaser built on a grid of look-alike tiles | 1,500 | 18,415 (12.3×), peak 945 px/f | 7,118 (4.7×), peak 246 px/f | the grid no longer aliases |
+| Tessel, sharp preview | 1,980 | 40,079 (20.2×), peak 2,115 px/f | 17,987 (9.1×), peak 246 px/f | a genuinely fast film: 315 frames over 80 px/f |
+| Tessel, the blurred master itself | 1,980 | 33,134 (16.7×), peak 1,880 px/f | 17,733 (9.0×), peak 394 px/f | smears no longer read as speed |
+
+Measuring takes about 1.7× as long as before (backward flow on the frames where it matters): 73 s for the starter's 540 frames, 5 min for 1,500 frames of dense UI. It saves far more than it costs.
 
 ### Rules the picture code must follow
 
@@ -101,14 +124,13 @@ Above the cap (216 px/f with a 3 px step), neighbouring samples sit more than 3 
 
 ### Cost
 
-| Film | Frames | Sub-frames | Ratio | Time |
+| Film | Frames | Sub-frames | Ratio | Time on 4 CPUs |
 |---|---|---|---|---|
-| Tessel master (33 s, 60 fps) | 1,980 | 19,841 | 10.0× | 3,387 s at concurrency 4 |
-| Tessel's fastest 2 s (robust stats) | 120 | 3,033 | 25× | — |
-| Starter demo, 1.5 s with `--max 16` | 90 | 504 | 5.6× | 70 s at concurrency 2 |
-| Starter demo, whole 9 s | 540 | 2,531 | 4.7× | 277 s end to end on 4 CPUs (default concurrency) |
+| Starter demo, whole 9 s | 540 | 1,415 | 2.6× | 273 s end to end: bundle 15, sharp pass 26, measurement 73, sub-frames 66, accumulation 51 |
+| Starter demo, act 2 with `--samples-from` and `--budget 2` | 180 | 396 | 2.2× | 55 s (48 frames capped at 4 samples, shorter shutter) |
+| Tessel master (33 s), measured before the consistency checks | 1,980 | 19,841 | 10.0× | 3,387 s at concurrency 4 (0.17 s per sub-frame, all in) |
 
-Still frames cost one render, so the ratio depends on how much of the film moves. To save time, cap `--max` for previews of the blur (`--measure "--max 12"`), and re-render only the acts that changed (§7).
+Still frames cost one render, so the ratio depends on how much of the film moves and how fast. To save time, cap the total with `--budget`, and re-render only the acts that changed (§7).
 
 ### HyperFrames
 
@@ -214,7 +236,7 @@ python3 scripts/check-sync.py out/film.mp4 && python3 scripts/probe.py out/film.
 
 ## 8. Deliverables
 
-`scripts/deliver.sh <master>` writes the set into `out/deliver/` with a `manifest.json` of every file and check, and exits 1 if a check fails.
+`scripts/deliver.sh <master>` writes the set into `out/deliver/` and exits 1 if a check fails. The top level holds only deliverables, because a client opens the folder before the film; the reports (`manifest.json` with every file's probe facts and check results, `loop-seam.json`) go in `out/deliver/qa/`, and the script warns if it finds sheets or reports at the top level.
 
 | Deliverable | How | Spec and budget |
 |---|---|---|
@@ -222,8 +244,9 @@ python3 scripts/check-sync.py out/film.mp4 && python3 scripts/probe.py out/film.
 | Web loop, MP4 | `--loop` | muted, `+faststart`, loop-seam check |
 | Web loop, WebM | `--webm` | VP9 CRF 32, BT.709 tagged, Opus audio unless `--loop` |
 | GIF | `--gif` | 25 fps, 960 px wide, two-pass palette; warns above 8 MB |
-| Alpha for editors | `--alpha StingAlpha` (+ `--alpha-webm`) | ProRes 4444 `.mov` with alpha; VP9 alpha `.webm` |
-| Aspect variants | `--variants Film9x16,Film1x1` | each through `render.sh`, own spec |
+| Alpha for editors | `--alpha StingAlpha,StingAlphaClear` (+ `--alpha-webm`) | ProRes 4444 `.mov` with alpha, one that holds the lockup and one that clears; VP9 alpha `.webm` |
+| Aspect variants | `--variants Film9x16,Film1x1` (+ `--variant-samples out/samples.json` to blur them with the master's samples) | each through `render.sh`, own spec |
+| Brand kit | `bash scripts/brand-kit.sh [--x-header]`, into `out/deliver/brand/` | SVG mark and lockups for light and dark grounds (the name outlined), transparent PNG lockups, the mark at 16/32/512/1024 px, a 400 px avatar, a 1500 × 500 X header |
 
 - **Loop seam.** The step from the last frame back to frame 0 must look like the steps around it: seam difference ≤ max(0.4, 1.5× the median of the 8 steps at each end), the same rule as `forensics.py --loop`. Design the loop so the last frame's state flows into frame 0 (the length is whole bars; see `references/formats.md`), and do not repeat frame 0 as the last frame, which reads as a hitch.
 - **GIF.** Frame delays are whole hundredths of a second, so 25 fps (4 cs) and 50 fps (2 cs) play at the true rate while 30 fps plays 11% fast. A GIF of busy full-frame UI is large (4 s at 960 px measured 26 MB); keep GIFs to short, simple loops at 480–960 px and ship WebM or MP4 wherever the page allows video. `--gif-dither bayer` gives a steadier pattern on large flat areas than the default `sierra2_4a`.

@@ -38,8 +38,12 @@ export const Act2: React.FC = () => {
   const sb = f >= CONTACT.b ? 1 : spr(f, START.b, LAND);
   const qa = squash(f - CONTACT.a); // squash against the contact edge for ~8 frames
   const qb = squash(f - CONTACT.b);
-  const a = { y: (1 - sa) * -210, rot: (1 - sa) * 9, sx: qa.across, sy: qa.along, origin: [50, 50] as [number, number] };
-  const b = { x: (1 - sb) * -360, rot: (1 - sb) * -12, sx: qb.along, sy: qb.across, origin: [46, 79] as [number, number] };
+  // Travel is kept short enough that the fastest frame stays under ~80 px/f (the dome peaks near
+  // 58, the block near 70): faster than that, blur cannot make a move read as motion. Each piece
+  // is born on its first frames of travel instead of flying in from off-frame.
+  const born = (s: number) => prog(f, s, s + f60(6), E.smooth);
+  const a = { y: (1 - sa) * -120, rot: (1 - sa) * 9, sx: qa.across, sy: qa.along, origin: [50, 50] as [number, number], o: born(START.a) };
+  const b = { x: (1 - sb) * -150, rot: (1 - sb) * -12, sx: qb.along, sy: qb.across, origin: [46, 79] as [number, number], o: born(START.b) };
 
   // --- the lockup ------------------------------------------------------------------------
   // The name is the display token at 1.5x, shrunk only if the lockup would leave the safe width.

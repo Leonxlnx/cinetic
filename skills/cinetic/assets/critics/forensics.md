@@ -47,7 +47,7 @@ You hunt technical artifacts: anything a viewer would read as broken, glitchy or
    - elements that appear or vanish without a transition;
    - thin lines and small text that crawl or alias at small scale or under perspective;
    - faux italics from 3D shear;
-   - motion-blur stamping: visible discrete copies on the fastest frames. `stats.mad_max_frame` and the biggest `burst` spikes point at them. Crop them 1:1.
+   - motion-blur stamping and smears: visible discrete copies, or a streak longer than the object, on the fastest frames. On a blurred master, `fastest_frames` and `too_fast` in `out/samples.json` name them (so do `stats.mad_max_frame` and the biggest `burst` spikes); grab each at full size and crop 1:1. A move over about 60–80 px/f is a redesign (a cut on the beat, a match cut, a mask wipe, a shorter distance), not a sample-count fix.
    - blur windows that cross a hard cut;
    - UI chrome cross-faded over a different shape (a double exposure);
    - colour shifts between preview and master: `probe.json` must show BT.709, tv range.
