@@ -36,7 +36,7 @@ python3 scripts/audio/master.py --measure public/audio/soundtrack.wav # loudness
 
 `score.py` renders the music and effects, mixes them, masters with `master.py` and writes a 48 kHz, 24-bit stereo WAV exactly `TOTAL / FPS` seconds long. `render.sh --audio` muxes it (`references/finishing.md` §6); never let Remotion encode the audio.
 
-**Gate (Step 5):** −14 ±0.5 LUFS integrated, true peak ≤ −1.5 dBTP on the WAV (4× oversampled), last 480 samples digital zero, report clean or every warning answered. `score.py` exits 1 when the loudness gate fails. After the mux, `scripts/check-sync.py` gates lag ≤ 48 samples and ≤ −1 dBTP on the decoded MP4, and `scripts/av-audit.py --stems out/stems` checks onsets against the cues, per stem (`references/review-loop.md`).
+**Gate (Step 5):** the film's loudness target ±0.5 LUFS integrated (`master.lufs`: −14 by default, −16 for a calm brand or a short sting; §9), true peak ≤ −1.5 dBTP on the WAV (4× oversampled), last 480 samples digital zero, report clean or every warning answered. `score.py` exits 1 when the loudness gate fails. After the mux, `scripts/check-sync.py` gates lag ≤ 48 samples and ≤ −1 dBTP on the decoded MP4, and `scripts/av-audit.py --stems out/stems` checks onsets against the cues, per stem (`references/review-loop.md`).
 
 ## 3. cues.json and the event kinds
 
@@ -161,7 +161,7 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
 | `progress` | — | `{match, kind?, start?, tonic?, resolve?, gain?}`: the progress motif (§5.5b): events whose `id` contains `match` climb the scale one step each; `resolve` lands the tonic on the payoff |
 | `bed` | — | `{file, at?, gain_db?}`: a supplied music track joins the music bus (§5.6) |
 | `mix` | as shown | music and effect bus gains, reverb amount, sidechain depth, dB the music dips under hits |
-| `master` | as shown | target LUFS, limiter ceiling (linear), the end fade's length (s), which the music and the effects both follow |
+| `master` | as shown | target LUFS (−14; −16 for a calm brand or a sting of 8 s or less, §9), limiter ceiling (linear), the end fade's length (s), which the music and the effects both follow |
 
 **Times** are a frame number (`360`), a cue (`"@lockup"`, `"@lockup-6"`), or a string `"bar:beat:16th"` (`"4"`, `"3:2"`, `"3:3:2"`, 1-based bars, 0-based beats as in `b()`). **Durations** are frames or a note value (`"1/16"`).
 
@@ -282,20 +282,23 @@ All in `scripts/audio/synth.py` (48 kHz, numpy/scipy, seeded). Oscillators integ
 | Bus compressor | 2:1 above −14 dBFS, 5 ms RMS detector, 15 ms attack, 120 ms release | glue without pumping |
 | Colour | soft saturation + a gentle air shelf | cohesion |
 | End | music and effects (with their reverb) fade over the last `master.fade` (1.3 s), reaching zero 30 ms before the end; last 60 ms faded; last 480 samples zero | the delivered audio ends in digital silence, with no effect still sounding at the cut |
+| Head | after the limiter, a 3 ms raised-cosine fade-in from exact zero at sample 0, always (and a fade-out of at least 10 ms onto the last sample) | a sound already at level on sample 0 (films measured about −22 dB) clicks and cuts in mid-action; `av-audit.py` warns when the first 5 ms still peak above −40 dBFS: either a hit designed for frame 0 (fine; say so) or a sound begun before frame 0, such as a whoosh whose apex comes early, a riser or a reverb tail (start it later or shorten it) |
 
 Typing thins itself: hats go to 8ths at half level and the arp drops 4 dB in bars with 4+ keys.
 
 ## 9. Master and verification
 
-`master.py` (imported by `score.py`, also standalone) runs loudness passes: measure integrated loudness (pyloudnorm), gain to the target, then a true-peak lookahead limiter (4× oversampled detection, 4 ms lookahead, 80 ms release, ceiling 0.77 linear = −2.3 dBFS), repeated until within 0.05 LU. The ceiling leaves room for AAC, which adds 0.5–1 dB of peak.
+`master.py` (imported by `score.py`, also standalone) runs loudness passes: measure integrated loudness (pyloudnorm), gain to the target, then a true-peak lookahead limiter (4× oversampled detection, 4 ms lookahead, 80 ms release, ceiling 0.77 linear = −2.3 dBFS), repeated until within 0.05 LU, then fades the edges (3 ms in from zero at sample 0, at least 10 ms out onto the last sample). The ceiling leaves room for AAC, which adds 0.5–1 dB of peak.
 
 ```bash
-python3 scripts/audio/master.py mix.wav public/audio/soundtrack.wav --lufs -14          # any mix, e.g. a supplied track
+python3 scripts/audio/master.py mix.wav public/audio/soundtrack.wav --lufs -14          # any mix, e.g. a supplied track (-16 for a calm sting)
 python3 scripts/audio/master.py music.wav ducked.wav --sidechain kick.wav --sc-depth 0.55 # duck from a key signal
 python3 scripts/audio/master.py --measure public/audio/soundtrack.wav --json -           # I, TP, LRA, loudest moment
 ```
 
-Targets: −14 LUFS integrated (streaming and social), LRA 5–8 LU for a launch film (4–6 for short pieces), true peak ≤ −1.5 dBTP on the WAV and ≤ −1 dBTP after the encode, limiter gain reduction under 1.5 dB at the payoff, the tail's last 50 ms under −45 dB. The starter's demo measures −14.0 LUFS, −2.3 dBTP and LRA about 5 LU on the WAV, and −2.2 dBTP after AAC 320k.
+**Loudness per film.** −14 LUFS integrated is the default: streaming and social players normalise to about that, so a quieter film plays quieter than the feed around it. A calm brand, or a short sting (8 s or less, often played at the head of someone else's video), may sit at −16 LUFS: set `"master": {"lufs": -16}` in `audio/score.json`, or pass `--lufs -16` to `score.py` or `master.py`. Keep −1 dBTP after the encode either way (the ceiling stays 0.77). Whatever the target, the loudest moment is the lockup or the payoff, never the bed: if the momentary peak sits on a pad or a drone, pull the bed down rather than the master up. `av-audit.py` reads `master.lufs` from the score and gates ±1 LU around it.
+
+Targets: the film's LUFS target (−14 by default, −16 as above), LRA 5–8 LU for a launch film (4–6 for short pieces), true peak ≤ −1.5 dBTP on the WAV and ≤ −1 dBTP after the encode, limiter gain reduction under 1.5 dB at the payoff, the tail's last 50 ms under −45 dB. The starter's demo measures −14.0 LUFS, −2.3 dBTP and LRA about 5 LU on the WAV, and −2.2 dBTP after AAC 320k.
 
 You cannot listen, so measure what a listener hears:
 

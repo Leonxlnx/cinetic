@@ -26,7 +26,9 @@ Checks (defaults are proven starting points, not dogma):
              strong visual peaks (a cut, a flash, the peak of a big move) with no audio onset or
              sfx envelope peak within +-3 f (--peak-tol), and no contact cue (land, hit, snap,
              drop) in the next 10 f: a picture event with nothing under it                      warn
-  loudness   ffmpeg ebur128: integrated -14 +-1 LUFS, true peak <= -1.0 dBTP                fail
+  loudness   ffmpeg ebur128: integrated at the film's target +-1 LUFS, true peak <= -1.0 dBTP  fail
+             (target: --lufs, else master.lufs in the score JSON (--score, default
+             audio/score.json), else -14 and -16 both pass)
              loudness range 3-8 LU; loudest momentary window on the payoff cue if one exists warn
              (audio shorter than cues.json's total is an excerpt: loudness and the tail are
              reported, not gated)
@@ -36,6 +38,8 @@ Checks (defaults are proven starting points, not dogma):
              whose > 14 kHz energy sits >= 80% inside 1 ms (a cut, not a designed attack)   warn
   tail       last 50 ms RMS <= -45 dBFS and last 10 ms peak <= -60 dBFS                      fail
              and the last half second quieter than the one before it                         warn
+  head       first 5 ms peak <= -40 dBFS: above it the film clicks on sample 0 or cuts in
+             mid-sound (skipped on an excerpt)                                               warn
   masking    (--stems) each sfx >= +6 dB over the music in its best band (60 ms); < 0 dB warns
 
 Writes JSON (--json) and a short summary. Exit: 0 no failing check, 1 a failing check, 2 usage or
@@ -151,6 +155,24 @@ def band_env(y, sr, lo, hi, win_ms=30, hop_ms=5):
     return np.sqrt(np.convolve(e, np.ones(k) / k, mode='same')), hop_ms
 
 
+def film_lufs(args):
+    """The film's loudness target and where it came from: --lufs, else master.lufs in the score
+    JSON (score.py's default -14 when the field is absent), else (None, None)."""
+    if args.lufs is not None:
+        return args.lufs, '--lufs'
+    if args.score and not os.path.isfile(args.score):
+        die(f'--score {args.score} not found')
+    here = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(args.cues))), 'audio', 'score.json')
+    for p in [args.score] if args.score else ['audio/score.json', here]:
+        if os.path.isfile(p):
+            try:
+                v = (json.load(open(p)).get('master') or {}).get('lufs', -14.0)
+                return float(v), p
+            except (OSError, ValueError, TypeError, AttributeError):
+                continue
+    return None, None
+
+
 def ebur128(path):
     r = subprocess.run(['ffmpeg', '-nostats', '-nostdin', '-i', path, '-map', '0:a:0', '-af', 'ebur128=peak=true',
                         '-f', 'null', '-'], capture_output=True, text=True)
@@ -189,7 +211,10 @@ def main():
     ap.add_argument('--vis-window', type=int, default=6, help='frames either side to look for the visual peak')
     ap.add_argument('--peak-tol', type=int, default=3, help='frames within which a strong visual peak needs a sound')
     ap.add_argument('--no-visual', action='store_true', help='skip the picture checks')
-    ap.add_argument('--lufs', type=float, default=-14.0)
+    ap.add_argument('--lufs', type=float, help="the film's loudness target (default: master.lufs in the score JSON, "
+                    'else -14 and -16 both pass)')
+    ap.add_argument('--score', help='score JSON that holds master.lufs (default: audio/score.json, here or next to '
+                    "the cues file's folder)")
     ap.add_argument('--lufs-tol', type=float, default=1.0)
     ap.add_argument('--tp-max', type=float, default=-1.0, help='dBTP')
     ap.add_argument('--lra', default='3,8', help='acceptable loudness range, LU')
@@ -197,6 +222,7 @@ def main():
     ap.add_argument('--payoff', help='cue name whose moment should be the loudest (default: a cue named payoff)')
     ap.add_argument('--tail-rms', type=float, default=-45.0, help='dBFS over the last 50 ms')
     ap.add_argument('--tail-peak', type=float, default=-60.0, help='dBFS over the last 10 ms')
+    ap.add_argument('--head-peak', type=float, default=-40.0, help='dBFS: max peak over the first 5 ms')
     ap.add_argument('--mask-db', type=float, default=6.0, help='sfx margin over music in its own band')
     args = ap.parse_args()
     if not args.video and not args.audio:
@@ -420,16 +446,19 @@ def main():
     loud = None
     if not args.no_loudness:
         I, lra, tp, moms = ebur128(src)
-        loud = dict(integrated_lufs=I, lra_lu=lra, true_peak_dbtp=tp, target=args.lufs)
+        target, target_from = film_lufs(args)
+        targets = [target] if target is not None else [-14.0, -16.0]
+        loud = dict(integrated_lufs=I, lra_lu=lra, true_peak_dbtp=tp, target=target,
+                    target_from=target_from or 'none found: -14 and -16 both pass', accepted=targets)
         if moms:
             tm, mm = max(moms, key=lambda r: r[1])
             loud.update(momentary_max_lufs=mm, momentary_max_t=tm, momentary_max_frame=int(round(tm * fps)))
         gate = 'warn' if excerpt else 'fail'
         if I is None:
             add('loudness', gate, None, 'no integrated loudness (silent audio?)')
-        elif abs(I - args.lufs) > args.lufs_tol:
-            add('loudness', gate, None, f'integrated {I:.1f} LUFS, target {args.lufs:g} +-{args.lufs_tol:g}: '
-                're-run the master loudness passes')
+        elif min(abs(I - t) for t in targets) > args.lufs_tol:
+            add('loudness', gate, None, f'integrated {I:.1f} LUFS, target {" or ".join(f"{t:g}" for t in targets)} '
+                f'+-{args.lufs_tol:g} ({loud["target_from"]}): re-run the master loudness passes')
         if tp is not None and tp > args.tp_max:
             add('loudness', 'fail', None, f'true peak {tp:.1f} dBTP > {args.tp_max:g}'
                 + (' after the AAC encode: lower the limiter ceiling' if not args.audio else ''))
@@ -497,6 +526,17 @@ def main():
             f'{tail["peak10_dbfs"]} dBFS): fade to digital zero and leave >= 60 f of tail')
     elif tail['last_half_vs_previous_db'] > 0 and r1 > 1e-4:
         add('tail', 'warn', None, 'the last half second is louder than the one before: the ending is cut, not decayed')
+    # the head: sample 0 starts from silence (master.py fades in over 3 ms); a sound already at level
+    # in the first 5 ms is a click on the first frame, or a sound cut in mid-action
+    h5 = np.abs(x[:max(1, int(sr * 0.005))])
+    head = dict(peak5_dbfs=round(20 * np.log10(h5.max() + 1e-12), 1), sample0_dbfs=round(20 * np.log10(h5[0].max() + 1e-12), 1))
+    if not excerpt and head['peak5_dbfs'] > args.head_peak:
+        add('head', 'warn', 0, f'the audio starts at level: first 5 ms peak {head["peak5_dbfs"]} dBFS (> {args.head_peak:g}), '
+            f'sample 0 at {head["sample0_dbfs"]} dBFS: '
+            + ('a click on the first frame; re-master through scripts/audio/master.py, which fades in from zero over 3 ms'
+               if head['sample0_dbfs'] > -45 else  # a faded head decodes from AAC at about -60
+               'a sound already in progress at frame 0 (a riser, pad or reverb begun before the film) cuts in '
+               'mid-action; start from silence, or on the attack of a hit designed for frame 0'))
     if vinfo:
         vdur = vinfo['frames'] / vinfo['fps']
         if abs(vdur - dur) > 1.5 / fps:
@@ -536,7 +576,7 @@ def main():
                cues=args.cues, cue_schema=cues['schema'], pass_=fails == 0, fails=fails,
                warnings=len(flags) - fails, notes=notes, flags=flags, sync=sync,
                apex=dict(checked=len(apex_rows), off=[r for r in apex_rows if not r['ok']], rows=apex_rows),
-               visual=visual, loudness=loud, clipping_samples=clip, clicks=clicks[:40], tail=tail, masking=masking)
+               visual=visual, loudness=loud, clipping_samples=clip, clicks=clicks[:40], tail=tail, head=head, masking=masking)
     res['pass'] = res.pop('pass_')
     if args.json:
         os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
@@ -551,9 +591,11 @@ def main():
         print(f'  picture: {visual["aligned"]}/{visual["clear_peaks"]} clear visual peaks aligned, '
               f'{len(visual["peaks_without_event"])} strong peaks with no sound within +-{args.peak_tol} f')
     if loud:
-        print(f'  loudness: I {loud["integrated_lufs"]} LUFS, LRA {loud["lra_lu"]} LU, TP {loud["true_peak_dbtp"]} dBTP, '
+        print(f'  loudness: I {loud["integrated_lufs"]} LUFS (target {" or ".join(f"{t:g}" for t in loud["accepted"])}), '
+              f'LRA {loud["lra_lu"]} LU, TP {loud["true_peak_dbtp"]} dBTP, '
               f'max momentary {loud.get("momentary_max_lufs")} at {loud.get("momentary_max_t")} s')
-    print(f'  tail: last 50 ms {tail["rms50_dbfs"]} dBFS, last 10 ms peak {tail["peak10_dbfs"]} dBFS; '
+    print(f'  head: first 5 ms peak {head["peak5_dbfs"]} dBFS; tail: last 50 ms {tail["rms50_dbfs"]} dBFS, '
+          f'last 10 ms peak {tail["peak10_dbfs"]} dBFS; '
           f'clicks {len(bad_clicks)} (+{len(clicks) - len(bad_clicks)} attacks); clipped samples {clip}')
     for nt in notes:
         print(f'  note: {nt}')
