@@ -15,12 +15,13 @@ The full list of things that make motion design look cheap, templated or generat
 ## A. Concept and story
 - **A1 Feature tour.** Feature, feature, feature, logo; the viewer has nothing to remember. **Fix:** problem → turn → promise; run the deletion test both ways (`references/concept-and-story.md` §4).
 - **A2 Wrong first frame.** Opening on "Introducing…", a question, the logo or a blank frame. **Fix:** open inside the problem; felt by 1 s, stated by 2 s.
-- **A3 Borrowed props.** A rocket, lightbulb, globe with arcs, up-and-right chart, floating phone, sparkle for AI, shield for security. **Fix:** the ownership test; build every image from the product's own atoms.
+- **A3 Borrowed props.** A rocket, lightbulb, globe with arcs, up-and-right chart, floating phone, sparkle for AI, shield for security. **Fix:** the ownership test; build every image from the product's own objects.
 - **A4 A style posing as an idea.** "Bold, kinetic, minimal, 3D." **Fix:** write Idea / Device / Grammar first; the style follows from them.
 - **A5 Demo without a cause, or a rushed result.** UI moves because the timeline says so, or the result is on screen 11 f before a whip. **Fix:** cause → action → result, with the result held ≥ 36 f + 6 f per word.
 - **A6 The device drops out.** It blinks out for 4 f at a cut, or changes size or colour across a seam. **Fix:** full opacity through every seam; hand it over on a shared prop.
 - **A7 Frames that contradict the promise.** A strike-through over the tagline, overlapping tiles in an "everything fits" shot, success in the error colour. **Fix:** read every key frame literally, as a paused still.
 - **A8 A recycled or dead end card.** It replays the mid-film reveal, sits static for 2.7 s, fades to black, or the last frame shows no brand. **Fix:** the device becomes the mark; a 1.5–2 s hold that builds 10–20%; the final frame is the poster.
+- **A9 An oversimplified feature.** The film would be just as true of a dumber product: an even split for an itemised one, a list for a ranking. **Fix:** the specificity test; the proof shows the non-obvious behaviour (`references/concept-and-story.md` §3–4).
 
 ## B. Copy
 - **B1 Landing-page grammar.** Eyebrow or kicker labels, a tagline stacked over a headline, all-caps micro labels. **Fix:** delete them; hierarchy comes from size and order of appearance.
@@ -32,7 +33,7 @@ The full list of things that make motion design look cheap, templated or generat
 - **B7 Proofing bugs.** "1 clashes", mixed brand casing, straight quotes, lorem, "John Doe", example domains. **Fix:** the plural helper and the string audit (`references/copy-and-type.md` §5).
 
 ## C. Type
-- **C1 Generated-look faces.** Serif or italic as instant "elegance", or a condensed display face for "impact", when the brand didn't ask for either. **Fix:** one sans; emphasis from size, weight contrast or motion.
+- **C1 Generated-look faces.** Serif or italic as instant "elegance", or a condensed display face for "impact", when the brand didn't ask for either. **Fix:** one family chosen for the personality (`references/brand-and-color.md` §2); emphasis from size, weight contrast or motion.
 - **C2 An unchosen default, or a fallback.** A ubiquitous UI default family picked by nobody, or a fallback face visible on any frame. **Fix:** choose the family on purpose, ship it locally (`@fontsource-variable/*`), gate it with `FontGate`.
 - **C3 Near-miss tokens.** Display weights 590, 600 and 620, or tracking −0.04, −0.05 and −0.06, across scenes. **Fix:** one display token (for example 600 / −0.045 em), reused everywhere.
 - **C4 Flat scale.** Everything at 48–64 px. **Fix:** statements 88–128 px, emphasis 1.5–1.7× that, headline to secondary ≥ 2:1.
@@ -41,9 +42,10 @@ The full list of things that make motion design look cheap, templated or generat
 - **C7 Blur-dissolve on every word.** Or readable text left blurred for more than 6 f. **Fix:** blur only on entry (statements 14 → 0 px, body lines 8 → 0 px, through `blurIn` so it clears by 60% of a 26 f `E.out` move); land sharp.
 - **C8 Jittering numbers.** Counters whose width changes, or mono timestamps in a consumer UI. **Fix:** tabular figures in the one family; digits roll 6–8 f each.
 - **C9 Letter gimmicks.** Typewriter headlines, per-letter bounce, scramble or decode effects, wide-tracked titles at rest. **Fix:** word-level reveals; per-letter motion only for the one hero word, collapsing to normal tracking.
+- **C10 A reveal that misspells.** A letter or sweep reveal passes through another word, or a half-drawn glyph reads as a different letter. **Fix:** reveal names by whole word or with a mask; list the reveal's prefixes and check those frames (`references/copy-and-type.md` §8).
 
 ## D. Colour and surface
-- **D1 Generated gradients.** Indigo or violet → blue, rainbow multi-hue, mesh blobs, aurora washes, gradient text. **Fix:** one flat accent with a written meaning; stages are tonal fields in the palette (`references/brand-and-color.md` §9).
+- **D1 Generated gradients.** Indigo or violet → blue, rainbow multi-hue, mesh blobs, aurora washes, gradient text. **Fix:** one flat accent with a written meaning; stages are tonal fields in the palette (`references/brand-and-color.md` §12).
 - **D2 Neon on black.** Anything at OKLCH L > 0.85 with C > 0.15 on an ink stage. **Fix:** lower the lightness or chroma; the accent is a signal, not a light source.
 - **D3 The beige default.** A beige or cream ground with an orange or terracotta accent. **Fix:** cool or accent-tinted neutrals (paper around `#F7F8F8`); warm only when the brand is warm.
 - **D4 Glass and glow.** Backdrop blur with a 10–20% white fill and a 1 px white border; glows, halos, bloom, an outer glow on text. **Fix:** one soft shadow on paper (`0 28px 90px rgba(0,0,0,.16)`); on ink, a luminance step plus a 1 px top hairline at 8–12% white.
@@ -51,6 +53,7 @@ The full list of things that make motion design look cheap, templated or generat
 - **D6 Filler decoration.** Particles, bokeh, starfields, code or ASCII rain, ghost text at 3–8%, grain that does nothing or changes per scene. **Fix:** every element names its job (reveal, route, validate, emphasise) or is cut; grain is none, or global 1.5–2% keyed to the output frame.
 - **D7 Muddy washes.** A white radial wash turns ink cards into grey buttons; a dull grey stage with a colour cast. **Fix:** ink stays ink; veil at 80–85% only where type sits.
 - **D8 Pure black holes.** Full-frame `#000` stages that crush under encoding. **Fix:** ink at OKLCH L 0.15–0.18, tinted 0.003–0.008 chroma toward the accent.
+- **D9 House-style convergence.** The starter's or Tessel's typeface, palette or mark, a block-and-accent-dot mark, or a light paper stage kept because the starter had one. **Fix:** three adjectives → family, stage, accent and shapes, then a sheet of 6–10 mark directions (`references/brand-and-color.md` §2, §4).
 
 ## E. Layout and framing
 - **E1 The SaaS layout.** Text left, UI card right on white, or everything centred and floating. **Fix:** the product full-bleed, type anchored to an eye line or the lower third, one focal action per shot.
@@ -58,6 +61,8 @@ The full list of things that make motion design look cheap, templated or generat
 - **E3 No margins.** Less than 96 px at the sides or 64 px top and bottom, or less than 24 px of headroom at maximum punch. **Fix:** check the safe area on the punch frame with `scripts/layout-audit.sh`.
 - **E4 Crops that slice glyphs.** "aft", ":00", or text cut by a card edge moving across it. **Fix:** crop on column gutters; reveal text only after the edge has passed.
 - **E5 Cropped social versions.** A 9:16 or 1:1 cut out of the 16:9 master. **Fix:** re-lay separate compositions from the same timeline (`references/formats.md`).
+- **E6 A lockup lost in a void.** The resolved lockup spans under a quarter of the frame's width and can't be read at 480 px. **Fix:** 28–45% of the width at its resolved size (`references/brand-and-color.md` §6).
+- **E7 A small card in empty space.** The product shown as a floating card whose type is unreadable on a phone. **Fix:** full-bleed, or push in until the working part fills the frame (`references/product-ui.md` §1).
 
 ## F. Motion and easing
 - **F1 The default entrance.** Everything fades in, or enters with `y: 30, opacity: 0`. **Fix:** one reveal system per role, with physical entrances: a mask sweep, a birth from a gap, a morph.
@@ -83,6 +88,7 @@ The full list of things that make motion design look cheap, templated or generat
 - **H2 Locked-off shots.** Mean frame difference around 0.1 for more than 1.5 s. **Fix:** a 2–3%/s push plus ~16 px of drift with parallax (`references/camera.md`).
 - **H3 Invisible drift.** 1 → 1.05 over 2 s on a logo reads as dead. **Fix:** logo holds push 10–20%; UI holds drift 0.5–1.5 px/f.
 - **H4 Strobing fast moves.** Unblurred motion above 20 px/f (falling blocks at 140 px/f). **Fix:** anything above 12 px/f gets the motion-blur pass (`references/finishing.md`).
+- **H5 Moves too fast to blur.** An element crossing 150–1,000 px in a frame: blur turns it into a long smear with stepped copies. **Fix:** keep any one element under about 60–80 px/f; faster than that, redesign the move (a cut on the beat, a match cut, a mask wipe, a shorter distance). `measure-speed.py` names the frames.
 
 ## I. UI depiction
 - **I1 Generic or pictured UI.** Fake KPIs, up-and-right charts, random numbers, stock icons, a screenshot zoomed until soft. **Fix:** the product's own surfaces as real components with named data from one module (`references/product-ui.md`).
@@ -91,6 +97,7 @@ The full list of things that make motion design look cheap, templated or generat
 - **I4 Z-order bugs.** A badge bitten by the next avatar, a lifted card drawn under a grounded one, a toast over the result. **Fix:** paint sorted by z; badges get a 2 px ring in the background colour.
 - **I5 Input no real app has.** A caret floating 8–75 px from the text, a chip whose weight animates and reflows the line. **Fix:** padding grows with the reveal; weight stays constant; animate only fill and colour.
 - **I6 A robotic cursor.** Straight paths at constant speed, a parked cursor, or any cursor on a product that acts alone. **Fix:** arc 15–25% of the path, travel 36–48 f, press to 0.88 over 4 f, ≤ 1 click per 30 f; no cursor once the product is autonomous.
+- **I7 Story and data disagree.** The person who paid is shown owing, a ratio doesn't match the numbers beside it, one figure appears twice in a frame. **Fix:** assert the story's facts in `data.ts` (`references/product-ui.md` §2).
 
 ## J. Sound
 - **J1 Library sound.** A stock whoosh on every cut, meme effects, riser → boom on everything. **Fix:** a synthesized palette; whooshes only on camera moves, dull (centroid 150–600 Hz), apex on the velocity peak, panned with the motion (`references/sound.md`).
@@ -99,6 +106,8 @@ The full list of things that make motion design look cheap, templated or generat
 - **J4 Out of key.** Untuned booms, snaps and ticks; a riser landing a tritone away. **Fix:** tune every pitched effect to the chord root; synthesize with integrated phase so attacks don't chirp.
 - **J5 The wrong ending.** Clicks at buffer ends, an ending cut at full level, or a mid-film drop louder than the payoff. **Fix:** 6 ms cos² tails, decay below −45 dB, last 480 samples at zero; the payoff has the highest momentary loudness with limiter gain reduction < 1.5 dB.
 - **J6 Typing rattle.** 30 clicks per second fusing into a buzz. **Fix:** accent word starts, a lower thock on spaces, ±6% pitch, drop clicks closer than 2 f.
+- **J7 Picture events with no sound.** A cut or whip peaking a quarter-second after the beat, a big move with no hit under it. **Fix:** cuts and velocity peaks sit on the grid with a hit; `av-audit.py` warns on strong picture changes with no sound within ±3 f (`references/timing-grid.md`).
+- **J8 A flat mix.** Loudness range under 5 LU on a film of 20 s or more; the payoff barely louder than the rest. **Fix:** thin out before the turn, true silence before the drop, the payoff 2–3 LU above the median momentary loudness (`references/sound.md`).
 
 ## K. Pacing
 - **K1 Weak hook.** 1–2 s of near-blank frame (mean difference < 0.05), which a muted feed reads as a stalled player. **Fix:** frame 0 already composed and moving; a visible change about every 0.5 s.
@@ -115,3 +124,4 @@ The full list of things that make motion design look cheap, templated or generat
 - **L5 Banding.** A CSS gradient spanning fewer than ~30 code values shows rings. **Fix:** dithered PNG stages from `scripts/dither-gradient.py`.
 - **L6 Bad motion blur.** Stamped copies of text, greys tinted cyan, blur smeared across a cut, double carets. **Fix:** float accumulation with samples ≤ 3 px apart, clamped to the act, discrete state from whole frames.
 - **L7 Sloppy delivery.** An untagged BT.601 preview, JPEG q80 intermediates, CRF 18, Remotion's AAC priming (~43 ms late). **Fix:** BT.709 tags everywhere, JPEG q95, CRF 14–16, a muted render muxed by ffmpeg, then `scripts/check-sync.py`.
+- **L8 A cluttered delivery folder.** Contact sheets, test crops and reports next to the film. **Fix:** deliverables at the top level, QA material in `qa/` (`scripts/deliver.sh` writes it that way).

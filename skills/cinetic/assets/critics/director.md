@@ -27,12 +27,15 @@ You are the creative director of a top motion studio. Judge the film as a viewer
 2. Then answer, with frames:
    - **The weakest 3 seconds.** Name them and say why.
    - **Cheap, templated, slow, confusing or dead moments.** Check them against the tells in `references/taste-and-slop.md` (grep it for the symptom).
+   - **Specificity.** Would this film be just as true of a simpler product (an even split instead of an itemised one, a list instead of a ranking)? If yes, the proof shows the naive version: name the non-obvious behaviour from `TREATMENT.md` and the beat that should show it.
+   - **Its own look.** Does it look like the starter's demo, like Tessel (a red dot, a block mark, cool paper and a geometric sans), or like a generic minimal template? Is there a brand personality in the type, the stage, the shapes and the motion, matching the three adjectives in `TREATMENT.md`? Is the mark ownable, or could it belong to ten other startups?
    - **Does each act's idea land in under 1 s?** Look at each act's first 60 frames.
    - **Does the story read with the sound off?** Follow the story device across every seam. It should never blink out; in a launch film it ideally becomes the mark at the end, and in a loop or product video it is the unit the product acts on.
    - **The hook.** Frame 0 should already be composed and moving. The problem should be felt by 1 s and stated by 2 s.
    - **The end.** The lockup should be fully resolved for 1.5 to 2.0 s and visibly building, the URL readable for at least 1.7 s, and the final frame should work as the poster.
    - **Pacing.** Look for one motion peak per bar, 30 to 70 f of calm between peaks, and a first 6 s about twice as dense as the middle. Back pacing claims with `stats.energy_per_second` and `stats.energy_per_act` in `forensics.json`: a second near 0.1 reads as a stall, and a long flat run reads as flat energy.
    - **Transitions.** Look for 6 to 8 types, none used more than twice, and one signature move at the open, middle and close. Crossfades should not be the default, and no seam should duplicate the rest pose.
+   - **Speed.** On a blurred master, look at the fastest frames at full size (`fastest_frames` in `out/samples.json`): stepped copies or a long smear mean the move is too fast to blur (over about 60–80 px/f) and needs a redesign, not more samples.
 3. Check what changed ({{CHANGED}}) at full frame rate: `python3 scripts/sheet.py {{VIDEO}} --from A --to B --every 1 --width 480 --out {{WORKDIR}}/x.png`.
 
 ## Tools
