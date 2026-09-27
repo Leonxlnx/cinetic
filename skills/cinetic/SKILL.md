@@ -116,7 +116,7 @@ Read `references/concept-and-story.md` now.
 Read `references/brand-and-color.md` and the type section of `references/copy-and-type.md`.
 - The starter's palette, fonts, mark and demo name are stand-ins marked `// cinetic:placeholder`, and `lint-film.mjs` reports an error until every marker is gone. Apply the user's brand, or invent one for this film, then delete the markers. A film that keeps the starter's look looks like every other film made from it.
 - **Personality first.** Write three adjectives for the brand, then derive the choices from them. This mapping is in `references/brand-and-color.md` §2:
-  - the typeface: pick the sans for this brand from `@fontsource-variable/*` (install what you need); Geist is only the starter's stand-in;
+  - the typeface: pick the sans for this brand from `@fontsource-variable/*` and vendor it with `node scripts/add-font.mjs <name>` (safe with a shared `node_modules`); Geist is only the starter's stand-in;
   - weight and case;
   - the stage (light or dark: a dev tool or a fire-named brand often wants dark), neutral or cool, and the accent's hue from the allowed families;
   - the motion character, from crisp to unhurried.
@@ -131,7 +131,13 @@ Read `references/brand-and-color.md` and the type section of `references/copy-an
   - Sketch 6–10 directions, each from a different source: the name's meaning, a letterform, the product's own object, the idea's metaphor, and a pure geometric construction.
   - Render them together on one sheet and look at it (the `MarkSheet` still in `references/brand-and-color.md` §4).
   - Reject any direction that could belong to ten other startups, including the "geometric block + accent dot" family, which is this skill's own example vocabulary.
+  - Run the misread test. Show the mark at 64 px for half a second. If it reads first as a common symbol (a minus, an emoticon, a menu or hamburger icon, a padlock, a play button, a plus), reject it or change it until it doesn't.
   - Build the winner in `src/brand/Mark.tsx` on a 100-unit grid, with gaps of at least 8 units so it survives being scaled down.
+- **A palette with character, inside the bans.** Derive it from the world of the name and the product (a hillside gives pine, moss and slate; a foundry gives graphite and signal red), not from framework defaults. When the name's world is heat or fire, orange is banned, so go red-hot (a deep signal red on graphite) or white-hot, never generic dev-tool blue: the colour must carry the name.
+  - Framework blues (the `#3B82F6` / `#2563EB` family) and flat pure greys read as "default".
+  - Tint the neutrals toward the world, with a cool green-grey or a blue slate; a dark stage can be pine-black or ink-navy rather than `#000`.
+  - `references/brand-and-color.md` §8–10 has worked palettes.
+- **Set the lockup like a typographer.** Render three settings side by side (mark-to-cap ratio, gap, weight, tracking) and pick the one where the mark and the word read as one object. A carelessly set wordmark costs more than any animation gains.
 - Render 2–4 one-frame style stills from the `Stills` folder and look at them: the mark at 16 px and at full size, one statement frame, and one product frame. `npm run stills` renders the mark stills; add your own with `npx remotion still <StillId> out/stills/<name>.png`.
 - **Gate:**
   - the stills pass §4;
@@ -154,6 +160,8 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
 - Make each act a pure function of `useCurrentFrame()`. Mount one `<Sequence>` per act in `Film.tsx`, and register each act as its own composition in the `Acts` folder so you can iterate on it alone.
 - Take all motion from the tokens in `src/lib/anim.ts` (§6). A raw bezier inside an act is a lint error, because that is how a house style decays.
 - Build the product UI from real components fed by one `data.ts` module with asserts on dates, weekdays, counts, plurals and sums. The data must agree with the story too: the person who paid doesn't owe, a "sorted" list is actually sorted, a stated ratio matches its numbers, and no number appears twice in one frame. Frame the UI large enough to read on a phone. A screenshot never carries the hero shot.
+- Make the product and the feature identifiable. Name the feature once, as a UI label, the one line of copy or the end card, and show enough real app chrome that a stranger knows this is software. "No feature name as a headline" never means "never name it".
+- Moving elements never cover text they pass over: plan the paths and the z-order, and check the densest frames at full size.
 - A progressive text reveal (letter by letter or with a sweep) must never spell a different word partway through ("tarn" briefly reading "tar"). Check the intermediate frames, or reveal by whole words or with a mask.
 - Export from its act every frame the sound needs, as a named constant (for example `LANDINGS` or `SNAP`), so the cue export can import it.
 - Wrap everything in `<FontGate>`.
@@ -169,6 +177,7 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
 ### Step 5: Sound → `public/audio/soundtrack.wav`
 Read `references/sound.md` now.
 - Run `npx tsx scripts/export-cues.ts`, which writes `out/cues.json`. Sync points are computed from the picture code (spring contact frames, 50% pop frames, velocity peaks, 97% settles) and never typed by hand. Typed sync points landed 8–11 f off in practice.
+- Pick the sound's personality row in `references/sound.md` §5.5a first. A calm brand gets soft mallets and one gentle chord; drops onto silence and sub booms are for energetic launch films only.
 - Fill in `audio/score.json`: key, one chord per bar, sections, drops and silences.
 - Run `python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json --out public/audio/soundtrack.wav --stems out/stems --json out/qa/score.json` (`npm run audio`). The stems let `av-audit.py` check each sound against its cue; the master chain lives in `scripts/audio/master.py`.
 - **Gate:**
@@ -236,6 +245,7 @@ These rules ban the tells of generated work, not personality. Two films made wit
 
 **Colour** (`references/brand-and-color.md`)
 - Pick one accent from an allowed hue family (red, green, teal, blue, yellow) for a stated reason. Everything in the Hard bans is out: orange, amber, beige and cream, neon, purple, violet or indigo, multi-hue gradients and glassmorphism.
+- Restraint is not the same as colourless. The accent visibly carries the key beats (the product's action and the payoff), and the stage and neutrals have a tone from the brand's world. Check a mid-film frame at thumbnail size: if no brand colour shows, the film has no identity.
 - Tint the neutrals cool or keep them neutral, never warm or beige, and keep ink as ink. New things arrive in the accent and relax to neutral over 10–30 f, which is how colour says "just happened".
 - No glow, halo or bloom.
   - Shadows are `0 20–40px 60–120px rgba(0,0,0,.12–.22)`.
@@ -287,12 +297,21 @@ const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one
 - **Holds**
   - Once text resolves, it stays at least 36 f + 6 f per word. Text that hasn't resolved never exits.
   - Nothing is static for more than 48 f, except a designed freeze of ≤ 15 f that sits exactly on a silence.
-  - A logo or lockup hold is 1.5–2.0 s and visibly builds (a push of ≥ 10–20%). A URL is readable for at least 1.7 s.
+  - A logo or lockup hold is 1.5–2.0 s and visibly builds (a push of ≥ 10–20%), then the tail. Never more than about 2.5 s on a still end card: judges call a longer one "drags". A URL is readable for at least 1.7 s.
 - **Density**
   - Aim for 45–60 discrete events per 30 s and one motion peak per bar, with 30–70 f of calm between peaks.
   - The first 6 s run about twice as dense as the middle.
+  - Energy builds toward the payoff. No stretch after the turn is slower or greyer than the one before it, unless it is a designed breath of ≤ 1 bar right before the drop. A second half that drags loses films whose first half is strong. Check the energy by eye on a contact sheet of the second half.
   - Shot length: median 60–90 f; minimum 24 f (and only with no text); maximum 180 f (and only with continuous action).
-- **Hook:** frame 0 is already composed and moving, something visibly changes about every 0.5 s, and the problem is felt by 1 s and stated by 2 s.
+- **Hook:**
+  - frame 0 is already composed and moving;
+  - the sound starts with intent, with no fade-in over the first bar;
+  - something visibly changes about every 0.5 s;
+  - the problem is felt by 1 s and stated by 2 s.
+
+  A soft first second loses a muted feed.
+- **End card:** carry the brief's one practical fact when it gives one (a date such as "next week", a URL, "out now"), set at the secondary size under the lockup. That is the only line besides the name.
+- **State follows the event:** counters, checks and totals change on the landing frame of the thing that caused them, not a beat later.
 
 **Where a sound goes** (computed by `src/lib/sync.ts`: `peak`, `hit`, `delayTo`, `settleOf`):
 
@@ -450,7 +469,8 @@ Read each file when its step comes up. Don't read them all at once.
 |---|---|
 | a project from the starter | `scripts/new-film.sh` |
 | static bans and hard bans, a leftover placeholder brand | `scripts/lint-film.mjs` |
-| grid, holds, gaps, word budget; text in the safe area | `scripts/grid-check.ts`; `scripts/layout-audit.sh` |
+| grid, holds, gaps, word budget; text in the safe zone (feed presets: `--safe feed9x16`), text covered by movers | `scripts/grid-check.ts`; `scripts/layout-audit.sh` |
+| a font family, vendored into the project without `npm install` | `scripts/add-font.mjs` (or `new-film.sh --font`) |
 | a palette from one accent, contrast, accent coverage on a still | `scripts/palette.py` |
 | gradients that don't band | `scripts/dither-gradient.py` |
 | cues for the sound; score, SFX, mix, master and tail fade | `scripts/export-cues.ts`; `scripts/audio/score.py`, `synth.py`, `master.py` |
