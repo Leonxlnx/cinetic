@@ -12,7 +12,8 @@ Usage (from the project root):
 
 Writes a 48 kHz 24-bit stereo WAV exactly TOTAL/FPS seconds long, optional stems that sum to
 the pre-master mix (drums, bass, pad, arp, bells, reverb, sfx, and bed when used) and a JSON
-report: loudness, true peak, LRA, the loudest moment against the payoff, limiter hot spots,
+report: loudness, true peak, LRA (warns under 5 LU on films of 20 s or more), the loudest moment
+against the payoff and the payoff's lift over the median momentary loudness (warns under 2 LU), limiter hot spots,
 masked effects (under +6 dB in their own band), every tuned sound with its note, skipped events
 and warnings. Schema and recipes: references/sound.md.
 
@@ -902,6 +903,18 @@ def main(argv=None):
                                  f'{mom[win].max():.1f} vs {rep["momentary_max"]} LUFS-M at {rep["momentary_max_t"]}s')
         if rep['payoff']['limiter_gr_db'] and rep['payoff']['limiter_gr_db'] > 1.5:
             song.warnings.append(f'limiter takes {rep["payoff"]["limiter_gr_db"]} dB off the payoff (keep it under 1.5)')
+        # contrast: the payoff should stand clearly above the film's typical level, not just edge it
+        audible = mom[mom > -70]
+        if win.any() and len(audible):
+            lift = float(mom[win].max() - np.median(audible))
+            rep['payoff']['over_median_lu'] = round(lift, 2)
+            if lift < 2.0:
+                song.warnings.append(f'the payoff is only {lift:.1f} LU over the median momentary loudness (want 2-3+): '
+                                     'thin the bars before it, leave true silence before the drop, give the hit more body')
+    # dynamics: a launch film of 20 s or more wants real contrast (sections that thin out, a silence, a drop)
+    if song.dur >= 20 and rep.get('lra') is not None and rep['lra'] < 5:
+        song.warnings.append(f'LRA {rep["lra"]} LU is flat for a {song.dur:.0f}s film (want 5-8): thin the section before the '
+                             'turn, cut to silence before the drop, hold the bed back until the payoff')
     off = [x for x in ev['tuned'] if not x['in_key']]
     if off:
         song.warnings.append('out of key: ' + ', '.join(f"{x['kind']} {x['note']} at f={x['f']}" for x in off))

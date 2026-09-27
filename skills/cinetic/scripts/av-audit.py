@@ -23,7 +23,9 @@ Checks (defaults are proven starting points, not dogma):
   visual     for each isolated event (no other event within 6 f): when the picture's peak
              change (480x270 MAD) within +-6 f is clear (>= 2x the local median) it sits at
              -2..+3 f from the sound, or the picture changes on the sound too (>= 35% of it) warn
-             strong visual peaks with no event within 6 f are listed (a hit with no sound)  info
+             strong visual peaks (a cut, a flash, the peak of a big move) with no audio onset or
+             sfx envelope peak within +-3 f (--peak-tol), and no contact cue (land, hit, snap,
+             drop) in the next 10 f: a picture event with nothing under it                      warn
   loudness   ffmpeg ebur128: integrated -14 +-1 LUFS, true peak <= -1.0 dBTP                fail
              loudness range 3-8 LU; loudest momentary window on the payoff cue if one exists warn
              (audio shorter than cues.json's total is an excerpt: loudness and the tail are
@@ -185,6 +187,7 @@ def main():
     ap.add_argument('--hf-ratio', type=float, default=4.0, help='> 1 kHz envelope rise that counts as an onset')
     ap.add_argument('--apex-tol', type=float, default=3.0, help='frames')
     ap.add_argument('--vis-window', type=int, default=6, help='frames either side to look for the visual peak')
+    ap.add_argument('--peak-tol', type=int, default=3, help='frames within which a strong visual peak needs a sound')
     ap.add_argument('--no-visual', action='store_true', help='skip the picture checks')
     ap.add_argument('--lufs', type=float, default=-14.0)
     ap.add_argument('--lufs-tol', type=float, default=1.0)
@@ -385,12 +388,28 @@ def main():
         for r in bad[:15]:
             add('visual', 'warn', int(round(r['f'])), f'{"/".join(r["kinds"])}: the picture peaks {r["peak_offset_f"]:+d} f '
                 'from its sound; move the picture (start at cue-1, pulses peak +2 f), not the sound')
-        # strong visual peaks with no event
+        # strong visual peaks (cuts, flashes, the velocity peak of a big move) need a sound under them:
+        # an onset, or the envelope peak of a whoosh, within +-peak_tol frames
         pk, props = signal.find_peaks(d, prominence=max(1.0, 3 * float(np.median(d[1:]))), distance=12)
+        env_v, ms_v = band_env(sfx_sig, sr, 60, 16000, win_ms=30, hop_ms=5)
+        epk, _ = signal.find_peaks(env_v, prominence=0.1 * float(env_v.max() or 1.0))
+        heard = np.concatenate([on_t * fps, epk * ms_v / 1000 * fps, [1e9]])
         evf = np.array([e['f'] for e in cues['events']]) if cues['events'] else np.array([1e9])
-        lonely = [dict(frame=int(p), mad=round(float(d[p]), 2), prominence=round(float(pr), 2))
-                  for p, pr in zip(pk, props['prominences']) if np.min(np.abs(evf - p)) > W6]
+        # a move that accelerates into a contact peaks just before it, and its sound belongs on the
+        # contact frame (a land, hit, snap or drop cue up to 10 f later), so that peak is explained
+        contacts = np.array([e['f'] for e in cues['events'] if e['kind'] in ('land', 'hit', 'snap', 'drop')] or [1e9])
+        lonely = [dict(frame=int(p), mad=round(float(d[p]), 2), prominence=round(float(pr), 2),
+                       nearest_sound_f=round(float(heard[np.argmin(np.abs(heard - p))] - p), 1),
+                       cue_event_nearby=bool(np.min(np.abs(evf - p)) <= W6))
+                  for p, pr in zip(pk, props['prominences'])
+                  if np.min(np.abs(heard - p)) > args.peak_tol and not np.any((contacts - p > 0) & (contacts - p <= 10))]
         lonely.sort(key=lambda r: -r['prominence'])
+        strong = max(1.5, 4 * float(np.median(d[1:])))
+        for r in [r for r in lonely if r['prominence'] >= strong][:10]:
+            near = r['nearest_sound_f']
+            add('visual', 'warn', r['frame'], f'a strong picture change (MAD {r["mad"]}) has no sound within +-{args.peak_tol} f'
+                + (f' (nearest {near:+.0f} f)' if abs(near) < 60 else '')
+                + ': cuts and the peaks of big moves land on a beat with a hit under them; move the picture onto the grid or add the hit')
         clear_rows = [r for r in vrows if r['clear']]
         visual = dict(checked=len(vrows), clear_peaks=len(clear_rows),
                       aligned=sum(1 for r in clear_rows if r['ok']),
@@ -530,7 +549,7 @@ def main():
           f'p90 |offset| {sync["p90_abs_offset_f"]} f; apex {sum(r["ok"] for r in apex_rows)}/{len(apex_rows)}')
     if visual:
         print(f'  picture: {visual["aligned"]}/{visual["clear_peaks"]} clear visual peaks aligned, '
-              f'{len(visual["peaks_without_event"])} strong peaks with no event')
+              f'{len(visual["peaks_without_event"])} strong peaks with no sound within +-{args.peak_tol} f')
     if loud:
         print(f'  loudness: I {loud["integrated_lufs"]} LUFS, LRA {loud["lra_lu"]} LU, TP {loud["true_peak_dbtp"]} dBTP, '
               f'max momentary {loud.get("momentary_max_lufs")} at {loud.get("momentary_max_t")} s')

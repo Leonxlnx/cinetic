@@ -24,11 +24,11 @@ You cannot listen, so you measure. You judge whether the sound makes the picture
    - A median offset beyond ±1 f is a systematic lag: check the mux and the priming (`sync.json`).
    - Each miss is a sound that is missing, early or late. Read the event's code in `src/sync.ts` and say which. Common causes: a spring cued on its settle instead of its pop (0.5) or contact (0.92-1.0); a whoosh apex off the velocity peak; a picture change that starts at `cue` instead of `cue − 1`.
    - `stray_sfx_onsets_f` lists sounds with no picture reason, or events missing from cues.json.
-2. **Picture against sound.** Read `av.json` `visual`. `misaligned` lists isolated events whose visual peak sits away from the sound. `peaks_without_event` lists strong picture changes with no sound. Some are fine: a silent implosion, or a cut on a silence. Name the ones that need a sound.
+2. **Picture against sound.** Read `av.json` `visual`. `misaligned` lists isolated events whose visual peak sits away from the sound. `peaks_without_event` lists strong picture changes (cuts, flashes, the peak of a big move) with no onset or whoosh peak within ±3 f; the strongest are warnings. Every hard cut and every major move's velocity peak should sit on a grid beat with a sound under it: a transition peaking a quarter-second after its beat reads as late even when nobody can say why. Name the ones to move onto the beat (move the picture) or to give a hit. A designed silent moment is fine when it sits on a silence in the score.
 3. **Audibility.** Read `av.json` `masking` and `score.json`. Effects should sit at least +6 dB over the music in their own band. Name the masked ones that matter: key hits, payoff, logo.
 4. **Arc and finish.** Check four things:
    - Integrated loudness is −14 ±1 LUFS, and true peak is at most −1 dBTP after AAC.
-   - The LRA is 3 to 8 LU.
+   - The LRA is 3 to 8 LU, and at least 5 LU for a film of 20 s or more: a launch film wants a thinned section before the turn, true silence before the drop, and a payoff 2–3 LU above the median momentary loudness (`score.json` reports both).
    - The loudest momentary window sits on the payoff. Find the payoff cue in `src/timeline.ts`.
    - Clicks are none, and the tail decays to digital zero with 60 f or more of silence at the end.
    For a momentary curve, run `ffmpeg -i {{VIDEO}} -af ebur128 -f null - 2>&1 | grep M:`.
