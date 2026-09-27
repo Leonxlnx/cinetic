@@ -138,14 +138,14 @@ HyperFrames seeks `t = frame/fps` and has no adaptive sub-frame stream, so rende
 
 ## 3. Banding
 
-Chromium renders CSS gradients in 8 bits. A ramp that spans only a few code values (a glow on ink going 11 → 29, a tabletop going 231 → 247) shows as contour rings, about one per code value. Nothing downstream can fix it: motion blur, a better encoder or grain added later all start from the already-quantised ramp.
+Chromium renders CSS gradients in 8 bits. A ramp that spans only a few code values (a pool of light on ink going 11 → 29, a tabletop going 231 → 247) shows as contour rings, about one per code value. Nothing downstream can fix it: motion blur, a better encoder or grain added later all start from the already-quantised ramp.
 
 - **Rule of thumb:** a CSS gradient whose channels change by fewer than about 30 code values across the frame will band. `lint-film.mjs` flags low-span gradients.
 - **Fix:** compute the gradient in float, add ±1 LSB triangular dither, quantise once, and load it as an image:
 
 ```json
 {"size": [1920, 1080], "seed": 11, "backdrops": [
-  {"name": "glow-ink", "type": "radial", "at": [0.5, 0.45], "radius": [0.7, 0.6],
+  {"name": "pool-ink", "type": "radial", "at": [0.5, 0.45], "radius": [0.7, 0.6],
    "stops": [["rgba(255,255,255,0.075)", 0], ["transparent", 0.7]]},
   {"name": "table", "base": "#E7E8EC", "type": "radial", "at": [0.5, 0.4], "radius": [0.65, 0.6],
    "stops": [["#F7F8FA", 0], ["#F7F8FA00", 0.75]]},
@@ -161,7 +161,7 @@ python3 scripts/dither-gradient.py --spec backdrops.json --out public/fx --previ
 ```
 
 - `type` follows CSS: `radial` is `ellipse RX RY at CX CY` in fractions of the frame; `linear` takes a CSS angle (180 = top to bottom). `space` is `srgb` (CSS default), `linear` or `oklab` (the smoothest ramp between two neutrals).
-- With `base` the PNG is opaque RGB. Without it, it is RGBA, and the alpha carries the dither (a white glow over ink is one alpha step per output level).
+- With `base` the PNG is opaque RGB. Without it, it is RGBA, and the alpha carries the dither (a white pool of light over ink is one alpha step per output level).
 - **Detection:** the `--preview` folder holds a ×12 contrast-stretched copy of each backdrop; bands are obvious there. On renders, the banding sheet from `scripts/forensics.py` does the same stretch on dark frames.
 - Slow colour ramps done with `interpolateColors` step for a different reason (gamma sRGB with integer rounding); see `references/brand-and-color.md`.
 

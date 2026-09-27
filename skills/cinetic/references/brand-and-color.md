@@ -25,6 +25,7 @@ The brand wins. Everything below is for what you have to invent, plus the method
 
 - **Colours.** Map them to roles: the darkest neutral becomes `ink`, the lightest `paper`. Choose *one* brand colour as the film's accent and write down its meaning. The other brand colours appear only inside the product UI, where they already live.
 - **Typeface.** Use it, serif and condensed included. Ship it locally (`@font-face` or a `@fontsource-variable/*` package) and gate it with `FontGate`.
+- **Supplied things the hard bans would catch** (their orange, their cream paper, their serif wordmark face) are the brand's identity, so they stay. List each one in `BRIEF.md` as a brand-supplied exception, so the critics don't flag it, and mark the lines that set it with `// cinetic:brand-supplied <what>` (in the file's leading comment it covers the whole file), so `lint-film.mjs` accepts them. `palette.py` takes `--brand-supplied` for the same reason.
 - **Logo.** Use the vector file. Don't redraw or "improve" it. Find the device in its geometry (a dot, a corner, a counter, a stroke end); if there is none, the device is the accent colour itself. Build the sting by splitting the logo along its existing shapes.
 - **Wordmark only.** Take the device from a letter feature: the dot of an i, a crossbar, a terminal.
 - **Brand guidelines that conflict with a rule here** (a gradient in the logo, a second accent): follow the guidelines, and use the rule to limit the damage. Show the gradient only in the logo, and let the second colour appear only in UI.
@@ -33,18 +34,18 @@ The brand wins. Everything below is for what you have to invent, plus the method
 
 Every invented brand starts from three adjectives, written in `TREATMENT.md` before any colour or face is picked. The adjectives decide the choices below; taste then refines them. Without this step every film drifts to the same cool, light, geometric-sans minimalism, which is this skill's own house style and reads as a template the second time a viewer sees it.
 
-| Personality (three adjectives) | Typeface (`@fontsource-variable/*`) | Weight and case | Tracking (display) | Stage and temperature | Accent family | Corners and shapes | Motion character |
+| Personality (three adjectives) | Typeface (`@fontsource-variable/*`) | Weight and case | Tracking (display) | Stage | Accent family | Corners and shapes | Motion character |
 |---|---|---|---|---|---|---|---|
-| **Calm, literary, unhurried** (notes, reading, journaling) | a text serif with warmth: `newsreader`, `literata`, `source-serif-4`; or a humanist sans, `source-sans-3` | 380–450 display, 400 text; sentence case | −0.01 to −0.02 em (serifs want less than sans) | a warm paper (L 0.96–0.97, C 0.008–0.015) and a warm ink | low chroma (0.06–0.10): ink blue, moss, clay | soft radii, organic curves, thin strokes | unhurried: 30–48 f moves on `outSoft` and `dolly`, no overshoot, long holds |
-| **Fast, exact, confident** (CI, APIs, build tools) | a tight grotesk, `schibsted-grotesk` or `instrument-sans`, with `jetbrains-mono` for numbers and logs | 600–650; lowercase or sentence case | −0.03 to −0.05 em | often dark (ink L 0.14–0.18), cool or neutral | a hot signal (chroma 0.14–0.20): ember orange, signal yellow-green | square or 2–4 unit corners, hard edges, a visible grid | crisp: 12–20 f on `out` and `whip`, cuts on the beat, no overshoot |
-| **Bright, friendly, bouncy** (consumer, social, games) | `bricolage-grotesque`, `fredoka` (rounded) or `nunito` | 600–800; sentence case | −0.02 em | light, or a saturated colour field as the stage | saturated primaries or warm brights | big radii, pills, blobs | playful: `SPR.pop` with 5–10% overshoot on landings, squash and stretch |
-| **Precise, quiet, expensive** (finance, legal, premium) | `hanken-grotesk` or `public-sans`; `source-serif-4` for a display voice | 400–500, a light touch; sentence case | −0.02 to −0.03 em | a deep dark stage (near-black green or navy) or a bright paper with fine rules | deep jewel tones at low lightness, or a muted brass | 2–6 unit corners, hairlines, fine rules | slow and exact: `rest` and `dolly`, 36–60 f, no overshoot |
-| **Raw, mechanical, honest** (dev tools, infrastructure, hardware) | a mono as the voice, `martian-mono` or `jetbrains-mono`, with `ibm-plex-sans` | 500–700; lowercase | 0 for mono, −0.02 em for the sans | concrete grey or dark | safety yellow or signal orange (on grey, never on beige) | square corners, cut notches, rules, registration marks | mechanical: detents (`SPR.detent`), steps, hard stops, conveyors |
-| **Warm, kind, steady** (health, care, community) | a friendly sans, `figtree`, `nunito-sans` or `commissioner` | 500–600; sentence case | −0.01 em | a warm light stage | from the product's world: clay red, sage, sky | rounded 12–24 unit corners, organic shapes | soft: `outSoft`, 1–3% overshoot on arrivals |
+| **Calm, clear, unhurried** (notes, reading, journaling) | a humanist sans: `source-sans-3`, `ysabeau-office` or `commissioner` | 350–450 display, 400 text; sentence case | −0.01 to −0.02 em | light: a neutral or cool paper (L 0.97–0.98, C ≤ 0.004) and a soft ink | low chroma (0.08–0.12): ink blue, moss or sage green, teal | soft radii, organic curves, thin strokes | unhurried: 30–48 f moves on `outSoft` and `dolly`, no overshoot, long holds |
+| **Fast, exact, confident** (CI, APIs, build tools) | a tight grotesk: `schibsted-grotesk` or `instrument-sans`, with `jetbrains-mono` for numbers and logs | 600–650; lowercase or sentence case | −0.03 to −0.05 em | often dark (ink L 0.14–0.18), neutral or cool | a hot signal (chroma 0.14–0.20): signal red, signal green, or a clean yellow on ink | square or 2–4 unit corners, hard edges, a visible grid | crisp: 12–20 f on `out` and `whip`, cuts on the beat, no overshoot |
+| **Bright, friendly, playful** (consumer, social, games) | a rounded sans: `nunito`, `fredoka` or `quicksand` | 600–700 (Fredoka and Quicksand stop at 700); sentence case | −0.02 em | light, or one designed flood of the accent as the stage | one saturated primary: red, blue, green or yellow | big radii, pills, soft blobs | lively: quick `out` arrivals and contact squash; overshoot (`SPR.snap`, ≤ 7%) only on its ≤ 2 true landings |
+| **Precise, quiet, expensive** (finance, legal, premium) | a neo-grotesk: `hanken-grotesk` or `public-sans` | 400–500, a light touch; sentence case | −0.02 to −0.03 em | a deep dark stage (near-black, neutral or cool: green-black or navy-black) or a bright neutral paper with fine rules | deep jewel tones at restrained chroma (0.10–0.16): emerald, sapphire, a deep red | 2–6 unit corners, hairlines, fine rules | slow and exact: `rest` and `dolly`, 36–60 f, no overshoot |
+| **Raw, mechanical, honest** (dev tools, infrastructure, hardware) | mono plus grotesk: `martian-mono` or `jetbrains-mono` as the voice, with `ibm-plex-sans` | 500–700; lowercase | 0 for mono, −0.02 em for the sans | concrete grey (neutral) or dark | safety yellow (on ink or concrete) or signal red | square corners, cut notches, rules, registration marks | mechanical: detents (`SPR.detent`), steps, hard stops, conveyors |
+| **Warm, kind, steady** (health, care, community) | a friendly humanist sans: `figtree` or `nunito-sans` | 500–600; sentence case | −0.01 em | a light, neutral stage with soft greys: the warmth comes from the type, the shapes and the motion, never from a beige paper | from the product's world: leaf or sage green, sky blue, a soft red | rounded 12–24 unit corners, organic shapes | soft: `outSoft` and `firm`, no overshoot |
 
-Every package in the table exists on npm at 5.3.x and registers its family as `"<Name> Variable"` (for example `"Newsreader Variable"`, `"Schibsted Grotesk Variable"`). How to install and load one is in `references/copy-and-type.md` §6.
+Every package in the table exists on npm at 5.3.x, is a sans or a mono (checked on a rendered specimen), and registers its family as `"<Name> Variable"` (for example `"Source Sans 3 Variable"`, `"Schibsted Grotesk Variable"`). How to install and load one is in `references/copy-and-type.md` §6.
 
-- **Warm and serif are allowed.** A warm, calm brand may use a warm paper and a serif or humanist face; that is a choice with a reason. What reads as generated is the *default*: beige with an orange accent on a brand that never asked for warmth, and a serif used as generic "elegance".
+- **Inside the hard bans.** Every row is a sans (plus an optional mono) on a neutral or cool stage, with an accent from red, green, teal, blue or yellow, because serif "elegance", beige-and-orange warmth and purple gradients are what generated work defaults to (`SKILL.md`, "Hard bans"). Personality comes from which sans, its weight, case and spacing, the stage's lightness, the accent's family and chroma, the corners and the motion. When the user's brand supplies a serif, a warm paper or an orange, it wins (§1) and goes into `BRIEF.md` as an exception.
 - **Light or dark is a brand decision.** A dark stage fits dev and infrastructure tools, night, focus and security products, anything named for fire, heat or energy, and premium brands that want a cinematic feel. A light stage fits documents, reading, health, consumer and anything used in daylight. The starter is light only because it has to be something; its paper is a stand-in like the rest of it.
 - **Weight carries tone.** A calm brand rarely wants a heavy grotesk wordmark; a fast tool rarely wants a hairline one.
 - **Write the choices down** next to the adjectives in `TREATMENT.md`: family, weights, case, stage, accent family, corners, motion character. Critics check the film against them.
@@ -181,17 +182,18 @@ The mark is built from the same parts the film animates, so the logo sting and t
 
 ```ts
 export const MARK = {
-  A: { d: 'M26 42H74Q74 70 50 100Q26 70 26 42Z', cx: 50, cy: 64, w: 48, h: 58 }, // the bob, in brass: the point finds the line
+  A: { d: 'M26 42H74Q74 70 50 100Q26 70 26 42Z', cx: 50, cy: 64, w: 48, h: 58 }, // the bob, steel: the point finds the line
   B: { x: 45, y: 0, w: 10, h: 34, r: 0 }, // the string: 10 units, so 1.6 px at 16 px; 8 units above the bob
 };
-// in Mark: <path d={A.d} fill={dot} …/> and <rect … fill={ink} …/>; the <circle> for D goes
+// in Mark: <path d={A.d} fill={ink} …/> and <rect … fill={ink} …/> (ink = C.paper on Plumb's dark stage);
+// no part carries the accent, which belongs to the flagged line; the <circle> for D goes
 ```
 
 More worked marks, in 100-unit coordinates:
 
 | Brand | Source | Parts | Idea | What testing taught |
 |---|---|---|---|---|
-| Plumb | name | the string above; a bob with a flat top and curved sides meeting in a point, in brass | a weight that points at the line that matters | a round bob under the string read as an exclamation mark at 16 px; the point made it a plumb bob |
+| Plumb | name | the string above; a bob with a flat top and curved sides meeting in a point, in steel (one colour, no accent) | a weight that points at the line that matters | a round bob under the string read as an exclamation mark at 16 px; the point made it a plumb bob |
 | Hush | product object | a card (r 14) whose top-right corner folds down along a 45° line, the fold a triangle in the accent, 8 units from the card | the storm folded into one incident card | the first try, a pip inside a rounded square, was the house cliché and read as a notification badge |
 | Keel | name | a waterline pill 0,34 → 100,48; 8 units below it, a fin that tapers from 36 units wide to 14, in hull red | the part below the line keeps you upright | a half-disc hull read as a sunrise over a horizon |
 | Loam | product reading | a pot in section, 12-unit walls and an open top; the lower 42% filled in the accent, its surface a gentle curve | the healthy reading is the mark | three stacked bars read as a menu icon |
@@ -217,15 +219,15 @@ More worked marks, in 100-unit coordinates:
 `src/brand/tokens.ts` is the only place a colour, family, size or tracking value is written, and `scripts/lint-film.mjs` fails any hex colour that isn't declared there. The starter's file already has this shape; extend it rather than forking it. Its values are stand-ins marked `// cinetic:placeholder` (so are the starter's mark and demo name), and `lint-film.mjs` reports an error until you replace them and delete the markers: the film's palette comes from the user's brand or from the work in this file, never from the starter.
 
 ```ts
-// Keel (a money app): precise, quiet, steady. Neutrals from scripts/palette.py --accent '#C13E2E' --meaning 'set aside'
+// Keel (a money app): precise, quiet, steady. Neutrals from scripts/palette.py --accent '#C92F33' --meaning 'set aside'
 export const C = {
-  ink: '#120E0E',    // type and marks (OKLCH 0.17 0.007 30, 17.8:1 on paper)
-  ink2: '#211C1B',   // raised dark surfaces
-  paper: '#F9F6F5',  // the stage: light, tinted toward the accent (a dark stage is equally valid, §9)
-  mist: '#F0ECEB',   // canvas behind the product
-  line: '#DDD8D7',   // hairlines, ≥ 1.5 px on screen
-  mute: '#706665',   // secondary text: 5.2:1 on paper, safe at any size
-  accent: '#C13E2E', // MEANING: "set aside". Arrives on new things, relaxes to ink; ≤ 8% of pixels.
+  ink: '#110F0E',    // type and marks (OKLCH 0.17 0.004 25, 17.8:1 on paper)
+  ink2: '#1F1C1C',   // raised dark surfaces
+  paper: '#F9F6F6',  // the stage: light and neutral (a dark stage is equally valid, §9)
+  mist: '#EFECEC',   // canvas behind the product
+  line: '#DBD8D8',   // hairlines, ≥ 1.5 px on screen
+  mute: '#6B6868',   // secondary text: 5.1:1 on paper, safe at any size
+  accent: '#C92F33', // MEANING: "set aside" (hull red, OKLCH 0.55 0.19 25). Arrives on new things, relaxes to ink; ≤ 8% of pixels.
 };
 export const FONT = { text: '"Hanken Grotesk Variable", system-ui, sans-serif', mono: '"JetBrains Mono Variable", ui-monospace, monospace' };
 export const FACES = ['400 16px "Hanken Grotesk Variable"', '520 16px "Hanken Grotesk Variable"', '400 16px "JetBrains Mono Variable"']; // what FontGate waits for
@@ -250,43 +252,56 @@ Write the accent's meaning in its comment. Critics read it, and it stops the acc
 - **One meaning.** Never success and error, never decoration ("the heading looked empty").
 - **Check for collisions with UI semantics.** If the product UI shows errors in red and your accent is a red meaning "now", viewers will misread it. Choose another hue, or render UI errors with shape and a neutral.
 
-**Choosing the hue.** Take it from the product's world: the brass of a plumb bob, water, the red antifouling paint below a hull's waterline, the red hand of a clock. Any hue is fine when it is chosen for a reason. Then fit it to the stage:
+**Choosing the hue.** Take it from the product's world: the safety yellow on a builder's level, water, the red antifouling paint below a hull's waterline, the red hand of a clock. Any hue in the allowed families (red, green, teal, blue, yellow) works when it is chosen for a reason. Then fit it to the stage:
 
 | On | Accent lightness (OKLCH L) | Chroma | Graphics contrast |
 |---|---|---|---|
 | A light stage | 0.50–0.65 | 0.10–0.20 (saturated reds up to ~0.23) | ≥ 3:1 |
-| A dark stage | 0.70–0.82 | 0.08–0.16 | ≥ 3:1 |
+| A dark stage | 0.70–0.82 (a yellow: 0.84–0.90) | 0.08–0.16 (a yellow: up to 0.17) | ≥ 3:1 |
 
 - **Below 0.08 chroma** the accent reads as a grey rather than a signal.
-- **Neon test.** OKLCH L > 0.85 with C > 0.15 is neon: it glows on ink and vibrates on paper. Lower one of them.
+- **Yellow needs a dark stage** (or a flood with ink type on it): on paper it reaches about 1.4:1.
 
-| Brand | Meaning | OKLCH | Hex | Stage | Contrast |
-|---|---|---|---|---|---|
-| Tessel | now | 0.61 0.225 24 | `#EC2A3A` | paper | 4.2:1 |
-| Plumb | look here (the weight) | 0.78 0.12 85 | `#DBB155` | ink | 9.7:1 (only 1.9:1 on paper, so brass needs a dark stage) |
-| Loam | water | 0.60 0.14 245 | `#1F86CD` | paper | 3.7:1 |
-| Hush | handled | 0.76 0.10 165 | `#6FC5A1` | ink | 9.3:1 |
-| Keel | set aside | 0.55 0.17 30 | `#C13E2E` | paper | 4.9:1 |
+**The banned regions.** These are the colour hard bans (`SKILL.md`, "Hard bans") as numbers, measured on the colour as rendered (hex → OKLCH). `scripts/lint-film.mjs` (rule `banned-color`) and `scripts/palette.py` use exactly these values, so check a colour with either before you commit to it.
 
-**Build and audit the palette with `scripts/palette.py`.** Given the accent (hex or `oklch(L C h)`), the stage (`--stage light|dark`) and the temperature (`--temp neutral|cool|warm`), it prints a `C` block for `tokens.ts` with neutrals tinted toward the accent, every contrast against the stage, and the checks above (statements ≥ 7:1, secondary ≥ 4.5:1, accent ≥ 3:1, chroma, neon, the lightness band), with a nearby fix when one fails. `--cover IMG` measures the accent's share of a still's pixels (within OKLab 0.08); on Tessel's frames it reads under 0.2% during the acts and 98% on the opening flood frame, the one designed exception.
+| Region | OKLCH | What it catches |
+|---|---|---|
+| Orange / amber | 31 ≤ h < 96 and C ≥ 0.05 | orange, amber, gold, brass, brown, coral, terracotta, and red-orange: vermilion `#F2461E` (h 34) and `#E14921` (h 35) |
+| Beige / cream | 31 ≤ h < 118, L ≥ 0.70 and 0.007 ≤ C < 0.10 | beige, cream, tan, sand, khaki: any warm, light, low-chroma paper or surface |
+| Purple / violet / indigo | 270 ≤ h < 340 and C ≥ 0.02 | indigo (`#4F46E5`, h 277), violet, purple, lavender, magenta; purple-to-blue gradients |
+| Neon | C ≥ 0.27; or L ≥ 0.85 and C ≥ 0.15; or L ≥ 0.80 and C ≥ 0.18 (a yellow, 96 ≤ h < 118: only L ≥ 0.91 and C ≥ 0.15) | electric green, cyan, highlighter yellow, hot magenta: accents that glow on ink and vibrate on paper |
+
+The edges were set so the reds stay: Tessel's `#EC2A3A` sits at h 24 and sRGB red `#FF0000` at h 29, while vermilion starts at h 33. The amber/yellow edge at h 96 keeps golden yellows out (`#FACC15` at h 92 and CSS `gold` at h 95, both also bright enough to count as neon) and lets a clean yellow (`#EBD235` at h 100) through. A neutral below C 0.007 carries no temperature and passes at any hue.
+
+**Allowed accents, one per family.** The examples are invented brands, except Tessel.
+
+| Family (OKLCH h) | Brand | Meaning | OKLCH | Hex | Stage | Contrast |
+|---|---|---|---|---|---|---|
+| Red (340–31) | Tessel | now | 0.61 0.225 24 | `#EC2A3A` | paper | 4.2:1 |
+| Red | Keel | set aside | 0.55 0.19 25 | `#C92F33` | paper | 5.0:1 |
+| Yellow (96–118) | Plumb | look here | 0.86 0.165 100 | `#EBD235` | ink | 12.7:1 (1.4:1 on paper) |
+| Green (118–175) | Hush | handled | 0.76 0.10 165 | `#6FC5A1` | ink | 9.2:1 |
+| Teal (175–225) | Weft | covered | 0.58 0.10 190 | `#018D87` | paper | 3.8:1 |
+| Blue (225–270) | Loam | water | 0.60 0.14 245 | `#1F86CD` | paper | 3.7:1 |
+
+**Build and audit the palette with `scripts/palette.py`.** Given the accent (hex or `oklch(L C h)`), the stage (`--stage light|dark`) and the temperature (`--temp neutral|cool`), it prints a `C` block for `tokens.ts` with neutrals tinted toward the accent (kept neutral when the accent is a red or a yellow), every contrast against the stage, and the checks above (statements ≥ 7:1, secondary ≥ 4.5:1, accent ≥ 3:1, chroma, the lightness band), with a nearby fix when one fails. It refuses (exit 1) an accent or a `--paper` in a banned region unless you pass `--brand-supplied`. `--cover IMG` measures the accent's share of a still's pixels (within OKLab 0.08); on Tessel's frames it reads under 0.2% during the acts and 98% on the opening flood frame, the one designed exception.
 
 ## 9. Neutrals and the stage
 
-Choose the stage first (§2): light or dark, cool, neutral or warm. `scripts/palette.py` builds either.
+Choose the stage first (§2): light or dark, neutral or cool. `scripts/palette.py` builds either.
 - **Ink.** Not pure black: OKLCH L 0.15–0.18 with chroma 0.003–0.008 (for example `#120E0E`). Pure black reads as a hole in the frame; a tinted ink reads as a material. On a dark stage it is the ground, and raised surfaces step up to L 0.21–0.23.
-- **Paper.** L 0.96–0.99. Cool or neutral papers keep chroma ≤ 0.004; a warm paper for a warm brand goes to 0.008–0.015 toward hue 60–90. Pure white is fine for UI surfaces sitting on it.
+- **Paper.** L 0.96–0.99, neutral or cool, chroma ≤ 0.004. A warm paper (chroma 0.007 and up toward hue 31–118) is beige, a hard ban, unless the brand supplied it. Pure white is fine for UI surfaces sitting on it.
 - **2–4 steps between them:** mist for the canvas, line for hairlines, and mute for secondary text. Contrast against the ground: statements ≥ 7:1, secondary lines at 44 px and up ≥ 3:1, anything smaller ≥ 4.5:1. A grey like `#82868E` is 3.5:1 on paper: fine for a 48 px descriptor, too faint for 24 px UI copy.
-- **Tint toward the accent.** Give the neutrals the accent's hue angle at chroma 0.003–0.010 so they read as one family. Warmth is a choice for a warm brand; warm neutrals picked by default slide into the beige tell.
+- **Tint toward the accent, or keep them neutral.** Give the neutrals a blue, teal or green accent's hue angle at chroma 0.003–0.010 so they read as one family. Toward a red or a yellow, stay at chroma ≤ 0.004 (`palette.py` does), because warm-tinted greys slide into beige.
 - **Ink stays ink.** A white radial wash laid over ink cards turns them into grey buttons. Veil at 80–85% only where type sits.
 
 ## 10. Palettes that read as generated
 
-These are combinations rather than hues, and they are the average of generated output. Avoid them when you are inventing; use them only if the brand already does.
-- indigo or violet → blue gradients, and gradient text;
-- neon on black (the §8 neon test on an ink stage);
+Most of these are hard bans (§8 has the numbers); the rest are combinations to avoid when you invent. Use one only if the brand already does (§1).
+- indigo or violet → blue gradients, gradient text, and any multi-hue gradient: rainbow washes, mesh blobs, aurora washes;
+- neon on black (the §8 neon region on an ink stage);
 - glassmorphism: backdrop blur, a 10–20% white fill and a 1 px white border;
-- a beige or cream ground with an orange or terracotta accent, picked by default rather than for a warm brand;
-- rainbow multi-hue gradients, mesh blobs and aurora washes;
+- beige, cream or sand grounds, and orange, amber or terracotta accents;
 - a dark UI with a coloured glow behind every hero element.
 
 ## 11. Surfaces: shadow and hairline
@@ -300,14 +315,14 @@ These are combinations rather than hues, and they are the average of generated o
 ## 12. Tonal stages and banding
 
 - **Stages are tonal fields in the palette**: one or two large soft shapes a few code values off the ground (blurred 40–80 px), and at most a whisper of accent (≤ 4% alpha). They give depth without decoration, because they have a job: light the stage.
-- **Chromium renders CSS gradients in 8 bits.** A gradient spanning fewer than about 30 code values shows contour bands; a glow on ink from code 11 to 29 showed about 18 rings. Nothing downstream removes bands quantized in the browser.
+- **Chromium renders CSS gradients in 8 bits.** A gradient spanning fewer than about 30 code values shows contour bands; a soft falloff on ink from code 11 to 29 showed about 18 rings. Nothing downstream removes bands quantized in the browser.
 - **Bake stages as dithered PNGs** with `scripts/dither-gradient.py --spec backdrops.json --out public/fx` (`--example` prints a spec). It computes in float, adds ±1 LSB TPDF dither and quantizes once. Load the result with `<Img src={staticFile('fx/stage.png')} />`.
-- For a glow over ink, use white with a dithered alpha, not a colour gradient.
+- For a pool of light on an ink stage, use white with a dithered alpha, not a colour gradient; keep it a lighting falloff across the stage, never a halo around an element.
 - Check with the ×12 contrast stretch: `--preview out/qa/bands`, and the banding sheet from `scripts/forensics.py`.
 
 ## 13. Colour in motion
 
-- **Mix in OKLab.** `interpolateColors` lerps gamma-encoded sRGB and rounds every channel each frame. Red → blue at 0.5 gives `rgba(128, 0, 128)`, a muddy dark purple; OKLab gives `rgb(140, 83, 162)`. Passing `oklch()` strings doesn't help, because they are converted to sRGB before the lerp. Use the starter's `mixColor(a, b, t)` from `src/lib/color.ts`, which mixes in OKLab and rounds once.
+- **Mix in OKLab.** `interpolateColors` lerps gamma-encoded sRGB and rounds every channel each frame. A green accent relaxing to paper (`#08965A` → `#F5F6F7`) sits at `#7EC6A8` halfway in sRGB, darker and 8° off in hue, against `#93C6A7` in OKLab; between two distant colours the sRGB midpoint turns dark and muddy. Passing `oklch()` strings doesn't help, because they are converted to sRGB before the lerp. Use the starter's `mixColor(a, b, t)` from `src/lib/color.ts`, which mixes in OKLab and rounds once.
 - **Slow global ramps step at 8 bits** however you mix: `#101010` → `#141414` over 100 f has only 5 distinct values. Keep slow tint changes on small areas, hide them inside motion, or cross-fade to a dithered PNG plate, whose per-pixel noise spreads the steps out.
 - **Plan the luminance flips.** Write the film's light/dark sequence as one row in the treatment. Tessel's is paper → accent (iris) → paper → ink (flood) → paper → accent (flood) → grey → paper.
   - Carry each flip on a moving shape from the device (an iris, flood, shutter or implosion). Never a hard cut to a different luminance, and never a crossfade through black, which dips about 25%.

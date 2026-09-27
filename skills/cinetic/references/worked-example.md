@@ -227,7 +227,7 @@ Each lesson is now a default somewhere in the skill; the file named after "Now i
       - text under `perspective` was capped at a low raster scale;
       - 2 px strokes crawled at quilt scale;
       - `overflow:hidden` flattened `preserve-3d`, so lifted cards drew under grounded ones;
-      - a CSS glow showed 18 contour rings.
+      - a soft CSS falloff on the ink stage showed 18 contour rings.
     - *Fix:*
       - no `will-change` near blur;
       - RackFocus cross-fades;

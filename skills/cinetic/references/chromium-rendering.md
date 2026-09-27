@@ -15,7 +15,7 @@ Every item here was hit on a real film and fixed. The numbers are what was measu
 | 5 | A shape freezes in an old pose for a few frames after an overshoot | a negative SVG attribute (`rx`, `r`, `width`) is rejected and the previous value stays | clamp every geometric input ≥ 0 | stills at overshoot frames |
 | 6 | Thin gaps and strokes crawl as dashes when small | no mipmaps: sub-pixel features alias under minification | gaps ≥ 8 units, strokes ≥ 1.5 px at final scale, fade hairlines out | 1:1 crops; every-frame sheet of the small section |
 | 7 | Lifted cards draw under grounded ones | `preserve-3d` is flattened by `overflow: hidden` (and other grouping properties), so depth sorting stops | paint in z order yourself | stills during lifts |
-| 8 | Contour rings in soft glows and falloffs | CSS gradients are 8-bit | dithered PNG backdrops (`scripts/dither-gradient.py`) | ×12 contrast stretch (`forensics.py` banding sheet) |
+| 8 | Contour rings in soft falloffs and vignettes | CSS gradients are 8-bit | dithered PNG backdrops (`scripts/dither-gradient.py`) | ×12 contrast stretch (`forensics.py` banding sheet) |
 | 9 | UI type looks italic on a tilted plane | roll applied before the tilt shears the content | keep the roll rigid and outside the tilt: `perspective() rotateZ() rotateX()` | look at text on tilted shots at 1:1 |
 | 10 | The whole UI shimmers ~0.4 px on a cut | the same element placed by layout on one side and by transform on the other | identical placement method and transform on both sides of the seam | `forensics.py` seam pop; phase correlation across the cut |
 | 11 | Doubled carets, half-opacity letters in the blurred master | discrete state computed from fractional sub-frame times | discrete state from `fd(frame)` (`Math.round`) | crops of typing in the master |
@@ -126,7 +126,7 @@ The first frames a render tab captures can show the fallback face, and any measu
 
 ### 13. Wall-clock animation
 
-Renders seek frame by frame in several tabs at once. CSS `transition`/`animation`, `@keyframes`, Tailwind `animate-*`, `Math.random()`, `Date.now()` and `performance.now()` all run on wall-clock time, so frames disagree between tabs and between renders. Drive everything from the frame and use seeded randomness (`random(seed)` in Remotion, the starter's `rand(seed)`). `lint-film.mjs` catches the patterns.
+Renders seek frame by frame in several tabs at once. CSS `transition`/`animation`, `@keyframes`, utility-class `animate-*`, `Math.random()`, `Date.now()` and `performance.now()` all run on wall-clock time, so frames disagree between tabs and between renders. Drive everything from the frame and use seeded randomness (`random(seed)` in Remotion, the starter's `rand(seed)`). `lint-film.mjs` catches the patterns.
 
 ### 14. WebGL
 
