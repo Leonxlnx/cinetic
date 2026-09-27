@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Bake soft backdrops (glows, vignettes, tabletop falloffs, floors) as dithered PNGs from a JSON spec.
+"""Bake soft backdrops (pools of light, vignettes, tabletop falloffs, floors) as dithered PNGs from a JSON spec.
 
-Chromium renders CSS gradients in 8 bits. A ramp that spans only a few code values (a glow on ink
-going 11 -> 29, a light table going 231 -> 247) shows as contour rings, and nothing downstream
+Chromium renders CSS gradients in 8 bits. A ramp that spans only a few code values (a pool of light
+on ink going 11 -> 29, a light table going 231 -> 247) shows as contour rings, and nothing downstream
 (motion blur, encoder, grain added later) can remove bands that were quantized in the browser.
 This script evaluates the same gradient in float, adds a +-1 LSB triangular (TPDF) dither and
 quantizes once. Load the PNG with <Img src={staticFile('fx/NAME.png')}> (Remotion) or <img> in
@@ -15,7 +15,7 @@ Usage:
 Spec (positions are fractions; colours are #RGB, #RRGGBB, #RRGGBBAA, rgb(), rgba() or 'transparent'):
   {"size": [1920, 1080], "seed": 11,
    "backdrops": [
-     {"name": "glow-ink", "type": "radial", "at": [0.5, 0.45], "radius": [0.7, 0.6],
+     {"name": "pool-ink", "type": "radial", "at": [0.5, 0.45], "radius": [0.7, 0.6],
       "stops": [["rgba(255,255,255,0.075)", 0], ["transparent", 0.7]]},
      {"name": "table", "base": "#E7E8EC", "type": "radial", "at": [0.5, 0.4], "radius": [0.65, 0.6],
       "stops": [["#F7F8FA", 0], ["#F7F8FA00", 0.75]]},
@@ -47,7 +47,7 @@ from PIL import Image
 EXAMPLE = {
     'size': [1920, 1080], 'seed': 11,
     'backdrops': [
-        {'name': 'glow-ink', 'type': 'radial', 'at': [0.5, 0.45], 'radius': [0.7, 0.6],
+        {'name': 'pool-ink', 'type': 'radial', 'at': [0.5, 0.45], 'radius': [0.7, 0.6],
          'stops': [['rgba(255,255,255,0.075)', 0], ['transparent', 0.7]]},
         {'name': 'table', 'base': '#E7E8EC', 'type': 'radial', 'at': [0.5, 0.4], 'radius': [0.65, 0.6],
          'stops': [['#F7F8FA', 0], ['#F7F8FA00', 0.75]]},

@@ -89,7 +89,7 @@ Run these prompts, one at a time, against the inventory:
 - **Borrow a physical law.** Gravity, buoyancy, pressure, tessellation, magnetism. Which one is the product secretly about?
 - **Make the logo guilty.** Build the mark from the problem's pieces, so the lockup is the resolution.
 - **Constrain.** No cuts; no words before the halfway point; only three objects; one colour change in the whole film; only the product's own UI elements.
-- **Oppose the category.** List what every film in the category looks like (dark terminal, neon, a shield) and do the opposite on purpose.
+- **Oppose the category.** List what every film in the category looks like (a dark terminal, a shield, a glowing chip) and do the opposite on purpose.
 
 ## 4. Tests that kill weak ideas
 
@@ -205,7 +205,7 @@ All four products are invented for this file. They are chosen to be unlike each 
 ### Plumb: a launch film (30 s)
 Code review that finds the few lines in a huge pull request that can actually break production.
 - **Inventory.** Name: a plumb line, a weight on a string, true vertical; "to plumb the depths". Non-obvious behaviour: unlike a linter that flags every line, it ranks the 2,184 changed lines and surfaces the 3 that can break production. Verbs: drop, sound, weigh, stop, point. Objects: diff line, gutter, line number, review box, Approve button. Clichés to ban: green-on-black terminal, code rain, bug icons, shields, rockets.
-- **(a) Verb:** a brass plumb bob drops through the diff streaming past like rock strata and stops dead on line 1,284. **(b) Pain:** 2,184 lines blur into grey texture under a tired scroll; "Looks good to me." is typed; freeze; zoom into the blur to the outage. **(c) Formal:** one unbroken vertical descent through one diff; the line number is the only type.
+- **(a) Verb:** a steel plumb bob drops through the diff streaming past like rock strata and stops dead on line 1,284. **(b) Pain:** 2,184 lines blur into grey texture under a tired scroll; "Looks good to me." is typed; freeze; zoom into the blur to the outage. **(c) Formal:** one unbroken vertical descent through one diff; the line number is the only type.
 - **Tests.** (b) fails ownership: any review tool could run it. (a) and (c) pass.
 - **Chosen:** (a) as the spine, (c)'s single descent as the grammar (everything in the film moves vertically, under gravity, until the lockup), and (b)'s "Looks good to me." as the setup line, repeated word for word at the end when it has become true.
 - The full treatment is the filled example in `assets/TREATMENT.md`.
