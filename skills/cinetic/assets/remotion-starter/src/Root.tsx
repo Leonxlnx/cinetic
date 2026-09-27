@@ -7,7 +7,7 @@ import { Film, FilmProps } from './Film';
 import { FilmSub, subMetadata } from './FilmSub';
 import { Audit } from './lib/Audit';
 import { FontGate } from './lib/FontGate';
-import { MarkSizes, MarkStill } from './Stills';
+import { BrandAvatar, BrandHeader, BrandLockup, BrandMark, MarkSizes, MarkStill } from './Stills';
 import { ACT, FPS, H, TOTAL, W } from './timeline';
 
 // An act on its own, font-gated like the film, so it can be iterated without scrubbing the film.
@@ -51,6 +51,14 @@ export const RemotionRoot: React.FC = () => (
       <Still id="Mark16" component={MarkStill} width={16} height={16} defaultProps={{ size: 16, surface: 'paper' as const }} />
       <Still id="MarkLarge" component={MarkStill} width={W} height={H} defaultProps={{ size: 640 * U, surface: 'paper' as const }} />
       <Still id="MarkSizes" component={MarkSizes} width={W} height={H} />
+    </Folder>
+
+    {/* The brand as files, for a brand the film invented: bash scripts/brand-kit.sh renders these. */}
+    <Folder name="Brand">
+      <Still id="BrandMark" component={BrandMark} defaultProps={{ size: 1024, ground: 'light' as const }} calculateMetadata={({ props }) => ({ width: props.size, height: props.size })} />
+      <Still id="BrandLockup" component={BrandLockup} width={2400} height={800} defaultProps={{ ground: 'light' as const }} />
+      <Still id="BrandAvatar" component={BrandAvatar} width={400} height={400} defaultProps={{ ground: 'light' as const }} />
+      <Still id="BrandHeader" component={BrandHeader} width={1500} height={500} defaultProps={{ ground: 'light' as const }} />
     </Folder>
   </>
 );

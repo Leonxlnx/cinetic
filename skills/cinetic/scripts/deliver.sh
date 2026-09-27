@@ -6,20 +6,24 @@
 #
 #   bash scripts/deliver.sh out/film.mp4                                 # poster only
 #   bash scripts/deliver.sh out/loop.mp4 --loop --gif --webm             # landing-page loop set
-#   bash scripts/deliver.sh out/sting.mp4 --alpha StingAlpha             # + ProRes 4444 with alpha
+#   bash scripts/deliver.sh out/sting.mp4 --alpha StingAlpha,StingAlphaClear   # + ProRes 4444 with alpha
 #   bash scripts/deliver.sh out/film.mp4 --variants Film9x16,Film1x1     # re-laid-out social cuts
 #
-# What it writes (into --out-dir, default out/deliver/):
+# What it writes (into --out-dir, default out/deliver/). The top level holds only deliverables, the
+# folder a client opens; every report goes in its qa/ subfolder:
 #   poster.png / poster.jpg   the final frame (the final frame is the poster), or --poster-frame N
 #   <name>-loop.mp4           --loop: muted, faststart copy, plus a loop-seam check: the step from
 #                             the last frame back to frame 0 must look like the steps around it
-#                             (seam MAD <= max(0.4, 1.5x the median of the 8 steps at each end))
+#                             (seam MAD <= max(0.4, 1.5x the median of the 8 steps at each end);
+#                             the report is qa/loop-seam.json)
 #   <name>.gif                --gif: two-pass palettegen/paletteuse (25 fps, 960 px wide by default)
 #   <name>.webm               --webm: VP9 CRF 32 (Opus audio unless --loop), BT.709 tagged
-#   <Comp>.mov                --alpha Comp: Remotion ProRes 4444, yuva444p10le, PNG frames, BT.709
+#   <Comp>.mov                --alpha Comp[,Comp2]: Remotion ProRes 4444, yuva444p10le, PNG frames, BT.709
+#                             (a sting ships two: one that ends on the lockup, one that clears)
 #   <Comp>-alpha.webm         --alpha-webm: VP9 with alpha (yuva420p) of the same composition
-#   <Comp>.mp4                --variants A,B: each composition through render.sh (sharp master)
-#   manifest.json             every file with its probe facts and check results
+#   <Comp>.mp4                --variants A,B: each composition through render.sh (sharp master, or
+#                             blurred with --variant-samples)
+#   qa/manifest.json          every file with its probe facts and check results
 #
 # Options:
 #   --out-dir DIR        output folder (default out/deliver)
@@ -34,6 +38,10 @@
 #   --alpha-props JSON   --props for the alpha render, e.g. '{"transparent":true}'
 #   --entry FILE         Remotion entry for --alpha/--variants (default src/index.ts)
 #   --audio FILE         soundtrack for --variants (default public/audio/soundtrack.wav)
+#   --variant-samples F  blur the variants with the master's samples JSON (render.sh --blur
+#                        --samples-from F): only when their timing is identical to the master's.
+#                        Without it, variants render sharp, which is right when their fastest
+#                        motion is <= 12 px/f.
 # Exit 0 = everything written and every check passed, 1 = a step or check failed.
 set -euo pipefail
 
@@ -44,7 +52,7 @@ step() { echo "[deliver] $*" >&2; }
 
 OUTDIR=out/deliver; POSTER_FRAME=""; LOOP=0; GIF=0; WEBM=0; ALPHA=""; ALPHA_WEBM=0; VARIANTS=""
 GIF_FPS=25; GIF_W=960; GIF_MAX=8; GIF_DITHER=sierra2_4a; WEBM_CRF=32; ALPHA_FRAMES=""; ALPHA_PROPS=""
-ENTRY=src/index.ts; AUDIO=public/audio/soundtrack.wav; POS=()
+ENTRY=src/index.ts; AUDIO=public/audio/soundtrack.wav; VSAMPLES=""; POS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage 0 ;;
@@ -65,6 +73,7 @@ while [[ $# -gt 0 ]]; do
     --webm-crf) WEBM_CRF=${2:?}; shift ;;
     --entry) ENTRY=${2:?}; shift ;;
     --audio) AUDIO=${2:?}; shift ;;
+    --variant-samples) VSAMPLES=${2:?}; shift ;;
     -*) die "unknown option $1 (see --help)" ;;
     *) POS+=("$1") ;;
   esac
@@ -74,10 +83,11 @@ done
 MASTER=${POS[0]}
 [[ -f "$MASTER" ]] || die "master $MASTER not found"
 command -v ffmpeg >/dev/null || die "ffmpeg not found"
-mkdir -p "$OUTDIR"
+mkdir -p "$OUTDIR/qa"
+QA="$OUTDIR/qa"
 NAME=$(basename "${MASTER%.*}")
 STATUS=0
-CHECKS="$OUTDIR/.checks.jsonl"; : > "$CHECKS"
+CHECKS="$QA/.checks.jsonl"; : > "$CHECKS"
 note() { printf '%s\n' "$1" >> "$CHECKS"; }
 
 read -r W H FPS N HAS_AUDIO <<< "$(python3 - "$MASTER" <<'PY'
@@ -105,7 +115,7 @@ step "poster.png / poster.jpg ($([[ -n "$POSTER_FRAME" ]] && echo "frame $POSTER
 
 if [[ $LOOP -eq 1 ]]; then
   ffmpeg -v error -y -i "$MASTER" -map 0:v:0 -c copy -an -movflags +faststart "$OUTDIR/$NAME-loop.mp4"
-  if python3 - "$MASTER" "$OUTDIR/loop-seam.json" <<'PY' >&2
+  if python3 - "$MASTER" "$QA/loop-seam.json" <<'PY' >&2
 import json, subprocess, sys
 import numpy as np
 src, out = sys.argv[1:3]
@@ -134,10 +144,10 @@ fi
 
 if [[ $GIF -eq 1 ]]; then
   F="scale=${GIF_W}:-2:flags=lanczos:in_color_matrix=auto:in_range=auto,format=rgb24,fps=${GIF_FPS}"
-  ffmpeg -v error -y -i "$MASTER" -vf "$F,palettegen=max_colors=256:stats_mode=full" "$OUTDIR/.palette.png"
-  ffmpeg -v error -y -i "$MASTER" -i "$OUTDIR/.palette.png" -lavfi "$F[x];[x][1:v]paletteuse=dither=${GIF_DITHER}:diff_mode=rectangle" \
+  ffmpeg -v error -y -i "$MASTER" -vf "$F,palettegen=max_colors=256:stats_mode=full" "$QA/.palette.png"
+  ffmpeg -v error -y -i "$MASTER" -i "$QA/.palette.png" -lavfi "$F[x];[x][1:v]paletteuse=dither=${GIF_DITHER}:diff_mode=rectangle" \
     -loop 0 "$OUTDIR/$NAME.gif"
-  rm -f "$OUTDIR/.palette.png"
+  rm -f "$QA/.palette.png"
   mb=$(python3 -c "import os;print(round(os.path.getsize('$OUTDIR/$NAME.gif')/1e6,2))")
   if python3 -c "import sys; sys.exit(0 if $mb <= $GIF_MAX else 1)"; then
     note '{"file":"'"$NAME.gif"'","check":"size","pass":true,"mb":'"$mb"'}'
@@ -158,6 +168,8 @@ if [[ $WEBM -eq 1 ]]; then
 fi
 
 if [[ -n "$ALPHA" ]]; then
+ IFS=',' read -r -a ALPHAS <<< "$ALPHA"
+ for ALPHA in "${ALPHAS[@]}"; do
   command -v npx >/dev/null || die "--alpha needs npx/Remotion"
   [[ -f "$ENTRY" ]] || die "--alpha needs the Remotion entry $ENTRY (run from the project root)"
   RA=(--muted --log=error --image-format=png --color-space=bt709)
@@ -188,6 +200,7 @@ sys.exit(0 if ok else 1)
 PY
   then note '{"file":"'"$ALPHA.mov"'","check":"prores_alpha","pass":true}'
   else note '{"file":"'"$ALPHA.mov"'","check":"prores_alpha","pass":false}'; STATUS=1; fi
+ done
 fi
 
 if [[ -n "$VARIANTS" ]]; then
@@ -195,6 +208,7 @@ if [[ -n "$VARIANTS" ]]; then
   for V in "${VS[@]}"; do
     step "rendering variant $V"
     VA=(); [[ $HAS_AUDIO -eq 1 ]] && VA=(--audio "$AUDIO") || VA=(--no-audio)
+    [[ -n "$VSAMPLES" ]] && VA+=(--blur --samples-from "$VSAMPLES" --samples "$QA/samples-$V.json")
     if bash "$SCRIPT_DIR/render.sh" "$V" "$OUTDIR/$V.mp4" "${VA[@]}" --entry "$ENTRY"; then
       note '{"file":"'"$V.mp4"'","check":"render","pass":true}'
     else
@@ -210,8 +224,8 @@ outdir, checks, master = sys.argv[1:4]
 items = []
 for name in sorted(os.listdir(outdir)):
     p = os.path.join(outdir, name)
-    if name.startswith('.') or name == 'manifest.json' or not os.path.isfile(p):
-        continue
+    if name.startswith('.') or not os.path.isfile(p):
+        continue  # the qa/ folder and hidden files are not deliverables
     e = {'file': name, 'mb': round(os.path.getsize(p) / 1e6, 3)}
     r = subprocess.run(['ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', p], capture_output=True, text=True)
     if r.returncode == 0:
@@ -229,10 +243,12 @@ for name in sorted(os.listdir(outdir)):
     items.append(e)
 res = [json.loads(l) for l in open(checks) if l.strip()]
 m = {'master': master, 'files': items, 'checks': res, 'pass': all(c.get('pass', True) for c in res)}
-json.dump(m, open(os.path.join(outdir, 'manifest.json'), 'w'), indent=1)
+json.dump(m, open(os.path.join(outdir, 'qa', 'manifest.json'), 'w'), indent=1)
 for e in items:
     print(f"  {e['file']:<28} {e['mb']:>8.2f} MB  {e.get('codec', '')} {e.get('size', '')} {e.get('pix_fmt', '') or ''}", file=sys.stderr)
 PY
 rm -f "$CHECKS"
-step "$([[ $STATUS -eq 0 ]] && echo 'done' || echo 'FAILED a check'): $OUTDIR/manifest.json"
+stray=$(find "$OUTDIR" -maxdepth 1 -type f \( -name '*.json' -o -name 'sheet*' -o -name 'qa-*' -o -name '*.log' \) | head -3 | tr '\n' ' ')
+[[ -z "$stray" ]] || echo "deliver.sh: warning: QA files at the top of $OUTDIR ($stray); move them into $QA, the top level is for deliverables" >&2
+step "$([[ $STATUS -eq 0 ]] && echo 'done' || echo 'FAILED a check'): $QA/manifest.json"
 exit $STATUS

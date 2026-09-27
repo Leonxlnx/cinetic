@@ -60,7 +60,7 @@ The numbers are proven defaults, not rules. Bar arithmetic and tempo choice live
 - The loudest momentary loudness is on the promise or payoff, with limiter gain reduction under 1.5 dB (`av-audit.py`).
 - The poster exists and shows the brand.
 
-**Deliver.** The 16:9 master, 9:16 and 1:1 re-layouts (§7), and a poster.
+**Deliver.** The 16:9 master, 9:16 and 1:1 re-layouts (§7), a poster, and the brand kit when you invented the brand (§5, "Brand kit").
 
 ## 3. Product / feature video
 
@@ -92,6 +92,8 @@ The numbers are proven defaults, not rules. Bar arithmetic and tempo choice live
 **Purpose.** A landing-page hero or a social post that autoplays muted and repeats forever without a visible restart.
 
 **Length.** A whole number of bars with no tail, for example 8 s = 4 bars at 120 BPM, or 9.6 s = 4 bars at 100. Budget 3–5 beats and 8 words or fewer. It must read with the sound off.
+
+**The first 2 s already show the product and the action starting.** A landing-page visitor decides in a second or two, and many see only the first pass. Open on the product itself with the cause already under way (a row arriving, a reading dropping, a card being dragged); a quiet "measuring" or setup beat is not a hook.
 
 **Design the loop as a cycle, not as enter → hold → exit.** A loop that fades out and fades back in is a slideshow. Pick a cycle that returns to its own start through an action:
 - **Conveyor.** Items flow through a stage, and the last item arrives exactly where the first one started (for example a list that advances by one row per cycle, with the rows identical at the seam).
@@ -158,6 +160,8 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 
 **Length.** 3–8 s at 120 BPM. The copy is the name plus at most 4 words.
 
+**Scale.** At its resolved size the lockup spans about 28–45% of the frame's width (540–860 px at 1920), with the mark and the name proportioned as in `references/brand-and-color.md` §6. Smaller than that and the brand becomes a small object in a void: the sting's whole job is to be read.
+
 **Anatomy** (6 s = `b(3,2) + 60`):
 
 | Beat | Time | What happens |
@@ -170,9 +174,10 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 - **Assemble the mark from its own primitives.** The sting teaches the construction of the mark, which is why the mark must be built from 2–4 primitives on a grid (`references/brand-and-color.md`). A fade or scale-up of a flat logo teaches nothing.
 - **Clamp every spring that could push one piece into another.** Pieces interpenetrating for a few frames on overshoot is the classic sting bug.
 - **The lockup cue sits at least 1.5 s before the end**, and scale changes by 3–20% over the last 1.5 s: alive, not dead-static, not drifting away.
+- **The ending.** End on the lockup, held and building. If the brief says the sting opens other videos, it may end on a clean cut to the backdrop on the last beat instead. Never end on a slow fade to blank that leaves the full lockup readable for less than 1.5 s.
 - **Sound.** One hit tuned to the root of the key, on the contact frame, with an optional pre-hit tick or riser that lands on the chord tone. There is no music bed unless asked. The last 10 ms are digital silence.
 
-**Alpha version.** Register a second composition, for example `StingAlpha`, that renders the same acts with no background fill.
+**Alpha versions.** Register compositions that render the same acts with no background fill, and deliver two: `StingAlpha`, which ends on the lockup (for editors who hold it), and `StingAlphaClear`, which clears it on the last beat (for intros that cut to footage). A prop such as `{transparent: true, clear: true}` on one component is enough.
 - Shadows and hairlines that depend on the paper colour need a plate-independent version: design it so it reads on both a light and a dark plate, and check stills over both.
 - `bash scripts/deliver.sh out/sting.mp4 --alpha StingAlpha --alpha-webm` renders ProRes 4444 (`--image-format=png --pixel-format=yuva444p10le --codec=prores --prores-profile=4444`) and a VP9 alpha WebM (`--codec=vp9 --pixel-format=yuva420p`) for the web.
 - `references/finishing.md` covers colour tags and checks.
@@ -182,7 +187,15 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 - Remotion encodes the ProRes file as `yuva444p10le`, but `ffprobe` reports the decoder's format, `yuva444p12le`; accept any `yuva444p*` with profile 4444 (`deliver.sh` does).
 - A still of the mark exists at 16 px and at 512 px or larger (the starter's `Stills` folder).
 - One hit lands within ±1 f of the lockup cue (`av-audit.py`), and the tail falls below −45 dB.
-- The accent covers 8% of pixels or less on the final frame (unless the brand is the accent).
+- The accent covers 8% of pixels or less on the final frame (unless the brand is the accent): `python3 scripts/palette.py --cover out/deliver/poster.png --accent '#…'`.
+- The resolved lockup spans 28–45% of the frame's width, and the full lockup is readable for at least 1.5 s.
+
+**Brand kit.** A sting that invents a brand, and a launch film for an invented brand, also deliver the brand as files: `bash scripts/brand-kit.sh` renders the `Brand` stills and writes, into `out/deliver/brand/`:
+- the mark as SVG, for light and dark grounds;
+- the lockup (mark and name) as SVG with the name outlined, for light and dark grounds;
+- the lockup as transparent PNG, for light and dark grounds;
+- the mark as PNG at 16, 32, 512 and 1024 px;
+- a social avatar (400 × 400, the mark inside the platform's circle crop), and with `--x-header` a 1500 × 500 header for X that keeps the bottom-left clear for the avatar.
 
 ## 6. UI walkthrough
 
@@ -236,6 +249,8 @@ writeFileSync('out/captions.srt', COPY.map((c, i) => `${i + 1}\n${ts(c.in)} --> 
 // src/Root.tsx — alongside "Film"
 <Composition id="Film9x16" component={Film} durationInFrames={TOTAL} fps={FPS} width={1080} height={1920} defaultProps={{ audit: false }} />
 <Composition id="Film1x1" component={Film} durationInFrames={TOTAL} fps={FPS} width={1080} height={1080} defaultProps={{ audit: false }} />
+{/* only if the variant needs motion blur: same timing, so it can reuse the master's samples (deliver.sh --variant-samples) */}
+<Composition id="Film9x16Sub" component={FilmSub} durationInFrames={TOTAL} fps={FPS} width={1080} height={1920} defaultProps={{ groups: [] as number[] }} calculateMetadata={subMetadata} />
 
 // inside an act: one layout table per aspect, same timing
 const { width, height } = useVideoConfig();
@@ -259,7 +274,7 @@ const LAY = layoutFor(width, height); // type sizes, camera anchors, safe box, l
   - By default `<Audit>` checks `safeArea(width, height)`: 5% at the sides and 6% top and bottom.
   - For a feed variant, pass `safe={{ x: 120, y: 384 }}`, the larger margin of each pair, so the asymmetric zones above are covered.
 - Burn captions into every feed variant, because feeds autoplay muted.
-- Render and probe with `bash scripts/deliver.sh out/film.mp4 --variants Film9x16,Film1x1`.
+- Render and probe with `bash scripts/deliver.sh out/film.mp4 --variants Film9x16,Film1x1`. Variants render sharp by default, which is right when their fastest motion is ≤ 12 px/f; otherwise add `--variant-samples out/samples.json` to blur them with the master's samples instead of measuring again (`references/finishing.md` §1).
 
 ## 8. Other short forms
 
