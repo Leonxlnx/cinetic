@@ -1,6 +1,6 @@
 # Concept and story
 
-Covers how to get from a brief to an idea worth pitching, a story device, a beat structure and an ending. Read it at Step 1 before any pixel exists, and again whenever a critic says "tour", "generic" or "weak end". Numbers here are proven defaults and starting points, not dogma.
+Covers how to get from a brief to an idea worth pitching, a story device, a beat structure and an ending. Read it at Step 1 before any pixel exists, and again whenever a critic says "tour", "generic", "oversimplified" or "weak end". Numbers here are proven defaults and starting points, not dogma.
 
 **Contents**
 1. [What a concept is](#1-what-a-concept-is)
@@ -37,16 +37,17 @@ If you can't fill the Grammar row, the film will look like everyone else's even 
 
 ## 2. Inventory before ideas
 
-Ideas come from specifics. Spend a few minutes filling these lists in `TREATMENT.md` before you ideate; generic inputs produce generic films.
+Ideas come from specifics. Spend a few minutes filling these lists in `TREATMENT.md` before you ideate; generic inputs produce generic films. Fill the first two rows first: they are where films made with this skill most often came up short.
 
 | List | Prompt | Why it matters |
 |---|---|---|
+| **Name** | What the name means or evokes: etymology, second meanings, the physical thing it names | The name's meaning often hands you the mark and the device. A name that means a hillside gives a rising line; a keel gives a hull below a waterline; tessellation gives pieces that tile |
+| **Non-obvious behaviour** | Finish the sentence "Unlike the obvious version, it…" (it splits by item, not evenly; it ranks, not lists; it reschedules only the future) | This is the proof beat. A film that shows only the obvious version would be just as true of a simpler product |
 | **Value sentence** | "Before: ___. After: ___." in the viewer's own words, no feature names | The turn of the film is the gap between the two halves |
 | **Verbs** | 10 verbs the product performs, from literal (sorts, pings) to abstract (steadies, forgives) | Lens (a) mines these |
-| **Atoms** | The smallest visual units of the product: a dot, a row, a chip, a gutter mark, a badge, a reading | The device is almost always one of these, because it is owned |
+| **The product's objects** | The things on its screen, each with its states: a row that turns resolved, a card that folds, a reading that crosses a threshold, a file that locks | The device is usually one of these, because the product owns it |
 | **The number** | The one quantity that changes: 412 → 1, 12 clashes → 0, 42% → 18% | A number can carry a whole film (counter as spine) |
 | **Pain scene** | Time, place and what is on the screen at the worst moment | The hook is shot here |
-| **Name** | Etymology, second meanings, the physical object it names | Names often hand you a device (tessellation, a plumb line, a keel) |
 | **Category clichés** | The five images every film in this category uses | They are banned for this film (see §4) |
 | **World sound** | What the product's world sounds like: a tick, a ping, a pour, a latch | The sonic signature and the bookend |
 
@@ -54,10 +55,12 @@ Ideas come from specifics. Spend a few minutes filling these lists in `TREATMENT
 
 Generate at least three raw ideas per lens (nine in all) as one-line sketches, then pick one finalist per lens. The first idea in any lens is usually the category cliché; the third is usually yours.
 
+**Start from the smart part.** The richest source of ideas is the inventory's non-obvious behaviour: what the feature does that a naive version wouldn't, made visible. An allocation by item, with the shared costs prorated, rather than an even division of the total. A feed that ranks, where the naive one only lists. A scheduler that moves only what hasn't happened yet. Stage that difference and the viewer thinks "oh, that's smart"; stage the naive version beautifully and they think "a calculator does that". Every lens below should end up showing it.
+
 ### (a) The product's verb made literal
-- **Method.** Take a verb from the list and ask what physical process it names. Stage that process using the product's atoms as the material, not an illustration beside them.
+- **Method.** Take a verb from the list and ask what physical process it names. Stage that process using the product's own objects as the material, not an illustration beside them.
 - **Push.** Make the frame obey the verb, not just an icon. Tessel doesn't show a tile animation; the whole film tessellates, and the end quilt closes its gutters into one surface.
-- **Failure.** The metaphor becomes clip art (a cartoon plumb bob next to a screenshot). If the metaphor isn't built from the product's own atoms or the mark, it is decoration.
+- **Failure.** The metaphor becomes clip art (a cartoon plumb bob next to a screenshot). If the metaphor isn't built from the product's own objects or the mark, it is decoration.
 
 ### (b) The viewer's pain made visible
 - **Method.** Give the pain a physical quantity (mass, height, noise, count, heat, speed, clutter) and let it grow until the frame can't hold it.
@@ -76,7 +79,7 @@ Pick one or two from the menu and marry them to a verb from (a).
 | Counter as spine | One number counts through the whole film | Products that reduce, sort or add up |
 | Split-sync | Before and after side by side, locked to the same beat | Speed and effort claims |
 | Rule of the frame | The film's grammar obeys the product's rule: only vertical moves, everything gets quieter, the horizon never tilts | Making a familiar story ownable |
-| Scale jump | The same atom at 16 px and at full frame | Products whose small unit adds up to something big |
+| Scale jump | The same object at 16 px and at full frame | Products whose small unit adds up to something big |
 
 ### When all nine ideas are weak
 Run these prompts, one at a time, against the inventory:
@@ -100,8 +103,9 @@ Run every finalist through these. A concept that fails the ownership or deletion
 | **Poster** | Describe the final frame as a still printed on a wall. | It doesn't say who made it and what it does |
 | **One sentence** | Say the idea aloud in one sentence. | You need "and" (two ideas) or an adjective (a style) |
 | **Retell** | How would a viewer describe it to a friend tomorrow? | The answer is a style ("it was slick") rather than an image ("the dot that…") |
+| **Specificity** | Imagine a simpler product or feature (an even split instead of an itemised one, a list instead of a ranking). Would the film be just as true of it? | Yes: the proof shows the naive version. Rebuild the proof around the non-obvious behaviour |
 | **Budget** | Count capabilities and beats against the format row in `SKILL.md` §1. | It needs more than 2 capabilities, or more than 10 beats per 30 s |
-| **Truth** | Does the product actually do what the picture shows? | The film promises a behaviour the product lacks |
+| **Truth** | Does the product actually do what the picture shows? Do the numbers and states on screen agree with the story? | The film promises a behaviour the product lacks, or a frame contradicts the story: the person who paid is shown owing, a "sorted" list isn't sorted, a ratio doesn't match the numbers beside it |
 
 **Generic props.** These fail ownership unless the product literally is the thing: rocket, lightbulb, globe with arcs, up-and-right chart, a phone or laptop floating in a void, a glowing orb or sparkle for AI, shield or padlock for security, puzzle pieces for integration, gears for automation, a stopwatch for speed, a magnifying glass for search, confetti for success, a handshake, a bullseye.
 
@@ -118,15 +122,18 @@ Run every finalist through these. A concept that fails the ownership or deletion
 The device is the film's continuity and the reason it reads with the sound off. Design it as carefully as the mark, because it will become part of the mark.
 
 **Where devices come from**, in order of preference:
-1. the product's own atom (a now-dot, a gutter marker, a severity pip, a waterline);
-2. a primitive of the mark;
+1. the product's own specific object, with its states: the deposit row, the incident card, the moisture reading, the changed brick in a build graph;
+2. the name's meaning: the plumb bob, the keel, the rising line of a hillside;
 3. the key number;
-4. the accent colour itself;
-5. a sound (only as a partner to a visual device).
+4. a primitive of the mark;
+5. the accent colour itself;
+6. a sound (only as a partner to a visual device).
+
+A bare dot, line or block is the lazy default. It is also Tessel's device (the red now-dot) and the starter's (the dot that becomes the mark), so reaching for it pulls your film toward theirs. Use one only when the concept truly needs it, and then give it behaviour only this product has: the dot that is the calendar's "now" and can't move into the past, not a dot that travels because devices travel.
 
 **Properties of a good device**
 - **One.** A single instance at a time. Two devices split attention.
-- **Small at rest, able to fill the frame.** 8–40 px at rest so it can travel through any shot; able to scale to a full-frame flood or iris once.
+- **Able to change scale.** Small enough at rest to travel through any shot (a row, a card or a chip travels as well as a dot does), and able to fill the frame once, as a flood, an iris or a push into it.
 - **Has a state that changes.** It ticks, fills, drops, locks or counts. A device that only moves is a logo on a tour.
 - **Owned.** It passes the ownership test on its own.
 - **Ends as the mark**, or as one piece of it, in a launch film or sting (ideally, not by force). In a feature loop or product video it is the unit the product acts on (the card, the row, the file) and ends in its resolved state.
@@ -144,7 +151,7 @@ Rules for the path:
 
 **Bookends.** Open and close on the same image and sound with exactly one thing changed; that change is the promise. Tessel ends on the tick-tock it began with. A clock reading 3:12 at the start and 3:13 at the end says "fixed in a minute" without a word.
 
-**Device failures:** too big to travel (a full card can't become a period); decorative (it moves but never acts); lost in the middle act because the demo "needed the space"; replaced by a second device for the ending.
+**Device failures:** too big to travel (a full dashboard can't become a period); decorative (it moves but never acts); generic (a dot or a line that any product could use); lost in the middle act because the demo "needed the space"; replaced by a second device for the ending.
 
 ## 7. Beats, and cause → action → result
 
@@ -193,11 +200,11 @@ Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, pr
 
 ## 10. Four worked concepts
 
-All four products are invented for this file. They are chosen to be unlike each other, and unlike a calendar, so the method shows rather than the answer.
+All four products are invented for this file. They are chosen to be unlike each other, and unlike a calendar, so the method shows rather than the answer. Their devices differ in kind on purpose: an object from the name (the bob), a line (the waterline), a product object with states (the incident card), and one record (the deposit row).
 
 ### Plumb: a launch film (30 s)
 Code review that finds the few lines in a huge pull request that can actually break production.
-- **Inventory.** Verbs: drop, sound, weigh, stop, point. Atoms: diff line, gutter, line number, review box, Approve button. Number: 2,184 lines changed, 3 that matter. Name: a plumb line, a weight on a string, true vertical; "to plumb the depths". Clichés to ban: green-on-black terminal, code rain, bug icons, shields, rockets.
+- **Inventory.** Name: a plumb line, a weight on a string, true vertical; "to plumb the depths". Non-obvious behaviour: unlike a linter that flags every line, it ranks the 2,184 changed lines and surfaces the 3 that can break production. Verbs: drop, sound, weigh, stop, point. Objects: diff line, gutter, line number, review box, Approve button. Clichés to ban: green-on-black terminal, code rain, bug icons, shields, rockets.
 - **(a) Verb:** a brass plumb bob drops through the diff streaming past like rock strata and stops dead on line 1,284. **(b) Pain:** 2,184 lines blur into grey texture under a tired scroll; "Looks good to me." is typed; freeze; zoom into the blur to the outage. **(c) Formal:** one unbroken vertical descent through one diff; the line number is the only type.
 - **Tests.** (b) fails ownership: any review tool could run it. (a) and (c) pass.
 - **Chosen:** (a) as the spine, (c)'s single descent as the grammar (everything in the film moves vertically, under gravity, until the lockup), and (b)'s "Looks good to me." as the setup line, repeated word for word at the end when it has become true.
@@ -205,7 +212,7 @@ Code review that finds the few lines in a huge pull request that can actually br
 
 ### Loam: a feature loop (8 s, muted, landing page)
 A soil sensor and app that tells you when a houseplant actually needs water.
-- **Inventory.** Verbs: sense, dry, drink, tell, wait. Atoms: the moisture reading, the sensor stake, the plant card, the "Water now" chip. Number: 42% → 18%. Pain scene: yellow leaves from watering on a schedule. Clichés: a watering can, a sprouting seedling time-lapse, a leaf icon, a smiling plant.
+- **Inventory.** Name: loam, the soil itself. Non-obvious behaviour: unlike a watering schedule, it waits for this pot's soil to reach this plant's threshold. Verbs: sense, dry, drink, tell, wait. Objects: the moisture reading, the sensor stake, the plant card, the "Water now" chip. Number: 42% → 18%. Pain scene: yellow leaves from watering on a schedule. Clichés: a watering can, a sprouting seedling time-lapse, a leaf icon, a smiling plant.
 - **(a) Verb:** the soil "tells": the reading rises out of the pot as a line. **(b) Pain:** a calendar reminder waters an already-wet pot and the waterline overflows. **(c) Formal:** one cross-section of one pot fills the frame, and the waterline in the soil is the only thing that moves.
 - **Tests.** (b) is negative and needs a before; a loop has no room. (c) passes muted and is cyclic by nature.
 - **Chosen:** (c) with (a)'s idea that the soil speaks. The waterline is the device: it drifts down as the soil dries (from rest, eased in), touches the 18% tick, becomes the progress bar in the plant card that rises from the lower edge, and underlines "Water now" in the accent. Water arrives; the line climbs back to 42% and settles at rest, which is frame 0.
@@ -213,26 +220,26 @@ A soil sensor and app that tells you when a houseplant actually needs water.
 
 ### Hush: a product video (20 s)
 An on-call tool that folds an alert storm into one incident and wakes one person.
-- **Inventory.** Verbs: fold, group, quiet, route, wake. Atoms: alert row, severity pip, incident card, lock-screen notification. Number: 412 → 1. Pain scene: 3:12 a.m., a phone that won't stop. Clichés: sirens, flashing red, a nightstand in the dark, a person bolting upright.
+- **Inventory.** Name: hush, the quiet after the noise. Non-obvious behaviour: unlike a mute button, it doesn't silence the storm; it groups 412 alerts by their shared cause and pages the one person who owns that service. Verbs: fold, group, quiet, route, wake. Objects: alert row, severity pip, incident card, lock-screen notification. Number: 412 → 1. Pain scene: 3:12 a.m., a phone that won't stop. Clichés: sirens, flashing red, a nightstand in the dark, a person bolting upright.
 - **(a) Verb:** 412 alert rows fold like a paper fan into one card. **(b) Pain:** a lock screen stacks notifications faster than they can be read until the phone is a solid slab. **(c) Formal:** counter as spine, plus a bookend on the clock.
-- **Tests.** The nightstand shot fails ownership, but the lock screen stays as the hook atom. (a) + (c) pass muted: the number goes down as the pile folds.
-- **Chosen:** (a) + (c), with a rule of the frame: after the turn the film only gets quieter. The element count, motion speed and sound density all fall until one thing moves. The device is the severity pip of the first alert. It survives the fold as the incident's pip, turns the accent (a quiet sage that means "handled") the moment one person is paged, and becomes the mark's dot.
+- **Tests.** The nightstand shot fails ownership, but the lock screen stays as the hook image. (a) + (c) pass muted: the number goes down as the pile folds.
+- **Chosen:** (a) + (c), with a rule of the frame: after the turn the film only gets quieter. The element count, motion speed and sound density all fall until one thing moves. The device is the incident card, a product object with states. It is born as the first alert row; the other 411 fold into it as a visible stack (the count on its edge ticks down as each lands), it gains its owner's name when grouping finishes, and it slides into the lock screen as the one notification that wakes one person. Its "handled" state (a quiet sage) is the accent, and the card's folded edge is the mark.
 - **Copy (12 words).** "3:12 a.m." / "412 alerts." / "One incident." / "One person paged." / "3:13 a.m." / "Hush". The clock is the bookend; one digit changed is the whole promise.
 
 ### Keel: a UI walkthrough (45 s)
 A money app that keeps a buffer below the waterline of your balance, so a surprise bill never tips you over.
-- **Inventory.** Verbs: set aside, top up, steady, absorb, refill. Atoms: the deposit row, the balance bar, the buffer under its baseline, the bill card. Numbers: a $480 buffer, a $380 repair, $1,350 of spending money. Name: a keel keeps a boat upright; hulls are painted red below the waterline. Clichés: piggy banks, stacks of coins, up-and-right charts, a person smiling at a phone.
+- **Inventory.** Name: a keel keeps a boat upright; hulls are painted red below the waterline. Non-obvious behaviour: unlike a savings pot, it fills the buffer first from every paycheck, so a surprise bill drains the buffer and never the spending money. Verbs: set aside, top up, steady, absorb, refill. Objects: the deposit row, the balance bar, the buffer under its baseline, the bill card. Numbers: a $480 buffer, a $380 repair, $1,350 of spending money. Clichés: piggy banks, stacks of coins, up-and-right charts, a person smiling at a phone.
 - **(a) Verb:** the balance as a hull on a horizon, rocked by a bill and righting itself. That is an illustration world, not the UI, so it fails truth. **(b) Pain:** a $380 repair lands two days before rent and the balance dips below zero. **(c) Formal:** follow one paycheck through every chapter.
 - **Chosen:** (c) with (a)'s rule of the frame: the camera may tilt when a bill hits, but the balance baseline never does. The device is the one deposit row. It lands, pours first into the buffer below the baseline, drawn in the accent (hull red, meaning "below the line: set aside"), and the rest rises above the line as spending money. (b)'s repair is chapter 3: it drains the buffer, and the part above the line never moves.
 - **Captions (≤ 6 words each).** "Pay lands. Buffer first." / "A $380 surprise." / "The buffer takes it." / "Spending money stays spending money." / "Payday tops it up." / "Stay level." The fourth line's repetition *is* the proof: nothing touched it.
 
 ## 11. Output and gate
 
-Write the chosen concept into `TREATMENT.md` from `assets/TREATMENT.md`: the inventory, the three finalists with test results, the concept (idea, device, grammar), logline, arc, device path, beat sheet, copy and final frame.
+Write the chosen concept into `TREATMENT.md` from `assets/TREATMENT.md`: the inventory (name and non-obvious behaviour first), the three finalists with test results, the concept (idea, device, grammar), logline, arc, device path, beat sheet, copy and final frame.
 
 Gate before Step 2:
 - the logline is ≤ 15 words and has no "and" joining two ideas;
-- the chosen concept passes the ownership and deletion tests, with the results written down;
+- the chosen concept passes the ownership, deletion and specificity tests, with the results written down; the specificity answer names the non-obvious behaviour and the beat that shows it;
 - the word count is within the format budget (`references/copy-and-type.md`), with ≤ 5 words per line and ≤ 2 lines per shot;
 - the device appears in every beat row, and its last link is the mark;
 - the final frame is described, and it contains the mark and the name.
