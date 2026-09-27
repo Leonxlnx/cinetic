@@ -16,7 +16,8 @@
 #   --blur     true motion blur: sharp render -> measure-speed.py writes out/samples.json (samples
 #              per frame from optical flow) -> the sub-frame composition (<Comp>Sub, e.g. FilmSub)
 #              renders every sub-frame with --props=out/samples.json -> accumulate.py averages
-#              them in float and encodes BT.709 CRF 14. Before the sub-frame pass it prints the
+#              them in float, quantizes once (flat fields exact, dither only in smooth ramps) and
+#              encodes BT.709 CRF 14. Before the sub-frame pass it prints the
 #              sub-frame multiple and an estimate in minutes from the sharp pass's measured speed,
 #              and it warns about moves too fast for clean blur. Typical films cost 3-8x a sharp
 #              render; cap it with --budget. Render the blurred master once, after the last review.
@@ -40,6 +41,9 @@
 #   --sub ID            sub-frame composition for --blur (default <Comp>Sub)
 #   --frames A-B        render only film frames A..B (inclusive); audio is taken from the same range
 #   --crf N             override the final CRF (preview 20, master 14, blur 14)
+#   --10bit             (--blur) encode the master as yuv420p10le, High 10: the cleanest gradients and
+#                       the smallest file, for masters that will be graded or re-encoded; ship 8-bit
+#                       to the web, because many browsers and phones do not decode High 10
 #   --concurrency N     Remotion concurrency (default: remotion.config.ts / Remotion default)
 #   --samples FILE      where --blur writes the samples JSON (default out/samples.json)
 #   --samples-from FILE reuse an existing samples JSON (skips the sharp render + measurement), e.g.
@@ -66,7 +70,7 @@ step() { echo "[render $(( $(date +%s) - T0 ))s] $*" >&2; }
 
 COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0
 ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
-SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=(); BUDGET=""
+SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0
 POS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -82,6 +86,7 @@ while [[ $# -gt 0 ]]; do
     --sub) SUB=${2:?}; shift ;;
     --frames) FRAMES=${2:?}; shift ;;
     --crf) CRF=${2:?}; shift ;;
+    --10bit) TENBIT=1 ;;
     --concurrency) CONC=${2:?}; shift ;;
     --samples) SAMPLES=${2:?}; shift ;;
     --samples-from) SAMPLES_FROM=${2:?}; shift ;;
@@ -98,6 +103,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 [[ ${#POS[@]} -eq 2 ]] || usage 1
+[[ $TENBIT -eq 0 || $MODE == blur ]] || die "--10bit applies to --blur masters (accumulate.py encodes them)"
 COMP=${POS[0]}; OUT=${POS[1]}
 
 # project root: the current folder if it has the entry, else the folder above this script
@@ -223,8 +229,9 @@ PY
     npx remotion render "$B" "$SUB" "$WORK/sub.mp4" --props="$(cd "$(dirname "$SAMPLES")" && pwd)/$(basename "$SAMPLES")" \
       --frames="$SA-$SB" --crf=6 --x264-preset=veryfast --pixel-format=yuv444p --color-space=default "${RARGS[@]}" \
       || die "sub-frame render failed"
-    step "accumulating in float -> BT.709 CRF ${CRF:-14}"
-    python3 "$SCRIPT_DIR/accumulate.py" "$WORK/sub.mp4" "$SAMPLES" "$PIC" --start "$FROM" --count "$N" --crf "${CRF:-14}" --quiet >/dev/null \
+    step "accumulating in float -> BT.709 CRF ${CRF:-14}$([[ $TENBIT -eq 1 ]] && echo ', 10-bit')"
+    ACC=(--crf "${CRF:-14}"); [[ $TENBIT -eq 1 ]] && ACC+=(--10bit)
+    python3 "$SCRIPT_DIR/accumulate.py" "$WORK/sub.mp4" "$SAMPLES" "$PIC" --start "$FROM" --count "$N" "${ACC[@]}" --quiet >/dev/null \
       || die "accumulate.py failed"
     ;;
 esac
@@ -260,6 +267,7 @@ if [[ $NOCHECK -eq 0 ]]; then
   step "probe"
   PARGS=(--spec "${SPEC:-${SIZE}@${FPS}}" --frames "$N" --json "out/qa/probe-$NAME.json" --no-loudness)
   [[ $NOAUDIO -eq 1 ]] && PARGS+=(--audio none)
+  [[ $TENBIT -eq 1 ]] && PARGS+=(--pix-fmt yuv420p10le)
   python3 "$SCRIPT_DIR/probe.py" "$OUT_ABS" "${PARGS[@]}" >/dev/null || STATUS=1
 fi
 

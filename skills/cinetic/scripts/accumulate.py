@@ -9,9 +9,20 @@ Reads a sub-frame render and writes the blurred master. Two modes:
 
 Why outside the browser: compositing samples in Chromium quantizes every layer to 8 bits, which
 posterizes soft gradients, tints light greys and darkens the frame a little per sample. Here the
-decode is 16-bit, the average is float32, and only pixels that actually changed across the
-shutter get a +-1 LSB triangular (TPDF) dither before the single quantization, so blurred ramps
-stay smooth while static pixels stay bit-exact. The encode is BT.709 limited range, tagged.
+decode is 16-bit, the average is float32, the BT.709 limited-range conversion is done here in float
+(it matches swscale to 0.01 of a code value), and the frame is quantized exactly once, straight to
+the yuv420p planes x264 encodes. Rounding is plain, so a flat field (paper, a solid stage, a flat
+card, moving or fading) comes out as one code value everywhere and encodes exactly. A +-1 LSB
+triangular (TPDF) dither is added only where banding can form, in smooth ramps (a dark pool of
+light, a blurred soft edge, a moving gradient), in every frame whether or not it moved, and with
+one fixed noise pattern, so a still shot stays identical from frame to frame and the encoder can
+keep the dither instead of smoothing it back into contours.
+
+Why not let ffmpeg convert the 16-bit average: swscale always adds an 8x8 ordered dither when it
+reduces a >8-bit source to 8 bits, so a flat paper whose value falls between two codes (228.31
+here) becomes a fixed 228/229 checker on every frame. x264 keeps that pattern in some blocks and
+flattens others, frame by frame, and a 25x stretch shows horizontal streaks and block smears of
++-1-2 levels over the whole background (references/finishing.md, section 5).
 
 Usage:
   python3 scripts/accumulate.py out/sub.mp4 out/samples.json out/picture.mp4 [--crf 14]
@@ -20,9 +31,11 @@ Usage:
   python3 scripts/accumulate.py 'frames/*.png' out/picture.mp4 --uniform 4 --in-fps 240
 
 Size and fps come from ffprobe (image sequences need --in-fps). Options: --crf (14), --preset
-(slow), --10bit (yuv420p10le, High 10), --start/--count (a range of film frames, for excerpt and
-per-act renders), --dither LSB (1.0; 0 = off), --dither-all (dither every pixel), --fps (override
-output fps). Exit 0 on success, 1 on failure (stream shorter/longer than the samples expect).
+(slow), --x264-params and --tune (none), --10bit (yuv420p10le, High 10), --start/--count (a range
+of film frames, for excerpt and per-act renders), --dither LSB (1.0; 0 = off), --dither-mask
+gradient|changed|all (where the dither goes; default gradient), --dither-frames N (1: one fixed
+pattern), --fps (override output fps). Width and height must be even (4:2:0). Exit 0 on success,
+1 on failure (stream shorter/longer than the samples expect, or the encoder failed).
 """
 import argparse
 import glob
@@ -37,6 +50,25 @@ from fractions import Fraction
 
 import numpy as np
 
+try:
+    import cv2
+except ImportError:  # the gradient mask falls back to numpy (slower)
+    cv2 = None
+
+# Extra x264 options for the master: none. With the planes quantized here a flat field is exact at
+# any setting, and on a dark dithered gradient aq-mode=3, tune film/grain and deblock -1:-1 moved
+# the banding error by 3% or less while aq-mode=3 cost 66% more bits on a flat sting (finishing.md §5).
+DEFAULT_X264 = ''
+# BT.709 luma weights; swscale's rgb48 carries 8-bit code v as v*256
+KR, KB = 0.2126, 0.0722
+KG = 1.0 - KR - KB
+# Where the dither goes (luma px; the chroma planes use half): a pixel is dithered when its 5x5
+# neighbourhood is not flat (range > FLAT_EPS code values; a slow 1-code-per-200-px ramp still
+# counts) and its 9x9 neighbourhood holds no edge (range <= RAMP_MAX; steeper than ~1 code per px
+# nothing can band). Flat fields, including the paper right next to a hairline, are rounded.
+FLAT_R, FLAT_EPS = 2, 0.01
+EDGE_R, RAMP_MAX = 4, 8.0
+
 
 def parse_args():
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0], formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -45,15 +77,25 @@ def parse_args():
     ap.add_argument('--shutter', type=float, default=240, help='shutter angle for --uniform (default 240)')
     ap.add_argument('--crf', type=float, default=float(os.environ.get('ACCUM_CRF', 14)))
     ap.add_argument('--preset', default='slow')
+    ap.add_argument('--tune', help='x264 tune (none by default; see references/finishing.md section 5)')
+    ap.add_argument('--x264-params', default=os.environ.get('ACCUM_X264', DEFAULT_X264),
+                    help='extra x264 options, e.g. "aq-mode=3" (default: none)')
     ap.add_argument('--10bit', dest='tenbit', action='store_true', help='encode yuv420p10le (High 10)')
     ap.add_argument('--start', type=int, default=0, help='first film frame in the stream (samples mode)')
     ap.add_argument('--count', type=int, help='number of film frames in the stream (samples mode)')
-    ap.add_argument('--dither', type=float, default=1.0, help='TPDF dither amplitude in 8-bit LSB (0 = off)')
-    ap.add_argument('--dither-all', action='store_true', help='dither every pixel, not only changed ones')
+    ap.add_argument('--dither', type=float, default=1.0, help='TPDF dither amplitude in output LSB (0 = off)')
+    ap.add_argument('--dither-mask', choices=('gradient', 'changed', 'all'), default='gradient',
+                    help='gradient: smooth ramps only, flat fields and edges rounded (default); changed: every '
+                         'pixel the shutter changed (the older rule); all: every pixel')
+    ap.add_argument('--dither-all', action='store_true', help='same as --dither-mask all')
+    ap.add_argument('--dither-frames', type=int, default=1,
+                    help='distinct noise patterns, cycled (1 = one fixed pattern, which a static shot keeps exactly)')
     ap.add_argument('--fps', type=float, help='output fps (default: source fps, or source fps / K)')
     ap.add_argument('--in-fps', type=float, help='source fps for image sequences')
     ap.add_argument('--quiet', action='store_true')
     a = ap.parse_args()
+    if a.dither_all:
+        a.dither_mask = 'all'
     if a.uniform:
         if len(a.paths) == 3:
             a.src, _, a.out = a.paths
@@ -119,6 +161,52 @@ def probe(path, count_frames):
     return s['width'], s['height'], fps, n
 
 
+def ycbcr_matrix():
+    """3x3 from swscale rgb48 units to BT.709 limited-range Y, Cb, Cr in 8-bit code units (no offsets)."""
+    m = np.array([[KR, KG, KB],
+                  [-KR / (2 * (1 - KB)), -KG / (2 * (1 - KB)), 0.5],
+                  [0.5, -KG / (2 * (1 - KR)), -KB / (2 * (1 - KR))]], np.float32)
+    return m * (np.array([[219], [224], [224]], np.float32) / (255.0 * 256.0))
+
+
+M709 = ycbcr_matrix()
+OFF = np.array([16, 128, 128], np.float32)
+
+
+def to_ycbcr(rgb48):
+    """float32 (H, W, 3) in swscale rgb48 units -> Y (H, W), Cb, Cr (H/2, W/2): BT.709 limited range
+    in 8-bit code units (float). Chroma is the 2x2 mean, which is what swscale does here."""
+    h, w = rgb48.shape[:2]
+    if cv2 is not None:
+        yuv = cv2.transform(rgb48, np.hstack([M709, OFF[:, None]]))
+        y, cb, cr = cv2.split(yuv)
+        half = (w // 2, h // 2)
+        return y, cv2.resize(cb, half, interpolation=cv2.INTER_AREA), cv2.resize(cr, half, interpolation=cv2.INTER_AREA)
+    yuv = (rgb48.reshape(-1, 3) @ M709.T).reshape(h, w, 3) + OFF
+    c = yuv[..., 1:].reshape(h // 2, 2, w // 2, 2, 2).mean(axis=(1, 3))
+    return np.ascontiguousarray(yuv[..., 0]), c[..., 0], c[..., 1]
+
+
+def local_range(p, r):
+    """max - min of plane p over a (2r+1)^2 window."""
+    if cv2 is not None:
+        k = np.ones((2 * r + 1, 2 * r + 1), np.uint8)
+        return cv2.dilate(p, k) - cv2.erode(p, k)
+    hi, lo = p.copy(), p.copy()
+    for ax in (0, 1):
+        a, b = hi.copy(), lo.copy()
+        for s in range(1, r + 1):
+            for sh in (s, -s):
+                np.maximum(a, np.roll(hi, sh, axis=ax), out=a)
+                np.minimum(b, np.roll(lo, sh, axis=ax), out=b)
+        hi, lo = a, b
+    return hi - lo
+
+
+def half_any(mask):
+    return mask[0::2, 0::2] | mask[1::2, 0::2] | mask[0::2, 1::2] | mask[1::2, 1::2]
+
+
 def main():
     a = parse_args()
     t0 = time.time()
@@ -166,17 +254,21 @@ def main():
                  f'{before}-{before + expected - 1}')
 
     FRAME = W * H * 3
+    if W % 2 or H % 2:
+        fail(f'{W}x{H}: 4:2:0 needs an even width and height')
     # decode at 16 bits with the file's own matrix/range and accurate chroma; swscale maps 8-bit
-    # code v to ~v*256 in rgb48, and the encoder maps it back the same way, so 1 LSB = 256 here
+    # code v to ~v*256 in rgb48, and to_ycbcr() maps it back the same way
     dec = subprocess.Popen(['ffmpeg', '-v', 'error', *in_args, '-vf',
                             'scale=in_color_matrix=auto:in_range=auto:flags=accurate_rnd+full_chroma_int',
                             '-f', 'rawvideo', '-pix_fmt', 'rgb48le', '-'], stdout=subprocess.PIPE)
+    # the planes are quantized here and piped as they are: no scale filter, so no hidden dither
     pix = 'yuv420p10le' if a.tenbit else 'yuv420p'
+    gain, top, dtype = (4.0, 1023, '<u2') if a.tenbit else (1.0, 255, np.uint8)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
-    enc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb48le', '-s', f'{W}x{H}',
+    x264 = (['-tune', a.tune] if a.tune else []) + (['-x264-params', a.x264_params] if a.x264_params else [])
+    enc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', pix, '-s', f'{W}x{H}',
                             '-r', f'{out_fps:g}', '-i', '-',
-                            '-vf', 'scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int',
-                            '-c:v', 'libx264', '-preset', a.preset, '-crf', f'{a.crf:g}', '-pix_fmt', pix,
+                            '-c:v', 'libx264', '-preset', a.preset, '-crf', f'{a.crf:g}', *x264, '-pix_fmt', pix,
                             '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
                             '-movflags', '+faststart', a.out], stdin=subprocess.PIPE)
 
@@ -192,12 +284,22 @@ def main():
                 return None
             got += k
         got_idx[0] += 1
-        return np.frombuffer(buf, dtype='<u2')
+        return np.frombuffer(buf, dtype='<u2').reshape(H, W, 3)
 
+    # TPDF noise in output LSB, one set per plane; a few frames of it, cycled
     rng = np.random.default_rng(7)
-    amp = 256.0 * a.dither
-    bank = [((rng.random(FRAME, dtype=np.float32) + rng.random(FRAME, dtype=np.float32)) - 1.0) * amp
-            for _ in range(6)] if amp > 0 else None
+
+    def tpdf(shape):
+        return (rng.random(shape, dtype=np.float32) + rng.random(shape, dtype=np.float32) - np.float32(1)) * np.float32(a.dither)
+
+    bank = [(tpdf((H, W)), tpdf((H // 2, W // 2)), tpdf((H // 2, W // 2))) for _ in range(max(1, a.dither_frames))] \
+        if a.dither > 0 else None
+
+    def quantize(p, noise, where):
+        p = p * np.float32(gain) if gain != 1 else p
+        if noise is not None and where is not None:
+            p = p + (noise if where is True else np.where(where, noise, np.float32(0)))
+        return np.clip(np.floor(p + np.float32(0.5)), 0, top).astype(dtype)
 
     cache = OrderedDict()  # source index -> frame (uniform mode windows may overlap or repeat)
 
@@ -219,8 +321,9 @@ def main():
             fail(f'sub-frame stream ended at frame {got_idx[0] + 1}, expected {expected} ({desc})')
         return fr
 
-    acc = np.zeros(FRAME, dtype=np.float32)
-    changed = np.zeros(FRAME, dtype=bool)
+    acc = np.zeros((H, W, 3), dtype=np.float32)
+    changed = np.zeros((H, W, 3), dtype=bool)
+    dithered = 0.0
     last_log = time.time()
     for f, idxs in enumerate(plan):
         # samples mode streams (a frame's sub-frames are consecutive and used once); uniform mode
@@ -228,20 +331,31 @@ def main():
         src = (lambda i: next_frame()) if not a.uniform else get
         first = src(idxs[0])
         acc[:] = first
-        if len(idxs) > 1:
+        blurred = len(idxs) > 1
+        if blurred:
             changed[:] = False
             for i in idxs[1:]:
                 x = src(i)
                 acc += x
                 changed |= x != first
             acc /= len(idxs)
-        if bank is not None and len(idxs) > 1:
-            d = bank[f % len(bank)]
-            if a.dither_all:
-                acc += d
-            else:
-                acc += np.where(changed, d, np.float32(0))
-        enc.stdin.write(np.clip(acc + 0.5, 0, 65535).astype('<u2').tobytes())
+        planes = to_ycbcr(acc)
+        noise = bank[f % len(bank)] if bank is not None else (None, None, None)
+        if bank is None:
+            wheres = (None, None, None)
+        elif a.dither_mask == 'all':
+            wheres = (True, True, True)
+        elif a.dither_mask == 'changed':  # the older rule: every pixel the shutter changed
+            ch = changed[..., 0] | changed[..., 1] | changed[..., 2] if blurred else np.zeros((H, W), bool)
+            wheres = (ch, half_any(ch), half_any(ch))
+        else:  # gradient: smooth ramps only, in every frame; flat areas and hard edges are rounded
+            wheres = []
+            for p, r in zip(planes, (1, 0.5, 0.5)):  # chroma planes are half size
+                wheres.append((local_range(p, int(FLAT_R * r)) > FLAT_EPS) & (local_range(p, int(EDGE_R * r)) <= RAMP_MAX))
+        if bank is not None:
+            dithered += float(np.mean(wheres[0]))
+        for p, d, w in zip(planes, noise, wheres):
+            enc.stdin.write(quantize(p, d, w).tobytes())
         if a.uniform:
             lo = plan[f + 1][0] if f + 1 < len(plan) else got_idx[0] + 1
             for k in [k for k in cache if k < lo]:
@@ -265,7 +379,9 @@ def main():
     if rc:
         fail(f'encoder failed (exit {rc})')
     if not a.quiet:
-        sys.stderr.write(f'wrote {a.out}: {desc}, {W}x{H}@{out_fps:g}, crf {a.crf:g} {pix} bt709, {time.time() - t0:.0f}s\n')
+        sys.stderr.write(f'wrote {a.out}: {desc}, {W}x{H}@{out_fps:g}, crf {a.crf:g} {a.x264_params or "x264 defaults"} '
+                         f'{pix} bt709, dither on {100 * dithered / max(1, n_out):.1f}% of pixels ({a.dither_mask}), '
+                         f'{time.time() - t0:.0f}s\n')
     print(a.out)
 
 
