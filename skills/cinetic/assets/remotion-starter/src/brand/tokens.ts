@@ -11,7 +11,7 @@ import { H, W } from '../timeline';
 export const C = {
   ink: '#0D0E10', // type, marks, dark stages
   ink2: '#1C1E22', // raised surfaces on ink
-  paper: '#F5F6F7', // the stage: cool, never cream
+  paper: '#F5F6F7', // the light stage (a dark stage is just as valid: the brand decides)
   mist: '#E9EBEE', // soft panels on paper
   line: '#D6D9DE', // hairlines, >= 1.5 px on screen
   mute: '#686D76', // secondary text: 4.8:1 on paper, readable at any size
@@ -22,8 +22,10 @@ export const C = {
   accent: '#08965A',
 };
 
+// cinetic:placeholder - the family is the starter's stand-in: choose one for this brand (fonts.ts
+// says how), set FONT and FACES to its CSS family name ("<Name> Variable"), then delete this line.
 export const FONT = {
-  sans: '"Geist Variable", "Geist", system-ui, sans-serif',
+  text: '"Geist Variable", "Geist", system-ui, sans-serif', // the film's one family (any style); typeStyle and measure.ts read it
   mono: '"Geist Mono Variable", "Geist Mono", ui-monospace, monospace',
 };
 
@@ -42,7 +44,7 @@ export const TYPE = {
 
 /** CSS for a type role at a size (px). Tabular figures always, so numbers never jitter in width. */
 export const typeStyle = (role: keyof typeof TYPE, size = TYPE[role].size * U): React.CSSProperties => ({
-  fontFamily: FONT.sans,
+  fontFamily: FONT.text,
   fontSize: size,
   fontWeight: TYPE[role].weight,
   letterSpacing: `${TYPE[role].track}em`,

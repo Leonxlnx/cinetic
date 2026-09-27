@@ -1,6 +1,6 @@
 # Copy and type
 
-Covers the words (budget, voice, callback copy, stock phrasing, string audit) and the letters (one family, scale, tracking, numerals, kinetic-type recipes, measuring and fitting). Read the copy half at Step 1 while writing `TREATMENT.md` and the type half at Step 2 before writing `src/brand/tokens.ts`. Numbers are proven defaults at 1920×1080 and 60 fps, starting points rather than dogma. A supplied brand voice or typeface wins over every default here.
+Covers the words (budget, voice, callback copy, stock phrasing, string audit) and the letters (choosing and loading the family, scale, tracking, numerals, kinetic-type recipes, reveals that never misspell, measuring and fitting). Read the copy half at Step 1 while writing `TREATMENT.md` and the type half at Step 2 before writing `src/brand/tokens.ts`. Numbers are proven defaults at 1920×1080 and 60 fps, starting points rather than dogma. A supplied brand voice or typeface wins over every default here.
 
 **Contents**
 1. [Copy budget](#1-copy-budget)
@@ -8,7 +8,7 @@ Covers the words (budget, voice, callback copy, stock phrasing, string audit) an
 3. [Callback copy](#3-callback-copy)
 4. [Stock phrasing to cut](#4-stock-phrasing-to-cut)
 5. [String audit](#5-string-audit)
-6. [One family, two weights](#6-one-family-two-weights)
+6. [One family, chosen for the brand](#6-one-family-chosen-for-the-brand)
 7. [Type scale](#7-type-scale)
 8. [Kinetic type: one recipe per role](#8-kinetic-type-one-recipe-per-role)
 9. [Recipe code](#9-recipe-code)
@@ -103,14 +103,38 @@ grep -rnP "\w'\w|\b1 [a-z]+s\b|lorem|ipsum|TODO|FIXME|Acme|John Doe|example\.com
 
 **Reading time** is owned by `references/timing-grid.md`: hold a line ≥ 36 f + 6 f per word after it resolves (1 word → 42 f, 3 → 54 f, 5 → 66 f), hold the lockup 1.5–2 s, and keep a URL readable ≥ 1.7 s. `scripts/grid-check.ts` enforces these holds from `COPY`.
 
-## 6. One family, two weights
+## 6. One family, chosen for the brand
 
-- **One well-made sans, shipped as a local variable font** from `@fontsource-variable/*`. The starter ships `@fontsource-variable/geist` and `@fontsource-variable/geist-mono`. To change the family, install another package, import it in `src/brand/fonts.ts`, and update `FONT` and `FACES` (the faces `FontGate` waits for) in `src/brand/tokens.ts`. Why: a variable axis lets you pick 560 exactly, local files render identically offline, and one family makes display, UI and wordmark agree.
-- **Choose it on purpose.** The ubiquitous UI default families read as "template" unless you chose them for a reason. Render a still of the name and the key statement in three candidates and compare the numerals, the "a", "g" and "t", and the width at display size.
-- **Two weights** from the variable axis, for example 600 for display and 450 for text. Never animate weight on text that reflows (a chip whose weight changes pushes the rest of the line).
-- **Mono** only for code, terminal output or aligned data. Mono timestamps in a consumer UI read as a developer-tool tell.
-- **Serif, italic and condensed display faces** are the commonest generated-look tells. Use them only when the brand calls for them; otherwise take emphasis from size or motion.
-- **One token per role.** If display is 600 / −0.045 em (the starter's value), it is exactly that in every scene. Near-miss values across scenes (590, 600, 620; −0.04, −0.05, −0.06) read as "almost matched".
+- **Choose the family for the brand's personality**, from the table in `references/brand-and-color.md` §2: a warm text serif for a calm, literary brand, a tight grotesk for a fast tool, a rounded face for a playful one. The starter's Geist is a stand-in marked `// cinetic:placeholder`, and `lint-film.mjs` fails until you replace it or keep it on purpose. Why a local variable font: the axis lets you pick 440 exactly, local files render identically offline, and one family makes display, UI and wordmark agree.
+- **Compare before you commit.** Render the name and the key statement in two or three candidates and compare the numerals, the "a", "g" and "t", and the width at display size. The ubiquitous UI default families read as "template" unless you chose them for a reason.
+- **Install and load it** (verified with `@fontsource-variable/newsreader` 5.3.0 in the starter):
+
+```bash
+npm i @fontsource-variable/newsreader @fontsource-variable/jetbrains-mono   # names: brand-and-color.md §2
+```
+```ts
+// src/brand/fonts.ts: bundled with the film; only FontGate imports this file
+import '@fontsource-variable/newsreader'; // calm, literary: the brand's one family
+import '@fontsource-variable/jetbrains-mono'; // numbers and code only
+
+// src/brand/tokens.ts: the CSS family is "<Name> Variable"; FACES lists every weight in use,
+// because FontGate waits for exactly these before anything renders or measures
+export const FONT = {
+  text: '"Newsreader Variable", Georgia, serif', // the film's one family (any style); typeStyle and measure.ts read it
+  mono: '"JetBrains Mono Variable", ui-monospace, monospace',
+};
+export const FACES = ['400 16px "Newsreader Variable"', '440 16px "Newsreader Variable"', '400 16px "JetBrains Mono Variable"'];
+export const TYPE = {
+  display: { size: 120, weight: 440, track: -0.015, lead: 1.0 }, // serifs want less negative tracking than sans
+  secondary: { size: 48, weight: 400, track: -0.01, lead: 1.15 },
+  ui: { size: 26, weight: 400, track: 0, lead: 1.3 },
+};
+```
+  A weight outside the package's axis silently falls back to the nearest one, so check the range in its `index.css` (`font-weight: 200 800` for Newsreader). In HyperFrames, copy the `.woff2` into `fonts/` instead (`assets/hyperframes-starter/fonts/README.md`).
+- **Two weights** from the variable axis, for example 440 for display and 400 for text. Never animate weight on text that reflows (a chip whose weight changes pushes the rest of the line).
+- **Mono** only for code, terminal output or aligned data, unless the brand's voice is a mono (the "raw, mechanical" row). Mono timestamps in a consumer UI read as a developer-tool tell.
+- **Serif and humanist faces** are right when the personality is warm, literary or calm and you chose them for that reason. Serif or italic used as generic "elegance", and condensed display faces used for "impact", are the generated-look tells; otherwise take emphasis from size or motion.
+- **One token per role.** If display is 440 / −0.015 em, it is exactly that in every scene. Near-miss values across scenes (430, 440, 460; −0.01, −0.015, −0.02) read as "almost matched".
 - **Numerals.** `fontVariantNumeric: 'tabular-nums'` on anything that counts, changes or aligns, so counters don't jitter in width.
 
 **Tracking tightens as size grows:**
@@ -161,6 +185,21 @@ Why these numbers:
 - **Locks never pass the lock** because overshoot closes the word space: Tessel showed "Everythingfits" for 6 f.
 - **Underline, never strike-through**, because a line through your own promise crosses it out.
 - **The drum masks to one line** because two readable lines at once is a text wall; neighbours show only as unreadable slivers.
+- **Letters only for the hero word** because per-letter motion invites misreads mid-reveal (below).
+
+**Reveals never spell another word.** A letter-by-letter or sweep reveal passes through every prefix of the word, and a half-drawn last glyph reads as a different letter (the left half of an "n" is an "r", of an "h" an "l"). If any of those intermediate frames reads as a real word, the viewer sees it: a name that briefly spells a different word on its reveal is a proofing bug on the most important frame of the film. Prefer revealing a name by whole word or with a mask that uncovers it all at once, from behind the mark's edge or on a vertical wipe. When a sweep is the idea, list what it passes through and check those frames:
+
+```ts
+// what a left-to-right reveal of `word` shows on its way: every prefix, plus half-drawn last glyphs
+const HALF: Record<string, string> = { m: 'n', n: 'r', h: 'l', d: 'c', b: 'l', e: 'c', o: 'c', a: 'c', q: 'c', w: 'v' };
+export const revealReads = (word: string): string[] =>
+  [...word.toLowerCase()].flatMap((ch, i) => {
+    const p = word.toLowerCase().slice(0, i);
+    return HALF[ch] ? [p + HALF[ch], p + ch] : [p + ch];
+  });
+// revealReads('tarn') → t tc ta tar tarr tarn: "tar" is a word, so this sweep needs a different reveal
+```
+Then make a sheet of every frame of the reveal (`python3 scripts/sheet.py --comp Act3 --from A --to B --every 1 --out out/qa/reveal.png`) and read each one as a stranger would.
 
 `SPR.word` and `SPR.detent` live in the starter's `src/lib/anim.ts`. Add any new preset there with a comment, never inline in an act: the lint treats spring configs in acts as errors.
 
@@ -259,5 +298,5 @@ lines.map((text, i) => {
 - **`@remotion/layout-utils`**, if you use it:
   - `fitText({text, withinWidth, fontFamily, fontWeight, letterSpacing})` returns `{fontSize}`; it measures at 100 px and scales.
   - `fitTextOnNLines({text, maxLines, maxBoxWidth, fontFamily, fontWeight, letterSpacing, maxFontSize})` returns `{fontSize, lines}`. It binary-searches the size and breaks greedily on single spaces, so you don't choose the breaks; prefer hand-set lines for statements.
-  - `letterSpacing` is a string (`'-0.05em'`), and `fontFamily` is the loaded family name (`'Geist Variable'`).
+  - `letterSpacing` is a string (`'-0.05em'`), and `fontFamily` is the loaded family name (`'Newsreader Variable'`).
   - **The cache gotcha.** Measurements go into a module-level cache that is never cleared. Its key is text, family, weight, size, letterSpacing, textTransform and additionalStyles, but *not* `fontVariantNumeric`, so a tabular and a proportional measurement of the same string collide. A measurement taken before the font loads is cached with the fallback width for the rest of the render. Call these functions only inside `FontGate`, and pass `validateFontIsLoaded: true`, which throws when the fallback face measures identically (it needs more than 4 distinct characters to tell).
