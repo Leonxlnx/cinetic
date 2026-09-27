@@ -116,30 +116,38 @@ grep -rnP "\w'\w|\b1 [a-z]+s\b|lorem|ipsum|TODO|FIXME|Acme|John Doe|example\.com
 
 - **Choose the family for the brand's personality**, from the table in `references/brand-and-color.md` §2: a humanist sans for a calm brand, a tight grotesk for a fast tool, a rounded sans for a playful one, a neo-grotesk for a premium one. It is always a clean sans, plus a mono if the product needs one, because serif and italic are hard bans when you invent the look. The starter's Geist is a stand-in marked `// cinetic:placeholder`, and `lint-film.mjs` fails until you replace it or keep it on purpose. Why a local variable font: the axis lets you pick 640 exactly, local files render identically offline, and one family makes display, UI and wordmark agree.
 - **Compare before you commit.** Render the name and the key statement in two or three candidate sans faces and compare the numerals, the "a", "g" and "t", and the width at display size. The ubiquitous UI default families read as "template" unless you chose them for a reason.
-- **Install and load it** (verified with `@fontsource-variable/schibsted-grotesk` 5.3.0 in the starter: `tsc` and a rendered still):
+- **Vendor it into the project, then load it.** A family ships as local files behind `FontGate`, never fetched at render time. The clean way works whether `node_modules` is the project's own or a folder shared through `new-film.sh --link-modules`, where `npm install <font>` would write into the shared folder and change every film that uses it:
 
 ```bash
-npm i @fontsource-variable/schibsted-grotesk @fontsource-variable/jetbrains-mono   # names: brand-and-color.md §2
+node scripts/add-font.mjs manrope                       # a sans from brand-and-color.md §2
+node scripts/add-font.mjs jetbrains-mono                # a mono, only if the product needs one
+bash scripts/new-film.sh films/x --link-modules <dir>/node_modules --font manrope   # the same, at scaffold time
 ```
+
+  `add-font.mjs` runs `npm pack @fontsource-variable/<name>` into a temp folder (nothing is installed), copies the package's `index.css`, the upright `.woff2` files it references and the licence into `src/brand/fonts/<name>/`, imports that CSS from `src/brand/fonts.ts` in place of the starter's stand-in, and sets `FONT` and `FACES` in `tokens.ts` to the family, clamping weights to its axis. The package's own category picks the role (a monospace family becomes `FONT.mono`) and refuses serif, display and script families unless you pass `--brand-supplied`. Verified with `@fontsource-variable/manrope` 5.3.0 in a project with a linked `node_modules`: the shared folder unchanged, `tsc` clean, and a rendered still in Manrope. The result for a sans plus a mono, once the weights are chosen:
+
 ```ts
 // src/brand/fonts.ts: bundled with the film; only FontGate imports this file
-import '@fontsource-variable/schibsted-grotesk'; // fast, exact: the brand's one family
-import '@fontsource-variable/jetbrains-mono'; // numbers and code only
+import './fonts/manrope/index.css'; // Manrope Variable (text), vendored: scripts/add-font.mjs
+import './fonts/jetbrains-mono/index.css'; // JetBrains Mono Variable (mono), vendored: scripts/add-font.mjs
 
 // src/brand/tokens.ts: the CSS family is "<Name> Variable"; FACES lists every weight in use,
 // because FontGate waits for exactly these before anything renders or measures
 export const FONT = {
-  text: '"Schibsted Grotesk Variable", system-ui, sans-serif', // the film's one family; typeStyle and measure.ts read it
+  text: '"Manrope Variable", system-ui, sans-serif', // the film's one family; typeStyle and measure.ts read it
   mono: '"JetBrains Mono Variable", ui-monospace, monospace',
 };
-export const FACES = ['450 16px "Schibsted Grotesk Variable"', '640 16px "Schibsted Grotesk Variable"', '400 16px "JetBrains Mono Variable"'];
+export const FACES = ['450 16px "Manrope Variable"', '640 16px "Manrope Variable"', '400 16px "JetBrains Mono Variable"'];
 export const TYPE = {
   display: { size: 116, weight: 640, track: -0.04, lead: 1.0 },
   secondary: { size: 48, weight: 450, track: -0.02, lead: 1.15 },
   ui: { size: 26, weight: 450, track: -0.01, lead: 1.3 },
 };
 ```
-  A weight outside the package's axis silently falls back to the nearest one, so check the range in its `index.css` (`font-weight: 400 900` for Schibsted Grotesk, so nothing lighter than 400). In HyperFrames, copy the `.woff2` into `fonts/` instead (`assets/hyperframes-starter/fonts/README.md`).
+
+  - **By hand** (offline, or a family that is not on npm): download or `npm pack` the package anywhere outside the project, copy its `index.css` and the `files/*-wght-normal.woff2` it references into `src/brand/fonts/<name>/` keeping the relative paths, and import that CSS from `fonts.ts`. For a brand's own `.ttf`, convert it (`fonttools ttLib.woff2 compress Brand.ttf`) and write the `@font-face` yourself, one block per file with the weight range (`font-weight: 100 900` for a variable font).
+  - **Own `node_modules`** (a project that ran `npm install` itself): `npm i @fontsource-variable/<name>` and `import '@fontsource-variable/<name>'` in `fonts.ts` is fine too.
+  - A weight outside the package's axis silently falls back to the nearest one, so check the range: `add-font.mjs` prints it and clamps `FACES`; the `font-weight` line of the vendored `index.css` has it too (`200 800` for Manrope). In HyperFrames, `add-font.mjs` copies the `.woff2` into `fonts/` and prints the `@font-face` block to paste (`assets/hyperframes-starter/fonts/README.md`).
 - **Two weights** from the variable axis, for example 640 for display and 450 for text. Never animate weight on text that reflows (a chip whose weight changes pushes the rest of the line).
 - **Mono** only for code, terminal output or aligned data, unless the brand's voice is a mono (the "raw, mechanical" row). Mono timestamps in a consumer UI read as a developer-tool tell.
 - **No serif, no italic.** Both are hard bans when you invent the look, and so is a skew that fakes an italic, because serif or italic "elegance" is what generated work reaches for (condensed display faces for "impact" are the same tell). Personality comes from which sans you pick, its weight, case and tracking; emphasis comes from size or motion. A serif the brand supplies is the exception (`references/brand-and-color.md` §1).
@@ -160,17 +168,17 @@ export const TYPE = {
 
 | Role | 16:9 (1920×1080) | 9:16 (1080×1920) | 1:1 (1080×1080) | Weight |
 |---|---|---|---|---|
-| Emphasis / payoff | 1.5–1.7× the statement (132–218 px) | 1.3–1.5× | 1.4–1.6× | 600 |
-| Statement | 88–128 px, ≤ 5 words per line | 90–120 px, ≤ 3 words per line | 80–110 px | 600 |
-| Slam | fit to ~77% of frame width | fit to ~86% | fit to ~84% | 600 |
-| Secondary / descriptor, URL | 44–56 px | ≥ 48 px | 44–52 px | 450–500 |
-| Walkthrough caption | 40–48 px | ≥ 44 px | 40–48 px | 500 |
+| Emphasis / payoff | 1.5–1.7× the statement (132–218 px) | 1.3–1.5× the statement, fitted to the safe width | 1.4–1.6× | 600 |
+| Statement | 88–128 px, ≤ 5 words per line | 110–140 px, ≤ 3 words per line, ≤ 2 lines | 80–110 px | 600 |
+| Slam | fit to ~77% of frame width | fit to ~83% (the safe width) | fit to ~84% | 600 |
+| Secondary / descriptor, URL | 44–56 px | 60–72 px | 44–52 px | 450–500 |
+| Walkthrough caption | 40–48 px | 56–64 px | 40–48 px | 500 |
 | Readable UI, after camera scale | ≥ 22 px (28 preferred) | ≥ 32 px | ≥ 28 px | 450–500 |
 
 - Keep a ratio of at least 2:1 between a headline and the secondary line; a flat scale (everything at 48–64 px) reads as a slide.
 - Contrast against the ground: statements ≥ 7:1, secondary lines at 44 px and up ≥ 3:1, anything smaller ≥ 4.5:1.
 - Size the wordmark optically: set its ascender or cap height about equal to the mark's height, then check it in a still.
-- For 9:16, re-lay the type rather than cropping the master. Keep it out of the top ~14% and bottom ~20%, where the feed UI sits; `references/formats.md` has the safe zones.
+- For 9:16, re-lay the type rather than cropping the master: everything but the statement runs about 1.3–1.5× its 16:9 size, because the frame is watched full-screen on a phone. Keep it out of the top ~14% and bottom ~20%, where the feed UI sits; `references/formats.md` §7 has the safe zones and a vertical layout sketch.
 
 ## 8. Kinetic type: one recipe per role
 
@@ -178,7 +186,7 @@ Give each text role exactly one reveal system and reuse it. A film has about fou
 
 | Recipe | Role | Numbers | Budget |
 |---|---|---|---|
-| **Word reveal** (`src/fx/Words.tsx`) | statements | per word over 26 f on `E.out`, 6–9 f stagger: opacity 0 → 1; `translateY` 0.32 em → 0 through `arrive(p)`; blur 14 px (8 px on body lines) → 0 through `blurIn(p, px)`, clear by 60% of the eased move; exit at half the stagger over 16 f on `E.in` (`depart`, `blurOut`) | the default |
+| **Word reveal** (`src/fx/Words.tsx`) | statements | per word over 26 f on `E.out`, 6–9 f stagger: opacity 0 → 1; `translateY` 0.32 em → 0 through `arrive(p)`; blur 14 px (8 px on body lines) → 0 through `blurIn(p, px)`, clear by 60% of the eased move; exit at half the stagger over 16 f: the move accelerates away on `E.in` (`depart`, `blurOut`) while the opacity fades on `E.smooth` | the default |
 | **Slam** | the problem headline | from `cue − 1` over 15 f on `E.out`: scale 1.2 → 1, blur 22 → 0 px through `blurIn`, opacity 0 → 1; then a slow grow of 1 → 1.05 on `E.smooth` through the hold; width fitted to ~77% of the frame | 1–2 per film |
 | **Locking words** | the payoff line | two words enter from opposite edges on `SPR.word` (20/170/0.9), launched `delayTo(SPR.word, 1)` = 19 f before the cue; each is clamped at its lock; a +1.8% `hitPulse(t, 1, 4)` punch; a push of 1 → 1.03 through the hold | 1 per film |
 | **Tracking collapse** | the hero word | per-glyph spread of +0.6–0.8 em → 0 over 24 f on `E.out`; colour accent → ink over 20 f | once per film |
@@ -189,6 +197,7 @@ Give each text role exactly one reveal system and reuse it. A film has about fou
 
 Why these numbers:
 - **Blur clears early** (`blurIn`, `blurOut` in `src/lib/anim.ts`) because Chromium renders a blur radius in ~0.5 px steps and anything under ~0.75 px fully sharp. A blur that fades with the move's slow tail snaps into focus a few frames after the text has visibly stopped; one that is gone by 60% of the move finishes while the word is still fast and half transparent.
+- **The exit fades on its own curve.** Opacity on the exit's `E.in` holds a word near full strength and then drops its last half in 2–3 frames: a pop as each word leaves (per-frame change 0.87 at its peak on a test line, against 0.38 with the fade on `E.smooth`, whose slope is zero at both ends).
 - **The rise ends on `arrive`** because the headless shell snaps a text layer's vertical position to whole pixels: an ease-out's last few pixels arrive as 1 px ticks with holds between them. Details in `references/chromium-rendering.md` §15.
 - **The slam grows** because a headline that sits static past 48 f reads as a stalled player.
 - **Locks never pass the lock** because overshoot closes the word space: Tessel showed "Everythingfits" for 6 f.

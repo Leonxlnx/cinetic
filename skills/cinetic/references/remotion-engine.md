@@ -13,7 +13,7 @@ What the Remotion side of cinetic looks like: the starter's files and compositio
 
 ## 1. The starter project
 
-`bash scripts/new-film.sh <dir> [--fps 60] [--bpm 120] [--size 1920x1080] [--name x] [--link-modules <node_modules>]` copies `assets/remotion-starter`, sets FPS, BPM, W and H in `src/timeline.ts`, copies every cinetic script into `<dir>/scripts`, and installs (or symlinks) `node_modules`. It refuses a BPM whose beat is not a whole number of frames and lists the ones that are.
+`bash scripts/new-film.sh <dir> [--fps 60] [--bpm 120] [--size 1920x1080] [--name x] [--link-modules <node_modules>] [--font <name>]` copies `assets/remotion-starter`, sets FPS, BPM, W and H in `src/timeline.ts`, copies every cinetic script into `<dir>/scripts`, and installs (or symlinks) `node_modules`. It refuses a BPM whose beat is not a whole number of frames and lists the ones that are. `--font` vendors a family into the project (below).
 
 The starter's palette, mark and demo name carry `// cinetic:placeholder` markers, and `npm run check` fails (`lint-film.mjs` rule `placeholder`) until they are replaced by the film's own brand (`references/brand-and-color.md`). That is deliberate: the demo renders as is, but a film cannot ship on the starter's look.
 
@@ -22,14 +22,15 @@ The starter's palette, mark and demo name carry `// cinetic:placeholder` markers
 | `src/timeline.ts` | `FPS BPM W H BEAT BAR b() f60() TAIL ACT TOTAL CUE COPY copy()`: the only source of time | always: your acts, cues and copy |
 | `src/brand/tokens.ts` | `C` colours, `FONT`, `FACES`, `TYPE`, `typeStyle()`, `U`, `SAFE`, `safeArea()` | always: the brand (placeholder palette: ink/paper, one signal-green accent `#08965A`; marked `cinetic:placeholder`) |
 | `src/brand/Mark.tsx` | `MARK` geometry (100-unit box), `<Mark>` with per-piece poses, `placeMark()` | always: your mark (the starter's is a marked placeholder); keep the per-piece API |
-| `src/brand/fonts.ts` | the `@fontsource-variable/*` imports (browser-only) | when the family changes |
+| `src/brand/fonts.ts` | the font CSS imports (browser-only): the starter's `@fontsource-variable/geist*`, or the vendored `./fonts/<name>/index.css` that `scripts/add-font.mjs` writes | when the family changes (`node scripts/add-font.mjs <name>`) |
 | `src/lib/anim.ts` | `E` easings, `SPR` springs, `tw prog mix lmix clamp spr hitPulse squash blurIn blurOut arrive depart rand fd` | add named tokens; never inline curves in acts |
 | `src/lib/sync.ts` | `peak delayTo hit settleOf`: sync frames computed from curves | rarely |
 | `src/lib/camera.ts` | `Shot`, `lc`, `camera()`, `toScreen`, `breath`, `dip` (`references/camera.md`) | rarely |
 | `src/lib/measure.ts` | `measureTracked fitSize inkBox baselineOf` (DOM/canvas, after fonts) | rarely |
 | `src/lib/color.ts` | `mixColor(a, b, t)` in OKLab | rarely |
 | `src/lib/FontGate.tsx` | blocks rendering until every face in `FACES` is decoded | never (edit `FACES`) |
-| `src/lib/Audit.tsx` | `audit` prop: logs and draws text boxes vs safe area | never |
+| `src/lib/Audit.tsx` | `audit` prop: logs and draws text boxes against the safe zone (`safe` prop), overlaps, minimum size, and text covered by a `data-mover` | never |
+| `src/lib/safe.ts` | safe-zone presets (`wide16x9`, `feed9x16`, `feed9x16Strict`, `square1x1`, `portrait4x5`, `title`), `safeInsets()`, `safeBox()`, `presetFor()`; Node-safe | rarely (a destination with other overlays) |
 | `src/fx/RackFocus.tsx` `Words.tsx` `Cursor.tsx` | rack focus without stepped blur; word reveal; transform-only cursor with `cursorArc`, `pressAt` | use as needed |
 | `src/acts/Act1.tsx`, `Act2.tsx` | the demo (below): replace with your acts | always |
 | `src/Film.tsx` | one `<Sequence>` per act, `<FontGate>`, optional `<Audit>`, the soundtrack in the Studio | per act added |
@@ -42,7 +43,7 @@ Compositions registered in `src/Root.tsx`:
 
 | Id | What | Used by |
 |---|---|---|
-| `Film` | the whole film, props `{audit?: boolean}` | Studio, `scripts/render.sh Film ...`, `scripts/layout-audit.sh Film` |
+| `Film` | the whole film, props `{audit?: boolean, safe?: SafeSpec}` | Studio, `scripts/render.sh Film ...`, `scripts/layout-audit.sh Film` |
 | `FilmSub` | the film as sub-frames, props `{groups: number[]}`, length from `calculateMetadata` | `scripts/render.sh --blur` |
 | `Acts/Act1`, `Acts/Act2` | each act alone under `FontGate`; `ActN` is the Nth entry of `ACT` | iteration, per-act re-renders, `layout-audit.sh ActN` |
 | `Stills/Mark16`, `MarkLarge`, `MarkSizes` | the mark at 16 px, full screen, and 16-256 px on paper and ink | `npm run stills` (look at them before animating) |
@@ -185,6 +186,7 @@ Keep test renders short on a shared machine: frame lists and ranges, `--concurre
 - **Fractional `left`/`top` plus a transform** snaps to whole pixels and slow moves stair-step: all motion goes in the transform (`lint-film.mjs` flags frame-driven left/top).
 - **`will-change` on a layer whose blur animates** leaves stale ghost frames; animated `filter: blur()` on big layers steps. Use `RackFocus`.
 - **Audio in the render.** Remotion's AAC mux leaves about 2048 samples of encoder priming (audio 2-3 frames late). Render `--muted`; `render.sh` muxes with ffmpeg and checks sync.
+- **`npm install` in a project whose `node_modules` is a symlink** (`new-film.sh --link-modules`) writes into the shared folder, changing every film that links it, and can break its pinned Remotion versions. Add a font family with `node scripts/add-font.mjs <name>` (it vendors the files into `src/brand/fonts/` via `npm pack`, `references/copy-and-type.md` §6); for any other package, give the project its own install (`rm node_modules && npm install`).
 - **The timeline must stay Node-loadable.** `grid-check.ts`, `export-cues.ts` and `layout-audit.sh` import `src/timeline.ts` with tsx: no React, CSS or `staticFile` imports in it. `src/sync.ts` may import acts, which import React, since tsx handles TSX, but never CSS: keep font imports in `brand/fonts.ts`, which only `FontGate` loads.
 - **Upstream doc slips** to ignore: trim values are frames, not seconds; a transparent-video example sets `defaultCodec: 'vp8'` while its CLI uses `vp9`; "always premount" is a no-op in renders.
 
