@@ -25,7 +25,8 @@
 #   --composition F    render this file instead of index.html (passed to render -c)
 #   --workers N        HyperFrames capture workers (default 2; each is a Chromium process)
 #   --skip-check       skip `hyperframes check` (lint still runs)
-#   --keep             keep the PNG frames in <out dir>/.hf-finish-<name>/
+#   --keep             keep the PNG frames in <out dir>/.hf-finish-<name>/ (the last one is always
+#                      kept as <out dir>/qa/<name>-last-frame.png, deliver.sh's clean poster source)
 #   --allow-transparent  accept transparent pixels (they encode as black); default is to fail
 #   --variables JSON   variable values for this render (one row of a --batch, finished properly)
 #   --json FILE        also write the run report there (it is always printed on stdout)
@@ -39,7 +40,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 die() { echo "hf-finish: $*" >&2; exit 1; }
-usage() { sed -n '2,37p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+usage() { sed -n '2,38p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 log() { echo "hf-finish: $*" >&2; }
 
 [ $# -ge 1 ] || usage
@@ -230,6 +231,8 @@ for F1 in "$WORK/frames/frame_000001.png" "$WORK/frames/$(printf 'frame_%06d.png
   fi
 done
 step render "pass ($NF frames at $RFPS fps)"; log "render: $NF frames"
+# the lossless last frame: deliver.sh takes the poster from it, not from a decoded H.264 frame
+cp "$WORK/frames/$(printf 'frame_%06d.png' "$NF")" "$QA/$NAME-last-frame.png"
 
 # ---- 4. encode once: BT.709 limited range, tagged -----------------------------------------
 PIC="$WORK/picture.mp4"

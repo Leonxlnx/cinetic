@@ -11,7 +11,13 @@
 #
 # What it writes (into --out-dir, default out/deliver/). The top level holds only deliverables, the
 # folder a client opens; every report goes in its qa/ subfolder:
-#   poster.png / poster.jpg   the final frame (the final frame is the poster), or --poster-frame N
+#   poster.png / poster.jpg   the final frame (the final frame is the poster), or --poster-frame N,
+#                             taken from a clean source, not decoded from the lossy master (an H.264
+#                             frame bakes 4:2:0 chroma and block smear into the still): --poster-from
+#                             PNG, else a Remotion still of --comp (npx remotion still, same frame),
+#                             else the lossless last frame hf-finish.sh keeps (qa/<name>-last-frame.png
+#                             next to the master); the source must match the master's frame. Only if
+#                             none does is the master's frame used, with a warning
 #   <name>-loop.mp4           --loop: muted, faststart copy, plus a loop-seam check: the step from
 #                             the last frame back to frame 0 must look like the steps around it
 #                             (seam MAD <= max(0.4, 1.5x the median of the 8 steps at each end);
@@ -28,6 +34,10 @@
 # Options:
 #   --out-dir DIR        output folder (default out/deliver)
 #   --poster-frame N     poster from frame N instead of the last frame
+#   --poster-from PNG    the poster's clean source, a lossless still of that frame (e.g. a kept
+#                        HyperFrames frame)
+#   --comp ID            the composition the master was rendered from, for the poster still
+#                        (default Film)
 #   --gif-fps N          GIF frame rate (default 25; GIF delays are whole 1/100 s, so 25 or 50 play
 #                        at the true rate while 30 plays 11% fast)
 #   --gif-width N        GIF width in px (default 960)
@@ -52,12 +62,14 @@ step() { echo "[deliver] $*" >&2; }
 
 OUTDIR=out/deliver; POSTER_FRAME=""; LOOP=0; GIF=0; WEBM=0; ALPHA=""; ALPHA_WEBM=0; VARIANTS=""
 GIF_FPS=25; GIF_W=960; GIF_MAX=8; GIF_DITHER=sierra2_4a; WEBM_CRF=32; ALPHA_FRAMES=""; ALPHA_PROPS=""
-ENTRY=src/index.ts; AUDIO=public/audio/soundtrack.wav; VSAMPLES=""; POS=()
+ENTRY=src/index.ts; AUDIO=public/audio/soundtrack.wav; VSAMPLES=""; POS=(); POSTER_FROM=""; COMP=Film
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage 0 ;;
     --out-dir) OUTDIR=${2:?}; shift ;;
     --poster-frame) POSTER_FRAME=${2:?}; shift ;;
+    --poster-from) POSTER_FROM=${2:?}; shift ;;
+    --comp) COMP=${2:?}; shift ;;
     --loop) LOOP=1 ;;
     --gif) GIF=1 ;;
     --webm) WEBM=1 ;;
@@ -103,15 +115,80 @@ PY
 step "$MASTER: ${W}x${H}@${FPS}, $N frames, audio $([[ $HAS_AUDIO -eq 1 ]] && echo yes || echo no)"
 TO_RGB="scale=in_color_matrix=auto:in_range=auto:flags=accurate_rnd+full_chroma_int,format=rgb24"
 
-# poster: the last frame (decode only the last second), or an exact frame
+# poster: the master's own frame first (the reference, and the fallback), then a clean source
 if [[ -n "$POSTER_FRAME" ]]; then
-  ffmpeg -v error -y -i "$MASTER" -vf "select=eq(n\,$POSTER_FRAME),$TO_RGB" -vsync 0 -frames:v 1 "$OUTDIR/poster.png"
-else
-  ffmpeg -v error -y -sseof -1 -i "$MASTER" -vf "$TO_RGB" -update 1 "$OUTDIR/poster.png"
+  [[ "$POSTER_FRAME" =~ ^[0-9]+$ && "$POSTER_FRAME" -lt "$N" ]] || die "--poster-frame $POSTER_FRAME outside 0-$((N - 1))"
+  ffmpeg -v error -y -i "$MASTER" -vf "select=eq(n\,$POSTER_FRAME),$TO_RGB" -vsync 0 -frames:v 1 "$QA/.poster-master.png"
+else  # the last frame (decode only the last second)
+  ffmpeg -v error -y -sseof -1 -i "$MASTER" -vf "$TO_RGB" -update 1 "$QA/.poster-master.png"
 fi
-[[ -s "$OUTDIR/poster.png" ]] || die "poster extraction failed"
+[[ -s "$QA/.poster-master.png" ]] || die "poster extraction failed"
+PF=${POSTER_FRAME:-$((N - 1))}
+CLEAN="$QA/.poster-clean.png"; rm -f "$CLEAN"; PSRC=""; WHY=()
+HF_LAST="$(dirname "$MASTER")/qa/$NAME-last-frame.png"
+if [[ -n "$POSTER_FROM" ]]; then
+  [[ -f "$POSTER_FROM" ]] || die "--poster-from $POSTER_FROM not found"
+  ffmpeg -v error -y -i "$POSTER_FROM" -vf format=rgb24 -frames:v 1 "$CLEAN" && PSRC="$POSTER_FROM"
+elif [[ -f "$ENTRY" ]] && command -v npx >/dev/null; then
+  PW=$(mktemp -d "${TMPDIR:-/tmp}/cinetic-poster.XXXXXX")
+  if npx remotion bundle "$ENTRY" --out-dir "$PW/bundle" --log=error >/dev/null 2>&1; then
+    CM=$(npx remotion compositions "$PW/bundle" 2>/dev/null \
+      | awk -v id="$COMP" '$1 == id && $2 ~ /^[0-9.]+$/ && $3 ~ /^[0-9]+x[0-9]+$/ { print $3, $4; exit }' || true)
+    if [[ "$CM" != "${W}x${H} $N" ]]; then
+      WHY+=("composition $COMP is ${CM:-not in $ENTRY}, the master ${W}x${H} $N frames (pass --comp)")
+    elif npx remotion still "$PW/bundle" "$COMP" "$CLEAN" --frame="$PF" --image-format=png --log=error >/dev/null 2>&1; then
+      PSRC="npx remotion still $COMP --frame=$PF"
+    else
+      WHY+=("npx remotion still $COMP failed")
+    fi
+  else
+    WHY+=("could not bundle $ENTRY")
+  fi
+  rm -rf "$PW"
+elif [[ -f "$HF_LAST" && "$PF" -eq $((N - 1)) ]]; then
+  ffmpeg -v error -y -i "$HF_LAST" -vf format=rgb24 -frames:v 1 "$CLEAN" && PSRC="$HF_LAST"
+elif [[ -f "$HF_LAST" ]]; then
+  WHY+=("$HF_LAST holds the last frame, not frame $PF; pass --poster-from PNG")
+else
+  WHY+=("no $ENTRY (Remotion) and no $HF_LAST (hf-finish.sh); pass --poster-from PNG")
+fi
+if [[ -n "$PSRC" ]]; then  # the clean still must show the master's frame: same size, same picture
+  if ! MATCH=$(python3 - "$CLEAN" "$QA/.poster-master.png" <<'PY'
+import subprocess, sys
+import numpy as np
+def rgb(p):
+    r = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height',
+                        '-of', 'csv=p=0', p], capture_output=True, text=True, check=True).stdout.split(',')
+    w, h = int(r[0]), int(r[1])
+    b = subprocess.run(['ffmpeg', '-v', 'error', '-i', p, '-vf', 'format=rgb24', '-f', 'rawvideo', '-'],
+                       capture_output=True, check=True).stdout
+    return np.frombuffer(b, np.uint8).reshape(h, w, 3).astype(np.int16)
+a, b = rgb(sys.argv[1]), rgb(sys.argv[2])
+if a.shape != b.shape:
+    print(f'it is {a.shape[1]}x{a.shape[0]}, the master {b.shape[1]}x{b.shape[0]}'); sys.exit(1)
+d = np.abs(a - b)
+mad, far = float(d.mean()), float((d.max(axis=2) > 32).mean())
+# the same frame measures MAD < 1 and < 0.1% of pixels off by > 32 (4:2:0 edges, blur); a neighbouring frame 0.4%
+print(f'MAD {mad:.2f}, {100 * far:.2f}% of pixels off by > 32 levels')
+sys.exit(0 if mad <= 2.0 and far <= 0.0025 else 1)
+PY
+  ); then
+    WHY+=("$PSRC does not match the master's frame $PF ($MATCH): a stale render, the wrong --comp or frame")
+    PSRC=""
+  fi
+fi
+if [[ -n "$PSRC" ]]; then
+  mv -f "$CLEAN" "$OUTDIR/poster.png"; rm -f "$QA/.poster-master.png"
+  step "poster.png / poster.jpg (frame $PF, from $PSRC; $MATCH against the master)"
+  note '{"file":"poster.png","check":"poster_source","pass":true,"source":"clean","frame":'"$PF"'}'
+else
+  mv -f "$QA/.poster-master.png" "$OUTDIR/poster.png"; rm -f "$CLEAN"
+  echo "deliver.sh: warning: poster.png is frame $PF decoded from the lossy master, so it carries 4:2:0 chroma and any" \
+       "block smear on flat fields: ${WHY[*]:-no clean source}" >&2
+  step "poster.png / poster.jpg (frame $PF, from the master)"
+  note '{"file":"poster.png","check":"poster_source","pass":true,"source":"master","frame":'"$PF"'}'
+fi
 ffmpeg -v error -y -i "$OUTDIR/poster.png" -q:v 2 "$OUTDIR/poster.jpg"
-step "poster.png / poster.jpg ($([[ -n "$POSTER_FRAME" ]] && echo "frame $POSTER_FRAME" || echo 'last frame'))"
 
 if [[ $LOOP -eq 1 ]]; then
   ffmpeg -v error -y -i "$MASTER" -map 0:v:0 -c copy -an -movflags +faststart "$OUTDIR/$NAME-loop.mp4"
