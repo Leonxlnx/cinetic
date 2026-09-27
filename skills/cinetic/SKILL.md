@@ -1,0 +1,406 @@
+---
+name: cinetic
+description: Direct, build and render premium cinematic motion design from code — launch films, product and feature videos, looping feature animations for landing pages and social, logo stings and reveals, UI walkthroughs, app demos, kinetic type, teasers, trailers, intros and promo clips. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion, HyperFrames, HTML/GSAP or React, or asks to storyboard, time, score, render, polish or critique one — even if they only say "make a video about X", "animate this feature" or "we need a launch clip". It supplies concept and copy discipline, type and colour taste that defers to a supplied brand, a beat-locked timeline that drives both picture and a synthesized soundtrack, choreography and transition craft, real product UI in motion, film-grade finishing (true motion blur, no banding, BT.709, sync-checked mux) and a measured self-critique loop on contact sheets and renders.
+---
+
+# cinetic
+
+You are directing a short film, not animating a web page. Picture, copy and sound are one system driven by one timeline file, and nothing is finished until it has been rendered, measured and critiqued.
+
+- **Engines.** Remotion 4.0.529 (React, frame-driven) is the default. HyperFrames 0.8.79 (HTML plus a paused GSAP timeline) is the alternative. The craft is engine-independent; §7 lists the rules that differ per engine.
+- **Numbers.** Every number here is a proven default from shipped work: a starting point that you can move away from when you have a stated reason. It is not a law of nature.
+- **Brand.** When the user supplies a brand (colours, fonts, logo, footage, tone), the brand wins. The taste defaults cover the parts you have to invent.
+- **Paths.** Paths such as `scripts/render.sh` work from the skill root and also inside a film project, because `scripts/new-film.sh` copies every script into the project. Every script prints `--help`.
+- **Worked example.** `references/worked-example.md` walks through Tessel, a 33 s launch film at 1920×1080 and 60 fps, and shows each rule below in use, including the mistakes. Read it once before your first film.
+
+## The bar
+
+The target is a film people watch twice: one idea the product owns, told in pictures, where every frame looks chosen and nothing is there to fill space.
+- **Visual, not narrated.** The idea reads with the sound off; the words confirm what the picture already said.
+- **Weight and stillness.** Motion has mass, arrives on the beat and then rests, so the fast moments land.
+- **Sound that makes the picture feel better:** every hit is caused by something you can see.
+- **Restraint over decoration.** When in doubt, remove.
+- **Proof, not impression.** The process below exists because none of this can be judged in the editor or the Studio: you only know once you have watched the actual render and measured it.
+
+## 1. Formats and defaults
+
+Choose a row first. It sets the length, the density and the list of files to deliver. The recipe for each format is in `references/formats.md`.
+
+| Format | Length | fps | Grid (BPM) | Story beats | On-screen words | Sound | Deliverables |
+|---|---|---|---|---|---|---|---|
+| Launch film / teaser | 20–45 s | 60 | 120 | 8–10 per 30 s | ≤ 20–35 in total | full score + SFX | 16:9 master, 9:16 and 1:1 re-layouts, poster |
+| Product / feature video | 8–30 s | 60 | 100–120 | 1 capability per 8–10 s | ≤ 15 | light bed + UI SFX | master, poster |
+| Feature loop | 4–15 s, whole bars | 60 (GIF 25) | any; whole bars | 3–5 | ≤ 8, reads muted | optional | MP4, WebM, GIF, seamless seam |
+| Logo sting | 3–8 s | 60 | 120 | 2–4 | name + ≤ 4 | one tuned hit + tail | MP4, ProRes 4444 alpha, poster, 16 px mark still |
+| UI walkthrough | 20–90 s | 60 | 90–110 | 1 chapter per 2–4 bars | ≤ 6 per caption | bed + UI SFX | master, SRT captions |
+
+Use 60 fps whenever UI, text or the camera moves. At 30 fps slow drifts visibly step and fast moves strobe, and 24 fps is never right for UI. A GIF is the one exception: export it at 25 fps (or 50) from the 60 fps master, because GIF frame delays are whole hundredths of a second and 30 fps plays 11% fast.
+
+## 2. The five laws
+
+1. **One idea.** You can say the film in one sentence. *Why:* a viewer carries away one thing, and a feature tour leaves them with nothing.
+2. **One story device.** An object, shape or colour travels through every shot and never blinks out at a cut. In a launch film it ideally resolves into the mark at the end; in a feature loop or product video it is the unit the product acts on (the card, the row, the file). *Why:* it makes the film continuous, and it lets the film read with the sound off.
+3. **One accent with one meaning.** The accent is a single token that means one thing, such as "now", "new" or "yours". Use it sparingly (about ≤ 8% of pixels) and let it flood the frame at most once. *Why:* a colour that means something is read without words, and a colour used everywhere means nothing.
+4. **One house motion system.** Use a few named curves and springs, each for a stated reason, and take every frame number from `timeline.ts`. *Why:* consistent motion *is* brand motion, and ad-hoc eases read as generated.
+5. **Verify by measurement.** A film is done only when the rendered pixels and the decoded audio pass the scripts and one round of critique. *Why:* Studio playback hides pops, ghost frames, sync slips and colour shifts that the encoded file will show.
+
+## 3. Workflow
+
+Every step writes a file, and every gate is a check you actually run. Work inline. Subagents are for critique only (§8), because building frames in parallel costs more time than it saves.
+
+### Step 0: Intake → `BRIEF.md`
+- If the brief already states the product, the message and the length, infer everything else and write your assumptions down.
+- If it doesn't, ask at most 3 questions: the product in one line, the format and length, and where the film will be shown. Take everything else from §1.
+- Choose the engine:
+  - Remotion by default.
+  - HyperFrames if the user already has a HyperFrames project, wants HTML/GSAP, or needs `--batch` renders driven by variables.
+- Write the defaults you will hold yourself to into `BRIEF.md`: no eyebrow labels, no stacked taglines, no emoji, no stock icons, no lorem ipsum, no telltale generated palettes, no serif or italic unless the brand calls for it. Critics are later prompted with this file word for word, so it doubles as the QA contract.
+- Scaffold the project: `bash <skill>/scripts/new-film.sh films/<name> --fps 60 --bpm 120 --size 1920x1080 [--engine hyperframes]`. Pass `--link-modules <dir>/node_modules` to reuse an existing install instead of running `npm install`.
+- **Gate:** `BRIEF.md` has a spec line, for example `1920x1080@60, 30s, 120BPM, audio: synthesized`.
+
+### Step 1: Concept → `TREATMENT.md`
+Read `references/concept-and-story.md` now.
+- Write 3 concepts, each through a different lens:
+  - (a) the product's own verb or metaphor made literal;
+  - (b) the viewer's pain made visible;
+  - (c) a formal device: a relay object, a bookend, one unbroken camera move, or a container that becomes the product.
+- Throw out any concept whose props could appear in another product's film. It isn't yours.
+- Fill in `assets/TREATMENT.md` for the concept you chose:
+  - a logline;
+  - the arc: hook (inside the problem, felt by 1 s) → turn → proof (1–2 capabilities) → promise → lockup;
+  - the device path, shot by shot;
+  - a beat sheet with the columns bar | time | picture | copy | sound;
+  - the full copy with its word count;
+  - the final frame.
+- Run the deletion test. Remove the demo beats, and the value should still read. Remove the value beats; if the film still "works", it was a feature tour.
+- **Gate:**
+  - the logline is ≤ 15 words;
+  - the word count is inside the §1 budget;
+  - no line is longer than 5 words, and no shot has more than 2 lines;
+  - the device appears in every beat row.
+
+### Step 2: Brand and style frames → `src/brand/`
+Read `references/brand-and-color.md` and the type section of `references/copy-and-type.md`.
+- The starter's palette, mark and demo name are stand-ins marked `// cinetic:placeholder`, and `lint-film.mjs` reports an error until every marker is gone. Apply the user's brand, or invent one for this film, then delete the markers. A film that keeps the starter's look looks like every other film made from it.
+- Write `src/brand/tokens.ts`:
+  - colours: an ink, a paper, 2–4 neutrals, and one accent with its meaning in a comment;
+  - type: one family at 2 weights, plus a mono if you need one;
+  - a type scale;
+  - one tracking value per role.
+- Build the mark in `src/brand/Mark.tsx` from 2–4 primitives on a 100-unit grid, with gaps of at least 8 units so it survives being scaled down.
+- Render 2–4 one-frame style stills from the `Stills` folder and look at them: the mark at 16 px and at full size, one statement frame, and one product frame. `npm run stills` renders the mark stills; add your own with `npx remotion still <StillId> out/stills/<name>.png`.
+- **Gate:**
+  - the stills pass §4;
+  - `node scripts/lint-film.mjs src` reports no placeholder and no colour or font that is not a token.
+
+### Step 3: Timeline → `src/timeline.ts`
+Read `references/timing-grid.md` now.
+- Choose BPM and fps so that a beat is a whole number of frames (see §5).
+- Map the beat sheet onto bars:
+  - `ACT` holds contiguous, bar-aligned acts;
+  - `CUE` holds named frames that sit on the grid;
+  - `COPY` holds `{id, text, in, resolved, out}` for every line;
+  - `TOTAL` includes a tail of at least 60 f.
+- Give each bar one motion peak.
+- **Gate:** `npx tsx scripts/grid-check.ts src/timeline.ts` passes (`npm run check` runs it together with `tsc` and the lint). It checks that every cue is on the 16th grid (or carries an `offgrid:` reason), that text holds are long enough, that no gap without an event runs past 48 f, and that the word count is within budget.
+
+### Step 4: Build, act by act → `src/acts/`
+Before you write motion, read `references/motion-tokens.md`, `references/camera.md`, `references/transitions.md`, and `references/product-ui.md` if the product appears. Keep `references/chromium-rendering.md` open while you debug.
+- Make each act a pure function of `useCurrentFrame()`. Mount one `<Sequence>` per act in `Film.tsx`, and register each act as its own composition in the `Acts` folder so you can iterate on it alone.
+- Take all motion from the tokens in `src/lib/anim.ts` (§6). A raw bezier inside an act is a lint error, because that is how a house style decays.
+- Build the product UI from real components fed by one `data.ts` module with asserts on dates, weekdays, counts and plurals. A screenshot never carries the hero shot.
+- Export from its act every frame the sound needs, as a named constant (for example `LANDINGS` or `SNAP`), so the cue export can import it.
+- Wrap everything in `<FontGate>`.
+- Iterate each act in this loop:
+  1. Render stills at each cue −2, 0 and +2.
+  2. Make an act contact sheet: `python3 scripts/sheet.py --comp Act2 --every 2 --out out/qa/act2.png` renders the act and tiles it with frame and time labels. Use `--every 2` for fast sections.
+  3. Run `bash scripts/layout-audit.sh Act2 --cues`.
+- **Gate:**
+  - `lint-film.mjs` is clean;
+  - `layout-audit` reports 0 safe-area or overlap violations;
+  - every act sheet has written review notes.
+
+### Step 5: Sound → `public/audio/soundtrack.wav`
+Read `references/sound.md` now.
+- Run `npx tsx scripts/export-cues.ts`, which writes `out/cues.json`. Sync points are computed from the picture code (spring contact frames, 50% pop frames, velocity peaks, 97% settles) and never typed by hand. Typed sync points landed 8–11 f off in practice.
+- Fill in `audio/score.json`: key, one chord per bar, sections, drops and silences.
+- Run `python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json --out public/audio/soundtrack.wav --stems out/stems --json out/qa/score.json` (`npm run audio`). The stems let `av-audit.py` check each sound against its cue; the master chain lives in `scripts/audio/master.py`.
+- **Gate:**
+  - the WAV measures −14 ±0.5 LUFS integrated, with true peak ≤ −1.5 dBTP before encoding;
+  - every event has a sound, and every sound has something visible that causes it.
+
+### Step 6: Render and finish → `out/film.mp4`
+Read `references/finishing.md` now.
+- **Preview:** `bash scripts/render.sh Film out/preview.mp4 --preview --audio public/audio/soundtrack.wav`. Remotion renders the picture muted and BT.709-tagged, and ffmpeg muxes the audio.
+- **Master:** if anything moves faster than 12 px/f (`scripts/measure-speed.py` reports this; it is true of almost every launch film), use `bash scripts/render.sh Film out/film.mp4 --blur`. The pipeline is: sharp render → speed measurement → `FilmSub` sub-frame render → float accumulation → mux → sync check. Otherwise, with no flag, `render.sh` renders a sharp master at CRF 14. Silent deliverables such as loops take `--no-audio`.
+- **Gate.** `render.sh` runs both checks below and exits 1 if either fails. Run them again on any file you deliver:
+  - `python3 scripts/probe.py out/film.mp4 --spec 1920x1080@60 --dur <s>` passes: size, fps, duration ±1 f, yuv420p, BT.709 tags, AAC at 48 kHz;
+  - `python3 scripts/check-sync.py out/film.mp4 public/audio/soundtrack.wav` reports a lag of ≤ 48 samples and true peak ≤ −1 dBTP after decoding.
+
+### Step 7: Review loop
+Run §8. Launch films and walkthroughs get at least 2 rounds. For stings and loops whose scripts all pass, 1 round is enough.
+
+### Step 8: Deliver
+- Run `bash scripts/deliver.sh out/film.mp4` with the flags your format needs: `--loop --gif --webm` for loops, `--alpha StingAlpha` for ProRes 4444, and `--variants Film9x16,Film1x1` for social versions. It writes the poster (the final frame) and a manifest. Re-lay the social versions out from the same timeline; never crop the master (see `references/formats.md`).
+- Write a short `README.md`: the idea, the device, the grid, how to render, and the file list.
+- **Gate:** every deliverable in the §1 row exists and passes `probe.py` at its own spec.
+
+### Scaled-down path (stings, loops, short feature clips)
+Small jobs should stay fast. The laws, the grid, the lint and one review round still apply. The rest shrinks:
+1. Write a one-page treatment in `TREATMENT.md`: logline, device, a bar table of 2–8 rows, and the copy. It replaces Steps 1–3 as separate passes. Still write `timeline.ts` and run `grid-check.ts`.
+2. For style frames, the mark at 16 px and one hero still are enough.
+3. Build the whole piece as one act, or two.
+4. Sound is optional for a loop. A sting needs one hit tuned to the key, plus a tail that decays to digital zero.
+5. Render a sharp master unless something passes 12 px/f. Then run one round with the director and forensics lenses.
+6. For a loop, the last frame must flow into frame 0: the seam's frame difference must be at most max(0.4, 1.5× the median step at the ends) (`forensics.py --loop` checks it, and so does `deliver.sh --loop`). Build the loop as a cycle rather than as enter, hold and exit.
+
+## 4. Taste rules that matter most
+
+The full catalogue of cheap-looking tells, each with its fix, is in `references/taste-and-slop.md`. Search it during review.
+
+**Copy** (`references/copy-and-type.md`)
+- Open inside the problem, never on "Introducing…", a rhetorical question or the logo. A muted feed decides in the first second.
+- Pay off the film's own words: a setup phrase, then a refrain, then the resolution.
+- Avoid stock phrasing (seamless, unlock, AI-powered, streamline) and never use a feature name as a headline. They mark the film as a template.
+- Show one line at a time. No eyebrow or kicker labels and no stacked taglines, because that is landing-page grammar.
+
+**Type**
+- Default to one well-made sans at 2 weights (400–600), plus an optional mono, shipped as local variable fonts (`@fontsource-variable/*`).
+  - Serif or italic "elegance" and condensed display faces are common generated-look tells. Use them only when the brand calls for them.
+  - The ubiquitous UI default families read as "template" unless you chose them on purpose.
+- Get emphasis from size or motion.
+  - Statements are 88–128 px with leading 0.95–1.05.
+  - Emphasis is 1.5–1.7× the statement size; secondary lines are 44–56 px.
+  - UI must be at least 22 px on screen after camera scale.
+  - Every number uses tabular figures.
+- Keep one tracking token per role, for example a display setting of 600 / −0.05 em. Near-miss values across scenes read as "almost matched".
+- Blur text only on entry, and only while it moves fast: statements 14 → 0 px, body lines 8 px, through `blurIn` (clear by 60% of the eased move, because Chromium steps blur radii and renders anything under ~0.75 px fully sharp). Text lands sharp and is never left readable-but-blurred for more than 6 f.
+
+**Colour** (`references/brand-and-color.md`)
+- Any hue is fine when it is chosen for a reason. Avoid the telltale generated palettes:
+  - indigo or violet-to-blue gradients;
+  - neon on black;
+  - glassmorphism;
+  - beige with an orange default;
+  - rainbow multi-hue gradients.
+- Tint the neutrals cool or toward the accent, and keep ink as ink. New things arrive in the accent and relax to neutral over 10–30 f, which is how colour says "just happened".
+- No glow, halo or bloom.
+  - Shadows are `0 20–40px 60–120px rgba(0,0,0,.12–.22)`.
+  - Dark surfaces get a 1 px top hairline at 8–12% white.
+  - Gradients ship as dithered PNGs (`scripts/dither-gradient.py`), because CSS gradients band at 8 bits.
+
+**Layout**
+- Avoid "text left, UI card right" and avoid centred floating cards. Show the product full-bleed, anchor the type to an eye line or the lower third, and give each shot one focal action.
+- Keep safe margins of at least 96 px at the sides and 64 px top and bottom, and at least 24 px of headroom at maximum punch. Overscan moving layers by 5–8%.
+
+**Decoration**
+- Every element must name its job (reveal, route, validate, emphasise) or be cut. That rules out particles, bokeh, starfields and ghost text.
+- Grain is either absent or global at 1.5–2%, keyed to the output frame.
+
+**Product truth** (`references/product-ui.md`)
+- Use named, specific, consistent data.
+- Counters count on each visible event.
+- The product only replans the future.
+- There is no cursor once the product acts on its own.
+- Any paused frame still makes sense.
+
+**Transitions** (`references/transitions.md`)
+- Use 6–8 types per film, each at most twice, plus one signature move taken from the mark and used 3 times (open, middle, close).
+- A crossfade is never the default, and never goes through black (it dips about 25% in luminance).
+- No preset gimmicks: glitch, light leak, film burn, swirl, ripple, dreamy zoom, flash through white.
+
+## 5. Timing system essentials
+
+`src/timeline.ts` is the only source of timing. Picture, cue export and grid check all import it. Details and the full pattern are in `references/timing-grid.md`.
+
+```ts
+export const BEAT = (60 / BPM) * FPS;               // 30 f at 120 BPM / 60 fps
+export const BAR = BEAT * 4;
+export const b = (bar: number, beat = 0, sub = 0) =>   // sub = 16ths
+  Math.round(((bar - 1) * 4 + beat) * BEAT + sub * (BEAT / 4));
+const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one per act
+```
+
+- **Whole-frame beats at 60 fps:** 90 BPM gives 40 f, 100 → 36, 120 → 30, 144 → 25, 150 → 24.
+- **Grid placement**
+  - Section changes land on downbeats; cuts inside a section land on 8ths.
+  - A batch of landings snaps to 16ths with a 0–3 f spread, and the first item lands on the beat.
+  - Micro-rhythm is welcome: the payoff on the clap, its consequence on the next kick.
+- **Hit frames**
+  - Start a picture change at `cue − 1`, because `prog()` is 0 on its start frame.
+  - Pulses peak 2 f after their sound (`hitPulse`).
+  - Start a spring at `beat − delayTo(cfg, 0.5)` so its pop lands on the beat.
+- **Holds**
+  - Once text resolves, it stays at least 36 f + 6 f per word. Text that hasn't resolved never exits.
+  - Nothing is static for more than 48 f, except a designed freeze of ≤ 15 f that sits exactly on a silence.
+  - A logo or lockup hold is 1.5–2.0 s and visibly builds (a push of ≥ 10–20%). A URL is readable for at least 1.7 s.
+- **Density**
+  - Aim for 45–60 discrete events per 30 s and one motion peak per bar, with 30–70 f of calm between peaks.
+  - The first 6 s run about twice as dense as the middle.
+  - Shot length: median 60–90 f; minimum 24 f (and only with no text); maximum 180 f (and only with continuous action).
+- **Hook:** frame 0 is already composed and moving, something visibly changes about every 0.5 s, and the problem is felt by 1 s and stated by 2 s.
+
+**Where a sound goes** (computed by `src/lib/sync.ts`: `peak`, `hit`, `delayTo`, `settleOf`):
+
+| Picture event | The sound sits on |
+|---|---|
+| Landing / impact | the contact frame, so the motion must arrive with velocity (spring threshold 0.92–1.0, or the `contact` ease) |
+| Pop-in | the frame at 50% of travel |
+| Tween settle | the 97% frame |
+| Whoosh | its apex on the velocity peak |
+| Exit roll | one tick, with no detent |
+
+Audio that leads the picture by more than about 45 ms reads as "sound first". Move the picture, not the sound.
+
+## 6. Motion system essentials
+
+The tokens live in `src/lib/anim.ts` (`E`, `SPR`, `tw`, `prog`, `mix`, `lmix`, `hitPulse`, `blurIn`, `arrive`, `rand`, `fd`). Curves, measured values and choreography constants are in `references/motion-tokens.md`; camera work is in `references/camera.md`.
+
+| Token | Bezier | Use |
+|---|---|---|
+| `out` | .16,1,.3,1 | arrivals, reveals |
+| `outSoft` | .22,1,.36,1 | gentle settles |
+| `in` | .7,0,.84,0 | departures, implosions |
+| `inOut` | .87,0,.13,1 | whips, lockup slides |
+| `smooth` | .65,0,.35,1 | drifts, fades (10–14 f) |
+| `ui` | .4,0,.2,1 | small UI changes |
+| `cam` | .48,.1,0,.9 | camera: slow start, peak at about 27%, long settle |
+| `glide` | .47,.2,.15,1 | 150–350 px moves |
+| `rest` | .45,0,.1,1 | moves that end at rest; chaining after another move |
+| `contact` | .55,0,.9,.55 | accelerating into an impact |
+| `whip` | .6,0,.15,1 | feature-to-feature whips |
+| `dolly` | .35,0,.65,1 | slow push through a hold |
+
+A film uses about 3 easing characters. Linear is only for drift.
+
+Springs (`SPR`, as damping/stiffness/mass): `snap` 18/260/0.7 (small overshoot), `pop` 11/180/0.6 (playful), `soft` 26/120/1 (no overshoot), `heavy` 30/90/1.4 (weighty).
+- **Damping.** Default to critical damping or more: damping ≥ 2√(stiffness·mass). Keep 1–7% overshoot for impacts, and use at most 2 "landing" springs per film, because a bounce everywhere reads as a toy.
+- **Clamp.** Clamp overshoot wherever it could collide with other geometry or drive a value negative. Snap to rest when `|1 − s| < 0.01`.
+- **`Easing.spring({damping:200})`** starts at zero velocity, so it is not a replacement for expo-out.
+
+Laws of weight:
+- **Direction.** Entrances decay and exits accelerate; only the camera eases both ways. A fade-out never uses expo-out, because it pops half the change in one frame.
+- **Log space.** Interpolate scale and zoom in log space: `exp(mix(log a, log b, t))`, which is `lmix`.
+- **Duration.** Duration grows with distance: 0.35 s + 1.35 ms per px, clamped to 0.6–2.4 s for camera moves. The slowest move is at least 3× the fastest.
+- **Shape and contact.** Shape settles 6 f before position. Contacts squash (scaleX 1.08 → 1, scaleY 0.9 → 1 over 8 f, anchored at the contact edge).
+- **Overlap.** Consecutive moves overlap by about 20 f, or the second one starts on a zero-slope curve. This prevents stall-then-lurch.
+- **Budget.** Run one hero motion plus at most 2 supporting ones. Put fast (60–70 px/f whips) next to real stillness (0.3–0.6 px/f). Anything faster than 12 px/f gets true motion blur in Step 6.
+- **Envelope.** Every punch and tick uses `hitPulse(t, attack = 2, tau = 5)`. A half-sine on a hard window leaves velocity clunks and peaks 6–8 f late.
+- **Seams**
+  - Either both sides of a cut are at rest, or the incoming shot starts at the outgoing velocity.
+  - Match every property across a cut, and show the rest pose once.
+  - Never cross-fade two copies of one object; morph one object instead.
+
+## 7. Engine non-negotiables
+
+These come from real failures. Each costs minutes to respect and hours to debug.
+
+**Both engines**
+- **Everything is a function of frame or time.**
+  - No CSS `transition`, `animation` or `@keyframes`, because they don't render deterministically.
+  - No `Math.random`, `Date.now` or `performance.now`; use a seeded `rand(seed)`.
+- **Transforms**
+  - Put all translation inside one `transform` (`left:0; top:0; transform-origin:0 0; transform: translate() scale()`). A fractional left/top combined with a transform snaps to whole pixels.
+  - Place dots and cursors by transform only.
+  - Vertical text positions snap to whole pixels in the headless shell, so end a text rise on `arrive(p)` (and start an exit on `depart(q)`) instead of letting an ease-out creep its last pixels (`references/chromium-rendering.md` §15).
+- **Blur**
+  - Never put `will-change` on a layer where `filter: blur()` animates. It causes nondeterministic ghost frames.
+  - Never animate blur on large layers; use `src/fx/RackFocus.tsx`.
+- **Discrete state**
+  - Clamp every value that feeds geometry, so radius, width, blur and scale stay ≥ 0.
+  - Compute discrete state (typed count, caret, counters, labels) from `fd(frame)` (`Math.round`), because motion-blur sub-frames are fractional.
+- **Fonts.** Load fonts before any render or text measurement (`FontGate`). A measurement taken earlier is cached with the fallback width.
+
+**Remotion** (`references/remotion-engine.md`)
+- **Clamping.** `interpolate` extrapolates by default, so always clamp; `tw()` and `prog()` do it for you.
+- **`premountFor`** only affects Studio preview and does nothing in a render. With `layout="none"` it is silently ignored in 4.0.529 (no error). Don't build on it.
+- **Studio `Interactive.*` markup** is an optional leaf layer, never the structure.
+- **Config.** Render with `--muted` and let ffmpeg mux the audio (Remotion's AAC leaves about 2.5 f of priming). Use the ANGLE GL renderer, JPEG q95 intermediates and a 120 s `delayRender` timeout; the starter's `remotion.config.ts` sets all of these.
+- **Browser.** In a sandbox, set `REMOTION_BROWSER` to the local headless Chromium if auto-detection misses it.
+
+**HyperFrames** (`references/hyperframes-engine.md`)
+- **Timeline.** Each composition has one paused timeline, registered last, with a key equal to its `data-composition-id`.
+- **Tweens**
+  - Use `fromTo`, never `from`.
+  - Never combine a CSS transform with a GSAP transform on one node.
+- **Markup**
+  - No `repeat:-1`. No `<br>`.
+  - Every `<audio>` has an `id`; one without is silently dropped from the mix.
+  - A sub-composition's `<style>` and `<script>` go inside its `<template>`.
+- **Fonts** are local woff2 files declared with `@font-face`.
+- **Lint.** Lint must show zero errors before `check` means anything, because otherwise it reports a misleadingly clean "0 samples".
+- **Finish.** Finish with `bash scripts/hf-finish.sh`. Films faster than about 18 px/f belong in Remotion.
+
+## 8. Review loop and ship gate
+
+The full procedure, the critic prompts, the rubric anchors and the table of thresholds are in `references/review-loop.md`. A round goes like this:
+
+1. **Render.** Render the preview (or the affected acts).
+2. **Measure.** Run the scripts. Each writes JSON to `out/qa/`:
+   - `python3 scripts/probe.py out/preview.mp4 --spec 1920x1080@60 --dur <s>`
+   - `python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --json out/qa/forensics.json`. It checks pops, stalls, dead holds, ghost frames, border slivers, judder, sharpness steps and banding. Declare designed cuts and freezes with `--cuts` and `--freeze-ok` so they are not flagged, and add `--loop` for loops to check the seam.
+   - `python3 scripts/av-audit.py out/preview.mp4 --cues out/cues.json --stems out/stems --json out/qa/av.json`. It checks onsets against cues (per stem, so the bed cannot hide a late effect), loudness, true peak, clicks and the tail.
+3. **Sheets.** Make contact sheets with `python3 scripts/sheet.py out/preview.mp4 --chunks 4 --rate 12 --out out/qa/sheet.png`, plus a legibility sheet at `--width 480`. Grab exact frames with `bash scripts/grab.sh out/preview.mp4 <frame>…`.
+4. **Lenses.** Run the critic lenses from `assets/critics/`. Launch them as parallel subagents if the harness allows it; otherwise run them one after another, and look at the sheet *before* you open the code.
+   - **Director** (`director.md`): the weakest 3 s; anything cheap, templated or dead; whether each act lands in under 1 s; whether the story reads muted; the 2 s hook; the end. At most 12 changes.
+   - **Forensics** (`forensics.md`): reads the script JSON and inspects the flagged frames at full size.
+   - **Sound/sync** (`sound-sync.md`): onsets against cues, masking, key, the ending.
+   - **Round 1 only, art/copy/UI** (`art-copy-ui.md`): type, colour discipline, strings, data truth.
+5. **Output format.** Each lens returns `{issues:[{id, priority, frame, problem, fix:{file, change}}], overall, score}`.
+6. **Verify** (`verifier.md`). Try to refute each P0 and P1 from frames and code. Drop an issue if it is wrong, invisible at normal speed, or if its fix would make things worse.
+7. **Fix and re-render.** Fix in order of impact per minute. Re-render only the affected acts (per-act compositions) and splice at a static seam frame.
+
+**Critic prompts** say what changed, so it gets checked hardest. They also say "Do not re-report fixed issues" and "Don't propose adding text", and they batch images into sheets, because images are expensive in context. When one act stays weak after two rounds, run the design-off in `review-loop.md`.
+
+**Severity**
+- **P0:** visible on a key beat (hook, payoff, logo), or it breaks the story.
+- **P1:** noticeable on a normal viewing.
+- **P2:** visible only when paused.
+
+**Ship gate**
+- The 11-dimension rubric: every dimension ≥ 3, Finish and Sync = 5, mean ≥ 4.2.
+- No open P0.
+- Every script passes.
+- Stop after 5 rounds, or sooner once the gate is met. Then say plainly what you would still change.
+
+## 9. File index
+
+Read each file when its step comes up. Don't read them all at once.
+
+| When | File | What it gives you |
+|---|---|---|
+| Step 0, choosing a format | `references/formats.md` | a recipe per format: act templates, loops, stings, walkthroughs, social re-layouts |
+| Before the first film | `references/worked-example.md` | Tessel from idea to master, with 15 mistakes and their fixes |
+| Step 1 | `references/concept-and-story.md` | concept lenses, ownership and deletion tests, device design, arcs, end cards |
+| Step 1 | `assets/TREATMENT.md` | the treatment template |
+| Steps 1–2 | `references/copy-and-type.md` | copy budget, callback copy, type scale, kinetic-type recipes, text measurement |
+| Step 2 | `references/brand-and-color.md` | naming, mark construction, tokens, accent semantics, shadows, colour ramps |
+| Step 2 and review | `references/taste-and-slop.md` | every cheap-looking tell, with its fix |
+| Step 3 | `references/timing-grid.md` | BPM/fps table, the `timeline.ts` pattern, sync helpers, schedules, typing cadence |
+| Step 4 | `references/motion-tokens.md` | easing and spring tables, `hitPulse`, anticipation, landings, staggers |
+| Step 4 | `references/camera.md` | anchor camera, log-space zoom, breath/dip modifiers, rack focus, 3D limits |
+| Step 4 | `references/transitions.md` | energy table and the seam catalogue, each with frames, curves and failure modes |
+| Step 4 | `references/product-ui.md` | data module with asserts, FLIP inserts, counters, cursor physics, typing |
+| Step 4, Remotion | `references/remotion-engine.md` | verified API facts, config, CLI recipes, pitfalls |
+| Step 4, HyperFrames | `references/hyperframes-engine.md` | render model, composition rules, CLI, translating cinetic to GSAP |
+| Any render artifact | `references/chromium-rendering.md` | symptom → cause → fix → detection for rasterisation traps |
+| Step 5 | `references/sound.md` | synthesis palette, `score.json` schema, placement, mix and master |
+| Step 6 | `references/finishing.md` | motion-blur pipeline, banding, BT.709, encoding, mux, deliverables |
+| Step 7 | `references/review-loop.md` | round procedure, rubric, severity, thresholds, design-off |
+
+| Script | Use |
+|---|---|
+| `scripts/new-film.sh` | scaffold a project from `assets/remotion-starter/` or `assets/hyperframes-starter/` |
+| `scripts/lint-film.mjs` | static bans: CSS animation, randomness, raw curves, off-token colours and fonts, unclamped `interpolate`, a leftover placeholder brand |
+| `scripts/grid-check.ts` | grid, contiguous acts, text holds, event-free gaps, word budget |
+| `scripts/layout-audit.sh` | text boxes against the safe area and against each other, at the cues |
+| `scripts/export-cues.ts` | `src/sync.ts` → `out/cues.json` |
+| `scripts/audio/score.py`, `synth.py`, `master.py` | score and SFX from the cues; mix and master |
+| `scripts/render.sh`, `scripts/render-chunks.sh` | preview and master renders (`--blur`), ffmpeg mux, sync check; chunked renders |
+| `scripts/measure-speed.py`, `scripts/accumulate.py` | the motion-blur pass (called by `render.sh --blur`) |
+| `scripts/dither-gradient.py` | dithered backdrop PNGs instead of CSS gradients |
+| `scripts/probe.py`, `scripts/check-sync.py` | spec gate; A/V lag and true-peak gate |
+| `scripts/sheet.py`, `scripts/grab.sh` | contact sheets; exact frame grabs |
+| `scripts/forensics.py`, `scripts/av-audit.py` | pixel QA; audio and sync QA |
+| `scripts/deliver.sh` | poster, GIF, WebM, loop-seam check, ProRes alpha, variant renders |
+| `scripts/hf-finish.sh` | the HyperFrames finish: lint, check, PNG render, BT.709 encode, mux, sync |
