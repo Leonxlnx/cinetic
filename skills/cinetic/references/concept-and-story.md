@@ -100,6 +100,7 @@ Run every finalist through these. A concept that fails the ownership or deletion
 | **Ownership** | Swap in a competitor's name and logo. Then list every prop in the film and strike any that could appear in another product's film. | The film still works with another name, or fewer than two owned props remain |
 | **Deletion** | Delete the demo beats: the value must still read. Then delete the value beats: the film must stop working. | The value vanishes with the demo, or the film still "works" without the value (it was a tour) |
 | **Muted** | Describe the film using pictures only: no copy, no sound. | The problem → result can't be told from the images |
+| **Feature word** | Would a stranger, watching muted, use the brief's own word for the feature ("streak", "split", "cache hit")? | They would describe a neighbouring thing (a chart of pages instead of a streak). The device serves the feature; when a name-derived metaphor makes the feature read as something else, keep the feature's familiar form and let the device dress it |
 | **Poster** | Describe the final frame as a still printed on a wall. | It doesn't say who made it and what it does |
 | **One sentence** | Say the idea aloud in one sentence. | You need "and" (two ideas) or an adjective (a style) |
 | **Retell** | How would a viewer describe it to a friend tomorrow? | The answer is a style ("it was slick") rather than an image ("the dot that…") |
