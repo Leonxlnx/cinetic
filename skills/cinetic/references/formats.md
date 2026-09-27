@@ -52,6 +52,7 @@ The numbers are proven defaults, not rules. Bar arithmetic and tempo choice live
 - **The signature move appears 3 times:** at the open, the middle and the close. Tessel's was the red dot's iris, flood and return. Every other transition type is used at most twice (see `references/transitions.md`).
 - **End card.**
   - The final frame is the poster by default, so it must carry the brand: the mark plus the name, or the mark plus the URL.
+  - When the brief gives one practical fact (a date such as "next week", "out now", a URL), it goes on the end card at the secondary size under the lockup, readable for at least 1.7 s. It is the only line besides the name; a film that leaves it out has dropped the brief's call to action.
   - A frame of the device alone is elegant, but it is weak for recall on a paused player. If you end on it anyway, export the poster from the lockup and say so in the README.
 - **Teaser (15–20 s).** Keep the hook, the turn and the lockup, and cut proof down to a single glimpse, or cut it entirely. Budget 6–10 words. The rule "open inside the problem" still applies: never open on the logo.
 
@@ -81,9 +82,11 @@ The numbers are proven defaults, not rules. Bar arithmetic and tempo choice live
 - **Show the product for real.** Use real components and one `data.ts` with asserts. The data should survive a pause: correct weekdays, sums that add up, plurals that agree. Details are in `references/product-ui.md`.
 - **Keep the story device.** Even in a UI-only piece something must carry the eye: the accent-marked item, a selection, or a moving total.
 - **Show no cursor after the cause.** A cursor that keeps doing things implies the product needs babysitting.
+- **Make the product and the feature identifiable.** A stranger should know it is software and which feature this is: enough real app chrome (a window edge, the app's own header or sidebar) and the feature's name once, as a UI label (a tab, a menu item, the button that causes the action), as the one line of copy, or on the end card. "No feature name as a headline" is a copy rule; it never means "never name it". A film that shows a clever behaviour without naming it can't be searched for or asked about.
 
 **Format gates**
 - One capability.
+- The feature's name appears once, and a paused frame shows enough app chrome to read as software.
 - A result hold of at least 36 f + 6 f per word before any camera move.
 - Every counter changes on a visible event (a manual check on the act sheet).
 
@@ -118,6 +121,8 @@ export const loopNoise = (seed: string, f: number, radius = 0.6, x = 0) =>
 - **Springs and tweens** must be at rest before the seam, or be part of a motion that continues identically after frame 0. A spring still settling at `TOTAL − 1` makes a visible hitch.
 - **Keep text away from the seam.** It must be fully resolved or fully gone there, because a line cut in half at the seam reads as a glitch.
 - **The first frame** is also the poster and the frame people see before autoplay starts, so make it a readable, composed state.
+
+**Name what it is.** A loop has no end card, so the product and the feature must be identifiable inside it: the feature's name as a UI label (a tab, a label, the button that causes the action) readable at 480 px, or the loop's one line names it. A loop of beautiful motion around an anonymous card sells nothing.
 - **Density.** Loops are watched repeatedly. Give each cycle one peak per bar, but make the calm between peaks real (30–70 f), or the loop becomes tiring on the third pass.
 
 **Sound (optional).** Most loops ship muted. If a loop has sound:
@@ -149,6 +154,7 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 - The length is a whole number of bars (`grid-check.ts`), and `probe.py --dur <s>` matches it within one frame (add `--audio none` for a muted loop).
 - **Seam.** The frame difference between the last frame and frame 0 is at most max(0.4, 1.5× the median of the 8 steps at each end), and it is not flagged as a spike (`forensics.py --loop`; `deliver.sh --loop` repeats the check on the delivered file).
 - The muted read works: the director lens watches the sheet with no audio and states the idea.
+- A paused frame names the product or the feature (a UI label or the one line).
 
 **Deliver.** Render with `bash scripts/render.sh Film out/loop.mp4 --no-audio` (or with the folded WAV), then run `bash scripts/deliver.sh out/loop.mp4 --loop --gif --webm`.
 - **MP4 and WebM** for `<video autoplay muted loop playsinline>`. Default budget: 4 MB or less per 10 s at 1080p.
@@ -258,21 +264,51 @@ const LAY = layoutFor(width, height); // type sizes, camera anchors, safe box, l
 ```
 
 - **Timing stays identical**, so the soundtrack and `cues.json` are reused unchanged. Only positions, sizes, line breaks and camera anchors change.
-- **Line breaks change.** A 5-word line at 120 px on 16:9 becomes two lines at 90–100 px on 9:16. Put the break in `COPY` or the layout table, never in a width that happens to wrap.
+- **Line breaks change.** A 5-word line at 120 px on 16:9 becomes two lines at 110–140 px on 9:16. Put the break in `COPY` or the layout table, never in a width that happens to wrap.
 - **The product's framing changes.** A tall frame wants the camera closer on one region, with the anchor moved rather than the scale reduced.
 
-**Safe zones and type minimums** (defaults; check the destination's current overlays when it matters):
+**Vertical (9:16) composition.** A tall frame is not a wide frame with bars: use the height. A 16:9 layout moved into 1080 × 1920 leaves the product as a strip in the middle and the lower half empty, and on a phone that empty half is what the viewer sees above the caption.
+- **The content's visual mass sits in the middle of the safe band**, not the middle of the frame. With the feed zones below, the band runs from y 270 to y 1536 and its centre is y ≈ 903 (`safeBox('feed9x16', W, H).cy` from `src/lib/safe.ts`).
+- **No empty bottom 40%.** Stack the statement above the product, or let the product fill the band and bleed past its sides, so the region from y 1152 down to the caption zone holds content. The caption zone itself (below y 1536) carries the stage or the product's edge as texture, never anything to read.
+- **Type and UI run about 1.3–1.5× their 16:9 pixel sizes**, because the frame is watched full-screen on a phone next to feed UI: readable UI ≥ 32 px (not 22), secondary lines and captions 60–72 px, the product framed so its body text reads ≥ 32 px. Statements are capped by the width instead: 110–140 px, at most two lines of ≤ 3 words (`references/copy-and-type.md` §7).
 
-| Aspect | Size | Keep text and key action inside | Type minimums |
-|---|---|---|---|
-| 16:9 | 1920×1080 | 96 px at the sides, 64 px top and bottom | statement 88–128 px, UI ≥ 22 px |
-| 9:16 | 1080×1920 | top 14% (≈ 270 px) and bottom 20% (≈ 384 px) clear of feed UI; 64 px left, 120 px right | headline ≥ 90 px, body ≥ 32 px |
-| 1:1 | 1080×1080 | 64 px on every side | headline ≥ 72 px, body ≥ 28 px |
-| 4:5 | 1080×1350 | 64 px at the sides, 96 px top and bottom | headline ≥ 80 px, body ≥ 30 px |
+A layout sketch at 1080 × 1920 (feed zones: top 270, right 120, bottom 384, left 64):
+
+| y (px) | Region | What goes there |
+|---|---|---|
+| 0–270 | header zone | the stage only (its tone, the device's path); nothing to read, no key action |
+| 300–580 | statement | one statement on two lines at 110–140 px, left edge on x 96 (or centred on the band's x 512) |
+| 620–1420 | the product | the working region, 896 px wide or bleeding off both sides, UI type ≥ 32 px; the action (the tap, the landing, the count) happens near y 900–1100, the band's centre |
+| 1420–1520 | the result | the counter, check or feature label the action produces, ≥ 48 px |
+| 1536–1920 | caption zone | the stage and the product's lower edge as texture; the feed's own UI sits here |
+
+Check the mass on a still: this prints the share of non-stage pixels per horizontal band, and the bands from 40% down should not read near 0%.
+
+```bash
+python3 - out/qa/f600.png <<'PY'
+import sys, cv2, numpy as np
+im = cv2.imread(sys.argv[1]).astype(float); h = im.shape[0]
+stage = np.median(im[: h // 40].reshape(-1, 3), axis=0)    # the top rows are stage
+busy = (np.abs(im - stage).sum(axis=2) > 24).mean(axis=1)  # content share of each row
+for a, b in [(0, .14), (.14, .40), (.40, .60), (.60, .80), (.80, 1)]:
+    print(f'{a:>4.0%}-{b:<4.0%} {busy[int(a * h):int(b * h)].mean():6.1%}')
+PY
+```
+
+**Safe zones and type minimums.** The zones are presets in `src/lib/safe.ts`, in px at the preset's own size and scaled with the frame. They are defaults taken from the current overlays of the big vertical feeds: the header and tabs take 240–290 px at the top, the action rail 120–190 px on the right (from about y 840 down), and the handle, a one- or two-line caption and the audio label 380–450 px at the bottom, up to about 670 px with a long caption or a paid post's call-to-action button. Check the destination's current overlays when it matters.
+
+| Aspect | Size | Preset | Keep text and key action inside | Type minimums |
+|---|---|---|---|---|
+| 16:9 | 1920×1080 | `wide16x9` | 96 px at the sides, 64 px top and bottom | statement 88–128 px, UI ≥ 22 px |
+| 9:16 feeds | 1080×1920 | `feed9x16` | top 270 (14%), right 120, bottom 384 (20%), left 64 | statement 110–140 px, secondary ≥ 60 px, UI ≥ 32 px |
+| 9:16, strict | 1080×1920 | `feed9x16Strict` | top 288, right 192, bottom 672 (35%), left 64: long captions, paid posts | as above |
+| 1:1 | 1080×1080 | `square1x1` | 64 px on every side | statement ≥ 72 px, secondary ≥ 44 px, UI ≥ 28 px |
+| 4:5 | 1080×1350 | `portrait4x5` | 64 px at the sides, 96 px top and bottom | statement ≥ 80 px, secondary ≥ 48 px, UI ≥ 30 px |
 
 - Run `bash scripts/layout-audit.sh Film9x16 --cues` for each variant.
-  - By default `<Audit>` checks `safeArea(width, height)`: 5% at the sides and 6% top and bottom.
-  - For a feed variant, pass `safe={{ x: 120, y: 384 }}`, the larger margin of each pair, so the asymmetric zones above are covered.
+  - `<Audit>` checks the preset for the frame's aspect by default (`presetFor(w, h)`: 9:16 gets `feed9x16`; an aspect with no preset gets `title`, 5% at the sides and 6% top and bottom). Its minimum readable size is 22 px, or 32 px in a 9:16 frame. It also fails text painted under a moving element tagged `data-mover` (`references/product-ui.md` §4.5).
+  - Name another zone on the composition (`defaultProps={{ audit: false, safe: 'feed9x16Strict' }}`) or per run (`--safe feed9x16Strict`, or explicit insets as top,right,bottom,left: `--safe 288,192,672,64`). The older symmetric `{ x, y }` still works (`--safe 96,64`).
+  - Lay out from the same numbers: `safeBox(spec, width, height)` returns the zone's edges, size and centre for a layout table, and `SAFE` in `tokens.ts` is its symmetric envelope (the larger inset of each pair), for centred text.
 - Burn captions into every feed variant, because feeds autoplay muted.
 - Render and probe with `bash scripts/deliver.sh out/film.mp4 --variants Film9x16,Film1x1`. Variants render sharp by default, which is right when their fastest motion is ≤ 12 px/f; otherwise add `--variant-samples out/samples.json` to blur them with the master's samples instead of measuring again (`references/finishing.md` §1).
 

@@ -1,21 +1,29 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { AbsoluteFill, useCurrentFrame, useCurrentScale, useVideoConfig } from 'remotion';
-import { C, safeArea } from '../brand/tokens';
+import { C } from '../brand/tokens';
+import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 
 // Layout audit, mounted only when a composition gets the prop {audit: true}
 // (scripts/layout-audit.sh renders stills that way). It measures every element tagged
-// data-text="<id>" on the current frame, checks it against the title-safe area (of this
-// composition's own size, or the `safe` prop for platform-specific margins), the other text
-// boxes and the minimum readable size, draws the boxes, and logs one JSON line per frame:
-//   BF_AUDIT {"comp":"Film","frame":120,"boxes":[...],"issues":[...]}
+// data-text="<id>" on the current frame and checks it against:
+// - the safe zone: `safe` is a preset ('feed9x16', 'feed9x16Strict', 'square1x1', 'portrait4x5',
+//   'wide16x9', 'title'), explicit insets {top, right, bottom, left}, or the older symmetric {x, y};
+//   without it, the preset for the frame's aspect (lib/safe.ts presetFor: 9:16 gets the feed zones);
+// - the other text boxes (overlap) and the minimum readable size (22 px at 1080p, 32 px in 9:16);
+// - anything tagged data-mover="<id>" (a chip, card, cursor or device that travels) painted OVER
+//   the text: sampled with elementsFromPoint, so z-order and transforms count as rendered.
+// It draws the boxes and the safe zone, and logs one JSON line per frame:
+//   BF_AUDIT {"comp":"Film","frame":120,"safe":{...},"boxes":[...],"issues":[...]}
 // Tag the element whose box IS the visible text (the line, not an oversized wrapper).
 
 export const AUDIT_TAG = 'BF_AUDIT';
 /** Smallest text a viewer must read, px at 1080p (scaled by U for other sizes). */
 export const MIN_TEXT_PX = 22;
+/** The same in a tall (9:16) frame, which is watched full-screen on a phone next to feed UI. */
+export const MIN_TEXT_PX_TALL = 32;
 
 type Box = { id: string; text: string; x: number; y: number; w: number; h: number; px: number; opacity: number };
-type Issue = { kind: 'safe-area' | 'overlap' | 'small-text'; id: string; detail: string };
+type Issue = { kind: 'safe-area' | 'overlap' | 'small-text' | 'covered'; id: string; detail: string };
 
 const round = (v: number) => Math.round(v * 10) / 10;
 
@@ -25,13 +33,35 @@ const opacityOf = (el: Element | null) => {
   return o;
 };
 
-export const Audit: React.FC<{ safe?: { x: number; y: number } }> = ({ safe }) => {
+/** Share of a 5 x 3 grid of points inside the text where a tagged mover is painted above the text. */
+const coverOf = (el: HTMLElement) => {
+  const r = el.getBoundingClientRect();
+  let hits = 0;
+  const by = new Set<string>();
+  for (let i = 1; i <= 5; i++)
+    for (let j = 1; j <= 3; j++) {
+      for (const hit of document.elementsFromPoint(r.left + (r.width * i) / 6, r.top + (r.height * j) / 4)) {
+        if (hit === el || el.contains(hit)) break; // the text is on top at this point
+        const m = hit.closest('[data-mover]');
+        if (m && !m.contains(el) && opacityOf(m) >= 0.1) {
+          hits++;
+          by.add(m.getAttribute('data-mover') || '?');
+          break;
+        }
+      }
+    }
+  return { hits, by: [...by] };
+};
+
+export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
   const ref = useRef<HTMLDivElement>(null);
   const frame = useCurrentFrame();
   const zoom = useCurrentScale(); // the Studio scales the canvas; renders are 1
   const { width, height, id: comp } = useVideoConfig();
-  const SAFE = safe ?? safeArea(width, height);
+  const SAFE: Insets = safeInsets(safe, width, height);
+  const zone = typeof safe === 'string' ? safe : safe ? 'custom' : presetFor(width, height);
   const U = Math.min(width, height) / 1080;
+  const minPx = (height / width > 1.5 ? MIN_TEXT_PX_TALL : MIN_TEXT_PX) * U;
   const [found, setFound] = useState<{ boxes: Box[]; issues: Issue[] }>({ boxes: [], issues: [] });
 
   useLayoutEffect(() => {
@@ -60,13 +90,15 @@ export const Audit: React.FC<{ safe?: { x: number; y: number } }> = ({ safe }) =
     const issues: Issue[] = [];
     for (const b of boxes) {
       const out = [
-        b.x < SAFE.x && `left ${b.x}px < ${SAFE.x}`,
-        b.x + b.w > width - SAFE.x && `right ${round(b.x + b.w)}px > ${width - SAFE.x}`,
-        b.y < SAFE.y && `top ${b.y}px < ${SAFE.y}`,
-        b.y + b.h > height - SAFE.y && `bottom ${round(b.y + b.h)}px > ${height - SAFE.y}`,
+        b.x < SAFE.left && `left ${b.x}px < ${SAFE.left}`,
+        b.x + b.w > width - SAFE.right && `right ${round(b.x + b.w)}px > ${width - SAFE.right}`,
+        b.y < SAFE.top && `top ${b.y}px < ${SAFE.top}`,
+        b.y + b.h > height - SAFE.bottom && `bottom ${round(b.y + b.h)}px > ${height - SAFE.bottom}`,
       ].filter(Boolean);
-      if (out.length) issues.push({ kind: 'safe-area', id: b.id, detail: out.join(', ') });
-      if (b.px < MIN_TEXT_PX * U) issues.push({ kind: 'small-text', id: b.id, detail: `${b.px}px < ${round(MIN_TEXT_PX * U)}px` });
+      if (out.length) issues.push({ kind: 'safe-area', id: b.id, detail: `${out.join(', ')} (${zone})` });
+      if (b.px < minPx) issues.push({ kind: 'small-text', id: b.id, detail: `${b.px}px < ${round(minPx)}px` });
+      const cov = coverOf(b.el);
+      if (cov.hits) issues.push({ kind: 'covered', id: b.id, detail: `${cov.hits}/15 sample points under ${cov.by.join(', ')}` });
     }
     for (let i = 0; i < boxes.length; i++)
       for (let j = i + 1; j < boxes.length; j++) {
@@ -78,14 +110,14 @@ export const Audit: React.FC<{ safe?: { x: number; y: number } }> = ({ safe }) =
         if (ix > 0 && iy > 0) issues.push({ kind: 'overlap', id: `${a.id}+${b.id}`, detail: `${round(ix)}x${round(iy)}px` });
       }
     const clean = boxes.map(({ el: _el, ...b }) => b);
-    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, safe: SAFE, boxes: clean, issues })}`);
+    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, boxes: clean, issues })}`);
     setFound({ boxes: clean, issues });
-  }, [frame, zoom, width, height, comp, SAFE.x, SAFE.y, U]);
+  }, [frame, zoom, width, height, comp, zone, SAFE.top, SAFE.right, SAFE.bottom, SAFE.left, minPx]);
 
   const bad = new Set(found.issues.flatMap((i) => i.id.split('+')));
   return (
     <AbsoluteFill ref={ref} style={{ pointerEvents: 'none' }}>
-      <div style={{ position: 'absolute', left: SAFE.x, top: SAFE.y, right: SAFE.x, bottom: SAFE.y, outline: `2px dashed ${C.mute}` }} />
+      <div style={{ position: 'absolute', left: SAFE.left, top: SAFE.top, right: SAFE.right, bottom: SAFE.bottom, outline: `2px dashed ${C.mute}` }} />
       {found.boxes.map((b, i) => (
         <div key={i} style={{ position: 'absolute', left: b.x, top: b.y, width: b.w, height: b.h, outline: `2px solid ${bad.has(b.id) ? C.accent : C.mute}` }} />
       ))}

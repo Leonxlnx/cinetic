@@ -3,25 +3,33 @@
 #
 # Renders the chosen frames with --props '{"audit":true}'. The starter's <Audit> (src/lib/Audit.tsx)
 # measures every element tagged data-text="<id>" and logs one BF_AUDIT JSON line per frame; this
-# script collects them and fails on text outside the title-safe area, text boxes that overlap, and
-# readable text under 22 px (at 1080p). The audit stills (boxes drawn, safe area dashed) are kept.
+# script collects them and fails on text outside the safe zone, text boxes that overlap, readable
+# text under 22 px (at 1080p; 32 px in a 9:16 frame) and text covered by a moving element tagged
+# data-mover (sampled with elementsFromPoint, so z-order counts). The audit stills (boxes drawn,
+# safe zone dashed) are kept.
 #
 # Usage (from the project root):
 #   bash scripts/layout-audit.sh <Comp> [--frames 120,240 | --cues | --copy] [--props '{"k":1}']
+#                                [--safe feed9x16 | --safe 270,120,384,64 | --safe 96,64]
 #                                [--entry src/index.ts] [--json out/qa/layout-<Comp>.json]
 #                                [--out out/qa/layout-<Comp>] [--concurrency 2]
 #   frames   --copy (default): each COPY entry's resolved frame, mid-hold and last frame before it leaves
 #            --cues: every CUE frame plus each COPY resolved frame
 #            --frames: an explicit comma list
 #   Comp ActN reads frames relative to the Nth entry of ACT; any other composition (Film,
-#   Film9x16, ...) uses absolute timeline frames. The composition must accept an `audit` prop.
+#   Film9x16, ...) uses absolute timeline frames. The composition must accept an `audit` prop
+#   (and a `safe` prop it hands to <Audit>, as the starter's Film and acts do).
+#   safe     a preset from src/lib/safe.ts (feed9x16, feed9x16Strict, square1x1, portrait4x5,
+#            wide16x9, title), insets top,right,bottom,left in px, the older symmetric x,y, or a
+#            JSON object. Default: the composition's own `safe` prop, else the preset for its
+#            aspect (9:16 -> feed9x16). The audit also fails text painted under a data-mover.
 # Exit codes: 0 no issues, 1 issues found or the audit did not run, 2 bad arguments.
 set -euo pipefail
 
-usage() { sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; }
 die() { echo "layout-audit: $*" >&2; exit 2; }
 
-COMP=""; MODE=copy; FRAMES=""; PROPS="{}"; ENTRY=src/index.ts; JSON=""; OUTDIR=""; CONC="${CONCURRENCY:-2}"
+COMP=""; MODE=copy; FRAMES=""; PROPS="{}"; SAFE=""; ENTRY=src/index.ts; JSON=""; OUTDIR=""; CONC="${CONCURRENCY:-2}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage; exit 0 ;;
@@ -29,6 +37,7 @@ while [[ $# -gt 0 ]]; do
     --cues) MODE=cues; shift ;;
     --copy) MODE=copy; shift ;;
     --props) PROPS="${2:?--props needs JSON}"; shift 2 ;;
+    --safe) SAFE="${2:?--safe needs a preset, insets or JSON}"; shift 2 ;;
     --entry) ENTRY="${2:?}"; shift 2 ;;
     --json) JSON="${2:?}"; shift 2 ;;
     --out) OUTDIR="${2:?}"; shift 2 ;;
@@ -77,12 +86,23 @@ EOF
 fi
 FRAMES=$(node -e "const f=[...new Set(process.argv[1].split(',').map(Number))].filter(Number.isInteger).sort((a,b)=>a-b);if(!f.length)process.exit(1);console.log(f.join(','))" "$FRAMES") || die "bad --frames list"
 ALLPROPS=$(node -e "try{const p=JSON.parse(process.argv[1]);p.audit=true;console.log(JSON.stringify(p))}catch(e){process.exit(1)}" "$PROPS") || die "--props is not valid JSON"
+if [[ -n "$SAFE" ]]; then
+  # preset name | t,r,b,l | x,y | JSON  ->  props.safe (validated again by src/lib/safe.ts at render)
+  ALLPROPS=$(node -e '
+    const [props, s] = process.argv.slice(1); const p = JSON.parse(props); let v;
+    if (/^[A-Za-z][A-Za-z0-9]*$/.test(s)) v = s;
+    else if (/^\s*\{/.test(s)) v = JSON.parse(s);
+    else { const n = s.split(",").map(Number); if (n.some((x) => !(x >= 0))) process.exit(1);
+      if (n.length === 4) v = { top: n[0], right: n[1], bottom: n[2], left: n[3] };
+      else if (n.length === 2) v = { x: n[0], y: n[1] }; else process.exit(1); }
+    p.safe = v; console.log(JSON.stringify(p));' "$ALLPROPS" "$SAFE") || die "--safe must be a preset name, top,right,bottom,left, x,y or a JSON object"
+fi
 
 echo "layout-audit: $COMP frames $FRAMES"
 rm -rf "$OUTDIR"; mkdir -p "$OUTDIR"
 if ! npx remotion render "$ENTRY" "$COMP" "$OUTDIR" --sequence --frames="$FRAMES" --props="$ALLPROPS" \
      --image-format=jpeg --concurrency="$CONC" --log=verbose > "$TMP/render.log" 2>&1; then
-  tail -30 "$TMP/render.log" >&2
+  grep -m1 -E "safe: (unknown preset|[a-z]+ must be)" "$TMP/render.log" >&2 || tail -30 "$TMP/render.log" >&2
   echo "layout-audit: render failed" >&2; exit 1
 fi
 
@@ -103,6 +123,7 @@ const report = {
   tool: 'layout-audit', comp, frames: want, audited: byFrame.size, missing, stills: outDir,
   pass: issues.length === 0 && missing.length === 0 && byFrame.size > 0,
   issues,
+  zone: [...byFrame.values()][0]?.zone, safe: [...byFrame.values()][0]?.safe,
   boxes: [...byFrame.values()].map((d) => ({ frame: d.frame, safe: d.safe, boxes: d.boxes })),
 };
 fs.writeFileSync(jsonPath, JSON.stringify(report, null, 1) + '\n');
@@ -110,6 +131,7 @@ for (const x of issues) console.log(`  f${x.frame}  ${x.kind}  ${x.id}  ${x.deta
 if (!byFrame.size) console.log(`  no BF_AUDIT output: does ${comp} accept the audit prop and render <Audit/> inside <FontGate>?`);
 else if (missing.length) console.log(`  no audit line for frames ${missing.join(',')}`);
 const n = [...byFrame.values()].reduce((s, d) => s + d.boxes.length, 0);
-console.log(`layout-audit: ${byFrame.size}/${want.length} frames, ${n} text boxes, ${issues.length} issues -> ${report.pass ? 'pass' : 'FAIL'} (${jsonPath}, stills in ${outDir})`);
+const z = report.safe ? ` in ${report.zone} (top ${report.safe.top}, right ${report.safe.right}, bottom ${report.safe.bottom}, left ${report.safe.left})` : '';
+console.log(`layout-audit: ${byFrame.size}/${want.length} frames, ${n} text boxes${z}, ${issues.length} issues -> ${report.pass ? 'pass' : 'FAIL'} (${jsonPath}, stills in ${outDir})`);
 process.exit(report.pass ? 0 : 1);
 EOF
