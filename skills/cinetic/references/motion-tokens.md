@@ -26,6 +26,7 @@ The numbers are proven defaults, measured against Remotion 4.0.529 at 60 fps. Tr
 - **Consecutive moves overlap by about 20 f** (more when the first move is slow), with the second starting on a zero-slope curve (`E.rest`, `E.smooth`). Two moves that each ease to rest and then restart read as stall-then-lurch (`references/camera.md` §6).
 - **One hero motion plus at most two supporting motions** at any moment. Stillness after motion is a tool; idle bobbing everywhere is noise.
 - **Speed limit:** anything faster than 12 px/f needs motion blur in the master (`references/finishing.md`); unblurred moves above about 20 px/f strobe. Pair fast with still: a 60–70 px/f whip reads best next to 0.3–0.6 px/f calm.
+- **Smooth, or it doesn't ship.** Jitter, pixel-snap stairs (`references/chromium-rendering.md`), single-frame pops and stall-then-lurch block the ship: the gate needs zero `forensics.py` fails and Finish at 5 (`references/review-loop.md` §10), however good the idea is.
 - **Discrete state reads whole frames.** Anything that switches (typed characters, labels, counters, layout thresholds) uses `fd(f)` (`Math.round`), so every motion-blur sub-sample of a frame agrees.
 
 ```ts
@@ -95,8 +96,8 @@ const y = (f: number) =>
 | Preset | damping / stiffness / mass | ζ | Overshoot | 50% / 100% | Settles | Character, use |
 |---|---|---|---|---|---|---|
 | `snap` | 18 / 260 / 0.7 | 0.67 | 6% | 5 f / 10 f | 22 f | locks into place with a small overshoot: impacts, lock-ins |
-| `pop` | 11 / 180 / 0.6 | 0.53 | 14% | 5 f / 9 f | 32 f | playful: small badges and checks that cannot collide |
-| `land` | 14.5 / 200 / 1 | 0.51 | 15% | 6 f / 11 f | 40 f | a real bounce: at most twice per film |
+| `pop` | 11 / 180 / 0.6 | 0.53 | 14% | 5 f / 9 f | 32 f | a small object landing in its slot (a check badge that cannot collide): a true landing only, one of the 2 |
+| `land` | 14.5 / 200 / 1 | 0.51 | 15% | 6 f / 11 f | 40 f | a real bounce on a true landing: one of the 2 |
 | `micro` | 30 / 500 / 0.6 | 0.87 | 0.4% | 4 f / 11 f | 11 f | fast and precise: chips, badges, UI micro-states |
 | `firm` | 24 / 140 / 1 | 1.01 | 0% | 9 f / at rest | 38 f | the critically damped workhorse: UI arrivals |
 | `soft` | 26 / 120 / 1 | 1.19 | 0% | 10 f / at rest | 41 f | weighty: panels, cards, large type |
@@ -108,13 +109,13 @@ const y = (f: number) =>
 |---|---|---|---|
 | impact | 23 / 320 / 1 | 7% | the upper limit for a visible impact |
 | detent | 24 / 380 / 0.6 | 1.6% | a reel or picker clicking home |
-| check | 12 / 220 / 0.5 | 11% | a tiny check badge popping (50% at 4 f) |
+| check | 12 / 220 / 0.5 | 11% | a tiny check badge landing (50% at 4 f): one of the 2 |
 | tile | 15 / 150 / 0.7 | 3.4% | tiles snapping into a grid (cue at 0.92) |
 | wordSlide | 20 / 170 / 0.9 | 1.3% | two words locking, clamped at the lock (reaches 1 at 19 f) |
 
 Rules:
-- **Default to critical damping**: `damping ≥ 2·√(stiffness·mass)` (ζ ≥ 1). Bouncy springs everywhere are the most common tell of generated motion.
-- **Overshoot of 1–7% belongs on impacts only**, and at most two visibly "landing" springs per film.
+- **Default to critical damping**: `damping ≥ 2·√(stiffness·mass)` (ζ ≥ 1), or an ease. Bouncy springs everywhere are the most common tell of generated motion, and a hard ban (`SKILL.md`).
+- **Overshoot belongs only to a true landing**: an object arriving at a surface or a lock, with a contact you could put a sound on. Keep it to 1–7% (`snap`, `impact`), and use at most two visible landings per film, counting every `pop`, `land` or `check`. A card, a label, a chip or a camera that merely arrives never overshoots.
 - **Clamp overshoot wherever it could collide or go negative.** A piece arriving from the left must not pass its slot; a word sliding in must not close the word space (Tessel's "Everythingfits" frame). Either clamp the offset or set `overshootClamping: true`, which stops the spring dead on arrival; put the impact in a `hitPulse` punch instead.
 - **Snap the tail to rest** when `|1 − s| < 0.01`, so labels never creep a sub-pixel across a cut.
 - **A spring before its start frame is 0** (`spring()` returns 0 for negative frames), so `spr(f, start, cfg)` needs no guard.
@@ -215,7 +216,7 @@ Weight comes from how a thing starts and stops. These recipes carry the exact nu
 - **Accelerate into contact.** A thing that hits something must still be moving on the contact frame: drive position with `E.contact` (or `E.in` over the last 10 f of a drop). An ease-out into a wall has no impact frame to put a sound on.
 - **Shape settles before position.** Width, height and radius finish 6 f before contact, on their own curve. Driving shape with the position ease crams the aspect change into the last 1–2 frames, where it reads as a cut.
 - **Contact squash.** On impact, widen and flatten against the contact edge: width × (1 + 0.08·q), height × (1 − 0.10·q), with `q = hitPulse(t, 1, 4)`, anchored at the edge it hit. `squash(t)` in `anim.ts` returns `{ along, across }` with exactly these factors.
-- **Landing bounce** for things that settle in place: `scale = 1 − exp(−t/4)·sin(t/1.6)·0.035`, plus an outline ring `exp(−t/9)` meaning "just moved".
+- **Landing settle**, for one of the film's two true landings only: `scale = 1 − exp(−t/4)·sin(t/1.6)·0.035`, plus an outline ring `exp(−t/9)` meaning "just moved".
 - **Falling card:** accelerate over 16 f with `((t + 16)/16)^2.2`, then settle `exp(−t/5)·sin(t/2.2)·10` px.
 - **Lift and fly:** lift over 14 f on `E.out` (z 70–130 px), travel on `E.inOut` with a `sin(π·t)·50` px arc, drop over the last 10 f on `E.in`. Ground shadow offset `(z·0.1, z·0.22)`, blur `3 + z·0.06` px, alpha `0.2 − 0.1·min(1, z/200)`. Paint lifted items above grounded ones (sort by z).
 - **Leaving for good:** drift 900 px off-frame while rising in z, fading over frames 22–46 of the move on `E.in`.

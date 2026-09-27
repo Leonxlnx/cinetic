@@ -29,12 +29,12 @@ export const E = {
  */
 export const SPR = {
   snap: { damping: 18, stiffness: 260, mass: 0.7 }, // locks into place, small overshoot
-  pop: { damping: 11, stiffness: 180, mass: 0.6 }, // playful overshoot: sparingly
+  pop: { damping: 11, stiffness: 180, mass: 0.6 }, // 14% overshoot: a true landing only (<= 2 landings per film)
   soft: { damping: 26, stiffness: 120, mass: 1 }, // weighty, no overshoot
   heavy: { damping: 30, stiffness: 90, mass: 1.4 }, // big objects
   firm: { damping: 24, stiffness: 140, mass: 1 }, // UI arrivals, no overshoot
   micro: { damping: 30, stiffness: 500, mass: 0.6 }, // chips, badges, small snaps
-  land: { damping: 14.5, stiffness: 200, mass: 1 }, // ~15% overshoot: at most twice per film
+  land: { damping: 14.5, stiffness: 200, mass: 1 }, // ~15% overshoot: a true landing only (<= 2 per film)
   word: { damping: 20, stiffness: 170, mass: 0.9 }, // words sliding in to lock (clamp at the lock)
   detent: { damping: 24, stiffness: 380, mass: 0.6 }, // a reel or picker clicking home
 } satisfies Record<string, Partial<SpringConfig>>;
