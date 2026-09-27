@@ -85,12 +85,13 @@ The first mark you think of is usually the one every other startup already has. 
    - the idea's metaphor;
    - a pure geometric construction;
    - negative space (a cut or gap that carries the idea).
-2. **Render them all on one sheet** and look at it, large, at 32 px on the dark stage and at 16 px (the pattern below).
-3. **Score each 0–2** on four questions:
+2. **Render them all on one sheet** and look at it, large, at 64 px, at 32 px on the dark stage and at 16 px (the pattern below).
+3. **Score each 0–2** on five questions:
    - **ownership:** does it belong to this brand and no other?
    - **16 px:** is it still distinct at favicon size?
    - **name link:** does it say the name or the idea?
    - **ten startups:** could it belong to ten other startups? (2 means no.)
+   - **misread:** what does it read as at 64 px in half a second? Look at the 64 px column for half a second with the names covered, or give only that column to a subagent with no brief and ask it to name each symbol in two words. 0 if the first read is a common symbol: a minus or a plus, an emoticon, a menu (hamburger) or a "more" row of dots, a padlock, a play or pause button, a check, an eye, a slider or settings icon, a hash, a ± or ÷. 1 if it reads as some other letter or object. 2 if it reads as itself, or as nothing but a mark. A 0 rejects the drawing, not the idea: change the geometry and run the test again. People meet the mark small and fast (an avatar, a favicon, a lower third), and a mark that reads as a minus sign is a minus sign.
 4. **Pick one, then refine it** (§5): gaps, stroke weights, optical corrections, the signature detail. Write the sheet's scores and the winner's reason in `TREATMENT.md`.
 
 **The house cliché.** Some shapes are this skill's own vocabulary, and a film that lands on them looks like every other film made with it: a geometric block with an accent dot, a dome over a block, a letter in a rounded square, and generic stacked bars. The starter's placeholder mark (dome, block, dot) and Tessel's mark (two blocks and a red dot tiling a square) both come from this family. Don't reuse either, and treat any direction in the family as a failed "ten startups" test unless the concept truly requires it.
@@ -107,7 +108,7 @@ import { C, typeStyle } from './tokens';
 /** One direction: its name, where it came from, and its drawing in a 100-unit box. */
 type Direction = { name: string; source: string; draw: (ink: string, accent: string) => React.ReactNode };
 
-// Weft, a shift-rota app (invented): six directions, each from a different source.
+// Weft, a shift-rota app (invented): six directions, each from a different source, and the refined winner.
 export const DIRECTIONS: Direction[] = [
   { name: 'over-under', source: 'name', draw: (ink) => (
     <path fill={ink} d="M44 0H56V52H44Z M0 24H36V40H0Z M64 24H100V40H64Z M0 60H100V76H0Z M44 84H56V100H44Z" />
@@ -129,12 +130,17 @@ export const DIRECTIONS: Direction[] = [
   { name: 'pulled thread', source: 'negative space', draw: (ink) => (
     <path fillRule="evenodd" fill={ink} d="M0 12Q0 0 12 0H88Q100 0 100 12V88Q100 100 88 100H12Q0 100 0 88Z M24 44H100V56H24Z" />
   ) },
+  // added after the misread test: the weft passes under the left warp and over the right one
+  { name: 'over-under, two warps', source: 'name, refined', draw: (ink) => (
+    <path fill={ink} d="M14 0H34V100H14Z M66 0H86V36H66Z M66 64H86V100H66Z M42 40H100V60H42Z" />
+  ) },
 ];
 
 const Cell: React.FC<{ d: Direction }> = ({ d }) => (
   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 28 }}>
       <svg width={220} height={220} viewBox="0 0 100 100">{d.draw(C.ink, C.accent)}</svg>
+      <svg width={64} height={64} viewBox="0 0 100 100">{d.draw(C.ink, C.accent)}</svg>
       <div style={{ background: C.ink, padding: 10, display: 'flex' }}>
         <svg width={32} height={32} viewBox="0 0 100 100">{d.draw(C.paper, C.accent)}</svg>
       </div>
@@ -153,16 +159,19 @@ export const MarkSheet: React.FC = () => (
 );
 ```
 
-How Weft's sheet scored (ownership / 16 px / name link / ten startups):
+How Weft's sheet scored (ownership / 16 px / name link / ten startups / misread):
 
-| Direction | Scores | Verdict |
-|---|---|---|
-| over-under (name) | 2 / 2 / 2 / 2 | the winner: a thread passing over one weft and under the next is what the name means, and it holds at 16 px |
-| w as a path | 1 / 2 / 1 / 1 | a letter; fine as a favicon, weak as an idea |
-| rota row | 1 / 0 / 1 / 0 | at 16 px it is the "more" menu icon |
-| shuttle | 1 / 1 / 1 / 1 | reads as an eye before it reads as a shuttle |
-| checker | 0 / 2 / 0 / 0 | pure geometry any brand could own |
-| pulled thread | 1 / 2 / 1 / 1 | a rounded square with a slot: close to the house cliché |
+| Direction | Scores | At 64 px it reads as | Verdict |
+|---|---|---|---|
+| over-under (name) | 2 / 2 / 2 / 2 / **0** | "±", a plus over a minus | the right idea in the wrong drawing: a short vertical over a long horizontal bar is the plus-minus sign before it is thread. Refined, not dropped |
+| w as a path | 1 / 2 / 1 / 1 / 2 | the letter w | a letter; fine as a favicon, weak as an idea |
+| rota row | 1 / 0 / 1 / 0 / 0 | the "more" menu (three dots) | a UI icon at every size |
+| shuttle | 1 / 1 / 1 / 1 / 0 | an eye | the visibility icon before it is a shuttle |
+| checker | 0 / 2 / 0 / 0 / 1 | two squares | pure geometry any brand could own |
+| pulled thread | 1 / 2 / 1 / 1 / 1 | a card with a slot | close to the house cliché |
+| over-under, two warps (refined) | 2 / 2 / 2 / 2 / 1 | a woven join; at a glance, an H-like letter | the winner: the weft passes under one warp and over the next, which is what the name means, and no common symbol has that silhouette. A letter-like first read costs a point; a symbol would have cost the mark |
+
+The first refinement tried three warps; at 64 px that read as a slider (settings) icon, another 0. The two-warp version keeps the over-and-under and loses the symmetry that made both drawings look like symbols. Symmetric crosses, bars and dots are where misreads live: an asymmetric break is usually the fix.
 
 ## 5. Mark construction
 
@@ -204,11 +213,59 @@ More worked marks, in 100-unit coordinates:
 3. **One colour:** the accent becomes ink (or a knockout). The mark still works.
 4. **Inverse:** paper on the ink stage.
 5. **In motion:** each part alone reads as a piece of the product's world.
-6. **Tell test:** it is not the house cliché (§4), a letter in a rounded square, a gradient blob, an abstract swoosh, a hexagon network, a four-point sparkle, or a generic UI icon (menu, toggle, chat bubble, sunrise, padlock).
+6. **Tell test:** it is not the house cliché (§4), a letter in a rounded square, a gradient blob, an abstract swoosh, a hexagon network, a four-point sparkle, or a generic UI icon (menu, toggle, chat bubble, sunrise, padlock), and it passes the misread test at 64 px (§4).
 
 ## 6. The lockup
 
 - **Proportions.** Set the mark's height to the wordmark's cap height, or its ascender height for a lowercase name, then correct optically: a solid, heavy mark sits at 1.0× and an open or pointed one at up to 1.15×. The gap between mark and name is 0.25–0.4× the mark's height, and the two share a baseline. The starter's lockup (`src/acts/Act2.tsx`) measures the name's ink ascent with `inkBox()` and derives the rest.
+- **Set it like a typographer: render three settings side by side.** A carelessly set wordmark beside a considered mark costs more than any animation gains, and the right setting is only visible in comparison. Render the lockup three ways on one still, at the end card's size and at a quarter of it, and look at both:
+
+  | Setting | Mark : name ink ascent | Gap (× mark height) | Name weight | Tracking |
+  |---|---|---|---|---|
+  | A, tight | 1.0 | 0.25 | the display weight | display − 0.01 em |
+  | B, balanced | 1.1 | 0.33 | display − 40 | the display tracking |
+  | C, airy | 1.2 | 0.40 | display − 80 | display + 0.01 em |
+
+  Pick the setting where the mark and the name read as one object at the small size; then check that the name's stems are within about 15% of the mark's stroke width (a heavy name beside a fine mark, or the reverse, reads as two logos), that the gap looks about as wide as the widest space inside the name, and that nothing at the join collides or floats. Write the winner as a `LOCKUP` token (`{ ratio, gap, weight, track }`) in `tokens.ts`, so the end card, the sting and `brand-kit.sh` set it the same way. Retune between the settings if none is right; the table is the starting spread, not the answer.
+
+```tsx
+// src/brand/LockupSheet.tsx: register as a Still in Root.tsx, then npx remotion still LockupSheet out/stills/lockup-sheet.png
+import React from 'react';
+import { AbsoluteFill } from 'remotion';
+import { FontGate } from '../lib/FontGate';
+import { inkBox } from '../lib/measure';
+import { Mark } from './Mark';
+import { C, FONT, TYPE } from './tokens';
+const NAME = 'weft'; // the wordmark, as COPY sets it
+const D = TYPE.display;
+const SETTINGS = [ // mark height : the name's ink ascent, gap in mark heights, weight, tracking (em)
+  { id: 'A tight', ratio: 1.0, gap: 0.25, weight: D.weight, track: D.track - 0.01 },
+  { id: 'B balanced', ratio: 1.1, gap: 0.33, weight: D.weight - 40, track: D.track },
+  { id: 'C airy', ratio: 1.2, gap: 0.4, weight: D.weight - 80, track: D.track + 0.01 },
+];
+const Lockup: React.FC<{ size: number; s: (typeof SETTINGS)[number] }> = ({ size, s }) => {
+  const markH = inkBox(NAME, size, s.weight).ascent * s.ratio; // measured under FontGate: the real face
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: markH * s.gap }}>
+      <Mark size={markH} />
+      <span style={{ fontFamily: FONT.text, fontSize: size, fontWeight: s.weight, letterSpacing: `${s.track}em`, lineHeight: 1, color: C.ink }}>{NAME}</span>
+    </div>
+  );
+};
+export const LockupSheet: React.FC = () => (
+  <FontGate>
+    <AbsoluteFill style={{ background: C.paper, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' }}>
+      {SETTINGS.map((s) => (
+        <div key={s.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 48 }}>
+          <Lockup size={160} s={s} />
+          <Lockup size={40} s={s} />
+          <div style={{ fontFamily: FONT.text, fontSize: 24, color: C.mute }}>{`${s.id}: ${s.ratio}, gap ${s.gap}, ${s.weight}, ${s.track.toFixed(3)} em`}</div>
+        </div>
+      ))}
+    </AbsoluteFill>
+  </FontGate>
+);
+```
 - **Scale in the frame.** At its resolved size the lockup spans about 28–45% of the frame's width (540–860 px at 1920), so it reads as the film's subject rather than a small object in a void. Measure it on the poster frame.
 - **Optical centre.** Centre the lockup's visual mass, not its box, and sit it slightly above the frame's geometric centre.
 - **Check it small.** Export the final frame, view it 480 px wide, and read the name. If you can't, the lockup is too small or too light.
@@ -294,6 +351,20 @@ Choose the stage first (§2): light or dark, neutral or cool. `scripts/palette.p
 - **2–4 steps between them:** mist for the canvas, line for hairlines, and mute for secondary text. Contrast against the ground: statements ≥ 7:1, secondary lines at 44 px and up ≥ 3:1, anything smaller ≥ 4.5:1. A grey like `#82868E` is 3.5:1 on paper: fine for a 48 px descriptor, too faint for 24 px UI copy.
 - **Tint toward the accent, or keep them neutral.** Give the neutrals a blue, teal or green accent's hue angle at chroma 0.003–0.010 so they read as one family. Toward a red or a yellow, stay at chroma ≤ 0.004 (`palette.py` does), because warm-tinted greys slide into beige.
 - **Ink stays ink.** A white radial wash laid over ink cards turns them into grey buttons. Veil at 80–85% only where type sits.
+
+**Palettes with character, inside the bans.** The bans leave a big space. The risk inside it is "default": framework blue on flat grey, which a viewer reads as a template before any motion plays. Derive the palette from the world the name and the product live in, then let `palette.py` check it. Some starting worlds:
+
+| World | Stage | Neutrals | Accent (allowed family) |
+|---|---|---|---|
+| hillside, fjord, forest (calm, outdoors) | pale green-grey paper, or pine-black | moss-grey, slate | a deep pine or a clear lake teal |
+| foundry, workshop (fast, physical) | graphite | cool concrete greys | a signal red |
+| night, focus, security | ink-navy | blue slates | a cold cyan-teal |
+| paper, ledger, archive (exact) | a cool white | graphite hairlines | a single ink blue with some depth, not framework blue |
+| signal, traffic, energy (bold) | near-black | steel | a safety yellow on dark only |
+| garden, health, care | a cool mint-white | sage greys | a leaf green |
+
+- **Avoid the defaults.** Framework blues (hue about 260, the `#3B82F6` / `#2563EB` / `#1D4ED8` family), pure `#808080`-style greys, and pure black and white everywhere. Move the hue, lower the chroma and tint the greys, and the same "blue on grey" becomes a brand.
+- **One colour story.** Stage, neutrals and accent come from the same world. A pine stage with a random coral accent is two brands.
 
 ## 10. Palettes that read as generated
 

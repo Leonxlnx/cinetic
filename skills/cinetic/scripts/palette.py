@@ -186,6 +186,11 @@ def main():
             return 1
         for r in refusals:
             print(f'palette.py: brand-supplied: {r}; record it in BRIEF.md so the critics accept it.', file=sys.stderr)
+        # not a ban, but the fastest way to look like a template: framework-default blues
+        if not a.brand_supplied and 252 <= ah <= 268 and aC >= 0.17 and 0.50 <= aL <= 0.66:
+            print(f'palette.py: note: accent {acc_hex} sits in the framework-default blue family (#3B82F6/#2563EB). '
+                  'It reads as "default" before anything moves. Derive the accent from the brand\'s world '
+                  '(references/brand-and-color.md §9: shift the hue, lower the chroma, or pick another family).', file=sys.stderr)
 
     if a.cover:
         try:
