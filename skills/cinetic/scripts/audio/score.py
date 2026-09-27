@@ -15,7 +15,11 @@ the pre-master mix (drums, bass, pad, arp, bells, reverb, sfx, and bed when used
 report: loudness, true peak, LRA (warns under 5 LU on films of 20 s or more), the loudest moment
 against the payoff and the payoff's lift over the median momentary loudness (warns under 2 LU), limiter hot spots,
 masked effects (under +6 dB in their own band), every tuned sound with its note, skipped events
-and warnings. Schema and recipes: references/sound.md.
+and warnings. The end fade (master.fade) applies to the music and the effects alike, so the WAV
+reaches digital silence; an effect that starts inside the fade is reported. The hook check warns
+when the first 0.5 s sits more than 12 dB under the median momentary loudness (a soft hook).
+A "progress" block re-pitches matching events into a climbing scale that resolves on the tonic.
+Schema and recipes: references/sound.md.
 
 Exit codes: 0 rendered and the gate passed (LUFS within +-0.5 of target, true peak <= -1.5
 dBTP, last 480 samples zero); 1 on invalid input or a failed gate.
@@ -225,6 +229,15 @@ class Song:
         for s_ in score.get('silences', []):
             self.silences.append((self.T(s_['from']), self.T(s_['to']), float(s_.get('depth', 0.97)), 'all'))
         self.payoff = self.T(score['payoff']) if 'payoff' in score else None
+        pr = score.get('progress')
+        self.progress = None
+        if pr:  # a progress motif: matching events climb the scale one step each; the resolve lands on the tonic
+            if not pr.get('match'):
+                raise ScoreError('progress needs "match": a piece of the event ids that climb (e.g. "day")')
+            self.progress = dict(match=str(pr['match']), kind=pr.get('kind'), start=pr.get('start'),
+                                 tonic=S.midi(pr['tonic']) if 'tonic' in pr else S.nearest([self.tonic], 76),  # rungs near 0.5-1.5 kHz
+                                 resolve=self.T(pr['resolve']) if 'resolve' in pr else None,
+                                 gain=float(pr.get('gain', 1.0)))
         mix = score.get('mix', {})
         self.mix = dict(music=float(mix.get('music', 1.0)), sfx=float(mix.get('sfx', 1.0)),
                         reverb=float(mix.get('reverb', 1.0)), sidechain=float(mix.get('sidechain', 0.55)),
@@ -404,7 +417,8 @@ def build_music(song, n, events):
             end, release = sil, min(0.6, max(0.05, (sil - a) * 0.5))
         u = (a - song.bar_t(sec['b0'])) / max(1e-6, song.bar_t(sec['b1'] + 1) - song.bar_t(sec['b0']))
         cut = (sec['cut'][0] + (sec['cut'][1] - sec['cut'][0]) * u) * sec['bright']
-        attack = 0.02 if any(abs(a - t) < 0.03 for t in big) else sec['attack']
+        # the film's first chord starts with intent (no fade-in on the hook); the intro builds by its filter
+        attack = 0.02 if a < 1e-3 or any(abs(a - t) < 0.03 for t in big) else sec['attack']
         d = max(0.05, end - a)
         gain = 0.34 * layer(sec, 'pad') / len(v) * 2.2
         for k, m in enumerate(v):
@@ -419,7 +433,8 @@ def build_music(song, n, events):
         sil = song.silence_start_in(a, b)
         b = sil if sil is not None else b
         root = S.mtof(28 + (song.tonic - 28) % 12)
-        S.place(pad, S.drone([root, root * 1.5], b - a), a, 0.16 * layer(sec, 'drone'))
+        rise = 0.05 if a < 1e-3 else 1.6  # at the film's start the drone is already there
+        S.place(pad, S.drone([root, root * 1.5], b - a, rise=rise), a, 0.16 * layer(sec, 'drone'))
 
     # ---- drums, bass, arp per bar -----------------------------------------------------------
     for sec in song.sections:
@@ -544,6 +559,47 @@ def build_music(song, n, events):
 
 def in_silence(song, t, scope=None):
     return any(a <= t < b for a, b, _, sc in song.silences if scope is None or sc == scope)
+
+
+PITCHED = ('pop', 'tick', 'tock', 'click', 'bell', 'land')  # kinds whose voice takes a `pitch`
+
+
+def apply_progress(song, events):
+    """The progress motif (score.json "progress"): every event whose id contains `match` (and
+    whose kind is `kind`, if given) gets the next note of the key's scale, in frame order, so
+    progress is heard as a climb. By default the last rung is the step below the tonic, and
+    `resolve` places the tonic above it (with its octave below, on the bells) on the payoff.
+    Returns the report entry."""
+    pr = song.progress
+    hits = [e for e in events if pr['match'] in str(e.get('id', '')) and (not pr['kind'] or e['kind'] == pr['kind'])]
+    if not hits:
+        song.warnings.append(f'progress: no event id contains "{pr["match"]}": nothing climbs')
+        return dict(match=pr['match'], events=0)
+    steps = MODES[song.mode]
+    n = len(hits)
+    start = int(pr['start']) if pr['start'] is not None else max(1, 8 - n)  # end one step under the octave
+
+    def degree(d):  # 1-based scale degree, any height, above the progress tonic
+        k = d - 1
+        return pr['tonic'] + 12 * (k // 7) + steps[k % 7]
+
+    rungs = []
+    for k, e in enumerate(hits):
+        m = degree(start + k)
+        e['pitch'] = m
+        rungs.append(dict(f=e['f'], id=e.get('id', ''), kind=e['kind'], note=note_name(m)))
+        if e['kind'] not in PITCHED or (e['kind'] == 'land' and float(e.get('weight', 1)) >= 0.6 and e.get('variant') != 'light'):
+            song.warnings.append(f'progress: {e["kind"]} {e.get("id", "")} ignores its pitch (use pop, bell, tick, click '
+                                 'or a light land for the rungs)')
+    rep = dict(match=pr['match'], events=n, rungs=rungs)
+    if pr['resolve'] is not None:
+        top = degree(start + n - 1)
+        res = top + 1 + (song.tonic - (top + 1)) % 12  # the first tonic above the last rung
+        if pr['resolve'] <= hits[-1]['f'] / song.fps:
+            song.warnings.append('progress: the resolve comes before the last rung; it must land after the climb')
+        song.motifs.append(dict(t=pr['resolve'], gain=pr['gain'] * 1.3, notes=[res, res - 12], rhythm=[0.0, 0.0]))
+        rep['resolve'] = dict(t=round(pr['resolve'], 3), note=note_name(res))
+    return rep
 
 
 # ------------------------------------------------------------------------------------------
@@ -783,6 +839,8 @@ def render(song, events, stems_dir=None, base_dir='.'):
     for a, b, depth in song.sucks:
         w_ = (t > a) & (t < b)
         bus[w_] = np.minimum(bus[w_], 1 - depth * np.clip((t[w_] - a) / 0.04, 0, 1))
+    # the end fade: music AND effects (with their reverb) reach digital zero 30 ms before the end,
+    # so nothing is still sounding when master.py's last 60 ms fade and zeroed samples arrive
     fade = np.clip((song.dur - 0.03 - t) / song.fade, 0, 1) ** 2
     music_gain = bus * fade * song.mix['music']
     music_bus = music * music_gain[:, None]
@@ -791,6 +849,16 @@ def render(song, events, stems_dir=None, base_dir='.'):
     fx_dry = S.filt(fx - fx_low * 0.45, S.hp(24, 2)) * 1.25 * song.mix['sfx']
     fxs = S.filt(fx, S.hp(250, 2))
     fx_wet = (S.reverb(fxs * 0.18, 'room') + S.reverb(fxs * 0.08 + hall, 'hall')) * song.mix['sfx']
+    fx_dry *= fade[:, None]
+    fx_wet *= fade[:, None]
+    seen = set()
+    for p in placed:  # an effect that starts inside the fade is mostly lost: say so
+        g_ = float(np.clip((song.dur - 0.03 - p['t']) / song.fade, 0, 1) ** 2)
+        if g_ < 0.5 and (p['kind'], p['f']) not in seen:
+            seen.add((p['kind'], p['f']))
+            song.warnings.append(f"{p['kind']} {p.get('id', '')} at f={p['f']:g} starts inside the end fade "
+                                 f"({20 * np.log10(g_ + 1e-9):.0f} dB): move it at least "
+                                 f"{int(np.ceil((song.fade + 0.03) * song.fps))} f before the end or shorten master.fade")
 
     hold = {'all': np.ones(n), 'music': np.ones(n)}
     for a, b, depth, scope in song.silences:
@@ -871,6 +939,7 @@ def main(argv=None):
         if a.ceiling is not None:
             song.ceiling = a.ceiling
         events = sorted(cues.get('events', []), key=lambda e: e['f'])
+        progress = apply_progress(song, events) if song.progress else None
         y, info, ev = render(song, events, a.stems, os.path.dirname(os.path.abspath(a.score)))
         import soundfile as sf
         os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
@@ -911,6 +980,20 @@ def main(argv=None):
             if lift < 2.0:
                 song.warnings.append(f'the payoff is only {lift:.1f} LU over the median momentary loudness (want 2-3+): '
                                      'thin the bars before it, leave true silence before the drop, give the hit more body')
+    # the hook: the first half second is heard at intent, not faded in from nothing
+    tm, mom = M.blocks(y, 0.4, 0.1)
+    audible = mom[mom > -70]
+    head = mom[tm <= 0.45]  # 0.4 s blocks inside the first ~0.65 s
+    if len(audible) and len(head):
+        med, opening = float(np.median(audible)), float(head.max())
+        rep['hook'] = dict(opening_lufs_m=round(opening, 2), median_lufs_m=round(med, 2), below_median_db=round(med - opening, 2))
+        if med - opening > 12:
+            song.warnings.append(f'soft hook: the first 0.5 s sits {med - opening:.0f} dB under the median momentary loudness '
+                                 f'({opening:.1f} vs {med:.1f} LUFS-M): start the first bar at intent (a hit, tick or chord on '
+                                 'frame 0; no slow attack, drone swell or riser into the opening)')
+    # the end: the effects follow the music's fade, so the last 50 ms are close to silence
+    if rep.get('tail_50ms_db') is not None and rep['tail_50ms_db'] > -45:
+        song.warnings.append(f'the ending is not silent: the last 50 ms measure {rep["tail_50ms_db"]} dB (want under -45)')
     # dynamics: a launch film of 20 s or more wants real contrast (sections that thin out, a silence, a drop)
     if song.dur >= 20 and rep.get('lra') is not None and rep['lra'] < 5:
         song.warnings.append(f'LRA {rep["lra"]} LU is flat for a {song.dur:.0f}s film (want 5-8): thin the section before the '
@@ -926,6 +1009,8 @@ def main(argv=None):
                events=dict(count=len(events), by_kind=by, skipped=ev['skipped'], masked=ev['masked'], tuned=ev['tuned']),
                chords=[dict(t=round(a_, 3), chord=c.name if c else 'N.C.') for a_, _, c in song.segs if a_ < song.dur],
                warnings=song.warnings, fails=fails)
+    if progress:
+        rep['progress'] = progress
     rep['pass'] = not fails
     if a.json:
         os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
@@ -934,6 +1019,9 @@ def main(argv=None):
         print(f"{'PASS' if not fails else 'FAIL'}  {a.out}  {rep['seconds']}s  {rep['lufs']} LUFS  TP {rep['true_peak_db']} dBTP  "
               f"LRA {rep['lra']} LU  loudest {rep['momentary_max']} LUFS-M at {rep['momentary_max_t']}s  "
               f"events {len(events)} ({len(ev['skipped'])} skipped, {len(ev['masked'])} masked)")
+        if progress and progress.get('events'):
+            print(f"  progress: {progress['events']} rungs {progress['rungs'][0]['note']} -> {progress['rungs'][-1]['note']}"
+                  + (f", resolves on {progress['resolve']['note']} at {progress['resolve']['t']}s" if 'resolve' in progress else ''))
         for w in song.warnings:
             print('  warning:', w)
         for m in ev['masked']:

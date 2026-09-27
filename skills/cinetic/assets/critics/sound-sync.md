@@ -26,13 +26,15 @@ You cannot listen, so you measure. You judge whether the sound makes the picture
    - `stray_sfx_onsets_f` lists sounds with no picture reason, or events missing from cues.json.
 2. **Picture against sound.** Read `av.json` `visual`. `misaligned` lists isolated events whose visual peak sits away from the sound. `peaks_without_event` lists strong picture changes (cuts, flashes, the peak of a big move) with no onset or whoosh peak within ±3 f; the strongest are warnings. Every hard cut and every major move's velocity peak should sit on a grid beat with a sound under it: a transition peaking a quarter-second after its beat reads as late even when nobody can say why. Name the ones to move onto the beat (move the picture) or to give a hit. A designed silent moment is fine when it sits on a silence in the score.
 3. **Audibility.** Read `av.json` `masking` and `score.json`. Effects should sit at least +6 dB over the music in their own band. Name the masked ones that matter: key hits, payoff, logo.
-4. **Arc and finish.** Check four things:
+4. **Arc and finish.** Check these:
    - Integrated loudness is −14 ±1 LUFS, and true peak is at most −1 dBTP after AAC.
    - The LRA is 3 to 8 LU, and at least 5 LU for a film of 20 s or more: a launch film wants a thinned section before the turn, true silence before the drop, and a payoff 2–3 LU above the median momentary loudness (`score.json` reports both).
    - The loudest momentary window sits on the payoff. Find the payoff cue in `src/timeline.ts`.
-   - Clicks are none, and the tail decays to digital zero with 60 f or more of silence at the end.
+   - Clicks are none, and the tail decays to digital zero with 60 f or more of silence at the end. No effect starts inside the end fade (`score.json` warnings name any).
+   - **The hook.** `score.json` `hook`: the first 0.5 s sits within 12 dB of the median momentary loudness, with a sound caused by something visible on or near frame 0. A pad or drone fading in over the first bar, or silence under a moving first second, is a soft hook: **P1**, **P0** on a feed or loop deliverable.
    For a momentary curve, run `ffmpeg -i {{VIDEO}} -af ebur128 -f null - 2>&1 | grep M:`.
-5. **Composition.** Read `audio/score.json` and the relevant `score.py` settings as a composer:
+5. **Personality.** Read the brand's three adjectives in `TREATMENT.md` and the row it picked in the personality table (`references/sound.md` §5.5a). A calm, literary or kind brand scored with drops onto silence, sub booms, risers or a `drive` section is the wrong tone (**P1**: it reads as trailer noise); a fast launch film with no contrast is the opposite failure. For a progress story (days, steps, items cleared), check that the steps climb (`score.json` `progress.rungs`, `references/sound.md` §5.5b) and resolve on the payoff, or propose it.
+6. **Composition.** Read `audio/score.json` and the relevant `score.py` settings as a composer:
    - Every pitched effect is in key, and the snaps and booms are tuned to the chord root.
    - V-chord pads end before the downbeat they resolve into.
    - Each drop lands on true silence.
