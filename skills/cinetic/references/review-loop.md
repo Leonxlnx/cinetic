@@ -313,9 +313,9 @@ Every script threshold in one place. Most can be changed with the flag named in 
 | `check-sync.py` | mux lag ≤ 48 samples at three points; true peak ≤ −1 dBTP after decode |
 | `grid-check.ts` | beat is whole frames; acts contiguous; cues on the 16th grid or `offgrid:`; text holds ≥ 36 f + 6 f per word; no event gap > 48 f; words ≤ budget |
 | `lint-film.mjs` | 0 errors: no CSS animation, no nondeterminism, no frame-driven left/top, tokens only, clamped interpolate |
-| `layout-audit.sh` | no text outside the safe area, no overlaps, readable text ≥ 22 px |
+| `layout-audit.sh` | no text outside the safe zone (the aspect's preset; `feed9x16` for 9:16), no overlaps, readable text ≥ 22 px (32 px in 9:16), no text covered by a `data-mover` |
 | `deliver.sh --loop` | the loop-seam rule above, on the delivered file |
 | `measure-speed.py` | `too_fast`: frames over 80 px/f (`--too-fast`), a redesign warning; `short_shutter`: frames the samples can't cover |
-| `score.py` | LRA ≥ 5 LU for films of 20 s or more; the payoff ≥ 2 LU over the median momentary loudness (warnings) |
+| `score.py` | LRA ≥ 5 LU for films of 20 s or more; the payoff ≥ 2 LU over the median momentary loudness; the first 0.5 s within 12 dB of the median (soft hook); no effect starting inside the end fade (warnings) |
 
 Contact sheets (`sheet.py`) and frame grabs (`grab.sh`) have no thresholds. They label frames as 0-based frame numbers at the file's real fps, which are the same numbers every report uses.
