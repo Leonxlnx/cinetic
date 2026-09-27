@@ -1,23 +1,33 @@
 #!/usr/bin/env python3
 """Build a film palette from one accent, check its contrast, or measure accent coverage on a still.
 
-Neutrals come out tinted toward the accent's hue (or cool / warm on request), for a light or a
-dark stage, each with its OKLCH, hex and contrast against the stage, ready to paste into
+Neutrals come out tinted toward the accent's hue (or cool on request), for a light or a dark
+stage, each with its OKLCH, hex and contrast against the stage, ready to paste into
 src/brand/tokens.ts. The checks are the ones in references/brand-and-color.md:
+  - the hard bans (SKILL.md, brand-and-color.md §8): an accent or paper that is orange/amber,
+    beige/cream, purple/violet/indigo or neon is refused (exit 1, no palette) unless the user's
+    brand supplied it (--brand-supplied; record it in BRIEF.md). The regions, in OKLCH:
+      orange/amber  31 <= h < 96 and C >= 0.05 (orange, amber, gold, brass, brown, coral)
+      beige/cream   31 <= h < 118, L >= 0.70 and 0.007 <= C < 0.10 (beige, cream, tan, sand)
+      purple        270 <= h < 340 and C >= 0.02 (purple, violet, indigo, lavender, magenta)
+      neon          C >= 0.27; or L >= 0.85 and C >= 0.15; or L >= 0.80 and C >= 0.18
+                    (yellows, 96 <= h < 118: only L >= 0.91 with C >= 0.15)
   - statements (ink on the stage) >= 7:1; secondary text (mute) >= 4.5:1; graphics (accent) >= 3:1
   - accent chroma >= 0.08 (below that it reads as a grey, not a signal)
-  - the neon test: OKLCH L > 0.85 with C > 0.15 glows on ink and vibrates on paper
-  - the accent's lightness band for the stage: 0.50-0.65 on a light stage, 0.70-0.82 on a dark one
+  - the accent's lightness band for the stage: 0.50-0.65 on a light stage, 0.70-0.82 on a dark
+    one (a yellow, which only works on a dark stage: 0.84-0.90)
 
 Usage:
-  python3 scripts/palette.py --accent '#C13E2E'                          # light stage, tinted to the accent
-  python3 scripts/palette.py --accent 'oklch(0.74 0.15 55)' --stage dark  # dark stage
-  python3 scripts/palette.py --accent '#1F86CD' --temp warm --json out/qa/palette.json
-  python3 scripts/palette.py --cover out/stills/poster.png --accent '#C13E2E'   # accent share of pixels
+  python3 scripts/palette.py --accent '#C92F33'                           # light stage, tinted to the accent
+  python3 scripts/palette.py --accent 'oklch(0.86 0.165 100)' --stage dark  # dark stage, a yellow
+  python3 scripts/palette.py --accent '#1F86CD' --temp cool --json out/qa/palette.json
+  python3 scripts/palette.py --accent '#1F86CD' --paper '#F6F7F9'         # check your own paper
+  python3 scripts/palette.py --accent '#F26B1D' --brand-supplied          # the user's orange: allowed
+  python3 scripts/palette.py --cover out/stills/poster.png --accent '#C92F33'   # accent share of pixels
 
---temp: neutral (default) tints the greys with the accent's hue; cool uses hue 250, warm hue 75
-(a warm paper is right for a warm, calm brand; the default beige-and-orange pairing is the tell).
-Exit 0 when every check passes, 1 when one fails, 2 on bad input.
+--temp: neutral (default) tints the greys with the accent's hue at a chroma too low to read as
+warm; cool uses hue 250. warm (hue 75) makes a beige paper, so it needs --brand-supplied.
+Exit 0 when every check passes, 1 when one fails or a colour is refused, 2 on bad input.
 """
 import argparse
 import json
@@ -79,6 +89,29 @@ def parse_colour(s):
     raise ValueError(f'cannot read colour {s!r} (want #RRGGBB or oklch(L C h))')
 
 
+# The hard-ban regions (SKILL.md "Hard bans"; references/brand-and-color.md §8). lint-film.mjs
+# carries the same numbers: change them in both places.
+YELLOW = (96.0, 118.0)
+
+
+def banned(L, C, h):
+    """Which hard-ban region an OKLCH colour falls in, or None. Order matters: neon, then the
+    light low-chroma warms (beige), then orange/amber, then purple."""
+    if YELLOW[0] <= h < YELLOW[1]:  # yellow is light by nature: neon only at highlighter lightness
+        neon = L >= 0.91 and C >= 0.15
+    else:
+        neon = (L >= 0.85 and C >= 0.15) or (L >= 0.80 and C >= 0.18)
+    if neon or C >= 0.27:
+        return 'neon (very bright and saturated)'
+    if 31 <= h < 118 and L >= 0.70 and 0.007 <= C < 0.10:
+        return 'beige/cream (warm, light, low chroma: beige, cream, tan, sand)'
+    if 31 <= h < 96 and C >= 0.05:
+        return 'orange/amber (orange, amber, gold, brass, brown, coral)'
+    if 270 <= h < 340 and C >= 0.02:
+        return 'purple/violet/indigo'
+    return None
+
+
 def luminance(hexs):
     return sum(w * srgb_to_lin(int(hexs[i:i + 2], 16) / 255) for w, i in ((0.2126, 1), (0.7152, 3), (0.0722, 5)))
 
@@ -109,7 +142,11 @@ def main():
                                  epilog=__doc__.split('\n\n', 1)[1])
     ap.add_argument('--accent', required=True, help="the one accent: '#RRGGBB' or 'oklch(L C h)'")
     ap.add_argument('--stage', choices=['light', 'dark'], default='light', help='the ground most shots sit on')
-    ap.add_argument('--temp', choices=['neutral', 'cool', 'warm'], default='neutral', help='tint of the neutrals')
+    ap.add_argument('--temp', choices=['neutral', 'cool', 'warm'], default='neutral',
+                    help='tint of the neutrals (warm makes a beige paper: needs --brand-supplied)')
+    ap.add_argument('--paper', help="use this paper instead of the generated one (hex or oklch), and check it")
+    ap.add_argument('--brand-supplied', action='store_true',
+                    help="the user's brand supplied the accent or paper: skip the hard-ban refusal (record it in BRIEF.md)")
     ap.add_argument('--meaning', default='<one word>', help='what the accent means, for the token comment')
     ap.add_argument('--cover', metavar='IMG', help='only measure the share of pixels within OKLab 0.08 of the accent')
     ap.add_argument('--json', help='also write the palette and checks here')
@@ -120,6 +157,35 @@ def main():
         print(f'palette.py: {e}', file=sys.stderr)
         return 2
     acc_hex, _ = oklch_hex(aL, aC, ah)
+    paper_in = None
+    if a.paper:
+        try:
+            paper_in = parse_colour(a.paper)
+        except ValueError as e:
+            print(f'palette.py: {e}', file=sys.stderr)
+            return 2
+
+    if not a.cover:
+        # the hard bans: refuse before building anything, unless the brand supplied the colour
+        refusals = []
+        why = banned(aL, aC, ah)
+        if why:
+            refusals.append(f'accent {acc_hex} (OKLCH {aL:.2f} {aC:.3f} {ah:.0f}) is {why}')
+        if a.temp == 'warm':
+            refusals.append('--temp warm makes a beige paper')
+        if paper_in:
+            why = banned(*paper_in)
+            if why:
+                refusals.append(f'paper {a.paper} (OKLCH {paper_in[0]:.2f} {paper_in[1]:.3f} {paper_in[2]:.0f}) is {why}')
+        if refusals and not a.brand_supplied:
+            for r in refusals:
+                print(f'palette.py: refused: {r}.', file=sys.stderr)
+            print('  That is a hard ban when you invent the look (SKILL.md "Hard bans"; references/brand-and-color.md §8).\n'
+                  '  Choose the accent from red, green, teal, blue or yellow, and keep the paper neutral or cool.\n'
+                  "  If the user's brand supplied this colour, pass --brand-supplied and record it in BRIEF.md.", file=sys.stderr)
+            return 1
+        for r in refusals:
+            print(f'palette.py: brand-supplied: {r}; record it in BRIEF.md so the critics accept it.', file=sys.stderr)
 
     if a.cover:
         try:
@@ -133,6 +199,10 @@ def main():
 
     hue = {'neutral': ah, 'cool': 250.0, 'warm': 75.0}[a.temp]
     tint = 2.2 if a.temp == 'warm' else 1.0  # warm papers carry a little more chroma
+    # Toward a warm hue (a red or a yellow accent) the neutrals stay neutral: C <= 0.004, and <= 0.003
+    # for light ones, so they never read as warm and 8-bit rounding can never push the paper or a
+    # light grey into the beige region (C >= 0.007).
+    warm_hue = 20 <= hue < 125 and a.temp != 'warm'
     if a.stage == 'light':
         spec = [('paper', 0.975, 0.004 * tint, 'the stage'), ('mist', 0.945, 0.005 * tint, 'canvas behind the product'),
                 ('line', 0.885, 0.006, 'hairlines, >= 1.5 px on screen'), ('mute', 0.52, 0.012, 'secondary text'),
@@ -142,11 +212,16 @@ def main():
         spec = [('ink', 0.165, 0.008 * tint, 'the stage'), ('ink2', 0.215, 0.009 * tint, 'raised surfaces on the stage'),
                 ('line', 0.31, 0.010, 'hairlines, >= 1.5 px on screen'), ('mute', 0.72, 0.012, 'secondary text'),
                 ('mist', 0.90, 0.006, 'light panels, if any'), ('paper', 0.965, 0.004 * tint, 'type and marks')]
-        stage_key, text_key, band = 'ink', 'paper', (0.70, 0.82)
+        stage_key, text_key, band = 'ink', 'paper', (0.84, 0.90) if YELLOW[0] <= ah < YELLOW[1] else (0.70, 0.82)
     tokens = {}
     for name, L, C, job in spec:
+        if warm_hue:
+            C = min(C, 0.003 if L >= 0.7 else 0.004)
         hx, c_used = oklch_hex(L, C, hue)
         tokens[name] = dict(hex=hx, oklch=[round(L, 3), round(c_used, 4), round(hue, 1)], job=job)
+    if paper_in:
+        hx, c_used = oklch_hex(*paper_in)
+        tokens['paper'] = dict(hex=hx, oklch=[round(paper_in[0], 3), round(c_used, 4), round(paper_in[2], 1)], job=tokens['paper']['job'] + ' (given)')
     tokens['accent'] = dict(hex=acc_hex, oklch=[round(aL, 3), round(aC, 4), round(ah, 1)], job=f'MEANING: "{a.meaning}"')
     stage = tokens[stage_key]['hex']
 
@@ -162,7 +237,11 @@ def main():
     check('secondary text', r_mute >= 4.5, f'mute on {stage_key} {r_mute:.1f}:1 (>= 4.5)')
     check('accent graphics', r_acc >= 3, f'accent on {stage_key} {r_acc:.1f}:1 (>= 3)')
     check('accent chroma', aC >= 0.08, f'C {aC:.3f} (>= 0.08, or it reads as a grey)')
-    check('neon', not (aL > 0.85 and aC > 0.15), f'L {aL:.2f} C {aC:.2f} (neon when L > 0.85 and C > 0.15)')
+    for k in ('ink', 'ink2', 'paper', 'mist', 'line', 'mute', 'accent'):
+        h_ = parse_colour(tokens[k]['hex'])
+        why = banned(*h_)
+        if why and not a.brand_supplied:
+            check(f'hard ban: {k}', False, f"{tokens[k]['hex']} reads as {why}")
     in_band = band[0] <= aL <= band[1]
     fix = ''
     if not in_band:

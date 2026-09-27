@@ -130,9 +130,10 @@ JS
   [[ -f "$DIR/package.json" ]] && sed -i.bak -E "s|\"name\": \"[^\"]*\"|\"name\": \"$PKG\"|" "$DIR/package.json" && rm -f "$DIR/package.json.bak"
 fi
 
-# The project carries its own copy of every script, so npm scripts use local paths.
+# The project carries its own copy of every script, so npm scripts use local paths (not the
+# skill's own tests in scripts/test/).
 mkdir -p "$DIR/scripts"
-(cd "$SKILL/scripts" && tar --exclude=__pycache__ --exclude='*.pyc' -cf - .) | (cd "$DIR/scripts" && tar -xf -)
+(cd "$SKILL/scripts" && tar --exclude=__pycache__ --exclude='*.pyc' --exclude=./test -cf - .) | (cd "$DIR/scripts" && tar -xf -)
 chmod +x "$DIR"/scripts/*.sh 2>/dev/null || true
 
 if [[ -n "$LINK" ]]; then
