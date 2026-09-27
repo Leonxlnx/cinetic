@@ -4,6 +4,8 @@ This is the story of one finished film, from idea to measured master, including 
 
 Tessel is a fictional product: *the calendar that plans itself*. Its launch film runs 33 s at 1920×1080 and 60 fps. It was built in Remotion 4.0.529, and the soundtrack was synthesized in Python. The numbers here are Tessel's. They became the skill's defaults because they held up, but they remain starting points.
 
+**Study the method, not the surface.** Tessel's red now-dot, its cool paper-and-ink palette, its geometric sans and its block-and-dot mark belong to Tessel: they came out of its name (pieces that tile) and its product (a calendar with a "now"). Reusing the red dot as a device, or a block mark with an accent dot, is the most common way a film made with this skill fails to be its own. Take the process (inventory, device path, grid, sound from picture, measurement) and let your brand's name, product and personality produce a different look.
+
 **Contents**
 1. [Brand](#1-brand)
 2. [Idea and copy](#2-idea-and-copy)
@@ -307,5 +309,6 @@ Tessel shipped with a few known compromises. The skill's defaults fix them for t
 - **Lockup hold.** Tessel kept a 1.0 → 1.1 dolly, and the note never went away. The default is now a hold of ≤ 1.5 s, or a build of ≥ 10–20%.
 - **Final frame.** Tessel ends on the dot alone. That is elegant, but the poster had to be taken from the mid-film lockup. The default is now "the final frame is the poster and carries the brand", with the trade-off stated in `references/formats.md`.
 - **Cursor.** The cursor was positioned with left/top. The starter's `Cursor.tsx` is transform-only.
-- **Motion-blur sampling.** Sample counts came from optical flow alone. `measure-speed.py` now uses robust-max statistics and a temporal filter, and it can take analytic velocity exported from the timeline.
+- **Motion-blur sampling.** Sample counts came from a raw optical-flow maximum, which over-reads flat shapes, flashes and repeating patterns. `measure-speed.py` now counts only forward-backward-consistent flow and tracks, gives cuts no speed, caps at 32 samples, and can take analytic velocity from the timeline; on Tessel's sharp preview that is 9.1× instead of 20.2×.
+- **Speed.** Tessel's whips and falls peak at 140–250 px/f, and 315 of its frames pass 80 px/f. The skill now keeps any one element under about 60–80 px/f and turns faster moves into cuts, match cuts or mask wipes (`references/transitions.md`), because blur can't make them read cleanly and they cost most of the render.
 - **Critique order.** Critique started late. The workflow now gates each step (treatment, style stills, grid check, act sheets) so that problems of taste surface before the expensive renders.

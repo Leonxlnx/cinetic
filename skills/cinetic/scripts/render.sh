@@ -16,7 +16,13 @@
 #   --blur     true motion blur: sharp render -> measure-speed.py writes out/samples.json (samples
 #              per frame from optical flow) -> the sub-frame composition (<Comp>Sub, e.g. FilmSub)
 #              renders every sub-frame with --props=out/samples.json -> accumulate.py averages
-#              them in float and encodes BT.709 CRF 14. Costs roughly 5-15x a sharp render.
+#              them in float and encodes BT.709 CRF 14. Before the sub-frame pass it prints the
+#              sub-frame multiple and an estimate in minutes from the sharp pass's measured speed,
+#              and it warns about moves too fast for clean blur. Typical films cost 3-8x a sharp
+#              render; cap it with --budget. Render the blurred master once, after the last review.
+#
+# The source is bundled once at the start and every pass renders from that frozen bundle, so edits
+# to src/ during a render are not in it; render.sh warns at the end if src/ changed meanwhile.
 #
 # Every mode then muxes the WAV with ffmpeg (AAC 320k, 48 kHz, +faststart; the audio is padded or
 # trimmed to the picture) because Remotion's own AAC mux leaves ~2048 samples of encoder priming,
@@ -36,7 +42,10 @@
 #   --crf N             override the final CRF (preview 20, master 14, blur 14)
 #   --concurrency N     Remotion concurrency (default: remotion.config.ts / Remotion default)
 #   --samples FILE      where --blur writes the samples JSON (default out/samples.json)
-#   --samples-from FILE reuse an existing samples JSON (skips the sharp render + measurement)
+#   --samples-from FILE reuse an existing samples JSON (skips the sharp render + measurement), e.g.
+#                       the master's for a variant with identical timing
+#   --budget X          cap the blur pass at X times the frame count (e.g. 6): the fastest frames get
+#                       fewer samples and a shorter shutter; the capped frames are listed
 #   --floor A-B:N       minimum samples over film frames A..B (repeatable; passed to measure-speed.py)
 #   --measure "ARGS"    extra measure-speed.py arguments, e.g. --measure "--max 64 --step 2"
 #   --spec WxH@fps      extra expectation for probe.py (default: the composition's own size/fps)
@@ -57,7 +66,7 @@ step() { echo "[render $(( $(date +%s) - T0 ))s] $*" >&2; }
 
 COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0
 ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
-SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=()
+SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=(); BUDGET=""
 POS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -76,6 +85,7 @@ while [[ $# -gt 0 ]]; do
     --concurrency) CONC=${2:?}; shift ;;
     --samples) SAMPLES=${2:?}; shift ;;
     --samples-from) SAMPLES_FROM=${2:?}; shift ;;
+    --budget) BUDGET=${2:?--budget needs a multiple, e.g. 6}; MS_ARGS+=(--budget "$BUDGET"); shift ;;
     --floor) MS_ARGS+=(--floor "${2:?}"); shift ;;
     --measure) read -r -a _m <<< "${2:?}"; MS_ARGS+=("${_m[@]}"); shift ;;
     --spec) SPEC=${2:?}; shift ;;
@@ -116,8 +126,10 @@ WORK=$(mktemp -d "${TMPDIR:-/tmp}/cinetic-render.XXXXXX")
 if [[ $KEEP -eq 1 ]]; then echo "render.sh: keeping work files in $WORK" >&2; else trap 'rm -rf "$WORK"' EXIT; fi
 
 step "bundling $ENTRY"
+touch "$WORK/.bundled"
 npx remotion bundle "$ENTRY" --out-dir "$WORK/bundle" --log=error >/dev/null || die "bundle failed"
 B="$WORK/bundle"
+step "frozen bundle: $B (every pass renders from it; edits to src/ from now on are not in this render)"
 LIST=$(npx remotion compositions "$B" 2>/dev/null) || die "could not list compositions"
 meta() { awk -v id="$1" '$1 == id && $2 ~ /^[0-9.]+$/ && $3 ~ /^[0-9]+x[0-9]+$/ { print $2, $3, $4; exit }' <<< "$LIST"; }
 read -r FPS SIZE TOTAL <<< "$(meta "$COMP")" || true
@@ -156,18 +168,30 @@ case "$MODE" in
     mkdir -p "$(dirname "$SAMPLES")"
     if [[ -n "$SAMPLES_FROM" ]]; then
       [[ -f "$SAMPLES_FROM" ]] || die "--samples-from $SAMPLES_FROM not found"
-      [[ "$(cd "$(dirname "$SAMPLES_FROM")" && pwd)/$(basename "$SAMPLES_FROM")" == "$(cd "$(dirname "$SAMPLES")" && pwd)/$(basename "$SAMPLES")" ]] || cp "$SAMPLES_FROM" "$SAMPLES"
+      if [[ -n "$BUDGET" ]]; then  # re-decide the groups from the saved speed track under the budget
+        python3 "$SCRIPT_DIR/measure-speed.py" "$SAMPLES_FROM" "$WORK/samples.json" "${MS_ARGS[@]}" >/dev/null || die "measure-speed.py failed"
+        cp "$WORK/samples.json" "$SAMPLES"
+      else
+        [[ "$(cd "$(dirname "$SAMPLES_FROM")" && pwd)/$(basename "$SAMPLES_FROM")" == "$(cd "$(dirname "$SAMPLES")" && pwd)/$(basename "$SAMPLES")" ]] || cp "$SAMPLES_FROM" "$SAMPLES"
+      fi
       step "reusing samples from $SAMPLES_FROM"
     else
       step "rendering sharp pass for speed measurement"
       # intermediates keep Chromium's native full-range JPEG colour (--color-space=default): no
       # matrix conversion before accumulate.py, which decodes with the file's own tags
+      TS=$(date +%s.%N)
       npx remotion render "$B" "$COMP" "$WORK/sharp.mp4" "${RANGE[@]}" --crf=12 --x264-preset=veryfast --color-space=default "${RARGS[@]}" \
         || die "sharp render failed"
+      SPF=$(python3 -c "print(round(($(date +%s.%N) - $TS) / $N, 4))")
       step "measuring on-screen speed -> $SAMPLES"
       CUES=(); [[ -f out/cues.json ]] && CUES=(--cues out/cues.json)
       python3 "$SCRIPT_DIR/measure-speed.py" "$WORK/sharp.mp4" "$SAMPLES" --offset "$FROM" "${CUES[@]}" "${MS_ARGS[@]}" >/dev/null \
         || die "measure-speed.py failed"
+      # remember the measured throughput, so a later --samples-from run can estimate too
+      python3 - "$SAMPLES" "$SPF" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1])); d['sharp_s_per_frame'] = float(sys.argv[2]); json.dump(d, open(sys.argv[1], 'w'))
+PY
     fi
     read -r SA SB <<< "$(python3 - "$SAMPLES" "$FROM" "$TO" <<'PY'
 import json, sys
@@ -178,6 +202,23 @@ before = sum(g[:a])
 print(before, before + sum(g[a:b + 1]) - 1)
 PY
 )"
+    # The estimate, measured on the starter (4 CPUs): a sub-frame renders in about the time of a
+    # sharp frame, and the float accumulation costs about 0.75 of that again per sub-frame.
+    python3 - "$SAMPLES" "$FROM" "$TO" "$((SB - SA + 1))" <<'PY' >&2 || true
+import json, sys
+d = json.load(open(sys.argv[1])); a, b, sub = int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
+n = b - a + 1
+spf = d.get('sharp_s_per_frame')
+est = f', about {max(1, round(sub * spf * 1.75 / 60))} min at {spf:.3f} s per sharp frame' if spf else ''
+print(f'render.sh: blur pass: {n} frames -> {sub} sub-frames ({sub / n:.1f}x){est}')
+tf = [r for r in d.get('too_fast', []) if r[1] >= a and r[0] <= b]
+if tf:
+    rng = ', '.join(f'{x}-{y}' for x, y in tf[:6])
+    print(f'render.sh: WARNING: too fast for clean blur at frames {rng} (> {d.get("too_fast_px_f", 80):g} px/f, peak '
+          f'{d.get("peak")} px/f): redesign those moves (a cut on the beat, a match cut, a mask wipe, a shorter distance)')
+if sub / n > 8 and not d.get('budget'):
+    print('render.sh: note: over 8x; pass --budget 6 to cap it, or slow the fastest moves')
+PY
     step "rendering $SUB sub-frames $SA-$SB ($((SB - SA + 1)) sub-frames for $N frames)"
     npx remotion render "$B" "$SUB" "$WORK/sub.mp4" --props="$(cd "$(dirname "$SAMPLES")" && pwd)/$(basename "$SAMPLES")" \
       --frames="$SA-$SB" --crf=6 --x264-preset=veryfast --pixel-format=yuv444p --color-space=default "${RARGS[@]}" \
@@ -196,13 +237,13 @@ if [[ $NOAUDIO -eq 1 ]]; then
   ffmpeg -v error -y -i "$PIC" -map 0:v:0 -c copy -movflags +faststart "$OUT_ABS" || die "ffmpeg copy failed"
 else
   ADUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$AUDIO")
-  python3 - "$ADUR" "$AOFF_S" "$DUR" "$FPS" <<'PY' >&2 || true
+  python3 - "$ADUR" "$AOFF_S" "$DUR" "$FPS" "$([[ -n "$FRAMES" ]] && echo 1 || echo 0)" <<'PY' >&2 || true
 import sys
-adur, off, dur, fps = map(float, sys.argv[1:])
+adur, off, dur, fps, excerpt = map(float, sys.argv[1:])
 need = off + dur
 if adur < need - 1 / fps:
     print(f'render.sh: warning: soundtrack is {adur:.3f}s, picture needs {need:.3f}s; padding with silence')
-elif off == 0 and adur > need + 1.0:
+elif off == 0 and not excerpt and adur > need + 1.0:
     print(f'render.sh: warning: soundtrack runs {adur - need:.2f}s past the picture; trimming it (check TOTAL / the tail)')
 PY
   step "muxing $AUDIO (from ${AOFF_S}s) -> $OUT"
@@ -223,6 +264,12 @@ if [[ $NOCHECK -eq 0 ]]; then
 fi
 
 SIZE_MB=$(python3 -c "import os;print(f'{os.path.getsize(\"$OUT_ABS\")/1e6:.1f}')")
+changed=$(find src -type f -newer "$WORK/.bundled" 2>/dev/null | head -3 | tr '\n' ' ' || true)
+[[ -z "$changed" ]] || echo "render.sh: warning: src/ changed while this rendered ($changed); $OUT shows the source as it was when bundled" >&2
+if [[ $MODE == blur && -f "$SAMPLES" ]]; then
+  FAST=$(python3 -c "import json;d=json.load(open('$SAMPLES'));print(' '.join(str(f - $FROM) for f in d.get('fastest_frames', [])[:4] if $FROM <= f <= $TO))" 2>/dev/null || true)
+  [[ -z "$FAST" ]] || echo "render.sh: look at the fastest frames at full size for stepped copies: bash scripts/grab.sh $OUT $FAST" >&2
+fi
 if [[ $STATUS -eq 0 ]]; then
   step "done: $OUT (${SIZE_MB} MB, ${DUR}s, $MODE)"
 else
