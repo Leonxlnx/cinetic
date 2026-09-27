@@ -60,7 +60,7 @@ Average outside the browser, in float, and quantise once.
 1. **Sharp render** of the composition (CRF 12, native colour), used only for measurement.
 2. **`measure-speed.py sharp.mp4 out/samples.json`** decides the samples per frame (`groups`) from optical flow.
 3. **Sub-frame render.** The `FilmSub` composition renders the film once per sub-frame: `--props=out/samples.json --crf=6 --pixel-format=yuv444p`. Its length comes from `calculateMetadata` summing `groups`.
-4. **`accumulate.py sub.mp4 out/samples.json picture.mp4`** averages each frame's group in float and encodes BT.709 CRF 14.
+4. **`accumulate.py sub.mp4 out/samples.json picture.mp4`** averages each frame's group in float, quantises once (flat fields exact, dither only in smooth ramps; §5) and encodes BT.709 CRF 14.
 5. **Mux**, then **`check-sync.py`** and **`probe.py`** (§6, §9).
 
 `FilmSub` and `src/blur.ts` ship in the starter. The core of it:
@@ -199,10 +199,29 @@ Verified on the starter demo: paper, ink and accent pixels decode within 1 code 
 | Sharp master | H.264 yuv420p | CRF 14, slow | transparent quality for flat colour and hairlines |
 | Sharp pass (for measuring) | H.264 | CRF 12, veryfast | only read by optical flow |
 | Sub-frame stream | H.264 yuv444p | CRF 6, veryfast | near-lossless; no extra chroma loss before averaging |
-| Blurred master | H.264 yuv420p (or `--10bit`) | CRF 14, slow, via `accumulate.py` | quantised once |
+| Blurred master | H.264 yuv420p (or `--10bit`) | CRF 14, slow, via `accumulate.py` | quantised once, with no swscale dither (see below) |
 | Web loop | VP9 | CRF 32, `-b:v 0` | about half the size of the H.264 master |
 
-Remotion's defaults are JPEG q80, CRF 18 and x264 `medium`; each is visibly worse on flat colour and gradients. `accumulate.py --10bit` writes High 10 for masters that will be graded or re-encoded; ship 8-bit to the web.
+Remotion's defaults are JPEG q80, CRF 18 and x264 `medium`; each is visibly worse on flat colour and gradients.
+
+### Compression smear on flat fields
+
+**What it is.** Under a ×25 contrast stretch, a flat field (paper, a solid stage, a flat card) shows horizontal streaks and 16 px blotches of ±1–2 levels that change from frame to frame. At normal contrast it is a faint, dirty shimmer over the background, most visible on a big screen, on pause and in a poster; platform re-encodes make it worse.
+
+**Why it happens.** The float average of a flat field rarely lands on a whole code value (one logo sting's paper sat at 228.31). When ffmpeg's swscale reduced the 16-bit average to 8 bits, it added an 8×8 ordered dither, which turned the paper into a fixed 228/229 checker. x264 kept that fine pattern in some macroblocks and flattened it in others, differently each frame: the patches are the smear. The older rule, dither every pixel the shutter changed, did the same wherever anything moved. Sharp masters don't have it, because Chromium's frames are whole code values already.
+
+**How `accumulate.py` avoids it.**
+- It converts to BT.709 limited range itself, in float (within 0.01 of a code value of swscale), and quantises once, straight to the yuv420p planes it pipes to x264. No scale filter runs, so nothing adds a hidden dither.
+- Plain rounding puts a flat field on one code value everywhere, moving or fading, and x264 encodes that exactly.
+- The ±1 LSB TPDF dither goes only into smooth ramps, where banding can form (a 5×5 neighbourhood that is not flat, with no edge steeper than 8 codes within 9×9). It goes into every frame, with one fixed noise pattern, so a held shot stays identical from frame to frame and x264 keeps the dither instead of smoothing it back into contours. `--dither-mask changed|all` restores the older rules for comparison.
+- No x264 tuning is needed. On a dark dithered gradient, `aq-mode=3`, `--tune film|grain` and `deblock -1:-1` each moved the banding error by 3% or less, and `aq-mode=3` cost 66% more bits on the flat sting.
+- On that sting, 7–11% of the paper's pixels sat 1–3 levels off before; after, 0.02% or fewer did, and the master came out a third smaller.
+
+**10-bit.** `render.sh --blur --10bit` (or `accumulate.py --10bit`) writes yuv420p10le, High 10: ramps quantised in quarter steps, the least banding and a smaller file. Use it for masters that will be graded or re-encoded. Ship 8-bit yuv420p to the web, because many browsers and phones do not decode High 10; `render.sh` tells `probe.py` to expect 10-bit only for that master.
+
+**Detection.** `forensics.py` runs a `smear` check on 2 frames per second, read from the exact luma plane. It finds flat fields (at least 1% of the frame, every 17×17 neighbourhood within 3 codes, 98% of it within ±2 of one value) and compares their 16 px blocks. Finely textured blocks next to clean ones are smear; all clean (an exact encode) or all textured (even grain) is not. A smeared share of the frame over 0.2 on two or more samples fails, and on one it warns (`--smear-area`, `--no-smear`). It writes `smear.png`, a ×25 stretch around the field's level, next to the JSON. That sting measured 0.29–0.43 before the fix and 0.00 after; a busy 30 s launch film peaks at 0.15. The fix is to re-run the blur with the current `accumulate.py`; with another encoder, use a lower CRF or 10-bit.
+
+For the same reason, the poster is not decoded from the master (§8).
 
 ## 6. Audio mux
 
@@ -240,7 +259,7 @@ python3 scripts/check-sync.py out/film.mp4 && python3 scripts/probe.py out/film.
 
 | Deliverable | How | Spec and budget |
 |---|---|---|
-| Poster | always: the final frame (`--poster-frame N` to override) | `poster.png` (exact) + `poster.jpg`; the final frame is designed to be the poster (see `references/concept-and-story.md` for the recall trade-off) |
+| Poster | always: the final frame (`--poster-frame N` to override), from a clean source, not the master | `poster.png` (lossless, full chroma) + `poster.jpg`; the final frame is designed to be the poster (see `references/concept-and-story.md` for the recall trade-off) |
 | Web loop, MP4 | `--loop` | muted, `+faststart`, loop-seam check |
 | Web loop, WebM | `--webm` | VP9 CRF 32, BT.709 tagged, Opus audio unless `--loop` |
 | GIF | `--gif` | 25 fps, 960 px wide, two-pass palette; warns above 8 MB |
@@ -248,6 +267,7 @@ python3 scripts/check-sync.py out/film.mp4 && python3 scripts/probe.py out/film.
 | Aspect variants | `--variants Film9x16,Film1x1` (+ `--variant-samples out/samples.json` to blur them with the master's samples) | each through `render.sh`, own spec |
 | Brand kit | `bash scripts/brand-kit.sh [--x-header]`, into `out/deliver/brand/` | SVG mark and lockups for light and dark grounds (the name outlined), transparent PNG lockups, the mark at 16/32/512/1024 px, a 400 px avatar, a 1500 × 500 X header |
 
+- **Poster source.** A frame decoded from the H.264 master carries 4:2:0 chroma (soft colour edges on type) and any block smear on flat fields (§5), and a still shows both. So `deliver.sh` renders the poster frame with `npx remotion still` of `--comp` (default `Film`); for a HyperFrames film it takes the lossless last frame `hf-finish.sh` keeps in `qa/<name>-last-frame.png`; `--poster-from PNG` names any other lossless still. The still must match the master's frame (MAD ≤ 2 and ≤ 0.25% of pixels off by more than 32 levels), which catches a stale render or the wrong composition. Only when no clean source matches does it use the master's frame, and it prints a warning; `qa/manifest.json` records the source.
 - **Loop seam.** The step from the last frame back to frame 0 must look like the steps around it: seam difference ≤ max(0.4, 1.5× the median of the 8 steps at each end), the same rule as `forensics.py --loop`. Design the loop so the last frame's state flows into frame 0 (the length is whole bars; see `references/formats.md`), and do not repeat frame 0 as the last frame, which reads as a hitch.
 - **GIF.** Frame delays are whole hundredths of a second, so 25 fps (4 cs) and 50 fps (2 cs) play at the true rate while 30 fps plays 11% fast. A GIF of busy full-frame UI is large (4 s at 960 px measured 26 MB); keep GIFs to short, simple loops at 480–960 px and ship WebM or MP4 wherever the page allows video. `--gif-dither bayer` gives a steadier pattern on large flat areas than the default `sierra2_4a`.
 - **Alpha.** The composition must paint no background, usually through a prop such as `{transparent: true}` that skips the paper fill; `deliver.sh` warns if the first frame is fully opaque. The Remotion recipe is `--codec=prores --prores-profile=4444 --pixel-format=yuva444p10le --image-format=png`. `ffprobe` reports the result as `yuva444p12le` (the decoder's format), so check for `yuva444p*` and profile 4444. VP9 alpha is `--codec=vp9 --pixel-format=yuva420p --image-format=png` and carries `alpha_mode=1`.
@@ -264,8 +284,8 @@ python3 scripts/check-sync.py out/film.mp4 && python3 scripts/probe.py out/film.
 | Audio stream | `probe.py` (`--audio none` for silent loops) | AAC, 48 kHz, stereo, length within one frame plus one AAC frame of the picture |
 | Sync | `check-sync.py film.mp4 soundtrack.wav` | ≤ 48 samples at every sample point, correlation ≥ 0.5 |
 | True peak | `check-sync.py` | ≤ −1 dBTP after decode |
-| Loudness (optional) | `probe.py --lufs -14 --tp-max -1` or `check-sync.py --lufs -14` | −14 ± 1 LUFS integrated |
+| Loudness (optional) | `probe.py --lufs <target> --tp-max -1` or `check-sync.py --lufs <target>`; `av-audit.py` reads the target from `audio/score.json` | the film's target ± 1 LUFS integrated: `master.lufs`, −14 by default, −16 for a calm brand or a sting (`references/sound.md`) |
 | Loop seam | `deliver.sh --loop` or `forensics.py --loop` | seam ≤ max(0.4, 1.5× median step at the ends) |
 | Alpha | `deliver.sh --alpha` / `probe.py --vcodec prores --pix-fmt yuva444p10le,yuva444p12le` | ProRes 4444 with alpha |
 
-All of them print JSON on stdout (probe and check-sync also take `--json FILE`) and exit 0 on pass, 1 on fail. `render.sh` writes its reports to `out/qa/probe-<name>.json` and `out/qa/sync-<name>.json`. Pixel-level QA (pops, ghosts, judder, banding sheets) is `scripts/forensics.py`; see `references/review-loop.md`. Chromium-specific artifacts and their fixes are in `references/chromium-rendering.md`.
+All of them print JSON on stdout (probe and check-sync also take `--json FILE`) and exit 0 on pass, 1 on fail. `render.sh` writes its reports to `out/qa/probe-<name>.json` and `out/qa/sync-<name>.json`. Pixel-level QA (pops, ghosts, judder, banding and compression-smear sheets) is `scripts/forensics.py`; see `references/review-loop.md`. Chromium-specific artifacts and their fixes are in `references/chromium-rendering.md`.
