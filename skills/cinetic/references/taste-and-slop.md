@@ -38,6 +38,8 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **A7 Frames that contradict the promise.** A strike-through over the tagline, overlapping tiles in an "everything fits" shot, success in the error colour. **Fix:** read every key frame literally, as a paused still.
 - **A8 A recycled or dead end card.** It replays the mid-film reveal, sits static for 2.7 s, fades to black, or the last frame shows no brand. **Fix:** the device becomes the mark; a 1.5–2 s hold that builds 10–20%; the final frame is the poster.
 - **A9 An oversimplified feature.** The film would be just as true of a dumber product: an even split for an itemised one, a list for a ranking. **Fix:** the specificity test; the proof shows the non-obvious behaviour (`references/concept-and-story.md` §3–4).
+- **A10 An anonymous product.** The feature is never named and nothing on screen says it is software: a clever behaviour on floating cards that a stranger can't name or search for. **Fix:** the feature's name once, as a UI label, the one line or the end card, plus enough real app chrome to read as an app (`references/product-ui.md` §1).
+- **A11 An end card without the brief's fact.** The brief says "shipping next week", "out now" or gives a URL, and the film ends on the name alone. **Fix:** that one fact at the secondary size under the lockup, readable ≥ 1.7 s; it is the only line besides the name (`references/formats.md` §2).
 
 ## B. Copy
 - **B1 Landing-page grammar.** Eyebrow or kicker labels and stacked taglines (HB1, HB2), all-caps micro labels. **Fix:** delete them; hierarchy comes from size and order of appearance.
@@ -70,6 +72,9 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **D7 Muddy washes.** A white radial wash turns ink cards into grey buttons; a dull grey stage with a colour cast. **Fix:** ink stays ink; veil at 80–85% only where type sits.
 - **D8 Pure black holes.** Full-frame `#000` stages that crush under encoding. **Fix:** ink at OKLCH L 0.15–0.18, tinted 0.003–0.008 chroma toward the accent.
 - **D9 House-style convergence.** The starter's or Tessel's typeface, palette or mark, a block-and-accent-dot mark, or a light paper stage kept because the starter had one. **Fix:** three adjectives → family, stage, accent and shapes, then a sheet of 6–10 mark directions (`references/brand-and-color.md` §2, §4).
+- **D10 A default palette.** Framework blue (the `#3B82F6` / `#2563EB` / `#1D4ED8` family, hue about 260) on flat greys (`#808080`-style, chroma 0), pure black and white: read as "template" before any motion plays. **Fix:** derive the stage, neutrals and accent from the world of the name and the product, tint the neutrals (chroma 0.003–0.010), move the accent's hue and chroma off the framework values (`references/brand-and-color.md` §9).
+- **D11 A colourless film.** Restraint turned into no colour: a mid-film frame at thumbnail size shows no brand colour at all, and the accent never carries the product's action. **Fix:** the accent visibly marks the key beats (the product acting, the payoff) and the stage has a tone from the brand's world; check a mid-film frame at 480 px; on a key beat `python3 scripts/palette.py --cover <still> --accent '#…'` should not read near 0%.
+- **D12 A mark that misreads.** At 64 px in half a second it reads as a common symbol: a minus or plus, an emoticon, a menu or "more" icon, a padlock, a play button, ±. **Fix:** the misread test on the mark sheet; change the geometry (an asymmetric break usually fixes a symmetric symbol) and test again (`references/brand-and-color.md` §4).
 
 ## E. Layout and framing
 - **E1 The SaaS layout.** Text left, UI card right on white, or everything centred and floating. **Fix:** the product full-bleed, type anchored to an eye line or the lower third, one focal action per shot.
@@ -79,6 +84,7 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **E5 Cropped social versions.** A 9:16 or 1:1 cut out of the 16:9 master. **Fix:** re-lay separate compositions from the same timeline (`references/formats.md`).
 - **E6 A lockup lost in a void.** The resolved lockup spans under a quarter of the frame's width and can't be read at 480 px. **Fix:** 28–45% of the width at its resolved size (`references/brand-and-color.md` §6).
 - **E7 A small card in empty space.** The product shown as a floating card whose type is unreadable on a phone. **Fix:** full-bleed, or push in until the working part fills the frame (`references/product-ui.md` §1).
+- **E8 An empty vertical frame.** A 9:16 frame laid out like a wide one: a strip of content in the middle, the bottom 40% bare, 16:9 type sizes. **Fix:** the content's mass in the middle of the safe band (y 270–1536 at 1080 × 1920), the product filling or bleeding past the band, type 1.3–1.5× the 16:9 sizes; the mass check and layout sketch are in `references/formats.md` §7.
 
 ## F. Motion and easing
 - **F1 The default entrance.** Everything fades in, or enters with `y: 30, opacity: 0`. **Fix:** one reveal system per role, with physical entrances: a mask sweep, a birth from a gap, a morph.
@@ -109,11 +115,12 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 ## I. UI depiction
 - **I1 Generic or pictured UI.** Fake KPIs, up-and-right charts, random numbers, stock icons (HB9), a screenshot zoomed until soft. **Fix:** the product's own surfaces as real components with named data from one module (`references/product-ui.md`).
 - **I2 Data that disagrees.** A date on the wrong weekday, stale labels after a move, a counter saying 7 over 12 items, the product replanning the past. **Fix:** derive every label from `data.ts` and assert it.
-- **I3 State that doesn't count.** A counter frozen during the action, then flipped in one frame. **Fix:** decrement on each visible event, computed on whole frames (`fd`).
+- **I3 State that doesn't count.** A counter frozen during the action, then flipped in one frame, or a counter or check that changes a beat after the thing that caused it landed. **Fix:** change on each visible event's landing frame, computed on whole frames (`fd`), from the same exported frames as its sound (`references/product-ui.md` §4.2).
 - **I4 Z-order bugs.** A badge bitten by the next avatar, a lifted card drawn under a grounded one, a toast over the result. **Fix:** paint sorted by z; badges get a 2 px ring in the background colour.
 - **I5 Input no real app has.** A caret floating 8–75 px from the text, a chip whose weight animates and reflows the line. **Fix:** padding grows with the reveal; weight stays constant; animate only fill and colour.
 - **I6 A robotic cursor.** Straight paths at constant speed, a parked cursor, or any cursor on a product that acts alone. **Fix:** arc 15–25% of the path, travel 36–48 f, press to 0.88 over 4 f, ≤ 1 click per 30 f; no cursor once the product is autonomous.
 - **I7 Story and data disagree.** The person who paid is shown owing, a ratio doesn't match the numbers beside it, one figure appears twice in a frame. **Fix:** assert the story's facts in `data.ts` (`references/product-ui.md` §2).
+- **I8 Text covered by a moving element.** A chip, card or the device slides over a label the viewer is reading (a badge flying across a list's labels). **Fix:** route paths through gutters, or paint the text above the mover; assert the path with `covers()` and tag movers `data-mover` so `layout-audit.sh` fails it (`references/product-ui.md` §4.5).
 
 ## J. Sound
 - **J1 Library sound.** A stock whoosh on every cut, meme effects, riser → boom on everything. **Fix:** a synthesized palette; whooshes only on camera moves, dull (centroid 150–600 Hz), apex on the velocity peak, panned with the motion (`references/sound.md`).
@@ -124,6 +131,8 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **J6 Typing rattle.** 30 clicks per second fusing into a buzz. **Fix:** accent word starts, a lower thock on spaces, ±6% pitch, drop clicks closer than 2 f.
 - **J7 Picture events with no sound.** A cut or whip peaking a quarter-second after the beat, a big move with no hit under it. **Fix:** cuts and velocity peaks sit on the grid with a hit; `av-audit.py` warns on strong picture changes with no sound within ±3 f (`references/timing-grid.md`).
 - **J8 A flat mix.** Loudness range under 5 LU on a film of 20 s or more; the payoff barely louder than the rest. **Fix:** thin out before the turn, true silence before the drop, the payoff 2–3 LU above the median momentary loudness (`references/sound.md`).
+- **J9 A soft hook.** The soundtrack fades in over the first bar (a pad or drone swelling from about −25 dB), so the first second sounds like nothing is happening yet. **Fix:** a sound with a visible cause on frame 0 and the first bar at intent; `score.py` warns when the first 0.5 s sits more than 12 dB under the median momentary loudness (`references/sound.md` §5.3).
+- **J10 The wrong energy for the brand.** Drops onto silence, sub booms and risers under a calm brand (trailer grammar), or a timid bed under a fast launch. **Fix:** pick the personality row first (`references/sound.md` §5.5a); calm brands get soft mallets and one gentle chord.
 
 ## K. Pacing
 - **K1 Weak hook.** 1–2 s of near-blank frame (mean difference < 0.05), which a muted feed reads as a stalled player. **Fix:** frame 0 already composed and moving; a visible change about every 0.5 s.
@@ -131,6 +140,7 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **K3 Cramming.** 17 scenes in 32 s, or 3 features in 5 s. **Fix:** 8–10 story beats per 30 s and 1–2 capabilities.
 - **K4 Flat energy.** A middle 10× calmer than the rest, or peaks with no calm between them. **Fix:** one motion peak per bar with 30–70 f of calm between; the first 6 s about 2× as dense as the middle.
 - **K5 Off-grid timing.** Cuts and hits that ignore the music. **Fix:** a BPM grid; section changes on downbeats, cuts on 8ths (`references/timing-grid.md`).
+- **K6 A soft first second.** Frame 0 is composed, but only the opening line moves and the problem isn't felt by 1 s; paired with a fade-in (J9), a muted feed scrolls past. **Fix:** the device and the product's state both move from frame 0, something visibly changes about every 0.5 s, the problem is felt by 1 s.
 
 ## L. Finishing
 - **L1 Pops and ghost frames.** Single-frame pops, or stale frames that land on different frames each render (`will-change` on a layer with an animated blur). **Fix:** never promote a layer with blur animating inside it; render twice and compare hashes.
