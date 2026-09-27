@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <!-- Local copies (npm install runs setup.mjs): renders must not depend on the network. -->
+    <script src="vendor/gsap.min.js"></script>
+    <script src="motion.js"></script>
+    <script src="timeline.js"></script>
+    <style>
+      /* Local variable font: bundled families alias silently, hosted fonts fail offline. */
+      @font-face {
+        font-family: "Geist";
+        src: url("fonts/geist-latin-wght-normal.woff2") format("woff2");
+        font-weight: 100 900;
+        font-style: normal;
+        font-display: block;
+      }
+      /* cinetic:placeholder - delete this comment once the palette and mark are the film's own.
+         They are the starter's stand-ins: apply the user's brand or invent one for this film
+         (references/brand-and-color.md); lint-film.mjs errors while a placeholder marker is left. */
+      :root {
+        --ink: #0d0e10;
+        --paper: #f3f2ef;
+        --n1: #1b1d21;
+        --n2: #8a8f97;
+        --accent: #08965a; /* one meaning: the moment something locks (signal green) */
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--ink);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Geist", sans-serif;
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+      #bg {
+        background: var(--ink);
+      }
+      /* Static end state first (the lockup, laid out by flex); GSAP animates from offsets. */
+      #shot {
+        position: absolute;
+        inset: 0;
+      }
+      #lockup {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 64px;
+      }
+      /* The mark: three primitives on a 100-unit grid (1 unit = 2 px, gaps 12 units). */
+      #mark {
+        position: relative;
+        flex: none;
+        width: 200px;
+        height: 200px;
+      }
+      #recoil {
+        position: absolute;
+        inset: 0;
+      }
+      .pc {
+        position: absolute;
+      }
+      .pc > span {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: var(--paper);
+      }
+      #pcA {
+        left: 0;
+        top: 0;
+        width: 88px;
+        height: 200px;
+      }
+      #pcB {
+        left: 112px;
+        top: 112px;
+        width: 88px;
+        height: 88px;
+      }
+      #pcC {
+        left: 112px;
+        top: 0;
+        width: 88px;
+        height: 88px;
+      }
+      #pcC > span {
+        background: var(--accent);
+        border-radius: 50%;
+        transform-origin: 50% 100%;
+      }
+      #word {
+        display: flex;
+        gap: 0.26em;
+        color: var(--paper);
+        font-size: 144px;
+        font-weight: 600;
+        letter-spacing: -0.045em;
+        line-height: 1;
+      }
+      /* Masks keep descenders and the period's pop inside the clip. check cannot see mask
+         clipping, so the hidden words carry data-layout-allow-overflow/-occlusion. */
+      .mask {
+        display: block;
+        overflow: hidden;
+        padding: 0.06em 0.14em 0.18em 0.02em;
+        margin: -0.06em -0.14em -0.18em -0.02em;
+      }
+      .w {
+        display: block;
+      }
+      .dot {
+        display: inline-block;
+        color: var(--accent);
+        transform-origin: 50% 85%;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="5"
+      data-fps="60"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div id="bg" class="clip" data-start="0" data-duration="5" data-track-index="0"></div>
+      <div id="stage" class="clip" data-start="0" data-duration="5" data-track-index="1">
+        <div id="shot">
+          <div id="lockup">
+            <div id="mark">
+              <div id="recoil">
+                <div id="pcA" class="pc"><span></span></div>
+                <div id="pcB" class="pc"><span></span></div>
+                <div id="pcC" class="pc"><span></span></div>
+              </div>
+            </div>
+            <div id="word">
+              <span class="mask"><span class="w" id="w1" data-layout-allow-overflow data-layout-allow-occlusion>In</span></span>
+              <span class="mask"><span class="w" id="w2" data-layout-allow-overflow data-layout-allow-occlusion>sync<span class="dot">.</span></span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        const { E, W, sec, pulse, startFor } = window.BF;
+        const { CUE, DUR, DROP, WORD_EASE, TOTAL } = window.FILM;
+
+        function build() {
+          const tl = gsap.timeline({ paused: true });
+
+          // Measure the static lockup once, after the font is in and before any transform.
+          const m = document.getElementById("mark").getBoundingClientRect();
+          const centre = W / 2 - (m.left + m.width / 2); // puts the mark mid-frame until the glide
+
+          // Bar 1: the mark assembles from its own primitives.
+          tl.fromTo("#pcA", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: sec(DUR.rise), ease: E.out }, sec(CUE.rise));
+          tl.fromTo("#pcB", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: sec(DUR.slide), ease: E.out }, sec(CUE.slide));
+          tl.fromTo("#pcC", { y: -DROP }, { y: 0, duration: sec(DUR.fall), ease: E.contact }, sec(CUE.fall)); // meets the grid on CUE.hit
+          tl.fromTo("#pcC", { opacity: 0 }, { opacity: 1, duration: sec(8), ease: E.out }, sec(CUE.fall));
+
+          // Downbeat of bar 2: contact. Squash on the child, recoil on a wrapper, so no node
+          // carries two transform tweens at once (the squash numbers are BF.squash's).
+          const squash = pulse(1, 4);
+          tl.fromTo("#pcC > span", { scaleX: 1, scaleY: 1 }, { scaleX: 1.08, scaleY: 0.9, duration: squash.dur, ease: squash.ease }, sec(CUE.hit));
+          const recoil = pulse(2, 5);
+          tl.fromTo("#recoil", { y: 0 }, { y: 4, duration: recoil.dur, ease: recoil.ease }, sec(CUE.hit));
+
+          // The mark glides aside (72 f keeps it near 12 px/f, sharp at 60 fps); each word settles on its beat.
+          tl.fromTo("#mark", { x: centre }, { x: 0, duration: sec(DUR.glide), ease: E.glide }, sec(CUE.glide));
+          // Vertical text snaps to whole pixels: WORD_EASE (timeline.js) ends the rise while it still travels.
+          const WORD = WORD_EASE;
+          tl.fromTo("#w1", { yPercent: 115 }, { yPercent: 0, duration: sec(DUR.word), ease: WORD }, sec(startFor(CUE.word1, DUR.word, WORD)));
+          tl.fromTo("#w2", { yPercent: 115 }, { yPercent: 0, duration: sec(DUR.word), ease: WORD }, sec(startFor(CUE.word2, DUR.word, WORD)));
+          const tick = pulse(2, 5);
+          tl.fromTo(".dot", { scale: 1 }, { scale: 1.3, duration: tick.dur, ease: tick.ease }, sec(CUE.word2));
+
+          // The hold builds instead of dying: a slow push that comes to rest on the last frame.
+          tl.fromTo("#shot", { scale: 1 }, { scale: 1.03, duration: sec(TOTAL - CUE.hit), ease: E.dolly }, sec(CUE.hit));
+
+          // Register last, after every tween exists; the key equals data-composition-id.
+          window.__timelines["main"] = tl;
+          if (typeof window.__hfForceTimelineRebind === "function") window.__hfForceTimelineRebind();
+        }
+
+        Promise.all([document.fonts.load('600 144px "Geist"'), document.fonts.ready]).then(build, build);
+      })();
+    </script>
+  </body>
+</html>

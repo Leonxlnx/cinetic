@@ -1,0 +1,16 @@
+{
+  "key": "G major",
+  "bpm": 120,
+  "chords": ["Em9", "Gadd9", "-"],
+  "sections": [
+    { "bars": [1, 1], "style": "intro" },
+    { "bars": [2, 2], "style": "resolve" },
+    { "bars": [3, 3], "style": "hold" }
+  ],
+  "signature": { "tick": "G7", "tock": "D7", "motif": [0, 7, 14], "rhythm": [0, 0.5, 1.5] },
+  "motifs": [{ "at": "@hit", "gain": 1.0 }],
+  "drops": [{ "at": "@hit", "silence": "1/16", "suck": 0.2 }],
+  "payoff": "@hit",
+  "mix": { "music": 1.0, "sfx": 1.0, "reverb": 1.0, "sidechain": 0.55, "duck_db": 3 },
+  "master": { "lufs": -14, "ceiling": 0.77, "fade": 1.3 }
+}
