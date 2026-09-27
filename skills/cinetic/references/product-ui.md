@@ -23,6 +23,7 @@ The numbers are proven defaults from shipped films. The product's real behaviour
 - **Cause → action → result.** Every product action has a visible cause (a click, a typed request, an incoming event), the action itself, and a result that holds ≥ 36 f before the camera leaves. One element carries the action per shot.
 - **The UI survives a pause.** Any frame could be a screenshot of the real app: correct dates, consistent counts, labels that match positions (§8).
 - **Show the smart part.** The proof beat shows the feature's non-trivial behaviour, because that is the whole point of a feature video: per-item assignment rather than an even split, proportional allocation of shared costs, conflict resolution, ranking rather than listing, only the future replanned. Take it from the "unlike the obvious version, it…" line in `TREATMENT.md` (`references/concept-and-story.md` §2). Restraint applies to decoration, never to the product's intelligence: a film that shows a simpler behaviour than the product has undersells it, however well it moves.
+- **Name the feature once, and show what it lives in.** A stranger should know which product and which feature this is: enough of the app's real chrome (its header, sidebar or window edge) to read as software, and the feature's name exactly once, where the product itself would show it (the tab, the menu item, the button that causes the action) or as the one line of copy or on the end card. A feature name as a headline is a copy tell; never naming it is the opposite failure, because a clever behaviour nobody can name can't be searched for or asked about. Put the name in `data.ts` with the rest of the strings.
 - **Fill the frame.** The UI must be readable at 1080p and on a phone (the 480 px legibility sheet). Frame the product full-bleed, or push the camera in until the part doing the work fills most of the frame; a small card floating in empty space reads as a slide and its type is unreadable when the film is embedded. Text that carries the story is ≥ 22 px after camera scale (28 preferred, §3).
 
 ## 2. The data module
@@ -131,6 +132,8 @@ export const listLayout = (rows: Row[], insertId: string, f: number, at: number)
 ### 4.2 Counters count during the action
 A counter decrements (or increments) on each visible event, on whole frames, and rolls each changed digit over 6–8 f. A counter frozen at "12" while everything resolves, then flipping to "0" in one frame, contradicts the picture.
 
+**State follows its cause on the landing frame.** The event frame is the frame the cause lands: the contact frame of the tile that seats, the settle of the row that arrives, the press of the button. The counter starts rolling there, the check draws there, the total changes there, never a beat later, when it reads as a second, unexplained event. Export those frames from the act once (`LANDINGS`, the same constant `src/sync.ts` puts the sound on) and drive the counter, the check and the sound from it, so the three can't drift apart.
+
 ```tsx
 import React from 'react';
 import { E, fd, prog } from '../lib/anim';
@@ -186,6 +189,26 @@ export const label = (f: number, startAt: (frame: number) => number) => hhmm(r5(
 - A chip exists only once its first character is typed; an empty chip keeps its padding and pushes the caret 8–75 px away.
 - **Padding grows with the reveal** (`padding: 4 * chipIn` px) while the font weight stays constant. Animating weight (400 → 560) reflows the rest of the line; animate background and colour only.
 - A pill that changes state (pending → confirmed) swaps its text on a single element at the midpoint of a short move or colour change, never by cross-fading two pills.
+
+### 4.5 Moving elements never cover text
+A chip flying to its slot, a card sliding over a list, the device crossing the frame: whatever moves passes over text, and for the frames it covers a line the viewer is reading, the frame reads as broken (a split chip sliding across a card's labels, paused, is a UI bug). Plan it rather than hoping:
+- **Route around the text.** Paths run through gutters, above or below the rows, or leave the text's column before it arrives. Lay out the text first, then the paths.
+- **Or order the layers on purpose.** The text the viewer reads paints above the moving thing (later in paint order, or a higher z-index), or the covered text has already left or not yet arrived. A moving object may pass behind a line; it never slides over one that is still being read.
+- **Check it from the data.** Positions are functions of the data (§3), so a path can be tested before anything renders:
+
+```ts
+// src/app/paths.ts: the first frame a moving rect covers any text rect (with a pad), or -1
+export type Rect = { x: number; y: number; w: number; h: number };
+const hits = (a: Rect, b: Rect, pad = 8) =>
+  a.x < b.x + b.w + pad && b.x < a.x + a.w + pad && a.y < b.y + b.h + pad && b.y < a.y + a.h + pad;
+export const covers = (rectAt: (f: number) => Rect, texts: Rect[], from: number, to: number) => {
+  for (let f = from; f <= to; f++) if (texts.some((t) => hits(rectAt(f), t))) return f;
+  return -1;
+};
+// in data.ts or the act module, at load: assert(covers(chipAt, CARD_LABELS, FLY.from, FLY.to) < 0, 'the chip crosses the card labels');
+```
+
+- **Check it on the frames.** Tag the moving element `data-mover="<id>"` (and the text `data-text="<id>"` as always). `scripts/layout-audit.sh` then samples each text box with `elementsFromPoint`, which respects z-order and transforms as rendered, and fails `covered: <text> … under <mover>`. Audit the densest frames of every move with `--frames`, not only the cues.
 
 ## 5. Cursor physics
 
@@ -282,6 +305,8 @@ Pause on any frame and check it as a screenshot. Run this on the act contact she
 - Labels travel with their items; nothing shows a stale value after a move.
 - The accent keeps one meaning; success and error never share a colour.
 - Nothing in the past changed; only the future was replanned.
-- Text that carries meaning is ≥ 22 px on screen; nothing important is cropped or covered by a moving edge.
+- Text that carries meaning is ≥ 22 px on screen (32 px in 9:16); nothing important is cropped, or covered by a moving element or edge (§4.5).
+- Counters, checks and totals have changed on the landing frame of their cause, not a beat later (§4.2).
+- The feature is named once and the product reads as an app (§1).
 - No cursor after the product became autonomous; at most one click per 30 f.
 - Discrete state (typed text, caret, counters, layout switches) is computed from `fd(f)`, so motion-blur sub-samples never show a double caret or a half-typed letter.

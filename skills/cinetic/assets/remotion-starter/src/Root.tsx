@@ -13,11 +13,11 @@ import { ACT, FPS, H, TOTAL, W } from './timeline';
 // An act on its own, font-gated like the film, so it can be iterated without scrubbing the film.
 // Composition ActN is the Nth entry of ACT (scripts/layout-audit.sh relies on that order).
 const solo = (Act: React.FC) => {
-  const Solo: React.FC<FilmProps> = ({ audit = false }) => (
+  const Solo: React.FC<FilmProps> = ({ audit = false, safe }) => (
     <FontGate>
       <div style={{ position: 'absolute', inset: 0, background: C.paper }}>
         <Act />
-        {audit && <Audit />}
+        {audit && <Audit safe={safe} />}
       </div>
     </FontGate>
   );

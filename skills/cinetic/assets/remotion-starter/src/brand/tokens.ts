@@ -6,6 +6,7 @@
 // (references/brand-and-color.md). lint-film.mjs errors while a placeholder marker is left in src/,
 // because a film that keeps the starter's palette and mark looks like every other starter film.
 import type React from 'react';
+import { safeInsets } from '../lib/safe';
 import { H, W } from '../timeline';
 
 export const C = {
@@ -53,7 +54,15 @@ export const typeStyle = (role: keyof typeof TYPE, size = TYPE[role].size * U): 
   whiteSpace: 'pre',
 });
 
-/** Title-safe margins for a w x h frame: 5% at the sides, 6% top and bottom (96 x 65 px at 1920x1080). */
-export const safeArea = (w: number, h: number) => ({ x: Math.round(w * 0.05), y: Math.round(h * 0.06) });
+/**
+ * Safe margins for a w x h frame as a symmetric envelope: the larger inset of each pair from the
+ * frame's safe-zone preset (src/lib/safe.ts), so a centred layout that fits inside clears every
+ * side. 96 x 64 px at 1920x1080; 120 x 384 at 1080x1920, where the feed zones are asymmetric
+ * (use safeBox() from lib/safe.ts there to centre on the clear band instead of the frame).
+ */
+export const safeArea = (w: number, h: number) => {
+  const i = safeInsets(undefined, w, h);
+  return { x: Math.max(i.left, i.right), y: Math.max(i.top, i.bottom) };
+};
 /** The film's safe margins; text stays inside them (scripts/layout-audit.sh checks). */
 export const SAFE = safeArea(W, H);
