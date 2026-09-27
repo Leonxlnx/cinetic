@@ -232,7 +232,7 @@ const start = CUE.lock - BF.delayTo(BF.SPR.snap, 1);  // 10 f early, so it touch
 tl.fromTo("#chip", { y: 80 }, { y: 0, duration: S.dur, ease: S.ease }, sec(start));
 ```
 
-`spring({ response, dampingFraction })` also works. Overshooting presets (`snap`, `pop`, `land`) go on transforms only, with opacity on its own short tween, and wherever overshoot could collide, pick a critically damped preset instead (`firm`, `soft`, `heavy`).
+`spring({ response, dampingFraction })` also works. Overshooting presets (`snap`, `pop`, `land`) belong to a true landing only (at most 2 per film), go on transforms only, with opacity on its own short tween, and wherever overshoot could collide, pick a critically damped preset instead (`firm`, `soft`, `heavy`).
 
 ### 11.4 Pulses and contact squash
 
