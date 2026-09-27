@@ -226,7 +226,7 @@ Formats without some dimensions score them against the format's own recipe in `r
 
 | Level | Meaning | Examples |
 |---|---|---|
-| **P0** | visible on a key beat (hook, payoff, logo, end card), or it breaks the story or a fact | the lockup vanishes in 2 frames; a typo on the payoff; audio 3 frames late; the device blinks out at a seam |
+| **P0** | visible on a key beat (hook, payoff, logo, end card), or it breaks the story or a fact, or it breaks a hard ban anywhere (`SKILL.md`; HB1–HB11 in `references/taste-and-slop.md`) that `BRIEF.md` does not list as brand-supplied | the lockup vanishes in 2 frames; a typo on the payoff; audio 3 frames late; the device blinks out at a seam; an eyebrow label, an orange glow or a serif caption on any frame |
 | **P1** | noticeable on a normal viewing | a one-frame pop in the middle of an act; a 2.7 s dead logo hold; a masked hit; a stall at a seam |
 | **P2** | visible only on pause | a 1 px sliver for 3 frames in a fast move; a label 2 px off its grid |
 
