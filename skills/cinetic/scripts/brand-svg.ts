@@ -35,25 +35,33 @@ const main = async () => {
   const { renderToStaticMarkup } = await import('react-dom/server');
   const imp = (p: string) => import(pathToFileURL(join(root, p)).href);
   const { Mark } = await imp('src/brand/Mark.tsx');
-  const { C, TYPE } = await imp('src/brand/tokens.ts');
+  const tokens = await imp('src/brand/tokens.ts');
+  const { C, TYPE } = tokens;
   const timeline = await imp('src/timeline.ts');
 
   const name: string = opt('--name') ?? timeline.COPY?.find((c: { id: string }) => c.id === 'wordmark')?.text ?? die('no --name and no COPY entry "wordmark"');
   let font = opt('--font');
   if (!font) {
     const src = readFileSync(join(root, 'src/brand/fonts.ts'), 'utf8').replace(/\/\/.*$/gm, '');
-    const pkg = src.match(/@fontsource-variable\/([\w-]+)/)?.[1] ?? die('no @fontsource-variable import in src/brand/fonts.ts; pass --font');
-    font = join(root, 'node_modules/@fontsource-variable', pkg, 'files', `${pkg}-latin-wght-normal.woff2`);
+    const pkg = src.match(/@fontsource-variable\/([\w-]+)/)?.[1] ?? src.match(/fonts\/([\w-]+)\//)?.[1]
+      ?? die('no @fontsource-variable import or vendored font (src/brand/fonts/<name>/) in src/brand/fonts.ts; pass --font');
+    // a font vendored by scripts/add-font.mjs wins over one in node_modules
+    const vendored = join(root, 'src/brand/fonts', pkg, 'files', `${pkg}-latin-wght-normal.woff2`);
+    font = existsSync(vendored) ? vendored : join(root, 'node_modules/@fontsource-variable', pkg, 'files', `${pkg}-latin-wght-normal.woff2`);
   }
   if (!existsSync(font)) die(`font file ${font} not found; pass --font`);
 
   const size = 200; // the wordmark's em in SVG units; everything scales together
-  const { weight, track } = TYPE.display;
+  // the lockup as tokens.ts sets it (LOCKUP = { ratio, gap, weight, track }, references/brand-and-color.md §6),
+  // falling back to the display type and the default proportions
+  const L = (tokens as { LOCKUP?: { ratio?: number; gap?: number; weight?: number; track?: number } }).LOCKUP ?? {};
+  const weight = L.weight ?? TYPE.display.weight;
+  const track = L.track ?? TYPE.display.track;
   const text = JSON.parse(
     execFileSync('python3', [join(here, 'outline-text.py'), '--font', font, '--text', name, '--size', String(size), '--weight', String(weight), '--track', String(track)], { encoding: 'utf8' }),
   );
-  const M = text.ascent; // mark height = the name's ink ascent (as in the film's lockup)
-  const gap = 0.3 * M;
+  const M = text.ascent * (L.ratio ?? 1); // mark height = the name's ink ascent x LOCKUP.ratio (as in the film's lockup)
+  const gap = (L.gap ?? 0.3) * M;
   const pad = 0.25 * M;
 
   mkdirSync(out, { recursive: true });
