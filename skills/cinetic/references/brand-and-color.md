@@ -341,7 +341,7 @@ The edges were set so the reds stay: Tessel's `#EC2A3A` sits at h 24 and sRGB re
 | Teal (175–225) | Weft | covered | 0.58 0.10 190 | `#018D87` | paper | 3.8:1 |
 | Blue (225–270) | Loam | water | 0.60 0.14 245 | `#1F86CD` | paper | 3.7:1 |
 
-**Build and audit the palette with `scripts/palette.py`.** Given the accent (hex or `oklch(L C h)`), the stage (`--stage light|dark`) and the temperature (`--temp neutral|cool`), it prints a `C` block for `tokens.ts` with neutrals tinted toward the accent (kept neutral when the accent is a red or a yellow), every contrast against the stage, and the checks above (statements ≥ 7:1, secondary ≥ 4.5:1, accent ≥ 3:1, chroma, the lightness band), with a nearby fix when one fails. It refuses (exit 1) an accent or a `--paper` in a banned region unless you pass `--brand-supplied`. `--cover IMG` measures the accent's share of a still's pixels (within OKLab 0.08); on Tessel's frames it reads under 0.2% during the acts and 98% on the opening flood frame, the one designed exception.
+**Build and audit the palette with `scripts/palette.py`.** Given the accent (hex or `oklch(L C h)`), the stage (`--stage light|dark`) the temperature (`--temp neutral|cool`) and optionally the stage's own hue from the brand's world (`--stage-hue H`, with `--stage-chroma C`), it prints a `C` block for `tokens.ts` with neutrals tinted toward the accent (kept neutral when the accent is a red or a yellow), every contrast against the stage, and the checks above (statements ≥ 7:1, secondary ≥ 4.5:1, accent ≥ 3:1, chroma, the lightness band), with a nearby fix when one fails. It refuses (exit 1) an accent or a `--paper` in a banned region unless you pass `--brand-supplied`. `--cover IMG` measures the accent's share of a still's pixels (within OKLab 0.08); on Tessel's frames it reads under 0.2% during the acts and 98% on the opening flood frame, the one designed exception.
 
 ## 9. Neutrals and the stage
 
@@ -357,14 +357,16 @@ Choose the stage first (§2): light or dark, neutral or cool. `scripts/palette.p
 | World | Stage | Neutrals | Accent (allowed family) |
 |---|---|---|---|
 | hillside, fjord, forest (calm, outdoors) | pale green-grey paper, or pine-black | moss-grey, slate | a deep pine or a clear lake teal |
-| foundry, workshop (fast, physical) | graphite | cool concrete greys | a signal red |
-| night, focus, security | ink-navy | blue slates | a cold cyan-teal |
+| foundry, forge, workshop (heat, physical) | a true charcoal, no blue in it (`--temp neutral`) | soot greys | a deep red used as heat and light: a lit edge, the glow of the material |
+| night, focus, security | an ink-navy with body (`--stage-hue 235 --stage-chroma 0.03`) | blue slates | a cold cyan-teal |
 | paper, ledger, archive (exact) | a cool white | graphite hairlines | a single ink blue with some depth, not framework blue |
 | signal, traffic, energy (bold) | near-black | steel | a safety yellow on dark only |
 | garden, health, care | a cool mint-white | sage greys | a leaf green |
 
 - **Avoid the defaults.** Framework blues (hue about 260, the `#3B82F6` / `#2563EB` / `#1D4ED8` family), pure `#808080`-style greys, and pure black and white everywhere. Move the hue, lower the chroma and tint the greys, and the same "blue on grey" becomes a brand.
 - **One colour story.** Stage, neutrals and accent come from the same world. A pine stage with a random coral accent is two brands.
+- **The dev-tool dark theme is a default too.** A blue-grey near-black (`#0D1117`, OKLCH about 0.17 0.01 250) is what GitHub and every editor ship, so a film on it reads as a screenshot of a tool. `palette.py` notes it. Take a dark stage from the brand's world: a true charcoal, a pine-black (`--stage-hue 160`), a deep teal (`200`) or an ink-navy with real body.
+- **In a dev tool, red means error.** Red status tags on UI rows read as an alarm, not a brand. When red is the brand, spend it on the brand's own thing (the material glowing, the device, the payoff) and keep the UI's states quiet: greys and one neutral "done" tone.
 
 ## 10. Palettes that read as generated
 

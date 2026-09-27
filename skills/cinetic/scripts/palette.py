@@ -27,6 +27,13 @@ Usage:
 
 --temp: neutral (default) tints the greys with the accent's hue at a chroma too low to read as
 warm; cool uses hue 250. warm (hue 75) makes a beige paper, so it needs --brand-supplied.
+--stage-hue H [--stage-chroma C]: give the stage and the dark neutrals a hue from the brand's world
+(pine-black 160, a green-black 145, a deep teal 200, an ink-navy with body 235) at chroma C
+(default 0.014 on a dark stage, 0.008 on a light one); type and light panels stay near-neutral.
+A stage hue in the purple range (270-340) is refused, and one in the warm range (31-118) is
+warned about (it slides into brown or beige).
+A dark stage in the cool blue-grey band (h 235-270, C < 0.02) gets a note: it is the stock
+dev-tool dark theme and reads as "a screenshot of a tool" before anything moves.
 Exit 0 when every check passes, 1 when one fails or a colour is refused, 2 on bad input.
 """
 import argparse
@@ -112,8 +119,18 @@ def banned(L, C, h):
     return None
 
 
-def luminance(hexs):
-    return sum(w * srgb_to_lin(int(hexs[i:i + 2], 16) / 255) for w, i in ((0.2126, 1), (0.7152, 3), (0.0722, 5)))
+def luminance(c):
+    """WCAG relative luminance of '#RRGGBB', 'RRGGBB', '#RGB' or an (r, g, b) tuple of 0-255 ints."""
+    if isinstance(c, (tuple, list)):
+        rgb = [v / 255 for v in c[:3]]
+    else:
+        h = str(c).strip().lstrip('#')
+        if len(h) == 3:
+            h = ''.join(ch * 2 for ch in h)
+        if len(h) != 6:
+            raise ValueError(f'not a hex colour: {c!r}')
+        rgb = [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    return sum(w * srgb_to_lin(v) for w, v in zip((0.2126, 0.7152, 0.0722), rgb))
 
 
 def contrast(a, b):
@@ -144,6 +161,8 @@ def main():
     ap.add_argument('--stage', choices=['light', 'dark'], default='light', help='the ground most shots sit on')
     ap.add_argument('--temp', choices=['neutral', 'cool', 'warm'], default='neutral',
                     help='tint of the neutrals (warm makes a beige paper: needs --brand-supplied)')
+    ap.add_argument('--stage-hue', type=float, help="the stage's own hue from the brand's world (OKLCH h, e.g. 160 for pine-black)")
+    ap.add_argument('--stage-chroma', type=float, help='chroma for --stage-hue (default 0.014 dark, 0.008 light)')
     ap.add_argument('--paper', help="use this paper instead of the generated one (hex or oklch), and check it")
     ap.add_argument('--brand-supplied', action='store_true',
                     help="the user's brand supplied the accent or paper: skip the hard-ban refusal (record it in BRIEF.md)")
@@ -204,6 +223,17 @@ def main():
 
     hue = {'neutral': ah, 'cool': 250.0, 'warm': 75.0}[a.temp]
     tint = 2.2 if a.temp == 'warm' else 1.0  # warm papers carry a little more chroma
+    stage_hue = None
+    if a.stage_hue is not None:
+        stage_hue = a.stage_hue % 360
+        if 270 <= stage_hue < 340 and not a.brand_supplied:
+            print(f'palette.py: refused: --stage-hue {stage_hue:.0f} is in the purple range (270-340), '
+                  'a hard ban (SKILL.md, "Hard bans"). Pick a green, teal, blue or neutral stage.', file=sys.stderr)
+            return 1
+        if 31 <= stage_hue < 118:
+            print(f'palette.py: note: --stage-hue {stage_hue:.0f} is warm; a tinted stage there reads as brown or '
+                  'beige. Prefer --temp neutral (a true charcoal or a neutral paper).', file=sys.stderr)
+    stage_C = a.stage_chroma if a.stage_chroma is not None else (0.014 if a.stage == 'dark' else 0.008)
     # Toward a warm hue (a red or a yellow accent) the neutrals stay neutral: C <= 0.004, and <= 0.003
     # for light ones, so they never read as warm and 8-bit rounding can never push the paper or a
     # light grey into the beige region (C >= 0.007).
@@ -220,13 +250,27 @@ def main():
         stage_key, text_key, band = 'ink', 'paper', (0.84, 0.90) if YELLOW[0] <= ah < YELLOW[1] else (0.70, 0.82)
     tokens = {}
     for name, L, C, job in spec:
-        if warm_hue:
+        h_use = hue
+        if stage_hue is not None:
+            # the stage and its surfaces carry the world's hue; type and light panels stay near-neutral
+            carries = name in (('ink', 'ink2', 'line') if a.stage == 'dark' else ('paper', 'mist', 'line'))
+            h_use = stage_hue
+            C = stage_C * (1.0 if name == stage_key else 0.8) if carries else min(C, 0.006)
+        elif warm_hue:
             C = min(C, 0.003 if L >= 0.7 else 0.004)
-        hx, c_used = oklch_hex(L, C, hue)
-        tokens[name] = dict(hex=hx, oklch=[round(L, 3), round(c_used, 4), round(hue, 1)], job=job)
+        hx, c_used = oklch_hex(L, C, h_use)
+        tokens[name] = dict(hex=hx, oklch=[round(L, 3), round(c_used, 4), round(h_use, 1)], job=job)
     if paper_in:
         hx, c_used = oklch_hex(*paper_in)
         tokens['paper'] = dict(hex=hx, oklch=[round(paper_in[0], 3), round(c_used, 4), round(paper_in[2], 1)], job=tokens['paper']['job'] + ' (given)')
+    if a.stage == 'dark' and not a.brand_supplied:
+        sL, sC, sh = tokens['ink']['oklch']
+        if 235 <= sh <= 270 and 0.004 <= sC < 0.02:
+            print(f"palette.py: note: the stage {tokens['ink']['hex']} (OKLCH {sL} {sC} {sh:.0f}) is the stock dev-tool "
+                  'dark theme (the GitHub / editor blue-grey). It reads as "a screenshot of a tool" before anything moves. '
+                  'Take the stage from the brand\'s world instead: --temp neutral for a true charcoal, or --stage-hue '
+                  '(pine-black 160, deep teal 200, an ink-navy with body: 235 with --stage-chroma 0.03). '
+                  'references/brand-and-color.md §9.', file=sys.stderr)
     tokens['accent'] = dict(hex=acc_hex, oklch=[round(aL, 3), round(aC, 4), round(ah, 1)], job=f'MEANING: "{a.meaning}"')
     stage = tokens[stage_key]['hex']
 
@@ -258,7 +302,8 @@ def main():
         r = contrast(v['hex'], stage) if k != stage_key else None
         v['contrast_on_stage'] = round(r, 2) if r else None
     width = max(len(k) for k in tokens)
-    print(f'// palette.py --accent {a.accent} --stage {a.stage} --temp {a.temp}')
+    sh_arg = f' --stage-hue {a.stage_hue:g}' if a.stage_hue is not None else ''
+    print(f'// palette.py --accent {a.accent} --stage {a.stage} --temp {a.temp}{sh_arg}')
     print('export const C = {')
     for k in ['ink', 'ink2', 'paper', 'mist', 'line', 'mute', 'accent']:
         v = tokens[k]
