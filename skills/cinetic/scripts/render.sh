@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+# render.sh: picture from Remotion (always muted), soundtrack muxed by ffmpeg, then sync + spec gates.
+#
+# Usage:
+#   bash scripts/render.sh <Comp> <out.mp4> [--preview | --blur] [options] [-- extra remotion args]
+#
+#   bash scripts/render.sh Film out/preview.mp4 --preview      # fast check render (CRF 20, veryfast)
+#   bash scripts/render.sh Film out/film.mp4                   # sharp master (CRF 14, x264 slow)
+#   bash scripts/render.sh Film out/film.mp4 --blur            # motion-blurred master
+#   bash scripts/render.sh Film out/act3.mp4 --blur --frames 600-839   # one act, for a splice
+#
+# Modes:
+#   (default)  sharp master: one Remotion encode at CRF 14, BT.709 tagged (--color-space=bt709).
+#   --preview  same pipeline, CRF 20 on x264 veryfast (about 3x faster to encode). Same tags as the
+#              master, so colour and banding judgements carry over.
+#   --blur     true motion blur: sharp render -> measure-speed.py writes out/samples.json (samples
+#              per frame from optical flow) -> the sub-frame composition (<Comp>Sub, e.g. FilmSub)
+#              renders every sub-frame with --props=out/samples.json -> accumulate.py averages
+#              them in float and encodes BT.709 CRF 14. Costs roughly 5-15x a sharp render.
+#
+# Every mode then muxes the WAV with ffmpeg (AAC 320k, 48 kHz, +faststart; the audio is padded or
+# trimmed to the picture) because Remotion's own AAC mux leaves ~2048 samples of encoder priming,
+# i.e. audio 2-3 frames late. Then check-sync.py (lag <= 48 samples, true peak <= -1 dBTP after
+# decode) and probe.py (size, fps, frame count, yuv420p, BT.709 tags, AAC 48 kHz) gate the file;
+# reports go to out/qa/. Exit 0 = rendered and every gate passed, 1 = a step or gate failed.
+#
+# Options:
+#   --audio FILE        soundtrack (default public/audio/soundtrack.wav)
+#   --no-audio          silent deliverable (loops): no mux, no sync check, probe expects no audio
+#   --audio-offset F    film frame at which this composition starts (default: the --frames start;
+#                       set it when rendering a per-act composition with sound)
+#   --build-audio       first run scripts/export-cues.ts and scripts/audio/score.py to rebuild the WAV
+#   --entry FILE        Remotion entry point (default src/index.ts)
+#   --sub ID            sub-frame composition for --blur (default <Comp>Sub)
+#   --frames A-B        render only film frames A..B (inclusive); audio is taken from the same range
+#   --crf N             override the final CRF (preview 20, master 14, blur 14)
+#   --concurrency N     Remotion concurrency (default: remotion.config.ts / Remotion default)
+#   --samples FILE      where --blur writes the samples JSON (default out/samples.json)
+#   --samples-from FILE reuse an existing samples JSON (skips the sharp render + measurement)
+#   --floor A-B:N       minimum samples over film frames A..B (repeatable; passed to measure-speed.py)
+#   --measure "ARGS"    extra measure-speed.py arguments, e.g. --measure "--max 64 --step 2"
+#   --spec WxH@fps      extra expectation for probe.py (default: the composition's own size/fps)
+#   --no-check          skip check-sync.py and probe.py
+#   --keep              keep the work directory (bundle, sharp.mp4, sub.mp4, picture.mp4)
+#   -- ARGS             passed to every `remotion render` call (e.g. -- --image-format=png --scale=0.5)
+#
+# Needs: node/npx with @remotion/cli, ffmpeg >= 6, python3 with numpy scipy soundfile opencv.
+# Run it from the project root (the folder holding src/index.ts); the other scripts are found
+# next to this one.
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+usage() { sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d' | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+die() { echo "render.sh: $*" >&2; exit 1; }
+T0=$(date +%s)
+step() { echo "[render $(( $(date +%s) - T0 ))s] $*" >&2; }
+
+COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0
+ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
+SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=()
+POS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help) usage 0 ;;
+    --preview) MODE=preview ;;
+    --blur) MODE=blur ;;
+    --master) MODE=master ;;
+    --audio) AUDIO=${2:?--audio needs a file}; shift ;;
+    --no-audio) NOAUDIO=1 ;;
+    --audio-offset) AOFF=${2:?}; shift ;;
+    --build-audio) BUILD_AUDIO=1 ;;
+    --entry) ENTRY=${2:?}; shift ;;
+    --sub) SUB=${2:?}; shift ;;
+    --frames) FRAMES=${2:?}; shift ;;
+    --crf) CRF=${2:?}; shift ;;
+    --concurrency) CONC=${2:?}; shift ;;
+    --samples) SAMPLES=${2:?}; shift ;;
+    --samples-from) SAMPLES_FROM=${2:?}; shift ;;
+    --floor) MS_ARGS+=(--floor "${2:?}"); shift ;;
+    --measure) read -r -a _m <<< "${2:?}"; MS_ARGS+=("${_m[@]}"); shift ;;
+    --spec) SPEC=${2:?}; shift ;;
+    --no-check) NOCHECK=1 ;;
+    --keep) KEEP=1 ;;
+    --) shift; EXTRA=("$@"); break ;;
+    -*) die "unknown option $1 (see --help)" ;;
+    *) POS+=("$1") ;;
+  esac
+  shift
+done
+[[ ${#POS[@]} -eq 2 ]] || usage 1
+COMP=${POS[0]}; OUT=${POS[1]}
+
+# project root: the current folder if it has the entry, else the folder above this script
+if [[ ! -f "$ENTRY" ]]; then
+  if [[ -f "$SCRIPT_DIR/../$ENTRY" ]]; then cd "$SCRIPT_DIR/.."; else die "no $ENTRY here; run from the project root or pass --entry"; fi
+fi
+ROOT=$(pwd)
+for tool in npx ffmpeg ffprobe python3; do command -v "$tool" >/dev/null || die "$tool not found on PATH"; done
+mkdir -p "$(dirname "$OUT")" out/qa
+OUT_ABS=$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")
+NAME=$(basename "${OUT%.*}")
+
+if [[ $BUILD_AUDIO -eq 1 && $NOAUDIO -eq 0 ]]; then
+  [[ -f "$SCRIPT_DIR/export-cues.ts" && -f "$SCRIPT_DIR/audio/score.py" ]] || die "--build-audio needs scripts/export-cues.ts and scripts/audio/score.py"
+  step "rebuilding cues and soundtrack"
+  npx tsx "$SCRIPT_DIR/export-cues.ts" >&2
+  python3 "$SCRIPT_DIR/audio/score.py" --cues out/cues.json --score audio/score.json --out "$AUDIO" --stems out/stems --json out/qa/score.json >&2
+fi
+if [[ $NOAUDIO -eq 0 ]]; then
+  [[ -f "$AUDIO" ]] || die "soundtrack $AUDIO not found (build it, pass --audio FILE, or --no-audio for a silent film)"
+  newer=$(find src -type f -newer "$AUDIO" 2>/dev/null | head -1 || true)
+  [[ -z "$newer" ]] || echo "render.sh: warning: $newer is newer than $AUDIO; if timing changed, rerun cues + audio (or pass --build-audio)" >&2
+fi
+
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/cinetic-render.XXXXXX")
+if [[ $KEEP -eq 1 ]]; then echo "render.sh: keeping work files in $WORK" >&2; else trap 'rm -rf "$WORK"' EXIT; fi
+
+step "bundling $ENTRY"
+npx remotion bundle "$ENTRY" --out-dir "$WORK/bundle" --log=error >/dev/null || die "bundle failed"
+B="$WORK/bundle"
+LIST=$(npx remotion compositions "$B" 2>/dev/null) || die "could not list compositions"
+meta() { awk -v id="$1" '$1 == id && $2 ~ /^[0-9.]+$/ && $3 ~ /^[0-9]+x[0-9]+$/ { print $2, $3, $4; exit }' <<< "$LIST"; }
+read -r FPS SIZE TOTAL <<< "$(meta "$COMP")" || true
+if [[ -z "${FPS:-}" ]]; then
+  ids=$(awk '$2 ~ /^[0-9.]+$/ && $3 ~ /x/ {printf "%s ", $1}' <<< "$LIST")
+  die "no video composition '$COMP' (stills render with 'npx remotion still'). Available: $ids"
+fi
+
+FROM=0; TO=$((TOTAL - 1)); RANGE=()
+if [[ -n "$FRAMES" ]]; then
+  [[ "$FRAMES" =~ ^([0-9]+)-([0-9]+)$ ]] || die "--frames wants A-B, e.g. 600-839"
+  FROM=${BASH_REMATCH[1]}; TO=${BASH_REMATCH[2]}
+  (( FROM <= TO && TO < TOTAL )) || die "--frames $FRAMES outside $COMP (0-$((TOTAL - 1)))"
+  RANGE=(--frames="$FROM-$TO")
+fi
+N=$((TO - FROM + 1))
+DUR=$(python3 -c "print(f'{$N/$FPS:.3f}')")
+AOFF=${AOFF:-$FROM}
+AOFF_S=$(python3 -c "print(f'{$AOFF/$FPS:.6f}')")
+RARGS=(--muted --log=error)
+[[ -n "$CONC" ]] && RARGS+=(--concurrency="$CONC")
+RARGS+=("${EXTRA[@]}")
+PIC="$WORK/picture.mp4"
+step "$COMP: ${SIZE}@${FPS}, frames $FROM-$TO ($N f, ${DUR}s), mode $MODE"
+
+case "$MODE" in
+  preview|master)
+    if [[ $MODE == preview ]]; then Q=(--crf="${CRF:-20}" --x264-preset=veryfast); else Q=(--crf="${CRF:-14}" --x264-preset=slow); fi
+    step "rendering $COMP ($MODE)"
+    npx remotion render "$B" "$COMP" "$PIC" "${RANGE[@]}" "${Q[@]}" --pixel-format=yuv420p --color-space=bt709 "${RARGS[@]}" \
+      || die "remotion render failed"
+    ;;
+  blur)
+    SUB=${SUB:-${COMP}Sub}
+    [[ -n "$(meta "$SUB")" ]] || die "--blur needs the sub-frame composition '$SUB' (register it in Root.tsx, pass --sub ID, or blur one act with: render.sh Film out.mp4 --blur --frames A-B)"
+    mkdir -p "$(dirname "$SAMPLES")"
+    if [[ -n "$SAMPLES_FROM" ]]; then
+      [[ -f "$SAMPLES_FROM" ]] || die "--samples-from $SAMPLES_FROM not found"
+      [[ "$(cd "$(dirname "$SAMPLES_FROM")" && pwd)/$(basename "$SAMPLES_FROM")" == "$(cd "$(dirname "$SAMPLES")" && pwd)/$(basename "$SAMPLES")" ]] || cp "$SAMPLES_FROM" "$SAMPLES"
+      step "reusing samples from $SAMPLES_FROM"
+    else
+      step "rendering sharp pass for speed measurement"
+      # intermediates keep Chromium's native full-range JPEG colour (--color-space=default): no
+      # matrix conversion before accumulate.py, which decodes with the file's own tags
+      npx remotion render "$B" "$COMP" "$WORK/sharp.mp4" "${RANGE[@]}" --crf=12 --x264-preset=veryfast --color-space=default "${RARGS[@]}" \
+        || die "sharp render failed"
+      step "measuring on-screen speed -> $SAMPLES"
+      CUES=(); [[ -f out/cues.json ]] && CUES=(--cues out/cues.json)
+      python3 "$SCRIPT_DIR/measure-speed.py" "$WORK/sharp.mp4" "$SAMPLES" --offset "$FROM" "${CUES[@]}" "${MS_ARGS[@]}" >/dev/null \
+        || die "measure-speed.py failed"
+    fi
+    read -r SA SB <<< "$(python3 - "$SAMPLES" "$FROM" "$TO" <<'PY'
+import json, sys
+g = [max(1, int(x)) for x in json.load(open(sys.argv[1]))['groups']]
+a, b = int(sys.argv[2]), int(sys.argv[3])
+g += [1] * max(0, b + 1 - len(g))  # FilmSub renders missing entries once
+before = sum(g[:a])
+print(before, before + sum(g[a:b + 1]) - 1)
+PY
+)"
+    step "rendering $SUB sub-frames $SA-$SB ($((SB - SA + 1)) sub-frames for $N frames)"
+    npx remotion render "$B" "$SUB" "$WORK/sub.mp4" --props="$(cd "$(dirname "$SAMPLES")" && pwd)/$(basename "$SAMPLES")" \
+      --frames="$SA-$SB" --crf=6 --x264-preset=veryfast --pixel-format=yuv444p --color-space=default "${RARGS[@]}" \
+      || die "sub-frame render failed"
+    step "accumulating in float -> BT.709 CRF ${CRF:-14}"
+    python3 "$SCRIPT_DIR/accumulate.py" "$WORK/sub.mp4" "$SAMPLES" "$PIC" --start "$FROM" --count "$N" --crf "${CRF:-14}" --quiet >/dev/null \
+      || die "accumulate.py failed"
+    ;;
+esac
+
+GOT=$(ffprobe -v error -count_packets -select_streams v:0 -show_entries stream=nb_read_packets -of csv=p=0 "$PIC")
+[[ "$GOT" -eq "$N" ]] || die "picture has $GOT frames, expected $N"
+
+if [[ $NOAUDIO -eq 1 ]]; then
+  step "writing $OUT (no audio)"
+  ffmpeg -v error -y -i "$PIC" -map 0:v:0 -c copy -movflags +faststart "$OUT_ABS" || die "ffmpeg copy failed"
+else
+  ADUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$AUDIO")
+  python3 - "$ADUR" "$AOFF_S" "$DUR" "$FPS" <<'PY' >&2 || true
+import sys
+adur, off, dur, fps = map(float, sys.argv[1:])
+need = off + dur
+if adur < need - 1 / fps:
+    print(f'render.sh: warning: soundtrack is {adur:.3f}s, picture needs {need:.3f}s; padding with silence')
+elif off == 0 and adur > need + 1.0:
+    print(f'render.sh: warning: soundtrack runs {adur - need:.2f}s past the picture; trimming it (check TOTAL / the tail)')
+PY
+  step "muxing $AUDIO (from ${AOFF_S}s) -> $OUT"
+  ffmpeg -v error -y -i "$PIC" -ss "$AOFF_S" -i "$AUDIO" -map 0:v:0 -map 1:a:0 -c:v copy \
+    -af apad -c:a aac -b:a 320k -ar 48000 -ac 2 -t "$DUR" -movflags +faststart "$OUT_ABS" || die "ffmpeg mux failed"
+fi
+
+STATUS=0
+if [[ $NOCHECK -eq 0 ]]; then
+  if [[ $NOAUDIO -eq 0 ]]; then
+    step "check-sync"
+    python3 "$SCRIPT_DIR/check-sync.py" "$OUT_ABS" "$AUDIO" --ref-offset "$AOFF_S" --json "out/qa/sync-$NAME.json" >/dev/null || STATUS=1
+  fi
+  step "probe"
+  PARGS=(--spec "${SPEC:-${SIZE}@${FPS}}" --frames "$N" --json "out/qa/probe-$NAME.json" --no-loudness)
+  [[ $NOAUDIO -eq 1 ]] && PARGS+=(--audio none)
+  python3 "$SCRIPT_DIR/probe.py" "$OUT_ABS" "${PARGS[@]}" >/dev/null || STATUS=1
+fi
+
+SIZE_MB=$(python3 -c "import os;print(f'{os.path.getsize(\"$OUT_ABS\")/1e6:.1f}')")
+if [[ $STATUS -eq 0 ]]; then
+  step "done: $OUT (${SIZE_MB} MB, ${DUR}s, $MODE)"
+else
+  step "FAILED a gate: $OUT written (${SIZE_MB} MB) but see the report above and out/qa/*-$NAME.json"
+fi
+exit $STATUS
