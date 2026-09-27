@@ -18,6 +18,8 @@ To swap the family, or to add a mono (for code or tabular numbers):
 2. Add a line to `COPIES` in `setup.mjs`, e.g. `['node_modules/@fontsource-variable/schibsted-grotesk/files/schibsted-grotesk-latin-wght-normal.woff2', 'fonts/schibsted-grotesk-latin-wght-normal.woff2']`, then run `node setup.mjs`.
 3. Add its `@font-face` block and use the family name literally in `font-family` (lint cannot see through `var(...)`).
 
+When `node_modules` is shared with other projects (`new-film.sh --link-modules`), `npm i` would write into that shared folder. Use `node scripts/add-font.mjs <name>` instead of steps 1–2: it fetches the package with `npm pack` into a temp folder, copies the upright latin and latin-ext `.woff2` files and the licence into `fonts/`, and prints the `@font-face` blocks for step 3.
+
 When you invent the look the family is a sans (serif and italic are hard bans). For brand-supplied fonts, which may be anything, convert them to `.woff2` (for example `fonttools ttLib.woff2 compress Brand.ttf`, which needs the `brotli` module) and put them here directly. A variable font needs one `@font-face` with a weight range (`font-weight: 100 900`); static fonts need one block per weight. Keep each family's licence file next to its fonts when you hand the project on.
 
 `bash scripts/hf-finish.sh` refuses to render when an `@font-face` `url(...)` points at a missing file, because the fallback face would otherwise ship silently.

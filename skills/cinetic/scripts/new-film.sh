@@ -8,7 +8,7 @@
 # Usage:
 #   bash scripts/new-film.sh <dir> [--engine remotion|hyperframes] [--fps 60] [--bpm 120]
 #                            [--size 1920x1080] [--name my-film] [--link-modules <node_modules>]
-#                            [--browser <chromium path>] [--no-install] [--force]
+#                            [--font <name>]... [--browser <chromium path>] [--no-install] [--force]
 #
 #   --fps, --bpm   one beat must be a whole number of frames (60*fps/bpm). At 60 fps:
 #                  90 -> 40 f, 100 -> 36, 120 -> 30, 144 -> 25, 150 -> 24.
@@ -19,6 +19,9 @@
 #                  typeface, mark, name) is marked cinetic:placeholder and lint-film.mjs fails
 #                  until it is replaced.
 #   --link-modules symlink this node_modules instead of running npm install (offline sandboxes).
+#   --font         vendor a @fontsource-variable/<name> family into the project (scripts/add-font.mjs:
+#                  npm pack into a temp folder, never an install into a shared node_modules) and set
+#                  FONT/FACES to it. Repeat for a mono. Later, run `node scripts/add-font.mjs <name>`.
 #   --browser      bake a Chromium/headless-shell path into remotion.config.ts (env REMOTION_BROWSER
 #                  or CHROMIUM_PATH at render time also works, and wins).
 #   --force        allow a non-empty <dir> (starter files overwrite same-named files).
@@ -30,6 +33,7 @@ usage() { sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; }
 die() { echo "new-film: $*" >&2; exit 1; }
 
 SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FONTS=()
 DIR=""; ENGINE=remotion; FPS=60; BPM=120; SIZE=1920x1080; NAME=""; LINK=""; BROWSER="${CHROMIUM_PATH:-}"; INSTALL=1; FORCE=0
 
 while [[ $# -gt 0 ]]; do
@@ -42,6 +46,7 @@ while [[ $# -gt 0 ]]; do
     --name) NAME="${2:?--name needs a value}"; shift 2 ;;
     --link-modules) LINK="${2:?--link-modules needs a path}"; shift 2 ;;
     --browser) BROWSER="${2:?--browser needs a path}"; shift 2 ;;
+    --font) FONTS+=("${2:?--font needs a family name or package}"); shift 2 ;;
     --no-install) INSTALL=0; shift ;;
     --force) FORCE=1; shift ;;
     -*) die "unknown option $1 (see --help)" ;;
@@ -148,6 +153,10 @@ if [[ -n "$LINK" ]]; then
 elif [[ "$INSTALL" == 1 && -f "$DIR/package.json" ]]; then
   (cd "$DIR" && npm install --no-audit --no-fund) || die "npm install failed in $DIR (rerun it there, or use --link-modules)"
 fi
+
+for font in ${FONTS[@]+"${FONTS[@]}"}; do
+  node "$DIR/scripts/add-font.mjs" "$font" --dir "$DIR" || die "--font $font: could not vendor it (see above)"
+done
 
 BEAT=$(node -e "console.log(60*$FPS/$BPM)")
 echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat)"
