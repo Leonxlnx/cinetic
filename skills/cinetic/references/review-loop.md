@@ -24,7 +24,8 @@ The numbers here are proven defaults from building and shipping films, not dogma
 - **Launch films and walkthroughs** get at least 2 rounds. **Stings and loops** need 1 round if every script passes.
 - Stop after 5 rounds, or as soon as the ship gate in §10 is met. Past that point, scores flatten and fixes start to fight each other.
 - Round 1 runs four lenses: director, forensics, sound-sync and art-copy-ui. Later rounds drop art-copy-ui unless copy, type, colour or UI changed.
-- A round reviews a preview (`render.sh --preview`), which carries the same BT.709 tags as the master, so colour and banding judgements carry over. The last round reviews the master itself, with motion blur, because the blur can stamp copies and cross cuts.
+- **Every critique round reviews a preview** (`render.sh --preview`), which carries the same BT.709 tags as the master, so colour and banding judgements carry over. Previews are minutes; a blurred master is tens of minutes, and blurring a film that is still changing wastes them.
+- **The blurred master is rendered once, after the last critique round, and gets a check, not a round:** `forensics.py` and `av-audit.py` on the master, the fastest frames at full size (`fastest_frames` in `out/samples.json`, printed by `render.sh`), and a quick director glance at the watch sheets for stamped copies, smears and blur across cuts. If that check finds a problem in one act, re-render that act's range and splice it (§7) rather than re-blurring the film.
 
 ## 2. One round, step by step
 
@@ -94,7 +95,7 @@ bash scripts/grab.sh out/preview.mp4 1739 1740 --out $R/frames       # exact fra
 
 - `sync`: the hit rate, the median and p90 offsets in frames, `misses`, and `stray_sfx_onsets_f`.
 - `apex`: whoosh peaks against their frames.
-- `visual`: picture peaks against sounds, and strong picture changes with no sound.
+- `visual`: picture peaks against sounds, and strong picture changes (cuts, flashes, the peak of a big move) with no sound within ±3 f; the strongest are warnings.
 - `loudness`, `clicks`, `tail`, and `masking`, which is present only with stems.
 
 Run av-audit with `--stems`. Only then is sync gated, because in the full mix the music hides quiet and soft-attack effects. With the full mix, a low hit rate is only a warning.
@@ -205,15 +206,15 @@ Score each dimension 1 to 5. The anchors are for 1, 3 and 5, and 2 and 4 sit bet
 
 | Dimension | 1 | 3 | 5 | Evidence |
 |---|---|---|---|---|
-| **Idea and device** | a feature tour | a clear idea, but the device drops out | one idea that reads muted; the device survives every cut and resolves (into the mark, or in a loop or product video into the product's finished state) | watch sheets with the sound off |
+| **Idea and device** | a feature tour | a clear idea, but the device drops out, or the film would be just as true of a simpler product | one idea specific to this product that reads muted; the device is an object this product owns, survives every cut and resolves (into the mark, or in a loop or product video into the product's finished state) | watch sheets with the sound off; the specificity answer in `TREATMENT.md` |
 | **Hook (0–2 s)** | a blank or static frame | motion, but the problem lands after 2 s | frame 0 composed and moving; the problem felt by 1 s | first watch sheet; `energy_per_second[0:2]` |
 | **Copy and type** | labels, bullets, more than 35 words, mixed fonts | clean but generic lines | at or under budget, lines that pay off the film's own words, one family on one token set, zero collisions | art lens; `grid-check.ts` words and holds |
-| **Colour and brand** | gradients, neon, glass or beige defaults | disciplined, but the accent carries no meaning | one accent with one meaning at 8% or less, no banding, a real mark | art lens; banding sheet |
+| **Colour and brand** | gradients, neon, glass or beige defaults; the starter's or Tessel's look | disciplined, but generic: the accent carries no meaning, or the brand has no personality | a look of its own that follows from the brand's personality; one accent with one meaning at 8% or less, no banding, an ownable mark | art lens; banding sheet; the mark sheet |
 | **Composition** | centred web layout, voids | correct, but framing errors or crops that slice glyphs | full-bleed, one focal point per shot, headroom kept | layout-audit; legibility sheet |
 | **Motion** | uniform fades and bounces | good eases, with pops or stalls | named curves, weight, zero-slope landings, contact squash | director; forensics spikes and stalls |
 | **Transitions** | crossfades and presets | motivated, but with repeats | velocity-matched cuts, relays and morphs, a signature move used 3 times | director; seam table |
 | **Pacing** | dead holds or cramming | even, with flat energy | one peak per bar, calm between peaks, results held long enough to land | energy curve; holds and quiet flags |
-| **Product truth** | a fake dashboard | real UI with data or state errors | consistent data, state changes animate, counters count during the action | art lens; pause test |
+| **Product truth** | a fake dashboard | real UI, but it shows only the naive version of the feature, or data or states contradict the story | the feature's non-obvious behaviour, shown; data that agrees with itself and with the story (roles, sums, ratios); state changes animate, counters count during the action | art lens; pause test; the story asserts in `data.ts` |
 | **Sound and sync** | stock sounds, or out of lock | synced, but masked or out of key | every event within ±1 f and audible, tuned, the payoff loudest, −14 LUFS and −1 dBTP | `av.json` strict; sound lens |
 | **Finish** | pops, ghosts, jitter or banding | occasional P1-level artifacts | zero failing forensics checks, explained warnings, clean blur, BT.709 tags | `forensics.json`; `probe` |
 
@@ -239,7 +240,7 @@ When the gate is met, or the 5 rounds are used up, ship. In the hand-off, say pl
 
 ## 11. Recurring issue classes
 
-These are the classes, in order of how often they came up across five review rounds of a finished film. Look for them first.
+Classes 1–9 are in order of how often they came up across five review rounds of a finished film; 10 and 11 are the ones blind comparisons caught that script checks don't. Look for them first.
 
 | # | Class | How it shows | First fix | See |
 |---|---|---|---|---|
@@ -252,6 +253,8 @@ These are the classes, in order of how often they came up across five review rou
 | 7 | UI truth | a wrong weekday, stale labels, a counter that flips at the end, the past replanned | derive every label from the data module, with asserts | `references/product-ui.md` |
 | 8 | Out-of-key or masked effects | `masking` warnings; a pitched effect off the chord | tune to the chord root; +6 dB in band; duck the music | `references/sound.md` |
 | 9 | Templated layouts | text left, card right; centred floating | full-bleed product, type on an eye line | `references/taste-and-slop.md` E |
+| 10 | House-style convergence and oversimplified features | the film looks like the starter or Tessel; the proof would be true of a simpler product | three adjectives → choices, a mark sheet; rebuild the proof on the non-obvious behaviour | `references/brand-and-color.md` §2, `references/concept-and-story.md` §3 |
+| 11 | Moves too fast to blur | stepped copies or long smears on the fastest frames of the master | keep elements under about 60–80 px/f; cut, match or mask instead | `references/transitions.md` |
 
 ## 12. Thresholds
 
@@ -291,6 +294,7 @@ Every script threshold in one place. Most can be changed with the flag named in 
 | Stray effects | sfx-stem onsets with no event within 6 f | warn | |
 | Apex | whoosh/suck (or `apexFrac`): 30 ms envelope maximum within ±3 f; risers and swells are listed only | warn (stems only) | `--apex-tol` |
 | Visual | isolated events: the clear MAD peak within ±6 f sits −2…+3 f from the sound, or the picture changes on the sound by ≥ 35% of it | warn | `--vis-window` |
+| Silent picture peak | a strong MAD peak (prominence ≥ max(1.5, 4 × median)) with no audio onset or sfx envelope peak within ±3 f | warn | `--peak-tol` |
 | Loudness | integrated −14 ± 1 LUFS; on an excerpt (audio shorter than the film) it is only reported | **fail** | `--lufs`, `--lufs-tol`, `--no-loudness` |
 | True peak | ≤ −1.0 dBTP, on the decoded track | **fail** | `--tp-max` |
 | LRA | 3–8 LU | warn | `--lra` |
@@ -311,5 +315,7 @@ Every script threshold in one place. Most can be changed with the flag named in 
 | `lint-film.mjs` | 0 errors: no CSS animation, no nondeterminism, no frame-driven left/top, tokens only, clamped interpolate |
 | `layout-audit.sh` | no text outside the safe area, no overlaps, readable text ≥ 22 px |
 | `deliver.sh --loop` | the loop-seam rule above, on the delivered file |
+| `measure-speed.py` | `too_fast`: frames over 80 px/f (`--too-fast`), a redesign warning; `short_shutter`: frames the samples can't cover |
+| `score.py` | LRA ≥ 5 LU for films of 20 s or more; the payoff ≥ 2 LU over the median momentary loudness (warnings) |
 
 Contact sheets (`sheet.py`) and frame grabs (`grab.sh`) have no thresholds. They label frames as 0-based frame numbers at the file's real fps, which are the same numbers every report uses.
