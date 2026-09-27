@@ -105,6 +105,7 @@ Read `references/concept-and-story.md` now.
   - the final frame.
 - Run the deletion test. Remove the demo beats, and the value should still read. Remove the value beats; if the film still "works", it was a feature tour.
 - Run the specificity test. Would the film be just as true of a simpler product, for example an even split instead of an itemised one, or a plain list instead of a ranked one? If yes, the proof undersells the product; show the part that is hard.
+- Run the feature-word test. Watching muted, would a stranger use the brief's word for the feature ("streak", "split")? If a clever device makes it read as something else, keep the feature's familiar form and let the device dress it.
 - **Gate:**
   - the logline is ≤ 15 words;
   - the specificity test passes, with its answer written down;
@@ -133,7 +134,7 @@ Read `references/brand-and-color.md` and the type section of `references/copy-an
   - Reject any direction that could belong to ten other startups, including the "geometric block + accent dot" family, which is this skill's own example vocabulary.
   - Run the misread test. Show the mark at 64 px for half a second. If it reads first as a common symbol (a minus, an emoticon, a menu or hamburger icon, a padlock, a play button, a plus), reject it or change it until it doesn't.
   - Build the winner in `src/brand/Mark.tsx` on a 100-unit grid, with gaps of at least 8 units so it survives being scaled down.
-- **A palette with character, inside the bans.** Derive it from the world of the name and the product (a hillside gives pine, moss and slate; a foundry gives graphite and signal red), not from framework defaults. When the name's world is heat or fire, orange is banned, so go red-hot (a deep signal red on graphite) or white-hot, never generic dev-tool blue: the colour must carry the name.
+- **A palette with character, inside the bans.** Derive it from the world of the name and the product (a hillside gives pine, moss and slate; a foundry gives charcoal, soot and a glowing red), not from framework defaults. When the name's world is heat or fire, orange is banned, so go red-hot (a deep red glowing on a true charcoal) or white-hot, never generic dev-tool blue: the colour must carry the name. A blue-grey near-black stage is the stock dev-tool dark theme (`palette.py` notes it), and in a dev tool red UI tags read as errors; spend the red on the brand's own thing.
   - Framework blues (the `#3B82F6` / `#2563EB` family) and flat pure greys read as "default".
   - Tint the neutrals toward the world, with a cool green-grey or a blue slate; a dark stage can be pine-black or ink-navy rather than `#000`.
   - `references/brand-and-color.md` §8–10 has worked palettes.
@@ -160,7 +161,9 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
 - Make each act a pure function of `useCurrentFrame()`. Mount one `<Sequence>` per act in `Film.tsx`, and register each act as its own composition in the `Acts` folder so you can iterate on it alone.
 - Take all motion from the tokens in `src/lib/anim.ts` (§6). A raw bezier inside an act is a lint error, because that is how a house style decays.
 - Build the product UI from real components fed by one `data.ts` module with asserts on dates, weekdays, counts, plurals and sums. The data must agree with the story too: the person who paid doesn't owe, a "sorted" list is actually sorted, a stated ratio matches its numbers, and no number appears twice in one frame. Frame the UI large enough to read on a phone. A screenshot never carries the hero shot.
-- Make the product and the feature identifiable. Name the feature once, as a UI label, the one line of copy or the end card, and show enough real app chrome that a stranger knows this is software. "No feature name as a headline" never means "never name it".
+- Make the product and the feature identifiable. Name the feature once, as a UI label, the one line of copy or the end card, and show enough real app chrome that a stranger knows this is software. "No feature name as a headline" never means "never name it". A feature label is not a payoff: land the value with one short line that makes it human ("Sam had the salad."), even in a muted loop.
+- Frame only the meaningful part of the product. No half-empty grids, no tables cropped at the frame edge, no rows of blank cells: they read as a spreadsheet, not a product.
+- Text that must be read stays readable in motion. Keep labelled chips and numbers under about 20 px/f while they travel, or fly them with the text faded and let it resolve on landing, because motion blur on small text reads as a double image.
 - Moving elements never cover text they pass over: plan the paths and the z-order, and check the densest frames at full size.
 - A progressive text reveal (letter by letter or with a sweep) must never spell a different word partway through ("tarn" briefly reading "tar"). Check the intermediate frames, or reveal by whole words or with a mask.
 - Export from its act every frame the sound needs, as a named constant (for example `LANDINGS` or `SNAP`), so the cue export can import it.
@@ -178,10 +181,15 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
 Read `references/sound.md` now.
 - Run `npx tsx scripts/export-cues.ts`, which writes `out/cues.json`. Sync points are computed from the picture code (spring contact frames, 50% pop frames, velocity peaks, 97% settles) and never typed by hand. Typed sync points landed 8–11 f off in practice.
 - Pick the sound's personality row in `references/sound.md` §5.5a first. A calm brand gets soft mallets and one gentle chord; drops onto silence and sub booms are for energetic launch films only.
+- **Make the music drive the picture, whatever the personality.**
+  - A motif that follows the story's progress, for example one tuned note per step climbing the scale (`progress` in `score.json`).
+  - An accent under every major visual event.
+  - The lockup is the biggest, most resolved musical moment of the film: softer for a calm brand, but still a resolved chord that blooms, never a held pad under the payoff.
+  - The sound starts on frame 0 without a click and never leaves a gap of dead air in the first bars.
 - Fill in `audio/score.json`: key, one chord per bar, sections, drops and silences.
 - Run `python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json --out public/audio/soundtrack.wav --stems out/stems --json out/qa/score.json` (`npm run audio`). The stems let `av-audit.py` check each sound against its cue; the master chain lives in `scripts/audio/master.py`.
 - **Gate:**
-  - the WAV measures −14 ±0.5 LUFS integrated, with true peak ≤ −1.5 dBTP before encoding;
+  - the WAV measures its target ±0.5 LUFS integrated (`master.lufs` in `audio/score.json`: −14, or −16 for a calm brand or a short sting), with true peak ≤ −1.5 dBTP before encoding;
   - a film of 20 s or more has contrast: LRA 5–8 LU, and the payoff 2–3 LU above the median momentary loudness (`score.py` warns);
   - every event has a sound, and every sound has something visible that causes it.
 
@@ -194,6 +202,7 @@ Read `references/finishing.md` now.
   - A late fix re-renders only the changed act's range (`--frames A-B`) and splices it, rather than re-blurring the film.
   - A 9:16 or 1:1 variant with identical timing reuses the master's samples (`--samples-from`); one whose fastest motion is ≤ 12 px/f renders sharp.
   - Don't edit `src/` while a render runs: `render.sh` renders from a bundle frozen at its start and warns if the source changed meanwhile.
+  - Stop a render by its own PID, never with a `pkill -f` pattern: on a shared machine the pattern also kills other people's renders.
 - **Speed ceiling.** Moves over about 80 px/f are listed as too fast for clean blur; redesign them rather than adding samples (§6).
 - **Gate.** `render.sh` runs both checks below and exits 1 if either fails. Run them again on any file you deliver:
   - `python3 scripts/probe.py out/film.mp4 --spec 1920x1080@60 --dur <s>` passes: size, fps, duration ±1 f, yuv420p, BT.709 tags, AAC at 48 kHz;
@@ -255,6 +264,10 @@ These rules ban the tells of generated work, not personality. Two films made wit
 **Layout**
 - Avoid "text left, UI card right" and avoid centred floating cards. Show the product full-bleed, anchor the type to an eye line or the lower third, and give each shot one focal action.
 - Keep safe margins of at least 96 px at the sides and 64 px top and bottom, and at least 24 px of headroom at maximum punch. Overscan moving layers by 5–8%.
+- **Fill the frame with purpose.**
+  - In product shots the hero (the UI, the object, the number) covers about 40–70% of the frame.
+  - Outside designed negative space around a single hero, such as a logo, no region of more than about a quarter of the frame stays empty.
+  - In vertical feeds, the platform's caption and button zones get background or continuation (the product's surface, the stage, a bleed), not an empty band. Judges read emptiness as unfinished, whatever the reason.
 
 **Decoration**
 - Every element must name its job (reveal, route, validate, emphasise) or be cut. That rules out particles, bokeh, starfields and ghost text.
@@ -298,10 +311,12 @@ const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one
   - Once text resolves, it stays at least 36 f + 6 f per word. Text that hasn't resolved never exits.
   - Nothing is static for more than 48 f, except a designed freeze of ≤ 15 f that sits exactly on a silence.
   - A logo or lockup hold is 1.5–2.0 s and visibly builds (a push of ≥ 10–20%), then the tail. Never more than about 2.5 s on a still end card: judges call a longer one "drags". A URL is readable for at least 1.7 s.
+  - In a launch film or product video the lockup appears once, at the end (a sting is the exception: it is all lockup). A mid-film logo reveal followed by the same lockup again reads as a repeat and spends seconds on a still. Mid-film, the brand is present through the device and the accent. Brand logo time across the whole film stays ≤ about 12% of the runtime.
 - **Density**
   - Aim for 45–60 discrete events per 30 s and one motion peak per bar, with 30–70 f of calm between peaks.
   - The first 6 s run about twice as dense as the middle.
   - Energy builds toward the payoff. No stretch after the turn is slower or greyer than the one before it, unless it is a designed breath of ≤ 1 bar right before the drop. A second half that drags loses films whose first half is strong. Check the energy by eye on a contact sheet of the second half.
+  - The last third keeps moving: a camera push, secondary motion or the device still acting. A film that settles 4 s before the end has ended early.
   - Shot length: median 60–90 f; minimum 24 f (and only with no text); maximum 180 f (and only with continuous action).
 - **Hook:**
   - frame 0 is already composed and moving;
@@ -413,7 +428,7 @@ The full procedure, the critic prompts, the rubric anchors and the table of thre
 1. **Render.** Render the preview (or the affected acts).
 2. **Measure.** Run the scripts. Each writes JSON to `out/qa/`:
    - `python3 scripts/probe.py out/preview.mp4 --spec 1920x1080@60 --dur <s>`
-   - `python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --json out/qa/forensics.json`. It checks pops, stalls, dead holds, ghost frames, border slivers, judder, sharpness steps and banding. Declare designed cuts and freezes with `--cuts` and `--freeze-ok` so they are not flagged, and add `--loop` for loops to check the seam.
+   - `python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --json out/qa/forensics.json`. It checks pops, stalls, dead holds, ghost frames, border slivers, judder, sharpness steps, banding and compression smear on flat fields. Declare designed cuts and freezes with `--cuts` and `--freeze-ok` so they are not flagged, and add `--loop` for loops to check the seam.
    - `python3 scripts/av-audit.py out/preview.mp4 --cues out/cues.json --stems out/stems --json out/qa/av.json`. It checks onsets against cues (per stem, so the bed cannot hide a late effect), loudness, true peak, clicks and the tail.
 3. **Sheets.** Make contact sheets with `python3 scripts/sheet.py out/preview.mp4 --chunks 4 --rate 12 --out out/qa/sheet.png`, plus a legibility sheet at `--width 480`. Grab exact frames with `bash scripts/grab.sh out/preview.mp4 <frame>…`.
 4. **Lenses.** Run the critic lenses from `assets/critics/`. Launch them as parallel subagents if the harness allows it; otherwise run them one after another, and look at the sheet *before* you open the code.
