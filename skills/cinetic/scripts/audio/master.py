@@ -6,7 +6,9 @@ Chain (finish): 28 Hz high-pass -> mono below 120 Hz -> 2:1 bus compressor above
 (5 ms RMS detector, 15 ms attack, 120 ms release) -> soft saturation + air -> loudness passes to
 the target LUFS, each followed by a true-peak lookahead limiter (4x oversampled detection, 4 ms
 lookahead, 80 ms release, ceiling 0.77 linear = -2.3 dBFS, which leaves room for AAC overshoot)
--> 60 ms end fade -> last 480 samples zeroed.
+-> edge fades, always: a 3 ms raised-cosine fade-in from exact zero at sample 0 (a sound already at
+level on sample 0 clicks and cuts in mid-action) and a raised-cosine fade-out of at least 10 ms
+(60 ms by default) onto the last sample -> last 480 samples zeroed.
 
 score.py imports sidechain_times(), finish() and measure(). Standalone use:
 
@@ -28,6 +30,8 @@ from scipy import signal
 from scipy.ndimage import maximum_filter1d, minimum_filter1d
 
 SR = 48000
+HEAD_FADE = 0.003     # s, raised-cosine fade-in at sample 0, applied after the limiter on every master
+END_FADE_MIN = 0.010  # s, the shortest fade-out onto the last sample, whatever end_fade asks for
 
 
 # ------------------------------------------------------------------------------------------
@@ -210,6 +214,22 @@ def glue(x, drive=1.15, air=0.25):
     return x
 
 
+def edge_fades(x, head=HEAD_FADE, tail=END_FADE_MIN):
+    """Raised-cosine fade-in over `head` s from exact zero at sample 0, and fade-out over `tail` s
+    to zero on the last sample. Run after the limiter, so nothing raises the edges again."""
+    x = _stereo(x).copy()
+    n = len(x)
+    for d, rising in ((head, True), (tail, False)):
+        k = min(n, int(round(d * SR)))
+        if k > 1:
+            w = 0.5 - 0.5 * np.cos(np.pi * np.arange(k) / (k - 1))  # 0 -> 1, raised cosine
+            if rising:
+                x[:k] *= w[:, None]
+            else:
+                x[-k:] *= w[::-1, None]
+    return x
+
+
 def finish(mix, lufs=-14.0, ceiling=0.77, mono_hz=120, comp=True, drive=1.15, air=0.25,
            hp_hz=28, fade=0.0, end_fade=0.06, tail_zero=480):
     """Full chain for a summed mix. Returns (master, info) where info has the limiter trace."""
@@ -227,9 +247,7 @@ def finish(mix, lufs=-14.0, ceiling=0.77, mono_hz=120, comp=True, drive=1.15, ai
         t = np.arange(len(x)) / SR
         x = x * (np.clip((len(x) / SR - 0.03 - t) / fade, 0, 1) ** 2)[:, None]
     x, g = loudness_passes(x, lufs, ceiling)
-    k = min(len(x), int(end_fade * SR))
-    if k > 1:
-        x[-k:] *= (np.cos(np.linspace(0, np.pi / 2, k)) ** 2)[:, None]
+    x = edge_fades(x, HEAD_FADE, max(end_fade or 0.0, END_FADE_MIN))
     if tail_zero:
         x[-tail_zero:] = 0
     lim_db = -20 * np.log10(np.maximum(g, 1e-9))

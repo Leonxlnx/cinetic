@@ -3,7 +3,9 @@
 score.py: renders a film's soundtrack. The music comes from audio/score.json (key, tempo, one
 chord per bar, sections, drops, silences, signature motif); the sound effects come from the
 events in out/cues.json (exported from the picture code by scripts/export-cues.ts). The mix is
-sidechained, bussed and mastered by master.py to -14 LUFS with a true-peak ceiling.
+sidechained, bussed and mastered by master.py to the film's target, master.lufs in score.json
+(default -14 LUFS; -16 for a calm brand or a sting of 8 s or less; --lufs overrides it), with a
+true-peak ceiling and a 3 ms fade-in at sample 0.
 
 Usage (from the project root):
   python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json \
@@ -924,7 +926,7 @@ def main(argv=None):
     ap.add_argument('--out', default='public/audio/soundtrack.wav')
     ap.add_argument('--stems', metavar='DIR', help='also write stems here; they sum to the pre-master mix')
     ap.add_argument('--json', metavar='PATH', help='write the report JSON here')
-    ap.add_argument('--lufs', type=float, help='override master.lufs from score.json')
+    ap.add_argument('--lufs', type=float, help='target LUFS; overrides master.lufs from score.json (default -14)')
     ap.add_argument('--ceiling', type=float, help='override master.ceiling (linear)')
     ap.add_argument('--max-tp', type=float, default=-1.5, help='gate: max true peak dBTP (default -1.5)')
     ap.add_argument('--tol', type=float, default=0.5, help='gate: LUFS tolerance (default 0.5)')
