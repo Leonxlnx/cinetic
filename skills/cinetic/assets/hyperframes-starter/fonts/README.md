@@ -14,10 +14,10 @@ fonts/geist-latin-wght-normal.woff2   <-  node_modules/@fontsource-variable/geis
 ```
 
 To swap the family, or to add a mono (for code or tabular numbers):
-1. `npm i -D @fontsource-variable/newsreader` (or the brand's package; the file is `files/<name>-latin-wght-normal.woff2`).
-2. Add a line to `COPIES` in `setup.mjs`, e.g. `['node_modules/@fontsource-variable/newsreader/files/newsreader-latin-wght-normal.woff2', 'fonts/newsreader-latin-wght-normal.woff2']`, then run `node setup.mjs`.
+1. `npm i -D @fontsource-variable/schibsted-grotesk` (a sans from the table in `references/brand-and-color.md` §2, or the brand's package; the file is `files/<name>-latin-wght-normal.woff2`).
+2. Add a line to `COPIES` in `setup.mjs`, e.g. `['node_modules/@fontsource-variable/schibsted-grotesk/files/schibsted-grotesk-latin-wght-normal.woff2', 'fonts/schibsted-grotesk-latin-wght-normal.woff2']`, then run `node setup.mjs`.
 3. Add its `@font-face` block and use the family name literally in `font-family` (lint cannot see through `var(...)`).
 
-For brand-supplied fonts, convert them to `.woff2` (for example `fonttools ttLib.woff2 compress Brand.ttf`, which needs the `brotli` module) and put them here directly. A variable font needs one `@font-face` with a weight range (`font-weight: 100 900`); static fonts need one block per weight. Keep each family's licence file next to its fonts when you hand the project on.
+When you invent the look the family is a sans (serif and italic are hard bans). For brand-supplied fonts, which may be anything, convert them to `.woff2` (for example `fonttools ttLib.woff2 compress Brand.ttf`, which needs the `brotli` module) and put them here directly. A variable font needs one `@font-face` with a weight range (`font-weight: 100 900`); static fonts need one block per weight. Keep each family's licence file next to its fonts when you hand the project on.
 
 `bash scripts/hf-finish.sh` refuses to render when an `@font-face` `url(...)` points at a missing file, because the fallback face would otherwise ship silently.
