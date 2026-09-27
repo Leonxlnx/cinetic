@@ -185,7 +185,8 @@ Section options: `level` (music bus gain for the section), `bright` (multiplies 
 - One section per story beat, bar-aligned with the acts. Energy follows the treatment's arc: hush → build → drop → proof → breath → payoff → tail.
 - **Drop on silence.** A `drops` entry stops the music (reverb included) for `silence` before `at` and sucks it down over the 0.2 s before. Effects of on-screen motion keep ringing, so a whoosh into the drop is not chopped. For a designed freeze with nothing moving, add a `silences` entry as well; it mutes everything, and the picture freeze must sit exactly on it (≤ 15 f).
 - End a `riser` on the silence's first frame, never inside it. Use one or two per film, and skip it when a whoosh already leads into the same downbeat: two noise swells on one approach blur into hiss (the starter lets the lockup slide's whoosh do the job).
-- The payoff has the highest momentary loudness of the film. A mid-film `drive` that out-shouts the lockup is a common failure; the report flags it.
+- The payoff has the highest momentary loudness of the film, clearly: 2–3 LU or more over the film's median momentary loudness. A mid-film `drive` that out-shouts the lockup is a common failure; the report flags it, and flags a payoff that only edges the rest.
+- **Contrast is the arc.** A launch film of 20 s or more wants an LRA of about 5–8 LU. A score that runs `drive` from start to finish measures around 4 LU and feels dense and flat however good each sound is. Thin the section before the turn (a `breakdown`, or `layers: {drums: 0, arp: 0}` on the section), put true silence before the drop (`drops`), and hold something back (the kick, the top octave) until the payoff. `score.py` warns under 5 LU on films of 20 s or more.
 - The last 60 f are a tail: the music fades over `master.fade` seconds and the WAV reaches digital zero on the last frame. Keep `hit`, `drop` and `bell` events at least 30 f from the end.
 
 ### 5.4 Stems
@@ -259,7 +260,7 @@ python3 scripts/audio/master.py music.wav ducked.wav --sidechain kick.wav --sc-d
 python3 scripts/audio/master.py --measure public/audio/soundtrack.wav --json -           # I, TP, LRA, loudest moment
 ```
 
-Targets: −14 LUFS integrated (streaming and social), LRA 4–6 LU, true peak ≤ −1.5 dBTP on the WAV and ≤ −1 dBTP after the encode, limiter gain reduction under 1.5 dB at the payoff, the tail's last 50 ms under −45 dB. The starter's demo measures −14.0 LUFS, −2.3 dBTP and LRA about 5 LU on the WAV, and −2.2 dBTP after AAC 320k.
+Targets: −14 LUFS integrated (streaming and social), LRA 5–8 LU for a launch film (4–6 for short pieces), true peak ≤ −1.5 dBTP on the WAV and ≤ −1 dBTP after the encode, limiter gain reduction under 1.5 dB at the payoff, the tail's last 50 ms under −45 dB. The starter's demo measures −14.0 LUFS, −2.3 dBTP and LRA about 5 LU on the WAV, and −2.2 dBTP after AAC 320k.
 
 You cannot listen, so measure what a listener hears:
 
@@ -277,6 +278,8 @@ You cannot listen, so measure what a listener hears:
 |---|---|
 | `masked: kind at f=… (x dB …)` | raise the event's weight, lower the section's `level`, or remove a layer that sits in that band (often the pad or bells) |
 | payoff is not the loudest moment | lower the louder section's `level`, or give the payoff section `level` 1.0 and a `drop` |
+| the payoff is only N LU over the median | thin the bars before it, add a `drops` silence before it, give the payoff section `level` 1.0 and the others 0.7–0.85 |
+| LRA is flat for a film of 20 s or more | a `breakdown` (or `layers: {drums: 0}`) before the turn, a `drops` silence before the drop, the full kit only from the payoff |
 | limiter over 1.5 dB at t | too many loud things on one frame: one boom per downbeat, lower the weights there |
 | out of key | a hand-set `pitch` is wrong; delete it and let the chord decide, or fix `chords` |
 | falls inside a silence | move the event, or shorten the silence |
