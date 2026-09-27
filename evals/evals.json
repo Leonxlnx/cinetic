@@ -1,0 +1,74 @@
+{
+  "skill_name": "cinetic",
+  "evals": [
+    {
+      "id": 1,
+      "name": "ledgerly-feature-loop",
+      "prompt": "Make a 10-second looping feature animation for the landing page of Ledgerly, a shared-expenses app. It should show the new Auto-Split feature splitting a dinner bill between four friends. 1920x1080, it has to loop seamlessly and work without sound (it autoplays muted on the site).",
+      "expected_output": "A 10 s 1920x1080 MP4 that loops seamlessly, shows real product UI splitting a bill four ways with believable data, reads without sound, minimal text, premium motion.",
+      "files": [],
+      "expectations": [
+        "A final MP4 exists at 1920x1080",
+        "Duration is 10 s (+-0.25 s)",
+        "Renders at 60 fps (smooth UI and type motion)",
+        "Colour is tagged BT.709 (correct HD playback colour)",
+        "No motion stutter (frozen frames inside motion runs <= 1% of frames)",
+        "Loops seamlessly (last->first frame change <= 1.5x the median moving step and < 3.0)",
+        "The loop shows a bill being split between four people, and the numbers are consistent (the shares add up to the total)",
+        "On-screen words outside the product UI are 12 or fewer, and the piece reads without sound",
+        "No text is clipped, overlapping or too small to read at 1080p (UI text roughly >= 20 px)",
+        "The product UI looks like a real, specific app (named people, real amounts, consistent states), not a generic dashboard or floating card",
+        "Avoids generated-look tells: no multi-hue or indigo/violet gradients, glassmorphism, neon, eyebrow labels, emoji or bouncy decoration",
+        "Evidence of self-review: the agent looked at rendered frames or a contact sheet and made at least one fix afterwards"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "kiln-launch-teaser",
+      "prompt": "Invent the brand for Kiln (a build cache that makes CI runs finish in seconds) and make a 25-second launch teaser with sound for our announcement on X. It should feel like a well-funded company shipped it, not a template.",
+      "expected_output": "A ~25 s 1920x1080 MP4 with a composed, synced soundtrack; an invented brand (name treatment, mark, palette); a clear idea told visually; restrained copy; lockup at the end; social-ready loudness.",
+      "files": [],
+      "expectations": [
+        "A final MP4 exists at 1920x1080",
+        "Duration is 25 s (+-1.5 s)",
+        "Renders at 60 fps (smooth UI and type motion)",
+        "Colour is tagged BT.709 (correct HD playback colour)",
+        "No motion stutter (frozen frames inside motion runs <= 1% of frames)",
+        "Has an audio track",
+        "True peak <= -1.0 dBTP after encode (no clipping on social platforms)",
+        "Integrated loudness -14 +-1.5 LUFS (social standard)",
+        "An invented brand is visible: a distinctive mark (not just a letter in a rounded square) and a name lockup in the final seconds",
+        "One clear idea is told visually (a stranger could describe it with the sound off)",
+        "Total on-screen words are 35 or fewer, with no stacked taglines or eyebrow labels",
+        "No text is clipped, overlapping or too small to read at 1080p",
+        "Avoids generated-look tells: no multi-hue or indigo/violet gradients, glassmorphism, neon, emoji, stock icons, particles or code-rain",
+        "The soundtrack is generated from the same timeline/cue list as the picture (checked in code), not placed by hand or looped from stock",
+        "Evidence of self-review: the agent looked at rendered frames or a contact sheet and made at least one fix afterwards"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "halden-logo-sting",
+      "prompt": "We're launching Halden, a calm note-taking app. Design the logo and make a 6-second logo sting with sound that we can put at the start of our videos, plus a transparent version for our editors.",
+      "expected_output": "A 6 s MP4 logo sting with a tuned sound hit, a transparent (alpha) version, and the logo as stills; the mark assembles with intent and holds long enough to read.",
+      "files": [],
+      "expectations": [
+        "A final MP4 exists at 1920x1080",
+        "Duration is 6 s (+-0.3 s)",
+        "Renders at 60 fps (smooth UI and type motion)",
+        "Colour is tagged BT.709 (correct HD playback colour)",
+        "No motion stutter (frozen frames inside motion runs <= 1% of frames)",
+        "Has an audio track",
+        "True peak <= -1.0 dBTP after encode (no clipping on social platforms)",
+        "A transparent (alpha) version exists",
+        "The logo is delivered as stills (PNG or SVG)",
+        "Audio has decayed by the end (last 50 ms peak < -40 dBFS, no click)",
+        "The logo mark is an original construction (not just the name set in a font, and not a letter in a rounded square)",
+        "The logo is fully resolved and readable for at least 1 second before the end",
+        "The sound has a clear hit that lands with the logo resolving (checked in code or by audio timing)",
+        "Avoids generated-look tells: no multi-hue gradients, glow, glassmorphism, neon, lens flares or particle bursts",
+        "Evidence of self-review: the agent looked at rendered frames or a contact sheet and made at least one fix afterwards"
+      ]
+    }
+  ]
+}
