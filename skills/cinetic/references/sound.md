@@ -9,7 +9,7 @@ The numbers here are the defaults that shipped Tessel (−14.1 LUFS, LRA 5.2 LU,
 2. [Pipeline and gate](#2-pipeline-and-gate)
 3. [cues.json and the event kinds](#3-cuesjson-and-the-event-kinds)
 4. [Writing src/sync.ts](#4-writing-srcsyncts)
-5. [score.json](#5-scorejson)
+5. [score.json](#5-scorejson) (5.5a personality, 5.5b progress motif)
 6. [Harmony and tuning](#6-harmony-and-tuning)
 7. [The instrument palette](#7-the-instrument-palette)
 8. [Mix](#8-mix)
@@ -158,9 +158,10 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
 | `drops` | `[]` | `{at, silence?, suck? (s), depth?, suckDepth?}`: the music stops dead for `silence`, ducks 90% over `suck`, and lands on `at` |
 | `silences` | `[]` | `{from, to, depth?}`: true silence for a designed freeze; mutes everything, effects and reverb included |
 | `payoff` | — | the moment that must be loudest; the report checks it |
+| `progress` | — | `{match, kind?, start?, tonic?, resolve?, gain?}`: the progress motif (§5.5b): events whose `id` contains `match` climb the scale one step each; `resolve` lands the tonic on the payoff |
 | `bed` | — | `{file, at?, gain_db?}`: a supplied music track joins the music bus (§5.6) |
 | `mix` | as shown | music and effect bus gains, reverb amount, sidechain depth, dB the music dips under hits |
-| `master` | as shown | target LUFS, limiter ceiling (linear), music fade-out length (s) |
+| `master` | as shown | target LUFS, limiter ceiling (linear), the end fade's length (s), which the music and the effects both follow |
 
 **Times** are a frame number (`360`), a cue (`"@lockup"`, `"@lockup-6"`), or a string `"bar:beat:16th"` (`"4"`, `"3:2"`, `"3:3:2"`, 1-based bars, 0-based beats as in `b()`). **Durations** are frames or a note value (`"1/16"`).
 
@@ -183,11 +184,12 @@ Section options: `level` (music bus gain for the section), `bright` (multiplies 
 ### 5.3 Shaping the arc
 
 - One section per story beat, bar-aligned with the acts. Energy follows the treatment's arc: hush → build → drop → proof → breath → payoff → tail.
+- **The hook starts at intent.** No fade-in on the first bar: frame 0 already has a sound with a reason (the device's first tick, a hit on the first move, the first chord at full level), because a muted-then-unmuted feed viewer and a sound-on viewer both decide in the first second. A pad swelling in, a drone rising or a riser into the opening reads as a soft start. `score.py` starts the film's first chord with a 20 ms attack and the `intro` drone at level (the intro still builds, by opening its filter), and warns "soft hook" when the first 0.5 s sits more than 12 dB under the film's median momentary loudness. "Hush" in the arc means sparse, not quiet: few layers at intent.
 - **Drop on silence.** A `drops` entry stops the music (reverb included) for `silence` before `at` and sucks it down over the 0.2 s before. Effects of on-screen motion keep ringing, so a whoosh into the drop is not chopped. For a designed freeze with nothing moving, add a `silences` entry as well; it mutes everything, and the picture freeze must sit exactly on it (≤ 15 f).
 - End a `riser` on the silence's first frame, never inside it. Use one or two per film, and skip it when a whoosh already leads into the same downbeat: two noise swells on one approach blur into hiss (the starter lets the lockup slide's whoosh do the job).
 - The payoff has the highest momentary loudness of the film, clearly: 2–3 LU or more over the film's median momentary loudness. A mid-film `drive` that out-shouts the lockup is a common failure; the report flags it, and flags a payoff that only edges the rest.
 - **Contrast is the arc.** A launch film of 20 s or more wants an LRA of about 5–8 LU. A score that runs `drive` from start to finish measures around 4 LU and feels dense and flat however good each sound is. Thin the section before the turn (a `breakdown`, or `layers: {drums: 0, arp: 0}` on the section), put true silence before the drop (`drops`), and hold something back (the kick, the top octave) until the payoff. `score.py` warns under 5 LU on films of 20 s or more.
-- The last 60 f are a tail: the music fades over `master.fade` seconds and the WAV reaches digital zero on the last frame. Keep `hit`, `drop` and `bell` events at least 30 f from the end.
+- The last 60 f are a tail: the music and the effects (with their reverb) fade over `master.fade` seconds, and the WAV reaches digital zero on the last frame. An effect that starts inside the fade is mostly lost, and `score.py` names it; keep `hit`, `drop` and `bell` events before the fade starts (`master.fade` + 0.03 s from the end, 80 f at the default 1.3 s), and let the lockup's last sound ring into the tail rather than start in it.
 
 ### 5.4 Stems
 
@@ -196,6 +198,39 @@ Section options: `level` (music bus gain for the section), `bright` (multiplies 
 ### 5.5 Picking a key and tempo
 
 The tempo comes from the timeline (`references/timing-grid.md` has the BPM/fps table). Pick the key for the low end too: the kick and the booms sit between E1 and E♭2 (41–78 Hz), and a tonic from F to A puts the kick at 44–55 Hz, the weight a sting wants. Major with added ninths and sevenths reads as confident and warm; dorian or minor reads as tense; keep one key for the whole film unless the story turns.
+
+### 5.5a Sound follows the personality
+
+The score's energy must match the brand's three adjectives (`references/brand-and-color.md` §2). A drop onto silence followed by a sub boom is launch-film grammar. On a calm brand it reads as trailer noise: the wrong tone, however well it is made.
+
+| Personality | Palette | Dynamics | Signature hit |
+|---|---|---|---|
+| Calm, literary, unhurried | soft mallets, felt keys, a warm pad, a single bell | narrow and gentle; no sucks, no booms, no risers | one soft chord or mallet note with a long tail |
+| Fast, exact, confident | tight kick, plucks, clicks, a short supersaw | wide; drops on true silence, a sub on the payoff | a tuned snap + kick |
+| Bright, friendly | marimba, claps, pops in a major key | bouncy; small risers | a rising two-note motif |
+| Precise, expensive | sparse piano-like tones, low strings pad | slow swells, lots of air | one low, warm chord |
+| Raw, mechanical | ticks, detents, metallic hits, noise | stepped, rhythmic, dry | a hard mechanical latch |
+| Warm, kind | plucked tones, soft pads | gentle rise and fall | a gentle two-note chime |
+
+Pick the row before writing `score.json`, and write it in `TREATMENT.md` next to the adjectives. `score.py` treats `drop` and `riser` as options, not requirements. The sound critic checks the score against this row (`assets/critics/sound-sync.md`).
+
+### 5.5b The progress motif
+
+When the story is progress (days of a streak, steps of a setup, items cleared, a build filling up), give each step one tuned note, one scale step higher than the last, and resolve on the tonic at the payoff. The ear hears "closer" before the eye counts, and the resolution lands the idea. It suits every personality row, because it is one soft note per event. The fields it adds to `score.json`:
+
+```json
+{
+  "key": "D major",
+  "progress": { "match": "day", "kind": "pop", "resolve": "@streak" },
+  "motifs": []
+}
+```
+
+- `match` picks the events: every event whose `id` contains it (and whose `kind` is `kind`, if given), in frame order. In `src/sync.ts` give the steps ids such as `day1` … `day7`, on the landing frame of each step.
+- The k-th step gets scale degree `start + k` of the key's mode. By default `start` is chosen so the last step is the one under the octave (seven steps: 1 → 7), and `resolve` then places the tonic above it, with its octave below, on the bells. `tonic` sets the note of degree 1 (default: the tonic nearest E5, so the rungs sit around 0.5–1.5 kHz, above the pad).
+- Use a voice that takes a pitch: `pop`, `bell`, `tick`, `tock`, `click` or a light `land` (weight under 0.6, or `variant: 'light'`). A heavy landing or a snap ignores it, and the report says so. Short voices (pop, light land) keep a fast climb clean; a bell rings, so space bell rungs at least a beat apart.
+- Put the resolve on the payoff cue and drop the signature motif there (`"motifs": []`), or the two compete.
+- The report lists every rung with its note (`progress.rungs`) and the resolution; `events.tuned` shows them in key.
 
 ### 5.6 When the brand brings sound
 
@@ -246,7 +281,7 @@ All in `scripts/audio/synth.py` (48 kHz, numpy/scipy, seeded). Oscillators integ
 | Mono low end | below 120 Hz | centred bass that survives phones and mono |
 | Bus compressor | 2:1 above −14 dBFS, 5 ms RMS detector, 15 ms attack, 120 ms release | glue without pumping |
 | Colour | soft saturation + a gentle air shelf | cohesion |
-| End | music fades over the last `master.fade` (1.3 s); last 60 ms faded; last 480 samples zero | no click at the cut, a clean poster frame |
+| End | music and effects (with their reverb) fade over the last `master.fade` (1.3 s), reaching zero 30 ms before the end; last 60 ms faded; last 480 samples zero | the delivered audio ends in digital silence, with no effect still sounding at the cut |
 
 Typing thins itself: hats go to 8ths at half level and the arp drops 4 dB in bars with 4+ keys.
 
@@ -272,7 +307,7 @@ You cannot listen, so measure what a listener hears:
 
 ## 10. Reading the report
 
-`score.py --json out/qa/score.json` writes `lufs`, `true_peak_db`, `lra`, `momentary_max` and its time, `limiter_max_gr_db`, `limiter_hot` (moments over 1.5 dB), `payoff`, `tail_50ms_db`, `events.skipped`, `events.masked`, `events.tuned` (every pitched sound with its note), `chords`, `warnings`, `pass`.
+`score.py --json out/qa/score.json` writes `lufs`, `true_peak_db`, `lra`, `momentary_max` and its time, `limiter_max_gr_db`, `limiter_hot` (moments over 1.5 dB), `payoff`, `hook` (the first 0.5 s against the median momentary loudness), `tail_50ms_db`, `events.skipped`, `events.masked`, `events.tuned` (every pitched sound with its note), `progress` (when used), `chords`, `warnings`, `pass`.
 
 | Warning | Fix |
 |---|---|
@@ -283,6 +318,10 @@ You cannot listen, so measure what a listener hears:
 | limiter over 1.5 dB at t | too many loud things on one frame: one boom per downbeat, lower the weights there |
 | out of key | a hand-set `pitch` is wrong; delete it and let the chord decide, or fix `chords` |
 | falls inside a silence | move the event, or shorten the silence |
+| soft hook: the first 0.5 s sits N dB under the median | a sound with a reason on frame 0 (the device's tick, a hit on the first move); no section-less first bar, no riser or swell into the opening |
+| starts inside the end fade | move the event before the fade (`master.fade` + 0.03 s from the end), or shorten `master.fade` |
+| the ending is not silent | an effect or a supplied bed runs to the last frame: move it earlier or trim the bed |
+| progress: … ignores its pitch | give the steps a pitched voice (`pop`, `bell`, `tick`, `click`, a light `land`) |
 | under 2 f after the previous key | expected for fast typing; not an error |
 | chords vs bars mismatch | one entry per bar, including the tail bar (`"-"`) |
 
@@ -297,7 +336,8 @@ You cannot listen, so measure what a listener hears:
 | Low end booms and blurs | a kick, a drop and a heavy landing on one downbeat | one weight per downbeat; `drop` already owns the kick |
 | Typing rattles | every key sounds, all at one level | `word`/`space` variants; thinning is automatic |
 | Effects vanish under the music | 13–25 dB under in their band | weights, section `level`, fewer layers where effects live |
-| Ending clicks or cuts off | no tail, or an event in the last 30 f | `TAIL` ≥ 60 f; move late events earlier |
+| Ending clicks or cuts off | no tail, or an event inside the end fade | `TAIL` ≥ 60 f; move late events before the fade (the report names them) |
+| The first second sounds like a fade-in | a slow pad attack, a swelling drone, nothing on frame 0 | a sound with a reason on frame 0; the first bar at intent (§5.3) |
 | Peaks over −1 dBTP after encode | limiter ceiling raised, or effects added after the master | keep ceiling 0.77; re-run `score.py` after every change |
 | Sound late after mux | Remotion's AAC priming | render `--muted`, mux with ffmpeg (`render.sh` does) |
 
