@@ -14,12 +14,12 @@
         "Colour is tagged BT.709 (correct HD playback colour)",
         "No motion stutter (frozen frames inside motion runs <= 1% of frames)",
         "Loops seamlessly (last->first frame change <= 1.5x the median moving step and < 3.0)",
-        "The loop shows a bill being split between four people, and the numbers are consistent (the shares add up to the total)",
-        "On-screen words outside the product UI are 12 or fewer, and the piece reads without sound",
-        "No text is clipped, overlapping or too small to read at 1080p (UI text roughly >= 20 px)",
+        "The proof shows the feature doing something a naive version would not (for example per-item assignment or proportional sharing), not just the total divided by four",
+        "The numbers and states agree with the story (the shares add up to the total; whoever paid does not owe themselves; statuses are consistent)",
+        "No text is clipped, overlapping or too small to read at 1080p (UI text roughly >= 20 px), and the UI fills enough of the frame to read on a phone",
         "The product UI looks like a real, specific app (named people, real amounts, consistent states), not a generic dashboard or floating card",
-        "Avoids generated-look tells: no multi-hue or indigo/violet gradients, glassmorphism, neon, eyebrow labels, emoji or bouncy decoration",
-        "Evidence of self-review: the agent looked at rendered frames or a contact sheet and made at least one fix afterwards"
+        "The deliverables folder is clean: deliverables at the top level, QA material in a subfolder",
+        "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no neon or glow; no purple/violet/indigo or multi-hue gradients; no glassmorphism; no emoji, sparkles, particles or confetti (brand-supplied exceptions excepted)"
       ]
     },
     {
@@ -37,13 +37,13 @@
         "Has an audio track",
         "True peak <= -1.0 dBTP after encode (no clipping on social platforms)",
         "Integrated loudness -14 +-1.5 LUFS (social standard)",
-        "An invented brand is visible: a distinctive mark (not just a letter in a rounded square) and a name lockup in the final seconds",
-        "One clear idea is told visually (a stranger could describe it with the sound off)",
-        "Total on-screen words are 35 or fewer, with no stacked taglines or eyebrow labels",
-        "No text is clipped, overlapping or too small to read at 1080p",
-        "Avoids generated-look tells: no multi-hue or indigo/violet gradients, glassmorphism, neon, emoji, stock icons, particles or code-rain",
-        "The soundtrack is generated from the same timeline/cue list as the picture (checked in code), not placed by hand or looped from stock",
-        "Evidence of self-review: the agent looked at rendered frames or a contact sheet and made at least one fix afterwards"
+        "An invented brand is visible: a distinctive mark (not a letter in a rounded square, not a generic block + dot) and a name lockup in the final seconds",
+        "One clear idea is told visually and shows what the product does that a simpler product would not (a stranger could describe it with the sound off)",
+        "Total on-screen words (excluding product-UI strings) are 35 or fewer, with no stacked taglines or eyebrow labels",
+        "No visible motion-blur artifacts: no stepped or ghosted copies and no smears longer than about a fifth of the frame on the fastest frames",
+        "Hard cuts and the biggest moves land on audio hits (within about 3 frames)",
+        "A brand kit is delivered: the logo as SVG (light and dark) plus transparent PNGs, and a square social avatar",
+        "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no neon or glow; no purple/violet/indigo or multi-hue gradients; no glassmorphism; no emoji, sparkles, particles or confetti (brand-supplied exceptions excepted)"
       ]
     },
     {
@@ -63,11 +63,34 @@
         "A transparent (alpha) version exists",
         "The logo is delivered as stills (PNG or SVG)",
         "Audio has decayed by the end (last 50 ms peak < -40 dBFS, no click)",
-        "The logo mark is an original construction (not just the name set in a font, and not a letter in a rounded square)",
-        "The logo is fully resolved and readable for at least 1 second before the end",
+        "The logo mark is ownable and derived from the name or the product (not just the name set in a font, not a letter in a rounded square, not a generic block + dot)",
+        "The logo is fully resolved and readable for at least 1.5 seconds before the end, at a size that fills a reasonable part of the frame (roughly a quarter of the width or more)",
         "The sound has a clear hit that lands with the logo resolving (checked in code or by audio timing)",
-        "Avoids generated-look tells: no multi-hue gradients, glow, glassmorphism, neon, lens flares or particle bursts",
-        "Evidence of self-review: the agent looked at rendered frames or a contact sheet and made at least one fix afterwards"
+        "No intermediate frame of the name reveal spells a different word",
+        "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no neon or glow; no purple/violet/indigo or multi-hue gradients; no glassmorphism; no emoji, sparkles, particles or confetti (brand-supplied exceptions excepted)"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "quire-streaks-vertical",
+      "prompt": "Our reading-tracker app Quire is shipping Streaks next week. Make a 12-second vertical product video (1080x1920, for Instagram Reels and TikTok, with sound) showing how a reading streak builds over a week. Use our brand: ink #1B1B1F, paper #FBF7F0, accent #3E7BFA, typeface Manrope.",
+      "expected_output": "A 12 s 1080x1920 MP4 with synced sound that uses the supplied brand exactly (colours, Manrope), shows a streak building across seven days in real product UI, reads muted, respects vertical safe zones.",
+      "files": [],
+      "expectations": [
+        "A final MP4 exists at 1080x1920",
+        "Duration is 12 s (+-0.5 s)",
+        "Renders at 60 fps (smooth UI and type motion)",
+        "Colour is tagged BT.709 (correct HD playback colour)",
+        "No motion stutter (frozen frames inside motion runs <= 1% of frames)",
+        "Has an audio track",
+        "True peak <= -1.0 dBTP after encode (no clipping on social platforms)",
+        "Integrated loudness -14 +-1.5 LUFS (social standard)",
+        "The supplied brand is used exactly: ink #1B1B1F, paper #FBF7F0, accent #3E7BFA and the Manrope typeface (checked in code and frames)",
+        "The supplied paper #FBF7F0 (a cream the hard bans would otherwise catch) is kept and listed in BRIEF.md as a brand-supplied exception, and lint-film.mjs passes with its token marked // cinetic:brand-supplied",
+        "A streak visibly builds over seven days in real product UI, with consistent dates and counts",
+        "Text and key UI stay inside vertical-video safe zones (not under the top ~220 px or bottom ~420 px platform chrome) and are readable on a phone",
+        "The sound is locked to the picture (hits land on visible events) and the film reads with the sound off",
+        "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no neon or glow; no purple/violet/indigo or multi-hue gradients; no glassmorphism; no emoji, sparkles, particles or confetti (brand-supplied exceptions excepted)"
       ]
     }
   ]
