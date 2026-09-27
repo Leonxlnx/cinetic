@@ -1,0 +1,946 @@
+#!/usr/bin/env python3
+"""
+score.py: renders a film's soundtrack. The music comes from audio/score.json (key, tempo, one
+chord per bar, sections, drops, silences, signature motif); the sound effects come from the
+events in out/cues.json (exported from the picture code by scripts/export-cues.ts). The mix is
+sidechained, bussed and mastered by master.py to -14 LUFS with a true-peak ceiling.
+
+Usage (from the project root):
+  python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json \
+      --out public/audio/soundtrack.wav [--stems out/stems] [--json out/qa/score.json]
+      [--lufs -14] [--ceiling 0.77] [--quiet]
+
+Writes a 48 kHz 24-bit stereo WAV exactly TOTAL/FPS seconds long, optional stems that sum to
+the pre-master mix (drums, bass, pad, arp, bells, reverb, sfx, and bed when used) and a JSON
+report: loudness, true peak, LRA, the loudest moment against the payoff, limiter hot spots,
+masked effects (under +6 dB in their own band), every tuned sound with its note, skipped events
+and warnings. Schema and recipes: references/sound.md.
+
+Exit codes: 0 rendered and the gate passed (LUFS within +-0.5 of target, true peak <= -1.5
+dBTP, last 480 samples zero); 1 on invalid input or a failed gate.
+"""
+import argparse
+import json
+import math
+import os
+import re
+import sys
+
+import numpy as np
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import master as M  # noqa: E402
+import synth as S  # noqa: E402
+
+SR = S.SR
+
+MODES = {
+    'major': [0, 2, 4, 5, 7, 9, 11], 'ionian': [0, 2, 4, 5, 7, 9, 11], 'minor': [0, 2, 3, 5, 7, 8, 10],
+    'aeolian': [0, 2, 3, 5, 7, 8, 10], 'dorian': [0, 2, 3, 5, 7, 9, 10], 'mixolydian': [0, 2, 4, 5, 7, 9, 10],
+    'lydian': [0, 2, 4, 6, 7, 9, 11], 'phrygian': [0, 1, 3, 5, 7, 8, 10],
+}
+QUALITIES = {
+    '': [0, 4, 7], 'maj': [0, 4, 7], 'M': [0, 4, 7], 'm': [0, 3, 7], 'min': [0, 3, 7], '-': [0, 3, 7],
+    '5': [0, 7], '6': [0, 4, 7, 9], 'm6': [0, 3, 7, 9], '69': [0, 4, 7, 9, 14], '6add9': [0, 4, 7, 9, 14],
+    '7': [0, 4, 7, 10], 'maj7': [0, 4, 7, 11], 'M7': [0, 4, 7, 11], 'm7': [0, 3, 7, 10], 'mmaj7': [0, 3, 7, 11],
+    '9': [0, 4, 7, 10, 14], 'maj9': [0, 4, 7, 11, 14], 'M9': [0, 4, 7, 11, 14], 'm9': [0, 3, 7, 10, 14],
+    'm11': [0, 3, 7, 10, 14, 17], 'maj7#11': [0, 4, 7, 11, 18], 'add9': [0, 4, 7, 14], 'add2': [0, 2, 4, 7],
+    'madd9': [0, 3, 7, 14], 'sus2': [0, 2, 7], 'sus4': [0, 5, 7], 'sus': [0, 5, 7], '7sus4': [0, 5, 7, 10],
+    '9sus4': [0, 5, 7, 10, 14], '6sus4': [0, 5, 7, 9], 'dim': [0, 3, 6], 'dim7': [0, 3, 6, 9],
+    'm7b5': [0, 3, 6, 10], 'aug': [0, 4, 8], '+': [0, 4, 8],
+}
+# Arrangement per section style. Gains are multipliers on house levels; cut = pad low-pass
+# (Hz) at the section's start and end; ring = sustain one chord per chord change, not per bar.
+STYLES = {
+    'intro': dict(pad=0.55, bass=0.0, arp=0.0, drone=1.0, drums=None, cut=(700, 1300), attack=0.6, level=0.95, ring=True),
+    'build': dict(pad=0.8, bass=0.65, arp=0.8, drone=0.0, drums='build', cut=(1400, 3200), attack=0.15, level=0.95, ring=False),
+    'groove': dict(pad=0.85, bass=1.0, arp=0.8, drone=0.0, drums='groove', cut=(2200, 2400), attack=0.1, level=1.0, ring=False),
+    'drive': dict(pad=1.0, bass=1.0, arp=1.0, drone=0.0, drums='drive', cut=(3000, 3400), attack=0.05, level=1.0, ring=False),
+    'breakdown': dict(pad=0.95, bass=0.5, arp=0.45, drone=0.0, drums='clock', cut=(1800, 3000), attack=0.2, level=0.9, ring=True),
+    'resolve': dict(pad=1.0, bass=0.9, arp=0.0, drone=0.0, drums='one', cut=(1700, 1700), attack=0.02, level=1.0, ring=True),
+    'hold': dict(pad=0, bass=0, arp=0, drone=0, drums=None, cut=(2000, 2000), attack=0.1, level=1.0, ring=True),
+}
+STYLES['tail'] = STYLES['hold']
+ARP_PATTERN = [0, 2, 1, 3, 2, 1, 3, 2, 0, 2, 1, 3, 2, 3, 1, 2]
+BASE = dict(tick=0.2, tock=0.22, hit=0.5, land=0.26, land_light=0.15, pop=0.12, whoosh=0.24, riser=0.18,
+            drop=0.7, key=0.14, click=0.5, snap=0.45, swell=0.16, bell=0.08, suck=0.5)
+
+
+class ScoreError(Exception):
+    pass
+
+
+# ------------------------------------------------------------------------------------------
+# harmony
+# ------------------------------------------------------------------------------------------
+class Chord:
+    _re = re.compile(r'^([A-G][#b]?)(.*?)(?:/([A-G][#b]?))?$')
+
+    def __init__(self, sym):
+        m = self._re.match(sym.strip())
+        if not m or m.group(2) not in QUALITIES:
+            raise ScoreError(f'unknown chord "{sym}"; qualities: {", ".join(q or "(major)" for q in QUALITIES)}')
+        self.name = sym
+        self.root = S.pitch_class(m.group(1))
+        self.iv = QUALITIES[m.group(2)]
+        self.pcs = [(self.root + i) % 12 for i in self.iv]
+        self.bass = S.pitch_class(m.group(3)) if m.group(3) else self.root
+
+    def tones(self):
+        """Voiced tones for pads: drop the fifth from 5+ note chords, double the root of triads."""
+        iv = list(self.iv)
+        if len(iv) >= 5 and 7 in iv:
+            iv.remove(7)
+        if len(iv) == 3:
+            iv = iv + [12]
+        if len(iv) == 2:
+            iv = [0, 7, 12, 19]
+        return [(self.root + i) % 12 for i in iv]
+
+
+def voicings(ch):
+    """Close and drop-2 voicings between D3 and G5 whose lowest note is the root, third or fifth
+    (tensions such as 9 and 11 sit inside or on top, never at the bottom)."""
+    tones = ch.tones()
+    base = {(ch.root + i) % 12 for i in ch.iv if i in (0, 3, 4, 7) or (i == 5 and 3 not in ch.iv and 4 not in ch.iv)}
+    out = []
+    for r in range(len(tones)):
+        order = tones[r:] + tones[:r]
+        for low in range(50, 66):
+            if low % 12 != order[0]:
+                continue
+            v = [low]
+            for p in order[1:]:
+                nxt = v[-1] + 1
+                while nxt % 12 != p:
+                    nxt += 1
+                v.append(nxt)
+            for cand in (v, sorted(v[:-2] + [v[-2] - 12] + v[-1:]) if len(v) >= 4 else None):
+                if cand and cand[0] >= 50 and cand[-1] <= 79 and cand[0] % 12 in base:
+                    out.append(cand)
+    return out
+
+
+def _mud(v):
+    """penalty for close intervals low in the register (they turn to mud)"""
+    c = 0
+    for a, b in zip(v[:-1], v[1:]):
+        if b - a <= 2 and a < 60:
+            c += 6
+        elif b - a <= 4 and a < 52:
+            c += 4
+    return c
+
+
+def voice_lead(ch, prev):
+    best, cost = None, 1e9
+    for v in voicings(ch):
+        c = 0.25 * abs(np.mean(v) - 62) + _mud(v)
+        if prev:
+            c += sum(min(abs(a - b) for b in prev) for a in v) + sum(min(abs(a - b) for a in v) for b in prev)
+        else:
+            c += abs(np.mean(v) - 60)
+        if c < cost:
+            best, cost = v, c
+    return best
+
+
+def stack(pcs, low, count):
+    """`count` ascending notes from `low` cycling through pcs (arp tones)."""
+    out, m = [], int(math.ceil(low))
+    while len(out) < count:
+        if m % 12 in pcs:
+            out.append(m)
+        m += 1
+    return out
+
+
+def arp_tones(ch, center=66):
+    """root, third (or sus), fifth and one colour tone (9, maj7, 7 or the octave), ascending
+    from the root nearest `center`"""
+    tri = [i for i in ch.iv if i in (0, 3, 4, 5, 7)][:3]
+    color = next((c for c in (14, 11, 10, 9) if c in ch.iv), 12)
+    first = int(S.nearest([ch.root], center))
+    out = [first]
+    for i in tri[1:] + [color]:
+        m = first + i
+        while m <= out[-1]:
+            m += 12
+        out.append(m)
+    return out
+
+
+# ------------------------------------------------------------------------------------------
+# the song: timing, chords, sections
+# ------------------------------------------------------------------------------------------
+class Song:
+    def __init__(self, score, cues):
+        self.cues = cues
+        self.fps, self.total, self.bpm = float(cues['fps']), int(cues['total']), float(cues['bpm'])
+        if 'bpm' in score and abs(float(score['bpm']) - self.bpm) > 1e-6:
+            raise ScoreError(f'score.json bpm {score["bpm"]} differs from the timeline ({self.bpm}); fix one')
+        self.beat = 60.0 / self.bpm
+        self.barlen = 4 * self.beat
+        self.dur = self.total / self.fps
+        self.nbars = int(math.ceil(self.dur / self.barlen - 1e-9))
+        self.warnings = []
+        key = str(score.get('key', 'C major')).split()
+        self.tonic = S.pitch_class(key[0])
+        self.mode = key[1].lower() if len(key) > 1 else 'major'
+        if self.mode not in MODES:
+            raise ScoreError(f'unknown mode "{self.mode}"; use one of {", ".join(MODES)}')
+        self.scale = [(self.tonic + i) % 12 for i in MODES[self.mode]]
+        minorish = MODES[self.mode][2] == 3
+        self.penta = [(self.tonic + i) % 12 for i in ([0, 3, 5, 7, 10] if minorish else [0, 2, 4, 7, 9])]
+        self._chords(score.get('chords', []))
+        self._sections(score.get('sections', []))
+        sig = score.get('signature', {})
+        self.sig_tick = S.midi(sig['tick']) if 'tick' in sig else S.nearest([self.tonic], 100)
+        self.sig_tock = S.midi(sig['tock']) if 'tock' in sig else S.nearest([(self.tonic + 7) % 12], self.sig_tick - 5)
+        t5 = S.nearest([self.tonic], 72)
+        self.motif = [S.midi(m) if isinstance(m, str) else t5 + m for m in sig.get('motif', [0, 7, 14])]
+        step = float(sig.get('step', 0.5))
+        self.rhythm = [float(r) for r in sig['rhythm']] if 'rhythm' in sig else [k * step for k in range(len(self.motif))]
+        if len(self.rhythm) != len(self.motif):
+            raise ScoreError('signature.rhythm needs one beat offset per motif note')
+        self.motifs = []
+        for m in score.get('motifs', []):
+            notes = [S.midi(x) if isinstance(x, str) else t5 + x for x in m['notes']] if 'notes' in m else self.motif
+            rhythm = [float(r) for r in m['rhythm']] if 'rhythm' in m else (
+                self.rhythm if 'notes' not in m else [k * float(m.get('step', step)) for k in range(len(notes))])
+            self.motifs.append(dict(t=self.T(m['at']), gain=float(m.get('gain', 1.0)), notes=notes, rhythm=rhythm))
+        # silences: (t0, t1, depth, scope). A drop's silence stops the music dead (reverb
+        # included) while effects of on-screen motion ring on; a `silences` entry mutes everything.
+        self.silences = []
+        self.sucks = []  # (t0, t1, depth): the music ducks into a drop
+        for d in score.get('drops', []):
+            t = self.T(d['at'])
+            sil = self.span(d.get('silence', 0))
+            if sil > 0:
+                self.silences.append((t - sil, t, float(d.get('depth', 0.97)), 'music'))
+            suck = float(d.get('suck', 0.2))
+            if suck > 0:
+                self.sucks.append((t - max(suck, sil), t, float(d.get('suckDepth', 0.9))))
+        for s_ in score.get('silences', []):
+            self.silences.append((self.T(s_['from']), self.T(s_['to']), float(s_.get('depth', 0.97)), 'all'))
+        self.payoff = self.T(score['payoff']) if 'payoff' in score else None
+        mix = score.get('mix', {})
+        self.mix = dict(music=float(mix.get('music', 1.0)), sfx=float(mix.get('sfx', 1.0)),
+                        reverb=float(mix.get('reverb', 1.0)), sidechain=float(mix.get('sidechain', 0.55)),
+                        duck_db=float(mix.get('duck_db', 3.0)))
+        bed = score.get('bed')
+        self.bed = None
+        if bed:  # a supplied music track: it replaces nothing, it joins the music bus
+            bed = {'file': bed} if isinstance(bed, str) else bed
+            self.bed = dict(file=bed['file'], at=self.T(bed.get('at', 0)), gain_db=float(bed.get('gain_db', 0)))
+        mas = score.get('master', {})
+        self.lufs = float(mas.get('lufs', -14.0))
+        self.ceiling = float(mas.get('ceiling', 0.77))
+        self.fade = float(mas.get('fade', min(1.3, max(0.4, self.dur * 0.12))))
+
+    # time --------------------------------------------------------------------------------
+    def bar_t(self, bar, beat=0.0, sub=0.0):
+        return ((bar - 1) * 4 + beat + sub / 4) * self.beat
+
+    def T(self, x):
+        """frame number | "@cue" | "@cue+6" | "bar:beat:sub" string -> seconds"""
+        if isinstance(x, (int, float)):
+            return float(x) / self.fps
+        s = str(x).strip()
+        m = re.match(r'^@([A-Za-z_]\w*)\s*([+-]\s*\d+(\.\d+)?)?$', s)
+        if m:
+            if m.group(1) not in self.cues['cue']:
+                raise ScoreError(f'score.json refers to cue "{m.group(1)}", not in cues.json '
+                                 f'({", ".join(sorted(self.cues["cue"]))})')
+            return (self.cues['cue'][m.group(1)] + float((m.group(2) or '0').replace(' ', ''))) / self.fps
+        m = re.match(r'^(\d+)(?::(\d+(?:\.\d+)?))?(?::(\d+(?:\.\d+)?))?$', s)
+        if m:
+            return self.bar_t(int(m.group(1)), float(m.group(2) or 0), float(m.group(3) or 0))
+        raise ScoreError(f'cannot read time {x!r}: use a frame number, "@cue", "@cue+6" or "bar:beat:sub"')
+
+    def span(self, x):
+        """duration: frames (number) | "1/8" note value | "@cue" not allowed -> seconds"""
+        if isinstance(x, (int, float)):
+            return float(x) / self.fps
+        m = re.match(r'^(\d+)/(\d+)$', str(x).strip())
+        if m:
+            return 4 * self.beat * int(m.group(1)) / int(m.group(2))
+        raise ScoreError(f'cannot read duration {x!r}: frames or a note value such as "1/8"')
+
+    # chords --------------------------------------------------------------------------------
+    def _chords(self, chords):
+        if not chords:
+            raise ScoreError('score.json needs "chords": one chord symbol per bar')
+        if len(chords) > self.nbars:
+            self.warnings.append(f'{len(chords)} chords for {self.nbars} bars: extra chords ignored')
+        if len(chords) < self.nbars - 1:
+            self.warnings.append(f'{len(chords)} chords for {self.nbars} bars: the last chord holds')
+        segs = []
+        for b in range(1, self.nbars + 1):
+            entry = chords[min(b, len(chords)) - 1] if b <= len(chords) else '-'
+            parts = str(entry).split()
+            for k, sym in enumerate(parts):
+                t0 = self.bar_t(b) + k * self.barlen / len(parts)
+                if sym == '-':
+                    continue
+                ch = None if sym.upper() in ('N.C.', 'NC') else Chord(sym)
+                if segs and (segs[-1][2].name if segs[-1][2] else None) == (ch.name if ch else None):
+                    continue  # the same chord again just continues
+                segs.append([t0, None, ch])
+        for i, s_ in enumerate(segs):
+            s_[1] = segs[i + 1][0] if i + 1 < len(segs) else self.bar_t(self.nbars + 1) + 4
+        self.segs = [tuple(s_) for s_ in segs]
+
+    def chord_at(self, t):
+        for a, b, ch in self.segs:
+            if a <= t + 1e-6 < b:
+                return ch
+        return self.segs[-1][2]
+
+    def sub_root(self, t):
+        """the chord's root between E1 and Eb2 (41-78 Hz): snaps, booms and landings glide onto it"""
+        ch = self.chord_at(t)
+        pc = ch.root if ch else self.tonic
+        return S.mtof(28 + (pc - 28) % 12)
+
+    # sections --------------------------------------------------------------------------------
+    def _sections(self, sections):
+        self.sections = []
+        taken = set()
+        for s_ in sections:
+            b0, b1 = (s_['bars'] if isinstance(s_['bars'], list) else [s_['bars'], s_['bars']])
+            style = s_.get('style', 'groove')
+            if style not in STYLES:
+                raise ScoreError(f'unknown section style "{style}"; use one of {", ".join(STYLES)}')
+            if b0 < 1 or b1 < b0:
+                raise ScoreError(f'bad section bars {s_["bars"]}')
+            if b1 > self.nbars:
+                self.warnings.append(f'section {s_["bars"]} runs past the last bar ({self.nbars})')
+            for b in range(b0, b1 + 1):
+                if b in taken:
+                    raise ScoreError(f'bar {b} is in two sections')
+                taken.add(b)
+            st = dict(STYLES[style])
+            st.update(dict(style=style, b0=b0, b1=b1, level=float(s_.get('level', st['level'])),
+                           bright=float(s_.get('bright', 1.0)), clock=bool(s_.get('clock', False)),
+                           hats=bool(s_.get('hats', True)), layers=s_.get('layers', {})))
+            if 'drums' in s_:
+                st['drums'] = s_['drums']
+            for k, v in st['layers'].items():
+                if k not in ('pad', 'bass', 'arp', 'drone', 'drums', 'bells'):
+                    raise ScoreError(f'unknown layer "{k}" in section {s_["bars"]}')
+            self.sections.append(st)
+        self.sections.sort(key=lambda s_: s_['b0'])
+
+    def section_at(self, t):
+        bar = int(t // self.barlen) + 1
+        for s_ in self.sections:
+            if s_['b0'] <= bar <= s_['b1']:
+                return s_
+        return None
+
+    def silence_start_in(self, a, b):
+        starts = [s0 for s0, s1, _, _ in self.silences if a <= s0 < b]
+        return min(starts) if starts else None
+
+
+# ------------------------------------------------------------------------------------------
+# music
+# ------------------------------------------------------------------------------------------
+def layer(sec, name):
+    """a layer's gain in a section: the style's default times the section's `layers` override"""
+    base = sec[name] if name in ('pad', 'bass', 'arp', 'drone') else 1.0
+    return float(base) * float(sec['layers'].get(name, 1.0))
+
+
+def build_music(song, n, events):
+    drums, bass, pad, arp, bells = (np.zeros((n, 2)) for _ in range(5))
+    kicks = []
+    beat, barlen = song.beat, song.barlen
+    ev_t = [(e['f'] / song.fps, e['kind']) for e in events]
+    owned = [t for t, k in ev_t if k in ('tick', 'tock', 'key', 'click')]
+    big = [t for t, k in ev_t if k in ('drop', 'hit', 'snap')]
+    booms = [t for t, k in ev_t if k in ('drop', 'hit')]
+
+    def free(t, tol=1.6):
+        return all(abs(t - o) > tol / song.fps for o in owned)
+
+    tonic_kick = S.mtof(28 + (song.tonic - 28) % 12)  # the kick settles on the tonic (E1..Eb2): in key under every chord
+
+    def K(t, g=1.0, hard=1.0):
+        if not in_silence(song, t):
+            S.place(drums, S.kick(tonic_kick, 0.9, hard), t, g)
+            kicks.append((t, g))
+
+    # ---- pads ------------------------------------------------------------------------------
+    notes = []
+    for sec in song.sections:
+        if layer(sec, 'pad') <= 0:
+            continue
+        s0, s1 = song.bar_t(sec['b0']), song.bar_t(sec['b1'] + 1)
+        for a, b, ch in song.segs:
+            a2, b2 = max(a, s0), min(b, s1)
+            if a2 >= b2 - 1e-6 or ch is None:
+                continue
+            cuts = [a2] + ([] if sec['ring'] else [song.bar_t(k) for k in range(sec['b0'], sec['b1'] + 2) if a2 < song.bar_t(k) < b2]) + [b2]
+            for x0, x1 in zip(cuts[:-1], cuts[1:]):
+                notes.append((x0, x1, ch, sec))
+    notes.sort(key=lambda z: z[0])
+    prev = None
+    for i, (a, b, ch, sec) in enumerate(notes):
+        v = voice_lead(ch, prev)
+        prev = v
+        release = 0.9
+        after = song.section_at(b + 1e-3)
+        if sec['style'] == 'resolve' or after is None or after['style'] in ('hold', 'tail'):
+            release = 2.2  # the last chord rings out
+        end = b + release
+        nxt = song.chord_at(b + 1e-3)
+        if ch.root == (song.tonic + 7) % 12 and nxt is not None and nxt.root == song.tonic and b < song.dur - 0.5:
+            end, release = b + 0.08, 0.3  # the V chord is gone by the downbeat it resolves into
+        sil = song.silence_start_in(a, end)
+        if sil is not None:
+            end, release = sil, min(0.6, max(0.05, (sil - a) * 0.5))
+        u = (a - song.bar_t(sec['b0'])) / max(1e-6, song.bar_t(sec['b1'] + 1) - song.bar_t(sec['b0']))
+        cut = (sec['cut'][0] + (sec['cut'][1] - sec['cut'][0]) * u) * sec['bright']
+        attack = 0.02 if any(abs(a - t) < 0.03 for t in big) else sec['attack']
+        d = max(0.05, end - a)
+        gain = 0.34 * layer(sec, 'pad') / len(v) * 2.2
+        for k, m in enumerate(v):
+            x = S.supersaw(S.mtof(m), d, 5, 0.11, cut, min(attack, d * 0.5), min(release, d * 0.9), seed=1000 + 17 * k + i)
+            S.place(pad, x, a, gain)
+    pad = S.filt(pad, S.hp(170, 2))
+    # intro drone: tonic + fifth, swelling, stopping dead where the section (or a silence) ends
+    for sec in song.sections:
+        if layer(sec, 'drone') <= 0:
+            continue
+        a, b = song.bar_t(sec['b0']), song.bar_t(sec['b1'] + 1)
+        sil = song.silence_start_in(a, b)
+        b = sil if sil is not None else b
+        root = S.mtof(28 + (song.tonic - 28) % 12)
+        S.place(pad, S.drone([root, root * 1.5], b - a), a, 0.16 * layer(sec, 'drone'))
+
+    # ---- drums, bass, arp per bar -----------------------------------------------------------
+    for sec in song.sections:
+        dg, bg, ag = layer(sec, 'drums'), layer(sec, 'bass'), layer(sec, 'arp')
+        nb = sec['b1'] - sec['b0'] + 1
+        for bar in range(sec['b0'], sec['b1'] + 1):
+            s = song.bar_t(bar)
+            if s >= song.dur:
+                break
+            u = (bar - sec['b0']) / max(1, nb - 1)
+            typing = sum(1 for t, k in ev_t if k == 'key' and s <= t < s + barlen) >= 4
+            hats = sec['hats']
+            pat = sec['drums']
+
+            def H(t, g, d=0.08, tau=0.012, bright=7500, pan=0.25):
+                if hats and free(t) and not song.silence_start_in(t - 0.01, t + 0.01) and not in_silence(song, t):
+                    S.place(drums, S.hat(d, tau, bright), t, g * dg * (0.5 if typing else 1.0), pan)
+
+            if pat == 'build':
+                K(s, 0.6 * dg, 0.8)
+                for k in range(8):
+                    H(s + k * beat / 2, (0.04 + 0.05 * u) * (1.4 if k % 2 else 0.8), 0.06, 0.01, 9000, -0.2 + 0.4 * (k % 2))
+            elif pat == 'groove':
+                K(s, 1.0 * dg)
+                K(s + 1.75 * beat, 0.55 * dg)
+                K(s + 2 * beat, 0.85 * dg)
+                S.place(drums, S.clap(), s + 2 * beat, 0.42 * dg)
+                for k in range(8):
+                    if not typing or k % 2 == 0:
+                        H(s + k * beat / 2, 0.10 if k % 2 else 0.05)
+            elif pat == 'drive':
+                for q in range(4):
+                    K(s + q * beat, (1.0 if q == 0 else 0.85) * dg)
+                    H(s + q * beat + beat / 2, 0.16, 0.25, 0.07, 6500, 0.2)
+                S.place(drums, S.clap(), s + beat, 0.40 * dg)
+                S.place(drums, S.clap(), s + 3 * beat, 0.44 * dg)
+                if not typing:
+                    for k in range(1, 16, 2):
+                        H(s + k * beat / 4, 0.06, 0.05, 0.01, 9500, -0.3)
+            elif pat == 'clock':
+                for k in range(8):
+                    t = s + k * beat / 2
+                    if free(t, 2.5):
+                        m = song.sig_tick if k % 2 == 0 else song.sig_tock
+                        S.place(drums, S.tick(S.mtof(m), 0.05, 0.005, 0.5), t, (0.10 + 0.03 * u) * dg, -0.15 if k % 2 else 0.15)
+            elif pat == 'one' and bar == sec['b0'] and not any(abs(s - t) < 2 / song.fps for t in booms):
+                K(s, 1.0 * dg, 1.1)  # a drop or hit on this downbeat already carries the weight
+            if sec['clock']:
+                for q in range(4):
+                    t = s + q * beat
+                    if free(t, 2.5) and not in_silence(song, t):
+                        m = song.sig_tick if q % 2 == 0 else song.sig_tock
+                        S.place(drums, S.tick(S.mtof(m), 0.06, 0.006, 0.6), t, 0.06 + 0.01 * (q % 2 == 0), 0.15 if q % 2 else -0.15)
+
+            # bass
+            if bg > 0:
+                def B(t, d, g, oct_=0, drive=1.3, h2=0.22):
+                    ch = song.chord_at(t)
+                    if ch is None or in_silence(song, t):
+                        return
+                    m = S.nearest([ch.bass], 35) + oct_
+                    sil = song.silence_start_in(t, t + d)
+                    d = (sil - t) if sil is not None else d
+                    if d > 0.03:
+                        S.place(bass, S.bass(S.mtof(m), d, drive, h2), t, g * bg)
+                st = sec['style']
+                if st == 'drive':
+                    for k in range(8):
+                        B(s + k * beat / 2, beat / 2 * 0.95, 0.40, 12 if k in (3, 7) else 0, 1.3, 0.35)
+                elif st == 'groove':
+                    B(s, beat * 1.5, 0.36)
+                    B(s + 1.75 * beat, beat * 0.45, 0.26)
+                    B(s + 2 * beat, beat * 1.9, 0.34)
+                elif st in ('build', 'breakdown'):
+                    for a, b, ch in song.segs:
+                        a2, b2 = max(a, s), min(b, s + barlen)
+                        if a2 < b2 - 1e-6 and ch is not None:
+                            B(a2, (b2 - a2) * 0.98, 0.22, 0, 1.1)
+                elif st == 'resolve' and bar == sec['b0']:
+                    s0, s1 = song.bar_t(sec['b0']), song.bar_t(sec['b1'] + 1)
+                    segs_ = [(max(a, s0), min(b, s1), ch) for a, b, ch in song.segs if ch is not None and min(b, s1) > max(a, s0) + 1e-6]
+                    for j, (a2, b2, ch) in enumerate(segs_):
+                        d = (b2 - a2) if j < len(segs_) - 1 else max(b2 - a2, min(1.6 * barlen, song.dur - a2))
+                        x = S.bass(S.mtof(S.nearest([ch.bass], 35)), max(0.1, d), 1.2)
+                        k = min(len(x), S.ns(0.4))
+                        x[-k:] *= np.linspace(1, 0, k)
+                        S.place(bass, x, a2 + (0.06 if j == 0 else 0), 0.3 * bg)  # lets the kick or boom land first
+
+            # pluck arp
+            if ag > 0:
+                st = sec['style']
+                step = 1 if st == 'drive' else 2
+                gain = {'build': 0.06 + 0.04 * u, 'groove': 0.08, 'drive': 0.13, 'breakdown': 0.06}.get(st, 0.06) * ag
+                if typing:
+                    gain *= 0.6
+                for k in range(0, 16, step):
+                    t = s + k * beat / 4
+                    ch = song.chord_at(t)
+                    if ch is None or in_silence(song, t) or song.silence_start_in(t, t + 0.12):
+                        continue
+                    tones = arp_tones(ch)
+                    m = tones[ARP_PATTERN[k] % len(tones)] + (12 if st == 'drive' and k in (6, 14) else 0)
+                    S.place(arp, S.pluck(S.mtof(m), 0.45, 4200 if st == 'drive' else 3000), t,
+                            gain * (1.0 if k % 4 == 0 else 0.75), -0.35 if k % 2 else 0.35)
+    arp = S.pingpong(arp, beat * 0.75, fb=0.32, mix=0.28)
+
+    # ---- bells: a chord on each resolve, the signature motif where score.json places it ------
+    for sec in song.sections:
+        t = song.bar_t(sec['b0'])
+        if sec['style'] == 'resolve' and layer(sec, 'bells') > 0 and not any(abs(mo['t'] - t) < 0.1 for mo in song.motifs):
+            ch = song.chord_at(t + 1e-3)
+            if ch is not None:  # a strummed chord of bells on the resolution (the motif replaces it)
+                tones = [S.nearest([ch.root], 56)] + stack(ch.pcs, 68, 3)
+                for k, m in enumerate(tones):
+                    S.place(bells, S.fm_bell(S.mtof(m), 4.5, 2.0, 3.5, 1.8), t + 0.02 * k, (0.10 - 0.015 * k) * layer(sec, 'bells'))
+    for mo in song.motifs:
+        for k, (m, r) in enumerate(zip(mo['notes'], mo['rhythm'])):
+            S.place(bells, S.fm_bell(S.mtof(m), 3.0, 1.4, 3.5, 1.3), mo['t'] + r * beat,
+                    (0.10 - 0.015 * k) * mo['gain'], 0.12 * (k % 2 * 2 - 1))
+    return dict(drums=drums, bass=bass, pad=pad, arp=arp, bells=bells), kicks
+
+
+def in_silence(song, t, scope=None):
+    return any(a <= t < b for a, b, _, sc in song.silences if scope is None or sc == scope)
+
+
+# ------------------------------------------------------------------------------------------
+# sound effects from events
+# ------------------------------------------------------------------------------------------
+def balance(x, pan):
+    if not pan:
+        return x
+    a = (float(np.clip(pan, -1, 1)) + 1) * np.pi / 4
+    return x * np.array([np.cos(a), np.sin(a)]) * np.sqrt(2)
+
+
+def build_sfx(song, n, events):
+    fx, hall = np.zeros((n, 2)), np.zeros((n, 2))
+    placed, skipped, ducks = [], [], []
+    fps, beat = song.fps, song.beat
+    last_key, last_heavy = -1e9, None
+    pop_run, last_pop, lights = 0, -1e9, {}
+    for i, e in enumerate(events):
+        kind, f = e['kind'], float(e['f'])
+        t = f / fps
+        w = float(e.get('weight', 1.0))
+        pan = float(e.get('pan', 0.0))
+        seed = 7919 * i + int(f * 10)
+        ch = song.chord_at(t + 1e-3)
+        pcs = ch.pcs if ch else song.scale
+        pitch = S.midi(e['pitch']) if 'pitch' in e else None
+        dur = float(e['dur']) / fps if 'dur' in e else None
+        g = BASE.get(kind, 0) * w
+        start = t
+        x = None
+        m = None  # the MIDI note the sound is tuned to, for the report
+        if kind not in BASE:
+            skipped.append(dict(i=i, f=f, kind=kind, why='unknown kind'))
+            continue
+        if in_silence(song, t, 'all') and kind != 'suck':
+            song.warnings.append(f'{kind} at f={f} falls inside a silence and is muted')
+        if kind == 'tick':
+            m = pitch or song.sig_tick
+            x = S.tick(S.mtof(m), 0.08, 0.008, 0.8, seed)
+        elif kind == 'tock':
+            m = pitch or song.sig_tock
+            x = S.tick(S.mtof(m), 0.08, 0.009, 0.8, seed) * 0.95 + S.tock(S.mtof(m) / 4, 0.08, 0.02, 0.05, seed) * 0.2
+        elif kind == 'hit':
+            r = song.sub_root(t)
+            m = S.ftom(r)
+            x = S.sub_boom(r * 2, r, 0.1, 1.6, seed)
+            x = S.layer_in(x, S.clap(seed=seed), 0.6)
+            x = S.layer_in(x, S.filt(S.noise(0.5, seed + 1), S.bp(200, 3000)) * S.expdec(0.5, 0.1), 0.35)
+            S.place(hall, S.filt(x, S.hp(250)), t, g * 0.4, pan)
+            ducks.append((t, w))
+        elif kind == 'land':
+            heavy = w >= 0.6 and e.get('variant') != 'light'
+            if heavy:
+                if last_heavy is not None and abs(f - last_heavy) < 1:
+                    skipped.append(dict(i=i, f=f, kind=kind, why='second heavy landing on one frame'))
+                    continue
+                last_heavy = f
+                r = song.sub_root(t)
+                m = S.ftom(r)
+                knock = S.tock(650 + 150 * S.rng(seed).random(), 0.2, 0.05, 1.0, seed)
+                x = S.layer_in(S.sub_boom(r * 2, r, 0.08, 1.0, seed) * 0.55, knock)
+                ducks.append((t, w * 0.6))
+            else:
+                key = id(ch)
+                k = lights.get(key, 0)
+                lights[key] = k + 1
+                ladder = stack(pcs, 84, 4)
+                m = pitch or ladder[k % len(ladder)]
+                x = S.tock(S.mtof(m), 0.12, 0.028, 0.35, seed)
+                g = BASE['land_light'] * min(2.0, w / 0.5)  # a light landing's reference weight is 0.5
+        elif kind == 'pop':
+            pop_run = pop_run + 1 if t - last_pop < 1.0 else 0  # a run of pops climbs the pentatonic
+            last_pop = t
+            ladder = [m for m in range(74, 92) if m % 12 in song.penta]
+            target = S.nearest([p for p in song.penta if p in pcs] or song.penta, 79)
+            base = int(np.argmin([abs(m - target) for m in ladder]))
+            m = pitch or ladder[min(len(ladder) - 1, base + pop_run)]
+            x = S.blip(S.mtof(m), e.get('variant') != 'down')
+        elif kind == 'whoosh':
+            d = float(np.clip(dur or (0.45 + 0.35 * w), 0.15, 3.0))
+            apex = float(e.get('apexFrac', 0.5))
+            x = S.whoosh(d, 120, 500 + 250 * min(w, 1.6), 220, apex, pan, 0.025, seed)  # dull: centroid ~550 Hz
+            start = t - apex * d
+            pan = 0.0
+        elif kind == 'suck':
+            d = dur or 0.35
+            apex = float(e.get('apexFrac', 0.85))
+            x = S.whoosh(d, 6000, 900, 200, apex, 0.0, 0.1, seed)  # synth.suck() with a movable apex
+            start = t - apex * d
+        elif kind == 'riser':
+            d = dur or song.barlen
+            m = pitch or S.nearest([ch.root if ch else song.tonic], 67)
+            x = S.riser(d, 220, 7000, S.mtof(m), seed)
+            start = t - d
+        elif kind == 'drop':
+            r = song.sub_root(t)
+            m = S.ftom(r)
+            x = S.stereo(S.sub_boom(r * 2, r, 0.12, 2.4, seed, tau=0.75))
+            x = S.layer_in(x, S.whoosh(0.4, 3000, 400, 150, 0.1, 0.0, 0.05, seed + 3), 0.4)  # falling air
+            S.place(hall, S.filt(x, S.hp(250)), t, g * 0.3, pan)
+            ducks.append((t, w))
+        elif kind == 'key':
+            if f - last_key < 2:
+                skipped.append(dict(i=i, f=f, kind=kind, why='under 2 f after the previous key (thinned)'))
+                continue
+            last_key = f
+            var = e.get('variant', '')
+            rr = S.rng(seed)
+            pv = 1 + (rr.random() - 0.5) * 0.12
+            if var == 'space':
+                x = S.thock(700 * pv, seed)
+            else:
+                x = S.key_click(i, pv)
+                g *= 1.7 if var == 'word' else 1.0
+            pan = float(np.clip(pan + ((i * 37) % 11 - 5) / 40, -1, 1))
+        elif kind == 'click':
+            m = pitch or S.nearest(song.penta, 94)
+            x = S.ui_click(S.mtof(m), 0.25, seed)
+        elif kind == 'snap':
+            m = S.ftom(song.sub_root(t))
+            x = S.snap(S.mtof(m), 0.6, 1.0, seed)
+            ducks.append((t, w * 0.7))
+        elif kind == 'swell':
+            d = dur or beat
+            notes = stack(pcs, 60, 3) if not pitch else [pitch]
+            m = notes[0]
+            x = S.swell([S.mtof(q) for q in notes], d, seed)
+            start = t - d
+        elif kind == 'bell':
+            if e.get('variant') == 'motif':
+                for k, (m, r) in enumerate(zip(song.motif, song.rhythm)):
+                    y = S.fm_bell(S.mtof(m), 3.0, 1.4, 3.5, 1.3)
+                    S.place(fx, y, t + r * beat, g * (1.2 - 0.15 * k) * 1.25, pan)
+                    placed.append(dict(i=i, f=f, kind=kind, t=t, x=y, g=g, pan=pan))
+                continue
+            m = pitch or S.nearest(pcs, 80)
+            x = S.fm_bell(S.mtof(m), 2.5, 1.6, 3.5, 1.0)
+        if x is None:
+            continue
+        if x.ndim == 2 and pan:
+            x = balance(x, pan)
+            pan = 0.0
+        S.place(fx, x, start, g, pan)
+        placed.append(dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m))
+    return fx, hall, placed, skipped, ducks
+
+
+# ------------------------------------------------------------------------------------------
+# mix
+# ------------------------------------------------------------------------------------------
+def smooth_env(points, n, tau=0.02):
+    t = np.arange(n) / SR
+    ts, gs = zip(*sorted(points))
+    g = np.interp(t, ts, gs)
+    return S.filt(g, S.lp(1 / (2 * np.pi * tau), 1))
+
+
+OCTAVES = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+A_WEIGHT_DB = [-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1]
+
+
+def band_snr(evt, bus):
+    """How far an effect stands above the music in its own band: per octave band, event energy
+    over music energy; the result is the best band among those holding >= 15% of the event's
+    A-weighted energy (a landing is heard by its knock, not its sub). Returns (band_hz, snr_db)."""
+    if len(evt) < 256:
+        return None
+    w = np.hanning(len(evt))
+    A = np.abs(np.fft.rfft(evt.mean(axis=1) * w)) ** 2
+    B = np.abs(np.fft.rfft(bus.mean(axis=1) * w)) ** 2
+    fr = np.fft.rfftfreq(len(evt), 1 / SR)
+    bands = [(fr >= c / np.sqrt(2)) & (fr < c * np.sqrt(2)) for c in OCTAVES]
+    heard = np.array([A[b].sum() * 10 ** (wd / 10) for b, wd in zip(bands, A_WEIGHT_DB)])
+    tot = heard.sum() + 1e-20
+    best = None
+    for c, band, h in zip(OCTAVES, bands, heard):
+        ea = A[band].sum()
+        if h / tot < 0.15:
+            continue
+        snr = 10 * np.log10((ea + 1e-20) / (B[band].sum() + 1e-20))
+        if best is None or snr > best[1]:
+            best = (c, snr)
+    return best
+
+
+def load_bed(song, n, base_dir):
+    """The supplied track (score.json "bed"), resampled to 48 kHz stereo and placed at its time."""
+    import soundfile as sf
+    from math import gcd
+    tries = [song.bed['file'], os.path.join(base_dir, song.bed['file'])]
+    path = next((p for p in tries if os.path.exists(p)), None)
+    if path is None:
+        raise ScoreError(f'bed file not found: {song.bed["file"]} (looked in the working directory and next to score.json)')
+    x, sr = sf.read(path, always_2d=True, dtype='float64')
+    x = np.repeat(x, 2, axis=1) if x.shape[1] == 1 else x[:, :2]
+    if sr != SR:
+        from scipy import signal
+        g = gcd(SR, sr)
+        x = signal.resample_poly(x, SR // g, sr // g, axis=0)
+    out = np.zeros((n, 2))
+    S.place(out, x, song.bed['at'], 10 ** (song.bed['gain_db'] / 20), tail=0.05)
+    return out
+
+
+def render(song, events, stems_dir=None, base_dir='.'):
+    n_out = int(round(song.dur * SR))
+    n = n_out + 4 * SR
+    stems, kicks = build_music(song, n, events)
+    if song.bed:
+        stems['bed'] = load_bed(song, n, base_dir)
+    fx, hall, placed, skipped, ducks = build_sfx(song, n, events)
+    t = np.arange(n) / SR
+
+    sc = M.sidechain_times(kicks + [(tt_, 0.8 * w) for tt_, w in ducks], n, song.mix['sidechain'], 0.14)
+    send = S.filt(stems['pad'] * 0.25 + stems['arp'] * 0.35 + stems['bells'] * 0.6 + stems['drums'] * 0.06, S.hp(250, 2))
+    parts = dict(drums=stems['drums'] * 0.8, bass=stems['bass'] * sc * 0.55, pad=stems['pad'] * (0.55 + 0.45 * sc) * 1.6,
+                 arp=stems['arp'] * (0.7 + 0.3 * sc) * 1.7, bells=stems['bells'] * 1.5,
+                 reverb=S.reverb(send, 'hall') * 0.6 * song.mix['reverb'])
+    if 'bed' in stems:
+        parts['bed'] = stems['bed']
+    music = sum(parts.values())
+
+    # music bus: section levels, a 3 dB dip for 150 ms around key hits, the suck before drops
+    pts = [(0.0, 1.0)]
+    for sec in song.sections:
+        a, b = song.bar_t(sec['b0']), song.bar_t(sec['b1'] + 1)
+        pts += [(a + 1e-3, sec['level']), (b - 1e-3, sec['level'])]
+    pts.append((n / SR, pts[-1][1]))
+    bus = smooth_env(pts, n, 0.03)
+    dip = 1 - 10 ** (-song.mix['duck_db'] / 20)
+    for tt_, w in ducks:
+        seg = (t >= tt_ - 0.01) & (t < tt_ + 0.4)
+        u = t[seg] - tt_
+        shape = np.where(u < 0, (u + 0.01) / 0.01, np.where(u < 0.15, 1.0, np.exp(-(u - 0.15) / 0.08)))
+        bus[seg] *= 1 - dip * min(1.0, w) * shape
+    for a, b, depth in song.sucks:
+        w_ = (t > a) & (t < b)
+        bus[w_] = np.minimum(bus[w_], 1 - depth * np.clip((t[w_] - a) / 0.04, 0, 1))
+    fade = np.clip((song.dur - 0.03 - t) / song.fade, 0, 1) ** 2
+    music_gain = bus * fade * song.mix['music']
+    music_bus = music * music_gain[:, None]
+
+    fx_low = S.filt(fx, S.lp(90, 2))
+    fx_dry = S.filt(fx - fx_low * 0.45, S.hp(24, 2)) * 1.25 * song.mix['sfx']
+    fxs = S.filt(fx, S.hp(250, 2))
+    fx_wet = (S.reverb(fxs * 0.18, 'room') + S.reverb(fxs * 0.08 + hall, 'hall')) * song.mix['sfx']
+
+    hold = {'all': np.ones(n), 'music': np.ones(n)}
+    for a, b, depth, scope in song.silences:
+        w_ = (t > a - 0.04) & (t < b)
+        h = hold[scope]
+        h[w_] = np.minimum(h[w_], 1 - depth * np.clip((t[w_] - (a - 0.04)) / 0.04, 0, 1))
+    music_gain *= hold['music'] * hold['all']
+    music_bus *= hold['music'][:, None]
+    mix = (music_bus + fx_dry + fx_wet) * hold['all'][:, None]
+    mix = mix[:n_out]
+
+    y, info = M.finish(mix, song.lufs, song.ceiling, fade=0)
+
+    # report: masking per event, payoff dynamics
+    mb = (music_bus * hold['all'][:, None])[:n_out]
+    masked = []
+    for p in placed:
+        if p['kind'] in ('key', 'drop') or 'start' not in p:
+            continue  # typing is judged as a texture; a drop IS the music's downbeat
+        x = S.stereo(p['x']) * p['g'] * 1.25 * song.mix['sfx']
+        k = p['kind']
+        if k in ('whoosh', 'suck'):
+            i0, i1 = int((p['t'] - 0.06) * SR), int((p['t'] + 0.06) * SR)
+        elif k in ('riser', 'swell'):
+            i0, i1 = int((p['t'] - 0.15) * SR), int(p['t'] * SR)
+        else:  # clicks are heard in their first 20 ms, knocks in 30 ms, booms over 60 ms
+            win = 0.06 if k in ('hit', 'drop') else 0.03 if k in ('snap', 'land', 'bell') else 0.02
+            i0, i1 = int(p['t'] * SR), int((p['t'] + win) * SR)
+        i0, i1 = max(0, i0), min(n_out, i1)
+        seg, s0 = np.zeros((max(0, i1 - i0), 2)), int(round(p['start'] * SR))
+        lo, hi = max(i0, s0), min(i1, s0 + len(x))
+        if hi > lo:
+            seg[lo - i0:hi - i0] = x[lo - s0:hi - s0]
+        r = band_snr(seg, mb[i0:i1])
+        if r is not None:
+            p['snr'] = (r[0], round(r[1], 1))
+            if r[1] < 6:
+                masked.append(dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), band_hz=r[0], snr_db=round(r[1], 1)))
+    if stems_dir:
+        import soundfile as sf
+        os.makedirs(stems_dir, exist_ok=True)
+        # stems sum exactly to the pre-master mix: each music part carries the bus automation
+        for k, v in parts.items():
+            sf.write(os.path.join(stems_dir, f'{k}.wav'), (v * music_gain[:, None])[:n_out].astype(np.float32), SR)
+        sf.write(os.path.join(stems_dir, 'sfx.wav'), ((fx_dry + fx_wet) * hold['all'][:, None])[:n_out].astype(np.float32), SR)
+        stale = os.path.join(stems_dir, 'music.wav')
+        if os.path.exists(stale):
+            os.remove(stale)  # an older layout; it would double-count in tools that sum the stems
+    def fits(p):  # in the key, or a tone of the chord sounding at that moment (a V7's leading tone)
+        ch = song.chord_at(p['t'] + 1e-3)
+        pc = int(round(p['midi'])) % 12
+        return pc in song.scale or (ch is not None and pc in ch.pcs)
+
+    tuned = [dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), note=note_name(p['midi']), in_key=fits(p))
+             for p in placed if p.get('midi') is not None]
+    return y, info, dict(placed=placed, skipped=skipped, masked=masked, tuned=tuned)
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description='Render the soundtrack from score.json + cues.json, mixed and mastered.')
+    ap.add_argument('--cues', default='out/cues.json')
+    ap.add_argument('--score', default='audio/score.json')
+    ap.add_argument('--out', default='public/audio/soundtrack.wav')
+    ap.add_argument('--stems', metavar='DIR', help='also write stems here; they sum to the pre-master mix')
+    ap.add_argument('--json', metavar='PATH', help='write the report JSON here')
+    ap.add_argument('--lufs', type=float, help='override master.lufs from score.json')
+    ap.add_argument('--ceiling', type=float, help='override master.ceiling (linear)')
+    ap.add_argument('--max-tp', type=float, default=-1.5, help='gate: max true peak dBTP (default -1.5)')
+    ap.add_argument('--tol', type=float, default=0.5, help='gate: LUFS tolerance (default 0.5)')
+    ap.add_argument('--quiet', action='store_true')
+    a = ap.parse_args(argv)
+    try:
+        cues = json.load(open(a.cues))
+        score = json.load(open(a.score))
+        song = Song(score, cues)
+        if a.lufs is not None:
+            song.lufs = a.lufs
+        if a.ceiling is not None:
+            song.ceiling = a.ceiling
+        events = sorted(cues.get('events', []), key=lambda e: e['f'])
+        y, info, ev = render(song, events, a.stems, os.path.dirname(os.path.abspath(a.score)))
+        import soundfile as sf
+        os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
+        sf.write(a.out, y.astype(np.float32), SR, subtype='PCM_24')
+    except (ScoreError, KeyError, ValueError, FileNotFoundError, json.JSONDecodeError) as e:
+        print(f'score.py: {type(e).__name__}: {e}', file=sys.stderr)
+        return 1
+
+    rep = M.measure(y)
+    lim = info['limiter_gr_db']
+    rep['limiter_max_gr_db'] = round(float(lim.max()), 2)
+    hot, i = [], 0
+    step = int(0.25 * SR)
+    for i in range(0, len(lim), step):
+        v = float(lim[i:i + step].max())
+        if v > 1.5:
+            hot.append(dict(t=round((i + int(np.argmax(lim[i:i + step]))) / SR, 3), gr_db=round(v, 2)))
+    rep['limiter_hot'] = hot
+    if hot:
+        song.warnings.append('limiter over 1.5 dB at ' + ', '.join(f"{h['t']}s ({h['gr_db']} dB)" for h in hot[:6])
+                             + ': lower the effect or music that peaks there')
+    if song.payoff is not None:
+        tm, mom = M.blocks(y, 0.4, 0.1)
+        win = (tm >= song.payoff - 0.2) & (tm <= song.payoff + 1.0)
+        i0, i1 = int(song.payoff * SR), int((song.payoff + 1.0) * SR)
+        rep['payoff'] = dict(t=round(song.payoff, 3), momentary_max=round(float(mom[win].max()), 2) if win.any() else None,
+                             limiter_gr_db=round(float(lim[i0:i1].max()), 2) if i1 > i0 else None)
+        if win.any() and mom[win].max() < rep['momentary_max'] - 0.5:
+            song.warnings.append(f'the payoff ({song.payoff:.2f}s) is not the loudest moment: '
+                                 f'{mom[win].max():.1f} vs {rep["momentary_max"]} LUFS-M at {rep["momentary_max_t"]}s')
+        if rep['payoff']['limiter_gr_db'] and rep['payoff']['limiter_gr_db'] > 1.5:
+            song.warnings.append(f'limiter takes {rep["payoff"]["limiter_gr_db"]} dB off the payoff (keep it under 1.5)')
+    off = [x for x in ev['tuned'] if not x['in_key']]
+    if off:
+        song.warnings.append('out of key: ' + ', '.join(f"{x['kind']} {x['note']} at f={x['f']}" for x in off))
+    by = {}
+    for e in events:
+        by[e['kind']] = by.get(e['kind'], 0) + 1
+    fails = M.gate(rep, song.lufs, a.tol, a.max_tp)
+    rep.update(out=a.out, bpm=song.bpm, key=f'{S_note(song.tonic)} {song.mode}', bars=song.nbars,
+               events=dict(count=len(events), by_kind=by, skipped=ev['skipped'], masked=ev['masked'], tuned=ev['tuned']),
+               chords=[dict(t=round(a_, 3), chord=c.name if c else 'N.C.') for a_, _, c in song.segs if a_ < song.dur],
+               warnings=song.warnings, fails=fails)
+    rep['pass'] = not fails
+    if a.json:
+        os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
+        json.dump(rep, open(a.json, 'w'), indent=1)
+    if not a.quiet:
+        print(f"{'PASS' if not fails else 'FAIL'}  {a.out}  {rep['seconds']}s  {rep['lufs']} LUFS  TP {rep['true_peak_db']} dBTP  "
+              f"LRA {rep['lra']} LU  loudest {rep['momentary_max']} LUFS-M at {rep['momentary_max_t']}s  "
+              f"events {len(events)} ({len(ev['skipped'])} skipped, {len(ev['masked'])} masked)")
+        for w in song.warnings:
+            print('  warning:', w)
+        for m in ev['masked']:
+            print(f"  masked: {m['kind']} {m['id']} at f={m['f']}: {m['snr_db']} dB over the music in its best band ({m['band_hz']} Hz)")
+        for f_ in fails:
+            print('  FAIL:', f_)
+    return 0 if not fails else 1
+
+
+NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
+
+
+def S_note(pc):
+    return NAMES[pc]
+
+
+def note_name(m):
+    k = int(round(m))
+    return NAMES[k % 12] + str(k // 12 - 1)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
