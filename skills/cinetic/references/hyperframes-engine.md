@@ -105,8 +105,9 @@ A single-file film works (the starter is one), but lint then warns `nested_struc
 <!doctype html><html><head><meta charset="UTF-8" /></head><body>
 <template>
   <style>
-    @font-face { font-family: "Geist"; src: url("fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; }
-    #root { position: absolute; inset: 0; font-family: "Geist", sans-serif; }
+    /* the brand's family (brand-and-color.md §2), copied into fonts/ by setup.mjs */
+    @font-face { font-family: "Instrument Sans"; src: url("fonts/instrument-sans-latin-wght-normal.woff2") format("woff2"); font-weight: 400 700; }
+    #root { position: absolute; inset: 0; font-family: "Instrument Sans", sans-serif; }
     #act2-title { /* prefix ids with the act */ }
   </style>
   <div id="root" data-composition-id="act2" data-width="1920" data-height="1080">…</div>

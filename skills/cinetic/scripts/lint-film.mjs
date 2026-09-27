@@ -20,8 +20,9 @@
  *   remote-font       font packages or stylesheets fetched over the network (ship local variable fonts)
  *   hf-*              HyperFrames: gsap .from(), repeat: -1, <br>, <audio> without id
  *   placeholder       a `cinetic:placeholder` marker is still in the source: the starter's stand-in
- *                     palette, mark or name was never replaced (error; the film would look like every
- *                     other starter film). Invent the brand or apply the user's, then delete the marker.
+ *                     palette, typeface, mark or name was never replaced (error; the film would look
+ *                     like every other starter film). Invent the brand or apply the user's, choose the
+ *                     family on purpose, then delete the marker. Markers in HTML/CSS comments count.
  *
  * Palette: hex colours must appear in the tokens file (Remotion: src/brand/tokens.ts). In a
  * HyperFrames project with no tokens file, the custom properties in the HTML's `:root { }` blocks
@@ -453,7 +454,7 @@ for (const file of files) {
       m.index,
       'placeholder',
       'error',
-      "the starter's stand-in brand is still here: invent the film's brand (or apply the user's) per references/brand-and-color.md - palette, mark and name - then delete this marker",
+      "the starter's stand-in brand is still here: choose this film's palette, typeface, mark and name (or apply the user's brand) per references/brand-and-color.md, then delete this marker",
     );
 
   // --- HyperFrames

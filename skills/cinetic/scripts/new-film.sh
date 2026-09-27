@@ -15,8 +15,9 @@
 #   --size         WxH, e.g. 1920x1080, 1080x1920 (9:16), 1080x1080. The demo lays out from the short side.
 #   --engine       remotion (default): sets FPS/BPM/W/H in src/timeline.ts. hyperframes: sets them in
 #                  motion.js and rewrites index.html's root data-fps/-width/-height/-duration (TOTAL/FPS),
-#                  viewport and html/body size to match. Either way the starter's brand is marked
-#                  cinetic:placeholder and lint-film.mjs fails until it is replaced.
+#                  viewport and html/body size to match. Either way the starter's brand (palette,
+#                  typeface, mark, name) is marked cinetic:placeholder and lint-film.mjs fails
+#                  until it is replaced.
 #   --link-modules symlink this node_modules instead of running npm install (offline sandboxes).
 #   --browser      bake a Chromium/headless-shell path into remotion.config.ts (env REMOTION_BROWSER
 #                  or CHROMIUM_PATH at render time also works, and wins).
@@ -25,7 +26,7 @@
 # Exit codes: 0 created, 1 bad arguments or a failed step (the message says which).
 set -euo pipefail
 
-usage() { sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; }
 die() { echo "new-film: $*" >&2; exit 1; }
 
 SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -154,7 +155,8 @@ if [[ "$ENGINE" == remotion ]]; then
 next:
   cd $DIR
   npm run check             # tsc, lint-film, grid-check: fails on purpose until the placeholder brand
-                            # (cinetic:placeholder in src/brand and COPY) is replaced; see brand-and-color.md
+                            # (palette, typeface, mark and name: cinetic:placeholder in src/brand and
+                            # COPY) is replaced; see brand-and-color.md
   npm run stills            # style frames in out/stills/ - look at them
   npm run studio            # iterate act by act (Acts folder)
   npm run cues && npm run audio && npm run render:preview
@@ -163,8 +165,8 @@ else
   cat <<EOF
 next:
   cd $DIR
-  node scripts/lint-film.mjs .   # cinetic bans; fails on purpose until the placeholder brand in
-                                 # index.html :root is replaced (references/brand-and-color.md)
+  node scripts/lint-film.mjs .   # cinetic bans; fails on purpose until the placeholder palette
+                                 # and font in index.html are replaced (references/brand-and-color.md)
   npm run preview                # HyperFrames Studio
   npm run cues && npm run audio && npm run render:preview   # then: npm run render (hf-finish.sh)
 EOF

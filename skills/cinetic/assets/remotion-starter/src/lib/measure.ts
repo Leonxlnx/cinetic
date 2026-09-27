@@ -5,7 +5,7 @@ import { FONT } from '../brand/tokens';
 const widths = new Map<string, number>();
 
 /** Advance width in px of one line, exactly as the DOM lays it out (variable weight, em tracking). */
-export const measureTracked = (text: string, size: number, weight: number, trackEm: number, family = FONT.sans) => {
+export const measureTracked = (text: string, size: number, weight: number, trackEm: number, family = FONT.text) => {
   const key = `${text}|${size}|${weight}|${trackEm}|${family}`;
   const hit = widths.get(key);
   if (hit !== undefined) return hit;
@@ -30,7 +30,7 @@ export const measureTracked = (text: string, size: number, weight: number, track
 };
 
 /** Largest size (px, at most `max`) at which `text` fits in `maxWidth`. Widths scale linearly with size. */
-export const fitSize = (text: string, maxWidth: number, max: number, weight: number, trackEm: number, family = FONT.sans) =>
+export const fitSize = (text: string, maxWidth: number, max: number, weight: number, trackEm: number, family = FONT.text) =>
   Math.min(max, (maxWidth / measureTracked(text, 100, weight, trackEm, family)) * 100);
 
 /**
@@ -41,7 +41,7 @@ export const fitSize = (text: string, maxWidth: number, max: number, weight: num
 type Ink = { ascent: number; descent: number; left: number; right: number; fontAscent: number; fontDescent: number };
 const inks = new Map<string, Ink>();
 
-export const inkBox = (text: string, size: number, weight: number, family = FONT.sans): Ink => {
+export const inkBox = (text: string, size: number, weight: number, family = FONT.text): Ink => {
   const key = `${text}|${size}|${weight}|${family}`;
   const hit = inks.get(key);
   if (hit) return hit;
@@ -62,7 +62,7 @@ export const inkBox = (text: string, size: number, weight: number, family = FONT
 };
 
 /** Distance from the top of a CSS line box (font-size `size`, line-height `lead`) down to its baseline. */
-export const baselineOf = (size: number, weight: number, lead: number, family = FONT.sans) => {
+export const baselineOf = (size: number, weight: number, lead: number, family = FONT.text) => {
   const { fontAscent, fontDescent } = inkBox('Hg', size, weight, family);
   return (size * lead - (fontAscent + fontDescent)) / 2 + fontAscent;
 };
