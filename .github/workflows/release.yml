@@ -2,10 +2,12 @@
 #   git tag -a v1.0.0 -m "v1.0.0" && git push origin v1.0.0
 # It packages skills/cinetic into cinetic.skill (a zip whose top-level folder is
 # cinetic/), takes the notes from the matching CHANGELOG.md section and attaches the
-# package plus the demo films kept on the media branch. Re-running it for a tag that already has a release updates
-# the notes and replaces the asset instead of failing.
-# If the tag push did not start a run, use "Run workflow" (workflow_dispatch) with the tag.
-# Push each version tag on its own: GitHub starts no run when more than three tags are pushed at once.
+# package plus the demo films kept on the media branch. Re-running it for a tag that already has a release
+# updates the notes and replaces the asset instead of failing.
+# If the tag push did not start a run, use "Run workflow" (workflow_dispatch) with the tag. A manual run can
+# also publish a tag that does not exist yet: it is created at the `target` commit (default: the commit the
+# run starts on). Push each version tag on its own: GitHub starts no run when more than three tags are pushed
+# at once. 0.x versions are development versions and are published as pre-releases without the demo films.
 name: Release
 
 on:
@@ -15,8 +17,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to publish, for example v1.0.0'
+        description: 'Tag to publish, for example v1.0.0 (created at target if it does not exist yet)'
         required: true
+        type: string
+      target:
+        description: 'Commit SHA for a tag that does not exist yet (default: the commit this run starts on)'
+        required: false
         type: string
 
 permissions:
@@ -42,6 +48,7 @@ jobs:
         id: tag
         env:
           INPUT_TAG: ${{ inputs.tag }}
+          INPUT_TARGET: ${{ inputs.target }}
         run: |
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             tag="$INPUT_TAG"
@@ -54,18 +61,35 @@ jobs:
           fi
           version="${tag#v}"
           prerelease=false
-          if [[ "$version" == *-* ]]; then prerelease=true; fi
+          if [[ "$version" == *-* || "$version" == 0.* ]]; then prerelease=true; fi
+          # an existing tag is published as is; a missing one (manual runs only) is created at the target commit
+          if git ls-remote --exit-code --tags "https://github.com/$GITHUB_REPOSITORY" "refs/tags/$tag" > /dev/null; then
+            exists=true
+            ref="refs/tags/$tag"
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            exists=false
+            ref="${INPUT_TARGET:-$GITHUB_SHA}"
+            if ! [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::target must be a full 40-character commit SHA, got '$ref'"
+              exit 1
+            fi
+          else
+            echo "::error::Tag '$tag' does not exist on the remote"
+            exit 1
+          fi
           {
             echo "tag=$tag"
             echo "version=$version"
             echo "prerelease=$prerelease"
+            echo "exists=$exists"
+            echo "ref=$ref"
           } >> "$GITHUB_OUTPUT"
-          echo "tag=$tag version=$version prerelease=$prerelease"
+          echo "tag=$tag version=$version prerelease=$prerelease exists=$exists ref=$ref"
 
       - name: Check out the tagged commit
         uses: actions/checkout@v7
         with:
-          ref: refs/tags/${{ steps.tag.outputs.tag }}
+          ref: ${{ steps.tag.outputs.ref }}
           persist-credentials: false
 
       - name: plugin.json version matches the tag
@@ -115,6 +139,7 @@ jobs:
           sha256sum "$out" | tee dist/checksum.txt
 
       - name: Fetch the demo films from the media branch
+        if: steps.tag.outputs.prerelease != 'true'
         run: |
           mkdir -p dist/demos
           base="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/media"
@@ -131,9 +156,16 @@ jobs:
         env:
           TAG: ${{ steps.tag.outputs.tag }}
           VERSION: ${{ steps.tag.outputs.version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           notes=dist/RELEASE_NOTES.md
           : > "$notes"
+          # versions older than the changelog take their section from the default branch's copy
+          if [ ! -f CHANGELOG.md ] || ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
+            curl -fsSL --retry 3 -o dist/CHANGELOG.md \
+              "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/${DEFAULT_BRANCH:-main}/CHANGELOG.md" \
+              && cp dist/CHANGELOG.md CHANGELOG.md || true
+          fi
           if [ -f CHANGELOG.md ]; then
             # Prints the body of the first "## [X.Y.Z]", "## X.Y.Z", "## vX.Y.Z" or
             # "## [X.Y.Z] - date" heading that matches VERSION, up to the next "## " heading.
@@ -186,6 +218,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
           TAG: ${{ steps.tag.outputs.tag }}
           PRERELEASE: ${{ steps.tag.outputs.prerelease }}
+          EXISTS: ${{ steps.tag.outputs.exists }}
+          REF: ${{ steps.tag.outputs.ref }}
         run: |
           asset="dist/$SKILL.skill"
           shopt -s nullglob
@@ -195,7 +229,7 @@ jobs:
             flags=(--prerelease --latest=false)
           else
             # only the newest version tag becomes Latest, so re-running an old tag can't demote the current release
-            newest="$(gh api "repos/$GH_REPO/tags" --paginate --jq '.[].name' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)" || true
+            newest="$( { gh api "repos/$GH_REPO/tags" --paginate --jq '.[].name' || true; echo "$TAG"; } | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)" || true
             if [ -z "$newest" ] || [ "$TAG" = "$newest" ]; then
               flags=(--prerelease=false --latest)
             else
@@ -207,8 +241,13 @@ jobs:
             gh release edit "$TAG" --title "$title" --notes-file dist/RELEASE_NOTES.md "${flags[@]}"
             gh release upload "$TAG" "$asset" "${demos[@]}" --clobber
           else
+            if [ "$EXISTS" = "true" ]; then
+              where=(--verify-tag)
+            else
+              where=(--target "$REF")  # GitHub creates the tag at this commit
+            fi
             gh release create "$TAG" "$asset" "${demos[@]}" \
-              --verify-tag \
+              "${where[@]}" \
               --title "$title" \
               --notes-file dist/RELEASE_NOTES.md \
               "${flags[@]}"
