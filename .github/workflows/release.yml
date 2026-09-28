@@ -1,0 +1,216 @@
+# Publishes a GitHub Release when a version tag is pushed:
+#   git tag -a v1.0.0 -m "v1.0.0" && git push origin v1.0.0
+# It packages skills/cinetic into cinetic.skill (a zip whose top-level folder is
+# cinetic/), takes the notes from the matching CHANGELOG.md section and attaches the
+# package plus the demo films kept on the media branch. Re-running it for a tag that already has a release updates
+# the notes and replaces the asset instead of failing.
+# If the tag push did not start a run, use "Run workflow" (workflow_dispatch) with the tag.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to publish, for example v1.0.0'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  SKILL: cinetic
+
+jobs:
+  release:
+    name: Package and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Resolve tag and version
+        id: tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            tag="$INPUT_TAG"
+          else
+            tag="$GITHUB_REF_NAME"
+          fi
+          if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag '$tag' is not a version tag like v1.0.0 or v1.1.0-rc.1"
+            exit 1
+          fi
+          version="${tag#v}"
+          prerelease=false
+          if [[ "$version" == *-* ]]; then prerelease=true; fi
+          {
+            echo "tag=$tag"
+            echo "version=$version"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+          echo "tag=$tag version=$version prerelease=$prerelease"
+
+      - name: Check out the tagged commit
+        uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ steps.tag.outputs.tag }}
+          persist-credentials: false
+
+      - name: plugin.json version matches the tag
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          if [ -f .claude-plugin/plugin.json ]; then
+            pv="$(python3 -c 'import json; print(json.load(open(".claude-plugin/plugin.json", encoding="utf-8")).get("version", ""))')"
+            if [ "$pv" != "$VERSION" ]; then
+              echo "::error file=.claude-plugin/plugin.json::version is '$pv' but the tag is v$VERSION. Bump it before tagging; Claude Code users only get updates when it changes."
+              exit 1
+            fi
+          fi
+
+      - name: Build the .skill package
+        run: |
+          src="skills/$SKILL"
+          if [ ! -f "$src/SKILL.md" ]; then
+            echo "::error::$src/SKILL.md not found"
+            exit 1
+          fi
+          mkdir -p dist
+          out="$PWD/dist/$SKILL.skill"
+          rm -f "$out"
+          # Zip from inside skills/ so every entry starts with "$SKILL/".
+          # -D: file entries only, -X: no extra file attributes.
+          # The -x list must stay last on the command line.
+          (
+            cd skills
+            zip -r -q -D -X "$out" "$SKILL" \
+              -x "$SKILL/evals/*" '*/node_modules/*' '*/__pycache__/*' '*.pyc' '*/.DS_Store'
+          )
+          unzip -Z1 "$out" > dist/contents.txt
+          if grep -v "^$SKILL/" dist/contents.txt; then
+            echo "::error::The entries above are outside the top-level folder $SKILL/"
+            exit 1
+          fi
+          if ! grep -qx "$SKILL/SKILL.md" dist/contents.txt; then
+            echo "::error::$SKILL/SKILL.md is missing from the package"
+            exit 1
+          fi
+          if grep -q "^$SKILL/evals/" dist/contents.txt; then
+            echo "::error::evals/ was not excluded from the package"
+            exit 1
+          fi
+          echo "$(wc -l < dist/contents.txt) files in $SKILL.skill"
+          sha256sum "$out" | tee dist/checksum.txt
+
+      - name: Fetch the demo films from the media branch
+        run: |
+          mkdir -p dist/demos
+          base="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/media"
+          for f in kiln-launch-teaser.mp4 quire-streaks-vertical.mp4 ledgerly-feature-loop.mp4 halden-logo-sting.mp4; do
+            if curl -fsSL --retry 3 -o "dist/demos/$f" "$base/$f"; then
+              echo "ok   $f ($(du -h "dist/demos/$f" | cut -f1))"
+            else
+              echo "::warning::$f not found on the media branch; releasing without it"
+              rm -f "dist/demos/$f"
+            fi
+          done
+
+      - name: Extract release notes from CHANGELOG.md
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          notes=dist/RELEASE_NOTES.md
+          : > "$notes"
+          if [ -f CHANGELOG.md ]; then
+            # Prints the body of the first "## [X.Y.Z]", "## X.Y.Z", "## vX.Y.Z" or
+            # "## [X.Y.Z] - date" heading that matches VERSION, up to the next "## " heading.
+            # Link reference lines ("[1.0.0]: https://...") and outer blank lines are dropped.
+            awk -v ver="$VERSION" '
+              { sub(/\r$/, "") }
+              /^## / {
+                if (found) exit
+                h = $0
+                sub(/^##[ \t]+/, "", h)
+                sub(/^\[/, "", h)
+                sub(/^[vV]/, "", h)
+                if (index(h, ver) == 1) {
+                  c = substr(h, length(ver) + 1, 1)
+                  if (c == "" || c == "]" || c == " " || c == "\t" || c == "(") found = 1
+                }
+                next
+              }
+              found && /^\[[^ ]+]: / { next }
+              found { buf[++n] = $0 }
+              END {
+                s = 1
+                while (s <= n && buf[s] ~ /^[ \t]*$/) s++
+                e = n
+                while (e >= s && buf[e] ~ /^[ \t]*$/) e--
+                for (i = s; i <= e; i++) print buf[i]
+              }
+            ' CHANGELOG.md > "$notes"
+          fi
+          if [ ! -s "$notes" ]; then
+            echo "::warning::CHANGELOG.md has no '## [$VERSION]' section; publishing a short default note."
+            printf 'Release %s of %s.\n' "$TAG" "$SKILL" > "$notes"
+          fi
+          if ! grep -q 'npx skills add' "$notes"; then
+            {
+              echo
+              echo '---'
+              echo
+              echo "Install with the skills CLI: \`npx skills add $GITHUB_REPOSITORY\`"
+              echo
+              echo "Or download \`$SKILL.skill\` below: a zip of the skill folder with \`$SKILL/SKILL.md\` at its root."
+            } >> "$notes"
+          fi
+          echo "----- release notes -----"
+          cat "$notes"
+
+      - name: Publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          PRERELEASE: ${{ steps.tag.outputs.prerelease }}
+        run: |
+          asset="dist/$SKILL.skill"
+          shopt -s nullglob
+          demos=(dist/demos/*.mp4)
+          title="$SKILL $TAG"
+          if [ "$PRERELEASE" = "true" ]; then
+            flags=(--prerelease --latest=false)
+          else
+            flags=(--prerelease=false --latest)
+          fi
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG already exists: updating its notes and replacing the asset."
+            gh release edit "$TAG" --title "$title" --notes-file dist/RELEASE_NOTES.md "${flags[@]}"
+            gh release upload "$TAG" "$asset" "${demos[@]}" --clobber
+          else
+            gh release create "$TAG" "$asset" "${demos[@]}" \
+              --verify-tag \
+              --title "$title" \
+              --notes-file dist/RELEASE_NOTES.md \
+              "${flags[@]}"
+          fi
+          url="$(gh release view "$TAG" --json url --jq .url)"
+          {
+            echo "### Released $SKILL $TAG"
+            echo
+            echo "- Release: $url"
+            echo "- Asset: \`$SKILL.skill\` ($(wc -l < dist/contents.txt) files)"
+            echo "- SHA-256: \`$(cut -d ' ' -f 1 dist/checksum.txt)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
