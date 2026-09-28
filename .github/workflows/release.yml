@@ -5,6 +5,7 @@
 # package plus the demo films kept on the media branch. Re-running it for a tag that already has a release updates
 # the notes and replaces the asset instead of failing.
 # If the tag push did not start a run, use "Run workflow" (workflow_dispatch) with the tag.
+# Push each version tag on its own: GitHub starts no run when more than three tags are pushed at once.
 name: Release
 
 on:
@@ -93,7 +94,7 @@ jobs:
           # -D: file entries only, -X: no extra file attributes.
           # The -x list must stay last on the command line.
           (
-            cd skills
+            cd skills || exit 1
             zip -r -q -D -X "$out" "$SKILL" \
               -x "$SKILL/evals/*" '*/node_modules/*' '*/__pycache__/*' '*.pyc' '*/.DS_Store'
           )
@@ -193,7 +194,13 @@ jobs:
           if [ "$PRERELEASE" = "true" ]; then
             flags=(--prerelease --latest=false)
           else
-            flags=(--prerelease=false --latest)
+            # only the newest version tag becomes Latest, so re-running an old tag can't demote the current release
+            newest="$(gh api "repos/$GH_REPO/tags" --paginate --jq '.[].name' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)" || true
+            if [ -z "$newest" ] || [ "$TAG" = "$newest" ]; then
+              flags=(--prerelease=false --latest)
+            else
+              flags=(--prerelease=false --latest=false)
+            fi
           fi
           if gh release view "$TAG" > /dev/null 2>&1; then
             echo "Release $TAG already exists: updating its notes and replacing the asset."
