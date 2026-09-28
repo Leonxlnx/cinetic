@@ -57,13 +57,13 @@ Before the first film, check your machine with [a first test render](docs/setup.
 <td valign="top">
 <a href="https://raw.githubusercontent.com/Leonxlnx/cinetic/media/halden-logo-sting.mp4"><img src="https://raw.githubusercontent.com/Leonxlnx/cinetic/media/halden-logo-sting.gif" alt="Halden logo sting: a text cursor becomes the stem of a lowercase h and the wordmark rises beside it" width="460"></a>
 
-**Halden.** A 6 s logo sting for a calm note-taking app, mixed at −16 LUFS, plus four ProRes 4444 alpha versions. The app's text cursor becomes the stem of the h. [Download MP4 (1920x1080, sound, 0.5 MB)](https://raw.githubusercontent.com/Leonxlnx/cinetic/media/halden-logo-sting.mp4)
+**Halden.** A 6 s logo sting for a calm note-taking app, mixed at −16 LUFS, plus four ProRes 4444 alpha versions (held and cleared, for light and dark footage). The app's text cursor becomes the stem of the h. [Download MP4 (1920x1080, sound, 0.5 MB)](https://raw.githubusercontent.com/Leonxlnx/cinetic/media/halden-logo-sting.mp4)
 
 </td>
 </tr>
 </table>
 
-All four films were made by an agent with cinetic from the one-paragraph briefs below, the same briefs used in the [evaluation](#evaluation). The brands are invented, except where the brief supplied one. Clicking a GIF downloads its MP4. The films live on the repo's `media` branch, so installs stay small.
+All four films were made by an agent with cinetic 0.5.0, in the fifth evaluation round, from the one-paragraph briefs below, the same briefs used in the [evaluation](#evaluation). The brands are invented, except where the brief supplied one. Clicking a GIF downloads its MP4. The films live on the repo's `media` branch, so installs stay small.
 
 <details>
 <summary>The four briefs, word for word</summary>
@@ -115,7 +115,7 @@ For Claude Code the skill lands in `.claude/skills/cinetic` (project) or `~/.cla
 /plugin install cinetic@cinetic
 ```
 
-Claude Code can then load the skill on its own when you ask for a video, because the request matches the skill's description, or you can call it directly as `/cinetic:cinetic`. Update with `/plugin marketplace update cinetic`.
+Claude Code can then load the skill on its own when you ask for a video, because the request matches the skill's description, or you can call it directly as `/cinetic:cinetic`. To update, run `/plugin marketplace update cinetic`, then open `/plugin` > Installed > cinetic > Update now (details in [docs/setup.md](docs/setup.md#claude-code-plugin)).
 
 ### Manual
 
@@ -123,6 +123,7 @@ Download `cinetic.skill` from the [latest release](https://github.com/Leonxlnx/c
 
 ```bash
 curl -L -o cinetic.skill https://github.com/Leonxlnx/cinetic/releases/latest/download/cinetic.skill
+mkdir -p ~/.claude/skills
 unzip cinetic.skill -d ~/.claude/skills/
 ```
 
@@ -130,12 +131,14 @@ Or copy the folder from a clone (use `<project>/.claude/skills/` instead for a s
 
 ```bash
 git clone --depth 1 https://github.com/Leonxlnx/cinetic
-mkdir -p ~/.claude/skills && cp -r cinetic/skills/cinetic ~/.claude/skills/cinetic
+mkdir -p ~/.claude/skills && cp -R cinetic/skills/cinetic ~/.claude/skills/
 ```
+
+To update a manual install, remove `~/.claude/skills/cinetic` first, then repeat.
 
 ## Requirements
 
-- **macOS or Linux.** The scripts are bash. On Windows, WSL2 with the [Ubuntu steps](docs/setup.md#ubuntu-and-debian-apt) is the likely route; it has not been tested.
+- **macOS or Linux.** The scripts are bash (3.2 or newer, so macOS's built-in bash works); they were developed on Linux, and macOS is less tested. On Windows, WSL2 with the [Ubuntu steps](docs/setup.md#ubuntu-and-debian-apt) is the likely route; it has not been tested.
 - **Node 22+** (Remotion 4)
 - **ffmpeg 6+** with libx264, and ffprobe
 - **Python 3.11+** with numpy, scipy, soundfile, pyloudnorm, opencv-python and librosa; fonttools, brotli and uharfbuzz for outlined SVG logos; pillow for banding-free gradient PNGs
@@ -151,7 +154,7 @@ pip install numpy scipy soundfile pyloudnorm opencv-python librosa fonttools bro
 
 The scripts call plain `python3`, so activate the environment before you start the agent, or put `~/.venvs/cinetic/bin` first on your `PATH` so the agent's shell finds it. A virtual environment also avoids the `externally-managed-environment` error that recent Debian, Ubuntu and Homebrew Pythons raise on a global `pip install`. Details: [Python packages](docs/setup.md#python-packages).
 
-You don't need a Remotion project first: the agent scaffolds one with `scripts/new-film.sh` and installs its dependencies. Renders are CPU-heavy. Motion blur multiplies render time by the number of sub-frames (typically 3–8x a sharp render); `render.sh` prints an estimate before it starts, and `--budget` caps it. Full setup steps: [docs/setup.md](docs/setup.md).
+You don't need a Remotion project first: the agent scaffolds one with `scripts/new-film.sh` and installs its dependencies. Renders are CPU-heavy. Motion blur multiplies render time by the number of sub-frames (typically 3–8x a sharp render); `render.sh --blur` prints an estimate before the sub-frame render, and `--budget` caps it. Full setup steps: [docs/setup.md](docs/setup.md).
 
 ## Use
 
@@ -214,7 +217,7 @@ Every step writes a file and ends at a gate the agent actually runs. It starts f
 | 5 | Sound | `public/audio/soundtrack.wav` | Sync frames computed from the picture code; a tuned score and SFX synthesized with stems; mastered to −14 LUFS (−16 for calm brands and short stings) | `export-cues.ts` |
 | 6 | Render | `out/film.mp4` | Preview, sharp or motion-blurred master: optical-flow speeds set the sub-frames per frame, averaged in float and quantized once to BT.709; sync and spec gates | `render.sh` |
 | 7 | Review | `out/qa/` | Contact sheets, pixel forensics (pops, stalls, ghosts, judder, banding, loop seams), an onset-by-onset audio audit, four critic lenses and a verifier, a scored rubric and a ship gate | `forensics.py` |
-| 8 | Deliver | `out/deliver/` | Poster from a clean still, GIF and WebM loops, alpha stings, social variants, a manifest; the brand kit | `deliver.sh` |
+| 8 | Deliver | `out/deliver/` | Poster from a clean still, GIF and WebM loops, alpha stings, social variants, a manifest; the brand kit | `deliver.sh`, `brand-kit.sh` |
 
 Everything hangs off one beat grid. Every frame number in the film comes from one helper, so the picture, the cue export and the audits can't drift apart:
 
@@ -245,7 +248,7 @@ When the agent invents the look, none of these appear:
 |---|---|
 | `skills/cinetic/SKILL.md` | The director: formats and defaults, five laws, the workflow from intake to delivery (Steps 0–8) with its gates plus a scaled-down path for stings and loops, taste rules, the timing and motion systems, engine rules, the ship gate |
 | `skills/cinetic/references/` | 17 guides, each read when its step comes up: concept and story, brand and color, copy and type, timing grid, motion tokens, camera, transitions, product UI, sound, finishing, review loop, a catalog of cheap-looking tells, both engines, Chromium rendering traps, formats, and a worked example |
-| `skills/cinetic/scripts/` | 26 scripts, each documented in its header comment and (all but the internal `brand-svg.ts` helper) in its `--help`, plus the lint regression tests in `scripts/test/`: scaffold, lint, grid and layout audits, palette, cue export, score and master, render and motion blur, probe and sync gates, forensics, A/V audit, contact sheets, delivery, brand kit |
+| `skills/cinetic/scripts/` | 26 scripts: scaffold, lint, grid and layout audits, palette, cue export, score and master, render and motion blur, probe and sync gates, forensics, A/V audit, contact sheets, delivery, brand kit. Each is documented in its header comment and, except the internal `brand-svg.ts` helper, in its `--help`. The lint regression tests are in `scripts/test/`. |
 | `skills/cinetic/assets/` | The Remotion starter (default), the HyperFrames starter, the treatment template and five critic prompts (director, art/copy/UI, sound-sync, forensics, verifier) |
 | [`evals/evals.json`](evals/evals.json) | The four briefs and the written expectations each film is graded against |
 | `docs/` | [Setup](docs/setup.md) and the full [evaluation](docs/evaluation.md) |
@@ -255,14 +258,14 @@ When the agent invents the look, none of these appear:
 
 ## Evaluation
 
-Each round ran the briefs with cinetic and with the same agent without it but with the official Remotion agent skills. A grader checked each brief's written expectations (size, fps, loudness and sync measured by script), and blind judging agents compared each pair with the labels randomized: a neutral senior creative director in every round and, from round 3, a second judge applying a house style guide equal to the hard bans.
+Each round ran the briefs with cinetic and with the same agent without it but with the official Remotion agent skills. A grader checked each brief's written expectations (size, frame rate, duration, loudness and true peak measured by script; sync and the visual checks judged from frames and audio), and blind judging agents compared each pair with the labels randomized: a neutral senior creative director in every round and, from round 3, a second judge applying a house style guide equal to the hard bans.
 
 | Round | Version | Briefs | Expectations met (cinetic vs baseline) | Neutral judge: cinetic wins | House-style judge: cinetic wins |
 |---|---|---|---|---|---|
-| 1 | 0.1 | 3 | 97.7% vs 80.3% | 0 of 3 | not run |
-| 3 | 0.3 | 4 | 100% vs 74.8% | 2 of 4 | 4 of 4 |
-| 4 | 0.4 | 4 | 55/56 (98%) vs 39/56 (70%) | 0 of 4 | 4 of 4 |
-| 5 | 0.5 | 4 | 54/56 (96%) vs 41/56 (73%) | 2 of 4 | 4 of 4 |
+| 1 | 0.1.0 | 3 | 97.7% vs 80.3% | 0 of 3 | not run |
+| 3 | 0.3.0 | 4 | 100% vs 74.8% | 2 of 4 | 4 of 4 |
+| 4 | 0.4.0 | 4 | 55/56 (98%) vs 39/56 (70%) | 0 of 4 | 4 of 4 |
+| 5 | 0.5.0 | 4 | 54/56 (96%) vs 41/56 (73%) | 2 of 4 | 4 of 4 |
 
 Round 2 was invalidated by a harness problem and is not reported.
 
@@ -274,7 +277,7 @@ It also costs about three times the time and tokens of the baseline (round 5 ave
 
 ## Origin
 
-The process was first worked out while making Tessel, a 33-second launch film built in code ([Leonxlnx/claude-launchvideo](https://github.com/Leonxlnx/claude-launchvideo)). Its [worked example](skills/cinetic/references/worked-example.md) ships with the skill.
+The process was first worked out while making Tessel, a 33-second launch film built in code ([source and film](https://github.com/Leonxlnx/claude-launchvideo)). Its [worked example](skills/cinetic/references/worked-example.md) ships with the skill.
 
 ## Contributing
 
