@@ -13,7 +13,9 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 // - anything tagged data-mover="<id>" (a chip, card, cursor or device that travels) painted OVER
 //   the text: sampled with elementsFromPoint, so z-order and transforms count as rendered.
 // It draws the boxes and the safe zone, and logs one JSON line per frame:
-//   BF_AUDIT {"comp":"Film","frame":120,"safe":{...},"boxes":[...],"issues":[...]}
+//   BF_AUDIT {"comp":"Film","frame":120,"safe":{...},"minPx":22,"boxes":[...],"issues":[...]}
+// Each box carries its effective opacity (its own times its ancestors'); layout-audit.sh --speed
+// pairs the boxes of frame f and f+1 by id to measure how fast readable text travels.
 // Tag the element whose box IS the visible text (the line, not an oversized wrapper).
 
 export const AUDIT_TAG = 'BF_AUDIT';
@@ -84,7 +86,7 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         w: round(r.width / zoom),
         h: round(r.height / zoom),
         px: round(parseFloat(getComputedStyle(el).fontSize) * k),
-        opacity: round(opacity),
+        opacity: Math.round(opacity * 100) / 100,
       });
     }
     const issues: Issue[] = [];
@@ -110,7 +112,7 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         if (ix > 0 && iy > 0) issues.push({ kind: 'overlap', id: `${a.id}+${b.id}`, detail: `${round(ix)}x${round(iy)}px` });
       }
     const clean = boxes.map(({ el: _el, ...b }) => b);
-    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, boxes: clean, issues })}`);
+    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), boxes: clean, issues })}`);
     setFound({ boxes: clean, issues });
   }, [frame, zoom, width, height, comp, zone, SAFE.top, SAFE.right, SAFE.bottom, SAFE.left, minPx]);
 
