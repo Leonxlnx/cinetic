@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "cinetic",
+  "owner": {
+    "name": "Leonxlnx",
+    "url": "https://github.com/Leonxlnx"
+  },
+  "description": "Cinematic launch films and motion design from code, directed by your coding agent.",
+  "plugins": [
+    {
+      "name": "cinetic",
+      "source": "./",
+      "description": "Direct, score and render launch films, product videos, feature loops, logo stings and UI walkthroughs with Remotion or HyperFrames."
+    }
+  ]
+}
