@@ -45,7 +45,7 @@ mkdir -p "$OUT"
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/cinetic-brand.XXXXXX"); trap 'rm -rf "$WORK"' EXIT
 
 step "SVG mark and lockups"
-npx tsx "$SCRIPT_DIR/brand-svg.ts" --out "$OUT" "${SVGARGS[@]}" >&2 || die "brand-svg.ts failed (see above)"
+npx tsx "$SCRIPT_DIR/brand-svg.ts" --out "$OUT" ${SVGARGS[@]+"${SVGARGS[@]}"} >&2 || die "brand-svg.ts failed (see above)"
 
 step "bundling"
 npx remotion bundle src/index.ts --out-dir "$WORK/bundle" --log=error >/dev/null || die "bundle failed"

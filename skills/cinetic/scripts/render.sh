@@ -92,7 +92,7 @@ while [[ $# -gt 0 ]]; do
     --samples-from) SAMPLES_FROM=${2:?}; shift ;;
     --budget) BUDGET=${2:?--budget needs a multiple, e.g. 6}; MS_ARGS+=(--budget "$BUDGET"); shift ;;
     --floor) MS_ARGS+=(--floor "${2:?}"); shift ;;
-    --measure) read -r -a _m <<< "${2:?}"; MS_ARGS+=("${_m[@]}"); shift ;;
+    --measure) read -r -a _m <<< "${2:?}"; MS_ARGS+=(${_m[@]+"${_m[@]}"}); shift ;;
     --spec) SPEC=${2:?}; shift ;;
     --no-check) NOCHECK=1 ;;
     --keep) KEEP=1 ;;
@@ -157,7 +157,7 @@ AOFF=${AOFF:-$FROM}
 AOFF_S=$(python3 -c "print(f'{$AOFF/$FPS:.6f}')")
 RARGS=(--muted --log=error)
 [[ -n "$CONC" ]] && RARGS+=(--concurrency="$CONC")
-RARGS+=("${EXTRA[@]}")
+RARGS+=(${EXTRA[@]+"${EXTRA[@]}"})
 PIC="$WORK/picture.mp4"
 step "$COMP: ${SIZE}@${FPS}, frames $FROM-$TO ($N f, ${DUR}s), mode $MODE"
 
@@ -165,7 +165,7 @@ case "$MODE" in
   preview|master)
     if [[ $MODE == preview ]]; then Q=(--crf="${CRF:-20}" --x264-preset=veryfast); else Q=(--crf="${CRF:-14}" --x264-preset=slow); fi
     step "rendering $COMP ($MODE)"
-    npx remotion render "$B" "$COMP" "$PIC" "${RANGE[@]}" "${Q[@]}" --pixel-format=yuv420p --color-space=bt709 "${RARGS[@]}" \
+    npx remotion render "$B" "$COMP" "$PIC" ${RANGE[@]+"${RANGE[@]}"} ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
       || die "remotion render failed"
     ;;
   blur)
@@ -175,7 +175,7 @@ case "$MODE" in
     if [[ -n "$SAMPLES_FROM" ]]; then
       [[ -f "$SAMPLES_FROM" ]] || die "--samples-from $SAMPLES_FROM not found"
       if [[ -n "$BUDGET" ]]; then  # re-decide the groups from the saved speed track under the budget
-        python3 "$SCRIPT_DIR/measure-speed.py" "$SAMPLES_FROM" "$WORK/samples.json" "${MS_ARGS[@]}" >/dev/null || die "measure-speed.py failed"
+        python3 "$SCRIPT_DIR/measure-speed.py" "$SAMPLES_FROM" "$WORK/samples.json" ${MS_ARGS[@]+"${MS_ARGS[@]}"} >/dev/null || die "measure-speed.py failed"
         cp "$WORK/samples.json" "$SAMPLES"
       else
         [[ "$(cd "$(dirname "$SAMPLES_FROM")" && pwd)/$(basename "$SAMPLES_FROM")" == "$(cd "$(dirname "$SAMPLES")" && pwd)/$(basename "$SAMPLES")" ]] || cp "$SAMPLES_FROM" "$SAMPLES"
@@ -185,13 +185,13 @@ case "$MODE" in
       step "rendering sharp pass for speed measurement"
       # intermediates keep Chromium's native full-range JPEG colour (--color-space=default): no
       # matrix conversion before accumulate.py, which decodes with the file's own tags
-      TS=$(date +%s.%N)
-      npx remotion render "$B" "$COMP" "$WORK/sharp.mp4" "${RANGE[@]}" --crf=12 --x264-preset=veryfast --color-space=default "${RARGS[@]}" \
+      TS=$(python3 -c 'import time; print(time.time())')
+      npx remotion render "$B" "$COMP" "$WORK/sharp.mp4" ${RANGE[@]+"${RANGE[@]}"} --crf=12 --x264-preset=veryfast --color-space=default ${RARGS[@]+"${RARGS[@]}"} \
         || die "sharp render failed"
-      SPF=$(python3 -c "print(round(($(date +%s.%N) - $TS) / $N, 4))")
+      SPF=$(python3 -c "import time; print(round((time.time() - $TS) / $N, 4))")
       step "measuring on-screen speed -> $SAMPLES"
       CUES=(); [[ -f out/cues.json ]] && CUES=(--cues out/cues.json)
-      python3 "$SCRIPT_DIR/measure-speed.py" "$WORK/sharp.mp4" "$SAMPLES" --offset "$FROM" "${CUES[@]}" "${MS_ARGS[@]}" >/dev/null \
+      python3 "$SCRIPT_DIR/measure-speed.py" "$WORK/sharp.mp4" "$SAMPLES" --offset "$FROM" ${CUES[@]+"${CUES[@]}"} ${MS_ARGS[@]+"${MS_ARGS[@]}"} >/dev/null \
         || die "measure-speed.py failed"
       # remember the measured throughput, so a later --samples-from run can estimate too
       python3 - "$SAMPLES" "$SPF" <<'PY'
@@ -227,11 +227,11 @@ if sub / n > 8 and not d.get('budget'):
 PY
     step "rendering $SUB sub-frames $SA-$SB ($((SB - SA + 1)) sub-frames for $N frames)"
     npx remotion render "$B" "$SUB" "$WORK/sub.mp4" --props="$(cd "$(dirname "$SAMPLES")" && pwd)/$(basename "$SAMPLES")" \
-      --frames="$SA-$SB" --crf=6 --x264-preset=veryfast --pixel-format=yuv444p --color-space=default "${RARGS[@]}" \
+      --frames="$SA-$SB" --crf=6 --x264-preset=veryfast --pixel-format=yuv444p --color-space=default ${RARGS[@]+"${RARGS[@]}"} \
       || die "sub-frame render failed"
     step "accumulating in float -> BT.709 CRF ${CRF:-14}$([[ $TENBIT -eq 1 ]] && echo ', 10-bit')"
     ACC=(--crf "${CRF:-14}"); [[ $TENBIT -eq 1 ]] && ACC+=(--10bit)
-    python3 "$SCRIPT_DIR/accumulate.py" "$WORK/sub.mp4" "$SAMPLES" "$PIC" --start "$FROM" --count "$N" "${ACC[@]}" --quiet >/dev/null \
+    python3 "$SCRIPT_DIR/accumulate.py" "$WORK/sub.mp4" "$SAMPLES" "$PIC" --start "$FROM" --count "$N" ${ACC[@]+"${ACC[@]}"} --quiet >/dev/null \
       || die "accumulate.py failed"
     ;;
 esac
@@ -268,7 +268,7 @@ if [[ $NOCHECK -eq 0 ]]; then
   PARGS=(--spec "${SPEC:-${SIZE}@${FPS}}" --frames "$N" --json "out/qa/probe-$NAME.json" --no-loudness)
   [[ $NOAUDIO -eq 1 ]] && PARGS+=(--audio none)
   [[ $TENBIT -eq 1 ]] && PARGS+=(--pix-fmt yuv420p10le)
-  python3 "$SCRIPT_DIR/probe.py" "$OUT_ABS" "${PARGS[@]}" >/dev/null || STATUS=1
+  python3 "$SCRIPT_DIR/probe.py" "$OUT_ABS" ${PARGS[@]+"${PARGS[@]}"} >/dev/null || STATUS=1
 fi
 
 SIZE_MB=$(python3 -c "import os;print(f'{os.path.getsize(\"$OUT_ABS\")/1e6:.1f}')")

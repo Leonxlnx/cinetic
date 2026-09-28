@@ -239,14 +239,14 @@ if [[ $WEBM -eq 1 ]]; then
   AUD=(-an); [[ $HAS_AUDIO -eq 1 && $LOOP -eq 0 ]] && AUD=(-c:a libopus -b:a 160k)
   ffmpeg -v error -y -i "$MASTER" -map 0:v:0 $([[ $HAS_AUDIO -eq 1 && $LOOP -eq 0 ]] && echo "-map 0:a:0") \
     -c:v libvpx-vp9 -crf "$WEBM_CRF" -b:v 0 -row-mt 1 -deadline good -cpu-used 2 -pix_fmt yuv420p \
-    -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv "${AUD[@]}" "$OUTDIR/$NAME.webm" \
+    -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv ${AUD[@]+"${AUD[@]}"} "$OUTDIR/$NAME.webm" \
     || die "webm encode failed"
   step "$NAME.webm (VP9 CRF $WEBM_CRF$([[ ${AUD[0]} == -an ]] && echo ', muted'))"
 fi
 
 if [[ -n "$ALPHA" ]]; then
  IFS=',' read -r -a ALPHAS <<< "$ALPHA"
- for ALPHA in "${ALPHAS[@]}"; do
+ for ALPHA in ${ALPHAS[@]+"${ALPHAS[@]}"}; do
   command -v npx >/dev/null || die "--alpha needs npx/Remotion"
   [[ -f "$ENTRY" ]] || die "--alpha needs the Remotion entry $ENTRY (run from the project root)"
   RA=(--muted --log=error --image-format=png --color-space=bt709)
@@ -254,9 +254,9 @@ if [[ -n "$ALPHA" ]]; then
   [[ -n "$ALPHA_PROPS" ]] && RA+=(--props="$ALPHA_PROPS")
   step "rendering $ALPHA as ProRes 4444 with alpha"
   npx remotion render "$ENTRY" "$ALPHA" "$OUTDIR/$ALPHA.mov" --codec=prores --prores-profile=4444 \
-    --pixel-format=yuva444p10le "${RA[@]}" || die "alpha render failed"
+    --pixel-format=yuva444p10le ${RA[@]+"${RA[@]}"} || die "alpha render failed"
   if [[ $ALPHA_WEBM -eq 1 ]]; then
-    npx remotion render "$ENTRY" "$ALPHA" "$OUTDIR/$ALPHA-alpha.webm" --codec=vp9 --pixel-format=yuva420p "${RA[@]}" \
+    npx remotion render "$ENTRY" "$ALPHA" "$OUTDIR/$ALPHA-alpha.webm" --codec=vp9 --pixel-format=yuva420p ${RA[@]+"${RA[@]}"} \
       || die "VP9 alpha render failed"
   fi
   if python3 - "$OUTDIR/$ALPHA.mov" <<'PY' >&2
@@ -282,11 +282,11 @@ fi
 
 if [[ -n "$VARIANTS" ]]; then
   IFS=',' read -r -a VS <<< "$VARIANTS"
-  for V in "${VS[@]}"; do
+  for V in ${VS[@]+"${VS[@]}"}; do
     step "rendering variant $V"
     VA=(); [[ $HAS_AUDIO -eq 1 ]] && VA=(--audio "$AUDIO") || VA=(--no-audio)
     [[ -n "$VSAMPLES" ]] && VA+=(--blur --samples-from "$VSAMPLES" --samples "$QA/samples-$V.json")
-    if bash "$SCRIPT_DIR/render.sh" "$V" "$OUTDIR/$V.mp4" "${VA[@]}" --entry "$ENTRY"; then
+    if bash "$SCRIPT_DIR/render.sh" "$V" "$OUTDIR/$V.mp4" ${VA[@]+"${VA[@]}"} --entry "$ENTRY"; then
       note '{"file":"'"$V.mp4"'","check":"render","pass":true}'
     else
       note '{"file":"'"$V.mp4"'","check":"render","pass":false}'; STATUS=1

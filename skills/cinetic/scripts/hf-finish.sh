@@ -40,11 +40,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 die() { echo "hf-finish: $*" >&2; exit 1; }
-usage() { sed -n '2,38p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+usage() {  # usage [status]: help on stdout for --help (exit 0), on stderr for misuse (exit 2)
+  if [ "${1:-2}" = 0 ]; then sed -n '2,38p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0; fi
+  sed -n '2,38p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2
+}
 log() { echo "hf-finish: $*" >&2; }
 
 [ $# -ge 1 ] || usage
-case "$1" in -h|--help) usage ;; esac
+case "$1" in -h|--help) usage 0 ;; esac
 PROJ="$1"; shift
 OUT=""; AUDIO=""; FPS=""; BLUR=1; SHUTTER=240; CRF=""; PREVIEW=0; COMP=""; WORKERS=2
 SKIP_CHECK=0; KEEP=0; JSON=""; CUES_OUT=""; ALLOW_ALPHA=0; VARS=""
@@ -65,7 +68,7 @@ while [ $# -gt 0 ]; do
     --variables) VARS="${2:?}"; shift 2 ;;
     --json) JSON="${2:?}"; shift 2 ;;
     --export-cues) CUES_OUT="${2:?}"; shift 2 ;;
-    -h|--help) usage ;;
+    -h|--help) usage 0 ;;
     *) echo "hf-finish: unknown option $1" >&2; usage ;;
   esac
 done
@@ -181,7 +184,7 @@ fail_step() { step "$1" fail; report false; die "$2"; }
 
 # ---- 1. lint: zero errors, or check's layout audit silently samples nothing ---------------
 set +e
-"${HF[@]}" lint "$PROJ" --json > "$QA/hf-lint.json" 2> "$QA/hf-lint.log"
+${HF[@]+"${HF[@]}"} lint "$PROJ" --json > "$QA/hf-lint.json" 2> "$QA/hf-lint.log"
 set -e
 LINT="$(node -e '
 const s = require("fs").readFileSync(process.argv[1], "utf8");
@@ -196,7 +199,7 @@ step lint "pass (${LWARN:-0} warnings)"; log "lint: 0 errors, ${LWARN:-0} warnin
 
 # ---- 2. check: runtime errors, layout, contrast, in one Chromium pass ----------------------
 if [ "$SKIP_CHECK" = 0 ]; then
-  if "${HF[@]}" check "$PROJ" > "$QA/hf-check.log" 2>&1; then
+  if ${HF[@]+"${HF[@]}"} check "$PROJ" > "$QA/hf-check.log" 2>&1; then
     step check pass; log "check: pass ($QA/hf-check.log)"
   else
     sed 's/\x1b\[[0-9;]*m//g' "$QA/hf-check.log" | tail -n 40 >&2
@@ -211,7 +214,7 @@ RARGS=(render "$PROJ" --format png-sequence --fps "$RFPS" -o "$WORK/frames" --wo
 [ -n "$COMP" ] && RARGS+=(-c "$COMP")
 [ -n "$VARS" ] && RARGS+=(--variables "$VARS" --strict-variables)
 log "render: $RFPS fps PNG sequence ($WORKERS workers)"
-if ! "${HF[@]}" "${RARGS[@]}" > "$QA/hf-render.log" 2>&1; then
+if ! ${HF[@]+"${HF[@]}"} ${RARGS[@]+"${RARGS[@]}"} > "$QA/hf-render.log" 2>&1; then
   sed 's/\x1b\[[0-9;]*m//g' "$QA/hf-render.log" | tail -n 30 >&2
   fail_step render "hyperframes render failed; see $QA/hf-render.log"
 fi
@@ -283,7 +286,7 @@ if [ -f "$SCRIPT_DIR/probe.py" ] && [ -n "$P_W" ] && [ -n "$P_H" ]; then
   PDUR=()
   [ -n "$P_TOTAL" ] && [ -n "$P_TLFPS" ] && PDUR=(--frames $(( (P_TOTAL * FPS + P_TLFPS / 2) / P_TLFPS )))
   AMODE=any; [ -n "$AUDIO" ] && AMODE=required
-  if python3 "$SCRIPT_DIR/probe.py" "$OUT" --spec "${P_W}x${P_H}@${FPS}" "${PDUR[@]}" --audio "$AMODE" \
+  if python3 "$SCRIPT_DIR/probe.py" "$OUT" --spec "${P_W}x${P_H}@${FPS}" ${PDUR[@]+"${PDUR[@]}"} --audio "$AMODE" \
       --json "$QA/probe.json" --quiet > /dev/null; then
     step probe pass; log "probe: pass ($QA/probe.json)"
   else

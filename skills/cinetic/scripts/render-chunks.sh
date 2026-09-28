@@ -81,7 +81,7 @@ for ((i = 0; i < CHUNKS; i++)); do
   (( a > b )) && break
   npx remotion render "$WORK/bundle" "$COMP" "$WORK/part$i.mp4" --frames="$a-$b" --concurrency=1 \
     --crf="$CRF" --x264-preset="$PRESET" --pixel-format=yuv420p --color-space=bt709 --muted --log=error \
-    "${EXTRA[@]}" > "$WORK/part$i.log" 2>&1 &
+    ${EXTRA[@]+"${EXTRA[@]}"} > "$WORK/part$i.log" 2>&1 &
   pids+=($!)
 done
 fail=0
@@ -113,7 +113,7 @@ if [[ $NOCHECK -eq 0 ]]; then
   fi
   PARGS=(--spec "${SIZE}@${FPS}" --frames "$TOTAL" --json "out/qa/probe-$NAME.json" --no-loudness)
   [[ $NOAUDIO -eq 1 ]] && PARGS+=(--audio none)
-  python3 "$SCRIPT_DIR/probe.py" "$OUT_ABS" "${PARGS[@]}" >/dev/null || STATUS=1
+  python3 "$SCRIPT_DIR/probe.py" "$OUT_ABS" ${PARGS[@]+"${PARGS[@]}"} >/dev/null || STATUS=1
 fi
 step "$( [[ $STATUS -eq 0 ]] && echo done || echo 'FAILED a gate' ): $OUT"
 exit $STATUS

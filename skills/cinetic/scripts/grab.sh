@@ -11,7 +11,8 @@
 # Prints one written path per line. Exit: 0 ok, 1 a grab failed, 2 usage error.
 set -euo pipefail
 
-usage() { sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-2}"; }
+case "${1:-}" in -h|--help) usage 0 ;; esac
 [ $# -lt 2 ] && usage
 
 VIDEO=$1; shift
@@ -22,7 +23,7 @@ while [ $# -gt 0 ]; do
     --out) OUT=$2; shift 2 ;;
     --width) WIDTH=$2; shift 2 ;;
     --crop) CROP=$2; shift 2 ;;
-    -h|--help) usage ;;
+    -h|--help) usage 0 ;;
     *) FRAMES+=("$1"); shift ;;
   esac
 done
@@ -40,7 +41,7 @@ FILTER=""
 [ -n "$FILTER" ] && VF=(-vf "$FILTER")
 
 status=0
-for spec in "${FRAMES[@]}"; do
+for spec in ${FRAMES[@]+"${FRAMES[@]}"}; do
   if [[ "$spec" =~ ^([0-9]+)-([0-9]+)$ ]]; then A=${BASH_REMATCH[1]}; B=${BASH_REMATCH[2]}
   elif [[ "$spec" =~ ^[0-9]+$ ]]; then A=$spec; B=$spec
   else echo "grab.sh: not a frame or range: $spec" >&2; exit 2; fi
