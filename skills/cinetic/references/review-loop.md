@@ -276,6 +276,7 @@ Every script threshold in one place. Most can be changed with the flag named in 
 | Hold, quiet | the same run, but small elements move | warn | |
 | End tail | a static run that reaches the last frame, ≤ 120 f | allowed | `--max-end-hold` |
 | Quiet | 60-frame mean d < 0.15, outside holds | warn | `--quiet-window`, `--quiet-mad` |
+| Hook | the first 2 s move less than max(0.5, 0.5× the film's median 2 s window); films over 6 s from frame 0, not loops | warn | declare a designed still read with `--ignore 0-119` |
 | Ghost | differs from both neighbours by > 80 while they agree (< 30), on > 2000 px (full-res), nothing moving within 192 px | **fail** | `--ghost-delta`, `--ghost-px` |
 | Border sliver | the outer 1-3 rows or columns differ by > 40 from rows 5-7, on > 25% of the edge, at a constant depth for ≥ 3 frames | **fail** | `--border-delta`, `--border-frac`, `--sliver-frames` |
 | Judder | a 24 f window of a 256 px patch moving 0.08–0.9 px/f in whole-pixel stairs (rests < 0.15 px, ≥ 2 isolated 1 px jumps, phase-correlation response ≥ 0.7) | warn | `--judder-window`, `--judder-resp`, `--track x,y,w,h` |
@@ -315,7 +316,7 @@ Every script threshold in one place. Most can be changed with the flag named in 
 | `check-sync.py` | mux lag ≤ 48 samples at three points; true peak ≤ −1 dBTP after decode |
 | `grid-check.ts` | beat is whole frames; acts contiguous; cues on the 16th grid or `offgrid:`; text holds ≥ 36 f + 6 f per word; no event gap > 48 f; words ≤ budget |
 | `lint-film.mjs` | 0 errors: no CSS animation, no nondeterminism, no frame-driven left/top, tokens only, clamped interpolate |
-| `layout-audit.sh` | no text outside the safe zone (the aspect's preset; `feed9x16` for 9:16), no overlaps, readable text ≥ 22 px (32 px in 9:16), no text covered by a `data-mover` |
+| `layout-audit.sh` | no text outside the safe zone (the aspect's preset; `feed9x16` for 9:16), no overlaps, readable text ≥ 22 px (32 px in 9:16), no text covered by a `data-mover`, no readable text (opacity ≥ 0.5) moving faster than 20 px/f from f to f+1, at 1080 px tall (`--speed`, on with `--cues`; `--max-text-speed`) |
 | `deliver.sh --loop` | the loop-seam rule above, on the delivered file |
 | `measure-speed.py` | `too_fast`: frames over 80 px/f (`--too-fast`), a redesign warning; `short_shutter`: frames the samples can't cover |
 | `score.py` | LRA ≥ 5 LU for films of 20 s or more; the payoff ≥ 2 LU over the median momentary loudness; the first 0.5 s within 12 dB of the median (soft hook); no effect starting inside the end fade (warnings) |
