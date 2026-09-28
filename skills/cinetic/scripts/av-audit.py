@@ -26,6 +26,9 @@ Checks (defaults are proven starting points, not dogma):
              strong visual peaks (a cut, a flash, the peak of a big move) with no audio onset or
              sfx envelope peak within +-3 f (--peak-tol), and no contact cue (land, hit, snap,
              drop) in the next 10 f: a picture event with nothing under it                      warn
+             the reverse: a loud sound (sfx envelope peak within 6 dB of the loudest) whose
+             picture barely changes from -3 to +6 f (MAD < max(0.3, 2x the median over
+             +-30 f)): a big hit on a still frame reads as unmotivated                         warn
   loudness   ffmpeg ebur128: integrated at the film's target +-1 LUFS, true peak <= -1.0 dBTP  fail
              (target: --lufs, else master.lufs in the score JSON (--score, default
              audio/score.json), else -14 and -16 both pass)
@@ -436,8 +439,27 @@ def main():
             add('visual', 'warn', r['frame'], f'a strong picture change (MAD {r["mad"]}) has no sound within +-{args.peak_tol} f'
                 + (f' (nearest {near:+.0f} f)' if abs(near) < 60 else '')
                 + ': cuts and the peaks of big moves land on a beat with a hit under them; move the picture onto the grid or add the hit')
+        # the reverse: a loud sound needs something visible that causes it. A hit on a frozen hold
+        # reads as unmotivated; give it a pulse, a landing or a push accent, or make it quieter.
+        still_hits = []
+        if len(epk) and env_v.max() > 0:
+            top = float(env_v.max())
+            for q in epk:
+                if env_v[q] < 0.5 * top:  # within 6 dB of the loudest effect
+                    continue
+                p = int(round(q * ms_v / 1000 * fps))
+                if p - 3 < 1 or p + 7 > len(d):
+                    continue
+                win = float(d[p - 3:p + 7].max())
+                base = float(np.median(d[max(1, p - 30):p + 31]))
+                if win < max(0.3, 2 * base):
+                    still_hits.append(dict(frame=p, level_db=round(20 * np.log10(env_v[q] / top), 1), picture_mad=round(win, 2)))
+        for r in still_hits[:6]:
+            add('visual', 'warn', r['frame'], f'a loud sound ({r["level_db"]:+.1f} dB from the loudest effect) lands on a '
+                f'still picture (MAD {r["picture_mad"]} from -3 to +6 f): give it a visible cause (a pulse, a landing, '
+                'a push accent) or make it quieter')
         clear_rows = [r for r in vrows if r['clear']]
-        visual = dict(checked=len(vrows), clear_peaks=len(clear_rows),
+        visual = dict(still_hits=still_hits[:12], checked=len(vrows), clear_peaks=len(clear_rows),
                       aligned=sum(1 for r in clear_rows if r['ok']),
                       median_peak_offset_f=float(np.median([r['peak_offset_f'] for r in clear_rows])) if clear_rows else None,
                       misaligned=bad[:40], peaks_without_event=lonely[:12])

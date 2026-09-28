@@ -286,6 +286,8 @@ All in `scripts/audio/synth.py` (48 kHz, numpy/scipy, seeded). Oscillators integ
 
 Typing thins itself: hats go to 8ths at half level and the arp drops 4 dB in bars with 4+ keys.
 
+**Scale each sound to its cause.** A sound is as big as the thing the viewer sees make it. A caret blink or a small UI tick gets a whisper, about 12–18 dB under the landing hit; the mark landing or the payoff gets the loudest effect in the film. A loud tick over a held frame reads as a sound with no cause, and viewers hear it as a mistake. Set each event's `weight` in `src/sync.ts` (0–2, §3) from the size of its picture event (a caret or tick about 0.3, the landing 1.5–2), then read `av-audit.py`'s visual warnings: it flags loud effects that land on a still picture.
+
 ## 9. Master and verification
 
 `master.py` (imported by `score.py`, also standalone) runs loudness passes: measure integrated loudness (pyloudnorm), gain to the target, then a true-peak lookahead limiter (4× oversampled detection, 4 ms lookahead, 80 ms release, ceiling 0.77 linear = −2.3 dBFS), repeated until within 0.05 LU, then fades the edges (3 ms in from zero at sample 0, at least 10 ms out onto the last sample). The ceiling leaves room for AAC, which adds 0.5–1 dB of peak.
