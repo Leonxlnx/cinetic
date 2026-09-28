@@ -27,7 +27,7 @@ The brand wins. Everything below is for what you have to invent, plus the method
 - **Typeface.** Use it, serif and condensed included. Ship it locally (`@font-face` or a `@fontsource-variable/*` package) and gate it with `FontGate`.
 - **Supplied things the hard bans would catch** (their orange, their cream paper, their serif wordmark face) are the brand's identity, so they stay. List each one in `BRIEF.md` as a brand-supplied exception, so the critics don't flag it, and mark the lines that set it with `// cinetic:brand-supplied <what>` (in the file's leading comment it covers the whole file), so `lint-film.mjs` accepts them. `palette.py` takes `--brand-supplied` for the same reason.
 - **Logo.** Use the vector file. Don't redraw or "improve" it. Find the device in its geometry (a dot, a corner, a counter, a stroke end); if there is none, the device is the accent colour itself. Build the sting by splitting the logo along its existing shapes.
-- **Wordmark only.** Take the device from a letter feature: the dot of an i, a crossbar, a terminal.
+- **Wordmark only.** Take the device from a letter feature: the dot of an i, a crossbar, a terminal. A letter you redraw inside the word must share the typeface's stroke weight, terminals (flat or round) and curve tension; a hand-built letter next to stock ones reads as a patch. Trace the font's own glyph (`outline-text.py` gives its path) and change only the feature that carries the idea.
 - **Brand guidelines that conflict with a rule here** (a gradient in the logo, a second accent): follow the guidelines, and use the rule to limit the damage. Show the gradient only in the logo, and let the second colour appear only in UI.
 
 ## 2. Personality → choices
