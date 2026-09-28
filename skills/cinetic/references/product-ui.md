@@ -130,7 +130,7 @@ export const listLayout = (rows: Row[], insertId: string, f: number, at: number)
 - **New things arrive in the accent and relax to neutral over 10–30 f**: a new row's marker, a changed value, a typed letter. Colour then means "just happened". Colour ramps and OKLab mixing are in `references/brand-and-color.md`.
 
 ### 4.2 Counters count during the action
-A counter decrements (or increments) on each visible event, on whole frames, and rolls each changed digit over 6–8 f. A counter frozen at "12" while everything resolves, then flipping to "0" in one frame, contradicts the picture.
+A counter decrements (or increments) on each visible event, on whole frames, and rolls each changed digit over 6–8 f. Roll it (a masked vertical slide, as below) or cut it; never crossfade two numbers in place, because the half-and-half frames read as a ghosted double image, worse after motion blur. A counter frozen at "12" while everything resolves, then flipping to "0" in one frame, contradicts the picture.
 
 **State follows its cause on the landing frame.** The event frame is the frame the cause lands: the contact frame of the tile that seats, the settle of the row that arrives, the press of the button. The counter starts rolling there, the check draws there, the total changes there, never a beat later, when it reads as a second, unexplained event. Export those frames from the act once (`LANDINGS`, the same constant `src/sync.ts` puts the sound on) and drive the counter, the check and the sound from it, so the three can't drift apart.
 
