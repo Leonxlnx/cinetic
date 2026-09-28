@@ -4,7 +4,7 @@ All notable changes to cinetic are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Versions 0.1.0 to 0.5.0 were development versions. Each was run against the briefs in `evals/evals.json` (the round on 0.2.0 was invalidated by a harness problem and is not reported), and the findings of each reported round became rules in the next version (see [docs/evaluation.md](docs/evaluation.md)).
+Versions 0.1.0 to 0.5.0 were development versions. Each was run against the briefs in `evals/evals.json` (the round on 0.2.0 was invalidated by a harness problem and is not reported), and the findings of each reported round became rules in the next version (see [docs/evaluation.md](docs/evaluation.md)). Each version up to 0.5.0 was committed from the snapshot that was evaluated, so every tag's tree is exactly the version that was tested; commit times between two tags are approximate.
 
 ## [Unreleased]
 
@@ -12,7 +12,7 @@ Versions 0.1.0 to 0.5.0 were development versions. Each was run against the brie
 
 cinetic is an agent skill that has your coding agent direct, score and render short films from code: launch films and teasers, product and feature videos, looping feature animations, logo stings, UI walkthroughs and social cut-downs. One beat grid in `timeline.ts` drives the picture, a synthesized soundtrack and the QA scripts, and a film counts as done only after its render has been measured and reviewed.
 
-Install it with the skills CLI (`npx skills add Leonxlnx/cinetic`), or in Claude Code with `/plugin marketplace add Leonxlnx/cinetic` followed by `/plugin install cinetic@cinetic`. To install by hand, download `cinetic.skill` from the [v1.0.0 release](https://github.com/Leonxlnx/cinetic/releases/tag/v1.0.0) (a zip whose top folder is `cinetic/`) and unzip it into `~/.claude/skills/`.
+Install it with the skills CLI (`npx skills add Leonxlnx/cinetic`), or in Claude Code with `/plugin marketplace add Leonxlnx/cinetic` followed by `/plugin install cinetic@cinetic`. To install by hand, download `cinetic.skill` from the [release page](https://github.com/Leonxlnx/cinetic/releases/tag/v1.0.0) (a zip whose top folder is `cinetic/`; the four demo films are attached next to it) and unzip it into `~/.claude/skills/`.
 
 Changes since 0.5.0 are listed under Added and Changed below. The rule and check changes come from the fifth evaluation round, which tested 0.5.0 against the same agent working without cinetic but with the official Remotion agent skills. In that round the cinetic runs met 54 of 56 written expectations (96%) against 41 of 56 (73%), won 2 of 4 blind comparisons with a neutral judge, and won 4 of 4 with a second blind judge applying the house style guide (the hard bans). The neutral judge's remaining craft points, such as quiet stretches, end cards without a descriptor and a loud sound on a still frame, fed the new rules. The plugin manifests, the license and CI were added for the public release. 1.0.0 itself has not been through a separate blind round; see the [evaluation](https://github.com/Leonxlnx/cinetic/blob/main/docs/evaluation.md) for the method and every round.
 
@@ -34,7 +34,7 @@ Changes since 0.5.0 are listed under Added and Changed below. The rule and check
 - `av-audit.py` warns when a loud effect (within 6 dB of the loudest) lands on a picture that barely changes from 3 frames before it to 6 frames after, and lists these as `visual.still_hits`.
 - Hook check in `forensics.py`: a film over 6 s that starts at frame 0 and is not a loop gets a warning when its first 2 s move less than max(0.5, 0.5× the film's median 2 s window). `review-loop.md` documents it.
 - Claude Code plugin marketplace (`.claude-plugin/marketplace.json` and `plugin.json`), MIT license, and `license` and `compatibility` fields in the SKILL.md frontmatter.
-- CI checks the SKILL.md frontmatter and the JSON manifests, confirms the skills CLI discovers the skill, and runs the lint regression tests and Python and shell syntax checks. A release workflow packages `cinetic.skill` on each version tag, checks that `plugin.json` matches the tag, and takes the release notes from this file.
+- CI checks the SKILL.md frontmatter and the JSON manifests, confirms the skills CLI discovers the skill, and runs the lint regression tests and Python and shell syntax checks. A release workflow packages `cinetic.skill` on each version tag, checks that `plugin.json` matches the tag, and takes the release notes from CHANGELOG.md.
 
 ### Changed
 

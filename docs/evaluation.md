@@ -70,7 +70,7 @@ Each round ran every brief with cinetic at the version under test and compared t
 - **with cinetic**: the agent pointed at a snapshot of the skill at the version under test and told to follow its SKILL.md;
 - **baseline**: the same agent without cinetic, but with the official Remotion agent skills (`remotion-best-practices` and its companions).
 
-The baseline films were made once (the first three briefs in round 1, the Quire Streaks brief in round 2), kept unchanged, and re-graded and re-compared in every later round. Only the cinetic films were made again each round. Both setups got the same brief text, and judging started only after the runs had finished. Three judges looked at the outputs:
+The baseline films were made once (the first three briefs in round 1; the Quire Streaks brief in round 2, where it was first run, before it was added to `evals/evals.json` in 0.3.0), kept unchanged, and re-graded and re-compared in every later round. Only the cinetic films were made again each round. Both setups got the same brief text, and judging started only after the runs had finished. Three judges looked at the outputs:
 
 | Judge | Knows which film is cinetic's | Output |
 |---|---|---|
@@ -179,7 +179,7 @@ This repository ships the briefs and expectations only, not a harness or judge p
 ```bash
 python3 scripts/probe.py out/film.mp4 --spec 1920x1080@60 --dur 25 --tol 1.5 --lufs -14 --lufs-tol 1.5 --tp-max -1 --motion
 python3 scripts/check-sync.py out/film.mp4 public/audio/soundtrack.wav
-python3 scripts/forensics.py out/loop.mp4 --loop --json qa/loop.json
+python3 scripts/forensics.py out/loop.mp4 --loop --json out/qa/loop.json
 ```
 
 `probe.py` covers size, fps, duration, BT.709 tags, audio, loudness, true peak and frozen frames. `--motion` reports stutter frames but does not gate them, so compare the count against 1% of the frames yourself. `check-sync.py` checks audio lag and true peak after decoding, and `forensics.py --loop` checks the loop seam. The gates come from the flags you pass and otherwise from the skill's defaults, not from `evals.json`: `forensics.py`, for example, gates the seam at max(0.4, 1.5x the median step at the ends), while the Ledgerly expectation asks for at most 1.5x the median moving step and under 3.0. Grade against the numbers the expectation states, and compare different skills with the same scripts.

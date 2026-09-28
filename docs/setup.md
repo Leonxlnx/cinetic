@@ -87,7 +87,7 @@ npx skills add Leonxlnx/cinetic -a cursor opencode -g
 | Gemini CLI | `gemini-cli` | `.agents/skills/` | `~/.agents/skills/` |
 | GitHub Copilot | `github-copilot` | `.agents/skills/` | `~/.agents/skills/` |
 
-These ids and paths come from skills CLI v1.7.0. The current list is the Supported Agents table in the [skills CLI README](https://github.com/vercel-labs/skills#supported-agents).
+These ids and paths are what skills CLI v1.7.0 does. The full agent list is the Supported Agents table in the [skills CLI README](https://github.com/vercel-labs/skills#supported-agents); that table shows each agent's own global folder, but a global install for an agent that reads `.agents/skills/` goes to `~/.agents/skills/`.
 
 When you install for several agents at once, the CLI keeps one copy in `.agents/skills/cinetic/` (`~/.agents/skills/cinetic/` with `-g`). Codex, Cursor, OpenCode, Gemini CLI and GitHub Copilot read that folder directly, and Claude Code gets a symlink to it in `.claude/skills/cinetic/`; `--copy` gives Claude Code its own copy instead. A single-agent install is a plain copy. The skill needs an agent that can run shell commands, because every step runs a script.
 
@@ -145,12 +145,12 @@ To update, delete the old folder first and repeat the steps: `rm -rf ~/.claude/s
 | ffmpeg and ffprobe | 6 or newer, built with libx264 | muxing the soundtrack, the blurred master's encode (`accumulate.py`), the HyperFrames encode (`hf-finish.sh`), probing and QA decoding |
 | Python | 3.11 or newer | sound (`score.py`, `master.py`), motion blur (`measure-speed.py`, `accumulate.py`), every QA gate |
 | Chromium headless shell | any recent build | rendering frames; Remotion downloads its own unless you point it at one ([section 3](#3-browser-setup)) |
-| bash | any | every `.sh` script |
+| bash | 3.2 or newer (macOS's built-in bash works) | every `.sh` script |
 | Network | when scaffolding a film, and each time you add a font | `npm install` in each new film (unless `--link-modules`), `npm pack` in `add-font.mjs`, the first `npx -y hyperframes@0.8.79` run, Remotion's first browser download; renders themselves run offline |
 
 Remotion bundles an ffmpeg of its own for its internal encodes, but `render.sh`, `accumulate.py`, `hf-finish.sh` and the QA scripts call `ffmpeg` and `ffprobe` from your `PATH`.
 
-The scripts are bash and are tested on Linux (CI runs on Ubuntu); they are written to run on macOS as well, with one known issue noted below. On Windows, WSL2 with the Ubuntu steps below is the likely route; it has not been tested.
+The scripts are bash and were developed and tested on Linux (CI runs on Ubuntu). They avoid GNU-only tools and bash 4 features so that they also run on macOS with its built-in bash 3.2, but macOS is less tested; please report anything that breaks. On Windows, WSL2 with the Ubuntu steps below is the likely route; it has not been tested.
 
 ### macOS (Homebrew)
 
@@ -163,12 +163,6 @@ node --version && ffmpeg -version | head -1 && python3.12 --version
 
 `brew install node` works as well: any current Node release is 22 or newer. Homebrew's `ffmpeg` includes libx264.
 
-**Known issue.** `render.sh --blur` times its sharp pass with `date +%s.%N`. The `date` that ships with macOS does not support `%N`, so a blurred render is likely to stop right after the sharp pass. Until that is fixed, run the blurred render from the film project with GNU `date` first on the `PATH`:
-
-```bash
-brew install coreutils
-PATH="$(brew --prefix coreutils)/libexec/gnubin:$PATH" bash scripts/render.sh Film out/film.mp4 --blur
-```
 
 ### Ubuntu and Debian (apt)
 
@@ -421,7 +415,7 @@ The full pipeline is in [`references/finishing.md`](../skills/cinetic/references
 |---|---|---|
 | `render.sh: soundtrack public/audio/soundtrack.wav not found` | cues and audio were not built | `npm run cues && npm run audio`; or pass `--build-audio` to rebuild both first; or `--no-audio` for a silent film |
 | `render.sh: warning: src/... is newer than public/audio/soundtrack.wav` | the picture changed after the score was made | rerun `npm run cues && npm run audio` before rendering; an old WAV under a retimed picture is the most common sync bug |
-| `npm run audio` prints `FAIL` with `integrated ... LUFS not within -14+-0.5` | the master missed its loudness target (±0.5 LU) | read `warnings` and `limiter_hot` in `out/qa/score.json`; pull a loud bed down rather than raising the ceiling; a calm brand or a sting of 8 s or less may target −16: set `"master": {"lufs": -16}` in `audio/score.json` (or pass `--lufs -16`), then rerun `npm run audio` |
+| `npm run audio` prints `FAIL` with `integrated ... LUFS not within -14.0+-0.5` | the master missed its loudness target (±0.5 LU) | read `warnings` and `limiter_hot` in `out/qa/score.json`; pull a loud bed down rather than raising the ceiling; a calm brand or a sting of 8 s or less may target −16: set `"master": {"lufs": -16}` in `audio/score.json` (or pass `--lufs -16`), then rerun `npm run audio` |
 | `FAIL: true peak ... dBTP above -1.5` | the ceiling was raised, or sounds were added after mastering | restore `"ceiling": 0.77` in `audio/score.json` and rerun `npm run audio`; master a supplied track with `python3 scripts/audio/master.py mix.wav public/audio/soundtrack.wav --lufs -14` |
 | `check-sync` fails on true peak after the mux | the AAC encode adds 0.5–1 dB of peak | the same fix as above: keep the 0.77 ceiling so the WAV stays at or under −1.5 dBTP |
 
@@ -448,4 +442,4 @@ The full pipeline is in [`references/finishing.md`](../skills/cinetic/references
 | Extra skills appeared in `~/.claude/skills` | `hyperframes init` installs its vendor's agent skills | start projects with `new-film.sh --engine hyperframes`, not `init`; `hf-finish.sh` sets `HYPERFRAMES_SKIP_SKILLS=1` and turns telemetry off (`HYPERFRAMES_NO_TELEMETRY=1`) |
 | Motion over about 18 px per frame shows separate copies after `--blur` | HyperFrames blur is capped at 240 fps (K ≤ 4 at 60 fps) | build fast films in Remotion, whose `render.sh --blur` adds samples with speed |
 
-Still stuck: every script prints `--help`, and [`references/remotion-engine.md`](../skills/cinetic/references/remotion-engine.md), [`references/hyperframes-engine.md`](../skills/cinetic/references/hyperframes-engine.md), [`references/chromium-rendering.md`](../skills/cinetic/references/chromium-rendering.md) and [`references/finishing.md`](../skills/cinetic/references/finishing.md) cover each engine's traps in more depth. Report a problem at [github.com/Leonxlnx/cinetic/issues](https://github.com/Leonxlnx/cinetic/issues).
+Still stuck: every script except the internal `brand-svg.ts` helper prints `--help`, and [`references/remotion-engine.md`](../skills/cinetic/references/remotion-engine.md), [`references/hyperframes-engine.md`](../skills/cinetic/references/hyperframes-engine.md), [`references/chromium-rendering.md`](../skills/cinetic/references/chromium-rendering.md) and [`references/finishing.md`](../skills/cinetic/references/finishing.md) cover each engine's traps in more depth. Report a problem at [github.com/Leonxlnx/cinetic/issues](https://github.com/Leonxlnx/cinetic/issues).
