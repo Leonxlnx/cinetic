@@ -1,0 +1,216 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SKILL: cinetic
+
+jobs:
+  check:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Tool versions
+        run: |
+          echo "node $(node --version)"
+          python3 --version
+          echo "bash $BASH_VERSION"
+          major="$(node -p 'process.versions.node.split(".")[0]')"
+          if [ "$major" -lt 18 ]; then
+            echo "::error::Node.js 18 or newer is required, found $(node --version)"
+            exit 1
+          fi
+
+      - name: SKILL.md frontmatter
+        run: |
+          python3 - <<'PY'
+          import glob
+          import os
+          import re
+          import sys
+
+          skill = os.environ["SKILL"]
+          NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+          KNOWN = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
+
+
+          def frontmatter(path):
+              with open(path, "rb") as fh:
+                  raw = fh.read()
+              # The skills CLI matches /^---\r?\n/ on the raw text, so a BOM hides the frontmatter.
+              if raw.startswith(b"\xef\xbb\xbf"):
+                  raise ValueError("the file starts with a UTF-8 BOM; the skills CLI would skip this skill")
+              lines = raw.decode("utf-8").replace("\r\n", "\n").split("\n")
+              if lines[0].rstrip() != "---":
+                  raise ValueError("the file must start with a '---' line")
+              end = next((i for i in range(1, len(lines)) if lines[i].rstrip() == "---"), None)
+              if end is None:
+                  raise ValueError("the frontmatter has no closing '---' line")
+              body, fields, i = lines[1:end], {}, 0
+              while i < len(body):
+                  m = re.match(r"^([A-Za-z0-9_-]+):[ \t]*(.*)$", body[i])
+                  i += 1
+                  if not m:
+                      continue
+                  key, raw = m.group(1), m.group(2).rstrip()
+                  cont = []
+                  while i < len(body) and (body[i][:1] in (" ", "\t") or not body[i].strip()):
+                      cont.append(body[i].strip())
+                      i += 1
+                  if raw[:1] in ("|", ">"):
+                      value = ("\n" if raw[0] == "|" else " ").join(cont).strip()
+                  elif not raw:
+                      value = "\n".join(c for c in cont if c)
+                  else:
+                      value = " ".join([raw] + [c for c in cont if c]).strip()
+                      if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                          value = value[1:-1]
+                      elif key in ("name", "description") and (": " in value or " #" in value):
+                          raise ValueError(f"'{key}' is an unquoted YAML value containing ': ' or ' #'; wrap it in quotes")
+                  fields[key] = value
+              return fields
+
+
+          errors = 0
+
+
+          def fail(path, message):
+              global errors
+              errors += 1
+              print(f"::error file={path}::{message}")
+
+
+          paths = sorted(glob.glob("skills/*/SKILL.md"))
+          if f"skills/{skill}/SKILL.md" not in paths:
+              fail(f"skills/{skill}/SKILL.md", "file not found")
+          for path in paths:
+              folder = os.path.basename(os.path.dirname(path))
+              try:
+                  fm = frontmatter(path)
+              except ValueError as exc:
+                  fail(path, str(exc))
+                  continue
+              name = fm.get("name", "")
+              desc = fm.get("description", "")
+              if not name:
+                  fail(path, "missing 'name'")
+              elif not NAME_RE.match(name) or len(name) > 64:
+                  fail(path, f"name '{name}' must be 1-64 lowercase letters, digits and single hyphens")
+              elif name != folder:
+                  fail(path, f"name '{name}' does not match its directory '{folder}'")
+              if not desc:
+                  fail(path, "missing 'description'")
+              elif len(desc) > 1024:
+                  fail(path, f"description is {len(desc)} characters; the limit is 1024")
+              elif "<" in desc or ">" in desc:
+                  fail(path, "description must not contain '<' or '>'")
+              for key in sorted(set(fm) - KNOWN):
+                  print(f"::warning file={path}::frontmatter key '{key}' is not in the Agent Skills spec")
+              print(f"{path}: name={name!r}, description={len(desc)} chars")
+          sys.exit(1 if errors else 0)
+          PY
+
+      - name: JSON manifests
+        run: |
+          shopt -s nullglob
+          status=0
+          for f in .claude-plugin/*.json evals/*.json; do
+            if python3 -m json.tool "$f" > /dev/null; then
+              echo "ok   $f"
+            else
+              echo "::error file=$f::invalid JSON"
+              status=1
+            fi
+          done
+          exit "$status"
+
+      - name: Plugin manifests agree
+        run: |
+          python3 - <<'PY'
+          import json
+          import sys
+
+          errors = []
+          mkt = json.load(open(".claude-plugin/marketplace.json", encoding="utf-8"))
+          plg = json.load(open(".claude-plugin/plugin.json", encoding="utf-8"))
+          name = plg.get("name")
+          entries = [e for e in mkt.get("plugins", []) if e.get("name") == name]
+          if not entries:
+              errors.append(f"marketplace.json has no plugins[] entry named {name!r} (the plugin.json name)")
+          for e in entries:
+              src = e.get("source")
+              if not (isinstance(src, str) and src.startswith("./")):
+                  errors.append(f"entry source {src!r} must be a string starting with './'; the skills CLI skips anything else")
+              if "version" in e:
+                  errors.append("set version in plugin.json only, not also in the marketplace entry")
+          if not plg.get("version"):
+              errors.append("plugin.json has no version")
+          for msg in errors:
+              print(f"::error file=.claude-plugin/marketplace.json::{msg}")
+          print(f"plugin {name!r}, version {plg.get('version')!r}, {len(entries)} matching entry")
+          sys.exit(1 if errors else 0)
+          PY
+
+      - name: skills CLI discovers the skill
+        env:
+          DISABLE_TELEMETRY: '1'
+        run: |
+          out="$(npx -y skills@1.7.0 add . --list 2>&1 | sed 's/\x1b\[[0-9;?]*[A-Za-z]//g')"
+          printf '%s\n' "$out"
+          if ! printf '%s\n' "$out" | grep -qxE "\|[[:space:]]+${SKILL}[[:space:]]*"; then
+            echo "::error::npx skills add . --list did not list '$SKILL'"
+            exit 1
+          fi
+
+      - name: Lint-film regression tests
+        run: node "skills/$SKILL/scripts/test/lint-film.test.mjs"
+
+      - name: Python syntax (py_compile)
+        run: |
+          shopt -s globstar nullglob
+          files=(skills/"$SKILL"/scripts/**/*.py)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::no .py files under skills/$SKILL/scripts"
+            exit 1
+          fi
+          printf 'compile %s\n' "${files[@]}"
+          PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache" python3 -m py_compile "${files[@]}"
+
+      - name: Shell syntax (bash -n)
+        run: |
+          shopt -s globstar nullglob
+          status=0
+          count=0
+          for f in **/*.sh; do
+            case "$f" in */node_modules/*) continue ;; esac
+            count=$((count + 1))
+            if bash -n "$f"; then
+              echo "ok   $f"
+            else
+              echo "::error file=$f::bash -n failed"
+              status=1
+            fi
+          done
+          echo "$count shell scripts checked"
+          exit "$status"
