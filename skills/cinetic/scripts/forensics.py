@@ -27,6 +27,9 @@ Frames are 0-based and absolute (frame = t * fps). Defaults (every number is a f
                                    quiet (only small elements move)                   warn
                a static end tail <= 120 f is allowed (the audio decays there)
   quiet        60-frame mean d < 0.15 outside holds (nearly locked-off)                warn
+  hook         the first 2 s move less than max(0.5, 0.5x the film's median 2 s window)
+               (films over 6 s that start at frame 0, not loops): a muted feed decides in
+               second one                                                              warn
   ghost        a frame differs from both neighbours by > 80 while they agree (< 30) on
                > 2000 px (full-res equivalent) and nothing moves within 192 px         fail
                (the same pattern inside motion is a fast element crossing: info)
@@ -837,6 +840,19 @@ def evaluate(args, info, M, decl):
             add('quiet', 'warn', f'{fa}-{fb}', f'{fb - fa + 1} f of near-stillness (mean change {q["mean_mad"]}); '
                 'fine for a read, otherwise add drift or a push')
 
+    # --- hook: the opening carries at least the film's typical energy (a muted feed decides in second one)
+    hook = None
+    hw = int(round(2 * fps))
+    if f0 == 0 and last + 1 >= info['frames'] - 2 and n > 3 * hw and not getattr(args, 'loop', False):
+        cs = np.concatenate([[0], np.cumsum(dd)])
+        typical = float(np.median((cs[hw:] - cs[:-hw]) / hw))
+        opening = float(dd[1:hw].mean())
+        hook = dict(first_2s=round(opening, 3), typical_2s=round(typical, 3))
+        if opening < max(0.5, 0.5 * typical) and not ignored(0):
+            add('hook', 'warn', f'0-{hw - 1}', f'the first 2 s move {opening:.2f} against a typical 2 s of {typical:.2f}: '
+                'a still opening loses a muted feed; start inside the action (the device already moving, the first '
+                'change by 0.5 s) and let the first line land over motion')
+
     # --- ghosts
     for g in M['ghosts']:
         if ignored(g['frame']) or in_ranges(g['frame'], cuts, 1):
@@ -1008,7 +1024,7 @@ def evaluate(args, info, M, decl):
                       spike_classes=counts, fast_crossings=len(M['crossings']),
                       energy_per_second=per_sec, energy_per_act=per_act),
         'flags': flags,
-        'checks': dict(spikes=spikes, stalls=stalls, holds=holds, quiet=quiet, ghosts=M['ghosts'],
+        'checks': dict(spikes=spikes, stalls=stalls, holds=holds, quiet=quiet, hook=hook, ghosts=M['ghosts'],
                        crossings=M['crossings'][:100], borders=borders, judder=judder, sharpness=sharp_steps,
                        banding=band, banding_sheet=band_sheet, smear=smear, smear_sheet=smear_sheet,
                        seams=seam_table, loop=loop, determinism=det),
