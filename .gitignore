@@ -1,0 +1,11 @@
+# local installs and test output (the skills CLI treats these folders as skill sources)
+.claude/skills/
+.agents/skills/
+skills-lock.json
+
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+dist/
+out/
