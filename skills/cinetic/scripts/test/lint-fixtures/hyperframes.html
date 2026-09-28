@@ -1,0 +1,22 @@
+<!doctype html>
+<!-- Fixture. expect: banned-color=2 serif=2 glass=1 glow=1 italic=1 -->
+<html>
+  <head>
+    <style>
+      @font-face {
+        font-family: "Playfair Display";
+        src: url("fonts/playfair.woff2") format("woff2");
+      }
+      :root {
+        --ink: #0d0e10;
+        --paper: #f5f0e6;
+        --accent: #7c3aed;
+        --warn: #f97316; /* cinetic:brand-supplied their warning orange: covers this line only */
+      }
+      #root { font-family: "Inter Tight", sans-serif; }
+      .panel { backdrop-filter: blur(24px); box-shadow: 0 0 30px var(--accent); }
+      .quote { font-style: italic; font: 400 40px "Playfair Display", serif; }
+    </style>
+  </head>
+  <body><div id="root"></div></body>
+</html>
