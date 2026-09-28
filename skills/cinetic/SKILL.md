@@ -174,7 +174,7 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
   3. Run `bash scripts/layout-audit.sh Act2 --cues`.
 - **Gate:**
   - `lint-film.mjs` is clean;
-  - `layout-audit` reports 0 safe-area or overlap violations;
+  - `layout-audit` reports 0 safe-area or overlap violations, and no readable text faster than 20 px/f;
   - every act sheet has written review notes.
 
 ### Step 5: Sound → `public/audio/soundtrack.wav`
@@ -191,7 +191,7 @@ Read `references/sound.md` now.
 - **Gate:**
   - the WAV measures its target ±0.5 LUFS integrated (`master.lufs` in `audio/score.json`: −14, or −16 for a calm brand or a short sting), with true peak ≤ −1.5 dBTP before encoding;
   - a film of 20 s or more has contrast: LRA 5–8 LU, and the payoff 2–3 LU above the median momentary loudness (`score.py` warns);
-  - every event has a sound, and every sound has something visible that causes it.
+  - every event has a sound, and every sound has something visible that causes it, at a loudness that matches the size of that cause (a caret blink whispers; the landing mark hits).
 
 ### Step 6: Render and finish → `out/film.mp4`
 Read `references/finishing.md` now.
@@ -209,7 +209,7 @@ Read `references/finishing.md` now.
   - `python3 scripts/check-sync.py out/film.mp4 public/audio/soundtrack.wav` reports a lag of ≤ 48 samples and true peak ≤ −1 dBTP after decoding.
 
 ### Step 7: Review loop
-Run §8 on previews. Launch films and walkthroughs get at least 2 rounds. For stings and loops whose scripts all pass, 1 round is enough. The blurred master then gets a check, not a round: forensics, av-audit, its fastest frames at full size, and a director's glance.
+Run §8 on previews. Launch films and walkthroughs get at least 2 rounds. For stings and loops whose scripts all pass, 1 round is enough. The blurred master then gets a check, not a round: forensics, av-audit, its fastest frames at full size (every act's, including the lockup's entrance and exit, where a sliding wordmark most often shows stepped copies; fix with `measure-speed.py --floor a-b:n`), and a director's glance.
 
 ### Step 8: Deliver
 - Run `bash scripts/deliver.sh out/film.mp4` with the flags your format needs: `--loop --gif --webm` for loops, `--alpha StingAlpha,StingAlphaClear` for ProRes 4444, and `--variants Film9x16,Film1x1` for social versions. It writes the poster (the final frame) and, in `qa/`, a manifest. For a brand you invented, `bash scripts/brand-kit.sh` exports the mark, lockups, favicon sizes and avatar. Re-lay the social versions out from the same timeline; never crop the master (see `references/formats.md`).
@@ -267,7 +267,7 @@ These rules ban the tells of generated work, not personality. Two films made wit
 - **Fill the frame with purpose.**
   - In product shots the hero (the UI, the object, the number) covers about 40–70% of the frame.
   - Outside designed negative space around a single hero, such as a logo, no region of more than about a quarter of the frame stays empty.
-  - In vertical feeds, the platform's caption and button zones get background or continuation (the product's surface, the stage, a bleed), not an empty band. Judges read emptiness as unfinished, whatever the reason.
+  - In vertical feeds, the platform's caption and button zones get background or continuation (the product's surface, the stage, a bleed), not an empty band. Viewers read emptiness as unfinished, whatever the reason.
 
 **Decoration**
 - Every element must name its job (reveal, route, validate, emphasise) or be cut. That rules out particles, bokeh, starfields and ghost text.
@@ -309,8 +309,8 @@ const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one
   - Start a spring at `beat − delayTo(cfg, 0.5)` so its pop lands on the beat.
 - **Holds**
   - Once text resolves, it stays at least 36 f + 6 f per word. Text that hasn't resolved never exits.
-  - Nothing is static for more than 48 f, except a designed freeze of ≤ 15 f that sits exactly on a silence.
-  - A logo or lockup hold is 1.5–2.0 s and visibly builds (a push of ≥ 10–20%), then the tail. Never more than about 2.5 s on a still end card: judges call a longer one "drags". A URL is readable for at least 1.7 s.
+  - Nothing is static for more than 48 f, except a designed freeze of ≤ 15 f that sits exactly on a silence. When a gate flags a quiet stretch, give it motion; loosening the threshold to pass is not a fix.
+  - A logo or lockup hold is 1.5–2.0 s and visibly builds (a push of ≥ 10–20%), then the tail. Never more than about 2.5 s on a still end card: a longer one reads as a drag. A URL is readable for at least 1.7 s.
   - In a launch film or product video the lockup appears once, at the end (a sting is the exception: it is all lockup). A mid-film logo reveal followed by the same lockup again reads as a repeat and spends seconds on a still. Mid-film, the brand is present through the device and the accent. Brand logo time across the whole film stays ≤ about 12% of the runtime.
 - **Density**
   - Aim for 45–60 discrete events per 30 s and one motion peak per bar, with 30–70 f of calm between peaks.
@@ -325,7 +325,7 @@ const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one
   - the problem is felt by 1 s and stated by 2 s.
 
   A soft first second loses a muted feed.
-- **End card:** carry the brief's one practical fact when it gives one (a date such as "next week", a URL, "out now"), set at the secondary size under the lockup. That is the only line besides the name.
+- **End card:** carry the brief's one practical fact when it gives one (a date such as "next week", a URL, "out now"), set at the secondary size under the lockup. When the brief gives none, a launch film or product video still says what the product is in one short line under the name ("The build cache for CI."); a bare name is for stings. That is the only line besides the name.
 - **State follows the event:** counters, checks and totals change on the landing frame of the thing that caused them, not a beat later.
 
 **Where a sound goes** (computed by `src/lib/sync.ts`: `peak`, `hit`, `delayTo`, `settleOf`):
@@ -484,7 +484,7 @@ Read each file when its step comes up. Don't read them all at once.
 |---|---|
 | a project from the starter | `scripts/new-film.sh` |
 | static bans and hard bans, a leftover placeholder brand | `scripts/lint-film.mjs` |
-| grid, holds, gaps, word budget; text in the safe zone (feed presets: `--safe feed9x16`), text covered by movers | `scripts/grid-check.ts`; `scripts/layout-audit.sh` |
+| grid, holds, gaps, word budget; text in the safe zone (feed presets: `--safe feed9x16`), text covered by movers, readable text faster than 20 px/f (`--cues`) | `scripts/grid-check.ts`; `scripts/layout-audit.sh` |
 | a font family, vendored into the project without `npm install` | `scripts/add-font.mjs` (or `new-film.sh --font`) |
 | a palette from one accent, contrast, accent coverage on a still | `scripts/palette.py` |
 | gradients that don't band | `scripts/dither-gradient.py` |
