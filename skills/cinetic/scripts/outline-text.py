@@ -9,7 +9,7 @@ x from 0 at the first glyph's origin), the advance width, and the ink box. scrip
 uses it for the lockup SVGs; use it alone for any lettering that must leave the browser.
 
 Usage:
-  python3 scripts/outline-text.py --font node_modules/@fontsource-variable/newsreader/files/newsreader-latin-wght-normal.woff2 \\
+  python3 scripts/outline-text.py --font node_modules/@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2 \\
       --text tarn --weight 440 --track -0.015 --size 200
   python3 scripts/outline-text.py --font brand.otf --text "tarn" --size 200 --svg out/wordmark.svg
 
