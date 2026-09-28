@@ -107,7 +107,7 @@ else
   for kv in "FPS=$FPS" "BPM=$BPM" "W=$W" "H=$H"; do
     k="${kv%%=*}"; v="${kv#*=}"
     grep -Eq "^\s*const $k = [^;]+;" "$MJ" || die "motion.js has no 'const $k = ...;' line to set"
-    sed -i.bak -E "s|^(\s*const $k = )[^;]+;|\1$v;|" "$MJ" && rm -f "$MJ.bak"
+    sed -i.bak -E "s|^([[:space:]]*const $k = )[^;]+;|\1$v;|" "$MJ" && rm -f "$MJ.bak"
   done
   DIR="$DIR" W="$W" H="$H" node - <<'JS' || die "could not update index.html from motion.js/timeline.js"
 const fs = require('fs'), path = require('path'), vm = require('vm');
