@@ -2,7 +2,7 @@
 name: cinetic
 description: Direct, build and render premium cinematic motion design from code — launch films, product and feature videos, looping feature animations for landing pages and social, logo stings and reveals, UI walkthroughs, app demos, kinetic type, teasers, trailers, intros and promo clips. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion, HyperFrames, HTML/GSAP or React, or asks to storyboard, time, score, render, polish or critique one — even if they only say "make a video about X", "animate this feature" or "we need a launch clip". It supplies concept and copy discipline, type and colour taste that defers to a supplied brand, a beat-locked timeline that drives both picture and a synthesized soundtrack, choreography and transition craft, real product UI in motion, film-grade finishing (true motion blur, no banding, BT.709, sync-checked mux) and a measured self-critique loop on contact sheets and renders.
 license: MIT
-compatibility: Needs Node 22+, ffmpeg 6+ with libx264, Python 3.11+ with numpy, scipy, soundfile, pyloudnorm, opencv-python and librosa (fonttools and uharfbuzz for outlined logos), and Chromium or Chrome for rendering. Works with Remotion 4 (React) or HyperFrames (HTML and GSAP).
+compatibility: Needs Node 22+, ffmpeg 6+ with libx264, Python 3.11+ with numpy, scipy, soundfile, pyloudnorm, opencv-python and librosa (fonttools, brotli and uharfbuzz for outlined logos; pillow for gradient PNGs), and Chromium or Chrome Headless Shell for rendering. Works with Remotion 4 (React) or HyperFrames (HTML and GSAP).
 ---
 
 # cinetic
@@ -12,7 +12,7 @@ You are directing a short film, not animating a web page. Picture, copy and soun
 - **Engines.** Remotion 4.0.529 (React, frame-driven) is the default. HyperFrames 0.8.79 (HTML plus a paused GSAP timeline) is the alternative. The craft is engine-independent; §7 lists the rules that differ per engine.
 - **Numbers.** Every number here is a proven default from shipped work: a starting point that you can move away from when you have a stated reason. It is not a law of nature.
 - **Brand.** When the user supplies a brand (colours, fonts, logo, footage, tone), the brand wins. The taste defaults cover the parts you have to invent.
-- **Paths.** Paths such as `scripts/render.sh` work from the skill root and also inside a film project, because `scripts/new-film.sh` copies every script into the project. Every script prints `--help`.
+- **Paths.** Paths such as `scripts/render.sh` work from the skill root and also inside a film project, because `scripts/new-film.sh` copies every script into the project. Every script except `brand-svg.ts` (which `brand-kit.sh` calls) prints `--help`.
 - **Worked example.** `references/worked-example.md` walks through Tessel, a 33 s launch film at 1920×1080 and 60 fps, and shows each rule below in use, including the mistakes. Read it once before your first film.
 
 ## The bar
