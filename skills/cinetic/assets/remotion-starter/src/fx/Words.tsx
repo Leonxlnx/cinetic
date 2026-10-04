@@ -28,7 +28,7 @@ export const Words: React.FC<{
   outDur?: number;
   style?: React.CSSProperties;
   wordStyle?: (i: number, p: number) => React.CSSProperties; // p = that word's 0..1 entrance
-}> = ({ text, frame, start, id = 'words', starts, stagger = 8, dur = 26, rise = 0.32, blur = 14, out, outDur = 16, style, wordStyle }) => {
+}> = ({ text, frame, start, id = 'words', starts, stagger = 8, dur = 26, rise = 0.32, blur = 8, out, outDur = 16, style, wordStyle }) => {
   const words = text.split(' ');
   return (
     <span data-text={id} style={{ display: 'inline-flex', flexWrap: 'nowrap', whiteSpace: 'pre', ...style }}>

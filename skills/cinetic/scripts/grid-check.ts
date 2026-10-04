@@ -13,7 +13,9 @@
  *   copy-lines     <= 5 words per line, <= 2 lines per entry (warning)
  *   word-total     on-screen words <= --max-words (default 35)
  *   event-gap      no stretch without an event (cue, copy change, act change, or a cues.json event
- *                  with --cues) longer than --max-gap frames (default 48 f at 60 fps), tail excluded
+ *                  with --cues) longer than --max-gap frames (default 48 f at 60 fps), tail excluded;
+ *                  one designed near-still hold may be declared with `export const HOLD = {from, to}`
+ *                  (60-96 f at 60 fps, on the key claim under a music dropout), and gaps inside it pass
  *   tail           >= 1 s after the last cue so the audio can decay (warning)
  *   whole-bars     the body (TOTAL - TAIL) is whole bars; loops need it (warning)
  *
@@ -154,6 +156,21 @@ async function main() {
   // --- event gaps (the tail is for the audio to decay, so it is excluded)
   const bodyEnd = TOTAL - TAIL;
   const events = new Set<number>([0, bodyEnd]);
+  // One designed near-still hold per film (the key claim, under a music dropout) may run past the gap limit.
+  const HOLD = T.HOLD as { from: number; to: number } | undefined;
+  const holdMax = Math.round(96 * s);
+  let hold: { from: number; to: number } | null = null;
+  if (HOLD !== undefined) {
+    if (!HOLD || !Number.isFinite(HOLD.from) || !Number.isFinite(HOLD.to) || HOLD.to <= HOLD.from) {
+      err('hold', 'HOLD must be {from, to} frames with to > from');
+    } else if (HOLD.to - HOLD.from > holdMax) {
+      err('hold', `HOLD runs ${HOLD.to - HOLD.from} f; a designed hold is at most ${holdMax} f (96 f at 60 fps)`);
+    } else {
+      hold = HOLD;
+      events.add(HOLD.from);
+      events.add(HOLD.to);
+    }
+  }
   for (const c of cueFrames) events.add(c.f);
   for (const [, a] of acts) events.add(a.from);
   for (const c of COPY) for (const f of [c.in, c.resolved, c.out ?? TOTAL]) if (Number.isFinite(f)) events.add(f);
@@ -166,6 +183,7 @@ async function main() {
   const ev = [...events].filter((f) => f >= 0 && f <= bodyEnd).sort((a, b) => a - b);
   for (let i = 1; i < ev.length; i++) {
     const gap = ev[i] - ev[i - 1];
+    if (hold && ev[i - 1] >= hold.from && ev[i] <= hold.to) continue; // the declared hold
     if (gap > maxGap) {
       const near = cueFrames.filter((c) => c.f === ev[i - 1] || c.f === ev[i]).map((c) => c.name);
       err('event-gap', `${gap} f without an event between f${ev[i - 1]} and f${ev[i]}${near.length ? ` (${near.join(', ')})` : ''}; add the beat that keeps it alive (a tick, a peak, a breath) or --max-gap`);

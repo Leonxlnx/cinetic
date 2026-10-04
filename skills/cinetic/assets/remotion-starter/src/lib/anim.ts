@@ -10,7 +10,8 @@ export type Ease = (t: number) => number;
 export const E = {
   out: Easing.bezier(0.16, 1, 0.3, 1), // expo-out: arrivals and reveals (never for fade-outs)
   outSoft: Easing.bezier(0.22, 1, 0.36, 1), // quint-out: gentle settles
-  in: Easing.bezier(0.7, 0, 0.84, 0), // expo-in: departures, implosions, exits
+  in: Easing.bezier(0.7, 0, 0.84, 0), // expo-in: implosions and hard snaps out (20-24% of the travel in the last frame)
+  exit: Easing.bezier(0.55, 0.055, 0.675, 0.19), // cubic-in: exits into a cut, speed growing about x1.14 per frame over the last 10-24 f
   inOut: Easing.bezier(0.87, 0, 0.13, 1), // expo-in-out: whips and lockup slides
   smooth: Easing.bezier(0.65, 0, 0.35, 1), // cubic-in-out: drifts and 10-14 f fades
   ui: Easing.bezier(0.4, 0, 0.2, 1), // small UI state changes

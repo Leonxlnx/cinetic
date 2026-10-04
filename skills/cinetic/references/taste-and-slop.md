@@ -57,7 +57,7 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **C4 Flat scale.** Everything at 48–64 px. **Fix:** statements 88–128 px, emphasis 1.5–1.7× that, headline to secondary ≥ 2:1.
 - **C5 Faux italics from 3D shear.** Roll applied before tilt leans all UI text by ~18°, an accidental HB4. **Fix:** write `perspective() rotateZ() rotateX()` so the roll stays rigid; total shear ≤ 7°.
 - **C6 Glyph collisions.** Overshoot closes a word space ("Everythingfits"), a period hangs 13 px under the baseline, a cover leaks glyph tops. **Fix:** clamp at the lock; place with `inkBox` and `baselineOf` after fonts load; pad covers by 8 px.
-- **C7 Blur-dissolve on every word.** Or readable text left blurred for more than 6 f. **Fix:** blur only on entry (statements 14 → 0 px, body lines 8 → 0 px, through `blurIn` so it clears by 60% of a 26 f `E.out` move); land sharp.
+- **C7 Blur-dissolve on every word.** Or readable text left blurred for more than 6 f. **Fix:** blur only on entry (statements 6–8 → 0 px, body lines 4–6 → 0 px, or none, through `blurIn` so it clears by 60% of a 26 f `E.out` move); land sharp.
 - **C8 Jittering numbers.** Counters whose width changes, or mono timestamps in a consumer UI. **Fix:** tabular figures in the one family; digits roll 6–8 f each.
 - **C9 Letter gimmicks.** Typewriter headlines, per-letter bounce, scramble or decode effects, wide-tracked titles at rest. **Fix:** word-level reveals; per-letter motion only for the one hero word, collapsing to normal tracking.
 - **C10 A reveal that misspells.** A letter or sweep reveal passes through another word, or a half-drawn glyph reads as a different letter. **Fix:** reveal names by whole word or with a mask; list the reveal's prefixes and check those frames (`references/copy-and-type.md` §8).
@@ -108,7 +108,7 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 ## H. Camera
 - **H1 Floating screenshots.** Tilted screenshot cards, fly-throughs of screenshot fields, a device mockup orbiting in a void. **Fix:** real 3D on real components, perspective 1800–2600 px, one camera axis per act; hardware only when hardware is the product.
 - **H2 Locked-off shots.** Mean frame difference around 0.1 for more than 1.5 s. **Fix:** a 2–3%/s push plus ~16 px of drift with parallax (`references/camera.md`).
-- **H3 Invisible drift.** 1 → 1.05 over 2 s on a logo reads as dead. **Fix:** logo holds push 10–20%; UI holds drift 0.5–1.5 px/f.
+- **H3 Invisible drift.** 1 → 1.05 over 2 s on a logo reads as dead. **Fix:** keep the still part of a logo hold short (36–80 f after a 60–80 f assembly), or push 10–20% over a longer one; UI holds drift 0.5–1.5 px/f.
 - **H4 Strobing fast moves.** Unblurred motion above 20 px/f (falling blocks at 140 px/f). **Fix:** anything above 12 px/f gets the motion-blur pass (`references/finishing.md`).
 - **H5 Moves too fast to blur.** An element crossing 150–1,000 px in a frame: blur turns it into a long smear with stepped copies. **Fix:** keep any one element under about 60–80 px/f; faster than that, redesign the move (a cut on the beat, a match cut, a mask wipe, a shorter distance). `measure-speed.py` names the frames.
 

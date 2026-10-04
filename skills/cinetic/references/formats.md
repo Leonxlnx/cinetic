@@ -175,7 +175,7 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 | Bar 1 | 0–2 s | Gather. Frame 0 is already moving. One primitive of the mark (the device) enters and builds tension with anticipation: a pull back before the push, or a rising tick. |
 | Bar 2, downbeat | 2.0 s | Assembly hit. The primitives accelerate into contact on the `contact` ease, squash (scaleX 1.08 → 1, scaleY 0.9 → 1 over 8 f), and one tuned hit sounds on the contact frame. If the accent floods the frame, this is its one moment. |
 | Bar 2, beats 2–3 | 2.5–3.5 s | The wordmark reveals from behind the mark's **live** edge. The clip follows the moving mark, never a fixed box. Words lock without overshoot past the lock. |
-| Bar 3 + 60 f | 4–6 s | The lockup holds and builds: a 10–20% push on `dolly` and one small beat punch (`hitPulse`, +1.5%). The tail decays to digital zero. |
+| Bar 3 + 60 f | 4–6 s | The lockup holds and builds: a sting's hold runs long, so a 10–20% push on `dolly` and one small beat punch (`hitPulse`, +1.5%). The tail decays to digital zero. |
 
 - **Assemble the mark from its own primitives.** The sting teaches the construction of the mark, which is why the mark must be built from 2–4 primitives on a grid (`references/brand-and-color.md`). A fade or scale-up of a flat logo teaches nothing.
 - **Clamp every spring that could push one piece into another.** Pieces interpenetrating for a few frames on overshoot is the classic sting bug.

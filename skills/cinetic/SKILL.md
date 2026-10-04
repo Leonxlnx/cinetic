@@ -96,7 +96,7 @@ Read `references/concept-and-story.md` now.
   - (b) the viewer's pain made visible;
   - (c) a formal device: a relay object, a bookend, one unbroken camera move, or a container that becomes the product.
 - Throw out any concept whose props could appear in another product's film. It isn't yours.
-- **Draw the techniques; don't choose them.** Run `python3 scripts/pick.py --format <launch|feature|loop|sting|walkthrough|vertical> --energy <calm|medium|high> --json out/qa/picks.json`. It draws a plan (a hook, transitions, camera, type, UI, end card, colour, pacing…) from the measured library in `assets/library/techniques.json`, weighted toward proven moves and the film's energy, and prints each recipe with default timing. Choosing by hand converges on the same fade-up, push-in and end card in every film; the draw is how two films stop looking alike. Build every pick, retold in this concept's objects and device. Reroll a pick at most twice (`--category <cat> --exclude <id>`) with a written reason, and pass `--brand-supplied <look>` when the brand owns a banned look. Look entries up in `references/technique-library.md`; measured pacing, easing and text-timing norms are in `references/craft-rules.md`.
+- **Draw the techniques; don't choose them.** Run `python3 scripts/pick.py --format <launch|feature|loop|sting|walkthrough|vertical> --energy <calm|medium|high> --json out/qa/picks.json`. It draws a plan (a hook, transitions, camera, type, UI, end card, colour, pacing…) from the measured library in `assets/library/techniques.json`, weighted toward proven moves and the film's energy, and prints each recipe with default timing. Choosing by hand converges on the same fade-up, push-in and end card in every film; the draw is how two films stop looking alike. Build every pick, retold in this concept's objects and device. Reroll a pick at most twice (`--category <cat> --exclude <id>`) with a written reason, and pass `--brand-supplied <look>` when the brand owns a banned look. Read a drawn entry in full with `pick.py --show <id>`; `references/technique-library.md` lists every entry (search it, don't read it whole). Measured pacing, easing and text-timing norms are in `references/craft-rules.md`.
 - Fill in `assets/TREATMENT.md` for the concept you chose:
   - a logline;
   - the arc: hook (inside the problem, felt by 1 s) → turn → proof (1–2 capabilities) → promise → lockup;
@@ -165,7 +165,7 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
 - Build the product UI from real components fed by one `data.ts` module with asserts on dates, weekdays, counts, plurals and sums. The data must agree with the story too: the person who paid doesn't owe, a "sorted" list is actually sorted, a stated ratio matches its numbers, and no number appears twice in one frame. Frame the UI large enough to read on a phone. A screenshot never carries the hero shot.
 - Make the product and the feature identifiable. Name the feature once, as a UI label, the one line of copy or the end card, and show enough real app chrome that a stranger knows this is software. "No feature name as a headline" never means "never name it". A feature label is not a payoff: land the value with one short line that makes it human ("Sam had the salad."), even in a muted loop.
 - Frame only the meaningful part of the product. No half-empty grids, no tables cropped at the frame edge, no rows of blank cells: they read as a spreadsheet, not a product.
-- Text that must be read stays readable in motion. Keep labelled chips and numbers under about 20 px/f while they travel, or fly them with the text faded and let it resolve on landing, because motion blur on small text reads as a double image.
+- Text that must be read stays readable in motion. Text being read moves at most about 3 px/f (a camera cruise under it 1.5–3 px/f). Keep labelled chips and numbers under about 20 px/f while they travel, or fly them with the text faded and let it resolve on landing, because motion blur on small text reads as a double image.
 - Moving elements never cover text they pass over: plan the paths and the z-order, and check the densest frames at full size.
 - A progressive text reveal (letter by letter or with a sweep) must never spell a different word partway through ("tarn" briefly reading "tar"). Check the intermediate frames, or reveal by whole words or with a mask.
 - Export from its act every frame the sound needs, as a named constant (for example `LANDINGS` or `SNAP`), so the cue export can import it.
@@ -248,11 +248,11 @@ These rules ban the tells of generated work, not personality. Two films made wit
   - Weight carries tone: a calm brand rarely wants a heavy grotesk wordmark.
 - Get emphasis from size or motion.
   - Statements are 88–128 px with leading 0.95–1.05.
-  - Emphasis is 1.5–1.7× the statement size; secondary lines are 44–56 px.
+  - Emphasis inside a line is 1.5–1.7× the statement size; a standalone hero word may run 2–5× (14–48% of the frame height); secondary lines are 44–56 px.
   - UI must be at least 22 px on screen after camera scale.
   - Every number uses tabular figures.
 - Keep one tracking token per role, for example a display setting of 600 / −0.05 em. Near-miss values across scenes read as "almost matched".
-- Blur text only on entry, and only while it moves fast: statements 14 → 0 px, body lines 8 px, through `blurIn` (clear by 60% of the eased move, because Chromium steps blur radii and renders anything under ~0.75 px fully sharp). Text lands sharp and is never left readable-but-blurred for more than 6 f.
+- Blur text only on entry, and only while it moves fast: statements 6–8 → 0 px, body lines 4–6 px, or no blur at all, through `blurIn` (clear by 60% of the eased move, because Chromium steps blur radii and renders anything under ~0.75 px fully sharp). Text lands sharp and is never left readable-but-blurred for more than 6 f.
 
 **Colour** (`references/brand-and-color.md`)
 - Pick one accent from an allowed hue family (red, green, teal, blue, yellow) for a stated reason. Everything in the Hard bans is out: orange, amber, beige and cream, neon, purple, violet or indigo, multi-hue gradients and glassmorphism.
@@ -261,7 +261,7 @@ These rules ban the tells of generated work, not personality. Two films made wit
 - No glow, halo or bloom. Shadows are `0 20–40px 60–120px rgba(0,0,0,.12–.22)`, dark surfaces get a 1 px top hairline at 8–12% white, and gradients ship as dithered PNGs (`scripts/dither-gradient.py`), because CSS gradients band at 8 bits.
 
 **Layout**
-- Avoid "text left, UI card right" and avoid centred floating cards. Show the product full-bleed, anchor the type to an eye line or the lower third, and give each shot one focal action.
+- Avoid "text left, UI card right" and small centred floating cards (under about 40% of the frame width) on an empty field; a centred product window at 70–92% of the frame width, ideally overflowing an edge, is the norm. Show the product full-bleed, anchor the type to an eye line or the lower third, and give each shot one focal action.
 - Keep safe margins of at least 96 px at the sides and 64 px top and bottom, and at least 24 px of headroom at maximum punch. Overscan moving layers by 5–8%.
 - **Fill the frame with purpose.**
   - In product shots the hero (the UI, the object, the number) covers about 40–70% of the frame.
@@ -303,15 +303,15 @@ const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one
   - Start a spring at `beat − delayTo(cfg, 0.5)` so its pop lands on the beat.
 - **Holds**
   - Once text resolves, it stays at least 36 f + 6 f per word. Text that hasn't resolved never exits.
-  - Nothing is static for more than 48 f, except a designed freeze of ≤ 15 f that sits exactly on a silence. When a gate flags a quiet stretch, give it motion; loosening the threshold to pass is not a fix.
-  - A logo or lockup hold is 1.5–2.0 s and visibly builds (a push of ≥ 10–20%), then the tail. Never more than about 2.5 s on a still end card: a longer one reads as a drag. A URL is readable for at least 1.7 s.
-  - In a launch film or product video the lockup appears once, at the end (a sting is the exception: it is all lockup). A mid-film logo reveal followed by the same lockup again reads as a repeat and spends seconds on a still. Mid-film, the brand is present through the device and the accent. Brand logo time across the whole film stays ≤ about 12% of the runtime.
+  - Nothing is static for more than 48 f, except a designed freeze of ≤ 15 f that sits exactly on a silence, and one designed near-still hold of 60–96 f per film on the key claim or success state, under a music dropout and followed by a big move (declare it as `export const HOLD = {from, to}` in `timeline.ts`). When a gate flags a quiet stretch, give it motion; loosening the threshold to pass is not a fix.
+  - The end card runs 1.5–2.5 s: the lockup assembles over 60–80 f, then holds still for 36–80 f or keeps building (a creep of ≤ 6%, or a 10–20% push when the hold runs past about 1.3 s), then the tail. Never cut to a complete card that sits static, and never more than about 2.5 s on a still end card: a longer one reads as a drag. A URL is readable for at least 1.7 s.
+  - In a launch film or product video the lockup appears once, at the end (a sting is the exception: it is all lockup). A mid-film logo reveal followed by the same lockup again reads as a repeat and spends seconds on a still; the one exception is the product's name or mark revealed at about 20–26% of the runtime after a problem act of 10 s or more, when the end card is a different construction or mirrors the opening. Mid-film, the brand is present through the device and the accent. Brand logo time across the whole film stays ≤ about 12% of the runtime.
 - **Density**
   - Aim for 45–60 discrete events per 30 s and one motion peak per bar, with 30–70 f of calm between peaks.
   - The first 6 s run about twice as dense as the middle.
-  - Energy builds toward the payoff. No stretch after the turn is slower or greyer than the one before it, unless it is a designed breath of ≤ 1 bar right before the drop. A second half that drags loses films whose first half is strong. Check the energy by eye on a contact sheet of the second half.
+  - Energy builds toward the payoff. No stretch after the turn is slower or greyer than the one before it, except one designed lull of 1–4 s inside a music breakdown at about 55–85% of the runtime; the last and biggest visual peak lands at 75–90%, on the music's re-entry. A second half that drags loses films whose first half is strong. Check the energy by eye on a contact sheet of the second half.
   - The last third keeps moving: a camera push, secondary motion or the device still acting. A film that settles 4 s before the end has ended early.
-  - Shot length: median 60–90 f; minimum 24 f (and only with no text); maximum 180 f (and only with continuous action).
+  - Shot length: median 60–90 f; minimum 24 f (and only with no text); maximum 180 f in a cut-driven film, while a continuous take may run 300–560 f if an in-shot beat lands at least every 72 f.
 - **Hook:**
   - frame 0 is already composed and moving;
   - the sound enters with intent on frame 0, with no fade over the first bar;
@@ -338,13 +338,14 @@ Audio that leads the picture by more than about 45 ms reads as "sound first". Mo
 
 ## 6. Motion system essentials
 
-The tokens live in `src/lib/anim.ts` (`E`, `SPR`, `tw`, `prog`, `mix`, `lmix`, `hitPulse`, `blurIn`, `arrive`, `rand`, `fd`). Curves, measured values and choreography constants are in `references/motion-tokens.md`; camera work is in `references/camera.md`.
+The tokens live in `src/lib/anim.ts` (`E`, `SPR`, `tw`, `prog`, `mix`, `lmix`, `hitPulse`, `blurIn`, `arrive`, `arriveK`, `stagger`, `inertia`, `rand`, `fd`), and tested primitives for the commonest moves in `src/fx/` (`Words`, `TypeOn`, `Scramble`, `Roll`, `Morph`, `Iris`, `MaskRise`, `Cursor`, `RackFocus`): use them before writing your own. Curves, measured values and choreography constants are in `references/motion-tokens.md`; camera work is in `references/camera.md`.
 
 | Token | Bezier | Use |
 |---|---|---|
 | `out` | .16,1,.3,1 | arrivals, reveals |
 | `outSoft` | .22,1,.36,1 | gentle settles |
-| `in` | .7,0,.84,0 | departures, implosions |
+| `in` | .7,0,.84,0 | implosions, a hard snap out |
+| `exit` | .55,.055,.675,.19 | exits into a cut: about ×1.14 per frame over the last 10–24 f |
 | `inOut` | .87,0,.13,1 | whips, lockup slides |
 | `smooth` | .65,0,.35,1 | drifts, fades (10–14 f) |
 | `ui` | .4,0,.2,1 | small UI changes |
@@ -368,9 +369,9 @@ Laws of weight:
 - **Log space.** Interpolate scale and zoom in log space: `exp(mix(log a, log b, t))`, which is `lmix`.
 - **Duration.** Duration grows with distance: 0.35 s + 1.35 ms per px, clamped to 0.6–2.4 s for camera moves. The slowest move is at least 3× the fastest.
 - **Shape and contact.** Shape settles 6 f before position. Contacts squash (scaleX 1.08 → 1, scaleY 0.9 → 1 over 8 f, anchored at the contact edge).
-- **Overlap.** Consecutive moves overlap by about 20 f, or the second one starts on a zero-slope curve. This prevents stall-then-lurch.
+- **Overlap.** A secondary move starts at 55–75% of the leading move (about 20 f into a 60 f move), so both settle within 2 f, or it starts on a zero-slope curve. This prevents stall-then-lurch.
 - **Budget.** Run one hero motion plus at most 2 supporting ones. Put fast (60–70 px/f whips) next to real stillness (0.3–0.6 px/f). Anything faster than 12 px/f gets true motion blur in Step 6.
-- **Ceiling.** No element moves faster than about 60–80 px/f. Past that, blur smears it into a streak with stepped copies; redesign the move as a cut on the beat, a match cut, a mask wipe or a shorter distance.
+- **Ceiling.** No element moves faster than about 60–80 px/f. Past that, blur smears it into a streak with stepped copies; redesign the move as a cut on the beat, a match cut, a mask wipe or a shorter distance. Frame-filling edges (wipes, floods, irises, zoom-throughs, a container growing to full frame) may peak at 150–300 px/f for a few frames.
 - **Envelope.** Every punch and tick uses `hitPulse(t, attack = 2, tau = 5)`. A half-sine on a hard window leaves velocity clunks and peaks 6–8 f late.
 - **Seams**
   - Either both sides of a cut are at rest, or the incoming shot starts at the outgoing velocity.

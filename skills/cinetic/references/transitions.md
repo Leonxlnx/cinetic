@@ -39,7 +39,7 @@ The frame counts and curves are proven defaults from shipped films (Tessel's are
 ## 3. Seam laws
 
 1. **Both sides at rest, or the incoming shot starts at the outgoing velocity.** Anything else is a visible jerk.
-2. **Accelerate out, cut at peak speed, decay in.** The outgoing move accelerates about ×1.25–1.3 per frame over its last 24–30 f (that is `E.in` over 24–30 f), the cut lands at its peak velocity, and the incoming move decays about ×0.959 per frame (a 0.4 s time constant, `E.out` over about 90 f).
+2. **Accelerate out, cut at peak speed, decay in.** The outgoing move accelerates about ×1.1–1.2 per frame over its last 10–24 f (`E.exit`; `E.in` is steeper and suits implosions), the cut lands at its peak velocity, and the incoming move enters at 20–45 px/f and decays about ×0.89–0.94 per frame (a time constant of about 12 f, `E.out` over 48–84 f).
 3. **Match every property across the cut:** position, size, radius, colour, shadow, opacity, blur. A property that flips at the cut pops (a dot whose opacity went 0 → 1, a pill that appeared).
 4. **The rest pose appears once.** If a move comes to rest on pose P and the next act opens on P, the outgoing act's last frame is the move's last in-between and the incoming act's frame 0 is P. Showing P twice reads as stop-hold-go.
 5. **Place things the same way on both sides.** If one act positions an element by layout and the next by transform, sub-pixel differences show as a whole-UI shimmer on the cut (0.42 px in Tessel). Share the placement function.
@@ -129,7 +129,7 @@ export const insetClip = (b: Box, r: number) =>
 
 ### 4.7 Velocity-matched cut
 A hard cut between two moving shots whose motion continues in the same screen direction at the same speed (§3 helpers).
-- **Frames:** exit on `E.in` over 24–30 f, cut at peak speed, entry on `E.out` decaying over 60–90 f. Whips peak on the kick.
+- **Frames:** exit on `E.exit` over 10–24 f, cut at peak speed, entry on `E.out` decaying over 48–84 f. Whips peak on the kick.
 - **Failure:** direction reverses across the cut, speed halves or doubles, or one side is at rest; any of these reads as a jump.
 
 ### 4.8 Zoom-through

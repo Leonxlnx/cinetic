@@ -427,7 +427,7 @@ Premium, in one line: restraint, one palette, dark keys and short bright clicks,
 
 ## 13. Measured norms
 
-Measured norms of top-tier launch films (8.6–88 s long, median 28 s), as median (range). *Decay* is the time from the peak to −20 dB; *vs music* is a 5–8 ms effect RMS against the music's 250 ms RMS at the same moment; *over bed* is the event's peak against the local background. Where good and bad habits both appear, the norm follows the good one.
+Measured norms of top-tier launch films, from 9 s teasers to 90 s feature films, as median (range). *Decay* is the time from the peak to −20 dB; *vs music* is a 5–8 ms effect RMS against the music's 250 ms RMS at the same moment; *over bed* is the event's peak against the local background. Where good and bad habits both appear, the norm follows the good one.
 
 **Loudness and arc**
 - Integrated −14 LUFS (properly mastered: −12.6, −15.1 to −8). Two thirds go over 0 dBTP between samples (up to +1.5): a defect. Limit to −1 dBTP with oversampling.
