@@ -15,6 +15,9 @@ Checks (defaults are proven starting points, not dogma):
   sync       each onset event has an audio onset within +-2 f (librosa backtracked onsets at hop
              128, delta 0.03, or a > 1 kHz 1 ms-envelope rise >= 4x); hit rate >= 90%     fail
              With --stems the sfx stem is searched (strict) and stray sfx onsets are listed.
+             Key events that score.py does not sound (thinned to ~12/s, or "typing": "off")
+             are replayed from the score JSON and not expected; a keyup within 0.2 s after a
+             key is not a stray onset.
              Without it the full mix is searched, where music hides quiet and soft-attack
              effects, so a low hit rate there is only a warning: gate with --stems.
   apex       whoosh/suck events (or any with apexFrac): the 30 ms envelope maximum of the sfx
@@ -44,6 +47,7 @@ Checks (defaults are proven starting points, not dogma):
   head       first 5 ms peak <= -40 dBFS: above it the film clicks on sample 0 or cuts in
              mid-sound (skipped on an excerpt)                                               warn
   masking    (--stems) each sfx >= +6 dB over the music in its best band (60 ms); < 0 dB warns
+             (typing is a texture: score.py's "typing" report judges it, not this check)
 
 Writes JSON (--json) and a short summary. Exit: 0 no failing check, 1 a failing check, 2 usage or
 input error. Needs ffmpeg/ffprobe, numpy, scipy, soundfile, librosa (and opencv for the picture).
@@ -158,15 +162,39 @@ def band_env(y, sr, lo, hi, win_ms=30, hop_ms=5):
     return np.sqrt(np.convolve(e, np.ones(k) / k, mode='same')), hop_ms
 
 
+def score_paths(args):
+    """Where the score JSON may be: --score, else audio/score.json here or next to the cues' folder."""
+    if args.score and not os.path.isfile(args.score):
+        die(f'--score {args.score} not found')
+    here = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(args.cues))), 'audio', 'score.json')
+    return [p for p in ([args.score] if args.score else ['audio/score.json', here]) if os.path.isfile(p)]
+
+
+def silent_keys(args):
+    """Frames of key events score.py leaves silent (thinned by time, or "typing": "off"), replayed
+    with its own plan_typing() on the same score JSON. None when that cannot be done."""
+    try:
+        raw = json.load(open(args.cues))
+        if not any(isinstance(e, dict) and e.get('kind') == 'key' for e in raw.get('events', [])):
+            return set()
+        paths = score_paths(args)
+        if not paths:
+            return None
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'audio'))
+        import score as SC  # noqa: E402
+        events = sorted(raw['events'], key=lambda e: e['f'])
+        _, thinned, _ = SC.plan_typing(SC.Song(json.load(open(paths[0])), raw), events)
+        return {round(float(events[i]['f']), 3) for i in thinned}
+    except Exception:  # noqa: BLE001  (an older score.py, or a score that does not load: expect every key)
+        return None
+
+
 def film_lufs(args):
     """The film's loudness target and where it came from: --lufs, else master.lufs in the score
     JSON (score.py's default -14 when the field is absent), else (None, None)."""
     if args.lufs is not None:
         return args.lufs, '--lufs'
-    if args.score and not os.path.isfile(args.score):
-        die(f'--score {args.score} not found')
-    here = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(args.cues))), 'audio', 'score.json')
-    for p in [args.score] if args.score else ['audio/score.json', here]:
+    for p in score_paths(args):
         if os.path.isfile(p):
             try:
                 v = (json.load(open(p)).get('master') or {}).get('lufs', -14.0)
@@ -276,8 +304,14 @@ def main():
         else:
             notes.append(f'no sfx*.wav in {args.stems}; using the full mix')
 
-    # ---- events -> expected onsets / apexes
-    ev_on = [e for e in cues['events'] if not e['apex'] and not e.get('ends')]
+    # ---- events -> expected onsets / apexes (keys score.py thins out are not expected to sound)
+    quiet_keys = silent_keys(args)
+    if quiet_keys:
+        notes.append(f'{len(quiet_keys)} key events are thinned by score.py (typing plan) and not expected to sound')
+    elif quiet_keys is None:
+        notes.append('could not replay score.py\'s typing plan: every key event is expected to sound')
+    ev_on = [e for e in cues['events'] if not e['apex'] and not e.get('ends')
+             and not (e['kind'] == 'key' and quiet_keys and round(e['f'], 3) in quiet_keys)]
     ev_ap = [e for e in cues['events'] if e['apex'] or e.get('ends')]
     groups = []
     for e in ev_on:
@@ -342,8 +376,11 @@ def main():
     stray = []
     if strict:
         ev_frames = np.array(sorted(e['f'] for e in cues['events'])) if cues['events'] else np.array([])
+        key_frames = np.array([e['f'] for e in cues['events'] if e['kind'] == 'key'])
         for t in on_t:
             f = t * fps
+            if len(key_frames) and np.any((f - key_frames > 0) & (f - key_frames <= 0.2 * fps + args.tol)):
+                continue  # a keyup: the key's release, 70-180 ms after the press
             if not len(ev_frames) or np.min(np.abs(ev_frames - f)) > 3 * args.tol:
                 stray.append(round(float(f), 1))
         sync['stray_sfx_onsets_f'] = stray[:60]
@@ -575,8 +612,8 @@ def main():
         mrows = []
         for g in groups:
             i = int(g['f'] / fps * sr)
-            if i + win > n:
-                continue
+            if i + win > n or g['kinds'] == {'key'}:
+                continue  # typing is a texture under the music: score.py's "typing" report judges it
             lv_s = [10 * np.log10((s[i:i + win] ** 2).mean() + 1e-12) for s in sb]
             lv_m = [10 * np.log10((m[i:i + win] ** 2).mean() + 1e-12) for m in mb]
             if max(lv_s) < -75:  # nothing in the sfx stem here (a picture-only cue, or a sound on another bus)

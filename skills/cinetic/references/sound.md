@@ -9,13 +9,14 @@ The numbers here are the defaults that shipped Tessel (−14.1 LUFS, LRA 5.2 LU,
 2. [Pipeline and gate](#2-pipeline-and-gate)
 3. [cues.json and the event kinds](#3-cuesjson-and-the-event-kinds)
 4. [Writing src/sync.ts](#4-writing-srcsyncts)
-5. [score.json](#5-scorejson) (5.5a personality, 5.5b progress motif)
+5. [score.json](#5-scorejson) (5.5a personality, 5.5b progress motif, 5.5c typing)
 6. [Harmony and tuning](#6-harmony-and-tuning)
 7. [The instrument palette](#7-the-instrument-palette)
 8. [Mix](#8-mix)
 9. [Master and verification](#9-master-and-verification)
 10. [Reading the report](#10-reading-the-report)
 11. [Failure modes](#11-failure-modes)
+12. [Sound slop](#12-sound-slop)
 
 ## 1. Why synthesize
 
@@ -56,14 +57,14 @@ python3 scripts/audio/master.py --measure public/audio/soundtrack.wav # loudness
 | `pitch` | optional MIDI number or note (`"Eb6"`). Leave it out: `score.py` picks a tone in key |
 | `apexFrac` | `whoosh`/`suck`: the fraction of the sound's length that lands on `f` (default 0.5 / 0.85) |
 | `dur` | frames; length of `whoosh`, `riser`, `swell`, `suck` |
-| `variant` | `key`: `word` (accented word start) or `space`; `land`: `light`; `bell`: `motif`; `pop`: `down` |
+| `variant` | `key`: `word` (word start), `space`, `return`, `back`; `click`: `confirm`; `land`: `light`; `bell`: `motif`; `pop`: `down` |
 | `id` | a label for QA reports; the starter prefixes the act (`mark:dome`) |
 
 | Kind | Picture event | `f` is | Sound (default tuning) |
 |---|---|---|---|
-| `tick` | the device keeps time; a clock | the pulse's start | pitched ping + air click on the signature tick (the tonic, octave 7) |
-| `tock` | the clock's other beat | the pulse's start | the tick voice on the signature tock (the fifth, a fourth below the tick) + a little wood |
-| `pop` | something appears: a word, badge, chip | its 50% frame | sine blip gliding up a fifth; a run of pops climbs the key's pentatonic |
+| `tick` | the device keeps time; a clock | the pulse's start | a small wooden mallet on the signature tick (the tonic, octave 6): tuned fundamental, free-bar partials, a felt transient |
+| `tock` | the clock's other beat | the pulse's start | the tick voice, darker, on the signature tock (the fifth, a fourth below the tick) + a little wood |
+| `pop` | something appears: a word, badge, chip | its 50% frame | a mallet-like blip sliding 2 semitones into its note; a run of pops climbs the key's pentatonic |
 | `snap` | a lock-in: a line closing, a piece seating | the contact frame | click + body + low tail on the chord root |
 | `land` | an in-shot landing | the contact frame | weight ≥ 0.6: wooden knock + short sub on the chord root; lighter or `light`: a pitched knock climbing chord tones |
 | `hit` | a slam, a cut on impact | the contact / cut frame | sub boom gliding an octave onto the chord root + clap + band burst; ducks the music |
@@ -72,8 +73,8 @@ python3 scripts/audio/master.py --measure public/audio/soundtrack.wav # loudness
 | `riser` | tension into a hit | the arrival (it stops here) | noise band 220 Hz → 7 kHz + two saws gliding an octave onto the chord root at `f` |
 | `swell` | a reveal that blooms into a hit | its peak (it stops here) | reverse swell of three chord tones + air |
 | `suck` | an implosion into silence | the implosion's end | reverse whoosh, bright to dark, apex at 85% |
-| `key` | a typed character | the character's frame | key click, ±6% pitch; `word` accents ×1.7; `space` is a lower thock; under 2 f apart is dropped |
-| `click` | a cursor press | the press frame | tight click + ping on the pentatonic tone near 1.9 kHz + low knock |
+| `key` | a typed character | the character's frame (fractional) | a soft modal key in the film's `typing` style (§5.5c): 26 fixed keys, ±1.2% pitch per press, word starts +2.5 dB, `space` and `return` lower and longer; thinned by time |
+| `click` | a cursor press | the press frame | modal press on the pentatonic tone near 1.2 kHz + its release 70–100 ms later; `confirm` adds a soft tuned tone |
 | `bell` | a chime: a success, a logo moment | the strike | FM bell on the chord tone near A♭5; `motif` plays the signature motif from `f` |
 
 ## 4. Writing src/sync.ts
@@ -119,7 +120,7 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
 - **Move the picture, not the sound.** When a hit belongs on the beat, start the spring at `beat − delayTo(cfg, 1)`. Audio that leads the picture by more than ~45 ms reads as "sound first".
 - **Two hits a few frames apart flam.** If a settle's 97% frame sits 3–8 f before a downbeat that also sounds, put the lock on the downbeat and let the whoosh carry the move (the starter's `name-locks`).
 - **Pan with the picture.** Map screen x to pan (±0.8 at the edges). Whooshes travel with the motion; a centred push or pull has `pan: 0`.
-- **Typing:** one `key` per character from the same `CHAR_AT` array the picture types with; mark word starts `word` and spaces `space`. `score.py` drops keys under 2 f apart and thins the hats and arp in any bar with 4+ keys, so 30 characters a second never fuse into a buzz.
+- **Typing:** one `key` per character from the same `CHAR_AT` array the picture types with, at its fractional frame (not `Math.round`: jitter and thinning work in time); mark word starts `word`, spaces `space` and a final `return`. `score.py` thins and shapes the run (§5.5c), so 30 characters a second never fuse into a buzz.
 - **Dense batches** (rain, tiles, grids): emit every landing, weight them light, pan each to its column. Pitched light landings climb chord tones, so a cascade sounds ordered.
 - **Check the file.** Open `out/cues.json` and read it against the contact sheet: every event has a picture, every picture event has a sound.
 
@@ -136,7 +137,8 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
     { "bars": [4, 4], "style": "resolve" },
     { "bars": [5, 5], "style": "hold" }
   ],
-  "signature": { "tick": "G7", "tock": "D7", "motif": [0, 7, 14], "rhythm": [0, 0.5, 1.5] },
+  "signature": { "tick": "G6", "tock": "D6", "motif": [0, 7, 14], "rhythm": [0, 0.5, 1.5] },
+  "typing": "soft",
   "motifs": [{ "at": "@lockup", "gain": 1.0 }],
   "drops": [{ "at": "@lockup", "silence": "1/16", "suck": 0.2 }],
   "payoff": "@lockup",
@@ -160,6 +162,7 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
 | `payoff` | — | the moment that must be loudest; the report checks it |
 | `progress` | — | `{match, kind?, start?, tonic?, resolve?, gain?}`: the progress motif (§5.5b): events whose `id` contains `match` climb the scale one step each; `resolve` lands the tonic on the payoff |
 | `bed` | — | `{file, at?, gain_db?}`: a supplied music track joins the music bus (§5.6) |
+| `typing` | `"soft"` | how `key` events sound: `soft`, `mechanical`, `pitched`, `muted` or `off` (§5.5c) |
 | `mix` | as shown | music and effect bus gains, reverb amount, sidechain depth, dB the music dips under hits |
 | `master` | as shown | target LUFS (−14; −16 for a calm brand or a sting of 8 s or less, §9), limiter ceiling (linear), the end fade's length (s), which the music and the effects both follow |
 
@@ -232,6 +235,22 @@ When the story is progress (days of a streak, steps of a setup, items cleared, a
 - Put the resolve on the payoff cue and drop the signature motif there (`"motifs": []`), or the two compete.
 - The report lists every rung with its note (`progress.rungs`) and the resolution; `events.tuned` shows them in key.
 
+### 5.5c Typing
+
+Typing is a texture, not a rhythm section: soft, low-mid, under the music. Pick one style per film:
+
+| `typing` | Sound | Use it for |
+|---|---|---|
+| `soft` (default) | damped modes: body 420–560 Hz, plate ~2.75×, thud ~180 Hz, a 3.5 ms tick at ~5.7×, 0.4 ms soft onset; ~80% of its A-weighted energy in 300 Hz–2 kHz, centroid ~600 Hz | almost every film |
+| `mechanical` | the same keys stiffer: ~1 ms rise and a bottom-out tick 4–5 ms later; still under 20% in 2–5 kHz | a raw, mechanical or developer brand |
+| `pitched` | felt mallets random-walking over the chord's pentatonic tones in G4–F5; space and return on the root | a moment where the typing is the music (a thinned section, a prompt-to-answer beat) |
+| `muted` | dull, short, ~10 dB down | under VO, in a dense `drive`, across the payoff, typed text that is background |
+| `off` | nothing | the picture types but any sound would compete |
+
+What `score.py` does to every run, with no settings: never two keys within 60 ms, and runs faster than 12 keys/s thinned to about 12/s (word starts, spaces and returns kept); +2.5 dB on word starts, −0.3 dB per letter after, −1 dB before a space, σ 1 dB, −3 dB after the first 1.5 s; σ 3.5 ms timing jitter (≤ 8 ms, under a frame); a keyup 70–120 ms after the press when the next key is over 140 ms away; gain × √(10 / rate) and shorter decays when keys come fast; letters panned ±0.12 by keyboard column; a 0.3 s room instead of the hall. In bars with 4+ sounded keys the hats stop and the arp drops 4 dB (`muted` and `off` leave the music alone).
+
+**Levels.** Under a full bed the typing sits 15–20 dB A under the music and at least 6 dB under it in 2–5 and 5–10 kHz: it is never the brightest thing in the mix. As the foreground (music thinned to a dark pad, which has no top end to hide under), 8–12 dB A under, with at most 25% of its own A-weighted energy in 2–5 kHz. The report's `typing` block measures each run (`bed_top_A_pct` is the music's share above 2 kHz) and warns past −8 dB A, when the keys are bright (over 25% in 2–5 kHz), or, over a bed with top end (5% or more above 2 kHz), when they come within 6 dB of it up there.
+
 ### 5.6 When the brand brings sound
 
 - **Music supplied:** set `bed` to the file, set `key`, `bpm` and `chords` to match the track (effects are tuned from them), and leave `sections` empty or use `hold` so nothing competes. Sucks, silences, ducking under hits and the master still apply. Retime the picture to the track's bars, not the other way round.
@@ -243,7 +262,7 @@ When the story is progress (days of a streak, steps of a setup, items cleared, a
 - **One chord per bar**, changing on downbeats, at most two per bar. Chords that move carry the film; one chord for 30 s sounds like a loop.
 - **Voice leading is automatic.** Pads pick the voicing nearest the previous one, keep the root, third or fifth at the bottom (tensions such as 9 and 11 sit inside), and avoid close intervals below C4, which turn to mud.
 - **The V chord is gone by the downbeat it resolves into.** A dominant pad ends at the next bar + 0.08 s, so the tonic lands clean.
-- **Every pitched effect is in key.** The defaults: the clock on the tonic and the fifth below it, around 2–3 kHz; pops on the pentatonic, climbing within a run; snaps, landings, booms and drops on the current chord's root between E1 and E♭2; risers landing on the chord root at their arrival; clicks on a pentatonic tone near 1.9 kHz; light landings on chord tones. The report lists every tuned sound with its note and flags anything outside the key and the chord.
+- **Every pitched effect is in key.** The defaults: the clock on the tonic and the fifth below it, in octave 6 (0.8–1.6 kHz; octave 7 sits on the ear's 3–4 kHz resonance and reads as a beep); pops on the pentatonic, climbing within a run; snaps, landings, booms and drops on the current chord's root between E1 and E♭2; risers landing on the chord root at their arrival; clicks on a pentatonic tone near 1.2 kHz; light landings on chord tones. The report lists every tuned sound with its note and flags anything outside the key and the chord.
 - **Tune the kick to the tonic.** It then agrees with every bass note.
 - **The sonic signature.** A tuned tick/tock pair and a three- or four-note motif (1–5–9 by default) belong to the brand the way the accent colour does. Open and close on the same sound (the bookend), and place the motif once, on the lockup.
 
@@ -264,7 +283,10 @@ All in `scripts/audio/synth.py` (48 kHz, numpy/scipy, seeded). Oscillators integ
 | `fm_bell` | FM, ratio 3.5, index ~2 decaying in 0.35 s | bells, motif |
 | `whoosh` | 1/f^1.6 noise through a wide band sweeping f0 → f1 at the apex → f2, envelope `(u/apex)²` then exponential; centroid ~550 Hz | whoosh, suck |
 | `riser` | noise band 220 Hz → 7 kHz + two saws gliding an octave onto the target | riser |
-| `tick`, `tock`, `key_click`, `thock`, `ui_click`, `snap`, `blip`, `swell`, `marker`, `drone`, `keys` | see the docstrings | effects |
+| `tick` | tuned fundamental (τ 8–12 ms) + partials at 2.76× and 5.4× dying 2.5–7× faster + a 0.5 ms low-passed transient; `dark=True` for the tock | tick, tock, clocks |
+| `key_click`, `thock` | modal key (body, plate, thud, a short tick) excited by a low-passed 0.6 ms transient under a soft onset; `style`, `kind` (`letter`, `space`, `return`, `back`), `keyup`; seeded per key and per press | key |
+| `ui_click` | modal press at `ping` with a 0.42× body, the release 70–100 ms later, an optional confirm `tone` | click |
+| `tock`, `snap`, `blip`, `swell`, `marker`, `drone`, `keys` | see the docstrings | effects |
 
 `place(dst, x, t, gain, pan)` adds a sound with a constant-power pan and a 6 ms cos² fade at its end, so nothing clicks where a buffer stops; `layer_in(base, x)` does the same for a layer inside a composite sound (a hit's clap inside its boom). `place_at_peak(dst, x, frac, t)` puts the point at `frac` of a sound on `t`. For a one-off sound, import `synth` in a small script and add the result to the WAV with `master.py`, or add an event kind to `score.py`.
 
@@ -274,7 +296,7 @@ All in `scripts/audio/synth.py` (48 kHz, numpy/scipy, seeded). Oscillators integ
 |---|---|---|
 | Sidechain | depth 0.55, τ 0.14 s, from every kick, hit, drop, snap and heavy landing | the music breathes around the hits |
 | Hit duck | music −3 dB for 150 ms around hits, drops, snaps and heavy landings | effects sit ≥ +6 dB over the music in their own band |
-| Reverb | sends high-passed at 250 Hz; hall 2.8 s for music and big hits, room 0.7 s for effects | space without low-end smear |
+| Reverb | sends high-passed at 250 Hz; hall 2.8 s for music and big hits, room 0.7 s for landings and moves; keys, ticks and clicks dry plus a 0.3 s room at −22 dB (send high-passed at 350 Hz) | space without low-end smear; tiny sounds get a tiny room |
 | Effects low end | 45% of the effects below 90 Hz removed | booms on consecutive hits do not stack into rumble |
 | Suck | music ducked 90% over the 0.2 s before a drop | the drop lands on air |
 | Silence | music 97% down for the drop's `silence`; everything down for `silences` | true silence makes the next hit feel twice as big |
@@ -284,7 +306,7 @@ All in `scripts/audio/synth.py` (48 kHz, numpy/scipy, seeded). Oscillators integ
 | End | music and effects (with their reverb) fade over the last `master.fade` (1.3 s), reaching zero 30 ms before the end; last 60 ms faded; last 480 samples zero | the delivered audio ends in digital silence, with no effect still sounding at the cut |
 | Head | after the limiter, a 3 ms raised-cosine fade-in from exact zero at sample 0, always (and a fade-out of at least 10 ms onto the last sample) | a sound already at level on sample 0 (films measured about −22 dB) clicks and cuts in mid-action; `av-audit.py` warns when the first 5 ms still peak above −40 dBFS: either a hit designed for frame 0 (fine; say so) or a sound begun before frame 0, such as a whoosh whose apex comes early, a riser or a reverb tail (start it later or shorten it) |
 
-Typing thins itself: hats go to 8ths at half level and the arp drops 4 dB in bars with 4+ keys.
+Typing in the foreground owns the top end: the hats stop and the arp drops 4 dB in bars with 4+ sounded keys (§5.5c).
 
 **Scale each sound to its cause.** A sound is as big as the thing the viewer sees make it. A caret blink or a small UI tick gets a whisper, about 12–18 dB under the landing hit; the mark landing or the payoff gets the loudest effect in the film. A loud tick over a held frame reads as a sound with no cause, and viewers hear it as a mistake. Set each event's `weight` in `src/sync.ts` (0–2, §3) from the size of its picture event (a caret or tick about 0.3, the landing 1.5–2), then read `av-audit.py`'s visual warnings: it flags loud effects that land on a still picture.
 
@@ -312,7 +334,7 @@ You cannot listen, so measure what a listener hears:
 
 ## 10. Reading the report
 
-`score.py --json out/qa/score.json` writes `lufs`, `true_peak_db`, `lra`, `momentary_max` and its time, `limiter_max_gr_db`, `limiter_hot` (moments over 1.5 dB), `payoff`, `hook` (the first 0.5 s against the median momentary loudness), `tail_50ms_db`, `events.skipped`, `events.masked`, `events.tuned` (every pitched sound with its note), `progress` (when used), `chords`, `warnings`, `pass`.
+`score.py --json out/qa/score.json` writes `lufs`, `true_peak_db`, `lra`, `momentary_max` and its time, `limiter_max_gr_db`, `limiter_hot` (moments over 1.5 dB), `payoff`, `hook` (the first 0.5 s against the median momentary loudness), `tail_50ms_db`, `events.skipped`, `events.masked`, `events.tuned` (every pitched sound with its note), `progress` (when used), `typing` (each run against the music: A-weighted, 2–5 and 5–10 kHz), `chords`, `warnings`, `pass`.
 
 | Warning | Fix |
 |---|---|
@@ -327,7 +349,8 @@ You cannot listen, so measure what a listener hears:
 | starts inside the end fade | move the event before the fade (`master.fade` + 0.03 s from the end), or shorten `master.fade` |
 | the ending is not silent | an effect or a supplied bed runs to the last frame: move it earlier or trim the bed |
 | progress: … ignores its pitch | give the steps a pitched voice (`pop`, `bell`, `tick`, `click`, a light `land`) |
-| under 2 f after the previous key | expected for fast typing; not an error |
+| a `key` skipped as thinned | expected: no two keys within 60 ms, fast runs at about 12/s; not an error |
+| typing sits only N dB A under the music, is bright, or is brighter than it above 2 kHz | lower the key weights, or `"typing": "muted"` for that film |
 | chords vs bars mismatch | one entry per bar, including the tail bar (`"-"`) |
 
 ## 11. Failure modes
@@ -339,7 +362,7 @@ You cannot listen, so measure what a listener hears:
 | Boom sounds wrong under the chord | pitch set by hand, or chords do not match the bars | drop `pitch`; fix `chords` |
 | Drop does not land | no silence or suck; a riser runs into the downbeat | a `drops` entry; end the riser on the silence's first frame |
 | Low end booms and blurs | a kick, a drop and a heavy landing on one downbeat | one weight per downbeat; `drop` already owns the kick |
-| Typing rattles | every key sounds, all at one level | `word`/`space` variants; thinning is automatic |
+| Typing rattles or sounds cheap | bright noise clicks, every key at one level, a random timbre per key | `"typing": "soft"`, `word`/`space` variants, fractional frames; thinning and dynamics are automatic |
 | Effects vanish under the music | 13–25 dB under in their band | weights, section `level`, fewer layers where effects live |
 | Ending clicks or cuts off | no tail, or an event inside the end fade | `TAIL` ≥ 60 f; move late events before the fade (the report names them) |
 | The first second sounds like a fade-in | a slow pad attack, a swelling drone, nothing on frame 0 | a sound with a reason on frame 0; the first bar at intent (§5.3) |
@@ -347,3 +370,25 @@ You cannot listen, so measure what a listener hears:
 | Sound late after mux | Remotion's AAC priming | render `--muted`, mux with ffmpeg (`render.sh` does) |
 
 HyperFrames: it has no master bus, loudness stage or audio-to-picture sync. Export the same `out/cues.json` from the composition's timeline, render the WAV with `score.py`, and mux it with `scripts/hf-finish.sh --audio` (`references/hyperframes-engine.md` §11).
+
+## 12. Sound slop
+
+The habits that make a launch film sound cheap, and what to do instead. Most are defaults here; the critic checks the rest (`assets/critics/sound-sync.md`).
+
+| Slop | Instead |
+|---|---|
+| A whoosh on every move, a slam on every cut, a riser before every reveal | whoosh the moves the eye tracks (about 30% of the frame or more), at most about one a bar, each different; one or two risers a film, or 100–250 ms of silence before the payoff |
+| A boom on every logo, lock and landing; trailer braams on a product film | one weighted hit, on the payoff; lock-ins are tuned snaps, light landings pitched knocks; the logo lands on the motif |
+| Pings in 2.5–4.5 kHz: sine ticks in octave 7, band-passed noise keys, clicks with a 100–200 ms ring | modal, low-mid voices (400 Hz–1.6 kHz); nothing rings longer than 4 ms in 2.5–4.5 kHz; presses 25–40 ms; a confirm tone only on a meaningful action |
+| The machine gun: one waveform on every hit (hats, claps, clock ticks, keys) | a new seed per hit, ±1 dB and ±1–2% pitch; keys keep a fixed timbre per key |
+| Random-pitch typing (±6% per press on a random timbre per key): a marimba, not a keyboard | 26 fixed keys, ±1.2% per press |
+| Typing at 30 clicks a second, at one level, brighter than the music | about 12 sounded keys a second, word dynamics, 15–20 dB A under the music and ≥ 6 dB under it above 2 kHz |
+| Every effect at one loudness | scaled to its cause: the payoff hit loudest, snaps and heavy landings next, whooshes felt more than heard, ticks and clicks just clear of the music in their band, keys a texture |
+| Long reverb on tiny sounds | keys, ticks and clicks dry plus a 0.3 s room; the hall only for hits, bells and the logo |
+| Hats through every section | hats in one or two sections, accented, a new seed each hit, gone under typing |
+| Glitter, shimmer and "magic" sweeps on reveals | the brand's palette and the motif; a shimmer only if it is the motif, once |
+| A bed that never stops | hush, build, silence, payoff: LRA 5–8 LU, true silence before the drop |
+| Cartoon glides, big Doppler swings | pitch moves within 1–2 semitones on pops, 2–4 on a whoosh |
+| A different material for every sound | one palette (felt, wood, glass, soft synth), one scale for every tuned sound |
+
+Premium, in one line: restraint, one palette, tuned and soft UI sounds, real dynamics, silence before the payoff. Good sound design mostly disappears.
