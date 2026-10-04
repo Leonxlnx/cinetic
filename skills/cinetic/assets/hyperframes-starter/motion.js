@@ -10,7 +10,7 @@
  * Units: the grid is in FRAMES (the numbers the sound pipeline and grid-check read). GSAP wants
  * SECONDS, so convert at the call site with sec() or at().
  *
- * Loads as a classic <script> (sets window.BF) and under Node (module.exports or vm), so tools
+ * Loads as a classic <script> (sets window.MOTION) and under Node (module.exports or vm), so tools
  * read the same numbers the picture uses. Keep index.html's data-fps / data-width / data-height
  * equal to FPS / W / H below.
  */
@@ -99,7 +99,7 @@
    * so the slow tail of an ease-out settles in 1 px ticks with holds between them. `arrive` ends a
    * move at `k` of its curve, while it still travels ~0.5-1 px/f; `depart` skips the slow start of
    * an exit. `arriving(ease)` / `departing(ease)` wrap a GSAP ease the same way:
-   *   tl.fromTo('#w1', { yPercent: 115 }, { yPercent: 0, duration: sec(30), ease: BF.arriving(E.out) }, t);
+   *   tl.fromTo('#w1', { yPercent: 115 }, { yPercent: 0, duration: sec(30), ease: MOTION.arriving(E.out) }, t);
    * Same numbers as the Remotion kit's arrive/depart (src/lib/anim.ts).
    */
   const arrive = (p, k = 0.94) => clamp(p / k);
@@ -126,8 +126,8 @@
   /**
    * hitPulse as a GSAP ease. It runs 0 -> 1 -> 0, so the tween's `to` value is the PEAK and the
    * property is back at its `from` value when the tween ends (the tiny exp(-6) tail is removed).
-   *   const P = BF.pulse(2, 5);
-   *   tl.fromTo(el, { scale: 1 }, { scale: 1.03, duration: P.dur, ease: P.ease }, BF.sec(CUE.hit));
+   *   const P = MOTION.pulse(2, 5);
+   *   tl.fromTo(el, { scale: 1 }, { scale: 1.03, duration: P.dur, ease: P.ease }, MOTION.sec(CUE.hit));
    * The peak lands `attack` (60 fps) frames after the tween's start, i.e. 2 f after its sound by default.
    */
   function pulse(attack = 2, tau = 5) {
@@ -169,8 +169,8 @@
    * spring(cfg, eps) -> {ease, dur, durF, x}: a GSAP ease plus the duration (seconds, whole
    * frames) after which |1 - x| stays below eps (0.001 = 0.4 px on a 400 px move). The ease is
    * x(p * dur) plus a sub-eps linear correction, so it ends on exactly 1 with no final snap.
-   *   const S = BF.spring(BF.SPR.snap);
-   *   tl.fromTo(el, { y: 120 }, { y: 0, duration: S.dur, ease: S.ease }, BF.sec(start));
+   *   const S = MOTION.spring(MOTION.SPR.snap);
+   *   tl.fromTo(el, { y: 120 }, { y: 0, duration: S.dur, ease: S.ease }, MOTION.sec(start));
    * Put overshooting springs on transforms only and fade opacity with its own short tween.
    */
   function spring(cfg = SPR.snap, eps = 1e-3) {
@@ -252,11 +252,11 @@
     return (h >>> 0) / 4294967296;
   }
 
-  const BF = {
+  const MOTION = {
     FPS, BPM, W, H, BEAT, BAR, b, sec, at, fd,
     bez, E, clamp, mix, lmix, tw, prog, arrive, depart, arriving, departing, hitPulse, squash, pulse, springFn, spring, SPR,
     peak, settleOf, delayTo, hit, reachAt, startFor, rand,
   };
-  root.BF = BF;
-  if (typeof module === 'object' && module.exports) module.exports = BF;
+  root.MOTION = MOTION;
+  if (typeof module === 'object' && module.exports) module.exports = MOTION;
 })(typeof window !== 'undefined' ? window : globalThis);

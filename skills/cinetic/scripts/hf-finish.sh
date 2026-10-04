@@ -88,22 +88,22 @@ const rootTag = (html.match(/<[a-z][^>]*\bdata-composition-id\s*=[^>]*>/is) || [
 const attr = (n) => { const m = rootTag.match(new RegExp('\\b' + n + '\\s*=\\s*["\']([^"\']*)["\']', 'i')); return m ? m[1] : ''; };
 const v = { dur: attr('data-duration'), rootFps: attr('data-fps'), w: attr('data-width'), h: attr('data-height') };
 if (!rootTag) errs.push(`${entry}: no element with data-composition-id`);
-let film = null, bf = null;
+let film = null, motion = null;
 const mj = path.join(dir, 'motion.js'), tj = path.join(dir, 'timeline.js');
 if (fs.existsSync(mj) && fs.existsSync(tj)) {
   const ctx = {}; ctx.window = ctx; vm.createContext(ctx);
   try {
     vm.runInContext(fs.readFileSync(mj, 'utf8'), ctx, { filename: mj });
     vm.runInContext(fs.readFileSync(tj, 'utf8'), ctx, { filename: tj });
-    film = ctx.FILM; bf = ctx.BF;
+    film = ctx.FILM; motion = ctx.MOTION;
   } catch (e) { errs.push(`timeline.js/motion.js failed to load: ${e.message}`); }
 }
-if (film && bf) {
-  const want = film.TOTAL / bf.FPS;
-  if (v.dur === '') errs.push(`root data-duration is missing; set it to ${want} (TOTAL ${film.TOTAL} f / ${bf.FPS} fps)`);
+if (film && motion) {
+  const want = film.TOTAL / motion.FPS;
+  if (v.dur === '') errs.push(`root data-duration is missing; set it to ${want} (TOTAL ${film.TOTAL} f / ${motion.FPS} fps)`);
   else if (Math.abs(+v.dur - want) > 1e-6) errs.push(`root data-duration="${v.dur}" but TOTAL/FPS = ${want} s; the render would cut or freeze. Make them equal.`);
-  if (v.rootFps && +v.rootFps !== bf.FPS) errs.push(`root data-fps="${v.rootFps}" but motion.js FPS = ${bf.FPS}`);
-  if (v.w && +v.w !== bf.W || v.h && +v.h !== bf.H) warn.push(`root is ${v.w}x${v.h} but motion.js says ${bf.W}x${bf.H}`);
+  if (v.rootFps && +v.rootFps !== motion.FPS) errs.push(`root data-fps="${v.rootFps}" but motion.js FPS = ${motion.FPS}`);
+  if (v.w && +v.w !== motion.W || v.h && +v.h !== motion.H) warn.push(`root is ${v.w}x${v.h} but motion.js says ${motion.W}x${motion.H}`);
   if (cuesOut) {
     if (typeof film.cues !== 'function') errs.push('timeline.js has no FILM.cues()');
     else {
@@ -134,7 +134,7 @@ for (const f of files) {
 for (const w of warn) console.error('hf-finish: warning: ' + w);
 for (const e of errs) console.error('hf-finish: ' + e);
 const num = (x) => (x === '' || x === undefined || x === null || isNaN(+x) ? '' : String(+x));
-console.log(`P_DUR=${num(v.dur)} P_ROOTFPS=${num(v.rootFps)} P_W=${num(v.w || (bf && bf.W))} P_H=${num(v.h || (bf && bf.H))} P_TLFPS=${num(bf && bf.FPS)} P_TOTAL=${num(film && film.TOTAL)} P_ERR=${errs.length}`);
+console.log(`P_DUR=${num(v.dur)} P_ROOTFPS=${num(v.rootFps)} P_W=${num(v.w || (motion && motion.W))} P_H=${num(v.h || (motion && motion.H))} P_TLFPS=${num(motion && motion.FPS)} P_TOTAL=${num(film && film.TOTAL)} P_ERR=${errs.length}`);
 JS
 )" || die "preflight crashed"
 eval "$PRE"

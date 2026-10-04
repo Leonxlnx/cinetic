@@ -85,7 +85,7 @@ Each rule costs a broken render when ignored:
 - **One transform owner per node.** A CSS `transform` plus a GSAP transform on the same element conflict (lint: `gsap_css_transform_conflict`); two overlapping transform tweens on one element kill the entrance. Nest wrappers: position on the parent, squash on the child, recoil on a grandparent. Static placement with whole-pixel `left`/`top` is fine; animated `left`/`top` is not.
 - **Never tween `display`, `visibility` or `autoAlpha` on a `.clip`** (lint: `gsap_animates_clip_element`); the clip's window owns visibility. Animate a child.
 - **No `repeat: -1`.** Use `repeat: Math.max(0, Math.floor(dur / cycle) - 1)`; `ceil` overshoots (`gsap_repeat_ceil_overshoot`).
-- **No clocks or chance**: no `Date.now()`, `performance.now()`, unseeded `Math.random()`, `requestAnimationFrame` loops, `setTimeout`, CSS `transition`, or network fetches at render time. Use `BF.rand(seed)`.
+- **No clocks or chance**: no `Date.now()`, `performance.now()`, unseeded `Math.random()`, `requestAnimationFrame` loops, `setTimeout`, CSS `transition`, or network fetches at render time. Use `MOTION.rand(seed)`.
 - **Transforms need a block box.** A transform on an inline `<span>` does nothing, and scaling an auto-width element shows nothing; use `inline-block` or `block` with a size.
 - **Other runtimes** (CSS keyframes, Web Animations, vector-animation players, WebGL scenes) have seek adapters. Keep a film on GSAP so every move shares one clock and one set of eases. A WebGL layer renders from the `hf-seek` event's `e.detail.time` and needs an explicit root `data-duration`.
 
@@ -113,7 +113,7 @@ A single-file film works (the starter is one), but lint then warns `nested_struc
   <div id="root" data-composition-id="act2" data-width="1920" data-height="1080">…</div>
   <script>
     (function () {
-      const { sec, E } = window.BF, { ACT, CUE } = window.FILM;
+      const { sec, E } = window.MOTION, { ACT, CUE } = window.FILM;
       const L = (f) => sec(f - ACT.act2.from); // sub-composition time starts at 0
       const tl = gsap.timeline({ paused: true });
       // … tweens at L(CUE.x) …
@@ -210,7 +210,7 @@ A single-file film works (the starter is one), but lint then warns `nested_struc
 `timeline.js` keeps `ACT`, `CUE`, `DUR` and `TOTAL` in frames, so grid rules, `COPY` holds and the cue export read the same integers as the Remotion kit. Convert only where GSAP needs seconds:
 
 ```js
-const { E, sec, at, startFor } = window.BF;
+const { E, sec, at, startFor } = window.MOTION;
 const { CUE, DUR } = window.FILM;
 tl.fromTo("#pcA", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: sec(DUR.rise), ease: E.out }, sec(CUE.rise));
 tl.fromTo("#flash", { opacity: 0 }, { opacity: 1, duration: sec(12), ease: E.out }, sec(CUE.hit - 1));
@@ -224,11 +224,11 @@ A tween placed at `sec(cue)` is at progress 0 on the cue frame, so the first vis
 
 ### 11.3 Springs
 
-GSAP has no spring, and `elastic` is not one. `BF.spring(cfg)` returns a closed-form, seek-safe ease plus its settle time:
+GSAP has no spring, and `elastic` is not one. `MOTION.spring(cfg)` returns a closed-form, seek-safe ease plus its settle time:
 
 ```js
-const S = BF.spring(BF.SPR.snap);                     // S.durF = 33: settled to 0.1% of travel
-const start = CUE.lock - BF.delayTo(BF.SPR.snap, 1);  // 10 f early, so it touches its slot on the beat
+const S = MOTION.spring(MOTION.SPR.snap);                     // S.durF = 33: settled to 0.1% of travel
+const start = CUE.lock - MOTION.delayTo(MOTION.SPR.snap, 1);  // 10 f early, so it touches its slot on the beat
 tl.fromTo("#chip", { y: 80 }, { y: 0, duration: S.dur, ease: S.ease }, sec(start));
 ```
 
@@ -236,10 +236,10 @@ tl.fromTo("#chip", { y: 80 }, { y: 0, duration: S.dur, ease: S.ease }, sec(start
 
 ### 11.4 Pulses and contact squash
 
-`BF.pulse(attack, tau)` turns `hitPulse` into an ease that goes 0 → 1 → 0, so the tween's `to` value is the peak and the property returns exactly to rest:
+`MOTION.pulse(attack, tau)` turns `hitPulse` into an ease that goes 0 → 1 → 0, so the tween's `to` value is the peak and the property returns exactly to rest:
 
 ```js
-const sq = BF.pulse(1, 4); // BF.squash's envelope: 10% flatter, 8% wider, anchored at the contact edge
+const sq = MOTION.pulse(1, 4); // MOTION.squash's envelope: 10% flatter, 8% wider, anchored at the contact edge
 tl.fromTo("#pcC > span", { scaleX: 1, scaleY: 1 }, { scaleX: 1.08, scaleY: 0.9, duration: sq.dur, ease: sq.ease }, sec(CUE.hit));
 ```
 
@@ -248,7 +248,7 @@ Started on the cue, it peaks `attack` frames later (2 f with the default `pulse(
 ### 11.5 Sync and the sound export
 
 - **Arrivals that lock on a beat**: `startFor(cue, durF, ease)` returns the start frame at which the tween reaches 97% of its travel exactly on the cue (the `settleOf` threshold, where the settle sound goes). An `E.out` word over 30 f starts 14.8 f early.
-- **Vertical text** snaps to whole pixels in the headless shell, so a rise on plain `E.out` settles in 1 px ticks (`references/chromium-rendering.md` §15). Rise text on `BF.arriving(E.out)`, as the starter's `FILM.WORD_EASE` does, and pass the same ease to `startFor`.
+- **Vertical text** snaps to whole pixels in the headless shell, so a rise on plain `E.out` settles in 1 px ticks (`references/chromium-rendering.md` §15). Rise text on `MOTION.arriving(E.out)`, as the starter's `FILM.WORD_EASE` does, and pass the same ease to `startFor`.
 - **Springs**: start at `cue - delayTo(cfg, thr)` (`thr` 1 for impacts, 0.5 for pops).
 - **Sound events** come from `FILM.cues()` in `timeline.js`, computed with `peak`, `settleOf` and `delayTo` from the same constants the picture uses. `bash scripts/hf-finish.sh . --export-cues out/cues.json` writes the standard `out/cues.json` (`{fps, bpm, total, acts, cue, events}`) for `scripts/audio/score.py`. Event kinds and fields: `references/sound.md`.
 
@@ -262,7 +262,7 @@ tl.fromTo(n, { v: 0 }, { v: 100, duration: sec(40), ease: E.ui, onUpdate: () => 
 ```
 
 - **Measure once, at build time**, after fonts load, and only for layout that will not change; multi-act films keep positions as constants in `timeline.js`.
-- **Camera**: one world wrapper per shot owns the camera transform (`references/camera.md`); scale in log space with `BF.lmix` when you compute values yourself.
+- **Camera**: one world wrapper per shot owns the camera transform (`references/camera.md`); scale in log space with `MOTION.lmix` when you compute values yourself.
 
 ### 11.7 Finishing
 

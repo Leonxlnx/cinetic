@@ -2,7 +2,7 @@
 # layout-audit.sh: render audit stills of a composition and check every text box.
 #
 # Renders the chosen frames with --props '{"audit":true}'. The starter's <Audit> (src/lib/Audit.tsx)
-# measures every element tagged data-text="<id>" and logs one BF_AUDIT JSON line per frame; this
+# measures every element tagged data-text="<id>" and logs one CINETIC_AUDIT JSON line per frame; this
 # script collects them and fails on text outside the safe zone, text boxes that overlap, readable
 # text under 22 px (at 1080p; 32 px in a 9:16 frame), text covered by a moving element tagged
 # data-mover (sampled with elementsFromPoint, so z-order counts) and, with --speed, readable text
@@ -140,9 +140,10 @@ const maxV = Number(maxArg); // text-speed limit, px/f in a 1080 px tall frame; 
 const pairs = maxV > 0 ? want.filter((f) => f + 1 < Number(lenArg)) : []; // f -> f+1
 const byFrame = new Map();
 for (const line of fs.readFileSync(log, 'utf8').split('\n')) {
-  const i = line.indexOf('BF_AUDIT ');
+  const TAG = 'CINETIC_AUDIT ';
+  const i = line.indexOf(TAG);
   if (i < 0) continue;
-  try { const d = JSON.parse(line.slice(i + 9)); byFrame.set(d.frame, d); } catch { /* truncated line */ }
+  try { const d = JSON.parse(line.slice(i + TAG.length)); byFrame.set(d.frame, d); } catch { /* truncated line */ }
 }
 const missing = [...new Set([...want, ...pairs.map((f) => f + 1)])].filter((f) => !byFrame.has(f));
 const audited = want.filter((f) => byFrame.has(f)).map((f) => byFrame.get(f)); // f+1 frames only feed the speed
@@ -179,7 +180,7 @@ const report = {
 };
 fs.writeFileSync(jsonPath, JSON.stringify(report, null, 1) + '\n');
 for (const x of issues) console.log(`  f${x.frame}  ${x.kind}  ${x.id}  ${x.detail}`);
-if (!byFrame.size) console.log(`  no BF_AUDIT output: does ${comp} accept the audit prop and render <Audit/> inside <FontGate>?`);
+if (!byFrame.size) console.log(`  no CINETIC_AUDIT output: does ${comp} accept the audit prop and render <Audit/> inside <FontGate>?`);
 else if (missing.length) console.log(`  no audit line for frames ${missing.join(',')}`);
 const n = audited.reduce((s, d) => s + d.boxes.length, 0);
 const z = report.safe ? ` in ${report.zone} (top ${report.safe.top}, right ${report.safe.right}, bottom ${report.safe.bottom}, left ${report.safe.left})` : '';

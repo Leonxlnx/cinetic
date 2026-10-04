@@ -13,12 +13,12 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 // - anything tagged data-mover="<id>" (a chip, card, cursor or device that travels) painted OVER
 //   the text: sampled with elementsFromPoint, so z-order and transforms count as rendered.
 // It draws the boxes and the safe zone, and logs one JSON line per frame:
-//   BF_AUDIT {"comp":"Film","frame":120,"safe":{...},"minPx":22,"boxes":[...],"issues":[...]}
+//   CINETIC_AUDIT {"comp":"Film","frame":120,"safe":{...},"minPx":22,"boxes":[...],"issues":[...]}
 // Each box carries its effective opacity (its own times its ancestors'); layout-audit.sh --speed
 // pairs the boxes of frame f and f+1 by id to measure how fast readable text travels.
 // Tag the element whose box IS the visible text (the line, not an oversized wrapper).
 
-export const AUDIT_TAG = 'BF_AUDIT';
+export const AUDIT_TAG = 'CINETIC_AUDIT';
 /** Smallest text a viewer must read, px at 1080p (scaled by U for other sizes). */
 export const MIN_TEXT_PX = 22;
 /** The same in a tall (9:16) frame, which is watched full-screen on a phone next to feed UI. */
