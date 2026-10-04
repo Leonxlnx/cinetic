@@ -335,7 +335,12 @@ def main():
             got, sig = draw([e for e in pool if e['category'] == cat], n, rng, a.energy, taken, sig)
             picks += got
     if not picks:
-        fail('nothing fits these filters (try without --energy, or a broader --format)', 1)
+        if a.category and not a.plan:
+            left = [e['id'] for e in pool if e['category'] == a.category and e['id'] not in taken]
+            fail(f'no {a.category} technique is left for --format {a.format or "any"} '
+                 f'({len(taken)} excluded, {len(left)} left). That pick has run out: drop it, with a reason in the '
+                 'treatment, or take the slot from another category', 1)
+        fail('nothing fits these filters (try a broader --format)', 1)
 
     head = (f"<!-- pick.py --seed {seed}"
             + (f" --format {a.format}" if a.format else '') + (f" --energy {a.energy}" if a.energy else '')
