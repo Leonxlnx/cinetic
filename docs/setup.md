@@ -42,7 +42,7 @@ The repository holds one skill, so the CLI selects it without asking. It still a
 
 ```bash
 npx skills add Leonxlnx/cinetic -g -a claude-code -y   # global, Claude Code only, no prompts
-npx skills add Leonxlnx/cinetic#v1.0.0                 # pin to the v1.0.0 tag
+npx skills add Leonxlnx/cinetic#v1.1.0                 # pin to the v1.1.0 tag
 npx skills add Leonxlnx/cinetic --list                 # show what would be installed, install nothing
 ```
 
@@ -121,7 +121,7 @@ mkdir -p ~/.claude/skills
 unzip cinetic.skill -d ~/.claude/skills/          # creates ~/.claude/skills/cinetic/
 ```
 
-To pin a version, download it from its tag instead: `https://github.com/Leonxlnx/cinetic/releases/download/v1.0.0/cinetic.skill`.
+To pin a version, download it from its tag instead: `https://github.com/Leonxlnx/cinetic/releases/download/v1.1.0/cinetic.skill`.
 
 Or copy the folder from a clone:
 
@@ -260,7 +260,7 @@ Set `SKILL` to the folder that holds the installed `SKILL.md`. Use an absolute p
 | skills CLI or manual copy, Claude Code, global | `$HOME/.claude/skills/cinetic` |
 | skills CLI or manual copy, Claude Code, project | `$PWD/.claude/skills/cinetic` (run from the project root) |
 | skills CLI, Codex, Cursor, OpenCode and the other `.agents` agents | `$HOME/.agents/skills/cinetic` (global) or `$PWD/.agents/skills/cinetic` (project) |
-| Claude Code plugin | `$HOME/.claude/plugins/cache/cinetic/cinetic/1.0.0/skills/cinetic` (the next-to-last folder is the installed version) |
+| Claude Code plugin | `$HOME/.claude/plugins/cache/cinetic/cinetic/1.1.0/skills/cinetic` (the next-to-last folder is the installed version) |
 | a clone of this repository | `$PWD/skills/cinetic` (run from the clone's root) |
 
 ```bash

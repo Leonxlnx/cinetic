@@ -8,6 +8,65 @@ Versions 0.1.0 to 0.5.0 were development versions. Each was run against the brie
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-04
+
+This version teaches cinetic what top-tier launch films measurably do. Their pictures and soundtracks were measured frame by frame, and the results became a technique library the agent draws from at random, a reference of craft norms, a recalibrated sound engine and a set of tested motion primitives in the starter.
+
+Two snapshots of this version went through judged rounds against the same agent working without cinetic but with the official Remotion agent skills, and, new in these rounds, against the films 0.5.0 made for the same briefs. In round 7 the cinetic films met 54 of 56 of the written expectations against 41 of 56, won 2 of 4 blind comparisons with the neutral judge, 4 of 4 with the house-style judge and 3 of 4 against the 0.5.0 films. The fixes from round 7's findings are in this release but were not judged again; see [docs/evaluation.md](docs/evaluation.md).
+
+### Highlights
+
+- **A technique library, drawn at random.** `assets/library/techniques.json` holds 273 techniques in 14 categories (opening hooks, transitions, camera, typography, UI choreography, data, product demo, end cards, colour and light, texture, layout, pacing, micro-interactions, depth). Each has a build recipe in the starter's tokens and helpers, default timing at 60 fps, when to use and avoid it, the formats and energy it suits, and a ban-safe variant where the original look touches a hard ban. `scripts/pick.py` draws about one technique per 2.5 s of film, in the order the film's format needs them and weighted toward proven workhorses and its energy, so films stop converging on the same fade-up, push-in and end card. `references/technique-library.md` is generated from the JSON.
+- **Craft rules from measurement.** `references/craft-rules.md` gives measured norms for pacing, smoothness, text timing, transitions, camera, UI in motion, colour over time and layout, plus what separates the top tier from good films.
+- **Sound that stops sounding stock.** Keys are a short, dark modal tock instead of band-passed noise; typing defaults to `auto` (soft per-key typing over a 10 dB music duck up to 25 characters a second, one tuned blip per word above); the UI click is one bright, very short press-and-release voice per film; effects go on discrete state changes, about 5 per 10 s, and most cuts are carried by the music; the ending subtracts instead of slamming. `sound.md` gains measured norms and a sound-slop table.
+- **Tested motion primitives.** The Remotion starter ships `TypeOn`, `Scramble`, `Roll`, `Morph`, `Iris` and `MaskRise` next to `Words`, `Cursor` and `RackFocus`, plus `E.type`, `E.exit`, `stagger`, `inertia`, `arriveK`, `zoomSpeed` and `zoomHandoff`, each rendered frame by frame at 60 and 30 fps and at blur sub-frames.
+
+### Added
+
+- `scripts/pick.py`: weighted random draws from the technique library (`--format`, `--energy`, `--seconds`, `--category`, `--n`, `--seed`, `--exclude`, `--avoid`, `--brand-supplied`, `--json`), `--list`, `--show <id>`, `--validate` and `--markdown`. A plan prints its seed so it can be reproduced and recorded in the treatment.
+- `assets/library/techniques.json` and the generated `references/technique-library.md`.
+- `references/craft-rules.md`.
+- The treatment template gains a "Drawn techniques" section and a gate line for it.
+- Starter primitives in `src/fx/` and helpers in `src/lib/anim.ts` and `src/lib/camera.ts` (see Highlights); `references/motion-tokens.md` lists them with their defaults.
+- `score.py`: typing styles `auto` (default), `soft`, `mechanical`, `pitched`, `muted`, `word` and `off`; a music duck under per-key typing (`mix.typing_duck_db`); levelling of keys, clicks, crisp ticks and word blips against the music; a `crisp` tick variant; a typing block, effect levels and the loudest moment's position in the report.
+- `synth.py`: `key_click` styles and kinds with a secondary transient, `word_blip`, `crisp_tick`, a new `ui_click`, and a small room for tiny sounds.
+- `render.sh --loop` renders lossless PNG intermediates, so a loop's seam survives the encode, and `deliver.sh --loop` encodes the WebM at CRF 26.
+- `render.sh --blur` stops before the sub-frame pass while a move is faster than clean blur allows (80 px/f), or on an unexplained full-frame change away from an act boundary, which would be a cut its sub-frames blend into a double exposure. `--accept-fast A-B` and `--accept-cut A-B` waive a range you checked at full size (a frame-filling wipe, a flood, a flash, a zoom-through).
+- `av-audit.py` warns when a landing sound (land, pop, tock, bell, snap, hit, drop) comes after the picture has already stopped moving.
+- `forensics.py` gates a still opening, measured on the film's own scale (a warning when the first visible change comes after 1.0 s, a failure after 2.5 s), and runs the hook check on films of 6 s or less with 1 s windows.
+- `brand-svg.ts` writes a `LockupSvg` exported from `src/brand/Mark.tsx` as is, for marks that are part of the word, so `brand-kit.sh` no longer assumes a mark beside a typed name.
+- `sheet.py --images` tiles stills or frames you already have, labelled by file name.
+- `grid-check.ts` accepts one declared designed hold (`export const HOLD = {from, to}`, at most 96 f at 60 fps).
+- Tests for `pick.py` (`scripts/test/pick.test.py`), run in CI, including a check that the generated library page matches the JSON.
+
+### Changed
+
+- SKILL.md Step 1 draws the film's techniques with `pick.py` before the beat sheet. The agent builds the picks the concept can carry and rerolls (at most twice) or drops the rest with a written reason; it never adds an undrawn technique.
+- Measured norms replace several defaults: one designed near-still hold of 60–96 f per film; an end card that assembles over 60–80 f and then holds 36–80 f still or creeping ≤ 6%; exits into a cut on `E.exit` and entrances decaying ×0.89–0.94 per frame; text being read at most about 3 px/f; entry blur 6–8 px or none (`Words` defaults to 8); standalone hero words up to 5× the statement size; frame-filling edges allowed 150–300 px/f for a few frames; secondary moves starting at 55–75% of the leading move; continuous takes up to 560 f; one lull of 1–4 s at 55–85% of the runtime and the biggest peak at 75–90%; large centred product windows; 12–20 f cursor travel with a 60 f dwell; time-boxed prompts.
+- Sound rules: the drop on the hero reveal is the loudest moment, and the lockup is the most resolved one; effects sit within ±0.15 pan except whooshes and risers; whooshes (about 2 a film) only on camera-scale moves and logo zooms; risers end on a hard stop, a filter drop or a gap.
+- `av-audit.py` suggests a sound only for the 3 biggest picture changes, instead of warning on every strong change without one.
+- Product UI: push in 2–5× on every interaction that carries the story, hold a wide shot of readable UI at most about 1.7 s, and label every bar or chart that carries meaning. A text reveal never shows part of a glyph.
+- `taste-and-slop.md` names haze behind the hero and the stock tech palette.
+- Sound goes on the frame an arrival becomes readable (its `settleOf`), never on the tween's last frame or a later bar line; every arrival of the lockup is sounded where it happens. Frame-0 sound assumes a moving frame 0.
+- Anything posted to a feed masters at −14 LUFS whatever the brand's temperament; −16 is only for a sting that plays at the head of other videos.
+- `brand-and-color.md` adds the word test for a mark that is a letter of the name, and how to export such a lockup.
+- A loop's frame 0 is its poster and names the product; numbers stay true in every in-between state; every number on screen carries its label or unit.
+- The 9:16 feed zone keeps the bottom 420 px clear (was 384), matching current overlays.
+- The static end tail `forensics.py` allows is 2 s at the film's frame rate instead of a fixed 120 frames.
+- `finishing.md`: run long renders in the background and read the log.
+- The hook names the product on screen by about a quarter of the runtime. The oversize opening line (`oh-oversize-fly-then-small`) travels every frame and hands straight to the small one, and becomes a signature move.
+
+### Fixed
+
+- `av-audit.py` picks onsets in numpy. librosa's cached numba peak picker could segfault the whole process.
+- A key event on frame 0 could start before the film and lose its attack.
+- `mixColor` accepts the `rgb()` strings it returns, so nested mixes no longer fall back to black.
+- A loop rendered from JPEG intermediates failed its seam gate even when its frames matched.
+- `pick.py` failed inside a film project: `new-film.sh` now copies the library to `scripts/library/`, and `pick.py` finds it there. When a category has run out for the format, it says so instead of blaming `--energy`.
+- `lint-film.mjs` flagged a build number such as "#2187" as a purple hex; an all-digit #NNN(N) in running text is now a number label.
+- A sub boom dropped onto true silence, and a silence opening again, clicked; both now ramp over a few milliseconds.
+- A hard cut inside an act blurred into one double-exposed frame: `measure-speed.py` now renders every hard cut it measures with one sample.
+
 ## [1.0.0] - 2026-09-28
 
 cinetic is an agent skill that has your coding agent direct, score and render short films from code: launch films and teasers, product and feature videos, looping feature animations, logo stings, UI walkthroughs and social cut-downs. One beat grid in `timeline.ts` drives the picture, a synthesized soundtrack and the QA scripts, and a film counts as done only after its render has been measured and reviewed.
@@ -159,7 +218,8 @@ First version: a skill for directing, building and rendering launch films, produ
 - Guides: timing grid, motion tokens, camera, transitions, product UI, concept and story, copy and type, brand and color, sound, finishing, the Remotion and HyperFrames engines, 16 Chromium rendering traps, and 80 generated-look tells with fixes. `assets/TREATMENT.md` is the Step 1 template.
 - Evals: three briefs (a feature loop, a launch teaser and a logo sting), each with objective checks (size, duration, 60 fps and BT.709 tags, plus true peak on the two with sound and loudness on the teaser) and visual ones, used to compare runs with and without the skill.
 
-[Unreleased]: https://github.com/Leonxlnx/cinetic/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Leonxlnx/cinetic/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Leonxlnx/cinetic/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Leonxlnx/cinetic/compare/v0.5.0...v1.0.0
 [0.5.0]: https://github.com/Leonxlnx/cinetic/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Leonxlnx/cinetic/compare/v0.3.0...v0.4.0
