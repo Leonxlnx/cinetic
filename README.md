@@ -181,6 +181,7 @@ To update a manual install, remove `~/.claude/skills/cinetic` first, then repeat
 - **ffmpeg 6+** with libx264, and ffprobe
 - **Python 3.11+** with numpy, scipy, soundfile, pyloudnorm, opencv-python and librosa; fonttools, brotli and uharfbuzz for outlined SVG logos; pillow for banding-free gradient PNGs
 - **Chromium or a Chrome headless shell.** Remotion downloads its own if allowed; set `REMOTION_BROWSER` or `CHROMIUM_PATH` to use a local one.
+- **A Remotion licence if you need one.** cinetic is MIT, but Remotion, the default engine, has its own licence: free for individuals and companies of up to 3 people, a company licence from 4. HyperFrames is Apache-2.0.
 
 Install the Python packages in a virtual environment:
 

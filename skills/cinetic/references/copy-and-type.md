@@ -18,7 +18,7 @@ Covers the words (budget, voice, callback copy, stock phrasing, string audit) an
 
 ## 1. Copy budget
 
-Count every word the viewer has to read, including UI text that carries meaning. UI texture that is too small or too brief to read costs nothing, but then it can't carry meaning either.
+Count every word of the film's own voice: statements, captions, the end-card line. Strings the product itself shows (a typed terminal command, code, a URL, an app label) are not the film talking: put them in `COPY` with `kind: 'ui'`, and `grid-check.ts` counts them apart instead of against the budget. They still have to be real, readable and held long enough when the story needs them read, and a frame of nothing but terminal text is still a wall of text. UI texture that is too small or too brief to read costs nothing, but then it can't carry meaning either.
 
 | Format | Words in the film | Per line | Per shot |
 |---|---|---|---|

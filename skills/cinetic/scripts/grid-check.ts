@@ -11,7 +11,8 @@
  *   copy           every COPY entry has in <= resolved <= out inside the film
  *   text-hold      resolved text holds >= 36 f + 6 f per word (0.6 s + 0.1 s/word) before it leaves
  *   copy-lines     <= 5 words per line, <= 2 lines per entry (warning)
- *   word-total     on-screen words <= --max-words (default 35)
+ *   word-total     on-screen words <= --max-words (default 35); entries with kind: 'ui' (terminal
+ *                  commands, code, URLs, app labels the product shows) are counted apart, not budgeted
  *   event-gap      no stretch without an event (cue, copy change, act change, or a cues.json event
  *                  with --cues) longer than --max-gap frames (default 48 f at 60 fps), tail excluded;
  *                  one designed near-still hold may be declared with `export const HOLD = {from, to}`
@@ -130,11 +131,14 @@ async function main() {
 
   // --- copy
   let words = 0;
+  let uiWords = 0;
   const holdNeed = (n: number) => Math.round((36 + 6 * n) * s);
   for (const c of COPY) {
     const id = c.id ?? '?';
     const n = String(c.text ?? '').split(/\s+/).filter(Boolean).length;
-    words += n;
+    const ui = (c as { kind?: string }).kind === 'ui'; // product strings: a typed command, code, a URL, an app label
+    if (ui) uiWords += n;
+    else words += n;
     const o = c.out ?? TOTAL;
     if (![c.in, c.resolved, o].every(Number.isFinite)) {
       err('copy', `COPY ${id}: in/resolved/out must be frames`);
@@ -143,7 +147,9 @@ async function main() {
     if (!(c.in <= c.resolved && c.resolved <= o)) err('copy', `COPY ${id}: needs in <= resolved <= out (got ${c.in}, ${c.resolved}, ${o}); unresolved text never exits`);
     if (c.in < 0 || o > TOTAL) err('copy', `COPY ${id}: [${c.in}, ${o}] is outside the film [0, ${TOTAL}]`);
     const hold = o - c.resolved;
-    if (hold < holdNeed(n)) err('text-hold', `COPY ${id} "${c.text}" holds ${hold} f resolved; ${n} word(s) need >= ${holdNeed(n)} f`);
+    if (hold < holdNeed(n) && ui) warn('text-hold', `COPY ${id} (ui) "${c.text}" holds ${hold} f resolved; ${n} word(s) want >= ${holdNeed(n)} f if it must be read`);
+    else if (hold < holdNeed(n)) err('text-hold', `COPY ${id} "${c.text}" holds ${hold} f resolved; ${n} word(s) need >= ${holdNeed(n)} f`);
+    if (ui) continue; // UI strings keep the product's own layout
     const lines = String(c.text).split('\n');
     if (lines.length > 2) warn('copy-lines', `COPY ${id}: ${lines.length} lines on screen at once (keep <= 2)`);
     for (const l of lines) {
@@ -151,7 +157,7 @@ async function main() {
       if (lw > 5) warn('copy-lines', `COPY ${id}: "${l}" has ${lw} words on one line (keep <= 5)`);
     }
   }
-  if (words > maxWords) err('word-total', `${words} on-screen words; the budget is ${maxWords} (--max-words)`);
+  if (words > maxWords) err('word-total', `${words} on-screen words; the budget is ${maxWords} (--max-words). Typed commands, code, URLs and app labels belong in COPY with kind: 'ui' and are not budgeted`);
 
   // --- event gaps (the tail is for the audio to decay, so it is excluded)
   const bodyEnd = TOTAL - TAIL;
@@ -210,6 +216,7 @@ async function main() {
     acts: acts.length,
     cues: cueFrames.length,
     words,
+    uiWords,
     maxWords,
     maxGap,
     longestGap: ev.slice(1).reduce((m, f, i) => Math.max(m, f - ev[i]), 0),
@@ -219,7 +226,7 @@ async function main() {
     for (const f of out) console.log(`${f.severity === 'error' ? 'FAIL' : 'warn'}  ${f.check}  ${f.message}`);
     console.log(
       `grid-check: ${summary.seconds} s, ${BPM} BPM @ ${FPS} fps (beat ${BEAT} f, bar ${BAR} f), ${summary.acts} acts, ${summary.cues} cues, ` +
-        `${words}/${maxWords} words, longest gap ${summary.longestGap}/${maxGap} f -> ${pass ? 'pass' : 'FAIL'} (${errors} errors, ${warnings} warnings)`,
+        `${words}/${maxWords} words${uiWords ? ` (+${uiWords} ui)` : ''}, longest gap ${summary.longestGap}/${maxGap} f -> ${pass ? 'pass' : 'FAIL'} (${errors} errors, ${warnings} warnings)`,
     );
   }
   process.exit(pass ? 0 : 1);
