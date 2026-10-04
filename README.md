@@ -11,4 +11,4 @@ Demo films and preview images for the [cinetic](https://github.com/Leonxlnx/cine
 | `halden-logo-sting.mp4` / `.gif` | 6 s logo sting with sound |
 | `social-preview.png` | 1280x640 repository social preview |
 
-Every film was made by an agent with a development snapshot of cinetic 1.1.0 (the Kiln teaser in evaluation round 6, the others in round 7) from the briefs in [`evals/evals.json`](https://github.com/Leonxlnx/cinetic/blob/main/evals/evals.json), then re-encoded for the web. MIT licensed, like the rest of the repository.
+Every film was made by an agent with a development snapshot of cinetic 1.0.0 (the Kiln teaser in evaluation round 6, the others in round 7) from the briefs in [`evals/evals.json`](https://github.com/Leonxlnx/cinetic/blob/main/evals/evals.json), then re-encoded for the web. MIT licensed, like the rest of the repository.
