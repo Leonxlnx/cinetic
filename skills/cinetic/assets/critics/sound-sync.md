@@ -38,7 +38,7 @@ You cannot listen, so you measure. You judge whether the sound makes the picture
    - Every pitched effect is in key, and the snaps and booms are tuned to the chord root.
    - V-chord pads end before the downbeat they resolve into.
    - Each drop lands on true silence.
-   - Typing is thinned (clicks closer than 2 f are dropped, and word starts are accented).
+   - Typing is a soft texture: a `typing` style that fits the personality row, word starts accented, and each run in `score.json` `typing.runs` 15–20 dB A under the music (8–12 as the foreground); at least 6 dB under it in 2–5 and 5–10 kHz when the bed has top end (`bed_top_A_pct` ≥ 5), and at most 25% of its own energy in 2–5 kHz (`share_2k_5k_A_pct`).
    - Heavy thuds play only for landings that happen in shot.
    - Whooshes are dull (centroid 150-600 Hz) and panned with the motion.
 

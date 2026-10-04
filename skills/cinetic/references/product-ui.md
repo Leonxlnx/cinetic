@@ -273,8 +273,8 @@ export const CHAR_AT: number[] = (() => {
   let acc = 0;
   return w.map((x) => a + ((acc += x) / total) * span);
 })();
-/** Absolute key frames for src/sync.ts (the sound thins clicks closer than 2 f). */
-export const KEY_FRAMES = CHAR_AT.map((c) => Math.round(c + ACT.proof.from));
+/** Absolute key frames for src/sync.ts, fractional on purpose: score.py thins and jitters them in time. */
+export const KEY_FRAMES = CHAR_AT.map((c) => c + ACT.proof.from);
 /** Characters visible at an act-local frame: pass fd(f), so every sub-sample of a frame agrees. */
 export const typed = (wholeFrame: number) => CHAR_AT.filter((c) => c <= wholeFrame).length;
 ```
@@ -283,7 +283,7 @@ export const typed = (wholeFrame: number) => CHAR_AT.filter((c) => c <= wholeFra
 - **Each new character arrives in the accent and relaxes to ink over 12 f** (quadratic ease-out on its age `fd(f) − CHAR_AT[i]`), so the eye tracks the caret.
 - **The caret** is solid while typing and blinks 16 f on / 16 f off when idle, decided on `fd(f)`.
 - Keep the typed field alive: a slow push on the bar and a parallax drift behind it (`references/camera.md` §4). Typing on a locked-off frame measured as a dead hold.
-- The sound side (click thinning below 2 f, accented word starts, a lower thock on spaces, ±6% pitch) lives in `references/sound.md`.
+- The sound side (the `typing` style, thinning to about 12 keys/s, accented word starts, space and return keys) lives in `references/sound.md` §5.5c.
 
 ## 7. Walkthrough chapters
 

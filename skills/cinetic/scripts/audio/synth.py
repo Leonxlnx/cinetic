@@ -236,10 +236,12 @@ _IR = {}
 
 
 def ir(name='hall'):
-    """Cached rooms: 'hall' (2.8 s) for music and big hits, 'room' (0.7 s) for effects."""
+    """Cached rooms: 'hall' (2.8 s) for music and big hits, 'room' (0.7 s) for landings and moves,
+    'small' (0.3 s, 5 ms predelay, narrow) for keys, ticks and clicks: tiny sounds get a tiny room."""
     if name not in _IR:
         _IR[name] = {'hall': lambda: make_ir(2.8, 0.025, 5500, 1.0, 3),
-                     'room': lambda: make_ir(0.7, 0.008, 7000, 0.8, 5)}[name]()
+                     'room': lambda: make_ir(0.7, 0.008, 7000, 0.8, 5),
+                     'small': lambda: make_ir(0.3, 0.005, 6000, 0.6, 7)}[name]()
     return _IR[name]
 
 
@@ -380,12 +382,33 @@ def hat(d=0.12, tau=0.018, bright=7500, seed=14):
 # ------------------------------------------------------------------------------------------
 # clock, UI and foley-like voices
 # ------------------------------------------------------------------------------------------
-def tick(freq=3322.4, d=0.07, tau=0.006, body=0.6, seed=21):
-    """Clock tick: a pitched sine ping plus a 1.5 ms air click. Tune freq into the key."""
+def modal(t, modes, pitch=1.0):
+    """Sum of damped sines [(f Hz, tau s, gain), ...] over the time axis t, each from phase 0 so the
+    onset is continuous; modes above 0.45*SR are skipped. The body of every key, tick and click."""
+    x = np.zeros_like(t)
+    for f, tau, g in modes:
+        f = f * pitch
+        if g and f < SR * 0.45:
+            x += g * np.sin(2 * np.pi * f * t) * np.exp(-t / tau)
+    return x
+
+
+def soft_onset(t, a=0.0004):
+    """1 - exp(-t/a): a soft attack of time constant a that starts from exact zero (no step)."""
+    return 1 - np.exp(-t / a)
+
+
+def tick(freq=1567.98, d=0.07, tau=0.010, body=0.8, seed=21, dark=False):
+    """Clock tick, a small wooden mallet rather than a beep: the tuned fundamental (decay tau, 8-12 ms),
+    free-bar partials at 2.76x and 5.4x dying 2.5-7x faster, and a 0.5 ms low-passed felt transient.
+    Tune freq into the key in octave 5-6 (520-1600 Hz): a pure tone in octave 7 sits on the ear's
+    3-4 kHz resonance and reads as a harsh ping. dark=True is the tock: a quieter 2.76x partial and a
+    duller transient (use it a fifth below the tick)."""
     t = tt(d)
-    x = sine(freq, d) * np.exp(-t / tau) * body
-    x += filt(noise(d, seed), hp(5000)) * np.exp(-t / 0.0015) * 0.5
-    return x * np.minimum(1, t / 0.0004)
+    x = modal(t, [(freq, tau, 1.0), (freq * 2.76, min(0.004, tau * 0.4), 0.12 if dark else 0.22),
+                  (freq * 5.4, 0.0015, 0.03 if dark else 0.06)]) * body
+    x += filt(noise(d, seed), lp(2500 if dark else 4000, 2)) * np.exp(-t / 0.0005) * 0.3
+    return filt(x * soft_onset(t, 0.0003), hp(150, 2))
 
 
 def tock(freq=1100, d=0.12, tau=0.03, low=0.4, seed=22):
@@ -396,28 +419,132 @@ def tock(freq=1100, d=0.12, tau=0.03, low=0.4, seed=22):
     return res + np.sin(2 * np.pi * 140 * t) * np.exp(-t / 0.025) * low
 
 
-def key_click(seed=0, pitch=1.0, d=0.05):
-    """One keystroke. Each seed is a different key; pitch scales it (+-6% keeps typing human)."""
-    r = rng(seed)
+# Soft modal keys. Per kind: body f1 range (Hz) and decay, plate ratio to f1 and decay, case thud
+# (Hz, decay, gain), definition tick (ratio to f1, decay, gain), excitation low-pass, length (s).
+# The tick is the only energy allowed in 2-5 kHz, and it is gone in about 10 ms.
+_KEY = {
+    'letter': dict(f1=(420, 560), tau1=(0.009, 0.013), r2=(2.55, 2.95), tau2=(0.004, 0.006), thud=(160, 200),
+                   tau3=0.018, g3=0.30, r4=(5.2, 6.2), tau4=0.0035, g4=0.60, exc=5000, d=0.07),
+    'space': dict(f1=(220, 270), tau1=(0.020, 0.026), r2=(2.6, 2.9), tau2=(0.009, 0.012), thud=(110, 130),
+                  tau3=0.018, g3=0.18, r4=(9.0, 11.0), tau4=0.003, g4=0.30, exc=3500, d=0.11),
+    'return': dict(f1=(250, 300), tau1=(0.026, 0.032), r2=(2.6, 2.8), tau2=(0.011, 0.014), thud=(120, 140),
+                   tau3=0.018, g3=0.22, r4=(8.5, 9.5), tau4=0.003, g4=0.30, exc=3500, d=0.14),
+}
+KEY_STYLES = ('soft', 'mechanical', 'pitched', 'muted')
+_PENTA_C = (67, 69, 72, 74, 76)  # G4 A4 C5 D5 E5: the pitched keys' default tones (400-700 Hz)
+
+
+def key_click(seed=0, pitch=1.0, d=None, style='soft', kind='letter', strike=None, level=1.0, keyup=None,
+              note=None, tau=1.0):
+    """One keystroke, modelled as a small damped object rather than a noise burst: a body mode at
+    420-560 Hz, a plate mode at ~2.75x, a case thud near 180 Hz and a 3.5 ms definition tick at
+    ~5.7x, excited by a 0.6 ms low-passed noise transient under a 0.4 ms soft onset, low-passed at
+    6 kHz and high-passed at 90 Hz. About 80% of its A-weighted energy sits in 300 Hz-2 kHz.
+
+    seed    the key's identity: the same seed is the same key (body pitch, mode ratios, decays drawn
+            once), as on a real keyboard; a run of seeds sounds like one keyboard, not a marimba
+    pitch   multiplies every mode; keep the per-press drift within +-1.5%
+    d       length in seconds (default per kind: letter 0.07, space 0.11, return 0.14, plus keyup)
+    style   'soft' (default), 'mechanical' (crisper onset, a bottom-out tick 4-5 ms later, still no
+            ringing in 2-5 kHz), 'pitched' (a felt mallet tuned to `note`) or 'muted' (dull, short)
+    kind    'letter', 'space', 'return' or 'back' (backspace: a letter 5% higher, 15% shorter)
+    strike  this press: a new noise waveform and +-1% mode detune every strike (default: seed)
+    level   press strength (1 = normal); the output peaks at `level`, and a harder press is
+            brighter (+25% cutoff per +6 dB)
+    keyup   seconds after the press for the release (70-120 ms; 120-180 for space and return), 10 dB
+            down and 18% higher; None for none. Only when the next key is over 140 ms away.
+    note    Hz for style 'pitched' (default: a C major pentatonic tone in 400-700 Hz from seed)
+    tau     multiplies every decay (score.py shortens them when keys come fast)"""
+    if style not in KEY_STYLES or kind not in ('letter', 'space', 'return', 'back'):
+        raise ValueError(f'key style {style!r} / kind {kind!r}: styles {", ".join(KEY_STYLES)}; '
+                         'kinds letter, space, return, back')
+    back = kind == 'back'
+    P = _KEY['letter' if back else kind]
+    k = rng(1000 + int(seed) + {'letter': 0, 'back': 0, 'space': 500, 'return': 600}[kind])
+    s = rng(50000 + 7919 * int(seed if strike is None else strike))
+    u = [k.random() for _ in range(6)]
+    pick = lambda rg, x: rg[0] + (rg[1] - rg[0]) * x
+    f1 = pick(P['f1'], u[0]) * (1.05 if back else 1.0)
+    tau1, tau2 = pick(P['tau1'], u[1]), pick(P['tau2'], u[3])
+    modes = [[f1, tau1, 1.0], [f1 * pick(P['r2'], u[2]), tau2, 0.5],
+             [pick(P['thud'], u[4]), P['tau3'], P['g3']], [f1 * pick(P['r4'], u[5]), P['tau4'], P['g4']]]
+    exc_lp, exc_g, onset, out_lp, length = P['exc'], 0.8, 0.0004, 6000.0, P['d']
+    if style == 'mechanical':  # stiffer, a little higher and drier; the tick is crisper but shorter
+        modes[0][0] *= 1.22
+        modes[1][0] *= 1.22
+        modes[0][1] *= 0.85
+        modes[1][2], modes[3][1], modes[3][2] = 0.6, 0.0025, 0.75
+        exc_lp, exc_g, onset, out_lp = exc_lp * 1.3, 1.0, 0.00015, 7500.0
+    elif style == 'muted':  # a fingertip on a laptop: no tick, a dull short body
+        modes[0][1] *= 0.7
+        modes[1][2], modes[2][2], modes[3][2] = 0.3, P['g3'] * 1.2, 0.08
+        exc_lp, exc_g, onset, out_lp, length = 2500.0, 0.5, 0.001, 3000.0, length * 0.85
+    elif style == 'pitched':  # a felt mallet on a small bar: tuned body, a quiet 3.93x overtone, no tick
+        f1 = note if note else mtof(_PENTA_C[int(seed) % len(_PENTA_C)] - (12 if kind != 'letter' and not back else 0))
+        long_ = 0.035 if kind == 'letter' or back else 0.06
+        modes = [[f1, long_, 1.0], [f1 * 3.93, 0.008, 0.2], [pick(P['thud'], u[4]), 0.012, 0.12]]
+        exc_lp, exc_g, onset, out_lp, length = 3000.0, 0.45, 0.0008, 5000.0, long_ * 4
+    if back:
+        for m in modes:
+            m[1] *= 0.85
+    if d is None:
+        d = length + (keyup or 0.0)
+    bright = float(np.clip(1 + 0.25 * (level - 1) + 0.08 * s.standard_normal(), 0.6, 1.6))
     t = tt(d)
-    f = (2400 + r.random() * 2200) * pitch
-    x = filt(noise(d, seed + 1), bp(f * 0.7, f * 1.3, 2)) * np.exp(-t / (0.004 + r.random() * 0.004))
-    x += np.sin(2 * np.pi * (180 + r.random() * 60) * pitch * t) * np.exp(-t / 0.012) * 0.25
-    return x * (0.55 + r.random() * 0.35)
+    detune = [1 + (0.0 if style == 'pitched' else 0.01) * s.standard_normal() for _ in modes]
+    x = modal(t, [(f * dt, tau_ * tau, g) for (f, tau_, g), dt in zip(modes, detune)], pitch)
+    nz = noise(d, 777 + int(seed if strike is None else strike) % 100000)
+    exc = filt(filt(nz, lp(exc_lp * bright, 2)), hp(250, 2)) * np.exp(-t / 0.0006) * exc_g
+    y = (x + exc) * soft_onset(t, onset)
+    if style == 'mechanical':  # the bottom-out: the plate and a short transient again, 9 dB down
+        i = ns(0.004 + 0.001 * s.random())
+        if i < len(t):
+            tb = t[:len(t) - i]
+            bo = modal(tb, [(modes[1][0] * 1.03, 0.003, 0.6), (modes[3][0] * 0.97, 0.002, 0.5)], pitch)
+            bo += filt(nz[i:], lp(exc_lp * bright, 2)) * np.exp(-tb / 0.0004) * 0.6
+            y[i:] += bo * soft_onset(tb, 0.0002) * 0.35
+    if keyup and keyup < d - 0.01:
+        i = ns(keyup)
+        tu = t[:len(t) - i]
+        if style == 'pitched':  # the felt lifts: no tone, just a little air and the thud
+            up = modal(tu, [(modes[2][0] * 1.18, 0.008, 0.5)], pitch)
+        else:
+            up = modal(tu, [(f * 1.18, tau_ * 0.7, g) for f, tau_, g in modes[:2]] + [(modes[0][0] * 1.18 * 5.5, 0.0012, 0.15)], pitch)
+        up += filt(noise(len(tu) / SR, 99 + int(seed if strike is None else strike) % 100000), lp(6000, 2)) * np.exp(-tu / 0.0006) * 0.4
+        y[i:] += up * soft_onset(tu, 0.0003) * (0.18 if style == 'muted' else 0.32)
+    y = filt(filt(y, lp(out_lp * bright, 1)), hp(90, 2))
+    return y * (level / (np.max(np.abs(y)) + 1e-12))
 
 
-def thock(freq=700, seed=0):
-    """Space bar / return: a lower, rounder key."""
-    return tock(freq, 0.08, 0.02, 0.3, seed)
+def thock(freq=700, seed=0, style='soft', kind='space', strike=None, level=1.0, keyup=None, d=None, note=None, tau=1.0):
+    """Space bar (kind='space') or return (kind='return'): the same modal key family, lower and
+    longer. freq is the plate's knock (~700 Hz) and scales the whole key (body ~freq/2.75); the
+    other arguments are key_click's."""
+    return key_click(seed, freq / 700.0, d, style, kind, strike, level, keyup, note, tau)
 
 
-def ui_click(ping=1850, d=0.25, seed=23):
-    """Mouse press: tight click, a short pitched ping (tune it into the key) and a low knock."""
+def ui_click(ping=1244.5, d=0.16, seed=23, release=0.075, tone=None):
+    """Cursor press and release, modal and short (-40 dB in about 35 ms): a tuned mode at `ping`
+    (tau 4.5 ms; keep it on a pentatonic tone in 0.9-1.6 kHz), a body at 0.42x (tau 10 ms), a faint
+    2.3x edge and a 0.5 ms low-passed transient, high-passed at 150 Hz. `release` seconds later the
+    release clicks 10 dB down and 18% higher (None: no release). tone (Hz) adds a confirm tone 12 dB
+    under the press: meaningful actions only. No low knock and no ringing ping."""
+    if release and release > d - 0.03:
+        d = release + 0.04
     t = tt(d)
-    c = filt(noise(d, seed), hp(3000)) * np.exp(-t / 0.0012)
-    tone = sine(ping, d) * np.exp(-t / 0.03) * 0.35
-    low = sine(95 + 40 * np.exp(-t / 0.01), d) * np.exp(-t / 0.05) * 0.8
-    return c * 0.8 + tone + low
+    f = ping * (1 + 0.004 * rng(seed).standard_normal())
+    y = modal(t, [(f, 0.0045, 1.0), (f * 0.42, 0.010, 0.7), (f * 2.3, 0.0012, 0.15)])
+    y += filt(noise(d, seed), lp(4500, 2)) * np.exp(-t / 0.0005) * 0.45
+    y *= soft_onset(t, 0.0003)
+    if release:
+        i = ns(release)
+        tu = t[:len(t) - i]
+        rel = modal(tu, [(f * 1.18, 0.0025, 1.0), (f * 0.5, 0.005, 0.4)])
+        rel += filt(noise(len(tu) / SR, seed + 1), lp(4500, 2)) * np.exp(-tu / 0.0004) * 0.3
+        y[i:] += rel * soft_onset(tu, 0.0003) * 0.3
+    if tone:
+        y += sine(tone, d) * np.minimum(1, t / 0.003) * np.exp(-t / 0.06) * 0.25
+    return filt(y, hp(150, 2))
 
 
 def snap(root=51.91, d=0.6, weight=1.0, seed=24):
@@ -430,15 +557,13 @@ def snap(root=51.91, d=0.6, weight=1.0, seed=24):
 
 
 def blip(freq=880, up=True, d=0.12):
-    """Word / pop blip: a sine gliding a fifth up (or down), with one slap echo at 55 ms."""
+    """Word / pop blip, mallet-like rather than a cartoon bloop: a sine that slides 2 semitones into
+    freq (up from below, or down from above) over ~20 ms, a 2.5 ms attack, and a 2.76x partial 15 dB
+    down that dies in 3 ms. No echo: the effects room gives it space. It rings on freq: tune it."""
     t = tt(d)
-    f = freq * (1.5 ** (1 - np.exp(-t / 0.01)) if up else 0.53 ** (1 - np.exp(-t / 0.012)))
-    x = (sine(f, d) + sine(2 * f, d) * 0.1) * np.minimum(1, t / 0.001) * np.exp(-t / 0.012)
-    out = np.zeros(ns(d + 0.06))
-    out[:len(x)] += x
-    e = ns(0.055)
-    out[e:e + len(x)] += x * 0.35
-    return out
+    f = freq * 2 ** ((-2 if up else 2) / 12 * np.exp(-t / 0.007))
+    x = sine(f, d) * np.exp(-t / 0.02) + sine(2.76 * f, d) * np.exp(-t / 0.003) * 0.18
+    return x * np.minimum(1, t / 0.0025)
 
 
 def fm_bell(freq, d=3.0, index=2.2, ratio=3.5, tau=1.2):
@@ -501,8 +626,9 @@ def riser(d=2.0, f0=250, f1=7000, target=None, seed=32):
 
 
 def suck(d=0.35, seed=33):
-    """Reverse suck into an implosion or a silence: bright to dark, apex at 85% of its length."""
-    return whoosh(d, 6000, 900, 200, apex=0.85, air=0.1, seed=seed)
+    """Reverse suck into an implosion or a silence: bright to dark, apex at 85% of its length. It
+    starts at 2.5 kHz with little air, so it reads as a breath in, not hiss."""
+    return whoosh(d, 2500, 900, 200, apex=0.85, air=0.04, seed=seed)
 
 
 def swell(freqs, d=1.0, seed=34):
@@ -578,6 +704,29 @@ def keys(freq, d=1.5, index=1.4, tau=0.9):
 # ------------------------------------------------------------------------------------------
 # demo
 # ------------------------------------------------------------------------------------------
+def _typed(style, tones=None):
+    """A short typed phrase ('type it'+return) in one key style, humanized the way score.py does it:
+    fixed key per letter, +-1.2% pitch and 1 dB per press, word-start accent, keyups on the gaps."""
+    text, gaps = 'type it\n', [0.11, 0.09, 0.13, 0.07, 0.12, 0.10, 0.24, 0.0]
+    r = rng(5)
+    out = np.zeros(ns(sum(gaps) + 0.4))
+    t, walk = 0.0, 2
+    for k, (ch, gap) in enumerate(zip(text, gaps)):
+        kind = 'space' if ch == ' ' else 'return' if ch == '\n' else 'letter'
+        db = r.normal(0, 1.0) + (2.5 if k == 0 or text[k - 1] == ' ' else 0.0) * (kind == 'letter')
+        note = None
+        if tones:
+            walk = int(np.clip(walk + r.integers(-1, 2), 0, len(tones) - 1))
+            note = tones[walk] / (2 if kind != 'letter' else 1)
+        x = key_click(ord(ch) % 26, 1 + 0.012 * r.standard_normal(), None, style, kind, k, 10 ** (db / 20),
+                      (0.15 if kind != 'letter' else 0.09) if gap > 0.14 or gap == 0 else None, note)
+        x *= {'space': 0.85, 'return': 0.95}.get(kind, 1.0) * {'pitched': 0.5, 'muted': 0.27}.get(style, 1.0)
+        i = ns(t)
+        out[i:i + len(x)] += x[:len(out) - i]
+        t += gap
+    return out
+
+
 def _demo(path, key='Eb'):
     import os
     import soundfile as sf
@@ -585,12 +734,18 @@ def _demo(path, key='Eb'):
     tonic = pitch_class(key)
     root1 = mtof(nearest([tonic], 31))
     fifth = (tonic + 7) % 12
+    penta = [(tonic + i) % 12 for i in (0, 2, 4, 7, 9)]
+    tones = [mtof(m) for m in range(67, 78) if m % 12 in penta]
     voices = [
         ('kick', kick(root1)), ('sub_boom', sub_boom(root1 * 2, root1)), ('clap', clap()),
         ('hat closed', hat(0.08, 0.012)), ('hat open', hat(0.25, 0.07, 6500)),
-        ('tick', tick(mtof(nearest([tonic], 100)))), ('tock', tick(mtof(nearest([fifth], 95)))),
-        ('tock (wood)', tock(mtof(nearest([fifth], 84)))), ('key_click', key_click(3)), ('thock', thock()),
-        ('ui_click', ui_click(mtof(nearest([fifth], 94)))), ('snap', snap(root1)),
+        ('tick', tick(mtof(nearest([tonic], 86)))), ('tock', tick(mtof(nearest([fifth], 81)), dark=True)),
+        ('tock (wood)', tock(mtof(nearest([fifth], 84)))),
+        ('typing soft', _typed('soft')), ('typing mechanical', _typed('mechanical')),
+        ('typing pitched', _typed('pitched', tones)), ('typing muted', _typed('muted')),
+        ('key_click', key_click(3, keyup=0.09)), ('thock (space)', thock()), ('thock (return)', thock(kind='return')),
+        ('ui_click', ui_click(mtof(nearest(penta, 87)))),
+        ('ui_click + confirm', ui_click(mtof(nearest(penta, 87)), tone=mtof(nearest(penta, 81)))), ('snap', snap(root1)),
         ('blip', blip(mtof(nearest([fifth], 79)))),
         ('fm_bell', fm_bell(mtof(nearest([tonic], 80)), 2.0)),
         ('whoosh', whoosh(0.8, travel=0.8)), ('riser', riser(1.5, target=mtof(nearest([tonic], 60)))),
@@ -599,12 +754,14 @@ def _demo(path, key='Eb'):
         ('pluck', pluck(mtof(nearest([fifth], 72)))), ('bass', bass(mtof(nearest([tonic], 38)), 1.0)),
         ('keys', keys(mtof(nearest([tonic], 64)))), ('marker', marker()),
     ]
+    soft_peak = np.max(np.abs(dict(voices)['typing soft']))
     total = sum(len(v) / SR + 0.35 for _, v in voices)
     bus = Bus(total + 1)
     t = 0.2
     for name, v in voices:
         print(f'{t:6.2f}s  {name}')
-        bus.place(v * (0.5 / (np.max(np.abs(v)) + 1e-9)), t)
+        level = 0.5 if not name.startswith('typing') else 0.5 * np.max(np.abs(v)) / soft_peak  # styles keep their levels
+        bus.place(v * (level / (np.max(np.abs(v)) + 1e-9)), t)
         t += len(v) / SR + 0.35
     sf.write(path, bus.x.astype(np.float32), SR, subtype='PCM_24')
     print('wrote', path)
