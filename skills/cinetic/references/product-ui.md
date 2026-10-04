@@ -281,7 +281,7 @@ export const typed = (wholeFrame: number) => CHAR_AT.filter((c) => c <= wholeFra
 
 - Size the span from the text: `TYPE.end − TYPE.start ≈ PROMPT.length × 2 f` at 60 fps (Tessel typed 60 characters over 120 f).
 - **Each new character arrives in the accent and relaxes to ink over 12 f** (quadratic ease-out on its age `fd(f) − CHAR_AT[i]`), so the eye tracks the caret.
-- **The caret** is solid while typing and blinks 16 f on / 16 f off when idle, decided on `fd(f)`.
+- **The caret** is solid while typing and blinks 30 f on / 30 f off when idle, decided on `fd(f)`. `src/fx/TypeOn.tsx` does all of this (`typeFrames()` gives the key frames).
 - Keep the typed field alive: a slow push on the bar and a parallax drift behind it (`references/camera.md` §4). Typing on a locked-off frame measured as a dead hold.
 - The sound side (the `typing` style, thinning to about 12 keys/s, accented word starts, space and return keys) lives in `references/sound.md` §5.5c.
 

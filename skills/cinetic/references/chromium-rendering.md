@@ -136,7 +136,7 @@ Canvases using WebGL (effects, 3D, maps) need a working GL backend in headless L
 
 Measured in the headless shell that renders Remotion and HyperFrames (Chromium 141): a word rising 40 px on `E.out`, placed by one `transform`, lands on whole-pixel rows on every frame. Horizontal moves of the same word stay sub-pixel. So the ease-out's slow tail (the last 3–4 px of a 26 f reveal) arrives as 1 px ticks separated by 1–3 frame holds, which reads as the word "clicking" into place, and `forensics.py` reports judder there. `rotate()`, `translate3d()`, `perspective()`, a constant filter and `opacity` do not change it; only a promoted layer (`will-change: transform`, or a real 3D transform such as `rotateX(0.01deg)`) positions text in 1/16 px steps.
 
-- **Reveals:** finish the vertical part of the move while it still travels ~0.5–1 px/f, then stop. `arrive(p, k = 0.94)` rescales eased progress so the move completes at 94% of its curve; `depart(q, k = 0.06)` skips the slow start of an exit. Opacity, blur and horizontal motion keep the plain progress. `src/fx/Words.tsx` and the starter's Act 1 do this; HyperFrames has `MOTION.arriving(ease)` for GSAP.
+- **Reveals:** finish the vertical part of the move while it still travels ~0.5–1 px/f, then stop. `arrive(p, k = 0.94)` rescales eased progress so the move completes at 94% of its curve (right for a ~40 px rise; `arriveK(px, dur, ease)` gives the k for any other travel or fps); `depart(q, k = 0.06)` skips the slow start of an exit. Opacity, blur and horizontal motion keep the plain progress. `src/fx/Words.tsx` and the starter's Act 1 do this; HyperFrames has `MOTION.arriving(ease)` for GSAP.
 
 ```tsx
 const p = prog(f, s, s + 26, E.out);

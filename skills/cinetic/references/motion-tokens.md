@@ -12,13 +12,14 @@ The numbers are proven defaults, measured against Remotion 4.0.529 at 60 fps. Tr
 5. [hitPulse: the one envelope for punches and ticks](#5-hitpulse-the-one-envelope-for-punches-and-ticks)
 6. [Choreography and stagger](#6-choreography-and-stagger)
 7. [Anticipation, contact and landing](#7-anticipation-contact-and-landing)
-8. [Checks](#8-checks)
+8. [Starter primitives](#8-starter-primitives)
+9. [Checks](#9-checks)
 
 ---
 
 ## 1. The laws
 
-- **All motion comes from `src/lib/anim.ts`**: `E` (easing tokens), `SPR` (spring presets), `tw`, `prog`, `mix`, `lmix`, `clamp`, `spr`, `hitPulse`, `squash`, `blurIn`, `blurOut`, `arrive`, `depart`, `rand`, `fd`, and the types `Ease` and `Spr`. A raw `Easing.bezier(…)` or `Easing.spring` anywhere else is a lint error (`scripts/lint-film.mjs`), and spring configs belong in `SPR` for the same reason: consistent motion is what makes it read as a brand, and ad-hoc curves are what make it read as generated. Need a new curve or spring? Add a named token with a comment saying its job.
+- **All motion comes from `src/lib/anim.ts`**: `E` (easing tokens), `SPR` (spring presets), `tw`, `prog`, `mix`, `lmix`, `clamp`, `spr`, `hitPulse`, `squash`, `blurIn`, `blurOut`, `arrive`, `arriveK`, `depart`, `rand`, `fd`, `stagger`, `inertia`, and the types `Ease` and `Spr`. A raw `Easing.bezier(…)` or `Easing.spring` anywhere else is a lint error (`scripts/lint-film.mjs`), and spring configs belong in `SPR` for the same reason: consistent motion is what makes it read as a brand, and ad-hoc curves are what make it read as generated. Need a new curve or spring? Add a named token with a comment saying its job.
 - **Entrances decay, exits accelerate.** Things arrive fast and settle (`E.out`); they leave slowly then fast (`E.in`). Only the camera eases both ways.
 - **Fades run 10–14 f on `E.smooth`.** Never fade out on `E.out`: it puts half the change in the first frame, so the element pops to 55% and then drifts. A 6 f `E.in` fade does the reverse and vanishes in about one frame.
 - **Linear is for drift only** (a constant background creep, a clock). Anything that starts or stops uses a curve.
@@ -57,6 +58,7 @@ export const durFor = (px: number, camera = false) => {
 | `contact` | .55,0,.9,.55 | .04 / .17 | at end (4.5× mean) | accelerating into an impact: it arrives with velocity | anything that should settle |
 | `whip` | .6,0,.15,1 | .10 / .75 | 39% | feature-to-feature whips, 24–30 f | holds |
 | `dolly` | .35,0,.65,1 | .15 / .50 | 50% (1.5×) | slow push through a hold | reveals |
+| `type` | .5,1,.89,1 | .44 / .75 | at start (2×) | an eased typewriter's character count (`TypeOn`) | motion of any kind |
 | `linear` | – | .25 / .50 | flat | drift, clocks, constant creep | anything that starts or stops |
 
 - **A film uses about three easing characters** most of the time, typically `out` for arrivals, `cam` for the camera and `in` for exits, with the rest reserved for the moments that need them. Ten curves in equal measure read as no system.
@@ -239,7 +241,22 @@ export const land = (f: number, from: number, to: number, a: R, b: R): R => {
 };
 ```
 
-## 8. Checks
+## 8. Starter primitives
+
+`src/fx/` in the Remotion starter holds tested versions of the moves generated films most often get wrong. Each is a pure function of the frame, placed by transform, built on `E`, `fd`, `arrive` and `blurIn`, with its failure mode in its doc comment. Defaults are 60 fps frames (converted with `f60`).
+
+| File | What it does | Defaults | Serves |
+|---|---|---|---|
+| `TypeOn.tsx` | typewriter with a caret; `typeOn()` gives the caret x (stepped and continuous, for a camera follow), `typeFrames()` the whole frame each key lands | 2 f per character on `E.type` (last key at ~80% of the box) or a linear `cps`; head fade 4 f; caret solid while typing, 30 f on / 30 f off when idle | prompts, search bars, a headline typed on |
+| `Scramble.tsx` | decode reveal: glyphs cycle through same-class, same-width glyphs, then lock; `scrambleFrames()` gives the lock frames | fade-in 10 f, hold 18 f, a lock every 3 f left to right (or seeded random), ~1.5 glyph changes per frame, cycling glyphs in `C.mute` | IDs, prices, codenames, a stat that resolves |
+| `Roll.tsx` | rolling digits in per-column masks; `countSteps()` turns a count into steps, so a fast count spins like an odometer | each changed digit slides 14 f on `E.out` through `arrive` (k from `arriveK`), starting 1 f before its step; count 60 f on `E.out`; tabular, fixed columns | counters, totals, a metric that counts up |
+| `Morph.tsx` | one rounded rect from state A to B (x, y, w, h, radius, fill, stroke, shadow) that clips each state's content, which stays put; `morphBox()` gives the geometry | 40 f on `E.inOut` (or a `SPR.firm` spring); content A out over the first 35%, B in over the last 40% | pill → card, button → panel, caret → pill |
+| `Iris.tsx` | reveal (or a solid accent flood) through a clip circle from a point; `close` reverses it | 24 f, radius 1 px → far corner + 2 px in log space on `E.out` (`E.in` closing); optional ring ahead of the edge | a glyph or button opening the next shot, the one accent flood |
+| `MaskRise.tsx` | words or lines rise from behind a clip under the baseline and leave through the top | 30 f per unit on `E.out` through `arrive` (k from `arriveK`), 5 f stagger; exit 16 f on `E.in`, half the stagger | headlines, captions, the closing line |
+
+In `src/lib/`: `stagger(i, n, span, ease)` spreads starts over a span; `inertia(f, start, v0, decay = 0.89)` coasts a scroll that enters at peak speed (closed form; 8.6·v0 px of travel, within 0.5 px of rest after about 60 f); `zoomHandoff(t, v0, settle = 30)` in `camera.ts` continues a zoom-through at the outgoing log-scale speed (`zoomSpeed`) and decays it to rest, so the cut reads as one move (`references/transitions.md` §4.8).
+
+## 9. Checks
 
 - `node scripts/lint-film.mjs src`: no raw curves outside `anim.ts`, no unclamped `interpolate`, no CSS transitions or animations.
 - Contact sheet at `--every 1` across every landing (`scripts/sheet.py`): the contact frame shows the squash, the frame before shows speed, and nothing interpenetrates on the overshoot frames.
