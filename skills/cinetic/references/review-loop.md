@@ -95,7 +95,7 @@ bash scripts/grab.sh out/preview.mp4 1739 1740 --out $R/frames       # exact fra
 
 - `sync`: the hit rate, the median and p90 offsets in frames, `misses`, and `stray_sfx_onsets_f`.
 - `apex`: whoosh peaks against their frames.
-- `visual`: picture peaks against sounds, and strong picture changes (cuts, flashes, the peak of a big move) with no sound within ±3 f; the strongest are warnings.
+- `visual`: picture peaks against sounds; the film's 3 biggest picture changes (`biggest_changes`), with a suggestion for any that has no audio onset, music or effect, within ±3 f (a section change or the hero reveal wants the music's own event; an ordinary cut needs no sound); loud sounds on a still picture.
 - `loudness` (with the target it gated against and where that came from), `clicks`, `head`, `tail`, and `masking`, which is present only with stems.
 
 Run av-audit with `--stems`. Only then is sync gated, because in the full mix the music hides quiet and soft-attack effects. With the full mix, a low hit rate is only a warning.

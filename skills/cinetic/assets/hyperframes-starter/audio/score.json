@@ -8,6 +8,7 @@
     { "bars": [3, 3], "style": "hold" }
   ],
   "signature": { "tick": "G6", "tock": "D6", "motif": [0, 7, 14], "rhythm": [0, 0.5, 1.5] },
+  "typing": "auto",
   "motifs": [{ "at": "@hit", "gain": 1.0 }],
   "drops": [{ "at": "@hit", "silence": "1/16", "suck": 0.2 }],
   "payoff": "@hit",

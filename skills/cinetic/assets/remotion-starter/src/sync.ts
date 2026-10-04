@@ -3,7 +3,10 @@
 // sound on its exact frame (schema and recipes: references/sound.md).
 //
 // The rules this file follows:
-// - One sound per visible event, and one visible event per sound.
+// - Every sound has a visible cause, but not every picture event gets a sound: sound discrete
+//   state changes (a press, an insert, a lock, a landing, the logo assembling), leave continuous
+//   motion silent, and let the music carry most cuts. A class of action, once sounded, is
+//   sounded every time.
 // - Impacts go on the contact frame, pops on the 50% frame, settles on the 97% frame, and a
 //   whoosh's apex on the velocity peak of the move it belongs to.
 // - Import the constants the acts animate with (they export them for this file) and compute the
@@ -22,11 +25,11 @@ export type SoundEvent = {
   f: number; // absolute frame the sound belongs on (fractional is fine)
   kind: Kind;
   weight?: number; // 0..2, 1 = normal; scales level (and size for whoosh and land)
-  pan?: number; // -1 left .. +1 right; for a whoosh, the direction and amount it travels
+  pan?: number; // -1 left .. +1 right from screen x; score.py keeps effects within +-0.15, a whoosh travels the full amount
   pitch?: number | string; // MIDI number or "Eb6"; omit and score.py picks a tone in key
   apexFrac?: number; // whoosh / suck: where in its length the loudest point sits (lands on f)
   dur?: number; // frames: whoosh, riser, swell and suck length
-  variant?: string; // key: 'word' | 'space'; land: 'light'; bell: 'motif'; pop: 'down'
+  variant?: string; // key: 'word' | 'space' | 'return' | 'back'; tick: 'crisp'; click: 'confirm'; land: 'light'; bell: 'motif'; pop: 'down'
   id?: string; // a name for QA reports
 };
 

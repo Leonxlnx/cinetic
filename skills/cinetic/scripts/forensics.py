@@ -286,7 +286,7 @@ def load_cues(path):
             kind = str(e.get('kind', 'hit'))
             apex = ('apexFrac' in e) or is_apex(kind)
             events.append(dict(f=float(e['f']), kind=kind, weight=float(e.get('weight', 1.0)),
-                               apex=apex, ends=is_end(kind) and not apex, pan=e.get('pan')))
+                               apex=apex, ends=is_end(kind) and not apex, pan=e.get('pan'), variant=e.get('variant')))
     else:
         schema = 'legacy'
         skip = {'fps', 'total', 'bpm', 'acts', 'cue', 'events', 'qa', 'meta', 'version'}

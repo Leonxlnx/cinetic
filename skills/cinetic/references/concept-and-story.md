@@ -197,7 +197,7 @@ Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, pr
 5. **Tail.** At least 60 f after the last event, under the resolved lockup, while the audio decays to digital silence. Never fade to black: the poster would be black and the player freezes on it.
 6. **The bookend trade-off.** A final frame of only the device (the dot alone, centred) is elegant, but it loses recall on autoplay players that freeze on the last frame and in thumbnails. Prefer playing the bookend *inside* the lockup (the dot ticks within the mark). If you must end on the device alone, keep that to the last ≤ 30 f, export the poster from the lockup frame instead, and say so in the README.
 7. **Nothing else.** No row of social icons, no store badges, no "Available now" unless the brief asks; no second tagline under the first.
-8. **Sound.** The payoff hit is the loudest moment of the film, and its tail rings under the hold (see `references/sound.md`).
+8. **Sound.** The ending subtracts: the music stops or filters down as the logo forms, then one soft resolved element on the wordmark rings under the hold. The end card sits well under the film's peak, which is the drop on the hero reveal; a sting is the exception (see `references/sound.md` §5.3).
 
 ## 10. Four worked concepts
 

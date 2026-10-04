@@ -185,15 +185,15 @@ Read `references/sound.md` now.
 - Pick the sound's personality row in `references/sound.md` §5.5a first. A calm brand gets soft mallets and one gentle chord; drops onto silence and sub booms are for energetic launch films only.
 - **Make the music drive the picture, whatever the personality.**
   - A motif that follows the story's progress, for example one tuned note per step climbing the scale (`progress` in `score.json`).
-  - An accent under every major visual event.
-  - The lockup is the biggest, most resolved musical moment of the film: softer for a calm brand, but still a resolved chord that blooms, never a held pad under the payoff.
-  - The sound starts on frame 0 without a click and never leaves a gap of dead air in the first bars.
-- Fill in `audio/score.json`: key, one chord per bar, sections, drops and silences.
+  - Section changes and the hero reveal land with the music's own event (drop, stop, re-entry). Designed effects go on discrete state changes only, about 5 per 10 s, clustered where the music is sparse; continuous motion and most cuts get none.
+  - The drop on the hero reveal, 30–60% in, is the loudest moment, and `payoff` points there. The lockup is the most resolved moment, not the loudest: the music stops on a bar line or filters down as the logo forms, 0.2–0.7 s of near-silence, then one soft resolved element on the wordmark and a 0.5–2.5 s tail. A sting is all lockup: its hit is its loudest moment.
+  - The sound enters with intent on frame 0 (a drone or a 150–450 ms entry at most), without a click, and runs 5–12 LU under the body for the first 2–3 s.
+- Fill in `audio/score.json`: key, one chord per bar, sections (with a breakdown or stop about 5 LU down at 40–80% of the runtime), drops and silences. Keep `"typing": "auto"` unless the brand asks otherwise.
 - Run `python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json --out public/audio/soundtrack.wav --stems out/stems --json out/qa/score.json` (`npm run audio`). The stems let `av-audit.py` check each sound against its cue; the master chain lives in `scripts/audio/master.py`.
 - **Gate:**
   - the WAV measures its target ±0.5 LUFS integrated (`master.lufs` in `audio/score.json`: −14, or −16 for a calm brand or a short sting), with true peak ≤ −1.5 dBTP before encoding;
   - a film of 20 s or more has contrast: LRA 5–8 LU, and the payoff 2–3 LU above the median momentary loudness (`score.py` warns);
-  - every event has a sound, and every sound has something visible that causes it, at a loudness that matches the size of that cause (a caret blink whispers; the landing mark hits).
+  - every sound has something visible that causes it, at a loudness that matches that cause (a caret blink whispers; the hero reveal drops); not every picture event gets a sound, but once a class of action is sounded every instance is, at one level.
 
 ### Step 6: Render and finish → `out/film.mp4`
 Read `references/finishing.md` now.
@@ -296,7 +296,7 @@ const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one
   - Section changes land on downbeats; cuts inside a section land on 8ths.
   - A batch of landings snaps to 16ths with a 0–3 f spread, and the first item lands on the beat.
   - Micro-rhythm is welcome: the payoff on the clap, its consequence on the next kick.
-  - Every hard cut, and the velocity peak of every big move, lands on a beat with a hit under it (`av-audit.py` warns on strong picture changes with no sound).
+  - Cuts land on the grid, but most carry no sound of their own: the music carries them. Section changes and the hero reveal land with the music's own event (drop, stop, re-entry); `av-audit.py` suggests one when a top-3 picture change has no audio onset.
 - **Hit frames**
   - Start a picture change at `cue − 1`, because `prog()` is 0 on its start frame.
   - Pulses peak 2 f after their sound (`hitPulse`).
@@ -314,7 +314,7 @@ const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one
   - Shot length: median 60–90 f; minimum 24 f (and only with no text); maximum 180 f (and only with continuous action).
 - **Hook:**
   - frame 0 is already composed and moving;
-  - the sound starts with intent, with no fade-in over the first bar;
+  - the sound enters with intent on frame 0, with no fade over the first bar;
   - something visibly changes about every 0.5 s;
   - the problem is felt by 1 s and stated by 2 s.
 
@@ -329,8 +329,10 @@ const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one
 | Landing / impact | the contact frame, so the motion must arrive with velocity (spring threshold 0.92–1.0, or the `contact` ease) |
 | Pop-in | the frame at 50% of travel |
 | Tween settle | the 97% frame |
-| Whoosh | its apex on the velocity peak |
+| Whoosh (camera-scale moves and logo zooms, about 2 a film) | onset 100–450 ms ahead, apex on the visual peak |
+| Typing | per key up to 25 chars/s, one blip per word above (`"typing": "auto"`) |
 | Exit roll | one tick, with no detent |
+| Cut, scroll, stream, progress bar, rolling counter | nothing: the music carries it; a counter's final lock gets a crisp tick |
 
 Audio that leads the picture by more than about 45 ms reads as "sound first". Move the picture, not the sound.
 

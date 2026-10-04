@@ -9,6 +9,7 @@
     { "bars": [5, 5], "style": "hold" }
   ],
   "signature": { "tick": "G6", "tock": "D6", "motif": [0, 7, 14], "rhythm": [0, 0.5, 1.5] },
+  "typing": "auto",
   "motifs": [{ "at": "@lockup", "gain": 1.0 }],
   "drops": [{ "at": "@lockup", "silence": "1/16", "suck": 0.2 }],
   "payoff": "@lockup",

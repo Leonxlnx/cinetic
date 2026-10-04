@@ -158,9 +158,9 @@ export const LANDINGS = CARDS_AT.map((s) => ACT.proof.from + hit(s, SPR.snap, 1)
 
 | Event | Where it lands | Why |
 |---|---|---|
-| Section (act) change | a downbeat: `b(n)` | the ear expects change on the one |
-| Cut or new shot inside a section | an 8th: `b(n, beat)` or `b(n, beat, 2)`, with a hit under it | on-grid but not every cut on the one |
-| A major move's velocity peak | a beat or an 8th, with a whoosh apex or hit on it | the eye reads a move's event at its fastest frame, not its start |
+| Section (act) change | a downbeat: `b(n)`, with the music's own event (drop, stop, re-entry) | the ear expects change on the one |
+| Cut or new shot inside a section | an 8th: `b(n, beat)` or `b(n, beat, 2)`, with no sound of its own (the music carries it) | on-grid but not every cut on the one |
+| A major move's velocity peak | a beat or an 8th; a whoosh apex on it only for a camera-scale move or a logo zoom (about 2 a film) | the eye reads a move's event at its fastest frame, not its start |
 | Batch of landings | 16ths, first item on the beat, 0–3 f spread inside each 16th | six objects on one frame read as a single blob |
 | Wave or tile snaps | the 32nd grid (3.75 f at 120/60) | dense enough to read as one gesture, still on the pulse |
 | Payoff and its consequence | payoff on the clap (`b(n, 2)`), its consequence on the next kick (`b(n, 2, 2)` in Tessel's pattern) | micro-rhythm inside a bar |
@@ -177,7 +177,7 @@ const S16 = BEAT / 4; // 7.5 f at 120/60
 export const on16 = (f: number, seed: string) => Math.round(Math.round(f / S16) * S16) + Math.round(rand(seed) * 3);
 ```
 
-**Cuts and big moves land on hits.** Every hard cut or seam, and the velocity peak of every major move (a whip, a flood, a camera push between shots), sits on a grid beat with a sound under it. Solve a move's start from where its speed peaks (`peak()` in §7, the way the starter's dot flight does), so the peak is the beat rather than the start. A transition that peaks a quarter-second after its beat, or a big move with nothing under it, reads as loose even to viewers who can't say why; `av-audit.py` warns on strong picture changes with no sound within ±3 f.
+**Cuts and big moves land on the grid; the music carries them.** Every hard cut or seam, and the velocity peak of every major move (a whip, a flood, a camera push between shots), sits on a grid beat. Solve a move's start from where its speed peaks (`peak()` in §7, the way the starter's dot flight does), so the peak is the beat rather than the start. A transition that peaks a quarter-second after its beat reads as loose even to viewers who can't say why. Most cuts get no dedicated sound (measured norms of top-tier launch films: about 85% of hard cuts, and under 5% get a whoosh): section changes and the hero reveal land with the music's own event (the drop, a stop, the re-entry), and a whoosh (onset 100–450 ms ahead, apex on the visual peak) goes only on a camera-scale move or a logo zoom. `av-audit.py` suggests a music event when one of the film's 3 biggest picture changes has no audio onset within ±3 f.
 
 A cue that must sit off the grid (a whoosh apex on a computed velocity peak, a cursor click on a human gap) is fine. Give it a trailing `// offgrid: <reason>` comment on its `CUE` line, which `grid-check.ts` accepts; unexplained off-grid cues fail the check. Computed sync points exported from acts (`peak()`, `hit()`) are off-grid by nature and need no comment.
 
