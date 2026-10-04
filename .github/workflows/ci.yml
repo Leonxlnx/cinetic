@@ -192,6 +192,9 @@ jobs:
       - name: Lint-film regression tests
         run: node "skills/$SKILL/scripts/test/lint-film.test.mjs"
 
+      - name: Technique library and pick.py tests
+        run: python3 "skills/$SKILL/scripts/test/pick.test.py"
+
       - name: Python syntax (py_compile)
         run: |
           shopt -s globstar nullglob
