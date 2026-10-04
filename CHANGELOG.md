@@ -36,6 +36,7 @@ Two snapshots of this version went through judged rounds against the same agent 
 - `forensics.py` gates a still opening, measured on the film's own scale (a warning when the first visible change comes after 1.0 s, a failure after 2.5 s), and runs the hook check on films of 6 s or less with 1 s windows.
 - `brand-svg.ts` writes a `LockupSvg` exported from `src/brand/Mark.tsx` as is, for marks that are part of the word, so `brand-kit.sh` no longer assumes a mark beside a typed name.
 - `sheet.py --images` tiles stills or frames you already have, labelled by file name.
+- `COPY` entries can be `kind: 'ui'` (a typed command, code, a URL, an app label): `grid-check.ts` counts them apart instead of against the word budget.
 - `grid-check.ts` accepts one declared designed hold (`export const HOLD = {from, to}`, at most 96 f at 60 fps).
 - Tests for `pick.py` (`scripts/test/pick.test.py`), run in CI, including a check that the generated library page matches the JSON.
 
@@ -54,6 +55,8 @@ Two snapshots of this version went through judged rounds against the same agent 
 - The 9:16 feed zone keeps the bottom 420 px clear (was 384), matching current overlays.
 - The static end tail `forensics.py` allows is 2 s at the film's frame rate instead of a fixed 120 frames.
 - `finishing.md`: run long renders in the background and read the log.
+- On a tight usage budget, the review runs the director and art lenses inline on the sheets and leaves forensics and sync to the scripts.
+- README notes Remotion's own licence.
 - The hook names the product on screen by about a quarter of the runtime. The oversize opening line (`oh-oversize-fly-then-small`) travels every frame and hands straight to the small one, and becomes a signature move.
 
 ### Fixed
