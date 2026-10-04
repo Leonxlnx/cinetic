@@ -186,7 +186,7 @@ Give each text role exactly one reveal system and reuse it. A film has about fou
 
 | Recipe | Role | Numbers | Budget |
 |---|---|---|---|
-| **Word reveal** (`src/fx/Words.tsx`) | statements | per word over 26 f on `E.out`, 6–9 f stagger: opacity 0 → 1; `translateY` 0.32 em → 0 through `arrive(p)`; blur 14 px (8 px on body lines) → 0 through `blurIn(p, px)`, clear by 60% of the eased move; exit at half the stagger over 16 f: the move accelerates away on `E.in` (`depart`, `blurOut`) while the opacity fades on `E.smooth` | the default |
+| **Word reveal** (`src/fx/Words.tsx`) | statements | per word over 26 f on `E.out`, 6–9 f stagger: opacity 0 → 1; `translateY` 0.32 em → 0 through `arrive(p)`; blur 8 px (4–6 px on body lines, or none) → 0 through `blurIn(p, px)`, clear by 60% of the eased move; exit at half the stagger over 16 f: the move accelerates away on `E.in` (`depart`, `blurOut`) while the opacity fades on `E.smooth` | the default |
 | **Slam** | the problem headline | from `cue − 1` over 15 f on `E.out`: scale 1.2 → 1, blur 22 → 0 px through `blurIn`, opacity 0 → 1; then a slow grow of 1 → 1.05 on `E.smooth` through the hold; width fitted to ~77% of the frame | 1–2 per film |
 | **Locking words** | the payoff line | two words enter from opposite edges on `SPR.word` (20/170/0.9), launched `delayTo(SPR.word, 1)` = 19 f before the cue; each is clamped at its lock; a +1.8% `hitPulse(t, 1, 4)` punch; a push of 1 → 1.03 through the hold | 1 per film |
 | **Tracking collapse** | the hero word | per-glyph spread of +0.6–0.8 em → 0 over 24 f on `E.out`; colour accent → ink over 20 f | once per film |

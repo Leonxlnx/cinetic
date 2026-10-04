@@ -119,7 +119,7 @@ A locked-off frame reads as a stalled player in a muted feed. Every hold has vis
 
 | Hold | Life | Number |
 |---|---|---|
-| Logo / lockup | dolly in on `E.dolly` | 10–20% over about 2 s (Tessel's 1.0 → 1.1 still read as dead; use 1.2) |
+| Logo / lockup | dolly in on `E.dolly` | a creep of ≤ 6% when the still hold after the assembly is ≤ 1.3 s; 10–20% over about 2 s when it runs longer (Tessel's 1.0 → 1.1 over 2 s still read as dead) |
 | UI hold | drift | 0.5–1.5 px/f, plus a 2–3%/s push |
 | Typing or reading | background parallax under a sharp foreground | background −16 px and +2.5% while the foreground bar pushes +0.16 |
 | Statement | slow grow | ×1.03–1.05 through the hold |
@@ -225,7 +225,7 @@ export const Defocus: React.FC<{ from: number; to: number; children: React.React
 | Move | Speed or length | Note |
 |---|---|---|
 | Hold drift | 0.5–1.5 px/f | visible life, not motion |
-| Push in a hold | 2–3% per second | a logo hold 10–20% over ~2 s |
+| Push in a hold | 2–5% per second (faster than about 9% per second reads as a move) | a logo hold: ≤ 6% after a 60–80 f assembly, 10–20% over ~2 s for a longer hold |
 | Camera move | 0.35 s + 1.35 ms/px, 0.6–2.4 s | `durFor(px, true)` in `references/motion-tokens.md` |
 | Whip | 24–30 f, peak 60–70 px/f | beside 0.3–0.6 px/f stillness; needs motion blur |
 | Unblurred motion | ≤ 12 px/f | above that, render the master with `--blur` (`references/finishing.md`) |

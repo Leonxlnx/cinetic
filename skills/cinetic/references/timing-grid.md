@@ -295,7 +295,7 @@ export const RAIN_AT = Array.from({ length: N }, (_, k) =>
 | Unresolved text | never exits | a line that leaves mid-reveal reads as a mistake |
 | Anything static | ≤ 48 f | past 0.8 s of no change, a muted feed reads as a stalled player |
 | Designed freeze | ≤ 15 f, exactly on a silence | stillness is intent only when the sound agrees |
-| Lockup, fully resolved | 1.5–2.0 s, visibly building (≥ 10–20% push) | a 2.75 s static lockup was flagged dead in every Tessel round |
+| End card | 1.5–2.5 s: assembly 60–80 f, then 36–80 f still or creeping ≤ 6% (a 10–20% push if the hold runs past ~1.3 s) | a 2.75 s static lockup was flagged dead in every Tessel round |
 | URL readable | ≥ 1.7 s | long enough to read and remember |
 | Product result before the camera leaves | ≥ 36 f | cause → action → result needs the result to land |
 | Tail after the last event | ≥ 60 f | the audio decays to digital zero |
@@ -316,7 +316,7 @@ for (const l of COPY)
 | Discrete animation events | 45–60 per 30 s |
 | Motion peaks | one per bar, with 30–70 f of calm between peaks |
 | First 6 s | about 2× as dense as the middle |
-| Shot length | median 60–90 f; minimum 24 f (only without text); maximum 180 f (only with continuous action) |
+| Shot length | median 60–90 f; minimum 24 f (only without text); maximum 180 f in a cut-driven film; a continuous take 300–560 f with an in-shot beat at least every 72 f |
 | Story beats | 8–10 per 30 s; 1–2 product capabilities |
 
 **Hook (first 2 s)**

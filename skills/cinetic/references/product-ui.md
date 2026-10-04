@@ -216,9 +216,9 @@ Use a cursor only while a human is acting. Once the product acts on its own, the
 
 | Property | Default | Why |
 |---|---|---|
-| Shape | a plain system-style arrow, drawn at a readable size for the shot (1.4–2.2× native when the camera is pushed in) | a custom cursor distracts from the UI |
+| Shape | a plain system-style arrow, 3–5% of the frame height on screen (1.4–2.2× native when the camera is pushed in) | a custom cursor distracts from the UI; an oversized one covers the control it presses |
 | Path | quadratic arc, control point offset 15–25% of the path length to one side | wrists move in arcs; straight lines read as robotic |
-| Travel | 36–48 f on `E.out` (velocity decays about ×0.95/frame); 29 f for a short final approach | arrives decisively, settles on the target |
+| Travel | 12–20 f on `E.out` (velocity decays about ×0.75–0.92/frame), then at least 60 f of hover, press and release on the target | arrives decisively; the time goes to the dwell, where the viewer reads the cause |
 | Hover | the target shows its hover state about 6 f before the press | real apps respond before the click |
 | Press | scale to 0.88 over 4 f, recoil over 8 f; the button reacts on the same frame | the click has a physical moment for the sound |
 | Rate | ≤ 1 click per 30 f; irregular 7 / 12 / 18 f gaps between micro-actions | a person, not a macro |
@@ -250,7 +250,7 @@ export const ClickSend: React.FC = () => {
 
 ## 6. Typing cadence
 
-Typed input runs at about 30 characters per second with a human rhythm: per-character weights, quicker spaces, a breath after a sentence. The schedule is computed once and exported for the sound.
+Typed input runs at about 30 characters per second with a human rhythm: per-character weights, quicker spaces, a breath after a sentence. A typed prompt is time-boxed to about 60–70 f whatever its length, on an eased count (most characters early, `E.type` in `src/fx/TypeOn.tsx`), then the finished line holds 72–120 f so it can be read; headlines type at 15–22 characters per second with hard per-letter pops. The schedule is computed once and exported for the sound.
 
 ```ts
 import { rand } from '../lib/anim';

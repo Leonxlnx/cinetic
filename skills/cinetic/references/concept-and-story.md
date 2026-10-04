@@ -191,7 +191,7 @@ Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, pr
 ## 9. End cards
 
 1. **The device ideally becomes the mark.** The lockup arrives from the story, not as a new logo animation. It may echo the mid-film reveal (the signature move's third use) but never replays it.
-2. **Hold and build.** The resolved lockup holds 1.5–2.0 s while visibly building: a 10–20% dolly or push over the hold. A static 2.75 s logo hold was flagged as dead in every Tessel review round.
+2. **Assemble, then hold briefly.** The end card runs 1.5–2.5 s: the lockup assembles over 60–80 f, then holds still for 36–80 f (or creeps ≤ 6%); a longer hold must visibly build (a 10–20% dolly). A card that cuts in complete and sits static reads as dead: a static 2.75 s logo hold was flagged in every Tessel review round.
 3. **URL or call to action.** ≥ 1.7 s fully readable, set at the secondary size (44–56 px at 1080p) and still while it is being read.
 4. **The final frame is the poster.** It must contain the mark and the name. Check it: export the last frame, view it 480 px wide, and ask whether a stranger could say whose film it was.
 5. **Tail.** At least 60 f after the last event, under the resolved lockup, while the audio decays to digital silence. Never fade to black: the poster would be black and the player freezes on it.

@@ -48,7 +48,8 @@ export const durFor = (px: number, camera = false) => {
 |---|---|---|---|---|---|
 | `out` | .16,1,.3,1 | .83 / .97 | at start | arrivals, reveals, word entrances | fade-outs, anything leaving |
 | `outSoft` | .22,1,.36,1 | .77 / .96 | at start | gentle settles, secondary arrivals | hero impacts |
-| `in` | .7,0,.84,0 | .00 / .03 | at end | departures, implosions, exits that cut at speed | short fades (vanishes in 1 f) |
+| `in` | .7,0,.84,0 | .00 / .03 | at end | implosions, hard snaps out | short fades (vanishes in 1 f); ordinary exits into a cut (too steep) |
+| `exit` | .55,.055,.675,.19 | .04 / .15 | at end (2.7× mean) | exits into a cut: speed grows about ×1.1–1.2 per frame over the last 10–24 f, the cut on the fastest frame | arrivals |
 | `inOut` | .87,0,.13,1 | .04 / .50 | 50% (7.7× mean) | whips, lockup slides, morphs | slow moves (feels like a jump) |
 | `smooth` | .65,0,.35,1 | .07 / .50 | 50% (2.9×) | fades, drifts, holds, breath | arrivals (starts too slow) |
 | `ui` | .4,0,.2,1 | .24 / .78 | 30% | small UI changes: toggles, chips, rows | camera |
@@ -195,7 +196,7 @@ Amplitudes that worked (scale = `1 + amp · hitPulse(…)`):
 | Batch landings | 16th grid, 0–3 f seeded spread, first on the beat | `references/timing-grid.md` §5 |
 
 - **Order a stagger by importance, not by DOM order.** The element that carries the idea arrives first (or last, as the punchline); decoration never leads.
-- **A word reveal** (`src/fx/Words.tsx`): per word over 26 f on `E.out`, opacity 0 → 1, `translateY` 0.32 em → 0 through `arrive(p)`, blur 14 → 0 px (8 px for body lines) through `blurIn(p, px)`, which is clear by 60% of the eased move. Blur only on entry, never left on readable text for more than 6 f. `blurIn` and `arrive` exist because Chromium steps blur radii (~0.5 px; under ~0.75 px renders fully sharp) and snaps vertical text to whole pixels, so a slow finish would snap into focus or settle in 1 px ticks (`references/chromium-rendering.md` §3, §15). Recipes for slams, locks and type that becomes the mark are in `references/copy-and-type.md` and `references/transitions.md`.
+- **A word reveal** (`src/fx/Words.tsx`): per word over 26 f on `E.out`, opacity 0 → 1, `translateY` 0.32 em → 0 through `arrive(p)`, blur 8 → 0 px (4–6 px for body lines, or none) through `blurIn(p, px)`, which is clear by 60% of the eased move. Blur only on entry, never left on readable text for more than 6 f. `blurIn` and `arrive` exist because Chromium steps blur radii (~0.5 px; under ~0.75 px renders fully sharp) and snaps vertical text to whole pixels, so a slow finish would snap into focus or settle in 1 px ticks (`references/chromium-rendering.md` §3, §15). Recipes for slams, locks and type that becomes the mark are in `references/copy-and-type.md` and `references/transitions.md`.
 
 ```ts
 import { E, prog } from '../lib/anim';
