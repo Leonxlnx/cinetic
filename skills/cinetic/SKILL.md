@@ -316,7 +316,8 @@ const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one
   - frame 0 is already composed and moving;
   - the sound enters with intent on frame 0, with no fade over the first bar;
   - something visibly changes about every 0.5 s;
-  - the problem is felt by 1 s and stated by 2 s.
+  - the problem is felt by 1 s and stated by 2 s;
+  - the product is named on screen by about a quarter of the runtime (its chrome, the name in a status line, the mark), not saved for the end card.
 
   A soft first second loses a muted feed.
 - **End card:** carry the brief's one practical fact when it gives one (a date such as "next week", a URL, "out now"), set at the secondary size under the lockup. When the brief gives none, a launch film or product video still says what the product is in one short line under the name ("The build cache for CI."); a bare name is for stings. That is the only line besides the name.
