@@ -10,7 +10,7 @@ export const SAFE_PRESETS = {
   /** 16:9 players and landing pages: 96 px at the sides, 64 px top and bottom. */
   wide16x9: { w: 1920, h: 1080, top: 64, right: 96, bottom: 64, left: 96 },
   /** Full-screen vertical feeds: header and tabs above, the action rail on the right, handle and a 1-2 line caption below. */
-  feed9x16: { w: 1080, h: 1920, top: 270, right: 120, bottom: 384, left: 64 },
+  feed9x16: { w: 1080, h: 1920, top: 270, right: 120, bottom: 420, left: 64 },
   /** Vertical feeds at their strictest: long captions or a paid post's call-to-action button (bottom 35%). */
   feed9x16Strict: { w: 1080, h: 1920, top: 288, right: 192, bottom: 672, left: 64 },
   /** 4:5 feed posts. */

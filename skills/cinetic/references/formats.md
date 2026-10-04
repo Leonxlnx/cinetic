@@ -268,19 +268,19 @@ const LAY = layoutFor(width, height); // type sizes, camera anchors, safe box, l
 - **The product's framing changes.** A tall frame wants the camera closer on one region, with the anchor moved rather than the scale reduced.
 
 **Vertical (9:16) composition.** A tall frame is not a wide frame with bars: use the height. A 16:9 layout moved into 1080 × 1920 leaves the product as a strip in the middle and the lower half empty, and on a phone that empty half is what the viewer sees above the caption.
-- **The content's visual mass sits in the middle of the safe band**, not the middle of the frame. With the feed zones below, the band runs from y 270 to y 1536 and its centre is y ≈ 903 (`safeBox('feed9x16', W, H).cy` from `src/lib/safe.ts`).
-- **No empty bottom 40%.** Stack the statement above the product, or let the product fill the band and bleed past its sides, so the region from y 1152 down to the caption zone holds content. The caption zone itself (below y 1536) carries the stage or the product's edge as texture, never anything to read.
+- **The content's visual mass sits in the middle of the safe band**, not the middle of the frame. With the feed zones below, the band runs from y 270 to y 1500 and its centre is y ≈ 885 (`safeBox('feed9x16', W, H).cy` from `src/lib/safe.ts`).
+- **No empty bottom 40%.** Stack the statement above the product, or let the product fill the band and bleed past its sides, so the region from y 1152 down to the caption zone holds content. The caption zone itself (below y 1500) carries the stage or the product's edge as texture, never anything to read.
 - **Type and UI run about 1.3–1.5× their 16:9 pixel sizes**, because the frame is watched full-screen on a phone next to feed UI: readable UI ≥ 32 px (not 22), secondary lines and captions 60–72 px, the product framed so its body text reads ≥ 32 px. Statements are capped by the width instead: 110–140 px, at most two lines of ≤ 3 words (`references/copy-and-type.md` §7).
 
-A layout sketch at 1080 × 1920 (feed zones: top 270, right 120, bottom 384, left 64):
+A layout sketch at 1080 × 1920 (feed zones: top 270, right 120, bottom 420, left 64):
 
 | y (px) | Region | What goes there |
 |---|---|---|
 | 0–270 | header zone | the stage only (its tone, the device's path); nothing to read, no key action |
 | 300–580 | statement | one statement on two lines at 110–140 px, left edge on x 96 (or centred on the band's x 512) |
-| 620–1420 | the product | the working region, 896 px wide or bleeding off both sides, UI type ≥ 32 px; the action (the tap, the landing, the count) happens near y 900–1100, the band's centre |
-| 1420–1520 | the result | the counter, check or feature label the action produces, ≥ 48 px |
-| 1536–1920 | caption zone | the stage and the product's lower edge as texture; the feed's own UI sits here |
+| 620–1380 | the product | the working region, 896 px wide or bleeding off both sides, UI type ≥ 32 px; the action (the tap, the landing, the count) happens near y 900–1100, the band's centre |
+| 1390–1490 | the result | the counter, check or feature label the action produces, ≥ 48 px |
+| 1500–1920 | caption zone | the stage and the product's lower edge as texture; the feed's own UI sits here |
 
 Check the mass on a still: this prints the share of non-stage pixels per horizontal band, and the bands from 40% down should not read near 0%.
 
@@ -300,7 +300,7 @@ PY
 | Aspect | Size | Preset | Keep text and key action inside | Type minimums |
 |---|---|---|---|---|
 | 16:9 | 1920×1080 | `wide16x9` | 96 px at the sides, 64 px top and bottom | statement 88–128 px, UI ≥ 22 px |
-| 9:16 feeds | 1080×1920 | `feed9x16` | top 270 (14%), right 120, bottom 384 (20%), left 64 | statement 110–140 px, secondary ≥ 60 px, UI ≥ 32 px |
+| 9:16 feeds | 1080×1920 | `feed9x16` | top 270 (14%), right 120, bottom 420 (22%), left 64 | statement 110–140 px, secondary ≥ 60 px, UI ≥ 32 px |
 | 9:16, strict | 1080×1920 | `feed9x16Strict` | top 288, right 192, bottom 672 (35%), left 64: long captions, paid posts | as above |
 | 1:1 | 1080×1080 | `square1x1` | 64 px on every side | statement ≥ 72 px, secondary ≥ 44 px, UI ≥ 28 px |
 | 4:5 | 1080×1350 | `portrait4x5` | 64 px at the sides, 96 px top and bottom | statement ≥ 80 px, secondary ≥ 48 px, UI ≥ 30 px |

@@ -86,7 +86,7 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **E5 Cropped social versions.** A 9:16 or 1:1 cut out of the 16:9 master. **Fix:** re-lay separate compositions from the same timeline (`references/formats.md`).
 - **E6 A lockup lost in a void.** The resolved lockup spans under a quarter of the frame's width and can't be read at 480 px. **Fix:** 28–45% of the width at its resolved size (`references/brand-and-color.md` §6).
 - **E7 A small card in empty space.** The product shown as a floating card whose type is unreadable on a phone. **Fix:** full-bleed, or push in until the working part fills the frame (`references/product-ui.md` §1).
-- **E8 An empty vertical frame.** A 9:16 frame laid out like a wide one: a strip of content in the middle, the bottom 40% bare, 16:9 type sizes. **Fix:** the content's mass in the middle of the safe band (y 270–1536 at 1080 × 1920), the product filling or bleeding past the band, type 1.3–1.5× the 16:9 sizes; the mass check and layout sketch are in `references/formats.md` §7.
+- **E8 An empty vertical frame.** A 9:16 frame laid out like a wide one: a strip of content in the middle, the bottom 40% bare, 16:9 type sizes. **Fix:** the content's mass in the middle of the safe band (y 270–1500 at 1080 × 1920), the product filling or bleeding past the band, type 1.3–1.5× the 16:9 sizes; the mass check and layout sketch are in `references/formats.md` §7.
 
 ## F. Motion and easing
 - **F1 The default entrance.** Everything fades in, or enters with `y: 30, opacity: 0`. **Fix:** one reveal system per role, with physical entrances: a mask sweep, a birth from a gap, a morph.
