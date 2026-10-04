@@ -92,9 +92,21 @@ for s in range(40):
     if 'fx-tr-loop-only' in ids(d):
         seen_loop_only = True
 result(not seen_loop_only, '--format launch never draws a loop-only entry')
-loop_hits = sum('fx-tr-loop-only' in ids(draw_json('--format', 'loop', '--energy', 'calm', '--seed', str(s))[1]) for s in range(40))
+loop_hits = sum('fx-tr-loop-only' in ids(draw_json('--format', 'loop', '--energy', 'calm', '--seconds', '15', '--seed', str(s))[1]) for s in range(40))
 result(loop_hits > 0, '--format loop can draw a loop-only entry', f'{loop_hits}/40')
 
+sizes = {(f, sec): len(draw_json('--format', f, '--seconds', str(sec), '--seed', '2')[1]['picks'])
+         for f, sec in (('vertical', 12), ('launch', 30), ('launch', 45), ('sting', 6), ('loop', 10), ('walkthrough', 90))}
+result(sizes[('vertical', 12)] == 5 and sizes[('launch', 30)] == 12, 'a plan holds about one technique per 2.5 s', str(sizes))
+result(sizes[('sting', 6)] == 4 and sizes[('loop', 10)] == 4, 'short pieces still draw at least 4', str(sizes))
+import importlib.util
+_spec = importlib.util.spec_from_file_location('pick_sizes', PICK)
+_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_mod)
+result(sizes[('launch', 45)] == 18 and _mod.plan_size('walkthrough', 90) == len(_mod.ORDER['walkthrough']),
+       'long films stop at the format\'s full order', str(sizes))
+r = pick('--format', 'sting', '--seed', '4')
+result(r.returncode == 0 and 'logo_and_end_card' in r.stdout.split('###')[0], 'a sting draws its end card first')
 worst = {}
 for fmt, cap in (('launch', 2), ('sting', 1), ('feature', 1)):
     worst[fmt] = max(sum(p['role'] == 'signature' for p in draw_json('--format', fmt, '--energy', 'high', '--seed', str(s))[1]['picks'])
@@ -183,7 +195,7 @@ if os.path.exists(SHIPPED):
     for fmt in ('launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical'):
         r, d = draw_json('--format', fmt, '--seed', '1', library=SHIPPED)
         cats = {p['category'] for p in d['picks']}
-        result(r.returncode == 0 and len(cats) >= 6, f'the shipped library fills a {fmt} plan', f'{len(d["picks"])} picks, {len(cats)} categories')
+        result(r.returncode == 0 and len(d['picks']) >= 4 and len(cats) >= 4, f'the shipped library fills a {fmt} plan', f'{len(d["picks"])} picks, {len(cats)} categories')
     md = os.path.join(SKILL, 'references', 'technique-library.md')
     r = pick('--markdown', library=SHIPPED)
     same = os.path.exists(md) and open(md, encoding='utf-8').read() == r.stdout

@@ -1826,17 +1826,6 @@ Every card, device bezel and bevelled shape on a dark stage carries a hairline e
 - **Use when:** Dark UI films with flat cards, panels, device bezels or bevelled brand shapes on near-black, where a drop shadow disappears and a glow is off-limits.
 - **Avoid when:** Light-mode shots, where a white hairline vanishes on paper. Also avoid it on cards that already carry cl-rim-light-sweep's travelling streak, and on layouts so dense that every lit edge turns the frame into wireframe noise.
 
-### Living gradient stage
-
-`cl-living-stage` · workhorse · energy calm · any
-
-Behind static cards the background never freezes: soft pools of colour at the corners breathe in brightness or drift slowly, like light through water.
-
-- **Build:** Start from a C.ink base with two or three huge pools (radius 55-60% of the frame, for example one centred at 85% 15% and one at 10% 95%) in dark tints of one allowed hue (never violet, warm brown or a multi-hue mesh), each baked once as an RGBA PNG with scripts/dither-gradient.py rather than drawn as a CSS radial-gradient under a live blur(), which bands at 8 bits and costs render time. Breathe mode: each pool's opacity moves between 0.85 and 1.0 on sin(2π·frame/162), the second half a period out of phase, with no translation (about ±15% luma). Drift mode: 4-5 pools, each centre moving ±6% of the frame on sine loops of 360-660 f at different phases, with opacity ±8%. The pools light the stage, never an element: none sits centred behind type or a card. Let the film's global 1.5-2% grain sit over it, and give the stage an intensity prop (0-1) so brand beats (open, tagline, end card) raise it while UI beats sit on flat C.ink.
-- **Timing:** The breathe period is 162 f. Drift loops run 360-660 f, at under 1 px/f. On brand beats the stage rises over 50 f on E.out (translateY +40% to 0) and drains to flat in 8 f.
-- **Use when:** Holds, end cards and statement cards that would otherwise sit still for more than 48 f.
-- **Avoid when:** Busy UI shots where any background motion competes, or films built on a hard flat-stage look.
-
 ### Monochrome world, one accent
 
 `cl-mono-one-accent` · workhorse · energy any · any
@@ -1937,6 +1926,17 @@ A crisp graphic that has just finished its move, such as a wall of bars or a str
 - **Use when:** After a graphic build (a bar wall, a stripe or tile field, a filled pattern), when the next beat is a title or the end-card mark and needs a backdrop born from what was just on screen.
 - **Avoid when:** The graphic carries data the viewer still needs to read, or it is a UI act where the stage should stay flat. When no graphic build comes before the title, use cl-living-stage directly.
 
+### Living gradient stage
+
+`cl-living-stage` · accent · energy calm · any
+
+Behind static cards the background never freezes: soft pools of colour at the corners breathe in brightness or drift slowly, like light through water.
+
+- **Build:** Start from a C.ink base with two or three huge pools (radius 55-60% of the frame, for example one centred at 85% 15% and one at 10% 95%) in dark tints of one allowed hue (never violet, warm brown or a multi-hue mesh), each baked once as an RGBA PNG with scripts/dither-gradient.py rather than drawn as a CSS radial-gradient under a live blur(), which bands at 8 bits and costs render time. Breathe mode: each pool's opacity moves between 0.85 and 1.0 on sin(2π·frame/162), the second half a period out of phase, with no translation (about ±15% luma). Drift mode: 4-5 pools, each centre moving ±6% of the frame on sine loops of 360-660 f at different phases, with opacity ±8%. The pools light the stage, never an element: none sits centred behind type or a card. Let the film's global 1.5-2% grain sit over it, and give the stage an intensity prop (0-1) so brand beats (open, tagline, end card) raise it while UI beats sit on flat C.ink.
+- **Timing:** The breathe period is 162 f. Drift loops run 360-660 f, at under 1 px/f. On brand beats the stage rises over 50 f on E.out (translateY +40% to 0) and drains to flat in 8 f.
+- **Use when:** Holds, end cards and statement cards that would otherwise sit still for more than 48 f.
+- **Avoid when:** Busy UI shots where any background motion competes, or films built on a hard flat-stage look. Behind a product window or readable type, where soft pools read as a generic gradient backdrop or as haze; light stages, where they read as smudges. A flat stage with one tonal step is the stronger default.
+
 ### Rim streak on card edges
 
 `cl-rim-light-sweep` · accent · energy calm · feature, launch, walkthrough
@@ -1956,9 +1956,10 @@ A bright streak travels along a dark card's border while its edges carry a faint
 A soft single-hue field rises from the bottom edge behind the type, swells and sweeps up across the frame on the change, then recedes off the top, so the foreground swap reads as one move.
 
 - **Build:** Place a full-frame layer under the type with background radial-gradient(ellipse 70% 60% at 50% Y, C.accent 0%, transparent 70%). The gradient is soft on its own, so use no blur filter, keep normal blend and keep the saturation low. Animate Y from 110% to 75% on E.out (coverage 0 to 47%). Then swell the ellipse from 70% to 110% and wipe it up (centroid from about 487 to 154 px at 1080p) on E.inOut, changing the foreground underneath on the fastest frame, and finally let it recede to Y -20% on E.outSoft. Short version into a hard cut: a bottom-anchored band of 40% height, linear-gradient(to top, mixColor(C.accent, C.ink, 0.5), transparent), translateY from 100% to 20% on E.in, with the cut landing mid-rise. Use it to preview the accent ground that is coming.
+- **Ban-safe variant (the default):** Keep the move and lose the soft falloff: a flat accent band with a crisp, straight top edge (a clip-path inset driven by the same Y curve) rises behind the type, sweeps up across the frame on the change and leaves off the top, at full opacity in a light tint of the accent. The swap still happens on its fastest frame; no radial gradient, no feathered edge. The full look relies on glow; use it only when the brand supplies that look.
 - **Timing:** The rise takes 39 f on E.out. The swell and wipe take 12 f on E.inOut (about 28 px/f). The recede takes 90 f on E.outSoft. The pre-cut band takes 16 f on E.in (about +14 luma levels).
 - **Use when:** Changing cards behind continuous colour, leading into an accent-ground claim or the end card, or smoothing a hard cut into a new scene.
-- **Avoid when:** Shots already on an accent ground, or dense UI that the wash would tint.
+- **Avoid when:** Shots already on an accent ground, or dense UI that the wash would tint. A soft accent haze behind type reads as glow.
 
 ### Shadows tinted by the stage
 

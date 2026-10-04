@@ -13,8 +13,8 @@ are drawn with their ban-safe variant as the recipe, unless --brand-supplied nam
 the entry's "bans" list.
 
 Usage:
-  python3 scripts/pick.py --format launch --energy high               # a whole-film plan
-  python3 scripts/pick.py --format loop --energy calm --seed 41       # reproducible plan
+  python3 scripts/pick.py --format launch --energy high --seconds 25  # a whole-film plan (10 picks)
+  python3 scripts/pick.py --format loop --energy calm --seed 41       # reproducible plan (10 s: 4 picks)
   python3 scripts/pick.py --category transition --n 3 --format launch # three transitions
   python3 scripts/pick.py --category logo_and_end_card --exclude le-hard-cut-lockup
   python3 scripts/pick.py --plan --avoid out/qa/picks-previous.json    # skip ids used before
@@ -24,9 +24,14 @@ Usage:
   python3 scripts/pick.py --markdown > references/technique-library.md # regenerate the readable library
   python3 scripts/pick.py ... --json out/qa/picks.json                # also write the draw as JSON
 
-Rules for the agent (SKILL.md, Step 1): draw before you design; build what was drawn, adapted to
-the concept; reroll a single pick (--exclude it, same --category) at most twice and write down
-why. A draw is a starting point for invention, not a template to paste.
+A plan holds about one technique per 2.5 s of film (--seconds), filled in the format's order of
+need (a sting draws its end card and hook first, a walkthrough its product demo), with one
+signature move, or two in a plan of 10 or more.
+
+Rules for the agent (SKILL.md, Step 1): draw before you design; build the picks the concept can
+carry, each retold in the film's objects; reroll a pick that fights the concept (--exclude it,
+same --category) at most twice, or drop it, and write down why. Never add a technique the draw
+did not give you: draw one with --category. A draw is a starting point, not a quota.
 
 Exit 0 on success, 1 when nothing fits the filters, 2 on bad input or an invalid library.
 """
@@ -49,31 +54,48 @@ ROLE_WEIGHT = {'workhorse': 3.0, 'accent': 2.0, 'signature': 1.0}
 REQUIRED = ['id', 'name', 'category', 'summary', 'recipe', 'timing', 'use_when', 'avoid_when',
             'formats', 'energy', 'role', 'ban_safe', 'evidence']
 
-# How many draws per category make one film, by format. Signature moments are capped per film.
-PLAN = {
-    'launch': {'opening_hook': 1, 'transition': 3, 'camera': 1, 'typography_motion': 2,
-               'ui_choreography': 2, 'data_and_numbers': 1, 'product_demo': 1,
-               'logo_and_end_card': 1, 'color_and_light': 1, 'texture_and_finish': 1,
-               'layout_and_composition': 1, 'pacing_structure': 1, 'micro_interaction': 1,
-               'depth_and_3d': 1},
-    'feature': {'opening_hook': 1, 'transition': 2, 'camera': 1, 'typography_motion': 1,
-                'ui_choreography': 2, 'data_and_numbers': 1, 'product_demo': 1,
-                'logo_and_end_card': 1, 'color_and_light': 1, 'layout_and_composition': 1,
-                'micro_interaction': 2},
-    'loop': {'transition': 1, 'camera': 1, 'typography_motion': 1, 'ui_choreography': 2,
-             'product_demo': 1, 'color_and_light': 1, 'layout_and_composition': 1,
-             'pacing_structure': 1, 'micro_interaction': 2},
-    'sting': {'opening_hook': 1, 'typography_motion': 1, 'logo_and_end_card': 1, 'camera': 1,
-              'color_and_light': 1, 'texture_and_finish': 1, 'micro_interaction': 1},
-    'walkthrough': {'opening_hook': 1, 'transition': 2, 'camera': 1, 'typography_motion': 1,
-                    'ui_choreography': 3, 'product_demo': 2, 'logo_and_end_card': 1,
-                    'layout_and_composition': 1, 'pacing_structure': 1, 'micro_interaction': 2},
-    'vertical': {'opening_hook': 1, 'transition': 2, 'camera': 1, 'typography_motion': 2,
-                 'ui_choreography': 2, 'data_and_numbers': 1, 'product_demo': 1,
-                 'logo_and_end_card': 1, 'color_and_light': 1, 'layout_and_composition': 1,
-                 'micro_interaction': 1},
+# The order in which a plan fills its slots, by format: the first slots go to what that format
+# cannot do without. A film gets about one technique per 2.5 s (--seconds), so a 12 s vertical
+# video draws 5 and a 30 s launch film 12: a short film carries a few moves done well, and a
+# plan stuffed with one move per category reads as a showreel. A category may appear twice.
+ORDER = {
+    'launch': ['opening_hook', 'transition', 'typography_motion', 'product_demo', 'ui_choreography',
+               'logo_and_end_card', 'camera', 'transition', 'data_and_numbers', 'micro_interaction',
+               'color_and_light', 'pacing_structure', 'typography_motion', 'depth_and_3d',
+               'layout_and_composition', 'texture_and_finish', 'transition', 'ui_choreography'],
+    'feature': ['product_demo', 'ui_choreography', 'opening_hook', 'transition', 'micro_interaction',
+                'typography_motion', 'logo_and_end_card', 'data_and_numbers', 'camera', 'color_and_light',
+                'ui_choreography', 'layout_and_composition'],
+    'loop': ['ui_choreography', 'product_demo', 'micro_interaction', 'typography_motion', 'transition',
+             'camera', 'pacing_structure', 'color_and_light'],
+    'sting': ['logo_and_end_card', 'opening_hook', 'typography_motion', 'micro_interaction', 'camera',
+              'texture_and_finish'],
+    'walkthrough': ['product_demo', 'ui_choreography', 'opening_hook', 'transition', 'micro_interaction',
+                    'camera', 'typography_motion', 'logo_and_end_card', 'ui_choreography', 'product_demo',
+                    'transition', 'pacing_structure', 'layout_and_composition', 'micro_interaction'],
+    'vertical': ['opening_hook', 'product_demo', 'ui_choreography', 'typography_motion', 'transition',
+                 'logo_and_end_card', 'micro_interaction', 'data_and_numbers', 'camera', 'color_and_light',
+                 'transition', 'typography_motion'],
 }
-MAX_SIGNATURE = {'launch': 2, 'feature': 1, 'loop': 1, 'sting': 1, 'walkthrough': 1, 'vertical': 1}
+DEFAULT_SECONDS = {'launch': 30, 'feature': 15, 'loop': 10, 'sting': 6, 'walkthrough': 45, 'vertical': 15}
+MIN_PICKS = {'launch': 6, 'feature': 5, 'loop': 4, 'sting': 4, 'walkthrough': 6, 'vertical': 5}
+SECONDS_PER_PICK = 2.5
+
+
+def plan_size(fmt, seconds):
+    """How many techniques a film of this format and length draws."""
+    n = int(round(seconds / SECONDS_PER_PICK))
+    return max(MIN_PICKS[fmt], min(len(ORDER[fmt]), n))
+
+
+def plan_slots(fmt, seconds):
+    """{category: count} for the first plan_size() slots of the format's order."""
+    slots = {}
+    for cat in ORDER[fmt][:plan_size(fmt, seconds)]:
+        slots[cat] = slots.get(cat, 0) + 1
+    return slots
+
+
 BANS = ['glass', 'glow', 'serif', 'italic', 'orange', 'beige', 'purple', 'gradient', 'filler-text',
         'emoji', 'sparkle', 'confetti', 'particles']
 
@@ -241,6 +263,7 @@ def main():
     ap.add_argument('--library', default=DEFAULT_LIBRARY, help='techniques JSON (default: assets/library/techniques.json)')
     ap.add_argument('--format', choices=FORMATS, help='the film format; filters entries and sets the plan shape')
     ap.add_argument('--energy', choices=ENERGIES, help='weights entries toward this energy')
+    ap.add_argument('--seconds', type=float, help='the film length: about one technique per 2.5 s (default per format)')
     ap.add_argument('--category', choices=CATEGORIES, help='draw only from this category')
     ap.add_argument('--n', type=int, default=1, help='how many to draw with --category (default 1)')
     ap.add_argument('--plan', action='store_true', help='draw a whole-film plan (the default without --category)')
@@ -302,8 +325,9 @@ def main():
         picks, _ = draw(cat_pool, a.n, rng, a.energy, taken, signature_left=a.n)
     else:
         fmt = a.format or 'launch'
-        sig = MAX_SIGNATURE[fmt]
-        for cat, n in PLAN[fmt].items():
+        seconds = a.seconds if a.seconds else DEFAULT_SECONDS[fmt]
+        sig = 2 if plan_size(fmt, seconds) >= 10 else 1  # signature moves per film
+        for cat, n in plan_slots(fmt, seconds).items():
             got, sig = draw([e for e in pool if e['category'] == cat], n, rng, a.energy, taken, sig)
             picks += got
     if not picks:
@@ -311,10 +335,11 @@ def main():
 
     head = (f"<!-- pick.py --seed {seed}"
             + (f" --format {a.format}" if a.format else '') + (f" --energy {a.energy}" if a.energy else '')
+            + (f" --seconds {a.seconds:g}" if a.seconds and not (a.category and not a.plan) else '')
             + (f" --category {a.category} --n {a.n}" if a.category and not a.plan else '') + ' -->')
     print(head)
     print(f"# Drawn techniques (seed {seed})\n")
-    print('Build each one, adapted to the concept. Reroll a single pick at most twice, with a written reason.\n')
+    print('Build the picks the concept can carry, each retold in its objects. Reroll a pick at most twice, or drop it, with a written reason.\n')
     if len(picks) > 1:
         for e in picks:
             print(f"- {e['category']}: {e['name']} (`{e['id']}`, {e['role']})")

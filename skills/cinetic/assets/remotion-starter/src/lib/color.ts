@@ -3,7 +3,10 @@
 // perceptually and rounds once, at the end.
 type Lab = [number, number, number];
 
+// Accepts '#rgb', '#rrggbb' and the 'rgb(r, g, b)' strings mixColor returns, so mixes can nest.
 const hexToRgb = (hex: string): Lab => {
+  const m = hex.match(/^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i);
+  if (m) return [m[1], m[2], m[3]].map((v) => Number(v) / 255) as Lab;
   const h = hex.replace('#', '');
   const f = h.length === 3 ? h.split('').map((c) => c + c).join('') : h.slice(0, 6);
   return [0, 2, 4].map((i) => parseInt(f.slice(i, i + 2), 16) / 255) as Lab;
@@ -27,7 +30,7 @@ const fromLab = ([L, A, B]: Lab) => {
   return rgb.map((c) => Math.round(Math.min(1, Math.max(0, gam(c))) * 255));
 };
 
-/** Perceptual mix of two hex colours, t in 0..1 -> 'rgb(r, g, b)'. */
+/** Perceptual mix of two colours (hex or 'rgb(...)'), t in 0..1 -> 'rgb(r, g, b)'. Nesting is safe. */
 export const mixColor = (a: string, b: string, t: number) => {
   const A = toLab(a);
   const B = toLab(b);

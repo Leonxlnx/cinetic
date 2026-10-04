@@ -52,7 +52,7 @@ For a loop or a sting (the one-page treatment), fill sections 3, 3b, 5 (2–8 ro
 |---|---|---|---|
 | <id> | <category> | <#> | <the recipe, retold in this film's objects> |
 
-**Rerolls (at most 2 per pick):** <id → new id: why the first draw could not serve this concept> or "none"
+**Rerolls and drops:** <id → new id (at most 2 rerolls per pick), or id dropped: why the draw could not serve this concept> or "none". The story, product truth and one consistent UI language come first; a short film carries a few moves done well.
 
 ## 4. Arc and device path
 - **Arc:** hook <bars> → problem <bars> → turn <bar> → proof <bars> → promise <bars> → lockup <bars, incl. tail>
@@ -80,7 +80,7 @@ Checks: ≤ 5 words per line · ≤ 2 lines per shot · no stock phrasing · eve
 - [ ] the chosen concept passes ownership, deletion and specificity, with reasons written in §2; the proof shows the non-obvious behaviour
 - [ ] word total within budget; ≤ 5 words per line; ≤ 2 lines per shot
 - [ ] the device appears in every beat row, and its last link is the mark
-- [ ] every drawn technique has its place in §3b (a beat row, or the whole film for colour, texture and pacing picks), and every reroll has a written reason
+- [ ] every drawn technique is placed in §3b (a beat row, or the whole film for colour, texture and pacing picks) or dropped, and every reroll or drop has a written reason
 - [ ] the final frame contains the mark and the name
 - [ ] nothing here breaks a hard ban (`SKILL.md`): no eyebrow, stacked tagline, "Introducing…" or filler text; a sans; an allowed accent on a neutral or cool stage; no glow, glass, emoji or effects; overshoot only on ≤ 2 true landings. Brand-supplied exceptions are listed in `BRIEF.md`
 
