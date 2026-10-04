@@ -418,6 +418,8 @@ The full pipeline is in [`references/finishing.md`](../skills/cinetic/references
 | `npm run audio` prints `FAIL` with `integrated ... LUFS not within -14.0+-0.5` | the master missed its loudness target (±0.5 LU) | read `warnings` and `limiter_hot` in `out/qa/score.json`; pull a loud bed down rather than raising the ceiling; a calm brand or a sting of 8 s or less may target −16: set `"master": {"lufs": -16}` in `audio/score.json` (or pass `--lufs -16`), then rerun `npm run audio` |
 | `FAIL: true peak ... dBTP above -1.5` | the ceiling was raised, or sounds were added after mastering | restore `"ceiling": 0.77` in `audio/score.json` and rerun `npm run audio`; master a supplied track with `python3 scripts/audio/master.py mix.wav public/audio/soundtrack.wav --lufs -14` |
 | `check-sync` fails on true peak after the mux | the AAC encode adds 0.5–1 dB of peak | the same fix as above: keep the 0.77 ceiling so the WAV stays at or under −1.5 dBTP |
+| A Python script of your own dies with `Segmentation fault` inside `librosa.onset` or `librosa.util.peak_pick` | a stale numba cache, or a numba build that does not match numpy | `av-audit.py` no longer uses librosa's numba code; for your own scripts, `export NUMBA_CACHE_DIR=$(mktemp -d)` or upgrade numba and numpy together |
+| `score.py` warns that typing sits too loud or too bright | keys over a full groove, or a per-key style above 25 characters a second | keep `"typing": "auto"` (it switches fast runs to one blip per word and ducks the music under slower ones), or lower the key weights in `src/sync.ts` |
 
 ### Rendering and blur
 
