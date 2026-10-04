@@ -9,7 +9,8 @@ draw. The seed is printed, so a plan can be reproduced and written into TREATMEN
 Weights: role (workhorse 3, accent 2, signature 1) x proof (1 + evidence / 4, capped at 3) x
 energy fit (same 1.0, "any" 0.7, other 0.25). Entries whose formats don't include the film's
 format (or "any") are never drawn. Entries that rely on a house-banned look (ban_safe false)
-are drawn with their ban-safe variant as the recipe, unless --brand-supplied names that look.
+are drawn with their ban-safe variant as the recipe, unless --brand-supplied names every look in
+the entry's "bans" list.
 
 Usage:
   python3 scripts/pick.py --format launch --energy high               # a whole-film plan
@@ -120,8 +121,15 @@ def validate(entries):
             problems.append(f'{where}: role must be one of {list(ROLE_WEIGHT)}')
         if e.get('ban_safe') is False and not e.get('ban_safe_variant'):
             problems.append(f'{where}: ban_safe is false but there is no ban_safe_variant')
-        if not isinstance(e.get('evidence', 0), (int, float)):
+        if not isinstance(e.get('evidence', 0), (int, float)) or isinstance(e.get('evidence'), bool):
             problems.append(f'{where}: evidence must be a number')
+        bans = e.get('bans', [])
+        if not isinstance(bans, list) or any(b not in BANS for b in bans):
+            problems.append(f'{where}: bans must be a list drawn from {BANS}')
+        elif e.get('ban_safe') is True and bans:
+            problems.append(f'{where}: ban_safe is true but bans lists {bans}')
+        elif e.get('ban_safe') is False and not bans:
+            problems.append(f'{where}: ban_safe is false, so bans must name the banned looks it relies on')
     return problems
 
 
@@ -156,7 +164,12 @@ def draw(pool, n, rng, energy, taken, signature_left):
 
 
 def brand_allows(e, allowed):
-    note = (e.get('ban_safe_variant', '') + ' ' + e.get('ban_note', '') + ' ' + e.get('recipe', '')).lower()
+    """True when the brand supplies every banned look this entry's original recipe relies on."""
+    if not allowed:
+        return False
+    if e.get('bans'):
+        return set(e['bans']) <= allowed
+    note = (e.get('ban_note', '') + ' ' + e.get('recipe', '')).lower()
     return any(b in note for b in allowed)
 
 
@@ -249,6 +262,10 @@ def main():
     print(head)
     print(f"# Drawn techniques (seed {seed})\n")
     print('Build each one, adapted to the concept. Reroll a single pick at most twice, with a written reason.\n')
+    if len(picks) > 1:
+        for e in picks:
+            print(f"- {e['category']}: {e['name']} (`{e['id']}`, {e['role']})")
+        print()
     for e in picks:
         print(render(e, allowed))
     if a.json:

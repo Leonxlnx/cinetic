@@ -1,0 +1,401 @@
+{
+ "version": 1,
+ "note": "Fixture for pick.test.py; not a real library.",
+ "techniques": [
+  {
+   "id": "fx-opening-hook",
+   "name": "Fx opening hook",
+   "category": "opening_hook",
+   "summary": "Fixture entry fx-opening-hook.",
+   "recipe": "Build fx-opening-hook.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-transition",
+   "name": "Fx transition",
+   "category": "transition",
+   "summary": "Fixture entry fx-transition.",
+   "recipe": "Build fx-transition.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-camera",
+   "name": "Fx camera",
+   "category": "camera",
+   "summary": "Fixture entry fx-camera.",
+   "recipe": "Build fx-camera.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-typography-motion",
+   "name": "Fx typography motion",
+   "category": "typography_motion",
+   "summary": "Fixture entry fx-typography-motion.",
+   "recipe": "Build fx-typography-motion.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-ui-choreography",
+   "name": "Fx ui choreography",
+   "category": "ui_choreography",
+   "summary": "Fixture entry fx-ui-choreography.",
+   "recipe": "Build fx-ui-choreography.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-data-and-numbers",
+   "name": "Fx data and numbers",
+   "category": "data_and_numbers",
+   "summary": "Fixture entry fx-data-and-numbers.",
+   "recipe": "Build fx-data-and-numbers.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-product-demo",
+   "name": "Fx product demo",
+   "category": "product_demo",
+   "summary": "Fixture entry fx-product-demo.",
+   "recipe": "Build fx-product-demo.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-logo-and-end-card",
+   "name": "Fx logo and end card",
+   "category": "logo_and_end_card",
+   "summary": "Fixture entry fx-logo-and-end-card.",
+   "recipe": "Build fx-logo-and-end-card.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-color-and-light",
+   "name": "Fx color and light",
+   "category": "color_and_light",
+   "summary": "Fixture entry fx-color-and-light.",
+   "recipe": "Build fx-color-and-light.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-texture-and-finish",
+   "name": "Fx texture and finish",
+   "category": "texture_and_finish",
+   "summary": "Fixture entry fx-texture-and-finish.",
+   "recipe": "Build fx-texture-and-finish.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-layout-and-composition",
+   "name": "Fx layout and composition",
+   "category": "layout_and_composition",
+   "summary": "Fixture entry fx-layout-and-composition.",
+   "recipe": "Build fx-layout-and-composition.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-pacing-structure",
+   "name": "Fx pacing structure",
+   "category": "pacing_structure",
+   "summary": "Fixture entry fx-pacing-structure.",
+   "recipe": "Build fx-pacing-structure.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-micro-interaction",
+   "name": "Fx micro interaction",
+   "category": "micro_interaction",
+   "summary": "Fixture entry fx-micro-interaction.",
+   "recipe": "Build fx-micro-interaction.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-depth-and-3d",
+   "name": "Fx depth and 3d",
+   "category": "depth_and_3d",
+   "summary": "Fixture entry fx-depth-and-3d.",
+   "recipe": "Build fx-depth-and-3d.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-tr-workhorse",
+   "name": "Fx tr workhorse",
+   "category": "transition",
+   "summary": "Fixture entry fx-tr-workhorse.",
+   "recipe": "Build fx-tr-workhorse.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "medium",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 8
+  },
+  {
+   "id": "fx-tr-accent",
+   "name": "Fx tr accent",
+   "category": "transition",
+   "summary": "Fixture entry fx-tr-accent.",
+   "recipe": "Build fx-tr-accent.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "high",
+   "role": "accent",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-tr-sig-a",
+   "name": "Fx tr sig a",
+   "category": "transition",
+   "summary": "Fixture entry fx-tr-sig-a.",
+   "recipe": "Build fx-tr-sig-a.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "high",
+   "role": "signature",
+   "ban_safe": true,
+   "evidence": 0
+  },
+  {
+   "id": "fx-tr-sig-b",
+   "name": "Fx tr sig b",
+   "category": "transition",
+   "summary": "Fixture entry fx-tr-sig-b.",
+   "recipe": "Build fx-tr-sig-b.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "high",
+   "role": "signature",
+   "ban_safe": true,
+   "evidence": 0
+  },
+  {
+   "id": "fx-tr-sig-c",
+   "name": "Fx tr sig c",
+   "category": "transition",
+   "summary": "Fixture entry fx-tr-sig-c.",
+   "recipe": "Build fx-tr-sig-c.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "calm",
+   "role": "signature",
+   "ban_safe": true,
+   "evidence": 0
+  },
+  {
+   "id": "fx-tr-loop-only",
+   "name": "Fx tr loop only",
+   "category": "transition",
+   "summary": "Fixture entry fx-tr-loop-only.",
+   "recipe": "Build fx-tr-loop-only.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "loop"
+   ],
+   "energy": "calm",
+   "role": "accent",
+   "ban_safe": true,
+   "evidence": 4
+  },
+  {
+   "id": "fx-cam-sig",
+   "name": "Fx cam sig",
+   "category": "camera",
+   "summary": "Fixture entry fx-cam-sig.",
+   "recipe": "Build fx-cam-sig.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "high",
+   "role": "signature",
+   "ban_safe": true,
+   "evidence": 2
+  },
+  {
+   "id": "fx-type-sig",
+   "name": "Fx type sig",
+   "category": "typography_motion",
+   "summary": "Fixture entry fx-type-sig.",
+   "recipe": "Build fx-type-sig.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "medium",
+   "role": "signature",
+   "ban_safe": true,
+   "evidence": 2
+  },
+  {
+   "id": "fx-glass-panel",
+   "name": "Fx glass panel",
+   "category": "ui_choreography",
+   "summary": "Fixture entry fx-glass-panel.",
+   "recipe": "Frosted glass panel with background blur.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "calm",
+   "role": "accent",
+   "ban_safe": false,
+   "evidence": 4,
+   "bans": [
+    "glass"
+   ],
+   "ban_safe_variant": "Opaque raised panel, 1 px hairline border, soft drop shadow."
+  }
+ ]
+}
