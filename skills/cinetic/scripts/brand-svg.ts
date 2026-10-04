@@ -7,6 +7,11 @@
  * tracking), set the way the film's lockup is: the mark as tall as the name's ink ascent, a gap of
  * 0.3 of that height, one shared baseline (references/brand-and-color.md §6).
  *
+ * When the mark is part of the name (a letter of the word is the mark, or the mark replaces one), a
+ * mark beside a typed name is the wrong lockup. Export `LockupSvg` from src/brand/Mark.tsx instead: a
+ * component that renders the whole lockup as one <svg> with its own viewBox, all outlines (no live
+ * text), taking `ink` and `dot` colours. brand-svg.ts then writes it as is and needs no font.
+ *
  * Usage (from the project root; scripts/brand-kit.sh calls it):
  *   npx tsx scripts/brand-svg.ts [--out out/deliver/brand] [--name plinth] [--font path.woff2]
  * The name defaults to COPY 'wordmark' in src/timeline.ts; the font to the first
@@ -34,10 +39,36 @@ const main = async () => {
   const React = await import('react');
   const { renderToStaticMarkup } = await import('react-dom/server');
   const imp = (p: string) => import(pathToFileURL(join(root, p)).href);
-  const { Mark } = await imp('src/brand/Mark.tsx');
+  const markModule = await imp('src/brand/Mark.tsx');
+  const { Mark } = markModule;
   const tokens = await imp('src/brand/tokens.ts');
   const { C, TYPE } = tokens;
   const timeline = await imp('src/timeline.ts');
+
+  const markInner = (ink: string) =>
+    renderToStaticMarkup(React.createElement(Mark, { size: 100, ink }))
+      .replace(/^<svg[^>]*>/, '')
+      .replace(/<\/svg>$/, '');
+  const svg = (w: number, h: number, body: string) =>
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w.toFixed(2)} ${h.toFixed(2)}" width="${Math.round(w)}" height="${Math.round(h)}">${body}</svg>\n`;
+  mkdirSync(out, { recursive: true });
+
+  // a lockup the brand draws itself (the mark is part of the word): written as is
+  const LockupSvg = markModule.LockupSvg; // ({ ink, dot }) => <svg viewBox=...>
+  if (LockupSvg) {
+    const files: string[] = [];
+    for (const [ground, ink] of [['light', C.ink], ['dark', C.paper]] as const) {
+      writeFileSync(join(out, `mark-${ground}.svg`), svg(100, 100, markInner(ink)));
+      let body = renderToStaticMarkup(React.createElement(LockupSvg, { ink, dot: C.accent }));
+      if (!/^<svg[^>]*viewBox=/.test(body)) die('LockupSvg must render one <svg> with a viewBox');
+      if (/<text[\s>]/.test(body)) die('LockupSvg renders live <text>; outline the name (scripts/outline-text.py) so the file needs no font');
+      if (!/xmlns=/.test(body.slice(0, body.indexOf('>')))) body = body.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+      writeFileSync(join(out, `lockup-${ground}.svg`), body + '\n');
+      files.push(`mark-${ground}.svg`, `lockup-${ground}.svg`);
+    }
+    console.log(`brand-svg: ${files.join(', ')} -> ${out} (LockupSvg from src/brand/Mark.tsx)`);
+    return;
+  }
 
   const name: string = opt('--name') ?? timeline.COPY?.find((c: { id: string }) => c.id === 'wordmark')?.text ?? die('no --name and no COPY entry "wordmark"');
   let font = opt('--font');
@@ -64,13 +95,6 @@ const main = async () => {
   const gap = (L.gap ?? 0.3) * M;
   const pad = 0.25 * M;
 
-  mkdirSync(out, { recursive: true });
-  const markInner = (ink: string) =>
-    renderToStaticMarkup(React.createElement(Mark, { size: 100, ink }))
-      .replace(/^<svg[^>]*>/, '')
-      .replace(/<\/svg>$/, '');
-  const svg = (w: number, h: number, body: string) =>
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w.toFixed(2)} ${h.toFixed(2)}" width="${Math.round(w)}" height="${Math.round(h)}">${body}</svg>\n`;
   const files: string[] = [];
   for (const [ground, ink] of [['light', C.ink], ['dark', C.paper]] as const) {
     writeFileSync(join(out, `mark-${ground}.svg`), svg(100, 100, markInner(ink)));

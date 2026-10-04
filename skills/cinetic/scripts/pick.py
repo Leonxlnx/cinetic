@@ -42,7 +42,11 @@ import random
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_LIBRARY = os.path.normpath(os.path.join(HERE, '..', 'assets', 'library', 'techniques.json'))
+# The skill keeps the library in assets/library/; a film project made by new-film.sh carries its own
+# copy next to this script, in scripts/library/.
+_LIBRARIES = [os.path.normpath(os.path.join(HERE, '..', 'assets', 'library', 'techniques.json')),
+              os.path.join(HERE, 'library', 'techniques.json')]
+DEFAULT_LIBRARY = next((p for p in _LIBRARIES if os.path.isfile(p)), _LIBRARIES[0])
 
 CATEGORIES = ['opening_hook', 'transition', 'camera', 'typography_motion', 'ui_choreography',
               'data_and_numbers', 'product_demo', 'logo_and_end_card', 'color_and_light',
@@ -260,7 +264,7 @@ def library_markdown(entries, path):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0], formatter_class=argparse.RawDescriptionHelpFormatter,
                                  epilog=__doc__.split('\n\n', 1)[1])
-    ap.add_argument('--library', default=DEFAULT_LIBRARY, help='techniques JSON (default: assets/library/techniques.json)')
+    ap.add_argument('--library', default=DEFAULT_LIBRARY, help='techniques JSON (default: assets/library/techniques.json in the skill, scripts/library/techniques.json in a film project)')
     ap.add_argument('--format', choices=FORMATS, help='the film format; filters entries and sets the plan shape')
     ap.add_argument('--energy', choices=ENERGIES, help='weights entries toward this energy')
     ap.add_argument('--seconds', type=float, help='the film length: about one technique per 2.5 s (default per format)')

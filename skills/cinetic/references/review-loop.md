@@ -73,7 +73,7 @@ The scripts cannot know what you meant. A designed flash transition looks like a
 - `forensics.py --cues out/cues.json` also takes two things from the cues:
   - act starts become **seams**, and a 1-2 frame change on a seam is a `seam-pop` (fail) unless it is declared;
   - every cue frame and sound event marks a designed **hit**, so a sudden change within 2 f of one is a warning, not a fail.
-- A static end tail of up to 120 f is always allowed (`--max-end-hold`), because it is where the audio decays.
+- A static end tail of up to 2 s (121 f at 60 fps) is always allowed (`--max-end-hold`), because it is where the audio decays.
 - Do not declare your way to a pass. A freeze that is not on a silence, or a "cut" in the middle of a move, is still a problem.
 
 ## 4. Reading the reports
@@ -95,7 +95,7 @@ bash scripts/grab.sh out/preview.mp4 1739 1740 --out $R/frames       # exact fra
 
 - `sync`: the hit rate, the median and p90 offsets in frames, `misses`, and `stray_sfx_onsets_f`.
 - `apex`: whoosh peaks against their frames.
-- `visual`: picture peaks against sounds; the film's 3 biggest picture changes (`biggest_changes`), with a suggestion for any that has no audio onset, music or effect, within ±3 f (a section change or the hero reveal wants the music's own event; an ordinary cut needs no sound); loud sounds on a still picture.
+- `visual`: picture peaks against sounds; the film's 3 biggest picture changes (`biggest_changes`), with a suggestion for any that has no audio onset, music or effect, within ±3 f (a section change or the hero reveal wants the music's own event; an ordinary cut needs no sound); loud sounds on a still picture; landing sounds (land, pop, tock, bell, snap, hit, drop) that come after the picture has already stopped moving (`late_sounds`): cue them on the readable frame instead.
 - `loudness` (with the target it gated against and where that came from), `clicks`, `head`, `tail`, and `masking`, which is present only with stems.
 
 Run av-audit with `--stems`. Only then is sync gated, because in the full mix the music hides quiet and soft-attack effects. With the full mix, a low hit rate is only a warning.
@@ -274,9 +274,10 @@ Every script threshold in one place. Most can be changed with the flag named in 
 | Stall | d < 0.05 between d > 0.8 on both sides | **fail** | `--stall-max`, `--stall-moving` |
 | Hold, frozen | d < 0.1 for > 48 f, and 90% of those frames change < 16 px by > 24 levels | **fail** | `--hold-mad`, `--max-hold`, `--frozen-px` |
 | Hold, quiet | the same run, but small elements move | warn | |
-| End tail | a static run that reaches the last frame, ≤ 120 f | allowed | `--max-end-hold` |
+| End tail | a static run that reaches the last frame, ≤ 2 s + 1 f | allowed | `--max-end-hold` |
 | Quiet | 60-frame mean d < 0.15, outside holds | warn | `--quiet-window`, `--quiet-mad` |
-| Hook | the first 2 s move less than max(0.5, 0.5× the film's median 2 s window); films over 6 s from frame 0, not loops | warn | declare a designed still read with `--ignore 0-119` |
+| Hook | the first 2 s move less than max(0.5, 0.5× the film's median 2 s window); for films of 6 s or less, the first 1 s under 0.5× the median 1 s; from frame 0, not loops | warn | declare a designed still read with `--ignore 0-119` |
+| Still opening | the first 0.5 s window whose mean d passes max(0.03, 0.3× the median d of the film's moving frames) starts after 1.0 s (warn) or 2.5 s (**fail**); measured on the film's own scale, so a fine-line sting is not held to a product film's energy | warn / **fail** | `--freeze-ok 0-N` for a designed still |
 | Ghost | differs from both neighbours by > 80 while they agree (< 30), on > 2000 px (full-res), nothing moving within 192 px | **fail** | `--ghost-delta`, `--ghost-px` |
 | Border sliver | the outer 1-3 rows or columns differ by > 40 from rows 5-7, on > 25% of the edge, at a constant depth for ≥ 3 frames | **fail** | `--border-delta`, `--border-frac`, `--sliver-frames` |
 | Judder | a 24 f window of a 256 px patch moving 0.08–0.9 px/f in whole-pixel stairs (rests < 0.15 px, ≥ 2 isolated 1 px jumps, phase-correlation response ≥ 0.7) | warn | `--judder-window`, `--judder-resp`, `--track x,y,w,h` |

@@ -36,6 +36,9 @@ Checks (defaults are proven starting points, not dogma):
              the reverse: a loud sound (sfx envelope peak within 6 dB of the loudest) whose
              picture barely changes from -3 to +6 f (MAD < max(0.3, 2x the median over
              +-30 f)): a big hit on a still frame reads as unmotivated                         warn
+             a landing sound (land, pop, tock, bell, snap, hit, drop) whose picture moved
+             clearly in the 60 f before it but has stopped (d < max(0.12, 0.05x that peak))
+             from -8 to +3 f: it lands on nothing; cue it on the readable frame            warn
   loudness   ffmpeg ebur128: integrated at the film's target +-1 LUFS, true peak <= -1.0 dBTP  fail
              (target: --lufs, else master.lufs in the score JSON (--score, default
              audio/score.json), else -14 and -16 both pass)
@@ -497,6 +500,31 @@ def main():
         for r in bad[:15]:
             add('visual', 'warn', int(round(r['f'])), f'{"/".join(r["kinds"])}: the picture peaks {r["peak_offset_f"]:+d} f '
                 'from its sound; move the picture (start at cue-1, pulses peak +2 f), not the sound')
+        # a landing sound after its motion has already finished. An E.out arrival covers 90% of its
+        # travel in about 40% of its duration, so the eye reads it as landed long before the tween's
+        # last frame; a sound on that last frame, or on a bar line the motion already reached, lands
+        # on nothing and the arrival itself goes unsounded.
+        late = []
+        for e in cues['events']:
+            if e['kind'] not in ('land', 'pop', 'tock', 'bell', 'snap', 'hit', 'drop'):
+                continue
+            fi = int(round(e['f']))
+            if fi - 60 < 1 or fi + 4 >= len(d):
+                continue
+            before = d[fi - 60:fi - 8]
+            peak = float(before.max())
+            if peak < max(1.0, 3 * float(np.median(d[1:]))):
+                continue  # no clear motion before it: a cut, a pulse or a held frame is judged above
+            if float(d[fi - 8:fi + 4].max()) >= max(0.12, 0.05 * peak):
+                continue  # still moving, or something changes on the sound itself
+            moving = np.nonzero(d[fi - 60:fi] >= 0.25 * peak)[0]
+            late.append(dict(f=round(float(e['f']), 1), kind=e['kind'], id=e.get('id', ''),
+                             stopped_f=int(fi - (fi - 60 + int(moving[-1])))))
+        for r in late[:8]:
+            add('visual', 'warn', int(round(r['f'])), f'{r["kind"]} {r["id"]}: the picture stopped moving about '
+                f'{r["stopped_f"]} f before this sound, so it lands on nothing and the arrival goes unsounded. '
+                'Cue a landing where the eye reads it: the contact frame of a spring or E.contact, settleOf() '
+                '(about the 97% frame) of an E.out, never the tween\'s last frame')
         # Not every picture change gets a sound: most cuts are carried by the music, and continuous
         # motion stays silent. Only the few biggest changes of the film (the hero reveal, a section
         # change, a camera-scale move) should meet an audio event, music or effect: an onset in the
@@ -544,7 +572,7 @@ def main():
                 f'still picture (MAD {r["picture_mad"]} from -3 to +6 f): give it a visible cause (a pulse, a landing, '
                 'a push accent) or make it quieter')
         clear_rows = [r for r in vrows if r['clear']]
-        visual = dict(still_hits=still_hits[:12], checked=len(vrows), clear_peaks=len(clear_rows),
+        visual = dict(still_hits=still_hits[:12], late_sounds=late[:12], checked=len(vrows), clear_peaks=len(clear_rows),
                       aligned=sum(1 for r in clear_rows if r['ok']),
                       median_peak_offset_f=float(np.median([r['peak_offset_f'] for r in clear_rows])) if clear_rows else None,
                       misaligned=bad[:40], biggest_changes=[dict(frame=p, prominence=round(pr, 2)) for p, pr in biggest],

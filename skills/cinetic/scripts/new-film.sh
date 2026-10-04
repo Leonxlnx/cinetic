@@ -140,6 +140,9 @@ fi
 mkdir -p "$DIR/scripts"
 (cd "$SKILL/scripts" && tar --exclude=__pycache__ --exclude='*.pyc' --exclude=./test -cf - .) | (cd "$DIR/scripts" && tar -xf -)
 chmod +x "$DIR"/scripts/*.sh 2>/dev/null || true
+# pick.py draws from the technique library; the project keeps a copy so it runs from here too
+LIB="$SKILL/assets/library/techniques.json"; [[ -f "$LIB" ]] || LIB="$SKILL/scripts/library/techniques.json"
+if [[ -f "$LIB" ]]; then mkdir -p "$DIR/scripts/library" && cp "$LIB" "$DIR/scripts/library/"; fi
 
 if [[ -n "$LINK" ]]; then
   [[ -d "$LINK" ]] || die "--link-modules: $LINK is not a directory"
