@@ -205,7 +205,7 @@ Read `references/finishing.md` now.
   - A 9:16 or 1:1 variant with identical timing reuses the master's samples (`--samples-from`); one whose fastest motion is ≤ 12 px/f renders sharp.
   - Don't edit `src/` while a render runs: `render.sh` renders from a bundle frozen at its start and warns if the source changed meanwhile.
   - Stop a render by its own PID, never with a `pkill -f` pattern: on a shared machine the pattern also kills other people's renders.
-- **Speed ceiling.** Moves over about 80 px/f are listed as too fast for clean blur, and `render.sh --blur` stops before the sub-frame pass while any are left: redesign them rather than adding samples (§6), or waive a frame-filling edge you checked at full size with `--accept-fast A-B`.
+- **Speed ceiling.** Moves over about 80 px/f are listed as too fast for clean blur, and `render.sh --blur` stops before the sub-frame pass while any are left: redesign them rather than adding samples (§6), or waive a frame-filling edge you checked at full size with `--accept-fast A-B`. Every hard cut is an act boundary: a cut inside an act blends its two shots into one double-exposed frame, so the render also stops on one (`--accept-cut A-B` for a flood or flash you checked).
 - **Gate.** `render.sh` runs both checks below and exits 1 if either fails. Run them again on any file you deliver:
   - `python3 scripts/probe.py out/film.mp4 --spec 1920x1080@60 --dur <s>` passes: size, fps, duration ±1 f, yuv420p, BT.709 tags, AAC at 48 kHz;
   - `python3 scripts/check-sync.py out/film.mp4 public/audio/soundtrack.wav` reports a lag of ≤ 48 samples and true peak ≤ −1 dBTP after decoding.

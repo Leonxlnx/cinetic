@@ -59,6 +59,11 @@
 #                       filling edges (a wipe, a flood, an iris, a zoom-through) checked at full size.
 #                       Without it, moves listed as too fast for clean blur stop the render before the
 #                       sub-frame pass: redesign them (a cut on the beat, a match cut, a shorter move)
+#   --accept-cut A-B    (--blur) frames A..B may hold an unexplained full-frame change away from an act
+#                       boundary (repeatable): a flood, a flash or a zoom-through you checked at full
+#                       size. Without it, such a change stops the render before the sub-frame pass,
+#                       because if it is a hard cut its sub-frames blend the two shots into one
+#                       double-exposed frame: make the cut an ACT boundary in src/timeline.ts instead
 #   --measure "ARGS"    extra measure-speed.py arguments, e.g. --measure "--max 64 --step 2"
 #   --spec WxH@fps      extra expectation for probe.py (default: the composition's own size/fps)
 #   --no-check          skip check-sync.py and probe.py
@@ -78,7 +83,7 @@ step() { echo "[render $(( $(date +%s) - T0 ))s] $*" >&2; }
 
 COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0
 ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
-SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0; ACCEPT_FAST=""
+SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0; ACCEPT_FAST=""; ACCEPT_CUT=""
 POS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -90,6 +95,7 @@ while [[ $# -gt 0 ]]; do
     --no-audio) NOAUDIO=1 ;;
     --loop) LOOP=1 ;;
     --accept-fast) ACCEPT_FAST="$ACCEPT_FAST ${2:?}"; shift ;;
+    --accept-cut) ACCEPT_CUT="$ACCEPT_CUT ${2:?}"; shift ;;
     --audio-offset) AOFF=${2:?}; shift ;;
     --build-audio) BUILD_AUDIO=1 ;;
     --entry) ENTRY=${2:?}; shift ;;
@@ -222,10 +228,12 @@ PY
     # The estimate, measured on the starter (4 CPUs): a sub-frame renders in about the time of a
     # sharp frame, and the float accumulation costs about 0.75 of that again per sub-frame.
     FASTRC=0
-    python3 - "$SAMPLES" "$FROM" "$TO" "$((SB - SA + 1))" "$ACCEPT_FAST" <<'PY' >&2 || FASTRC=$?
+    python3 - "$SAMPLES" "$FROM" "$TO" "$((SB - SA + 1))" "$ACCEPT_FAST" "$ACCEPT_CUT" <<'PY' >&2 || FASTRC=$?
 import json, sys
 d = json.load(open(sys.argv[1])); a, b, sub = int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
-acc = [tuple(int(v) for v in r.split('-')) for r in sys.argv[5].split()]
+rng_of = lambda r: tuple(int(v) for v in (r.split('-') if '-' in r else (r, r)))
+acc = [rng_of(r) for r in sys.argv[5].split()]
+acc_cut = [rng_of(r) for r in sys.argv[6].split()]
 n = b - a + 1
 spf = d.get('sharp_s_per_frame')
 est = f', about {max(1, round(sub * spf * 1.75 / 60))} min at {spf:.3f} s per sharp frame' if spf else ''
@@ -240,8 +248,19 @@ if left:
           f'{d.get("peak")} px/f): blur will show stepped copies there. Redesign those moves (a cut on the beat, a match '
           f'cut, a mask wipe, a shorter distance), or, for a frame-filling edge you checked at full size, pass --accept-fast A-B.')
     sys.exit(3)
+# unexplained full-frame changes inside an act (hard cuts measured as such already render sharp)
+hard = set(d.get('cuts', []))
+odd = [c for c in d.get('cuts_inside_acts', []) if a <= c <= b and c not in hard
+       and not any(p <= c <= q for p, q in acc + acc_cut)]
+if odd:
+    print(f'render.sh: frames {", ".join(map(str, odd[:8]))} change in a way the flow cannot explain, away from any act '
+          'boundary. If one is a hard cut, its sub-frames will blend the two shots into a double-exposed frame: make it '
+          'an ACT boundary in src/timeline.ts. If it is a flood, a flash or a zoom-through you checked at full size, '
+          'pass --accept-cut A-B.')
+    sys.exit(4)
 PY
     [[ $FASTRC -eq 3 ]] && die "stopped before the sub-frame pass: moves too fast for clean blur (see above)"
+    [[ $FASTRC -eq 4 ]] && die "stopped before the sub-frame pass: a possible cut inside an act (see above)"
     step "rendering $SUB sub-frames $SA-$SB ($((SB - SA + 1)) sub-frames for $N frames)"
     npx remotion render "$B" "$SUB" "$WORK/sub.mp4" --props="$(cd "$(dirname "$SAMPLES")" && pwd)/$(basename "$SAMPLES")" \
       --frames="$SA-$SB" --crf=6 --x264-preset=veryfast --pixel-format=yuv444p --color-space=default ${RARGS[@]+"${RARGS[@]}"} \
