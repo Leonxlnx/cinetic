@@ -22,9 +22,9 @@ optional floors over known fast ranges and an optional analytic speed track expo
 timeline (max of both wins).
 
 Cuts. A pair of frames where most pixels change (--cut-frac) and the flow cannot explain the change
-(a hard cut, a flash, a full-frame luminance flip) contributes no speed and is listed in `cuts`:
-blur samples never help there, and sub-frames only stay on one side of a cut when it is an act
-boundary (src/blur.ts). A whip pan also changes most pixels, but the flow explains it, so it keeps
+(a hard cut, a flash, a full-frame luminance flip) contributes no speed, is listed in `cuts` and
+renders with one sample, so its frame never averages the two shots into a double exposure (at an act
+boundary src/blur.ts also clamps the samples to the act). A whip pan also changes most pixels, but the flow explains it, so it keeps
 its speed. Smaller unexplained changes are listed as suspect_cuts; with --cues, the ones away from
 act boundaries are flagged.
 
@@ -389,6 +389,16 @@ def main():
                 shutters[i] = round(max(a.min_shutter, 360.0 * a.step * g / s), 1)
     too_fast = [i for i, s in enumerate(speed) if s > a.too_fast]
 
+    # A hard cut renders sharp. Its frame's shutter would otherwise reach back into the outgoing
+    # shot (the temporal max filter gives it its neighbours' speed) and average the two shots into
+    # one double-exposed frame. At an act boundary src/blur.ts already clamps the samples; inside an
+    # act only this keeps the cut clean.
+    for c in cuts:
+        if 0 <= c < n_frames:
+            groups[c] = 1
+            shutters[c] = a.shutter
+    short = [i for i in short if i not in set(cuts)]
+
     groups = [1] * a.offset + groups
     sub = int(sum(groups[a.offset:]))
     out = {'groups': groups, 'speed': [0.0] * a.offset + [round(float(s), 1) for s in speed], 'offset': a.offset,
@@ -424,7 +434,8 @@ def main():
             + (' ...' if len(out['cuts']) > 12 else ''))
     if out.get('cuts_inside_acts'):
         log(f'  check frames {out["cuts_inside_acts"][:12]}: large changes the flow cannot explain, away from act '
-            'boundaries. If any is a hard cut, make it an ACT boundary so sub-frames never straddle it (floods and flashes are fine).')
+            'boundaries. Measured hard cuts render with one sample; any other that is a hard cut must become an ACT '
+            'boundary, or its sub-frames blend the two shots (floods, flashes and zoom-throughs are fine).')
     if budget and capped:
         worst = float(max(speed[i] for i in capped))
         log(f'  budget {a.budget:g}x: capped {len(capped)} frames at {cap} samples ({budget["uncapped_subframes"]} -> {sub} '
