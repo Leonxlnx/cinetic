@@ -63,9 +63,10 @@ export type Copy = {
   in: number; // first frame any of it is visible
   resolved: number; // first frame it is fully readable
   out: number; // first frame it starts to leave (TOTAL if it stays)
+  kind?: 'copy' | 'ui'; // 'ui': a string the product shows (a typed command, code, a URL, an app label); not budgeted
 };
 
-// Every on-screen word, for the word budget and the hold check (resolved -> out >= 36 f + 6 f/word at 60 fps).
+// Every on-screen word, for the word budget (kind: 'ui' entries are counted apart) and the hold check (resolved -> out >= 36 f + 6 f/word at 60 fps).
 export const COPY: Copy[] = [
   { id: 'statement', text: 'Built on the beat', in: 0, resolved: CUE.lock, out: CUE.exit },
   // cinetic:placeholder - the demo's invented name: use the product's, then delete this line.

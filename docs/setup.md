@@ -288,7 +288,7 @@ cd films/first-film
 Now run the gates and build the sound:
 
 ```bash
-npm run check    # 3 s. Fails on purpose: "lint-film: 24 files, 5 errors, 0 warnings -> FAIL"
+npm run check    # 3-8 s. Fails on purpose: "lint-film: 30 files, 5 errors, 0 warnings -> FAIL"
 npm run cues     # 1 s. "wrote out/cues.json: 20 events (...), 16 cues, 9.00 s at 60 fps, 120 BPM"
 npm run audio    # 6 s. "PASS  public/audio/soundtrack.wav  9.0s  -14.0 LUFS  TP -2.27 dBTP ..."
 ```
