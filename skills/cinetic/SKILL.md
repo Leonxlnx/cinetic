@@ -80,9 +80,7 @@ Every step writes a file, and every gate is a check you actually run. Work inlin
 ### Step 0: Intake → `BRIEF.md`
 - If the brief already states the product, the message and the length, infer everything else and write your assumptions down.
 - If it doesn't, ask at most 3 questions: the product in one line, the format and length, and where the film will be shown. Take everything else from §1.
-- Choose the engine:
-  - Remotion by default.
-  - HyperFrames if the user already has a HyperFrames project, wants HTML/GSAP, or needs `--batch` renders driven by variables.
+- Choose the engine: Remotion by default; HyperFrames if the user already has a HyperFrames project, wants HTML/GSAP, or needs `--batch` renders driven by variables.
 - Copy the hard bans (above) into `BRIEF.md`, plus any brand-supplied exceptions. Critics are later prompted with this file word for word, so it doubles as the QA contract.
 - Scaffold the project: `bash <skill>/scripts/new-film.sh films/<name> --fps 60 --bpm 120 --size 1920x1080 [--engine hyperframes]`. Pass `--link-modules <dir>/node_modules` to reuse an existing install instead of running `npm install`.
 - **Gate:** `BRIEF.md` has a spec line, for example `1920x1080@60, 30s, 120BPM, audio: synthesized`.
@@ -98,9 +96,11 @@ Read `references/concept-and-story.md` now.
   - (b) the viewer's pain made visible;
   - (c) a formal device: a relay object, a bookend, one unbroken camera move, or a container that becomes the product.
 - Throw out any concept whose props could appear in another product's film. It isn't yours.
+- **Draw the techniques; don't choose them.** Run `python3 scripts/pick.py --format <launch|feature|loop|sting|walkthrough|vertical> --energy <calm|medium|high> --json out/qa/picks.json`. It draws a plan (a hook, transitions, camera, type, UI, end card, colour, pacing…) from the measured library in `assets/library/techniques.json`, weighted toward proven moves and the film's energy, and prints each recipe with default timing. Choosing by hand converges on the same fade-up, push-in and end card in every film; the draw is how two films stop looking alike. Build every pick, retold in this concept's objects and device. Reroll a pick at most twice (`--category <cat> --exclude <id>`) with a written reason, and pass `--brand-supplied <look>` when the brand owns a banned look. Look entries up in `references/technique-library.md`; measured pacing, easing and text-timing norms are in `references/craft-rules.md`.
 - Fill in `assets/TREATMENT.md` for the concept you chose:
   - a logline;
   - the arc: hook (inside the problem, felt by 1 s) → turn → proof (1–2 capabilities) → promise → lockup;
+  - the drawn techniques with the seed line, each placed in a beat (§3b of the template);
   - the device path, shot by shot;
   - a beat sheet with the columns bar | time | picture | copy | sound;
   - the full copy with its word count;
@@ -113,7 +113,7 @@ Read `references/concept-and-story.md` now.
   - the specificity test passes, with its answer written down;
   - the word count is inside the §1 budget;
   - no line is longer than 5 words, and no shot has more than 2 lines;
-  - the device appears in every beat row.
+  - the device appears in every beat row, and every drawn technique has its place.
 
 ### Step 2: Brand and style frames → `src/brand/`
 Read `references/brand-and-color.md` and the type section of `references/copy-and-type.md`.
@@ -221,7 +221,7 @@ Run §8 on previews. Launch films and walkthroughs get at least 2 rounds. For st
 
 ### Scaled-down path (stings, loops, short feature clips)
 Small jobs should stay fast. The laws, the grid, the lint and one review round still apply. The rest shrinks:
-1. Write a one-page treatment in `TREATMENT.md`: logline, device, a bar table of 2–8 rows, and the copy. It replaces Steps 1–3 as separate passes. Still write `timeline.ts` and run `grid-check.ts`.
+1. Write a one-page treatment in `TREATMENT.md`: logline, device, the `pick.py` draw for the format, a bar table of 2–8 rows, and the copy. It replaces Steps 1–3 as separate passes. Still write `timeline.ts` and run `grid-check.ts`.
 2. For style frames, the mark at 16 px and one hero still are enough.
 3. Build the whole piece as one act, or two.
 4. Sound is optional for a loop. A sting needs one hit tuned to the key, plus a tail that decays to digital zero.
@@ -258,10 +258,7 @@ These rules ban the tells of generated work, not personality. Two films made wit
 - Pick one accent from an allowed hue family (red, green, teal, blue, yellow) for a stated reason. Everything in the Hard bans is out: orange, amber, beige and cream, neon, purple, violet or indigo, multi-hue gradients and glassmorphism.
 - Restraint is not the same as colourless. The accent visibly carries the key beats (the product's action and the payoff), and the stage and neutrals have a tone from the brand's world. Check a mid-film frame at thumbnail size: if no brand colour shows, the film has no identity.
 - Tint the neutrals cool or keep them neutral, never warm or beige, and keep ink as ink. New things arrive in the accent and relax to neutral over 10–30 f, which is how colour says "just happened".
-- No glow, halo or bloom.
-  - Shadows are `0 20–40px 60–120px rgba(0,0,0,.12–.22)`.
-  - Dark surfaces get a 1 px top hairline at 8–12% white.
-  - Gradients ship as dithered PNGs (`scripts/dither-gradient.py`), because CSS gradients band at 8 bits.
+- No glow, halo or bloom. Shadows are `0 20–40px 60–120px rgba(0,0,0,.12–.22)`, dark surfaces get a 1 px top hairline at 8–12% white, and gradients ship as dithered PNGs (`scripts/dither-gradient.py`), because CSS gradients band at 8 bits.
 
 **Layout**
 - Avoid "text left, UI card right" and avoid centred floating cards. Show the product full-bleed, anchor the type to an eye line or the lower third, and give each shot one focal action.
@@ -275,12 +272,7 @@ These rules ban the tells of generated work, not personality. Two films made wit
 - Every element must name its job (reveal, route, validate, emphasise) or be cut. That rules out particles, bokeh, starfields and ghost text.
 - Grain is either absent or global at 1.5–2%, keyed to the output frame.
 
-**Product truth** (`references/product-ui.md`)
-- Use named, specific, consistent data.
-- Counters count on each visible event.
-- The product only replans the future.
-- There is no cursor once the product acts on its own.
-- Any paused frame still makes sense.
+**Product truth** (`references/product-ui.md`): named, specific, consistent data; counters count on each visible event; the product only replans the future; no cursor once the product acts on its own; any paused frame still makes sense.
 
 **Transitions** (`references/transitions.md`)
 - Use 6–8 types per film, each at most twice, plus one signature move taken from the mark and used 3 times (open, middle, close).
@@ -444,10 +436,7 @@ The full procedure, the critic prompts, the rubric anchors and the table of thre
 
 **Critic prompts** say what changed, so it gets checked hardest. They also say "Do not re-report fixed issues" and "Don't propose adding text", and they batch images into sheets, because images are expensive in context. When one act stays weak after two rounds, run the design-off in `review-loop.md`.
 
-**Severity**
-- **P0:** visible on a key beat (hook, payoff, logo), or it breaks the story.
-- **P1:** noticeable on a normal viewing.
-- **P2:** visible only when paused.
+**Severity:** P0 is visible on a key beat (hook, payoff, logo) or breaks the story; P1 is noticeable on a normal viewing; P2 is visible only when paused.
 
 **Ship gate**
 - The 11-dimension rubric: every dimension ≥ 3, Finish and Sync = 5, mean ≥ 4.2.
@@ -465,6 +454,8 @@ Read each file when its step comes up. Don't read them all at once.
 | Before the first film | `references/worked-example.md` | Tessel from idea to master, with 15 mistakes and their fixes |
 | Step 1 | `references/concept-and-story.md` | concept lenses, ownership and deletion tests, device design, arcs, end cards |
 | Step 1 | `assets/TREATMENT.md` | the treatment template |
+| Step 1, after the draw | `references/technique-library.md` | every technique in the library: recipe, timing at 60 fps, when to use and avoid it |
+| Steps 1, 3–4 and review | `references/craft-rules.md` | measured norms for pacing, smoothness, text timing, transitions, camera, UI and colour over time |
 | Steps 1–2 | `references/copy-and-type.md` | copy budget, callback copy, loading a family, type scale, kinetic type, safe reveals |
 | Step 2 | `references/brand-and-color.md` | personality → choices, naming, the mark sheet, lockup proportions, tokens, accent, stages |
 | Step 2 and review | `references/taste-and-slop.md` | every cheap-looking tell, with its fix |
@@ -485,6 +476,7 @@ Read each file when its step comes up. Don't read them all at once.
 | Need | Tool |
 |---|---|
 | a project from the starter | `scripts/new-film.sh` |
+| a random, weighted draw of techniques for the film; one entry in full | `scripts/pick.py` (`--show <id>`, `--list`) |
 | static bans and hard bans, a leftover placeholder brand | `scripts/lint-film.mjs` |
 | grid, holds, gaps, word budget; text in the safe zone (feed presets: `--safe feed9x16`), text covered by movers, readable text faster than 20 px/f (`--cues`) | `scripts/grid-check.ts`; `scripts/layout-audit.sh` |
 | a font family, vendored into the project without `npm install` | `scripts/add-font.mjs` (or `new-film.sh --font`) |

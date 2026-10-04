@@ -4,7 +4,7 @@
 The treatment template: copy this file to the project root as TREATMENT.md at Step 1, fill every <…>,
 and delete the worked example at the bottom. Method: references/concept-and-story.md.
 Copy rules: references/copy-and-type.md. Numbers are defaults, not dogma.
-For a loop or a sting (the one-page treatment), fill sections 3, 5 (2–8 rows), 6 and 7, and tick section 8.
+For a loop or a sting (the one-page treatment), fill sections 3, 3b, 5 (2–8 rows), 6 and 7, and tick section 8.
 -->
 
 **Spec:** `<W>x<H>@<fps>, <length>s, <BPM>BPM, audio: <synthesized | none>` · **Format:** <launch film | product video | feature loop | logo sting | UI walkthrough> · **Engine:** <Remotion | HyperFrames>
@@ -45,6 +45,15 @@ For a loop or a sting (the one-page treatment), fill sections 3, 5 (2–8 rows),
 - **Easing characters (about 3):** <tokens from src/lib/anim.ts, each with its job>
 - **Sonic signature:** <one tuned sound that opens and closes the film>
 
+## 3b. Drawn techniques
+`<!-- pick.py --seed <n> --format <…> --energy <…> -->` (paste the seed line `scripts/pick.py` printed)
+
+| Pick (id) | Category | Beat # (or "whole film") | How it is adapted to this concept and device |
+|---|---|---|---|
+| <id> | <category> | <#> | <the recipe, retold in this film's objects> |
+
+**Rerolls (at most 2 per pick):** <id → new id: why the first draw could not serve this concept> or "none"
+
 ## 4. Arc and device path
 - **Arc:** hook <bars> → problem <bars> → turn <bar> → proof <bars> → promise <bars> → lockup <bars, incl. tail>
 - **Device path:** <link> → <link> → … → the mark (name each seam: relay, morph, flood, drop, …)
@@ -71,6 +80,7 @@ Checks: ≤ 5 words per line · ≤ 2 lines per shot · no stock phrasing · eve
 - [ ] the chosen concept passes ownership, deletion and specificity, with reasons written in §2; the proof shows the non-obvious behaviour
 - [ ] word total within budget; ≤ 5 words per line; ≤ 2 lines per shot
 - [ ] the device appears in every beat row, and its last link is the mark
+- [ ] every drawn technique has its place in §3b (a beat row, or the whole film for colour, texture and pacing picks), and every reroll has a written reason
 - [ ] the final frame contains the mark and the name
 - [ ] nothing here breaks a hard ban (`SKILL.md`): no eyebrow, stacked tagline, "Introducing…" or filler text; a sans; an allowed accent on a neutral or cool stage; no glow, glass, emoji or effects; overshoot only on ≤ 2 true landings. Brand-supplied exceptions are listed in `BRIEF.md`
 
