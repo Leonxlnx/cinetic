@@ -44,7 +44,7 @@ Useful flags: `--loop` for seamless loops (lossless PNG intermediates, so the se
 
 Anything that moves faster than about 12 px per frame at 60 fps strobes without blur: the eye sees discrete copies instead of motion. Launch films almost always have such moments (whips, floods, flying cards, drops). `measure-speed.py` prints the peak speed, so you do not have to guess.
 
-Blur has a ceiling too. Past about 60–80 px/f a 240° shutter smears an element into a streak 40–50+ px long, and the samples that fit in one frame show as stepped copies along it: the "artificial smear" a viewer reads as a glitch. Keep any one element under that speed and redesign faster moves (a cut on the beat, a match cut, a mask wipe, a shorter distance; `references/transitions.md`). `measure-speed.py` lists the frames over 80 px/f as `too_fast`, and `render.sh` repeats the warning before it spends the time.
+Blur has a ceiling too. Past about 60–80 px/f a 240° shutter smears an element into a streak 40–50+ px long, and the samples that fit in one frame show as stepped copies along it: the "artificial smear" a viewer reads as a glitch. Keep any one element under that speed and redesign faster moves (a cut on the beat, a match cut, a mask wipe, a shorter distance; `references/transitions.md`). `measure-speed.py` lists the frames over 80 px/f as `too_fast`, and `render.sh --blur` stops before the sub-frame pass while any are left. A frame-filling edge (a wipe, a flood, an iris, a zoom-through) may run 150–300 px/f for a few frames without stepped copies; check it at full size, then waive it with `--accept-fast A-B`.
 
 ### Why not in the browser
 

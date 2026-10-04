@@ -55,6 +55,10 @@
 #   --budget X          cap the blur pass at X times the frame count (e.g. 6): the fastest frames get
 #                       fewer samples and a shorter shutter; the capped frames are listed
 #   --floor A-B:N       minimum samples over film frames A..B (repeatable; passed to measure-speed.py)
+#   --accept-fast A-B   (--blur) frames A..B may exceed the speed ceiling (repeatable): only for frame-
+#                       filling edges (a wipe, a flood, an iris, a zoom-through) checked at full size.
+#                       Without it, moves listed as too fast for clean blur stop the render before the
+#                       sub-frame pass: redesign them (a cut on the beat, a match cut, a shorter move)
 #   --measure "ARGS"    extra measure-speed.py arguments, e.g. --measure "--max 64 --step 2"
 #   --spec WxH@fps      extra expectation for probe.py (default: the composition's own size/fps)
 #   --no-check          skip check-sync.py and probe.py
@@ -74,7 +78,7 @@ step() { echo "[render $(( $(date +%s) - T0 ))s] $*" >&2; }
 
 COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0
 ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
-SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0
+SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0; ACCEPT_FAST=""
 POS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -85,6 +89,7 @@ while [[ $# -gt 0 ]]; do
     --audio) AUDIO=${2:?--audio needs a file}; shift ;;
     --no-audio) NOAUDIO=1 ;;
     --loop) LOOP=1 ;;
+    --accept-fast) ACCEPT_FAST="$ACCEPT_FAST ${2:?}"; shift ;;
     --audio-offset) AOFF=${2:?}; shift ;;
     --build-audio) BUILD_AUDIO=1 ;;
     --entry) ENTRY=${2:?}; shift ;;
@@ -216,21 +221,27 @@ PY
 )"
     # The estimate, measured on the starter (4 CPUs): a sub-frame renders in about the time of a
     # sharp frame, and the float accumulation costs about 0.75 of that again per sub-frame.
-    python3 - "$SAMPLES" "$FROM" "$TO" "$((SB - SA + 1))" <<'PY' >&2 || true
+    FASTRC=0
+    python3 - "$SAMPLES" "$FROM" "$TO" "$((SB - SA + 1))" "$ACCEPT_FAST" <<'PY' >&2 || FASTRC=$?
 import json, sys
 d = json.load(open(sys.argv[1])); a, b, sub = int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
+acc = [tuple(int(v) for v in r.split('-')) for r in sys.argv[5].split()]
 n = b - a + 1
 spf = d.get('sharp_s_per_frame')
 est = f', about {max(1, round(sub * spf * 1.75 / 60))} min at {spf:.3f} s per sharp frame' if spf else ''
 print(f'render.sh: blur pass: {n} frames -> {sub} sub-frames ({sub / n:.1f}x){est}')
 tf = [r for r in d.get('too_fast', []) if r[1] >= a and r[0] <= b]
-if tf:
-    rng = ', '.join(f'{x}-{y}' for x, y in tf[:6])
-    print(f'render.sh: WARNING: too fast for clean blur at frames {rng} (> {d.get("too_fast_px_f", 80):g} px/f, peak '
-          f'{d.get("peak")} px/f): redesign those moves (a cut on the beat, a match cut, a mask wipe, a shorter distance)')
+left = [(x, y) for x, y in tf if not any(p <= x and y <= q for p, q in acc)]
 if sub / n > 8 and not d.get('budget'):
     print('render.sh: note: over 8x; pass --budget 6 to cap it, or slow the fastest moves')
+if left:
+    rng = ', '.join(f'{x}-{y}' for x, y in left[:6])
+    print(f'render.sh: too fast for clean blur at frames {rng} (> {d.get("too_fast_px_f", 80):g} px/f, peak '
+          f'{d.get("peak")} px/f): blur will show stepped copies there. Redesign those moves (a cut on the beat, a match '
+          f'cut, a mask wipe, a shorter distance), or, for a frame-filling edge you checked at full size, pass --accept-fast A-B.')
+    sys.exit(3)
 PY
+    [[ $FASTRC -eq 3 ]] && die "stopped before the sub-frame pass: moves too fast for clean blur (see above)"
     step "rendering $SUB sub-frames $SA-$SB ($((SB - SA + 1)) sub-frames for $N frames)"
     npx remotion render "$B" "$SUB" "$WORK/sub.mp4" --props="$(cd "$(dirname "$SAMPLES")" && pwd)/$(basename "$SAMPLES")" \
       --frames="$SA-$SB" --crf=6 --x264-preset=veryfast --pixel-format=yuv444p --color-space=default ${RARGS[@]+"${RARGS[@]}"} \
