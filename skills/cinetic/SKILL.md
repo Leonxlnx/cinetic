@@ -198,7 +198,7 @@ Read `references/sound.md` now.
 ### Step 6: Render and finish → `out/film.mp4`
 Read `references/finishing.md` now.
 - **Preview:** `bash scripts/render.sh Film out/preview.mp4 --preview --audio public/audio/soundtrack.wav`. Remotion renders the picture muted and BT.709-tagged, and ffmpeg muxes the audio. Iterate and critique on previews only.
-- **Master:** if anything moves faster than 12 px/f (true of almost every launch film), `bash scripts/render.sh Film out/film.mp4 --blur`: sharp render → speed measurement → `FilmSub` sub-frame render → float accumulation → mux → sync check. Otherwise, with no flag, `render.sh` renders a sharp master at CRF 14. Silent deliverables such as loops take `--no-audio`.
+- **Master:** if anything moves faster than 12 px/f (true of almost every launch film), `bash scripts/render.sh Film out/film.mp4 --blur`: sharp render → speed measurement → `FilmSub` sub-frame render → float accumulation → mux → sync check. Otherwise, with no flag, `render.sh` renders a sharp master at CRF 14. Loops take `--loop` (lossless PNG intermediates, so the seam survives the encode) and, when silent, `--no-audio`.
 - **Blur costs render time, so spend it once.**
   - Render the blurred master once, at the end, after the last critique round. It prints the sub-frame multiple and an estimate before it starts; on 4 CPUs a 10 s film at 60 fps and 6× takes about 7 minutes on simple frames and 10–15 on dense UI. `--budget 6` caps it.
   - A late fix re-renders only the changed act's range (`--frames A-B`) and splices it, rather than re-blurring the film.
@@ -226,7 +226,7 @@ Small jobs should stay fast. The laws, the grid, the lint and one review round s
 3. Build the whole piece as one act, or two.
 4. Sound is optional for a loop. A sting needs one hit tuned to the key, plus a tail that decays to digital zero.
 5. Render a sharp master unless something passes 12 px/f. Then run one round with the director and forensics lenses.
-6. For a loop, the last frame must flow into frame 0: the seam's frame difference must be at most max(0.4, 1.5× the median step at the ends) (`forensics.py --loop` checks it, and so does `deliver.sh --loop`). Build the loop as a cycle rather than as enter, hold and exit.
+6. For a loop, the last frame must flow into frame 0: the seam's frame difference must be at most max(0.4, 1.5× the median step at the ends) (`forensics.py --loop` checks it, and so does `deliver.sh --loop`); render it with `render.sh --loop`. Build the loop as a cycle rather than as enter, hold and exit.
 
 ## 4. Taste rules that matter most
 

@@ -156,7 +156,7 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 - The muted read works: the director lens watches the sheet with no audio and states the idea.
 - A paused frame names the product or the feature (a UI label or the one line).
 
-**Deliver.** Render with `bash scripts/render.sh Film out/loop.mp4 --no-audio` (or with the folded WAV), then run `bash scripts/deliver.sh out/loop.mp4 --loop --gif --webm`.
+**Deliver.** Render with `bash scripts/render.sh Film out/loop.mp4 --loop --no-audio` (or with the folded WAV instead of `--no-audio`), then run `bash scripts/deliver.sh out/loop.mp4 --loop --gif --webm`. `--loop` renders lossless PNG intermediates: with JPEG frames the encoder smooths the noise between neighbours but not across the seam, which then measures about 1.7× its neighbours. `deliver.sh --loop` encodes the WebM at CRF 26 for the same reason.
 - **MP4 and WebM** for `<video autoplay muted loop playsinline>`. Default budget: 4 MB or less per 10 s at 1080p.
 - **GIF** only when asked. Use 25 fps (or 50): GIF frame delays are whole hundredths of a second, so those play at the true rate while 30 fps plays 11% fast. 960 px wide or narrower, a palettegen palette and 8 MB or less (`deliver.sh --gif` does all of it). If the size is over budget, reduce the width before the frame rate.
 

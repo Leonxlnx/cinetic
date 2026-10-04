@@ -29,7 +29,7 @@ Remotion always renders the picture muted; ffmpeg attaches the sound; two script
 | One act | `... --blur --frames 600-839` | the same, on a film-frame range; audio from the same range | per act |
 | Chunked | `bash scripts/render-chunks.sh Film out/film.mp4 4` | N browsers at concurrency 1, joined with `-c copy` | often faster on GPU-heavy scenes |
 
-Useful flags: `--no-audio` for silent loops, `--audio FILE`, `--build-audio` (reruns `scripts/export-cues.ts` and `scripts/audio/score.py` first, stems included), `--concurrency N`, `--keep` (keeps `sharp.mp4`, `sub.mp4` and `picture.mp4` for inspection), and `-- <args>` to pass anything through to every `remotion render` call (for example `-- --image-format=png`). `render.sh` warns when a file in `src/` is newer than the soundtrack, because a retimed picture with an old WAV is the most common sync bug.
+Useful flags: `--loop` for seamless loops (lossless PNG intermediates, so the seam survives the encode), `--no-audio` for silent loops, `--audio FILE`, `--build-audio` (reruns `scripts/export-cues.ts` and `scripts/audio/score.py` first, stems included), `--concurrency N`, `--keep` (keeps `sharp.mp4`, `sub.mp4` and `picture.mp4` for inspection), and `-- <args>` to pass anything through to every `remotion render` call (for example `-- --image-format=png`). `render.sh` warns when a file in `src/` is newer than the soundtrack, because a retimed picture with an old WAV is the most common sync bug.
 
 **Spend the blur once.** A blurred master costs tens of minutes; a preview costs a few.
 - **Iterate on `--preview` renders.** Every critique round reviews a preview (`references/review-loop.md` §1).

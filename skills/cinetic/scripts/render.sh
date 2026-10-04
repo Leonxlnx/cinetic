@@ -34,6 +34,10 @@
 # Options:
 #   --audio FILE        soundtrack (default public/audio/soundtrack.wav)
 #   --no-audio          silent deliverable (loops): no mux, no sync check, probe expects no audio
+#   --loop              a seamless loop: every pass renders lossless PNG intermediates, because JPEG
+#                       noise is smoothed by x264 between neighbours but not between the last frame
+#                       and the first, which pushes the loop seam over its gate; check the seam with
+#                       forensics.py --loop or deliver.sh --loop
 #   --audio-offset F    film frame at which this composition starts (default: the --frames start;
 #                       set it when rendering a per-act composition with sound)
 #   --build-audio       first run scripts/export-cues.ts and scripts/audio/score.py to rebuild the WAV
@@ -70,7 +74,7 @@ step() { echo "[render $(( $(date +%s) - T0 ))s] $*" >&2; }
 
 COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0
 ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
-SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0
+SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0
 POS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -80,6 +84,7 @@ while [[ $# -gt 0 ]]; do
     --master) MODE=master ;;
     --audio) AUDIO=${2:?--audio needs a file}; shift ;;
     --no-audio) NOAUDIO=1 ;;
+    --loop) LOOP=1 ;;
     --audio-offset) AOFF=${2:?}; shift ;;
     --build-audio) BUILD_AUDIO=1 ;;
     --entry) ENTRY=${2:?}; shift ;;
@@ -157,6 +162,7 @@ AOFF=${AOFF:-$FROM}
 AOFF_S=$(python3 -c "print(f'{$AOFF/$FPS:.6f}')")
 RARGS=(--muted --log=error)
 [[ -n "$CONC" ]] && RARGS+=(--concurrency="$CONC")
+[[ $LOOP == 1 ]] && RARGS+=(--image-format=png)
 RARGS+=(${EXTRA[@]+"${EXTRA[@]}"})
 PIC="$WORK/picture.mp4"
 step "$COMP: ${SIZE}@${FPS}, frames $FROM-$TO ($N f, ${DUR}s), mode $MODE"

@@ -23,7 +23,7 @@
 #                             (seam MAD <= max(0.4, 1.5x the median of the 8 steps at each end);
 #                             the report is qa/loop-seam.json)
 #   <name>.gif                --gif: two-pass palettegen/paletteuse (25 fps, 960 px wide by default)
-#   <name>.webm               --webm: VP9 CRF 32 (Opus audio unless --loop), BT.709 tagged
+#   <name>.webm               --webm: VP9 CRF 32, or 26 with --loop so the seam survives (Opus audio unless --loop), BT.709 tagged
 #   <Comp>.mov                --alpha Comp[,Comp2]: Remotion ProRes 4444, yuva444p10le, PNG frames, BT.709
 #                             (a sting ships two: one that ends on the lockup, one that clears)
 #   <Comp>-alpha.webm         --alpha-webm: VP9 with alpha (yuva420p) of the same composition
@@ -43,7 +43,7 @@
 #   --gif-width N        GIF width in px (default 960)
 #   --gif-max-mb N       warn above this size (default 8)
 #   --gif-dither D       paletteuse dither: sierra2_4a (default), bayer, floyd_steinberg, none
-#   --webm-crf N         VP9 CRF (default 32)
+#   --webm-crf N         VP9 CRF (default 32; 26 with --loop, because CRF 32 smears the seam past its gate)
 #   --alpha-frames A-B   render only this range of the alpha composition (tests)
 #   --alpha-props JSON   --props for the alpha render, e.g. '{"transparent":true}'
 #   --entry FILE         Remotion entry for --alpha/--variants (default src/index.ts)
@@ -61,7 +61,7 @@ die() { echo "deliver.sh: $*" >&2; exit 1; }
 step() { echo "[deliver] $*" >&2; }
 
 OUTDIR=out/deliver; POSTER_FRAME=""; LOOP=0; GIF=0; WEBM=0; ALPHA=""; ALPHA_WEBM=0; VARIANTS=""
-GIF_FPS=25; GIF_W=960; GIF_MAX=8; GIF_DITHER=sierra2_4a; WEBM_CRF=32; ALPHA_FRAMES=""; ALPHA_PROPS=""
+GIF_FPS=25; GIF_W=960; GIF_MAX=8; GIF_DITHER=sierra2_4a; WEBM_CRF=""; ALPHA_FRAMES=""; ALPHA_PROPS=""
 ENTRY=src/index.ts; AUDIO=public/audio/soundtrack.wav; VSAMPLES=""; POS=(); POSTER_FROM=""; COMP=Film
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -236,6 +236,7 @@ if [[ $GIF -eq 1 ]]; then
 fi
 
 if [[ $WEBM -eq 1 ]]; then
+  [[ -z "$WEBM_CRF" ]] && { [[ $LOOP -eq 1 ]] && WEBM_CRF=26 || WEBM_CRF=32; }
   AUD=(-an); [[ $HAS_AUDIO -eq 1 && $LOOP -eq 0 ]] && AUD=(-c:a libopus -b:a 160k)
   ffmpeg -v error -y -i "$MASTER" -map 0:v:0 $([[ $HAS_AUDIO -eq 1 && $LOOP -eq 0 ]] && echo "-map 0:a:0") \
     -c:v libvpx-vp9 -crf "$WEBM_CRF" -b:v 0 -row-mt 1 -deadline good -cpu-used 2 -pix_fmt yuv420p \
