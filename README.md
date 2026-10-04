@@ -64,7 +64,7 @@ Before the first film, check your machine with [a first test render](docs/setup.
 </tr>
 </table>
 
-All four films were made by an agent with development snapshots of cinetic 1.1.0, in evaluation rounds 6 (Kiln) and 7 (the others), from the one-paragraph briefs below, the same briefs used in the [evaluation](#evaluation). The brands are invented, except where the brief supplied one. Clicking a GIF downloads its MP4. The films live on the repo's `media` branch, so installs stay small.
+All four films were made by an agent with development snapshots of cinetic 1.0.0, in evaluation rounds 6 (Kiln) and 7 (the others), from the one-paragraph briefs below, the same briefs used in the [evaluation](#evaluation). The brands are invented, except where the brief supplied one. Clicking a GIF downloads its MP4. The films live on the repo's `media` branch, so installs stay small.
 
 <details>
 <summary>The four briefs, word for word</summary>
@@ -141,7 +141,7 @@ npx skills add Leonxlnx/cinetic -g -a claude-code -y
 Pin a version:
 
 ```bash
-npx skills add Leonxlnx/cinetic#v1.1.0
+npx skills add Leonxlnx/cinetic#v1.0.0
 ```
 
 For Claude Code the skill lands in `.claude/skills/cinetic` (project) or `~/.claude/skills/cinetic` (with `-g`). The same command installs it for the other agents the skills CLI supports, such as Codex and Cursor; choose them with `-a`.
@@ -297,22 +297,22 @@ When the agent invents the look, none of these appear:
 
 ## Evaluation
 
-Each round ran the briefs with cinetic and with the same agent without it but with the official Remotion agent skills. A grader checked each brief's written expectations (size, frame rate, duration, loudness and true peak measured by script; sync and the visual checks judged from frames and audio), and blind judging agents compared each pair with the labels randomized: a neutral senior creative director in every round, a second judge applying a house style guide equal to the hard bans from round 3, and from round 6 the neutral judge again, comparing each new film with the one the previous version made for the same brief.
+Each round ran the briefs with cinetic and with the same agent without it but with the official Remotion agent skills. A grader checked each brief's written expectations (size, frame rate, duration, loudness and true peak measured by script; sync and the visual checks judged from frames and audio), and blind judging agents compared each pair with the labels randomized: a neutral senior creative director in every round, a second judge applying a house style guide equal to the hard bans from round 3, and from round 6 the neutral judge again, comparing each new film with the one 0.5.0 made for the same brief.
 
-| Round | Version | Briefs | Expectations met (cinetic vs baseline) | Neutral judge: cinetic wins | House-style judge: cinetic wins | Against the previous version |
+| Round | Version | Briefs | Expectations met (cinetic vs baseline) | Neutral judge: cinetic wins | House-style judge: cinetic wins | Against 0.5.0's films |
 |---|---|---|---|---|---|---|
 | 1 | 0.1.0 | 3 | 97.7% vs 80.3% | 0 of 3 | not run | not run |
 | 3 | 0.3.0 | 4 | 100% vs 74.8% | 2 of 4 | 4 of 4 | not run |
 | 4 | 0.4.0 | 4 | 55/56 (98%) vs 39/56 (70%) | 0 of 4 | 4 of 4 | not run |
 | 5 | 0.5.0 | 4 | 54/56 (96%) vs 41/56 (73%) | 2 of 4 | 4 of 4 | not run |
-| 6 | 1.1.0, first snapshot | 4 | 53/56 (95%) vs 41/56 (73%) | 1 of 4 | 4 of 4 | 2 of 4 |
-| 7 | 1.1.0, second snapshot | 4 | 54/56 (96%) vs 41/56 (73%) | 2 of 4 | 4 of 4 | 3 of 4 |
+| 6 | 1.0.0, first snapshot | 4 | 53/56 (95%) vs 41/56 (73%) | 1 of 4 | 4 of 4 | 2 of 4 |
+| 7 | 1.0.0, second snapshot | 4 | 54/56 (96%) vs 41/56 (73%) | 2 of 4 | 4 of 4 | 3 of 4 |
 
 Round 2 was invalidated by a harness problem and is not reported.
 
 cinetic meets more of the written expectations in every round and wins every house-style comparison. The house-style judge found one hard-ban slip in a cinetic film in each of rounds 6 and 7 (a soft blue glow in the vertical video), against 4–8 per baseline film.
 
-The neutral judge is split. In round 7 it preferred cinetic for the feature loop (31–28) and the vertical video (36–31), and the baseline for the logo sting (31–34) and the launch teaser (30–33): there it credited the baselines' warm palette, brand board and orange-glow look, which the bans remove, while preferring cinetic's ideas and product story. Against the 0.5.0 films, the round-7 films won three of four. Its craft points, such as a sound cued after the arrival it belonged to, two cuts that motion blur turned into double exposures and an opening that read as a false start, became rules and checks in the released 1.1.0, which has not had a round of its own (see [CHANGELOG.md](CHANGELOG.md)).
+The neutral judge is split. In round 7 it preferred cinetic for the feature loop (31–28) and the vertical video (36–31), and the baseline for the logo sting (31–34) and the launch teaser (30–33): there it credited the baselines' warm palette, brand board and orange-glow look, which the bans remove, while preferring cinetic's ideas and product story. Against the 0.5.0 films, the round-7 films won three of four. Its craft points, such as a sound cued after the arrival it belonged to, two cuts that motion blur turned into double exposures and an opening that read as a false start, became rules and checks in the released 1.0.0, which has not had a round of its own (see [CHANGELOG.md](CHANGELOG.md)).
 
 It also costs about three times the time and tokens of the baseline (round 7 average: 95 vs 33 minutes, 626k vs 231k tokens), because the agent builds a brand, scores the sound, renders motion blur and runs review rounds. The method and the full results are in [docs/evaluation.md](docs/evaluation.md).
 
