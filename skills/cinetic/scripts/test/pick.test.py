@@ -6,7 +6,8 @@
      per-film signature cap.
   3. Ban-unsafe entries print their ban-safe variant unless the brand supplies every banned look.
   4. Weights do what the docstring says: workhorses come up more often than signatures.
-  5. The shipped library (assets/library/techniques.json) validates and can fill a plan for every format.
+  5. The shipped library (assets/library/techniques.json) validates, can fill a plan for every format,
+     and references/technique-library.md is exactly its generated Markdown.
 
 Usage (from the skill root):  python3 scripts/test/pick.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -122,6 +123,9 @@ result(pick('--category', 'camera', '--n', '0').returncode == 2, '--n 0 is exit 
 r = pick('--show', 'fx-camera')
 result(r.returncode == 0 and '**Build:** Build fx-camera.' in r.stdout, '--show prints one entry in full')
 result(pick('--show', 'fx-nope').returncode == 1, '--show of an unknown id is exit 1')
+r = pick('--markdown')
+result(r.returncode == 0 and '## Transitions' in r.stdout and '- [Transitions](#transitions) (7)' in r.stdout
+       and 'Ban-safe variant (the default):** Opaque' in r.stdout, '--markdown renders contents, sections and ban-safe variants')
 r = pick('--list', '--category', 'transition')
 result(r.returncode == 0 and len(r.stdout.strip().splitlines()) == 7, '--list --category lists that category only')
 
@@ -180,6 +184,10 @@ if os.path.exists(SHIPPED):
         r, d = draw_json('--format', fmt, '--seed', '1', library=SHIPPED)
         cats = {p['category'] for p in d['picks']}
         result(r.returncode == 0 and len(cats) >= 6, f'the shipped library fills a {fmt} plan', f'{len(d["picks"])} picks, {len(cats)} categories')
+    md = os.path.join(SKILL, 'references', 'technique-library.md')
+    r = pick('--markdown', library=SHIPPED)
+    same = os.path.exists(md) and open(md, encoding='utf-8').read() == r.stdout
+    result(same, 'references/technique-library.md matches the JSON', '' if same else 'run: python3 scripts/pick.py --markdown > references/technique-library.md')
 else:
     result(False, 'the shipped library exists', SHIPPED)
 
