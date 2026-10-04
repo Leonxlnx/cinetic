@@ -120,7 +120,7 @@ export const loopNoise = (seed: string, f: number, radius = 0.6, x = 0) =>
 
 - **Springs and tweens** must be at rest before the seam, or be part of a motion that continues identically after frame 0. A spring still settling at `TOTAL − 1` makes a visible hitch.
 - **Keep text away from the seam.** It must be fully resolved or fully gone there, because a line cut in half at the seam reads as a glitch.
-- **The first frame** is also the poster and the frame people see before autoplay starts, so make it a readable, composed state.
+- **The first frame** is also the poster and the frame people see before autoplay starts, so make it a readable, composed state that names the product: the app chrome with the brand in it, or the name. A lone object in a wide empty frame is a weak poster, and a loop that shows its brand only in the middle of the cycle is anonymous on a paused page.
 
 **Name what it is.** A loop has no end card, so the product and the feature must be identifiable inside it: the feature's name as a UI label (a tab, a label, the button that causes the action) readable at 480 px, or the loop's one line names it. A loop of beautiful motion around an anonymous card sells nothing.
 - **Density.** Loops are watched repeatedly. Give each cycle one peak per bar, but make the calm between peaks real (30–70 f), or the loop becomes tiring on the third pass.
