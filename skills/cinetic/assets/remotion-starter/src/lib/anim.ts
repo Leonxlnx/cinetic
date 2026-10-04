@@ -20,6 +20,7 @@ export const E = {
   contact: Easing.bezier(0.55, 0, 0.9, 0.55), // accelerates INTO an impact (ends with velocity)
   whip: Easing.bezier(0.6, 0, 0.15, 1), // feature-to-feature whips
   dolly: Easing.bezier(0.35, 0, 0.65, 1), // slow push through a hold
+  type: Easing.bezier(0.5, 1, 0.89, 1), // quad-out: an eased typewriter, 2x its mean rate at the start, last key at ~80%
   linear: (t: number) => t, // drift only
 };
 
@@ -91,6 +92,17 @@ export const blurOut = (q: number, px: number) => px * clamp((q - 0.3) / 0.7);
  */
 export const arrive = (p: number, k = 0.94) => clamp(p / k);
 export const depart = (q: number, k = 0.06) => clamp((q - k) / (1 - k));
+/**
+ * The `k` for arrive() on a vertical move of `px` over `dur` frames on `ease`: the point of the
+ * curve where its step falls below 1 px/f, so the move stops from ~1 px/f at any travel and fps.
+ * The default 0.94 fits a ~40 px rise at 60 fps; a 140 px slide would stop from 3 px/f with it
+ * (12 px/f at 30 fps), a 20 px one would tick.
+ */
+export const arriveK = (px: number, dur: number, ease: Ease = E.out) => {
+  const n = Math.max(1, Math.round(dur));
+  for (let i = 1; i <= n; i++) if (Math.abs(px) * (ease(i / n) - ease((i - 1) / n)) < 1) return clamp(ease((i - 1) / n), 0.5, 1);
+  return 1;
+};
 
 /** Contact squash for a landing, `t` frames after contact: widen 8% and flatten 10%, back over ~8 f (at 60 fps). Anchor it at the contact edge. */
 export const squash = (t: number) => {
@@ -117,3 +129,31 @@ export const rand = (seed: number | string) => {
  * of one output frame in agreement.
  */
 export const fd = Math.round;
+
+/**
+ * Start offset (frames) of item i of n spread over `span` frames: 0 for the first, `span` for the
+ * last. The ease shapes the gaps (E.linear: even; E.out: the first items bunch up, the tail spreads
+ * out). Add it to the group's start: prog(f, at + stagger(i, n, 24), at + stagger(i, n, 24) + 26, E.out).
+ * A group arrives within 30 f at 60 fps (references/motion-tokens.md §6); longer reads as a queue.
+ */
+export const stagger = (i: number, n: number, span: number, ease: Ease = E.linear) => (n > 1 ? span * ease(clamp(i / (n - 1))) : 0);
+
+/**
+ * Inertial scroll that starts `start` at v0 px/f and loses (1 - decay) of its speed every frame, in
+ * closed form: x = v0·tau·(1 - d^n), v = v0·d^n, with tau = -1/ln d. Before `start` it moves at a
+ * constant v0, so a shot can open at peak scroll speed and coast (the velocity has no step). `decay`
+ * is per 60 fps frame (0.89: tau = 8.6 f, travel = 8.6·v0, within 0.5 px of rest after
+ * `settle` frames); it is converted for other frame rates. A slow vertical tail of text settles in
+ * 1 px ticks (references/chromium-rendering.md §15): for text use total * arrive(x / total,
+ * 1 - 1 / |v0|) after `start` (x before it), which stops from ~1 px/f at any v0 > 1.
+ */
+export const inertia = (frame: number, start: number, v0: number, decay = 0.89) => {
+  const d = clamp(decay, 1e-6, 0.999999) ** (60 / FPS);
+  const tau = -1 / Math.log(d);
+  const n = frame - start;
+  const total = v0 * tau;
+  const settle = Math.abs(total) > 0.5 ? Math.ceil(tau * Math.log(Math.abs(total) / 0.5)) : 0;
+  if (n <= 0) return { x: v0 * n, v: v0, total, settle };
+  const k = d ** n;
+  return { x: total * (1 - k), v: v0 * k, total, settle };
+};
