@@ -128,12 +128,46 @@ def sum_wavs(paths, n, sr):
 # ------------------------------------------------------------------------------------------
 # detectors
 # ------------------------------------------------------------------------------------------
+def peak_pick(x, pre_max, post_max, pre_avg, post_avg, delta, wait):
+    """librosa 0.11's util.peak_pick, in numpy. librosa's own version is a cached numba JIT, and a
+    stale numba cache (or a numba/numpy mismatch) segfaults the whole process, which no try/except
+    can catch. Same rule: a peak is the max of x[n-pre_max : n+post_max], at least delta above the
+    mean of x[n-pre_avg : n+post_avg], and more than `wait` frames after the previous peak."""
+    pre_max, post_max, pre_avg, post_avg, wait = (int(np.ceil(v)) for v in (pre_max, post_max, pre_avg, post_avg, wait))
+    n = len(x)
+    peaks = []
+    if n == 0:
+        return np.array(peaks, dtype=int)
+    i = 1
+    if x[0] >= x[:min(post_max, n)].max() and x[0] >= x[:min(post_avg, n)].mean() + delta:
+        peaks.append(0)
+        i = wait + 1
+    while i < n:
+        if x[i] == x[max(0, i - pre_max):min(i + post_max, n)].max() and \
+                x[i] >= x[max(0, i - pre_avg):min(i + post_avg, n)].mean() + delta:
+            peaks.append(i)
+            i += wait + 1
+        else:
+            i += 1
+    return np.array(peaks, dtype=int)
+
+
 def librosa_onsets(y, sr, delta, hop=128):
+    """librosa.onset.onset_detect(backtrack=True, wait=4, units='time') with its default peak-picking
+    windows, but peak picking and backtracking run in numpy (see peak_pick)."""
     import librosa
-    env = librosa.onset.onset_strength(y=y.astype(np.float32), sr=sr, hop_length=hop)
-    on = librosa.onset.onset_detect(onset_envelope=env, sr=sr, hop_length=hop, backtrack=True,
-                                    units='time', wait=4, delta=delta)
-    return np.asarray(on, dtype=np.float64)
+    env = librosa.onset.onset_strength(y=y.astype(np.float32), sr=sr, hop_length=hop).astype(np.float64)
+    env = env - env.min()
+    env /= env.max() + np.finfo(env.dtype).tiny
+    if not env.any() or not np.all(np.isfinite(env)):
+        return np.array([], dtype=np.float64)
+    on = peak_pick(env, pre_max=0.03 * sr // hop, post_max=0.00 * sr // hop + 1, pre_avg=0.10 * sr // hop,
+                   post_avg=0.10 * sr // hop + 1, delta=delta, wait=4)
+    # backtrack each onset to the nearest preceding energy minimum (librosa.onset.onset_backtrack)
+    minima = np.flatnonzero((env[1:-1] <= env[:-2]) & (env[1:-1] < env[2:])) + 1
+    minima = np.unique(np.concatenate([[0], minima]))
+    on = minima[np.clip(np.searchsorted(minima, on, side='right') - 1, 0, None)]
+    return on.astype(np.float64) * hop / sr
 
 
 def hf_rise(y, sr):
