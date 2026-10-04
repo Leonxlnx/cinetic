@@ -494,6 +494,13 @@ for (const file of files) {
     const q = code[i - 1];
     if (isScript && !/['"`\s:(,]/.test(q)) return;
     if (isHtml && /href\s*=\s*["']$|id\s*=\s*["']$/.test(code.slice(Math.max(0, i - 10), i))) return;
+    // "#2187 built", "PR #412": an all-digit #NNN(N) inside running text is a number label. It counts as a
+    // colour only as a whole string ('#123') or after a colour property.
+    if (isScript && /^#\d{3,4}$/.test(m[0])) {
+      const alone = /['"`]/.test(q) && /['"`]/.test(code[i + m[0].length] ?? '');
+      const prop = /(colou?r|background|fill|stroke|border|outline|shadow)[\w-]*['"]?\s*[:=][^;\n]{0,40}$/i.test(code.slice(Math.max(0, i - 60), i));
+      if (!alone && !prop) return;
+    }
     banColor(i, m[0], colorOf(m[0])); // every colour, the tokens file and the :root palette included
     if (isTokens || rootSpans.some(([a, b]) => i >= a && i < b)) return;
     if (!paletteName) return;
