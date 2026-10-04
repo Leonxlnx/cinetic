@@ -7,6 +7,7 @@ Usage:
   python3 scripts/sheet.py out/film.mp4 --every 30 --width 480 --out out/qa/legibility.png  # phone legibility
   python3 scripts/sheet.py out/film.mp4 --frames 358-364,1796 --diff --width 480 --out out/qa/pops.png
   python3 scripts/sheet.py --comp Act3 --every 2 --offset 600 --out out/qa/act3.png [-- --props=...]
+  python3 scripts/sheet.py --images out/stills/*.png --width 480 --out out/qa/stills.png  # tile stills
 
 Tiles are labelled "f<frame> <seconds>s" (frame = t * fps, 0-based) and, with --cues out/cues.json,
 the act and any cue within half a step. --diff pairs each frame with its change from the previous
@@ -163,10 +164,30 @@ def build(frames, imgs, fps, args, acts, cue, half, bgr):
     return tiles
 
 
+def sheet_of_images(args):
+    """Tile existing images (stills, frames grabbed earlier) at one tile width, each labelled with its file name."""
+    tiles = []
+    for path in args.images:
+        im = cv2.imread(path, cv2.IMREAD_COLOR)
+        if im is None:
+            die(f'cannot read {path}')
+        w = args.width or 480
+        tiles.append(label(cv2.resize(im, (w, max(1, round(im.shape[0] * w / im.shape[1]))), interpolation=cv2.INTER_AREA),
+                           os.path.splitext(os.path.basename(path))[0]))
+    h = max(t.shape[0] for t in tiles)  # pad mixed aspect ratios to one row height
+    tiles = [np.pad(t, ((0, h - t.shape[0]), (0, 0), (0, 0)), constant_values=90) for t in tiles]
+    cols = args.cols or max(1, min(len(tiles), 8, max(2, round(1920 / tiles[0].shape[1]))))
+    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    cv2.imwrite(args.out, tile(tiles, cols))
+    print(f'{args.out}  ({len(tiles)} images)')
+    sys.exit(0)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0],
                                  formatter_class=argparse.RawDescriptionHelpFormatter, epilog=__doc__)
-    ap.add_argument('video', nargs='?', help='MP4 to sample (or use --comp)')
+    ap.add_argument('video', nargs='?', help='MP4 to sample (or use --comp or --images)')
+    ap.add_argument('--images', nargs='+', help='tile these image files instead, labelled by file name')
     ap.add_argument('--comp', help='Remotion composition id to render instead of reading a video')
     ap.add_argument('--entry', default='src/index.ts', help='Remotion entry point for --comp')
     ap.add_argument('--concurrency', type=int, help='Remotion render concurrency for --comp')
@@ -191,6 +212,9 @@ def main():
     if extra and not args.comp:
         die(f'unknown arguments: {" ".join(extra)}')
     args.extra = extra
+    if args.images:
+        sheet_of_images(args)
+        return
     if bool(args.video) == bool(args.comp):
         die('give either a video path or --comp <Composition>')
     if args.frames and args.comp:

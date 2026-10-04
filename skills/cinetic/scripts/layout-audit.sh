@@ -12,7 +12,7 @@
 # Usage (from the project root):
 #   bash scripts/layout-audit.sh <Comp> [--frames 120,240 | --cues | --copy] [--props '{"k":1}']
 #                                [--speed | --no-speed] [--max-text-speed 20]
-#                                [--safe feed9x16 | --safe 270,120,384,64 | --safe 96,64]
+#                                [--safe feed9x16 | --safe 270,120,420,64 | --safe 96,64]
 #                                [--entry src/index.ts] [--json out/qa/layout-<Comp>.json]
 #                                [--out out/qa/layout-<Comp>] [--concurrency 2]
 #   frames   --copy (default): each COPY entry's resolved frame, mid-hold and last frame before it leaves

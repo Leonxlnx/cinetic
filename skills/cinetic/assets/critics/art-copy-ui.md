@@ -66,7 +66,7 @@ You are the art director, the copy editor and the product designer. Judge every 
    - Safe margins are at least 96 px at the sides and 64 px top and bottom, with at least 24 px of headroom at maximum punch. Check the `layout-*.json` violations.
    - Look for crops that slice glyphs, voids at the frame edge, and empty UI regions.
    - **Covered text (I8).** Nothing that moves (a chip, card, cursor or the device) passes over text that is being read: check the densest frames of every move and the `covered` issues in `layout-*.json` (movers tagged `data-mover`).
-   - **Vertical frames (E8).** In a 9:16 deliverable the content's mass sits in the middle of the safe band (y 270–1536 at 1080 × 1920), the bottom 40% is not bare, text is clear of the feed zones (`feed9x16`) and UI type is at least 32 px (`references/formats.md` §7).
+   - **Vertical frames (E8).** In a 9:16 deliverable the content's mass sits in the middle of the safe band (y 270–1500 at 1080 × 1920), the bottom 40% is not bare, text is clear of the feed zones (`feed9x16`) and UI type is at least 32 px (`references/formats.md` §7).
 7. **Product truth.** Pause on every UI frame.
    - The proof shows the feature's non-obvious behaviour, not a version any simpler product could show (the specificity test).
    - Data is named, specific and consistent: dates match weekdays, counts match what is shown, labels stay true after things move.

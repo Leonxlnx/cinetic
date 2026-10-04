@@ -52,7 +52,7 @@ out/qa/round-2/
    python3 scripts/sheet.py out/preview.mp4 --chunks 4 --rate 12 --cues out/cues.json --out $R/watch.png
    python3 scripts/sheet.py out/preview.mp4 --every 60 --width 480 --out $R/legibility.png
    ```
-   The first command writes one sheet per 4 s chunk at 12 fps, each about 1950 × 850 px with 48 labelled tiles. The second writes one frame per second at phone size. For one act before the full film exists, use `sheet.py --comp Act3 --every 2 --offset <ACT.x.from>`.
+   The first command writes one sheet per 4 s chunk at 12 fps, each about 1950 × 850 px with 48 labelled tiles. The second writes one frame per second at phone size. For one act before the full film exists, use `sheet.py --comp Act3 --every 2 --offset <ACT.x.from>`; to tile stills or frames you already have, `sheet.py --images out/stills/*.png --out ...`.
 4. **Read the flags yourself first** (§4), for five minutes. Declare what is designed (§3) and re-run, so the lenses see only real candidates.
 5. **Run the lenses** (§5) as parallel subagents with the filled templates. If the harness has no subagents, run them one after another in your own context, and open each lens's sheets *before* reading any code: the code tells you what you meant, the sheets show what you made.
 6. **Verify** every P0 and P1 (§6).

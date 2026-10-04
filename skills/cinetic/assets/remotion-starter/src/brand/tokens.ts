@@ -57,7 +57,7 @@ export const typeStyle = (role: keyof typeof TYPE, size = TYPE[role].size * U): 
 /**
  * Safe margins for a w x h frame as a symmetric envelope: the larger inset of each pair from the
  * frame's safe-zone preset (src/lib/safe.ts), so a centred layout that fits inside clears every
- * side. 96 x 64 px at 1920x1080; 120 x 384 at 1080x1920, where the feed zones are asymmetric
+ * side. 96 x 64 px at 1920x1080; 120 x 420 at 1080x1920, where the feed zones are asymmetric
  * (use safeBox() from lib/safe.ts there to centre on the clear band instead of the frame).
  */
 export const safeArea = (w: number, h: number) => {
