@@ -15,9 +15,10 @@ Checks (defaults are proven starting points, not dogma):
   sync       each onset event has an audio onset within +-2 f (librosa backtracked onsets at hop
              128, delta 0.03, or a > 1 kHz 1 ms-envelope rise >= 4x); hit rate >= 90%     fail
              With --stems the sfx stem is searched (strict) and stray sfx onsets are listed.
-             Key events that score.py does not sound (thinned to ~12/s, or "typing": "off")
-             are replayed from the score JSON and not expected; a keyup within 0.2 s after a
-             key is not a stray onset.
+             Key events that score.py does not sound (thinned to ~12/s, the letters of a word
+             typed in the "word" style, or "typing": "off") are replayed from the score JSON
+             and not expected; a key's bottom-out or keyup within 0.2 s after it is not a stray
+             onset.
              Without it the full mix is searched, where music hides quiet and soft-attack
              effects, so a low hit rate there is only a warning: gate with --stems.
   apex       whoosh/suck events (or any with apexFrac): the 30 ms envelope maximum of the sfx
@@ -26,9 +27,12 @@ Checks (defaults are proven starting points, not dogma):
   visual     for each isolated event (no other event within 6 f): when the picture's peak
              change (480x270 MAD) within +-6 f is clear (>= 2x the local median) it sits at
              -2..+3 f from the sound, or the picture changes on the sound too (>= 35% of it) warn
-             strong visual peaks (a cut, a flash, the peak of a big move) with no audio onset or
-             sfx envelope peak within +-3 f (--peak-tol), and no contact cue (land, hit, snap,
-             drop) in the next 10 f: a picture event with nothing under it                      warn
+             the 3 strongest picture changes of the film (--big, by prominence: the hero reveal,
+             a section change, a camera-scale move, not the ordinary cuts inside a section) when
+             one has no audio onset at all, music or effect, within +-3 f (--peak-tol) and no
+             contact cue (land, hit, snap, drop) in the next 10 f: a suggestion to land the
+             music's own event (drop, stop, re-entry) there. Most cuts carry no sound: the music
+             carries them                                                                       warn
              the reverse: a loud sound (sfx envelope peak within 6 dB of the loudest) whose
              picture barely changes from -3 to +6 f (MAD < max(0.3, 2x the median over
              +-30 f)): a big hit on a still frame reads as unmotivated                         warn
@@ -47,7 +51,8 @@ Checks (defaults are proven starting points, not dogma):
   head       first 5 ms peak <= -40 dBFS: above it the film clicks on sample 0 or cuts in
              mid-sound (skipped on an excerpt)                                               warn
   masking    (--stems) each sfx >= +6 dB over the music in its best band (60 ms); < 0 dB warns
-             (typing is a texture: score.py's "typing" report judges it, not this check)
+             (typing and crisp ticks sit just over the music by design: score.py's report
+             judges them, not this check)
 
 Writes JSON (--json) and a short summary. Exit: 0 no failing check, 1 a failing check, 2 usage or
 input error. Needs ffmpeg/ffprobe, numpy, scipy, soundfile, librosa (and opencv for the picture).
@@ -274,7 +279,9 @@ def main():
     ap.add_argument('--hf-ratio', type=float, default=4.0, help='> 1 kHz envelope rise that counts as an onset')
     ap.add_argument('--apex-tol', type=float, default=3.0, help='frames')
     ap.add_argument('--vis-window', type=int, default=6, help='frames either side to look for the visual peak')
-    ap.add_argument('--peak-tol', type=int, default=3, help='frames within which a strong visual peak needs a sound')
+    ap.add_argument('--peak-tol', type=int, default=3, help='frames within which one of the biggest picture changes '
+                    'should have an audio onset')
+    ap.add_argument('--big', type=int, default=3, help='how many of the strongest picture changes to check for a sound')
     ap.add_argument('--no-visual', action='store_true', help='skip the picture checks')
     ap.add_argument('--lufs', type=float, help="the film's loudness target (default: master.lufs in the score JSON, "
                     'else -14 and -16 both pass)')
@@ -349,13 +356,15 @@ def main():
     ev_ap = [e for e in cues['events'] if e['apex'] or e.get('ends')]
     groups = []
     for e in ev_on:
+        crisp = e['kind'] == 'tick' and e.get('variant') == 'crisp'
         if groups and e['f'] - groups[-1]['f'] <= args.cluster:
             g = groups[-1]
             g['kinds'].add(e['kind'])
             g['weight'] = max(g['weight'], e['weight'])
             g['n'] += 1
+            g['crisp'] = g['crisp'] and crisp
         else:
-            groups.append(dict(f=e['f'], kinds={e['kind']}, weight=e['weight'], n=1))
+            groups.append(dict(f=e['f'], kinds={e['kind']}, weight=e['weight'], n=1, crisp=crisp))
     groups = [g for g in groups if g['f'] / fps < dur - 0.01]
     if not groups and not ev_ap:
         die(f'no events in {args.cues}')
@@ -414,7 +423,7 @@ def main():
         for t in on_t:
             f = t * fps
             if len(key_frames) and np.any((f - key_frames > 0) & (f - key_frames <= 0.2 * fps + args.tol)):
-                continue  # a keyup: the key's release, 70-180 ms after the press
+                continue  # a key's bottom-out (25-40 ms) or keyup (70-180 ms) after the press
             if not len(ev_frames) or np.min(np.abs(ev_frames - f)) > 3 * args.tol:
                 stray.append(round(float(f), 1))
         sync['stray_sfx_onsets_f'] = stray[:60]
@@ -488,28 +497,33 @@ def main():
         for r in bad[:15]:
             add('visual', 'warn', int(round(r['f'])), f'{"/".join(r["kinds"])}: the picture peaks {r["peak_offset_f"]:+d} f '
                 'from its sound; move the picture (start at cue-1, pulses peak +2 f), not the sound')
-        # strong visual peaks (cuts, flashes, the velocity peak of a big move) need a sound under them:
-        # an onset, or the envelope peak of a whoosh, within +-peak_tol frames
+        # Not every picture change gets a sound: most cuts are carried by the music, and continuous
+        # motion stays silent. Only the few biggest changes of the film (the hero reveal, a section
+        # change, a camera-scale move) should meet an audio event, music or effect: an onset in the
+        # full mix or the effects, or a whoosh's envelope peak, within +-peak_tol frames.
         pk, props = signal.find_peaks(d, prominence=max(1.0, 3 * float(np.median(d[1:]))), distance=12)
         env_v, ms_v = band_env(sfx_sig, sr, 60, 16000, win_ms=30, hop_ms=5)
         epk, _ = signal.find_peaks(env_v, prominence=0.1 * float(env_v.max() or 1.0))
-        heard = np.concatenate([on_t * fps, epk * ms_v / 1000 * fps, [1e9]])
+        mix_on = on_t if not strict else librosa_onsets(mono, sr, args.onset_delta)
+        heard = np.concatenate([on_t * fps, mix_on * fps, epk * ms_v / 1000 * fps, [1e9]])
         evf = np.array([e['f'] for e in cues['events']]) if cues['events'] else np.array([1e9])
         # a move that accelerates into a contact peaks just before it, and its sound belongs on the
         # contact frame (a land, hit, snap or drop cue up to 10 f later), so that peak is explained
         contacts = np.array([e['f'] for e in cues['events'] if e['kind'] in ('land', 'hit', 'snap', 'drop')] or [1e9])
-        lonely = [dict(frame=int(p), mad=round(float(d[p]), 2), prominence=round(float(pr), 2),
+        strong = max(1.5, 4 * float(np.median(d[1:])))
+        biggest = sorted(((int(p), float(pr)) for p, pr in zip(pk, props['prominences']) if pr >= strong),
+                         key=lambda r: -r[1])[:max(0, args.big)]
+        lonely = [dict(frame=p, mad=round(float(d[p]), 2), prominence=round(pr, 2),
                        nearest_sound_f=round(float(heard[np.argmin(np.abs(heard - p))] - p), 1),
                        cue_event_nearby=bool(np.min(np.abs(evf - p)) <= W6))
-                  for p, pr in zip(pk, props['prominences'])
+                  for p, pr in biggest
                   if np.min(np.abs(heard - p)) > args.peak_tol and not np.any((contacts - p > 0) & (contacts - p <= 10))]
-        lonely.sort(key=lambda r: -r['prominence'])
-        strong = max(1.5, 4 * float(np.median(d[1:])))
-        for r in [r for r in lonely if r['prominence'] >= strong][:10]:
+        for r in lonely:
             near = r['nearest_sound_f']
-            add('visual', 'warn', r['frame'], f'a strong picture change (MAD {r["mad"]}) has no sound within +-{args.peak_tol} f'
-                + (f' (nearest {near:+.0f} f)' if abs(near) < 60 else '')
-                + ': cuts and the peaks of big moves land on a beat with a hit under them; move the picture onto the grid or add the hit')
+            add('visual', 'warn', r['frame'], f'one of the {args.big} biggest picture changes (MAD {r["mad"]}) has no audio '
+                f'onset within +-{args.peak_tol} f' + (f' (nearest {near:+.0f} f)' if abs(near) < 60 else '')
+                + ': if it is the hero reveal or a section change, consider landing the music\'s own event there '
+                '(the drop, a stop, the re-entry; move the picture onto the bar). An ordinary cut needs no sound')
         # the reverse: a loud sound needs something visible that causes it. A hit on a frozen hold
         # reads as unmotivated; give it a pulse, a landing or a push accent, or make it quieter.
         still_hits = []
@@ -533,7 +547,8 @@ def main():
         visual = dict(still_hits=still_hits[:12], checked=len(vrows), clear_peaks=len(clear_rows),
                       aligned=sum(1 for r in clear_rows if r['ok']),
                       median_peak_offset_f=float(np.median([r['peak_offset_f'] for r in clear_rows])) if clear_rows else None,
-                      misaligned=bad[:40], peaks_without_event=lonely[:12])
+                      misaligned=bad[:40], biggest_changes=[dict(frame=p, prominence=round(pr, 2)) for p, pr in biggest],
+                      peaks_without_event=lonely)
 
     # ---- loudness
     loud = None
@@ -646,8 +661,8 @@ def main():
         mrows = []
         for g in groups:
             i = int(g['f'] / fps * sr)
-            if i + win > n or g['kinds'] == {'key'}:
-                continue  # typing is a texture under the music: score.py's "typing" report judges it
+            if i + win > n or g['kinds'] == {'key'} or g['crisp']:
+                continue  # typing and crisp ticks sit just over the music by design: score.py's report judges them
             lv_s = [10 * np.log10((s[i:i + win] ** 2).mean() + 1e-12) for s in sb]
             lv_m = [10 * np.log10((m[i:i + win] ** 2).mean() + 1e-12) for m in mb]
             if max(lv_s) < -75:  # nothing in the sfx stem here (a picture-only cue, or a sound on another bus)
@@ -681,8 +696,9 @@ def main():
           f'({"sfx stem" if strict else "full mix"}), median offset {sync["median_offset_f"]:+.2f} f, '
           f'p90 |offset| {sync["p90_abs_offset_f"]} f; apex {sum(r["ok"] for r in apex_rows)}/{len(apex_rows)}')
     if visual:
-        print(f'  picture: {visual["aligned"]}/{visual["clear_peaks"]} clear visual peaks aligned, '
-              f'{len(visual["peaks_without_event"])} strong peaks with no sound within +-{args.peak_tol} f')
+        print(f'  picture: {visual["aligned"]}/{visual["clear_peaks"]} clear visual peaks aligned; '
+              f'{len(visual["peaks_without_event"])} of the {len(visual["biggest_changes"])} biggest picture changes '
+              f'with no audio onset within +-{args.peak_tol} f')
     if loud:
         print(f'  loudness: I {loud["integrated_lufs"]} LUFS (target {" or ".join(f"{t:g}" for t in loud["accepted"])}), '
               f'LRA {loud["lra_lu"]} LU, TP {loud["true_peak_dbtp"]} dBTP, '

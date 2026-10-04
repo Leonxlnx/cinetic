@@ -21,20 +21,28 @@ and warnings. The end fade (master.fade) applies to the music and the effects al
 reaches digital silence; an effect that starts inside the fade is reported. The hook check warns
 when the first 0.5 s sits more than 12 dB under the median momentary loudness (a soft hook).
 A "progress" block re-pitches matching events into a climbing scale that resolves on the tonic.
+The arc check warns when the loudest moment falls in the last 20% of a film over 8 s: the drop on
+the hero reveal should peak, and the lockup resolve.
 
-Typing ("typing" in score.json, one per film): "soft" (default; a damped modal key, ~80% of its
-audible energy in 300 Hz-2 kHz), "mechanical" (crisper onset and a bottom-out tick, still no ring
-in 2-5 kHz), "pitched" (felt mallets on chord/pentatonic tones in G4-F5: for a moment where the
-typing IS the music), "muted" (dull and about 10 dB down: typing under VO, in a dense section, or
-as background) or "off" (key events are skipped). Every key event is humanized: never two keys
-within 60 ms, runs over 12 keys/s thinned to about 12/s (word starts, spaces and returns kept);
-level follows the word (+2.5 dB on word starts, a slight decrescendo inside it, -1 dB before a
-space, 1 dB random, -3 dB once a run passes 1.5 s); onsets jitter by sigma 3.5 ms (never more
-than 8 ms or a frame); a keyup follows when the next key is over 140 ms away; gain and decay
-shrink with the local key rate; letters pan +-0.12 by keyboard column; and keys, ticks and clicks
-share a small room (0.3 s) instead of the hall. Bars with 4+ sounded keys mute the hats and dip
-the arp. The report's "typing" block measures each run against the music (A-weighted, and the
-2-5 / 5-10 kHz bands).
+Typing ("typing" in score.json, one per film): "auto" (default) sounds each run per key ("soft")
+up to 25 chars/s and once per word ("word") above, as measured top-tier launch films do. "soft" is
+a dark modal tock (spectral peak 0.75-0.95 kHz, centroid ~1.2 kHz, ~11% in 2-5 kHz, -20 dB about
+6 ms after its peak); "mechanical" is stiffer with a bottom-out tick; "pitched" plays felt mallets
+on chord/pentatonic tones in G4-F5; "muted" is dull and 10 dB further under the music; "word" is one
+pitched blip per word (36-60 ms, 330-1400 Hz) stepping through the chord's tones; "off" skips key
+events. Per key: never two keys within 60 ms, runs over 12 keys/s thinned to about 12/s (word
+starts, spaces and returns kept); level follows the word (+2.5 dB on word starts, a slight
+decrescendo inside it, -1 dB before a space, sigma 2.5 dB at random, -3 dB once a run passes 1.5 s),
+no jump over 6 dB between neighbours; about half the letters bottom out 25-35 ms after the press;
+no key-up click unless "keyup": true. Keys, clicks and crisp ticks are dry and every effect but a
+whoosh, riser, swell or suck sits within +-0.15 of the centre.
+Under every run sounded per key the music bus ducks mix.typing_duck_db (default 10 dB; 0 disables),
+30 ms down and 250 ms back, and bars with 4+ sounded keys mute the hats and dip the arp. Levels
+against the music, as measured (6 ms effect RMS vs the music's 250 ms RMS): each typing run about
+-4 dB under the ducked music (word blips +6, muted -14), and one level per film for the UI click
+(-3 dB) and the crisp tick (-8 dB), each within +-12 dB of its static level. The report's "typing"
+block measures each run against the music (A-weighted, short-window, 2-5 / 5-10 kHz) and
+"sfx_levels" the clicks and crisp ticks.
 Schema and recipes: references/sound.md.
 
 Exit codes: 0 rendered and the gate passed (LUFS within +-0.5 of target, true peak <= -1.5
@@ -83,18 +91,30 @@ STYLES = {
 }
 STYLES['tail'] = STYLES['hold']
 ARP_PATTERN = [0, 2, 1, 3, 2, 1, 3, 2, 0, 2, 1, 3, 2, 3, 1, 2]
-# click 0.7: the modal click has no low knock, so it needs ~3 dB more to clear the pad in its band
+# Static levels (pre-master, before the per-run and per-film levelling in render()).
 BASE = dict(tick=0.25, tock=0.34, hit=0.5, land=0.26, land_light=0.15, pop=0.12, whoosh=0.24, riser=0.18,
-            drop=0.7, key=0.075, click=0.7, snap=0.45, swell=0.16, bell=0.08, suck=0.5)
-# Typing (score.json "typing"). Gains match the styles' loudness to "soft"; muted sits ~10 dB under.
-TYPING = ('soft', 'mechanical', 'pitched', 'muted', 'off')
-TYPING_GAIN = dict(soft=1.0, mechanical=1.0, pitched=0.5, muted=0.27)
-KEY_KIND_GAIN = {'letter': 1.0, 'back': 0.9, 'space': 0.85, 'return': 0.95}  # space +1.5 dB, return +3 dB over letters
+            drop=0.7, key=0.2, click=0.9, crisp=0.4, snap=0.45, swell=0.16, bell=0.08, suck=0.5)
+# Typing (score.json "typing"). "auto" picks per run: "word" above AUTO_WORD_RATE chars/s, else "soft".
+TYPING = ('auto', 'soft', 'mechanical', 'pitched', 'muted', 'word', 'off')
+PER_KEY = ('soft', 'mechanical', 'pitched')  # a sound per key, in the foreground: the music ducks under them
+TYPING_GAIN = dict(soft=1.0, mechanical=1.0, pitched=0.5, muted=0.8, word=5.0)
+AUTO_WORD_RATE = 25.0  # chars/s: measured typing above 25-30 chars/s is sounded per word, or not at all
+KEY_KIND_GAIN = {'letter': 1.0, 'back': 0.9, 'space': 1.26, 'return': 1.33}  # heard level: space +2 dB, return +2.5 dB
+KEY_RMS_REF = dict(soft=0.31, mechanical=0.344, muted=0.388, pitched=0.624)  # a letter's 6 ms RMS / peak, per style
 KEY_FAST = 12.0  # keys/s: typing faster than this is thinned
 KEY_MIN_GAP = 1 / KEY_FAST  # s: in a fast run a letter sounds only this long after the previous sounded key
 KEY_FLAM_GAP = 0.06  # s: never two keys closer (a flam); word starts, spaces and returns need only this
+WORD_MIN_GAP = 0.08  # s: word blips closer than this merge into one
+KEY_LEVEL_SD = 2.5  # dB, random per press (heard: about 2.5 dB SD over a run, with the word dynamics)
+KEY_MAX_STEP = 5.0  # dB between neighbouring sounded keys as planned (heard: under 6 dB with the timbre's spread)
+# Levels against the music, as measured: short-window (6 ms) effect RMS minus the music's 250 ms RMS
+# at the same moment. render() levels each typing run, and each film's clicks and crisp ticks, to these.
+LEVEL_VS_MUSIC = dict(key=-4.0, pitched=-8.0, muted=-14.0, word=6.0, click=-3.0, crisp=-8.0)  # at weight 1
+LEVEL_CLAMP_DB = 12.0  # the levelling never moves a run or a voice more than this from its static level
 QWERTY = ('qwertyuiop', 'asdfghjkl', 'zxcvbnm')
-UI_KINDS = ('key', 'tick', 'tock', 'click')  # tiny sounds: a small room, never the hall
+UI_KINDS = ('tick', 'tock')  # the signature clock: a small room, never the hall
+WIDE_KINDS = ('whoosh', 'riser', 'swell', 'suck')  # only these take width; every other effect sits near the centre
+SFX_PAN = 0.15  # |pan| of every other effect; the cue's pan (+-0.8 at the screen edges) is scaled into it
 
 
 class ScoreError(Exception):
@@ -264,13 +284,16 @@ class Song:
                                  tonic=S.midi(pr['tonic']) if 'tonic' in pr else S.nearest([self.tonic], 76),  # rungs near 0.5-1.5 kHz
                                  resolve=self.T(pr['resolve']) if 'resolve' in pr else None,
                                  gain=float(pr.get('gain', 1.0)))
-        self.typing = str(score.get('typing', 'soft')).lower()
+        self.typing = str(score.get('typing', 'auto')).lower()
         if self.typing not in TYPING:
             raise ScoreError(f'unknown typing "{self.typing}"; use one of {", ".join(TYPING)}')
+        self.keyup = bool(score.get('keyup', False))
         mix = score.get('mix', {})
         self.mix = dict(music=float(mix.get('music', 1.0)), sfx=float(mix.get('sfx', 1.0)),
                         reverb=float(mix.get('reverb', 1.0)), sidechain=float(mix.get('sidechain', 0.55)),
-                        duck_db=float(mix.get('duck_db', 3.0)))
+                        duck_db=float(mix.get('duck_db', 3.0)), typing_duck_db=float(mix.get('typing_duck_db', 10.0)))
+        if not 0 <= self.mix['typing_duck_db'] <= 30:
+            raise ScoreError('mix.typing_duck_db is dB the music dips under typing: 0 (off) to 30 (default 10)')
         bed = score.get('bed')
         self.bed = None
         if bed:  # a supplied music track: it replaces nothing, it joins the music bus
@@ -401,7 +424,8 @@ def build_music(song, n, events, plan=None):
     kicks = []
     beat, barlen = song.beat, song.barlen
     ev_t = [(e['f'] / song.fps, e['kind']) for e in events]
-    key_t = [k['t'] for k in (plan or {}).values()]  # sounded keys only
+    key_t = [k['t'] for k in (plan or {}).values()]  # sounded keys (and word blips) only
+    fg_t = [k['t'] for k in (plan or {}).values() if k['style'] in PER_KEY]  # typing in the foreground
     owned = [t for t, k in ev_t if k in ('tick', 'tock', 'click')] + key_t
     big = [t for t, k in ev_t if k in ('drop', 'hit', 'snap')]
     booms = [t for t, k in ev_t if k in ('drop', 'hit')]
@@ -476,7 +500,7 @@ def build_music(song, n, events, plan=None):
                 break
             u = (bar - sec['b0']) / max(1, nb - 1)
             # typing in the foreground owns the top end: the hats stop and the arp steps back
-            typing = song.typing in ('soft', 'mechanical', 'pitched') and sum(1 for t in key_t if s <= t < s + barlen) >= 4
+            typing = sum(1 for t in fg_t if s <= t < s + barlen) >= 4
             hats = sec['hats'] and not typing
             pat = sec['drums']
 
@@ -650,30 +674,37 @@ def balance(x, pan):
 def plan_typing(song, events):
     """Humanize the film's key events for score.json "typing". Returns (plan, thinned, runs):
     plan[i] holds how event i sounds, thinned[i] why it does not, runs the bursts of typing (keys
-    under 0.5 s apart) for the report.
+    under 0.5 s apart) with their character rate and style, for the levelling and the report.
 
-    - Thin by time, not by frames: no two keys sound within 60 ms (a flam), and where the typing
-      runs faster than 12 keys/s (within +-0.25 s) a letter sounds only 1/12 s after the previous
-      sounded key. A word start, space or return needs only the 60 ms, and displaces a plain
-      letter there rather than being dropped. Realistic typing (up to ~12/s) keeps nearly every key.
+    - Style per run: "auto" (the default) sounds a run of more than 25 chars/s per word ("word")
+      and a slower one per key ("soft"); any other style applies to every run.
+    - "word": one pitched blip per word, on each word start (variant "word") and on the first key
+      of a run, at least 80 ms apart; the other keys stay silent. The blips step through the tones
+      of the chord under them (E4-F6, 330-1400 Hz), up and back down, word by word.
+    - Per key, thinned by time, not by frames: no two keys sound within 60 ms (a flam), and where
+      the typing runs faster than 12 keys/s (within +-0.25 s) a letter sounds only 1/12 s after
+      the previous sounded key. A word start, space or return needs only the 60 ms, and displaces
+      a plain letter there rather than being dropped. Realistic typing (up to ~12/s) keeps nearly
+      every key.
     - Level follows the word: +2.5 dB on a word start, -0.3 dB per letter inside the word (down to
-      -1.5), -1 dB on the letter before a space, sigma 1 dB at random (clipped at 2.5), and -3 dB
-      ramped in from 1.5 s to 3 s into a run (the ear habituates; the first words sell the rest).
+      -1.5), -1 dB on the letter before a space, sigma 2.5 dB at random (clipped at 6.25), and -3 dB
+      ramped in from 1.5 s to 3 s into a run (the ear habituates; the first words sell the rest);
+      about 2.5 dB SD in all, and never more than 5 dB between neighbouring keys as planned
+      (under 6 dB as heard).
     - Density: gain x min(1, sqrt(10 / rate)) and decays x clip(10 / rate, 0.6, 1), where rate is
       the sounded keys per second within +-0.25 s, so a burst keeps one loudness and stays clean.
     - Timing: onsets jitter by sigma 3.5 ms, clipped at 8 ms and at 0.9 frame from the cue.
-    - A keyup 70-120 ms after the press when the next sounded key is over 140 ms away (space and
-      return: 120-180 ms when it is over 200 ms away).
-    - Each letter is one of 26 fixed keys (same key, same timbre) panned +-0.12 by its keyboard
-      column; space and return are one key each, centred. Per press: pitch sigma 1.2%.
+    - About half the letters bottom out 25-35 ms after the press at -12 to -15 dB; space and return
+      always do. A separate key-up click only with "keyup": true in score.json (next key over 140
+      ms away).
+    - Each letter is one of 26 fixed keys (same key, same timbre), within +-0.05 of the centre by its
+      keyboard column; space and return are one key each, centred. Per press: pitch sigma 1.2%.
     - "pitched": letters random-walk over the chord's pentatonic tones in G4-F5; space and return
       take the chord root near C4."""
     keys = [i for i, e in enumerate(events) if e['kind'] == 'key']
     plan, thinned, runs = {}, {}, []
     if not keys:
         return plan, thinned, runs
-    if song.typing == 'off':
-        return plan, {i: 'typing is "off" in score.json' for i in keys}, runs
     T = {i: float(events[i]['f']) / song.fps for i in keys}
     V = {i: str(events[i].get('variant', '') or '') for i in keys}
     edge = ('space', 'return')
@@ -681,22 +712,65 @@ def plan_typing(song, events):
     def prio(i):
         return V[i] in ('word',) + edge
 
-    pos, before_space, run_of, prev = {}, {}, {}, None
+    pos, before_space, run_of, first, prev = {}, {}, {}, set(), None
     for n, i in enumerate(keys):  # bursts and each letter's place in its word, over every key event
         new_run = prev is None or T[i] - T[prev] > 0.5
         if new_run:
-            runs.append(dict(t0=T[i], t1=T[i], keys=0, sounded=0, rate_max=0.0))
+            runs.append(dict(t0=T[i], t1=T[i], keys=0, sounded=0, rate_max=0.0, idx=[]))
+            first.add(i)
         run_of[i] = len(runs) - 1
         runs[-1]['t1'] = T[i]
         runs[-1]['keys'] += 1
+        runs[-1]['idx'].append(i)
         pos[i] = 0 if (new_run or V[i] in ('word',) + edge or V[prev] in edge) else pos[prev] + 1
         nxt = keys[n + 1] if n + 1 < len(keys) else None
         before_space[i] = nxt is not None and V[nxt] in edge and V[i] not in edge
         prev = i
-    ta = np.array([T[i] for i in keys])
-    kept = []
+    for r in runs:
+        span = r['t1'] - r['t0']
+        r['chars_per_s'] = (r['keys'] - 1) / span if span > 1e-6 else 0.0
+        r['style'] = song.typing if song.typing != 'auto' else ('word' if r['chars_per_s'] > AUTO_WORD_RATE else 'soft')
+    if song.typing == 'off':
+        return plan, {i: 'typing is "off" in score.json' for i in keys}, runs
+    style = {i: runs[run_of[i]]['style'] for i in keys}
+    lim = min(0.008, 0.9 / song.fps)
+
+    # word: one blip per word, stepping through the chord tones
+    contour = (0, 1, 2, 3, 4, 3, 2, 1)
+    last_blip, wk = -1e9, 0
     for i in keys:
-        if kept:
+        if style[i] != 'word':
+            continue
+        if i in first:
+            wk = 0
+        why = None
+        if not (V[i] == 'word' or i in first):
+            why = 'typing "word": one blip per word, on its first key'
+        elif T[i] - last_blip < WORD_MIN_GAP:
+            why = f'{(T[i] - last_blip) * 1000:.0f} ms after the previous word blip (merged)'
+        if why:
+            thinned[i] = why
+            continue
+        last_blip = T[i]
+        r = S.rng(7919 * i + int(float(events[i]['f']) * 10) + 37)
+        ch = song.chord_at(T[i] + 1e-3)
+        pcs = ch.pcs if ch is not None else song.penta
+        tones = [m for m in range(64, 90) if m % 12 in pcs]  # E4-F6: 330-1400 Hz
+        start = int(np.argmin([abs(m - 69) for m in tones]))  # from the chord tone nearest A4
+        m = tones[min(len(tones) - 1, start + contour[wk % len(contour)])]
+        wk += 1
+        db = float(np.clip(r.normal(0, 1.0), -2.0, 2.0)) + (1.5 if i in first else 0.0)
+        plan[i] = dict(t=max(0.0, T[i] + float(np.clip(r.normal(0, 0.0025), -lim, lim))), kind='word', style='word',
+                       seed=0, strike=7919 * i, level=10 ** (db / 20), keyup=None, second=0.0, second_db=None, tau=1.0,
+                       note=S.mtof(m), midi=m, pitch=1.0, pan=0.0, gain=TYPING_GAIN['word'], db=db)
+        runs[run_of[i]]['sounded'] += 1
+
+    # per key (soft, mechanical, pitched, muted): thin by time
+    pk = [i for i in keys if style[i] != 'word']
+    ta = np.array([T[i] for i in pk])
+    kept = []
+    for i in pk:
+        if kept and run_of[kept[-1]] == run_of[i]:
             j = kept[-1]
             gap = T[i] - T[j]
             fast = np.sum(np.abs(ta - T[i]) <= 0.25) / 0.5 > KEY_FAST
@@ -709,26 +783,33 @@ def plan_typing(song, events):
                 continue
         kept.append(i)
     tk = np.array([T[i] for i in kept])
-    lim = min(0.008, 0.9 / song.fps)
     letters = ''.join(QWERTY)
-    walk = 2
+    walk, prev_db = 2, None
     for n, i in enumerate(kept):
         f = float(events[i]['f'])
         r = S.rng(7919 * i + int(f * 10) + 31)
         rate = float(np.sum(np.abs(tk - T[i]) <= 0.25)) / 0.5
         kind = V[i] if V[i] in ('space', 'return', 'back') else 'letter'
-        db = float(np.clip(r.normal(0, 1.0), -2.5, 2.5))
+        db = float(np.clip(r.normal(0, KEY_LEVEL_SD), -2.5 * KEY_LEVEL_SD, 2.5 * KEY_LEVEL_SD))
         if kind in ('letter', 'back'):
             db += 2.5 if pos[i] == 0 else -min(1.5, 0.3 * pos[i]) - (1.0 if before_space[i] else 0.0)
         db -= 3.0 * float(np.clip((T[i] - runs[run_of[i]]['t0'] - 1.5) / 1.5, 0, 1))
+        gain = min(1.0, math.sqrt(10.0 / rate)) * KEY_KIND_GAIN[kind] * TYPING_GAIN[style[i]]
+        total = db + 20 * math.log10(gain)  # what is heard: the press level and the key's gain together
+        if prev_db is not None and n > 0 and run_of[kept[n - 1]] == run_of[i]:
+            total = float(np.clip(total, prev_db - KEY_MAX_STEP, prev_db + KEY_MAX_STEP))  # no jump over 5 dB as planned
+            db = total - 20 * math.log10(gain)
+        prev_db = total
         gap = tk[n + 1] - T[i] if n + 1 < len(kept) else 1e9
         need, dwell = (0.2, (0.12, 0.18)) if kind in edge else (0.14, (0.07, 0.12))
-        keyup = min(dwell[0] + (dwell[1] - dwell[0]) * r.random(), gap - 0.03) if gap > need else None
+        u_up, u_sec, u_delay, u_db = r.random(), r.random(), r.random(), r.random()
+        keyup = min(dwell[0] + (dwell[1] - dwell[0]) * u_up, gap - 0.03) if song.keyup and gap > need else None
+        second = None if kind in edge else (0.025 + 0.010 * u_delay if u_sec < 0.5 else 0.0)  # about half the letters
         ident = int(S.rng(4242 + i).integers(26))
         row = next(k for k, rw in enumerate(QWERTY) if letters[ident] in rw)
         col = QWERTY[row].index(letters[ident]) + (0, 0.25, 0.75)[row]
         note, m = None, None
-        if song.typing == 'pitched':
+        if style[i] == 'pitched':
             ch = song.chord_at(T[i] + 1e-3)
             pcs = [q for q in song.penta if ch is None or q in ch.pcs]
             pcs = pcs if len(pcs) >= 3 else song.penta
@@ -739,29 +820,41 @@ def plan_typing(song, events):
                 walk = int(np.clip(walk + int(r.integers(-2, 3) if pos[i] == 0 else r.integers(-1, 2)), 0, len(tones) - 1))
                 m = tones[walk]
             note = S.mtof(m)
-        plan[i] = dict(t=max(0.0, T[i] + float(np.clip(r.normal(0, 0.0035), -lim, lim))), kind=kind,
+        plan[i] = dict(t=max(0.0, T[i] + float(np.clip(r.normal(0, 0.0035), -lim, lim))), kind=kind, style=style[i],
                        seed=0 if kind in edge else ident, strike=7919 * i + int(f * 10), level=10 ** (db / 20),
-                       keyup=keyup, tau=float(np.clip(10.0 / rate, 0.6, 1.0)), note=note, midi=m,
+                       keyup=keyup, second=second, second_db=None if kind in edge else -12.0 - 3.0 * u_db,
+                       tau=float(np.clip(10.0 / rate, 0.6, 1.0)), note=note, midi=m,
                        pitch=1 + float(np.clip(0.012 * r.standard_normal(), -0.025, 0.025)),
-                       pan=0.0 if kind in edge else (col / 9.0 - 0.5) * 0.24,
-                       gain=min(1.0, math.sqrt(10.0 / rate)) * KEY_KIND_GAIN[kind] * TYPING_GAIN[song.typing])
+                       pan=0.0 if kind in edge else (col / 9.0 - 0.5) * 0.1, db=db, gain=gain)
         runs[run_of[i]]['sounded'] += 1
         runs[run_of[i]]['rate_max'] = max(runs[run_of[i]]['rate_max'], rate)
     return plan, thinned, runs
 
 
 def build_sfx(song, n, events, plan=None, thinned=None):
-    fx, hall, ui, keys = (np.zeros((n, 2)) for _ in range(4))
+    """Every event as a sound. Returns the buses (fx with its rooms, hall sends, ui for the clock's
+    tick/tock with a small room, and keys, clicks and crisp ticks, all dry), the placed and skipped
+    events and the hit ducks. Effects other than whooshes, risers, swells and sucks sit within
+    +-0.15 of the centre: the cue's pan is scaled into that range."""
+    fx, hall, ui, keys, clicks, crisp = (np.zeros((n, 2)) for _ in range(6))
     placed, skipped, ducks = [], [], []
     fps, beat = song.fps, song.beat
     plan, thinned = plan or {}, thinned or {}
     last_heavy = None
     pop_run, last_pop, lights = 0, -1e9, {}
+    # the UI click: one voice for the whole film at one level (the median click weight), a fixed
+    # press-release gap, +-0.5 dB and a tiny timbre jitter per press
+    cw = [float(e.get('weight', 1.0)) for e in events if e['kind'] == 'click']
+    click_w = float(np.median(cw)) if cw else 1.0
+    click_seed = 23 + 7 * song.tonic
+    click_gap = 0.080 + 0.012 * S.rng(click_seed).random()
     for i, e in enumerate(events):
         kind, f = e['kind'], float(e['f'])
         t = f / fps
         w = float(e.get('weight', 1.0))
         pan = float(e.get('pan', 0.0))
+        if kind not in WIDE_KINDS:
+            pan = SFX_PAN * float(np.clip(pan / 0.8, -1, 1))
         seed = 7919 * i + int(f * 10)
         ch = song.chord_at(t + 1e-3)
         pcs = ch.pcs if ch else song.scale
@@ -776,6 +869,12 @@ def build_sfx(song, n, events, plan=None, thinned=None):
             continue
         if in_silence(song, t, 'all') and kind != 'suck':
             song.warnings.append(f'{kind} at f={f} falls inside a silence and is muted')
+        if kind == 'tick' and e.get('variant') == 'crisp':  # counters locking, list rows, build ticks
+            x = S.crisp_tick(seed, 0.05, S.mtof(pitch) if pitch else None)
+            m, g = pitch, BASE['crisp'] * w
+            S.place(crisp, x, start, g, pan)
+            placed.append(dict(i=i, f=f, kind=kind, variant='crisp', id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m))
+            continue
         if kind == 'tick':
             m = pitch or song.sig_tick
             x = S.tick(S.mtof(m), 0.08, 0.010, 0.8, seed)
@@ -845,17 +944,29 @@ def build_sfx(song, n, events, plan=None, thinned=None):
             if i not in plan:
                 skipped.append(dict(i=i, f=f, kind=kind, why=thinned.get(i, 'thinned')))
                 continue
-            k = plan[i]  # plan_typing(): thinning, word dynamics, jitter, keyup, density
-            x = S.key_click(k['seed'], k['pitch'], None, song.typing, k['kind'], k['strike'], k['level'], k['keyup'],
-                            k['note'], k['tau'])
-            g *= k['gain']
+            k = plan[i]  # plan_typing(): style, thinning, word dynamics, jitter, bottom-out, density
+            if k['style'] == 'word':
+                x = S.word_blip(k['note'], 0.048) * k['level']
+            else:
+                x = S.key_click(k['seed'], k['pitch'], None, k['style'], k['kind'], k['strike'], k['level'], k['keyup'],
+                                k['note'], k['tau'], k['second'], k['second_db'])
+                # level by what is heard (6 ms RMS), not by the peak: every key, space and return then
+                # sits exactly where plan_typing put it, whatever its timbre
+                w6 = max(1, S.ns(0.006))
+                x *= k['level'] * KEY_RMS_REF[k['style']] / (np.sqrt(np.convolve(x ** 2, np.ones(w6) / w6, 'same')).max() + 1e-12)
+            g = BASE['key'] * w * k['gain']  # render() then levels the run against the music (weight 1 = the norm)
             start = k['t']
-            pan = float(np.clip(pan + k['pan'], -1, 1))
+            pan = float(np.clip(k['pan'], -SFX_PAN, SFX_PAN))
             m = k['midi']
         elif kind == 'click':  # press + release; variant "confirm" adds a soft tuned tone (meaningful actions only)
-            m = pitch or S.nearest(song.penta, 87)  # 1.0-1.5 kHz
+            m = pitch or S.nearest(song.penta, 95)  # one tone near 2 kHz for the film
             tone = S.mtof(S.nearest([q for q in song.penta if q in pcs] or song.penta, 81)) if e.get('variant') == 'confirm' else None
-            x = S.ui_click(S.mtof(m), 0.16, seed, 0.07 + 0.03 * S.rng(seed).random(), tone)
+            r = S.rng(seed)
+            x = S.ui_click(S.mtof(m), 0.14, click_seed, click_gap + 0.004 * r.standard_normal(), tone, seed)
+            g = BASE['click'] * click_w * 10 ** (float(np.clip(r.normal(0, 0.25), -0.5, 0.5)) / 20)
+            S.place(clicks, x, start, g, pan)
+            placed.append(dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m))
+            continue
         elif kind == 'snap':
             m = S.ftom(song.sub_root(t))
             x = S.snap(S.mtof(m), 0.6, 1.0, seed)
@@ -882,7 +993,7 @@ def build_sfx(song, n, events, plan=None, thinned=None):
             pan = 0.0
         S.place(keys if kind == 'key' else ui if kind in UI_KINDS else fx, x, start, g, pan)
         placed.append(dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m))
-    return fx, hall, ui, keys, placed, skipped, ducks
+    return dict(fx=fx, hall=hall, ui=ui, keys=keys, clicks=clicks, crisp=crisp), placed, skipped, ducks
 
 
 # ------------------------------------------------------------------------------------------
@@ -930,47 +1041,118 @@ def _a_weight(fr):
     return (ra * 1.2589) ** 2
 
 
-def typing_levels(runs, keys_sig, music_sig, style='soft'):
-    """Each run of 4+ sounded keys against the music under it (both pre-master): the A-weighted
-    level difference, the 2-5 and 5-10 kHz band differences, the typing's 2-5 kHz share of its
-    own A-weighted energy, and the bed's share above 2 kHz. The band test applies only over a bed
-    with top end (>= 5% above 2 kHz); over a dark pad the keys' own spectrum is judged (<= 25% in
-    2-5 kHz). Returns (rows, warnings)."""
-    rows, warns = [], []
-    for r in runs:
-        if r['sounded'] < 4:
+def short_vs_music(sig, music, t, win=0.006, mwin=0.25):
+    """An effect against the music the way the norms measure it: the effect's 6 ms RMS at its
+    loudest (within 2 ms before to 20 ms after t) minus the music's 250 ms RMS centred on t, in dB.
+    sig and music are mono. Returns (dB, effect RMS) or (None, rms) when there is no music there."""
+    i = int(round(t * SR))
+    a, b = max(0, i - int(0.002 * SR)), min(len(sig), i + int(0.02 * SR))
+    if b - a < 8:
+        return None, 0.0
+    k = max(1, int(win * SR))
+    e = np.sqrt(np.maximum(np.convolve(sig[a:b] ** 2, np.ones(k) / k, mode='same'), 0))
+    h = int(mwin * SR / 2)
+    mu = float(np.sqrt(np.mean(music[max(0, i - h):i + h] ** 2))) if i < len(music) else 0.0
+    peak = float(e.max())
+    if mu < 1e-4 or peak <= 0:  # no music under it (or nothing sounded): nothing to level against
+        return None, peak
+    return 20 * np.log10(peak / mu), peak
+
+
+def level_bus(bus, times, music, target_db, spans=None):
+    """Scale an effect bus so the median of its events' short_vs_music sits on target_db (clamped
+    to +-LEVEL_CLAMP_DB). spans: [(i0, i1, times)] levels each span on its own (typing runs);
+    otherwise one gain for the whole bus (one voice, one level per film). Returns the gains in dB,
+    one per span (or one), None where no music sits under the events."""
+    sig = bus.mean(axis=1)
+    out = []
+    for i0, i1, ts in (spans or [(0, len(bus), times)]):
+        d = [v for v in (short_vs_music(sig, music, t)[0] for t in ts) if v is not None]
+        if not d:
+            out.append(None)
             continue
-        i0, i1 = int(r['t0'] * SR), min(len(music_sig), int((r['t1'] + 0.1) * SR))
+        g = float(np.clip(target_db - np.median(d), -LEVEL_CLAMP_DB, LEVEL_CLAMP_DB))
+        bus[i0:i1] *= 10 ** (g / 20)
+        out.append(round(g, 1))
+    return out
+
+
+def typing_duck(song, plan, runs, n):
+    """Typing in the foreground gets room: the music bus gain dips mix.typing_duck_db (default 10 dB)
+    under every run of 3+ keys sounded per key (soft, mechanical, pitched), down over the 30 ms before
+    its first key and back up over 250 ms after its last. muted, word and off runs leave the music alone."""
+    g = np.ones(n)
+    db = song.mix['typing_duck_db']
+    for r in runs:
+        r['duck_db'] = 0.0
+        ts = sorted(plan[i]['t'] for i in r['idx'] if i in plan and plan[i]['style'] in PER_KEY)
+        if len(ts) < 3 or db <= 0:  # a lone key or two (an Enter, a shortcut) leaves the music alone
+            continue
+        a, b = ts[0], ts[-1] + 0.03
+        i0, i1 = max(0, int((a - 0.03) * SR)), min(n, int((b + 0.25) * SR))
+        u = np.arange(i0, i1) / SR
+        shape = np.where(u < a, 0.5 - 0.5 * np.cos(np.pi * np.clip((u - a + 0.03) / 0.03, 0, 1)),
+                         np.where(u <= b, 1.0, 0.5 + 0.5 * np.cos(np.pi * np.clip((u - b) / 0.25, 0, 1))))
+        g[i0:i1] = np.minimum(g[i0:i1], 1 - (1 - 10 ** (-db / 20)) * shape)
+        r['duck_db'] = db
+    return g
+
+
+def typing_levels(runs, plan, keys_sig, music_sig):
+    """Each typing run of 4+ sounded keys (2+ word blips) against the music under it, both
+    pre-master and the music already ducked: the A-weighted level difference over the run, the
+    keys' short-window level against the music (6 ms vs 250 ms RMS, median), the 2-5 and 5-10 kHz
+    band differences, the typing's 2-5 kHz share of its own A-weighted energy, and the bed's share
+    above 2 kHz. Targets, from measured norms: per key (soft, mechanical, pitched) the run sits -8
+    to -2 dB A under the ducked music with the keys about at the music's short-window RMS; word
+    blips +2 to +9 dB over it; muted typing 8 dB A or more under the full bed. Returns (rows, warnings)."""
+    rows, warns = [], []
+    km, mm = keys_sig.mean(axis=1), music_sig.mean(axis=1)
+    for r in runs:
+        sounded = [plan[i]['t'] for i in r['idx'] if i in plan]
+        if r['sounded'] < (2 if r['style'] == 'word' else 4) or not sounded:
+            continue
+        i0, i1 = int(r['t0'] * SR), min(len(mm), int((r['t1'] + 0.1) * SR))
         if i1 - i0 < 1024:
             continue
-        k, mu = keys_sig[i0:i1].mean(axis=1), music_sig[i0:i1].mean(axis=1)
+        k, mu = km[i0:i1], mm[i0:i1]
         K, Mu = np.abs(np.fft.rfft(k)) ** 2, np.abs(np.fft.rfft(mu)) ** 2
         fr = np.fft.rfftfreq(len(k), 1 / SR)
         aw = _a_weight(fr)
         db = lambda a, b: round(float(10 * np.log10((a + 1e-20) / (b + 1e-20))), 1)
         band = lambda X, lo, hi: X[(fr >= lo) & (fr < hi)].sum()
-        row = dict(t=[round(r['t0'], 2), round(r['t1'], 2)], keys=r['keys'], sounded=r['sounded'],
-                   rate_max=round(r['rate_max'], 1), vs_music_A_db=db((K * aw).sum(), (Mu * aw).sum()),
+        sv = [v for v in (short_vs_music(km, mm, t)[0] for t in sounded) if v is not None]
+        row = dict(t=[round(r['t0'], 2), round(r['t1'], 2)], style=r['style'], chars_per_s=round(r['chars_per_s'], 1),
+                   keys=r['keys'], sounded=r['sounded'], rate_max=round(r['rate_max'], 1), duck_db=r.get('duck_db', 0.0),
+                   level_db=r.get('level_db'), vs_music_A_db=db((K * aw).sum(), (Mu * aw).sum()),
+                   key_vs_music_db=round(float(np.median(sv)), 1) if sv else None,
                    band_2k_5k_db=db(band(K, 2000, 5000), band(Mu, 2000, 5000)),
                    band_5k_10k_db=db(band(K, 5000, 10000), band(Mu, 5000, 10000)),
                    share_2k_5k_A_pct=round(float(100 * band(K * aw, 2000, 5000) / ((K * aw).sum() + 1e-20)), 1),
                    bed_top_A_pct=round(float(100 * band(Mu * aw, 2000, 10000) / ((Mu * aw).sum() + 1e-20)), 1))
         rows.append(row)
+        where = f'typing at {row["t"][0]}-{row["t"][1]}s ({r["style"]}, {row["chars_per_s"]:.0f} chars/s)'
+        if r['style'] != 'word' and r['chars_per_s'] > AUTO_WORD_RATE:  # any per-key style, muted included
+            warns.append(f'{where} sounds per key above {AUTO_WORD_RATE:.0f} chars/s; measured films sound typing that fast '
+                         'once per word or not at all: "typing": "auto", "word" or "off"')
         if np.sqrt(np.mean(mu ** 2)) < 1e-3:
             row['note'] = 'no music under this run'
             continue
-        where = f'typing at {row["t"][0]}-{row["t"][1]}s'
-        quieter = 'lower the key weights' + ('' if style == 'muted' else ' or use "typing": "muted"')
-        duller = 'lower the key weights' + {'mechanical': ' or use "typing": "soft" or "muted"', 'muted': ''}.get(style, ' or use "typing": "muted"')
-        if row['vs_music_A_db'] > -8:
-            warns.append(f'{where} sits only {-row["vs_music_A_db"]:.0f} dB A under the music (a texture wants 15-20 under a '
-                         f'full bed, 8-12 as the foreground): {quieter}')
-        if row['share_2k_5k_A_pct'] > 25:
+        if r['style'] in PER_KEY:
+            if row['vs_music_A_db'] > -1:
+                warns.append(f'{where} sits {row["vs_music_A_db"]:+.0f} dB A against the ducked music (want about -8 to -2): '
+                             'lower the key weights')
+            elif row['vs_music_A_db'] < -10:
+                warns.append(f'{where} sits {-row["vs_music_A_db"]:.0f} dB A under the ducked music (want about 2-8): the music is '
+                             'too dense to level against; raise mix.typing_duck_db, thin the section, or "muted"')
+        elif r['style'] == 'muted' and row['vs_music_A_db'] > -8:
+            warns.append(f'{where} sits only {-row["vs_music_A_db"]:.0f} dB A under the music (muted typing is background, '
+                         '8 dB A or more under): lower the key weights')
+        elif r['style'] == 'word' and row['key_vs_music_db'] is not None and not 0 <= row['key_vs_music_db'] <= 11:
+            warns.append(f'{where}: the word blips sit {row["key_vs_music_db"]:+.0f} dB against the music (want +2 to +9)')
+        if r['style'] != 'word' and row['share_2k_5k_A_pct'] > 25:
             warns.append(f'{where} is bright: {row["share_2k_5k_A_pct"]:.0f}% of its A-weighted energy in 2-5 kHz (want 25% '
-                         f'or less): {duller}')
-        elif row['bed_top_A_pct'] >= 5 and max(row['band_2k_5k_db'], row['band_5k_10k_db']) > -6 and row['vs_music_A_db'] > -20:
-            warns.append(f'{where} is brighter than the music above 2 kHz ({row["band_2k_5k_db"]:+.0f} dB in 2-5 kHz, '
-                         f'{row["band_5k_10k_db"]:+.0f} dB in 5-10 kHz; want 6 dB under): {duller}')
+                         'or less; a key is a dark tock): use "soft" or "muted"')
     return rows, warns
 
 
@@ -1000,7 +1182,8 @@ def render(song, events, stems_dir=None, base_dir='.'):
     stems, kicks = build_music(song, n, events, plan)
     if song.bed:
         stems['bed'] = load_bed(song, n, base_dir)
-    fx, hall, ui, keys, placed, skipped, ducks = build_sfx(song, n, events, plan, thinned)
+    B, placed, skipped, ducks = build_sfx(song, n, events, plan, thinned)
+    fx, hall, ui, keys = B['fx'], B['hall'], B['ui'], B['keys']
     t = np.arange(n) / SR
 
     sc = M.sidechain_times(kicks + [(tt_, 0.8 * w) for tt_, w in ducks], n, song.mix['sidechain'], 0.14)
@@ -1012,7 +1195,8 @@ def render(song, events, stems_dir=None, base_dir='.'):
         parts['bed'] = stems['bed']
     music = sum(parts.values())
 
-    # music bus: section levels, a 3 dB dip for 150 ms around key hits, the suck before drops
+    # music bus: section levels, a 3 dB dip for 150 ms around key hits, a 10 dB dip under typing
+    # sounded per key, the suck before drops
     pts = [(0.0, 1.0)]
     for sec in song.sections:
         a, b = song.bar_t(sec['b0']), song.bar_t(sec['b1'] + 1)
@@ -1025,22 +1209,64 @@ def render(song, events, stems_dir=None, base_dir='.'):
         u = t[seg] - tt_
         shape = np.where(u < 0, (u + 0.01) / 0.01, np.where(u < 0.15, 1.0, np.exp(-(u - 0.15) / 0.08)))
         bus[seg] *= 1 - dip * min(1.0, w) * shape
+    bus *= typing_duck(song, plan, runs, n)
     for a, b, depth in song.sucks:
         w_ = (t > a) & (t < b)
         bus[w_] = np.minimum(bus[w_], 1 - depth * np.clip((t[w_] - a) / 0.04, 0, 1))
     # the end fade: music AND effects (with their reverb) reach digital zero 30 ms before the end,
     # so nothing is still sounding when master.py's last 60 ms fade and zeroed samples arrive
     fade = np.clip((song.dur - 0.03 - t) / song.fade, 0, 1) ** 2
-    music_gain = bus * fade * song.mix['music']
-    music_bus = music * music_gain[:, None]
+    hold = {'all': np.ones(n), 'music': np.ones(n)}
+    for a, b, depth, scope in song.silences:
+        w_ = (t > a - 0.04) & (t < b)
+        h = hold[scope]
+        h[w_] = np.minimum(h[w_], 1 - depth * np.clip((t[w_] - (a - 0.04)) / 0.04, 0, 1))
+    music_gain = bus * fade * song.mix['music'] * hold['music'] * hold['all']
+    music_bus = music * (bus * fade * song.mix['music'] * hold['music'])[:, None]
+
+    # levels against the music as heard (measured norms: 6 ms effect RMS vs 250 ms music RMS): each
+    # typing run on its own, and one gain per film for the click and for the crisp tick
+    heard = (music_bus * hold['all'][:, None]).mean(axis=1)
+    ref = heard / 1.25  # the dry effects go out at 1.25x (below); mix.sfx stays a trim on top of the levelling
+    spans, owners = [], []
+    for r in runs:
+        ts = sorted(plan[i]['t'] for i in r['idx'] if i in plan)
+        if ts:
+            spans.append((max(0, int((ts[0] - 0.02) * SR)), min(n, int((ts[-1] + 0.3) * SR)), ts))
+            owners.append(r)
+    wdb = lambda ws: 20 * math.log10(max(0.05, float(np.median(ws)))) if ws else 0.0  # a weight shifts the target
+    for r, (i0, i1, ts) in zip(owners, spans):
+        target = LEVEL_VS_MUSIC.get(r['style'], LEVEL_VS_MUSIC['key'])
+        target += wdb([float(events[i].get('weight', 1.0)) for i in r['idx'] if i in plan])
+        r['level_db'] = level_bus(keys, None, ref, target, [(i0, i1, ts)])[0]
+    sfx_levels = {}
+    for name, bus_, sel in (('click', B['clicks'], lambda p: p['kind'] == 'click'),
+                            ('crisp', B['crisp'], lambda p: p.get('variant') == 'crisp')):
+        ps = [p for p in placed if sel(p)]
+        if not ps:
+            continue
+        target = LEVEL_VS_MUSIC[name] + wdb([float(events[p['i']].get('weight', 1.0)) for p in ps])
+        g_db = level_bus(bus_, [p['start'] for p in ps], ref, target)[0]
+        for p in ps:
+            p['g'] *= 10 ** ((g_db or 0.0) / 20)
+        sig = bus_.mean(axis=1) * 1.25 * song.mix['sfx']
+        sv = [v for v in (short_vs_music(sig, heard, p['start'])[0] for p in ps) if v is not None]
+        sfx_levels[name] = dict(count=len(ps), level_db=g_db, vs_music_db=round(float(np.median(sv)), 1) if sv else None,
+                                target_db=round(target, 1))
+        if sv and abs(np.median(sv) - target - 20 * math.log10(max(song.mix['sfx'], 1e-3))) > 2:
+            song.warnings.append(f'{name}: {len(ps)} at {np.median(sv):+.1f} dB against the music, target {target:+g} (the levelling '
+                                 f'stops {LEVEL_CLAMP_DB:g} dB from the static level): the music under them is unusually loud or quiet; check '
+                                 'that section\'s level, or their weights')
 
     fx_low = S.filt(fx, S.lp(90, 2))
     fx_dry = S.filt(fx - fx_low * 0.45, S.hp(24, 2)) * 1.25 * song.mix['sfx']
     fxs = S.filt(fx, S.hp(250, 2))
     fx_wet = (S.reverb(fxs * 0.18, 'room') + S.reverb(fxs * 0.08 + hall, 'hall')) * song.mix['sfx']
-    # keys, ticks and clicks: dry, plus a small room (0.3 s) sent at -22 dB and high-passed at 350 Hz
-    ui_dry = S.filt(ui + keys, S.hp(24, 2)) * 1.25 * song.mix['sfx']
-    ui_wet = S.reverb(S.filt(ui + keys, S.hp(350, 2)) * 0.08, 'small') * song.mix['sfx']
+    # keys, clicks and crisp ticks dry; the clock's tick and tock plus a small room (0.3 s) sent at
+    # -22 dB and high-passed at 350 Hz
+    dry = ui + keys + B['clicks'] + B['crisp']
+    ui_dry = S.filt(dry, S.hp(24, 2)) * 1.25 * song.mix['sfx']
+    ui_wet = S.reverb(S.filt(ui, S.hp(350, 2)) * 0.08, 'small') * song.mix['sfx']
     fx_dry = (fx_dry + ui_dry) * fade[:, None]
     fx_wet = (fx_wet + ui_wet) * fade[:, None]
     keys_dry = S.filt(keys, S.hp(24, 2)) * 1.25 * song.mix['sfx'] * fade[:, None]  # for the typing report
@@ -1053,13 +1279,6 @@ def render(song, events, stems_dir=None, base_dir='.'):
                                  f"({20 * np.log10(g_ + 1e-9):.0f} dB): move it at least "
                                  f"{int(np.ceil((song.fade + 0.03) * song.fps))} f before the end or shorten master.fade")
 
-    hold = {'all': np.ones(n), 'music': np.ones(n)}
-    for a, b, depth, scope in song.silences:
-        w_ = (t > a - 0.04) & (t < b)
-        h = hold[scope]
-        h[w_] = np.minimum(h[w_], 1 - depth * np.clip((t[w_] - (a - 0.04)) / 0.04, 0, 1))
-    music_gain *= hold['music'] * hold['all']
-    music_bus *= hold['music'][:, None]
     mix = (music_bus + fx_dry + fx_wet) * hold['all'][:, None]
     mix = mix[:n_out]
 
@@ -1067,10 +1286,11 @@ def render(song, events, stems_dir=None, base_dir='.'):
 
     # report: masking per event, payoff dynamics
     mb = (music_bus * hold['all'][:, None])[:n_out]
-    trows, twarn = typing_levels(runs, (keys_dry * hold['all'][:, None])[:n_out], mb, song.typing)
+    trows, twarn = typing_levels(runs, plan, (keys_dry * hold['all'][:, None])[:n_out], mb)
     song.warnings.extend(twarn)
-    typing = dict(style=song.typing, keys=sum(1 for e in events if e['kind'] == 'key'), sounded=len(plan),
-                  thinned=len(thinned), runs=trows)
+    styles = sorted({r['style'] for r in runs})
+    typing = dict(style=song.typing, styles=styles, keys=sum(1 for e in events if e['kind'] == 'key'), sounded=len(plan),
+                  thinned=len(thinned), duck_db=song.mix['typing_duck_db'], runs=trows)
     masked = []
     for p in placed:
         if p['kind'] in ('key', 'drop') or 'start' not in p:
@@ -1092,7 +1312,7 @@ def render(song, events, stems_dir=None, base_dir='.'):
         r = band_snr(seg, mb[i0:i1])
         if r is not None:
             p['snr'] = (r[0], round(r[1], 1))
-            if r[1] < 6:
+            if r[1] < (0 if p.get('variant') == 'crisp' else 6):  # a crisp tick sits just over the bed by design
                 masked.append(dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), band_hz=r[0], snr_db=round(r[1], 1)))
     if stems_dir:
         import soundfile as sf
@@ -1111,7 +1331,7 @@ def render(song, events, stems_dir=None, base_dir='.'):
 
     tuned = [dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), note=note_name(p['midi']), in_key=fits(p))
              for p in placed if p.get('midi') is not None]
-    return y, info, dict(placed=placed, skipped=skipped, masked=masked, tuned=tuned, typing=typing)
+    return y, info, dict(placed=placed, skipped=skipped, masked=masked, tuned=tuned, typing=typing, sfx_levels=sfx_levels)
 
 
 def main(argv=None):
@@ -1186,8 +1406,18 @@ def main(argv=None):
         rep['hook'] = dict(opening_lufs_m=round(opening, 2), median_lufs_m=round(med, 2), below_median_db=round(med - opening, 2))
         if med - opening > 12:
             song.warnings.append(f'soft hook: the first 0.5 s sits {med - opening:.0f} dB under the median momentary loudness '
-                                 f'({opening:.1f} vs {med:.1f} LUFS-M): start the first bar at intent (a hit, tick or chord on '
-                                 'frame 0; no slow attack, drone swell or riser into the opening)')
+                                 f'({opening:.1f} vs {med:.1f} LUFS-M; an intro runs 5-12 LU under the body): enter with '
+                                 'intent on frame 0 (a drone, a chord, the device\'s tick, at most a 150-450 ms entry; no slow '
+                                 'swell or riser into the opening)')
+    # the arc: measured films peak at the drop or hero reveal (30-60% of the runtime); the lockup is
+    # the most resolved moment, not the loudest. A sting (8 s or less) is all lockup: exempt.
+    if song.dur > 8 and rep.get('momentary_max_t') is not None:
+        frac = rep['momentary_max_t'] / song.dur
+        rep['loudest_frac'] = round(frac, 2)
+        if frac > 0.8:
+            song.warnings.append(f'the loudest moment is at {frac * 100:.0f}% of the film ({rep["momentary_max_t"]}s): the ending '
+                                 'should subtract, not slam. Peak on the drop or hero reveal (30-60%) and point "payoff" '
+                                 'there; stop or filter the music as the logo forms, then one soft resolved element')
     # the end: the effects follow the music's fade, so the last 50 ms are close to silence
     if rep.get('tail_50ms_db') is not None and rep['tail_50ms_db'] > -45:
         song.warnings.append(f'the ending is not silent: the last 50 ms measure {rep["tail_50ms_db"]} dB (want under -45)')
@@ -1210,6 +1440,8 @@ def main(argv=None):
         rep['progress'] = progress
     if ev['typing']['keys']:
         rep['typing'] = ev['typing']
+    if ev['sfx_levels']:
+        rep['sfx_levels'] = ev['sfx_levels']
     rep['pass'] = not fails
     if a.json:
         os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
@@ -1220,9 +1452,15 @@ def main(argv=None):
               f"events {len(events)} ({len(ev['skipped'])} skipped, {len(ev['masked'])} masked)")
         ty = ev['typing']
         if ty['keys']:
-            worst = max((r['vs_music_A_db'] for r in ty['runs'] if 'note' not in r), default=None)
-            print(f"  typing: {ty['style']}, {ty['sounded']}/{ty['keys']} keys sound"
+            worst = max((r['vs_music_A_db'] for r in ty['runs'] if 'note' not in r and r['style'] != 'word'), default=None)
+            ducked = any(r['duck_db'] for r in ty['runs'])
+            print(f"  typing: {ty['style']} ({', '.join(ty['styles'])}), {ty['sounded']}/{ty['keys']} keys sound"
+                  + (f", music ducked {ty['duck_db']:g} dB under the keys" if ducked else '')
                   + (f", loudest run {worst:+.1f} dB A vs the music" if worst is not None else ''))
+        for k_, v_ in ev['sfx_levels'].items():
+            if v_['vs_music_db'] is not None:
+                print(f"  {k_}: {v_['count']} at one level, {v_['vs_music_db']:+.1f} dB vs the music (6 ms vs 250 ms RMS; "
+                      f"target {v_['target_db']:+g})")
         if progress and progress.get('events'):
             print(f"  progress: {progress['events']} rungs {progress['rungs'][0]['note']} -> {progress['rungs'][-1]['note']}"
                   + (f", resolves on {progress['resolve']['note']} at {progress['resolve']['t']}s" if 'resolve' in progress else ''))

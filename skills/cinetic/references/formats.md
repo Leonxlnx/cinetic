@@ -236,7 +236,7 @@ const ts = (f: number) => {
 writeFileSync('out/captions.srt', COPY.map((c, i) => `${i + 1}\n${ts(c.in)} --> ${ts(c.out)}\n${c.text}\n`).join('\n'));
 ```
 
-- **Sound.** A light bed with UI clicks at about −24 dBFS, panned ±0.3 with the cursor. Typing stays soft and under the music (`"typing": "soft"` or `"muted"`; `score.py` thins it, `references/sound.md` §5.5c).
+- **Sound.** A light bed with UI clicks at one level, about 3 dB under the music's short-window level and centred (`score.py` levels them). Typing per key with the music ducked under it, or one blip per word when it streams fast (`"typing": "auto"`, or `"muted"` under VO; `references/sound.md` §5.5c).
 - **Long walkthroughs** (over 60 s) get one act per chapter, so a fix re-renders one chapter. Master with `scripts/render-chunks.sh` when the blur pass would be slow.
 
 **Format gates**

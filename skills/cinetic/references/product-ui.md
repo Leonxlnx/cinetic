@@ -245,7 +245,7 @@ export const ClickSend: React.FC = () => {
 };
 ```
 
-- Put the click sound on the press frame and pan it with the cursor's x (±0.3); see `references/sound.md`.
+- Put the click sound on the press frame. Keep the cue's `pan` from the cursor's x: `score.py` scales it into ±0.15 and plays every click at one level; see `references/sound.md`.
 - Keep the arc inside the frame and clear of the text the viewer is reading.
 
 ## 6. Typing cadence

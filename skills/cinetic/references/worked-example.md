@@ -88,7 +88,7 @@ The film runs at 120 BPM and 60 fps: a beat is 30 f, a bar is 120 f (2 s), an 8t
 |---|---|---|---|---|---|---|
 | fit | 1–3 | 0–359 | 0–6 s | Iris onto the dot (f30), day line (f45), grid (f60), accelerating rain (f90 on), headline slam (f240), implosion (f330) | Your week / doesn't fit. | tick-tock alone, then intro chords; rain tocks panned to their day column; a "suck" to silence at f345 |
 | mark | 4–5 | 360–599 | 6–10 s | Ink flood, the mark assembles (drop 1, f360), lockup (f405), dolly and beat punches, the mark opens into the app (f540) | Tessel / The calendar that plans itself. | drop 1; the clock keeps time through the hold (hats removed on those beats) |
-| prompt | 6–7 | 600–839 | 10–14 s | Clashes flash day by day on the downbeat, the camera pushes to the command bar (f630), typing (f660–780), click (f810), red flood (f814) | the typed prompt (UI) | key clicks with accented word starts; 8th-note hats only under typing |
+| prompt | 6–7 | 600–839 | 10–14 s | Clashes flash day by day on the downbeat, the camera pushes to the command bar (f630), typing (f660–780), click (f810), red flood (f814) | the typed prompt (UI) | key clicks with accented word starts; hats thinned under the typing |
 | plan | 8–9 | 840–1079 | 14–18 s | Shutter into the now-line (drop 2, f840); tabletop: 34 blocks lift, fly and land on an accelerating schedule (f870–990); straighten (f990); "Week planned" (f1050) | UI toast | drop 2; landing tocks climb chord-tone ladders |
 | feat | 10–12 | 1080–1439 | 18–24 s | The window splits on its sidebar seam; one line clicks home per bar (f1080, f1200, f1320); each payoff lands on the clap (+60 f) and its consequence on the kick (+75 f) | the three consequence lines | whips peak on the kick; check pips in key |
 | end | 13–16 + 60 f | 1440–1979 | 24–33 s | Pull-back, neighbouring weeks tessellate in a wave (f1560), "Everything" (f1620), "fits." (f1680), lockup (f1740), URL (f1800), tick-tock and return home (f1890) | Everything fits. / tessel.app | breakdown, resolution on "fits.", bookend tick-tock, 1 s tail to digital zero |
@@ -266,7 +266,7 @@ Each lesson is now a default somewhere in the skill; the file named after "Now i
     - *Fix:*
       - tune every sound to the chord and use integrated-phase oscillators;
       - end the V pads at the bar + 0.08 s;
-      - play 8th-note hats only under typing;
+      - thin the hats under typing (`score.py` now stops them in bars with 4+ sounded keys);
       - duck everything 97% before the drop;
       - verify each effect's audibility by mute-and-subtract, at ≥ +6 dB in its own band.
     - *Now in:* `references/sound.md`.
