@@ -4,7 +4,7 @@ Covers the measured norms of top-tier launch films: how long shots run and how o
 
 Every number here was measured frame by frame in top-tier launch films, from 9 s social teasers to 90 s feature films, and converted to one convention:
 - **f** is a frame at 60 fps. Speeds are **px/f at 1080p and 60 fps**. Sizes are shares of frame height (**FH**) or frame width (**FW**).
-- A value reads "median (range)" across the films. Counts read "just over half".
+- A value reads "median (range)" across the films.
 - **Frame difference** is the mean absolute luma change between consecutive frames on a 320 px-wide greyscale copy, on a 0–255 scale. "Near-still" means a frame difference under 0.5.
 - A **Skill check** line marks a measured norm that differs from a default in `SKILL.md` or another reference, and gives the measured range. The skill's default stands until you have a reason to move; this file is that reason when you need one.
 
