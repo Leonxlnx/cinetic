@@ -10,9 +10,9 @@
  */
 (function (root) {
   'use strict';
-  const BF = root.BF || (typeof require === 'function' ? require('./motion.js') : null);
-  if (!BF) throw new Error('timeline.js: load motion.js first');
-  const { b, E, FPS, BPM, peak, settleOf, startFor, arriving } = BF;
+  const MOTION = root.MOTION || (typeof require === 'function' ? require('./motion.js') : null);
+  if (!MOTION) throw new Error('timeline.js: load motion.js first');
+  const { b, E, FPS, BPM, peak, settleOf, startFor, arriving } = MOTION;
 
   const TAIL = FPS; // 1 s after the last event: room for reverb tails and the poster hold
 

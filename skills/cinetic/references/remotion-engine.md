@@ -171,7 +171,7 @@ Encoder defaults you override per render: h264 CRF 18 and x264 preset `medium` (
 | find the fastest concurrency | `npx remotion benchmark --concurrencies=1,2,4 --runs=2` |
 | transparent master | `--image-format=png --pixel-format=yuva444p10le --codec=prores --prores-profile=4444` (`scripts/deliver.sh`) |
 | override size/fps/length | `--width --height --fps --duration`, e.g. a quick half-size check with `--scale=0.5` |
-| see browser console output | `--log=verbose` (the layout audit reads `BF_AUDIT` lines this way) |
+| see browser console output | `--log=verbose` (the layout audit reads `CINETIC_AUDIT` lines this way) |
 
 Keep test renders short on a shared machine: frame lists and ranges, `--concurrency=2`.
 

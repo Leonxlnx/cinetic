@@ -169,7 +169,7 @@
     </div>
     <script>
       (function () {
-        const { E, W, sec, pulse, startFor } = window.BF;
+        const { E, W, sec, pulse, startFor } = window.MOTION;
         const { CUE, DUR, DROP, WORD_EASE, TOTAL } = window.FILM;
 
         function build() {
@@ -186,7 +186,7 @@
           tl.fromTo("#pcC", { opacity: 0 }, { opacity: 1, duration: sec(8), ease: E.out }, sec(CUE.fall));
 
           // Downbeat of bar 2: contact. Squash on the child, recoil on a wrapper, so no node
-          // carries two transform tweens at once (the squash numbers are BF.squash's).
+          // carries two transform tweens at once (the squash numbers are MOTION.squash's).
           const squash = pulse(1, 4);
           tl.fromTo("#pcC > span", { scaleX: 1, scaleY: 1 }, { scaleX: 1.08, scaleY: 0.9, duration: squash.dur, ease: squash.ease }, sec(CUE.hit));
           const recoil = pulse(2, 5);

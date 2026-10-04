@@ -66,7 +66,7 @@ for (const [name, sub] of [
   ['remotion starter', 'remotion-starter/src'],
   ['hyperframes starter', 'hyperframes-starter'],
 ]) {
-  const tmp = mkdtempSync(join(tmpdir(), 'bf-lint-'));
+  const tmp = mkdtempSync(join(tmpdir(), 'cinetic-lint-'));
   const dst = join(tmp, 'p');
   cpSync(join(SKILL, 'assets', sub), dst, { recursive: true, filter: (s) => !s.includes('node_modules') });
   const before = lint(dst);

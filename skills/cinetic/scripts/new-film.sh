@@ -114,7 +114,7 @@ const fs = require('fs'), path = require('path'), vm = require('vm');
 const dir = process.env.DIR, W = +process.env.W, H = +process.env.H;
 const ctx = {}; ctx.window = ctx; vm.createContext(ctx);
 for (const f of ['motion.js', 'timeline.js']) vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8'), ctx, { filename: f });
-const { FPS } = ctx.BF, { TOTAL } = ctx.FILM;
+const { FPS } = ctx.MOTION, { TOTAL } = ctx.FILM;
 const dur = +(TOTAL / FPS).toFixed(6);
 const file = path.join(dir, 'index.html');
 let html = fs.readFileSync(file, 'utf8');
