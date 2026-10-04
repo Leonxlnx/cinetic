@@ -2,7 +2,7 @@
 
 How cinetic was tested, what the results were, and what they do and do not show.
 
-In short: across six judged rounds, cinetic met more of the written expectations than the baseline every time and won every house-style comparison. The neutral blind judge was split: 7 wins in 23 comparisons over the six rounds, and 2 of 4 in the last, on a snapshot of 1.1.0. Against the films of the previous version, 1.1.0's films won 5 of 8 blind comparisons. A cinetic run costs about three times the time and tokens of the baseline.
+In short: across six judged rounds, cinetic met more of the written expectations than the baseline every time and won every house-style comparison. The neutral blind judge was split: 7 wins in 23 comparisons over the six rounds, and 2 of 4 in the last, on a snapshot of 1.0.0. Against the films of 0.5.0, the last version whose films were judged, 1.0.0's films won 5 of 8 blind comparisons. A cinetic run costs about three times the time and tokens of the baseline.
 
 ## Why evaluate a creative skill
 
@@ -77,7 +77,7 @@ The baseline films were made once (the first three briefs in round 1; the Quire 
 | Expectation grader | yes; it reads each run's project files and notes, where the process shows | pass or fail for each expectation. Objective items (size, fps, duration, BT.709 tags, stutter, loop seam, loudness, true peak, the audio tail, and whether the audio, alpha and still files exist) are measured by script; the rest, including sync, are judged from frames, the audio and, where an expectation says so, the project files |
 | Neutral comparator | no | a senior creative director persona that picks the better film of the pair and scores both on eight dimensions from 1 to 5 (idea, motion, type and layout, colour and brand, product truth, sound, finish, brief fit): 40 points, or 35 for a silent film, where sound is not scored |
 | House-style comparator | no | the same comparison and rubric with a house style guide that restates the hard bans, plus the hard-ban violations it finds |
-| Previous-version comparator (from round 6) | no | the neutral comparison again, but against the film the previous version (0.5.0) made for the same brief in round 5, to show whether the new version moved forward on its own terms |
+| Previous-version comparator (from round 6) | no | the neutral comparison again, but against the film 0.5.0 made for the same brief in round 5 (0.9.0 had no judged round of its own), to show whether the new version moved forward on its own terms |
 
 For each pair, the two films were labelled A and B in a random order, and both comparators saw the same labels. The comparators saw only the delivered files, plus a contact sheet, sample frames and measured stats made the same way for both. They did not see the code, the agent's notes or the treatment, or which process made which film.
 
@@ -90,12 +90,12 @@ For each pair, the two films were labelled A and B in a random order, and both c
 | 3 | 0.3.0 | 4 | 100% vs 74.8% | 2 of 4 | 4 of 4 |
 | 4 | 0.4.0 | 4 | 55/56 (98%) vs 39/56 (70%) | 0 of 4 | 4 of 4 |
 | 5 | 0.5.0 | 4 | 54/56 (96%) vs 41/56 (73%) | 2 of 4 | 4 of 4 |
-| 6 | 1.1.0, first snapshot | 4 | 53/56 (95%) vs 41/56 (73%) | 1 of 4 | 4 of 4 |
-| 7 | 1.1.0, second snapshot | 4 | 54/56 (96%) vs 41/56 (73%) | 2 of 4 | 4 of 4 |
+| 6 | 1.0.0, first snapshot | 4 | 53/56 (95%) vs 41/56 (73%) | 1 of 4 | 4 of 4 |
+| 7 | 1.0.0, second snapshot | 4 | 54/56 (96%) vs 41/56 (73%) | 2 of 4 | 4 of 4 |
 
-Rounds 6 and 7 tested development snapshots of 1.1.0: round 6 the first build with the technique library and the recalibrated sound, round 7 the same after the round-6 fixes. The released 1.1.0 adds the fixes from round 7 (below), which have not been judged. Round 2 was invalidated by a harness problem, and its results are not reported. Round 1 has no house-style result; the hard bans that judge applies arrived in 0.3.0. Rounds 3 to 7 used the 56 expectations in the current file. Round 1 used an earlier set of 42 for the first three briefs. The percentages for rounds 1 and 3 are the mean of the per-brief pass rates. The baseline films were the same in every round, so the movement in their numbers (42, 39 and 41 of 56 in rounds 3 to 5) comes from the grader, not from the films.
+Rounds 6 and 7 tested development snapshots of 1.0.0: round 6 the first build with the technique library and the recalibrated sound, round 7 the same after the round-6 fixes. The released 1.0.0 adds the fixes from round 7 (below), which have not been judged. Round 2 was invalidated by a harness problem, and its results are not reported. Round 1 has no house-style result; the hard bans that judge applies arrived in 0.3.0. Rounds 3 to 7 used the 56 expectations in the current file. Round 1 used an earlier set of 42 for the first three briefs. The percentages for rounds 1 and 3 are the mean of the per-brief pass rates. The baseline films were the same in every round, so the movement in their numbers (42, 39 and 41 of 56 in rounds 3 to 5) comes from the grader, not from the films.
 
-Round 7, by brief (cinetic's score first, and 1.1.0's first in the last column; totals out of 40, or 35 for the silent Ledgerly loop, where sound is not scored):
+Round 7, by brief (cinetic's score first, and 1.0.0's first in the last column; totals out of 40, or 35 for the silent Ledgerly loop, where sound is not scored):
 
 | Brief | Expectations (cinetic vs baseline) | Neutral judge | House-style judge | Against the 0.5.0 film |
 |---|---|---|---|---|
@@ -104,7 +104,7 @@ Round 7, by brief (cinetic's score first, and 1.1.0's first in the last column; 
 | Halden | 15/15 vs 12/15 | 31-34, loss | 33-23, win | 32-30, win |
 | Kiln | 14/15 vs 11/15 | 30-33, loss | 35-27, win | 30-35, loss |
 
-Against the previous version's films, the first 1.1.0 snapshot won 2 of 4 (round 6) and the second 3 of 4 (round 7). The one expectation Quire Streaks missed in round 7 was loudness: the agent mastered the feed video to −16 LUFS, which the skill then allowed for a calm brand; 1.1.0 masters every feed cut to −14. Kiln missed the motion-blur expectation: two hard cuts inside acts each blurred into one double-exposed frame, which the render log had warned about; 1.1.0 renders hard cuts sharp and stops the blur render on a possible cut inside an act.
+Against 0.5.0's films, the first 1.0.0 snapshot won 2 of 4 (round 6) and the second 3 of 4 (round 7). The one expectation Quire Streaks missed in round 7 was loudness: the agent mastered the feed video to −16 LUFS, which the skill then allowed for a calm brand; 1.0.0 masters every feed cut to −14. Kiln missed the motion-blur expectation: two hard cuts inside acts each blurred into one double-exposed frame, which the render log had warned about; 1.0.0 renders hard cuts sharp and stops the blur render on a possible cut inside an act.
 
 Round 5, by brief, for comparison:
 
@@ -130,9 +130,9 @@ The neutral judge's preferences for the baseline fall into two groups.
 | 1 | Films were true of a simpler product; the story device drifted to a bare dot | 0.2.0: a specificity test at the concept gate, brand choices derived from three personality adjectives, a scored mark sheet |
 | 3 | The logo sting's mark read as a minus; the teaser's blue on slate read as a stock dev-tool look | 0.4.0: a 64 px misread test for marks, palettes drawn from the name's world, a note on framework-default blues |
 | 4 | Films were sparse, static at the end and quiet at the payoff | 0.5.0: the hero fills 40-70% of product shots, the last third keeps moving, music that leads the picture and resolves on a lockup chord, a payoff line |
-| 5 | Quiet stretches, end cards without a line saying what the product is, a loud sound on a still frame | 1.0.0: flagged quiet stretches get motion, a hook-energy warning, a required end-card descriptor, a still-hit warning in `av-audit.py`, a text-speed audit, counters that roll or cut |
-| 6 | A 12 s film built all 14 techniques it drew and lost its one UI language; wide UI too small to read on a phone; bare numbers; a wordmark wipe that spelled "halder" on the way; a soft wash read as glow; stepped copies on moves too fast to blur | 1.1.0 (before round 7): draws sized to the film's length, built only where the concept carries them; push-ins of 2–5× and at most 1.7 s of wide UI; labels on data; no partial-glyph reveals; the wash flagged as glow; a too-fast gate in `render.sh --blur` |
-| 7 | A sound cued on a bar line after the word it belonged to had landed; a first second of a blinking caret; a letter mark that half-read as another word; a calm feed video mastered quiet; a loop whose poster frame did not name the product; two cuts inside acts that the blur turned into double exposures; an oversized opening line that read as a false start; a product first named at 19 s of 25 | 1.1.0 (release): sounds on the frame an arrival becomes readable, with a late-sound warning in `av-audit.py`; a still-opening gate in `forensics.py`; a word test for letter marks; −14 LUFS for every feed cut; loops that name the product on frame 0; hard cuts rendered sharp and a stop on a possible cut inside an act; an opening line that travels and hands straight over; the product named by a quarter of the runtime |
+| 5 | Quiet stretches, end cards without a line saying what the product is, a loud sound on a still frame | 0.9.0: flagged quiet stretches get motion, a hook-energy warning, a required end-card descriptor, a still-hit warning in `av-audit.py`, a text-speed audit, counters that roll or cut |
+| 6 | A 12 s film built all 14 techniques it drew and lost its one UI language; wide UI too small to read on a phone; bare numbers; a wordmark wipe that spelled "halder" on the way; a soft wash read as glow; stepped copies on moves too fast to blur | 1.0.0 (before round 7): draws sized to the film's length, built only where the concept carries them; push-ins of 2–5× and at most 1.7 s of wide UI; labels on data; no partial-glyph reveals; the wash flagged as glow; a too-fast gate in `render.sh --blur` |
+| 7 | A sound cued on a bar line after the word it belonged to had landed; a first second of a blinking caret; a letter mark that half-read as another word; a calm feed video mastered quiet; a loop whose poster frame did not name the product; two cuts inside acts that the blur turned into double exposures; an oversized opening line that read as a false start; a product first named at 19 s of 25 | 1.0.0 (release): sounds on the frame an arrival becomes readable, with a late-sound warning in `av-audit.py`; a still-opening gate in `forensics.py`; a word test for letter marks; −14 LUFS for every feed cut; loops that name the product on frame 0; hard cuts rendered sharp and a stop on a possible cut inside an act; an opening line that travels and hands straight over; the product named by a quarter of the runtime |
 
 There is no row for round 2, which was invalidated; 0.3.0 added the hard bans.
 
@@ -158,8 +158,8 @@ The difference is the extra work: building a brand, scoring and mastering the so
 - **The house-style judge scores against cinetic's own rules.** Its clean sweep shows that the skill follows its rules and the baseline does not. It is not independent evidence that viewers prefer the result.
 - **The expectations favour the skill.** They were written alongside it, and several check cinetic conventions that the baseline was never given: the hard bans themselves, 60 fps when the brief does not state a frame rate, QA material in a subfolder, a brand kit, the `BRIEF.md` exception and the `lint-film.mjs` marker. The gap in expectations met is partly a gap in instructions, so read it as an upper bound.
 - **Round 2 is missing.** A harness problem invalidated it, so 0.2.0 has no judged result.
-- **The released 1.1.0 is a little ahead of what was judged.** Round 7 tested a snapshot; the fixes from its findings (the sound timing, the still-opening gate, the word test, the feed loudness) shipped after it without a judged round of their own.
-- **The previous-version comparison reuses one film per brief.** The 0.5.0 films were made once, in round 5, so a 1.1.0 win against one of them is one draw, not a measured trend.
+- **The released 1.0.0 is a little ahead of what was judged.** Round 7 tested a snapshot; the fixes from its findings (the sound timing, the still-opening gate, the word test, the feed loudness) shipped after it without a judged round of their own.
+- **The previous-version comparison reuses one film per brief.** The 0.5.0 films were made once, in round 5, so a 1.0.0 win against one of them is one draw, not a measured trend.
 - **Four short briefs.** No brief covers a UI walkthrough, a film longer than 25 s, or the social cut-downs.
 
 ## Run your own evaluation
