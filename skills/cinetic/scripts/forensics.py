@@ -25,11 +25,14 @@ Frames are 0-based and absolute (frame = t * fps). Defaults (every number is a f
   stall        d < 0.05 while d[f-1] > 0.8 and d[f+1] > 0.8 (a repeated frame)         fail
   hold         d < 0.1 for > 48 f: frozen (90% of its frames change < 16 px by > 24)  fail
                                    quiet (only small elements move)                   warn
-               a static end tail <= 120 f is allowed (the audio decays there)
+               a static end tail <= 2 s + 1 f is allowed (the audio decays there)
   quiet        60-frame mean d < 0.15 outside holds (nearly locked-off)                warn
   hook         the first 2 s move less than max(0.5, 0.5x the film's median 2 s window)
-               (films over 6 s that start at frame 0, not loops): a muted feed decides in
-               second one                                                              warn
+               (films that start at frame 0, not loops; for films of 6 s or less, the first
+               1 s under 0.5x the median 1 s): a muted feed decides in second one      warn
+               the first 0.5 s window whose mean d passes max(0.03, 0.3x the median d
+               of the film's moving frames) starts after 1.0 s                         warn
+                                                         after 2.5 s                   fail
   ghost        a frame differs from both neighbours by > 80 while they agree (< 30) on
                > 2000 px (full-res equivalent) and nothing moves within 192 px         fail
                (the same pattern inside motion is a fast element crossing: info)
@@ -656,6 +659,8 @@ def analyse(args, info):
 # ------------------------------------------------------------------------------------------
 def evaluate(args, info, M, decl):
     fps = info['fps']
+    if args.max_end_hold is None:  # the audio's decay: 2 s whatever the frame rate
+        args.max_end_hold = int(round(2 * fps)) + 1
     cuts, freezes, ignore, acts, moments = decl
     idx = np.array(M['idx'])
     f0, n, last = int(idx[0]), len(idx), int(idx[-1])
@@ -814,8 +819,8 @@ def evaluate(args, info, M, decl):
             continue
         if kind == 'end':
             if length > args.max_end_hold:
-                add('hold', 'fail', f'{fa}-{fb}', f'static end tail of {length} f; keep it <= {args.max_end_hold} f '
-                    '(the audio decay) or give it a visible build')
+                add('hold', 'fail', f'{fa}-{fb}', f'static end tail of {length} f ({length / fps:.1f} s); keep it <= '
+                    f'{args.max_end_hold} f (the audio decay) or give it a visible build (a slow push or drift)')
         elif kind == 'frozen':
             add('hold', 'fail', f'{fa}-{fb}', f'{length} f ({length / fps:.1f} s) frozen: reads as a stalled player; '
                 'add a build (push, drift, breath) or declare it with --freeze-ok')
@@ -843,15 +848,36 @@ def evaluate(args, info, M, decl):
     # --- hook: the opening carries at least the film's typical energy (a muted feed decides in second one)
     hook = None
     hw = int(round(2 * fps))
+    if n <= 3 * hw:  # a sting or a short cut: judge its first second against its typical second
+        hw = int(round(fps))
     if f0 == 0 and last + 1 >= info['frames'] - 2 and n > 3 * hw and not getattr(args, 'loop', False):
         cs = np.concatenate([[0], np.cumsum(dd)])
         typical = float(np.median((cs[hw:] - cs[:-hw]) / hw))
         opening = float(dd[1:hw].mean())
         hook = dict(first_2s=round(opening, 3), typical_2s=round(typical, 3))
-        if opening < max(0.5, 0.5 * typical) and not ignored(0):
-            add('hook', 'warn', f'0-{hw - 1}', f'the first 2 s move {opening:.2f} against a typical 2 s of {typical:.2f}: '
+        if opening < max(0.5 if hw > fps * 1.5 else 0.0, 0.5 * typical) and not ignored(0):
+            add('hook', 'warn', f'0-{hw - 1}', f'the first {hw / fps:.0f} s move {opening:.2f} against a typical {hw / fps:.0f} s of {typical:.2f}: '
                 'a still opening loses a muted feed; start inside the action (the device already moving, the first '
                 'change by 0.5 s) and let the first line land over motion')
+
+    # --- a still opening: the first visible change comes at a median 0.1 s (all by 0.43 s) in top-tier
+    # launch films, and a still title held 2.7 s before any motion reads as a slow hook. "Still" is
+    # measured on the film's own scale (a fine-line sting moves less than a product film): the first
+    # half second whose mean change passes 0.3x the median change of the film's moving frames.
+    first_change = None
+    if f0 == 0 and not getattr(args, 'loop', False) and n > fps:
+        moving = dd[1:][dd[1:] > args.hold_mad]
+        thr = max(0.03, 0.3 * float(np.median(moving))) if len(moving) else 0.03
+        w = max(1, int(round(fps / 2)))
+        cs = np.concatenate([[0], np.cumsum(dd)])
+        over = np.nonzero((cs[w:] - cs[:-w]) / w > thr)[0]
+        first_change = round(float(over[0]) / fps, 2) if len(over) else round(n / fps, 2)
+        hook = {**(hook or {}), 'first_change_s': first_change}
+        if first_change > 1.0 and not ignored(0) and not any(x <= 2 for x, _ in freezes):
+            add('hook', 'fail' if first_change > 2.5 else 'warn', f'0-{int(first_change * fps)}',
+                f'the first visible change comes at {first_change:.1f} s: it belongs inside 0.5 s, and the first '
+                'hard change (a cut, a reveal, a surge) by about 1.3 s. Start inside the action, put a push or drift '
+                'under the first read, or declare a designed still with --freeze-ok')
 
     # --- ghosts
     for g in M['ghosts']:
@@ -1068,7 +1094,7 @@ def main():
     g.add_argument('--hold-mad', type=float, default=0.1)
     g.add_argument('--max-hold', type=int, default=48, help='frames')
     g.add_argument('--frozen-px', type=int, default=16, help='a hold is frozen if fewer px change by >24 levels')
-    g.add_argument('--max-end-hold', type=int, default=120, help='frames of static tail allowed at the end')
+    g.add_argument('--max-end-hold', type=int, default=None, help='frames of static tail allowed at the end (default: 2 s at the film\'s rate, plus 1)')
     g.add_argument('--quiet-window', type=int, default=60)
     g.add_argument('--quiet-mad', type=float, default=0.15)
     g.add_argument('--ghost-delta', type=int, default=80)

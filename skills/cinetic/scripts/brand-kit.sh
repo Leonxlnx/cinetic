@@ -8,7 +8,9 @@
 #
 # It writes into --out (default out/deliver/brand/):
 #   mark-light.svg, mark-dark.svg        the mark for light and dark grounds (src/brand/Mark.tsx)
-#   lockup-light.svg, lockup-dark.svg    mark + name, the name outlined (scripts/brand-svg.ts)
+#   lockup-light.svg, lockup-dark.svg    mark + name, the name outlined (scripts/brand-svg.ts); when the
+#                                        mark is part of the word, export LockupSvg from src/brand/Mark.tsx
+#                                        and it is written as is (and make BrandLockup draw the same)
 #   lockup-light.png, lockup-dark.png    transparent, trimmed to the ink plus a small margin
 #   mark-16.png, mark-32.png             favicon sizes, for light grounds
 #   mark-512.png, mark-1024.png          transparent, for light grounds; -dark variants too
