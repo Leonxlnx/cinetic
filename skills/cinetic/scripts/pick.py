@@ -180,7 +180,7 @@ def render(e, allowed):
              e['summary'], '']
     if e.get('ban_safe') is False and not brand_allows(e, allowed):
         lines += [f"**Build (ban-safe variant):** {e['ban_safe_variant']}",
-                  f"(The original look touches a house ban; use it only for a brand that supplies it: {e['recipe']})"]
+                  f"(The full look touches a house ban; use it only for a brand that supplies it: {e['recipe']})"]
     else:
         lines += [f"**Build:** {e['recipe']}"]
     lines += [f"**Timing:** {e['timing']}", f"**Use when:** {e['use_when']}", f"**Avoid when:** {e['avoid_when']}", '']
@@ -229,7 +229,7 @@ def library_markdown(entries, path):
                     f"`{e['id']}` · {e['role']} · energy {e['energy']} · {', '.join(e['formats'])}", '',
                     e['summary'], '', f"- **Build:** {e['recipe']}"]
             if e.get('ban_safe') is False:
-                out.append(f"- **Ban-safe variant (the default):** {e['ban_safe_variant']} The original relies on "
+                out.append(f"- **Ban-safe variant (the default):** {e['ban_safe_variant']} The full look relies on "
                            f"{', '.join(e.get('bans', []))}; use it only when the brand supplies that look.")
             out += [f"- **Timing:** {e['timing']}", f"- **Use when:** {e['use_when']}", f"- **Avoid when:** {e['avoid_when']}", '']
     return '\n'.join(out).rstrip() + '\n'
