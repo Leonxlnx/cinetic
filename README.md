@@ -1,4 +1,9 @@
-<h1 align="center">cinetic</h1>
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/lockup-dark.svg">
+    <img src="docs/brand/lockup-light.svg" alt="cinetic" width="340">
+  </picture>
+</h1>
 
 <p align="center">Cinematic launch films and motion design from code, directed by your coding agent.</p>
 
