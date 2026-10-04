@@ -358,7 +358,10 @@ def sub_boom(f0=104, f1=52, glide=0.12, d=2.5, seed=12, tau=0.9):
     f = f1 + (f0 - f1) * np.exp(-t / glide)
     x = sine(f, d) * np.exp(-t / tau) + sine(f * 2, d) * np.exp(-t / 0.25) * 0.25
     thump = filt(noise(d, seed), lp(180, 2)) * np.exp(-t / 0.05) * 0.6
-    return sat(x, 1.4) * 0.9 + thump
+    y = sat(x, 1.4) * 0.9 + thump
+    a = min(len(y), max(1, int(0.003 * SR)))  # a 3 ms raised-cosine attack: a drop onto true silence lands without a click
+    y[:a] *= 0.5 - 0.5 * np.cos(np.linspace(0, np.pi, a))
+    return y
 
 
 def clap(d=0.45, seed=13):

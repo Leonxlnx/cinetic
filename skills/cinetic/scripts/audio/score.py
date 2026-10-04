@@ -1221,6 +1221,8 @@ def render(song, events, stems_dir=None, base_dir='.'):
         w_ = (t > a - 0.04) & (t < b)
         h = hold[scope]
         h[w_] = np.minimum(h[w_], 1 - depth * np.clip((t[w_] - (a - 0.04)) / 0.04, 0, 1))
+        r_ = (t >= b) & (t < b + 0.008)  # open again over 8 ms, so tails that resume at the silence's end don't click
+        h[r_] = np.minimum(h[r_], 1 - depth * (0.5 + 0.5 * np.cos(np.pi * (t[r_] - b) / 0.008)))
     music_gain = bus * fade * song.mix['music'] * hold['music'] * hold['all']
     music_bus = music * (bus * fade * song.mix['music'] * hold['music'])[:, None]
 
