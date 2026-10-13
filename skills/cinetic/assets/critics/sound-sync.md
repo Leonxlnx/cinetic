@@ -5,7 +5,7 @@ Prompt template for one review lens (see `references/review-loop.md`, §5). The 
 ## Context
 
 - Film: {{FILM}}, {{SPEC}}. Project root: {{ROOT}}.
-- The soundtrack is synthesized by `scripts/audio/score.py` from `out/cues.json`, which `scripts/export-cues.ts` computes from the same constants the picture animates with. The harmony, sections and silences live in `audio/score.json`. Read `references/sound.md` for the house rules.
+- The soundtrack is rendered by `scripts/audio/score.py` (a recorded track and recorded takes named in `audio/score.json`, or the synth) from `out/cues.json`, which `scripts/export-cues.ts` computes from the same constants the picture animates with. The harmony, sections and silences live in `audio/score.json`. Read `references/sound.md` for the house rules.
 - File under review: {{VIDEO}} ({{KIND}}). Frames are 0-based: frame = t × {{FPS}}.
 - QA folder for this round: {{QA}}. It holds:
   - `av.json`, from `python3 scripts/av-audit.py {{VIDEO}} --cues out/cues.json --stems out/stems`;

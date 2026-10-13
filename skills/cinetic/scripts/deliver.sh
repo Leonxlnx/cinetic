@@ -29,6 +29,8 @@
 #   <Comp>-alpha.webm         --alpha-webm: VP9 with alpha (yuva420p) of the same composition
 #   <Comp>.mp4                --variants A,B: each composition through render.sh (sharp master, or
 #                             blurred with --variant-samples)
+#   SOURCES.md                a copy of audio/SOURCES.md, the licence record of the recorded music and
+#                             effects, when the project has one (references/sound-library.md §9)
 #   qa/manifest.json          every file with its probe facts and check results
 #
 # Options:
@@ -293,6 +295,11 @@ if [[ -n "$VARIANTS" ]]; then
       note '{"file":"'"$V.mp4"'","check":"render","pass":false}'; STATUS=1
     fi
   done
+fi
+
+if [[ -f audio/SOURCES.md ]]; then
+  cp audio/SOURCES.md "$OUTDIR/SOURCES.md"
+  step "SOURCES.md (the licence record of the recorded audio; put its credit lines in the delivery note)"
 fi
 
 python3 - "$OUTDIR" "$CHECKS" "$MASTER" <<'PY'

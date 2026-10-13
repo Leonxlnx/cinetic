@@ -1,6 +1,6 @@
 ---
 name: cinetic
-description: Direct, build and render premium cinematic motion design from code — launch films, product and feature videos, looping feature animations for landing pages and social, logo stings and reveals, UI walkthroughs, app demos, kinetic type, teasers, trailers, intros and promo clips. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion, HyperFrames, HTML/GSAP or React, or asks to storyboard, time, score, render, polish or critique one — even if they only say "make a video about X", "animate this feature" or "we need a launch clip". It supplies concept and copy discipline, type and colour taste that defers to a supplied brand, a beat-locked timeline that drives both picture and a synthesized soundtrack, choreography and transition craft, real product UI in motion, film-grade finishing (true motion blur, no banding, BT.709, sync-checked mux) and a measured self-critique loop on contact sheets and renders.
+description: Direct, build and render premium cinematic motion design from code — launch films, product and feature videos, looping feature animations for landing pages and social, logo stings and reveals, UI walkthroughs, app demos, kinetic type, teasers, trailers, intros and promo clips. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion, HyperFrames, HTML/GSAP or React, or asks to storyboard, time, score, render, polish or critique one — even if they only say "make a video about X", "animate this feature" or "we need a launch clip". It supplies concept and copy discipline, type and colour taste that defers to a supplied brand, a beat-locked timeline that drives picture and soundtrack (free recorded music and effects found per film, or a synthesized score), choreography and transition craft, real product UI in motion, film-grade finishing (true motion blur, no banding, BT.709, sync-checked mux) and a measured self-critique loop on contact sheets and renders.
 license: MIT
 compatibility: Needs Node 22+, ffmpeg 6+ with libx264, Python 3.11+ with numpy, scipy, soundfile, pyloudnorm, opencv-python and librosa (fonttools, brotli and uharfbuzz for outlined logos; pillow for gradient PNGs), and Chromium or Chrome Headless Shell for rendering. Works with Remotion 4 (React) or HyperFrames (HTML and GSAP).
 ---
@@ -83,7 +83,7 @@ Every step writes a file, and every gate is a check you actually run. Work inlin
 - Choose the engine: Remotion by default; HyperFrames if the user already has a HyperFrames project, wants HTML/GSAP, or needs `--batch` renders driven by variables.
 - Copy the hard bans (above) into `BRIEF.md`, plus any brand-supplied exceptions. Critics are later prompted with this file word for word, so it doubles as the QA contract.
 - Scaffold the project: `bash <skill>/scripts/new-film.sh films/<name> --fps 60 --bpm 120 --size 1920x1080 [--engine hyperframes]`. Pass `--link-modules <dir>/node_modules` to reuse an existing install instead of running `npm install`.
-- **Gate:** `BRIEF.md` has a spec line, for example `1920x1080@60, 30s, 120BPM, audio: synthesized`.
+- **Gate:** `BRIEF.md` has a spec line, for example `1920x1080@60, 30s, 120BPM, audio: recorded`.
 
 ### Step 1: Concept → `TREATMENT.md`
 Read `references/concept-and-story.md` now.
@@ -149,7 +149,8 @@ Read `references/brand-and-color.md` and the type section of `references/copy-an
 
 ### Step 3: Timeline → `src/timeline.ts`
 Read `references/timing-grid.md` now.
-- Choose BPM and fps so that a beat is a whole number of frames (see §5).
+- Pick the music track first (`references/sound-library.md` §2, §5): its tempo sets the film's BPM. Measure it with `scripts/audio/track-info.py`.
+- Choose BPM and fps so that a beat is a whole number of frames (see §5); stretch the track by up to 3% when its tempo is not a whole-frame one (`references/sound-library.md` §6).
 - Map the beat sheet onto bars:
   - `ACT` holds contiguous, bar-aligned acts;
   - `CUE` holds named frames that sit on the grid;
@@ -180,7 +181,7 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
   - every act sheet has written review notes.
 
 ### Step 5: Sound → `public/audio/soundtrack.wav`
-Read `references/sound.md` now.
+Read `references/sound.md` and `references/sound-library.md` now.
 - Run `npx tsx scripts/export-cues.ts`, which writes `out/cues.json`. Sync points are computed from the picture code (spring contact frames, 50% pop frames, velocity peaks, 97% settles) and never typed by hand. Typed sync points landed 8–11 f off in practice.
 - Pick the sound's personality row in `references/sound.md` §5.5a first. A calm brand gets soft mallets and one gentle chord; drops onto silence and sub booms are for energetic launch films only.
 - **Make the music drive the picture, whatever the personality.**
@@ -188,12 +189,20 @@ Read `references/sound.md` now.
   - Section changes and the hero reveal land with the music's own event (drop, stop, re-entry). Designed effects go on discrete state changes only, about 5 per 10 s, clustered where the music is sparse; continuous motion and most cuts get none.
   - The drop on the hero reveal, 30–60% in, is the loudest moment, and `payoff` points there. The lockup is the most resolved moment, not the loudest: the music stops on a bar line or filters down as the logo forms, 0.2–0.7 s of near-silence, then one soft resolved element on the frame the wordmark becomes readable (its `settleOf`, never the tween's last frame or a later bar line: a sound after the motion has stopped lands on nothing) and a 0.5–2.5 s tail. A sting is all lockup: its hit is its loudest moment.
   - The sound enters with intent on frame 0 (a drone or a 150–450 ms entry at most), without a click, and runs 5–12 LU under the body for the first 2–3 s. That assumes frame 0 moves: a drone at full level over a still frame (an empty page, a blinking caret) reads as a mistake, so move the picture, not the sound.
-- Fill in `audio/score.json`: key, one chord per bar, sections (with a breakdown or stop about 5 LU down at 40–80% of the runtime), drops and silences. Keep `"typing": "auto"` unless the brand asks otherwise.
+- **Find the sounds.** The default is the best free-to-use recorded audio, found online for this film (`references/sound-library.md`):
+  - the track chosen in Step 3, edited to the picture: its biggest entry on the hero reveal (`track-info.py --cues out/cues.json --land-at @drop`), cuts on bar lines only;
+  - one recorded take per sounded kind from one palette (2–4 takes for kinds that repeat), downloaded into `audio/sfx/`;
+  - only files you may use in a commercial film for free (no NC, no ND), each written into `audio/SOURCES.md` with its licence as you download it;
+  - nothing behind a login or a captcha: give the user the link instead.
+
+  Use the synth (`references/sound.md` §7) when there is no web access or no fitting file, or when the brief asks for it, and say so in the delivery note.
+- Fill in `audio/score.json`: `key`; `bed` and `samples` for the recorded audio (or one chord per bar and `sections` for the synth), with a breakdown or stop about 5 LU down at 40–80% of the runtime; drops and silences. Keep `"typing": "auto"` unless the brand asks otherwise.
 - Run `python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json --out public/audio/soundtrack.wav --stems out/stems --json out/qa/score.json` (`npm run audio`). The stems let `av-audit.py` check each sound against its cue; the master chain lives in `scripts/audio/master.py`.
 - **Gate:**
   - the WAV measures its target ±0.5 LUFS integrated (`master.lufs` in `audio/score.json`: −14; −16 only for a sting that plays at the head of other videos, never for a social or feed cut, whatever the brand's temperament), with true peak ≤ −1.5 dBTP before encoding;
   - a film of 20 s or more has contrast: LRA 5–8 LU, and the payoff 2–3 LU above the median momentary loudness (`score.py` warns);
-  - every sound has something visible that causes it, at a loudness that matches that cause (a caret blink whispers; the hero reveal drops); not every picture event gets a sound, but once a class of action is sounded every instance is, at one level.
+  - every sound has something visible that causes it, at a loudness that matches that cause (a caret blink whispers; the hero reveal drops); not every picture event gets a sound, but once a class of action is sounded every instance is, at one level;
+  - every recorded file is in `audio/SOURCES.md` with a licence that allows a commercial film, and every credit line a licence asks for is ready for the delivery note.
 
 ### Step 6: Render and finish → `out/film.mp4`
 Read `references/finishing.md` now.
@@ -215,7 +224,7 @@ Run §8 on previews. Launch films and walkthroughs get at least 2 rounds. For st
 
 ### Step 8: Deliver
 - Run `bash scripts/deliver.sh out/film.mp4` with the flags your format needs: `--loop --gif --webm` for loops, `--alpha StingAlpha,StingAlphaClear` for ProRes 4444, and `--variants Film9x16,Film1x1` for social versions. It writes the poster (the final frame) and, in `qa/`, a manifest. For a brand you invented, `bash scripts/brand-kit.sh` exports the mark, lockups, favicon sizes and avatar. Re-lay the social versions out from the same timeline; never crop the master (see `references/formats.md`).
-- Write a short `README.md`: the idea, the device, the grid, how to render, and the file list.
+- Write a short `README.md`: the idea, the device, the grid, how to render, and the file list. With recorded audio, `deliver.sh` copies `audio/SOURCES.md` next to the film; put every credit line it asks for in the delivery note.
 - Keep the delivery folder clean. Put the deliverables at its top level (the film, alpha versions, poster, logo files) and QA material (sheets, crops, reports) in a `qa/` subfolder. A client opens the folder before they open the film.
 - **Gate:** every deliverable in the §1 row exists and passes `probe.py` at its own spec.
 
@@ -471,7 +480,8 @@ Read each file when its step comes up. Don't read them all at once.
 | Step 4, Remotion | `references/remotion-engine.md` | verified API facts, config, CLI recipes, pitfalls |
 | Step 4, HyperFrames | `references/hyperframes-engine.md` | render model, composition rules, CLI, translating cinetic to GSAP |
 | Any render artifact | `references/chromium-rendering.md` | symptom → cause → fix → detection for rasterisation traps |
-| Step 5 | `references/sound.md` | synthesis palette, `score.json` schema, placement, mix and master |
+| Step 3, Step 5 | `references/sound-library.md` | finding and licensing recorded music and effects, editing the track to the picture, `bed` and `samples` |
+| Step 5 | `references/sound.md` | the cues, `score.json` schema, the synth palette, placement, mix and master |
 | Step 6 | `references/finishing.md` | motion-blur pipeline and its cost, banding, BT.709, encoding, mux, deliverables |
 | Step 7 | `references/review-loop.md` | round procedure, rubric, severity, thresholds, design-off |
 
@@ -487,6 +497,7 @@ Read each file when its step comes up. Don't read them all at once.
 | a palette from one accent, contrast, accent coverage on a still | `scripts/palette.py` |
 | gradients that don't band | `scripts/dither-gradient.py` |
 | cues for the sound; score, SFX, mix, master and tail fade | `scripts/export-cues.ts`; `scripts/audio/score.py`, `synth.py`, `master.py` |
+| a recorded track's tempo, bars, entries and edit points | `scripts/audio/track-info.py` |
 | previews, masters, motion blur, splices, chunked renders | `scripts/render.sh` (`--preview`, `--blur`, `--frames`, `--budget`), `scripts/render-chunks.sh` |
 | on-screen speed, too-fast moves; float accumulation | `scripts/measure-speed.py`; `scripts/accumulate.py` |
 | spec, A/V lag and true-peak gates | `scripts/probe.py`, `scripts/check-sync.py` |

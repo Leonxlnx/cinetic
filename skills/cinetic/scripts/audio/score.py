@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """
-score.py: renders a film's soundtrack. The music comes from audio/score.json (key, tempo, one
-chord per bar, sections, drops, silences, signature motif); the sound effects come from the
-events in out/cues.json (exported from the picture code by scripts/export-cues.ts). The mix is
+score.py: renders a film's soundtrack. The music comes from audio/score.json: a recorded track
+("bed", one file or several segments of it, edited to the picture) or the built-in synth (key,
+tempo, one chord per bar, sections, drops, silences, signature motif). The sound effects come from
+the events in out/cues.json (exported from the picture code by scripts/export-cues.ts): recorded
+takes where score.json "samples" names files for a kind, synthesized voices otherwise. A take is
+levelled to where the synth voice of its kind sits and aligned by its onset, peak or end on the
+event's frame (references/sound-library.md: finding, licensing and preparing the files). The mix is
 sidechained, bussed and mastered by master.py to the film's target, master.lufs in score.json
 (default -14 LUFS; -16 for a calm brand or a sting of 8 s or less; --lufs overrides it), with a
 true-peak ceiling and a 3 ms fade-in at sample 0.
@@ -113,6 +117,9 @@ LEVEL_VS_MUSIC = dict(key=-4.0, pitched=-8.0, muted=-14.0, word=6.0, click=-3.0,
 LEVEL_CLAMP_DB = 12.0  # the levelling never moves a run or a voice more than this from its static level
 QWERTY = ('qwertyuiop', 'asdfghjkl', 'zxcvbnm')
 UI_KINDS = ('tick', 'tock')  # the signature clock: a small room, never the hall
+SAMPLE_KINDS = ('tick', 'tock', 'pop', 'snap', 'land', 'hit', 'drop', 'whoosh', 'riser', 'swell', 'suck', 'key',
+                'click', 'bell')
+SHORT_KINDS = ('tick', 'tock', 'pop', 'snap', 'land', 'key', 'click')  # levelled by their 6 ms RMS; the rest by 50 ms
 WIDE_KINDS = ('whoosh', 'riser', 'swell', 'suck')  # only these take width; every other effect sits near the centre
 SFX_PAN = 0.15  # |pan| of every other effect; the cue's pan (+-0.8 at the screen edges) is scaled into it
 
@@ -243,7 +250,9 @@ class Song:
         self.scale = [(self.tonic + i) % 12 for i in MODES[self.mode]]
         minorish = MODES[self.mode][2] == 3
         self.penta = [(self.tonic + i) % 12 for i in ([0, 3, 5, 7, 10] if minorish else [0, 2, 4, 7, 9])]
-        self._chords(score.get('chords', []))
+        # chords are needed when the synth plays; "hold" sections only shape a recorded bed's level
+        synth = any(s_.get('style', 'groove') not in ('hold', 'tail') for s_ in score.get('sections', []))
+        self._chords(score.get('chords', []), synth_music=synth)
         self._sections(score.get('sections', []))
         sig = score.get('signature', {})
         self.sig_tick = S.midi(sig['tick']) if 'tick' in sig else S.nearest([self.tonic], 86)  # octave 6: 0.8-1.6 kHz
@@ -294,11 +303,38 @@ class Song:
                         duck_db=float(mix.get('duck_db', 3.0)), typing_duck_db=float(mix.get('typing_duck_db', 10.0)))
         if not 0 <= self.mix['typing_duck_db'] <= 30:
             raise ScoreError('mix.typing_duck_db is dB the music dips under typing: 0 (off) to 30 (default 10)')
+        # bed: a recorded music track (or several segments of one, to edit it to the picture). It joins
+        # the music bus, so section levels, ducks, sucks and silences shape it like the synth music.
         bed = score.get('bed')
-        self.bed = None
-        if bed:  # a supplied music track: it replaces nothing, it joins the music bus
-            bed = {'file': bed} if isinstance(bed, str) else bed
-            self.bed = dict(file=bed['file'], at=self.T(bed.get('at', 0)), gain_db=float(bed.get('gain_db', 0)))
+        self.beds = []
+        for b in (bed if isinstance(bed, list) else [bed] if bed else []):
+            b = {'file': b} if isinstance(b, str) else b
+            if not b.get('file'):
+                raise ScoreError('every bed segment needs a "file"')
+            seg = dict(file=b['file'], at=self.T(b.get('at', 0)), src=float(b.get('from', 0.0)),
+                       to=float(b['to']) if 'to' in b else None, gain_db=float(b.get('gain_db', 0)),
+                       fade_in=float(b.get('fade_in', 0.01)), fade_out=float(b.get('fade_out', 0.05)))
+            if seg['src'] < 0 or (seg['to'] is not None and seg['to'] <= seg['src']):
+                raise ScoreError(f'bed segment {b["file"]}: "from" must be >= 0 and "to" after it')
+            self.beds.append(seg)
+        self.bed = self.beds[0] if self.beds else None
+        # samples: recorded effects that replace the synthesized voice of an event kind
+        # ("whoosh") or of one variant ("click.confirm"), levelled to where that voice sat
+        self.samples = {}
+        for key, spec in (score.get('samples') or {}).items():
+            spec = {'files': spec} if isinstance(spec, (str, list)) else dict(spec)
+            files = spec.get('files', spec.get('file'))
+            files = [files] if isinstance(files, str) else list(files or [])
+            kind = key.split('.')[0]
+            if kind not in SAMPLE_KINDS:
+                raise ScoreError(f'samples."{key}": unknown event kind "{kind}"; use one of {", ".join(SAMPLE_KINDS)}')
+            if not files:
+                raise ScoreError(f'samples."{key}" names no file')
+            align = spec.get('align', 'peak' if kind in ('whoosh', 'suck', 'riser', 'swell') else 'onset')
+            if align not in ('onset', 'peak', 'end'):
+                raise ScoreError(f'samples."{key}".align must be "onset", "peak" or "end"')
+            self.samples[key] = dict(files=files, gain_db=float(spec.get('gain_db', 0.0)), align=align,
+                                     root=S.midi(spec['root']) if spec.get('root') is not None else None, next=0)
         mas = score.get('master', {})
         self.lufs = float(mas.get('lufs', -14.0))
         self.ceiling = float(mas.get('ceiling', 0.77))
@@ -334,9 +370,12 @@ class Song:
         raise ScoreError(f'cannot read duration {x!r}: frames or a note value such as "1/8"')
 
     # chords --------------------------------------------------------------------------------
-    def _chords(self, chords):
+    def _chords(self, chords, synth_music=True):
         if not chords:
-            raise ScoreError('score.json needs "chords": one chord symbol per bar')
+            if synth_music:
+                raise ScoreError('score.json needs "chords": one chord symbol per bar')
+            self.segs = []  # recorded music without a chord chart: tuned effects take the key's scale
+            return
         if len(chords) > self.nbars:
             self.warnings.append(f'{len(chords)} chords for {self.nbars} bars: extra chords ignored')
         if len(chords) < self.nbars - 1:
@@ -361,7 +400,7 @@ class Song:
         for a, b, ch in self.segs:
             if a <= t + 1e-6 < b:
                 return ch
-        return self.segs[-1][2]
+        return self.segs[-1][2] if self.segs else None
 
     def sub_root(self, t):
         """the chord's root between E1 and Eb2 (41-78 Hz): snaps, booms and landings glide onto it"""
@@ -831,7 +870,109 @@ def plan_typing(song, events):
     return plan, thinned, runs
 
 
-def build_sfx(song, n, events, plan=None, thinned=None):
+# ------------------------------------------------------------------------------------------
+# recorded audio: the bed and the effects named in score.json "samples"
+# ------------------------------------------------------------------------------------------
+_SAMPLES = {}
+
+
+def find_file(name, base_dir, what):
+    """A path as written, else relative to the folder that holds score.json."""
+    for p in (name, os.path.join(base_dir, name)):
+        if os.path.exists(p):
+            return p
+    raise ScoreError(f'{what} not found: {name} (looked in the working directory and next to score.json)')
+
+
+def read_audio(path):
+    """Any file soundfile reads (WAV, FLAC, OGG; MP3 with libsndfile 1.1+) as 48 kHz float64, shape (n, ch)."""
+    import soundfile as sf
+    from math import gcd
+    try:
+        x, sr = sf.read(path, always_2d=True, dtype='float64')
+    except Exception as err:  # noqa: BLE001 - soundfile raises several types
+        raise ScoreError(f'cannot read {path} ({err}); convert it: ffmpeg -i "{path}" -ar 48000 out.wav') from err
+    if sr != SR:
+        from scipy import signal
+        g = gcd(SR, sr)
+        x = signal.resample_poly(x, SR // g, sr // g, axis=0)
+    return x
+
+
+def load_sample(path):
+    """A recorded effect with its leading silence trimmed (2 ms of pre-roll kept), and the times of its
+    onset (the transient: first sample at half the peak), peak (loudest 30 ms) and end (last point
+    within 20 dB of that peak). Cached per file."""
+    if path in _SAMPLES:
+        return _SAMPLES[path]
+    x = read_audio(path)
+    mag = np.abs(x).max(axis=1)
+    if mag.max() <= 1e-6:
+        raise ScoreError(f'sample {path} is silent')
+    on = np.nonzero(mag > mag.max() * 10 ** (-50 / 20))[0]
+    x = x[max(0, on[0] - S.ns(0.002)):on[-1] + 1]
+    mag = np.abs(x).max(axis=1)
+    w = max(1, S.ns(0.03))
+    env = np.sqrt(np.convolve((x ** 2).mean(axis=1), np.ones(w) / w, 'same'))
+    loud = np.nonzero(env >= env.max() * 0.1)[0]
+    info = dict(x=x, onset=int(np.argmax(mag >= 0.5 * mag.max())) / SR, peak=int(np.argmax(env)) / SR,
+                end=int(loud[-1]) / SR, dur=len(x) / SR)
+    _SAMPLES[path] = info
+    return info
+
+
+def wrms(x, win):
+    """The loudest `win`-second RMS of a mono or stereo signal (how loud a sound is heard, not its peak)."""
+    p = x ** 2 if x.ndim == 1 else (x ** 2).mean(axis=1)
+    w = max(1, S.ns(win))
+    return float(np.sqrt(np.convolve(p, np.ones(w) / w, 'same')).max()) + 1e-12
+
+
+def retune(x, semis):
+    """Shift a sample by `semis` semitones the way a sampler does (it gets shorter as it goes up)."""
+    if abs(semis) < 0.01:
+        return x
+    from fractions import Fraction
+    from scipy import signal
+    r = Fraction(2 ** (-semis / 12)).limit_denominator(240)
+    return signal.resample_poly(x, r.numerator, r.denominator, axis=0)
+
+
+def sample_spec(song, kind, variant):
+    return (song.samples.get(f'{kind}.{variant}') if variant else None) or song.samples.get(kind)
+
+
+def sampled(song, e, kind, x_syn, t, m, seed, base_dir):
+    """The recorded take for this event when score.json names one, else None. Returns (x, start, midi,
+    file): the takes of a kind play in turn (no take twice in a row), mono unless the kind is wide,
+    tuned to the event's note when the entry has a "root", levelled to the synthesized voice it
+    replaces (6 ms RMS for short sounds, 50 ms for the rest) plus "gain_db", +-0.5 dB per take except
+    the one-level UI click, and placed so its onset, peak or end lands on t."""
+    spec = sample_spec(song, kind, e.get('variant'))
+    if not spec:
+        return None
+    name = spec['files'][spec['next'] % len(spec['files'])]
+    spec['next'] += 1
+    info = load_sample(find_file(name, base_dir, 'sample'))
+    x = info['x']
+    if kind in WIDE_KINDS:
+        x = np.repeat(x, 2, axis=1) if x.shape[1] == 1 else x[:, :2]
+    else:
+        x = x.mean(axis=1)
+    speed, tuned = 1.0, None
+    if spec['root'] is not None and m is not None:
+        semis = float(np.clip(m - spec['root'], -12, 12))
+        x = retune(x, semis)
+        speed, tuned = 2 ** (semis / 12), spec['root'] + semis
+    win = 0.006 if kind in SHORT_KINDS else 0.05
+    ref = wrms(x_syn, win) if x_syn is not None and np.any(x_syn) else wrms(x, win)
+    gain = ref / wrms(x, win) * 10 ** (spec['gain_db'] / 20)
+    if kind != 'click':
+        gain *= 10 ** (float(np.clip(S.rng(seed + 5).normal(0, 0.25), -0.5, 0.5)) / 20)
+    return x * gain, t - info[spec['align']] / speed, tuned, os.path.basename(name)
+
+
+def build_sfx(song, n, events, plan=None, thinned=None, base_dir='.'):
     """Every event as a sound. Returns the buses (fx with its rooms, hall sends, ui for the clock's
     tick/tock with a small room, and keys, clicks and crisp ticks, all dry), the placed and skipped
     events and the hit ducks. Effects other than whooshes, risers, swells and sucks sit within
@@ -864,6 +1005,8 @@ def build_sfx(song, n, events, plan=None, thinned=None):
         start = t
         x = None
         m = None  # the MIDI note the sound is tuned to, for the report
+        src = None  # the recorded take, when score.json "samples" names one for this kind
+        rec = sample_spec(song, kind, e.get('variant')) is not None
         if kind not in BASE:
             skipped.append(dict(i=i, f=f, kind=kind, why='unknown kind'))
             continue
@@ -872,8 +1015,11 @@ def build_sfx(song, n, events, plan=None, thinned=None):
         if kind == 'tick' and e.get('variant') == 'crisp':  # counters locking, list rows, build ticks
             x = S.crisp_tick(seed, 0.05, S.mtof(pitch) if pitch else None)
             m, g = pitch, BASE['crisp'] * w
+            if rec:
+                x, start, m, src = sampled(song, e, kind, x, t, m, seed, base_dir)
             S.place(crisp, x, start, g, pan)
-            placed.append(dict(i=i, f=f, kind=kind, variant='crisp', id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m))
+            placed.append(dict(i=i, f=f, kind=kind, variant='crisp', id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan,
+                               midi=m, sample=src))
             continue
         if kind == 'tick':
             m = pitch or song.sig_tick
@@ -887,7 +1033,8 @@ def build_sfx(song, n, events, plan=None, thinned=None):
             x = S.sub_boom(r * 2, r, 0.1, 1.6, seed)
             x = S.layer_in(x, S.clap(seed=seed), 0.6)
             x = S.layer_in(x, S.filt(S.noise(0.5, seed + 1), S.bp(200, 3000)) * S.expdec(0.5, 0.1), 0.35)
-            S.place(hall, S.filt(x, S.hp(250)), t, g * 0.4, pan)
+            if not rec:  # a recorded impact brings its own room
+                S.place(hall, S.filt(x, S.hp(250)), t, g * 0.4, pan)
             ducks.append((t, w))
         elif kind == 'land':
             heavy = w >= 0.6 and e.get('variant') != 'light'
@@ -938,7 +1085,8 @@ def build_sfx(song, n, events, plan=None, thinned=None):
             m = S.ftom(r)
             x = S.stereo(S.sub_boom(r * 2, r, 0.12, 2.4, seed, tau=0.75))
             x = S.layer_in(x, S.whoosh(0.4, 3000, 400, 150, 0.1, 0.0, 0.05, seed + 3), 0.4)  # falling air
-            S.place(hall, S.filt(x, S.hp(250)), t, g * 0.3, pan)
+            if not rec:
+                S.place(hall, S.filt(x, S.hp(250)), t, g * 0.3, pan)
             ducks.append((t, w))
         elif kind == 'key':
             if i not in plan:
@@ -964,8 +1112,10 @@ def build_sfx(song, n, events, plan=None, thinned=None):
             r = S.rng(seed)
             x = S.ui_click(S.mtof(m), 0.14, click_seed, click_gap + 0.004 * r.standard_normal(), tone, seed)
             g = BASE['click'] * click_w * 10 ** (float(np.clip(r.normal(0, 0.25), -0.5, 0.5)) / 20)
+            if rec:
+                x, start, m, src = sampled(song, e, kind, x, t, m, seed, base_dir)
             S.place(clicks, x, start, g, pan)
-            placed.append(dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m))
+            placed.append(dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m, sample=src))
             continue
         elif kind == 'snap':
             m = S.ftom(song.sub_root(t))
@@ -978,6 +1128,12 @@ def build_sfx(song, n, events, plan=None, thinned=None):
             x = S.swell([S.mtof(q) for q in notes], d, seed)
             start = t - d
         elif kind == 'bell':
+            if e.get('variant') == 'motif' and rec:  # a recorded sonic logo or chime plays once, in place of the motif
+                y0 = S.fm_bell(S.mtof(song.motif[0]), 3.0, 1.4, 3.5, 1.3)
+                x, start, m, src = sampled(song, e, kind, y0, t, None, seed, base_dir)
+                S.place(fx, x, start, g * 1.25, pan)
+                placed.append(dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m, sample=src))
+                continue
             if e.get('variant') == 'motif':
                 for k, (m, r) in enumerate(zip(song.motif, song.rhythm)):
                     y = S.fm_bell(S.mtof(m), 3.0, 1.4, 3.5, 1.3)
@@ -988,11 +1144,15 @@ def build_sfx(song, n, events, plan=None, thinned=None):
             x = S.fm_bell(S.mtof(m), 2.5, 1.6, 3.5, 1.0)
         if x is None:
             continue
+        if rec:  # the recorded take replaces the voice, at the voice's level and on the same frame
+            x, start, m, src = sampled(song, e, kind, x, start if kind == 'key' else t, m, seed, base_dir)
+            if kind in WIDE_KINDS:
+                pan = float(np.clip(e.get('pan', 0.0), -1, 1)) * 0.6
         if x.ndim == 2 and pan:
             x = balance(x, pan)
             pan = 0.0
         S.place(keys if kind == 'key' else ui if kind in UI_KINDS else fx, x, start, g, pan)
-        placed.append(dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m))
+        placed.append(dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m, sample=src))
     return dict(fx=fx, hall=hall, ui=ui, keys=keys, clicks=clicks, crisp=crisp), placed, skipped, ducks
 
 
@@ -1157,21 +1317,26 @@ def typing_levels(runs, plan, keys_sig, music_sig):
 
 
 def load_bed(song, n, base_dir):
-    """The supplied track (score.json "bed"), resampled to 48 kHz stereo and placed at its time."""
-    import soundfile as sf
-    from math import gcd
-    tries = [song.bed['file'], os.path.join(base_dir, song.bed['file'])]
-    path = next((p for p in tries if os.path.exists(p)), None)
-    if path is None:
-        raise ScoreError(f'bed file not found: {song.bed["file"]} (looked in the working directory and next to score.json)')
-    x, sr = sf.read(path, always_2d=True, dtype='float64')
-    x = np.repeat(x, 2, axis=1) if x.shape[1] == 1 else x[:, :2]
-    if sr != SR:
-        from scipy import signal
-        g = gcd(SR, sr)
-        x = signal.resample_poly(x, SR // g, sr // g, axis=0)
+    """The supplied track (score.json "bed"): each segment read from its "from" to its "to" second of
+    the file, resampled to 48 kHz stereo, faded in and out (cos^2) and placed at its film time. Two
+    segments of one file edit the track: the intro, then a jump to its drop on the hero reveal."""
     out = np.zeros((n, 2))
-    S.place(out, x, song.bed['at'], 10 ** (song.bed['gain_db'] / 20), tail=0.05)
+    files = {}
+    for seg in song.beds:
+        path = find_file(seg['file'], base_dir, 'bed file')
+        if path not in files:
+            x = read_audio(path)
+            files[path] = np.repeat(x, 2, axis=1) if x.shape[1] == 1 else x[:, :2]
+        x = files[path]
+        a = int(round(seg['src'] * SR))
+        b = len(x) if seg['to'] is None else min(len(x), int(round(seg['to'] * SR)))
+        if a >= len(x):
+            raise ScoreError(f'bed segment {seg["file"]}: "from" {seg["src"]:g} s is past the end of the file ({len(x) / SR:.2f} s)')
+        y = x[a:b].copy()
+        k = min(len(y) // 2, S.ns(seg['fade_in']))
+        if k > 1:
+            y[:k] *= (np.sin(np.linspace(0, np.pi / 2, k)) ** 2)[:, None]
+        S.place(out, y, seg['at'], 10 ** (seg['gain_db'] / 20), tail=max(0.006, seg['fade_out']))
     return out
 
 
@@ -1180,9 +1345,9 @@ def render(song, events, stems_dir=None, base_dir='.'):
     n = n_out + 4 * SR
     plan, thinned, runs = plan_typing(song, events)
     stems, kicks = build_music(song, n, events, plan)
-    if song.bed:
+    if song.beds:
         stems['bed'] = load_bed(song, n, base_dir)
-    B, placed, skipped, ducks = build_sfx(song, n, events, plan, thinned)
+    B, placed, skipped, ducks = build_sfx(song, n, events, plan, thinned, base_dir)
     fx, hall, ui, keys = B['fx'], B['hall'], B['ui'], B['keys']
     t = np.arange(n) / SR
 
@@ -1444,6 +1609,13 @@ def main(argv=None):
         rep['typing'] = ev['typing']
     if ev['sfx_levels']:
         rep['sfx_levels'] = ev['sfx_levels']
+    takes = {}
+    for p in ev['placed']:
+        if p.get('sample'):
+            takes.setdefault(p['kind'], []).append(p['sample'])
+    if song.beds or takes:  # what came from recorded files, for the licence record in audio/SOURCES.md
+        rep['recorded'] = dict(bed=[dict(file=s['file'], at=round(s['at'], 3), src=s['src'], to=s['to']) for s in song.beds],
+                               samples={k: dict(count=len(v), files=sorted(set(v))) for k, v in takes.items()})
     rep['pass'] = not fails
     if a.json:
         os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
@@ -1452,6 +1624,12 @@ def main(argv=None):
         print(f"{'PASS' if not fails else 'FAIL'}  {a.out}  {rep['seconds']}s  {rep['lufs']} LUFS  TP {rep['true_peak_db']} dBTP  "
               f"LRA {rep['lra']} LU  loudest {rep['momentary_max']} LUFS-M at {rep['momentary_max_t']}s  "
               f"events {len(events)} ({len(ev['skipped'])} skipped, {len(ev['masked'])} masked)")
+        if 'recorded' in rep:
+            r_ = rep['recorded']
+            print('  recorded: ' + '; '.join(
+                ([f"bed {', '.join(sorted({b['file'] for b in r_['bed']}))} ({len(r_['bed'])} segment{'s' if len(r_['bed']) != 1 else ''})"]
+                 if r_['bed'] else [])
+                + [f"{k} {v['count']}x from {len(v['files'])} take{'s' if len(v['files']) != 1 else ''}" for k, v in r_['samples'].items()]))
         ty = ev['typing']
         if ty['keys']:
             worst = max((r['vs_music_A_db'] for r in ty['runs'] if 'note' not in r and r['style'] != 'word'), default=None)

@@ -24,7 +24,7 @@ cinetic (cinema + kinetic) is an agent skill that makes your coding agent direct
 - **Idea first.** Before any code, the agent writes three concepts through different lenses, tests them, and picks one story device the film owns.
 - **273 techniques, drawn at random.** A library of measured moves in 14 categories, each with a build recipe and timing at 60 fps. `pick.py` draws the film's plan, weighted for its format and energy, so two films don't share the same fade-up, push-in and end card.
 - **Its own brand.** The look comes from three personality words, so a calm notes app and a fast CI tool don't end up looking alike.
-- **One beat grid, measured sound.** `timeline.ts` drives the picture, a synthesized score and the QA scripts, so every hit lands on its frame. Typing, clicks and ticks follow measured norms of top-tier launch films: soft, short and mostly left to the music.
+- **One beat grid, measured sound.** `timeline.ts` drives the picture, the soundtrack and the QA scripts, so every hit lands on its frame. The agent finds the best free-to-use music track and effects for each film, edits the track to the picture and keeps a licence record; a synthesized score is the fallback. Typing, clicks and ticks follow measured norms of top-tier launch films: soft, short and mostly left to the music.
 - **Finished and measured.** True motion blur, no banding, BT.709 and a sync-checked mux, then pixel forensics, an audio-sync audit, contact sheets and critic passes against a ship gate.
 - **No generated look.** Hard bans, enforced by a linter and the critics, keep out the looks that mark a video as generated. A brand you supply always wins.
 
@@ -250,7 +250,7 @@ Social versions are re-laid out from the same timeline, never cropped from the m
 
 ## How it works
 
-Every step writes a file and ends at a gate the agent actually runs. It starts from `BRIEF.md`, the brief plus a spec line such as `1920x1080@60, 30s, 120BPM, audio: synthesized`.
+Every step writes a file and ends at a gate the agent actually runs. It starts from `BRIEF.md`, the brief plus a spec line such as `1920x1080@60, 30s, 120BPM, audio: recorded`.
 
 | # | Step | Writes | What happens | Key script or template |
 |---|---|---|---|---|
@@ -258,7 +258,7 @@ Every step writes a file and ends at a gate the agent actually runs. It starts f
 | 2 | Brand | `src/brand/` | Three personality adjectives set the typeface, stage, accent, corners and motion character; 6–10 mark directions on one sheet, each put through a 64 px misread test; a lockup set like a typographer would | `palette.py` |
 | 3 | Timeline | `src/timeline.ts` | FPS, BPM, the beat grid `b(bar, beat, sub)`, acts, cues and every line of copy | `grid-check.ts` |
 | 4 | Build | `src/acts/` | Acts built from motion tokens and tested primitives (`TypeOn`, `Roll`, `Morph`, `Iris`…), with real product UI fed by one data module; safe zones, covered text and text speed audited | `lint-film.mjs` |
-| 5 | Sound | `public/audio/soundtrack.wav` | Sync frames computed from the picture code; a tuned score and SFX synthesized with stems; mastered to −14 LUFS (−16 for a short sting) | `export-cues.ts` |
+| 5 | Sound | `public/audio/soundtrack.wav` | Sync frames computed from the picture code; a recorded track edited to the picture and recorded effects (or a synthesized score), with stems and a licence record; mastered to −14 LUFS (−16 for a short sting) | `export-cues.ts` |
 | 6 | Render | `out/film.mp4` | Preview, sharp or motion-blurred master: optical-flow speeds set the sub-frames per frame, averaged in float and quantized once to BT.709; sync and spec gates | `render.sh` |
 | 7 | Review | `out/qa/` | Contact sheets, pixel forensics (pops, stalls, ghosts, judder, banding, loop seams), an onset-by-onset audio audit, four critic lenses and a verifier, a scored rubric and a ship gate | `forensics.py` |
 | 8 | Deliver | `out/deliver/` | Poster from a clean still, GIF and WebM loops, alpha stings, social variants, a manifest; the brand kit | `deliver.sh`, `brand-kit.sh` |
@@ -291,9 +291,9 @@ When the agent invents the look, none of these appear:
 | Path | Contents |
 |---|---|
 | `skills/cinetic/SKILL.md` | The director: formats and defaults, five laws, the workflow from intake to delivery (Steps 0–8) with its gates plus a scaled-down path for stings and loops, taste rules, the timing and motion systems, engine rules, the ship gate |
-| `skills/cinetic/references/` | 19 guides, each read when its step comes up: concept and story, brand and color, copy and type, timing grid, motion tokens, camera, transitions, product UI, sound, finishing, review loop, a catalog of cheap-looking tells, both engines, Chromium rendering traps, formats, the technique library, the measured craft rules, and a worked example |
+| `skills/cinetic/references/` | 20 guides, each read when its step comes up: concept and story, brand and color, copy and type, timing grid, motion tokens, camera, transitions, product UI, sound, recorded music and effects, finishing, review loop, a catalog of cheap-looking tells, both engines, Chromium rendering traps, formats, the technique library, the measured craft rules, and a worked example |
 | `skills/cinetic/assets/library/` | `techniques.json`, the 273 techniques `pick.py` draws from |
-| `skills/cinetic/scripts/` | 27 scripts: scaffold, the technique draw (`pick.py`), lint, grid and layout audits, palette, cue export, score and master, render and motion blur, probe and sync gates, forensics, A/V audit, contact sheets, delivery, brand kit. Each is documented in its header comment and, except the internal `brand-svg.ts` helper, in its `--help`. The regression tests for the lint and `pick.py` are in `scripts/test/`. |
+| `skills/cinetic/scripts/` | 28 scripts: scaffold, the technique draw (`pick.py`), lint, grid and layout audits, palette, cue export, score and master, a recorded track's tempo and edit points, render and motion blur, probe and sync gates, forensics, A/V audit, contact sheets, delivery, brand kit. Each is documented in its header comment and, except the internal `brand-svg.ts` helper, in its `--help`. The regression tests for the lint, `pick.py` and the recorded audio in `score.py` are in `scripts/test/`. |
 | `skills/cinetic/assets/` | The Remotion starter (default, with tested motion primitives in `src/fx/`), the HyperFrames starter, the treatment template and five critic prompts (director, art/copy/UI, sound-sync, forensics, verifier) |
 | [`evals/evals.json`](evals/evals.json) | The four briefs and the written expectations each film is graded against |
 | `docs/` | [Setup](docs/setup.md) and the full [evaluation](docs/evaluation.md) |
@@ -333,9 +333,10 @@ Issues and pull requests are welcome. Before you open a PR, run the regression t
 ```bash
 node skills/cinetic/scripts/test/lint-film.test.mjs
 python3 skills/cinetic/scripts/test/pick.test.py
+python3 skills/cinetic/scripts/test/score.test.py   # needs numpy, scipy and soundfile
 ```
 
-CI runs the same tests and also checks the SKILL.md frontmatter, the JSON and plugin manifests, that the skills CLI discovers the skill, and Python and shell syntax. A change to a hard-ban rule needs a fixture in `skills/cinetic/scripts/test/lint-fixtures/` that declares what it must produce. A change to the library goes into `techniques.json`; regenerate the readable page with `python3 skills/cinetic/scripts/pick.py --markdown > skills/cinetic/references/technique-library.md` (CI checks that the two match).
+CI runs the lint and `pick.py` tests (the score test needs the audio packages, so run it locally) and also checks the SKILL.md frontmatter, the JSON and plugin manifests, that the skills CLI discovers the skill, and Python and shell syntax. A change to a hard-ban rule needs a fixture in `skills/cinetic/scripts/test/lint-fixtures/` that declares what it must produce. A change to the library goes into `techniques.json`; regenerate the readable page with `python3 skills/cinetic/scripts/pick.py --markdown > skills/cinetic/references/technique-library.md` (CI checks that the two match).
 
 ## License
 

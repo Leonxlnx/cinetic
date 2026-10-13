@@ -295,7 +295,7 @@ npm run audio    # 6 s. "PASS  public/audio/soundtrack.wav  9.0s  -14.0 LUFS  TP
 
 - `npm run check` runs `tsc`, `lint-film.mjs` and `grid-check.ts`. On the starter the lint fails with `placeholder` errors: the palette, typeface, mark and name are stand-ins, and no film may ship on them. Replacing them is the agent's Step 2. `tsc` passing is the part that matters here. Because the lint stops the chain, run the grid check on its own: `npx tsx scripts/grid-check.ts src/timeline.ts` should print `-> pass (0 errors, 0 warnings)`.
 - `npm run cues` exports the sync frames from the picture code (`scripts/export-cues.ts`).
-- `npm run audio` synthesizes and masters the score (`scripts/audio/score.py`) into `public/audio/soundtrack.wav`, with stems in `out/stems/` and a report in `out/qa/score.json`.
+- `npm run audio` renders and masters the soundtrack (`scripts/audio/score.py`: the recorded files named in `audio/score.json`, or the synth) into `public/audio/soundtrack.wav`, with stems in `out/stems/` and a report in `out/qa/score.json`.
 
 Render a preview, then the motion-blurred master:
 

@@ -8,6 +8,24 @@ Versions 0.1.0 to 0.5.0 were development versions, and 0.9.0 was the first publi
 
 ## [Unreleased]
 
+The soundtrack now comes from recorded audio by default: the best free-to-use music track and effects the agent can find for each film, edited and levelled to the picture by the same beat grid. The synthesized score stays as the fallback.
+
+### Added
+
+- **`references/sound-library.md`.** How to find, license, choose and place recorded music and effects: the licences that allow a commercial film (no NC, no ND; CC BY with its credit line), where to look (Pixabay, Mixkit, Kenney; Freesound and the Sonniss bundles through the user), search terms by sound personality, what to pick for each event kind against the measured norms, how to edit a track to the picture, and the failure modes. Nothing behind a login or a captcha is downloaded by the agent.
+- **`bed` segments in `audio/score.json`.** A bed can be a list of segments with `from`, `to`, `fade_in` and `fade_out`, so a track is edited to the picture: its intro on frame 0, then a cut on a bar line to its drop on the hero reveal.
+- **`samples` in `audio/score.json`.** Recorded takes for any event kind, or for one variant (`"click.confirm"`, `"tick.crisp"`, `"bell.motif"`). Takes play in turn, are levelled to where the synthesized voice of their kind sat (so the per-film levelling of clicks, ticks and typing still holds), land on their frame by onset, peak or end, and are retuned per event when given a `root`.
+- **`scripts/audio/track-info.py`.** Measures a track (length, loudness, key, tempo, first downbeat, bar grid, loudness per bar, entries and breaks), checks it against the film's BPM, and prints `bed` values that land its biggest entry on a cue (`--cues out/cues.json --land-at @drop`).
+- **`audio/SOURCES.md`.** The licence record of every downloaded file; `deliver.sh` copies it next to the film.
+- **`scripts/test/score.test.py`.** Regression tests for the recorded audio in `score.py` (needs numpy, scipy and soundfile).
+
+### Changed
+
+- **Step 3 picks the track first** and takes its tempo as the film's BPM (stretching it by up to 3% when the tempo is not a whole-frame one). **Step 5** finds the effects and fills `bed` and `samples`; its gate also asks for the licence record.
+- **`chords` are optional** when the music is a recorded bed (no synth sections, or `hold` sections only): tuned effects then follow the key's scale.
+- **`score.py` reports what came from files**: a `recorded:` line and a `recorded` block in its JSON report. A recorded `hit` or `drop` brings its own room, so no synth reverb send is added.
+- The spec line's audio field is `recorded`, `synthesized` or `none`.
+
 ## [1.0.0] - 2026-10-04
 
 This version teaches cinetic what top-tier launch films measurably do. Their pictures and soundtracks were measured frame by frame, and the results became a technique library the agent draws from at random, a reference of craft norms, a recalibrated sound engine and a set of tested motion primitives in the starter.

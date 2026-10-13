@@ -1,11 +1,11 @@
 # Sound: score, effects, mix and master from the cues
 
-Covers the soundtrack end to end: the `out/cues.json` contract, writing `src/sync.ts`, the `audio/score.json` schema, tuning, the instrument palette, the mix and the master. Read it before Step 5 (Sound), and again whenever sound and picture disagree.
+Covers the soundtrack end to end: the `out/cues.json` contract, writing `src/sync.ts`, the `audio/score.json` schema, tuning, the instrument palette, the mix and the master. Read it before Step 5 (Sound), and again whenever sound and picture disagree. Where the music and the effects come from (by default, recorded files found online for each film) is in `references/sound-library.md`.
 
 The numbers here are the defaults that shipped Tessel (−14.1 LUFS, LRA 5.2 LU, −1.7 dBTP after AAC, every effect within ±1 f of its picture), calibrated to the measured norms of top-tier launch films (§13). Treat them as starting points, not dogma. When the user supplies music, a sonic logo or a voiceover, the brand wins: tune and time everything else around it (§5.6).
 
 ## Contents
-1. [Why synthesize](#1-why-synthesize)
+1. [Recorded or synthesized](#1-recorded-or-synthesized)
 2. [Pipeline and gate](#2-pipeline-and-gate)
 3. [cues.json and the event kinds](#3-cuesjson-and-the-event-kinds)
 4. [Writing src/sync.ts](#4-writing-srcsyncts)
@@ -19,11 +19,15 @@ The numbers here are the defaults that shipped Tessel (−14.1 LUFS, LRA 5.2 LU,
 12. [Sound slop](#12-sound-slop)
 13. [Measured norms](#13-measured-norms)
 
-## 1. Why synthesize
+## 1. Recorded or synthesized
+
+By default the film uses a produced music track and recorded effects, found online for each film, free to use, and recorded in `audio/SOURCES.md` (`references/sound-library.md`). `score.py` edits the track to the picture (`bed`), plays a recorded take for each sounded kind (`samples`), levels every take to where the synth voice of its kind would sit and lands it on its frame. Everything else in this file (the cues, the counts, the levels, the arc, the mix, the master and the gates) holds whichever source a sound comes from.
+
+The synth below is the fallback, and still the right call in a few places:
 
 - **Tuned.** Every pitched sound (clock, pops, snaps, booms, risers) is computed in the film's key and on the chord under it. Library effects arrive in random keys, and an untuned boom under a resolving chord sounds cheap even to people who cannot say why.
 - **Sample-accurate and re-timeable.** Sounds are placed on the exact frame the picture code computes. Retime an act and the next run of `export-cues.ts` + `score.py` moves every sound with it.
-- **Deterministic and clean.** Everything is seeded, so the same inputs render the same samples, and nothing needs a licence.
+- **Deterministic and clean.** Everything is seeded, so the same inputs render the same samples, and nothing needs a licence or a download: the film still has sound with no web access.
 - **One source of truth.** Bars, cues and sync points come from `src/timeline.ts` and the act modules, never from a second, hand-typed list.
 
 ## 2. Pipeline and gate
@@ -32,11 +36,12 @@ The numbers here are the defaults that shipped Tessel (−14.1 LUFS, LRA 5.2 LU,
 npx tsx scripts/export-cues.ts                       # src/sync.ts -> out/cues.json      (npm run cues)
 python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json \
     --out public/audio/soundtrack.wav --stems out/stems --json out/qa/score.json   # (npm run audio)
+python3 scripts/audio/track-info.py audio/music/track.wav --cues out/cues.json --land-at @drop --bpm 120   # a recorded track: tempo, bars, entries, where to cut
 python3 scripts/audio/synth.py --demo out/palette.wav --key G         # audition every voice in a key
 python3 scripts/audio/master.py --measure public/audio/soundtrack.wav # loudness of any WAV
 ```
 
-`score.py` renders the music and effects, mixes them, masters with `master.py` and writes a 48 kHz, 24-bit stereo WAV exactly `TOTAL / FPS` seconds long. `render.sh --audio` muxes it (`references/finishing.md` §6); never let Remotion encode the audio.
+`score.py` renders the music and effects (recorded files where `bed` and `samples` name them, the synth elsewhere), mixes them, masters with `master.py` and writes a 48 kHz, 24-bit stereo WAV exactly `TOTAL / FPS` seconds long. `render.sh --audio` muxes it (`references/finishing.md` §6); never let Remotion encode the audio.
 
 **Gate (Step 5):** the film's loudness target ±0.5 LUFS integrated (`master.lufs`: −14 by default, −16 for a calm brand or a short sting; §9), true peak ≤ −1.5 dBTP on the WAV (4× oversampled), last 480 samples digital zero, report clean or every warning answered. `score.py` exits 1 when the loudness gate fails. After the mux, `scripts/check-sync.py` gates lag ≤ 48 samples and ≤ −1 dBTP on the decoded MP4, and `scripts/av-audit.py --stems out/stems` checks onsets against the cues, per stem (`references/review-loop.md`).
 
@@ -77,6 +82,8 @@ python3 scripts/audio/master.py --measure public/audio/soundtrack.wav # loudness
 | `key` | a typed character | the character's frame (fractional) | the film's `typing` style (§5.5c): by default a dark modal "tock" per key up to 25 chars/s, one pitched blip per word above; 26 fixed keys, `space` and `return` lower and longer; thinned by time |
 | `click` | a cursor press | the press frame | one bright, very short voice for the film (a tone near 2 kHz, nothing below 500 Hz) at one level, about 3 dB under the music, with its release about 85 ms later; `confirm` adds a soft tuned tone |
 | `bell` | a chime: a success, a logo moment | the strike | FM bell on the chord tone near A♭5; `motif` plays the signature motif from `f` |
+
+Any kind can play a recorded take in place of the voice in the last column: name it in `samples` (`references/sound-library.md` §8). The take is levelled to that voice and lands on the same frame (its onset, or its peak for `whoosh`, `suck`, `riser` and `swell`).
 
 ## 4. Writing src/sync.ts
 
@@ -160,7 +167,7 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
 |---|---|---|
 | `key` | `"C major"` | tonic + mode: major, minor, dorian, mixolydian, lydian, phrygian (ionian, aeolian) |
 | `bpm` | timeline | optional; must equal the timeline's `BPM` or `score.py` refuses |
-| `chords` | required | one entry per bar from bar 1. `"Am11 D7sus4"` splits the bar evenly; `"-"` continues; `"N.C."` is no chord; missing bars hold the last chord |
+| `chords` | required with synth music | one entry per bar from bar 1. Optional when the music is a recorded `bed` (no sections, or `hold` sections only): tuned effects then follow the key's scale. `"Am11 D7sus4"` splits the bar evenly; `"-"` continues; `"N.C."` is no chord; missing bars hold the last chord |
 | `sections` | `[]` | `{bars: [from, to], style, level?, bright?, clock?, hats?, drums?, layers?}`; bars outside every section get no music |
 | `signature` | tonic / fifth / `[0,7,14]` | `tick` and `tock` pitches, the `motif` (semitones above the tonic nearest C5, or note names) and its `rhythm` in beats (or an even `step`) |
 | `motifs` | `[]` | `{at, gain?, notes?, rhythm?}`: where the signature motif plays (bells) |
@@ -168,7 +175,8 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
 | `silences` | `[]` | `{from, to, depth?}`: true silence for a designed freeze; mutes everything, effects and reverb included |
 | `payoff` | — | the moment that must be loudest: the drop on the hero reveal, about 30–60% into the film (in a sting, its hit); the report checks it |
 | `progress` | — | `{match, kind?, start?, tonic?, resolve?, gain?}`: the progress motif (§5.5b): events whose `id` contains `match` climb the scale one step each; `resolve` lands the tonic on the payoff |
-| `bed` | — | `{file, at?, gain_db?}`: a supplied music track joins the music bus (§5.6) |
+| `bed` | — | a recorded music track: a file, `{file, at?, from?, to?, gain_db?, fade_in?, fade_out?}`, or a list of such segments to edit it to the picture; it joins the music bus (`references/sound-library.md` §6, §8) |
+| `samples` | — | `{kind or kind.variant: file, [files] or {file(s), gain_db?, align?, root?}}`: recorded takes in place of the synthesized voices (`references/sound-library.md` §7, §8) |
 | `typing` | `"auto"` | how `key` events sound: `auto`, `soft`, `mechanical`, `pitched`, `muted`, `word` or `off` (§5.5c) |
 | `keyup` | `false` | `true` adds a key-release click on slow typing (next key over 140 ms away); measured typing has none |
 | `mix` | as shown | music and effect bus gains, reverb amount, sidechain depth, dB the music dips under hits (`duck_db`) and under typing sounded per key (`typing_duck_db`, 0 disables) |
@@ -271,7 +279,7 @@ What `score.py` does to every run, with no settings:
 
 ### 5.6 When the brand brings sound
 
-- **Music supplied:** set `bed` to the file, set `key`, `bpm` and `chords` to match the track (effects are tuned from them), and leave `sections` empty or use `hold` so nothing competes. Sucks, silences, ducking under hits and the master still apply. Retime the picture to the track's bars, not the other way round.
+- **Music supplied:** treat it as the film's recorded track (`references/sound-library.md` §6): measure it with `track-info.py`, set `bed` and `key` from it, and leave `sections` empty or use `hold` so nothing competes. Sucks, silences, ducking under hits and the master still apply. Retime the picture to the track's bars, not the other way round.
 - **Sonic logo supplied:** place it as the `bed` at the lockup cue (`"at": "@lockup"`) and drop the signature motif.
 - **Voiceover:** mix it into the bed file, or build the bed around it; keep the music 10–12 dB under speech in the 1–4 kHz band, and keep effects off the syllables that matter.
 
@@ -286,7 +294,7 @@ What `score.py` does to every run, with no settings:
 
 ## 7. The instrument palette
 
-All in `scripts/audio/synth.py` (48 kHz, numpy/scipy, seeded). Oscillators integrate their phase, because `sin(2πf(t)·t)` chirps on a glide.
+The synth's voices: the fallback for any kind without a recorded take, and the reference level each take is matched to. All in `scripts/audio/synth.py` (48 kHz, numpy/scipy, seeded). Oscillators integrate their phase, because `sin(2πf(t)·t)` chirps on a glide.
 
 | Voice | Recipe | Used by |
 |---|---|---|
@@ -423,7 +431,7 @@ The habits that make a launch film sound cheap, and what to do instead. Most are
 | A truncated ending: the file stops mid-note or mid-fade | a tail of 0.5–2.5 s to below −60 dBFS, then 0.4–1.1 s of silence on the end card |
 | Brickwall limiting to 0 dBFS with overs between samples; an infrasonic swell spending the headroom | −14 LUFS, −1 dBTP with oversampling (the WAV holds −1.5), PLR 12–16 dB; high-pass below about 25 Hz |
 | Cartoon glides, big Doppler swings; an untuned sub, random pop pitches | pitch moves within 1–2 semitones on pops, 2–4 on a whoosh; the sub and kick on the key's root (39–62 Hz); pops and word blips stepped through chord tones (330–1400 Hz) |
-| A different material for every sound | one palette (felt, wood, glass, soft synth), one scale for every tuned sound |
+| A different material for every sound | one palette (felt, wood, glass, soft synth), one scale for every tuned sound; recorded takes from one material, the pitched ones given a `root` so they stay in key |
 
 Premium, in one line: restraint, one palette, dark keys and short bright clicks, the music carrying the cuts, real dynamics, silence before the drop and an ending that subtracts. Good sound design mostly disappears.
 

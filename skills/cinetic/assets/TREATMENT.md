@@ -7,7 +7,7 @@ Copy rules: references/copy-and-type.md. Numbers are defaults, not dogma.
 For a loop or a sting (the one-page treatment), fill sections 3, 3b, 5 (2–8 rows), 6 and 7, and tick section 8.
 -->
 
-**Spec:** `<W>x<H>@<fps>, <length>s, <BPM>BPM, audio: <synthesized | none>` · **Format:** <launch film | product video | feature loop | logo sting | UI walkthrough> · **Engine:** <Remotion | HyperFrames>
+**Spec:** `<W>x<H>@<fps>, <length>s, <BPM>BPM, audio: <recorded | synthesized | none>` · **Format:** <launch film | product video | feature loop | logo sting | UI walkthrough> · **Engine:** <Remotion | HyperFrames>
 **Product:** <what it does, in one line> · **Viewer:** <who watches, and where: feed, landing page, keynote>
 **Assumptions:** <anything you inferred rather than were told>
 
@@ -88,7 +88,7 @@ Checks: ≤ 5 words per line · ≤ 2 lines per shot · no stock phrasing · eve
 
 # Example: Plumb (fictional; delete this section in your copy)
 
-**Spec:** `1920x1080@60, 30s, 120BPM, audio: synthesized` · **Format:** launch film · **Engine:** Remotion
+**Spec:** `1920x1080@60, 30s, 120BPM, audio: recorded` · **Format:** launch film · **Engine:** Remotion
 **Product:** code review that finds the few lines in a huge pull request that can break production · **Viewer:** engineers and their leads, muted in a feed first
 **Assumptions:** no brand supplied, so name, mark and palette are invented; 1 bar = 2 s = 120 f; 15 bars, with the tail inside the last bar.
 
