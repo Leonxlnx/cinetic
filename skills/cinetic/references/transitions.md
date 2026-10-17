@@ -34,6 +34,7 @@ The frame counts and curves are proven defaults from shipped films (Tessel's are
 | High | 0.15–0.3 s | 9–18 f | expo-like: `E.in` / `E.out`, `E.contact` | 3–6 px | zoom-through, velocity-matched cut, implosion, flood |
 
 - Match the seam's energy to the music at that point: a high-energy seam on a drop, a calm one across a breakdown.
+- **Text-led films default to calm seams.** In the calm pace use at most 2 high-energy seams per film, each in a stretch with no text being read; a seam never fires while a fragment is still in its reading hold. Text leaves before or with the seam (its whole-fragment exit, 24 f), never in the middle of it.
 - Blur here is the transient softness a seam adds on purpose (a defocus, a zoom smear). Speed blur on fast motion comes from the motion-blur render pass (`references/finishing.md`), whose samples never cross an act boundary, so hard cuts stay crisp.
 
 ## 3. Seam laws

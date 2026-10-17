@@ -164,6 +164,8 @@ The difference is the extra work: building a brand, scoring and mastering the so
 
 ## Run your own evaluation
 
+`evals/evals.json` now holds a fifth brief, a calm 20-second update film, added together with the fragment grammar and the calm pace (see [CHANGELOG.md](../CHANGELOG.md)). Neither has been through a judged round yet: the results above are for the four briefs and the versions named in each round.
+
 This repository ships the briefs and expectations only, not a harness or judge prompts.
 
 **The file format.** `evals/evals.json` has a `skill_name` and an `evals` array. Each entry has an `id`, a `name`, the `prompt` exactly as a person would send it, a one-line `expected_output`, the input `files` (none in these briefs) and `expectations`: plain sentences, each one pass or fail. One entry, trimmed:

@@ -1,6 +1,6 @@
 # Motion tokens
 
-Covers the house motion system: easing tokens and when to use each, spring presets and the damping rule, the `hitPulse` envelope, stagger and choreography constants, anticipation, landings and weight. Read it before Step 4 (Build), and whenever motion looks floaty, bouncy, uniform or mechanical.
+Covers the house motion system: easing tokens and when to use each, spring presets and the damping rule, the `PACE` knob (calm by default, crisp on request), the `hitPulse` envelope, stagger and choreography constants, anticipation, landings and weight. Read it before Step 4 (Build), and whenever motion looks floaty, bouncy, uniform or mechanical.
 
 The numbers are proven defaults, measured against Remotion 4.0.529 at 60 fps. Treat them as starting points: a brand with its own motion language wins, but keep it to a small set of named tokens.
 
@@ -19,25 +19,25 @@ The numbers are proven defaults, measured against Remotion 4.0.529 at 60 fps. Tr
 
 ## 1. The laws
 
-- **All motion comes from `src/lib/anim.ts`**: `E` (easing tokens), `SPR` (spring presets), `tw`, `prog`, `mix`, `lmix`, `clamp`, `spr`, `hitPulse`, `squash`, `blurIn`, `blurOut`, `arrive`, `arriveK`, `depart`, `rand`, `fd`, `stagger`, `inertia`, and the types `Ease` and `Spr`. A raw `Easing.bezier(…)` or `Easing.spring` anywhere else is a lint error (`scripts/lint-film.mjs`), and spring configs belong in `SPR` for the same reason: consistent motion is what makes it read as a brand, and ad-hoc curves are what make it read as generated. Need a new curve or spring? Add a named token with a comment saying its job.
+- **All motion comes from `src/lib/anim.ts`**: `E` (easing tokens), `SPR` (spring presets), `PACE` and `pace` (the pace knob, §6), `tw`, `prog`, `mix`, `lmix`, `clamp`, `spr`, `hitPulse`, `squash`, `blurIn`, `blurOut`, `arrive`, `arriveK`, `depart`, `rand`, `fd`, `stagger`, `inertia`, and the types `Ease` and `Spr`. A raw `Easing.bezier(…)` or `Easing.spring` anywhere else is a lint error (`scripts/lint-film.mjs`), and spring configs belong in `SPR` for the same reason: consistent motion is what makes it read as a brand, and ad-hoc curves are what make it read as generated. Need a new curve or spring? Add a named token with a comment saying its job.
 - **Entrances decay, exits accelerate.** Things arrive fast and settle (`E.out`); they leave slowly then fast (`E.in`). Only the camera eases both ways.
 - **Fades run 10–14 f on `E.smooth`.** Never fade out on `E.out`: it puts half the change in the first frame, so the element pops to 55% and then drifts. A 6 f `E.in` fade does the reverse and vanishes in about one frame.
 - **Linear is for drift only** (a constant background creep, a clock). Anything that starts or stops uses a curve.
-- **Duration scales with distance.** `0.35 s + 1.35 ms per px`, clamped to 0.6–2.4 s for camera moves. The longest move in a film lasts at least 3× the shortest, or everything feels the same speed.
+- **Duration scales with distance.** Calm (the default): `0.5 s + 1.6 ms per px`, clamped to 0.9–3.0 s for camera moves. Crisp: `0.35 s + 1.35 ms per px`, clamped to 0.6–2.4 s. The longest move in a film lasts at least 3× the shortest, or everything feels the same speed.
 - **Consecutive moves overlap by about 20 f** (more when the first move is slow), with the second starting on a zero-slope curve (`E.rest`, `E.smooth`). Two moves that each ease to rest and then restart read as stall-then-lurch (`references/camera.md` §6).
 - **One hero motion plus at most two supporting motions** at any moment. Stillness after motion is a tool; idle bobbing everywhere is noise.
-- **Speed limit:** anything faster than 12 px/f needs motion blur in the master (`references/finishing.md`); unblurred moves above about 20 px/f strobe. Pair fast with still: a 60–70 px/f whip reads best next to 0.3–0.6 px/f calm.
+- **Speed limit:** anything faster than 12 px/f needs motion blur in the master (`references/finishing.md`); unblurred moves above about 20 px/f strobe. In calm, ordinary moves stay at or under 25 px/f and fast moves are rare (at most 2 per film, at most 1 of them a whip); in either profile nothing fast moves while text is being read. Pair fast with still: a 60–70 px/f whip reads best next to 0.3–0.6 px/f calm.
 - **Smooth, or it doesn't ship.** Jitter, pixel-snap stairs (`references/chromium-rendering.md`), single-frame pops and stall-then-lurch block the ship: the gate needs zero `forensics.py` fails and Finish at 5 (`references/review-loop.md` §10), however good the idea is.
 - **Discrete state reads whole frames.** Anything that switches (typed characters, labels, counters, layout thresholds) uses `fd(f)` (`Math.round`), so every motion-blur sub-sample of a frame agrees.
 
 ```ts
-import { FPS } from '../timeline';
-/** Frames for a move of `px` pixels: 0.35 s + 1.35 ms/px, camera moves clamped to 0.6-2.4 s. */
-export const durFor = (px: number, camera = false) => {
-  const s = 0.35 + 0.00135 * px;
-  return Math.round((camera ? Math.min(2.4, Math.max(0.6, s)) : s) * FPS);
+// in src/lib/anim.ts: frames for a move of `px` pixels at this film's fps, from the pace's `move`
+// coefficients (calm 0.5 s + 1.6 ms/px, camera 0.9-3.0 s; crisp 0.35 s + 1.35 ms/px, camera 0.6-2.4 s)
+export const durFor = (px: number, camera = false, p: Pace = pace) => {
+  const s = p.move.base + p.move.perPx * Math.abs(px);
+  return Math.round((camera ? clamp(s, p.move.camMin, p.move.camMax) : s) * FPS);
 };
-// durFor(150) = 33 f, durFor(350) = 49 f, durFor(1200, true) = 118 f
+// calm: durFor(150) = 44 f, durFor(350) = 64 f, durFor(1200, true) = 145 f; crisp: 33 f, 49 f and 118 f
 ```
 
 ## 2. Easing tokens
@@ -60,6 +60,7 @@ export const durFor = (px: number, camera = false) => {
 | `whip` | .6,0,.15,1 | .10 / .75 | 39% | feature-to-feature whips, 24–30 f | holds |
 | `dolly` | .35,0,.65,1 | .15 / .50 | 50% (1.5×) | slow push through a hold | reveals |
 | `type` | .5,1,.89,1 | .44 / .75 | at start (2×) | an eased typewriter's character count (`TypeOn`) | motion of any kind |
+| `expo` | 1 − e^(−6t), normalised | .78 / .95 | at start | a build line's re-centre (`Chain`): half-way at 12% of the time, 90% at 38%, then a sub-pixel tail | vertical moves (whole-pixel snapping turns the tail into ticks) |
 | `linear` | – | .25 / .50 | flat | drift, clocks, constant creep | anything that starts or stops |
 
 - **A film uses about three easing characters** most of the time, typically `out` for arrivals, `cam` for the camera and `in` for exits, with the rest reserved for the moments that need them. Ten curves in equal measure read as no system.
@@ -105,6 +106,7 @@ const y = (f: number) =>
 | `firm` | 24 / 140 / 1 | 1.01 | 0% | 9 f / at rest | 38 f | the critically damped workhorse: UI arrivals |
 | `soft` | 26 / 120 / 1 | 1.19 | 0% | 10 f / at rest | 41 f | weighty: panels, cards, large type |
 | `heavy` | 30 / 90 / 1.4 | 1.34 | 0% | 13 f / at rest | 56 f | slow and massive: full-frame surfaces |
+| `calm` | 16 / 64 / 1 | 1.0 | 0% | about 12 f / at rest (97% at 41 f) | about 55 f | words, lines and labels: the only spring for type, and the default for calm UI arrivals |
 
 "Settles" is `measureSpring` (within 0.005 of rest). Configs that earned a name in Tessel and are worth adding to `SPR` when a film needs them:
 
@@ -118,6 +120,7 @@ const y = (f: number) =>
 
 Rules:
 - **Default to critical damping**: `damping ≥ 2·√(stiffness·mass)` (ζ ≥ 1), or an ease. Bouncy springs everywhere are the most common tell of generated motion, and a hard ban (`SKILL.md`).
+- **Type never overshoots.** Words, lines and labels settle on an ease (`E.outSoft` by default) or on `SPR.calm`. `snap`, `pop`, `land` or an unclamped `word` spring driving text is a `lint-film.mjs` warning (`text-spring`), and a critic flags it as F11. Measure a new type spring with `measureSpring` before it ships: 0% overshoot, 97% in 36–44 f.
 - **Overshoot belongs only to a true landing**: an object arriving at a surface or a lock, with a contact you could put a sound on. Keep it to 1–7% (`snap`, `impact`), and use at most two visible landings per film, counting every `pop`, `land` or `check`. A card, a label, a chip or a camera that merely arrives never overshoots.
 - **Clamp overshoot wherever it could collide or go negative.** A piece arriving from the left must not pass its slot; a word sliding in must not close the word space (Tessel's "Everythingfits" frame). Either clamp the offset or set `overshootClamping: true`, which stops the spring dead on arrival; put the impact in a `hitPulse` punch instead.
 - **Snap the tail to rest** when `|1 − s| < 0.01`, so labels never creep a sub-pixel across a cut.
@@ -183,20 +186,48 @@ Amplitudes that worked (scale = `1 + amp · hitPulse(…)`):
 
 ## 6. Choreography and stagger
 
+**The pace knob.** Text timing and the film's density come from one object, `PACE` in `src/lib/pace.ts` (`motion.js` in HyperFrames), with two profiles in 60 fps frames. The film picks one with `PACE_NAME` in `timeline.ts` (calm unless the brief asks for energy), and `anim.ts` exports it as `pace`. `line()`, `chain()`, `Words`, `Chain`, `MaskRise`, `TypeOn`, `Scramble`, `Roll`, `Morph`, `Iris` and `durFor()` take their defaults from it, and `grid-check.ts` checks against the same numbers. One passage can run at the other tempo with a `pace={PACE.crisp}` prop. Calm is the default because a viewer reading while watching needs it: the measured professional films held a fragment about 0.8 s, and the house default holds it about 1.5× longer.
+
+| `PACE` field | Calm (default) | Crisp | Meaning |
+|---|---|---|---|
+| `wordDur` | 36 | 26 | frames per word entry (`E.outSoft` calm, `E.out` crisp) |
+| `stagger` | 11 | 6 | frames between word starts inside a fragment |
+| `rise` | 0.2 em | 0.32 em | entry travel |
+| `blur` | 0 | 8 px | entry blur (calm opt-in ≤ 4 px for a soft brand) |
+| `exitDur` | 24 | 16 | calm: the whole fragment leaves together; crisp: per word, half the stagger apart |
+| `holdBase`, `holdPerWord`, `holdMin` | 42, 8, 60 | 36, 6, 42 | reading hold = max(`holdMin`, `holdBase` + `holdPerWord` · words) |
+| `readMax` | 150 | 120 | a reading window counts as alive (not an event gap) for at most this long |
+| `gapMin`, `gapMax` | 30, 90 | 18, 90 | picture beat between two fragments of a chain |
+| `maxNewWords` | 4 | 5 | words per fragment |
+| `maxVisibleBuild`, `maxVisibleReplace` | 8, 5 | 10, 10 | words of copy visible on one frame |
+| `maxWordsPerSec`, `avgWordsPerSec`, `maxWords` | 1.2, 0.9, 30 | 2.0, 1.2, 35 | words resolving in any 5 s, per second; over the film; in total |
+| `textShare`, `freeRun` | 0.65, 90 | 0.8, 60 | share of frames with copy; the text-free run every 10 s must hold |
+| `maxGap` | 72 | 48 | frames without an event, reading windows counted as covered |
+| `accentDur` | 24 | 14 | the newest fragment relaxing from the accent to ink |
+| `recentreDur`, `recentreLead` | 96, 36 | 60, 20 | a build line's re-centre on `E.expo`, and how early it starts |
+| `move` | 0.5 s + 1.6 ms/px, camera 0.9–3.0 s | 0.35 s + 1.35 ms/px, 0.6–2.4 s | `durFor()` |
+| `fx` | MaskRise 38 f / 10 f / exit 22 f; TypeOn 3 f per character; Scramble 5 f, 1.0, fade-in 16 f; Roll 90 f / 18 f; Morph 52 f; Iris 32 f | 30 / 5 / 16; 2; 3, 1.5, 10; 60 / 14; 40; 24 | component defaults |
+
+Both profiles build copy from fragments (`references/copy-and-type.md` §2b); crisp is faster and tolerates a little more text. The film's other calm numbers live beside the knob: about 24–36 events per 30 s, shots of 100–160 f, 100 BPM (`references/timing-grid.md` §9).
+
 | Pattern | Constant | Note |
 |---|---|---|
-| Statement words | 6 f apart, each 26 f on `E.out` | Tessel headlines ran 9 f / 28 f; a quiet descriptor 5 f / 24 f |
-| Burst words | 4 f apart | a punchy line landing on one beat |
-| Word exit | half the entry stagger, 16 f on `E.in` | exits are quicker than entrances |
+| Statement words | calm: 11 f apart, each 36 f on `E.outSoft`; crisp: 6 f apart, 26 f on `E.out` | Tessel's headlines ran 9 f / 28 f; a quiet descriptor 5 f / 24 f |
+| Fragments of a chain | one per bar at 100 BPM, with 30–90 f of picture between | a build line re-centres once per fragment on `E.expo` (90% home in about 36 f), never per letter |
+| Burst words | 4 f apart | crisp only: a punchy line landing on one beat |
+| Text exit | calm: the whole fragment or line together, 24 f (opacity on `E.smooth`, a 0.12 em lift on `E.exit`); crisp: half the entry stagger, 16 f on `E.in` | exits are quicker than entrances |
+| Slot swap (stem + rotating word) | 6–10 f crossfade or a drum roll, re-centre 15–25 f, a swap every 60–90 f | only the slot moves; the stem holds |
+| Accent on the newest words | arrives in the accent, relaxes to ink over 20–30 f; a keyword sweep 30–40 f | never on every fragment |
 | Grids | 4 f per column, 6 f per row | reading order: left to right, then down |
-| Lists | 15 f per row (an 8th at 120 BPM) | locked to tempo |
-| A whole group | arrives within 30 f | longer reads as a queue, not a group |
+| Lists | one 8th per row (18 f at 100 BPM, 15 f at 120) | locked to tempo |
+| A whole group | UI arrives within 30 f; a text fragment resolves within 36–69 f | longer reads as a queue, not a group |
 | "Human" gaps | irregular 7, 12, 18 f | clicks, keystroke bursts, a person's rhythm |
 | Spatial ripple | delay = distance / 60 px (1 f per 60 px) | from the cause outward, or from the centre |
 | Batch landings | 16th grid, 0–3 f seeded spread, first on the beat | `references/timing-grid.md` §5 |
 
 - **Order a stagger by importance, not by DOM order.** The element that carries the idea arrives first (or last, as the punchline); decoration never leads.
-- **A word reveal** (`src/fx/Words.tsx`): per word over 26 f on `E.out`, opacity 0 → 1, `translateY` 0.32 em → 0 through `arrive(p)`, blur 8 → 0 px (4–6 px for body lines, or none) through `blurIn(p, px)`, which is clear by 60% of the eased move. Blur only on entry, never left on readable text for more than 6 f. `blurIn` and `arrive` exist because Chromium steps blur radii (~0.5 px; under ~0.75 px renders fully sharp) and snaps vertical text to whole pixels, so a slow finish would snap into focus or settle in 1 px ticks (`references/chromium-rendering.md` §3, §15). Recipes for slams, locks and type that becomes the mark are in `references/copy-and-type.md` and `references/transitions.md`.
+- **A word reveal** (`src/fx/Words.tsx`), calm: per word over 36 f on `E.outSoft`, 11 f apart, opacity 0 → 1, `translateY` 0.2 em → 0 through `arrive(p)`, no blur; the fragment exits as one unit over 24 f. Crisp: 26 f on `E.out`, 6–9 f apart, rise 0.32 em, blur 8 → 0 px (4–6 px for body lines, or none) through `blurIn(p, px)`, which is clear by 60% of the eased move, and a per-word exit. Blur only on entry, never left on readable text for more than 6 f. `blurIn` and `arrive` exist because Chromium steps blur radii (~0.5 px; under ~0.75 px renders fully sharp) and snaps vertical text to whole pixels, so a slow finish would snap into focus or settle in 1 px ticks (`references/chromium-rendering.md` §3, §15). Recipes for chains, slams, locks and type that becomes the mark are in `references/copy-and-type.md` and `references/transitions.md`.
+- **A reading hold drifts.** Once a fragment has resolved, it stays sharp and moves at most about 3 px/f, but never freezes: a 0.3–1 px/f drift or a 1–3% creep on `E.linear` or `E.dolly` through the hold (`references/camera.md` §4). Before the exit the drift may accelerate into the cut over its last 18–27 f, which carries the momentum across.
 
 ```ts
 import { E, prog } from '../lib/anim';
@@ -248,12 +279,14 @@ export const land = (f: number, from: number, to: number, a: R, b: R): R => {
 
 | File | What it does | Defaults | Serves |
 |---|---|---|---|
-| `TypeOn.tsx` | typewriter with a caret; `typeOn()` gives the caret x (stepped and continuous, for a camera follow), `typeFrames()` the whole frame each key lands | 2 f per character on `E.type` (last key at ~80% of the box) or a linear `cps`; head fade 4 f; caret solid while typing, 30 f on / 30 f off when idle | prompts, search bars, a headline typed on |
-| `Scramble.tsx` | decode reveal: glyphs cycle through same-class, same-width glyphs, then lock; `scrambleFrames()` gives the lock frames | fade-in 10 f, hold 18 f, a lock every 3 f left to right (or seeded random), ~1.5 glyph changes per frame, cycling glyphs in `C.mute` | IDs, prices, codenames, a stat that resolves |
-| `Roll.tsx` | rolling digits in per-column masks; `countSteps()` turns a count into steps, so a fast count spins like an odometer | each changed digit slides 14 f on `E.out` through `arrive` (k from `arriveK`), starting 1 f before its step; count 60 f on `E.out`; tabular, fixed columns | counters, totals, a metric that counts up |
-| `Morph.tsx` | one rounded rect from state A to B (x, y, w, h, radius, fill, stroke, shadow) that clips each state's content, which stays put; `morphBox()` gives the geometry | 40 f on `E.inOut` (or a `SPR.firm` spring); content A out over the first 35%, B in over the last 40% | pill → card, button → panel, caret → pill |
-| `Iris.tsx` | reveal (or a solid accent flood) through a clip circle from a point; `close` reverses it | 24 f, radius 1 px → far corner + 2 px in log space on `E.out` (`E.in` closing); optional ring ahead of the edge | a glyph or button opening the next shot, the one accent flood |
-| `MaskRise.tsx` | words or lines rise from behind a clip under the baseline and leave through the top | 30 f per unit on `E.out` through `arrive` (k from `arriveK`), 5 f stagger; exit 16 f on `E.in`, half the stagger | headlines, captions, the closing line |
+| `Chain.tsx` | renders one fragment chain from its `COPY` entries, in build mode (fragments append to one held line that re-centres, the newest in the accent relaxing to ink, the line clearing together) or replace mode (each fragment leaves whole as the next arrives); `chainResolves()` gives each fragment's landing frame for its one soft `text` sound, `chainLayout()` the measured line for placing things by the text | timing from `pace` through the entries `chain()` wrote; the `line` type role; re-centre on `E.expo` over 96 f, starting 36 f early; `accent` `recency` (24 f), `hold` or `none`; exit 24 f together | every statement in a calm film |
+| `Words.tsx` | per-word rise and fade of one fragment, with an optional entry blur | from `pace`: calm 36 f on `E.outSoft`, 11 f apart, rise 0.2 em, no blur, the whole fragment exiting together over 24 f; crisp 26 f, 6 f apart, rise 0.32 em, blur 8 px, per-word exit | single fragments, and the words inside `Chain` |
+| `TypeOn.tsx` | typewriter with a caret; `typeOn()` gives the caret x (stepped and continuous, for a camera follow), `typeFrames()` the whole frame each key lands | a time box per character on `E.type` (last key at ~80% of the box) or a linear `cps`; head fade 4 f; caret solid while typing, 30 f on / 30 f off when idle. From `pace`: 3 f per character in calm (about 20 characters/s for a line read live, then a hold of at least 72 f), 2 f in crisp | prompts, search bars (never a headline in calm) |
+| `Scramble.tsx` | decode reveal: glyphs cycle through same-class, same-width glyphs, then lock; `scrambleFrames()` gives the lock frames | from `pace`: calm fade-in 16 f, a lock every 5 f, about 1 glyph change per frame (crisp 10 f, 3 f, 1.5); hold 18 f; locks left to right (or seeded random), cycling glyphs in `C.mute` | IDs, prices, codenames, a stat that resolves: an accent, at most once per film, never on film copy |
+| `Roll.tsx` | rolling digits in per-column masks; `countSteps()` turns a count into steps, so a fast count spins like an odometer | each changed digit slides 18 f in calm (14 f crisp) on `E.out` through `arrive` (k from `arriveK`), starting 1 f before its step; count 90 f in calm (60 f crisp) on `E.out`; tabular, fixed columns | counters, totals, a metric that counts up |
+| `Morph.tsx` | one rounded rect from state A to B (x, y, w, h, radius, fill, stroke, shadow) that clips each state's content, which stays put; `morphBox()` gives the geometry | 52 f in calm (40 f crisp) on `E.inOut` (or a `SPR.firm` spring); content A out over the first 35%, B in over the last 40% | pill → card, button → panel, caret → pill |
+| `Iris.tsx` | reveal (or a solid accent flood) through a clip circle from a point; `close` reverses it | 32 f in calm (24 f crisp), radius 1 px → far corner + 2 px in log space on `E.out` (`E.in` closing); optional ring ahead of the edge | a glyph or button opening the next shot, the one accent flood |
+| `MaskRise.tsx` | words or lines rise from behind a clip under the baseline and leave through the top | from `pace`: calm 38 f per unit, 10 f apart, exit 22 f (crisp 30 f, 5 f, 16 f), on `E.out` through `arrive` (k from `arriveK`), exit on `E.in` at half the stagger; `by="line"` for a fragment of up to 3 words | headlines, captions, the closing line |
 
 In `src/lib/`: `stagger(i, n, span, ease)` spreads starts over a span; `inertia(f, start, v0, decay = 0.89)` coasts a scroll that enters at peak speed (closed form; 8.6·v0 px of travel, within 0.5 px of rest after about 60 f); `zoomHandoff(t, v0, settle = 30)` in `camera.ts` continues a zoom-through at the outgoing log-scale speed (`zoomSpeed`) and decays it to rest, so the cut reads as one move (`references/transitions.md` §4.8).
 

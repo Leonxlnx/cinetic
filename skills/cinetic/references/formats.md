@@ -28,23 +28,23 @@ The numbers are proven defaults, not rules. Bar arithmetic and tempo choice live
   - which aspect ratios you owe.
 
   Write all three into `BRIEF.md`.
-- **Budgets scale with length, not ambition.** At 30 s a launch film holds 8–10 story beats and 20–35 words. At 15 s, halve both; don't compress the same film into half the time. Cramming is the most common failure of short formats: 3 features in 5 s reads as none.
+- **Budgets scale with length, not ambition.** At 30 s a launch film holds 6–8 story beats (8–10 in crisp) and 15–25 words, 30 at most. At 15 s, halve both; don't compress the same film into half the time. Cramming is the most common failure of short formats: 3 features in 5 s reads as none.
 - **Every format keeps the five laws.** A 4-second loop still has one idea, one device, one accent meaning and one motion system, and it is still measured before it ships.
 
 ## 2. Launch film and teaser
 
 **Purpose.** Make a viewer feel a problem, see the product answer it, and remember the name.
 
-**Length.** 20–45 s at 120 BPM (a 2 s bar), with 8–10 story beats per 30 s. Keep the whole film to 20–35 words or fewer, set at most 5 words per line.
+**Length.** 20–45 s at 100 BPM (a 2.4 s bar; 120 BPM for a crisp film), with 6–8 story beats per 30 s (8–10 in crisp). Keep the whole film to 15–25 words, 30 at most, in fragments of at most 4 words that arrive one at a time with picture between them.
 
-**Act template** (30 s + tail = 15 bars + 60 f; Tessel's shape, see `references/worked-example.md`):
+**Act template** (30 s + tail = 15 bars + 60 f at 120 BPM; Tessel's shape, see `references/worked-example.md`). At the calm 100 BPM the same beats fill about 12–13 bars: keep each beat's share of the runtime and let each copy beat carry one fragment chain.
 
 | Bars | Time | Beat type | What happens | Sound |
 |---|---|---|---|---|
 | 1–3 | 0–6 s | hook → problem | Frame 0 is already moving, and the device is on screen. The problem is felt by 1 s and stated by 2 s, then piles up visibly. It ends in an implosion or a gather into the device. | Signature motif alone, then intro chords. A "suck" to true silence before bar 4. |
 | 4–5 | 6–10 s | turn | Drop 1 on the bar 4 downbeat: the device meets or becomes the mark. The lockup lasts 1.5 s or less, or visibly builds. The mark then opens into the product (a container morph). | Drop 1, and the motif keeps time through the hold. |
 | 6–9 | 10–18 s | proof 1 | One capability as cause → action → result. The human's one input comes first, and the product acts after it. Drop 2 lands on bar 8, where the product takes over. | Riser into drop 2. Landings sit on the chord tones. |
-| 10–12 | 18–24 s | proof 2 / consequences | One line per bar, each paying off earlier copy. One consequence per line lands on the beat. | Whips peak on the kick. The payoff sits on the clap. |
+| 10–12 | 18–24 s | proof 2 / consequences | One fragment per bar, each paying off earlier copy, and the picture acting between them. One consequence per fragment lands on the beat. | Whips peak on the kick. The payoff sits on the clap. |
 | 13–15 | 24–30 s | promise | Pull back to show scale. The refrain resolves, and the device becomes the mark for the last time. | Breakdown, then the resolution chord lands on the promise word. |
 | 16 + 60 f | 30–33 s | lockup / end card | Name, URL (readable ≥ 1.7 s), the bookend, and a tail that decays to digital zero. | The motif bookends; the tail runs to zero. |
 
@@ -57,7 +57,8 @@ The numbers are proven defaults, not rules. Bar arithmetic and tempo choice live
 - **Teaser (15–20 s).** Keep the hook, the turn and the lockup, and cut proof down to a single glimpse, or cut it entirely. Budget 6–10 words. The rule "open inside the problem" still applies: never open on the logo.
 
 **Format gates**
-- There are 8–10 beat rows per 30 s in `TREATMENT.md`, and the device appears in every row.
+- There are 6–8 beat rows per 30 s in `TREATMENT.md` (8–10 in crisp), and the device appears in every row.
+- Film copy is on screen for at most about 65% of the runtime, with at least 1.5 s of picture without text in every 10 s (`grid-check.ts` `text-share`).
 - The loudest momentary loudness is on the promise or payoff, with limiter gain reduction under 1.5 dB (`av-audit.py`).
 - The poster exists and shows the brand.
 
@@ -67,16 +68,16 @@ The numbers are proven defaults, not rules. Bar arithmetic and tempo choice live
 
 **Purpose.** Show one capability so clearly that the viewer could explain it afterwards.
 
-**Length.** 8–30 s at 100–120 BPM. Budget one capability per 8–10 s and 15 words or fewer.
+**Length.** 8–30 s at 100 BPM. Budget one capability per 8–10 s and 12 words or fewer, in fragments of at most 4.
 
 **Structure.** Cause → action → result, with the product doing the work:
 
-| Bars (120 BPM, 16 s) | What happens |
+| Bars (about 16–19 s) | What happens |
 |---|---|
 | 1–2 | Inside the product, in the "before" state, with the pain visible. The device or accent marks the thing that is wrong. |
 | 3 | The cause: one human input (a click, a typed line, an incoming event). This is the only cursor moment. |
 | 4–6 | The product acts. State changes animate as FLIP inserts over 18–24 f, and counters count on each event. The camera anchors on the region doing the work (`references/camera.md`). |
-| 7 | The result holds for at least 36 f + 6 f per word, together with the single line of copy that names the value. The line uses the viewer's words, not the feature's name. |
+| 7 | The result holds for at least its reading hold (max(60, 42 + 8 f per word)), together with the one fragment or short chain that names the value. It uses the viewer's words, not the feature's name, and it arrives after the product has acted, not during. |
 | 8 + tail | A small lockup: the mark, the name and the feature name if the brief needs it. |
 
 - **Show the product for real.** Use real components and one `data.ts` with asserts. The data should survive a pause: correct weekdays, sums that add up, plurals that agree. Details are in `references/product-ui.md`.
@@ -84,17 +85,19 @@ The numbers are proven defaults, not rules. Bar arithmetic and tempo choice live
 - **Show no cursor after the cause.** A cursor that keeps doing things implies the product needs babysitting.
 - **Make the product and the feature identifiable.** A stranger should know it is software and which feature this is: enough real app chrome (a window edge, the app's own header or sidebar) and the feature's name once, as a UI label (a tab, a menu item, the button that causes the action), as the one line of copy, or on the end card. "No feature name as a headline" is a copy rule; it never means "never name it". A film that shows a clever behaviour without naming it can't be searched for or asked about.
 
+**Update film** (a release or a new feature, posted to a feed). The product video's short cousin: 15–25 s at the calm pace, the news as the hook. Frame 0 shows the product already moving, never the logo. A setup fragment hands over to the product's arrival and the name lands as its own fragment ("here is the newest" → the product arrives → "earshot."); then one capability as cause → action → result, told as a chain around what the product does ("it turns sound" → [the waveform becomes code] → "into code."); then a text-free stretch of the product working; then the name with the brief's fact ("out now", a version, a URL). 8–12 words in all, film copy on at most about 60% of the frames.
+
 **Format gates**
 - One capability.
 - The feature's name appears once, and a paused frame shows enough app chrome to read as software.
-- A result hold of at least 36 f + 6 f per word before any camera move.
+- A result hold of at least the reading hold (max(60, 42 + 8 f per word)) before any camera move.
 - Every counter changes on a visible event (a manual check on the act sheet).
 
 ## 4. Feature loop
 
 **Purpose.** A landing-page hero or a social post that autoplays muted and repeats forever without a visible restart.
 
-**Length.** A whole number of bars with no tail, for example 8 s = 4 bars at 120 BPM, or 9.6 s = 4 bars at 100. Budget 3–5 beats and 8 words or fewer. It must read with the sound off.
+**Length.** A whole number of bars with no tail, for example 8 s = 4 bars at 120 BPM, or 9.6 s = 4 bars at 100. Budget 3–5 beats and 6 words or fewer. It must read with the sound off.
 
 **The first 2 s already show the product and the action starting.** A landing-page visitor decides in a second or two, and many see only the first pass. Open on the product itself with the cause already under way (a row arriving, a reading dropping, a card being dragged); a quiet "measuring" or setup beat is not a hook.
 
@@ -164,7 +167,7 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 
 **Purpose.** The mark arrives with intent, makes one sound, and holds long enough to be read and remembered.
 
-**Length.** 3–8 s at 120 BPM. The copy is the name plus at most 4 words.
+**Length.** 3–8 s at 100–120 BPM. The copy is the name plus at most 3 words.
 
 **Scale.** At its resolved size the lockup spans about 28–45% of the frame's width (540–860 px at 1920), with the mark and the name proportioned as in `references/brand-and-color.md` §6. Smaller than that and the brand becomes a small object in a void: the sting's whole job is to be read.
 
@@ -207,7 +210,7 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 
 **Purpose.** Teach a flow: the viewer can repeat it afterwards. It is calmer than a launch film but never static.
 
-**Length.** 20–90 s at 90–110 BPM, with one chapter per 2–4 bars and 6 words or fewer per caption.
+**Length.** 20–90 s at 90–100 BPM, with one chapter per 2–4 bars and 5 words or fewer per caption, arriving as one fragment or a chain of two.
 
 **Chapter template** (repeat per feature; chapter changes land on downbeats):
 
@@ -215,8 +218,8 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 |---|---|---|
 | Establish | ½–1 | Wide on the product. The camera anchor is the whole window, and the chapter caption enters in the lower third. |
 | Push | ½ | The camera moves to the feature's anchor on `cam` (duration grows with distance: 0.35 s + 1.35 ms per px). |
-| Cause | ½–1 | The cursor travels a bezier arc over 36–48 f, presses (0.88 over 4 f) and makes one click; or the user types at about 30 characters/s. |
-| Action → result | 1–2 | The product responds, and the result holds for at least 36 f + 6 f per word while the caption is readable. |
+| Cause | ½–1 | The cursor travels a bezier arc over 36–48 f, presses (0.88 over 4 f) and makes one click; or the user types at about 20 characters/s, then the line holds at least 72 f. |
+| Action → result | 1–2 | The product responds, and the result holds for at least the caption's reading hold (max(60, 42 + 8 f per word)) while the caption is readable. |
 | Hand-off | ¼–½ | A whip or pull-back to the next anchor. The last chapter hands off to the lockup. |
 
 - **Camera.** Use one anchor camera for the whole walkthrough (`references/camera.md`), and chain the anchors so every move starts where the previous one ended. During holds, the UI drifts 0.5–1.5 px/f so the shot is never locked off.
@@ -240,7 +243,7 @@ writeFileSync('out/captions.srt', COPY.map((c, i) => `${i + 1}\n${ts(c.in)} --> 
 - **Long walkthroughs** (over 60 s) get one act per chapter, so a fix re-renders one chapter. Master with `scripts/render-chunks.sh` when the blur pass would be slow.
 
 **Format gates**
-- Each chapter has exactly one caption line, 6 words or fewer.
+- Each chapter has exactly one caption, 5 words or fewer, never arriving as one block of 5.
 - Every result hold passes `grid-check.ts`.
 - The SRT timings match the burned-in captions.
 - The legibility sheet at 480 px can be read.
@@ -264,7 +267,7 @@ const LAY = layoutFor(width, height); // type sizes, camera anchors, safe box, l
 ```
 
 - **Timing stays identical**, so the soundtrack and `cues.json` are reused unchanged. Only positions, sizes, line breaks and camera anchors change.
-- **Line breaks change.** A 5-word line at 120 px on 16:9 becomes two lines at 110–140 px on 9:16. Put the break in `COPY` or the layout table, never in a width that happens to wrap.
+- **Line breaks change.** A 4-word fragment at 120 px on 16:9 becomes two lines of 2 at 110–140 px on 9:16, and a build line of 6–8 words becomes a build over two lines. Put the break in `COPY` or the layout table, never in a width that happens to wrap.
 - **The product's framing changes.** A tall frame wants the camera closer on one region, with the anchor moved rather than the scale reduced.
 
 **Vertical (9:16) composition.** A tall frame is not a wide frame with bars: use the height. A 16:9 layout moved into 1080 × 1920 leaves the product as a strip in the middle and the lower half empty, and on a phone that empty half is what the viewer sees above the caption.
@@ -317,8 +320,9 @@ PY
 | Request | Recipe | Adjustments |
 |---|---|---|
 | Teaser or trailer | §2, teaser variant | hook → turn → lockup, 15–20 s, 6–10 words |
+| Release or update post ("here is the newest …") | §3, update film | 15–25 s, calm, 8–12 words, the setup fragment handing over to the product's arrival |
 | Intro or outro for other videos | §5 | 3–5 s; the outro reverses the intro's entrance; provide an alpha version |
-| Kinetic type piece | §2 structure, words as the device | one line at a time; recipes in `references/copy-and-type.md`; a statement per bar |
+| Kinetic type piece | §2 structure, words as the device | fragment chains, one fragment per bar, with picture beats and text-free stretches; recipes in `references/copy-and-type.md` §2b and §8 |
 | App demo | §3 if one capability, §6 if a flow | real components, a data module with asserts |
 | Promo clip with footage | §3 structure | the footage is the product surface; the brand's footage and grade win; add type and sound on the grid |
 | Social cut-down of a finished film | §7 | re-layout from the same timeline; trim at bar boundaries, never mid-bar |

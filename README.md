@@ -24,6 +24,7 @@ cinetic (cinema + kinetic) is an agent skill that makes your coding agent direct
 - **Idea first.** Before any code, the agent writes three concepts through different lenses, tests them, and picks one story device the film owns.
 - **273 techniques, drawn at random.** A library of measured moves in 14 categories, each with a build recipe and timing at 60 fps. `pick.py` draws the film's plan, weighted for its format and energy, so two films don't share the same fade-up, push-in and end card.
 - **Its own brand.** The look comes from three personality words, so a calm notes app and a fast CI tool don't end up looking alike.
+- **Calm, with words in fragments.** Copy arrives a few words at a time, split around what the product does ("here is the newest" → the product → its name), with readable holds that drift instead of freezing and stretches of pure picture between. The fragment grammar comes from a frame-by-frame study of eight professional films; a crisp profile is there when a brief asks for energy.
 - **One beat grid, measured sound.** `timeline.ts` drives the picture, a synthesized score and the QA scripts, so every hit lands on its frame. Typing, clicks and ticks follow measured norms of top-tier launch films: soft, short and mostly left to the music.
 - **Finished and measured.** True motion blur, no banding, BT.709 and a sync-checked mux, then pixel forensics, an audio-sync audit, contact sheets and critic passes against a ship gate.
 - **No generated look.** Hard bans, enforced by a linter and the critics, keep out the looks that mark a video as generated. A brand you supply always wins.
@@ -250,13 +251,13 @@ Social versions are re-laid out from the same timeline, never cropped from the m
 
 ## How it works
 
-Every step writes a file and ends at a gate the agent actually runs. It starts from `BRIEF.md`, the brief plus a spec line such as `1920x1080@60, 30s, 120BPM, audio: synthesized`.
+Every step writes a file and ends at a gate the agent actually runs. It starts from `BRIEF.md`, the brief plus a spec line such as `1920x1080@60, 30s, 100BPM, pace: calm, audio: synthesized`.
 
 | # | Step | Writes | What happens | Key script or template |
 |---|---|---|---|---|
-| 1 | Idea | `TREATMENT.md` | Three concepts through different lenses; ownership, deletion, specificity and feature-word tests; one story device the film owns; the film's techniques drawn from the library; a beat sheet | `pick.py`, `assets/TREATMENT.md` |
+| 1 | Idea | `TREATMENT.md` | Three concepts through different lenses; ownership, deletion, specificity and feature-word tests; one story device the film owns; the film's techniques drawn from the library; a beat sheet whose copy is written as fragment chains, each with the picture beat between its fragments | `pick.py`, `assets/TREATMENT.md` |
 | 2 | Brand | `src/brand/` | Three personality adjectives set the typeface, stage, accent, corners and motion character; 6–10 mark directions on one sheet, each put through a 64 px misread test; a lockup set like a typographer would | `palette.py` |
-| 3 | Timeline | `src/timeline.ts` | FPS, BPM, the beat grid `b(bar, beat, sub)`, acts, cues and every line of copy | `grid-check.ts` |
+| 3 | Timeline | `src/timeline.ts` | FPS, BPM, the beat grid `b(bar, beat, sub)`, acts, cues and every fragment of copy, with words per frame, reading holds and picture beats checked | `grid-check.ts` |
 | 4 | Build | `src/acts/` | Acts built from motion tokens and tested primitives (`TypeOn`, `Roll`, `Morph`, `Iris`…), with real product UI fed by one data module; safe zones, covered text and text speed audited | `lint-film.mjs` |
 | 5 | Sound | `public/audio/soundtrack.wav` | Sync frames computed from the picture code; a tuned score and SFX synthesized with stems; mastered to −14 LUFS (−16 for a short sting) | `export-cues.ts` |
 | 6 | Render | `out/film.mp4` | Preview, sharp or motion-blurred master: optical-flow speeds set the sub-frames per frame, averaged in float and quantized once to BT.709; sync and spec gates | `render.sh` |
@@ -266,7 +267,7 @@ Every step writes a file and ends at a gate the agent actually runs. It starts f
 Everything hangs off one beat grid. Every frame number in the film comes from one helper, so the picture, the cue export and the audits can't drift apart:
 
 ```ts
-export const BEAT = (60 / BPM) * FPS;               // 30 f at 120 BPM / 60 fps
+export const BEAT = (60 / BPM) * FPS;               // 36 f at 100 BPM / 60 fps
 export const b = (bar: number, beat = 0, sub = 0) =>   // sub = 16ths
   Math.round(((bar - 1) * 4 + beat) * BEAT + sub * (BEAT / 4));
 ```
@@ -277,10 +278,10 @@ Sounds are never placed by hand. `export-cues.ts` runs the project's `src/sync.t
 
 When the agent invents the look, none of these appear:
 
-- **Words:** eyebrow or kicker labels, stacked taglines, "Introducing…", text walls and filler (decorative mono captions, fake metrics, lorem ipsum)
+- **Words:** eyebrow or kicker labels, stacked taglines, "Introducing…", full sentences dumped at once, text walls and filler (decorative mono captions, fake metrics, lorem ipsum)
 - **Type:** serif typefaces; italic or oblique styles, including a skew that fakes one
 - **Color:** orange, amber, beige, cream, tan or sand; neon, glow, bloom and halos; purple, violet or indigo, and any multi-hue gradient; glassmorphism
-- **Decoration:** emoji and stock icons; sparkles standing for "AI", particles, confetti, lens flares and code rain; bouncy overshoot on anything that isn't landing
+- **Decoration:** emoji and stock icons; sparkles standing for "AI", particles, confetti, lens flares and code rain; bouncy overshoot on anything that isn't landing, and any overshoot or per-letter trick on copy
 
 `lint-film.mjs` checks tokens and styles (colors by OKLCH region), `palette.py` refuses a banned accent or paper, and the critics check the rendered frames. What remains is ink and paper, one accent with a meaning from red, green, teal, blue or yellow, one clean sans, and motion that is eased and weighted. The creativity goes into the idea and the choreography.
 
@@ -295,7 +296,7 @@ When the agent invents the look, none of these appear:
 | `skills/cinetic/assets/library/` | `techniques.json`, the 273 techniques `pick.py` draws from |
 | `skills/cinetic/scripts/` | 27 scripts: scaffold, the technique draw (`pick.py`), lint, grid and layout audits, palette, cue export, score and master, render and motion blur, probe and sync gates, forensics, A/V audit, contact sheets, delivery, brand kit. Each is documented in its header comment and, except the internal `brand-svg.ts` helper, in its `--help`. The regression tests for the lint and `pick.py` are in `scripts/test/`. |
 | `skills/cinetic/assets/` | The Remotion starter (default, with tested motion primitives in `src/fx/`), the HyperFrames starter, the treatment template and five critic prompts (director, art/copy/UI, sound-sync, forensics, verifier) |
-| [`evals/evals.json`](evals/evals.json) | The four briefs and the written expectations each film is graded against |
+| [`evals/evals.json`](evals/evals.json) | The briefs and the written expectations each film is graded against: the four of the evaluation rounds, plus a calm update film added with the fragment grammar |
 | `docs/` | [Setup](docs/setup.md) and the full [evaluation](docs/evaluation.md) |
 | `.claude-plugin/` | `marketplace.json` and `plugin.json` for the Claude Code plugin marketplace |
 | `.github/workflows/` | `ci.yml` (checks) and `release.yml` (packages `cinetic.skill` for each version tag, with notes from the changelog) |

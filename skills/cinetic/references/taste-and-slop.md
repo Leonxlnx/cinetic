@@ -17,7 +17,7 @@ The full list of things that make motion design look cheap, templated or generat
 
 These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appears on any frame. `scripts/lint-film.mjs` catches what it can in the code (rule names in brackets), and the critics check the frames for the rest.
 - **HB1 Eyebrow or kicker labels** above a headline ("NEW FEATURE", "01 / SPEED"). **Fix:** delete them; hierarchy comes from size and order of appearance.
-- **HB2 Stacked taglines, and "Introducing…".** A tagline over or under a headline; a second statement under the first; any "Introducing". **Fix:** one line at a time, opening inside the problem (`references/copy-and-type.md` §4).
+- **HB2 Stacked taglines, and "Introducing…".** A tagline over or under a headline; a second statement under the first; any "Introducing". **Fix:** one fragment at a time, opening inside the problem (`references/copy-and-type.md` §2b, §4).
 - **HB3 Text walls and filler text.** Two statements readable at once, paragraphs, bullet lists; decorative mono captions, fake metrics, version strings, labels nobody needs, lorem ipsum. **Fix:** every word is counted, held and true on its paused frame, or it goes.
 - **HB4 Serif and italic.** Serif typefaces; italic or oblique styles, including a skew that fakes one [`serif`, `italic`]. **Fix:** one clean, modern sans chosen for the personality, plus a mono if needed; emphasis from size or motion (`references/brand-and-color.md` §2).
 - **HB5 Orange, amber, beige, cream, tan or sand**, as an accent, a paper or a glow [`banned-color`]. **Fix:** an accent from red, green, teal, blue or yellow; a neutral or cool paper (the OKLCH regions are in `references/brand-and-color.md` §8).
@@ -26,14 +26,14 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **HB8 Glassmorphism.** Backdrop blur, a 10–20% white fill, a 1 px white border [`glass`]. **Fix:** an opaque surface with one soft shadow.
 - **HB9 Emoji and stock icons** [`emoji`, `stock-decoration`]. **Fix:** draw what the product itself shows; icons only where the real product UI has them.
 - **HB10 Effects standing in for ideas.** Sparkles for "AI", particles, confetti, lens flares, code rain [`stock-decoration`, `emoji`]. **Fix:** the product's real behaviour, shown; every element names its job.
-- **HB11 Bouncy overshoot on anything that isn't landing.** **Fix:** everything eased or critically damped; overshoot of 1–7% only on a true landing, an object arriving at a surface or a lock, at most 2 per film (F3).
+- **HB11 Bouncy overshoot on anything that isn't landing**, and any overshoot or per-letter trick on copy (the one hero word may move letter by letter, without overshoot). **Fix:** everything eased or critically damped; overshoot of 1–7% only on a true landing, an object arriving at a surface or a lock, at most 2 per film (F3); type settles on an ease or `SPR.calm` (F11).
 
 ## A. Concept and story
 - **A1 Feature tour.** Feature, feature, feature, logo; the viewer has nothing to remember. **Fix:** problem → turn → promise; run the deletion test both ways (`references/concept-and-story.md` §4).
 - **A2 Wrong first frame.** Opening on "Introducing…", a question, the logo or a blank frame. **Fix:** open inside the problem; felt by 1 s, stated by 2 s.
 - **A3 Borrowed props.** A rocket, lightbulb, globe with arcs, up-and-right chart, floating phone, sparkle for AI (HB10), shield for security. **Fix:** the ownership test; build every image from the product's own objects.
 - **A4 A style posing as an idea.** "Bold, kinetic, minimal, 3D." **Fix:** write Idea / Device / Grammar first; the style follows from them.
-- **A5 Demo without a cause, or a rushed result.** UI moves because the timeline says so, or the result is on screen 11 f before a whip. **Fix:** cause → action → result, with the result held ≥ 36 f + 6 f per word.
+- **A5 Demo without a cause, or a rushed result.** UI moves because the timeline says so, or the result is on screen 11 f before a whip. **Fix:** cause → action → result, with the result held for its reading hold (max(60, 42 + 8 f per word) in calm, 36 f + 6 f per word in crisp).
 - **A6 The device drops out.** It blinks out for 4 f at a cut, or changes size or colour across a seam. **Fix:** full opacity through every seam; hand it over on a shared prop.
 - **A7 Frames that contradict the promise.** A strike-through over the tagline, overlapping tiles in an "everything fits" shot, success in the error colour. **Fix:** read every key frame literally, as a paused still.
 - **A8 A recycled or dead end card.** It replays the mid-film reveal, sits static for 2.7 s, fades to black, or the last frame shows no brand. **Fix:** the device becomes the mark; a 1.5–2 s hold that builds 10–20%; the final frame is the poster.
@@ -44,11 +44,13 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 ## B. Copy
 - **B1 Landing-page grammar.** Eyebrow or kicker labels and stacked taglines (HB1, HB2), all-caps micro labels. **Fix:** delete them; hierarchy comes from size and order of appearance.
 - **B2 Stock phrasing and punctuation.** Seamless, unlock, supercharge, AI-powered, next-gen, "the future of"; exclamation marks, emoji (HB9), rhetorical questions. **Fix:** callback copy built from the film's own words; statements end in a period (`references/copy-and-type.md` §3–4).
-- **B3 A feature name as a headline.** "Smart Split." **Fix:** say what changes for the viewer in ≤ 5 words.
-- **B4 Text wall.** More than one statement readable at once, such as a list with blurred neighbours (HB3). **Fix:** one line at a time; neighbours masked to unreadable slivers.
-- **B5 Over budget.** More than 35 words per 30 s, more than 5 words per line, more than 2 lines per shot. **Fix:** cut adjectives first, then whole lines.
+- **B3 A feature name as a headline.** "Smart Split." **Fix:** say what changes for the viewer in one fragment of ≤ 4 words, or a short chain.
+- **B4 Text wall.** More than one statement readable at once, more than 8 words of copy visible on one frame (5 in a replace chain, 10 in a crisp film), or a list with readable neighbours (HB3). **Fix:** one fragment at a time; a list becomes a stem with a rotating slot, neighbours masked to unreadable slivers (`references/copy-and-type.md` §2b). A held build line of up to 8 words is not a wall.
+- **B5 Over budget.** More than about 25 words per 30 s (30 at most), more than 4 new words in one fragment (5 in crisp), or more than 6 words resolving in any 5 s (10 in crisp). **Fix:** cut adjectives first, then whole fragments; let the picture carry the words you cut.
 - **B6 Microcopy asked to carry meaning.** A 14–16 px toast readable for 6 f. **Fix:** ≥ 22 px on screen and held for its reading time, or treat it as texture that carries nothing.
 - **B7 Proofing bugs.** "1 clashes", mixed brand casing, straight quotes, lorem, "John Doe", example domains. **Fix:** the plural helper and the string audit (`references/copy-and-type.md` §5).
+- **B8 Sentence dump.** A thought of 5 or more words revealed as one block, even word by word inside about 1 s (8 words resolving in 32 f), or two fragments of one chain arriving together. **Fix:** a fragment chain: 1–4 words per fragment, a picture beat of 30–90 f between them, build or replace mode (`references/copy-and-type.md` §2b); `grid-check.ts` flags it as `fragment` or `reveal-rate`.
+- **B9 Subtitle film.** Film copy on more than about 65% of the frames (80% in crisp), or no text-free stretch of 1.5 s in 10 s (1 s in crisp): the picture has become a backdrop for captions. **Fix:** cut words until the picture gets stretches with no copy; let the product act between fragments and between runs of text (`grid-check.ts` `text-share`).
 
 ## C. Type
 - **C1 Generated-look faces.** Serif or italic as instant "elegance" (HB4), or a condensed display face for "impact". **Fix:** one clean sans chosen for the personality (`references/brand-and-color.md` §2); emphasis from size, weight contrast or motion.
@@ -57,7 +59,7 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **C4 Flat scale.** Everything at 48–64 px. **Fix:** statements 88–128 px, emphasis 1.5–1.7× that, headline to secondary ≥ 2:1.
 - **C5 Faux italics from 3D shear.** Roll applied before tilt leans all UI text by ~18°, an accidental HB4. **Fix:** write `perspective() rotateZ() rotateX()` so the roll stays rigid; total shear ≤ 7°.
 - **C6 Glyph collisions.** Overshoot closes a word space ("Everythingfits"), a period hangs 13 px under the baseline, a cover leaks glyph tops. **Fix:** clamp at the lock; place with `inkBox` and `baselineOf` after fonts load; pad covers by 8 px.
-- **C7 Blur-dissolve on every word.** Or readable text left blurred for more than 6 f. **Fix:** blur only on entry (statements 6–8 → 0 px, body lines 4–6 → 0 px, or none, through `blurIn` so it clears by 60% of a 26 f `E.out` move); land sharp.
+- **C7 Blur-dissolve on every word.** Or readable text left blurred for more than 6 f. **Fix:** no entry blur by default; ≤ 4 px when the brand is soft, and in the crisp profile statements 6–8 → 0 px and body lines 4–6 → 0 px, always through `blurIn` so it clears by 60% of the move; land sharp.
 - **C8 Jittering numbers.** Counters whose width changes, or mono timestamps in a consumer UI. **Fix:** tabular figures in the one family; digits roll 6–8 f each.
 - **C9 Letter gimmicks.** Typewriter headlines, per-letter bounce, scramble or decode effects, wide-tracked titles at rest. **Fix:** word-level reveals; per-letter motion only for the one hero word, collapsing to normal tracking.
 - **C10 A reveal that misspells.** A letter or sweep reveal passes through another word, or a half-drawn glyph reads as a different letter. **Fix:** reveal names by whole word or with a mask; list the reveal's prefixes and check those frames (`references/copy-and-type.md` §8).
@@ -99,6 +101,7 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **F8 Everything moving at once.** Idle bobbing, pulsing badges, an ambient zoom on every scene. **Fix:** one hero motion plus ≤ 2 supporting ones; stillness after motion is a tool.
 - **F9 Batch landings.** 6–7 objects hitting on the same frame. **Fix:** stagger 0–3 f within the group, with the first object on the beat.
 - **F10 Shape snaps.** The aspect ratio flips in the last 1–2 frames because one ease drove size and position. **Fix:** shape settles 6 f before position; land with a contact squash (1.08 / 0.9 → 1 over 8 f).
+- **F11 Springs on type.** Words or letters arriving on an overshooting spring (`snap`, `pop`, `land`, an unclamped `word`), a bounce or a slam on every line, letters rising one by one on copy. **Fix:** eases (`E.outSoft`) or the critically damped `SPR.calm`; emphasis from one accent colour sweep or a last-word accent; per-letter motion only for the one hero word (`lint-film.mjs` `text-spring`, `per-letter`).
 
 ## G. Transitions
 - **G1 Crossfade by default.** Or two misregistered outlines double-exposed for 26 f. **Fix:** morph the container or clip it with an inset; only one outline ever exists (`references/transitions.md`).
@@ -110,7 +113,7 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 ## H. Camera
 - **H1 Floating screenshots.** Tilted screenshot cards, fly-throughs of screenshot fields, a device mockup orbiting in a void. **Fix:** real 3D on real components, perspective 1800–2600 px, one camera axis per act; hardware only when hardware is the product.
 - **H2 Locked-off shots.** Mean frame difference around 0.1 for more than 1.5 s. **Fix:** a 2–3%/s push plus ~16 px of drift with parallax (`references/camera.md`).
-- **H3 Invisible drift.** 1 → 1.05 over 2 s on a logo reads as dead. **Fix:** keep the still part of a logo hold short (36–80 f after a 60–80 f assembly), or push 10–20% over a longer one; UI holds drift 0.5–1.5 px/f.
+- **H3 Invisible drift.** 1 → 1.05 over 2 s on a logo reads as dead. **Fix:** keep the still part of a logo hold short (36–80 f after a 60–80 f assembly), or push 10–20% over a longer one; UI holds drift 0.5–1.5 px/f. A reading hold under text is different: there a 0.3–1 px/f drift or a 1–3% creep is the right amount of life, because the eye is busy reading. The drift that reads as dead is on a logo or a frame where nothing is being read.
 - **H4 Strobing fast moves.** Unblurred motion above 20 px/f (falling blocks at 140 px/f). **Fix:** anything above 12 px/f gets the motion-blur pass (`references/finishing.md`).
 - **H5 Moves too fast to blur.** An element crossing 150–1,000 px in a frame: blur turns it into a long smear with stepped copies. **Fix:** keep any one element under about 60–80 px/f; faster than that, redesign the move (a cut on the beat, a match cut, a mask wipe, a shorter distance). `measure-speed.py` names the frames.
 
@@ -137,12 +140,13 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **J10 The wrong energy for the brand.** Drops onto silence, sub booms and risers under a calm brand (trailer grammar), or a timid bed under a fast launch. **Fix:** pick the personality row first (`references/sound.md` §5.5a); calm brands get soft mallets and one gentle chord.
 
 ## K. Pacing
-- **K1 Weak hook.** 1–2 s of near-blank frame (mean difference < 0.05), which a muted feed reads as a stalled player. **Fix:** frame 0 already composed and moving; a visible change about every 0.5 s.
-- **K2 Dead holds.** More than 48 f with no visible life, such as a logo held 1.6–2.4 s at a frame difference of 0.03–0.08. **Fix:** every hold builds; a designed freeze is ≤ 15 f and sits exactly on a silence.
-- **K3 Cramming.** 17 scenes in 32 s, or 3 features in 5 s. **Fix:** 8–10 story beats per 30 s and 1–2 capabilities.
-- **K4 Flat energy.** A middle 10× calmer than the rest, or peaks with no calm between them. **Fix:** one motion peak per bar with 30–70 f of calm between; the first 6 s about 2× as dense as the middle.
+- **K1 Weak hook.** 1–2 s of near-blank frame (mean difference < 0.05), which a muted feed reads as a stalled player. **Fix:** frame 0 already composed and moving; a visible change about every 1 s (0.5 s in crisp), with slow life between.
+- **K2 Dead holds.** A frozen stretch: more than 72 f (48 f in crisp) with no visible life, such as a logo held 1.6–2.4 s at a frame difference of 0.03–0.08. A reading hold that drifts 0.3–1 px/f or creeps 1–3% is alive, and is not a dead hold. **Fix:** every hold builds or drifts, with no tick planted inside a read; a designed freeze is ≤ 15 f and sits exactly on a silence.
+- **K3 Cramming.** 17 scenes in 32 s, or 3 features in 5 s. **Fix:** 6–8 story beats per 30 s (8–10 in crisp) and 1–2 capabilities.
+- **K4 Flat energy.** A middle 10× calmer than the rest, peaks with no calm between them, or no peak at all. **Fix:** an energy arc: an early peak, a designed lull, the biggest peak at 75–90%; one hero move per bar in calm, one motion peak per bar with 30–70 f of calm between in crisp. Reading holds with slow drift are the cruise between peaks, not flat energy.
 - **K5 Off-grid timing.** Cuts and hits that ignore the music. **Fix:** a BPM grid; section changes on downbeats, cuts on 8ths (`references/timing-grid.md`).
-- **K6 A soft first second.** Frame 0 is composed, but only the opening line moves and the problem isn't felt by 1 s; paired with a fade-in (J9), a muted feed scrolls past. **Fix:** the device and the product's state both move from frame 0, something visibly changes about every 0.5 s, the problem is felt by 1 s.
+- **K6 A soft first second.** Frame 0 is composed, but only the opening line moves and the problem isn't felt by 1 s; paired with a fade-in (J9), a muted feed scrolls past. **Fix:** the device and the product's state both move from frame 0, something visibly changes about every 1 s (0.5 s in crisp), the problem is felt by 1 s.
+- **K7 Hurry.** Word entries under 24 f, staggers under 8 f, every hold at its minimum, fragments arriving back to back with no picture between, text landing during the hero move, or fast moves while words are read. **Fix:** `PACE.calm`; text and the hero action take turns (a picture beat of 30–90 f between fragments, nothing fast during a read); a fast move is rare and lands in a text-free stretch (`references/timing-grid.md` §9).
 
 ## L. Finishing
 - **L1 Pops and ghost frames.** Single-frame pops, or stale frames that land on different frames each render (`will-change` on a layer with an animated blur). **Fix:** never promote a layer with blur animating inside it; render twice and compare hashes.
