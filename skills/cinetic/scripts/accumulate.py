@@ -266,10 +266,14 @@ def main():
     gain, top, dtype = (4.0, 1023, '<u2') if a.tenbit else (1.0, 255, np.uint8)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     x264 = (['-tune', a.tune] if a.tune else []) + (['-x264-params', a.x264_params] if a.x264_params else [])
+    # the tags describe the raw planes, so they go on the input. On the output side, ffmpeg 9 reads
+    # the untagged pipe as BT.601, auto-inserts a conversion to the requested bt709 matrix (shifting
+    # every colour) and still writes the file as bt709/unknown/unknown
     enc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', pix, '-s', f'{W}x{H}',
-                            '-r', f'{out_fps:g}', '-i', '-',
-                            '-c:v', 'libx264', '-preset', a.preset, '-crf', f'{a.crf:g}', *x264, '-pix_fmt', pix,
+                            '-r', f'{out_fps:g}',
                             '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
+                            '-i', '-',
+                            '-c:v', 'libx264', '-preset', a.preset, '-crf', f'{a.crf:g}', *x264, '-pix_fmt', pix,
                             '-movflags', '+faststart', a.out], stdin=subprocess.PIPE)
 
     got_idx = [-1]

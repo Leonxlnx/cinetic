@@ -185,9 +185,11 @@ Verified on the starter demo: paper, ink and accent pixels decode within 1 code 
 - **In your own ffmpeg encodes** (accumulate, splices, re-encodes), convert and tag explicitly:
 
 ```bash
--vf scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int \
+-vf scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv \
 -pix_fmt yuv420p -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv
 ```
+
+  The `setparams` step is not optional. Current ffmpeg (seen on 7.1 and 9) writes the frames' own colour properties from the filter graph and ignores output-side `-color_primaries`/`-color_trc` when they disagree, so without it a PNG-sourced encode comes out `bt709/unknown/unknown/tv` and fails `probe.py`. A raw-plane pipe (`-f rawvideo -i -`, as in `accumulate.py`) already holds BT.709 planes: put the four tags before `-i` as input options. Given only on the output side, ffmpeg 9 reads the untagged pipe as BT.601 and converts it (flat `#00C2E0` went from Y 149 to 162), then still writes `unknown` primaries and transfer.
 
 - **When decoding for QA or stills,** convert with the file's own matrix and accurate rounding, not ffmpeg's implicit conversion: `-vf scale=in_color_matrix=auto:in_range=auto:flags=accurate_rnd+full_chroma_int,format=rgb24`. Measured on a Tessel frame against a PNG still, the explicit path is within 0.2–0.4 code values; the implicit one is off by about 0.6.
 - `bt2020-ncl` in Remotion tags HLG (`arib-std-b67`), which is wrong for SDR graphics. Do not use it.
