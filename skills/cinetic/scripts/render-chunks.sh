@@ -50,7 +50,7 @@ while [[ $# -gt 0 ]]; do
 done
 [[ ${#POS[@]} -ge 2 && ${#POS[@]} -le 4 ]] || usage 1
 COMP=${POS[0]}; OUT=${POS[1]}
-NPROC=$(nproc 2>/dev/null || echo 4)
+NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)  # sysctl: macOS has no nproc
 CHUNKS=${POS[2]:-$(( NPROC / 2 > 2 ? NPROC / 2 : 2 ))}
 CRF=${POS[3]:-14}
 [[ "$CHUNKS" =~ ^[0-9]+$ && "$CHUNKS" -ge 1 ]] || die "chunks must be a positive integer"

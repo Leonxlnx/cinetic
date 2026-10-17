@@ -125,7 +125,7 @@ else
   [[ -f "$MJ" && -f "$DIR/timeline.js" && -f "$DIR/index.html" ]] || die "HyperFrames starter needs motion.js, timeline.js and index.html"
   for kv in "FPS=$FPS" "BPM=$BPM" "W=$W" "H=$H" ${PACE:+"PACE_NAME='$PACE'"}; do
     k="${kv%%=*}"; v="${kv#*=}"
-    grep -Eq "^\s*const $k = [^;]+;" "$MJ" || die "motion.js has no 'const $k = ...;' line to set"
+    grep -Eq "^[[:space:]]*const $k = [^;]+;" "$MJ" || die "motion.js has no 'const $k = ...;' line to set"
     sed -i.bak -E "s|^([[:space:]]*const $k = )[^;]+;|\1$v;|" "$MJ" && rm -f "$MJ.bak"
   done
   DIR="$DIR" W="$W" H="$H" node - <<'JS' || die "could not update index.html from motion.js/timeline.js"

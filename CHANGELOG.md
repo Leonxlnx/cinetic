@@ -45,6 +45,9 @@ A film's effects now come from an [earshot](https://github.com/Leonxlnx/earshot)
 - `scripts/test/score.test.py`: the synth engine renders bit for bit as before, a kit's takes land on their frames, the fallbacks, the stack guard, effects-only scores, tuning; with `EARSHOT_PYTHON` set, a real kit render.
 - `references/sound.md` §1 (where the sounds come from: the kit, its roles, the fallback), §5.7 (scoring a text-led film) and §9.1 (listening with earshot); new rows in the report table, the failure modes and the sound-slop table (a rising synth whip, a stacked sting, a sound on every word, a synth pad bed under quiet type).
 - `docs/setup.md`: "Sound from earshot" (installing earshot in its own environment, `EARSHOT_PYTHON`) and sound troubleshooting rows.
+- CI parses every shell script with bash 3.2.57, the version macOS ships, and runs the HyperFrames preflight (`npm run cues`) under it. A macOS job does the same with the real `/bin/bash`, scaffolds a HyperFrames project and refreshes its scripts with BSD `sed` and `tar`, and runs the encode-tags test on Homebrew's ffmpeg (7.1 or newer). CI also fails on a heredoc inside `$( )`, backticks or `<( )`, found by a multi-line scan (`scripts/test/bash32.test.py`), and checks the syntax of the Node scripts (`node --check`).
+- `scripts/test/encode-tags.test.py`, run in CI: every BT.709-tagged encode in the scripts sets `setparams`, and the `hf-finish.sh` and `accumulate.py` encodes write `bt709/bt709/bt709/tv` on the local ffmpeg.
+- `scripts/test/scripts-docs.test.mjs`, run in CI: every script but the two internal helpers handles `--help`, `hf-preflight.cjs` exits 2 with its pointer, the docs name the same helpers, and `docs/setup.md` refreshes a project's scripts with `new-film.sh`'s own copy.
 
 ### Changed
 
@@ -64,6 +67,12 @@ A film's effects now come from an [earshot](https://github.com/Leonxlnx/earshot)
 
 ### Fixed
 
+- macOS ([#2](https://github.com/Leonxlnx/cinetic/issues/2)). `hf-finish.sh` parses with the stock `/bin/bash` 3.2: its preflight was a heredoc inside `$( )`, which bash 3.2 scans as shell code, and now lives in `scripts/hf-preflight.cjs` (same checks, same cues). The other heredocs inside `$( )`, in `deliver.sh` and `render.sh`, became shell functions. The frame-count check compares numbers, so BSD `wc`'s padded count passes; colour codes are stripped from the HyperFrames logs with BSD `sed` too; `render-chunks.sh` counts cores with `sysctl` where there is no `nproc`; `new-film.sh` matches `motion.js` with a POSIX character class instead of `\s`.
+- BT.709 tags with ffmpeg 7.1 and newer, which take a file's colour tags from the frames over `-color_primaries` and `-color_trc`. The HyperFrames encode came out without primaries and transfer (`bt709/None/None/tv`) and failed `probe.py`; `hf-finish.sh`, `accumulate.py` and the WebM in `deliver.sh` now end their filters with `setparams`. In `accumulate.py`, the encoder of every `--blur` master, the unlabelled raw planes also made ffmpeg insert a matrix conversion that shifted the colours; they now pass through bit-exact. With ffmpeg 6 the files are identical to before.
+- A project keeps its own copy of the scripts, so a project made with 1.0.0 gets these fixes when you copy the skill's scripts into it the way `new-film.sh` does, without the skill's own tests (`docs/setup.md`, "Updating a project's scripts").
+- `hf-preflight.cjs`, which `hf-finish.sh` runs, answers `--help` or a missing environment with a pointer to `hf-finish.sh --help` and exit 2 instead of a stack trace, and `SKILL.md` names it with `brand-svg.ts` as the scripts without a `--help` of their own.
+- `.gitattributes` checks every text file out with LF line endings. A Windows clone with `core.autocrlf` (the Git for Windows default) gave CRLF scripts, which WSL's bash refuses (`set: pipefail: invalid option name`).
+- `docs/setup.md`: removed a stale macOS row about `date %N`; `render.sh` uses only `date +%s`, which BSD `date` has, and times the sharp pass with `python3`.
 - `new-film.sh --link-modules` makes a directory junction on Windows (Git Bash, MSYS2, Cygwin), where `ln -s` copied the whole `node_modules`.
 - `add-font.mjs` starts npm on Windows (it failed with `spawnSync npm ENOENT`), extracts the package with a relative path, and replaces the import it supersedes in `fonts.ts` (the starter's stand-in or a family vendored before) on a CRLF checkout too.
 
