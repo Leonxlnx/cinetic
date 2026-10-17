@@ -24,7 +24,7 @@ cinetic (cinema + kinetic) is an agent skill that makes your coding agent direct
 - **Idea first.** Before any code, the agent writes three concepts through different lenses, tests them, and picks one story device the film owns.
 - **273 techniques, drawn at random.** A library of measured moves in 14 categories, each with a build recipe and timing at 60 fps. `pick.py` draws the film's plan, weighted for its format and energy, so two films don't share the same fade-up, push-in and end card.
 - **Its own brand.** The look comes from three personality words, so a calm notes app and a fast CI tool don't end up looking alike.
-- **One beat grid, measured sound.** `timeline.ts` drives the picture, a synthesized score and the QA scripts, so every hit lands on its frame. Typing, clicks and ticks follow measured norms of top-tier launch films: soft, short and mostly left to the music.
+- **One beat grid, measured sound.** `timeline.ts` drives the picture, the soundtrack and the QA scripts, so every hit lands on its frame. The effects come from an [earshot](https://github.com/Leonxlnx/earshot) sound kit: sounds designed in code and rendered with measured sync points, one soft sound per text fragment, one clean element on the lockup. Typing, clicks and ticks follow measured norms of top-tier launch films: soft, short and mostly left to the picture.
 - **Finished and measured.** True motion blur, no banding, BT.709 and a sync-checked mux, then pixel forensics, an audio-sync audit, contact sheets and critic passes against a ship gate.
 - **No generated look.** Hard bans, enforced by a linter and the critics, keep out the looks that mark a video as generated. A brand you supply always wins.
 
@@ -185,6 +185,7 @@ To update a manual install, remove `~/.claude/skills/cinetic` first, then repeat
 - **Node 22+** (Remotion 4)
 - **ffmpeg 6+** with libx264, and ffprobe
 - **Python 3.11+** with numpy, scipy, soundfile, pyloudnorm, opencv-python and librosa; fonttools, brotli and uharfbuzz for outlined SVG logos; pillow for banding-free gradient PNGs
+- **[earshot](https://github.com/Leonxlnx/earshot) 0.3+ (optional, recommended)** in its own virtual environment, with `EARSHOT_PYTHON` pointing at its interpreter: it renders the film's sound kit and listens to the soundtrack. Without it a film uses the kit takes already rendered in its `audio/kit/`, or falls back to synthesized effects with a warning. Details: [Sound from earshot](docs/setup.md#sound-from-earshot).
 - **Chromium or a Chrome headless shell.** Remotion downloads its own if allowed; set `REMOTION_BROWSER` or `CHROMIUM_PATH` to use a local one.
 - **A Remotion licence if you need one.** cinetic is MIT, but Remotion, the default engine, has its own licence: free for individuals and companies of up to 3 people, a company licence from 4. HyperFrames is Apache-2.0.
 
@@ -250,7 +251,7 @@ Social versions are re-laid out from the same timeline, never cropped from the m
 
 ## How it works
 
-Every step writes a file and ends at a gate the agent actually runs. It starts from `BRIEF.md`, the brief plus a spec line such as `1920x1080@60, 30s, 120BPM, audio: synthesized`.
+Every step writes a file and ends at a gate the agent actually runs. It starts from `BRIEF.md`, the brief plus a spec line such as `1920x1080@60, 30s, 120BPM, audio: earshot kit`.
 
 | # | Step | Writes | What happens | Key script or template |
 |---|---|---|---|---|
@@ -258,7 +259,7 @@ Every step writes a file and ends at a gate the agent actually runs. It starts f
 | 2 | Brand | `src/brand/` | Three personality adjectives set the typeface, stage, accent, corners and motion character; 6–10 mark directions on one sheet, each put through a 64 px misread test; a lockup set like a typographer would | `palette.py` |
 | 3 | Timeline | `src/timeline.ts` | FPS, BPM, the beat grid `b(bar, beat, sub)`, acts, cues and every line of copy | `grid-check.ts` |
 | 4 | Build | `src/acts/` | Acts built from motion tokens and tested primitives (`TypeOn`, `Roll`, `Morph`, `Iris`…), with real product UI fed by one data module; safe zones, covered text and text speed audited | `lint-film.mjs` |
-| 5 | Sound | `public/audio/soundtrack.wav` | Sync frames computed from the picture code; a tuned score and SFX synthesized with stems; mastered to −14 LUFS (−16 for a short sting) | `export-cues.ts` |
+| 5 | Sound | `public/audio/soundtrack.wav` | Sync frames computed from the picture code; the effects from the film's earshot sound kit, placed by measured sync points, with stems; music only when the film wants a groove (none, a supplied track or the synth band); mastered to −14 LUFS with music, −18 effects only; earshot listens to the result | `export-cues.ts`, `kit.py`, `score.py`, `listen.py` |
 | 6 | Render | `out/film.mp4` | Preview, sharp or motion-blurred master: optical-flow speeds set the sub-frames per frame, averaged in float and quantized once to BT.709; sync and spec gates | `render.sh` |
 | 7 | Review | `out/qa/` | Contact sheets, pixel forensics (pops, stalls, ghosts, judder, banding, loop seams), an onset-by-onset audio audit, four critic lenses and a verifier, a scored rubric and a ship gate | `forensics.py` |
 | 8 | Deliver | `out/deliver/` | Poster from a clean still, GIF and WebM loops, alpha stings, social variants, a manifest; the brand kit | `deliver.sh`, `brand-kit.sh` |
@@ -272,6 +273,14 @@ export const b = (bar: number, beat = 0, sub = 0) =>   // sub = 16ths
 ```
 
 Sounds are never placed by hand. `export-cues.ts` runs the project's `src/sync.ts`, which computes the contact frames of springs, the 50% frame of pop-ins and the velocity peaks of whips from the same constants and springs the acts animate with, and `score.py` writes the score to those frames.
+
+## Sound
+
+Every effect has a role (`text`, `hit`, `land`, `whoosh.short`, `key`, ...), and the film's kit, `audio/kit.json`, names one sound for each from the bank of [earshot](https://github.com/Leonxlnx/earshot), a separate tool that designs sounds in code and checks them by measurement. `scripts/audio/kit.py render` has earshot render the takes into `audio/kit/` with each take's measured onset, loudest point and end, cached; `score.py` puts the onset (a whoosh's peak) on the cue frame, a new take per cue, tonal roles in the film's key. Three presets: `calm` (the default for text-led films: soft taps, a kalimba for text and bells, one struck note for the lockup), `crisp` and `minimal`; every preset leaves risers, swells and sucks off.
+
+The house style is restraint, from a frame-measured study of professional text-led films: one soft sound per text fragment, near-silence while it is read, a big hit only for the one reveal, and a lockup that is a stop-down and one clean element. `score.py` warns on a stacked lockup and on any sound whose pitch climbs. A calm film plays effects only (`"music": "none"`, mastered at −18 LUFS so its accents keep their dynamics); a supplied track or the built-in synth band is one setting away. `scripts/audio/listen.py` gives the review loop ears: earshot's per-cue sync, an annotated sound sheet and a critique, in one process.
+
+The fallback order: earshot renders the kit → the takes already in `audio/kit/` (so a film rebuilds where earshot is not installed) → synthesized effects with a loud warning. The build never fails only because earshot is missing.
 
 ## Hard bans
 
@@ -293,7 +302,7 @@ When the agent invents the look, none of these appear:
 | `skills/cinetic/SKILL.md` | The director: formats and defaults, five laws, the workflow from intake to delivery (Steps 0–8) with its gates plus a scaled-down path for stings and loops, taste rules, the timing and motion systems, engine rules, the ship gate |
 | `skills/cinetic/references/` | 19 guides, each read when its step comes up: concept and story, brand and color, copy and type, timing grid, motion tokens, camera, transitions, product UI, sound, finishing, review loop, a catalog of cheap-looking tells, both engines, Chromium rendering traps, formats, the technique library, the measured craft rules, and a worked example |
 | `skills/cinetic/assets/library/` | `techniques.json`, the 273 techniques `pick.py` draws from |
-| `skills/cinetic/scripts/` | 27 scripts: scaffold, the technique draw (`pick.py`), lint, grid and layout audits, palette, cue export, score and master, render and motion blur, probe and sync gates, forensics, A/V audit, contact sheets, delivery, brand kit. Each is documented in its header comment and, except the internal `brand-svg.ts` helper, in its `--help`. The regression tests for the lint and `pick.py` are in `scripts/test/`. |
+| `skills/cinetic/scripts/` | 29 scripts: scaffold, the technique draw (`pick.py`), lint, grid and layout audits, palette, cue export, the sound kit (`kit.py`), score and master, listening (`listen.py`), render and motion blur, probe and sync gates, forensics, A/V audit, contact sheets, delivery, brand kit. Each is documented in its header comment and, except the internal `brand-svg.ts` helper, in its `--help`. The regression tests for the lint, `pick.py` and `score.py` are in `scripts/test/`. |
 | `skills/cinetic/assets/` | The Remotion starter (default, with tested motion primitives in `src/fx/`), the HyperFrames starter, the treatment template and five critic prompts (director, art/copy/UI, sound-sync, forensics, verifier) |
 | [`evals/evals.json`](evals/evals.json) | The four briefs and the written expectations each film is graded against |
 | `docs/` | [Setup](docs/setup.md) and the full [evaluation](docs/evaluation.md) |

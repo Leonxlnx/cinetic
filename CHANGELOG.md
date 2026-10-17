@@ -8,6 +8,32 @@ Versions 0.1.0 to 0.5.0 were development versions, and 0.9.0 was the first publi
 
 ## [Unreleased]
 
+### Sound from earshot kits
+
+A film's effects now come from an [earshot](https://github.com/Leonxlnx/earshot) sound kit instead of cinetic's own synth voices: one sound per role, designed in code, rendered into takes with measured sync points, audited by measurement, and placed on the cue frames by `score.py`, which keeps the timing, typing plan, levels and master. The synth voices stay as the fallback, with a loud warning. Calm text-led films play effects only, and the scoring rules for text come from a frame-measured study of professional text-led films: one soft sound per fragment, near-silence while it is read, a big hit only for the one reveal, and a lockup that is a stop-down and one clean element.
+
+### Added
+
+- `scripts/audio/kit.py`: the film's sound kit. `init --preset calm|crisp|minimal` (from earshot, tuned to the film's key), `tune`, `render` (cached, into `audio/kit/` with `kit.lock.json`), `vendor`, `check` (the kit against the film's cues plus earshot's audit of every take), `audition`, `listen` and `where`. It finds earshot through `--python`, `score.json` `sfx.python`, `EARSHOT_PYTHON` (`none` turns it off), an importable earshot, or `earshot` on `PATH`.
+- `scripts/audio/listen.py`: earshot's timeline with the cues, its annotated sound sheet and its critique in one process, into `out/qa/listen.json` and `out/qa/sound_sheet.png`; `--kit` listens to each kit role against cheap-synth alternatives. Without earshot or its models it records why and exits 0.
+- `score.json` `"sfx": {"engine": "auto" | "earshot" | "synth", "kit", "python"}`. `auto` renders the kit when it changed and earshot is found, else plays the rendered takes as they are, else the synth voices with a warning; `earshot` fails instead of falling back.
+- `score.json` `"music": "none" | "synth" | <track>`. `none` (effects only) needs no chords and masters at −18 LUFS by default, so a few accents keep their dynamics; `synth` is the built-in band, the default for a score that has chords.
+- Cue kind `text`: the soft sound of a copy fragment resolving, in `export-cues.ts` and the starter's `sync.ts`. A chain's fragments step through the chord's tones.
+- A stack guard in `score.py`: a warning, and a `stacks` row in the report, when a second sound lands within ±3 f of the payoff or the `lockup` cue (a score.json motif counts) or a whoosh, riser, swell or suck runs into it, and when two heavy sounds or three kinds start within ±3 f anywhere.
+- The report's `sfx` block (where every effect came from: the kit's roles with their takes, the cues of roles the kit leaves off, the kinds still on synth voices) and `target_lufs`; the console prints the source and the limiter's gain reduction. Warnings for a kit role whose pitch climbs or whose hit stacks attacks (earshot's audit), and for every synth riser.
+- `npm run kit` and `npm run listen` in both starters; each starter ships the calm kit as `audio/kit.json`.
+- `scripts/test/score.test.py`: the synth engine renders bit for bit as before, a kit's takes land on their frames, the fallbacks, the stack guard, effects-only scores, tuning; with `EARSHOT_PYTHON` set, a real kit render.
+- `references/sound.md` §1 (where the sounds come from: the kit, its roles, the fallback), §5.7 (scoring a text-led film) and §9.1 (listening with earshot); new rows in the report table, the failure modes and the sound-slop table (a rising synth whip, a stacked sting, a sound on every word, a synth pad bed under quiet type).
+- `docs/setup.md`: "Sound from earshot" (installing earshot in its own environment, `EARSHOT_PYTHON`) and sound troubleshooting rows.
+
+### Changed
+
+- The starters' lockup is a stop-down and one clean hit: no whoosh into it, no drop, snap or motif bells on it, no ticks through the hold. Their statements get one `text` sound per fragment instead of a pop and a tick per word, and their `score.json` plays effects only.
+- `render.sh --build-audio` renders the kit before the score; `new-film.sh` lists `npm run kit` and `npm run listen` in its next steps and says whether earshot was found.
+- `av-audit.py`: the loudness target follows score.py's default for the score (−18 for an effects-only film), the loudness range for an effects-only film is 3–14 LU, and events score.py's report lists as skipped (a role the kit leaves off) are not expected to sound.
+- The sound critic reads `listen.json` and the report's `sfx` and `stacks`; its fixes name a kit change, a new sound from earshot (a forge run, or a fit of a public-domain or owned recording), a cue or a score parameter. A stacked lockup, a rising synth whip and shipping on the synth fallback are P1.
+- SKILL.md Step 5 renders and checks the kit, scores text one fragment at a time, keeps the music off for calm text-led films, and listens with earshot; the spec line names the kit.
+
 ## [1.0.0] - 2026-10-04
 
 This version teaches cinetic what top-tier launch films measurably do. Their pictures and soundtracks were measured frame by frame, and the results became a technique library the agent draws from at random, a reference of craft norms, a recalibrated sound engine and a set of tested motion primitives in the starter.
