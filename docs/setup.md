@@ -207,7 +207,7 @@ A venv also avoids the `externally-managed-environment` error that recent Debian
 
 ### Sound from earshot
 
-A film's sound effects come from its sound kit (`audio/kit.json`), rendered by [earshot](https://github.com/Leonxlnx/earshot) 0.3 or later: sounds designed in code, each take with its measured sync points. earshot is optional but recommended: without it a film plays the kit takes already rendered in its `audio/kit/` folder, and with none it falls back to synthesized effects and says so in a warning. Rendering a kit needs no models and no network; listening (`listen.py`) downloads two open models (~1.4 GB) on first use.
+A film's sound effects come from its sound kit (`audio/kit.json`), rendered by [earshot](https://github.com/Leonxlnx/earshot) 0.3 or later: sounds designed in code, each take with its measured sync points. earshot is optional but recommended: without it a film plays the kit takes already rendered in its `audio/kit/` folder, and with none it falls back to synthesized effects and says so in a warning. Rendering a kit needs no models and no network; listening (`listen.py`) downloads two open models (~1.1 GB) on first use.
 
 earshot has heavier dependencies (PyTorch) than cinetic, so give it its own virtual environment, following its README ("Install"):
 
@@ -319,7 +319,7 @@ Now run the gates and build the sound:
 ```bash
 npm run check    # 3-8 s. Fails on purpose: "lint-film: 32 files, 5 errors, 0 warnings -> FAIL"
 npm run cues     # 1 s. "wrote out/cues.json: 8 events (text 2, land 3, whoosh 1, tock 1, hit 1), 12 cues, 3 copy entries, 13.00 s at 60 fps, 100 BPM"
-npm run kit      # 30-75 s the first time, seconds after. "kit calm: 57 takes in audio/kit (57 rendered, 0 cached) ..."
+npm run kit      # 30-75 s the first time, seconds after. "kit calm: 64 takes in audio/kit (64 rendered, 0 cached) ..."
 npm run audio    # 6-20 s. "PASS  public/audio/soundtrack.wav  13.0s  -18.05 LUFS (target -18, ...)  TP -2.27 dBTP ..."
 ```
 
