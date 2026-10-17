@@ -12,10 +12,11 @@
 //   whoosh's apex on the velocity peak of the move it belongs to.
 // - Import the constants the acts animate with (they export them for this file) and compute the
 //   frame; a frame typed by hand drifts the first time an act is retimed.
-// - Text gets one soft `text` sound per fragment, on the frame it resolves, never one per word;
+// - Text gets one soft `text` sound per fragment, on the frame its last word visibly comes to rest
+//   (chainResolves(), at the size the act sets the chain at), never one per word;
 //   what was just said is read in near-silence. The lockup is a stop-down and ONE clean element:
 //   score.py's stack guard warns when anything else lands within 3 f of it or leads into it.
-import { DOT_TRAVEL } from './acts/Act1';
+import { DOT_TRAVEL, STATEMENT_SIZE } from './acts/Act1';
 import { HERO } from './acts/Act2';
 import { MARK } from './brand/Mark';
 import { chainResolves } from './fx/Chain';
@@ -58,9 +59,9 @@ export default function cues(): SoundEvent[] {
   const ev: SoundEvent[] = [];
 
   // Act 1: one soft text sound as each fragment of the statement lands (fx/Chain: the frame its
-  // last word is 97% home), never one per word. Between the two, the dot's landing on the
-  // baseline is the picture beat's one sound, on its contact frame.
-  chainResolves('statement').forEach((f, i) => ev.push({ f, kind: 'text', weight: 0.8, pan: -0.1 + 0.2 * i, id: `fragment${i + 1}` }));
+  // last word's drawn rise is 97% home, at the statement's size), never one per word. Between the
+  // two, the dot's landing on the baseline is the picture beat's one sound, on its contact frame.
+  chainResolves('statement', { size: STATEMENT_SIZE }).forEach((f, i) => ev.push({ f, kind: 'text', weight: 0.8, pan: -0.1 + 0.2 * i, id: `fragment${i + 1}` }));
   ev.push({ f: CUE.land, kind: 'land', variant: 'light', weight: 0.9, pan: 0.4, id: 'dot-lands' });
   // The line has left when the dot sets off: one whoosh for the flight, travelling left with it.
   ev.push(move(DOT_TRAVEL, 1, -0.5, 'dot-flight'));

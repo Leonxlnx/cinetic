@@ -5,7 +5,8 @@
  *
  *   1. Every fixture in lint-fixtures/ declares what it must produce in its first lines
  *      (`expect: rule=N rule:warn=N`); the hard-ban and text-flow rules it does not name must stay
- *      silent. lint-fixtures/timeline.ts makes the fixtures a calm film (for text-pace).
+ *      silent. lint-fixtures/timeline.ts makes the fixtures a calm film (for text-pace). A
+ *      followed type-on reports its real rate (typing-follow.tsx: 180 chars/s, not 60).
  *   2. Both starters fail only on their placeholder markers, raise no text-flow warning, and lint
  *      clean once the markers are gone.
  *   3. palette.py refuses banned accents and papers (exit 1) and accepts allowed ones, and
@@ -62,6 +63,10 @@ for (const f of readdirSync(FIX).sort()) {
   const keys = new Set([...Object.keys(expect), ...HARD, ...HARD.map((h) => `${h}:warn`), ...TEXT.map((t) => `${t}:warn`)]);
   const diffs = [...keys].filter((k) => (expect[k] ?? 0) !== (got[k] ?? 0)).map((k) => `${k}: want ${expect[k] ?? 0}, got ${got[k] ?? 0}`);
   result(!diffs.length, `fixture ${f}`, diffs.join('; ') || Object.entries(expect).map(([k, v]) => `${k}=${v}`).join(' ') || 'silent');
+  if (f === 'typing-follow.tsx') {
+    const msg = r.issues.find((x) => x.rule === 'typing-rate')?.message ?? '';
+    result(/about 180 chars\/s/.test(msg), 'a type-on built from other names reports its real rate (180 chars/s)', msg.slice(0, 60));
+  }
   if (verbose || diffs.length) for (const x of r.issues.filter((x) => HARD.includes(x.rule) || TEXT.includes(x.rule))) console.log(`      ${x.line}: ${x.rule} ${x.severity} ${x.excerpt}`);
 }
 

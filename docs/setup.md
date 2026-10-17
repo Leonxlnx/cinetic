@@ -279,7 +279,7 @@ The config also sets the ANGLE GL backend (WebGL works headless), JPEG q95 inter
 
 ## 4. A first test render
 
-This renders the starter's 9-second placeholder demo end to end: scaffold, gates, cues, a synthesized soundtrack, a preview and a motion-blurred master. It proves the machine is ready before an agent spends an hour on a film. After `npm install`, the gates, cues, soundtrack and preview take a little over a minute, and the blurred master about four and a half more. The timings in the comments were measured on a 4-CPU Linux machine.
+This renders the starter's 13-second placeholder demo end to end: scaffold, gates, cues, a synthesized soundtrack, a preview and a motion-blurred master. It proves the machine is ready before an agent spends an hour on a film. After `npm install`, the gates, cues, soundtrack and preview take a little over a minute, and the blurred master about four and a half more. The timings in the comments were measured on a 4-CPU Linux machine.
 
 Set `SKILL` to the folder that holds the installed `SKILL.md`. Use an absolute path, because the steps below change directory:
 
@@ -293,7 +293,7 @@ Set `SKILL` to the folder that holds the installed `SKILL.md`. Use an absolute p
 
 ```bash
 SKILL="$HOME/.claude/skills/cinetic"
-bash "$SKILL/scripts/new-film.sh" films/first-film --fps 60 --bpm 100 --size 1920x1080
+bash "$SKILL/scripts/new-film.sh" films/first-film --fps 60 --size 1920x1080
 cd films/first-film
 ```
 
@@ -304,22 +304,23 @@ cd films/first-film
 | `<dir>` | (required) | target folder; must be empty unless `--force` |
 | `--engine remotion\|hyperframes` | `remotion` | which starter to copy |
 | `--fps N` | `60` | frame rate |
-| `--bpm N` | `120` | tempo; one beat must be a whole number of frames (at 60 fps: 90 → 40 f, 100 → 36, 120 → 30, 144 → 25, 150 → 24) |
+| `--bpm N` | the starter's own: Remotion 100, HyperFrames 120 (120 with `--pace crisp`) | tempo; one beat must be a whole number of frames (at 60 fps: 90 → 40 f, 100 → 36, 120 → 30, 144 → 25, 150 → 24) |
+| `--pace calm\|crisp` | `calm` | the film's pace (`PACE_NAME`): calm fragments that take turns with the picture, or the denser crisp tempo for a brief that asks for energy |
 | `--size WxH` | `1920x1080` | frame size, even in both dimensions (`1080x1920` for 9:16, `1080x1080` for 1:1) |
 | `--name NAME` | the folder name | project and package name |
 | `--font NAME` | none | vendor a `@fontsource-variable/*` family (repeatable) |
 | `--browser PATH` | `$CHROMIUM_PATH` | bake a headless-shell path into `remotion.config.ts` |
-| `--link-modules DIR` | none | symlink an existing `node_modules` instead of running `npm install` |
+| `--link-modules DIR` | none | link an existing `node_modules` instead of running `npm install` (a symlink; a directory junction on Windows, where `ln -s` would copy the folder) |
 | `--no-install` | off | skip `npm install` |
 | `--force` | off | allow a non-empty `<dir>` |
 
 Now run the gates and build the sound:
 
 ```bash
-npm run check    # 3-8 s. Fails on purpose: "lint-film: 30 files, 5 errors, 0 warnings -> FAIL"
-npm run cues     # 1 s. "wrote out/cues.json: 6 events (...), 16 cues, 9.00 s at 60 fps, 120 BPM"
-npm run kit      # 35-75 s the first time, seconds after. "kit calm: 57 takes in audio/kit (57 rendered, 0 cached) ..."
-npm run audio    # 6-20 s. "PASS  public/audio/soundtrack.wav  9.0s  -18.0 LUFS (target -18, ...)  TP -2.27 dBTP ..."
+npm run check    # 3-8 s. Fails on purpose: "lint-film: 32 files, 5 errors, 0 warnings -> FAIL"
+npm run cues     # 1 s. "wrote out/cues.json: 8 events (text 2, land 3, whoosh 1, tock 1, hit 1), 12 cues, 3 copy entries, 13.00 s at 60 fps, 100 BPM"
+npm run kit      # 30-75 s the first time, seconds after. "kit calm: 57 takes in audio/kit (57 rendered, 0 cached) ..."
+npm run audio    # 6-20 s. "PASS  public/audio/soundtrack.wav  13.0s  -18.05 LUFS (target -18, ...)  TP -2.27 dBTP ..."
 ```
 
 - `npm run check` runs `tsc`, `lint-film.mjs` and `grid-check.ts`. On the starter the lint fails with `placeholder` errors: the palette, typeface, mark and name are stand-ins, and no film may ship on them. Replacing them is the agent's Step 2. `tsc` passing is the part that matters here. Because the lint stops the chain, run the grid check on its own: `npx tsx scripts/grid-check.ts src/timeline.ts` should print `-> pass (0 errors, 0 warnings)`.
@@ -334,7 +335,7 @@ bash scripts/render.sh Film out/preview.mp4 --preview   # about 1 min (same as: 
 bash scripts/render.sh Film out/film.mp4 --blur         # about 4.5 min (same as: npm run render)
 ```
 
-Both commands take the soundtrack from `public/audio/soundtrack.wav` by default (`--audio FILE` to change it, `--no-audio` for a silent loop) and end with two gates: `check-sync.py` (audio lag at most 48 samples, true peak at most −1 dBTP after decoding) and `probe.py` (size, fps, frame count, yuv420p, BT.709 tags, AAC at 48 kHz). A good run ends with `check-sync PASS`, `probe PASS` and `done: out/preview.mp4 (0.6 MB, 9.000s, preview)`. Exit code 0 means every gate passed.
+Both commands take the soundtrack from `public/audio/soundtrack.wav` by default (`--audio FILE` to change it, `--no-audio` for a silent loop) and end with two gates: `check-sync.py` (audio lag at most 48 samples, true peak at most −1 dBTP after decoding) and `probe.py` (size, fps, frame count, yuv420p, BT.709 tags, AAC at 48 kHz). A good run ends with `check-sync PASS`, `probe PASS` and `done: out/preview.mp4 (<size> MB, 13.000s, preview)`. Exit code 0 means every gate passed.
 
 Other useful commands in the Remotion starter: `npm run studio` (Remotion Studio, with each act as its own composition), `npm run stills` (the mark at 16 px, at full size and across sizes, into `out/stills/`), and `npm run qa` (probe, forensics, A/V audit and a contact sheet of `out/film.mp4`).
 
@@ -346,9 +347,10 @@ Continuing from `films/first-film`, with `SKILL` still set:
 
 ```bash
 cd ../..                          # back to where you ran the first new-film.sh
-bash "$SKILL/scripts/new-film.sh" films/hf-film --engine hyperframes --fps 60 --bpm 100 --size 1920x1080
+bash "$SKILL/scripts/new-film.sh" films/hf-film --engine hyperframes --fps 60 --size 1920x1080   # its own 120 BPM
 cd films/hf-film
 node scripts/lint-film.mjs .      # fails on purpose until the placeholder palette, font and mark in index.html are replaced
+node scripts/grid-check.ts timeline.js   # the grid, the reads and the text flow: "-> pass (0 errors, 0 warnings)"
 npm run lint                      # HyperFrames' own lint: must show 0 errors
 npm run cues && npm run kit && npm run audio
 npm run render:preview            # hf-finish.sh --preview -> out/preview.mp4

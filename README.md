@@ -101,7 +101,7 @@ An agent left to choose picks the familiar option every time. cinetic's agent dr
 python3 scripts/pick.py --format launch --energy high --seconds 25 --json out/qa/picks.json
 ```
 
-and gets about one technique per 2.5 s of film (10 for a 25 s launch, 5 for a 12 s vertical video, 4 for a loop or a sting), drawn in the order the format needs them and weighted toward proven workhorses and the film's energy. Each pick prints its build recipe and default timing. The agent builds the picks its concept can carry, retold in the film's own objects, and rerolls or drops the rest with a reason written into the treatment; it never adds a move the draw didn't give it. The seed is printed, so a plan can be reproduced.
+and gets about one technique per 3.5 s of film at the calm default and per 2.5 s for an energetic one (7 or 10 for a 25 s launch, 5 for a 12 s vertical video, 4 for a loop or a sting), drawn in the order the format needs them and weighted toward proven workhorses and the film's energy. Each pick prints its build recipe and default timing. The agent builds the picks its concept can carry, retold in the film's own objects, and rerolls or drops the rest with a reason written into the treatment; it never adds a move the draw didn't give it. The seed is printed, so a plan can be reproduced.
 
 | Category | Entries | | Category | Entries |
 |---|---|---|---|---|
@@ -303,7 +303,7 @@ When the agent invents the look, none of these appear:
 | `skills/cinetic/SKILL.md` | The director: formats and defaults, five laws, the workflow from intake to delivery (Steps 0–8) with its gates plus a scaled-down path for stings and loops, taste rules, the timing and motion systems, engine rules, the ship gate |
 | `skills/cinetic/references/` | 19 guides, each read when its step comes up: concept and story, brand and color, copy and type, timing grid, motion tokens, camera, transitions, product UI, sound, finishing, review loop, a catalog of cheap-looking tells, both engines, Chromium rendering traps, formats, the technique library, the measured craft rules, and a worked example |
 | `skills/cinetic/assets/library/` | `techniques.json`, the 273 techniques `pick.py` draws from |
-| `skills/cinetic/scripts/` | 29 scripts: scaffold, the technique draw (`pick.py`), lint, grid and layout audits, palette, cue export, the sound kit (`kit.py`), score and master, listening (`listen.py`), render and motion blur, probe and sync gates, forensics, A/V audit, contact sheets, delivery, brand kit. Each is documented in its header comment and, except the internal `brand-svg.ts` helper, in its `--help`. The regression tests for the lint, `pick.py` and `score.py` are in `scripts/test/`. |
+| `skills/cinetic/scripts/` | 29 scripts: scaffold, the technique draw (`pick.py`), lint, grid and layout audits, palette, cue export, the sound kit (`kit.py`), score and master, listening (`listen.py`), render and motion blur, probe and sync gates, forensics, A/V audit, contact sheets, delivery, brand kit. Each is documented in its header comment and, except the internal `brand-svg.ts` helper, in its `--help`. The regression tests for the lint (`lint-film.test.mjs`), the timeline checks and the starters' timing (`grid-check.test.mjs`), `pick.py` and `score.py` are in `scripts/test/`. |
 | `skills/cinetic/assets/` | The Remotion starter (default, with tested motion primitives in `src/fx/`), the HyperFrames starter, the treatment template and five critic prompts (director, art/copy/UI, sound-sync, forensics, verifier) |
 | [`evals/evals.json`](evals/evals.json) | The briefs and the written expectations each film is graded against: the four of the evaluation rounds, plus a calm update film added with the fragment grammar |
 | `docs/` | [Setup](docs/setup.md) and the full [evaluation](docs/evaluation.md) |
@@ -338,14 +338,16 @@ The process was first worked out while making Tessel, a 33-second launch film bu
 
 ## Contributing
 
-Issues and pull requests are welcome. Before you open a PR, run the regression tests (they need Node and Python 3):
+Issues and pull requests are welcome. Before you open a PR, run the regression tests (they need Node 22.18+ and Python 3; `score.test.py` also needs numpy, scipy, soundfile and pyloudnorm):
 
 ```bash
 node skills/cinetic/scripts/test/lint-film.test.mjs
+node skills/cinetic/scripts/test/grid-check.test.mjs    # the Remotion starter cases need: npm install in assets/remotion-starter
 python3 skills/cinetic/scripts/test/pick.test.py
+python3 skills/cinetic/scripts/test/score.test.py [--baseline <main's scripts/audio/score.py>]
 ```
 
-CI runs the same tests and also checks the SKILL.md frontmatter, the JSON and plugin manifests, that the skills CLI discovers the skill, and Python and shell syntax. A change to a hard-ban rule needs a fixture in `skills/cinetic/scripts/test/lint-fixtures/` that declares what it must produce. A change to the library goes into `techniques.json`; regenerate the readable page with `python3 skills/cinetic/scripts/pick.py --markdown > skills/cinetic/references/technique-library.md` (CI checks that the two match).
+CI runs the same tests (with the Remotion starter installed and type-checked, and `score.test.py` against main's `score.py`, bit for bit on the synth engine) and also checks the SKILL.md frontmatter, the JSON and plugin manifests, that the skills CLI discovers the skill, and Python and shell syntax. A change to a hard-ban or text-flow rule needs a fixture in `skills/cinetic/scripts/test/lint-fixtures/`, and a change to a timeline check one in `grid-fixtures/`, that declares what it must produce. A change to the library goes into `techniques.json`; regenerate the readable page with `python3 skills/cinetic/scripts/pick.py --markdown > skills/cinetic/references/technique-library.md` (CI checks that the two match).
 
 ## License
 

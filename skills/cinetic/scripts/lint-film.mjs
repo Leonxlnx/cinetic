@@ -25,23 +25,30 @@
  * Text flow (warnings; --strict makes them fail). Calm films arrive as fragments: copy that escapes
  * COPY escapes every timing check, and springs or per-letter tricks on type read as gimmicks.
  *   copy-literal      on-screen text of 2+ words written in an act (JSX text, a {'string'} child,
- *                     a text/label/title/caption/line prop, a words={['...']} list) instead of read
- *                     from COPY through copy() / chainOf(): grid-check never sees its words, hold
- *                     or fragments.
+ *                     a text/label/title/caption/line prop, a words={['...']} list, or one word per
+ *                     element in sibling elements that together read 2+ words) instead of read from
+ *                     COPY through copy() / chainOf(): grid-check never sees its words, hold or
+ *                     fragments.
  *                     Acts are files under an acts/ folder or named Act*, Scene*, Shot*
  *   text-spring       an overshooting spring (spr() with SPR.snap/pop/land/word/detent/micro, or
  *                     spr()'s snap default, or spring() with such a config or none) driving an
  *                     element that carries data-text or a text component (Words, MaskRise, Chain,
- *                     TypeOn, Scramble, Roll); type eases in or rides SPR.calm. Which presets
+ *                     TypeOn, Scramble, Roll), followed through the declarations by name (object
+ *                     keys, strings and .property names do not carry it); or any element given an
+ *                     overshooting preset as a cfg/config/spring prop whose children are text (JSX
+ *                     text, a string, copy(...)): type eases in or rides SPR.calm. Which presets
  *                     overshoot is read from the project's lib/anim.ts (damping < 2*sqrt(k*m))
  *   text-pace         in a calm film (PACE_NAME 'calm' in the nearest timeline.ts), <Words> or
  *                     <MaskRise> given stagger < 8, dur < 24 or outDur < 18 frames (60 fps):
  *                     the crisp tempo inside a calm film (pass pace={PACE.crisp} to mean it)
  *   typing-rate       <TypeOn cps> above 30, or a hand-rolled type-on (.slice(0, n) / substring
- *                     with n growing with the frame) faster than 30 characters a second
- *   per-letter        a string split into letters (.split(''), [...text], Array.from(text)) and
- *                     mapped into animated spans outside fx/ and lib/: animate words or whole
- *                     fragments; the one hero word may keep it (// lint-ok: hero word)
+ *                     with n growing with the frame, followed through the names it is built from)
+ *                     faster than 30 characters a second
+ *   per-letter        a string split into letters (.split(''), or [...x] / Array.from(x) where x is
+ *                     a string: declared from a string or copy(), typed string, a .text, or named
+ *                     text/word/label/title/...) and mapped into animated spans outside fx/ and
+ *                     lib/: animate words or whole fragments; the one hero word may keep it
+ *                     (// lint-ok: hero word)
  *
  * Hard bans (SKILL.md "Hard bans"): errors whenever you invent the look.
  *   banned-color      any colour (tokens, :root palette, literals, CSS names) in a banned OKLCH region:
@@ -384,14 +391,51 @@ const OVERSHOOT = new Set(['snap', 'pop', 'land', 'word', 'detent', 'micro']); /
 }
 const TEXT_TAGS = /^(Words|MaskRise|Chain|TypeOn|Scramble|Roll)$/;
 const twoWords = (t) => (t.match(/[A-Za-z][A-Za-z'’-]*/g) ?? []).length >= 2;
-/** Every `const x = ...` declaration of a source as [lhs, rhs] pairs (destructuring kept whole). */
-const declsOf = (code) => [...code.matchAll(/\b(?:const|let|var)\s+(\{[^}]*\}|\[[^\]]*\]|[A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*([^;]+?)(?:;|(?=\n\s*(?:const|let|var|return|export|\})))/gs)].map((m) => [m[1], m[2]]);
-/** Grows `set` with every name declared from an expression that uses one already in it. */
+/** Every `const x = ...` declaration of a source as [lhs, rhs, index] (destructuring kept whole). */
+const declsOf = (code) => [...code.matchAll(/\b(?:const|let|var)\s+(\{[^}]*\}|\[[^\]]*\]|[A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*([^;]+?)(?:;|(?=\n\s*(?:const|let|var|return|export|\})))/gs)].map((m) => [m[1], m[2], m.index]);
+/**
+ * The names an expression reads: string literals, the text of template literals (their ${...}
+ * expressions stay), object keys ({ badge: ... }) and .property names are not names it reads, so
+ * `const V = { badge: 4 }` never takes on the meaning of a variable called badge elsewhere.
+ */
+const namesIn = (expr) => {
+  let s = '';
+  for (let i = 0; i < expr.length; i++) {
+    const c = expr[i];
+    if (c === "'" || c === '"') {
+      let j = i + 1;
+      while (j < expr.length && expr[j] !== c) j += expr[j] === '\\' ? 2 : 1;
+      s += ' ';
+      i = j;
+    } else if (c === '`') {
+      let j = i + 1;
+      while (j < expr.length && expr[j] !== '`') {
+        if (expr[j] === '\\') j += 2;
+        else if (expr[j] === '$' && expr[j + 1] === '{') {
+          let depth = 1;
+          let k = j + 2;
+          while (k < expr.length && depth) {
+            if (expr[k] === '{') depth++;
+            else if (expr[k] === '}') depth--;
+            k++;
+          }
+          s += ' ' + expr.slice(j + 2, k - 1) + ' ';
+          j = k;
+        } else j++;
+      }
+      s += ' ';
+      i = j;
+    } else s += c;
+  }
+  s = s.replace(/([{,]\s*)[A-Za-z_$][\w$]*\s*:(?!:)/g, '$1').replace(/(?<!\.)\.\s*[A-Za-z_$][\w$]*/g, ' ');
+  return s.match(/[A-Za-z_$][\w$]*/g) ?? [];
+};
+/** Grows `set` with every name declared from an expression that reads one already in it. */
 const propagate = (decls, set) => {
   for (let pass = 0; pass < 6; pass++) {
     let grew = false;
     for (const [lhs, rhs] of decls) {
-      const ids = rhs.match(/[A-Za-z_$][\w$]*/g) ?? [];
+      const ids = namesIn(rhs);
       if (!ids.some((id) => set.has(id))) continue;
       for (const name of lhs.match(/[A-Za-z_$][\w$]*/g) ?? []) if (!set.has(name)) (set.add(name), (grew = true));
     }
@@ -798,6 +842,44 @@ for (const file of files) {
       each(/(?<![\w-])(text|label|title|caption|line|headline|subtitle|children)\s*=\s*(?:\{\s*)?(['"`])((?:(?!\2)[^\n$])*)\2/g, (m, i) => {
         if (twoWords(m[3])) report(i, 'copy-literal', 'warn', copyMsg(m[3]));
       });
+      // a sentence written one word per element: single-word JSX texts in sibling (or cousin)
+      // elements, with only balanced closing and opening tags between them
+      const single = [...code.matchAll(/(?<![=\-])>(\s*)([A-Za-z][A-Za-z'’-]*[.,;:!?]?)\s*<\//g)].map((m) => ({ at: m.index + 1 + m[1].length, word: m[2], end: m.index + m[0].length - 2 }));
+      const nextWord = (from) => {
+        // skip "</a>" and "<b ...>" pairs (balanced) and whitespace; return the index of the next JSX text
+        let j = from;
+        let depth = 0;
+        while (j < code.length) {
+          const ws = /^\s*/.exec(code.slice(j, j + 400))[0].length;
+          j += ws;
+          if (code.startsWith('</', j)) {
+            const e = code.indexOf('>', j);
+            if (e < 0) return -1;
+            depth--;
+            j = e + 1;
+          } else if (code[j] === '<' && /[A-Za-z]/.test(code[j + 1] ?? '')) {
+            const t = tagAt(code, j);
+            if (!t) return -1;
+            if (!t.text.endsWith('/>')) depth++;
+            j += t.text.length;
+          } else return depth === 0 ? j : -1;
+        }
+        return -1;
+      };
+      for (let k = 0; k < single.length; k++) {
+        const run = [single[k]];
+        while (true) {
+          const last = run[run.length - 1];
+          const n = single.find((x) => x.at > last.end);
+          if (!n || nextWord(last.end) !== n.at) break;
+          run.push(n);
+        }
+        if (run.length >= 2) {
+          const text = run.map((x) => x.word).join(' ');
+          if (twoWords(text)) report(run[0].at, 'copy-literal', 'warn', copyMsg(text) + ' (written one word per element)');
+          k += run.length - 1;
+        }
+      }
     }
 
     // text-spring: values from an overshooting spring, followed through the declarations into a text element
@@ -821,11 +903,33 @@ for (const file of files) {
       return false;
     };
     const sprung = propagate(decls, new Set(decls.filter(([, rhs]) => springy(rhs)).flatMap(([lhs]) => lhs.match(/[A-Za-z_$][\w$]*/g) ?? [])));
+    // an overshooting preset handed to a component as its spring: cfg={SPR.word}, config={LAND}
+    const springProp = (tagText) =>
+      [...tagText.matchAll(/\b(?:cfg|config|spring|spr)\s*=\s*\{\s*(?:SPR\.(\w+)|([A-Za-z_$][\w$]*))\s*\}/g)].some((p) => (p[1] ? OVERSHOOT.has(p[1]) : aliases.has(p[2])));
+    // the children of the element whose opening tag starts at i: do they put text on screen?
+    const textChildren = (tag, i) => {
+      if (tag.text.endsWith('/>')) return false;
+      const close = code.indexOf(`</${tag.name}>`, i + tag.text.length);
+      if (close < 0) return false;
+      const inner = code.slice(i + tag.text.length, close);
+      if (/\bcopy\s*\(|\{\s*(['"`])[^'"`]*[A-Za-z]/.test(inner)) return true;
+      // JSX text: what is left once expressions and tags are removed
+      let bare = '';
+      let depth = 0;
+      for (const ch of inner) {
+        if (ch === '{') depth++;
+        else if (ch === '}') depth--;
+        else if (!depth) bare += ch;
+      }
+      return /[A-Za-z]{2,}/.test(bare.replace(/<[^>]*>/g, ' '));
+    };
     each(/<[A-Za-z][\w.]*/g, (m, i) => {
       const tag = tagAt(code, i);
-      if (!tag || !(/\bdata-text\b/.test(tag.text) || TEXT_TAGS.test(tag.name))) return;
-      const ids = (tag.text.match(/[A-Za-z_$][\w$]*/g) ?? []).filter((id) => sprung.has(id));
-      if (ids.length || springy(tag.text))
+      if (!tag) return;
+      const isText = /\bdata-text\b/.test(tag.text) || TEXT_TAGS.test(tag.name);
+      // only the names the tag's props read (not its prop names or strings)
+      const ids = isText ? namesIn(tag.text.replace(/^<[\w.]+/, '').replace(/\b[\w-]+\s*=(?=\s*[{'"])/g, ' ')).filter((id) => sprung.has(id)) : [];
+      if ((isText && (ids.length || springy(tag.text) || springProp(tag.text))) || (!isText && springProp(tag.text) && textChildren(tag, i)))
         report(i, 'text-spring', 'warn', `an overshooting spring moves text here${ids.length ? ` (via ${ids[0]})` : ''}: a word that bounces into place reads as a gimmick and costs the read; ease it in (Words, Chain) or use SPR.calm`);
     });
 
@@ -856,21 +960,41 @@ for (const file of files) {
       const frameish = new Set(['frame']);
       for (const mm of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*useCurrentFrame\s*\(/g)) frameish.add(mm[1]);
       propagate(decls, frameish);
-      const perFrame = (expr, depth = 0) => {
+      // the declaration of a name that is in force at `at`: the nearest one before it (a loop's
+      // `let i = 0` is not the `i` another component derives from the frame)
+      const declOf = (id, at) => {
+        const list = decls.filter(([lhs]) => lhs === id);
+        return list.filter(([, , k]) => k < at).pop() ?? list[0];
+      };
+      // a number a name stands for (const CPS = 3), so `* CPS` counts like `* 3`
+      const numOf = (tok, at) => {
+        if (/^[\d.]+$/.test(tok)) return Number(tok);
+        const d = declOf(tok, at);
+        return d && /^\s*[\d.]+\s*$/.test(d[1]) ? Number(d[1]) : null;
+      };
+      const perFrame = (expr, at, depth = 0) => {
         // characters added per frame by a count expression; null when it does not grow with the frame
+        if (depth > 4) return null;
         const id = expr.trim().match(/^[A-Za-z_$][\w$]*$/)?.[0];
-        if (id && depth < 2) {
-          const d = decls.find(([lhs]) => lhs === id);
-          return d ? perFrame(d[1], depth + 1) : null;
+        if (id) {
+          const d = declOf(id, at);
+          return d ? perFrame(d[1], d[2], depth + 1) : frameish.has(id) ? 1 : null;
         }
-        if (!(expr.match(/[A-Za-z_$][\w$]*/g) ?? []).some((x) => frameish.has(x))) return null;
-        const mul = expr.match(/\*\s*([\d.]+)/);
-        const div = expr.match(/\/\s*([\d.]+)/);
-        return mul ? Number(mul[1]) : div ? 1 / Number(div[1]) : 1;
+        const names = namesIn(expr);
+        if (!names.some((x) => frameish.has(x))) return null;
+        // the count is built from other names (Math.max(0, left), shown + 1): follow each that is
+        // declared from the frame, and take the fastest
+        const via = names.filter((x) => frameish.has(x) && x !== 'frame' && declOf(x, at)).map((x) => perFrame(x, at, depth + 1)).filter((r) => r !== null);
+        const mulTok = expr.match(/\*\s*([\d.]+|[A-Za-z_$][\w$]*)/)?.[1];
+        const divTok = expr.match(/\/\s*([\d.]+|[A-Za-z_$][\w$]*)/)?.[1];
+        const mul = mulTok !== undefined ? numOf(mulTok, at) : null;
+        const div = divTok !== undefined ? numOf(divTok, at) : null;
+        const own = mul ? mul : div ? 1 / div : 1;
+        return via.length && !mul && !div ? Math.max(...via) : own;
       };
       each(/\.(slice|substring|substr)\s*\(\s*0\s*,/g, (m, i) => {
         const args = parenGroup(code, i + m[0].indexOf('('));
-        const rate = perFrame(args.slice(args.indexOf(',') + 1));
+        const rate = perFrame(args.slice(args.indexOf(',') + 1), i);
         if (rate !== null && rate * filmFps > 30)
           report(i, 'typing-rate', 'warn', `a hand-rolled type-on at about ${Math.round(rate * filmFps)} chars/s: over 30 the text is a blur, not a read; use <TypeOn> (calm: 20 chars/s) and hold the finished string >= 72 f`);
       });
@@ -878,7 +1002,21 @@ for (const file of files) {
 
     // per-letter: a string split into letters and mapped into animated spans
     if (!house) {
-      each(/(\.split\(\s*(['"])\2\s*\)|\[\s*\.\.\.\s*[\w.$]+(?:\(\))?\s*\]|Array\.from\(\s*[\w.$]+\s*\))\s*\.map\s*\(/g, (m, i) => {
+      // is x (the thing spread or Array.from'd) a string? An array of rows spread is not letters.
+      const STRINGY_NAME = /^(text|word|words?Text|label|title|caption|headline|str|string|name|letters)$/i;
+      const stringy = (x) => {
+        const t = x.replace(/\(\)$/, '');
+        if (/\.(text|label|title|caption|headline|name)$/.test(t)) return true;
+        const id = t.match(/^[A-Za-z_$][\w$]*$/)?.[0];
+        if (!id) return false;
+        if (STRINGY_NAME.test(id)) return true;
+        if (new RegExp(`\\b${id.replace(/\$/g, '\\$')}\\??\\s*:\\s*string\\b`).test(code)) return true; // typed string
+        const d = decls.find(([lhs]) => lhs === id);
+        return !!d && /^\s*(['"`]|copy\s*\(|String\s*\(|[\w$.]+\.text\b)/.test(d[1]);
+      };
+      each(/(\.split\(\s*(['"])\2\s*\)|\[\s*\.\.\.\s*([\w.$]+(?:\(\))?)\s*\]|Array\.from\(\s*([\w.$]+)\s*\))\s*\.map\s*\(/g, (m, i) => {
+        const x = m[3] ?? m[4];
+        if (x && !stringy(x)) return;
         const body = parenGroup(code, i + m[0].length - 1);
         if (/style\s*=|transform|opacity/.test(body))
           report(i, 'per-letter', 'warn', 'letters animated one by one: animate words or whole fragments (a per-letter rise slows the read and reads as a trick); the one hero word may keep it with // lint-ok: hero word');

@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { AbsoluteFill, useCurrentFrame, useCurrentScale, useVideoConfig } from 'remotion';
 import { C } from '../brand/tokens';
+import { COPY } from '../timeline';
 import { pace } from './anim';
 import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 
@@ -123,8 +124,12 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
     const outer = readable.filter((b) => !readable.some((a) => a !== b && a.el.contains(b.el)));
     const words = outer.filter((b) => !b.ui).reduce((n, b) => n + b.words, 0);
     const uiWords = outer.filter((b) => b.ui).reduce((n, b) => n + b.words, 0);
-    if (words > pace.maxVisibleBuild)
-      issues.push({ kind: 'words', id: outer.filter((b) => !b.ui).map((b) => b.id).join('+'), detail: `${words} film words readable at once > ${pace.maxVisibleBuild}: one fragment at a time` });
+    // A frame whose film text all belongs to replace chains (COPY mode) has the tighter cap, as in grid-check.
+    const film = outer.filter((b) => !b.ui);
+    const replace = film.length > 0 && film.every((b) => COPY.find((c) => c.id === b.id)?.mode === 'replace');
+    const cap = replace ? pace.maxVisibleReplace : pace.maxVisibleBuild;
+    if (words > cap)
+      issues.push({ kind: 'words', id: film.map((b) => b.id).join('+'), detail: `${words} film words readable at once > ${cap}${replace ? ' (replace chain)' : ''}: one fragment at a time` });
     const clean = boxes.map(({ el: _el, ...b }) => b);
     console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, issues })}`);
     setFound({ boxes: clean, issues });

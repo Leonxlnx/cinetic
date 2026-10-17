@@ -1,14 +1,16 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: chain-gap=3 chain-gap:warn=2
+// Fixture for scripts/test/grid-check.test.mjs. expect: chain-gap=4 chain-gap:warn=1
 // Fragments that do not take turns: in a build chain the second arrives before the first is read
-// (error); a replace chain overlaps its fragments (error) and gives no picture beat (warning); a
-// third chain mixes modes (error) and stalls 3 s between its fragments (warning).
+// (error); a replace chain rises its second fragment while the first is still leaving (error) and
+// gives the picture 3 f (an error when calm); a third chain mixes modes (error) and stalls 3 s
+// between its fragments (warning).
 export const FPS = 60;
 export const BPM = 100;
 export const PACE_NAME = 'calm';
 export const TAIL = 60;
 export const ACT = { a: { from: 0, dur: 1440 + TAIL } };
 export const TOTAL = 1440 + TAIL;
-export const CUE = Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`c${i}`, i * 72]));
+// a cue every 72 f, except inside the reads (a cue there would be a read-quiet warning)
+export const CUE = Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`c${i}`, i * 72]).filter(([, f]) => ![72, 144, 216, 576, 720, 1296].includes(f as number)));
 export const COPY = [
   { id: 'a.1', text: 'Built on', in: 0, resolved: 47, out: 250, chain: 'a', mode: 'build' },
   { id: 'a.2', text: 'the beat', in: 80, resolved: 127, out: 250, chain: 'a', mode: 'build' },

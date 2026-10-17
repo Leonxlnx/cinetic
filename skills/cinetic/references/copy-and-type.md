@@ -67,11 +67,11 @@ A sentence never lands on screen as one block. It arrives as **fragments** of 1�
 | Mode | What happens | Visible at once | Use it for |
 |---|---|---|---|
 | **build** | Fragments append to one held line. The line re-centres once per fragment on an exponential glide (`E.expo`, 90% home in about 36 f, no overshoot) that starts just before the new words, so they rise into open space; or the line is laid out at its final width from the start. The newest fragment arrives in the accent and relaxes to ink over 20–30 f. The finished line holds, then clears as a whole over 24 f. | ≤ 8 words on one line (about 45 characters) | a sentence whose halves belong together: setup → payoff, subject → predicate |
-| **replace** | Each fragment leaves whole over 24 f as the next takes its place on the same centre, so the eye never travels. | ≤ 5 words | verbs or nouns in a row, a cause → effect run ("connected" → "published" → "live"), a sentence too long for one line |
+| **replace** | Each fragment leaves whole over 24 f, then the next rises in its place on the same centre (`chain()` ends the exit 6 f before the next fragment starts, so two fragments never share the spot), and the eye never travels. | ≤ 5 words | verbs or nouns in a row, a cause → effect run ("queued" → "built" → "shipped"), a sentence too long for one line |
 
 **Recipes.** Each is a pattern measured in the professional films, restated for the calm default.
 
-1. **The animation is the verb.** Write the sentence around the demo: 2–4 words before it, the demo, 1–3 words after. "You can now" → [the product does it] → "in minutes." The words never describe what the picture shows. In one measured launch film the middle of a sentence was 5.5 s of product story with no text at all.
+1. **The animation is the verb.** Write the sentence around the demo: 2–4 words before it, the demo, 1–3 words after. "Now it reads" → [the recording turns into labelled lines] → "who spoke." The words never describe what the picture shows. In one measured launch film the middle of a sentence was 5.5 s of product story with no text at all.
 2. **The cliffhanger cut.** End a fragment one step before its payoff and let the picture deliver it: "here is the newest" → the product arrives → "earshot." The pause is the anticipation, and the name lands as its own fragment, in the accent.
 3. **Build on a held line.** "Your week" holds, the meetings pile in and overflow it, "doesn't fit." appends. Earlier words never move except for the one re-centre, so the reader keeps their eye position and reads only the new words.
 4. **Stem and rotating slot.** A list is never a list. The stem holds and only the last word turns over: "syncs to" | "your phone" → "your laptop" → "the whole team." Swap with a 6–10 f crossfade or a drum roll and re-centre over 15–25 f. Measured slot swaps ran every 0.55–0.85 s; calm swaps run every 60–90 f.
@@ -83,7 +83,7 @@ A sentence never lands on screen as one block. It arrives as **fragments** of 1�
 10. **Text-free picture stretches.** Between runs of text the picture gets stretches with no copy at all: at least one of 90 f or more in every 10 s, and film copy on at most about 65% of the frames. The measured films gave the picture 0.5–6 s without words between their text runs, the ones that carried the story 1.5 s or more.
 11. **Quiet after the text completes.** Once a fragment or line has resolved, nothing new starts during its reading hold: the camera drifts, the device breathes, the mix thins. Several measured films dropped the music for 0.6–1.75 s right after a key line completed, and the reading happened in that quiet.
 
-**Timing.** Frames at 60 fps. At 100 BPM a beat is 36 f and a bar 144 f (2.4 s), so a fragment per bar is the natural calm rhythm. The numbers are `PACE.calm` (`references/motion-tokens.md` §6); a crisp film is faster and allows fragments of up to 5 words and 10 visible, but still builds its sentences from fragments.
+**Timing.** Frames at 60 fps. At 100 BPM a beat is 36 f and a bar 144 f (2.4 s): a fragment's reveal, its read and the picture beat after it take 1–1.5 bars, the natural calm rhythm. The numbers are `PACE.calm` (`references/motion-tokens.md` §6); a crisp film is faster and allows fragments of up to 5 words and 10 visible, but still builds its sentences from fragments.
 
 | Step | Frames | Seconds |
 |---|---|---|
@@ -91,9 +91,9 @@ A sentence never lands on screen as one block. It arrives as **fragments** of 1�
 | Word stagger inside a fragment | 11 f | 0.18 s |
 | A fragment of n words resolves | 36 + 11·(n − 1): 36, 47, 58, 69 f | 0.6, 0.8, 1.0, 1.15 s |
 | Reading hold after it resolves | max(60, 42 + 8 f per word): 60, 60, 66, 74 f | 1.0, 1.0, 1.1, 1.25 s |
-| A build line's hold (its full word count, ≤ 150 f) | 6 words 90 f, 8 words 106 f | 1.5, 1.75 s |
+| A build line's hold (its full word count) | 6 words 90 f, 8 words 106 f | 1.5, 1.75 s |
 | Picture beat between two fragments of a chain | 30–90 f after the earlier one has been read | 0.5–1.5 s |
-| Exit (the whole fragment or line together) | 24 f | 0.4 s |
+| Exit (the whole fragment or line together; in replace mode it ends 6 f before the next fragment rises) | 24 f | 0.4 s |
 | Copy rate | ≤ 6 words resolving in any 5 s; ≤ 0.9 words per second film-wide | |
 
 One build chain at 100 BPM, frame by frame:
@@ -113,12 +113,12 @@ b(n+1, 2) − 1    B in: "earshot." in the accent, 73 f after A was read, about 
 |---|---|
 | "Here is the newest earshot. It turns sound into code." (10 words, two sentences on one card) | "here is the newest" → [the product arrives] → "earshot." (build) · 1.5 s with no text: a recording plays · "it turns sound" → [the waveform folds into lines of code] → "into code." (build) |
 | "Every sound you heard was made by code." (8 words resolving in 32 f) | "every sound you heard" → [the film's earlier sounds flash back as waveforms] → "was made" → "by code." (replace) |
-| "Syncs to your phone, your laptop and your whole team." (a list) | "syncs to" with a rotating slot: "your phone" → "your laptop" → "the whole team." (stem and slot, one per bar) |
+| "Syncs to your phone, your laptop and your whole team." (a list) | "syncs to" with a rotating slot: "your phone" → "your laptop" → "the whole team." (stem and slot, one per 1–1.5 bars) |
 | "Your week doesn't fit." (4 words, but the overflow is the story) | "Your week" → [meetings pile in and overflow the week] → "doesn't fit." (build) |
 | "Builds go from push to preview in 1.2 s." (a full sentence) | giant "1.2 s" counting up → "from push to preview" small beside it (giant keyword and continuation) |
 | "Your notes stay messy." then, a card later, "Your notes stay findable." | "Your notes stay messy." → backspace → "findable." (edit, don't replace) |
 
-Write a chain in `COPY` with the `chain()` helper (`references/timing-grid.md` §4): it emits one entry per fragment (`<id>.1`, `<id>.2`, …) with its `chain` id and `mode`, timed from the pace. Render it with `<Chain chain="<id>">` from `src/fx/Chain.tsx`, which sets it in the quiet `line` role by default and gives each fragment's landing frame (`chainResolves()`) for its one soft sound. `grid-check.ts` then measures it: `fragment` (words per entry), `copy-concurrent` (words visible on each frame), `reveal-rate` (a fragment dumped faster than 8 f per word), `chain-gap` (the picture beat), `word-rate` and `text-share`.
+Write a chain in `COPY` with the `chain()` helper (`references/timing-grid.md` §4): it emits one entry per fragment (`<id>.1`, `<id>.2`, …) with its `chain` id and `mode`, timed from the pace. Render it with `<Chain chain="<id>">` from `src/fx/Chain.tsx`, which sets it in the quiet `line` role by default and gives the frame each fragment visibly lands (`chainResolves(id, { size })`, at the size the act sets it at) for its one soft sound. `grid-check.ts` then measures it: `fragment` (words per entry), `copy-concurrent` (words visible on each frame, a leaving fragment until its exit is over), `read-first` (separate lines never arrive together), `reveal-rate` (a fragment dumped faster than 8 f per word), `chain-gap` (each fragment read first, then 30–90 f of picture), `chain-beat` (a cue in that picture beat), `read-quiet` (no cue starts during a read), `word-rate` and `text-share`. In a calm film a missing beat, two lines at once and copy on more than 75% of the body fail.
 
 ## 3. Callback copy
 
@@ -182,7 +182,7 @@ Run this before every review round. Proofing bugs read as "fake" faster than any
 grep -rnP "\w'\w|\b1 [a-z]+s\b|lorem|ipsum|TODO|FIXME|Acme|John Doe|example\.com" src/
 ```
 
-**Reading time** is owned by `references/timing-grid.md` §9: hold a fragment max(60, 42 + 8 f per word) after it resolves (1–2 words → 60 f, 3 → 66 f, 4 → 74 f; a build line counts its full word count, up to 150 f), leave 30–90 f of picture between two fragments of a chain, keep the copy rate at or under 6 words in any 5 s, hold the lockup 1.5–2 s, and keep a URL readable ≥ 1.7 s. A crisp film holds 36 f + 6 f per word. `scripts/grid-check.ts` enforces these from `COPY`.
+**Reading time** is owned by `references/timing-grid.md` §9: hold a fragment max(60, 42 + 8 f per word) after it resolves (1–2 words → 60 f, 3 → 66 f, 4 → 74 f; a build line counts its full word count: 90 f at 6 words, 106 f at 8), leave 30–90 f of picture between two fragments of a chain, keep the copy rate at or under 6 words in any 5 s, hold the lockup 1.5–2 s, and keep a URL readable ≥ 1.7 s. A crisp film holds 36 f + 6 f per word. `scripts/grid-check.ts` enforces these from `COPY`.
 
 ## 6. One family, chosen for the brand
 
@@ -260,7 +260,7 @@ Give each text role exactly one reveal system and reuse it. A film has about fou
 
 | Recipe | Role | Numbers | Budget |
 |---|---|---|---|
-| **Fragment chain** (`src/fx/Chain.tsx`) | statements | one `COPY` entry per fragment, written with `chain()` (§2b); each fragment's words reveal as in the next row. Build: the line re-centres once per fragment on `E.expo` (an exponential glide over 96 f, 90% home in about 36 f) starting 36 f before the new fragment, the newest fragment arrives in the accent and relaxes to ink over 24 f (`accent="recency"`; `"hold"` keeps the payoff in the accent), and the line clears together over 24 f. Replace: each fragment leaves whole over 24 f as the next arrives on the same centre | the default for every statement |
+| **Fragment chain** (`src/fx/Chain.tsx`) | statements | one `COPY` entry per fragment, written with `chain()` (§2b); each fragment's words reveal as in the next row. Build: the line re-centres once per fragment on `E.expo` (an exponential glide over 96 f, 90% home in about 36 f) starting 36 f before the new fragment, the newest fragment arrives in the accent and relaxes to ink over 24 f (`accent="recency"`; `"hold"` keeps the payoff in the accent), and the line clears together over 24 f. Replace: each fragment leaves whole over 24 f and has gone 6 f before the next rises on the same centre | the default for every statement |
 | **Word reveal** (`src/fx/Words.tsx`) | the words of a fragment | calm (`PACE.calm`, the default): per word over 36 f on `E.outSoft`, 11 f stagger: opacity 0 → 1; `translateY` 0.2 em → 0 through `arrive(p)`; no blur (≤ 4 px through `blurIn` when the brand is soft); the whole fragment exits together over 24 f, opacity on `E.smooth` with a 0.12 em lift on `E.exit`. Crisp (`PACE.crisp`): 26 f on `E.out`, 6–9 f stagger, rise 0.32 em, blur 8 px (4–6 px on body lines) through `blurIn`, clear by 60% of the eased move; per-word exit at half the stagger over 16 f, the move accelerating away on `E.in` (`depart`, `blurOut`) while the opacity fades on `E.smooth` | inside every fragment |
 | **Slam** | the problem headline | from `cue − 1` over 15 f on `E.out`: scale 1.2 → 1, blur 22 → 0 px through `blurIn`, opacity 0 → 1; then a slow grow of 1 → 1.05 on `E.smooth` through the hold; width fitted to ~77% of the frame | an accent: at most 1 per film in calm, 1–2 in crisp |
 | **Locking words** | the payoff line | two words enter from opposite edges and meet on one baseline. Calm: on `SPR.calm` (16/64/1, critically damped, 97% at 41 f), launched so its 97% frame is the cue, then a push of 1 → 1.03 through the hold. Crisp: on `SPR.word` (20/170/0.9), launched `delayTo(SPR.word, 1)` = 19 f before the cue, each clamped at its lock, with a +1.8% `hitPulse(t, 1, 4)` punch | 1 per film |

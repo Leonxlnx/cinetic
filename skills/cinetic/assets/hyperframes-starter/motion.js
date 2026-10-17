@@ -66,6 +66,29 @@
   /** Frames (60 fps) from a fragment's first word starting to its last word fully in. */
   const revealFor = (words, p = pace) => Math.max(0, words - 1) * p.stagger + p.wordDur;
   /**
+   * When each COPY entry is being read: {id: [[from, to), ...]} in this film's frames, the rule of
+   * the Remotion kit's readingWindows() (src/lib/pace.ts), which every check shares: from
+   * `resolved` for at most readMax (never past `out`); an earlier fragment of a chain only for its
+   * own hold (never past the next fragment's `in`), so the picture beat between two fragments is
+   * not a read; a build line once more, whole, after its last fragment resolves. timeline.js
+   * exports it as READ and writes it into out/cues.json; nothing new starts inside a window.
+   */
+  function readingWindows(copy, p = pace, fps = FPS, total = Infinity) {
+    const s = fps / 60;
+    const cap = Math.round(p.readMax * s);
+    const out = {};
+    for (const c of copy) {
+      const end = c.out == null ? total : c.out;
+      const chain = c.chain ? copy.filter((x) => x.chain === c.chain).sort((a, z) => a.in - z.in) : [c];
+      const last = chain[chain.length - 1];
+      const next = chain[chain.indexOf(c) + 1];
+      const own = next ? [c.resolved, Math.min(next.in, c.resolved + Math.round(holdFor(wordCount(c.text), p) * s), end)] : [c.resolved, Math.min(end, c.resolved + cap)];
+      const line = next && (c.mode || 'build') === 'build' ? [last.resolved, Math.min(last.out == null ? total : last.out, last.resolved + cap)] : null;
+      out[c.id] = (line ? [own, line] : [own]).filter(([a, z]) => z > a);
+    }
+    return out;
+  }
+  /**
    * Frames for a move of `px` pixels at this film's fps: calm 0.5 s + 1.6 ms/px (camera moves
    * clamped to 0.9-3.0 s), crisp 0.35 s + 1.35 ms/px (0.6-2.4 s).
    */
@@ -306,7 +329,7 @@
 
   const MOTION = {
     FPS, BPM, W, H, BEAT, BAR, b, sec, at, fd,
-    PACE_NAME, PACE, pace, wordCount, holdFor, revealFor, durFor,
+    PACE_NAME, PACE, pace, wordCount, holdFor, revealFor, readingWindows, durFor,
     bez, E, clamp, mix, lmix, tw, prog, arrive, depart, arriving, departing, hitPulse, squash, pulse, springFn, spring, SPR,
     peak, settleOf, delayTo, hit, reachAt, startFor, rand,
   };

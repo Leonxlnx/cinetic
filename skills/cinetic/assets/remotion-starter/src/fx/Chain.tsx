@@ -9,30 +9,45 @@ import { chainOf, type Copy, f60, H, W } from '../timeline';
 type Role = keyof typeof TYPE;
 const split = (text: string) => text.split(/\s+/).filter(Boolean);
 
-/** One fragment's frames (absolute): `settle` is its last word 97% home, where its one soft sound goes. */
+/** One fragment's frames (absolute): `settle` is its last word visibly at rest, where its one soft sound goes. */
 export type FragmentFrames = { id: string; text: string; words: number; in: number; settle: number; resolved: number; out: number };
 
 /** First frame and end frame of word i of a fragment that starts at `inF` (the last word ends exactly on COPY's resolved). */
 const wordSpan = (inF: number, i: number, p: Pace) => [inF + f60(i * p.stagger), inF + f60(i * p.stagger + p.wordDur)] as const;
 
+/** Options for chainFrames()/chainResolves(): the pace, and the type size the chain is drawn at. */
+export type ChainTiming = {
+  pace?: Pace;
+  size?: number; // px the chain is set at (default: the line role at this frame size, TYPE.line.size * U)
+};
+
 /**
  * The frames of each fragment of a chain, in order: its first frame, `settle` (the frame its last
- * word reaches 97% of its rise: where the fragment reads as landed, and where its one soft `text`
- * sound goes), COPY's `resolved` (every word fully in, what grid-check measures holds from) and `out`.
+ * word's drawn position reaches 97% of its rise: where the fragment reads as landed, and where its
+ * one soft `text` sound goes), COPY's `resolved` (every word fully in, what grid-check measures
+ * holds from) and `out`. Chain draws a word through arrive(), which stops the rise early (vertical
+ * text snaps to whole pixels; arriveK() depends on the rise in px), so the settle is measured on
+ * that drawn curve, at the size the chain is set at: pass `size` when it is not the line role's.
  */
-export const chainFrames = (chain: string, p: Pace = filmPace): FragmentFrames[] =>
-  chainOf(chain).map((c) => {
+export const chainFrames = (chain: string, o: ChainTiming = {}): FragmentFrames[] => {
+  const p = o.pace ?? filmPace;
+  const size = o.size ?? TYPE.line.size * U;
+  const ease = easeOf(p);
+  return chainOf(chain).map((c) => {
     const n = wordCount(c.text);
     const [s, e] = wordSpan(c.in, Math.max(0, n - 1), p);
-    return { id: c.id, text: c.text, words: n, in: c.in, settle: settleOf(s, e, easeOf(p)), resolved: c.resolved, out: c.out };
+    const k = arriveK(p.rise * size, e - s, ease);
+    return { id: c.id, text: c.text, words: n, in: c.in, settle: settleOf(s, e, (t) => arrive(ease(t), k)), resolved: c.resolved, out: c.out };
   });
+};
 
 /**
  * The frame each fragment of a chain lands on, for src/sync.ts: one soft `text` sound per fragment,
- * never one per word (a word-by-word patter makes a calm line sound busy).
- *   chainResolves('statement').forEach((f, i) => ev.push({ f, kind: 'text', weight: 0.8, id: `statement${i + 1}` }));
+ * never one per word (a word-by-word patter makes a calm line sound busy). Pass the size the act
+ * sets the chain at, so the sound meets the words' visible stop:
+ *   chainResolves('statement', { size: STATEMENT_SIZE }).forEach((f, i) => ev.push({ f, kind: 'text', weight: 0.8, id: `statement${i + 1}` }));
  */
-export const chainResolves = (chain: string, p: Pace = filmPace) => chainFrames(chain, p).map((x) => x.settle);
+export const chainResolves = (chain: string, o: ChainTiming = {}) => chainFrames(chain, o).map((x) => x.settle);
 
 export type ChainLayoutOpts = {
   role?: Role;
@@ -94,7 +109,8 @@ export const chainLayout = (chain: string, o: ChainLayoutOpts = {}): ChainLayout
  *            before the fragment (never before the previous one's read hold is over), so the line
  *            makes room first and the new words rise into open space at their final place; the
  *            words already read ride the glide, the arriving ones never move sideways.
- *   replace  each fragment holds the line's place alone and leaves before the next arrives.
+ *   replace  each fragment holds the line's place alone; it leaves over `pace.exitDur` and is gone
+ *            before the next one rises (timeline.ts chain() times `out` for that).
  * Exit: the whole fragment together (`pace.exit` 'together': a fade on E.smooth and a
  * `pace.exitLift` em lift on E.exit through depart()), or word by word at half the stagger
  * ('words', the crisp profile). Colour: `accent` 'recency' brings the newest fragment in the accent
@@ -120,7 +136,7 @@ export const Chain: React.FC<
   const role = o.role ?? 'line';
   const family = o.family ?? FONT.text;
   const ease = easeOf(pace);
-  const settles = chainFrames(chain, pace).map((x) => x.settle);
+  const settles = chainFrames(chain, { pace, size: L.size }).map((x) => x.settle);
   const exitDur = f60(pace.exitDur);
   const last = L.frags.length - 1;
 

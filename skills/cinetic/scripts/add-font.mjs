@@ -8,8 +8,9 @@
  * node_modules when it is already there, read-only), and copies the face into the project:
  *
  *   Remotion     src/brand/fonts/<name>/index.css + the .woff2 files it references + LICENSE;
- *                src/brand/fonts.ts imports './fonts/<name>/index.css' (replacing the starter's
- *                stand-in for that role); src/brand/tokens.ts gets the family in FONT.<role> and
+ *                src/brand/fonts.ts imports './fonts/<name>/index.css' in place of the import it
+ *                replaces for that role (the starter's stand-in, or a family vendored before);
+ *                src/brand/tokens.ts gets the family in FONT.<role> and
  *                FACES, with every weight clamped to the font's axis. The bundler serves the files,
  *                FontGate waits for them: nothing is fetched at render time.
  *   HyperFrames  fonts/<name>-latin[-ext]-wght-normal.woff2 + fonts/<name>-LICENSE, and prints the
@@ -32,7 +33,18 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdir
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 
-const HELP = readFileSync(new URL(import.meta.url), 'utf8').split('*/')[0].replace(/^#!.*\n\/\*\*?/, '').replace(/^ \* ?/gm, '');
+const HELP = readFileSync(new URL(import.meta.url), 'utf8').replace(/\r\n/g, '\n').split('*/')[0].replace(/^#!.*\n\/\*\*?/, '').replace(/^ \* ?/gm, '');
+// Files are edited with LF and written back with the line ending they had (a Windows checkout has CRLF).
+const readText = (p) => {
+  const s = readFileSync(p, 'utf8');
+  return { text: s.replace(/\r\n/g, '\n'), eol: s.includes('\r\n') ? '\r\n' : '\n' };
+};
+const writeText = (p, text, eol) => writeFileSync(p, eol === '\n' ? text : text.replace(/\n/g, eol));
+// npm is npm.cmd on Windows, which execFile cannot start without a shell (EINVAL / ENOENT)
+const WIN = process.platform === 'win32';
+const npm = (args, opts) => (WIN
+  ? execFileSync('npm', args.map((a) => `"${a}"`), { ...opts, shell: true })
+  : execFileSync('npm', args, opts));
 let tmp = null; // the npm pack folder, removed on every exit
 const cleanup = () => { if (tmp) rmSync(tmp, { recursive: true, force: true }); tmp = null; };
 const die = (msg, code = 1) => { cleanup(); console.error(`add-font: ${msg}`); process.exit(code); };
@@ -71,9 +83,10 @@ let root = join(dir, 'node_modules', pkg);
 if (!existsSync(join(root, 'index.css')) || m[3]) {
   tmp = mkdtempSync(join(tmpdir(), 'add-font-'));
   try {
-    const out = execFileSync('npm', ['pack', m[3] ? `${pkg}@${m[3]}` : pkg, '--pack-destination', tmp, '--silent'],
-      { cwd: tmp, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim().split('\n').pop();
-    execFileSync('tar', ['-xzf', join(tmp, out), '-C', tmp]);
+    const out = npm(['pack', m[3] ? `${pkg}@${m[3]}` : pkg, '--pack-destination', tmp, '--silent'],
+      { cwd: tmp, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim().split(/\r?\n/).pop().trim();
+    // a relative name from inside the folder: GNU tar reads "C:\..." as a remote host
+    execFileSync('tar', ['-xzf', basename(out)], { cwd: tmp });
   } catch (e) {
     die(`npm pack ${pkg} failed: ${(e.stderr || e.message || '').toString().trim().split('\n').slice(-2).join(' ')}\n` +
       '  (is the name right? the families are listed at fontsource.org; offline, copy the .woff2 files by hand: references/copy-and-type.md §6)');
@@ -134,21 +147,26 @@ try {
   }
   say(`${family} ${version} (${category}, weight ${axis.join('-')}) -> src/brand/${rel}/ (${files.length} files, ${kb(files)} KB)`);
 
-  // fonts.ts: import the vendored CSS; drop the starter's stand-in for this role and its marker
+  // fonts.ts: import the vendored CSS in place of what it replaces for this role: the starter's
+  // stand-in, or a family vendored here before for the same role (and the stand-in's marker)
   const fontsTs = join(dir, 'src/brand/fonts.ts');
-  let ft = existsSync(fontsTs) ? readFileSync(fontsTs, 'utf8') : '';
-  const standIn = role === 'mono' ? /^import '@fontsource-variable\/geist-mono';\n/m : /^import '@fontsource-variable\/geist';\n/m;
-  ft = ft.replace(standIn, '');
+  const { text: ft0, eol: ftEol } = existsSync(fontsTs) ? readText(fontsTs) : { text: '', eol: '\n' };
+  let ft = ft0;
+  const replaced = [];
+  const drop = (re) => { ft = ft.replace(re, (line) => (replaced.push(line.trim()), '')); };
+  drop(role === 'mono' ? /^import '@fontsource-variable\/geist-mono(?:\/[^']*)?';[^\n]*\n?/gm : /^import '@fontsource-variable\/geist(?:\/[^']*)?';[^\n]*\n?/gm);
+  drop(new RegExp(`^import '\\./fonts/(?!${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/)[^']+/index\\.css';[^\\n]*\\(${role}\\)[^\\n]*\\n?`, 'gm'));
   if (role === 'text') ft = ft.replace(/^(?:\/\/\n)?\/\/ cinetic:placeholder[^\n]*\n(?:\/\/(?! cinetic:)[^\n]*\n)*/m, '');
   const imp = `import './${rel}/index.css'; // ${family} (${role}), vendored: scripts/add-font.mjs`;
   if (!ft.includes(`'./${rel}/index.css'`)) ft = ft.replace(/\s*$/, '\n') + imp + '\n';
-  if (!dry) writeFileSync(fontsTs, ft);
-  say(`src/brand/fonts.ts imports ./${rel}/index.css`);
+  if (!dry) writeText(fontsTs, ft, ftEol);
+  say(`src/brand/fonts.ts imports ./${rel}/index.css${replaced.length ? ` (replacing ${replaced.map((l) => l.replace(/^import /, '').replace(/;.*$/, '')).join(', ')})` : ''}`);
 
   // tokens.ts: FONT.<role> and FACES follow the family; weights clamp to the axis
   const tokTs = join(dir, 'src/brand/tokens.ts');
   if (tokens && existsSync(tokTs)) {
-    let tk = readFileSync(tokTs, 'utf8');
+    const { text: tk0, eol: tkEol } = readText(tokTs);
+    let tk = tk0;
     const line = new RegExp(`^(\\s*${role}:\\s*)'([^']*)'`, 'm');
     const cur = line.exec(tk);
     if (!cur) die(`src/brand/tokens.ts has no FONT.${role} line to set (set FONT and FACES by hand)`);
@@ -172,10 +190,16 @@ try {
     if (role === 'text') tk = tk.replace(/^\/\/ cinetic:placeholder - the family is[^\n]*\n(?:\/\/(?! cinetic:)[^\n]*\n)*/m, '');
     // TYPE weights outside the axis would silently fall back to the nearest one: say so
     const outside = [...tk.matchAll(/weight:\s*(\d+)/g)].map((x) => Number(x[1])).filter((w) => w < axis[0] || w > axis[1]);
-    if (!dry) writeFileSync(tokTs, tk);
+    if (!dry) writeText(tokTs, tk, tkEol);
     say(`src/brand/tokens.ts: FONT.${role} = '${stack}'${old ? ` (was "${old}")` : ''}; FACES follow it` +
       (clamped.length ? ` (weights clamped to the axis: ${clamped.join(', ')})` : ''));
     if (role === 'text' && outside.length) console.warn(`add-font: TYPE uses weight ${[...new Set(outside)].join(', ')}, outside ${family}'s axis ${axis.join('-')}: pick weights inside it`);
+    // the mono stand-in stays loaded until a mono replaces it: say so when nothing uses it
+    const monoUsed = readdirSync(join(dir, 'src'), { recursive: true }).some((f) => /\.(tsx?)$/.test(f) && !/^brand[\\/]/.test(f) &&
+      /\bFONT\.mono\b/.test(readFileSync(join(dir, 'src', f), 'utf8')));
+    if (role === 'text' && /Geist Mono/.test(tk) && !monoUsed)
+      say('note: the starter\'s mono stand-in (Geist Mono) is still in fonts.ts and FACES, and nothing outside src/brand uses FONT.mono: ' +
+        'remove it (the import, its FACES entry and the package) or vendor this film\'s mono with --role mono');
   }
 
   // package.json: the starter's stand-in dependency for this role is no longer used

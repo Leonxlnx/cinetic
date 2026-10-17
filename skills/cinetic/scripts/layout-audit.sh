@@ -28,7 +28,7 @@
 #            moves more than --max-text-speed px/f (default 20, in px of a 1080 px tall frame, so
 #            9:16 and 1:1 compare fairly). Boxes match by data-text id: give each line its own.
 #            Inside a box's reading window the limit is --max-read-speed (default 3 px/f): the
-#            window is [resolved, out) of the COPY entry whose id is the box's data-text id (or
+#            window is the timeline's READ for the COPY entry whose id is the box's data-text id (or
 #            its part before the first '.'), and for a fragment of a build chain (fx/Chain) that
 #            is not the last, its own read hold plus the full line's read after the last fragment
 #            resolves: in between, the line may glide to re-centre at in-flight speed.
@@ -103,19 +103,29 @@ for (const c of copy) {
 }
 if (mode === 'cues') for (const v of Object.values(T.CUE as Record<string, number | number[]>)) for (const f of [v].flat()) out.add(f);
 const frames = [...out].filter((f) => f >= lo && f < hi).map((f) => Math.round(f - lo)).sort((a, b) => a - b);
-// Reading windows per COPY id (composition frames): [resolved, out), or for a build chain's earlier
-// fragments their own read hold, then the whole line's read once its last fragment has resolved.
-const P = ((T as any).PACE ?? {})[(T as any).PACE_NAME ?? ''] ?? { holdBase: 36, holdPerWord: 6, holdMin: 42 };
+// Reading windows per COPY id (composition frames): the timeline's READ (src/lib/pace.ts
+// readingWindows(), the rule every check shares), else the same rule computed here: from resolved
+// for at most readMax, an earlier fragment of a chain only for its own hold, a build line once
+// more after its last fragment.
+const P = ((T as any).PACE ?? {})[(T as any).PACE_NAME ?? ''] ?? { holdBase: 36, holdPerWord: 6, holdMin: 42, readMax: 120 };
 const s60 = (T.FPS as number) / 60;
 const words = (t: string) => t.split(/\s+/).filter(Boolean).length;
 const hold = (n: number) => Math.round(Math.max(P.holdMin, P.holdBase + P.holdPerWord * n) * s60);
+const cap = Math.round((P.readMax ?? 120) * s60);
+const READ = (T as any).READ as Record<string, [number, number][]> | undefined;
 const windows: Record<string, [number, number][]> = {};
 for (const c of copy) {
-  const end = Math.min(c.out ?? T.TOTAL, T.TOTAL);
-  const chain = c.chain && (c.mode ?? 'build') === 'build' ? copy.filter((x) => x.chain === c.chain).sort((a, b) => a.in - b.in) : [c];
-  const last = chain[chain.length - 1];
-  const next = chain[chain.indexOf(c) + 1];
-  const w: [number, number][] = next ? [[c.resolved, Math.min(next.in, c.resolved + hold(words(c.text)))], [last.resolved, end]] : [[c.resolved, end]];
+  let w: [number, number][];
+  if (READ && Array.isArray(READ[c.id])) w = READ[c.id];
+  else {
+    const end = Math.min(c.out ?? T.TOTAL, T.TOTAL);
+    const chain = c.chain ? copy.filter((x) => x.chain === c.chain).sort((a, b) => a.in - b.in) : [c];
+    const last = chain[chain.length - 1];
+    const next = chain[chain.indexOf(c) + 1];
+    const own: [number, number] = next ? [c.resolved, Math.min(next.in, c.resolved + hold(words(c.text)), end)] : [c.resolved, Math.min(end, c.resolved + cap)];
+    const line: [number, number] | null = next && (c.mode ?? 'build') === 'build' ? [last.resolved, Math.min(last.out ?? T.TOTAL, last.resolved + cap)] : null;
+    w = line ? [own, line] : [own];
+  }
   windows[c.id] = w.map(([a, b]) => [a - lo, b - lo]);
 }
 console.log([...new Set(frames)].join(','));

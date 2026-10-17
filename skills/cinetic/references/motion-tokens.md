@@ -194,9 +194,9 @@ Amplitudes that worked (scale = `1 + amp · hitPulse(…)`):
 | `stagger` | 11 | 6 | frames between word starts inside a fragment |
 | `rise` | 0.2 em | 0.32 em | entry travel |
 | `blur` | 0 | 8 px | entry blur (calm opt-in ≤ 4 px for a soft brand) |
-| `exitDur` | 24 | 16 | calm: the whole fragment leaves together; crisp: per word, half the stagger apart |
+| `exitDur` | 24 | 16 | calm: the whole fragment leaves together; crisp: per word, half the stagger apart. In a replace chain the exit is over 6 f before the next fragment rises (`chain()` sets `out` so; grid-check counts a leaving fragment as on screen until its exit ends) |
 | `holdBase`, `holdPerWord`, `holdMin` | 42, 8, 60 | 36, 6, 42 | reading hold = max(`holdMin`, `holdBase` + `holdPerWord` · words) |
-| `readMax` | 150 | 120 | a reading window counts as alive (not an event gap) for at most this long |
+| `readMax` | 150 | 120 | a reading window lasts at most this long after `resolved` (`readingWindows()` in `pace.ts`, `READ` in `timeline.ts`: the windows every check reads); inside one the film is alive, not in an event gap |
 | `gapMin`, `gapMax` | 30, 90 | 18, 90 | picture beat between two fragments of a chain |
 | `maxNewWords` | 4 | 5 | words per fragment |
 | `maxVisibleBuild`, `maxVisibleReplace` | 8, 5 | 10, 10 | words of copy visible on one frame |
@@ -213,7 +213,7 @@ Both profiles build copy from fragments (`references/copy-and-type.md` §2b); cr
 | Pattern | Constant | Note |
 |---|---|---|
 | Statement words | calm: 11 f apart, each 36 f on `E.outSoft`; crisp: 6 f apart, 26 f on `E.out` | Tessel's headlines ran 9 f / 28 f; a quiet descriptor 5 f / 24 f |
-| Fragments of a chain | one per bar at 100 BPM, with 30–90 f of picture between | a build line re-centres once per fragment on `E.expo` (90% home in about 36 f), never per letter |
+| Fragments of a chain | one per 1–1.5 bars at 100 BPM, with 30–90 f of picture between | a build line re-centres once per fragment on `E.expo` (90% home in about 36 f), never per letter |
 | Burst words | 4 f apart | crisp only: a punchy line landing on one beat |
 | Text exit | calm: the whole fragment or line together, 24 f (opacity on `E.smooth`, a 0.12 em lift on `E.exit`); crisp: half the entry stagger, 16 f on `E.in` | exits are quicker than entrances |
 | Slot swap (stem + rotating word) | 6–10 f crossfade or a drum roll, re-centre 15–25 f, a swap every 60–90 f | only the slot moves; the stem holds |
@@ -279,7 +279,7 @@ export const land = (f: number, from: number, to: number, a: R, b: R): R => {
 
 | File | What it does | Defaults | Serves |
 |---|---|---|---|
-| `Chain.tsx` | renders one fragment chain from its `COPY` entries, in build mode (fragments append to one held line that re-centres, the newest in the accent relaxing to ink, the line clearing together) or replace mode (each fragment leaves whole as the next arrives); `chainResolves()` gives each fragment's landing frame for its one soft `text` sound, `chainLayout()` the measured line for placing things by the text | timing from `pace` through the entries `chain()` wrote; the `line` type role; re-centre on `E.expo` over 96 f, starting 36 f early; `accent` `recency` (24 f), `hold` or `none`; exit 24 f together | every statement in a calm film |
+| `Chain.tsx` | renders one fragment chain from its `COPY` entries, in build mode (fragments append to one held line that re-centres, the newest in the accent relaxing to ink, the line clearing together) or replace mode (each fragment leaves whole, then the next rises in its place); `chainResolves(id, { size })` gives the frame each fragment visibly lands (its last word's drawn rise 97% home) for its one soft `text` sound, `chainLayout()` the measured line for placing things by the text | timing from `pace` through the entries `chain()` wrote; the `line` type role; re-centre on `E.expo` over 96 f, starting 36 f early; `accent` `recency` (24 f), `hold` or `none`; exit 24 f together | every statement in a calm film |
 | `Words.tsx` | per-word rise and fade of one fragment, with an optional entry blur | from `pace`: calm 36 f on `E.outSoft`, 11 f apart, rise 0.2 em, no blur, the whole fragment exiting together over 24 f; crisp 26 f, 6 f apart, rise 0.32 em, blur 8 px, per-word exit | single fragments, and the words inside `Chain` |
 | `TypeOn.tsx` | typewriter with a caret; `typeOn()` gives the caret x (stepped and continuous, for a camera follow), `typeFrames()` the whole frame each key lands | a time box per character on `E.type` (last key at ~80% of the box) or a linear `cps`; head fade 4 f; caret solid while typing, 30 f on / 30 f off when idle. From `pace`: 3 f per character in calm (about 20 characters/s for a line read live, then a hold of at least 72 f), 2 f in crisp | prompts, search bars (never a headline in calm) |
 | `Scramble.tsx` | decode reveal: glyphs cycle through same-class, same-width glyphs, then lock; `scrambleFrames()` gives the lock frames | from `pace`: calm fade-in 16 f, a lock every 5 f, about 1 glyph change per frame (crisp 10 f, 3 f, 1.5); hold 18 f; locks left to right (or seeded random), cycling glyphs in `C.mute` | IDs, prices, codenames, a stat that resolves: an accent, at most once per film, never on film copy |

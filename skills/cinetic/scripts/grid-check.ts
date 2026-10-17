@@ -2,7 +2,9 @@
  * grid-check.ts: checks a film's timeline against the timing rules before anything renders.
  *
  * Imports the project's src/timeline.ts (FPS, BPM, TOTAL, ACT, CUE, COPY; optional BEAT, BAR, TAIL,
- * PACE_NAME, PACE) and checks, with the 60 fps numbers scaled to the film's fps:
+ * PACE_NAME, PACE, READ), or a HyperFrames project's timeline.js (its FILM object; PACE_NAME and
+ * PACE from the timeline or the motion.js beside it), and checks, with the 60 fps numbers scaled
+ * to the film's fps:
  *   beat-whole     one beat is a whole number of frames (60*FPS/BPM)
  *   acts           acts are contiguous from 0 to TOTAL with positive lengths
  *   acts-on-bar    every act starts on a bar line (warning)
@@ -16,31 +18,45 @@
  *                  above maxNewWords + 2 when calm (a full sentence arriving at once) or above
  *                  10 when crisp; kind: 'ui' entries are exempt
  *   copy-lines     <= 2 lines per entry (warning)
- *   copy-concurrent film words on screen at once (in <= f < out): an error above maxVisibleBuild
- *                  (calm 8), or above maxVisibleReplace (calm 5) when every entry on screen is a
- *                  replace-mode fragment; a warning when film and ui words together pass 14
+ *   copy-concurrent film words on screen at once (in <= f < out + exitDur: a leaving fragment is
+ *                  still seen until its exit is over): an error above maxVisibleBuild (calm 8), or
+ *                  above maxVisibleReplace (calm 5) when every entry on screen is a replace-mode
+ *                  fragment; a warning when film and ui words together pass 14
+ *   read-first     two film entries that are not one chain: the later one arrives only after the
+ *                  earlier one, still on screen, has resolved and held its read (an error when
+ *                  calm, a warning when crisp): two lines arriving together are a sentence dump
  *   reveal-rate    an entry of 3+ words revealed faster than 8 f per word, (resolved - in) /
  *                  (words - 1): a sentence dumped at once (warning)
  *   chain-gap      inside a chain (COPY entries sharing `chain`): each fragment arrives only after
  *                  the previous one has resolved and held its read (error), with a picture beat of
- *                  gapMin..gapMax frames (calm 30-90 f) after that read (warning outside it); in
- *                  replace mode the previous fragment leaves >= 6 f before the next arrives (error);
- *                  a chain keeps one mode and a build chain clears at one `out` (errors)
+ *                  gapMin..gapMax frames (calm 30-90 f) after that read (shorter: an error when
+ *                  calm, a warning when crisp; longer: a warning); in replace mode the previous
+ *                  fragment's exit (exitDur: calm 24 f, crisp 16 f) is over >= 6 f before the next
+ *                  arrives (error); a chain keeps one mode and a build chain clears at one `out`
+ *   chain-beat     the picture beat between two fragments really happens: at least one CUE (or,
+ *                  with --cues, a sound event other than a `text` sound) in [read, next.in) (an
+ *                  error when calm, a warning when crisp)
+ *   read-quiet     calm: no CUE starts inside a reading window (READ) other than a text's own
+ *                  frames: what was just said is read in the quiet (warning)
  *   word-rate      film words resolving in any 5 s window <= 5 * maxWordsPerSec (calm 6), and the
  *                  body's average <= avgWordsPerSec (calm 0.9 w/s) (warnings)
- *   text-share     film copy on screen on <= textShare of the body's frames (calm 65%), and every
- *                  10 s of body (all of it, if shorter) holds a text-free run >= freeRun frames
- *                  (calm 90 f): the picture gets its turns (warnings)
+ *   text-share     film copy on screen on <= textShare of the body's frames (calm 65%; a warning,
+ *                  an error when calm and more than 10 points over), and every 10 s of body (all
+ *                  of it, if shorter) holds a text-free run >= freeRun frames (calm 90 f): the
+ *                  picture gets its turns (warning)
  *   word-total     on-screen words <= --max-words (default: the pace's maxWords, calm 30, crisp 35);
  *                  entries with kind: 'ui' (terminal commands, code, URLs, app labels the product
  *                  shows) are counted apart, not budgeted
  *   event-gap      no stretch without an event (cue, copy change, act change, or a cues.json event
  *                  with --cues) longer than --max-gap frames (default: the pace's maxGap, calm 72 f,
- *                  crisp 48 f), tail excluded. A reading window, [resolved, out) of a COPY entry
- *                  for at most readMax frames (calm 150 f), counts as alive: a hold being read needs
- *                  a slow drift, not a tick planted in it. One designed near-still hold may be
- *                  declared with `export const HOLD = {from, to}` (60-96 f at 60 fps, on the key
- *                  claim under a music dropout), and gaps inside it pass
+ *                  crisp 48 f), tail excluded. A reading window counts as alive: a hold being read
+ *                  needs a slow drift, not a tick planted in it. The windows are the timeline's
+ *                  READ (src/lib/pace.ts readingWindows(): from `resolved` for at most readMax, calm
+ *                  150 f; an earlier fragment of a chain only for its own hold, so a chain's picture
+ *                  beat is not a read; a build line once more after its last fragment), else a
+ *                  cues.json copy block's `read`, else the same rule computed here. One designed
+ *                  near-still hold may be declared with `export const HOLD = {from, to}` (60-96 f
+ *                  at 60 fps, on the key claim under a music dropout), and gaps inside it pass
  *   tail           >= 1 s after the last cue so the audio can decay (warning)
  *   whole-bars     the body (TOTAL - TAIL) is whole bars; loops need it (warning)
  *
@@ -49,14 +65,19 @@
  * one, so a retuned token moves the checks with the picture; otherwise from the copy below.
  *
  * Usage:
- *   npx tsx scripts/grid-check.ts [src/timeline.ts] [--pace calm|crisp] [--strict] [--json]
- *                                 [--max-words N] [--max-gap N] [--cues out/cues.json]
+ *   npx tsx scripts/grid-check.ts [src/timeline.ts | timeline.js] [--pace calm|crisp] [--strict]
+ *                                 [--json] [--max-words N] [--max-gap N] [--cues out/cues.json]
+ *   Without a path: src/timeline.ts, else timeline.js. Node 22.18+ runs it without tsx too, when
+ *   the timeline has no extensionless imports (a HyperFrames timeline.js):
+ *   node scripts/grid-check.ts timeline.js
  *   --strict  warnings fail too.   --json  machine-readable report on stdout.
  * Exit codes: 0 pass, 1 a check failed (or a warning with --strict), 2 bad arguments / import error.
  */
 import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { createRequire } from 'node:module';
+import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { createContext, runInContext } from 'node:vm';
 
 type Act = { from: number; dur: number };
 type Copy = { id: string; text: string; in: number; resolved: number; out?: number | null; kind?: string; chain?: string; mode?: string };
@@ -64,13 +85,14 @@ type Finding = { check: string; severity: 'error' | 'warn'; message: string };
 type Pace = {
   holdBase: number; holdPerWord: number; holdMin: number; readMax: number; gapMin: number; gapMax: number;
   maxNewWords: number; maxVisibleBuild: number; maxVisibleReplace: number; maxWordsPerSec: number;
-  avgWordsPerSec: number; maxWords: number; textShare: number; freeRun: number; maxGap: number;
+  avgWordsPerSec: number; maxWords: number; textShare: number; freeRun: number; maxGap: number; exitDur: number;
 };
+type Windows = Record<string, [number, number][]>;
 
 // The check numbers of src/lib/pace.ts (60 fps frames), for timelines that do not export PACE.
 const BUILTIN: Record<'calm' | 'crisp', Pace> = {
-  calm: { holdBase: 42, holdPerWord: 8, holdMin: 60, readMax: 150, gapMin: 30, gapMax: 90, maxNewWords: 4, maxVisibleBuild: 8, maxVisibleReplace: 5, maxWordsPerSec: 1.2, avgWordsPerSec: 0.9, maxWords: 30, textShare: 0.65, freeRun: 90, maxGap: 72 },
-  crisp: { holdBase: 36, holdPerWord: 6, holdMin: 42, readMax: 120, gapMin: 18, gapMax: 90, maxNewWords: 5, maxVisibleBuild: 10, maxVisibleReplace: 10, maxWordsPerSec: 2.0, avgWordsPerSec: 1.2, maxWords: 35, textShare: 0.8, freeRun: 60, maxGap: 48 },
+  calm: { holdBase: 42, holdPerWord: 8, holdMin: 60, readMax: 150, gapMin: 30, gapMax: 90, maxNewWords: 4, maxVisibleBuild: 8, maxVisibleReplace: 5, maxWordsPerSec: 1.2, avgWordsPerSec: 0.9, maxWords: 30, textShare: 0.65, freeRun: 90, maxGap: 72, exitDur: 24 },
+  crisp: { holdBase: 36, holdPerWord: 6, holdMin: 42, readMax: 120, gapMin: 18, gapMax: 90, maxNewWords: 5, maxVisibleBuild: 10, maxVisibleReplace: 10, maxWordsPerSec: 2.0, avgWordsPerSec: 1.2, maxWords: 35, textShare: 0.8, freeRun: 60, maxGap: 48, exitDur: 16 },
 };
 
 const argv = process.argv.slice(2);
@@ -85,7 +107,7 @@ if (has('-h') || has('--help')) {
 }
 const valued = new Set(['--max-words', '--max-gap', '--cues', '--pace']);
 const positional = argv.filter((a, i) => !a.startsWith('--') && !valued.has(argv[i - 1]));
-const tlPath = resolve(positional[0] ?? 'src/timeline.ts');
+const tlPath = resolve(positional[0] ?? (!existsSync('src/timeline.ts') && existsSync('timeline.js') ? 'timeline.js' : 'src/timeline.ts'));
 const json = has('--json');
 const strict = has('--strict');
 
@@ -97,11 +119,70 @@ const die = (msg: string): never => {
 
 const wordsOf = (text: unknown) => String(text ?? '').split(/\s+/).filter(Boolean).length;
 
+/**
+ * src/lib/pace.ts readingWindows(), for a timeline that exports no READ (and no cues.json `read`):
+ * the same rule, so every check reads text the same way.
+ */
+const readingWindows = (copy: Copy[], P: Pace, fps: number, total: number): Windows => {
+  const s = fps / 60;
+  const cap = Math.round(P.readMax * s);
+  const hold = (n: number) => Math.round(Math.max(P.holdMin, P.holdBase + P.holdPerWord * n) * s);
+  const w: Windows = {};
+  for (const c of copy) {
+    const end = c.out ?? total;
+    const chain = c.chain ? copy.filter((x) => x.chain === c.chain).sort((a, b) => a.in - b.in) : [c];
+    const last = chain[chain.length - 1];
+    const next = chain[chain.indexOf(c) + 1];
+    const own: [number, number] = next ? [c.resolved, Math.min(next.in, c.resolved + hold(wordsOf(c.text)), end)] : [c.resolved, Math.min(end, c.resolved + cap)];
+    const line: [number, number] | null = next && (c.mode ?? 'build') === 'build' ? [last.resolved, Math.min(last.out ?? total, last.resolved + cap)] : null;
+    const list: [number, number][] = line ? [own, line] : [own];
+    w[String(c.id)] = list.filter(([a, b]) => b > a);
+  }
+  return w;
+};
+const isWindows = (v: unknown): v is Windows =>
+  !!v && typeof v === 'object' && Object.values(v as object).every((l) => Array.isArray(l) && l.every((r) => Array.isArray(r) && r.length === 2 && r.every(Number.isFinite)));
+
+/**
+ * The timeline module. A Remotion timeline.ts is an ES module. A HyperFrames timeline.js is a classic
+ * script that sets FILM (CommonJS under Node, so the import gives it as `default`), with PACE_NAME
+ * and PACE in the motion.js beside it; one that cannot be imported (in an ES-module package) runs
+ * in a vm after its motion.js, as the browser loads them.
+ */
+async function loadTimeline(path: string): Promise<Record<string, unknown>> {
+  let T: Record<string, unknown>;
+  let M: Record<string, unknown> | undefined;
+  const motion = join(dirname(path), 'motion.js');
+  try {
+    const mod = (await import(pathToFileURL(path).href)) as Record<string, unknown>;
+    T = mod.default && mod.FPS === undefined ? { ...(mod.default as object) } : mod;
+  } catch (e) {
+    if (!/\.c?js$/.test(path)) throw e;
+    const ctx: Record<string, unknown> = {};
+    ctx.window = ctx;
+    createContext(ctx);
+    if (existsSync(motion)) runInContext(readFileSync(motion, 'utf8'), ctx, { filename: motion });
+    runInContext(readFileSync(path, 'utf8'), ctx, { filename: path });
+    if (!ctx.FILM) throw e;
+    T = { ...(ctx.FILM as object) };
+    M = ctx.MOTION as Record<string, unknown> | undefined;
+  }
+  if (T.PACE_NAME === undefined && !M && existsSync(motion)) {
+    try {
+      M = createRequire(path)(motion) as Record<string, unknown>;
+    } catch {
+      /* an ES-module motion.js: the pace falls back to crisp, as for a timeline written before paces */
+    }
+  }
+  if (T.PACE_NAME === undefined && M && typeof M.PACE_NAME === 'string') Object.assign(T, { PACE_NAME: M.PACE_NAME, PACE: T.PACE ?? M.PACE });
+  return T;
+}
+
 async function main() {
   if (!existsSync(tlPath)) die(`${tlPath} not found`);
   let T: Record<string, unknown>;
   try {
-    T = await import(pathToFileURL(tlPath).href);
+    T = await loadTimeline(tlPath);
   } catch (e) {
     return die(`importing ${tlPath} failed (keep timeline.ts free of React/CSS imports): ${(e as Error).message}`);
   }
@@ -209,9 +290,30 @@ async function main() {
   }
   if (words > maxWords) err('word-total', `${words} on-screen words; the budget is ${maxWords} (--max-words). Typed commands, code, URLs and app labels belong in COPY with kind: 'ui' and are not budgeted`);
 
+  // --- reading windows: the timeline's READ, else the cues.json copy block's `read`, else the same rule here
+  const fromCues = (() => {
+    const p = val('--cues');
+    if (!p || !existsSync(p)) return null;
+    const w: Windows = {};
+    for (const c of JSON.parse(readFileSync(p, 'utf8')).copy ?? []) if (isWindows({ x: c.read })) w[String(c.id)] = c.read;
+    return Object.keys(w).length ? w : null;
+  })();
+  const READ: Windows = isWindows(T.READ) ? (T.READ as Windows) : (fromCues ?? readingWindows(valid, P, FPS, TOTAL));
+
   // --- chains: fragments of one thought
   const chains = new Map<string, typeof valid>();
   for (const c of valid) if (c.chain) chains.set(c.chain, [...(chains.get(c.chain) ?? []), c]);
+  const exitF = Math.round(P.exitDur * s); // a leaving entry is seen until its exit is over
+  const calm = paceName === 'calm';
+  const sev = (check: string, message: string) => (calm ? err : warn)(check, message);
+  const soundEvents: { f: number; kind: string }[] = [];
+  const cuesPath = val('--cues');
+  let cuesDoc: { events?: { f: number; kind?: string }[]; copy?: { id: string; read?: unknown }[] } | null = null;
+  if (cuesPath) {
+    if (!existsSync(cuesPath)) die(`--cues ${cuesPath} not found (run npx tsx scripts/export-cues.ts)`);
+    cuesDoc = JSON.parse(readFileSync(cuesPath, 'utf8'));
+    for (const e of cuesDoc!.events ?? []) if (Number.isFinite(e.f)) soundEvents.push({ f: e.f, kind: String(e.kind ?? '') });
+  }
   for (const [name, list] of chains) {
     list.sort((a, b) => a.in - b.in);
     const modes = new Set(list.map((c) => c.mode ?? 'build'));
@@ -230,27 +332,48 @@ async function main() {
       const read = a.resolved + holdNeed(a.n);
       const gap = b.in - read;
       if (gap < 0) err('chain-gap', `${b.id} arrives at f${b.in}, ${-gap} f before ${a.id} has been read (resolved f${a.resolved} + ${holdNeed(a.n)} f)`);
-      else if (gap < Math.round(P.gapMin * s)) warn('chain-gap', `${a.id} -> ${b.id}: ${gap} f of picture between the read and the next fragment; give the picture its beat (${Math.round(P.gapMin * s)}-${Math.round(P.gapMax * s)} f)`);
+      else if (gap < Math.round(P.gapMin * s)) sev('chain-gap', `${a.id} -> ${b.id}: ${gap} f of picture between the read and the next fragment; give the picture its beat (${Math.round(P.gapMin * s)}-${Math.round(P.gapMax * s)} f)`);
       else if (gap > Math.round(P.gapMax * s)) warn('chain-gap', `${a.id} -> ${b.id}: ${gap} f between the read and the next fragment; past ${Math.round(P.gapMax * s)} f the thought breaks in two`);
-      if (mode === 'replace' && b.in < a.out + Math.round(6 * s)) err('chain-gap', `replace chain ${name}: ${b.id} arrives at f${b.in} while ${a.id} is still on screen (out f${a.out}); leave >= ${Math.round(6 * s)} f`);
+      if (gap >= Math.round(P.gapMin * s)) {
+        // the picture beat must be something the picture does: a cue, or a sound that is not a text sound
+        const beat = cueFrames.some((c) => c.f >= read && c.f < b.in) || soundEvents.some((e) => e.kind !== 'text' && e.f >= read && e.f < b.in);
+        if (!beat)
+          sev('chain-beat', `${a.id} -> ${b.id}: nothing happens between the read (f${read}) and the next fragment (f${b.in}): no CUE${cuesPath ? ' and no sound other than text' : ''} there. The picture takes its turn between fragments (the product does what the fragment set up): give it a cue`);
+      }
+      const clear = Math.round((P.exitDur + 6) * s);
+      if (mode === 'replace' && b.in < a.out + clear)
+        err('chain-gap', `replace chain ${name}: ${b.id} arrives at f${b.in} while ${a.id} is still leaving (out f${a.out} + a ${exitF} f exit); start it >= ${clear} f after ${a.id}'s out, so its exit is over first`);
     }
   }
 
-  // --- what is on screen, frame by frame (film copy; ui counted apart)
+  // --- separate entries that arrive together (not one chain): the earlier one is read first
   const film = valid.filter((c) => !c.ui);
+  const byIn = [...film].sort((a, b) => a.in - b.in);
+  for (let i = 0; i < byIn.length; i++)
+    for (let j = i + 1; j < byIn.length; j++) {
+      const [a, b] = [byIn[i], byIn[j]];
+      if (a.chain && a.chain === b.chain) continue; // chain-gap checks a chain's own fragments
+      if (b.in >= a.out) continue; // a has left before b arrives
+      const read = a.resolved + holdNeed(a.n);
+      if (b.in < read)
+        sev('read-first', `${b.id} "${b.text}" arrives at f${b.in} while ${a.id} "${a.text}" is on screen and not yet read (resolved f${a.resolved} + ${holdNeed(a.n)} f): two lines at once read as one sentence dumped. Write them as one chain() so they take turns, or bring ${b.id} in after f${read}`);
+    }
+
+  // --- what is on screen, frame by frame (film copy; ui counted apart)
   let maxVisible = 0;
   let worst: { f: number; ids: string[]; n: number; limit: number } | null = null;
   let textFrames = 0;
   let maxBoth = 0;
   const free: boolean[] = [];
   for (let f = 0; f < TOTAL; f++) {
-    const on = film.filter((c) => c.in <= f && f < c.out);
-    const n = on.reduce((m, c) => m + c.n, 0);
-    const both = n + valid.filter((c) => c.ui && c.in <= f && f < c.out).reduce((m, c) => m + c.n, 0);
-    const limit = on.length && on.every((c) => c.mode === 'replace') ? P.maxVisibleReplace : P.maxVisibleBuild;
+    const on = film.filter((c) => c.in <= f && f < c.out); // on screen until its exit begins (text-share)
+    const seen = film.filter((c) => c.in <= f && f < c.out + exitF); // ... and until its exit is over (concurrency)
+    const n = seen.reduce((m, c) => m + c.n, 0);
+    const both = n + valid.filter((c) => c.ui && c.in <= f && f < c.out + exitF).reduce((m, c) => m + c.n, 0);
+    const limit = seen.length && seen.every((c) => c.mode === 'replace') ? P.maxVisibleReplace : P.maxVisibleBuild;
     maxVisible = Math.max(maxVisible, n);
     maxBoth = Math.max(maxBoth, both);
-    if (n > limit && (!worst || n - limit > worst.n - worst.limit)) worst = { f, ids: on.map((c) => c.id), n, limit };
+    if (n > limit && (!worst || n - limit > worst.n - worst.limit)) worst = { f, ids: seen.map((c) => c.id), n, limit };
     if (f < bodyEnd) {
       if (on.length) textFrames++;
       free.push(!on.length);
@@ -273,7 +396,8 @@ async function main() {
   const avg = bodySec > 0 ? words / bodySec : 0;
   if (avg > P.avgWordsPerSec) warn('word-rate', `${avg.toFixed(2)} film words per second over the body; keep <= ${P.avgWordsPerSec}`);
   const share = bodyEnd > 0 ? textFrames / bodyEnd : 0;
-  if (film.length && share > P.textShare) warn('text-share', `film copy is on screen on ${(100 * share).toFixed(1)}% of the body; keep <= ${Math.round(100 * P.textShare)}%: give the picture beats with no copy`);
+  if (film.length && share > P.textShare)
+    (calm && share > P.textShare + 0.1 ? err : warn)('text-share', `film copy is on screen on ${(100 * share).toFixed(1)}% of the body; keep <= ${Math.round(100 * P.textShare)}%: give the picture beats with no copy`);
   // the longest text-free run inside every 10 s window of the body (the whole body when shorter)
   const freeNeed = Math.round(P.freeRun * s);
   const win10 = Math.min(bodyEnd, Math.round(10 * FPS));
@@ -314,15 +438,9 @@ async function main() {
   for (const c of cueFrames) events.add(c.f);
   for (const [, a] of acts) events.add(a.from);
   for (const c of valid) for (const f of [c.in, c.resolved, c.out]) events.add(f);
-  const cuesPath = val('--cues');
-  if (cuesPath) {
-    if (!existsSync(cuesPath)) die(`--cues ${cuesPath} not found (run npx tsx scripts/export-cues.ts)`);
-    const doc = JSON.parse(readFileSync(cuesPath, 'utf8'));
-    for (const e of doc.events ?? []) if (Number.isFinite(e.f)) events.add(Math.round(e.f));
-  }
-  // Reading windows: a resolved line being read is alive (up to readMax), so it fills the gap it sits in.
-  const readMax = Math.round(P.readMax * s);
-  const reading = valid.map((c) => [c.resolved, Math.min(c.out, c.resolved + readMax)] as const).filter(([a, b]) => b > a);
+  for (const e of soundEvents) events.add(Math.round(e.f));
+  // Reading windows: a resolved line being read is alive, so it fills the gap it sits in.
+  const reading = Object.values(READ).flat();
   const uncovered = (a: number, b: number) => {
     // the longest run of frames in (a, b) that no reading window covers
     let best = 0;
@@ -340,6 +458,21 @@ async function main() {
     if (gap > maxGap && live > maxGap) {
       const near = cueFrames.filter((c) => c.f === ev[i - 1] || c.f === ev[i]).map((c) => c.name);
       err('event-gap', `${live} f without an event or a line being read between f${ev[i - 1]} and f${ev[i]}${near.length ? ` (${near.join(', ')})` : ''}; add the beat that keeps it alive (a move, a peak, a drift under a read) or --max-gap`);
+    }
+  }
+
+  // --- read-quiet: nothing new starts while a fragment is read (calm)
+  if (calm) {
+    const textFrames = new Set(valid.flatMap((c) => [c.in, c.resolved, c.out]));
+    const loud = new Set<string>();
+    for (const c of valid) {
+      if (c.ui) continue;
+      for (const [a, b] of READ[String(c.id)] ?? [])
+        for (const q of cueFrames)
+          if (q.f >= a && q.f < b && q.f < bodyEnd && !textFrames.has(q.f) && !loud.has(q.name)) {
+            loud.add(q.name);
+            warn('read-quiet', `CUE.${q.name} (f${q.f}) starts while ${c.id} "${c.text}" is being read (f${a}-${b}): nothing new starts during a reading hold; move it after the read, where the picture takes its turn`);
+          }
     }
   }
 

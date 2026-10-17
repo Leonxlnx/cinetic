@@ -45,7 +45,8 @@ the share of frames over 12, 25 and 40 px/f, the longest run under 2 px/f, and h
 40 px/f. --pace calm warns when the 90th percentile passes 25 px/f or more than 6% of frames pass
 40 px/f (crisp: 45 px/f, 15%): calm films keep ordinary moves under 25 px/f and save speed for one
 or two moments. --copy out/cues.json (or a --cues file that has a copy block) adds the speed inside
-each copy entry's reading window, [resolved, out): the frame should be near still while text is
+each copy entry's reading windows (its `read`: the timeline's READ, so a chain's picture beat is
+not a read; [resolved, out) in an older cues.json): the frame should be near still while text is
 read, so a median over 3 px/f or a peak over 25 px/f (crisp 40) warns. The pace defaults to the
 cues file's `pace`. Run it on a sharp render (a preview, or the speed pass of render.sh --blur):
 the numbers are about the design, not the blur.
@@ -380,27 +381,37 @@ def pace_report(raw, still, fps):
                 longest_under2_s=round(longest / fps, 2) if fps else None, moves_over40=int(moves))
 
 
+def read_windows(c):
+    """The frames in which a copy entry is read: its `read` windows (export-cues.ts writes the
+    timeline's READ: an earlier fragment of a chain only for its own hold, so a chain's picture beat
+    is not a read), or [resolved, out) from a cues.json written before them."""
+    read = c.get('read')
+    if isinstance(read, list) and all(isinstance(w, (list, tuple)) and len(w) == 2 for w in read):
+        return [(int(a), int(b)) for a, b in read]
+    return [(int(c['resolved']), int(c.get('out', c['resolved'])))]
+
+
 def copy_windows(path, raw, offset, limits):
-    """Speed inside each copy entry's reading window [resolved, out), from a cues.json copy block."""
+    """Speed inside each copy entry's reading windows (its `read` in a cues.json copy block)."""
     try:
         doc = json.load(open(path))
     except (OSError, ValueError) as e:
         sys.exit(f'measure-speed.py: cannot read --copy {path}: {e}')
     rows, warns = [], []
     for c in doc.get('copy') or []:
-        a, b = int(c['resolved']) - offset, int(c.get('out', c['resolved'])) - offset
-        a, b = max(a, 0), min(b, len(raw))
-        if b - a < 2:
-            continue
-        seg = np.asarray(raw[a:b], dtype=float)
-        row = dict(id=c.get('id'), text=c.get('text'), kind=c.get('kind', 'copy'), frames=[a + offset, b + offset],
-                   median=round(float(np.median(seg)), 1), peak=round(float(seg.max()), 1),
-                   peak_frame=int(a + int(np.argmax(seg)) + offset))
-        rows.append(row)
-        if limits and row['kind'] != 'ui' and (row['median'] > limits['read_median'] or row['peak'] > limits['read_peak']):
-            warns.append(f"while \"{row['text']}\" is read (f{row['frames'][0]}-{row['frames'][1]}) the frame moves "
-                         f"{row['median']} px/f (median), {row['peak']} at f{row['peak_frame']}: keep it under "
-                         f"{limits['read_median']:g} px/f with nothing over {limits['read_peak']:g} until the read is done")
+        for a0, b0 in read_windows(c):
+            a, b = max(a0 - offset, 0), min(b0 - offset, len(raw))
+            if b - a < 2:
+                continue
+            seg = np.asarray(raw[a:b], dtype=float)
+            row = dict(id=c.get('id'), text=c.get('text'), kind=c.get('kind', 'copy'), frames=[a + offset, b + offset],
+                       median=round(float(np.median(seg)), 1), peak=round(float(seg.max()), 1),
+                       peak_frame=int(a + int(np.argmax(seg)) + offset))
+            rows.append(row)
+            if limits and row['kind'] != 'ui' and (row['median'] > limits['read_median'] or row['peak'] > limits['read_peak']):
+                warns.append(f"while \"{row['text']}\" is read (f{row['frames'][0]}-{row['frames'][1]}) the frame moves "
+                             f"{row['median']} px/f (median), {row['peak']} at f{row['peak_frame']}: keep it under "
+                             f"{limits['read_median']:g} px/f with nothing over {limits['read_peak']:g} until the read is done")
     return rows, warns
 
 

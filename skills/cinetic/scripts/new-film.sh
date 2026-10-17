@@ -25,7 +25,9 @@
 #                  viewport and html/body size to match. Either way the starter's brand (palette,
 #                  typeface, mark, name) is marked cinetic:placeholder and lint-film.mjs fails
 #                  until it is replaced.
-#   --link-modules symlink this node_modules instead of running npm install (offline sandboxes).
+#   --link-modules link this node_modules instead of running npm install (offline sandboxes): a
+#                  symlink, or on Windows (Git Bash, MSYS2, Cygwin) a directory junction, because
+#                  ln -s there copies the whole folder unless Windows symlinks are enabled.
 #   --font         vendor a @fontsource-variable/<name> family into the project (scripts/add-font.mjs:
 #                  npm pack into a temp folder, never an install into a shared node_modules) and set
 #                  FONT/FACES to it. Repeat for a mono. Later, run `node scripts/add-font.mjs <name>`.
@@ -169,7 +171,17 @@ if [[ -f "$LIB" ]]; then mkdir -p "$DIR/scripts/library" && cp "$LIB" "$DIR/scri
 if [[ -n "$LINK" ]]; then
   [[ -d "$LINK" ]] || die "--link-modules: $LINK is not a directory"
   rm -rf "$DIR/node_modules"
-  ln -s "$(cd "$LINK" && pwd)" "$DIR/node_modules"
+  TARGET="$(cd "$LINK" && pwd)"
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*)
+      # ln -s copies here (hundreds of MB) unless Windows symlinks are enabled: make a junction,
+      # which needs no rights and acts like a symlink for node and npm.
+      MSYS_NO_PATHCONV=1 cmd /c mklink /J "$(cygpath -w "$DIR/node_modules")" "$(cygpath -w "$TARGET")" >/dev/null \
+        || die "--link-modules: could not make a junction node_modules -> $TARGET (cmd /c mklink /J)"
+      ;;
+    *) ln -s "$TARGET" "$DIR/node_modules" ;;
+  esac
+  [[ -d "$DIR/node_modules" ]] || die "--link-modules: $DIR/node_modules was not created"
   echo "new-film: linked node_modules -> $LINK"
   # npm's postinstall does not run for a linked folder; run the starter's setup step directly
   if [[ -f "$DIR/setup.mjs" ]]; then
@@ -203,6 +215,8 @@ next:
   cd $DIR
   node scripts/lint-film.mjs .   # cinetic bans; fails on purpose until the placeholder palette
                                  # and font in index.html are replaced (references/brand-and-color.md)
+  node scripts/grid-check.ts timeline.js   # the grid, the reads and the text flow (Node 22.18+;
+                                           # else npx -y tsx scripts/grid-check.ts timeline.js)
   npm run preview                # HyperFrames Studio
   npm run cues && npm run kit && npm run audio && npm run render:preview   # then: npm run render
   npm run listen                 # earshot's ears on the soundtrack: out/qa/listen.json + sound_sheet.png

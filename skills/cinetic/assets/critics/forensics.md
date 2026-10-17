@@ -35,7 +35,7 @@ You hunt technical artifacts: anything a viewer would read as broken, glitchy or
    | `spike` pop / seam-pop | a 1-2 frame change that motion does not explain | a property flipping at a cut; a fade collapsing into 1-2 frames; expo-out on a fade-out |
    | `spike` hit | the same, on a cue | fine if the hit is designed; a pop if it is a reveal that finishes too fast |
    | `stall` | a repeated frame inside motion | a duplicated rest pose at a seam; two moves easing to rest back to back |
-   | `hold` frozen / quiet | more than 48 f with (almost) nothing changing | a dead hold; a locked-off shot. A quiet run inside a fragment's reading window (`copy` in `out/cues.json`) where the text still drifts 0.3–1 px/f or creeps is a reading hold, not a dead one; a truly frozen frame there still fails |
+   | `hold` frozen / quiet | more than 48 f (calm: 72 f) with (almost) nothing changing | a dead hold; a locked-off shot. A quiet run inside a fragment's reading window (its `read` in the `copy` block of `out/cues.json`; a chain's picture beat is not a read) where the text still drifts 0.3–1 px/f or creeps is a reading hold, not a dead one; a truly frozen frame there still fails |
    | `ghost` | a one-frame image neither neighbour has | `will-change` on a layer with an animated blur; a stale layer |
    | `border` | a 1-3 px sliver at an edge for several frames | a camera that exposes the stage edge; layers without overscan |
    | `judder` | whole-pixel stairs in a slow move | fractional left/top with a transform; text snapping at the tail of an ease |

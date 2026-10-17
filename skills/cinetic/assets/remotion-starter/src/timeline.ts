@@ -2,7 +2,7 @@
 // and QA (scripts/grid-check.ts) all import this file, so a change here moves everything together.
 // Think in bars and beats, never in seconds. Keep this file free of React and CSS imports:
 // Node scripts load it directly.
-import { holdFor, PACE, revealFor, wordCount, type PaceName } from './lib/pace';
+import { holdFor, PACE, readingWindows, revealFor, wordCount, type PaceName } from './lib/pace';
 
 export { PACE } from './lib/pace'; // grid-check checks COPY against the film's own pace numbers
 
@@ -48,13 +48,14 @@ export const TOTAL = b(6) + TAIL;
 // carries a trailing `// offgrid: <reason>` comment, which grid-check accepts.
 // Picture code reads these; src/sync.ts turns them into sound events.
 export const CUE = {
-  fragA: b(1), // "Built on" rises into the frame (the camera is already creeping in)
-  drop: b(1, 2), // picture beat: the dot is born above the line and falls...
-  land: b(1, 3), // ...and lands where the line will end: contact. The line opens to make room
-  fragB: b(2), // "the beat" rises into the opening; the dot is its period
+  fragA: b(1), // "Built on" rises into the frame (the camera is already creeping in); then it is read, alone
+  drop: b(1, 3), // picture beat, once "Built on" has been read: the dot is born above the line and falls...
+  land: b(2), // ...and lands where the line will end: contact, on the downbeat. The line is opening to make room
+  fragB: b(2, 0, 2), // "the beat" answers on the off-beat, rising into the opening; the dot is its period
   exit: b(3), // the whole line leaves together, the dot staying behind
-  fly: b(3, 2), // the dot's flight hits top speed here (whoosh apex): Act 1 solves its start from it
-  handoff: b(4), // the dot arrives at rest in its slot; act 2 opens on exactly this pose
+  depart: b(3, 1), // the dot sets off for its slot (E.smooth, so its speed peaks half-way)...
+  fly: b(3, 2, 2), // ...top speed half-way there, on the grid (the whoosh apex)...
+  handoff: b(4), // ...and it arrives at rest in its slot; act 2 opens on exactly this pose
   pieceA: b(4, 1), // the dome lands (contact frame)
   pieceB: b(4, 2), // the block lands (contact frame)
   lockup: b(5), // the mark settles into the lockup and the name locks beside it: the payoff
@@ -91,7 +92,8 @@ export const line = (id: string, text: string, inF: number, out?: number): Copy 
  * up). Give each fragment its first frame; `resolved` follows from the pace.
  *   build    fragments append to one held line, which re-centres; the line clears as a whole, at
  *            `out` (default: the last fragment's resolve plus the hold of the full line)
- *   replace  each fragment leaves (as a whole) just before the next arrives, in the same place;
+ *   replace  each fragment leaves (as a whole, over pace.exitDur: 24 f when calm) and has gone
+ *            6 f before the next one rises in its place, so two fragments never share the spot;
  *            the last one leaves at `out` (default: its resolve plus its hold)
  * grid-check checks the result: every fragment is read before the next arrives, the picture beat
  * between them, the words on screen at once and the copy rate.
@@ -105,17 +107,28 @@ export const chain = (id: string, mode: 'build' | 'replace', fragments: [text: s
     const out = o.out ?? last.resolved + f60(holdFor(words(base), pace));
     return base.map((c) => ({ ...c, out }));
   }
-  return base.map((c, i) => ({ ...c, out: base[i + 1] ? base[i + 1].in - f60(6) : (o.out ?? c.resolved + f60(holdFor(wordCount(c.text), pace))) }));
+  // replace: the outgoing fragment's exit (exitDur) is over 6 f before the next one starts to rise
+  const leave = f60(pace.exitDur) + f60(6);
+  return base.map((c, i) => ({ ...c, out: base[i + 1] ? base[i + 1].in - leave : (o.out ?? c.resolved + f60(holdFor(wordCount(c.text), pace))) }));
 };
 
 // Every on-screen word: the word budget (kind: 'ui' entries are counted apart), the hold check,
 // and the text-flow checks (fragments, words on screen at once, copy rate, text share) read this.
 export const COPY: Copy[] = [
-  // "Built on" -> the dot lands where the line will end -> "the beat". The dot is the period.
+  // "Built on" (read alone) -> the dot falls and lands where the line will end -> "the beat". The dot is the period.
   ...chain('statement', 'build', [['Built on', CUE.fragA], ['the beat', CUE.fragB]], { out: CUE.exit }),
   // cinetic:placeholder - the demo's invented name: use the product's, then delete this line.
   { id: 'wordmark', text: 'plinth', in: CUE.lockup - f60(34), resolved: CUE.lockup, out: TOTAL },
 ];
+
+/**
+ * When each COPY entry is being read: [from, to) frame ranges by id (src/lib/pace.ts
+ * readingWindows(): from `resolved` for at most readMax, an earlier fragment of a build chain only
+ * for its own hold, then the whole line again). The one rule every check uses: export-cues.ts
+ * writes it into out/cues.json, and grid-check, layout-audit, measure-speed and forensics read it.
+ * Nothing new should start inside a window: the read happens in the quiet.
+ */
+export const READ = readingWindows(COPY, pace, FPS, TOTAL);
 
 /** One COPY entry by id; acts read their text and timing from here so the budget stays true. */
 export const copy = (id: string): Copy => {

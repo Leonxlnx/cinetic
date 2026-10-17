@@ -1,5 +1,5 @@
 import React from 'react';
-import { arrive, blurIn, blurOut, depart, E, easeOf, pace as filmPace, type Pace, prog } from '../lib/anim';
+import { arrive, arriveK, blurIn, blurOut, depart, E, easeOf, pace as filmPace, type Pace, prog } from '../lib/anim';
 import { f60 } from '../timeline';
 
 /**
@@ -16,9 +16,10 @@ import { f60 } from '../timeline';
  * an accelerating curve would hold the word near full strength and drop it in 2-3 frames, a
  * visible pop. Text lands sharp: blur, when there is any, ends while the word still moves fast
  * (blurIn), because Chromium renders radii under ~0.75 px fully sharp and a slow finish would snap
- * into focus. The rise ends through arrive() at arriveK(), and the exit starts through depart():
- * vertical text positions snap to whole pixels, so an ease-out's slow tail would settle in 1 px
- * ticks. Transform-only placement. The line carries data-text for scripts/layout-audit.sh.
+ * into focus. The rise ends through arrive() at arriveK() of the rise in px (from `size`, or a
+ * numeric style.fontSize; without either, k = 0.94, which fits a ~40 px rise), and the exit starts
+ * through depart(): vertical text positions snap to whole pixels, so an ease-out's slow tail would
+ * settle in 1 px ticks. Transform-only placement. The line carries data-text for scripts/layout-audit.sh.
  */
 export const Words: React.FC<{
   text: string;
@@ -37,7 +38,8 @@ export const Words: React.FC<{
   exit?: 'together' | 'words';
   style?: React.CSSProperties;
   wordStyle?: (i: number, p: number) => React.CSSProperties; // p = that word's 0..1 entrance
-}> = ({ text, frame, start, id = 'words', starts, pace = filmPace, stagger, dur, ease, rise, blur, out, outDur, exit, style, wordStyle }) => {
+  size?: number; // px font size, so the rise stops from ~1 px/f (arriveK); default: style.fontSize when it is a number
+}> = ({ text, frame, start, id = 'words', starts, pace = filmPace, stagger, dur, ease, rise, blur, out, outDur, exit, style, wordStyle, size }) => {
   const st = stagger ?? f60(pace.stagger);
   const d = dur ?? f60(pace.wordDur);
   const e = ease ?? easeOf(pace);
@@ -45,6 +47,8 @@ export const Words: React.FC<{
   const bl = blur ?? pace.blur;
   const od = outDur ?? f60(pace.exitDur);
   const together = (exit ?? pace.exit) === 'together';
+  const px = size ?? (typeof style?.fontSize === 'number' ? style.fontSize : undefined);
+  const k = px ? arriveK(r * px, d, e) : 0.94; // where the drawn rise stops
   const words = text.split(' ');
   return (
     <span data-text={id} style={{ display: 'inline-flex', flexWrap: 'nowrap', whiteSpace: 'pre', ...style }}>
@@ -61,7 +65,7 @@ export const Words: React.FC<{
             key={i}
             style={{
               display: 'inline-block',
-              transform: `translateY(${((1 - arrive(p)) * r - depart(q) * lift).toFixed(4)}em)`,
+              transform: `translateY(${((1 - arrive(p, k)) * r - depart(q) * lift).toFixed(4)}em)`,
               filter: b > 0.05 ? `blur(${b.toFixed(2)}px)` : undefined,
               opacity: p * (1 - fade),
               ...wordStyle?.(i, p),

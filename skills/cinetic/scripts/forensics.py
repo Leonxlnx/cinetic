@@ -26,7 +26,8 @@ Frames are 0-based and absolute (frame = t * fps). Defaults (every number is a f
   hold         d < 0.1 for > 48 f (calm: 72 f): frozen (90% of its frames change < 16 px by > 24)  fail
                                    quiet (only small elements move)                   warn
                a static end tail <= 2 s + 1 f is allowed (the audio decays there); a run inside a
-               reading window (the cues copy block: [resolved, out) of an on-screen string) whose
+               reading window (the cues copy block: an on-screen string's `read` windows, which leave a
+               chain's picture beat out; [resolved, out) in an older cues.json) whose
                mean d >= 0.02 is a read: a line held while it is read, alive with a slow drift  info
   quiet        60-frame mean d < 0.15 (calm: 0.10) outside holds (nearly locked-off)   warn
                (inside a reading window with mean d >= 0.02: a read, info)
@@ -386,9 +387,19 @@ def load_declarations(args):
         cuts.extend((int(round(e['f'])), int(round(e['f']))) for e in c['events'] if e['kind'].lower() == 'cut')
         acts = c['acts']
         moments = sorted({int(round(e['f'])) for e in c['events']} | set(c['cue'].values()))
-        reading = [(int(x['resolved']), int(x['out'])) for x in c['copy'] if x['out'] > x['resolved']]
+        reading = [w for x in c['copy'] for w in read_windows(x) if w[1] > w[0]]
         cues_fps = c['fps']
     return sorted(set(cuts)), sorted(set(freezes)), sorted(set(ignore)), acts, moments, reading, cues_fps
+
+
+def read_windows(x):
+    """The frames in which a copy entry is read: its `read` windows (export-cues.ts writes the
+    timeline's READ: an earlier fragment of a chain only for its own hold, so a frozen picture beat
+    between two fragments is not excused as a read), or [resolved, out) from an older cues.json."""
+    read = x.get('read')
+    if isinstance(read, list) and all(isinstance(w, (list, tuple)) and len(w) == 2 for w in read):
+        return [(int(a), int(b)) for a, b in read]
+    return [(int(x['resolved']), int(x['out']))]
 
 
 def in_ranges(f, ranges, pad=0):

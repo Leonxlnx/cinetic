@@ -117,7 +117,7 @@
         "No motion stutter (frozen frames inside motion runs <= 1% of frames)",
         "Has an audio track",
         "True peak <= -1.0 dBTP after encode (no clipping on social platforms)",
-        "Integrated loudness -14 +-1.5 LUFS (social standard)",
+        "Integrated loudness -18 +-1.5 LUFS: a calm update film is effects only, with no music bed (SKILL.md Step 5 and the formats table)",
         "Film copy is cut into fragments of 1-4 words revealed one after another: no frame shows more than about 8 words of it, and no sentence of 5 or more words lands as one block",
         "At least one sentence is split around the product: a setup fragment, then the product or the feature acting with no new text, then the payoff fragment (the 'here is the newest' -> product -> name pattern)",
         "Every fragment stays fully readable for at least 1 s, and no 5 s window resolves more than about 6 words of film copy",

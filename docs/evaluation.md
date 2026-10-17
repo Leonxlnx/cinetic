@@ -10,16 +10,17 @@ cinetic asks an agent to do much more work than a plain attempt: invent a brand,
 
 Part of the question can be measured. Is the file the size, frame rate and length the brief asked for? Is the loudness on target? Does the loop have a seam? Do the hits land on their frames? The rest is judgement, which needs a comparison against a real alternative, made by judges who do not know which film came from which process. The evaluation does both and reports them separately.
 
-## The four briefs
+## The briefs
 
-[`evals/evals.json`](../evals/evals.json) holds four one-paragraph briefs, written the way a person would ask, each with a list of expectations the result is graded against. The films in the [README gallery](../README.md#gallery) were made from these same briefs.
+[`evals/evals.json`](../evals/evals.json) holds five one-paragraph briefs, written the way a person would ask, each with a list of expectations the result is graded against. The films in the [README gallery](../README.md#gallery) were made from the first four; the fifth, a calm update film, was added in 1.1 and has not been through a judged round yet.
 
 | # | Brief (id in `evals.json`) | Format | Sound | Expectations |
 |---|---|---|---|---|
-| 1 | Ledgerly Auto-Split (`ledgerly-feature-loop`) | 10 s landing-page loop, 1920x1080 | none; autoplays muted | 12 |
-| 2 | Kiln (`kiln-launch-teaser`) | 25 s launch teaser for X, 1920x1080, invented brand | yes | 15 |
-| 3 | Halden (`halden-logo-sting`) | 6 s logo sting, 1920x1080, plus a transparent version, invented logo | yes | 15 |
-| 4 | Quire Streaks (`quire-streaks-vertical`) | 12 s vertical video, 1080x1920, brand supplied | yes | 14 |
+| 1 | Ledgerly Auto-Split (`ledgerly-feature-loop`) | 10 s landing-page loop, 1920x1080 | none; autoplays muted | 15 |
+| 2 | Kiln (`kiln-launch-teaser`) | 25 s launch teaser for X, 1920x1080, invented brand | yes | 18 |
+| 3 | Halden (`halden-logo-sting`) | 6 s logo sting, 1920x1080, plus a transparent version, invented logo | yes | 16 |
+| 4 | Quire Streaks (`quire-streaks-vertical`) | 12 s vertical video, 1080x1920, brand supplied | yes | 17 |
+| 5 | Murmur (`murmur-update-calm`) | 20 s calm update film for X, 1920x1080 | yes, effects only | 18 |
 
 Six checks appear in every brief: a final MP4 at the expected size (1080x1920 for the vertical brief, 1920x1080 for the rest, which the Kiln and Halden briefs do not state); the duration within a tolerance (from ±0.25 s on the loop to ±1.5 s on the teaser); 60 fps; colour tagged BT.709; no motion stutter (frozen frames inside motion runs at most 1% of frames); and the hard bans respected, with exceptions for anything the brand supplied.
 
@@ -63,6 +64,16 @@ A reading-tracker app ships Streaks next week. The brief asks for a 12-second ve
 - layout: text and key UI clear of the top ~220 px and bottom ~420 px of platform chrome, and readable on a phone.
 
 This is the brief that tests whether a supplied brand overrides the bans.
+
+### 5. Murmur
+
+A voice-memo app now labels who is speaking; the brief asks for a calm 20-second update video for X, with sound, that never puts a lot of text on screen at once. The expectations check:
+- copy: fragments of 1–4 words, one at a time (no frame with more than about 8 words, no sentence of 5 or more words as one block), at least one sentence split around the product (setup fragment, the product acting with no new text, the payoff), every fragment readable for 1 s or more, at most about 6 words resolving in any 5 s, and copy on at most about two thirds of the frames;
+- motion: reading holds keep a slow drift, nothing outside a read sits still for more than about 1.2 s, and no overshoot, bounce or per-letter trick on copy;
+- sound: an audio track, true peak at or below -1.0 dBTP, integrated loudness of -18 ±1.5 LUFS (a calm film is effects only, with no music bed), at most one soft sound per text fragment, and effects rendered from an earshot kit when earshot is installed (a reported fallback otherwise);
+- the product: speaker labels working in real, specific UI.
+
+This is the brief that tests the calm pace and the fragment chains.
 
 ## Setup
 

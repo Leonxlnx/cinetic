@@ -7,7 +7,7 @@ Copy rules: references/copy-and-type.md. Numbers are defaults, not dogma.
 For a loop or a sting (the one-page treatment), fill sections 3, 3b, 5 (2–8 rows), 6 and 7, and tick section 8.
 -->
 
-**Spec:** `<W>x<H>@<fps>, <length>s, <BPM>BPM, pace: <calm | crisp>, audio: <synthesized | none>` · **Format:** <launch film | product video | feature loop | logo sting | UI walkthrough> · **Engine:** <Remotion | HyperFrames>
+**Spec:** `<W>x<H>@<fps>, <length>s, <BPM>BPM, pace: <calm | crisp>, audio: <effects (earshot kit) | effects + music | none>` · **Format:** <launch film | product video | feature loop | logo sting | UI walkthrough> · **Engine:** <Remotion | HyperFrames>
 **Product:** <what it does, in one line> · **Viewer:** <who watches, and where: feed, landing page, keynote>
 **Assumptions:** <anything you inferred rather than were told>
 
@@ -72,7 +72,7 @@ Copy is written as fragments (1–4 words), one at a time; a thought of more tha
 | <id> | <…> | <n ≤ 4> | <build / replace / –> | <#> | <30–90 f: what happens> | <setup / refrain / payoff / —> |
 | **Total** | | **<n> / <budget>** | | | | |
 
-Checks: every fragment ≤ 4 words · ≤ 8 words visible at once (≤ 5 in replace mode) · no thought of 5+ words lands as one block · copy on ≤ about 65% of the runtime, with ≥ 1.5 s text-free in every 10 s · no stock phrasing · every line passes the line test.
+Checks: every fragment ≤ 4 words · ≤ 8 words visible at once (≤ 5 in replace mode) · no thought of 5+ words lands as one block, and no two lines arrive together · every picture beat is a move the picture makes (a cue in `timeline.ts`), after the earlier fragment has been read · copy on ≤ about 65% of the runtime, with ≥ 1.5 s text-free in every 10 s · no stock phrasing · every line passes the line test.
 
 ## 7. Final frame (the poster)
 <Describe it as a still: stage, mark, wordmark, any URL, positions, the camera scale reached by the push. It must contain the mark and the name.>
@@ -80,7 +80,7 @@ Checks: every fragment ≤ 4 words · ≤ 8 words visible at once (≤ 5 in repl
 ## 8. Gate
 - [ ] logline ≤ 15 words, with no "and" joining two ideas
 - [ ] the chosen concept passes ownership, deletion and specificity, with reasons written in §2; the proof shows the non-obvious behaviour
-- [ ] word total within budget; every fragment ≤ 4 words; ≤ 8 words visible at once (≤ 5 in replace mode); every longer thought is a chain with a picture beat between its fragments; copy on ≤ about 65% of the runtime
+- [ ] word total within budget; every fragment ≤ 4 words; ≤ 8 words visible at once (≤ 5 in replace mode); every longer thought is a chain with a picture beat between its fragments (30–90 f after the read, with a cue in it); copy on ≤ about 65% of the runtime
 - [ ] the device appears in every beat row, and its last link is the mark
 - [ ] every drawn technique is placed in §3b (a beat row, or the whole film for colour, texture and pacing picks) or dropped, and every reroll or drop has a written reason
 - [ ] the final frame contains the mark and the name
@@ -90,7 +90,7 @@ Checks: every fragment ≤ 4 words · ≤ 8 words visible at once (≤ 5 in repl
 
 # Example: Plumb (fictional; delete this section in your copy)
 
-**Spec:** `1920x1080@60, 31s, 100BPM, pace: calm, audio: synthesized` · **Format:** launch film · **Engine:** Remotion
+**Spec:** `1920x1080@60, 31s, 100BPM, pace: calm, audio: effects + music` · **Format:** launch film · **Engine:** Remotion
 **Product:** code review that finds the few lines in a huge pull request that can break production · **Viewer:** engineers and their leads, muted in a feed first
 **Assumptions:** no brand supplied, so name, mark and palette are invented; calm pace (the brand is calm and the brief asks for no energy); 1 bar = 2.4 s = 144 f; 13 bars, with the tail inside the last bar.
 

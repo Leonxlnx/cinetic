@@ -135,3 +135,36 @@ export const holdFor = (words: number, p: Pace) => Math.max(p.holdMin, p.holdBas
 
 /** Frames (60 fps) from a fragment's first word starting to its last word fully in: (words - 1) * stagger + wordDur. */
 export const revealFor = (words: number, p: Pace) => Math.max(0, words - 1) * p.stagger + p.wordDur;
+
+/** The fields of a COPY entry that the reading windows need. */
+export type ReadEntry = { id: string; text: string; in: number; resolved: number; out?: number | null; chain?: string; mode?: string };
+
+/**
+ * The reading windows of every COPY entry: the frames in which it is being read, as half-open
+ * [from, to) ranges of the film's own frames, keyed by COPY id. The one rule every check shares
+ * (timeline.ts exports it as READ; export-cues.ts writes it into out/cues.json as each copy
+ * entry's `read`; grid-check, layout-audit, measure-speed and forensics read it from there):
+ * - an entry is read from `resolved` for at most `readMax` frames, and never past its `out`;
+ * - an earlier fragment of a chain (build or replace) is read for its own hold, holdFor(its
+ *   words), and never past the next fragment's `in` or its own `out`: the picture beat between
+ *   two fragments is the picture's turn, not a read;
+ * - in a build chain the whole line is read again once its last fragment resolves, so every
+ *   fragment of the chain also carries the line's window [last.resolved, out), capped at readMax.
+ * `fps` converts the 60 fps pace numbers; `total` stands in for a missing `out`.
+ */
+export const readingWindows = (copy: ReadEntry[], p: Pace, fps = 60, total = Infinity): Record<string, [number, number][]> => {
+  const s = fps / 60;
+  const cap = Math.round(p.readMax * s);
+  const out: Record<string, [number, number][]> = {};
+  for (const c of copy) {
+    const end = c.out ?? total;
+    const chain = c.chain ? copy.filter((x) => x.chain === c.chain).sort((a, b) => a.in - b.in) : [c];
+    const last = chain[chain.length - 1];
+    const next = chain[chain.indexOf(c) + 1];
+    const own: [number, number] = next ? [c.resolved, Math.min(next.in, c.resolved + Math.round(holdFor(wordCount(c.text), p) * s), end)] : [c.resolved, Math.min(end, c.resolved + cap)];
+    const line: [number, number] | null = next && (c.mode ?? 'build') === 'build' ? [last.resolved, Math.min(last.out ?? total, last.resolved + cap)] : null;
+    const w: [number, number][] = line ? [own, line] : [own];
+    out[c.id] = w.filter(([a, b]) => b > a);
+  }
+  return out;
+};
