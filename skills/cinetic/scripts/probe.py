@@ -221,8 +221,8 @@ def main():
         ok = space_ok and range_ok and col['primaries'] == 'bt709' and col['transfer'] == 'bt709'
         check('bt709', ok, 'bt709/bt709/bt709/tv',
               f"{col['space']}/{col['primaries']}/{col['transfer']}/{col['range']}",
-              None if ok else 'encode with scale=out_color_matrix=bt709:out_range=tv and -colorspace/-color_primaries/'
-                              '-color_trc bt709 -color_range tv (see references/finishing.md)')
+              None if ok else 'encode with scale=out_color_matrix=bt709:out_range=tv,setparams=color_primaries=bt709:color_trc=bt709:'
+                              'colorspace=bt709:range=tv (tags on the input for rawvideo; see references/finishing.md)')
 
     if au is not None:
         a_frames = au.get('duration')

@@ -246,7 +246,7 @@ if [ "$BLUR" -gt 1 ]; then
   step encode "pass (blur K=$BLUR, shutter $SHUTTER, crf $CRF)"
 else
   ffmpeg -v error -y -framerate "$FPS" -start_number 1 -i "$WORK/frames/frame_%06d.png" \
-    -vf "scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p" \
+    -vf "scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv" \
     -c:v libx264 -preset "$PRESET" -crf "$CRF" -pix_fmt yuv420p \
     -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv \
     -movflags +faststart "$PIC" || fail_step encode "ffmpeg encode failed"

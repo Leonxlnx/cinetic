@@ -8,6 +8,11 @@ Versions 0.1.0 to 0.5.0 were development versions, and 0.9.0 was the first publi
 
 ## [Unreleased]
 
+### Fixed
+
+- Blurred masters from `accumulate.py` (every `render.sh --blur` and `hf-finish.sh --blur`) came out with shifted colours and tagged `bt709/unknown/unknown/tv` on ffmpeg 9, failing `probe.py`'s colour check. With the tags only on the output side, ffmpeg read the untagged raw pipe as BT.601 and converted it to BT.709 (flat `#00C2E0`: Y 149 → 162). The tags are now input options, and the piped planes reach the encoder bit-exact.
+- Sharp `hf-finish.sh` encodes came out tagged `bt709/unknown/unknown/tv` on ffmpeg 7.1 and 9, because the filter graph's frame properties override output-side tags. The `-vf` chain now ends in `setparams` (pixels unchanged); `references/finishing.md` gives the corrected recipe and `probe.py`'s hint points to it. Refs #2 (point 3).
+
 ## [1.0.0] - 2026-10-04
 
 This version teaches cinetic what top-tier launch films measurably do. Their pictures and soundtracks were measured frame by frame, and the results became a technique library the agent draws from at random, a reference of craft norms, a recalibrated sound engine and a set of tested motion primitives in the starter.
