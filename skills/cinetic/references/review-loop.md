@@ -34,19 +34,21 @@ Keep each round in its own folder, so later lenses can be told what changed:
 ```
 out/qa/round-2/
   forensics.json  banding.png  smear.png  av.json  score.json   script reports
+  listen.json  sound_sheet.png                         earshot's listening pass (when installed)
   watch_01_f0-239.png ... legibility.png               sheets
   director.json  forensics-lens.json  sound.json  art.json
   verified.json  fixes.md                              verdicts, and what you changed
 ```
 
 1. **Render.** Run `bash scripts/render.sh Film out/preview.mp4 --preview`. It mutes Remotion, muxes the WAV with ffmpeg, and gates on `check-sync.py` (lag ≤ 48 samples, true peak ≤ −1 dBTP after AAC) and `probe.py` (spec and tags). Those reports land in `out/qa/sync-preview.json` and `out/qa/probe-preview.json`. Rebuild the sound with stems first, so the audit below can be strict: `python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json --out public/audio/soundtrack.wav --stems out/stems --json out/qa/round-2/score.json`.
-2. **Measure.** Run the two audits:
+2. **Measure.** Run the two audits, and the listening pass when earshot is installed:
    ```bash
    R=out/qa/round-2
    python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --json $R/forensics.json
    python3 scripts/av-audit.py out/preview.mp4 --cues out/cues.json --stems out/stems --json $R/av.json
+   python3 scripts/audio/listen.py --video out/preview.mp4 --out $R    # listen.json + sound_sheet.png
    ```
-   Each prints a summary, writes JSON, and exits 0 when no check fails. Add `--declare qa.json` to forensics once you have declarations (§3), and `--loop` for a loop.
+   Each prints a summary, writes JSON, and exits 0 when no check fails (`listen.py` always exits 0, and writes `"listened": false` with the reason when earshot or its models are missing; `references/sound.md` §9.1). Add `--declare qa.json` to forensics once you have declarations (§3), and `--loop` for a loop.
 3. **Sheets.** Make the watch sheets and a legibility sheet:
    ```bash
    python3 scripts/sheet.py out/preview.mp4 --chunks 4 --rate 12 --cues out/cues.json --out $R/watch.png

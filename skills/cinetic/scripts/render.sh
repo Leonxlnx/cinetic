@@ -40,7 +40,8 @@
 #                       forensics.py --loop or deliver.sh --loop
 #   --audio-offset F    film frame at which this composition starts (default: the --frames start;
 #                       set it when rendering a per-act composition with sound)
-#   --build-audio       first run scripts/export-cues.ts and scripts/audio/score.py to rebuild the WAV
+#   --build-audio       first run scripts/export-cues.ts, scripts/audio/kit.py render (the earshot kit,
+#                       cached) and scripts/audio/score.py to rebuild the WAV
 #   --entry FILE        Remotion entry point (default src/index.ts)
 #   --sub ID            sub-frame composition for --blur (default <Comp>Sub)
 #   --frames A-B        render only film frames A..B (inclusive); audio is taken from the same range
@@ -136,6 +137,11 @@ if [[ $BUILD_AUDIO -eq 1 && $NOAUDIO -eq 0 ]]; then
   [[ -f "$SCRIPT_DIR/export-cues.ts" && -f "$SCRIPT_DIR/audio/score.py" ]] || die "--build-audio needs scripts/export-cues.ts and scripts/audio/score.py"
   step "rebuilding cues and soundtrack"
   npx tsx "$SCRIPT_DIR/export-cues.ts" >&2
+  # the earshot kit first (cached: seconds when nothing changed); without earshot score.py plays the
+  # rendered takes in audio/kit, or its synth voices with a warning
+  if [[ -f audio/kit.json && -f "$SCRIPT_DIR/audio/kit.py" ]]; then
+    python3 "$SCRIPT_DIR/audio/kit.py" render >&2 || echo "render.sh: the kit was not rendered (above); score.py falls back" >&2
+  fi
   python3 "$SCRIPT_DIR/audio/score.py" --cues out/cues.json --score audio/score.json --out "$AUDIO" --stems out/stems --json out/qa/score.json >&2
 fi
 if [[ $NOAUDIO -eq 0 ]]; then

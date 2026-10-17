@@ -17,7 +17,10 @@ Checks (defaults are proven starting points, not dogma):
              With --stems the sfx stem is searched (strict) and stray sfx onsets are listed.
              Key events that score.py does not sound (thinned to ~12/s, the letters of a word
              typed in the "word" style, or "typing": "off") are replayed from the score JSON
-             and not expected; a key's bottom-out or keyup within 0.2 s after it is not a stray
+             and not expected, nor are the events score.py's report (--score-report, default
+             out/qa/score.json beside the cues) lists as skipped when it is newer than the cues
+             (a role the sound kit leaves off, such as riser); a key's bottom-out or keyup within
+             0.2 s after it is not a stray
              onset.
              Without it the full mix is searched, where music hides quiet and soft-attack
              effects, so a low hit rate there is only a warning: gate with --stems.
@@ -41,8 +44,10 @@ Checks (defaults are proven starting points, not dogma):
              from -8 to +3 f: it lands on nothing; cue it on the readable frame            warn
   loudness   ffmpeg ebur128: integrated at the film's target +-1 LUFS, true peak <= -1.0 dBTP  fail
              (target: --lufs, else master.lufs in the score JSON (--score, default
-             audio/score.json), else -14 and -16 both pass)
-             loudness range 3-8 LU; loudest momentary window on the payoff cue if one exists warn
+             audio/score.json), else score.py's default for it: -14 with music, -18 for an
+             effects-only film; without a score JSON -14 and -16 both pass)
+             loudness range 3-8 LU (3-14 for an effects-only film, whose accents stand alone);
+             loudest momentary window on the payoff cue if one exists                         warn
              (audio shorter than cues.json's total is an excerpt: loudness and the tail are
              reported, not gated)
   clipping   samples at or above full scale                                                 fail
@@ -231,19 +236,53 @@ def silent_keys(args):
         return None
 
 
+def score_json(args):
+    """The first readable score JSON (score_paths), or None."""
+    for p in score_paths(args):
+        try:
+            return json.load(open(p))
+        except (OSError, ValueError):
+            continue
+    return None
+
+
+def effects_only(sc):
+    """True when score.py renders this score JSON without music: "music": "none" (the default
+    without chords) and no "bed"."""
+    music = sc.get('music') or ('synth' if sc.get('chords') else 'none')
+    return music == 'none' and not sc.get('bed')
+
+
 def film_lufs(args):
     """The film's loudness target and where it came from: --lufs, else master.lufs in the score
-    JSON (score.py's default -14 when the field is absent), else (None, None)."""
+    JSON (score.py's default when the field is absent: -14 with music, -18 effects only), else
+    (None, None)."""
     if args.lufs is not None:
         return args.lufs, '--lufs'
     for p in score_paths(args):
         if os.path.isfile(p):
             try:
-                v = (json.load(open(p)).get('master') or {}).get('lufs', -14.0)
-                return float(v), p
+                sc = json.load(open(p))
+                mas = sc.get('master') or {}
+                if 'lufs' in mas:
+                    return float(mas['lufs']), p
+                return (-18.0, f'{p} (effects only: score.py default)') if effects_only(sc) else (-14.0, p)
             except (OSError, ValueError, TypeError, AttributeError):
                 continue
     return None, None
+
+
+def score_skipped(args):
+    """Frames of the events score.py's report lists as skipped (a role the kit leaves off, a second
+    heavy landing on one frame, a thinned key), when the report is newer than the cues; else None."""
+    p = args.score_report or os.path.join(os.path.dirname(os.path.abspath(args.cues)), 'qa', 'score.json')
+    try:
+        if not os.path.isfile(p) or os.path.getmtime(p) < os.path.getmtime(args.cues):
+            return None
+        rep = json.load(open(p))
+        return {round(float(s['f']), 3) for s in (rep.get('events') or {}).get('skipped', [])}
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        return None
 
 
 def ebur128(path):
@@ -292,7 +331,8 @@ def main():
                     "the cues file's folder)")
     ap.add_argument('--lufs-tol', type=float, default=1.0)
     ap.add_argument('--tp-max', type=float, default=-1.0, help='dBTP')
-    ap.add_argument('--lra', default='3,8', help='acceptable loudness range, LU')
+    ap.add_argument('--lra', help='acceptable loudness range, LU (default 3,8; 3,14 for an effects-only film)')
+    ap.add_argument('--score-report', help="score.py's report JSON (default: qa/score.json in the cues' folder)")
     ap.add_argument('--no-loudness', action='store_true', help='skip loudness (e.g. a muted loop)')
     ap.add_argument('--payoff', help='cue name whose moment should be the loudest (default: a cue named payoff)')
     ap.add_argument('--tail-rms', type=float, default=-45.0, help='dBFS over the last 50 ms')
@@ -354,9 +394,15 @@ def main():
         notes.append(f'{len(quiet_keys)} key events are thinned by score.py (typing plan) and not expected to sound')
     elif quiet_keys is None:
         notes.append('could not replay score.py\'s typing plan: every key event is expected to sound')
+    skipped = score_skipped(args) or set()
+    off = [e for e in cues['events'] if e['kind'] != 'key' and round(e['f'], 3) in skipped]
+    if off:
+        notes.append(f'{len(off)} events are skipped by score.py (its report: a role the kit leaves off) and not expected '
+                     'to sound: ' + ', '.join(sorted({e["kind"] for e in off})))
     ev_on = [e for e in cues['events'] if not e['apex'] and not e.get('ends')
-             and not (e['kind'] == 'key' and quiet_keys and round(e['f'], 3) in quiet_keys)]
-    ev_ap = [e for e in cues['events'] if e['apex'] or e.get('ends')]
+             and not (e['kind'] == 'key' and quiet_keys and round(e['f'], 3) in quiet_keys)
+             and not (e['kind'] != 'key' and round(e['f'], 3) in skipped)]
+    ev_ap = [e for e in cues['events'] if (e['apex'] or e.get('ends')) and round(e['f'], 3) not in skipped]
     groups = []
     for e in ev_on:
         crisp = e['kind'] == 'tick' and e.get('variant') == 'crisp'
@@ -598,7 +644,9 @@ def main():
         if tp is not None and tp > args.tp_max:
             add('loudness', 'fail', None, f'true peak {tp:.1f} dBTP > {args.tp_max:g}'
                 + (' after the AAC encode: lower the limiter ceiling' if not args.audio else ''))
-        lo_lra, hi_lra = (float(v) for v in args.lra.split(','))
+        sc = score_json(args)
+        lra_rng = args.lra or ('3,14' if sc is not None and effects_only(sc) else '3,8')
+        lo_lra, hi_lra = (float(v) for v in lra_rng.split(','))
         if lra is not None and not lo_lra <= lra <= hi_lra:
             add('loudness', 'warn', None, f'loudness range {lra:.1f} LU outside {lo_lra:g}-{hi_lra:g}: '
                 + ('too flat, no drops or builds' if lra < lo_lra else 'too wide for a short film'))

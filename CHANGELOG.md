@@ -17,6 +17,10 @@ cinetic's films now move at a calm pace, and their copy arrives as short fragmen
 - **Holds alive, not frozen.** A reading hold with a 0.3–1 px/f drift or a 1–3% creep counts as life, so a film no longer has to plant a tick inside a read to pass the gates. Calm never turns static: the energy arc, the moving frame 0, the moving last third and the building end card all stay.
 - **No springs on type.** Words settle on eases or the critically damped `SPR.calm`; overshoot and per-letter tricks on copy join the hard bans.
 
+### Sound from earshot kits
+
+A film's effects now come from an [earshot](https://github.com/Leonxlnx/earshot) sound kit instead of cinetic's own synth voices: one sound per role, designed in code, rendered into takes with measured sync points, audited by measurement, and placed on the cue frames by `score.py`, which keeps the timing, typing plan, levels and master. The synth voices stay as the fallback, with a loud warning. Calm text-led films play effects only, and the scoring rules for text come from a frame-measured study of professional text-led films: one soft sound per fragment, near-silence while it is read, a big hit only for the one reveal, and a lockup that is a stop-down and one clean element.
+
 ### Added
 
 - `src/fx/Chain.tsx` in the Remotion starter renders a chain in build or replace mode from `COPY`, set in a new quiet `line` type role, and gives each fragment's landing frame for the sound (`chainResolves()`). `chain(id, mode, [[text, inFrame], …], { out })` in `timeline.ts` writes one `COPY` entry per fragment (`<id>.1`, `<id>.2`, …) with its `chain` and `mode`, timed from the pace; `line()` does the same for a single fragment and `chainOf()` reads a chain back.
@@ -27,6 +31,17 @@ cinetic's films now move at a calm pace, and their copy arrives as short fragmen
 - `taste-and-slop.md` names B8 Sentence dump, B9 Subtitle film, K7 Hurry and F11 Springs on type.
 - `craft-rules.md` adds the eight-film study of fragment flow (words per beat, hold, entry and exit, beats that continue a sentence, frames with text) beside the calm default.
 - A fifth eval, a calm 20 s update film for X, and text-flow expectations (words per frame, fragments, reading time, no overshoot on copy) on every brief.
+- `scripts/audio/kit.py`: the film's sound kit. `init --preset calm|crisp|minimal` (from earshot, tuned to the film's key), `tune`, `render` (cached, into `audio/kit/` with `kit.lock.json`), `vendor`, `check` (the kit against the film's cues plus earshot's audit of every take), `audition`, `listen` and `where`. It finds earshot through `--python`, `score.json` `sfx.python`, `EARSHOT_PYTHON` (`none` turns it off), an importable earshot, or `earshot` on `PATH`.
+- `scripts/audio/listen.py`: earshot's timeline with the cues, its annotated sound sheet and its critique in one process, into `out/qa/listen.json` and `out/qa/sound_sheet.png`; `--kit` listens to each kit role against cheap-synth alternatives. Without earshot or its models it records why and exits 0.
+- `score.json` `"sfx": {"engine": "auto" | "earshot" | "synth", "kit", "python"}`. `auto` renders the kit when it changed and earshot is found, else plays the rendered takes as they are, else the synth voices with a warning; `earshot` fails instead of falling back.
+- `score.json` `"music": "none" | "synth" | <track>`. `none` (effects only) needs no chords and masters at −18 LUFS by default, so a few accents keep their dynamics; `synth` is the built-in band, the default for a score that has chords.
+- Cue kind `text`: the soft sound of a copy fragment resolving, in `export-cues.ts` and the starter's `sync.ts`. A chain's fragments step through the chord's tones.
+- A stack guard in `score.py`: a warning, and a `stacks` row in the report, when a second sound lands within ±3 f of the payoff or the `lockup` cue (a score.json motif counts) or a whoosh, riser, swell or suck runs into it, and when two heavy sounds or three kinds start within ±3 f anywhere.
+- The report's `sfx` block (where every effect came from: the kit's roles with their takes, the cues of roles the kit leaves off, the kinds still on synth voices) and `target_lufs`; the console prints the source and the limiter's gain reduction. Warnings for a kit role whose pitch climbs or whose hit stacks attacks (earshot's audit), and for every synth riser.
+- `npm run kit` and `npm run listen` in both starters; each starter ships the calm kit as `audio/kit.json`.
+- `scripts/test/score.test.py`: the synth engine renders bit for bit as before, a kit's takes land on their frames, the fallbacks, the stack guard, effects-only scores, tuning; with `EARSHOT_PYTHON` set, a real kit render.
+- `references/sound.md` §1 (where the sounds come from: the kit, its roles, the fallback), §5.7 (scoring a text-led film) and §9.1 (listening with earshot); new rows in the report table, the failure modes and the sound-slop table (a rising synth whip, a stacked sting, a sound on every word, a synth pad bed under quiet type).
+- `docs/setup.md`: "Sound from earshot" (installing earshot in its own environment, `EARSHOT_PYTHON`) and sound troubleshooting rows.
 
 ### Changed
 
@@ -36,6 +51,11 @@ cinetic's films now move at a calm pace, and their copy arrives as short fragmen
 - The treatment template's beat sheet carries each fragment with its mode and picture beat. The Plumb example runs at the calm pace and splits its 7-word UI note into a replace chain.
 - The director lens counts words per frame on the sheets and checks the text flow, the art lens checks the fragment rules, and the verifier checks text-flow issues on sheet frames rather than by eye at speed. Critics may propose splitting a sentence into a chain.
 - Motion characters per brand personality run about 1.4× longer, calm moves follow 0.5 s + 1.6 ms per px, and a line read as it types runs at about 20 characters per second.
+- The starters' lockup is a stop-down and one clean hit: no whoosh into it, no drop, snap or motif bells on it, no ticks through the hold. Their statements get one `text` sound per fragment instead of a pop and a tick per word, and their `score.json` plays effects only.
+- `render.sh --build-audio` renders the kit before the score; `new-film.sh` lists `npm run kit` and `npm run listen` in its next steps and says whether earshot was found.
+- `av-audit.py`: the loudness target follows score.py's default for the score (−18 for an effects-only film), the loudness range for an effects-only film is 3–14 LU, and events score.py's report lists as skipped (a role the kit leaves off) are not expected to sound.
+- The sound critic reads `listen.json` and the report's `sfx` and `stacks`; its fixes name a kit change, a new sound from earshot (a forge run, or a fit of a public-domain or owned recording), a cue or a score parameter. A stacked lockup, a rising synth whip and shipping on the synth fallback are P1.
+- SKILL.md Step 5 renders and checks the kit, scores text one fragment at a time, keeps the music off for calm text-led films, and listens with earshot; the spec line names the kit.
 
 ## [1.0.0] - 2026-10-04
 

@@ -205,6 +205,34 @@ echo 'export PATH="$HOME/.venvs/cinetic/bin:$PATH"' >> ~/.zshrc    # or ~/.bashr
 
 A venv also avoids the `externally-managed-environment` error that recent Debian, Ubuntu and Homebrew Pythons raise on a global `pip install`.
 
+### Sound from earshot
+
+A film's sound effects come from its sound kit (`audio/kit.json`), rendered by [earshot](https://github.com/Leonxlnx/earshot) 0.3 or later: sounds designed in code, each take with its measured sync points. earshot is optional but recommended: without it a film plays the kit takes already rendered in its `audio/kit/` folder, and with none it falls back to synthesized effects and says so in a warning. Rendering a kit needs no models and no network; listening (`listen.py`) downloads two open models (~1.4 GB) on first use.
+
+earshot has heavier dependencies (PyTorch) than cinetic, so give it its own virtual environment, following its README ("Install"):
+
+```bash
+git clone https://github.com/Leonxlnx/earshot ~/earshot && cd ~/earshot
+python3 -m venv .venv
+.venv/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+.venv/bin/python -m pip install -e .
+```
+
+Then tell cinetic where it is, in your shell profile next to the `PATH` line above:
+
+```bash
+echo 'export EARSHOT_PYTHON="$HOME/earshot/.venv/bin/python"' >> ~/.zshrc    # or ~/.bashrc
+```
+
+Inside a film project, `python3 scripts/audio/kit.py where` prints which earshot it found, or what it tried. It looks, in order, at `--python`, `"sfx": {"python": ...}` in `audio/score.json`, `EARSHOT_PYTHON`, an `earshot` importable in the `python3` that runs the script, and `earshot` on `PATH`; each must have sound kits (`earshot kit --help` works). When the interpreter runs earshot from a source checkout it was not installed from, add `PYTHONPATH=/path/to/that/checkout` (it is passed through). `EARSHOT_PYTHON=none` turns earshot off for a run (score.py then plays the rendered takes as they are).
+
+| Command (in a film project) | What it does |
+|---|---|
+| `npm run kit` (`python3 scripts/audio/kit.py render`) | renders every take into `audio/kit/` (about 35–75 s for the calm kit the first time, a few seconds once cached) |
+| `python3 scripts/audio/kit.py init --preset calm\|crisp\|minimal --force` | starts `audio/kit.json` from an earshot preset, tuned to the key in `audio/score.json` |
+| `python3 scripts/audio/kit.py check` | the kit against the film's cues, plus earshot's audit of every take |
+| `npm run listen` (`python3 scripts/audio/listen.py`) | earshot's ears on the soundtrack: `out/qa/listen.json` and `out/qa/sound_sheet.png` (20–60 s of model loading, once per run) |
+
 ### Fonts
 
 Nothing is installed system-wide. Each film vendors its typefaces from npm `@fontsource-variable/*` packages, with `--font <name>` on `new-film.sh` or `node scripts/add-font.mjs <name>` inside the project (both need the network), so a render never fetches a font. A brand's own `.ttf` or `.otf`, and the route for offline machines, are in [`references/copy-and-type.md` §6](../skills/cinetic/references/copy-and-type.md#6-one-family-chosen-for-the-brand).
@@ -289,13 +317,15 @@ Now run the gates and build the sound:
 
 ```bash
 npm run check    # 3-8 s. Fails on purpose: "lint-film: 30 files, 5 errors, 0 warnings -> FAIL"
-npm run cues     # 1 s. "wrote out/cues.json: 20 events (...), 16 cues, 9.00 s at 60 fps, 120 BPM"
-npm run audio    # 6 s. "PASS  public/audio/soundtrack.wav  9.0s  -14.0 LUFS  TP -2.27 dBTP ..."
+npm run cues     # 1 s. "wrote out/cues.json: 6 events (...), 16 cues, 9.00 s at 60 fps, 120 BPM"
+npm run kit      # 35-75 s the first time, seconds after. "kit calm: 57 takes in audio/kit (57 rendered, 0 cached) ..."
+npm run audio    # 6-20 s. "PASS  public/audio/soundtrack.wav  9.0s  -18.0 LUFS (target -18, ...)  TP -2.27 dBTP ..."
 ```
 
 - `npm run check` runs `tsc`, `lint-film.mjs` and `grid-check.ts`. On the starter the lint fails with `placeholder` errors: the palette, typeface, mark and name are stand-ins, and no film may ship on them. Replacing them is the agent's Step 2. `tsc` passing is the part that matters here. Because the lint stops the chain, run the grid check on its own: `npx tsx scripts/grid-check.ts src/timeline.ts` should print `-> pass (0 errors, 0 warnings)`.
 - `npm run cues` exports the sync frames from the picture code (`scripts/export-cues.ts`).
-- `npm run audio` synthesizes and masters the score (`scripts/audio/score.py`) into `public/audio/soundtrack.wav`, with stems in `out/stems/` and a report in `out/qa/score.json`.
+- `npm run kit` has earshot render the film's sound kit into `audio/kit/` (`scripts/audio/kit.py`; [Sound from earshot](#sound-from-earshot)). Without earshot it prints an install hint and what `score.py` will play instead, and the chain goes on.
+- `npm run audio` places the kit's takes on the cue frames and masters the soundtrack (`scripts/audio/score.py`) into `public/audio/soundtrack.wav`, with stems in `out/stems/` and a report in `out/qa/score.json`. The starter is effects only (`"music": "none"`), so it masters to −18 LUFS; its second line names where the effects came from (`sfx: earshot kit calm ...`, or `synth (fallback)` with a warning when no kit was rendered).
 
 Render a preview, then the motion-blurred master:
 
@@ -320,7 +350,7 @@ bash "$SKILL/scripts/new-film.sh" films/hf-film --engine hyperframes --fps 60 --
 cd films/hf-film
 node scripts/lint-film.mjs .      # fails on purpose until the placeholder palette, font and mark in index.html are replaced
 npm run lint                      # HyperFrames' own lint: must show 0 errors
-npm run cues && npm run audio
+npm run cues && npm run kit && npm run audio
 npm run render:preview            # hf-finish.sh --preview -> out/preview.mp4
 npm run render                    # hf-finish.sh with the soundtrack -> out/film.mp4
 ```
@@ -415,7 +445,11 @@ The full pipeline is in [`references/finishing.md`](../skills/cinetic/references
 |---|---|---|
 | `render.sh: soundtrack public/audio/soundtrack.wav not found` | cues and audio were not built | `npm run cues && npm run audio`; or pass `--build-audio` to rebuild both first; or `--no-audio` for a silent film |
 | `render.sh: warning: src/... is newer than public/audio/soundtrack.wav` | the picture changed after the score was made | rerun `npm run cues && npm run audio` before rendering; an old WAV under a retimed picture is the most common sync bug |
-| `npm run audio` prints `FAIL` with `integrated ... LUFS not within -14.0+-0.5` | the master missed its loudness target (±0.5 LU) | read `warnings` and `limiter_hot` in `out/qa/score.json`; pull a loud bed down rather than raising the ceiling; a calm brand or a sting of 8 s or less may target −16: set `"master": {"lufs": -16}` in `audio/score.json` (or pass `--lufs -16`), then rerun `npm run audio` |
+| `npm run audio` prints `FAIL` with `integrated ... LUFS not within ...` | the master missed its loudness target (±0.5 LU; −14 with music, −18 for an effects-only film unless `master.lufs` says otherwise) | read `warnings` and `limiter_hot` in `out/qa/score.json`; pull a loud bed down rather than raising the ceiling; a sting of 8 s or less with music may target −16: set `"master": {"lufs": -16}` in `audio/score.json` (or pass `--lufs -16`), then rerun `npm run audio` |
+| `warning: blind synthesis fallback: ...` and `sfx: synth (fallback)` | no rendered kit in `audio/kit/` and no earshot found | install earshot and set `EARSHOT_PYTHON` ([Sound from earshot](#sound-from-earshot)), then `npm run kit && npm run audio`; or copy a kit rendered on another machine: `python3 scripts/audio/kit.py vendor --from <its audio/kit>` |
+| `kit.py: earshot not found (...)` | `EARSHOT_PYTHON` unset or wrong, or an earshot older than 0.3 (no `earshot kit`) | `python3 scripts/audio/kit.py where` lists what it tried; point `EARSHOT_PYTHON` at the interpreter of earshot's virtual environment |
+| `... changed since the takes were rendered; earshot is not available ...: playing the takes as they are` | `audio/kit.json` was edited on a machine without earshot | render the kit where earshot is installed (`npm run kit`) and keep `audio/kit/` with the project |
+| `listen.py` writes `"listened": false` | earshot or its models are missing, or a model failed to load (memory, network on first use) | the reason is in `out/qa/listen.json`; `python3 -m earshot doctor --load` in earshot's environment checks the models. Listening never blocks a build |
 | `FAIL: true peak ... dBTP above -1.5` | the ceiling was raised, or sounds were added after mastering | restore `"ceiling": 0.77` in `audio/score.json` and rerun `npm run audio`; master a supplied track with `python3 scripts/audio/master.py mix.wav public/audio/soundtrack.wav --lufs -14` |
 | `check-sync` fails on true peak after the mux | the AAC encode adds 0.5–1 dB of peak | the same fix as above: keep the 0.77 ceiling so the WAV stays at or under −1.5 dBTP |
 | A Python script of your own dies with `Segmentation fault` inside `librosa.onset` or `librosa.util.peak_pick` | a stale numba cache, or a numba build that does not match numpy | `av-audit.py` no longer uses librosa's numba code; for your own scripts, `export NUMBA_CACHE_DIR=$(mktemp -d)` or upgrade numba and numpy together |
