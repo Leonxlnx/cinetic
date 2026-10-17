@@ -22,13 +22,19 @@ row; placed so the take's measured onset (peak for whooshes, end for risers) lan
 whoosh's lead-in is faded so it starts no earlier than its move; levelled by the role's level_db,
 the cue's weight and KIT_GAIN (a take at level_db 0 sits where the synth voices sat against the
 music), with keys, clicks and crisp ticks levelled against the music as below; tonal roles play the
-take whose pitch is nearest the note the synth voice would sound. A role the kit sets null is off
-(its cues are skipped and listed); a role the kit does not name keeps its synth voice. Kind "text"
-is the soft sound of a copy fragment resolving: a chain's fragments step through the chord's tones.
-The stack guard warns when a second designed sound (or a lead-in: whoosh, riser, swell, suck, a
-score.json motif or suck) sits within +-3 f of the payoff or the "lockup" cue, or when 2+ heavy
-sounds (hit, drop, snap, heavy land) or 3+ kinds start within +-3 f anywhere; the report also lists
-the kit's audit warnings (a rising pitch glide, stacked attacks) and every synth riser.
+take whose pitch is nearest the note the synth voice would sound. An explicit note (a hand-set
+pitch, a progress rung, a motif note) plays only a take on that note: with none, that cue gets its
+synth voice and a warning (a neighbouring take would be a wrong note). Each take is trimmed toward
+its role's median loudness (kit.lock.json lufs_m_max, at most 6 dB), so repeated cues of a role do
+not jump in level although the takes are peak-normalised. A role the kit sets null is off (its cues
+are skipped and listed); a role the kit does not name keeps its synth voice. Kind "text" is the
+soft sound of a copy fragment resolving: a chain's fragments step through the chord's tones (with a
+kit, the chord's tones among the text takes, so consecutive fragments play different notes).
+The stack guard warns when a second designed sound (or a lead-in: whoosh, riser, swell or suck, or
+a score.json motif) sits within +-3 f of the payoff or the "lockup" cue, or when 2+ heavy sounds
+(hit, drop, snap, heavy land) or 3+ kinds start within +-3 f anywhere; a score.json drop's silence
+and suck are the stop-down, not a layer. The report also lists the kit's audit warnings (a rising
+pitch glide, stacked attacks) and every synth riser.
 
 Usage (from the project root):
   python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json \
@@ -43,7 +49,9 @@ masked effects (under +6 dB in their own band), every tuned sound with its note,
 and warnings. The end fade (master.fade) applies to the music and the effects alike, so the WAV
 reaches digital silence; an effect that starts inside the fade is reported. The hook check warns
 when the first 0.5 s sits more than 12 dB under the median momentary loudness (a soft hook).
-A "progress" block re-pitches matching events into a climbing scale that resolves on the tonic.
+A "progress" block re-pitches matching events into a climbing scale that resolves on the tonic
+(with a kit whose role for them is tuned, a climb through that role's take notes; an untuned kit
+role warns, since its rungs cannot climb).
 The arc check warns when the loudest moment falls in the last 20% of a film over 8 s: the drop on
 the hero reveal should peak, and the lockup resolve. The hook check applies to films with music;
 an effects-only film may open on near-silence.
@@ -53,8 +61,9 @@ up to 25 chars/s and once per word ("word") above, as measured top-tier launch f
 a dark modal tock (spectral peak 0.75-0.95 kHz, centroid ~1.2 kHz, ~11% in 2-5 kHz, -20 dB about
 6 ms after its peak); "mechanical" is stiffer with a bottom-out tick; "pitched" plays felt mallets
 on chord/pentatonic tones in G4-F5; "muted" is dull and 10 dB further under the music; "word" is one
-pitched blip per word (36-60 ms, 330-1400 Hz) stepping through the chord's tones; "off" skips key
-events. Per key: never two keys within 60 ms, runs over 12 keys/s thinned to about 12/s (word
+pitched blip per word (36-60 ms, 330-1400 Hz) stepping through the chord's tones (with a kit: one key
+take per word); "off" skips key events. With a kit the key takes set the timbre and the style sets
+timing and level. Per key: never two keys within 60 ms, runs over 12 keys/s thinned to about 12/s (word
 starts, spaces and returns kept); level follows the word (+2.5 dB on word starts, a slight
 decrescendo inside it, -1 dB before a space, sigma 2.5 dB at random, -3 dB once a run passes 1.5 s),
 no jump over 6 dB between neighbours; about half the letters bottom out 25-35 ms after the press;
@@ -139,6 +148,7 @@ TYPING_GAIN = dict(soft=1.0, mechanical=1.0, pitched=0.5, muted=0.8, word=5.0)
 AUTO_WORD_RATE = 25.0  # chars/s: measured typing above 25-30 chars/s is sounded per word, or not at all
 KEY_KIND_GAIN = {'letter': 1.0, 'back': 0.9, 'space': 1.26, 'return': 1.33}  # heard level: space +2 dB, return +2.5 dB
 KEY_RMS_REF = dict(soft=0.31, mechanical=0.344, muted=0.388, pitched=0.624)  # a letter's 6 ms RMS / peak, per style
+KEY_CENTROID_MAX = 3000.0  # Hz: a kit key run brighter than the measured key-click centroids (0.8-3 kHz) warns
 KEY_FAST = 12.0  # keys/s: typing faster than this is thinned
 KEY_MIN_GAP = 1 / KEY_FAST  # s: in a fast run a letter sounds only this long after the previous sounded key
 KEY_FLAM_GAP = 0.06  # s: never two keys closer (a flam); word starts, spaces and returns need only this
@@ -696,12 +706,29 @@ def motif_bells(song, bells, kit=None):
     for mo in song.motifs:
         for k, (m, r) in enumerate(zip(mo['notes'], mo['rhythm'])):
             t, pan = mo['t'] + r * song.beat, 0.12 * (k % 2 * 2 - 1)
-            if st == 'ok':
-                tk = kit.pick(name, f"motif|{t:.4f}|{k}", m, explicit=True)
-                g = KIT_GAIN * 10 ** (spec['level_db'] / 20) * (1.0 - 0.12 * k) * mo['gain'] / 1.5
-                S.place(bells, kit.audio(tk), t - tk[spec['align'] + '_s'], g, pan)
+            tk = kit.pick(name, f"motif|{t:.4f}|{k}", m, explicit=True) if st == 'ok' else None
+            if tk is not None:
+                g = KIT_GAIN * 10 ** (float(spec.get('level_db') or 0.0) / 20) * (1.0 - 0.12 * k) * mo['gain'] / 1.5
+                S.place(bells, kit.audio(tk) * tk.get('trim', 1.0), t - tk[spec.get('align', 'onset') + '_s'], g, pan)
             else:
+                if st == 'ok':
+                    missing_note(song, kit, name, m, 'or keep the motif inside the role\'s notes (a progress climb and its '
+                                 'resolve fit two octaves of pentatonic takes at 5 rungs or fewer)')
                 S.place(bells, S.fm_bell(S.mtof(m), 3.0, 1.4, 3.5, 1.3), t, (0.10 - 0.015 * k) * mo['gain'], pan)
+
+
+def missing_note(song, kit, name, m, hint=None):
+    """Warn (once per role and note) that a pitched kit role has no take on an explicit note, so its synth
+    voice plays it: a neighbouring take would be a wrong note. hint: the other way out, for the caller."""
+    seen = song.__dict__.setdefault('_missing_notes', set())
+    if (name, round(m, 3)) in seen:
+        return
+    seen.add((name, round(m, 3)))
+    ns = kit.notes(name)
+    song.warnings.append(f'kit role {name} ({kit.roles[name]["sound"]}) has no take on {note_name(m)} (its notes: '
+                         f'{note_name(ns[0])}-{note_name(ns[-1])}, {len(ns)} of them): its synth voice plays that note. Add '
+                         f'{note_name(m)} to the role\'s pitches in audio/kit.json and run kit.py render (npm run kit), '
+                         + (hint or 'or drop the hand-set pitch and let score.py choose the note'))
 
 
 def in_silence(song, t, scope=None):
@@ -711,12 +738,43 @@ def in_silence(song, t, scope=None):
 PITCHED = ('pop', 'tick', 'tock', 'click', 'bell', 'land')  # kinds whose voice takes a `pitch`
 
 
-def apply_progress(song, events):
+def progress_ladder(song, kit, hits):
+    """With a kit: (role name, notes) when every rung event plays one kit role that has takes on 2+ notes
+    of the key (the rungs then climb those notes), else (None, None). Warns about rung roles that cannot
+    climb: an untuned role (its rungs all sound alike) or one the kit leaves off."""
+    roles = {}
+    for e in hits:
+        roles.setdefault(K.role_for(e['kind'], e.get('variant'), float(e.get('weight', 1.0)),
+                                    float(e['dur']) / song.fps if 'dur' in e else None), []).append(e)
+    found = []
+    for role, es in roles.items():
+        st, name, spec = kit.lookup(role)
+        if st == 'off':
+            song.warnings.append(f'progress: the kit leaves {name} off, so its {len(es)} rung(s) are skipped: give the role a '
+                                 'sound in audio/kit.json, or use "kind": "bell" for the steps')
+        elif st == 'ok' and not kit.notes(name):
+            song.warnings.append(f'progress: kit role {name} ({spec["sound"]}) is untuned, so its {len(es)} rung(s) sound '
+                                 'alike and do not climb: use "kind": "bell" (the kit\'s tuned voice) for the steps, or give '
+                                 'the role "pitches" in audio/kit.json')
+        elif st == 'ok':
+            found.append(name)
+    if len(found) == 1 and len(roles) == 1:
+        ns = kit.notes(found[0])
+        inkey = [m for m in ns if int(round(m)) % 12 in song.scale]
+        if len(inkey) >= 2:
+            return found[0], inkey
+    return None, None
+
+
+def apply_progress(song, events, kit=None):
     """The progress motif (score.json "progress"): every event whose id contains `match` (and
     whose kind is `kind`, if given) gets the next note of the key's scale, in frame order, so
     progress is heard as a climb. By default the last rung is the step below the tonic, and
     `resolve` places the tonic above it (with its octave below, on the bells) on the payoff.
-    Returns the report entry."""
+    With a kit whose role for the rungs has takes on several notes (the calm bell: two octaves of
+    the key's pentatonic), the rungs climb those notes instead, ending under the highest tonic they
+    can reach, and `start` counts those notes from the lowest; an untuned role warns, since its rungs
+    cannot climb. Returns the report entry."""
     pr = song.progress
     hits = [e for e in events if pr['match'] in str(e.get('id', '')) and (not pr['kind'] or e['kind'] == pr['kind'])]
     if not hits:
@@ -730,17 +788,33 @@ def apply_progress(song, events):
         k = d - 1
         return pr['tonic'] + 12 * (k // 7) + steps[k % 7]
 
+    lad_role, lad = progress_ladder(song, kit, hits) if kit is not None else (None, None)
+    if lad:
+        if pr['start'] is not None:
+            k0 = max(0, min(len(lad) - 1, int(pr['start']) - 1))
+            notes = [lad[min(len(lad) - 1, k0 + k)] for k in range(n)]
+        else:
+            fit = [T for T, m in enumerate(lad) if T >= n and int(round(m)) % 12 == song.tonic]
+            notes = lad[max(fit) - n:max(fit)] if fit else [lad[min(k, len(lad) - 1)] for k in range(n)]
+        if n > len(lad):
+            song.warnings.append(f'progress: {n} rungs but kit role {lad_role} has takes on only {len(lad)} notes of the key, so '
+                                 'the climb holds on its top note: add notes to its pitches in audio/kit.json (npm run kit)')
     rungs = []
     for k, e in enumerate(hits):
-        m = degree(start + k)
+        m = notes[k] if lad else degree(start + k)
         e['pitch'] = m
         rungs.append(dict(f=e['f'], id=e.get('id', ''), kind=e['kind'], note=note_name(m)))
+        if kit is not None and kit.lookup(K.role_for(e['kind'], e.get('variant'), float(e.get('weight', 1.0)),
+                                                     float(e['dur']) / song.fps if 'dur' in e else None))[0] != 'missing':
+            continue  # the kit plays it: progress_ladder judged the role
         if e['kind'] not in PITCHED or (e['kind'] == 'land' and float(e.get('weight', 1)) >= 0.6 and e.get('variant') != 'light'):
             song.warnings.append(f'progress: {e["kind"]} {e.get("id", "")} ignores its pitch (use pop, bell, tick, click '
                                  'or a light land for the rungs)')
     rep = dict(match=pr['match'], events=n, rungs=rungs)
+    if lad:
+        rep['kit'] = dict(role=lad_role, notes=[note_name(m) for m in lad])
     if pr['resolve'] is not None:
-        top = degree(start + n - 1)
+        top = notes[-1] if lad else degree(start + n - 1)
         res = top + 1 + (song.tonic - (top + 1)) % 12  # the first tonic above the last rung
         if pr['resolve'] <= hits[-1]['f'] / song.fps:
             song.warnings.append('progress: the resolve comes before the last rung; it must land after the climb')
@@ -941,12 +1015,13 @@ def kit_target(song, kind, e, t, pcs, pitch, text_note):
 
 def kit_voice(kit, name, spec, e, i, f, t, target=None, explicit=False, index=None, mono=True):
     """One cue's take: (samples, start s, MIDI note of a pitched take or None, file). The take is chosen by
-    Kit.pick and placed so its measured onset / peak / end (the role's align) lands on t."""
+    Kit.pick, trimmed toward its role's median loudness (Kit: the takes are peak-normalised) and placed so
+    its measured onset / peak / end (the role's align) lands on t."""
     tk = kit.pick(name, f"{e.get('id', i)}|{f:g}", target, explicit, index)
     x = kit.audio(tk)
     if mono and x.ndim == 2:
         x = x.mean(axis=1)
-    return x, t - tk[spec.get('align', 'onset') + '_s'], tk['midi'], tk['file']
+    return x * tk.get('trim', 1.0), t - tk[spec.get('align', 'onset') + '_s'], tk['midi'], tk['file']
 
 
 def fade_head(x, cut):
@@ -1016,27 +1091,47 @@ def build_sfx(song, n, events, plan=None, thinned=None, kit=None):
             if st == 'off':
                 skipped.append(dict(i=i, f=f, kind=kind, role=role, why=f'{name} is off in the kit'))
                 continue
+            target, explicit = kit_target(song, kind, e, t, pcs, pitch, text_note) if st == 'ok' else (None, False)
+            if st == 'ok' and kind == 'text' and pitch is None and kit.notes(name):
+                # a chain steps through the chord's tones among the kit's text notes (root, third, fifth,
+                # third as the synth voice does), so consecutive fragments play different takes
+                ns = kit.notes(name)
+                tones = [m_ for m_ in ns if int(round(m_)) % 12 in tri]
+                if len(tones) < 2:  # fewer than two triad tones among the takes: any chord tone, else any take
+                    wide = [m_ for m_ in ns if int(round(m_)) % 12 in pcs]
+                    tones = wide if len(wide) >= 2 else ns
+                target, explicit = tones[(0, 1, 2, 1)[text_run % 4] % len(tones)], True
+            motif = kind == 'bell' and e.get('variant') == 'motif'
+            if st == 'ok' and explicit and not motif and not kit.covers(name, target):
+                missing_note(song, kit, name, target)  # the synth voice below plays this cue
+                st = 'missing-note'
             if st == 'ok' and name == 'land':
                 if last_heavy is not None and abs(f - last_heavy) < 1:
                     skipped.append(dict(i=i, f=f, kind=kind, why='second heavy landing on one frame'))
                     continue
                 last_heavy = f
             if st == 'ok':
-                kg = KIT_GAIN * 10 ** (float(spec.get('level_db', 0.0)) / 20)
-                target, explicit = kit_target(song, kind, e, t, pcs, pitch, text_note)
+                kg = KIT_GAIN * 10 ** (float(spec.get('level_db') or 0.0) / 20)
                 crisp_ = role == 'tick.crisp'
                 if kind == 'key':  # plan_typing's timing, word dynamics and density; one take per key identity
-                    letter = kp['kind'] not in ('space', 'return')
-                    x, start, m, src = kit_voice(kit, name, spec, e, i, f, kp['t'], index=kp['seed'] if letter else None)
-                    g = kg * w * kp['level'] * kp['gain'] / (TYPING_GAIN[kp['style']] * KEY_KIND_GAIN[kp['kind']])
+                    kk = kp['kind']  # letter, back, space, return, or word (typing "word": one take per word)
+                    index = kp['strike'] if kk == 'word' else kp['seed'] if kk not in ('space', 'return') else None
+                    x, start, m, src = kit_voice(kit, name, spec, e, i, f, kp['t'], index=index)
+                    g = kg * w * kp['level'] * kp['gain'] / (TYPING_GAIN[kp['style']] * KEY_KIND_GAIN.get(kk, 1.0))
                     g *= 0.8 if kp['style'] == 'muted' else 1.0
                     pan, bus = float(np.clip(kp['pan'], -SFX_PAN, SFX_PAN)), keys
-                elif kind == 'bell' and e.get('variant') == 'motif':  # the signature motif on the bell takes
+                elif motif:  # the signature motif on the bell takes (a note the kit lacks: the synth bell)
                     for k, (mm, r) in enumerate(zip(song.motif, song.rhythm)):
-                        x, start, m, src = kit_voice(kit, name, spec, e, i, f, t + r * beat, mm, True)
-                        S.place(fx, x, start, kg * w * (1.0 - 0.12 * k), pan)
+                        if kit.covers(name, mm):
+                            x, start, m, src = kit_voice(kit, name, spec, e, i, f, t + r * beat, mm, True)
+                            gk = kg * w * (1.0 - 0.12 * k)
+                        else:
+                            missing_note(song, kit, name, mm, 'or change signature.motif to notes the role has')
+                            x, start, m, src = S.fm_bell(S.mtof(mm), 3.0, 1.4, 3.5, 1.3), t + r * beat, mm, None
+                            gk = g * (1.2 - 0.15 * k) * 1.25
+                        S.place(fx, x, start, gk, pan)
                         placed.append(dict(i=i, f=f, kind=kind, variant='motif', id=e.get('id', ''), t=t, start=start, x=x,
-                                           g=kg * w * (1.0 - 0.12 * k), pan=pan, midi=m, sample=src, role=name))
+                                           g=gk, pan=pan, midi=m, sample=src, role=name if src else None))
                     continue
                 else:
                     wide = kind in WIDE_KINDS
@@ -1047,7 +1142,7 @@ def build_sfx(song, n, events, plan=None, thinned=None, kit=None):
                         cut = int(round((t - lead - start) * SR))
                         if cut > 0:
                             x, start = fade_head(x, cut), start + cut / SR
-                    g = kg * (min(2.0, w / 0.5) if name == 'land.light' else click_w if kind == 'click' else w)
+                    g = kg * (click_w if kind == 'click' else w)  # level_db sets each role's level, land.light's too
                     if kind == 'click':  # one level per film, +-0.5 dB per press, as the synth click
                         r = S.rng(seed)
                         r.standard_normal()
@@ -1299,15 +1394,19 @@ def typing_duck(song, plan, runs, n):
     return g
 
 
-def typing_levels(runs, plan, keys_sig, music_sig):
+def typing_levels(runs, plan, keys_sig, music_sig, kit_keys=None):
     """Each typing run of 4+ sounded keys (2+ word blips) against the music under it, both
     pre-master and the music already ducked: the A-weighted level difference over the run, the
     keys' short-window level against the music (6 ms vs 250 ms RMS, median), the 2-5 and 5-10 kHz
     band differences, the typing's 2-5 kHz share of its own A-weighted energy, and the bed's share
     above 2 kHz. Targets, from measured norms: per key (soft, mechanical, pitched) the run sits -8
     to -2 dB A under the ducked music with the keys about at the music's short-window RMS; word
-    blips +2 to +9 dB over it; muted typing 8 dB A or more under the full bed. Returns (rows, warnings)."""
+    blips +2 to +9 dB over it; muted typing 8 dB A or more under the full bed. kit_keys: {event index:
+    "role: sound"} for keys a kit take voiced: such a run is bright when its centroid passes the measured
+    key-click range (KEY_CENTROID_MAX), and the warning names the take, not a style. Returns (rows,
+    warnings)."""
     rows, warns = [], []
+    kit_keys = kit_keys or {}
     km, mm = keys_sig.mean(axis=1), music_sig.mean(axis=1)
     for r in runs:
         sounded = [plan[i]['t'] for i in r['idx'] if i in plan]
@@ -1330,6 +1429,7 @@ def typing_levels(runs, plan, keys_sig, music_sig):
                    band_2k_5k_db=db(band(K, 2000, 5000), band(Mu, 2000, 5000)),
                    band_5k_10k_db=db(band(K, 5000, 10000), band(Mu, 5000, 10000)),
                    share_2k_5k_A_pct=round(float(100 * band(K * aw, 2000, 5000) / ((K * aw).sum() + 1e-20)), 1),
+                   centroid_hz=round(float((fr * K).sum() / (K.sum() + 1e-20))),
                    bed_top_A_pct=round(float(100 * band(Mu * aw, 2000, 10000) / ((Mu * aw).sum() + 1e-20)), 1))
         rows.append(row)
         where = f'typing at {row["t"][0]}-{row["t"][1]}s ({r["style"]}, {row["chars_per_s"]:.0f} chars/s)'
@@ -1351,7 +1451,21 @@ def typing_levels(runs, plan, keys_sig, music_sig):
                          '8 dB A or more under): lower the key weights')
         elif r['style'] == 'word' and row['key_vs_music_db'] is not None and not 0 <= row['key_vs_music_db'] <= 11:
             warns.append(f'{where}: the word blips sit {row["key_vs_music_db"]:+.0f} dB against the music (want +2 to +9)')
-        if r['style'] != 'word' and row['share_2k_5k_A_pct'] > 25:
+        ks = sorted({kit_keys[i] for i in r['idx'] if i in kit_keys})
+        if ks:
+            row['kit_sounds'] = ks
+        if r['style'] == 'word':
+            continue
+        if ks:  # the kit's take sets the timbre; the typing style only shapes timing and level
+            # judged by the measured key-click centroid (0.8-3 kHz, median 1.8): recorded keys in earshot's bank
+            # put 39-65% of their A-weighted energy in 2-5 kHz with centroids of 1-2.2 kHz, so the synth voice's
+            # 25% share target would flag every one of them
+            if row['centroid_hz'] > KEY_CENTROID_MAX:
+                warns.append(f'{where} is bright: its keys\' centroid is {row["centroid_hz"] / 1000:.1f} kHz (measured key clicks '
+                             f'sit at 0.8-{KEY_CENTROID_MAX / 1000:g} kHz, median 1.8; a key is a dark tock). The kit\'s key '
+                             f'takes ({", ".join(ks)}) set the timbre, not the typing style: give the brighter role a darker '
+                             'member in audio/kit.json (earshot sfx list shows each sound\'s centroid_hz), then npm run kit')
+        elif row['share_2k_5k_A_pct'] > 25:
             warns.append(f'{where} is bright: {row["share_2k_5k_A_pct"]:.0f}% of its A-weighted energy in 2-5 kHz (want 25% '
                          'or less; a key is a dark tock): use "soft" or "muted"')
     return rows, warns
@@ -1489,7 +1603,8 @@ def render(song, events, stems_dir=None, base_dir='.', kit=None):
 
     # report: masking per event, payoff dynamics
     mb = (music_bus * hold['all'][:, None])[:n_out]
-    trows, twarn = typing_levels(runs, plan, (keys_dry * hold['all'][:, None])[:n_out], mb)
+    kit_keys = {p['i']: f"{p['role']}: {kit.roles[p['role']]['sound']}" for p in placed if p['kind'] == 'key' and p.get('sample')}
+    trows, twarn = typing_levels(runs, plan, (keys_dry * hold['all'][:, None])[:n_out], mb, kit_keys)
     song.warnings.extend(twarn)
     styles = sorted({r['style'] for r in runs})
     typing = dict(style=song.typing, styles=styles, keys=sum(1 for e in events if e['kind'] == 'key'), sounded=len(plan),
@@ -1585,17 +1700,21 @@ def sfx_report(song, kinfo, kit, ev):
                 takes=kinfo['takes'].replace(os.sep, '/'), name=kinfo.get('name'), bank=kinfo.get('bank'),
                 earshot=kinfo.get('earshot_version'), notes=kinfo['notes'],
                 kit_cues=len({i for r in roles.values() for i in r['cues']}),
-                roles={k: dict(sound=v['sound'], cues=len(v['cues']), takes=sorted(v['takes'])) for k, v in sorted(roles.items())},
+                roles={k: dict(sound=v['sound'], cues=len(v['cues']), takes=sorted(v['takes']),
+                               lufs_spread=kit.roles[k].get('lufs_spread', 0.0),
+                               trim_db=sorted({t.get('trim_db', 0.0) for t in kit.roles[k]['takes'] if t['file'] in v['takes']}))
+                       for k, v in sorted(roles.items())},
                 off=off, synth={k: len(v) for k, v in sorted(synth.items())})
 
 
 def stack_guard(song, placed, events, cues):
     """Stacked gestures, as warnings and report rows {t, f, at, layers, lead_ins}. At the payoff and the
     "lockup" cue: a second sound within +-STACK_F frames (a score.json motif counts), or a lead-in that runs
-    into it (a whoosh, riser, swell or suck from up to 0.75 s before, still sounding 0.1 s before the moment;
-    a score.json drop's suck). A
-    reveal resolves on ONE clean element after a stop-down. Anywhere else: 2+ heavy sounds (hit, drop,
-    snap, a heavy landing) or 3+ kinds starting within +-STACK_F frames. Typing is a texture: not counted."""
+    into it (a whoosh, riser, swell or suck event from up to 0.75 s before, still sounding 0.1 s before the
+    moment). A reveal resolves on ONE clean element after a stop-down. A score.json drop is not a layer:
+    its silence and the music's suck into it are the stop-down itself (the suck ducks the music bus and
+    plays no sound). Anywhere else: 2+ heavy sounds (hit, drop, snap, a heavy landing) or 3+ kinds
+    starting within +-STACK_F frames. Typing is a texture: not counted."""
     win = STACK_F / song.fps
     evs, seen = [], set()
     for p in placed:
@@ -1622,7 +1741,6 @@ def stack_guard(song, placed, events, cues):
         layers += [f'motif bells (score.json motifs, {mo["t"]:.2f}s)' for mo in song.motifs if abs(mo['t'] - m_t) <= win]
         leads = [e['label'] for e in evs if e['kind'] in LEAD_IN and m_t - 0.75 <= e['t'] <= m_t + win
                  and e['start'] + len(e['x']) / SR >= m_t - 0.1]  # still sounding 100 ms before the moment
-        leads += ['the suck of a score.json drop' for _, b_, _ in song.sucks if abs(b_ - m_t) <= win]
         if len(layers) + len(leads) >= 2:
             out.append(dict(t=round(m_t, 3), f=round(m_t * song.fps, 2), at=at, layers=layers, lead_ins=leads))
             song.warnings.append(f'stacked {at} at {m_t:.2f}s: {", ".join(layers + leads)}. A reveal resolves on ONE clean '
@@ -1666,12 +1784,12 @@ def main(argv=None):
         if a.ceiling is not None:
             song.ceiling = a.ceiling
         events = sorted(cues.get('events', []), key=lambda e: e['f'])
-        progress = apply_progress(song, events) if song.progress else None
         base_dir = os.path.dirname(os.path.abspath(a.score))
         kit, kinfo = K.resolve(song.engine, locate(song.kit_path, base_dir),
                                locate(song.kit_takes, base_dir) if song.kit_takes else None, song.earshot_python,
                                log=None if a.quiet else (lambda s: print(s, file=sys.stderr)))
         song.warnings.extend(kinfo['warnings'])
+        progress = apply_progress(song, events, kit) if song.progress else None  # the rungs follow the kit's notes
         y, info, ev = render(song, events, a.stems, base_dir, kit)
         import soundfile as sf
         os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)

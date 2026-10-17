@@ -19,9 +19,11 @@ Checks (defaults are proven starting points, not dogma):
              typed in the "word" style, or "typing": "off") are replayed from the score JSON
              and not expected, nor are the events score.py's report (--score-report, default
              out/qa/score.json beside the cues) lists as skipped when it is newer than the cues
-             (a role the sound kit leaves off, such as riser); a key's bottom-out or keyup within
-             0.2 s after it is not a stray
-             onset.
+             (a role the sound kit leaves off, such as riser; matched on frame and kind, so the
+             hit a skipped riser leads into is still expected); a key's bottom-out or keyup
+             within 0.2 s after it is not a stray onset, nor is an onset inside a whoosh's or
+             suck's own span (its apexFrac of dur before the apex, at least 0.5 s after it) or
+             a riser's or swell's build.
              Without it the full mix is searched, where music hides quiet and soft-attack
              effects, so a low hit rate there is only a warning: gate with --stems.
   apex       whoosh/suck events (or any with apexFrac): the 30 ms envelope maximum of the sfx
@@ -53,7 +55,9 @@ Checks (defaults are proven starting points, not dogma):
   clipping   samples at or above full scale                                                 fail
   duration   audio and picture lengths differ by > 1.5 f                                     warn
   clicks     a > 14 kHz sample > 9x the RMS of its 20 ms and > 6x its 4 ms neighbourhood
-             whose > 14 kHz energy sits >= 80% inside 1 ms (a cut, not a designed attack)   warn
+             whose > 14 kHz energy sits >= 80% inside 1 ms (a cut, not a designed attack);
+             one within +-1 f of an onset event is that sound's own attack (a tap or knock
+             from the kit starts that fast; kit.py check audits the takes for clicks)      warn
   tail       last 50 ms RMS <= -45 dBFS and last 10 ms peak <= -60 dBFS                      fail
              and the last half second quieter than the one before it                         warn
   head       first 5 ms peak <= -40 dBFS: above it the film clicks on sample 0 or cuts in
@@ -63,7 +67,8 @@ Checks (defaults are proven starting points, not dogma):
              judges them, not this check)
 
 Writes JSON (--json) and a short summary. Exit: 0 no failing check, 1 a failing check, 2 usage or
-input error. Needs ffmpeg/ffprobe, numpy, scipy, soundfile, librosa (and opencv for the picture).
+input error. Needs ffmpeg/ffprobe, numpy, scipy, soundfile and librosa (opencv is optional: the
+picture is decoded by ffmpeg).
 """
 import argparse
 import glob
@@ -79,7 +84,21 @@ from scipy import signal
 
 sys.dont_write_bytecode = True  # no __pycache__ in the project's scripts/
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from forensics import SW, SH, decode, load_cues, probe  # noqa: E402
+try:
+    from forensics import SW, SH, decode, load_cues, probe  # noqa: E402
+except ModuleNotFoundError as _e:  # forensics imports opencv for its own picture metrics; nothing used here needs it
+    if _e.name != 'cv2':
+        raise
+    import types
+
+    class _NoCV(types.ModuleType):
+        def __getattr__(self, name):
+            if name.startswith('__'):  # module introspection (other imports walk sys.modules)
+                raise AttributeError(name)
+            raise RuntimeError(f'opencv (cv2.{name}) is not installed: pip install opencv-python-headless')
+
+    sys.modules['cv2'] = _NoCV('cv2')
+    from forensics import SW, SH, decode, load_cues, probe  # noqa: E402
 
 
 def die(msg):
@@ -273,16 +292,49 @@ def film_lufs(args):
 
 
 def score_skipped(args):
-    """Frames of the events score.py's report lists as skipped (a role the kit leaves off, a second
-    heavy landing on one frame, a thinned key), when the report is newer than the cues; else None."""
+    """(frame, kind) of the events score.py's report lists as skipped (a role the kit leaves off, a
+    second heavy landing on one frame, a thinned key), when the report is newer than the cues; else
+    None. Matched on the kind too: a riser's frame is the frame of the hit it leads into, and a kit
+    that leaves the riser off still plays that hit."""
     p = args.score_report or os.path.join(os.path.dirname(os.path.abspath(args.cues)), 'qa', 'score.json')
     try:
         if not os.path.isfile(p) or os.path.getmtime(p) < os.path.getmtime(args.cues):
             return None
         rep = json.load(open(p))
-        return {round(float(s['f']), 3) for s in (rep.get('events') or {}).get('skipped', [])}
+        return {(round(float(s['f']), 3), str(s.get('kind'))) for s in (rep.get('events') or {}).get('skipped', [])}
     except (OSError, ValueError, TypeError, KeyError, AttributeError):
         return None
+
+
+def is_skipped(e, skipped):
+    return (round(float(e['f']), 3), str(e['kind'])) in skipped
+
+
+def effect_spans(path, fps):
+    """[(f0, f1, kind, f)] frame spans the long effects of the cues file sound over, as score.py places
+    them: a whoosh or suck around its apex (dur frames, apexFrac of it before f; score.py's default
+    length when dur is missing), a riser or swell building into f. A take's tail can outlast its cue's
+    dur, so a whoosh or suck span runs at least 0.5 s past its apex. Onsets inside a span belong to
+    that sound's body, not to a missing event."""
+    try:
+        raw = json.load(open(path))
+    except (OSError, ValueError):
+        return []
+    out = []
+    for e in raw.get('events') or []:
+        if not isinstance(e, dict) or not isinstance(e.get('f'), (int, float)):
+            continue
+        kind, f, w = str(e.get('kind', '')), float(e['f']), float(e.get('weight', 1.0) or 1.0)
+        dur = float(e['dur']) if isinstance(e.get('dur'), (int, float)) else None
+        if kind in ('whoosh', 'suck'):
+            d = dur if dur is not None else (min(3.0, max(0.15, 0.45 + 0.35 * w)) if kind == 'whoosh' else 0.35) * fps
+            a = float(e.get('apexFrac', 0.5 if kind == 'whoosh' else 0.85))
+            out.append((f - a * d - 2, f + max((1 - a) * d, 0.5 * fps), kind, f))
+        elif kind in ('riser', 'swell'):  # score.py's default: a bar for a riser, a beat for a swell
+            beat = 60.0 / float(raw.get('bpm') or 120) * fps
+            d = dur if dur is not None else (4 * beat if kind == 'riser' else beat)
+            out.append((f - d, f + 1, kind, f))
+    return out
 
 
 def ebur128(path):
@@ -395,14 +447,15 @@ def main():
     elif quiet_keys is None:
         notes.append('could not replay score.py\'s typing plan: every key event is expected to sound')
     skipped = score_skipped(args) or set()
-    off = [e for e in cues['events'] if e['kind'] != 'key' and round(e['f'], 3) in skipped]
+    off = [e for e in cues['events'] if e['kind'] != 'key' and is_skipped(e, skipped)]
     if off:
         notes.append(f'{len(off)} events are skipped by score.py (its report: a role the kit leaves off) and not expected '
                      'to sound: ' + ', '.join(sorted({e["kind"] for e in off})))
     ev_on = [e for e in cues['events'] if not e['apex'] and not e.get('ends')
              and not (e['kind'] == 'key' and quiet_keys and round(e['f'], 3) in quiet_keys)
-             and not (e['kind'] != 'key' and round(e['f'], 3) in skipped)]
-    ev_ap = [e for e in cues['events'] if (e['apex'] or e.get('ends')) and round(e['f'], 3) not in skipped]
+             and not (e['kind'] != 'key' and is_skipped(e, skipped))]
+    ev_ap = [e for e in cues['events'] if (e['apex'] or e.get('ends')) and not is_skipped(e, skipped)]
+    spans = [(a, b) for a, b, kind, f in effect_spans(args.cues, fps) if (round(f, 3), kind) not in skipped]
     groups = []
     for e in ev_on:
         crisp = e['kind'] == 'tick' and e.get('variant') == 'crisp'
@@ -469,13 +522,18 @@ def main():
     if strict:
         ev_frames = np.array(sorted(e['f'] for e in cues['events'])) if cues['events'] else np.array([])
         key_frames = np.array([e['f'] for e in cues['events'] if e['kind'] == 'key'])
+        inside = 0
         for t in on_t:
             f = t * fps
             if len(key_frames) and np.any((f - key_frames > 0) & (f - key_frames <= 0.2 * fps + args.tol)):
                 continue  # a key's bottom-out (25-40 ms) or keyup (70-180 ms) after the press
             if not len(ev_frames) or np.min(np.abs(ev_frames - f)) > 3 * args.tol:
+                if any(a <= f <= b for a, b in spans):
+                    inside += 1  # texture inside a whoosh's (or riser's) own body: that sound, not a stray
+                    continue
                 stray.append(round(float(f), 1))
         sync['stray_sfx_onsets_f'] = stray[:60]
+        sync['onsets_inside_long_effects'] = inside
         if stray:
             add('sync', 'warn', None, f'{len(stray)} effect onsets have no event within {3 * args.tol:g} f '
                 f'(first at f{stray[0]}): a sound with no picture reason, or an event missing from cues.json')
@@ -693,6 +751,12 @@ def main():
                 last = i
     clicks.sort(key=lambda c: (c['t'], c['ch']))
     clicks = [c for i, c in enumerate(clicks) if i == 0 or c['t'] - clicks[i - 1]['t'] > 0.001]  # one per moment
+    # a sharp attack within +-1 f of a cue the effects voice is that sound's designed transient (a kit
+    # take is audited for clicks by `kit.py check`; a tap or knock starts that fast), not a buffer edge
+    on_f = np.array([e['f'] for e in ev_on]) if ev_on else np.array([])
+    for c in clicks:
+        if c['kind'] == 'click' and len(on_f) and float(np.min(np.abs(on_f - c['t'] * fps))) <= 1.0:
+            c['kind'], c['on_cue'] = 'attack', True
     bad_clicks = [c for c in clicks if c['kind'] == 'click']  # a percussive attack is designed; a cut is not
     if bad_clicks:
         add('clicks', 'warn', bad_clicks[0]['frame'], f'{len(bad_clicks)} clicks (> 14 kHz energy packed into 1 ms, '

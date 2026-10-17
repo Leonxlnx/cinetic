@@ -32,7 +32,8 @@ In order of preference:
 What the kit route keeps from the synth one:
 
 - **Sample-accurate and re-timeable.** Every take is placed by its measured sync point on the exact frame the picture code computes. Retime an act and the next `export-cues.ts` + `score.py` moves every sound with it.
-- **Tuned.** Tonal roles (a struck bell, a pluck, a sub drop) are rendered in the film's key (`kit.py tune` moves them to `score.json`'s key), and each cue plays the take whose pitch is nearest the note its chord asks for. Noise sounds (taps, whooshes, keys) need no tuning.
+- **Tuned.** Tonal roles (a struck bell, a pluck, a sub drop) are rendered in the film's key (`kit.py tune` moves them to `score.json`'s key), and each cue plays the take whose pitch is nearest the note its chord asks for. An explicit note (a hand-set `pitch`, a progress rung, a motif note) plays only a take on that note: when the role has none, that cue gets its synth voice and the report says which note to add, because a neighbouring take would be a wrong note. Noise sounds (taps, whooshes, keys) need no tuning.
+- **Level.** Takes are normalised to a −1 dBFS peak, so the takes of one role can measure 3–4 LU apart; `score.py` trims each take toward its role's median loudness (the lock's `lufs_m_max`, at most ±6 dB), so a repeated cue keeps one level whichever take it gets.
 - **Deterministic and licence-free.** The same kit renders the same takes; the bank's recipes are code.
 - **One source of truth.** Bars, cues and sync points come from `src/timeline.ts` and the act modules, never from a second, hand-typed list.
 
@@ -40,19 +41,19 @@ What the kit route keeps from the synth one:
 
 | Cue (kind, variant) | Role | Align | calm | Level (dB) |
 |---|---|---|---|---|
-| `text` (a fragment resolving) | `text` | onset | a soft kalimba pluck on the tonic triad, stepping through it across a chain | −12 |
+| `text` (a fragment resolving) | `text` | onset | a soft kalimba pluck on the key's pentatonic (5 notes); a chain steps through each chord's tones among them | −12 |
 | `hit` | `hit` | onset | one struck bell on the tonic, 1.9 s natural decay: the lockup | −3 |
-| `bell`, the motif, progress steps | `bell` | onset | the kalimba on the key's pentatonic, one take per note | −5 |
+| `bell`, the motif, progress steps | `bell` | onset | the kalimba on two octaves of the key's pentatonic (10 notes), one take per note | −5 |
 | `land` (weight ≥ 0.6) / `land` light | `land` / `land.light` | onset | a round low thump / a soft fingertip | −5 / −8 |
-| `pop` | `pop` | onset | an airy pop-in thump, no pitch glide | −6 |
-| `snap` | `snap` | onset | a firm short knock | −6 |
-| `tick` / `tick` crisp / `tock` | `tick` / `tick.crisp` / `tock` | onset | a fingertip on glass / tighter glass / a knuckle knock | −8 / −8 / −6 |
-| `whoosh` (move under 0.5 s / longer) | `whoosh.short` / `whoosh.long` | peak | a velvet swipe / a gentle air swell | −7 |
-| `key` / `space` / `return` | `key` / `key.space` / `key.return` | onset | a thocky mechanical key (12 takes) / a deeper cap / the deeper cap, firmer | −10 / −9 / −7 |
-| `click` / `click` confirm | `click` / `click.confirm` | onset | a fingertip tap / a soft tuned pluck | −8 / −10 |
+| `pop` | `pop` | onset | a soft mouth plop (a CC0 recording fitted as code), no pitch glide | −2.5 |
+| `snap` | `snap` | onset | a switch flip (fitted CC0), one attack | −3.5 |
+| `tick` / `tick` crisp / `tock` | `tick` / `tick.crisp` / `tock` | onset | dominoes knocking (fitted CC0) / a tight glass touch / a knuckle knock | −5 / −8 / −6 |
+| `whoosh` (move under 0.5 s / longer) | `whoosh.short` / `whoosh.long` | peak | a short bamboo swish (fitted CC0) / a gentle air swell | −9 / −7 |
+| `key` / `space` / `return` | `key` / `key.space` / `key.return` | onset | a thocky mechanical key (12 takes) / a mechanical space bar (fitted CC0) / a deep cap, firmer | −10 / −9.5 / −7 |
+| `click` / `click` confirm | `click` / `click.confirm` | onset | a small plastic click (fitted CC0) / a soft tuned pluck | −4.5 / −10 |
 | `drop`, `riser`, `swell`, `suck` | same | onset / end | off: a calm reveal resolves on one element | — |
 
-`crisp` swaps in a gated impact for `hit`, a tight whoosh, crisp keys and a short sub drop; `minimal` a sub-led impact and glassy keys; all three keep `riser`, `swell` and `suck` off and give the lockup one clean hit. `earshot sfx list` shows the whole bank (by category, kind and the knobs each sound takes); `kit.py audition` plays every take of the film's kit, role by role, at its level.
+The fitted roles are public-domain (CC0) recordings that earshot fitted as code, chosen where they measure closer to the role's description than the forge member; each role's `note` in `audio/kit.json` gives its measurement. `crisp` swaps in a gated impact for `hit`, a tight whoosh, crisp keys and a short sub drop; `minimal` a sub-led impact and glassy keys; all three keep `riser`, `swell` and `suck` off and give the lockup one clean hit. `earshot sfx list` shows the whole bank (by category, kind and the knobs each sound takes); `kit.py audition` plays every take of the film's kit, role by role, at its level.
 
 **kit.json** (schema 1, written by `kit.py init --preset calm`, edited by hand):
 
@@ -60,12 +61,12 @@ What the kit route keeps from the synth one:
 {"kit": 1, "name": "calm", "sr": 48000,
  "roles": {
    "hit":  {"sound": "notify/m0", "takes": 2, "align": "onset", "level_db": -3.0, "edits": {"pitch": "G4"}},
-   "text": {"sound": "pluck/kalimba_soft", "pitches": ["G4", "B4", "D5"], "takes": 1, "level_db": -12.0},
+   "text": {"sound": "pluck/kalimba_soft", "pitches": ["G4", "A4", "B4", "D5", "E5"], "takes": 1, "level_db": -12.0},
    "whoosh.long": {"sound": "whoosh_big/swell", "takes": 2, "align": "peak", "level_db": -7.0},
    "riser": null}}
 ```
 
-`sound` is a bank id; `takes` how many takes to render (a new take per cue, by a hash of its id and frame, never the same file twice in a row; keys keep one take per key identity); `edits` the knobs every take renders with (`dur`, `apex`, `pitch`, `peak_db`); `pitches` one set of takes per note; `align` the sync point that lands on the cue frame (`onset`, `peak` for whooshes, `end` for risers); `max_s` fades a long tail; `level_db` the role's mix level; `note` why this sound. Change a role, run `npm run kit` (only the changed takes render again).
+`sound` is a bank id; `takes` how many takes to render (a new take per cue, by a hash of its id and frame, never the same file twice in a row; keys keep one take per key identity); `edits` the knobs every take renders with (`dur`, `apex`, `pitch`, `peak_db`); `pitches` one set of takes per note; `align` the sync point that lands on the cue frame (`onset`, `peak` for whooshes, `end` for risers); `max_s` fades a long tail; `level_db` the role's mix level (every take trimmed toward the role's median loudness); `note` why this sound. Change a role, run `npm run kit` (only the changed takes render again).
 
 **Fallback, in order** (`score.json` `"sfx": {"engine": "auto"}`, the default): render the kit with earshot when `kit.json` changed since the takes were rendered (or they are missing) → play the takes in `audio/kit/` as they are (vendored: the film rebuilds where earshot is not installed; a changed `kit.json` then plays the old takes with a warning) → the synth voices, with a loud warning in the report and on the console. `"engine": "earshot"` fails instead of falling back; `"engine": "synth"` plays the synth voices only. The build never fails only because earshot is missing.
 
@@ -113,7 +114,7 @@ The kit plays each kind's role (§1); the last column is the synth voice, what p
 
 | Kind | Picture event | `f` is | Synth voice (default tuning) |
 |---|---|---|---|
-| `text` | a copy fragment resolving: the phrase is fully readable | its resolve frame (the COPY `resolved`, the `settleOf` of its last word) | one soft mallet note; a chain's fragments step root, third, fifth, third of the chord (the key's triad without chords). One per fragment, never one per word (§5.7) |
+| `text` | a copy fragment resolving: the phrase is fully readable | the frame its last word visibly comes to rest (`chainResolves()` in the starter: the 97% frame of the word's drawn rise, up to about 16 f before the COPY `resolved`, which marks the end of the reveal) | one soft mallet note; a chain's fragments step root, third, fifth, third of the chord (the key's triad without chords). With a kit, the same steps over the chord's tones among the text takes. One per fragment, never one per word (§5.7) |
 | `tick` | the device keeps time; a clock | the pulse's start | a small wooden mallet on the signature tick (the tonic, octave 6): tuned fundamental, free-bar partials, a felt transient. `crisp`: a counter locking, list rows, a build: an untuned tick at 3–4.5 kHz, −20 dB in 10–20 ms, a new seed per hit, about 8 dB under the music |
 | `tock` | the clock's other beat | the pulse's start | the tick voice, darker, on the signature tock (the fifth, a fourth below the tick) + a little wood |
 | `pop` | something appears: a word, badge, chip | its 50% frame | a mallet-like blip sliding 2 semitones into its note; a run of pops climbs the key's pentatonic |
@@ -134,8 +135,9 @@ The kit plays each kind's role (§1); the last column is the synth voice, what p
 `src/sync.ts` default-exports `cues()`, which returns the events. It imports the constants the acts animate with, so every frame is computed. The starter's version is the pattern (excerpt):
 
 ```ts
-import { DOT_TRAVEL } from './acts/Act1';          // acts export what the sound needs
+import { DOT_TRAVEL, STATEMENT_SIZE } from './acts/Act1';  // acts export what the sound needs
 import { HERO } from './acts/Act2';
+import { chainResolves } from './fx/Chain';
 import { peak, settleOf } from './lib/sync';
 import { ACT, CUE, TOTAL, W } from './timeline';
 
@@ -148,7 +150,8 @@ const move = (m: { from: number; to: number; ease: (t: number) => number }, weig
 
 export default function cues() {
   return [
-    { f: CUE.lock, kind: 'text', weight: 1, id: 'statement' },               // the fragment resolves: one soft sound
+    ...chainResolves('statement', { size: STATEMENT_SIZE })                  // each fragment comes to rest: one soft sound
+      .map((f, i) => ({ f, kind: 'text', weight: 0.8, id: `fragment${i + 1}` })),
     move(DOT_TRAVEL, 1, -0.5, 'dot-flight'),                                  // flies left
     { f: settleOf(DOT_TRAVEL.from, DOT_TRAVEL.to, DOT_TRAVEL.ease), kind: 'tock', weight: 0.7, id: 'dot-seats' },
     { f: CUE.pieceA, kind: 'land', weight: 1, pan: panX(HERO.x + 150), id: 'dome' }, // spring started by delayTo
@@ -165,7 +168,7 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
 | Tween into contact (`E.contact`) | its last frame | — |
 | Pop-in | 50% of its travel | `hit(start, cfg, 0.5)` |
 | Tween that settles | the 97% frame, never the last frame | `settleOf(a, b, ease)` |
-| Text or a wordmark arriving | the frame it becomes readable: the `settleOf` of its reveal (also its COPY `resolved` frame), never the tween's end or the next bar line. An `E.out` covers 90% of its travel in about 40% of its duration, so the eye reads it as landed long before its last frame | `settleOf(a, b, ease)` |
+| Text or a wordmark arriving | the frame it becomes readable: the `settleOf` of its reveal (a chain fragment: the 97% frame of its last word's drawn rise, which `chainResolves()` computes, up to ~16 f before its COPY `resolved`), never the tween's end or the next bar line. An `E.out` covers 90% of its travel in about 40% of its duration, so the eye reads it as landed long before its last frame | `settleOf(a, b, ease)`, `chainResolves(id, {size})` |
 | Whoosh (camera-scale moves, logo zooms) | apex on the velocity peak, length = the move, its onset 100–450 ms before the apex | `peak(a, b, ease)` |
 | Exit roll | one tick, no detent | — |
 
@@ -179,7 +182,7 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
 - **The lockup is a stop-down and ONE clean element.** Nothing sounds in the 0.2–0.7 s before it (no whoosh into it, no riser, swell or suck), and nothing else lands with it: one `hit` on the frame the wordmark becomes readable. No snap, bell or motif on top, no ticks through the hold. `score.py`'s stack guard warns when a second sound lands within ±3 f of the payoff or the `lockup` cue, or a lead-in runs into it.
 - **Effects are dry, mono and centred.** Keep the screen-x `pan` in the cues, but `score.py` scales it into ±0.15; width goes only to whooshes, risers and the music. Whooshes still travel with the motion; a centred push or pull has `pan: 0`.
 - **Typing:** one `key` per character from the same `CHAR_AT` array the picture types with, at its fractional frame (not `Math.round`: jitter and thinning work in time); mark word starts `word`, spaces `space` and a final `return`. `score.py` picks per key or per word from the run's rate and shapes it (§5.5c), so 30 characters a second never fuse into a buzz.
-- **Dense batches** (rain, tiles, grids, list rows): emit every landing, weight them light. Pitched light landings climb chord tones, so a cascade sounds ordered; crisp ticks (`variant: 'crisp'`) suit rows and counters.
+- **Dense batches** (rain, tiles, grids, list rows): emit every landing, weight them light. The synth voice's light landings climb chord tones, so a cascade sounds ordered (the calm kit's `land.light` is an untuned tap, a new take per landing); crisp ticks (`variant: 'crisp'`) suit rows and counters.
 - **Check the file.** Open `out/cues.json` and read it against the contact sheet: every event has a picture, every sounded class is complete, and nothing continuous is sounded.
 
 ## 5. score.json
@@ -187,15 +190,15 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
 ```json
 {
   "key": "G major",
-  "bpm": 120,
+  "bpm": 100,
   "music": "none",
   "sfx": { "engine": "auto", "kit": "audio/kit.json", "python": null },
-  "chords": ["Em9", "Cmaj9", "Am11 D7sus4", "Gadd9", "-"],
+  "chords": ["Em9", "Cmaj9", "Am11", "Am11 D7sus4", "Gadd9", "-"],
   "sections": [
     { "bars": [1, 1], "style": "intro" },
-    { "bars": [2, 3], "style": "build" },
-    { "bars": [4, 4], "style": "resolve" },
-    { "bars": [5, 5], "style": "hold" }
+    { "bars": [2, 4], "style": "build" },
+    { "bars": [5, 5], "style": "resolve" },
+    { "bars": [6, 6], "style": "hold" }
   ],
   "signature": { "tick": "G6", "tock": "D6", "motif": [0, 7, 14], "rhythm": [0, 0.5, 1.5] },
   "typing": "auto",
@@ -205,7 +208,7 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
 }
 ```
 
-(The starter is a calm, text-led sting: effects only, and its payoff is the lockup. Its `chords` still steer the tonal roles, and `"music": "synth"` turns the band on over the same sections. In a launch film with music the payoff is the drop on the hero reveal, §5.3.)
+(The Remotion starter's score: 100 BPM, six bars for its 13 s; the HyperFrames starter's has the same fields at 120 BPM over three bars, with its payoff on `@hit`. The starter is a calm, text-led sting: effects only, and its payoff is the lockup. Its `chords` still steer the tonal roles, and `"music": "synth"` turns the band on over the same sections. In a launch film with music the payoff is the drop on the hero reveal, §5.3.)
 
 ### 5.1 Fields
 
@@ -213,7 +216,7 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
 |---|---|---|
 | `key` | `"C major"` | tonic + mode: major, minor, dorian, mixolydian, lydian, phrygian (ionian, aeolian) |
 | `bpm` | timeline | optional; must equal the timeline's `BPM` or `score.py` refuses |
-| `music` | `"synth"` with `chords`, else `"none"` | `"none"`: effects only, the right default for a calm text-led film (a synth pad bed under quiet type is the cheapest-sounding part of a soundtrack); `"synth"`: the built-in band (sections, chords, drums, the motif bells); a file path: that track as the bed (the same as `bed`) |
+| `music` | `"synth"` with `chords`, else `"none"` | `"none"`: effects only, the house default for a calm text-led film (the one effects-led film in the study runs −22 LUFS with an LRA of 12 LU and no bed, §5.7; a pad also sits in the band of the soft text sounds, and the report's `masked` list measures what it covers); `"synth"`: the built-in band (sections, chords, drums, the motif bells); a file path: that track as the bed (the same as `bed`) |
 | `sfx` | `{"engine": "auto", "kit": "audio/kit.json"}` | where the effects come from (§1): `engine` `auto` (kit, else vendored takes, else synth with a warning), `earshot` (kit or fail), `synth`; `kit` the kit file (its takes in the folder of the same name); `python` the interpreter that has earshot |
 | `chords` | required for `"music": "synth"` | one entry per bar from bar 1. `"Am11 D7sus4"` splits the bar evenly; `"-"` continues; `"N.C."` is no chord; missing bars hold the last chord. Without music they are optional: the tonal roles then follow the key's scale and triad |
 | `sections` | `[]` | `{bars: [from, to], style, level?, bright?, clock?, hats?, drums?, layers?}`; bars outside every section get no music |
@@ -222,7 +225,7 @@ Where the sound goes (the helpers and their measured spring numbers are in `refe
 | `drops` | `[]` | `{at, silence?, suck? (s), depth?, suckDepth?}`: the music stops dead for `silence`, ducks 90% over `suck`, and lands on `at` |
 | `silences` | `[]` | `{from, to, depth?}`: true silence for a designed freeze; mutes everything, effects and reverb included |
 | `payoff` | — | the moment that must be loudest: the drop on the hero reveal, about 30–60% into the film (in a sting, its hit); the report checks it |
-| `progress` | — | `{match, kind?, start?, tonic?, resolve?, gain?}`: the progress motif (§5.5b): events whose `id` contains `match` climb the scale one step each; `resolve` lands the tonic on the payoff |
+| `progress` | — | `{match, kind?, start?, tonic?, resolve?, gain?}`: the progress motif (§5.5b): events whose `id` contains `match` climb the scale one step each (with a kit, the tuned role's take notes); `resolve` lands the tonic on the payoff |
 | `bed` | — | `{file, at?, gain_db?}`: a supplied music track joins the music bus (§5.6), with any `music` setting |
 | `typing` | `"auto"` | how `key` events sound: `auto`, `soft`, `mechanical`, `pitched`, `muted`, `word` or `off` (§5.5c) |
 | `keyup` | `false` | `true` adds a key-release click on slow typing (next key over 140 ms away); measured typing has none |
@@ -251,7 +254,7 @@ Section options: `level` (music bus gain for the section), `bright` (multiplies 
 
 - One section per story beat, bar-aligned with the acts. The measured shape of a good launch film: a soft entry, an intro with no sub or drums running 5–12 LU under the body for about 2–3 s, the drop on the hero reveal, the body, a breakdown or stop about 5 LU down at 40–80% of the runtime, a re-entry on a picture beat, and an ending that subtracts. The loudest moment is the drop or the hero reveal, about 30–60% into the film, and `payoff` points there.
 - **The hook enters with intent.** Frame 0 already has a sound with a reason (the device's first tick, a drone, the first chord), because a muted-then-unmuted feed viewer and a sound-on viewer both decide in the first second. It can be soft: a drone, or an entry of 150–450 ms at most. A pad swelling in over the whole first bar or a riser into the opening reads as nothing happening yet. `score.py` starts the film's first chord with a 20 ms attack and the `intro` drone at level (the intro still builds, by opening its filter), and warns "soft hook" when the first 0.5 s sits more than 12 dB under the film's median momentary loudness. Place the first sharp transient once the bed is up.
-- **Drop on silence.** A `drops` entry stops the music (reverb included) for `silence` before `at` and sucks it down over the 0.2 s before. Effects of on-screen motion keep ringing, so a whoosh into the drop is not chopped. For a designed freeze with nothing moving, add a `silences` entry as well; it mutes everything, and the picture freeze must sit exactly on it (≤ 15 f).
+- **Drop on silence.** A `drops` entry stops the music (reverb included) for `silence` before `at` and sucks it down over the 0.2 s before. Effects of on-screen motion keep ringing, so a whoosh into the drop is not chopped. The silence and the suck are the stop-down, so the stack guard never counts them as a layer (the suck ducks the music bus and plays no sound of its own). For a designed freeze with nothing moving, add a `silences` entry as well; it mutes everything, and the picture freeze must sit exactly on it (≤ 15 f).
 - End a `riser` on the silence's first frame, never inside it: a riser ends in a hard stop, a filter drop or a 30–250 ms gap, never a crash. A drop may land 100–116 ms after its cut, a beat of air after the riser or the reveal. Use one or two per film, and skip it when a whoosh already leads into the same downbeat: two noise swells on one approach blur into hiss (the starter lets the lockup slide's whoosh do the job).
 - The payoff (the drop on the hero reveal) has the highest momentary loudness of the film, clearly: 2–3 LU or more over the film's median momentary loudness. A `drive` section that out-shouts it is a common failure; the report flags it, flags a payoff that only edges the rest, and flags a loudest moment in the last 20% of a film over 8 s.
 - **The lockup is the most resolved moment, not the loudest.** The ending subtracts: as the logo forms, the music stops on a bar line or filters down (end the section on the bar with a `hold` after it, or a `silences` entry), 0.2–0.7 s of near-silence, then ONE soft resolved element on the wordmark (the kit's `hit`: a struck note in `calm`, a clean impact in `crisp`), and a tail of 0.5–2.5 s to below −60 dBFS. Never a stack: no whoosh or riser into it, no snap, motif or bell on top (`score.py` warns: "stacked lockup"). The end card sits 8–20 dB under the film's peak. A logo sting is the exception: it is all lockup, so its hit is its loudest moment. In an effects-only film the stop-down is the 0.2–0.7 s with no effect before the hit.
@@ -288,16 +291,17 @@ When the story is progress (days of a streak, steps of a setup, items cleared, a
 ```json
 {
   "key": "D major",
-  "progress": { "match": "day", "kind": "pop", "resolve": "@streak" },
+  "progress": { "match": "day", "kind": "bell", "resolve": "@streak" },
   "motifs": []
 }
 ```
 
 - `match` picks the events: every event whose `id` contains it (and whose `kind` is `kind`, if given), in frame order. In `src/sync.ts` give the steps ids such as `day1` … `day7`, on the landing frame of each step.
 - The k-th step gets scale degree `start + k` of the key's mode. By default `start` is chosen so the last step is the one under the octave (seven steps: 1 → 7), and `resolve` then places the tonic above it, with its octave below, on the bells. `tonic` sets the note of degree 1 (default: the tonic nearest E5, so the rungs sit around 0.5–1.5 kHz, above the pad).
-- Use a voice that takes a pitch: `pop`, `bell`, `tick`, `tock`, `click` or a light `land` (weight under 0.6, or `variant: 'light'`). A heavy landing or a snap ignores it, and the report says so. Short voices (pop, light land) keep a fast climb clean; a bell rings, so space bell rungs at least a beat apart.
+- **With a kit**, the rungs climb the notes the steps' role has takes for, so every rung is a real take. The calm `bell` has two octaves of the key's pentatonic (10 notes): up to five rungs end on the note under its upper tonic and `resolve` lands on that tonic, with the octave below; more rungs climb from its lowest note (the resolve then comes from the synth bell, and the report says so), and past its top note they hold (also reported). `start` then counts those notes from the lowest. The calm `pop`, `tick`, `click` and `land.light` are untuned taps: their rungs cannot climb, and `score.py` warns. Use `"kind": "bell"` for the steps under the calm kit, or give the role `pitches`.
+- With the synth voices, use a voice that takes a pitch: `pop`, `bell`, `tick`, `tock`, `click` or a light `land` (weight under 0.6, or `variant: 'light'`). A heavy landing or a snap ignores it, and the report says so. Short voices (pop, light land) keep a fast climb clean; a bell rings, so space bell rungs at least a beat apart.
 - Put the resolve on the payoff cue and drop the signature motif there (`"motifs": []`), or the two compete.
-- The report lists every rung with its note (`progress.rungs`) and the resolution; `events.tuned` shows them in key.
+- The report lists every rung with its note (`progress.rungs`), the kit role and notes it climbed (`progress.kit`) and the resolution; `events.tuned` shows what played, in key.
 
 ### 5.5c Typing
 
@@ -313,7 +317,7 @@ On screen, most typing is silent in measured films (about 75%); about 15% gets a
 | `word` | one pitched blip per word (36–60 ms, 330–1400 Hz, a small upward glide), stepping through the chord's tones on each word start; the other keys silent | fast type-ons, prompts that stream in |
 | `off` | nothing | the picture types but any sound would compete |
 
-With a kit, the `key`, `key.space` and `key.return` takes replace the synth keys (one take per key identity, so a key keeps its sound) and everything below still applies: the plan, the dynamics, the duck and the levels; `pitched` then plays the kit's keys untuned, and the bottom-out and key-up belong to the take.
+With a kit, the `key`, `key.space` and `key.return` takes replace the synth keys (one take per key identity, so a key keeps its sound) and everything below still applies: the plan, the dynamics, the duck and the levels; `pitched` then plays the kit's keys untuned, `word` plays one key take per word (on its word starts, a new take each), and the bottom-out and key-up belong to the take. The take sets the timbre, so a bright run on a kit is a kit choice: the report judges it by the run's centroid against the measured 0.8–3 kHz of key clicks (§13), names the key sounds, and the fix is a darker member for the role in `audio/kit.json` (`earshot sfx list` shows each sound's `centroid_hz`), not another style. The 25% share in 2–5 kHz below is the synth keys' target only: the recorded keys in earshot's bank (fitted CC0 recordings) put 39–65% of their A-weighted energy there with centroids of 1–2.2 kHz.
 
 What `score.py` does to every run, with no settings:
 
@@ -324,7 +328,7 @@ What `score.py` does to every run, with no settings:
 - **Room:** dry, mono and centred (letters within ±0.05 by keyboard column).
 - **The duck:** under every run of 3+ keys sounded per key (`soft`, `mechanical`, `pitched`) the music bus dips `mix.typing_duck_db` (default 10 dB; 0 disables), down over the 30 ms before the first key and back over 250 ms after the last; in bars with 4+ sounded keys the hats stop and the arp drops 4 dB. `muted`, `word` and `off` leave the music alone.
 
-**Levels.** `score.py` levels each run against the music under it (6 ms key RMS against the music's 250 ms RMS, as the norms measure it, within ±12 dB of the static level): per key, about 4 dB under the ducked music's short-window RMS (`pitched`, whose tones carry more energy, 8 dB), which puts the run at about −8 to −2 dB A against it (measured films sit near +4 dB over music dipped 10–16 dB or drumless; over this engine's fuller groove that level measures about +5 dB A, so `score.py` holds the keys lower); `word` blips +6 dB over the music (measured +2 to +9); `muted` 10 dB lower than `soft`, under the full bed. These hold at weight 1; the run's median key weight moves its target by 20·log10 of it. The report's `typing` block measures each run (`vs_music_A_db`, `key_vs_music_db`, `level_db` applied, `duck_db`, `share_2k_5k_A_pct`) and warns when a per-key run sits above −1 dB A or below −10 dB A against the ducked music, when `muted` typing comes within 8 dB A of the bed, when word blips leave 0 to +11 dB, when keys are bright (over 25% of their A-weighted energy in 2–5 kHz), and when a style set by hand sounds per key above 25 chars/s.
+**Levels.** `score.py` levels each run against the music under it (6 ms key RMS against the music's 250 ms RMS, as the norms measure it, within ±12 dB of the static level): per key, about 4 dB under the ducked music's short-window RMS (`pitched`, whose tones carry more energy, 8 dB), which puts the run at about −8 to −2 dB A against it (measured films sit near +4 dB over music dipped 10–16 dB or drumless; over this engine's fuller groove that level measures about +5 dB A, so `score.py` holds the keys lower); `word` blips +6 dB over the music (measured +2 to +9); `muted` 10 dB lower than `soft`, under the full bed. These hold at weight 1; the run's median key weight moves its target by 20·log10 of it. The report's `typing` block measures each run (`vs_music_A_db`, `key_vs_music_db`, `level_db` applied, `duck_db`, `share_2k_5k_A_pct`) and warns when a per-key run sits above −1 dB A or below −10 dB A against the ducked music, when `muted` typing comes within 8 dB A of the bed, when word blips leave 0 to +11 dB, when keys are bright (over 25% of their A-weighted energy in 2–5 kHz; kit keys: a run centroid, `centroid_hz`, over 3 kHz), and when a style set by hand sounds per key above 25 chars/s.
 
 ### 5.6 When the brand brings sound
 
@@ -336,7 +340,7 @@ What `score.py` does to every run, with no settings:
 
 Measured, frame by frame, on eight professional motion films where short text fragments carry the story (patterns, not their copy):
 
-- **One soft sound per fragment arrival, 0–80 ms after the visual.** Words and short phrases are "voiced" by small sounds (a tap, a tick, a soft tuned note) landing on the frame the text becomes readable, in the tightest films within ±45 ms of it. cinetic sounds the fragment, not each word: a `text` event on the fragment's resolve frame, and a chain's fragments step through the chord's tones (root, third, fifth), so a thought building up is heard as one gesture. A word-by-word build that is the whole point of a shot may tick per word, at most, with the `text` sound on the last word.
+- **One soft sound per fragment arrival, 0–80 ms after the visual.** Words and short phrases are "voiced" by small sounds (a tap, a tick, a soft tuned note) landing on the frame the text becomes readable, in the tightest films within ±45 ms of it. cinetic sounds the fragment, not each word: a `text` event on the fragment's resolve frame, and a chain's fragments step through the chord's tones (root, third, fifth; with a kit, the chord's tones among the text takes), so a thought building up is heard as one gesture. A word-by-word build that is the whole point of a shot may tick per word, at most, with the `text` sound on the last word.
 - **Near-silence holds the reading.** Gaps of 0.6–1.75 s fall right after a line has fully arrived (0.6 s after a short statement, 1.75 s under a finished tagline). The held line gets no ticks, pulses or beds that move; the next sound comes with the next picture event.
 - **A big low hit only for the single reveal.** Loud hits are rare and reserved for the one reveal (the product name, the hero moment): about 2 hits a film, the rest of the text sounds 10–27 dB under full scale. A sub drop under every statement turns a calm film into a trailer.
 - **The lockup is a stop-down and one element** (§5.3): near-silence for 0.2–0.7 s, then one clean hit or struck note on the wordmark, then its tail.
@@ -349,7 +353,7 @@ Measured, frame by frame, on eight professional motion films where short text fr
 - **One chord per bar**, changing on downbeats, at most two per bar. Chords that move carry the film; one chord for 30 s sounds like a loop.
 - **Voice leading is automatic.** Pads pick the voicing nearest the previous one, keep the root, third or fifth at the bottom (tensions such as 9 and 11 sit inside), and avoid close intervals below C4, which turn to mud.
 - **The V chord is gone by the downbeat it resolves into.** A dominant pad ends at the next bar + 0.08 s, so the tonic lands clean.
-- **Every pitched effect is in key.** The defaults: the clock on the tonic and the fifth below it, in octave 6 (0.8–1.6 kHz; octave 7 sits on the ear's 3–4 kHz resonance and reads as a beep); pops on the pentatonic, climbing within a run; snaps, landings, booms and drops on the current chord's root between E1 and E♭2; risers landing on the chord root at their arrival; clicks on one pentatonic tone near 2 kHz for the whole film; word blips stepping through the chord's tones; light landings on chord tones. Crisp ticks are untuned by design. With a kit, the tonal roles are rendered in the key (`kit.py tune` writes their `pitches` and `edits.pitch` from `score.json`'s key: the bell on the pentatonic, `text` on the tonic triad, the lockup's struck note on the tonic) and each cue plays the take whose pitch is nearest the note above; noise roles (taps, whooshes, keys) are untuned. The report lists every tuned sound with its note and flags anything outside the key and the chord.
+- **Every pitched effect is in key.** The defaults: the clock on the tonic and the fifth below it, in octave 6 (0.8–1.6 kHz; octave 7 sits on the ear's 3–4 kHz resonance and reads as a beep); pops on the pentatonic, climbing within a run; snaps, landings, booms and drops on the current chord's root between E1 and E♭2; risers landing on the chord root at their arrival; clicks on one pentatonic tone near 2 kHz for the whole film; word blips stepping through the chord's tones; light landings on chord tones. Crisp ticks are untuned by design. With a kit, the tonal roles are rendered in the key (`kit.py tune` writes their `pitches` and `edits.pitch` from `score.json`'s key: the bell on the pentatonic, `text` on the pentatonic too (a text role of three notes keeps the tonic triad), the lockup's struck note on the tonic) and each cue plays the take whose pitch is nearest the note above; a chain's text fragments step through the chord's tones among the text takes, and an explicit note (a hand-set pitch, a progress rung, a motif note) plays only a take on that note, else the synth voice with a warning; noise roles (taps, whooshes, keys) are untuned. The report lists every tuned sound with its note and flags anything outside the key and the chord.
 - **Tune the kick to the tonic.** It then agrees with every bass note.
 - **The sonic signature.** A tuned tick/tock pair and a three- or four-note motif (1–5–9 by default) belong to the brand the way the accent colour does. Open and close on the same sound (the bookend), and place the motif once, on the lockup.
 
@@ -387,7 +391,7 @@ The built-in band (`"music": "synth"`) and the fallback effect voices, all in `s
 | Hit duck | music −3 dB for 150 ms around hits, drops, snaps and heavy landings | effects sit ≥ +6 dB over the music in their own band |
 | Typing duck | music −10 dB under every run sounded per key, 30 ms down, 250 ms back (`mix.typing_duck_db`) | measured films carve a 10–16 dB dip for typing in the foreground |
 | Levelling | each typing run, and one gain per film for the click and for the crisp tick, set against the music's 250 ms RMS: keys about −4 dB (ducked music), word blips +6, clicks −3, crisp ticks −8, at weight 1 (the median weight moves the target by 20·log10 of it) | the measured levels, whatever the section's density |
-| Kit level | each take (peaking at −1 dBFS) at its role's `level_db` × the cue's weight × `KIT_GAIN` (0.83: measured so a kit sits against the music about where the synth voices did); a light landing's reference weight is 0.5; keys follow the typing plan's dynamics | the kit keeps its own balance between roles, the one `kit.py audition` plays |
+| Kit level | each take (peaking at −1 dBFS) at its role's `level_db` × the cue's weight × `KIT_GAIN` (0.83: measured so a kit sits against the music about where the synth voices did), trimmed toward its role's median loudness (the lock's `lufs_m_max`, at most ±6 dB); keys follow the typing plan's dynamics | the kit keeps its own balance between roles, the one `kit.py audition` plays, and a role keeps one level from take to take (peak-normalised takes of one role measure up to 3–4 LU apart) |
 | Placement | every effect except whooshes and risers (and their reverse forms, sucks and swells) within ±0.15 of the centre, kit takes folded to mono | measured effects are mono and centred; the width lives in the music |
 | Reverb | sends high-passed at 250 Hz; hall 2.8 s for music and big hits, room 0.7 s for landings and moves; keys, clicks and crisp ticks dry; the clock's tick and tock dry plus a 0.3 s room at −22 dB (send high-passed at 350 Hz) | space without low-end smear; tiny sounds stay dry |
 | Effects low end | 45% of the effects below 90 Hz removed | booms on consecutive hits do not stack into rumble |
@@ -413,9 +417,9 @@ python3 scripts/audio/master.py music.wav ducked.wav --sidechain kick.wav --sc-d
 python3 scripts/audio/master.py --measure public/audio/soundtrack.wav --json -           # I, TP, LRA, loudest moment
 ```
 
-**Loudness per film.** With music, −14 LUFS integrated is the default: streaming and social players normalise loud films down to about that and never turn quiet ones up, so a quieter film plays quieter than the feed around it. That holds for a calm brand with music too: anything posted to a feed masters at −14, and the calm lives in the arrangement, not the level. An **effects-only** film (`"music": "none"`, no bed) defaults to −18 LUFS: its integrated loudness comes from a handful of accents, and pushing them to −14 puts the limiter on every one (the starter measures −18.0 LUFS with its loudest peak right at the ceiling and 0.01 dB of limiting). −16 to −18 is the range; the report prints the limiter's gain reduction, so raise the target only while it stays under 1.5 dB. A short sting (8 s or less, played at the head of someone else's video) with music may sit at −16 LUFS. Set `"master": {"lufs": …}` in `audio/score.json`, or pass `--lufs` to `score.py` or `master.py`. Keep −1 dBTP after the encode either way (the ceiling stays 0.77). Whatever the target, the loudest moment is the payoff, the drop on the hero reveal (in a sting, its hit), never the bed or the end card, which sits 8–20 dB under the peak: if the momentary peak sits on a pad or a drone, pull the bed down rather than the master up. `av-audit.py` reads `master.lufs` from the score and gates ±1 LU around it.
+**Loudness per film.** With music, −14 LUFS integrated is the default: streaming and social players normalise loud films down to about that and never turn quiet ones up, so a quieter film plays quieter than the feed around it. That holds for a calm brand with music too: anything posted to a feed masters at −14, and the calm lives in the arrangement, not the level. An **effects-only** film (`"music": "none"`, no bed) defaults to −18 LUFS: its integrated loudness comes from a handful of accents, and pushing them to −14 puts the limiter on every one (the Remotion starter measures −18.0 LUFS with its loudest peak, the lockup's struck note, at −2.3 dBTP and 0.1 dB of limiting). −16 to −18 is the range; the report prints the limiter's gain reduction, so raise the target only while it stays under 1.5 dB. A short sting (8 s or less, played at the head of someone else's video) with music may sit at −16 LUFS. Set `"master": {"lufs": …}` in `audio/score.json`, or pass `--lufs` to `score.py` or `master.py`. Keep −1 dBTP after the encode either way (the ceiling stays 0.77). Whatever the target, the loudest moment is the payoff, the drop on the hero reveal (in a sting, its hit), never the bed or the end card, which sits 8–20 dB under the peak: if the momentary peak sits on a pad or a drone, pull the bed down rather than the master up. `av-audit.py` reads `master.lufs` from the score and gates ±1 LU around it.
 
-Targets: the film's LUFS target (−14 with music, −18 effects only, −16 as above), LRA 5–8 LU for a launch film with music (4–6 for short pieces; an effects-only film may run wider, and `av-audit.py` accepts 3–14 for one), true peak ≤ −1.5 dBTP on the WAV and ≤ −1 dBTP after the encode, the loudest moment 30–60% into the film, limiter gain reduction under 1.5 dB at the payoff, the tail's last 50 ms under −45 dB. The starter (effects only, the calm kit) measures −18.0 LUFS, −2.3 dBTP, LRA 3.8 LU and 0.01 dB of limiting on the WAV.
+Targets: the film's LUFS target (−14 with music, −18 effects only, −16 as above), LRA 5–8 LU for a launch film with music (4–6 for short pieces; an effects-only film may run wider, and `av-audit.py` accepts 3–14 for one), true peak ≤ −1.5 dBTP on the WAV and ≤ −1 dBTP after the encode, the loudest moment 30–60% into the film, limiter gain reduction under 1.5 dB at the payoff, the tail's last 50 ms under −45 dB. The Remotion starter (effects only, the calm kit) measures −18.0 LUFS, −2.3 dBTP, LRA 7.3 LU and 0.1 dB of limiting on the WAV.
 
 You cannot listen, so measure what a listener hears:
 
@@ -438,13 +442,14 @@ You cannot listen, so measure what a listener hears:
 
 ## 10. Reading the report
 
-`score.py --json out/qa/score.json` writes `lufs`, `target_lufs` (the target and where it came from), `true_peak_db`, `lra`, `momentary_max` and its time, `limiter_max_gr_db`, `limiter_hot` (moments over 1.5 dB), `payoff`, `hook` (films with music: the first 0.5 s against the median momentary loudness), `tail_50ms_db`, `sfx` (where the effects came from: `source` (`earshot kit`, `earshot kit (rendered now)`, `vendored kit (…)` or `synth (fallback)`), the kit's name, bank and earshot version, each role with its sound, cues and the takes used, `off` (cues of roles the kit leaves off) and `synth` (kinds still on synth voices)), `stacks` (stacked gestures), `events.skipped`, `events.masked`, `events.tuned` (every pitched sound with its note: a tonal take reports the note it was rendered at), `progress` (when used), `typing` (the style per run, the duck, the level applied, each run against the music: A-weighted, short-window, 2–5 and 5–10 kHz), `sfx_levels` (clicks and crisp ticks: the level applied and their median against the music), `loudest_frac`, `chords`, `warnings`, `pass`.
+`score.py --json out/qa/score.json` writes `lufs`, `target_lufs` (the target and where it came from), `true_peak_db`, `lra`, `momentary_max` and its time, `limiter_max_gr_db`, `limiter_hot` (moments over 1.5 dB), `payoff`, `hook` (films with music: the first 0.5 s against the median momentary loudness), `tail_50ms_db`, `sfx` (where the effects came from: `source` (`earshot kit`, `earshot kit (rendered now)`, `vendored kit (…)` or `synth (fallback)`), the kit's name, bank and earshot version, each role with its sound, cues, the takes used, their loudness spread before the trim (`lufs_spread`) and the trims applied (`trim_db`), `off` (cues of roles the kit leaves off) and `synth` (kinds still on synth voices)), `stacks` (stacked gestures), `events.skipped`, `events.masked`, `events.tuned` (every pitched sound with its note: a tonal take reports the note it was rendered at), `progress` (when used), `typing` (the style per run, the duck, the level applied, each run against the music: A-weighted, short-window, 2–5 and 5–10 kHz; the run's centroid and, with a kit, its key sounds), `sfx_levels` (clicks and crisp ticks: the level applied and their median against the music), `loudest_frac`, `chords`, `warnings`, `pass`.
 
 | Warning | Fix |
 |---|---|
 | blind synthesis fallback | no rendered kit and no earshot: install earshot (`docs/setup.md`), set `EARSHOT_PYTHON`, `npm run kit`; or copy a rendered kit in (`kit.py vendor --from DIR`). Do not ship on it |
 | `audio/kit.json` changed since the takes were rendered … playing the takes as they are | earshot is not found here: render the kit where it is (`npm run kit`) and keep `audio/kit/` with the project |
-| stacked lockup / payoff at t: … | keep ONE clean element on the reveal; cut the whoosh into it, the snap or bell on top, the score.json motif or drop there (§5.3) |
+| stacked lockup / payoff at t: … | keep ONE clean element on the reveal; cut the whoosh into it, the snap or bell on top, the score.json motif there (§5.3). A `drops` entry is not a layer: its silence and suck are the stop-down |
+| kit role … has no take on N | a hand-set `pitch`, a progress rung or a motif note the tuned role has no take on: its synth voice played it. Add the note to the role's `pitches` in `audio/kit.json` and `npm run kit`, or drop the hand-set pitch |
 | stacked effects at t: … | one sound per visible event: two heavy sounds or three kinds within ±3 f blur into one smear |
 | cues the kit leaves off (skipped): … | by design for `riser`, `swell`, `suck` (and `drop` in `calm`); when the picture needs it, give the role a sound in `audio/kit.json`, then `npm run kit` |
 | kit role … rises in pitch (rising_glide) | a rising synth whip: pick another sound for the role (`earshot sfx list`, then `kit.py check`) |
@@ -462,8 +467,10 @@ You cannot listen, so measure what a listener hears:
 | starts inside the end fade | move the event before the fade (`master.fade` + 0.03 s from the end), or shorten `master.fade` |
 | the ending is not silent | an effect or a supplied bed runs to the last frame: move it earlier or trim the bed |
 | progress: … ignores its pitch | give the steps a pitched voice (`pop`, `bell`, `tick`, `click`, a light `land`) |
+| progress: kit role … is untuned | its rungs all sound alike: `"kind": "bell"` for the steps (the kit's tuned voice), or give the role `pitches` |
+| progress: N rungs but kit role … has takes on only M notes | the climb holds on the top note: add notes to the role's `pitches`, or use fewer steps |
 | a `key` skipped as thinned, or "one blip per word" | expected: no two keys within 60 ms, fast runs at about 12/s, and a `word` run sounds only its word starts; not an error |
-| typing sits N dB A against the ducked music, is buried under it, or is bright | lower the key weights; for buried, raise `mix.typing_duck_db` or thin the section; for bright, `soft` or `muted` |
+| typing sits N dB A against the ducked music, is buried under it, or is bright | lower the key weights; for buried, raise `mix.typing_duck_db` or thin the section; for bright, `soft` or `muted` with the synth keys, and with a kit (the warning names the key sound) a darker member for the key role in `audio/kit.json` |
 | typing sounds per key above 25 chars/s | `"typing": "auto"`, `"word"` or `"off"` |
 | click / crisp: N at x dB against the music, target y | the levelling hit its ±12 dB limit: the music there is unusually loud or quiet; check that section's `level` or the events' weights |
 | chords vs bars mismatch | one entry per bar, including the tail bar (`"-"`) |
@@ -512,7 +519,7 @@ The habits that make a launch film sound cheap, and what to do instead. Most are
 | A rising synth whip: a pitch sweep up into a cut or a reveal (a zip, a laser, a riser's gliding saws) | air without pitch (a whoosh, a swipe), or nothing; `kit.py check` and the report flag any role whose pitch climbs, and the presets use none |
 | A stacked sting on the logo: a whoosh into an impact, plus a sub, a bell and a shimmer on one frame | stop-down, then ONE clean element (a struck note or a single hit); the stack guard flags a second sound within ±3 f |
 | A sound on every word of a text build; ticks through the held line | one soft `text` sound per fragment, on its resolve frame; the held line in near-silence |
-| A synth pad bed under quiet type | effects only (`"music": "none"`), or a real track; a calm film loses nothing without a bed |
+| A synth pad bed under quiet type | effects only (`"music": "none"`), or a real track: the one effects-led film in the study runs with no bed (§5.7), and a pad sits in the band of the soft text sounds (the report's `masked` list shows what it covers) |
 | A bed that never stops; flat loudness (LRA 1–2 LU) | an intro 5–12 LU under the body for 2–3 s, the drop at about 3 s on the hero reveal, a breakdown about 5 LU down mid-film: LRA 5–9 LU, true silence before the drop |
 | A full-level downbeat on frame 1, or a first ping 49 dB over silence | enter with intent but soft: a drone or a 150–450 ms entry, the first sharp transient once the bed is up |
 | A truncated ending: the file stops mid-note or mid-fade | a tail of 0.5–2.5 s to below −60 dBFS, then 0.4–1.1 s of silence on the end card |

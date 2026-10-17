@@ -33,7 +33,9 @@ off (score.py skips its cues and says so); a role the kit does not name falls ba
 The presets keep riser, swell and suck off and give the lockup one clean element.
 
 Tuning (init, tune): roles with `pitches` or `edits.pitch` move to the film's key in their own
-register: bell to the key's pentatonic, text to the tonic triad, a single pitch to the nearest tonic;
+register: bell to the key's pentatonic, text to the pentatonic too (the tonic triad when it has 3
+notes or fewer; score.py steps a chain through the chord's tones among them), a single pitch to the
+nearest tonic;
 with earshot found, a tonal hit, drop, bell, text or confirm click with no pitch (struck bells,
 plucks, dings, sub drops, impacts) gets the tonic nearest its native note, inside its range.
 
@@ -65,6 +67,8 @@ WHOOSH_SHORT_S = 0.5  # s: a move shorter than this takes whoosh.short, a longer
 TUNE_ROLES = ('hit', 'drop', 'bell', 'text', 'click.confirm')  # roles init/tune may give a pitch they lack
 TONAL = ('pluck', 'notify', 'pro_notify', 'sub_drop', 'pro_sub_drop', 'impact', 'pro_impact')  # bank categories
 NOTE_RE = re.compile(r'^([A-Ga-g])([#sb]?)(-?\d+)$')
+PITCH_TOL = 0.5  # semitones: an explicit note plays a take only when the take is that note (a quarter tone either way)
+LEVEL_TRIM_DB = 6.0  # dB: the per-take loudness trim toward its role's median never moves a take further
 PCS = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
 NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
@@ -196,8 +200,11 @@ def find_earshot(python=None, score_python=None):
         tried.append(f'{how} ({py}): ' + ('no earshot with sound kits: ' + why if why else 'no earshot'))
     exe = None if off else shutil.which('earshot')
     if exe:
-        d = os.path.dirname(exe)
-        sib = next((os.path.join(d, n) for n in ('python', 'python3', 'python.exe') if os.path.isfile(os.path.join(d, n))), None)
+        # the interpreter beside the entry point; pipx and Homebrew put a symlink on PATH, so look
+        # beside its target first, then beside the link itself
+        dirs = list(dict.fromkeys([os.path.dirname(os.path.realpath(exe)), os.path.dirname(exe)]))
+        sib = next((os.path.join(d, n) for d in dirs for n in ('python', 'python3', 'python.exe')
+                    if os.path.isfile(os.path.join(d, n))), None)
         if sib:
             ver, why = _probe_python(sib)
             if ver:
@@ -266,9 +273,26 @@ def read_take(path, sr=48000):
     return x[:, 0].copy() if x.shape[1] == 1 else np.ascontiguousarray(x)
 
 
+def _loud(v):
+    """A take's measured loudness (lufs_m_max) when it is a usable number, else None."""
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and v > -70 else None
+
+
+def _median(xs):
+    xs = sorted(xs)
+    k = len(xs) // 2
+    return xs[k] if len(xs) % 2 else 0.5 * (xs[k - 1] + xs[k])
+
+
 class Kit:
     """A rendered kit (kit.lock.json + takes) as score.py plays it. roles[role] is None (off) or
-    {sound, align, level_db, takes: [{file, pitch, midi, onset_s, peak_s, end_s, checks, ...}]}."""
+    {sound, align, level_db, lufs_spread, takes: [{file, pitch, midi, onset_s, peak_s, end_s, checks,
+    trim_db, trim, ...}]}.
+
+    Takes are peak-normalised (-1 dBFS), so their loudness follows their crest: the takes of one role
+    can be 3-4 LU apart. Each take carries a trim toward the role's median loudness (from the lock's
+    lufs_m_max, at most LEVEL_TRIM_DB either way), so a role plays at one level whichever take a cue
+    gets; lufs_spread is the role's spread before the trim. A lock without lufs_m_max trims nothing."""
 
     def __init__(self, lock, takes, source):
         self.lock, self.dir, self.source = lock, takes, source
@@ -282,7 +306,14 @@ class Kit:
                 tk = dict(tk)
                 tk['midi'] = to_midi(tk.get('pitch'))
                 tks.append(tk)
-            self.roles[role] = dict(r, takes=tks) if tks else None
+            louds = [x for x in (_loud(t.get('lufs_m_max')) for t in tks) if x is not None]
+            med = _median(louds) if louds else None
+            for t in tks:
+                lv = _loud(t.get('lufs_m_max'))
+                d = 0.0 if med is None or lv is None else max(-LEVEL_TRIM_DB, min(LEVEL_TRIM_DB, med - lv))
+                t['trim_db'], t['trim'] = round(d, 2), 10 ** (d / 20)
+            spread = round(max(louds) - min(louds), 2) if len(louds) > 1 else 0.0
+            self.roles[role] = dict(r, takes=tks, lufs_spread=spread) if tks else None
         self._audio = {}
         self._last = {}
 
@@ -299,17 +330,31 @@ class Kit:
             self._audio[tk['file']] = read_take(os.path.join(self.dir, tk['file']))
         return self._audio[tk['file']]
 
+    def notes(self, name):
+        """The distinct notes (MIDI) of role `name`'s pitched takes, low to high ([] for an untuned role)."""
+        r = self.roles.get(name)
+        return sorted({round(t['midi'], 3) for t in (r or {}).get('takes', []) if t['midi'] is not None})
+
+    def covers(self, name, target):
+        """Whether role `name` can sound the explicit note `target`: an untuned role plays its takes as
+        they are; a pitched one needs a take within PITCH_TOL of the note."""
+        ns = self.notes(name)
+        return target is None or not ns or min(abs(m - target) for m in ns) <= PITCH_TOL
+
     def pick(self, name, key, target=None, explicit=False, index=None):
-        """One take of role `name`. Pitched roles first choose the pitch: an explicit target (a progress
-        rung, a motif note) takes the nearest note; a derived one the nearest pitch class (the kit keeps its
-        register). Among the takes left, `index` (a key's identity) or a stable hash of `key` (the event's
-        id and frame) picks one, never the same file twice in a row for a role that has more."""
+        """One take of role `name`, or None when an explicit note has no take (see covers()). Pitched
+        roles first choose the pitch: an explicit target (a progress rung, a motif note, a text step) takes
+        the take on that note; a derived one the nearest pitch class (the kit keeps its register). Among
+        the takes left, `index` (a key's identity) or a stable hash of `key` (the event's id and frame)
+        picks one, never the same file twice in a row for a role that has more."""
         import zlib
         tks = self.roles[name]['takes']
         pitched = [t for t in tks if t['midi'] is not None]
         if pitched and target is not None:
             if explicit:
                 best = min(pitched, key=lambda t: (abs(t['midi'] - target), t['midi']))
+                if abs(best['midi'] - target) > PITCH_TOL:
+                    return None  # a neighbouring note would be a wrong note: the caller plays its synth voice
             else:
                 pc = lambda t: min((t['midi'] - target) % 12, (target - t['midi']) % 12)  # noqa: E731
                 best = min(pitched, key=lambda t: (round(pc(t), 6), abs(t['midi'] - target)))
@@ -407,7 +452,12 @@ def key_of(score_path):
     mode = parts[1].lower() if len(parts) > 1 else 'major'
     if mode not in SC.MODES:
         raise KitError(f'score.json key "{text}": unknown mode')
-    return SC.S.pitch_class(parts[0]), SC.MODES[mode], text
+    try:
+        if not parts:
+            raise ValueError('no tonic (write it as "G major")')
+        return SC.S.pitch_class(parts[0]), SC.MODES[mode], text
+    except (ValueError, KeyError) as e:
+        raise KitError(f'score.json key "{text}": {e}') from None
 
 
 def nearest_pc(pc, m):
@@ -431,7 +481,9 @@ def tune(kit, key, knobs=None):
         ed = spec.get('edits') or {}
         if spec.get('pitches'):
             old = [to_midi(p) for p in spec['pitches']]
-            pcs = penta if role == 'bell' else triad if role == 'text' else scale
+            # text steps through each chord's tones, so it wants the key's pentatonic (the tones most
+            # chords of the key share); a kit with only 3 text notes keeps the tonic triad
+            pcs = penta if role == 'bell' or (role == 'text' and len(old) > 3) else triad if role == 'text' else scale
             m = nearest_pc(tonic, min(old))
             new = []
             while len(new) < len(old):
