@@ -150,6 +150,20 @@ jobs:
           done
           exit "$status"
 
+      - name: Line endings (.gitattributes)
+        run: |
+          # LF in the index, LF in every checkout (a CRLF script fails under WSL's bash with
+          # "set: pipefail: invalid option name"), and binaries never converted
+          status=0
+          crlf="$(git ls-files --eol | awk '$1 ~ /crlf|mixed/ {print $NF}')"
+          for f in $crlf; do echo "::error file=$f::stored with CRLF line endings"; status=1; done
+          notlf="$(git ls-files -z -- '*.sh' '*.py' '*.mjs' '*.cjs' '*.js' '*.ts' '*.tsx' | xargs -0 -r git check-attr eol -- | awk -F': ' '$3 != "lf" {print $1}')"
+          for f in $notlf; do echo "::error file=$f::not checked out with LF; add its type to .gitattributes"; status=1; done
+          text="$(git ls-files -z -- '*.png' '*.jpg' '*.gif' '*.woff2' '*.wav' '*.mp4' | xargs -0 -r git check-attr text -- | awk -F': ' '$3 != "unset" {print $1}')"
+          for f in $text; do echo "::error file=$f::a binary file is not marked binary in .gitattributes"; status=1; done
+          echo "$(git ls-files | wc -l | tr -d ' ') files: LF in the index, scripts check out with LF, binaries marked"
+          exit "$status"
+
       - name: Plugin manifests agree
         run: |
           python3 - <<'PY'
@@ -194,6 +208,9 @@ jobs:
 
       - name: Technique library and pick.py tests
         run: python3 "skills/$SKILL/scripts/test/pick.test.py"
+
+      - name: Script --help contract and docs tests
+        run: node "skills/$SKILL/scripts/test/scripts-docs.test.mjs"
 
       - name: Python syntax (py_compile)
         run: |
@@ -260,13 +277,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: No heredoc inside $( )
+      - name: No heredoc inside $( ), backticks or <( )
         run: |
-          if git grep -nE '\$\([^()]*[^<]<<[^<]' -- '*.sh'; then
-            echo "::error::a heredoc inside \$( ) (above) does not parse in bash 3.2; put it in a shell function and call that inside \$( )"
-            exit 1
-          fi
-          echo "no heredoc inside \$( )"
+          # a multi-line scan (quotes, comments, heredoc bodies, nesting); it reports each heredoc
+          # with the fix: move it into a shell function and call that inside the substitution
+          git ls-files -z '*.sh' | xargs -0 python3 "skills/$SKILL/scripts/test/bash32.test.py"
 
       - name: Shell syntax under bash 3.2 (bash -n)
         run: |
@@ -303,6 +318,110 @@ jobs:
             fi
             node -e "const c = require(process.argv[1]); if (!(c.total > 0 && c.events.length)) process.exit(1); console.log(c.total + \" frames, \" + c.events.length + \" events\")" "$out/cues.json" \
               || { echo "::error::hf-finish.sh --export-cues wrote no valid cues under bash 3.2"; exit 1; }'
+
+  macos:
+    # The platform of #2, for real: Apple's /bin/bash 3.2.57, BSD sed/tar/wc, and Homebrew's ffmpeg
+    # (7.1 or newer, which takes a file's colour tags from the frames). The bash32 job above only
+    # emulates the shell in a Linux container, and Ubuntu's ffmpeg 6.1 passes the encodes either way.
+    name: macOS (bash 3.2, BSD tools, current ffmpeg)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
+      HOMEBREW_NO_ENV_HINTS: '1'
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install ffmpeg and numpy
+        run: |
+          brew install ffmpeg > /dev/null
+          python -m pip install --quiet numpy
+
+      - name: Tool versions
+        run: |
+          v="$(/bin/bash -c 'echo "$BASH_VERSION"')"
+          echo "/bin/bash $v, node $(node --version), $(python --version), $(ffmpeg -version | head -n 1)"
+          case "$v" in
+            3.2.*) ;;
+            *) echo "::error::/bin/bash is $v, not 3.2: this job no longer tests macOS's stock bash"; exit 1 ;;
+          esac
+          ff="$(ffmpeg -version | head -n 1 | awk '{print $3}')"
+          case "$ff" in
+            [0-6].*|7.0|7.0.*) echo "::warning::ffmpeg $ff is older than 7.1: the encode checks pass with or without setparams" ;;
+            [0-9]*) ;;
+            *) echo "::warning::could not read the ffmpeg version ('$ff')" ;;
+          esac
+
+      - name: Shell syntax under /bin/bash (bash -n)
+        run: |
+          status=0
+          count=0
+          while IFS= read -r f; do
+            count=$((count + 1))
+            if /bin/bash -n "$f"; then
+              echo "ok   $f"
+            else
+              echo "::error file=$f::/bin/bash -n failed"
+              status=1
+            fi
+          done < <(git ls-files '*.sh')
+          echo "$count shell scripts checked with /bin/bash $(/bin/bash -c 'echo "$BASH_VERSION"')"
+          exit "$status"
+
+      - name: HyperFrames preflight under /bin/bash (npm run cues)
+        run: |
+          # As in the bash32 job: a fresh starter has no fonts or vendor/gsap.min.js, so the preflight
+          # writes the cues and then reports those files missing (exit 1).
+          out="$RUNNER_TEMP/hf"
+          mkdir -p "$out"
+          rc=0
+          /bin/bash "skills/$SKILL/scripts/hf-finish.sh" "skills/$SKILL/assets/hyperframes-starter" \
+            --export-cues "$out/cues.json" 2> "$out/err" || rc=$?
+          cat "$out/err"
+          if [ "$rc" -gt 1 ] || ! grep -qE '^hf-finish: (wrote|preflight failed)' "$out/err"; then
+            echo "::error::hf-finish.sh did not get through its preflight under /bin/bash (exit $rc)"
+            exit 1
+          fi
+          node -e 'const c = require(process.argv[1]); if (!(c.total > 0 && c.events.length)) process.exit(1); console.log(c.total + " frames, " + c.events.length + " events")' "$out/cues.json" \
+            || { echo "::error::hf-finish.sh --export-cues wrote no valid cues under /bin/bash"; exit 1; }
+
+      - name: Scaffold and script refresh with BSD tools (new-film.sh, docs/setup.md)
+        run: |
+          film="$RUNNER_TEMP/film"
+          /bin/bash "skills/$SKILL/scripts/new-film.sh" "$film" --engine hyperframes --no-install
+          [ ! -e "$film/scripts/test" ] || { echo "::error::new-film.sh copied the skill's tests into the project"; exit 1; }
+          # the refresh command docs/setup.md gives, run from the project root with BSD tar
+          rm "$film/scripts/hf-finish.sh"  # the refresh must bring it back
+          SKILL="$PWD/skills/$SKILL"
+          (cd "$film" && (cd "$SKILL/scripts" && tar --exclude=__pycache__ --exclude='*.pyc' --exclude=./test -cf - .) | (cd scripts && tar -xf -))
+          [ ! -e "$film/scripts/test" ] || { echo "::error::the docs/setup.md refresh copied scripts/test into the project"; exit 1; }
+          cmp "$SKILL/scripts/hf-finish.sh" "$film/scripts/hf-finish.sh"
+          rc=0
+          (cd "$film" && /bin/bash scripts/hf-finish.sh . --export-cues out/cues.json) 2> "$RUNNER_TEMP/film-err" || rc=$?
+          cat "$RUNNER_TEMP/film-err"
+          if [ "$rc" -gt 1 ] || [ ! -s "$film/out/cues.json" ]; then
+            echo "::error::the scaffolded project's hf-finish.sh did not export cues under /bin/bash (exit $rc)"
+            exit 1
+          fi
+
+      - name: Encode tags test (Homebrew ffmpeg)
+        run: python "skills/$SKILL/scripts/test/encode-tags.test.py"
 
   encode-tags:
     # ffmpeg 7.1 and newer take a file's colour tags from the frames (#2). The test's static part
