@@ -11,8 +11,14 @@
  * Env: PROJ (absolute project folder), ENTRY (the html file in it), CUES_OUT (optional path).
  * It is a file of its own because bash 3.2 (macOS's /bin/bash) cannot parse a heredoc inside
  * $( ), and .cjs because it uses require() whatever "type" the project's package.json declares.
+ * It has no CLI of its own: with --help, or without PROJ and ENTRY, it says so and exits 2.
  */
 const fs = require('fs'), path = require('path'), vm = require('vm');
+if (process.argv.slice(2).some((a) => a === '--help' || a === '-h') || !process.env.PROJ || !process.env.ENTRY) {
+  console.error('hf-preflight.cjs: internal helper of hf-finish.sh, which sets its environment (PROJ, ENTRY, optional CUES_OUT).\n'
+    + 'Run the preflight through hf-finish.sh instead: bash scripts/hf-finish.sh --help');
+  process.exit(2);
+}
 const dir = process.env.PROJ, entry = process.env.ENTRY, cuesOut = process.env.CUES_OUT;
 const errs = [], warn = [];
 const html = fs.readFileSync(path.join(dir, entry), 'utf8');

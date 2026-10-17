@@ -12,7 +12,7 @@ You are directing a short film, not animating a web page. Picture, copy and soun
 - **Engines.** Remotion 4.0.529 (React, frame-driven) is the default. HyperFrames 0.8.79 (HTML plus a paused GSAP timeline) is the alternative. The craft is engine-independent; §7 lists the rules that differ per engine.
 - **Numbers.** Every number here is a proven default from shipped work: a starting point that you can move away from when you have a stated reason. It is not a law of nature.
 - **Brand.** When the user supplies a brand (colours, fonts, logo, footage, tone), the brand wins. The taste defaults cover the parts you have to invent.
-- **Paths.** Paths such as `scripts/render.sh` work from the skill root and also inside a film project, because `scripts/new-film.sh` copies every script into the project. Every script except `brand-svg.ts` (which `brand-kit.sh` calls) prints `--help`.
+- **Paths.** Paths such as `scripts/render.sh` work from the skill root and also inside a film project, because `scripts/new-film.sh` copies every script into the project. Every script except the internal helpers `brand-svg.ts` (which `brand-kit.sh` calls) and `hf-preflight.cjs` (which `hf-finish.sh` runs) prints `--help`.
 - **Worked example.** `references/worked-example.md` walks through Tessel, a 33 s launch film at 1920×1080 and 60 fps, and shows each rule below in use, including the mistakes. Read it once before your first film.
 
 ## The bar
