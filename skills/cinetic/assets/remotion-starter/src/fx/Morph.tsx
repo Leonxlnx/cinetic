@@ -1,5 +1,5 @@
 import React from 'react';
-import { clamp, E, Ease, mix, prog, Spr, spr } from '../lib/anim';
+import { clamp, E, Ease, mix, pace, prog, Spr, spr } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { f60 } from '../timeline';
 
@@ -50,7 +50,8 @@ export const morphBox = (A: MorphBox, B: MorphBox, p: number): Required<MorphBox
  * scaled) and stays where its own state puts it, laid out in that state's box and revealed or
  * hidden by the moving, clipping rounded box (the shared-element mask of references/transitions.md
  * §4.2). Content that rode with the box would cross the slow ends of the move and settle in 1 px
- * vertical ticks (references/chromium-rendering.md §15). Defaults at 60 fps: 40 f on E.inOut,
+ * vertical ticks (references/chromium-rendering.md §15). Defaults at 60 fps: pace.fx.morph
+ * frames on E.inOut (calm 52 f, crisp 40 f),
  * timed by the clock; pass `spring` (SPR.firm) to drive geometry and fades by the spring instead
  * (not an overshooting one when the box shrinks: it clamps at 0 and vanishes for the overshoot).
  * Placed by transform only (left: 0; top: 0);
@@ -68,7 +69,7 @@ export const Morph: React.FC<{
   ease?: Ease;
   spring?: Spr;
   style?: React.CSSProperties;
-}> = ({ frame, start, A, B, a, b, dur = f60(40), ease = E.inOut, spring, style }) => {
+}> = ({ frame, start, A, B, a, b, dur = f60(pace.fx.morph), ease = E.inOut, spring, style }) => {
   const p = spring ? spr(frame, start, spring) : prog(frame, start, start + dur, ease);
   const u = spring ? clamp(p) : clamp((frame - start) / Math.max(1, dur)); // the content's clock
   const m = morphBox(A, B, p);

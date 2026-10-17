@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 /**
- * lint-film.test.mjs: regression tests for the hard-ban rules in lint-film.mjs and palette.py.
+ * lint-film.test.mjs: regression tests for the hard-ban and text-flow rules in lint-film.mjs and
+ * for palette.py.
  *
  *   1. Every fixture in lint-fixtures/ declares what it must produce in its first lines
- *      (`expect: rule=N rule:warn=N`); the hard-ban rules it does not name must stay silent.
- *   2. Both starters fail only on their placeholder markers, and lint clean once the markers are gone.
+ *      (`expect: rule=N rule:warn=N`); the hard-ban and text-flow rules it does not name must stay
+ *      silent. lint-fixtures/timeline.ts makes the fixtures a calm film (for text-pace).
+ *   2. Both starters fail only on their placeholder markers, raise no text-flow warning, and lint
+ *      clean once the markers are gone.
  *   3. palette.py refuses banned accents and papers (exit 1) and accepts allowed ones, and
  *      --brand-supplied lets the user's own colour through.
  *
@@ -23,6 +26,7 @@ const LINT = join(SKILL, 'scripts', 'lint-film.mjs');
 const PALETTE = join(SKILL, 'scripts', 'palette.py');
 const verbose = process.argv.includes('--verbose');
 const HARD = ['banned-color', 'serif', 'italic', 'glass', 'glow', 'gradient-multihue', 'emoji', 'stock-decoration', 'brand-supplied'];
+const TEXT = ['copy-literal', 'text-spring', 'text-pace', 'typing-rate', 'per-letter'];
 
 let failed = 0;
 const result = (ok, name, detail = '') => {
@@ -55,10 +59,10 @@ for (const f of readdirSync(FIX).sort()) {
   for (const m of head.matchAll(/\b([a-z-]+(?::warn)?)=(\d+)/g)) expect[m[1]] = Number(m[2]);
   const r = lint(path);
   const got = count(r.issues);
-  const keys = new Set([...Object.keys(expect), ...HARD, ...HARD.map((h) => `${h}:warn`)]);
+  const keys = new Set([...Object.keys(expect), ...HARD, ...HARD.map((h) => `${h}:warn`), ...TEXT.map((t) => `${t}:warn`)]);
   const diffs = [...keys].filter((k) => (expect[k] ?? 0) !== (got[k] ?? 0)).map((k) => `${k}: want ${expect[k] ?? 0}, got ${got[k] ?? 0}`);
   result(!diffs.length, `fixture ${f}`, diffs.join('; ') || Object.entries(expect).map(([k, v]) => `${k}=${v}`).join(' ') || 'silent');
-  if (verbose || diffs.length) for (const x of r.issues.filter((x) => HARD.includes(x.rule))) console.log(`      ${x.line}: ${x.rule} ${x.severity} ${x.excerpt}`);
+  if (verbose || diffs.length) for (const x of r.issues.filter((x) => HARD.includes(x.rule) || TEXT.includes(x.rule))) console.log(`      ${x.line}: ${x.rule} ${x.severity} ${x.excerpt}`);
 }
 
 // 2. starters: placeholders are the only errors, and removing the markers leaves them clean
@@ -73,6 +77,8 @@ for (const [name, sub] of [
   const other = before.issues.filter((x) => x.rule !== 'placeholder' && x.severity === 'error');
   const nPlace = before.issues.filter((x) => x.rule === 'placeholder').length;
   result(before.code === 1 && nPlace > 0 && !other.length, `${name} fails only on placeholders`, `${nPlace} placeholder errors, ${other.length} other errors`);
+  const flow = before.issues.filter((x) => TEXT.includes(x.rule));
+  result(!flow.length, `${name} raises no text-flow warning`, flow.map((x) => `${x.file}:${x.line} ${x.rule}`).join('; '));
   const walk = (p) => (statSync(p).isDirectory() ? readdirSync(p).flatMap((e) => walk(join(p, e))) : [p]);
   for (const f of walk(dst)) {
     const s = readFileSync(f, 'utf8');

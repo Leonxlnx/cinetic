@@ -19,11 +19,12 @@ The starter's palette, mark and demo name carry `// cinetic:placeholder` markers
 
 | Path | Job | Change it? |
 |---|---|---|
-| `src/timeline.ts` | `FPS BPM W H BEAT BAR b() f60() TAIL ACT TOTAL CUE COPY copy()`: the only source of time | always: your acts, cues and copy |
+| `src/timeline.ts` | `FPS BPM PACE_NAME W H BEAT BAR b() f60() TAIL ACT TOTAL CUE Copy line() chain() COPY copy() chainOf()`: the only source of time; `COPY` holds one entry per fragment, `chain()` writes a thought as a build or replace chain | always: your acts, cues, copy and pace |
 | `src/brand/tokens.ts` | `C` colours, `FONT`, `FACES`, `TYPE`, `typeStyle()`, `U`, `SAFE`, `safeArea()` | always: the brand (placeholder palette: ink/paper, one signal-green accent `#08965A`; marked `cinetic:placeholder`) |
 | `src/brand/Mark.tsx` | `MARK` geometry (100-unit box), `<Mark>` with per-piece poses, `placeMark()` | always: your mark (the starter's is a marked placeholder); keep the per-piece API |
 | `src/brand/fonts.ts` | the font CSS imports (browser-only): the starter's `@fontsource-variable/geist*`, or the vendored `./fonts/<name>/index.css` that `scripts/add-font.mjs` writes | when the family changes (`node scripts/add-font.mjs <name>`) |
-| `src/lib/anim.ts` | `E` easings, `SPR` springs, `tw prog mix lmix clamp spr hitPulse squash blurIn blurOut arrive depart rand fd` | add named tokens; never inline curves in acts |
+| `src/lib/anim.ts` | `E` easings (with `E.expo`), `SPR` springs (with `SPR.calm` for type), `pace` (the film's `PACE` profile) and `easeOf`, `durFor`, `tw prog mix lmix clamp spr hitPulse squash blurIn blurOut arrive depart rand fd` | add named tokens; never inline curves in acts |
+| `src/lib/pace.ts` | `PACE.calm` and `PACE.crisp` (text timing, holds, limits, component defaults), `holdFor`, `revealFor`, `wordCount`; pure data, Node-safe | rarely; pick the profile with `PACE_NAME` in `timeline.ts` |
 | `src/lib/sync.ts` | `peak delayTo hit settleOf`: sync frames computed from curves | rarely |
 | `src/lib/camera.ts` | `Shot`, `lc`, `camera()`, `toScreen`, `breath`, `dip` (`references/camera.md`) | rarely |
 | `src/lib/measure.ts` | `measureTracked fitSize inkBox baselineOf` (DOM/canvas, after fonts) | rarely |
@@ -31,7 +32,8 @@ The starter's palette, mark and demo name carry `// cinetic:placeholder` markers
 | `src/lib/FontGate.tsx` | blocks rendering until every face in `FACES` is decoded | never (edit `FACES`) |
 | `src/lib/Audit.tsx` | `audit` prop: logs and draws text boxes against the safe zone (`safe` prop), overlaps, minimum size, and text covered by a `data-mover` | never |
 | `src/lib/safe.ts` | safe-zone presets (`wide16x9`, `feed9x16`, `feed9x16Strict`, `square1x1`, `portrait4x5`, `title`), `safeInsets()`, `safeBox()`, `presetFor()`; Node-safe | rarely (a destination with other overlays) |
-| `src/fx/RackFocus.tsx` `Words.tsx` `Cursor.tsx` | rack focus without stepped blur; word reveal; transform-only cursor with `cursorArc`, `pressAt` | use as needed |
+| `src/fx/Chain.tsx` `Words.tsx` | a fragment chain in build or replace mode, with each fragment's resolve frame for the sound; the word reveal inside a fragment, timed from `pace` | for every statement |
+| `src/fx/RackFocus.tsx` `Cursor.tsx` | rack focus without stepped blur; transform-only cursor with `cursorArc`, `pressAt` | use as needed |
 | `src/acts/Act1.tsx`, `Act2.tsx` | the demo (below): replace with your acts | always |
 | `src/Film.tsx` | one `<Sequence>` per act, `<FontGate>`, optional `<Audit>`, the soundtrack in the Studio | per act added |
 | `src/FilmSub.tsx`, `src/blur.ts` | sub-frame stream for the motion-blurred master | never |
@@ -50,13 +52,13 @@ Compositions registered in `src/Root.tsx`:
 
 npm scripts: `studio`, `check` (tsc + `lint-film.mjs` + `grid-check.ts`), `stills`, `cues` (`export-cues.ts`), `audio` (`score.py`, writing `out/stems/` and `out/qa/score.json` too), `render` (`render.sh --blur`), `render:preview`, `qa` (probe, forensics, `av-audit --stems`, sheet on `out/film.mp4`).
 
-**The demo** is a 4-bar placeholder that exercises the system; replace every act, keep the patterns. Its dot, dome and block are the placeholder's vocabulary, not a template for your device or mark (`references/brand-and-color.md` §4). Act 1: the accent dot waits where the period will be and ticks on each beat of bar 1, each tick calling in one word (it pops on the beat, arrives in the accent and relaxes to ink); the spread line closes on `E.contact` and locks on the downbeat of bar 2 with the dot seated as its period; after the read hold the words leave last-first and the dot flies to its slot in the mark, its velocity peak on a beat (`CUE.fly`) and arriving at rest on the act seam. Act 2 opens on exactly that pose; the dome and the block are born on their first frames of travel and land on beats 2 and 3 (springs started `delayTo()` early, stopped dead at contact, squashed against the contact edge, and kept under about 70 px/f); the mark settles into the lockup while the name rides out from behind its moving edge and locks on the downbeat of bar 4; a 20% dolly and the dot's clock ticks keep the hold alive to the last frame. The words rise on `arrive()` so they do not settle in whole-pixel ticks (`references/chromium-rendering.md` §15).
+**The demo** is a 5-bar placeholder at 100 BPM and the calm pace that exercises the system; replace every act, keep the patterns. Its dot, dome and block are the placeholder's vocabulary, not a template for your device or mark (`references/brand-and-color.md` §4). Act 1 is a two-fragment build chain around a picture beat: "Built on" rises alone into the frame while the camera creeps in from frame 0; then the picture takes its turn, as the accent dot is born above the line, falls on `E.contact` and lands on the baseline where the finished line will end (`CUE.land`); the line glides left to make room and "the beat" rises into the opening with the dot seated as its period. After a long read the whole line leaves together; the dot stays a moment, then flies to its slot in the mark, its velocity peak on a beat (`CUE.fly`) and arriving at rest on the act seam. Act 2 opens on exactly that pose; the dome and the block are born on their first frames of travel and land on beats 2 and 3 of bar 4 (springs started `delayTo()` early, stopped dead at contact, squashed against the contact edge, and kept under about 70 px/f); the mark settles into the lockup while the name rides out from behind its moving edge and locks on the downbeat of bar 5; a slow 15% dolly keeps the hold alive to the last frame, with no tick planted in it. The words rise on `arrive()` so they do not settle in whole-pixel ticks (`references/chromium-rendering.md` §15).
 
 ## 2. How a film is wired
 
 - **Acts are pure functions of `useCurrentFrame()`.** Inside an act, convert cues once: `const L = (abs: number) => abs - ACT.mark.from`. Inside a `<Sequence>` the frame is local (it starts at 0).
 - **Durations inside a move use `f60()`**, cues use `b()`. `f60(22)` is 22 frames at 60 fps and 11 at 30, so choreography keeps its timing if the fps changes; `hitPulse` attack and decay are in 60 fps frames for the same reason.
-- **Text reads its words from `COPY`** (`copy('statement').text`), never a second literal, so `grid-check.ts` counts what is on screen.
+- **Text reads its words from `COPY`** (`copy('statement').text`, or `<Chain>` for a chain), never a second literal, so `grid-check.ts` counts and times what is on screen (`lint-film.mjs` flags a literal as `copy-literal`).
 - **Everything the sound needs is exported from the act** (`DOT_TRAVEL`, `LOCKUP_MOVE`, `HERO` in the demo) and `src/sync.ts` computes events from it (`references/timing-grid.md`, `references/sound.md`).
 - **Seams are designed inside the acts**: the outgoing act ends on the pose the incoming act opens with, computed from shared constants (`DOT_SLOT`, `HERO`), never a crossfade in `Film.tsx`.
 - **Tag readable text** with `data-text="<id>"` on the element whose box is the text, so `layout-audit.sh` can check it.

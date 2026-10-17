@@ -33,6 +33,7 @@ When you invent the look, none of these appear, ever. They are the fastest tells
 - **Words:**
   - eyebrow or kicker labels above a headline;
   - stacked taglines, and "Introducing…";
+  - full sentences dumped at once: copy arrives as short fragments, one after another, with picture between them (§4, "Text flow");
   - text walls, and random filler text: decorative mono captions, fake metrics, labels nobody needs, lorem ipsum.
 
   Every word on screen earns its place.
@@ -45,7 +46,7 @@ When you invent the look, none of these appear, ever. They are the fastest tells
 - **Decoration:**
   - emoji and stock icons;
   - sparkles standing for "AI", particles, confetti, lens flares and code rain;
-  - bouncy overshoot on anything that isn't landing.
+  - bouncy overshoot on anything that isn't landing, and any overshoot or per-letter trick on copy (only the one hero word may move letter by letter).
 
 What remains is plenty: ink and paper (light or dark, neutral or cool), one accent with a meaning from any hue family outside the banned ones (red, green, teal, blue, yellow), one sans, and motion that is ultra clean and smooth, eased, weighted, motion-blurred and free of jitter. The creativity goes into the idea, the device and the choreography, not into effects.
 
@@ -53,15 +54,15 @@ If the user supplies a brand that includes one of these (their serif wordmark, t
 
 ## 1. Formats and defaults
 
-Choose a row first. It sets the length, the density and the list of files to deliver. The recipe for each format is in `references/formats.md`.
+Choose a row first. It sets the length, the density and the list of files to deliver. The recipe for each format is in `references/formats.md`. The numbers are the calm pace, the default; a brief that asks for energy (a teaser, a drop, a hype cut) opts into the crisp profile (§5), which is faster and allows a little more text (fragments up to 5 words, up to 10 visible) but still never a sentence dumped at once.
 
-| Format | Length | fps | Grid (BPM) | Story beats | On-screen words | Sound | Deliverables |
+| Format | Length | fps | Grid (BPM) | Story beats | Words: total · new per fragment · visible at once | Sound | Deliverables |
 |---|---|---|---|---|---|---|---|
-| Launch film / teaser | 20–45 s | 60 | 120 | 8–10 per 30 s | ≤ 20–35 in total | full score + SFX | 16:9 master, 9:16 and 1:1 re-layouts, poster, brand kit if invented |
-| Product / feature video | 8–30 s | 60 | 100–120 | 1 capability per 8–10 s | ≤ 15 | light bed + UI SFX | master, poster |
-| Feature loop | 4–15 s, whole bars | 60 (GIF 25) | any; whole bars | 3–5 | ≤ 8, reads muted | optional | MP4, WebM, GIF, seamless seam |
-| Logo sting | 3–8 s | 60 | 120 | 2–4 | name + ≤ 4 | one tuned hit + tail | MP4, ProRes 4444 alphas (held and cleared), poster, brand kit if invented |
-| UI walkthrough | 20–90 s | 60 | 90–110 | 1 chapter per 2–4 bars | ≤ 6 per caption | bed + UI SFX | master, SRT captions |
+| Launch film / teaser | 20–45 s | 60 | 100 (crisp 120) | 6–8 per 30 s (crisp 8–10) | 15–25, cap 30 · ≤ 4 · ≤ 8 (≤ 5 in replace mode) | full score + SFX | 16:9 master, 9:16 and 1:1 re-layouts, poster, brand kit if invented |
+| Product / feature video, update film | 8–30 s | 60 | 100 | 1 capability per 8–10 s | ≤ 12 · ≤ 4 · ≤ 8 | light bed + UI SFX | master, poster |
+| Feature loop | 4–15 s, whole bars | 60 (GIF 25) | any; whole bars | 3–5 | ≤ 6, reads muted · ≤ 4 · ≤ 4 | optional | MP4, WebM, GIF, seamless seam |
+| Logo sting | 3–8 s | 60 | 100–120 | 2–4 | name + ≤ 3 · ≤ 3 · name + 3 | one tuned hit + tail | MP4, ProRes 4444 alphas (held and cleared), poster, brand kit if invented |
+| UI walkthrough | 20–90 s | 60 | 90–100 | 1 chapter per 2–4 bars | ≤ 5 per caption · ≤ 4 · one caption | bed + UI SFX | master, SRT captions |
 
 Use 60 fps whenever UI, text or the camera moves. At 30 fps slow drifts visibly step and fast moves strobe, and 24 fps is never right for UI. A GIF is the one exception: export it at 25 fps (or 50) from the 60 fps master, because GIF frame delays are whole hundredths of a second and 30 fps plays 11% fast.
 
@@ -82,8 +83,9 @@ Every step writes a file, and every gate is a check you actually run. Work inlin
 - If it doesn't, ask at most 3 questions: the product in one line, the format and length, and where the film will be shown. Take everything else from §1.
 - Choose the engine: Remotion by default; HyperFrames if the user already has a HyperFrames project, wants HTML/GSAP, or needs `--batch` renders driven by variables.
 - Copy the hard bans (above) into `BRIEF.md`, plus any brand-supplied exceptions. Critics are later prompted with this file word for word, so it doubles as the QA contract.
-- Scaffold the project: `bash <skill>/scripts/new-film.sh films/<name> --fps 60 --bpm 120 --size 1920x1080 [--engine hyperframes]`. Pass `--link-modules <dir>/node_modules` to reuse an existing install instead of running `npm install`.
-- **Gate:** `BRIEF.md` has a spec line, for example `1920x1080@60, 30s, 120BPM, audio: synthesized`.
+- Choose the pace: calm (the default) unless the brief asks for energy; write it into the spec line. Crisp is an explicit opt-in (§5).
+- Scaffold the project: `bash <skill>/scripts/new-film.sh films/<name> --fps 60 --bpm 100 --size 1920x1080 [--engine hyperframes]` (`--bpm 120` for a crisp film). Pass `--link-modules <dir>/node_modules` to reuse an existing install instead of running `npm install`.
+- **Gate:** `BRIEF.md` has a spec line, for example `1920x1080@60, 30s, 100BPM, pace: calm, audio: synthesized`.
 
 ### Step 1: Concept → `TREATMENT.md`
 Read `references/concept-and-story.md` now.
@@ -96,13 +98,13 @@ Read `references/concept-and-story.md` now.
   - (b) the viewer's pain made visible;
   - (c) a formal device: a relay object, a bookend, one unbroken camera move, or a container that becomes the product.
 - Throw out any concept whose props could appear in another product's film. It isn't yours.
-- **Draw the techniques; don't choose them.** Run `python3 scripts/pick.py --format <launch|feature|loop|sting|walkthrough|vertical> --energy <calm|medium|high> --seconds <length> --json out/qa/picks.json`. It draws about one technique per 2.5 s of film (5 for a 12 s video, 12 for a 30 s launch) from the measured library in `assets/library/techniques.json`, in the order the format needs them, weighted toward proven moves and the film's energy, and prints each recipe with default timing. Choosing by hand converges on the same fade-up, push-in and end card in every film; the draw is how two films stop looking alike. Build the picks the concept can carry, retold in its objects and device; the story, product truth and one consistent UI language come first, and a film that crams in every move reads as a showreel. Reroll a pick that fights the concept at most twice (`--category <cat> --exclude <id>`), or drop it, with a written reason; never add a technique the draw did not give you (draw one with `--category`), and pass `--brand-supplied <look>` when the brand owns a banned look. Read a drawn entry in full with `pick.py --show <id>`; `references/technique-library.md` lists every entry (search it, don't read it whole). Measured pacing, easing and text-timing norms are in `references/craft-rules.md`.
+- **Draw the techniques; don't choose them.** Run `python3 scripts/pick.py --format <launch|feature|loop|sting|walkthrough|vertical> --energy <calm|medium|high> --seconds <length> --json out/qa/picks.json`, with `--energy calm` unless the brief asks for energy. It draws about one technique per 2.5 s of film (5 for a 12 s video, 12 for a 30 s launch) from the measured library in `assets/library/techniques.json`, in the order the format needs them, weighted toward proven moves and the film's energy, and prints each recipe with default timing. Choosing by hand converges on the same fade-up, push-in and end card in every film; the draw is how two films stop looking alike. Build the picks the concept can carry, retold in its objects and device; the story, product truth and one consistent UI language come first, and a film that crams in every move reads as a showreel. Reroll a pick that fights the concept at most twice (`--category <cat> --exclude <id>`), or drop it, with a written reason; never add a technique the draw did not give you (draw one with `--category`), and pass `--brand-supplied <look>` when the brand owns a banned look. Read a drawn entry in full with `pick.py --show <id>`; `references/technique-library.md` lists every entry (search it, don't read it whole). Measured pacing, easing and text-timing norms are in `references/craft-rules.md`.
 - Fill in `assets/TREATMENT.md` for the concept you chose:
   - a logline;
   - the arc: hook (inside the problem, felt by 1 s) → turn → proof (1–2 capabilities) → promise → lockup;
   - the drawn techniques with the seed line, each placed in a beat (§3b of the template);
   - the device path, shot by shot;
-  - a beat sheet with the columns bar | time | picture | copy | sound;
+  - a beat sheet with the columns bar | time | picture | copy (fragment, mode) | picture beat | sound: every thought of more than 4 words written as a chain of fragments, each with the picture beat it hands over to;
   - the full copy with its word count;
   - the final frame.
 - Run the deletion test. Remove the demo beats, and the value should still read. Remove the value beats; if the film still "works", it was a feature tour.
@@ -112,7 +114,8 @@ Read `references/concept-and-story.md` now.
   - the logline is ≤ 15 words;
   - the specificity test passes, with its answer written down;
   - the word count is inside the §1 budget;
-  - no line is longer than 5 words, and no shot has more than 2 lines;
+  - every fragment is 1–4 words; no beat shows more than 8 words of copy (5 in replace mode); every thought of more than 4 words is a chain with a picture beat of 30–90 f between its fragments, and none arrives as one block (a crisp film allows 5 words per fragment and 10 on screen);
+  - copy is planned on at most about 65% of the runtime (80% in crisp), with a text-free picture stretch of at least 1.5 s in every 10 s;
   - the device appears in every beat row, and every drawn technique is placed in a beat or dropped with a reason.
 
 ### Step 2: Brand and style frames → `src/brand/`
@@ -153,10 +156,10 @@ Read `references/timing-grid.md` now.
 - Map the beat sheet onto bars:
   - `ACT` holds contiguous, bar-aligned acts;
   - `CUE` holds named frames that sit on the grid;
-  - `COPY` holds `{id, text, in, resolved, out}` for every line;
+  - `COPY` holds one `{id, text, in, resolved, out}` entry per fragment: `line(id, text, in)` for a single fragment, `chain(id, 'build' | 'replace', [[text, inFrame], …])` for a thought in several (it adds `chain` and `mode` and times each fragment from the pace);
   - `TOTAL` includes a tail of at least 60 f.
-- Give each bar one motion peak.
-- **Gate:** `npx tsx scripts/grid-check.ts src/timeline.ts` passes (`npm run check` runs it together with `tsc` and the lint). It checks that every cue is on the 16th grid (or carries an `offgrid:` reason), that text holds are long enough, that no gap without an event runs past 48 f, and that the word count is within budget.
+- Give each bar one motion peak, and let text and the hero action take turns on the grid.
+- **Gate:** `npx tsx scripts/grid-check.ts src/timeline.ts` passes (`npm run check` runs it together with `tsc` and the lint). It checks the grid (every cue on the 16th grid or carrying an `offgrid:` reason), the reading holds, the event gap (no stretch past 72 f without an event or a reading hold; 48 f in crisp), the word budget, and the text flow, all against the film's `PACE_NAME` (`--pace` overrides it): `fragment` (words per entry), `copy-concurrent` (words visible on any frame), `reveal-rate`, `chain-gap`, `word-rate` and `text-share`.
 
 ### Step 4: Build, act by act → `src/acts/`
 Before you write motion, read `references/motion-tokens.md`, `references/camera.md`, `references/transitions.md`, and `references/product-ui.md` if the product appears. Keep `references/chromium-rendering.md` open while you debug.
@@ -165,7 +168,8 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
 - Build the product UI from real components fed by one `data.ts` module with asserts on dates, weekdays, counts, plurals and sums. The data must agree with the story too: the person who paid doesn't owe, a "sorted" list is actually sorted, a stated ratio matches its numbers, and no number appears twice in one frame. That holds in every frame, in-between states included: a copy headed "owes Maya" over the whole bill's total is a wrong number on screen for as long as it shows. Frame the UI large enough to read on a phone: push in 2–5× on every interaction that carries the story, and hold a wide shot of readable UI for at most about 1.7 s. Every bar, segment, chart or bare number that carries meaning shows its value, label or unit: a row of "18 24 12 31" under M–S reads as dates, not pages. A screenshot never carries the hero shot.
 - Make the product and the feature identifiable. Name the feature once, as a UI label, the one line of copy or the end card, and show enough real app chrome that a stranger knows this is software. "No feature name as a headline" never means "never name it". A feature label is not a payoff: land the value with one short line that makes it human ("Sam had the salad."), even in a muted loop.
 - Frame only the meaningful part of the product. No half-empty grids, no tables cropped at the frame edge, no rows of blank cells: they read as a spreadsheet, not a product.
-- Text that must be read stays readable in motion. Text being read moves at most about 3 px/f (a camera cruise under it 1.5–3 px/f). Keep labelled chips and numbers under about 20 px/f while they travel, or fly them with the text faded and let it resolve on landing, because motion blur on small text reads as a double image.
+- Text that must be read stays readable in motion. Text being read (between its `resolved` and `out` frames) moves at most about 3 px/f, and at least 0.3 px/f of drift or a slow creep keeps it alive; a camera cruise under it runs 1.5–3 px/f. Keep labelled chips and numbers under about 20 px/f while they travel, or fly them with the text faded and let it resolve on landing, because motion blur on small text reads as a double image.
+- Words reach the screen through `COPY` only: render statements with `src/fx/Chain.tsx` or `Words` from `copy(id)`, never a string literal in an act (`lint-film.mjs` flags `copy-literal`, `text-spring`, `text-pace`, `typing-rate` and `per-letter`).
 - Moving elements never cover text they pass over: plan the paths and the z-order, and check the densest frames at full size.
 - A progressive text reveal (letter by letter or with a sweep) must never spell a different word partway through ("tarn" briefly reading "tar"), and never shows part of a glyph: a soft wipe through an "n" reads as an "r" ("halder"). Step the mask from glyph edge to glyph edge on whole frames, or reveal whole words, and check the intermediate frames.
 - Export from its act every frame the sound needs, as a named constant (for example `LANDINGS` or `SNAP`), so the cue export can import it.
@@ -176,7 +180,7 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
   3. Run `bash scripts/layout-audit.sh Act2 --cues`.
 - **Gate:**
   - `lint-film.mjs` is clean;
-  - `layout-audit` reports 0 safe-area or overlap violations, and no readable text faster than 20 px/f;
+  - `layout-audit` reports 0 safe-area, overlap or `words` violations (no frame with more readable film words than the pace allows; product strings carry `data-ui` and count apart) and no readable text faster than 20 px/f; on the act sheets, text being read moves at most about 3 px/f;
   - every act sheet has written review notes.
 
 ### Step 5: Sound → `public/audio/soundtrack.wav`
@@ -235,10 +239,21 @@ The full catalogue of cheap-looking tells, each with its fix, is in `references/
 These rules ban the tells of generated work, not personality. Two films made with this skill for different brands should not look alike. If yours looks like the starter, the Tessel example or your last film, it is not finished.
 
 **Copy** (`references/copy-and-type.md`)
-- Open inside the problem, never on "Introducing…", a rhetorical question or the logo. A muted feed decides in the first second.
+- Open inside the problem, never on "Introducing…", a rhetorical question or the logo. A muted feed decides in the first second. An update film opens on the news itself: the product already moving, with a setup fragment that hands over to it.
 - Pay off the film's own words: a setup phrase, then a refrain, then the resolution.
 - Avoid stock phrasing (seamless, unlock, AI-powered, streamline) and never use a feature name as a headline. They mark the film as a template.
-- Show one line at a time. No eyebrow or kicker labels and no stacked taglines, because that is landing-page grammar.
+- Show one fragment at a time, and let text and the hero action take turns. No eyebrow or kicker labels and no stacked taglines, because that is landing-page grammar.
+
+**Text flow: fragments, one at a time** (`references/copy-and-type.md` §2b)
+
+In eight frame-measured professional films a beat showed about 2 new words, a fragment stayed readable about 0.8 s, and half the beats continued a sentence begun on an earlier one. The house default keeps that grammar and slows it down.
+- **Fragments.** 1–4 words (2–3 is best, about 22 characters at most; crisp allows 5), cut at grammar: after the subject, before the object, before the payoff noun or the name. Never split a name or a number from its unit. Punctuation comes only with a sentence's last fragment. A thought of more than 4 words is a chain of 2–4 fragments and never lands as one block.
+- **Build or replace.** In a build chain the fragments append to one held line that re-centres, the newest arriving in the accent and relaxing to ink; up to 8 words show, and the line clears as a whole. In a replace chain each fragment leaves whole over 24 f as the next takes its place; up to 5 words show.
+- **The animation is the verb.** Put 2–4 words before the demo and 1–3 after it; the words never describe what the picture shows. The cliffhanger cut ends a fragment one step short of its payoff and lets the picture deliver it within 90 f: "here is the newest" → the product arrives → "earshot."
+- **Text and picture take turns.** Between two fragments of a chain the picture gets 30–90 f to act. The hero move never starts in the same 12 f as a fragment, nothing fast moves while words are being read, and nothing new starts during a reading hold: the camera drifts, the device breathes and the mix thins, so the line is read in quiet. Between runs of text the picture has stretches with no copy: copy on at most about 65% of the frames, and at least 1.5 s without text in every 10 s.
+- **More grammar.** A list becomes a stem with a rotating slot ("syncs to" | "your phone" → "your laptop" → "the whole team."). The product can stand in for a word inside the line. One giant keyword with a small continuation beside it, once per film. Edit the tail and keep the anchor instead of replacing a line. A persistent container (a pill, brackets) holds changing words together.
+- **Emphasis by colour, never bounce.** One accent sweep on the keyword, or the last word keeps the accent. No overshoot, slam per line or per-letter trick on copy; only the one hero word may move letter by letter.
+- **Holds are alive, not frozen.** A fragment holds max(60, 42 + 8 f per word) after it resolves (1.0–1.25 s for 1–4 words; a build line counts all its words, up to 150 f) while it drifts 0.3–1 px/f or creeps 1–3%. That is life, not a stall: no tick needs planting in the read.
 
 **Type**
 - Choose one clean, modern sans for the brand's personality, at 2 weights, plus an optional mono, shipped as local variable fonts (`@fontsource-variable/*`). No serif and no italic (see Hard bans).
@@ -247,12 +262,12 @@ These rules ban the tells of generated work, not personality. Two films made wit
   - The ubiquitous UI default families, the starter's stand-in included, read as "template" unless you chose them on purpose.
   - Weight carries tone: a calm brand rarely wants a heavy grotesk wordmark.
 - Get emphasis from size or motion.
-  - Statements are 88–128 px with leading 0.95–1.05.
+  - Statements are 88–128 px with leading 0.95–1.05; a build line that will reach 6–8 words takes the quieter line role, 48–72 px, with generous space around it.
   - Emphasis inside a line is 1.5–1.7× the statement size; a standalone hero word may run 2–5× (14–48% of the frame height); secondary lines are 44–56 px.
   - UI must be at least 22 px on screen after camera scale.
   - Every number uses tabular figures.
 - Keep one tracking token per role, for example a display setting of 600 / −0.05 em. Near-miss values across scenes read as "almost matched".
-- Blur text only on entry, and only while it moves fast: statements 6–8 → 0 px, body lines 4–6 px, or no blur at all, through `blurIn` (clear by 60% of the eased move, because Chromium steps blur radii and renders anything under ~0.75 px fully sharp). Text lands sharp and is never left readable-but-blurred for more than 6 f.
+- No entry blur on text by default; ≤ 4 px when the brand is soft, and 6–8 px on statements only in the crisp profile, always through `blurIn` (clear by 60% of the eased move, because Chromium steps blur radii and renders anything under ~0.75 px fully sharp). Text lands sharp and is never left readable-but-blurred for more than 6 f.
 
 **Colour** (`references/brand-and-color.md`)
 - Pick one accent from an allowed hue family (red, green, teal, blue, yellow) for a stated reason. Everything in the Hard bans is out: orange, amber, beige and cream, neon, purple, violet or indigo, multi-hue gradients and glassmorphism.
@@ -284,14 +299,27 @@ These rules ban the tells of generated work, not personality. Two films made wit
 `src/timeline.ts` is the only source of timing. Picture, cue export and grid check all import it. Details and the full pattern are in `references/timing-grid.md`.
 
 ```ts
-export const BEAT = (60 / BPM) * FPS;               // 30 f at 120 BPM / 60 fps
+export const BEAT = (60 / BPM) * FPS;               // 36 f at 100 BPM / 60 fps
 export const BAR = BEAT * 4;
 export const b = (bar: number, beat = 0, sub = 0) =>   // sub = 16ths
   Math.round(((bar - 1) * 4 + beat) * BEAT + sub * (BEAT / 4));
 const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one per act
 ```
 
-- **Whole-frame beats at 60 fps:** 90 BPM gives 40 f, 100 → 36, 120 → 30, 144 → 25, 150 → 24.
+- **Whole-frame beats at 60 fps:** 90 BPM gives 40 f, 100 → 36, 120 → 30, 144 → 25, 150 → 24. 100 BPM is the default for text-led and calm films: its 2.4 s bar carries one fragment unhurried. 120 BPM (a 2 s bar) is for crisp films.
+- **Pace: calm by default, crisp on request.** The profiles are `PACE.calm` and `PACE.crisp` (`src/lib/pace.ts`; `motion.js` in HyperFrames). A film picks one with `PACE_NAME` in `timeline.ts`; `anim.ts` exports it as `pace`, `line()`, `chain()`, `Words` and `Chain` take their numbers from it, and `grid-check.ts` checks against it. Both profiles cut copy into fragments; crisp is faster and allows a little more text.
+
+  | Knob (60 fps) | calm (default) | crisp |
+  |---|---|---|
+  | Word entry, stagger | 36 f on `outSoft`, 11 f | 26 f on `out`, 6 f |
+  | Rise, entry blur | 0.2 em, none | 0.32 em, 8 px |
+  | Exit | the whole fragment together, 24 f | per word, 16 f |
+  | Reading hold | max(60, 42 + 8 f per word) | 36 f + 6 f per word |
+  | Events per 30 s, visible change | 24–36, about every 1 s | 45–60, about every 0.5 s |
+  | Shot median, maximum | 100–160 f, 240 f | 60–90 f, 180 f |
+  | Words per fragment, visible at once | ≤ 4, ≤ 8 (≤ 5 in replace mode) | ≤ 5, ≤ 10 |
+  | Copy rate, text share | ≤ 1.2 words/s in any 5 s, copy on ≤ 65% of frames | ≤ 2 words/s, ≤ 80% |
+  | Tempo | 100 BPM | 120 BPM |
 - **Grid placement**
   - Section changes land on downbeats; cuts inside a section land on 8ths.
   - A batch of landings snaps to 16ths with a 0–3 f spread, and the first item lands on the beat.
@@ -302,25 +330,25 @@ const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one
   - Pulses peak 2 f after their sound (`hitPulse`).
   - Start a spring at `beat − delayTo(cfg, 0.5)` so its pop lands on the beat.
 - **Holds**
-  - Once text resolves, it stays at least 36 f + 6 f per word. Text that hasn't resolved never exits.
-  - Nothing is static for more than 48 f, except a designed freeze of ≤ 15 f that sits exactly on a silence, and one designed near-still hold of 60–96 f per film on the key claim or success state, under a music dropout and followed by a big move (declare it as `export const HOLD = {from, to}` in `timeline.ts`). When a gate flags a quiet stretch, give it motion; loosening the threshold to pass is not a fix.
+  - Once a fragment resolves, it holds at least max(60, 42 + 8 f per word) (crisp: 36 f + 6 f per word); a build line holds for its full word count, up to 150 f. Text that hasn't resolved never exits.
+  - Nothing freezes. A reading hold with a 0.3–1 px/f drift or a 1–3% creep is alive, not a stall, and needs no tick planted inside it. Outside reading holds, no stretch runs past 72 f (crisp: 48 f) without a visible event, except a designed freeze of ≤ 15 f that sits exactly on a silence, and one designed near-still hold of 60–96 f per film on the key claim or success state, under a music dropout and followed by a big move (declare it as `export const HOLD = {from, to}` in `timeline.ts`). When a gate flags a quiet stretch, give it life; loosening the threshold to pass is not a fix.
   - The end card runs 1.5–2.5 s: the lockup assembles over 60–80 f, then holds still for 36–80 f or keeps building (a creep of ≤ 6%, or a 10–20% push when the hold runs past about 1.3 s), then the tail. Never cut to a complete card that sits static, and never more than about 2.5 s on a still end card: a longer one reads as a drag. A URL is readable for at least 1.7 s.
   - In a launch film or product video the lockup appears once, at the end (a sting is the exception: it is all lockup). A mid-film logo reveal followed by the same lockup again reads as a repeat and spends seconds on a still; the one exception is the product's name or mark revealed at about 20–26% of the runtime after a problem act of 10 s or more, when the end card is a different construction or mirrors the opening. Mid-film, the brand is present through the device and the accent. Brand logo time across the whole film stays ≤ about 12% of the runtime.
 - **Density**
-  - Aim for 45–60 discrete events per 30 s and one motion peak per bar, with 30–70 f of calm between peaks.
-  - The first 6 s run about twice as dense as the middle.
+  - Calm: 24–36 discrete events per 30 s, one hero move per bar, and slow life cruising between them. Crisp: 45–60 events per 30 s, one motion peak per bar with 30–70 f of calm between peaks, and the first 6 s about twice as dense as the middle.
+  - Calm is not sparse. The energy arc, the moving frame 0 and the moving last third stay; peaks come from one hero move per section, never from more text.
   - Energy builds toward the payoff. No stretch after the turn is slower or greyer than the one before it, except one designed lull of 1–4 s inside a music breakdown at about 55–85% of the runtime; the last and biggest visual peak lands at 75–90%, on the music's re-entry. A second half that drags loses films whose first half is strong. Check the energy by eye on a contact sheet of the second half.
   - The last third keeps moving: a camera push, secondary motion or the device still acting. A film that settles 4 s before the end has ended early.
-  - Shot length: median 60–90 f; minimum 24 f (and only with no text); maximum 180 f in a cut-driven film, while a continuous take may run 300–560 f if an in-shot beat lands at least every 72 f.
+  - Shot length: median 100–160 f and maximum 240 f in a calm cut-driven film (crisp: 60–90 f and 180 f); minimum 24 f, and only with no text; a continuous take may run 300–560 f if an in-shot beat lands at least every 72 f.
 - **Hook:**
   - frame 0 is already composed and moving;
   - the sound enters with intent on frame 0, with no fade over the first bar;
-  - something visibly changes about every 0.5 s;
+  - something visibly changes about every 1 s (crisp: 0.5 s), with slow life in between; when the film opens on words, the first fragment is readable by about 1 s;
   - the problem is felt by 1 s and stated by 2 s;
   - the product is named on screen by about a quarter of the runtime (its chrome, the name in a status line, the mark), not saved for the end card.
 
   A soft first second loses a muted feed.
-- **End card:** carry the brief's one practical fact when it gives one (a date such as "next week", a URL, "out now"), set at the secondary size under the lockup. When the brief gives none, a launch film or product video still says what the product is in one short line under the name ("The build cache for CI."); a bare name is for stings. That is the only line besides the name.
+- **End card:** carry the brief's one practical fact when it gives one (a date such as "next week", a URL, "out now"), set at the secondary size under the lockup. When the brief gives none, a launch film or product video still says what the product is in one short line under the name ("The build cache for CI."); a bare name is for stings. That is the only line besides the name, and it arrives as its own fragment once the name has resolved, never stacked in together with it.
 - **State follows the event:** counters, checks and totals change on the landing frame of the thing that caused them, not a beat later.
 
 **Where a sound goes** (computed by `src/lib/sync.ts`: `peak`, `hit`, `delayTo`, `settleOf`):
@@ -332,6 +360,7 @@ const L = (abs: number) => abs - ACT.plan.from;         // act-local frames, one
 | Tween settle | the 97% frame |
 | Whoosh (camera-scale moves and logo zooms, about 2 a film) | onset 100–450 ms ahead, apex on the visual peak |
 | Typing | per key up to 25 chars/s, one blip per word above (`"typing": "auto"`) |
+| A text fragment landing | one soft `text` sound where its last word is 97% home (`chainResolves()` in `Chain.tsx`), or none; never one per word |
 | Exit roll | one tick, with no detent |
 | Cut, scroll, stream, progress bar, rolling counter | nothing: the music carries it; a counter's final lock gets a crisp tick |
 
@@ -339,7 +368,7 @@ Audio that leads the picture by more than about 45 ms reads as "sound first". Mo
 
 ## 6. Motion system essentials
 
-The tokens live in `src/lib/anim.ts` (`E`, `SPR`, `tw`, `prog`, `mix`, `lmix`, `hitPulse`, `blurIn`, `arrive`, `arriveK`, `stagger`, `inertia`, `rand`, `fd`), and tested primitives for the commonest moves in `src/fx/` (`Words`, `TypeOn`, `Scramble`, `Roll`, `Morph`, `Iris`, `MaskRise`, `Cursor`, `RackFocus`): use them before writing your own. Curves, measured values and choreography constants are in `references/motion-tokens.md`; camera work is in `references/camera.md`.
+The tokens live in `src/lib/anim.ts` (`E`, `SPR`, `PACE`, `pace`, `durFor`, `tw`, `prog`, `mix`, `lmix`, `hitPulse`, `blurIn`, `arrive`, `arriveK`, `stagger`, `inertia`, `rand`, `fd`), and tested primitives for the commonest moves in `src/fx/` (`Chain`, `Words`, `TypeOn`, `Scramble`, `Roll`, `Morph`, `Iris`, `MaskRise`, `Cursor`, `RackFocus`): use them before writing your own. Curves, measured values and choreography constants are in `references/motion-tokens.md`; camera work is in `references/camera.md`.
 
 | Token | Bezier | Use |
 |---|---|---|
@@ -359,8 +388,8 @@ The tokens live in `src/lib/anim.ts` (`E`, `SPR`, `tw`, `prog`, `mix`, `lmix`, `
 
 A film uses about 3 easing characters. Linear is only for drift.
 
-Springs (`SPR`, as damping/stiffness/mass): `snap` 18/260/0.7 (small overshoot), `pop` 11/180/0.6 (a landing only), `soft` 26/120/1 (no overshoot), `heavy` 30/90/1.4 (weighty).
-- **Damping.** Everything is eased or critically damped: damping ≥ 2√(stiffness·mass). Overshoot (1–7%) belongs only to a true landing, an object arriving at a surface or a lock, at most 2 per film, because a bounce anywhere else reads as a toy.
+Springs (`SPR`, as damping/stiffness/mass): `snap` 18/260/0.7 (small overshoot), `pop` 11/180/0.6 (a landing only), `soft` 26/120/1 (no overshoot), `heavy` 30/90/1.4 (weighty), `calm` 16/64/1 (critically damped, 97% at 41 f: the only spring for type).
+- **Damping.** Everything is eased or critically damped: damping ≥ 2√(stiffness·mass). Overshoot (1–7%) belongs only to a true landing, an object arriving at a surface or a lock, at most 2 per film, because a bounce anywhere else reads as a toy. Never put an overshooting spring on type: words settle on an ease or `SPR.calm`.
 - **Smoothness is a ship gate.** Jitter, pixel-snap stairs, single-frame pops and stall-then-lurch block the ship however good the idea is: zero `forensics.py` fails and Finish at 5 (§8).
 - **Clamp.** Clamp overshoot wherever it could collide with other geometry or drive a value negative. Snap to rest when `|1 − s| < 0.01`.
 - **`Easing.spring({damping:200})`** starts at zero velocity, so it is not a replacement for expo-out.
@@ -368,10 +397,10 @@ Springs (`SPR`, as damping/stiffness/mass): `snap` 18/260/0.7 (small overshoot),
 Laws of weight:
 - **Direction.** Entrances decay and exits accelerate; only the camera eases both ways. A fade-out never uses expo-out, because it pops half the change in one frame.
 - **Log space.** Interpolate scale and zoom in log space: `exp(mix(log a, log b, t))`, which is `lmix`.
-- **Duration.** Duration grows with distance: 0.35 s + 1.35 ms per px, clamped to 0.6–2.4 s for camera moves. The slowest move is at least 3× the fastest.
+- **Duration.** Duration grows with distance: calm 0.5 s + 1.6 ms per px, camera moves clamped to 0.9–3.0 s (crisp: 0.35 s + 1.35 ms per px, 0.6–2.4 s). The slowest move is at least 3× the fastest.
 - **Shape and contact.** Shape settles 6 f before position. Contacts squash (scaleX 1.08 → 1, scaleY 0.9 → 1 over 8 f, anchored at the contact edge).
 - **Overlap.** A secondary move starts at 55–75% of the leading move (about 20 f into a 60 f move), so both settle within 2 f, or it starts on a zero-slope curve. This prevents stall-then-lurch.
-- **Budget.** Run one hero motion plus at most 2 supporting ones. Put fast (60–70 px/f whips) next to real stillness (0.3–0.6 px/f). Anything faster than 12 px/f gets true motion blur in Step 6.
+- **Budget.** Run one hero motion plus at most 2 supporting ones. Ordinary moves stay at or under 25 px/f; fast moves are rare (in calm at most 2 per film, at most 1 of them a 60–70 px/f whip, crisp films spend more), sit next to real stillness (0.3–0.6 px/f), and never happen while text is being read. Anything faster than 12 px/f gets true motion blur in Step 6.
 - **Ceiling.** No element moves faster than about 60–80 px/f. Past that, blur smears it into a streak with stepped copies; redesign the move as a cut on the beat, a match cut, a mask wipe or a shorter distance. Frame-filling edges (wipes, floods, irises, zoom-throughs, a container growing to full frame) may peak at 150–300 px/f for a few frames.
 - **Envelope.** Every punch and tick uses `hitPulse(t, attack = 2, tau = 5)`. A half-sine on a hard window leaves velocity clunks and peaks 6–8 f late.
 - **Seams**
@@ -430,7 +459,7 @@ The full procedure, the critic prompts, the rubric anchors and the table of thre
    - `python3 scripts/av-audit.py out/preview.mp4 --cues out/cues.json --stems out/stems --json out/qa/av.json`. It checks onsets against cues (per stem, so the bed cannot hide a late effect), loudness, true peak, clicks and the tail.
 3. **Sheets.** Make contact sheets with `python3 scripts/sheet.py out/preview.mp4 --chunks 4 --rate 12 --out out/qa/sheet.png`, plus a legibility sheet at `--width 480`. Grab exact frames with `bash scripts/grab.sh out/preview.mp4 <frame>…`.
 4. **Lenses.** Run the critic lenses from `assets/critics/`. Launch them as parallel subagents if the harness allows it; otherwise run them one after another, and look at the sheet *before* you open the code. On a tight usage budget, run the director and art lenses only, yourself, on the sheets, and let the scripts cover forensics and sync; never skip the lenses entirely, because they catch most of what the scripts can't.
-   - **Director** (`director.md`): the weakest 3 s; anything cheap, templated or dead; whether each act lands in under 1 s; whether the story reads muted; the 2 s hook; the end. At most 12 changes.
+   - **Director** (`director.md`): the weakest 3 s; anything cheap, templated or dead; whether each act lands in under 1 s; whether the story reads muted; the 2 s hook; the text flow (words per frame, one fragment at a time, text and picture taking turns); the end. At most 12 changes.
    - **Forensics** (`forensics.md`): reads the script JSON and inspects the flagged frames at full size.
    - **Sound/sync** (`sound-sync.md`): onsets against cues, masking, key, the ending.
    - **Round 1 only, art/copy/UI** (`art-copy-ui.md`): type, colour discipline, strings, data truth.
@@ -438,7 +467,7 @@ The full procedure, the critic prompts, the rubric anchors and the table of thre
 6. **Verify** (`verifier.md`). Try to refute each P0 and P1 from frames and code. Drop an issue if it is wrong, invisible at normal speed, or if its fix would make things worse.
 7. **Fix and re-render.** Fix in order of impact per minute. Re-render only the affected acts (per-act compositions) and splice at a static seam frame.
 
-**Critic prompts** say what changed, so it gets checked hardest. They also say "Do not re-report fixed issues" and "Don't propose adding text", and they batch images into sheets, because images are expensive in context. When one act stays weak after two rounds, run the design-off in `review-loop.md`.
+**Critic prompts** say what changed, so it gets checked hardest. They also say "Do not re-report fixed issues", "Don't propose adding text" and "Do propose splitting a sentence into a chain", and they batch images into sheets, because images are expensive in context. When one act stays weak after two rounds, run the design-off in `review-loop.md`.
 
 **Severity:** P0 is visible on a key beat (hook, payoff, logo) or breaks the story; P1 is noticeable on a normal viewing; P2 is visible only when paused.
 
@@ -460,11 +489,11 @@ Read each file when its step comes up. Don't read them all at once.
 | Step 1 | `assets/TREATMENT.md` | the treatment template |
 | Step 1, after the draw | `references/technique-library.md` | every technique in the library: recipe, timing at 60 fps, when to use and avoid it |
 | Steps 1, 3–4 and review | `references/craft-rules.md` | measured norms for pacing, smoothness, text timing, transitions, camera, UI and colour over time |
-| Steps 1–2 | `references/copy-and-type.md` | copy budget, callback copy, loading a family, type scale, kinetic type, safe reveals |
+| Steps 1–2 | `references/copy-and-type.md` | copy budget, fragment chains with timing and before/after examples, callback copy, loading a family, type scale, kinetic type, safe reveals |
 | Step 2 | `references/brand-and-color.md` | personality → choices, naming, the mark sheet, lockup proportions, tokens, accent, stages |
 | Step 2 and review | `references/taste-and-slop.md` | every cheap-looking tell, with its fix |
-| Step 3 | `references/timing-grid.md` | BPM/fps table, the `timeline.ts` pattern, sync helpers, schedules, typing cadence |
-| Step 4 | `references/motion-tokens.md` | easing and spring tables, `hitPulse`, anticipation, landings, staggers |
+| Step 3 | `references/timing-grid.md` | BPM/fps table, the `timeline.ts` pattern with `chain()`, sync helpers, schedules, holds and the two density profiles |
+| Step 4 | `references/motion-tokens.md` | easing and spring tables, the `PACE` knob, `hitPulse`, anticipation, landings, staggers |
 | Step 4 | `references/camera.md` | anchor camera, log-space zoom, breath/dip modifiers, rack focus, 3D limits |
 | Step 4 | `references/transitions.md` | energy table and the seam catalogue, each with frames, curves and failure modes |
 | Step 4 | `references/product-ui.md` | the smart part, data and story asserts, FLIP inserts, counters, cursor physics, typing |
@@ -482,7 +511,7 @@ Read each file when its step comes up. Don't read them all at once.
 | a project from the starter | `scripts/new-film.sh` |
 | a random, weighted draw of techniques for the film; one entry in full | `scripts/pick.py` (`--show <id>`, `--list`) |
 | static bans and hard bans, a leftover placeholder brand | `scripts/lint-film.mjs` |
-| grid, holds, gaps, word budget; text in the safe zone (feed presets: `--safe feed9x16`), text covered by movers, readable text faster than 20 px/f (`--cues`) | `scripts/grid-check.ts`; `scripts/layout-audit.sh` |
+| grid, holds, gaps, word budget, text flow (fragments, words per frame, reveal and word rate, picture beats, text share); text in the safe zone (feed presets: `--safe feed9x16`), text covered by movers, readable text too fast (`--cues`) | `scripts/grid-check.ts`; `scripts/layout-audit.sh` |
 | a font family, vendored into the project without `npm install` | `scripts/add-font.mjs` (or `new-film.sh --font`) |
 | a palette from one accent, contrast, accent coverage on a still | `scripts/palette.py` |
 | gradients that don't band | `scripts/dither-gradient.py` |

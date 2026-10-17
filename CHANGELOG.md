@@ -8,6 +8,35 @@ Versions 0.1.0 to 0.5.0 were development versions, and 0.9.0 was the first publi
 
 ## [Unreleased]
 
+### Calm pace by default and fragment chains
+
+cinetic's films now move at a calm pace, and their copy arrives as short fragments, one at a time, instead of whole sentences. A frame-by-frame study of eight professional films (how they split sentences, how long a fragment stays readable, how text and picture take turns) became the copy grammar; the house default keeps that grammar and holds each fragment about 1.5× longer than the references did.
+
+- **Fragment chains.** A fragment is 1–4 words. A longer thought is a chain of fragments, in build mode (appending to one held line) or replace mode (each taking the last one's place), with a picture beat of 30–90 f between them: "here is the newest" → the product arrives → "earshot." `references/copy-and-type.md` §2b gives the break rules, eleven recipes (the animation as the verb, the cliffhanger cut, a stem with a rotating slot, an image as a word, a giant keyword with a small continuation, edit instead of replace, a persistent container, emphasis by colour, text-free stretches, quiet after the text), a timing template in frames and six before-and-after examples.
+- **Calm by default, crisp on request.** `PACE.calm` and `PACE.crisp` drive word timing, reading holds and the checks. Calm words enter over 36 f, 11 f apart, rise 0.2 em without blur, hold max(60, 42 + 8 f per word) and leave together over 24 f; crisp keeps the 1.0 timing. Text-led films run at 100 BPM, one fragment per 2.4 s bar, with 24–36 events per 30 s instead of 45–60, shots of 100–160 f and a visible change about every second.
+- **Holds alive, not frozen.** A reading hold with a 0.3–1 px/f drift or a 1–3% creep counts as life, so a film no longer has to plant a tick inside a read to pass the gates. Calm never turns static: the energy arc, the moving frame 0, the moving last third and the building end card all stay.
+- **No springs on type.** Words settle on eases or the critically damped `SPR.calm`; overshoot and per-letter tricks on copy join the hard bans.
+
+### Added
+
+- `src/fx/Chain.tsx` in the Remotion starter renders a chain in build or replace mode from `COPY`, set in a new quiet `line` type role, and gives each fragment's landing frame for the sound (`chainResolves()`). `chain(id, mode, [[text, inFrame], …], { out })` in `timeline.ts` writes one `COPY` entry per fragment (`<id>.1`, `<id>.2`, …) with its `chain` and `mode`, timed from the pace; `line()` does the same for a single fragment and `chainOf()` reads a chain back.
+- `src/lib/pace.ts` with `PACE.calm` and `PACE.crisp`, picked by `PACE_NAME` in `timeline.ts`; `pace`, `easeOf`, `durFor`, `E.expo` and `SPR.calm` in `src/lib/anim.ts`; the same profiles in the HyperFrames starter's `motion.js`.
+- `export-cues.ts` writes a `copy` block (every `COPY` entry as `{id, text, in, resolved, out, words, kind, chain?, mode?}`) and the film's `pace` to `out/cues.json`, and the sound gets one soft `text` event per fragment landing instead of one per word.
+- `grid-check.ts` checks the text flow (`fragment`, `copy-concurrent`, `reveal-rate`, `chain-gap`, `word-rate`, `text-share`) against the film's own pace; its event-gap check counts a reading hold as covered.
+- `lint-film.mjs` rules `copy-literal`, `text-spring`, `text-pace`, `typing-rate` and `per-letter`.
+- `taste-and-slop.md` names B8 Sentence dump, B9 Subtitle film, K7 Hurry and F11 Springs on type.
+- `craft-rules.md` adds the eight-film study of fragment flow (words per beat, hold, entry and exit, beats that continue a sentence, frames with text) beside the calm default.
+- A fifth eval, a calm 20 s update film for X, and text-flow expectations (words per frame, fragments, reading time, no overshoot on copy) on every brief.
+
+### Changed
+
+- SKILL.md bans full sentences dumped at once, gives each format its total words, new words per fragment and words visible at once, gates Step 1 on fragments, chains and text share, and adds a "Text flow" subsection. The timing and motion systems state both profiles. Text and the hero action take turns, and fast moves are rare and never run while text is read.
+- Word budgets: launch films 15–25 words, capped at 30 (was 35); product videos 12 (was 15); loops 6 (was 8); stings the name plus 3 (was 4); walkthrough captions 5 (was 6).
+- The starter film runs at 100 BPM, and its statement is a two-fragment build chain with a picture beat between the fragments and no pulse planted in the read.
+- The treatment template's beat sheet carries each fragment with its mode and picture beat. The Plumb example runs at the calm pace and splits its 7-word UI note into a replace chain.
+- The director lens counts words per frame on the sheets and checks the text flow, the art lens checks the fragment rules, and the verifier checks text-flow issues on sheet frames rather than by eye at speed. Critics may propose splitting a sentence into a chain.
+- Motion characters per brand personality run about 1.4× longer, calm moves follow 0.5 s + 1.6 ms per px, and a line read as it types runs at about 20 characters per second.
+
 ## [1.0.0] - 2026-10-04
 
 This version teaches cinetic what top-tier launch films measurably do. Their pictures and soundtracks were measured frame by frame, and the results became a technique library the agent draws from at random, a reference of craft norms, a recalibrated sound engine and a set of tested motion primitives in the starter.

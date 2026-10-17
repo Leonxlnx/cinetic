@@ -7,14 +7,17 @@ fits the film (format, energy) and toward proven workhorses, and prints the buil
 draw. The seed is printed, so a plan can be reproduced and written into TREATMENT.md.
 
 Weights: role (workhorse 3, accent 2, signature 1) x proof (1 + evidence / 4, capped at 3) x
-energy fit (same 1.0, "any" 0.7, other 0.25). Entries whose formats don't include the film's
-format (or "any") are never drawn. Entries that rely on a house-banned look (ban_safe false)
-are drawn with their ban-safe variant as the recipe, unless --brand-supplied names every look in
-the entry's "bans" list.
+energy fit (same 1.0, "any" 0.7, other 0.25). The energy defaults to calm, the house pace, and a
+calm draw never takes a high-energy entry (weight 0: slams, whips, glitch streaks); pass --energy
+high for a brief that asks for energy, or --energy any to draw without the energy weight.
+Entries whose formats don't include the film's format (or "any") are never drawn. Entries that
+rely on a house-banned look (ban_safe false) are drawn with their ban-safe variant as the recipe,
+unless --brand-supplied names every look in the entry's "bans" list.
 
 Usage:
-  python3 scripts/pick.py --format launch --energy high --seconds 25  # a whole-film plan (10 picks)
-  python3 scripts/pick.py --format loop --energy calm --seed 41       # reproducible plan (10 s: 4 picks)
+  python3 scripts/pick.py --format launch --seconds 25               # a calm whole-film plan (7 picks)
+  python3 scripts/pick.py --format launch --energy high --seconds 25  # an energetic one (10 picks)
+  python3 scripts/pick.py --format loop --seed 41                     # reproducible plan (10 s: 4 picks)
   python3 scripts/pick.py --category transition --n 3 --format launch # three transitions
   python3 scripts/pick.py --category logo_and_end_card --exclude le-hard-cut-lockup
   python3 scripts/pick.py --plan --avoid out/qa/picks-previous.json    # skip ids used before
@@ -24,9 +27,10 @@ Usage:
   python3 scripts/pick.py --markdown > references/technique-library.md # regenerate the readable library
   python3 scripts/pick.py ... --json out/qa/picks.json                # also write the draw as JSON
 
-A plan holds about one technique per 2.5 s of film (--seconds), filled in the format's order of
-need (a sting draws its end card and hook first, a walkthrough its product demo), with one
-signature move, or two in a plan of 10 or more.
+A plan holds about one technique per 3.5 s of film when calm, per 2.5 s otherwise (--seconds),
+filled in the format's order of need (a sting draws its end card and hook first, a walkthrough its
+product demo), with one signature move, or two in a plan of 10 or more. A slot whose category has
+nothing left at this energy passes to the next category in that order.
 
 Rules for the agent (SKILL.md, Step 1): draw before you design; build the picks the concept can
 carry, each retold in the film's objects; reroll a pick that fights the concept (--exclude it,
@@ -59,9 +63,10 @@ REQUIRED = ['id', 'name', 'category', 'summary', 'recipe', 'timing', 'use_when',
             'formats', 'energy', 'role', 'ban_safe', 'evidence']
 
 # The order in which a plan fills its slots, by format: the first slots go to what that format
-# cannot do without. A film gets about one technique per 2.5 s (--seconds), so a 12 s vertical
-# video draws 5 and a 30 s launch film 12: a short film carries a few moves done well, and a
-# plan stuffed with one move per category reads as a showreel. A category may appear twice.
+# cannot do without. A film gets about one technique per 3.5 s when calm and per 2.5 s otherwise
+# (--seconds), so a 12 s vertical video draws 5 and a 30 s launch film 9 (calm) or 12: a short
+# film carries a few moves done well, and a plan stuffed with one move per category reads as a
+# showreel. A category may appear twice.
 ORDER = {
     'launch': ['opening_hook', 'transition', 'typography_motion', 'product_demo', 'ui_choreography',
                'logo_and_end_card', 'camera', 'transition', 'data_and_numbers', 'micro_interaction',
@@ -83,19 +88,20 @@ ORDER = {
 }
 DEFAULT_SECONDS = {'launch': 30, 'feature': 15, 'loop': 10, 'sting': 6, 'walkthrough': 45, 'vertical': 15}
 MIN_PICKS = {'launch': 6, 'feature': 5, 'loop': 4, 'sting': 4, 'walkthrough': 6, 'vertical': 5}
-SECONDS_PER_PICK = 2.5
+SECONDS_PER_PICK = {'calm': 3.5}  # a calm film carries fewer, longer moves
+DEFAULT_SECONDS_PER_PICK = 2.5
 
 
-def plan_size(fmt, seconds):
-    """How many techniques a film of this format and length draws."""
-    n = int(round(seconds / SECONDS_PER_PICK))
+def plan_size(fmt, seconds, energy=None):
+    """How many techniques a film of this format, length and energy draws."""
+    n = int(round(seconds / SECONDS_PER_PICK.get(energy, DEFAULT_SECONDS_PER_PICK)))
     return max(MIN_PICKS[fmt], min(len(ORDER[fmt]), n))
 
 
-def plan_slots(fmt, seconds):
+def plan_slots(fmt, seconds, energy=None):
     """{category: count} for the first plan_size() slots of the format's order."""
     slots = {}
-    for cat in ORDER[fmt][:plan_size(fmt, seconds)]:
+    for cat in ORDER[fmt][:plan_size(fmt, seconds, energy)]:
         slots[cat] = slots.get(cat, 0) + 1
     return slots
 
@@ -162,7 +168,9 @@ def validate(entries):
 
 def weight(e, energy):
     w = ROLE_WEIGHT[e['role']] * min(3.0, 1.0 + float(e.get('evidence') or 0) / 4.0)
-    if energy:
+    if energy == 'calm' and e['energy'] == 'high':
+        return 0.0  # a calm film never draws a slam, a whip or a glitch streak
+    if energy and energy != 'any':
         w *= 1.0 if e['energy'] == energy else (0.7 if e['energy'] == 'any' else 0.25)
     return w
 
@@ -174,7 +182,7 @@ def fits(e, fmt):
 def draw(pool, n, rng, energy, taken, signature_left):
     """Weighted draw without replacement. Returns (picks, signature_left)."""
     picks = []
-    cand = [e for e in pool if e['id'] not in taken]
+    cand = [e for e in pool if e['id'] not in taken and weight(e, energy) > 0]
     while len(picks) < n and cand:
         if signature_left <= 0:
             cand = [e for e in cand if e['role'] != 'signature']
@@ -266,8 +274,9 @@ def main():
                                  epilog=__doc__.split('\n\n', 1)[1])
     ap.add_argument('--library', default=DEFAULT_LIBRARY, help='techniques JSON (default: assets/library/techniques.json in the skill, scripts/library/techniques.json in a film project)')
     ap.add_argument('--format', choices=FORMATS, help='the film format; filters entries and sets the plan shape')
-    ap.add_argument('--energy', choices=ENERGIES, help='weights entries toward this energy')
-    ap.add_argument('--seconds', type=float, help='the film length: about one technique per 2.5 s (default per format)')
+    ap.add_argument('--energy', choices=ENERGIES + ['any'], default='calm',
+                    help='weights entries toward this energy (default calm: no high-energy entries; any: no energy weight)')
+    ap.add_argument('--seconds', type=float, help='the film length: about one technique per 3.5 s calm, 2.5 s otherwise (default per format)')
     ap.add_argument('--category', choices=CATEGORIES, help='draw only from this category')
     ap.add_argument('--n', type=int, default=1, help='how many to draw with --category (default 1)')
     ap.add_argument('--plan', action='store_true', help='draw a whole-film plan (the default without --category)')
@@ -330,9 +339,16 @@ def main():
     else:
         fmt = a.format or 'launch'
         seconds = a.seconds if a.seconds else DEFAULT_SECONDS[fmt]
-        sig = 2 if plan_size(fmt, seconds) >= 10 else 1  # signature moves per film
-        for cat, n in plan_slots(fmt, seconds).items():
+        size = plan_size(fmt, seconds, a.energy)
+        sig = 2 if size >= 10 else 1  # signature moves per film
+        for cat, n in plan_slots(fmt, seconds, a.energy).items():
             got, sig = draw([e for e in pool if e['category'] == cat], n, rng, a.energy, taken, sig)
+            picks += got
+        # A slot whose category has nothing at this energy passes on down the format's order.
+        rest = ORDER[fmt][size:] + ORDER[fmt]
+        while len(picks) < size and rest:
+            cat = rest.pop(0)
+            got, sig = draw([e for e in pool if e['category'] == cat], 1, rng, a.energy, taken, sig)
             picks += got
     if not picks:
         if a.category and not a.plan:

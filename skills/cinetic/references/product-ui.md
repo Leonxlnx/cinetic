@@ -250,7 +250,7 @@ export const ClickSend: React.FC = () => {
 
 ## 6. Typing cadence
 
-Typed input runs at about 30 characters per second with a human rhythm: per-character weights, quicker spaces, a breath after a sentence. A typed prompt is time-boxed to about 60–70 f whatever its length, on an eased count (most characters early, `E.type` in `src/fx/TypeOn.tsx`), then the finished line holds 72–120 f so it can be read; headlines type at 15–22 characters per second with hard per-letter pops. The schedule is computed once and exported for the sound.
+Typed input runs at about 20 characters per second when the viewer reads it as it types (the calm pace; about 30 in crisp) with a human rhythm: per-character weights, quicker spaces, a breath after a sentence. A typed prompt is time-boxed to about 60–70 f whatever its length, on an eased count (most characters early, `E.type` in `src/fx/TypeOn.tsx`), then the finished line holds 72–120 f so it can be read; headlines type at 15–22 characters per second with hard per-letter pops. The schedule is computed once and exported for the sound.
 
 ```ts
 import { rand } from '../lib/anim';
@@ -259,7 +259,7 @@ import { ACT, CUE } from '../timeline';
 const L = (abs: number) => abs - ACT.proof.from;
 export const TYPE = { start: CUE.feat1 + 30, end: CUE.feat1 + 150 }; // absolute: 120 f for 60 characters
 export const PROMPT = 'Protect my mornings. Gym Tue + Thu. Ship the deck by Friday.';
-/** Act-local frame each character appears: ~30 chars/s between TYPE.start and TYPE.end. */
+/** Act-local frame each character appears: ~30 chars/s between TYPE.start and TYPE.end (Tessel, crisp; calm: ~20). */
 export const CHAR_AT: number[] = (() => {
   const w = [...PROMPT].map((ch, i) => {
     let x = 0.75 + rand(`k${i}`) * 0.6; // per-character variation
@@ -289,7 +289,7 @@ export const typed = (wholeFrame: number) => CHAR_AT.filter((c) => c <= wholeFra
 
 - **One chapter per 2–4 bars**, chapter changes on downbeats; 1–2 capabilities per 20 s, never a tour of every feature.
 - **Each chapter** is: a camera move onto the feature's anchor (`references/camera.md`), one cause → action → result, a caption of ≤ 6 words, and the result held ≥ 36 f before the next move.
-- **Captions** sit on the eye line or the lower third, never over the action, and follow the text-hold rule (36 f + 6 f per word). Burn them in for sound-off viewing and ship an SRT (`references/finishing.md`).
+- **Captions** sit on the eye line or the lower third, never over the action, and follow the reading-hold rule (max(60, 42 + 8 f per word); crisp 36 f + 6 f per word). Burn them in for sound-off viewing and ship an SRT (`references/finishing.md`).
 - **A persistent anchor** (the story device, or the product's own "now" or selection marker) carries across chapters, so the walkthrough reads as one continuous product, not a slideshow.
 - Screen recordings of the real app are useful as texture and as a guide to its real behaviour; rebuild the hero moments as components so they can be timed to the grid.
 

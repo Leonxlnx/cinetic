@@ -122,7 +122,7 @@ A locked-off frame reads as a stalled player in a muted feed. Every hold has vis
 | Logo / lockup | dolly in on `E.dolly` | a creep of ≤ 6% when the still hold after the assembly is ≤ 1.3 s; 10–20% over about 2 s when it runs longer (Tessel's 1.0 → 1.1 over 2 s still read as dead) |
 | UI hold | drift | 0.5–1.5 px/f, plus a 2–3%/s push |
 | Typing or reading | background parallax under a sharp foreground | background −16 px and +2.5% while the foreground bar pushes +0.16 |
-| Statement | slow grow | ×1.03–1.05 through the hold |
+| Fragment or statement being read | slow drift or creep | 0.3–1 px/f of drift, or a 1–3% creep through the reading hold; a single slam may grow ×1.03–1.05 |
 
 - **Parallax planes** move at 0.3× (background), 1.0× (subject) and 1.6× (foreground) of the camera's translation. Two planes are usually enough; three is the maximum before it looks like a demo reel of parallax.
 - A drift that starts at a seam **eases in from rest**, so the cut is clean: `drift = (f − 20·(1 − e^(−f/20))) / 300` starts at zero velocity and reaches constant speed over about 60 f.
@@ -224,10 +224,10 @@ export const Defocus: React.FC<{ from: number; to: number; children: React.React
 
 | Move | Speed or length | Note |
 |---|---|---|
-| Hold drift | 0.5–1.5 px/f | visible life, not motion |
+| Hold drift | 0.5–1.5 px/f; 0.3–1 px/f under text being read | visible life, not motion; a reading hold with it is alive, not a stall |
 | Push in a hold | 2–5% per second (faster than about 9% per second reads as a move) | a logo hold: ≤ 6% after a 60–80 f assembly, 10–20% over ~2 s for a longer hold |
-| Camera move | 0.35 s + 1.35 ms/px, 0.6–2.4 s | `durFor(px, true)` in `references/motion-tokens.md` |
-| Whip | 24–30 f, peak 60–70 px/f | beside 0.3–0.6 px/f stillness; needs motion blur |
+| Camera move | calm 0.5 s + 1.6 ms/px, 0.9–3.0 s; crisp 0.35 s + 1.35 ms/px, 0.6–2.4 s | `durFor(px, true)` in `references/motion-tokens.md` |
+| Whip | 24–30 f, peak 60–70 px/f; at most 1 per film in calm | beside 0.3–0.6 px/f stillness, in a stretch with no text being read; needs motion blur |
 | Unblurred motion | ≤ 12 px/f | above that, render the master with `--blur` (`references/finishing.md`) |
 | Strobing | > 20 px/f unblurred | falling blocks at 140 px/f stamped copies until blurred |
 

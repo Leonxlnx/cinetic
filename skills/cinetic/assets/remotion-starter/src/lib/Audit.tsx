@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { AbsoluteFill, useCurrentFrame, useCurrentScale, useVideoConfig } from 'remotion';
 import { C } from '../brand/tokens';
+import { pace } from './anim';
 import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 
 // Layout audit, mounted only when a composition gets the prop {audit: true}
@@ -11,9 +12,13 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 //   without it, the preset for the frame's aspect (lib/safe.ts presetFor: 9:16 gets the feed zones);
 // - the other text boxes (overlap) and the minimum readable size (22 px at 1080p, 32 px in 9:16);
 // - anything tagged data-mover="<id>" (a chip, card, cursor or device that travels) painted OVER
-//   the text: sampled with elementsFromPoint, so z-order and transforms count as rendered.
+//   the text: sampled with elementsFromPoint, so z-order and transforms count as rendered;
+// - how much there is to read: the film words in readable boxes (effective opacity >= 0.5, at
+//   least the minimum size; a box inside another tagged box counts once) must stay within the
+//   pace's limit (pace.maxVisibleBuild: 8 when calm). Product strings (a typed command, code, a
+//   URL, an app label) carry data-ui on their tagged element and are counted apart.
 // It draws the boxes and the safe zone, and logs one JSON line per frame:
-//   CINETIC_AUDIT {"comp":"Film","frame":120,"safe":{...},"minPx":22,"boxes":[...],"issues":[...]}
+//   CINETIC_AUDIT {"comp":"Film","frame":120,"safe":{...},"minPx":22,"words":4,"uiWords":0,"boxes":[...],"issues":[...]}
 // Each box carries its effective opacity (its own times its ancestors'); layout-audit.sh --speed
 // pairs the boxes of frame f and f+1 by id to measure how fast readable text travels.
 // Tag the element whose box IS the visible text (the line, not an oversized wrapper).
@@ -24,8 +29,8 @@ export const MIN_TEXT_PX = 22;
 /** The same in a tall (9:16) frame, which is watched full-screen on a phone next to feed UI. */
 export const MIN_TEXT_PX_TALL = 32;
 
-type Box = { id: string; text: string; x: number; y: number; w: number; h: number; px: number; opacity: number };
-type Issue = { kind: 'safe-area' | 'overlap' | 'small-text' | 'covered'; id: string; detail: string };
+type Box = { id: string; text: string; words: number; ui: boolean; x: number; y: number; w: number; h: number; px: number; opacity: number };
+type Issue = { kind: 'safe-area' | 'overlap' | 'small-text' | 'covered' | 'words'; id: string; detail: string };
 
 const round = (v: number) => Math.round(v * 10) / 10;
 
@@ -81,6 +86,8 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         el,
         id: el.dataset.text || '?',
         text: (el.textContent || '').trim().slice(0, 60),
+        words: (el.textContent || '').split(/\s+/).filter(Boolean).length,
+        ui: el.closest('[data-ui]') !== null,
         x: round((r.left - origin.left) / zoom),
         y: round((r.top - origin.top) / zoom),
         w: round(r.width / zoom),
@@ -111,8 +118,15 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         const iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) - 2;
         if (ix > 0 && iy > 0) issues.push({ kind: 'overlap', id: `${a.id}+${b.id}`, detail: `${round(ix)}x${round(iy)}px` });
       }
+    // Words to read on this frame: readable boxes only, each counted once (not again inside an outer tagged box).
+    const readable = boxes.filter((b) => b.opacity >= 0.5 && b.px >= minPx);
+    const outer = readable.filter((b) => !readable.some((a) => a !== b && a.el.contains(b.el)));
+    const words = outer.filter((b) => !b.ui).reduce((n, b) => n + b.words, 0);
+    const uiWords = outer.filter((b) => b.ui).reduce((n, b) => n + b.words, 0);
+    if (words > pace.maxVisibleBuild)
+      issues.push({ kind: 'words', id: outer.filter((b) => !b.ui).map((b) => b.id).join('+'), detail: `${words} film words readable at once > ${pace.maxVisibleBuild}: one fragment at a time` });
     const clean = boxes.map(({ el: _el, ...b }) => b);
-    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), boxes: clean, issues })}`);
+    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, issues })}`);
     setFound({ boxes: clean, issues });
   }, [frame, zoom, width, height, comp, zone, SAFE.top, SAFE.right, SAFE.bottom, SAFE.left, minPx]);
 

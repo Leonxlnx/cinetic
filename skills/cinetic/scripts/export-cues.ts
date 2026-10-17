@@ -1,20 +1,25 @@
 /**
  * export-cues.ts: writes out/cues.json, the contract between the picture and the soundtrack.
  *
- * It imports the project's timeline (FPS, BPM, TOTAL, ACT, CUE) and the default export of
- * src/sync.ts: a function cues() that returns sound events computed from the same constants,
- * springs and easings the acts animate with. Sync points are computed, never typed.
+ * It imports the project's timeline (FPS, BPM, TOTAL, ACT, CUE, COPY, PACE_NAME) and the default
+ * export of src/sync.ts: a function cues() that returns sound events computed from the same
+ * constants, springs and easings the acts animate with. Sync points are computed, never typed.
  *
  * Usage (from the project root):
  *   npx tsx scripts/export-cues.ts [--sync src/sync.ts] [--timeline src/timeline.ts]
  *                                  [--out out/cues.json] [--allow-unknown] [--quiet]
  *
  * Output schema:
- *   { fps, bpm, total, acts: {name: {from, dur}}, cue: {name: frame},
+ *   { fps, bpm, total, pace?, acts: {name: {from, dur}}, cue: {name: frame},
+ *     copy: [{ id, text, in, resolved, out, words, kind, chain?, mode? }],
  *     events: [{ f, kind, weight, pan, pitch?, apexFrac?, dur?, variant?, id? }] }
  * f is the absolute frame the sound belongs on (fractional allowed), weight 0..2 (1 = normal),
  * pan -1..1, pitch a MIDI number or a note name such as "Eb6", apexFrac (whoosh, suck) the point
- * of the sound that lands on f, dur a length in frames. See references/sound.md.
+ * of the sound that lands on f, dur a length in frames. See references/sound.md. Kind `text` is
+ * the one soft sound of a copy fragment landing (fx/Chain chainResolves()), never one per word.
+ * `copy` is the timeline's COPY (every on-screen string with its frames): forensics.py and
+ * measure-speed.py read its reading windows, [resolved, out), and `pace` (the timeline's
+ * PACE_NAME) sets their calm or crisp thresholds.
  *
  * Exit codes: 0 written, 1 import failure or invalid events (nothing is written).
  */
@@ -24,7 +29,7 @@ import { pathToFileURL } from 'node:url';
 
 export const KINDS = [
   'tick', 'tock', 'hit', 'land', 'pop', 'whoosh', 'riser', 'drop',
-  'key', 'click', 'snap', 'swell', 'bell', 'suck',
+  'key', 'click', 'snap', 'swell', 'bell', 'suck', 'text',
 ] as const;
 export type Kind = (typeof KINDS)[number];
 
@@ -75,7 +80,7 @@ async function main() {
 
   const tl = await load(tlPath);
   const T = tl.default && tl.FPS === undefined ? tl.default : tl;
-  const { FPS, BPM, TOTAL, ACT, CUE } = T;
+  const { FPS, BPM, TOTAL, ACT, CUE, COPY, PACE_NAME } = T;
   for (const [k, v] of Object.entries({ FPS, BPM, TOTAL })) {
     if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) fail(`${tlPath} must export a positive number ${k}`);
   }
@@ -138,7 +143,22 @@ async function main() {
   const cue: Record<string, number> = {};
   for (const [k, v] of Object.entries(CUE as Record<string, unknown>)) if (typeof v === 'number') cue[k] = v;
 
-  const doc = { fps: FPS, bpm: BPM, total: TOTAL, acts, cue, events: sorted };
+  // The copy block: every on-screen string with its frames, so the render checks know when text is being read.
+  type CopyIn = { id: string; text: string; in: number; resolved: number; out?: number | null; kind?: string; chain?: string; mode?: string };
+  const copy = (Array.isArray(COPY) ? (COPY as CopyIn[]) : []).map((c) => ({
+    id: String(c.id),
+    text: String(c.text),
+    in: c.in,
+    resolved: c.resolved,
+    out: c.out ?? TOTAL,
+    words: String(c.text).split(/\s+/).filter(Boolean).length,
+    kind: c.kind ?? 'copy',
+    ...(c.chain ? { chain: c.chain, mode: c.mode ?? 'build' } : {}),
+  }));
+  for (const c of copy)
+    if (![c.in, c.resolved, c.out].every((v) => typeof v === 'number' && Number.isFinite(v))) fail(`COPY ${c.id}: in/resolved/out must be frames`);
+
+  const doc = { fps: FPS, bpm: BPM, total: TOTAL, ...(typeof PACE_NAME === 'string' ? { pace: PACE_NAME } : {}), acts, cue, copy, events: sorted };
   mkdirSync(dirname(resolve(outPath)), { recursive: true });
   writeFileSync(outPath, JSON.stringify(doc, null, 1) + '\n');
 
@@ -149,7 +169,7 @@ async function main() {
     console.log(
       `wrote ${relative(process.cwd(), resolve(outPath))}: ${sorted.length} events ` +
         `(${Object.entries(byKind).map(([k, n]) => `${k} ${n}`).join(', ')}), ` +
-        `${Object.keys(cue).length} cues, ${(TOTAL / FPS).toFixed(2)} s at ${FPS} fps, ${BPM} BPM`,
+        `${Object.keys(cue).length} cues, ${copy.length} copy entries, ${(TOTAL / FPS).toFixed(2)} s at ${FPS} fps, ${BPM} BPM`,
     );
   }
 }

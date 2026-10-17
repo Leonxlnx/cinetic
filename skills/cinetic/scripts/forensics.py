@@ -23,10 +23,13 @@ Frames are 0-based and absolute (frame = t * fps). Defaults (every number is a f
                  busy: a region spike while the whole frame changes > 0.15x as much   info
                  pop: any other 1-2 frame change that motion does not explain         fail
   stall        d < 0.05 while d[f-1] > 0.8 and d[f+1] > 0.8 (a repeated frame)         fail
-  hold         d < 0.1 for > 48 f: frozen (90% of its frames change < 16 px by > 24)  fail
+  hold         d < 0.1 for > 48 f (calm: 72 f): frozen (90% of its frames change < 16 px by > 24)  fail
                                    quiet (only small elements move)                   warn
-               a static end tail <= 2 s + 1 f is allowed (the audio decays there)
-  quiet        60-frame mean d < 0.15 outside holds (nearly locked-off)                warn
+               a static end tail <= 2 s + 1 f is allowed (the audio decays there); a run inside a
+               reading window (the cues copy block: [resolved, out) of an on-screen string) whose
+               mean d >= 0.02 is a read: a line held while it is read, alive with a slow drift  info
+  quiet        60-frame mean d < 0.15 (calm: 0.10) outside holds (nearly locked-off)   warn
+               (inside a reading window with mean d >= 0.02: a read, info)
   hook         the first 2 s move less than max(0.5, 0.5x the film's median 2 s window)
                (films that start at frame 0, not loops; for films of 6 s or less, the first
                1 s under 0.5x the median 1 s): a muted feed decides in second one      warn
@@ -60,7 +63,10 @@ Declare intended cuts, freezes and effects:
   --ignore 10-12            skip every check on these frames (a deliberate glitch)
   --declare qa.json         {"cuts":[600,[836,840]], "freezes":[[345,359]], "ignore":[[10,12]]}
   --cues out/cues.json      the same block under "qa"; events of kind "cut" count as cuts; act
-                            boundaries become seams; cue frames and sound events mark hits.
+                            boundaries become seams; cue frames and sound events mark hits; its
+                            copy block gives the reading windows, its `pace` the default --pace.
+  --pace calm|crisp         hold and quiet limits: calm --max-hold 72 --quiet-mad 0.10 (a calm film
+                            holds its reads longer), crisp 48 and 0.15 (the default without cues)
 
 Writes JSON (--json), a x12 banding stretch sheet and a x25 smear sheet next to it, and a short
 summary on stdout.
@@ -79,6 +85,9 @@ import cv2
 import numpy as np
 
 SW, SH = 480, 270  # MAD analysis size; the thresholds are calibrated at this size
+# Hold and quiet limits per pace: a calm film holds its reads longer (a drifting line is alive).
+PACE_LIMITS = {'calm': dict(max_hold=72, quiet_mad=0.10), 'crisp': dict(max_hold=48, quiet_mad=0.15)}
+READ_MAD = 0.02  # inside a reading window, a run with at least this mean change is a read, not a stall
 APEX_KINDS = ('whoosh', 'sweep', 'suck')  # the loudest point of the sound sits on f
 END_KINDS = ('riser', 'swell')  # the sound builds and ends on f
 
@@ -314,8 +323,10 @@ def load_cues(path):
                             events.append(dict(f=float(x), kind=name, weight=1.0, apex=apex,
                                                ends=is_end(name) and not apex, pan=None))
     events.sort(key=lambda e: (e['f'], e['kind']))
+    copy = [x for x in (c.get('copy') or []) if isinstance(x, dict) and _num(x.get('resolved')) and _num(x.get('out'))]
     return dict(fps=float(c.get('fps') or 0) or None, total=total, acts=acts, cue=cue, events=events,
-                qa=c.get('qa') if isinstance(c.get('qa'), dict) else None, schema=schema)
+                qa=c.get('qa') if isinstance(c.get('qa'), dict) else None, schema=schema, copy=copy,
+                pace=c.get('pace') if c.get('pace') in PACE_LIMITS else None)
 
 
 # ------------------------------------------------------------------------------------------
@@ -352,7 +363,7 @@ def load_declarations(args):
     cuts = parse_ranges(args.cuts)
     freezes = parse_ranges(args.freeze_ok)
     ignore = parse_ranges(args.ignore)
-    acts, moments = {}, []
+    acts, moments, reading, cues_fps = {}, [], [], None
 
     def take(block, where):
         if not isinstance(block, dict):
@@ -375,7 +386,9 @@ def load_declarations(args):
         cuts.extend((int(round(e['f'])), int(round(e['f']))) for e in c['events'] if e['kind'].lower() == 'cut')
         acts = c['acts']
         moments = sorted({int(round(e['f'])) for e in c['events']} | set(c['cue'].values()))
-    return sorted(set(cuts)), sorted(set(freezes)), sorted(set(ignore)), acts, moments
+        reading = [(int(x['resolved']), int(x['out'])) for x in c['copy'] if x['out'] > x['resolved']]
+        cues_fps = c['fps']
+    return sorted(set(cuts)), sorted(set(freezes)), sorted(set(ignore)), acts, moments, reading, cues_fps
 
 
 def in_ranges(f, ranges, pad=0):
@@ -661,7 +674,14 @@ def evaluate(args, info, M, decl):
     fps = info['fps']
     if args.max_end_hold is None:  # the audio's decay: 2 s whatever the frame rate
         args.max_end_hold = int(round(2 * fps)) + 1
-    cuts, freezes, ignore, acts, moments = decl
+    cuts, freezes, ignore, acts, moments, reading, cues_fps = decl
+    k_ = fps / cues_fps if cues_fps else 1.0  # cues frames -> video frames
+    reading = [(int(round(a * k_)), int(round(b * k_))) for a, b in reading]
+
+    def read_run(fa, fb, mean_mad):
+        # a run inside one reading window that still changes a little: a held line being read
+        return mean_mad >= READ_MAD and any(fa >= x and fb < y for x, y in reading)
+
     idx = np.array(M['idx'])
     f0, n, last = int(idx[0]), len(idx), int(idx[-1])
     dd = np.nan_to_num(np.array(M['d'], dtype=np.float64), nan=0.0)
@@ -812,10 +832,12 @@ def evaluate(args, info, M, decl):
         frozen = float(np.percentile(nchg[a:b + 1], 90)) < args.frozen_px  # a stray moving frame is not life
         declared = any(fa >= x - 2 and fb <= y + 2 for x, y in freezes)
         at_end = fb >= info['frames'] - 2
-        kind = 'declared' if declared else 'end' if at_end else ('frozen' if frozen else 'quiet')
+        mean_mad = float(dd[a:b + 1].mean())
+        kind = ('declared' if declared else 'end' if at_end else 'read' if read_run(fa, fb, mean_mad)
+                else ('frozen' if frozen else 'quiet'))
         holds.append({'from': fa, 'to': fb, 'frames': length, 'seconds': round(length / fps, 2), 'kind': kind,
-                      'mean_mad': round(float(dd[a:b + 1].mean()), 3), 'max_changed_px': int(nchg[a:b + 1].max())})
-        if kind == 'declared' or ignored(fa) or ignored(fb):
+                      'mean_mad': round(mean_mad, 3), 'max_changed_px': int(nchg[a:b + 1].max())})
+        if kind in ('declared', 'read') or ignored(fa) or ignored(fb):
             continue
         if kind == 'end':
             if length > args.max_end_hold:
@@ -841,9 +863,11 @@ def evaluate(args, info, M, decl):
             if any(fa >= x - 2 and fb <= y + 2 for x, y in freezes) or ignored(fa):
                 continue
             q = {'from': fa, 'to': fb, 'mean_mad': round(float(dd[a:b + win].mean()), 3)}
+            q['kind'] = 'read' if read_run(fa, fb, q['mean_mad']) else 'quiet'
             quiet.append(q)
-            add('quiet', 'warn', f'{fa}-{fb}', f'{fb - fa + 1} f of near-stillness (mean change {q["mean_mad"]}); '
-                'fine for a read, otherwise add drift or a push')
+            if q['kind'] == 'quiet':
+                add('quiet', 'warn', f'{fa}-{fb}', f'{fb - fa + 1} f of near-stillness (mean change {q["mean_mad"]}); '
+                    'fine for a read, otherwise add drift or a push')
 
     # --- hook: the opening carries at least the film's typical energy (a muted feed decides in second one)
     hook = None
@@ -1038,7 +1062,8 @@ def evaluate(args, info, M, decl):
         'file': args.video, 'fps': round(fps, 3), 'size': [info['w'], info['h']], 'frames': n, 'range': [f0, last],
         'pass': fails == 0, 'fails': fails, 'warnings': warns,
         'declared': dict(cuts=[list(x) for x in cuts], freezes=[list(x) for x in freezes],
-                         ignore=[list(x) for x in ignore], cue_moments=len(moments)),
+                         ignore=[list(x) for x in ignore], cue_moments=len(moments), reading=[list(x) for x in reading]),
+        'pace': args.pace,
         'thresholds': {k: getattr(args, k) for k in (
             'spike_min', 'region_spike_min', 'region_busy', 'spike_ratio', 'spike_add', 'burst_frames', 'flow_explained', 'stall_max', 'stall_moving',
             'hold_mad', 'max_hold', 'frozen_px', 'max_end_hold', 'quiet_window', 'quiet_mad', 'ghost_delta',
@@ -1080,6 +1105,7 @@ def main():
     ap.add_argument('--smear-sheet', help='x25 stretch sheet of the smear samples (default: smear.png next to --json)')
     ap.add_argument('--smear-every', type=int, help='sample one frame per N for smear (default: fps / 2)')
     ap.add_argument('--curves', help='also write per-frame MAD and sharpness curves to this JSON')
+    ap.add_argument('--pace', choices=sorted(PACE_LIMITS), help="hold and quiet limits (default: the cues file's pace, else crisp)")
     g = ap.add_argument_group('thresholds (defaults are proven starting points; see references/review-loop.md)')
     g.add_argument('--spike-min', type=float, default=1.0)
     g.add_argument('--spike-ratio', type=float, default=2.5)
@@ -1092,11 +1118,11 @@ def main():
     g.add_argument('--stall-max', type=float, default=0.05)
     g.add_argument('--stall-moving', type=float, default=0.8)
     g.add_argument('--hold-mad', type=float, default=0.1)
-    g.add_argument('--max-hold', type=int, default=48, help='frames')
+    g.add_argument('--max-hold', type=int, default=None, help='frames (default: the pace\'s, calm 72, crisp 48)')
     g.add_argument('--frozen-px', type=int, default=16, help='a hold is frozen if fewer px change by >24 levels')
     g.add_argument('--max-end-hold', type=int, default=None, help='frames of static tail allowed at the end (default: 2 s at the film\'s rate, plus 1)')
     g.add_argument('--quiet-window', type=int, default=60)
-    g.add_argument('--quiet-mad', type=float, default=0.15)
+    g.add_argument('--quiet-mad', type=float, default=None, help='(default: the pace\'s, calm 0.10, crisp 0.15)')
     g.add_argument('--ghost-delta', type=int, default=80)
     g.add_argument('--ghost-px', type=int, default=2000, help='full-res pixels')
     g.add_argument('--border-delta', type=int, default=40)
@@ -1122,6 +1148,11 @@ def main():
 
     info = probe(args.video)
     decl = load_declarations(args)
+    if not args.pace:
+        args.pace = (load_cues(args.cues)['pace'] if args.cues else None) or 'crisp'
+    for k, v in PACE_LIMITS[args.pace].items():
+        if getattr(args, k) is None:
+            setattr(args, k, v)
     M = analyse(args, info)
     M['smear'] = [] if args.no_smear else smear_scan(args, info)
     res = evaluate(args, info, M, decl)

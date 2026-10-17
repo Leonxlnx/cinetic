@@ -1,6 +1,6 @@
 # Timing grid
 
-Covers the beat grid: choosing BPM and fps, writing `src/timeline.ts`, putting cues on the grid, computing sync points from the picture code, and budgeting holds and density. Read it before Step 3 (Timeline), and again whenever a hit feels early, late or dead.
+Covers the beat grid: choosing BPM and fps, writing `src/timeline.ts` (fragment chains included), putting cues on the grid, computing sync points from the picture code, and budgeting holds and density in the calm and crisp profiles. Read it before Step 3 (Timeline), and again whenever a hit feels early, late or dead.
 
 The numbers are proven defaults from shipped films (Tessel among them). Start from them and change one only when a render shows you why.
 
@@ -33,13 +33,14 @@ Beat frames = `60 / BPM × fps`. These tempos give whole-frame beats at 60 fps:
 |---|---|---|---|---|---|---|
 | 75 | 48 f | 24 | 12 | 192 f | 3.2 | slow, spacious brand pieces |
 | 90 | 40 f | 20 | 10 | 160 f | 2.67 | calm walkthroughs, long reads |
-| 100 | 36 f | 18 | 9 | 144 f | 2.4 | walkthroughs, product videos |
-| **120** | **30 f** | **15** | 7.5 | **120 f** | **2.0** | **default**: launch films, loops, stings |
+| **100** | **36 f** | **18** | **9** | **144 f** | **2.4** | **default**: text-led and calm films (launch films, product videos, updates, walkthroughs), a fragment per bar |
+| 120 | 30 f | 15 | 7.5 | 120 f | 2.0 | crisp films: energetic launches and teasers, fast loops, stings |
 | 144 | 25 f | 12.5 | 6.25 | 100 f | 1.67 | energetic teasers (8ths are fractional) |
 | 150 | 24 f | 12 | 6 | 96 f | 1.6 | teasers with whole 16ths |
 | 180 | 20 f | 10 | 5 | 80 f | 1.33 | stings and fast cut sections only |
 
-- **120 at 60 fps is the default.** Beat 30 f, bar exactly 2 s, every 8th whole. The 16th is 7.5 f; `b()` rounds it (8, 15, 23), which is fine for landings. When a section needs whole 16ths (typing, ratchets, ripple waves), choose 90, 100 or 150.
+- **100 at 60 fps is the default.** Beat 36 f, bar 2.4 s, every 16th whole (9 f). A bar holds one fragment of 2–3 words at an unhurried pace: it resolves in about 50 f, holds about 60–66 f, and leaves room for the picture beat. In eight measured professional films a fragment stayed readable for about 0.8 s; the house default holds it about 1.5× longer.
+- **120 is the crisp tempo.** Beat 30 f, bar exactly 2 s, every 8th whole. The 16th is 7.5 f; `b()` rounds it (8, 15, 23), which is fine for landings. When a crisp section needs whole 16ths (typing, ratchets, ripple waves), choose 150.
 - **Use 60 fps whenever UI, text or the camera moves.** At 30 fps slow drifts step and fast moves strobe. Never use 24 fps for UI.
 - **Other frame rates** (same formula): at 30 fps, 120 → 15 f, 100 → 18, 90 → 20, 150 → 12. At 50 fps, 100 → 30, 120 → 25, 150 → 20. At 24 fps, 120 → 12, 90 → 16. A GIF is resampled from the 60 fps master at 25 fps (GIF delays are whole hundredths of a second, so 30 fps would play fast); its beats need not be whole frames, because the timing lives in the master.
 - If the user supplies music, measure its BPM first and choose fps and grid from it. If it will not land on whole frames, keep 60 fps and snap cues to the nearest frame of the real beat times (store them in `CUE` with a trailing `// offgrid: <reason>` comment), rather than re-timing the track.
@@ -48,27 +49,31 @@ Beat frames = `60 / BPM × fps`. These tempos give whole-frame beats at 60 fps:
 
 | Format | Tempo | Length | Bars at that tempo | Shape |
 |---|---|---|---|---|
-| Launch film | 120 | 20–45 s | 10–22 bars + tail | 8–10 story beats per 30 s; acts of 2–4 bars |
-| Product / feature video | 100–120 | 8–30 s | 4–15 bars | one capability per 4–5 bars (8–10 s) |
-| Feature loop | 120 (or 100) | 4–15 s | 2–7 **whole** bars, no tail | e.g. 8 s = 4 bars at 120; 9.6 s = 4 bars at 100 |
-| Logo sting | 120 | 3–8 s | e.g. `b(3,2) + 60` = 6.0 s | 1 bar build, lockup hit on a downbeat, building hold, tail |
-| UI walkthrough | 90–110 | 20–90 s | 60 s ≈ 25 bars at 100 | one chapter per 2–4 bars, chapter changes on downbeats |
+| Launch film | 100 (crisp 120) | 20–45 s | 8–18 bars + tail at 100 | 6–8 story beats per 30 s (crisp 8–10); acts of 2–4 bars |
+| Product / feature video | 100 | 8–30 s | 4–12 bars | one capability per 3–4 bars (8–10 s) |
+| Feature loop | 100 (or 120) | 4–15 s | 2–6 **whole** bars, no tail | e.g. 9.6 s = 4 bars at 100; 8 s = 4 bars at 120 |
+| Logo sting | 100–120 | 3–8 s | e.g. `b(3) + 60` = 5.8 s at 100, `b(3,2) + 60` = 6.0 s at 120 | 1 bar build, lockup hit on a downbeat, building hold, tail |
+| UI walkthrough | 90–100 | 20–90 s | 60 s ≈ 25 bars at 100 | one chapter per 2–4 bars, chapter changes on downbeats |
 
 - Every film except a loop ends with a **tail of at least 60 f** after the last event, so the audio decays to digital zero on the last frame (see `references/sound.md`).
 - A loop's length is a whole number of bars and has no tail: frame `TOTAL − 1` must flow into frame 0 (see `references/formats.md`).
 
 ## 4. The `timeline.ts` pattern
 
-`src/timeline.ts` is the only file with timing in it. The starter ships this shape with a short demo; keep the export names (`FPS`, `BPM`, `W`, `H`, `BEAT`, `BAR`, `b`, `TAIL`, `ACT`, `TOTAL`, `CUE`, `Copy`, `COPY`, `copy`), because `src/sync.ts`, `scripts/export-cues.ts` and `scripts/grid-check.ts` import them. Keep it free of React and CSS imports: Node scripts load it directly. A 31 s launch film looks like this:
+`src/timeline.ts` is the only file with timing in it. The starter ships this shape with a short demo; keep the export names (`FPS`, `BPM`, `PACE_NAME`, `PACE`, `W`, `H`, `BEAT`, `BAR`, `b`, `f60`, `TAIL`, `ACT`, `TOTAL`, `CUE`, `Copy`, `line`, `chain`, `COPY`, `copy`, `chainOf`), because `src/sync.ts`, `scripts/export-cues.ts` and `scripts/grid-check.ts` import them. Keep it free of React and CSS imports: Node scripts load it directly. A 30 s launch film at the calm default looks like this:
 
 ```ts
 // src/timeline.ts: the only place timing lives. Picture, cue export and grid-check import it.
+import { holdFor, PACE, revealFor, wordCount, type PaceName } from './lib/pace'; // pure data, Node-safe; line() and chain() use them
+export { PACE } from './lib/pace';
+
 export const FPS = 60;
-export const BPM = 120;
+export const BPM = 100;
+export const PACE_NAME: PaceName = 'calm'; // 'crisp' for a brief that asks for energy (at 120 BPM)
 export const W = 1920;
 export const H = 1080;
-export const BEAT = (60 / BPM) * FPS; // 30 f
-export const BAR = BEAT * 4; // 120 f = 2 s
+export const BEAT = (60 / BPM) * FPS; // 36 f
+export const BAR = BEAT * 4; // 144 f = 2.4 s
 
 /** Frame of a bar (1-based), a beat inside it (0-3) and a 16th inside that beat (0-3, fractions allowed). */
 export const b = (bar: number, beat = 0, sub = 0) => Math.round(((bar - 1) * 4 + beat) * BEAT + sub * (BEAT / 4));
@@ -78,51 +83,52 @@ export const TAIL = FPS;
 
 // Acts: contiguous, bar-aligned, absolute frames. One <Sequence> and one <Composition> each.
 export const ACT = {
-  hook: { from: b(1), dur: b(4) - b(1) }, // 0-6 s: inside the problem
-  turn: { from: b(4), dur: b(6) - b(4) }, // 6-10 s: the device becomes the mark
-  proof: { from: b(6), dur: b(12) - b(6) }, // 10-22 s: two capabilities, 3 bars each
-  end: { from: b(12), dur: b(16) + TAIL - b(12) }, // 22-31 s: payoff, lockup, tail
+  hook: { from: b(1), dur: b(4) - b(1) }, // 0-7.2 s: inside the problem
+  turn: { from: b(4), dur: b(5) - b(4) }, // 7.2-9.6 s: the device becomes the mark
+  proof: { from: b(5), dur: b(10) - b(5) }, // 9.6-21.6 s: two capabilities, 2-3 bars each
+  end: { from: b(10), dur: b(13) + TAIL - b(10) }, // 21.6-29.8 s: payoff, lockup, tail
 };
-export const TOTAL = b(16) + TAIL; // 1860 f = 31 s
+export const TOTAL = b(13) + TAIL; // 1788 f = 29.8 s
 
 // Named cues: absolute frames on the 16th grid. A cue that must sit off the grid carries a
 // trailing `// offgrid: <reason>` comment, which grid-check accepts.
 export const CUE = {
   deviceIn: b(1, 1), // the device lands on the first tick
-  problem: b(2), // headline on the downbeat (stated by 2 s)
-  implode: b(3, 3), // everything collapses into the device
+  problem: b(1, 2), // the first fragment arrives (readable by 2 s)
+  overflow: b(2, 1), // the picture beat: meetings pile into the week and overflow it
+  implode: b(3, 3), // the line has cleared; everything collapses into the device
   silence: b(3, 3, 2), // an 8th of true silence...
   drop: b(4), // ...then the drop: the mark assembles
   lockup: b(4, 2),
-  feat1: b(6),
-  feat2: b(9),
-  payoff: b(13),
-  lockupEnd: b(14, 2),
-  url: b(15),
-  final: b(16),
+  feat1: b(5),
+  feat2: b(7, 2),
+  payoff: b(10),
+  lockupEnd: b(11, 2),
+  url: b(12),
+  final: b(13),
 };
 
 export type Copy = {
   id: string;
-  text: string; // exactly what is on screen (\n separates lines)
+  text: string; // exactly what is on screen: one fragment
   in: number; // first frame any of it is visible
   resolved: number; // first frame it is fully readable
   out: number; // first frame it starts to leave (TOTAL if it stays)
+  kind?: 'copy' | 'ui'; // 'ui': a string the product shows (a typed command, a URL, an app label); counted apart
+  chain?: string; // the thought this fragment belongs to
+  mode?: 'build' | 'replace'; // build: appends to one held line; replace: takes the last fragment's place
 };
-/** A line revealed word by word, `stagger` frames apart, each word taking `dur` frames (match the act's <Words>). */
-const line = (id: string, text: string, inF: number, out: number, stagger = 6, dur = 26): Copy => ({
-  id,
-  text,
-  in: inF,
-  resolved: inF + (text.split(' ').length - 1) * stagger + dur,
-  out,
-});
-// Every on-screen word: the word budget and the hold check read this list.
+// line() and chain() ship in the starter's timeline.ts (described after this block). Both time a fragment
+// from PACE[PACE_NAME]: resolved = in + revealFor(words) = in + 11 * (words - 1) + 36 at the calm pace.
+// Every on-screen word, one entry per fragment: the budget, the holds and the text-flow checks read this list.
 export const COPY: Copy[] = [
-  line('problem', 'Your week doesn’t fit.', CUE.problem - 1, CUE.implode),
-  line('feat1', 'Meetings move over.', CUE.feat1 + 20, b(8, 2)),
+  ...chain('problem', 'build', [
+    ['Your week', CUE.problem - 1], // resolved at 118 f, read by 178 f
+    ['doesn’t fit.', b(2, 3) - 1], // 73 f of picture beat after the first fragment was read
+  ]), // the full line holds 74 f, then clears together into the implosion
+  line('feat1', 'Meetings move over.', CUE.feat1 + 20, b(6, 1)),
   line('payoff', 'Everything fits.', CUE.payoff - 1, CUE.lockupEnd - 12),
-  line('url', 'tessel.app', CUE.url, TOTAL),
+  { ...line('url', 'tessel.app', CUE.url, TOTAL), kind: 'ui' },
 ];
 
 /** One COPY entry by id: acts read their text and timing from here, so the budget stays true. */
@@ -133,10 +139,16 @@ export const copy = (id: string): Copy => {
 };
 ```
 
+**`line(id, text, in, out?)`** is one standalone fragment; `out` defaults to `resolved` plus its reading hold. **`chain(id, mode, [[text, inFrame], …], { out? })`** turns one thought into one `Copy` entry per fragment, with ids `<id>.1`, `<id>.2`, … and `chain: id` and `mode` on each; `chainOf(id)` returns them in order:
+- `resolved` comes from the pace, `in + revealFor(words)` = `in + stagger · (words − 1) + wordDur` (calm 11 f and 36 f; crisp 6 f and 26 f), so it matches what `Words` and `Chain` render.
+- `out` comes from the mode. **build:** every fragment stays until the whole line clears, at `out` (by default the last fragment's `resolved` plus the hold for the line's full word count), and they leave together over 24 f. **replace:** a fragment starts to leave, whole, 6 f before the next one arrives, and the last one leaves at `out` (by default after its own reading hold). Pass `{ out }` to hold the line to a cue, as the starter does for its exit.
+- You choose only where each fragment starts. Put every `in` on the grid at `b(n, beat) − 1` (the first visible change on the beat), and leave a picture beat of 30–90 f between the moment one fragment has been read (`resolved` + its hold) and the next fragment's `in`. In that gap the picture does what the words set up; `grid-check.ts` measures it as `chain-gap`.
+- Render the chain with `<Chain chain="problem" frame={f} from={ACT.hook.from} />` (`src/fx/Chain.tsx`), which reads the entries by chain id, so picture, sound and checks see the same frames. `export-cues.ts` writes every `COPY` entry into the `copy` block of `out/cues.json` as `{id, text, in, resolved, out, words, kind, chain?, mode?}`, and `src/sync.ts` gives each fragment one soft `text` event on its landing frame (`chainResolves()`), never one per word.
+
 Rules the pattern encodes:
 - The beat must be whole: `grid-check.ts` fails otherwise.
 - `ACT` entries are contiguous (`from` = previous `from + dur`) and start on bar lines, so an act can be rendered, reviewed and spliced alone. The last act absorbs `TAIL`.
-- Acts render their words from `copy('payoff').text`, never a second literal, so the word count and the hold check always see what is on screen.
+- Acts render their words from `copy('payoff').text` or `<Chain>`, never a second literal, so the word count and the text-flow checks always see what is on screen (`lint-film.mjs` flags a literal as `copy-literal`).
 - Inside an act, convert once: `const L = (abs: number) => abs - ACT.proof.from;` then use `L(CUE.feat2)` everywhere. Never mix absolute and local frames in one expression.
 - **Anything the sound needs is exported from the act module as a named constant** (`LANDINGS`, `SNAP`, `KEY_FRAMES`, `PEAKS`), computed by the same code that drives the picture. `src/sync.ts` imports those constants and turns them into events for `out/cues.json`; the schema and event kinds are in `references/sound.md`.
 
@@ -162,7 +174,7 @@ export const LANDINGS = CARDS_AT.map((s) => ACT.proof.from + hit(s, SPR.snap, 1)
 | Cut or new shot inside a section | an 8th: `b(n, beat)` or `b(n, beat, 2)`, with no sound of its own (the music carries it) | on-grid but not every cut on the one |
 | A major move's velocity peak | a beat or an 8th; a whoosh apex on it only for a camera-scale move or a logo zoom (about 2 a film) | the eye reads a move's event at its fastest frame, not its start |
 | Batch of landings | 16ths, first item on the beat, 0–3 f spread inside each 16th | six objects on one frame read as a single blob |
-| Wave or tile snaps | the 32nd grid (3.75 f at 120/60) | dense enough to read as one gesture, still on the pulse |
+| Wave or tile snaps | the 32nd grid (4.5 f at 100/60, 3.75 f at 120/60) | dense enough to read as one gesture, still on the pulse |
 | Payoff and its consequence | payoff on the clap (`b(n, 2)`), its consequence on the next kick (`b(n, 2, 2)` in Tessel's pattern) | micro-rhythm inside a bar |
 | Designed freeze | exactly on a silence, ≤ 15 f | stillness only reads as intent when the sound stops too |
 
@@ -172,7 +184,7 @@ Snap computed times to the grid instead of rounding by eye:
 import { BEAT } from '../timeline';
 import { rand } from '../lib/anim';
 
-const S16 = BEAT / 4; // 7.5 f at 120/60
+const S16 = BEAT / 4; // 9 f at 100/60, 7.5 f at 120/60
 /** Nearest 16th, then a 0-3 f human spread (seeded) so a batch reads as a roll, not a blob. */
 export const on16 = (f: number, seed: string) => Math.round(Math.round(f / S16) * S16) + Math.round(rand(seed) * 3);
 ```
@@ -283,45 +295,58 @@ export const RAIN_AT = Array.from({ length: N }, (_, k) =>
 
 - **Batches** land on the 16th grid with a 0–3 f seeded spread (`on16` above), first item exactly on the beat.
 - **Ripples and waves** take their delay from distance (1 f per 60 px, from the centre or the cause outward), then snap the landing, not the start, to the grid. Tessel's quilt snapped each tile's spring hit to the 32nd grid: `Math.round((22 + dist·21 + TILE_HIT) / 3.75) · 3.75 − TILE_HIT`, with `TILE_HIT = delayTo(TILE_SPR, 0.92)`.
-- **Typing** follows its own weighted cadence (about 30 characters/s); the schedule and its exported `KEY_FRAMES` are in `references/product-ui.md`. Stagger constants for words, grids and lists are in `references/motion-tokens.md`.
+- **Typing** follows its own weighted cadence (about 20 characters/s when the line is read live at the calm pace, about 30 in crisp, then at least 72 f of read hold); the schedule and its exported `KEY_FRAMES` are in `references/product-ui.md`. Stagger constants for words, grids and lists are in `references/motion-tokens.md`.
 
 ## 9. Holds, reading time and density
 
-**Holds**
+**Holds.** The calm column is the default; a film that sets `PACE_NAME = 'crisp'` uses the right-hand one, and `grid-check.ts` follows it.
 
-| Rule | Number | Why |
-|---|---|---|
-| Text hold after it resolves | ≥ 36 f + 6 f per word | about 0.6 s to find the line plus 3 words/s to read it |
-| Unresolved text | never exits | a line that leaves mid-reveal reads as a mistake |
-| Anything static | ≤ 48 f | past 0.8 s of no change, a muted feed reads as a stalled player |
-| Designed freeze | ≤ 15 f, exactly on a silence | stillness is intent only when the sound agrees |
-| End card | 1.5–2.5 s: assembly 60–80 f, then 36–80 f still or creeping ≤ 6% (a 10–20% push if the hold runs past ~1.3 s) | a 2.75 s static lockup was flagged dead in every Tessel round |
-| URL readable | ≥ 1.7 s | long enough to read and remember |
-| Product result before the camera leaves | ≥ 36 f | cause → action → result needs the result to land |
-| Tail after the last event | ≥ 60 f | the audio decays to digital zero |
+| Rule | Calm (default) | Crisp | Why |
+|---|---|---|---|
+| Fragment hold after it resolves | max(60, 42 + 8 f per word): 1–2 words 60 f, 3 → 66 f, 4 → 74 f | 36 f + 6 f per word | about 0.7 s to find the fragment, then a word every 8 f, read while watching motion |
+| Build line hold, after its last fragment | 42 + 8 f per word of the whole line, at most 150 f | 36 f + 6 f per word of the line | the finished line is read once more as a whole |
+| Picture beat between fragments of a chain | 30–90 f, from the earlier fragment being read to the next one's `in` | 18–90 f | the picture acts; past 90 f the viewer loses the start of the thought |
+| Words per fragment | ≤ 4 | ≤ 5 | one glance |
+| Words visible at once | ≤ 8 in a build chain, ≤ 5 in replace mode | ≤ 10 | one line per thought |
+| Copy rate | ≤ 6 words resolving in any 5 s (1.2 words/s); ≤ 0.9 words/s over the film; ≤ 30 words | ≤ 2 words/s in any 5 s; ≤ 1.2 over the film; ≤ 35 words | the measured films ran 0.4–1.9 words/s; calm sits at the low end |
+| Text share | film copy on ≤ about 65% of the body frames; a text-free run of ≥ 90 f in every 10 s | ≤ 80%; a text-free run of ≥ 60 f in every 10 s | the picture needs stretches of its own |
+| Unresolved text | never exits | never exits | a line that leaves mid-reveal reads as a mistake |
+| Life in a hold | a reading hold with a 0.3–1 px/f drift or a 1–3% creep is alive; anywhere else, ≤ 72 f without a visible event | ≤ 48 f without a visible event | past that, a muted feed reads a frozen frame as a stalled player; slow life is not a stall |
+| Designed freeze | ≤ 15 f, exactly on a silence | the same | stillness is intent only when the sound agrees |
+| End card | 1.5–2.5 s: assembly 60–80 f, then 36–80 f still or creeping ≤ 6% (a 10–20% push if the hold runs past ~1.3 s) | the same | a 2.75 s static lockup was flagged dead in every Tessel round |
+| URL readable | ≥ 1.7 s | ≥ 1.7 s | long enough to read and remember |
+| Product result before the camera leaves | ≥ 60 f | ≥ 36 f | cause → action → result needs the result to land |
+| Tail after the last event | ≥ 60 f | ≥ 60 f | the audio decays to digital zero |
 
-Check a hold while writing `COPY`:
+Check a hold while writing `COPY` (`grid-check.ts` runs the full set, build lines and chains included):
 
 ```ts
 import { COPY } from '../timeline';
-const holdFor = (text: string) => 36 + 6 * text.split(' ').length;
+const words = (t: string) => t.split(/\s+/).filter(Boolean).length;
+const holdFor = (n: number) => Math.max(60, 42 + 8 * n); // calm; crisp: 36 + 6 * n
 for (const l of COPY)
-  if (l.out - l.resolved < holdFor(l.text)) throw new Error(`${l.id}: hold ${l.out - l.resolved} f < ${holdFor(l.text)} f`);
+  if (l.out - l.resolved < holdFor(words(l.text)))
+    throw new Error(`${l.id}: hold ${l.out - l.resolved} f < ${holdFor(words(l.text))} f`);
 ```
 
 **Density**
 
-| Measure | Target |
-|---|---|
-| Discrete animation events | 45–60 per 30 s |
-| Motion peaks | one per bar, with 30–70 f of calm between peaks |
-| First 6 s | about 2× as dense as the middle |
-| Shot length | median 60–90 f; minimum 24 f (only without text); maximum 180 f in a cut-driven film; a continuous take 300–560 f with an in-shot beat at least every 72 f |
-| Story beats | 8–10 per 30 s; 1–2 product capabilities |
+| Measure | Calm (default) | Crisp |
+|---|---|---|
+| Discrete animation events | 24–36 per 30 s | 45–60 per 30 s |
+| Motion peaks | one hero move per bar (2.4 s), with slow life cruising between | one per bar, with 30–70 f of calm between peaks |
+| Visible change | about every 1 s, with continuous slow life between | about every 0.5 s (every beat at 120 BPM) |
+| First 6 s | frame 0 moving; when the film opens on words, the first fragment readable by about 1 s | about 2× as dense as the middle |
+| Shot length | median 100–160 f, maximum 240 f in a cut-driven film | median 60–90 f, maximum 180 f |
+| Shortest shot; continuous takes | 24 f, only without text; a take of 300–560 f with an in-shot beat at least every 72 f | the same |
+| Fast moves | ordinary moves ≤ 25 px/f; at most 2 fast moves per film, at most 1 of them a whip; none while text is being read | whips of 60–70 px/f beside real stillness |
+| Story beats | 6–8 per 30 s; 1–2 product capabilities | 8–10 per 30 s; 1–2 capabilities |
+
+**Calm is not sparse.** Blind reviews of earlier versions marked films down for quiet stretches and static end cards (`docs/evaluation.md`, rounds 4–5). The calm profile keeps every lesson from them: frame 0 moving, slow drift or creep in every hold, the device and the product's state alive, the energy arc (an early peak, a designed lull of 1–4 s, the biggest peak at 75–90%), a last third that keeps moving and an end card that builds. Slower and fewer is different from frozen, and peaks come from one hero move per section, never from more text.
 
 **Hook (first 2 s)**
 - Frame 0 is already composed and moving. No fade from black, no blank frame.
-- Something visibly changes about every 0.5 s (every beat at 120 BPM).
+- Something visibly changes about every 1 s (calm) or 0.5 s (crisp), and the picture never freezes between.
 - The problem is felt by 1 s and stated by 2 s.
 
 ## 10. The Tessel grid, worked
@@ -340,11 +365,11 @@ Tessel ran at 120 BPM, 60 fps: beat 30 f, bar 120 f, 8th 15 f, 16th 7.5 f. The f
 Hold lessons from five critique rounds:
 - The 0.6 s static dot after the opening iris read as a stalled player. Fix: the line draws 0.25 s after the iris lands, the grid at 1.0 s, the rain from 1.5 s.
 - The headline hold of 1.5 s (`b(3)` to `b(3,3)`) then implosion was right.
-- One 2-word, 2-line statement per bar (2 s) at 120 px read well.
+- One 2-word, 2-line statement per bar (2 s) at 120 px read well: Tessel is the crisp profile. A calm film carries one 2–3 word fragment per 2.4 s bar at 100 BPM.
 - The 2.75 s logo hold was flagged as dead air in every round, even with a 1.0 → 1.1 dolly and beat pulses. Keep a lockup hold ≤ 1.5 s, or make it build visibly (≥ 20% dolly).
 
 ## 11. Checks
 
-- `npx tsx scripts/grid-check.ts src/timeline.ts`: whole-frame beat, contiguous bar-aligned acts, cues on the 16th grid (or explained), text holds, no event-free gap over 48 f, word total within budget.
+- `npx tsx scripts/grid-check.ts src/timeline.ts` (against the film's `PACE_NAME`; `--pace calm|crisp` overrides it, and a timeline written before `PACE_NAME` existed is checked as crisp): whole-frame beat, contiguous bar-aligned acts, cues on the 16th grid (or explained), reading holds, no gap without an event or a reading hold over 72 f (48 f crisp), word total within budget, and the text flow: `fragment`, `copy-concurrent`, `reveal-rate`, `chain-gap`, `word-rate`, `text-share`.
 - `npx tsx scripts/export-cues.ts`: writes `out/cues.json`; open it and confirm every visible event has an event and vice versa.
 - Stills at every cue −2, 0 and +2 frames (`npx remotion still Film out/qa/f<n>.png --frame=<n>`): the change must be visible on the cue frame, not the one after.

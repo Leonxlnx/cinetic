@@ -11,7 +11,8 @@ import { ACT, copy, CUE, f60, H, W } from '../timeline';
 // ACT 2 - the dot becomes the mark. It opens on the dot at rest in its slot (Act 1 hands it over
 // on exactly this pose). The dome drops in and the block slides in, each landing ON its beat;
 // then the mark settles into the lockup while the name slides out from behind its live edge and
-// locks on the downbeat. The lockup keeps building (a 20% dolly, the dot keeping time) to the end.
+// locks on the downbeat. The lockup keeps building to the end on a slow 15% dolly alone: a hold
+// that keeps moving needs no tick planted in it.
 
 const L = (abs: number) => abs - ACT.mark.from; // absolute cue -> act-local frame
 
@@ -27,7 +28,7 @@ const START = { a: CONTACT.a - delayTo(LAND), b: CONTACT.b - delayTo(LAND) };
 const NAME = copy('wordmark');
 /** The lockup move (absolute frames) and its curve, exported for src/sync.ts (whoosh on its peak). */
 export const LOCKUP_MOVE = { from: NAME.in, to: NAME.resolved, ease: E.inOut };
-const DOLLY = { from: L(CUE.lockup) - f60(20), to: ACT.mark.dur, k: 1.2 }; // a 20% push: a lockup hold keeps building
+const DOLLY = { from: L(CUE.lockup) - f60(20), to: ACT.mark.dur, k: 1.15 }; // a 15% push: a lockup hold keeps building
 
 export const Act2: React.FC = () => {
   const f = useCurrentFrame();
@@ -74,10 +75,9 @@ export const Act2: React.FC = () => {
   const dolly = lmix(1, DOLLY.k, prog(f, DOLLY.from, DOLLY.to, E.dolly));
   const cam = camera({ ax: W / 2, ay: H / 2, sx: W / 2, sy: H / 2, k: punch * dolly });
 
-  // The dot keeps the clock: a tick on each hold beat, a small lift when each piece lands.
-  // Small amplitudes: at +6% the dot's gaps to the dome and block stay above 6 units.
-  const tick = Math.max(...[CUE.tick1, CUE.tick2, CUE.tick3].map((c) => hitPulse(f - L(c))));
-  const d = { s: 1 + 0.06 * tick + 0.05 * (hitPulse(f - CONTACT.a) + hitPulse(f - CONTACT.b)) };
+  // The dot lifts a little as each piece lands beside it. A small amplitude: at +5% its gaps to
+  // the dome and block stay above 6 units.
+  const d = { s: 1 + 0.05 * (hitPulse(f - CONTACT.a) + hitPulse(f - CONTACT.b)) };
 
   return (
     <AbsoluteFill style={{ background: C.paper, overflow: 'hidden' }}>

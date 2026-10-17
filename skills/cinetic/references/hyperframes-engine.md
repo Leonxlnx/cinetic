@@ -43,8 +43,8 @@ Nothing ever plays. For every output frame the engine seeks every registered tim
 | Starter file | Role |
 |---|---|
 | `index.html` | the composition: root, clips, one paused timeline registered last |
-| `motion.js` | grid (`FPS`, `BPM`, `b`, `sec`, `at`), `E`, `SPR`, `spring()`, `pulse()`, `hitPulse`, `squash`, `arrive`/`depart` and their GSAP-ease forms `arriving`/`departing`, sync helpers, `rand`; same names and numbers as the Remotion kit |
-| `timeline.js` | the film's `ACT`, `DUR`, `CUE`, `COPY`, `TOTAL` in frames, `WORD_EASE`, and `FILM.cues()` for the sound |
+| `motion.js` | grid (`FPS`, `BPM`, `b`, `sec`, `at`), `E`, `SPR` (with `SPR.calm`), `PACE` and `pace`, `spring()`, `pulse()`, `hitPulse`, `squash`, `arrive`/`depart` and their GSAP-ease forms `arriving`/`departing`, sync helpers, `rand`; same names and numbers as the Remotion kit |
+| `timeline.js` | the film's `ACT`, `DUR`, `CUE`, `COPY` (one entry per fragment, with `chain()` for a thought in several), `TOTAL` in frames, `WORD_EASE`, and `FILM.cues()` for the sound |
 | `audio/score.json` | the demo's music (key, chords, sections) for `scripts/audio/score.py` |
 | `setup.mjs`, `package.json` | local GSAP and fonts; `npm run` scripts `lint`, `check`, `snapshot`, `cues`, `audio`, `render:preview`, `render` |
 | `fonts/README.md` | how to add or swap faces |

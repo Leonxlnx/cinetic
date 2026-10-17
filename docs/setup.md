@@ -265,7 +265,7 @@ Set `SKILL` to the folder that holds the installed `SKILL.md`. Use an absolute p
 
 ```bash
 SKILL="$HOME/.claude/skills/cinetic"
-bash "$SKILL/scripts/new-film.sh" films/first-film --fps 60 --bpm 120 --size 1920x1080
+bash "$SKILL/scripts/new-film.sh" films/first-film --fps 60 --bpm 100 --size 1920x1080
 cd films/first-film
 ```
 
@@ -316,7 +316,7 @@ Continuing from `films/first-film`, with `SKILL` still set:
 
 ```bash
 cd ../..                          # back to where you ran the first new-film.sh
-bash "$SKILL/scripts/new-film.sh" films/hf-film --engine hyperframes --fps 60 --bpm 120 --size 1920x1080
+bash "$SKILL/scripts/new-film.sh" films/hf-film --engine hyperframes --fps 60 --bpm 100 --size 1920x1080
 cd films/hf-film
 node scripts/lint-film.mjs .      # fails on purpose until the placeholder palette, font and mark in index.html are replaced
 npm run lint                      # HyperFrames' own lint: must show 0 errors

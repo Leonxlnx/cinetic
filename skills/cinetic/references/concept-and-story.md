@@ -105,7 +105,7 @@ Run every finalist through these. A concept that fails the ownership or deletion
 | **One sentence** | Say the idea aloud in one sentence. | You need "and" (two ideas) or an adjective (a style) |
 | **Retell** | How would a viewer describe it to a friend tomorrow? | The answer is a style ("it was slick") rather than an image ("the dot that…") |
 | **Specificity** | Imagine a simpler product or feature (an even split instead of an itemised one, a list instead of a ranking). Would the film be just as true of it? | Yes: the proof shows the naive version. Rebuild the proof around the non-obvious behaviour |
-| **Budget** | Count capabilities and beats against the format row in `SKILL.md` §1. | It needs more than 2 capabilities, or more than 10 beats per 30 s |
+| **Budget** | Count capabilities and beats against the format row in `SKILL.md` §1. | It needs more than 2 capabilities, or more than 8 beats per 30 s (10 in crisp) |
 | **Truth** | Does the product actually do what the picture shows? Do the numbers and states on screen agree with the story? | The film promises a behaviour the product lacks, or a frame contradicts the story: the person who paid is shown owing, a "sorted" list isn't sorted, a ratio doesn't match the numbers beside it |
 
 **Generic props.** These fail ownership unless the product literally is the thing: rocket, lightbulb, globe with arcs, up-and-right chart, a phone or laptop floating in a void, a glowing orb or sparkle for AI, shield or padlock for security, puzzle pieces for integration, gears for automation, a stopwatch for speed, a magnifying glass for search, confetti for success, a handshake, a bullseye.
@@ -168,7 +168,7 @@ Rules for the path:
 **Cause → action → result**, for every product action on screen:
 - **Cause.** Something visible makes the action necessary: a typed intent, an arriving event, an accumulated mess, a threshold crossed. A UI block that moves because the timeline said so reads as a screensaver.
 - **Action.** The product's real behaviour, shown in its own UI (see `references/product-ui.md`). No sparkle standing in for "magic".
-- **Result.** A changed state that is still true when paused: a counter that counted during the action, a list that is now in order, a line now highlighted. Hold it ≥ 36 f + 6 f per word of any label before the camera moves on.
+- **Result.** A changed state that is still true when paused: a counter that counted during the action, a list that is now in order, a line now highlighted. Hold it at least for the reading hold of any label (max(60, 42 + 8 f per word)) before the camera moves on.
 
 ## 8. Arcs by format
 
@@ -184,7 +184,7 @@ Production recipes (act templates, loop seams, stings, social layouts) are in `r
 | Teaser, ≤ 15 s | the effect without the product → the name and a date | a partial glimpse of the mark | the name |
 | Before/after | the same shot twice with an identical camera move: without, then with | the camera move itself | the difference |
 
-Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, proof ~35–40%, promise ~15%, lockup and tail ~15–20%. Tessel: problem 0–6 s, turn 6–10 s, proof 10–24 s, promise and lockup 24–33 s.
+Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, proof ~35–40%, promise ~15%, lockup and tail ~15–20%. Write the copy into those beats as fragment chains, and give each chain its picture beat in the beat sheet: what the product does between "here is the newest" and "earshot." is part of the story, not a gap (`references/copy-and-type.md` §2b). Tessel: problem 0–6 s, turn 6–10 s, proof 10–24 s, promise and lockup 24–33 s.
 
 **Loops need a cyclic story.** Don't build enter → hold → exit; build a process whose end state is its start state (a line that dries and is watered, an inbox that clears and refills). Put both sides of the seam at rest, or at the same velocity.
 
@@ -241,6 +241,6 @@ Write the chosen concept into `TREATMENT.md` from `assets/TREATMENT.md`: the inv
 Gate before Step 2:
 - the logline is ≤ 15 words and has no "and" joining two ideas;
 - the chosen concept passes the ownership, deletion and specificity tests, with the results written down; the specificity answer names the non-obvious behaviour and the beat that shows it;
-- the word count is within the format budget (`references/copy-and-type.md`), with ≤ 5 words per line and ≤ 2 lines per shot;
+- the word count is within the format budget (`references/copy-and-type.md`); every fragment is 1–4 words, no beat shows more than 8 words (5 in replace mode), and every thought of more than 4 words is a chain with a picture beat between its fragments;
 - the device appears in every beat row, and its last link is the mark;
 - the final frame is described, and it contains the mark and the name.
