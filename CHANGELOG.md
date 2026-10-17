@@ -15,7 +15,7 @@ Versions 0.1.0 to 0.5.0 were development versions, and 0.9.0 was the first publi
 
 ### Fixed
 
-- `Words` renders nothing before its first word starts and after its exit has finished. An invisible line used to keep its box, so `layout-audit.sh` reported it as overlapping whatever sat in its place later.
+- `Words` drops its `data-text` tag before its first word starts and after its exit has finished, as `MaskRise` does. The invisible line kept its tag, so `layout-audit.sh` reported it as overlapping whatever sat in its place later. Its box stays, so nothing laid out around it moves.
 
 ## [1.0.0] - 2026-10-04
 
