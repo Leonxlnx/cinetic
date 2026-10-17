@@ -3,7 +3,8 @@
 
   1. The fixture library validates; broken libraries are refused with exit 2 and a reason.
   2. Draws are reproducible per seed, honour --format, --exclude and --avoid, and never break the
-     per-film signature cap.
+     per-film signature cap. The default energy is calm: no high-energy entry is ever drawn, a calm
+     plan holds one technique per 3.5 s, and a slot with nothing calm left passes down the order.
   3. Ban-unsafe entries print their ban-safe variant unless the brand supplies every banned look.
   4. Weights do what the docstring says: workhorses come up more often than signatures.
   5. The shipped library (assets/library/techniques.json) validates, can fill a plan for every format,
@@ -79,7 +80,7 @@ with tempfile.TemporaryDirectory() as tmp:
 # 2. Draws --------------------------------------------------------------------------------------
 a, b = pick('--format', 'launch', '--seed', '7'), pick('--format', 'launch', '--seed', '7')
 result(a.returncode == 0 and a.stdout == b.stdout, 'same seed, same plan')
-result('<!-- pick.py --seed 7 --format launch -->' in a.stdout, 'the seed header reproduces the call')
+result('<!-- pick.py --seed 7 --format launch --energy calm -->' in a.stdout, 'the seed header reproduces the call')
 plans = {pick('--format', 'launch', '--seed', str(s)).stdout for s in range(8)}
 result(len(plans) > 1, 'different seeds give different plans', f'{len(plans)} distinct of 8')
 
@@ -92,12 +93,14 @@ for s in range(40):
     if 'fx-tr-loop-only' in ids(d):
         seen_loop_only = True
 result(not seen_loop_only, '--format launch never draws a loop-only entry')
-loop_hits = sum('fx-tr-loop-only' in ids(draw_json('--format', 'loop', '--energy', 'calm', '--seconds', '15', '--seed', str(s))[1]) for s in range(40))
+loop_hits = sum('fx-tr-loop-only' in ids(draw_json('--format', 'loop', '--energy', 'calm', '--seconds', '20', '--seed', str(s))[1]) for s in range(40))
 result(loop_hits > 0, '--format loop can draw a loop-only entry', f'{loop_hits}/40')
 
-sizes = {(f, sec): len(draw_json('--format', f, '--seconds', str(sec), '--seed', '2')[1]['picks'])
+sizes = {(f, sec): len(draw_json('--format', f, '--seconds', str(sec), '--seed', '2', '--energy', 'high')[1]['picks'])
          for f, sec in (('vertical', 12), ('launch', 30), ('launch', 45), ('sting', 6), ('loop', 10), ('walkthrough', 90))}
-result(sizes[('vertical', 12)] == 5 and sizes[('launch', 30)] == 12, 'a plan holds about one technique per 2.5 s', str(sizes))
+result(sizes[('vertical', 12)] == 5 and sizes[('launch', 30)] == 12, 'an energetic plan holds about one technique per 2.5 s', str(sizes))
+calm = {sec: len(draw_json('--format', 'launch', '--seconds', str(sec), '--seed', '2')[1]['picks']) for sec in (30, 45)}
+result(calm == {30: 9, 45: 13}, 'a calm plan (the default) holds about one technique per 3.5 s', str(calm))
 result(sizes[('sting', 6)] == 4 and sizes[('loop', 10)] == 4, 'short pieces still draw at least 4', str(sizes))
 import importlib.util
 _spec = importlib.util.spec_from_file_location('pick_sizes', PICK)
@@ -113,7 +116,24 @@ for fmt, cap in (('launch', 2), ('sting', 1), ('feature', 1)):
                      for s in range(60))
     result(worst[fmt] <= cap, f'{fmt} plans hold at most {cap} signature move(s)', f'worst {worst[fmt]}')
 
-_, d = draw_json('--category', 'transition', '--n', '7', '--seed', '1', '--exclude', 'fx-tr-accent,fx-tr-workhorse')
+HIGH = {e['id'] for e in fixture if e['energy'] == 'high'}
+calm_hits = set()
+for s_ in range(40):
+    calm_hits |= set(ids(draw_json('--category', 'transition', '--n', '3', '--seed', str(s_))[1]))
+any_hits = set()
+for s_ in range(40):
+    any_hits |= set(ids(draw_json('--category', 'transition', '--n', '3', '--seed', str(s_), '--energy', 'any')[1]))
+result(calm_hits and not calm_hits & HIGH, 'a calm draw (the default) never takes a high-energy entry', str(sorted(calm_hits & HIGH)))
+result(any_hits & HIGH, '--energy any draws high-energy entries too', str(sorted(any_hits & HIGH)))
+with tempfile.TemporaryDirectory() as tmp:
+    lib = os.path.join(tmp, 'hook-high.json')
+    json.dump({'techniques': [dict(e, energy='high') if e['category'] == 'opening_hook' else e for e in fixture]},
+              open(lib, 'w', encoding='utf-8'))
+    _, d = draw_json('--format', 'sting', '--seed', '3', library=lib)
+    cats = [p['category'] for p in d['picks']]
+    result(len(cats) == 4 and 'opening_hook' not in cats, 'a slot with nothing calm left passes to the next category', str(cats))
+
+_, d = draw_json('--category', 'transition', '--n', '7', '--seed', '1', '--exclude', 'fx-tr-accent,fx-tr-workhorse', '--energy', 'any')
 result(not {'fx-tr-accent', 'fx-tr-workhorse'} & set(ids(d)), '--exclude keeps ids out of the draw')
 result(len(ids(d)) == len(set(ids(d))), 'a draw never repeats an id')
 

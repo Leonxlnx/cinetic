@@ -1,7 +1,7 @@
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { C, U } from '../brand/tokens';
-import { clamp, E, Ease, lmix, prog } from '../lib/anim';
+import { clamp, E, Ease, lmix, pace, prog } from '../lib/anim';
 import { f60 } from '../timeline';
 
 /** Distance from (x, y) to the farthest corner of a w x h frame. */
@@ -19,7 +19,8 @@ export const irisRadius = (frame: number, start: number, dur: number, r0: number
  * Iris: reveals `children` (or floods `color`, a one-time accent flood) through a circle growing
  * from a point (a glyph, a button) to the frame's far corner, radius eased in log space. `close`
  * runs it backwards: the circle shrinks onto the point and hides what was inside. Defaults at
- * 60 fps: 24 f, E.out (opening) or E.in (closing) in log space, from 1 px to the far corner + 2 px
+ * 60 fps: pace.fx.iris frames (calm 32 f, crisp 24 f), E.out (opening) or E.in (closing) in log
+ * space, from 1 px to the far corner + 2 px
  * (more if needed to clear it on the last clipped frame), so the edge leaves the frame cleanly.
  * Start it at `cue - 1` so the circle is already opening on the hit frame. Before an opening iris
  * starts nothing is drawn; once it ends the clip is removed (no anti-aliased edge left on screen).
@@ -42,7 +43,7 @@ export const Iris: React.FC<{
   ringColor?: string;
   ringWidth?: number;
   style?: React.CSSProperties;
-}> = ({ frame, start, x, y, dur = f60(24), ease, close = false, r0 = 1, color, children, ring = false, ringColor = C.accent, ringWidth = Math.max(1.5, 2 * U), style }) => {
+}> = ({ frame, start, x, y, dur = f60(pace.fx.iris), ease, close = false, r0 = 1, color, children, ring = false, ringColor = C.accent, ringWidth = Math.max(1.5, 2 * U), style }) => {
   const { width, height } = useVideoConfig();
   const far = farCorner(x, y, width, height);
   // An opening circle must already cover the corners on its last clipped frame (start + dur - 1),

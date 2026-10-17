@@ -2,16 +2,23 @@
 # new-film.sh: start a film project from the cinetic starter.
 #
 # Copies assets/remotion-starter (or assets/hyperframes-starter) into <dir>, sets the frame rate,
-# tempo, size and name, copies every cinetic script into <dir>/scripts so the project runs on its
-# own, then installs dependencies (or symlinks an existing node_modules with --link-modules).
+# tempo, pace, size and name, copies every cinetic script into <dir>/scripts so the project runs on
+# its own, then installs dependencies (or symlinks an existing node_modules with --link-modules).
 #
 # Usage:
-#   bash scripts/new-film.sh <dir> [--engine remotion|hyperframes] [--fps 60] [--bpm 120]
-#                            [--size 1920x1080] [--name my-film] [--link-modules <node_modules>]
+#   bash scripts/new-film.sh <dir> [--engine remotion|hyperframes] [--fps 60] [--bpm N]
+#                            [--pace calm|crisp] [--size 1920x1080] [--name my-film]
+#                            [--link-modules <node_modules>]
 #                            [--font <name>]... [--browser <chromium path>] [--no-install] [--force]
 #
 #   --fps, --bpm   one beat must be a whole number of frames (60*fps/bpm). At 60 fps:
-#                  90 -> 40 f, 100 -> 36, 120 -> 30, 144 -> 25, 150 -> 24.
+#                  90 -> 40 f, 100 -> 36, 120 -> 30, 144 -> 25, 150 -> 24. Without --bpm the
+#                  starter keeps its own tempo (Remotion 100, HyperFrames 120), or 120 with
+#                  --pace crisp. The project's audio/score.json gets the same bpm.
+#   --pace         calm (default): text arrives as short fragments that take turns with the
+#                  picture and holds about 1-1.5 s; crisp: the denser launch-film tempo. Sets
+#                  PACE_NAME (src/timeline.ts, or motion.js), which the components, grid-check
+#                  and lint-film read.
 #   --size         WxH, e.g. 1920x1080, 1080x1920 (9:16), 1080x1080. The demo lays out from the short side.
 #   --engine       remotion (default): sets FPS/BPM/W/H in src/timeline.ts. hyperframes: sets them in
 #                  motion.js and rewrites index.html's root data-fps/-width/-height/-duration (TOTAL/FPS),
@@ -34,7 +41,7 @@ die() { echo "new-film: $*" >&2; exit 1; }
 
 SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FONTS=()
-DIR=""; ENGINE=remotion; FPS=60; BPM=120; SIZE=1920x1080; NAME=""; LINK=""; BROWSER="${CHROMIUM_PATH:-}"; INSTALL=1; FORCE=0
+DIR=""; ENGINE=remotion; FPS=60; BPM=""; PACE=""; SIZE=1920x1080; NAME=""; LINK=""; BROWSER="${CHROMIUM_PATH:-}"; INSTALL=1; FORCE=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -42,6 +49,7 @@ while [[ $# -gt 0 ]]; do
     --engine) ENGINE="${2:?--engine needs a value}"; shift 2 ;;
     --fps) FPS="${2:?--fps needs a value}"; shift 2 ;;
     --bpm) BPM="${2:?--bpm needs a value}"; shift 2 ;;
+    --pace) PACE="${2:?--pace needs calm or crisp}"; shift 2 ;;
     --size) SIZE="${2:?--size needs a value}"; shift 2 ;;
     --name) NAME="${2:?--name needs a value}"; shift 2 ;;
     --link-modules) LINK="${2:?--link-modules needs a path}"; shift 2 ;;
@@ -57,6 +65,16 @@ done
 [[ -n "$DIR" ]] || { usage; die "missing <dir>"; }
 [[ "$ENGINE" == remotion || "$ENGINE" == hyperframes ]] || die "--engine must be remotion or hyperframes"
 [[ "$FPS" =~ ^[0-9]+$ && "$FPS" -gt 0 ]] || die "--fps must be a positive integer"
+[[ -z "$PACE" || "$PACE" == calm || "$PACE" == crisp ]] || die "--pace must be calm or crisp"
+SRC="$SKILL/assets/$ENGINE-starter"
+[[ -d "$SRC" ]] || die "starter not found: $SRC"
+if [[ -z "$BPM" ]]; then
+  # the starter's own tempo, unless the pace asks for the crisp one
+  GRID="$SRC/src/timeline.ts"; [[ "$ENGINE" == hyperframes ]] && GRID="$SRC/motion.js"
+  BPM=$(sed -nE 's/^[[:space:]]*(export )?const BPM = ([0-9.]+);.*/\2/p' "$GRID" | head -n 1)
+  [[ "$PACE" == crisp ]] && BPM=120
+  [[ -n "$BPM" ]] || die "could not read BPM from $GRID; pass --bpm"
+fi
 [[ "$BPM" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "--bpm must be a number"
 [[ "$SIZE" =~ ^([0-9]+)x([0-9]+)$ ]] || die "--size must look like 1920x1080"
 W="${BASH_REMATCH[1]}"; H="${BASH_REMATCH[2]}"
@@ -68,8 +86,6 @@ if ! node -e "const b=60*$FPS/$BPM; process.exit(Math.abs(b-Math.round(b))<1e-9?
   die "at $FPS fps, $BPM BPM gives a beat of $(node -e "console.log((60*$FPS/$BPM).toFixed(3))") frames. Pick a BPM with a whole beat: $OK"
 fi
 
-SRC="$SKILL/assets/$ENGINE-starter"
-[[ -d "$SRC" ]] || die "starter not found: $SRC"
 if [[ -e "$DIR" ]]; then
   [[ -d "$DIR" ]] || die "$DIR exists and is not a directory"
   if [[ -n "$(ls -A "$DIR" 2>/dev/null)" && "$FORCE" != 1 ]]; then die "$DIR is not empty (use --force to copy into it anyway)"; fi
@@ -93,6 +109,7 @@ set_const() { # file name value
 if [[ "$ENGINE" == remotion ]]; then
   TL="$DIR/src/timeline.ts"
   set_const "$TL" FPS "$FPS"; set_const "$TL" BPM "$BPM"; set_const "$TL" W "$W"; set_const "$TL" H "$H"
+  [[ -n "$PACE" ]] && set_const "$TL" PACE_NAME "'$PACE'"
   sed -i.bak -E "s|\"name\": \"[^\"]*\"|\"name\": \"$PKG\"|; s|[0-9]+x[0-9]+@[0-9]+|${W}x${H}@${FPS}|g" "$DIR/package.json" && rm -f "$DIR/package.json.bak"
   if [[ -n "$BROWSER" ]]; then
     [[ -x "$BROWSER" ]] || echo "new-film: warning: --browser $BROWSER is not an executable file here" >&2
@@ -104,7 +121,7 @@ else
   # derive data-duration from timeline.js (TOTAL / FPS) so the render neither cuts nor freezes.
   MJ="$DIR/motion.js"
   [[ -f "$MJ" && -f "$DIR/timeline.js" && -f "$DIR/index.html" ]] || die "HyperFrames starter needs motion.js, timeline.js and index.html"
-  for kv in "FPS=$FPS" "BPM=$BPM" "W=$W" "H=$H"; do
+  for kv in "FPS=$FPS" "BPM=$BPM" "W=$W" "H=$H" ${PACE:+"PACE_NAME='$PACE'"}; do
     k="${kv%%=*}"; v="${kv#*=}"
     grep -Eq "^\s*const $k = [^;]+;" "$MJ" || die "motion.js has no 'const $k = ...;' line to set"
     sed -i.bak -E "s|^([[:space:]]*const $k = )[^;]+;|\1$v;|" "$MJ" && rm -f "$MJ.bak"
@@ -135,6 +152,11 @@ JS
   [[ -f "$DIR/package.json" ]] && sed -i.bak -E "s|\"name\": \"[^\"]*\"|\"name\": \"$PKG\"|" "$DIR/package.json" && rm -f "$DIR/package.json.bak"
 fi
 
+# score.py refuses a score whose bpm differs from the timeline's: keep audio/score.json on the grid.
+if [[ -f "$DIR/audio/score.json" ]]; then
+  sed -i.bak -E "s|(\"bpm\"[[:space:]]*:[[:space:]]*)[0-9.]+|\1$BPM|" "$DIR/audio/score.json" && rm -f "$DIR/audio/score.json.bak"
+fi
+
 # The project carries its own copy of every script, so npm scripts use local paths (not the
 # skill's own tests in scripts/test/).
 mkdir -p "$DIR/scripts"
@@ -162,7 +184,7 @@ for font in ${FONTS[@]+"${FONTS[@]}"}; do
 done
 
 BEAT=$(node -e "console.log(60*$FPS/$BPM)")
-echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat)"
+echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat${PACE:+, $PACE pace})"
 if [[ "$ENGINE" == remotion ]]; then
   cat <<EOF
 next:

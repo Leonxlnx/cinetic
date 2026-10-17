@@ -1,6 +1,6 @@
 import React from 'react';
 import { FONT, TYPE, U, typeStyle } from '../brand/tokens';
-import { arrive, arriveK, blurIn, depart, E, Ease, prog } from '../lib/anim';
+import { arrive, arriveK, blurIn, depart, E, Ease, pace as filmPace, type Pace, prog } from '../lib/anim';
 import { f60 } from '../timeline';
 
 type Role = keyof typeof TYPE;
@@ -14,10 +14,12 @@ type Role = keyof typeof TYPE;
  * tick: references/chromium-rendering.md §15); text lands sharp because nothing scales and blur
  * is off unless asked for (then blurIn clears it by 60%). The exit rises out through the top on
  * E.in (through depart), first word first, at half the stagger; E.in covers 6% of the travel in
- * its first 60%, which depart skips, so a word is seen leaving ~10 f after `out` (at the default
- * 16 f). Defaults at 60 fps: 30 f per unit on E.out, stagger 5 f, exit 16 f. The clip is padded
- * 0.12 em on top, 0.26 em under the line box and 0.1 em at the sides, so descenders and overhangs
- * are never shaved on a landed line, and the travel covers the padding. Lines are `\n`-separated;
+ * its first 60%, which depart skips, so a word is seen leaving ~10 f after `out` (at 16 f).
+ * Defaults come from the film's pace (pace.fx.mask, 60 fps): calm 38 f per unit on E.out, 10 f
+ * apart, exit 22 f; crisp 30 f, 5 f, 16 f. `by` defaults to 'line' for a fragment of up to 3 words
+ * (it rises as one thought) and to 'word' above that. The clip is padded 0.12 em on top, 0.26 em
+ * under the line box and 0.1 em at the sides, so descenders and overhangs are never shaved on a
+ * landed line, and the travel covers the padding. Lines are `\n`-separated;
  * each line's text box carries data-text `${id}.${i}` while any of it is on screen.
  */
 export const MaskRise: React.FC<{
@@ -26,6 +28,7 @@ export const MaskRise: React.FC<{
   start: number;
   id?: string;
   by?: 'word' | 'line';
+  pace?: Pace;
   stagger?: number;
   dur?: number;
   ease?: Ease;
@@ -37,7 +40,8 @@ export const MaskRise: React.FC<{
   family?: string;
   align?: 'left' | 'center' | 'right';
   style?: React.CSSProperties;
-}> = ({ text, frame, start, id = 'rise', by = 'word', stagger = f60(5), dur = f60(30), ease = E.out, out, outDur = f60(16), blur = 0, role = 'display', size = TYPE[role].size * U, family = FONT.text, align = 'left', style }) => {
+}> = ({ text, frame, start, id = 'rise', by, pace = filmPace, stagger = f60(pace.fx.mask.stagger), dur = f60(pace.fx.mask.dur), ease = E.out, out, outDur = f60(pace.fx.mask.exitDur), blur = 0, role = 'display', size = TYPE[role].size * U, family = FONT.text, align = 'left', style }) => {
+  const unit = by ?? (text.split(/\s+/).filter(Boolean).length <= 3 ? 'line' : 'word');
   const lead = TYPE[role].lead;
   const pad = { t: 0.12, b: 0.26, x: 0.1 };
   // em: starts wholly below the clip and ends wholly above it (glyph ink overhangs a tight line box ~0.1 em)
@@ -49,7 +53,7 @@ export const MaskRise: React.FC<{
     // a flex column, so the clips' negative margins never collapse into each other
     <div style={{ ...typeStyle(role, size), fontFamily: family, textAlign: align, display: 'flex', flexDirection: 'column', ...style }}>
       {lines.map((words, li) => {
-        const units = by === 'word' ? words.map((w, wi) => (wi < words.length - 1 ? w + ' ' : w)) : [words.join(' ')];
+        const units = unit === 'word' ? words.map((w, wi) => (wi < words.length - 1 ? w + ' ' : w)) : [words.join(' ')];
         const ps = units.map(() => {
           k++;
           const s = start + k * stagger;

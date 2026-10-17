@@ -22,6 +22,27 @@
  *                     like every other starter film). Invent the brand or apply the user's, choose the
  *                     family on purpose, then delete the marker. Markers in HTML/CSS comments count.
  *
+ * Text flow (warnings; --strict makes them fail). Calm films arrive as fragments: copy that escapes
+ * COPY escapes every timing check, and springs or per-letter tricks on type read as gimmicks.
+ *   copy-literal      on-screen text of 2+ words written in an act (JSX text, a {'string'} child,
+ *                     a text/label/title/caption/line prop, a words={['...']} list) instead of read
+ *                     from COPY through copy() / chainOf(): grid-check never sees its words, hold
+ *                     or fragments.
+ *                     Acts are files under an acts/ folder or named Act*, Scene*, Shot*
+ *   text-spring       an overshooting spring (spr() with SPR.snap/pop/land/word/detent/micro, or
+ *                     spr()'s snap default, or spring() with such a config or none) driving an
+ *                     element that carries data-text or a text component (Words, MaskRise, Chain,
+ *                     TypeOn, Scramble, Roll); type eases in or rides SPR.calm. Which presets
+ *                     overshoot is read from the project's lib/anim.ts (damping < 2*sqrt(k*m))
+ *   text-pace         in a calm film (PACE_NAME 'calm' in the nearest timeline.ts), <Words> or
+ *                     <MaskRise> given stagger < 8, dur < 24 or outDur < 18 frames (60 fps):
+ *                     the crisp tempo inside a calm film (pass pace={PACE.crisp} to mean it)
+ *   typing-rate       <TypeOn cps> above 30, or a hand-rolled type-on (.slice(0, n) / substring
+ *                     with n growing with the frame) faster than 30 characters a second
+ *   per-letter        a string split into letters (.split(''), [...text], Array.from(text)) and
+ *                     mapped into animated spans outside fx/ and lib/: animate words or whole
+ *                     fragments; the one hero word may keep it (// lint-ok: hero word)
+ *
  * Hard bans (SKILL.md "Hard bans"): errors whenever you invent the look.
  *   banned-color      any colour (tokens, :root palette, literals, CSS names) in a banned OKLCH region:
  *                       orange/amber  31 <= h < 96, C >= 0.05 (orange, amber, gold, brass, brown, coral)
@@ -66,7 +87,7 @@
  * Tests (in the skill, not copied into films): node scripts/test/lint-film.test.mjs
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, extname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path';
 
 // ---------------------------------------------------------------------------------- arguments
 const argv = process.argv.slice(2);
@@ -333,6 +354,70 @@ const parenGroup = (s, open) => {
   return s.slice(open + 1);
 };
 
+// ---------------------------------------------------------------------------------- film context for the text rules
+// The nearest timeline.ts (or a HyperFrames motion.js) above the scanned path sets the pace; the
+// project's lib/anim.ts (or motion.js) says which SPR presets overshoot.
+const findUp = (start, names) => {
+  let d = statSync(start).isDirectory() ? start : dirname(start);
+  for (let up = 0; up < 4; up++) {
+    for (const n of names) if (existsSync(join(d, n))) return join(d, n);
+    if (dirname(d) === d) break;
+    d = dirname(d);
+  }
+  return null;
+};
+const timelineFile = findUp(root, ['timeline.ts', join('src', 'timeline.ts'), 'motion.js']);
+const timelineSrc = timelineFile ? readFileSync(timelineFile, 'utf8') : '';
+const filmPace = timelineSrc.match(/\bPACE_NAME\b[^=\n]*=\s*['"](\w+)['"]/)?.[1] ?? null; // null: written before paces (crisp rules)
+const filmFps = Number(timelineSrc.match(/\bconst FPS\s*=\s*(\d+)/)?.[1] ?? 60);
+const OVERSHOOT = new Set(['snap', 'pop', 'land', 'word', 'detent', 'micro']); // the shipped presets, if no anim file is found
+{
+  const anim = findUp(root, [join('lib', 'anim.ts'), join('src', 'lib', 'anim.ts'), 'motion.js']);
+  const block = anim ? readFileSync(anim, 'utf8').match(/\bSPR\s*=\s*\{([\s\S]*?)\n\s*\}/)?.[1] : null;
+  if (block) {
+    OVERSHOOT.clear();
+    for (const m of block.matchAll(/^\s*(\w+)\s*:\s*\{([^}]*)\}/gm)) {
+      const num = (k, d) => Number(m[2].match(new RegExp(`\\b${k}\\s*:\\s*([\\d.]+)`))?.[1] ?? d);
+      if (num('damping', 10) < 2 * Math.sqrt(num('stiffness', 100) * num('mass', 1)) - 1e-9) OVERSHOOT.add(m[1]);
+    }
+  }
+}
+const TEXT_TAGS = /^(Words|MaskRise|Chain|TypeOn|Scramble|Roll)$/;
+const twoWords = (t) => (t.match(/[A-Za-z][A-Za-z'’-]*/g) ?? []).length >= 2;
+/** Every `const x = ...` declaration of a source as [lhs, rhs] pairs (destructuring kept whole). */
+const declsOf = (code) => [...code.matchAll(/\b(?:const|let|var)\s+(\{[^}]*\}|\[[^\]]*\]|[A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*([^;]+?)(?:;|(?=\n\s*(?:const|let|var|return|export|\})))/gs)].map((m) => [m[1], m[2]]);
+/** Grows `set` with every name declared from an expression that uses one already in it. */
+const propagate = (decls, set) => {
+  for (let pass = 0; pass < 6; pass++) {
+    let grew = false;
+    for (const [lhs, rhs] of decls) {
+      const ids = rhs.match(/[A-Za-z_$][\w$]*/g) ?? [];
+      if (!ids.some((id) => set.has(id))) continue;
+      for (const name of lhs.match(/[A-Za-z_$][\w$]*/g) ?? []) if (!set.has(name)) (set.add(name), (grew = true));
+    }
+    if (!grew) break;
+  }
+  return set;
+};
+/** The JSX tag that opens at `i` ('<Name ...>'): its name and its full text, braces and strings respected. */
+const tagAt = (code, i) => {
+  const name = code.slice(i + 1).match(/^[A-Za-z][\w.]*/)?.[0];
+  if (!name) return null;
+  let depth = 0;
+  for (let j = i + 1 + name.length; j < code.length; j++) {
+    const c = code[j];
+    if (c === '{') depth++;
+    else if (c === '}') depth--;
+    else if ((c === '"' || c === "'") && depth === 0) {
+      const e = code.indexOf(c, j + 1);
+      if (e < 0) return null;
+      j = e;
+    } else if (c === '>' && depth === 0 && code[j - 1] !== '=') return { name, text: code.slice(i, j + 1) };
+    else if (c === '<' && depth === 0) return null; // not a tag after all (a comparison or a generic)
+  }
+  return null;
+};
+
 // ---------------------------------------------------------------------------------- lint
 const issues = [];
 let suppressed = 0;
@@ -436,16 +521,7 @@ for (const file of files) {
   if (isScript) {
     const tainted = new Set(['frame']);
     for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*useCurrentFrame\s*\(/g)) tainted.add(m[1]);
-    const decls = [...code.matchAll(/\b(?:const|let|var)\s+(\{[^}]*\}|\[[^\]]*\]|[A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*([^;]+?)(?:;|\n\s*(?:const|let|var|return|export|\}))/gs)];
-    for (let pass = 0; pass < 6; pass++) {
-      let grew = false;
-      for (const [, lhs, rhs] of decls) {
-        const ids = rhs.match(/[A-Za-z_$][\w$]*/g) ?? [];
-        if (!ids.some((id) => tainted.has(id))) continue;
-        for (const name of lhs.match(/[A-Za-z_$][\w$]*/g) ?? []) if (!tainted.has(name)) (tainted.add(name), (grew = true));
-      }
-      if (!grew) break;
-    }
+    propagate(declsOf(code), tainted);
     each(/(?<![\w$.-])(left|top|right|bottom|marginLeft|marginTop)\s*:\s*([^,}\n]+)/g, (m, i) => {
       const val = m[2];
       if (/^\s*(number|string|boolean|undefined|null)\b/.test(val)) return; // type annotation
@@ -699,6 +775,116 @@ for (const file of files) {
       'error',
       "the starter's stand-in brand is still here: choose this film's palette, typeface, mark and name (or apply the user's brand) per references/brand-and-color.md, then delete this marker",
     );
+
+  // --- text flow: copy-literal, text-spring, text-pace, typing-rate, per-letter
+  if (isScript) {
+    const decls = declsOf(code);
+    const isAct = /(^|\/)acts\//.test(norm) || /^(act|scene|shot)(\d|[-_.])/i.test(basename(file));
+    const house = /(^|\/)(fx|lib)\//.test(norm); // the house components animate per character on purpose
+    const lit = (t) => `"${t.trim().replace(/\s+/g, ' ').slice(0, 40)}"`;
+    const copyMsg = (t) => `${lit(t)} is on-screen text written in an act: put it in COPY (timeline.ts line() or chain()) and read it with copy() or chainOf(), so grid-check counts its words, times its hold and catches a sentence arriving at once`;
+
+    if (isAct && /\.(t|j)sx$/.test(file)) {
+      each(/(?<![=\-])>([^<>{}();=|&:]*)</g, (m, i) => {
+        if (twoWords(m[1])) report(i + 1, 'copy-literal', 'warn', copyMsg(m[1]));
+      });
+      each(/>\s*\{\s*(['"`])((?:(?!\1)[^\n$])*)\1\s*\}/g, (m, i) => {
+        if (twoWords(m[2])) report(i + 1, 'copy-literal', 'warn', copyMsg(m[2]));
+      });
+      each(/(?<![\w-])(words|lines|fragments)\s*=\s*\{\s*\[([^\]]*)\]/g, (m, i) => {
+        const strings = [...m[2].matchAll(/(['"`])((?:(?!\1)[^\n$])*)\1/g)].map((x) => x[2]).join(' ');
+        if (twoWords(strings)) report(i, 'copy-literal', 'warn', copyMsg(strings));
+      });
+      each(/(?<![\w-])(text|label|title|caption|line|headline|subtitle|children)\s*=\s*(?:\{\s*)?(['"`])((?:(?!\2)[^\n$])*)\2/g, (m, i) => {
+        if (twoWords(m[3])) report(i, 'copy-literal', 'warn', copyMsg(m[3]));
+      });
+    }
+
+    // text-spring: values from an overshooting spring, followed through the declarations into a text element
+    const aliases = new Set();
+    for (const [lhs, rhs] of decls) {
+      const a = rhs.trim().match(/^SPR\.(\w+)$/);
+      if (a && OVERSHOOT.has(a[1]) && /^[A-Za-z_$][\w$]*$/.test(lhs)) aliases.add(lhs);
+    }
+    const springy = (expr) => {
+      for (const m of expr.matchAll(/\b(spr|spring)\s*\(/g)) {
+        const args = parenGroup(expr, m.index + m[0].length - 1);
+        const preset = args.match(/SPR\.(\w+)/);
+        if (preset) {
+          if (OVERSHOOT.has(preset[1])) return true;
+          continue;
+        }
+        if ([...aliases].some((a) => new RegExp(`\\b${a.replace('$', '\\$')}\\b`).test(args))) return true;
+        if (m[1] === 'spr' && args.split(',').length <= 2) return true; // spr()'s default is SPR.snap
+        if (m[1] === 'spring' && !/\bconfig\b/.test(args)) return true; // Remotion's default spring overshoots
+      }
+      return false;
+    };
+    const sprung = propagate(decls, new Set(decls.filter(([, rhs]) => springy(rhs)).flatMap(([lhs]) => lhs.match(/[A-Za-z_$][\w$]*/g) ?? [])));
+    each(/<[A-Za-z][\w.]*/g, (m, i) => {
+      const tag = tagAt(code, i);
+      if (!tag || !(/\bdata-text\b/.test(tag.text) || TEXT_TAGS.test(tag.name))) return;
+      const ids = (tag.text.match(/[A-Za-z_$][\w$]*/g) ?? []).filter((id) => sprung.has(id));
+      if (ids.length || springy(tag.text))
+        report(i, 'text-spring', 'warn', `an overshooting spring moves text here${ids.length ? ` (via ${ids[0]})` : ''}: a word that bounces into place reads as a gimmick and costs the read; ease it in (Words, Chain) or use SPR.calm`);
+    });
+
+    // text-pace: the crisp tempo written into a calm film
+    if (filmPace === 'calm') {
+      each(/<(Words|MaskRise)\b/g, (m, i) => {
+        const tag = tagAt(code, i);
+        if (!tag || /pace\s*=\s*\{\s*PACE\.crisp\b/.test(tag.text)) return;
+        const num = (prop) => {
+          const v = tag.text.match(new RegExp(`\\b${prop}\\s*=\\s*\\{\\s*(?:f60\\(\\s*)?([\\d.]+)`));
+          return v ? Number(v[1]) : null;
+        };
+        const hurried = [['stagger', 8, 'words land 10-12 f apart'], ['dur', 24, 'a word rises over 34-40 f'], ['outDur', 18, 'a fragment leaves over 22-24 f']]
+          .map(([prop, min, why]) => [prop, num(prop), min, why])
+          .filter(([, v, min]) => v !== null && v < min);
+        for (const [prop, v, min, why] of hurried)
+          report(i, 'text-pace', 'warn', `<${m[1]} ${prop}={${v}}> is the crisp tempo (< ${min} f) in a calm film: ${why}; drop the prop to take the pace's default, or pass pace={PACE.crisp} for a deliberate crisp passage`);
+      });
+    }
+
+    // typing-rate: <TypeOn cps> and hand-rolled type-ons
+    each(/<TypeOn\b/g, (m, i) => {
+      const tag = tagAt(code, i);
+      const cps = tag?.text.match(/\bcps\s*=\s*\{\s*([\d.]+)/);
+      if (cps && Number(cps[1]) > 30) report(i, 'typing-rate', 'warn', `<TypeOn cps={${cps[1]}}> types faster than a viewer reads along (30 chars/s at most; 18-24 for text that must be read live)`);
+    });
+    if (!house) {
+      const frameish = new Set(['frame']);
+      for (const mm of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*useCurrentFrame\s*\(/g)) frameish.add(mm[1]);
+      propagate(decls, frameish);
+      const perFrame = (expr, depth = 0) => {
+        // characters added per frame by a count expression; null when it does not grow with the frame
+        const id = expr.trim().match(/^[A-Za-z_$][\w$]*$/)?.[0];
+        if (id && depth < 2) {
+          const d = decls.find(([lhs]) => lhs === id);
+          return d ? perFrame(d[1], depth + 1) : null;
+        }
+        if (!(expr.match(/[A-Za-z_$][\w$]*/g) ?? []).some((x) => frameish.has(x))) return null;
+        const mul = expr.match(/\*\s*([\d.]+)/);
+        const div = expr.match(/\/\s*([\d.]+)/);
+        return mul ? Number(mul[1]) : div ? 1 / Number(div[1]) : 1;
+      };
+      each(/\.(slice|substring|substr)\s*\(\s*0\s*,/g, (m, i) => {
+        const args = parenGroup(code, i + m[0].indexOf('('));
+        const rate = perFrame(args.slice(args.indexOf(',') + 1));
+        if (rate !== null && rate * filmFps > 30)
+          report(i, 'typing-rate', 'warn', `a hand-rolled type-on at about ${Math.round(rate * filmFps)} chars/s: over 30 the text is a blur, not a read; use <TypeOn> (calm: 20 chars/s) and hold the finished string >= 72 f`);
+      });
+    }
+
+    // per-letter: a string split into letters and mapped into animated spans
+    if (!house) {
+      each(/(\.split\(\s*(['"])\2\s*\)|\[\s*\.\.\.\s*[\w.$]+(?:\(\))?\s*\]|Array\.from\(\s*[\w.$]+\s*\))\s*\.map\s*\(/g, (m, i) => {
+        const body = parenGroup(code, i + m[0].length - 1);
+        if (/style\s*=|transform|opacity/.test(body))
+          report(i, 'per-letter', 'warn', 'letters animated one by one: animate words or whole fragments (a per-letter rise slows the read and reads as a trick); the one hero word may keep it with // lint-ok: hero word');
+      });
+    }
+  }
 
   // --- HyperFrames
   if (isHtml || (isScript && /gsap|timeline\(/.test(code))) {

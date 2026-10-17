@@ -1,7 +1,7 @@
 import React from 'react';
 import { FONT, TYPE, U, typeStyle } from '../brand/tokens';
-import { arrive, arriveK, clamp, E, Ease, fd, mix, prog } from '../lib/anim';
-import { f60 } from '../timeline';
+import { arrive, arriveK, clamp, E, Ease, fd, mix, pace, prog } from '../lib/anim';
+import { f60, FPS } from '../timeline';
 
 type Role = keyof typeof TYPE;
 
@@ -11,7 +11,8 @@ export type RollStep = { at: number; value: number };
 /**
  * Steps of a count from a to b over [start, start + dur] on `ease`: one step on every whole frame
  * where the shown integer changes, so a fast stretch ticks every frame and the tail slows down.
- * The step frames are integers: put ticks on them (thin them first if they come every frame).
+ * The step frames are integers: put ticks on them (thin them first if they come every frame:
+ * thinSteps).
  */
 export const countSteps = (a: number, b: number, start: number, dur: number, ease: Ease = E.out): RollStep[] => {
   const out: RollStep[] = [];
@@ -23,6 +24,21 @@ export const countSteps = (a: number, b: number, start: number, dur: number, eas
   return out;
 };
 
+/**
+ * The steps that get a sound: at most `perSec` a second (default 12), always keeping the last, so a
+ * fast count ticks as a steady run instead of a buzz. The picture still rolls every step.
+ */
+export const thinSteps = (steps: RollStep[], perSec = 12): RollStep[] => {
+  const gap = FPS / perSec;
+  const out: RollStep[] = [];
+  steps.forEach((s, i) => {
+    const kept = out[out.length - 1];
+    if (i === steps.length - 1 && kept && s.at - kept.at < gap) out.pop(); // the last step always sounds
+    if (i === steps.length - 1 || !kept || s.at - kept.at >= gap) out.push(s);
+  });
+  return out;
+};
+
 type Slot = { s: number; d: number; at: number }; // strip position, digit (-1 blank), frame it rolls in
 
 /**
@@ -31,7 +47,8 @@ type Slot = { s: number; d: number; at: number }; // strip position, digit (-1 b
  * the new digit rising from below as the value grows and dropping from above as it shrinks. Columns
  * that did not change hold still. Steps closer than `roll` overlap and add up, so a fast count
  * (countSteps) spins the low columns at up to one slot per frame and lands each on its own E.out:
- * an odometer, never two numbers crossfaded in place. Defaults at 60 fps: roll 14 f, the slide
+ * an odometer, never two numbers crossfaded in place. Defaults from the film's pace
+ * (pace.fx.roll, 60 fps): calm roll 18 f and a 90 f count, crisp 14 f and 60 f; the slide
  * starting one frame before its step (already moving on the step frame) and ending through
  * arrive() at arriveK(), because vertical text snaps to whole pixels and an ease-out tail would
  * tick (references/chromium-rendering.md §15): a display digit is home after ~9 f, stopping from
@@ -60,7 +77,7 @@ export const Roll: React.FC<{
   family?: string;
   lead?: number; // mask height and slot pitch, em
   style?: React.CSSProperties;
-}> = ({ frame, from, steps, to, start = 0, dur = f60(60), ease = E.out, roll = f60(14), digits, pad = false, group, id = 'roll', role = 'display', size = TYPE[role].size * U, family = FONT.text, lead = 1.2, style }) => {
+}> = ({ frame, from, steps, to, start = 0, dur = f60(pace.fx.roll.dur), ease = E.out, roll = f60(pace.fx.roll.roll), digits, pad = false, group, id = 'roll', role = 'display', size = TYPE[role].size * U, family = FONT.text, lead = 1.2, style }) => {
   const seq = steps ?? (to === undefined ? [] : countSteps(from, to, start, dur, ease));
   const values = [Math.max(0, Math.round(from)), ...seq.map((x) => Math.max(0, Math.round(x.value)))];
   const D = digits ?? Math.max(...values.map((v) => String(v).length));

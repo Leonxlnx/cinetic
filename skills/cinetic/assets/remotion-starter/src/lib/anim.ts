@@ -2,9 +2,24 @@
 // one motion character; scripts/lint-film.mjs fails raw beziers anywhere else. The numbers are
 // proven defaults, not dogma: retune a token here and the whole film follows.
 import { Easing, interpolate, spring, SpringConfig } from 'remotion';
-import { FPS } from '../timeline';
+import { FPS, PACE_NAME } from '../timeline';
+import { PACE, type Pace } from './pace';
+
+export { PACE, holdFor, revealFor, wordCount } from './pace';
+export type { Pace, PaceName } from './pace';
 
 export type Ease = (t: number) => number;
+
+/**
+ * True exponential ease-out, normalised to land exactly on 1: progress 1 - e^(-k t), so its time
+ * constant is 1/k of the move. With k = 6 it is half-way at 12% of the time and 90% home at 38%,
+ * and the tail is sub-pixel for any horizontal move: it reads as a quick glide that comes to rest
+ * on its own. Measured on line re-centres in professional films (t50 ~0.12 s, t90 ~0.4 s).
+ */
+const expOut = (k: number): Ease => {
+  const n = 1 - Math.exp(-k);
+  return (t) => (t <= 0 ? 0 : t >= 1 ? 1 : (1 - Math.exp(-k * t)) / n);
+};
 
 /** Easing tokens, named for how they feel. Entrances decay, exits accelerate; only the camera eases both ways. */
 export const E = {
@@ -22,12 +37,16 @@ export const E = {
   whip: Easing.bezier(0.6, 0, 0.15, 1), // feature-to-feature whips
   dolly: Easing.bezier(0.35, 0, 0.65, 1), // slow push through a hold
   type: Easing.bezier(0.5, 1, 0.89, 1), // quad-out: an eased typewriter, 2x its mean rate at the start, last key at ~80%
+  expo: expOut(6), // exponential glide of held text: a build line re-centring (fx/Chain), horizontal only
   linear: (t: number) => t, // drift only
 };
 
 /**
  * Spring presets. Default to critical damping (damping >= 2*sqrt(stiffness*mass)); overshoot is for
- * impacts only, and clamp it wherever it could cross other geometry or go negative.
+ * impacts only, and clamp it wherever it could cross other geometry or go negative. Never put an
+ * overshooting spring (snap, pop, land, word, detent, micro) on type: a word that bounces into
+ * place reads as a gimmick and costs the read. Type eases in, or rides SPR.calm
+ * (scripts/lint-film.mjs warns: text-spring).
  */
 export const SPR = {
   snap: { damping: 18, stiffness: 260, mass: 0.7 }, // locks into place, small overshoot
@@ -37,11 +56,33 @@ export const SPR = {
   firm: { damping: 24, stiffness: 140, mass: 1 }, // UI arrivals, no overshoot
   micro: { damping: 30, stiffness: 500, mass: 0.6 }, // chips, badges, small snaps
   land: { damping: 14.5, stiffness: 200, mass: 1 }, // ~15% overshoot: a true landing only (<= 2 per film)
-  word: { damping: 20, stiffness: 170, mass: 0.9 }, // words sliding in to lock (clamp at the lock)
+  word: { damping: 20, stiffness: 170, mass: 0.9 }, // words sliding in to lock (clamp at the lock); crisp films only
   detent: { damping: 24, stiffness: 380, mass: 0.6 }, // a reel or picker clicking home
+  calm: { damping: 16, stiffness: 64, mass: 1 }, // critically damped, 97% at 41 f, no overshoot: the only spring for type
 } satisfies Record<string, Partial<SpringConfig>>;
 
 export type Spr = Partial<SpringConfig>;
+
+/**
+ * The film's pace (src/lib/pace.ts, picked by PACE_NAME in src/timeline.ts): the defaults of every
+ * text component (Words, Chain, MaskRise, TypeOn, Scramble, Roll) and of durFor(). Frames are at
+ * 60 fps; convert with f60(). A component takes `pace={PACE.crisp}` to run one passage at the other
+ * tempo.
+ */
+export const pace: Pace = PACE[PACE_NAME];
+
+/** The easing token a word of this pace rises on (calm: E.outSoft, crisp: E.out). */
+export const easeOf = (p: Pace = pace): Ease => E[p.ease];
+
+/**
+ * Frames for a move of `px` pixels at this film's fps: calm 0.5 s + 1.6 ms/px (camera moves
+ * clamped to 0.9-3.0 s), crisp 0.35 s + 1.35 ms/px (0.6-2.4 s). durFor(150) = 44 f and
+ * durFor(1200, true) = 145 f when calm; 33 f and 118 f when crisp.
+ */
+export const durFor = (px: number, camera = false, p: Pace = pace) => {
+  const s = p.move.base + p.move.perPx * Math.abs(px);
+  return Math.round((camera ? clamp(s, p.move.camMin, p.move.camMax) : s) * FPS);
+};
 
 /** Clamped tween between two frames. interpolate() extends past its range by default; this never does. */
 export const tw = (frame: number, from: number, to: number, a: number, b: number, ease: Ease = E.out) =>
@@ -135,7 +176,9 @@ export const fd = Math.round;
  * Start offset (frames) of item i of n spread over `span` frames: 0 for the first, `span` for the
  * last. The ease shapes the gaps (E.linear: even; E.out: the first items bunch up, the tail spreads
  * out). Add it to the group's start: prog(f, at + stagger(i, n, 24), at + stagger(i, n, 24) + 26, E.out).
- * A group arrives within 30 f at 60 fps (references/motion-tokens.md §6); longer reads as a queue.
+ * A group of objects arrives within 30 f at 60 fps (references/motion-tokens.md §6); longer reads as
+ * a queue. Text is the exception: the words of a fragment arrive over 40-50 f (pace.stagger apart),
+ * which is what lets each word be read as it lands; use Words or Chain rather than this for type.
  */
 export const stagger = (i: number, n: number, span: number, ease: Ease = E.linear) => (n > 1 ? span * ease(clamp(i / (n - 1))) : 0);
 
