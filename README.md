@@ -333,9 +333,10 @@ Issues and pull requests are welcome. Before you open a PR, run the regression t
 ```bash
 node skills/cinetic/scripts/test/lint-film.test.mjs
 python3 skills/cinetic/scripts/test/pick.test.py
+python3 skills/cinetic/scripts/test/encode-tags.test.py   # runs its encodes when ffmpeg is on PATH
 ```
 
-CI runs the same tests and also checks the SKILL.md frontmatter, the JSON and plugin manifests, that the skills CLI discovers the skill, and Python and shell syntax. A change to a hard-ban rule needs a fixture in `skills/cinetic/scripts/test/lint-fixtures/` that declares what it must produce. A change to the library goes into `techniques.json`; regenerate the readable page with `python3 skills/cinetic/scripts/pick.py --markdown > skills/cinetic/references/technique-library.md` (CI checks that the two match).
+CI runs the same tests and also checks the SKILL.md frontmatter, the JSON and plugin manifests, that the skills CLI discovers the skill, and Python, Node and shell syntax. The shell scripts are also parsed with bash 3.2 (macOS's `/bin/bash`), which cannot parse a heredoc inside `$( )`: put such a heredoc in a shell function. A change to a hard-ban rule needs a fixture in `skills/cinetic/scripts/test/lint-fixtures/` that declares what it must produce. A change to the library goes into `techniques.json`; regenerate the readable page with `python3 skills/cinetic/scripts/pick.py --markdown > skills/cinetic/references/technique-library.md` (CI checks that the two match).
 
 ## License
 

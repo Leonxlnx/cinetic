@@ -102,7 +102,10 @@ STATUS=0
 CHECKS="$QA/.checks.jsonl"; : > "$CHECKS"
 note() { printf '%s\n' "$1" >> "$CHECKS"; }
 
-read -r W H FPS N HAS_AUDIO <<< "$(python3 - "$MASTER" <<'PY'
+# Python helpers whose output is captured are shell functions called inside $( ), because bash 3.2
+# (macOS) cannot parse a heredoc written inside $( ).
+probe_master() {  # probe_master FILE: width height fps frames has_audio
+  python3 - "$1" <<'PY'
 import json, subprocess, sys
 from fractions import Fraction
 d = json.loads(subprocess.run(['ffprobe', '-v', 'error', '-count_packets', '-show_streams', '-of', 'json', sys.argv[1]],
@@ -111,7 +114,8 @@ v = next(s for s in d['streams'] if s['codec_type'] == 'video')
 a = any(s['codec_type'] == 'audio' for s in d['streams'])
 print(v['width'], v['height'], float(Fraction(v['avg_frame_rate'])), v['nb_read_packets'], int(a))
 PY
-)"
+}
+read -r W H FPS N HAS_AUDIO <<< "$(probe_master "$MASTER")"
 step "$MASTER: ${W}x${H}@${FPS}, $N frames, audio $([[ $HAS_AUDIO -eq 1 ]] && echo yes || echo no)"
 TO_RGB="scale=in_color_matrix=auto:in_range=auto:flags=accurate_rnd+full_chroma_int,format=rgb24"
 
@@ -152,8 +156,8 @@ elif [[ -f "$HF_LAST" ]]; then
 else
   WHY+=("no $ENTRY (Remotion) and no $HF_LAST (hf-finish.sh); pass --poster-from PNG")
 fi
-if [[ -n "$PSRC" ]]; then  # the clean still must show the master's frame: same size, same picture
-  if ! MATCH=$(python3 - "$CLEAN" "$QA/.poster-master.png" <<'PY'
+poster_match() {  # poster_match STILL MASTER_FRAME: prints the difference, exit 1 if they differ
+  python3 - "$1" "$2" <<'PY'
 import subprocess, sys
 import numpy as np
 def rgb(p):
@@ -172,7 +176,9 @@ mad, far = float(d.mean()), float((d.max(axis=2) > 32).mean())
 print(f'MAD {mad:.2f}, {100 * far:.2f}% of pixels off by > 32 levels')
 sys.exit(0 if mad <= 2.0 and far <= 0.0025 else 1)
 PY
-  ); then
+}
+if [[ -n "$PSRC" ]]; then  # the clean still must show the master's frame: same size, same picture
+  if ! MATCH=$(poster_match "$CLEAN" "$QA/.poster-master.png"); then
     WHY+=("$PSRC does not match the master's frame $PF ($MATCH): a stale render, the wrong --comp or frame")
     PSRC=""
   fi
@@ -238,7 +244,10 @@ fi
 if [[ $WEBM -eq 1 ]]; then
   [[ -z "$WEBM_CRF" ]] && { [[ $LOOP -eq 1 ]] && WEBM_CRF=26 || WEBM_CRF=32; }
   AUD=(-an); [[ $HAS_AUDIO -eq 1 && $LOOP -eq 0 ]] && AUD=(-c:a libopus -b:a 160k)
+  # setparams labels the master's BT.709 frames with all four tags (no conversion): ffmpeg 7.1 and
+  # newer tag the stream from the frames, over -color_primaries/-color_trc (finishing.md, section 4)
   ffmpeg -v error -y -i "$MASTER" -map 0:v:0 $([[ $HAS_AUDIO -eq 1 && $LOOP -eq 0 ]] && echo "-map 0:a:0") \
+    -vf setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv \
     -c:v libvpx-vp9 -crf "$WEBM_CRF" -b:v 0 -row-mt 1 -deadline good -cpu-used 2 -pix_fmt yuv420p \
     -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv ${AUD[@]+"${AUD[@]}"} "$OUTDIR/$NAME.webm" \
     || die "webm encode failed"

@@ -148,9 +148,9 @@ To update, delete the old folder first and repeat the steps: `rm -rf ~/.claude/s
 | bash | 3.2 or newer (macOS's built-in bash works) | every `.sh` script |
 | Network | when scaffolding a film, and each time you add a font | `npm install` in each new film (unless `--link-modules`), `npm pack` in `add-font.mjs`, the first `npx -y hyperframes@0.8.79` run, Remotion's first browser download; renders themselves run offline |
 
-Remotion bundles an ffmpeg of its own for its internal encodes, but `render.sh`, `accumulate.py`, `hf-finish.sh` and the QA scripts call `ffmpeg` and `ffprobe` from your `PATH`.
+Remotion bundles an ffmpeg of its own for its internal encodes, but `render.sh`, `accumulate.py`, `hf-finish.sh` and the QA scripts call `ffmpeg` and `ffprobe` from your `PATH`. Any version from 6 on works: ffmpeg 7.1 and newer take a file's colour tags from the decoded frames, so the scripts' encodes end with a `setparams` step that writes all four BT.709 tags (do the same in your own encodes, see [`references/finishing.md` §4](../skills/cinetic/references/finishing.md#4-colour-bt709-everywhere)).
 
-The scripts are bash and were developed and tested on Linux (CI runs on Ubuntu). They avoid GNU-only tools and bash 4 features so that they also run on macOS with its built-in bash 3.2, but macOS is less tested; please report anything that breaks. On Windows, WSL2 with the Ubuntu steps below is the likely route; it has not been tested.
+The scripts are bash and were developed and tested on Linux (CI runs on Ubuntu). They avoid GNU-only tools and bash 4 features so that they also run on macOS with its built-in bash 3.2, and CI parses every script with bash 3.2.57, the version macOS ships. macOS is still less tested; please report anything that breaks. On Windows, WSL2 with the Ubuntu steps below is the likely route; it has not been tested.
 
 ### macOS (Homebrew)
 
@@ -430,7 +430,7 @@ The full pipeline is in [`references/finishing.md`](../skills/cinetic/references
 | Stepped copies of a moving wordmark in the master | too few samples on its fastest frames | grab them with `bash scripts/grab.sh out/film.mp4 <frame>`; raise the floor for that range with `--floor A-B:N` |
 | `--blur needs the sub-frame composition 'XSub'` | a composition without a registered `...Sub` twin | register one in `src/Root.tsx` like `FilmSub`, pass `--sub ID`, or blur a range of `Film` with `--frames A-B` |
 | The output shows older code than the source | `src/` was edited while the render ran | render again; `render.sh` warns when this happens |
-| On macOS, a `--blur` render stops right after the sharp pass | the system `date` does not support `%N` | run it with GNU coreutils first on `PATH` ([macOS](#macos-homebrew)) |
+| `probe.py` fails the `bt709` check with `bt709/None/None/tv` | ffmpeg 7.1 or newer takes the colour tags from the frames, and the encode had no `setparams` step: scripts copied into the project by cinetic 1.0.0 or earlier, or an encode of your own | copy the skill's current scripts into the project (`cp -R "$SKILL/scripts/." scripts/` from the project root, with `SKILL` set as in [section 4](#4-a-first-test-render)) and render again; in your own encodes end `-vf` with `setparams` ([`references/finishing.md` §4](../skills/cinetic/references/finishing.md#4-colour-bt709-everywhere)) |
 
 ### HyperFrames
 
@@ -438,10 +438,11 @@ The full pipeline is in [`references/finishing.md`](../skills/cinetic/references
 |---|---|---|
 | The first `npx -y hyperframes@0.8.79 ...` is slow or fails offline | `npx` downloads the pinned CLI on first use | run `npx -y hyperframes@0.8.79 doctor` once while online; point `HF_CLI` at a local install for `hf-finish.sh` |
 | HyperFrames downloads a browser, or `doctor` reports one missing | no browser configured | set `HYPERFRAMES_BROWSER_PATH` to a local headless shell (`CHROMIUM_PATH` reaches only `hf-finish.sh`); `npx -y hyperframes@0.8.79 browser` helps diagnose |
+| On macOS, `npm run cues` or a render stops with `hf-finish.sh: line 301: unexpected EOF while looking for matching`, or the render step fails with `render wrote      300 frames, expected 300` | the project's copy of `hf-finish.sh` is from cinetic 1.0.0 or earlier, which macOS's bash 3.2 cannot parse and whose frame count broke on BSD `wc` | copy the skill's current scripts into the project: `cp -R "$SKILL/scripts/." scripts/` from the project root |
 | `setup: missing node_modules/gsap/dist/gsap.min.js` | `npm install` did not run | `npm install` in the project (it runs `setup.mjs`), or `node setup.mjs` after linking `node_modules` |
 | `check` reports "0 samples" and looks clean | a lint error disables the layout audit | get `npm run lint` to 0 errors first |
 | `hf-finish: ... has transparent pixels` | PNG capture drops the `html`/`body` background, which would encode as black | put the background on a full-bleed `.clip` layer, or pass `--allow-transparent` |
 | Extra skills appeared in `~/.claude/skills` | `hyperframes init` installs its vendor's agent skills | start projects with `new-film.sh --engine hyperframes`, not `init`; `hf-finish.sh` sets `HYPERFRAMES_SKIP_SKILLS=1` and turns telemetry off (`HYPERFRAMES_NO_TELEMETRY=1`) |
 | Motion over about 18 px per frame shows separate copies after `--blur` | HyperFrames blur is capped at 240 fps (K ≤ 4 at 60 fps) | build fast films in Remotion, whose `render.sh --blur` adds samples with speed |
 
-Still stuck: every script except the internal `brand-svg.ts` helper prints `--help`, and [`references/remotion-engine.md`](../skills/cinetic/references/remotion-engine.md), [`references/hyperframes-engine.md`](../skills/cinetic/references/hyperframes-engine.md), [`references/chromium-rendering.md`](../skills/cinetic/references/chromium-rendering.md) and [`references/finishing.md`](../skills/cinetic/references/finishing.md) cover each engine's traps in more depth. Report a problem at [github.com/Leonxlnx/cinetic/issues](https://github.com/Leonxlnx/cinetic/issues).
+Still stuck: every script except the internal `brand-svg.ts` and `hf-preflight.cjs` helpers prints `--help`, and [`references/remotion-engine.md`](../skills/cinetic/references/remotion-engine.md), [`references/hyperframes-engine.md`](../skills/cinetic/references/hyperframes-engine.md), [`references/chromium-rendering.md`](../skills/cinetic/references/chromium-rendering.md) and [`references/finishing.md`](../skills/cinetic/references/finishing.md) cover each engine's traps in more depth. Report a problem at [github.com/Leonxlnx/cinetic/issues](https://github.com/Leonxlnx/cinetic/issues).

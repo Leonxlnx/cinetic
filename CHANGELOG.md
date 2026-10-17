@@ -8,6 +8,18 @@ Versions 0.1.0 to 0.5.0 were development versions, and 0.9.0 was the first publi
 
 ## [Unreleased]
 
+### Fixed
+
+- macOS ([#2](https://github.com/Leonxlnx/cinetic/issues/2)). `hf-finish.sh` parses with the stock `/bin/bash` 3.2: its preflight was a heredoc inside `$( )`, which bash 3.2 scans as shell code, and now lives in `scripts/hf-preflight.cjs` (same checks, same cues). The other heredocs inside `$( )`, in `deliver.sh` and `render.sh`, became shell functions. The frame-count check compares numbers, so BSD `wc`'s padded count passes; colour codes are stripped from the HyperFrames logs with BSD `sed` too; `render-chunks.sh` counts cores with `sysctl` where there is no `nproc`.
+- BT.709 tags with ffmpeg 7.1 and newer, which take a file's colour tags from the frames over `-color_primaries` and `-color_trc`. The HyperFrames encode came out without primaries and transfer (`bt709/None/None/tv`) and failed `probe.py`; `hf-finish.sh`, `accumulate.py` and the WebM in `deliver.sh` now end their filters with `setparams`. In `accumulate.py`, the encoder of every `--blur` master, the unlabelled raw planes also made ffmpeg insert a matrix conversion that shifted the colours; they now pass through bit-exact. With ffmpeg 6 the files are identical to before.
+- A project keeps its own copy of the scripts, so a project made with 1.0.0 gets these fixes when you copy the skill's `scripts/` into it (`docs/setup.md`, Troubleshooting).
+- `docs/setup.md`: removed a stale macOS row about `date %N`; `render.sh` uses only `date +%s`, which BSD `date` has, and times the sharp pass with `python3`.
+
+### Added
+
+- CI parses every shell script with bash 3.2.57, the version macOS ships, runs the HyperFrames preflight (`npm run cues`) under it, fails on a heredoc inside `$( )`, and checks the syntax of the Node scripts (`node --check`).
+- `scripts/test/encode-tags.test.py`, run in CI: every BT.709-tagged encode in the scripts sets `setparams`, and the `hf-finish.sh` and `accumulate.py` encodes write `bt709/bt709/bt709/tv` on the local ffmpeg.
+
 ## [1.0.0] - 2026-10-04
 
 This version teaches cinetic what top-tier launch films measurably do. Their pictures and soundtracks were measured frame by frame, and the results became a technique library the agent draws from at random, a reference of craft norms, a recalibrated sound engine and a set of tested motion primitives in the starter.
