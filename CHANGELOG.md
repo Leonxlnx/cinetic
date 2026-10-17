@@ -8,6 +8,15 @@ Versions 0.1.0 to 0.5.0 were development versions, and 0.9.0 was the first publi
 
 ## [Unreleased]
 
+### Added
+
+- `deliver.sh --variant-accept-fast A-B` passes the master's `--accept-fast` waiver on to blurred variants (`--variant-samples`). They reuse the master's samples, so before this every variant stopped at the same fast frames the master had already waived.
+- `Words` takes `breaks`, the word indices that start a new line, so a layout table can own a statement's line breaks per aspect instead of relying on the box width.
+
+### Fixed
+
+- `Words` renders nothing before its first word starts and after its exit has finished. An invisible line used to keep its box, so `layout-audit.sh` reported it as overlapping whatever sat in its place later.
+
 ## [1.0.0] - 2026-10-04
 
 This version teaches cinetic what top-tier launch films measurably do. Their pictures and soundtracks were measured frame by frame, and the results became a technique library the agent draws from at random, a reference of craft norms, a recalibrated sound engine and a set of tested motion primitives in the starter.
