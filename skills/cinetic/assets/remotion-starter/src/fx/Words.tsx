@@ -12,7 +12,11 @@ import { arrive, blurIn, blurOut, depart, E, prog } from '../lib/anim';
  * ~0.75 px fully sharp and a slow finish would snap into focus. The rise itself ends on `arrive`
  * (and the exit starts on `depart`): vertical text positions snap to whole pixels, so an
  * ease-out's slow tail would settle in 1 px ticks. Transform-only placement.
- * The whole line carries data-text so scripts/layout-audit.sh can check it.
+ * `breaks` lists the word indices that start a new line (the layout table owns line breaks, so a
+ * statement never wraps on a width that happens to fit). The lines stack in a column, left-aligned;
+ * `style={{ alignItems: 'center' }}` centres each one. The block keeps its box on every frame, so
+ * nothing laid out around it moves, but carries data-text for scripts/layout-audit.sh only while
+ * some of it is on screen (like MaskRise).
  */
 export const Words: React.FC<{
   text: string;
@@ -24,37 +28,49 @@ export const Words: React.FC<{
   dur?: number;
   rise?: number; // em
   blur?: number; // px
+  breaks?: number[];
   out?: number; // frame the exit begins (optional)
   outDur?: number;
   style?: React.CSSProperties;
   wordStyle?: (i: number, p: number) => React.CSSProperties; // p = that word's 0..1 entrance
-}> = ({ text, frame, start, id = 'words', starts, stagger = 8, dur = 26, rise = 0.32, blur = 8, out, outDur = 16, style, wordStyle }) => {
+}> = ({ text, frame, start, id = 'words', starts, stagger = 8, dur = 26, rise = 0.32, blur = 8, breaks = [], out, outDur = 16, style, wordStyle }) => {
   const words = text.split(' ');
+  // Before the first word starts and after the last has left, nothing of the line is on screen:
+  // its box stays for the layout around it, but the audit must not read it as a line.
+  const first = Math.min(...words.map((_, i) => starts?.[i] ?? start + i * stagger));
+  const gone = out !== undefined && frame >= out + (words.length - 1) * (stagger / 2) + outDur;
+  const onScreen = frame >= first && !gone;
+  const lines = [0, ...breaks].map((from, j, all) => words.map((_, i) => i).slice(from, all[j + 1] ?? words.length));
+  const word = (i: number) => {
+    const s = starts?.[i] ?? start + i * stagger;
+    const p = prog(frame, s, s + dur, E.out);
+    const o = out === undefined ? 0 : out + i * (stagger / 2);
+    const q = out === undefined ? 0 : prog(frame, o, o + outDur, E.in); // the move accelerates away
+    const fade = out === undefined ? 0 : prog(frame, o, o + outDur, E.smooth); // the fade has no pop at either end
+    const b = blurIn(p, blur) + blurOut(q, blur);
+    return (
+      <span
+        key={i}
+        style={{
+          display: 'inline-block',
+          transform: `translateY(${((1 - arrive(p)) * rise - depart(q) * rise * 0.6).toFixed(4)}em)`,
+          filter: b > 0.05 ? `blur(${b.toFixed(2)}px)` : undefined,
+          opacity: p * (1 - fade),
+          ...wordStyle?.(i, p),
+        }}
+      >
+        {words[i]}
+        {i < words.length - 1 && !breaks.includes(i + 1) ? ' ' : ''}
+      </span>
+    );
+  };
   return (
-    <span data-text={id} style={{ display: 'inline-flex', flexWrap: 'nowrap', whiteSpace: 'pre', ...style }}>
-      {words.map((w, i) => {
-        const s = starts?.[i] ?? start + i * stagger;
-        const p = prog(frame, s, s + dur, E.out);
-        const o = out === undefined ? 0 : out + i * (stagger / 2);
-        const q = out === undefined ? 0 : prog(frame, o, o + outDur, E.in); // the move accelerates away
-        const fade = out === undefined ? 0 : prog(frame, o, o + outDur, E.smooth); // the fade has no pop at either end
-        const b = blurIn(p, blur) + blurOut(q, blur);
-        return (
-          <span
-            key={i}
-            style={{
-              display: 'inline-block',
-              transform: `translateY(${((1 - arrive(p)) * rise - depart(q) * rise * 0.6).toFixed(4)}em)`,
-              filter: b > 0.05 ? `blur(${b.toFixed(2)}px)` : undefined,
-              opacity: p * (1 - fade),
-              ...wordStyle?.(i, p),
-            }}
-          >
-            {w}
-            {i < words.length - 1 ? ' ' : ''}
-          </span>
-        );
-      })}
+    <span data-text={onScreen ? id : undefined} style={{ display: 'inline-flex', flexDirection: 'column', whiteSpace: 'pre', ...style }}>
+      {lines.map((line) => (
+        <span key={line[0]} style={{ display: 'flex', flexWrap: 'nowrap' }}>
+          {line.map(word)}
+        </span>
+      ))}
     </span>
   );
 };

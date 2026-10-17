@@ -52,6 +52,9 @@
 #                        --samples-from F): only when their timing is identical to the master's.
 #                        Without it, variants render sharp, which is right when their fastest
 #                        motion is <= 12 px/f.
+#   --variant-accept-fast A-B  with --variant-samples: pass the master's render.sh --accept-fast range
+#                        on to the variants. They reuse its samples, so without it the same fast
+#                        frames the master waived stop every variant before its sub-frame pass.
 # Exit 0 = everything written and every check passed, 1 = a step or check failed.
 set -euo pipefail
 
@@ -62,7 +65,7 @@ step() { echo "[deliver] $*" >&2; }
 
 OUTDIR=out/deliver; POSTER_FRAME=""; LOOP=0; GIF=0; WEBM=0; ALPHA=""; ALPHA_WEBM=0; VARIANTS=""
 GIF_FPS=25; GIF_W=960; GIF_MAX=8; GIF_DITHER=sierra2_4a; WEBM_CRF=""; ALPHA_FRAMES=""; ALPHA_PROPS=""
-ENTRY=src/index.ts; AUDIO=public/audio/soundtrack.wav; VSAMPLES=""; POS=(); POSTER_FROM=""; COMP=Film
+ENTRY=src/index.ts; AUDIO=public/audio/soundtrack.wav; VSAMPLES=""; VACCEPT=""; POS=(); POSTER_FROM=""; COMP=Film
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage 0 ;;
@@ -86,6 +89,7 @@ while [[ $# -gt 0 ]]; do
     --entry) ENTRY=${2:?}; shift ;;
     --audio) AUDIO=${2:?}; shift ;;
     --variant-samples) VSAMPLES=${2:?}; shift ;;
+    --variant-accept-fast) VACCEPT=${2:?}; shift ;;
     -*) die "unknown option $1 (see --help)" ;;
     *) POS+=("$1") ;;
   esac
@@ -94,6 +98,7 @@ done
 [[ ${#POS[@]} -eq 1 ]] || usage 1
 MASTER=${POS[0]}
 [[ -f "$MASTER" ]] || die "master $MASTER not found"
+[[ -n "$VACCEPT" && -z "$VSAMPLES" ]] && die "--variant-accept-fast needs --variant-samples (sharp variants have no speed gate)"
 command -v ffmpeg >/dev/null || die "ffmpeg not found"
 mkdir -p "$OUTDIR/qa"
 QA="$OUTDIR/qa"
@@ -287,6 +292,7 @@ if [[ -n "$VARIANTS" ]]; then
     step "rendering variant $V"
     VA=(); [[ $HAS_AUDIO -eq 1 ]] && VA=(--audio "$AUDIO") || VA=(--no-audio)
     [[ -n "$VSAMPLES" ]] && VA+=(--blur --samples-from "$VSAMPLES" --samples "$QA/samples-$V.json")
+    [[ -n "$VACCEPT" ]] && VA+=(--accept-fast "$VACCEPT")
     if bash "$SCRIPT_DIR/render.sh" "$V" "$OUTDIR/$V.mp4" ${VA[@]+"${VA[@]}"} --entry "$ENTRY"; then
       note '{"file":"'"$V.mp4"'","check":"render","pass":true}'
     else
