@@ -24,7 +24,7 @@ import { pathToFileURL } from 'node:url';
 
 export const KINDS = [
   'tick', 'tock', 'hit', 'land', 'pop', 'whoosh', 'riser', 'drop',
-  'key', 'click', 'snap', 'swell', 'bell', 'suck',
+  'key', 'click', 'snap', 'swell', 'bell', 'suck', 'text',
 ] as const;
 export type Kind = (typeof KINDS)[number];
 

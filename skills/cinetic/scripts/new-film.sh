@@ -172,7 +172,8 @@ next:
                             # COPY) is replaced; see brand-and-color.md
   npm run stills            # style frames in out/stills/ - look at them
   npm run studio            # iterate act by act (Acts folder)
-  npm run cues && npm run audio && npm run render:preview
+  npm run cues && npm run kit && npm run audio && npm run render:preview
+  npm run listen            # earshot's ears on the soundtrack: out/qa/listen.json + sound_sheet.png
 EOF
 else
   cat <<EOF
@@ -181,6 +182,11 @@ next:
   node scripts/lint-film.mjs .   # cinetic bans; fails on purpose until the placeholder palette
                                  # and font in index.html are replaced (references/brand-and-color.md)
   npm run preview                # HyperFrames Studio
-  npm run cues && npm run audio && npm run render:preview   # then: npm run render (hf-finish.sh)
+  npm run cues && npm run kit && npm run audio && npm run render:preview   # then: npm run render
+  npm run listen                 # earshot's ears on the soundtrack: out/qa/listen.json + sound_sheet.png
 EOF
+fi
+# the effects come from earshot's kit (audio/kit.json): say now whether this machine can render it
+if [[ -f "$DIR/audio/kit.json" ]] && command -v python3 >/dev/null; then
+  (cd "$DIR" && python3 scripts/audio/kit.py where 2>/dev/null | tail -n 1 | sed 's/^kit:/sound:/') || true
 fi

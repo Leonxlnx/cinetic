@@ -55,9 +55,8 @@
       { f: settleOf(CUE.slide, CUE.slide + DUR.slide, E.out), kind: 'land', variant: 'light', weight: 0.7, pan: 0.1, id: 'square' },
       { f: CUE.hit, kind: 'hit', weight: 1, pan: 0.1, id: 'accent-contact' },
       { f: apex, kind: 'whoosh', weight: 1.3, pan: -0.3, dur: DUR.glide, apexFrac: (apex - g0) / DUR.glide, id: 'glide' },
-      { f: CUE.word1, kind: 'snap', weight: 1.0, pan: 0.05, id: 'word1' },
-      { f: CUE.word2, kind: 'snap', weight: 0.9, pan: 0.25, id: 'word2' },
-      { f: CUE.word2, kind: 'tick', weight: 0.6, pan: 0.35, id: 'period' },
+      // one soft text sound as the line lands (its last word and the period), never one per word
+      { f: CUE.word2, kind: 'text', weight: 0.9, pan: 0.2, id: 'line-lands' },
     ].sort((p, q) => p.f - q.f);
     return { fps: FPS, bpm: BPM, total: TOTAL, acts: ACT, cue: CUE, events };
   }

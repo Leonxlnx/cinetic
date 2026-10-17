@@ -9,7 +9,9 @@
     "check": "npx -y hyperframes@0.8.79 check .",
     "snapshot": "npx -y hyperframes@0.8.79 snapshot . --at 1,2,3,4",
     "cues": "bash scripts/hf-finish.sh . --export-cues out/cues.json",
+    "kit": "python3 scripts/audio/kit.py render",
     "audio": "python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json --out public/audio/soundtrack.wav --stems out/stems --json out/qa/score.json",
+    "listen": "python3 scripts/audio/listen.py",
     "render:preview": "bash scripts/hf-finish.sh . out/preview.mp4 --preview",
     "render": "bash scripts/hf-finish.sh . out/film.mp4 --audio public/audio/soundtrack.wav"
   },
