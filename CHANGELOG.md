@@ -8,6 +8,8 @@ Versions 0.1.0 to 0.5.0 were development versions, and 0.9.0 was the first publi
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-18
+
 ### Calm pace by default and fragment chains
 
 cinetic's films now move at a calm pace, and their copy arrives as short fragments, one at a time, instead of whole sentences. A frame-by-frame study of eight professional films (how they split sentences, how long a fragment stays readable, how text and picture take turns) became the copy grammar; the house default keeps that grammar and holds each fragment about 1.5× longer than the references did.
@@ -291,7 +293,8 @@ First version: a skill for directing, building and rendering launch films, produ
 - Guides: timing grid, motion tokens, camera, transitions, product UI, concept and story, copy and type, brand and color, sound, finishing, the Remotion and HyperFrames engines, 16 Chromium rendering traps, and 80 generated-look tells with fixes. `assets/TREATMENT.md` is the Step 1 template.
 - Evals: three briefs (a feature loop, a launch teaser and a logo sting), each with objective checks (size, duration, 60 fps and BT.709 tags, plus true peak on the two with sound and loudness on the teaser) and visual ones, used to compare runs with and without the skill.
 
-[Unreleased]: https://github.com/Leonxlnx/cinetic/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Leonxlnx/cinetic/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Leonxlnx/cinetic/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Leonxlnx/cinetic/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/Leonxlnx/cinetic/compare/v0.5.0...v0.9.0
 [0.5.0]: https://github.com/Leonxlnx/cinetic/compare/v0.4.0...v0.5.0
