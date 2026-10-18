@@ -293,7 +293,7 @@ When the agent invents the look, none of these appear:
 | `skills/cinetic/SKILL.md` | The director: formats and defaults, five laws, the workflow from intake to delivery (Steps 0–8) with its gates plus a scaled-down path for stings and loops, taste rules, the timing and motion systems, engine rules, the ship gate |
 | `skills/cinetic/references/` | 19 guides, each read when its step comes up: concept and story, brand and color, copy and type, timing grid, motion tokens, camera, transitions, product UI, sound, finishing, review loop, a catalog of cheap-looking tells, both engines, Chromium rendering traps, formats, the technique library, the measured craft rules, and a worked example |
 | `skills/cinetic/assets/library/` | `techniques.json`, the 273 techniques `pick.py` draws from |
-| `skills/cinetic/scripts/` | 27 scripts: scaffold, the technique draw (`pick.py`), lint, grid and layout audits, palette, cue export, score and master, render and motion blur, probe and sync gates, forensics, A/V audit, contact sheets, delivery, brand kit. Each is documented in its header comment and, except the internal `brand-svg.ts` helper, in its `--help`. The regression tests for the lint and `pick.py` are in `scripts/test/`. |
+| `skills/cinetic/scripts/` | 28 scripts: scaffold, the technique draw (`pick.py`), lint, grid and layout audits, palette, cue export, score and master, render and motion blur, probe and sync gates, forensics, A/V audit, contact sheets, delivery, brand kit. Each is documented in its header comment and, except the internal `brand-svg.ts` and `hf-preflight.cjs` helpers, in its `--help`. The regression tests for the lint, `pick.py`, the encodes' colour tags, the scripts' `--help` and bash 3.2 parsing are in `scripts/test/`. |
 | `skills/cinetic/assets/` | The Remotion starter (default, with tested motion primitives in `src/fx/`), the HyperFrames starter, the treatment template and five critic prompts (director, art/copy/UI, sound-sync, forensics, verifier) |
 | [`evals/evals.json`](evals/evals.json) | The four briefs and the written expectations each film is graded against |
 | `docs/` | [Setup](docs/setup.md) and the full [evaluation](docs/evaluation.md) |
@@ -333,9 +333,12 @@ Issues and pull requests are welcome. Before you open a PR, run the regression t
 ```bash
 node skills/cinetic/scripts/test/lint-film.test.mjs
 python3 skills/cinetic/scripts/test/pick.test.py
+python3 skills/cinetic/scripts/test/encode-tags.test.py   # runs its encodes when ffmpeg is on PATH
+node skills/cinetic/scripts/test/scripts-docs.test.mjs
+python3 skills/cinetic/scripts/test/bash32.test.py
 ```
 
-CI runs the same tests and also checks the SKILL.md frontmatter, the JSON and plugin manifests, that the skills CLI discovers the skill, and Python and shell syntax. A change to a hard-ban rule needs a fixture in `skills/cinetic/scripts/test/lint-fixtures/` that declares what it must produce. A change to the library goes into `techniques.json`; regenerate the readable page with `python3 skills/cinetic/scripts/pick.py --markdown > skills/cinetic/references/technique-library.md` (CI checks that the two match).
+CI runs the same tests and also checks the SKILL.md frontmatter, the JSON and plugin manifests, that the skills CLI discovers the skill, and Python, Node and shell syntax. The shell scripts are also parsed with bash 3.2 (macOS's `/bin/bash`), in a container and on a macOS runner, which also runs the encode-tags test on a current ffmpeg. Bash 3.2 cannot parse a heredoc inside `$( )`: put such a heredoc in a shell function (`bash32.test.py` finds them). A change to a hard-ban rule needs a fixture in `skills/cinetic/scripts/test/lint-fixtures/` that declares what it must produce. A change to the library goes into `techniques.json`; regenerate the readable page with `python3 skills/cinetic/scripts/pick.py --markdown > skills/cinetic/references/technique-library.md` (CI checks that the two match).
 
 ## License
 

@@ -185,9 +185,11 @@ Verified on the starter demo: paper, ink and accent pixels decode within 1 code 
 - **In your own ffmpeg encodes** (accumulate, splices, re-encodes), convert and tag explicitly:
 
 ```bash
--vf scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int \
+-vf scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv \
 -pix_fmt yuv420p -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv
 ```
+
+  Keep the `setparams` step. From ffmpeg 7.1 on, the stream takes its colour tags from the frames, over `-color_primaries` and `-color_trc`, and `scale` sets only the matrix and range on them: without `setparams` the file has no primaries or transfer tag (`probe.py` reports `bt709/None/None/tv` and fails it). It only labels, so on older ffmpeg the file is the same. Planes you quantised yourself and pipe in raw (`accumulate.py`) get `-vf setparams=...` alone: unlabelled, ffmpeg 7.1+ inserts its own matrix conversion and the colours shift.
 
 - **When decoding for QA or stills,** convert with the file's own matrix and accurate rounding, not ffmpeg's implicit conversion: `-vf scale=in_color_matrix=auto:in_range=auto:flags=accurate_rnd+full_chroma_int,format=rgb24`. Measured on a Tessel frame against a PNG still, the explicit path is within 0.2–0.4 code values; the implicit one is off by about 0.6.
 - `bt2020-ncl` in Remotion tags HLG (`arib-std-b67`), which is wrong for SDR graphics. Do not use it.

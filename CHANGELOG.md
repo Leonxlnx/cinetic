@@ -8,6 +8,21 @@ Versions 0.1.0 to 0.5.0 were development versions, and 0.9.0 was the first publi
 
 ## [Unreleased]
 
+### Fixed
+
+- macOS ([#2](https://github.com/Leonxlnx/cinetic/issues/2)). `hf-finish.sh` parses with the stock `/bin/bash` 3.2: its preflight was a heredoc inside `$( )`, which bash 3.2 scans as shell code, and now lives in `scripts/hf-preflight.cjs` (same checks, same cues). The other heredocs inside `$( )`, in `deliver.sh` and `render.sh`, became shell functions. The frame-count check compares numbers, so BSD `wc`'s padded count passes; colour codes are stripped from the HyperFrames logs with BSD `sed` too; `render-chunks.sh` counts cores with `sysctl` where there is no `nproc`; `new-film.sh` matches `motion.js` with a POSIX character class instead of `\s`.
+- BT.709 tags with ffmpeg 7.1 and newer, which take a file's colour tags from the frames over `-color_primaries` and `-color_trc`. The HyperFrames encode came out without primaries and transfer (`bt709/None/None/tv`) and failed `probe.py`; `hf-finish.sh`, `accumulate.py` and the WebM in `deliver.sh` now end their filters with `setparams`. In `accumulate.py`, the encoder of every `--blur` master, the unlabelled raw planes also made ffmpeg insert a matrix conversion that shifted the colours; they now pass through bit-exact. With ffmpeg 6 the files are identical to before.
+- A project keeps its own copy of the scripts, so a project made with 1.0.0 gets these fixes when you copy the skill's scripts into it the way `new-film.sh` does, without the skill's own tests (`docs/setup.md`, "Updating a project's scripts").
+- `hf-preflight.cjs`, which `hf-finish.sh` runs, answers `--help` or a missing environment with a pointer to `hf-finish.sh --help` and exit 2 instead of a stack trace, and `SKILL.md` names it with `brand-svg.ts` as the scripts without a `--help` of their own.
+- `.gitattributes` checks every text file out with LF line endings. A Windows clone with `core.autocrlf` (the Git for Windows default) gave CRLF scripts, which WSL's bash refuses (`set: pipefail: invalid option name`).
+- `docs/setup.md`: removed a stale macOS row about `date %N`; `render.sh` uses only `date +%s`, which BSD `date` has, and times the sharp pass with `python3`.
+
+### Added
+
+- CI parses every shell script with bash 3.2.57, the version macOS ships, and runs the HyperFrames preflight (`npm run cues`) under it. A macOS job does the same with the real `/bin/bash`, scaffolds a HyperFrames project and refreshes its scripts with BSD `sed` and `tar`, and runs the encode-tags test on Homebrew's ffmpeg (7.1 or newer). CI also fails on a heredoc inside `$( )`, backticks or `<( )`, found by a multi-line scan (`scripts/test/bash32.test.py`), and checks the syntax of the Node scripts (`node --check`).
+- `scripts/test/encode-tags.test.py`, run in CI: every BT.709-tagged encode in the scripts sets `setparams`, and the `hf-finish.sh` and `accumulate.py` encodes write `bt709/bt709/bt709/tv` on the local ffmpeg.
+- `scripts/test/scripts-docs.test.mjs`, run in CI: every script but the two internal helpers handles `--help`, `hf-preflight.cjs` exits 2 with its pointer, the docs name the same helpers, and `docs/setup.md` refreshes a project's scripts with `new-film.sh`'s own copy.
+
 ## [1.0.0] - 2026-10-04
 
 This version teaches cinetic what top-tier launch films measurably do. Their pictures and soundtracks were measured frame by frame, and the results became a technique library the agent draws from at random, a reference of craft norms, a recalibrated sound engine and a set of tested motion primitives in the starter.
