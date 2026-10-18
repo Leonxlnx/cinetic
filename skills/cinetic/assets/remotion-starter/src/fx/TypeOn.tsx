@@ -1,6 +1,6 @@
 import React from 'react';
 import { FONT, TYPE, U, typeStyle } from '../brand/tokens';
-import { clamp, E, Ease, fd, mix, prog } from '../lib/anim';
+import { clamp, E, Ease, fd, mix, pace, prog } from '../lib/anim';
 import { baselineOf, inkBox, measureTracked } from '../lib/measure';
 import { f60, FPS } from '../timeline';
 
@@ -8,13 +8,13 @@ type Role = keyof typeof TYPE;
 
 export type TypeTiming = {
   start: number; // typing begins; the first character shows on the next whole frame
-  dur?: number; // time box in frames (default 2 f per character at 60 fps: 30 chars/s on average)
+  dur?: number; // time box in frames (default pace.fx.typeFPerChar per character at 60 fps: calm 3 f = 20 chars/s, crisp 2 f = 30)
   ease?: Ease; // the character count's progress over the box (default E.type: fast start, slow end)
   cps?: number; // linear typing at this many characters per second instead (overrides dur and ease)
 };
 export type TypeFont = { role?: Role; size?: number; family?: string };
 
-const boxOf = (len: number, t: TypeTiming) => (t.cps ? (len * FPS) / t.cps : Math.max(1, t.dur ?? f60(2 * len)));
+const boxOf = (len: number, t: TypeTiming) => (t.cps ? (len * FPS) / t.cps : Math.max(1, t.dur ?? f60(pace.fx.typeFPerChar * len)));
 
 /** Characters typed at frame f, continuous (0..len). */
 const typedAt = (len: number, f: number, t: TypeTiming) =>
@@ -65,7 +65,8 @@ export const typeOn = (text: string, frame: number, t: TypeTiming & TypeFont) =>
  * Typewriter with a caret. The character count follows an eased progress over a time box (E.type:
  * about 1 char/f at the start, the last key at ~80% of the box) or a linear `cps` rate, decided on
  * whole frames (fd), so motion-blur sub-samples never show a half-typed letter or a double caret.
- * Defaults at 60 fps: box = 2 f per character, head fade 4 f (each new character ramps in on E.ui,
+ * Defaults at 60 fps: box = pace.fx.typeFPerChar per character (calm 3 f: 20 chars/s on average,
+ * a rate a viewer can read along with; crisp 2 f), head fade 4 f (each new character ramps in on E.ui,
  * so a burst of 2-3 keys in one frame never pops; 0 = keys appear whole, like a real field), caret
  * solid while keys land and blinking 30 f on / 30 f off while idle, phase-locked to the last key.
  * Every character is laid out from the first frame (untyped ones at opacity 0) and only opacity
@@ -73,6 +74,9 @@ export const typeOn = (text: string, frame: number, t: TypeTiming & TypeFont) =>
  * loaded font (FontGate). Single line. Use typeOn() for the caret position (camera follow) and
  * typeFrames() for the key sounds. `charStyle(i, age)` styles character i, `age` whole frames
  * after it appeared (an accent that relaxes to ink over 12 f: references/product-ui.md §6).
+ * Typing is for what the product types (a prompt, a command, a field): keep it at 30 chars/s or
+ * less (lint-film warns: typing-rate) and hold the finished string >= 72 f after its last key
+ * before it changes. Headlines and film copy are never typed: they arrive as fragments (fx/Chain).
  */
 export const TypeOn: React.FC<
   TypeTiming &

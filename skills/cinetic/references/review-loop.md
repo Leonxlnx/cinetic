@@ -34,19 +34,21 @@ Keep each round in its own folder, so later lenses can be told what changed:
 ```
 out/qa/round-2/
   forensics.json  banding.png  smear.png  av.json  score.json   script reports
+  listen.json  sound_sheet.png                         earshot's listening pass (when installed)
   watch_01_f0-239.png ... legibility.png               sheets
   director.json  forensics-lens.json  sound.json  art.json
   verified.json  fixes.md                              verdicts, and what you changed
 ```
 
 1. **Render.** Run `bash scripts/render.sh Film out/preview.mp4 --preview`. It mutes Remotion, muxes the WAV with ffmpeg, and gates on `check-sync.py` (lag ≤ 48 samples, true peak ≤ −1 dBTP after AAC) and `probe.py` (spec and tags). Those reports land in `out/qa/sync-preview.json` and `out/qa/probe-preview.json`. Rebuild the sound with stems first, so the audit below can be strict: `python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json --out public/audio/soundtrack.wav --stems out/stems --json out/qa/round-2/score.json`.
-2. **Measure.** Run the two audits:
+2. **Measure.** Run the two audits, and the listening pass when earshot is installed:
    ```bash
    R=out/qa/round-2
    python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --json $R/forensics.json
    python3 scripts/av-audit.py out/preview.mp4 --cues out/cues.json --stems out/stems --json $R/av.json
+   python3 scripts/audio/listen.py --video out/preview.mp4 --out $R    # listen.json + sound_sheet.png
    ```
-   Each prints a summary, writes JSON, and exits 0 when no check fails. Add `--declare qa.json` to forensics once you have declarations (§3), and `--loop` for a loop.
+   Each prints a summary, writes JSON, and exits 0 when no check fails (`listen.py` always exits 0, and writes `"listened": false` with the reason when earshot or its models are missing; `references/sound.md` §9.1). Add `--declare qa.json` to forensics once you have declarations (§3), and `--loop` for a loop.
 3. **Sheets.** Make the watch sheets and a legibility sheet:
    ```bash
    python3 scripts/sheet.py out/preview.mp4 --chunks 4 --rate 12 --cues out/cues.json --out $R/watch.png
@@ -132,7 +134,7 @@ The templates are in `assets/critics/`. Each ends with the same return schema:
 | Field | Value |
 |---|---|
 | `FILM`, `LOGLINE` | the film's name and its one-line idea |
-| `SPEC`, `FPS` | for example `1920x1080@60, 30 s, 120 BPM` and `60` |
+| `SPEC`, `FPS` | for example `1920x1080@60, 30 s, 100 BPM, pace: calm` and `60` |
 | `ROOT` | the project root |
 | `VIDEO`, `KIND` | the file under review, and whether it is a preview or the master |
 | `QA` | `out/qa/round-N` |
@@ -148,7 +150,7 @@ The templates are in `assets/critics/`. Each ends with the same return schema:
 
 - Say what changed, so it gets checked hardest.
 - Say "Do not re-report fixed issues", or every round re-litigates old notes.
-- Say "Don't propose adding text": critics reach for captions when a picture does not read, and the fix is the picture.
+- Say "Don't propose adding text": critics reach for captions when a picture does not read, and the fix is the picture. Do let them propose splitting a sentence into a fragment chain, which is a fix of the same kind.
 - Ask for a ranking by impact per minute of fixing, with the time left. Near the end, only small, safe, high-impact fixes are worth it.
 - Batch images into sheets. Images are the expensive part of a critic's context, and one 48-tile sheet costs about the same as one still.
 
@@ -208,12 +210,12 @@ Score each dimension 1 to 5. The anchors are for 1, 3 and 5, and 2 and 4 sit bet
 |---|---|---|---|---|
 | **Idea and device** | a feature tour | a clear idea, but the device drops out, or the film would be just as true of a simpler product | one idea specific to this product that reads muted; the device is an object this product owns, survives every cut and resolves (into the mark, or in a loop or product video into the product's finished state) | watch sheets with the sound off; the specificity answer in `TREATMENT.md` |
 | **Hook (0–2 s)** | a blank or static frame | motion, but the problem lands after 2 s | frame 0 composed and moving; the problem felt by 1 s | first watch sheet; `energy_per_second[0:2]` |
-| **Copy and type** | labels, bullets, more than 35 words, mixed fonts | clean but generic lines | at or under budget, lines that pay off the film's own words, one family on one token set, zero collisions | art lens; `grid-check.ts` words and holds |
+| **Copy and type** | labels, bullets, more than 30 words, whole sentences landing at once, mixed fonts | clean but generic lines, or fragments that crowd each other | one fragment at a time (≤ 4 new words, ≤ 8 visible, at least 8 f per word in a reveal), at or under budget, lines that pay off the film's own words, one family on one token set, zero collisions | art lens; `grid-check.ts` words, holds and text flow |
 | **Colour and brand** | gradients, neon, glass or beige defaults; the starter's or Tessel's look | disciplined, but generic: the accent carries no meaning, or the brand has no personality | a look of its own that follows from the brand's personality; one accent with one meaning at 8% or less, no banding, an ownable mark | art lens; banding sheet; the mark sheet |
 | **Composition** | centred web layout, voids | correct, but framing errors or crops that slice glyphs | full-bleed, one focal point per shot, headroom kept | layout-audit; legibility sheet |
 | **Motion** | uniform fades and bounces | good eases, with pops or stalls | named curves, weight, zero-slope landings, contact squash | director; forensics spikes and stalls |
 | **Transitions** | crossfades and presets | motivated, but with repeats | velocity-matched cuts, relays and morphs, a signature move used 3 times | director; seam table |
-| **Pacing** | dead holds or cramming | even, with flat energy | one peak per bar, calm between peaks, results held long enough to land | energy curve; holds and quiet flags |
+| **Pacing** | frozen holds, cramming, or text racing the picture | even, with flat energy, or text on nearly every frame | text and picture take turns; every read held, with slow life in it; a calm cruise between a few clear peaks; results held long enough to land | energy curve; holds and quiet flags; `text-share` and `word-rate` |
 | **Product truth** | a fake dashboard | real UI, but it shows only the naive version of the feature, or data or states contradict the story | the feature's non-obvious behaviour, shown; data that agrees with itself and with the story (roles, sums, ratios); state changes animate, counters count during the action | art lens; pause test; the story asserts in `data.ts` |
 | **Sound and sync** | stock sounds, or out of lock | synced, but masked or out of key | every event within ±1 f and audible, tuned, the payoff loudest, on its LUFS target (−14; −16 for a calm brand or a sting) and −1 dBTP | `av.json` strict; sound lens |
 | **Finish** | pops, ghosts, jitter or banding | occasional P1-level artifacts | zero failing forensics checks, explained warnings, clean blur, BT.709 tags | `forensics.json`; `probe` |
@@ -273,7 +275,7 @@ Every script threshold in one place. Most can be changed with the flag named in 
 | Pop | 1-2 frame, unexplained, no cue | **fail** | |
 | Stall | d < 0.05 between d > 0.8 on both sides | **fail** | `--stall-max`, `--stall-moving` |
 | Hold, frozen | d < 0.1 for > 48 f, and 90% of those frames change < 16 px by > 24 levels | **fail** | `--hold-mad`, `--max-hold`, `--frozen-px` |
-| Hold, quiet | the same run, but small elements move | warn | |
+| Hold, quiet | the same run, but small elements move | warn; a fragment's reading hold whose text drifts or creeps lands here, and is fine when the run sits inside its `copy` window in `out/cues.json` | |
 | End tail | a static run that reaches the last frame, ≤ 2 s + 1 f | allowed | `--max-end-hold` |
 | Quiet | 60-frame mean d < 0.15, outside holds | warn | `--quiet-window`, `--quiet-mad` |
 | Hook | the first 2 s move less than max(0.5, 0.5× the film's median 2 s window); for films of 6 s or less, the first 1 s under 0.5× the median 1 s; from frame 0, not loops | warn | declare a designed still read with `--ignore 0-119` |
@@ -315,9 +317,9 @@ Every script threshold in one place. Most can be changed with the flag named in 
 |---|---|
 | `probe.py` | size, fps, duration ±1 f, yuv420p, BT.709 tags with tv range, AAC 48 kHz stereo |
 | `check-sync.py` | mux lag ≤ 48 samples at three points; true peak ≤ −1 dBTP after decode |
-| `grid-check.ts` | beat is whole frames; acts contiguous; cues on the 16th grid or `offgrid:`; text holds ≥ 36 f + 6 f per word; no event gap > 48 f; words ≤ budget |
+| `grid-check.ts` | beat is whole frames; acts contiguous; cues on the 16th grid or `offgrid:`; reading holds ≥ max(60, 42 + 8 f per word) (crisp: 36 f + 6 f per word); no gap without an event or a reading hold > 72 f (crisp: 48 f); words ≤ budget; text flow: `fragment` (> 4 new words), `copy-concurrent` (> 8 words visible, > 5 in replace mode), `reveal-rate` (< 8 f per word), `chain-gap` (picture beat outside 30–90 f), `chain-beat` (no cue in the picture beat), `read-first` (two separate lines arriving together), `read-quiet` (a cue starting inside a read), `word-rate` (> 6 words in any 5 s), `text-share` (copy on > 65% of frames, or no 90 f text-free run in 10 s); limits from the film's `PACE_NAME` (`--pace` overrides; in a calm film a short or empty picture beat, lines together and copy on > 75% fail) |
 | `lint-film.mjs` | 0 errors: no CSS animation, no nondeterminism, no frame-driven left/top, tokens only, clamped interpolate |
-| `layout-audit.sh` | no text outside the safe zone (the aspect's preset; `feed9x16` for 9:16), no overlaps, readable text ≥ 22 px (32 px in 9:16), no text covered by a `data-mover`, no readable text (opacity ≥ 0.5) moving faster than 20 px/f from f to f+1, at 1080 px tall (`--speed`, on with `--cues`; `--max-text-speed`) |
+| `layout-audit.sh` | no text outside the safe zone (the aspect's preset; `feed9x16` for 9:16), no overlaps, readable text ≥ 22 px (32 px in 9:16), no frame with more readable film words than the pace allows (`words`; 8 when calm, `data-ui` strings counted apart), no text covered by a `data-mover`, no readable text (opacity ≥ 0.5) moving faster than 20 px/f from f to f+1, at 1080 px tall (`--speed`, on with `--cues`; `--max-text-speed`) |
 | `deliver.sh --loop` | the loop-seam rule above, on the delivered file |
 | `measure-speed.py` | `too_fast`: frames over 80 px/f (`--too-fast`), a redesign warning; `short_shutter`: frames the samples can't cover |
 | `score.py` | LRA ≥ 5 LU for films of 20 s or more; the payoff ≥ 2 LU over the median momentary loudness; the first 0.5 s within 12 dB of the median (soft hook); no effect starting inside the end fade (warnings) |

@@ -18,6 +18,9 @@
         "The numbers and states agree with the story (the shares add up to the total; whoever paid does not owe themselves; statuses are consistent)",
         "No text is clipped, overlapping or too small to read at 1080p (UI text roughly >= 20 px), and the UI fills enough of the frame to read on a phone",
         "The product UI looks like a real, specific app (named people, real amounts, consistent states), not a generic dashboard or floating card",
+        "Film copy (outside the product UI) arrives as fragments of at most 4 words, one at a time: no frame shows more than about 4 words of it, and no sentence of 5 or more words lands as one block",
+        "Every fragment of film copy stays fully readable for at least 1 s before it leaves or the loop restarts",
+        "No overshoot, bounce or per-letter animation on copy",
         "The deliverables folder is clean: deliverables at the top level, QA material in a subfolder",
         "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no neon or glow; no purple/violet/indigo or multi-hue gradients; no glassmorphism; no emoji, sparkles, particles or confetti (brand-supplied exceptions excepted)"
       ]
@@ -39,7 +42,10 @@
         "Integrated loudness -14 +-1.5 LUFS (social standard)",
         "An invented brand is visible: a distinctive mark (not a letter in a rounded square, not a generic block + dot) and a name lockup in the final seconds",
         "One clear idea is told visually and shows what the product does that a simpler product would not (a stranger could describe it with the sound off)",
-        "Total on-screen words (excluding product-UI strings) are 35 or fewer, with no stacked taglines or eyebrow labels",
+        "Total on-screen words (excluding product-UI strings) are 25 or fewer, with no stacked taglines or eyebrow labels",
+        "Copy arrives as fragments of 1-4 words revealed one after another, with picture between them: no frame shows more than about 8 words of film copy, and no sentence of 5 or more words lands as one block",
+        "Every fragment of film copy stays fully readable for at least 1 s, and film copy is visible on at most about two thirds of the frames",
+        "No overshoot, bounce or per-letter animation on copy (the one hero word excepted)",
         "No visible motion-blur artifacts: no stepped or ghosted copies and no smears longer than about a fifth of the frame on the fastest frames",
         "Hard cuts and the biggest moves land on audio hits (within about 3 frames)",
         "A brand kit is delivered: the logo as SVG (light and dark) plus transparent PNGs, and a square social avatar",
@@ -67,6 +73,7 @@
         "The logo is fully resolved and readable for at least 1.5 seconds before the end, at a size that fills a reasonable part of the frame (roughly a quarter of the width or more)",
         "The sound has a clear hit that lands with the logo resolving (checked in code or by audio timing)",
         "No intermediate frame of the name reveal spells a different word",
+        "The name settles without overshoot or bounce, and any line beside it arrives after the name has resolved, not together with it",
         "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no neon or glow; no purple/violet/indigo or multi-hue gradients; no glassmorphism; no emoji, sparkles, particles or confetti (brand-supplied exceptions excepted)"
       ]
     },
@@ -89,7 +96,37 @@
         "The supplied paper #FBF7F0 (a cream the hard bans would otherwise catch) is kept and listed in BRIEF.md as a brand-supplied exception, and lint-film.mjs passes with its token marked // cinetic:brand-supplied",
         "A streak visibly builds over seven days in real product UI, with consistent dates and counts",
         "Text and key UI stay inside vertical-video safe zones (not under the top ~220 px or bottom ~420 px platform chrome) and are readable on a phone",
+        "Film copy arrives as fragments of at most 4 words, one at a time: no frame shows more than about 6 words of it, and no sentence of 5 or more words lands as one block",
+        "Every fragment of film copy stays fully readable for at least 1 s",
+        "No overshoot, bounce or per-letter animation on copy",
         "The sound is locked to the picture (hits land on visible events) and the film reads with the sound off",
+        "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no neon or glow; no purple/violet/indigo or multi-hue gradients; no glassmorphism; no emoji, sparkles, particles or confetti (brand-supplied exceptions excepted)"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "murmur-update-calm",
+      "prompt": "Make a 20-second update video for X: our voice-memo app Murmur now labels who is speaking in a recording. Something like \"here is the newest Murmur\" and then show it working. 1920x1080 with sound. Keep it calm, and never put a lot of text on screen at once.",
+      "expected_output": "A ~20 s 1920x1080 MP4 with sound: a calm update film whose copy arrives as short fragments, one at a time, split around the product (a setup fragment, the product acting, then the name), with speaker labels shown working in real product UI, readable holds that never freeze, text-free picture stretches and soft, sparse sound.",
+      "files": [],
+      "expectations": [
+        "A final MP4 exists at 1920x1080",
+        "Duration is 20 s (+-1 s)",
+        "Renders at 60 fps (smooth UI and type motion)",
+        "Colour is tagged BT.709 (correct HD playback colour)",
+        "No motion stutter (frozen frames inside motion runs <= 1% of frames)",
+        "Has an audio track",
+        "True peak <= -1.0 dBTP after encode (no clipping on social platforms)",
+        "Integrated loudness -18 +-1.5 LUFS: a calm update film is effects only, with no music bed (SKILL.md Step 5 and the formats table)",
+        "Film copy is cut into fragments of 1-4 words revealed one after another: no frame shows more than about 8 words of it, and no sentence of 5 or more words lands as one block",
+        "At least one sentence is split around the product: a setup fragment, then the product or the feature acting with no new text, then the payoff fragment (the 'here is the newest' -> product -> name pattern)",
+        "Every fragment stays fully readable for at least 1 s, and no 5 s window resolves more than about 6 words of film copy",
+        "Film copy is visible on at most about two thirds of the frames, with at least one stretch of 1.5 s or more showing the product with no text",
+        "The film never freezes: reading holds keep a slow drift or creep, and nothing outside a reading hold sits static for more than about 1.2 s",
+        "No overshoot, bounce or per-letter animation on copy; emphasis comes from one accent colour or from position",
+        "Speaker labels are shown working in real, specific product UI (named speakers, a plausible transcript, consistent timestamps), not a generic waveform or floating card",
+        "Each text fragment gets at most one soft sound, never one per word",
+        "The sound effects are rendered with earshot from a kit (audio/kit.json with its kit.lock.json) when earshot is installed; without it, the build reports that it fell back instead of failing",
         "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no neon or glow; no purple/violet/indigo or multi-hue gradients; no glassmorphism; no emoji, sparkles, particles or confetti (brand-supplied exceptions excepted)"
       ]
     }

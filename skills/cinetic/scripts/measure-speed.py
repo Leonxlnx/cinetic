@@ -39,6 +39,18 @@ are listed as too_fast: blur cannot make them read, so the log asks for a redesi
 
 --shutter must match SHUTTER in src/blur.ts (240 by default).
 
+Pace. Every run also reports how fast the film moves (the `pace` block, from the per-pair flow
+speed before the shutter and max filters): the median and 90th percentile speed of moving frames,
+the share of frames over 12, 25 and 40 px/f, the longest run under 2 px/f, and how many moves pass
+40 px/f. --pace calm warns when the 90th percentile passes 25 px/f or more than 6% of frames pass
+40 px/f (crisp: 45 px/f, 15%): calm films keep ordinary moves under 25 px/f and save speed for one
+or two moments. --copy out/cues.json (or a --cues file that has a copy block) adds the speed inside
+each copy entry's reading windows (its `read`: the timeline's READ, so a chain's picture beat is
+not a read; [resolved, out) in an older cues.json): the frame should be near still while text is
+read, so a median over 3 px/f or a peak over 25 px/f (crisp 40) warns. The pace defaults to the
+cues file's `pace`. Run it on a sharp render (a preview, or the speed pass of render.sh --blur):
+the numbers are about the design, not the blur.
+
 Blind spots (use --floor or --analytic there, and check those frames at 1:1 in the master): an
 edge with no 2D structure (a flat band sweeping the full frame reads ~0), a small flat object
 jumping more than ~150 px/f at the default analysis width (both trackers lose it), and the first
@@ -50,6 +62,7 @@ Usage:
   python3 scripts/measure-speed.py sharp.mp4 out/samples.json --floor 1210-1260:16 --analytic out/speed.json
   python3 scripts/measure-speed.py sharp.mp4 out/samples.json --budget 6      # at most 6x the frame count
   python3 scripts/measure-speed.py excerpt.mp4 out/samples.json --offset 600   # excerpt starts at film frame 600
+  python3 scripts/measure-speed.py out/preview.mp4 out/qa/speed.json --pace calm --copy out/cues.json
 
 --analytic FILE: JSON {"speed": [px/f per film frame]} or {"ranges": [{"from": a, "to": b, "speed": v}]}
                  (px per frame at output resolution, absolute film frames).
@@ -57,7 +70,8 @@ Usage:
                  FilmSub indexes them correctly (render.sh --frames uses this).
 Writes JSON {groups, speed, offset, frames, fps, width, height, shutter, step, min, max, still,
 cuts, suspect_cuts, subframes, multiple, peak, budget, capped, too_fast, short_shutter, shutters?,
-fastest_frames, ...}. Exit 0 on success, 1 on failure.
+fastest_frames, pace, pace_warnings, copy_speed?, ...}. Exit 0 on success (pace warnings included), 1 on
+failure.
 """
 import argparse
 import json
@@ -100,6 +114,8 @@ def parse_args():
     ap.add_argument('--floor', action='append', default=[], help="a-b:n, min samples over frames a..b (repeatable, comma list ok)")
     ap.add_argument('--analytic', help='JSON speed track exported from the timeline (px/f)')
     ap.add_argument('--cues', help='out/cues.json: warn about hard cuts that are not act boundaries')
+    ap.add_argument('--pace', choices=['calm', 'crisp'], help="speed limits for the pace report (default: the cues file's pace)")
+    ap.add_argument('--copy', help="cues.json with a copy block: the speed inside each text's reading window")
     ap.add_argument('--offset', type=int, default=0, help='film frame index of the first frame of the video')
     ap.add_argument('--workers', type=int, default=max(1, min(4, (os.cpu_count() or 2) // 2)))
     ap.add_argument('--quiet', action='store_true')
@@ -309,11 +325,12 @@ def measure(a, log, t0):
         agree = np.minimum(dense, sparse) >= 0.7 * np.maximum(dense, sparse)
         v = np.where((v > a.spike * nb) & ~agree, nb, v)
 
+    raw = v.copy()  # per-pair speed, before the shutter straddle and the max filter: the pace report reads it
     speed = np.array([max(v[i], v[i + 1] if i + 1 < n_frames else 0.0) for i in range(n_frames)])
     if a.maxfilter > 0:
         from scipy.ndimage import maximum_filter1d
         speed = maximum_filter1d(speed, size=2 * a.maxfilter + 1, mode='nearest')
-    meta = dict(frames=n_frames, fps=fps, width=src_w, height=src_h, measured_s=round(time.time() - t0, 1))
+    meta = dict(frames=n_frames, fps=fps, width=src_w, height=src_h, measured_s=round(time.time() - t0, 1), raw=raw)
     return speed, speed.copy(), cuts, suspects, meta
 
 
@@ -333,9 +350,69 @@ def reuse(a, log):
     suspects = [c - off for c in d.get('suspect_cuts', [])]
     meta = {k: d.get(k) for k in ('frames', 'fps', 'width', 'height', 'sharp_s_per_frame')}
     meta['frames'] = len(speed)
+    meta['raw'] = np.asarray(d['raw_speed'][off:], dtype=float) if d.get('raw_speed') else None
     meta['reused_from'] = a.video
     log(f'  reusing the speed track of {a.video} ({len(speed)} frames)')
     return speed, np.asarray(d.get('flow_speed_track', speed), dtype=float), cuts, suspects, meta
+
+
+# Speed limits per pace (px/f at output size): ordinary moves, the share of fast frames, and the
+# frame while text is being read.
+PACE_LIMITS = {'calm': dict(p90=25.0, over40=0.06, read_median=3.0, read_peak=25.0),
+               'crisp': dict(p90=45.0, over40=0.15, read_median=3.0, read_peak=40.0)}
+
+
+def pace_report(raw, still, fps):
+    """How fast the film moves: moving-frame percentiles, fast-frame shares, the longest near-still run."""
+    raw = np.asarray(raw, dtype=float)
+    moving = raw[raw >= still]
+    slow, run, longest, moves, inside = raw < 2.0, 0, 0, 0, False
+    for k, sl in enumerate(slow):
+        run = run + 1 if sl else 0
+        longest = max(longest, run)
+        fast = raw[k] > 40
+        moves += int(fast and not inside)
+        inside = fast
+    n = max(1, len(raw))
+    return dict(p50=round(float(np.percentile(moving, 50)), 1) if len(moving) else 0.0,
+                p90=round(float(np.percentile(moving, 90)), 1) if len(moving) else 0.0,
+                over12=round(float((raw > 12).sum()) / n, 3), over25=round(float((raw > 25).sum()) / n, 3),
+                over40=round(float((raw > 40).sum()) / n, 3), longest_under2_f=int(longest),
+                longest_under2_s=round(longest / fps, 2) if fps else None, moves_over40=int(moves))
+
+
+def read_windows(c):
+    """The frames in which a copy entry is read: its `read` windows (export-cues.ts writes the
+    timeline's READ: an earlier fragment of a chain only for its own hold, so a chain's picture beat
+    is not a read), or [resolved, out) from a cues.json written before them."""
+    read = c.get('read')
+    if isinstance(read, list) and all(isinstance(w, (list, tuple)) and len(w) == 2 for w in read):
+        return [(int(a), int(b)) for a, b in read]
+    return [(int(c['resolved']), int(c.get('out', c['resolved'])))]
+
+
+def copy_windows(path, raw, offset, limits):
+    """Speed inside each copy entry's reading windows (its `read` in a cues.json copy block)."""
+    try:
+        doc = json.load(open(path))
+    except (OSError, ValueError) as e:
+        sys.exit(f'measure-speed.py: cannot read --copy {path}: {e}')
+    rows, warns = [], []
+    for c in doc.get('copy') or []:
+        for a0, b0 in read_windows(c):
+            a, b = max(a0 - offset, 0), min(b0 - offset, len(raw))
+            if b - a < 2:
+                continue
+            seg = np.asarray(raw[a:b], dtype=float)
+            row = dict(id=c.get('id'), text=c.get('text'), kind=c.get('kind', 'copy'), frames=[a + offset, b + offset],
+                       median=round(float(np.median(seg)), 1), peak=round(float(seg.max()), 1),
+                       peak_frame=int(a + int(np.argmax(seg)) + offset))
+            rows.append(row)
+            if limits and row['kind'] != 'ui' and (row['median'] > limits['read_median'] or row['peak'] > limits['read_peak']):
+                warns.append(f"while \"{row['text']}\" is read (f{row['frames'][0]}-{row['frames'][1]}) the frame moves "
+                             f"{row['median']} px/f (median), {row['peak']} at f{row['peak_frame']}: keep it under "
+                             f"{limits['read_median']:g} px/f with nothing over {limits['read_peak']:g} until the read is done")
+    return rows, warns
 
 
 def main():
@@ -417,6 +494,33 @@ def main():
     for k in ('sharp_s_per_frame', 'reused_from', 'measured_s'):
         if meta.get(k) is not None:
             out[k] = meta[k]
+
+    # Pace: how fast the film moves, and how still the frame is while text is read.
+    raw = meta.get('raw')
+    raw = np.asarray(speed if raw is None else raw, dtype=float)
+    out['raw_speed'] = [0.0] * a.offset + [round(float(x), 1) for x in raw]
+    copy_path = a.copy or (a.cues if a.cues and 'copy' in json.load(open(a.cues)) else None)
+    pace = a.pace
+    if not pace:
+        for src in (copy_path, a.cues):
+            if src and json.load(open(src)).get('pace') in PACE_LIMITS:
+                pace = json.load(open(src))['pace']
+                break
+    limits = PACE_LIMITS.get(pace)
+    rep = pace_report(raw, a.still, meta.get('fps') or 60)
+    warns = []
+    if limits and rep['p90'] > limits['p90']:
+        warns.append(f"90% of moving frames stay under {rep['p90']} px/f; a {pace} film keeps ordinary moves under "
+                     f"{limits['p90']:g} px/f (longer moves, shorter distances, or the speed in one or two moments)")
+    if limits and rep['over40'] > limits['over40']:
+        warns.append(f"{100 * rep['over40']:.1f}% of frames move faster than 40 px/f ({rep['moves_over40']} moves); "
+                     f"a {pace} film keeps it under {100 * limits['over40']:g}%")
+    out['pace'] = dict(rep, profile=pace, source='flow' if meta.get('raw') is not None else 'speed track')
+    if copy_path:
+        rows, cw = copy_windows(copy_path, raw, a.offset, limits)
+        out['copy_speed'] = rows
+        warns += cw
+    out['pace_warnings'] = warns
     if a.cues and (out['suspect_cuts'] or out['cuts']):
         acts = json.load(open(a.cues)).get('acts', {})
         edges = [int(x['from']) for x in acts.values()]
@@ -452,6 +556,14 @@ def main():
         log(f'  frames {out["short_shutter"][:8] or ranges_of(short, a.offset)[:8]} need more than {cap} samples: '
             + ('they render with a shorter shutter so samples stay %gpx apart (a clean, shorter streak)' % a.step
                if not a.no_short_shutter else 'with --no-short-shutter they will show stepped copies'))
+    pr = out['pace']
+    log(f'  pace{" (" + pace + ")" if pace else ""}: moving p50 {pr["p50"]} / p90 {pr["p90"]} px/f; frames over 12/25/40 px/f '
+        f'{100 * pr["over12"]:.0f}/{100 * pr["over25"]:.0f}/{100 * pr["over40"]:.1f}%, {pr["moves_over40"]} moves over 40; '
+        f'longest run under 2 px/f {pr["longest_under2_f"]} f')
+    for row in out.get('copy_speed', []):
+        log(f'  read "{row["text"]}" f{row["frames"][0]}-{row["frames"][1]}: median {row["median"]}, peak {row["peak"]} px/f')
+    for w in warns:
+        log(f'  PACE: {w}')
     print(a.out)
 
 

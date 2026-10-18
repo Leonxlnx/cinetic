@@ -52,6 +52,8 @@ Tessel is a fictional product: *the calendar that plans itself*. Its launch film
 
 The typed prompt is product UI rather than film copy: *"Protect my mornings. Gym Tue + Thu. Ship the deck by Friday."*
 
+**Fragments, read today.** Tessel's copy already follows the fragment rules: the hook is a two-fragment build ("Your week" → the rain of meetings overflows → "doesn't fit."), the promise arrives as "Everything" then "fits." a second later, and no fragment runs past 3 words. Its timing is the crisp profile: 120 BPM, a 15 f slam on the headline, words 9 f apart. Made at the calm default, the same film would run at 100 BPM with one fragment per 2.4 s bar, the headline on `Words` instead of a slam, and the meeting rain carrying the picture beat between the two halves of the line.
+
 **Callback copy.** The consequence lines replaced a first draft of stock feature bullets:
 - they pay off the typed prompt ("Protect my mornings" becomes "Mornings stay yours.");
 - they set up the refrain that the finale resolves ("fit too" becomes "Everything fits.");
@@ -93,7 +95,7 @@ The film runs at 120 BPM and 60 fps: a beat is 30 f, a bar is 120 f (2 s), an 8t
 | feat | 10–12 | 1080–1439 | 18–24 s | The window splits on its sidebar seam; one line clicks home per bar (f1080, f1200, f1320); each payoff lands on the clap (+60 f) and its consequence on the kick (+75 f) | the three consequence lines | whips peak on the kick; check pips in key |
 | end | 13–16 + 60 f | 1440–1979 | 24–33 s | Pull-back, neighbouring weeks tessellate in a wave (f1560), "Everything" (f1620), "fits." (f1680), lockup (f1740), URL (f1800), tick-tock and return home (f1890) | Everything fits. / tessel.app | breakdown, resolution on "fits.", bookend tick-tock, 1 s tail to digital zero |
 
-**Budgets as shipped**
+**Budgets as shipped** (the crisp profile)
 - 8–10 story beats.
 - One motion peak per bar.
 - About 22 words.

@@ -23,6 +23,7 @@ For each issue, try to refute it. Treat it as a claim, not a fact.
    - `python3 scripts/sheet.py {{VIDEO}} --frames A-B --diff --width 480 --out {{WORKDIR}}/<id>.png` gives the frame-to-frame change.
    - For sound: `av.json` rows near the frame. To isolate a moment, cut it with `ffmpeg -ss T -t 1 -i {{VIDEO}} {{WORKDIR}}/<id>.wav` and measure onsets or levels in Python.
 2. **Watch it at speed.** A one-frame blemish on a small area inside a fast move is often invisible at 60 fps. A pop on a large area, or anything on a key beat, is not. Judge what a viewer sees at normal playback.
+   - **Text-flow issues are the exception** (B8, B9, K7, F11: words per frame, fragments arriving together, a fragment readable for under 1 s, text on too many frames). Verify them on the 12 fps sheet frames, counting words tile by tile, and against `COPY` and the `grid-check.ts` text-flow output, never by eye at speed: you know the copy already, and a viewer seeing it once does not.
 3. **Read the code the fix names.** Is the cause really there? Would the fix work, and could it break something else, such as a seam, a sync point or a hold budget in `grid-check.ts`?
 4. **Decide.** An issue is **rejected** when any of these holds:
    - the claim is wrong;

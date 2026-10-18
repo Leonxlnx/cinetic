@@ -5,13 +5,15 @@
 # measures every element tagged data-text="<id>" and logs one CINETIC_AUDIT JSON line per frame; this
 # script collects them and fails on text outside the safe zone, text boxes that overlap, readable
 # text under 22 px (at 1080p; 32 px in a 9:16 frame), text covered by a moving element tagged
-# data-mover (sampled with elementsFromPoint, so z-order counts) and, with --speed, readable text
-# travelling faster than 20 px/f (motion blur turns it into a double image). The audit stills
-# (boxes drawn, safe zone dashed) are kept.
+# data-mover (sampled with elementsFromPoint, so z-order counts), more film words readable at once
+# than the pace allows (8 when calm; product strings tagged data-ui count apart) and, with --speed,
+# readable text that moves too fast: 20 px/f while it enters or travels (motion blur turns it into
+# a double image), 3 px/f while it is being read. The audit stills (boxes drawn, safe zone dashed)
+# are kept.
 #
 # Usage (from the project root):
 #   bash scripts/layout-audit.sh <Comp> [--frames 120,240 | --cues | --copy] [--props '{"k":1}']
-#                                [--speed | --no-speed] [--max-text-speed 20]
+#                                [--speed | --no-speed] [--max-text-speed 20] [--max-read-speed 3]
 #                                [--safe feed9x16 | --safe 270,120,420,64 | --safe 96,64]
 #                                [--entry src/index.ts] [--json out/qa/layout-<Comp>.json]
 #                                [--out out/qa/layout-<Comp>] [--concurrency 2]
@@ -25,6 +27,11 @@
 #            readable text box (effective opacity >= 0.5, at least the minimum size) whose centre
 #            moves more than --max-text-speed px/f (default 20, in px of a 1080 px tall frame, so
 #            9:16 and 1:1 compare fairly). Boxes match by data-text id: give each line its own.
+#            Inside a box's reading window the limit is --max-read-speed (default 3 px/f): the
+#            window is the timeline's READ for the COPY entry whose id is the box's data-text id (or
+#            its part before the first '.'), and for a fragment of a build chain (fx/Chain) that
+#            is not the last, its own read hold plus the full line's read after the last fragment
+#            resolves: in between, the line may glide to re-centre at in-flight speed.
 #            On by default with --cues (--no-speed turns it off); opt in with --copy or --frames,
 #            where it doubles the stills. The composition's length comes from src/timeline.ts.
 #   safe     a preset from src/lib/safe.ts (feed9x16, feed9x16Strict, square1x1, portrait4x5,
@@ -38,7 +45,7 @@ usage() { sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; }
 die() { echo "layout-audit: $*" >&2; exit 2; }
 
 COMP=""; MODE=copy; FRAMES=""; PROPS="{}"; SAFE=""; ENTRY=src/index.ts; JSON=""; OUTDIR=""; CONC="${CONCURRENCY:-2}"
-SPEED=""; MAXV=20
+SPEED=""; MAXV=20; MAXR=3
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage; exit 0 ;;
@@ -48,6 +55,7 @@ while [[ $# -gt 0 ]]; do
     --speed) SPEED=1; shift ;;
     --no-speed) SPEED=0; shift ;;
     --max-text-speed) MAXV="${2:?--max-text-speed needs px/f}"; SPEED="${SPEED:-1}"; shift 2 ;;
+    --max-read-speed) MAXR="${2:?--max-read-speed needs px/f}"; SPEED="${SPEED:-1}"; shift 2 ;;
     --props) PROPS="${2:?--props needs JSON}"; shift 2 ;;
     --safe) SAFE="${2:?--safe needs a preset, insets or JSON}"; shift 2 ;;
     --entry) ENTRY="${2:?}"; shift 2 ;;
@@ -60,6 +68,7 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -n "$COMP" ]] || { usage; die "missing <Comp>"; }
 node -e "process.exit(Number(process.argv[1]) > 0 ? 0 : 1)" "$MAXV" || die "--max-text-speed must be a positive number of px/f"
+node -e "process.exit(Number(process.argv[1]) > 0 ? 0 : 1)" "$MAXR" || die "--max-read-speed must be a positive number of px/f"
 [[ -n "$SPEED" ]] || { [[ "$MODE" == cues ]] && SPEED=1 || SPEED=0; }
 
 # Run from the project root: the current directory if it holds the entry, else this script's parent.
@@ -85,7 +94,8 @@ const act = m ? acts[Number(m[1]) - 1] : null;
 if (m && !act) { console.error('no ACT entry #' + m[1]); process.exit(3); }
 const [lo, hi] = act ? [act.from, act.from + act.dur] : [0, T.TOTAL as number];
 const out = new Set<number>();
-const copy = (T.COPY ?? []) as { resolved: number; out?: number }[];
+type C = { id: string; text: string; in: number; resolved: number; out?: number; chain?: string; mode?: string };
+const copy = (T.COPY ?? []) as C[];
 for (const c of copy) {
   const end = Math.min(c.out ?? T.TOTAL, T.TOTAL) - 1;
   out.add(c.resolved);
@@ -93,11 +103,38 @@ for (const c of copy) {
 }
 if (mode === 'cues') for (const v of Object.values(T.CUE as Record<string, number | number[]>)) for (const f of [v].flat()) out.add(f);
 const frames = [...out].filter((f) => f >= lo && f < hi).map((f) => Math.round(f - lo)).sort((a, b) => a - b);
+// Reading windows per COPY id (composition frames): the timeline's READ (src/lib/pace.ts
+// readingWindows(), the rule every check shares), else the same rule computed here: from resolved
+// for at most readMax, an earlier fragment of a chain only for its own hold, a build line once
+// more after its last fragment.
+const P = ((T as any).PACE ?? {})[(T as any).PACE_NAME ?? ''] ?? { holdBase: 36, holdPerWord: 6, holdMin: 42, readMax: 120 };
+const s60 = (T.FPS as number) / 60;
+const words = (t: string) => t.split(/\s+/).filter(Boolean).length;
+const hold = (n: number) => Math.round(Math.max(P.holdMin, P.holdBase + P.holdPerWord * n) * s60);
+const cap = Math.round((P.readMax ?? 120) * s60);
+const READ = (T as any).READ as Record<string, [number, number][]> | undefined;
+const windows: Record<string, [number, number][]> = {};
+for (const c of copy) {
+  let w: [number, number][];
+  if (READ && Array.isArray(READ[c.id])) w = READ[c.id];
+  else {
+    const end = Math.min(c.out ?? T.TOTAL, T.TOTAL);
+    const chain = c.chain ? copy.filter((x) => x.chain === c.chain).sort((a, b) => a.in - b.in) : [c];
+    const last = chain[chain.length - 1];
+    const next = chain[chain.indexOf(c) + 1];
+    const own: [number, number] = next ? [c.resolved, Math.min(next.in, c.resolved + hold(words(c.text)), end)] : [c.resolved, Math.min(end, c.resolved + cap)];
+    const line: [number, number] | null = next && (c.mode ?? 'build') === 'build' ? [last.resolved, Math.min(last.out ?? T.TOTAL, last.resolved + cap)] : null;
+    w = line ? [own, line] : [own];
+  }
+  windows[c.id] = w.map(([a, b]) => [a - lo, b - lo]);
+}
 console.log([...new Set(frames)].join(','));
 console.log(hi - lo);
+console.log(JSON.stringify(windows));
 EOF
   LIST=$(npx tsx "$TMP/frames.ts") || die "could not read frames from $TL"
-  LEN=$(tail -n 1 <<< "$LIST")
+  LEN=$(sed -n 2p <<< "$LIST")
+  WINDOWS=$(sed -n 3p <<< "$LIST")
   if [[ "$MODE" != frames ]]; then
     FRAMES=$(head -n 1 <<< "$LIST")
     [[ -n "$FRAMES" ]] || die "no COPY/CUE frames fall inside $COMP; pass --frames"
@@ -118,13 +155,13 @@ if [[ -n "$SAFE" ]]; then
 fi
 
 # --speed: render f+1 beside each audited frame f (none past the composition's last frame).
-RENDER="$FRAMES"; SPEEDMAX=0
+RENDER="$FRAMES"; SPEEDMAX=0; WINDOWS="${WINDOWS:-}"
 if [[ "$SPEED" == 1 ]]; then
   RENDER=$(node -e "const n=Number(process.argv[2]);console.log([...new Set(process.argv[1].split(',').map(Number).flatMap((f)=>f+1<n?[f,f+1]:[f]))].sort((a,b)=>a-b).join(','))" "$FRAMES" "$LEN")
   SPEEDMAX="$MAXV"
 fi
 
-echo "layout-audit: $COMP frames $FRAMES$([[ "$SPEED" == 1 ]] && echo " (+ f+1 of each for text speed, max $MAXV px/f)")"
+echo "layout-audit: $COMP frames $FRAMES$([[ "$SPEED" == 1 ]] && echo " (+ f+1 of each for text speed, max $MAXV px/f, $MAXR while read)")"
 rm -rf "$OUTDIR"; mkdir -p "$OUTDIR"
 if ! npx remotion render "$ENTRY" "$COMP" "$OUTDIR" --sequence --frames="$RENDER" --props="$ALLPROPS" \
      --image-format=jpeg --concurrency="$CONC" --log=verbose > "$TMP/render.log" 2>&1; then
@@ -132,11 +169,17 @@ if ! npx remotion render "$ENTRY" "$COMP" "$OUTDIR" --sequence --frames="$RENDER
   echo "layout-audit: render failed" >&2; exit 1
 fi
 
-node - "$TMP/render.log" "$JSON" "$COMP" "$FRAMES" "$OUTDIR" "$SPEEDMAX" "${LEN:-0}" <<'EOF'
+node - "$TMP/render.log" "$JSON" "$COMP" "$FRAMES" "$OUTDIR" "$SPEEDMAX" "${LEN:-0}" "$MAXR" "$WINDOWS" <<'EOF'
 const fs = require('fs');
-const [log, jsonPath, comp, framesArg, outDir, maxArg, lenArg] = process.argv.slice(2);
+const [log, jsonPath, comp, framesArg, outDir, maxArg, lenArg, readArg, windowsArg] = process.argv.slice(2);
 const want = framesArg.split(',').map(Number);
 const maxV = Number(maxArg); // text-speed limit, px/f in a 1080 px tall frame; 0: the check is off
+const maxR = Number(readArg); // the limit while the text is being read
+const windows = JSON.parse(windowsArg || '{}'); // COPY id -> [[from, to), ...] reading windows (composition frames)
+const readingAt = (id, f) => {
+  const w = windows[id] ?? windows[String(id).split('.')[0]];
+  return !!w && w.some(([a, b]) => f >= a && f < b);
+};
 const pairs = maxV > 0 ? want.filter((f) => f + 1 < Number(lenArg)) : []; // f -> f+1
 const byFrame = new Map();
 for (const line of fs.readFileSync(log, 'utf8').split('\n')) {
@@ -152,6 +195,7 @@ for (const d of audited) for (const x of d.issues) issues.push({ frame: d.frame,
 // Text speed: each box's centre from f to the nearest box with its id on f+1, in px of a 1080 px
 // tall frame. Readable: effective opacity >= 0.5 and at least the minimum size.
 let fastest = null;
+let fastestRead = null;
 for (const f of pairs) {
   const a = byFrame.get(f), b = byFrame.get(f + 1);
   if (!a || !b) continue;
@@ -163,10 +207,15 @@ for (const f of pairs) {
     box.speed = Math.round(d * k * 10) / 10;
     if (box.opacity < 0.5 || box.px < (a.minPx ?? 0)) continue;
     if (!fastest || box.speed > fastest.speed) fastest = { frame: f, id: box.id, speed: box.speed };
-    if (box.speed <= maxV) continue;
+    const read = readingAt(box.id, f);
+    if (read && (!fastestRead || box.speed > fastestRead.speed)) fastestRead = { frame: f, id: box.id, speed: box.speed };
+    const limit = read ? maxR : maxV;
+    if (box.speed <= limit) continue;
     const at = k === 1 ? '' : ` (${Math.round(d * 10) / 10} px/f in ${a.width}x${a.height}, scaled to 1080 px tall)`;
-    issues.push({ frame: f, kind: 'text-speed', id: box.id,
-      detail: `${box.speed} px/f > ${maxV}${at}: slow it under ${maxV} px/f, or fade its text out for the flight and resolve it on landing`, speed: box.speed });
+    issues.push({ frame: f, kind: read ? 'read-speed' : 'text-speed', id: box.id,
+      detail: read
+        ? `${box.speed} px/f > ${maxR}${at} while it is being read: hold it near still (a drift under 1 px/f) until the read is done`
+        : `${box.speed} px/f > ${maxV}${at}: slow it under ${maxV} px/f, or fade its text out for the flight and resolve it on landing`, speed: box.speed });
   }
 }
 issues.sort((p, q) => p.frame - q.frame);
@@ -174,7 +223,8 @@ const report = {
   tool: 'layout-audit', comp, frames: want, audited: audited.length, missing, stills: outDir,
   pass: issues.length === 0 && missing.length === 0 && audited.length > 0,
   issues,
-  speed: maxV > 0 ? { max: maxV, pairs: pairs.length, fastest } : null,
+  speed: maxV > 0 ? { max: maxV, read: maxR, pairs: pairs.length, fastest, fastestRead } : null,
+  words: audited.reduce((m, d) => (d.words !== undefined && (!m || d.words > m.max) ? { max: d.words, frame: d.frame, ui: d.uiWords ?? 0 } : m), null),
   zone: audited[0]?.zone, safe: audited[0]?.safe,
   boxes: audited.map((d) => ({ frame: d.frame, safe: d.safe, boxes: d.boxes })),
 };
@@ -184,7 +234,9 @@ if (!byFrame.size) console.log(`  no CINETIC_AUDIT output: does ${comp} accept t
 else if (missing.length) console.log(`  no audit line for frames ${missing.join(',')}`);
 const n = audited.reduce((s, d) => s + d.boxes.length, 0);
 const z = report.safe ? ` in ${report.zone} (top ${report.safe.top}, right ${report.safe.right}, bottom ${report.safe.bottom}, left ${report.safe.left})` : '';
-const v = maxV > 0 ? `, fastest readable text ${fastest ? `${fastest.speed} px/f (${fastest.id} f${fastest.frame})` : 'not measured'}` : '';
-console.log(`layout-audit: ${audited.length}/${want.length} frames, ${n} text boxes${z}${v}, ${issues.length} issues -> ${report.pass ? 'pass' : 'FAIL'} (${jsonPath}, stills in ${outDir})`);
+const v = maxV > 0 ? `, fastest readable text ${fastest ? `${fastest.speed} px/f (${fastest.id} f${fastest.frame})` : 'not measured'}` +
+  (fastestRead ? `, ${fastestRead.speed} px/f while read (${fastestRead.id} f${fastestRead.frame})` : '') : '';
+const wv = report.words ? `, at most ${report.words.max} film words readable (f${report.words.frame})` : '';
+console.log(`layout-audit: ${audited.length}/${want.length} frames, ${n} text boxes${z}${v}${wv}, ${issues.length} issues -> ${report.pass ? 'pass' : 'FAIL'} (${jsonPath}, stills in ${outDir})`);
 process.exit(report.pass ? 0 : 1);
 EOF

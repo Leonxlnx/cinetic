@@ -1,9 +1,9 @@
 /*
  * motion.js: the cinetic motion kit for HyperFrames (plain script, no build step).
  *
- * The same grid, easing tokens, springs, envelopes and sync helpers as the Remotion kit
- * (src/lib/anim.ts + src/lib/sync.ts), with the same names and numbers, plus adapters that turn
- * them into GSAP eases. Every export is a pure function of its arguments: no clocks, no unseeded
+ * The same grid, pace, easing tokens, springs, envelopes and sync helpers as the Remotion kit
+ * (src/lib/pace.ts + src/lib/anim.ts + src/lib/sync.ts), with the same names and numbers, plus
+ * adapters that turn them into GSAP eases. Every export is a pure function of its arguments: no clocks, no unseeded
  * randomness, no state carried between frames, because HyperFrames seeks each frame on its own
  * (often in parallel workers).
  *
@@ -33,6 +33,69 @@
   const at = (bar, beat = 0, sub = 0) => sec(b(bar, beat, sub));
   /** Whole frame for discrete state (typed characters, counters), so blur sub-frames agree. */
   const fd = Math.round;
+
+  // ---- pace: how fast text arrives, how long it holds, how much is on screen ------------------
+  // The same profiles as the Remotion kit's src/lib/pace.ts, in 60 fps frames. calm (the house
+  // default): fragments of 1-4 words rising over 36 f, 11 f apart, held about 1-1.5 s, taking turns
+  // with the picture; crisp: the denser launch-film tempo, for briefs that ask for energy.
+  // scripts/new-film.sh --pace sets PACE_NAME; scripts/lint-film.mjs reads it here.
+  const PACE_NAME = 'calm';
+  const PACE = {
+    calm: {
+      wordDur: 36, stagger: 11, rise: 0.2, blur: 0, ease: 'outSoft', exit: 'together', exitDur: 24, exitLift: 0.12,
+      holdBase: 42, holdPerWord: 8, holdMin: 60, readMax: 150, gapMin: 30, gapMax: 90,
+      maxNewWords: 4, maxVisibleBuild: 8, maxVisibleReplace: 5, maxWordsPerSec: 1.2, avgWordsPerSec: 0.9, maxWords: 30,
+      textShare: 0.65, freeRun: 90, maxGap: 72, accentDur: 24, recentreDur: 96, recentreLead: 36,
+      move: { base: 0.5, perPx: 0.0016, camMin: 0.9, camMax: 3.0 },
+      fx: { mask: { stagger: 10, dur: 38, exitDur: 22 }, typeFPerChar: 3, scramble: { stagger: 5, rate: 1.0, fadeIn: 16 }, roll: { dur: 90, roll: 18 }, morph: 52, iris: 32 },
+    },
+    crisp: {
+      wordDur: 26, stagger: 6, rise: 0.32, blur: 8, ease: 'out', exit: 'words', exitDur: 16, exitLift: 0.19,
+      holdBase: 36, holdPerWord: 6, holdMin: 42, readMax: 120, gapMin: 18, gapMax: 90,
+      maxNewWords: 5, maxVisibleBuild: 10, maxVisibleReplace: 10, maxWordsPerSec: 2.0, avgWordsPerSec: 1.2, maxWords: 35,
+      textShare: 0.8, freeRun: 60, maxGap: 48, accentDur: 14, recentreDur: 60, recentreLead: 20,
+      move: { base: 0.35, perPx: 0.00135, camMin: 0.6, camMax: 2.4 },
+      fx: { mask: { stagger: 5, dur: 30, exitDur: 16 }, typeFPerChar: 2, scramble: { stagger: 3, rate: 1.5, fadeIn: 10 }, roll: { dur: 60, roll: 14 }, morph: 40, iris: 24 },
+    },
+  };
+  const pace = PACE[PACE_NAME];
+  /** Words in a string, as every check counts them. */
+  const wordCount = (text) => String(text).split(/\s+/).filter(Boolean).length;
+  /** Frames (60 fps) a fragment holds after it resolves: max(holdMin, holdBase + holdPerWord * words). */
+  const holdFor = (words, p = pace) => Math.max(p.holdMin, p.holdBase + p.holdPerWord * words);
+  /** Frames (60 fps) from a fragment's first word starting to its last word fully in. */
+  const revealFor = (words, p = pace) => Math.max(0, words - 1) * p.stagger + p.wordDur;
+  /**
+   * When each COPY entry is being read: {id: [[from, to), ...]} in this film's frames, the rule of
+   * the Remotion kit's readingWindows() (src/lib/pace.ts), which every check shares: from
+   * `resolved` for at most readMax (never past `out`); an earlier fragment of a chain only for its
+   * own hold (never past the next fragment's `in`), so the picture beat between two fragments is
+   * not a read; a build line once more, whole, after its last fragment resolves. timeline.js
+   * exports it as READ and writes it into out/cues.json; nothing new starts inside a window.
+   */
+  function readingWindows(copy, p = pace, fps = FPS, total = Infinity) {
+    const s = fps / 60;
+    const cap = Math.round(p.readMax * s);
+    const out = {};
+    for (const c of copy) {
+      const end = c.out == null ? total : c.out;
+      const chain = c.chain ? copy.filter((x) => x.chain === c.chain).sort((a, z) => a.in - z.in) : [c];
+      const last = chain[chain.length - 1];
+      const next = chain[chain.indexOf(c) + 1];
+      const own = next ? [c.resolved, Math.min(next.in, c.resolved + Math.round(holdFor(wordCount(c.text), p) * s), end)] : [c.resolved, Math.min(end, c.resolved + cap)];
+      const line = next && (c.mode || 'build') === 'build' ? [last.resolved, Math.min(last.out == null ? total : last.out, last.resolved + cap)] : null;
+      out[c.id] = (line ? [own, line] : [own]).filter(([a, z]) => z > a);
+    }
+    return out;
+  }
+  /**
+   * Frames for a move of `px` pixels at this film's fps: calm 0.5 s + 1.6 ms/px (camera moves
+   * clamped to 0.9-3.0 s), crisp 0.35 s + 1.35 ms/px (0.6-2.4 s).
+   */
+  const durFor = (px, camera = false, p = pace) => {
+    const s = p.move.base + p.move.perPx * Math.abs(px);
+    return Math.round((camera ? Math.min(p.move.camMax, Math.max(p.move.camMin, s)) : s) * FPS);
+  };
 
   // ---- cubic-bezier solver ---------------------------------------------------------------
   // CSS cubic-bezier() maths: solve x(t) = p (Newton-Raphson, bisection fallback), return y(t).
@@ -68,6 +131,12 @@
     return ease;
   }
 
+  /** True exponential ease-out, normalised to land on 1 (k = 6: half-way at 12%, 90% at 38%). */
+  function expOut(k) {
+    const n = 1 - Math.exp(-k);
+    return (p) => (p <= 0 ? 0 : p >= 1 ? 1 : (1 - Math.exp(-k * p)) / n);
+  }
+
   // ---- easing tokens: named for how they feel (table: references/motion-tokens.md) ---------
   const E = {
     out: bez(0.16, 1, 0.3, 1), //         expo-out: arrivals and reveals (never fade-outs)
@@ -82,6 +151,8 @@
     contact: bez(0.55, 0, 0.9, 0.55), //  accelerates INTO an impact (ends with velocity)
     whip: bez(0.6, 0, 0.15, 1), //        feature-to-feature whips
     dolly: bez(0.35, 0, 0.65, 1), //      slow push through a hold
+    exit: bez(0.55, 0.055, 0.675, 0.19), // cubic-in: exits into a cut; a whole fragment's lift as it leaves
+    expo: expOut(6), //                   exponential glide of held text: a build line re-centring
     linear: (p) => p, //                  drift only
   };
 
@@ -184,7 +255,10 @@
     return { ease, dur, durF: Math.round(dur * FPS), x };
   }
 
-  /** Spring presets, identical to the Remotion kit. Default to critical damping (zeta >= 1). */
+  /**
+   * Spring presets, identical to the Remotion kit. Default to critical damping (zeta >= 1). Never an
+   * overshooting one (snap, pop, land, word, detent, micro) on type: words ease in, or ride SPR.calm.
+   */
   const SPR = {
     snap: { damping: 18, stiffness: 260, mass: 0.7 }, //   locks into place, small overshoot
     pop: { damping: 11, stiffness: 180, mass: 0.6 }, //    14% overshoot: a true landing only (<= 2 per film)
@@ -195,6 +269,7 @@
     land: { damping: 14.5, stiffness: 200, mass: 1 }, //   ~15% overshoot: a true landing only (<= 2 per film)
     word: { damping: 20, stiffness: 170, mass: 0.9 }, //   words sliding in to lock
     detent: { damping: 24, stiffness: 380, mass: 0.6 }, // a reel or picker clicking home
+    calm: { damping: 16, stiffness: 64, mass: 1 }, //      critically damped, 97% at 41 f: the only spring for type
   };
 
   // ---- sync: computed from the same curves the picture uses --------------------------------
@@ -254,6 +329,7 @@
 
   const MOTION = {
     FPS, BPM, W, H, BEAT, BAR, b, sec, at, fd,
+    PACE_NAME, PACE, pace, wordCount, holdFor, revealFor, readingWindows, durFor,
     bez, E, clamp, mix, lmix, tw, prog, arrive, depart, arriving, departing, hitPulse, squash, pulse, springFn, spring, SPR,
     peak, settleOf, delayTo, hit, reachAt, startFor, rand,
   };

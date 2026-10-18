@@ -39,6 +39,7 @@ export const U = Math.min(W, H) / 1080;
 // One token per role, reused everywhere, so nothing is "almost matched" (size in px at 1080p).
 export const TYPE = {
   display: { size: 120, weight: 600, track: -0.045, lead: 1.0 }, // statements and the wordmark
+  line: { size: 64, weight: 500, track: -0.025, lead: 1.1 }, // fragment chains (fx/Chain): a quiet line in open space, up to ~8 words
   secondary: { size: 48, weight: 450, track: -0.02, lead: 1.15 }, // descriptor lines, URLs
   ui: { size: 24, weight: 500, track: -0.01, lead: 1.3 }, // smallest readable size on screen
 };

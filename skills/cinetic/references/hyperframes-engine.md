@@ -26,7 +26,7 @@ Nothing ever plays. For every output frame the engine seeks every registered tim
 | Stage | What happens | What it means for you |
 |---|---|---|
 | Seek | `t = frame / fps` on an integer grid; each timeline is paused, then `totalTime(t)` | motion must be a pure function of `t`; workers seek frames out of order |
-| Capture | opaque MP4: JPEG q95 (q80 for `draft`); PNG when the output keeps alpha (`png-sequence`, `mov`, `webm`) | the MP4 path compresses twice; cinetic renders PNGs and encodes once (§11.7) |
+| Capture | opaque MP4: JPEG q95 (q80 for `draft`); PNG when the output keeps alpha (`png-sequence`, `mov`, `webm`) | the MP4 path compresses twice; cinetic renders PNGs and encodes once (§11.8) |
 | Capture mode | BeginFrame on Linux headless shell for opaque output; alpha outputs fall back to screenshots | PNG capture is slower: 15 s for the 5 s starter at 1080p60 with 2 workers |
 | Encode | H.264 `yuv420p`, BT.709-tagged; CRF by `--quality` (§9) | the default `looks` is CRF 16 on `medium`, softer than a CRF 14 master |
 | Audio | every `<audio id>` mixed at 48 kHz, AAC 192k, no loudness stage or limiter | bring a mastered WAV and mux it yourself |
@@ -43,8 +43,8 @@ Nothing ever plays. For every output frame the engine seeks every registered tim
 | Starter file | Role |
 |---|---|
 | `index.html` | the composition: root, clips, one paused timeline registered last |
-| `motion.js` | grid (`FPS`, `BPM`, `b`, `sec`, `at`), `E`, `SPR`, `spring()`, `pulse()`, `hitPulse`, `squash`, `arrive`/`depart` and their GSAP-ease forms `arriving`/`departing`, sync helpers, `rand`; same names and numbers as the Remotion kit |
-| `timeline.js` | the film's `ACT`, `DUR`, `CUE`, `COPY`, `TOTAL` in frames, `WORD_EASE`, and `FILM.cues()` for the sound |
+| `motion.js` | grid (`FPS`, `BPM`, `b`, `sec`, `at`), `E`, `SPR` (with `SPR.calm`), `PACE` and `pace`, `spring()`, `pulse()`, `hitPulse`, `squash`, `arrive`/`depart` and their GSAP-ease forms `arriving`/`departing`, sync helpers, `rand`; same names and numbers as the Remotion kit |
+| `timeline.js` | the film's `ACT`, `DUR`, `CUE`, `COPY` (one entry per fragment, with `chain()` for a thought in several), `READ` (when each entry is read), `TOTAL` in frames, `WORD_EASE`, `PACE_NAME`/`PACE` (from `motion.js`), and `FILM.cues()` for the sound; `node scripts/grid-check.ts timeline.js` checks it |
 | `audio/score.json` | the demo's music (key, chords, sections) for `scripts/audio/score.py` |
 | `setup.mjs`, `package.json` | local GSAP and fonts; `npm run` scripts `lint`, `check`, `snapshot`, `cues`, `audio`, `render:preview`, `render` |
 | `fonts/README.md` | how to add or swap faces |
@@ -180,7 +180,7 @@ A single-file film works (the starter is one), but lint then warns `nested_struc
 | `standard` | medium | 18 | JPEG q95 |
 | `delivery` / `high` | slow | 15 | JPEG q95 |
 
-`mov` is always ProRes 4444 with alpha and `webm` is VP9 with alpha. `png-sequence` writes `frame_000001.png…` (1-based) plus an `audio.m4a` sidecar when the composition has audio. Engine sub-frame motion blur exists but is not exposed by the CLI; §11.8 does it outside.
+`mov` is always ProRes 4444 with alpha and `webm` is VP9 with alpha. `png-sequence` writes `frame_000001.png…` (1-based) plus an `audio.m4a` sidecar when the composition has audio. Engine sub-frame motion blur exists but is not exposed by the CLI; §11.9 does it outside.
 
 ## 10. Traps the linter does not catch
 
@@ -216,7 +216,7 @@ tl.fromTo("#pcA", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: sec(DUR.r
 tl.fromTo("#flash", { opacity: 0 }, { opacity: 1, duration: sec(12), ease: E.out }, sec(CUE.hit - 1));
 ```
 
-A tween placed at `sec(cue)` is at progress 0 on the cue frame, so the first visible change arrives a frame late. Start changes that must show on a hit at `cue − 1`, exactly as with `prog()` in Remotion. A tween that ends on the cue (a contact) is already right.
+A tween placed at `sec(cue)` is at progress 0 on the cue frame, so the first visible change arrives a frame late. Start changes that must show on a hit at `cue − 1`, exactly as with `prog()` in Remotion. A tween that ends on the cue (a contact) is already right. A move that must meet a cue takes its length from the grid, never a fixed number: the starter's fall is `DUR.fall = CUE.hit - CUE.fall`, one beat at any `--bpm` (a fixed 30 f meets the grid only at 120 BPM).
 
 ### 11.2 Easing tokens
 
@@ -250,9 +250,34 @@ Started on the cue, it peaks `attack` frames later (2 f with the default `pulse(
 - **Arrivals that lock on a beat**: `startFor(cue, durF, ease)` returns the start frame at which the tween reaches 97% of its travel exactly on the cue (the `settleOf` threshold, where the settle sound goes). An `E.out` word over 30 f starts 14.8 f early.
 - **Vertical text** snaps to whole pixels in the headless shell, so a rise on plain `E.out` settles in 1 px ticks (`references/chromium-rendering.md` §15). Rise text on `MOTION.arriving(E.out)`, as the starter's `FILM.WORD_EASE` does, and pass the same ease to `startFor`.
 - **Springs**: start at `cue - delayTo(cfg, thr)` (`thr` 1 for impacts, 0.5 for pops).
-- **Sound events** come from `FILM.cues()` in `timeline.js`, computed with `peak`, `settleOf` and `delayTo` from the same constants the picture uses. `bash scripts/hf-finish.sh . --export-cues out/cues.json` writes the standard `out/cues.json` (`{fps, bpm, total, acts, cue, events}`) for `scripts/audio/score.py`. Event kinds and fields: `references/sound.md`.
+- **Sound events** come from `FILM.cues()` in `timeline.js`, computed with `peak`, `settleOf` and `delayTo` from the same constants the picture uses. `bash scripts/hf-finish.sh . --export-cues out/cues.json` writes the standard `out/cues.json` (`{fps, bpm, total, pace, acts, cue, copy, events}`, each copy entry with its reading windows `read`) for `scripts/audio/score.py`, `forensics.py` and `measure-speed.py`. Event kinds and fields: `references/sound.md`.
 
-### 11.6 Discrete state and DOM work
+### 11.6 Fragment chains and the timeline check
+
+Copy is one `COPY` entry per fragment, as in Remotion (`references/copy-and-type.md` §2b): `FILM.chain(id, 'build' | 'replace', [[text, inFrame], …])` writes a thought as fragments of 1–4 words and times `resolved` and `out` from the pace; in replace mode each fragment's exit (`pace.exitDur`, 24 f when calm) is over 6 f before the next one rises in its place. HyperFrames has no `<Chain>` component, so drive the words from the same entries with GSAP. Lay a build line out at its final width from the start (every fragment present, hidden), so nothing re-centres; stack replace fragments on one centre (`position: absolute`).
+
+```js
+// index.html, inside build(): <span class="frag" id="statement-1"><span class="w">Built</span> <span class="w">on</span></span> ...
+const { E, sec, pace, arriving, FPS } = window.MOTION;
+const f60 = (f) => Math.round((f * FPS) / 60);
+const rise = arriving(E[pace.ease]); // calm: E.outSoft, ended early so vertical text never ticks
+for (const c of FILM.COPY.filter((x) => x.chain === "statement")) {
+  const frag = document.getElementById(c.id.replace(".", "-"));
+  frag.querySelectorAll(".w").forEach((w, i) => {
+    const t = c.in + f60(i * pace.stagger); // words pace.stagger apart, as chain() assumes for resolved
+    tl.fromTo(w, { yPercent: pace.rise * 100, opacity: 0 }, { yPercent: 0, opacity: 1, duration: sec(f60(pace.wordDur)), ease: rise }, sec(t));
+  });
+  // the fragment leaves as one: a fade on E.smooth and a small lift on E.exit, both over exitDur
+  tl.fromTo(frag, { opacity: 1 }, { opacity: 0, duration: sec(f60(pace.exitDur)), ease: E.smooth }, sec(c.out));
+  tl.fromTo(frag, { yPercent: 0 }, { yPercent: -pace.exitLift * 100, duration: sec(f60(pace.exitDur)), ease: E.exit }, sec(c.out));
+}
+```
+
+Every fragment of a build chain shares one `out`, so the whole line leaves together. In `FILM.cues()`, give each fragment one soft `text` event on the frame its last word stops: `settleOf(t, t + f60(pace.wordDur), rise)` for the last word's `t`, on the same eased curve the picture draws. Between two fragments the picture takes its turn: put a cue there for the move it makes.
+
+Check the timeline before rendering: `node scripts/grid-check.ts timeline.js` (Node 22.18+; otherwise `npx -y tsx scripts/grid-check.ts timeline.js`). It reads `FILM` (the pace from `motion.js`) and runs every check it runs on a Remotion `timeline.ts`: the grid, the reading holds, the fragments, the words on screen, the picture beat between fragments and the cue in it, quiet reads, the copy rate and the text share.
+
+### 11.7 Discrete state and DOM work
 
 - **Counters and typed text**: tween a proxy and write the whole-frame value in `onUpdate`. It renders correctly under out-of-order seeks (verified: 0 / 50 / 97 at frames 0, 15 and 29 of a one-second linear 0 → 100 count at 30 fps):
 
@@ -264,7 +289,7 @@ tl.fromTo(n, { v: 0 }, { v: 100, duration: sec(40), ease: E.ui, onUpdate: () => 
 - **Measure once, at build time**, after fonts load, and only for layout that will not change; multi-act films keep positions as constants in `timeline.js`.
 - **Camera**: one world wrapper per shot owns the camera transform (`references/camera.md`); scale in log space with `MOTION.lmix` when you compute values yourself.
 
-### 11.7 Finishing
+### 11.8 Finishing
 
 ```bash
 bash scripts/hf-finish.sh . out/preview.mp4 --preview                               # fast look: CRF 20, no check
@@ -276,7 +301,7 @@ bash scripts/hf-finish.sh . out/film.mp4 --audio public/audio/soundtrack.wav    
 
 The script runs: preflight (root `data-duration` equals `TOTAL / FPS`, `data-fps` equals `FPS`, every `@font-face` file and local script exists) → `lint` at 0 errors → `check` → `render --format png-sequence --strict` → a frame count and transparent-pixel gate → one x264 encode at CRF 14 `slow`, BT.709 limited range and tagged → mux the WAV as AAC 320k at 48 kHz, cut to the picture's exact length → `check-sync.py` → `probe.py`. It prints a JSON report and writes QA logs to `out/qa/`. Run on the starter, the three commands produce a 5 s master in under a minute on 2 workers: −14.0 LUFS, −2.2 dBTP after AAC, 0-sample lag. Encoding and deliverables in general: `references/finishing.md`.
 
-### 11.8 Motion blur
+### 11.9 Motion blur
 
 `--blur K` renders at `fps × K` and hands the frames to `scripts/accumulate.py --uniform K`, which averages the sub-frames centred on each frame (a 240° shutter by default, `--shutter` to change) in float and quantizes once:
 

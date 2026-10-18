@@ -1,6 +1,7 @@
 // The sound events of the film, computed from the picture code. scripts/export-cues.ts calls the
-// default export and writes out/cues.json; scripts/audio/score.py turns each event into a tuned
-// sound on its exact frame (schema and recipes: references/sound.md).
+// default export and writes out/cues.json; scripts/audio/score.py voices each event with the
+// film's sound kit (audio/kit.json: the earshot take for its kind) on its exact frame (schema,
+// roles and recipes: references/sound.md).
 //
 // The rules this file follows:
 // - Every sound has a visible cause, but not every picture event gets a sound: sound discrete
@@ -11,15 +12,20 @@
 //   whoosh's apex on the velocity peak of the move it belongs to.
 // - Import the constants the acts animate with (they export them for this file) and compute the
 //   frame; a frame typed by hand drifts the first time an act is retimed.
-import { DOT_TRAVEL } from './acts/Act1';
-import { HERO, LOCKUP_MOVE } from './acts/Act2';
+// - Text gets one soft `text` sound per fragment, on the frame its last word visibly comes to rest
+//   (chainResolves(), at the size the act sets the chain at), never one per word;
+//   what was just said is read in near-silence. The lockup is a stop-down and ONE clean element:
+//   score.py's stack guard warns when anything else lands within 3 f of it or leads into it.
+import { DOT_TRAVEL, STATEMENT_SIZE } from './acts/Act1';
+import { HERO } from './acts/Act2';
 import { MARK } from './brand/Mark';
+import { chainResolves } from './fx/Chain';
 import { peak, settleOf } from './lib/sync';
 import { ACT, CUE, FPS, TOTAL, W } from './timeline';
 
 export type Kind =
   | 'tick' | 'tock' | 'hit' | 'land' | 'pop' | 'whoosh' | 'riser'
-  | 'drop' | 'key' | 'click' | 'snap' | 'swell' | 'bell' | 'suck';
+  | 'drop' | 'key' | 'click' | 'snap' | 'swell' | 'bell' | 'suck' | 'text';
 
 export type SoundEvent = {
   f: number; // absolute frame the sound belongs on (fractional is fine)
@@ -52,16 +58,12 @@ const move = (m: { from: number; to: number; ease: (t: number) => number }, weig
 export default function cues(): SoundEvent[] {
   const ev: SoundEvent[] = [];
 
-  // Act 1: each word pops ON its beat (the act starts it early by its 50% time) and the dot,
-  // waiting at the right end of the line, ticks with it. The pops climb the key's pentatonic.
-  [CUE.word1, CUE.word2, CUE.word3, CUE.word4].forEach((f, i) => {
-    ev.push({ f, kind: 'pop', weight: 0.9, pan: -0.35 + 0.2 * i, id: `word${i + 1}` }); // words run left to right
-    ev.push({ f, kind: 'tick', weight: 0.8, pan: 0.4, id: `dot-tick${i + 1}` });
-  });
-  // The line closes on E.contact and stops dead: the lock is a contact frame, tuned to the chord.
-  ev.push({ f: CUE.lock, kind: 'snap', weight: 1.2, pan: 0.1, id: 'lock' });
-  ev.push({ f: CUE.pulse, kind: 'tock', weight: 0.8, pan: 0.4, id: 'pulse' });
-  // The words leave as the dot sets off: one whoosh for the flight, travelling left with it.
+  // Act 1: one soft text sound as each fragment of the statement lands (fx/Chain: the frame its
+  // last word's drawn rise is 97% home, at the statement's size), never one per word. Between the
+  // two, the dot's landing on the baseline is the picture beat's one sound, on its contact frame.
+  chainResolves('statement', { size: STATEMENT_SIZE }).forEach((f, i) => ev.push({ f, kind: 'text', weight: 0.8, pan: -0.1 + 0.2 * i, id: `fragment${i + 1}` }));
+  ev.push({ f: CUE.land, kind: 'land', variant: 'light', weight: 0.9, pan: 0.4, id: 'dot-lands' });
+  // The line has left when the dot sets off: one whoosh for the flight, travelling left with it.
   ev.push(move(DOT_TRAVEL, 1, -0.5, 'dot-flight'));
   // The flight ends at rest (E.rest), so its sound goes on the 97% settle, not on the act seam.
   ev.push({ f: settleOf(DOT_TRAVEL.from, DOT_TRAVEL.to, DOT_TRAVEL.ease), kind: 'tock', weight: 0.7, pan: panMark(MARK.D.cx), id: 'dot-seats' });
@@ -69,16 +71,11 @@ export default function cues(): SoundEvent[] {
   // Act 2: the dome and the block land on their contact frames (springs started early by delayTo).
   ev.push({ f: CUE.pieceA, kind: 'land', weight: 1, pan: panMark(MARK.A.cx), id: 'dome' });
   ev.push({ f: CUE.pieceB, kind: 'land', weight: 1, pan: panMark(MARK.B.x + MARK.B.w / 2), id: 'block' });
-  // The mark slides into the lockup while the name rides out to its right. The slide eases into
-  // the downbeat, where the camera punches: the name's lock rides on the drop instead of sitting
-  // on the slide's 97% frame 7 f earlier, where the two hits would flam.
-  ev.push(move(LOCKUP_MOVE, 0.7, 0.3, 'lockup-slide'));
-  ev.push({ f: CUE.lockup, kind: 'drop', weight: 1, id: 'lockup' }); // the payoff: the music lands on the tonic
-  ev.push({ f: CUE.lockup, kind: 'snap', weight: 0.8, pan: 0.2, id: 'name-locks' });
-  // The dot keeps the clock through the hold: the film ends on the tick it opened with.
-  ev.push({ f: CUE.tick1, kind: 'tick', weight: 1, pan: -0.15, id: 'hold-tick1' });
-  ev.push({ f: CUE.tick2, kind: 'tock', weight: 1.2, pan: -0.15, id: 'hold-tock' }); // the lower partner sits in the pad's band
-  ev.push({ f: CUE.tick3, kind: 'tick', weight: 1, pan: -0.15, id: 'hold-tick2' });
+  // The lockup: a stop-down, then one clean element. The mark's slide into it stays silent (a
+  // whoosh into the hit would be a lead-in stacked onto it) and the name locking on the downbeat
+  // gets a single hit: the payoff, one struck note in the calm kit. No snap or bell on top and no
+  // ticks through the hold: the wordmark reads in near-silence.
+  ev.push({ f: CUE.lockup, kind: 'hit', weight: 1, pan: 0.1, id: 'lockup' });
 
   for (const e of ev) {
     if (!(e.f >= 0 && e.f < TOTAL)) throw new Error(`sync: ${e.id} at f=${e.f} is outside the film (0..${TOTAL - 1})`);

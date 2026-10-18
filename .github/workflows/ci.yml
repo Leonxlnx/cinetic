@@ -21,7 +21,7 @@ jobs:
   check:
     name: Lint and test
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     defaults:
       run:
         shell: bash
@@ -208,6 +208,37 @@ jobs:
 
       - name: Technique library and pick.py tests
         run: python3 "skills/$SKILL/scripts/test/pick.test.py"
+
+      - name: Install the Remotion starter (for its type check and grid-check cases)
+        run: cd "skills/$SKILL/assets/remotion-starter" && npm install --no-audit --no-fund --loglevel=error
+
+      - name: Remotion starter type check (tsc --noEmit)
+        run: cd "skills/$SKILL/assets/remotion-starter" && npx tsc --noEmit
+
+      - name: Grid-check regression tests (fixtures, both starters, new-film.sh --pace crisp)
+        run: |
+          node "skills/$SKILL/scripts/test/grid-check.test.mjs" | tee "$RUNNER_TEMP/grid.log"
+          if grep -q '^skip  the Remotion starter' "$RUNNER_TEMP/grid.log"; then
+            echo "::error::the Remotion starter cases were skipped (its npm install did not take)"
+            exit 1
+          fi
+
+      - name: Score regression tests (score.py against main's, bit for bit on the synth engine)
+        run: |
+          # a venv: the runner's system Python is externally managed (PEP 668)
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet numpy scipy soundfile pyloudnorm librosa
+          base=()
+          # main's score.py and its siblings, to compare the synth engine against bit for bit
+          if git fetch --no-tags --depth=1 origin main 2>/dev/null; then
+            mkdir -p "$RUNNER_TEMP/main"
+            git archive FETCH_HEAD "skills/$SKILL/scripts/audio" | tar -x -C "$RUNNER_TEMP/main"
+            if [ -f "$RUNNER_TEMP/main/skills/$SKILL/scripts/audio/score.py" ]; then
+              base=(--baseline "$RUNNER_TEMP/main/skills/$SKILL/scripts/audio/score.py")
+            fi
+          fi
+          [ "${#base[@]}" -gt 0 ] || echo "::notice::main could not be fetched; score.test.py runs without --baseline"
+          "$RUNNER_TEMP/venv/bin/python" "skills/$SKILL/scripts/test/score.test.py" "${base[@]}"
 
       - name: Script --help contract and docs tests
         run: node "skills/$SKILL/scripts/test/scripts-docs.test.mjs"

@@ -1,6 +1,6 @@
 import React from 'react';
 import { C, FONT, TYPE, U, typeStyle } from '../brand/tokens';
-import { E, fd, prog, rand } from '../lib/anim';
+import { E, fd, pace, prog, rand } from '../lib/anim';
 import { measureTracked } from '../lib/measure';
 import { f60 } from '../timeline';
 
@@ -34,7 +34,7 @@ const ranks = (text: string, order: 'ltr' | 'random', seed: number | string) => 
  * Put a tick on each for sound (they are integers); the component reads the same schedule.
  */
 export const scrambleFrames = (text: string, t: ScrambleTiming): number[] => {
-  const { start, hold = f60(18), stagger = f60(3), order = 'ltr', seed = 0 } = t;
+  const { start, hold = f60(18), stagger = f60(pace.fx.scramble.stagger), order = 'ltr', seed = 0 } = t;
   return ranks(text, order, seed).map((r) => (r < 0 ? Math.round(start) : Math.round(start + hold + r * stagger)));
 };
 
@@ -43,8 +43,11 @@ export const scrambleFrames = (text: string, t: ScrambleTiming): number[] => {
  * to its final glyph, left to right or in a seeded random order, `stagger` frames apart. About
  * `rate` glyphs change per frame across the whole line (each on its own evenly spaced phase), never
  * all at once: a calm decode, not noise. Deterministic from `seed`; all state on fd(frame).
- * Defaults at 60 fps: fade-in 10 f (E.smooth), hold 18 f, stagger 3 f, rate 1.5 glyphs/f, cycling
- * glyphs in C.mute. The layout never jumps: the final text is laid out from the first frame (only
+ * An accent, at most once per film, on a short product string (a code, a version, a number): never
+ * on film copy, which a viewer must read the moment it appears (a letter-by-letter decode of a
+ * line is a per-letter trick). Defaults from the film's pace (pace.fx.scramble, 60 fps): calm
+ * fade-in 16 f (E.smooth), hold 18 f, stagger 5 f, rate 1 glyph/f; crisp 10 f, 18 f, 3 f, 1.5;
+ * cycling glyphs in C.mute. The layout never jumps: the final text is laid out from the first frame (only
  * opacity changes, tabular figures, kerning intact) and each cycling glyph is drawn on its own
  * layer, centred on its cell, from a pool of the same class (digits, capitals or lower case) whose
  * advance is within 8% of the final glyph's (at least the 6 nearest). `set` replaces the pool.
@@ -65,7 +68,7 @@ export const Scramble: React.FC<
     style?: React.CSSProperties;
     lockStyle?: (i: number, age: number) => React.CSSProperties;
   }
-> = ({ text, frame, id = 'scramble', rate = 1.5, fadeIn = f60(10), set, color = C.mute, role = 'display', size = TYPE[role].size * U, family = FONT.text, style, lockStyle, ...t }) => {
+> = ({ text, frame, id = 'scramble', rate = pace.fx.scramble.rate, fadeIn = f60(pace.fx.scramble.fadeIn), set, color = C.mute, role = 'display', size = TYPE[role].size * U, family = FONT.text, style, lockStyle, ...t }) => {
   const { start, seed = 0 } = t;
   const { weight, track } = TYPE[role];
   const F = fd(frame);
