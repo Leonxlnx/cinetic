@@ -4,7 +4,7 @@ All notable changes to cinetic are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Versions 0.1.0 to 0.5.0 were development versions, and 0.9.0 was the first public release. Each was run against the briefs in `evals/evals.json` (the round on 0.2.0 was invalidated by a harness problem and is not reported), and the findings of each reported round became rules in the next version (see [docs/evaluation.md](docs/evaluation.md)). Each version up to 0.5.0 was committed from the snapshot that was evaluated, so every tag's tree is exactly the version that was tested; commit times between two tags are approximate.
+Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first public release. Each was run against the briefs in `evals/evals.json` (the round on 0.2.0 was invalidated by a harness problem and is not reported), and the findings of each reported round became rules in the next version (see [docs/evaluation.md](docs/evaluation.md)). Each version up to 0.5.0 was committed from the snapshot that was evaluated, so every tag's tree is exactly the version that was tested; commit times between two tags are approximate.
 
 ## [Unreleased]
 
@@ -80,6 +80,8 @@ A film's effects now come from an [earshot](https://github.com/Leonxlnx/earshot)
 
 ## [1.0.0] - 2026-10-04
 
+First tagged v1.1.0 on 2026-10-04 and retagged v1.0.0 on 2026-10-18, so the files inside the v1.0.0 tag still call themselves 1.1.0.
+
 This version teaches cinetic what top-tier launch films measurably do. Their pictures and soundtracks were measured frame by frame, and the results became a technique library the agent draws from at random, a reference of craft norms, a recalibrated sound engine and a set of tested motion primitives in the starter.
 
 Two snapshots of this version went through judged rounds against the same agent working without cinetic but with the official Remotion agent skills, and, new in these rounds, against the films 0.5.0 made for the same briefs. In round 7 the cinetic films met 54 of 56 of the written expectations against 41 of 56, won 2 of 4 blind comparisons with the neutral judge, 4 of 4 with the house-style judge and 3 of 4 against the 0.5.0 films. The fixes from round 7's findings are in this release but were not judged again; see [docs/evaluation.md](docs/evaluation.md).
@@ -140,15 +142,15 @@ Two snapshots of this version went through judged rounds against the same agent 
 - A sub boom dropped onto true silence, and a silence opening again, clicked; both now ramp over a few milliseconds.
 - A hard cut inside an act blurred into one double-exposed frame: `measure-speed.py` now renders every hard cut it measures with one sample.
 
-## [0.9.0] - 2026-09-28
+## [1.0.0-beta] - 2026-09-28
 
-First published as 1.0.0 on 2026-09-28 and renumbered 0.9.0 on 2026-10-04, when the measured technique library became 1.0.0. The v0.9.0 tag points at the same commit, so the files inside it still call themselves 1.0.0.
+First published as v1.0.0 on 2026-09-28 and renamed 1.0.0-beta on 2026-10-18, when the measured technique library (first tagged v1.1.0) took the 1.0.0 tag. The v1.0.0-beta tag points at the same commit, so the files inside it still call themselves 1.0.0.
 
 cinetic is an agent skill that has your coding agent direct, score and render short films from code: launch films and teasers, product and feature videos, looping feature animations, logo stings, UI walkthroughs and social cut-downs. One beat grid in `timeline.ts` drives the picture, a synthesized soundtrack and the QA scripts, and a film counts as done only after its render has been measured and reviewed.
 
-Install it with the skills CLI (`npx skills add Leonxlnx/cinetic`), or in Claude Code with `/plugin marketplace add Leonxlnx/cinetic` followed by `/plugin install cinetic@cinetic`. To install by hand, download `cinetic.skill` from the [release page](https://github.com/Leonxlnx/cinetic/releases/tag/v0.9.0) (a zip whose top folder is `cinetic/`; the four demo films are attached next to it) and unzip it into `~/.claude/skills/`.
+Install it with the skills CLI (`npx skills add Leonxlnx/cinetic`), or in Claude Code with `/plugin marketplace add Leonxlnx/cinetic` followed by `/plugin install cinetic@cinetic`. To install by hand, download `cinetic.skill` from the [release page](https://github.com/Leonxlnx/cinetic/releases/tag/v1.0.0-beta) (a zip whose top folder is `cinetic/`; the four demo films are attached next to it) and unzip it into `~/.claude/skills/`.
 
-Changes since 0.5.0 are listed under Added and Changed below. The rule and check changes come from the fifth evaluation round, which tested 0.5.0 against the same agent working without cinetic but with the official Remotion agent skills. In that round the cinetic runs met 54 of 56 written expectations (96%) against 41 of 56 (73%), won 2 of 4 blind comparisons with a neutral judge, and won 4 of 4 with a second blind judge applying the house style guide (the hard bans). The neutral judge's remaining craft points, such as quiet stretches, end cards without a descriptor and a loud sound on a still frame, fed the new rules. The plugin manifests, the license and CI were added for the public release. 0.9.0 itself has not been through a separate blind round; see the [evaluation](https://github.com/Leonxlnx/cinetic/blob/main/docs/evaluation.md) for the method and every round.
+Changes since 0.5.0 are listed under Added and Changed below. The rule and check changes come from the fifth evaluation round, which tested 0.5.0 against the same agent working without cinetic but with the official Remotion agent skills. In that round the cinetic runs met 54 of 56 written expectations (96%) against 41 of 56 (73%), won 2 of 4 blind comparisons with a neutral judge, and won 4 of 4 with a second blind judge applying the house style guide (the hard bans). The neutral judge's remaining craft points, such as quiet stretches, end cards without a descriptor and a loud sound on a still frame, fed the new rules. The plugin manifests, the license and CI were added for the public release. 1.0.0-beta itself has not been through a separate blind round; see the [evaluation](https://github.com/Leonxlnx/cinetic/blob/main/docs/evaluation.md) for the method and every round.
 
 ### Highlights
 
@@ -295,8 +297,8 @@ First version: a skill for directing, building and rendering launch films, produ
 
 [Unreleased]: https://github.com/Leonxlnx/cinetic/compare/v1.1.0...HEAD
 [1.1.0]: https://github.com/Leonxlnx/cinetic/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/Leonxlnx/cinetic/compare/v0.9.0...v1.0.0
-[0.9.0]: https://github.com/Leonxlnx/cinetic/compare/v0.5.0...v0.9.0
+[1.0.0]: https://github.com/Leonxlnx/cinetic/compare/v1.0.0-beta...v1.0.0
+[1.0.0-beta]: https://github.com/Leonxlnx/cinetic/compare/v0.5.0...v1.0.0-beta
 [0.5.0]: https://github.com/Leonxlnx/cinetic/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Leonxlnx/cinetic/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Leonxlnx/cinetic/compare/v0.2.0...v0.3.0
