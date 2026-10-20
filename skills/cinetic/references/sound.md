@@ -21,6 +21,10 @@ The numbers here are the defaults that shipped Tessel (−14.1 LUFS, LRA 5.2 LU,
 
 ## 1. Where the sounds come from
 
+**A rule from listening tests on finished films:**
+
+- **The background is a real track or nothing.** Under the kit, use the user's track or a real library track arranged on the bars, or play effects only. Never the built-in synth band (`"music": "synth"`), and nothing sustained under the film besides the music: no generated hum, pad or drone, and no looping effect bed (a buzz, a whirr, an engine). Next to a real track it reads as cheap, and a sound that never stops wears on the viewer. Effects stay short and land on what you see.
+
 The effects come from the film's **sound kit**, `audio/kit.json`: one sound per role (the cue kinds and their variants), chosen from the bank of [earshot](https://github.com/Leonxlnx/earshot), a separate, optional tool that designs sounds in code and checks them by measurement. `scripts/audio/kit.py render` has earshot render every role into takes in `audio/kit/` (24-bit WAVs) with each take's measured onset, loudest point and end in `audio/kit/kit.lock.json`; `score.py` places those takes on the cue frames. Rendering is pure DSP (no models, no network): about a minute for a fresh kit, seconds once cached.
 
 In order of preference:

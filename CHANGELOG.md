@@ -8,6 +8,21 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 ## [Unreleased]
 
+### Style: the product as an object, a type voice, chapters
+
+Side-by-side tests on the same short briefs, judged by eye, found films reading as zoomed screen recordings: one page filling the frame for 10 s, one stage colour throughout, one plain sans, one continuous story. These rules aim at the look of strong launch films instead.
+
+- **The UI as an object on a stage.** Windows, cards, phones and notifications sit at about 50–80% of the frame width on a designed stage, with the working part isolated at a readable size; a page filling the frame is a 1–2 s macro only. New tell **E9 The screen recording** in `taste-and-slop.md`; `product-ui.md` §1, E1, E7 and `craft-rules.md` §6 follow (the old norm was a window at 70–92% of the frame width, full-bleed).
+- **No canvas jumping.** The camera never flies between spots on one big page or canvas; it goes from object to object through a hand-over, or pushes into one object and pulls back out.
+- **A new picture every 1–2 s**, and never the same view of the same UI past about 3 s.
+- **A type voice.** Statement lines own the frame on their own beat, never as a title strip above the UI. The films that land pair the sans with one accent: an italic payoff word, the accent colour on the last word, or name-led verb lines.
+- **An accent face.** One italic (serif or sans) is allowed for the payoff word inside a line, marked `// cinetic:accent-face <family>`. `lint-film.mjs` accepts it like `brand-supplied` and reports a marker with no family; fixture `lint-fixtures/accent-face.tsx`.
+- **Colour by section, inside the brand's palette.** The stage changes 2–4 times along the story, only between the brand's own ink, paper and accent (and tints of them); third-party apps shown in the UI keep their own colours as content.
+- **Launch films in chapters.** A second launch arc beside the single story (`concept-and-story.md` §8, SKILL.md Step 1): hook → turn → 3–4 chapters (a 1–3 word flash of text → the UI doing it → its result) → promise → lockup, linked by one through-line. Pick the shape that fits, or mix them; the deletion test now covers chapters.
+- **Real or fictional UI.** Intake asks for screenshots, a link or a Figma file when the product exists, and the film rebuilds those screens. Otherwise the agent designs a fictional UI that explains the function, with real platform conventions, the product's own look, and the third-party apps it acts in as believable brands (`product-ui.md` §1).
+- **Sound.** The background is a real track or nothing: never the synth band, and nothing sustained under the film besides the music (no generated drone, no looping effect bed); effects stay short and land on what you see (`sound.md` §1).
+- **Drawings.** Drawn illustration is allowed only for the mark or a mascot, and it is optional: a wordmark or a simple geometric mark is often the better choice. No drawn objects or scenes; light and effects are fine.
+
 ## [1.1.0] - 2026-10-18
 
 ### Calm pace by default and fragment chains

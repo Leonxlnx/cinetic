@@ -37,7 +37,7 @@ When you invent the look, none of these appear, ever. They are the fastest tells
   - text walls, and random filler text: decorative mono captions, fake metrics, labels nobody needs, lorem ipsum.
 
   Every word on screen earns its place.
-- **Type:** serif typefaces, and italic or oblique styles, including a skew that fakes one. Use one clean, modern sans, plus a mono for code or numbers if the product needs one.
+- **Type:** serif typefaces, and italic or oblique styles, for body text, UI and whole lines, including a skew that fakes one. Use one clean, modern sans, plus a mono for code or numbers if the product needs one. The one exception is an **accent face** for the payoff word inside a line: an italic (serif or sans) at the line's size, as in `Fits [ ] *anywhere.*` or `your week, *sorted.*`. Use it on at most one word per line, a few times per film, and mark the line that sets it `// cinetic:accent-face <family>`.
 - **Colour:**
   - orange, amber, beige, cream, tan or sand, as an accent, a paper or a glow;
   - neon: very bright, saturated accents, glows, bloom and halos;
@@ -48,7 +48,7 @@ When you invent the look, none of these appear, ever. They are the fastest tells
   - sparkles standing for "AI", particles, confetti, lens flares and code rain;
   - bouncy overshoot on anything that isn't landing, and any overshoot or per-letter trick on copy (only the one hero word may move letter by letter).
 
-What remains is plenty: ink and paper (light or dark, neutral or cool), one accent with a meaning from any hue family outside the banned ones (red, green, teal, blue, yellow), one sans, and motion that is ultra clean and smooth, eased, weighted, motion-blurred and free of jitter. The creativity goes into the idea, the device and the choreography, not into effects.
+What remains is plenty: ink and paper (light or dark, neutral or cool), one accent with a meaning from any hue family outside the banned ones (red, green, teal, blue, yellow), one sans (with an optional accent face for payoff words), and motion that is ultra clean and smooth, eased, weighted, motion-blurred and free of jitter. The creativity goes into the idea, the device and the choreography, not into effects.
 
 If the user supplies a brand that includes one of these (their serif wordmark, their orange), the brand wins, because it is their identity rather than a default. Record it in `BRIEF.md` so the critics don't flag it, and mark the lines that set it with `// cinetic:brand-supplied <what>` so the lint accepts them.
 
@@ -81,6 +81,7 @@ Every step writes a file, and every gate is a check you actually run. Work inlin
 ### Step 0: Intake → `BRIEF.md`
 - If the brief already states the product, the message and the length, infer everything else and write your assumptions down.
 - If it doesn't, ask at most 3 questions: the product in one line, the format and length, and where the film will be shown. Take everything else from §1.
+- If the product already exists, ask once for screenshots, a link or a Figma file of its UI; the film rebuilds those screens. Without them, design a fictional UI that explains the function best (`references/product-ui.md` §1).
 - Choose the engine: Remotion by default; HyperFrames if the user already has a HyperFrames project, wants HTML/GSAP, or needs `--batch` renders driven by variables.
 - Copy the hard bans (above) into `BRIEF.md`, plus any brand-supplied exceptions. Critics are later prompted with this file word for word, so it doubles as the QA contract.
 - Choose the pace: calm (the default) unless the brief asks for energy; write it into the spec line. Crisp is an explicit opt-in (§5).
@@ -101,13 +102,13 @@ Read `references/concept-and-story.md` now.
 - **Draw the techniques; don't choose them.** Run `python3 scripts/pick.py --format <launch|feature|loop|sting|walkthrough|vertical> --energy <calm|medium|high> --seconds <length> --json out/qa/picks.json`, with `--energy calm` unless the brief asks for energy. It draws about one technique per 3.5 s of film when calm and per 2.5 s otherwise (9 or 12 for a 30 s launch, at least 4 for a short piece) from the measured library in `assets/library/techniques.json`, in the order the format needs them, weighted toward proven moves and the film's energy, and prints each recipe with default timing. Choosing by hand converges on the same fade-up, push-in and end card in every film; the draw is how two films stop looking alike. Build the picks the concept can carry, retold in its objects and device; the story, product truth and one consistent UI language come first, and a film that crams in every move reads as a showreel. Reroll a pick that fights the concept at most twice (`--category <cat> --exclude <id>`), or drop it, with a written reason; never add a technique the draw did not give you (draw one with `--category`), and pass `--brand-supplied <look>` when the brand owns a banned look. Read a drawn entry in full with `pick.py --show <id>`; `references/technique-library.md` lists every entry (search it, don't read it whole). Measured pacing, easing and text-timing norms are in `references/craft-rules.md`.
 - Fill in `assets/TREATMENT.md` for the concept you chose:
   - a logline;
-  - the arc: hook (inside the problem, felt by 1 s) → turn → proof (1–2 capabilities) → promise → lockup;
+  - the arc, in one of two shapes (`references/concept-and-story.md` §8): one unfolding story, hook (inside the problem, felt by 1 s) → turn → proof (1–2 capabilities) → promise → lockup; or **chapters**, hook → turn → 3–4 chapters (a 1–3 word flash of text → the UI doing it → its result, each handed over to the next) → promise → lockup. A launch with several things to show usually wants chapters; pick the shape that fits the product, or mix them;
   - the drawn techniques with the seed line, each placed in a beat (§3b of the template);
   - the device path, shot by shot;
   - a beat sheet with the columns bar | time | picture | copy (fragment, mode) | picture beat | sound: every thought of more than 4 words written as a chain of fragments, each with the picture beat it hands over to;
   - the full copy with its word count;
   - the final frame.
-- Run the deletion test. Remove the demo beats, and the value should still read. Remove the value beats; if the film still "works", it was a feature tour.
+- Run the deletion test. Remove the demo beats, and the value should still read. Remove the value beats; if the film still "works", it was a feature tour. In a chapters film, every chapter shows a result and one through-line carries across all of them; screens without results are still a tour.
 - Run the specificity test. Would the film be just as true of a simpler product, for example an even split instead of an itemised one, or a plain list instead of a ranked one? If yes, the proof undersells the product; show the part that is hard.
 - Run the feature-word test. Watching muted, would a stranger use the brief's word for the feature ("streak", "split")? If a clever device makes it read as something else, keep the feature's familiar form and let the device dress it.
 - **Gate:**
@@ -270,17 +271,21 @@ In eight frame-measured professional films a beat showed about 2 new words, a fr
   - Emphasis inside a line is 1.5–1.7× the statement size; a standalone hero word may run 2–5× (14–48% of the frame height); secondary lines are 44–56 px.
   - UI must be at least 22 px on screen after camera scale.
   - Every number uses tabular figures.
+- **Give the film a type voice.** A plain sans throughout reads as a document, not a launch film. The films that land pair the display sans with one accent: an italic payoff word (`Fits [ ] *anywhere.*`), the accent colour on the last word (`your week, *sorted.*`), or wordmark lines that keep the name and swap the verb (`Tessel plans.` → `Tessel moves.` → `Tessel never double-books.`). Statement lines own the frame: alone, centred, big, on their own stage beat. A line never sits as a title strip above the UI.
 - Keep one tracking token per role, for example a display setting of 600 / −0.05 em. Near-miss values across scenes read as "almost matched".
 - No entry blur on text by default; ≤ 4 px when the brand is soft, and 6–8 px on statements only in the crisp profile, always through `blurIn` (clear by 60% of the eased move, because Chromium steps blur radii and renders anything under ~0.75 px fully sharp). Text lands sharp and is never left readable-but-blurred for more than 6 f.
 
 **Colour** (`references/brand-and-color.md`)
 - Pick one accent from an allowed hue family (red, green, teal, blue, yellow) for a stated reason. Everything in the Hard bans is out: orange, amber, beige and cream, neon, purple, violet or indigo, multi-hue gradients and glassmorphism.
 - Restraint is not the same as colourless. The accent visibly carries the key beats (the product's action and the payoff), and the stage and neutrals have a tone from the brand's world. Check a mid-film frame at thumbnail size: if no brand colour shows, the film has no identity.
+- **Change colour by section, inside the brand's own palette.** One stage for the whole film reads monotone. Change the stage 2–4 times along the story, through a continuity move (a fill, a flood, the camera passing into the next stage), but only between the brand's own colours: ink, paper, the accent, and tints or shades of them. For example ink → paper → a full field of the accent for the payoff → ink for the lockup, the way a black-and-lime brand moves between its black and its lime. Never bring in a new hue for variety: the palette is the brand's identity, and every film keeps its own unique style. Inside the content, real-feeling third-party apps show their own colours (a booking app's oxblood, a gym app's black and lime), because that is content, not the film's palette.
 - Tint the neutrals cool or keep them neutral, never warm or beige, and keep ink as ink. New things arrive in the accent and relax to neutral over 10–30 f, which is how colour says "just happened".
 - No glow, halo or bloom. Shadows are `0 20–40px 60–120px rgba(0,0,0,.12–.22)`, dark surfaces get a 1 px top hairline at 8–12% white, and gradients ship as dithered PNGs (`scripts/dither-gradient.py`), because CSS gradients band at 8 bits.
 
 **Layout**
-- Avoid "text left, UI card right" and small centred floating cards (under about 40% of the frame width) on an empty field; a centred product window at 70–92% of the frame width, ideally overflowing an edge, is the norm. Show the product full-bleed, anchor the type to an eye line or the lower third, and give each shot one focal action.
+- **Show the UI as an object on a stage, not as the screen.** A window, card, phone or notification sits at about 50–80% of the frame width (a phone 70–90% of the frame height), centred, with the designed stage visible around it, a soft shadow under it and the camera drifting. Isolate the one part that does the work (the card, the row, the clause, the button) at a readable size instead of showing the whole page. A page or app filling the frame edge to edge reads as a screen recording: allow it only as a 1–2 s macro push, then pull back to the object. Avoid "text left, UI card right" and tiny cards (under about 35% of the frame width) whose type can't be read; give each shot one focal action.
+- **Change the picture every 1–2 s.** Subject, scale or stage changes at least that often (a push into the detail, a pull back to the object, the next object, a statement beat). Never hold the same view of the same UI past about 3 s, even while it animates.
+- **No canvas jumping.** The camera never flies across one big page, canvas or map from one spot to another to make "new pictures": it reads as panning around a screen recording, and viewers find it restless. Go from object to object through a hand-over (the element grows into the next stage, a word lifts into the next card, a soft swap), or push into one object and pull back out of it.
 - Keep safe margins of at least 96 px at the sides and 64 px top and bottom, and at least 24 px of headroom at maximum punch. Overscan moving layers by 5–8%.
 - **Fill the frame with purpose.**
   - In product shots the hero (the UI, the object, the number) covers about 40–70% of the frame.
@@ -290,6 +295,7 @@ In eight frame-measured professional films a beat showed about 2 new words, a fr
 **Decoration**
 - Every element must name its job (reveal, route, validate, emphasise) or be cut. That rules out particles, bokeh, starfields and ghost text.
 - Grain is either absent or global at 1.5–2%, keyed to the output frame.
+- Drawn illustration (SVG shapes made to look like things) is allowed only for the mark or a mascot, and it is optional. Many brands want none: a wordmark or a simple geometric mark is often the better choice, so draw a mascot only when the name and the brand truly call for one, never by default. Never draw physical objects or scenes (pens, paper on a desk, plants, furniture, rooms); the product's subject appears as it looks in its UI. Light and effects (window light, shadows, gradients, blur) are fine.
 
 **Product truth** (`references/product-ui.md`): named, specific, consistent data; counters count on each visible event; the product only replans the future; no cursor once the product acts on its own; any paused frame still makes sense.
 

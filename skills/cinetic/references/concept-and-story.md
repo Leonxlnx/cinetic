@@ -177,12 +177,22 @@ Production recipes (act templates, loop seams, stings, social layouts) are in `r
 | Format | Arc | Device's job | Where the idea lands |
 |---|---|---|---|
 | Launch film, 20–45 s | hook → problem → turn → proof ×1–2 → promise → lockup | carries every shot, becomes the mark | the turn at ~20–25% of the film, the callback at the promise |
+| Launch film in chapters, 20–45 s | hook → turn (the product named) → 3–4 chapters, each a 1–3 word flash → the UI doing it (2–4 s) → its result → promise → lockup | links the chapters (the mark, the agent's cursor, a recurring line stem) and becomes the mark | each chapter's result; the refrain at the promise |
 | Product / feature video, 8–30 s | situation → cause → action → result (held) → name | it is the unit the product acts on | the result |
 | Feature loop, 4–15 s | rest A → cause → action → result → rest A | its state *is* the loop | mid-loop; the last frame is the first |
 | Logo sting, 3–8 s | gather → assemble with a contact → hit → wordmark → building hold | the primitives are the device | the hit |
 | UI walkthrough, 20–90 s | cold open on the end result (2–4 s) → chapters, each cause → action → result → recap image → lockup | one record followed through every chapter | each chapter's result |
 | Teaser, ≤ 15 s | the effect without the product → the name and a date | a partial glimpse of the mark | the name |
 | Before/after | the same shot twice with an identical camera move: without, then with | the camera move itself | the difference |
+
+**Two launch shapes; pick the one that fits.** One unfolding story (a single situation that turns, like a fly stopping one signature) suits a product with one sharp capability. **Chapters** suit a launch with several things to show, and are how most of the strongest launch films move:
+- a texting agent: four tasks, each done inside its own app;
+- an AI receptionist: setup in three flashes, a live call, then three name-led verb lines;
+- an assistant: three features, with the logo swapping sides each time;
+- a lead-finding agent: prompt, then connect, then the feed, then the message;
+- a 10 s update film: one verb swap ("can now search / read / analyze").
+
+A chapter is a short flash of text (a verb, the feature in 1–3 words, or the stem of a refrain: "Tessel *plans.*" → "Tessel *moves.*" → "Tessel *fits.*"), then the UI doing that thing with a concrete result, then a hand-over into the next chapter. Chapters are not a feature tour as long as every chapter shows a result and one through-line (the device, the agent, the refrain) carries across all of them; a row of screens without results still is one. Vary chapter lengths (2–5 s) and give the strongest chapter the 70–85% slot. Neither shape is a template: mix them (a story that opens into chapters, chapters that end on one human beat) when the product calls for it.
 
 Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, proof ~35–40%, promise ~15%, lockup and tail ~15–20%. Write the copy into those beats as fragment chains, and give each chain its picture beat in the beat sheet: what the product does between "here is the newest" and "earshot." is part of the story, not a gap (`references/copy-and-type.md` §2b). Tessel: problem 0–6 s, turn 6–10 s, proof 10–24 s, promise and lockup 24–33 s.
 
