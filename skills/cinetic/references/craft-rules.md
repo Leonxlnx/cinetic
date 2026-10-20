@@ -169,7 +169,7 @@ The numbers describe what the best films do. They are not a licence for the look
 
 ## 6. UI in motion
 
-1. **Scale.** Product windows fill 70–92% FW (median about 80%), often overflowing an edge. Show the hero widget alone first, then pull back for context. Scale UI to about 2× native so that body text reaches 2.5% FH. Cards in a grid are about 34% FW each. Consistent with the skill's ≥ 22 px.
+1. **Scale.** Product windows fill 70–92% FW (median about 80%), often overflowing an edge. The house default frames the product as an object on a designed stage at 50–80% FW with the stage visible, and goes full-frame only for a 1–2 s macro (SKILL.md §4 Layout): films made this way read as designed pictures rather than screen captures. Show the hero widget alone first, then pull back for context. Scale UI to about 2× native so that body text reaches 2.5% FH. Cards in a grid are about 34% FW each. Consistent with the skill's ≥ 22 px.
 2. **Legibility is the most common failure.** In most of the films the wide UI text sat at 0.5–1.5% FH (5–16 px) and read only as texture. The fixes that worked: a 2–5× push or punch-in on every interaction; and an isolate in two steps (fade the neighbours over 12 f, then dim the world over 10 f, while the hero never moves).
 3. **One hero per frame.** Show 1–4 objects per frame; a dense full screen appears only as a 1–2 s establishing beat before the camera pushes into one element.
 4. **Real beats stylised.** Most of the films show the real product with plausible data. Skeleton text bars, placeholder strings and unrelated stock photos read as generic; raw third-party captures read as texture.

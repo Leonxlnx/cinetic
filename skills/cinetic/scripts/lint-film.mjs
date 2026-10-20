@@ -75,6 +75,8 @@
  *     it covers the hard-ban rules in the whole file;
  *   - anywhere else, it covers the hard-ban rules on its own line and the next one.
  * A marker with nothing after it is an error: say what the brand supplied.
+ * `cinetic:accent-face <family>` works the same way for the one italic accent face a film may use on
+ * payoff words (SKILL.md, Hard bans: Type).
  *
  * Palette: hex colours must appear in the tokens file (Remotion: src/brand/tokens.ts). In a
  * HyperFrames project with no tokens file, the custom properties in the HTML's `:root { }` blocks
@@ -466,8 +468,8 @@ const tagAt = (code, i) => {
 const issues = [];
 let suppressed = 0;
 let brandSupplied = 0;
-const BRAND_RE = /cinetic:brand-supplied\b/;
-const BRAND_REASON_RE = /cinetic:brand-supplied\b[\s:,.;–—-]*[\w"'#(]/;
+const BRAND_RE = /cinetic:(?:brand-supplied|accent-face)\b/;
+const BRAND_REASON_RE = /cinetic:(?:brand-supplied|accent-face)\b[\s:,.;–—-]*[\w"'#(]/;
 
 for (const file of files) {
   const raw = readFileSync(file, 'utf8');
@@ -524,9 +526,11 @@ for (const file of files) {
     for (const m of code.matchAll(re)) fn(m, m.index);
   };
 
-  for (const m of raw.matchAll(/cinetic:brand-supplied\b.*/g))
+  for (const m of raw.matchAll(/cinetic:(?:brand-supplied|accent-face)\b.*/g))
     if (!BRAND_REASON_RE.test(m[0].replace(/\*\/|-->/g, '')))
-      report(m.index, 'brand-supplied', 'error', 'say what the brand supplied after cinetic:brand-supplied (and record it in BRIEF.md)');
+      report(m.index, 'brand-supplied', 'error', m[0].includes('accent-face')
+        ? 'name the family after cinetic:accent-face (the one italic accent face, SKILL.md Hard bans: Type)'
+        : 'say what the brand supplied after cinetic:brand-supplied (and record it in BRIEF.md)');
 
   // --- css-animation
   if (!isScript) {

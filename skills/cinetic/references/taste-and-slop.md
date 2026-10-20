@@ -81,13 +81,14 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **D14 The stock tech palette.** Cool grey paper, navy ink and a teal or framework-blue accent: correct, and anonymous. **Fix:** tint the stage from the brand's world (pine, slate, ink-navy, a deep red, a clean yellow) and let the accent carry one meaning (`references/brand-and-color.md` §8–10).
 
 ## E. Layout and framing
-- **E1 The SaaS layout.** Text left, UI card right on white, or everything centred and floating. **Fix:** the product full-bleed, type anchored to an eye line or the lower third, one focal action per shot.
+- **E1 The SaaS layout.** Text left, UI card right on white, or everything centred and floating. **Fix:** the product as one centred object on a designed stage (50–80% of the frame width), statements alone on their own beat, one focal action per shot.
 - **E2 Voids and edge bands.** 20% of the frame empty under the product, a dark window edge 20–130 px wide at the border, a UI header over 120 px of nothing. **Fix:** clamp the camera so the product covers the frame; overscan moving layers 5–8%; collapse a section until its content arrives.
 - **E3 No margins.** Less than 96 px at the sides or 64 px top and bottom, or less than 24 px of headroom at maximum punch. **Fix:** check the safe area on the punch frame with `scripts/layout-audit.sh`.
 - **E4 Crops that slice glyphs.** "aft", ":00", or text cut by a card edge moving across it. **Fix:** crop on column gutters; reveal text only after the edge has passed.
 - **E5 Cropped social versions.** A 9:16 or 1:1 cut out of the 16:9 master. **Fix:** re-lay separate compositions from the same timeline (`references/formats.md`).
 - **E6 A lockup lost in a void.** The resolved lockup spans under a quarter of the frame's width and can't be read at 480 px. **Fix:** 28–45% of the width at its resolved size (`references/brand-and-color.md` §6).
-- **E7 A small card in empty space.** The product shown as a floating card whose type is unreadable on a phone. **Fix:** full-bleed, or push in until the working part fills the frame (`references/product-ui.md` §1).
+- **E7 A small card in empty space.** The product shown as a floating card whose type is unreadable on a phone. **Fix:** scale the object to 50–80% of the frame width, or isolate the working part at a readable size (`references/product-ui.md` §1).
+- **E9 The screen recording.** A page or app filling the frame edge to edge for several seconds, the camera crawling over it: it reads as a zoomed screen capture, not a designed picture, and every frame looks the same. **Fix:** pull back so the page is an object on a stage, isolate the clause or card that matters, and change the picture every 1–2 s; a full-frame macro is a 1–2 s accent.
 - **E8 An empty vertical frame.** A 9:16 frame laid out like a wide one: a strip of content in the middle, the bottom 40% bare, 16:9 type sizes. **Fix:** the content's mass in the middle of the safe band (y 270–1500 at 1080 × 1920), the product filling or bleeding past the band, type 1.3–1.5× the 16:9 sizes; the mass check and layout sketch are in `references/formats.md` §7.
 
 ## F. Motion and easing
