@@ -30,6 +30,13 @@
 #   <Comp>.mp4                --variants A,B: each composition through render.sh (sharp master, or
 #                             blurred with --variant-samples)
 #   qa/manifest.json          every file with its probe facts and check results
+#   CREDITS.md,               a film cut to a licensed track (audio/score.json "music"): scripts/audio/credits.py
+#   CREDITS_description.txt   checks the licence record (allowed licence, licence_seen quoted from the item's own
+#                             page, the file unchanged, a CC BY credit line) and writes both; the description text
+#                             (CC BY credits, courtesy lines) is printed, ready to paste under the post. Delivery is
+#                             refused when the record fails, and for a soundtrack score.py rendered with --draft.
+#                             A stem, the bed or the decoded track is never delivered: the music travels only
+#                             inside the picture (an audio-only file in the output folder fails the run)
 #
 # Options:
 #   --out-dir DIR        output folder (default out/deliver)
@@ -52,6 +59,8 @@
 #                        --samples-from F): only when their timing is identical to the master's.
 #                        Without it, variants render sharp, which is right when their fastest
 #                        motion is <= 12 px/f.
+#   --score FILE         the film's score.json, for the credits gate (default audio/score.json)
+#   --score-report FILE  score.py's report (default out/qa/score.json): a --draft build is refused
 # Exit 0 = everything written and every check passed, 1 = a step or check failed.
 set -euo pipefail
 
@@ -63,6 +72,7 @@ step() { echo "[deliver] $*" >&2; }
 OUTDIR=out/deliver; POSTER_FRAME=""; LOOP=0; GIF=0; WEBM=0; ALPHA=""; ALPHA_WEBM=0; VARIANTS=""
 GIF_FPS=25; GIF_W=960; GIF_MAX=8; GIF_DITHER=sierra2_4a; WEBM_CRF=""; ALPHA_FRAMES=""; ALPHA_PROPS=""
 ENTRY=src/index.ts; AUDIO=public/audio/soundtrack.wav; VSAMPLES=""; POS=(); POSTER_FROM=""; COMP=Film
+SCORE=audio/score.json; SREPORT=out/qa/score.json
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage 0 ;;
@@ -86,6 +96,8 @@ while [[ $# -gt 0 ]]; do
     --entry) ENTRY=${2:?}; shift ;;
     --audio) AUDIO=${2:?}; shift ;;
     --variant-samples) VSAMPLES=${2:?}; shift ;;
+    --score) SCORE=${2:?}; shift ;;
+    --score-report) SREPORT=${2:?}; shift ;;
     -*) die "unknown option $1 (see --help)" ;;
     *) POS+=("$1") ;;
   esac
@@ -115,6 +127,26 @@ a = any(s['codec_type'] == 'audio' for s in d['streams'])
 print(v['width'], v['height'], float(Fraction(v['avg_frame_rate'])), v['nb_read_packets'], int(a))
 PY
 }
+music_state() {  # music_state SCORE REPORT: "track" | "none", and "draft" when score.py rendered with --draft
+  python3 - "$1" "$2" <<'PY'
+import json, os, sys
+score, report = sys.argv[1:3]
+m = 'none'
+if os.path.isfile(score):
+    v = json.load(open(score, encoding='utf-8')).get('music')
+    m = 'track' if isinstance(v, dict) or (isinstance(v, str) and v not in ('none', 'synth')) else 'none'
+d = 'draft' if os.path.isfile(report) and json.load(open(report, encoding='utf-8')).get('draft') else 'final'
+print(m, d)
+PY
+}
+read -r MUSIC_KIND BUILD <<< "$(music_state "$SCORE" "$SREPORT")"
+[[ "$BUILD" != draft ]] || die "the soundtrack in $SREPORT is a --draft build (placeholder voices): it is never delivered. Render the kit (npm run kit) and the soundtrack again (npm run audio)"
+if [[ "$MUSIC_KIND" == track ]]; then
+  step "credits: the film plays a licensed track; checking its record"
+  python3 "$SCRIPT_DIR/audio/credits.py" --score "$SCORE" --report "$SREPORT" --out "$OUTDIR" \
+    || die "credits gate refused the delivery (see above): a film with a track ships with a valid licence record and its credits"
+  note '{"file":"CREDITS.md","check":"credits","pass":true}'
+fi
 read -r W H FPS N HAS_AUDIO <<< "$(probe_master "$MASTER")"
 step "$MASTER: ${W}x${H}@${FPS}, $N frames, audio $([[ $HAS_AUDIO -eq 1 ]] && echo yes || echo no)"
 TO_RGB="scale=in_color_matrix=auto:in_range=auto:flags=accurate_rnd+full_chroma_int,format=rgb24"
@@ -334,6 +366,13 @@ json.dump(m, open(os.path.join(outdir, 'qa', 'manifest.json'), 'w'), indent=1)
 for e in items:
     print(f"  {e['file']:<28} {e['mb']:>8.2f} MB  {e.get('codec', '')} {e.get('size', '')} {e.get('pix_fmt', '') or ''}", file=sys.stderr)
 PY
+# the music travels only inside the picture: no stem, bed or decoded track among the deliverables
+loose=$(find "$OUTDIR" -maxdepth 2 -type f \( -iname '*.wav' -o -iname '*.mp3' -o -iname '*.flac' -o -iname '*.ogg' -o -iname '*.m4a' \
+  -o -iname '*.aac' -o -iname '*.aif' -o -iname '*.aiff' -o -iname '*.opus' \) | head -5 | tr '\n' ' ')
+if [[ -n "$loose" ]]; then
+  echo "deliver.sh: an audio-only file is in $OUTDIR ($loose): a stem, the bed or a decoded track is never delivered (the licences allow the music only inside the film); remove it" >&2
+  STATUS=1
+fi
 rm -f "$CHECKS"
 stray=$(find "$OUTDIR" -maxdepth 1 -type f \( -name '*.json' -o -name 'sheet*' -o -name 'qa-*' -o -name '*.log' \) | head -3 | tr '\n' ' ')
 [[ -z "$stray" ]] || echo "deliver.sh: warning: QA files at the top of $OUTDIR ($stray); move them into $QA, the top level is for deliverables" >&2

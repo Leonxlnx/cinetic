@@ -10,6 +10,9 @@
 #                            [--pace calm|crisp] [--size 1920x1080] [--name my-film]
 #                            [--link-modules <node_modules>]
 #                            [--font <name>]... [--browser <chromium path>] [--no-install] [--force]
+#                            [--music <track file> --title T --artist A --source S --page URL --licence L
+#                             --seen-quote Q --seen-url URL [--credit C] [--file-url URL] [--content-id X]
+#                             [--profile calm|crisp|punchy] | --music <file> --record <licence.json>]
 #
 #   --fps, --bpm   one beat must be a whole number of frames (60*fps/bpm). At 60 fps:
 #                  90 -> 40 f, 100 -> 36, 120 -> 30, 144 -> 25, 150 -> 24. Without --bpm the
@@ -34,6 +37,14 @@
 #   --browser      bake a Chromium/headless-shell path into remotion.config.ts (env REMOTION_BROWSER
 #                  or CHROMIUM_PATH at render time also works, and wins).
 #   --force        allow a non-empty <dir> (starter files overwrite same-named files).
+#   --music        a film cut to a licensed, human-made, instrumental track (references/music.md): the file is
+#                  copied into <dir>/audio/music/ (git-ignored; never committed), its licence record written
+#                  (scripts/audio/track.py add with the flags above: the licence as read on the item's own page
+#                  now, never from memory; or --record, an existing record for the same file), the track
+#                  analysed (track.py analyze), the launch kit set up (kit.py init --preset launch, with
+#                  earshot 0.4+) and audio/score.json pointed at the track. The tempo comes from the track, so
+#                  the whole-beat check below is skipped. Then: track.py edit, track.py grid (printed).
+#                  Python: $PYTHON, else python3 (numpy, scipy, soundfile, librosa, ffmpeg).
 #
 # Exit codes: 0 created, 1 bad arguments or a failed step (the message says which).
 set -euo pipefail
@@ -43,6 +54,8 @@ die() { echo "new-film: $*" >&2; exit 1; }
 
 SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FONTS=()
+MUSIC=""; RECORD=""; PROFILE=""; ADD=()
+PY="${PYTHON:-python3}"
 DIR=""; ENGINE=remotion; FPS=60; BPM=""; PACE=""; SIZE=1920x1080; NAME=""; LINK=""; BROWSER="${CHROMIUM_PATH:-}"; INSTALL=1; FORCE=0
 
 while [[ $# -gt 0 ]]; do
@@ -58,6 +71,11 @@ while [[ $# -gt 0 ]]; do
     --browser) BROWSER="${2:?--browser needs a path}"; shift 2 ;;
     --font) FONTS+=("${2:?--font needs a family name or package}"); shift 2 ;;
     --no-install) INSTALL=0; shift ;;
+    --music) MUSIC="${2:?--music needs a track file}"; shift 2 ;;
+    --record) RECORD="${2:?--record needs a licence record}"; shift 2 ;;
+    --profile) PROFILE="${2:?--profile needs calm, crisp or punchy}"; shift 2 ;;
+    --title|--artist|--source|--page|--licence|--seen-quote|--seen-url|--seen-date|--credit|--file-url|--content-id|--licence-url|--limits)
+      ADD+=("$1" "${2:?$1 needs a value}"); shift 2 ;;
     --force) FORCE=1; shift ;;
     -*) die "unknown option $1 (see --help)" ;;
     *) [[ -z "$DIR" ]] || die "one target directory only (got '$DIR' and '$1')"; DIR="$1"; shift ;;
@@ -82,8 +100,16 @@ fi
 W="${BASH_REMATCH[1]}"; H="${BASH_REMATCH[2]}"
 (( W % 2 == 0 && H % 2 == 0 )) || die "--size must be even in both dimensions (yuv420p needs it)"
 
+if [[ -n "$MUSIC" ]]; then
+  [[ -f "$MUSIC" ]] || die "--music: $MUSIC not found"
+  [[ -n "$RECORD" || ${#ADD[@]} -gt 0 ]] || die "--music needs its licence: --record <licence.json>, or --title --artist --source --page --licence --seen-quote --seen-url (read on the item's own page)"
+  [[ -z "$RECORD" || -f "$RECORD" ]] || die "--record: $RECORD not found"
+  [[ -z "$PROFILE" || "$PROFILE" =~ ^(calm|crisp|punchy)$ ]] || die "--profile must be calm, crisp or punchy"
+fi
+
 # The whole system assumes a beat is a whole number of frames: cues on the grid, sound on the frame.
-if ! node -e "const b=60*$FPS/$BPM; process.exit(Math.abs(b-Math.round(b))<1e-9?0:1)"; then
+# With a track the tempo is the track's (src/music.ts gives b() its fractional frames): no whole-beat check.
+if [[ -z "$MUSIC" ]] && ! node -e "const b=60*$FPS/$BPM; process.exit(Math.abs(b-Math.round(b))<1e-9?0:1)"; then
   OK=$(node -e "const r=[];for(let b=60;b<=200;b++){const f=60*$FPS/b;if(Number.isInteger(f))r.push(b+' ('+f+' f)')}console.log(r.join(', '))")
   die "at $FPS fps, $BPM BPM gives a beat of $(node -e "console.log((60*$FPS/$BPM).toFixed(3))") frames. Pick a BPM with a whole beat: $OK"
 fi
@@ -164,6 +190,11 @@ fi
 mkdir -p "$DIR/scripts"
 (cd "$SKILL/scripts" && tar --exclude=__pycache__ --exclude='*.pyc' --exclude=./test -cf - .) | (cd "$DIR/scripts" && tar -xf -)
 chmod +x "$DIR"/scripts/*.sh 2>/dev/null || true
+# a licensed track never enters git: make sure the project ignores it and everything mixed from it
+GI="$DIR/.gitignore"
+for line in 'node_modules/' 'out/*' '!out/cues.json' 'public/audio/*.wav' 'audio/music/*' '!audio/music/*.json' '!audio/music/README.md' 'out/cache/' '.DS_Store' '*.log' '__pycache__/'; do
+  grep -qxF -- "$line" "$GI" 2>/dev/null || echo "$line" >> "$GI"
+done
 # pick.py draws from the technique library; the project keeps a copy so it runs from here too
 LIB="$SKILL/assets/library/techniques.json"; [[ -f "$LIB" ]] || LIB="$SKILL/scripts/library/techniques.json"
 if [[ -f "$LIB" ]]; then mkdir -p "$DIR/scripts/library" && cp "$LIB" "$DIR/scripts/library/"; fi
@@ -195,6 +226,42 @@ for font in ${FONTS[@]+"${FONTS[@]}"}; do
   node "$DIR/scripts/add-font.mjs" "$font" --dir "$DIR" || die "--font $font: could not vendor it (see above)"
 done
 
+if [[ -n "$MUSIC" ]]; then
+  mkdir -p "$DIR/audio/music"
+  cp "$MUSIC" "$DIR/audio/music/"
+  TRK="audio/music/$(basename "$MUSIC")"
+  STEM=$(basename "$MUSIC" | sed -E 's/\.[^.]+$//' | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/_/g; s/^_+//; s/_+$//')
+  REC="audio/music/$STEM.licence.json"
+  if [[ -n "$RECORD" ]]; then
+    cp "$RECORD" "$DIR/$REC"
+    (cd "$DIR" && "$PY" scripts/audio/credits.py --check "$REC" --track "$TRK") || die "--record: the licence record does not pass (see above)"
+  else
+    (cd "$DIR" && "$PY" scripts/audio/track.py add "$TRK" "${ADD[@]}" --out "$REC") || die "the licence record was refused (see above): a track the gate cannot license never goes into a film"
+  fi
+  (cd "$DIR" && "$PY" scripts/audio/track.py analyze "$TRK" ${PROFILE:+--profile "$PROFILE"} --quiet) || \
+    echo "new-film: warning: track.py analyze did not resolve the downbeat (see above): rerun it with --phase N before track.py edit" >&2
+  TJ="audio/music/$STEM.track.json"
+  # score.json: the track, its edit and its record; the key from the analysis; the tempo comes from src/music.ts
+  (cd "$DIR" && TRK="$TRK" REC="$REC" TJ="$TJ" "$PY" - <<'PYEOF'
+import json, os
+p = 'audio/score.json'
+s = json.load(open(p, encoding='utf-8'))
+s['music'] = {'track': os.environ['TRK'], 'edit': 'audio/music/edit.json', 'licence': os.environ['REC']}
+s.pop('bpm', None)
+if os.path.isfile(os.environ['TJ']):
+    k = (json.load(open(os.environ['TJ'], encoding='utf-8')).get('key') or {}).get('name')
+    if k:
+        s['key'] = k
+s.setdefault('stopdowns', {'auto': 'kit', 'add': [], 'skip': [], 'quiet_db': -7})
+s.setdefault('master', {})['lufs'] = -14
+open(p, 'w', encoding='utf-8', newline='\n').write(json.dumps(s, indent=2) + '\n')
+print(f"new-film: audio/score.json plays {s['music']['track']} (key {s.get('key')})")
+PYEOF
+  ) || die "could not point audio/score.json at the track"
+  (cd "$DIR" && "$PY" scripts/audio/kit.py init --preset launch --force) || \
+    echo "new-film: warning: the launch kit needs earshot 0.4+ (docs/setup.md); run python3 scripts/audio/kit.py init --preset launch --force once it is installed" >&2
+fi
+
 BEAT=$(node -e "console.log(60*$FPS/$BPM)")
 echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat${PACE:+, $PACE pace})"
 if [[ "$ENGINE" == remotion ]]; then
@@ -220,6 +287,14 @@ next:
   npm run preview                # HyperFrames Studio
   npm run cues && npm run kit && npm run audio && npm run render:preview   # then: npm run render
   npm run listen                 # earshot's ears on the soundtrack: out/qa/listen.json + sound_sheet.png
+EOF
+fi
+if [[ -n "$MUSIC" ]]; then
+  cat <<EOF
+music first (references/music.md):
+  python3 scripts/audio/track.py edit --bars N --reveal-bar K --end stop|button|ring   # the film's bars on the track
+  python3 scripts/audio/track.py grid       # src/music.ts (or music.js): write the timeline on MUSIC bars
+  python3 scripts/audio/track.py check      # joins, licence, nothing from the track in git
 EOF
 fi
 # the effects come from earshot's kit (audio/kit.json): say now whether this machine can render it

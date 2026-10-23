@@ -12,6 +12,10 @@ Cues: the {events:[{f,kind,weight,pan,apexFrac?}]} schema, or an older per-key e
 forensics.load_cues). Events closer than --cluster frames are one expected onset.
 
 Checks (defaults are proven starting points, not dogma):
+  intended   the times a sound is meant to start: out/qa/cues_sounded.json (plan.py / score.py: only the events
+             that received a sound, each at its cue plus the role's offset, at the take's align point) when
+             it sits in the cues' qa/ folder and is newer than the cues (--sounded names another); else
+             the cue frames, minus the keys and skipped events score.py's report lists
   sync       each onset event has an audio onset within +-2 f (librosa backtracked onsets at hop
              128, delta 0.03, or a > 1 kHz 1 ms-envelope rise >= 4x); hit rate >= 90%     fail
              With --stems the sfx stem is searched (strict) and stray sfx onsets are listed.
@@ -62,9 +66,15 @@ Checks (defaults are proven starting points, not dogma):
              and the last half second quieter than the one before it                         warn
   head       first 5 ms peak <= -40 dBFS: above it the film clicks on sample 0 or cuts in
              mid-sound (skipped on an excerpt)                                               warn
-  masking    (--stems) each sfx >= +6 dB over the music in its best band (60 ms); < 0 dB warns
-             (typing and crisp ticks sit just over the music by design: score.py's report
-             judges them, not this check)
+  masking    (--stems) each sfx over the music in its best band (60 ms) by its role's margin: 3 dB for roles
+             that sit 4 dB or less over the bed (ticks, taps, text, snap), 6 dB for the rest; < 0 dB warns
+             (typing and crisp ticks sit just over the music by design: score.py's report judges them);
+             score.py's over-bed and stop-down figures are copied into the report
+  music_sync (a film with a track: cues.json "music", the film-time grid) every structural cue and act
+             boundary within +-1 f of a downbeat attack, an entry, a stop's end or the ending (the reveal,
+             the payoff and the lockup fail when off); a hard cut 2-4 f off a strong accent (>= 6 dB) is a
+             near miss                                                                         warn/fail
+  draft      a soundtrack score.py rendered with --draft (placeholder voices) is never delivered     fail
 
 Writes JSON (--json) and a short summary. Exit: 0 no failing check, 1 a failing check, 2 usage or
 input error. Needs ffmpeg/ffprobe, numpy, scipy, soundfile and librosa (opencv is optional: the
@@ -140,8 +150,8 @@ def find_stems(d):
     if not os.path.isdir(d):
         die(f'--stems {d} is not a directory')
     files = sorted(glob.glob(os.path.join(d, '*.wav')))
-    sfx = [p for p in files if re.match(r'(sfx|fx|effects)', os.path.basename(p).lower())]
-    bus = [p for p in files if os.path.basename(p).lower() == 'music.wav']  # score.py's summed music bus
+    sfx = [p for p in files if re.match(r'(sfx|fx|effects|room)', os.path.basename(p).lower())]
+    bus = [p for p in files if os.path.basename(p).lower() in ('bed.wav', 'music.wav')]  # the track as played
     music = bus or [p for p in files if p not in sfx]
     return sfx, music
 
@@ -266,10 +276,80 @@ def score_json(args):
 
 
 def effects_only(sc):
-    """True when score.py renders this score JSON without music: "music": "none" (the default
-    without chords) and no "bed"."""
-    music = sc.get('music') or ('synth' if sc.get('chords') else 'none')
+    """True when score.py renders this score JSON without music: "music": "none" (the default) and no
+    older "bed"."""
+    music = sc.get('music') or 'none'
     return music == 'none' and not sc.get('bed')
+
+
+def sounded_path(args):
+    """out/qa/cues_sounded.json (the intended sound times) when it is current for these cues, else None"""
+    p = args.sounded or os.path.join(os.path.dirname(os.path.abspath(args.cues)), 'qa', 'cues_sounded.json')
+    try:
+        if os.path.isfile(p) and (args.sounded or os.path.getmtime(p) >= os.path.getmtime(args.cues)):
+            return p
+    except OSError:
+        pass
+    return None
+
+
+def score_report(args):
+    p = args.score_report or os.path.join(os.path.dirname(os.path.abspath(args.cues)), 'qa', 'score.json')
+    try:
+        if os.path.isfile(p) and os.path.getmtime(p) >= os.path.getmtime(args.cues):
+            return json.load(open(p))
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def role_margins(args, default):
+    """{role: masking margin dB} from the effects plan (out/qa/sfx_plan.json): 3 dB for roles 4 dB or less over
+    the bed, the default for the rest"""
+    p = os.path.join(os.path.dirname(os.path.abspath(args.cues)), 'qa', 'sfx_plan.json')
+    try:
+        plan = json.load(open(p))
+    except (OSError, ValueError):
+        return {}
+    return {e['role']: (3.0 if e.get('bed_db') is not None and e['bed_db'] <= 4 else default) for e in plan.get('events', [])}
+
+
+def music_sync(raw, fps):
+    """Structural cuts against the film's music grid (cues.json "music"): rows and near misses, or None."""
+    m = raw.get('music')
+    if not m or not m.get('downbeats'):
+        return None
+    onsets = [('downbeat', float(x)) for x in m['downbeats']] + [('entry', float(x)) for x in m.get('entries') or []]
+    onsets += [('stop end', float(s['to'])) for s in m.get('stops') or [] if 'to' in s]
+    if m.get('end') and m['end'].get('f') is not None:
+        onsets.append(('ending', float(m['end']['f'])))
+    strong = [float(a['f']) for a in m.get('accents') or [] if float(a.get('db', 0)) >= 6.0]
+    exact = {'reveal', 'payoff', 'lockup'}
+    rows = []
+    cue_at = {int(round(float(v))): k for k, v in (raw.get('cue') or {}).items()}
+    want = []
+    for e in raw.get('events', []):
+        if e.get('structural'):
+            ex = str(e.get('id', '')).split(':')[-1] in exact or cue_at.get(int(round(float(e['f'])))) in exact
+            want.append((e.get('id') or e.get('kind'), float(e['f']), ex))
+    for name, a in (raw.get('acts') or {}).items():
+        if isinstance(a, dict) and float(a.get('from', 0)) > 0:
+            want.append((f'act {name}', float(a['from']), False))
+    for name, f in (raw.get('cue') or {}).items():
+        if name in exact and not any(abs(w[1] - float(f)) < 0.5 for w in want):
+            want.append((f'cue {name}', float(f), True))
+    for name, f, ex in want:
+        kind, at = min(onsets, key=lambda o: abs(o[1] - f))
+        d = round(f - at, 2)
+        rows.append(dict(what=name, f=round(f, 2), nearest=kind, nearest_f=round(at, 2), off_f=d, ok=abs(d) <= 1.0, exact=ex))
+    near = []
+    for e in raw.get('events', []):
+        if e.get('kind') == 'cut':
+            for a in strong:
+                if 2.0 <= abs(float(e['f']) - a) <= 4.0:
+                    near.append(dict(f=float(e['f']), accent_f=a, off_f=round(float(e['f']) - a, 2)))
+                    break
+    return dict(rows=rows, near_misses=near, grid_bpm=m.get('bpm'))
 
 
 def film_lufs(args):
@@ -385,6 +465,8 @@ def main():
     ap.add_argument('--tp-max', type=float, default=-1.0, help='dBTP')
     ap.add_argument('--lra', help='acceptable loudness range, LU (default 3,8; 3,14 for an effects-only film)')
     ap.add_argument('--score-report', help="score.py's report JSON (default: qa/score.json in the cues' folder)")
+    ap.add_argument('--sounded', help="the intended sound times (default: qa/cues_sounded.json in the cues' folder, when "
+                    'newer than the cues)')
     ap.add_argument('--no-loudness', action='store_true', help='skip loudness (e.g. a muted loop)')
     ap.add_argument('--payoff', help='cue name whose moment should be the loudest (default: a cue named payoff)')
     ap.add_argument('--tail-rms', type=float, default=-45.0, help='dBFS over the last 50 ms')
@@ -397,7 +479,10 @@ def main():
 
     if not os.path.isfile(args.cues):
         die(f'no such cues file: {args.cues} (run npx tsx scripts/export-cues.ts)')
-    cues = load_cues(args.cues)
+    raw_cues = json.load(open(args.cues, encoding='utf-8'))
+    sp = sounded_path(args)
+    cues = load_cues(sp) if sp else load_cues(args.cues)
+    srep = score_report(args)
     vinfo = probe(args.video) if args.video else None
     fps = args.fps or (vinfo['fps'] if vinfo else None) or cues['fps']
     if not fps:
@@ -441,12 +526,20 @@ def main():
             notes.append(f'no sfx*.wav in {args.stems}; using the full mix')
 
     # ---- events -> expected onsets / apexes (keys score.py thins out are not expected to sound)
-    quiet_keys = silent_keys(args)
-    if quiet_keys:
-        notes.append(f'{len(quiet_keys)} key events are thinned by score.py (typing plan) and not expected to sound')
-    elif quiet_keys is None:
-        notes.append('could not replay score.py\'s typing plan: every key event is expected to sound')
-    skipped = score_skipped(args) or set()
+    if sp:
+        quiet_keys, skipped = set(), set()
+        notes.append(f'intended sound times from {sp} ({len(cues["events"])} sounded events; the silent ones are listed '
+                     'there, not expected)')
+    else:
+        quiet_keys = silent_keys(args)
+        if quiet_keys:
+            notes.append(f'{len(quiet_keys)} key events are thinned by score.py (typing plan) and not expected to sound')
+        elif quiet_keys is None:
+            notes.append("could not replay score.py's typing plan: every key event is expected to sound")
+        skipped = score_skipped(args) or set()
+    if srep and srep.get('draft'):
+        add('draft', 'fail', None, 'the soundtrack is a --draft build (placeholder voices): it is never delivered; render the '
+            'kit (npm run kit) and the soundtrack again without --draft')
     off = [e for e in cues['events'] if e['kind'] != 'key' and is_skipped(e, skipped)]
     if off:
         notes.append(f'{len(off)} events are skipped by score.py (its report: a role the kit leaves off) and not expected '
@@ -798,6 +891,8 @@ def main():
         sb = [signal.sosfilt(signal.butter(4, b, 'band', fs=sr, output='sos'), sfx_sig) for b in bands]
         mb = [signal.sosfilt(signal.butter(4, b, 'band', fs=sr, output='sos'), music_sig) for b in bands]
         win = int(0.06 * sr)
+        margins = role_margins(args, args.mask_db)
+        by_f = {round(float(e['f']), 2): e.get('role') for e in (json.load(open(sp)).get('events', []) if sp else [])}
         mrows = []
         for g in groups:
             i = int(g['f'] / fps * sr)
@@ -808,23 +903,41 @@ def main():
             if max(lv_s) < -75:  # nothing in the sfx stem here (a picture-only cue, or a sound on another bus)
                 continue
             j = int(np.argmax(np.array(lv_s) - np.array(lv_m)))
-            mrows.append(dict(f=round(g['f'], 2), kinds=sorted(g['kinds'])[:3], band=f'{bands[j][0]}-{bands[j][1]}',
-                              margin_db=round(lv_s[j] - lv_m[j], 1)))
-        low = [r for r in mrows if r['margin_db'] < args.mask_db]
+            role = by_f.get(round(g['f'], 2))
+            mrows.append(dict(f=round(g['f'], 2), kinds=sorted(g['kinds'])[:3], role=role, band=f'{bands[j][0]}-{bands[j][1]}',
+                              margin_db=round(lv_s[j] - lv_m[j], 1), target_db=margins.get(role, args.mask_db)))
+        low = [r for r in mrows if r['margin_db'] < r['target_db']]
         masked = [r for r in mrows if r['margin_db'] < 0]
         masking = dict(checked=len(mrows), below_target=len(low), masked=len(masked),
                        worst=sorted(mrows, key=lambda r: r['margin_db'])[:15])
         if masked:
             add('masking', 'warn', int(round(masked[0]['f'])), f'{len(masked)} effects sit under the music in their '
-                f'own band (worst {masking["worst"][0]["margin_db"]} dB at f{masking["worst"][0]["f"]}): +6 dB in band, '
-                'duck the music 3 dB for 150 ms around key hits')
+                f'own band (worst {masking["worst"][0]["margin_db"]} dB at f{masking["worst"][0]["f"]}): move the effect off '
+                'the busy band, raise its weight, or cut to a sparser bar under it (track.py edit); the music never ducks')
 
+    # ---- music_sync (a film with a track) and score.py's music figures
+    msync = music_sync(raw_cues, fps)
+    if msync:
+        for r in msync['rows']:
+            if not r['ok']:
+                add('music', 'fail' if r['exact'] else 'warn', int(round(r['f'])),
+                    f"{r['what']} sits {r['off_f']:+.1f} f from the music's nearest {r['nearest']} (f{r['nearest_f']}): "
+                    "structure lands on the music's events within 1 f")
+        for nm in msync['near_misses'][:6]:
+            add('music', 'warn', int(round(nm['f'])), f"a hard cut {nm['off_f']:+.1f} f off a strong accent (f{nm['accent_f']}): "
+                'a near miss reads as a mistake; move it onto the accent or well clear of it')
+    if srep:
+        for k_ in ('over_bed', 'stop_downs', 'no_duck', 'density', 'music'):
+            if srep.get(k_) is not None:
+                msync = msync or {}
+                msync[k_] = srep[k_] if k_ != 'over_bed' else {kk: v for kk, v in srep[k_].items() if kk != 'effects'}
     fails = sum(1 for f in flags if f['severity'] == 'fail')
     res = dict(file=args.video, audio_source=src, sr=sr, fps=round(fps, 3), duration_s=round(dur, 3), excerpt=excerpt,
                cues=args.cues, cue_schema=cues['schema'], pass_=fails == 0, fails=fails,
                warnings=len(flags) - fails, notes=notes, flags=flags, sync=sync,
                apex=dict(checked=len(apex_rows), off=[r for r in apex_rows if not r['ok']], rows=apex_rows),
-               visual=visual, loudness=loud, clipping_samples=clip, clicks=clicks[:40], tail=tail, head=head, masking=masking)
+               visual=visual, loudness=loud, clipping_samples=clip, clicks=clicks[:40], tail=tail, head=head, masking=masking,
+               music_sync=msync, intended=sp)
     res['pass'] = res.pop('pass_')
     if args.json:
         os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)

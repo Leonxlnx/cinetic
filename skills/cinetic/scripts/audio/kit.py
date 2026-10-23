@@ -3,41 +3,58 @@
 kit.py: the film's sound kit, made by earshot (a separate, optional tool: docs/setup.md). The effects
 of a cinetic film come from audio/kit.json, one earshot bank sound per role: the cue kinds and their
 variants (hit, whoosh.short, key, key.space, text, ...). `render` has earshot render every take into
-audio/kit/ with its measured onset, peak and end (audio/kit/kit.lock.json), cached; score.py places
-those takes on the cue frames. The rendered takes stay with the project, so the film rebuilds where
-earshot is not installed; with neither, score.py falls back to its synth voices and says so loudly.
+audio/kit/ with its measured onset, peak and end (audio/kit/kit.lock.json), cached; plan.py and score.py
+place those takes on the cue frames. The rendered takes stay with the project, so the film rebuilds
+where earshot is not installed; with neither, the soundtrack fails its gate (score.py --draft plays
+placeholder voices for a timing check, never delivered).
+
+Presets: calm (text-led, effects-only, the default), crisp (energetic, effects-only), minimal (designed,
+sub-led, effects-only) and launch (a film cut to a licensed track; earshot 0.4+): every launch role names
+its level over the music bed (bed_db), where it sits against the cut (offset_ms), how close a run may go
+(min_gap_ms) and, for ticks and bells, its stereo width; the kit-level "mix" block holds the stop-down
+ranges. The lock passes all of it through (bed_db, offset_ms, min_gap_ms, width, the takes' l50_lufs and
+corr, mix). `init` rewrites the preset's notes into house wording.
 
 Usage (from the project root):
-  python3 scripts/audio/kit.py init [--preset calm|crisp|minimal] [--force]
+  python3 scripts/audio/kit.py init [--preset calm|crisp|minimal|launch] [--force]
                                    # write audio/kit.json from an earshot preset, tuned to the film's key
   python3 scripts/audio/kit.py tune                 # retune the tonal roles to score.json's key
   python3 scripts/audio/kit.py render [--force]     # audio/kit/*.wav + kit.lock.json (cached)
   python3 scripts/audio/kit.py vendor [--from DIR]  # check (or first copy in) the takes score.py plays
   python3 scripts/audio/kit.py check [--json PATH]  # the rendered kit against kit.json and the film's cues,
                                                     # plus earshot's model-free audit of every take
-  python3 scripts/audio/kit.py audition [-o out/qa/kit_audition.wav]   # every take, role by role
+  python3 scripts/audio/kit.py audition [-o out/qa/kit_audition.wav] [--over-bed]
+                                                    # every take, role by role (--over-bed: over 2 s of the
+                                                    # film's own edited track, each at its bed_db; no earshot needed)
   python3 scripts/audio/kit.py listen [--json out/qa/kit_listen.json]  # earshot's ears on each role
   python3 scripts/audio/kit.py where                # which earshot is used, and why
 Options for every command: --kit audio/kit.json, --takes DIR (default: the kit path without .json,
 audio/kit), --score audio/score.json, --cues out/cues.json, --python PY (the earshot interpreter).
 
 Finding earshot, first that works: --python, score.json "sfx.python", $EARSHOT_PYTHON, this
-interpreter (import earshot), `earshot` on PATH. It must have sound kits (earshot 0.3 or later).
+interpreter (import earshot), `earshot` on PATH. It must have sound kits (earshot 0.3 or later; the
+launch preset and the mix keys need 0.4).
 EARSHOT_PYTHON=none turns earshot off (score.py then plays the rendered takes as they are).
 earshot in its own virtualenv: EARSHOT_PYTHON=/path/to/venv/bin/python. earshot from a source
 checkout run by another venv: also PYTHONPATH=/path/to/checkout (it is passed through).
 
 Roles: tick, tick.crisp, tock, hit, land, land.light, pop, whoosh.short, whoosh.long, suck, riser,
 drop, key, key.space, key.return, click, click.confirm, snap, swell, bell, text. A role set to null is
-off (score.py skips its cues and says so); a role the kit does not name falls back to the synth voice.
-The presets keep riser, swell and suck off and give the lockup one clean element.
+off (score.py skips its cues and says so); a cue whose role the kit does not name fails the soundtrack's
+gate. The effects-only presets keep riser, swell and suck off and give the lockup one clean element.
 
 Tuning (init, tune): roles with `pitches` or `edits.pitch` move to the film's key in their own
 register: bell to the key's pentatonic, text to the pentatonic too (the tonic triad when it has 3
 notes or fewer; score.py steps a chain through the chord's tones among them), a single pitch to the
 nearest tonic;
 with earshot found, a tonal hit, drop, bell, text or confirm click with no pitch (struck bells,
-plucks, dings, sub drops, impacts) gets the tonic nearest its native note, inside its range.
+plucks, mallets, dings, sub drops, impacts; a cut_hit drop, not a cut_hit hit) gets the tonic nearest its
+native note, inside its range. With a track, the key comes from score.json "key", which the track's
+analysis fills (track.py analyze reports it).
+
+check also warns when a film with a track has roles without bed_db (they fall back to level_db, which is
+calibrated to full scale, not to the bed: give them the bed_db of the launch role of the same kind), and
+when a launch kit plays an effects-only film.
 
 Exit codes: 0 done (render also when earshot is missing: it says what score.py will play instead, and a
 build never fails only because earshot is missing); 1 a failed check or render, or invalid input; 2 earshot
@@ -56,7 +73,8 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOCK = 'kit.lock.json'
 SOURCE = 'kit.source.json'  # written by render: which kit.json (by digest) the takes in this folder belong to
-PRESETS = ('calm', 'crisp', 'minimal')
+PRESETS = ('calm', 'crisp', 'minimal', 'launch')
+LAUNCH_MIN = (0, 4)  # the earshot version the launch preset and the mix keys need
 INSTALL_HINT = ('install earshot 0.3+ in its own virtualenv (https://github.com/Leonxlnx/earshot, README "Install") and '
                 'point EARSHOT_PYTHON at that interpreter (cinetic docs/setup.md, "Sound from earshot")')
 # a role the kit does not name borrows the nearest one of its family; with none, score.py's synth voice plays
@@ -65,7 +83,22 @@ FAMILY = {'tick.crisp': ['tick'], 'land.light': ['land'], 'whoosh.short': ['whoo
           'key.return': ['key.space', 'key'], 'key.back': ['key'], 'key.word': ['key']}
 WHOOSH_SHORT_S = 0.5  # s: a move shorter than this takes whoosh.short, a longer one whoosh.long
 TUNE_ROLES = ('hit', 'drop', 'bell', 'text', 'click.confirm')  # roles init/tune may give a pitch they lack
-TONAL = ('pluck', 'notify', 'pro_notify', 'sub_drop', 'pro_sub_drop', 'impact', 'pro_impact')  # bank categories
+TONAL = ('pluck', 'notify', 'pro_notify', 'sub_drop', 'pro_sub_drop', 'impact', 'pro_impact', 'mallet',
+         'cut_hit')  # bank categories with a pitch knob (a cut_hit is tuned on the drop, never on the hit)
+MIX_KEYS = ('bed_db', 'offset_ms', 'min_gap_ms', 'width')
+AUDITION_BED_S = 2.0
+# earshot's text may say where its numbers came from; a film's kit.json and reports say it in house wording.
+# Generic rules (no quoted phrases): a sentence that ties a number to measured clips or films, an instrument
+# credited to a film, and noun phrases that count or qualify a set of films.
+HOUSE_WORDING = [
+    (r'(?:^|(?<=[.;] ))[^.;]*?\b(?:medians?|measured)\b[^.;]*\b(?:clips|films|videos)\b[^.;]*',
+     'The numbers are house numbers for music-led films'),
+    (r"\bthe [a-z]+ film'?s (?:[a-z]+ )?(kalimba|marimba|bell|pluck)\b", r'a soft \1'),
+    (r'\ba profile of \d+ (?:professional |reference )*(?:launch )?(?:films|clips)\b', 'the launch profile'),
+    (r'\bvs\.? \d+ (?:professional |reference )*(?:launch )?(?:films|clips)\b', 'vs the launch profile'),
+    (r'\b(?:the |a )?(?:\d+ )?(?:bundled |professional |reference )+(?:launch )?(?:films|clips|videos)\b',
+     'the launch profile'),
+]
 NOTE_RE = re.compile(r'^([A-Ga-g])([#sb]?)(-?\d+)$')
 PITCH_TOL = 0.5  # semitones: an explicit note plays a take only when the take is that note (a quarter tone either way)
 LEVEL_TRIM_DB = 6.0  # dB: the per-take loudness trim toward its role's median never moves a take further
@@ -95,6 +128,34 @@ def to_midi(p):
     if s.lower().endswith('hz'):
         return 69 + 12 * math.log2(float(s[:-2]) / 440.0)
     return 69 + 12 * math.log2(float(s) / 440.0)
+
+
+def house_wording(text):
+    """earshot text (preset notes, critique lines) rewritten into house wording: where a number came from is
+    never quoted"""
+    if not isinstance(text, str):
+        return text
+    for pat, sub in HOUSE_WORDING:
+        text = re.sub(pat, sub, text, flags=re.I)
+    return text
+
+
+def house_wording_deep(obj):
+    """house_wording over every string in a JSON-like value (dicts, lists), returned as a copy"""
+    if isinstance(obj, str):
+        return house_wording(obj)
+    if isinstance(obj, list):
+        return [house_wording_deep(x) for x in obj]
+    if isinstance(obj, dict):
+        return {k: house_wording_deep(v) for k, v in obj.items()}
+    return obj
+
+
+def version_at_least(v, want):
+    try:
+        return tuple(int(x) for x in re.findall(r'\d+', str(v))[:2]) >= tuple(want)
+    except ValueError:
+        return False
 
 
 def note(m):
@@ -314,6 +375,7 @@ class Kit:
                 t['trim_db'], t['trim'] = round(d, 2), 10 ** (d / 20)
             spread = round(max(louds) - min(louds), 2) if len(louds) > 1 else 0.0
             self.roles[role] = dict(r, takes=tks, lufs_spread=spread) if tks else None
+        self.mix = lock.get('mix') or {}  # the kit-level mix block (stop-down ranges, runs, density): earshot 0.4
         self._audio = {}
         self._last = {}
 
@@ -455,7 +517,7 @@ def key_of(score_path):
     try:
         if not parts:
             raise ValueError('no tonic (write it as "G major")')
-        return SC.S.pitch_class(parts[0]), SC.MODES[mode], text
+        return SC.D.pitch_class(parts[0]), SC.MODES[mode], text
     except (ValueError, KeyError) as e:
         raise KitError(f'score.json key "{text}": {e}') from None
 
@@ -498,7 +560,8 @@ def tune(kit, key, knobs=None):
             if new != ed['pitch']:
                 changes.append((role, ed['pitch'], new))
                 ed['pitch'] = new
-        elif knobs and role in TUNE_ROLES and spec.get('sound', '').split('/')[0] in TONAL:
+        elif knobs and role in TUNE_ROLES and spec.get('sound', '').split('/')[0] in TONAL \
+                and not (role == 'hit' and spec.get('sound', '').startswith('cut_hit/')):
             kp = (knobs.get(spec['sound']) or {}).get('pitch')
             if not kp:
                 continue
@@ -557,7 +620,8 @@ def cmd_where(a, score_python):
     for t in tried:
         print(f'  not used: {t}')
     if es:
-        print(f'kit: {es}')
+        print(f'kit: {es}' + ('' if version_at_least(es.version, LAUNCH_MIN) else
+                              ' (the launch preset and the mix keys need earshot 0.4 or later)'))
         return 0
     print(f'kit: earshot not found. {INSTALL_HINT}')
     return 2
@@ -574,14 +638,22 @@ def cmd_init(a, score_python):
     es = need_earshot(a, score_python)
     if not es:
         return 2
+    if a.preset == 'launch' and es.version and not version_at_least(es.version, LAUNCH_MIN):
+        print(f'kit.py: the launch preset needs earshot 0.4 or later ({es}); {INSTALL_HINT}', file=sys.stderr)
+        return 2
     if os.path.exists(a.kit) and not a.force:
         print(f'kit.py: {a.kit} exists (--force replaces it)', file=sys.stderr)
         return 1
     p = es.run(['kit', 'init', '--preset', a.preset, '-o', a.kit, '--force'])
     if p.returncode != 0:
-        print(f'kit.py: earshot kit init failed: {p.stderr.strip() or p.stdout.strip()}', file=sys.stderr)
+        print(f'kit.py: earshot kit init failed: {house_wording(p.stderr.strip() or p.stdout.strip())}', file=sys.stderr)
         return 1
-    print(p.stdout.strip())
+    print(house_wording(p.stdout.strip()))
+    kit = read_json(a.kit, 'kit')
+    clean = house_wording_deep(kit)
+    if clean != kit:
+        write_json(a.kit, clean)
+        print('kit: notes in house wording')
     return tune_file(a, bank_knobs(es))
 
 
@@ -664,11 +736,28 @@ def cmd_check(a, score_python):
     kit = st['kit'] or {}
     roles = kit.get('roles') or {}
     used = cue_kinds(a.cues)
+    music = None
+    if os.path.isfile(a.score):
+        try:
+            music = read_json(a.score, 'score').get('music')
+        except KitError:
+            music = None
+    has_track = isinstance(music, dict) or (isinstance(music, str) and music not in ('none', 'synth'))
+    if has_track:
+        flat = sorted(r for r, sp in roles.items() if sp and sp.get('bed_db') is None and (used is None or r in used))
+        if flat:
+            rep['notes'].append(f"a film with a track: {', '.join(flat)} ha{'s' if len(flat) == 1 else 've'} no bed_db, so "
+                                'levels fall back to level_db (calibrated to full scale, not to the bed): give each the bed_db of '
+                                'the launch role of the same kind (kit.py init --preset launch shows them)')
+    elif kit.get('name') == 'launch' or any((sp or {}).get('bed_db') is not None for sp in roles.values()):
+        rep['notes'].append('the launch kit is for films cut to a track: with "music": "none" its roles play at level_db '
+                            '(use calm, crisp or minimal for an effects-only film)')
     if used is not None:
         for role, n in sorted(used.items()):
             name = next((x for x in [role] + FAMILY.get(role, []) if x in roles), None)
             if name is None:
-                rep['notes'].append(f'{n} {role} cue(s): the kit has no {role} role, so score.py plays its synth voice')
+                rep['problems'].append(f'{n} {role} cue(s): the kit has no {role} role: give it one (every effect is a kit '
+                                       'take; the soundtrack fails its gate otherwise)')
             elif roles[name] is None:
                 rep['notes'].append(f'{n} {role} cue(s): {name} is off in the kit, so score.py skips them')
             rep['roles'][role] = dict(cues=n, role=name, sound=(roles.get(name) or {}).get('sound') if name else None)
@@ -681,6 +770,7 @@ def cmd_check(a, score_python):
     es, tried = find_earshot(a.python, score_python)
     if es and st['status'] != 'no-kit':
         code, res, err = es.run_json(['kit', 'check', a.kit] + (['--out', a.takes] if st['lock'] else []))
+        res = house_wording_deep(res) if res else res
         if res:
             rep['earshot'] = dict(ok=res.get('ok'), summary=res.get('summary'), notes=res.get('notes'))
             if not res.get('ok'):
@@ -704,7 +794,75 @@ def cmd_check(a, score_python):
     return 0 if rep['ok'] else 1
 
 
+def cmd_audition_over_bed(a):
+    """every take of each role over AUDITION_BED_S of the film's own edited track, at the gain the plan gives it
+    (bed_db over that bed; level_db for a role without one), in out/qa/kit_audition.wav (git-ignored: it holds the
+    track) with an index beside it. No earshot needed: the rendered takes and audio/music/edit.json."""
+    import numpy as np
+    import soundfile as sf
+    sys.path.insert(0, HERE)
+    import mixkeys as MK
+    import score as SC
+    st = kit_state(a.kit, a.takes)
+    if not st['lock']:
+        print(f"kit.py: no rendered takes ({st['why']}): npm run kit", file=sys.stderr)
+        return 1
+    try:
+        score = read_json(a.score, 'score')
+        cues = read_json(a.cues, 'cues') if os.path.isfile(a.cues) else dict(fps=60, bpm=120, total=600, cue={}, events=[])
+        song = SC.Song(score, cues)
+        if not song.has_music:
+            print('kit.py: --over-bed needs a film with a track (score.json music); without one, audition plays the takes '
+                  'against a nominal bed', file=sys.stderr)
+            return 1
+        bed, edit = SC.load_music(song, os.path.dirname(os.path.abspath(a.score)), int((max(song.dur, 4) + 4) * MK.SR))
+    except (SC.ScoreError, KitError) as e:
+        print(f'kit.py: {e}', file=sys.stderr)
+        return 1
+    down = ((edit or {}).get('film') or {}).get('downbeats') or [0.25]
+    rv = ((edit or {}).get('reveal') or {}).get('film_s')
+    t0 = float(rv if rv is not None else down[min(len(down) - 1, len(down) // 2)])
+    seg = bed[int(t0 * MK.SR):int((t0 + AUDITION_BED_S) * MK.SR)]
+    if len(seg) < int(AUDITION_BED_S * MK.SR) // 2:
+        seg = bed[:int(AUDITION_BED_S * MK.SR)]
+    kit = Kit(st['lock'], a.takes, st['status'])
+    parts, index, t = [], [], 0.0
+    gap = np.zeros((int(0.3 * MK.SR), 2))
+    for role, r in kit.roles.items():
+        if not r:
+            continue
+        for tk in r['takes']:
+            y = seg.copy()
+            lv = MK.bed_level(y, 1.0)
+            g = MK.gain_db(tk, r, lv)
+            x = kit.audio(tk)
+            x = np.stack([x, x], 1) if x.ndim == 1 else x
+            at = int(round((1.0 - tk.get(r.get('align', 'onset') + '_s', 0.0)) * MK.SR))
+            m = min(len(x), len(y) - max(0, at))
+            y[max(0, at):max(0, at) + m] += x[:m] * 10 ** (g / 20)
+            index.append(f"{t + 1.0:8.3f}  {role:14s} {r['sound']:26s} {tk['file']}  gain {g:+.1f} dB"
+                         + (f" (bed_db {r['bed_db']:g} over {lv:.1f} LUFS)" if r.get('bed_db') is not None and lv is not None else ' (level_db)'))
+            parts += [y, gap]
+            t += len(y) / MK.SR + 0.3
+    if not parts:
+        print('kit.py: the kit sounds no role', file=sys.stderr)
+        return 1
+    out = np.concatenate(parts)
+    pk = float(np.abs(out).max())
+    if pk > 10 ** (-1 / 20):
+        out *= 10 ** (-1 / 20) / pk
+    os.makedirs(os.path.dirname(os.path.abspath(a.output)) or '.', exist_ok=True)
+    sf.write(a.output, out.astype(np.float32), MK.SR, subtype='PCM_24')
+    with open(os.path.splitext(a.output)[0] + '.txt', 'w', encoding='utf-8', newline='\n') as fh:
+        fh.write('\n'.join(index) + '\n')
+    print(f'kit: wrote {a.output}: {len(index)} takes over {AUDITION_BED_S:g} s of the film\'s bed from {t0:.2f} s (index in '
+          f'{os.path.splitext(a.output)[0]}.txt); it holds the track: keep it out of git (out/ is ignored)')
+    return 0
+
+
 def cmd_audition(a, score_python):
+    if getattr(a, 'over_bed', False):
+        return cmd_audition_over_bed(a)
     es = need_earshot(a, score_python)
     if not es:
         return 2
@@ -713,7 +871,7 @@ def cmd_audition(a, score_python):
     if code != 0 or res is None:
         print(f'kit.py: earshot kit audition failed: {err.splitlines()[-1] if err else code}', file=sys.stderr)
         return 1
-    print(res.get('summary'))
+    print(house_wording(res.get('summary')))
     return 0
 
 
@@ -736,10 +894,13 @@ def main(argv=None):
     ap.add_argument('--score', default='audio/score.json')
     ap.add_argument('--cues', default='out/cues.json')
     ap.add_argument('--python', help='the interpreter that has earshot (overrides sfx.python and EARSHOT_PYTHON)')
-    ap.add_argument('--preset', default='calm', choices=PRESETS, help='init: calm (text-led, default), crisp, minimal')
+    ap.add_argument('--preset', default='calm', choices=PRESETS, help='init: calm (text-led, default), crisp, minimal, '
+                    'launch (a film cut to a licensed track; earshot 0.4+)')
     ap.add_argument('--force', action='store_true', help='init: replace audio/kit.json; render: render every take again')
     ap.add_argument('--from', dest='source', metavar='DIR', help='vendor: copy a rendered kit (takes + lock) from here')
     ap.add_argument('-o', '--output', default='out/qa/kit_audition.wav', help='audition: the WAV to write')
+    ap.add_argument('--over-bed', action='store_true', help="audition: every take over 2 s of the film's own track at its "
+                    'bed_db (needs audio/music/edit.json)')
     ap.add_argument('--json', metavar='PATH', help='check / listen: write the report here')
     a = ap.parse_args(argv)
     a.takes = takes_dir_for(a.kit, a.takes)
@@ -762,7 +923,7 @@ def main(argv=None):
         if a.cmd == 'check':
             return cmd_check(a, score_python)
         if a.cmd == 'audition':
-            return cmd_audition(a, score_python)
+            return cmd_audition(a, score_python) if not a.over_bed else cmd_audition_over_bed(a)
         return cmd_listen(a)
     except KitError as e:
         print(f'kit.py: {e}', file=sys.stderr)

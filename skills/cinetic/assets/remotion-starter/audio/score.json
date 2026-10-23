@@ -4,15 +4,8 @@
   "music": "none",
   "sfx": { "engine": "auto", "kit": "audio/kit.json", "python": null },
   "chords": ["Em9", "Cmaj9", "Am11", "Am11 D7sus4", "Gadd9", "-"],
-  "sections": [
-    { "bars": [1, 1], "style": "intro" },
-    { "bars": [2, 4], "style": "build" },
-    { "bars": [5, 5], "style": "resolve" },
-    { "bars": [6, 6], "style": "hold" }
-  ],
-  "signature": { "tick": "G6", "tock": "D6", "motif": [0, 7, 14], "rhythm": [0, 0.5, 1.5] },
   "typing": "auto",
   "payoff": "@lockup",
-  "mix": { "music": 1.0, "sfx": 1.0, "reverb": 1.0, "sidechain": 0.55, "duck_db": 3 },
+  "mix": { "music": 1.0, "sfx": 1.0, "reverb": 1.0 },
   "master": { "ceiling": 0.77, "fade": 1.3 }
 }
