@@ -1,8 +1,8 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { AbsoluteFill, useCurrentFrame, useCurrentScale, useVideoConfig } from 'remotion';
 import { C } from '../brand/tokens';
-import { COPY } from '../timeline';
-import { pace } from './anim';
+import { useFilm } from './film';
+import { auditing, drain, setAuditing } from './registry';
 import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 
 // Layout audit, mounted only when a composition gets the prop {audit: true}
@@ -22,9 +22,13 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 //   CINETIC_AUDIT {"comp":"Film","frame":120,"safe":{...},"minPx":22,"words":4,"uiWords":0,"boxes":[...],"issues":[...]}
 // Each box carries its effective opacity (its own times its ancestors'); layout-audit.sh --speed
 // pairs the boxes of frame f and f+1 by id to measure how fast readable text travels.
+// It also logs the frame's tweens from the registry (lib/registry.ts), which audit mode switches on:
+//   CINETIC_TWEENS {"comp":"Film","frame":120,"tweens":[{"from":96,"to":128,"token":"snapOut","family":"arrive"},...]}
+// with spans in absolute frames (scripts/grammar-score.mjs reads them).
 // Tag the element whose box IS the visible text (the line, not an oversized wrapper).
 
 export const AUDIT_TAG = 'CINETIC_AUDIT';
+export const TWEENS_TAG = 'CINETIC_TWEENS';
 /** Smallest text a viewer must read, px at 1080p (scaled by U for other sizes). */
 export const MIN_TEXT_PX = 22;
 /** The same in a tall (9:16) frame, which is watched full-screen on a phone next to feed UI. */
@@ -66,11 +70,13 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
   const frame = useCurrentFrame();
   const zoom = useCurrentScale(); // the Studio scales the canvas; renders are 1
   const { width, height, id: comp } = useVideoConfig();
+  const { copy: COPY, pace } = useFilm(); // the film's copy and pace (lib/film.ts)
   const SAFE: Insets = safeInsets(safe, width, height);
   const zone = typeof safe === 'string' ? safe : safe ? 'custom' : presetFor(width, height);
   const U = Math.min(width, height) / 1080;
   const minPx = (height / width > 1.5 ? MIN_TEXT_PX_TALL : MIN_TEXT_PX) * U;
   const [found, setFound] = useState<{ boxes: Box[]; issues: Issue[] }>({ boxes: [], issues: [] });
+  if (!auditing()) setAuditing(true); // the registry is on whenever the audit is mounted
 
   useLayoutEffect(() => {
     const host = ref.current;
@@ -132,8 +138,11 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
       issues.push({ kind: 'words', id: film.map((b) => b.id).join('+'), detail: `${words} film words readable at once > ${cap}${replace ? ' (replace chain)' : ''}: one fragment at a time` });
     const clean = boxes.map(({ el: _el, ...b }) => b);
     console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, issues })}`);
+    // the tweens evaluated for this frame, their spans moved into absolute frames (a caller's frame argument is its own clock)
+    const tweens = drain().map((r) => ({ from: r.from + (frame - r.frame), to: r.to + (frame - r.frame), token: r.token, family: r.family }));
+    console.log(`${TWEENS_TAG} ${JSON.stringify({ comp, frame, tweens })}`);
     setFound({ boxes: clean, issues });
-  }, [frame, zoom, width, height, comp, zone, SAFE.top, SAFE.right, SAFE.bottom, SAFE.left, minPx]);
+  }, [frame, zoom, width, height, comp, zone, SAFE.top, SAFE.right, SAFE.bottom, SAFE.left, minPx, COPY, pace]);
 
   const bad = new Set(found.issues.flatMap((i) => i.id.split('+')));
   return (

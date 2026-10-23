@@ -1,6 +1,8 @@
 import React from 'react';
 import { C } from '../brand/tokens';
 import { mix } from '../lib/anim';
+import { type FilmCtx, fpsOf } from '../lib/film';
+import type { Declares } from '../timeline';
 
 /**
  * System-style arrow pointer, placed ONLY by transform (tip at x, y). A fractional left/top next to
@@ -41,9 +43,12 @@ export const cursorArc = (a: Pt, b: Pt, t: number, bow = 0.2): Pt => {
   return { x: mix(mix(a.x, cx, t), mix(cx, b.x, t), t), y: mix(mix(a.y, cy, t), mix(cy, b.y, t), t) };
 };
 
-/** Click press 0..1 for Cursor's `press` prop: down over 4 f from `at`, recoil over the next 8 f. */
-export const pressAt = (frame: number, at: number) => {
-  const t = frame - at;
+/** Click press 0..1 for Cursor's `press` prop: down over 4 f from `at`, recoil over the next 8 f (60 fps frames; `fps` converts). */
+export const pressAt = (frame: number, at: number, fps: number = fpsOf()) => {
+  const t = ((frame - at) * 60) / fps;
   if (t <= 0 || t >= 12) return 0;
   return t < 4 ? t / 4 : 1 - (t - 4) / 8;
 };
+
+/** What a Cursor instance does on purpose (steps, flashes, camera blur, seams): nothing in its 1.1 form. */
+export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

@@ -1,6 +1,7 @@
 import React from 'react';
-import { arrive, arriveK, blurIn, blurOut, depart, E, easeOf, pace as filmPace, type Pace, prog } from '../lib/anim';
-import { f60 } from '../timeline';
+import { arrive, arriveK, blurIn, blurOut, depart, E, easeOf, type Pace, prog } from '../lib/anim';
+import { f60, type FilmCtx, useFilm } from '../lib/film';
+import type { Declares } from '../timeline';
 
 /**
  * Word-by-word reveal of one fragment (1-4 words; a longer thought is a chain: fx/Chain). Each word
@@ -39,13 +40,15 @@ export const Words: React.FC<{
   style?: React.CSSProperties;
   wordStyle?: (i: number, p: number) => React.CSSProperties; // p = that word's 0..1 entrance
   size?: number; // px font size, so the rise stops from ~1 px/f (arriveK); default: style.fontSize when it is a number
-}> = ({ text, frame, start, id = 'words', starts, pace = filmPace, stagger, dur, ease, rise, blur, out, outDur, exit, style, wordStyle, size }) => {
-  const st = stagger ?? f60(pace.stagger);
-  const d = dur ?? f60(pace.wordDur);
+}> = ({ text, frame, start, id = 'words', starts, pace: paceProp, stagger, dur, ease, rise, blur, out, outDur, exit, style, wordStyle, size }) => {
+  const film = useFilm();
+  const pace = paceProp ?? film.pace; // the film's pace (lib/film.ts), unless the prop overrides it
+  const st = stagger ?? f60(pace.stagger, film.fps);
+  const d = dur ?? f60(pace.wordDur, film.fps);
   const e = ease ?? easeOf(pace);
   const r = rise ?? pace.rise;
   const bl = blur ?? pace.blur;
-  const od = outDur ?? f60(pace.exitDur);
+  const od = outDur ?? f60(pace.exitDur, film.fps);
   const together = (exit ?? pace.exit) === 'together';
   const px = size ?? (typeof style?.fontSize === 'number' ? style.fontSize : undefined);
   const k = px ? arriveK(r * px, d, e) : 0.94; // where the drawn rise stops
@@ -79,3 +82,6 @@ export const Words: React.FC<{
     </span>
   );
 };
+
+/** What a Words instance does on purpose (steps, flashes, camera blur, seams): nothing; it is one eased reveal. */
+export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

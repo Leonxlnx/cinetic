@@ -1,25 +1,44 @@
 // The film's pace: how fast text arrives, how long it holds, how much of it is on screen at once,
 // and the default durations of every text component. Two profiles, both in 60 fps frames (convert
 // with f60() at the point of use):
-// - calm (the house default): fragments of 1-4 words that rise in over 36 f, 11 f apart, hold at
-//   least 1 s, and take turns with the picture. In 8 frame-measured professional films a fragment
-//   holds 0.6-1.2 s; calm sits at the slow end of that range, about 1.0-1.5 s.
-// - crisp: the denser launch-film tempo (26 f entrances, 6 f stagger, per-word exits) for briefs
-//   that ask for energy: teasers, drops, dev-tool launches.
-// src/timeline.ts picks one with PACE_NAME; src/lib/anim.ts exports it as `pace`, the components
-// read their defaults from it, and scripts/grid-check.ts checks COPY against the same numbers.
-// Pure data and arithmetic with no imports, so Node scripts load it through timeline.ts.
+// - calm (the house default): fragments of 1-4 words. Each word fades in over 32 f on E.snapOut
+//   while it rises a third of the line box over 25 f on M.rise, 12 f apart on the reading cadence
+//   (a longer word earns a longer gap), no blur. A fragment holds at least 1 s (house range for a
+//   fragment's hold: 0.6-1.2 s; calm sits at the slow end, about 1.0-1.5 s) and takes turns with
+//   the picture. A build line re-centres with a jump (22 f on E.jump, no lead); exits accelerate
+//   (into a cut or a mask at full opacity, otherwise with a short fade in the move's last half);
+//   the newest fragment holds the accent 18 f, then cools to ink linearly over 13 f.
+// - crisp: the denser launch tempo (26 f entrances, 8 f apart, faster exits) for briefs that ask
+//   for energy: teasers, drops, dev-tool launches.
+// src/timeline.ts picks one with PACE_NAME; the components read their defaults from the film
+// context (src/lib/film.ts), and scripts/grid-check.ts checks COPY against the same numbers.
+// scripts/gen-pace.mjs copies the check numbers into grid-check.ts and export-cues.ts and the whole
+// pace into the HyperFrames motion.js (run it after editing PACE; scripts/test/mirror.test.mjs fails
+// while they differ). Pure data and arithmetic with no imports, so Node scripts load it through
+// timeline.ts.
 
 export type PaceName = 'calm' | 'crisp';
 
+/** The easing token (lib/anim.ts E) a word fades in on. 'outSoft' and 'out' are the 1.1 choices. */
+export type PaceEase = 'snapOut' | 'glideOut' | 'settleOut' | 'softOut' | 'outSoft' | 'out';
+
+/**
+ * Every knob in 60 fps frames. The knobs marked 1.2 are optional in the type, so a pace object
+ * written for 1.1 still type-checks and renders; a component reads a missing one as its 1.1
+ * behaviour (riseUnit 'em', cadence 'even', exit as `exit` says, accent over accentDur).
+ */
 export type Pace = {
-  wordDur: number; // frames one word takes to rise in
-  stagger: number; // frames between the starts of two words of a fragment
-  rise: number; // em a word rises
+  wordDur: number; // frames one word takes to fade in (and, in 1.1 components, to rise)
+  stagger: number; // frames between the starts of two words of a fragment (the mean gap on the reading cadence)
+  rise: number; // how far a word rises: in em (riseUnit 'em', 1.1) or as a share of the line box (riseUnit 'line')
+  riseUnit?: 'em' | 'line'; // 1.2
+  riseDur?: number; // 1.2: frames of the rise, on M.rise (the fade keeps wordDur on `ease`)
   blur: number; // px of entry blur (0: none; blur on calm type reads as a gimmick)
-  ease: 'outSoft' | 'out'; // the E token a word rises on
-  exit: 'together' | 'words'; // a fragment leaves as one, or word by word at half the stagger
+  ease: PaceEase; // the E token a word fades in on
+  cadence?: 'even' | 'reading'; // 1.2: even gaps, or each gap from the previous word's length (lib/cadence.ts reading())
+  exit: 'together' | 'words' | 'launch' | 'launchFade' | 'auto'; // 1.1: together | words. 1.2: launch (full opacity into a cut or mask), launchFade (an 8-12 f fade in the move's last half), auto (launch into a cut or mask, else launchFade)
   exitDur: number; // frames of the exit
+  exitFade?: number; // 1.2: frames of a launchFade exit's opacity drop
   exitLift: number; // em the text lifts as it leaves
   holdBase: number; // hold after resolve: max(holdMin, holdBase + holdPerWord * words)
   holdPerWord: number;
@@ -36,29 +55,38 @@ export type Pace = {
   textShare: number; // share of body frames with film copy on screen
   freeRun: number; // frames: every 10 s holds a text-free picture beat at least this long
   maxGap: number; // frames without an event (reading windows count as covered)
-  accentDur: number; // frames the newest fragment takes to relax from the accent to ink
-  recentreDur: number; // frames of a build line's re-centre (exponential, time constant dur / 6)
-  recentreLead: number; // frames the re-centre starts before the new fragment, so it lands in open space
+  accentDur: number; // frames the newest fragment shows the accent before it is ink again (1.1 components: an eased relax over this; 1.2: accentHold + accentCool)
+  accentHold?: number; // 1.2: frames the accent holds after the fragment lands
+  accentCool?: number; // 1.2: frames of the linear cool to ink
+  accentSpace?: 'srgb' | 'oklab'; // 1.2: the space the cool is linear in (lib/color.ts accentFade)
+  recentre?: 'jump' | 'glide' | 'slot'; // 1.2: how a build line makes room (jump: E.jump, lead 0; glide: 1.1 E.expo; slot: opens recentreLead early)
+  recentreDur: number; // frames of a build line's re-centre
+  recentreLead: number; // frames the re-centre starts before the new fragment (0 for a jump)
   move: { base: number; perPx: number; camMin: number; camMax: number }; // durFor(): seconds
   fx: {
-    mask: { stagger: number; dur: number; exitDur: number }; // MaskRise
-    typeFPerChar: number; // TypeOn's default time box per character
-    scramble: { stagger: number; rate: number; fadeIn: number }; // Scramble (an accent, never film copy)
+    mask: { stagger: number; dur: number; exitDur: number; head?: 'ease' | 'linearStop'; lastScale?: number }; // MaskRise (1.2: a linear head that stops dead; the last word takes lastScale x dur)
+    typeFPerChar: number; // TypeOn's default time box per character (2 f = 30 characters a second)
+    scramble: { stagger: number; rate: number; fadeIn: number; order?: 'ltr' | 'random' | 'centre'; rateHz?: number }; // Scramble: frames per lock, glyph changes per frame, fade-in (1.2: lock order, glyph changes per second per cell)
     roll: { dur: number; roll: number }; // Roll: count length, one digit's slide
     morph: number; // Morph
-    iris: number; // Iris
+    iris: number; // Iris: frames
+    irisMode?: { mode: 'ease' | 'rate'; ratio: number }; // 1.2: rate mode grows the radius by `ratio` a frame (at 60 fps)
   };
 };
 
 export const PACE: Record<PaceName, Pace> = {
   calm: {
-    wordDur: 36,
-    stagger: 11,
-    rise: 0.2,
+    wordDur: 32,
+    stagger: 12,
+    rise: 0.33,
+    riseUnit: 'line',
+    riseDur: 25,
     blur: 0,
-    ease: 'outSoft',
-    exit: 'together',
-    exitDur: 24,
+    ease: 'snapOut',
+    cadence: 'reading',
+    exit: 'auto',
+    exitDur: 17,
+    exitFade: 10,
     exitLift: 0.12,
     holdBase: 42,
     holdPerWord: 8,
@@ -75,27 +103,36 @@ export const PACE: Record<PaceName, Pace> = {
     textShare: 0.65,
     freeRun: 90,
     maxGap: 72,
-    accentDur: 24,
-    recentreDur: 96,
-    recentreLead: 36,
+    accentDur: 31,
+    accentHold: 18,
+    accentCool: 13,
+    accentSpace: 'srgb',
+    recentre: 'jump',
+    recentreDur: 22,
+    recentreLead: 0,
     move: { base: 0.5, perPx: 0.0016, camMin: 0.9, camMax: 3.0 },
     fx: {
-      mask: { stagger: 10, dur: 38, exitDur: 22 },
-      typeFPerChar: 3,
-      scramble: { stagger: 5, rate: 1.0, fadeIn: 16 },
+      mask: { stagger: 10, dur: 10, exitDur: 22, head: 'linearStop', lastScale: 2.8 },
+      typeFPerChar: 2,
+      scramble: { stagger: 3, rate: 1.0, fadeIn: 16, order: 'centre', rateHz: 10 },
       roll: { dur: 90, roll: 18 },
       morph: 52,
-      iris: 32,
+      iris: 18,
+      irisMode: { mode: 'rate', ratio: 1.28 },
     },
   },
   crisp: {
     wordDur: 26,
-    stagger: 6,
-    rise: 0.32,
-    blur: 8,
-    ease: 'out',
-    exit: 'words',
-    exitDur: 16,
+    stagger: 8,
+    rise: 0.33,
+    riseUnit: 'line',
+    riseDur: 22,
+    blur: 0,
+    ease: 'snapOut',
+    cadence: 'reading',
+    exit: 'auto',
+    exitDur: 14,
+    exitFade: 8,
     exitLift: 0.19,
     holdBase: 36,
     holdPerWord: 6,
@@ -112,17 +149,22 @@ export const PACE: Record<PaceName, Pace> = {
     textShare: 0.8,
     freeRun: 60,
     maxGap: 48,
-    accentDur: 14,
-    recentreDur: 60,
-    recentreLead: 20,
+    accentDur: 20,
+    accentHold: 7,
+    accentCool: 13,
+    accentSpace: 'srgb',
+    recentre: 'jump',
+    recentreDur: 16,
+    recentreLead: 0,
     move: { base: 0.35, perPx: 0.00135, camMin: 0.6, camMax: 2.4 },
     fx: {
-      mask: { stagger: 5, dur: 30, exitDur: 16 },
+      mask: { stagger: 8, dur: 10, exitDur: 16, head: 'linearStop', lastScale: 2.8 },
       typeFPerChar: 2,
-      scramble: { stagger: 3, rate: 1.5, fadeIn: 10 },
+      scramble: { stagger: 3, rate: 1.5, fadeIn: 10, order: 'centre', rateHz: 10 },
       roll: { dur: 60, roll: 14 },
       morph: 40,
-      iris: 24,
+      iris: 18,
+      irisMode: { mode: 'rate', ratio: 1.28 },
     },
   },
 };

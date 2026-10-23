@@ -1,5 +1,6 @@
 import React from 'react';
-import { useVideoConfig } from 'remotion';
+import { type FilmCtx, useFilm } from '../lib/film';
+import type { Declares } from '../timeline';
 
 /**
  * Rack focus without Chromium's stepped blur ramp. Animating filter: blur() on a large layer jumps
@@ -16,7 +17,7 @@ export const RackFocus: React.FC<{
   render: () => React.ReactNode; // content in frame coordinates
   style?: React.CSSProperties;
 }> = ({ t, blur, mid = false, overscan = 80, render, style }) => {
-  const { width, height } = useVideoConfig();
+  const { width, height } = useFilm();
   const box: React.CSSProperties = { position: 'absolute', left: -overscan, top: -overscan, width: width + overscan * 2, height: height + overscan * 2, overflow: 'hidden' };
   const inner: React.CSSProperties = { position: 'absolute', left: overscan, top: overscan, width, height };
   const tc = Math.min(1, Math.max(0, t));
@@ -33,3 +34,6 @@ export const RackFocus: React.FC<{
     </div>
   );
 };
+
+/** What a RackFocus instance does on purpose (steps, flashes, camera blur, seams): nothing in its 1.1 form. */
+export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

@@ -1,6 +1,6 @@
 // Fixture for scripts/test/grid-check.test.mjs. expect: chain-gap=1 copy-concurrent=1
 // A replace chain timed the old way, its first fragment leaving only 6 f before the next rises:
-// the first is still fading out (a 24 f exit) when the second arrives in its place (chain-gap),
+// the first is still fading out (a 17 f exit when calm) when the second arrives in its place (chain-gap),
 // and the two together put 6 words on screen in a replace chain (copy-concurrent, max 5).
 export const FPS = 60;
 export const BPM = 100;

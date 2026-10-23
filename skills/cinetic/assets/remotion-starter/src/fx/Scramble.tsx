@@ -1,8 +1,9 @@
 import React from 'react';
-import { C, FONT, TYPE, U, typeStyle } from '../brand/tokens';
-import { E, fd, pace, prog, rand } from '../lib/anim';
+import { C, FONT, TYPE, typeStyle } from '../brand/tokens';
+import { E, fd, prog, rand } from '../lib/anim';
+import { f60, type FilmCtx, fpsOf, paceOf, uOf, useFilm } from '../lib/film';
 import { measureTracked } from '../lib/measure';
-import { f60 } from '../timeline';
+import type { Declares } from '../timeline';
 
 type Role = keyof typeof TYPE;
 
@@ -33,8 +34,8 @@ const ranks = (text: string, order: 'ltr' | 'random', seed: number | string) => 
  * Whole frame each character locks to its final glyph (characters that never scramble: `start`).
  * Put a tick on each for sound (they are integers); the component reads the same schedule.
  */
-export const scrambleFrames = (text: string, t: ScrambleTiming): number[] => {
-  const { start, hold = f60(18), stagger = f60(pace.fx.scramble.stagger), order = 'ltr', seed = 0 } = t;
+export const scrambleFrames = (text: string, t: ScrambleTiming, film?: Partial<FilmCtx>): number[] => {
+  const { start, hold = f60(18, fpsOf(film)), stagger = f60(paceOf(film).fx.scramble.stagger, fpsOf(film)), order = 'ltr', seed = 0 } = t;
   return ranks(text, order, seed).map((r) => (r < 0 ? Math.round(start) : Math.round(start + hold + r * stagger)));
 };
 
@@ -68,13 +69,17 @@ export const Scramble: React.FC<
     style?: React.CSSProperties;
     lockStyle?: (i: number, age: number) => React.CSSProperties;
   }
-> = ({ text, frame, id = 'scramble', rate = pace.fx.scramble.rate, fadeIn = f60(pace.fx.scramble.fadeIn), set, color = C.mute, role = 'display', size = TYPE[role].size * U, family = FONT.text, style, lockStyle, ...t }) => {
+> = ({ text, frame, id = 'scramble', rate: rateProp, fadeIn: fadeInProp, set, color = C.mute, role = 'display', size: sizeProp, family = FONT.text, style, lockStyle, ...t }) => {
+  const film = useFilm();
+  const rate = rateProp ?? film.pace.fx.scramble.rate;
+  const fadeIn = fadeInProp ?? f60(film.pace.fx.scramble.fadeIn, film.fps);
+  const size = sizeProp ?? TYPE[role].size * uOf(film);
   const { start, seed = 0 } = t;
   const { weight, track } = TYPE[role];
   const F = fd(frame);
   if (F < start) return null;
   const chars = [...text];
-  const locks = scrambleFrames(text, t);
+  const locks = scrambleFrames(text, t, film);
   const order = ranks(text, t.order ?? 'ltr', seed);
   const m = order.filter((r) => r >= 0).length;
   const P = Math.max(1, Math.round(m / Math.max(0.1, rate))); // frames between changes of one glyph
@@ -125,3 +130,6 @@ export const Scramble: React.FC<
     </span>
   );
 };
+
+/** What a Scramble instance does on purpose (steps, flashes, camera blur, seams): nothing in its 1.1 form. */
+export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

@@ -2,8 +2,8 @@
 // sits at screen point (sx, sy) at scale k", which is how a director thinks about framing, and
 // shots chain without drift: lc(lc(A, B, t1), C, t2). Anchors lerp linearly, k in log space.
 import type React from 'react';
-import { f60 } from '../timeline';
 import { clamp, lmix, mix } from './anim';
+import { f60, fpsOf } from './film';
 
 export type Shot = {
   ax: number; // world point that is framed ...
@@ -56,7 +56,10 @@ export const toScreen = (s: Shot, p: { x: number; y: number }) => ({
   y: s.sy + (p.y - s.ay) * s.k,
 });
 
-/** Push-in "breath" inside a hold: multiply k by it (amount 0.025 = +2.5%). Released by the next move. */
+/**
+ * Push-in "breath" inside a hold: multiply k by it (amount 0.025 = +2.5%). Released by the next move.
+ * Deprecated: lib/handoff.ts creep(f, from, { pctPerSec }) is the same linear push in film time, at any fps.
+ */
 export const breath = (t: number, amount = 0.025) => 1 + amount * t;
 
 /** Zoom-out hop during a whip (t = the whip's 0..1 progress): multiply k by it. */
@@ -66,25 +69,37 @@ export const dip = (t: number, depth = 0.18) => 1 - depth * Math.sin(Math.PI * t
 export const zoomSpeed = (k: (f: number) => number, f: number) => Math.log(Math.max(1e-6, k(f)) / Math.max(1e-6, k(f - 1)));
 
 /**
- * Velocity handoff for a zoom-through cut: the incoming shot keeps zooming at the outgoing move's
- * log-scale speed `v0` (zoomSpeed at the cut), then decays exponentially (time constant settle/5,
- * expo-out-like) to rest exactly at `settle` frames with zero velocity. A cut at peak speed then
- * reads as one move; an incoming shot that starts at rest reads as a stall at the cut. Multiply the
- * incoming shot's k by `.k` at t = frames since the cut (0 on its first frame); `.from` is where it
- * starts (= exp(-0.193·v0·settle)), so lengthen `settle` for a bigger entry, shorten it for less.
- * Defaults at 60 fps: settle 30 f. An exit of 1 -> 1.2 on E.in over 12 f, cut on its 12th frame
- * (v0 = 0.047), starts the entry at 0.76x: the 0.75 -> 1 entry of references/transitions.md §4.8,
- * with no speed step at the cut.
+ * Velocity handoff for any carried quantity (x, y, log scale, roll): the incoming shot starts offset
+ * by `from` and moving at `v0` (units per film frame, the outgoing move's speed on the cut frame),
+ * and the offset decays exponentially (time constant settle / 5) to exactly 0, with zero speed, at
+ * `settle` film frames. Add `d` to the incoming shot's value at t = frames since the cut (0 on its
+ * first frame). A cut at peak speed then reads as one move; an incoming shot that starts at rest
+ * reads as a stall. Defaults at the film's fps: settle 30 f at 60 fps. lib/handoff.ts handoffShot()
+ * applies it to a whole Shot.
  */
-export const zoomHandoff = (t: number, v0: number, settle = f60(30)) => {
-  const T = Math.max(1, settle);
+export const handoff = (t: number, v0: number, settle?: number, fps: number = fpsOf()) => {
+  const T = Math.max(1, settle ?? f60(30, fps));
   const a = 5; // window length in time constants
   const tau = T / a;
   const ea = Math.exp(-a);
   const s = clamp(t / T);
   // exponential decay minus its tangent at T, so position and velocity both reach 0 at t = T
-  const u = (-v0 * tau * (Math.exp(-a * s) - ea * (1 + a - a * s))) / (1 - ea);
+  const d = (-v0 * tau * (Math.exp(-a * s) - ea * (1 + a - a * s))) / (1 - ea);
   const v = (v0 * (Math.exp(-a * s) - ea)) / (1 - ea);
-  const u0 = (-v0 * tau * (1 - ea * (1 + a))) / (1 - ea);
-  return { k: Math.exp(u), v: t >= T ? 0 : v, from: Math.exp(u0) };
+  const from = (-v0 * tau * (1 - ea * (1 + a))) / (1 - ea);
+  return { d, v: t >= T ? 0 : v, from };
+};
+
+/**
+ * Velocity handoff for a zoom-through cut: handoff() on log scale. The incoming shot keeps zooming at
+ * the outgoing move's log-scale speed `v0` (zoomSpeed at the cut), then comes to rest at `settle`.
+ * Multiply the incoming shot's k by `.k` at t = frames since the cut (0 on its first frame); `.from`
+ * is where it starts (= exp(-0.193·v0·settle)), so lengthen `settle` for a bigger entry, shorten it
+ * for less. Defaults at 60 fps: settle 30 f. An exit of 1 -> 1.2 on E.in over 12 f, cut on its 12th
+ * frame (v0 = 0.047), starts the entry at 0.76x: the 0.75 -> 1 entry of references/transitions.md
+ * §4.8, with no speed step at the cut.
+ */
+export const zoomHandoff = (t: number, v0: number, settle?: number, fps: number = fpsOf()) => {
+  const h = handoff(t, v0, settle, fps);
+  return { k: Math.exp(h.d), v: h.v, from: Math.exp(h.from) };
 };

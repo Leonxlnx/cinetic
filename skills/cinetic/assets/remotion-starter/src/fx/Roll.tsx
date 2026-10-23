@@ -1,7 +1,8 @@
 import React from 'react';
-import { FONT, TYPE, U, typeStyle } from '../brand/tokens';
-import { arrive, arriveK, clamp, E, Ease, fd, mix, pace, prog } from '../lib/anim';
-import { f60, FPS } from '../timeline';
+import { FONT, TYPE, typeStyle } from '../brand/tokens';
+import { arrive, arriveK, clamp, E, Ease, fd, mix, prog } from '../lib/anim';
+import { f60, type FilmCtx, fpsOf, uOf, useFilm } from '../lib/film';
+import type { Declares } from '../timeline';
 
 type Role = keyof typeof TYPE;
 
@@ -28,8 +29,8 @@ export const countSteps = (a: number, b: number, start: number, dur: number, eas
  * The steps that get a sound: at most `perSec` a second (default 12), always keeping the last, so a
  * fast count ticks as a steady run instead of a buzz. The picture still rolls every step.
  */
-export const thinSteps = (steps: RollStep[], perSec = 12): RollStep[] => {
-  const gap = FPS / perSec;
+export const thinSteps = (steps: RollStep[], perSec = 12, fps: number = fpsOf()): RollStep[] => {
+  const gap = fps / perSec;
   const out: RollStep[] = [];
   steps.forEach((s, i) => {
     const kept = out[out.length - 1];
@@ -77,7 +78,11 @@ export const Roll: React.FC<{
   family?: string;
   lead?: number; // mask height and slot pitch, em
   style?: React.CSSProperties;
-}> = ({ frame, from, steps, to, start = 0, dur = f60(pace.fx.roll.dur), ease = E.out, roll = f60(pace.fx.roll.roll), digits, pad = false, group, id = 'roll', role = 'display', size = TYPE[role].size * U, family = FONT.text, lead = 1.2, style }) => {
+}> = ({ frame, from, steps, to, start = 0, dur: durProp, ease = E.out, roll: rollProp, digits, pad = false, group, id = 'roll', role = 'display', size: sizeProp, family = FONT.text, lead = 1.2, style }) => {
+  const film = useFilm();
+  const dur = durProp ?? f60(film.pace.fx.roll.dur, film.fps);
+  const roll = rollProp ?? f60(film.pace.fx.roll.roll, film.fps);
+  const size = sizeProp ?? TYPE[role].size * uOf(film);
   const seq = steps ?? (to === undefined ? [] : countSteps(from, to, start, dur, ease));
   const values = [Math.max(0, Math.round(from)), ...seq.map((x) => Math.max(0, Math.round(x.value)))];
   const D = digits ?? Math.max(...values.map((v) => String(v).length));
@@ -132,3 +137,6 @@ export const Roll: React.FC<{
     </span>
   );
 };
+
+/** What a Roll instance does on purpose (steps, flashes, camera blur, seams): nothing in its 1.1 form. */
+export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

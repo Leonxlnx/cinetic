@@ -3,11 +3,27 @@
 // Think in bars and beats, never in seconds. Keep this file free of React and CSS imports:
 // Node scripts load it directly.
 import { holdFor, PACE, readingWindows, revealFor, wordCount, type PaceName } from './lib/pace';
+import { bar, MUSIC } from './music';
 
 export { PACE } from './lib/pace'; // grid-check checks COPY against the film's own pace numbers
+/**
+ * The film-time music grid (src/music.ts). null: no licensed track (effects only, or before the
+ * track is chosen), and the timeline runs on its own BPM grid below. With a track, scripts/audio/
+ * track.py grid writes src/music.ts, BPM becomes the track's and b() follows the music's bars.
+ */
+export { MUSIC } from './music';
 
 export const FPS = 60;
-export const BPM = 100;
+/**
+ * This film's own grid tempo, used while src/music.ts carries no track. new-film.sh --bpm rewrites
+ * the `const BPM = ...;` line inside, so keep that line as it is.
+ */
+const GRID_BPM = ((): number => {
+const BPM = 100;
+  return BPM;
+})();
+/** The tempo every helper and check uses: the track's when src/music.ts carries one, else GRID_BPM. */
+export const BPM = MUSIC?.bpm ?? GRID_BPM;
 export const W = 1920;
 export const H = 1080;
 /**
@@ -17,21 +33,30 @@ export const H = 1080;
  */
 export const PACE_NAME: PaceName = 'calm';
 
-/** Frames per beat. Must be a whole number (grid-check fails otherwise): 60 fps -> 90, 100, 120, 144, 150 BPM. */
+/**
+ * Frames per beat. Without a track it must be a whole number (grid-check fails otherwise): 60 fps ->
+ * 90, 100, 120, 144, 150 BPM. With a track it is fractional (124 BPM = 29.03 f) and b() rounds.
+ */
 export const BEAT = (60 / BPM) * FPS;
 export const BAR = BEAT * 4;
 /**
  * Absolute frame of a grid position: bar is 1-based, beat 0-3, sub = 16ths within the beat.
- * b(3) is the downbeat of bar 3; b(2, 1, 2) is the "and" of beat 2 in bar 2.
+ * b(3) is the downbeat of bar 3; b(2, 1, 2) is the "and" of beat 2 in bar 2. With a track (MUSIC
+ * set) it is the music's grid from its first downbeat, rounded: a whole frame within 0.5 f of the
+ * music. Its fractional twin is bar() in src/music.ts, for the rare place that needs it.
  */
-export const b = (bar: number, beat = 0, sub = 0) => Math.round(((bar - 1) * 4 + beat) * BEAT + sub * (BEAT / 4));
+export const b = (n: number, beat = 0, sub = 0) =>
+  MUSIC ? Math.round(bar(n, beat, sub)) : Math.round(((n - 1) * 4 + beat) * BEAT + sub * (BEAT / 4));
 
 /**
  * A choreography length written in 60 fps frames (the unit every number in the cinetic
- * references uses), converted to this film's fps. Cues come from b(); durations inside a move
- * use f60(), so the film keeps its timing if --fps changes.
+ * references uses), converted to this film's fps (or to `fps`, for a composition at another
+ * rate). Cues come from b(); durations inside a move use f60(), so the film keeps its timing if
+ * --fps changes. It rounds (copy timing, Sequence lengths); f60x() is the fractional twin, for
+ * durations inside a move, where rounding would bend the curve at 24, 25 or 30 fps.
  */
-export const f60 = (frames: number) => Math.round((frames * FPS) / 60);
+export const f60 = (frames: number, fps: number = FPS) => Math.round((frames * fps) / 60);
+export const f60x = (frames: number, fps: number = FPS) => (frames * fps) / 60;
 
 /** After the last bar the picture holds while the audio decays to digital silence. */
 export const TAIL = FPS;
@@ -60,6 +85,71 @@ export const CUE = {
   pieceB: b(4, 2), // the block lands (contact frame)
   lockup: b(5), // the mark settles into the lockup and the name locks beside it: the payoff
   end: b(6), // last bar line; TAIL follows
+};
+
+// ---- Declarations: what the picture does on purpose -------------------------------------------
+// Every export from here to COPY is optional: a timeline without them keeps the 1.1 behaviour.
+// With them, grid-check validates them, scripts/export-cues.ts writes them into out/cues.json
+// (`look`, `declared`, `salience`), and the blur sampling, forensics and the speed checks treat a
+// declared step, flash, seam or camera-blur moment as craft while still failing undeclared pops.
+// Frames are absolute film frames, like CUE.
+
+/** How fast moves render: 'crisp' (house default, flat graphics stay sharp) or 'camera' (180-degree shutter on fast moves). */
+export type BlurPolicy = 'crisp' | 'camera';
+/** The film's type sets its shot-length band and whether a grid-locked edit is allowed (reel, social). */
+export type FilmType = 'launch' | 'explainer' | 'reel' | 'social';
+/** One surface material per film, or none. */
+export type Texture = 'clean' | 'paper' | 'grid' | 'halftone' | 'dither';
+export type Look = { blur: BlurPolicy; texture: Texture; filmType: FilmType; oneTake: boolean; whiteWorld: boolean };
+/** How one shot hands over to the next. `hard` is a designed cut; `fadeEnd` only closes a film. */
+export type SeamKind =
+  | 'velocity' | 'morph' | 'hard' | 'mask' | 'whip' | 'defocus' | 'light' | 'snapZoom' | 'breath'
+  | 'zoomThrough' | 'stepped' | 'colour' | 'dissolveUi' | 'fadeEnd' | 'wipe';
+/** A seam at frame `at`: what carries across it (`carry`), its direction, and whether it is the film's signature move. */
+export type Seam = { at: number; kind: SeamKind; carry?: 'x' | 'y' | 'scale' | 'rot' | 'shape' | 'colour'; dir?: 1 | -1; signature?: boolean; id?: string };
+/** Frames [from, to) animated on a lower cadence (`fps`) or held `on` 2s / 3s: a designed step, not a dropped frame. */
+export type SteppedRange = { from: number; to: number; fps?: 12 | 16 | 20 | 30; on?: 2 | 3; id: string };
+/** A designed flash: 1 or 2 frames from `f`. */
+export type Flash = { f: number; frames: 1 | 2; id: string };
+/** Frames [from, to) rendered with camera blur inside a crisp film (a flick, a whip). */
+export type CameraBlurRange = { from: number; to: number; id: string };
+/** The film's one end lock: frames [from, to), 1-5 s. */
+export type EndLock = { from: number; to: number };
+/**
+ * What one primitive instance does on purpose, from its own props: every fx exports
+ * `declares(props, film): Declares`. src/sync.ts `declares()` lists them for the instances the acts
+ * use; export-cues writes them under `declared.fx`, and grid-check fails when the timeline's own
+ * declarations below do not cover them.
+ */
+export type Declares = { stepped?: SteppedRange[]; flashes?: Flash[]; cameraBlur?: CameraBlurRange[]; seams?: Seam[] };
+/**
+ * What a CUE asks of the eye. read-quiet guards `copy`, `hit` and `cut` (and fast moves over the
+ * text being read); `life` (creep, light, drift, a carried decay) and camera moves away from the
+ * text may run during a read and count toward the picture's density. A CUE without one is `hit`.
+ */
+export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
+
+export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'launch', oneTake: false, whiteWorld: false };
+/** Every seam of the film. Designed cuts are seams of kind `hard`. */
+export const SEAMS: Seam[] = [
+  // the dot arrives at rest in its slot and act 2 opens on exactly that pose: the dot becomes the mark
+  { at: ACT.mark.from, kind: 'morph', carry: 'shape', id: 'dot-becomes-mark' },
+];
+export const STEPPED: SteppedRange[] = [];
+export const FLASHES: Flash[] = [];
+export const CAMERA_BLUR: CameraBlurRange[] = [];
+/** The one lock: the name holds beside the mark to the end. */
+export const END: EndLock = { from: CUE.lockup, to: TOTAL };
+/** The biggest reveal (its stop-down or dip ends here): the lockup. */
+export const REVEAL = CUE.lockup;
+/** The one element class allowed an underdamped spring: the mark's pieces landing. */
+export const SPRING_CLASS = 'mark-piece';
+/** CUE names that must land on a music event (a downbeat attack, an entry, a stop's end, the ending). None without a track. */
+export const STRUCTURAL: (keyof typeof CUE)[] = [];
+/** Each CUE's salience (missing = 'hit'). */
+export const SALIENCE: Partial<Record<keyof typeof CUE, Salience>> = {
+  fragA: 'copy', drop: 'move', land: 'hit', fragB: 'copy', exit: 'copy', depart: 'move', fly: 'move',
+  handoff: 'cut', pieceA: 'hit', pieceB: 'hit', lockup: 'hit', end: 'cut',
 };
 
 export type Copy = {

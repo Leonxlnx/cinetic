@@ -1,24 +1,41 @@
 import React from 'react';
-import { C, FONT, TYPE, U, typeStyle } from '../brand/tokens';
-import { arrive, arriveK, blurIn, depart, E, easeOf, holdFor, pace as filmPace, type Pace, prog, wordCount } from '../lib/anim';
+import { C, FONT, TYPE, typeStyle } from '../brand/tokens';
+import { arrive, arriveK, blurIn, depart, E, easeOf, holdFor, type Pace, prog, wordCount } from '../lib/anim';
 import { mixColor } from '../lib/color';
+import { copyOf, f60, type FilmCtx, fpsOf, paceOf, sizeOf, uOf, useFilm } from '../lib/film';
 import { measureTracked } from '../lib/measure';
 import { settleOf } from '../lib/sync';
-import { chainOf, type Copy, f60, H, W } from '../timeline';
+import type { Copy, Declares } from '../timeline';
 
 type Role = keyof typeof TYPE;
 const split = (text: string) => text.split(/\s+/).filter(Boolean);
+
+/**
+ * The fragments of a chain in order of arrival: the COPY entries whose `chain` is this id (looked up in
+ * `copy`, default the film's COPY), or the list itself when one is given.
+ */
+export const fragmentsOf = (chain: string | Copy[], copy?: Copy[]): Copy[] => {
+  if (typeof chain !== 'string') {
+    if (!chain.length) throw new Error('Chain: an empty fragment list');
+    return [...chain].sort((one, two) => one.in - two.in);
+  }
+  const list = (copy ?? copyOf()).filter((entry) => entry.chain === chain).sort((one, two) => one.in - two.in);
+  if (!list.length) throw new Error(`timeline: no COPY chain "${chain}"`);
+  return list;
+};
 
 /** One fragment's frames (absolute): `settle` is its last word visibly at rest, where its one soft sound goes. */
 export type FragmentFrames = { id: string; text: string; words: number; in: number; settle: number; resolved: number; out: number };
 
 /** First frame and end frame of word i of a fragment that starts at `inF` (the last word ends exactly on COPY's resolved). */
-const wordSpan = (inF: number, i: number, p: Pace) => [inF + f60(i * p.stagger), inF + f60(i * p.stagger + p.wordDur)] as const;
+const wordSpan = (inF: number, i: number, p: Pace, fps: number) => [inF + f60(i * p.stagger, fps), inF + f60(i * p.stagger + p.wordDur, fps)] as const;
 
-/** Options for chainFrames()/chainResolves(): the pace, and the type size the chain is drawn at. */
-export type ChainTiming = {
-  pace?: Pace;
-  size?: number; // px the chain is set at (default: the line role at this frame size, TYPE.line.size * U)
+/**
+ * Options for chainFrames()/chainResolves(): the type size the chain is drawn at, and the film context
+ * (pace, fps, copy, frame size; each defaults to the film's: lib/film.ts).
+ */
+export type ChainTiming = Partial<FilmCtx> & {
+  size?: number; // px the chain is set at (default: the line role at the film's frame size, TYPE.line.size * U)
 };
 
 /**
@@ -29,13 +46,14 @@ export type ChainTiming = {
  * text snaps to whole pixels; arriveK() depends on the rise in px), so the settle is measured on
  * that drawn curve, at the size the chain is set at: pass `size` when it is not the line role's.
  */
-export const chainFrames = (chain: string, o: ChainTiming = {}): FragmentFrames[] => {
-  const p = o.pace ?? filmPace;
-  const size = o.size ?? TYPE.line.size * U;
+export const chainFrames = (chain: string | Copy[], o: ChainTiming = {}): FragmentFrames[] => {
+  const p = paceOf(o);
+  const fps = fpsOf(o);
+  const size = o.size ?? TYPE.line.size * uOf(o);
   const ease = easeOf(p);
-  return chainOf(chain).map((c) => {
+  return fragmentsOf(chain, typeof chain === 'string' ? copyOf(o) : undefined).map((c) => {
     const n = wordCount(c.text);
-    const [s, e] = wordSpan(c.in, Math.max(0, n - 1), p);
+    const [s, e] = wordSpan(c.in, Math.max(0, n - 1), p, fps);
     const k = arriveK(p.rise * size, e - s, ease);
     return { id: c.id, text: c.text, words: n, in: c.in, settle: settleOf(s, e, (t) => arrive(ease(t), k)), resolved: c.resolved, out: c.out };
   });
@@ -47,7 +65,7 @@ export const chainFrames = (chain: string, o: ChainTiming = {}): FragmentFrames[
  * sets the chain at, so the sound meets the words' visible stop:
  *   chainResolves('statement', { size: STATEMENT_SIZE }).forEach((f, i) => ev.push({ f, kind: 'text', weight: 0.8, id: `statement${i + 1}` }));
  */
-export const chainResolves = (chain: string, o: ChainTiming = {}) => chainFrames(chain, o).map((x) => x.settle);
+export const chainResolves = (chain: string | Copy[], o: ChainTiming = {}) => chainFrames(chain, o).map((x) => x.settle);
 
 export type ChainLayoutOpts = {
   role?: Role;
@@ -76,11 +94,12 @@ export type ChainLayout = {
  * reads it to place things by the text: the starter seats its dot after the last word with
  * lineLeft[last] + width[last].
  */
-export const chainLayout = (chain: string, o: ChainLayoutOpts = {}): ChainLayout => {
-  const list = chainOf(chain);
+export const chainLayout = (chain: string | Copy[], o: ChainLayoutOpts & Partial<Pick<FilmCtx, 'copy' | 'width' | 'height'>> = {}): ChainLayout => {
+  const list = fragmentsOf(chain, typeof chain === 'string' ? copyOf(o) : undefined);
+  const { width: W, height: H } = sizeOf(o);
   const role = o.role ?? 'line';
   const { weight, track, lead } = TYPE[role];
-  const size = o.size ?? TYPE[role].size * U;
+  const size = o.size ?? TYPE[role].size * uOf(o);
   const family = o.family ?? FONT.text;
   const x = o.x ?? W / 2;
   const tail = o.tail ?? 0;
@@ -121,7 +140,7 @@ export const chainLayout = (chain: string, o: ChainLayoutOpts = {}): ChainLayout
  */
 export const Chain: React.FC<
   ChainLayoutOpts & {
-    chain: string;
+    chain: string | Copy[]; // a COPY chain id (looked up in the film's copy) or the fragments themselves
     frame: number; // local frame
     from?: number; // the act's first frame (absolute): COPY frames are absolute
     accent?: 'recency' | 'hold' | 'none';
@@ -130,32 +149,35 @@ export const Chain: React.FC<
     pace?: Pace;
     style?: React.CSSProperties;
   }
-> = ({ chain, frame, from = 0, accent = 'recency', color = C.ink, accentColor = C.accent, pace = filmPace, style, ...o }) => {
+> = ({ chain, frame, from = 0, accent = 'recency', color = C.ink, accentColor = C.accent, pace: paceProp, style, ...o }) => {
+  const film = useFilm();
+  const pace = paceProp ?? film.pace; // the film's pace (lib/film.ts), unless the prop overrides it
+  const fps = film.fps;
   const F = frame + from;
-  const L = chainLayout(chain, o);
+  const L = chainLayout(chain, { ...o, copy: film.copy, width: film.width, height: film.height });
   const role = o.role ?? 'line';
   const family = o.family ?? FONT.text;
   const ease = easeOf(pace);
-  const settles = chainFrames(chain, { pace, size: L.size }).map((x) => x.settle);
-  const exitDur = f60(pace.exitDur);
+  const settles = chainFrames(chain, { pace, size: L.size, fps, copy: film.copy, width: film.width, height: film.height }).map((x) => x.settle);
+  const exitDur = f60(pace.exitDur, fps);
   const last = L.frags.length - 1;
 
   // Build mode: the re-centre glides. Glide j moves the line from lineLeft[j-1] to lineLeft[j].
   const glide = L.frags.map(({ copy }, j) => {
     if (L.mode !== 'build' || j === 0 || o.align === 'left') return 0;
     const prev = L.frags[j - 1].copy;
-    const start = Math.max(prev.resolved + f60(holdFor(wordCount(prev.text), pace)), copy.in - f60(pace.recentreLead));
-    return prog(F, start, start + f60(pace.recentreDur), E.expo);
+    const start = Math.max(prev.resolved + f60(holdFor(wordCount(prev.text), pace), fps), copy.in - f60(pace.recentreLead, fps));
+    return prog(F, start, start + f60(pace.recentreDur, fps), E.expo);
   });
   const lineX = L.lineLeft[0] + glide.reduce((x, g, j) => (j ? x + (L.lineLeft[j] - L.lineLeft[j - 1]) * g : x), 0);
 
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, ...style }}>
       {L.frags.map(({ copy, words, left }, j) => {
-        if (F < copy.in - 1 || F > copy.out + exitDur + f60(pace.stagger / 2) * words.length) return null;
+        if (F < copy.in - 1 || F > copy.out + exitDur + f60(pace.stagger / 2, fps) * words.length) return null;
         // build: the line's place, minus the share of its own glide (an arriving fragment stays put)
         const x = L.mode === 'build' ? lineX + left + (j ? (L.lineLeft[j] - L.lineLeft[j - 1]) * (1 - glide[j]) : 0) : L.lineLeft[j];
-        const relax = accent === 'none' ? 1 : accent === 'hold' && j === last ? 0 : prog(F, settles[j], settles[j] + f60(pace.accentDur), E.smooth);
+        const relax = accent === 'none' ? 1 : accent === 'hold' && j === last ? 0 : prog(F, settles[j], settles[j] + f60(pace.accentDur, fps), E.smooth);
         return (
           <span
             key={copy.id}
@@ -173,9 +195,9 @@ export const Chain: React.FC<
             }}
           >
             {words.map((w, i) => {
-              const [s, e] = wordSpan(copy.in, i, pace);
+              const [s, e] = wordSpan(copy.in, i, pace, fps);
               const p = prog(F, s, e, ease);
-              const o0 = pace.exit === 'words' ? copy.out + f60((i * pace.stagger) / 2) : copy.out;
+              const o0 = pace.exit === 'words' ? copy.out + f60((i * pace.stagger) / 2, fps) : copy.out;
               const q = prog(F, o0, o0 + exitDur, E.exit); // the lift accelerates away
               const fade = prog(F, o0, o0 + exitDur, E.smooth); // the fade has no pop at either end
               const y = (1 - arrive(p, arriveK(pace.rise * L.size, e - s, ease))) * pace.rise - depart(q) * pace.exitLift;
@@ -202,3 +224,6 @@ export const Chain: React.FC<
     </div>
   );
 };
+
+/** What a Chain instance does on purpose (steps, flashes, camera blur, seams): nothing; its re-centres are eased glides. */
+export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

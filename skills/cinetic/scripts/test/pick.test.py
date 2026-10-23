@@ -36,7 +36,7 @@ def result(ok, name, detail=''):
 
 
 def pick(*args, library=FIXTURE):
-    r = subprocess.run([sys.executable, PICK, '--library', library, *args], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, PICK, '--library', library, *args], capture_output=True, text=True, encoding='utf-8')
     if VERBOSE:
         print(f'  $ pick.py {" ".join(args)} -> {r.returncode}\n' + r.stdout[-600:] + r.stderr[-600:])
     return r

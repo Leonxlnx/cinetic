@@ -1,7 +1,8 @@
 import React from 'react';
-import { FONT, TYPE, U, typeStyle } from '../brand/tokens';
-import { arrive, arriveK, blurIn, depart, E, Ease, pace as filmPace, type Pace, prog } from '../lib/anim';
-import { f60 } from '../timeline';
+import { FONT, TYPE, typeStyle } from '../brand/tokens';
+import { arrive, arriveK, blurIn, depart, E, Ease, type Pace, prog } from '../lib/anim';
+import { f60, type FilmCtx, uOf, useFilm } from '../lib/film';
+import type { Declares } from '../timeline';
 
 type Role = keyof typeof TYPE;
 
@@ -40,7 +41,13 @@ export const MaskRise: React.FC<{
   family?: string;
   align?: 'left' | 'center' | 'right';
   style?: React.CSSProperties;
-}> = ({ text, frame, start, id = 'rise', by, pace = filmPace, stagger = f60(pace.fx.mask.stagger), dur = f60(pace.fx.mask.dur), ease = E.out, out, outDur = f60(pace.fx.mask.exitDur), blur = 0, role = 'display', size = TYPE[role].size * U, family = FONT.text, align = 'left', style }) => {
+}> = ({ text, frame, start, id = 'rise', by, pace: paceProp, stagger: staggerProp, dur: durProp, ease = E.out, out, outDur: outDurProp, blur = 0, role = 'display', size: sizeProp, family = FONT.text, align = 'left', style }) => {
+  const film = useFilm();
+  const pace = paceProp ?? film.pace; // the film's pace (lib/film.ts), unless the prop overrides it
+  const stagger = staggerProp ?? f60(pace.fx.mask.stagger, film.fps);
+  const dur = durProp ?? f60(pace.fx.mask.dur, film.fps);
+  const outDur = outDurProp ?? f60(pace.fx.mask.exitDur, film.fps);
+  const size = sizeProp ?? TYPE[role].size * uOf(film);
   const unit = by ?? (text.split(/\s+/).filter(Boolean).length <= 3 ? 'line' : 'word');
   const lead = TYPE[role].lead;
   const pad = { t: 0.12, b: 0.26, x: 0.1 };
@@ -90,3 +97,6 @@ export const MaskRise: React.FC<{
     </div>
   );
 };
+
+/** What a MaskRise instance does on purpose (steps, flashes, camera blur, seams): nothing in its 1.1 form. */
+export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

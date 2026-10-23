@@ -1,8 +1,9 @@
 import React from 'react';
-import { FONT, TYPE, U, typeStyle } from '../brand/tokens';
-import { clamp, E, Ease, fd, mix, pace, prog } from '../lib/anim';
+import { FONT, TYPE, typeStyle } from '../brand/tokens';
+import { clamp, E, Ease, fd, mix, prog } from '../lib/anim';
+import { f60, type FilmCtx, fpsOf, paceOf, uOf, useFilm } from '../lib/film';
 import { baselineOf, inkBox, measureTracked } from '../lib/measure';
-import { f60, FPS } from '../timeline';
+import type { Declares } from '../timeline';
 
 type Role = keyof typeof TYPE;
 
@@ -14,22 +15,23 @@ export type TypeTiming = {
 };
 export type TypeFont = { role?: Role; size?: number; family?: string };
 
-const boxOf = (len: number, t: TypeTiming) => (t.cps ? (len * FPS) / t.cps : Math.max(1, t.dur ?? f60(pace.fx.typeFPerChar * len)));
+const boxOf = (len: number, t: TypeTiming, film?: Partial<FilmCtx>) =>
+  t.cps ? (len * fpsOf(film)) / t.cps : Math.max(1, t.dur ?? f60(paceOf(film).fx.typeFPerChar * len, fpsOf(film)));
 
 /** Characters typed at frame f, continuous (0..len). */
-const typedAt = (len: number, f: number, t: TypeTiming) =>
-  t.cps ? clamp(((f - t.start) * t.cps) / FPS, 0, len) : len * (t.ease ?? E.type)(clamp((f - t.start) / boxOf(len, t)));
+const typedAt = (len: number, f: number, t: TypeTiming, film?: Partial<FilmCtx>) =>
+  t.cps ? clamp(((f - t.start) * t.cps) / fpsOf(film), 0, len) : len * (t.ease ?? E.type)(clamp((f - t.start) / boxOf(len, t, film)));
 
 /**
  * Whole frame on which each character of a `len`-character string first shows. The component reads
  * the same schedule, so key sounds put on these frames land on the picture exactly:
  * KEY_FRAMES = typeFrames(PROMPT.length, TYPE_T).map((k) => k + ACT.proof.from).
  */
-export const typeFrames = (len: number, t: TypeTiming): number[] => {
+export const typeFrames = (len: number, t: TypeTiming, film?: Partial<FilmCtx>): number[] => {
   const at: number[] = [];
-  const end = Math.ceil(t.start + boxOf(len, t)) + 1;
+  const end = Math.ceil(t.start + boxOf(len, t, film)) + 1;
   for (let F = Math.ceil(t.start); F <= end && at.length < len; F++) {
-    const n = Math.min(len, Math.ceil(typedAt(len, F, t) - 1e-6));
+    const n = Math.min(len, Math.ceil(typedAt(len, F, t, film) - 1e-6));
     while (at.length < n) at.push(F);
   }
   while (at.length < len) at.push(end);
@@ -44,17 +46,17 @@ export const typeFrames = (len: number, t: TypeTiming): number[] => {
  * camera that follows the caret, through a lag, so the camera never steps), and whether keys are
  * still landing.
  */
-export const typeOn = (text: string, frame: number, t: TypeTiming & TypeFont) => {
+export const typeOn = (text: string, frame: number, t: TypeTiming & TypeFont, film?: Partial<FilmCtx>) => {
   const role = t.role ?? 'display';
-  const size = t.size ?? TYPE[role].size * U;
+  const size = t.size ?? TYPE[role].size * uOf(film);
   const { weight, track } = TYPE[role];
   const family = t.family ?? FONT.text;
   const len = text.length;
-  const at = typeFrames(len, t);
+  const at = typeFrames(len, t, film);
   const F = fd(frame);
   const n = at.filter((k) => k <= F).length;
   const wOf = (k: number) => (k <= 0 ? 0 : measureTracked(text.slice(0, k), size, weight, track, family));
-  const c = typedAt(len, frame, t);
+  const c = typedAt(len, frame, t, film);
   const lo = Math.floor(c);
   const followX = lo >= len ? wOf(len) : mix(wOf(lo), wOf(lo + 1), c - lo);
   const last = len ? at[len - 1] : t.start;
@@ -92,8 +94,11 @@ export const TypeOn: React.FC<
       style?: React.CSSProperties;
       charStyle?: (i: number, age: number) => React.CSSProperties;
     }
-> = ({ text, frame, id = 'type', fade = f60(4), caret = true, caretColor = 'currentColor', blink = f60(30), caretOut, style, charStyle, ...t }) => {
-  const s = typeOn(text, frame, t);
+> = ({ text, frame, id = 'type', fade: fadeProp, caret = true, caretColor = 'currentColor', blink: blinkProp, caretOut, style, charStyle, ...t }) => {
+  const film = useFilm();
+  const fade = fadeProp ?? f60(4, film.fps);
+  const blink = blinkProp ?? f60(30, film.fps);
+  const s = typeOn(text, frame, t, film);
   const role = t.role ?? 'display';
   const lead = TYPE[role].lead;
   const F = fd(frame);
@@ -103,7 +108,7 @@ export const TypeOn: React.FC<
   const showCaret = caret && (caretOut === undefined || F < caretOut);
   const ink = inkBox('Hg', s.size, s.weight, s.family);
   const base = baselineOf(s.size, s.weight, lead, s.family);
-  const cw = Math.max(2 * U, 0.055 * s.size);
+  const cw = Math.max(2 * uOf(film), 0.055 * s.size);
   const cy = base - ink.ascent - 0.07 * s.size;
   const ch = ink.ascent + ink.descent + 0.14 * s.size;
   // CSS puts the (negative) tracking after each glyph, so the last glyph's ink can reach past the
@@ -138,3 +143,6 @@ export const TypeOn: React.FC<
     </span>
   );
 };
+
+/** What a TypeOn instance does on purpose (steps, flashes, camera blur, seams): nothing in its 1.1 form. */
+export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

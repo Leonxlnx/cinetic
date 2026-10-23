@@ -12,7 +12,22 @@
   'use strict';
   const MOTION = root.MOTION || (typeof require === 'function' ? require('./motion.js') : null);
   if (!MOTION) throw new Error('timeline.js: load motion.js first');
-  const { b, E, FPS, BPM, peak, settleOf, startFor, arriving, pace, wordCount, holdFor, revealFor, readingWindows } = MOTION;
+  const { E, FPS, peak, settleOf, startFor, arriving, pace, wordCount, holdFor, revealFor, readingWindows } = MOTION;
+
+  // The film-time music grid (music.js). MUSIC null (the stub, or music.js not loaded): no licensed
+  // track, and the film runs on motion.js's BPM grid. With a track, track.py grid writes music.js,
+  // BPM becomes the track's and b() follows the music's bars: whole frames within 0.5 f of it.
+  let GRID = root.MUSIC_GRID || null;
+  if (!GRID && typeof require === 'function') {
+    try { GRID = require('./music.js'); } catch (e) { GRID = null; } // a project without music.js
+  }
+  const MUSIC = (GRID && GRID.MUSIC) || null;
+  const BPM = MUSIC ? MUSIC.bpm : MOTION.BPM;
+  /** Frame of bar (1-based), beat (0-3) and sixteenth (0-3), on the music's grid when MUSIC is set. */
+  const b = (n, beat = 0, sub = 0) => (MUSIC ? Math.round(GRID.bar(n, beat, sub)) : MOTION.b(n, beat, sub));
+  /** A length in 60 fps frames at this film's fps (or `fps`): rounded for copy timing; f60x keeps the fraction. */
+  const f60 = (f, fps = FPS) => Math.round((f * fps) / 60);
+  const f60x = (f, fps = FPS) => (f * fps) / 60;
 
   const TAIL = FPS; // 1 s after the last event: room for reverb tails and the poster hold
 
@@ -33,6 +48,28 @@
     word1: b(2, 2), //              "In" settles (97%) on the beat, once the glide has done its work
     word2: b(2, 3), //              "sync." settles a beat later and the accent period pops: the line lands
   };
+
+  // Declarations: what the picture does on purpose (the Remotion starter's timeline.ts declarations,
+  // same names and shapes; all optional, absent = the 1.1 behaviour). grid-check validates them and
+  // FILM.cues() writes them into out/cues.json (`look`, `declared`, `salience`).
+  //   LOOK         { blur: 'crisp' | 'camera', texture, filmType: 'launch' | 'explainer' | 'reel' | 'social', oneTake, whiteWorld }
+  //   SEAMS        [{ at, kind, carry?, dir?, signature?, id? }]: how each shot hands over; designed cuts are kind 'hard'
+  //   STEPPED      [{ from, to, fps?: 12|16|20|30, on?: 2|3, id }]: a designed lower cadence
+  //   FLASHES      [{ f, frames: 1|2, id }]: designed flashes
+  //   CAMERA_BLUR  [{ from, to, id }]: camera blur inside a crisp film
+  //   END          { from, to }: the one end lock, 1-5 s
+  //   REVEAL       frame of the biggest reveal; SPRING_CLASS: the one class allowed an underdamped spring
+  //   STRUCTURAL   CUE names that must land on a music event; SALIENCE: each CUE's 'copy' | 'hit' | 'cut' | 'move' | 'life'
+  const LOOK = { blur: 'crisp', texture: 'clean', filmType: 'launch', oneTake: false, whiteWorld: false };
+  const SEAMS = [];
+  const STEPPED = [];
+  const FLASHES = [];
+  const CAMERA_BLUR = [];
+  const END = { from: CUE.word2, to: TOTAL }; // the line holds 1.5 s to the end
+  const REVEAL = CUE.word2; // the payoff: the line lands
+  const SPRING_CLASS = '';
+  const STRUCTURAL = []; // none without a track
+  const SALIENCE = { rise: 'move', slide: 'move', fall: 'move', hit: 'hit', glide: 'move', word1: 'copy', word2: 'copy' };
 
   // Move lengths in frames. The picture and the cue export both read these. A word rises over
   // 40 f: the calm pace's 36 f, a little longer because it travels a whole line out of its mask.
@@ -56,7 +93,6 @@
    * Render it with the GSAP recipe in references/hyperframes-engine.md ("Fragment chains").
    */
   function chain(id, mode, fragments, o = {}) {
-    const f60 = (f) => Math.round((f * FPS) / 60);
     const base = fragments.map(([text, inF], i) => ({ id: `${id}.${i + 1}`, text, in: inF, resolved: inF + f60(revealFor(wordCount(text))), chain: id, mode }));
     const last = base[base.length - 1];
     if (!last) throw new Error(`timeline.js: chain "${id}" has no fragments`);
@@ -95,11 +131,18 @@
       { f: CUE.word2, kind: 'text', weight: 0.9, pan: 0.2, id: 'line-lands' },
     ].sort((p, q) => p.f - q.f);
     const copy = COPY.map((c) => ({ ...c, words: wordCount(c.text), kind: c.kind || 'copy', read: READ[c.id] || [] }));
-    return { fps: FPS, bpm: BPM, total: TOTAL, pace: MOTION.PACE_NAME, acts: ACT, cue: CUE, copy, events };
+    const declared = { seams: SEAMS, stepped: STEPPED, flashes: FLASHES, cameraBlur: CAMERA_BLUR, end: END, reveal: REVEAL, springClass: SPRING_CLASS, structural: STRUCTURAL, fx: [] };
+    return {
+      fps: FPS, bpm: BPM, total: TOTAL, pace: MOTION.PACE_NAME, acts: ACT, cue: CUE, copy, events,
+      look: LOOK, declared, salience: SALIENCE, ...(MUSIC ? { music: JSON.parse(JSON.stringify(MUSIC)) } : {}),
+    };
   }
 
   // PACE_NAME and PACE ride along so scripts/grid-check.ts reads this file like a Remotion timeline.ts.
-  const FILM = { FPS, BPM, TAIL, ACT, TOTAL, DUR, DROP, WORD_EASE, CUE, COPY, READ, PACE_NAME: MOTION.PACE_NAME, PACE: MOTION.PACE, chain, cues };
+  const FILM = {
+    FPS, BPM, TAIL, ACT, TOTAL, DUR, DROP, WORD_EASE, CUE, COPY, READ, PACE_NAME: MOTION.PACE_NAME, PACE: MOTION.PACE, chain, cues,
+    MUSIC, b, f60, f60x, LOOK, SEAMS, STEPPED, FLASHES, CAMERA_BLUR, END, REVEAL, SPRING_CLASS, STRUCTURAL, SALIENCE,
+  };
   root.FILM = FILM;
   if (typeof module === 'object' && module.exports) module.exports = FILM;
 })(typeof window !== 'undefined' ? window : globalThis);

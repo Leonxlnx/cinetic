@@ -1,8 +1,8 @@
 import React from 'react';
-import { useVideoConfig } from 'remotion';
-import { C, U } from '../brand/tokens';
-import { clamp, E, Ease, lmix, pace, prog } from '../lib/anim';
-import { f60 } from '../timeline';
+import { C } from '../brand/tokens';
+import { clamp, E, Ease, lmix, prog } from '../lib/anim';
+import { f60, type FilmCtx, uOf, useFilm } from '../lib/film';
+import type { Declares } from '../timeline';
 
 /** Distance from (x, y) to the farthest corner of a w x h frame. */
 export const farCorner = (x: number, y: number, w: number, h: number) => Math.hypot(Math.max(x, w - x), Math.max(y, h - y));
@@ -43,8 +43,11 @@ export const Iris: React.FC<{
   ringColor?: string;
   ringWidth?: number;
   style?: React.CSSProperties;
-}> = ({ frame, start, x, y, dur = f60(pace.fx.iris), ease, close = false, r0 = 1, color, children, ring = false, ringColor = C.accent, ringWidth = Math.max(1.5, 2 * U), style }) => {
-  const { width, height } = useVideoConfig();
+}> = ({ frame, start, x, y, dur: durProp, ease, close = false, r0 = 1, color, children, ring = false, ringColor = C.accent, ringWidth: ringWidthProp, style }) => {
+  const film = useFilm();
+  const { width, height } = film;
+  const dur = durProp ?? f60(film.pace.fx.iris, film.fps);
+  const ringWidth = ringWidthProp ?? Math.max(1.5, 2 * uOf(film));
   const far = farCorner(x, y, width, height);
   // An opening circle must already cover the corners on its last clipped frame (start + dur - 1),
   // or they pop in when the clip comes off: far + 2 is short there for an iris of <= 9 frames.
@@ -71,3 +74,6 @@ export const Iris: React.FC<{
     </>
   );
 };
+
+/** What an Iris instance does on purpose (steps, flashes, camera blur, seams): nothing in its 1.1 form. */
+export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

@@ -36,13 +36,20 @@ export const FACES = ['400 16px "Geist Variable"', '600 16px "Geist Variable"', 
 /** Layout unit: 1 at 1080p, scales every size with the short side of the frame (16:9, 9:16, 1:1). */
 export const U = Math.min(W, H) / 1080;
 
-// One token per role, reused everywhere, so nothing is "almost matched" (size in px at 1080p).
+// One token per role, reused everywhere, so nothing is "almost matched" (size in px at 1080p; the
+// cap height is about 0.72 em, given below as a share of the frame height after camera scale).
 export const TYPE = {
-  display: { size: 120, weight: 600, track: -0.045, lead: 1.0 }, // statements and the wordmark
-  line: { size: 64, weight: 500, track: -0.025, lead: 1.1 }, // fragment chains (fx/Chain): a quiet line in open space, up to ~8 words
-  secondary: { size: 48, weight: 450, track: -0.02, lead: 1.15 }, // descriptor lines, URLs
-  ui: { size: 24, weight: 500, track: -0.01, lead: 1.3 }, // smallest readable size on screen
+  ui: { size: 30, weight: 500, track: -0.005, lead: 1.3 }, // product strings, labels: cap 2.0 % FH, the smallest readable size
+  caption: { size: 46, weight: 500, track: -0.01, lead: 1.25 }, // descriptor lines, URLs, captions: cap 3.1 % (2.3-4)
+  line: { size: 84, weight: 500, track: -0.025, lead: 1.1 }, // fragment chains (fx/Chain) and build lines: cap 5.6 % (5-9)
+  display: { size: 128, weight: 600, track: -0.04, lead: 1.0 }, // statements and the wordmark: cap 8.5 %, the top of the statement band
+  hero: { size: 240, weight: 600, track: -0.045, lead: 0.95 }, // the payoff word: cap 16 % (11-23)
+  giant: { size: 900, weight: 600, track: -0.05, lead: 0.9 }, // a cropped texture word: cap 60 % (40-90)
+  secondary: { size: 48, weight: 450, track: -0.02, lead: 1.15 }, // 1.1 role, kept for old acts: use caption
 };
+
+/** Type roles that replace a 1.1 role. */
+export const TYPE_DEPRECATED: Partial<Record<keyof typeof TYPE, keyof typeof TYPE>> = { secondary: 'caption' };
 
 /** CSS for a type role at a size (px). Tabular figures always, so numbers never jitter in width. */
 export const typeStyle = (role: keyof typeof TYPE, size = TYPE[role].size * U): React.CSSProperties => ({

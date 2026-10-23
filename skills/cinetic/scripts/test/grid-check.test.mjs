@@ -5,10 +5,15 @@
  *
  *   1. Every timeline in grid-fixtures/ declares what it must produce in its first lines
  *      (`expect: check=N check:warn=N`, or `expect: (none)`); every other check must stay silent.
+ *      A fixture may add arguments on an `args:` line (files resolve next to the fixture), e.g.
+ *      `args: --cues declares-cover.cues.json`. Music mode: music-124 (a 124 BPM track whose first
+ *      downbeat is at 0.37 s) passes clean; music-errors and music-metronome fail and warn as declared.
  *   2. The HyperFrames starter: grid-check reads its timeline.js (FILM, with the pace from
  *      motion.js) and passes it as calm with no finding, at its own 120 BPM and at 100 BPM; the
  *      accent's fall always lands on CUE.hit (DUR.fall comes from the grid); chain() in replace
- *      mode lets a fragment's exit finish before the next one rises.
+ *      mode lets a fragment's exit finish before the next one rises; with a music.js carrying a
+ *      124 BPM track it is checked on the music's grid (music mode), both when Node can require it
+ *      and when it runs in a vm (motion.js, music.js, timeline.js, as the browser loads them).
  *   3. The Remotion starter (needs its tsx: npm install in assets/remotion-starter):
  *      - it passes as calm with no finding; --pace crisp overrides its PACE_NAME and holds it to
  *        the crisp gap limit (48 f), which only its 54 f flight stretches exceed;
@@ -70,10 +75,14 @@ const why = (r) => r.error ?? (r.findings ?? []).map((x) => `${x.check}: ${x.mes
 // 1. fixtures
 const FIX = join(HERE, 'grid-fixtures');
 for (const f of readdirSync(FIX).filter((x) => x.endsWith('.ts')).sort()) {
-  const head = readFileSync(join(FIX, f), 'utf8').split('\n').slice(0, 3).join(' ');
+  const lines = readFileSync(join(FIX, f), 'utf8').split('\n').slice(0, 3);
+  const head = lines.filter((l) => !/\bargs:/.test(l)).join(' ');
   const expect = {};
   for (const m of head.matchAll(/\b([a-z-]+(?::warn)?)=(\d+)/g)) expect[m[1]] = Number(m[2]);
-  const r = run(process.execPath, [...strip, '--no-warnings', GRID, join(FIX, f), '--json']);
+  // extra arguments from an `// args: --cues x.json` line; file names resolve next to the fixture
+  const extra = (lines.find((l) => /\bargs:/.test(l)) ?? '').replace(/^.*\bargs:\s*/, '').split(/\s+/).filter(Boolean)
+    .map((a) => (!a.startsWith('-') && existsSync(join(FIX, a)) ? join(FIX, a) : a));
+  const r = run(process.execPath, [...strip, '--no-warnings', GRID, join(FIX, f), '--json', ...extra]);
   const got = count(r.findings ?? []);
   const keys = new Set([...Object.keys(expect), ...Object.keys(got)]);
   const diffs = [...keys].filter((k) => (expect[k] ?? 0) !== (got[k] ?? 0)).map((k) => `${k}: want ${expect[k] ?? 0}, got ${got[k] ?? 0}`);
@@ -85,18 +94,25 @@ for (const f of readdirSync(FIX).filter((x) => x.endsWith('.ts')).sort()) {
 }
 
 // 2. the HyperFrames starter (plain node: timeline.js and motion.js are classic scripts)
-const hfAt = (bpm) => {
-  // a copy of motion.js + timeline.js at another tempo, as new-film.sh --bpm writes it
-  const dir = join(TMP, `hf-${bpm}`);
+const hfAt = (bpm, o = {}) => {
+  // a copy of motion.js + timeline.js at another tempo, as new-film.sh --bpm writes it; with o.music a
+  // music.js carrying that track (as track.py grid writes it); with o.esm an ES-module package, where
+  // grid-check cannot import timeline.js and runs motion.js, music.js and timeline.js in a vm
+  const dir = join(TMP, `hf-${bpm}${o.music ? '-music' : ''}${o.esm ? '-esm' : ''}`);
   mkdirSync(dir, { recursive: true });
   const motion = readFileSync(join(HF, 'motion.js'), 'utf8').replace(/^(\s*const BPM = )[^;]+;/m, (_, head) => `${head}${bpm};`);
   writeFileSync(join(dir, 'motion.js'), motion);
   copyFileSync(join(HF, 'timeline.js'), join(dir, 'timeline.js'));
-  writeFileSync(join(dir, 'package.json'), '{ "private": true }\n'); // CommonJS, like the starter's
+  if (o.music) {
+    const src = readFileSync(join(HF, 'music.js'), 'utf8');
+    if (!src.includes('const MUSIC = null;')) throw new Error('music.js no longer carries the stub line');
+    writeFileSync(join(dir, 'music.js'), src.replace('const MUSIC = null;', `const MUSIC = ${JSON.stringify(o.music)};`));
+  }
+  writeFileSync(join(dir, 'package.json'), o.esm ? '{ "private": true, "type": "module" }\n' : '{ "private": true }\n'); // CommonJS, like the starter's
   const ctx = {};
   ctx.window = ctx;
   createContext(ctx);
-  for (const f of ['motion.js', 'timeline.js']) runInContext(readFileSync(join(dir, f), 'utf8'), ctx, { filename: f });
+  for (const f of ['motion.js', ...(o.music ? ['music.js'] : []), 'timeline.js']) runInContext(readFileSync(join(dir, f), 'utf8'), ctx, { filename: f });
   return { dir, FILM: ctx.FILM, MOTION: ctx.MOTION };
 };
 for (const bpm of [120, 100]) {
@@ -104,6 +120,22 @@ for (const bpm of [120, 100]) {
   const r = run(process.execPath, [...strip, '--no-warnings', GRID, join(dir, 'timeline.js'), '--json']);
   result(clean(r, 'calm') && r.summary?.bpm === bpm, `the HyperFrames starter's timeline.js passes as calm with no finding at ${bpm} BPM`, why(r));
   result(FILM.CUE.fall + FILM.DUR.fall === FILM.CUE.hit, `the HyperFrames accent's fall lands on CUE.hit at ${bpm} BPM`, `fall ${FILM.CUE.fall} + ${FILM.DUR.fall} vs hit ${FILM.CUE.hit}`);
+}
+{
+  // music mode: a 124 BPM track, first downbeat at 0.37 s, two bars of body, a 0.3 s stop before the reveal
+  const BEATF = (60 / 124) * 60;
+  const T0 = 0.37 * 60;
+  const d = Array.from({ length: 4 }, (_, i) => T0 + i * 4 * BEATF);
+  const reveal = T0 + 7 * BEATF; // CUE.word2 = b(2, 3), the starter's REVEAL
+  const music = { bpm: 124, beatS: 60 / 124, fps: 60, t0: T0, bars: 2, phraseLen: 4, downbeats: d, accents: [{ f: T0 + 0.3, db: 9, band: 'low' }],
+    phrases: [T0], entries: [], breaks: [], stops: [{ from: reveal - 18, to: reveal }], end: { mode: 'stop', f: d[2] } };
+  for (const esm of [false, true]) {
+    const { dir, FILM } = hfAt(120, { music, esm });
+    const r = run(process.execPath, [...strip, '--no-warnings', GRID, join(dir, 'timeline.js'), '--json']);
+    result(clean(r, 'calm') && r.summary?.bpm === 124 && r.summary?.music?.bpm === 124 && FILM.b(1) === Math.round(T0),
+      `the HyperFrames starter with a 124 BPM music.js is checked on the music grid (${esm ? 'in a vm: motion.js, music.js, timeline.js' : 'required by timeline.js'})`,
+      why(r) || `bpm ${r.summary?.bpm}, music ${JSON.stringify(r.summary?.music)}`);
+  }
 }
 {
   const { FILM, MOTION } = hfAt(120);
@@ -128,6 +160,7 @@ if (!calm || /another platform/.test(calm.error ?? '')) {
   const rep = join(TMP, 'replace');
   mkdirSync(join(rep, 'lib'), { recursive: true });
   copyFileSync(join(STARTER, 'src', 'lib', 'pace.ts'), join(rep, 'lib', 'pace.ts'));
+  if (existsSync(join(STARTER, 'src', 'music.ts'))) copyFileSync(join(STARTER, 'src', 'music.ts'), join(rep, 'music.ts')); // timeline.ts imports ./music
   const tl = readFileSync(join(STARTER, 'src', 'timeline.ts'), 'utf8');
   writeFileSync(join(rep, 'timeline.ts'), tl.replace("chain('statement', 'build',", "chain('statement', 'replace',"));
   const r = run('npx', ['tsx', GRID, join(rep, 'timeline.ts'), '--json'], STARTER);

@@ -1,45 +1,11 @@
 import React from 'react';
-import { clamp, E, Ease, mix, pace, prog, Spr, spr } from '../lib/anim';
-import { mixColor } from '../lib/color';
-import { f60 } from '../timeline';
+import { clamp, E, Ease, prog, Spr, spr } from '../lib/anim';
+import { morphBox, type MorphBox } from '../lib/box';
+import { f60, type FilmCtx, useFilm } from '../lib/film';
+import type { Declares } from '../timeline';
 
-/** One state of the container, in the parent's px. Shadow: black, `a` alpha (0.12-0.22 reads as a real surface). */
-export type MorphBox = {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  r: number; // corner radius; a pill is h / 2
-  fill?: string; // a hex token
-  stroke?: string; // a hex token
-  strokeW?: number;
-  shadow?: { y: number; blur: number; a: number };
-};
-
-/**
- * The box between A and B at progress p. Sizes are clamped >= 0 and the radius to [0, min(w, h)/2],
- * so a spring that overshoots can never hand Chromium a negative radius (references/chromium-rendering.md §5).
- */
-export const morphBox = (A: MorphBox, B: MorphBox, p: number): Required<MorphBox> => {
-  const w = Math.max(0, mix(A.w, B.w, p));
-  const h = Math.max(0, mix(A.h, B.h, p));
-  const q = clamp(p);
-  const sa = A.shadow ?? { y: 0, blur: 0, a: 0 };
-  const sb = B.shadow ?? { y: 0, blur: 0, a: 0 };
-  const fill = A.fill && B.fill ? mixColor(A.fill, B.fill, q) : (B.fill ?? A.fill ?? 'transparent');
-  const stroke = A.stroke && B.stroke ? mixColor(A.stroke, B.stroke, q) : (B.stroke ?? A.stroke ?? 'transparent');
-  return {
-    x: mix(A.x, B.x, p),
-    y: mix(A.y, B.y, p),
-    w,
-    h,
-    r: clamp(mix(A.r, B.r, p), 0, Math.min(w, h) / 2),
-    fill,
-    stroke,
-    strokeW: Math.max(0, mix(A.strokeW ?? 0, B.strokeW ?? 0, q)),
-    shadow: { y: mix(sa.y, sb.y, q), blur: Math.max(0, mix(sa.blur, sb.blur, q)), a: clamp(mix(sa.a, sb.a, q)) },
-  };
-};
+// The box state and its clamped blend live in lib/box.ts (shared with other primitives); re-exported here.
+export { morphBox, type MorphBox } from '../lib/box';
 
 /**
  * Container morph: one rounded rect travels from state A to state B (x, y, w, h, radius, fill,
@@ -69,8 +35,10 @@ export const Morph: React.FC<{
   ease?: Ease;
   spring?: Spr;
   style?: React.CSSProperties;
-}> = ({ frame, start, A, B, a, b, dur = f60(pace.fx.morph), ease = E.inOut, spring, style }) => {
-  const p = spring ? spr(frame, start, spring) : prog(frame, start, start + dur, ease);
+}> = ({ frame, start, A, B, a, b, dur: durProp, ease = E.inOut, spring, style }) => {
+  const film = useFilm();
+  const dur = durProp ?? f60(film.pace.fx.morph, film.fps);
+  const p = spring ? spr(frame, start, spring, film.fps) : prog(frame, start, start + dur, ease);
   const u = spring ? clamp(p) : clamp((frame - start) / Math.max(1, dur)); // the content's clock
   const m = morphBox(A, B, p);
   const outA = 1 - prog(u, 0, 0.35, E.smooth);
@@ -100,3 +68,6 @@ export const Morph: React.FC<{
     </div>
   );
 };
+
+/** What a Morph instance does on purpose (steps, flashes, camera blur, seams): nothing in its 1.1 form. */
+export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

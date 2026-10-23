@@ -21,7 +21,7 @@ import { HERO } from './acts/Act2';
 import { MARK } from './brand/Mark';
 import { chainResolves } from './fx/Chain';
 import { peak, settleOf } from './lib/sync';
-import { ACT, CUE, FPS, TOTAL, W } from './timeline';
+import { ACT, CUE, type Declares, FPS, type Salience, TOTAL, W } from './timeline';
 
 export type Kind =
   | 'tick' | 'tock' | 'hit' | 'land' | 'pop' | 'whoosh' | 'riser'
@@ -37,6 +37,10 @@ export type SoundEvent = {
   dur?: number; // frames: whoosh, riser, swell and suck length
   variant?: string; // key: 'word' | 'space' | 'return' | 'back'; tick: 'crisp'; click: 'confirm'; land: 'light'; bell: 'motif'; pop: 'down'
   id?: string; // a name for QA reports
+  structural?: true; // an act or section change, the reveal or the ending: it must land on a music event (av-audit music_sync, grid-check)
+  force?: true; // sound it even when a track accent already carries the moment
+  offset_ms?: number; // -500..500: overrides the kit role's offset for this event only (rare)
+  salience?: Salience; // what the moment asks of the eye: copy | hit | cut | move | life (see timeline.ts Salience)
 };
 
 /** Seconds to frames, for sound lengths. */
@@ -54,6 +58,14 @@ const move = (m: { from: number; to: number; ease: (t: number) => number }, weig
   const dur = Math.max(sec(0.3), m.to - m.from); // even a short whip gets 0.3 s of air
   return { f: apex, kind: 'whoosh', weight, pan, dur, apexFrac: (apex - m.from) / (m.to - m.from), id };
 };
+
+/**
+ * What the primitives the acts use do on purpose (each fx's declares(props, film), called with the
+ * props the acts pass): stepped ranges, flashes, camera-blur ranges and seams. export-cues writes
+ * them under declared.fx in out/cues.json; grid-check fails when the timeline's own declarations
+ * (SEAMS, STEPPED, FLASHES, CAMERA_BLUR) do not cover them. The starter's primitives declare nothing.
+ */
+export const declares = (): (Declares & { id?: string })[] => [];
 
 export default function cues(): SoundEvent[] {
   const ev: SoundEvent[] = [];
