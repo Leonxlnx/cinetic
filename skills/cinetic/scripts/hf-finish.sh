@@ -8,18 +8,24 @@
 # again (two lossy steps, visible on dark gradients), defaults to CRF 16 and AAC 192k, and has
 # no loudness stage and no motion blur in the CLI. Rendering PNGs and encoding once here fixes
 # the picture; the soundtrack comes in already mastered from scripts/audio/ and is muxed here.
-# --blur K renders at fps*K and averages the sub-frames with accumulate.py --uniform K.
+# --blur K renders at fps*K and averages the sub-frames with accumulate.py --uniform K, when the film's
+# blur policy allows it (--policy; timeline.js LOOK.blur): a crisp film stays sharp (the house default).
 #
 # Usage:
 #   bash scripts/hf-finish.sh <project> <out.mp4> [--audio wav] [--fps 60] [--blur K]
-#        [--shutter 240] [--crf 14] [--preview] [--composition file.html] [--workers 2]
-#        [--skip-check] [--keep] [--allow-transparent] [--variables JSON] [--json report.json]
+#        [--shutter 180] [--policy auto] [--build-audio] [--crf 14] [--preview] [--composition file.html]
+#        [--workers 2] [--skip-check] [--keep] [--allow-transparent] [--variables JSON] [--json report.json]
 #   bash scripts/hf-finish.sh <project> --export-cues out/cues.json
 #
 #   --audio WAV        mastered soundtrack to mux (AAC 320k, 48 kHz); checked with check-sync.py
 #   --fps N            output fps (default: root data-fps, else motion.js FPS)
 #   --blur K           render at fps*K (<= 240) and accumulate K sub-frames per frame
-#   --shutter DEG      shutter for --blur (default 240; accumulate.py centres the samples)
+#   --shutter DEG      shutter for --blur (default 180, as src/blur.ts; accumulate.py centres the samples)
+#   --policy P         auto (default: LOOK.blur in timeline.js, else camera), crisp (--blur is ignored:
+#                      flat graphics stay sharp) or camera (--blur K applies to the whole film; per-range
+#                      camera blur is a Remotion feature)
+#   --build-audio      rebuild the soundtrack first through the project's npm scripts (music with a track,
+#                      cues, kit, audio, credits with a track) and mux public/audio/soundtrack.wav
 #   --crf N            x264 CRF (default 14; --preview uses 20 and preset veryfast)
 #   --preview          fast iteration: skips check, no blur, CRF 20
 #   --composition F    render this file instead of index.html (passed to render -c)
@@ -41,8 +47,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 die() { echo "hf-finish: $*" >&2; exit 1; }
 usage() {  # usage [status]: help on stdout for --help (exit 0), on stderr for misuse (exit 2)
-  if [ "${1:-2}" = 0 ]; then sed -n '2,38p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0; fi
-  sed -n '2,38p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2
+  if [ "${1:-2}" = 0 ]; then sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d' | sed 's/^# \{0,1\}//'; exit 0; fi
+  sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d' | sed 's/^# \{0,1\}//' >&2; exit 2
 }
 log() { echo "hf-finish: $*" >&2; }
 ESC="$(printf '\033')"  # strips colour codes from logs; BSD sed has no \x1b
@@ -50,7 +56,7 @@ ESC="$(printf '\033')"  # strips colour codes from logs; BSD sed has no \x1b
 [ $# -ge 1 ] || usage
 case "$1" in -h|--help) usage 0 ;; esac
 PROJ="$1"; shift
-OUT=""; AUDIO=""; FPS=""; BLUR=1; SHUTTER=240; CRF=""; PREVIEW=0; COMP=""; WORKERS=2
+OUT=""; AUDIO=""; FPS=""; BLUR=1; SHUTTER=180; CRF=""; PREVIEW=0; COMP=""; WORKERS=2; POLICY=auto; BUILD_AUDIO=0
 SKIP_CHECK=0; KEEP=0; JSON=""; CUES_OUT=""; ALLOW_ALPHA=0; VARS=""
 if [ $# -ge 1 ] && [ "${1#--}" = "$1" ]; then OUT="$1"; shift; fi
 while [ $# -gt 0 ]; do
@@ -59,6 +65,8 @@ while [ $# -gt 0 ]; do
     --fps) FPS="${2:?}"; shift 2 ;;
     --blur) BLUR="${2:?}"; shift 2 ;;
     --shutter) SHUTTER="${2:?}"; shift 2 ;;
+    --policy) POLICY="${2:?--policy needs auto, crisp or camera}"; shift 2 ;;
+    --build-audio) BUILD_AUDIO=1; shift ;;
     --crf) CRF="${2:?}"; shift 2 ;;
     --preview) PREVIEW=1; shift ;;
     --composition) COMP="${2:?}"; shift 2 ;;
@@ -78,6 +86,7 @@ PROJ="$(cd "$PROJ" && pwd)"
 ENTRY="${COMP:-index.html}"
 [ -f "$PROJ/$ENTRY" ] || { echo "hf-finish: missing $PROJ/$ENTRY" >&2; exit 2; }
 command -v node >/dev/null || die "node is required"
+case "$POLICY" in auto|crisp|camera) ;; *) echo "hf-finish: --policy is auto, crisp or camera" >&2; exit 2 ;; esac
 
 # ---- preflight: timeline vs root, fonts and local scripts on disk, cue export -------------
 # in its own file: bash 3.2 (macOS) cannot parse a heredoc inside $( )
@@ -89,12 +98,34 @@ if [ -n "$CUES_OUT" ]; then log "wrote $CUES_OUT"; exit 0; fi
 [ -n "$OUT" ] || usage
 
 FPS="${FPS:-${P_ROOTFPS:-${P_TLFPS:-60}}}"
+# the blur policy: LOOK.blur in timeline.js (a timeline written before the declarations: camera)
+if [ "$POLICY" = auto ]; then
+  POLICY="$(node -e "const s=require('fs').readFileSync(process.argv[1],'utf8');const m=s.match(/\bLOOK\s*=\s*\{[^}]*\bblur\s*:\s*'(\w+)'/);console.log(m?m[1]:'camera')" "$PROJ/timeline.js" 2>/dev/null || echo camera)"
+fi
+if [ "$BLUR" != 1 ] && [ "$POLICY" = crisp ]; then
+  log "note: --blur $BLUR ignored: the film's blur policy is crisp (flat graphics stay sharp); pass --policy camera to blur it"
+  BLUR=1
+fi
 [ "$PREVIEW" = 1 ] && { BLUR=1; SKIP_CHECK=1; CRF="${CRF:-20}"; PRESET=veryfast; } || PRESET=slow
 CRF="${CRF:-14}"
 case "$BLUR" in ''|*[!0-9]*) die "--blur takes a whole number" ;; esac
 RFPS=$((FPS * BLUR))
 [ "$RFPS" -le 240 ] || die "--blur $BLUR at $FPS fps needs $RFPS fps; HyperFrames caps at 240 (use K <= $((240 / FPS)), or Remotion for faster motion)"
 [ -n "$P_TLFPS" ] && [ "$FPS" != "$P_TLFPS" ] && log "warning: rendering at $FPS fps but the grid in motion.js is $P_TLFPS fps"
+if [ "$BUILD_AUDIO" = 1 ]; then
+  # the soundtrack through the project's own npm scripts, before anything renders
+  has_script() { node -e "const p=require(process.argv[2]);process.exit(p.scripts&&p.scripts[process.argv[1]]?0:1)" "$1" "$PROJ/package.json" 2>/dev/null; }
+  has_script cues && has_script audio || die "--build-audio needs the npm scripts cues and audio in $PROJ/package.json"
+  MUSIC_LED=0
+  if [ -f "$PROJ/audio/score.json" ] && node -e "const s=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));process.exit(s.music&&typeof s.music==='object'?0:1)" "$PROJ/audio/score.json"; then MUSIC_LED=1; fi
+  log "build-audio: npm run$([ "$MUSIC_LED" = 1 ] && echo ' music,') cues, kit, audio$([ "$MUSIC_LED" = 1 ] && echo ', credits')"
+  if [ "$MUSIC_LED" = 1 ]; then (cd "$PROJ" && npm run --silent music) >&2 || die "npm run music failed"; fi
+  (cd "$PROJ" && npm run --silent cues) >&2 || die "npm run cues failed"
+  if [ -f "$PROJ/audio/kit.json" ] && has_script kit; then (cd "$PROJ" && npm run --silent kit) >&2 || log "the kit was not rendered (above)"; fi
+  (cd "$PROJ" && npm run --silent audio) >&2 || die "npm run audio failed"
+  if [ "$MUSIC_LED" = 1 ]; then (cd "$PROJ" && npm run --silent credits) >&2 || die "the licence gate refused the music (npm run credits)"; fi
+  AUDIO="${AUDIO:-$PROJ/public/audio/soundtrack.wav}"
+fi
 if [ -n "$AUDIO" ]; then [ -f "$AUDIO" ] || die "missing audio $AUDIO"; AUDIO="$(cd "$(dirname "$AUDIO")" && pwd)/$(basename "$AUDIO")"; fi
 command -v ffmpeg >/dev/null || die "ffmpeg is required"
 
@@ -122,7 +153,7 @@ STEPS=""
 step() { STEPS="$STEPS\"$1\":\"$2\","; }
 report() {
   local ok="$1"
-  local r="{\"ok\":$ok,\"out\":\"$OUT\",\"fps\":$FPS,\"blur\":$BLUR,\"render_fps\":$RFPS,\"crf\":$CRF,\"steps\":{${STEPS%,}}}"
+  local r="{\"ok\":$ok,\"out\":\"$OUT\",\"fps\":$FPS,\"blur\":$BLUR,\"policy\":\"$POLICY\",\"render_fps\":$RFPS,\"crf\":$CRF,\"steps\":{${STEPS%,}}}"
   echo "$r"
   if [ -n "$JSON" ]; then mkdir -p "$(dirname "$JSON")"; echo "$r" > "$JSON"; fi
 }

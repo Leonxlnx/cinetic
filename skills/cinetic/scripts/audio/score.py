@@ -45,8 +45,8 @@ Targets (master.lufs overrides): -14 LUFS with music (-16 for a film of 8 s or l
 true peak <= -1.5 dBTP; last 480 samples zero. The report holds loudness, true peak, LRA, PLR, the loudest
 moment against the payoff, limiter hot spots, masked effects, tuned sounds, skipped events and, with a
 track: music (record, segments, joins, ending), over_bed (each effect's loudest 50 ms over the bed it was
-levelled against, per role), stop_downs (measured on the bed), no_duck, density, one_gesture, the lockup
-element after a stop. Schema and recipes: references/sound.md; the track: references/music.md.
+levelled against, per role: with the bed, the bed's own accent there, and the take alone, which the warnings
+judge), stop_downs (measured on the bed), no_duck, density, one_gesture, the lockup element after a stop. Schema and recipes: references/sound.md; the track: references/music.md.
 
 Exit codes: 0 rendered and the gate passed (a --draft render passes nothing: its report says "pass": false);
 1 invalid input, a failed gate, "music": "synth", an effect with no kit take, or "engine": "earshot" with no
@@ -123,7 +123,8 @@ QWERTY = ('qwertyuiop', 'asdfghjkl', 'zxcvbnm')
 UI_KINDS = ('tick', 'tock')  # the clock: a small room, never the hall
 WIDE_KINDS = ('whoosh', 'riser', 'swell', 'suck')  # only these take width; every other effect sits near the centre
 SFX_PAN = 0.15  # |pan| of every other effect; the cue's pan (+-0.8 at the screen edges) is scaled into it
-# the over-bed gate: an effect's loudest 50 ms (bed + effect) over the bed it was levelled against
+# the over-bed gate: an effect's loudest 50 ms over the bed it was levelled against (reported with the bed and
+# alone; the take alone against over_bed(bed_db) is judged, within this many dB)
 OVER_BED_TOL = 2.0
 STOP_MIN_DIP_DB, STOP_RETURN_DB = 6.0, 3.0
 LOCKUP_PEAK = (-9.0, -6.0)  # dBFS: the one element after a stop ending
@@ -1353,9 +1354,14 @@ def render_music(song, events, cues, kit, bed, edit, stems_dir=None, draft=False
                          sfx_levels={}, plan=plan, gates=gates)
 
 
-def effect_over_bed_window(bed_played, p, n):
-    """LUFS of the bed plus this one effect (no other effect) over the effect's own loudest 50 ms: what bed_db
-    sets ("the mix's loudest 50 ms at the effect"); None when the effect is shorter than 50 ms or outside"""
+def effect_levels(bed_played, p, n):
+    """An effect's own loudest 50 ms measured three ways (LUFS scale), or None when the effect is shorter than
+    50 ms or outside the bed:
+      mix   the bed plus this one effect (no other effect) over that window: what bed_db sets on a steady bed
+            ("the mix's loudest 50 ms at the effect")
+      bed   the bed alone over the same window: its own accent there (a kick under an on-beat cue reads several
+            dB over the bed's median, and the mix with it)
+      take  the take alone at its gain: what the kit's gain places (the bed's level + over_bed(bed_db))"""
     import mixkeys as MK
     x = D.stereo(p['x']) * p['g']
     s0 = int(round(p['start'] * SR))
@@ -1365,16 +1371,40 @@ def effect_over_bed_window(bed_played, p, n):
         return None
     kx = MK.kpower(x)
     c = np.concatenate([[0.0], np.cumsum(kx)])
-    j = int(np.argmax(c[MK.L_WIN:] - c[:-MK.L_WIN]))
+    win = c[MK.L_WIN:] - c[:-MK.L_WIN]
+    j = int(np.argmax(win))
     w0 = s0 + j
     if w0 + MK.L_WIN > n:
         return None
     a = max(0, w0 - int(0.2 * SR))  # 200 ms of lead so the K-weighting filters have settled
-    seg = bed_played[a:w0 + MK.L_WIN].copy()
+    bseg = bed_played[a:w0 + MK.L_WIN]
+    seg = bseg.copy()
     lo = max(s0, a)
     seg[lo - a:] += x[lo - s0:lo - s0 + (len(seg) - (lo - a))]
     kp = MK.kpower(seg)
-    return float(-0.691 + 10 * np.log10(kp[w0 - a:w0 - a + MK.L_WIN].mean() + 1e-24))
+    kb = MK.kpower(bseg)
+    return dict(mix=float(-0.691 + 10 * np.log10(kp[w0 - a:w0 - a + MK.L_WIN].mean() + 1e-24)),
+                bed=float(-0.691 + 10 * np.log10(kb[w0 - a:w0 - a + MK.L_WIN].mean() + 1e-24)),
+                take=float(-0.691 + 10 * np.log10(win[j] / MK.L_WIN + 1e-24)))
+
+
+def effect_over_bed_window(bed_played, p, n):
+    """LUFS of the bed plus this one effect (no other effect) over the effect's own loudest 50 ms: what bed_db
+    sets ("the mix's loudest 50 ms at the effect"); None when the effect is shorter than 50 ms or outside"""
+    lv = effect_levels(bed_played, p, n)
+    return None if lv is None else lv['mix']
+
+
+def take_want_db(bed_db, weight_db=0.0):
+    """The take alone over the bed for a mix bed_db over a steady bed (mixkeys.over_bed), plus the cue's weight
+    (plan.py's weight_db: a weighted cue is meant louder); None for bed_db <= 0"""
+    import mixkeys as MK
+    return MK.over_bed(bed_db) + float(weight_db or 0.0) if bed_db is not None and bed_db > 0 else None
+
+
+def steady_db(take_db):
+    """The mix over a steady bed that a take take_db over the bed makes (the inverse of over_bed)"""
+    return float(10 * np.log10(1.0 + 10 ** (take_db / 10)))
 
 
 def music_gates(song, plan, bed, bed_played, sfx, auto, edit, base_dir, placed):
@@ -1384,14 +1414,19 @@ def music_gates(song, plan, bed, bed_played, sfx, auto, edit, base_dir, placed):
     out = dict(fails=[], warnings=[])
     n = len(bed)
     active = [s for s in plan['stopdowns'] if s.get('status') in ('added', 'arrangement')]
-    # 8. over the bed: the bed plus the effect alone over the effect's loudest 50 ms, over the bed it was levelled against
+    # 8. over the bed, measured over the effect's loudest 50 ms against the bed level it was levelled against:
+    # the mix (bed + this effect: measured_db, error_db, as bed_db reads on a steady bed), the bed alone in that
+    # window (bed_accent_db: the track's own accent under the cue) and the take alone (take_db against
+    # take_want_db = over_bed(bed_db) + the cue's weight_db). The warnings judge the take alone: on a beat the bed's
+    # own kick lifts the mix reading by several dB while the take sits where the kit puts it, and turning it down
+    # would be wrong. Typed keys vary press by press on purpose (the typing dynamics): judged by their role median.
     rows, by_role = [], {}
     for p in placed:
         pl = p.get('plan')
         if not pl or pl.get('bed_lufs') is None or pl.get('bed_db') is None:
             continue
-        loud = effect_over_bed_window(bed_played, p, n)
-        if loud is None:
+        lvs = effect_levels(bed_played, p, n)
+        if lvs is None:
             continue
         own = next((k for k, s in enumerate(active) if s['for'].endswith(f":{pl['id'] or pl['i']}") and abs(s['t'] - pl['sync_s']) < 1e-3), None)
         ref = bed_played if own is None else bed * (PL.stop_envelope(n, active, own) * PL.hold_envelope(song, n)
@@ -1402,26 +1437,50 @@ def music_gates(song, plan, bed, bed_played, sfx, auto, edit, base_dir, placed):
             lv = None
         if lv is None:
             continue
-        over = round(loud - lv, 2)
-        rows.append(dict(id=pl['id'], role=pl['role'], t=pl['sync_s'], bed_db=pl['bed_db'], measured_db=over,
-                         error_db=round(over - pl['bed_db'], 2), clamped=pl['clamped']))
-        by_role.setdefault(pl['role'], []).append(over)
+        over = round(lvs['mix'] - lv, 2)
+        take = round(lvs['take'] - lv, 2)
+        wdb = float(pl.get('weight_db') or 0.0)
+        want = take_want_db(pl['bed_db'], wdb)
+        row = dict(id=pl['id'], role=pl['role'], t=pl['sync_s'], bed_db=pl['bed_db'], measured_db=over,
+                   error_db=round(over - pl['bed_db'], 2), clamped=pl['clamped'], weight_db=round(wdb, 2), take_db=take,
+                   take_want_db=None if want is None else round(want, 2),
+                   take_error_db=None if want is None else round(take - want, 2),
+                   steady_db=round(steady_db(take), 2), bed_accent_db=round(lvs['bed'] - lv, 2))
+        row['judged_db'] = row['take_error_db'] if row['take_error_db'] is not None else row['error_db']
+        rows.append(row)
+        by_role.setdefault(pl['role'], []).append(row)
     roles = {}
-    for r_, v in sorted(by_role.items()):
-        bdb = next(x['bed_db'] for x in rows if x['role'] == r_)
-        q = np.percentile(v, [25, 50, 75])
-        roles[r_] = dict(bed_db=bdb, n=len(v), median=round(float(q[1]), 2), iqr=[round(float(q[0]), 2), round(float(q[2]), 2)])
-        if abs(q[1] - bdb) > OVER_BED_TOL:
-            out['warnings'].append(f'{r_}: {q[1]:.1f} dB over the bed (want {bdb:g} +-{OVER_BED_TOL:g})')
-    off = [r for r in rows if abs(r['error_db']) > OVER_BED_TOL]
+    for r_, rr in sorted(by_role.items()):
+        bdb = rr[0]['bed_db']
+        q = np.percentile([x['measured_db'] for x in rr], [25, 50, 75])
+        tq = float(np.median([x['take_db'] for x in rr]))
+        wants = [x['take_want_db'] for x in rr if x['take_want_db'] is not None]
+        want = float(np.median(wants)) if wants else None
+        jm = float(np.median([x['judged_db'] for x in rr]))
+        roles[r_] = dict(bed_db=bdb, n=len(rr), median=round(float(q[1]), 2), iqr=[round(float(q[0]), 2), round(float(q[2]), 2)],
+                         take_median=round(tq, 2), take_want=None if want is None else round(want, 2),
+                         steady_median=round(float(np.median([x['steady_db'] for x in rr])), 2),
+                         bed_accent_median=round(float(np.median([x['bed_accent_db'] for x in rr])), 2))
+        if abs(jm) > OVER_BED_TOL:
+            out['warnings'].append(f'{r_}: the takes sit {jm:+.1f} dB off their level over the bed (take alone {tq:.1f} dB over '
+                                   f'it, want {want if want is None else round(want, 1)} for bed_db {bdb:g}, +-{OVER_BED_TOL:g})')
+    off = [r for r in rows if abs(r['judged_db']) > OVER_BED_TOL and r['role'].split('.')[0] != 'key']
     for r in off[:6]:
-        out['warnings'].append(f"{r['role']} {r['id']} at {r['t']:.2f} s sits {r['measured_db']:+.1f} dB over the bed (want "
-                               f"{r['bed_db']:g})" + (' (clamped by the -1 dBFS ceiling)' if r['clamped'] else ''))
+        out['warnings'].append(f"{r['role']} {r['id']} at {r['t']:.2f} s: the take alone sits {r['take_db']:+.1f} dB over the bed "
+                               f"(want {r['take_want_db']} for bed_db {r['bed_db']:g}"
+                               + (f" and weight {r['weight_db']:+.1f} dB" if r['weight_db'] else '')
+                               + f"; with the bed {r['measured_db']:+.1f} dB, its own "
+                               f"accent there {r['bed_accent_db']:+.1f} dB)" + (' (clamped by the -1 dBFS ceiling)' if r['clamped'] else ''))
     med = float(np.median([r['measured_db'] for r in rows])) if rows else None
+    smed = float(np.median([r['steady_db'] for r in rows])) if rows else None
     out['over_bed'] = dict(effects=rows, roles=roles, median=None if med is None else round(med, 2),
-                           within_tol=sum(1 for r in rows if abs(r['error_db']) <= OVER_BED_TOL), count=len(rows))
-    if med is not None and not 3.0 <= med <= 10.0:
-        out['warnings'].append(f'the effects sit {med:.1f} dB over the bed overall (house range 3-10)')
+                           within_tol=sum(1 for r in rows if abs(r['error_db']) <= OVER_BED_TOL), count=len(rows),
+                           steady_median=None if smed is None else round(smed, 2),
+                           take_within_tol=sum(1 for r in rows if abs(r['judged_db']) <= OVER_BED_TOL),
+                           judged='the take alone over the bed against over_bed(bed_db) + weight_db, +-%g dB (typed keys '
+                                  'by their role median)' % OVER_BED_TOL)
+    if smed is not None and not 3.0 <= smed <= 10.0:
+        out['warnings'].append(f'the effects sit {smed:.1f} dB over the bed overall, as on a steady bed (house range 3-10)')
     # 9. stop-downs, measured on the bed stem
     sd_rows = []
     payoff = song.payoff
@@ -1815,8 +1874,9 @@ def main(argv=None):
               + (f"; draft voices: {', '.join(f'{k} x{n}' for k, n in sx['draft_voices'].items())}" if sx['draft_voices'] else ''))
         if song.has_music:
             ob, sdn = rep['over_bed'], rep['stop_downs']
-            print(f"  music: {rep['music']['source']}; over the bed {ob['within_tol']}/{ob['count']} effects within "
-                  f"+-{OVER_BED_TOL:g} dB (median {ob['median']}); stop-downs "
+            print(f"  music: {rep['music']['source']}; over the bed {ob['take_within_tol']}/{ob['count']} takes within "
+                  f"+-{OVER_BED_TOL:g} dB of their level (as on a steady bed: median {ob['steady_median']} dB; with the bed's "
+                  f"own accents {ob['within_tol']}/{ob['count']}, median {ob['median']}); stop-downs "
                   + (', '.join(f"{s['t']:.2f}s {s['status']}" + (f" {s['measured_dip_db']:.1f} dB" if 'measured_dip_db' in s else '')
                                for s in sdn) or 'none')
                   + f"; density {rep['density']['median']}/10 s; no duck {'ok' if rep['no_duck']['ok'] else 'FAIL'}")

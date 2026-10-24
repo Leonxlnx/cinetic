@@ -8,18 +8,23 @@
 # data-mover (sampled with elementsFromPoint, so z-order counts), more film words readable at once
 # than the pace allows (8 when calm; product strings tagged data-ui count apart) and, with --speed,
 # readable text that moves too fast: 20 px/f while it enters or travels (motion blur turns it into
-# a double image), 3 px/f while it is being read. The audit stills (boxes drawn, safe zone dashed)
-# are kept.
+# a double image), 3 px/f while it is being read; a declared re-centre jump of a build chain (the line
+# making room for its next fragment, 2/3 of the distance in 1/30 s) is a decisive move, not a drift,
+# and is held to the travel limit instead. Type roles (cap height bands, the ui size, at most 2 non-UI
+# sizes at once, statement and payoff widths) are warnings; --strict makes them fail. The audit stills
+# (boxes drawn, safe zone dashed) are kept, and the tweens the audited frames evaluate (lib/registry.ts)
+# are collected for scripts/grammar-score.mjs.
 #
 # Usage (from the project root):
-#   bash scripts/layout-audit.sh <Comp> [--frames 120,240 | --cues | --copy] [--props '{"k":1}']
+#   bash scripts/layout-audit.sh <Comp> [--frames 120,240 | --cues | --copy | --every 6] [--props '{"k":1}']
 #                                [--speed | --no-speed] [--max-text-speed 20] [--max-read-speed 3]
 #                                [--safe feed9x16 | --safe 270,120,420,64 | --safe 96,64]
 #                                [--entry src/index.ts] [--json out/qa/layout-<Comp>.json]
-#                                [--out out/qa/layout-<Comp>] [--concurrency 2]
+#                                [--out out/qa/layout-<Comp>] [--concurrency 2] [--strict]
 #   frames   --copy (default): each COPY entry's resolved frame, mid-hold and last frame before it leaves
 #            --cues: every CUE frame plus each COPY resolved frame
 #            --frames: an explicit comma list
+#            --every N: every Nth frame of the composition (the tween registry for grammar-score.mjs)
 #   Comp ActN reads frames relative to the Nth entry of ACT; any other composition (Film,
 #   Film9x16, ...) uses absolute timeline frames. The composition must accept an `audit` prop
 #   (and a `safe` prop it hands to <Audit>, as the starter's Film and acts do).
@@ -31,7 +36,9 @@
 #            window is the timeline's READ for the COPY entry whose id is the box's data-text id (or
 #            its part before the first '.'), and for a fragment of a build chain (fx/Chain) that
 #            is not the last, its own read hold plus the full line's read after the last fragment
-#            resolves: in between, the line may glide to re-centre at in-flight speed.
+#            resolves: in between, the line may glide to re-centre at in-flight speed. A frame inside a
+#            declared re-centre jump (the pace's recentre 'jump' or 'slot': from the new fragment's
+#            first frame, recentreDur long) is held to --max-text-speed, reported as a jump.
 #            On by default with --cues (--no-speed turns it off); opt in with --copy or --frames,
 #            where it doubles the stills. The composition's length comes from src/timeline.ts.
 #   safe     a preset from src/lib/safe.ts (feed9x16, feed9x16Strict, square1x1, portrait4x5,
@@ -44,7 +51,7 @@ set -euo pipefail
 usage() { sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; }
 die() { echo "layout-audit: $*" >&2; exit 2; }
 
-COMP=""; MODE=copy; FRAMES=""; PROPS="{}"; SAFE=""; ENTRY=src/index.ts; JSON=""; OUTDIR=""; CONC="${CONCURRENCY:-2}"
+COMP=""; MODE=copy; FRAMES=""; PROPS="{}"; SAFE=""; ENTRY=src/index.ts; JSON=""; OUTDIR=""; CONC="${CONCURRENCY:-2}"; EVERY=0; STRICT=0
 SPEED=""; MAXV=20; MAXR=3
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -52,6 +59,8 @@ while [[ $# -gt 0 ]]; do
     --frames) MODE=frames; FRAMES="${2:?--frames needs a list}"; shift 2 ;;
     --cues) MODE=cues; shift ;;
     --copy) MODE=copy; shift ;;
+    --every) MODE=every; EVERY="${2:?--every needs a frame step}"; shift 2 ;;
+    --strict) STRICT=1; shift ;;
     --speed) SPEED=1; shift ;;
     --no-speed) SPEED=0; shift ;;
     --max-text-speed) MAXV="${2:?--max-text-speed needs px/f}"; SPEED="${SPEED:-1}"; shift 2 ;;
@@ -81,11 +90,12 @@ TMP=$(mktemp -d "${TMPDIR:-/tmp}/layout-audit-XXXXXX")
 trap 'rm -rf "$TMP"' EXIT
 
 # Frame list and the composition's length from the timeline (tsx loads src/timeline.ts directly).
+[[ "$MODE" != every ]] || node -e "process.exit(Number.isInteger(Number(process.argv[1])) && Number(process.argv[1]) > 0 ? 0 : 1)" "$EVERY" || die "--every needs a whole number of frames"
 if [[ "$MODE" != frames || "$SPEED" == 1 ]]; then
   TL="$(dirname "$ENTRY")/timeline.ts"
   [[ -f "$TL" ]] || die "$TL not found; pass --frames (and --no-speed: --speed reads the composition's length from it)"
   cat > "$TMP/frames.ts" <<EOF
-import * as T from '$(cd "$(dirname "$TL")" && pwd)/timeline.ts';
+import * as T from '$(cd "$(dirname "$TL")" && { pwd -W 2>/dev/null || pwd; })/timeline.ts';
 const mode = '$MODE';
 const comp = '$COMP';
 const acts = Object.values(T.ACT as Record<string, { from: number; dur: number }>);
@@ -102,6 +112,7 @@ for (const c of copy) {
   if (mode === 'copy') { out.add(Math.floor((c.resolved + end) / 2)); out.add(end); }
 }
 if (mode === 'cues') for (const v of Object.values(T.CUE as Record<string, number | number[]>)) for (const f of [v].flat()) out.add(f);
+if (mode === 'every') for (let f = lo; f < hi; f += $EVERY) out.add(f);
 const frames = [...out].filter((f) => f >= lo && f < hi).map((f) => Math.round(f - lo)).sort((a, b) => a - b);
 // Reading windows per COPY id (composition frames): the timeline's READ (src/lib/pace.ts
 // readingWindows(), the rule every check shares), else the same rule computed here: from resolved
@@ -128,13 +139,33 @@ for (const c of copy) {
   }
   windows[c.id] = w.map(([a, b]) => [a - lo, b - lo]);
 }
+// Declared re-centre jumps (composition frames): a build chain whose pace re-centres with a 'jump' (or
+// opens a 'slot') moves the whole line from each later fragment's first frame over recentreDur f@60.
+const jumps: Record<string, [number, number][]> = {};
+const how = P.recentre;
+if (how === 'jump' || how === 'slot') {
+  const dur = Math.max(1, Math.round((P.recentreDur ?? 22) * s60));
+  const lead = how === 'slot' ? Math.round(Math.max(P.recentreLead ?? 0, 12) * s60) : 0;
+  const chains = new Map<string, C[]>();
+  for (const c of copy) if (c.chain && (c.mode ?? 'build') === 'build') chains.set(c.chain, [...(chains.get(c.chain) ?? []), c]);
+  for (const list of chains.values()) {
+    list.sort((a, b) => a.in - b.in);
+    list.forEach((c, j) => {
+      if (!j) return;
+      const w: [number, number] = [c.in - lead - lo, c.in - lead + dur + 1 - lo];
+      for (const x of list) (jumps[x.id] ??= []).push(w);
+    });
+  }
+}
 console.log([...new Set(frames)].join(','));
 console.log(hi - lo);
 console.log(JSON.stringify(windows));
+console.log(JSON.stringify(jumps));
 EOF
   LIST=$(npx tsx "$TMP/frames.ts") || die "could not read frames from $TL"
   LEN=$(sed -n 2p <<< "$LIST")
   WINDOWS=$(sed -n 3p <<< "$LIST")
+  JUMPS=$(sed -n 4p <<< "$LIST")
   if [[ "$MODE" != frames ]]; then
     FRAMES=$(head -n 1 <<< "$LIST")
     [[ -n "$FRAMES" ]] || die "no COPY/CUE frames fall inside $COMP; pass --frames"
@@ -155,7 +186,7 @@ if [[ -n "$SAFE" ]]; then
 fi
 
 # --speed: render f+1 beside each audited frame f (none past the composition's last frame).
-RENDER="$FRAMES"; SPEEDMAX=0; WINDOWS="${WINDOWS:-}"
+RENDER="$FRAMES"; SPEEDMAX=0; WINDOWS="${WINDOWS:-}"; JUMPS="${JUMPS:-}"
 if [[ "$SPEED" == 1 ]]; then
   RENDER=$(node -e "const n=Number(process.argv[2]);console.log([...new Set(process.argv[1].split(',').map(Number).flatMap((f)=>f+1<n?[f,f+1]:[f]))].sort((a,b)=>a-b).join(','))" "$FRAMES" "$LEN")
   SPEEDMAX="$MAXV"
@@ -169,9 +200,15 @@ if ! npx remotion render "$ENTRY" "$COMP" "$OUTDIR" --sequence --frames="$RENDER
   echo "layout-audit: render failed" >&2; exit 1
 fi
 
-node - "$TMP/render.log" "$JSON" "$COMP" "$FRAMES" "$OUTDIR" "$SPEEDMAX" "${LEN:-0}" "$MAXR" "$WINDOWS" <<'EOF'
+node - "$TMP/render.log" "$JSON" "$COMP" "$FRAMES" "$OUTDIR" "$SPEEDMAX" "${LEN:-0}" "$MAXR" "$WINDOWS" "$JUMPS" "$STRICT" <<'EOF'
 const fs = require('fs');
-const [log, jsonPath, comp, framesArg, outDir, maxArg, lenArg, readArg, windowsArg] = process.argv.slice(2);
+const [log, jsonPath, comp, framesArg, outDir, maxArg, lenArg, readArg, windowsArg, jumpsArg, strictArg] = process.argv.slice(2);
+const jumps = JSON.parse(jumpsArg || '{}'); // COPY id -> [[from, to), ...] declared re-centre jumps (composition frames)
+const strict = strictArg === '1';
+const jumpingAt = (id, f) => {
+  const w = jumps[id] ?? jumps[String(id).split('.')[0]];
+  return !!w && w.some(([a, b]) => f >= a && f < b);
+};
 const want = framesArg.split(',').map(Number);
 const maxV = Number(maxArg); // text-speed limit, px/f in a 1080 px tall frame; 0: the check is off
 const maxR = Number(readArg); // the limit while the text is being read
@@ -182,9 +219,17 @@ const readingAt = (id, f) => {
 };
 const pairs = maxV > 0 ? want.filter((f) => f + 1 < Number(lenArg)) : []; // f -> f+1
 const byFrame = new Map();
+const tweens = new Map(); // span + curve -> the tween (deduplicated across the audited frames)
 for (const line of fs.readFileSync(log, 'utf8').split('\n')) {
   const TAG = 'CINETIC_AUDIT ';
   const i = line.indexOf(TAG);
+  const k = line.indexOf('CINETIC_TWEENS ');
+  if (k >= 0) {
+    try {
+      const d = JSON.parse(line.slice(k + 'CINETIC_TWEENS '.length));
+      for (const t of d.tweens ?? []) tweens.set(`${Math.round(t.from * 100)}|${Math.round(t.to * 100)}|${t.token}|${t.family}`, t);
+    } catch { /* truncated line */ }
+  }
   if (i < 0) continue;
   try { const d = JSON.parse(line.slice(i + TAG.length)); byFrame.set(d.frame, d); } catch { /* truncated line */ }
 }
@@ -192,6 +237,9 @@ const missing = [...new Set([...want, ...pairs.map((f) => f + 1)])].filter((f) =
 const audited = want.filter((f) => byFrame.has(f)).map((f) => byFrame.get(f)); // f+1 frames only feed the speed
 const issues = [];
 for (const d of audited) for (const x of d.issues) issues.push({ frame: d.frame, ...x });
+const warnings = [];
+for (const d of audited) for (const x of d.warnings ?? []) warnings.push({ frame: d.frame, ...x });
+const jumped = [];
 // Text speed: each box's centre from f to the nearest box with its id on f+1, in px of a 1080 px
 // tall frame. Readable: effective opacity >= 0.5 and at least the minimum size.
 let fastest = null;
@@ -207,7 +255,9 @@ for (const f of pairs) {
     box.speed = Math.round(d * k * 10) / 10;
     if (box.opacity < 0.5 || box.px < (a.minPx ?? 0)) continue;
     if (!fastest || box.speed > fastest.speed) fastest = { frame: f, id: box.id, speed: box.speed };
-    const read = readingAt(box.id, f);
+    const jump = jumpingAt(box.id, f);
+    const read = readingAt(box.id, f) && !jump;
+    if (jump && box.speed > maxR) jumped.push({ frame: f, id: box.id, speed: box.speed });
     if (read && (!fastestRead || box.speed > fastestRead.speed)) fastestRead = { frame: f, id: box.id, speed: box.speed };
     const limit = read ? maxR : maxV;
     if (box.speed <= limit) continue;
@@ -221,15 +271,19 @@ for (const f of pairs) {
 issues.sort((p, q) => p.frame - q.frame);
 const report = {
   tool: 'layout-audit', comp, frames: want, audited: audited.length, missing, stills: outDir,
-  pass: issues.length === 0 && missing.length === 0 && audited.length > 0,
-  issues,
+  width: audited[0]?.width, height: audited[0]?.height,
+  pass: issues.length === 0 && missing.length === 0 && audited.length > 0 && !(strict && warnings.length),
+  issues, warnings, jumps: jumped,
+  tweens: [...tweens.values()].sort((p, q) => p.from - q.from),
   speed: maxV > 0 ? { max: maxV, read: maxR, pairs: pairs.length, fastest, fastestRead } : null,
   words: audited.reduce((m, d) => (d.words !== undefined && (!m || d.words > m.max) ? { max: d.words, frame: d.frame, ui: d.uiWords ?? 0 } : m), null),
   zone: audited[0]?.zone, safe: audited[0]?.safe,
-  boxes: audited.map((d) => ({ frame: d.frame, safe: d.safe, boxes: d.boxes })),
+  boxes: audited.map((d) => ({ frame: d.frame, width: d.width, height: d.height, safe: d.safe, boxes: d.boxes })),
 };
 fs.writeFileSync(jsonPath, JSON.stringify(report, null, 1) + '\n');
 for (const x of issues) console.log(`  f${x.frame}  ${x.kind}  ${x.id}  ${x.detail}`);
+for (const x of warnings.slice(0, 20)) console.log(`  f${x.frame}  warn ${x.kind}  ${x.id}  ${x.detail}`);
+if (jumped.length) console.log(`  ${jumped.length} declared re-centre jump frame(s) moved read text faster than ${maxR} px/f (held to ${maxV}): fastest ${Math.max(...jumped.map((j) => j.speed))} px/f`);
 if (!byFrame.size) console.log(`  no CINETIC_AUDIT output: does ${comp} accept the audit prop and render <Audit/> inside <FontGate>?`);
 else if (missing.length) console.log(`  no audit line for frames ${missing.join(',')}`);
 const n = audited.reduce((s, d) => s + d.boxes.length, 0);
@@ -237,6 +291,6 @@ const z = report.safe ? ` in ${report.zone} (top ${report.safe.top}, right ${rep
 const v = maxV > 0 ? `, fastest readable text ${fastest ? `${fastest.speed} px/f (${fastest.id} f${fastest.frame})` : 'not measured'}` +
   (fastestRead ? `, ${fastestRead.speed} px/f while read (${fastestRead.id} f${fastestRead.frame})` : '') : '';
 const wv = report.words ? `, at most ${report.words.max} film words readable (f${report.words.frame})` : '';
-console.log(`layout-audit: ${audited.length}/${want.length} frames, ${n} text boxes${z}${v}${wv}, ${issues.length} issues -> ${report.pass ? 'pass' : 'FAIL'} (${jsonPath}, stills in ${outDir})`);
+console.log(`layout-audit: ${audited.length}/${want.length} frames, ${n} text boxes${z}${v}${wv}, ${issues.length} issues, ${warnings.length} type warnings, ${report.tweens.length} tweens -> ${report.pass ? 'pass' : 'FAIL'} (${jsonPath}, stills in ${outDir})`);
 process.exit(report.pass ? 0 : 1);
 EOF

@@ -89,15 +89,28 @@ MIX_KEYS = ('bed_db', 'offset_ms', 'min_gap_ms', 'width')
 AUDITION_BED_S = 2.0
 # earshot's text may say where its numbers came from; a film's kit.json and reports say it in house wording.
 # Generic rules (no quoted phrases): a sentence that ties a number to measured clips or films, an instrument
-# credited to a film, and noun phrases that count or qualify a set of films.
+# credited to a film, and noun phrases that count or qualify a set of films; then a note that a file is one of
+# the profile's own entries, a count of the set as a subject, the set named outright (and its
+# length span), range labels ("refs" and percentile names) and, last, a phrase repeated in brackets right
+# after itself (two rules that produced the same house phrase).
 HOUSE_WORDING = [
     (r'(?:^|(?<=[.;] ))[^.;]*?\b(?:medians?|measured)\b[^.;]*\b(?:clips|films|videos)\b[^.;]*',
      'The numbers are house numbers for music-led films'),
     (r"\bthe [a-z]+ film'?s (?:[a-z]+ )?(kalimba|marimba|bell|pluck)\b", r'a soft \1'),
-    (r'\ba profile of \d+ (?:professional |reference )*(?:launch )?(?:films|clips)\b', 'the launch profile'),
+    (r'\b(?:a )?profile of \d+ (?:professional |reference )*(?:launch )?(?:films|clips)\b(?: \(medians?\))?',
+     'the launch profile'),
     (r'\bvs\.? \d+ (?:professional |reference )*(?:launch )?(?:films|clips)\b', 'vs the launch profile'),
     (r'\b(?:the |a )?(?:\d+ )?(?:bundled |professional |reference )+(?:launch )?(?:films|clips|videos)\b',
      'the launch profile'),
+    (r"\bthis file is .{1,60}? of the profile\b[^:]*", "this file is one of the launch profile's own entries, so it "
+                                                       'is scored without it'),
+    (r'\b\d+ of \d+ (?:references?|films|clips|videos)\b', 'the launch profile tends to'),
+    (r'\bthe references? (?:are|is) ([^;.()]*?) ?(?:films|clips|videos)\b', r'the house ranges hold for \1 films'),
+    (r'\bthe references\b', 'the house ranges'),
+    (r'\brefs? (?:p\d{1,2} ?- ?p\d{1,2} )?(?=[-+]?\d|n\.a\.)', 'house range '),
+    (r'\bp\d{1,2} ?(?:-|\.\.) ?p\d{1,2}\b', 'house range'),
+    (r'\brefs? median\b', 'house value'),
+    (r"(\b\w[\w .'-]{2,60}?) \(\1\)", r'\1'),
 ]
 NOTE_RE = re.compile(r'^([A-Ga-g])([#sb]?)(-?\d+)$')
 PITCH_TOL = 0.5  # semitones: an explicit note plays a take only when the take is that note (a quarter tone either way)

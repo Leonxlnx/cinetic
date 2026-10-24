@@ -37,7 +37,20 @@ a shorter shutter in `shutters` (src/blur.ts reads it), so it draws one clean, s
 of stepped copies; --no-short-shutter keeps the full shutter. Frames faster than --too-fast (80 px/f)
 are listed as too_fast: blur cannot make them read, so the log asks for a redesign of the move.
 
---shutter must match SHUTTER in src/blur.ts (240 by default).
+--shutter must match SHUTTER in src/blur.ts (180 by default).
+
+Policy (--policy, default auto). Blur is a declared policy (timeline.ts LOOK.blur): 'crisp' keeps flat
+graphics sharp, so only frames inside CAMERA_BLUR ranges get samples (one sample everywhere else);
+'camera' samples every fast frame (the policy of a timeline written before the declarations). auto
+reads `look.blur` from --cues (out/cues.json), else camera. Either way a declared step, flash, hard
+seam or act start renders from one sample (cues `declared`, with what the primitives declare), and
+too_fast (the redesign list) only applies where the camera policy holds. Under crisp the
+speed-ceiling check warns when the frame moves faster than 3000 px/s (at 1080p) for more than 14 f@60:
+exponential moves spend only a few frames that fast (an element is above 1200 px/s for about 2-8 f@60;
+the whole-frame measure reads wipes and morphs as speed too, hence the wider bound; cut frames and
+frames the flow cannot explain are not moves). A fast plateau
+(at least three frames, and four at 60 fps, within 15 % of each other above 1200 px/s) is reported as
+`speed_plateau` for review, without a warning.
 
 Pace. Every run also reports how fast the film moves (the `pace` block, from the per-pair flow
 speed before the shutter and max filters): the median and 90th percentile speed of moving frames,
@@ -85,13 +98,19 @@ from multiprocessing import Pool
 
 import numpy as np
 
+CEIL_PXS = 3000.0  # px/s at 1080p: the crisp speed ceiling (whole-frame flow)
+CEIL_F60 = 14  # f@60 a frame may stay above it
+PLATEAU_PXS = 1200.0  # px/s: runs above this are checked for flat plateaus (review only)
+
 
 def parse_args():
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0], formatter_class=argparse.RawDescriptionHelpFormatter,
                                  epilog=__doc__.split('\n\n', 1)[1])
-    ap.add_argument('video', help='sharp (unblurred) render of the film or an excerpt, or an earlier samples JSON to re-decide groups from its speed track')
-    ap.add_argument('out', help='samples JSON to write (e.g. out/samples.json)')
-    ap.add_argument('--shutter', type=float, default=240, help='shutter angle in degrees; must match src/blur.ts')
+    ap.add_argument('video', nargs='?', help='sharp (unblurred) render of the film or an excerpt, or an earlier samples JSON to re-decide groups from its speed track')
+    ap.add_argument('out', nargs='?', help='samples JSON to write (e.g. out/samples.json)')
+    ap.add_argument('--shutter', type=float, default=180, help='shutter angle in degrees; must match src/blur.ts')
+    ap.add_argument('--policy', choices=['auto', 'crisp', 'camera'], default='auto', help="blur policy: auto reads look.blur from --cues (else camera)")
+    ap.add_argument('--self-test', action='store_true', help='run the policy checks on a synthetic clip made in code, then exit')
     ap.add_argument('--step', type=float, default=3.0, help='max px between neighbouring samples at output size')
     ap.add_argument('--min', type=int, default=4, help='min samples on a moving frame')
     ap.add_argument('--max', type=int, default=32, help='max samples per frame (32 covers 144 px/f at a 3 px step)')
@@ -415,8 +434,90 @@ def copy_windows(path, raw, offset, limits):
     return rows, warns
 
 
+def declarations(path):
+    """The film's look and declared ranges from a cues.json (timeline declarations plus each
+    primitive's declares()), as film-frame sets: camera-blur frames and one-sample frames."""
+    if not path:
+        return None, set(), set()
+    try:
+        c = json.load(open(path))
+    except (OSError, ValueError):
+        return None, set(), set()
+    look = c.get('look') if isinstance(c.get('look'), dict) else None
+    d = c.get('declared') if isinstance(c.get('declared'), dict) else {}
+    fx = [x for x in (d.get('fx') or []) if isinstance(x, dict)]
+
+    def items(key):
+        return [x for x in (d.get(key) or []) if isinstance(x, dict)] + [y for x in fx for y in (x.get(key) or []) if isinstance(y, dict)]
+
+    cam, one = set(), set()
+    for r in items('cameraBlur'):
+        cam |= set(range(int(r['from']), int(r['to'])))
+    for r in items('stepped'):
+        one |= set(range(int(r['from']), int(r['to'])))
+    for x in items('flashes'):
+        one |= set(range(int(x['f']), int(x['f']) + int(x.get('frames', 1))))
+    for sm in items('seams'):
+        if sm.get('kind') == 'hard':
+            one.add(int(sm['at']))
+    if look is not None:  # a declared film: every act starts on one sample
+        one |= {int(v['from']) for v in (c.get('acts') or {}).values() if isinstance(v, dict) and 'from' in v}
+    return look, cam, one
+
+
+def self_test():
+    """A synthetic crisp film: groups stay 1 outside the camera range, the camera range gets samples,
+    too_fast lists only camera frames and a sustained fast move trips the speed ceiling."""
+    import shutil
+    import tempfile
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import forensics as F
+    tmp = tempfile.mkdtemp(prefix='cinetic-speed-')
+    fps, w, h = 30, 480, 270
+    A = F.texture(5, w + 2400, h, scale=3, amp=60)
+    frames, x = [], 0.0
+    for i in range(90):  # 0-29 slow (a 3-frame burst at 20-22), 30-59 fast (a long fast plateau), 60-89 fast again (declared camera range)
+        x += 35.0 if 20 <= i < 23 or i >= 30 else 1.0
+        frames.append(np.ascontiguousarray(A[:, int(x):int(x) + w]))
+    clip = os.path.join(tmp, 'c.mp4')
+    F.write_clip(clip, frames, fps)
+    cues = dict(fps=fps, total=90, acts=dict(a={'from': 0, 'dur': 90}), look=dict(blur='crisp'),
+                declared=dict(seams=[], stepped=[{'from': 10, 'to': 14, 'id': 's'}], flashes=[], cameraBlur=[{'from': 60, 'to': 90, 'id': 'whip'}],
+                              end={'from': 0, 'to': 0}))
+    cp = os.path.join(tmp, 'cues.json')
+    json.dump(cues, open(cp, 'w'))
+    out = os.path.join(tmp, 's.json')
+    r = subprocess.run([sys.executable, os.path.abspath(__file__), clip, out, '--cues', cp, '--workers', '1', '--quiet'], capture_output=True, text=True)
+    bad = 0
+
+    def check(ok, what, detail=''):
+        nonlocal bad
+        bad += 0 if ok else 1
+        print(f"{'pass' if ok else 'FAIL'}  measure-speed self-test: {what}" + (f'  ({detail})' if detail else ''))
+    try:
+        d = json.load(open(out))
+    except (OSError, ValueError):
+        print(r.stdout, r.stderr)
+        d = {}
+    g = d.get('groups', [])
+    check(d.get('policy') == 'crisp', 'auto reads the crisp policy from the cues', str(d.get('policy')))
+    check(bool(g) and all(v == 1 for v in g[:58]), 'a crisp film renders one sample outside its camera range', str(g[30:40]))
+    check(bool(g) and max(g[62:88]) > 1, 'the declared camera range gets blur samples', str(g[62:70]))
+    check(all(rr[0] >= 60 for rr in d.get('too_fast', [])), 'too_fast lists only camera-policy frames', str(d.get('too_fast')))
+    ce = d.get('speed_ceiling') or []
+    check(bool(ce) and all(c['frames'][0] >= 29 for c in ce), 'a long fast run on a crisp film trips the speed ceiling; a 3-frame burst does not', str(ce)[:80])
+    check(bool(d.get('speed_plateau')), 'the flat fast stretch is listed as a plateau for review', str(d.get('speed_plateau'))[:80])
+    shutil.rmtree(tmp, ignore_errors=True)
+    print('measure-speed self-test: ' + ('all pass' if not bad else f'{bad} failed'))
+    return 1 if bad else 0
+
+
 def main():
     a = parse_args()
+    if a.self_test:
+        sys.exit(self_test())
+    if not a.video or not a.out:
+        sys.exit('measure-speed.py: a video and an output JSON are required (or --self-test)')
     t0 = time.time()
 
     def log(msg):
@@ -464,7 +565,17 @@ def main():
             short.append(i)
             if not a.no_short_shutter:
                 shutters[i] = round(max(a.min_shutter, 360.0 * a.step * g / s), 1)
-    too_fast = [i for i, s in enumerate(speed) if s > a.too_fast]
+    # the declared policy: crisp renders one sample outside CAMERA_BLUR ranges; declared steps,
+    # flashes, hard seams and act starts always render from one sample
+    look, cam_frames, one_frames = declarations(a.cues)
+    policy = a.policy if a.policy != 'auto' else ((look or {}).get('blur') or 'camera')
+    camera_at = (lambda i: True) if policy == 'camera' else (lambda i: (i + a.offset) in cam_frames)
+    for i in range(n_frames):
+        if not camera_at(i) or (i + a.offset) in one_frames:
+            groups[i] = 1
+            shutters[i] = a.shutter
+    short = [i for i in short if groups[i] > 1]
+    too_fast = [i for i, s in enumerate(speed) if s > a.too_fast and camera_at(i)]
 
     # A hard cut renders sharp. Its frame's shutter would otherwise reach back into the outgoing
     # shot (the temporal max filter gives it its neighbours' speed) and average the two shots into
@@ -488,7 +599,9 @@ def main():
            'budget': budget, 'capped': ranges_of(capped, a.offset),
            'too_fast': ranges_of(too_fast, a.offset), 'too_fast_px_f': a.too_fast,
            'short_shutter': ranges_of(short, a.offset) if not a.no_short_shutter else [],
-           'fastest_frames': [int(i) + a.offset for i in np.argsort(-speed, kind='stable')[:6] if speed[i] >= 12]}
+           'fastest_frames': [int(i) + a.offset for i in np.argsort(-speed, kind='stable')[:6] if speed[i] >= 12],
+           'policy': policy, 'camera_frames': ranges_of(sorted(f - a.offset for f in cam_frames if a.offset <= f < total), a.offset),
+           'one_sample': ranges_of(sorted(f - a.offset for f in one_frames if a.offset <= f < total), a.offset)}
     if not a.no_short_shutter and short:
         out['shutters'] = [a.shutter] * a.offset + shutters  # read by src/blur.ts (per-frame shutter)
     for k in ('sharp_s_per_frame', 'reused_from', 'measured_s'):
@@ -520,6 +633,50 @@ def main():
         rows, cw = copy_windows(copy_path, raw, a.offset, limits)
         out['copy_speed'] = rows
         warns += cw
+    # speed-ceiling (crisp frames): a whole-frame run above CEIL_PXS for more than CEIL_F60 f@60 warns;
+    # plateaus above 1200 px/s are listed for review
+    ceiling, plateaus = [], []
+    if policy == 'crisp' or cam_frames:
+        hgt = meta.get('height') or 1080
+        fps_ = meta.get('fps') or 60
+        pxs = raw * (1080.0 / hgt) * fps_
+        unexplained = {c - a.offset for c in out.get('cuts', []) + out.get('suspect_cuts', [])}  # a cut is not a move
+        fast = [i for i in range(len(pxs)) if pxs[i] > PLATEAU_PXS and not camera_at(i) and i not in unexplained]
+        runs_, cur = [], []
+        for i in fast:
+            if cur and i == cur[-1] + 1:
+                cur.append(i)
+            else:
+                if cur:
+                    runs_.append(cur)
+                cur = [i]
+        if cur:
+            runs_.append(cur)
+        need = CEIL_F60 * fps_ / 60
+        plateau_n = max(3, int(round(4 * fps_ / 60)))
+        for r_ in runs_:
+            seg_ = pxs[r_]
+            plateau = len(r_) >= plateau_n and any(max(seg_[j:j + plateau_n]) <= 1.15 * min(seg_[j:j + plateau_n]) for j in range(0, len(r_) - plateau_n + 1))
+            if plateau:
+                plateaus.append(dict(frames=[r_[0] + a.offset, r_[-1] + a.offset], peak_pxs=round(float(seg_.max()))))
+            # the longest stretch of this run above the ceiling speed
+            best, cur_, start = (0, 0), 0, 0
+            for j, v in enumerate(seg_):
+                if v > CEIL_PXS:
+                    start = j if cur_ == 0 else start
+                    cur_ += 1
+                    best = max(best, (cur_, start))
+                else:
+                    cur_ = 0
+            if best[0] > need:
+                f0_ = r_[best[1]] + a.offset
+                ceiling.append(dict(frames=[f0_, f0_ + best[0] - 1], peak_pxs=round(float(seg_.max())), long=True, plateau=bool(plateau)))
+        for c_ in ceiling[:6]:
+            warns.append(f"frames {c_['frames'][0]}-{c_['frames'][1]} move faster than {CEIL_PXS:g} px/s for "
+                         f"{(c_['frames'][1] - c_['frames'][0] + 1) * 60 / fps_:.0f} f@60 in a crisp film: an exponential move is that fast "
+                         'for only a few frames (front-load it, or declare a CAMERA_BLUR range for a camera-real moment)')
+    out['speed_ceiling'] = ceiling
+    out['speed_plateau'] = plateaus
     out['pace_warnings'] = warns
     if a.cues and (out['suspect_cuts'] or out['cuts']):
         acts = json.load(open(a.cues)).get('acts', {})

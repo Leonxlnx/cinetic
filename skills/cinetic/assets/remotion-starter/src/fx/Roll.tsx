@@ -1,8 +1,9 @@
 import React from 'react';
 import { FONT, TYPE, typeStyle } from '../brand/tokens';
 import { arrive, arriveK, clamp, E, Ease, fd, mix, prog } from '../lib/anim';
+import { stepFrame } from '../lib/cadence';
 import { f60, type FilmCtx, fpsOf, uOf, useFilm } from '../lib/film';
-import type { Declares } from '../timeline';
+import type { Declares, SteppedRange } from '../timeline';
 
 type Role = keyof typeof TYPE;
 
@@ -78,7 +79,8 @@ export const Roll: React.FC<{
   family?: string;
   lead?: number; // mask height and slot pitch, em
   style?: React.CSSProperties;
-}> = ({ frame, from, steps, to, start = 0, dur: durProp, ease = E.out, roll: rollProp, digits, pad = false, group, id = 'roll', role = 'display', size: sizeProp, family = FONT.text, lead = 1.2, style }) => {
+  hard?: boolean; // hard UI: each step swaps the digits in one frame, no slide (a counter that runs linear and is cut mid-count)
+}> = ({ frame, from, steps, to, start = 0, dur: durProp, ease = E.out, roll: rollProp, digits, pad = false, group, id = 'roll', role = 'display', size: sizeProp, family = FONT.text, lead = 1.2, style, hard = false }) => {
   const film = useFilm();
   const dur = durProp ?? f60(film.pace.fx.roll.dur, film.fps);
   const roll = rollProp ?? f60(film.pace.fx.roll.roll, film.fps);
@@ -90,6 +92,17 @@ export const Roll: React.FC<{
     const p = 10 ** (D - 1 - c);
     return pad || p === 1 || v >= p ? Math.floor(v / p) % 10 : -1;
   };
+  if (hard) {
+    const shown = stepValueOf(frame, values, seq);
+    const txt = String(shown).padStart(pad ? D : 0, '0');
+    const padded = txt.padStart(D, ' ');
+    const grouped = group ? padded.replace(/\B(?=(\d{3})+(?!\d))/g, group) : padded;
+    return (
+      <span data-text={id} style={{ ...typeStyle(role, size), fontFamily: family, lineHeight: lead, display: 'inline-block', ...style }}>
+        {grouped}
+      </span>
+    );
+  }
   const k = arriveK(lead * size, roll, E.out);
   const move = (at: number) => arrive(prog(frame, at - 1, at - 1 + roll, E.out), k);
 
@@ -138,5 +151,71 @@ export const Roll: React.FC<{
   );
 };
 
-/** What a Roll instance does on purpose (steps, flashes, camera blur, seams): nothing in its 1.1 form. */
-export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });
+/** The value shown at frame f by a list of steps (whole frames). */
+const stepValueOf = (frame: number, values: number[], seq: RollStep[]) => {
+  const F = fd(frame);
+  let v = values[0];
+  seq.forEach((x, i) => {
+    if (F >= x.at) v = values[i + 1];
+  });
+  return v;
+};
+
+// ---- linear counters --------------------------------------------------------------------------------
+/**
+ * A counter that runs LINEAR: `from` plus `perSec` units per second since `start`, shown rounded down
+ * (or to nearest) on every frame, still counting when the shot cuts. Different counters in one frame run
+ * at different rates (14 : 5 : 1 reads as live data). `animFps` puts it on a lower source cadence (a 25 fps
+ * screen recording inside a 30 fps film holds every sixth frame); `phase` places that grid (film frames).
+ */
+export type CountLinear = { from: number; perSec: number; start: number; round?: 'floor' | 'round'; animFps?: number; phase?: number; to?: number };
+
+/** The counter at frame f: the exact value, the integer shown, and the source step index. Pure. */
+export const countLinear = (f: number, o: CountLinear, film?: Partial<FilmCtx>): { value: number; shown: number; step: number } => {
+  const fps = fpsOf(film);
+  const g = o.animFps ? stepFrame(f, { animFps: o.animFps, filmFps: fps, phase: o.phase ?? o.start }) : fd(f);
+  const t = Math.max(0, g - o.start) / fps;
+  let value = o.from + o.perSec * t;
+  if (o.to !== undefined) value = o.perSec >= 0 ? Math.min(o.to, value) : Math.max(o.to, value);
+  const shown = (o.round ?? 'floor') === 'floor' ? Math.floor(value + 1e-9) : Math.round(value);
+  const step = o.animFps ? Math.round(((g - (o.phase ?? o.start)) * o.animFps) / fps) : fd(f) - Math.round(o.start);
+  return { value, shown, step };
+};
+
+/** A linear counter as Roll steps over frames [a, b] (one step on every frame its shown value changes). */
+export const linearSteps = (o: CountLinear, a: number, b: number, film?: Partial<FilmCtx>): RollStep[] => {
+  const out: RollStep[] = [];
+  let last = countLinear(a - 1, o, film).shown;
+  for (let F = Math.ceil(a); F <= Math.floor(b); F++) {
+    const v = countLinear(F, o, film).shown;
+    if (v !== last) out.push({ at: F, value: (last = v) });
+  }
+  return out;
+};
+
+/**
+ * A count-up that lands on its final value in decelerating steps: the last units arrive one per frame,
+ * then one every 2, then every 3 frames (`gaps`, frames between the last steps, last first). Returns the
+ * steps of the tail only: from `to - gaps.length` up to `to`, ending on `end`.
+ */
+export const steppedTail = (to: number, end: number, gaps: number[] = [3, 3, 2, 2, 1, 1, 1]): RollStep[] => {
+  const out: RollStep[] = [{ at: end, value: to }];
+  let at = end;
+  gaps.forEach((g, i) => {
+    at -= g;
+    out.unshift({ at, value: to - 1 - i });
+  });
+  return out;
+};
+
+/**
+ * What a Roll declares: nothing in its 1.1 form; a hard linear counter on a source cadence of 12/16/20/30 fps
+ * declares that range as stepped (pass the countLinear options as `count` and the range as `from`/`to`).
+ */
+export const declares = (props?: { count?: CountLinear; from?: number; to?: number; id?: string }, _film?: Partial<FilmCtx>): Declares => {
+  const c = props?.count;
+  const allowed = [12, 16, 20, 30] as const;
+  if (!c?.animFps || props?.from === undefined || props?.to === undefined || !allowed.includes(c.animFps as (typeof allowed)[number])) return { stepped: [], flashes: [], cameraBlur: [], seams: [] };
+  const stepped: SteppedRange[] = [{ from: props.from, to: props.to, fps: c.animFps as SteppedRange['fps'], id: props.id ?? 'counter' }];
+  return { stepped, flashes: [], cameraBlur: [], seams: [] };
+};

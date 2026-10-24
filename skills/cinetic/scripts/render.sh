@@ -13,14 +13,19 @@
 #   (default)  sharp master: one Remotion encode at CRF 14, BT.709 tagged (--color-space=bt709).
 #   --preview  same pipeline, CRF 20 on x264 veryfast (about 3x faster to encode). Same tags as the
 #              master, so colour and banding judgements carry over.
-#   --blur     true motion blur: sharp render -> measure-speed.py writes out/samples.json (samples
-#              per frame from optical flow) -> the sub-frame composition (<Comp>Sub, e.g. FilmSub)
+#   --blur     true motion blur, as the film declares it (--policy): sharp render -> measure-speed.py
+#              writes out/samples.json (samples per frame from optical flow) -> the sub-frame
+#              composition (<Comp>Sub, e.g. FilmSub)
 #              renders every sub-frame with --props=out/samples.json -> accumulate.py averages
 #              them in float, quantizes once (flat fields exact, dither only in smooth ramps) and
 #              encodes BT.709 CRF 14. Before the sub-frame pass it prints the
 #              sub-frame multiple and an estimate in minutes from the sharp pass's measured speed,
 #              and it warns about moves too fast for clean blur. Typical films cost 3-8x a sharp
 #              render; cap it with --budget. Render the blurred master once, after the last review.
+#              A crisp film (LOOK.blur 'crisp', the house default) samples only inside its CAMERA_BLUR
+#              ranges; with none in the range, no frame needs samples and the sharp master is rendered
+#              instead. A film with declarations caps the samples at 8 per frame (--measure "--max N"
+#              overrides).
 #
 # The source is bundled once at the start and every pass renders from that frozen bundle, so edits
 # to src/ during a render are not in it; render.sh warns at the end if src/ changed meanwhile.
@@ -40,8 +45,14 @@
 #                       forensics.py --loop or deliver.sh --loop
 #   --audio-offset F    film frame at which this composition starts (default: the --frames start;
 #                       set it when rendering a per-act composition with sound)
-#   --build-audio       first run scripts/export-cues.ts, scripts/audio/kit.py render (the earshot kit,
-#                       cached) and scripts/audio/score.py to rebuild the WAV
+#   --build-audio       rebuild the soundtrack first, through the project's npm scripts: with a licensed
+#                       track (audio/score.json "music" is a track) `npm run music` (analyse, edit, write
+#                       src/music.ts), then `npm run cues`, `npm run kit` (the earshot kit, cached),
+#                       `npm run audio` (the effects plan, then the mix) and, with a track, `npm run
+#                       credits` (the licence gate: a music film without a valid record stops here). A
+#                       project without those scripts runs export-cues.ts, kit.py render and score.py
+#   --policy P          blur policy for --blur: auto (default: LOOK.blur from out/cues.json, else camera),
+#                       crisp (samples only inside CAMERA_BLUR ranges) or camera (every fast frame)
 #   --entry FILE        Remotion entry point (default src/index.ts)
 #   --sub ID            sub-frame composition for --blur (default <Comp>Sub)
 #   --frames A-B        render only film frames A..B (inclusive); audio is taken from the same range
@@ -82,7 +93,7 @@ die() { echo "render.sh: $*" >&2; exit 1; }
 T0=$(date +%s)
 step() { echo "[render $(( $(date +%s) - T0 ))s] $*" >&2; }
 
-COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0
+COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0; POLICY=auto
 ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
 SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0; ACCEPT_FAST=""; ACCEPT_CUT=""
 POS=()
@@ -99,6 +110,7 @@ while [[ $# -gt 0 ]]; do
     --accept-cut) ACCEPT_CUT="$ACCEPT_CUT ${2:?}"; shift ;;
     --audio-offset) AOFF=${2:?}; shift ;;
     --build-audio) BUILD_AUDIO=1 ;;
+    --policy) POLICY=${2:?--policy needs auto, crisp or camera}; shift ;;
     --entry) ENTRY=${2:?}; shift ;;
     --sub) SUB=${2:?}; shift ;;
     --frames) FRAMES=${2:?}; shift ;;
@@ -120,6 +132,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 [[ ${#POS[@]} -eq 2 ]] || usage 1
+case "$POLICY" in auto|crisp|camera) ;; *) die "--policy is auto, crisp or camera (got $POLICY)" ;; esac
 [[ $TENBIT -eq 0 || $MODE == blur ]] || die "--10bit applies to --blur masters (accumulate.py encodes them)"
 COMP=${POS[0]}; OUT=${POS[1]}
 
@@ -134,15 +147,38 @@ OUT_ABS=$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")
 NAME=$(basename "${OUT%.*}")
 
 if [[ $BUILD_AUDIO -eq 1 && $NOAUDIO -eq 0 ]]; then
-  [[ -f "$SCRIPT_DIR/export-cues.ts" && -f "$SCRIPT_DIR/audio/score.py" ]] || die "--build-audio needs scripts/export-cues.ts and scripts/audio/score.py"
-  step "rebuilding cues and soundtrack"
-  npx tsx "$SCRIPT_DIR/export-cues.ts" >&2
-  # the earshot kit first (cached: seconds when nothing changed); without earshot score.py plays the
-  # rendered takes in audio/kit, or its synth voices with a warning
-  if [[ -f audio/kit.json && -f "$SCRIPT_DIR/audio/kit.py" ]]; then
-    python3 "$SCRIPT_DIR/audio/kit.py" render >&2 || echo "render.sh: the kit was not rendered (above); score.py falls back" >&2
+  # the npm scripts of the project (music, cues, kit, audio, credits), else the scripts themselves
+  has_script() { [[ -f package.json ]] && node -e "const p=require('./package.json');process.exit(p.scripts&&p.scripts[process.argv[1]]?0:1)" "$1"; }
+  MUSIC_LED=0
+  if [[ -f audio/score.json ]] && node -e "const s=JSON.parse(require('fs').readFileSync('audio/score.json','utf8'));process.exit(s.music&&typeof s.music==='object'?0:1)"; then MUSIC_LED=1; fi
+  if has_script cues && has_script audio; then
+    step "rebuilding the soundtrack (npm run$([[ $MUSIC_LED -eq 1 ]] && echo ' music,') cues, kit, audio$([[ $MUSIC_LED -eq 1 ]] && echo ', credits'))"
+    if [[ $MUSIC_LED -eq 1 ]]; then
+      has_script music || die "--build-audio: audio/score.json plays a track but package.json has no music script"
+      npm run --silent music >&2 || die "npm run music failed (track analysis, edit or grid)"
+    fi
+    npm run --silent cues >&2 || die "npm run cues failed"
+    if [[ -f audio/kit.json ]] && has_script kit; then
+      npm run --silent kit >&2 || echo "render.sh: the kit was not rendered (above); the mix uses the takes already in audio/kit" >&2
+    fi
+    npm run --silent audio >&2 || die "npm run audio failed (the effects plan or the mix; see out/qa/score.json)"
+    if [[ "$AUDIO" != public/audio/soundtrack.wav && -f public/audio/soundtrack.wav ]]; then
+      mkdir -p "$(dirname "$AUDIO")"; cp public/audio/soundtrack.wav "$AUDIO"
+    fi
+    if [[ $MUSIC_LED -eq 1 ]]; then
+      has_script credits || die "--build-audio: a music film needs the credits script (the licence gate)"
+      npm run --silent credits >&2 || die "the licence gate refused the music (npm run credits): no film leaves without a valid record and its credits"
+    fi
+  else
+    [[ -f "$SCRIPT_DIR/export-cues.ts" && -f "$SCRIPT_DIR/audio/score.py" ]] || die "--build-audio needs scripts/export-cues.ts and scripts/audio/score.py"
+    step "rebuilding cues and soundtrack"
+    npx tsx "$SCRIPT_DIR/export-cues.ts" >&2
+    # the earshot kit first (cached: seconds when nothing changed)
+    if [[ -f audio/kit.json && -f "$SCRIPT_DIR/audio/kit.py" ]]; then
+      python3 "$SCRIPT_DIR/audio/kit.py" render >&2 || echo "render.sh: the kit was not rendered (above); score.py uses the takes already in audio/kit" >&2
+    fi
+    python3 "$SCRIPT_DIR/audio/score.py" --cues out/cues.json --score audio/score.json --out "$AUDIO" --stems out/stems --json out/qa/score.json >&2
   fi
-  python3 "$SCRIPT_DIR/audio/score.py" --cues out/cues.json --score audio/score.json --out "$AUDIO" --stems out/stems --json out/qa/score.json >&2
 fi
 if [[ $NOAUDIO -eq 0 ]]; then
   [[ -f "$AUDIO" ]] || die "soundtrack $AUDIO not found (build it, pass --audio FILE, or --no-audio for a silent film)"
@@ -225,9 +261,12 @@ case "$MODE" in
       npx remotion render "$B" "$COMP" "$WORK/sharp.mp4" ${RANGE[@]+"${RANGE[@]}"} --crf=12 --x264-preset=veryfast --color-space=default ${RARGS[@]+"${RARGS[@]}"} \
         || die "sharp render failed"
       SPF=$(python3 -c "import time; print(round((time.time() - $TS) / $N, 4))")
-      step "measuring on-screen speed -> $SAMPLES"
+      step "measuring on-screen speed -> $SAMPLES (policy $POLICY)"
       CUES=(); [[ -f out/cues.json ]] && CUES=(--cues out/cues.json)
-      python3 "$SCRIPT_DIR/measure-speed.py" "$WORK/sharp.mp4" "$SAMPLES" --offset "$FROM" ${CUES[@]+"${CUES[@]}"} ${MS_ARGS[@]+"${MS_ARGS[@]}"} >/dev/null \
+      # a film with declarations accumulates at most 8 samples per frame (laptop-safe finals)
+      CAP=()
+      if [[ -f out/cues.json ]] && node -e "process.exit(JSON.parse(require('fs').readFileSync('out/cues.json','utf8')).look?0:1)" && [[ " ${MS_ARGS[*]-} " != *" --max "* ]]; then CAP=(--max 8); fi
+      python3 "$SCRIPT_DIR/measure-speed.py" "$WORK/sharp.mp4" "$SAMPLES" --offset "$FROM" --policy "$POLICY" ${CUES[@]+"${CUES[@]}"} ${CAP[@]+"${CAP[@]}"} ${MS_ARGS[@]+"${MS_ARGS[@]}"} >/dev/null \
         || die "measure-speed.py failed"
       # remember the measured throughput, so a later --samples-from run can estimate too
       python3 - "$SAMPLES" "$SPF" <<'PY'
@@ -236,6 +275,14 @@ d = json.load(open(sys.argv[1])); d['sharp_s_per_frame'] = float(sys.argv[2]); j
 PY
     fi
     read -r SA SB <<< "$(subframe_span "$SAMPLES" "$FROM" "$TO")"
+    if [[ $((SB - SA + 1)) -eq $N ]]; then
+      # crisp, or nothing fast: every frame renders from one sample, so the master is a sharp render
+      step "no frame in $FROM-$TO needs blur samples ($(python3 -c "import json;print(json.load(open('$SAMPLES')).get('policy','camera'))") policy): rendering the sharp master"
+      npx remotion render "$B" "$COMP" "$PIC" ${RANGE[@]+"${RANGE[@]}"} --crf="${CRF:-14}" --x264-preset=slow --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
+        || die "remotion render failed"
+      SKIP_SUB=1
+    fi
+    [[ ${SKIP_SUB:-0} -eq 1 ]] || {
     # The estimate, measured on the starter (4 CPUs): a sub-frame renders in about the time of a
     # sharp frame, and the float accumulation costs about 0.75 of that again per sub-frame.
     FASTRC=0
@@ -280,6 +327,7 @@ PY
     ACC=(--crf "${CRF:-14}"); [[ $TENBIT -eq 1 ]] && ACC+=(--10bit)
     python3 "$SCRIPT_DIR/accumulate.py" "$WORK/sub.mp4" "$SAMPLES" "$PIC" --start "$FROM" --count "$N" ${ACC[@]+"${ACC[@]}"} --quiet >/dev/null \
       || die "accumulate.py failed"
+    }
     ;;
 esac
 

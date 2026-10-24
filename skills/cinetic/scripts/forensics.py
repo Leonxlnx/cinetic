@@ -56,6 +56,28 @@ Frames are 0-based and absolute (frame = t * fps). Defaults (every number is a f
                > 0.2 on >= 2 sampled frames (2 per second, exact luma plane)          fail
                                                               on one sampled frame   warn
   loop seam    (--loop) last->first change <= max(0.4, 1.5 * median step at the ends)  fail
+
+Grammar (a film whose cues.json carries the 1.2 declarations, `look` or `declared`, or --grammar; for
+an older cues file they are info, so its verdict does not change). Speeds are px/s at 1080p, measured
+over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), so a slow creep reads:
+  declared     a spike or stall on a declared stepped range, flash or hard seam (cues `declared`,
+               including what each primitive declares) is craft                            info
+  hold-drift   a run > 0.8 s outside the end lock (cues END; a film without declarations: its last
+               2 s, as look-audit.py) where the camera neither drifts 6 px/s nor creeps
+               1 %/s, no layer moves 6 px/s, the ground does not change and no content changes
+               (typing, a counter: 0.2 % of the frame)                                        fail
+               inside a reading window: faster than 90 px/s or 15 %/s                       warn
+  static-share more than 15 % of the body stands still (camera, layers and ground)          warn
+  still-cut    more than 30 % of the cuts go from a still frame to a still frame            warn
+  hold-into-exit  fewer than half of the continuity cuts accelerate into the cut (the last two
+               frames run x1.15 faster than the two before them, or end at 3x the hold)     warn
+  carried-cut  a declared velocity seam: direction cosine >= 0.7, incoming first-frame speed
+               0.4-1.4x the outgoing, then decaying every frame                             fail
+  dissolve-detect  >= 4 f@60 explained as a rising mix of two different images (SSIM < 0.5), or a
+               fade to black before the last 2 s, unless a seam declares it (dissolveUi,
+               light, fadeEnd)                                                              fail
+  end-card     with END declared: the 1.5 s before the lock barely move, or it fades in   warn
+--no-grammar skips them.
   determinism  (--against) frames whose change between two renders > max(0.3, 5*median) fail
 
 Declare intended cuts, freezes and effects:
@@ -76,6 +98,7 @@ Needs ffmpeg/ffprobe, numpy and opencv-python.
 """
 import argparse
 import json
+import math
 import os
 import re
 import subprocess
@@ -327,7 +350,9 @@ def load_cues(path):
     copy = [x for x in (c.get('copy') or []) if isinstance(x, dict) and _num(x.get('resolved')) and _num(x.get('out'))]
     return dict(fps=float(c.get('fps') or 0) or None, total=total, acts=acts, cue=cue, events=events,
                 qa=c.get('qa') if isinstance(c.get('qa'), dict) else None, schema=schema, copy=copy,
-                pace=c.get('pace') if c.get('pace') in PACE_LIMITS else None)
+                pace=c.get('pace') if c.get('pace') in PACE_LIMITS else None,
+                look=c.get('look') if isinstance(c.get('look'), dict) else None,
+                declared=c.get('declared') if isinstance(c.get('declared'), dict) else None)
 
 
 # ------------------------------------------------------------------------------------------
@@ -365,6 +390,7 @@ def load_declarations(args):
     freezes = parse_ranges(args.freeze_ok)
     ignore = parse_ranges(args.ignore)
     acts, moments, reading, cues_fps = {}, [], [], None
+    extra = dict(look=None, seams=[], stepped=[], flashes=[], camera_blur=[], end=None, events=[])
 
     def take(block, where):
         if not isinstance(block, dict):
@@ -389,7 +415,33 @@ def load_declarations(args):
         moments = sorted({int(round(e['f'])) for e in c['events']} | set(c['cue'].values()))
         reading = [w for x in c['copy'] for w in read_windows(x) if w[1] > w[0]]
         cues_fps = c['fps']
-    return sorted(set(cuts)), sorted(set(freezes)), sorted(set(ignore)), acts, moments, reading, cues_fps
+        extra.update(declared_of(c))
+        extra['events'] = c['events']
+    return sorted(set(cuts)), sorted(set(freezes)), sorted(set(ignore)), acts, moments, reading, cues_fps, extra
+
+
+CARRIED = ('velocity', 'morph', 'breath', 'zoomThrough', 'whip', 'snapZoom', 'mask', 'wipe', 'defocus')
+PUNCH = ('hard', 'colour', 'light', 'stepped')
+
+
+def declared_of(c):
+    """What the timeline and its primitives declare on purpose (cues.json `look` + `declared`): seams,
+    stepped ranges, flashes, camera-blur ranges and the end lock, in film frames."""
+    d = c.get('declared') or {}
+    fx = [x for x in (d.get('fx') or []) if isinstance(x, dict)]
+
+    def items(key, alt=None):
+        own = d.get(key) or (d.get(alt) if alt else None) or []
+        return [x for x in own if isinstance(x, dict)] + [y for x in fx for y in (x.get(key) or (x.get(alt) if alt else None) or []) if isinstance(y, dict)]
+
+    end = d.get('end') if isinstance(d.get('end'), dict) else None
+    if end and not (_num(end.get('from')) and _num(end.get('to')) and end['to'] > end['from']):
+        end = None
+    return dict(look=c.get('look'), seams=[s for s in items('seams') if _num(s.get('at'))],
+                stepped=[r for r in items('stepped') if _num(r.get('from')) and _num(r.get('to'))],
+                flashes=[x for x in items('flashes') if _num(x.get('f'))],
+                camera_blur=[r for r in items('cameraBlur', 'camera_blur') if _num(r.get('from')) and _num(r.get('to'))],
+                end=end, reveal=d.get('reveal'))
 
 
 def read_windows(x):
@@ -538,6 +590,264 @@ def stairs(v, r, first, win, rmin):
     return [{'from': m.pop('frm'), **m} for m in merged]
 
 
+# ------------------------------------------------------------------------------------------
+# the motion probe (shared with look-audit.py): slow and fast motion at analysis size, in constant
+# memory. Speeds are px/s at a 1080-high frame, scale rates %/s, so every fps and size compares.
+# ------------------------------------------------------------------------------------------
+LIVE_PXS = 6.0      # below this (and LIVE_PCT) a frame does not move: a frozen hold
+LIVE_PCT = 1.0      # %/s of scale creep
+GROUND_CPS = 18.0   # a flat ground tile changing faster than this (codes per second) is living light
+ONSET_PXS = 30.0    # a region starting to move faster than this is an animation start
+CHANGE_LIVE = 0.002  # share of the frame whose content changes over a window (typing, counters): a hold that lives
+
+
+def flow_fb(a, b):
+    """Dense optical flow a -> b (Farneback; the parameters every probe uses)."""
+    return cv2.calcOpticalFlowFarneback(a, b, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+
+
+def textured(gray, thr=6):
+    """Pixels with 2D structure (where flow can be trusted)."""
+    gx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+    gy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+    return cv2.dilate((np.hypot(gx, gy) >= thr * 4).astype(np.uint8), None) > 0
+
+
+def fit_similarity(fl, mask, max_pts=4000, residual=True):
+    """Least-squares camera move (translation, scale, roll) that explains the flow on `mask`:
+    u = tx + a x - b y, v = ty + b x + a y about the frame centre (a = scale - 1, b = roll).
+    Returns (tx, ty, a, b, inlier share, mask of pixels it does not explain) or None."""
+    h, w = mask.shape
+    ys, xs = np.nonzero(mask)
+    if len(xs) < 60:
+        return None
+    if len(xs) > max_pts:
+        k = np.linspace(0, len(xs) - 1, max_pts).astype(int)
+        ys, xs = ys[k], xs[k]
+    u, v = fl[ys, xs, 0], fl[ys, xs, 1]
+    x, y = xs - w / 2.0, ys - h / 2.0
+    A = np.zeros((2 * len(x), 4), np.float64)
+    A[0::2, 0] = 1
+    A[0::2, 2] = x
+    A[0::2, 3] = -y
+    A[1::2, 1] = 1
+    A[1::2, 2] = y
+    A[1::2, 3] = x
+    rhs = np.empty(2 * len(x))
+    rhs[0::2], rhs[1::2] = u, v
+    keep = np.ones(len(x), bool)
+    p = None
+    for _ in range(2):  # fit, drop what moves on its own, fit again
+        sel = np.repeat(keep, 2)
+        if sel.sum() < 40:
+            break
+        p, *_ = np.linalg.lstsq(A[sel], rhs[sel], rcond=None)
+        r = np.hypot(u - (p[0] + p[2] * x - p[3] * y), v - (p[1] + p[3] * x + p[2] * y))
+        keep = r <= max(0.35, 3 * float(np.median(r)))
+    if p is None:
+        return None
+    if not residual:
+        return float(p[0]), float(p[1]), float(p[2]), float(p[3]), float(keep.mean()), None
+    full_x = np.arange(w)[None, :] - w / 2.0
+    full_y = np.arange(h)[:, None] - h / 2.0
+    ru = fl[..., 0] - (p[0] + p[2] * full_x - p[3] * full_y)
+    rv = fl[..., 1] - (p[1] + p[3] * full_x + p[2] * full_y)
+    return float(p[0]), float(p[1]), float(p[2]), float(p[3]), float(keep.mean()), np.hypot(ru, rv)
+
+
+class MotionProbe:
+    """Feed it the frames (gray, analysis size) in order; it measures, per frame f:
+      win  (every `wstride` frames, flow f-k -> f over k ~ 0.4 s, which resolves a slow creep):
+           cam_pxs / cam_pct  the camera move that explains most structure (px/s at 1080p, %/s)
+           layer_pxs          the fastest moving layer (90th percentile of structure speed)
+           plane2_pxs         a second plane moving apart from the camera (parallax), else 0
+           ground_cps         how fast the flat ground changes (light moving over it)
+      pair (on every frame, or only on `pair_frames`, flow f-1 -> f):
+           vec                the dominant motion vector of the moving structure (px/f at 1080p)
+           speed              its speed (px/s), and the camera fit of the pair
+           tiles              which 64 px tiles move faster than ONSET_PXS (for starts and concurrency)
+           cut                most pixels change and the flow cannot explain it
+    """
+
+    def __init__(self, fps, w, h, window_s=0.4, wstride=None, pair_frames=None, tiles=True, force=(), pair_scale=0.5):
+        self.fps, self.w, self.h = fps, w, h
+        # the frame-to-frame pairs run at a smaller size (cuts, speeds, tiles); the slow windows at full analysis size
+        self.ps = pair_scale if min(w, h) * pair_scale >= 96 else 1.0
+        self.pw, self.ph = max(2, int(round(w * self.ps))), max(2, int(round(h * self.ps)))
+        self.up = 1080.0 / self.ph
+        self.k = max(2, int(round(window_s * fps)))
+        self.wstride = wstride or max(1, int(round(fps / 10)))
+        self.pair_frames = pair_frames  # None: every frame
+        self.force = set(force)  # frames that always get a window measurement (both sides of a cut)
+        self.u = 1080.0 / h  # analysis px -> px at 1080p
+        self.tile = max(8, int(round(64 * h / 1080)))
+        self.ptile = max(4, int(round(64 * self.ph / 1080)))
+        self.want_tiles = tiles
+        self.buf = deque(maxlen=self.k + 1)
+        self.prev_small = None
+        self.win, self.pair = {}, {}
+
+    def feed(self, f, gray):
+        self.buf.append((f, gray))
+        small = gray if self.ps == 1.0 else cv2.resize(gray, (self.pw, self.ph), interpolation=cv2.INTER_AREA)
+        if self.prev_small is not None and (self.pair_frames is None or f in self.pair_frames):
+            self.pair[f] = self._pair(self.prev_small, small)
+        self.prev_small = small
+        if len(self.buf) == self.k + 1 and (f % self.wstride == 0 or f in self.force):
+            self.win[f] = self._win(self.buf[0][1], gray)
+
+    def _pair(self, a, b):
+        diff = cv2.absdiff(a, b)
+        frac = float((diff > 24).mean())
+        mad = float(diff.mean())
+        fl = flow_fb(a, b)
+        tex = textured(a)
+        mag = np.hypot(fl[..., 0], fl[..., 1])
+        moving = tex & (mag > 0.15)
+        resid = 0.0
+        if frac > 0.2 or mad > 12:
+            hh, ww = a.shape
+            gx, gy = np.meshgrid(np.arange(ww, dtype=np.float32), np.arange(hh, dtype=np.float32))
+            warped = cv2.remap(b, gx + fl[..., 0], gy + fl[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+            resid = float(cv2.absdiff(a, warped).mean()) / max(mad, 1e-6)
+        out = dict(mad=round(mad, 3), frac=round(frac, 3), cut=bool((frac > 0.35 and resid > 0.5) or (mad > 25 and resid > 0.6)))
+        if moving.sum() >= 30:
+            vx, vy = float(np.median(fl[..., 0][moving])), float(np.median(fl[..., 1][moving]))
+            out['vec'] = [round(vx * self.up, 3), round(vy * self.up, 3)]
+            out['speed'] = round(float(np.percentile(mag[moving], 90)) * self.up * self.fps, 1)
+        else:
+            out['vec'], out['speed'] = [0.0, 0.0], 0.0
+        fit = fit_similarity(fl, tex, max_pts=1500, residual=False)
+        if fit:
+            out['cam'] = [round(fit[0] * self.up, 3), round(fit[1] * self.up, 3), round(fit[2], 5)]
+        if self.want_tiles:
+            t = self.ptile
+            th, tw = a.shape[0] // t, a.shape[1] // t
+            m = mag[:th * t, :tw * t].reshape(th, t, tw, t).mean(axis=(1, 3))
+            tx = tex[:th * t, :tw * t].reshape(th, t, tw, t).mean(axis=(1, 3))
+            out['tiles'] = ((m * self.up * self.fps >= ONSET_PXS) & (tx > 0.05)).astype(np.uint8)
+        return out
+
+    def _win(self, a, b):
+        dt = self.k / self.fps
+        fl = flow_fb(a, b)
+        tex = textured(a)
+        mag = np.hypot(fl[..., 0], fl[..., 1])
+        out = dict(cam_pxs=0.0, cam_pct=0.0, layer_pxs=0.0, plane2_pxs=0.0, ground_cps=0.0, structure=float(tex.mean()))
+        if tex.sum() >= 60:
+            out['layer_pxs'] = round(float(np.percentile(mag[tex], 90)) * self.u / dt, 2)
+            out['moving_share'] = round(float((mag[tex] * self.u / dt >= LIVE_PXS).mean()), 3)  # how much of the structure moves
+            fit = fit_similarity(fl, tex)
+            if fit:
+                tx, ty, sa, rb, inl, res = fit
+                out['cam_pxs'] = round(math.hypot(tx, ty) * self.u / dt, 2)
+                out['cam_pct'] = round(abs(sa) * 100 / dt, 3)
+                out['cam_k'] = round(sa * 100 / dt, 3)  # signed: > 0 pushes in
+                out['cam_vec'] = [round(tx * self.u / dt, 2), round(ty * self.u / dt, 2)]
+                # a second plane: structure the camera move does not explain, moving on its own
+                cam_mag = math.hypot(tx, ty) + abs(sa) * max(a.shape) / 2
+                apart = tex & (res > max(0.4, 0.25 * cam_mag))
+                if apart.sum() >= max(40, 0.03 * tex.sum()):
+                    p2 = float(np.median(mag[apart])) * self.u / dt
+                    out['plane2_pxs'] = round(p2, 2)
+                    out['plane2_share'] = round(float(apart.sum() / tex.sum()), 3)
+        t = self.tile
+        th, tw = a.shape[0] // t, a.shape[1] // t
+        if th and tw:
+            d = cv2.absdiff(a, b).astype(np.float32)[:th * t, :tw * t].reshape(th, t, tw, t).mean(axis=(1, 3))
+            flat = tex[:th * t, :tw * t].reshape(th, t, tw, t).mean(axis=(1, 3)) < 0.05
+            if flat.sum() >= 3:
+                out['ground_cps'] = round(float(np.percentile(d[flat], 95)) / dt, 2)
+        out['live'] = bool(out['cam_pxs'] >= LIVE_PXS or out['cam_pct'] >= LIVE_PCT or out['ground_cps'] >= GROUND_CPS)
+        # content that changes without moving (typing, a counter, a colour turning) is a living hold too
+        out['change'] = round(float((cv2.absdiff(a, b) > 24).mean()), 4)
+        out['moving'] = bool(out['live'] or out['layer_pxs'] >= LIVE_PXS)
+        return out
+
+
+def ssim_gray(a, b):
+    """Mean structural similarity of two gray frames (float32, 0-255), 7 px Gaussian window."""
+    c1, c2 = (0.01 * 255) ** 2, (0.03 * 255) ** 2
+    blur = lambda x: cv2.GaussianBlur(x, (7, 7), 1.5)  # noqa: E731
+    ma, mb = blur(a), blur(b)
+    va, vb, cov = blur(a * a) - ma * ma, blur(b * b) - mb * mb, blur(a * b) - ma * mb
+    m = ((2 * ma * mb + c1) * (2 * cov + c2)) / ((ma * ma + mb * mb + c1) * (va + vb + c2))
+    return float(m.mean())
+
+
+def blend_test(frames, res_max=2.0, min_area=0.2):
+    """Is the middle of `frames` (gray, float32) a linear mix of its first and last frame, with the
+    mix rising every frame, over two different images? That is a dissolve (or a fade to a flat
+    colour). Moving content never fits a mix, so a whip or a push is not one."""
+    a, b = frames[0], frames[-1]
+    d = b - a
+    ch = np.abs(d) > 10
+    if ch.mean() < min_area:
+        return None
+    dd = d[ch]
+    den = float((dd * dd).sum())
+    alphas, res = [], []
+    for img in frames[1:-1]:
+        e = (img - a)[ch]
+        al = float((e * dd).sum() / den)
+        alphas.append(al)
+        res.append(float(np.abs(e - al * dd).mean()))
+    if max(res) > res_max or not all(0.04 < x < 0.96 for x in alphas):
+        return None
+    if any(alphas[i + 1] <= alphas[i] + 0.02 for i in range(len(alphas) - 1)):
+        return None
+    # a slow move of soft content is also a mix of its ends (sub-pixel interpolation); motion explains it
+    a8, b8 = np.clip(a, 0, 255).astype(np.uint8), np.clip(b, 0, 255).astype(np.uint8)
+    fl = flow_fb(a8, b8)
+    hh, ww = a8.shape
+    gx, gy = np.meshgrid(np.arange(ww, dtype=np.float32), np.arange(hh, dtype=np.float32))
+    warped = cv2.remap(b8, gx + fl[..., 0], gy + fl[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE).astype(np.float32)
+    explained = float(np.abs(a - warped)[ch].mean()) / max(1e-6, float(np.abs(dd).mean()))
+    if explained < 0.5:
+        return None
+    # the two ends are compared over the whole merged span (blend_spans), not this short window
+    return dict(alphas=[round(x, 3) for x in alphas], residual=round(max(res), 2), area=round(float(ch.mean()), 3), _a=a, _b=b)
+
+
+def blend_spans(hits):
+    """Merge overlapping blend windows; a span is a dissolve when its first and last image differ
+    (SSIM < 0.5), and a fade when one end is a flat colour."""
+    spans = []
+    for x in hits:
+        if spans and x['frm'] <= spans[-1]['to']:
+            spans[-1]['to'] = max(spans[-1]['to'], x['to'])
+            spans[-1]['_b'] = x['_b']
+            spans[-1]['alphas'] = spans[-1]['alphas'] + x['alphas']
+        else:
+            spans.append(dict(x))
+    out = []
+    flat = lambda img: float(img.std()) < 6  # noqa: E731
+    for sp in spans:
+        a, b = sp.pop('_a'), sp.pop('_b')
+        sp['ssim'] = round(ssim_gray(a, b), 3)
+        sp['black'] = bool(float(b.mean()) < 14 and flat(b)) or bool(float(a.mean()) < 14 and flat(a))
+        sp['flat'] = bool(flat(a) or flat(b))
+        sp['alphas'] = sp['alphas'][:12]
+        if sp['ssim'] < 0.5 or sp['flat']:
+            out.append(sp)
+    return out
+
+
+def probe_size(info):
+    """The motion probe's analysis size: 480 wide, the source's own aspect (px at 1080p stay true on
+    square and tall frames)."""
+    w = min(SW, info['w']) // 2 * 2
+    return w, max(2, int(round(info['h'] * w / info['w'])) // 2 * 2)
+
+
+def window_at(win, f, wstride):
+    """The window measurement that covers frame f (the nearest one at or after it)."""
+    for g in range(f, f + 2 * wstride + 1):
+        if g in win:
+            return win[g]
+    return None
+
+
 def rolling_median_excl(d, i, r=4):
     lo, hi = max(1, i - r), min(len(d), i + r + 1)
     nb = np.concatenate([d[lo:i], d[i + 1:hi]])
@@ -596,8 +906,27 @@ def analyse(args, info):
             die('--against file has a different size')
         other = decode(args.against, oinfo, start, count)
 
+    probe_m = getattr(args, '_probe', None)  # the grammar probe (hold drift, cuts at speed), when enabled
+    dis_n = max(2, int(round(4 * fps / 60)))  # a dissolve shows as a blend over >= 4 f@60
+    disq = deque(maxlen=dis_n + 2)
+    M['dissolve'] = []
     for f, rgb in decode(args.video, info, start, count):
         small = cv2.resize(rgb, (SW, SH), interpolation=cv2.INTER_AREA).astype(np.int16)
+        if probe_m is not None or getattr(args, '_dissolve', False):
+            g8 = cv2.cvtColor(small.astype(np.uint8), cv2.COLOR_RGB2GRAY) if probe_m is None or (probe_m.w, probe_m.h) == (SW, SH) else \
+                cv2.resize(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY), (probe_m.w, probe_m.h), interpolation=cv2.INTER_AREA)
+            if (g8.shape[1], g8.shape[0]) != (SW, SH) and getattr(args, '_dissolve', False):
+                g8d = cv2.cvtColor(small.astype(np.uint8), cv2.COLOR_RGB2GRAY)
+            else:
+                g8d = g8
+            if probe_m is not None:
+                probe_m.feed(f, g8)
+            if getattr(args, '_dissolve', False):
+                disq.append((f, g8d.astype(np.float32)))
+                if len(disq) == disq.maxlen:
+                    hit = blend_test([x[1] for x in disq])
+                    if hit:
+                        M['dissolve'].append(dict(frm=disq[0][0], to=disq[-1][0], **hit))
         M['idx'].append(f)
         if smallq:
             diff = np.abs(small - smallq[-1])
@@ -685,7 +1014,7 @@ def evaluate(args, info, M, decl):
     fps = info['fps']
     if args.max_end_hold is None:  # the audio's decay: 2 s whatever the frame rate
         args.max_end_hold = int(round(2 * fps)) + 1
-    cuts, freezes, ignore, acts, moments, reading, cues_fps = decl
+    cuts, freezes, ignore, acts, moments, reading, cues_fps, extra = decl
     k_ = fps / cues_fps if cues_fps else 1.0  # cues frames -> video frames
     reading = [(int(round(a * k_)), int(round(b * k_))) for a, b in reading]
 
@@ -895,8 +1224,8 @@ def evaluate(args, info, M, decl):
                 'a still opening loses a muted feed; start inside the action (the device already moving, the first '
                 'change by 0.5 s) and let the first line land over motion')
 
-    # --- a still opening: the first visible change comes at a median 0.1 s (all by 0.43 s) in top-tier
-    # launch films, and a still title held 2.7 s before any motion reads as a slow hook. "Still" is
+    # --- a still opening: the first visible change belongs in the first 0.1-0.4 s (house), and a still
+    # title held 2.7 s before any motion reads as a slow hook. "Still" is
     # measured on the film's own scale (a fine-line sting moves less than a product film): the first
     # half second whose mean change passes 0.3x the median change of the film's moving frames.
     first_change = None
@@ -1049,6 +1378,10 @@ def evaluate(args, info, M, decl):
         if np.isnan(vals).any() or probe(args.against)['frames'] != info['frames']:
             add('determinism', 'fail', last, 'the two renders have different frame counts')
 
+    # --- grammar: the picture never freezes, cuts carry speed, no dissolves (cues with 1.2 declarations,
+    # or --grammar; without them these are reported as info so a 1.1 film keeps its verdict)
+    grammar = run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts, add, spikes, stalls, flags)
+
     # --- energy summary for pacing reads
     step = max(1, int(round(fps)))
     per_sec = [round(float(dd[max(1, s):s + step].mean()), 2) for s in range(0, n, step) if len(dd[max(1, s):s + step])]
@@ -1062,10 +1395,10 @@ def evaluate(args, info, M, decl):
     seam_table = [dict(frame=s, mad=round(float(dd[s - f0]), 3), neighbour_median=round(rolling_median_excl(dd, s - f0), 3))
                   for s in seams if 1 <= s - f0 < n]
 
-    sev = {'fail': 0, 'warn': 1}
+    sev = {'fail': 0, 'warn': 1, 'info': 2}
     flags.sort(key=lambda x: (sev[x['severity']], int(str(x['frame']).split('-')[0])))
     fails = sum(1 for x in flags if x['severity'] == 'fail')
-    warns = len(flags) - fails
+    warns = sum(1 for x in flags if x['severity'] == 'warn')
     counts = {}
     for s in spikes:
         counts[s['class']] = counts.get(s['class'], 0) + 1
@@ -1089,14 +1422,355 @@ def evaluate(args, info, M, decl):
         'checks': dict(spikes=spikes, stalls=stalls, holds=holds, quiet=quiet, hook=hook, ghosts=M['ghosts'],
                        crossings=M['crossings'][:100], borders=borders, judder=judder, sharpness=sharp_steps,
                        banding=band, banding_sheet=band_sheet, smear=smear, smear_sheet=smear_sheet,
-                       seams=seam_table, loop=loop, determinism=det),
+                       seams=seam_table, loop=loop, determinism=det, grammar=grammar),
     }
+
+
+def grammar_on(args, extra):
+    """The grammar checks fail only on a film that declares itself (cues.json with `look` or
+    `declared`), or with --grammar; otherwise they are reported as info."""
+    if getattr(args, 'no_grammar', False):
+        return False
+    return bool(getattr(args, 'grammar', False) or extra.get('look') or extra.get('seams') or extra.get('end'))
+
+
+def cut_frames(extra, acts, cuts, k_):
+    """Every designed cut in video frames: act boundaries, declared seams and declared hard cuts."""
+    out = {int(round(a * k_)) for a, _ in acts.values() if a > 0}
+    out |= {int(round(s['at'] * k_)) for s in extra.get('seams', [])}
+    out |= {a for a, _ in cuts}
+    return sorted(out)
+
+
+def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts, add, spikes, stalls, flags):
+    fps = info['fps']
+    g12 = grammar_on(args, extra)
+    sev = (lambda s: s) if g12 else (lambda s: 'info')
+    vf = lambda x: int(round(x * k_))  # noqa: E731 (cue frames -> video frames)
+    idx = M['idx']
+    f0, last = idx[0], idx[-1]
+    out = dict(enabled=g12)
+    end = extra.get('end')
+    end_rng = (vf(end['from']), vf(end['to'])) if end else None
+    # an undeclared film (no look, seams or END in its cues) gets the default end lock of look-audit.py,
+    # the last 2 s: its closing card may lock off without failing the holds
+    undeclared = not (extra.get('look') or extra.get('seams') or extra.get('end'))
+    hold_end = end_rng or ((max(f0, last + 1 - int(round(2 * fps))), last + 1) if undeclared else None)
+    in_end = lambda f: bool(hold_end and hold_end[0] <= f < hold_end[1])  # noqa: E731
+
+    # declared designed artifacts: a step, a flash or a hard seam is craft, not a pop
+    disc = set()
+    for r in extra.get('stepped', []):
+        disc |= set(range(vf(r['from']), vf(r['to'])))
+    for x in extra.get('flashes', []):
+        disc |= set(range(vf(x['f']), vf(x['f']) + int(x.get('frames', 1)) + 1))
+    for s in extra.get('seams', []):
+        if s.get('kind') in PUNCH:
+            disc |= {vf(s['at']) - 1, vf(s['at'])}
+    stepped = [(vf(r['from']), vf(r['to'])) for r in extra.get('stepped', [])]
+    declared_hits = []
+    for it in spikes:
+        if it['class'] in ('pop', 'seam-pop', 'hit', 'region-hit') and any(g in disc for g in range(it['frames'][0] - 1, it['frames'][1] + 2)):
+            declared_hits.append(it['frame'])
+            it['class'] = 'declared'
+    for st in stalls:
+        if any(a <= st['frame'] < b for a, b in stepped):
+            st['declared'] = True
+            declared_hits.append(st['frame'])
+    if declared_hits:
+        flags[:] = [x for x in flags if not (x['check'] in ('spike', 'stall') and x['frame'] in declared_hits)]
+        add('declared', 'info', declared_hits[0], f'{len(declared_hits)} designed step/flash/seam frame(s) accepted from the declarations', frames=declared_hits[:50])
+
+    probe_m = M.get('probe')
+    if probe_m is not None:
+        win, ws, k = probe_m.win, probe_m.wstride, probe_m.k
+        body = [f for f in range(f0 + k, last + 1) if not in_end(f) and not in_ranges(f, freezes) and not ignored(f)]
+        state = {f: window_at(win, f, ws) for f in body}
+        frozen = [f for f in body if state[f] is not None and not state[f]['live'] and state[f]['layer_pxs'] < LIVE_PXS
+                  and state[f].get('change', 0) < CHANGE_LIVE]
+        fz = set(frozen)
+        runs_f, run = [], []
+        for f in body:
+            if f in fz and (not run or f == run[-1] + 1):
+                run.append(f)
+            else:
+                if len(run) > 0.8 * fps:
+                    runs_f.append((run[0], run[-1]))
+                run = [f] if f in fz else []
+        if len(run) > 0.8 * fps:
+            runs_f.append((run[0], run[-1]))
+        for a, b in runs_f:
+            add('hold-drift', sev('fail'), f'{a}-{b}', f'{b - a + 1} f ({(b - a + 1) / fps:.1f} s) frozen outside the end lock: nothing drifts '
+                f'{LIVE_PXS:g} px/s or creeps {LIVE_PCT:g} %/s, and the ground does not change. Give the hold life (a creep of 2-15 %/s, a drift '
+                'of 6-90 px/s, light moving over the ground) and turn it into the exit in its last 12-20 f@60')
+        fast_read = [f for f in body if state[f] is not None and any(x <= f < y for x, y in reading)
+                     and (state[f]['cam_pxs'] > 90 or state[f]['cam_pct'] > 15)]
+        if fast_read:
+            add('hold-drift', 'warn', fast_read[0], f'{len(fast_read)} frame(s) move faster than 90 px/s or 15 %/s while text is read '
+                f'(from f{fast_read[0]}): a read holds near still (drift 6-90 px/s, creep 2-15 %/s)')
+        measured = [f for f in body if state[f] is not None]
+        still = [f for f in measured if not state[f]['moving']]
+        share = len(still) / max(1, len(measured))
+        out['holds'] = dict(frozen_runs=[list(r) for r in runs_f], static_share=round(share, 3), body_frames=len(measured),
+                            live_share=round(sum(1 for f in measured if state[f]['live']) / max(1, len(measured)), 3))
+        if share > 0.15:
+            add('static-share', sev('warn'), f'{f0}-{last}', f'{share * 100:.0f} % of the body stands still (camera, layers and ground '
+                'all under 6 px/s): keep it under 15 % (a premium film is dense in time and calm in space)')
+
+        cuts_all = [c for c in cut_frames(extra, acts, cuts, k_) if f0 + k < c < last - 1]
+        seam_at = {vf(s['at']): s for s in extra.get('seams', [])}
+        rows = []
+        N = max(4, int(round(20 * fps / 60)))
+        for c in cuts_all:
+            bw, aw = win.get(c - 1), win.get(c + k)
+            sp = [probe_m.pair.get(g, {}).get('speed') for g in range(c - N, c)]
+            hold = [probe_m.pair.get(g, {}).get('speed') for g in range(c - 2 * N, c - N)]
+            row = dict(frame=c, kind=seam_at.get(c, {}).get('kind', 'act' if c in {vf(a) for a, _ in acts.values()} else 'cut'),
+                       before_moving=bool(bw and bw['moving']), after_moving=bool(aw and aw['moving']))
+            if None not in sp and len(sp) >= 4:
+                h = float(np.median([x for x in hold if x is not None])) if any(x is not None for x in hold) else 0.0
+                # the last two frames run faster than the two before the final four (x1.15), or end at 3x the hold
+                end2 = (sp[-1] + sp[-2]) / 2
+                before = (sp[-6] + sp[-5]) / 2 if len(sp) >= 6 else sp[0]
+                rising = end2 > 0 and end2 >= 1.15 * before
+                row['into'] = dict(speeds=[round(x, 1) for x in sp], hold=round(h, 1), rising=bool(rising or sp[-1] >= 3 * max(h, LIVE_PXS)))
+            rows.append(row)
+        out['cuts'] = rows
+        dead = [r for r in rows if not r['before_moving'] and not r['after_moving']]
+        if rows and len(dead) / len(rows) > 0.3:
+            add('still-cut', sev('warn'), dead[0]['frame'], f'{len(dead)} of {len(rows)} cuts go from a still frame to a still frame: a shot '
+                'never starts from rest; carry the speed across (velocity-matched cut, a breath, a whip)')
+        cont = [r for r in rows if 'into' in r and r['kind'] not in PUNCH]
+        if cont:
+            up = sum(1 for r in cont if r['into']['rising'])
+            out['hold_into_exit'] = round(up / len(cont), 3)
+            if up / len(cont) < 0.5:
+                add('hold-into-exit', sev('warn'), cont[0]['frame'], f'only {up} of {len(cont)} cuts accelerate into the cut: the last 12-20 f@60 '
+                    'of a hold turn into the exit (speed growing about x1.11-1.16 a frame), and the cut falls on the fastest frame')
+        car = []
+        decay = 0.97 ** (60 / fps)
+        for s in extra.get('seams', []):
+            if s.get('kind') != 'velocity':
+                continue
+            at = vf(s['at'])
+            vs = [probe_m.pair.get(g, {}).get('vec') for g in [at - 1] + list(range(at + 1, at + 6))]
+            if any(v is None for v in vs):
+                continue
+            sp = [math.hypot(*v) for v in vs]
+            o, i = sp[0], sp[1]
+            cos = (vs[0][0] * vs[1][0] + vs[0][1] * vs[1][1]) / max(1e-6, o * i)
+            ratio = i / max(1e-6, o)
+            decays = all(sp[j + 1] <= sp[j] * decay + 0.5 for j in range(1, len(sp) - 1))
+            ok = o >= 2 and cos >= 0.7 and 0.4 <= ratio <= 1.4 and decays
+            car.append(dict(frame=at, out=round(o, 2), into=round(i, 2), ratio=round(ratio, 3), cos=round(cos, 3), after=[round(x, 2) for x in sp[2:]], ok=ok))
+            if not ok:
+                why = ('the outgoing shot is not moving at the cut' if o < 2 else f'direction turns (cos {cos:.2f} < 0.7)' if cos < 0.7
+                       else f'incoming speed {ratio:.2f}x the outgoing (0.4-1.4x)' if not 0.4 <= ratio <= 1.4 else 'the incoming shot does not decay')
+                add('carried-cut', sev('fail'), at, f'declared velocity seam f{at}: {why}; carry the speed in the same direction and let it '
+                    'decay x0.78-0.93 a frame (lib/handoff.ts carriedCut)')
+        out['carried'] = car
+
+    # dissolves between unrelated images; a fade to black only at the very end
+    spans = blend_spans(M.get('dissolve', []))
+    ok_kinds = ('dissolveUi', 'light', 'fadeEnd')
+    dis = []
+    for sp in spans:
+        frames60 = (sp['to'] - sp['frm']) * 60 / fps
+        if frames60 < 4 or ignored(sp['frm']):
+            continue
+        near = [s for s in extra.get('seams', []) if s.get('kind') in ok_kinds and sp['frm'] - 3 <= vf(s['at']) <= sp['to'] + 3]
+        at_end = sp['black'] and sp['to'] >= info['frames'] - 1 - 2 * fps
+        cls = 'declared' if near else 'end-fade' if at_end else 'dissolve'
+        dis.append(dict(frm=sp['frm'], to=sp['to'], cls=cls, black=sp['black'], ssim=sp['ssim'], alphas=sp['alphas']))
+        if cls == 'dissolve':
+            what = 'a fade to black' if sp['black'] else 'a dissolve between two different images'
+            add('dissolve-detect', sev('fail'), f'{sp["frm"]}-{sp["to"]}', f'{what} over {sp["to"] - sp["frm"]} f: no dissolve between shots and a '
+                'fade to black only at the end; build the seam from what is on screen (a carried move, a morph, a mask, light), or '
+                'declare a UI dissolve (seam dissolveUi, 6-8 f@60)')
+    out['dissolves'] = dis
+
+    # the end card ends a physical story: it assembles (motion before the lock) and never fades in
+    if end_rng and probe_m is not None:
+        e0 = end_rng[0]
+        pre = [window_at(probe_m.win, f, probe_m.wstride) for f in range(max(f0, e0 - int(1.5 * fps)), e0)]
+        pre = [w for w in pre if w]
+        mov = sum(1 for w in pre if w['moving']) / max(1, len(pre))
+        faded = [d for d in dis if e0 - 1.5 * fps <= d['to'] <= e0 + 0.25 * fps]
+        out['end_card'] = dict(frame=e0, moving_before=round(mov, 3), fades_in=bool(faded))
+        if pre and mov < 0.3:
+            add('end-card', sev('warn'), e0, 'the end card arrives without a story: little moves in the 1.5 s before the lock; assemble the mark, '
+                'snap or settle it, slide the lockup, then hold')
+        if faded:
+            add('end-card', sev('warn'), faded[0]['frm'], 'the end card fades in: a lockup assembles (parts, a snap, a slide), never a fade-in on a static card')
+    return out
+
+
+# ------------------------------------------------------------------------------------------
+# synthetic clips (the self-tests of forensics.py, look-audit.py and measure-speed.py)
+# ------------------------------------------------------------------------------------------
+def texture(seed, w, h, scale=6, mean=128, amp=70, tint=None):
+    """A deterministic textured RGB plate (blurred noise, structure at `scale` px), grey or tinted
+    by (r, g, b) weights."""
+    rng = np.random.default_rng(seed)
+    n = cv2.GaussianBlur(rng.normal(0, 1, (h, w)).astype(np.float32), (0, 0), scale)
+    n = (n - n.mean()) / (n.std() + 1e-6)
+    g = np.clip(mean + amp * n, 0, 255)
+    img = np.repeat(g[..., None], 3, axis=2)
+    if tint is not None:
+        img = np.clip(img * np.array(tint, np.float32)[None, None, :], 0, 255)
+    return img.astype(np.uint8)
+
+
+def warp(img, dx=0.0, dy=0.0, k=1.0):
+    """The plate moved by (dx, dy) px and scaled by k about the centre (reflected at the edges)."""
+    h, w = img.shape[:2]
+    m = np.float32([[k, 0, (1 - k) * w / 2 + dx], [0, k, (1 - k) * h / 2 + dy]])
+    return cv2.warpAffine(img, m, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+
+
+def write_clip(path, frames, fps, crf=12):
+    """Encode RGB frames (an iterable of HxWx3 uint8) to an H.264 file at `fps`."""
+    frames = iter(frames)
+    first = next(frames)
+    h, w = first.shape[:2]
+    p = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{w}x{h}', '-r', str(fps), '-i', '-',
+                          '-c:v', 'libx264', '-preset', 'veryfast', '-crf', str(crf), '-pix_fmt', 'yuv420p', path], stdin=subprocess.PIPE)
+    p.stdin.write(np.ascontiguousarray(first, np.uint8).tobytes())
+    for fr in frames:
+        p.stdin.write(np.ascontiguousarray(fr, np.uint8).tobytes())
+    p.stdin.close()
+    if p.wait() != 0:
+        raise RuntimeError(f'ffmpeg could not write {path}')
+
+
+def self_test():
+    """Synthetic clips with known motion: each grammar check must fire where it should and stay
+    quiet where it should not. Returns the exit code."""
+    import shutil
+    import tempfile
+    tmp = tempfile.mkdtemp(prefix='cinetic-forensics-')
+    fps, w, h = 30, 480, 270
+    bad = 0
+    count = [0]
+
+    def cues(n, seams=(), stepped=(), end=None, look=True):
+        c = dict(fps=fps, total=n, acts=dict(a={'from': 0, 'dur': n}), cue={}, events=[], copy=[])
+        if look:
+            c['look'] = dict(blur='crisp', texture='clean', filmType='launch', oneTake=False, whiteWorld=False)
+            c['declared'] = dict(seams=list(seams), stepped=list(stepped), flashes=[], cameraBlur=[], end=end or {'from': 0, 'to': 0})
+        count[0] += 1
+        path = os.path.join(tmp, f'cues{count[0]}.json')
+        json.dump(c, open(path, 'w'))
+        return path
+
+    def run(name, frames, cue_path, more=()):
+        clip = os.path.join(tmp, name + '.mp4')
+        write_clip(clip, frames, fps)
+        out = os.path.join(tmp, name + '.json')
+        r = subprocess.run([sys.executable, os.path.abspath(__file__), clip, '--cues', cue_path, '--json', out, '--no-banding', '--no-smear',
+                            '--no-judder', *more], capture_output=True, text=True)
+        try:
+            return json.load(open(out))
+        except (OSError, ValueError):
+            print(r.stdout, r.stderr)
+            return {'flags': [], 'checks': {}}
+
+    def check(ok, what, detail=''):
+        nonlocal bad
+        bad += 0 if ok else 1
+        print(f"{'pass' if ok else 'FAIL'}  forensics self-test: {what}" + (f'  ({detail})' if detail else ''))
+
+    def flags(rep, name, severity=None):
+        return [x for x in rep['flags'] if x['check'] == name and (severity is None or x['severity'] == severity)]
+
+    def gram(rep):
+        return rep.get('checks', {}).get('grammar') or {}
+
+    A, B = texture(1, w, h), texture(2, w, h)
+    n = 90
+    rep = run('frozen', [A] * n, cues(n))
+    check(bool(flags(rep, 'hold-drift', 'fail')), 'a frozen 3 s hold fails hold-drift', f"{len(flags(rep, 'hold-drift', 'fail'))} fail")
+    rep = run('creep', [warp(A, k=1 + 0.03 * i / fps) for i in range(n)], cues(n))
+    check(not flags(rep, 'hold-drift', 'fail'), 'a 3 %/s creep keeps the hold alive', f"live share {gram(rep).get('holds', {}).get('live_share')}")
+    rep = run('drift', [warp(A, dx=12 * i / fps / 4) for i in range(n)], cues(n))
+    check(not flags(rep, 'hold-drift', 'fail'), 'a 12 px/s drift (at 1080p) keeps the hold alive', f"live share {gram(rep).get('holds', {}).get('live_share')}")
+    rep = run('frozen11', [A] * n, cues(n, look=False))
+    check(not flags(rep, 'hold-drift', 'fail') and not flags(rep, 'hold-drift', 'warn'), 'without 1.2 declarations hold-drift is info only')
+    # an undeclared film checked with --grammar: its last 2 s are the end lock (a closing card may lock off)
+    lock = [warp(A, dx=12 * i / fps / 4) for i in range(60)] + [warp(A, dx=12 * 59 / fps / 4)] * 60
+    rep = run('endlock', lock, cues(120, look=False), ['--grammar'])
+    check(not flags(rep, 'hold-drift', 'fail'), 'an undeclared film (--grammar) may lock off in its last 2 s')
+    rep = run('midlock', lock[60:] + lock[:60], cues(120, look=False), ['--grammar'])
+    check(bool(flags(rep, 'hold-drift', 'fail')), 'the same 2 s lock mid-film fails hold-drift')
+    fa, fb = A.astype(np.float32), B.astype(np.float32)
+    mix = [A] * 30 + [((1 - t) * fa + t * fb).astype(np.uint8) for t in np.linspace(0, 1, 10)] + [warp(B, dx=i * 0.5) for i in range(50)]
+    rep = run('dissolve', mix, cues(90))
+    check(bool(flags(rep, 'dissolve-detect', 'fail')), 'a 10 f dissolve between two images fails', str([d['cls'] for d in gram(rep).get('dissolves', [])]))
+    rep = run('dissolve-ui', mix, cues(90, seams=[dict(at=35, kind='dissolveUi', id='ui')]))
+    check(not flags(rep, 'dissolve-detect', 'fail'), 'the same blend declared as a UI dissolve passes')
+    push = [warp(A, dx=-(6 * i + 0.4 * i * i) / 4) for i in range(45)] + [warp(B, dx=-sum(30 * 0.7 * 0.85 ** j for j in range(i)) / 4) for i in range(45)]
+    rep = run('carried', push, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry')]))
+    car = gram(rep).get('carried', [])
+    check(bool(car) and car[0]['ok'], 'a velocity seam that carries speed and direction passes', json.dumps(car[:1]))
+    turn = push[:45] + [warp(B, dx=sum(30 * 0.7 * 0.85 ** j for j in range(i)) / 4) for i in range(45)]
+    rep = run('turned', turn, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry')]))
+    check(bool(flags(rep, 'carried-cut', 'fail')), 'a velocity seam whose next shot turns around fails', json.dumps(gram(rep).get('carried', [])[:1]))
+    rep = run('stillcut', [A] * 45 + [B] * 45, cues(90, seams=[dict(at=45, kind='hard', id='cut')]))
+    check(bool(flags(rep, 'still-cut', 'warn')), 'a cut from a still frame to a still frame warns')
+    steps = [warp(A, dx=6 * (i // 3)) for i in range(n)]
+    rep = run('stepped', steps, cues(n, stepped=[{'from': 0, 'to': n, 'fps': 10, 'id': 'steps'}]))
+    check(not flags(rep, 'stall', 'fail') and not flags(rep, 'spike', 'fail'), 'held frames inside a declared stepped range are craft', f"{len(flags(rep, 'declared'))} declared note(s)")
+    shutil.rmtree(tmp, ignore_errors=True)
+    print('forensics self-test: ' + ('all pass' if not bad else f'{bad} failed'))
+    return 1 if bad else 0
+
+
+def grammar_only(args, info, decl):
+    """Only the grammar checks, on a decode at the analysis size (no full-resolution pass)."""
+    args.grammar = True
+    fps = info['fps']
+    cuts, freezes, ignore, acts, moments, reading, cues_fps, extra = decl
+    k_ = fps / cues_fps if cues_fps else 1.0
+    reading = [(int(round(a * k_)), int(round(b * k_))) for a, b in reading]
+    cuts_v = cut_frames(extra, acts, cuts, k_)
+    n_ = max(4, int(round(20 * fps / 60)))
+    kk = max(2, int(round(0.4 * fps)))
+    pf = {g for c in cuts_v for g in range(c - 2 * n_ - 1, c + 7)}
+    pw, ph = probe_size(info)
+    probe_m = MotionProbe(fps, pw, ph, pair_frames=pf, tiles=False, force={x for c in cuts_v for x in (c - 1, c + kk)})
+    dis_n = max(2, int(round(4 * fps / 60)))
+    disq = deque(maxlen=dis_n + 2)
+    M = dict(idx=[], dissolve=[], probe=probe_m)
+    start = max(0, args.from_frame or 0)
+    count = max(1, args.to_frame - start + 1) if args.to_frame is not None else None
+    for f, rgb in decode(args.video, info, start, count, size=(pw, ph)):
+        g8 = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+        M['idx'].append(f)
+        probe_m.feed(f, g8)
+        disq.append((f, g8.astype(np.float32)))
+        if len(disq) == disq.maxlen:
+            hit = blend_test([x[1] for x in disq])
+            if hit:
+                M['dissolve'].append(dict(frm=disq[0][0], to=disq[-1][0], **hit))
+    if not M['idx']:
+        die('decoded 0 frames')
+    flags = []
+
+    def add(check, severity, frame, note, **kw):
+        first = frame if isinstance(frame, int) else int(str(frame).split('-')[0])
+        flags.append(dict(check=check, severity=severity, frame=frame, t=round(first / fps, 3), note=note, **kw))
+
+    grammar = run_grammar(args, info, M, extra, k_, cuts, freezes, lambda f: in_ranges(f, ignore), reading, acts, add, [], [], flags)
+    fails = sum(1 for x in flags if x['severity'] == 'fail')
+    return dict(file=args.video, fps=round(fps, 3), frames=len(M['idx']), grammar_only=True, fails=fails,
+                warnings=sum(1 for x in flags if x['severity'] == 'warn'), flags=flags, checks=dict(grammar=grammar)) | {'pass': fails == 0}
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0],
                                  formatter_class=argparse.RawDescriptionHelpFormatter, epilog=__doc__)
-    ap.add_argument('video')
+    ap.add_argument('video', nargs='?')
+    ap.add_argument('--self-test', action='store_true', help='run the grammar checks on synthetic clips made in code, then exit')
     ap.add_argument('--json', help='write the report here (e.g. out/qa/forensics.json)')
     ap.add_argument('--cues', help='out/cues.json: act seams, cue moments, a "qa" block, events of kind "cut"')
     ap.add_argument('--declare', help='JSON with cuts / freezes / ignore')
@@ -1117,6 +1791,9 @@ def main():
     ap.add_argument('--smear-every', type=int, help='sample one frame per N for smear (default: fps / 2)')
     ap.add_argument('--curves', help='also write per-frame MAD and sharpness curves to this JSON')
     ap.add_argument('--pace', choices=sorted(PACE_LIMITS), help="hold and quiet limits (default: the cues file's pace, else crisp)")
+    ap.add_argument('--grammar', action='store_true', help='run the grammar checks as fails even without 1.2 declarations in the cues')
+    ap.add_argument('--no-grammar', action='store_true', help='skip the grammar checks (hold drift, cuts at speed, dissolves, end card)')
+    ap.add_argument('--grammar-only', action='store_true', help='run only the grammar checks, on a small decode (fast; implies --grammar)')
     g = ap.add_argument_group('thresholds (defaults are proven starting points; see references/review-loop.md)')
     g.add_argument('--spike-min', type=float, default=1.0)
     g.add_argument('--spike-ratio', type=float, default=2.5)
@@ -1145,12 +1822,16 @@ def main():
     g.add_argument('--sharp-min', type=float, default=30.0)
     g.add_argument('--band-area', type=float, default=0.03)
     g.add_argument('--smear-area', type=float, default=0.2,
-                   help='smeared share of the frame that flags a sample (Tessel peaks at 0.15; the smeared sting at 0.29-0.42)')
+                   help='smeared share of the frame that flags a sample (a clean flat field stays under 0.15; a smeared one reads 0.29-0.42)')
     g.add_argument('--seam-abs', type=float, default=0.4)
     g.add_argument('--seam-ratio', type=float, default=1.5)
     g.add_argument('--det-min', type=float, default=0.3)
     g.add_argument('--det-ratio', type=float, default=5.0)
     args = ap.parse_args()
+    if args.self_test:
+        sys.exit(self_test())
+    if not args.video:
+        ap.error('a video is required (or --self-test)')
     if args.banding_sheet is None and args.json and not args.no_banding:
         args.banding_sheet = os.path.join(os.path.dirname(os.path.abspath(args.json)), 'banding.png')
 
@@ -1164,7 +1845,27 @@ def main():
     for k, v in PACE_LIMITS[args.pace].items():
         if getattr(args, k) is None:
             setattr(args, k, v)
+    extra = decl[7]
+    args._dissolve = not args.no_grammar
+    if grammar_on(args, extra):
+        k_ = info['fps'] / decl[6] if decl[6] else 1.0
+        cuts_v = cut_frames(extra, decl[3], decl[0], k_)
+        n_ = max(4, int(round(20 * info['fps'] / 60)))
+        kk = max(2, int(round(0.4 * info['fps'])))
+        pf = {g for c in cuts_v for g in range(c - 2 * n_ - 1, c + 7)}
+        args._probe = MotionProbe(info['fps'], *probe_size(info), pair_frames=pf, tiles=False, force={x for c in cuts_v for x in (c - 1, c + kk)})
+    if args.grammar_only:
+        res = grammar_only(args, info, decl)
+        if args.json:
+            os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
+            with open(args.json, 'w') as fh:
+                json.dump(res, fh, indent=1, default=lambda o: o.item() if hasattr(o, 'item') else str(o))
+        print(f'forensics (grammar only): {args.video}  {res["frames"]} frames  {"PASS" if res["pass"] else "FAIL"}  ({res["fails"]} fail, {res["warnings"]} warn)')
+        for x in res['flags'][:30]:
+            print(f'  {x["severity"]:4s} {x["check"]:9s} f{x["frame"]}: {x["note"]}')
+        sys.exit(0 if res['pass'] else 1)
     M = analyse(args, info)
+    M['probe'] = getattr(args, '_probe', None)
     M['smear'] = [] if args.no_smear else smear_scan(args, info)
     res = evaluate(args, info, M, decl)
 

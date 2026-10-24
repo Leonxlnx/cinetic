@@ -14,6 +14,8 @@ last 0.42 s stop dead, peak 15-22, outro 23-24) and one final thump on bar 25. C
   - check: every join measured on the edited bed (attack on the film downbeat, no click)
   - a bed with no bar accent (identical clicks): analyze exits 2 (downbeat unresolved), edit refuses,
     and --phase N resolves it
+  - a bed that ends on a hit and a 2.5 s ring over level bars (the ring's tail a near-silent last bar):
+    the ending is a ring on that hit, not a fade, and edit --end ring accepts it
   - add: an NC licence and a record without licence_seen are refused; a CC BY record needs its credit
 
 Usage: python3 skills/cinetic/scripts/test/track.test.py [--keep DIR]
@@ -111,6 +113,56 @@ def bed(accents=True, seed=1):
                 add(tick(), tk + BEAT / 2, lvl)
     add(thump(1.0), T0 + BARS * BAR, 0.9)
     y += floor * signal.sosfilt(signal.butter(1, 30, 'low', fs=SR, output='sos'), env)
+    y = y / (np.abs(y).max() + 1e-9) * 0.9
+    return np.stack([y, y], 1).astype(np.float32)
+
+
+RING_BARS = 12
+
+
+def ring_bed(seed=5):
+    """A bed that ends on a hit and its ring (stereo float32 at 48 kHz): RING_BARS level bars (a thump on every
+    beat, the downbeat's strongest, noise bursts on 2 and 4, ticks on the off-beats, a soft floor), then one
+    final thump on the next downbeat with a noise splash and a 2.5 s decaying chord of three tones, then 3 s of
+    silence. Counted as bars, the ring's tail makes a near-silent last bar after the level ones."""
+    n = int((T0 + (RING_BARS + 1) * BAR + 3.0) * SR)
+    y = np.zeros(n)
+    r = np.random.default_rng(seed)
+
+    def add(x, t, g):
+        i = int(round(t * SR))
+        m = min(len(x), n - i)
+        y[i:i + m] += x[:m] * g
+
+    def u(d):
+        return np.arange(int(d * SR)) / SR
+    lowp = signal.butter(2, 120, 'low', fs=SR, output='sos')
+    hpf = signal.butter(2, 5000, 'high', fs=SR, output='sos')
+    bpf = signal.butter(2, [400, 2500], 'band', fs=SR, output='sos')
+
+    def thump(g):
+        t = u(0.3)
+        return signal.sosfilt(lowp, r.standard_normal(len(t))) * 8 * np.exp(-t / 0.09) * np.minimum(1, t / 0.0015) * g
+    for b in range(RING_BARS):
+        tb = T0 + b * BAR
+        for k in range(4):
+            add(thump(1.0 if k == 0 else 0.45), tb + k * BEAT, 0.8)
+            if k in (1, 3):
+                t = u(0.15)
+                add(signal.sosfilt(bpf, r.standard_normal(len(t))) * np.exp(-t / 0.04) * 0.8, tb + k * BEAT, 0.8)
+            t = u(0.04)
+            add(signal.sosfilt(hpf, r.standard_normal(len(t))) * np.exp(-t / 0.006) * 0.4, tb + k * BEAT + BEAT / 2, 0.8)
+    body_end = int((T0 + RING_BARS * BAR) * SR)
+    y[int(T0 * SR):body_end] += signal.sosfilt(signal.butter(2, [200, 3000], 'band', fs=SR, output='sos'),
+                                               r.standard_normal(body_end - int(T0 * SR))) * 0.12
+    th = T0 + RING_BARS * BAR
+    add(thump(1.0), th, 0.8)
+    t = u(1.2)
+    add(signal.sosfilt(hpf, r.standard_normal(len(t))) * np.exp(-t / 0.3) * np.minimum(1, t / 0.001), th, 0.15)
+    t = u(2.5)
+    ring = sum(np.sin(2 * np.pi * 220.0 * k * t) for k in (1.0, 1.2, 1.5)) / 3 * np.exp(-t / 0.8)
+    ring *= np.minimum(1, t / 0.002) * np.minimum(1, (2.5 - t) / 0.05)
+    add(ring, th, 0.2)
     y = y / (np.abs(y).max() + 1e-9) * 0.9
     return np.stack([y, y], 1).astype(np.float32)
 
@@ -241,6 +293,27 @@ def edit_grid_check(d, a):
         check(False, f'edit --end button runs: {p.stderr[-300:]}')
 
 
+def ring_ending(d):
+    d2 = os.path.join(d, 'ring')
+    os.makedirs(os.path.join(d2, 'audio', 'music'))
+    sf.write(os.path.join(d2, 'audio', 'music', 'ring.wav'), ring_bed(), SR, subtype='FLOAT')
+    p = run(['analyze', 'audio/music/ring.wav', '--quiet', '--phase', '0'], d2)  # the ending is under test, not the downbeat
+    tj = os.path.join(d2, 'audio', 'music', 'ring.track.json')
+    if p.returncode != 0 or not os.path.isfile(tj):
+        check(False, f'the ring bed analyses: {(p.stderr or p.stdout)[-300:]}')
+        return
+    a = json.load(open(tj))
+    end, lv = a['ending'], [b['lufs'] for b in a['bars']]
+    hit = T0 + RING_BARS * BAR
+    check(len(lv) == RING_BARS + 2 and lv[-1] - max(lv[-5:-1]) <= -20,
+          f"the ring's tail is counted as a near-silent last bar after level ones ({lv[-5:]})")
+    check(end['kind'] == 'ring' and abs(end['last_hit_t'] - hit) <= 0.01 and (end['ring_out_s'] or 0) >= 1.6,
+          f"a final hit and its ring over level bars is a ring, not a fade ({end}, hit at {hit:.3f} s)")
+    check(not any('ends on a fade' in x for x in a['notes']), f"no fade note for a ring ending ({a['notes']})")
+    p = run(['edit', '--bars', '4', '--reveal-bar', '2', '--entry', '5', '--end', 'ring'], d2)
+    check(p.returncode == 0, 'edit --end ring accepts it' + ('' if p.returncode == 0 else f': {p.stderr[-300:]}'))
+
+
 def low_confidence(d):
     d2 = os.path.join(d, 'flat')
     os.makedirs(os.path.join(d2, 'audio', 'music'))
@@ -285,6 +358,7 @@ def main():
         if a:
             edit_grid_check(d, a)
         low_confidence(d)
+        ring_ending(d)
         add_records(d)
     finally:
         if not keep:

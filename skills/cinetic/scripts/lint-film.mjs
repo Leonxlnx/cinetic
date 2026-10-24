@@ -39,16 +39,47 @@
  *                     text, a string, copy(...)): type eases in or rides SPR.calm. Which presets
  *                     overshoot is read from the project's lib/anim.ts (damping < 2*sqrt(k*m))
  *   text-pace         in a calm film (PACE_NAME 'calm' in the nearest timeline.ts), <Words> or
- *                     <MaskRise> given stagger < 8, dur < 24 or outDur < 18 frames (60 fps):
- *                     the crisp tempo inside a calm film (pass pace={PACE.crisp} to mean it)
- *   typing-rate       <TypeOn cps> above 30, or a hand-rolled type-on (.slice(0, n) / substring
+ *                     <MaskRise> given stagger < 10, dur < 29 or outDur < 16 frames (60 fps; a 1.1
+ *                     pace: 8, 24, 18): the crisp tempo inside a calm film (pass pace={PACE.crisp})
+ *   typing-rate       <TypeOn cps> above 45 (a person types 19-45 a second, house 30) or under 15,
+ *                     kind="stream" above 150, or a hand-rolled type-on (.slice(0, n) / substring
  *                     with n growing with the frame, followed through the names it is built from)
- *                     faster than 30 characters a second
+ *                     faster than 45 characters a second
  *   per-letter        a string split into letters (.split(''), or [...x] / Array.from(x) where x is
  *                     a string: declared from a string or copy(), typed string, a .text, or named
  *                     text/word/label/title/...) and mapped into animated spans outside fx/ and
  *                     lib/: animate words or whole fragments; the one hero word may keep it
  *                     (// lint-ok: hero word)
+ *
+ * Grammar (the house motion and look grammar; warnings unless marked error). Acts and other film files;
+ * the primitives in fx/ and lib/ are gated by their own curve tests. Roles, deprecated names and spring
+ * presets are read from the project's lib/anim.ts (or motion.js), the look from timeline.ts LOOK.
+ *   ease-family       error: enter() / leave() / move(), a word's `ease` and any `exitEase` given a
+ *                     curve of another role (arrive / reposition / leave); warn: a move under 1 s that
+ *                     starts and stops on E.linear (linear is for drift, creep, lmix zooms, colour)
+ *   token-drift       a house token in the motion file whose samples at t = .1 ... .9 leave the house
+ *                     band at more than 2 points: a retuned curve gets a new name
+ *   whip-shape        error: a whip token that peaks before t = .5 (a whip builds long, brakes short)
+ *   spring-budget     underdamped springs on 2 element classes (warn), 3 or more (error); a use's class is
+ *                     its `// spring: <class>` tag, else its preset (timeline.ts SPRING_CLASS names it)
+ *   spring-range      a preset under zeta 0.45 or over 19 % overshoot (swing, drop and wheel excepted)
+ *   scale-from-zero   an entrance scaled up from 0 (a tween, spring or mix from ~0): start oversized
+ *   fade-exit         a statement fading out over more than 12 f@60 with no move in the same style
+ *   linear-opacity    type opacity on E.linear
+ *   crossfade         error: two full-frame layers dissolving into each other over more than 8 f@60
+ *                     (unknown length: warn); a UI dissolve carries data-ui
+ *   shutter           SHUTTER in blur.ts outside 120-180 degrees
+ *   blur-on-crisp     LOOK.blur 'crisp' and blurred type entrances (a focus-in word: // focus-in)
+ *   pure-ink          error: a #000 colour token; warn: a #FFF ground without LOOK.whiteWorld
+ *   accent-count      error: a second saturated hue (C >= 0.06) outside a 30-degree band; tokens that
+ *                     live in imagery or one product state carry an `imagery` / `ui-state` comment
+ *   gradient-shape    gradient stops more than 7 degrees of hue apart (stage light is one hue)
+ *   type-role         in an act: a fontSize that is not a TYPE role; more than 2 non-UI roles
+ *   deprecated-token  a 1.1 easing, spring or type name (kept, with its 1.1 shape): the 1.2 name to use
+ *   timeline-constant error: FPS, W, H or COPY imported from the timeline in fx/ or lib/ (lib/film.ts
+ *                     excepted): primitives read the film context
+ *   gpu-cost          blurs over 40 px, more than 2 blurred layers in a file, an SVG filter animated by
+ *                     the frame, backdrop-filter, a 1.2 chain holding more than 24 word layers
  *
  * Hard bans (SKILL.md "Hard bans"): errors whenever you invent the look.
  *   banned-color      any colour (tokens, :root palette, literals, CSS names) in a banned OKLCH region:
@@ -64,7 +95,9 @@
  *                     on a style that also sets type is an error, any other skew a warning)
  *   glass             backdrop-filter (glassmorphism)
  *   glow              a white or coloured box-/text-/drop-shadow with blur, or a coloured radial
- *                     falloff to transparent (glows, halos, bloom); black shadows are fine
+ *                     falloff to transparent (glows, halos, bloom); ink shadows are fine. In fx/ and
+ *                     lib/ a light field or soft shape declares itself with `cinetic:light <what>` (in
+ *                     the file's leading comment or on the line); element halos stay errors everywhere
  *   gradient-multihue gradients across several hues (the generated look)
  *   emoji             emoji and sparkle glyphs in strings or markup
  *   stock-decoration  icon, confetti and particle libraries (stock icons, sparkles, confetti)
@@ -74,7 +107,8 @@
  *   - in a file's leading comment block (for HTML: an <!-- --> comment before <body>/<template>),
  *     it covers the hard-ban rules in the whole file;
  *   - anywhere else, it covers the hard-ban rules on its own line and the next one.
- * A marker with nothing after it is an error: say what the brand supplied.
+ * A marker with nothing after it is an error: say what the brand supplied. It also covers the house
+ * palette rules pure-ink and gradient-shape; accent-count (one accent family) still applies.
  *
  * Palette: hex colours must appear in the tokens file (Remotion: src/brand/tokens.ts). In a
  * HyperFrames project with no tokens file, the custom properties in the HTML's `:root { }` blocks
@@ -389,6 +423,173 @@ const OVERSHOOT = new Set(['snap', 'pop', 'land', 'word', 'detent', 'micro']); /
     }
   }
 }
+// ---------------------------------------------------------------------------------- film context for the grammar rules
+// The curve roles, the deprecated names, the spring presets, the look and the type roles come from the
+// project's own files (the nearest lib/anim.ts or motion.js, timeline, tokens, blur.ts, lib/pace.ts),
+// with the house values as the fallback, so a film that retunes a token is judged by its own file.
+const animPath = findUp(root, [join('lib', 'anim.ts'), join('src', 'lib', 'anim.ts'), 'motion.js']);
+const animSrc = animPath ? readFileSync(animPath, 'utf8') : '';
+const anim12 = /\b(?:tagEase|tag)\(\s*[^\n]*'(?:arrive|reposition|leave|linear)'/.test(animSrc); // a 1.2 motion file (curves carry their role)
+const HOUSE_FAMILY = {
+  snapOut: 'arrive', glideOut: 'arrive', settleOut: 'arrive', softOut: 'arrive', liftOut: 'arrive', jump: 'arrive',
+  stdInOut: 'reposition', strongInOut: 'reposition', whipBuild: 'reposition', anticipate: 'reposition',
+  softIn: 'leave', buildIn: 'leave', launchIn: 'leave', linear: 'linear',
+  out: 'arrive', outSoft: 'arrive', in: 'leave', exit: 'leave', inOut: 'reposition', smooth: 'reposition', ui: 'reposition',
+  cam: 'arrive', glide: 'arrive', rest: 'reposition', contact: 'leave', whip: 'reposition', dolly: 'reposition', type: 'arrive', expo: 'arrive',
+};
+const HOUSE_E_DEPRECATED = {
+  out: 'snapOut', outSoft: 'snapOut', in: 'launchIn', exit: 'buildIn', inOut: 'strongInOut', smooth: 'strongInOut', ui: 'stdInOut',
+  cam: 'liftOut', glide: 'liftOut', rest: 'stdInOut', contact: 'buildIn', whip: 'whipBuild', dolly: 'linear',
+};
+const HOUSE_SPR_DEPRECATED = {
+  snap: 'landing', pop: 'containerPop', soft: 'critical', heavy: 'criticalSlow', firm: 'critical', micro: 'criticalFast',
+  land: 'landing', word: 'critical', detent: 'criticalFast', calm: 'criticalSlow',
+};
+// a 1.1 motion file (no roles in it) keeps its own names: only a 1.2 file, or none, has deprecated names
+const knowsDeprecated = !animPath || anim12;
+/** 'E.snapOut' / 'M.rise' -> { family, deprecated, shape, index } */
+const TOK = new Map(Object.entries(HOUSE_FAMILY).map(([k, family]) => [`E.${k}`, { family, deprecated: knowsDeprecated ? (HOUSE_E_DEPRECATED[k] ?? null) : null, shape: null, index: -1 }]));
+for (const m of animSrc.matchAll(/^[ \t]*(\w+)\s*:\s*(?:tagEase|tag)\(([^\n]*?),\s*'(arrive|reposition|leave|linear)'\s*,\s*'([^']*)'(?:\s*,\s*'([^']*)')?\s*\)/gm)) {
+  const key = m[4].startsWith('M.') ? m[4] : `E.${m[1]}`;
+  TOK.set(key, { family: m[3], deprecated: m[5] ?? null, shape: m[2], index: m.index, name: m[1] });
+}
+const sprDep = animSrc.match(/\bSPR_DEPRECATED\b[^=]*=\s*\{([^}]*)\}/)?.[1];
+const SPR_DEP = sprDep ? Object.fromEntries([...sprDep.matchAll(/(\w+)\s*:\s*'(\w+)'/g)].map((m) => [m[1], m[2]])) : knowsDeprecated ? HOUSE_SPR_DEPRECATED : {};
+/** Every spring preset of the motion file: zeta and overshoot (share of the travel), with its index. */
+const SPRS = new Map();
+{
+  const at = animSrc.search(/\bSPR\s*=\s*\{/);
+  const block = at >= 0 ? animSrc.slice(at).match(/\{([\s\S]*?)\n\s*\}/)?.[1] : null;
+  const base = at >= 0 ? at + animSrc.slice(at).indexOf('{') + 1 : 0;
+  for (const m of (block ?? '').matchAll(/^\s*(\w+)\s*:\s*\{([^}]*)\}/gm)) {
+    const num = (k, d) => Number(m[2].match(new RegExp(`\\b${k}\\s*:\\s*([\\d.]+)`))?.[1] ?? d);
+    const zeta = num('damping', 10) / (2 * Math.sqrt(num('stiffness', 100) * num('mass', 1)));
+    SPRS.set(m[1], { zeta, overshoot: zeta < 1 ? Math.exp((-zeta * Math.PI) / Math.sqrt(1 - zeta * zeta)) : 0, index: base + m.index });
+  }
+}
+const timelineJs = findUp(root, ['timeline.js']); // a HyperFrames project declares its look in timeline.js
+const declSrc = timelineSrc + (timelineJs && timelineJs !== timelineFile ? '\n' + readFileSync(timelineJs, 'utf8') : '');
+const lookBlock = declSrc.match(/\bLOOK\b[^=\n]*=\s*\{([^}]*)\}/)?.[1] ?? null;
+const LOOK = lookBlock
+  ? { blur: lookBlock.match(/\bblur\s*:\s*'(\w+)'/)?.[1] ?? 'crisp', whiteWorld: /\bwhiteWorld\s*:\s*true\b/.test(lookBlock) }
+  : null; // a timeline written before the declarations: the look rules stay quiet
+const SPRING_CLASS = declSrc.match(/\bSPRING_CLASS\b[^=\n]*=\s*'([^']*)'/)?.[1] ?? null;
+const pacePath = findUp(root, [join('lib', 'pace.ts'), join('src', 'lib', 'pace.ts')]);
+const pace12 = /\briseUnit\b|\brecentreDur\b/.test(pacePath ? readFileSync(pacePath, 'utf8') : animSrc); // a 1.2 pace (or its HF mirror)
+/** Words per chain id, from the timeline's chain('id', 'build' | 'replace', [[text, frame], ...]) calls. */
+const CHAIN_WORDS = new Map();
+for (const m of timelineSrc.matchAll(/\bchain\(\s*['"]([\w.-]+)['"]\s*,\s*['"](?:build|replace)['"]\s*,\s*\[/g)) {
+  let depth = 0;
+  let j = m.index + m[0].length - 1;
+  for (; j < timelineSrc.length; j++) {
+    if (timelineSrc[j] === '[') depth++;
+    else if (timelineSrc[j] === ']' && --depth === 0) break;
+  }
+  const body = timelineSrc.slice(m.index + m[0].length - 1, j + 1);
+  const words = [...body.matchAll(/(['"`])((?:(?!\1)[^\n])*)\1/g)].reduce((n, s) => n + (s[2].match(/\S+/g) ?? []).length, 0);
+  CHAIN_WORDS.set(m[1], words);
+}
+// type roles (px at 1080p) from the tokens file, else the house scale
+const TYPE_SIZES = new Map(Object.entries({ ui: 30, caption: 46, line: 84, display: 128, hero: 240, giant: 900 }));
+let TYPE_DEP = { secondary: 'caption' };
+if (tokensPath) {
+  const t = readFileSync(tokensPath, 'utf8');
+  const at = t.search(/\bTYPE\s*=\s*\{/);
+  if (at >= 0) {
+    const block = t.slice(at).match(/\{([\s\S]*?)\n\s*\};?/)?.[1] ?? '';
+    const found = [...block.matchAll(/^\s*(\w+)\s*:\s*\{[^}]*\bsize\s*:\s*([\d.]+)/gm)];
+    if (found.length) {
+      TYPE_SIZES.clear();
+      for (const m of found) TYPE_SIZES.set(m[1], Number(m[2]));
+    }
+  }
+  const dep = t.match(/\bTYPE_DEPRECATED\b[^=]*=\s*\{([^}]*)\}/)?.[1];
+  TYPE_DEP = dep ? Object.fromEntries([...dep.matchAll(/(\w+)\s*:\s*'(\w+)'/g)].map((m) => [m[1], m[2]])) : TYPE_SIZES.has('secondary') ? TYPE_DEP : {};
+}
+const blurPath = findUp(root, ['blur.ts', join('src', 'blur.ts')]);
+/** A house curve's progress at t = .1 ... .9 must sit in this band (the house curve table) at >= 7 of 9 points. */
+const HOUSE_BAND = {
+  snapOut: [[0.469, 0.695, 0.802, 0.871, 0.914, 0.94, 0.964, 0.978, 0.989], [0.517, 0.734, 0.837, 0.895, 0.933, 0.959, 0.975, 0.986, 0.995]],
+  glideOut: [[0.282, 0.516, 0.669, 0.77, 0.839, 0.895, 0.928, 0.957, 0.98], [0.373, 0.588, 0.736, 0.831, 0.889, 0.932, 0.96, 0.983, 0.995]],
+  settleOut: [[0.208, 0.404, 0.549, 0.664, 0.75, 0.824, 0.882, 0.928, 0.967], [0.274, 0.465, 0.61, 0.716, 0.806, 0.871, 0.923, 0.96, 0.985]],
+  softOut: [[0.138, 0.276, 0.405, 0.522, 0.617, 0.708, 0.785, 0.857, 0.927], [0.197, 0.364, 0.478, 0.593, 0.687, 0.77, 0.847, 0.919, 0.963]],
+  liftOut: [[0.044, 0.244, 0.486, 0.684, 0.8, 0.88, 0.929, 0.96, 0.983], [0.126, 0.339, 0.598, 0.785, 0.879, 0.939, 0.967, 0.985, 0.995]],
+  stdInOut: [[0.02, 0.076, 0.232, 0.489, 0.695, 0.837, 0.897, 0.944, 0.975], [0.063, 0.169, 0.358, 0.577, 0.812, 0.909, 0.948, 0.975, 0.992]],
+  strongInOut: [[0.012, 0.042, 0.096, 0.221, 0.494, 0.737, 0.856, 0.933, 0.973], [0.036, 0.087, 0.18, 0.331, 0.603, 0.823, 0.92, 0.967, 0.991]],
+  whipBuild: [[0.01, 0.029, 0.057, 0.107, 0.195, 0.451, 0.691, 0.839, 0.942], [0.029, 0.07, 0.105, 0.174, 0.336, 0.578, 0.816, 0.944, 0.983]],
+  softIn: [[0.03, 0.079, 0.135, 0.205, 0.287, 0.382, 0.505, 0.631, 0.809], [0.069, 0.14, 0.202, 0.274, 0.359, 0.453, 0.585, 0.737, 0.871]],
+  buildIn: [[0.01, 0.03, 0.061, 0.104, 0.17, 0.256, 0.371, 0.531, 0.734], [0.026, 0.058, 0.099, 0.157, 0.231, 0.33, 0.441, 0.621, 0.814]],
+  launchIn: [[0.005, 0.017, 0.032, 0.059, 0.097, 0.152, 0.231, 0.362, 0.573], [0.018, 0.036, 0.062, 0.091, 0.141, 0.207, 0.309, 0.444, 0.669]],
+  anticipate: [[-0.079, -0.053, -0.003, 0.283, 0.477, 0.634, 0.73, 0.803, 0.896], [-0.013, 0.001, 0.104, 0.409, 0.674, 0.798, 0.881, 0.949, 0.982]],
+};
+/** A curve as a function from its source text: bz/bez(x1, y1, x2, y2), expOut(k), expIn(k), table(NAME), (t) => t. */
+const curveOf = (shape) => {
+  if (!shape) return null;
+  let m = shape.match(/\b(?:bz|bez|bezier)\(\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)/);
+  if (m) {
+    const [x1, y1, x2, y2] = m.slice(1).map(Number);
+    const at = (a, b, s) => 3 * a * s * (1 - s) ** 2 + 3 * b * s * s * (1 - s) + s ** 3;
+    return (t) => {
+      if (t <= 0) return 0;
+      if (t >= 1) return 1;
+      let lo = 0;
+      let hi = 1;
+      for (let k = 0; k < 60; k++) {
+        const mid = (lo + hi) / 2;
+        if (at(x1, x2, mid) < t) lo = mid;
+        else hi = mid;
+      }
+      return at(y1, y2, (lo + hi) / 2);
+    };
+  }
+  m = shape.match(/\bexp(Out|In)\(\s*([\d.]+)\s*\)/);
+  if (m) {
+    const k = Number(m[2]);
+    return m[1] === 'Out' ? (t) => (1 - Math.exp(-k * t)) / (1 - Math.exp(-k)) : (t) => (Math.exp(k * t) - 1) / (Math.exp(k) - 1);
+  }
+  m = shape.match(/\btable\(\s*(\w+)\s*\)/);
+  if (m) {
+    const arr = animSrc.match(new RegExp(`\\b${m[1]}\\s*=\\s*\\[([^\\]]*)\\]`))?.[1];
+    const ys = arr ? arr.split(',').map(Number).filter((v) => Number.isFinite(v)) : [];
+    if (ys.length < 3) return null;
+    // the monotone cubic of lib/anim.ts table()
+    const n = ys.length - 1;
+    const h = 1 / n;
+    const d = ys.slice(0, -1).map((y, i) => (ys[i + 1] - y) / h);
+    const end = (a, b) => {
+      const p = a + (a - b) * 0.5;
+      return Math.sign(p) !== Math.sign(a) ? 0 : Math.abs(p) > 2 * Math.abs(a) ? 2 * a : p;
+    };
+    const mm = ys.map((_, i) => {
+      if (i === 0) return end(d[0], d[1]);
+      if (i === n) return end(d[n - 1], d[n - 2]);
+      const a = d[i - 1];
+      const b = d[i];
+      if (a * b <= 0) return 0;
+      return (Math.sign(a) + Math.sign(b)) * Math.min(Math.abs(a), Math.abs(b), Math.abs((a + b) / 2) / 2);
+    });
+    return (t) => {
+      if (t <= 0) return ys[0];
+      if (t >= 1) return ys[n];
+      const i = Math.min(n - 1, Math.floor(t / h));
+      const s = (t - i * h) / h;
+      return (2 * s ** 3 - 3 * s * s + 1) * ys[i] + (s ** 3 - 2 * s * s + s) * h * mm[i] + (-2 * s ** 3 + 3 * s * s) * ys[i + 1] + (s ** 3 - s * s) * h * mm[i + 1];
+    };
+  }
+  if (/^\s*\(?\s*(\w+)\s*\)?\s*=>\s*\1\s*$/.test(shape)) return (t) => t;
+  return null;
+};
+/** Where a curve is fastest, as t in 0..1 (sampled). */
+const peakT = (fn) => {
+  let best = 0;
+  let at = 0;
+  for (let i = 0; i < 400; i++) {
+    const v = (fn((i + 1) / 400) - fn(i / 400)) * 400;
+    if (v > best) (best = v), (at = (i + 0.5) / 400);
+  }
+  return at;
+};
+const LAYER_BUDGET = 24; // sharp words held on their own composited layers at once (see gpu-cost)
 const TEXT_TAGS = /^(Words|MaskRise|Chain|TypeOn|Scramble|Roll)$/;
 const twoWords = (t) => (t.match(/[A-Za-z][A-Za-z'’-]*/g) ?? []).length >= 2;
 /** Every `const x = ...` declaration of a source as [lhs, rhs, index] (destructuring kept whole). */
@@ -462,12 +663,99 @@ const tagAt = (code, i) => {
   return null;
 };
 
+/** Top-level comma split of an argument list or object body (brackets, braces, parens and strings respected). */
+const splitArgs = (s) => {
+  const out = [];
+  let depth = 0;
+  let start = 0;
+  let q = null;
+  for (let k = 0; k < s.length; k++) {
+    const c = s[k];
+    if (q) {
+      if (c === '\\') k++;
+      else if (c === q) q = null;
+      continue;
+    }
+    if (c === "'" || c === '"' || c === '`') q = c;
+    else if ('([{'.includes(c)) depth++;
+    else if (')]}'.includes(c)) depth--;
+    else if (c === ',' && depth === 0) {
+      out.push(s.slice(start, k).trim());
+      start = k + 1;
+    }
+  }
+  const last = s.slice(start).trim();
+  if (last) out.push(last);
+  return out;
+};
+/** Every call of one of `names` in a source string: { name, args, index }. */
+const callsIn = (s, names) =>
+  [...s.matchAll(new RegExp(`(?<![\\w$.])(${names.join('|')})\\s*\\(`, 'g'))].map((m) => ({ name: m[1], args: splitArgs(parenGroup(s, m.index + m[0].length - 1)), index: m.index }));
+/** A tween's length in 60 fps frames from its endpoints: two numbers (film frames), or `A + n` / `A + f60(n)` after A. */
+const span60 = (a, b) => {
+  if (a === undefined || b === undefined) return null;
+  const lit = (x) => {
+    const t = x.trim();
+    const m = t.match(/^f60x?\(\s*([\d.]+)\s*\)$/);
+    if (m) return Number(m[1]);
+    return /^-?[\d.]+$/.test(t) ? (Number(t) * 60) / filmFps : null;
+  };
+  const A = /^-?[\d.]+$/.test(a.trim()) ? Number(a) : null;
+  const B = /^-?[\d.]+$/.test(b.trim()) ? Number(b) : null;
+  if (A !== null && B !== null) return ((B - A) * 60) / filmFps;
+  const m = b.trim().match(/^([\s\S]*?)\s*\+\s*(f60x?\(\s*[\d.]+\s*\)|[\d.]+)$/);
+  if (m && m[1].replace(/\s+/g, '') === a.trim().replace(/\s+/g, '')) return lit(m[2]);
+  return null;
+};
+/** The tweens in an expression (prog, tw, enter, leave, move, interpolate) as { a, b, from, to, ease, index, neg }. */
+const tweensIn = (s) =>
+  callsIn(s, ['prog', 'tw', 'enter', 'leave', 'move', 'interpolate']).map((c) => {
+    const neg = /(^|[^\w.$])1\s*-\s*\(?\s*$/.test(s.slice(0, c.index)); // 1 - prog(...): the falling half
+    if (c.name === 'interpolate') {
+      const r = c.args[1]?.match(/^\[([\s\S]*)\]$/);
+      const o = c.args[2]?.match(/^\[([\s\S]*)\]$/);
+      const rr = r ? splitArgs(r[1]) : [];
+      const oo = o ? splitArgs(o[1]) : [];
+      return { ...c, neg, a: rr[0], b: rr[rr.length - 1], from: oo[0] ?? '0', to: oo[oo.length - 1] ?? '1', ease: (c.args[3] ?? '').match(/easing\s*:\s*([\w.]+)/)?.[1] ?? '' };
+    }
+    if (c.name === 'tw') return { ...c, neg, a: c.args[1], b: c.args[2], from: c.args[3] ?? '0', to: c.args[4] ?? '1', ease: c.args[5] ?? 'E.out' };
+    const dflt = { enter: 'E.glideOut', leave: 'E.buildIn', move: 'E.strongInOut', prog: 'E.out' }[c.name];
+    return { ...c, neg, a: c.args[1], b: c.args[2], from: '0', to: '1', ease: c.args[3] ?? dflt };
+  });
+/** Inline JSX style objects: { index, body, tag }. */
+const styleObjects = (code) =>
+  [...code.matchAll(/\bstyle\s*=\s*\{\{/g)].map((m) => {
+    const open = m.index + m[0].length - 1;
+    let depth = 0;
+    let j = open;
+    for (; j < code.length; j++) {
+      if (code[j] === '{') depth++;
+      else if (code[j] === '}' && --depth === 0) break;
+    }
+    const tagStart = code.lastIndexOf('<', m.index);
+    return { index: m.index, body: code.slice(open + 1, j), tag: tagStart >= 0 ? tagAt(code, tagStart) : null };
+  });
+/** One key's value in an object literal body (top level). */
+const keyOf = (body, key) => {
+  for (const part of splitArgs(body)) {
+    const m = part.match(new RegExp(`^['"]?${key}['"]?\\s*:\\s*([\\s\\S]*)$`));
+    if (m) return m[1];
+  }
+  return null;
+};
+const isZeroish = (x) => /^\s*(0|0?\.[01]\d*)\s*$/.test(x ?? '');
+const isOneish = (x) => /^\s*(1(\.0+)?|0?\.[5-9]\d*)\s*$/.test(x ?? '');
+
 // ---------------------------------------------------------------------------------- lint
 const issues = [];
 let suppressed = 0;
 let brandSupplied = 0;
 const BRAND_RE = /cinetic:brand-supplied\b/;
 const BRAND_REASON_RE = /cinetic:brand-supplied\b[\s:,.;–—-]*[\w"'#(]/;
+// house palette rules a supplied brand also overrides (its colours are checked only for contrast and the one-accent rule)
+const BRAND_RULES = new Set(['pure-ink', 'gradient-shape']);
+const LIGHT_RE = /cinetic:light\b/; // a declared light field or soft shape in fx/ or lib/ (see glow)
+const springUses = []; // underdamped spring uses across the film, for spring-budget
 
 for (const file of files) {
   const raw = readFileSync(file, 'utf8');
@@ -509,7 +797,7 @@ for (const file of files) {
     const { line, col } = pos(idx);
     const here = lines[line - 1] ?? '';
     const prev = lines[line - 2] ?? '';
-    if (HARD_BANS.has(rule) && (brandFile || BRAND_RE.test(here) || BRAND_RE.test(prev))) {
+    if ((HARD_BANS.has(rule) || BRAND_RULES.has(rule)) && (brandFile || BRAND_RE.test(here) || BRAND_RE.test(prev))) {
       brandSupplied++;
       return;
     }
@@ -714,7 +1002,7 @@ for (const file of files) {
     const blur = /\$\{/.test(blurTok) ? Infinity : parseFloat(blurTok);
     const dark = c.rgb ? Math.max(...c.rgb) <= 48 : lchOf(c).L < 0.3;
     if (!dark && blur >= 4)
-      report(i, 'glow', 'error', `a ${lchOf(c).C > 0.04 ? 'coloured' : 'light'} shadow with ${Number.isFinite(blur) ? blur + ' px of ' : ''}blur is a glow or halo (a hard ban): shadows are black at 12–22% (0 28px 90px rgba(0,0,0,.16)), and on ink use a luminance step plus a 1 px hairline`);
+      report(i, 'glow', 'error', `a ${lchOf(c).C > 0.04 ? 'coloured' : 'light'} shadow with ${Number.isFinite(blur) ? blur + ' px of ' : ''}blur is a glow or halo (a hard ban): a shadow is the ink colour at 6–12% (lib/look.ts SHADOW.paper: 0 12px 40px at 8%), and on ink use a luminance step plus a 1 px hairline`);
   };
   const splitLayers = (v) => {
     const out = [];
@@ -771,9 +1059,26 @@ for (const file of files) {
       const spread = 360 - maxGap;
       if (spread > 40) report(i, 'gradient-multihue', 'error', `gradient spans ${Math.round(spread)} degrees of hue: a multi-hue gradient is a hard ban; use one hue (or a tonal field in the palette)`);
     }
-    // a coloured radial falloff to nothing is a glow
-    if (m[2] === 'radial' && chromatic.length && colors.some((c) => c.a <= 0.02) && colors.some((c) => c.rgb && c.a >= 0.08 && oklch(c.rgb).C > 0.04))
-      report(i, 'glow', 'error', 'a coloured radial falloff to transparent is a glow (a hard ban): light a stage with a neutral tonal field, baked as a dithered PNG (references/brand-and-color.md §12)');
+    // a gradient that leans across hues reads as two colours: stage light keeps one hue (within 7 degrees)
+    {
+      const lit = colors.filter((c) => c.rgb && c.a > 0.05).map((c) => oklch(c.rgb)).filter((c) => c.C > 0.03);
+      if (lit.length >= 2) {
+        const hs = lit.map((c) => c.h).sort((a, b) => a - b);
+        let gap = 360 - hs[hs.length - 1] + hs[0];
+        for (let k = 1; k < hs.length; k++) gap = Math.max(gap, hs[k] - hs[k - 1]);
+        const spread = 360 - gap;
+        if (spread > 7 && spread <= 40)
+          report(i, 'gradient-shape', 'warn', `gradient stops lean ${Math.round(spread)} degrees of hue apart: light is one hue (keep every chromatic stop within 7 degrees of the accent, or neutral)`);
+      }
+    }
+    // a coloured radial falloff to nothing is a glow. In fx/ and lib/ a declared light field or soft shape
+    // (`cinetic:light <what>` in the file's leading comment or on the line) is light, not a halo.
+    if (m[2] === 'radial' && chromatic.length && colors.some((c) => c.a <= 0.02) && colors.some((c) => c.rgb && c.a >= 0.08 && oklch(c.rgb).C > 0.04)) {
+      const { line } = pos(i);
+      const declaredLight = /(^|\/)(fx|lib)\//.test(norm) && (LIGHT_RE.test(raw.slice(0, headEnd)) || LIGHT_RE.test(lines[line - 1] ?? '') || LIGHT_RE.test(lines[line - 2] ?? ''));
+      if (!declaredLight)
+        report(i, 'glow', 'error', 'a coloured radial falloff to transparent is a glow (a hard ban): light a stage with a one-hue field baked as a dithered PNG (references/brand-and-color.md §12); a light field or soft shape inside fx/ or lib/ declares itself with `cinetic:light <what>`');
+    }
     const opaque = colors.filter((c) => c.rgb && c.a >= 0.99);
     if (!dynamic && opaque.length === colors.length && opaque.length >= 2) {
       const ls = opaque.map((c) => luma(c.rgb));
@@ -942,7 +1247,10 @@ for (const file of files) {
           const v = tag.text.match(new RegExp(`\\b${prop}\\s*=\\s*\\{\\s*(?:f60\\(\\s*)?([\\d.]+)`));
           return v ? Number(v[1]) : null;
         };
-        const hurried = [['stagger', 8, 'words land 10-12 f apart'], ['dur', 24, 'a word rises over 34-40 f'], ['outDur', 18, 'a fragment leaves over 22-24 f']]
+        // a 1.2 pace: calm words 12 f apart, rising over 32 f, leaving over 17 f (crisp 8 / 26 / 14)
+        const hurried = (pace12
+          ? [['stagger', 10, 'words land about 12 f apart'], ['dur', 29, 'a word rises over about 32 f'], ['outDur', 16, 'a fragment leaves over about 17 f']]
+          : [['stagger', 8, 'words land 10-12 f apart'], ['dur', 24, 'a word rises over 34-40 f'], ['outDur', 18, 'a fragment leaves over 22-24 f']])
           .map(([prop, min, why]) => [prop, num(prop), min, why])
           .filter(([, v, min]) => v !== null && v < min);
         for (const [prop, v, min, why] of hurried)
@@ -951,10 +1259,18 @@ for (const file of files) {
     }
 
     // typing-rate: <TypeOn cps> and hand-rolled type-ons
+    // human typing runs 19-45 chars/s (house 30); a machine stream (kind="stream") up to 150; under 15 it crawls
     each(/<TypeOn\b/g, (m, i) => {
       const tag = tagAt(code, i);
       const cps = tag?.text.match(/\bcps\s*=\s*\{\s*([\d.]+)/);
-      if (cps && Number(cps[1]) > 30) report(i, 'typing-rate', 'warn', `<TypeOn cps={${cps[1]}}> types faster than a viewer reads along (30 chars/s at most; 18-24 for text that must be read live)`);
+      if (!cps) return;
+      const v = Number(cps[1]);
+      const stream = /\bkind\s*=\s*(?:\{\s*)?['"]stream['"]/.test(tag.text);
+      if (stream ? v > 150 : v > 45)
+        report(i, 'typing-rate', 'warn', stream
+          ? `<TypeOn kind="stream" cps={${cps[1]}}> streams faster than 150 chars/s: past that it is a flash, not output`
+          : `<TypeOn cps={${cps[1]}}> types faster than a person (19-45 chars/s, house 30); machine output is kind="stream" (50-150)`);
+      else if (v < 15) report(i, 'typing-rate', 'warn', `<TypeOn cps={${cps[1]}}> crawls (under 15 chars/s): type at the house 30, or elide the typing with a cut`);
     });
     if (!house) {
       const frameish = new Set(['frame']);
@@ -995,8 +1311,8 @@ for (const file of files) {
       each(/\.(slice|substring|substr)\s*\(\s*0\s*,/g, (m, i) => {
         const args = parenGroup(code, i + m[0].indexOf('('));
         const rate = perFrame(args.slice(args.indexOf(',') + 1), i);
-        if (rate !== null && rate * filmFps > 30)
-          report(i, 'typing-rate', 'warn', `a hand-rolled type-on at about ${Math.round(rate * filmFps)} chars/s: over 30 the text is a blur, not a read; use <TypeOn> (calm: 20 chars/s) and hold the finished string >= 72 f`);
+        if (rate !== null && rate * filmFps > 45)
+          report(i, 'typing-rate', 'warn', `a hand-rolled type-on at about ${Math.round(rate * filmFps)} chars/s: over 45 it is faster than a person types; use <TypeOn> (house 30 chars/s, kind="stream" for machine output) and hold the finished string >= 72 f`);
       });
     }
 
@@ -1024,6 +1340,296 @@ for (const file of files) {
     }
   }
 
+  // --- grammar: curve roles, springs, exits, look, type roles, GPU cost (1.2)
+  {
+    const house = /(^|\/)(fx|lib)\//.test(norm); // house primitives: their defaults are gated by the curve tests
+    const isActFile = /(^|\/)acts\//.test(norm) || /^(act|scene|shot)(\d|[-_.])/i.test(basename(file));
+    const lineHas = (i, re) => {
+      const { line } = pos(i);
+      return re.test(lines[line - 1] ?? '') || re.test(lines[line - 2] ?? '');
+    };
+    const decls = isScript ? declsOf(code) : [];
+    const declBefore = (id, at) => {
+      const list = decls.filter(([lhs]) => lhs === id);
+      return list.filter(([, , k]) => k < at).pop() ?? list[list.length - 1];
+    };
+    /** An expression with the right-hand side of every name it reads, two levels deep (for following a value). */
+    const expand = (expr, at, depth = 2) => {
+      if (depth <= 0) return expr;
+      let out = expr;
+      for (const id of new Set(namesIn(expr))) {
+        const d = declBefore(id, at);
+        if (d && d[1].length < 600) out += ` ;${id}= ${expand(d[1], d[2], depth - 1)}`;
+      }
+      return out;
+    };
+    const famOf = (tok) => TOK.get(tok)?.family ?? null;
+
+    // the motion file itself: house curves keep their shape, whips keep their late peak, springs stay in range
+    if (isAnim && resolve(file) === (animPath && resolve(animPath))) {
+      for (const [key, t] of TOK) {
+        if (t.index < 0) continue;
+        const fn = curveOf(t.shape);
+        if (!fn) continue;
+        const name = key.slice(2);
+        const band = key.startsWith('E.') ? HOUSE_BAND[name] : null;
+        if (band && !t.deprecated) {
+          const out = band[0].filter((lo, k) => {
+            const y = fn((k + 1) / 10);
+            return y < lo - 1e-3 || y > band[1][k] + 1e-3;
+          }).length;
+          if (out > 2)
+            report(t.index, 'token-drift', 'warn', `${key} leaves the house band at ${out} of 9 points (t = .1 ... .9): a retuned curve is a new curve; give it a new name (keep ${key} the house shape)`);
+        }
+        if (/whip/i.test(name) && !t.deprecated && t.family === 'reposition') {
+          const at = peakT(fn);
+          if (at < 0.5)
+            report(t.index, 'whip-shape', 'error', `${key} peaks at t = ${at.toFixed(2)}: a whip builds long and brakes short (peak speed at t = .55-.6); a front-loaded "whip" is an arrival`);
+        }
+      }
+      for (const [name, s] of SPRS) {
+        if (SPR_DEP[name] || /swing|drop|wheel/i.test(name)) continue;
+        if (s.zeta < 0.45 || s.overshoot > 0.19)
+          report(s.index, 'spring-range', 'warn', `SPR.${name}: zeta ${s.zeta.toFixed(2)}, ${Math.round(s.overshoot * 100)} % overshoot: the landing class sits at zeta 0.59-0.70 and 4-10 % (a logo swing or a wheel may reach 16-18 %); below zeta 0.45 it wobbles`);
+      }
+    }
+
+    // the blur shutter
+    if (blurPath && resolve(file) === resolve(blurPath)) {
+      const m = code.match(/\bSHUTTER\s*=\s*(\d+(?:\.\d+)?)/);
+      if (m && (Number(m[1]) < 120 || Number(m[1]) > 180))
+        report(m.index, 'shutter', 'warn', `SHUTTER = ${m[1]} degrees: a film camera shutter is 120-180 (house 180); a wider one smears motion into a blur that reads as a filter`);
+    }
+
+    // the palette: never pure black ink, one accent family
+    {
+      const pal = [];
+      if (isTokens) for (const m of raw.matchAll(/^[ \t]*['"]?([\w-]+)['"]?\s*:\s*['"](#[0-9a-fA-F]{3,8})['"].*$/gm)) pal.push({ name: m[1], hex: m[2], index: m.index + m[0].indexOf(m[2]), text: m[0] });
+      for (const [a, b] of rootSpans) for (const m of raw.slice(a, b).matchAll(/--([\w-]+)\s*:\s*(#[0-9a-fA-F]{3,8})\b[^\n]*/g)) pal.push({ name: m[1], hex: m[2], index: a + m.index, text: m[0] });
+      for (const p of pal) {
+        const hex = normHex(p.hex);
+        if (hex === '#000000') report(p.index, 'pure-ink', 'error', `${p.name} is pure #000: ink is tinted (OKLCH L 0.15-0.25, C 0-0.02 toward the accent hue), never pure black`);
+        else if (hex === '#ffffff' && /^(paper|ground|bg|background|stage|canvas|base)$/i.test(p.name) && !LOOK?.whiteWorld)
+          report(p.index, 'pure-ink', 'warn', `${p.name} is pure #FFF: a light ground is a tinted white (L 0.93-0.99, C <= 0.015 toward a cool accent); pure white is the white-world look (LOOK.whiteWorld)`);
+      }
+      const sat = pal
+        .filter((p) => !/\b(imagery|ui-state)\b/.test(p.text))
+        .map((p) => ({ ...p, lch: oklch(rgbOf(p.hex)) }))
+        .filter((p) => p.lch.C >= 0.06);
+      if (sat.length > 1) {
+        const dist = (a, b) => (b - a + 360) % 360;
+        let best = [];
+        for (const anchor of sat) {
+          const members = sat.filter((p) => dist(anchor.lch.h, p.lch.h) <= 30);
+          if (members.length > best.length) best = members;
+        }
+        for (const p of sat.filter((x) => !best.includes(x)))
+          report(p.index, 'accent-count', 'error', `${p.name} (${fmtLch(p.lch)}) is a second saturated hue: a film has one accent family (within 30 degrees of hue); colours that only live in imagery or one product state carry an \`imagery\` or \`ui-state\` comment`);
+      }
+    }
+
+    // GPU cost (warn): what loads the graphics chip on every frame
+    each(/blur\(\s*([\d.]+)\s*px/g, (m, i) => {
+      if (Number(m[1]) > 40) report(i, 'gpu-cost', 'warn', `a ${m[1]} px blur: over 40 px on a large layer costs the GPU every frame; bake a blurred plate (or stack lib/defocus levels, at most 2 copies)`);
+    });
+    each(/(?<![\w-])(backdropFilter|WebkitBackdropFilter|(?:-webkit-)?backdrop-filter)\s*:\s*['"`]?\s*(?!none)\w/g, (m, i) =>
+      report(i, 'gpu-cost', 'warn', 'backdrop-filter re-blurs everything under the layer every frame; bake the plate'),
+    );
+    {
+      // an SVG filter attribute driven by the frame (props set once are static and cost nothing extra)
+      const timed = new Set(['frame']);
+      if (isScript) {
+        for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*useCurrentFrame\s*\(/g)) timed.add(m[1]);
+        propagate(decls, timed);
+      }
+      each(/<fe[A-Z]\w*\b/g, (m, i) => {
+        const tag = tagAt(code, i);
+        const live = tag && [...tag.text.matchAll(/\b([\w-]+)\s*=\s*\{([^}]*)\}/g)].find((a) => !/^(in|in2|result|key|ref|id)$/.test(a[1]) && namesIn(a[2]).some((id) => timed.has(id)));
+        if (live) report(i, 'gpu-cost', 'warn', `an SVG filter animated by the frame (${tag.name} ${live[1]}): it re-rasterises its layer every frame; animate opacity between static filtered copies, or bake it`);
+      });
+    }
+    if (isScript && !house && !isAnim) {
+      const blurred = [...code.matchAll(/\bfilter\s*:[^,}\n]*blur\(/g)].length;
+      if (blurred > 2) report(code.search(/\bfilter\s*:[^,}\n]*blur\(/), 'gpu-cost', 'warn', `${blurred} blurred layers in one file: more than 2 blurred copies at once load the GPU; use lib/defocus (2 levels at most) or a baked plate`);
+      if (pace12)
+        each(/<Chain\b/g, (m, i) => {
+          const tag = tagAt(code, i);
+          const id = tag?.text.match(/\bchain\s*=\s*(?:\{\s*)?['"]([\w.-]+)['"]/)?.[1];
+          const n = id ? CHAIN_WORDS.get(id) : undefined;
+          if (n && n > LAYER_BUDGET)
+            report(i, 'gpu-cost', 'warn', `chain "${id}" holds ${n} words: each sharp word stays on its own composited layer for the shot (budget ${LAYER_BUDGET}); split the thought into two shots or a replace chain`);
+        });
+    }
+
+    if (isScript && !house && !isAnim) {
+      // ease-family: enter()/leave()/move() and the arrival/exit props take a curve of their role
+      for (const c of callsIn(code, ['enter', 'leave', 'move'])) {
+        const tok = c.args.map((a) => a.match(/^((?:E|M)\.\w+)$/)?.[1]).filter(Boolean).pop();
+        const want = { enter: 'arrive', leave: 'leave', move: 'reposition' }[c.name];
+        const fam = tok && famOf(tok);
+        if (fam && fam !== want) report(c.index, 'ease-family', 'error', `${c.name}() takes a ${want} curve and ${tok} is ${fam}: choose the curve by role (arrive: snapOut, glideOut, settleOut, softOut, liftOut; reposition: stdInOut, strongInOut, whipBuild; leave: softIn, buildIn, launchIn)`);
+      }
+      each(/<(Words|Chain|MaskRise|Oversize)\b/g, (m, i) => {
+        const tag = tagAt(code, i);
+        for (const p of tag?.text.matchAll(/\b(ease|riseEase)\s*=\s*\{\s*((?:E|M)\.\w+)\s*\}/g) ?? []) {
+          const fam = famOf(p[2]);
+          if (fam && fam !== 'arrive') report(i, 'ease-family', 'error', `<${m[1]} ${p[1]}={${p[2]}}>: a word arrives on an arrive curve (peak speed on its first frame); ${p[2]} is ${fam}`);
+        }
+      });
+      each(/\b(exitEase|outEase)\s*=\s*\{\s*((?:E|M)\.\w+)\s*\}/g, (m, i) => {
+        const fam = famOf(m[2]);
+        if (fam && fam !== 'leave') report(i, 'ease-family', 'error', `${m[1]}={${m[2]}}: an exit leaves on a leave curve and is cut at speed; ${m[2]} is ${fam}`);
+      });
+      // linear on a short move: a translate or scale that starts and stops on E.linear (drift, creep, lmix and colour are linear on purpose)
+      const linearShort = (s) => tweensIn(s).find((t) => t.ease === 'E.linear' && (span60(t.a, t.b) ?? Infinity) < 60);
+      each(/`[^`]*\b(?:translate(?:3d|X|Y|Z)?|scale(?:X|Y)?|rotate)\([^`]*`/g, (m, i) => {
+        for (const e of m[0].matchAll(/\$\{([^}]*)\}/g)) {
+          if (/\b(lmix|creep|drift|mixColor|mixRgb|accentFade|pathColor)\s*\(/.test(e[1])) continue;
+          const full = expand(e[1], i);
+          if (/\b(lmix|creep|drift)\s*\(/.test(full)) continue;
+          if (linearShort(full)) {
+            report(i, 'ease-family', 'warn', 'a move that starts and stops on E.linear: linear is for drift, creep, log zooms (lmix), counters and colour; an arrival takes an arrive curve, an exit a leave curve');
+            break;
+          }
+        }
+      });
+
+      // scale-from-zero: an entrance that grows from (almost) nothing
+      // the scale IS a 0 -> 1 value (a bare tween, spring or mix from ~0, or a name holding one); a tween
+      // nested in another call (lmix, an offset, a product) is not followed
+      const fromZero = (expr, at, depth = 0) => {
+        const e = expr.trim().replace(/^\(([\s\S]*)\)$/, '$1').trim();
+        if (depth > 3) return false;
+        const call = e.match(/^(prog|tw|enter|interpolate|spr|spring|mix)\s*\(/);
+        if (call) {
+          const inner = parenGroup(e, call[0].length - 1);
+          if (call[0].length + inner.length + 1 !== e.length) return false;
+          if (call[1] === 'spr' || call[1] === 'spring') return true;
+          if (call[1] === 'mix') {
+            const a = splitArgs(inner);
+            return isZeroish(a[0]) && isOneish(a[1]);
+          }
+          const t = tweensIn(e)[0];
+          return !!t && isZeroish(t.from) && isOneish(t.to);
+        }
+        const id = e.match(/^[A-Za-z_$][\w$]*$/)?.[0];
+        const d = id && declBefore(id, at);
+        return d ? fromZero(d[1], d[2], depth + 1) : false;
+      };
+      const scaleExprs = [
+        ...[...code.matchAll(/\bscale(?:X|Y)?\(\s*\$\{([^}]*)\}\s*\)/g)].map((m) => [m.index, m[1]]),
+        ...[...code.matchAll(/(?<![\w$.-])scale\s*:\s*([^}\n]+)/g)].map((m) => [m.index, splitArgs(m[1])[0] ?? '']),
+      ];
+      for (const [i, e] of scaleExprs)
+        if (fromZero(e, i)) report(i, 'scale-from-zero', 'warn', 'an entrance that scales up from (almost) nothing reads as a template pop: start oversized at 1.28-1.9x and settle on an arrive curve (fx/Oversize), or pop to 0.4 and finish in 10-16 f');
+
+      // exits, type opacity and crossfades: read off the inline style objects
+      const fills = [];
+      for (const so of styleObjects(code)) {
+        const op = keyOf(so.body, 'opacity');
+        const isFill = so.tag && (so.tag.name === 'AbsoluteFill' || /\binset\s*:\s*0\b/.test(so.body)) && !/\bdata-ui\b/.test(so.tag.text);
+        const isText = (so.tag && (/\bdata-text\b/.test(so.tag.text) || TEXT_TAGS.test(so.tag.name))) || /\btypeStyle\s*\(|\bfontSize\b/.test(so.body);
+        const role = so.body.match(/typeStyle\(\s*'(\w+)'/)?.[1] ?? so.body.match(/\bTYPE\.(\w+)/)?.[1] ?? null;
+        if (!op) continue;
+        // follow names one level: `opacity: 1 - out` with `const out = prog(...)`
+        const tws = tweensIn(op);
+        for (const id of new Set(namesIn(op))) {
+          const d = declBefore(id, so.index);
+          if (!d) continue;
+          const negName = new RegExp(`(^|[^\\w.$])1\\s*-\\s*\\(?\\s*${id.replace(/\$/g, '\\$')}\\b`).test(op);
+          for (const t of tweensIn(d[1])) tws.push({ ...t, neg: t.neg !== negName });
+        }
+        const falling = tws.filter((t) => (t.neg ? isZeroish(t.from) && isOneish(t.to) : isOneish(t.from) && isZeroish(t.to)));
+        const rising = tws.filter((t) => !falling.includes(t));
+        if (isText && role !== 'ui' && role !== 'caption' && !/\bdata-ui\b/.test(so.tag?.text ?? '')) {
+          if (tws.some((t) => t.ease === 'E.linear')) report(so.index, 'linear-opacity', 'warn', 'type opacity on E.linear: a word arrives with a third of its change in the first 1/30 s (snapOut) and leaves accelerating (buildIn); a linear ramp reads as a fade');
+          const slow = falling.find((t) => (span60(t.a, t.b) ?? 0) > 12);
+          if (slow && !keyOf(so.body, 'transform'))
+            report(so.index, 'fade-exit', 'warn', `a statement fading out over ${Math.round(span60(slow.a, slow.b))} f@60 with nothing moving: lines leave by accelerating (buildIn or launchIn, cut at speed) or ride the camera; a fade is for small UI (6-12 f)`);
+        }
+        if (isFill) for (const t of [...falling.map((x) => ({ ...x, dir: -1 })), ...rising.map((x) => ({ ...x, dir: 1 }))]) fills.push({ ...t, at: so.index });
+      }
+      const seenPair = new Set();
+      for (const p of fills)
+        for (const q of fills) {
+          if (p.dir !== 1 || q.dir !== -1 || p.at === q.at) continue;
+          const same = (x, y) => (x ?? '').replace(/\s+/g, '') === (y ?? '').replace(/\s+/g, '');
+          if (!same(p.a, q.a) || !same(p.b, q.b)) continue;
+          const len = span60(p.a, p.b);
+          const key = `${Math.min(p.at, q.at)}:${Math.max(p.at, q.at)}`;
+          if (seenPair.has(key) || (len !== null && len <= 8)) continue;
+          seenPair.add(key);
+          report(Math.max(p.at, q.at), 'crossfade', len === null ? 'warn' : 'error', `two full-frame layers cross-fade${len === null ? '' : ` over ${Math.round(len)} f@60`}: no dissolve between shots; build the seam from what is on screen (a carried move, a morph, a mask, a light event); a dissolve lives only inside UI (6-8 f, data-ui)`);
+        }
+
+      // blur-on-crisp: a crisp film's type arrives sharp (a focus-in is a named device: // focus-in)
+      if (LOOK?.blur === 'crisp') {
+        each(/(?<![\w$.])(blurIn|blurOut)\s*\(/g, (m, i) => {
+          if (!lineHas(i, /focus-in/)) report(i, 'blur-on-crisp', 'warn', `${m[1]}() in a crisp film (LOOK.blur 'crisp'): type arrives and leaves sharp; a focus-in word is a device, mark it // focus-in`);
+        });
+        each(/<(Words|Chain|MaskRise|Oversize)\b/g, (m, i) => {
+          const tag = tagAt(code, i);
+          const b = tag?.text.match(/\b(?:blur|inkBlur)\s*=\s*\{\s*([\d.]+)/);
+          if (b && Number(b[1]) > 0 && !lineHas(i, /focus-in/)) report(i, 'blur-on-crisp', 'warn', `<${m[1]} blur={${b[1]}}> in a crisp film: words arrive sharp; a focus-in is a device, mark it // focus-in`);
+        });
+        for (const so of styleObjects(code)) {
+          const isText = (so.tag && (/\bdata-text\b/.test(so.tag.text) || TEXT_TAGS.test(so.tag.name))) || /\btypeStyle\s*\(|\bfontSize\b/.test(so.body);
+          const fl = keyOf(so.body, 'filter');
+          if (isText && fl && /blur\(/.test(fl) && /\$\{/.test(fl) && !/\bblur(In|Out)\s*\(/.test(fl) && !lineHas(so.index, /focus-in/))
+            report(so.index, 'blur-on-crisp', 'warn', 'animated blur on type in a crisp film: words arrive sharp; a focus-in is a device, mark it // focus-in');
+        }
+      }
+
+      // spring-budget: collect every underdamped spring use (counted across the film after the scan)
+      const springAt = (i, preset) => {
+        const { line, col } = pos(i);
+        const here = lines[line - 1] ?? '';
+        const cls = here.match(/spring(?:-class)?\s*:\s*([\w-]+)/)?.[1] ?? preset;
+        const ok = /lint-ok\s*:\s*\S/.test(here) || /lint-ok\s*:\s*\S/.test(lines[line - 2] ?? '');
+        springUses.push({ file: rel, line, col, preset, cls, ok, excerpt: here.trim().slice(0, 140) });
+      };
+      each(/(?<![\w$.])SPR\.(\w+)\b/g, (m, i) => {
+        if (OVERSHOOT.has(m[1])) springAt(i, m[1]);
+      });
+      for (const c of callsIn(code, ['spr'])) if (c.args.length <= 2 && OVERSHOOT.has('snap')) springAt(c.index, 'snap');
+
+      // deprecated-token: 1.1 names keep working; the film should move to the 1.2 vocabulary
+      each(/(?<![\w$.])(E|SPR|TYPE)\.(\w+)\b/g, (m, i) => {
+        const repl = m[1] === 'E' ? TOK.get(`E.${m[2]}`)?.deprecated : m[1] === 'SPR' ? SPR_DEP[m[2]] : TYPE_DEP[m[2]];
+        if (repl) report(i, 'deprecated-token', 'warn', `${m[1]}.${m[2]} is a 1.1 name (it keeps its 1.1 shape); the 1.2 vocabulary has ${m[1]}.${repl}`);
+      });
+      each(/typeStyle\(\s*['"](\w+)['"]/g, (m, i) => {
+        if (TYPE_DEP[m[1]]) report(i, 'deprecated-token', 'warn', `type role '${m[1]}' is a 1.1 role; use '${TYPE_DEP[m[1]]}'`);
+      });
+    }
+
+    // type-role: sizes come from TYPE roles; one or two non-UI roles per act
+    if (isScript && isActFile) {
+      const sizes = [...TYPE_SIZES.values()];
+      each(/\bfontSize\s*:\s*([\d.]+)\b(?!\s*[*/]\s*(?![Uu]\b)[\w(])/g, (m, i) => {
+        const v = Number(m[1]);
+        if (!sizes.some((s) => Math.abs(s - v) <= 0.5))
+          report(i, 'type-role', 'warn', `fontSize ${m[1]} is not a type role (${[...TYPE_SIZES].map(([k, s]) => `${k} ${s}`).join(', ')}): size changes through the camera, not by restyling`);
+      });
+      const roles = new Map();
+      each(/\btypeStyle\(\s*['"](\w+)['"]|\bTYPE\.(\w+)\b|\brole\s*=\s*(?:\{\s*)?['"](\w+)['"]/g, (m, i) => {
+        const r0 = m[1] ?? m[2] ?? m[3];
+        const r = TYPE_DEP[r0] ?? r0;
+        if (r !== 'ui' && TYPE_SIZES.has(r) && !roles.has(r)) roles.set(r, i);
+      });
+      if (roles.size > 2)
+        report([...roles.values()][2], 'type-role', 'warn', `${roles.size} type roles in one act (${[...roles.keys()].join(', ')}): one size per scene, a hero at least 2x the statement; change size through the camera`);
+    }
+
+    // timeline-constant: primitives read fps, size and copy from the film context (lib/film.ts), never the starter's timeline
+    if (isScript && house && !/(^|\/)lib\/film\.(ts|tsx|js)$/.test(norm)) {
+      each(/\bimport\s+(?!type\b)\{([^}]*)\}\s*from\s*['"]\.\.\/timeline(?:\.ts)?['"]/g, (m, i) => {
+        const bad = m[1].split(',').map((x) => x.trim()).filter((x) => x && !/^type\s/.test(x)).map((x) => x.split(/\s+as\s+/)[0]).filter((x) => ['FPS', 'W', 'H', 'COPY'].includes(x));
+        if (bad.length) report(i, 'timeline-constant', 'error', `${bad.join(', ')} imported from the timeline in a primitive: a composition at 24 or 30 fps, or a second film in the project, gets the wrong numbers; read useFilm() / the film argument (lib/film.ts)`);
+      });
+    }
+  }
+
   // --- HyperFrames
   if (isHtml || (isScript && /gsap|timeline\(/.test(code))) {
     each(/\.from\s*\(/g, (m, i) => {
@@ -1037,6 +1643,23 @@ for (const file of files) {
     each(/<audio\b[^>]*>/gi, (m, i) => {
       if (!/\bid\s*=/.test(m[0])) report(i, 'hf-audio-id', 'error', '<audio> needs an id');
     });
+  }
+}
+
+// ---------------------------------------------------------------------------------- film-wide: spring-budget
+// One underdamped class per film (timeline.ts SPRING_CLASS): a second class warns, a third fails. A use's
+// class is its `// spring: <class>` tag, else its preset; `// lint-ok: <reason>` drops a use.
+if (!opt.allow.has('spring-budget')) {
+  const live = springUses.filter((u) => !u.ok);
+  const classes = [...new Set(live.map((u) => u.cls))];
+  if (classes.length > 1) {
+    const sev = classes.length >= 3 ? 'error' : 'warn';
+    const first = classes[0];
+    for (const u of live.filter((x) => x.cls !== first)) {
+      const message = `${classes.length} underdamped spring classes in the film (${classes.join(', ')}): one element class may spring${SPRING_CLASS ? ` (SPRING_CLASS '${SPRING_CLASS}')` : ''}; everything else settles critically (SPR.critical*). Tag a use with // spring: <class>`;
+      if (!issues.some((x) => x.file === u.file && x.line === u.line && x.rule === 'spring-budget'))
+        issues.push({ file: u.file, line: u.line, col: u.col, rule: 'spring-budget', severity: sev, message, excerpt: u.excerpt });
+    }
   }
 }
 

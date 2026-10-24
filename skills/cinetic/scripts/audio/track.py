@@ -47,8 +47,10 @@ Analysis (numpy, scipy, librosa, ffmpeg; no models, no network):
   accents    attacks whose loudest 50 ms rise >= 6 dB over the median 50 ms level of the second before, with
              their band (low = kick or sub, mid = snare, clap or stab, high = hats) and bar:beat position
   ending     button (a final hit, then a decay with no new onset), ring (a long decay on a chord), fade (the
-             level falls over 4+ bars: the edit must end on a stop instead) or loop (no ending)
-  key        Krumhansl on the mean chroma, and per section (splices join parts in one key only)
+             level falls over 4+ bars, already falling before the bar of a last hit: the edit must end on a
+             stop instead; a hit on level bars whose ring dies into a quiet last bar is a ring) or loop (no
+             ending)
+  key      Krumhansl on the mean chroma, and per section (splices join parts in one key only)
 
 The edit is a dynamic programme over the film's bars: an energy arc (intro -14, body -6, break -10, peak 0,
 resolve; dB re the track's loud bars), a jump cost (how unlike the bar that would naturally follow the target
@@ -93,6 +95,7 @@ ENTRY_LOW_VOTE_DB = 6.0       # a low-band rise over this (kick or bass coming i
 ENTRY_KICK_DB, ENTRY_KICK_LOW_DB = 2.5, 12.0   # a kick entering under an intro: a smaller step, a big low-band rise
 STOP_DB, STOP_MIN_S, STOP_MAX_S = 12.0, 0.15, 1.0
 ACCENT_DB = 6.0
+FADE_INTO_HIT_DB = 2.0        # ending: a fade with a hit in its last bars has fallen this much over the 2 bars before it
 PRE_MS, TAIL_MS, TAIL_SUSTAIN_MS = 8.0, 60.0, 150.0
 STOP_FADE_S, STOP_GUARD_S = 0.025, 0.003
 LEVEL_FLOOR = -90.0           # LUFS / dB: digital silence reads as this, so depths and novelty stay finite
@@ -629,6 +632,13 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
         ring_out = r3((below[0] if len(below) else k) * MK.L_WIN / SR)
     tail_lufs = lufs[last8:]
     falling = len(tail_lufs) >= 4 and np.all(np.diff(tail_lufs[-5:]) <= 0.5) and tail_lufs[-1] - tail_lufs[-5 if len(tail_lufs) >= 5 else 0] <= -9
+    if falling and tail_acc:
+        # a hit inside the last bars: what follows it is its ring (and a near-silent bar its tail), so a fade must
+        # already be under way before the hit's bar: the bar before it sits FADE_INTO_HIT_DB under the bar two
+        # before that (same place in a 2-bar pattern). Level bars + a hit + a ring + one quiet bar are a ring.
+        hb = int(np.searchsorted(downs[:nb], last_hit + 1e-4) - 1)
+        if hb >= 3:
+            falling = bool(lufs[hb - 1] <= lufs[hb - 3] - FADE_INTO_HIT_DB)
     body_med = float(np.median(lufs))
     remain = dur - last_hit
     if falling and remain < 6:

@@ -434,63 +434,63 @@
   },
   "press": {
    "file": "fx/Cards.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "bento": {
    "file": "fx/Cards.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "Bubbles": {
    "file": "fx/Bubbles.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "Scroll": {
    "file": "fx/Scroll.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "Develop": {
    "file": "fx/Develop.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "HardStep": {
    "file": "fx/HardStep.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "countLinear": {
    "file": "fx/Roll.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "MorphChain": {
    "file": "fx/MorphChain.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "Exposure": {
    "file": "fx/Exposure.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "LightSweep": {
    "file": "fx/Exposure.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "BlockStep": {
    "file": "fx/BlockStep.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "Dive": {
    "file": "fx/Dive.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "BlobRing": {
    "file": "fx/BlobRing.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "Window": {
    "file": "fx/Window.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "Wipe": {
    "file": "fx/Wipe.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "LightField": {
    "file": "fx/LightField.tsx",

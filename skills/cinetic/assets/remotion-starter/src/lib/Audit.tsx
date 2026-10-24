@@ -18,8 +18,12 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 //   least the minimum size; a box inside another tagged box counts once) must stay within the
 //   pace's limit (pace.maxVisibleBuild: 8 when calm). Product strings (a typed command, code, a
 //   URL, an app label) carry data-ui on their tagged element and are counted apart.
+// - the type roles (warnings, never a fail unless layout-audit.sh --strict): each readable box's cap
+//   height as a share of the frame height against the role bands (TYPE_BANDS: caption 2.3-4 %,
+//   statement 5-9 %, hero 11-23 %, giant 40-90 %), text under the ui role (30 px at 1080p), more than
+//   2 non-UI sizes at once, a statement wider than 61 % of the frame, a payoff wider than 84 %.
 // It draws the boxes and the safe zone, and logs one JSON line per frame:
-//   CINETIC_AUDIT {"comp":"Film","frame":120,"safe":{...},"minPx":22,"words":4,"uiWords":0,"boxes":[...],"issues":[...]}
+//   CINETIC_AUDIT {"comp":"Film","frame":120,"safe":{...},"minPx":22,"words":4,"uiWords":0,"boxes":[...],"issues":[...],"warnings":[...]}
 // Each box carries its effective opacity (its own times its ancestors'); layout-audit.sh --speed
 // pairs the boxes of frame f and f+1 by id to measure how fast readable text travels.
 // It also logs the frame's tweens from the registry (lib/registry.ts), which audit mode switches on:
@@ -33,9 +37,24 @@ export const TWEENS_TAG = 'CINETIC_TWEENS';
 export const MIN_TEXT_PX = 22;
 /** The same in a tall (9:16) frame, which is watched full-screen on a phone next to feed UI. */
 export const MIN_TEXT_PX_TALL = 32;
+/** The ui type role, px at 1080p: readable text under it gets a type-size warning (the fail floor stays MIN_TEXT_PX). */
+export const UI_TEXT_PX = 30;
+/**
+ * Type roles by cap height (0.72 em) as a share of the frame height, after camera scale: a box whose
+ * cap height falls between bands, more than 2 non-UI sizes at once, a statement wider than 61 % of the
+ * frame or a payoff wider than 84 % get a type-size warning (warnings never fail the audit unless
+ * layout-audit.sh --strict). `ui` is below caption.
+ */
+export const TYPE_BANDS: [role: string, lo: number, hi: number][] = [
+  ['caption', 2.3, 4],
+  ['statement', 5, 9],
+  ['hero', 11, 23],
+  ['giant', 40, 90],
+];
 
-type Box = { id: string; text: string; words: number; ui: boolean; x: number; y: number; w: number; h: number; px: number; opacity: number };
+type Box = { id: string; text: string; words: number; ui: boolean; x: number; y: number; w: number; h: number; px: number; opacity: number; role?: string; cap?: number };
 type Issue = { kind: 'safe-area' | 'overlap' | 'small-text' | 'covered' | 'words'; id: string; detail: string };
+type Warning = { kind: 'type-size'; id: string; detail: string };
 
 const round = (v: number) => Math.round(v * 10) / 10;
 
@@ -136,8 +155,22 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
     const cap = replace ? pace.maxVisibleReplace : pace.maxVisibleBuild;
     if (words > cap)
       issues.push({ kind: 'words', id: film.map((b) => b.id).join('+'), detail: `${words} film words readable at once > ${cap}${replace ? ' (replace chain)' : ''}: one fragment at a time` });
+    // Type roles: each readable box's cap height against the role bands (warnings only).
+    const warnings: Warning[] = [];
+    const sizes: number[] = [];
+    for (const b of readable) {
+      const cap = Math.round(((0.72 * b.px) / height) * 1000) / 10;
+      b.cap = cap;
+      b.role = b.ui ? 'ui' : (TYPE_BANDS.find(([, lo, hi]) => cap >= lo && cap <= hi)?.[0] ?? (cap < TYPE_BANDS[0][1] ? 'ui' : 'between'));
+      if (b.px < UI_TEXT_PX * U) warnings.push({ kind: 'type-size', id: b.id, detail: `${b.px}px is under the ui role (${round(UI_TEXT_PX * U)}px)` });
+      if (b.role === 'between') warnings.push({ kind: 'type-size', id: b.id, detail: `cap height ${cap}% of the frame sits between roles (caption 2.3-4, statement 5-9, hero 11-23, giant 40-90)` });
+      if (b.role === 'statement' && b.w > 0.61 * width) warnings.push({ kind: 'type-size', id: b.id, detail: `a statement ${round((b.w / width) * 100)}% of the frame wide (<= 61%)` });
+      if (b.role === 'hero' && b.w > 0.84 * width) warnings.push({ kind: 'type-size', id: b.id, detail: `a payoff ${round((b.w / width) * 100)}% of the frame wide (<= 84%)` });
+      if (!b.ui && !sizes.some((s) => Math.abs(s - b.px) <= 0.08 * s)) sizes.push(b.px);
+    }
+    if (sizes.length > 2) warnings.push({ kind: 'type-size', id: readable.filter((b) => !b.ui).map((b) => b.id).join('+'), detail: `${sizes.length} non-UI type sizes at once: one size per scene, change size through the camera` });
     const clean = boxes.map(({ el: _el, ...b }) => b);
-    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, issues })}`);
+    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, issues, warnings })}`);
     // the tweens evaluated for this frame, their spans moved into absolute frames (a caller's frame argument is its own clock)
     const tweens = drain().map((r) => ({ from: r.from + (frame - r.frame), to: r.to + (frame - r.frame), token: r.token, family: r.family }));
     console.log(`${TWEENS_TAG} ${JSON.stringify({ comp, frame, tweens })}`);

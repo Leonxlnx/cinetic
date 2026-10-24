@@ -13,9 +13,35 @@ src/brand/tokens.ts. The checks are the ones in references/brand-and-color.md:
       neon          C >= 0.27; or L >= 0.85 and C >= 0.15; or L >= 0.80 and C >= 0.18
                     (yellows, 96 <= h < 118: only L >= 0.91 with C >= 0.15)
   - statements (ink on the stage) >= 7:1; secondary text (mute) >= 4.5:1; graphics (accent) >= 3:1
-  - accent chroma >= 0.08 (below that it reads as a grey, not a signal)
-  - the accent's lightness band for the stage: 0.50-0.65 on a light stage, 0.70-0.82 on a dark
-    one (a yellow, which only works on a dark stage: 0.84-0.90)
+  - accent chroma >= 0.08 (below that it reads as a grey, not a signal); the house chroma band
+    (0.11-0.25 on a light stage, 0.07-0.16 on a dark one) is a note, not a fail
+  - the accent's lightness band for the stage: 0.43-0.67 on a light stage, 0.63-0.85 on a dark
+    one (a yellow, which only works on a dark stage: 0.84-0.90); a recipe sets its own
+  - a given paper on a light stage: L 0.93-0.99, C <= 0.015 toward the accent (C <= 0.004 when the
+    accent is red or yellow, or the white turns beige)
+A colour the user's brand supplied (--brand-supplied) skips the bans and the bands: it is checked only
+for contrast and the one-accent rule.
+
+Recipes (--recipe NAME; --list-recipes prints them): the house colour systems as OKLCH lightness and
+chroma at the accent's hue, written out as the same seven tokens:
+  tintedPaper     light stage: ground L .955 C .008 toward the hue, ink L .22, accent L .43-.67
+  inkStage        dark stage: ground L .15, raised L .20, type L .955, accent L .63-.85
+  paperEditorial  neutral paper L .945 and ink L .24, one accent used on newness only
+  whiteWorld      pure white ground (this system only), ink L .13, accent L .43-.67
+  stoneMid        a mid stone ground L .75 (C <= .006 with a red or yellow accent), ink L .14, accent L .38-.46
+  slateMid        a mid slate ground L .35 C .025, type L .975, accent L .74-.84 (a yellow .86-.90)
+  deepField       the accent's own hue at depth: ground L .38 C .10 (blue, teal or green only), type
+                  L .97, accent the same hue at L .78-.86
+
+Token check (--check-tokens src/brand/tokens.ts, or an HTML file whose :root holds the palette): the
+bans and bands on every colour that is not brand-supplied (a line or the leading comment marked
+cinetic:brand-supplied), and on every colour the contrast (statements >= 7:1, mute >= 4.5:1, accent >=
+3:1 on the stage) and the one-accent rule (saturated colours, C >= 0.06, within 30 degrees of hue;
+a token commented `imagery` or `ui-state` is left out).
+
+Ramp (--ramp 'c1,c2,...' with --accent): the stops of a light field or a colour sweep keep one hue:
+every stop with C > 0.03 within 7 degrees of the accent's hue (the public default of a one-hue field),
+C <= 0.13 on a light field, and a lightness swing of 0.05-0.20 across it (both notes).
 
 Usage:
   python3 scripts/palette.py --accent '#C92F33'                           # light stage, tinted to the accent
@@ -24,6 +50,9 @@ Usage:
   python3 scripts/palette.py --accent '#1F86CD' --paper '#F6F7F9'         # check your own paper
   python3 scripts/palette.py --accent '#F26B1D' --brand-supplied          # the user's orange: allowed
   python3 scripts/palette.py --cover out/stills/poster.png --accent '#C92F33'   # accent share of pixels
+  python3 scripts/palette.py --accent '#1F86CD' --recipe inkStage                 # a house colour system
+  python3 scripts/palette.py --check-tokens src/brand/tokens.ts                   # the film's own tokens
+  python3 scripts/palette.py --accent '#1F86CD' --ramp '#EEF3F9,#D3E2F2,#A9C7E8' # a one-hue light field
 
 --temp: neutral (default) tints the greys with the accent's hue at a chroma too low to read as
 warm; cool uses hue 250. warm (hue 75) makes a beige paper, so it needs --brand-supplied.
@@ -154,10 +183,122 @@ def cover(img, accent_hex, radius=0.08):
     return float((np.linalg.norm(lab - ref_lab, axis=-1) < radius).mean() * 100)
 
 
+# The house colour systems: (L, C) at the accent hue ('n': neutral, C 0), per token, and the accent bands.
+RECIPES = {
+    'tintedPaper': dict(stage='light', tokens=dict(paper=(0.955, 0.008), mist=(0.985, 0.004), line=(0.885, 0.006), mute=(0.52, 0.010), ink2=(0.28, 0.010), ink=(0.22, 0.012)),
+                        accent_L=(0.43, 0.67), accent_C=(0.11, 0.25)),
+    'inkStage': dict(stage='dark', tokens=dict(ink=(0.15, 0.010), ink2=(0.20, 0.012), line=(0.30, 0.010), mute=(0.75, 0.010), mist=(0.90, 0.006), paper=(0.955, 0.006)),
+                     accent_L=(0.63, 0.85), accent_C=(0.07, 0.16)),
+    'paperEditorial': dict(stage='light', tokens=dict(paper=(0.945, 0.0), mist=(0.97, 0.0), line=(0.875, 0.0), mute=(0.50, 0.0), ink2=(0.30, 0.0), ink=(0.24, 0.0)),
+                           accent_L=(0.43, 0.67), accent_C=(0.11, 0.25)),
+    'whiteWorld': dict(stage='light', tokens=dict(paper=(1.0, 0.0), mist=(0.965, 0.004), line=(0.89, 0.006), mute=(0.50, 0.010), ink2=(0.22, 0.010), ink=(0.13, 0.010)),
+                       accent_L=(0.43, 0.67), accent_C=(0.11, 0.25)),
+    'stoneMid': dict(stage='light', tokens=dict(paper=(0.75, 0.012), mist=(0.80, 0.010), line=(0.66, 0.010), mute=(0.34, 0.010), ink2=(0.20, 0.010), ink=(0.14, 0.010)),
+                     accent_L=(0.38, 0.46), accent_C=(0.08, 0.25)),
+    'slateMid': dict(stage='dark', tokens=dict(ink=(0.35, 0.025), ink2=(0.40, 0.025), line=(0.48, 0.02), mute=(0.82, 0.010), mist=(0.92, 0.006), paper=(0.975, 0.006)),
+                     accent_L=(0.74, 0.84), accent_C=(0.07, 0.18), yellow_L=(0.86, 0.90)),
+    'deepField': dict(stage='dark', tokens=dict(ink=(0.38, 0.10), ink2=(0.43, 0.10), line=(0.50, 0.08), mute=(0.85, 0.02), mist=(0.93, 0.01), paper=(0.97, 0.006)),
+                      accent_L=(0.78, 0.86), accent_C=(0.05, 0.16), hues=(150, 265)),
+}
+
+
+def check_tokens(path):
+    """The film's own tokens: bans and bands on what the brand did not supply, contrast and the
+    one-accent rule on everything. Returns the exit code."""
+    try:
+        src = open(path, encoding='utf-8').read()
+    except OSError as e:
+        print(f'palette.py: cannot read {path}: {e}', file=sys.stderr)
+        return 2
+    lines = src.split('\n')
+    head = src.split('\n\n')[0]
+    whole = 'cinetic:brand-supplied' in head
+    toks = []
+    for i, line in enumerate(lines):
+        for m in re.finditer(r"""['"]?([\w-]+)['"]?\s*:\s*['"]?(#[0-9a-fA-F]{6})\b""", line):
+            brand = whole or 'cinetic:brand-supplied' in line or (i > 0 and 'cinetic:brand-supplied' in lines[i - 1])
+            toks.append(dict(name=m.group(1).lstrip('-'), hex=m.group(2).upper(), brand=brand, skip=bool(re.search(r'\b(imagery|ui-state)\b', line)),
+                             lch=parse_colour(m.group(2))))
+    if not toks:
+        print(f'palette.py: no #RRGGBB tokens in {path}', file=sys.stderr)
+        return 2
+    by = {t['name']: t for t in toks}
+    fails, notes = [], []
+    for t in toks:
+        if t['hex'] == '#000000' and not t['brand']:
+            fails.append(f"{t['name']} is pure #000: ink is tinted (L 0.15-0.25 toward the accent hue)")
+        why = banned(*t['lch'])
+        if why and not t['brand']:
+            fails.append(f"{t['name']} {t['hex']} is {why} (a hard ban unless the brand supplied it: mark it cinetic:brand-supplied)")
+    stage = by.get('paper') or by.get('ground') or by.get('bg') or by.get('stage')
+    text = by.get('ink') or by.get('text')
+    if stage and text and stage['lch'][0] < text['lch'][0]:
+        stage, text = text, stage  # a dark stage: the paper token is the type
+    if stage and text:
+        r = contrast(text['hex'], stage['hex'])
+        (notes if r >= 7 else fails).append(f"statements {text['name']} on {stage['name']} {r:.1f}:1 (>= 7)")
+        if 'mute' in by:
+            r = contrast(by['mute']['hex'], stage['hex'])
+            (notes if r >= 4.5 else fails).append(f"secondary mute on {stage['name']} {r:.1f}:1 (>= 4.5)")
+        if 'accent' in by:
+            r = contrast(by['accent']['hex'], stage['hex'])
+            (notes if r >= 3 else fails).append(f"accent graphics on {stage['name']} {r:.1f}:1 (>= 3)")
+        L, C, h = stage['lch']
+        if not stage['brand'] and L >= 0.5 and not (0.93 <= L <= 0.99 or L >= 0.999) and L > 0.85:
+            notes.append(f"note: the light ground {stage['hex']} sits at L {L:.3f} (house band 0.93-0.99)")
+        if not stage['brand'] and L >= 0.93 and C > 0.015:
+            fails.append(f"the ground {stage['hex']} carries chroma {C:.3f} (<= 0.015, toward a cool accent)")
+        if text and not text['brand'] and text['lch'][0] < 0.5 and not 0.12 <= text['lch'][0] <= 0.25:
+            notes.append(f"note: ink {text['hex']} at L {text['lch'][0]:.3f} (house band 0.15-0.25)")
+    sat = [t for t in toks if t['lch'][1] >= 0.06 and not t['skip']]
+    best = []
+    for anchor in sat:
+        members = [t for t in sat if (t['lch'][2] - anchor['lch'][2]) % 360 <= 30]
+        if len(members) > len(best):
+            best = members
+    for t in sat:
+        if t not in best:
+            fails.append(f"{t['name']} {t['hex']} is a second accent hue (one accent family within 30 degrees{'; brand-supplied colours count too' if t['brand'] else ''})")
+    for n_ in notes:
+        print(f'  ok   {n_}', file=sys.stderr)
+    for f_ in fails:
+        print(f'  FAIL {f_}', file=sys.stderr)
+    print(f"palette.py: {len(toks)} tokens in {path} ({sum(1 for t in toks if t['brand'])} brand-supplied): {'pass' if not fails else 'FAIL'}")
+    return 1 if fails else 0
+
+
+def check_ramp(stops, accent, brand=False):
+    """A light field or sweep keeps one hue: chromatic stops within 7 degrees of the accent hue.
+    Returns the exit code."""
+    aL, aC, ah = parse_colour(accent)
+    rows, fails = [], []
+    for s_ in stops:
+        L, C, h = parse_colour(s_)
+        rows.append((s_, L, C, h))
+        off = min(abs(h - ah), 360 - abs(h - ah))
+        if C > 0.03 and off > 7 and not brand:
+            fails.append(f'{s_} (OKLCH {L:.3f} {C:.3f} {h:.0f}) leaves the accent hue by {off:.0f} degrees (one hue: within 7)')
+    swing = max(r[1] for r in rows) - min(r[1] for r in rows)
+    peak = max(r[2] for r in rows)
+    print(f"// ramp at h {ah:.0f}: " + ', '.join(f'{r[0]} (L {r[1]:.3f} C {r[2]:.3f} h {r[3]:.0f})' for r in rows))
+    if not 0.05 <= swing <= 0.20:
+        print(f'  note lightness swing {swing:.3f} (a living light field reads at 0.05-0.20)', file=sys.stderr)
+    if peak > 0.13 and not brand:
+        print(f'  note chroma {peak:.3f} over 0.13 (a light field stays under it; a sweep on type may go higher)', file=sys.stderr)
+    for f_ in fails:
+        print(f'  FAIL {f_}', file=sys.stderr)
+    print(f"palette.py: ramp of {len(rows)} stops: {'pass' if not fails else 'FAIL'}")
+    return 1 if fails else 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0], formatter_class=argparse.RawDescriptionHelpFormatter,
                                  epilog=__doc__.split('\n\n', 1)[1])
-    ap.add_argument('--accent', required=True, help="the one accent: '#RRGGBB' or 'oklch(L C h)'")
+    ap.add_argument('--accent', help="the one accent: '#RRGGBB' or 'oklch(L C h)'")
+    ap.add_argument('--recipe', choices=sorted(RECIPES), help='build the palette from a house colour system')
+    ap.add_argument('--list-recipes', action='store_true', help='print the recipes and exit')
+    ap.add_argument('--check-tokens', metavar='FILE', help="check a film's tokens file (or an HTML :root palette) instead of building one")
+    ap.add_argument('--ramp', help='comma-separated stops of a light field or sweep: one-hue check against --accent')
     ap.add_argument('--stage', choices=['light', 'dark'], default='light', help='the ground most shots sit on')
     ap.add_argument('--temp', choices=['neutral', 'cool', 'warm'], default='neutral',
                     help='tint of the neutrals (warm makes a beige paper: needs --brand-supplied)')
@@ -170,6 +311,24 @@ def main():
     ap.add_argument('--cover', metavar='IMG', help='only measure the share of pixels within OKLab 0.08 of the accent')
     ap.add_argument('--json', help='also write the palette and checks here')
     a = ap.parse_args()
+    if a.list_recipes:
+        for k, v in RECIPES.items():
+            print(f"{k:15s} {v['stage']:5s} " + ' '.join(f'{t} L{lc[0]:.3f} C{lc[1]:.3f}' for t, lc in v['tokens'].items())
+                  + f"  accent L {v['accent_L'][0]}-{v['accent_L'][1]}")
+        return 0
+    if a.check_tokens:
+        return check_tokens(a.check_tokens)
+    if not a.accent:
+        ap.error('--accent is required (or --check-tokens / --list-recipes)')
+    if a.ramp:
+        try:
+            return check_ramp([x.strip() for x in a.ramp.split(',') if x.strip()], a.accent, a.brand_supplied)
+        except ValueError as e:
+            print(f'palette.py: {e}', file=sys.stderr)
+            return 2
+    recipe = RECIPES.get(a.recipe) if a.recipe else None
+    if recipe:
+        a.stage = recipe['stage']
     try:
         aL, aC, ah = parse_colour(a.accent)
     except ValueError as e:
@@ -242,12 +401,25 @@ def main():
         spec = [('paper', 0.975, 0.004 * tint, 'the stage'), ('mist', 0.945, 0.005 * tint, 'canvas behind the product'),
                 ('line', 0.885, 0.006, 'hairlines, >= 1.5 px on screen'), ('mute', 0.52, 0.012, 'secondary text'),
                 ('ink2', 0.23, 0.008, 'raised dark surfaces'), ('ink', 0.17, 0.007, 'type and marks')]
-        stage_key, text_key, band = 'paper', 'ink', (0.50, 0.65)
+        stage_key, text_key, band = 'paper', 'ink', (0.43, 0.67)
     else:
         spec = [('ink', 0.165, 0.008 * tint, 'the stage'), ('ink2', 0.215, 0.009 * tint, 'raised surfaces on the stage'),
                 ('line', 0.31, 0.010, 'hairlines, >= 1.5 px on screen'), ('mute', 0.72, 0.012, 'secondary text'),
                 ('mist', 0.90, 0.006, 'light panels, if any'), ('paper', 0.965, 0.004 * tint, 'type and marks')]
-        stage_key, text_key, band = 'ink', 'paper', (0.84, 0.90) if YELLOW[0] <= ah < YELLOW[1] else (0.70, 0.82)
+        stage_key, text_key, band = 'ink', 'paper', (0.84, 0.90) if YELLOW[0] <= ah < YELLOW[1] else (0.63, 0.85)
+    c_band = (0.11, 0.25) if a.stage == 'light' else (0.07, 0.16)
+    if recipe:
+        # the recipe's lightness and chroma at the accent hue (neutral where its chroma is 0)
+        jobs = {n: j for n, _, _, j in spec}
+        spec = [(n, L, C, jobs.get(n, '')) for n, (L, C) in recipe['tokens'].items()]
+        band = recipe.get('yellow_L', recipe['accent_L']) if YELLOW[0] <= ah < YELLOW[1] and 'yellow_L' in recipe else recipe['accent_L']
+        c_band = recipe['accent_C']
+        if a.recipe == 'stoneMid' and warm_hue:
+            spec = [(n, L, min(C, 0.006), j) for n, L, C, j in spec]
+        lo, hi = recipe.get('hues', (0, 360))
+        if not lo <= ah <= hi and not a.brand_supplied:
+            print(f'palette.py: refused: {a.recipe} takes a blue, teal or green accent (hue {lo}-{hi}); this one sits at {ah:.0f}.', file=sys.stderr)
+            return 1
     tokens = {}
     for name, L, C, job in spec:
         h_use = hue
@@ -256,7 +428,7 @@ def main():
             carries = name in (('ink', 'ink2', 'line') if a.stage == 'dark' else ('paper', 'mist', 'line'))
             h_use = stage_hue
             C = stage_C * (1.0 if name == stage_key else 0.8) if carries else min(C, 0.006)
-        elif warm_hue:
+        elif warm_hue and not (recipe and a.recipe == 'deepField'):
             C = min(C, 0.003 if L >= 0.7 else 0.004)
         hx, c_used = oklch_hex(L, C, h_use)
         tokens[name] = dict(hex=hx, oklch=[round(L, 3), round(c_used, 4), round(h_use, 1)], job=job)
@@ -291,19 +463,27 @@ def main():
         why = banned(*h_)
         if why and not a.brand_supplied:
             check(f'hard ban: {k}', False, f"{tokens[k]['hex']} reads as {why}")
-    in_band = band[0] <= aL <= band[1]
+    in_band = band[0] <= aL <= band[1] or a.brand_supplied
     fix = ''
     if not in_band:
         L2 = min(max(aL, band[0]), band[1])
         fix = f'; try {oklch_hex(L2, aC, ah)[0]} (L {L2:.2f})'
-    check('accent lightness', in_band, f'L {aL:.2f} for a {a.stage} stage ({band[0]}-{band[1]}){fix}')
+    check('accent lightness', in_band, f'L {aL:.2f} for a {a.stage} stage{f" ({a.recipe})" if recipe else ""} ({band[0]}-{band[1]}){fix}'
+          + (' (brand-supplied: contrast only)' if a.brand_supplied else ''))
+    if not a.brand_supplied and not c_band[0] <= aC <= c_band[1] and not YELLOW[0] <= ah < YELLOW[1]:
+        print(f'palette.py: note: accent chroma {aC:.3f} sits outside the house band for this stage ({c_band[0]}-{c_band[1]})', file=sys.stderr)
+    if paper_in and a.stage == 'light' and not a.brand_supplied:
+        pL, pC, ph = paper_in
+        cap = 0.004 if (20 <= ah < 125) else 0.015
+        check('paper band', 0.93 <= pL <= 0.99 + 1e-9 or (a.recipe == 'whiteWorld' and pL >= 0.999), f'paper L {pL:.3f} (0.93-0.99; pure white is the white-world recipe)')
+        check('paper chroma', pC <= cap + 1e-4, f'paper C {pC:.4f} (<= {cap} {"with a red or yellow accent" if cap < 0.01 else "toward a cool accent"})')
 
     for k, v in tokens.items():
         r = contrast(v['hex'], stage) if k != stage_key else None
         v['contrast_on_stage'] = round(r, 2) if r else None
     width = max(len(k) for k in tokens)
     sh_arg = f' --stage-hue {a.stage_hue:g}' if a.stage_hue is not None else ''
-    print(f'// palette.py --accent {a.accent} --stage {a.stage} --temp {a.temp}{sh_arg}')
+    print(f'// palette.py --accent {a.accent} --stage {a.stage} --temp {a.temp}{sh_arg}' + (f' --recipe {a.recipe}' if recipe else ''))
     print('export const C = {')
     for k in ['ink', 'ink2', 'paper', 'mist', 'line', 'mute', 'accent']:
         v = tokens[k]

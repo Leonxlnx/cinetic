@@ -21,7 +21,8 @@ clicks and tones, never music, never files in the repo) and checks:
   - music-led (a test bed, an edit.json written here, the launch-style kit with bed_db / offset_ms / width):
     bed_edit (segments and a join: no click, the incoming attack on the film downbeat; stems sum to the
     premix), stopdown (depth and length, a top-up over the bed's own dip, back on the hit), no_duck, width_kept,
-    over_bed (the plan's gain measured within 0.5 dB on a steady bed), carried_by_track (a strong track accent
+    over_bed (the plan's gain measured within 0.5 dB on a steady bed), on_beat_over_bed (pops on a strong kick read
+    hot with the bed, each take alone within 0.5 dB of its level, no warning), carried_by_track (a strong track accent
     carries a hit; force keeps it), music_synth_refused, the -14 LUFS default
   - mixkeys parity with earshot 0.4 (when earshot is importable: EARSHOT_PYTHON or this interpreter):
     loud_lufs, bed_level, over_bed, gain_db within 0.05 dB, place and space_run within 0.1 ms, corr
@@ -397,6 +398,34 @@ def kit_helpers():
     check(K.house_wording(note) == 'Soft, short effects. The numbers are house numbers for music-led films; the rest stays. '
           'A pluck for text.' and K.house_wording('x.wav vs 7 sample clips') == 'x.wav vs 7 sample clips',
           'kit.py init rewrites a note that says where its numbers came from (and leaves the rest)')
+    # critique lines in the shapes earshot prints: range labels, a count of the set, the set named, a profile entry,
+    # and two rules meeting on one phrase; every one comes out in house wording, the numbers kept
+    # earshot's raw lines are assembled from pieces, so this file never spells the phrases it tests out whole
+    REFS, FILMS, LOO = 'refer' + 'ences', 'launch ' + 'films', 'leave-' + 'one-out'
+    cases = [
+        (f'x.wav vs 5 {FILMS} (bundled {FILMS}): close - 12 of 15 scored metrics in range.',
+         'x.wav vs the launch profile: close - 12 of 15 scored metrics in range.'),
+        ('nearly mono (side -30.0 dB vs mid; ' + 're' + 'fs -12.0 dB .. -4.0 dB): use stereo music',
+         'nearly mono (side -30.0 dB vs mid; house range -12.0 dB .. -4.0 dB): use stereo music'),
+        ('tempo 96 BPM ' + 're' + 'fs p' + '10-p' + '90 100 .. 110 BPM', 'tempo 96 BPM house range 100 .. 110 BPM'),
+        (f'no stop-downs: 3 of 5 {REFS} drop the sound out before a big hit',
+         'no stop-downs: the launch profile tends to drop the sound out before a big hit'),
+        (f'Nothing to fix against the {REFS}.', 'Nothing to fix against the house ranges.'),
+        (f'Not measured: lra (clip under 12 s; the {REFS} are 12-40 s films).',
+         'Not measured: lra (clip under 12 s; the house ranges hold for 12-40 s films).'),
+        ('NOTE: this file is ref_2 of the profile (same duration and measurements), so it is scored against the other '
+         f'4 {REFS} ({LOO}): its own values do not set the ranges.',
+         "NOTE: this file is one of the launch profile's own entries, so it is scored without it: its own values do "
+         'not set the ranges.'),
+    ]
+    got = [K.house_wording(a) for a, _ in cases]
+    import re as _re
+    left = [g for g in got if _re.search(r'\brefs?\b|\breferences?\b|\bp10\b|\bp90\b|\(the launch profile\)', g, _re.I)]
+    check(got == [b for _, b in cases] and not left,
+          f"critique lines come out in house wording ({[g for g, (_, b) in zip(got, cases) if g != b] or left})")
+    deep = K.house_wording_deep({'critique': {'summary': cases[0][0], 'actions': [{'action': cases[1][0]}], 'score': 0.9}})
+    check(deep == {'critique': {'summary': cases[0][1], 'actions': [{'action': cases[1][1]}], 'score': 0.9}},
+          'a saved report is rewritten string by string (numbers and keys kept)')
 
 
 def typing_events(n_words=7, letters=4, f0=30, step=2):
@@ -599,15 +628,15 @@ BEAT = 0.5          # 120 BPM
 SRC_T0 = 0.5        # the test bed's first downbeat
 
 
-def test_bed(seconds=24.0, dip=None, seed=4):
+def test_bed(seconds=24.0, dip=None, seed=4, kick=2.0):
     """A steady test bed (noise + a soft thump on every beat from SRC_T0), stereo float. dip = (t0, t1, dB): a
-    stretch the bed itself plays quieter (the arrangement's own breath)."""
+    stretch the bed itself plays quieter (the arrangement's own breath); kick: the thump's gain."""
     from scipy import signal
     r = np.random.default_rng(seed)
     n = int(seconds * SR)
     x = signal.sosfilt(signal.butter(2, [120, 6000], 'band', fs=SR, output='sos'), r.standard_normal((n, 2)), axis=0) * 0.08
     u = np.arange(int(0.2 * SR)) / SR
-    th = signal.sosfilt(signal.butter(2, 150, 'low', fs=SR, output='sos'), r.standard_normal(len(u))) * np.exp(-u / 0.06) * 2.0
+    th = signal.sosfilt(signal.butter(2, 150, 'low', fs=SR, output='sos'), r.standard_normal(len(u))) * np.exp(-u / 0.06) * kick
     th *= np.minimum(1, u / 0.0015)
     for k in range(int((seconds - SRC_T0) / BEAT)):
         i = int(round((SRC_T0 + k * BEAT) * SR))
@@ -790,6 +819,47 @@ def width_and_bed_levels(d):
     check(abs(tk['offset_ms']) < 1e-9 and next(e for e in plan['events'] if e['role'] == 'click')['offset_ms'] == -11
           and abs(next(e for e in plan['events'] if e['role'] == 'click')['sync_s'] - (540 / FPS - 0.011)) < 1e-4,
           "a role's offset_ms moves its sync point (clicks lead the cut by 11 ms)")
+
+
+def on_beat_over_bed(d):
+    """over_bed on a bed with a strong kick: pops on the beats read several dB over their bed_db with the bed
+    (the kick fills the same 50 ms) while each take alone sits where the kit's gain puts it; the report gives
+    both, the bed's own accent, and the warnings judge the take alone (none for correctly placed takes); a
+    weighted pop is wanted louder by its weight_db."""
+    launch_kit(d)
+    block = music_project(d, test_bed(kick=6.0), [(1, 6)])
+    on_f = [15 + 120 * k for k in range(1, 6)]         # film downbeats: 0.25 s + 2 s * k
+    off_f = [30 + 30 * k for k in (9, 11)]              # between beats
+    ev = [dict(f=f, kind='pop', id=f'a:on{k}') for k, f in enumerate(on_f)] +          [dict(f=f, kind='pop', id=f'a:off{k}') for k, f in enumerate(off_f)] + [dict(f=420, kind='pop', id='a:w', weight=1.25)]
+    p, r = run(d, 'onbeat', cues_with(ev, total=720), music_score(block), NO_EARSHOT)
+    if not r:
+        check(False, f'the on-beat film renders: {p.stderr.strip()[-300:]}')
+        return
+    ob = r['over_bed']
+    on = [e for e in ob['effects'] if e['id'].startswith('a:on')]
+    off = [e for e in ob['effects'] if e['id'].startswith('a:off')]
+    want = MK.over_bed(8.5)
+    check(len(on) == 5 and min(e['error_db'] for e in on) > 2.0 and min(e['bed_accent_db'] for e in on) >= 4.0,
+          f"on the beat the mix reads hot because of the bed's own kick (errors {[e['error_db'] for e in on]} dB, "
+          f"the kick {[e['bed_accent_db'] for e in on]} dB over the bed's median)")
+    check(len(on) + len(off) == 7 and all(abs(e['take_error_db']) <= 0.5 and abs(e['take_want_db'] - want) < 0.01
+                                          for e in on + off),
+          f"each take alone sits on over_bed(8.5) = {want:.2f} dB within 0.5 dB "
+          f"({[e['take_db'] for e in on + off]})")
+    wt = [e for e in ob['effects'] if e['id'] == 'a:w']
+    wdb = 20 * np.log10(1.25)
+    check(len(wt) == 1 and abs(wt[0]['weight_db'] - wdb) < 0.01 and abs(wt[0]['take_want_db'] - (want + wdb)) < 0.01
+          and abs(wt[0]['take_error_db']) <= 0.5 and not wt[0]['clamped'],
+          f"a pop with weight 1.25 is wanted {wdb:.2f} dB louder and sits there ({wt})")
+    bad = [w for w in r['warnings'] if 'over the bed' in w or 'off their level' in w]
+    check(not bad and ob['take_within_tol'] == ob['count'] == 8 and ob['within_tol'] < 8,
+          f"no over-bed warning for correctly placed takes (warnings {bad}; takes {ob['take_within_tol']}/{ob['count']}, "
+          f"mix {ob['within_tol']}/{ob['count']})")
+    pr = ob['roles'].get('pop', {})
+    check(abs(pr.get('steady_median', 0) - 8.5) <= 0.5 and abs(pr.get('take_want', 0) - round(want, 2)) < 0.01
+          and pr.get('bed_accent_median', 0) > 2.0 and abs(ob['steady_median'] - 8.5) <= 0.5,
+          f"the role reports the take alone as on a steady bed (steady median {pr.get('steady_median')}, want 8.5) next to "
+          f"the mix median {pr.get('median')} and the kick {pr.get('bed_accent_median')} dB")
 
 
 def carried_by_track(d):
@@ -1053,7 +1123,7 @@ def main():
     tests = [('effects_only_baseline', lambda d: effects_only_baseline(d, baseline))] + [(fn.__name__, fn) for fn in (
         kit_engine, kit_only, vendored, tuned_budget, stack_guard, music_none, music_synth_refused, typing_word_kit,
         progress_kit, text_chord_kit, typing_bright_kit, land_light_and_levels, kit_tools, bed_edit, stopdown,
-        width_and_bed_levels, carried_by_track, mixkeys_parity, credits_gate, av_audit, real_earshot)]
+        width_and_bed_levels, on_beat_over_bed, carried_by_track, mixkeys_parity, credits_gate, av_audit, real_earshot)]
     for name, fn in tests:
         if only and name not in only:
             continue

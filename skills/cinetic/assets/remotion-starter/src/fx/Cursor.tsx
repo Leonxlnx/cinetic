@@ -1,33 +1,108 @@
 import React from 'react';
 import { C } from '../brand/tokens';
-import { mix } from '../lib/anim';
-import { type FilmCtx, fpsOf } from '../lib/film';
-import type { Declares } from '../timeline';
-
-/**
- * System-style arrow pointer, placed ONLY by transform (tip at x, y). A fractional left/top next to
- * a transform snaps to whole pixels, so a slow cursor would stair-step. Use no cursor at all once
- * the product acts on its own.
- */
-export const Cursor: React.FC<{ x: number; y: number; scale?: number; press?: number; opacity?: number }> = ({ x, y, scale = 1, press = 0, opacity = 1 }) => (
-  <div
-    style={{
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      opacity,
-      transformOrigin: '0 0',
-      transform: `translate(${x}px, ${y}px) scale(${scale * (1 - 0.12 * press)})`,
-      filter: 'drop-shadow(0 3px 5px rgba(0,0,0,0.28))',
-    }}
-  >
-    <svg width={30} height={42} viewBox="0 0 30 42" style={{ position: 'absolute', left: -3, top: -2 }}>
-      <path d="M3 2 L3 33 L10.2 26.4 L15 38 L20.2 35.8 L15.4 24.4 L25 24.4 Z" fill={C.ink} stroke={C.white} strokeWidth={2.4} strokeLinejoin="round" />
-    </svg>
-  </div>
-);
+import { clamp, DUR, E, type Ease, fd, hitPulse, mix } from '../lib/anim';
+import { type FilmCtx, f60x, fpsOf, uOf } from '../lib/film';
+import type { Declares, SteppedRange } from '../timeline';
 
 type Pt = { x: number; y: number };
+
+/** Cursor shapes: the arrow (hotspot at its tip) and the text I-beam (hotspot at its centre). */
+export type CursorShape = 'arrow' | 'ibeam';
+
+const ARROW = 'M3 2 L3 33 L10.2 26.4 L15 38 L20.2 35.8 L15.4 24.4 L25 24.4 Z';
+// an I-beam with soft serifs, 24 x 46 at scale 1, centred on (12, 23)
+const IBEAM =
+  'M5 3.5 C8 2.2 10.5 3 12 5.2 C13.5 3 16 2.2 19 3.5 L18.6 6.4 C16.6 5.7 14.6 6.2 13.9 8.2 L13.9 20.6 L16.2 20.6 L16.2 25.4 L13.9 25.4 L13.9 37.8 C14.6 39.8 16.6 40.3 18.6 39.6 L19 42.5 C16 43.8 13.5 43 12 40.8 C10.5 43 8 43.8 5 42.5 L5.4 39.6 C7.4 40.3 9.4 39.8 10.1 37.8 L10.1 25.4 L7.8 25.4 L7.8 20.6 L10.1 20.6 L10.1 8.2 C9.4 6.2 7.4 5.7 5.4 6.4 Z';
+const SHAPES: Record<CursorShape, { d: string; w: number; h: number; hot: Pt; stroke: number }> = {
+  arrow: { d: ARROW, w: 30, h: 42, hot: { x: 3, y: 2 }, stroke: 2.4 },
+  ibeam: { d: IBEAM, w: 24, h: 46, hot: { x: 12, y: 23 }, stroke: 2.2 }, // hotspot at the glyph's centre (it is symmetric)
+};
+
+/**
+ * System-style pointer, placed ONLY by transform (hotspot at x, y). A fractional left/top next to a
+ * transform snaps to whole pixels, so a slow cursor would stair-step. Use no cursor at all once the
+ * product acts on its own.
+ *
+ * New in this version (all optional; without them it draws exactly as before): `angle` (degrees, about
+ * the hotspot: a cursor that swings upright as it lands), `shape` ('arrow' | 'ibeam'), `shadow` ('drop':
+ * the soft drop shadow it always had; 'cast': a blurred copy of the shape offset down-right, the shadow of
+ * a cursor floating above the UI; 'none'), and `ring` (a press ring from cursorRing(): a thin circle that
+ * expands and fades around the hotspot, never a glow).
+ */
+export const Cursor: React.FC<{
+  x: number;
+  y: number;
+  scale?: number;
+  press?: number;
+  opacity?: number;
+  angle?: number;
+  shape?: CursorShape;
+  shadow?: 'drop' | 'cast' | 'none';
+  ring?: { r: number; opacity: number } | null;
+  fill?: string;
+  outline?: string;
+}> = ({ x, y, scale = 1, press = 0, opacity = 1, angle, shape, shadow, ring, fill = C.ink, outline = C.white }) => {
+  if (angle === undefined && shape === undefined && shadow === undefined && ring === undefined) {
+    // the 1.1 drawing, unchanged
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          opacity,
+          transformOrigin: '0 0',
+          transform: `translate(${x}px, ${y}px) scale(${scale * (1 - 0.12 * press)})`,
+          filter: 'drop-shadow(0 3px 5px rgba(0,0,0,0.28))',
+        }}
+      >
+        <svg width={30} height={42} viewBox="0 0 30 42" style={{ position: 'absolute', left: -3, top: -2 }}>
+          <path d={ARROW} fill={fill} stroke={outline} strokeWidth={2.4} strokeLinejoin="round" />
+        </svg>
+      </div>
+    );
+  }
+  const sh = SHAPES[shape ?? 'arrow'];
+  const k = scale * (1 - 0.12 * press);
+  const glyph = (paint: string, line: string | undefined, key: string, extra?: React.CSSProperties) => (
+    <svg key={key} width={sh.w} height={sh.h} viewBox={`0 0 ${sh.w} ${sh.h}`} style={{ position: 'absolute', left: -sh.hot.x, top: -sh.hot.y, overflow: 'visible', ...extra }}>
+      <path d={sh.d} fill={paint} stroke={line} strokeWidth={line ? sh.stroke : 0} strokeLinejoin="round" />
+    </svg>
+  );
+  const mode = shadow ?? 'drop';
+  return (
+    <div style={{ position: 'absolute', left: 0, top: 0, opacity }}>
+      {ring && ring.opacity > 0.001 && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: 2 * ring.r,
+            height: 2 * ring.r,
+            borderRadius: '50%',
+            boxShadow: `inset 0 0 0 ${(2 * scale).toFixed(2)}px ${fill}`,
+            opacity: clamp(ring.opacity),
+            transform: `translate(${(x - ring.r).toFixed(3)}px, ${(y - ring.r).toFixed(3)}px)`,
+          }}
+        />
+      )}
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          transformOrigin: '0 0',
+          transform: `translate(${x.toFixed(3)}px, ${y.toFixed(3)}px) rotate(${(angle ?? 0).toFixed(4)}deg) scale(${k.toFixed(5)})`,
+          filter: mode === 'drop' ? 'drop-shadow(0 3px 5px rgba(0,0,0,0.28))' : undefined,
+        }}
+      >
+        {mode === 'cast' && glyph('rgba(0, 0, 0, 0.26)', undefined, 'cast', { transform: `translate(${9}px, ${15}px)`, filter: 'blur(3px)' })}
+        {glyph(shape === 'ibeam' ? outline : fill, shape === 'ibeam' ? fill : outline, 'shape')}
+      </div>
+    </div>
+  );
+};
 
 /**
  * Point on a bowed path from a to b at eased progress t (0..1). Hands never move in straight
@@ -50,5 +125,87 @@ export const pressAt = (frame: number, at: number, fps: number = fpsOf()) => {
   return t < 4 ? t / 4 : 1 - (t - 4) / 8;
 };
 
-/** What a Cursor instance does on purpose (steps, flashes, camera blur, seams): nothing in its 1.1 form. */
-export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });
+// ---- cursor physics ---------------------------------------------------------------------------------
+/** One move of the cursor: to `to`, starting `start`, over `dur` frames on `ease`, bowed by `bow`. */
+export type CursorMove = { to: Pt; start: number; dur?: number; ease?: Ease; bow?: number };
+
+/**
+ * Where the cursor is at frame f after a list of moves from `from` (each move starts where the last one
+ * ended). Default move: 44 f at 60 fps on E.glideOut (an approach that lands softly), bow 0.18. Returns
+ * the point and its speed (px per frame), closed form.
+ */
+export const cursorMove = (f: number, from: Pt, moves: CursorMove[], film?: Partial<FilmCtx>): Pt & { v: number } => {
+  const fps = fpsOf(film);
+  const at = (g: number): Pt => {
+    let p = from;
+    for (const m of moves) {
+      if (g < m.start) break;
+      const dur = Math.max(1e-6, m.dur ?? f60x(DUR.cursor[2], fps));
+      p = cursorArc(p, m.to, (m.ease ?? E.glideOut)(clamp((g - m.start) / dur)), m.bow ?? 0.18);
+      if (g < m.start + dur) return p;
+      p = m.to;
+    }
+    return p;
+  };
+  const a = at(f);
+  const b = at(f - 1);
+  return { ...a, v: Math.hypot(a.x - b.x, a.y - b.y) };
+};
+
+/**
+ * The cursor's tilt: it swings in from `swing.from` degrees to `from` over `swing.frames` (ending at
+ * `start`), then settles upright from `from` to 0 over `dur` frames on `ease` (default 36 f at 60 fps on
+ * E.settleOut, the exponential-looking settle of a hand coming to rest). Positive = clockwise.
+ */
+export type CursorTilt = { from: number; start: number; dur?: number; ease?: Ease; swing?: { from: number; frames: number; ease?: Ease } };
+export const cursorTilt = (f: number, t: CursorTilt, film?: Partial<FilmCtx>): number => {
+  const fps = fpsOf(film);
+  if (f < t.start) {
+    if (!t.swing) return t.from;
+    const s = clamp((f - (t.start - t.swing.frames)) / Math.max(1e-6, t.swing.frames));
+    return mix(t.swing.from, t.from, (t.swing.ease ?? E.snapOut)(s));
+  }
+  const dur = Math.max(1e-6, t.dur ?? f60x(36, fps));
+  return t.from * (1 - (t.ease ?? E.settleOut)(clamp((f - t.start) / dur)));
+};
+
+/** A press ring around the hotspot `at` a click: radius from r0 to r1 on E.snapOut over `dur`, opacity on hitPulse (attack 2, tau 6 at 60 fps). */
+export const cursorRing = (f: number, at: number, o: { r0?: number; r1?: number; dur?: number; alpha?: number } = {}, film?: Partial<FilmCtx>): { r: number; opacity: number } | null => {
+  const fps = fpsOf(film);
+  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const t = f - at;
+  if (t <= 0) return null;
+  const dur = Math.max(1e-6, o.dur ?? f60x(30, fps));
+  if (t >= dur) return null;
+  return { r: mix(o.r0 ?? 10 * u, o.r1 ?? 34 * u, E.snapOut(t / dur)), opacity: (o.alpha ?? 0.45) * hitPulse(t, 2, 6, fps) };
+};
+
+export type CursorStateProps = {
+  from: Pt;
+  moves?: CursorMove[];
+  tilt?: CursorTilt;
+  shape?: CursorShape; // the shape at the start (default arrow)
+  switches?: { at: number; to: CursorShape }[]; // shape changes on whole frames (arrow -> ibeam over a text field)
+  click?: { at: number; ring?: boolean }; // a press (Cursor's press dip) and an optional ring
+};
+export type CursorState = Pt & { v: number; angle: number; shape: CursorShape; press: number; ring: { r: number; opacity: number } | null };
+
+/** Everything a cursor does at frame f: position (cursorMove), tilt, shape, press and ring. Pure. */
+export const cursorState = (f: number, p: CursorStateProps, film?: Partial<FilmCtx>): CursorState => {
+  const fps = fpsOf(film);
+  const m = cursorMove(f, p.from, p.moves ?? [], film);
+  let shape: CursorShape = p.shape ?? 'arrow';
+  for (const s of p.switches ?? []) if (fd(f) >= s.at) shape = s.to;
+  const press = p.click ? pressAt(f, p.click.at, fps) : 0;
+  const ring = p.click?.ring ? cursorRing(f, p.click.at, {}, film) : null;
+  return { ...m, angle: p.tilt ? cursorTilt(f, p.tilt, film) : 0, shape, press, ring };
+};
+
+/**
+ * What a Cursor instance does on purpose: nothing in its 1.1 form; a shape switch (arrow -> I-beam over a text
+ * field) is a designed one-frame change, declared as a one-frame step when the instance's `switches` are passed.
+ */
+export const declares = (props?: { switches?: { at: number }[]; id?: string }, _film?: Partial<FilmCtx>): Declares => {
+  const stepped: SteppedRange[] = (props?.switches ?? []).map((s, i) => ({ from: Math.round(s.at), to: Math.round(s.at) + 1, id: `${props?.id ?? 'cursor'}-${i}` }));
+  return { stepped, flashes: [], cameraBlur: [], seams: [] };
+};
