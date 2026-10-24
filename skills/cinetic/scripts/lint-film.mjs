@@ -81,6 +81,17 @@
  *   gpu-cost          blurs over 40 px, more than 2 blurred layers in a file, an SVG filter animated by
  *                     the frame, backdrop-filter, a 1.2 chain holding more than 24 word layers
  *
+ * Picture (the frame holds real content at film size; look-audit.py measures the render):
+ *   card-content      error: a <Card> with no children, image or blank, or a bento tile with no
+ *                     content, image or blank: an empty slab (at render it falls back to kit UI)
+ *   small-text        text under 36 px at 1080p (a fontSize, a typeStyle size, a role under the floor):
+ *                     held in focus over 6 f it is mush; product UI is rebuilt at x1.8-2 (uiFilm)
+ *   giant-watermark   a giant word (TYPE.giant, 400 px and up) at opacity <= 0.29: it is the set, not
+ *                     a watermark
+ *   giant-once        giant words in more than one act: the set of one moment, once per film
+ *   end-card-template a mark, a wordmark and a tagline centred over a radial gradient: the stock end
+ *                     card; build the lockup from the film's own device
+ *
  * Hard bans (SKILL.md "Hard bans"): errors whenever you invent the look.
  *   banned-color      any colour (tokens, :root palette, literals, CSS names) in a banned OKLCH region:
  *                       orange/amber  31 <= h < 96, C >= 0.05 (orange, amber, gold, brass, brown, coral)
@@ -490,7 +501,7 @@ for (const m of timelineSrc.matchAll(/\bchain\(\s*['"]([\w.-]+)['"]\s*,\s*['"](?
   CHAIN_WORDS.set(m[1], words);
 }
 // type roles (px at 1080p) from the tokens file, else the house scale
-const TYPE_SIZES = new Map(Object.entries({ ui: 30, caption: 46, line: 84, display: 128, hero: 240, giant: 900 }));
+const TYPE_SIZES = new Map(Object.entries({ ui: 40, caption: 46, line: 120, display: 200, hero: 240, giant: 900 }));
 let TYPE_DEP = { secondary: 'caption' };
 if (tokensPath) {
   const t = readFileSync(tokensPath, 'utf8');
@@ -756,6 +767,7 @@ const BRAND_REASON_RE = /cinetic:brand-supplied\b[\s:,.;–—-]*[\w"'#(]/;
 const BRAND_RULES = new Set(['pure-ink', 'gradient-shape']);
 const LIGHT_RE = /cinetic:light\b/; // a declared light field or soft shape in fx/ or lib/ (see glow)
 const springUses = []; // underdamped spring uses across the film, for spring-budget
+const giantUses = []; // act files that set a giant word, for giant-once
 
 for (const file of files) {
   const raw = readFileSync(file, 'utf8');
@@ -1621,6 +1633,94 @@ for (const file of files) {
         report([...roles.values()][2], 'type-role', 'warn', `${roles.size} type roles in one act (${[...roles.keys()].join(', ')}): one size per scene, a hero at least 2x the statement; change size through the camera`);
     }
 
+    // card-content: a card or a bento tile shows built UI, a picture, or nothing on purpose (blank): never an empty slab
+    if (isScript && !/(^|\/)fx\/Cards\.tsx$/.test(norm) && !/(^|\/)kit\//.test(norm)) {
+      each(/<Card\b/g, (m, i) => {
+        const tag = tagAt(code, i);
+        if (!tag || /\{\s*\.\.\./.test(tag.text) || /\b(image|blank|children)\b\s*(=|\/?>|\s)/.test(tag.text.replace(/^<Card/, ''))) return;
+        const selfClosing = /\/\s*>$/.test(tag.text);
+        const close = selfClosing ? -1 : code.indexOf('</Card>', i + tag.text.length);
+        const inner = close < 0 ? '' : code.slice(i + tag.text.length, close);
+        if (selfClosing || !inner.trim())
+          report(i, 'card-content', 'error', 'a <Card> with no content draws an empty slab (or, at render, sample kit UI): give it the product\'s own built UI (children), a picture (image), or say blank on purpose; never grey placeholder bars (src/kit has real parts)');
+      });
+      const tileArrays = [
+        ...[...code.matchAll(/\btiles\s*=\s*\{\s*\[/g)].map((m) => m.index + m[0].length - 1),
+        ...[...code.matchAll(/:\s*BentoTile\[\]\s*=\s*\[/g)].map((m) => m.index + m[0].length - 1),
+      ];
+      for (const open of tileArrays) {
+        let depth = 0;
+        let j = open;
+        for (; j < code.length; j++) {
+          if (code[j] === '[') depth++;
+          else if (code[j] === ']' && --depth === 0) break;
+        }
+        let at = open + 1;
+        for (const el of splitArgs(code.slice(open + 1, j))) {
+          const k = code.indexOf(el, at);
+          at = k < 0 ? at : k + el.length;
+          if (el.startsWith('{') && /\bA\s*:/.test(el) && /\bB\s*:/.test(el) && !/\.\.\./.test(el) && !/\b(content|image|blank)\s*[:,}]/.test(el))
+            report(k < 0 ? open : k, 'card-content', 'error', 'a bento tile with no content: give it built UI (content), a picture (image), or blank: true on purpose (src/kit has real parts)');
+        }
+      }
+    }
+
+    // small-text: text held in focus is 36 px or more at 1080p (UI rebuilt for film: x1.8-2, brand/tokens.ts uiFilm)
+    if (isScript && !house && !isTokens) {
+      const small = (i, px) =>
+        report(i, 'small-text', 'warn', `text at ${px} px: under 36 px (at 1080p) a string held in focus for more than 6 frames is mush on a phone and on every sheet; set it at 36+ (product UI is rebuilt at x1.8-2: uiFilm()), or keep it out of focus or on screen under 6 f (// lint-ok: <why>)`);
+      each(/\bfontSize\s*:\s*([\d.]+)\b(?!\s*[*/]\s*(?![Uu]\b)[\w(])/g, (m, i) => {
+        if (Number(m[1]) > 0 && Number(m[1]) < 36) small(i, m[1]);
+      });
+      each(/\btypeStyle\(\s*['"]\w+['"]\s*,\s*([\d.]+)\b(?!\s*[*/]\s*(?![Uu]\b)[\w(])/g, (m, i) => {
+        if (Number(m[1]) < 36) small(i, m[1]);
+      });
+      each(/\b(?:typeStyle\(\s*['"](\w+)['"]\s*\)|TYPE\.(\w+)\.size\b)/g, (m, i) => {
+        const r = m[1] ?? m[2];
+        if (r !== 'secondary' && TYPE_SIZES.has(r) && TYPE_SIZES.get(r) < 36) small(i, TYPE_SIZES.get(r));
+      });
+    }
+    if (isScript && isTokens) {
+      for (const [role, size] of TYPE_SIZES)
+        if (size < 36 && role !== 'secondary') {
+          const k = code.search(new RegExp(`\\b${role}\\s*:\\s*\\{[^}]*\\bsize\\s*:\\s*${size}\\b`));
+          if (k >= 0) report(k, 'small-text', 'warn', `TYPE.${role} is ${size} px: the smallest size held in focus is 36 px at 1080p (house ui 40)`);
+        }
+    }
+
+    // giant-watermark / giant-once: the giant word (400 px and up) is the set, used once, at full ink
+    if (isScript && !house) {
+      const giantStyle = (body) => /typeStyle\(\s*['"]giant['"]|\bTYPE\.giant\b/.test(body) || Number(body.match(/\bfontSize\s*:\s*([\d.]+)/)?.[1] ?? 0) >= 400;
+      let used = -1;
+      for (const so of styleObjects(code)) {
+        if (!giantStyle(so.body) && !/\brole\s*=\s*(?:\{\s*)?['"]giant['"]/.test(so.tag?.text ?? '')) continue;
+        if (used < 0) used = so.index;
+        const op = keyOf(so.body, 'opacity');
+        if (op && /^\s*0?\.(0\d*|[0-2]\d*)\s*$/.test(op))
+          report(so.index, 'giant-watermark', 'warn', `a giant word at opacity ${op.trim()}: the giant role is the set the camera travels (full ink, cropped by the frame, lit), never a faint watermark behind the copy`);
+      }
+      each(/\brole\s*=\s*(?:\{\s*)?['"]giant['"]/g, (m, i) => {
+        if (used < 0) used = i;
+      });
+      if (used >= 0 && isActFile) giantUses.push({ file: rel, ...pos(used), excerpt: (lines[pos(used).line - 1] ?? '').trim().slice(0, 140) });
+    }
+
+    // end-card-template: mark + wordmark + tagline centred over a radial gradient is the stock ending
+    if (isScript && !house) {
+      const starts = [0, ...[...code.matchAll(/\n(?:export\s+)?(?:const|function)\s+[A-Z][\w$]*/g)].map((m) => m.index), code.length];
+      each(/radial-gradient\s*\(/g, (m, i) => {
+        let a = 0;
+        let b = code.length;
+        for (let k = 0; k < starts.length - 1; k++) if (starts[k] <= i && i < starts[k + 1]) [a, b] = [starts[k], starts[k + 1]];
+        const region = code.slice(a, b);
+        const mark = /<\w*(Mark|Logo|Wordmark|Lockup|Emblem)\b/.test(region);
+        const centred = (/alignItems\s*:\s*['"]center['"]/.test(region) && /(justifyContent\s*:\s*['"]center['"]|flexDirection\s*:\s*['"]column['"])/.test(region)) || /textAlign\s*:\s*['"]center['"]/.test(region) || /translate\(\s*-50%/.test(region);
+        const texts = (region.match(/<(Words|Chain|MaskRise|Scramble)\b|\btypeStyle\s*\(|\bfontSize\b|\bdata-text\b|\btxt\s*\(/g) ?? []).length;
+        if (mark && centred && texts >= 2)
+          report(i, 'end-card-template', 'warn', 'a mark, a wordmark and a tagline centred over a radial gradient: the stock end card. Build the lockup from the film\'s own device (the deck\'s lockup: the device becomes the mark, printed on the last plane), lit by the key, off-centre or as a crop; no radial glow behind it');
+      });
+    }
+
     // timeline-constant: primitives read fps, size and copy from the film context (lib/film.ts), never the starter's timeline
     if (isScript && house && !/(^|\/)lib\/film\.(ts|tsx|js)$/.test(norm)) {
       each(/\bimport\s+(?!type\b)\{([^}]*)\}\s*from\s*['"]\.\.\/timeline(?:\.ts)?['"]/g, (m, i) => {
@@ -1661,6 +1761,22 @@ if (!opt.allow.has('spring-budget')) {
         issues.push({ file: u.file, line: u.line, col: u.col, rule: 'spring-budget', severity: sev, message, excerpt: u.excerpt });
     }
   }
+}
+
+// ---------------------------------------------------------------------------------- film-wide: giant-once
+// The giant word (400 px and up) is the set of one moment: a second act with its own giant word warns.
+if (!opt.allow.has('giant-once') && giantUses.length > 1) {
+  for (const u of giantUses.slice(1))
+    if (!issues.some((x) => x.file === u.file && x.line === u.line && x.rule === 'giant-once'))
+      issues.push({
+        file: u.file,
+        line: u.line,
+        col: u.col,
+        rule: 'giant-once',
+        severity: 'warn',
+        message: `a giant word in ${giantUses.length} acts (${giantUses.map((x) => x.file).join(', ')}): the giant role is the set of one moment, once per film; elsewhere scale changes through the camera`,
+        excerpt: u.excerpt,
+      });
 }
 
 // ---------------------------------------------------------------------------------- report

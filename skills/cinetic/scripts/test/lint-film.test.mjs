@@ -19,9 +19,11 @@
  * produce. Python: $CINETIC_PYTHON, else python3 (a real interpreter; 4 also needs numpy and opencv,
  * and is skipped with a note when they are missing).
  *
- * Usage (from the skill root):  node scripts/test/lint-film.test.mjs [--verbose] [--part static|rendered]
+ * Usage (from the skill root):  node scripts/test/lint-film.test.mjs [--verbose] [--part static|rendered|forensics|look-a|look-b|look-c|speed]
  * --part static runs 1-3 and the grammar-score self-test; --part rendered runs only 4 (the slow,
- * clip-making self-tests), so a machine with a job time limit can run the suite in two halves.
+ * clip-making self-tests), so a machine with a job time limit can run the suite in two halves; on a
+ * slow machine 4 splits further: forensics, look-a (look-audit's floor, colour and picture cases),
+ * look-b and look-c (its look rules) and speed (measure-speed), one run each.
  * Exit codes: 0 all pass, 1 a test failed.
  */
 import { spawnSync } from 'node:child_process';
@@ -36,17 +38,20 @@ const LINT = join(SKILL, 'scripts', 'lint-film.mjs');
 const PALETTE = join(SKILL, 'scripts', 'palette.py');
 const verbose = process.argv.includes('--verbose');
 const part = process.argv.includes('--part') ? process.argv[process.argv.indexOf('--part') + 1] : 'all';
-if (!['all', 'static', 'rendered'].includes(part)) {
-  console.error('lint-film tests: --part takes static or rendered');
+const RENDERED_PARTS = ['forensics', 'look-a', 'look-b', 'look-c', 'speed'];
+if (!['all', 'static', 'rendered', ...RENDERED_PARTS].includes(part)) {
+  console.error(`lint-film tests: --part takes static, rendered or one of ${RENDERED_PARTS.join(', ')}`);
   process.exit(2);
 }
-const STATIC = part !== 'rendered';
+const STATIC = part === 'all' || part === 'static';
 const RENDERED = part !== 'static';
+const runs = (k) => part === 'all' || part === 'rendered' || part === k; // one clip-making self-test of section 4
 const HARD = ['banned-color', 'serif', 'italic', 'glass', 'glow', 'gradient-multihue', 'emoji', 'stock-decoration', 'brand-supplied'];
 const TEXT = ['copy-literal', 'text-spring', 'text-pace', 'typing-rate', 'per-letter'];
 // the grammar rules: silent unless a fixture names them
 const GRAMMAR = ['ease-family', 'token-drift', 'whip-shape', 'spring-budget', 'spring-range', 'scale-from-zero', 'fade-exit', 'linear-opacity',
-  'crossfade', 'shutter', 'blur-on-crisp', 'pure-ink', 'accent-count', 'gradient-shape', 'type-role', 'deprecated-token', 'timeline-constant', 'gpu-cost'];
+  'crossfade', 'shutter', 'blur-on-crisp', 'pure-ink', 'accent-count', 'gradient-shape', 'type-role', 'deprecated-token', 'timeline-constant', 'gpu-cost',
+  'card-content', 'small-text', 'giant-watermark', 'giant-once', 'end-card-template'];
 const PY = process.env.CINETIC_PYTHON || 'python3';
 
 let failed = 0;
@@ -163,11 +168,11 @@ if (!RENDERED) {
 } else if (probe.status !== 0 || ff.status !== 0) {
   console.log(`skip  the rendered checks' self-tests: ${probe.status !== 0 ? `${PY} has no numpy/opencv (set CINETIC_PYTHON)` : 'no ffmpeg on PATH'}`);
 } else {
-  for (const script of ['forensics.py', 'look-audit.py', 'measure-speed.py']) {
-    const r = spawnSync(PY, [join(SKILL, 'scripts', script), '--self-test'], { encoding: 'utf8', timeout: 600000 });
+  for (const [key, script, sub] of [['forensics', 'forensics.py'], ['look-a', 'look-audit.py', 'a'], ['look-b', 'look-audit.py', 'b'], ['look-c', 'look-audit.py', 'c'], ['speed', 'measure-speed.py']].filter(([k]) => runs(k))) {
+    const r = spawnSync(PY, [join(SKILL, 'scripts', script), '--self-test', ...(sub ? [sub] : [])], { encoding: 'utf8', timeout: 600000 });
     const lines = (r.stdout || '').split('\n').filter((l) => /^(pass|FAIL)\s/.test(l));
     for (const l of lines) result(l.startsWith('pass'), l.replace(/^(pass|FAIL)\s+/, ''));
-    if (r.status !== 0 && !lines.some((l) => l.startsWith('FAIL'))) result(false, `${script} --self-test ran`, (r.stderr || r.stdout || '').trim().split('\n').slice(-2).join(' | '));
+    if (r.status !== 0 && !lines.some((l) => l.startsWith('FAIL'))) result(false, `${script} --self-test ${sub ?? ''} ran (${key})`, (r.stderr || r.stdout || '').trim().split('\n').slice(-2).join(' | '));
   }
 }
 {
