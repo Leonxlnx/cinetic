@@ -2,12 +2,16 @@ import React from 'react';
 import { C, FONT, TYPE, typeStyle } from '../brand/tokens';
 import { arrive, arriveK, blurIn, depart, E, type Ease, easeOf, holdFor, M, type Pace, prog, wordCount } from '../lib/anim';
 import { accentFade, mixColor } from '../lib/color';
-import { defocusLevel } from '../lib/defocus';
+import { defocusLevel, defocusMix } from '../lib/defocus';
 import { copyOf, f60, f60x, type FilmCtx, fpsOf, paceOf, sizeOf, uOf, useFilm } from '../lib/film';
 import { measureTracked } from '../lib/measure';
 import { settleOf } from '../lib/sync';
 import type { Copy, Declares } from '../timeline';
+import { type FocusOpts, focusState } from './FocusWord';
+import { type SweepOpts, sweepColor } from './HueSweep';
+import { type MakeRoomOpts, makeRoomState, type ScaleSnapOpts, type ScaleSnapState, scaleSnapState } from './LineSnap';
 import { blurFilter, type OversizeOpts, oversizeState } from './Oversize';
+import { edgeMask } from './Wipe';
 import { cadenceOffsets, landedOf, launchSeam, unitIfKnown, WORDS_HOUSE } from './Words';
 
 type Role = keyof typeof TYPE;
@@ -156,7 +160,8 @@ export type RecentreOpts = {
   chain: string | Copy[];
   copy?: Copy[];
   pace?: Pace;
-  recentre?: 'jump' | 'glide' | 'slot'; // default the pace's (1.1 pace: glide)
+  recentre?: 'jump' | 'glide' | 'slot' | 'room'; // default the pace's (1.1 pace: glide); 'room': fx/LineSnap make-room (creep, one jump frame, tail)
+  room?: Partial<Omit<MakeRoomOpts, 'start' | 'distance'>> & { lead?: number }; // 'room': the creep/jump/tail shape; `lead` film frames the jump comes before the fragment shows (default 0)
   recentreDur?: number; // film frames (default the pace's recentreDur)
   recentreEase?: Ease; // default E.jump (jump, slot) / E.expo (glide)
   recentreLead?: number; // film frames a slot (or a glide) opens before the fragment (slot default 12 f@60)
@@ -202,6 +207,15 @@ export const recentreState = (F: number, o: RecentreOpts, film?: Partial<FilmCtx
       durs.push(dur);
       return prog(F, start, start + dur, o.recentreEase ?? E.expo);
     }
+    if (how === 'room') {
+      // the make-room move of fx/LineSnap: its one jump frame lands on the frame the fragment shows (less `lead`)
+      const ro = o.room ?? {};
+      const probe = makeRoomState(0, { ...ro, start: 0, distance: 1 }, film);
+      const start = copy.in + 1 - (ro.lead ?? 0) - probe.jumpFrame;
+      starts.push(start);
+      durs.push(probe.end);
+      return makeRoomState(F, { ...ro, start, distance: 1 }, film).p;
+    }
     const slotLead = how === 'slot' ? (o.recentreLead ?? f60x(Math.max(pace.recentreLead, 12), fps)) : 0;
     const start = copy.in - slotLead;
     const dur = o.recentreDur ?? f60x(pace.recentreDur, fps);
@@ -226,9 +240,12 @@ export const chainJumps = (chain: string | Copy[], o: Omit<RecentreOpts, 'chain'
   const kind = o.recentre ?? pace.recentre ?? 'glide';
   return list
     .map((c, j) => ({ id: c.id, start: s.starts[j], dur: s.durs[j], kind }))
-    .filter((x): x is { id: string; start: number; dur: number; kind: 'jump' | 'glide' | 'slot' } => x.start !== null)
-    .map((x) => ({ ...x, at: Math.floor(x.start) + 1 }));
+    .filter((x): x is { id: string; start: number; dur: number; kind: 'jump' | 'glide' | 'slot' | 'room' } => x.start !== null)
+    .map((x) => ({ ...x, at: x.kind === 'room' ? makeRoomState(x.start, { ...(o.room ?? {}), start: x.start, distance: 1 }, film).jumpFrame : Math.floor(x.start) + 1 }));
 };
+
+/** A soft edge given in px at 1080p, in the film's px (house left 250). */
+const edgesAt = ({ left: edgeL = 250, right: edgeR }: { left?: number; right?: number }, edgeScale: number) => ({ left: edgeL * edgeScale, right: edgeR !== undefined ? edgeR * edgeScale : undefined });
 
 /** The house partial-ink steps of an arriving word (30 fps frames 0..5 after its start): it cuts on part-inked and fills in 4 frames. */
 export const INK_PARTIAL = [0, 0.39, 0.62, 0.89, 0.98, 1] as const;
@@ -269,12 +286,18 @@ export type ChainSpec = Omit<RecentreOpts, 'lineLeft'> & {
   accentColor?: string;
   oversizeFirst?: boolean | (Partial<Omit<OversizeOpts, 'start'>> & { start?: number });
   subpixel?: boolean; // composited word layers (default: true with a 1.2 pace)
+  snapLast?: boolean | (Partial<ScaleSnapOpts>); // the last fragment snaps the whole line larger in one frame (fx/LineSnap scale snap; `at` default: the frame it shows)
+  focusIn?: boolean | Partial<Omit<FocusOpts, 'start' | 'mode'>>; // arriving words come into focus and slide home (fx/FocusWord word mode) instead of the rise
+  sweep?: boolean | Partial<Omit<SweepOpts, 'start'>>; // arriving words ink along the one-hue sweep, letter by letter (fx/HueSweep), instead of the fragment colour
+  sweepOn?: 'all' | 'last' | number[]; // which fragments sweep (default all)
+  edgeMask?: { left?: number; right?: number }; // a soft alpha edge for a line that scrolls through the frame (fx/Wipe edgeMask; house left 250 px at 1080p)
 };
 
-export type ChainWordState = { opacity: number; y: number; x: number; blur: number; visible: boolean };
+export type ChainWordState = { opacity: number; y: number; x: number; blur: number; visible: boolean; colors?: string[]; focus?: boolean };
 export type ChainState = {
   recentre: RecentreState;
   frags: { id: string; color: string; scale: number; blur: number; visible: boolean; words: ChainWordState[] }[];
+  snap?: ScaleSnapState & { at: number }; // snapLast: the line's scale, the read words' settle (px at 1080p), the line's defocus
 };
 
 /**
@@ -312,6 +335,13 @@ export const chainState = (F: number, o: ChainSpec, film?: Partial<FilmCtx>): Ch
   const dist = o.exitDistance ?? (exitMode === 'launchFade' ? WORDS_HOUSE.fadeDistance : WORDS_HOUSE.exitDistance);
   const exitEase = o.exitEase ?? (exitMode === 'launch' ? E.launchIn : E.buildIn);
   const exitFade = o.exitFade ?? f60x(pace.exitFade ?? WORDS_HOUSE.exitFade60, fps);
+  const u = unitIfKnown(film) ?? uOf(film);
+  const snapO = o.snapLast ? (o.snapLast === true ? {} : o.snapLast) : null;
+  const snapAt = snapO ? (snapO.at ?? list[last].in + 1) : undefined;
+  const snap = snapO && snapAt !== undefined ? { ...scaleSnapState(F, { ...snapO, at: snapAt }, film), at: snapAt } : undefined;
+  const focus = o.focusIn ? (o.focusIn === true ? {} : o.focusIn) : null;
+  const sweep = o.sweep ? (o.sweep === true ? {} : o.sweep) : null;
+  const sweeps = (j: number) => !!sweep && (o.sweepOn === undefined || o.sweepOn === 'all' ? true : o.sweepOn === 'last' ? j === last : o.sweepOn.includes(j));
   const frags = list.map((copy, j) => {
     const words = split(copy.text);
     const spans = fragmentSpans(copy.text, copy.in, pace, fps, o.cadence);
@@ -353,6 +383,25 @@ export const chainState = (F: number, o: ChainSpec, film?: Partial<FilmCtx>): Ch
         } else y = (1 - arrive(p, arriveK(pace.rise * size, e - s, ease))) * pace.rise;
         blur = blurIn(p, pace.blur);
       }
+      let colors: string[] | undefined;
+      if (focus && ink === 'reveal') {
+        // focus in: the word shows soft on its first frame and slides home while it sharpens (no rise)
+        const fs = focusState(F, { ...focus, start: s, mode: 'word' }, film).parts[0];
+        opacity = fs.opacity;
+        y = 0;
+        x += (fs.x * u) / size;
+        blur = fs.sigma; // px at 1080p: the component draws it on the defocus ladder
+      }
+      if (snap && j === last) {
+        // the snapped word fades in from 16 % with a small rise (the line itself jumps larger)
+        opacity = snap.wordOpacity;
+        y = (snap.wordY * u) / size / snap.scale; // inside the scaled line: on-screen px divide by the scale
+      }
+      if (snap && j < last) x += (snap.settleX * u) / size / snap.scale;
+      if (sweeps(j)) {
+        const w = words[i];
+        colors = [...w].map((_, li) => sweepColor(F, { ...sweep, start: s }, li, w.length, film));
+      }
       let visible = F > s;
       if (exitMode === 'together' || exitMode === 'words') {
         const o0 = exitMode === 'words' ? copy.out + f60((i * pace.stagger) / 2, fps) : copy.out;
@@ -376,11 +425,11 @@ export const chainState = (F: number, o: ChainSpec, film?: Partial<FilmCtx>): Ch
       if (o.exitAt !== undefined && F > o.exitAt) visible = false;
       if (!visible) opacity = 0;
       anyVisible = anyVisible || visible;
-      return { opacity, y, x, blur, visible };
+      return { opacity, y, x, blur, visible, colors, focus: !!focus && ink === 'reveal' };
     });
     return { id: copy.id, color: fragColor, scale, blur: fblur, visible: anyVisible, words: ws };
   });
-  return { recentre: rec, frags };
+  return { recentre: rec, frags, snap };
 };
 
 /**
@@ -425,9 +474,12 @@ export const Chain: React.FC<
   const lineX = rec.x ?? L.lineLeft[0];
   const sub = spec.subpixel ?? isNew(pace);
   const u = film.height / 1080;
-  return (
-    <div style={{ position: 'absolute', left: 0, top: 0, ...style }}>
-      {L.frags.map(({ copy, words, left }, j) => {
+  const lastJ = L.frags.length - 1;
+  const lineCx = L.lineLeft[lastJ] + L.width[lastJ] / 2;
+  const lineCy = L.top + (L.size * TYPE[role].lead) / 2;
+  const mask = spec.edgeMask ? edgeMask(edgesAt(spec.edgeMask, film.height / 1080)) : undefined;
+  const frags = (copyKey: number) =>
+    L.frags.map(({ copy, words, left }, j) => {
         const fs = S.frags[j];
         if (!fs.visible && F > copy.in) return null;
         if (F < copy.in - 1) return null;
@@ -436,8 +488,8 @@ export const Chain: React.FC<
         const fblur = fs.blur > 0 ? defocusLevel(fs.blur * u) : 0;
         return (
           <span
-            key={copy.id}
-            data-text={copy.id}
+            key={`${copy.id}.${copyKey}`}
+            data-text={copyKey === 0 ? copy.id : undefined}
             style={{
               ...typeStyle(role, L.size),
               fontFamily: family,
@@ -454,7 +506,7 @@ export const Chain: React.FC<
           >
             {words.map((w, i) => {
               const ws = fs.words[i];
-              const b = ws.blur > 0 ? (spec.ink === 'partial' ? defocusLevel(ws.blur * u) : ws.blur) : 0;
+              const b = ws.blur > 0 ? (spec.ink === 'partial' || ws.focus ? defocusLevel(ws.blur * u) : ws.blur) : 0;
               return (
                 <span
                   key={i}
@@ -467,14 +519,28 @@ export const Chain: React.FC<
                     opacity: ws.opacity,
                   }}
                 >
-                  {w}
+                  {ws.colors ? [...w].map((c, li) => <span key={li} style={{ color: ws.colors?.[li] }}>{c}</span>) : w}
                   {i < words.length - 1 ? ' ' : ''}
                 </span>
               );
             })}
           </span>
         );
-      })}
+      });
+  if (!S.snap) return <div style={{ position: 'absolute', left: 0, top: 0, ...mask, ...style }}>{frags(0)}</div>;
+  // snapLast: the whole line jumps larger about its finished centre in one frame; a short defocus clears on
+  // at most two fixed ladder copies (the group faded as one)
+  const sn = S.snap;
+  const copies = (sn.sigma * u) / sn.scale >= 0.5 ? defocusMix((sn.sigma * u) / sn.scale) : [{ level: 0, weight: 1 }];
+  return (
+    <div style={{ position: 'absolute', left: 0, top: 0, ...mask, ...style }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, transformOrigin: `${lineCx.toFixed(2)}px ${lineCy.toFixed(2)}px`, transform: `scale(${sn.scale.toFixed(6)})` }}>
+        {copies.map((c, k) => (
+          <div key={k} style={{ position: 'absolute', left: 0, top: 0, opacity: k === 0 ? 1 : c.weight, filter: c.level > 0 ? blurFilter(c.level) : undefined }}>
+            {frags(k)}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -493,5 +559,14 @@ export const declares = (p?: Partial<ChainSpec> & { id?: string }, film?: Partia
   if (p.exitAt !== undefined && (exit === 'launch' || exit === 'auto')) out.seams?.push(launchSeam(p.exitDir ?? 'up', p.exitAt + 1 - (p.exitOverlap ?? 0), id));
   const ov = typeof p.oversizeFirst === 'object' ? p.oversizeFirst : undefined;
   if (ov?.defocus && ov.defocusUntil !== undefined) out.stepped?.push({ from: ov.defocusUntil, to: ov.defocusUntil + 1, id });
+  if (p.chain !== undefined && (p.recentre === 'room' || p.snapLast)) {
+    // the make-room jump frames and the scale snap are designed one-frame steps (fx/LineSnap)
+    if (p.recentre === 'room') for (const j of chainJumps(p.chain, { ...p, recentre: 'room' }, film)) out.stepped?.push({ from: j.at, to: j.at + 1, id });
+    if (p.snapLast) {
+      const snapFrags = fragmentsOf(p.chain, typeof p.chain === 'string' ? (p.copy ?? copyOf(film)) : undefined);
+      const snapFrame = (p.snapLast === true ? undefined : p.snapLast.at) ?? snapFrags[snapFrags.length - 1].in + 1;
+      out.stepped?.push({ from: snapFrame, to: snapFrame + 1, id });
+    }
+  }
   return out;
 };

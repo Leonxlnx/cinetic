@@ -8,7 +8,11 @@ import { f60, f60x, type FilmCtx, fpsOf, paceOf, uOf, useFilm } from '../lib/fil
 import { GRAMMAR } from '../lib/look';
 import { settleOf } from '../lib/sync';
 import type { Declares, Seam } from '../timeline';
+import { type FocusOpts, focusState } from './FocusWord';
+import { type SweepOpts, sweepColor } from './HueSweep';
+import { type MakeRoomOpts, makeRoomState, type ScaleSnapOpts, scaleSnapState } from './LineSnap';
 import { blurFilter, type OversizeOpts, oversizeState } from './Oversize';
+import { edgeMask } from './Wipe';
 
 /**
  * Word-by-word reveal of one fragment (1-4 words; a longer thought is a chain: fx/Chain). Every
@@ -88,6 +92,11 @@ export type WordsSpec = {
   accentEase?: Ease; // the cool's curve (default E.linear: the house transient accent is linear)
   accentOn?: 'all' | 'first' | 'last' | number[];
   oversize?: Partial<Omit<OversizeOpts, 'start'>> & { start?: number };
+  focusIn?: boolean | Partial<Omit<FocusOpts, 'start' | 'mode'>>; // each word comes into focus and slides home (fx/FocusWord word mode) instead of the rise
+  sweep?: boolean | Partial<Omit<SweepOpts, 'start'>>; // each word inks along the one-hue sweep letter by letter (fx/HueSweep)
+  snapLast?: boolean | Partial<ScaleSnapOpts>; // the last word snaps the fragment larger in one frame (fx/LineSnap; `at` default: the frame it shows)
+  room?: Partial<Omit<MakeRoomOpts, 'start'>> & { distance: number; lead?: number }; // the words before the last make room for it (fx/LineSnap): px they travel (signed), the jump `lead` frames before it shows
+  edgeMask?: { left?: number; right?: number }; // a soft alpha edge for a line scrolling through the frame (fx/Wipe edgeMask), px at 1080p
   id?: string;
 };
 
@@ -115,6 +124,8 @@ export type WordState = {
   visible: boolean;
   p: number; // the fade's eased progress
   q: number; // the exit's eased progress
+  colors?: string[]; // sweep: per letter
+  focus?: boolean; // focusIn: `blur` is px at 1080p, drawn on the defocus ladder
 };
 
 export type WordsState = { words: WordState[]; scale: number; blur: number; frames: WordFrame[] };
@@ -265,6 +276,20 @@ export const wordState = (frame: number, o: WordsSpec, film?: Partial<FilmCtx>):
   const cool = o.accentCool ?? f60x(k.pace.accentCool ?? 13, k.fps);
   const dir = o.exitDir ?? 'up';
   const dist = o.exitDistance ?? (k.mode === 'launchFade' ? WORDS_HOUSE.fadeDistance : WORDS_HOUSE.exitDistance);
+  const n = frames.length;
+  const u = unitIfKnown(film) ?? uOf(film);
+  const em = px ?? TYPE.line.size * u; // px per em for px-valued devices
+  const focus = o.focusIn ? (o.focusIn === true ? {} : o.focusIn) : null;
+  const sweep = o.sweep ? (o.sweep === true ? {} : o.sweep) : null;
+  const snapO = o.snapLast ? (o.snapLast === true ? {} : o.snapLast) : null;
+  const snapAt = snapO ? (snapO.at ?? Math.floor(frames[n - 1].start) + 1) : undefined;
+  const snap = snapO && snapAt !== undefined ? scaleSnapState(frame, { ...snapO, at: snapAt }, film) : undefined;
+  let roomX = 0;
+  if (o.room && n > 1) {
+    const probe = makeRoomState(0, { ...o.room, start: 0 }, film);
+    const start = Math.floor(frames[n - 1].start) + 1 - (o.room.lead ?? 0) - probe.jumpFrame;
+    roomX = (makeRoomState(frame, { ...o.room, start }, film).x - o.room.distance) / em; // em still to travel (the words start where they sat before the room opened)
+  }
   const words = frames.map((fr, i): WordState => {
     const ei = k.eases[i];
     const p = prog(frame, fr.start, fr.start + fr.dur, ei);
@@ -284,6 +309,16 @@ export const wordState = (frame: number, o: WordsSpec, film?: Partial<FilmCtx>):
       y = (1 - (k.subpixel ? c : arrive(c, px ? arriveK(k.riseEm * px, rd, k.riseEase) : 0.94))) * k.riseEm;
     }
     blur = blurIn(p, bl);
+    let focused = false;
+    if (focus) {
+      // focus in: the word shows soft on its first frame and slides home while it sharpens (no rise)
+      const fs = focusState(frame, { ...focus, start: fr.start, mode: 'word' }, film).parts[0];
+      opacity = fs.opacity;
+      y = 0;
+      x += (fs.x * u) / em;
+      blur = fs.sigma;
+      focused = true;
+    }
     if (fr.exitStart !== null) {
       if (k.mode === 'together' || k.mode === 'words') {
         const together = k.mode === 'together';
@@ -305,8 +340,15 @@ export const wordState = (frame: number, o: WordsSpec, film?: Partial<FilmCtx>):
         if (frame >= end && (k.mode === 'launchFade' || o.exitAt === undefined)) visible = false; // gone at the move's end (a cut hides it earlier)
       }
     }
+    if (snap && i === n - 1) {
+      opacity = snap.wordOpacity;
+      y = (snap.wordY * u) / em / snap.scale; // inside the scaled span: on-screen px divide by the scale
+    }
+    if (snap && i < n - 1) x += (snap.settleX * u) / em / snap.scale;
+    if (o.room && i < n - 1) x += roomX;
     if (o.exitAt !== undefined && frame > o.exitAt) visible = false;
     if (!visible) opacity = 0;
+    const colors = sweep ? [...fr.word].map((_, li) => sweepColor(frame, { ...sweep, start: fr.start }, li, fr.word.length, film)) : undefined;
     let color: string | undefined;
     if (o.accent && accentPicked(o.accentOn, i, frames.length)) {
       const a = { accent: o.accent, ink, hold: (hold * 60) / k.fps, cool: (cool * 60) / k.fps, space: o.accentSpace ?? k.pace.accentSpace ?? 'srgb', fps: k.fps };
@@ -316,7 +358,7 @@ export const wordState = (frame: number, o: WordsSpec, film?: Partial<FilmCtx>):
         color = a.space === 'srgb' ? mixRgb(o.accent, ink, t) : mixColor(o.accent, ink, t);
       }
     }
-    return { opacity, y, x, yPx: px ? y * px : undefined, xPx: px ? x * px : undefined, blur, color, visible, p, q };
+    return { opacity, y, x, yPx: px ? y * px : undefined, xPx: px ? x * px : undefined, blur, color, visible, p, q, colors, focus: focused };
   });
   let scale = 1;
   let lineBlur = 0;
@@ -324,6 +366,10 @@ export const wordState = (frame: number, o: WordsSpec, film?: Partial<FilmCtx>):
     const s = oversizeState(frame, { ...o.oversize, start: o.oversize.start ?? frames[0].start + 1 }, film);
     scale = s.scale;
     lineBlur = s.blur;
+  }
+  if (snap) {
+    scale *= snap.scale;
+    lineBlur = Math.max(lineBlur, snap.sigma / snap.scale); // drawn on the scaled span
   }
   return { words, scale, blur: lineBlur, frames };
 };
@@ -350,14 +396,15 @@ export const Words: React.FC<WordsProps> = ({ frame, style, wordStyle, ...spec }
         display: 'inline-flex',
         flexWrap: 'nowrap',
         whiteSpace: 'pre',
-        ...(spec.oversize ? { transformOrigin: spec.oversize.origin ?? 'center', transform: `scale(${s.scale.toFixed(6)})` } : {}),
+        ...(spec.oversize || spec.snapLast ? { transformOrigin: spec.oversize?.origin ?? 'center', transform: `scale(${s.scale.toFixed(6)})` } : {}),
         filter: lineBlur > 0 ? blurFilter(lineBlur) : undefined,
+        ...(spec.edgeMask ? edgeMask({ left: (spec.edgeMask.left ?? 250) * (film.height / 1080), right: spec.edgeMask.right !== undefined ? spec.edgeMask.right * (film.height / 1080) : undefined }) : {}),
         ...style,
       }}
     >
       {words.map((w, i) => {
         const ws = s.words[i];
-        const b = ws.blur;
+        const b = ws.focus ? defocusLevel(ws.blur * (film.height / 1080)) : ws.blur;
         return (
           <span
             key={i}
@@ -373,7 +420,7 @@ export const Words: React.FC<WordsProps> = ({ frame, style, wordStyle, ...spec }
               ...wordStyle?.(i, ws.p),
             }}
           >
-            {w}
+            {ws.colors ? [...w].map((c, li) => <span key={li} style={{ color: ws.colors?.[li] }}>{c}</span>) : w}
             {i < words.length - 1 ? ' ' : ''}
           </span>
         );
@@ -404,5 +451,18 @@ export const declares = (p?: Partial<WordsSpec>, film?: Partial<FilmCtx>): Decla
   const exit = p.exit ?? pace?.exit;
   if (p.exitAt !== undefined && (exit === 'launch' || exit === 'auto')) out.seams?.push(launchSeam(p.exitDir ?? 'up', p.exitAt + 1 - (p.exitOverlap ?? 0), id));
   if (p.oversize?.defocus && p.oversize.defocusUntil !== undefined) out.stepped?.push({ from: p.oversize.defocusUntil, to: p.oversize.defocusUntil + 1, id });
+  if ((p.snapLast || p.room) && p.text !== undefined && p.start !== undefined) {
+    // the scale snap and the make-room jump are designed one-frame steps (fx/LineSnap)
+    const fr = wordFrames(p as WordsSpec, film);
+    const showLast = Math.floor(fr[fr.length - 1].start) + 1;
+    if (p.snapLast) {
+      const at = (p.snapLast === true ? undefined : p.snapLast.at) ?? showLast;
+      out.stepped?.push({ from: at, to: at + 1, id });
+    }
+    if (p.room && fr.length > 1) {
+      const j = showLast - (p.room.lead ?? 0);
+      out.stepped?.push({ from: j, to: j + 1, id });
+    }
+  }
   return out;
 };
