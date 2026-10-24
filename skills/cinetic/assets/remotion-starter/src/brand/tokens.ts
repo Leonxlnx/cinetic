@@ -21,6 +21,12 @@ export const C = {
   // green (3.5:1 on paper, 5.1:1 on ink: large type and graphics only). It arrives on new things
   // and relaxes to ink; it covers well under 8% of the frame except in one designed flood.
   accent: '#08965A',
+  // The dark stage is a mid slate (lib/look.ts STAGE.dark = RECIPE.slateMid: L .34 at the accent's hue),
+  // not near-black ink: shadows, lit faces and colour still read on it. On the slate the accent lifts to
+  // L .80 so it signals by lightness; type is the paper token.
+  slate: '#2E3C33',
+  slateRaised: '#3D4C42',
+  accentLift: '#77D59E',
 };
 
 // cinetic:placeholder - the family is the starter's stand-in: choose one for this brand (fonts.ts
@@ -37,16 +43,30 @@ export const FACES = ['400 16px "Geist Variable"', '600 16px "Geist Variable"', 
 export const U = Math.min(W, H) / 1080;
 
 // One token per role, reused everywhere, so nothing is "almost matched" (size in px at 1080p; the
-// cap height is about 0.72 em, given below as a share of the frame height after camera scale).
+// cap height is about 0.72 em, given below as a share of the frame height after camera scale). Film
+// sizes, not page sizes: a line is 120 px, a statement 200, and the one giant word of a film (400 px
+// and up) is the set the camera travels, never a faint watermark behind the copy.
 export const TYPE = {
-  ui: { size: 30, weight: 500, track: -0.005, lead: 1.3 }, // product strings, labels: cap 2.0 % FH, the smallest readable size
+  ui: { size: 40, weight: 500, track: -0.005, lead: 1.3 }, // product strings, labels: cap 2.7 % FH, the smallest size held in focus (TEXT_MIN)
   caption: { size: 46, weight: 500, track: -0.01, lead: 1.25 }, // descriptor lines, URLs, captions: cap 3.1 % (2.3-4)
-  line: { size: 84, weight: 500, track: -0.025, lead: 1.1 }, // fragment chains (fx/Chain) and build lines: cap 5.6 % (5-9)
-  display: { size: 128, weight: 600, track: -0.04, lead: 1.0 }, // statements and the wordmark: cap 8.5 %, the top of the statement band
-  hero: { size: 240, weight: 600, track: -0.045, lead: 0.95 }, // the payoff word: cap 16 % (11-23)
-  giant: { size: 900, weight: 600, track: -0.05, lead: 0.9 }, // a cropped texture word: cap 60 % (40-90)
+  line: { size: 120, weight: 500, track: -0.025, lead: 1.1 }, // fragment chains (fx/Chain) and build lines: cap 8 % (5-14)
+  display: { size: 200, weight: 600, track: -0.04, lead: 1.0 }, // statements and the wordmark: cap 13 %, the top of the statement band
+  hero: { size: 240, weight: 600, track: -0.045, lead: 0.95 }, // the payoff word: cap 16 % (14-26)
+  giant: { size: 900, weight: 600, track: -0.05, lead: 0.9 }, // the set: one word at 400 px or more (cap 27-90 %), once per film, cropped by the frame
   secondary: { size: 48, weight: 450, track: -0.02, lead: 1.15 }, // 1.1 role, kept for old acts: use caption
 };
+
+/** The smallest text held in focus for more than 6 frames at 60 fps (px at 1080p): anything smaller is mush on a phone. */
+export const TEXT_MIN = 36;
+/** The giant role starts here (px at 1080p): below it a big word is a hero, not the set. */
+export const GIANT_MIN = 400;
+/**
+ * Product UI is rebuilt for film, not screenshotted at page size: every size of the web design times
+ * 1.8-2 (house 1.9), never under TEXT_MIN. A 16 px label becomes 36, a 20 px body 38, a 32 px figure 61.
+ */
+export const UI_FILM = 1.9;
+/** A web UI size (px) rebuilt for film: x UI_FILM, floored at TEXT_MIN for text. */
+export const uiFilm = (webPx: number, text = true) => (text ? Math.max(TEXT_MIN, webPx * UI_FILM) : webPx * UI_FILM);
 
 /** Type roles that replace a 1.1 role. */
 export const TYPE_DEPRECATED: Partial<Record<keyof typeof TYPE, keyof typeof TYPE>> = { secondary: 'caption' };
