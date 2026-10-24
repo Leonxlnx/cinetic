@@ -2,7 +2,10 @@ import React from 'react';
 import { Img } from 'remotion';
 import { C } from '../brand/tokens';
 import { clamp, DUR, E, type Ease, expOut, M, mix, PRESS, SPR, type Spr, spr } from '../lib/anim';
+import { KitFallback } from '../kit/panels';
+import { kitTheme } from '../kit/theme';
 import { morphBox, type MorphBox } from '../lib/box';
+import { toOklch } from '../lib/color';
 import { defocusMix } from '../lib/defocus';
 import { type FilmCtx, f60x, fpsOf, uOf, useFilm } from '../lib/film';
 import type { Declares } from '../timeline';
@@ -20,6 +23,10 @@ import type { Declares } from '../timeline';
 //   springBox    the film's one spring: a container popping open past its size and back
 //   <Card>       draws any of them, with built UI or a supplied image (screenshot, product shot) as content
 //   <Bento>      draws a bento unfold, each tile built or an image cropped to its moving box
+//
+// Content is required: built UI (children / content), a picture (image), or `blank` on purpose. A card
+// or tile given none draws real product UI from the kit (src/kit) instead of an empty slab, and lint-film
+// reports it (card-content). Build product UI at film size (brand/tokens.ts UI_FILM: the web design x1.9).
 //
 // House numbers (60 fps): entrance 34 f on E.snapOut from 240 px below, lean 10 deg flattening 6 f behind
 // the position; arrival 50 f on E.snapOut with rotation on the same curve; demotion 20 f to x0.82 and
@@ -273,6 +280,14 @@ export const CardPicture: React.FC<{ image: CardImage; frame?: number; radius?: 
 /** The paper shadow of a card in ink at `a` alpha, `y` px down, `blur` px (a dip, never a glow). */
 const shadowCss = (s: MorphBox['shadow']) => (s && s.a > 0.001 ? `0 ${s.y.toFixed(2)}px ${s.blur.toFixed(2)}px rgba(0, 0, 0, ${s.a.toFixed(3)})` : undefined);
 
+/**
+ * What a card shows: built UI (`children`), a supplied picture (`image`), or, on purpose, nothing
+ * (`blank`: a backdrop or a pure shape). One of them is required: a card is never an empty slab or a stack
+ * of grey placeholder bars. A card given none still renders (old code keeps working), with real product
+ * UI from the kit (kit/KitFallback) in its box, and lint-film reports it (card-content).
+ */
+export type CardContent = { children: React.ReactNode; image?: CardImage; blank?: false } | { image: CardImage; children?: React.ReactNode; blank?: false } | { blank: true; image?: undefined; children?: undefined };
+
 export type CardProps = {
   frame: number; // local frame (useCurrentFrame() of the caller)
   box: MorphBox; // the card at rest, frame px (x, y = top-left)
@@ -281,12 +296,14 @@ export type CardProps = {
   demote?: DemoteProps;
   press?: { at: number } & PressOpts;
   spring?: { start: number; from: MorphBox; preset?: Spr }; // the box pops from `from` to `box`
-  image?: CardImage; // a supplied picture as the content (drawn under the children)
   perspective?: number; // px, for the lean plane (default 1800 at 1080p)
   origin?: Pt; // transform origin inside the box, 0..1 (default the centre)
-  children?: React.ReactNode; // built UI, laid out in a box.w x box.h box
   style?: React.CSSProperties;
-};
+  seed?: number; // which kit panel a content-less card falls back to (default 0)
+} & CardContent; // image: a supplied picture (drawn under the children); children: built UI, laid out in a box.w x box.h box
+
+/** The kit theme that sits on a card's fill: a light fill gets the paper kit, a dark or mid one the slate kit. */
+const fallbackTheme = (fill?: string) => kitTheme(fill && toOklch(fill)[0] < 0.6 ? 'slateMid' : 'tintedPaper');
 
 /**
  * A card: the box with its fill, radius and dip shadow, content clipped to it (built UI or a supplied
@@ -331,6 +348,7 @@ export const Card: React.FC<CardProps> = (props) => {
     >
       {props.image && <CardPicture image={props.image} frame={f} />}
       {props.children !== undefined && <div style={{ position: 'absolute', left: 0, top: 0, width: props.box.w, height: props.box.h }}>{props.children}</div>}
+      {props.children === undefined && !props.image && !props.blank && <KitFallback frame={f} w={props.box.w} h={props.box.h} seed={props.seed} theme={fallbackTheme(rest.fill)} />}
       {rest.strokeW > 0.01 && <div style={{ position: 'absolute', inset: 0, borderRadius: rest.r, boxShadow: `inset 0 0 0 ${rest.strokeW.toFixed(2)}px ${rest.stroke}` }} />}
     </div>
   );
@@ -359,7 +377,11 @@ export const Card: React.FC<CardProps> = (props) => {
  * layout, revealed by the moving box (right when a tile opens in place); 'box' rides the box's top-left corner,
  * laid out at B's size and clipped (right when a tile flies across the layout, so its header travels with it).
  */
-export type BentoTile = { A: MorphBox; B: MorphBox; image?: CardImage; content?: React.ReactNode; contentAnchor?: 'layout' | 'box' };
+export type BentoTile = { A: MorphBox; B: MorphBox; contentAnchor?: 'layout' | 'box' } & (
+  | { content: React.ReactNode; image?: CardImage; blank?: false }
+  | { image: CardImage; content?: React.ReactNode; blank?: false }
+  | { blank: true; image?: undefined; content?: undefined }
+); // like a card, a tile shows built UI, a picture or, on purpose, nothing (a tile given none falls back to kit UI)
 
 /**
  * A bento unfold: every tile's box travels from A to B (x, y, size, radius, fill, shadow) on one shared
@@ -398,6 +420,11 @@ export const Bento: React.FC<{ frame: number; tiles: BentoTile[]; style?: React.
             }}
           >
             {t.image && <CardPicture image={t.image} frame={frame} />}
+            {t.content === undefined && !t.image && !t.blank && (
+              <div style={{ position: 'absolute', left: 0, top: 0, width: t.B.w, height: t.B.h, transform: t.contentAnchor === 'box' ? undefined : `translate(${(t.B.x - m.x).toFixed(3)}px, ${(t.B.y - m.y).toFixed(3)}px)` }}>
+                <KitFallback frame={frame} w={t.B.w} h={t.B.h} seed={i} theme={fallbackTheme(m.fill)} />
+              </div>
+            )}
             {t.content !== undefined && (
               <div
                 style={{
