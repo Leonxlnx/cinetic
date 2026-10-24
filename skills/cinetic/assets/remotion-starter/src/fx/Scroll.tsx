@@ -2,6 +2,7 @@ import React from 'react';
 import { clamp, perFrame, SPEED } from '../lib/anim';
 import { type FilmCtx, fpsOf, uOf, useFilm } from '../lib/film';
 import type { CameraBlurRange, Declares } from '../timeline';
+import { edgeMask as wipeEdge } from './Wipe';
 
 // A flick scroll: the list opens on a crawl (or at rest), speeds up by a constant ratio every frame to its
 // peak, can hold the peak a few frames, then brakes on friction in two stages (a quick first drop, a long
@@ -119,27 +120,34 @@ export const flickBlurRange = (p: FlickProps, film?: Partial<FilmCtx>): { from: 
   return { from: p.start + idx[0], to: p.start + idx[idx.length - 1] + 1 };
 };
 
+/** The horizontal soft edge of a scrolling line: alpha ramps over `left` px (house 250 at 1080p) and `right` px (default 0). */
+export type EdgeMask = { left?: number; right?: number };
+
+/** The CSS mask of a Scroll viewport: the vertical `edge` fade and the horizontal `edgeMask`, intersected when both are given. */
+export const scrollMask = (height: number, edge = 0, edgeMask?: EdgeMask | boolean, u = 1): React.CSSProperties => {
+  const v = edge > 0 ? `linear-gradient(to bottom, transparent 0px, black ${edge}px, black ${height - edge}px, transparent ${height}px)` : undefined;
+  const em = edgeMask === true ? {} : edgeMask || null;
+  const h = em ? (wipeEdge({ left: em.left ?? 250 * u, right: em.right ?? 0 }).maskImage as string) : undefined;
+  if (v && h) return { maskImage: `${v}, ${h}`, WebkitMaskImage: `${v}, ${h}`, maskComposite: 'intersect', WebkitMaskComposite: 'source-in' };
+  const one = v ?? h;
+  return one ? { maskImage: one, WebkitMaskImage: one } : {};
+};
+
 /**
  * A scrolling list: `children` laid out in a column (frame px), moved by the flick. `edge` fades the
  * content out at the top and bottom of the viewport over `edge` px (a static mask: a viewport, not a
- * glow), so rows enter and leave soft without moving any gradient.
+ * glow), so rows enter and leave soft without moving any gradient. `edgeMask` adds the soft left (and
+ * right) edge for lines that slide through the frame (fx/Wipe edgeMask: house 250 px at 1080p on the
+ * left), so a line comes out of nothing instead of being cut by the frame; both masks intersect.
  */
-export const Scroll: React.FC<FlickProps & { frame: number; x?: number; y?: number; width: number; height: number; edge?: number; children: React.ReactNode; style?: React.CSSProperties }> = ({
-  frame,
-  x = 0,
-  y = 0,
-  width,
-  height,
-  edge = 0,
-  children,
-  style,
-  ...p
-}) => {
+export const Scroll: React.FC<
+  FlickProps & { frame: number; x?: number; y?: number; width: number; height: number; edge?: number; edgeMask?: EdgeMask | boolean; children: React.ReactNode; style?: React.CSSProperties }
+> = ({ frame, x = 0, y = 0, width, height, edge = 0, edgeMask, children, style, ...p }) => {
   const film = useFilm();
   const s = flickState(frame, p, film);
-  const mask = edge > 0 ? `linear-gradient(to bottom, transparent 0px, black ${edge}px, black ${height - edge}px, transparent ${height}px)` : undefined;
+  const mask = scrollMask(height, edge, edgeMask, uOf(film));
   return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width, height, overflow: 'hidden', transform: `translate(${x}px, ${y}px)`, maskImage: mask, WebkitMaskImage: mask, ...style }}>
+    <div style={{ position: 'absolute', left: 0, top: 0, width, height, overflow: 'hidden', transform: `translate(${x}px, ${y}px)`, ...mask, ...style }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width, transform: `translate3d(0px, ${(-s.y).toFixed(3)}px, 0)`, willChange: 'transform' }}>{children}</div>
     </div>
   );
