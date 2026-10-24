@@ -110,6 +110,7 @@ const houseTarget = () => {
   const G = literal(look, 'GRAMMAR') ?? {};
   const DUR = literal(anim, 'DUR') ?? {};
   const STAG = literal(anim, 'STAG') ?? {};
+  const P = literal(look, 'PICTURE') ?? {};
   const iqr = (row, lo = 1, hi = 3) => (Array.isArray(row) ? [row[lo], row[hi]] : null);
   return {
     source: src ? 'house (lib/look.ts GRAMMAR, lib/anim.ts DUR and STAG)' : 'house (built-in)',
@@ -132,7 +133,20 @@ const houseTarget = () => {
       mixTvdMax: 0.35,
     },
     cutSync: { within1f: G.cut?.within1f ?? 0.5, within100ms: G.cut?.within100ms ?? 0.8, width100: 0.4 },
-    colour: { hueGroups: 1, accentMax: 0.08, groundL: [[0.93, 0.99], [0.06, 0.23]], inkL: [0.15, 0.25] },
+    // grounds: paper, the mid stone, the mid slate or a deep field, ink (lib/look.ts RECIPE); ink on a light or mid-light ground
+    colour: { hueGroups: 1, accentMax: 0.08, groundL: [[0.93, 0.99], [0.7, 0.8], [0.3, 0.42], [0.06, 0.23]], inkL: [0.12, 0.25] },
+    // the picture: the floor (look-audit fails under it) scores 70, the house target 100 (lib/look.ts PICTURE)
+    picture: {
+      floor: { flatMax: P.flatMax ?? 0.75, flatShare: P.flatFrame?.maxShare ?? 0.88, edgesMin: P.edgesMin ?? 0.018, saturatedMin: P.saturatedMin ?? 0.022, bleedShare: P.bleed?.share ?? 0.5, falloffShare: 0 },
+      target: {
+        flatMax: P.target?.flatMax ?? 0.55,
+        flatShare: P.target?.flatShare ?? 0.4,
+        edgesMin: P.target?.edgesMin ?? 0.03,
+        saturatedMin: P.target?.saturatedMin ?? 0.06,
+        bleedShare: P.target?.bleedShare ?? 1,
+        falloffShare: P.target?.falloffShare ?? 0.35,
+      },
+    },
     overlap: { secondaryBefore90: 0.7, foregroundLead60: [10, 30], foregroundShare: 0.5, enterBeforeLeave: [0, 1], handoverShare: 0.7 },
   };
 };
@@ -376,6 +390,33 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
     dim('colour', { hueGroups: M.hue_groups, accent: M.accent_p95, groundL: M.ground_L, inkL: M.ink_L }, Math.min(...parts), 'measured');
   } else dim('colour', null, null, 'unmeasured', 'needs look-audit.py');
 
+  // picture: what the frames hold (look-audit.py picture floor): flat ground, structure, depth of field, colour mass, bleed, no skeleton bars
+  if (M && M.picture) {
+    const Pm = M.picture;
+    const Fl = T.picture?.floor ?? {};
+    const Tg = T.picture?.target ?? {};
+    // 100 at the target, 70 at the floor, linear between; under the floor it falls to 0 at twice the floor-target gap
+    const tier = (v, floor, target) => {
+      if (v === null || v === undefined || Number.isNaN(v)) return null;
+      const up = target >= floor; // larger is better
+      if (up ? v >= target : v <= target) return 100;
+      if (up ? v >= floor : v <= floor) return Math.round(70 + (30 * (v - floor)) / (target - floor || 1e-9));
+      const gap = Math.abs(target - floor) || Math.abs(floor) || 1;
+      return Math.max(0, Math.round(70 - (70 * Math.abs(v - floor)) / (2 * gap)));
+    };
+    const bleed = Pm.bleed_share ?? (Pm.bleed_acts?.length ? Pm.bleed_acts.filter(Boolean).length / Pm.bleed_acts.length : 1);
+    const parts = [
+      tier(Pm.flat, Fl.flatMax ?? 0.75, Tg.flatMax ?? 0.55),
+      tier(Pm.flat_frames_over, Fl.flatShare ?? 0.88, Tg.flatShare ?? 0.4),
+      tier(Pm.edges, Fl.edgesMin ?? 0.018, Tg.edgesMin ?? 0.03),
+      tier(Pm.saturated, Fl.saturatedMin ?? 0.022, Tg.saturatedMin ?? 0.06),
+      tier(bleed, Fl.bleedShare ?? 0.5, Tg.bleedShare ?? 1),
+      tier(Pm.falloff, Fl.falloffShare ?? 0, Tg.falloffShare ?? 0.35),
+      (Pm.skeleton_samples ?? 0) >= 2 ? 0 : 100,
+    ].filter((x) => x !== null);
+    dim('picture', { flat: Pm.flat, edges: Pm.edges, falloff: Pm.falloff, saturated: Pm.saturated, bleed: Math.round(bleed * 100) / 100, skeleton: Pm.skeleton_samples ?? 0 }, Math.min(...parts), 'measured');
+  } else dim('picture', null, null, 'unmeasured', 'needs look-audit.py (the picture floor)');
+
   // type
   if (layout && Array.isArray(layout.warnings)) {
     const n = layout.warnings.filter((w) => w.kind === 'type-size').length;
@@ -472,6 +513,50 @@ const selfTest = () => {
   check(oneTake.dims.find((d) => d.name === 'cut-sync').score === null, 'a one-take film is not scored on cut sync');
   const custom = merge(T, { roleMix: { shares: { arrive: 0, reposition: 1, leave: 0, linear: 0, spring: 0 } } });
   check(score({ cues: cuesA, layout: { tweens: tw2 }, target: custom, format: 'launch' }).dims.find((d) => d.name === 'role-mix').score === 100, '--target scores closeness to another grammar (a clip that only repositions)');
+  // a bad and a good input for every dimension that reads a measure (each scores 100 on the good one, under 70 on the bad one)
+  const dimOf = (r, name) => r.dims.find((d) => d.name === name);
+  const withM = (m) => score({ look: { floor: { pass: true }, measures: { ...lookA.measures, ...m } }, target: T, format: 'launch' });
+  const pair = (name, good, badIn, what) => {
+    const g = dimOf(good, name)?.score;
+    const b = dimOf(badIn, name)?.score;
+    check(g === 100 && b !== null && b !== undefined && b < 70, what, `good ${g}, bad ${b}`);
+  };
+  const tws = (role, token, len, n) => Array.from({ length: n }, (_, i) => ({ from: i * 50, to: i * 50 + len, token, family: role }));
+  pair(
+    'durations',
+    score({ cues: cuesA, layout: { tweens: [...tws('arrive', 'snapOut', 32, 4), ...tws('leave', 'buildIn', 22, 4)] }, target: T, format: 'launch' }),
+    score({ cues: cuesA, layout: { tweens: [...tws('arrive', 'snapOut', 120, 4), ...tws('leave', 'buildIn', 90, 4)] }, target: T, format: 'launch' }),
+    'durations: house-length arrivals and exits score 100; 2 s arrivals and 1.5 s exits do not',
+  );
+  pair('density', withM({ starts_per_s: 2.2, concurrency: 1.8, idle_share: 0.05 }), withM({ starts_per_s: 0.4, concurrency: 1, idle_share: 0.6 }), 'density: 2.2 starts a second scores 100; a sparse film (0.4 a second, idle 60 %) does not');
+  pair('holds', withM({ living_holds: 0.97 }), withM({ living_holds: 0.55 }), 'holds: 97 % living holds score 100; 55 % do not');
+  pair(
+    'seams',
+    score({ cues: { ...cuesA, declared: { seams: [{ at: 120, kind: 'velocity' }, { at: 260, kind: 'morph' }, { at: 400, kind: 'whip' }] } }, look: { floor: { pass: true }, measures: { carried_share: 0.67, seams: 3 } }, target: T, format: 'launch' }),
+    score({ cues: { ...cuesA, declared: { seams: [120, 200, 260, 330, 400].map((at) => ({ at, kind: 'hard' })) } }, look: { floor: { pass: true }, measures: { carried_share: 0, seams: 5 } }, target: T, format: 'launch' }),
+    'seams: carried, varied seams score 100; five plain hard cuts carrying nothing do not',
+  );
+  pair('cut-sync', withM({ cut_sync: { within_1f: 0.75, within_100ms: 1 } }), withM({ cut_sync: { within_1f: 0.1, within_100ms: 0.2 } }), 'cut-sync: cuts on the sound score 100; cuts off it do not');
+  pair(
+    'velocity-seams',
+    score({ cues: cuesA, forensics: { checks: { grammar: { carried: [{ ok: true }, { ok: true }] } } }, target: T, format: 'launch' }),
+    score({ cues: cuesA, forensics: { checks: { grammar: { carried: [{ ok: true }, { ok: false }] } } }, target: T, format: 'launch' }),
+    'velocity-seams: every declared velocity seam carrying speed scores 100; one that does not fails',
+  );
+  pair('colour', withM({ hue_groups: 1, accent_p95: 0.05, ground_L: 0.95, ink_L: 0.22 }), withM({ hue_groups: 3, accent_p95: 0.2 }), 'colour: one hue on paper scores 100; three hue groups and a 20 % accent do not');
+  check(dimOf(withM({ hue_groups: 1, accent_p95: 0.05, ground_L: 0.35, ink_L: 0.2 }), 'colour').score === 100 && dimOf(withM({ hue_groups: 1, accent_p95: 0.05, ground_L: 0.74, ink_L: 0.14 }), 'colour').score === 100,
+    'colour: the mid slate and the mid stone are house grounds (100)');
+  pair('type', score({ layout: { warnings: [] }, look: lookA, target: T, format: 'launch' }), score({ layout: { warnings: Array.from({ length: 4 }, () => ({ kind: 'type-size' })) }, look: lookA, target: T, format: 'launch' }), 'type: no role warnings score 100; four do not');
+  pair(
+    'picture',
+    withM({ picture: { flat: 0.4, flat_frames_over: 0.2, edges: 0.045, falloff: 0.8, saturated: 0.14, bleed_acts: [true, true], skeleton_samples: 0 } }),
+    withM({ picture: { flat: 0.87, flat_frames_over: 1, edges: 0.01, falloff: 0.3, saturated: 0.003, bleed_acts: [false, false], skeleton_samples: 12 } }),
+    'picture: a rich frame scores 100; a flat frame of skeleton cards does not',
+  );
+  {
+    const atFloor = dimOf(withM({ picture: { flat: 0.75, flat_frames_over: 0.88, edges: 0.018, falloff: 0, saturated: 0.022, bleed_share: 0.5, skeleton_samples: 0 } }), 'picture').score;
+    check(atFloor >= 70 && atFloor <= 72, 'picture: a frame exactly at the floor scores 70 (the target scores 100)', `${atFloor}`);
+  }
   console.log(`grammar-score self-test: ${bad ? `${bad} failed` : 'all pass'}`);
   return bad ? 1 : 0;
 };
