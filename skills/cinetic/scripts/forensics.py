@@ -1690,8 +1690,10 @@ def self_test():
     n = 90
     rep = run('frozen', [A] * n, cues(n))
     check(bool(flags(rep, 'hold-drift', 'fail')), 'a frozen 3 s hold fails hold-drift', f"{len(flags(rep, 'hold-drift', 'fail'))} fail")
+    check(bool(flags(rep, 'static-share', 'warn')), 'a frozen film warns static-share', f"static share {gram(rep).get('holds', {}).get('static_share')}")
     rep = run('creep', [warp(A, k=1 + 0.03 * i / fps) for i in range(n)], cues(n))
     check(not flags(rep, 'hold-drift', 'fail'), 'a 3 %/s creep keeps the hold alive', f"live share {gram(rep).get('holds', {}).get('live_share')}")
+    check(not flags(rep, 'static-share'), 'a creeping film does not warn static-share', f"static share {gram(rep).get('holds', {}).get('static_share')}")
     rep = run('drift', [warp(A, dx=12 * i / fps / 4) for i in range(n)], cues(n))
     check(not flags(rep, 'hold-drift', 'fail'), 'a 12 px/s drift (at 1080p) keeps the hold alive', f"live share {gram(rep).get('holds', {}).get('live_share')}")
     rep = run('frozen11', [A] * n, cues(n, look=False))
@@ -1712,11 +1714,27 @@ def self_test():
     rep = run('carried', push, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry')]))
     car = gram(rep).get('carried', [])
     check(bool(car) and car[0]['ok'], 'a velocity seam that carries speed and direction passes', json.dumps(car[:1]))
+    steps_b = [0.0]
+    for i in range(1, 45):
+        steps_b.append(steps_b[-1] + 24.0 * 0.86 ** (44 - i))  # the step grows x1.16 a frame into the cut (a house build)
+    build = [warp(A, dx=-x / 4) for x in steps_b] + [warp(B, dx=-sum(16.0 * 0.85 ** j for j in range(i)) / 4) for i in range(45)]
+    rep = run('build', build, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry')]))
+    check(not flags(rep, 'hold-into-exit'), 'a hold that builds x1.16 a frame into its cut passes hold-into-exit', str(gram(rep).get('hold_into_exit')))
+    level = [warp(A, dx=-3.0 * i) for i in range(45)] + [warp(B, dx=-3.0 * (45 + i)) for i in range(45)]
+    rep = run('level', level, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry')]))
+    check(bool(flags(rep, 'hold-into-exit', 'warn')), 'a move that runs level into its cut warns hold-into-exit', str(gram(rep).get('hold_into_exit')))
     turn = push[:45] + [warp(B, dx=sum(30 * 0.7 * 0.85 ** j for j in range(i)) / 4) for i in range(45)]
     rep = run('turned', turn, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry')]))
     check(bool(flags(rep, 'carried-cut', 'fail')), 'a velocity seam whose next shot turns around fails', json.dumps(gram(rep).get('carried', [])[:1]))
     rep = run('stillcut', [A] * 45 + [B] * 45, cues(90, seams=[dict(at=45, kind='hard', id='cut')]))
     check(bool(flags(rep, 'still-cut', 'warn')), 'a cut from a still frame to a still frame warns')
+    # end-card: with END declared, a lock that arrives after 1.5 s of nothing warns; one that assembles into the lock does not
+    lockup = [warp(A, dx=-2.0 * i) for i in range(45)] + [warp(A, dx=-88.0)] * 75
+    rep = run('deadend', lockup, cues(120, end={'from': 90, 'to': 120}))
+    check(bool(flags(rep, 'end-card', 'warn')), 'an end lock with nothing moving in the 1.5 s before it warns end-card', json.dumps(gram(rep).get('end_card')))
+    alive = [warp(A, dx=-2.0 * i, k=1 + 0.002 * i) for i in range(90)] + [warp(A, dx=-178.0, k=1.178)] * 30
+    rep = run('liveend', alive, cues(120, end={'from': 90, 'to': 120}))
+    check(not flags(rep, 'end-card'), 'an end lock that settles out of motion does not', json.dumps(gram(rep).get('end_card')))
     steps = [warp(A, dx=6 * (i // 3)) for i in range(n)]
     rep = run('stepped', steps, cues(n, stepped=[{'from': 0, 'to': n, 'fps': 10, 'id': 'steps'}]))
     check(not flags(rep, 'stall', 'fail') and not flags(rep, 'spike', 'fail'), 'held frames inside a declared stepped range are craft', f"{len(flags(rep, 'declared'))} declared note(s)")
