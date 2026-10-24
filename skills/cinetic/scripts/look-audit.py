@@ -28,8 +28,8 @@ Look checks (warn unless marked fail):
                   (outside the end lock)
   clean-finish    grain on flat ground over 0.6 L* (full-resolution samples) or a vignette over 2 %
                   unless LOOK.texture is not 'clean'
-  type-size       (--layout) cap height off its role's band (caption 2.3-4 %, statement 5-9 %, hero
-                  11-23 %, giant 40-90 % of the frame height), more than 2 non-UI sizes at once, a
+  type-size       (--layout) cap height off its role's band (caption 2.3-4 %, statement 5-14 %, hero
+                  14-26 %, giant 26-90 % of the frame height: line 120 px is 8 %, display 200 13 %), more than 2 non-UI sizes at once, a
                   statement wider than 61 % of the frame (a payoff 84 %)
   luminance-flip  the stage flips light/dark by a hard cut with nothing moving across it, or flips
                   twice inside one bar
@@ -61,6 +61,25 @@ without one, all but the last 2 s):
   floor-scale     the scale of the content contrasts (x1.5 in element height, or x2 in coverage)
                   between consecutive shots on >= 30 % of cuts
   A one-take film (LOOK.oneTake, or no cut) is judged on 2 s segments and has no seam or cut items.
+
+The picture floor (fail; beside the motion floor, which is blind to content: lib/look.ts PICTURE). Body
+frames for flat, edges and bleed; every frame for colour and bars:
+  picture-flat     flat ground (16 px blocks at 480 wide with std < 1.5 levels): mean <= 0.75 and no
+                   more than 88 % of frames over 60 % flat
+  picture-edges    structure: Canny edge pixels >= 1.8 % of the frame on average
+  picture-saturated colour mass: pixels at OKLCH C >= 0.06 >= 2.2 % of the frame on average
+  picture-bleed    the subject (the largest region of structure) touches two frame edges and spans >= 60 %
+                   of the frame one way in at least half of the acts (no cues: 8 s parts)
+  skeleton-bars    more than 3 glyphless bars in focus (solid, uniform, grey, text-line high, 3-60x as long,
+                   sharp-edged) on 2 or more samples: placeholder lines, not content
+  picture-target   (warn) the floor is cleared but the house target is not: flat <= 0.55 and <= 40 % of frames
+                   over 60 % flat, edges >= 3 %, saturated >= 6 %, bleed in every act, and a crisp plane with a
+                   defocused one (cell edge sharpness, size-independent) in >= 35 % of frames
+Framing and type (warn):
+  framing-centred  the subject sits dead centre (within 8 %) and inside the frame in over half the samples
+  framing-hold     one framing held over 0.8 s with no depth plane moving (camera, second plane and layers still)
+  small-text       (--layout) a string under 36 px at 1080p held over 6 f@60 (UI strings included)
+--picture-only runs the picture floor alone (no motion probe; --every N reads every Nth frame).
 
 Trajectory (--trajectory, the one-hue gate): the colour of a region over time keeps the accent's hue
 (within --hue-tol degrees wherever C >= 0.03) and, with --target (JSON {"L": [...], "C": [...]} per
@@ -190,6 +209,279 @@ def ground_of(rgb8):
 
 
 # ------------------------------------------------------------------------------------------
+# the picture: what a frame holds (lib/look.ts PICTURE)
+# ------------------------------------------------------------------------------------------
+PIC = dict(
+    # two levels: the floor (fail) and the house target (a picture-target warning): where a rich frame sits
+    flat_max=0.75,  # mean share of flat 16 px blocks (at 480 wide)
+    flat_over=0.60, flat_share=0.88,  # and no more than 88 % of frames over 60 % flat
+    edges_min=0.018,  # mean edge-pixel share (Canny 60/140 at 480 wide)
+    saturated_min=0.022,  # mean share of saturated pixels (OKLCH C >= 0.06)
+    sat_c=0.06,
+    bleed_share=0.5,  # acts in which the subject bleeds off two edges at scale (at least half; the target: every act)
+    bleed_extent=0.60,  # a subject touching two frame edges, visible over >= 60 % of the frame's width or height
+    skeleton_max=3,  # glyphless bars in focus in one frame
+    skeleton_samples=2,  # samples over the limit before it fails
+    crisp=0.6, soft=0.4, soft_floor=0.05, plane_ratio=1.5,  # cell edge sharpness (p99 gradient / contrast range): a crisp plane, a defocused form, their ratio
+    target=dict(flat_max=0.55, flat_share=0.40, edges_min=0.03, falloff_share=0.35, saturated_min=0.06, bleed_share=1.0),
+    centred=0.08,  # a subject whose centre sits within 8 % of the frame's centre (both ways) and touches no edge
+    centred_share=0.5,  # warn when more than half of the framed samples are centred
+    hold_s=0.8,  # a framing held this long with no depth plane moving
+    text_min=36, text_hold60=6,  # px at 1080p, frames at 60 fps
+)
+PSEUDO_ACT_S = 8.0  # without cues, the bleed check judges 8 s segments as acts
+
+
+def flat_share(gray):
+    """Share of 16 px blocks (at the analysis size) with almost no variation (std < 1.5 levels)."""
+    h, w = gray.shape
+    hb, wb = h // 16, w // 16
+    if hb < 1 or wb < 1:
+        return 0.0
+    b = gray[:hb * 16, :wb * 16].astype(np.float32).reshape(hb, 16, wb, 16).swapaxes(1, 2).reshape(hb, wb, 256)
+    return float((b.std(axis=2) < 1.5).mean())
+
+
+def focus_falloff(gray):
+    """Depth of field in one frame: a sharp plane and a soft plane. A 4 x 4 grid; each cell's edge
+    sharpness = the 99th percentile of its gradient over its contrast range (p98 - p2), which does not
+    depend on the size of what is drawn (a crisp edge reads about 1.0 whatever the type size, a defocus
+    of 2 px at 480 wide about 0.4-0.6, 6 px about 0.16-0.22, a smooth light ramp about 0.02). The frame
+    has falloff when one cell is crisp (>= 0.6, range >= 24 levels) and another holds a defocused form
+    (0.05-0.4, range >= 16): a smooth gradient or a plain plate is neither.
+    Returns (falloff, raw): raw is a plain energy-ratio test (max/min Laplacian energy over contrast > 6),
+    kept for comparison."""
+    g = gray.astype(np.float32)
+    h, w = g.shape
+    ch, cw = h // 4, w // 4
+    g = g[:ch * 4, :cw * 4]
+    mag = np.hypot(cv2.Sobel(g, cv2.CV_32F, 1, 0, ksize=3), cv2.Sobel(g, cv2.CV_32F, 0, 1, ksize=3)) / 4.0
+    lap = cv2.Laplacian(g, cv2.CV_32F)
+    cells = lambda a: a.reshape(4, ch, 4, cw).swapaxes(1, 2).reshape(16, ch * cw)  # noqa: E731
+    G, M, Lp = cells(g), cells(mag), cells(lap)
+    lo_, hi_ = np.percentile(G, (2, 98), axis=1)
+    rng = hi_ - lo_
+    s = np.percentile(M, 99, axis=1) / np.maximum(rng, 1e-6)
+    hi_s = s[rng >= 24]
+    lo_s = s[(rng >= 16) & (s >= PIC['soft_floor'])]
+    top = float(hi_s.max()) if hi_s.size else 0.0  # the crispest cell
+    low = float(lo_s.min()) if lo_s.size else 9.0  # the softest cell that still holds a form
+    sd = G.std(axis=1)
+    keep = sd > 6
+    ratios = (Lp.var(axis=1) / (G.var(axis=1) + 1e-6))[keep]
+    raw = len(ratios) >= 3 and float(ratios.max() / (ratios.min() + 1e-9)) > 6
+    return falloff_of(top, low), bool(raw), top, low
+
+
+def falloff_of(top, low):
+    """A sharp plane and a soft plane: the crispest cell at or above PIC crisp, the softest at or below PIC soft."""
+    return bool(top >= PIC['crisp'] and low <= PIC['soft'] and top >= PIC['plane_ratio'] * low)
+
+
+def subject_of(rgb, gray, nong, edges=None):
+    """The frame's main subject: the largest region of structure (colour off the ground, or edges, closed
+    over about 3 % of the width) that holds real edges. Returns its edge contacts, its visible extent,
+    its centre and whether it bleeds (two edges, >= 60 % of the frame one way) or sits centred."""
+    h, w = gray.shape
+    e = edges if edges is not None else cv2.Canny(rgb, 60, 140) > 0
+    k = max(3, int(round(0.03 * w)) | 1)
+    mask = (nong | (cv2.dilate(e.astype(np.uint8), np.ones((3, 3), np.uint8)) > 0)).astype(np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((k, k), np.uint8))
+    n, lab, st, cen = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    best = None
+    for i in range(1, n):
+        area = int(st[i, cv2.CC_STAT_AREA])
+        if area < 0.04 * h * w:
+            continue
+        x, y, bw, bh = (int(st[i, cv2.CC_STAT_LEFT]), int(st[i, cv2.CC_STAT_TOP]), int(st[i, cv2.CC_STAT_WIDTH]), int(st[i, cv2.CC_STAT_HEIGHT]))
+        comp = lab[y:y + bh, x:x + bw] == i
+        ed = float(e[y:y + bh, x:x + bw][comp].mean())
+        if ed < 0.003:
+            continue  # a smooth field (a gradient, a plate): not a subject
+        if best is None or area > best['area']:
+            touch = int(x <= 1) + int(y <= 1) + int(x + bw >= w - 1) + int(y + bh >= h - 1)
+            best = dict(area=area, touch=touch, extent=max(bw / w, bh / h), cx=float(cen[i][0] / w), cy=float(cen[i][1] / h), box=[x, y, bw, bh])
+    if best is None:
+        return dict(found=False, bleed=False, centred=False)
+    best['found'] = True
+    best['share'] = round(best.pop('area') / (h * w), 4)
+    best['bleed'] = bool(best['touch'] >= 2 and best['extent'] >= PIC['bleed_extent'])
+    best['centred'] = bool(best['touch'] == 0 and abs(best['cx'] - 0.5) < PIC['centred'] and abs(best['cy'] - 0.5) < PIC['centred'])
+    return best
+
+
+def glyphless_bars(gray, C):
+    """Placeholder bars in focus: solid, uniform, grey rounded bars the height of a text line (0.4-3.5 % of
+    the frame height) and 3-60x as long, sharp at their edges. Real words break into letters, real charts
+    and meters are coloured; a skeleton line is none of those."""
+    h, w = gray.shape
+    g = gray.astype(np.float32)
+    bg = cv2.medianBlur(gray, 31).astype(np.float32)
+    diff = g - bg
+    fg = (np.abs(diff) > 10).astype(np.uint8)
+    n, lab, st, _ = cv2.connectedComponentsWithStats(fg, connectivity=8)
+    gy = np.abs(cv2.Sobel(g, cv2.CV_32F, 0, 1, ksize=3)) / 4.0
+    out = []
+    for i in range(1, n):
+        x, y, bw, bh, area = (int(st[i, k]) for k in (cv2.CC_STAT_LEFT, cv2.CC_STAT_TOP, cv2.CC_STAT_WIDTH, cv2.CC_STAT_HEIGHT, cv2.CC_STAT_AREA))
+        if bh < max(2, 0.004 * h) or bh > 0.035 * h or bw < 3 * bh or bw > 0.6 * w or area < 0.82 * bw * bh:
+            continue
+        comp = lab[y:y + bh, x:x + bw] == i
+        vals = g[y:y + bh, x:x + bw][comp]
+        if vals.std() > 5 or float(C[y:y + bh, x:x + bw][comp].mean()) > 0.05:
+            continue
+        contrast = float(np.abs(diff[y:y + bh, x:x + bw][comp]).mean())
+        edge = float(gy[max(0, y - 1):min(h, y + bh + 1), x:x + bw].max())
+        if contrast > 0 and edge >= 0.35 * contrast:
+            out.append([x, y, bw, bh])
+    return out
+
+
+def pic_frame(P, f, rgb, gray):
+    """The per-frame picture reads (every frame): flat share, edge share, focus falloff."""
+    e = cv2.Canny(rgb, 60, 140) > 0
+    fo, raw, top, low = focus_falloff(gray)
+    P['f'].append(f)
+    P['fall_top'].append(round(top, 3))
+    P['fall_low'].append(round(low, 3))
+    P['flat'].append(flat_share(gray))
+    P['edges'].append(float(e.mean()))
+    P['falloff'].append(fo)
+    P['falloff_raw'].append(raw)
+    return e
+
+
+def pic_sample(P, f, rgb, gray, C, nong, edges):
+    """The sampled picture reads (twice a second): colour mass, the subject's framing, placeholder bars."""
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+    sub = subject_of(rgb, gray, nong, edges)
+    bars = glyphless_bars(gray, C)
+    P['samples'].append(dict(f=f, sat=round(float((C >= PIC['sat_c']).mean()), 4),
+                             sat_hsv=round(float(((hsv[..., 1] > 89) & (hsv[..., 2] > 64)).mean()), 4),
+                             subject={k: (round(v, 3) if isinstance(v, float) else v) for k, v in sub.items()}, bars=len(bars), bar_boxes=bars[:12]))
+
+
+def new_pic():
+    return dict(f=[], flat=[], edges=[], falloff=[], falloff_raw=[], fall_top=[], fall_low=[], samples=[])
+
+
+def nonground(rgb):
+    gcol, _ = ground_of(rgb)
+    return gcol, np.abs(rgb.astype(np.int16) - gcol.astype(np.int16)[None, None, :]).max(axis=2) > 16
+
+
+def measure_picture(args, info, F):
+    """The picture reads alone (no motion probe): a fast pass for --picture-only."""
+    fps = info['fps']
+    W = min(args.width, info['w']) // 2 * 2
+    H = int(round(info['h'] * W / info['w'])) // 2 * 2
+    cstep = max(1, int(round(fps / 2)))
+    P = new_pic()
+    every = max(1, args.every)
+    for f, rgb in F.decode(args.video, info, 0, None, size=(W, H)):
+        if f % every:
+            continue
+        gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+        e = pic_frame(P, f, rgb, gray)
+        if f % cstep == 0:
+            L, A, B = oklab(rgb)
+            _, nong = nonground(rgb)
+            pic_sample(P, f, rgb, gray, np.hypot(A, B), nong, e)
+    return P, (W, H)
+
+
+def picture_floor(P, fps, n, acts, end_rng=None):
+    """The picture floor from the reads: flat ground, edges, saturated, bleed, skeleton bars (fail), the
+    house target on the same reads plus focus falloff (warn), and the framing read (centred subjects).
+    Frames inside the end lock are left out of flat, edges, falloff and bleed (an end card may sit on a
+    plain ground); colour mass and skeleton bars count every frame."""
+    body = [i for i, f in enumerate(P['f']) if not (end_rng and end_rng[0] <= f < end_rng[1])] or list(range(len(P['f'])))
+    flat = [P['flat'][i] for i in body]
+    edges = [P['edges'][i] for i in body]
+    fall = [falloff_of(P['fall_top'][i], P['fall_low'][i]) for i in body] if P.get('fall_top') else [P['falloff'][i] for i in body]
+    smp = [s for s in P['samples'] if not (end_rng and end_rng[0] <= s['f'] < end_rng[1])] or P['samples']
+    flat_mean = float(np.mean(flat)) if flat else 1.0
+    flat_over = float(np.mean([x > PIC['flat_over'] for x in flat])) if flat else 1.0
+    edges_mean = float(np.mean(edges)) if edges else 0.0
+    fall_share = float(np.mean(fall)) if fall else 0.0
+    sat_mean = float(np.mean([s['sat'] for s in P['samples']])) if P['samples'] else 0.0
+    rows = acts if acts else [(f'part{i + 1}', (a, min(n, a + int(PSEUDO_ACT_S * fps)))) for i, a in enumerate(range(0, max(1, n), int(PSEUDO_ACT_S * fps)))]
+    bleed_rows = []
+    for name, (a, b) in rows:
+        inside = [s for s in smp if a <= s['f'] < b]
+        if not inside:
+            continue
+        hit = next((s['f'] for s in inside if s['subject'].get('bleed')), None)
+        bleed_rows.append(dict(act=name, frames=[a, b], bleed_at=hit, ok=hit is not None))
+    bleed_share = sum(1 for r in bleed_rows if r['ok']) / max(1, len(bleed_rows)) if bleed_rows else 1.0
+    over = [s['f'] for s in P['samples'] if s['bars'] > PIC['skeleton_max']]
+    framed = [s for s in smp if s['subject'].get('found')]
+    centred = [s['f'] for s in framed if s['subject'].get('centred')]
+    T = PIC['target']
+    pf = dict(
+        flat=dict(mean=round(flat_mean, 3), frames_over=round(flat_over, 3), need=[PIC['flat_max'], PIC['flat_share']], target=[T['flat_max'], T['flat_share']],
+                  ok=flat_mean <= PIC['flat_max'] and flat_over <= PIC['flat_share'], target_ok=flat_mean <= T['flat_max'] and flat_over <= T['flat_share']),
+        edges=dict(mean=round(edges_mean, 4), need=PIC['edges_min'], target=T['edges_min'], ok=edges_mean >= PIC['edges_min'], target_ok=edges_mean >= T['edges_min']),
+        saturated=dict(mean=round(sat_mean, 4), hsv=round(float(np.mean([s['sat_hsv'] for s in P['samples']])) if P['samples'] else 0.0, 4), need=PIC['saturated_min'],
+                       target=T['saturated_min'], ok=sat_mean >= PIC['saturated_min'], target_ok=sat_mean >= T['saturated_min']),
+        bleed=dict(acts=bleed_rows, share=round(bleed_share, 3), need=PIC['bleed_share'], target=T['bleed_share'], ok=bleed_share >= PIC['bleed_share'] - 1e-9,
+                   target_ok=bleed_share >= T['bleed_share'] - 1e-9),
+        skeleton=dict(frames=over[:20], samples=len(over), max_bars=max([s['bars'] for s in P['samples']] or [0]), need=PIC['skeleton_max'], ok=len(over) < PIC['skeleton_samples'],
+                      target_ok=len(over) < PIC['skeleton_samples']),
+        # depth of field is a target only: the motion floor (floor-depth) already asks for two planes at different rates
+        falloff=dict(share=round(fall_share, 3), raw=round(float(np.mean([P['falloff_raw'][i] for i in body])) if body else 0.0, 3), target=T['falloff_share'], ok=True,
+                     target_ok=fall_share >= T['falloff_share']),
+    )
+    pf['ok'] = all(v['ok'] for v in pf.values())
+    misses = [k for k, v in pf.items() if isinstance(v, dict) and 'target_ok' in v and not v['target_ok']]
+    pf['target'] = dict(ok=not misses, misses=misses)
+    framing = dict(samples=len(framed), centred=len(centred), centred_share=round(len(centred) / max(1, len(framed)), 3), centred_frames=centred[:20],
+                   bleed_share=round(sum(1 for s in framed if s['subject'].get('bleed')) / max(1, len(framed)), 3))
+    return pf, framing
+
+
+def picture_line(video, pf, framing, ok):
+    """One summary line of the picture floor (and the target's misses)."""
+    tgt = 'met' if pf['target']['ok'] else 'missed: ' + ', '.join(pf['target']['misses'])
+    return ((f'look-audit picture: {video}  ' if video else 'picture ') + f"{'pass' if ok else 'FAIL'}: flat {pf['flat']['mean']} "
+            f"({pf['flat']['frames_over'] * 100:.0f} % of frames over 60 %), edges {pf['edges']['mean'] * 100:.1f} %, falloff {pf['falloff']['share']}, "
+            f"saturated {pf['saturated']['mean'] * 100:.1f} %, bleed {pf['bleed']['share'] * 100:.0f} % of acts, glyphless bars max {pf['skeleton']['max_bars']}, "
+            f"centred {framing['centred_share']}; target {tgt}")
+
+
+def picture_flags(pf, framing, add, fps):
+    T = PIC['target']
+    missing = ', '.join(r['act'] for r in pf['bleed']['acts'] if not r['ok'])
+    msgs = {
+        'flat': f"{pf['flat']['mean'] * 100:.0f} % of the frame is flat ground on average (floor {PIC['flat_max'] * 100:.0f} %), {pf['flat']['frames_over'] * 100:.0f} % of frames over 60 % flat "
+                f"(floor {PIC['flat_share'] * 100:.0f} %): calm copy sits on a rich picture (product, imagery, depth, light)",
+        'edges': f"edge pixels {pf['edges']['mean'] * 100:.1f} % of the frame (floor {PIC['edges_min'] * 100:.1f} %): the frame holds too little structure (real UI, numbers, imagery, type at film size)",
+        'saturated': f"saturated pixels {pf['saturated']['mean'] * 100:.1f} % of the frame (floor {PIC['saturated_min'] * 100:.1f} %): colour mass, not a 1 % accent dot (a deep field ground, real imagery, an accent flood)",
+        'bleed': f"the subject bleeds off two edges at scale in {pf['bleed']['share'] * 100:.0f} % of the acts (floor {PIC['bleed_share'] * 100:.0f} %; missing: {missing}): "
+                 f"frame the hero at 1.2x the frame or more, off-centre, cropped by it",
+        'skeleton': f"{pf['skeleton']['samples']} sample(s) show more than {PIC['skeleton_max']} glyphless bars in focus (max {pf['skeleton']['max_bars']}): placeholder lines are not content; "
+                    f"show real strings, numbers and images (src/kit)",
+    }
+    for key, msg in msgs.items():
+        if not pf[key]['ok']:
+            at = pf['skeleton']['frames'][0] if key == 'skeleton' and pf['skeleton']['frames'] else 0
+            add('skeleton-bars' if key == 'skeleton' else f'picture-{key}', 'fail', at, msg)
+    if pf['ok'] and not pf['target']['ok']:
+        why = {
+            'flat': f"flat ground {pf['flat']['mean'] * 100:.0f} % (target <= {T['flat_max'] * 100:.0f} %, frames over 60 % flat <= {T['flat_share'] * 100:.0f} %)",
+            'edges': f"edges {pf['edges']['mean'] * 100:.1f} % (target >= {T['edges_min'] * 100:.0f} %)",
+            'saturated': f"saturated {pf['saturated']['mean'] * 100:.1f} % (target >= {T['saturated_min'] * 100:.0f} %)",
+            'bleed': f"bleed in {pf['bleed']['share'] * 100:.0f} % of acts (target: every act)",
+            'falloff': f"a sharp and a soft plane in {pf['falloff']['share'] * 100:.0f} % of frames (target >= {T['falloff_share'] * 100:.0f} %)",
+            'skeleton': 'glyphless bars',
+        }
+        add('picture-target', 'warn', 0, 'the picture clears the floor but not the house target: ' + '; '.join(why[k] for k in pf['target']['misses']))
+    if framing['samples'] >= 4 and framing['centred_share'] > PIC['centred_share']:
+        add('framing-centred', 'warn', framing['centred_frames'][0] if framing['centred_frames'] else 0,
+            f"the subject sits dead centre and inside the frame in {framing['centred_share'] * 100:.0f} % of framed samples: put it off-centre at 1.1-1.6x the frame, bleeding off an edge")
+
+
+# ------------------------------------------------------------------------------------------
 # inputs
 # ------------------------------------------------------------------------------------------
 def brand_colours(tokens_path, extra):
@@ -301,6 +593,7 @@ def measure(args, info, F, accent, brand, layout, cues):
                 want_roi.setdefault(f, []).append(cid)
 
     S = dict(luma=[], ground_L=[], sharp=[], roi={cid: {} for cid in rois}, samples=[], tiles_prev=[])
+    S['pic'] = new_pic()
     for f, rgb in F.decode(args.video, info, 0, None, size=(W, H)):
         gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
         probe_m.feed(f, gray)
@@ -311,6 +604,7 @@ def measure(args, info, F, accent, brand, layout, cues):
         lap = cv2.Laplacian(gray.astype(np.float32), cv2.CV_32F)
         tex = F.textured(gray)
         S['sharp'].append(float(lap[tex].var()) if tex.sum() > 200 else None)
+        edges_px = pic_frame(S['pic'], f, rgb, gray)
         for cid in want_roi.get(f, []):
             x, y, w, h = rois[cid]['box']
             patch = gray[max(0, y):y + h, max(0, x):x + w]
@@ -340,6 +634,7 @@ def measure(args, info, F, accent, brand, layout, cues):
             # element scale: the median height of the non-ground blobs
             n_lab, _, st, _ = cv2.connectedComponentsWithStats(nong.astype(np.uint8), connectivity=8)
             hs = [st[i, cv2.CC_STAT_HEIGHT] for i in range(1, n_lab) if st[i, cv2.CC_STAT_AREA] >= 6]
+            pic_sample(S['pic'], f, rgb, gray, C, nong, edges_px)
             S['samples'].append(dict(
                 f=f, groups=groups, banned=round(float(ban.mean()), 4), ground=[int(v) for v in gcol], ground_share=round(gshare, 3),
                 ground_L=round(float(gL[0]), 4), ground_C=round(float(math.hypot(ga[0], gb[0])), 4), nonground=round(float(nong.mean()), 4),
@@ -581,7 +876,13 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
         light=dict(acts=light_rows, ok=all(r['light'] for r in light_rows)),
         scale=dict(share=round(scale_share, 3), need=0.3, ok=one_take or not scale_rows or scale_share >= 0.3, cuts=scale_rows, na=one_take or not scale_rows),
     )
-    floor['pass'] = all(v['ok'] for v in floor.values() if isinstance(v, dict))
+    pf, framing = picture_floor(S['pic'], fps, n, list(acts.items()) if acts else None, end_rng)
+    floor['picture'] = pf
+    if args.no_picture:
+        pf['reported_only'] = True
+    floor['pass'] = all(v['ok'] for k, v in floor.items() if isinstance(v, dict) and not (k == 'picture' and args.no_picture))
+    if not args.no_floor and not args.no_picture:
+        picture_flags(pf, framing, add, fps)
     if not args.no_floor:
         msgs = {
             'moving': f"the camera or the ground moves on {moving_share * 100:.0f} % of the body (floor 90 %): creep, drift or light the ground through every hold",
@@ -673,6 +974,22 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     if lg_runs:
         a, b = max(lg_runs, key=lambda r: r[1] - r[0])
         add('living-ground', 'warn', f'{a}-{b}', f'{len(lg_runs)} stretch(es) where the camera and the ground both stand still (longest {(b - a + 1) / fps:.1f} s): when type locks off, the ground keeps moving')
+    # framing-hold: one framing held with no depth plane moving (the camera still, no second plane, no layer)
+    fh_runs, cur = [], []
+    for f in body:
+        w = states.get(f)
+        held = w is not None and w['cam_pxs'] < F.LIVE_PXS and w['cam_pct'] < F.LIVE_PCT and w.get('plane2_pxs', 0) < F.LIVE_PXS and w['layer_pxs'] < F.LIVE_PXS
+        if held:
+            cur.append(f)
+        else:
+            if len(cur) > PIC['hold_s'] * fps:
+                fh_runs.append((cur[0], cur[-1]))
+            cur = []
+    if len(cur) > PIC['hold_s'] * fps:
+        fh_runs.append((cur[0], cur[-1]))
+    if fh_runs:
+        a, b = max(fh_runs, key=lambda r: r[1] - r[0])
+        add('framing-hold', 'warn', f'{a}-{b}', f'{len(fh_runs)} framing(s) held over {PIC["hold_s"]:g} s with no depth plane moving (longest {(b - a + 1) / fps:.1f} s): keep a plane travelling (a creep, a foreground pass, parallax) through every hold')
     if not args.no_finish:
         grains, vigs = full_res_finish(args, info, F)
         tex = look.get('texture', 'clean')
@@ -716,8 +1033,32 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
             add('blur-policy', 'warn', soft[0], f'{len(soft)} of {len(fast)} fast frames lose over 20 % of their sharpness in a crisp film: flat graphics stay crisp at any speed (declare a CAMERA_BLUR range for a camera-real moment)')
     # type sizes from the layout audit
     type_rows = []
+    small_rows = []
     if layout:
-        bands = [('caption', 2.3, 4.0), ('statement', 5.0, 9.0), ('hero', 11.0, 23.0), ('giant', 40.0, 90.0)]
+        # small-text: a string under 36 px (at 1080p) held in focus over 6 f@60, UI strings included
+        frames_l = sorted(fr['frame'] for fr in layout.get('boxes', []))
+        step = float(np.median(np.diff(frames_l))) if len(frames_l) >= 2 else 1.0
+        seen = {}
+        for fr in layout.get('boxes', []):
+            hgt = fr.get('height') or layout.get('height') or args.comp_height or 1080
+            for b in fr.get('boxes', []):
+                px = b['px'] * 1080.0 / hgt
+                if b.get('opacity', 1) < 0.5 or b.get('blur', 0) > 1 or px >= PIC['text_min']:
+                    continue
+                seen.setdefault(b['id'], []).append((fr['frame'], round(px, 1)))
+        for bid, rows_ in seen.items():
+            fs_ = [r[0] for r in rows_]
+            run, best = [fs_[0]], [fs_[0]]
+            for a_, b_ in zip(fs_, fs_[1:]):
+                run = run + [b_] if b_ - a_ <= step * 1.5 else [b_]
+                best = run if len(run) > len(best) else best
+            held60 = ((best[-1] - best[0]) + step) * 60.0 / fps if len(best) >= 2 else 0.0
+            if held60 > PIC['text_hold60']:
+                small_rows.append(dict(id=bid, px=min(r[1] for r in rows_), frame=best[0], held60=round(held60, 1)))
+        for r in small_rows[:12]:
+            add('small-text', 'warn', r['frame'], f"\"{r['id']}\" at {r['px']:g} px held {r['held60']:g} f@60: under {PIC['text_min']} px (at 1080p) a string held in focus over {PIC['text_hold60']} f is mush; set it at 36+ (UI rebuilt for film at x1.8-2)")
+        # role bands as cap height in % of the frame height: line 120 px is 8 %, display 200 13 %, hero 240 16 %, giant 400+ 27 %+
+        bands = [('caption', 2.3, 4.0), ('statement', 5.0, 14.0), ('hero', 14.0, 26.0), ('giant', 26.0, 90.0)]
         for fr in layout.get('boxes', []):
             hgt = fr.get('height') or layout.get('height') or args.comp_height or 1080
             wid = fr.get('width') or layout.get('width') or args.comp_width or 1920
@@ -741,7 +1082,7 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
             if len(sizes) > 2:
                 type_rows.append(dict(frame=fr['frame'], id='+'.join(b['id'] for b in fr.get('boxes', [])), issue=f'{len(sizes)} non-UI sizes at once'))
         for r in type_rows[:20]:
-            add('type-size', 'warn', r['frame'], f"{r['id']}: {r['issue']}" + (f" (cap {r['cap']} % of the frame height; caption 2.3-4, statement 5-9, hero 11-23, giant 40-90)" if 'cap' in r else ''))
+            add('type-size', 'warn', r['frame'], f"{r['id']}: {r['issue']}" + (f" (cap {r['cap']} % of the frame height; caption 2.3-4, statement 5-14, hero 14-26, giant 26-90)" if 'cap' in r else ''))
     # word arrivals and fades (layout + copy)
     word_rows = []
     for cid, series in S['roi'].items():
@@ -829,8 +1170,13 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
         ground_C=round(float(np.median([s['ground_C'] for s in samples])), 4) if samples else None,
         ink_L=round(float(np.median([s['ink_L'] for s in samples if s['ink_L'] is not None])), 4) if any(s['ink_L'] is not None for s in samples) else None,
         grain=round(float(np.median(grains)), 3) if grains else None, vignette=round(float(np.median(vigs)), 4) if vigs else None,
-        type_issues=len(type_rows), words=word_rows,
+        type_issues=len(type_rows), words=word_rows, small_text=len(small_rows),
+        picture=dict(flat=pf['flat']['mean'], flat_frames_over=pf['flat']['frames_over'], edges=pf['edges']['mean'], falloff=pf['falloff']['share'],
+                     saturated=pf['saturated']['mean'], bleed_acts=[r['ok'] for r in pf['bleed']['acts']], bleed_share=pf['bleed']['share'], skeleton_samples=pf['skeleton']['samples'],
+                     target_misses=pf['target']['misses'], pass_=pf['ok']),
+        framing=framing,
     )
+    measures['picture']['pass'] = measures['picture'].pop('pass_')
     return flags, floor, measures
 
 
@@ -878,7 +1224,7 @@ def trajectory(args, info, F):
 # ------------------------------------------------------------------------------------------
 # self-test: synthetic clips with known answers
 # ------------------------------------------------------------------------------------------
-def self_test(F):
+def self_test(F, part='all'):
     import shutil
     import tempfile
     tmp = tempfile.mkdtemp(prefix='cinetic-look-')
@@ -933,92 +1279,348 @@ def self_test(F):
             g[yy:yy + 3, xx:xx + 3] -= 15
         return np.clip(g, 0, 255).astype(np.uint8)
 
-    # a flat film: two locked-off cards and a hard cut
-    n = 150
-    flat = [card(paper, 140, 90, 120, (30, 32, 36))] * 75 + [card(paper, 200, 100, 80, (30, 32, 36))] * 75
-    rep = run('flat', flat, cues_for(n, seams=[dict(at=75, kind='hard', id='cut')]))
-    fl = rep.get('floor', {})
-    check(not fl.get('pass', True) and not fl.get('moving', {}).get('ok', True), 'a locked-off film fails the floor (nothing moves)', f"moving {fl.get('moving', {}).get('share')}")
-    check(bool(has(rep, 'floor-moving', 'fail')) and bool(has(rep, 'floor-light', 'fail')), 'the flat film fails floor-moving and floor-light')
-    # a rich film: a creeping textured ground (light moving), a card moving apart from it, a carried cut, scale change
-    A, B = dots(11), dots(12)
-    rich = []  # three shots: a large card, a small one, a large one again (two carried seams)
-    for i in range(50):
-        g = F.warp(A, dx=-i * 1.2, k=1 + 0.002 * i)[:h, :w]
-        g = np.clip(g.astype(np.int16) + int(12 * math.sin(i / 10)), 0, 255).astype(np.uint8)
-        rich.append(card(g, 60 + i * 3.0, 80, 160, (25, 60, 110), stripes=True))
-    for i in range(50):
-        g = F.warp(B, dx=-(90 + i * 1.0), k=1 + 0.003 * i)[:h, :w]
-        g = np.clip(g.astype(np.int16) + int(10 * math.cos(i / 9)), 0, 255).astype(np.uint8)
-        rich.append(card(g, 280 - i * 1.5, 120, 60, (25, 60, 110), stripes=True))
-    for i in range(50):
-        g = F.warp(A, dx=-(140 + i * 1.1), k=1.1 + 0.002 * i)[:h, :w]
-        g = np.clip(g.astype(np.int16) + int(12 * math.sin(i / 8 + 1)), 0, 255).astype(np.uint8)
-        rich.append(card(g, 40 + i * 2.5, 70, 170, (25, 60, 110), stripes=True))
-    rep = run('rich', rich, cues_for(n, seams=[dict(at=50, kind='velocity', carry='x', id='carry1'), dict(at=100, kind='velocity', carry='x', id='carry2')]))
-    fl = rep.get('floor', {})
-    check(fl.get('moving', {}).get('ok') is True, 'a creeping ground passes floor-moving', f"share {fl.get('moving', {}).get('share')}")
-    check(fl.get('depth', {}).get('ok') is True, 'a card moving over a moving ground counts as two depth planes', f"share {fl.get('depth', {}).get('share')}")
-    check(fl.get('carried', {}).get('ok') is True and fl.get('light', {}).get('ok') is True, 'a declared velocity seam and a brightening ground pass carried and light')
-    sc = fl.get('scale', {})
-    check(sc.get('ok') is True and len(sc.get('cuts', [])) == 2 and all(r['contrast'] for r in sc.get('cuts', [])), 'a large card cut to a small one (and back) is scale contrast', json.dumps(sc.get('cuts', [])[:2]))
-    # an undeclared cut: the scale moving on both sides carries the move across; still into still does not
-    TA, TB = F.texture(21, w, h), F.texture(22, w, h)
-    breath = [F.warp(TA, k=1 + 0.04 * i / fps) for i in range(60)] + [F.warp(TB, k=1.05 + 0.04 * i / fps) for i in range(60)]
-    rows = [r for r in run('breath', breath).get('floor', {}).get('carried', {}).get('seams', []) if not r['declared']]
-    check(bool(rows) and rows[0]['carried'], 'an undeclared cut with the scale moving on both sides is carried', json.dumps(rows[:1]))
-    rows = [r for r in run('stillcut', [TA] * 60 + [TB] * 60).get('floor', {}).get('carried', {}).get('seams', []) if not r['declared']]
-    check(bool(rows) and not rows[0]['carried'], 'an undeclared cut from a still frame to a still frame is not carried', json.dumps(rows[:1]))
-    # hue count: three saturated hues fail, one passes
-    three = []
-    for i in range(60):
-        img = paper.copy()
-        cv2.rectangle(img, (40 + i, 60), (140 + i, 200), (220, 40, 50), -1)   # red
-        cv2.rectangle(img, (190, 60 + i // 2), (290, 200), (30, 160, 80), -1)  # green
-        cv2.rectangle(img, (340, 60), (440, 200 - i // 3), (40, 90, 220), -1)  # blue
-        three.append(img)
-    rep = run('hues', three)
-    check(bool(has(rep, 'hue-count', 'fail')), 'three accent hues fail hue-count')
-    one = [card(paper, 60 + i * 2, 80, 140, (30, 120, 200)) for i in range(60)]
-    rep = run('onehue', one)
-    check(not has(rep, 'hue-count'), 'one accent hue passes hue-count')
-    # banned hue: orange fails unless the brand supplied it
-    orange = [card(paper, 60 + i * 2, 80, 160, (240, 130, 30)) for i in range(60)]
-    rep = run('orange', orange)
-    check(bool(has(rep, 'banned-hue', 'fail')), 'an orange accent fails banned-hue')
-    rep = run('orange-brand', orange, extra=('--brand', '#F0821E'))
-    check(not has(rep, 'banned-hue'), 'the same orange supplied by the brand passes')
-    # pure black ink on pure white
-    bw = [card(np.full((h, w, 3), 255, np.uint8), 60 + i, 100, 120, (0, 0, 0)) for i in range(60)]
-    rep = run('bw', bw)
-    check(len(has(rep, 'tinted-ink')) == 2, 'pure black ink and a pure white ground warn')
-    # trajectory: a constant-hue ramp passes, a hue sweep fails
-    ramp = []
-    for i in range(30):
-        t = i / 29
-        L, C = 0.9 - 0.4 * t, 0.04 + 0.1 * t
-        col = oklch_rgb(L, C, 150.0)
-        img = paper.copy()
-        img[100:170, 200:280] = col
-        ramp.append(img)
-    clip = os.path.join(tmp, 'ramp.mp4')
-    F.write_clip(clip, ramp, fps)
-    acc = '#%02X%02X%02X' % tuple(oklch_rgb(0.6, 0.15, 150.0))
-    r = subprocess.run([sys.executable, os.path.abspath(__file__), clip, '--trajectory', '--roi', '200,100,80,70', '--accent', acc, '--json', os.path.join(tmp, 'ramp.json')],
-                       capture_output=True, text=True)
-    check(r.returncode == 0, 'a one-hue lightness/chroma ramp keeps the accent hue', r.stdout.strip().split('\n')[-1][:100])
-    sweep = []
-    for i in range(30):
-        img = paper.copy()
-        img[100:170, 200:280] = oklch_rgb(0.6, 0.14, 150.0 + 3 * i)
-        sweep.append(img)
-    F.write_clip(clip, sweep, fps)
-    r = subprocess.run([sys.executable, os.path.abspath(__file__), clip, '--trajectory', '--roi', '200,100,80,70', '--accent', acc, '--json', os.path.join(tmp, 'sweep.json')],
-                       capture_output=True, text=True)
-    check(r.returncode == 1, 'a hue sweep leaves the accent hue and fails the one-hue gate')
+    if part in ('all', 'a'):
+        # a flat film: two locked-off cards and a hard cut
+        n = 150
+        flat = [card(paper, 140, 90, 120, (30, 32, 36))] * 75 + [card(paper, 200, 100, 80, (30, 32, 36))] * 75
+        rep = run('flat', flat, cues_for(n, seams=[dict(at=75, kind='hard', id='cut')]))
+        fl = rep.get('floor', {})
+        check(not fl.get('pass', True) and not fl.get('moving', {}).get('ok', True), 'a locked-off film fails the floor (nothing moves)', f"moving {fl.get('moving', {}).get('share')}")
+        check(bool(has(rep, 'floor-moving', 'fail')) and bool(has(rep, 'floor-light', 'fail')), 'the flat film fails floor-moving and floor-light')
+        # a rich film: a creeping textured ground (light moving), a card moving apart from it, a carried cut, scale change
+        A, B = dots(11), dots(12)
+        rich = []  # three shots: a large card, a small one, a large one again (two carried seams)
+        for i in range(50):
+            g = F.warp(A, dx=-i * 1.2, k=1 + 0.002 * i)[:h, :w]
+            g = np.clip(g.astype(np.int16) + int(12 * math.sin(i / 10)), 0, 255).astype(np.uint8)
+            rich.append(card(g, 60 + i * 3.0, 80, 160, (25, 60, 110), stripes=True))
+        for i in range(50):
+            g = F.warp(B, dx=-(90 + i * 1.0), k=1 + 0.003 * i)[:h, :w]
+            g = np.clip(g.astype(np.int16) + int(10 * math.cos(i / 9)), 0, 255).astype(np.uint8)
+            rich.append(card(g, 280 - i * 1.5, 120, 60, (25, 60, 110), stripes=True))
+        for i in range(50):
+            g = F.warp(A, dx=-(140 + i * 1.1), k=1.1 + 0.002 * i)[:h, :w]
+            g = np.clip(g.astype(np.int16) + int(12 * math.sin(i / 8 + 1)), 0, 255).astype(np.uint8)
+            rich.append(card(g, 40 + i * 2.5, 70, 170, (25, 60, 110), stripes=True))
+        rep = run('rich', rich, cues_for(n, seams=[dict(at=50, kind='velocity', carry='x', id='carry1'), dict(at=100, kind='velocity', carry='x', id='carry2')]))
+        fl = rep.get('floor', {})
+        check(fl.get('moving', {}).get('ok') is True, 'a creeping ground passes floor-moving', f"share {fl.get('moving', {}).get('share')}")
+        check(fl.get('depth', {}).get('ok') is True, 'a card moving over a moving ground counts as two depth planes', f"share {fl.get('depth', {}).get('share')}")
+        check(fl.get('carried', {}).get('ok') is True and fl.get('light', {}).get('ok') is True, 'a declared velocity seam and a brightening ground pass carried and light')
+        sc = fl.get('scale', {})
+        check(sc.get('ok') is True and len(sc.get('cuts', [])) == 2 and all(r['contrast'] for r in sc.get('cuts', [])), 'a large card cut to a small one (and back) is scale contrast', json.dumps(sc.get('cuts', [])[:2]))
+        # an undeclared cut: the scale moving on both sides carries the move across; still into still does not
+        TA, TB = F.texture(21, w, h), F.texture(22, w, h)
+        breath = [F.warp(TA, k=1 + 0.04 * i / fps) for i in range(60)] + [F.warp(TB, k=1.05 + 0.04 * i / fps) for i in range(60)]
+        rows = [r for r in run('breath', breath).get('floor', {}).get('carried', {}).get('seams', []) if not r['declared']]
+        check(bool(rows) and rows[0]['carried'], 'an undeclared cut with the scale moving on both sides is carried', json.dumps(rows[:1]))
+        rows = [r for r in run('stillcut', [TA] * 60 + [TB] * 60).get('floor', {}).get('carried', {}).get('seams', []) if not r['declared']]
+        check(bool(rows) and not rows[0]['carried'], 'an undeclared cut from a still frame to a still frame is not carried', json.dumps(rows[:1]))
+        # hue count: three saturated hues fail, one passes
+        three = []
+        for i in range(60):
+            img = paper.copy()
+            cv2.rectangle(img, (40 + i, 60), (140 + i, 200), (220, 40, 50), -1)   # red
+            cv2.rectangle(img, (190, 60 + i // 2), (290, 200), (30, 160, 80), -1)  # green
+            cv2.rectangle(img, (340, 60), (440, 200 - i // 3), (40, 90, 220), -1)  # blue
+            three.append(img)
+        rep = run('hues', three)
+        check(bool(has(rep, 'hue-count', 'fail')), 'three accent hues fail hue-count')
+        one = [card(paper, 60 + i * 2, 80, 140, (30, 120, 200)) for i in range(60)]
+        rep = run('onehue', one)
+        check(not has(rep, 'hue-count'), 'one accent hue passes hue-count')
+        # banned hue: orange fails unless the brand supplied it
+        orange = [card(paper, 60 + i * 2, 80, 160, (240, 130, 30)) for i in range(60)]
+        rep = run('orange', orange)
+        check(bool(has(rep, 'banned-hue', 'fail')), 'an orange accent fails banned-hue')
+        rep = run('orange-brand', orange, extra=('--brand', '#F0821E'))
+        check(not has(rep, 'banned-hue'), 'the same orange supplied by the brand passes')
+        # pure black ink on pure white
+        bw = [card(np.full((h, w, 3), 255, np.uint8), 60 + i, 100, 120, (0, 0, 0)) for i in range(60)]
+        rep = run('bw', bw)
+        check(len(has(rep, 'tinted-ink')) == 2, 'pure black ink and a pure white ground warn')
+        # trajectory: a constant-hue ramp passes, a hue sweep fails
+        ramp = []
+        for i in range(30):
+            t = i / 29
+            L, C = 0.9 - 0.4 * t, 0.04 + 0.1 * t
+            col = oklch_rgb(L, C, 150.0)
+            img = paper.copy()
+            img[100:170, 200:280] = col
+            ramp.append(img)
+        clip = os.path.join(tmp, 'ramp.mp4')
+        F.write_clip(clip, ramp, fps)
+        acc = '#%02X%02X%02X' % tuple(oklch_rgb(0.6, 0.15, 150.0))
+        r = subprocess.run([sys.executable, os.path.abspath(__file__), clip, '--trajectory', '--roi', '200,100,80,70', '--accent', acc, '--json', os.path.join(tmp, 'ramp.json')],
+                           capture_output=True, text=True)
+        check(r.returncode == 0, 'a one-hue lightness/chroma ramp keeps the accent hue', r.stdout.strip().split('\n')[-1][:100])
+        sweep = []
+        for i in range(30):
+            img = paper.copy()
+            img[100:170, 200:280] = oklch_rgb(0.6, 0.14, 150.0 + 3 * i)
+            sweep.append(img)
+        F.write_clip(clip, sweep, fps)
+        r = subprocess.run([sys.executable, os.path.abspath(__file__), clip, '--trajectory', '--roi', '200,100,80,70', '--accent', acc, '--json', os.path.join(tmp, 'sweep.json')],
+                           capture_output=True, text=True)
+        check(r.returncode == 1, 'a hue sweep leaves the accent hue and fails the one-hue gate')
+    self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part)
     shutil.rmtree(tmp, ignore_errors=True)
     print('look-audit self-test: ' + ('all pass' if not bad else f'{bad} failed'))
     return 1 if bad else 0
+
+
+def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='all'):
+    """A bad and a good clip for every look check and picture rule (each must fire on the bad one and stay
+    quiet on the good one). Clips are small (480 x 270 at 30 fps, 2-5 s)."""
+    fps, w, h = 30, 480, 270
+
+    def run_pic(name, frames, extra=()):
+        clip = os.path.join(tmp, name + '.mp4')
+        F.write_clip(clip, frames, fps)
+        out = os.path.join(tmp, name + '.json')
+        r = subprocess.run([sys.executable, os.path.abspath(__file__), clip, '--picture-only', '--json', out, *extra], capture_output=True, text=True)
+        try:
+            return json.load(open(out))
+        except (OSError, ValueError):
+            print(r.stdout[-800:], r.stderr[-1500:])
+            return {'flags': [], 'picture': {}, 'framing': {}}
+
+    def write_json(name, obj):
+        p = os.path.join(tmp, name)
+        json.dump(obj, open(p, 'w'))
+        return p
+
+    def text_rows(img, x, y, rows, scale=0.5, col=(30, 32, 36), gap=22):
+        for k, s in enumerate(rows):
+            cv2.putText(img, s, (int(x), int(y + k * gap)), cv2.FONT_HERSHEY_SIMPLEX, scale, col, 1, cv2.LINE_AA)
+        return img
+
+    def photo(seed, ww, hh, sat=True):
+        """A dense, colourful, sharp 'picture': fine texture over coarse forms, tinted toward a teal-blue."""
+        fine = F.texture(seed, ww, hh, scale=1.5, mean=128, amp=40).astype(np.float32)
+        coarse = F.texture(seed + 50, ww, hh, scale=10, mean=128, amp=80).astype(np.float32)
+        g = np.clip(coarse + (fine - fine.mean()), 0, 255)
+        if not sat:
+            return g.astype(np.uint8)
+        return np.clip(g * np.array([0.3, 0.72, 1.0], np.float32)[None, None, :] + np.array([10, 20, 30], np.float32), 0, 255).astype(np.uint8)
+
+    if part in ('all', 'a'):
+        # --- the picture floor: a flat film fails every reading; a rich picture passes them all
+        flat = [card(paper, 180 + i * 0.3, 100, 120, (30, 32, 36)) for i in range(60)]
+        rep_f = run_pic('pflat', flat)
+        pf = rep_f.get('picture', {})
+        check(bool(has(rep_f, 'picture-flat', 'fail')) and not pf.get('flat', {}).get('ok', True), 'a card on paper fails picture-flat', f"flat {pf.get('flat', {}).get('mean')}")
+        check(bool(has(rep_f, 'picture-edges', 'fail')), 'a near-empty frame fails picture-edges', f"edges {pf.get('edges', {}).get('mean')}")
+        check(bool(has(rep_f, 'picture-saturated', 'fail')), 'grey on paper fails picture-saturated', f"saturated {pf.get('saturated', {}).get('mean')}")
+        check(bool(has(rep_f, 'picture-bleed', 'fail')), 'a subject inside the frame fails picture-bleed')
+        check(pf.get('falloff', {}).get('target_ok') is False, 'one sharp plane misses the falloff target', f"falloff {pf.get('falloff', {}).get('share')}")
+        rich = []
+        P0 = photo(3, w + 200, h + 60)
+        for i in range(60):
+            img = P0[30:30 + h, 10 + i:10 + i + w].copy()
+            soft = cv2.GaussianBlur(img[:, :w // 2], (0, 0), 5)  # the far plane, defocused
+            img[:, :w // 2] = soft
+            cv2.rectangle(img, (300, 40), (w + 40, h + 40), (236, 238, 241), -1)  # a panel bleeding off the right and bottom
+            text_rows(img, 316, 80, ['Q3 budget 48,200', 'Design 8,140', 'Engineering 17,220', 'Marketing 6,100', 'Spent 31,460'], 0.5)
+            rich.append(img)
+        rep_r = run_pic('prich', rich)
+        pr = rep_r.get('picture', {})
+        check(not has(rep_r, 'picture-target') and pr.get('target', {}).get('ok') is True, 'the same picture meets the house target (no picture-target warning)', json.dumps(pr.get('target')))
+        for key in ('flat', 'edges', 'falloff', 'saturated', 'bleed'):
+            check(pr.get(key, {}).get('ok') is True and not has(rep_r, f'picture-{key}'), f'a dense picture with a soft plane, colour and a bleeding panel passes picture-{key}',
+                  json.dumps({k: v for k, v in pr.get(key, {}).items() if k != 'acts'})[:120])
+        # skeleton bars: grey placeholder lines fail; real strings in the same layout pass
+        skel, real = [], []
+        for i in range(45):
+            a, b = paper.copy(), paper.copy()
+            for c in range(3):
+                x0 = 30 + c * 150 + i * 0.2
+                for img in (a, b):
+                    cv2.rectangle(img, (int(x0), 70), (int(x0 + 130), 200), (255, 255, 255), -1)
+                    cv2.circle(img, (int(x0 + 22), 92), 12, (200, 204, 210), -1)
+                for k, ww in enumerate((96, 70, 84)):
+                    cv2.rectangle(a, (int(x0 + 12), 120 + k * 22), (int(x0 + 12 + ww), 128 + k * 22), (206, 210, 216), -1)
+                text_rows(b, x0 + 10, 128, ['Mara K.', 'shot 14', '48 of 48'], 0.42, (60, 64, 70))
+            skel.append(a)
+            real.append(b)
+        rep = run_pic('skel', skel)
+        check(bool(has(rep, 'skeleton-bars', 'fail')), 'grey skeleton lines on cards fail skeleton-bars', f"max {rep.get('picture', {}).get('skeleton', {}).get('max_bars')}")
+        rep = run_pic('real', real)
+        check(not has(rep, 'skeleton-bars'), 'the same cards with real strings pass skeleton-bars', f"max {rep.get('picture', {}).get('skeleton', {}).get('max_bars')}")
+        # falloff (a target): crisp product UI alone misses it; the same UI with its far half defocused meets it
+        def ui_frame(i):
+            img = np.full((h, w, 3), (20, 90, 110), np.uint8)
+            cv2.rectangle(img, (int(250 + i * 0.4), 24), (w + 60, h + 40), (236, 238, 241), -1)
+            text_rows(img, 24, 50, ['Tide 48 shots', 'print Friday', 'approved 44', 'Mara K.', 'shot 14', '48 of 48'], 0.7, (250, 250, 250), 34)
+            text_rows(img, 270 + i * 0.4, 70, ['Cover approved.', 'Can 22 go tighter?', 'Dust spot fixed.', 'Print confirmed.', 'Booked Thursday.'], 0.55, (30, 32, 36), 36)
+            return img
+        sharp = [ui_frame(i) for i in range(45)]
+        rep = run_pic('sharp', sharp)
+        check('falloff' in rep.get('picture', {}).get('target', {}).get('misses', []), 'crisp UI alone misses the falloff target',
+              f"share {rep.get('picture', {}).get('falloff', {}).get('share')}")
+        deep = []
+        for i in range(45):
+            img = ui_frame(i)
+            img[:, w // 2:] = cv2.GaussianBlur(img[:, w // 2:], (0, 0), 6)
+            deep.append(img)
+        rep = run_pic('deep', deep)
+        check('falloff' not in rep.get('picture', {}).get('target', {}).get('misses', ['?']), 'the same UI with its far half defocused meets the falloff target', f"share {rep.get('picture', {}).get('falloff', {}).get('share')}")
+        # framing-centred: a card dead centre warns; the same card off-centre does not
+        cen = [card(paper, 180 + i * 0.1, 99, 120, (30, 32, 36)) for i in range(75)]
+        rep = run_pic('centred', cen)
+        check(bool(has(rep, 'framing-centred', 'warn')), 'a subject held dead centre warns framing-centred', f"share {rep.get('framing', {}).get('centred_share')}")
+        off = [card(paper, 40 + i * 0.1, 40, 150, (30, 32, 36)) for i in range(75)]
+        rep = run_pic('offcentre', off)
+        check(not has(rep, 'framing-centred'), 'the same subject off-centre does not', f"share {rep.get('framing', {}).get('centred_share')}")
+
+    if part in ('all', 'b'):
+        # --- framing-hold and floor-device: a still frame held for 5 s; the rich film moves through both
+        still = [card(paper, 140, 90, 120, (30, 32, 36))] * 180
+        rep = run('still5', still, cues_for(180))
+        check(bool(has(rep, 'framing-hold', 'warn')), 'a framing held still for 5 s warns framing-hold')
+        check(bool(has(rep, 'floor-device', 'fail')), 'five seconds with nothing designed fail floor-device', f"gap {rep.get('floor', {}).get('device', {}).get('max_gap_s')}")
+        check(bool(has(rep, 'living-ground', 'warn')), 'a still camera over a still ground warns living-ground')
+        A = dots(31)
+        moving = []
+        for i in range(180):
+            g = F.warp(A, dx=-i * 1.5, k=1 + 0.002 * i)[:h, :w]
+            g = np.clip(g.astype(np.int16) + int(12 * math.sin(i / 9)), 0, 255).astype(np.uint8)
+            moving.append(card(g, 60 + i * 1.6, 80, 140, (25, 60, 110), stripes=True))
+        rep = run('moving5', moving, cues_for(180, seams=[dict(at=60, kind='velocity', carry='x', id='c1'), dict(at=120, kind='velocity', carry='x', id='c2')]))
+        check(not has(rep, 'framing-hold') and not has(rep, 'living-ground'), 'a creeping ground with a card moving apart passes framing-hold and living-ground')
+        check(rep.get('floor', {}).get('device', {}).get('ok') is True, 'designed seams every 2 s pass floor-device')
+
+        # --- accent-share: the accent over 20 % of the frame for 3 s warns; at 3 % it does not
+        acc_hex = '#1E78C8'
+        acc = tuple(hex_rgb(acc_hex))
+        big = [cv2.rectangle(paper.copy(), (20 + i // 4, 30), (20 + i // 4 + 220, 30 + 120), acc, -1) for i in range(90)]
+        rep = run('accent-big', big, extra=('--accent', acc_hex))
+        check(bool(has(rep, 'accent-share', 'warn')), 'the accent flooding 20 % of the frame for 3 s warns accent-share')
+        small = [cv2.rectangle(paper.copy(), (20 + i // 4, 30), (20 + i // 4 + 60, 30 + 60), acc, -1) for i in range(90)]
+        rep = run('accent-small', small, extra=('--accent', acc_hex))
+        check(not has(rep, 'accent-share'), 'the accent on 3 % of the frame does not')
+
+        # --- negative-space: a type scene that fills half the frame warns; one in open space does not
+        copy_cues = cues_for(90)
+        copy_cues['copy'] = [dict(id='line', text='every note in place', **{'in': 0}, resolved=4, out=86, read=[[4, 86]])]
+        dense = [cv2.rectangle(paper.copy(), (10 + (i % 3), 10), (470, 150), (40, 44, 50), -1) for i in range(90)]
+        rep = run('dense', dense, copy_cues)
+        check(bool(has(rep, 'negative-space', 'warn')), 'a type scene filling half the frame warns negative-space')
+        airy = [text_rows(paper.copy(), 60 + i * 0.2, 130, ['every note in place'], 0.9) for i in range(90)]
+        rep = run('airy', airy, copy_cues)
+        check(not has(rep, 'negative-space'), 'a line in open space does not')
+
+        # --- clean-finish: grain over 0.6 L* on the flat ground warns (finish samples on); a clean ground does not
+        rng = np.random.default_rng(5)
+        grainy = []
+        for i in range(60):
+            img = card(paper, 40 + i, 60, 120, (30, 32, 36)).astype(np.int16)
+            img += rng.normal(0, 4.0, img.shape[:2]).astype(np.int16)[..., None]
+            grainy.append(np.clip(img, 0, 255).astype(np.uint8))
+        clip = os.path.join(tmp, 'grainy.mp4')
+        F.write_clip(clip, grainy, fps, crf=4)
+        out = os.path.join(tmp, 'grainy.json')
+        subprocess.run([sys.executable, os.path.abspath(__file__), clip, '--json', out, '--no-audio', '--no-floor'], capture_output=True, text=True)
+        rep = json.load(open(out)) if os.path.exists(out) else {'flags': []}
+        check(bool(has(rep, 'clean-finish', 'warn')), 'grain on the flat ground warns clean-finish')
+        clean = [card(paper, 40 + i, 60, 120, (30, 32, 36)) for i in range(60)]
+        clip = os.path.join(tmp, 'clean.mp4')
+        F.write_clip(clip, clean, fps, crf=4)
+        out = os.path.join(tmp, 'clean.json')
+        subprocess.run([sys.executable, os.path.abspath(__file__), clip, '--json', out, '--no-audio', '--no-floor'], capture_output=True, text=True)
+        rep = json.load(open(out)) if os.path.exists(out) else {'flags': [{'check': 'clean-finish'}]}
+        check(not has(rep, 'clean-finish'), 'a clean flat ground does not')
+
+    if part in ('all', 'c'):
+        # --- luminance-flip: light to dark on a still hard cut warns; the same flip with motion across it does not
+        dark = np.full((h, w, 3), (24, 26, 30), np.uint8)
+        flip_still = [card(paper, 140, 90, 120, (30, 32, 36))] * 45 + [card(dark, 200, 100, 80, (230, 232, 236))] * 45
+        rep = run('flip-still', flip_still)
+        check(bool(has(rep, 'luminance-flip', 'warn')), 'a light-to-dark hard cut with nothing moving warns luminance-flip')
+        TL, TD = F.texture(41, w, h, mean=215, amp=25), F.texture(42, w, h, mean=40, amp=25)
+        flip_moving = [F.warp(TL, dx=-3 * i) for i in range(45)] + [F.warp(TD, dx=-3 * (45 + i)) for i in range(45)]
+        rep = run('flip-moving', flip_moving)
+        check(not has(rep, 'luminance-flip'), 'the same flip carried by motion on both sides does not')
+
+        # --- blur-policy (crisp film): fast frames that lose their sharpness warn; crisp fast frames do not
+        TB = F.texture(51, w + 400, h, scale=1.2)
+        xs = [0] * 30 + [12 * k for k in range(1, 16)] + [180] * 30
+
+        def strip(blurred):
+            out_ = []
+            for i, x in enumerate(xs):
+                img = TB[:, x:x + w].copy()
+                if blurred and 30 <= i < 45:
+                    img = cv2.blur(img, (17, 1))
+                out_.append(img)
+            return out_
+
+        rep = run('blur-soft', strip(True), cues_for(len(xs)))
+        check(bool(has(rep, 'blur-policy', 'warn')), 'a crisp film whose fast frames blur warns blur-policy')
+        rep = run('blur-crisp', strip(False), cues_for(len(xs)))
+        check(not has(rep, 'blur-policy'), 'the same move kept sharp does not')
+
+        # --- word arrivals (layout + copy): a word fading in place over 30 f warns word-first-frame, fade-detect and
+        # arrival-front-load; a word cut on at most of its contrast and rising into place does not
+        def word_clip(kind):
+            frames_ = []
+            for i in range(60):
+                img = paper.copy()
+                if i >= 10:
+                    if kind == 'fade':
+                        a = min(1.0, (i - 10) / 30)
+                        y = 150
+                    else:
+                        a = 0.65 + 0.35 * min(1.0, (i - 10) / 3)
+                        y = 150 + int(round(10 * (1 - min(1.0, (i - 10) / 4)) ** 2))
+                    col = tuple(int(round(236 - (236 - 30) * a)) for _ in range(3))
+                    cv2.putText(img, 'Approved', (120, y), cv2.FONT_HERSHEY_SIMPLEX, 1.6, col, 3, cv2.LINE_AA)
+                frames_.append(img)
+            return frames_
+
+        wc = cues_for(60)
+        wc['copy'] = [dict(id='word', text='Approved', **{'in': 10}, resolved=16, out=58)]
+        layout_w = write_json('layout-word.json', dict(width=w, height=h, boxes=[dict(frame=20, width=w, height=h, boxes=[dict(id='word', px=120, x=116, y=112, w=200, h=48, opacity=1)])]))
+        rep = run('word-fade', word_clip('fade'), wc, extra=('--layout', layout_w, '--comp-width', str(w), '--comp-height', str(h)))
+        check(bool(has(rep, 'word-first-frame', 'warn')), 'a word fading in over 30 f warns word-first-frame')
+        check(bool(has(rep, 'fade-detect', 'warn')), 'a word fading in place warns fade-detect')
+        check(bool(has(rep, 'arrival-front-load', 'warn')), 'a linear arrival warns arrival-front-load')
+        rep = run('word-cut', word_clip('cut'), wc, extra=('--layout', layout_w, '--comp-width', str(w), '--comp-height', str(h)))
+        check(not has(rep, 'word-first-frame') and not has(rep, 'fade-detect') and not has(rep, 'arrival-front-load'), 'a word cut on at most of its contrast and rising into place passes all three')
+
+        # --- type-size and small-text from the layout audit (the same clip, two layouts)
+        lay_bad = write_json('layout-bad.json', dict(width=1920, height=1080, boxes=[dict(frame=f_, width=1920, height=1080, boxes=[
+            dict(id='between', px=68, x=200, y=200, w=600, h=80, opacity=1), dict(id='label', px=24, x=200, y=700, w=300, h=30, opacity=1, ui=True)]) for f_ in range(0, 60, 6)]))
+        lay_good = write_json('layout-good.json', dict(width=1920, height=1080, boxes=[dict(frame=f_, width=1920, height=1080, boxes=[
+            dict(id='line', px=120, x=200, y=200, w=900, h=130, opacity=1), dict(id='label', px=40, x=200, y=700, w=300, h=48, opacity=1, ui=True)]) for f_ in range(0, 60, 6)]))
+        plain = [card(paper, 40 + i, 60, 120, (30, 32, 36)) for i in range(60)]
+        rep = run('type-bad', plain, None, extra=('--layout', lay_bad))
+        check(bool(has(rep, 'type-size', 'warn')), 'a cap height between the role bands warns type-size')
+        check(bool(has(rep, 'small-text', 'warn')), 'a 24 px label held for a second warns small-text')
+        rep = run('type-good', plain, None, extra=('--layout', lay_good))
+        check(not has(rep, 'type-size') and not has(rep, 'small-text'), 'a 120 px line and a 40 px label pass type-size and small-text')
+
+        # --- image-develop: imagery that arrives at full colour in one frame (twice) warns; developing from grey does not
+        ramp = np.linspace(0.15, 1.0, 200, dtype=np.float32)[None, :, None]  # a picture: its colour varies across it
+        grey_, blue_ = np.array([150, 150, 150], np.float32), np.array([30, 110, 210], np.float32)
+
+        def imagery(develop):
+            frames_ = []
+            for i in range(150):
+                img = paper.copy()
+                for t0 in (30, 90):
+                    if t0 <= i < t0 + 45:
+                        k = min(1.0, (i - t0) / 44) if develop else 1.0
+                        block = grey_[None, None, :] + (blue_ - grey_)[None, None, :] * (k * ramp)
+                        img[60:200, 100:300] = np.clip(np.repeat(block, 140, axis=0), 0, 255).astype(np.uint8)
+                frames_.append(img)
+            return frames_
+
+        rep = run('img-pop', imagery(False))
+        check(bool(has(rep, 'image-develop', 'warn')), 'imagery arriving at full colour warns image-develop')
+        rep = run('img-dev', imagery(True))
+        check(not has(rep, 'image-develop'), 'imagery developing from grey over 1 s does not')
+    return 0
 
 
 def oklch_rgb(L, C, h):
@@ -1050,6 +1652,9 @@ def main():
     ap.add_argument('--comp-width', type=int, help='composition width of the layout boxes (default the video width)')
     ap.add_argument('--comp-height', type=int, help='composition height of the layout boxes (default 1080)')
     ap.add_argument('--no-floor', action='store_true', help='report the floor without failing on it')
+    ap.add_argument('--no-picture', action='store_true', help='report the picture floor without failing on it (the motion floor still counts)')
+    ap.add_argument('--picture-only', action='store_true', help='only the picture floor (no motion probe): a fast pass')
+    ap.add_argument('--every', type=int, default=1, help='--picture-only: read every Nth frame (the samples stay at two a second)')
     ap.add_argument('--no-finish', action='store_true', help='skip the full-resolution grain and vignette samples')
     ap.add_argument('--no-audio', action='store_true', help='skip the audio onsets (cut sync)')
     ap.add_argument('--trajectory', action='store_true', help='the one-hue gate on --roi instead of the film checks')
@@ -1060,7 +1665,8 @@ def main():
     ap.add_argument('--from', dest='from_frame', type=int)
     ap.add_argument('--to', dest='to_frame', type=int)
     ap.add_argument('--series', help='also write the per-frame motion series here (camera, layers, ground, pair speed, cuts)')
-    ap.add_argument('--self-test', action='store_true', help='run the checks on synthetic clips made in code, then exit')
+    ap.add_argument('--self-test', nargs='?', const='all', choices=['all', 'a', 'b', 'c'],
+                    help='run the checks on synthetic clips made in code, then exit (a: the floor, colour and picture cases; b and c: the look rules; default all)')
     args = ap.parse_args()
     global cv2, np
     try:
@@ -1071,7 +1677,7 @@ def main():
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import forensics as F
     if args.self_test:
-        sys.exit(self_test(F))
+        sys.exit(self_test(F, args.self_test))
     if not args.video:
         ap.error('a video is required (or --self-test)')
     info = F.probe(args.video)
@@ -1086,6 +1692,32 @@ def main():
     cues = F.load_cues(args.cues) if args.cues else None
     raw_cues = json.load(open(args.cues)) if args.cues else None
     extra = F.declared_of(cues) if cues else {}
+    if args.picture_only:
+        P, size = measure_picture(args, info, F)
+        fps = info['fps']
+        n = info['frames'] or (P['f'][-1] + 1 if P['f'] else 0)
+        k_ = fps / (cues.get('fps') or fps) if cues else 1.0
+        acts = [(k, (int(round(a * k_)), int(round(b * k_)))) for k, (a, b) in (cues or {}).get('acts', {}).items()] or None
+        end = (extra or {}).get('end')
+        end_rng = (int(round(end['from'] * k_)), int(round(end['to'] * k_))) if end else None
+        pf, framing = picture_floor(P, fps, n, acts, end_rng)
+        flags = []
+
+        def add(check, severity, frame, note):
+            flags.append(dict(check=check, severity=severity, frame=frame, t=round(frame / fps, 3), note=note))
+
+        picture_flags(pf, framing, add, fps)
+        fails = sum(1 for x in flags if x['severity'] == 'fail') if not args.no_floor else 0
+        res = dict(tool='look-audit', mode='picture-only', file=args.video, fps=fps, size=[info['w'], info['h']], analysis=list(size), pass_=fails == 0, fails=fails,
+                   warnings=sum(1 for x in flags if x['severity'] == 'warn'), flags=flags, picture=pf, framing=framing, samples=P['samples'], frames=dict(f=P['f'], top=P['fall_top'], low=P['fall_low']))
+        res['pass'] = res.pop('pass_')
+        if args.json:
+            os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
+            json.dump(res, open(args.json, 'w'), indent=1, default=lambda o: o.item() if hasattr(o, 'item') else str(o))
+        print(picture_line(args.video, pf, framing, res['pass']))
+        for x in flags:
+            print(f"  {x['severity']:4s} {x['check']:16s} f{x['frame']}: {x['note']}")
+        sys.exit(0 if res['pass'] else 1)
     if raw_cues is not None:
         cues['copy'] = [x for x in (raw_cues.get('copy') or []) if isinstance(x, dict) and 'resolved' in x]
         cues['bpm'] = raw_cues.get('bpm')
@@ -1109,10 +1741,12 @@ def main():
     if args.json:
         os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
         json.dump(res, open(args.json, 'w'), indent=1, default=lambda o: o.item() if hasattr(o, 'item') else str(o))
+    na = 'n/a (one take)'
     print(f"look-audit: {args.video}  {measures['frames']} frames @ {info['fps']:g} fps  {'PASS' if res['pass'] else 'FAIL'}  "
           f"({fails} fail, {res['warnings']} warn); floor {'pass' if floor['pass'] else 'FAIL'}: moving {floor['moving']['share']}, "
-          f"depth {floor['depth']['share']}, carried {floor['carried']['share']}, device gap {floor['device']['max_gap_s']} s, "
-          f"light {sum(1 for r in floor['light']['acts'] if r['light'])}/{len(floor['light']['acts'])} acts, scale {floor['scale']['share']}")
+          f"depth {floor['depth']['share']}, carried {na if floor['carried'].get('na') and measures['one_take'] else floor['carried']['share']}, device gap {floor['device']['max_gap_s']} s, "
+          f"light {sum(1 for r in floor['light']['acts'] if r['light'])}/{len(floor['light']['acts'])} acts, scale {na if floor['scale'].get('na') and measures['one_take'] else floor['scale']['share']}")
+    print('  ' + picture_line(None, floor['picture'], measures['framing'], floor['picture']['ok'] or args.no_picture))
     for x in flags[:30]:
         print(f"  {x['severity']:4s} {x['check']:16s} f{x['frame']}: {x['note']}")
     if args.json:
