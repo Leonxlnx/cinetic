@@ -64,7 +64,8 @@ export const borderBleedState = (frame: number, p: BorderBleedProps, film?: Part
   const turn = f60x(p.turn ?? BORDER_BLEED.turn60, fps);
   const rot = turn > 0 && t > leak ? (t - leak) / turn : 0;
   const full = bleedReach(p.dots);
-  return { k, reach: full.map((m) => m * k), dotR: BORDER_BLEED.dotFrom + (BORDER_BLEED.dotTo - BORDER_BLEED.dotFrom) * k, rot, closed: k >= 1, absorbed: frame >= absorb };
+  // the feathered lead overshoots the midpoint by its own length at k = 1, so the ring is whole on closing (no pop)
+  return { k, reach: full.map((m) => (m + BORDER_BLEED.feather) * k), dotR: BORDER_BLEED.dotFrom + (BORDER_BLEED.dotTo - BORDER_BLEED.dotFrom) * k, rot, closed: k >= 1, absorbed: frame >= absorb };
 };
 
 /** Sync: leak start (a swell), closed, the absorb (the next kick). */
@@ -111,7 +112,7 @@ export const bleedAt = (u: number, p: BorderBleedProps, s: BorderBleedState, col
     const dist = Math.min(Math.abs(uu - d.pos), 1 - Math.abs(uu - d.pos));
     const reach = s.reach[d.i];
     if (reach <= 0) continue;
-    const f = BORDER_BLEED.feather * Math.min(1, s.k * 2);
+    const f = BORDER_BLEED.feather;
     a = Math.max(a, s.closed ? 1 : clamp((reach - dist) / Math.max(1e-4, f)));
   }
   // hue: mix of the dots before and after u
