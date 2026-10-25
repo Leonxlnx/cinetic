@@ -75,6 +75,7 @@ export const Fringe: React.FC<FringeProps & { frame: number; children: React.Rea
       {props.children}
     </div>
   );
+  // cinetic:device-palette the black ground the screen-blended channel layers add up on
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', isolation: 'isolate', background: '#000' }}>
       <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
