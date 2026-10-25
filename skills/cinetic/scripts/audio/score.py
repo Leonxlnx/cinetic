@@ -1462,8 +1462,12 @@ def music_gates(song, plan, bed, bed_played, sfx, auto, edit, base_dir, placed):
                          steady_median=round(float(np.median([x['steady_db'] for x in rr])), 2),
                          bed_accent_median=round(float(np.median([x['bed_accent_db'] for x in rr])), 2))
         if abs(jm) > OVER_BED_TOL:
+            nclamp = sum(1 for x in rr if x['clamped'])
             out['warnings'].append(f'{r_}: the takes sit {jm:+.1f} dB off their level over the bed (take alone {tq:.1f} dB over '
-                                   f'it, want {want if want is None else round(want, 1)} for bed_db {bdb:g}, +-{OVER_BED_TOL:g})')
+                                   f'it, want {want if want is None else round(want, 1)} for bed_db {bdb:g}, +-{OVER_BED_TOL:g})'
+                                   + (f'; {nclamp} of {len(rr)} take(s) held at the -1 dBFS peak, so a higher bed_db cannot lift them'
+                                      if nclamp else '')
+                                   + "; with a track the role's bed_db in audio/kit.json sets it (level_db is the effects-only level)")
     off = [r for r in rows if abs(r['judged_db']) > OVER_BED_TOL and r['role'].split('.')[0] != 'key']
     for r in off[:6]:
         out['warnings'].append(f"{r['role']} {r['id']} at {r['t']:.2f} s: the take alone sits {r['take_db']:+.1f} dB over the bed "

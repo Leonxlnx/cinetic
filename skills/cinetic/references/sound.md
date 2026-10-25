@@ -438,7 +438,7 @@ You cannot listen, so measure what a listener hears:
 | a --draft build | never delivered: render the kit and the soundtrack again without `--draft` |
 | the stop-down before … measures N dB | the track rises into the hit: give it more weight, or let `track.py edit` cut to a break before the reveal |
 | the bed is N dB down 250 ms after … | the track breaks there (fine) or the edit lands the hit inside a break: move the reveal onto the entry |
-| role … N dB over the bed (want …) | an effect on a kick or a gap sits off its `bed_db`: move it off the accent, or accept a role median within ±2 dB |
+| role … N dB over the bed (want …) | an effect on a kick or a gap sits off its `bed_db`: move it off the accent, or accept a role median within ±2 dB. With a track the role's `bed_db` moves its level (`level_db` is the effects-only level); a take held at the −1 dBFS peak cannot go higher |
 | … clamped by the −1 dBFS ceiling | the bed is too loud for that short take: a quieter bar under it, or a fuller member |
 | doubles the track's accent | one gesture: let the track carry it (drop the effect) or move it off the accent |
 | density … outside the band | thin the effects, or sound the classes the picture asks for |
