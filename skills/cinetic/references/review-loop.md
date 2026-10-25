@@ -47,7 +47,14 @@ out/qa/round-2/
    python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --json $R/forensics.json
    python3 scripts/av-audit.py out/preview.mp4 --cues out/cues.json --stems out/stems --json $R/av.json
    python3 scripts/audio/listen.py --video out/preview.mp4 --out $R    # listen.json + sound_sheet.png
+   bash scripts/layout-audit.sh Film --every 6 --json $R/layout.json
+   python3 scripts/look-audit.py out/preview.mp4 --cues out/cues.json --layout $R/layout.json --json $R/look.json
+   node scripts/grammar-score.mjs --cues out/cues.json --layout $R/layout.json --look $R/look.json --forensics $R/forensics.json
    ```
+   `look-audit.py` holds the two floors against a flat film (motion and picture) and the look checks; `grammar-score.mjs`
+   scores the film's grammar against the house's (or a clip's, `--target out/like.json`) and appends to
+   `out/grammar-score.json`, so the loop shows its progress. Write the weakest dimension and the weakest floor reading
+   into `fixes.md` and fix those first (`references/checks.md`).
    Each prints a summary, writes JSON, and exits 0 when no check fails (`listen.py` always exits 0, and writes `"listened": false` with the reason when earshot or its models are missing; `references/sound.md` §9.1). Add `--declare qa.json` to forensics once you have declarations (§3), and `--loop` for a loop.
 3. **Sheets.** Make the watch sheets and a legibility sheet:
    ```bash
@@ -102,7 +109,7 @@ bash scripts/grab.sh out/preview.mp4 1739 1740 --out $R/frames       # exact fra
 
 Run av-audit with `--stems`. Only then is sync gated, because in the full mix the music hides quiet and soft-attack effects. With the full mix, a low hit rate is only a warning.
 
-**What a good film looks like.** On the shipped Tessel film (33 s, 1980 frames, motion-blurred master), forensics passes with 12 warnings, and each one is explainable:
+**What a good film looks like.** On the worked example's film (33 s, 1980 frames, motion-blurred master), forensics passes with 12 warnings, and each one is explainable:
 
 - 8 banding warnings: a CSS radial wash in act 1, and soft gradients under the UI;
 - one 0.9 s "quiet" hold at the hook, where only a hairline draws;
@@ -123,7 +130,7 @@ The templates are in `assets/critics/`. Each ends with the same return schema:
 
 | Lens | Template | Reads | Owns (rubric) |
 |---|---|---|---|
-| Director | `director.md` | watch sheets first, then the code and energy stats | idea, hook, composition, motion, transitions, pacing |
+| Director | `director.md` | watch sheets first, then `out/direction.json`, the code and energy stats | idea, hook, picture, composition, motion, transitions, pacing |
 | Forensics | `forensics.md` | `forensics.json`, flagged frames at full size, banding sheet | finish, motion |
 | Sound and sync | `sound-sync.md` | `av.json`, `score.json`, `sync-*.json`, `audio/score.json` | sound |
 | Art, copy, UI (round 1, or when these changed) | `art-copy-ui.md` | legibility sheet, grabs of every `COPY` line, layout-audit JSON | copy, color, composition, product |
@@ -150,6 +157,7 @@ The templates are in `assets/critics/`. Each ends with the same return schema:
 
 - Say what changed, so it gets checked hardest.
 - Say "Do not re-report fixed issues", or every round re-litigates old notes.
+- Ask the creative question every round: **is the picture doing something a template would not?** A film that is clean, synced and correct but could be any product's is not finished.
 - Say "Don't propose adding text": critics reach for captions when a picture does not read, and the fix is the picture. Do let them propose splitting a sentence into a fragment chain, which is a fix of the same kind.
 - Ask for a ranking by impact per minute of fixing, with the time left. Near the end, only small, safe, high-impact fixes are worth it.
 - Batch images into sheets. Images are the expensive part of a critic's context, and one 48-tile sheet costs about the same as one still.
@@ -211,13 +219,14 @@ Score each dimension 1 to 5. The anchors are for 1, 3 and 5, and 2 and 4 sit bet
 | **Idea and device** | a feature tour | a clear idea, but the device drops out, or the film would be just as true of a simpler product | one idea specific to this product that reads muted; the device is an object this product owns, survives every cut and resolves (into the mark, or in a loop or product video into the product's finished state) | watch sheets with the sound off; the specificity answer in `TREATMENT.md` |
 | **Hook (0–2 s)** | a blank or static frame | motion, but the problem lands after 2 s | frame 0 composed and moving; the problem felt by 1 s | first watch sheet; `energy_per_second[0:2]` |
 | **Copy and type** | labels, bullets, more than 30 words, whole sentences landing at once, mixed fonts | clean but generic lines, or fragments that crowd each other | one fragment at a time (≤ 4 new words, ≤ 8 visible, at least 8 f per word in a reveal), at or under budget, lines that pay off the film's own words, one family on one token set, zero collisions | art lens; `grid-check.ts` words, holds and text flow |
-| **Colour and brand** | gradients, neon, glass or beige defaults; the starter's or Tessel's look | disciplined, but generic: the accent carries no meaning, or the brand has no personality | a look of its own that follows from the brand's personality; one accent with one meaning at 8% or less, no banding, an ownable mark | art lens; banding sheet; the mark sheet |
-| **Composition** | centred web layout, voids | correct, but framing errors or crops that slice glyphs | full-bleed, one focal point per shot, headroom kept | layout-audit; legibility sheet |
+| **Colour and brand** | a monochrome accent wash, neon, decorative gradients or glow, beige defaults; the starter's look | disciplined, but generic: the accent carries no meaning, or the brand has no personality | a look of its own from the brand's personality (or the supplied kit); one dominant accent with one meaning over neutral grounds; spectral, gradient and glow only inside devices; no banding; an ownable mark | art lens; look-audit colour checks; banding sheet; the mark sheet |
+| **Picture** | flat: grey cards on a plain ground, a parked camera, a sampler of devices | tidy and moving, but thin: one plane, no light event, code shapes where the subject has a world | rich and alive: real imagery or a lit world, three depth planes, light that moves, one signature shot, a device per beat from many families; both floors pass and the picture target is met | look-audit floors and `picture` readings; watch sheets; `out/direction.json` |
+| **Composition** | centred web layout, voids | correct, but framing errors or crops that slice glyphs | bleeding and off-centre framing, one focal point per shot, headroom kept, type at film size | layout-audit; legibility sheet |
 | **Motion** | uniform fades and bounces | good eases, with pops or stalls | named curves, weight, zero-slope landings, contact squash | director; forensics spikes and stalls |
-| **Transitions** | crossfades and presets | motivated, but with repeats | velocity-matched cuts, relays and morphs, a signature move used 3 times | director; seam table |
+| **Transitions** | crossfades and presets | motivated, but with repeats | built from what is on screen: velocity-matched cuts, morphs, masks from the picture; at least 40 % carried; no kind more than 3 times | director; `SEAMS`; grammar-score `seams` |
 | **Pacing** | frozen holds, cramming, or text racing the picture | even, with flat energy, or text on nearly every frame | text and picture take turns; every read held, with slow life in it; a calm cruise between a few clear peaks; results held long enough to land | energy curve; holds and quiet flags; `text-share` and `word-rate` |
 | **Product truth** | a fake dashboard | real UI, but it shows only the naive version of the feature, or data or states contradict the story | the feature's non-obvious behaviour, shown; data that agrees with itself and with the story (roles, sums, ratios); state changes animate, counters count during the action | art lens; pause test; the story asserts in `data.ts` |
-| **Sound and sync** | stock sounds, or out of lock | synced, but masked or out of key | every event within ±1 f and audible, tuned, the payoff loudest, on its LUFS target (−14; −16 for a calm brand or a sting) and −1 dBTP | `av.json` strict; sound lens |
+| **Sound and sync** | stock effects, generated music, no music, or out of lock | a licensed track, but effects masked, ducked or out of key, or cuts on the bar grid | a licensed track cut to the picture with structure on its events, every effect within ±1 f at its level over the bed, stop-downs before the hits, one element at the lockup, on its LUFS target (−14; −16 for a sting of 8 s or less) and −1 dBTP | `av.json` strict; `score.json`; sound lens |
 | **Finish** | pops, ghosts, jitter or banding | occasional P1-level artifacts | zero failing forensics checks, explained warnings, clean blur, BT.709 tags | `forensics.json`; `probe` |
 
 Formats without some dimensions score them against the format's own recipe in `references/formats.md`: a muted loop scores Sound and sync as N/A, and a sting's Product truth is its mark.
@@ -234,29 +243,36 @@ Formats without some dimensions score them against the format's own recipe in `r
 
 **Ship gate.** Every condition must hold:
 
-- every rubric dimension is at least 3, Finish and Sound and sync are 5, and the mean is at least 4.2;
+- every rubric dimension is at least 3, Picture at least 4, Finish and Sound and sync are 5, and the mean is at least 4.2;
 - there is no open verified P0;
-- every script passes: `probe.py`, `check-sync.py`, `forensics.py` (0 fails; every warning explained in `fixes.md`), `av-audit.py --stems` (0 fails), `lint-film.mjs`, `grid-check.ts` and `layout-audit.sh`.
+- every script passes: `probe.py`, `check-sync.py`, `forensics.py` (0 fails; every warning explained in `fixes.md`), `av-audit.py --stems` (0 fails), `lint-film.mjs --strict`, `grid-check.ts` and `layout-audit.sh`;
+- `look-audit.py` passes with both floors (motion and picture);
+- `grammar-score.mjs`: mean ≥ 90, no dimension under 70;
+- the sound gates (`references/sound.md` §2: a licensed track with a valid record, every effect from the kit, over-bed levels, stop-downs, no ducking, clean joins, one element at the lockup, loudness) and `credits.py`;
+- with a clip to match: `like.py guard` passes (`references/clip-match.md`).
 
 When the gate is met, or the 5 rounds are used up, ship. In the hand-off, say plainly what you would still change.
 
 ## 11. Recurring issue classes
 
-Classes 1–9 are in order of how often they came up across five review rounds of a finished film; 10 and 11 are the ones blind comparisons caught that script checks don't. Look for them first.
+Look for these first; 10 to 13 are the ones scripts catch least well.
 
 | # | Class | How it shows | First fix | See |
 |---|---|---|---|---|
 | 1 | Seam pops and duplicate frames | `seam-pop` or `stall` at an act start; the device blinks | match every property across the cut; show the rest pose once | `references/transitions.md` §3 |
 | 2 | Sound on the settle, not the pop or contact; whooshes off the velocity peak | av-audit misses and `apex` warnings; picture peak 3-8 f from the sound | cue with `hit(…, 0.5)` for pops, `0.92`–`1.0` for contacts, `peak()` for whooshes | `references/timing-grid.md` §7 |
-| 3 | Dead holds: logo, post-hook, typing, end card | `hold` or `quiet` flags; energy near 0.1 for a second | a visible build: 10–20% dolly, 2.5% breath, eased-in drift; or shorten | `references/camera.md` §4 |
+| 3 | Dead holds: logo, post-hook, typing, end card | `hold-drift` fails, `quiet` flags | a creep of 2-15 %/s or a drift, light moving on the ground, the hold turning into its exit; or shorten | `references/camera.md` §7 |
 | 4 | Collisions from overshoot or moving targets | glyphs or pieces touching for a few frames | clamp springs at the rest pose; lock the target before landing on it | `references/motion-tokens.md` §3 |
 | 5 | Chromium artifacts | `ghost`, `judder`, `sharpness`, `banding`, `border` | the matching row of the table | `references/chromium-rendering.md` |
-| 6 | Envelope shape: half-sines, expo-out fade-outs | a pulse peaking late; a fade that pops in 1-2 frames (`hit` or `pop`) | `hitPulse`; fades of 10–14 f on `smooth` | `references/motion-tokens.md` §5 |
+| 6 | Envelope shape: half-sines, fades on arrive curves | a pulse peaking late; a fade that pops in 1-2 frames (`hit` or `pop`) | `hitPulse`; exits at speed on a leave curve, a short fade only inside a moving exit | `references/motion-tokens.md` §10 |
 | 7 | UI truth | a wrong weekday, stale labels, a counter that flips at the end, the past replanned | derive every label from the data module, with asserts | `references/product-ui.md` |
-| 8 | Out-of-key or masked effects | `masking` warnings; a pitched effect off the chord | tune to the chord root; +6 dB in band; duck the music | `references/sound.md` |
+| 8 | Out-of-key or masked effects | `masking` warnings; over-bed outside ±2 dB; a pitched effect off the key | tune to the track's key; the effect at its `bed_db`; a stop-down before the hit (never a duck) | `references/sound.md` |
 | 9 | Templated layouts | text left, card right; centred floating | full-bleed product, type on an eye line | `references/taste-and-slop.md` E |
 | 10 | House-style convergence and oversimplified features | the film looks like the starter or Tessel; the proof would be true of a simpler product | three adjectives → choices, a mark sheet; rebuild the proof on the non-obvious behaviour | `references/brand-and-color.md` §2, `references/concept-and-story.md` §3 |
-| 11 | Moves too fast to blur | stepped copies or long smears on the fastest frames of the master | keep elements under about 60–80 px/f; cut, match or mask instead | `references/transitions.md` |
+| 11 | Moves too fast to blur | stepped copies or long smears on the fastest frames of the master | a crisp blur policy for flat graphics; a declared `CAMERA_BLUR` range; or cut, match or mask instead | `references/camera.md` §12 |
+| 12 | A flat or sparse picture | the picture floor fails or misses its target; one plane; no light event; grey cards | real imagery or a lit world, three planes, living light, a device per beat (`references/imagery.md`, `references/lighting.md`) | `references/checks.md` §6 |
+| 13 | A sampler, or one device everywhere | a new device every half second, or the same device on every beat | one device per beat, from many families; one signature shot | `references/devices/INDEX.md` |
+| 14 | A monochrome accent wash | saturated pixels at the accent's hue on most frames; neutral share low | neutral grounds, the accent at its share, the pictures' own colour | `references/brand-and-color.md` |
 
 ## 12. Thresholds
 
@@ -319,7 +335,7 @@ Every script threshold in one place. Most can be changed with the flag named in 
 | `check-sync.py` | mux lag ≤ 48 samples at three points; true peak ≤ −1 dBTP after decode |
 | `grid-check.ts` | beat is whole frames; acts contiguous; cues on the 16th grid or `offgrid:`; reading holds ≥ max(60, 42 + 8 f per word) (crisp: 36 f + 6 f per word); no gap without an event or a reading hold > 72 f (crisp: 48 f); words ≤ budget; text flow: `fragment` (> 4 new words), `copy-concurrent` (> 8 words visible, > 5 in replace mode), `reveal-rate` (< 8 f per word), `chain-gap` (picture beat outside 30–90 f), `chain-beat` (no cue in the picture beat), `read-first` (two separate lines arriving together), `read-quiet` (a cue starting inside a read), `word-rate` (> 6 words in any 5 s), `text-share` (copy on > 65% of frames, or no 90 f text-free run in 10 s); limits from the film's `PACE_NAME` (`--pace` overrides; in a calm film a short or empty picture beat, lines together and copy on > 75% fail) |
 | `lint-film.mjs` | 0 errors: no CSS animation, no nondeterminism, no frame-driven left/top, tokens only, clamped interpolate |
-| `layout-audit.sh` | no text outside the safe zone (the aspect's preset; `feed9x16` for 9:16), no overlaps, readable text ≥ 22 px (32 px in 9:16), no frame with more readable film words than the pace allows (`words`; 8 when calm, `data-ui` strings counted apart), no text covered by a `data-mover`, no readable text (opacity ≥ 0.5) moving faster than 20 px/f from f to f+1, at 1080 px tall (`--speed`, on with `--cues`; `--max-text-speed`) |
+| `layout-audit.sh` | no text outside the safe zone (the aspect's preset; `feed9x16` for 9:16), no overlaps, readable text ≥ 36 px in focus for more than 6 f, no frame with more readable film words than the pace allows (`words`; 8 when calm, `data-ui` strings counted apart), no text covered by a `data-mover`, no readable text (opacity ≥ 0.5) moving faster than 20 px/f from f to f+1, at 1080 px tall (`--speed`, on with `--cues`; `--max-text-speed`) |
 | `deliver.sh --loop` | the loop-seam rule above, on the delivered file |
 | `measure-speed.py` | `too_fast`: frames over 80 px/f (`--too-fast`), a redesign warning; `short_shutter`: frames the samples can't cover |
 | `score.py` | LRA ≥ 5 LU for films of 20 s or more; the payoff ≥ 2 LU over the median momentary loudness; the first 0.5 s within 12 dB of the median (soft hook); no effect starting inside the end fade (warnings) |
