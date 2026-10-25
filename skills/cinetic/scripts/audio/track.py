@@ -14,8 +14,9 @@ Usage (from the project root):
       -> audio/music/<name>.licence.json (hash, licence class, the licence as read on the item's own page)
   python3 scripts/audio/track.py analyze FILE [--profile calm|crisp|punchy] [--bpm N] [--phase N] [--json OUT] [--force]
       -> audio/music/<name>.track.json (tempo, grid, bars, phrases, sections, entries, breaks, stops, accents,
-         ending, key, loudness); an analysis already there of the same file (sha256) with the same settings is
-         kept without loading librosa (--force analyses again)
+         ending, key, loudness); an analysis already there of the same file (sha256) is kept without loading
+         librosa when every option given matches it (one not given keeps the analysis's own: a phase set by hand
+         stays set); --force analyses again
   python3 scripts/audio/track.py edit [TRACK.json] --bars N --reveal-bar K --end button|stop|ring
           [--start-bar S] [--entry B] [--arc "-14,-12,..."] [--film-t0 0.25] [--gap 0.4] [--out audio/music/edit.json]
           [--map "1:2x10,11:59x2"]
@@ -1549,7 +1550,8 @@ def find_one(folder, suffix):
 
 
 def current_analysis(out, path, profile, bpm, phase):
-    """The analysis in `out` when it was made from this exact file (sha256) with these settings, else None."""
+    """The analysis in `out` when it was made from this exact file (sha256) and matches every option given (None:
+    not given, so the analysis's own profile, stated tempo or phase set by hand stands), else None."""
     if not os.path.isfile(out) or not os.path.isfile(path):
         return None
     try:
@@ -1557,9 +1559,10 @@ def current_analysis(out, path, profile, bpm, phase):
     except TrackError:
         return None
     an, g, tp = old.get('analysis') or {}, old.get('grid') or {}, old.get('tempo') or {}
-    same = (an.get('version') == ANALYSIS_VERSION and an.get('profile') == profile and an.get('rate') == AR
-            and tp.get('stated') == (float(bpm) if bpm else None)
-            and ((bool(g.get('phase_set')) and g.get('phase') == phase) if phase is not None else not g.get('phase_set')))
+    same = (an.get('version') == ANALYSIS_VERSION and an.get('rate') == AR
+            and (profile is None or an.get('profile') == profile)
+            and (bpm is None or tp.get('stated') == float(bpm))
+            and (phase is None or (bool(g.get('phase_set')) and g.get('phase') == phase)))
     return old if same and old.get('sha256') == CR.sha256_file(path) else None
 
 
@@ -1570,7 +1573,8 @@ def cmd_analyze(a_):
         print_analysis(res, print if not a_.quiet else (lambda s: None))
         print(f'analyze: {out} is current (the same file and settings): kept (--force analyses again)')
     else:
-        res = analyze(a_.file, a_.profile, a_.bpm, a_.phase, a_.cache, log=None if a_.quiet else (lambda s: print('  ' + s)))
+        res = analyze(a_.file, a_.profile or 'crisp', a_.bpm, a_.phase, a_.cache,
+                      log=None if a_.quiet else (lambda s: print('  ' + s)))
         write_json(out, res)
         print_analysis(res, print if not a_.quiet else (lambda s: None))
         print(f'analyze: wrote {out}')
@@ -1636,7 +1640,7 @@ def main(argv=None):
     p.add_argument('--force', action='store_true')
     p = sub.add_parser('analyze', help='tempo, grid, bars, structure')
     p.add_argument('file')
-    p.add_argument('--profile', default='crisp', choices=tuple(PRIOR))
+    p.add_argument('--profile', choices=tuple(PRIOR), help='the tempo prior (default crisp)')
     p.add_argument('--bpm', type=float, help='the stated tempo, when the composer gives one (the phase is still fitted)')
     p.add_argument('--phase', type=int, help='the downbeat phase 0-3 (after a low-confidence analysis)')
     p.add_argument('--json', help='output (default audio/music/<name>.track.json next to the file)')

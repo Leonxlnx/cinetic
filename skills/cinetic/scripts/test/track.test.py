@@ -7,7 +7,7 @@ last 0.42 s stop dead, peak 15-22, outro 23-24) and one final thump on bar 25. C
   - analyze: the tempo within 0.05 BPM, bar 1 on its attack (+-5 ms), a confident downbeat, the stop
     found (and no groove trough taken for one), the entry after the break marked as a drop, the ending
     a button on the final thump, no bars counted in the file's trailing silence; a second run of the same
-    file and settings keeps the analysis, another profile or --force makes it again
+    file and settings keeps the analysis (a phase set by hand too), another profile or --force makes it again
   - edit --end stop: the reveal's film bar holds the entry, whole bars, at most one splice per 8 bars,
     the bed stops on the bar line after the body; --end button back-times the final hit; --map writes the
     bars given by hand, and refuses a gap or a button ending off the bar before the final hit
@@ -353,6 +353,9 @@ def low_confidence(d):
     check(p.returncode == 2 and '--phase' in p.stderr, 'and edit refuses until the phase is set')
     p = run(['analyze', 'audio/music/flat.wav', '--quiet', '--phase', '0'], d2)
     check(p.returncode == 0, '--phase 0 resolves it' + ('' if p.returncode == 0 else f': {p.stderr[-200:]}'))
+    p = run(['analyze', 'audio/music/flat.wav', '--quiet'], d2)
+    check(p.returncode == 0 and 'is current' in p.stdout,
+          f'a run without --phase keeps the analysis whose phase was set by hand (exit {p.returncode})')
     p = run(['edit', '--bars', '4', '--reveal-bar', '2', '--end', 'stop'], d2)
     check(p.returncode == 0, 'edit runs on the set phase' + ('' if p.returncode == 0 else f': {p.stderr[-200:]}'))
 
