@@ -1,4 +1,5 @@
 import React, { useLayoutEffect, useRef } from 'react';
+import { C } from '../brand/tokens';
 import { clamp, E } from '../lib/anim';
 import { type FilmCtx, f60x, fpsOf, useFilm } from '../lib/film';
 import type { Declares } from '../timeline';
@@ -22,12 +23,14 @@ import { hash01, lab, normStops, plateAt, srgbOf, type Stop } from './plates';
  * a dither offset: `blue` (interleaved gradient noise, the house), `ordered` (Bayer 8x8) or `tpdf` (+-1 level).
  * `levels` 256 is plain 8-bit; 2-8 gives a visible dithered posterise (a print or screen texture). `grain`
  * adds monochrome grain (sigma in 8-bit levels, re-seeded at `grainFps`, 24) before the rounding, so the grain
- * dithers too. fieldPixels() is pure and Node-safe; <GradientField> paints it on a canvas every frame.
+ * dithers too. fieldPixels() is pure and Node-safe; <GradientField> paints it on a canvas at half size by default
+ * (`res` 0.5: the field is soft and its dither survives the 2x upscale; give 1 for a posterised or grained field
+ * seen close) and computes a still field (fieldIsStill) once per recipe instead of every frame.
  * Plates for the other material files (radial, conic and grain tiles) are baked here once and moved by
  * transform: platePixels() is pure, bakePlate() caches a data URL per recipe.
  */
 
-export const GRADIENTS = { step: 6, grain: 1.5, grainFps: 24, swirl60: 34, satinPeriod: 9, radius: 0.75 } as const;
+export const GRADIENTS = { step: 6, grain: 1.5, grainFps: 24, swirl60: 34, satinPeriod: 9, radius: 0.75, res: 0.5 } as const;
 
 export type DitherKind = 'blue' | 'ordered' | 'tpdf';
 export type FieldMode = 'linear' | 'radial' | 'mesh' | 'satin' | 'swirl' | 'stripes';
@@ -122,8 +125,9 @@ const rampInto = (lut: Float32Array, u: number, o: Float32Array, k: number) => {
   for (let c = 0; c < 3; c++) o[k + c] = lut[i * 3 + c] + (lut[(i + 1) * 3 + c] - lut[i * 3 + c]) * t;
 };
 
-/** House ramps: the slate night with the accent (dark to light), and the accent's cool neighbours. */
-export const NIGHT = ['#0B100D', '#1B2A22', '#08965A', '#77D59E', '#F2FBF5'] as const;
+/** House ramps, dark to light: the night on the brand's neutral ink with the accent, and the accent's cool neighbours. */
+export const NIGHT = [C.ink, C.ink2, C.accent, C.accentLift, C.paper] as const;
+// cinetic:device-palette the tide ramp: the accent's cool neighbours, a colour field
 export const TIDE = ['#06121A', '#0E3B4A', '#11A39A', '#9FE3D6', '#F4FBFA'] as const;
 
 // ---------------------------------------------------------------------------------------------------- fields
@@ -276,25 +280,57 @@ export const gradientFieldFrames = (p: GradientFieldProps, film: Partial<FilmCtx
   return p.swirl ? { start: p.swirl.at, settled: p.swirl.at + f60x(p.swirl.dur60 ?? GRADIENTS.swirl60, fps) } : {};
 };
 
-/** Paints the field into a canvas of the box (w x h, default the film) every frame; `res` < 1 paints smaller and scales up. */
+/** A field that never changes over time: no spin, drift, orbit, moving mesh point, moving stripes or grain. Pure. */
+export const fieldIsStill = (p: GradientFieldProps) => {
+  if (p.grain) return false;
+  const mode = p.mode ?? 'linear';
+  if (mode === 'linear') return !p.spin && !p.drift;
+  if (mode === 'radial') return !p.orbit || (!p.orbit[0] && !p.orbit[1]);
+  if (mode === 'mesh') return (p.points ?? []).every((m) => !m.orbit || (!m.orbit[0] && !m.orbit[1]));
+  if (mode === 'stripes') return p.stripes?.speed === 0;
+  return false; // satin folds and the swirl always move
+};
+
+const stillCache = new Map<string, Uint8ClampedArray>();
+/** A still field's bytes, computed once per recipe and size (the last 4 recipes are kept). */
+const stillPixels = (key: string, W: number, H: number, p: GradientFieldProps, film: Partial<FilmCtx>) => {
+  const hit = stillCache.get(key);
+  if (hit) return hit;
+  const px = fieldPixels(W, H, p, 0, film);
+  if (stillCache.size >= 4) stillCache.delete(stillCache.keys().next().value as string);
+  stillCache.set(key, px);
+  return px;
+};
+
+/**
+ * Paints the field into a canvas of the box (w x h, default the film). `res` (0.5) paints smaller and scales up: a
+ * full-size field costs several hundred ms a frame on the CPU, half size a quarter to a third of that. A still
+ * field is computed once and drawn once while the canvas stays mounted; a moving one is computed every frame.
+ */
 export const GradientField: React.FC<GradientFieldProps & { frame: number; x?: number; y?: number; w?: number; h?: number; res?: number; style?: React.CSSProperties }> = (props) => {
   const film = useFilm();
   const ref = useRef<HTMLCanvasElement>(null);
-  const w = props.w ?? film.width;
-  const h = props.h ?? film.height;
-  const res = props.res ?? 1;
+  const { frame, x, y, w: bw, h: bh, res: r, style, ...field } = props;
+  const w = bw ?? film.width;
+  const h = bh ?? film.height;
+  const res = r ?? GRADIENTS.res;
   const W = Math.max(2, Math.round(w * res));
   const H = Math.max(2, Math.round(h * res));
+  const p: GradientFieldProps = { ...field, step: (field.step ?? GRADIENTS.step) * res };
+  const still = fieldIsStill(p);
+  const key = still ? `${W}x${H}|${JSON.stringify(p)}` : '';
   const buf = useRef<Uint8ClampedArray | undefined>(undefined);
+  const drawn = useRef('');
   useLayoutEffect(() => {
     const ctx = ref.current?.getContext('2d');
-    if (!ctx) return;
-    buf.current = fieldPixels(W, H, { ...props, step: (props.step ?? GRADIENTS.step) * res }, props.frame, film, buf.current);
+    if (!ctx || (still && drawn.current === key)) return;
+    const px = still ? stillPixels(key, W, H, p, film) : (buf.current = fieldPixels(W, H, p, frame, film, buf.current));
     const img = ctx.createImageData(W, H);
-    img.data.set(buf.current);
+    img.data.set(px);
     ctx.putImageData(img, 0, 0);
+    drawn.current = key;
   });
-  return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: props.x ?? 0, top: props.y ?? 0, width: w, height: h, ...props.style }} />;
+  return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: x ?? 0, top: y ?? 0, width: w, height: h, ...style }} />;
 };
 
 // ---------------------------------------------------------------------------------------------------- plates
@@ -381,5 +417,13 @@ export const bakePlate = (kind: PlateKind, stops: readonly (Stop | string)[], w:
 /** A grain tile as a cached data URL (browser). */
 export const bakeGrain = (size: number, sigma: number, g: number) => bakePixels(`grain|${size}|${sigma}|${g}`, size, size, () => grainTilePixels(size, sigma, g));
 
-/** Fields are continuous: nothing steps or flashes. A posterised field (`levels` < 16) is a texture, not a step. */
-export const declares = (_p?: Partial<GradientFieldProps>, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });
+/**
+ * Fields are continuous: nothing flashes, and a posterised field (`levels` < 16) is a texture, not a step. Grain
+ * re-seeds at `grainFps` (24): in a faster film each grain holds 2-3 frames, so a grained field gives the frames it
+ * is on screen (`span`, [from, to)) and is declared stepped there.
+ */
+export const declares = (p?: Partial<GradientFieldProps> & { span?: [number, number]; id?: string }, film?: Partial<FilmCtx>): Declares => {
+  const none: Declares = { stepped: [], flashes: [], cameraBlur: [], seams: [] };
+  if (!p?.grain || !p.span || fpsOf(film) <= (p.grainFps ?? GRADIENTS.grainFps)) return none;
+  return { ...none, stepped: [{ from: p.span[0], to: p.span[1], id: p.id ?? 'field-grain' }] };
+};
