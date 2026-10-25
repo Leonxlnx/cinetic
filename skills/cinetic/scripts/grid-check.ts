@@ -77,7 +77,9 @@
  *                  measured downbeat, an entry, a stop's end or the ending (error)
  *   anti-metronome outside reel and social films: at most 60 % of the ordinary cuts on downbeats,
  *                  and the cut intervals vary (coefficient of variation >= 0.25) (warnings)
- *   reveal-dip     a stop or dip of 0.2-0.5 s ends within 2 f of REVEAL (warning)
+ *   reveal-dip     a stop or dip of 0.2-0.5 s ends within 2 f of REVEAL (warning): the track's own stops and
+ *                  breaks, stop or dip events in --cues, and audio/score.json stopdowns.add (a depth 'stop'
+ *                  lasts stop_len, 0.2-0.7 s, default 0.4; a dip about 0.4 s)
  *
  * Declarations (LOOK, SEAMS, STEPPED, FLASHES, CAMERA_BLUR, END, REVEAL, SPRING_CLASS, STRUCTURAL,
  * SALIENCE; all optional, a timeline without them is checked exactly as before):
@@ -374,6 +376,40 @@ async function main() {
     }
   }
   const nearest = (list: number[], f: number) => list.reduce((best, x) => (Math.abs(x - f) < Math.abs(best - f) ? x : best), Infinity);
+  /** audio/score.json stopdowns.add as film-frame spans ending on their time (plan.py builds them): a depth 'stop'
+   *  lasts stop_len (0.2-0.7 s, default 0.4), a dip about 0.4 s. Times as score.py reads them: a frame, "@cue",
+   *  "@cue+6" or "bar:beat:16th" on the music grid. */
+  const scoreStopdowns = (): Span[] => {
+    const dir = dirname(tlPath);
+    const p = [join(dir, '..', 'audio', 'score.json'), join(dir, 'audio', 'score.json')].find((x) => existsSync(x));
+    let sd: { add?: unknown[]; stop_len?: number } | undefined;
+    try {
+      sd = p ? JSON.parse(readFileSync(p, 'utf8'))?.stopdowns : undefined;
+    } catch {
+      return [];
+    }
+    if (!sd || !Array.isArray(sd.add)) return [];
+    const stopLen = Math.min(0.7, Math.max(0.2, isNum(sd.stop_len) ? sd.stop_len : 0.4));
+    const frameOf = (x: unknown): number | undefined => {
+      if (isNum(x)) return x;
+      const s = String(x).trim();
+      let m = s.match(/^@([A-Za-z_]\w*)\s*([+-]\s*\d+(?:\.\d+)?)?$/);
+      if (m) {
+        const c = CUE?.[m[1]];
+        const f = Array.isArray(c) ? c[0] : c;
+        return isNum(f) ? f + Number((m[2] ?? '0').replace(/\s/g, '')) : undefined;
+      }
+      m = s.match(/^(\d+)(?::(\d+(?:\.\d+)?))?(?::(\d+(?:\.\d+)?))?$/);
+      return m ? musicAt((Number(m[1]) - 1) * 4 + Number(m[2] ?? 0) + Number(m[3] ?? 0) / 4) : undefined;
+    };
+    const out: Span[] = [];
+    for (const a of sd.add) {
+      const obj = a && typeof a === 'object' ? (a as { at?: unknown; depth?: string }) : null;
+      const f = frameOf(obj ? obj.at : a);
+      if (isNum(f)) out.push({ from: f - (obj?.depth === 'stop' ? stopLen : 0.4) * FPS, to: f, label: 'score.json stop-down' });
+    }
+    return out;
+  };
   // Sound onsets a cut or a cue can land on: the track's accents, entries, measured downbeats, stop
   // ends and ending; the designed effects (--cues); an analysed onset list (--onsets).
   const onsets: number[] = [];
@@ -850,6 +886,7 @@ async function main() {
     if (REVEAL !== null) {
       const dips: Span[] = [...(MUSIC.stops ?? []), ...(MUSIC.breaks ?? [])].filter((x) => x && isNum(x.from) && isNum(x.to));
       for (const e of soundEvents) if (/^(stop|dip|stopdown)$/i.test(e.kind) && isNum(e.dur)) dips.push({ from: e.f, to: e.f + e.dur });
+      dips.push(...scoreStopdowns());
       const near = dips.filter((x) => Math.abs(x.to - REVEAL) <= 2 + 1e-9);
       const good = near.filter((x) => (x.to - x.from) / FPS >= 0.2 - 1e-9 && (x.to - x.from) / FPS <= 0.5 + 1e-9);
       if (!near.length) warn('reveal-dip', `no stop or dip ends within 2 f of REVEAL (f${REVEAL}): before the biggest reveal, stop the track (or dip it) for 0.2-0.5 s and land the reveal on its return`);

@@ -136,6 +136,15 @@ for (const bpm of [120, 100]) {
       `the HyperFrames starter with a 124 BPM music.js is checked on the music grid (${esm ? 'in a vm: motion.js, music.js, timeline.js' : 'required by timeline.js'})`,
       why(r) || `bpm ${r.summary?.bpm}, music ${JSON.stringify(r.summary?.music)}`);
   }
+  // no stop in the track before the reveal: reveal-dip warns, until audio/score.json adds a stop-down that ends on it
+  const { dir } = hfAt(100, { music: { ...music, stops: [] } });
+  const bare = run(process.execPath, [...strip, '--no-warnings', GRID, join(dir, 'timeline.js'), '--json']);
+  const dipWarn = (r) => (r.findings ?? []).some((x) => x.check === 'reveal-dip');
+  mkdirSync(join(dir, 'audio'), { recursive: true });
+  writeFileSync(join(dir, 'audio', 'score.json'), JSON.stringify({ stopdowns: { auto: 'kit', add: [{ at: '@word2', depth: 'stop' }] } }));
+  const added = run(process.execPath, [...strip, '--no-warnings', GRID, join(dir, 'timeline.js'), '--json']);
+  result(dipWarn(bare) && !dipWarn(added), "reveal-dip counts a score.json stop-down that ends on the reveal (stopdowns.add, depth 'stop')",
+    `without it: ${dipWarn(bare) ? 'warns' : 'no warning'}; with it: ${dipWarn(added) ? 'still warns' : 'clean'}`);
 }
 {
   const { FILM, MOTION } = hfAt(120);
