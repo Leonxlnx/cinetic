@@ -157,10 +157,22 @@ export type Copy = {
 
 const pace = PACE[PACE_NAME];
 
+/** How the words of a line or fragment arrive, as fx/Chain draws them with the same `ink`. */
+export type Ink = 'reveal' | 'pop' | 'partial';
+/**
+ * Frames from a fragment's first frame to every word in: the pace's reveal, or for a line cut on ('pop')
+ * the frame after its last word's start, or part-inked ('partial') that start plus the 10 f ink, so a
+ * caption the act cuts on is not held as long as a calm reveal.
+ */
+const revealSpan = (n: number, ink: Ink = 'reveal'): number => {
+  const last = (Math.max(0, n - 1) * pace.stagger * FPS) / 60;
+  return ink === 'pop' ? Math.floor(last) + 1 : ink === 'partial' ? Math.ceil(last + (10 * FPS) / 60) : f60(revealFor(n, pace));
+};
+
 /** One line of copy revealed word by word with this film's pace; `out` defaults to the pace's hold. */
-export const line = (id: string, text: string, inF: number, out?: number): Copy => {
+export const line = (id: string, text: string, inF: number, out?: number, o: { ink?: Ink } = {}): Copy => {
   const n = wordCount(text);
-  const resolved = inF + f60(revealFor(n, pace));
+  const resolved = inF + revealSpan(n, o.ink);
   return { id, text, in: inF, resolved, out: out ?? resolved + f60(holdFor(n, pace)) };
 };
 

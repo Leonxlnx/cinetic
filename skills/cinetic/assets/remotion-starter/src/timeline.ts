@@ -200,13 +200,26 @@ export type Copy = {
 
 const pace = PACE[PACE_NAME];
 
+/** How the words of a line or fragment arrive, as fx/Chain draws them with the same `ink`. */
+export type Ink = 'reveal' | 'pop' | 'partial';
+/**
+ * Frames from a fragment's first frame to every word in: the pace's reveal, or for a line cut on ('pop')
+ * the frame after its last word's start, or part-inked ('partial') that start plus the 10 f ink, so a
+ * caption the act cuts on is not held as long as a calm reveal.
+ */
+const revealSpan = (n: number, ink: Ink = 'reveal'): number => {
+  const last = (Math.max(0, n - 1) * pace.stagger * FPS) / 60;
+  return ink === 'pop' ? Math.floor(last) + 1 : ink === 'partial' ? Math.ceil(last + (10 * FPS) / 60) : f60(revealFor(n, pace));
+};
+
 /**
  * One line of copy revealed word by word with this film's pace (the numbers <Words> uses), so
- * `resolved` is the frame its last word is fully in. `out` defaults to the pace's hold.
+ * `resolved` is the frame its last word is fully in. `out` defaults to the pace's hold. `ink` as the act
+ * draws it: 'pop' (cut on) or 'partial' resolve as soon as the last word is in.
  */
-export const line = (id: string, text: string, inF: number, out?: number): Copy => {
+export const line = (id: string, text: string, inF: number, out?: number, o: { ink?: Ink } = {}): Copy => {
   const n = wordCount(text);
-  const resolved = inF + f60(revealFor(n, pace));
+  const resolved = inF + revealSpan(n, o.ink);
   return { id, text, in: inF, resolved, out: out ?? resolved + f60(holdFor(n, pace)) };
 };
 
@@ -221,10 +234,10 @@ export const line = (id: string, text: string, inF: number, out?: number): Copy 
  *            6 f before the next one rises in its place, so two fragments never share the spot;
  *            the last one leaves at `out` (default: its resolve plus its hold)
  * grid-check checks the result: every fragment is read before the next arrives, the picture beat
- * between them, the words on screen at once and the copy rate.
+ * between them, the words on screen at once and the copy rate. `ink`: as <Chain ink> draws them.
  */
-export const chain = (id: string, mode: 'build' | 'replace', fragments: [text: string, inF: number][], o: { out?: number } = {}): Copy[] => {
-  const base = fragments.map(([text, inF], i) => ({ id: `${id}.${i + 1}`, text, in: inF, resolved: inF + f60(revealFor(wordCount(text), pace)), chain: id, mode }));
+export const chain = (id: string, mode: 'build' | 'replace', fragments: [text: string, inF: number][], o: { out?: number; ink?: Ink } = {}): Copy[] => {
+  const base = fragments.map(([text, inF], i) => ({ id: `${id}.${i + 1}`, text, in: inF, resolved: inF + revealSpan(wordCount(text), o.ink), chain: id, mode }));
   const last = base[base.length - 1];
   if (!last) throw new Error(`timeline: chain "${id}" has no fragments`);
   const words = (list: { text: string }[]) => list.reduce((n, c) => n + wordCount(c.text), 0);
