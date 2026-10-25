@@ -246,8 +246,8 @@ export const SplitFlap: React.FC<SplitFlapProps & { frame: number; x: number; y:
   const ch = p.size * 1.02;
   const gap = p.size * 0.06;
   const half = (c: string, lower: boolean, extra?: React.CSSProperties) => (
-    <div style={{ position: 'absolute', left: 0, top: lower ? ch / 2 : 0, width: cw, height: ch / 2, overflow: 'hidden', background: p.tile ?? '#16191C', borderRadius: lower ? `0 0 ${4 * u}px ${4 * u}px` : `${4 * u}px ${4 * u}px 0 0`, ...extra }}>
-      <div style={{ position: 'absolute', left: 0, top: lower ? -ch / 2 : 0, width: cw, height: ch, lineHeight: `${ch}px`, textAlign: 'center', fontFamily: p.family ?? FONT.mono, fontWeight: p.weight ?? 600, fontSize: p.size * 0.8, color: p.ink ?? '#F2F4F3' }}>{c}</div>
+    <div style={{ position: 'absolute', left: 0, top: lower ? ch / 2 : 0, width: cw, height: ch / 2, overflow: 'hidden', background: p.tile ?? C.ink2, borderRadius: lower ? `0 0 ${4 * u}px ${4 * u}px` : `${4 * u}px ${4 * u}px 0 0`, ...extra }}>
+      <div style={{ position: 'absolute', left: 0, top: lower ? -ch / 2 : 0, width: cw, height: ch, lineHeight: `${ch}px`, textAlign: 'center', fontFamily: p.family ?? FONT.mono, fontWeight: p.weight ?? 600, fontSize: p.size * 0.8, color: p.ink ?? C.paper }}>{c}</div>
     </div>
   );
   return (
