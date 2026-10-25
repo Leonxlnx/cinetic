@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { Freeze, useCurrentFrame } from 'remotion';
+import { Sequence, useCurrentFrame } from 'remotion';
 import { clamp, type Ease, M, rand } from '../lib/anim';
 import { irregular, onTwos, stepFrame } from '../lib/cadence';
 import { type FilmCtx, f60x, fpsOf, useFilm } from '../lib/film';
@@ -8,10 +8,11 @@ import type { Declares, SteppedRange } from '../timeline';
 /**
  * Stepped time for graphics: a layer animates on a lower cadence than the film (16 fps inside 24 or
  * 60, on twos for illustration) while the camera and footage stay smooth. <Stepped fps={16}> hands its
- * children a stepped frame through Remotion's Freeze, so any animation inside (yours or a primitive's)
- * holds each pose for film fps / 16 frames without knowing it; useStepped() reads both clocks. Stepped
- * layers get no shutter blur: declare the range (declares() says which) so blur sampling, forensics and
- * the speed checks treat the holds as designed.
+ * children a stepped frame (a Sequence shifted by the hold: a Freeze adds only its direct parent's offset
+ * before clamping, so under an outer Sequence that starts mid-scene its children would see the wrong
+ * frame), so any animation inside (yours or a primitive's) holds each pose for film fps / 16 frames
+ * without knowing it; useStepped() reads both clocks. Stepped layers get no shutter blur: declare the
+ * range (declares() says which) so blur sampling, forensics and the speed checks treat the holds as designed.
  *
  * collage(): a stop-motion build. Elements are born as cuts (full size and full opacity on their first
  * frame, never faded or scaled in) on an irregular but repeatable cadence (house: gaps of 4 frames at
@@ -65,7 +66,9 @@ export const Stepped: React.FC<SteppedProps & { children: React.ReactNode }> = (
   const active = (p.from === undefined || live >= p.from) && (p.to === undefined || live <= p.to);
   return (
     <Ctx.Provider value={{ stepped, live, active, fps: p.fps ?? 16 }}>
-      <Freeze frame={stepped}>{children}</Freeze>
+      <Sequence from={live - stepped} layout="none" name="stepped">
+        {children}
+      </Sequence>
     </Ctx.Provider>
   );
 };

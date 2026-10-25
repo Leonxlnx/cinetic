@@ -126,13 +126,18 @@ export const assembleFor = (logo: Logo, o: { start: number; x: number; y: number
   const main = parts.filter((q) => !details.includes(q));
   const out: AssemblePart[] = [];
   let at = o.start;
+  let lastH: Edge | null = null; // the edge the previous wide part came from: the next one comes from the other side
+  let lastV: Edge | null = null;
   main.forEach((q, i) => {
     const box = { x: o.x + q.box.x * k, y: o.y + q.box.y * k, w: q.box.w * k, h: q.box.h * k };
     const aspect = Math.max(box.w, box.h) / Math.max(1, Math.min(box.w, box.h));
     const horiz = box.w >= box.h;
     const leftHalf = q.cx < logo.box.x + logo.box.w / 2;
     const topHalf = q.cy < logo.box.y + logo.box.h / 2;
-    const from: Edge = horiz ? (i % 2 === 0 ? (leftHalf ? 'left' : 'right') : leftHalf ? 'right' : 'left') : topHalf ? 'top' : 'bottom';
+    // the first part comes from the side it sits on; after that the edges alternate
+    const from: Edge = horiz ? (lastH ? (lastH === 'left' ? 'right' : 'left') : leftHalf ? 'left' : 'right') : lastV ? (lastV === 'top' ? 'bottom' : 'top') : topHalf ? 'top' : 'bottom';
+    if (horiz) lastH = from;
+    else lastV = from;
     out.push({ id: q.id, from, at, box, curve: aspect > 4 ? 'stop' : E.softOut, dur: f60x((aspect > 4 ? ASSEMBLE.stripe24 : ASSEMBLE.panel24) * 2.5, fps) });
     at += gaps[i % gaps.length];
   });
