@@ -5,8 +5,8 @@
  *   1. Licences: Creative Commons codes, Wikimedia Commons metadata and NASA records map to the right licence;
  *      the default takes only licences that need no credit; --allow-credit adds CC BY; share-alike,
  *      non-commercial, no-derivatives, Mixkit's restricted licence and unknown licences are always refused.
- *   2. Every source's parser on recorded responses (assets-fixtures/: JSON only, no images; the keyed sources
- *      follow their documented response shapes): fields, renditions, licences, refusals.
+ *   2. Every source's parser on hand-written responses (assets-fixtures/: JSON only, no images, no recorded data;
+ *      each follows its source's response shape): fields, renditions, licences, refusals.
  *   3. Filtering (licence, size, shape, near-duplicates), interleaving, search options (keyed sources only with
  *      their key), the colour filter's scoring.
  *   4. The private licence record: where it lives (outside public/), what an entry holds, replacement.
@@ -26,7 +26,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIX = path.join(HERE, 'assets-fixtures');
 const verbose = process.argv.includes('--verbose');
 if (process.argv.includes('--help') || process.argv.includes('-h')) {
-  console.log('usage: node scripts/test/assets.test.mjs [--verbose]   (offline: recorded responses in scripts/test/assets-fixtures)');
+  console.log('usage: node scripts/test/assets.test.mjs [--verbose]   (offline: hand-written responses in scripts/test/assets-fixtures)');
   process.exit(0);
 }
 
@@ -66,7 +66,7 @@ for (const id of ['by-sa', 'by-nc', 'by-nd', 'by-nc-sa', 'by-nc-nd', 'mixkit-res
 ok(/commercial/.test(A.licenceAllowed('by-nc').why) && /personal/.test(A.licenceAllowed('mixkit-restricted').why) && /share-alike/.test(A.licenceAllowed('by-sa').why), 'refusals say why');
 ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICENCES[id].seen.url)), 'every credit-free licence carries the licence as read (quote + page)');
 
-// ---------------------------------------------------------------- 2. parsers on recorded responses
+// ---------------------------------------------------------------- 2. parsers on hand-written responses
 {
   const items = A.parseOpenverse(fx('openverse-cc0.json'));
   ok(items.length >= 3 && items.every((it) => ['cc0', 'pd'].includes(it.licence) && it.image && it.page && it.ref.startsWith('openverse:')), 'Openverse: cc0/public-domain items with image, page and ref', `${items.length}`);
