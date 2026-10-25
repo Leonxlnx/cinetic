@@ -115,6 +115,6 @@ export const ditherPlate = (stops: readonly (Stop | string)[], w: number, h: num
 
 // cinetic:device-palette spectral runs for a spectral plate (a rainbow accent is the film's one dominant accent)
 /** A ban-safe spectral run round the accent's side of the wheel (lime, green, teal, cyan, blue), no orange or violet. */
-export const COOL_SPECTRUM = ['#C9E46A', '#5CC977', '#08965A', '#11A39A', '#2DB4D6', '#3D7BE0'] as const;
+export const COOL_SPECTRUM = ['#B9D45F', '#5CC977', '#08965A', '#11A39A', '#2DB4D6', '#3D7BE0'] as const;
 /** The full spectrum, for a brand that asks for it (a rainbow accent is one film's one dominant accent). */
 export const FULL_SPECTRUM = ['#FFD23F', '#FF8A3D', '#F0407A', '#B04BE0', '#4B6BFF', '#2EC4E6', '#3DDC84', '#C9E46A'] as const;
