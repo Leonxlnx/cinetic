@@ -371,6 +371,53 @@
     "a picture graded outside the film's one hue"
    ],
    "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version number cut out of the plate at 90 % of the frame width, the new picture already moving inside its digits while the plate creeps 2 % toward the viewer.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a new photograph from the same graded shoot, cut on the beat, with a one-line fragment in the open third of the picture and the changed screen pinned into the place.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the drift of each picture carries across the cut at 0.7 of its speed, so the shoot reads as one travelling camera"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The letter window: the product's name cut from the plate with the latest picture inside, then the push into one stem until the picture is the world.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The plate slides back in as a band and the name and the version are cut through it, the place still moving inside the letters.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
    "assets": {
     "kind": [
      "video",
@@ -712,6 +759,53 @@
     "shots under 0.4 s"
    ],
    "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version printed in the lower third over a shot already travelling sideways at 9 px/f, the track's first accent landing on frame 0.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "One shot per change, each one beat long: the changed screen of the product held in the same corner while the footage behind it cuts on the accent and the travel never stops.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "every cut opens at 0.7x the outgoing travel speed, so one lateral move runs through all the changes"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The carried cut: four shots on four beats with one travel through them, braking on the fifth to a slow drift under the line that names the whole release.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "On the track's stop the travel halts on a night shot, the frame freezes, and the name and the version sit on it at display size.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
    "assets": {
     "kind": [
      "video"
@@ -1050,6 +1144,53 @@
     "pictures of offices with screens"
    ],
    "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version drawn as a line along the waterline of a real shore, the camera already trucking along it and the mark's dot riding the line's end.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change lives in a new real place: the product's changed readout pinned to a surface in the photograph (a quay wall, a window, a sail), re-projected every frame as the camera trucks past.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the truck's direction and speed carry across each cut, and the next place's readout enters from the same side"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The pinned chart: one line drawn along a real waterline, hour marks landing 8 f apart and a dot riding it to now, every point re-projected as the camera moves.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The mark printed onto a real surface in the last picture, in its perspective and grain; the name and the version set beside it in the sky.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
    "assets": {
     "kind": [
      "photo",
@@ -1373,6 +1514,53 @@
     "type on the busiest part of the texture"
    ],
    "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version pressed into the material at macro scale, a lighter copy of the texture inside the digits, the camera already drifting across the grain.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change on a new material in the same light: the changed part of the product cut out and laid on the texture, its contact shadow sharpening as it lands.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the drift across one material continues on the next in the same direction at 0.7x the speed"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The material pull: from the texture at x6 the camera pulls back until it resolves into the surface of the product, its edge sharp against a defocused copy of the material.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The light comes to rest on the mark pressed into the material, and the name and the version set beside it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
    "assets": {
     "kind": [
      "texture",
@@ -1692,6 +1880,53 @@
     "more than two pieces falling at once"
    ],
    "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version number cut from a printed photograph, already dropping toward the table from 140 px above, its shadow sliding in under it.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a new cut-out piece laid onto the growing collage with the product's changed screen printed on it, its shadow sharpening on contact while the camera creeps over the table.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "each new piece arrives from the side the last one left open, so the collage grows in one direction across the changes"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The settle: the product's own piece drops onto the collage, turning from 8 degrees to 2, its shadow sliding in and sharpening until it lies flat as printed paper.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "Every piece lifts away except the product's piece, which stays with the name and the version laid beside it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
    "assets": {
     "kind": [
      "photo",
@@ -2028,6 +2263,53 @@
     "stock before-and-after of people"
    ],
    "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version printed on the divider itself, the frame already split between the same place in two states, both halves drifting together.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is one place in its two states side by side, the product's changed readout pinned to the better half while both halves drift.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the next pair enters on a cut that keeps the divider where it was, so the line stays put while the worlds change around it"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The divider sweep: the product's readout drags the divider fully across in 40 f, a slight lift riding the revealed side, and the better world takes the frame.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The better world freezes on its last frame, the divider returns as a hairline, and the name and the version set on that line.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
    "assets": {
     "kind": [
      "video",
@@ -2359,6 +2641,53 @@
     "pairs that do not share a line"
    ],
    "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version printed on the paper edge of an archive photograph, its horizon at 38 % of the frame height, the drift already running at 24 px/s.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change pairs an archive print with today's clip of the same kind of place, the changed product state set in today's half as a short fragment.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the drift runs at one speed on both pictures, so each change slides in on the motion the last one left"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The matched horizon: an archive print and today's clip share one horizon, a wipe runs along it in 18 f and today holds with the product inside it.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The mark resolves out of the archive's grain on the last print as today's footage comes to rest; the name and the version set in the line's place.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
    "assets": {
     "kind": [
      "art",
@@ -2684,6 +3013,53 @@
     "stops that are only scenery"
    ],
    "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the camera already travelling along one long photograph on strongInOut, the version printed small in the open sky of the first stop.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a stop along the same photograph: the move brakes with a 2 % breath and the changed product state appears pinned to that place in the picture.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the camera leaves each stop the way it arrived, so the changes read as places along one continuous strip"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The long pan: the camera travels six frame widths along the one photograph in three stops of 0.8 s, past every change at once.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The camera pulls back until the whole picture is a band across the frame, and the name and the version sit under it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
    "assets": {
     "kind": [
      "photo",
@@ -3027,6 +3403,53 @@
     "more than two lens stops before the name"
    ],
    "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version set in the dark wall beside a framed work, the camera already creeping across the painting's surface toward its mark.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a new work from the same collection, cut on the beat, with the product's changed state set in the wall space beside it as a one-line fragment.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the creep across each work continues in the next at 0.7 of its speed, so the collection reads as one walk along a wall"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The loupe: a lens springs open on a detail of the last work at 2.2x, glides to a second detail and holds a beat, showing what the full frame cannot hold.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The loupe flies home and shrinks into the o of the name, still live, and the name and the version set around it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
    "assets": {
     "kind": [
      "art",
