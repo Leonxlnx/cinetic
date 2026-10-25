@@ -2,8 +2,8 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "cinetic",
   "displayName": "cinetic",
-  "version": "1.1.0",
-  "description": "Direct, score and render launch films, product videos, feature loops, logo stings and UI walkthroughs with Remotion or HyperFrames.",
+  "version": "1.2.0",
+  "description": "Direct and render launch films, update videos, product videos, feature loops, logo stings and UI walkthroughs with Remotion or HyperFrames: a direction per film, real imagery, brand kits and a licensed music track.",
   "author": {
     "name": "Leonxlnx",
     "url": "https://github.com/Leonxlnx"
@@ -11,5 +11,5 @@
   "homepage": "https://github.com/Leonxlnx/cinetic",
   "repository": "https://github.com/Leonxlnx/cinetic",
   "license": "MIT",
-  "keywords": ["video", "motion-design", "launch-video", "remotion", "hyperframes", "gsap", "animation", "sound-design"]
+  "keywords": ["video", "motion-design", "launch-video", "remotion", "hyperframes", "gsap", "animation", "sound-design", "music"]
 }
