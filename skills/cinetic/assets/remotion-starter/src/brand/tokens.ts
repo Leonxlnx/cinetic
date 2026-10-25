@@ -33,6 +33,12 @@ export const C = {
   // Declare it here as `second`, commented ui-state, so the one-accent checks leave it out and kit/ uses it.
 };
 
+/**
+ * Mask black: the zero of a luminance mask, a multiply or a screen-blend base, and a contact shade at an alpha.
+ * Never a surface, a ground or ink (ink is C.ink, tinted). It stays black whatever the brand: fx/ reads it.
+ */
+export const MASK = '#000000';
+
 // cinetic:placeholder - the family is the starter's stand-in: choose one for this brand (fonts.ts
 // says how), set FONT and FACES to its CSS family name ("<Name> Variable"), then delete this line.
 export const FONT = {
