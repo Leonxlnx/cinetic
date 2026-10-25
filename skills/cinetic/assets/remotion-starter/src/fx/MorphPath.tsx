@@ -11,8 +11,9 @@ import { hash01 } from './plates';
  *
  *   ShapeMorph  every shape is resampled by arc length to n points (96) starting at the top, clockwise; the
  *               target is rotated to the start index that moves least, and each point leaves on its own delay by
- *               its angle round the shape (`stagger` 0.35), so the change travels round the outline like a wave
- *               instead of every point sliding at once; drawn through a closed Catmull-Rom spline. `followers`
+ *               its distance round the shape from `from` (`stagger` 0.35), so the change spreads both ways round
+ *               the outline like a wave and meets on the far side (never a seam) instead of every point sliding
+ *               at once; drawn through a closed Catmull-Rom spline. `followers`
  *               are smaller copies at offsets that run the same morph `lag60` (5) frames later each: the
  *               satellites echo the hero's change one after another
  *   Goo         two blobs enter from the edges, fuse, split and fuse again (3 cycles, each 0.7 the size, 24 f),
@@ -127,7 +128,7 @@ export const alignPts = (a: Pt[], b: Pt[]): Pt[] => {
 
 const centroid = (p: Pt[]): Pt => [p.reduce((s, q) => s + q[0], 0) / p.length, p.reduce((s, q) => s + q[1], 0) / p.length];
 
-/** a -> b at t with a travelling delay: point i waits stagger x its turn from angle `from` (deg) round a's centre. Pure. */
+/** a -> b at t with a travelling delay: point i waits stagger x its distance round a's centre from angle `from` (deg), both ways. Pure. */
 export const morphPts = (a: Pt[], b: Pt[], t: number, o: { stagger?: number; from?: number; ease?: Ease } = {}): Pt[] => {
   const st = clamp(o.stagger ?? MORPH_PATH.stagger, 0, 0.95);
   const ease = o.ease ?? E.stdInOut;
@@ -136,7 +137,8 @@ export const morphPts = (a: Pt[], b: Pt[], t: number, o: { stagger?: number; fro
   return a.map((p, i) => {
     let turn = (Math.atan2(p[1] - cy, p[0] - cx) - f0) / (2 * Math.PI);
     turn -= Math.floor(turn);
-    const k = ease(clamp((t - st * turn) / (1 - st)));
+    const d = 2 * Math.min(turn, 1 - turn); // 0 at `from`, 1 opposite: the wave spreads both ways, no seam
+    const k = ease(clamp((t - st * d) / (1 - st)));
     return [p[0] + (b[i][0] - p[0]) * k, p[1] + (b[i][1] - p[1]) * k];
   });
 };
