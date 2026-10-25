@@ -1,30 +1,64 @@
 # Product UI in motion
 
-Covers showing a real product on screen: the smart part, one data module whose asserts hold the story's facts, legible framing, layout derived from data, state transitions (FLIP inserts, counters, rolling labels, chips), cursor physics, typing cadence, walkthrough chapters, and the pause test. Read it before building any act that shows the product, and before a UI-truth review.
+How a product moves on screen. The product is the hero of a launch film and of an update film: it should look like a
+working app doing its job, at film size, in one continuous camera, with the house's few rules of behaviour. Copy
+stays calm fragments; the product does the talking. Read this before building any act that shows the product, and
+before a UI-truth review. The product's real behaviour wins over any number here: if the app animates a row in
+150 ms, show that.
 
-The numbers are proven defaults from shipped films. The product's real behaviour wins over any of them: if the app animates a row in 150 ms, show that.
+Everything is a pure state function of the frame (any frame, any order, sub-frames included) plus one component that
+draws it with transforms and opacity. Numbers are 60 fps frames (`f@60`) unless they say otherwise; every function
+takes the film context or reads it inside a component.
 
 **Contents**
-1. [Real UI, not screenshots](#1-real-ui-not-screenshots)
+1. [The grammar in one screen](#1-the-grammar-in-one-screen)
 2. [The data module](#2-the-data-module)
 3. [Layout from data](#3-layout-from-data)
 4. [State transitions](#4-state-transitions)
-5. [Cursor physics](#5-cursor-physics)
-6. [Typing cadence](#6-typing-cadence)
-7. [Walkthrough chapters](#7-walkthrough-chapters)
-8. [The pause test](#8-the-pause-test)
+5. [The product kit](#5-the-product-kit)
+6. [Cards, bento and the one spring](#6-cards-bento-and-the-one-spring)
+7. [Bubbles, scroll, develop, hard steps, counters](#7-bubbles-scroll-develop-hard-steps-counters)
+8. [Cursor](#8-cursor)
+9. [Typing](#9-typing)
+10. [Supplied screenshots and product shots](#10-supplied-screenshots-and-product-shots)
+11. [Declarations](#11-declarations)
+12. [A product moment in one camera](#12-a-product-moment-in-one-camera)
+13. [Walkthrough chapters](#13-walkthrough-chapters)
+14. [The pause test](#14-the-pause-test)
 
 ---
 
-## 1. Real UI, not screenshots
+## 1. The grammar in one screen
 
-- **Build the product's own surfaces as React components** (`src/app/*.tsx`) fed by one data module. A screenshot can be texture in a background plate, never the hero: it cannot change state, and state changing is what the film is about.
-- **Named, specific, consistent data.** Real-sounding names, amounts and times that agree with each other. No fake KPIs, up-and-to-the-right charts, lorem ipsum, stock icons or generic dashboards: those read as "any product".
-- **Cause → action → result.** Every product action has a visible cause (a click, a typed request, an incoming event), the action itself, and a result that holds ≥ 36 f before the camera leaves. One element carries the action per shot.
-- **The UI survives a pause.** Any frame could be a screenshot of the real app: correct dates, consistent counts, labels that match positions (§8).
-- **Show the smart part.** The proof beat shows the feature's non-trivial behaviour, because that is the whole point of a feature video: per-item assignment rather than an even split, proportional allocation of shared costs, conflict resolution, ranking rather than listing, only the future replanned. Take it from the "unlike the obvious version, it…" line in `TREATMENT.md` (`references/concept-and-story.md` §2). Restraint applies to decoration, never to the product's intelligence: a film that shows a simpler behaviour than the product has undersells it, however well it moves.
-- **Name the feature once, and show what it lives in.** A stranger should know which product and which feature this is: enough of the app's real chrome (its header, sidebar or window edge) to read as software, and the feature's name exactly once, where the product itself would show it (the tab, the menu item, the button that causes the action) or as the one line of copy or on the end card. A feature name as a headline is a copy tell; never naming it is the opposite failure, because a clever behaviour nobody can name can't be searched for or asked about. Put the name in `data.ts` with the rest of the strings.
-- **Fill the frame.** The UI must be readable at 1080p and on a phone (the 480 px legibility sheet). Frame the product full-bleed, or push the camera in until the part doing the work fills most of the frame; a small card floating in empty space reads as a slide and its type is unreadable when the film is embedded. Text that carries the story is ≥ 22 px after camera scale (28 preferred, §3).
+- **Real UI, not screenshots as the hero.** Build the product's own surfaces as components fed by one data module.
+  A supplied screenshot moves under the camera, with the one element the film acts on rebuilt live over it (§10).
+- **Arrivals are front-loaded.** A panel, a card, a bubble, a tile: the biggest step is on its first frame, then a
+  long settle. Never an S-curve into place, never a fade-up from nothing, never a scale from zero.
+- **One spring per film.** One kind of element (`SPRING_CLASS`) may overshoot, every time it appears: usually the
+  container that pops open on the click. Everything else settles critically or on an arrive curve.
+- **Hard UI against eased type.** The product changes state the way software does: a list jumps a whole row, a
+  counter ticks linear values and is still counting when the shot cuts, a selection snaps in one frame. The copy
+  around it eases. The contrast is what makes the UI read as the product and the type as the film.
+- **Clicks have a grammar.** Squeeze, a short hold, release that snaps home at speed; nothing above rest afterwards.
+- **The cursor is a hand.** It travels a bowed path, swings upright as it lands, changes glyph with what it is over,
+  presses, and leaves once the product acts on its own.
+- **A flick is a U turned over.** Speed builds by a constant ratio a frame, peaks, brakes on friction, lands on the
+  target. It is the one UI move fast enough to want camera blur: it declares its own blur range.
+- **Imagery develops.** Pictures arrive as a tint in the film's own colours and come into full colour column by
+  column, on a static filter plus an opacity fade.
+- **Real content, film sizes.** A believable product with its own name, data that adds up, drawn icons, avatars as
+  shapes, real states (hover, pressed, typing, approved). Every web size ×1.9 (`uiFilm()`), nothing under 36 px in
+  focus; product numbers and labels at `caption` and up (`references/copy-and-type.md` §7).
+- **Cause → action → result.** Every product action has a visible cause (a click, a typed request, an incoming
+  event), the action itself, and a result that holds ≥ 36 f before the camera leaves. One element carries the action
+  per shot.
+- **Show the smart part.** The proof beat shows the feature's non-trivial behaviour (per-item assignment rather than
+  an even split, ranking rather than listing, only the future replanned), from the "unlike the obvious version, it…"
+  line in `TREATMENT.md`. A film that shows a simpler behaviour than the product has undersells it.
+- **Name the feature once, and show what it lives in.** Enough of the app's real chrome to read as software, and the
+  feature's name exactly once, where the product itself would show it, or as the one line of copy or on the end card.
+- **Fill the frame.** Push in until the part doing the work fills most of the frame; frame UI as macro crops and hero
+  planes, bleeding past an edge. A small card floating in empty space reads as a slide.
 
 ## 2. The data module
 
@@ -89,17 +123,17 @@ What the story asserts catch, each a defect that is easy to ship and obvious to 
 - **Order.** A list the copy calls sorted or ranked is sorted by the value shown.
 
 - **Before and after share ids.** When the product changes things, write the states as lists (`BEFORE`, `AFTER`, `FINAL`) whose items share ids, so an item can travel between layouts and keep its label. Assert what the after state promises: no overlaps, everything inside the visible window, counts that match the copy.
-- **The product only changes the future.** Assert that nothing before "now" moved: replanning the past was a real UI-truth defect in Tessel.
+- **The product only changes the future.** Assert that nothing before "now" moved: replanning the past is a UI-truth defect.
 - **One meaning per colour.** If the accent means "now" or "new", it never also marks an error or a success. A red ring meaning both "clash" and "done" was flagged.
 
 ## 3. Layout from data
 
 - **Positions and labels are functions of the data** (a row's y from its index, a block's rect from its start and end). A moved item carries its own label, and a label can never go stale.
-- **Readable at shot scale:** text the viewer must read is ≥ 22 px on screen after the camera scale (28 px preferred). Smaller text is texture and must not carry the story. Under 3D, lay out at shot scale with CSS `zoom` (see `references/camera.md` §5).
+- **Readable at shot scale:** text the viewer must read is ≥ 36 px on screen after the camera scale (`TEXT_MIN`). Smaller text is texture and must not carry the story. Under 3D, lay out at shot scale with CSS `zoom` (see `references/camera.md` §9).
 - **Tabular figures for every number** (`fontVariantNumeric: 'tabular-nums'`), so counters, times and amounts never jitter in width.
 - **Paint in z order.** Sort items by z before rendering (lifted items above grounded ones); stacks overlap left over right; badges on avatars get a 2 px ring in the background colour, so an overlap reads as layering, not as a bite.
 - **Collapse empty regions** until their content arrives. A section header over 120 px of nothing reads as a broken app.
-- **Decide layout thresholds per whole frame.** If a card switches layout at 40 px tall, decide it from `fd(f)` so every motion-blur sub-sample agrees (Tessel's `keepLayout`).
+- **Decide layout thresholds per whole frame.** If a card switches layout at 40 px tall, decide it from `fd(f)` so every motion-blur sub-sample agrees.
 
 ## 4. State transitions
 
@@ -113,12 +147,12 @@ const ROW = 64;
 type Row = { id: string; label: string };
 /** Row positions while `insertId` grows in at frame `at`: siblings shift as it opens (18-24 f). */
 export const listLayout = (rows: Row[], insertId: string, f: number, at: number) => {
-  const grow = prog(f, at, at + 20, E.ui);
+  const grow = prog(f, at, at + 20, E.stdInOut);
   let y = 0;
   return rows.map((r) => {
     const isNew = r.id === insertId;
     const h = isNew ? ROW * grow : ROW;
-    const out = { ...r, y, h, opacity: isNew ? prog(f, at + 8, at + 20, E.smooth) : 1 };
+    const out = { ...r, y, h, opacity: isNew ? prog(f, at + 8, at + 20, E.softOut) : 1 };
     y += h;
     return out;
   });
@@ -126,11 +160,11 @@ export const listLayout = (rows: Row[], insertId: string, f: number, at: number)
 ```
 
 - The new row's content fades in only once its slot is half open, so text never overlaps its neighbours.
-- A **reorder** interpolates each item from its before-y to its after-y on one curve (`E.glide` for 150–350 px, `E.inOut` for longer), lifting the moving item in z (shadow per `references/motion-tokens.md` §7) while siblings shift on the same timing.
+- A **reorder** interpolates each item from its before-y to its after-y on one curve (`E.stdInOut` for short moves, `E.strongInOut` for longer), lifting the moving item in z (a cast shadow from the key, `references/lighting.md`) while siblings shift on the same timing.
 - **New things arrive in the accent and relax to neutral over 10–30 f**: a new row's marker, a changed value, a typed letter. Colour then means "just happened". Colour ramps and OKLab mixing are in `references/brand-and-color.md`.
 
 ### 4.2 Counters count during the action
-A counter decrements (or increments) on each visible event, on whole frames, and rolls each changed digit over 6–8 f. Roll it (a masked vertical slide, as below) or cut it; never crossfade two numbers in place, because the half-and-half frames read as a ghosted double image, worse after motion blur. A counter frozen at "12" while everything resolves, then flipping to "0" in one frame, contradicts the picture.
+A counter decrements (or increments) on each visible event, on whole frames, and rolls each changed digit over 6–8 f (or runs linear and is cut mid-count: `countLinear`, §7). Roll it (a masked vertical slide, as below) or cut it; never crossfade two numbers in place, because the half-and-half frames read as a ghosted double image, worse after motion blur. A counter frozen at "12" while everything resolves, then flipping to "0" in one frame, contradicts the picture.
 
 **State follows its cause on the landing frame.** The event frame is the frame the cause lands: the contact frame of the tile that seats, the settle of the row that arrives, the press of the button. The counter starts rolling there, the check draws there, the total changes there, never a beat later, when it reads as a second, unexplained event. Export those frames from the act once (`LANDINGS`, the same constant `src/sync.ts` puts the sound on) and drive the counter, the check and the sound from it, so the three can't drift apart.
 
@@ -147,7 +181,7 @@ export const Counter: React.FC<{ f: number; start: number; events: number[]; dig
   digits = 2,
 }) => {
   const n = events.filter((t) => fd(f) >= t).length; // discrete: whole frames only
-  const roll = n > 0 ? prog(f, events[n - 1] - 1, events[n - 1] + 6, E.ui) : 1; // moving on the event frame
+  const roll = n > 0 ? prog(f, events[n - 1] - 1, events[n - 1] + 6, E.stdInOut) : 1; // moving on the event frame
   const now = start - n;
   const before = n > 0 ? now + 1 : now;
   return (
@@ -175,7 +209,7 @@ export const Counter: React.FC<{ f: number; start: number; events: number[]; dig
 - Export the event frames (`CLEARED_AT`) from the act so the sound design ticks on them (`references/timing-grid.md` §4).
 
 ### 4.3 Labels roll with the move
-A time or value label attached to a moving item updates in the product's real step size while it moves (Tessel rolled times in 5-minute steps), computed on whole frames:
+A time or value label attached to a moving item updates in the product's real step size while it moves (times roll in 5-minute steps, for example), computed on whole frames:
 
 ```ts
 import { fd } from '../lib/anim';
@@ -210,82 +244,167 @@ export const covers = (rectAt: (f: number) => Rect, texts: Rect[], from: number,
 
 - **Check it on the frames.** Tag the moving element `data-mover="<id>"` (and the text `data-text="<id>"` as always). `scripts/layout-audit.sh` then samples each text box with `elementsFromPoint`, which respects z-order and transforms as rendered, and fails `covered: <text> … under <mover>`. Audit the densest frames of every move with `--frames`, not only the cues.
 
-## 5. Cursor physics
+## 5. The product kit
 
-Use a cursor only while a human is acting. Once the product acts on its own, the cursor leaves (fade over 10 f after its last click, or exit the frame) and never returns: an autonomous product with a cursor parked in shot reads as a screen recording.
+`src/kit/` is a set of real product parts at film size, lit by the house key. It is the floor for every product
+moment: replace its strings and numbers with the brand's own, and pass `data=` to each panel rather than editing the
+sample.
 
-| Property | Default | Why |
-|---|---|---|
-| Shape | a plain system-style arrow, 3–5% of the frame height on screen (1.4–2.2× native when the camera is pushed in) | a custom cursor distracts from the UI; an oversized one covers the control it presses |
-| Path | quadratic arc, control point offset 15–25% of the path length to one side | wrists move in arcs; straight lines read as robotic |
-| Travel | 12–20 f on `E.out` (velocity decays about ×0.75–0.92/frame), then at least 60 f of hover, press and release on the target | arrives decisively; the time goes to the dwell, where the viewer reads the cause |
-| Hover | the target shows its hover state about 6 f before the press | real apps respond before the click |
-| Press | scale to 0.88 over 4 f, recoil over 8 f; the button reacts on the same frame | the click has a physical moment for the sound |
-| Rate | ≤ 1 click per 30 f; irregular 7 / 12 / 18 f gaps between micro-actions | a person, not a macro |
-| Placement | transform only (`src/fx/Cursor.tsx`), in screen space, target from `toScreen(shot, point)` (`references/camera.md` §2) | fractional left/top snaps to pixels; a cursor under the camera would balloon with the zoom |
+- `kitTheme(recipe, accent)`: every colour of the kit computed from one recipe at the accent's hue (no hex in the kit;
+  surfaces are neutral, avatars one hue at several lightnesses, never a rainbow).
+- Parts: `Surface` (a lit face with a contact shadow and a cast shadow away from the key), `Avatar` (initials at 36 px
+  and up, a drawn person below that), `AvatarStack`, `Badge`, `Check`, `Pending`, `Glyph` / `GlyphTile` (line glyphs
+  drawn in code: no icon library), `Meter`, `Button` (press amount from `fx/Cards press().q`), `Toast`, `Sparkline`,
+  `BarChart` (bars rise out of the baseline in turn), `Ring`, `Photo` (a product photograph made in code, or a
+  supplied `src`).
+- Panels with live states: `ProjectPanel` (status, team, selects with approvals, count, bar, the primary action;
+  `doneAt` switches badge, count, tick and button in one frame), `ChatCard` (`fx/Bubbles`, the composer types the next
+  line at 30 a second), `FeedCard` (`flick` lands a hand-thrown scroll on the highlight), `StatCard` (a figure
+  counting on linearly), `ApprovalsCard`, `BudgetCard`, `CategoryRows`, `ChartCard`, `RingCard`, `AmountToast`,
+  `ReportCover`, and `KitFallback` (the panel that fits a box's shape).
+- Sample data (`REVIEW`, `BUDGETS`): two believable products whose numbers add up and whose copy states a product
+  fact. They are the shape to copy, never the content to ship.
+- Every kit part is a pure function of its props and `frame`, text tagged `data-text` under a `data-ui` root (the
+  layout audit counts product strings apart from copy).
+- **Cards require content.** `<Card>` and `<Bento>` tiles show built UI (`children` / `content`), a supplied picture
+  (`image`), or nothing on purpose (`blank`). A card given none renders kit UI in its box instead of an empty slab,
+  and lint errors (`card-content`). Never draw grey placeholder bars: a frame without words, numbers or pictures that
+  mean something reads as a demo, and the picture floor counts skeleton bars.
+- Real pictures lead where the product has them: `Photo src=` and `ProjectPanel photos=[...]` take supplied or
+  licensed photographs (`references/imagery.md`); rewrite the sample's copy for the pictures you show, so every string
+  states a fact about what is on screen.
 
-`src/fx/Cursor.tsx` ships the arrow (`<Cursor x y scale press opacity />`, placed by transform only) and two helpers: `cursorArc(a, b, t, bow)` for the bowed path (negative `bow` flips the side) and `pressAt(frame, at)`, a 0..1 press that goes down over 4 f and recoils over 8 f (the arrow scales to 0.88 at full press).
+## 6. Cards, bento and the one spring
 
-```tsx
-import React from 'react';
-import { useCurrentFrame } from 'remotion';
-import { E, prog } from '../lib/anim';
-import { Cursor, cursorArc, pressAt } from '../fx/Cursor';
+`fx/Cards.tsx`:
 
-const FROM = { x: 1480, y: 900 }; // screen space: enters from lower right
-const SEND = { x: 1236, y: 612 }; // the button, projected from the product (toScreen)
-const MOVE = [140, 182] as const; // 42 f of travel, act-local
-const CLICK = 186; // 4 f after arrival, so the hover state shows first
+- **`enterState(f, { start, dur, ease, from, lean, defocus }, film)`**: a panel arrives front-loaded. House 34 f on
+  `E.snapOut` (about half the travel by 10 % of the time), from 240 px below, opacity 1 from the first frame (normal
+  16-122 f; the first frame carries 22-50 % of the travel). `lean`: the plane the panel rides on, house 10° flattening
+  to 0 on `E.glideOut`, starting 6 f after the position (the lean lags, never leads). `defocus`: optional, 4 px on the
+  first frame clearing over 6 f, at fixed ladder levels.
+- **`cardArrive(f, { start, dur, ease, from: { x, y, rot, scale }, creep }, film)`**: position, rotation and scale ride
+  one curve, so a tilted card squares up exactly as it lands (house 50 f on `E.snapOut`, a tilt of 8-35° at the
+  start), then `creep` keeps it alive in the hold (6-90 px/s).
+- **`demote(f, { at, dur, ease, to }, film)`**: the card already there scales to 0.82 and moves 87 px up over 20 f on
+  `E.whipBuild`, `at` = the frame it is half done. Put `at` on the newcomer's first frame: two moves read as one push.
+- **`press(f, at, { depth, down, hold, up }, film)`** → `{ scale, q, phase }`: house ×0.87 (normal 0.86-0.90; a big
+  tile 0.81), 9 f down on `M.press`, 3 f held, 10 f release on `E.buildIn` (it snaps home at speed and never passes 1).
+  Click sound on `at`; drive a colour snap or a shadow from `q`.
+- **`bento(f, A, B, { start, dur, ease, decay, delays, durs, eases }, film)`**: one layout unfolds into the next
+  (position, size, radius, fill and shadow per tile together). House 44 f on `E.snapOut`; delays 0-18 f (main tiles
+  together, edges after); `decay: 0.8` keeps 80 % of the remaining distance a frame. `<Bento tiles={[{ A, B, image?,
+  content?, contentAnchor? }]} />`: built content keeps its size (text never scales) and is revealed by the moving box;
+  `contentAnchor: 'box'` makes it ride the box's corner.
+- **`springBox(f, start, { A, B, preset }, film)`**: the film's one spring: a container pops from A to B on
+  `SPR.landing` (ζ 0.59, about 10 % over, home in 23 f); overshoot is clamped where a radius would turn negative.
+- `<Card frame box enter arrive demote press spring image perspective origin>` composes any of these into one
+  transform.
 
-export const ClickSend: React.FC = () => {
-  const f = useCurrentFrame();
-  const p = cursorArc(FROM, SEND, prog(f, MOVE[0], MOVE[1], E.out), 0.2); // bows up, over the chord
-  const shown = prog(f, MOVE[0] - 8, MOVE[0], E.smooth) * (1 - prog(f, CLICK + 20, CLICK + 30, E.smooth));
-  return <Cursor x={p.x} y={p.y} scale={1.6} press={pressAt(f, CLICK)} opacity={shown} />;
-};
-```
+## 7. Bubbles, scroll, develop, hard steps, counters
 
-- Put the click sound on the press frame. Keep the cue's `pan` from the cursor's x: `score.py` scales it into ±0.15 and plays every click at one level; see `references/sound.md`.
-- Keep the arc inside the frame and clear of the text the viewer is reading.
+- **Bubbles** (`fx/Bubbles.tsx`): a bubble cuts on at full opacity and full size (on its sound) below its slot and
+  slides up on an exponential (`bubbleY`: tau 12 f, home at 50 f, travel 56 px, normal 38-70). `lift: { share, tau }`:
+  the whole conversation takes a share of each new bubble's travel on a quicker time constant (0.25 with tau 4 f reads
+  as a live chat). Replies 20-32 f after the message before; a `typing` bubble's dots pulse until the next message from
+  that side replaces it. `<Bubbles messages x y width role header anchor />`, text at `caption` by default.
+- **Scroll** (`fx/Scroll.tsx`): `flickState(f, { start, crawl, lead, ramp, peak, hold, brake, distance, dir }, film)`:
+  speed builds ×1.05 a frame for 66 f to the peak (house 2600 px/s), holds 6 f, brakes in two stages (a quick drop
+  ×0.82 a frame for 40 % of the speed, a long coast ×0.977); `distance` lands it on the target row. Its frames above
+  900 px/s are declared as a `CAMERA_BLUR` range: copy it into the timeline and the blur pass renders them with the
+  shutter inside a crisp film. `<Scroll edgeMask>` fades lines in out of nothing at the edge.
+- **Develop** (`fx/Develop.tsx`): `developState()` 0 = the tint, 1 = full colour; house 24 f per picture on
+  `M.develop`, columns 4 f apart; `steps: { animFps: 16 }` puts it on stepped holds. The tint is a static duotone filter
+  on one copy; the colour copy fades in above it. Built UI develops too.
+- **HardStep** (`fx/HardStep.tsx`): `hardStepState()`, `snapBox()`, `stepValue()`: whole-frame state changes with
+  nothing in between (a list that moves only in row jumps). Every jump frame is declared.
+- **Counters** (`fx/Roll.tsx`): `countLinear(f, { from, perSec, start, round, animFps, phase, to }, film)`: counters run
+  linear and are cut mid-count; several in one frame at different rates (14 : 5 : 1 reads as live data).
+  `steppedTail(to, end)` lands a final value in decelerating steps; `<Roll hard>` swaps digits in one frame; a rolling
+  digit slides 18 f. The device book's [data and numbers](devices/data-and-numbers.md), [micro-interactions](devices/micro-interactions.md),
+  [loaders and progress](devices/loaders-and-progress.md) and [UI choreography](devices/ui-choreography.md) families hold
+  the rest (charts from cells, loaders, check pops, toggles, the agent's step list).
 
-## 6. Typing cadence
+## 8. Cursor
 
-Typed input runs at about 20 characters per second when the viewer reads it as it types (the calm pace; about 30 in crisp) with a human rhythm: per-character weights, quicker spaces, a breath after a sentence. A typed prompt is time-boxed to about 60–70 f whatever its length, on an eased count (most characters early, `E.type` in `src/fx/TypeOn.tsx`), then the finished line holds 72–120 f so it can be read; headlines type at 15–22 characters per second with hard per-letter pops. The schedule is computed once and exported for the sound.
+Use a cursor only while a human is acting. Once the product acts on its own, the cursor leaves in flight (it
+accelerates off the frame, banking) and never returns: an autonomous product with a cursor parked in shot reads as a
+screen recording.
 
-```ts
-import { rand } from '../lib/anim';
-import { ACT, CUE } from '../timeline';
+- `cursorMove(f, from, moves, film)`: successive bowed moves, house 44 f on `E.glideOut`, bow 0.18 (wrists move in
+  arcs). `cursorTilt()`: it swings in (up to 60° over a few frames), then settles upright from 16-24° over 36 f on
+  `E.settleOut`. `cursorRing(f, at)`: a thin ring that expands 10 → 34 px and fades on the click (a ring, never a glow).
+  `cursorState(f, { from, moves, tilt, shape, switches, click }, film)` returns everything for `<Cursor>`.
+- `<Cursor x y angle shape shadow ring press scale />`: `shape` arrow (hotspot at the tip) or ibeam (hotspot at its
+  visual centre, so a swap never moves the point that acts); `shadow` drop, cast (floating above the UI) or none.
+- Dwell 10-16 f on the target before the press; the target shows its hover state about 6 f before; at most one click
+  per 30 f, on irregular gaps. Place it by transform in screen space, at `toScreen(shot, point)`.
+- Put the click sound on the press frame. Keep the arc inside the frame and clear of the text being read.
 
-const L = (abs: number) => abs - ACT.proof.from;
-export const TYPE = { start: CUE.feat1 + 30, end: CUE.feat1 + 150 }; // absolute: 120 f for 60 characters
-export const PROMPT = 'Protect my mornings. Gym Tue + Thu. Ship the deck by Friday.';
-/** Act-local frame each character appears: ~30 chars/s between TYPE.start and TYPE.end (Tessel, crisp; calm: ~20). */
-export const CHAR_AT: number[] = (() => {
-  const w = [...PROMPT].map((ch, i) => {
-    let x = 0.75 + rand(`k${i}`) * 0.6; // per-character variation
-    if (ch === ' ') x *= 0.7; // spaces are quick
-    if (PROMPT[i - 1] === '.') x += 2.2; // a breath after a sentence
-    return x;
-  });
-  const total = w.reduce((a, b) => a + b, 0);
-  const a = L(TYPE.start);
-  const span = L(TYPE.end) - a;
-  let acc = 0;
-  return w.map((x) => a + ((acc += x) / total) * span);
-})();
-/** Absolute key frames for src/sync.ts, fractional on purpose: score.py thins and jitters them in time. */
-export const KEY_FRAMES = CHAR_AT.map((c) => c + ACT.proof.from);
-/** Characters visible at an act-local frame: pass fd(f), so every sub-sample of a frame agrees. */
-export const typed = (wholeFrame: number) => CHAR_AT.filter((c) => c <= wholeFrame).length;
-```
+## 9. Typing
 
-- Size the span from the text: `TYPE.end − TYPE.start ≈ PROMPT.length × 2 f` at 60 fps (Tessel typed 60 characters over 120 f).
-- **Each new character arrives in the accent and relaxes to ink over 12 f** (quadratic ease-out on its age `fd(f) − CHAR_AT[i]`), so the eye tracks the caret.
-- **The caret** is solid while typing and blinks 30 f on / 30 f off when idle, decided on `fd(f)`. `src/fx/TypeOn.tsx` does all of this (`typeFrames()` gives the key frames).
-- Keep the typed field alive: a slow push on the bar and a parallax drift behind it (`references/camera.md` §4). Typing on a locked-off frame measured as a dead hold.
-- The sound side (the `typing` style, thinning to about 12 keys/s, accented word starts, space and return keys) lives in `references/sound.md` §5.5c.
+Typing is for what the product types: `TypeOn` with `kind="human"` (30 characters a second in runs, pauses around
+punctuation), `"field"` (word by word every 5 frames), `"prompt"` (5 → 19 characters a second, slower on the last word)
+or `"stream"` (machine output, 50-150 a second) (`references/copy-and-type.md` §9). The schedule is computed once
+(`typeSchedule()`) and exported for the sound and a caret-following camera (`typeOn()`); discrete state is decided on
+`fd(f)`. The newest characters can carry an accent trail that ages to ink; the caret is solid while typing and blinks
+30 f on / 30 f off when idle. Keep the typed field alive: a slow push on the bar and a parallax drift behind it. A
+headline is never typed.
 
-## 7. Walkthrough chapters
+## 10. Supplied screenshots and product shots
+
+A launch or update film often has the real product: screenshots, stills of recordings, product photos. They move with
+the same grammar as built UI.
+
+- `<Card image={{ src: staticFile('shot.png'), fit, focus, zoom, zoomTo, zoomStart, zoomDur }}>`: `fit: 'cover'` fills
+  the card and crops; `focus` is the point kept in view and the centre of `zoom`; `zoomTo` pushes in slowly inside the
+  card (a camera move over a still).
+- `<Bento tiles={[{ A, B, image: {...} }]}>`: a screenshot tile re-crops around its focus as its box opens.
+- `<Develop image={{...}}>`: a screenshot arrives as a duotone and develops.
+- Supply images at least 2× their largest on-screen size, PNG for UI, and crop the focus onto the feature the shot is
+  about. **Rebuild the one element the film acts on** (the button that is pressed, the number that counts) as live UI
+  over the screenshot, at the same place and size, so it can press, spring and count; the rest stays the picture.
+- A supplied brand's screenshots come in through `brand.py` (`references/brand-kits.md`).
+
+## 11. Declarations
+
+| Primitive | `declares()` |
+|---|---|
+| Cards | nothing (no step, flash, blur or seam) |
+| Bubbles | one `stepped` frame per bubble cutting on |
+| Cursor | one `stepped` frame per shape switch |
+| Scroll | its fast frames as one `cameraBlur` range |
+| Develop | a `stepped` range when `steps` is set |
+| HardStep | one `stepped` frame per jump |
+| Roll | a `stepped` range for a hard counter on a 12/16/20/30 fps cadence |
+
+List the instances the acts use in `src/sync.ts` `declares()`; grid-check fails when the timeline does not cover them.
+
+## 12. A product moment in one camera
+
+One continuous camera over one desk, five beats, about 9 s, plus an end card. Each beat adds one device; the copy is
+one calm fragment per beat in a fixed cell, and every framing keeps the product out of that cell.
+
+| Beat | Picture | Primitives | Copy |
+|---|---|---|---|
+| 1 | the project panel enters front-loaded on a tilted plane (lean 20-25° flattening 6 f behind, a short entry defocus); the cursor swings upright as it lands on the button | `enterState`, `cursorState` | the hook, 1-2 words |
+| 2 | push in on the press; the button squeezes, the ring expands, and the film's one spring pops it open into its confirmation; the last pending badge switches in one frame | `press`, `cursorRing`, `springBox`, `stepValue` | none (the animation is the line) |
+| 3 | the next card lands (position and tilt on one curve) while the panel steps back; bubbles cut on and slide home, the composer types at the house rate | `cardArrive`, `demote`, `Bubbles` | the claim |
+| 4 | pull back: every card unfolds into the dashboard on one shared curve, the pictures develop from a duotone, the light pool brightens once as the board opens | `bento`, `Develop`, `LightField` | the second claim |
+| 5 | push onto the feed, which flicks and lands on the item that matters (its fast frames the declared blur range), while a live counter runs linear; a hard cut takes it mid-count | `flickState`, `countLinear` | the payoff |
+
+- Design the overview layout first in screen pixels at the pull-back framing, with the copy cell left empty, then map
+  it into the desk's coordinates. Every other framing is a scale and an anchor of that one layout, so the copy never
+  lands on UI.
+- Content is specific and adds up: one named project, one number every tile agrees with (48 shots: 44 then 48
+  approved, 48 / 48 on the board), avatars as initials, drawn icons, real states.
+- A close framing that crops a title crops it out completely, not halfway.
+- Depth: the desk casts shadows from the key; two or three pictures far behind it move at about 0.4 of the camera and
+  sit defocused; one shape passes close to the lens during the biggest camera move.
+- The cards' own faces fade out quickly (10-12 f) under the opening tiles, and the tiles' contents fade up as their
+  boxes open, so no frame shows two half-transparent layouts.
+
+## 13. Walkthrough chapters
 
 - **One chapter per 2–4 bars**, chapter changes on downbeats; 1–2 capabilities per 20 s, never a tour of every feature.
 - **Each chapter** is: a camera move onto the feature's anchor (`references/camera.md`), one cause → action → result, a caption of ≤ 6 words, and the result held ≥ 36 f before the next move.
@@ -293,7 +412,7 @@ export const typed = (wholeFrame: number) => CHAR_AT.filter((c) => c <= wholeFra
 - **A persistent anchor** (the story device, or the product's own "now" or selection marker) carries across chapters, so the walkthrough reads as one continuous product, not a slideshow.
 - Screen recordings of the real app are useful as texture and as a guide to its real behaviour; rebuild the hero moments as components so they can be timed to the grid.
 
-## 8. The pause test
+## 14. The pause test
 
 Pause on any frame and check it as a screenshot. Run this on the act contact sheets and at every cue (`scripts/sheet.py`, `npx remotion still`).
 
@@ -305,8 +424,9 @@ Pause on any frame and check it as a screenshot. Run this on the act contact she
 - Labels travel with their items; nothing shows a stale value after a move.
 - The accent keeps one meaning; success and error never share a colour.
 - Nothing in the past changed; only the future was replanned.
-- Text that carries meaning is ≥ 22 px on screen (32 px in 9:16); nothing important is cropped, or covered by a moving element or edge (§4.5).
+- Text that carries meaning is ≥ 36 px on screen whenever it is held in focus; nothing important is cropped, or covered by a moving element or edge (§4.5).
 - Counters, checks and totals have changed on the landing frame of their cause, not a beat later (§4.2).
 - The feature is named once and the product reads as an app (§1).
 - No cursor after the product became autonomous; at most one click per 30 f.
+- No card or tile is empty or filled with grey bars (§5).
 - Discrete state (typed text, caret, counters, layout switches) is computed from `fd(f)`, so motion-blur sub-samples never show a double caret or a half-typed letter.
