@@ -297,7 +297,7 @@ result(P.CARRY.ratio[1] === 0.7 && P.CARRY.decay60[1] === 0.89 && P.SPEED.residu
 }
 {
   const t = P.TYPE;
-  result(t.ui.size === 30 && t.caption.size === 46 && t.line.size === 84 && t.display.size === 128 && t.hero.size === 240 && t.giant.size === 900 && t.secondary.size === 48, 'TYPE roles ui 30, caption 46, line 84, display 128, hero 240, giant 900 (secondary kept)');
+  result(t.ui.size === 40 && t.caption.size === 46 && t.line.size === 120 && t.display.size === 200 && t.hero.size === 240 && t.giant.size === 900 && t.secondary.size === 48, 'TYPE roles ui 40, caption 46, line 120, display 200, hero 240, giant 900 (secondary kept)');
   result(P.LIGHT.dL[0] === 0.05 && P.LIGHT.dL[1] === 0.2 && P.LIGHT.maxC === 0.13 && P.LIGHT.poolSpeedPxS === 240, 'LIGHT band: dL 0.05-0.20, C <= 0.13, pools 240 px/s');
   result(P.RECIPE_GROUND[0] >= 0.93 && P.RECIPE_GROUND[0] <= 0.99 && P.RECIPE_GROUND[1] <= 0.015, 'RECIPE tinted paper ground in L .93-.99, C <= .015');
 }
