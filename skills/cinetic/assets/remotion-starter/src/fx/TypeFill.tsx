@@ -23,7 +23,8 @@ import { COOL_SPECTRUM, ditherPlate, type Stop } from './plates';
  *            (8 f) and parks on the keyword; `then` types on after it, each letter born hot, cooling in 24 f
  *   swap     letters leave the plate one by one (4 f apart), blink out for a gap (4 f) and return solid
  *   fill     the phrase grows 27 % (58 f, E.settleOut) while its fill turns from solid to the plate in the
- *            first 24 f, a deeper glow copy at one fixed blur behind it
+ *            first 24 f, a deeper glow copy at one fixed blur behind it; `grow` 0 and a `vertical` plate give
+ *            static bevelled metal numerals
  *
  * The default spectral run is the cool side of the wheel (lime, green, teal, cyan, blue): no orange or violet
  * unless a brand passes them (plates.ts FULL_SPECTRUM). Pure state: typeFillState(f); <TypeFill> measures the
@@ -64,6 +65,8 @@ export type TypeFillProps = {
   then?: string; // window: text that types on after the park
   stagger?: number; // swap: 60 fps frames between letters (4)
   gap?: number; // swap: dropout length (4)
+  grow?: number; // fill: growth share (0.27; 0 = static type, e.g. small metal numerals)
+  vertical?: boolean; // swap, fill: the plate runs top to bottom (a bevelled metal: light, mid, dark, light)
   id?: string;
 };
 
@@ -153,7 +156,7 @@ export const typeFillState = (frame: number, p: TypeFillProps, film?: Partial<Fi
   }
   const d = Math.max(1, f60x(p.dur ?? TYPE_FILL.fill.dur60, fps));
   const sh = Math.max(1, f60x(TYPE_FILL.fill.shift60, fps));
-  return { ...base, pos: E.softOut(clamp(t / sh)), scale: 1 + TYPE_FILL.fill.grow * (p.ease ?? E.settleOut)(clamp(t / d)) };
+  return { ...base, pos: E.softOut(clamp(t / sh)), scale: 1 + (p.grow ?? TYPE_FILL.fill.grow) * (p.ease ?? E.settleOut)(clamp(t / d)) };
 };
 
 /**
@@ -242,7 +245,7 @@ type DrawProps = TypeFillProps & {
   color?: string; // the ink (band ink, shimmer base, window base, swap solid, fill solid)
   accent?: string;
   band?: string; // shimmer band colour (white on dark grounds)
-  glow?: string; // fill: the glow copy's colour
+  glow?: string; // fill: the glow copy's colour ('none': no glow)
   family?: string;
 };
 
@@ -276,7 +279,7 @@ export const TypeFill: React.FC<DrawProps> = (props) => {
   const span = props.span ?? TYPE_FILL.span;
   const stops = props.stops ?? (props.mode === 'band' ? tintBand(ink, accent) : [mixColor(accent, '#FFFFFF', 0.35), accent, '#2DB4D6']);
   const plateW = props.mode === 'band' ? span * W : W;
-  const plate = useMemo(() => (props.mode === 'band' || props.mode === 'swap' || props.mode === 'fill' ? ditherPlate(stops, plateW, H) : ''), [JSON.stringify(stops), plateW, H, props.mode]);
+  const plate = useMemo(() => (props.mode === 'band' || props.mode === 'swap' || props.mode === 'fill' ? ditherPlate(stops, plateW, H, { vertical: props.vertical && props.mode !== 'band' }) : ''), [JSON.stringify(stops), plateW, H, props.mode, props.vertical]);
   const fea = (props.feather ?? (props.mode === 'shimmer' ? TYPE_FILL.shimmer.feather : TYPE_FILL.develop.head)) * letterW;
   const bw = (props.width ?? TYPE_FILL.shimmer.width) * letterW;
   const alpha = useMemo(() => {
@@ -388,7 +391,7 @@ export const TypeFill: React.FC<DrawProps> = (props) => {
         <defs>
           <clipPath id={clip}>{whole()}</clipPath>
         </defs>
-        {whole(glow, { opacity: TYPE_FILL.fill.glowOpacity * s.pos, style: { ...style, filter: `blur(${TYPE_FILL.fill.glowBlur * (props.size / 200)}px)` } })}
+        {props.glow === 'none' ? null : whole(glow, { opacity: TYPE_FILL.fill.glowOpacity * s.pos, style: { ...style, filter: `blur(${TYPE_FILL.fill.glowBlur * (props.size / 200)}px)` } })}
         {s.pos < 1 ? whole(ink, { opacity: 1 - s.pos }) : null}
         <g clipPath={`url(#${clip})`} opacity={s.pos}>
           <image href={plate} x={0} y={0} width={W} height={H} preserveAspectRatio="none" />
