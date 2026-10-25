@@ -26,7 +26,9 @@
  * (living share >= 95 %), seams (carried >= 40 %, no kind more than 3 times except the signature,
  * mix distance <= 0.35), cut-sync (hard cuts within 1 f of a sound, the picture leading by up to 3 f,
  * >= 50 %; within 100 ms >= 80 %; not scored on a one-take film), velocity-seams (every declared one
- * carries speed), colour (one hue group, accent <= 8 %, ink and ground in band), type (no role
+ * carries speed), colour (one hue group, neutral grounds, ink and ground in band, and from the picture reads:
+ * neutral pixels >= 40 %, no colour wash, the accent's hue family 6-15 % of the frame, no second accent;
+ * lib/look.ts NEUTRAL, COLOUR, PICTURE), type (no role
  * warnings), overlap (secondaries start before the primary reaches 90 %, the foreground lands about
  * 20 f@60 before the background, the next element enters 0-1 f before the previous leaves).
  *
@@ -111,6 +113,8 @@ const houseTarget = () => {
   const DUR = literal(anim, 'DUR') ?? {};
   const STAG = literal(anim, 'STAG') ?? {};
   const P = literal(look, 'PICTURE') ?? {};
+  const N = literal(look, 'NEUTRAL') ?? {};
+  const CO = literal(look, 'COLOUR') ?? {};
   const iqr = (row, lo = 1, hi = 3) => (Array.isArray(row) ? [row[lo], row[hi]] : null);
   return {
     source: src ? 'house (lib/look.ts GRAMMAR, lib/anim.ts DUR and STAG)' : 'house (built-in)',
@@ -134,7 +138,18 @@ const houseTarget = () => {
     },
     cutSync: { within1f: G.cut?.within1f ?? 0.5, within100ms: G.cut?.within100ms ?? 0.8, width100: 0.4 },
     // grounds: paper, the mid stone, the mid slate or a deep field, ink (lib/look.ts RECIPE); ink on a light or mid-light ground
-    colour: { hueGroups: 1, accentMax: 0.08, groundL: [[0.93, 0.99], [0.7, 0.8], [0.3, 0.42], [0.06, 0.23]], inkL: [0.12, 0.25] },
+    // and the colour of the picture (look-audit's picture reads): floor 70, house target 100, like the picture dimension
+    colour: {
+      hueGroups: 1,
+      accentMax: CO.accent?.frameMax ?? 0.25, // p95 of the accent's share of a frame (one designed flood aside)
+      groundL: [[0.93, 0.99], [0.7, 0.8], [0.3, 0.42], [0.06, 0.23]],
+      inkL: [0.12, 0.25],
+      groundCMax: N.maxC ?? 0.025,
+      neutral: { floor: 0.15, target: P.target?.neutralMin ?? CO.neutralTarget ?? 0.4 },
+      saturatedMax: { floor: P.saturatedMax ?? 0.45, target: P.target?.saturatedMax ?? 0.3 },
+      washShare: { floor: P.washFrame?.maxShare ?? 0.45, target: P.target?.washShare ?? 0.33 },
+      accent: P.target?.accent ?? CO.accent?.share ?? [0.06, 0.15],
+    },
     // the picture: the floor (look-audit fails under it) scores 70, the house target 100 (lib/look.ts PICTURE)
     picture: {
       floor: { flatMax: P.flatMax ?? 0.75, flatShare: P.flatFrame?.maxShare ?? 0.88, edgesMin: P.edgesMin ?? 0.018, saturatedMin: P.saturatedMin ?? 0.022, bleedShare: P.bleed?.share ?? 0.5, falloffShare: 0 },
@@ -381,13 +396,34 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
     } else if (seams.some((s) => s.kind === 'velocity')) dim('velocity-seams', null, null, 'unmeasured', 'run forensics.py on the render');
   }
 
-  // colour
+  // 100 at the target, 70 at the floor, linear between; under the floor it falls to 0 at twice the floor-target gap
+  const tier = (v, floor, target) => {
+    if (v === null || v === undefined || Number.isNaN(v)) return null;
+    const up = target >= floor; // larger is better
+    if (up ? v >= target : v <= target) return 100;
+    if (up ? v >= floor : v <= floor) return Math.round(70 + (30 * (v - floor)) / (target - floor || 1e-9));
+    const gap = Math.abs(target - floor) || Math.abs(floor) || 1;
+    return Math.max(0, Math.round(70 - (70 * Math.abs(v - floor)) / (2 * gap)));
+  };
+
+  // colour: one hue family, neutral grounds in band, and the picture's colour (neutral share, no wash, the accent band, no second accent)
   if (M && M.hue_groups !== undefined) {
-    const parts = [M.hue_groups <= T.colour.hueGroups ? 100 : M.hue_groups === 2 ? 60 : 0];
-    if (M.accent_p95 !== null && M.accent_p95 !== undefined) parts.push(atMost(M.accent_p95, T.colour.accentMax));
-    if (M.ground_L !== null && M.ground_L !== undefined) parts.push(T.colour.groundL.some(([lo, hi]) => M.ground_L >= lo && M.ground_L <= hi) ? 100 : 60);
-    if (M.ink_L !== null && M.ink_L !== undefined && M.ground_L > 0.5) parts.push(bandScore(M.ink_L, ...T.colour.inkL));
-    dim('colour', { hueGroups: M.hue_groups, accent: M.accent_p95, groundL: M.ground_L, inkL: M.ink_L }, Math.min(...parts), 'measured');
+    const Tc = T.colour;
+    const parts = [M.hue_groups <= Tc.hueGroups ? 100 : M.hue_groups === 2 ? 60 : 0];
+    if (M.accent_p95 !== null && M.accent_p95 !== undefined) parts.push(atMost(M.accent_p95, Tc.accentMax));
+    if (M.ground_L !== null && M.ground_L !== undefined) parts.push(Tc.groundL.some(([lo, hi]) => M.ground_L >= lo && M.ground_L <= hi) ? 100 : 60);
+    if (M.ground_C !== null && M.ground_C !== undefined && Tc.groundCMax !== undefined) parts.push(M.ground_C <= Tc.groundCMax + 1e-9 ? 100 : 60);
+    if (M.ink_L !== null && M.ink_L !== undefined && M.ground_L > 0.5) parts.push(bandScore(M.ink_L, ...Tc.inkL));
+    const Pm = M.picture ?? {};
+    const acc = Pm.accent;
+    if (Tc.neutral) parts.push(tier(Pm.neutral, Tc.neutral.floor, Tc.neutral.target));
+    if (Tc.saturatedMax) parts.push(tier(Pm.saturated_out, Tc.saturatedMax.floor, Tc.saturatedMax.target));
+    if (Tc.washShare) parts.push(tier(Pm.wash_share, Tc.washShare.floor, Tc.washShare.target));
+    if (acc !== undefined && acc !== null && Tc.accent) parts.push(acc > Tc.accent[1] ? tier(acc, Tc.accentMax, Tc.accent[1]) : acc < Tc.accent[0] ? tier(acc, Tc.accent[0] / 3, Tc.accent[0]) : 100);
+    if (Pm.second_accent === true) parts.push(60);
+    const got = parts.filter((x) => x !== null && x !== undefined);
+    dim('colour', { hueGroups: M.hue_groups, accent: M.accent_p95, groundL: M.ground_L, groundC: M.ground_C ?? null, inkL: M.ink_L, neutral: Pm.neutral ?? null, saturated: Pm.saturated_out ?? null,
+      washShare: Pm.wash_share ?? null, accentShare: acc ?? null, secondAccent: Pm.second_accent ?? null }, Math.min(...got), 'measured');
   } else dim('colour', null, null, 'unmeasured', 'needs look-audit.py');
 
   // picture: what the frames hold (look-audit.py picture floor): flat ground, structure, depth of field, colour mass, bleed, no skeleton bars
@@ -395,15 +431,6 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
     const Pm = M.picture;
     const Fl = T.picture?.floor ?? {};
     const Tg = T.picture?.target ?? {};
-    // 100 at the target, 70 at the floor, linear between; under the floor it falls to 0 at twice the floor-target gap
-    const tier = (v, floor, target) => {
-      if (v === null || v === undefined || Number.isNaN(v)) return null;
-      const up = target >= floor; // larger is better
-      if (up ? v >= target : v <= target) return 100;
-      if (up ? v >= floor : v <= floor) return Math.round(70 + (30 * (v - floor)) / (target - floor || 1e-9));
-      const gap = Math.abs(target - floor) || Math.abs(floor) || 1;
-      return Math.max(0, Math.round(70 - (70 * Math.abs(v - floor)) / (2 * gap)));
-    };
     const bleed = Pm.bleed_share ?? (Pm.bleed_acts?.length ? Pm.bleed_acts.filter(Boolean).length / Pm.bleed_acts.length : 1);
     const parts = [
       tier(Pm.flat, Fl.flatMax ?? 0.75, Tg.flatMax ?? 0.55),
@@ -546,6 +573,18 @@ const selfTest = () => {
   pair('colour', withM({ hue_groups: 1, accent_p95: 0.05, ground_L: 0.95, ink_L: 0.22 }), withM({ hue_groups: 3, accent_p95: 0.2 }), 'colour: one hue on paper scores 100; three hue groups and a 20 % accent do not');
   check(dimOf(withM({ hue_groups: 1, accent_p95: 0.05, ground_L: 0.35, ink_L: 0.2 }), 'colour').score === 100 && dimOf(withM({ hue_groups: 1, accent_p95: 0.05, ground_L: 0.74, ink_L: 0.14 }), 'colour').score === 100,
     'colour: the mid slate and the mid stone are house grounds (100)');
+  pair(
+    'colour',
+    withM({ ground_C: 0.008, picture: { neutral: 0.72, saturated_out: 0.12, wash_share: 0.05, accent: 0.1, second_accent: false } }),
+    withM({ ground_C: 0.1, picture: { neutral: 0.06, saturated_out: 0.83, wash_share: 1, accent: 0.67, second_accent: true } }),
+    'colour: a neutral picture with the accent on 10 % of the frame scores 100; a frame washed in the accent hue does not',
+  );
+  {
+    const C = T.colour;
+    const atFloor = dimOf(withM({ ground_C: 0.008, picture: { neutral: C.neutral.floor, saturated_out: C.saturatedMax.floor, wash_share: C.washShare.floor, accent: 0.1 } }), 'colour').score;
+    check(atFloor >= 70 && atFloor <= 72, 'colour: a picture exactly at the wash ceiling and the neutral floor scores 70', `${atFloor}`);
+    check(dimOf(withM({ ground_C: 0.04 }), 'colour').score === 60, 'colour: a ground at the accent chroma (C .04) is not a house ground (60)');
+  }
   pair('type', score({ layout: { warnings: [] }, look: lookA, target: T, format: 'launch' }), score({ layout: { warnings: Array.from({ length: 4 }, () => ({ kind: 'type-size' })) }, look: lookA, target: T, format: 'launch' }), 'type: no role warnings score 100; four do not');
   pair(
     'picture',
