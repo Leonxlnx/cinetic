@@ -31,6 +31,7 @@ export const GRADIENT_MAP = { in60: 8, to60: 36, perMap60: 6, stagger60: 6, wash
 
 /** The film's own two-ink field: luminance 0 -> a deep ink, .5 -> the accent, 1 -> a pale tint. */
 export const inkMap = (ink: string = C.ink, accent: string = C.accent): MapStops => [mixColor(ink, accent, 0.18), accent, mixColor(accent, '#FFFFFF', 0.82)];
+// cinetic:device-palette false-colour maps: each a dark-to-light run for one picture's luminance
 export const COOL: MapStops = ['#0B2F38', '#1E8FA3', '#8FE3EE', '#F0FBFD'];
 export const MINT: MapStops = ['#0B3D2A', '#2F9E6E', '#9BE8C2', '#F5FFF9'];
 export const HEAT: MapStops = ['#121A3A', '#126E7A', '#7CCB5E', '#E9F7B8', '#FFFFFF'];
