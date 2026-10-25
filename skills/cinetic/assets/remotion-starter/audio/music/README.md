@@ -17,7 +17,8 @@ here, `npm run audio` stops with "not found". To add one (or let `new-film.sh --
 2. `python3 scripts/audio/track.py add audio/music/<file> --title ... --artist ... --source ... --page URL
    --licence "..." --seen-quote "..." --seen-url URL` writes the record; then `track.py analyze audio/music/<file>`.
 3. Point `audio/score.json` `music.track` and `music.licence` at the file and its record, and set `key` from the
-   analysis.
+   analysis. `python3 scripts/audio/kit.py init --preset launch --force` (earshot 0.4+) swaps the starter's calm kit
+   for the launch kit, whose effects sit at their level over the music.
 4. `track.py edit --bars 6 --reveal-bar 6 --end stop`, then `track.py grid`: `src/music.ts` gets the track's bars
    and every cue in `src/timeline.ts` follows them.
 
