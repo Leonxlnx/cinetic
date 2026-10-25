@@ -33,9 +33,11 @@ What it recognises (by extension, then by name or folder):
                the image itself only under a camera move
   photos       images in a folder or with a name of photo, product, hero, lifestyle
 Roles: the accent is a colour named primary/accent/brand, else the most chromatic colour; the ground and ink
-are the named background/text colours, else the lightest and darkest neutrals; what the brand leaves out is
-derived from the house recipes at the accent's hue (tintedPaper paper and ink, the slate stage). The film
-keeps one accent: a second brand hue is recorded for product UI states and imagery only.
+are the named background/text colours, else the lightest and darkest neutrals. The kit's own greys and
+papers are the grounds: paper, mist, line, mute, slate and the raised surfaces each take a supplied neutral
+at their lightness first; what the kit leaves out is derived at the recipe's lightness on the kit's neutral
+(its greys' hue, chroma no higher than theirs and .025; a plain grey when it has none), never at the
+accent's hue. The film keeps one accent: a second brand hue is recorded for product UI states and imagery.
 
 Usage (from the film project root, or pass --project):
   python3 scripts/brand.py <kit folder or files...> [--name "Quill"] [--project .]
@@ -119,6 +121,17 @@ def rgb_hex(r, g, b):
 
 def derive(L, C, h):
     return P.oklch_hex(L, C, h)[0]
+
+
+def kit_neutral(neutral):
+    """(hue, chroma) the kit's own greys lean to: their chroma-weighted hue and their highest chroma (capped at
+    .025); a kit without tinted greys gets plain greys (C 0), whatever the accent."""
+    tinted = [c for c in neutral if c['C'] >= 0.004]
+    if not tinted:
+        return 0.0, 0.0
+    x = sum(c['C'] * math.cos(math.radians(c['h'])) for c in tinted)
+    y = sum(c['C'] * math.sin(math.radians(c['h'])) for c in tinted)
+    return math.degrees(math.atan2(y, x)) % 360, min(0.025, max(c['C'] for c in tinted))
 
 
 def colours_from_text(text, name=''):
@@ -344,7 +357,8 @@ def verdict(t, stage):
         fails.append(f'the accent {t["accent"]} holds {checks["accent_on_stage"]:.1f}:1 on its {stage} stage and the lift '
                      f'{checks["accent_lift_on_slate"]:.1f}:1 on the slate: it signals on neither (graphics need 3:1)')
     elif checks['accent_on_paper'] < 3:
-        notes.append(f'the accent holds {checks["accent_on_paper"]:.1f}:1 on paper: play the film on the {"brand\'s dark ground" if stage == "dark" else "slate or a deep field"}, '
+        where = "the brand's dark ground" if stage == 'dark' else 'the slate or a deep field'
+        notes.append(f'the accent holds {checks["accent_on_paper"]:.1f}:1 on paper: play the film on {where}, '
                      'or keep it to large graphics and floods on a light stage')
     return checks, fails, notes
 
@@ -540,37 +554,64 @@ def build(args):
                      '(tokens commented ui-state)')
     if not acc:
         warns.append('the brand has no chromatic colour: deal the film\'s one accent from the deck and check it with palette.py')
-    # tokens: supplied roles first, the rest from the house recipes at the accent hue
+    # tokens: the kit's own greys and papers are the grounds. Every ground role takes a supplied neutral at its
+    # lightness first; what the kit leaves out is derived on the kit's neutral (the chroma-weighted hue of its
+    # greys, chroma no higher than theirs and .025), never at the accent's hue: grounds derived at the accent hue
+    # turn a one-accent brand into a wash of its own colour (a cobalt brand on cobalt grounds).
     h = acc['h'] if acc else 250.0
-    # the starter's stages are paper (light) and ink (dark) whichever the film plays on: take the brand's
-    # lightest neutral at L >= .75 as paper and its darkest at L <= .30 as ink (the named roles first)
     neutral = [c for c in cols if c['C'] < 0.06 and c is not acc]
     lights = sorted([c for c in neutral if c['L'] >= 0.75], key=lambda c: (c is not ground and c is not ink, -c['L']))
     darks = sorted([c for c in neutral if c['L'] <= 0.3], key=lambda c: (c is not ink and c is not ground, c['L']))
     paper_c, ink_c = (lights[0] if lights else None), (darks[0] if darks else None)
-    # derived neutrals lean toward the brand's own neutral hue when its neutrals carry one, else the accent's
-    tinted = [c for c in neutral if c['C'] >= 0.015]
-    hn = max(tinted, key=lambda c: c['C'])['h'] if tinted else h
+    hn, cn = kit_neutral(neutral)
     stage = 'dark' if (ground is not None and ground['L'] < 0.5) else 'light'
-    paper = paper_c['hex'] if paper_c else derive(0.955, 0.008, h)
-    inkx = ink_c['hex'] if ink_c else derive(0.22, 0.012, h)
+    paper = paper_c['hex'] if paper_c else derive(0.955, min(0.008, cn), hn)
+    inkx = ink_c['hex'] if ink_c else derive(0.22, min(0.012, cn), hn)
     pL, inkL = lch(paper)[0], lch(inkx)[0]
     accent = acc['hex'] if acc else derive(0.56, 0.16, h)
     aL, aC, ah = lch(accent)
     lift = accent if aL >= 0.74 else derive(0.8, min(aC, 0.12), ah)
-    slate_src = next((c for c in neutral if 0.28 <= c['L'] <= 0.42 and c is not paper_c and c is not ink_c), None)
+    used = {id(c) for c in (paper_c, ink_c) if c is not None}
+
+    def src(c):
+        """What the kit supplied, for the cinetic:brand-supplied marker: the colour's name in the kit, or the logo."""
+        if c is None:
+            return False
+        lab = str(c.get('label') or '').strip()
+        return 'the logo fill' if c.get('from') == 'logo' or lab == 'logo' else f'the kit colour {lab}' if lab else 'a kit colour'
+
+    def grey(lo, hi, aim, ok=None):
+        """The kit neutral nearest `aim` inside [lo, hi] that no other role took (and passes ok), else None."""
+        got = sorted((abs(c['L'] - aim), i, c) for i, c in enumerate(neutral)
+                     if lo <= c['L'] <= hi and id(c) not in used and (ok is None or ok(c)))
+        if not got:
+            return None
+        used.add(id(got[0][2]))
+        return got[0][2]
+
+    def role(c, L, C):
+        return (c['hex'], src(c)) if c is not None else (derive(L, min(C, cn), hn), False)
+    slate_c = grey(0.28, 0.42, 0.34)
+    mist_c = grey(max(0.8, pL - 0.1), pL - 0.01, pL - 0.03)
+    line_c = grey(0.74, pL - 0.04, max(0.8, pL - 0.12))
+    mute_c = grey(0.4, 0.62, 0.52, lambda c: P.contrast(c['hex'], paper) >= 4.5)
+    ink2_c = grey(inkL + 0.02, 0.34, min(0.32, inkL + 0.05))
+    raised_c = grey(0.38, 0.5, 0.4)
+    T = {'ink2': role(ink2_c, min(0.32, inkL + 0.05), 0.012), 'mist': role(mist_c, max(0.86, pL - 0.03), 0.008),
+         'line': role(line_c, max(0.8, pL - 0.12), 0.01), 'mute': role(mute_c, 0.52, 0.01),
+         'slate': role(slate_c, 0.34, 0.025), 'slateRaised': role(raised_c, 0.4, 0.025)}
     tok = {
-        'ink': (inkx, ink_c is not None, 'type, marks, dark stages'),
-        'ink2': (derive(min(0.32, inkL + 0.05), 0.012, hn), False, 'raised surfaces on ink'),
-        'paper': (paper, paper_c is not None, 'the light stage'),
-        'mist': (derive(max(0.86, pL - 0.03), 0.008, hn), False, 'soft panels on paper'),
-        'line': (derive(max(0.8, pL - 0.12), 0.01, hn), False, 'hairlines, >= 1.5 px on screen'),
-        'mute': (derive(0.52, 0.01, hn), False, 'secondary text, >= 4.5:1 on paper'),
+        'ink': (inkx, src(ink_c), 'type, marks, dark stages'),
+        'ink2': (*T['ink2'], 'raised surfaces on ink'),
+        'paper': (paper, src(paper_c), 'the light stage'),
+        'mist': (*T['mist'], 'soft panels on paper'),
+        'line': (*T['line'], 'hairlines, >= 1.5 px on screen'),
+        'mute': (*T['mute'], 'secondary text, >= 4.5:1 on paper'),
         'white': ('#FFFFFF', False, 'pure white, only where a white world or a product surface needs it'),
-        'accent': (accent, bool(acc), 'the one accent'),
-        'slate': (slate_src['hex'] if slate_src else derive(0.34, 0.025, hn), bool(slate_src), 'the dark stage: a mid slate'),
-        'slateRaised': (derive(0.4, 0.025, hn), False, 'raised surfaces on the slate'),
-        'accentLift': (lift, lift == accent and bool(acc), 'the accent lifted to L .80 for the slate stage'),
+        'accent': (accent, src(acc) if acc else False, 'the one accent'),
+        'slate': (*T['slate'], 'the dark stage: a mid slate'),
+        'slateRaised': (*T['slateRaised'], 'raised surfaces on the slate'),
+        'accentLift': (lift, src(acc) if (acc and lift == accent) else False, 'the accent lifted to L .80 for the slate stage'),
     }
     checks, fails, more = verdict({k: v[0] for k, v in tok.items()}, stage)
     notes += more
@@ -632,7 +673,8 @@ def tokens_block(tok):
     w = max(len(k) for k in tok)
     lines = ['export const C = {']
     for k, (hx, supplied, what) in tok.items():
-        tag = 'cinetic:brand-supplied' if supplied else 'derived from the brand accent (house recipe)'
+        tag = (f'cinetic:brand-supplied {supplied if isinstance(supplied, str) else "a kit colour"}' if supplied
+               else 'derived on the kit\'s greys (house recipe)' if k not in ('accentLift', 'white') else 'house recipe')
         lines.append(f"  {k}: '{hx}',{' ' * (w - len(k))} // {what}; {tag}")
     lines.append('};')
     return '\n'.join(lines)
@@ -709,6 +751,16 @@ def write_project(args, brand, tok, src_files):
         out += ['src/brand/fonts.ts', f'src/brand/fonts/{slug(fam)}/']
     # logo parts
     lg = brand['logo']
+    mpath = os.path.join(sb, 'Mark.tsx')
+    if (lg['mark'] or lg['raster']) and os.path.isfile(mpath):
+        # the film's mark is the supplied logo now: the starter's stand-in notice goes, its sample mark stays a fallback
+        mk = open(mpath, encoding='utf-8').read().replace('\r\n', '\n')
+        mk2 = re.sub(r'// cinetic:placeholder - delete these three lines once the mark is the film\'s own[^\n]*\n(//[^\n]*\n){2}',
+                     '// The film\'s mark is the supplied logo (src/brand/logo.ts, written by scripts/brand.py); the sample mark\n'
+                     '// below is only the fallback LogoMark draws when no logo is passed.\n', mk, count=1)
+        if mk2 != mk:
+            write_text(mpath, mk2)
+            out.append('src/brand/Mark.tsx')
     if lg['mark']:
         svg = clean_svg(open(src_files['mark'], encoding='utf-8', errors='replace').read())
         lines = ['// The supplied logo, parsed into parts for LogoMark, AssembledMark and Lockup (written by scripts/brand.py',
@@ -727,7 +779,7 @@ def write_project(args, brand, tok, src_files):
         write_text(os.path.join(sb, 'logo.ts'), '\n'.join(lines) + '\n')
         out.append('src/brand/logo.ts')
     elif lg['raster']:
-        lines = ['// The supplied logo is a raster image (written by scripts/brand.py): it is placed whole. cinetic:brand-supplied',
+        lines = ['// The supplied logo is a raster image (written by scripts/brand.py): it is placed whole. cinetic:brand-supplied the kit\'s raster logo',
                  "import { type Logo, logoParts, SAMPLE_MARK_SVG } from './Mark';", '',
                  '/** No vector logo was supplied: LOGO stays the film\'s own mark, LOGO_RASTER is the supplied image (staticFile path). */',
                  'export const LOGO_SVG = SAMPLE_MARK_SVG;', "export const LOGO = logoParts(LOGO_SVG, { split: 'ids' });",
@@ -737,7 +789,7 @@ def write_project(args, brand, tok, src_files):
         out.append('src/brand/logo.ts')
     if brand['name']:
         write_text(os.path.join(sb, 'identity.ts'),
-                   "// The product's name and how it is set (written by scripts/brand.py). cinetic:brand-supplied\n"
+                   "// The product's name and how it is set (written by scripts/brand.py). cinetic:brand-supplied the product's name\n"
                    f"export const IDENTITY = {{ name: {json.dumps(brand['name'])}, supplied: true }} as const;\n")
         out.append('src/brand/identity.ts')
     write_text(os.path.join(sb, 'assets.ts'),

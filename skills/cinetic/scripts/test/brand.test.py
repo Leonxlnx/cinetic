@@ -10,7 +10,9 @@
      the screenshot is copied to public/brand/ and listed.
   3. A logo-only kit: the colours are measured from the SVG fills (source "measured").
   4. A dark-ground kit with CSS custom properties: the starter's paper and ink stages take the brand's
-     light and dark neutrals, the mark splits by its group ids.
+     light and dark neutrals and its surface grey, the mark splits by its group ids.
+ 4b. A cobalt kit with cool greys: paper, soft panels and hairlines are the kit's own greys and whatever is
+     derived keeps their chroma, never a ground at the accent hue; an accent-only kit gets plain greys.
   5. A raster logo (a PNG made here) is placed whole; its colours are measured without any image library.
   6. --check re-reads brand.json and fails when the tokens no longer hold contrast; a folder that is not
      a film project is refused; deck.py --brand reads what brand.py wrote.
@@ -178,6 +180,9 @@ result(os.path.isfile(os.path.join(proj, 'public', 'brand', 'screens', 'home.png
        'screenshots go to public/brand/ and src/brand/assets.ts, the name to identity.ts, the originals to brand/logo/')
 r2 = run(kit, '--project', proj)
 result(r2.returncode == 0 and read(proj, 'src', 'brand', 'tokens.ts') == tok, 'running it twice gives the same tokens')
+mk = read(proj, 'src', 'brand', 'Mark.tsx') or ''
+result('cinetic:placeholder' not in mk and 'supplied logo' in mk and 'export const logoParts' in mk,
+       'with a supplied logo the starter mark\'s stand-in notice goes (its sample mark stays as the fallback)')
 
 # 3. a logo-only kit: measured colours ---------------------------------------------------------------
 pb = project('film-b')
@@ -198,6 +203,38 @@ result(r.returncode == 0 and t.get('paper', {}).get('hex') == '#EEF2F8' and t.ge
        'a dark-ground brand fills the paper and ink stages with its own light and dark neutrals', json.dumps(t)[:200])
 result((bj.get('logo', {}).get('mark') or {}).get('split') == 'ids' and bj['logo']['mark']['parts'] == ['ring', 'moon'],
        'a logo with group ids splits by them')
+result(t.get('ink2', {}).get('hex') == '#172033' and t['ink2'].get('supplied'),
+       'the kit\'s own surface grey becomes the raised surface on ink', json.dumps(t.get('ink2')))
+
+# 4b. a cobalt brand with cool greys: the kit's greys are the grounds, nothing is derived at the accent hue ----
+kc = os.path.join(TMP, 'kit-cool')
+os.makedirs(kc, exist_ok=True)
+json.dump({'primary': '#1F5EFF', 'background': '#F5F7F9', 'surface': '#EBEDF0', 'border': '#DFE2E6', 'text': '#0E0F13'},
+          open(os.path.join(kc, 'colours.json'), 'w'))
+pc = project('film-cool')
+r = run(kc, '--project', pc, '--name', 'Cobalt')
+bj = json.loads(read(pc, 'brand', 'brand.json') or '{}')
+t = bj.get('colours', {}).get('tokens', {})
+hx = {k: v.get('hex') for k, v in t.items()}
+result(r.returncode == 0 and hx.get('paper') == '#F5F7F9' and hx.get('mist') == '#EBEDF0' and hx.get('line') == '#DFE2E6'
+       and hx.get('ink') == '#0E0F13', 'paper, soft panels and hairlines are the kit\'s own greys', json.dumps(hx))
+pal = importlib.util.spec_from_file_location('palette', os.path.join(SKILL, 'scripts', 'palette.py'))
+PAL = importlib.util.module_from_spec(pal)
+pal.loader.exec_module(PAL)
+derived = {k: PAL.parse_colour(v['hex']) for k, v in t.items() if not v.get('supplied') and k not in ('accentLift', 'white', 'accent')}
+result(derived and all(c[1] <= 0.012 for c in derived.values()),
+       'what the kit leaves out is derived on its greys (chroma no higher than theirs), never a ground at the accent hue',
+       json.dumps({k: [round(x, 3) for x in c] for k, c in derived.items()}))
+kn = os.path.join(TMP, 'kit-plain')
+os.makedirs(kn, exist_ok=True)
+json.dump({'primary': '#1F5EFF'}, open(os.path.join(kn, 'colours.json'), 'w'))
+pn = project('film-plain')
+r = run(kn, '--project', pn, '--name', 'Plain')
+t = json.loads(read(pn, 'brand', 'brand.json') or '{}').get('colours', {}).get('tokens', {})
+grounds = [PAL.parse_colour(t[k]['hex']) for k in ('paper', 'mist', 'slate', 'slateRaised', 'ink', 'ink2') if k in t]
+result(r.returncode == 0 and len(grounds) == 6 and all(c[1] <= 0.005 for c in grounds),
+       'an accent-only kit gets plain grey grounds (C <= .005), not grounds tinted with the accent',
+       json.dumps([[round(x, 3) for x in c] for c in grounds]))
 
 # 5. a raster logo ---------------------------------------------------------------------------------------
 kr = os.path.join(TMP, 'kit-r')
