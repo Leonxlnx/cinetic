@@ -1,6 +1,6 @@
 # Remotion engine: the starter project, verified API facts, config and CLI
 
-What the Remotion side of cinetic looks like: the starter's files and compositions, the Remotion 4.0.529 APIs a film actually uses (checked against the installed type definitions and source), the `remotion.config.ts` template, render recipes and the traps. Read it when you start a Remotion film (after `scripts/new-film.sh`), and again whenever an API behaves differently from what you expected. Numbers here are proven defaults and starting points, not dogma.
+What the Remotion side of cinetic looks like: the starter's files and compositions, the Remotion 4.0.529 APIs a film actually uses (checked against the installed type definitions and source), the `remotion.config.ts` template, render recipes and the traps. Read it when you start a Remotion film (after `scripts/new-film.sh`), and again whenever an API behaves differently from what you expected. Numbers here are house defaults and starting points, not dogma.
 
 ## Contents
 
@@ -191,5 +191,28 @@ Keep test renders short on a shared machine: frame lists and ranges, `--concurre
 - **`npm install` in a project whose `node_modules` is a symlink** (`new-film.sh --link-modules`) writes into the shared folder, changing every film that links it, and can break its pinned Remotion versions. Add a font family with `node scripts/add-font.mjs <name>` (it vendors the files into `src/brand/fonts/` via `npm pack`, `references/copy-and-type.md` §6); for any other package, give the project its own install (`rm node_modules && npm install`).
 - **The timeline must stay Node-loadable.** `grid-check.ts`, `export-cues.ts` and `layout-audit.sh` import `src/timeline.ts` with tsx: no React, CSS or `staticFile` imports in it. `src/sync.ts` may import acts, which import React, since tsx handles TSX, but never CSS: keep font imports in `brand/fonts.ts`, which only `FontGate` loads.
 - **Upstream doc slips** to ignore: trim values are frames, not seconds; a transparent-video example sets `defaultCodec: 'vp8'` while its CLI uses `vp9`; "always premount" is a no-op in renders.
+
+## 7. The film context, primitives and the 1.2 starter
+
+- **The film context** (`src/lib/film.ts`): `FilmProvider` gives every primitive the film's fps, size, pace and copy;
+  `useFilm()` reads them; `filmDefaults()` falls back to the timeline's constants. Primitives in `fx/` and `lib/` never
+  import `FPS`, `W`, `H` or `COPY` from the timeline (`timeline-constant` is a lint error), so a 24, 25 or 30 fps
+  comp, or a second film in the same project, uses them unchanged. Durations are written in 60 fps frames and converted
+  (`f60(frames, fps)`, `f60x` for fractional frames); starts are whole frames; discrete state decides on `fd()`.
+- **Pure state plus a thin component.** Every primitive exports `xxxState(frame, props, film)` (the animated numbers,
+  closed form, any frame in any order) and a component that draws them with transforms and opacity, and
+  `declares(props, film)` for the steps, flashes, blur ranges and seams it makes on purpose. List the instances the
+  acts use in `src/sync.ts` `declares()`.
+- **Footage on the film's clock:** `<Freeze frame={sourceFrame}>` around `<OffthreadVideo>` with the source frame
+  computed in closed form (`fx/Footage`, `fx/FootageRamp`): no playback clock, so any frame renders the same in any
+  order and the cut points are exact.
+- **Stepped layers** (`fx/Stepped`) shift a `<Sequence>` by the hold instead of wrapping children in `<Freeze>`: a
+  Freeze adds only its direct parent's offset before clamping to the composition, so under an outer Sequence that
+  starts a scene mid-way its children see the wrong frame. Stepped ranges render from one sample.
+- **The product kit** (`src/kit/`) and the device primitives (`src/fx/`) are part of the starter; `assets/directions/`
+  and the technique library are copied into `scripts/` by `new-film.sh`.
+- **`new-film.sh` flags for 1.2:** `--format update` (the update template), `--brand <kit>` (`brand.py`), `--like
+  <clip>` (`like.py measure`), `--music <file>` with its licence flags (`track.py add`, the launch kit), `--profile
+  calm|crisp|punchy`.
 
 Related: `references/chromium-rendering.md` (rasterisation traps and detection), `references/finishing.md` (blur, colour, encode, mux), `references/timing-grid.md` (the timeline pattern), `scripts/render.sh`, `scripts/lint-film.mjs`, `scripts/grid-check.ts`, `scripts/layout-audit.sh`.

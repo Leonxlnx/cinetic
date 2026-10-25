@@ -2,7 +2,7 @@
 
 Covers HyperFrames 0.8.79 as cinetic uses it: how it renders, the composition and timeline contract, the CLI, the traps its linter misses, and how to carry the beat grid, easing tokens, springs, sync and finishing over from the Remotion kit. Read it at Step 4 when the film is built in HyperFrames (HTML plus one paused GSAP timeline), and before the first render.
 
-Everything here was checked against the 0.8.79 source and by rendering `assets/hyperframes-starter/` with a sandbox headless Chromium. The numbers are proven defaults and starting points; the craft rules in the other references apply unchanged.
+Everything here was checked against the 0.8.79 source and by rendering `assets/hyperframes-starter/` with a sandbox headless Chromium. The numbers are house defaults and starting points; the craft rules in the other references apply unchanged.
 
 **Contents**
 1. [Render model](#1-render-model)
@@ -312,3 +312,19 @@ bash scripts/hf-finish.sh . out/film.mp4 --audio public/audio/soundtrack.wav --b
 - **K is capped at 240 / fps** (4 at 60 fps), so the samples always sit a quarter frame apart and a moving edge becomes a few bands `speed / 4` px wide. Measured on the starter: at 14 px/f the three 3.5 px bands read as a soft edge at speed but show on pause; at 27 px/f they separate into three distinct copies. Treat about 18 px/f as the ceiling, and build faster films in Remotion, whose adaptive sampling (`render.sh --blur`) adds samples with speed.
 - **Under about 12 px/f, skip blur**: the sharp master reads clean at 60 fps. The starter keeps its fastest move, the 277 px glide, at 11 px/f by giving it 72 f.
 - Measure speed on a sharp render with `scripts/measure-speed.py` before deciding.
+
+### 11.10 What carries over in 1.2
+
+- **Tokens and pace are mirrored:** `motion.js` carries the same `E`, `M`, `SPR`, `PACE` and tables as `lib/anim.ts` and
+  `lib/pace.ts` (`scripts/test/mirror.test.mjs` keeps them equal; `scripts/gen-pace.mjs` copies the pace after an
+  edit). The curve-by-role rules, the canonical word reveal, the jump re-centre, exits at speed and the transient
+  accent apply as written.
+- **The timeline contract is mirrored:** `timeline.js` takes the declarations (`LOOK`, `SEAMS`, `STEPPED`, `FLASHES`,
+  `END`, `REVEAL`, `STRUCTURAL`, `SALIENCE`) and `music.js` (written by `track.py grid`) gives the music grid;
+  `grid-check.ts` runs on it.
+- **The rich primitives are Remotion-first.** The device primitives, imagery primitives, the product kit, KeyLight,
+  LightField, camera-moves and the transitions built from content live in the Remotion starter. A film that leans on
+  them belongs in Remotion; in HyperFrames, build the device from its recipe in the device book with GSAP `fromTo`
+  tweens on the same numbers.
+- **Blur policy:** `hf-finish.sh --policy` (or a crisp `LOOK`) ignores `--blur K` for a crisp film; per-range camera
+  blur is a Remotion feature.
