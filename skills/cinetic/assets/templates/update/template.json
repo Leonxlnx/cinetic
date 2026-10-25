@@ -36,6 +36,10 @@
  ],
  "remove": [
   "src/acts/Act1.tsx",
-  "src/acts/Act2.tsx"
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
  ]
 }
