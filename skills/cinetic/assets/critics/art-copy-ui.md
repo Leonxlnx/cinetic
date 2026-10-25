@@ -29,9 +29,10 @@ You are the art director, the copy editor and the product designer. Judge every 
 1. **Hard bans first** (`SKILL.md` "Hard bans"; HB1–HB11 in `references/taste-and-slop.md`). Run this checklist on the watch sheets and on every resolved copy frame. A hit on any frame is a **P0**, unless `BRIEF.md` lists that exact thing as brand-supplied. Start its `problem` with the HB ID.
    - [ ] **HB1–HB3 words:** no eyebrow or kicker label, no stacked tagline, no "Introducing…", never two statements readable at once, no full sentence landing as one block, no filler text (decorative mono captions, fake metrics, labels nobody needs, lorem ipsum).
    - [ ] **HB4 type:** no serif face, no italic or oblique, no skewed text.
-   - [ ] **HB5–HB8 colour:** no orange, amber, beige, cream, tan or sand anywhere (accent, paper, glow); no neon, glow, bloom or halo; no purple, violet or indigo, no purple-to-blue or multi-hue gradient; no glass.
+   - [ ] **HB5–HB8 colour:** no orange, amber, beige, cream, tan or sand anywhere (accent, paper, glow); no neon; no halo or bloom around elements or type as decoration; no purple, violet or indigo; no monochrome accent wash; no glassmorphism as a UI style. Light, glow, spectral accents, dithered gradients and glass inside a device that does a job are allowed (`references/lighting.md` §5).
    - [ ] **HB9–HB10 decoration:** no emoji or stock icons, no sparkles for "AI", no particles, confetti, lens flares or code rain.
-   - [ ] **HB11 motion:** overshoot only on true landings (an object arriving at a surface or a lock), at most 2 in the film; nothing else bounces, and copy never overshoots or moves letter by letter (the one hero word excepted).
+   - [ ] **HB11 motion:** overshoot only on the film's one spring class; nothing else bounces, and copy never overshoots or moves letter by letter (the one word that earns it excepted).
+   - [ ] **Credits:** no music or imagery credit in the picture.
 
    For a borderline colour, measure it rather than judging by eye: `python3 scripts/palette.py --accent '<hex>'` refuses one in a banned region. Read `node scripts/lint-film.mjs src` too, but trust the frames: the lint cannot see a rendered glow or a filler caption.
 2. **Copy.** Grab every line at its resolved frame from `COPY`: `bash scripts/grab.sh {{VIDEO}} <resolved> --width 960 --out {{WORKDIR}}/copy`.
@@ -45,25 +46,28 @@ You are the art director, the copy editor and the product designer. Judge every 
    - There is one family on one set of tokens: the display weight and tracking are a single value everywhere, not 590 here and 620 there.
    - Emphasis comes from size or motion (italic and serif are hard bans, step 1).
    - Numbers use tabular figures.
-   - Statement 88-128 px; secondary 44-56 px; readable UI at least 22 px after camera scale (check `legibility.png`).
+   - Type roles at film size: `line` 120, `display` 200, `hero` 240, `giant` 900 (once per film, the set of one moment, never a faint watermark), `caption` 46, `ui` 40; nothing under 36 px held in focus for more than 6 f (check `legibility.png` and the layout audit's type-role warnings).
    - Look for glyph collisions: a closed word space, a period off the baseline, a cover that lets glyph tops show.
    - Look for faux italics from 3D shear, and text that stays blurred for more than 6 f.
-   - Type never overshoots: no spring bounce, no slam on every line, no per-letter rise on copy (F11). Emphasis is one accent sweep or a last-word accent. Text being read drifts at most about 3 px/f and never freezes.
+   - Type never overshoots: no spring bounce, no slam on every line, no per-letter rise on copy (F11). Words arrive front-loaded (a third visible on the first frame); exits leave at speed, never a standalone fade on a statement; colour on type is transient. Text being read drifts at most about 3 px/f and never freezes.
 4. **Brand personality and the mark.**
    - Do the family, weights, case, stage, accent and shapes follow from the three adjectives in `TREATMENT.md` (`references/brand-and-color.md` §2)? A calm brand in a heavy grotesk, or a fire-named dev tool on a pale SaaS stage, is a mismatch.
+   - With a supplied kit (`brand/brand.json`): the real logo's parts, the kit's colours and greys as grounds, the kit's typeface; a redrawn or recoloured logo is a **P0**.
    - Does anything look like the starter or Tessel: the starter's Geist or palette, a red "now" dot, a block-and-accent-dot or dome-and-block mark? That is house-style convergence (D9).
    - Is the mark ownable: it passes the 16 px test, links to the name or the product, and could not belong to ten other startups? Is the resolved lockup 28–45% of the frame's width?
    - **Misread test.** Grab the mark at 64 px (a frame of the lockup scaled down, or `out/stills/`), look for half a second and name it. If the first read is a common symbol (a minus or plus, an emoticon, a menu or "more" icon, a padlock, a play button, ±), it is a **P0** (D12): the fix is new geometry, `references/brand-and-color.md` §4.
    - **Lockup typography.** Do the mark and the name read as one object: the name's stems within about 15% of the mark's stroke, a gap about as wide as the widest space inside the name, a shared baseline? A careless setting is a **P1** (`references/brand-and-color.md` §6, three settings side by side).
 5. **Colour and surface.**
-   - There is one accent with a stated meaning, used for that meaning only. It covers at most 8% of pixels outside a single flood moment.
+   - There is one dominant accent with a stated meaning, used for that meaning only, over neutral grounds (C ≤ 0.025) or a deep field; it stays at its share of the picture outside a single flood moment (`look.json` `accent-share` and the wash ceiling). A film washed in the accent's hue (grounds, surfaces and graded pictures all at that hue) is a **P1** (D15).
+   - Imagery: one grade across the set, natural colour by default, no stock clichés, real resolution (`references/imagery.md` §5).
    - The accent's family and the stage match the personality in `TREATMENT.md`; the banned palettes and surfaces are step 1.
    - **Default palette (D10).** Framework blue (`#3B82F6` / `#2563EB` / `#1D4ED8`, hue about 260 at high chroma) or flat greys at chroma 0 in `tokens.ts` read as a template: name the token and a value from the brand's world (`references/brand-and-color.md` §9).
    - **Colourless (D11).** On `legibility.png`, a mid-film frame at 480 px should show a brand colour, and the accent should mark the product's action and the payoff. Measure a key beat with `python3 scripts/palette.py --cover <still> --accent '<hex>'`: near 0% on the beat that should carry it is a **P1**.
    - Look for muddy washes that turn ink to grey.
    - Look for banding: `banding.png` from the forensics lens shows it.
 6. **Composition.**
-   - Flag "text left, UI card right" and centred floating layouts.
+   - Flag "text left, UI card right" and centred floating layouts; the subject should bleed past an edge, off-centre (`framing-centred`).
+   - Flag grey placeholder cards or skeleton bars (D17) and empty cards: every card shows real UI, a real picture or is blank on purpose.
    - There is one focal action per shot.
    - Safe margins are at least 96 px at the sides and 64 px top and bottom, with at least 24 px of headroom at maximum punch. Check the `layout-*.json` violations.
    - Look for crops that slice glyphs, voids at the frame edge, and empty UI regions.
@@ -73,7 +77,7 @@ You are the art director, the copy editor and the product designer. Judge every 
    - The proof shows the feature's non-obvious behaviour, not a version any simpler product could show (the specificity test).
    - Data is named, specific and consistent: dates match weekdays, counts match what is shown, labels stay true after things move.
    - Data agrees with the story: the person who acted isn't shown as still owing or pending, totals and stated ratios match the numbers on screen, and no number appears twice in one frame.
-   - The UI fills the frame enough to read on a phone (`legibility.png`); no small card floating in empty space.
+   - The UI is rebuilt for film (every web size ×1.9) and fills the frame enough to read on a phone (`legibility.png`); no small card floating in empty space; a supplied screenshot moves only under the camera, with the element the film acts on rebuilt live.
    - Counters count down during the action, not in one frame afterwards, and every counter, check or total changes on the landing frame of its cause, not a beat later (I3).
    - The feature is named once (a UI label, the one line or the end card) and the product reads as an app: a stranger could say which product and which feature this is (A10).
    - The product changes only the future.
@@ -90,7 +94,7 @@ You are the art director, the copy editor and the product designer. Judge every 
 
 ## Return
 
-Return JSON only. `frame` is a number or an `"a-b"` range. `score` is 1 to 10 against top-tier launch films. End `overall` with `rubric: copy=N color=N composition=N product=N`.
+Return JSON only. `frame` is a number or an `"a-b"` range. `score` is 1 to 10 against the bar in `SKILL.md`. End `overall` with `rubric: copy=N color=N composition=N product=N`.
 
 ```json
 {

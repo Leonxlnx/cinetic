@@ -5,9 +5,9 @@ Prompt template for one review lens (see `references/review-loop.md`, §5). The 
 ## Context
 
 - Film: {{FILM}}, {{SPEC}} (for example `1920x1080@60, 30 s, 100 BPM, pace: calm`). The idea in one line: {{LOGLINE}}
-- Project root: {{ROOT}}. Read `BRIEF.md`, `TREATMENT.md` and `src/timeline.ts` first: the story, the device path and the beat-locked cues. The acts live in `src/acts/`.
+- Project root: {{ROOT}}. Read `BRIEF.md`, `TREATMENT.md`, `out/direction.json` (the dealt direction: space, light, camera, cuts, story shape, the signature shot and its beat, the lockup kind, the idea sentence and the competitor test) and `src/timeline.ts` first: the story, the device path and the music-locked cues. The acts live in `src/acts/`.
 - File under review: {{VIDEO}} ({{KIND}}: preview or master). Frame numbers are 0-based: frame = t × {{FPS}}.
-- QA folder for this round: {{QA}}. It holds `forensics.json`, `av.json`, `probe.json`, the 12 fps watch sheets (`watch_*.png`, one per 4 s chunk) and `legibility.png`.
+- QA folder for this round: {{QA}}. It holds `forensics.json`, `av.json`, `probe.json`, `look.json` (the motion and picture floors), the latest line of `out/grammar-score.json`, the 12 fps watch sheets (`watch_*.png`, one per 4 s chunk) and `legibility.png`.
 - Round {{ROUND}}. Changed since the last round, so check these hardest: {{CHANGED}}
 - Already fixed. Do not re-report these: {{FIXED}}
 - Fixing time left before the next render: {{BUDGET}}
@@ -21,31 +21,36 @@ The brief, word for word:
 
 ## Your lens
 
-You are the creative director of a top motion studio. Judge the film as a viewer first and as a builder second.
+You are the creative director. Judge the film as a viewer first and as a builder second, and hold it to the bar: a film people watch twice and ask "how was that made?". Calm copy is right; a calm, flat or sparse picture is a failure.
 
 1. **Watch before you read.** Open the watch sheets in order and imagine real-time playback: each row of a 12 fps sheet is about 0.67 s. Write your first impressions down before you open any code or JSON. First impressions are the audience's; after reading the code you will forgive things the audience will not.
 2. **Run the hard-ban checklist on the sheets** (`SKILL.md` "Hard bans"; HB1–HB11 in `references/taste-and-slop.md`). A hit on any frame is a **P0**, on a key beat or not, unless `BRIEF.md` lists that exact thing as brand-supplied. Start its `problem` with the HB ID.
    - [ ] **HB1–HB3 words:** no eyebrow or kicker label, no stacked tagline, no "Introducing…", never two statements readable at once, no full sentence landing as one block, no filler text (decorative mono captions, fake metrics, labels nobody needs, lorem ipsum).
    - [ ] **HB4 type:** no serif face, no italic or oblique, no skewed text.
-   - [ ] **HB5–HB8 colour:** no orange, amber, beige, cream, tan or sand anywhere (accent, paper, glow); no neon, glow, bloom or halo; no purple, violet or indigo, no purple-to-blue or multi-hue gradient; no glass.
+   - [ ] **HB5–HB8 colour:** no orange, amber, beige, cream, tan or sand anywhere (accent, paper, glow); no neon; no halo or bloom around elements or type as decoration; no purple, violet or indigo; no monochrome accent wash; no glassmorphism as a UI style. Light, glow, spectral accents, dithered gradients and glass are allowed when they are part of a device that does a job, with one dominant accent over neutral grounds (`references/lighting.md` §5).
    - [ ] **HB9–HB10 decoration:** no emoji or stock icons, no sparkles for "AI", no particles, confetti, lens flares or code rain.
-   - [ ] **HB11 motion:** overshoot only on true landings (an object arriving at a surface or a lock), at most 2 in the film; nothing else bounces, and copy never overshoots or moves letter by letter (the one hero word excepted).
+   - [ ] **HB11 motion:** overshoot only on the film's one spring class (`SPRING_CLASS`); nothing else bounces, and copy never overshoots or moves letter by letter (the one word that earns it excepted).
+   - [ ] **Sound and credits:** music is a licensed track (never generated, never absent); no music or imagery credit appears in the picture.
 
    For a borderline colour, measure it rather than judging by eye: `python3 scripts/palette.py --accent '<hex>'` refuses one in a banned region. Read `node scripts/lint-film.mjs src` too, but trust the frames: the lint cannot see a rendered glow or a filler caption.
 3. Then answer, with frames:
+   - **The creative question.** Is the picture doing something a template would not? Name the moment a viewer would ask "how was that made?" (it should be the dealt signature shot). A clean, synced, correct film that could be any product's is a **P1** at least.
+   - **The direction.** Does the film keep its dealt direction (the space, the light, a camera that never parks, the cut grammar, the lockup kind)? Flag drift: a different space or light, a camera that stops, a second signature, a beat that uses the alternative, a lockup of another kind, a signature shot that is missing or repeated (**P1**; P0 when the signature is missing).
+   - **A rich picture.** Real imagery or a lit world where the subject has one; three depth planes; light that moves and one light event per act; the subject bleeding past an edge, off-centre; colour mass from pictures and the accent's steps over neutral grounds. Read `look.json`: a failed motion or picture floor is a **P0**; a missed picture target is a P1. Grey cards on a plain ground, a code-only world for a subject that has one, or a monochrome accent wash are P1.
+   - **Device variety.** One device per beat (about 1.5-2.5 s), from many families. A sampler (a new trick every half second) or one device on every beat (unless it is the film's declared identity) is a **P1** (K8, K9).
    - **The weakest 3 seconds.** Name them and say why.
    - **Cheap, templated, slow, confusing or dead moments.** Check them against the tells in `references/taste-and-slop.md` (grep it for the symptom).
    - **Specificity.** Would this film be just as true of a simpler product (an even split instead of an itemised one, a list instead of a ranking)? If yes, the proof shows the naive version: name the non-obvious behaviour from `TREATMENT.md` and the beat that should show it.
-   - **Its own look.** Does it look like the starter's demo, like Tessel (a red dot, a block mark, cool paper and a geometric sans), or like a generic minimal template? Is there a brand personality in the type, the stage, the shapes and the motion, matching the three adjectives in `TREATMENT.md`? Is the mark ownable, or could it belong to ten other startups?
+   - **Its own look.** Does it look like the starter's demo, like Tessel (a red dot, a block mark, cool paper and a geometric sans), like the last film, or like a generic minimal template? Is there a brand personality in the type, the stage, the shapes and the motion, matching the three adjectives in `TREATMENT.md`? Is the mark ownable, or could it belong to ten other startups?
    - **Colour with character.** Is the palette a default: framework blue (the `#3B82F6` / `#2563EB` family) on flat greys, pure black and white (D10)? Is the film colourless: look at a mid-film frame on `legibility.png` (480 px, thumbnail size); if no brand colour shows there and the accent doesn't carry the product's action, the film has no identity (D11). Both are **P1**; P0 when the brief asked for a distinctive brand.
    - **The mark at a glance.** What does the mark read as at 64 px in half a second? A minus or plus, an emoticon, a menu or "more" icon, a padlock, a play button or ± is a misread (D12) and a **P0**, because the logo is a key beat.
    - **Does each act's idea land in under 1 s?** Look at each act's first 60 frames.
    - **Does the story read with the sound off?** Follow the story device across every seam. It should never blink out; in a launch film it ideally becomes the mark at the end, and in a loop or product video it is the unit the product acts on.
    - **The hook.** Frame 0 should already be composed and moving. The problem should be felt by 1 s and stated by 2 s. A soft first second, where only the opening line moves (K6) or the sound fades in from quiet (J9; `score.json` `hook`, a warning when the first 0.5 s sits more than 12 dB under the median), is a **P1**, and a **P0** on a feed, loop or social deliverable.
    - **Can a stranger name it?** The product should read as an app (real chrome) and the feature should be named once, as a UI label, the one line or the end card (A10). A clever behaviour nobody can name is a **P1** (P0 for a feature video or loop, whose job is the feature).
-   - **The end.** The lockup should be fully resolved for 1.5 to 2.0 s and visibly building, the URL readable for at least 1.7 s, and the final frame should work as the poster. When the brief gives a practical fact (a date such as "next week", "out now", a URL), it must be on the end card at the secondary size; a missing one is a **P0** (A11), because it is the brief's call to action.
+   - **The end.** The lockup is the film's own device (the dealt lockup kind, the real logo's parts), never a mark, wordmark and tagline centred over a radial glow; fully resolved for 1.5 to 2.0 s and alive (the one held run of the film), the URL readable for at least 1.7 s, and the final frame works as the poster. When the brief gives a practical fact (a date such as "next week", "out now", a URL), it must be on the end card at the secondary size; a missing one is a **P0** (A11), because it is the brief's call to action.
    - **Composition in motion.** Nothing moving covers text the viewer is reading (I8; `covered` issues in `layout-*.json`). In a 9:16 deliverable, the height is used: the content's mass sits in the middle of the safe band, with no bare bottom 40% and no strip of 16:9 layout floating in the middle (E8; the mass check in `references/formats.md` §7).
-   - **Pacing.** In a calm film (the default, see the spec line) look for one hero move per bar with slow life cruising between, reading holds that drift instead of freezing, and the energy arc: an early peak, a lull, the biggest peak at 75–90% of the runtime. In a crisp film look for one motion peak per bar, 30 to 70 f of calm between peaks, and a first 6 s about twice as dense as the middle. Back pacing claims with `stats.energy_per_second` and `stats.energy_per_act` in `forensics.json`: a second near 0.1 reads as a stall unless it is a reading hold whose text still drifts (the `read` windows of the `copy` block in `out/cues.json`; the picture beat between two fragments is not a read and must move), and a long flat run reads as flat energy. Calm is not sparse: a film that is slow and frozen fails as surely as one that is busy.
+   - **Pacing.** In a calm film (the default, see the spec line) look for one hero move per bar with life cruising between (creep, drift, moving light), holds that never freeze, cuts on the track's events and accents rather than on every downbeat, a dip before the biggest reveal, and the energy arc: an early peak, a lull, the biggest peak at 75–90% of the runtime. In a crisp film look for one motion peak per bar, 30 to 70 f of calm between peaks, and a first 6 s about twice as dense as the middle. Back pacing claims with `stats.energy_per_second` and `stats.energy_per_act` in `forensics.json`: a second near 0.1 reads as a stall unless it is a reading hold whose text still drifts (the `read` windows of the `copy` block in `out/cues.json`; the picture beat between two fragments is not a read and must move), and a long flat run reads as flat energy. Calm is not sparse: a film that is slow and frozen fails as surely as one that is busy.
    - **Text flow** (B8, B9, K7, F11). On the 12 fps watch sheets, count the readable words of film copy on each tile (a tile is 5 frames, so a fragment held 1 s spans about 12 tiles). Flag:
      - any tile with more than 8 words of copy, or more than 5 in a replace chain (10 in a crisp film);
      - two fragments arriving together, or any thought of 5 or more words that lands as one block (B8);
@@ -55,8 +60,9 @@ You are the creative director of a top motion studio. Judge the film as a viewer
      - words that bounce, slam on every line or rise letter by letter (F11).
 
      Back the counts with `grid-check.ts` (`copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`, `chain-beat`, `read-quiet`, `word-rate`, `text-share`). The fix for a dumped sentence is a chain: name the fragments, the mode (build or replace) and what the picture does between them, as `COPY` entries.
-   - **Transitions.** Look for 6 to 8 types, none used more than twice, and one signature move at the open, middle and close. Crossfades should not be the default, and no seam should duplicate the rest pose.
-   - **Speed.** On a blurred master, look at the fastest frames at full size (`fastest_frames` in `out/samples.json`): stepped copies or a long smear mean the move is too fast to blur (over about 60–80 px/f) and needs a redesign, not more samples.
+   - **Transitions.** Seams built from what is on screen (a chip that becomes the next word, an iris from a word gap, a carried velocity); at least 40 % carried; no kind more than 3 times except the signature; no dissolve between scenes, no fade to black before the end; no seam duplicating the rest pose.
+   - **Speed.** On a blurred master, look at the fastest frames at full size (`fastest_frames` in `out/samples.json`): stepped copies or a long smear mean the move is too fast for its blur policy and needs a redesign or a declared `CAMERA_BLUR` range, not more samples.
+   - **The grammar score.** Name the weakest `grammar-score` dimension and the fix that raises it.
 4. Check what changed ({{CHANGED}}) at full frame rate: `python3 scripts/sheet.py {{VIDEO}} --from A --to B --every 1 --width 480 --out {{WORKDIR}}/x.png`.
 
 ## Tools
@@ -76,7 +82,7 @@ You are the creative director of a top motion studio. Judge the film as a viewer
 
 ## Return
 
-Return JSON only, in this shape. `frame` is a frame number or an `"a-b"` range. `score` is 1 to 10 against top-tier launch films. End `overall` with one line of rubric scores (1 to 5) for the dimensions this lens owns, for example `rubric: idea=4 hook=3 composition=4 motion=4 transitions=3 pacing=3`.
+Return JSON only, in this shape. `frame` is a frame number or an `"a-b"` range. `score` is 1 to 10 against the bar in `SKILL.md`. End `overall` with one line of rubric scores (1 to 5) for the dimensions this lens owns, for example `rubric: idea=4 hook=3 picture=4 composition=4 motion=4 transitions=3 pacing=3`.
 
 ```json
 {
@@ -89,7 +95,7 @@ Return JSON only, in this shape. `frame` is a frame number or an `"a-b"` range. 
       "fix": { "file": "src/acts/Act6.tsx", "change": "the concrete edit, with values" }
     }
   ],
-  "overall": "3-6 sentences: what is great, what most holds it back.\nrubric: idea=4 hook=3 composition=4 motion=4 transitions=3 pacing=3",
+  "overall": "3-6 sentences: what is great, what most holds it back.\nrubric: idea=4 hook=3 picture=4 composition=4 motion=4 transitions=3 pacing=3",
   "score": 7.5
 }
 ```
