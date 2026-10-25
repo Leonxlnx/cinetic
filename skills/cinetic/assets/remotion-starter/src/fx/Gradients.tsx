@@ -14,8 +14,8 @@ import { hash01, lab, normStops, plateAt, srgbOf, type Stop } from './plates';
  *   satin    tall curved folds like satin or an aurora: sin(k b + warp sin(m a + w2 t) + w t) through the ramp,
  *            and the colour rolls from `stops` into `stopsB` on a slow cosine (`folds.period` s)
  *   swirl    liquid light: from dark, a white-hot area rolls in from the `centre` corner with curling arms of
- *            tint and accent behind it, then calms (30-36 f at 60 fps) into a slow drifting field; the hot
- *            core is the last thing to fade
+ *            tint and accent behind it, then calms (30-36 f at 60 fps) into a slow drifting field that reaches
+ *            `reach` (0.8) of the diagonal, so the far side stays dark; the hot core is the last thing to fade
  *   stripes  glossy diagonal stripes drifting over a radial two-ink ground that falls to near-black
  *
  * Every field is evaluated on a node grid (`step` px, 6), interpolated per pixel in float, then rounded with
@@ -46,7 +46,7 @@ export type GradientFieldProps = {
   period?: number; // radial orbit period, s (12)
   points?: MeshPoint[]; // mesh: positions are shares, orbit radii shares, period s
   folds?: { k?: number; warp?: number; m?: number; speed?: number; period?: number };
-  swirl?: { at: number; dur60?: number; turn?: number; arms?: number };
+  swirl?: { at: number; dur60?: number; turn?: number; arms?: number; reach?: number }; // reach: share of the diagonal the settled light covers (0.8)
   stripes?: { k?: number; gloss?: number; speed?: number };
   dither?: DitherKind;
   levels?: number;
@@ -210,7 +210,7 @@ export const fieldNodes = (W: number, H: number, p: GradientFieldProps, f: numbe
         const r = Math.hypot(dx, dy);
         const th = Math.atan2(dy, dx);
         const e = E.glideOut(st);
-        const R = 0.05 + 1.05 * e; // the light front
+        const R = 0.05 + (sw.reach ?? 0.8) * e; // the light front: the far side of the frame stays dark
         const calm = 0.35 + 0.65 * (1 - e); // arms relax but never freeze
         const warpTh = th + (sw.turn ?? 1.4) * (1 - e) * Math.exp(-2.5 * r) + 0.12 * Math.sin(3 * r * 6.283 - sec * 0.6);
         const arms = 1 + 0.55 * calm * Math.sin((sw.arms ?? 3) * warpTh + 11 * r - sec * 1.3) * Math.sin(5 * r - sec * 0.4 + 1.1);
