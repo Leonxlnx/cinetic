@@ -680,6 +680,38 @@ def tokens_block(tok):
     return '\n'.join(lines)
 
 
+def css_weight(target, ws):
+    """The supplied weight a browser draws for `target` (CSS font matching): 400 tries 500 next and 500 tries 400,
+    a lighter target looks lighter first, a heavier one heavier first."""
+    ws = sorted(set(ws))
+    if target in ws:
+        return target
+    if 400 <= target <= 500:
+        up = [w for w in ws if target < w <= 500]
+        down = [w for w in ws if w < target]
+        return up[0] if up else down[-1] if down else [w for w in ws if w > 500][0]
+    if target < 400:
+        down = [w for w in ws if w < target]
+        return down[-1] if down else [w for w in ws if w > target][0]
+    up = [w for w in ws if w > target]
+    return up[0] if up else [w for w in ws if w < target][-1]
+
+
+def snap_type(src, ws):
+    """TYPE's role weights moved onto the supplied faces (the weight the browser would draw anyway), so every role
+    names a real face; returns (src, the weights the roles use)."""
+    m = re.search(r'export const TYPE = \{[\s\S]*?\n\};', src)
+    if not m or not ws:
+        return src, set()
+    used = set()
+
+    def one(mm):
+        w = css_weight(int(mm.group(1)), ws)
+        used.add(w)
+        return f'weight: {w}'
+    return src[:m.start()] + re.sub(r'\bweight: (\d+)', one, m.group(0)) + src[m.end():], used
+
+
 def rewrite_tokens(path, tok, family, faces):
     src = open(path, encoding='utf-8').read() if os.path.isfile(path) else None
     if src is None:
@@ -692,7 +724,9 @@ def rewrite_tokens(path, tok, family, faces):
         src = re.sub(r'// cinetic:placeholder - the family is the starter\'s stand-in[^\n]*\n(//[^\n]*\n)*', '', src)
         src = re.sub(r"(export const FONT = \{\s*\n\s*text: )'[^']*'", lambda m: m.group(1) + f"'\"{family}\", system-ui, sans-serif'", src, count=1)
         ws = sorted({x['weight'] for x in faces}) or [400, 600]
-        pick = sorted({min(ws, key=lambda w: abs(w - t)) for t in (400, 500, 600)})
+        # supplied faces: each TYPE role on a weight the kit has, and FACES loads every weight a role uses
+        src, used = snap_type(src, ws) if faces else (src, set())
+        pick = sorted(used | {css_weight(400, ws)}) if used else sorted({min(ws, key=lambda w: abs(w - t)) for t in (400, 500, 600)})
         face_list = ', '.join(f"'{w} 16px \"{family}\"'" for w in pick)
         mono = re.search(r"FACES = \[[^\]]*?('400 16px \"Geist Mono[^']*')", src)
         src = re.sub(r'export const FACES = \[[^\]]*\];', f'export const FACES = [{face_list}{", " + mono.group(1) if mono else ""}];', src, count=1)

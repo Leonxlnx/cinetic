@@ -156,8 +156,16 @@ result('#1F6FEB' in lines.get('accent', '') and 'cinetic:brand-supplied' in line
        and 'cinetic:brand-supplied' not in lines.get('mist', '') and '#1FAA59' not in tok,
        'supplied colours are marked cinetic:brand-supplied, derived ones are not, the second hue stays out')
 type_block = lambda s: re.search(r'export const TYPE = \{[\s\S]*?\n\};', s).group(0)  # noqa: E731
-result('delete these four lines' not in tok and type_block(tok) == type_block(starter) and 'export const SAFE' in tok,
-       'the palette placeholder goes; the type scale, units and safe areas stay as they were')
+no_w = lambda s: re.sub(r'\bweight: \d+', 'weight: W', type_block(s))  # noqa: E731
+result('delete these four lines' not in tok and no_w(tok) == no_w(starter) and 'export const SAFE' in tok
+       and set(re.findall(r'\bweight: (\d+)', type_block(tok))) == {'600'},
+       'the palette placeholder goes; the type scale, units and safe areas stay; every role is on the one supplied weight (600)')
+w3 = [400, 500, 700]
+snapped, used = mod.snap_type(starter, w3)
+roles = dict(re.findall(r'^\s+(\w+): \{ size: \d+, weight: (\d+)', type_block(snapped), re.M))
+result(roles.get('ui') == '500' and roles.get('line') == '500' and roles.get('display') == '700' and roles.get('hero') == '700'
+       and roles.get('secondary') == '500' and used == {500, 700} and mod.css_weight(300, w3) == 400 and mod.css_weight(450, [400, 600]) == 400,
+       'faces 400/500/700: the 600 roles draw at 700 and the 450 role at 500, as a browser matches them', json.dumps(roles))
 chk = run('--check-tokens', os.path.join(proj, 'src', 'brand', 'tokens.ts'), script=os.path.join(SKILL, 'scripts', 'palette.py'))
 result(chk.returncode == 0, 'the written tokens pass palette.py --check-tokens (contrast and one accent)', (chk.stdout + chk.stderr)[-300:])
 logo = read(proj, 'src', 'brand', 'logo.ts')

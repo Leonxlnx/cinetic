@@ -43,7 +43,9 @@ accent is the named one or the most chromatic.
 ## 3. Fonts
 
 Licensed files are vendored into `src/brand/fonts/<family>/` with an `@font-face` sheet (upright faces only; the
-family and weight come from the font's own tables); a Google font name is vendored with
+family and weight come from the font's own tables). Each role in `TYPE` moves onto a weight the kit supplies (the
+one a browser would draw: 600 becomes 700 when the kit has 500 and 700), and `FACES` loads every weight a role
+uses. A Google font name is vendored with
 `node scripts/add-font.mjs <name> --brand-supplied`. The brand's typeface takes the dealt direction's weights and case.
 A supplied serif or italic is the brand's identity and passes the type bans (`cinetic:brand-supplied`).
 
