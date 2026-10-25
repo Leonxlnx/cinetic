@@ -14,7 +14,9 @@ import type { Declares } from '../timeline';
  * anchor (0..1 of the frame); the cover scale already holds the drift and roll the move will use, so no
  * edge ever shows and nothing is clamped while it moves (a clamp mid-move would stall the speed).
  * `shift` adds a translation computed elsewhere (a carry or launch from lib/handoff for a velocity cut), with
- * `room` kept in the cover for it.
+ * `room` kept in the cover for it. It moves every slice alike (a carried camera move, not parallax: amplified on
+ * a near slice it would show the far copy behind it), and the root clips at the frame grown by `room`, so a
+ * wrapper that translates the whole Photo by up to `room` shows picture at the frame's edge, not the box's.
  * Move: scale about the anchor in log space (lmix: a push has constant perceived speed), drift in frame
  * px. House: a push of 4-8 % over a shot (E.linear on a hold, softOut after a cut), drift 20-40 px/s at
  * 1080p.
@@ -31,7 +33,7 @@ export type PhotoSrc = { src: string; w: number; h: number; focus?: [number, num
 export type PhotoMove = {
   from?: number; // the move's first frame (default the shot's start)
   to?: number; // its last frame (default from + 3 s)
-  push?: number; // scale at the end of the move (x, default 1: none); 1.06 = a 6 % push
+  push?: number; // scale at the end of the move (x, default 1: none); 1.06 = a 6 % push; under 1 a pull-back (it pivots so it ends covering the frame)
   drift?: [number, number]; // frame px travelled over the move (x, y), at the film's size
   roll?: number; // degrees at the end (keep within 2)
   ease?: Ease; // default E.linear (a hold that lives); E.softOut after a cut
@@ -52,8 +54,8 @@ export type PhotoProps = {
   move?: PhotoMove;
   anchor?: [number, number]; // where the focus point sits in the frame (0..1), default the centre
   scale?: number; // extra scale on the cover fit (>= 1)
-  shift?: [number, number]; // a translation this frame (frame px), on top of the move: drive it from lib/handoff (carry, launch) for carried cuts
-  room?: [number, number]; // the margin the cover keeps for `shift` (frame px each side), so a carried move never shows an edge
+  shift?: [number, number]; // a translation this frame (frame px), on top of the move, the same for every slice: drive it from lib/handoff (carry, launch) for carried cuts
+  room?: [number, number]; // the margin the cover keeps for `shift` (frame px each side), so a carried move never shows an edge; the root clips there, not at the frame
   slices?: DepthSlice[];
   parallax?: number; // depth gain g (house 0.6)
   grade?: PhotoGrade;
@@ -108,10 +110,26 @@ export const photoState = (f: number, p: Omit<PhotoProps, 'frame'>, film?: Parti
   const [ax, ay] = p.anchor ?? [0.5, 0.5];
   const A = [ax * W, ay * H];
   const depths = [0, ...(p.slices ?? []).map((s) => clamp(s.depth))];
+  const pushEnd = Math.max(1e-4, m.push ?? 1);
   const layers = depths.map((d) => {
     const pd = push ** (1 + d * g);
     const dd = 1 + d * g;
-    return { depth: d, k: cover.k * pd, x: A[0] + (cover.x - A[0]) * pd + (drift[0] + sh[0]) * dd, y: A[1] + (cover.y - A[1]) * pd + (drift[1] + sh[1]) * dd, roll: roll * dd };
+    // A push in keeps the cover about any anchor; a pull-back about the anchor can end with an edge in the frame
+    // when the focus is off centre. Then the pull pivots on the point that ends it covering the frame (with the
+    // drift and room margins): one pure scale for the whole move, so the motion stays smooth.
+    const pe = pushEnd ** (1 + d * g);
+    const pivot = (a: number, c: number, size: number, frame: number, margin: number) => {
+      if (pe >= 1) return a;
+      const lo = frame - size * cover.k * pe + margin;
+      const hi = -margin;
+      const end = a + (c - a) * pe;
+      const fit = lo > hi ? (lo + hi) / 2 : clamp(end, lo, hi);
+      return fit === end ? a : (fit - c * pe) / (1 - pe);
+    };
+    const px = pivot(A[0], cover.x, p.photo.w, W, Math.abs(m.drift?.[0] ?? 0) * dd + Math.abs(room[0]));
+    const py = pivot(A[1], cover.y, p.photo.h, H, Math.abs(m.drift?.[1] ?? 0) * dd + Math.abs(room[1]));
+    // the drift parts the slices (x dd); the carried shift moves them all alike
+    return { depth: d, k: cover.k * pd, x: px + (cover.x - px) * pd + drift[0] * dd + sh[0], y: py + (cover.y - py) * pd + drift[1] * dd + sh[1], roll: roll * dd };
   });
   return { t, push, drift, roll, cover, layers };
 };
@@ -191,8 +209,11 @@ export const Photo: React.FC<PhotoProps> = (p) => {
   const duoId = `duo-${p.id ?? uid}`;
   const s = photoState(p.frame, p, film);
   const anchor = p.anchor ?? [0.5, 0.5];
+  const [rx, ry] = (p.room ?? [0, 0]).map((v) => Math.abs(v));
+  // clipped at the frame grown by the room: a wrapper carrying the whole Photo within the room shows no edge
+  const clip: React.CSSProperties = rx || ry ? { overflow: 'visible', clipPath: `inset(${-ry}px ${-rx}px)` } : { overflow: 'hidden' };
   return (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: C.ink, ...p.style }}>
+    <div style={{ position: 'absolute', inset: 0, ...clip, background: C.ink, ...p.style }}>
       {p.grade?.duotone && <DuotoneDefs id={duoId} duotone={p.grade.duotone} />}
       <div style={{ position: 'absolute', inset: 0, filter: gradeFilter(p.grade, duoId) }}>
         {s.layers.map((L, i) => (
