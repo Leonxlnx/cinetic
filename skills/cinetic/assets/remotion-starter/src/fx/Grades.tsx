@@ -1,4 +1,5 @@
 import React from 'react';
+import { C, MASK } from '../brand/tokens';
 import { clamp, E } from '../lib/anim';
 import { type FilmCtx, f60x, fpsOf, useFilm } from '../lib/film';
 import type { Declares, SeamKind } from '../timeline';
@@ -58,7 +59,7 @@ const FILTER: Record<GradeKind, string> = {
 export const Grade: React.FC<{ kind: GradeKind; amount: number; color?: string; children: React.ReactNode }> = (p) => {
   const L = gradeLayers(p.kind, p.amount);
   const full: React.CSSProperties = { position: 'absolute', inset: 0 };
-  const flood = p.kind === 'wash' ? '#FFFFFF' : p.kind === 'crush' ? '#000000' : p.kind === 'tint' ? (p.color ?? '#08965A') : 'transparent';
+  const flood = p.kind === 'wash' ? C.white : p.kind === 'crush' ? MASK : p.kind === 'tint' ? (p.color ?? C.accent) : 'transparent';
   return (
     <div style={{ ...full, isolation: 'isolate' }}>
       <div style={full}>{p.children}</div>
