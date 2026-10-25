@@ -125,6 +125,12 @@
  * HyperFrames project with no tokens file, the custom properties in the HTML's `:root { }` blocks
  * are the palette, and motion.js is the easing module (raw beziers are allowed there).
  *
+ * Device palettes: a device in fx/ or lib/ may carry its own stops (a spectral run, a false-colour
+ * map, a luminance mask's black and white) with `cinetic:device-palette <job>` in a comment. In the
+ * file's leading comment block it covers the whole file; anywhere else it covers its own line and the
+ * lines after it up to the next blank line. It covers banned-color and off-token-color only (the film
+ * still has one dominant accent); elsewhere the marker is not honoured, and without a job it is an error.
+ *
  * Suppress one finding with a reason on the same or previous line:  // lint-ok: <reason>
  * (or <!-- lint-ok: reason --> in HTML). Disable whole rules for a run with --allow rule,...
  *
@@ -766,6 +772,11 @@ const BRAND_REASON_RE = /cinetic:brand-supplied\b[\s:,.;–—-]*[\w"'#(]/;
 // house palette rules a supplied brand also overrides (its colours are checked only for contrast and the one-accent rule)
 const BRAND_RULES = new Set(['pure-ink', 'gradient-shape']);
 const LIGHT_RE = /cinetic:light\b/; // a declared light field or soft shape in fx/ or lib/ (see glow)
+// a device's own palette in fx/ or lib/ (spectral runs, false-colour maps, mask stops): see the header
+const DEVICE_RE = /cinetic:device-palette\b/;
+const DEVICE_REASON_RE = /cinetic:device-palette\b[\s:,.;–—-]*[\w"'#(]/;
+const DEVICE_RULES = new Set(['banned-color', 'off-token-color']);
+let devicePalette = 0;
 const springUses = []; // underdamped spring uses across the film, for spring-budget
 const giantUses = []; // act files that set a giant word, for giant-once
 
@@ -804,11 +815,27 @@ for (const file of files) {
   const brandFile = isHtml
     ? (raw.slice(0, headEnd).match(/<!--[\s\S]*?-->/g) ?? []).some((c) => BRAND_RE.test(c))
     : BRAND_RE.test(raw.slice(0, headEnd));
+  // Device palette: in fx/ or lib/, the leading comment covers the file; a marker elsewhere covers its
+  // line through the next blank line (one palette block).
+  const inDevice = /(^|\/)(fx|lib)\//.test(norm);
+  const deviceFile = inDevice && DEVICE_RE.test(raw.slice(0, headEnd));
+  const deviceSpans = [];
+  if (inDevice)
+    lines.forEach((l, k) => {
+      if (!DEVICE_RE.test(l)) return;
+      let e = k;
+      while (e + 1 < lines.length && lines[e + 1].trim() !== '') e++;
+      deviceSpans.push([k + 1, e + 1]);
+    });
   const report = (idx, rule, severity, message) => {
     if (opt.allow.has(rule) || [...opt.allow].some((a) => a.endsWith('*') && rule.startsWith(a.slice(0, -1)))) return;
     const { line, col } = pos(idx);
     const here = lines[line - 1] ?? '';
     const prev = lines[line - 2] ?? '';
+    if (DEVICE_RULES.has(rule) && (deviceFile || deviceSpans.some(([a, b]) => line >= a && line <= b))) {
+      devicePalette++;
+      return;
+    }
     if ((HARD_BANS.has(rule) || BRAND_RULES.has(rule)) && (brandFile || BRAND_RE.test(here) || BRAND_RE.test(prev))) {
       brandSupplied++;
       return;
@@ -827,6 +854,10 @@ for (const file of files) {
   for (const m of raw.matchAll(/cinetic:brand-supplied\b.*/g))
     if (!BRAND_REASON_RE.test(m[0].replace(/\*\/|-->/g, '')))
       report(m.index, 'brand-supplied', 'error', 'say what the brand supplied after cinetic:brand-supplied (and record it in BRIEF.md)');
+  for (const m of raw.matchAll(/cinetic:device-palette\b.*/g)) {
+    if (!inDevice) report(m.index, 'device-palette', 'warn', 'cinetic:device-palette is honoured only inside fx/ or lib/: keep the device palette in its device file, or put the colours in the tokens with their job');
+    else if (!DEVICE_REASON_RE.test(m[0].replace(/\*\/|-->/g, ''))) report(m.index, 'device-palette', 'error', "say the palette's job after cinetic:device-palette (a spectral run, a false-colour map, mask stops)");
+  }
 
   // --- css-animation
   if (!isScript) {
@@ -1786,7 +1817,7 @@ const failed = errors > 0 || (opt.strict && warnings > 0);
 if (opt.json) {
   console.log(
     JSON.stringify(
-      { tool: 'lint-film', root: relative(process.cwd(), root) || '.', tokens: paletteName, files: files.length, errors, warnings, suppressed, brandSupplied, pass: !failed, issues },
+      { tool: 'lint-film', root: relative(process.cwd(), root) || '.', tokens: paletteName, files: files.length, errors, warnings, suppressed, brandSupplied, devicePalette, pass: !failed, issues },
       null,
       1,
     ),
@@ -1795,7 +1826,7 @@ if (opt.json) {
   for (const x of issues) console.log(`${x.file}:${x.line}:${x.col}  ${x.severity === 'error' ? 'error' : 'warn '}  ${x.rule}  ${x.message}\n    ${x.excerpt}`);
   if (!paletteName) console.log('note: no tokens file or :root palette found; off-token colours were not checked (pass --tokens)');
   console.log(
-    `lint-film: ${files.length} files, ${errors} errors, ${warnings} warnings${suppressed ? `, ${suppressed} suppressed` : ''}${brandSupplied ? `, ${brandSupplied} brand-supplied (list each in BRIEF.md)` : ''} -> ${failed ? 'FAIL' : 'pass'}`,
+    `lint-film: ${files.length} files, ${errors} errors, ${warnings} warnings${suppressed ? `, ${suppressed} suppressed` : ''}${brandSupplied ? `, ${brandSupplied} brand-supplied (list each in BRIEF.md)` : ''}${devicePalette ? `, ${devicePalette} in device palettes` : ''} -> ${failed ? 'FAIL' : 'pass'}`,
   );
 }
 process.exit(failed ? 1 : 0);
