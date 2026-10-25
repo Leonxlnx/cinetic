@@ -1238,7 +1238,9 @@ works: commons:File:<file name>, met:<object id>, aic:<artwork id>, nasa:<nasa i
 Keyless: Openverse (cc0 / public domain), Wikimedia Commons (public domain / CC0), NASA, the Art Institute of
 Chicago and the Met (CC0), Mixkit video (free licence only). With a key in the environment: PEXELS_API_KEY,
 UNSPLASH_ACCESS_KEY, PIXABAY_API_KEY. Default licences need no credit; --allow-credit adds CC BY. Refused:
-share-alike, non-commercial, no-derivatives, Mixkit restricted, unknown.`;
+share-alike, non-commercial, no-derivatives, Mixkit restricted, unknown.
+
+  --help, -h   print this help`;
 
 export async function main(argv) {
   let args;
