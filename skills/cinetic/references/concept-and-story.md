@@ -1,11 +1,12 @@
 # Concept and story
 
-Covers how to get from a brief to an idea worth pitching, a story device, a beat structure and an ending. Read it at Step 1 before any pixel exists, and again whenever a critic says "tour", "generic", "oversimplified" or "weak end". Numbers here are proven defaults and starting points, not dogma.
+Covers how to get from a brief to an idea worth pitching, a story device, a beat structure and an ending. Read it at Step 1 before any pixel exists, and again whenever a critic says "tour", "generic", "oversimplified" or "weak end". Numbers here are house defaults and starting points, not dogma. **Calm copy, rich picture:** the words stay few; the picture carries a device in every beat, one signature shot, real material, light that moves.
 
 **Contents**
 1. [What a concept is](#1-what-a-concept-is)
 2. [Inventory before ideas](#2-inventory-before-ideas)
 3. [Three lenses, and how to push past the first idea](#3-three-lenses-and-how-to-push-past-the-first-idea)
+3b. [Directions: the deck, the idea sentence and the signature shot](#3b-directions-the-deck-the-idea-sentence-and-the-signature-shot)
 4. [Tests that kill weak ideas](#4-tests-that-kill-weak-ideas)
 5. [Choose, graft, pitch](#5-choose-graft-pitch)
 6. [Story-device design](#6-story-device-design)
@@ -33,7 +34,7 @@ What a concept is not:
 - **A mood.** "Premium, energetic, trustworthy" is a brief for the colourist, not a film.
 - **A format.** "A product walkthrough with captions" is the container.
 
-If you can't fill the Grammar row, the film will look like everyone else's even when the idea is good. Grammar is where a film becomes ownable.
+If you can't fill the Grammar row, the film will look like everyone else's even when the idea is good. Grammar is where a film becomes ownable. The dealt direction (§3b) supplies most of it: the space, the light, the camera, the cuts, the story shape, the signature shot and the lockup.
 
 ## 2. Inventory before ideas
 
@@ -90,6 +91,90 @@ Run these prompts, one at a time, against the inventory:
 - **Make the logo guilty.** Build the mark from the problem's pieces, so the lockup is the resolution.
 - **Constrain.** No cuts; no words before the halfway point; only three objects; one colour change in the whole film; only the product's own UI elements.
 - **Oppose the category.** List what every film in the category looks like (a dark terminal, a shield, a glowing chip) and do the opposite on purpose.
+
+## 3b. Directions: the deck, the idea sentence and the signature shot
+
+Left alone, an agent makes the same film every time: calm fragments on a plain ground, small marks, a push-in, an end
+card. Calm copy is right; a calm *picture* is not. The direction deck gives every film its own visual idea before the
+treatment exists.
+
+**What a direction is** (`assets/directions/directions.json`, read through `scripts/deck.py`, never whole): a complete
+art direction for a 6-45 s film:
+- **the world:** one of four spaces (flat; layered 2.5D; perspective planes; a lit relief of extruded solids under one
+  key light, with shadows cast from their real heights), the set, the depth planes;
+- **the light:** one of seven kinds (a raking key, faces shaded by angle, a sun crossing a day, a travelling pool, an
+  exposure event, light from an object in the scene, a material sheen), built from parts that exist
+  (`references/lighting.md`);
+- **the palette:** 2-3 colour recipes with ground, ink and accent proportions, in four ground tones (light, dark, mid,
+  colour); every deal holds a mid or colour ground when the pool has one;
+- the type settings and behaviour, the camera language, the cut grammar;
+- **the story shape:** one of sixteen (problem and turn, journey, one to many, many to one, detail to whole, whole to
+  detail, assembly, chain, day arc, call and response, twist, accelerando, result first, nested, loop, reveal);
+- **one signature shot**, concrete (at least three quantities: frames, seconds, px, degrees, factors), with its build
+  (transforms, clip paths, SVG paths, baked plates, state functions; nothing that loads the GPU on every frame), a node
+  budget (at most 1,500 animated nodes) and its library entries, plus an alternative for a redraw;
+- **the lockup:** one of ten kinds (the device becomes the mark, the mark as an object in the world, a pull back, the
+  light finds the mark, a dead stop, a held frame, the world writes the name, everything else leaves, the mark as a
+  shadow, the mark resolves), built from primitives that exist; a centred mark, name and tagline over a radial plate is
+  refused;
+- idea-sentence templates, the fit (formats, paces, assets, length), the music character and its tempo range, the
+  primitives it leans on and the ones that fight it, a 4-6 beat skeleton with calm copy slots (1-4 words each, at most
+  30 in all), an **update skeleton** (hook, change, payoff, end) and an avoid list;
+- a pre-softened foreground layer in layered spaces (one shape from the product's world, 1.2-1.6× the frame height,
+  softened once in its plate, crossing near a frame edge at 1.5-2.5× the camera's speed), unless the direction turns it
+  off with a reason.
+
+**The deal.**
+```
+python3 scripts/deck.py --brief "<one line>" --format <launch|update|...> --pace <calm|crisp> \
+        [--have ui,footage,audio,number,name] [--seconds N] [--changes 2-4] [--brand brand/brand.json] --options 3
+python3 scripts/deck.py --brief "<one line>" --format <fmt> --direction <id>     # the sheet: out/direction.json, out/DIRECTION.md
+python3 scripts/deck.py --show [<id>]        python3 scripts/deck.py --redraw palette|type|signature|direction --reason "..."
+```
+- `--have` names what really exists (product UI, supplied footage, a real recorded clip, one honest number, a name whose
+  meaning the film can use); directions built on an asset fit only when it exists.
+- A deal of three always differs in camera motion, signature, story shape and lockup; spans three kinds of space and
+  two kinds of light; holds one rich direction whenever one fits, and at most one quiet one.
+- The seed comes from the brief, so the same brief deals the same three; a small history deals the directions of the
+  last films less often (`--no-history` to skip it).
+- `--keep palette,type` when the brand fixes colours or type; `--brand brand/brand.json` maps the dealt roles onto the
+  brand (`references/brand-kits.md` §6).
+- Redraw a slot only when it contradicts the brand, needs an asset that does not exist, or cannot carry the idea;
+  `--reason` is required, each slot at most twice, every redraw logged in the sheet.
+- When the film has no product UI to show, or the brief wants a world, read the imagery-led directions in
+  `assets/directions/imagery.json` beside the dealt three (`references/imagery.md` §8).
+
+**Choose by the idea.** Hold each direction against the inventory: which way of making the picture can carry something
+only this product has? Choose that one, not the most familiar, and write one line on why. Then adopt it: do not blend
+it with the film you would have made anyway.
+
+**The idea sentence and the competitor test.**
+
+> In this film, **[something only this product has]** becomes **[the device this direction calls for]**.
+
+- The first blank comes from the inventory (the name's meaning, the non-obvious behaviour, the product's own objects
+  or its number), never from the category ("speed", "AI", "simplicity"). The second comes from the sheet's templates.
+- **Competitor test:** put the nearest real competitor in the sentence. If it still works, the idea belongs to the
+  category, not to this product; go back to the inventory. "A field of screens to fly into" works for every app; "the
+  412 alerts the product folds into one card become planes the camera flies through until only one is left" does not.
+- Both go into `TREATMENT.md` under the direction's name and seed, and into `out/direction.json`, where the critics read
+  them.
+
+**One signature shot; the picture never rests.** The signature is the one shot a viewer will ask "how was that made"
+about. It happens once, on the beat the skeleton marks; the film may echo it (smaller, at the open, or inside the
+lockup), never repeat it, and no beat uses the alternative. Every direction states its life inside a shot (creep,
+drift, lean, orbit, a key that never stops moving) and a light event, and the render checks hold the floor against a
+flat film: the camera or the ground moving on 90 % of body frames, two depth planes in half the shots, 40 % of seams
+carried, a designed moment at least every 3 s, one light event per act, a clear scale change on 30 % of cuts
+(`references/checks.md` §6).
+
+**Concepts inside the direction.** The three lenses (§3) still run, but the direction supplies the concept's Grammar
+row: the lenses find the idea; the direction decides how the film looks and moves. Then draw the devices with
+`pick.py` and write the treatment on the dealt skeleton: beats, device path, the signature beat, the lockup, the copy.
+
+**Devices, with variety.** A device per beat (about 1.5-2.5 s), drawn with `pick.py` and read in the device book
+(`references/devices/INDEX.md`), from many families; one device everywhere is a template unless it is the film's
+identity. Mentioning one device in a brief does not make it the whole film.
 
 ## 4. Tests that kill weak ideas
 
@@ -190,7 +275,7 @@ Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, pr
 
 ## 9. End cards
 
-1. **The device ideally becomes the mark.** The lockup arrives from the story, not as a new logo animation. It may echo the mid-film reveal (the signature move's third use) but never replays it.
+1. **The device ideally becomes the mark.** The lockup arrives from the story, not as a new logo animation. It may echo the signature shot (smaller, inside the lockup) but never replays it.
 2. **Assemble, then hold briefly.** The end card runs 1.5–2.5 s: the lockup assembles over 60–80 f, then holds still for 36–80 f (or creeps ≤ 6%); a longer hold must visibly build (a 10–20% dolly). A card that cuts in complete and sits static reads as dead: a static 2.75 s logo hold was flagged in every Tessel review round.
 3. **URL or call to action.** ≥ 1.7 s fully readable, set at the secondary size (44–56 px at 1080p) and still while it is being read.
 4. **The final frame is the poster.** It must contain the mark and the name. Check it: export the last frame, view it 480 px wide, and ask whether a stranger could say whose film it was.
@@ -236,7 +321,7 @@ A money app that keeps a buffer below the waterline of your balance, so a surpri
 
 ## 11. Output and gate
 
-Write the chosen concept into `TREATMENT.md` from `assets/TREATMENT.md`: the inventory (name and non-obvious behaviour first), the three finalists with test results, the concept (idea, device, grammar), logline, arc, device path, beat sheet, copy and final frame.
+Write the chosen concept into `TREATMENT.md` from `assets/TREATMENT.md`: the Direction block (deck seed and id, palette and type, the idea sentence and the competitor test, the story shape, the signature shot and its beat, the lockup kind, redraws with reasons), the inventory (name and non-obvious behaviour first), the three finalists with test results, the concept (idea, device, grammar), logline, arc, device path, beat sheet, copy and final frame.
 
 Gate before Step 2:
 - the logline is ≤ 15 words and has no "and" joining two ideas;
@@ -244,3 +329,5 @@ Gate before Step 2:
 - the word count is within the format budget (`references/copy-and-type.md`); every fragment is 1–4 words, no beat shows more than 8 words (5 in replace mode), and every thought of more than 4 words is a chain with a picture beat between its fragments;
 - the device appears in every beat row, and its last link is the mark;
 - the final frame is described, and it contains the mark and the name.
+- the idea sentence and the competitor test are written; the signature shot sits on one beat and no beat uses the alternative; the beats follow the dealt skeleton (re-timed freely); the lockup is the dealt kind;
+- every beat names its device, and no two neighbouring beats use the same family.
