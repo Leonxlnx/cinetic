@@ -1,5 +1,5 @@
 import React, { useId, useMemo } from 'react';
-import { C, FONT } from '../brand/tokens';
+import { C, FONT, MASK } from '../brand/tokens';
 import { clamp, E, type Ease } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { type FilmCtx, f60x, fpsOf, useFilm } from '../lib/film';
@@ -278,7 +278,7 @@ export const TypeFill: React.FC<DrawProps> = (props) => {
     </text>
   );
   const span = props.span ?? TYPE_FILL.span;
-  // cinetic:device-palette the fill's default stops and the luminance masks' black and white
+  // cinetic:device-palette the fill's default stops: a pale accent, the accent and its cool neighbour
   const stops = props.stops ?? (props.mode === 'band' ? tintBand(ink, accent) : [mixColor(accent, '#FFFFFF', 0.35), accent, '#2DB4D6']);
   const plateW = props.mode === 'band' ? span * W : W;
   const plate = useMemo(() => (props.mode === 'band' || props.mode === 'swap' || props.mode === 'fill' ? ditherPlate(stops, plateW, H, { vertical: props.vertical && props.mode !== 'band' }) : ''), [JSON.stringify(stops), plateW, H, props.mode, props.vertical]);
@@ -287,9 +287,9 @@ export const TypeFill: React.FC<DrawProps> = (props) => {
   const alpha = useMemo(() => {
     if (props.mode === 'shimmer') {
       const tot = bw + 2 * fea;
-      return ditherPlate([{ at: 0, color: '#000' }, { at: fea / tot, color: '#fff' }, { at: (fea + bw) / tot, color: '#fff' }, { at: 1, color: '#000' }], tot, H);
+      return ditherPlate([{ at: 0, color: MASK }, { at: fea / tot, color: C.white }, { at: (fea + bw) / tot, color: C.white }, { at: 1, color: MASK }], tot, H);
     }
-    if (props.mode === 'develop') return ditherPlate([{ at: 0, color: '#fff' }, { at: W / (W + fea), color: '#fff' }, { at: 1, color: '#000' }], W + fea, H);
+    if (props.mode === 'develop') return ditherPlate([{ at: 0, color: C.white }, { at: W / (W + fea), color: C.white }, { at: 1, color: MASK }], W + fea, H);
     return '';
   }, [props.mode, bw, fea, W, H]);
 
