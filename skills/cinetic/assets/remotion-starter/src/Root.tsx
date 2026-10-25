@@ -2,6 +2,8 @@ import React from 'react';
 import { Composition, Folder, Still } from 'remotion';
 import { Act1 } from './acts/Act1';
 import { Act2 } from './acts/Act2';
+import { Act3 } from './acts/Act3';
+import { Act4 } from './acts/Act4';
 import { C, U } from './brand/tokens';
 import { Film, FilmProps } from './Film';
 import { FilmSub, subMetadata } from './FilmSub';
@@ -25,6 +27,8 @@ const solo = (Act: React.FC) => {
 };
 const Act1Solo = solo(Act1);
 const Act2Solo = solo(Act2);
+const Act3Solo = solo(Act3);
+const Act4Solo = solo(Act4);
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -43,8 +47,10 @@ export const RemotionRoot: React.FC = () => (
     />
 
     <Folder name="Acts">
-      <Composition id="Act1" component={Act1Solo} durationInFrames={ACT.statement.dur} fps={FPS} width={W} height={H} defaultProps={{ audit: false } as FilmProps} />
-      <Composition id="Act2" component={Act2Solo} durationInFrames={ACT.mark.dur} fps={FPS} width={W} height={H} defaultProps={{ audit: false } as FilmProps} />
+      <Composition id="Act1" component={Act1Solo} durationInFrames={ACT.line.dur} fps={FPS} width={W} height={H} defaultProps={{ audit: false } as FilmProps} />
+      <Composition id="Act2" component={Act2Solo} durationInFrames={ACT.plate.dur} fps={FPS} width={W} height={H} defaultProps={{ audit: false } as FilmProps} />
+      <Composition id="Act3" component={Act3Solo} durationInFrames={ACT.frame.dur} fps={FPS} width={W} height={H} defaultProps={{ audit: false } as FilmProps} />
+      <Composition id="Act4" component={Act4Solo} durationInFrames={ACT.mark.dur} fps={FPS} width={W} height={H} defaultProps={{ audit: false } as FilmProps} />
     </Folder>
 
     <Folder name="Stills">

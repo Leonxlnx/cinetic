@@ -16,10 +16,13 @@ export { MUSIC } from './music';
 export const FPS = 60;
 /**
  * This film's own grid tempo, used while src/music.ts carries no track. new-film.sh --bpm rewrites
- * the `const BPM = ...;` line inside, so keep that line as it is.
+ * the `const BPM = ...;` line inside, so keep that line as it is. The demo is planned for a 124 BPM
+ * bed (a bar is 1.94 s, its six bars 11.6 s): until the track is in audio/music/, the grid runs at
+ * 120 BPM, the nearest tempo with whole-frame beats at 60 fps. `track.py grid` then writes
+ * src/music.ts and every b() below follows the track's own bars: the cue plan moves with the music.
  */
 const GRID_BPM = ((): number => {
-const BPM = 100;
+const BPM = 120;
   return BPM;
 })();
 /** The tempo every helper and check uses: the track's when src/music.ts carries one, else GRID_BPM. */
@@ -61,30 +64,39 @@ export const f60x = (frames: number, fps: number = FPS) => (frames * fps) / 60;
 /** After the last bar the picture holds while the audio decays to digital silence. */
 export const TAIL = FPS;
 
-// Acts: contiguous, bar-aligned, [from, from + dur). Each act is its own composition in Root.tsx.
+// Acts: contiguous, [from, from + dur), on the grid. Each act is its own composition in Root.tsx.
+// Six shots in four acts (a cut inside an act is a declared seam): every hand-over carries something.
 export const ACT = {
-  statement: { from: b(1), dur: b(4) - b(1) }, // the line builds in two fragments around a picture beat
-  mark: { from: b(4), dur: b(6) + TAIL - b(4) }, // the dot becomes the mark; lockup builds to the end
+  line: { from: b(1), dur: b(3, 1) - b(1) }, // the statement builds round the dot's landing, then launches left
+  plate: { from: b(3, 1), dur: b(4, 1) - b(3, 1) }, // offgrid: the cut lands where the launch peaks, a beat into the bar
+  frame: { from: b(4, 1), dur: b(5, 1, 2) - b(4, 1) }, // offgrid: the plate shrinks into the line a bar after it arrived
+  mark: { from: b(5, 1, 2), dur: b(7) + TAIL - b(5, 1, 2) }, // offgrid: the line drops into the relief a 16th before the beat the dome lands on
 };
 
-export const TOTAL = b(6) + TAIL;
+export const TOTAL = b(7) + TAIL;
 
 // Named sync points (absolute frames), all on the 16th grid. A cue that must sit off the grid
 // carries a trailing `// offgrid: <reason>` comment, which grid-check accepts.
 // Picture code reads these; src/sync.ts turns them into sound events.
 export const CUE = {
-  fragA: b(1), // "Built on" rises into the frame (the camera is already creeping in); then it is read, alone
-  drop: b(1, 3), // picture beat, once "Built on" has been read: the dot is born above the line and falls...
-  land: b(2), // ...and lands where the line will end: contact, on the downbeat. The line is opening to make room
-  fragB: b(2, 0, 2), // "the beat" answers on the off-beat, rising into the opening; the dot is its period
-  exit: b(3), // the whole line leaves together, the dot staying behind
-  depart: b(3, 1), // the dot sets off for its slot (E.smooth, so its speed peaks half-way)...
-  fly: b(3, 2, 2), // ...top speed half-way there, on the grid (the whoosh apex)...
-  handoff: b(4), // ...and it arrives at rest in its slot; act 2 opens on exactly this pose
-  pieceA: b(4, 1), // the dome lands (contact frame)
-  pieceB: b(4, 2), // the block lands (contact frame)
-  lockup: b(5), // the mark settles into the lockup and the name locks beside it: the payoff
-  end: b(6), // last bar line; TAIL follows
+  fragA: b(1), // "Built on" rises into a frame that is already moving (creep, a light pool crossing the paper)
+  drop: b(1, 3), // once "Built on" has been read: the accent dot is born above the line and falls...
+  land: b(2), // ...and lands where the line will end, on the downbeat: the camera punches in on the contact
+  fragB: b(2, 0, 2), // "the beat" answers on the off-beat; the line jumps to make room, the dot is its period
+  exit: b(3, 0, 2), // the read is over: the line (dot and all) accelerates out to the left...
+  cut: b(3, 1), // ...cut on its fastest frame: the plate (the film's real imagery) arrives already moving left
+  plateCut: b(3, 3), // a hard cut on the beat to a closer frame of the same set, still drifting left
+  morph: b(4, 1), // the plate contracts into the gap of the next line: the picture becomes a word
+  fragC: b(4, 1, 2), // "Every" and "frame" rise on either side of it
+  swapA: b(4, 2), // the picture in the gap cuts to the next frame of the set...
+  swapB: b(4, 2, 2), // ...and the next (designed steps)
+  exit2: b(5, 1), // the read is over: the line and its picture drop out of the frame, accelerating...
+  drop2: b(5, 1, 2), // ...into the relief: the plinth under a low key, carried in on the same speed
+  pieceA: b(5, 2), // the dome lands on the plinth (contact frame)
+  pieceB: b(5, 3), // the block lands (contact frame)
+  lockCut: b(6, 1), // cut to the lockup as the key climbs: shadows shorten, the name starts to slide out of the mark
+  lockup: b(6, 2), // the name is home: the payoff, then the hold lives on the key and a slow dolly
+  end: b(7), // last bar line; TAIL follows
 };
 
 // ---- Declarations: what the picture does on purpose -------------------------------------------
@@ -132,24 +144,42 @@ export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'launch', oneTake: false, whiteWorld: false };
 /** Every seam of the film. Designed cuts are seams of kind `hard`. */
 export const SEAMS: Seam[] = [
-  // the dot arrives at rest in its slot and act 2 opens on exactly that pose: the dot becomes the mark
-  { at: ACT.mark.from, kind: 'morph', carry: 'shape', id: 'dot-becomes-mark' },
+  // the dot's contact punches the camera in (scale carried through a 6-frame snap)
+  { at: CUE.land, kind: 'snapZoom', carry: 'scale', id: 'punch-on-contact' },
+  // the line launches left (fx/Chain exit 'launch') and the plate opens at 0.7 of its cut speed
+  { at: ACT.plate.from, kind: 'velocity', carry: 'x', dir: -1, id: 'statement' },
+  // a cut inside the plate, on the beat: a closer frame of the same set, the drift keeping its direction
+  { at: CUE.plateCut, kind: 'hard', id: 'plate-closer' },
+  // the full-frame plate contracts into the gap of "Every frame"
+  { at: ACT.frame.from, kind: 'morph', carry: 'scale', id: 'plate-into-line' },
+  // the line drops out and the relief opens on the same downward speed
+  { at: ACT.mark.from, kind: 'velocity', carry: 'y', dir: 1, id: 'line-drops' },
+  // the cut to the lockup is carried by the key light climbing (fx/KeyLight noon lift)
+  { at: CUE.lockCut, kind: 'light', id: 'noon-lift' },
 ];
-export const STEPPED: SteppedRange[] = [];
+/** The picture in the line's gap cuts to the next frame of the set (fx/InlineGap swaps). */
+export const STEPPED: SteppedRange[] = [
+  { from: CUE.swapA, to: CUE.swapA + 4, id: 'gap-0' },
+  { from: CUE.swapB, to: CUE.swapB + 4, id: 'gap-1' },
+];
 export const FLASHES: Flash[] = [];
 export const CAMERA_BLUR: CameraBlurRange[] = [];
-/** The one lock: the name holds beside the mark to the end. */
+/** The one lock: the name holds beside the mark to the end, the key and a slow dolly keeping it alive. */
 export const END: EndLock = { from: CUE.lockup, to: TOTAL };
 /** The biggest reveal (its stop-down or dip ends here): the lockup. */
 export const REVEAL = CUE.lockup;
 /** The one element class allowed an underdamped spring: the mark's pieces landing. */
 export const SPRING_CLASS = 'mark-piece';
-/** CUE names that must land on a music event (a downbeat attack, an entry, a stop's end, the ending). None without a track. */
+/**
+ * CUE names that must land on a music event (a downbeat attack, an entry, a stop's end, the ending). None
+ * without a track; with the 124 BPM bed the plan is pieceA on an accent, lockup on the stop's end and end on
+ * the ending (track.py edit --reveal-bar 6).
+ */
 export const STRUCTURAL: (keyof typeof CUE)[] = [];
 /** Each CUE's salience (missing = 'hit'). */
 export const SALIENCE: Partial<Record<keyof typeof CUE, Salience>> = {
-  fragA: 'copy', drop: 'move', land: 'hit', fragB: 'copy', exit: 'copy', depart: 'move', fly: 'move',
-  handoff: 'cut', pieceA: 'hit', pieceB: 'hit', lockup: 'hit', end: 'cut',
+  fragA: 'copy', drop: 'move', land: 'hit', fragB: 'copy', exit: 'copy', cut: 'cut', plateCut: 'cut', morph: 'cut', fragC: 'copy',
+  swapA: 'move', swapB: 'move', exit2: 'copy', drop2: 'cut', pieceA: 'hit', pieceB: 'hit', lockCut: 'cut', lockup: 'hit', end: 'cut',
 };
 
 export type Copy = {
@@ -207,8 +237,10 @@ export const chain = (id: string, mode: 'build' | 'replace', fragments: [text: s
 export const COPY: Copy[] = [
   // "Built on" (read alone) -> the dot falls and lands where the line will end -> "the beat". The dot is the period.
   ...chain('statement', 'build', [['Built on', CUE.fragA], ['the beat', CUE.fragB]], { out: CUE.exit }),
+  // The picture takes its turn (the plate, no words), then becomes a word: "Every [picture] frame".
+  line('frame', 'Every frame', CUE.fragC, CUE.exit2),
   // cinetic:placeholder - the demo's invented name: use the product's, then delete this line.
-  { id: 'wordmark', text: 'plinth', in: CUE.lockup - f60(34), resolved: CUE.lockup, out: TOTAL },
+  { id: 'wordmark', text: 'plinth', in: CUE.lockCut, resolved: CUE.lockup, out: TOTAL },
 ];
 
 /**
