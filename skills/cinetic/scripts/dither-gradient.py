@@ -68,8 +68,9 @@ import os
 import re
 import sys
 
-import numpy as np
-from PIL import Image
+# numpy and PIL load in main(), after the argument parser, so --help and --example run without them.
+np = None
+Image = None
 
 EXAMPLE = {
     'size': [1920, 1080], 'seed': 11,
@@ -120,10 +121,10 @@ def from_linear(c):
     return np.where(c <= 0.0031308, c * 12.92, 1.055 * c ** (1 / 2.4) - 0.055)
 
 
-M1 = np.array([[0.4122214708, 0.5363325363, 0.0514459929], [0.2119034982, 0.6806995451, 0.1073969566],
-               [0.0883024619, 0.2817188376, 0.6299787005]])
-M2 = np.array([[0.2104542553, 0.7936177850, -0.0040720468], [1.9779984951, -2.4285922050, 0.4505937099],
-               [0.0259040371, 0.7827717662, -0.8086757660]])
+M1 = [[0.4122214708, 0.5363325363, 0.0514459929], [0.2119034982, 0.6806995451, 0.1073969566],
+      [0.0883024619, 0.2817188376, 0.6299787005]]
+M2 = [[0.2104542553, 0.7936177850, -0.0040720468], [1.9779984951, -2.4285922050, 0.4505937099],
+      [0.0259040371, 0.7827717662, -0.8086757660]]
 
 
 def to_space(rgb, space):
@@ -132,14 +133,14 @@ def to_space(rgb, space):
     lin = to_linear(rgb)
     if space == 'linear':
         return lin
-    return np.cbrt(lin @ M1.T) @ M2.T  # oklab
+    return np.cbrt(lin @ np.asarray(M1).T) @ np.asarray(M2).T  # oklab
 
 
 def from_space(v, space):
     if space == 'srgb':
         return np.clip(v, 0, 1)
     if space == 'oklab':
-        v = (v @ np.linalg.inv(M2).T) ** 3 @ np.linalg.inv(M1).T
+        v = (v @ np.linalg.inv(np.asarray(M2)).T) ** 3 @ np.linalg.inv(np.asarray(M1)).T
     return from_linear(v)
 
 
@@ -449,6 +450,9 @@ def main():
     ap.add_argument('--example', action='store_true', help='print an example spec and exit')
     ap.add_argument('--quiet', action='store_true')
     a = ap.parse_args()
+    global np, Image
+    import numpy as np
+    from PIL import Image
     if a.example:
         print(json.dumps(EXAMPLE, indent=1))
         return
