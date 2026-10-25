@@ -42,7 +42,7 @@
   const CUE = {
     rise: b(1, 0, 2), //            the tall bar rises
     slide: b(1, 2), //              the square slides in
-    fall: b(1, 3), //               the accent starts to fall (E.contact, one beat)
+    fall: b(1, 3), //               the accent starts to fall (E.buildIn, one beat)
     hit: b(2), //                   contact on the downbeat: squash, recoil, the hit
     glide: b(2), //                 the impact sets the mark gliding aside (peak ~12 px/f)
     word1: b(2, 2), //              "In" settles (97%) on the beat, once the glide has done its work
@@ -76,8 +76,8 @@
   // The fall comes from the grid, so its contact lands on CUE.hit at any tempo (one beat: 30 f at
   // 120 BPM, 36 f at 100).
   const DUR = { rise: 36, slide: 36, fall: CUE.hit - CUE.fall, glide: 72, word: 40 };
-  const DROP = 96; // px the accent falls; on E.contact (4.5x its mean speed at contact) it meets the grid at ~14 px/f at 120 BPM, ~12 at 100
-  // The words rise on the pace's ease (calm: E.outSoft, no overshoot), finished early with
+  const DROP = 96; // px the accent falls; on E.buildIn (2.4x its mean speed at contact) it meets the grid at ~8 px/f at 120 BPM, ~6 at 100
+  // The words rise on the pace's ease (calm: E.snapOut, no overshoot), finished early with
   // arriving(): vertical text snaps to whole pixels, so a rise that creeps its last pixels settles
   // in visible 1 px ticks.
   const WORD_EASE = arriving(E[pace.ease]);
@@ -121,10 +121,10 @@
   function cues() {
     // Settles on their 97% frame, the impact on its contact frame, the whoosh apex on the peak.
     // Weights are set so no event is masked by the bed (score.py reports masking per event).
-    const g0 = CUE.glide, g1 = CUE.glide + DUR.glide, apex = peak(g0, g1, E.glide);
+    const g0 = CUE.glide, g1 = CUE.glide + DUR.glide, apex = peak(g0, g1, E.liftOut);
     const events = [
-      { f: settleOf(CUE.rise, CUE.rise + DUR.rise, E.out), kind: 'land', variant: 'light', weight: 0.8, pan: -0.1, id: 'bar' },
-      { f: settleOf(CUE.slide, CUE.slide + DUR.slide, E.out), kind: 'land', variant: 'light', weight: 0.7, pan: 0.1, id: 'square' },
+      { f: settleOf(CUE.rise, CUE.rise + DUR.rise, E.snapOut), kind: 'land', variant: 'light', weight: 0.8, pan: -0.1, id: 'bar' },
+      { f: settleOf(CUE.slide, CUE.slide + DUR.slide, E.snapOut), kind: 'land', variant: 'light', weight: 0.7, pan: 0.1, id: 'square' },
       { f: CUE.hit, kind: 'hit', weight: 1, pan: 0.1, id: 'accent-contact' },
       { f: apex, kind: 'whoosh', weight: 1.3, pan: -0.3, dur: DUR.glide, apexFrac: (apex - g0) / DUR.glide, id: 'glide' },
       // one soft text sound as the line lands (its last word and the period), never one per word

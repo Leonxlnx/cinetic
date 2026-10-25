@@ -6,6 +6,7 @@
     <!-- Local copies (npm install runs setup.mjs): renders must not depend on the network. -->
     <script src="vendor/gsap.min.js"></script>
     <script src="motion.js"></script>
+    <script src="music.js"></script>
     <script src="timeline.js"></script>
     <style>
       /* Local variable font: bundled families alias silently, hosted fonts fail offline.
@@ -180,10 +181,10 @@
           const centre = W / 2 - (m.left + m.width / 2); // puts the mark mid-frame until the glide
 
           // Bar 1: the mark assembles from its own primitives.
-          tl.fromTo("#pcA", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: sec(DUR.rise), ease: E.out }, sec(CUE.rise));
-          tl.fromTo("#pcB", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: sec(DUR.slide), ease: E.out }, sec(CUE.slide));
-          tl.fromTo("#pcC", { y: -DROP }, { y: 0, duration: sec(DUR.fall), ease: E.contact }, sec(CUE.fall)); // meets the grid on CUE.hit
-          tl.fromTo("#pcC", { opacity: 0 }, { opacity: 1, duration: sec(8), ease: E.out }, sec(CUE.fall));
+          tl.fromTo("#pcA", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: sec(DUR.rise), ease: E.snapOut }, sec(CUE.rise));
+          tl.fromTo("#pcB", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: sec(DUR.slide), ease: E.snapOut }, sec(CUE.slide));
+          tl.fromTo("#pcC", { y: -DROP }, { y: 0, duration: sec(DUR.fall), ease: E.buildIn }, sec(CUE.fall)); // meets the grid on CUE.hit
+          tl.fromTo("#pcC", { opacity: 0 }, { opacity: 1, duration: sec(8), ease: E.snapOut }, sec(CUE.fall));
 
           // Downbeat of bar 2: contact. Squash on the child, recoil on a wrapper, so no node
           // carries two transform tweens at once (the squash numbers are MOTION.squash's).
@@ -193,7 +194,7 @@
           tl.fromTo("#recoil", { y: 0 }, { y: 4, duration: recoil.dur, ease: recoil.ease }, sec(CUE.hit));
 
           // The mark glides aside (72 f keeps it near 12 px/f, sharp at 60 fps); each word settles on its beat.
-          tl.fromTo("#mark", { x: centre }, { x: 0, duration: sec(DUR.glide), ease: E.glide }, sec(CUE.glide));
+          tl.fromTo("#mark", { x: centre }, { x: 0, duration: sec(DUR.glide), ease: E.liftOut }, sec(CUE.glide));
           // Vertical text snaps to whole pixels: WORD_EASE (timeline.js) ends the rise while it still travels.
           const WORD = WORD_EASE;
           tl.fromTo("#w1", { yPercent: 115 }, { yPercent: 0, duration: sec(DUR.word), ease: WORD }, sec(startFor(CUE.word1, DUR.word, WORD)));
@@ -201,8 +202,8 @@
           const tick = pulse(2, 5);
           tl.fromTo(".dot", { scale: 1 }, { scale: 1.3, duration: tick.dur, ease: tick.ease }, sec(CUE.word2));
 
-          // The hold builds instead of dying: a slow push that comes to rest on the last frame.
-          tl.fromTo("#shot", { scale: 1 }, { scale: 1.03, duration: sec(TOTAL - CUE.hit), ease: E.dolly }, sec(CUE.hit));
+          // The hold builds instead of dying: a slow, even push through to the last frame.
+          tl.fromTo("#shot", { scale: 1 }, { scale: 1.03, duration: sec(TOTAL - CUE.hit), ease: E.linear }, sec(CUE.hit));
 
           // Register last, after every tween exists; the key equals data-composition-id.
           window.__timelines["main"] = tl;
