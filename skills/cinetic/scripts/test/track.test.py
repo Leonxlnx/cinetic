@@ -9,7 +9,8 @@ last 0.42 s stop dead, peak 15-22, outro 23-24) and one final thump on bar 25. C
     a button on the final thump, no bars counted in the file's trailing silence; a second run of the same
     file and settings keeps the analysis, another profile or --force makes it again
   - edit --end stop: the reveal's film bar holds the entry, whole bars, at most one splice per 8 bars,
-    the bed stops on the bar line after the body; --end button back-times the final hit
+    the bed stops on the bar line after the body; --end button back-times the final hit; --map writes the
+    bars given by hand, and refuses a gap or a button ending off the bar before the final hit
   - grid: src/music.ts and music.js carry the MUSIC grid in film frames (t0, downbeats, ending), and the
     TypeScript file loads under node's type stripping when node can do it
   - check: every join measured on the edited bed (attack on the film downbeat, no click)
@@ -303,6 +304,22 @@ def edit_grid_check(d, a):
               f"({e['ending']['last_hit_film_s']} vs {e['film']['downbeats'][-1]}; hit at {hit_src} s in the source)")
     else:
         check(False, f'edit --end button runs: {p.stderr[-300:]}')
+    # --map: the film's bars by hand, the planner skipped; a gap in the map and a button off its bar are refused
+    p = run(['edit', '--bars', '6', '--reveal-bar', '4', '--end', 'stop', '--map', '1:5x3,4:15x3',
+             '--out', 'audio/music/edit_map.json'], d)
+    em = os.path.join(music, 'edit_map.json')
+    if p.returncode == 0 and os.path.isfile(em):
+        e = json.load(open(em))
+        segs = [(s['film_bar'], s['src_bar'], s['bars']) for s in e['segments']]
+        check(segs == [(1, 5, 3), (4, 15, 3)] and e['reveal']['src_bar'] == 15 and e['args']['map'] == '1:5x3,4:15x3'
+              and len(e['joins']) == 1 and len(e['film']['downbeats']) == 7,
+              f"--map writes the given bars, its join and the grid ({segs}, reveal {e['reveal']['src_bar']})")
+    else:
+        check(False, f'edit --map runs: {p.stderr[-300:]}')
+    p = run(['edit', '--bars', '6', '--reveal-bar', '4', '--end', 'stop', '--map', '1:5x3,5:15x3', '--out', 'audio/music/x.json'], d)
+    check(p.returncode == 1 and 'does not follow' in p.stderr, '--map with a gap is refused')
+    p = run(['edit', '--bars', '6', '--reveal-bar', '4', '--end', 'button', '--map', '1:5x3,4:15x3', '--out', 'audio/music/x.json'], d)
+    check(p.returncode == 1 and 'end the map on that bar' in p.stderr, '--map: a button ending off the bar before the final hit is refused')
 
 
 def ring_ending(d):

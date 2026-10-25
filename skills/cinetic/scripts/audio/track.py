@@ -18,7 +18,9 @@ Usage (from the project root):
          kept without loading librosa (--force analyses again)
   python3 scripts/audio/track.py edit [TRACK.json] --bars N --reveal-bar K --end button|stop|ring
           [--start-bar S] [--entry B] [--arc "-14,-12,..."] [--film-t0 0.25] [--gap 0.4] [--out audio/music/edit.json]
-      -> audio/music/edit.json (source bars -> film bars, joins, the film-time grid, ending)
+          [--map "1:2x10,11:59x2"]
+      -> audio/music/edit.json (source bars -> film bars, joins, the film-time grid, ending); --map gives the
+         film's bars by hand (film bar:source bar x bars, in order) instead of the planner's choice
   python3 scripts/audio/track.py grid [--edit audio/music/edit.json] [--fps N] [--out src/music.ts | music.js]
       -> src/music.ts (Remotion) or music.js (HyperFrames): the film-time grid the timeline imports
   python3 scripts/audio/track.py check [--edit audio/music/edit.json] [--json out/qa/track_check.json]
@@ -781,6 +783,48 @@ def bar_times(a):
     return d + [d[-1] + BPB * T], BPB * T
 
 
+def end_bar(a, end):
+    """The 0-based source bar a button or ring ending's body ends on (the bar before the final hit), else None."""
+    if end not in ('button', 'ring'):
+        return None
+    nb = len(a['bars'])
+    ending = a['ending']
+    hit = ending['last_hit_t']
+    d = [b['t'] for b in a['bars']]
+    hb = int(np.searchsorted(d, hit + 0.05) - 1)  # the bar whose downbeat carries (or precedes) the final hit
+    if abs(hit - d[min(max(hb, 0), nb - 1)]) < 0.1:
+        hb -= 1                                  # a button on a downbeat: the body ends on the bar before it
+    if ending['kind'] == 'fade':
+        raise TrackError('the track ends on a fade: use --end stop (a fade-out is never an ending)')
+    return int(np.clip(hb, 0, nb - 1))
+
+
+def map_edit(a, spec, bars, reveal, end):
+    """--map "1:2x10,11:59x2" (film bar:source bar x bars, in film order, no gaps) -> (path, info) as plan_edit
+    returns them, for an edit chosen by hand."""
+    nb = len(a['bars'])
+    if not 1 <= reveal <= bars:
+        raise TrackError(f'--reveal-bar {reveal} is outside the film bars 1..{bars}')
+    path = []
+    for part in spec.split(','):
+        m = re.fullmatch(r'\s*(\d+)\s*:\s*(\d+)\s*x\s*(\d+)\s*', part)
+        if not m:
+            raise TrackError(f'--map: cannot read {part.strip()!r}: give film bar:source bar x bars, e.g. 1:2x10,11:59x2')
+        fb, sb, n = (int(v) for v in m.groups())
+        if fb != len(path) + 1:
+            raise TrackError(f'--map: film bar {fb} does not follow film bar {len(path)}: list the segments in film order, no gaps')
+        if n < 1 or sb < 1 or sb + n - 1 > nb:
+            raise TrackError(f'--map: source bars {sb}-{sb + n - 1} are outside the track\'s bars 1..{nb}')
+        path += list(range(sb - 1, sb - 1 + n))
+    if len(path) != bars:
+        raise TrackError(f'--map gives {len(path)} film bars and --bars is {bars}')
+    eb = end_bar(a, end)
+    if eb is not None and path[-1] != eb:
+        raise TrackError(f'--map: a {end} ending plays the final hit after source bar {eb + 1}: end the map on that bar')
+    return path, dict(entry_bar=path[reveal - 1] + 1, end_bar=(eb + 1) if eb is not None else None, total=0.0,
+                      arc=None, splices=sum(1 for p, q in zip(path[:-1], path[1:]) if q != p + 1))
+
+
 def plan_edit(a, bars, reveal, end, start=None, entry=None, arc=None, max_splices=None):
     """The DP over film bars. Returns (path of 0-based source bars per film bar, info)."""
     nb = len(a['bars'])
@@ -809,17 +853,7 @@ def plan_edit(a, bars, reveal, end, start=None, entry=None, arc=None, max_splice
     S0 = int(start) - 1 if start else None
     if S0 is not None and not 0 <= S0 < nb:
         raise TrackError(f'--start-bar {start} is outside the source bars 1..{nb}')
-    ending = a['ending']
-    endbar = None
-    if end in ('button', 'ring'):
-        hit = ending['last_hit_t']
-        d = [b['t'] for b in a['bars']]
-        hb = int(np.searchsorted(d, hit + 0.05) - 1)  # the bar whose downbeat carries (or precedes) the final hit
-        if abs(hit - d[min(max(hb, 0), nb - 1)]) < 0.1:
-            hb -= 1                                  # a button on a downbeat: the body ends on the bar before it
-        endbar = int(np.clip(hb, 0, nb - 1))
-        if ending['kind'] == 'fade':
-            raise TrackError('the track ends on a fade: use --end stop (a fade-out is never an ending)')
+    endbar = end_bar(a, end)
     arc = np.array(arc if arc is not None else default_arc(bars, reveal, end), float)
     if len(arc) != bars:
         raise TrackError(f'--arc has {len(arc)} values for {bars} film bars')
@@ -1025,7 +1059,10 @@ def cmd_edit(a_):
         raise TrackError('--gap is the near-silence after a stop: 0.2-0.7 s')
     if not 0.0 <= a_.film_t0 <= 0.45:
         raise TrackError('--film-t0 (the film time of bar 1\'s downbeat) is 0-0.45 s: the first sound arrives early')
-    path, info = plan_edit(a, a_.bars, a_.reveal_bar, a_.end, a_.start_bar, a_.entry, arc)
+    if a_.map:
+        path, info = map_edit(a, a_.map, a_.bars, a_.reveal_bar, a_.end)
+    else:
+        path, info = plan_edit(a, a_.bars, a_.reveal_bar, a_.end, a_.start_bar, a_.entry, arc)
     segs = segments_of(path)
     base = os.path.dirname(os.path.abspath(tj))
     trk = os.path.join(base, a['file'])
@@ -1043,7 +1080,7 @@ def cmd_edit(a_):
            'bpm': a['tempo']['bpm'], 'beat_s': a['tempo']['beat_s'], 'beats_per_bar': BPB,
            'film_t0': r3(a_.film_t0), 'film_bars': a_.bars, 'phrase_len': a['phrases']['len'],
            'args': dict(bars=a_.bars, reveal_bar=a_.reveal_bar, end=a_.end, start_bar=a_.start_bar, entry=a_.entry,
-                        film_t0=a_.film_t0, gap=a_.gap, arc=a_.arc),
+                        film_t0=a_.film_t0, gap=a_.gap, arc=a_.arc, map=a_.map),
            'reveal': dict(film_bar=a_.reveal_bar, src_bar=info['entry_bar'], film_s=film_down[a_.reveal_bar - 1]),
            'segments': segs, 'joins': joins, 'ending': ending, 'track_dips': dips,
            'film': dict(downbeats=film_down, **fg), 'key': a['key']['name'], 'key_r': a['key']['r'],
@@ -1566,7 +1603,8 @@ def cmd_music(a_):
         return code
     g = e.get('args') or {}
     ev = ['edit', av[3], '--bars', str(g['bars']), '--reveal-bar', str(g['reveal_bar']), '--end', g['end'], '--out', a_.edit]
-    for k, flag in (('start_bar', '--start-bar'), ('entry', '--entry'), ('film_t0', '--film-t0'), ('gap', '--gap'), ('arc', '--arc')):
+    for k, flag in (('start_bar', '--start-bar'), ('entry', '--entry'), ('film_t0', '--film-t0'), ('gap', '--gap'), ('arc', '--arc'),
+                    ('map', '--map')):
         if g.get(k) is not None:
             ev += [flag, str(g[k])]
     code = main(ev)
@@ -1615,6 +1653,8 @@ def main(argv=None):
     p.add_argument('--arc', help='target dB per film bar, comma list (default: intro, body, dip, peak, resolve)')
     p.add_argument('--film-t0', type=float, default=0.25, help='film time of bar 1\'s downbeat, 0-0.45 s (default 0.25)')
     p.add_argument('--gap', type=float, default=0.4, help='stop ending: near-silence before the one element (0.2-0.7)')
+    p.add_argument('--map', help='the film bars by hand: film bar:source bar x bars in film order, e.g. 1:2x10,11:59x2 '
+                   '(the planner is skipped; joins, ending and grid are written as usual)')
     p.add_argument('--out', default='audio/music/edit.json')
     p.add_argument('--cache', default='out/cache/music')
     p = sub.add_parser('grid', help='write src/music.ts or music.js')

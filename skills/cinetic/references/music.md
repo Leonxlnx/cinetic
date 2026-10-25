@@ -100,7 +100,7 @@ Read it before editing: is bar 1 where the music starts (a pickup is fine), does
 
 ## 6. Editing
 
-`track.py edit [TRACK.json] --bars N --reveal-bar K --end button|stop|ring [--start-bar S] [--entry B] [--arc "…"] [--film-t0 0.25] [--gap 0.4]` arranges the film's bars on the track and writes `audio/music/edit.json` (editable by hand):
+`track.py edit [TRACK.json] --bars N --reveal-bar K --end button|stop|ring [--start-bar S] [--entry B] [--arc "…"] [--film-t0 0.25] [--gap 0.4] [--map "…"]` arranges the film's bars on the track and writes `audio/music/edit.json` (editable by hand). When the beat sheet needs bars the planner does not choose, `--map "1:2x10,11:59x2"` gives them by hand (film bar:source bar x bars, in film order): the planner is skipped, and the joins, the ending and the film grid are written as usual (a `button` or `ring` map ends on the bar before the final hit). The planner's edit:
 
 - **Arrangement:** a dynamic programme over the film's bars: an energy arc (intro −14, body −6, a dip −10 before the reveal, the peak 0 from the reveal, then a resolve; with a `stop` ending the body holds to the end), a jump cost (how unlike the bar that would naturally follow the target sounds, a loudness step of 3 LU or more, a jump off a phrase start), no key change across a jump, at least 2 bars per segment, at most one splice per 8 film bars, whole bars only.
 - **Anchors:** the reveal's film bar holds the chosen entry (`--entry`, by default the biggest entry after a break or a stop); film bar 1 the start bar (`--start-bar`, inside the track's intro); the ending as below.
