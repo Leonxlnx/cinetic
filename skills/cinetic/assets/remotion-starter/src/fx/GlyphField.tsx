@@ -194,7 +194,7 @@ export const GlyphField: React.FC<DrawProps> = (props) => {
         if (props.triads && field.mag[i] > 0.5) {
           const o = rad * 0.55;
           // cinetic:device-palette the RGB triad of a screen's phosphor dots
-          (['#FF2A2A', '#2AFF5A', '#2A6BFF'] as const).forEach((col, k) => {
+          (['#FF2A2A', '#30C85A', '#2A6BFF'] as const).forEach((col, k) => {
             ctx.fillStyle = col;
             ctx.beginPath();
             ctx.arc(cx + o * Math.cos((k * 2 * Math.PI) / 3), cy + o * Math.sin((k * 2 * Math.PI) / 3), rad * 0.6, 0, Math.PI * 2);
