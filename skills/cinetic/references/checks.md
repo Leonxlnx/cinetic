@@ -120,6 +120,11 @@ freezes for a film without cues. With a cues file that carries the declarations:
 
 Without the declarations these report as info; `--no-grammar` skips them.
 
+`carried-cut` measures the outgoing vector with optical flow, which cannot see motion along a texture of parallel bands
+(water ripples, stripes, scan lines: the aperture problem): there it reads only the motion across the bands, and a
+carry declared in the other direction fails on its cosine. Carry the direction the flow sees there (the crop's measured
+drift), or measure the seam on a textured region.
+
 ## 6. look-audit and the floors (`scripts/look-audit.py`)
 
 Rendered look checks: `hue-count` (2 hue groups warn, 3 fail, outside declared devices and imagery), `banned-hue`
