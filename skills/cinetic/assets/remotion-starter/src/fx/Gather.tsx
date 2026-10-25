@@ -195,7 +195,7 @@ export const BlockSwarm: React.FC<Omit<BlockSwarmProps, 'slots'> & { frame: numb
 
 // ---------------------------------------------------------------------------------------------- ZSwarm
 
-/** House numbers: per 30 fps frame steps (the house steps), frames at 60 fps. */
+/** House numbers: per 30 fps frame steps (the house cadence), frames at 60 fps. */
 export const Z_SWARM = { outStep: -0.15, outSteps: 6, inFrom: 0.2, inStep: 0.1, inSteps: 8, inLag60: 4, jitter60: 6, jitterPx: 6, trail: [0.45, 0.2] as number[] } as const;
 
 export type ZSwarmProps = {
