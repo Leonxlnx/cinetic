@@ -21,7 +21,7 @@ jobs:
   check:
     name: Lint and test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash
@@ -203,17 +203,62 @@ jobs:
             exit 1
           fi
 
-      - name: Lint-film regression tests
-        run: node "skills/$SKILL/scripts/test/lint-film.test.mjs"
+      - name: No audio and no video in git
+        run: |
+          # A film's licensed track and everything mixed from it stay out of git, and demo films live on the
+          # media branch: this branch carries no audio file and no video file at all.
+          bad="$(git ls-files | grep -iE '\.(wav|mp3|flac|ogg|m4a|aac|aif|aiff|opus|mp4|mov|m4v|webm|mkv)$' || true)"
+          if [ -n "$bad" ]; then
+            while IFS= read -r f; do echo "::error file=$f::audio or video tracked by git"; done <<< "$bad"
+            exit 1
+          fi
+          echo "$(git ls-files | wc -l | tr -d ' ') tracked files, no audio and no video"
+
+      - name: Set up Python and ffmpeg for the tests
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg > /dev/null
+          ffmpeg -version | head -n 1
+          # a venv: the runner's system Python is externally managed (PEP 668); first on PATH for every later step
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet numpy scipy soundfile pyloudnorm librosa opencv-python-headless pillow fonttools brotli
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+
+      - name: Provenance (house wording, no audio in git; release mode)
+        run: node "skills/$SKILL/scripts/test/provenance.test.mjs" --release
+
+      - name: Lint-film regression tests (static part)
+        run: node "skills/$SKILL/scripts/test/lint-film.test.mjs" --part static
 
       - name: Technique library and pick.py tests
         run: python3 "skills/$SKILL/scripts/test/pick.test.py"
 
-      - name: Install the Remotion starter (for its type check and grid-check cases)
+      - name: Direction deck tests (deck.py)
+        run: python3 "skills/$SKILL/scripts/test/deck.test.py"
+
+      - name: Brand kit intake tests (brand.py)
+        run: python3 "skills/$SKILL/scripts/test/brand.test.py"
+
+      - name: Clip match tests (like.py)
+        run: python3 "skills/$SKILL/scripts/test/like.test.py"
+
+      - name: Imagery tests (assets.mjs, offline fixtures)
+        run: node "skills/$SKILL/scripts/test/assets.test.mjs"
+
+      - name: Music track tests (track.py on test beds made in code)
+        run: python3 "skills/$SKILL/scripts/test/track.test.py"
+
+      - name: Install the Remotion starter (for its type check, token, mirror and grid-check cases)
         run: cd "skills/$SKILL/assets/remotion-starter" && npm install --no-audit --no-fund --loglevel=error
 
       - name: Remotion starter type check (tsc --noEmit)
         run: cd "skills/$SKILL/assets/remotion-starter" && npx tsc --noEmit
+
+      - name: Token tests (type roles, curves, springs, colour)
+        run: node "skills/$SKILL/scripts/test/tokens.test.mjs"
+
+      - name: HyperFrames mirror tests (motion.js against the Remotion core)
+        run: node "skills/$SKILL/scripts/test/mirror.test.mjs"
 
       - name: Grid-check regression tests (fixtures, both starters, new-film.sh --pace crisp)
         run: |
@@ -223,13 +268,10 @@ jobs:
             exit 1
           fi
 
-      - name: Score regression tests (score.py against main's, bit for bit on the synth engine)
+      - name: Score regression tests (the effects-only path bit for bit against main's score.py)
         run: |
-          # a venv: the runner's system Python is externally managed (PEP 668)
-          python3 -m venv "$RUNNER_TEMP/venv"
-          "$RUNNER_TEMP/venv/bin/pip" install --quiet numpy scipy soundfile pyloudnorm librosa
           base=()
-          # main's score.py and its siblings, to compare the synth engine against bit for bit
+          # main's score.py and its siblings: the effects-only path must render the same WAV bit for bit
           if git fetch --no-tags --depth=1 origin main 2>/dev/null; then
             mkdir -p "$RUNNER_TEMP/main"
             git archive FETCH_HEAD "skills/$SKILL/scripts/audio" | tar -x -C "$RUNNER_TEMP/main"
@@ -238,7 +280,7 @@ jobs:
             fi
           fi
           [ "${#base[@]}" -gt 0 ] || echo "::notice::main could not be fetched; score.test.py runs without --baseline"
-          "$RUNNER_TEMP/venv/bin/python" "skills/$SKILL/scripts/test/score.test.py" "${base[@]}"
+          python3 "skills/$SKILL/scripts/test/score.test.py" "${base[@]}"
 
       - name: Script --help contract and docs tests
         run: node "skills/$SKILL/scripts/test/scripts-docs.test.mjs"
