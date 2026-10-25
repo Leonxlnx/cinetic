@@ -405,11 +405,12 @@ export const chainState = (F: number, o: ChainSpec, film?: Partial<FilmCtx>): Ch
       let visible = F > s;
       if (exitMode === 'together' || exitMode === 'words') {
         const o0 = exitMode === 'words' ? copy.out + f60((i * pace.stagger) / 2, fps) : copy.out;
-        const exitDur = f60(pace.exitDur, fps);
+        const exitDur = o.outDur ?? f60(pace.exitDur, fps);
         const q = prog(F, o0, o0 + exitDur, E.exit); // the lift accelerates away
         const fade = prog(F, o0, o0 + exitDur, E.smooth); // the fade has no pop at either end
         y -= depart(q) * pace.exitLift;
         opacity *= 1 - fade;
+        if (F >= o0 + exitDur) visible = false; // gone: unmounted, so a left fragment is no longer on screen to the audits
       } else if (base !== undefined && base !== null) {
         const st = base + offs[i];
         const q = prog(F, st, st + od, exitEase);
