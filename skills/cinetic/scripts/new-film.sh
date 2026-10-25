@@ -17,8 +17,9 @@
 #
 #   --fps, --bpm   one beat must be a whole number of frames (60*fps/bpm). At 60 fps:
 #                  90 -> 40 f, 100 -> 36, 120 -> 30, 144 -> 25, 150 -> 24. Without --bpm the
-#                  starter keeps its own tempo (Remotion 100, HyperFrames 120), or 120 with
-#                  --pace crisp. The project's audio/score.json gets the same bpm.
+#                  starter keeps its own 120 BPM, a placeholder until track.py grid writes the
+#                  track's grid; at an fps where 120 gives no whole beat (25 fps) the nearest tempo
+#                  that does (125). A bpm in audio/score.json follows it.
 #   --pace         calm (default): text arrives as short fragments that take turns with the
 #                  picture and holds about 1-1.5 s; crisp: the denser launch-film tempo. Sets
 #                  PACE_NAME (src/timeline.ts, or motion.js), which the components, grid-check
@@ -72,14 +73,14 @@ FONTS=()
 MUSIC=""; RECORD=""; PROFILE=""; ADD=()
 PY="${PYTHON:-python3}"
 DIR=""; ENGINE=remotion; FPS=60; BPM=""; PACE=""; SIZE=1920x1080; NAME=""; LINK=""; BROWSER="${CHROMIUM_PATH:-}"; INSTALL=1; FORCE=0
-FORMAT=launch; BRANDS=(); LIKE=""; NAME_SET=0
+FORMAT=launch; BRANDS=(); LIKE=""; NAME_SET=0; BPM_SET=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage; exit 0 ;;
     --engine) ENGINE="${2:?--engine needs a value}"; shift 2 ;;
     --fps) FPS="${2:?--fps needs a value}"; shift 2 ;;
-    --bpm) BPM="${2:?--bpm needs a value}"; shift 2 ;;
+    --bpm) BPM="${2:?--bpm needs a value}"; BPM_SET=1; shift 2 ;;
     --pace) PACE="${2:?--pace needs calm or crisp}"; shift 2 ;;
     --size) SIZE="${2:?--size needs a value}"; shift 2 ;;
     --name) NAME="${2:?--name needs a value}"; NAME_SET=1; shift 2 ;;
@@ -139,9 +140,16 @@ fi
 
 # The whole system assumes a beat is a whole number of frames: cues on the grid, sound on the frame.
 # With a track the tempo is the track's (src/music.ts gives b() its fractional frames): no whole-beat check.
+# The starter's own tempo is a placeholder: at an fps where it gives no whole beat, take the nearest one that does.
 if [[ -z "$MUSIC" ]] && ! node -e "const b=60*$FPS/$BPM; process.exit(Math.abs(b-Math.round(b))<1e-9?0:1)"; then
   OK=$(node -e "const r=[];for(let b=60;b<=200;b++){const f=60*$FPS/b;if(Number.isInteger(f))r.push(b+' ('+f+' f)')}console.log(r.join(', '))")
-  die "at $FPS fps, $BPM BPM gives a beat of $(node -e "console.log((60*$FPS/$BPM).toFixed(3))") frames. Pick a BPM with a whole beat: $OK"
+  NEAR=$(node -e "let n='';for(let b=60;b<=200;b++){if(Number.isInteger(60*$FPS/b)&&(n===''||Math.abs(b-$BPM)<Math.abs(n-$BPM)))n=b}console.log(n)")
+  if [[ "$BPM_SET" == 0 && -n "$NEAR" ]]; then
+    echo "new-film: at $FPS fps the starter's $BPM BPM gives no whole beat: using $NEAR BPM ($(node -e "console.log(60*$FPS/$NEAR)") f), a placeholder until track.py grid writes the track's grid (or pass --bpm)" >&2
+    BPM="$NEAR"
+  else
+    die "at $FPS fps, $BPM BPM gives a beat of $(node -e "console.log((60*$FPS/$BPM).toFixed(3))") frames. Pick a BPM with a whole beat: $OK"
+  fi
 fi
 
 if [[ -e "$DIR" ]]; then
