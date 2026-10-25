@@ -13,8 +13,9 @@
  *   node scripts/assets.mjs sheet <results.json | image files | folders> [--pick 1,4,7] [--scan 6] [--cols 4] [--cell 400] [--out x.png]
  *   node scripts/assets.mjs get <ref|#n>[,<ref|#n>...] --to <film>/public/assets [--from results.json] [--name stem]
  *        [--width 2400] [--res 1080] [--trim start,seconds] [--max-mb 150] [--allow-credit] [--record path]
- *   node scripts/assets.mjs grade <files...> --look <name> [--accent #hex] [--focus x,y] [--aspect 16:9|none]
- *        [--width 2400] [--grain 0.3] [--out dir] [--trim start,seconds] [--speed 1] [--dry-run]
+ *   node scripts/assets.mjs grade <files...> [--look natural] [--strength 1] [--accent #hex] [--split-hue deg|#hex] [--focus x,y]
+ *        [--aspect 16:9|none] [--width 2400] [--grain 0.3] [--out dir] [--trim start,seconds] [--speed 1] [--scrub] [--dry-run] [--no-check]
+ *   node scripts/assets.mjs check <graded files...> [--accent #hex]
  *   node scripts/assets.mjs probe <files...> [--json]
  *   node scripts/assets.mjs looks | licences [--to <film>/public/assets]
  *
@@ -32,8 +33,16 @@
  * <film>/assets/licences.json (source, licence, author, page, the licence as read): a private record kept
  * outside public/, never shown on screen.
  *
+ * Grade. `natural` is the default and the film's look: every picture keeps its own colour, exposure and colour
+ * strength are matched across the set and strong colours are held back, so water reads green-black, foam
+ * white, mist grey and the accent stays free for live data. `matte` and `silver` are whole-film looks too;
+ * `tint`, `duotone` and `deep` are device looks for one shot (a whole film in one wash reads as a filter).
+ * After grading, the set is measured: the share of neutral pixels (OKLCH C < .03) must be at least 30 %, or
+ * grade exits 3 with what to change (--strength 0.7, matte, silver); frames more than half saturated and the
+ * pictures' own share of the accent's hue are reported against their ceilings (35 %, 10 %).
+ *
  * Needs Node 18+ (built-in fetch); ffmpeg and ffprobe for sheet, grade, probe and --trim.
- * Exit codes: 0 done, 1 nothing usable / a step failed, 2 bad arguments.
+ * Exit codes: 0 done, 1 nothing usable / a step failed, 2 bad arguments, 3 the graded set is a colour wash.
  */
 import { spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -354,7 +363,7 @@ export function parseCommons(j, o = {}) {
     const lic = commonsLicence({ License: m('License'), LicenseShortName: m('LicenseShortName'), Restrictions: m('Restrictions') });
     const video = /^video\//.test(ii.mime || '') || o.kind === 'video';
     const it = item('commons', pg.pageid, {
-      kind: video ? 'video' : o.kind || 'photo', title: m('ObjectName').replace(/s*(?:title|label) QS:.*$/s, '').replace(/^"|"$/g, '') || String(pg.title || '').replace(/^File:/, '').replace(/\.[a-z0-9]+$/i, ''),
+      kind: video ? 'video' : o.kind || 'photo', title: m('ObjectName').replace(/\s*\b(?:title|label) QS:.*$/s, '').replace(/^"|"$/g, '') || String(pg.title || '').replace(/^File:/, '').replace(/\.[a-z0-9]+$/i, ''),
       author: short(m('Artist'), 80), page: ii.descriptionurl || null, width: ii.width || null, height: ii.height || null, bytes: ii.size || null,
       duration: Number(ii.duration) || null, licence: lic.id, notes: lic.notes,
     });
@@ -440,10 +449,37 @@ export function parseAic(j, o = {}) {
     const cap = W ? Math.min(W, 3000) : 3000; const w = Math.min(o.width || 2400, cap);
     return item('aic', d.id, { kind: 'art', title: text(d.title) || 'Untitled', author: text(d.artist_title) || text(String(d.artist_display || '').split('\n')[0]),
       page: `https://www.artic.edu/artworks/${d.id}`, thumb: `${iiif}/${d.image_id}/full/400,/0/default.jpg`, image: `${iiif}/${d.image_id}/full/${w},/0/default.jpg`,
-      width: W && H ? cap : null, height: W && H ? Math.round((H * cap) / W) : null, licence: 'cc0', tags: [text(d.artwork_type_title), text(d.medium_display)].filter(Boolean) });
+      width: W && H ? w : null, height: W && H ? Math.round((H * w) / W) : null, full: W && H ? [W, H] : null, licence: 'cc0', tags: [text(d.artwork_type_title), text(d.medium_display)].filter(Boolean) });
   }).filter(Boolean);
 }
 async function searchAic(q, o) { return parseAic(await getJson(aicUrl(q, o), { headers: AIC_HEADERS }), o); }
+/**
+ * AIC's IIIF server renders a width it has ready and answers any other with a redirect to its 843 px default, so a
+ * plain fetch saves 843 px whatever the record says. The widths to try, largest first: the asked width within the
+ * original, AIC's 1686 px large size, 843. Pure.
+ */
+export const aicWidths = (asked, original = null) => {
+  const top = Math.max(1, Math.round(Math.min(asked, original || asked)));
+  return [...new Set([top, 1686, 843])].filter((w) => w <= top).sort((a, b) => b - a);
+};
+/**
+ * The largest width AIC serves for an item, asked without following its redirect; sets the item's image, width and
+ * height to it and returns the width (null when no answer came: the item is left as it was). `f` is fetch.
+ */
+export async function aicServe(it, asked, f = fetch) {
+  const base = String(it.image || '').replace(/\/full\/[^/]+\/0\/default\.jpg$/, '');
+  const [W, H] = it.full || [null, null];
+  for (const w of aicWidths(asked, W)) {
+    const url = `${base}/full/${w},/0/default.jpg`;
+    const r = await f(url, { headers: imageHeaders(url), redirect: 'manual', signal: AbortSignal.timeout(30000) }).catch(() => null);
+    if (r?.body) r.body.cancel().catch(() => {});
+    if (r && r.status >= 200 && r.status < 300) {
+      Object.assign(it, { image: url, width: w, height: W && H ? Math.round((H * w) / W) : it.height });
+      return w;
+    }
+  }
+  return null;
+}
 
 // ---------- The Met
 export const metSearchUrl = (q, o) => `https://collectionapi.metmuseum.org/public/collection/v1.1/search?${new URLSearchParams({ q, hasImages: 'true', limit: String(Math.min(40, o.limit * 4 + 8)), offset: '0' })}`;
@@ -487,7 +523,7 @@ export function parseMixkitItem(html, id) {
   if (/restricted/i.test(notice) || link === 'videoRestricted') licence = 'mixkit-restricted';
   else if (/^free$/i.test(notice) || link === 'videoFree' || /Mixkit Stock Video Free License/.test(html)) licence = 'mixkit-video';
   const dur = (html.match(/"duration":"PT(\d+)M(\d+)S"/) || []);
-  const res = [...html.matchAll(/download-resolution">s*(d+)s*xs*(d+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+  const res = [...html.matchAll(/download-resolution">\s*(\d+)\s*x\s*(\d+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
   const big = res.sort((a, b) => b[0] * b[1] - a[0] * a[1])[0] || [1920, 1080];
   const portrait = big[1] > big[0];
   const has1080 = /type=1080p/.test(html) || res.some(([a, b]) => Math.max(a, b) >= 1920);
@@ -614,8 +650,8 @@ export const rgbHex = (rgb) => `#${rgb.map((v) => Math.round(v * 255).toString(1
 // ------------------------------------------------------------------------------------------------ search
 export function parseArgs(argv) {
   const VALUED = new Set(['kind', 'source', 'orientation', 'min-width', 'colour', 'color', 'limit', 'out', 'pick', 'cols', 'cell', 'to', 'from', 'name', 'width', 'res', 'trim', 'max-mb',
-    'record', 'look', 'accent', 'focus', 'aspect', 'grain', 'speed', 'fps', 'suffix', 'strength', 'scan']);
-  const FLAGS = new Set(['allow-credit', 'json', 'no-check', 'dry-run', 'help', 'force', 'keep']);
+    'record', 'look', 'accent', 'split-hue', 'focus', 'aspect', 'grain', 'speed', 'fps', 'suffix', 'strength', 'scan']);
+  const FLAGS = new Set(['allow-credit', 'json', 'no-check', 'dry-run', 'help', 'force', 'keep', 'scrub']);
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -640,23 +676,27 @@ const num = (args, k, def, lo, hi) => {
   return n;
 };
 
-/** Search options from the arguments (kind, sources, filters). */
+/**
+ * Search options from the arguments (kind, sources, filters). A named source without a search for the kind is
+ * skipped with a note in `skipped` (--kind art --source met,aic,commons searches the museums); only when no named
+ * source is left is it a usage error.
+ */
 export function searchOptions(args, env = process.env) {
   const kind = String(args.kind || 'photo').toLowerCase();
   if (!['photo', 'video', 'texture', 'art'].includes(kind)) throw new Usage('--kind is photo, video, texture or art');
   const orientation = args.orientation ? ({ landscape: 'landscape', wide: 'landscape', portrait: 'portrait', tall: 'portrait', square: 'square' }[String(args.orientation).toLowerCase()]) : null;
   if (args.orientation && !orientation) throw new Usage('--orientation is landscape, portrait or square');
   const usable = Object.keys(SOURCES).filter((s) => SOURCES[s].kinds.includes(kind) && (!SOURCES[s].env || Boolean(env[SOURCES[s].env])));
-  let sources = usable;
+  let sources = usable; const skipped = [];
   if (args.source && args.source !== 'all') {
-    sources = String(args.source).toLowerCase().split(',').map((s) => s.trim()).filter(Boolean);
-    for (const s of sources) {
-      if (!SOURCES[s]) throw new Usage(`unknown source ${s}: ${Object.keys(SOURCES).join(', ')}`);
-      if (!SOURCES[s].kinds.includes(kind)) throw new Usage(`${SOURCES[s].name} has no ${kind} search (it serves ${SOURCES[s].kinds.join(', ')})`);
-      if (SOURCES[s].env && !env[SOURCES[s].env]) throw new Usage(`${SOURCES[s].name} needs ${SOURCES[s].env} in the environment`);
-    }
+    const named = String(args.source).toLowerCase().split(',').map((s) => s.trim()).filter(Boolean);
+    for (const s of named) if (!SOURCES[s]) throw new Usage(`unknown source ${s}: ${Object.keys(SOURCES).join(', ')}`);
+    sources = named.filter((s) => SOURCES[s].kinds.includes(kind));
+    for (const s of named) if (!sources.includes(s)) skipped.push(`${SOURCES[s].name} has no ${kind} search (it serves ${SOURCES[s].kinds.join(', ')})`);
+    if (!sources.length) throw new Usage(skipped.join('; '));
+    for (const s of sources) if (SOURCES[s].env && !env[SOURCES[s].env]) throw new Usage(`${SOURCES[s].name} needs ${SOURCES[s].env} in the environment`);
   }
-  return { kind, sources, orientation, minWidth: num(args, 'min-width', kind === 'video' ? 1280 : 1600, 0, 20000), limit: Math.round(num(args, 'limit', 8, 1, 30)),
+  return { kind, sources, skipped, orientation, minWidth: num(args, 'min-width', kind === 'video' ? 1280 : 1600, 0, 20000), limit: Math.round(num(args, 'limit', 8, 1, 30)),
     width: Math.round(num(args, 'width', 2400, 400, 4000)), res: Math.round(num(args, 'res', 1080, 240, 2160)), allowCredit: Boolean(args['allow-credit']),
     colour: colourOf(args.colour), check: !args['no-check'] };
 }
@@ -692,6 +732,7 @@ async function cmdSearch(args) {
   const query = args._.join(' ').trim();
   if (!query) throw new Usage('search needs a query, e.g. search "basalt cliff"');
   const o = searchOptions(args);
+  for (const n of o.skipped) console.error(`note: ${n}; skipped, searching ${o.sources.map((s) => SOURCES[s].name).join(', ')}`);
   const q = searchQuery(query, o.kind);
   const cap = (ms, msg) => new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms).unref());
   const results = await Promise.all(o.sources.map(async (s) => {
@@ -706,7 +747,8 @@ async function cmdSearch(args) {
   }
   let items = groups.flat();
   if (o.check) {
-    await Promise.race([mapLimit(items.filter((it) => it.kind !== 'video' && (!it.width || ['nasa', 'openverse'].includes(it.source))), 6, async (it) => {
+    await Promise.race([mapLimit(items.filter((it) => it.kind !== 'video' && (!it.width || ['nasa', 'openverse', 'aic'].includes(it.source))), 6, async (it) => {
+      if (it.source === 'aic') { await aicServe(it, o.width); return; } // the width AIC really serves (it redirects others to 843 px)
       const p = await probeUrl(it.image, 12000); it.checked = p.ok ? 'ok' : p.why;
       if (p.ok && p.w) { it.width = p.w; it.height = p.h; }
       if (p.ok && p.bytes) it.bytes = p.bytes;
@@ -932,6 +974,19 @@ export function resolveRefs(list, doc) {
     return { ref: it.ref, hint: it };
   });
 }
+/**
+ * The item a saved search found for a ref (the results files in `dir`, newest first), or null: a ref given as
+ * search printed it, after another search, still finds its page (Mixkit has no lookup by id).
+ */
+export function findSaved(ref, dir = path.join('out', 'assets')) {
+  let files;
+  try { files = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => path.join(dir, f)); } catch { return null; }
+  const mtime = (f) => { try { return fs.statSync(f).mtimeMs; } catch { return 0; } };
+  for (const f of files.sort((a, b) => mtime(b) - mtime(a))) {
+    try { const it = JSON.parse(fs.readFileSync(f, 'utf8'))?.items?.find?.((x) => x?.ref === ref); if (it) return it; } catch { /* not a results file */ }
+  }
+  return null;
+}
 /** Fresh metadata and licence for one ref, read from its source (never trusted from a results file). */
 async function lookup(ref, o, hint) {
   const m = String(ref).match(/^([a-z]+):(.+)$/);
@@ -954,11 +1009,19 @@ async function lookup(ref, o, hint) {
     else it.image = (o.width > 1600 ? man.orig : null) || man.large || man.medium;
     return it;
   }
-  if (src === 'aic') { const j = await getJson(`https://api.artic.edu/api/v1/artworks/${encodeURIComponent(id)}?fields=${AIC_FIELDS.join(',')}`, { headers: AIC_HEADERS }); return parseAic({ data: [j.data], config: j.config }, o)[0]; }
+  if (src === 'aic') {
+    const j = await getJson(`https://api.artic.edu/api/v1/artworks/${encodeURIComponent(id)}?fields=${AIC_FIELDS.join(',')}`, { headers: AIC_HEADERS });
+    const it = parseAic({ data: [j.data], config: j.config }, o)[0]; if (!it) return null;
+    const w = await aicServe(it, o.width);
+    if (w && w < Math.min(o.width, it.full?.[0] || o.width)) it.notes = [...it.notes, `AIC serves this work at ${w} px wide only (asked ${o.width}${it.full ? `, the original is ${it.full[0]}` : ''}): use it small or behind a defocus, or choose another work`];
+    return it;
+  }
   if (src === 'met') return parseMetObject(await getJson(metObjectUrl(id)), {});
   if (src === 'mixkit') {
-    const page = hint?.page || `https://mixkit.co/free-stock-video/${id}/`;
-    const html = await getText(page).catch((e) => { throw new Error(hint?.page ? e.message : `${e.message}: pass --from the results file that found it (Mixkit pages need their name)`); });
+    // a Mixkit page address needs the clip's name, which only a search records (an id alone lands on a search page)
+    if (!hint?.page) throw new Error(`no saved search holds ${ref}: pass --from <the results.json that found it> (Mixkit pages need their name, and the licence is read there)`);
+    const { page } = hint;
+    const html = await getText(page);
     const r = parseMixkitItem(html, id); const pick = pickRendition(r.renditions, o.res);
     return item('mixkit', id, { kind: 'video', title: r.title || hint?.title || `mixkit ${id}`, page, image: pick.url, width: pick.w, height: pick.h, duration: r.duration, licence: r.licence });
   }
@@ -1004,6 +1067,12 @@ export function probeFile(file) {
     fps: isStill ? null : Number(rate(v.avg_frame_rate || v.r_frame_rate).toFixed(3)) || null, frames: Number(v.nb_frames) || null, bitrate: Number(j.format?.bit_rate) || null, bytes: Number(j.format?.size) || null,
     colour: [v.color_primaries, v.color_transfer, v.color_space].filter(Boolean).join('/') || null, audio: (j.streams || []).some((s) => s.codec_type === 'audio') };
 }
+/** A saved image narrower than the record promised (within the asked width) by more than 10 %: what to say, or null. Pure. */
+export function shortfall(saved, promised, asked) {
+  const want = promised ? Math.min(promised, asked || promised) : null;
+  if (!saved || !want || saved >= want * 0.9) return null;
+  return `saved ${saved} px wide, but the record promised ${want} px: the server sent a smaller rendition (use it small or behind a defocus, or choose another)`;
+}
 const parseTrim = (s) => { if (!s) return null; const [a, b] = String(s).split(',').map(Number); if (!(a >= 0) || !(b > 0)) throw new Usage('--trim is start,seconds (e.g. 3.5,6)'); return { start: a, dur: b }; };
 async function cmdGet(args) {
   const list = splitRefs(args._.join(','));
@@ -1017,8 +1086,9 @@ async function cmdGet(args) {
   const to = path.resolve(args.to); const rec = recordPath(to, args.record);
   fs.mkdirSync(to, { recursive: true });
   let failed = 0;
-  for (const { ref, hint } of resolveRefs(list, doc)) {
+  for (const { ref, hint: known } of resolveRefs(list, doc)) {
     try {
+      const hint = known || findSaved(ref);
       const it = await lookup(ref, o, hint);
       if (!it || !it.image) throw new Error('no usable file on the record (removed, or no rendition)');
       const lic = licenceAllowed(it.licence, o);
@@ -1048,6 +1118,8 @@ async function cmdGet(args) {
       f.file = path.relative(path.dirname(rec), file).split(path.sep).join('/');
       writeRecord(rec, recordEntry(it, f));
       const small = kind.media === 'image' && f.width && f.width < 1920;
+      const short = kind.media === 'image' ? shortfall(f.width, it.width, o.width) : null;
+      if (short) console.error(`WARNING  ${ref}: ${short}`);
       console.log(`Saved ${path.relative(process.cwd(), file)} · ${f.width ? `${f.width}x${f.height}` : ''}${f.duration ? ` · ${f.duration.toFixed(1)} s @ ${f.fps} fps` : ''} · ${size(f.bytes)} · ${LICENCES[it.licence].name}${LICENCES[it.licence].credit ? ' (credit line in the record)' : ', no credit needed'}`);
       console.log(`  use      ${publicPath(file) ? `staticFile('${publicPath(file)}')` : path.relative(process.cwd(), file)}`);
       if (small) console.log('  note     under 1920 px wide: use it small, as a texture, or behind a defocus; never full frame sharp');
@@ -1063,19 +1135,54 @@ async function cmdGet(args) {
 /**
  * Named looks: one grade for a whole set, so stills from different sources read as one shoot. Every look
  * normalises exposure (the 10th and 90th luma percentiles to `lo` / `hi`) and colour strength (mean
- * saturation to `sat`) first, then colours: `mode` duotone maps luma between two colours at the accent hue
- * (shadow and highlight as OKLCH L/C), `tint` keeps `keep` of the photo's own colour under a duotone wash,
- * `split` pushes shadows toward the accent hue, `mono` is a neutral black and white.
+ * saturation to `sat`, times --strength) first, then colours: `vib` < 0 is a vibrance ceiling (strong colours
+ * lose more than weak ones, so a turquoise bay does not outshout the set), `mode` duotone maps luma between
+ * two colours at the accent hue (shadow and highlight as OKLCH L/C), `tint` keeps `keep` of the photo's own
+ * colour under a duotone wash, `split` pushes shadows a step toward the split hue (--split-hue, a cool teal-slate
+ * by default and never tied to the accent: a red accent must not redden celadon shadows, and the accent stays
+ * free for live data), `mono` is a neutral black and white. `device: true` marks a look for one shot, never a
+ * whole film.
  */
 export const LOOKS = {
-  natural: { about: 'exposure and colour strength matched across the set, a faint cool shadow; the photos keep their own colour', lo: 0.07, hi: 0.86, sat: 0.9, mode: 'split', split: 0.04, grain: 0.18 },
-  matte: { about: 'editorial matte: lifted blacks, rolled highlights, colour at 55 %, shadows toward the accent hue', lo: 0.12, hi: 0.84, black: 0.06, white: 0.94, sat: 0.55, mode: 'split', split: 0.07, grain: 0.25 },
-  tint: { about: 'desaturate-to-tint: 30 % of the photo\'s own colour under a one-hue wash at the accent hue', lo: 0.08, hi: 0.88, sat: 0.3, mode: 'tint', keep: 0.3, shadow: [0.2, 0.06], mid: [0.55, 0.085], highlight: [0.95, 0.025], grain: 0.25 },
-  duotone: { about: 'full duotone: deep accent-hued shadows to a pale tinted white', lo: 0.06, hi: 0.9, sat: 0, mode: 'duotone', shadow: [0.2, 0.08], mid: [0.55, 0.075], highlight: [0.96, 0.03], grain: 0.3 },
-  deep: { about: 'the photo becomes the colour world: shadows at L .14, highlights at the accent lifted to L .82', lo: 0.05, hi: 0.86, sat: 0, mode: 'duotone', shadow: [0.14, 0.05], mid: [0.46, 0.1], highlight: [0.82, 0.1], grain: 0.3 },
-  silver: { about: 'neutral black and white, a firm curve and stronger grain', lo: 0.05, hi: 0.9, sat: 0, mode: 'mono', grain: 0.4 },
-  night: { about: 'low key: exposure down, shadows sunk toward the accent hue, highlights kept', lo: 0.03, hi: 0.72, sat: 0.6, mode: 'split', split: 0.09, gamma: 0.85, grain: 0.3 },
+  natural: { about: 'the default: each picture keeps its own colour; exposure and colour strength matched across the set, strong colours held back, a faint cool shadow', lo: 0.07, hi: 0.86, sat: 0.8, vib: -0.35, mode: 'split', split: 0.025, grain: 0.18 },
+  matte: { about: 'editorial matte: lifted blacks, rolled highlights, colour at 55 %, shadows a step toward the split hue (cool by default)', lo: 0.12, hi: 0.84, black: 0.06, white: 0.94, sat: 0.55, vib: -0.25, mode: 'split', split: 0.05, grain: 0.25 },
+  silver: { about: 'neutral black and white, a firm curve and stronger grain (archives, a quiet film, the pieces of a collage)', lo: 0.05, hi: 0.9, sat: 0, mode: 'mono', grain: 0.4 },
+  night: { about: 'low key: exposure down, shadows sunk a step toward the split hue (cool by default), highlights kept', lo: 0.03, hi: 0.72, sat: 0.6, vib: -0.25, mode: 'split', split: 0.07, gamma: 0.85, grain: 0.3 },
+  tint: { device: true, about: 'a device look for one shot: 30 % of the photo\'s own colour under a one-hue wash at the accent hue', lo: 0.08, hi: 0.88, sat: 0.3, mode: 'tint', keep: 0.3, shadow: [0.2, 0.06], mid: [0.55, 0.085], highlight: [0.95, 0.025], grain: 0.25 },
+  duotone: { device: true, about: 'a device look for one shot: deep accent-hued shadows to a pale tinted white', lo: 0.06, hi: 0.9, sat: 0, mode: 'duotone', shadow: [0.2, 0.08], mid: [0.55, 0.075], highlight: [0.96, 0.03], grain: 0.3 },
+  deep: { device: true, about: 'a device look for one shot: the photo becomes a colour field, shadows at L .14, highlights at the accent lifted to L .82', lo: 0.05, hi: 0.86, sat: 0, mode: 'duotone', shadow: [0.14, 0.05], mid: [0.46, 0.1], highlight: [0.82, 0.1], grain: 0.3 },
 };
+/** The picture check's thresholds (OKLCH chroma): neutral below, saturated at or above (the look audit's line). */
+export const PICTURE = { neutralC: 0.03, saturatedC: 0.06, accentDeg: 20, minNeutral: 0.3, maxSatFrames: 0.35, maxAccent: 0.1 };
+const hueGap = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+/** Shares of neutral, saturated and accent-hued pixels in an rgb24 buffer (accent = a #hex or null). Pure. */
+export function colourShares(buf, accent = null) {
+  const ah = accent ? hexToOklch(accent)[2] : null;
+  let n = 0; let neutral = 0; let saturated = 0; let acc = 0;
+  for (let i = 0; i + 2 < buf.length; i += 3) {
+    const [, C, h] = rgbToOklch(buf[i], buf[i + 1], buf[i + 2]);
+    n++;
+    if (C < PICTURE.neutralC) neutral++;
+    if (C >= PICTURE.saturatedC) { saturated++; if (ah !== null && hueGap(h, ah) <= PICTURE.accentDeg) acc++; }
+  }
+  return n ? { neutral: neutral / n, saturated: saturated / n, accent: acc / n } : { neutral: 0, saturated: 0, accent: 0 };
+}
+/**
+ * The verdict on a graded set from per-frame shares ([{ neutral, saturated, accent }], every still once, every
+ * clip three times): mean neutral share against the floor, the share of frames more than half saturated and
+ * the mean accent share against their ceilings. Only the neutral floor fails. Pure.
+ */
+export function pictureVerdict(frames, o = {}) {
+  const P = { ...PICTURE, ...o };
+  const m = (k) => (frames.length ? frames.reduce((s, f) => s + f[k], 0) / frames.length : 0);
+  const neutral = m('neutral'); const accent = m('accent');
+  const satFrames = frames.length ? frames.filter((f) => f.saturated > 0.5).length / frames.length : 0;
+  const notes = [];
+  if (neutral < P.minNeutral) notes.push(`neutral ${Math.round(neutral * 100)} % is under the ${Math.round(P.minNeutral * 100)} % floor: the set reads as one colour wash and the accent will not read on live data; grade natural (the default) with --strength 0.7, or matte or silver; keep tint, duotone and deep for one shot`);
+  if (satFrames > P.maxSatFrames) notes.push(`${Math.round(satFrames * 100)} % of frames are more than half saturated (ceiling ${Math.round(P.maxSatFrames * 100)} %): lower --strength or pick pictures with grey, white or dark in them`);
+  if (accent > P.maxAccent) notes.push(`the pictures themselves carry the accent's hue on ${Math.round(accent * 100)} % of their pixels (ceiling ${Math.round(P.maxAccent * 100)} %): the accent will not stand out on them; lower --strength or move the accent's hue away from the pictures'`);
+  return { neutral, satFrames, accent, ok: neutral >= P.minNeutral, notes };
+}
 /** The crop of a w x h source at `aspect` (w/h), `zoom` x tighter, centred on focus (fx, fy in 0..1) and clamped inside. */
 export function focusCrop(w, h, aspect, fx = 0.5, fy = 0.5, zoom = 1) {
   let cw = w; let ch = Math.round(w / aspect);
@@ -1113,11 +1220,22 @@ export function duotoneCurves(hue, shadow, highlight, mid = null) {
   const ch = (i) => knots.map((k) => `${f3(k.t)}/${f3(k.rgb[i])}`).join(' ');
   return { r: ch(0), g: ch(1), b: ch(2), shadowHex: rgbHex(A), highlightHex: rgbHex(B) };
 }
+/** The split-tone hue when none is asked for: the hue of #2f7d8c (OKLCH ~213, a cool teal-slate). */
+export const SPLIT_HUE = 213;
+/** A --split-hue value (degrees 0-360 or a #rrggbb colour) to degrees. */
+export function hueOf(v) {
+  const s = String(v ?? '').trim();
+  if (/^#[0-9a-f]{6}$/i.test(s)) return hexToOklch(s)[2];
+  const n = Number(s);
+  if (s !== '' && Number.isFinite(n) && n >= 0 && n <= 360) return n;
+  throw new Usage('--split-hue is a hue in degrees (0-360, OKLCH) or a #rrggbb colour');
+}
 /**
  * The ffmpeg filter chain of one file for a look. stats = { lo, hi, sat } of the source (luma percentiles and
- * mean saturation, 0..1) or null; crop = focusCrop() or null; width = output width. Pure (tested).
+ * mean saturation, 0..1) or null; crop = focusCrop() or null; width = output width; accent = the wash hue of the
+ * device looks; splitHue = the shadow hue of the split looks (degrees, SPLIT_HUE when null). Pure (tested).
  */
-export function gradeFilter(lookName, { accent = '#2f7d8c', stats = null, crop = null, width = 2400, grain, video = false, speed = 1 } = {}) {
+export function gradeFilter(lookName, { accent = '#2f7d8c', splitHue = null, stats = null, crop = null, width = 2400, grain, video = false, speed = 1, colour = 1 } = {}) {
   const L = LOOKS[lookName];
   if (!L) throw new Usage(`unknown look ${lookName}: ${Object.keys(LOOKS).join(', ')}`);
   const hue = hexToOklch(accent)[2];
@@ -1138,12 +1256,13 @@ export function gradeFilter(lookName, { accent = '#2f7d8c', stats = null, crop =
       const d = duotoneCurves(hue, L.shadow, L.highlight, L.mid);
       const tone = `${luma},curves=r='${d.r}':g='${d.g}':b='${d.b}'`; // blend: the first input (the photo) on top at `keep`
       if (L.mode === 'duotone') f.push(tone);
-      else { const sat = satFactor(stats, 1, ex.slope); f.push(`split[a][b];[b]${tone}[t];[a]eq=saturation=${f3(sat)}[k];[k][t]blend=all_mode=normal:all_opacity=${f3(L.keep)}`); }
+      else { const sat = satFactor(stats, colour, ex.slope); f.push(`split[a][b];[b]${tone}[t];[a]eq=saturation=${f3(sat)}[k];[k][t]blend=all_mode=normal:all_opacity=${f3(L.keep)}`); }
     }
   } else {
-    const sat = satFactor(stats, L.sat, ex.slope);
+    const sat = satFactor(stats, L.sat * colour, ex.slope);
     f.push(`eq=saturation=${f3(sat)}`);
-    const [r, g, b] = oklchToRgb(0.5, 0.12, hue).map((v) => v - 0.5);
+    if (L.vib) f.push(`vibrance=intensity=${f3(L.vib)}`);
+    const [r, g, b] = oklchToRgb(0.5, 0.12, splitHue ?? SPLIT_HUE).map((v) => v - 0.5);
     const k = L.split / Math.max(0.001, Math.max(Math.abs(r), Math.abs(g), Math.abs(b)));
     f.push(`colorbalance=rs=${f3(r * k)}:gs=${f3(g * k)}:bs=${f3(b * k)}:rm=${f3(r * k * 0.3)}:gm=${f3(g * k * 0.3)}:bm=${f3(b * k * 0.3)}`);
   }
@@ -1152,6 +1271,11 @@ export function gradeFilter(lookName, { accent = '#2f7d8c', stats = null, crop =
   f.push(video ? 'format=yuv420p' : 'format=rgb24');
   return f.join(',');
 }
+/**
+ * The encoder arguments of a graded clip. scrub: every frame a key frame and no reordered frames, for a clip whose
+ * time the film drives (a clock, a ping-pong, a ramp): a renderer then lands on any frame exactly. Pure.
+ */
+export const videoEncode = ({ scrub = false } = {}) => ['-c:v', 'libx264', '-crf', scrub ? '18' : '17', '-preset', 'medium', ...(scrub ? ['-g', '1', '-bf', '0'] : [])];
 /** Luma percentiles and saturation of a file (ffmpeg signalstats on a small copy): { lo, hi, avg, sat } in 0..1. */
 export function measure(file) {
   const r = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'info', '-i', file, '-vf', 'scale=320:-2,signalstats,metadata=mode=print', '-frames:v', '1', '-f', 'null', '-'], { encoding: 'utf8' });
@@ -1170,7 +1294,10 @@ async function cmdGrade(args) {
   const width = Math.round(num(args, 'width', 2400, 320, 3840)); const grain = args.grain !== undefined ? num(args, 'grain', 0.3, 0, 1) : undefined;
   const aspect = !args.aspect || args.aspect === 'none' ? (args.aspect === 'none' ? null : 16 / 9) : (() => { const [a, b] = String(args.aspect).split(/[:/x]/).map(Number); if (!(a > 0 && b > 0)) throw new Usage('--aspect is w:h (16:9) or none'); return a / b; })();
   const [fx, fy] = args.focus ? String(args.focus).split(',').map(Number) : [0.5, 0.5];
-  const trim = parseTrim(args.trim); const speed = num(args, 'speed', 1, 0.1, 8);
+  const trim = parseTrim(args.trim); const speed = num(args, 'speed', 1, 0.1, 8); const colour = num(args, 'strength', 1, 0.2, 1.5);
+  const splitHue = args['split-hue'] !== undefined ? hueOf(args['split-hue']) : null;
+  if (LOOKS[look].device) console.log(`${look} is a device look: grade the one shot that uses it this way and the rest of the film natural (or matte, silver).`);
+  const graded = [];
   const outDir = path.resolve(args.out || path.join(path.dirname(files[0]), 'graded'));
   fs.mkdirSync(outDir, { recursive: true });
   for (const file of files) {
@@ -1179,21 +1306,54 @@ async function cmdGrade(args) {
     const stats = measure(file);
     const crop = aspect ? focusCrop(p.width, p.height, aspect, fx, fy) : null;
     const w = Math.min(width, crop ? crop.w : p.width) - (Math.min(width, crop ? crop.w : p.width) % 2);
-    const vf = gradeFilter(look, { accent, stats, crop, width: w, grain, video, speed });
+    const vf = gradeFilter(look, { accent, splitHue, stats, crop, width: w, grain, video, speed, colour });
     const out = path.join(outDir, `${path.basename(file).replace(/\.[^.]+$/, '')}.${args.suffix || look}.${video ? 'mp4' : 'jpg'}`);
     const argv = video
-      ? [...(trim ? ['-ss', String(trim.start)] : []), '-i', file, ...(trim ? ['-t', String(trim.dur / speed)] : []), '-an', '-filter_complex', `[0:v]${vf}[v]`, '-map', '[v]', '-c:v', 'libx264', '-crf', '17', '-preset', 'medium',
+      ? [...(trim ? ['-ss', String(trim.start)] : []), '-i', file, ...(trim ? ['-t', String(trim.dur / speed)] : []), '-an', '-filter_complex', `[0:v]${vf}[v]`, '-map', '[v]', ...videoEncode({ scrub: Boolean(args.scrub) }),
         '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-movflags', '+faststart', out]
       : ['-i', file, '-filter_complex', `[0:v]${vf}[v]`, '-map', '[v]', '-frames:v', '1', '-q:v', '2', out];
     if (args['dry-run']) { console.log(`ffmpeg ${argv.map((a) => (/[\s;'[\]]/.test(a) ? `"${a}"` : a)).join(' ')}`); continue; }
     ff(argv, `grade ${path.basename(file)}`);
+    graded.push({ file: out, video });
     console.log(`Graded ${path.relative(process.cwd(), out)} · ${look}${crop ? ` · crop ${crop.w}x${crop.h} at ${crop.x},${crop.y}` : ''} · source luma ${stats ? `${stats.lo.toFixed(2)}-${stats.hi.toFixed(2)}` : '?'}`);
   }
-  if (!args['dry-run']) console.log(`Check the set as one shoot: node scripts/assets.mjs sheet ${path.relative(process.cwd(), outDir) || outDir}`);
-  return 0;
+  if (args['dry-run'] || !graded.length) return 0;
+  console.log(`Check the set as one shoot: node scripts/assets.mjs sheet ${path.relative(process.cwd(), outDir) || outDir}`);
+  if (args['no-check']) return 0;
+  return pictureCheck(graded, args.accent ? accent : null);
+}
+/** Pixels of one frame (a still, or a clip at t seconds) as a small rgb24 grid at 16:9. */
+export function frameGrid(file, t = null, w = 96, h = 54) {
+  const r = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', ...(t !== null ? ['-ss', String(t)] : []), '-i', file, '-vf', `scale=${w}:${h}:flags=area`, '-frames:v', '1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 1 << 20 });
+  return r.status === 0 ? r.stdout : Buffer.alloc(0);
+}
+/** Measures a graded set (every still once, every clip at three times), prints the verdict; 3 when the set is a wash. */
+export function pictureCheck(graded, accent = null) {
+  const frames = [];
+  console.log(`\nPicture check (OKLCH: neutral C < ${PICTURE.neutralC}, saturated C >= ${PICTURE.saturatedC}${accent ? `, accent within ${PICTURE.accentDeg} deg of ${accent}` : ''}):`);
+  for (const g of graded) {
+    const times = g.video ? scanTimes(probeFile(g.file)?.duration || 1, 3) : [null];
+    const rows = times.map((t) => colourShares(frameGrid(g.file, t), accent));
+    frames.push(...rows);
+    const m = (k) => String(Math.round((rows.reduce((a, r) => a + r[k], 0) / rows.length) * 100)).padStart(3);
+    console.log(`  ${path.basename(g.file).padEnd(46)} neutral ${m('neutral')} %  saturated ${m('saturated')} %${accent ? `  accent ${m('accent')} %` : ''}`);
+  }
+  const v = pictureVerdict(frames);
+  const pc = (x) => Math.round(x * 100);
+  console.log(`Set: neutral ${pc(v.neutral)} % (floor ${pc(PICTURE.minNeutral)} %), frames over half saturated ${pc(v.satFrames)} % (ceiling ${pc(PICTURE.maxSatFrames)} %)${accent ? `, accent ${pc(v.accent)} % (ceiling ${pc(PICTURE.maxAccent)} %)` : ''}: ${v.ok ? (v.notes.length ? 'passes, with notes' : 'passes') : 'FAILS'}`);
+  for (const n of v.notes) console.log(`  - ${n}`);
+  return v.ok ? 0 : 3;
 }
 
-// ------------------------------------------------------------------------------------------------ probe, looks, licences
+// ------------------------------------------------------------------------------------------------ check, probe, looks, licences
+function cmdCheck(args) {
+  if (args.accent && !/^#[0-9a-f]{6}$/i.test(args.accent)) throw new Usage('--accent is a #rrggbb colour');
+  const files = listLocal(args._).filter((f) => !/\.(json|txt|md)$/i.test(f));
+  if (!files.length) throw new Usage('check needs graded image or video files (or folders)');
+  if (!ffmpegOk()) throw new Error('check needs ffmpeg and ffprobe on the PATH');
+  const graded = files.map((f) => ({ file: f, video: /\.(mp4|webm|mov)$/i.test(f) }));
+  return pictureCheck(graded, args.accent || null);
+}
 function cmdProbe(args) {
   const files = listLocal(args._); if (!files.length) throw new Usage('probe needs files');
   const all = files.map((f) => ({ file: f, ...(probeFile(f) || { error: 'not readable by ffprobe' }) }));
@@ -1206,7 +1366,8 @@ function cmdProbe(args) {
 }
 function cmdLooks() {
   for (const [k, L] of Object.entries(LOOKS)) console.log(`${k.padEnd(9)} ${L.about}`);
-  console.log('\nnode scripts/assets.mjs grade public/assets/*.jpg --look tint --accent "#2f7d8c" --focus 0.5,0.4');
+  console.log('\nThe film grades natural (the default); matte, silver and night are whole-film looks too; tint, duotone and deep are for one shot.');
+  console.log('node scripts/assets.mjs grade public/assets --accent "#2f7d8c" --out public/assets/graded');
   return 0;
 }
 function cmdLicences(args) {
@@ -1228,12 +1389,17 @@ export const USAGE = `assets.mjs: photographs, footage, textures and art a film 
   sheet  <results.json> [--pick 1,4,7] | <files or folders> [--scan 6] [--cols 4] [--cell 400] [--out sheet.png]
   get    <ref|#n>[,...] --to <film>/public/assets [--from results.json] [--name stem] [--width 2400]
          [--res 1080] [--trim start,seconds] [--max-mb 150] [--allow-credit] [--record path]
-  grade  <files or folders> --look ${Object.keys(LOOKS).join('|')} [--accent #hex] [--focus x,y]
-         [--aspect 16:9|none] [--width 2400] [--grain 0..1] [--out dir] [--trim start,seconds] [--speed 1] [--dry-run]
+  grade  <files or folders> [--look ${Object.keys(LOOKS).join('|')}] [--strength 0.2..1.5] [--accent #hex]
+         [--split-hue deg|#hex] [--focus x,y] [--aspect 16:9|none] [--width 2400] [--grain 0..1] [--out dir]
+         [--trim start,seconds] [--speed 1] [--scrub] [--dry-run] [--no-check]   (natural is the default; a graded
+         set keeps >= 30 % neutral pixels; --split-hue: the shadows' hue in natural, matte and night, cool by default
+         and apart from --accent; --scrub: every frame a key frame, for a clip the film's clock drives)
+  check  <graded files or folders> [--accent #hex]   (the picture check grade runs, on any set)
   probe  <files> [--json]          looks          licences [--to <film>/public/assets]
 
-Refs: #n from the last search, or <source>:<id> as search prints it; a known work by name or number also
-works: commons:File:<file name>, met:<object id>, aic:<artwork id>, nasa:<nasa id>.
+Refs: #n from the last search, or <source>:<id> as search prints it (a ref is looked up in the saved searches
+under out/assets/; a Mixkit ref needs one, or --from); a known work by name or number also works:
+commons:File:<file name>, met:<object id>, aic:<artwork id>, nasa:<nasa id>.
 
 Keyless: Openverse (cc0 / public domain), Wikimedia Commons (public domain / CC0), NASA, the Art Institute of
 Chicago and the Met (CC0), Mixkit video (free licence only). With a key in the environment: PEXELS_API_KEY,
@@ -1254,9 +1420,10 @@ export async function main(argv) {
       case 'get': return await cmdGet(args);
       case 'grade': return await cmdGrade(args);
       case 'probe': return cmdProbe(args);
+      case 'check': return cmdCheck(args);
       case 'looks': return cmdLooks();
       case 'licences': case 'licenses': return cmdLicences(args);
-      default: throw new Usage(`unknown command ${cmd}: search, sheet, get, grade, probe, looks, licences`);
+      default: throw new Usage(`unknown command ${cmd}: search, sheet, get, grade, check, probe, looks, licences`);
     }
   } catch (e) {
     if (e instanceof Usage) { console.error(`${e.message}\n\n${USAGE}`); return 2; }

@@ -103,6 +103,23 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
 {
   const aic = A.parseAic(fx('aic-search.json'), { width: 1600 });
   ok(aic.length >= 2 && aic.every((it) => it.licence === 'cc0' && /\/full\/1600,\/0\/default\.jpg$/.test(it.image) && /\/full\/400,\//.test(it.thumb)), 'Art Institute: CC0, IIIF at the asked width, 400 px preview');
+  ok(aic[0].width === 1600 && aic[0].full?.[0] === 3000 && aic[0].full?.[1] === 2000, 'Art Institute: the record promises the asked width and keeps the original size', JSON.stringify([aic[0].width, aic[0].full]));
+  eq(A.aicWidths(2400, 4536), [2400, 1686, 843], 'AIC widths to try: the asked width, the 1686 px large size, the 843 px default');
+  eq(A.aicWidths(2400, 1200), [1200, 843], 'AIC widths stay within the original');
+  eq(A.aicWidths(1686, null), [1686, 843], 'AIC widths without a known original');
+}
+// AIC redirects a width it has not rendered to its 843 px default: the ladder is asked without following redirects
+{
+  const asked = [];
+  const stub = (served) => async (url, init) => { asked.push(`${init?.redirect}:${url.match(/\/full\/(\d+),/)[1]}`); const w = Number(url.match(/\/full\/(\d+),/)[1]); return { status: served.includes(w) ? 200 : 307, body: null }; };
+  const it = A.parseAic(fx('aic-search.json'), { width: 2400 })[0];
+  const w = await A.aicServe(it, 2400, stub([1686, 843]));
+  ok(w === 1686 && /\/full\/1686,\/0\/default\.jpg$/.test(it.image) && it.width === 1686 && it.height === Math.round((2000 * 1686) / 3000), 'AIC: a redirected 2400 falls back to the served 1686, image and size follow', `${w} ${it.image.slice(-30)} ${it.width}x${it.height}`);
+  ok(asked.every((a) => a.startsWith('manual:')) && asked.join(' ') === 'manual:2400 manual:1686', 'AIC: each width is asked without following the redirect, largest first', asked.join(' '));
+  const it2 = A.parseAic(fx('aic-search.json'), { width: 2400 })[0]; const before = it2.image;
+  const none = await A.aicServe(it2, 2400, async () => { throw new Error('offline'); });
+  ok(none === null && it2.image === before, 'AIC: no answer leaves the item as it was');
+  ok(A.shortfall(843, 2400, 2400) && /843 px/.test(A.shortfall(843, 2400, 2400)) && A.shortfall(2400, 3000, 2400) === null && A.shortfall(1686, null, 2400) === null, 'a saved image narrower than promised is reported; one at the asked width or with no promise is not');
   const met = fx('met-objects.json').objects.map((o) => A.parseMetObject(o, {}));
   ok(met.length >= 1 && met.every((it) => it.licence === 'cc0' && it.image && it.thumb), 'The Met: CC0 objects with image and preview');
   eq(A.parseMetObject({ ...fx('met-objects.json').objects[0], isPublicDomain: false }, {}), null, 'The Met: a non-public-domain object is dropped');
@@ -115,6 +132,12 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   ok(free.licence === 'mixkit-video' && free.duration === 30 && free.renditions.some((r) => r.h === 1080), 'Mixkit item: the free licence, its length and a 1080p rendition');
   const res = A.parseMixkitItem(fx('mixkit-item-restricted.json').html, '48525');
   ok(res.licence === 'mixkit-restricted' && !A.licenceAllowed(res.licence, { allowCredit: true }).ok, 'Mixkit item under the restricted licence is refused');
+  const tall = A.parseMixkitItem('<a href="/license/#videoFree">l</a><span class="download-resolution">1080 x 1920</span>', '1');
+  ok(tall.renditions.length === 2 && tall.renditions.every((r) => r.h > r.w) && tall.renditions[1].h === 1920, 'Mixkit item: a portrait clip read from its download resolution', JSON.stringify(tall.renditions.map((r) => [r.w, r.h])));
+}
+{
+  const page = { pageid: 7, index: 1, title: 'File:Example.jpg', imageinfo: [{ url: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Example.jpg', descriptionurl: 'https://commons.wikimedia.org/wiki/File:Example.jpg', width: 4000, height: 3000, mime: 'image/jpeg', extmetadata: { ObjectName: { value: 'Tide pools at dawn title QS:P1476,en:"Tide pools at dawn"' }, LicenseShortName: { value: 'CC0' }, License: { value: 'cc0' } } }] };
+  eq(A.parseCommons({ query: { pages: [page] } })[0]?.title, 'Tide pools at dawn', 'Commons: the structured-data tail is cut from the title');
 }
 {
   const ph = A.parsePexels(fx('pexels-photos.json'), opts());
@@ -152,6 +175,9 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   eq(A.searchOptions({ kind: 'art' }, {}).sources, ['openverse', 'aic', 'met'], 'art search: Openverse, the two museums');
   throws(() => A.searchOptions({ kind: 'photo', source: 'pexels' }, {}), /PEXELS_API_KEY/, 'asking for a keyed source without its key is a usage error');
   throws(() => A.searchOptions({ kind: 'photo', source: 'mixkit' }, {}), /no photo search/, 'Mixkit has no photo search');
+  const art = A.searchOptions({ kind: 'art', source: 'met,aic,commons' }, {});
+  ok(art.sources.join() === 'met,aic' && art.skipped.length === 1 && /Wikimedia Commons has no art search/.test(art.skipped[0]), 'a named source without the kind is skipped with a note while others answer', JSON.stringify(art.skipped));
+  ok(A.searchOptions({ kind: 'photo' }, {}).skipped.length === 0, 'no note when no source was named');
   throws(() => A.searchOptions({ kind: 'gif' }, {}), /--kind/, 'unknown --kind');
   throws(() => A.searchOptions({ kind: 'photo', source: 'flickrx' }, {}), /unknown source/, 'unknown source');
   eq(A.searchOptions({ kind: 'video' }, {}).minWidth, 1280, 'video defaults to 1280 px wide at least, photos to 1600');
@@ -234,7 +260,17 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   const crop = A.focusCrop(3000, 2000, 16 / 9, 0.5, 0.5);
   const tint = A.gradeFilter('tint', { accent: '#2e8c9e', stats: { lo: 0.12, hi: 0.8, sat: 0.2 }, crop, width: 2400 });
   ok(tint.startsWith(`crop=${crop.w}:${crop.h}:${crop.x}:${crop.y},scale=2400:-2`) && /split\[a\]\[b\]/.test(tint) && /blend=all_mode=normal:all_opacity=0\.3/.test(tint), 'grade tint: crop, scale, the photo on top at 30 % over the duotone');
-  ok(/colorbalance=/.test(A.gradeFilter('matte', { accent: '#2e8c9e' })) && /eq=saturation=/.test(A.gradeFilter('matte', { accent: '#2e8c9e' })), 'grade matte: saturation and a shadow push toward the accent');
+  ok(/colorbalance=/.test(A.gradeFilter('matte', { accent: '#2e8c9e' })) && /eq=saturation=/.test(A.gradeFilter('matte', { accent: '#2e8c9e' })), 'grade matte: saturation and a split-tone shadow push');
+  // the split-tone hue is apart from the accent: a red accent must not redden celadon shadows
+  const cb = (o) => A.gradeFilter('natural', o).match(/colorbalance=[^,]+/)[0];
+  const rs = (s) => Number(s.match(/rs=(-?[\d.]+)/)[1]); const bs = (s) => Number(s.match(/bs=(-?[\d.]+)/)[1]);
+  ok(cb({ accent: '#e9504d' }) === cb({ accent: '#2e8c9e' }) && cb({}) === cb({ accent: '#e9504d' }), 'split tone: the accent does not move the shadows (natural, red or teal accent)');
+  ok(rs(cb({})) < 0 && bs(cb({})) >= 0, 'split tone: cool by default (shadows lose red, keep blue)', cb({}));
+  const warm = cb({ splitHue: A.hueOf('#e9504d') });
+  ok(rs(warm) > 0 && warm !== cb({}) && cb({ splitHue: 213 }) === cb({}), '--split-hue moves the shadows (a #hex or degrees; 213 is the default)', warm);
+  ok(A.hueOf('240') === 240 && Math.abs(A.hueOf('#2f7d8c') - A.SPLIT_HUE) < 1, 'hueOf reads degrees and #hex; SPLIT_HUE is the hue of #2f7d8c');
+  throws(() => A.hueOf('teal'), /--split-hue/, 'a --split-hue that is not degrees or #hex');
+  throws(() => A.hueOf('400'), /--split-hue/, 'a --split-hue above 360');
   const v = A.gradeFilter('duotone', { accent: '#2e8c9e', video: true, speed: 0.5 });
   ok(/setpts=PTS\/0\.5/.test(v) && /allf=t\+u/.test(v) && /format=yuv420p$/.test(v), 'grade video: speed, temporal grain, yuv420p');
   ok(!/noise=/.test(A.gradeFilter('silver', { grain: 0 })), 'grade: --grain 0 removes the grain');
@@ -243,6 +279,32 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   const hard = A.exposureMap({ lo: 0.01, hi: 0.99 }, A.LOOKS.tint);
   ok(hard.slope >= 0.75, 'exposure: a contrasty source is flattened at most to x0.75');
   ok(A.satFactor({ sat: 0.02 }, 1, 1) === 1.25 && A.satFactor({ sat: 0.9 }, 1, 1) === 0.25 && A.satFactor(null, 0.55) === 0.55, 'saturation factor: bounded 0.25-1.25, the look\'s own without stats');
+}
+// the film's look is natural; one-hue washes are one-shot devices; a graded set is measured
+{
+  ok(Object.keys(A.LOOKS)[0] === 'natural', 'natural is the first look (and the grade default)');
+  ok(['tint', 'duotone', 'deep'].every((k) => A.LOOKS[k].device) && ['natural', 'matte', 'silver', 'night'].every((k) => !A.LOOKS[k].device), 'tint, duotone and deep are marked as one-shot device looks; natural, matte, silver and night are whole-film looks');
+  const nat = A.gradeFilter('natural', { accent: '#2e8c9e', stats: { lo: 0.1, hi: 0.8, sat: 0.2 } });
+  ok(/vibrance=intensity=-0\.35/.test(nat) && /eq=saturation=/.test(nat), 'natural holds strong colours back (a vibrance ceiling after the saturation match)');
+  const s1 = Number(nat.match(/eq=saturation=([\d.]+)/)[1]);
+  const s07 = Number(A.gradeFilter('natural', { accent: '#2e8c9e', stats: { lo: 0.1, hi: 0.8, sat: 0.2 }, colour: 0.7 }).match(/eq=saturation=([\d.]+)/)[1]);
+  ok(s07 < s1 && Math.abs(s07 / s1 - 0.7) < 0.02, '--strength scales the colour strength the set is matched to', `${s1} -> ${s07}`);
+  const tintKeep = A.gradeFilter('tint', { accent: '#2e8c9e', stats: { lo: 0.1, hi: 0.8, sat: 0.2 }, colour: 0.5 });
+  ok(/split\[a\]\[b\]/.test(tintKeep), 'a device look still grades when asked for (one shot)');
+  // pixels: a neutral grey, a strong teal (the accent's hue), a strong red
+  const px = (rgb, n) => Buffer.from(Array.from({ length: n }, () => rgb).flat());
+  const grey = px([120, 122, 121], 60); const teal = px([40, 150, 165], 30); const red = px([220, 60, 50], 10);
+  const sh = A.colourShares(Buffer.concat([grey, teal, red]), '#2e8c9e');
+  ok(Math.abs(sh.neutral - 0.6) < 1e-9 && Math.abs(sh.saturated - 0.4) < 1e-9 && Math.abs(sh.accent - 0.3) < 1e-9, 'colour shares: neutral (C < .03), saturated (C >= .06) and accent-hued pixels counted apart', JSON.stringify(sh));
+  ok(A.colourShares(Buffer.alloc(0)).neutral === 0, 'colour shares of an empty buffer are zero, not NaN');
+  const wash = A.pictureVerdict([{ neutral: 0.02, saturated: 0.8, accent: 0.6 }, { neutral: 0.05, saturated: 0.7, accent: 0.5 }]);
+  ok(!wash.ok && wash.notes.length === 3 && /natural/.test(wash.notes[0]) && /--strength/.test(wash.notes[1]), 'a one-hue wash fails the neutral floor and gets all three notes', JSON.stringify(wash.notes.map((n) => n.slice(0, 40))));
+  const good = A.pictureVerdict([{ neutral: 0.6, saturated: 0.1, accent: 0.01 }, { neutral: 0.4, saturated: 0.55, accent: 0.02 }, { neutral: 0.7, saturated: 0.05, accent: 0 }]);
+  ok(good.ok && Math.abs(good.neutral - 17 / 30) < 1e-9 && Math.abs(good.satFrames - 1 / 3) < 1e-9 && good.notes.length === 0, 'a natural set passes: mean neutral, the share of frames over half saturated', JSON.stringify(good));
+  ok(A.pictureVerdict([{ neutral: 0.5, saturated: 0.2, accent: 0.2 }]).ok && A.pictureVerdict([{ neutral: 0.5, saturated: 0.2, accent: 0.2 }]).notes.length === 1, 'only the neutral floor fails; the accent ceiling is a note');
+  ok(A.PICTURE.minNeutral === 0.3 && A.PICTURE.saturatedC === 0.06, 'the picture check uses the look audit\'s saturation line and a 30 % neutral floor');
+  const enc = A.videoEncode({ scrub: true }).join(' ');
+  ok(/-g 1/.test(enc) && /-bf 0/.test(enc) && !/-g /.test(A.videoEncode().join(' ')), '--scrub encodes every frame as a key frame with no reordered frames; the default keeps a normal group', enc);
 }
 {
   const png = Buffer.alloc(32); png[0] = 0x89; png.write('PNG', 1, 'ascii'); png.writeUInt32BE(2400, 16); png.writeUInt32BE(1350, 20);
@@ -275,7 +337,14 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   const noq = await A.main(['search']);
   const noTo = await A.main(['get', 'commons:1']);
   const badLook = await A.main(['grade', HERE, '--look', 'sepia']);
+  const noCheck = await A.main(['check']);
+  const badAccent = await A.main(['check', HERE, '--accent', 'teal']);
+  const looksOut = (() => { out = ''; return A.main(['looks']); })();
+  const looksCode = await looksOut;
+  const looksText = out;
   console.log = log; console.error = err;
+  ok(noCheck === 2 && badAccent === 2, 'check without files, or with a non-hex accent, is a usage error', `${noCheck} ${badAccent}`);
+  ok(looksCode === 0 && /natural \(the default\)/.test(looksText) && !/--look tint/.test(looksText) && /one shot/.test(looksText), 'looks names natural as the default and keeps tint for one shot (no tint example)');
   ok(help === 0 && /search/.test(helpOut) && /--allow-credit/.test(helpOut) && /PEXELS_API_KEY/.test(helpOut), '--help prints the commands, the licence switch and the keys; exit 0');
   ok(none === 2 && bad === 2 && noq === 2 && noTo === 2, 'usage errors exit 2 (no command, unknown option, no query, get without --to)', `${none} ${bad} ${noq} ${noTo}`);
   ok(badLook === 2 || badLook === 1, 'grade with an unknown look stops before any work', `${badLook}`);
@@ -290,6 +359,24 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   ok(A.commonsRefParam('File:Waves_009.jpg').titles === 'File:Waves 009.jpg' && A.commonsRefParam('Waves 009.jpg').titles === 'File:Waves 009.jpg', 'a Commons title ref takes File: or not, underscores or spaces');
   ok(A.commonsRefParam('File%3AWaves%20009.jpg').titles === 'File:Waves 009.jpg', 'a URL-encoded title (copied from a page address) decodes');
   throws(() => A.commonsRefParam('File:'), /Commons ref/, 'an empty Commons title');
+}
+// a ref as search printed it is found in the saved searches; a Mixkit ref no saved search holds says --from
+{
+  const dir = path.join(os.tmpdir(), `cinetic-assets-saved-${process.pid}`);
+  const saved = path.join(dir, 'out', 'assets');
+  fs.mkdirSync(saved, { recursive: true });
+  const page = 'https://mixkit.co/free-stock-video/example-tide-4242/';
+  fs.writeFileSync(path.join(saved, 'tide-video.json'), JSON.stringify({ query: 'tide', kind: 'video', items: [{ n: 1, ref: 'mixkit:4242', source: 'mixkit', kind: 'video', page, licence: 'mixkit-video' }] }));
+  fs.writeFileSync(path.join(saved, 'notes.json'), '{ not json');
+  ok(A.findSaved('mixkit:4242', saved)?.page === page, 'a ref is found in a saved search (a broken file beside it is skipped)');
+  ok(A.findSaved('mixkit:999', saved) === null && A.findSaved('mixkit:4242', path.join(dir, 'nowhere')) === null, 'no saved search holds the ref, or there is no folder: null');
+  const cwd = process.cwd(); const log = console.log; const err = console.error; let out = '';
+  console.log = (...a) => { out += `${a.join(' ')}\n`; }; console.error = (...a) => { out += `${a.join(' ')}\n`; };
+  process.chdir(dir);
+  const code = await A.main(['get', 'mixkit:999', '--to', path.join(dir, 'public', 'assets')]);
+  process.chdir(cwd); console.log = log; console.error = err;
+  ok(code === 1 && /--from/.test(out) && !/unknown licence/.test(out), 'get mixkit:<id> with no saved search says pass --from (not "unknown licence"), without a fetch', out.split('\n')[0]);
+  fs.rmSync(dir, { recursive: true, force: true });
 }
 
 ok(fetched === 0, 'no test touched the network', `${fetched} fetch calls`);
