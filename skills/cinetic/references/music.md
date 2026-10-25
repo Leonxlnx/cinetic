@@ -22,7 +22,7 @@ At Step 3, before a single act is timed: choose the track, record its licence, a
 ```bash
 python3 scripts/audio/track.py add audio/music/deep_urban.mp3 --title "Deep Urban" --artist "Eugenio Mininni" \
     --source Mixkit --page https://mixkit.co/free-stock-music/tech-house/ --licence "Mixkit Stock Music Free License" \
-    --seen-quote "…the licence text, as read on the item's own page now…" --seen-url https://mixkit.co/license/ \
+    --seen-quote "…the licence text, as read on the item's own page now…" --seen-url https://mixkit.co/license/modal/musicFree/ \
     --ai-generated no --vocals no                       # -> audio/music/deep_urban.licence.json
 python3 scripts/audio/track.py analyze audio/music/deep_urban.mp3 --profile crisp    # -> deep_urban.track.json
 python3 scripts/audio/track.py edit --bars 16 --reveal-bar 7 --end stop              # -> audio/music/edit.json
@@ -31,6 +31,8 @@ python3 scripts/audio/track.py check                 # joins, the licence record
 ```
 
 `bash scripts/new-film.sh <dir> --music <file> …` does the first two steps and sets up the launch kit (`kit.py init --preset launch`); `npm run music` repeats analyze, edit and grid with the settings already saved. `analyze` keeps an analysis already made of the same file (sha256) with the same settings, so a second run takes seconds (`--force` makes it again), and `new-film.sh` reuses a `<name>.track.json` lying beside the file it is given. On a busy machine, `new-film.sh --music … --no-analyze` scaffolds without the analysis (the longest step) and prints its command, to run as its own job.
+
+A Mixkit track has no page of its own: `--page` is the listing it was found on (the genre page), and the licence text is read at `https://mixkit.co/license/modal/musicFree/` (the `/license/` page only opens it in a panel): that is the `--seen-url`.
 
 **Gate (Step 3):** the licence record passes (`track.py check`); the downbeat is confident or its phase is set by hand; the reveal bar holds an entry; the ending is `button`, `stop` or `ring`; `grid-check.ts` runs in music mode clean (`music-grid`, `structural-on-music`).
 
@@ -70,7 +72,7 @@ The record (`audio/music/<name>.licence.json`; `audio/music/licence.template.jso
  "licence": "Mixkit Stock Music Free License", "licence_id": "mixkit-music", "licence_url": "https://mixkit.co/license/#musicFree",
  "credit_required": false, "credit": "Music: \"Deep Urban\" by Eugenio Mininni (Mixkit)",
  "content_id": "not registered", "ai_generated": false, "vocals": false, "checked": "2026-10-23", "certificate": null,
- "licence_seen": {"quote": "…", "url": "https://mixkit.co/license/", "date": "2026-10-23"},
+ "licence_seen": {"quote": "…", "url": "https://mixkit.co/license/modal/musicFree/", "date": "2026-10-23"},
  "limits": "web, social, ads and VOD; no broadcast, CD/DVD or games",
  "modifications": "edited at bar lines for the film; levels adjusted"}
 ```
