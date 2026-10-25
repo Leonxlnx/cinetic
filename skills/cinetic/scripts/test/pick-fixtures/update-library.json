@@ -16,7 +16,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam opening hook",
+   "primitive": []
   },
   {
    "id": "up-transition",
@@ -33,7 +35,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam transition",
+   "primitive": []
   },
   {
    "id": "up-camera",
@@ -50,7 +54,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam camera",
+   "primitive": []
   },
   {
    "id": "up-typography-motion",
@@ -67,7 +73,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam typography motion",
+   "primitive": []
   },
   {
    "id": "up-ui-choreography",
@@ -84,7 +92,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam ui choreography",
+   "primitive": []
   },
   {
    "id": "up-data-and-numbers",
@@ -101,7 +111,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam data and numbers",
+   "primitive": []
   },
   {
    "id": "up-product-demo",
@@ -118,7 +130,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam product demo",
+   "primitive": []
   },
   {
    "id": "up-logo-and-end-card",
@@ -135,7 +149,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam logo and end card",
+   "primitive": []
   },
   {
    "id": "up-color-and-light",
@@ -152,7 +168,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam color and light",
+   "primitive": []
   },
   {
    "id": "up-texture-and-finish",
@@ -169,7 +187,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam texture and finish",
+   "primitive": []
   },
   {
    "id": "up-layout-and-composition",
@@ -186,7 +206,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam layout and composition",
+   "primitive": []
   },
   {
    "id": "up-pacing-structure",
@@ -203,7 +225,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam pacing structure",
+   "primitive": []
   },
   {
    "id": "up-micro-interaction",
@@ -220,7 +244,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam micro interaction",
+   "primitive": []
   },
   {
    "id": "up-depth-and-3d",
@@ -237,7 +263,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam depth and 3d",
+   "primitive": []
   },
   {
    "id": "up-hook-launch",
@@ -254,7 +282,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam opening hook",
+   "primitive": []
   },
   {
    "id": "up-demo-feature",
@@ -271,7 +301,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam product demo",
+   "primitive": []
   },
   {
    "id": "up-end-sting",
@@ -288,7 +320,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam logo and end card",
+   "primitive": []
   },
   {
    "id": "up-hook-loop-only",
@@ -305,7 +339,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam opening hook",
+   "primitive": []
   },
   {
    "id": "up-demo-walkthrough-only",
@@ -322,7 +358,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam product demo",
+   "primitive": []
   },
   {
    "id": "up-end-vertical-only",
@@ -339,7 +377,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "weight": 4,
+   "family": "Fam logo and end card",
+   "primitive": []
   }
  ]
 }

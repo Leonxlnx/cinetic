@@ -3,24 +3,32 @@
 
   1. The fixture library validates; broken libraries are refused with exit 2 and a reason.
   2. Draws are reproducible per seed, honour --format, --exclude and --avoid, and never break the
-     signature cap of a film. The default energy is calm: no high-energy entry is ever drawn, a calm
-     plan holds one technique per 3.5 s, and a slot with nothing calm left passes down the order.
+     signature cap of a film. The default energy is calm: calm copy, rich picture (a copy category
+     never draws a high-energy entry, a picture category draws one at half weight), a calm plan holds
+     one technique per 3.5 s, and a slot with nothing calm left passes down the order.
   3. Ban-unsafe entries print their ban-safe variant unless the brand supplies every banned look.
   4. Weights do what the docstring says: workhorses come up more often than signatures.
-  5. The shipped library (assets/library/techniques.json) validates, can fill a plan for every format,
-     and references/technique-library.md is exactly its generated Markdown.
+  5. The shipped library (assets/library/techniques.json) validates, every entry has a family and a
+     primitive list, it can fill a plan for every format, and references/technique-library.md plus
+     references/library/<family>.md are exactly its generated Markdown (no stale family file).
   6. The update format: an 8-20 s update film draws its hook, a product moment and its end card first,
      from entries made for update films and from launch, feature and sting entries, never from entries
      that only fit a loop, a walkthrough or a vertical film.
+  7. Variety: at most two entries from one family per film (--max-per-family, --keep), entries an
+     earlier film drew come up less often (--recent, the pick history), merged ids still resolve.
 
 Usage (from the skill root):  python3 scripts/test/pick.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
 """
+import contextlib
+import importlib.util
+import io
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import types
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL = os.path.normpath(os.path.join(HERE, '..', '..'))
@@ -38,8 +46,31 @@ def result(ok, name, detail=''):
     print(f"{'pass' if ok else 'FAIL'}  {name}{f'  ({detail})' if detail else ''}")
 
 
-def pick(*args, library=FIXTURE):
-    r = subprocess.run([sys.executable, PICK, '--library', library, *args], capture_output=True, text=True, encoding='utf-8')
+ENV = dict(os.environ, CINETIC_PICK_HISTORY='off')  # the user's own pick history never enters a test
+
+
+_cli_spec = importlib.util.spec_from_file_location('pick_cli', PICK)
+CLI = importlib.util.module_from_spec(_cli_spec)
+_cli_spec.loader.exec_module(CLI)
+
+
+def pick(*args, library=FIXTURE, env=None):
+    """Run pick.py's command line in this process (hundreds of draws: one interpreter, not hundreds)."""
+    saved_env, saved_argv = dict(os.environ), sys.argv
+    out, err, code = io.StringIO(), io.StringIO(), 0
+    os.environ.clear()
+    os.environ.update(env or ENV)
+    sys.argv = ['pick.py', '--library', library, *args]
+    try:
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = CLI.main() or 0
+    except SystemExit as e:
+        code = e.code if isinstance(e.code, int) else (0 if e.code is None else 2)
+    finally:
+        sys.argv = saved_argv
+        os.environ.clear()
+        os.environ.update(saved_env)
+    r = types.SimpleNamespace(returncode=code, stdout=out.getvalue(), stderr=err.getvalue())
     if VERBOSE:
         print(f'  $ pick.py {" ".join(args)} -> {r.returncode}\n' + r.stdout[-600:] + r.stderr[-600:])
     return r
@@ -58,8 +89,8 @@ def ids(data):
 
 
 # 1. Validation ---------------------------------------------------------------------------------
-r = pick('--validate')
-result(r.returncode == 0 and '23 techniques in 14 categories' in r.stdout, 'fixture library validates', r.stderr.strip())
+r = subprocess.run([sys.executable, PICK, '--library', FIXTURE, '--validate'], capture_output=True, text=True, encoding='utf-8', env=ENV)
+result(r.returncode == 0 and '24 techniques in 14 categories and 15 families' in r.stdout, 'fixture library validates (from the command line)', r.stderr.strip())
 
 fixture = json.load(open(FIXTURE, encoding='utf-8'))['techniques']
 broken = [dict(e) for e in fixture]
@@ -68,11 +99,18 @@ broken[2] = {k: v for k, v in broken[2].items() if k != 'recipe'}  # missing fie
 broken[3] = dict(broken[3], ban_safe=False)                       # no variant, no bans
 broken[4] = dict(broken[4], category='fireworks')                 # unknown category
 broken[5] = dict(broken[5], bans=['neon-sign'])                    # unknown ban
+broken[6] = dict(broken[6], primitive=['fx/Nowhere.thing'])         # a primitive the starter lacks
+broken[7] = dict(broken[7], primitive=['fx/Cards.notAnExport'])     # an export the module lacks
+broken[8] = dict(broken[8], family='Not listed')                   # a family the library does not list
+broken[9] = dict(broken[9], aliases=[broken[10]['id']])            # an alias that is also an id
+broken[11] = dict(broken[11], evidence=12)                          # a weight out of 0-9
 with tempfile.TemporaryDirectory() as tmp:
     bad = os.path.join(tmp, 'bad.json')
-    json.dump({'techniques': broken}, open(bad, 'w', encoding='utf-8'))
+    json.dump({'families': json.load(open(FIXTURE, encoding='utf-8'))['families'], 'techniques': broken}, open(bad, 'w', encoding='utf-8'))
     r = pick('--validate', library=bad)
-    want = ['duplicate id', 'missing recipe', 'no ban_safe_variant', 'unknown category', 'bans must be a list']
+    want = ['duplicate id', 'missing recipe', 'no ban_safe_variant', 'unknown category', 'bans must be a list',
+            'the starter has no src/fx/Nowhere', 'does not export notAnExport', "is not in the library's families",
+            'is also an id', 'weight must be a number 0-9']
     missing = [w for w in want if w not in r.stderr]
     result(r.returncode == 2 and not missing, 'a broken library is refused with every reason', f'missing {missing}' if missing else '')
     json.dump({'techniques': []}, open(bad, 'w', encoding='utf-8'))
@@ -120,21 +158,25 @@ for fmt, cap in (('launch', 2), ('sting', 1), ('feature', 1)):
     result(worst[fmt] <= cap, f'{fmt} plans hold at most {cap} signature move(s)', f'worst {worst[fmt]}')
 
 HIGH = {e['id'] for e in fixture if e['energy'] == 'high'}
+type_hits = set()
+for s_ in range(40):
+    type_hits |= set(ids(draw_json('--category', 'typography_motion', '--n', '2', '--seed', str(s_))[1]))
 calm_hits = set()
 for s_ in range(40):
     calm_hits |= set(ids(draw_json('--category', 'transition', '--n', '3', '--seed', str(s_))[1]))
 any_hits = set()
 for s_ in range(40):
-    any_hits |= set(ids(draw_json('--category', 'transition', '--n', '3', '--seed', str(s_), '--energy', 'any')[1]))
-result(calm_hits and not calm_hits & HIGH, 'a calm draw (the default) never takes a high-energy entry', str(sorted(calm_hits & HIGH)))
-result(any_hits & HIGH, '--energy any draws high-energy entries too', str(sorted(any_hits & HIGH)))
+    any_hits |= set(ids(draw_json('--category', 'typography_motion', '--n', '2', '--seed', str(s_), '--energy', 'any')[1]))
+result(type_hits and not type_hits & HIGH, 'a calm draw (the default) never takes a high-energy copy entry', str(sorted(type_hits & HIGH)))
+result(calm_hits & HIGH, 'calm copy, rich picture: a calm draw can take a high-energy picture entry', str(sorted(calm_hits)))
+result(any_hits & HIGH, '--energy any draws high-energy copy entries too', str(sorted(any_hits & HIGH)))
 with tempfile.TemporaryDirectory() as tmp:
-    lib = os.path.join(tmp, 'hook-high.json')
-    json.dump({'techniques': [dict(e, energy='high') if e['category'] == 'opening_hook' else e for e in fixture]},
+    lib = os.path.join(tmp, 'type-high.json')
+    json.dump({'techniques': [dict(e, energy='high') if e['category'] == 'typography_motion' else e for e in fixture]},
               open(lib, 'w', encoding='utf-8'))
     _, d = draw_json('--format', 'sting', '--seed', '3', library=lib)
     cats = [p['category'] for p in d['picks']]
-    result(len(cats) == 4 and 'opening_hook' not in cats, 'a slot with nothing calm left passes to the next category', str(cats))
+    result(len(cats) == 4 and 'typography_motion' not in cats, 'a slot with nothing calm left passes to the next category', str(cats))
 
 _, d = draw_json('--category', 'transition', '--n', '7', '--seed', '1', '--exclude', 'fx-tr-accent,fx-tr-workhorse', '--energy', 'any')
 result(not {'fx-tr-accent', 'fx-tr-workhorse'} & set(ids(d)), '--exclude keeps ids out of the draw')
@@ -159,10 +201,16 @@ r = pick('--show', 'fx-camera')
 result(r.returncode == 0 and '**Build:** Build fx-camera.' in r.stdout, '--show prints one entry in full')
 result(pick('--show', 'fx-nope').returncode == 1, '--show of an unknown id is exit 1')
 r = pick('--markdown')
-result(r.returncode == 0 and '## Transitions' in r.stdout and '- [Transitions](#transitions) (7)' in r.stdout
-       and 'Ban-safe variant (the default):** Opaque' in r.stdout, '--markdown renders contents, sections and ban-safe variants')
+result(r.returncode == 0 and '## Families' in r.stdout and '| [Shared seams](library/shared-seams.md) | 3 |' in r.stdout
+       and '### Transitions (7)' in r.stdout and 'Families: Fam transition 4, Shared seams 3.' in r.stdout, '--markdown renders the index: families and categories')
+r = pick('--markdown', '--family', 'fam-ui-choreography')
+result(r.returncode == 0 and r.stdout.startswith('# Fam ui choreography') and 'Ban-safe variant (the default):** Opaque' in r.stdout
+       and '- **Primitive:** `fx/Cards.press`' in r.stdout, '--markdown --family renders one family in full, with ban-safe variants and primitives')
+result(pick('--markdown', '--family', 'nope').returncode == 2, 'an unknown --family is exit 2')
 r = pick('--list', '--category', 'transition')
 result(r.returncode == 0 and len(r.stdout.strip().splitlines()) == 7, '--list --category lists that category only')
+r = pick('--list', '--family', 'Shared seams')
+result(r.returncode == 0 and len(r.stdout.strip().splitlines()) == 3, '--list --family lists that family only')
 
 # 3. Bans ---------------------------------------------------------------------------------------
 r = pick('--show', 'fx-glass-panel')
@@ -215,14 +263,38 @@ result(high.get('fx-tr-sig-a', 0) > 2 * high.get('fx-tr-sig-c', 0), '--energy hi
 if os.path.exists(SHIPPED):
     r = pick('--validate', library=SHIPPED)
     result(r.returncode == 0, 'the shipped library validates', (r.stderr or r.stdout).strip()[:300])
+    shipped = json.load(open(SHIPPED, encoding='utf-8'))
+    ents = shipped['techniques']
+    nofam = [e['id'] for e in ents if not e.get('family')]
+    noprim = [e['id'] for e in ents if not isinstance(e.get('primitive'), list)]
+    old = [e['id'] for e in ents if 'evidence' in e]
+    result(not nofam and not noprim and not old and len(shipped.get('families', [])) >= 20,
+           'every shipped entry has a family, a primitive list and a weight', f'{nofam[:3]} {noprim[:3]} {old[:3]}')
     for fmt in ('launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical', 'update'):
         r, d = draw_json('--format', fmt, '--seed', '1', library=SHIPPED)
         cats = {p['category'] for p in d['picks']}
-        result(r.returncode == 0 and len(d['picks']) >= 4 and len(cats) >= 4, f'the shipped library fills a {fmt} plan', f'{len(d["picks"])} picks, {len(cats)} categories')
-    md = os.path.join(SKILL, 'references', 'technique-library.md')
+        fams = [p['family'] for p in d['picks']]
+        worst = max(fams.count(f) for f in fams) if fams else 0
+        result(r.returncode == 0 and len(d['picks']) >= 4 and len(cats) >= 4 and worst <= 2,
+               f'the shipped library fills a {fmt} plan from many families', f'{len(d["picks"])} picks, {len(cats)} categories, {len(set(fams))} families')
+    refs = os.path.join(SKILL, 'references')
+    md = os.path.join(refs, 'technique-library.md')
     r = pick('--markdown', library=SHIPPED)
     same = os.path.exists(md) and open(md, encoding='utf-8').read() == r.stdout
-    result(same, 'references/technique-library.md matches the JSON', '' if same else 'run: python3 scripts/pick.py --markdown > references/technique-library.md')
+    result(same, 'references/technique-library.md matches the JSON', '' if same else 'run: python3 scripts/pick.py --write-docs references')
+    import importlib.util as _u
+    _s = _u.spec_from_file_location('pick_docs', PICK)
+    _m = _u.module_from_spec(_s)
+    _s.loader.exec_module(_m)
+    files = _m.doc_files(ents, shipped)
+    bad = [rel for rel, text in files.items() if rel != 'technique-library.md'
+           and not (os.path.exists(os.path.join(refs, *rel.split('/'))) and open(os.path.join(refs, *rel.split('/')), encoding='utf-8').read() == text)]
+    lib_dir = os.path.join(refs, 'library')
+    stale = sorted(f for f in (os.listdir(lib_dir) if os.path.isdir(lib_dir) else []) if f'library/{f}' not in files)
+    result(not bad and not stale, 'references/library/<family>.md match the JSON, with no stale file',
+           f'differ: {bad[:3]} stale: {stale[:3]}; run: python3 scripts/pick.py --write-docs references' if bad or stale else '')
+    r = pick('--markdown', '--family', 'Camera', library=SHIPPED)
+    result(r.returncode == 0 and r.stdout == files.get('library/camera.md'), '--markdown --family prints the family file')
 else:
     result(False, 'the shipped library exists', SHIPPED)
 
@@ -251,6 +323,51 @@ result(len(d['picks']) == 4 and len(d2['picks']) == 8 and d['format'] == 'update
 r, d = draw_json('--format', 'launch', '--seed', '4', library=UPD_LIB)
 result(r.returncode == 1 or not set(ids(d)) & {e['id'] for e in upd if e['formats'] == ['update']},
        'a launch film never draws an entry made only for update films')
+
+# 7. Variety -------------------------------------------------------------------------------------
+SHARED = {e['id'] for e in fixture if e['family'] == 'Shared seams'}
+worst, uncapped = 0, 0
+for s in range(40):
+    got = ids(draw_json('--category', 'transition', '--n', '5', '--energy', 'any', '--seed', str(s))[1])
+    worst = max(worst, len(SHARED & set(got)))
+    got = ids(draw_json('--category', 'transition', '--n', '5', '--energy', 'any', '--seed', str(s), '--max-per-family', '0')[1])
+    uncapped = max(uncapped, len(SHARED & set(got)))
+result(worst == 2 and uncapped == 3, 'at most two entries from one family per draw; --max-per-family 0 lifts the cap', f'worst {worst}, uncapped {uncapped}')
+with tempfile.TemporaryDirectory() as tmp:
+    keep = os.path.join(tmp, 'plan.json')
+    json.dump({'picks': [{'id': 'fx-transition'}, {'id': 'fx-tr-workhorse'}]}, open(keep, 'w', encoding='utf-8'))
+    hit = set()
+    for s in range(30):
+        hit |= set(ids(draw_json('--category', 'transition', '--n', '3', '--energy', 'any', '--seed', str(s), '--keep', keep)[1]))
+    result(hit and not hit & SHARED, "--keep: the plan's picks are not drawn again and their families count toward the cap", str(sorted(hit & SHARED)))
+    hist = os.path.join(tmp, 'history.json')
+    env = dict(os.environ, CINETIC_PICK_HISTORY=hist)
+    pick('--format', 'launch', '--seed', '5', '--json', os.path.join(tmp, 'a.json'), env=env)
+    first = ids(json.load(open(os.path.join(tmp, 'a.json'), encoding='utf-8')))
+    r = pick('--format', 'launch', '--seed', '6', '--json', os.path.join(tmp, 'b.json'), env=env)
+    h = json.load(open(hist, encoding='utf-8')) if os.path.exists(hist) else []
+    head = r.stdout.splitlines()[0] if r.stdout else ''
+    result(len(h) == 2 and h[1]['ids'] == first and f"--recent {','.join(first)}" in head,
+           'a plan written with --json is recorded; the next plan down-weights it and prints --recent', head[:120])
+    r2 = pick(*head[len('<!-- pick.py '):-len(' -->')].split(), '--no-history', env=env)
+    result(r2.stdout.split('\n', 1)[1:] == r.stdout.split('\n', 1)[1:], 'the printed header reproduces a plan drawn with a history')
+    pick('--category', 'camera', '--json', os.path.join(tmp, 'c.json'), env=env)
+    result(len(json.load(open(hist, encoding='utf-8'))) == 2, 'a single draw (a reroll) is not recorded as a film')
+work = next(e for e in fixture if e['id'] == 'fx-tr-workhorse')
+result(abs(mod.weight(work, None, {'fx-tr-workhorse'}) - mod.RECENT_FACTOR * mod.weight(work, None)) < 1e-9,
+       'an entry a recent film drew keeps a fifth of its weight')
+slam = next(e for e in fixture if e['id'] == 'fx-type-slam')
+sig_a = next(e for e in fixture if e['id'] == 'fx-tr-sig-a')
+result(mod.weight(slam, 'calm') == 0 and mod.weight(sig_a, 'calm') == 0.5 * mod.weight(sig_a, 'any'),
+       'calm weights: a high-energy copy entry 0, a high-energy picture entry half')
+with tempfile.TemporaryDirectory() as tmp:
+    lib = os.path.join(tmp, 'alias.json')
+    data = json.load(open(FIXTURE, encoding='utf-8'))
+    data['techniques'] = [dict(e, aliases=['dv-old-camera']) if e['id'] == 'fx-camera' else e for e in data['techniques']]
+    json.dump(data, open(lib, 'w', encoding='utf-8'))
+    r = pick('--show', 'dv-old-camera', library=lib)
+    _, d = draw_json('--category', 'camera', '--n', '2', '--exclude', 'dv-old-camera', '--energy', 'any', '--seed', '1', library=lib)
+    result(r.returncode == 0 and '`fx-camera`' in r.stdout and 'fx-camera' not in ids(d), 'a merged id still names its entry (--show, --exclude)')
 
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')
 sys.exit(1 if failed else 0)
