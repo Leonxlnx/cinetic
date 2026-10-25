@@ -89,16 +89,7 @@ const walk = (p) => {
 for (const d of ['references/_drafts', 'assets/library/_drafts']) walk(join(SKILL, d));
 
 // Files waiting for their rewrite at integration (house wording for older text). Empty before a release.
-const PENDING = new Set([
-  'README.md', 'CHANGELOG.md', 'docs/setup.md',
-  'skills/cinetic/SKILL.md',
-  'skills/cinetic/references/copy-and-type.md', 'skills/cinetic/references/craft-rules.md', 'skills/cinetic/references/timing-grid.md',
-  'skills/cinetic/references/worked-example.md', 'skills/cinetic/references/transitions.md', 'skills/cinetic/references/product-ui.md',
-  'skills/cinetic/references/motion-tokens.md', 'skills/cinetic/references/finishing.md', 'skills/cinetic/references/camera.md',
-  'skills/cinetic/assets/critics/director.md', 'skills/cinetic/assets/critics/art-copy-ui.md',
-  'skills/cinetic/scripts/test/pick.test.py',
-  'skills/cinetic/references/_drafts/S.md', // quotes the older wording it replaces; merged and deleted at integration
-]);
+const PENDING = new Set([]);
 
 const TEXT_EXT = /\.(md|mdx|txt|ts|tsx|js|jsx|mjs|cjs|json|py|sh|html|htm|css|ya?ml|toml|cfg|ini)$/i;
 const SELF = relative(REPO, fileURLToPath(import.meta.url)).split('\\').join('/');
