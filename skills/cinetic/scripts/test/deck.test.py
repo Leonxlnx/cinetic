@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """deck.test.py: regression tests for deck.py, the film-direction deal.
 
-  1. The shipped deck validates: 18-24 directions, every library id and primitive name real, the
+  1. The shipped decks validate merged: the main deck 18-24 directions, the imagery deck at least 3,
+     every library id and primitive name real, the
      catalogue's built primitives exported by the starter; four kinds of space; at least half the deck
      rich; light, mid, dark and colour grounds; many story shapes, lockups and kinds of light; every
      signature concrete (3+ quantities, a node budget) and its own move; lockups and light events
@@ -30,6 +31,11 @@
      face in the dealt weights; a colour world takes a second brand colour or falls back to a neutral.
  12. Deck hygiene: the real export names (Card), every primitive and recipe the starter has marked built,
      a pre-softened foreground layer on by default in layered spaces, lockups made by the film's own device.
+ 13. Imagery decks: every deck file in assets/directions/ is dealt; an imagery-led direction carries a picture
+     brief (kind, count, inventory, queries, sources, one grade, choose, refuse) that its sheet prints, for a
+     launch and for an update film; a deal of 3 holds an imagery-led direction and a built world when its pool
+     has both; --no-imagery deals none; broken deck folders are refused (a thin deck, a catalogue entry two decks
+     define differently, a direction id in two decks, a missing or thin picture brief).
 
 Usage (from the skill root):  python3 scripts/test/deck.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -38,6 +44,7 @@ import copy
 import importlib.util
 import itertools
 import json
+import math
 import os
 import re
 import subprocess
@@ -48,13 +55,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL = os.path.normpath(os.path.join(HERE, '..', '..'))
 DECK_PY = os.path.join(SKILL, 'scripts', 'deck.py')
 SHIPPED = os.path.join(SKILL, 'assets', 'directions', 'directions.json')
+IMAGERY = os.path.join(SKILL, 'assets', 'directions', 'imagery.json')
 VERBOSE = '--verbose' in sys.argv
 failed = 0
 
 spec = importlib.util.spec_from_file_location('deck', DECK_PY)
 deck = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(deck)
-DATA = json.load(open(SHIPPED, encoding='utf-8'))
+MAIN = json.load(open(SHIPPED, encoding='utf-8'))  # the main deck alone: broken() mutates copies of it
+DATA, DECK_PROBLEMS = deck.load_deck(deck.DEFAULT_DECK)  # every deck in assets/directions/, merged: what deck.py deals
 DIRS = DATA['directions']
 BY_ID = {d['id']: d for d in DIRS}
 CAT = DATA['primitives']
@@ -100,7 +109,7 @@ LIBRARY = deck.load_library(deck.DEFAULT_LIBRARY)
 def broken(mutate, cli=False):
     """Validate a mutated copy of the shipped deck; returns (exit code, error text). In process by default
     (each CLI start costs seconds); cli=True goes through deck.py --deck ... --validate."""
-    data = copy.deepcopy(DATA)
+    data = copy.deepcopy(MAIN)
     mutate(data)
     if not cli:
         errors, _ = deck.validate(data, LIBRARY, deck.starter_src(), False)
@@ -124,7 +133,11 @@ def UPD(x):
 r = run('--validate', '--strict')
 result(r.returncode == 0, 'the shipped deck validates (--strict: library, starter source, look.ts)', (r.stdout + r.stderr).strip()[-300:])
 n = len(DIRS)
-result(18 <= n <= 24, f'the deck holds 18-24 directions ({n})')
+PER = DATA.get('decks', {})
+result(not DECK_PROBLEMS and 18 <= len(PER.get('directions', [])) <= 24 and len(PER) >= 2 and all(len(v) >= 3 for v in PER.values()),
+       f'the main deck holds 18-24 directions, every deck that adds directions at least 3 ({", ".join(f"{k} {len(v)}" for k, v in PER.items())})',
+       '; '.join(DECK_PROBLEMS[:3]))
+GROW = max(1.0, n / 24)  # the share caps hold per 24 directions
 lib = deck.load_library(deck.DEFAULT_LIBRARY)
 ids = {t for d in DIRS for k in ('techniques', 'avoid_techniques') for t in d[k]}
 ids |= {t for d in DIRS for t in d['signature']['techniques'] + d['signature_alt']['techniques'] + d['lockup'].get('techniques', [])}
@@ -149,12 +162,13 @@ result(tone['light'] <= 0.45 and tone['mid'] + tone['field'] >= 0.3 and all(tone
 shapes = {}
 for d in DIRS:
     shapes.setdefault(d['story']['shape'], []).append(d['id'])
-result(len(shapes) >= 10 and max(len(v) for v in shapes.values()) <= 3, f'{len(shapes)} story shapes, none used more than 3 times')
+result(len(shapes) >= 10 and max(len(v) for v in shapes.values()) <= math.ceil(3 * GROW),
+       f'{len(shapes)} story shapes, none used more than {math.ceil(3 * GROW)} times')
 lks = {}
 for d in DIRS:
     lks.setdefault(d['lockup']['kind'], []).append(d['id'])
-result(len(lks) >= 6 and max(len(v) for v in lks.values()) <= 5,
-       f'{len(lks)} lockup kinds, none more than 5 (device-becomes-mark: {len(lks.get("device-mark", []))})')
+result(len(lks) >= 6 and max(len(v) for v in lks.values()) <= math.ceil(5 * GROW),
+       f'{len(lks)} lockup kinds, none more than {math.ceil(5 * GROW)} (device-becomes-mark: {len(lks.get("device-mark", []))})')
 lights = {d['world']['light_kind'] for d in DIRS}
 result(len(lights) >= 5, f'{len(lights)} kinds of light')
 vague = [d['id'] for d in DIRS if len(deck.QUANTITY.findall(d['signature']['shot'])) < 3 or not 1 <= d['signature']['elements'] <= deck.MAX_ELEMENTS]
@@ -411,7 +425,8 @@ run('--brief', 'x', '--format', 'launch', '--direction', 'fold', '--out', os.pat
 result(os.path.getsize(hist) == size, '--no-history leaves the history alone')
 
 # 9. house wording -------------------------------------------------------------------------------------
-texts = {'directions.json': open(SHIPPED, encoding='utf-8').read(), 'DIRECTION.md': md}
+texts = {'directions.json': open(SHIPPED, encoding='utf-8').read(), 'imagery.json': open(IMAGERY, encoding='utf-8').read(),
+         'DIRECTION.md': md}
 src = open(DECK_PY, encoding='utf-8').read()
 texts['deck.py (docstring and messages)'] = re.sub(r'WORDING = \[.*?\n\]', '', src, flags=re.S)
 leaks = [f'{k}: {m.group(0)}' for k, t in texts.items() for p in deck.WORDING for m in [re.search(p, t, re.I)] if m]
@@ -419,7 +434,8 @@ result(not leaks, 'the deck, a dealt sheet and deck.py carry no provenance phras
 planted = copy.deepcopy(DATA)
 planted['directions'][0]['world']['set'] += ' A trick ' + 'stud' + 'ied in reference ' + 'films.'
 result(len(deck.wording_hits(planted)) >= 2, 'the wording guard catches planted phrases')
-caps = [w for w in re.findall(r'\b[A-Z][A-Z0-9]{3}\b', texts['directions.json']) if w not in ('CSS', 'SVG', 'HTML', 'OKLCH')]
+caps = [w for w in re.findall(r'\b[A-Z][A-Z0-9]{3}\b', texts['directions.json'] + texts['imagery.json'])
+        if w not in ('CSS', 'SVG', 'HTML', 'OKLCH')]
 result(not caps, 'the deck carries no stray four-character upper-case codes', ', '.join(sorted(set(caps))[:8]))
 
 # 10. update films -------------------------------------------------------------------------------------
@@ -544,6 +560,75 @@ r2 = run('--brief', 'x', '--format', 'launch', '--direction', flat['id'], '--out
 result('Foreground layer (on by default' in r1.stdout and 'Foreground layer' not in r2.stdout and 'pre-softened' in DATA['defaults']['foreground'],
        f'a layered space carries a pre-softened foreground layer by default ({lay["id"]}), a flat one does not ({flat["id"]})')
 result('never a centred mark' in r1.stdout and 'LogoMark' in r1.stdout, 'the lockup section asks for the film\'s own device and the supplied logo\'s parts')
+
+# 13. imagery decks -------------------------------------------------------------------------------------
+IMG = [d for d in DIRS if deck.is_imagery(d)]
+result(len(IMG) >= 3 and {d['id'] for d in IMG} == set(PER.get('imagery', [])),
+       f'the imagery deck is dealt with the main deck ({len(IMG)} imagery-led directions)')
+upd_img = next(d for d in IMG if 'update' in d['fit']['formats'] and not deck.needs_of(d, 'update'))
+r1 = run('--brief', 'a tide forecast for small boats', '--format', 'update', '--direction', upd_img['id'], '--out', os.path.join(TMP, 'img1'), '--no-history')
+launch_img = next(d for d in IMG if 'launch' in d['fit']['formats'] and not deck.needs_of(d) and d['id'] != upd_img['id'])
+r2 = run('--brief', 'a tide forecast for small boats', '--format', 'launch', '--direction', launch_img['id'], '--out', os.path.join(TMP, 'img2'), '--no-history')
+result(r1.returncode == 0 and '**Imagery (real pictures are this world):**' in r1.stdout and '## 8. Beat skeleton: an update film' in r1.stdout
+       and '**Queries**' in r1.stdout and 'assets.mjs' in r1.stdout,
+       f'an imagery-led direction deals an update film with its picture brief ({upd_img["id"]})', (r1.stderr or '')[-200:])
+result(r2.returncode == 0 and '**Imagery (real pictures are this world):**' in r2.stdout and '**Refuse:**' in r2.stdout,
+       f'and a launch film ({launch_img["id"]})', (r2.stderr or '')[-200:])
+r3 = run('--show', IMG[0]['id'])
+result(r3.returncode == 0 and '**One grade for every picture:**' in r3.stdout, '--show prints an imagery-led direction\'s picture brief')
+mixed, none_img, swept = [], [], 0
+for fmt in deck.FORMATS:
+    for pace in deck.PACES:
+        for s_ in range(20):
+            inp = inp_of('test', fmt, pace)
+            opts, pool, _ = deck.options_for(DATA, inp, s_, 3, (), (), (), READY)
+            swept += 1
+            why = ('no imagery' if len(opts) >= 2 and any(deck.is_imagery(d) for d in pool) and not any(deck.is_imagery(o) for o in opts)
+                   else 'imagery only' if len(opts) >= 2 and any(not deck.is_imagery(d) for d in pool) and all(deck.is_imagery(o) for o in opts)
+                   else '')
+            if why:  # allowed only when no set of the pool meets every ask (as in section 4)
+                tc = {d['id']: deck.palette_tone(d, s_, RECIPES) for d in pool}
+                if any(not deck.option_problems(list(c), pool, 3, lambda d: tc[d['id']]) for c in itertools.combinations(pool, 3)):
+                    mixed.append(f'{fmt}/{pace}/{s_}: {why}')
+            inp['imagery'] = False
+            opts, _, _ = deck.options_for(DATA, inp, s_, 3, (), (), (), READY)
+            none_img += [o['id'] for o in opts if deck.is_imagery(o)]
+result(not mixed, f'every deal of 3 holds an imagery-led direction and a built world when its pool has both and a perfect set exists ({swept} deals)', '; '.join(mixed[:4]))
+result(not none_img, '--no-imagery deals no imagery-led direction', ', '.join(sorted(set(none_img))[:4]))
+r = run('--brief', 'x', '--format', 'launch', '--options', '3', '--no-imagery', '--seed', '2', '--no-history')
+result(r.returncode == 0 and '--no-imagery' in r.stdout.splitlines()[0] and 'imagery-led' not in r.stdout,
+       '--no-imagery reaches the CLI deal and its reproducible command line')
+IMG_RAW = json.load(open(IMAGERY, encoding='utf-8'))
+
+
+def broken_folder(mutate):
+    """Validate a deck folder: the main deck and a mutated copy of the imagery deck. Returns the error text."""
+    folder = tempfile.mkdtemp(dir=TMP)
+    json.dump(MAIN, open(os.path.join(folder, 'directions.json'), 'w', encoding='utf-8'))
+    img = copy.deepcopy(IMG_RAW)
+    mutate(img)
+    json.dump(img, open(os.path.join(folder, 'imagery.json'), 'w', encoding='utf-8'))
+    data, problems = deck.load_deck(folder)
+    errors, _ = deck.validate(data, LIBRARY, deck.starter_src(), False)
+    return folder, '\n'.join(problems + errors)
+
+
+folder, err = broken_folder(lambda x: None)
+r = run('--deck', folder, '--validate')
+result(not err and r.returncode == 0 and f'imagery {len(IMG)}' in r.stdout,
+       'a deck folder (--deck <folder>) merges its decks', (err or r.stderr)[-200:])
+first_prim = next(iter(IMG_RAW['primitives']))
+for name, mutate, expect in (
+        ('a deck of 2 directions', lambda x: x.__setitem__('directions', x['directions'][:2]), 'at least 3'),
+        ('a primitive two decks define differently', lambda x: x['primitives'].__setitem__('Card', {'file': 'fx/Elsewhere.tsx', 'status': 'built'}),
+         'differs from the one another deck defines'),
+        ('a direction id in two decks', lambda x: x['directions'][0].__setitem__('id', MAIN['directions'][0]['id']), 'duplicate id'),
+        ('an imagery-led direction without its picture brief', lambda x: x['directions'][1].pop('assets'), 'needs an assets block'),
+        ('a picture brief with 2 queries', lambda x: x['directions'][2]['assets'].__setitem__('queries', ['a', 'b']), 'at least 3 query patterns'),
+        ('a picture brief without a grade', lambda x: x['directions'][3]['assets'].__setitem__('grade', {}), 'one look for every picture'),
+        ('an unknown kind of picture', lambda x: x['directions'][4]['assets'].__setitem__('kind', ['hologram']), 'assets.kind')):
+    _, err = broken_folder(mutate)
+    result(expect in err, f'a deck folder with {name} is refused', err.strip().splitlines()[0][:160] if err.strip() else 'no error')
 
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')
 sys.exit(1 if failed else 0)

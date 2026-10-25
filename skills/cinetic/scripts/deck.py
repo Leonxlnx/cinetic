@@ -2,10 +2,12 @@
 """Deal a film direction from the deck, so every film gets its own visual idea.
 
 Left alone, an agent makes the same film every time: calm fragments on a plain ground, a push-in, an
-end card. deck.py deals three complete art directions from assets/directions/directions.json that fit
+end card. deck.py deals three complete art directions from the decks in assets/directions/ that fit
 the brief (format, pace, the assets that exist), each with its own space (flat, layered, perspective
 planes or a lit relief), light, camera language, cut grammar, type behaviour, story shape, lockup and
-one signature shot. The agent chooses the one that can carry something only this product has (the idea
+one signature shot. directions.json is the main deck; every other deck file there adds its directions,
+primitives and methods to the deal: imagery.json holds the imagery-led directions, where real
+photographs and footage found under licences that need no credit (scripts/assets.mjs) are the world. The agent chooses the one that can carry something only this product has (the idea
 sentence and the competitor test), then deals the full sheet for it. The sheet is the art direction for
 the film: the treatment, the technique draw (pick.py) and the build follow it.
 
@@ -21,6 +23,7 @@ Usage:
   python3 scripts/deck.py --show <id>            # one direction in full, with every variant
   python3 scripts/deck.py --list [--format vertical --pace crisp --have ui]
   python3 scripts/deck.py --validate [--strict]  # schema, library ids, primitives, distinctness, bans
+  python3 scripts/deck.py ... --no-imagery       # leave out the imagery-led directions
 
   --have      what really exists (comma-separated): ui (the product has an interface to show, built in
               code from the real product), footage (real video supplied), audio (a real recorded clip the
@@ -44,12 +47,19 @@ Usage:
               the same brief always deals the same three: rerunning is not a way to fish for another deal.
   --allow-planned  deal or sheet a direction whose signature still waits for a planned primitive (you
               build that primitive inside the film).
+  --no-imagery  deal no imagery-led direction (the brief rules out found pictures). Without it, real
+              imagery comes first: a deal holds at least one imagery-led direction when one fits, and its
+              sheet carries the picture brief (what to list from the subject, the queries, how many
+              pictures, the one grade, what to refuse) for scripts/assets.mjs.
+  --deck      a deck file (only that file), or a folder whose *.json decks are merged (default: the
+              skill's assets/directions/, or scripts/directions/ in a film project).
 
 The deal is weighted toward directions whose keywords appear in the brief and that use an asset the film
 really has, away from the directions of your last films (a small history in ~/.cinetic/deck-history.json,
 or CINETIC_DECK_HISTORY; --no-history turns it off). The three options always differ in camera motion,
 signature, story shape and lockup, span three kinds of space and two kinds of light, deal palettes of at
-least two ground tones, and include at least one rich, high-intensity direction when one fits.
+least two ground tones, and include at least one rich, high-intensity direction, one imagery-led
+direction and one built world when the brief fits them.
 
 Redraw one slot (palette | type | signature | direction) only for a reason you can state: it contradicts
 the brand, needs an asset that does not exist, or cannot carry the idea. Never to get something more
@@ -80,6 +90,7 @@ def _first(paths):
 # The skill keeps its data in assets/; a film project made by new-film.sh keeps copies next to its scripts.
 DEFAULT_DECK = _first([os.path.join(SKILL, 'assets', 'directions', 'directions.json'),
                        os.path.join(HERE, 'directions', 'directions.json')])
+MAIN_DECK = 'directions.json'  # the deck that also holds the recipes, the defaults and the floor
 DEFAULT_LIBRARY = _first([os.path.join(SKILL, 'assets', 'library', 'techniques.json'),
                           os.path.join(HERE, 'library', 'techniques.json')])
 STARTER_SRC = [os.path.join(SKILL, 'assets', 'remotion-starter', 'src'), os.path.join(SKILL, 'src')]
@@ -140,6 +151,7 @@ MUSIC_MODES = ['track', 'effects', 'either']
 ENDINGS = ['button', 'stop', 'ring']
 COSTS = ['light', 'medium']
 STATUSES = ['built', 'planned']
+IMAGERY_KINDS = ['photo', 'video', 'texture', 'art', 'archive']
 MAX_ELEMENTS = 1500  # animated DOM or SVG nodes in the signature shot: kept for a laptop GPU at 1080p60
 
 REQUIRED = ['id', 'name', 'intensity', 'idea', 'story', 'world', 'palettes', 'type_options', 'camera', 'cuts', 'type',
@@ -209,7 +221,71 @@ def load_library(path):
         return None
     data = read_json(path, 'the technique library')
     entries = data['techniques'] if isinstance(data, dict) else data
-    return {e['id']: e for e in entries if isinstance(e, dict) and 'id' in e}
+    out = {e['id']: e for e in entries if isinstance(e, dict) and 'id' in e}
+    for e in list(out.values()):  # an id an entry was merged from still names it
+        for a in e.get('aliases', []) if isinstance(e.get('aliases'), list) else []:
+            out.setdefault(a, e)
+    return out
+
+
+def deck_files(path):
+    """The deck files --deck names: a folder (or the default deck) gives every *.json in it, the main deck
+    first; any other file gives itself alone."""
+    if os.path.isdir(path):
+        folder = path
+    elif os.path.abspath(path) == os.path.abspath(DEFAULT_DECK):
+        folder = os.path.dirname(path)
+    else:
+        return [path]
+    files = sorted(os.path.join(folder, f) for f in os.listdir(folder) if f.endswith('.json'))
+    main = [f for f in files if os.path.basename(f) == MAIN_DECK]
+    return main + [f for f in files if f not in main]
+
+
+def _stem(path):
+    return os.path.splitext(os.path.basename(path))[0]
+
+
+def load_deck(path):
+    """Every deck file merged into one deck: (data, problems). The main deck brings the recipes, the defaults
+    and the floor; each other deck adds its directions, primitives and methods. data['decks'] maps each deck
+    file to the ids of its directions; a catalogue entry two decks define differently is a problem."""
+    files = deck_files(path)
+    if not files:
+        fail(f'no deck in {path}')
+    first = read_json(files[0], 'the deck')
+    if len(files) == 1 or not isinstance(first, dict):
+        return first, []
+    data = dict(first)
+    for key in ('primitives', 'methods', 'recipes', 'defaults'):
+        data[key] = dict(first.get(key) or {})
+    data['directions'] = list(first.get('directions') or [])
+    decks = {_stem(files[0]): [d.get('id') for d in data['directions'] if isinstance(d, dict)]}
+    problems = []
+    for f in files[1:]:
+        x = read_json(f, 'the deck')
+        name = _stem(f)
+        if not isinstance(x, dict) or not isinstance(x.get('directions'), list):
+            problems.append(f'{name}: a deck file needs a "directions" list')
+            continue
+        decks[name] = [d.get('id') for d in x['directions'] if isinstance(d, dict)]
+        data['directions'] += x['directions']
+        for key in ('primitives', 'methods', 'recipes', 'defaults'):
+            for k, v in (x.get(key) or {}).items():
+                old = data[key].get(k)
+                same = old == v or (key == 'primitives' and isinstance(old, dict) and isinstance(v, dict)
+                                    and old.get('file') == v.get('file') and old.get('status') == v.get('status'))
+                if old is not None and not same:
+                    problems.append(f'{name}: {key}.{k} differs from the one another deck defines')
+                elif old is None:
+                    data[key][k] = v
+    data['decks'] = decks
+    return data, problems
+
+
+def is_imagery(d):
+    """A direction whose world is real photographs and footage (fit.imagery: "sourced")."""
+    return bool((d.get('fit') or {}).get('imagery'))
 
 
 def starter_src():
@@ -345,7 +421,14 @@ def validate(data, library=None, src=None, strict=False):
         errors.append('defaults: an object of house defaults (name -> text)')
         defaults = {}
     errors += ban_hits({'defaults': defaults})
-    if not 18 <= len(dirs) <= 24:
+    decks = data.get('decks')
+    if isinstance(decks, dict) and decks:
+        for i, (name, ids) in enumerate(decks.items()):
+            if i == 0 and not 18 <= len(ids) <= 24:
+                errors.append(f'the {name} deck holds {len(ids)} directions; the main deck holds 18-24')
+            elif i > 0 and len(ids) < 3:
+                errors.append(f'the {name} deck holds {len(ids)} directions; a deck that adds directions holds at least 3')
+    elif not 18 <= len(dirs) <= 24:
         errors.append(f'the deck holds {len(dirs)} directions; it must hold 18-24')
     planned_caps = [n for n, p in cat.items() if isinstance(p, dict) and p.get('status') == 'planned' and re.search(r'[A-Z]', n)]
 
@@ -557,6 +640,32 @@ def validate(data, library=None, src=None, strict=False):
         fg = w.get('foreground')
         if fg is not None and not (isinstance(fg, str) and (not fg.lower().startswith('off') or len(fg.split()) >= 5)):
             e('world.foreground is a sentence, or "off: <the reason>" (a layered space has a pre-softened near plane by default)')
+        # the picture brief of an imagery-led direction
+        if fit.get('imagery') is not None or 'assets' in d:
+            if fit.get('imagery') != 'sourced':
+                e('fit.imagery is "sourced" for a direction whose world is real imagery found with scripts/assets.mjs')
+            a_ = d.get('assets')
+            if not isinstance(a_, dict):
+                e('an imagery-led direction needs an assets block: kind, count, inventory, queries, sources, grade, choose, avoid')
+            else:
+                c_ = a_.get('count')
+                if not _is_list_of(a_.get('kind'), IMAGERY_KINDS):
+                    e(f'assets.kind lists what to find, from {IMAGERY_KINDS}')
+                if not (isinstance(c_, list) and len(c_) == 2 and all(isinstance(x, int) and not isinstance(x, bool) for x in c_)
+                        and 1 <= c_[0] <= c_[1] <= 20):
+                    e('assets.count is [least, most] pictures, 1-20')
+                if not (isinstance(a_.get('inventory'), str) and len(a_['inventory']) > 40):
+                    e('assets.inventory says what to list from the subject before searching')
+                if not (_is_list_of(a_.get('queries')) and len(a_['queries']) >= 3):
+                    e('assets.queries holds at least 3 query patterns built from the inventory')
+                if not _is_list_of(a_.get('sources')):
+                    e('assets.sources names where to search (scripts/assets.mjs sources)')
+                if not (isinstance(a_.get('grade'), dict) and a_['grade'].get('look')):
+                    e('assets.grade gives one look for every picture')
+                if not (isinstance(a_.get('choose'), str) and a_['choose']):
+                    e('assets.choose says how to choose among the results')
+                if not (_is_list_of(a_.get('avoid')) and len(a_['avoid']) >= 3):
+                    e('assets.avoid names at least 3 stock pictures to refuse')
         # primitives and techniques
         named = (list(d['primitives']) + list(d['transitions']) + list(sig['primitives']) + list(d['signature_alt']['primitives'])
                  + list(lk['primitives']))
@@ -619,9 +728,10 @@ def validate(data, library=None, src=None, strict=False):
             errors.append(f'the deck must span quiet to wild: {quiet} directions at intensity 1-2, {wild} at 4-5 (3 of each at least)')
         if wild < len(dirs) // 2:
             errors.append(f'only {wild} of {len(dirs)} directions are rich (intensity 4-5); at least half must be')
-        for what, key, cap, least in (('story shape', lambda d: d['story']['shape'], 3, 10),
-                                      ('lockup kind', lambda d: d['lockup']['kind'], 5, 6),
-                                      ('light kind', lambda d: d['world']['light_kind'], 6, 5)):
+        grow = max(1.0, len(dirs) / 24)  # the share caps hold per 24 directions: a merged deck may hold more
+        for what, key, cap, least in (('story shape', lambda d: d['story']['shape'], math.ceil(3 * grow), 10),
+                                      ('lockup kind', lambda d: d['lockup']['kind'], math.ceil(5 * grow), 6),
+                                      ('light kind', lambda d: d['world']['light_kind'], math.ceil(6 * grow), 5)):
             counts = {}
             for d in dirs:
                 counts.setdefault(key(d), []).append(d['id'])
@@ -634,7 +744,7 @@ def validate(data, library=None, src=None, strict=False):
         for d in dirs:
             bins.setdefault(round(sig_start(d) * 20) / 20, []).append(d['id'])
         for k, ids in bins.items():
-            if len(ids) > 6:
+            if len(ids) > math.ceil(6 * grow):
                 errors.append(f'{len(ids)} directions put the signature at {k:.2f} of the film; vary where it lands')
         pals = [p for d in dirs for p in d['palettes']]
         share = {t: sum(1 for p in pals if tone_of(p, recipes) == t) / max(1, len(pals)) for t in TONES}
@@ -754,9 +864,12 @@ def keyword_hits(d, brief):
     return sum(1 for k in d['keywords'] if re.search(r'\b' + re.escape(k.lower()) + r'(s|es|ing|ed|er|ers)?\b', b))
 
 
-def fits(d, fmt, pace, have, seconds, brief='', ready=None):
-    """(True, '') when the direction can make this film, else (False, reason). ready=None skips the planned check."""
+def fits(d, fmt, pace, have, seconds, brief='', ready=None, imagery=True):
+    """(True, '') when the direction can make this film, else (False, reason). ready=None skips the planned check;
+    imagery=False leaves out the imagery-led directions."""
     f = d['fit']
+    if not imagery and is_imagery(d):
+        return False, 'imagery-led (--no-imagery)'
     if fmt and fmt not in f['formats']:
         return False, f'format {fmt}'
     if pace and pace not in f['paces']:
@@ -825,6 +938,10 @@ def option_problems(picks, pool, n, tone=None):
             out.append('no mid or colour ground')
     if any(d['intensity'] >= 4 for d in pool) and not any(p['intensity'] >= 4 for p in picks):
         out.append('no rich direction')
+    if k >= 2 and any(is_imagery(d) for d in pool) and not any(is_imagery(p) for p in picks):
+        out.append('no imagery-led direction')
+    if k >= 2 and any(not is_imagery(d) for d in pool) and all(is_imagery(p) for p in picks):
+        out.append('no built world beside the imagery')
     if sum(1 for p in picks if p['intensity'] <= 2) > max(1, n // 3):
         out.append('too many quiet directions')
     return out
@@ -878,8 +995,8 @@ def options_for(data, inp, seed, n, recent=(), avoid=(), keep=(), ready=None, al
     if ready is None and not allow_planned:
         ready = ready_names(data.get('primitives', {}), starter_src())
     gate = None if allow_planned else ready
-    pool = [d for d in dirs if fits(d, inp['format'], inp['pace'], inp['have'], inp['seconds'], inp['brief'], gate)[0]
-            and d['id'] not in avoid]
+    pool = [d for d in dirs if fits(d, inp['format'], inp['pace'], inp['have'], inp['seconds'], inp['brief'], gate,
+                                    inp.get('imagery', True))[0] and d['id'] not in avoid]
     weights = {d['id']: weight(d, inp, list(recent)) for d in pool}
     recipes = data.get('recipes', {})
     tones = {d['id']: palette_tone(d, seed, recipes) for d in pool}
@@ -1172,6 +1289,8 @@ def _cmd(inp, seed, extra):
         parts.append(f'--changes {inp["changes"]}')
     if inp.get('brand'):
         parts.append(f'--brand {inp["brand"]}')
+    if inp.get('imagery') is False:
+        parts.append('--no-imagery')
     parts.append(f'--seed {seed}')
     return ' '.join(parts + extra)
 
@@ -1188,9 +1307,28 @@ def _fit_line(d):
 
 
 def _tag(d):
-    return (f'intensity {d["intensity"]}/5 · {SPACES[d["world"]["space"]]} · light {d["world"]["light_kind"]} · '
+    return (('imagery-led · ' if is_imagery(d) else '') + f'intensity {d["intensity"]}/5 · {SPACES[d["world"]["space"]]} · light {d["world"]["light_kind"]} · '
             f'camera {d["camera"]["motion"]} · {d["cuts"]["kind"]} cuts · story {d["story"]["shape"]} · '
             f'lockup {d["lockup"]["kind"]}')
+
+
+def _imagery_lines(d, bullet='- '):
+    """The picture brief of an imagery-led direction, for scripts/assets.mjs."""
+    a = d.get('assets')
+    if not is_imagery(d) or not isinstance(a, dict):
+        return []
+    g = a.get('grade') or {}
+    return [f'{bullet}**Imagery (real pictures are this world):** {", ".join(a["kind"])}, {a["count"][0]}-{a["count"][1]} '
+            f'pictures, found under licences that need no credit and never credited on screen (the licence record stays in '
+            f'the project). {a["inventory"]}',
+            f'{bullet}**Queries** (built from that list, never from the category): ' + '; '.join(f'"{q}"' for q in a['queries'])
+            + f'. Sources: {", ".join(a["sources"])}.' + (f' At least {a["min_width"]} px wide, {a.get("orientation", "any")}.'
+                                                           if a.get('min_width') else ''),
+            f'{bullet}**Choose:** {a["choose"]}',
+            f'{bullet}**One grade for every picture:** `{g.get("look")}`' + (f' ({g["notes"]})' if g.get('notes') else '') + '.',
+            f'{bullet}**Refuse:** {"; ".join(a["avoid"])}.',
+            f'{bullet}**Route:** `node scripts/assets.mjs search` (each query) -> `sheet` (look at the results) -> `get` -> '
+            '`grade` (one look for the set), then move them with the imagery primitives this direction names.']
 
 
 def _lcs(v):
@@ -1282,6 +1420,7 @@ def render_sheet(sh, data, library):
             f'- **How the light is built:** {w["light_build"]}', f'- **Texture:** {w["texture"]}.']
     if sh.get('foreground'):
         out.append(f'- **Foreground layer (on by default in a layered space):** {sh["foreground"].rstrip(".")}.')
+    out += _imagery_lines(d)
     bm = sh.get('brand')
     if bm:
         pr = bm['proportions']
@@ -1409,7 +1548,11 @@ def render_entry(d, data, library, ready=None):
         out += [f'(Not dealt yet: its signature waits for planned {", ".join(p for p in d["requires"] if p not in ready)}.)', '']
     out += [f'**Story ({d["story"]["shape"]}).** {d["story"]["line"]}', '',
             f'**World.** {SPACES[w["space"]]}. {w["set"]} Planes: {w["planes"]}. '
-            f'Light ({w["light_kind"]}): {w["light"]} Built: {w["light_build"]} Texture: {w["texture"]}.', '', '**Palettes.**']
+            f'Light ({w["light_kind"]}): {w["light"]} Built: {w["light_build"]} Texture: {w["texture"]}.', '']
+    img = _imagery_lines(d)
+    if img:
+        out += img + ['']
+    out += ['**Palettes.**']
     out += [x for p in d['palettes'] for x in _palette_lines(p, recipes)]
     out += ['', '**Type.**'] + [x for t in d['type_options'] for x in _type_lines(t)]
     c, k, ty, lk = d['camera'], d['cuts'], d['type'], d['lockup']
@@ -1484,18 +1627,20 @@ def main():
     ap.add_argument('--strict', action='store_true', help='with --validate: the library, the starter source and lib/look.ts must all be found')
     ap.add_argument('--allow-planned', action='store_true', help='also deal directions whose signature waits for a planned primitive')
     ap.add_argument('--out', default='out', help='where the sheet is written (default out/)')
-    ap.add_argument('--deck', default=DEFAULT_DECK, help='the directions json (default assets/directions/directions.json)')
+    ap.add_argument('--no-imagery', action='store_true', help='deal no imagery-led direction (the brief rules out found pictures)')
+    ap.add_argument('--deck', default=DEFAULT_DECK, help='a deck file, or a folder whose decks are merged (default: every deck in assets/directions/)')
     ap.add_argument('--library', default=DEFAULT_LIBRARY, help='the technique library (default assets/library/techniques.json)')
     ap.add_argument('--no-history', action='store_true', help='neither read nor write the deal history')
     a = ap.parse_args()
 
-    data = read_json(a.deck, 'the deck')
+    data, deck_problems = load_deck(a.deck)
     library = load_library(a.library)
     cat = data.get('primitives', {}) if isinstance(data, dict) else {}
     src = starter_src()
 
     if a.validate:
         errors, notes = validate(data, library, src, a.strict)
+        errors = deck_problems + errors
         for n in notes:
             print(f'note: {n}')
         if errors:
@@ -1511,7 +1656,10 @@ def main():
         rs = {s: sum(1 for r in recipes.values() if r.get('status') == s) for s in STATUSES}
         techs = {t for d in dirs for t in d['techniques']}
         blocked = [d['id'] for d in dirs if [p for p in d.get('requires', []) if p not in ready]]
-        print(f'deck.py: {len(dirs)} directions valid, {len(dirs) - len(blocked)} dealable now'
+        per = data.get('decks') or {}
+        print(f'deck.py: {len(dirs)} directions valid'
+              + (' (' + ', '.join(f'{k} {len(v)}' for k, v in per.items()) + ')' if len(per) > 1 else '')
+              + f'; {sum(1 for d in dirs if is_imagery(d))} imagery-led; {len(dirs) - len(blocked)} dealable now'
               f'{" (" + ", ".join(blocked) + " wait for planned primitives)" if blocked else ""}; space {sp}; intensity {it}; '
               f'light {li}; {len({d["story"]["shape"] for d in dirs})} story shapes; {len({d["lockup"]["kind"] for d in dirs})} '
               f'lockup kinds; palette grounds {tn}; recipes {rs["built"]} built, {rs["planned"]} planned; primitives '
@@ -1519,6 +1667,7 @@ def main():
         return 0
 
     errors, _ = validate(data, library, None, False)
+    errors = deck_problems + errors
     if errors:
         fail('invalid deck (run --validate):\n  ' + '\n  '.join(errors[:20]))
     dirs = data['directions']
@@ -1547,7 +1696,7 @@ def main():
 
     if a.list:
         for d in dirs:
-            ok, why = fits(d, a.format, a.pace, have, a.seconds, a.brief, ready)
+            ok, why = fits(d, a.format, a.pace, have, a.seconds, a.brief, ready, not a.no_imagery)
             print(f'{d["id"]:<16} {d["intensity"]}  {d["world"]["space"]:<12} {d["camera"]["motion"]:<7} {d["cuts"]["kind"]:<9} '
                   f'{d["world"]["light_kind"]:<11} {d["name"]:<20} {"" if ok else "(does not fit: " + why + ") "}{d["idea"]}')
         return 0
@@ -1589,8 +1738,8 @@ def main():
             sh['redraws'].append({'slot': 'signature', 'from': cur, 'to': nxt, 'reason': a.reason})
         else:  # direction
             held = [sh['direction']['id']] + [r['from'] for r in sh['redraws'] if r['slot'] == 'direction']
-            pool = [x for x in dirs if fits(x, inp['format'], inp['pace'], inp['have'], inp['seconds'], inp['brief'], gate)[0]
-                    and x['id'] not in held]
+            pool = [x for x in dirs if fits(x, inp['format'], inp['pace'], inp['have'], inp['seconds'], inp['brief'], gate,
+                                            inp.get('imagery', True))[0] and x['id'] not in held]
             if not pool:
                 fail('no other direction fits this brief; keep the one you have', 1)
             recent = [h['direction'] for h in read_history(sh['history'])][:4]
@@ -1611,6 +1760,8 @@ def main():
     if a.brand and not os.path.isfile(a.brand):
         fail(f'--brand: {a.brand} not found (write it with scripts/brand.py)')
     inp = {'brief': a.brief, 'format': a.format, 'pace': a.pace or 'calm', 'have': have, 'seconds': a.seconds, 'avoid': avoid}
+    if a.no_imagery:
+        inp['imagery'] = False
     if a.format == 'update':
         inp['changes'] = a.changes or DEFAULT_CHANGES
     if a.brand:
@@ -1635,7 +1786,7 @@ def main():
     if a.direction not in by_id:
         fail(f'no direction {a.direction!r} (run --list)', 1)
     d = by_id[a.direction]
-    ok, why = fits(d, a.format, inp['pace'], have, a.seconds, a.brief, gate)
+    ok, why = fits(d, a.format, inp['pace'], have, a.seconds, a.brief, gate, not a.no_imagery)
     if not ok:
         hint = ' (or pass --allow-planned and build them inside the film)' if why.startswith('waits for') else ''
         fail(f'{a.direction} does not fit this brief ({why}){hint}; deal options that do with --options 3', 1)
