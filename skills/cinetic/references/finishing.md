@@ -2,7 +2,7 @@
 
 Covers everything between "the picture code is done" and "the files are shipped": the render modes, true motion blur as a render pass, banding, BT.709 colour, encoder settings, the audio mux, splicing, and every deliverable format. Read it before Step 6 (Render and finish) and Step 8 (Deliver), and whenever a render looks different from the Studio.
 
-The numbers here are proven defaults from shipped films, Tessel among them. Start from them; change one when a measurement tells you to.
+The numbers here are house defaults with normal ranges. Start from them; change one when a measurement tells you to.
 
 **Contents**
 1. [Render modes at a glance](#1-render-modes-at-a-glance)
@@ -43,9 +43,19 @@ Useful flags: `--loop` for seamless loops (lossless PNG intermediates, so the se
 
 ## 2. Motion blur is a render pass
 
-Anything that moves faster than about 12 px per frame at 60 fps strobes without blur: the eye sees discrete copies instead of motion. Launch films almost always have such moments (whips, floods, flying cards, drops). `measure-speed.py` prints the peak speed, so you do not have to guess.
+**Blur is a declared policy.** `LOOK.blur` in `timeline.ts` says what the film is: `'crisp'` (the default) renders flat
+graphics sharp at any speed, one sample a frame, and only the frames inside a declared `CAMERA_BLUR` range (a flick, a
+whip, a camera-real moment) get shutter samples; `'camera'` puts a 180° shutter on every frame moving faster than
+about 900-1200 px/s, as a camera would. Declared steps (a snap zoom's jump, a stepped layer, a make-room jump),
+flashes, hard seams and act starts always render from one sample in either policy. `measure-speed.py --policy auto`
+(the default) reads the declaration from `out/cues.json`; `render.sh --blur` follows it (with no frame needing
+samples it renders the sharp master directly) and caps the samples at 8 a frame in a declared film; `--policy
+crisp|camera` overrides. Defocus is a separate tool (`references/camera.md` §5), never a stand-in for motion blur.
 
-Blur has a ceiling too. Past about 60–80 px/f a 240° shutter smears an element into a streak 40–50+ px long, and the samples that fit in one frame show as stepped copies along it: the "artificial smear" a viewer reads as a glitch. Keep any one element under that speed and redesign faster moves (a cut on the beat, a match cut, a mask wipe, a shorter distance; `references/transitions.md`). `measure-speed.py` lists the frames over 80 px/f as `too_fast`, and `render.sh --blur` stops before the sub-frame pass while any are left. A frame-filling edge (a wipe, a flood, an iris, a zoom-through) may run 150–300 px/f for a few frames without stepped copies; check it at full size, then waive it with `--accept-fast A-B`.
+Under the camera policy, anything that moves faster than about 12 px per frame at 60 fps strobes without blur: the eye
+sees discrete copies instead of motion. `measure-speed.py` prints the peak speed, so you do not have to guess.
+
+Blur has a ceiling too. Past about 60–80 px/f a 180° shutter smears an element into a streak 40–50+ px long, and the samples that fit in one frame show as stepped copies along it: the "artificial smear" a viewer reads as a glitch. Keep any one element under that speed and redesign faster moves (a cut on the beat, a match cut, a mask wipe, a shorter distance; `references/transitions.md`). Under the camera policy `measure-speed.py` lists the frames over 80 px/f as `too_fast` (a crisp film instead gets the `speed-ceiling` warning for a frame over 3000 px/s for more than 14 f), and `render.sh --blur` stops before the sub-frame pass while any are left. A frame-filling edge (a wipe, a flood, an iris, a zoom-through) may run 150–300 px/f for a few frames without stepped copies; check it at full size, then waive it with `--accept-fast A-B`.
 
 **Cuts are act boundaries.** An output frame averages sub-frames from a third of a frame before and after its time, so a hard cut inside an act turns its frame into a 50/50 double exposure of the two shots, and on a payoff beat that reads as a glitch. `src/blur.ts` clamps samples inside an act, so a cut at an act boundary stays crisp. `measure-speed.py` renders the hard cuts it can measure with one sample; any other unexplained full-frame change away from an act boundary stops `render.sh --blur` before the sub-frame pass. Make a real cut an ACT boundary in `src/timeline.ts`; for a flood, a flash or a zoom-through you checked at full size, pass `--accept-cut A-B`.
 
@@ -69,9 +79,9 @@ Average outside the browser, in float, and quantise once.
 `FilmSub` and `src/blur.ts` ship in the starter. The core of it:
 
 ```ts
-export const SHUTTER = 240; // degrees; measure-speed.py --shutter must match
+export const SHUTTER = 180; // degrees; measure-speed.py assumes the same
 export const sampleTimes = (f: number, n: number): number[] => {
-  if (n <= 1) return [f];
+  if (n <= 1 || policyAt(f) === 'crisp' || isDiscrete(f)) return [f]; // the declared policy and steps
   const a = ACTS.find((x) => f >= x.from && f < x.from + x.dur) ?? { from: 0, dur: TOTAL };
   const span = SHUTTER / 360, lo = a.from, hi = a.from + a.dur - 1e-3;
   return Array.from({ length: n }, (_, i) => Math.min(hi, Math.max(lo, f + span * ((i + 0.5) / n - 0.5))));
@@ -80,20 +90,20 @@ export const sampleTimes = (f: number, n: number): number[] => {
 <Freeze frame={subs[j].t}><Film /></Freeze>
 ```
 
-The shutter is centred on the frame (a 240° shutter spans f ± 1/3). Samples are clamped inside the frame's act, so the frame before a cut never averages in the next shot.
+The shutter is centred on the frame (a 180° shutter spans f ± 1/4). Samples are clamped inside the frame's act, so the frame before a cut never averages in the next shot.
 
 ### How many samples
 
 ```
 n = 1                                             if speed < 2 px/f   (renders once)
-n = clamp(ceil((shutter/360) · speed / step), 4, 48)   otherwise; shutter 240°, step 3 px
+n = clamp(ceil((shutter/360) · speed / step), 4, 48)   otherwise; shutter 180°, step 3 px (8 at most in a declared film)
 ```
 
 | Peak speed (px/f) | 2–18 | 30 | 60 | 80 | 120 | ≥ 144 |
 |---|---|---|---|---|---|---|
 | Samples | 4 | 7 | 14 | 18 | 27 | 32 (cap) |
 
-Above the cap (144 px/f with a 3 px step), 32 samples can't stay 3 px apart across a 240° shutter. Those frames get a **shorter shutter** instead (`shutters` in the samples JSON, read by `src/blur.ts`), just long enough that the samples stay 3 px apart: a shorter, clean streak rather than a long one with stepped copies. `--no-short-shutter` keeps the full shutter. Either way the move is over the ceiling above and wants a redesign.
+Above the cap (144 px/f with a 3 px step), 32 samples can't stay 3 px apart across the shutter. Those frames get a **shorter shutter** instead (`shutters` in the samples JSON, read by `src/blur.ts`), just long enough that the samples stay 3 px apart: a shorter, clean streak rather than a long one with stepped copies. `--no-short-shutter` keeps the full shutter. Either way the move is over the ceiling above and wants a redesign.
 
 ### Measuring speed (`measure-speed.py`)
 
@@ -137,7 +147,7 @@ Still frames cost one render, so the ratio depends on how much of the film moves
 
 ### HyperFrames
 
-HyperFrames seeks `t = frame/fps` and has no adaptive sub-frame stream, so render at `fps × K` and average uniformly: `python3 scripts/accumulate.py 'frames/*.png' out/picture.mp4 --uniform 4 --in-fps 240`. Each output frame averages the `ceil(K·240/360)` sub-frames centred on it (K = 4 gives 3 samples, 0.25 f apart). HyperFrames renders at most 240 fps, so at 60 fps K ≤ 4; that is clean to roughly 12–18 px/f. Faster films belong in the Remotion path. `scripts/hf-finish.sh --blur 4` wires this up; see `references/hyperframes-engine.md`.
+HyperFrames seeks `t = frame/fps` and has no adaptive sub-frame stream, so render at `fps × K` and average uniformly: `python3 scripts/accumulate.py 'frames/*.png' out/picture.mp4 --uniform 4 --in-fps 240`. Each output frame averages the `ceil(K·240/360)` sub-frames centred on it (K = 4 gives 3 samples, 0.25 f apart). HyperFrames renders at most 240 fps, so at 60 fps K ≤ 4; that is clean to roughly 12–18 px/f. Faster films belong in the Remotion path. `scripts/hf-finish.sh --blur 4` wires this up; with `--policy` (or a crisp `LOOK`) a crisp HyperFrames film ignores `--blur K`, because per-range camera blur is a Remotion feature; see `references/hyperframes-engine.md`.
 
 ## 3. Banding
 
@@ -260,7 +270,12 @@ python3 scripts/check-sync.py out/film.mp4 && python3 scripts/probe.py out/film.
 
 ## 8. Deliverables
 
-`scripts/deliver.sh <master>` writes the set into `out/deliver/` and exits 1 if a check fails. The top level holds only deliverables, because a client opens the folder before the film; the reports (`manifest.json` with every file's probe facts and check results, `loop-seam.json`) go in `out/deliver/qa/`, and the script warns if it finds sheets or reports at the top level.
+`scripts/deliver.sh <master>` writes the set into `out/deliver/` and exits 1 if a check fails. For a film with a track
+it runs `scripts/audio/credits.py` first: it refuses without a valid licence record (an allowed licence,
+`licence_seen`, the file unchanged) or a required credit line, writes `CREDITS.md` and `CREDITS_description.txt`, and
+never delivers a stem, the bed or the decoded track; a `--draft` soundtrack is refused. Credits never appear in the
+picture (`references/music.md` §8). Imagery licence records (`assets/licences.json`) stay private with the project and
+are not delivered. The top level holds only deliverables, because a client opens the folder before the film; the reports (`manifest.json` with every file's probe facts and check results, `loop-seam.json`) go in `out/deliver/qa/`, and the script warns if it finds sheets or reports at the top level.
 
 | Deliverable | How | Spec and budget |
 |---|---|---|
