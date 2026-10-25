@@ -3333,9 +3333,16 @@
     "fx/Wordmark.lockupState",
     "fx/Wordmark.Lockup"
    ],
+   "jobs": [
+    "logo"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 7
+   "weight": 7,
+   "impact": 3,
+   "aliases": [
+    "dv-lockup-snap-slide"
+   ]
   },
   {
    "id": "le-reverse-type-recentre",
@@ -3402,9 +3409,14 @@
    "primitive": [
     "fx/Wordmark.swingState"
    ],
+   "materials": "Rotational smear on the fastest spin frames: the glyph inside the disc becomes a soft spiral ring and its tail is flung outside the disc as a comet (arc length about rotation speed x shutter x radius, about 100 deg at the peak); the rim becomes a soft band of the ground and the mark's colour; whites stay at full brightness. About 12 f of heavy smear, 12 of partial, sharp after.",
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 4,
+   "aliases": [
+    "dv-logo-swing-in"
+   ]
   },
   {
    "id": "le-seed-stroke-build",
@@ -3681,13 +3693,25 @@
     "fx/Wordmark.hotGlyphState",
     "fx/Wordmark.HotGlyphs"
    ],
+   "materials": "The halo travels with the newest letter: each new letter is born with a gradient fill (white to the accent across the glyph) and a two-layer glow (18 px and 60 px blur), wipes on with a left-to-right alpha ramp for 4 f, and cools to white over about 24 f; a soft radial halo about 350 x 260 px eases toward the newest letter at every step, so the glow is always on the head of the word.",
+   "conditions": [
+    "light built into the device (core, body, falloff), never a uniform halo",
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "jobs": [
+    "logo"
+   ],
    "ban_safe": false,
    "bans": [
     "gradient",
     "orange"
    ],
    "ban_safe_variant": "Start the tile in the film's single accent as a flat fill, not a multi-hue gradient, and cool it through darker shades of that same hue to the neutral ink with mixColor. Any accent hue carries the idea, so it never needs a warm orange-to-red ramp.",
-   "weight": 5
+   "weight": 5,
+   "impact": 4,
+   "aliases": [
+    "dv-hot-glyph-cool"
+   ]
   },
   {
    "id": "le-mark-glint-turn",
@@ -3729,10 +3753,17 @@
    "timing": "1-2 ticks at least 30 f apart. hitPulse attack 2 f, tau 6 f (gone in ~38 f). Amplitude 10-14% scale or 2-4 px. None in the final 30 f.",
    "use_when": "Films whose story device became a piece of the mark. Ends that should close the device's loop without ending on the device alone.",
    "avoid_when": "Marks without a separable piece. Very still closes, where any pulse breaks the calm. Loops that need the device to travel back to its frame-0 position instead.",
-   "primitive": [],
+   "primitive": [
+    "fx/Stepped"
+   ],
+   "materials": "The pixel mark is drawn with 1-bit hatching: the body and wings are runs of diagonal and vertical 1 px stripes (an engraving rendered in pixels), cells 10-11 px at final size; it de-pixels through chunky solid cells into the hatched sprite (36 f), and 2 frames of each run cycle blend to 50 % grey cells.",
    "ban_safe": true,
    "bans": [],
-   "weight": 0
+   "weight": 1,
+   "impact": 3,
+   "aliases": [
+    "dv-living-mark-sprite"
+   ]
   },
   {
    "id": "cl-mono-one-accent",
@@ -4386,7 +4417,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 7,
+   "impact": 3,
+   "aliases": [
+    "dv-stepped-cadence"
+   ]
   },
   {
    "id": "tx-mixed-media-grade",
@@ -6594,7 +6629,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 3,
+   "aliases": [
+    "dv-wordmark-letter-build"
+   ]
   },
   {
    "id": "ty-letter-arc-swing",
@@ -10667,6 +10706,58 @@
    "impact": 4
   },
   {
+   "id": "dv-blob-fusion-mark",
+   "name": "Blobs fuse and split, then collapse into the mark",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Two huge blobs enter from both edges, fuse into a gooey shape that shrinks and bulges, split into circles, approach again and repeat three times, shrinking each time, and collapse into the mark.",
+   "recipe": "Recipe: an SVG gooey filter (a static blur + alpha threshold, built once) over two circles moved in closed form. Anatomy: Enter 149 px/f; fuse; split expo-out; approach expo-in; bulge +11 % area and a +12 % rebound. Sound: A drum at the fusion; a deep boom on the mark. Materials: The blobs are jelly, not perfect metaballs: in flight they stretch along their travel with flattened leading faces (rx = r(1 + kv), ry = r / (1 + kv), rotated to the heading); slowing, they become wobbling circles whose flat facet travels round the edge (r(1 + 0.06 sin(3 theta + 0.2 f))); they fuse, split and fuse again on hits before collapsing to the dot of the mark. Crisp edges, no blur or shadow; a goo filter (blur 18 then an alpha threshold) merges them.",
+   "timing": "Cycles of 18-28 f; 90 f in all.",
+   "use_when": "A brand with round forms; an energetic end.",
+   "avoid_when": "More than three cycles.",
+   "primitive": [
+    "fx/MorphPath.Goo"
+   ],
+   "materials": "The blobs are jelly, not perfect metaballs: in flight they stretch along their travel with flattened leading faces (rx = r(1 + kv), ry = r / (1 + kv), rotated to the heading); slowing, they become wobbling circles whose flat facet travels round the edge (r(1 + 0.06 sin(3 theta + 0.2 f))); they fuse, split and fuse again on hits before collapsing to the dot of the mark. Crisp edges, no blur or shadow; a goo filter (blur 18 then an alpha threshold) merges them.",
+   "jobs": [
+    "logo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-block-swarm-to-wordmark",
+   "name": "Colour blocks swarm into letter slots and become glyphs",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Coloured rectangles flash at scattered spots for two frames each, converge, become letter-sized placeholders in the wordmark's slots, and swap to glyphs one by one; the mascot fills in to black.",
+   "recipe": "Build: <BlockSwarm at text x y font palette> (fx/Gather): one block per letter flashes at a seeded spot for two frames (4 f at 60), each pose nearer its slot (18 f), sits as a letter-sized placeholder (6 f), then the glyphs swap in left to right every 3 f; letterSlots() gives the boxes; fill the mascot with Develop or a tint. Anatomy: Blocks held 2 f at random spots; converge; placeholders in letter boxes; glyph swaps every 1-2 f. Sound: A whoosh, a bubble pop, a key click.",
+   "timing": "Swarm 18 f; swaps 2-4 f apart; fill 16 f.",
+   "use_when": "Playful brands with a palette; a wordmark reveal.",
+   "avoid_when": "Calm films.",
+   "primitive": [
+    "fx/Gather.BlockSwarm"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
    "id": "dv-brand-colour-last",
    "name": "Brand colour withheld until the mark lands",
    "category": "logo_and_end_card",
@@ -10695,6 +10786,37 @@
    "impact": 3
   },
   {
+   "id": "dv-comets-to-logo",
+   "name": "Light comets spiral out and collapse into the logo",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Two point-symmetric light comets (a bright head, a curved tail) spiral out from the centre, orbit once and collapse into the logo's position at full speed, where the mark appears.",
+   "recipe": "Build: <Comets at x y color> (fx/Gather) centred on the mark: two point-symmetric flat heads with tapering tails spiral out (10 f, E.snapOut, to 450 px), orbit (8 f) and collapse on E.buildIn (26 f), arriving at about 85 px per 30 fps frame; land the mark on cometsState().land. Ban-safe: no halo. Anatomy: Expand 10 f, orbit 8 f, collapse 26 f (radial 110 px/f at the end); tails 19-84 px. Sound: A run of whooshes, then a hit on the mark. Materials: The last word dims from white to grey over 14 f while its corner brackets shrink to small hooks; one frame after the dim ends two curved light comets appear crossing the word's centre and swing outward (head at full white, tail 20-85 px, a halo of about 150 px at 4-6 % over the stage, screen blend); the word's ghost stays faintly visible under them for 12 f.",
+   "timing": "34 f at 60 fps.",
+   "use_when": "A dark film's logo reveal.",
+   "avoid_when": "Light grounds; glow-heavy comets in house films.",
+   "primitive": [
+    "fx/Gather.Comets"
+   ],
+   "materials": "The last word dims from white to grey over 14 f while its corner brackets shrink to small hooks; one frame after the dim ends two curved light comets appear crossing the word's centre and swing outward (head at full white, tail 20-85 px, a halo of about 150 px at 4-6 % over the stage, screen blend); the word's ghost stays faintly visible under them for 12 f.",
+   "conditions": [
+    "light built into the device (core, body, falloff), never a uniform halo"
+   ],
+   "jobs": [
+    "logo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
    "id": "dv-cta-peek-centre",
    "name": "CTA peeks in cropped, then cuts to centred",
    "category": "logo_and_end_card",
@@ -10711,6 +10833,50 @@
    "avoid_when": "Long peeks.",
    "primitive": [
     "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-end-exit",
+   "name": "How the film leaves: fade, cut or defocus",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The last frames leave on purpose: the logo holds a third of a second and fades out on a sine over 20 f to a few black frames; or a hard cut to black on a drum hit with the tail ringing into silence; or the mark keeps receding and blurs out into silence.",
+   "recipe": "Recipe: an opacity or defocus ramp on the end card group, aligned with the music's end. Anatomy: Fade 20 f sine; black 3-50 f; recede 0.3 %/f with a 38 f ease-in defocus. Sound: A sub-drop tail; a drum hit then silence; audio dropping to silence.",
+   "timing": "20-103 f.",
+   "use_when": "The final second of a film.",
+   "avoid_when": "An abrupt end with the music still running.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3
+  },
+  {
+   "id": "dv-icon-monogram-converge",
+   "name": "App icon de-blurs while its monogram writes and lines converge",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A rounded app-icon tile cuts in blurred at about 2.3x and shrinks to size while sharpening; inside it a monogram is written with a pen; about 16 curves draw in from the frame edges converging on it.",
+   "recipe": "Oversize from 2.3 with defocus; the monogram path with strokeDrawn(); converging curves as SVG paths with dash growth. Anatomy: Icon settle 71 f; pen 26 f; lines with linear ink growth 66 f. Sound: Voice.",
+   "timing": "Icon to size 28 f, settle 140 f.",
+   "use_when": "An app's end card.",
+   "avoid_when": "Too many converging lines (over about 20).",
+   "primitive": [
+    "fx/Oversize",
+    "fx/Stepped.strokeDrawn"
    ],
    "ban_safe": true,
    "bans": [],
@@ -10740,6 +10906,231 @@
    "impact": 4
   },
   {
+   "id": "dv-logo-assemble-parts",
+   "name": "Logo assembles from parts",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The mark builds from its parts entering from alternating edges with uneven gaps (panels front-loaded, thin parts as constant-speed stripes that stop dead, small details popping last); a custom round glyph assembles from arc pieces that grow along the circle.",
+   "recipe": "<AssembledMark> / assembleFor(logo, ...). Anatomy: Gaps 4/3/3/7/7/4 f at 24 fps; panels 7-12 f expo-out each; arcs 14 f. Sound: A pop on each main part.",
+   "timing": "14-92 f.",
+   "use_when": "Logos made of geometric parts.",
+   "avoid_when": "Even gaps (they read mechanical).",
+   "primitive": [
+    "fx/Wordmark"
+   ],
+   "jobs": [
+    "logo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-logo-build-chain",
+   "name": "Logo grows out of a line, a bar, a pixel monogram",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The mark is reached through a chain of simple states: a hairline fades in, grows into a tall bar that splits into stripes, the stripe stack squashes (anticipation) and each stripe slides sideways into the pixel mark; or two dots grow into a pixel monogram glyph by glyph, which collapses into a bar, which becomes the symbol.",
+   "recipe": "MorphChain with explicit states (line, bar, stripes, mark) and HardStep for the stripe offsets; logoParts() for the final mark. Anatomy: Fade 8 f (63 % in the last frame); grow 28 f; squash -5 % then -30 %; stripes slide 23 f on an S-curve; monogram build 38 f, collapse 8 f, bar 1 f. Sound: A reverse-cymbal swell bed; a pluck on the slide; a drum on the build.",
+   "timing": "45-82 f.",
+   "use_when": "Brands with a geometric or pixel mark; the opening or the closing of a film.",
+   "avoid_when": "Chains longer than four states.",
+   "primitive": [
+    "fx/MorphChain"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 5
+  },
+  {
+   "id": "dv-logo-oversize-land",
+   "name": "Logo cuts in oversized and settles",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "The mark or wordmark cuts in larger than its rest (1.3-1.9x), often defocused or tinted, and settles down with nearly half the move on the first frame; a square can jump 85 % in one frame and ease the rest over a long tail; a wordmark can resolve from a tint and blur, then drift away accelerating.",
+   "recipe": "<Oversize from={1.4} dur={30} defocus> on the mark; Lockup snap for a one-frame jump. Anatomy: Scale 1.34-1.86x -> 1; blur peaks 3 f after entry then clears; colour tint -> ink (or a hue sweep). Sound: The voice saying the name 3 f after the picture; a snare on the jump.",
+   "timing": "28-62 f; 47 % of the travel in the first frame.",
+   "use_when": "Lockups, end cards, the brand's first appearance.",
+   "avoid_when": "Scaling the logo up from nothing.",
+   "primitive": [
+    "fx/Oversize"
+   ],
+   "jobs": [
+    "logo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 4
+  },
+  {
+   "id": "dv-logo-slam-frame",
+   "name": "Logo slams in on one blurred frame",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A big logo glyph fills its quadrant with a heavy motion blur on the last frame of a grid, moving diagonally: a one-frame slam.",
+   "recipe": "A one-frame layer with a pre-blurred version of the glyph. Anatomy: One frame, blur along the direction of travel. Sound: None needed.",
+   "timing": "2-3 f.",
+   "use_when": "Closing a grid section on a hit.",
+   "avoid_when": "More than one frame.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-logo-swell-settle",
+   "name": "End logo swells, then settles back",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The end logo grows a little past its rest (1.06 -> 1.22, or x1.4 with a decaying rate), then settles or slowly shrinks a few percent while the ground brightens.",
+   "recipe": "Two tweens on the mark's scale (E.snapOut up, E.strongInOut down) or a reversal on the mark. Anatomy: Up on an ease-out, down on an in-out; background brightens over 60 f. Sound: The music drops out under it; a quiet tail.",
+   "timing": "Up 26-38 f, down 30-44 f.",
+   "use_when": "The last beat of a film.",
+   "avoid_when": "Bounces.",
+   "primitive": [
+    "fx/Oversize"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 2
+  },
+  {
+   "id": "dv-mark-in-photo-window",
+   "name": "The mark lands inside a window of a real photograph",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "signature",
+   "energy": "calm",
+   "formats": [
+    "launch"
+   ],
+   "summary": "The logo is not set on a flat ground: it spins in exactly inside the window glass of a warm photograph (a train window onto a mountain lake), sitting on the horizon, with the rest of the photo softly out of focus round it and a very slow push.",
+   "recipe": "Photo framed on the window, a second blurred copy masked outside it, and the lockup placed in the window's rect. Anatomy: The window area sharp, the foreground and top blurred 12-18 px (a tilt-shift from two masked copies); the mark about 146 px across, centred on the horizon at 52 % of the window's height; push about 1 % over the beat. Sound: Spin-in on a whoosh; wordmark on the next hit. Materials: Choose a free photo whose window or frame is the composition; grade it toward the brand's ink so the mark owns the brightest colour.",
+   "timing": "Holds about 90 f; the wordmark follows on the next hit.",
+   "use_when": "A consumer brand with a place or a feeling; the end card of a lifestyle film.",
+   "avoid_when": "Developer tools; busy photos without a calm window area.",
+   "primitive": [
+    "fx/Photo"
+   ],
+   "materials": "Choose a free photo whose window or frame is the composition; grade it toward the brand's ink so the mark owns the brightest colour.",
+   "jobs": [
+    "logo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-mark-resolve-steps",
+   "name": "Mark resolves in steps: de-pixel, ghost to ink, bold to final",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A pixel-art mark appears as very coarse cells and resolves to finer cells while it zooms out; a glyph inside a notched square steps from ghost to white to ink; a symbol appears heavy with its counters filled and thins until the holes open, with small ticks radiating.",
+   "recipe": "Pixelate in-phase on the mark; HardStep for the ghost-white-ink states; weight via two outline paths morphed (Morph path). Anatomy: Cells 55 -> 20 px near-linear; glyph states 3-4 f each; weight thinning over 34 f. Sound: A ding; a drum on the bold state. Materials: The symbol is a jagged upscaled bitmap until the snap: while big it shows hard pixel staircases with 2-3 grey anti-alias levels per step (a 40 px bitmap scaled with nearest-neighbour, cells about 14 px), and on the one-frame snap to half size on a drum hit it becomes the clean vector.",
+   "timing": "16-75 f.",
+   "use_when": "Pixel or geometric marks.",
+   "avoid_when": "Smooth tweens for these steps.",
+   "primitive": [
+    "fx/Pixel.Pixelate"
+   ],
+   "materials": "The symbol is a jagged upscaled bitmap until the snap: while big it shows hard pixel staircases with 2-3 grey anti-alias levels per step (a 40 px bitmap scaled with nearest-neighbour, cells about 14 px), and on the one-frame snap to half size on a drum hit it becomes the clean vector.",
+   "jobs": [
+    "logo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-mark-squash-pop",
+   "name": "Mark pops squashed and stretches to size",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The mark appears on the frame after a dot at full width but 79 % height (108 % wide), and stretches to its true proportions over 6 frames: a landing with squash.",
+   "recipe": "Recipe: separate scaleX and scaleY tweens on the mark. Anatomy: Height 0.79 -> 1 cubic-out over 12 f; width 1.08 -> 1 over 26 f. Sound: A kick.",
+   "timing": "12-26 f.",
+   "use_when": "Marks that land on a beat after a dot or a drop.",
+   "avoid_when": "Squash on type.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-markers-collapse-to-logo",
+   "name": "Brackets become strokes that shrink to dots as the logo grows",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "At the last line the corner brackets turn into four diagonal strokes in an X around a centre dot, which shrink into small dots while the logo grows from the centre; one blink and the end card holds.",
+   "recipe": "Markers rects morphed into diagonal strokes (rotated rects) then dots; Oversize from 0 is not allowed: the logo grows from the centre dot's size on E.snapOut. Anatomy: Strokes 90 -> 131 px then shrinking to 20-28 px dots; logo expo-out from the centre; one 1-frame blink. Sound: A sub-bass hit.",
+   "timing": "Strokes 28 f; logo 25 f.",
+   "use_when": "A film that used corner markers throughout: they hand over to the logo.",
+   "avoid_when": "Without a marker system earlier in the film.",
+   "primitive": [
+    "fx/Markers"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
    "id": "dv-panels-to-logo",
    "name": "Panels shrink away and seeds build the logo",
    "category": "logo_and_end_card",
@@ -10761,6 +11152,128 @@
    "bans": [],
    "weight": 1,
    "impact": 3
+  },
+  {
+   "id": "dv-pull-back-from-mark",
+   "name": "Start inside the mark and pull back to it",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Hard cut to the inside of a huge 3D mark; the camera pulls back about 12x with a roll (the first frame halves the size, the ratio relaxing after), then snaps to the flat mark.",
+   "recipe": "zoomThrough in reverse (factor 1/12) with roll; HardStep to the flat mark. Anatomy: Pull back in log space, roll, final snap to the flat version. Sound: Kick, snare, kick across the pull.",
+   "timing": "76 f + 34 f.",
+   "use_when": "The end of a film whose mark has a 3D form.",
+   "avoid_when": "Marks without a recognisable silhouette.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-still-end-hold",
+   "name": "The one dead-still hold at the end",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The film's only frozen frames are the end lockup: the card holds completely still for 1.2-3 s while the music drops out or a single final kick lands under it; a URL can pop on a sub-drop; the wordmark can scale in from 0.81 first; a split screen can hold one pane static while the others keep moving.",
+   "recipe": "Recipe: a static end card from the timeline with no creep (declare the still range so the checks accept it). Anatomy: Zero drift (frame difference near 0); optional URL pop in one frame; optional plain entrance (4 blank frames, a 40 f linear fade). Sound: The music tail drops out (to about -42 LUFS) or a final kick; a cork pop and a sub-drop on the URL.",
+   "timing": "Hold 73-220 f.",
+   "use_when": "Every end card.",
+   "avoid_when": "Fading to black under the hold; freezing anything earlier in the film.",
+   "primitive": [],
+   "jobs": [
+    "logo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 8,
+   "impact": 2
+  },
+  {
+   "id": "dv-wordmark-slides-from-mark",
+   "name": "Wordmark slides out of the mark",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The mark travels aside to make room and the wordmark slides out from behind it, fading up from pale or revealed by a soft mask, and the whole lockup re-centres; after it lands the gap keeps closing until mark and word almost touch.",
+   "recipe": "Lockup slide + Wipe gradient on the name, or Words with an x offset on E.snapOut. Anatomy: Slide 110-299 px cubic-out (38-42 % on the first step); wordmark opacity 0.3 -> 1 over 15 f, horizontally smeared at first; gap 20 -> 5 px in a slow tail. Sound: Often none (the music is in its tail). Materials: The wordmark can enter as a see-through wash: at 25-35 % opacity over the photo (the scene visible through the letters), doubled sideways by a ghost offset 20-30 px at half its opacity, turning solid brand colour as it slides 110-165 px into place over about 52 f.",
+   "timing": "Slide 45-80 f; mask 20 f; gap tail 36 f.",
+   "use_when": "Every lockup that does not need a hit.",
+   "avoid_when": "The wordmark fading in place next to a static mark.",
+   "primitive": [
+    "fx/Wordmark"
+   ],
+   "materials": "The wordmark can enter as a see-through wash: at 25-35 % opacity over the photo (the scene visible through the letters), doubled sideways by a ghost offset 20-30 px at half its opacity, turning solid brand colour as it slides 110-165 px into place over about 52 f.",
+   "jobs": [
+    "logo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-wordmark-soft-reveal",
+   "name": "Wordmark letters blur-stagger in, a script suffix pen-writes",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The icon scales in, then the wordmark letters reveal left to right (about 1.3 f per glyph), each from a blur or a pale tint to full; a script suffix writes on with a pen; a dot can run a rounded path with a hairline trail.",
+   "recipe": "Letters build with FocusWord-style blur per letter; script as a stroke path with strokeDrawn(). Anatomy: Per letter blur 20 px -> 0 and fade over 3-4 f; script 16-28 f; settle 100 f; optional 90 f fade to black. Sound: Kicks under the icon; a whoosh on the exit; audio to silence. Materials: The end fade dims the white ground to grey and black while the floor glow keeps its colour a beat longer (the ground's brightness falls over 90 f, the glow's starts 20 f later), so the coloured light is the last thing besides the wordmark, which deepens to a dark shade of the accent.",
+   "timing": "Letters 22-24 f; script 16-28 f.",
+   "use_when": "Soft, friendly brands.",
+   "avoid_when": "Script suffixes in a brand without one.",
+   "primitive": [
+    "fx/Letters"
+   ],
+   "materials": "The end fade dims the white ground to grey and black while the floor glow keeps its colour a beat longer (the ground's brightness falls over 90 f, the glow's starts 20 f later), so the coloured light is the last thing besides the wordmark, which deepens to a dark shade of the accent.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-wordmark-type-on",
+   "name": "Wordmark types on a beat grid, lands loose and tightens",
+   "category": "logo_and_end_card",
+   "family": "Logo and end card",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The wordmark's letters cut in one at a time on a grid locked to the music (every 8 f, triplets of the beat) or one per frame landing a little loose and tightening 3 %; a product mark resolves glyph by glyph with one glyph translucent and darkening in steps.",
+   "recipe": "<Letters mode=\"pop\" tracking> with starts on the beat grid. Anatomy: Letters cut on; landing +44 px loose, tightening over 10 f; one glyph darkening in steps. Sound: Letters within 23-33 ms of beats; a bubble pop at the end.",
+   "timing": "Letters every 1-8 f; tighten 20 f.",
+   "use_when": "A lockup for a product with a typed or technical feel.",
+   "avoid_when": "Off-grid letter timing.",
+   "primitive": [
+    "fx/Letters"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3
   },
   {
    "id": "dv-blob-launch-arc",
@@ -10832,6 +11345,28 @@
    "bans": [],
    "weight": 2,
    "impact": 3
+  },
+  {
+   "id": "dv-character-life",
+   "name": "Eyes open and blink",
+   "category": "micro_interaction",
+   "family": "Pacing and structure",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A character or object gets life from its eyes: an eye springs open behind an object, gets a catch-light and blinks 1-4-1 frames; a character closes its eyes for about 4 frames.",
+   "recipe": "Recipe: lid as a clip-path driven by a spring; blink as three stepped states. Anatomy: Lid spring zeta 0.70 with 4.5 % overshoot; blink 2/10/2 f. Sound: A UI pop on the open.",
+   "timing": "Open 22 f; blink 15 f.",
+   "use_when": "Mascots and characters.",
+   "avoid_when": "Blinks on a regular metronome.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 5
   },
   {
    "id": "dv-chip-pop-in-place",
@@ -11042,6 +11577,30 @@
    "avoid_when": "Continuous pulsing.",
    "primitive": [
     "fx/MicroUI.hoverPulse"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-hud-waveform",
+   "name": "A screen-fixed voice waveform under moving shots",
+   "category": "micro_interaction",
+   "family": "Sound and timing",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "feature"
+   ],
+   "summary": "A thin grey waveform with a tiny two-line caption stays fixed at the bottom centre while the camera whips and zooms underneath; its amplitude rises and falls like live audio and lies flat between phrases.",
+   "recipe": "Recipe: an SVG polyline from noise(x, frame) times an envelope, placed outside the camera. Anatomy: About 60 points across, low contrast (about 30 % white), a new noise phase per frame under an amplitude envelope; outside the camera transform. Sound: It follows the voice.",
+   "timing": "Active while the voice speaks, flat between.",
+   "use_when": "Voice and call products; a narration cue without words on screen.",
+   "avoid_when": "Films with captions.",
+   "primitive": [],
+   "jobs": [
+    "product"
    ],
    "ban_safe": true,
    "bans": [],
@@ -11807,6 +12366,26 @@
    "impact": 5
   },
   {
+   "id": "dv-designed-hold",
+   "name": "A designed hold that clicks into place",
+   "category": "pacing_structure",
+   "family": "Pacing and structure",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A held frame on purpose: the settled mark is bit-identical for 4 frames as it clicks into place; a stamped line sits perfectly still while only the background light pools move; a title holds over a second with under 3 px drift.",
+   "recipe": "Recipe: no creep on the element for the hold (declare the still range); keep LightField or grain alive. Anatomy: 4-28 f of stillness; a living background layer. Sound: Silence or the voice.",
+   "timing": "4-70 f.",
+   "use_when": "After a landing that should feel locked.",
+   "avoid_when": "Long dead holds without any living layer.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3
+  },
+  {
    "id": "dv-empty-beat",
    "name": "An empty beat before the logo",
    "category": "pacing_structure",
@@ -11827,6 +12406,54 @@
    "bans": [],
    "weight": 1,
    "impact": 2
+  },
+  {
+   "id": "dv-held-drop",
+   "name": "No low end until the reveal",
+   "category": "pacing_structure",
+   "family": "Sound and timing",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The opening plays over near silence or a light, high bed (soft high clicks on each hard step, an arpeggio with no kick and no bass), and the full-band music enters exactly on the reveal frame and stays.",
+   "recipe": "Timeline: mute the kick and bass stems until the reveal cue and schedule a tick on every hard step before it. Anatomy: Before the drop the bed is high-passed at about 200 Hz and the ticks sit at -45 to -32 dB with centroids at 3.5-7 kHz; at the drop the RMS rises 6-7 dB and the low band goes from about 1 % to about 30 % of the energy, within one frame of the reveal. Sound: This is the sound device.",
+   "timing": "The drop on the reveal frame, typically 4-6 s in.",
+   "use_when": "Every launch film with a construction or build-up act.",
+   "avoid_when": "Films that open on the product.",
+   "primitive": [],
+   "jobs": [
+    "opening",
+    "reveal"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-hit-placement",
+   "name": "Whoosh run into a thud; the swap just before the kick",
+   "category": "pacing_structure",
+   "family": "Sound and timing",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A series of whooshes accompanies a collapse and an exit, then a heavy thud lands on the frame the title's letters land; a word swap is placed about 90 ms before the loudest kick, so the eye gets there first.",
+   "recipe": "Recipe: cue the thud on the landing frame from Letters' letterFrames(); the swap at kick - 5 f. Anatomy: Whoosh run about 36 f; thud +9 dB; swap 5 f before the kick at 60 fps. Sound: This is the sound device. Materials: A kick roll builds under a pull-back (five kicks at 0.09-0.18 s intervals) and a bright water-drop sound (a sine sweep 900 -> 1600 Hz over 60 ms, fast decay, a little reverb) lands exactly as the button starts to separate.",
+   "timing": "Run 36 f; lead 5 f.",
+   "use_when": "Title landings; swaps on strong beats.",
+   "avoid_when": "Thuds without a visual landing.",
+   "primitive": [],
+   "materials": "A kick roll builds under a pull-back (five kicks at 0.09-0.18 s intervals) and a bright water-drop sound (a sine sweep 900 -> 1600 Hz over 60 ms, fast decay, a little reverb) lands exactly as the button starts to separate.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
   },
   {
    "id": "dv-log-dolly-montage",
@@ -11947,6 +12574,30 @@
    "ban_safe": true,
    "bans": [],
    "weight": 1
+  },
+  {
+   "id": "dv-stop-down-before-reveal",
+   "name": "The music stops for a breath before the reveal",
+   "category": "pacing_structure",
+   "family": "Sound and timing",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "The music drops out (or dips 7-10 dB) for 0.2-0.5 s right before each big transition or reveal, and the reveal lands on the returning hit; long silences (0.65-1.75 s) can sit under holds and before reveals; a background can change on the silence; the film's only hard cut can land on a voice onset inside a drop-out.",
+   "recipe": "Recipe: mark reveals in the timeline; the music ducker cuts the bed for 0.3 s before each. Anatomy: Drop to about -33 to -40 LUFS for 18-30 f; the hit on the reveal frame. Sound: This is the sound device: drop-out, then the hit.",
+   "timing": "12-30 f dips; silences 40-105 f.",
+   "use_when": "Before every big reveal; two to five times per film.",
+   "avoid_when": "Dips before small events (they lose their power).",
+   "primitive": [],
+   "jobs": [
+    "reveal"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 7,
+   "impact": 3
   },
   {
    "id": "dv-brand-in-the-world",
