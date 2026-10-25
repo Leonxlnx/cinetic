@@ -2177,11 +2177,16 @@
    "use_when": "Choosing among options, showing many screens as one continuous surface, or a playful list of choices that read one at a time.",
    "avoid_when": "Items must be read while moving fast, or a plain scroll says it more simply.",
    "primitive": [
-    "fx/Scroll.Scroll"
+    "fx/Scroll.Scroll",
+    "fx/Reels.FocusBand"
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 3
+   "weight": 3,
+   "impact": 5,
+   "aliases": [
+    "dv-focus-band-list"
+   ]
   },
   {
    "id": "ui-discard-into-bin",
@@ -2591,13 +2596,26 @@
    "timing": "Full draw 96 f on E.rest (peak near 29%, 3.5x the mean speed; the last 30 f creep at about 2-3 px/f on a 1,400 px path). Short form: 24 f on E.out, with the area fill fading in from 8 f later over 16 f. Head peaks at 40-60 px/f at 1080p. Endpoint value rolls over 14 f.",
    "use_when": "Growth, price or usage over time; any chart where the trend is the message.",
    "avoid_when": "Invented up-and-to-the-right data; charts under ~400 px wide, where the head reads as noise.",
-   "primitive": [],
+   "primitive": [
+    "kit/index"
+   ],
+   "materials": "Dark-mode chart construction: a smooth spline line 3 px in the accent with a glow copy (8 px blur at 50 %), the area under it a vertical gradient from the accent at 70 % to transparent, every vertex a bright 12 px dot with a lighter core and a 1 px hairline drop to the baseline at 40 %; ground black fading to a deep tint at the bottom.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "jobs": [
+    "proof"
+   ],
    "ban_safe": false,
    "bans": [
     "glow"
    ],
    "ban_safe_variant": "A solid head dot with a 2 px stage-colour ring and no blur, drop-shadow halo or bloom. The area fill stays a single-hue opacity ramp.",
-   "weight": 2
+   "weight": 2,
+   "impact": 3,
+   "aliases": [
+    "dv-line-chart-draw"
+   ]
   },
   {
    "id": "dn-bar-sweep-lit-caps",
@@ -6907,9 +6925,16 @@
     "fx/Cards.enterState",
     "fx/Cards.Card"
    ],
+   "jobs": [
+    "product"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 7
+   "weight": 9,
+   "impact": 4,
+   "aliases": [
+    "dv-panel-rise-front-loaded"
+   ]
   },
   {
    "id": "ui-card-arrival-demotion",
@@ -6955,9 +6980,20 @@
    "primitive": [
     "fx/Cards.press"
    ],
+   "materials": "The press can bend its container: see the jelly press for the edge displacement, and the button fill can change colour by a gradient climbing through it rather than a cross-fade.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "jobs": [
+    "product"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 7
+   "weight": 7,
+   "impact": 2,
+   "aliases": [
+    "dv-press-squeeze-release"
+   ]
   },
   {
    "id": "ui-bento-unfold",
@@ -6982,7 +7018,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 6,
+   "impact": 4,
+   "aliases": [
+    "dv-bento-unfold"
+   ]
   },
   {
    "id": "ui-one-container-spring",
@@ -7007,7 +7047,10 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 6,
+   "aliases": [
+    "dv-one-spring-pill"
+   ]
   },
   {
    "id": "ui-chat-bubbles",
@@ -7032,7 +7075,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 6,
+   "impact": 3,
+   "aliases": [
+    "dv-chat-bubble-slide"
+   ]
   },
   {
    "id": "pd-develop-from-tint",
@@ -7090,7 +7137,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 3,
+   "aliases": [
+    "dv-linear-counters"
+   ]
   },
   {
    "id": "pd-screenshot-grammar",
@@ -8594,6 +8645,34 @@
    "impact": 4
   },
   {
+   "id": "dv-representation-cascade",
+   "name": "Image resolves through representations",
+   "category": "color_and_light",
+   "family": "Loaders and progress",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "An image is generated in front of the viewer: coloured dots pop into a grid with accelerating density, recolour toward the photo, then one frame of halftone, one frame of pixel mosaic, then the sharp photo; or a post image fills like a progressive render on twos (blank, a soft blob, rough shapes, final).",
+   "recipe": "Build: <Cascade at src x y w h cols rows unlit palette> (fx/Cascade): round dots pop in power-in 2.3 over 38 f up to 58 % of the cells (each 1.4x large, settling in 4 f) in seeded palette tints (or vivid picture colours), recolour to the picture (14 f), then one beat each of halftone, mosaic and the photo (2.4 f each); ghost lets the empty grid carry the picture; the grid is sampled from src once (useImageGrid) or passed as grid; mode=\"progressive\" loads blank, three fixed blur levels, sharp, on twos (46 f). Start it from a QuadLoader on the grid's centre cells. Anatomy: Dot fill power-in (0.6 -> 58 % coverage), recolour 6 f, final stages 1 f each; progressive stages on twos. Sound: A chat pop, a bubble pop, a cork pop on the reveal. Materials: The generated image grows from a speck to full width on twos while its content evolves like a diffusion render: pastel blobs (blur 12 px), then coloured clouds over dunes, then candy-coloured hills, then the final picture, each state about 6 f and sharper than the last.",
+   "timing": "Fill 38 f, recolour 14 f, stages 2-3 f each at 60 fps; progressive 46 f.",
+   "use_when": "Image generation, rendering, any \"it makes the picture\" beat.",
+   "avoid_when": "Without a final image that rewards the wait.",
+   "primitive": [
+    "fx/Cascade"
+   ],
+   "materials": "The generated image grows from a speck to full width on twos while its content evolves like a diffusion render: pastel blobs (blur 12 px), then coloured clouds over dunes, then candy-coloured hills, then the final picture, each state about 6 f and sharper than the last.",
+   "jobs": [
+    "product"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 5
+  },
+  {
    "id": "dv-satin-fold-field",
    "name": "Full-frame satin folds of colour that roll through hues",
    "category": "color_and_light",
@@ -8897,6 +8976,358 @@
    "impact": 4
   },
   {
+   "id": "dv-big-stat-landing",
+   "name": "Big statistic lands oversized with tiny labels",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A huge stat (216-256 px tall) appears at 118 % and settles to size, with small labels above and below (\"over\", \"views\").",
+   "recipe": "Oversize from 1.18 + Words labels. Anatomy: Scale 1.185 -> 1 quad-out; labels at the ui role. Sound: None needed; or a hit.",
+   "timing": "38 f.",
+   "use_when": "The headline number of a film.",
+   "avoid_when": "Labels as large as the number.",
+   "primitive": [
+    "fx/Oversize"
+   ],
+   "jobs": [
+    "proof"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-blueprint-dimensions",
+   "name": "Spec drawing with breathing dimension bars",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A construction drawing (hairline guides, a dashed centre line, a hatched shape, circles with anchor handles, ratio labels like \"x\" and \"0.5x\") where only the dimension bars move: they contract, hold 4 frames and expand back, opposing bars in counter-phase.",
+   "recipe": "Recipe: static SVG drawing; bars as rects with an in-out width tween. Anatomy: Hairlines 1 px; bars contract 124 px in-out, hold 4 f, expand with a long tail. Sound: A kick on the drawing's arrival.",
+   "timing": "54 f per breath; 76 f in counter-phase.",
+   "use_when": "Brand or product construction; precision claims.",
+   "avoid_when": "Labels that are fake numbers.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-cell-chart-fill",
+   "name": "Chart built from tiny cells that fill",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A bar chart made of small rounded squares (about 22 px with 4 px gaps): the first column fills from pale to full, the grey grid fades in, then the cells fill in column bursts (about one column a frame) while a cut to a wider framing keeps filling; a hexagon map of dots fills with coloured dots, scattered then dense, in sync with a counter, then snaps grey.",
+   "recipe": "Build: <CellChart at cols rows values color empty> (fx/Charts): 22 px cells with 4 px gaps; order=\"column\": the first column fills pale to full (14 f), the empty grid fades in (12 f), then one column bursts on every 2 f; order=\"scatter\" fills seeded cells sparse then dense (60 f, E.buildIn) with cellChartCount() driving the counter; desat={{ at }} snaps the fill grey (8 f); mask shapes the grid (a hexagon map). Anatomy: Cells on a grid; fill order by column (bursts) or scattered-then-dense; the accent area grows about 40x in 8 f; a button can shrink into the first cell. Sound: Pops and ticks on the bursts.",
+   "timing": "First column 14 f; grid fade 12 f; bursts 16 f; scattered fill 60 f with the counter; desaturate 8 f.",
+   "use_when": "Any metric that grows; the payoff number of a product film.",
+   "avoid_when": "Smooth bars next to it; more than one colour per series.",
+   "primitive": [
+    "fx/Charts.CellChart"
+   ],
+   "jobs": [
+    "proof"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-dot-wave",
+   "name": "A row of dots rides a wave in stop-go pulses",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A row of dots (larger in the troughs, a few hollow rings) rides a sine wave that travels right in pulses: moves, stops, moves.",
+   "recipe": "Recipe: dot y = A sin(kx - phase(f)), phase stepping by pulses. Anatomy: Pulses 60 f with 12 f holds at 7-10 px/f. Sound: None.",
+   "timing": "60 f per pulse.",
+   "use_when": "Signal, activity, rhythm.",
+   "avoid_when": "Continuous motion (the stops are the look).",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-exponential-count",
+   "name": "Count grows geometrically, then jumps to the total",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A small header chip counts in quarter-second steps that grow x1.6-1.9 each (23, 43, 72, 125, 201, 360, 661), then jumps straight to the total (3,412).",
+   "recipe": "Roll with explicit steps (a geometric list, then the total). Anatomy: Steps every 15 f; the final jump on a beat. Sound: Under the scroll.",
+   "timing": "200 f.",
+   "use_when": "\"Reading N items\" moments; scale reveals.",
+   "avoid_when": "Linear counting for big totals.",
+   "primitive": [
+    "fx/Roll"
+   ],
+   "jobs": [
+    "proof"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-metal-numerals",
+   "name": "Small bevelled metal numerals for rank",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "feature"
+   ],
+   "summary": "Rank numbers beside list rows are tiny bevelled metal glyphs (the first gold, the second silver, the third bronze) while lower ranks stay plain grey.",
+   "recipe": "Recipe: background-clip:text with a four-stop vertical gradient and a 1 px light text-shadow. Anatomy: A vertical four-stop gradient with a dark middle band (the classic chrome) clipped to the glyph, plus a 1 px bright top-edge shadow. Sound: None.",
+   "timing": "Static; scrolls with the list.",
+   "use_when": "Leaderboards and rankings inside UI; one list.",
+   "avoid_when": "Big display numbers.",
+   "primitive": [
+    "fx/TypeFill.TypeFill"
+   ],
+   "jobs": [
+    "proof"
+   ],
+   "ban_safe": false,
+   "bans": [
+    "orange"
+   ],
+   "ban_safe_variant": "Silver only for the first rank, plain grey below.",
+   "weight": 1,
+   "impact": 2
+  },
+  {
+   "id": "dv-micro-data-viz",
+   "name": "Small data glyphs inside cards",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Cards carry tiny data visualisations: a dotted world map with one accent square at the location, a row of dots as a level meter, three small colour chips with counts as a status panel.",
+   "recipe": "kit parts (Meter, Badge) and small SVG dot maps. Anatomy: Dots about 6 px; one accent element per glyph. Sound: None.",
+   "timing": "Appear with their rows.",
+   "use_when": "Profiles, dashboards, rows of results.",
+   "avoid_when": "Unreadable micro text.",
+   "primitive": [
+    "kit/index"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 2
+  },
+  {
+   "id": "dv-node-graph",
+   "name": "Node graph draws its links",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Relations drawn as a graph: right-angled connector lines draw from thumbnails (with small chips) while a table goes from skeleton bars to rows; scattered nodes fade in, spokes draw out from a hub, then the nodes morph into an even fan row on an over-damped spring; video thumbnails connected by thin lines sit around a title and ride the whip pans; selected thumbnails pop back to colour one by one as the cursor clicks and dashed links with small labels draw between them.",
+   "recipe": "SVG paths with strokeDrawn(); node positions blended between two layouts (scatter, row) on an over-damped curve. Anatomy: Links drawn at pen speed; nodes about 10-60 px; spokes in 12 f; morph about 32 f over-damped. Sound: Onsets on the links; a ding on the last.",
+   "timing": "Links 28-50 f; nodes 13 f each; morph 32 f.",
+   "use_when": "Integrations, knowledge graphs, connected data, workflows.",
+   "avoid_when": "Graphs with more than about 12 nodes on screen.",
+   "primitive": [
+    "fx/Stepped.strokeDrawn"
+   ],
+   "jobs": [
+    "proof"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-orbit-ring-counter",
+   "name": "A ring of dots orbits a falling counter and contracts",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Dots on a tilted ring (sized by depth, white ones outlined) rotate around a small counter that rolls down; the ring contracts and collapses into the counter.",
+   "recipe": "Build: <OrbitRing r={contracting radius} tilt={60} depth={[0.65, 1]} hero={<Roll>}> (fx/Orbit, fx/Roll): dots sized by depth orbit the rolling counter; shrink r over 90 f, then collapse 12 f on E.buildIn. Anatomy: Dots 55-85 px by depth; contraction 90 f; collapse 12 f circ-in. Sound: None needed. Materials: The ring is a tilted perspective orbit of black and white dots: near dots big and soft (up to 44 px, blur 3-5 px), far dots small and sharp (16 px); it shrinks 40 % while orbiting, then in the last 8 f the dots crowd into a clump that becomes a button arriving with a horizontal smear (20 px, then 8, then sharp).",
+   "timing": "Counter 60 f; contraction 90 f; collapse 12 f.",
+   "use_when": "A total that gathers many parts.",
+   "avoid_when": "Busy rings with labels.",
+   "primitive": [
+    "fx/Orbit.OrbitRing",
+    "fx/Roll"
+   ],
+   "materials": "The ring is a tilted perspective orbit of black and white dots: near dots big and soft (up to 44 px, blur 3-5 px), far dots small and sharp (16 px); it shrinks 40 % while orbiting, then in the last 8 f the dots crowd into a clump that becomes a button arriving with a horizontal smear (20 px, then 8, then sharp).",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-rolling-digits",
+   "name": "Digits roll or resolve into place",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "Huge numbers cropped by the edge roll down into place with a fast decay, up to three rows stacking; a thin big score resolves digit by digit behind a leading dash, its label following.",
+   "recipe": "<Roll> (rolling) or Roll hard with a per-digit start. Anatomy: Roll 12 f expo-out per swap; digit-by-digit resolve over 32 f. Sound: A glockenspiel.",
+   "timing": "12-34 f.",
+   "use_when": "Big numbers, scores, amounts.",
+   "avoid_when": "Digits rolling at different speeds without reason.",
+   "primitive": [
+    "fx/Roll"
+   ],
+   "jobs": [
+    "proof"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-spectral-accent-object",
+   "name": "One full-spectrum object in a one-hue film",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "In an otherwise one-hue film one small object runs through the whole hue wheel: a pie of about 24 thin wedges with hairline separators, or a tiny concentric target icon. It is the only multi-hue thing on screen, so it reads as data or as a signal, never as decoration.",
+   "recipe": "Recipe: a CSS conic gradient with hard stops (pie) or a radial gradient with hard stops (target); hard stops do not band. Anatomy: Pie: a wedge every 15 deg round the wheel, 1 px separators at 20 % white, about 320 px across. Target: four near-hard rings with a 1-2 px blend. Entry: one frame at 1.15x and 1.3 brightness, then rest. Sound: None. Materials: Wheel order cyan, azure, blue, violet, magenta, pink, red, orange, amber, yellow, green, teal.",
+   "timing": "Cuts on in one frame with its widget; holds.",
+   "use_when": "A dashboard widget, a category chart or an icon that must stand out; the film's one spectral accent.",
+   "avoid_when": "Any other multi-hue element in the same film.",
+   "primitive": [],
+   "materials": "Wheel order cyan, azure, blue, violet, magenta, pink, red, orange, amber, yellow, green, teal.",
+   "conditions": [
+    "the film's one spectral accent"
+   ],
+   "jobs": [
+    "emphasis",
+    "proof"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-stepped-tail-counter",
+   "name": "Counter lands in decelerating steps",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A big number counts one unit a frame, then one every 2 frames, then every 3, landing exactly as the scroll settles.",
+   "recipe": "steppedTail(to, end) from Roll. Anatomy: Step durations 2, 2, 2, 2, 2, 4, 6 f. Sound: A stab or an impact on the landing. Materials: With proportional digits and a fixed suffix the gap breathes (a narrow one opens a visible gap); use tabular figures or place the suffix after the measured digits every frame.",
+   "timing": "20 f at 60 fps.",
+   "use_when": "The payoff number.",
+   "avoid_when": "Easing the digits smoothly.",
+   "primitive": [
+    "fx/Roll"
+   ],
+   "materials": "With proportional digits and a fixed suffix the gap breathes (a narrow one opens a visible gap); use tabular figures or place the suffix after the measured digits every frame.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 1
+  },
+  {
+   "id": "dv-tag-and-wash",
+   "name": "Tag the chosen data, wash out the rest",
+   "category": "data_and_numbers",
+   "family": "Data and numbers",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A grid of thumbnails switches to a warm duotone in a few frames, column labels fade in, tag pills grow on the chosen items and the untagged items wash out.",
+   "recipe": "Develop reversed (colour to tint) for the untagged items; pill-label-build for the tags. Anatomy: Tint 15 f; labels 6-10 f apart; pills 18 f each; washout 35 f. Sound: None needed.",
+   "timing": "160 f in all.",
+   "use_when": "Filtering, classification, search results.",
+   "avoid_when": "Tagging too many items.",
+   "primitive": [
+    "fx/Develop"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-tick-gauge",
+   "name": "Segmented tick gauge",
+   "category": "data_and_numbers",
+   "family": "Loaders and progress",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Under a small label, a gauge of about 32 thin vertical ticks (3 px wide, 25 px tall) shows a value: most dark, the rest light.",
+   "recipe": "Build: <TickGauge value on off> (fx/MicroUI): 32 ticks 3 px wide, 25 px tall, 3 px gaps; with at (and from) it fills one tick a frame. Anatomy: Ticks with 2-3 px gaps; filled share = the value. Sound: None.",
+   "timing": "Static, or a fill of 1 tick a frame.",
+   "use_when": "A percentage that should read at a glance.",
+   "avoid_when": "Animating every tick at once (fill left to right if it moves).",
+   "primitive": [
+    "fx/MicroUI.TickGauge"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
    "id": "dv-barrel-roll-flyin",
    "name": "Barrel-roll fly-in down a corridor",
    "category": "depth_and_3d",
@@ -8915,6 +9346,53 @@
    "primitive": [
     "lib/camera-moves"
    ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-device-hinge-open",
+   "name": "Device hinges open and its world pops around it",
+   "category": "depth_and_3d",
+   "family": "UI choreography",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A thin slab hinges open into a laptop (screen growing 44 -> 466 px with a slight yaw), then an envelope rises from behind the screen and a notification dot and a chat pill pop around it.",
+   "recipe": "Build: <Flip3D kind=\"hinge\" at x y w h front> (fx/Flip): the screen turns -90 -> 0 deg about its bottom edge on E.snapOut (22 f); the satellites pop with Cards or MicroUI after it. Anatomy: Hinge rotateX quad-out; satellites pop 6, 4, 6 f in sequence. Sound: A bubble pop on the envelope. Materials: The dark screen picks up a soft diagonal reflection (white at about 45 % with a cool tint, band at about 60 deg) that grows and slides across as the device yaws toward the camera, strongest mid-turn, fading as the camera pushes in.",
+   "timing": "Hinge 22 f; satellites 10-15 f each.",
+   "use_when": "Introducing a device or an app in context.",
+   "avoid_when": "Too many satellites.",
+   "primitive": [
+    "fx/Flip.Flip3D"
+   ],
+   "materials": "The dark screen picks up a soft diagonal reflection (white at about 45 % with a cool tint, band at about 60 deg) that grows and slides across as the device yaws toward the camera, strongest mid-turn, fading as the camera pushes in.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 2
+  },
+  {
+   "id": "dv-exploded-view",
+   "name": "Exploded view: panels push out, spin, collapse",
+   "category": "depth_and_3d",
+   "family": "UI choreography",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A face panel lifts off a 3D object and floats, the inner panels push outward into an exploded cube inside a larger box, the camera spins slowly in isometric, then everything collapses back.",
+   "recipe": "Recipe: CSS 3D faces (preserve-3d) offset along normals by one progress value; spin as the container's rotateY. Anatomy: Panels offset along their normals; isometric camera spin on a sine-out; collapse on an ease-in. Sound: None needed.",
+   "timing": "Explode 78 f, spin 98 f, collapse 35 f.",
+   "use_when": "Explaining an architecture, layers or what is inside.",
+   "avoid_when": "Flat 2D products.",
+   "primitive": [],
    "ban_safe": true,
    "bans": [],
    "weight": 1,
@@ -9043,6 +9521,30 @@
    "materials": "Glossy objects share one shading recipe: a pale highlight upper-left, the accent through the middle, a deep shade at the base and a large soft halo of the accent around them on light grounds (radial gradient at 35 % 30 %: near-white, light tint 30 %, accent 65 %, deep 100 %; halo blur about 60 px at 60 %). Pills get an extrusion: a duplicate in the deep shade offset (-8, +10) px behind, and a 1 px light inner top edge.",
    "conditions": [
     "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-object-flip-turn",
+   "name": "Card or model turns 180 deg with the edge-on frame on the beat",
+   "category": "depth_and_3d",
+   "family": "UI choreography",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A card rotates about its axis in perspective (long ease-in, quicker ease-out) and goes edge-on exactly on the downbeat, swapping its face there; a 3D model inside a card turns from front to side to back.",
+   "recipe": "Build: <Flip3D at={flipAt(beat, {})} x y w h front back> (fx/Flip): a 180 deg turn on E.whipBuild (65 f, peak speed near 58 %) whose edge-on frame lands on the beat and swaps the faces there (declared a morph seam). Anatomy: Peak 8.4 deg/f at 58 %; face swap on the edge-on frame. Sound: The edge-on frame on the downbeat (-37 ms).",
+   "timing": "65 f; model turn 28 f.",
+   "use_when": "Revealing the other side; turning a product.",
+   "avoid_when": "Flips with readable text on both sides at once.",
+   "primitive": [
+    "fx/Flip.Flip3D"
    ],
    "ban_safe": true,
    "bans": [],
@@ -9749,6 +10251,29 @@
    "weight": 1
   },
   {
+   "id": "dv-mirrored-label-pairs",
+   "name": "Tiny labels pop in mirrored pairs and drift out",
+   "category": "layout_and_composition",
+   "family": "Micro-interactions",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Ten tiny metric labels pop in pairs mirrored about the centre and drift outward slowly.",
+   "recipe": "Words pairs with mirrored x and an outward drift. Anatomy: Pairs 2-3 f apart; drift outward. Sound: None.",
+   "timing": "Pairs over 25 f; drift 36 f.",
+   "use_when": "Surrounding a hero number with context.",
+   "avoid_when": "Labels that must be read.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
    "id": "dv-object-vocabulary",
    "name": "A set of physical objects as the film's vocabulary",
    "category": "layout_and_composition",
@@ -10170,6 +10695,28 @@
    "impact": 3
   },
   {
+   "id": "dv-cta-peek-centre",
+   "name": "CTA peeks in cropped, then cuts to centred",
+   "category": "logo_and_end_card",
+   "family": "Micro-interactions",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch"
+   ],
+   "summary": "A call-to-action tag peeks in at the edge of a grid, cropped, and creeps wider for about a second; hard cut to the tag centred and whole, breathing.",
+   "recipe": "Cards with a creep, then a cut to a centred Card with Oversize from 1.04. Anatomy: Peek creep 52 f; cut; breathe 24 f expo-out. Sound: A kick on the cut.",
+   "timing": "96 f.",
+   "use_when": "Ending on a registration or sign-up.",
+   "avoid_when": "Long peeks.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
    "id": "dv-line-art-endcard-pattern",
    "name": "Line-art pattern fills the end card",
    "category": "logo_and_end_card",
@@ -10191,6 +10738,29 @@
    "bans": [],
    "weight": 1,
    "impact": 4
+  },
+  {
+   "id": "dv-panels-to-logo",
+   "name": "Panels shrink away and seeds build the logo",
+   "category": "logo_and_end_card",
+   "family": "UI choreography",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch"
+   ],
+   "summary": "Large blank panels shrink into one corner while coloured seed squares scatter and fly to build the logo in the opposite corner, and the words land in the accent: \"one place\".",
+   "recipe": "Cards demote toward a corner + Wordmark assemble with parts starting from the panels' centres. Anatomy: Panels shrink to the corner; seeds fly on arcs; words 2 f apart. Sound: A ding.",
+   "timing": "34 f; glyphs 1-2 f.",
+   "use_when": "Consolidation claims; the move from product to brand.",
+   "avoid_when": "Logos without separable parts.",
+   "primitive": [
+    "fx/Wordmark"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
   },
   {
    "id": "dv-blob-launch-arc",
@@ -10217,6 +10787,173 @@
    "impact": 5
   },
   {
+   "id": "dv-block-loader",
+   "name": "Grid loader of blocks: lit row steps, copies in phase",
+   "category": "micro_interaction",
+   "family": "Loaders and progress",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A tiny grid of accent squares is the loader: one row lit at full strength with a dimmer trail row behind it steps down the block on drum onsets (irregular holds 7, 3, 1, 3, 1 f), the other rows step down to a faint level in four linear frames, the loader zooms in until its grid becomes the screen's grid, and tiled copies each run in their own phase so the field shimmers.",
+   "recipe": "Build: <BlockLoader start x y steps={onsets} color> (fx/Loaders): 4 x 4 accent squares (22 px on a 46 px pitch), the lit row and a 38 % trail step down on the onsets (house holds 17.5, 7.5, 2.5, 7.5, 2.5 f), the rest steps down to 17 % in four frames; tiled copies take a seed (own 1-7 f schedule) or a phase; zoom={{ at, to }} pushes in until its grid is the screen's. The 2 x 2 version is <QuadLoader> (clockwise head at 100 / 38 / 17 %, a step every 7.26 f; tile(step) puts a picture in the head cell). Anatomy: 4 columns, cells 22 px on a 46 px pitch at the start; lit row 100 %, trail 38 %, others 17 %; zoom expo-in. Sound: A water-drop or sub hit at the start; row steps on kicks.",
+   "timing": "Zoom 18 f; row steps on onsets; dims 10 f in 4 steps; copies on their own 1-7 f schedules.",
+   "use_when": "Openers and loading moments in grid-based brands.",
+   "avoid_when": "Smooth fades between rows.",
+   "primitive": [
+    "fx/Loaders.BlockLoader"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-caret-beats",
+   "name": "The caret waits and blinks",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The placeholder clears and a thick caret waits about 6 frames before typing starts; after typing, the caret blinks while the bar lifts away.",
+   "recipe": "TypeOn caret with a pre-hold and blink. Anatomy: Caret 6 x 45 px; hold 12 f; blink on/off 16 f. Sound: None.",
+   "timing": "Hold 12 f; blink period 32 f.",
+   "use_when": "Before and after any typing.",
+   "avoid_when": "A caret that blinks during the typing.",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-chip-pop-in-place",
+   "name": "Chips and tags pop in place",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Tags with coloured status dots, secondary chips, an inline file chip in a prompt or a notification dot simply appear at full saturation in one frame, one every few frames: no fly-in.",
+   "recipe": "HardStep visibility per chip. Anatomy: One-frame cut-on; 2-6 f apart; an inline chip appears as one token. Sound: None, or within another pop.",
+   "timing": "1 f each; gaps 4-12 f.",
+   "use_when": "Secondary UI that should not compete with the hero motion.",
+   "avoid_when": "Popping the hero element (give it an entrance).",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 3
+  },
+  {
+   "id": "dv-click-colour-pulse",
+   "name": "Click answered by a colour pulse, not a bounce",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "On the click the pointer vanishes and the button's fill ramps through a light tint and lands in its new state (with a check, an \"Analyzing\" label, a popover from its tail); or the colour drains upward through the button as its arrow launches; or the button flashes white and blurs for 3 f before turning to the active colour.",
+   "recipe": "press() q drives a colour interpolation; HardStep for the white flash; springBox from the button for the popover. Recipe: background linear-gradient(0deg, next 0 %, current 66 %), background-size 100 % 300 %, background-position-y stepping 0 -> 100 % inside each 4 f state. Anatomy: Hover 8 f, click, colour ramp 9-23 f, hold, fade; popover pops from its tail in 3 f. Sound: A bubble pop at -1.2 dBFS plus a wood-block; a UI pop. Materials: The fill changes colour by a vertical gradient climbing through it: each new colour enters at the bottom edge and pushes upward through a soft gradient 1.5x the button's height, about 4 f per state through a short hue walk, then holds 18 f and fades in 6 f.",
+   "timing": "Hover 12-19 f; ramp 12-23 f; popover 10 f in, 7 f out.",
+   "use_when": "Send, copy, export, confirm.",
+   "avoid_when": "A second multi-hue ramp in the same film.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "materials": "The fill changes colour by a vertical gradient climbing through it: each new colour enters at the bottom edge and pushes upward through a soft gradient 1.5x the button's height, about 4 f per state through a short hue walk, then holds 18 f and fades in 6 f.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 3
+  },
+  {
+   "id": "dv-click-ripple-dot",
+   "name": "Click feedback: dot, ring, tint",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "On click a small dot blooms at the cursor tip, a thin ring expands around it to about 40 px, and the clicked area takes a light tint that holds.",
+   "recipe": "Build: <Ripple at x y color shape={{ w, h }}> (fx/MicroUI): an 18 px dot blooms (2 f), a thin ring grows 10 -> 40 px (12 f, E.snapOut) and the clicked area takes a 14 % tint that holds (6 f). Anatomy: Dot 18 px, ring 10 -> 40 px fading, area tint over 6 f. Sound: A soft UI tap on the ring.",
+   "timing": "26 f in all; ring 12 f.",
+   "use_when": "Clicks on flat areas without a button shape.",
+   "avoid_when": "Glow halos (keep the ring thin).",
+   "primitive": [
+    "fx/MicroUI.Ripple"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-corner-chase-loader",
+   "name": "Corner handles turn on one after another: a loading chase",
+   "category": "micro_interaction",
+   "family": "Loaders and progress",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The four corner handles of a selection turn dark in sequence (TL, then TR and BL, then BR) and back: a six-frame loading chase built from the frame itself.",
+   "recipe": "Build: <Corners chase={{ at, color }}> (fx/Corners): the corners turn dark TL, then TR and BL, then BR and back, a step every 2.5 f (15 f a cycle; cycles to repeat). Anatomy: 2-3 f per corner; colour swap only. Sound: None needed.",
+   "timing": "15 f at 60 fps per cycle.",
+   "use_when": "A selection or a card processing.",
+   "avoid_when": "Long chases (one or two cycles).",
+   "primitive": [
+    "fx/Corners"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-cursor-becomes-button",
+   "name": "Cursor vanishes into an outlined button",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "On click the cursor disappears and an outlined circle with an arrow appears at about 111 % and settles, as if the click produced the button.",
+   "recipe": "Cursor visibility off on the click + Oversize from 1.11. Anatomy: One-frame swap; settle expo-out. Sound: None distinct.",
+   "timing": "16 f.",
+   "use_when": "A call to action at the end of a demo.",
+   "avoid_when": "Keeping both cursor and button.",
+   "primitive": [
+    "fx/Cursor"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
    "id": "dv-dot-grows-into-icon",
    "name": "A dot grows into an icon",
    "category": "micro_interaction",
@@ -10238,6 +10975,78 @@
    "bans": [],
    "weight": 3,
    "impact": 4
+  },
+  {
+   "id": "dv-ellipsis-dots-arrive",
+   "name": "Ellipsis dots arrive one by one",
+   "category": "micro_interaction",
+   "family": "Loaders and progress",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The \"...\" after a status word arrives as three separate dots, accelerating (14 f, then 6-8 f gaps); a placeholder gains its dots one at a time while a more-button's dots resolve.",
+   "recipe": "Build: <ThinkingDots ellipsis start> (fx/MicroUI): the dots cut on 14 f, then 7 f apart (22 f for three), then pulse; or HardStep visibility per dot. Anatomy: Dots cut on with shrinking gaps. Sound: None.",
+   "timing": "22-24 f for three dots.",
+   "use_when": "Status lines and placeholders.",
+   "avoid_when": "All three at once.",
+   "primitive": [
+    "fx/MicroUI.ThinkingDots"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 2
+  },
+  {
+   "id": "dv-gradient-border-input",
+   "name": "Input with a moving coloured border",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A dark rounded input whose border light travels around its outline in two brand colours, continuously.",
+   "recipe": "A conic-gradient border (a baked plate) rotated by transform. Anatomy: Conic border rotated continuously. Sound: None.",
+   "timing": "Continuous (68 f per turn).",
+   "use_when": "An AI input in a brand that owns that look.",
+   "avoid_when": "House films (it reads as the stock AI look).",
+   "primitive": [],
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform",
+    "light built into the device (core, body, falloff), never a uniform halo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-hover-pulse",
+   "name": "Hover pulse on contact",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "When the cursor touches a button its rim grows about 8 % in 2 f and decays back over 4 f.",
+   "recipe": "Build: hoverPulse(f, at) (fx/MicroUI) on the rim's scale: +7.8 % in 2 f at 30 fps, back over 4 f. Anatomy: Scale +7.8 % in 2 f, decay 4 f. Sound: None, or a faint tick.",
+   "timing": "12 f at 60 fps.",
+   "use_when": "Before every important click.",
+   "avoid_when": "Continuous pulsing.",
+   "primitive": [
+    "fx/MicroUI.hoverPulse"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
   },
   {
    "id": "dv-icon-draw-on",
@@ -10309,6 +11118,30 @@
    "weight": 2
   },
   {
+   "id": "dv-integration-orbit-pins",
+   "name": "Integration icons slide in and pin to the pill",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Five app-icon tiles appear one by one around a central pill as each is named, and matching coloured dots pin to the pill's border, so the connections read.",
+   "recipe": "Cards enterState per icon + small dots placed on the pill's border by angle. Anatomy: Slide about 16 f expo-out; onsets tied to the words; dots at the border points facing each icon. Sound: Each icon lands with its word.",
+   "timing": "86 f for five.",
+   "use_when": "Integrations, connected sources.",
+   "avoid_when": "More than about six icons.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
    "id": "dv-interaction-light-response",
    "name": "Click or hover lights the object",
    "category": "micro_interaction",
@@ -10334,6 +11167,228 @@
    "jobs": [
     "light"
    ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-jelly-press",
+   "name": "The field bends like jelly where it is pressed",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "As the cursor presses a button inside an input card, the card's edge and corner bow outward round the button (a soft bulge, the corner radius swelling), the edge goes slightly wavy along its length, then everything springs back.",
+   "recipe": "Recipe: the rounded rect as an SVG path sampled at about 80 points, displaced each frame in closed form. Anatomy: Edge displacement d(s) = A exp(-(s - s0)^2 / (2 x 120^2)) along the normal, A peaking about 9 px at 1080p; a ripple of 2 px sin(2 pi s / 90 px - phase); stroke and shadow follow the shape; the cursor squashes 1 -> 0.8 -> 1 with it. Sound: The click, then a wood-block.",
+   "timing": "Bulge 6 f, wobble 10 f, release 4 f.",
+   "use_when": "The one press of a film that should feel physical; playful brands.",
+   "avoid_when": "Serious enterprise tools; every click.",
+   "primitive": [],
+   "jobs": [
+    "emphasis",
+    "product"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-liquid-glass-button",
+   "name": "Round button with a liquid fill and a rim",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A round button with a thin up-arrow, a bright rim highlight and an accent liquid fill pooled at its bottom; it shrinks with the pull-back, pulses on hover and implodes on click.",
+   "recipe": "Layered circles with a baked rim plate. Anatomy: Rim highlight, liquid pool, glyph. Sound: None. Materials: At rest the round glass button holds a swirling liquid in its lower third and a streak across the top; as the cursor approaches the liquid swirls up and fills the sphere (18 f), on touch it drains to a thin layer (16 f); fill blobs blurred about 10 px inside a hard circle mask, a white inner highlight at 30 %, a rim glow about 8 px. The arrow inside scrolls out of the top (8 f, ease-in), the button is empty for 4 f, and a fresh arrow rises from the bottom (8 f, ease-out), landing as the cursor touches.",
+   "timing": "Static; implodes in 6 f.",
+   "use_when": "A hero button in a brand with a glass language.",
+   "avoid_when": "House films.",
+   "primitive": [],
+   "materials": "At rest the round glass button holds a swirling liquid in its lower third and a streak across the top; as the cursor approaches the liquid swirls up and fills the sphere (18 f), on touch it drains to a thin layer (16 f); fill blobs blurred about 10 px inside a hard circle mask, a white inner highlight at 30 %, a rim glow about 8 px. The arrow inside scrolls out of the top (8 f, ease-in), the button is empty for 4 f, and a fresh arrow rises from the bottom (8 f, ease-out), landing as the cursor touches.",
+   "conditions": [
+    "glass as a material with real frost or refraction, not a default card style"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-loader-arc-ring",
+   "name": "Loader arc grows into a ring and the core swells",
+   "category": "micro_interaction",
+   "family": "Loaders and progress",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Inside a screen a dot becomes a short dash, then an arc that grows 30, 60, 90, 160 deg, accelerating to about 300 deg, closes into a ring, and the dot at the centre swells into the hero button.",
+   "recipe": "Build: <ArcLoader at r x y color core={{ to }}>{icon}</ArcLoader> (fx/Loaders): a dot (3 f), an arc growing to 300 deg on E.buildIn while it turns 6 deg/f (15 f), closing (4 f), and the core swelling into the button on E.snapOut (8 f): 30 f in all. Anatomy: Arc length on an accelerating curve while it rotates; ring closure; core swell. Sound: The beat (+7 ms) on the first frame.",
+   "timing": "Arc 0 -> 300 deg in 18 f; close + swell 10 f (30 f in all at 60 fps).",
+   "use_when": "The moment between a request and the result; turning a loader into the next object.",
+   "avoid_when": "A spinner that loops more than once before resolving.",
+   "primitive": [
+    "fx/Loaders.ArcLoader"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-loading-shimmer",
+   "name": "A shine passes through text while it loads",
+   "category": "micro_interaction",
+   "family": "Loaders and progress",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A soft band (about one word wide) sweeps left to right across a status line on every beat, turning the letters it covers white; a single word glows and returns to grey; skeleton cards pulse a diagonal shine twice; a textured shimmer passes over a filled prompt box before the press; an idle slider label shimmers letter by letter.",
+   "recipe": "<LightSweep> clipped to the text, looped on the beat. Recipe until a primitive exists: background: linear-gradient(90deg, base 0 42%, band 48% 52%, base 58% 100%); background-size 250% 100%; background-clip text; background-position-x = 100 - ((f % period) / period) x 100 %. Anatomy: Band 150 px moving about 86 px/f near-linearly, then a rest; period = one beat (40 f, 90 BPM). Sound: The beat grid exactly. Materials: Anatomy of a type shimmer: the text is clipped to a gradient three times its width whose position slides one width per period. On a dark or tinted ground the band is white, about one word (5-7 letters) wide with 2.5 letters of feather each side, travelling about 0.7 letters/f and restarting at once (period about 40 f), with a slight bloom on the white letters. On a light UI invert it: a band darker than the grey base, about 40 % of the word wide, period 16-20 f; a dim band on near-white letters reads as a skeleton loader on type. Include the ellipsis in the sweep.",
+   "timing": "Sweep 20-26 f; rest 18 f; pulses 22 + 20 f.",
+   "use_when": "Loading states; an idle call to action.",
+   "avoid_when": "Shimmer on headlines; glow halos.",
+   "primitive": [
+    "fx/Exposure.LightSweep"
+   ],
+   "materials": "Anatomy of a type shimmer: the text is clipped to a gradient three times its width whose position slides one width per period. On a dark or tinted ground the band is white, about one word (5-7 letters) wide with 2.5 letters of feather each side, travelling about 0.7 letters/f and restarting at once (period about 40 f), with a slight bloom on the white letters. On a light UI invert it: a band darker than the grey base, about 40 % of the word wide, period 16-20 f; a dim band on near-white letters reads as a skeleton loader on type. Include the ellipsis in the sweep.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 3
+  },
+  {
+   "id": "dv-mark-spin-loader",
+   "name": "Brand mark rises alone and spins as the loader",
+   "category": "micro_interaction",
+   "family": "Loaders and progress",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "On black, the brand mark rises into place alone, sits for 5 frames, then words append beside it and the mark spins on its vertical axis as the loader.",
+   "recipe": "Build: <Flip3D angle={spinAngle(f, start)} front={mark}> (fx/Flip): the mark turns on its vertical axis, a turn every 26 f, its back face hidden; Words appends the name beside it. Anatomy: Rise 123 px in 8 f; rotateY spin about 26 f per turn. Sound: A riser.",
+   "timing": "Rise 8 f; spin 26 f/turn.",
+   "use_when": "Product moments where the brand is the system.",
+   "avoid_when": "Spinning the wordmark.",
+   "primitive": [
+    "fx/Flip.Flip3D"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-menu-over-blurred-page",
+   "name": "Context menu springs up over a blurred page",
+   "category": "micro_interaction",
+   "family": "UI choreography",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "On a right-click the board blurs out completely in 6 f and dims about 11 %, and a dark rounded menu springs up softly; the hover moves down its rows.",
+   "recipe": "RackFocus levels on the page + springBox for the menu. Anatomy: Background blur expo-out; menu soft spring; hover 12 f per row. Sound: A pop.",
+   "timing": "Blur 12 f; menu 46 f; hover 12 f.",
+   "use_when": "Right-click and long-press actions.",
+   "avoid_when": "Menus without the background reacting.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-pill-label-build",
+   "name": "Pill grows around its label",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A pill builds around its words: an outlined pill pre-sized per phrase with words cut on inside it; a link icon first, then words, the outline widening symmetrically; a label pill growing up from its bottom edge beside a tile.",
+   "recipe": "Morph box width from the measured text (FontGate); words pop inside. Anatomy: Words 4-6 f apart; width eases with each word (or pre-sized); growth from the bottom edge on an expo-out. Sound: A bubble pop and a mouse click 80-140 ms after.",
+   "timing": "10-20 f per pill; words 10-15 f apart.",
+   "use_when": "Labels, tags, prompt chips.",
+   "avoid_when": "Text that spills before the pill grows.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 3
+  },
+  {
+   "id": "dv-pill-marquee-select",
+   "name": "Pill marquee; selected pills fill",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Rows of outlined pills with words alternate with small line icons, scrolling as a marquee; the selected pills fill with colour from their left end, connectors draw between them, the rest dim.",
+   "recipe": "Wipe kind 'feather' inside each selected pill; connectors as stroke draw-ons. Anatomy: Fill left-anchored 16-24 f; connectors 20 f; dim 18 f. Sound: Voice. Materials: The chosen outline pill fills with a horizontal gradient (a pale tint at its left end, the accent at 45 %, a near-black shade at its right end) revealed by width over about 20 f, under white text; its 2 px outline stays visible.",
+   "timing": "175 f in all.",
+   "use_when": "Choosing among modes or capabilities.",
+   "avoid_when": "Gradient fills in house films.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "materials": "The chosen outline pill fills with a horizontal gradient (a pale tint at its left end, the accent at 45 %, a near-black shade at its right end) revealed by width over about 20 f, under white text; its 2 px outline stays visible.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-progress-line-build",
+   "name": "Progress line builds with counter-motion",
+   "category": "micro_interaction",
+   "family": "Loaders and progress",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A dash becomes a line whose left end races left while the right end creeps; a short dash slides against the build direction under the bar; a coloured band scrolls once along the line.",
+   "recipe": "Recipe: rect ends animated separately (left on E.snapOut, right slow); the counter dash a second rect. Anatomy: Width 42 -> 262 px cubic-out (peak 32 px/f at 20 %); counter-dash 13 -> 6 px/f. Sound: With the bar. Materials: A stepper advances as a 3D cursor passes under it: the next node goes from an empty ring (2 px, about 22 px) to a ring with a filled centre dot that scales in over 8 f, and the button dims to a pale tint over 16 f.",
+   "timing": "33-42 f.",
+   "use_when": "Progress, search bars forming, a line that becomes a field.",
+   "avoid_when": "A second multi-hue band in the same film.",
+   "primitive": [],
+   "materials": "A stepper advances as a 3D cursor passes under it: the next node goes from an empty ring (2 px, about 22 px) to a ring with a filled centre dot that scales in over 8 f, and the button dims to a pale tint over 16 f.",
    "ban_safe": true,
    "bans": [],
    "weight": 2,
@@ -10367,6 +11422,207 @@
    "impact": 3
   },
   {
+   "id": "dv-seed-square-unfold",
+   "name": "A tiny seed square appears first, then unfolds",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A 15-40 px coloured square appears exactly where something will land and sits for 1-4 frames, then bursts into a photo tile, slides and widens with each typed character into a sticky note, stretches into a label bar whose text types, or a line end becomes a capsule that unfolds centre-out into a labelled card.",
+   "recipe": "Build: <Seed at box color mode=\"burst\"|\"stretch\"|\"capsule\">{content}</Seed> (fx/Seed): a 24 px square cut on at the landing spot, held 4 f, then burst (expo-out from a third of the way, 14 f), stretch (a bar of the label's height, 20 f) or capsule (centre-out, then open, 17 f); widths for a note that widens per typed character; seedOnsets(start, n) for a run every 4-6 f. Anatomy: Seed square (2-4 % of the frame) -> hold 1-4 f -> expo-out to the full box starting at a third; width follows typing instantly; capsule widens centre-out revealing its letters. Sound: A glockenspiel note on the first seed; none per seed after.",
+   "timing": "Seed 2-8 f; tile 12-16 f; new tile every 4-6 f; bar stretch 20 f; capsule 14-20 f.",
+   "use_when": "Building a layout tile by tile; labels and notes; any arrival that should feel planted.",
+   "avoid_when": "Seeds that do not match the final element's colour.",
+   "primitive": [
+    "fx/Seed"
+   ],
+   "jobs": [
+    "product"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
+  },
+  {
+   "id": "dv-selection-handles",
+   "name": "Selection handles appear, drift and resize",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Four small square handles appear one by one clockwise around a subject and drift outward; they pull in until they overlap the corners, then spring back past rest; the cursor becomes a corner-bracket handle and drags a translucent selection rectangle; handles snap around a small word and the selection grows to swallow the cards around it.",
+   "recipe": "<Markers boxes onsets blink> for the handles; the drag as a Morph box tied to the cursor. Anatomy: 24-32 px squares; appear 2-3 f apart clockwise; drift 47 px out; overlap then spring past rest; selection rectangle at 25 % white with corner marks. Sound: None, or soft ticks.",
+   "timing": "Appear 32 f; drift 30 f; spring 15 f; drag 20 f.",
+   "use_when": "Editing and selection tools; pointing at the subject of the film.",
+   "avoid_when": "Handles in a film without an editing idea.",
+   "primitive": [
+    "fx/Markers"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-send-button-launch",
+   "name": "Send button launches",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The round send button detaches from its box and launches on a J-curve toward the camera (drifting right while rising and growing), or its arrow rotates to point back and flies along the input, erasing the text with a liquid smear.",
+   "recipe": "Recipe: x on E.snapOut, y on E.buildIn, scale linear; the erase is a Wipe whose edge follows the arrow. Anatomy: x peak early, y peak late (J), diameter growing linearly; arrow rotate 90 deg on an ease, fly on an ease-in, a smear erasing behind it. Sound: A kick on the launch, a whoosh on the exit; or a silence then a sub-drop. Materials: The button that flew away comes back: about 2 s later a white disc spins in from a frame corner, motion-blurred (rotational smear for 6 f), and settles into the send slot of the new window (12 f, strong ease-out) on a sub drop.",
+   "timing": "Launch 42 f; rotate 17 f, fly 26 f.",
+   "use_when": "The moment a request is sent.",
+   "avoid_when": "Sending without consequence (the next shot must show the result).",
+   "primitive": [],
+   "materials": "The button that flew away comes back: about 2 s later a white disc spins in from a frame corner, motion-blurred (rotational smear for 6 f), and settles into the send slot of the new window (12 f, strong ease-out) on a sub drop.",
+   "jobs": [
+    "product"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-sidebar-nav",
+   "name": "Selection bar slides to the clicked item",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "feature",
+    "walkthrough"
+   ],
+   "summary": "On click the cursor shrinks a little and a solid selection bar slides down the sidebar to the clicked item while the page cross-dissolves in 3-4 frames; a group expands its sub-items and pushes the items below down.",
+   "recipe": "snapBox/E.snapOut on the bar's y; Cards stack for the group. Anatomy: Bar 8 f; dissolve 6-8 f; sub-items open in 12-16 f pushing 110 px. Sound: A UI click.",
+   "timing": "8-16 f.",
+   "use_when": "App navigation in a walkthrough.",
+   "avoid_when": "Pages that slide (they cross-dissolve fast in real apps).",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-split-from-centre",
+   "name": "Twin controls split apart from the centre",
+   "category": "micro_interaction",
+   "family": "UI choreography",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Two buttons that start overlapped at the centre slide apart to their places (one left, one right), then both drift outward slowly.",
+   "recipe": "Two Cards with mirrored x on E.strongInOut. Anatomy: Symmetric in-out, peak 12.3 px/f at 43 %, then an outward ease-in drift. Sound: UI pops.",
+   "timing": "48 f; drift 14 f.",
+   "use_when": "A composer's buttons appearing.",
+   "avoid_when": "Asymmetric timing.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-state-change-in-place",
+   "name": "State changes in place without travel",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A control changes state the way software does: a toggle turns on without sliding (the knob dissolves on the left and reappears on the right while the brand colour switches in the same frame); a header label clears and the new label appears as the chevron slides to its width; sub-panels swap content on one frame; a frosted bubble is a solid button after a cut.",
+   "recipe": "Build: <Toggle at mode=\"inPlace\" w track trackOn knob> (fx/MicroUI): the knob dissolves on the left and reappears on the right while the track switches in one frame at the midpoint (26 f); other in-place swaps stay HardStep / stepValue with the chevron on a short E.snapOut. mode=\"spring\" (house) crosses on SPR.landing clamped at 6 % with the track snapping 1 f after the click. Anatomy: One-frame swaps; the only eased part is the chevron or the colour. Sound: A state-change sound. Materials: A chip's label changes by the new label sliding in from the right inside the pill while the old one is clipped (both overlap for 4-6 f, about 20 f per swap); a phone screen can change content by a 6-8 f ghost dissolve (old 100, 50, 20, 0 %) while the device moves.",
+   "timing": "1 f swaps; label change 16 f; toggle 26 f.",
+   "use_when": "Toggles, status labels, panels switching.",
+   "avoid_when": "Tweening what software would switch.",
+   "primitive": [
+    "fx/MicroUI.Toggle",
+    "fx/HardStep"
+   ],
+   "materials": "A chip's label changes by the new label sliding in from the right inside the pill while the old one is clipped (both overlap for 4-6 f, about 20 f per swap); a phone screen can change content by a 6-8 f ghost dissolve (old 100, 50, 20, 0 %) while the device moves.",
+   "jobs": [
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 4
+  },
+  {
+   "id": "dv-status-label-swaps",
+   "name": "Status labels swap faster and faster",
+   "category": "micro_interaction",
+   "family": "Loaders and progress",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A status label fast-types (3-4 characters a frame), then swaps to the next; phrases change at shrinking intervals (15, 12, 18, 15, then 3, 3, 3, 3 f) before the cut, with giant cropped numbers beside them swapping too.",
+   "recipe": "TypeOn kind=\"stream\" per label with starts from an ACCEL list. Anatomy: TypeOn stream per label; HardStep swaps; intervals shrinking. Sound: A cut at the end.",
+   "timing": "Labels 16 f each; final swaps 6 f apart at 60 fps.",
+   "use_when": "Showing a process speeding to completion.",
+   "avoid_when": "Text the viewer must read.",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-thinking-indicator",
+   "name": "Thinking indicator: icon, label and pulsing dots",
+   "category": "micro_interaction",
+   "family": "Loaders and progress",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A small status line says the product is working: an icon (a sparkle, a ring of circles, a face bubble), a word (\"Thinking\", \"Searching\") and three dots that pulse in turn (each darkening and growing about 1.4x, the wave passing left to right), sometimes with a token count.",
+   "recipe": "Build: <ThinkingDots start size color> (fx/MicroUI) beside the icon and label: three dots darken and grow 1.4x in turn (20 f up, 20 f down, 25 f apart); ellipsis brings them on one by one first. Anatomy: Dot wave: each dot up 20 f + down 20 f, stagger 25 f at 60 fps (or a 12 f cycle); icon rises 14 f circ-out. Sound: None, or a soft tick per cycle. Materials: The assistant icon is a line drawing of a brilliant-cut gem (outer circle, eight kite facets, an octagon table) stroked with a vertical three-hue gradient, still, the only multi-hue element on a dark panel.",
+   "timing": "Cycle 24-60 f.",
+   "use_when": "Every wait in a product demo.",
+   "avoid_when": "Long waits (cut away after about one cycle).",
+   "primitive": [
+    "fx/MicroUI.ThinkingDots"
+   ],
+   "materials": "The assistant icon is a line drawing of a brilliant-cut gem (outer circle, eight kite facets, an octagon table) stroked with a vertical three-hue gradient, still, the only multi-hue element on a dark panel.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 2
+  },
+  {
    "id": "dv-ticking-icon-swap",
    "name": "Companion icon swaps on every tick",
    "category": "micro_interaction",
@@ -10389,6 +11645,32 @@
    "bans": [],
    "weight": 1,
    "impact": 3
+  },
+  {
+   "id": "dv-toast-chip-entry",
+   "name": "Toast or chip arrives smeared or blurred, then sharpens",
+   "category": "micro_interaction",
+   "family": "Micro-interactions",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A status chip enters sideways as a horizontal smear (a thin streak, then a smeared pill, then sharp); a notification grows from a blurred pill and rises; a toast pops blurred at the push's midpoint, rises and sharpens; a disc inflates behind an icon (the icon leads); a tab bar slides down as the scroll brakes.",
+   "recipe": "Cards enterState with defocus (two ladder copies) and a 1-2 f horizontal ghost. Anatomy: Streak 1 f, smear 2 f, sharp; growth 1136 -> 1408 px in 7 f; rise 17 px; the disc starts 2-4 f after its glyph. Sound: A chat pop or wood-block on the cut; a soft note after whooshes.",
+   "timing": "8-24 f.",
+   "use_when": "Status messages, notifications, small UI pieces arriving.",
+   "avoid_when": "Long smears on readable text.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "jobs": [
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 4
   },
   {
    "id": "dv-giant-cropped-rise",
@@ -10621,6 +11903,29 @@
    "impact": 5
   },
   {
+   "id": "dv-quiet-hold-label-pops",
+   "name": "Calm hold marked only by small label pops",
+   "category": "pacing_structure",
+   "family": "UI choreography",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A grid holds almost still for several seconds and the only events are three small labels popping next to tiles about a second apart: rest that still has a pulse.",
+   "recipe": "living hold + Words pop for labels. Anatomy: Camera creep only (0.98-1.0); label pops 1 s apart. Sound: A bubble pop and a click on the pops; a low hit.",
+   "timing": "344 f hold; pops 50-70 f apart.",
+   "use_when": "After a busy run; to let a layout be read.",
+   "avoid_when": "Holds longer than about 6 s.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 2
+  },
+  {
    "id": "dv-shot-energy-decay",
    "name": "Zoom energy decays shot by shot",
    "category": "pacing_structure",
@@ -10674,6 +11979,155 @@
    "impact": 4
   },
   {
+   "id": "dv-code-stream-lines",
+   "name": "Code streams in line by line",
+   "category": "product_demo",
+   "family": "UI choreography",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Code lines appear in a panel about one line every 2 frames, stepped, carrying the only saturated colours in the frame (syntax colours), and keep streaming under a zoom-out.",
+   "recipe": "TypeOn kind=\"stream\" with a line-quantised count. Anatomy: One line per 2 f; syntax colours as the only saturation. Sound: None distinct.",
+   "timing": "46 f.",
+   "use_when": "Developer products; \"it writes the code\".",
+   "avoid_when": "Readable fake code (keep it plausible, real-looking).",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-cta-flies-in-pointer",
+   "name": "Button flies in carrying the pointer",
+   "category": "product_demo",
+   "family": "UI choreography",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A call-to-action button enters bottom-right tilted and small, travels on a curved path carrying the pointer with it, and takes a word's slot in the line.",
+   "recipe": "cursorMove on a bowed path with the button attached to the cursor's transform. Anatomy: Start -7 deg at 80 % size; x peak 147 px/f before y peak 32 px/f (curved path). Sound: A pop and whoosh.",
+   "timing": "36 f.",
+   "use_when": "Ending a demo on the action.",
+   "avoid_when": "Pointer and button on separate paths.",
+   "primitive": [
+    "fx/Cursor"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-cursor-as-character",
+   "name": "The cursor as a character",
+   "category": "product_demo",
+   "family": "Cursor",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "An oversized cursor (8-12 % of the frame height) with its own look lives in the shot: it banks into its motion within 2 frames, a thick 3D cursor half-spins about its axis and is edge-on at peak speed, a glossy cursor idles with slow decelerating drifts between clicks, an outlined cursor swings upright as it lands and morphs into an I-beam.",
+   "recipe": "<Cursor shape scale shadow=\"cast\"> with cursorTilt (swing) and a shape switch to ibeam. Anatomy: Size 120-170 px; bank = f(velocity); swing from -60 deg to upright over 3 f; idle drift 10 -> 0 px/f. Sound: Mouse clicks. Materials: A glossy 3D cursor (matte white body, a warm bevel gradient, soft drop shadow) rests on the first letter of a line, then rises and passes behind it for 6 f: the letter is drawn over the cursor's tip, as if the cursor were an object moving between layers of type.",
+   "timing": "Travel 40-52 f (peak 50-80 px/f at about 50 %); swing 8 f.",
+   "use_when": "Launch films where the product is used by \"you\".",
+   "avoid_when": "Multiple cursor styles in one film.",
+   "primitive": [
+    "fx/Cursor"
+   ],
+   "materials": "A glossy 3D cursor (matte white body, a warm bevel gradient, soft drop shadow) rests on the first letter of a line, then rises and passes behind it for 6 f: the letter is drawn over the cursor's tip, as if the cursor were an object moving between layers of type.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 5
+  },
+  {
+   "id": "dv-cursor-drag",
+   "name": "Cursor drags an object into place",
+   "category": "product_demo",
+   "family": "Cursor",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A grab-hand cursor drags a value cell (tilted about 15 deg, straightening as it drops), a folder into a grid, or a dashed selection marquee across a collage; the hand can squash +33 % on contact and relax.",
+   "recipe": "cursorMove with the dragged object attached by a lagged spring (one per film) or a short delay. Anatomy: Object tilt -15 deg -> 0 on drop; drag expo-out; contact pop 3 f, relax 6 f. Sound: A drum on the drop.",
+   "timing": "Drag 26-42 f; drop 8 f.",
+   "use_when": "Drag-and-drop features; selections.",
+   "avoid_when": "Dragged objects that do not tilt or lag (they look glued).",
+   "primitive": [
+    "fx/Cursor"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-cursor-exit-flight",
+   "name": "The cursor leaves in flight once the product acts",
+   "category": "product_demo",
+   "family": "Cursor",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "After its click the cursor does not fade: it accelerates off the frame on a quad- or expo-in, banking upright as it goes (3 -> 270 px/f); or it travels to the next button, presses, and drifts off.",
+   "recipe": "cursorMove with an exit move on E.buildIn off-frame. Anatomy: Exit speed x1.3-1.9 a frame; bank follows velocity. Sound: An impact as the last button is pressed. Materials: After the click the cursor does not just translate: it turns about 200 deg in 10 f (peak about 20 deg/f, expo-out) while it accelerates off the top-right like a flicked paper plane; no motion blur, so the turn reads as a run of poses.",
+   "timing": "14-22 f.",
+   "use_when": "After the last click of a demo moment.",
+   "avoid_when": "Fading the cursor; leaving it parked on screen.",
+   "primitive": [
+    "fx/Cursor"
+   ],
+   "materials": "After the click the cursor does not just translate: it turns about 200 deg in 10 f (peak about 20 deg/f, expo-out) while it accelerates off the top-right like a flicked paper plane; no motion blur, so the turn reads as a run of poses.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-cursor-glide-dwell-click",
+   "name": "Cursor glides in, dwells, then clicks",
+   "category": "product_demo",
+   "family": "Cursor",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The cursor enters (often rising from below), decelerates onto its target, rests 5-8 frames, then clicks; the button darkens for a few frames; the card or the camera can start pulling back or pushing in right after the press; or the cursor simply cuts on already over the button and presses.",
+   "recipe": "cursorState({ moves, click }) + press() on the target. Anatomy: Travel 22-44 f on an ease-out (172 px in 22 f), dwell 10-16 f, press 6-12 f; macro variant: a hand pressing a cropped send button in close-up. Sound: A click on the press; a kick on the following cut.",
+   "timing": "40-70 f per click.",
+   "use_when": "Every click in a demo.",
+   "avoid_when": "Clicking on arrival with no dwell.",
+   "primitive": [
+    "fx/Cursor"
+   ],
+   "jobs": [
+    "product"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 4
+  },
+  {
    "id": "dv-edit-in-place-under-cursor",
    "name": "Edits happen in place under the hovering cursor",
    "category": "product_demo",
@@ -10700,6 +12154,48 @@
    "weight": 1
   },
   {
+   "id": "dv-hover-trail",
+   "name": "Hover states fire along the cursor's path",
+   "category": "product_demo",
+   "family": "Cursor",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The cursor sweeps up in one expo-out and every row it passes gets a hover outline for a few frames; a hover on an icon brings a small tooltip; a cursor wanders between the input and cards while the UI eases back.",
+   "recipe": "cursorState + per-element hover flags from the cursor's position at each frame. Anatomy: Hover 6-8 f per row; tooltip hold 28 f. Sound: A whoosh as it enters.",
+   "timing": "Sweep 52 f (44 % in 10 %).",
+   "use_when": "Showing that a UI is alive and responsive.",
+   "avoid_when": "Hover states lasting longer than the pass.",
+   "primitive": [
+    "fx/Cursor"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2
+  },
+  {
+   "id": "dv-live-thumbnails",
+   "name": "Thumbnails stay alive inside the cards",
+   "category": "product_demo",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Cards contain playing motion pieces: logo marks swap colour, words morph, images move, so a board of cards is never a still screenshot.",
+   "recipe": "Recipe: each card renders a small composition in <Loop> with awkward periods. Anatomy: Per card a tiny loop with its own period. Sound: None.",
+   "timing": "Continuous; letter swaps 14 f.",
+   "use_when": "Boards, galleries, dashboards with media.",
+   "avoid_when": "Every thumbnail moving at once at full speed.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
    "id": "dv-mosaic-paint-trail",
    "name": "Dragged paint as a pixel mosaic trailing the cursor",
    "category": "product_demo",
@@ -10721,6 +12217,55 @@
    "bans": [],
    "weight": 1,
    "impact": 4
+  },
+  {
+   "id": "dv-phone-tilt-scroll-demo",
+   "name": "Phone demo: pull back, tilt while scrolling, press, popup",
+   "category": "product_demo",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "feature",
+    "walkthrough"
+   ],
+   "summary": "Close on the app header, pull back; the phone tilts away in 3D while its content scrolls with in-out gestures; a cursor clicks, a floating button presses, a popup grows from its anchor.",
+   "recipe": "camera pull + Cards lean + Scroll + press + springBox from the anchor. Anatomy: Pull 26 f; scroll 70 f; press 6-8 f; popup 16 f from the anchor. Sound: UI clicks.",
+   "timing": "About 190 f.",
+   "use_when": "Mobile app walkthroughs.",
+   "avoid_when": "Straight-on flat phones for the whole demo.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-pointer-glyph-aims",
+   "name": "A pointer glyph turns to aim, then moves",
+   "category": "product_demo",
+   "family": "Cursor",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A small pointer shape (a paper plane, a triangle) first rotates to aim at its target, then travels; a tiny pointer drifts in an empty cell and the target appears exactly where it stops; a filled pointer glides into a vacated slot.",
+   "recipe": "Cursor custom shape with cursorTilt then cursorMove. Anatomy: Rotate 30-90 deg over 16-20 f ease-out, then rise or glide; drift 2-4 px/f. Sound: None needed. Materials: Letter tiles in the pointer's path flip in 3D: a tile goes edge-on (a 4-6 px parallelogram) in about 4 f, starting 2-4 f before the pointer reaches it, a flipped tile shows its letter mirrored; the cut lands before the flip completes.",
+   "timing": "30-50 f.",
+   "use_when": "Illustrative, non-literal UI films.",
+   "avoid_when": "Pointers that move before they aim.",
+   "primitive": [
+    "fx/Cursor"
+   ],
+   "materials": "Letter tiles in the pointer's path flip in 3D: a tile goes edge-on (a 4-6 px parallelogram) in about 4 f, starting 2-4 f before the pointer reaches it, a flipped tile shows its letter mirrored; the cut lands before the flip completes.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
   },
   {
    "id": "dv-product-in-context-footage",
@@ -11743,6 +13288,30 @@
    "bans": [],
    "weight": 2,
    "impact": 5
+  },
+  {
+   "id": "dv-charge-and-snap",
+   "name": "Bubble charges with colour, then snaps wide",
+   "category": "transition",
+   "family": "Loaders and progress",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A typing pill fills with the accent on an expo-in while its dots fade and its width creeps, then snaps wide in one frame into a bar that eases to its final width.",
+   "recipe": "MorphChain with a one-frame CHAIN_STEP after a fill window. Anatomy: Fill expo-in 28 f; width creep 185 -> 223 px; snap to 466 px in 1 f; ease 13 f. Sound: None needed; a soft hit on the snap.",
+   "timing": "44 f in all.",
+   "use_when": "The answer arriving after a typing indicator.",
+   "avoid_when": "Snapping without the charge.",
+   "primitive": [
+    "fx/MorphChain"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
   },
   {
    "id": "dv-collapse-to-chip",
@@ -14115,6 +15684,30 @@
    "impact": 3
   },
   {
+   "id": "dv-picker-wheel",
+   "name": "Word wheel advances like a picker",
+   "category": "typography_motion",
+   "family": "Data and numbers",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "An inline chip rolls like a drum picker through options (neighbours above and below faded and blurred); a vertical list in a card advances one row every 4 frames with hard jumps through formats.",
+   "recipe": "Build: <GhostReel mode=\"step\" swaps={every 10 f}> (fx/Reels) for the hard-jumping card list; the default mode rolls like a drum picker (26 f exit, 16 f settle) with the neighbours softened above and below. Anatomy: Pitch about 56-120 px; neighbours 30-50 % and blurred; exit quad-in, settle cubic-out; hard jumps at 6 Hz. Sound: Ticks on percussion onsets.",
+   "timing": "48 f per roll; jumps every 10 f at 60 fps.",
+   "use_when": "Options, formats, apps that the product supports.",
+   "avoid_when": "More than about 12 options.",
+   "primitive": [
+    "fx/Reels.GhostReel"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 5
+  },
+  {
    "id": "dv-plain-caption-on-picture",
    "name": "Small plain caption directly on the picture",
    "category": "typography_motion",
@@ -14915,6 +16508,84 @@
    "impact": 3
   },
   {
+   "id": "dv-agent-step-list",
+   "name": "Agent step list: spinner rows that tick to checks",
+   "category": "ui_choreography",
+   "family": "Loaders and progress",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "The product shows its work as a list of steps: each row starts with a small spinner (a dashed ring or an arc) and its words step in at partial ink, then the line fades up and the spinner turns into a check; rows cut on with a coloured verb that drains to ink as the next row arrives; the list jumps up a row (or half a row) unanimated, or pushes up in 3-frame expo steps; the cadence of rows shortens toward the end (9, 9, 7, 5, 4, 3, 3 f).",
+   "recipe": "Build: <StepList rows={stepCadence(start, n).map((at) => ({ at }))} labels x y width font colors> (fx/Loaders): rows cut on with a spinner (120 deg per 3 f at 30 fps) and the verb in the accent at 45 % ink, the line fades up (14 f), the spinner swaps to a check (3 f) and the verb drains to ink as the next row arrives (6 f); the list jumps a row unanimated past window (or jump=\"expo\"); house cadence 18, 18, 14, 10, 8, 6, 6 f. Anatomy: Row = spinner + verb (accent tint) + grey detail + optional right icon; thin thread line on the left; status line eases down 12 px before a new row (anticipation); list jump 93-94 px in one frame. Sound: Rows within 60 ms of wood-block or drum hits; dings on rows; a glockenspiel on the last. Materials: Each step's icon draws itself: a short arc grows clockwise to about 270 deg and closes into a circle (12 f), the check draws in 4 f; icon 16 px, stroke 1.5 px in the row's current colour; the row text walks through a short hue path to ink as it completes (28-44 f), or each verb takes its own pastel tint and slides in 10 px over 16 f before cooling to white; a 2 px guide line pre-draws down the left 12 f before the first row; pending steps stay a dashed ring of 8 dashes.",
+   "timing": "Rows every 14-50 f (shortening); spinner about 120 deg per 3 f; check swap 2-4 f; line fade 12-16 f; verb drain 4-6 f.",
+   "use_when": "AI agents, builds, workflows, any \"it is doing it\" moment.",
+   "avoid_when": "Smooth scrolling lists (the steps should feel like software); more than about seven rows.",
+   "primitive": [
+    "fx/Loaders.StepList"
+   ],
+   "materials": "Each step's icon draws itself: a short arc grows clockwise to about 270 deg and closes into a circle (12 f), the check draws in 4 f; icon 16 px, stroke 1.5 px in the row's current colour; the row text walks through a short hue path to ink as it completes (28-44 f), or each verb takes its own pastel tint and slides in 10 px over 16 f before cooling to white; a 2 px guide line pre-draws down the left 12 f before the first row; pending steps stay a dashed ring of 8 dashes.",
+   "jobs": [
+    "product"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 4
+  },
+  {
+   "id": "dv-avatar-bubble-choreo",
+   "name": "Avatar bubbles swoop, orbit and split",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Round avatar bubbles behave like characters: one swoops in on an arc from an impact point and drifts; two orbit around their midpoint and swap sides while one splits into a group; a smaller bubble is ejected from a group bubble on an arc and grows.",
+   "recipe": "Recipe: polar paths in closed form (angle on an ease, radius on its own curve); the split is a MorphChain swap at mid-orbit. Anatomy: Arc paths (peak 137 px/f), orbit 154 deg (peak 13.4 deg/f), growth +30 % mid-swap, ejection r 87 -> 164 px in 8 f. Sound: A UI pop on arrival; voice. Materials: A bubble first appears as an empty glass ring (rim 4-6 px, a gradient from the tint to white, an inner radial gradient from a white centre to the tint at the edge, a specular dot low right), then its glyph rises from the lower edge into place clipped by the ring (8-10 f, expo-out); the next bubble repeats it 18 f later.",
+   "timing": "Swoop 75-85 f; orbit 90 f; ejection 20 f.",
+   "use_when": "Collaboration and people features.",
+   "avoid_when": "More than three bubbles.",
+   "primitive": [],
+   "materials": "A bubble first appears as an empty glass ring (rim 4-6 px, a gradient from the tint to white, an inner radial gradient from a white centre to the tint at the edge, a specular dot low right), then its glyph rises from the lower edge into place clipped by the ring (8-10 f, expo-out); the next bubble repeats it 18 f later.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-card-fan-stack",
+   "name": "Cards fan out from behind into a stack",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Copies of a card slide out from behind the front card 2 f apart into a tilted stack or a cover-flow fan; sibling cards enter from opposite sides with faint ghost trails; the stack collapses back behind the front card on exit.",
+   "recipe": "Cards cardArrive per copy with delays 4 f and demote for the front card's lift. Anatomy: Followers 2 f apart, spreading on an ease-in to 42 px/f then a settle push x1.08; hero card lifts x1.25 while the fan spreads; tilt 2-8 deg; collapse on an ease-in. Sound: A pop on the spread; a whoosh series on the collapse. Materials: Before the back cards fan out, 1-3 hairline card edges appear one by one at the side of the single front card (one more every 4 f, a 1 px rim at 18 % white), so the viewer senses the stack before it opens.",
+   "timing": "Spread 20 f; settle 16 f; siblings 40 f apart; collapse 22 f.",
+   "use_when": "Plans, sources, payments, posters: several of one kind.",
+   "avoid_when": "More than about five cards.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "materials": "Before the back cards fan out, 1-3 hairline card edges appear one by one at the side of the single front card (one more every 4 f, a 1 px rim at 18 % white), so the viewer senses the stack before it opens.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
+  },
+  {
    "id": "dv-card-pile-on",
    "name": "Cards flick onto a pile",
    "category": "ui_choreography",
@@ -14938,6 +16609,124 @@
    "bans": [],
    "weight": 2,
    "impact": 4
+  },
+  {
+   "id": "dv-card-scale-in-creep-push",
+   "name": "Card scales in, creeps, then pushes into the cut",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A card or dialog grows from 70-90 % (often blurred or smeared on its first frame) to full size with 90 % of the change in about 8 f, keeps a slow creep, then accelerates into the cut; a dock can expand out of a split line.",
+   "recipe": "Cards enterState with scale from 0.85 + creep + scaleBreath into the cut. Anatomy: Scale 0.7-0.89 -> 1 expo-out, a 0.05 %/f creep or 1.8 px/f growth, quad-in push into the cut; optional relax of 0.8 % after the overshoot-free landing; content swaps 1 f. Sound: The cut on frame 1; none on the push.",
+   "timing": "In 12-65 f; creep for the hold; push 32 f.",
+   "use_when": "Hero cards, export dialogs, posts, chat windows.",
+   "avoid_when": "Growing from zero.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 2
+  },
+  {
+   "id": "dv-carousel-pass",
+   "name": "Carousel: fast in, near stop, fast out",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A row of cards slides through: fast on entry, decaying almost to zero for the read, then accelerating before the cut, with soft faded edges; status chips can swap spinner to done left to right as it passes; or the row moves in discrete pushes as each new card lands.",
+   "recipe": "A camera x with E.snapOut entry and E.launchIn exit; edgeMask for the faded edges; HardStep pushes for the discrete variant. Anatomy: Entry 81 px/f decaying to a 7.3 px/f cruise, exit to 31 px/f; discrete variant: pushes of 40-200 px per frame every 2-4 f. Sound: A whoosh on the exit.",
+   "timing": "100-160 f; chip swaps 35 f apart.",
+   "use_when": "Examples, creators, thumbnails, results.",
+   "avoid_when": "Constant speed.",
+   "primitive": [
+    "fx/Scroll"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-chip-physics",
+   "name": "Chips fall like objects and float back",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "When the line says \"disconnected\", the chips around it fall like objects (accelerating), land in a cluster at the bottom and straighten as they land, then drift back up; after popping, chips can float upward on a very long tail.",
+   "recipe": "Build: gravityDrop(f, { at, fall, rot, drift }) (fx/Flight): the fall on E.buildIn (24 f), the rotation flattening over the last 30 %, then a slow drift back up (2.5 px/f at 60). Anatomy: Fall 7 -> 67 px/f, rotation flattening on landing, drift back -5 px/f; float 220 px on a long expo-out still moving 3 px/f at the end. Sound: Camera-shutter clicks and bubble pops.",
+   "timing": "Fall 24 f; float 68 f (t90 1.13 s).",
+   "use_when": "Showing disorder or separation with UI chips.",
+   "avoid_when": "Bounces (land, do not bounce).",
+   "primitive": [
+    "fx/Flight"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-choose-one-dissolve",
+   "name": "Chosen item enlarges while the rest dissolve",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "From a menu or a row of cards, the camera zooms into the chosen one (or it scales up 0.78 -> 1.0) while the others blur and fade into the background.",
+   "recipe": "SnapZoom or Cards enterState on the chosen item; RackFocus levels on the rest. Anatomy: Chosen: expo-out scale or zoom; others: blur and fade over 14-16 f. Sound: A kick or a beat on the choice.",
+   "timing": "Zoom 32-40 f; others 14-16 f.",
+   "use_when": "Selecting a product, a plan, a result.",
+   "avoid_when": "Keeping the others sharp.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "jobs": [
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-clear-the-slot",
+   "name": "Tile slides out to clear a slot for the next actor",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A tile slides out on an in-out curve leaving a stub, and the next actor (a cursor, a tile) enters the vacated space 2 f before it settles; a secondary tile shift overlaps the previous move by 11 f.",
+   "recipe": "Cards enterState out on E.strongInOut; the next actor starting 4 f before the end. Anatomy: Quart in-out, peak 91-117 px/f, no blur; overlap 11 f. Sound: None.",
+   "timing": "30-34 f.",
+   "use_when": "Making space inside a bento or layout for a demo action.",
+   "avoid_when": "Moves that end before the next one starts (overlap them).",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
   },
   {
    "id": "dv-conveyor-streams",
@@ -14965,6 +16754,29 @@
    "impact": 5
   },
   {
+   "id": "dv-develop-sweep-page",
+   "name": "Tilted page sweeps up, develops colour, is scrolled",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A white product page tilted in perspective sweeps up from the bottom in a few frames, its illustration develops from ghost grey through a tint to full colour, and the camera scrolls it in three moves.",
+   "recipe": "Cards enterState (lean 20) + Develop + reframeChain. Anatomy: Sweep 12 f; develop grey -> tint -> colour; three scroll moves. Sound: A spoken word, then a punchy hit.",
+   "timing": "256 f in all.",
+   "use_when": "A product page or a landing page shown as an object.",
+   "avoid_when": "Flat, untilted pages (they read as screenshots).",
+   "primitive": [
+    "fx/Develop"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
    "id": "dv-field-word-flash",
    "name": "Field fills a word at a time, each word lit for one frame",
    "category": "ui_choreography",
@@ -14989,6 +16801,131 @@
    "weight": 2
   },
   {
+   "id": "dv-flick-scroll",
+   "name": "Flick scroll: ramp, peak, friction",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "high",
+   "formats": [
+    "any"
+   ],
+   "summary": "Content accelerates by a constant ratio a frame into a peak, brakes on friction and lands; an exit whip can hand straight into the scroll; a column of cards decays from 68 px/f to a 2 px/f drift; the input bar decelerates into place as the conversation stops.",
+   "recipe": "flickState({ ramp, peak, brake, distance }); declares the fast frames as a camera-blur range. Anatomy: Ramp x1.05-1.1 a frame to 176 px/f, friction x0.955 a frame (or x0.77 -> 0.85), brake time constant 0.73 s. Sound: A sub-bass drop on the peak speed; a stab on the landing.",
+   "timing": "Exit 20 f; scroll 70-250 f.",
+   "use_when": "Feeds, lists, long conversations.",
+   "avoid_when": "Even-speed scrolling.",
+   "primitive": [
+    "fx/Scroll"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 3
+  },
+  {
+   "id": "dv-grid-assemble",
+   "name": "Grid assembles cell by cell",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "Outlined cards with logos slide into a grid with irregular stagger (one card snapping 880 px in a single frame); grid cells fill with blank tiles, then their text lines and progress bars fill in; rows of squares are born below and the block re-centres every frame.",
+   "recipe": "Cards enterState per cell with seeded delays; HardStep for the snapping card. Anatomy: Stagger 1-8 f; slides 24 f; one-frame snap; blank card 3-4 f then content 4-8 f; squares grow 33 -> 82 px. Sound: Bubble pops; a pop per row.",
+   "timing": "28-74 f; rows every 2 f.",
+   "use_when": "Integrations, sponsors, a dashboard filling up.",
+   "avoid_when": "Perfectly even stagger.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-inner-ui-cascade",
+   "name": "Inner UI pops in, left to right or top to bottom",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Inside a panel that has landed, chips, cards, a stat ring and buttons pop in with a 2 f stagger; agent log rows fade in one by one while the list scrolls; or the card stays and its content changes (the title retypes, the subtitle soft-reveals, the footer blurs away).",
+   "recipe": "Cards / kit parts with starts every 4 f; TypeOn for the retype; Wipe gradient for the soft reveal. Anatomy: Stagger 2-5 f, short fades; a retype at 5-6 chars/f. Sound: UI ticks. Materials: Window chrome fills in item by item after the window lands: icon, then its label 6 f later (fade 4-6 f), header label 8 f after the landing, a chevron dropping 14 px in 6 f, a menu icon 10 f later; a footer row of icons pops in three stages over 8 f.",
+   "timing": "24 f for a panel; rows 6-10 f apart.",
+   "use_when": "Filling a panel after it lands.",
+   "avoid_when": "Filling before the panel has settled.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "materials": "Window chrome fills in item by item after the window lands: icon, then its label 6 f later (fade 4-6 f), header label 8 f after the landing, a chevron dropping 14 px in 6 f, a menu icon 10 f later; a footer row of icons pops in three stages over 8 f.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 3
+  },
+  {
+   "id": "dv-late-syntax-colour",
+   "name": "Code types in plain ink; syntax colours arrive a few frames later",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "feature",
+    "update"
+   ],
+   "summary": "A code snippet types line by line in plain dark monospace; a few frames after each token is complete its syntax colour switches on (placeholders and string values flip from ink to the accent), as if the editor were catching up.",
+   "recipe": "Recipe: TypeOn over tokenised code; a token takes its colour once the frame is 10 f past its completion. Anatomy: Mono about 14 px at 1080p, line height 1.6; the colour about 10 f after the token completes; the accent only on placeholders and strings. Sound: Key ticks under the VO.",
+   "timing": "About 55 f of typing for a short snippet; recolours staggered with the tokens.",
+   "use_when": "SDK, API and developer products; any code card.",
+   "avoid_when": "Fast walls of code, where the delay cannot be read.",
+   "primitive": [
+    "fx/TypeFx.CodeType"
+   ],
+   "jobs": [
+    "product",
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-oversize-card-settle",
+   "name": "Card lands by shrinking to size",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A notification, a widget or a hero card appears a little large (1.07-1.22x) and settles down to size while it sharpens; dashboard widgets can cut on every 4 f at 107 % and settle in 5 f; a full-frame photo can shrink 20 % into a card.",
+   "recipe": "<Oversize from={1.12} dur={16}> or Words oversize on UI; widgets with starts every 8 f. Anatomy: Scale-down landing, defocus clearing; per-widget cut-ons on a fixed cadence. Sound: A whoosh tail; cork-like pops on the photo shrink. Materials: The result card's paragraph fades out line by line toward its end, as if still streaming (a vertical mask from opaque at 45 % to transparent), and a thin two-hue gradient rule echoing the ground separates it from the footer chips.",
+   "timing": "10-38 f expo-out (47 % in 10 %); widgets 8 f apart, 10 f settle.",
+   "use_when": "Notifications, dashboards, cards that land on a beat.",
+   "avoid_when": "Overshooting below size.",
+   "primitive": [
+    "fx/Oversize"
+   ],
+   "materials": "The result card's paragraph fades out line by line toward its end, as if still streaming (a vertical mask from opaque at 45 % to transparent), and a thin two-hue gradient rule echoing the ground separates it from the footer chips.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
+  },
+  {
    "id": "dv-pill-resizes-per-word",
    "name": "Words added into a pill that resizes instantly",
    "category": "ui_choreography",
@@ -15010,6 +16947,154 @@
    "ban_safe": true,
    "bans": [],
    "weight": 2
+  },
+  {
+   "id": "dv-radial-card-swarm",
+   "name": "Cards fly in radially on one ease",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Seven small tilted UI cards (lists, notes, charts, messages) fly in radially from off-screen on one shared exponential ease and settle around the centre, their rotation tails running long.",
+   "recipe": "Cards cardArrive per card on one curve with radial from vectors and rot 8-35 deg. Anatomy: Shared curve, per-card direction and tilt; rotation settles last. Sound: Voice.",
+   "timing": "Each visible 28-48 f; rotation tail 120 f.",
+   "use_when": "Showing many parts of a product at once around a statement.",
+   "avoid_when": "Cards with readable detail (they are too small to read).",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-resize-creep-jump",
+   "name": "Resize: small creep, one big jump, long settle",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A card or field is resized the way a tool resizes it: a short anticipation creep, one big jump frame (50-70 % of the change) with stretched echo handles, then a long settle; an emptied field stretches with a slow-in, a 3-frame lunge and a long tail while the caret glides.",
+   "recipe": "Build: <ResizeBox at from to handle line radius>{content}</ResizeBox> (fx/Resize): creep 15 % over 12 f (E.softIn), ONE jump frame of 60 % with the corner handles stretched back as echo bars, then an exponential settle (24 f); jumpFrames={3} is the field version (a three-frame lunge). Anatomy: Creep under 20 % over 4-6 f; jump 1 f; settle 8-10 f; handles stretch toward the new edge on the jump frame and snap back. Sound: The jump on a snare (+5 ms); a kick on the lunge.",
+   "timing": "43-90 f; field lunge peak 66 px/f.",
+   "use_when": "Editing, resizing, aspect changes, expanding a field.",
+   "avoid_when": "Smooth tweens for a tool action.",
+   "primitive": [
+    "fx/Resize.ResizeBox"
+   ],
+   "jobs": [
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 5
+  },
+  {
+   "id": "dv-result-card-assemble",
+   "name": "Result card pops and fills in sequence",
+   "category": "ui_choreography",
+   "family": "Data and numbers",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A result card pops in one frame, its price types in digit by digit in grey, then its actions and sources follow a few frames later.",
+   "recipe": "Cards pop + TypeOn for the price + kit parts with starts. Anatomy: Card 1 f; price 1 char per 1-2 f; icons 2 f; sources +4 f. Sound: A chat pop.",
+   "timing": "22 f.",
+   "use_when": "The product's output (a quote, a report, an answer).",
+   "avoid_when": "Everything inside the card arriving at once.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-rise-hold-launch",
+   "name": "UI rises in, holds, launches out",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "Each UI piece (input box, share sheet, composer, search field) rises 40-260 px into place, holds briefly, then accelerates up and out with a smear; a search field can whip in while the camera pulls back, type, and drift up.",
+   "recipe": "Cards enterState + an exit on E.launchIn with a 2-frame vertical ghost. Anatomy: Rise expo-out, hold, ease-in exit with vertical smear; pull-back x0.65 quint-out. Sound: Whooshes on the exits; keypress ticks.",
+   "timing": "Rise 22-32 f; exit 24-32 f; typing 38 f.",
+   "use_when": "A rapid sequence of UI moments.",
+   "avoid_when": "Fading out.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-skeleton-load",
+   "name": "Skeleton placeholders hand over to content",
+   "category": "ui_choreography",
+   "family": "Micro-interactions",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Cards first appear as blank or blurred slabs with grey bars for text (or a code panel with only its line numbers, or avatar circles), then the real content resolves in layers: the pin first, the text, then the photo; a selection dot pops last.",
+   "recipe": "Cards with a skeleton face cross-switched to the content face (HardStep per layer). Anatomy: Blank slab 2-4 f; layers 2 f apart; gutter 26 f before the first code pixel. Sound: UI pops on each card.",
+   "timing": "Hand-off 28 f; per card 4-6 f.",
+   "use_when": "Loading states; anything the product fetches or generates.",
+   "avoid_when": "Skeletons that last longer than about 0.5 s.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "jobs": [
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 7,
+   "impact": 4
+  },
+  {
+   "id": "dv-stack-push-demote",
+   "name": "New item pushes in, older items step back",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A new toast or card takes the top slot and the older ones step down, shrink and blur in depth; new rows push a list up with a snap scroll (75 % in the first frame); a queue keeps three and fades the oldest; new pills enter tilted and demote the older ones.",
+   "recipe": "Cards cardArrive + demote (at = the newcomer's first frame). Anatomy: Per entry 22 f; older items scale 0.82-0.9 and blur one level; stagger 8-16 f (shortening 18 -> 10 f in a run); the stack can accelerate up into the next shot. Sound: A bell, then dings per toast; kicks within 40 ms.",
+   "timing": "Entries 22 f; snap scroll 10-22 f; cards on kicks 26, 15, 18 f apart.",
+   "use_when": "Notifications, payments, steps of an agent, feature pills.",
+   "avoid_when": "Older items that stay at full strength.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "jobs": [
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
   },
   {
    "id": "dv-stream-card-grow",
@@ -15037,6 +17122,31 @@
    "bans": [],
    "weight": 2,
    "impact": 3
+  },
+  {
+   "id": "dv-tail-anchored-bubble-pop",
+   "name": "Bubbles spring-pop from their tail corner",
+   "category": "ui_choreography",
+   "family": "UI choreography",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Speech bubbles pop around a subject in a photo, each scaling up from its tail corner with a small spring, on the voice's cadence.",
+   "recipe": "springBox per bubble with transformOrigin at the tail. Anatomy: Scale from the tail anchor; spring zeta 0.62; irregular gaps from the voice. Sound: Chat pops. Materials: Each bubble starts as a short white dash (20 x 3 px) exactly at its tail corner for 2 f, then a tiny squashed bubble springs out from the tail (spring about 8 f, damping 12) and settles in 6 f.",
+   "timing": "Rise 12-14 f, settle 40 f; gaps 6-26 f.",
+   "use_when": "Questions or messages around a person in footage.",
+   "avoid_when": "Spending the spring elsewhere in the same film.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "materials": "Each bubble starts as a short white dash (20 x 3 px) exactly at its tail corner for 2 f, then a tiny squashed bubble springs out from the tail (spring about 8 f, damping 12) and settles in 6 f.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
   },
   {
    "id": "dv-tile-wall-whip",
