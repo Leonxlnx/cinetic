@@ -89,7 +89,7 @@ export type CollageOpts = {
   mean?: number; // birth gap, 60 fps frames (house 4)
   min?: number; // house 1
   max?: number; // house 10
-  gaps?: number[]; // explicit gaps in film frames (an instance to match); overrides the seeded cadence
+  gaps?: number[]; // gaps in film frames (an explicit cadence); overrides the seeded cadence
   growth?: false | { share?: number; every?: [number, number]; ratio?: [number, number]; steps?: number };
   ghosts?: false | { share?: number; len?: [number, number]; alpha?: [number, number]; scale?: number };
   camera?: false | { share?: number; panShare?: number; stepK?: [number, number]; stepPx?: [number, number]; push?: { at: number; dur?: number; amount?: number; ease?: Ease } };

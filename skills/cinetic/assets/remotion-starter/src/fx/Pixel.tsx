@@ -151,7 +151,7 @@ export type MosaicIrisProps = {
   at: number; // first frame of the iris
   origin: [number, number]; // px
   frames?: number; // to the far corner (house 9 f@30)
-  radii?: number[]; // an explicit outer radius per frame from `at` (an instance), px
+  radii?: number[]; // an outer radius per frame from `at` (explicit), px
   ease?: Ease; // front-loaded expansion (house E.snapOut)
   ring?: number; // ring thickness px at 1080p (house 195)
   cell?: number; // cell edge px at 1080p (house 30)
