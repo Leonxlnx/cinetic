@@ -35,6 +35,11 @@ accent is the named one or the most chromatic.
   colour (a cobalt brand on cobalt grounds).
 - **One accent.** A second brand hue is recorded for product UI states and imagery, never as a second accent. The
   accent keeps to its share of the picture (`references/brand-and-color.md`).
+- **A neutral kit still needs colour mass.** A kit of greys with an accent used "only when" something happens
+  can leave the film under `look-audit.py`'s colour floor (`picture-saturated`: pixels at OKLCH C 0.06 or more on
+  2.2 % of the frame on average). Plan about 3 % on average at the beat sheet, inside the brand's own rule: devices
+  that carry the accent legitimately (a meter of the film's own mix, the object that is sounding, the live product
+  state, the imagery's own colour), not a tinted ground.
 - **Supplied colours skip the house colour bans** and are checked only for contrast (statements 7:1 on the stage the
   brand plays: paper for a light brand, the brand's ink for a dark one, or the accent lifted on the slate; the accent
   3:1 on it) and the one-accent rule. Each marker says what the kit supplied:
