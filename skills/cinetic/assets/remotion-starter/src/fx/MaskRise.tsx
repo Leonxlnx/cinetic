@@ -60,6 +60,7 @@ export type MaskRiseOpts = {
   ink?: { from?: string; to?: string; frames?: number; power?: number }; // the unit darkens from `from` to `to` over 1.14 x its head (or `frames`), progress (k / frames)^power (house 1.5)
   stop?: MaskStop; // linearStop: the head's shape and the stop (house MASK_HOUSE)
   travel?: number; // em the unit rises (default the line box plus the clip padding: it starts wholly under the mask)
+  clipBelow?: number; // em of clip under the line box (house 0.26: descenders only); deeper, a unit already shows (light, by its ink) while it is still well under the line
   out?: number;
   outDur?: number;
   blur?: number;
@@ -92,7 +93,7 @@ export const maskRiseState = (f: number, o: MaskRiseOpts, film?: Partial<FilmCtx
   const units = maskUnits(o.text, o.by).flat();
   const n = units.length;
   const lead = TYPE[o.role ?? 'display'].lead;
-  const travel = o.travel ?? lead + 0.12 + 0.26;
+  const travel = o.travel ?? lead + 0.12 + (o.clipBelow ?? 0.26);
   const ease = o.ease ?? E.out;
   return units.map((_, k): MaskUnitState => {
     const s = o.starts?.[k] ?? o.start + k * stagger;
@@ -129,8 +130,8 @@ export const maskRiseFrames = (o: MaskRiseOpts, film?: Partial<FilmCtx>): number
  * §15); text lands sharp because nothing scales and blur is off unless asked for (then blurIn clears it
  * by 60%). The exit rises out through the top on E.in (through depart), first word first, at half the
  * stagger. `by` defaults to 'line' for a fragment of up to 3 words and to 'word' above that. The clip is
- * padded 0.12 em on top, 0.26 em under the line box and 0.1 em at the sides, so descenders and overhangs
- * are never shaved on a landed line, and the travel covers the padding. Lines are `\n`-separated; each
+ * padded 0.12 em on top, 0.26 em under the line box (`clipBelow`) and 0.1 em at the sides, so descenders and
+ * overhangs are never shaved on a landed line, and the travel covers the padding. Lines are `\n`-separated; each
  * line's text box carries data-text `${id}.${i}` while any of it is on screen.
  */
 export const MaskRise: React.FC<
@@ -141,12 +142,12 @@ export const MaskRise: React.FC<
     align?: 'left' | 'center' | 'right';
     style?: React.CSSProperties;
   }
-> = ({ text, frame, start, id = 'rise', by, pace: paceProp, stagger, starts, dur, durs, ease, head, lastScale, ink, stop, travel, out, outDur, blur = 0, role = 'display', size: sizeProp, family = FONT.text, align = 'left', style }) => {
+> = ({ text, frame, start, id = 'rise', by, pace: paceProp, stagger, starts, dur, durs, ease, head, lastScale, ink, stop, travel, clipBelow, out, outDur, blur = 0, role = 'display', size: sizeProp, family = FONT.text, align = 'left', style }) => {
   const film = useFilm();
   const pace = paceProp ?? film.pace; // the film's pace (lib/film.ts), unless the prop overrides it
   const size = sizeProp ?? TYPE[role].size * uOf(film);
-  const pad = { t: 0.12, b: 0.26, x: 0.1 };
-  const states = maskRiseState(frame, { text, start, by, pace, stagger, starts, dur, durs, ease, head, lastScale, ink, stop, travel, out, outDur, role, size }, film);
+  const pad = { t: 0.12, b: clipBelow ?? 0.26, x: 0.1 };
+  const states = maskRiseState(frame, { text, start, by, pace, stagger, starts, dur, durs, ease, head, lastScale, ink, stop, travel, clipBelow, out, outDur, role, size }, film);
   const lines = maskUnits(text, by);
   let k = -1; // reading-order index of the unit
   const fresh = (head ?? (ease ? 'ease' : (pace.fx.mask.head ?? 'ease'))) === 'linearStop';
