@@ -1,18 +1,56 @@
 // The house look, as numbers: colour-system recipes, shadow, radius, living light, measure and the
-// grammar bands the checks read. Colours here are OKLCH [L, C] at the brand's accent hue (or neutral):
-// scripts/palette.py --recipe turns a recipe into hex tokens for brand/tokens.ts, which stays the
-// only place a hex colour is written. Node-safe, no imports.
+// grammar bands the checks read. Colours here are OKLCH [L, C]: grounds and surfaces are neutral greys
+// (C <= NEUTRAL.maxC, toward the brand's greys or the accent's hue at a chroma too low to read as a
+// colour), the accent carries the hue. scripts/palette.py --recipe turns a recipe into hex tokens for
+// brand/tokens.ts, which stays the only place a hex colour is written. Node-safe, no imports.
 
-/** OKLCH lightness and chroma at the accent hue h (C 0: neutral). */
+/** OKLCH lightness and chroma (a ground's C stays under NEUTRAL.maxC; an accent's sits at the accent hue h). */
 export type LC = [L: number, C: number];
+
+/**
+ * Neutral: every ground and UI surface (paper, stone, slate, ink, cards, wells, hairlines) is a grey at
+ * OKLCH C <= 0.025 (house 0.004-0.012), at the hue of the brand's own greys (or the accent's hue at that low
+ * chroma when a brand has none). A pixel under C 0.03 counts as neutral in the checks, one at 0.06 or more as
+ * saturated. A ground at the accent's own hue and chroma is a colour event (COLOUR.event), never the film's
+ * stage: a frame washed in one hue hides the accent it was meant to show.
+ */
+export const NEUTRAL = { maxC: 0.025, houseC: [0.004, 0.012] as const, pixelC: 0.03, saturatedC: 0.06 } as const;
+
+/**
+ * Colour as shares of the frame (scripts/look-audit.py measures them, scripts/grammar-score.mjs scores them):
+ *   neutral    most of a frame is neutral: the house target is 40 % of the pixels or more over the film
+ *   accent     the accent's hue family (within 20 degrees) covers 6-15 % of the frame on average, outside
+ *              imagery: on the thing that matters (the state that changed, the number, the mark), never
+ *              on the ground; no frame over 25 % except inside a declared colour event
+ *   wash       saturated pixels have a floor (PICTURE.saturatedMin) and a ceiling (PICTURE.saturatedMax,
+ *              PICTURE.washFrame): a film is not one colour wash; the target keeps a third of the frames or
+ *              fewer over half saturated
+ *   second     one optional second hue, for a moment: data beside the accent, a state the accent cannot be
+ *              (an alert, a warning), a highlight. It sits 40 degrees or more from the accent, covers at
+ *              most 5 % of the frame while it shows and shows in at most a quarter of the film's frames;
+ *              declare it in the tokens (C.second, commented ui-state) so the checks know it. A hue in more
+ *              than half the frames at over 8 % of the frame is a second accent (a warning)
+ *   event      a declared colour event (cues `declared.colour` [{ from, to }], or one designed flood up to
+ *              2 s): a deep field, an accent flood, a colour cut; the ceilings pause inside it
+ *   grade      real imagery keeps its own colour: `natural` is the default grade (kit/theme.ts photoGrade,
+ *              scripts/assets.mjs grade); tint, duotone and deep are explicit choices for one shot
+ */
+export const COLOUR = {
+  neutralTarget: 0.4,
+  accent: { share: [0.06, 0.15] as const, frameMax: 0.25, deg: 20 },
+  second: { minDeg: 40, maxShare: 0.05, maxFrames: 0.25, presentShare: 0.01, warn: { frames: 0.5, share: 0.08 } }, // warn: a second accent
+  event: { floodMaxS: 2 },
+  grade: 'natural',
+} as const;
 
 /**
  * Colour systems. Ground, ink and accent bands; one accent hue per film. tintedPaper is the light
  * default, slateMid the dark default (STAGE below), stoneMid the mid stone for relief and shadow play,
- * deepField the colour world (the accent's own hue at depth); inkStage is the near-black stage, kept for
- * films that want it on purpose; paperEditorial neutral paper with one material; whiteWorld the one
- * system where pure white is allowed. A film needs colour mass, not a 1 % dot: deal at least one mid or
- * colour ground, and let the accent, a deep field or real imagery carry 6 % or more of the frame.
+ * deepField a colour event (the accent's own hue at depth, for a moment, under neutral UI); inkStage is the
+ * near-black stage, kept for films that want it on purpose; paperEditorial neutral paper with one material;
+ * whiteWorld the one system where pure white is allowed. Grounds are neutral (NEUTRAL); colour mass comes
+ * from the accent on what matters, real imagery in its own colours and, for a moment, a declared colour
+ * event: a 1 % dot is too little, a frame in one hue too much (COLOUR).
  */
 export const RECIPE = {
   tintedPaper: {
@@ -31,9 +69,9 @@ export const RECIPE = {
     accent: [0.74, 0.13] as LC, // L .63-.85, C .07-.16
     floor: { stops: [[0.2, 0.08], [0.28, 0.13], [0.31, 0.15]] as LC[], cover: 0.25 },
   },
-  /** A mid stone: matte relief, shadow play, a lit face reads against it. Cool, or toward the accent hue. */
+  /** A mid stone: matte relief, shadow play, a lit face reads against it. A neutral grey, cool or toward the brand's greys. */
   stoneMid: {
-    ground: [0.74, 0.012] as LC, // L .70-.80, C .004-.03 (C <= .006 with a red or yellow accent, so it never reads as the banned paper band)
+    ground: [0.74, 0.012] as LC, // L .70-.80, C .004-.012 (C <= .006 with a red or yellow accent, so it never reads as the banned paper band)
     surface: [0.8, 0.01] as LC, // a raised face: +.04-.08 L
     lit: [0.84, 0.01] as LC, // a face turned to the key: up to +.10 L
     ink: [0.14, 0.01] as LC, // L .12-.16: type holds 7:1
@@ -41,18 +79,21 @@ export const RECIPE = {
     accent: [0.42, 0.16] as LC, // L .38-.46: graphics hold 3:1 on the stone
     shade: [0.12, 0.24] as const, // ink alpha of the shade plates (turned-away faces, cast shadows)
   },
-  /** A mid slate: the dark default. Deep enough for light type, light enough that shadows and lit faces still read. */
+  /** A mid slate: the dark default. Deep enough for light type, light enough that shadows and lit faces still read. A neutral grey. */
   slateMid: {
-    ground: [0.34, 0.025] as LC, // L .30-.40, C .01-.04 toward h (navy only with a blue hue)
-    raised: [0.4, 0.025] as LC, // +.06 L
-    lit: [0.44, 0.025] as LC, // a face turned to the key: +.06-.10 L
+    ground: [0.34, 0.008] as LC, // L .30-.40, C .004-.012: the brand's greys or a cool grey (a slate tinted at C .025 or more reads as a colour)
+    raised: [0.4, 0.008] as LC, // +.06 L
+    lit: [0.44, 0.008] as LC, // a face turned to the key: +.06-.10 L
     type: [0.97, 0.005] as LC, // L .96-.99: 8:1 or more
-    mute: [0.8, 0.01] as LC,
-    line: [0.48, 0.02] as LC,
+    mute: [0.8, 0.008] as LC,
+    line: [0.48, 0.01] as LC,
     accent: [0.8, 0.12] as LC, // L .74-.84 (a yellow .86-.90): it signals by lightness on the slate
     shade: [0.2, 0.32] as const, // near-black alpha of the shade plates
   },
-  /** A colour world: the ground is the accent's hue at depth, so the accent signals by lightness (blue, teal or green hues). */
+  /**
+   * A colour event: the ground is the accent's hue at depth, so the accent signals by lightness (blue, teal or
+   * green hues). For a moment (COLOUR.event: declare it), under neutral UI, never the film's stage.
+   */
   deepField: {
     ground: [0.38, 0.1] as LC, // L .34-.42, C .07-.13 at h
     raised: [0.44, 0.1] as LC,
@@ -80,6 +121,7 @@ export const RECIPE = {
  * near-black void flattens every shadow and lit face, and reads as a screenshot of a dark-mode tool.
  */
 export const STAGE = { light: 'tintedPaper', dark: 'slateMid', mid: 'stoneMid', colour: 'deepField' } as const satisfies Record<string, keyof typeof RECIPE>;
+// STAGE.colour is the recipe of a declared colour event (COLOUR.event), not a stage a film sits on.
 
 /**
  * Shadows. On paper: one soft drop in the ink colour at 6-12 % (house 8 %); on an ink stage a raised
@@ -101,7 +143,8 @@ export const RADIUS = { cardOfWidth: 0.12, chip: 'pill' } as const;
 /**
  * Living light: a light field is one hue, built from baked, dithered plates (scripts/dither-gradient.py)
  * moved by transform and opacity, never animated CSS gradients. Its strength is visible, not a tint:
- * a lightness swing of 0.05-0.20 across the field at chroma <= 0.13 at the accent hue. Pools wander
+ * a lightness swing of 0.05-0.20 across the field at chroma <= 0.13 at the accent hue (a field that fills the
+ * frame at that chroma is a colour event; behind UI, keep it near neutral, C <= 0.025). Pools wander
  * about 240 px/s at 1080p (8 px per frame at 30 fps, 4 at 60); a loop repeats every 1-4 s; a reveal
  * brightens it x2 over 0.9 s.
  */
@@ -135,8 +178,11 @@ export const GRAMMAR = {
  *              variation): floor mean <= 0.75 and no more than 88 % of frames over 0.60 flat; target
  *              mean <= 0.55 and no more than 40 % of frames over 0.60
  *   edges      structure (words, numbers, imagery, UI): edge pixels >= 1.8 % of the frame (target 3 %)
- *   saturated  colour mass: saturated pixels (OKLCH C >= 0.06) >= 2.2 % of the frame (target 6 %: a deep
- *              field, real imagery, an accent flood; one accent dot on grey is not colour)
+ *   saturated  colour mass: saturated pixels (OKLCH C >= 0.06) >= 2.2 % of the frame (target 6 %: the
+ *              accent on what matters, real imagery; one accent dot on grey is not colour)
+ *   wash       and a ceiling (COLOUR): saturated pixels <= 45 % of the frame on average and no more than 45 %
+ *              of the frames over half saturated (target: <= 30 % and <= 33 % of frames, neutral pixels
+ *              >= 40 %, the accent's hue family 6-15 % of the frame); declared colour events left out
  *   bleed      the subject framed past two edges at 1.2x the frame or more in at least half the acts
  *              (target: every act)
  *   skeleton   no more than 3 glyphless bars in focus in a frame: placeholder lines are not content
@@ -150,9 +196,11 @@ export const PICTURE = {
   flatFrame: { over: 0.6, maxShare: 0.88 },
   edgesMin: 0.018,
   saturatedMin: 0.022,
+  saturatedMax: 0.45,
+  washFrame: { over: 0.5, maxShare: 0.45 },
   bleed: { share: 0.5, edges: 2, scale: 1.2 },
   skeletonBarsMax: 3,
-  target: { flatMax: 0.55, flatShare: 0.4, edgesMin: 0.03, saturatedMin: 0.06, bleedShare: 1, falloffShare: 0.35 },
+  target: { flatMax: 0.55, flatShare: 0.4, edgesMin: 0.03, saturatedMin: 0.06, bleedShare: 1, falloffShare: 0.35, saturatedMax: 0.3, washShare: 0.33, neutralMin: 0.4, accent: [0.06, 0.15] as const },
   subject: { scale: [1.1, 1.6] as const, offCentre: 0.08 },
   holdMaxS: 0.8,
 } as const;

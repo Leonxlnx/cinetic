@@ -18,15 +18,19 @@ export const C = {
   mute: '#686D76', // secondary text: 4.8:1 on paper, readable at any size
   white: '#FFFFFF',
   // The one accent, and what it means: "the beat" - whatever just landed and locked. A signal
-  // green (3.5:1 on paper, 5.1:1 on ink: large type and graphics only). It arrives on new things
-  // and relaxes to ink; it covers well under 8% of the frame except in one designed flood.
+  // green (3.5:1 on paper, 5.1:1 on ink: large type and graphics only). It goes on the thing that
+  // matters (the new state, the number, the mark), 6-15 % of the frame on average, never on a ground,
+  // and relaxes to ink; a frame over 25 % is a declared colour event (lib/look.ts COLOUR).
   accent: '#08965A',
-  // The dark stage is a mid slate (lib/look.ts STAGE.dark = RECIPE.slateMid: L .34 at the accent's hue),
-  // not near-black ink: shadows, lit faces and colour still read on it. On the slate the accent lifts to
-  // L .80 so it signals by lightness; type is the paper token.
-  slate: '#2E3C33',
-  slateRaised: '#3D4C42',
+  // The dark stage is a mid slate (lib/look.ts STAGE.dark = RECIPE.slateMid: L .34), a neutral grey on the
+  // same cool greys as paper and ink, not the accent's hue: shadows, lit faces and the accent read on it.
+  // On the slate the accent lifts to L .80 so it signals by lightness; type is the paper token.
+  slate: '#35383C',
+  slateRaised: '#45484C',
   accentLift: '#77D59E',
+  // A film may add one second hue for a moment (lib/look.ts COLOUR.second): a second data series, a state the
+  // accent cannot be, a highlight; at most 5 % of the frame while it shows, in at most a quarter of the frames.
+  // Declare it here as `second`, commented ui-state, so the one-accent checks leave it out and kit/ uses it.
 };
 
 // cinetic:placeholder - the family is the starter's stand-in: choose one for this brand (fonts.ts

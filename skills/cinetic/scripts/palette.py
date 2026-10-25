@@ -29,15 +29,21 @@ chroma at the accent's hue, written out as the same seven tokens:
   paperEditorial  neutral paper L .945 and ink L .24, one accent used on newness only
   whiteWorld      pure white ground (this system only), ink L .13, accent L .43-.67
   stoneMid        a mid stone ground L .75 (C <= .006 with a red or yellow accent), ink L .14, accent L .38-.46
-  slateMid        a mid slate ground L .35 C .025, type L .975, accent L .74-.84 (a yellow .86-.90)
-  deepField       the accent's own hue at depth: ground L .38 C .10 (blue, teal or green only), type
-                  L .97, accent the same hue at L .78-.86
+  slateMid        a mid slate ground L .35 C .008 (a neutral grey), type L .975, accent L .74-.84 (a yellow .86-.90)
+  deepField       a colour event, not a stage: the accent's own hue at depth, ground L .38 C .10 (blue,
+                  teal or green only), type L .97, accent the same hue at L .78-.86; for a moment, under
+                  neutral UI (the film's grounds stay neutral)
+Grounds are neutral (lib/look.ts NEUTRAL): every recipe but deepField keeps its grounds and surfaces at
+C <= .025 (house .004-.012), so the accent is the colour in the frame.
 
 Token check (--check-tokens src/brand/tokens.ts, or an HTML file whose :root holds the palette): the
 bans and bands on every colour that is not brand-supplied (a line or the leading comment marked
 cinetic:brand-supplied), and on every colour the contrast (statements >= 7:1, mute >= 4.5:1, accent >=
 3:1 on the stage) and the one-accent rule (saturated colours, C >= 0.06, within 30 degrees of hue;
-a token commented `imagery` or `ui-state` is left out).
+a token commented `imagery` or `ui-state` is left out). Grounds stay neutral: paper, mist, line, slate,
+slateRaised, ink, ink2 (and ground, bg, stage, surface) at C <= .025 unless brand-supplied. The stage the
+accent is judged on: paper (a light film), or the one a `// stage: dark` (the ink token) or `// stage: slate`
+(the slate token, with accentLift as the accent) comment names.
 
 Ramp (--ramp 'c1,c2,...' with --accent): the stops of a light field or a colour sweep keep one hue:
 every stop with C > 0.03 within 7 degrees of the accent's hue (the public default of a one-hue field),
@@ -195,11 +201,16 @@ RECIPES = {
                        accent_L=(0.43, 0.67), accent_C=(0.11, 0.25)),
     'stoneMid': dict(stage='light', tokens=dict(paper=(0.75, 0.012), mist=(0.80, 0.010), line=(0.66, 0.010), mute=(0.34, 0.010), ink2=(0.20, 0.010), ink=(0.14, 0.010)),
                      accent_L=(0.38, 0.46), accent_C=(0.08, 0.25)),
-    'slateMid': dict(stage='dark', tokens=dict(ink=(0.35, 0.025), ink2=(0.40, 0.025), line=(0.48, 0.02), mute=(0.82, 0.010), mist=(0.92, 0.006), paper=(0.975, 0.006)),
+    'slateMid': dict(stage='dark', tokens=dict(ink=(0.35, 0.008), ink2=(0.40, 0.008), line=(0.48, 0.010), mute=(0.82, 0.008), mist=(0.92, 0.006), paper=(0.975, 0.006)),
                      accent_L=(0.74, 0.84), accent_C=(0.07, 0.18), yellow_L=(0.86, 0.90)),
     'deepField': dict(stage='dark', tokens=dict(ink=(0.38, 0.10), ink2=(0.43, 0.10), line=(0.50, 0.08), mute=(0.85, 0.02), mist=(0.93, 0.01), paper=(0.97, 0.006)),
                       accent_L=(0.78, 0.86), accent_C=(0.05, 0.16), hues=(150, 265)),
 }
+
+
+GROUNDS = ('paper', 'mist', 'line', 'slate', 'slateRaised', 'ink', 'ink2', 'ground', 'bg', 'stage', 'surface')
+NEUTRAL_C = 0.025  # lib/look.ts NEUTRAL.maxC
+NEUTRAL_HOUSE = 0.012  # lib/look.ts NEUTRAL.houseC[1]
 
 
 def check_tokens(path):
@@ -225,6 +236,13 @@ def check_tokens(path):
     by = {t['name']: t for t in toks}
     fails, notes = [], []
     for t in toks:
+        if t['name'] in GROUNDS and not t['brand'] and not t['skip'] and t['lch'][1] > NEUTRAL_C + 1e-9:
+            fails.append(f"{t['name']} {t['hex']} is a ground at chroma {t['lch'][1]:.3f}: grounds and surfaces stay neutral (C <= {NEUTRAL_C}); "
+                         'the accent is the colour, a field at its hue is a declared colour event')
+        elif t['name'] in GROUNDS and not t['brand'] and not t['skip'] and t['lch'][1] > NEUTRAL_HOUSE + 1e-9:
+            notes.append(f"note: {t['name']} {t['hex']} carries chroma {t['lch'][1]:.3f} (house grounds .004-{NEUTRAL_HOUSE}: above it a grey starts to read as a colour)")
+    named = re.search(r'//\s*stage:\s*(dark|light|slate)\b', src)
+    for t in toks:
         if t['hex'] == '#000000' and not t['brand']:
             fails.append(f"{t['name']} is pure #000: ink is tinted (L 0.15-0.25 toward the accent hue)")
         why = banned(*t['lch'])
@@ -234,6 +252,13 @@ def check_tokens(path):
     text = by.get('ink') or by.get('text')
     if stage and text and stage['lch'][0] < text['lch'][0]:
         stage, text = text, stage  # a dark stage: the paper token is the type
+    if named and named.group(1) in ('dark', 'slate'):
+        dark = by.get('slate') if named.group(1) == 'slate' else (by.get('ink') or by.get('ground'))
+        if dark:
+            stage, text = dark, by.get('paper') or by.get('text') or text
+            if named.group(1) == 'slate' and 'accentLift' in by:
+                by = dict(by, accent=by['accentLift'])
+            notes.append(f"the stage named in the tokens: {stage['name']} ({named.group(1)})")
     if stage and text:
         r = contrast(text['hex'], stage['hex'])
         (notes if r >= 7 else fails).append(f"statements {text['name']} on {stage['name']} {r:.1f}:1 (>= 7)")
