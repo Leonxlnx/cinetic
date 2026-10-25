@@ -3871,9 +3871,16 @@
     "fx/Words",
     "fx/Chain"
    ],
+   "jobs": [
+    "emphasis"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 8,
+   "impact": 3,
+   "aliases": [
+    "dv-transient-accent-word"
+   ]
   },
   {
    "id": "cl-accent-hit-envelope",
@@ -6987,9 +6994,17 @@
    "primitive": [
     "fx/Develop"
    ],
+   "materials": "Gradient-map roll: the tiles start washed out (the map mixed 55 % toward the stage) and every tile keeps changing its map, about 6 f per map through six to eight pastel maps, staggered about 6 f a tile, before landing on true colour (90 f in all). A cluster can also lose contrast and re-tint into a two-ink duotone as it shrinks into the cut (12 f).",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 6,
+   "impact": 4,
+   "aliases": [
+    "dv-photo-develop-duotone"
+   ]
   },
   {
    "id": "ui-hard-steps-linear-counters",
@@ -7117,9 +7132,17 @@
     "fx/Exposure.Exposure",
     "fx/Exposure.exposureState"
    ],
+   "jobs": [
+    "transition",
+    "light"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 6,
+   "impact": 4,
+   "aliases": [
+    "dv-exposure-bloom"
+   ]
   },
   {
    "id": "tr-light-sweep",
@@ -7340,9 +7363,14 @@
     "fx/Stepped.collageElement",
     "fx/Stepped.collageCamera"
    ],
+   "materials": "Every tile lands as a flat colour block first: a solid pastel rectangle cuts on, and 2-6 f later the photo replaces it in exactly that rectangle (a hard swap, no cross-fade); some tiles never resolve; tile pops on the 8th-note hats.",
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 6,
+   "impact": 4,
+   "aliases": [
+    "dv-stop-motion-collage"
+   ]
   },
   {
    "id": "tr-mosaic-iris",
@@ -7427,6 +7455,1156 @@
    "ban_safe": true,
    "bans": [],
    "weight": 6
+  },
+  {
+   "id": "dv-plate-speed-follows-read",
+   "name": "Background plate speeds up and slows with the read",
+   "category": "camera",
+   "family": "Photos and footage",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "An aerial footage plate zooms and pans continuously, faster in the intro, slower while text is on screen, faster again at the exit.",
+   "recipe": "Footage speed keys or a camera creep() whose rate is keyed to the copy's on-screen spans. Anatomy: Zoom +0.20 %/f and pan -2.4 px/f in the intro, +0.09 %/f and -1.1 px/f under text. Sound: Follows the riser.",
+   "timing": "372 f.",
+   "use_when": "Footage behind type.",
+   "avoid_when": "Fast plates under reading.",
+   "primitive": [
+    "fx/Footage"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-background-veil",
+   "name": "Background steps back behind the type",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The picture behind a line gets a pale haze and a defocus, a canvas fades into a blurred image, a colour field fades to the neutral stage under the UI, or a dark vignetted plate puts the headline in the bright centre.",
+   "recipe": "<RackFocus levels> on the background with a veil layer; vignette as a static plate. Anatomy: Background luma lifted (151 -> 224) and defocused; or a vignette with corners at a third of the centre. Sound: None. Materials: Calm, uncanny photoreal plates (a lone chair in a meadow, a misty window) in one cool grade carry the copy: an elliptical vignette about 45 % darker at the corners, a lift behind the type, saturation about 0.7; the plates creep almost imperceptibly (0.02-0.4 % a frame) while the copy changes on them.",
+   "timing": "30-38 f; a fade 23 f sine.",
+   "use_when": "Type over footage or a busy picture.",
+   "avoid_when": "Dark drop shadows behind type.",
+   "primitive": [
+    "fx/RackFocus"
+   ],
+   "materials": "Calm, uncanny photoreal plates (a lone chair in a meadow, a misty window) in one cool grade carry the copy: an elliptical vignette about 45 % darker at the corners, a lift behind the type, saturation about 0.7; the plates creep almost imperceptibly (0.02-0.4 % a frame) while the copy changes on them.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 3
+  },
+  {
+   "id": "dv-colour-wash-materialise",
+   "name": "Object materialises through a colour wash",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A board or object starts as a flat colour overlay and sweeps through tints before landing on its true colours; or an object is recoloured through a gradient map for 5 frames on a hit.",
+   "recipe": "<Develop> (duotone tint -> full colour) for the wash; a one-hue flash as a HardStep overlay on the object. Anatomy: Overlay colour -> tints -> true colours; gradient-map flash on an object within 22 f. Sound: A hit on the flash.",
+   "timing": "Wash 54 f; flash 10 f inside 22 f.",
+   "use_when": "The first appearance of a product board; a hit on a dock or icon row.",
+   "avoid_when": "A second multi-hue wash in the same film.",
+   "primitive": [
+    "fx/Develop"
+   ],
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-cut-glow-decay",
+   "name": "The cut frame glows and decays",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "sting"
+   ],
+   "summary": "On the cut frame the whole stage lifts into a soft glow centred on the subject and decays by a constant ratio over half a second; a dark scene can open over-bloomed and let its halo fall.",
+   "recipe": "<Exposure> with up 0, peak on the cut and down 30 on an exponential. Anatomy: Peak on one frame, decay x0.92 a frame toward the base; halo falls about 70 %. Sound: A whoosh into the cut, or an orchestral stab on the beat.",
+   "timing": "Peak 1 f, decay 30-39 f.",
+   "use_when": "A cut onto a small bright subject on a dark stage.",
+   "avoid_when": "Light stages (it reads as a flash fault).",
+   "primitive": [
+    "fx/Exposure"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2
+  },
+  {
+   "id": "dv-drifting-blob-field",
+   "name": "Soft blobs drift behind the copy",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Large soft colour masses (500-900 px) drift and breathe slowly behind the type, so no ground is flat; a blob can wander continuously and ignore the cuts, or drift and shrink behind a held logo; the colourway can change on cuts.",
+   "recipe": "<LightField pools={[...]}> with Lissajous loops; colourway per shot. Anatomy: 22-37 % of the frame each, about 1 px a frame, area breathing; variant: static soft glows bleeding from the corners with faint layout lines. Sound: None. Materials: A mesh gradient built from two inks: saturated pools of the accent in a pale grey-tinted base with near-white highlights along one S-shaped ribbon; blob blur 25-35 % of the frame width; the shapes drift and bend about 0.5 % a frame and stay continuous across cuts in the same colourway. Two-lobe version: a cool lobe and a warm lobe meeting at a soft vertical seam where their mix shows, the shape morphing from a wedge to an ellipse to a pill over about 2 s spans. Add grain at 1.5-2 % or bake the lobes as dithered plates: large soft gradients band at 8 bits.",
+   "timing": "Continuous; contours repeating every 60 f, bands every 116 f; drift 87 f decelerating.",
+   "use_when": "Text-led films on a coloured ground.",
+   "avoid_when": "A second mesh field in other hues; blobs that move faster than about 1 px a frame.",
+   "primitive": [
+    "fx/LightField"
+   ],
+   "materials": "A mesh gradient built from two inks: saturated pools of the accent in a pale grey-tinted base with near-white highlights along one S-shaped ribbon; blob blur 25-35 % of the frame width; the shapes drift and bend about 0.5 % a frame and stay continuous across cuts in the same colourway. Two-lobe version: a cool lobe and a warm lobe meeting at a soft vertical seam where their mix shows, the shape morphing from a wedge to an ellipse to a pill over about 2 s spans. Add grain at 1.5-2 % or bake the lobes as dithered plates: large soft gradients band at 8 bits.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "jobs": [
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 9,
+   "impact": 4
+  },
+  {
+   "id": "dv-flood-defocus-cards",
+   "name": "Cards flood with colour and defocus one by one",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "On the line \"more than anyone can track\", each card turns fully into the brand colour and blurs into a soft blob in a few frames, staggered around the ring, then the whole frame fades to white.",
+   "recipe": "Recipe: Cards with an overlay of the accent (opacity tween) and RackFocus levels per card; Exposure to white at the end. Anatomy: Per card a colour flood overlay plus a fixed defocus ladder; clockwise stagger; white fade. Sound: Voice cadence.",
+   "timing": "Flood 8 f, fade 10 f, stagger 5-6 f.",
+   "use_when": "Showing overload: too many tools, tabs, tasks.",
+   "avoid_when": "Light brand colours (the blobs disappear).",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-floor-glow",
+   "name": "Floor glow under the stage, brightening into reveals",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A one-hue glow rises from the bottom 25-30 % of the frame under UI or type; it brightens into reveals and transitions, can undulate in soft lobes, and is stronger on the end card.",
+   "recipe": "<LightField floor={{ plate, height: 0.27, breathe, rises }}>. Bake each stop set with scripts/dither-gradient.py (kind floor) and move the plates by transform; never an animated CSS gradient. Anatomy: Bottom band luma rising 4 -> 189 into a reveal; lobes slowly undulating; strength stepping up on the end card. Sound: A sub-bass hit on the rise; an outro pad under the sink. Materials: The floor glow is a horizon at dusk, not one colour: a near-white core with a cool tint at the very bottom edge, then the accent body, a deeper hue and a fade to black (radial ellipse about 140 % of the frame wide and 60 % tall, centred just below the frame); it rises over about 68 f as the panel rises. The closing version is a row of 4-5 soft lobes along the bottom third (500-700 px wide, blur about 80 px) with darker gaps, rising and falling out of phase (20-40 px, 2-4 s periods) and sinking 300 px in 30 f before the logo. A three-hue aurora can rise under a translucent prompt box (coverage 2 -> 28 % of the panel in 48 f, then breathing 25-35 %, its core drifting and tilting about 20 deg), visible through the box's lower third.",
+   "timing": "Rise 68 f ease-out; continuous breathing; sinks 32 f at the end.",
+   "use_when": "Dark or near-white product stages that should not be flat.",
+   "avoid_when": "Glow behind a single element; saturated glow.",
+   "primitive": [
+    "fx/LightField"
+   ],
+   "materials": "The floor glow is a horizon at dusk, not one colour: a near-white core with a cool tint at the very bottom edge, then the accent body, a deeper hue and a fade to black (radial ellipse about 140 % of the frame wide and 60 % tall, centred just below the frame); it rises over about 68 f as the panel rises. The closing version is a row of 4-5 soft lobes along the bottom third (500-700 px wide, blur about 80 px) with darker gaps, rising and falling out of phase (20-40 px, 2-4 s periods) and sinking 300 px in 30 f before the logo. A three-hue aurora can rise under a translucent prompt box (coverage 2 -> 28 % of the panel in 48 f, then breathing 25-35 %, its core drifting and tilting about 20 deg), visible through the box's lower third.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "jobs": [
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
+  },
+  {
+   "id": "dv-focus-glow-hop",
+   "name": "Soft light hops to the active card",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A soft light appears behind one card or tile and moves to the next as each becomes active; a dark grid of keycap tiles lights up tile by tile as labels fade in.",
+   "recipe": "LightField pool moved between card centres on E.snapOut. Anatomy: Soft light about 100 px around the active element; moves card to card; grows about 2.5x on the tile variant. Sound: None, or a soft tick per hop. Materials: The light is motivated: a small passing foreground dot leaves a soft radial glow on each card it crosses (a pale accent tint at about 0.55 at the core, radius about 70 px), blooming 2 f after the dot passes and fading over 20 f, so the glow seems lit by the dot.",
+   "timing": "28 f per hop; tile bloom 14 f.",
+   "use_when": "Walking through KPI cards or a grid of features.",
+   "avoid_when": "Glow halos on light grounds.",
+   "primitive": [
+    "fx/LightField"
+   ],
+   "materials": "The light is motivated: a small passing foreground dot leaves a soft radial glow on each card it crosses (a pale accent tint at about 0.55 at the core, radius about 70 px), blooming 2 f after the dot passes and fading over 20 f, so the glow seems lit by the dot.",
+   "conditions": [
+    "light built into the device (core, body, falloff), never a uniform halo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-ghost-preflash",
+   "name": "Ghost pre-flash of an upcoming element",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A huge, faint version of an element that is about to arrive flashes behind the frame for a few frames before the real element lands.",
+   "recipe": "Build: <GhostPreflash land x y>{element}</GhostPreflash> (fx/Flashes): the element at 5.5x, 12 %, for 6 f (creeping 8 % larger), ending 6 f before it lands; a stepped run. Anatomy: Oversized ghost (5-6x) at 8-15 % strength for 5-8 f; the real element lands 3-11 f later. Sound: A whoosh on the flash. Materials: The ghost can be any layer of the coming shot: a full-frame tinted texture at about 35 % for 10 f, a huge faint line etching at about 10 % and twice its final size for 16 f, a silhouette for 2 f, a coloured glow at 20 % screen over the current plate for 20 f. Small marks can do the same job: corner marks switch to the next shot's accent 4-8 f before the cut, one corner a frame.",
+   "timing": "Ghost 5-8 f; real element +3-11 f.",
+   "use_when": "A collage or stop-motion build that should anticipate its next piece.",
+   "avoid_when": "Clean UI films.",
+   "primitive": [
+    "fx/Flashes.GhostPreflash"
+   ],
+   "materials": "The ghost can be any layer of the coming shot: a full-frame tinted texture at about 35 % for 10 f, a huge faint line etching at about 10 % and twice its final size for 16 f, a silhouette for 2 f, a coloured glow at 20 % screen over the current plate for 20 f. Small marks can do the same job: corner marks switch to the next shot's accent 4-8 f before the cut, one corner a frame.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-gradient-band-flow",
+   "name": "Light bands flow along a column",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Bands of a lighter tint sweep down a coloured column at constant speed, new pulses every 25 f: the column reads as a channel with something flowing.",
+   "recipe": "<LightField bands={[{ plate, width, y, period, dir: 'down' }]}>. Anatomy: Leading edge at a constant 256 px/f; pulses every 25 f. Sound: None.",
+   "timing": "Constant speed; continuous.",
+   "use_when": "A pipe, a column, a stream of data.",
+   "avoid_when": "Beat-locking it (it should run free).",
+   "primitive": [
+    "fx/LightField"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-gradient-fill-type",
+   "name": "Type filled with a gradient that blooms",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A key phrase grows a little and its fill turns from white into a soft gradient that blooms, or each word of a hero line carries its own soft gradient and lands in silence.",
+   "recipe": "HueSweep with a brand path, or the phrase clipped to a baked dithered gradient plate revealed by opacity. Recipe: a glow copy (blur 20 px, opacity 0.5) under a fill copy clipped to a baked dithered gradient plate; scale on the wrapper. Anatomy: Fill shift white -> gradient over the scale-up (25-30 %), soft bloom; per-word gradients on paper. Sound: The music stops for about 1 s under it. Materials: Construction: the phrase grows 25-30 % over about 58 f while its fill shifts in the first 24 f from white to a horizontal two-hue gradient (a lilac-like left to a sky-like right), with a glow made of a duplicate blurred 18-24 px at about 50 % in a deeper hue behind it; the second word held slightly out of focus (4-6 px). Behind a card, big type can carry a gradient that fades from the saturated hue to nearly the ground colour across the word, so the card in front reads first and the phrase reads as an echo.",
+   "timing": "42-68 f expo-out.",
+   "use_when": "A brand that owns a gradient; a hero line once.",
+   "avoid_when": "More than one gradient phrase per film; a gradient that is not the film's own family.",
+   "primitive": [
+    "fx/HueSweep"
+   ],
+   "materials": "Construction: the phrase grows 25-30 % over about 58 f while its fill shifts in the first 24 f from white to a horizontal two-hue gradient (a lilac-like left to a sky-like right), with a glow made of a duplicate blurred 18-24 px at about 50 % in a deeper hue behind it; the second word held slightly out of focus (4-6 px). Behind a card, big type can carry a gradient that fades from the saturated hue to nearly the ground colour across the word, so the card in front reads first and the phrase reads as an echo.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform",
+    "light built into the device (core, body, falloff), never a uniform halo"
+   ],
+   "jobs": [
+    "emphasis",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-gradient-ground-swap",
+   "name": "Ground gradient swaps or floods",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch"
+   ],
+   "summary": "Behind a locked picture the two stops of a vertical gradient trade places; or a brand gradient floods half the frame behind stripes.",
+   "recipe": "Baked dithered gradient plates cross-faded by opacity. Bake every gradient with scripts/dither-gradient.py from one stop list in the brand tokens. Anatomy: Stops swap over 48 f; flood coverage 0.14 -> 0.96 in 100 f. Sound: A reverse-cymbal swell. Materials: One gradient family everywhere: every gradient in the film (strips, light floods, skies, mesh grounds) uses the same five stops, ordered by lightness so no muddy midpoint appears (e.g. a warm stop always sits between the hot hue and white, never beside the cool one); large soft gradients carry a fine per-pixel dither (sigma about 0.75 levels) that only shows under a contrast boost. Variants: a diagonal three-hue ground under floating panels; a pale sky radial (near-white centre, pale blue corners) with blurred clouds drifting about 0.5 px/f that hides every UI scene in air.",
+   "timing": "48-100 f.",
+   "use_when": "Any film that carries one gradient family.",
+   "avoid_when": "House films.",
+   "primitive": [
+    "fx/LightField"
+   ],
+   "materials": "One gradient family everywhere: every gradient in the film (strips, light floods, skies, mesh grounds) uses the same five stops, ordered by lightness so no muddy midpoint appears (e.g. a warm stop always sits between the hot hue and white, never beside the cool one); large soft gradients carry a fine per-pixel dither (sigma about 0.75 levels) that only shows under a contrast boost. Variants: a diagonal three-hue ground under floating panels; a pale sky radial (near-white centre, pale blue corners) with blurred clouds drifting about 0.5 px/f that hides every UI scene in air.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "jobs": [
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 3
+  },
+  {
+   "id": "dv-gradient-map-plate",
+   "name": "A photo turned into a two- or three-ink gradient map",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature",
+    "vertical"
+   ],
+   "summary": "A photograph (clouds, a landscape, a soft figure) is mapped by luminance onto the film's inks: shadows to the deep ink, mids to the accent, highlights to a pale tint, so real imagery carries the brand palette; the map can hold or drift slowly (a head turning from one ink to the next).",
+   "recipe": "Photo with a gradeFilter table built from the brand stops (SVG feComponentTransfer); a drifting map = two statically filtered copies cross-faded by opacity, never an animated filter. Anatomy: Desaturate, then a three-stop table per channel (dark, mid, light); an optional blur (12-30 px) for a defocused figure; slow drift about 2 px/f; optional tiny specks and soft horizontal glints over a two-ink field. Sound: Music; no sound of its own. Materials: Two-ink field: luminance 0 -> deep ink, 0.5 -> accent, 1 -> pale tint. Infrared: swap the red and green channels so foliage turns crimson while the sky stays blue. Defocused figure: blur 30 px, then a four-stop map whose head and body stops drift apart.",
+   "timing": "Holds a whole shot; a drifting map changes its stops over 30-100 f with no snaps.",
+   "use_when": "Real imagery that must live in a strong palette; an opening field; an infrared or thermal flavour for vision and generation products.",
+   "avoid_when": "Faces that must read naturally; product screenshots.",
+   "primitive": [
+    "fx/GradientMap.GradientMap"
+   ],
+   "materials": "Two-ink field: luminance 0 -> deep ink, 0.5 -> accent, 1 -> pale tint. Infrared: swap the red and green channels so foliage turns crimson while the sky stays blue. Defocused figure: blur 30 px, then a four-stop map whose head and body stops drift apart.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "jobs": [
+    "opening",
+    "texture",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-ground-alternation",
+   "name": "Ground colour changes per shot and per act",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "The ground itself is a beat: shots alternate paper, black with a fine grid, a full brand field, a texture; an act flips the film from a light stage to a dark world and stays there; brand moments sit on a warm stage and the product on a cool one.",
+   "recipe": "Recipe: a GROUNDS list in the timeline indexed by shot; the flip is a hard cut. Anatomy: A ground per shot from a set of 3-5; one act flip per film; one ground per world. Sound: A music change on the act flip.",
+   "timing": "Changes on cuts and transitions only.",
+   "use_when": "Any film with more than four shots.",
+   "avoid_when": "Two neighbouring shots on the same ground with different content.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3
+  },
+  {
+   "id": "dv-ground-drain",
+   "name": "Ground darkens or drains as an exit",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The white page darkens to black with luma halving per frame while its elements shrink out; a panel drains to grey and darkens slowly; the ground dims to true black under an opening.",
+   "recipe": "Recipe: ground colour tween on E.buildIn; shrink the elements with exits 'launch' on scale. Anatomy: Accelerating darken (ease-in), chips shrinking one by one; drain S-curve then linear darken. Sound: A snare starting it. Materials: Grades as a transition: before a chapter cut the whole frame drains (saturation about 60 -> 15 %, brightness to 0.75) over 16 f ease-in, then a hard cut lands on the brightest frame of the film, so the cut reads as a flash without a white frame. When a white page darkens (luma halving each frame), white pills that were invisible on it suddenly read as raised capsules for a beat before they shrink away.",
+   "timing": "25-40 f; drain 33 f then 128 f.",
+   "use_when": "The end of a section; an opening that builds on black.",
+   "avoid_when": "A plain fade to black between unrelated shots.",
+   "primitive": [],
+   "materials": "Grades as a transition: before a chapter cut the whole frame drains (saturation about 60 -> 15 %, brightness to 0.75) over 16 f ease-in, then a hard cut lands on the brightest frame of the film, so the cut reads as a flash without a white frame. When a white page darkens (luma halving each frame), white pills that were invisible on it suddenly read as raised capsules for a beat before they shrink away.",
+   "jobs": [
+    "transition"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
+  },
+  {
+   "id": "dv-ground-flip-on-beat",
+   "name": "Ground flips on one frame as punctuation",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "any"
+   ],
+   "summary": "The background inverts (dark to light) on one frame while the objects stay; or a whole background layer switches from dim grey to the accent on the key word; or a colour change passes through a one-frame near-black dip on a pop.",
+   "recipe": "HardStep on the ground colour; the dip as a one-frame fill. Anatomy: One-frame switch; optional one-frame dip; objects unchanged. Sound: The resolving word or a pop 33 ms after. Materials: Ground and type swap colours through one half-blend frame: the type turns 50 % for a single frame, then the whole palette has swapped (accent type on white instead of white on accent) while small labels keep their colour.",
+   "timing": "1-2 f; a dip variant 12 f to the dip, 10 f back.",
+   "use_when": "The key word of a line; a beat inside a held shot.",
+   "avoid_when": "More than one or two per film (polarity flips are the loudest punctuation).",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "materials": "Ground and type swap colours through one half-blend frame: the type turns 50 % for a single frame, then the whole palette has swapped (accent type on white instead of white on accent) while small labels keep their colour.",
+   "jobs": [
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
+  },
+  {
+   "id": "dv-hard-fill-swaps",
+   "name": "Hard colour swaps that step the size",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature",
+    "sting"
+   ],
+   "summary": "A shape (a pair of circles, discs, a column) hard-cuts through three fills a few frames apart, each swap also stepping it about 4 % larger; or a column switches colour on the frame it passes half its width.",
+   "recipe": "fillSwapState(f, { at, n: 3, every: 10, grow: 0.04, fills }). Anatomy: 3 swaps, each with a scale step x1.04; text dims a frame before; variant: a column widens 6x and swaps colour at half width with a band of the old colour inside. Sound: Swaps next to a kick and a sub-drop. Materials: The pair cuts through three fills, each held exactly 10 f and each slightly larger (+4 % a step), on third-beats; the text colour switches on the same frame as the fill, and the words can first sink into the disc colour over 6 f before the first swap.",
+   "timing": "Swaps 10 f apart at 60 fps (6 Hz); widen 20 f cubic-out.",
+   "use_when": "A beat-cut on a simple graphic; building energy before a reveal.",
+   "avoid_when": "More than one run per act.",
+   "primitive": [
+    "fx/CutFx.fillSwapState"
+   ],
+   "materials": "The pair cuts through three fills, each held exactly 10 f and each slightly larger (+4 % a step), on third-beats; the text colour switches on the same frame as the fill, and the words can first sink into the disc colour over 6 f before the first swap.",
+   "jobs": [
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-heat-ramp-arrive-exit",
+   "name": "Heat ramp as the arrival and exit colour system",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "sting"
+   ],
+   "summary": "Every arrival cools from a warm tint to the ink and every exit heats back up and bleaches to white; colour leads the fade, so type seems to burn in and burn out.",
+   "recipe": "HueSweep with back for exits (one hue path, lightness doing the work). Anatomy: Arrival: pale warm -> accent -> deep -> ink; exit: ink -> warm -> pale -> white, colour leading opacity. Sound: None of its own.",
+   "timing": "Cool 10-15 f; heat 8-23 f.",
+   "use_when": "A whole film's colour grammar, one film at a time.",
+   "avoid_when": "Brands without a warm accent; mixing with other accent systems.",
+   "primitive": [
+    "fx/HueSweep"
+   ],
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": false,
+   "bans": [
+    "orange"
+   ],
+   "ban_safe_variant": "One hue: pale accent -> accent -> ink on arrival, the reverse plus a fade on exit.",
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-hue-cycle-token",
+   "name": "Small token cycles through hues",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A version number or a pill border keeps cycling through hues (or a rotating multi-colour stroke) while the wordmark stays ink.",
+   "recipe": "Brand path colour cycle; the border as a conic gradient (a baked plate) rotated by transform. Anatomy: Hue stops 22-26 f each; a border gradient rotating about 6 deg a frame. Sound: None.",
+   "timing": "Stops 22-26 f; continuous.",
+   "use_when": "A version tag or an \"active\" pill in a brand with a multi-colour system.",
+   "avoid_when": "House films (it reads as a template).",
+   "primitive": [
+    "fx/HueSweep"
+   ],
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": false,
+   "bans": [
+    "purple"
+   ],
+   "ban_safe_variant": "The token breathes in lightness at the accent hue (a 0.05-0.10 L swing over 1-2 s).",
+   "weight": 1
+  },
+  {
+   "id": "dv-inner-glow-core",
+   "name": "Core glows up to white-hot",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The core of a hero object brightens to white with a soft halo (or a point's halo blooms wide and contracts, or a held word sits on a faint bloom).",
+   "recipe": "A baked halo plate whose opacity follows haloLevel(); never an animated blur. Anatomy: Core brightness 153 -> 240 in luma with a halo; halo 250 px contracting to 120 px in one step; repeated beats. Sound: A celesta note 53 ms before.",
+   "timing": "19 f cubic-out, repeated; halo held 5 f then one-step contraction.",
+   "use_when": "A brand that supplies glow; a living hero object.",
+   "avoid_when": "House films (a radial glow is the stock look).",
+   "primitive": [
+    "fx/KeyLight"
+   ],
+   "conditions": [
+    "light built into the device (core, body, falloff), never a uniform halo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 3
+  },
+  {
+   "id": "dv-light-cone-drop",
+   "name": "Light cone drops and flashes twice",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "An inverted-triangle beam drops from the top edge, widening, and flashes colour twice on UI pops.",
+   "recipe": "LightField glowRise on a static cone plate scaled by transform; flashes as opacity steps. Anatomy: Width 487 -> 1447 px circ-out; two colour flashes 0.25 s apart. Sound: The second flash 34 ms after a UI pop.",
+   "timing": "38 f; flashes at about 15 f and 30 f.",
+   "use_when": "A spotlight on a hero object.",
+   "avoid_when": "Saturated beams.",
+   "primitive": [
+    "fx/LightField"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-liquid-light-swirl",
+   "name": "A fluid swirl of light floods the dark frame and settles",
+   "category": "color_and_light",
+   "family": "Glass, glow and spectral",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "On an empty dark frame a fluid wave of light rolls in from one corner, a white-hot area followed by curling arms of a pale tint and the accent like ink in water lit from behind, and within half a second it calms into the slow drifting colour field that holds the logo or the line.",
+   "recipe": "Exposure for the light rise plus baked blob plates rotated by transform; the displacement as a static turbulence map at two or three fixed strengths cross-faded, or a pre-rendered swirl clip. Anatomy: Three soft blobs (white, a pale tint, the accent) blurred 80-150 px, rotating about a corner pivot from 60 to 0 deg through a low-frequency displacement (scale 120 -> 0); peak mean luma about 4x the ground; settles into 3-4 drifting blobs. Sound: A whoosh or swell; the line lands after it. Materials: White hotspot, pale tint, accent, deep ground; the hotspot sits in the corner the swirl comes from and is the last thing to fade.",
+   "timing": "30-36 f from dark to the settled field.",
+   "use_when": "A section opener or the frame before the logo on a dark film.",
+   "avoid_when": "More than once; light grounds.",
+   "primitive": [
+    "fx/Gradients.GradientField"
+   ],
+   "materials": "White hotspot, pale tint, accent, deep ground; the hotspot sits in the corner the swirl comes from and is the last thing to fade.",
+   "jobs": [
+    "opening",
+    "transition",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-one-frame-knockback",
+   "name": "Previous hero knocked back in one frame",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "When the big type arrives, the previous hero drops to about 55 % strength in a single frame, so the eye moves to the new element.",
+   "recipe": "Build: knockback(f, land) (fx/Flashes): the previous hero's strength drops to 55 % on the new hero's landing frame (one stepped frame). Anatomy: One-frame opacity step to 0.55. Sound: None.",
+   "timing": "1 f.",
+   "use_when": "Stacking a new statement over a previous visual.",
+   "avoid_when": "Fading it slowly (that reads as indecision).",
+   "primitive": [
+    "fx/Flashes.knockback"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-overexposed-entry",
+   "name": "Element enters over-exposed and decays to its tone",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "sting"
+   ],
+   "summary": "New figures appear as flat bright white for a few frames and drop to their real tone in one step; a cut-out subject flashes bright on release while the caption slips behind it.",
+   "recipe": "Build: <EntryFlash at color> inside the arriving element (fx/MicroUI): a flat light overlay holds 10 f and drops in one step; mode=\"decay\" fades 1 -> 0 in 5 f (the accent-flash tile on a cut-on). Anatomy: White hold 4 f, one-step drop, near and far figures 2 f apart; variant: +60 L* flash on release, decaying 20 f, with a depth swap of the caption. Sound: A mouse-click on the release. Materials: On the first frame after the white flash, figures arrive as one-frame vertical smears (about 150 px, luminance kept, a 3 px colour split), then sharp flat white silhouettes that decay to grey halftone.",
+   "timing": "Hold 10 f, drop 1 f; flash hold 5 f, decay 20 f.",
+   "use_when": "Figures arriving in a graphic world; the release moment of a selection.",
+   "avoid_when": "Faces that must be read from the first frame.",
+   "primitive": [
+    "fx/MicroUI.EntryFlash"
+   ],
+   "materials": "On the first frame after the white flash, figures arrive as one-frame vertical smears (about 150 px, luminance kept, a 3 px colour split), then sharp flat white silhouettes that decay to grey halftone.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-painted-light-plates",
+   "name": "Rainbow arcs, prism beams and auras composited into plates",
+   "category": "color_and_light",
+   "family": "Glass, glow and spectral",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch"
+   ],
+   "summary": "Generated or photographic plates carry light painted into them: a full spectral arc over a figure, a broad warm prism beam falling through the body, a soft aura behind the head, a horizontal spectral band across a face, floating double-exposed shapes and a local glow that fades slowly around the feet, all grained together with the plate.",
+   "recipe": "Recipe: SVG and CSS overlays in screen blend over a Photo, plus one grain layer; bake each spectrum as a dithered PNG. Anatomy: Arc: a seven-stop spectrum stroke about 60 px wide, blur 6 px, screen at 0.6. Beam: transparent -> warm at 0.55 -> transparent over about 240 px. Aura: radial, about 260 px. Spectral band: about 20 % of the frame tall, screen at 0.45, blur 12 px. Local glow: radial about 150 px fading 0.8 -> 0.1 over a 240 f hold. Grain about 4 % over everything. Sound: None of its own. Materials: Arc stops outer to inner: red, coral, a thin yellow, a thin green, sky, violet, fading into the sky colour; double exposures at 45 % in lighten.",
+   "timing": "Static in the plate; the camera push moves everything together; local glows fade across the hold.",
+   "use_when": "An imaging or generation brand whose plates are the hero; slow holds.",
+   "avoid_when": "Product UI; documentary footage.",
+   "primitive": [],
+   "materials": "Arc stops outer to inner: red, coral, a thin yellow, a thin green, sky, violet, fading into the sky colour; double exposures at 45 % in lighten.",
+   "conditions": [
+    "the film's one spectral accent"
+   ],
+   "jobs": [
+    "opening",
+    "texture",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-radial-light-streaks",
+   "name": "A window floats inside radial light streaks",
+   "category": "color_and_light",
+   "family": "Glass, glow and spectral",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch"
+   ],
+   "summary": "The final product window floats on black with a thin coloured rim light, and around it broad light streaks radiate from the frame centre (a warm one, a white one, a cool one, a deep one) separated by black gaps, bending past the corners like light leaking round the window.",
+   "recipe": "Recipe: a conic gradient of hard colour stops and black gaps baked as a dithered PNG, blurred once, radially masked and scaled by transform; the rim is a box-shadow. Anatomy: Rim 1.5 px plus a 4 px blur at about 60 % in a tint of the accent; streaks 200-400 px long, blurred 20-40 px, radial from the centre, hidden behind the window by a radial mask (transparent to 70 % of the closest side); drift outward about 1.5 px/f while the window pulls back 6 %. Sound: The last strong kicks. Materials: Conic stops e.g. warm 0-6 %, gap to 10 %, white 18 %, gap 24 %, cool 33 %, gap 40 %, deep 52 %; the window pure white.",
+   "timing": "30-40 f to the end.",
+   "use_when": "The last product frame of a dark launch film, after a glass or light act.",
+   "avoid_when": "Light grounds; the middle of a UI demo.",
+   "primitive": [
+    "fx/Glow.RadialStreaks"
+   ],
+   "materials": "Conic stops e.g. warm 0-6 %, gap to 10 %, white 18 %, gap 24 %, cool 33 %, gap 40 %, deep 52 %; the window pure white.",
+   "conditions": [
+    "the film's one spectral accent"
+   ],
+   "jobs": [
+    "product",
+    "logo",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-satin-fold-field",
+   "name": "Full-frame satin folds of colour that roll through hues",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Behind small captions the whole frame is a soft field of tall curved folds like satin or an aurora: dark ribbons sweep diagonally through bright bands and the colour phase slowly rolls from one hue through its neighbour into a deep shade; the calm cousin is a field of glossy diagonal stripes over a two-ink gradient that fades to black at the edges.",
+   "recipe": "Recipe: render two fold plates offline as dithered PNGs (scripts/dither-gradient.py) and move and skew them by transform, cross-fading the two phases instead of animating colour. Anatomy: Folds: one colour strip, sin(x * 12 + 0.8 sin(y * 3) + t) through a four-stop ramp, skewed so the folds lean, blurred about 20 px; dark ribbons 80-140 px, highlights about 200 px; phase cycle about 2 s; ripple travel about 3 px/f. Stripes: highlight +12 % luma, 4 px blur, at 135 deg, drifting 1 px/f. Sound: VO or music only. Materials: Ramp: deep shade -> shadow hue -> accent -> highlight tint. Stripes over a radial gradient (120 % x 90 % at the lower left: light tint, accent at 45 %, near-black at 80 %).",
+   "timing": "Continuous, never a held frame.",
+   "use_when": "A section of short captions over pure colour; music-led films.",
+   "avoid_when": "Under dense UI; next to another full-frame colour field.",
+   "primitive": [
+    "fx/Gradients.GradientField"
+   ],
+   "materials": "Ramp: deep shade -> shadow hue -> accent -> highlight tint. Stripes over a radial gradient (120 % x 90 % at the lower left: light tint, accent at 45 %, near-black at 80 %).",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "jobs": [
+    "texture",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-segmentation-silhouette",
+   "name": "People become flat colour silhouettes",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The people in a collage of tiles switch to flat colour silhouettes with a scattered stagger, then the backgrounds go flat too: a segmentation look that says \"the AI sees them\".",
+   "recipe": "Recipe: Cutouts mattes (hand-traced polygons) filled flat, switched on per tile with a seeded stagger. Anatomy: Per tile a matte layer in one flat colour; staggered over 4 f; backgrounds follow. Sound: None, or a soft scan.",
+   "timing": "23 f ease-in.",
+   "use_when": "A film about vision, detection or editing.",
+   "avoid_when": "Without hand-made mattes (it needs clean cut-outs).",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-sheen-pass",
+   "name": "A light sheen crosses a landing object once",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A soft pale band about 1.5 letters wide crosses the end logo or a turning object once; mirrored highlights glide along an object's rims; a title fades up with a light sweep and a 1.2-1.4x brightness overshoot.",
+   "recipe": "<LightSweep band={0.45} frames={34}> clipped to the element; rims: LightSweep clipped to the stroke. Recipe: the rounded rect stroked twice with a bright dash (strokeDasharray 120 of 1000) moving in opposite directions from the end, plus a blurred glow copy. Anatomy: Band 0.45 of the element width moving at about 24 px/f; rim variant: two short streaks mirrored about the centre, front-loaded then linear. Sound: The final kick after the sweep. Materials: A bright C-shaped end cap on a glass pill's rounded end (peak luma 150-200 on a dark panel, glow about 10 px) holds 12 f, then divides: one highlight runs along the top rim and one along the bottom for about 40 f, like light rolling off a glass edge.",
+   "timing": "26-48 f near-linear (rim: fast start 39 px/f then 15-28 px/f).",
+   "use_when": "An end logo landing, a hero object turning, a title reveal.",
+   "avoid_when": "Repeating sheens; a sheen on every element.",
+   "primitive": [
+    "fx/Exposure.LightSweep"
+   ],
+   "materials": "A bright C-shaped end cap on a glass pill's rounded end (peak luma 150-200 on a dark panel, glow about 10 px) holds 12 f, then divides: one highlight runs along the top rim and one along the bottom for about 40 f, like light rolling off a glass edge.",
+   "jobs": [
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 3
+  },
+  {
+   "id": "dv-spectral-border-bleed",
+   "name": "Coloured dots bleed along a border into one spectral ring",
+   "category": "color_and_light",
+   "family": "Glass, glow and spectral",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A black pill border carries a few small coloured dots, each matching an integration or a category; colour leaks out of every dot along the border in both directions until the segments meet and the border is one continuous spectral ring, the dots shrinking as they empty, and the ring then turns slowly.",
+   "recipe": "Recipe: per dot a copy of the rounded rect stroked in the dot's colour and masked by a dash (strokeDasharray 2 x spread, strokeDashoffset = position - spread) over a base copy in ink; spread on an in-out. Anatomy: Stroke 3 px, radius 20 px; per dot a gradient segment along the perimeter whose half-length grows from 0 to 25 % of the perimeter on an in-out; outside the segments the stroke stays ink with a soft mix; dots 9 -> 3 px losing 40 % saturation; the ring then rotates about 3 deg/f. Sound: The label swap and the ring's completion on one kick. Materials: Segment ends feather over about 8 % of the perimeter; neighbouring hues meet without a grey seam (order the dots by hue around the shape).",
+   "timing": "Leak 12 f, dots absorbed on the next kick (with the label swap), ring turns 60 f.",
+   "use_when": "Integrations, works-with-everything, a many-source product; one moment.",
+   "avoid_when": "Single-source products; next to another spectral accent.",
+   "primitive": [
+    "fx/BorderBleed.BorderBleed"
+   ],
+   "materials": "Segment ends feather over about 8 % of the perimeter; neighbouring hues meet without a grey seam (order the dots by hue around the shape).",
+   "conditions": [
+    "the film's one spectral accent"
+   ],
+   "jobs": [
+    "emphasis",
+    "product",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-thermal-lut-cycle",
+   "name": "False-colour palette cycles, then resolves material by material",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A 3D room is shown in a thermal false-colour palette whose hues rotate while the camera pushes in, then each material resolves to its real look in turn (desk, wall, ceiling).",
+   "recipe": "Recipe: a grey plate through a static colour-map filter whose hue is rotated per frame, per-material masks fading to the true plate. Anatomy: Hue rotation on a luminance map; resolve per material mask. Sound: A riser into it, then quiet. Materials: A blurred backdrop photo (12 px) inside an iris is gradient-mapped to saturated pastels with a map whose hue keeps rolling (about 6 f per stop through six stops) under a thin white cell grid (1 px at 35 %, 12 px pitch), while the whole layer fades out over 36 f.",
+   "timing": "Cycle 77 f; resolves 12-20 f each inside a 53 f window.",
+   "use_when": "A film about sensing, rendering or AI vision.",
+   "avoid_when": "Without a real 3D or photo plate to map.",
+   "primitive": [
+    "fx/GradientMap.GradientMap"
+   ],
+   "materials": "A blurred backdrop photo (12 px) inside an iris is gradient-mapped to saturated pastels with a map whose hue keeps rolling (about 6 f per stop through six stops) under a thin white cell grid (1 px at 35 %, 12 px pitch), while the whole layer fades out over 36 f.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": false,
+   "bans": [
+    "orange",
+    "purple"
+   ],
+   "ban_safe_variant": "Cycle a two-tone map of the accent's lightness steps, then resolve.",
+   "weight": 2,
+   "impact": 5
+  },
+  {
+   "id": "dv-tint-pulse-bleach",
+   "name": "Tiles warm up, then bleach to white",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "All tiles on a wall warm from grey through a tint over a few frames, then bleach to pure white: a colour pulse that carries a transition.",
+   "recipe": "<Exposure> with hue = a pale tint of the accent and swap at the peak. Anatomy: Grey -> tint -> pale -> white; whole wall at once. Sound: A sub on the bleach.",
+   "timing": "Warm 18 f, bleach 20 f.",
+   "use_when": "Leaving a grid of images into a white scene.",
+   "avoid_when": "Warm hues in a cool brand.",
+   "primitive": [
+    "fx/Exposure"
+   ],
+   "ban_safe": false,
+   "bans": [
+    "orange"
+   ],
+   "ban_safe_variant": "Pulse through a tint of the accent, then bleach.",
+   "weight": 1
+  },
+  {
+   "id": "dv-tint-through-grey",
+   "name": "Category tint crossfades through grey",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature",
+    "walkthrough"
+   ],
+   "summary": "Video panels fade in from white into a duotone with a small saturation overshoot; with each category the tint changes by passing through a neutral grey, so two tints never mix into a third hue.",
+   "recipe": "tintThroughGrey(f, { a, b, grey }) on a Develop duotone. Anatomy: Duotone in; saturation overshoot +52 % then settle; crossfade via grey. Sound: A ding on the first, a sub on the last.",
+   "timing": "Crossfades 13-18 f each; lines 35 f.",
+   "use_when": "Several categories or use cases shown on the same panels.",
+   "avoid_when": "More than about four tints.",
+   "primitive": [
+    "fx/CutFx.tintThroughGrey"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-tint-wave-through-words",
+   "name": "A tint wave travels through the words and drains",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A band of tint moves through a line (or a running counter's digits) as the words arrive, peaking on each word as the voice lands it and draining behind; it can park on the last word.",
+   "recipe": "HueSweep on the line with starts on the voice onsets, sweepOn 'all', back on early words; park with Chain accent=\"hold\". Recipe: background linear-gradient(90deg, ink 0 40 %, deep 45 %, accent 50 % 58 %, deep 63 %, ink 68 % 100 %), background-size 300 %, background-clip text, position 100 -> 0 %. Anatomy: Tint band about 1.5 words wide; the picture leads the voice by 1-3 f; drain 12-16 f for early words, the last word lingers; variant: a second, slower wave 30-45 % behind a write-on front; variant: the band parks on the last word. Sound: Voice words land with the tint peaks. Materials: Band shoulders: when the accent travels through type, the band's edges are never a fade to grey. On black type the stops go black -> a deep shade of the accent (about 0.4 letter wide) -> the accent core (1-1.5 letters) -> the deep shade -> black inside single letters; on white type the shoulders are a pale tint instead. Band speed about 1 letter per 4 f on a giant word; in a sentence the head can run about 20 px/f and park on the keyword. Over a counting number the band is a soft-edged tint about 1.5 digits wide crossing in about 50 f while the digits keep running.",
+   "timing": "Word peaks 8 f apart at 60 fps; drain 12-16 f; one pass about 1 s on a counter.",
+   "use_when": "A headline voiced word by word; a counter that should feel alive; a phrase whose last word is the point.",
+   "avoid_when": "A grey mid-tone in the band (give it shoulders); a second multi-hue accent in the same film.",
+   "primitive": [
+    "fx/HueSweep"
+   ],
+   "materials": "Band shoulders: when the accent travels through type, the band's edges are never a fade to grey. On black type the stops go black -> a deep shade of the accent (about 0.4 letter wide) -> the accent core (1-1.5 letters) -> the deep shade -> black inside single letters; on white type the shoulders are a pale tint instead. Band speed about 1 letter per 4 f on a giant word; in a sentence the head can run about 20 px/f and park on the keyword. Over a counting number the band is a soft-edged tint about 1.5 digits wide crossing in about 50 f while the digits keep running.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "jobs": [
+    "emphasis",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 4
+  },
+  {
+   "id": "dv-type-knockout-over-colour",
+   "name": "Type changes colour with what is behind it",
+   "category": "color_and_light",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A soft blob slides under a typed word and the letters over it knock out to white; big type takes its colour from a blurred image blooming behind it; a small caption flips colour the frame a picture passes under it.",
+   "recipe": "Recipe: render the text twice and clip the white copy with the blob's (static, transformed) mask; or mix-blend-mode difference on a flat field. Anatomy: Two copies of the type (ink and knockout), the knockout clipped by the blob or image shape. Sound: None. Materials: A defocused, heavily grained iridescent image (teal, magenta, coral on periwinkle) blooms up from a corner behind the giant type (coverage 7 -> 80 % in 32 f) and splits the letters white or black in screen space: white where the bloom covers the paper, black elsewhere, with a mask feather of about 150 px and grain sigma about 1.5.",
+   "timing": "Blob 22 f expo-out; bloom 33 f; flips on one frame.",
+   "use_when": "Type that shares the frame with moving colour.",
+   "avoid_when": "Low contrast in the mixed state.",
+   "primitive": [],
+   "materials": "A defocused, heavily grained iridescent image (teal, magenta, coral on periwinkle) blooms up from a corner behind the giant type (coverage 7 -> 80 % in 32 f) and splits the letters white or black in screen space: white where the bloom covers the paper, black elsewhere, with a mask feather of about 150 px and grain sigma about 1.5.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 5
+  },
+  {
+   "id": "dv-under-light-spill",
+   "name": "A tile lights from beneath and spills onto its neighbours",
+   "category": "color_and_light",
+   "family": "Glass, glow and spectral",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "When a key or tile lights, the light is not contained in it: a deep accent glow fills the tile and a white-hot spot sits on one edge, washing over the gap and half the next tile as if a light were under the keyboard; the dark tiles round it pick it up.",
+   "recipe": "Recipe: a baked radial plate (white core, accent body) scaled by transform in screen blend at the tile's edge. Anatomy: Tile near-black, radius 24 px, 1 px top inner highlight; light: a near-white core (r about 60 px) at the tile's edge, an accent body (r about 220 px), falloff to transparent; a floor glow along the bottom third; it grows about 2.5x over 14 f. Sound: VO. Materials: Glow anatomy: core, body and falloff, three stops, never a uniform halo; the core sits off-centre on the edge nearest the next tile.",
+   "timing": "Bloom 14 f, then holds with the camera move.",
+   "use_when": "Keyboard, grid and tile UIs on dark grounds; choosing one option.",
+   "avoid_when": "Light grounds.",
+   "primitive": [],
+   "materials": "Glow anatomy: core, body and falloff, three stops, never a uniform halo; the core sits off-centre on the edge nearest the next tile.",
+   "jobs": [
+    "emphasis",
+    "product",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-frosted-panel-over-plate",
+   "name": "Frosted panel over a living plate",
+   "category": "depth_and_3d",
+   "family": "Glass, glow and spectral",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A card shows the same moving footage behind it, heavily blurred and slightly brightened, while the plate outside stays sharp; the material the camera dived into becomes the UI's background; an app window floats on warm light; a frosted card rises with a solid offset twin behind it.",
+   "recipe": "RackFocus levels clipped to the card (a fixed blur copy of the plate under the card's mask). Safer than backdrop-filter: render the title twice, a sharp copy clipped outside the card's rect and a blurred, dimmed copy clipped inside it. Anatomy: Backdrop blur about 25 px inside the card; twin offset 45 px right, 60 px down. Sound: A whip whoosh. Materials: Frost construction: where a card overlaps the headline the letters show through as soft dimmed shapes (backdrop blur 8-12 px, letters at 40-50 % luma, no refraction offset), the card's rim stays crisp and its soft shadow darkens the letters just above it; a frosted bar over a halftone sky averages the dots into soft colour because its blur exceeds the dot pitch (blur 24 px, white at 22 %, a 1.5 px bright top edge, an inner shadow at the bottom). The ground behind a composer can be the same glass heavily defocused (blur 60-90 px) with pastel caustic patches and a faint rainbow arc at 8 % for 8 f, drifting against the camera.",
+   "timing": "Continuous with the plate; rise 30 f expo-out.",
+   "use_when": "Brands with a glass language.",
+   "avoid_when": "Frost as a default card style; more than one glass language per film.",
+   "primitive": [
+    "fx/RackFocus"
+   ],
+   "materials": "Frost construction: where a card overlaps the headline the letters show through as soft dimmed shapes (backdrop blur 8-12 px, letters at 40-50 % luma, no refraction offset), the card's rim stays crisp and its soft shadow darkens the letters just above it; a frosted bar over a halftone sky averages the dots into soft colour because its blur exceeds the dot pitch (blur 24 px, white at 22 %, a 1.5 px bright top edge, an inner shadow at the bottom). The ground behind a composer can be the same glass heavily defocused (blur 60-90 px) with pastel caustic patches and a faint rainbow arc at 8 % for 8 f, drifting against the camera.",
+   "conditions": [
+    "glass as a material with real frost or refraction, not a default card style",
+    "the film's one spectral accent"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 4
+  },
+  {
+   "id": "dv-prism-rim-glass-tiles",
+   "name": "Frosted glass tiles with rainbow prism rims",
+   "category": "depth_and_3d",
+   "family": "Glass, glow and spectral",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch"
+   ],
+   "summary": "Icons orbit inside thick frosted-glass squircles whose edges glow with thin rainbow fringes (one hue on the lit side, its opposite on the other) like light split by a glass edge, while the icon inside stays crisp; out-of-focus tiles become pastel rainbow smudges.",
+   "recipe": "Recipe: a squircle with a padded conic-gradient border masked to the rim, a white frost fill; the conic angle follows the tile's rotation. Anatomy: Tile 140 px, radius 36; frost white at 35 % over a 14 px backdrop blur; a 6-10 px rim of a conic spectrum whose order follows the light direction; bokeh tiles blurred 12-25 px keeping their colours. Sound: None of its own.",
+   "timing": "A continuous orbit; the dispersion turns as each tile turns.",
+   "use_when": "An integrations orbit or icon cloud in a light, airy world.",
+   "avoid_when": "Dark grounds; flat UI.",
+   "primitive": [
+    "fx/Spectral.SpectralRim",
+    "fx/Glass.Glass"
+   ],
+   "conditions": [
+    "the film's one spectral accent"
+   ],
+   "jobs": [
+    "product",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-refracting-glass-sphere",
+   "name": "Glass objects refract the world behind them, then turn opaque",
+   "category": "depth_and_3d",
+   "family": "Glass, glow and spectral",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Dark glass spheres fly in, and for their first frames the background shows through them, darkened, magnified and bent (grid lines and a light line displaced inside, a slight colour split on the bright lines); as they land they turn opaque.",
+   "recipe": "Recipe: a clipPath circle holding a scaled, blurred, darkened copy of the backdrop layer, a radial caustic and a rim stroke; the copy's opacity animates. Anatomy: Inside the circle: the backdrop scaled 1.1-1.2x about the sphere's centre, blurred 2-4 px, brightness 0.25, a 2 px channel split on bright lines; a caustic radial gradient from the accent at 80 % to transparent over 30 % of the radius; the refracted copy's opacity 1 -> 0 over the landing. Sound: Bubble pops on the landing, leading the picture by about 30 ms. Materials: Magnification 1.15, blur 3 px, brightness 0.25, caustic in the accent at 0.8.",
+   "timing": "Clear 6 f, half 2 f, nearly opaque by 10 f more, overlapping the landing overshoot.",
+   "use_when": "A 3D or glass act; objects that frame a hero.",
+   "avoid_when": "Flat UI films.",
+   "primitive": [
+    "fx/Glass.Glass"
+   ],
+   "materials": "Magnification 1.15, blur 3 px, brightness 0.25, caustic in the accent at 0.8.",
+   "jobs": [
+    "product",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-thin-film-dome",
+   "name": "Soap-bubble glass with thin-film rainbow bands",
+   "category": "depth_and_3d",
+   "family": "Glass, glow and spectral",
+   "role": "signature",
+   "energy": "calm",
+   "formats": [
+    "launch"
+   ],
+   "summary": "A character or product sits under a clear glass dome that shimmers like a soap bubble: broad concentric pastel rainbow bands follow its curvature, strongest near the rim and fading at the crown, and the world behind is slightly desaturated and bent.",
+   "recipe": "3D: a hemisphere with a physical material (transmission 1, thickness 0.15, roughness 0.04, iridescence 1, IOR 1.3, film thickness 120-780 nm) under an environment map. 2D: concentric bands baked as a dithered PNG in screen blend inside a circle mask, a white rim, and a backdrop copy scaled 1.03 and desaturated inside. Anatomy: Five band hues (pink, peach, mint, lilac, sky), each 6-10 % of the radius wide, 25-40 % opacity, soft 20 px edges; a white fresnel rim at about 0.6 at grazing angles; the background inside desaturated about 30 % and shifted 2-4 % radially. Sound: An airy pad.",
+   "timing": "Present for the shot; the bands drift 1-2 % a second with the camera.",
+   "use_when": "A hero object that should feel protected, new or magical; airy pastel worlds.",
+   "avoid_when": "Dark, technical films.",
+   "primitive": [
+    "fx/Glass.Glass"
+   ],
+   "conditions": [
+    "the film's one spectral accent"
+   ],
+   "jobs": [
+    "product",
+    "logo",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-window-light-shadows",
+   "name": "Soft window-blind shadows across the set",
+   "category": "depth_and_3d",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Broad soft diagonal shadow stripes (window blinds) fall across a tabletop set and move with it, so the scene reads as a real room.",
+   "recipe": "A baked shadow plate (dither-gradient 'shadow' kind) with stripes, inside the set's transform. Anatomy: Static stripe plate in the ground's hue, multiplied, carried with the set. Sound: None. Materials: One shadow pass unites photographed and drawn pieces: a real photo cut-out lies among flat illustrated stickers and a drawn note, and a single set of soft diagonal window-blind shadows (bands 140-180 px at 1080p, a 60 px gaussian edge, a dark tint of the ground at multiply) crosses all of them, so the photo and the drawings share one room.",
+   "timing": "Static; moves with the camera.",
+   "use_when": "Tabletop or desk sets with objects.",
+   "avoid_when": "Moving the stripes independently of the set.",
+   "primitive": [
+    "fx/KeyLight"
+   ],
+   "materials": "One shadow pass unites photographed and drawn pieces: a real photo cut-out lies among flat illustrated stickers and a drawn note, and a single set of soft diagonal window-blind shadows (bands 140-180 px at 1080p, a 60 px gaussian edge, a dark tint of the ground at multiply) crosses all of them, so the photo and the drawings share one room.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-act-composition-rule",
+   "name": "One composition rule per act",
+   "category": "layout_and_composition",
+   "family": "Collage and composition",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "An act keeps exactly one centred object on black for its whole length (a dot, a line, a triangle, a prism), then the next act flips to an off-centre cropped UI: the composition change marks the act change.",
+   "recipe": "Recipe: a layout rule per act in the timeline. Anatomy: Centred single object vs off-centre crop. Sound: A section change on the switch.",
+   "timing": "Acts of 2-3 s.",
+   "use_when": "Films with a construction act and a product act.",
+   "avoid_when": "Mixing the two rules within one act.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
   },
   {
    "id": "dv-arrow-motifs",
@@ -7627,6 +8805,54 @@
    "impact": 4
   },
   {
+   "id": "dv-fixed-subject-world-swap",
+   "name": "Product stays fixed while the world swaps behind it",
+   "category": "layout_and_composition",
+   "family": "Photos and footage",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature",
+    "vertical"
+   ],
+   "summary": "The product (a phone in a hand, a bottle) stays locked in place while the background swaps every 5-6 frames through photos of different places and textures; a heavily blurred background can change on every letter of a typing logo.",
+   "recipe": "HardStep over a background list under a fixed Cutouts/Photo of the product. Anatomy: Hard swaps on a fixed cadence; product cut out on top; optional slow push across the run. Sound: Ticks or key presses on the swaps.",
+   "timing": "Swaps every 10-15 f at 60 fps; 7-8 backgrounds.",
+   "use_when": "Showing versatility (works anywhere, with anything).",
+   "avoid_when": "Moving the product.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "jobs": [
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-hard-split-screen",
+   "name": "Hard split: image half, text half",
+   "category": "layout_and_composition",
+   "family": "Collage and composition",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The frame divides vertically: one half a mockup or picture, the other half a ground with type; the image half can carry a stepped dithered border.",
+   "recipe": "Recipe: two AbsoluteFill halves with their own content. Anatomy: 50/50 split; cuts swap both halves together. Sound: Cuts on beats.",
+   "timing": "About 95 f per pair.",
+   "use_when": "Product plus claim, side by side.",
+   "avoid_when": "Centred copy in the text half (left-align it).",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
    "id": "dv-left-stack-build",
    "name": "Left-aligned stack builds downward beside the product",
    "category": "layout_and_composition",
@@ -7673,6 +8899,51 @@
    "materials": "Marker strokes have dry, fibrous edges (plus or minus 2-3 px of edge noise at about 1/6 px frequency), round blobby caps 1.1x the stroke width, small width changes along the stroke, a flat fill and no transparency: they sit opaque over black or white letters.",
    "jobs": [
     "emphasis"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-matted-photo-card",
+   "name": "Photo cards with a mat and a thin coloured outline",
+   "category": "layout_and_composition",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Photos sit inside a white mat with a thin coloured outline that follows the outer radius, like framed prints in a wall.",
+   "recipe": "Recipe: nested rounded rects; Cards with image. Anatomy: Photo radius about 24 px, mat 12 px, 2 px outline. Sound: None.",
+   "timing": "Static.",
+   "use_when": "Masonry walls and galleries.",
+   "avoid_when": "Heavy shadows on top.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-object-vocabulary",
+   "name": "A set of physical objects as the film's vocabulary",
+   "category": "layout_and_composition",
+   "family": "Collage and composition",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Logos become die-cut stickers with a white border and a soft shadow lying on a cutting mat; letters sit on square tiles that drift apart radially under a pull-back, each at its own speed.",
+   "recipe": "Cutouts with paper border; tiles as Cards with radial drift. Anatomy: Sticker border 6-8 px, contact shadow; tiles about 70 px each with one letter. Sound: None.",
+   "timing": "Static, or a radial drift over 36 f.",
+   "use_when": "Tabletop, crafted films.",
+   "avoid_when": "Mixing object styles.",
+   "primitive": [
+    "fx/Cutout"
    ],
    "ban_safe": true,
    "bans": [],
@@ -7754,6 +9025,86 @@
    "impact": 4
   },
   {
+   "id": "dv-pop-around-word",
+   "name": "Objects pop around a word at full size",
+   "category": "layout_and_composition",
+   "family": "Collage and composition",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Around a word or a stacked lockup, sticker objects, ad images or tilted app chips pop on at full size, no scale or fade, staggered by 1-4 frames (one settles 7 px), framing the word with context.",
+   "recipe": "HardStep visibility per object, positions laid around the word's box. Anatomy: Cut-ons at full size; tilts 5-15 deg; lines 2-3 f apart. Sound: Chat pops. Materials: The chips pop exactly where the next words land, so for about 20 f the sentence is tangled with the logos (text over chips, no knockout; chips tilted -25 to +20 deg, white pills with a 1 px border at 6 % and a 6 % shadow); then the chips drift about 220 px upward on an expo-out and the line clears (cleared by 0.7 s).",
+   "timing": "1 f each; 1-4 f stagger.",
+   "use_when": "Showing what a word covers (integrations, formats, uses).",
+   "avoid_when": "More than about eight objects.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "materials": "The chips pop exactly where the next words land, so for about 20 f the sentence is tangled with the logos (text over chips, no knockout; chips tilted -25 to +20 deg, white pills with a 1 px border at 6 % and a 6 % shadow); then the chips drift about 220 px upward on an expo-out and the line clears (cleared by 0.7 s).",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-problem-benefit-pills",
+   "name": "Grey problem pills, then blue benefit pills",
+   "category": "layout_and_composition",
+   "family": "Collage and composition",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A grey wordmark with an OFF toggle and grey problem pills floating in from the corners; later the same layout in the brand colour with benefit pills floating in from three edges, mirroring it: the before and after share one layout.",
+   "recipe": "Cards enterState from edges, same positions for both states, colour swapped. Anatomy: Pills enter expo-out (52 % in 10 %) 300-400 px from edges and idle; grey vs accent. Sound: An uplifter sweep on the benefits. Materials: Benefit pills fade from the accent at their left end to a pale tint and almost white at their right end (stops 0 / 40 / 75 / 100 %), with a 1 px white inner highlight on the top edge and a soft white glow past their end, so each pill dissolves into the light.",
+   "timing": "Pills 48-94 f each, 80-120 f apart.",
+   "use_when": "Problem/solution structures.",
+   "avoid_when": "Changing the layout between the two states.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "materials": "Benefit pills fade from the accent at their left end to a pale tint and almost white at their right end (stops 0 / 40 / 75 / 100 %), with a 1 px white inner highlight on the top edge and a soft white glow past their end, so each pill dissolves into the light.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-quad-grid-films",
+   "name": "Four de-synchronised mini-films in a gutterless grid",
+   "category": "layout_and_composition",
+   "family": "Collage and composition",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "loop",
+    "launch",
+    "feature"
+   ],
+   "summary": "The frame is split into four panels with no gutters (or near-invisible hairlines), each running its own mini-film in its own style; cuts happen in one panel at a time on an irregular clock (never two on the same frame, at least two panels always moving); motifs echo across panels; near the loop's end the panels relay scenes to each other so the loop never visibly restarts.",
+   "recipe": "Recipe: CSS grid 2x2, each cell a scaled 1920x1080 composition in <Loop> with awkward periods; merge all cut frames and nudge apart any within 6 f. Anatomy: Panels 960 x 540 at 1080p; per-panel state changes about every 1 s; cut gaps 12-88 f at 60 fps, irregular; a motif from one panel reappearing (inverted) in another. Sound: One shared bed; pane cuts driven by SFX onsets (whooshes, pops, keypresses), not the beat.",
+   "timing": "Panel cuts 12-88 f apart; relays 16 f apart at the loop end.",
+   "use_when": "Social loops and hero loops that must show breadth; feature reels.",
+   "avoid_when": "Synchronised cuts across panels; 9:16 frames (panels get too small).",
+   "primitive": [],
+   "jobs": [
+    "opening",
+    "proof"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 5
+  },
+  {
    "id": "dv-ring-draw-around",
    "name": "A ring draws around the subject, then ripples",
    "category": "layout_and_composition",
@@ -7806,6 +9157,28 @@
    "bans": [],
    "weight": 3,
    "impact": 3
+  },
+  {
+   "id": "dv-shape-vocabulary",
+   "name": "Tiles in a mixed shape vocabulary",
+   "category": "layout_and_composition",
+   "family": "Collage and composition",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A layout uses a small set of shapes (circles, a rounded square, pills, photos with asymmetric corners), flat colour blocks mixed among photos, tinted photo cards, coloured tag chips and side accent bars, all cropped by the frame.",
+   "recipe": "Recipe: per-tile border-radius arrays; colour blocks as Cards. Anatomy: Mixed radii (one corner fully round, others small); colour blocks 40-120 px. Sound: Pops and a ding. Materials: Every frame device is drawn from the logo's parts before the logo appears: the photo mask, the hairline caption frames, the pair of circles and the blobs are the mark's rounded rect, its circular cut-out and its dot; a construction drawing shows the primitives with anchor nodes; the film resolves on their assembly.",
+   "timing": "Static after the unfold; tags pop 4-8 f.",
+   "use_when": "Bento and collage layouts that should feel designed, not templated.",
+   "avoid_when": "Every tile the same radius.",
+   "primitive": [],
+   "materials": "Every frame device is drawn from the logo's parts before the logo appears: the photo mask, the hairline caption frames, the pair of circles and the blobs are the mark's rounded rect, its circular cut-out and its dot; a construction drawing shows the primitives with anchor nodes; the film resolves on their assembly.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
   },
   {
    "id": "dv-swap-arrows",
@@ -7947,6 +9320,57 @@
    "impact": 4
   },
   {
+   "id": "dv-brand-colour-last",
+   "name": "Brand colour withheld until the mark lands",
+   "category": "logo_and_end_card",
+   "family": "Colour and light",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The mark stays white or ink until everything has cooled, then switches to the brand colour in one frame; or the wordmark is re-coloured for each background and lands on the brand colour last.",
+   "recipe": "HardStep on the mark's fill. Anatomy: One-frame switch; a stepped colour sequence per background. Sound: The switch 157 ms after a beat. Materials: Over a warm plate the white wordmark first turns the plate's complement for 4 f (it reads as a translucent multiply), then the brand colour fills the letters from the bottom up with a hard, unfeathered boundary (half, then full, one step every 2 f); the mark switches 2 f before the letters.",
+   "timing": "1 f switch; 8 f in 4 steps.",
+   "use_when": "End cards and lockups.",
+   "avoid_when": "A brand colour that is already everywhere in the film.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "materials": "Over a warm plate the white wordmark first turns the plate's complement for 4 f (it reads as a translucent multiply), then the brand colour fills the letters from the bottom up with a hard, unfeathered boundary (half, then full, one step every 2 f); the mark switches 2 f before the letters.",
+   "jobs": [
+    "logo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-line-art-endcard-pattern",
+   "name": "Line-art pattern fills the end card",
+   "category": "logo_and_end_card",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Large thin outlines (2-3 px) of a motif in a lighter tint of the accent fill the end card behind the title and logo.",
+   "recipe": "Recipe: an SVG line-art layer inside the end card's drift. Recipe: interpolate between a few hand-drawn key paths on a 24 f cycle, or offset each point by noise(i, f). Anatomy: Static line art, drifting with the card. Sound: None. Materials: The line art is alive: the outlines behind the end card keep morphing (tongues stretch, curl and change silhouette, 4-8 px of tip travel a frame) so the field flickers gently like a drawing of fire; stroke about 4 px at 1080p in a pale tint of the ground's hue at about 45 % contrast, round joins, no fill.",
+   "timing": "Static.",
+   "use_when": "End cards on a full accent field.",
+   "avoid_when": "Motifs unrelated to the brand.",
+   "primitive": [],
+   "materials": "The line art is alive: the outlines behind the end card keep morphing (tongues stretch, curl and change silhouette, 4-8 px of tip travel a frame) so the field flickers gently like a drawing of fire; stroke about 4 px at 1080p in a pale tint of the ground's hue at about 45 % contrast, round joins, no fill.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
    "id": "dv-blob-launch-arc",
    "name": "Blob launches, stretches, hangs and falls",
    "category": "micro_interaction",
@@ -8063,6 +9487,37 @@
    "weight": 2
   },
   {
+   "id": "dv-interaction-light-response",
+   "name": "Click or hover lights the object",
+   "category": "micro_interaction",
+   "family": "Colour and light",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A click pushes the camera toward the caret and a soft light blooms at the click point; a glossy 3D object brightens and shifts colour under the hovering cursor.",
+   "recipe": "SnapZoom (pre build) on the click; light as SnapZoom flash with a swell (gain 0.4). Anatomy: Push tau about 6.5 f; light attack 13 f, release 23 f; hover 84 f then a 20 f shrink. Sound: A click on the beat (+28 ms); a UI pop on the punch-in. Materials: Emissive heat under the cursor: a glossy object lit by the scene brightens to a hot emissive version of the accent when the cursor reaches it (brightness 1 -> 1.5 and saturation 1.4 over 40 f), its rims glow (drop-shadow 30 px in the accent) and a soft radial glow pools on the ground under it (about 60 % at the centre to 0 at 500 px).",
+   "timing": "Push 15-20 f; light 36 f.",
+   "use_when": "The decisive click of a demo; a hover on a hero object.",
+   "avoid_when": "Halo glows in house films.",
+   "primitive": [
+    "fx/SnapZoom"
+   ],
+   "materials": "Emissive heat under the cursor: a glossy object lit by the scene brightens to a hot emissive version of the accent when the cursor reaches it (brightness 1 -> 1.5 and saturation 1.4 over 40 f), its rims glow (drop-shadow 30 px in the accent) and a soft radial glow pools on the ground under it (about 60 % at the centre to 0 at 500 px).",
+   "conditions": [
+    "light built into the device (core, body, falloff), never a uniform halo"
+   ],
+   "jobs": [
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
    "id": "dv-ripple-rings",
    "name": "Rings ripple out from a click or a pill",
    "category": "micro_interaction",
@@ -8163,6 +9618,203 @@
    "ban_safe_variant": "The brand's mark or a plain dot as the seed.",
    "weight": 1,
    "impact": 4
+  },
+  {
+   "id": "dv-light-line-shoot",
+   "name": "Light lines shoot through the frame",
+   "category": "opening_hook",
+   "family": "Colour and light",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "From black, a thin light bar shoots up from the frame edge to full height in a few frames; lines extend from a hero to the corners; thin light axes pierce an object one after another.",
+   "recipe": "Build: <LightLine at from to color width> (fx/Streak): grows from from on E.snapOut (12 f) and thins to 35 % (10 f); stagger several 10-30 f apart for axes; flat by default, soft adds a static blurred copy on dark stages. Anatomy: Bar 60-100 px wide with a 20-30 px soft edge, or 2 px lines; grow from an edge or a point; thin afterwards. Sound: The first music hit right after.",
+   "timing": "Bar 12 f quad-out (peak 462 px/f); lines 5-8 f; axes 10-30 f apart.",
+   "use_when": "A cold open on a dark stage; a hero moment in a 3D world.",
+   "avoid_when": "Neon glows (keep the lines thin and the halo small).",
+   "primitive": [
+    "fx/Streak.LightLine"
+   ],
+   "conditions": [
+    "light built into the device (core, body, falloff), never a uniform halo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-accelerating-flip-montage",
+   "name": "Picture montage that accelerates behind held copy",
+   "category": "pacing_structure",
+   "family": "Photos and footage",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A sentence holds still while images cut behind it with shrinking shot lengths (8-9 f down to 2-3 f); a front card swaps its photo by hard cuts accelerating from 7-12 f to 1-4 f; a central photo flip-book of tilted prints accelerates and the words re-centre to each print's width.",
+   "recipe": "<Montage cuts> with an accelerating cut list (ACCEL.montage); prints as Cards with seeded tilt. Anatomy: Interval lists shrinking (6, 6, 3, 5, 3, 3, 4, 2...); prints tilted ±2-5 deg and different sizes; each new photo 12-15 % larger at landing. Sound: A silence then a whoosh run; a cut into silence at the end. Materials: Not every change is a cut: for 4-8 f the next image is double-exposed over the current one (screen or lighten at 40-60 %), and the last still leaves by smearing sideways (a blur ramp 0 -> 40 px over 8 f) with a spectral leading edge (red, yellow, white, transparent) in screen blend.",
+   "timing": "106-170 f.",
+   "use_when": "Breadth (use cases, styles, results) under one statement.",
+   "avoid_when": "Text that changes during the montage.",
+   "primitive": [
+    "fx/Montage"
+   ],
+   "materials": "Not every change is a cut: for 4-8 f the next image is double-exposed over the current one (screen or lighten at 40-60 %), and the last still leaves by smearing sideways (a blur ramp 0 -> 40 px over 8 f) with a spectral leading edge (red, yellow, white, transparent) in screen blend.",
+   "conditions": [
+    "the film's one spectral accent"
+   ],
+   "jobs": [
+    "opening"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 5
+  },
+  {
+   "id": "dv-brand-in-the-world",
+   "name": "The copy and the work continue on real surfaces",
+   "category": "product_demo",
+   "family": "Photos and footage",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "After the product moment the work leaves the screen: the headlines continue as the copy of billboards and light boxes, the edited image appears as printed magazines, a print lifted through a hard window shadow, a poster wall, a street hoarding, a screen among plants; passers-by and cars cross the foreground as natural wipes.",
+   "recipe": "Photo or Footage with the artwork placed by matrix3d onto the print's quad, a multiply shadow plate over it, and a blurred occluder cut-out translating across. Anatomy: 3-6 shots of 25-90 f; the hero artwork composited onto each surface by a perspective transform with a multiply shadow layer (a hard 45 deg window shadow at 55 %); at night light boxes at about twice the surround with a soft bloom; foreground occluders cross in 20-30 f. Sound: Music continues; cuts on beats. Materials: Real imagery leads: free photos of surfaces, the artwork composited, one shared light direction per shot; screens cast a faint glow on what is near them.",
+   "timing": "Shots 25-90 f on the beat; a slow push of 1-3 % per shot.",
+   "use_when": "Creative and brand tools: made here, used everywhere; the last act before the logo.",
+   "avoid_when": "Internal tools with no visible output; weak mock-ups.",
+   "primitive": [
+    "fx/Photo"
+   ],
+   "materials": "Real imagery leads: free photos of surfaces, the artwork composited, one shared light direction per shot; screens cast a faint glow on what is near them.",
+   "jobs": [
+    "proof",
+    "product",
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-edit-in-place-under-cursor",
+   "name": "Edits happen in place under the hovering cursor",
+   "category": "product_demo",
+   "family": "Photos and footage",
+   "role": "signature",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The cursor hovers and the image or label changes in place: a product label swaps in one frame after a slow push; a cheek is relit in one step, lips brighten slowly over 45 f; the rest of the picture is untouched.",
+   "recipe": "HardStep or a short fade between two versions of the region (masked copies). Anatomy: One-frame steps for discrete edits; slow fades for continuous ones; masks per edited region. Sound: Key clicks.",
+   "timing": "Steps 1 f; slow edits 45 f; push 40 f.",
+   "use_when": "Image or design editing products.",
+   "avoid_when": "Big transitions for small edits.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "jobs": [
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-product-in-context-footage",
+   "name": "Product UI framed over live footage",
+   "category": "product_demo",
+   "family": "Photos and footage",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A rounded screen with a thin rim floats over desaturated moving footage (a figure walking in a forest); a cut-out hand holding a phone slides in and rotates upright.",
+   "recipe": "<Footage> graded down + a Card on top; the hand as a Cutouts piece. Anatomy: Footage desaturated; screen with rim; hand slide 91 px + 10 deg rotation circ-out. Sound: None needed. Materials: Before the edit demos, a few seconds of generated commercial footage of the subject and product (a wide studio shot with gear in frame, a profile close-up, a frontal close-up), cool seamless with warm skin, the last clip frozen under the edit overlays: the raw material the product works on.",
+   "timing": "Hand 40 f; footage plays.",
+   "use_when": "Putting the product in the world without a full live-action shoot.",
+   "avoid_when": "Saturated footage competing with the UI.",
+   "primitive": [
+    "fx/Footage"
+   ],
+   "materials": "Before the edit demos, a few seconds of generated commercial footage of the subject and product (a wide studio shot with gear in frame, a profile close-up, a frontal close-up), cool seamless with warm skin, the last clip frozen under the edit overlays: the raw material the product works on.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-recurring-generated-character",
+   "name": "One generated character carried across plates",
+   "category": "product_demo",
+   "family": "Photos and footage",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The same generated person appears in two or three photographic plates (worried in one place, shocked over a phone in another): the same face and clothes and a consistent grade, so the story has a protagonist without a shoot.",
+   "recipe": "Photo plates sharing one grade; UI layers above. Anatomy: Shallow depth of field (an f/2 look), warm highlights and shadows pushed toward the brand hue; a slow push of 0.3 % per frame; UI cards and bubbles over the plate. Sound: The VO tells the pain; chat pops on the UI.",
+   "timing": "Plates 100-160 f; cut on the counter-to-shock beat with a momentum zoom.",
+   "use_when": "Problem-and-answer stories; reaction beats around UI cards and bubbles.",
+   "avoid_when": "Uncanny results; more than three plates.",
+   "primitive": [
+    "fx/Photo"
+   ],
+   "jobs": [
+    "proof",
+    "product"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-true-colour-in-boxes",
+   "name": "Detection boxes keep faces in true colour while the frame turns false-colour",
+   "category": "product_demo",
+   "family": "Photos and footage",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Over video panels thin white boxes lock onto every face; outside the boxes the footage turns into a false-colour gradient map while inside each box the face stays in true colour, and the map changes with each feature (a cool map, a mint map, a heat map) as small labels type in.",
+   "recipe": "Footage twice: a full-frame copy under a static map filter and the plain copy clipped to each box (overflow hidden, offset by the box position). Anatomy: Boxes 1.5 px white, snapping with no easing, popping before the tint; outside a three-stop map (shadows deep, mids the accent, highlights pale); inside, the plain footage clipped to the box; the palette changes about every 80 f; the heat map adds a warm edge glow where luma changes fast. Sound: Soft ticks per label. Materials: Cool map deep teal -> cyan -> ice; mint map green -> mint -> near-white; heat map lilac -> peach -> warm edges with a pale highlight.",
+   "timing": "Boxes pop in 4 f, tint in 8 f, labels type over 24 f; about 80 f per palette; a fade to white at the end.",
+   "use_when": "Vision, detection, search-in-video and analysis products: showing what the model sees.",
+   "avoid_when": "Products with nothing visual to detect.",
+   "primitive": [
+    "fx/GradientMap.TrueColourBoxes"
+   ],
+   "materials": "Cool map deep teal -> cyan -> ice; mint map green -> mint -> near-white; heat map lilac -> peach -> warm edges with a pale highlight.",
+   "jobs": [
+    "proof",
+    "product",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
   },
   {
    "id": "dv-typing-accelerate-whip",
@@ -8286,6 +9938,675 @@
    "bans": [],
    "weight": 2,
    "impact": 3
+  },
+  {
+   "id": "dv-typing-wall",
+   "name": "A wall of fields all typing at once",
+   "category": "product_demo",
+   "family": "Collage and composition",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Cut to a wall of question pills all typing word chunks simultaneously (offset 1-3 f), send buttons popping as they finish; the next cut pushes in with a new background colour.",
+   "recipe": "Many <TypeOn kind=\"field\"> with seeded starts. Anatomy: 6-12 TypeOn instances with seeded offsets; pops on completion. Sound: UI pops on the cuts.",
+   "timing": "120 f.",
+   "use_when": "Scale: many users, many questions.",
+   "avoid_when": "Readable sentences (it is texture).",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-ascii-edge-halo",
+   "name": "A band of glyphs traces every subject's edge",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Around every subject of a photo or plate a band of tiny white monospace glyphs hugs the silhouette like a typed outline (the heaviest glyph at the strongest edge, lighter ones further out, dots bleeding inside); it re-samples every frame so it shimmers as the plate moves, and before a cut it flares, wider, heavier and brighter, and the frame breaks into blocks.",
+   "recipe": "The Ascii glyph atlas drawn on a canvas from a downscaled luma of the plate, with an edge magnitude per cell. Anatomy: Cells 13.5 x 14 px at 1080p, fixed to the screen; the glyph picked by edge strength on a blurred luma: over 0.6 a zero, 0.4-0.6 a small o, 0.2-0.4 a colon, 0.1-0.2 a dot, else empty; white at 0.75-0.9; the band sits mostly outside the silhouette (2-4 cells). Flare: threshold 0.4 -> 0.1 and alpha 0.6 -> 1 over 12 f into a pixelate cut. Sound: None of its own; the flare rides the rising whoosh into the hit. Materials: On strong straight edges the glyph follows the edge angle (tall glyphs on vertical edges, round ones on curves).",
+   "timing": "Lives for the plate; flare 12 f, then the pixelate.",
+   "use_when": "Generated imagery, vision and generation products; plates that need a signature texture.",
+   "avoid_when": "UI shots; small subjects.",
+   "primitive": [
+    "fx/GlyphField.GlyphField"
+   ],
+   "materials": "On strong straight edges the glyph follows the edge angle (tall glyphs on vertical edges, round ones on curves).",
+   "jobs": [
+    "opening",
+    "transition",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-ascii-globe-resolve",
+   "name": "Symbol string tiles the frame and resolves into an ASCII object",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A short string of symbols repeats in a grid that fills the panel, turns into character columns, and resolves into a flickering ASCII-dither globe.",
+   "recipe": "Build: <AsciiField at x y w h src color> (fx/Ascii): the symbol string tiles the panel, turns into seeded character columns (from 22 f), the picture resolves through a dark-to-light glyph ramp (from 44 f, settled by 63) and flickers like a dither: about 6 % of the cells swap to a ramp neighbour every 3-8 f. Anatomy: Grid of characters; columns; luminance mapped to a glyph ramp; style flicker every 1-3 f. Sound: None needed.",
+   "timing": "Settle 63 f; flicker every 3-8 f at 60 fps.",
+   "use_when": "A film about the web, data or the world; a title reveal from code.",
+   "avoid_when": "Without a plate to convert.",
+   "primitive": [
+    "fx/Ascii.AsciiField"
+   ],
+   "jobs": [
+    "opening"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 5
+  },
+  {
+   "id": "dv-chromatic-fringe",
+   "name": "Radial lens chromatic aberration on light lines",
+   "category": "texture_and_finish",
+   "family": "Glass, glow and spectral",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A red fringe on one side and cyan on the other of silhouettes and caption edges, present on every graphic frame as a fixed offset. Two flavours: a radial lens aberration over the whole graphic layer, so every thin luminous line is three lines (warm toward the frame centre, a green core, blue outside) with a split that grows with distance from the centre; or a lateral split on 3D edges that makes hard lines read as cut glass catching light.",
+   "recipe": "Recipe: two tinted copies offset 2-3 px under the element. Recipe: render the graphic layer three times with mix-blend screen, each keeping one channel (feColorMatrix), scaled 0.982 / 1 / 1.018 about the frame centre (radial) or offset -1 / 0 / +1 px (lateral). Anatomy: Static offset of two tinted copies. Radial: channel scale about 1.8 % of the radius each way (red 0.982, blue 1.018 about the frame centre), so a line at r 450 px carries about 28 px of red-green-blue cross-section plus a wide soft blue glow outside (sigma about 20 px) and a warm haze inside; lines near the centre lose their fringe (a spiral loses it as it tightens). Lateral: 1-1.5 px each side (a warm line one side, cyan the other) round a white core, larger toward the frame edge, with a neutral grey glow. Sound: None. Materials: Static optical property: it animates only because things move through radius. Build it once as a layer over all graphics, never per element.",
+   "timing": "Static.",
+   "use_when": "A graphic, glitch-flavoured world.",
+   "avoid_when": "Clean UI films.",
+   "primitive": [],
+   "materials": "Static optical property: it animates only because things move through radius. Build it once as a layer over all graphics, never per element.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform",
+    "the film's one spectral accent"
+   ],
+   "jobs": [
+    "texture",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 5
+  },
+  {
+   "id": "dv-concentric-rings-ground",
+   "name": "Faint concentric rings behind the subject",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Very faint concentric ellipses or circles sit behind a word reveal or a centred line, sometimes with tiny accent satellites on them that rotate with a chip ring; a small concentric decal can sit under a hero core.",
+   "recipe": "Recipe: static SVG circles; satellites placed by angle and rotated with the ring's closed-form angle. Anatomy: 4-5 rings at a few percent contrast; satellites about 6 px. Sound: None. Materials: Echo rings follow the morph: as the page darkens the faint concentric circles brighten into lines and, in sync with the centre circle becoming a rounded card, stretch horizontally into concentric stadium outlines (straight segment 0 -> about 700 px in 10-12 f, in-out).",
+   "timing": "Static or rotating with the ring.",
+   "use_when": "Centred statements; orbit and ecosystem ideas.",
+   "avoid_when": "Rings strong enough to read.",
+   "primitive": [],
+   "materials": "Echo rings follow the morph: as the page darkens the faint concentric circles brighten into lines and, in sync with the centre circle becoming a rounded card, stretch horizontally into concentric stadium outlines (straight segment 0 -> about 700 px in 10-12 f, in-out).",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-dither-patch-sweep",
+   "name": "Dither-pixel patch licks up through outlines",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A patch of light dither pixels (small crosses) sweeps from bottom to top through a line drawing and dies out; the same burst repeats once.",
+   "recipe": "Recipe: a seeded dither mask plate translated upward, multiplied with the line art. Recipe: a canvas clipped to the shape's path; per cell value = band(y + 6f) x (0.5 + 0.5 noise(x, y)); fillText the ramp glyph when the value is over 0.1. Anatomy: Coverage 0.9 -> 4.2 -> 0.8 %; bursts 21 f apart. Sound: A stab and a kick. Materials: A glyph patch licks up through a big shape and stays inside its outline: tiny light glyphs on a value ramp (dot < dash < equals < plus < x), denser in the middle and sparser at the edges, cells about 12 px at 1080p, colour a pale tint of the shape at 60-80 %; the band is about 45 % of the shape tall and scrolls about 6 px/f upward; each burst lives 32 f and repeats 52 f later.",
+   "timing": "30 f per burst.",
+   "use_when": "End cards with line art; a \"spark\" without sparkles.",
+   "avoid_when": "Coverage above about 5 %.",
+   "primitive": [],
+   "materials": "A glyph patch licks up through a big shape and stays inside its outline: tiny light glyphs on a value ramp (dot < dash < equals < plus < x), denser in the middle and sparser at the edges, cells about 12 px at 1080p, colour a pale tint of the shape at 60-80 %; the band is about 45 % of the shape tall and scrolls about 6 px/f upward; each burst lives 32 f and repeats 52 f later.",
+   "jobs": [
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-dot-grid-light-pools",
+   "name": "Dot grid seen only under wandering light",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A black stage carries a fine dot grid that is only visible where two or three very soft light pools drift, so the ground breathes with light.",
+   "recipe": "LightField pools with the dot-grid plate as their mask (mix-blend multiply on a static grid layer). Anatomy: 12 px dot grid (luma 17-63) multiplied by the light pools (radius 300-500 px). Sound: None. Materials: Lights tint the grid: in a dark grid room the lines near each glowing object take that object's colour and brighten (spill radius 150-250 px, near lines at about 200 luma, far lines 40-60), so the grid reads as lit by the objects and the tints move with them.",
+   "timing": "Continuous.",
+   "use_when": "Dark openers; tech films that want depth without objects.",
+   "avoid_when": "Pools that move fast (keep them slow, every 6-18 f of drift).",
+   "primitive": [
+    "fx/LightField"
+   ],
+   "materials": "Lights tint the grid: in a dark grid room the lines near each glowing object take that object's colour and brighten (spill radius 150-250 px, near lines at about 200 luma, far lines 40-60), so the grid reads as lit by the objects and the tints move with them.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-fixed-rim-highlight",
+   "name": "Rim highlight from a fixed light",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Every container has a 1 px hairline rim that is brightest at one spot, and the bright spot stays put as the container moves: the light source is fixed in the world.",
+   "recipe": "Recipe: a conic highlight on the border whose angle is computed from the card's position against a fixed light point. Anatomy: Rim highlight computed from the container's position relative to a fixed light. Sound: None. Materials: A spectral rim: a black wordmark on a bright gradient carries a 1.5 px rim at about 0.8, warm on the edges facing the light and cool on the opposite edges (two offset text-shadows), and its interiors carry a faint vertical gradient instead of flat black.",
+   "timing": "Static per shot.",
+   "use_when": "Floating cards in a soft, airy look.",
+   "avoid_when": "Glass looks in house films.",
+   "primitive": [],
+   "materials": "A spectral rim: a black wordmark on a bright gradient carries a 1.5 px rim at about 0.8, warm on the edges facing the light and cool on the opposite edges (two offset text-shadows), and its interiors carry a faint vertical gradient instead of flat black.",
+   "conditions": [
+    "glass as a material with real frost or refraction, not a default card style",
+    "the film's one spectral accent",
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "jobs": [
+    "logo",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-fluted-bar-ground",
+   "name": "Ground made of vertical bars",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The background is a field of flat vertical bars (about 100 px wide), each a single shade, so a soft glow reads as a stepped poster; or vertical stripes with soft light gradients like fluted glass.",
+   "recipe": "Recipe: render the light field into a few bands of flat colour (posterised horizontally), moved by transform. Shader or canvas: x quantised to 16 bars, band = smoothstep on the distance to a tilted line that moves, colour from a ramp at the bar's centre; the bars have hard edges, so banding is not an issue. Anatomy: Bars quantise a smooth field into steps; the glow can spread, sweep and wander. Sound: None. Materials: The glow is a staircase, not a gradient: hard vertical bars, each one flat colour stepping from a warm deep tone through the accent to violet and black across the frame (about 16 bars), with a smooth fade to black vertically; the glow band slides and tilts so the bars light up and go dark in waves, like an audio meter under the music.",
+   "timing": "Spread 36 f; sweep 150 f; wander 244 f.",
+   "use_when": "Brand-colour sections; checkout or store panels.",
+   "avoid_when": "A second multi-hue field in the same film.",
+   "primitive": [],
+   "materials": "The glow is a staircase, not a gradient: hard vertical bars, each one flat colour stepping from a warm deep tone through the accent to violet and black across the frame (about 16 bars), with a smooth fade to black vertically; the glow band slides and tilts so the bars light up and go dark in waves, like an audio meter under the music.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform",
+    "glass as a material with real frost or refraction, not a default card style"
+   ],
+   "jobs": [
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-fluted-glass-type",
+   "name": "A word seen through fluted glass, sliced into refracted strips",
+   "category": "texture_and_finish",
+   "family": "Glass, glow and spectral",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The logo or a word sits behind reeded glass: it is broken into vertical bands, each a sideways-shifted, softened slice, so it flickers between sliced and legible while it moves; then the bands clear and the word is sharp.",
+   "recipe": "Recipe: an SVG displacement map driven by a static repeating-gradient stripe image; the strength steps through fixed levels (pre-rendered copies cross-faded). Anatomy: Stripes 40-60 px; per stripe a sawtooth displacement of up to 15-25 px with a lens ramp inside each stripe; edges softened about 4 px; strength 1 -> 0 over 28 f. Sound: A whoosh on the logo's move.",
+   "timing": "28 f.",
+   "use_when": "A logo or a word reveal on a dark, lit ground; a clarity beat.",
+   "avoid_when": "Long lines; flat light grounds.",
+   "primitive": [
+    "fx/Glass.Glass"
+   ],
+   "jobs": [
+    "reveal",
+    "logo",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-glyph-portrait-gradient",
+   "name": "A portrait drawn in two digits under a rising gradient",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A picture is set as a terminal dump of monospace digits: one digit fills the ground, the other draws the figure in two-by-two blocks like pixel art, and a vertical gradient (white at the top, the accent at the bottom) rises through the glyphs until the card is accent on accent.",
+   "recipe": "AsciiField with a bitmap source and a two-glyph ramp, its glyph layer used as a mask over a baked dithered gradient plate that rises by transform. Anatomy: Glyph cap about 14 px at 1080p, pitch about 17 px; the figure from a 1-bit bitmap on a grid of two-by-two glyph cells; fill = a gradient clipped to the glyphs whose top edge rises from 100 % to -20 % of the card; afterwards the glyphs are a pale tint of the accent on the accent. Sound: The card morph sits on a kick. Materials: Stops: near-white at the top edge, then the accent, then a deeper accent at the bottom; glyph colour after the rise = the accent mixed 25 % toward white.",
+   "timing": "Gradient rise 50 f expo-out, texture holds 75 f.",
+   "use_when": "Developer, data and scraping products; the moment a card turns into what the machine sees.",
+   "avoid_when": "A film that already leans on a glyph texture elsewhere.",
+   "primitive": [
+    "fx/GlyphField.GlyphField"
+   ],
+   "materials": "Stops: near-white at the top edge, then the accent, then a deeper accent at the bottom; glyph colour after the rise = the accent mixed 25 % toward white.",
+   "jobs": [
+    "reveal",
+    "product",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-grain-and-print-texture",
+   "name": "Grain and print texture as the picture's finish",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Images carry visible grain, low-contrast highlights and soft focus while vector type stays razor sharp on top; white type over imagery carries a speckled, slightly broken print texture; a near-black stage carries a barely visible vertical micro-texture (3-5 % luma).",
+   "recipe": "Recipe: cycled grain plates (seeded), a static speckle mask on the type, a baked micro-texture plate. Anatomy: Grain changing every frame; print speckle static; micro-texture most visible near the hero's glow. Sound: None.",
+   "timing": "Grain every frame; others static.",
+   "use_when": "Editorial, image-led or dark tech films.",
+   "avoid_when": "Grain on UI text; texture strong enough to read.",
+   "primitive": [],
+   "jobs": [
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3
+  },
+  {
+   "id": "dv-grid-blocks-on-kicks",
+   "name": "Accent blocks jump between grid cells on kicks",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Solid accent blocks exactly one grid cell in size sit in the page grid forming steps and L shapes, and jump to new cells instantly, all together, on kicks.",
+   "recipe": "HardStep positions from a table of cells indexed by the kick list. Anatomy: Blocks of one cell (192 px at 1080p); arrangements from a seeded table indexed by kick count. Sound: Kicks.",
+   "timing": "0 f transitions; rearrangements 13-25 f apart.",
+   "use_when": "Grid-based brands; a beat-driven interlude.",
+   "avoid_when": "Tweening the blocks.",
+   "primitive": [
+    "fx/BlockStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-grid-cell-wave",
+   "name": "Grid cells switch on in a wave",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "Cells on a fixed grid switch on outward from a centre (each at one of a few random opacities), fade in as a radial wave and out centre-first, appear radially around a hub in a few steps, materialise in a diagonal wipe from a corner (duotone first, then colour), or multiply outward from one coloured cell.",
+   "recipe": "Build: <CellWave at cols rows x y color shape=\"radial\"|\"diagonal\"> (fx/Grids): cells switch on outward from origin at one of five seeded strengths (15-100 %), radial on E.buildIn over 23 f (on twos for the first 8 f) or diagonal (+1 f per column, +1.4 per row); fade={40} for a slow in-out, out={{ at }} leaves centre-first; render(cell) puts a thumbnail in each cell. Anatomy: Radial or diagonal threshold over a static grid; per-cell opacity from 5 levels (15-100 %); on twos for the first frames, then ones; cell 40 px on a 72 px pitch, or 60 px icons on a 95 px pitch. Sound: An onset on the wave; a sub on the gallery; a hit on the radial step. Materials: As cells multiply each holds the spreadsheet overflow mark in a dark tone; the clicked centre cell is the full accent and each ring of neighbours a lighter tint (five steps), so the wave reads as a heat map of distance; rows added every 5-6 f.",
+   "timing": "23-75 f; each cell 40 f in-out; wave 20 f across; diagonal onset +1 f per column, +1.4 f per row.",
+   "use_when": "Openers, backgrounds that build, galleries of thousands, \"it scales\".",
+   "avoid_when": "Cells that move (they only switch).",
+   "primitive": [
+    "fx/Grids.CellWave"
+   ],
+   "materials": "As cells multiply each holds the spreadsheet overflow mark in a dark tone; the clicked centre cell is the full accent and each ring of neighbours a lighter tint (five steps), so the wave reads as a heat map of distance; rows added every 5-6 f.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 4
+  },
+  {
+   "id": "dv-hairline-grid-ground",
+   "name": "Hairline layout grid as the ground",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A faint layout grid keeps empty space active: dashed grey cells on black that scale with the camera, a cutting-mat grid, hairlines a few percent darker than the page, guides with tiny square markers at intersections, grid paper with ruler ticks, a 1 px grid with small crosses at card corners, white rounded squares on near-white, a thin grid over photos; a wireframe grid of rectangles and nodes can pan and zoom.",
+   "recipe": "Recipe: a static SVG pattern (or a baked plate) inside the camera transform; markers as small rects at chosen intersections. Anatomy: Cells 16-210 px; 1 px lines; optional heavier line every 5 cells, tick marks on edges, crosses or nodes at intersections; the grid either moves with the camera or stays fixed while the content moves (a fixed grid reads as the screen). Sound: None. Materials: The dashed grid can be barrel-curved like a lens (each point pushed out by 1 + 0.06 d^2 from the centre, about 12 px of sag at the frame edges) and the curve swims as the camera pushes; dashes 14 px with 8 px gaps, 1 px mid-grey, cells about 210 px.",
+   "timing": "Static; moves with the camera; a wireframe grid pans over 158 f.",
+   "use_when": "Product, tool and design films; any minimal ground that needs structure.",
+   "avoid_when": "Grids strong enough to read as content (keep lines 3-8 % off the ground).",
+   "primitive": [],
+   "materials": "The dashed grid can be barrel-curved like a lens (each point pushed out by 1 + 0.06 d^2 from the centre, about 12 px of sag at the frame edges) and the curve swims as the camera pushes; dashes 14 px with 8 px gaps, 1 px mid-grey, cells about 210 px.",
+   "jobs": [
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 9,
+   "impact": 3
+  },
+  {
+   "id": "dv-holographic-icons",
+   "name": "Holographic foil icons with frosted inner tiles",
+   "category": "texture_and_finish",
+   "family": "Glass, glow and spectral",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Feature or integration icons are rounded squares whose surface swirls with pastel holographic foil (a cool rim, warm, pink and lilac sheen) under a smaller frosted-white tile that carries a plain white glyph; each icon's foil is turned to its own angle, so the grid shimmers as one family.",
+   "recipe": "Recipe: one baked dithered conic foil PNG rotated by transform under a squircle clip, plus the white tile. Anatomy: Base conic gradient (rim hue -> warm -> pink -> lilac -> rim hue) blurred about 6 px inside the shape; inner tile inset 16 %, radius 20 %, white at 75 % with a 1 px white rim; glyph white with a 10 % grey shadow; icon about 80 px at radius 22 %; the foil angle differs per icon. Sound: Small pops on the arrivals. Materials: Example stops teal #2FA39A, peach #F2C1A6, pink #EBA3B9, lilac #C9C3EE; the foil is the film's one spectral accent.",
+   "timing": "Develop 28 f (saturation pale to full while the focus clears), then hold.",
+   "use_when": "A grid of features or integrations that must read premium and related; light grounds.",
+   "avoid_when": "Dark grounds; brand icons that must keep their own colours.",
+   "primitive": [
+    "fx/Spectral.Foil"
+   ],
+   "materials": "Example stops teal #2FA39A, peach #F2C1A6, pink #EBA3B9, lilac #C9C3EE; the foil is the film's one spectral accent.",
+   "conditions": [
+    "the film's one spectral accent"
+   ],
+   "jobs": [
+    "product",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-lattice-light-sweep",
+   "name": "A patch of light carrying a lattice sweeps under the text",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Before a send, a patch of pale light holding a fine white honeycomb lattice sweeps across the prompt box under the text; the lattice is only visible inside the light, so its edges dissolve, and the text and chips stay crisp on top.",
+   "recipe": "Recipe: an SVG hex pattern masked by a moving radial gradient (a baked radial PNG as the mask) under the text layer, with a tint layer under the same mask. Anatomy: Light: a radial pale tint at about 70 % to transparent, about 420 x 300 px; hex cells about 55 px with 2 px white lines; travel about 30 px/f, decelerating. Sound: The send whoosh.",
+   "timing": "28 f.",
+   "use_when": "The send or run moment of a prompt box; a processing beat.",
+   "avoid_when": "Every send; dark text on a dark box.",
+   "primitive": [],
+   "jobs": [
+    "product",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-living-grain-flicker",
+   "name": "Glow and grain boil on held graphics",
+   "category": "texture_and_finish",
+   "family": "Colour and light",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "While shapes hold still, their glow and grain change every frame by a few percent, so a held frame never freezes.",
+   "recipe": "Recipe: a set of 4-8 baked grain plates cycled by frame (seeded), at low opacity. Anatomy: Per-frame seeded noise on the grain plate and a tiny lightness wobble. Sound: None.",
+   "timing": "Every frame, amplitude 2-4 % luma.",
+   "use_when": "Any hold longer than about 30 f on a graphic, especially on twos.",
+   "avoid_when": "Visible flicker (keep it 2-4 % of luma).",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 2
+  },
+  {
+   "id": "dv-pixel-mosaic-ground",
+   "name": "Coarse pixel-mosaic ground behind UI",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The background is made of large square cells (30-45 px) like a low-resolution image of a soft colour field, also used as a dithered strip.",
+   "recipe": "Recipe: a baked low-res plate scaled up with image-rendering pixelated. Anatomy: Static cells. Sound: None.",
+   "timing": "Static.",
+   "use_when": "Image-generation brands; behind UI panels.",
+   "avoid_when": "A second multi-hue field in the same film.",
+   "primitive": [],
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-screen-texture",
+   "name": "Halftone, ASCII and dither as the picture's texture",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Pictures carry a print or screen texture: a grid of glyphs from a brightness ramp sits over the dark areas of images and re-samples irregularly; silhouettes are filled with a fine dot screen; clouds show a halftone in their shadows under a giant translucent wordmark; a light dot grid overlays a defocused photo; small dither pixels sparkle around subjects' edges.",
+   "recipe": "Recipe: a baked halftone or ASCII plate (rendered once from the image), cycled among 3-4 variants for the flicker. Recipe: the figure as a mask over three radial-dot patterns in pure red, green and blue, offset 1-2 px, screen blend on black; halftone radius per cell = r_max x sqrt(1 - luma). Anatomy: Dot pitch about 4 px at 1080p; glyph ramp . : o O 0; re-sample every 2-7 f (a soft flicker). Sound: None. Materials: Up close the halftone figures are printed in phosphor triads: the dot screen breaks into red, green and blue dots at the edges (8 px pitch, 3 px dots) with a grey core; on a mosaic glitch frame a fine dot grid at 25 % sits over the flat blocks like an LED wall. A frosted bar over a halftone sky averages the screen into soft colour (blur larger than the dot pitch).",
+   "timing": "Static per frame or re-sampled every 2-7 f.",
+   "use_when": "Image-generation, print, editorial or retro-tech films.",
+   "avoid_when": "Texture on readable type.",
+   "primitive": [],
+   "materials": "Up close the halftone figures are printed in phosphor triads: the dot screen breaks into red, green and blue dots at the edges (8 px pitch, 3 px dots) with a grey core; on a mosaic glitch frame a fine dot grid at 25 % sits over the flat blocks like an LED wall. A frosted bar over a halftone sky averages the screen into soft colour (blur larger than the dot pitch).",
+   "jobs": [
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
+  },
+  {
+   "id": "dv-slat-offset-picture",
+   "name": "Picture sliced into offset slats",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A blurred figure is cut into 4-6 horizontal bands that are offset vertically by different amounts, so the image reads as a stepped, sliced object, then the offsets settle.",
+   "recipe": "Build: <Slices kind=\"slats\" at x y w h n={5} spread={0.08}>{picture}</Slices> (fx/Slices): 4-6 horizontal slats offset up and down by seeded amounts that settle to flat on E.snapOut (65 f). Anatomy: Bands 150-250 px; offsets decaying 16 -> 1.5 px/f. Sound: Under the hold.",
+   "timing": "65 f ease-out.",
+   "use_when": "Section breaks on a portrait or a picture.",
+   "avoid_when": "Faces that must be read.",
+   "primitive": [
+    "fx/Slices"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-spectral-film-stills",
+   "name": "Stills pushed into an expired-film spectral look",
+   "category": "texture_and_finish",
+   "family": "Photos and footage",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting",
+    "vertical"
+   ],
+   "summary": "Every still of a fast montage is pushed into one lo-fi spectral look: three or four saturated inks, a cyan fringe on one side of each edge and a red-yellow one on the other, a soft sideways smear, baked light streaks and heavy monochrome grain, so pictures from anywhere read as one printed, expired-film world.",
+   "recipe": "Photo stills under a per-still stack: three channel copies offset by transform in screen blend, one fixed sideways-blur copy at 40 %, a grain overlay; the cadence is the flip montage's. Anatomy: Per still a local channel split (red sampled to one side, blue to the other, amount gated by a low-frequency noise so fringes are local, 15-30 px at 1080p), a one-axis blur copy (12 px) mixed at 40 %, monochrome grain about 1.5 px at 6 % re-seeded per frame; the palette pushed to a few saturated inks over a pale ground. Sound: Full music under the run, then a stop-down into the next line. Materials: Fringe = red copy +1.2 % of the width, blue copy -1.2 %, masked by a static soft-noise plate; grain monochrome, sigma about 1.5 levels; inks e.g. magenta, red, cobalt and teal over a pale periwinkle ground.",
+   "timing": "Stills 5-22 f each on an accelerating cadence; the look holds constant across the run.",
+   "use_when": "A montage of mixed generated or stock stills that must feel like one world; imaging and creative products.",
+   "avoid_when": "Product UI; clean corporate films; more than one montage per film.",
+   "primitive": [],
+   "materials": "Fringe = red copy +1.2 % of the width, blue copy -1.2 %, masked by a static soft-noise plate; grain monochrome, sigma about 1.5 levels; inks e.g. magenta, red, cobalt and teal over a pale periwinkle ground.",
+   "conditions": [
+    "the film's one spectral accent"
+   ],
+   "jobs": [
+    "opening",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-string-curve-fan",
+   "name": "A fan of curves that keep vibrating like strings",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "From a hub (an app icon, a node) about sixteen curves fan out to the left and right and never freeze: their amplitudes swell and relax slowly, so they cross each other like vibrating strings or a moire; curves near the axis are saturated and thick, the outer ones thin and pale.",
+   "recipe": "Recipe: 16-32 SVG paths recomputed each frame from closed-form amplitudes. Anatomy: Cubic curves from the hub's edge to the frame edge; stroke 2.5 px in the accent at the axis down to 1 px at 30 % outermost; amplitude oscillates 10-20 % on a 2-3 s period with a phase per curve; mirrored on the other side. Sound: VO only. Materials: Opacity and width fall linearly with the curve index; every curve converges exactly on the hub's edge.",
+   "timing": "Continuous for 3-6 s.",
+   "use_when": "Connection, sync, everything flowing into one; behind a hub while the VO speaks.",
+   "avoid_when": "Under text; next to another line texture.",
+   "primitive": [],
+   "materials": "Opacity and width fall linearly with the curve index; every curve converges exactly on the hub's edge.",
+   "jobs": [
+    "product",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-thermal-echo-figure",
+   "name": "A heat-mapped figure trailed by tinted time echoes",
+   "category": "texture_and_finish",
+   "family": "Photos and footage",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Slow-motion footage of a figure is gradient-mapped like a heat image and trailed by soft translucent copies of itself a few frames behind, in one flat tint, so the movement reads as a long exposure; glyphs can trace its edge.",
+   "recipe": "Footage three extra times with startFrom offsets under a static tint filter in screen blend. Anatomy: Figure: a three-stop map (deep, hot, pale highlight); echoes: three copies at -2, -4 and -6 source frames, one flat tint, blur 8 px, screen blend at 0.3, 0.2 and 0.1; grain about 4 %. Sound: Music. Materials: Echo tint flat over a pale ground; in a house film the tint is a pale shade of the accent.",
+   "timing": "The echoes persist through the clip; often speed-ramped into a pixelate cut.",
+   "use_when": "A sport, motion or generation beat; one hero clip.",
+   "avoid_when": "Talking heads; UI.",
+   "primitive": [],
+   "materials": "Echo tint flat over a pale ground; in a house film the tint is a pale shade of the accent.",
+   "jobs": [
+    "emphasis",
+    "texture"
+   ],
+   "ban_safe": false,
+   "bans": [
+    "purple"
+   ],
+   "ban_safe_variant": "Echoes in a pale tint of the accent.",
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-tracking-guides",
+   "name": "Design-tool guides that track a mask's bounding box",
+   "category": "texture_and_finish",
+   "family": "Texture, grids and finish",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Behind a masked photo the faint lines are not a fixed grid: exactly two vertical and two horizontal hairlines sit on the edges of the mask's bounding box, extended across the frame, and they move with it as the mask breathes, like the guides of a design tool.",
+   "recipe": "Recipe: four SVG lines placed from the mask's rect each frame. Anatomy: Lines 2 px at 1080p, about 10 luma off the ground, no blur; locked to the mask on every frame (no lag); they inherit the mask's breath and its contraction into the cut. Sound: A shutter click on the cut right after the contraction.",
+   "timing": "As long as the mask: breath out 40 f, hold, in 10 f.",
+   "use_when": "A shape-led identity; design and layout products; any masked hero image.",
+   "avoid_when": "Busy grounds; together with a full grid.",
+   "primitive": [],
+   "jobs": [
+    "emphasis",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
   },
   {
    "id": "dv-accelerating-cadence",
@@ -9917,6 +12238,56 @@
    "bans": [],
    "weight": 5,
    "impact": 3
+  },
+  {
+   "id": "dv-card-pile-on",
+   "name": "Cards flick onto a pile",
+   "category": "ui_choreography",
+   "family": "Collage and composition",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "New photo cards pop onto the top of a fanned stack one after another, each starting small and motion-blurred, the cadence decaying until the cut; inside a framed screen, cards spin in toward level, pile up and orbit as a ring.",
+   "recipe": "Cards cardArrive (rot, scale from 0.7) with starts on a decaying list. Anatomy: Arrival 6 f each; one card every 9-10 f, decaying; spin 10 f; orbit 100 f in two pushes. Sound: A beat bed; a wood-block hit. Materials: A new card is born inside the face of the current top card: small (35 % of a card) and heavily blurred (20 px for 2-4 f) over its right half, it grows and turns toward the viewer (yaw 15 -> 5 deg in perspective) and lands as the new top card with a soft drop shadow appearing; about 12 f per card, one every 24 f.",
+   "timing": "60-110 f.",
+   "use_when": "Accumulation: saves, uploads, picks.",
+   "avoid_when": "Even cadence.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "materials": "A new card is born inside the face of the current top card: small (35 % of a card) and heavily blurred (20 px for 2-4 f) over its right half, it grows and turns toward the viewer (yaw 15 -> 5 deg in perspective) and lands as the new top card with a soft drop shadow appearing; about 12 f per card, one every 24 f.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-conveyor-streams",
+   "name": "Card streams on conveyors with U-shaped speed",
+   "category": "ui_choreography",
+   "family": "Collage and composition",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Streams of image cards travel on diagonals (one up-right, one down-left) or in rows with fade masks at the edges, fast on entry, slow in the middle, fast on exit; a photo strip accelerates to a whip and slows while the tiles grow so the hero ends large; two rivers of cards accelerate six-fold into a full blur and cut.",
+   "recipe": "Build: <Conveyor start n pitch angle x y render={(i) => card}> (fx/Conveyor): a looped stream whose speed enters at 65 px/f, settles to 18 (56 f), and with outAt grows 6x into the cut (28 f, 64 % of the change in the last fifth); two conveyors at opposite angles with a phase offset make the rivers; edges fade by mask; declares() marks the fast frames as camera blur. Anatomy: Rounded cards about 140 px; diagonal angle about 44 deg; edge fade masks; speed U-curve; growth toward the hero. Sound: Enters on a swap; exits with the word; a cut +120 ms after the beat. Materials: Rivers get depth per card, not one flat speed blur: neighbours at the same 8-9 px/f are blurred by different seeded amounts (0 or 6-10 px), lean 3-8 deg in perspective and scale down slightly with depth; card radius about 24 px, shadow 0 10px 20px at 10 %. A collage conveyor can magnify while it pans (1 -> 3.2x over 150 f, ease-in) while its content turns from one mood to its opposite, slowing almost to rest for 60 f at the peak so the faces can be read.",
+   "timing": "In 56 f, cruise, out 28 f; a rush into blur 60 f (64 % of the change in the last 20 %).",
+   "use_when": "Showing volume (thousands of images, many creators, a feed of examples).",
+   "avoid_when": "Constant-speed marquees.",
+   "primitive": [
+    "fx/Conveyor"
+   ],
+   "materials": "Rivers get depth per card, not one flat speed blur: neighbours at the same 8-9 px/f are blurred by different seeded amounts (0 or 6-10 px), lean 3-8 deg in perspective and scale down slightly with depth; card radius about 24 px, shadow 0 10px 20px at 10 %. A collage conveyor can magnify while it pans (1 -> 3.2x over 150 f, ease-in) while its content turns from one mood to its opposite, slowing almost to rest for 60 f at the peak so the faces can be read.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 5
   },
   {
    "id": "dv-field-word-flash",
