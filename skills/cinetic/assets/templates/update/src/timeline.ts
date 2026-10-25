@@ -152,6 +152,7 @@ export type Copy = {
   kind?: 'copy' | 'ui'; // 'ui': a string the product shows; not budgeted
   chain?: string;
   mode?: 'build' | 'replace';
+  reveal?: 'focus'; // the phrase comes into focus whole (fx/FocusWord): grid-check reads its hold, not a per-word rate
 };
 
 const pace = PACE[PACE_NAME];

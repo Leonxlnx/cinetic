@@ -162,7 +162,9 @@ bars.
 Write a chain in `COPY` with the `chain()` helper (`references/timing-grid.md`): it emits one entry per fragment
 (`<id>.1`, `<id>.2`, …) with its `chain` id and `mode`, timed from the pace. Render it with `<Chain chain="<id>">`
 (§8). `grid-check.ts` then measures it: `fragment`, `copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`,
-`chain-beat`, `read-quiet` (by salience), `word-rate` and `text-share` (`references/checks.md`).
+`chain-beat`, `read-quiet` (by salience), `word-rate` and `text-share` (`references/checks.md`). A phrase that comes
+into focus whole (`FocusWord`, word mode) declares `reveal: 'focus'` on its `COPY` entry: `reveal-rate` then reads its
+hold, not a rate per word.
 
 ## 3. Callback copy
 

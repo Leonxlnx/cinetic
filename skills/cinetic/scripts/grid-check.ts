@@ -26,7 +26,8 @@
  *                  earlier one, still on screen, has resolved and held its read (an error when
  *                  calm, a warning when crisp): two lines arriving together are a sentence dump
  *   reveal-rate    an entry of 3+ words revealed faster than 8 f per word, (resolved - in) /
- *                  (words - 1): a sentence dumped at once (warning)
+ *                  (words - 1): a sentence dumped at once (warning). An entry with reveal: 'focus' (the
+ *                  whole line coming into focus at once, fx/FocusWord) is read by its hold instead
  *   chain-gap      inside a chain (COPY entries sharing `chain`): each fragment arrives only after
  *                  the previous one has resolved and held its read (error), with a picture beat of
  *                  gapMin..gapMax frames (calm 30-90 f) after that read (shorter: an error when
@@ -145,7 +146,7 @@ import { pathToFileURL } from 'node:url';
 import { createContext, runInContext } from 'node:vm';
 
 type Act = { from: number; dur: number };
-type Copy = { id: string; text: string; in: number; resolved: number; out?: number | null; kind?: string; chain?: string; mode?: string };
+type Copy = { id: string; text: string; in: number; resolved: number; out?: number | null; kind?: string; chain?: string; mode?: string; reveal?: string };
 type Finding = { check: string; severity: 'error' | 'warn'; message: string };
 type Span = { from: number; to: number; label?: string };
 type Music = {
@@ -538,7 +539,7 @@ async function main() {
     const lines = String(c.text).split('\n');
     if (lines.length > 2) warn('copy-lines', `COPY ${id}: ${lines.length} lines on screen at once (keep <= 2)`);
     const rate = (c.resolved - c.in) / Math.max(1, n - 1);
-    if (n >= 3 && rate < 8 * s) warn('reveal-rate', `COPY ${id} "${c.text}" reveals ${n} words in ${c.resolved - c.in} f (${rate.toFixed(1)} f per word < ${8 * s}): a block, not a read; stagger the words or split the line`);
+    if (n >= 3 && rate < 8 * s && c.reveal !== 'focus') warn('reveal-rate', `COPY ${id} "${c.text}" reveals ${n} words in ${c.resolved - c.in} f (${rate.toFixed(1)} f per word < ${8 * s}): a block, not a read; stagger the words or split the line`);
   }
   if (words > maxWords) err('word-total', `${words} on-screen words; the budget is ${maxWords} (--max-words). Typed commands, code, URLs and app labels belong in COPY with kind: 'ui' and are not budgeted`);
 

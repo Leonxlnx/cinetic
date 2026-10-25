@@ -195,6 +195,7 @@ export type Copy = {
   kind?: 'copy' | 'ui'; // 'ui': a string the product shows (a typed command, code, a URL, an app label); not budgeted
   chain?: string; // the thought this fragment belongs to (fx/Chain renders a chain; grid-check checks its gaps)
   mode?: 'build' | 'replace'; // build: fragments append to one held line; replace: each takes the last one's place
+  reveal?: 'focus'; // the phrase comes into focus whole (fx/FocusWord): grid-check reads its hold, not a per-word rate
 };
 
 const pace = PACE[PACE_NAME];
