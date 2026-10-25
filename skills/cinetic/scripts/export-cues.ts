@@ -230,7 +230,17 @@ async function main() {
     if (!(Number.isFinite(pan) && pan >= -1 && pan <= 1)) errors.push(`${where}: pan must be in [-1, 1], got ${e.pan}`);
     if (e.pitch !== undefined && !(typeof e.pitch === 'number' ? Number.isFinite(e.pitch) : NOTE.test(String(e.pitch))))
       errors.push(`${where}: pitch must be a MIDI number or a note like "Eb6", got ${e.pitch}`);
-    if (e.apexFrac !== undefined && !(e.apexFrac > 0 && e.apexFrac < 1)) errors.push(`${where}: apexFrac must be in (0, 1)`);
+    // apexFrac exactly 0 or 1 comes from lib/sync peak() on an ease whose speed peaks at an end (E.softOut, E.buildIn,
+    // E.launchIn): the whoosh would land on its own first or last sample, so it is clamped with a warning, not refused
+    let apexFrac = e.apexFrac;
+    if (apexFrac !== undefined) {
+      if (!(Number.isFinite(apexFrac) && apexFrac >= 0 && apexFrac <= 1)) errors.push(`${where}: apexFrac must be in (0, 1)`);
+      else if (apexFrac === 0 || apexFrac === 1) {
+        const c = apexFrac === 0 ? 0.05 : 0.95;
+        warnings.push(`${where}: apexFrac ${apexFrac} puts the whoosh's peak on its ${apexFrac === 0 ? 'first' : 'last'} sample (the ease's speed peaks at an end): clamped to ${c}`);
+        apexFrac = c;
+      }
+    }
     if (e.dur !== undefined && !(Number.isFinite(e.dur) && e.dur > 0)) errors.push(`${where}: dur must be > 0 frames`);
     if (e.structural !== undefined && typeof e.structural !== 'boolean') errors.push(`${where}: structural must be true (or left out)`);
     if (e.force !== undefined && typeof e.force !== 'boolean') errors.push(`${where}: force must be true (or left out)`);
@@ -241,8 +251,8 @@ async function main() {
     if (e.structural && !MUSIC) warnings.push(`${where}: structural without a track (src/music.ts MUSIC is null): nothing to land on yet`);
     const out: SoundEvent = { f: Math.round(f * 1000) / 1000, kind: e.kind, weight: +(+weight).toFixed(3), pan: +(+pan).toFixed(3) };
     if (e.pitch !== undefined) out.pitch = e.pitch;
-    if (e.kind === 'whoosh' || e.kind === 'suck' || e.apexFrac !== undefined)
-      out.apexFrac = +(e.apexFrac ?? (e.kind === 'suck' ? 0.85 : 0.5)).toFixed(3);
+    if (e.kind === 'whoosh' || e.kind === 'suck' || apexFrac !== undefined)
+      out.apexFrac = +(apexFrac ?? (e.kind === 'suck' ? 0.85 : 0.5)).toFixed(3);
     if (e.dur !== undefined) out.dur = e.dur;
     if (e.variant !== undefined) out.variant = String(e.variant);
     if (e.id !== undefined) out.id = String(e.id);
