@@ -1,4 +1,5 @@
 import React, { useId } from 'react';
+import { MASK } from '../brand/tokens';
 import { clamp, E, type Ease } from '../lib/anim';
 import { type FilmCtx, f60x, fpsOf, uOf, useFilm } from '../lib/film';
 import type { Declares } from '../timeline';
@@ -30,6 +31,7 @@ export const SPECTRAL = {
   sweep: { dur60: 40, width: 0.32, angle: 18 },
 } as const;
 
+// cinetic:device-palette pastel foil hues on the cool side, a spectral run
 /** Pastel foil hues on the cool side (a brand may pass its own; the ring closes on its first colour). */
 export const FOIL_COOL = ['#2FA39A', '#9FE3D6', '#D5ECFF', '#E6F7C8', '#B8EBD7', '#2FA39A'] as const;
 
@@ -95,7 +97,7 @@ export const Foil: React.FC<FoilProps & { frame: number; children?: React.ReactN
   const rad = (p.radius ?? SPECTRAL.foil.radius) * S;
   const plate = bakePlate('conic', ringStops(p.hues ?? FOIL_COOL), 320, 320, { angle: 0 });
   const sheen = bakePlate('linear', [{ at: 0, color: '#FFFFFF', alpha: 0 }, { at: 0.5, color: '#FFFFFF', alpha: 0.55 }, { at: 1, color: '#FFFFFF', alpha: 0 }], 160, 8);
-  const shade = bakePlate('radial', [{ at: 0, color: '#000000', alpha: 0 }, { at: 0.75, color: '#000000', alpha: 0.05 }, { at: 1.05, color: '#000000', alpha: 0.22 }], 160, 160);
+  const shade = bakePlate('radial', [{ at: 0, color: MASK, alpha: 0 }, { at: 0.75, color: MASK, alpha: 0.05 }, { at: 1.05, color: MASK, alpha: 0.22 }], 160, 160);
   const D = S * 1.6;
   const foil = (key: string, grey: boolean, opacity: number) => (
     <img key={key} src={plate} style={{ position: 'absolute', left: (S - D) / 2, top: (S - D) / 2, width: D, height: D, transform: `rotate(${p.angle.toFixed(3)}deg) scale(1.15, 0.85)`, filter: grey ? 'saturate(0) brightness(1.12)' : undefined, opacity }} />
