@@ -1,5 +1,7 @@
 import React, { useId, useLayoutEffect, useRef } from 'react';
+import { C, MASK } from '../brand/tokens';
 import { clamp, E, type Ease } from '../lib/anim';
+import { mixColor } from '../lib/color';
 import { type FilmCtx, f60x, fpsOf, uOf, useFilm } from '../lib/film';
 import type { Declares } from '../timeline';
 import { bakePlate } from './Gradients';
@@ -136,8 +138,9 @@ export const floorState = (f: number, p: Pick<FloorGlowProps, 'at' | 'grow60' | 
   return { scale: GLOW.floor.from + (1 - GLOW.floor.from) * t, opacity: (p.at === undefined || f >= p.at ? Math.min(1, t * 1.6) : 0) * (p.level ?? 1) };
 };
 
+// cinetic:device-palette a light pool's white-hot core and its cool falloff tone (the accent's neighbour)
 /** The pool's stops: near-white core, accent body, second tone in the falloff. Pure. */
-export const floorStops = (tones: [string, string] = ['#08965A', '#11A39A']): Stop[] => [
+export const floorStops = (tones: [string, string] = [C.accent, '#11A39A']): Stop[] => [
   { at: 0, color: '#F4FFF8', alpha: 1 },
   { at: 0.16, color: tones[0], alpha: 0.92 },
   { at: 0.5, color: tones[1], alpha: 0.38 },
@@ -168,7 +171,7 @@ export const ColourShadow: React.FC<ColourShadowProps & { children: React.ReactN
   const u = uOf(film);
   const uid = useId().replace(/[:]/g, '');
   const s = shadowState(p.lift, p, u);
-  const tint = p.tint ?? '#0B4A30';
+  const tint = p.tint ?? mixColor(C.accent, C.ink, 0.5); // the accent's deep shade
   const sh = (id: string, color: string, blur: number) => (
     <filter id={`cs${uid}${id}`} colorInterpolationFilters="sRGB" x="-30%" y="-30%" width="160%" height="160%">
       <feFlood floodColor={color} />
@@ -186,7 +189,7 @@ export const ColourShadow: React.FC<ColourShadowProps & { children: React.ReactN
     <div style={{ position: 'absolute', inset: 0 }}>
       <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
         <defs>
-          {sh('c', '#000000', 3)}
+          {sh('c', MASK, 3)}
           {sh('n', tint, GLOW.shadow.near)}
           {sh('f', tint, GLOW.shadow.far)}
         </defs>
@@ -274,11 +277,12 @@ export const LightFront: React.FC<LightFrontProps & { frame: number; children: R
 // ---------------------------------------------------------------------------------------------------- streaks
 /** Hard conic stops with black gaps (shares of the turn). Pure. */
 export const streakStops = (streaks: { from: number; to: number; color: string }[]): Stop[] => {
-  const s: Stop[] = [{ at: 0, color: '#000000' }];
-  for (const k of streaks) s.push({ at: k.from, color: '#000000' }, { at: k.from + 0.004, color: k.color }, { at: k.to - 0.004, color: k.color }, { at: k.to, color: '#000000' });
-  s.push({ at: 1, color: '#000000' });
+  const s: Stop[] = [{ at: 0, color: MASK }];
+  for (const k of streaks) s.push({ at: k.from, color: MASK }, { at: k.from + 0.004, color: k.color }, { at: k.to - 0.004, color: k.color }, { at: k.to, color: MASK });
+  s.push({ at: 1, color: MASK });
   return s;
 };
+// cinetic:device-palette the streaks' cool run: lift, white, cyan and deep teal between the black gaps
 export const STREAKS_COOL = streakStops([
   { from: 0.0, to: 0.06, color: '#77D59E' },
   { from: 0.1, to: 0.18, color: '#F4FBFA' },
@@ -300,7 +304,7 @@ export const RadialStreaks: React.FC<RadialStreaksProps & { frame: number }> = (
   const S = p.size ?? Math.hypot(film.width, film.height) * 1.1;
   const plate = bakePlate('conic', p.stops ?? STREAKS_COOL, 768, 768, { angle: p.angle ?? -90 });
   const inner = p.inner ?? GLOW.streaks.inner;
-  const mask = bakePlate('radial', [{ at: 0, color: '#000', alpha: 0 }, { at: inner, color: '#000', alpha: 0 }, { at: inner * 1.7, color: '#000', alpha: 1 }, { at: 1, color: '#000', alpha: 0.6 }], 256, 256);
+  const mask = bakePlate('radial', [{ at: 0, color: MASK, alpha: 0 }, { at: inner, color: MASK, alpha: 0 }, { at: inner * 1.7, color: MASK, alpha: 1 }, { at: 1, color: MASK, alpha: 0.6 }], 256, 256);
   const sc = streaksScale(p.frame, p, film);
   return (
     <div style={{ position: 'absolute', left: p.cx - S / 2, top: p.cy - S / 2, width: S, height: S, WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: '100% 100%', maskSize: '100% 100%', transform: `scale(${sc.toFixed(5)})`, opacity: p.opacity ?? 1, mixBlendMode: 'screen', pointerEvents: 'none' }}>
