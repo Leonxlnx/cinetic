@@ -23,6 +23,9 @@
 # Needs: npx with @remotion/cli, python3 with numpy and opencv, and for the SVG lockups fonttools,
 # brotli and uharfbuzz. Exit 0 = every file written, 1 = a step failed.
 set -euo pipefail
+# Python: $PYTHON when it is set (the interpreter of a full environment; new-film.sh and npm's scripts/py.mjs
+# honour it too), else python3 on PATH
+python3() { if [ -n "${PYTHON:-}" ]; then "$PYTHON" "$@"; else command python3 "$@"; fi; }
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 usage() { sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d' | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }

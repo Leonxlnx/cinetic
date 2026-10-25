@@ -43,6 +43,9 @@
 # HyperFrames downloads its own. Telemetry is off unless HYPERFRAMES_NO_TELEMETRY is set to 0.
 # Exit: 0 every gate passed, 1 a gate failed, 2 usage error.
 set -euo pipefail
+# Python: $PYTHON when it is set (the interpreter of a full environment; new-film.sh and npm's scripts/py.mjs
+# honour it too), else python3 on PATH
+python3() { if [ -n "${PYTHON:-}" ]; then "$PYTHON" "$@"; else command python3 "$@"; fi; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 die() { echo "hf-finish: $*" >&2; exit 1; }

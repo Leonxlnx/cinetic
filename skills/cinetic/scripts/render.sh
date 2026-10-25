@@ -86,6 +86,9 @@
 # Run it from the project root (the folder holding src/index.ts); the other scripts are found
 # next to this one.
 set -euo pipefail
+# Python: $PYTHON when it is set (the interpreter of a full environment; new-film.sh and npm's scripts/py.mjs
+# honour it too), else python3 on PATH
+python3() { if [ -n "${PYTHON:-}" ]; then "$PYTHON" "$@"; else command python3 "$@"; fi; }
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 usage() { sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d' | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
@@ -141,7 +144,7 @@ if [[ ! -f "$ENTRY" ]]; then
   if [[ -f "$SCRIPT_DIR/../$ENTRY" ]]; then cd "$SCRIPT_DIR/.."; else die "no $ENTRY here; run from the project root or pass --entry"; fi
 fi
 ROOT=$(pwd)
-for tool in npx ffmpeg ffprobe python3; do command -v "$tool" >/dev/null || die "$tool not found on PATH"; done
+for tool in npx ffmpeg ffprobe "${PYTHON:-python3}"; do command -v "$tool" >/dev/null || die "$tool not found on PATH"; done
 mkdir -p "$(dirname "$OUT")" out/qa
 OUT_ABS=$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")
 NAME=$(basename "${OUT%.*}")

@@ -377,4 +377,5 @@ Read each file when its step comes up; never all at once.
 | poster, GIF, WebM, loop seam, alpha, variants, credits | `scripts/deliver.sh` |
 | brand kit export; outlined lettering | `scripts/brand-kit.sh`; `scripts/outline-text.py` |
 | the HyperFrames finish | `scripts/hf-finish.sh` |
+| the Python the npm scripts run (`$PYTHON`, else `python3`, `python` or `py -3`) | `scripts/py.mjs` (`--which`) |
 | the scripts' own tests (not a film's) | `scripts/test/` (`lint-film`, `grid-check`, `tokens`, `mirror`, `scripts-docs`, `provenance`, `pick`, `deck`, `brand`, `like`, `track`, `score`, `assets`) |

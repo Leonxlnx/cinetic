@@ -197,7 +197,7 @@ python3 -c "import numpy, scipy, soundfile, pyloudnorm, cv2, librosa, fontTools,
 | `fonttools`, `brotli`, `uharfbuzz` | outlined lettering: `outline-text.py`, the SVG lockups in `brand-kit.sh`, and the fonts of a supplied brand kit (`brand.py`) |
 | `pillow` | `dither-gradient.py` (banding-free gradient PNGs), a PNG logo in a brand kit (`brand.py`) |
 
-The npm scripts and shell scripts call plain `python3`, and many agents open a fresh shell for each command. Either activate the environment in the terminal before you start the agent, or put it first on your `PATH` in your shell profile:
+The shell scripts and `new-film.sh` run `$PYTHON` when it is set, else `python3`; the npm scripts go through `scripts/py.mjs`, which runs `$PYTHON`, else the first of `python3`, `python` and (on Windows) `py -3` that is Python 3.10 or newer (`node scripts/py.mjs --which` prints it). Many agents open a fresh shell for each command, so either set `PYTHON` to the environment's interpreter, activate the environment in the terminal before you start the agent, or put it first on your `PATH` in your shell profile:
 
 ```bash
 echo 'export PATH="$HOME/.venvs/cinetic/bin:$PATH"' >> ~/.zshrc    # or ~/.bashrc
