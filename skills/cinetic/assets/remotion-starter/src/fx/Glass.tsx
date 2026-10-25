@@ -1,4 +1,5 @@
 import React, { useId } from 'react';
+import { C, MASK } from '../brand/tokens';
 import { clamp, E } from '../lib/anim';
 import { type FilmCtx, f60x, fpsOf, uOf, useFilm } from '../lib/film';
 import type { Declares } from '../timeline';
@@ -173,8 +174,8 @@ export const Glass: React.FC<GlassProps & { frame: number; backdrop: React.React
         </defs>
       </svg>,
       <div key="body" style={{ ...full, clipPath: clip, opacity: s.level }}>
-        <div style={{ ...full, background: p.fill ?? '#0A0D0C' }} />
-        <div style={{ ...full, background: '#000', opacity: s.clear, isolation: 'isolate' }}>
+        <div style={{ ...full, background: p.fill ?? C.ink }} />
+        <div style={{ ...full, background: MASK, opacity: s.clear, isolation: 'isolate' }}>
           {copy(0, mg * (1 - R.split))}
           {copy(1, mg)}
           {copy(2, mg * (1 + R.split))}
@@ -190,10 +191,10 @@ export const Glass: React.FC<GlassProps & { frame: number; backdrop: React.React
     const shade = bakePlate(
       'linear',
       [
-        { at: 0, color: '#000000', alpha: 0.28 },
+        { at: 0, color: MASK, alpha: 0.28 },
         { at: 0.3, color: '#FFFFFF', alpha: 0.14 },
         { at: 0.55, color: '#FFFFFF', alpha: 0 },
-        { at: 1, color: '#000000', alpha: 0.22 },
+        { at: 1, color: MASK, alpha: 0.22 },
       ],
       Math.round(st),
       8,
