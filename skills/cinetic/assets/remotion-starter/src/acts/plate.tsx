@@ -4,7 +4,7 @@
 // absolute frame, carried from the statement's launch and drifting on after it.
 //
 // cinetic:placeholder - the plate is a stand-in drawn in code (forested ridges in blue-hour mist, a photograph's
-// own colour and texture, never the accent's hue), so the starter commits no media. Put the film's own photographs in public/assets/ (python3 scripts/assets.mjs
+// own colour and texture, never the accent's hue), so the starter commits no media. Put the film's own photographs in public/assets/ (node scripts/assets.mjs
 // search / get / grade: sources whose licences need no credit), point PLATE and SET_FRAMES at them with their
 // real pixel sizes and focus points (SET_FRAMES: one photo per frame), redraw PLATE_SLICES along the real photo's edges (or delete them), then
 // delete these lines. Real imagery keeps its own colour (grade 'natural'); credits never go on screen.
