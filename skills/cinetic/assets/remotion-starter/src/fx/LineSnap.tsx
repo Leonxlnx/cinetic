@@ -1,7 +1,7 @@
 import React from 'react';
 import { FONT, TYPE, typeStyle } from '../brand/tokens';
 import { clamp, E, type Ease, fd, perFrame, prog } from '../lib/anim';
-import { defocusMix } from '../lib/defocus';
+import { DEFOCUS_SHARP, defocusMix } from '../lib/defocus';
 import { type FilmCtx, f60x, fpsOf, uOf, useFilm } from '../lib/film';
 import { measureTracked } from '../lib/measure';
 import type { Declares } from '../timeline';
@@ -191,6 +191,7 @@ export type LineSnapProps = {
   role?: Role;
   size?: number;
   family?: string;
+  weight?: number; // the face's weight (default the role's); measuring and drawing both use it
   color?: string;
   wordColor?: string;
   align?: 'left' | 'center'; // where the finished line sits around x (default centre)
@@ -208,11 +209,12 @@ export type LineSnapProps = {
  * new word is hidden; on `at` the line jumps `factor` larger, the read words settle and a short defocus
  * clears (at most two fixed ladder copies), the new word fades in with a small rise. Call under FontGate.
  */
-export const LineSnap: React.FC<LineSnapProps> = ({ frame, held, word, mode, room, wordAt, snap, role = 'display', size: sizeProp, family = FONT.text, color, wordColor, align = 'center', x: xProp, top: topProp, origin = 'center', id = 'linesnap', style }) => {
+export const LineSnap: React.FC<LineSnapProps> = ({ frame, held, word, mode, room, wordAt, snap, role = 'display', size: sizeProp, family = FONT.text, color, wordColor, align = 'center', x: xProp, top: topProp, origin = 'center', id = 'linesnap', weight: weightProp, style }) => {
   const film = useFilm();
   const u = uOf(film);
   const size = sizeProp ?? TYPE[role].size * u;
-  const { weight, track, lead } = TYPE[role];
+  const { track, lead } = TYPE[role];
+  const weight = weightProp ?? TYPE[role].weight;
   const w = (s: string) => measureTracked(s, size, weight, track, family) - track * size;
   const full = `${held} ${word}`;
   const wFull = w(full);
@@ -230,11 +232,11 @@ export const LineSnap: React.FC<LineSnapProps> = ({ frame, held, word, mode, roo
     const heldLeft = left - dist + s.x; // the held words start where a centred held line sits
     return (
       <div style={{ position: 'absolute', left: 0, top: 0, ...style }}>
-        <span data-text={`${id}.held`} style={{ ...typeStyle(role, size), fontFamily: family, color, position: 'absolute', left: 0, top: 0, transform: `translate3d(${heldLeft.toFixed(3)}px, ${top.toFixed(3)}px, 0)`, willChange: 'transform' }}>
+        <span data-text={`${id}.held`} style={{ ...typeStyle(role, size), fontWeight: weight, fontFamily: family, color, position: 'absolute', left: 0, top: 0, transform: `translate3d(${heldLeft.toFixed(3)}px, ${top.toFixed(3)}px, 0)`, willChange: 'transform' }}>
           {held}
         </span>
         {show && (
-          <span data-text={`${id}.word`} style={{ ...typeStyle(role, size), fontFamily: family, color: wordColor ?? color, position: 'absolute', left: 0, top: 0, transform: `translate(${(left + wordLeft).toFixed(3)}px, ${top.toFixed(3)}px)` }}>
+          <span data-text={`${id}.word`} style={{ ...typeStyle(role, size), fontWeight: weight, fontFamily: family, color: wordColor ?? color, position: 'absolute', left: 0, top: 0, transform: `translate(${(left + wordLeft).toFixed(3)}px, ${top.toFixed(3)}px)` }}>
             {word}
           </span>
         )}
@@ -245,20 +247,26 @@ export const LineSnap: React.FC<LineSnapProps> = ({ frame, held, word, mode, roo
   const s = scaleSnapState(frame, so, film);
   const ox = left + (origin === 'left' ? 0 : origin === 'right' ? wFull : wFull / 2);
   const oy = top + (size * lead) / 2;
-  // everything below sits inside the scaled container: on-screen px (settle, rise, defocus) divide by the scale
+  // the settle and the rise sit inside the scaled container (on-screen px divide by the scale); the defocus
+  // copies wrap it from outside, so their ladder radii are on-screen px (a radius inside a x2.2 scale would
+  // lose every on-screen sigma under about 1.1 px to the sharp threshold). The two copies add in an isolated group
+  // (plus-lighter, each at its weight), so a transparent text layer is the weighted mix: a second copy drawn over
+  // an opaque first one would add ink and read as more blur on a light weight and as less near the sharp end.
   const k = s.scale;
-  const copies = (s.sigma * u) / k >= 0.5 ? defocusMix((s.sigma * u) / k) : [{ level: 0, weight: 1 }];
+  const copies = s.sigma * u >= DEFOCUS_SHARP ? defocusMix(s.sigma * u) : [{ level: 0, weight: 1 }];
   const line = (key: number, level: number, opacity: number) => (
-    <div key={key} style={{ position: 'absolute', left: 0, top: 0, opacity, filter: level > 0 ? blurFilter(level) : undefined }}>
-      <span style={{ ...typeStyle(role, size), fontFamily: family, color, position: 'absolute', left: 0, top: 0, transform: `translate(${(left + (s.settleX * u) / k).toFixed(3)}px, ${top.toFixed(3)}px)` }}>{held}</span>
-      {s.snapped && (
-        <span style={{ ...typeStyle(role, size), fontFamily: family, color: wordColor ?? color, position: 'absolute', left: 0, top: 0, opacity: s.wordOpacity, transform: `translate(${(left + wordLeft).toFixed(3)}px, ${(top + (s.wordY * u) / k).toFixed(3)}px)` }}>{word}</span>
-      )}
+    <div key={key} style={{ position: 'absolute', left: 0, top: 0, width: film.width, height: film.height, opacity, filter: level > 0 ? blurFilter(level) : undefined, mixBlendMode: key > 0 ? 'plus-lighter' : undefined }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: film.width, height: film.height, transformOrigin: `${ox.toFixed(2)}px ${oy.toFixed(2)}px`, transform: `scale(${k.toFixed(6)})` }}>
+        <span style={{ ...typeStyle(role, size), fontWeight: weight, fontFamily: family, color, position: 'absolute', left: 0, top: 0, transform: `translate(${(left + (s.settleX * u) / k).toFixed(3)}px, ${top.toFixed(3)}px)` }}>{held}</span>
+        {s.snapped && (
+          <span style={{ ...typeStyle(role, size), fontWeight: weight, fontFamily: family, color: wordColor ?? color, position: 'absolute', left: 0, top: 0, opacity: s.wordOpacity, transform: `translate(${(left + wordLeft).toFixed(3)}px, ${(top + (s.wordY * u) / k).toFixed(3)}px)` }}>{word}</span>
+        )}
+      </div>
     </div>
   );
   return (
-    <div data-text={id} style={{ position: 'absolute', left: 0, top: 0, width: film.width, height: film.height, transformOrigin: `${ox.toFixed(2)}px ${oy.toFixed(2)}px`, transform: `scale(${s.scale.toFixed(6)})`, ...style }}>
-      {copies.map((c, i) => line(i, c.level, i === 0 ? 1 : c.weight))}
+    <div data-text={id} style={{ position: 'absolute', left: 0, top: 0, width: film.width, height: film.height, isolation: copies.length > 1 ? 'isolate' : undefined, ...style }}>
+      {copies.map((c, i) => line(i, c.level, c.weight))}
     </div>
   );
 };
