@@ -45,7 +45,7 @@ Nothing ever plays. For every output frame the engine seeks every registered tim
 | `index.html` | the composition: root, clips, one paused timeline registered last |
 | `motion.js` | grid (`FPS`, `BPM`, `b`, `sec`, `at`), `E`, `SPR` (with `SPR.calm`), `PACE` and `pace`, `spring()`, `pulse()`, `hitPulse`, `squash`, `arrive`/`depart` and their GSAP-ease forms `arriving`/`departing`, sync helpers, `rand`; same names and numbers as the Remotion kit |
 | `timeline.js` | the film's `ACT`, `DUR`, `CUE`, `COPY` (one entry per fragment, with `chain()` for a thought in several), `READ` (when each entry is read), `TOTAL` in frames, `WORD_EASE`, `PACE_NAME`/`PACE` (from `motion.js`), and `FILM.cues()` for the sound; `node scripts/grid-check.ts timeline.js` checks it |
-| `audio/score.json` | the demo's music (key, chords, sections) for `scripts/audio/score.py` |
+| `audio/score.json`, `audio/kit.json` | the soundtrack for `scripts/audio/score.py`: the licensed track (`audio/music/`, git-ignored), its edit and licence record, the key, the stop-downs and the payoff; the earshot `launch` kit, whose effects sit at their level over the track |
 | `setup.mjs`, `package.json` | local GSAP and fonts; `npm run` scripts `lint`, `check`, `snapshot`, `cues`, `audio`, `render:preview`, `render` |
 | `fonts/README.md` | how to add or swap faces |
 
