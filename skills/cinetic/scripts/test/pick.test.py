@@ -3,12 +3,15 @@
 
   1. The fixture library validates; broken libraries are refused with exit 2 and a reason.
   2. Draws are reproducible per seed, honour --format, --exclude and --avoid, and never break the
-     per-film signature cap. The default energy is calm: no high-energy entry is ever drawn, a calm
+     signature cap of a film. The default energy is calm: no high-energy entry is ever drawn, a calm
      plan holds one technique per 3.5 s, and a slot with nothing calm left passes down the order.
   3. Ban-unsafe entries print their ban-safe variant unless the brand supplies every banned look.
   4. Weights do what the docstring says: workhorses come up more often than signatures.
   5. The shipped library (assets/library/techniques.json) validates, can fill a plan for every format,
      and references/technique-library.md is exactly its generated Markdown.
+  6. The update format: an 8-20 s update film draws its hook, a product moment and its end card first,
+     from entries made for update films and from launch, feature and sting entries, never from entries
+     that only fit a loop, a walkthrough or a vertical film.
 
 Usage (from the skill root):  python3 scripts/test/pick.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -212,7 +215,7 @@ result(high.get('fx-tr-sig-a', 0) > 2 * high.get('fx-tr-sig-c', 0), '--energy hi
 if os.path.exists(SHIPPED):
     r = pick('--validate', library=SHIPPED)
     result(r.returncode == 0, 'the shipped library validates', (r.stderr or r.stdout).strip()[:300])
-    for fmt in ('launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical'):
+    for fmt in ('launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical', 'update'):
         r, d = draw_json('--format', fmt, '--seed', '1', library=SHIPPED)
         cats = {p['category'] for p in d['picks']}
         result(r.returncode == 0 and len(d['picks']) >= 4 and len(cats) >= 4, f'the shipped library fills a {fmt} plan', f'{len(d["picks"])} picks, {len(cats)} categories')
@@ -222,6 +225,32 @@ if os.path.exists(SHIPPED):
     result(same, 'references/technique-library.md matches the JSON', '' if same else 'run: python3 scripts/pick.py --markdown > references/technique-library.md')
 else:
     result(False, 'the shipped library exists', SHIPPED)
+
+# 6. The update format ---------------------------------------------------------------------------
+UPD_LIB = os.path.join(HERE, 'pick-fixtures', 'update-library.json')
+r = pick('--validate', library=UPD_LIB)
+result(r.returncode == 0 and '20 techniques in 14 categories' in r.stdout, 'a library whose entries list the update format validates', r.stderr.strip())
+upd = json.load(open(UPD_LIB, encoding='utf-8'))['techniques']
+never = {e['id'] for e in upd if not set(e['formats']) & {'update', 'launch', 'feature', 'sting', 'any'}}
+seen, first, bad = set(), [], []
+for s in range(60):
+    r, d = draw_json('--format', 'update', '--seed', str(s), library=UPD_LIB)
+    got = ids(d)
+    seen |= set(got)
+    bad += [i for i in got if i in never]
+    first.append([p['category'] for p in d['picks']][:3])
+result(not bad and seen >= {'up-hook-launch', 'up-demo-feature', 'up-end-sting'},
+       'an update film draws update entries and borrows launch, feature and sting entries, never loop-, walkthrough- or vertical-only ones',
+       ', '.join(sorted(set(bad))[:4]))
+result(all(f == ['opening_hook', 'product_demo', 'logo_and_end_card'] for f in first),
+       'an update plan fills the hook, a product moment and the end card first')
+r, d = draw_json('--format', 'update', '--seed', '4', library=UPD_LIB)
+r2, d2 = draw_json('--format', 'update', '--seconds', '20', '--energy', 'high', '--seed', '4', library=UPD_LIB)
+result(len(d['picks']) == 4 and len(d2['picks']) == 8 and d['format'] == 'update',
+       'a 14 s calm update draws 4 techniques, a 20 s energetic one 8', f'{len(d["picks"])}, {len(d2["picks"])}')
+r, d = draw_json('--format', 'launch', '--seed', '4', library=UPD_LIB)
+result(r.returncode == 1 or not set(ids(d)) & {e['id'] for e in upd if e['formats'] == ['update']},
+       'a launch film never draws an entry made only for update films')
 
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')
 sys.exit(1 if failed else 0)

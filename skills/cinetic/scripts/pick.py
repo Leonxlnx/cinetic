@@ -18,6 +18,7 @@ Usage:
   python3 scripts/pick.py --format launch --seconds 25               # a calm whole-film plan (7 picks)
   python3 scripts/pick.py --format launch --energy high --seconds 25  # an energetic one (10 picks)
   python3 scripts/pick.py --format loop --seed 41                     # reproducible plan (10 s: 4 picks)
+  python3 scripts/pick.py --format update --seconds 14                # a short update film ("vX is out")
   python3 scripts/pick.py --category transition --n 3 --format launch # three transitions
   python3 scripts/pick.py --category logo_and_end_card --exclude le-hard-cut-lockup
   python3 scripts/pick.py --plan --avoid out/qa/picks-previous.json    # skip ids used before
@@ -26,6 +27,11 @@ Usage:
   python3 scripts/pick.py --validate                                  # check the library file
   python3 scripts/pick.py --markdown > references/technique-library.md # regenerate the readable library
   python3 scripts/pick.py ... --json out/qa/picks.json                # also write the draw as JSON
+
+An update film (--format update, 8-20 s: a hook on the version or the mark, 2-4 changes each shown as a
+product moment, one payoff, the end card with the version) draws from the entries made for update films
+and from launch, feature and sting entries (an update is a short launch), and fills its hook, a product
+moment and its end card first.
 
 A plan holds about one technique per 3.5 s of film when calm, per 2.5 s otherwise (--seconds),
 filled in the format's order of need (a sting draws its end card and hook first, a walkthrough its
@@ -56,7 +62,9 @@ CATEGORIES = ['opening_hook', 'transition', 'camera', 'typography_motion', 'ui_c
               'data_and_numbers', 'product_demo', 'logo_and_end_card', 'color_and_light',
               'texture_and_finish', 'layout_and_composition', 'pacing_structure',
               'micro_interaction', 'depth_and_3d']
-FORMATS = ['launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical']
+FORMATS = ['launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical', 'update']
+# A format that also draws from other formats' entries: an update film is a short launch film.
+FORMAT_ALSO = {'update': ('launch', 'feature', 'sting')}
 ENERGIES = ['calm', 'medium', 'high']
 ROLE_WEIGHT = {'workhorse': 3.0, 'accent': 2.0, 'signature': 1.0}
 REQUIRED = ['id', 'name', 'category', 'summary', 'recipe', 'timing', 'use_when', 'avoid_when',
@@ -85,9 +93,13 @@ ORDER = {
     'vertical': ['opening_hook', 'product_demo', 'ui_choreography', 'typography_motion', 'transition',
                  'logo_and_end_card', 'micro_interaction', 'data_and_numbers', 'camera', 'color_and_light',
                  'transition', 'typography_motion'],
+    # the hook on the version or the mark, a product moment per change, the end card with the version
+    'update': ['opening_hook', 'product_demo', 'logo_and_end_card', 'ui_choreography', 'transition',
+               'typography_motion', 'micro_interaction', 'product_demo', 'data_and_numbers', 'camera',
+               'transition', 'color_and_light'],
 }
-DEFAULT_SECONDS = {'launch': 30, 'feature': 15, 'loop': 10, 'sting': 6, 'walkthrough': 45, 'vertical': 15}
-MIN_PICKS = {'launch': 6, 'feature': 5, 'loop': 4, 'sting': 4, 'walkthrough': 6, 'vertical': 5}
+DEFAULT_SECONDS = {'launch': 30, 'feature': 15, 'loop': 10, 'sting': 6, 'walkthrough': 45, 'vertical': 15, 'update': 14}
+MIN_PICKS = {'launch': 6, 'feature': 5, 'loop': 4, 'sting': 4, 'walkthrough': 6, 'vertical': 5, 'update': 4}
 SECONDS_PER_PICK = {'calm': 3.5}  # a calm film carries fewer, longer moves
 DEFAULT_SECONDS_PER_PICK = 2.5
 
@@ -176,7 +188,7 @@ def weight(e, energy):
 
 
 def fits(e, fmt):
-    return not fmt or 'any' in e['formats'] or fmt in e['formats']
+    return not fmt or 'any' in e['formats'] or fmt in e['formats'] or bool(set(FORMAT_ALSO.get(fmt, ())) & set(e['formats']))
 
 
 def draw(pool, n, rng, energy, taken, signature_left):
