@@ -91,8 +91,8 @@ export const EchoStamp: React.FC<EchoStampProps & { frame: number; x: number; y:
         const line = 2 * u;
         return (
           <>
-            <div style={{ position: 'absolute', left: -w, top: -h, width: sz, height: sz, borderLeft: `${line}px solid ${t.color}`, borderTop: `${line}px solid ${t.color}` }} />
-            <div style={{ position: 'absolute', left: w - sz, top: h - sz, width: sz, height: sz, borderRight: `${line}px solid ${t.color}`, borderBottom: `${line}px solid ${t.color}` }} />
+            <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(-w).toFixed(2)}px, ${(-h).toFixed(2)}px)`, width: sz, height: sz, borderLeft: `${line}px solid ${t.color}`, borderTop: `${line}px solid ${t.color}` }} />
+            <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(w - sz).toFixed(2)}px, ${(h - sz).toFixed(2)}px)`, width: sz, height: sz, borderRight: `${line}px solid ${t.color}`, borderBottom: `${line}px solid ${t.color}` }} />
           </>
         );
       })()}
