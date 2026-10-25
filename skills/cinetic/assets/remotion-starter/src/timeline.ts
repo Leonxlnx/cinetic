@@ -85,7 +85,9 @@ export const CUE = {
   fragB: b(2, 0, 2), // "the beat" answers on the off-beat; the line jumps to make room, the dot is its period
   exit: b(3, 0, 2), // the read is over: the line (dot and all) accelerates out to the left...
   cut: b(3, 1), // ...cut on its fastest frame: the plate (the film's real imagery) arrives already moving left
+  band: b(3, 2), // a band of light crosses the plate, mid-frame on the beat
   plateCut: b(3, 3), // a hard cut on the beat to a closer frame of the same set, still drifting left
+  band2: b(4), // the light crosses the closer frame too, mid-frame on the downbeat
   morph: b(4, 1), // the plate contracts into the gap of the next line: the picture becomes a word
   fragC: b(4, 1, 2), // "Every" and "frame" rise on either side of it
   swapA: b(4, 2), // the picture in the gap cuts to the next frame of the set...
@@ -94,6 +96,7 @@ export const CUE = {
   drop2: b(5, 1, 2), // ...into the relief: the plinth under a low key, carried in on the same speed
   pieceA: b(5, 2), // the dome lands on the plinth (contact frame)
   pieceB: b(5, 3), // the block lands (contact frame)
+  catch: b(6), // the mark is whole: on the downbeat the key rises, and every shadow shortens
   lockCut: b(6, 1), // cut to the lockup as the key climbs: shadows shorten, the name starts to slide out of the mark
   lockup: b(6, 2), // the name is home: the payoff, then the hold lives on the key and a slow dolly
   end: b(7), // last bar line; TAIL follows
@@ -178,8 +181,9 @@ export const SPRING_CLASS = 'mark-piece';
 export const STRUCTURAL: (keyof typeof CUE)[] = [];
 /** Each CUE's salience (missing = 'hit'). */
 export const SALIENCE: Partial<Record<keyof typeof CUE, Salience>> = {
-  fragA: 'copy', drop: 'move', land: 'hit', fragB: 'copy', exit: 'copy', cut: 'cut', plateCut: 'cut', morph: 'cut', fragC: 'copy',
-  swapA: 'move', swapB: 'move', exit2: 'copy', drop2: 'cut', pieceA: 'hit', pieceB: 'hit', lockCut: 'cut', lockup: 'hit', end: 'cut',
+  fragA: 'copy', drop: 'move', land: 'hit', fragB: 'copy', exit: 'copy', cut: 'cut', band: 'life', plateCut: 'cut', band2: 'life', morph: 'cut',
+  fragC: 'copy', swapA: 'move', swapB: 'move', exit2: 'copy', drop2: 'cut', pieceA: 'hit', pieceB: 'hit', catch: 'life', lockCut: 'cut',
+  lockup: 'hit', end: 'cut',
 };
 
 export type Copy = {

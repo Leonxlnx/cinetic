@@ -31,13 +31,14 @@ const LAND = SPR.landing;
 const CONTACT = { a: CUE.pieceA, b: CUE.pieceB };
 const START = { a: CONTACT.a - delayTo(LAND), b: CONTACT.b - delayTo(LAND) };
 
-/** The key: a raking key that turns while the pieces land, the noon lift on the cut, then a slow turn through the hold. */
+/** The key: a raking key that turns while the pieces land, rises as the mark is whole, lifts to noon on the cut, then turns slowly through the hold. */
 export const KEY_PLAN: KeyLightProps = {
   elevation: 18,
   azimuth: 292,
   events: [
     { kind: 'rake', at: ACT.mark.from, dur: CUE.lockCut - ACT.mark.from, toAz: 318, ease: E.strongInOut },
-    { kind: 'noon', at: CUE.lockCut, dur: 72, from: 18, to: 52, ease: E.strongInOut },
+    { kind: 'move', at: CUE.catch, dur: 30, elevation: 26, ease: E.stdInOut }, // the mark is whole: the key rises a little
+    { kind: 'noon', at: CUE.lockCut, dur: 72, from: 26, to: 52, ease: E.strongInOut },
     { kind: 'move', at: CUE.lockCut + 72, dur: ACT.mark.from + ACT.mark.dur - CUE.lockCut - 72, azimuth: 336, ease: E.linear },
   ],
   seam: { at: CUE.lockCut, id: 'noon-lift' },

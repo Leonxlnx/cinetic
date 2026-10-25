@@ -153,7 +153,7 @@ if (!calm || /another platform/.test(calm.error ?? '')) {
   result(clean(calm, 'calm'), 'the Remotion starter passes as calm with no finding', why(calm));
   const crisp = run('npx', ['tsx', GRID, 'src/timeline.ts', '--json', '--pace', 'crisp'], STARTER);
   const checks = new Set((crisp.findings ?? []).map((x) => x.check));
-  result(crisp.summary?.pace === 'crisp' && checks.size === 1 && checks.has('event-gap'), '--pace crisp overrides PACE_NAME (only the crisp 48 f gap limit fails)',
+  result(crisp.summary?.pace === 'crisp' && [...checks].every((c) => c === 'event-gap'), '--pace crisp overrides PACE_NAME (the summary reads crisp; at most the crisp 48 f gap limit fails)',
     crisp.error ?? `pace ${crisp.summary?.pace}, ${[...checks].join(', ')}`);
 
   // the statement as a replace chain: chain() must time each exit to end before the next fragment rises
@@ -171,13 +171,13 @@ if (!calm || /another platform/.test(calm.error ?? '')) {
   writeFileSync(probe, `import { pathToFileURL } from 'node:url';
 const S = process.argv[2];
 const at = (p: string) => import(pathToFileURL(S + p).href);
-const { chainOf, f60 } = await at('/src/timeline.ts');
+const { chainOf, copy, f60 } = await at('/src/timeline.ts');
 const A = await at('/src/lib/anim.ts');
 const { STATEMENT_SIZE } = await at('/src/acts/Act1.tsx');
 const cues = (await at('/src/sync.ts')).default();
 const p = A.pace, ease = A.easeOf(p);
 const text = cues.filter((e: any) => e.kind === 'text').map((e: any) => e.f);
-const rest = chainOf('statement').map((c: any) => {
+const rest = [...chainOf('statement'), copy('frame')].map((c: any) => { // the demo's text sounds: the statement's fragments, then "Every frame"
   const n = c.text.split(/\\s+/).filter(Boolean).length;
   const s = c.in + f60((n - 1) * p.stagger), e = s + f60(p.wordDur);
   const k = A.arriveK(p.rise * STATEMENT_SIZE, e - s, ease);
