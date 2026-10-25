@@ -128,5 +128,15 @@ export const decaySettled = (o: DecayOpts, film?: Partial<FilmCtx>, share = 0.1)
 /** Pixels at 1080p for a film. */
 export const orbitPx = (px: number, film?: Partial<FilmCtx>): number => px * uOf(film);
 
-/** Orbits are continuous: nothing to declare (a spin-up's cut is a seam the act declares with its timeline). */
-export const declares = (_p?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });
+/**
+ * Orbits are continuous: nothing steps or flashes. A spin-up runs into a cut on its fastest frame: with `seam` the
+ * cut is declared here as a velocity seam carrying the rotation (on the frame after `cut`, as Rush does); without
+ * it the act declares that seam with its timeline.
+ */
+export const declares = (p?: { spinUp?: SpinUpOpts; seam?: boolean; id?: string }, film?: Partial<FilmCtx>): Declares => {
+  const none: Declares = { stepped: [], flashes: [], cameraBlur: [], seams: [] };
+  if (!p?.spinUp || !p.seam) return none;
+  fpsOf(film);
+  const dir = (p.spinUp.to ?? ORBIT.spinUp.to) >= 0 ? 1 : -1;
+  return { ...none, seams: [{ at: p.spinUp.cut + 1, kind: 'velocity', carry: 'rot', dir, id: p.id ?? 'spin-up' }] };
+};
