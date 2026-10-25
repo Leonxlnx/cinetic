@@ -1,4 +1,5 @@
 {
+ "_shape": "a Mixkit item page under the restricted licence, reduced to the strings parseMixkitItem reads, hand-written (not their markup)",
  "id": "48525",
- "html": "<h1 class=\"video-item-page__title\" data-test-id=\"item-page-title\">Aerial view of long running wave crashing onto shore</h1>\n\"copyrightNotice\":\"Mixkit Restricted License\"\n\"duration\":\"PT0M29S\"\n<a href=\"/license/#videoRestricted\" data-controller=\"license--modal\" data-action=\"click->license--modal#open\" data-license=\"videoRestricted\">Mixkit Restricted License</a>"
+ "html": "<h1>Example city at night</h1>\n<script type=\"application/ld+json\">{\"copyrightNotice\":\"Restricted\",\"duration\":\"PT0M12S\"}</script>\n<a href=\"/license/#videoRestricted\">licence</a>"
 }

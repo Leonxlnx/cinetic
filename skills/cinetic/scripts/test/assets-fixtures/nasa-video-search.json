@@ -1,90 +1,51 @@
 {
+ "_shape": "the NASA Image and Video Library /search response for video, hand-written (not a recording)",
  "collection": {
   "items": [
    {
-    "href": "https://images-assets.nasa.gov/video/GSFC_20180314_Aurora_m12865_Steve/collection.json",
+    "href": "https://images-assets.nasa.gov/video/example-aurora-video-1/collection.json",
     "data": [
      {
-      "nasa_id": "GSFC_20180314_Aurora_m12865_Steve",
-      "title": "The Aurora Named STEVE",
-      "description": "For the first time, scientists have ground and satellite views of STEVE (short for Strong Thermal Emission Velocity Enhancement), a thin purple ribbon of light. Scientists have now learned, despite its ordinary name, that STEVE may be an extraordinary puzzle piece in painting a better picture of how",
+      "nasa_id": "example-aurora-video-1",
+      "title": "Aurora time-lapse",
+      "description": "A time-lapse of an aurora seen from orbit.",
       "center": "GSFC",
-      "date_created": "2018-03-14T00:00:00Z",
+      "date_created": "2020-01-01T00:00:00Z",
       "keywords": [
-       "Aurorae",
-       "Auroral Substorm",
-       "Sun"
+       "aurora",
+       "time-lapse"
       ],
-      "secondary_creator": "Genna Duberstein, Kasha Patel, Krystofer Kim",
       "media_type": "video"
      }
     ],
     "links": [
      {
-      "href": "https://images-assets.nasa.gov/video/GSFC_20180314_Aurora_m12865_Steve/GSFC_20180314_Aurora_m12865_Steve~large.jpg",
-      "rel": "alternate",
+      "href": "https://images-assets.nasa.gov/video/example-aurora-video-1/example-aurora-video-1~thumb.jpg",
+      "rel": "preview",
       "render": "image"
      }
     ]
    },
    {
-    "href": "https://images-assets.nasa.gov/video/How Can I See the Northern Lights/collection.json",
+    "href": "https://images-assets.nasa.gov/video/example-aurora-video-2/collection.json",
     "data": [
      {
-      "nasa_id": "How Can I See the Northern Lights",
-      "title": "How Can I See the Northern Lights? We Asked a NASA Expert",
-      "description": "Want to catch a glimpse of the northern lights? You’ll need dark skies, the right location, good space weather and a little patience!   Auroras happen when charged particles from the Sun interact with Earth's magnetic field, creating dazzling light shows in the sky. A NASA scientist shares tips on w",
-      "center": "HQ",
-      "date_created": "2025-03-17T00:00:00Z",
-      "keywords": [
-       "Northern Lights",
-       "Aurora"
-      ],
-      "media_type": "video"
-     }
-    ],
-    "links": [
-     {
-      "href": "https://images-assets.nasa.gov/video/How Can I See the Northern Lights/How Can I See the Northern Lights~large.jpg",
-      "rel": "alternate",
-      "render": "image"
-     }
-    ]
-   },
-   {
-    "href": "https://images-assets.nasa.gov/video/20250324_NSL_EZIE/collection.json",
-    "data": [
-     {
-      "nasa_id": "20250324_NSL_EZIE",
-      "title": "NASA Science Live: Aurora Glow, Electric Flow & the EZIE Mission [Episode #63]",
-      "description": "Join NASA experts to talk about EZIE, a trio of just-launched NASA spacecraft that will study powerful electric currents in the sky. When colorful auroras glow, intense currents called “electrojets” flow. EZIE will help us better understand these electric currents by looking at the invisible magneti",
+      "nasa_id": "example-aurora-video-2",
+      "title": "Aurora and city lights",
+      "description": "An aurora above city lights.",
       "center": "GSFC",
-      "date_created": "2025-03-24T00:00:00Z",
+      "date_created": "2020-01-01T00:00:00Z",
       "keywords": [
-       "Joy Ng",
-       "Dr. Larry Kepko",
-       "Dr. Nelli Mosavi-Hoyer",
-       "Sun",
-       "EZIE",
-       "Aurora",
-       "Solar System",
-       "Heliophysics",
-       "Sun Science",
-       "Spacecraft",
-       "Satellites",
-       "Electrojets",
-       "Space Weather",
-       "NSL",
-       "NASA Science Live"
+       "aurora",
+       "Earth"
       ],
-      "secondary_creator": "Emily Furfaro",
       "media_type": "video"
      }
     ],
     "links": [
      {
-      "href": "https://images-assets.nasa.gov/video/20250324_NSL_EZIE/20250324_NSL_EZIE~large.jpg",
-      "rel": "alternate",
+      "href": "https://images-assets.nasa.gov/video/example-aurora-video-2/example-aurora-video-2~thumb.jpg",
+      "rel": "preview",
       "render": "image"
      }
     ]

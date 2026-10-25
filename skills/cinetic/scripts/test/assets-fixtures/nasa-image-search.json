@@ -1,103 +1,99 @@
 {
+ "_shape": "the NASA Image and Video Library /search response, hand-written with the fields assets.mjs reads (not a recording)",
  "collection": {
   "items": [
    {
-    "href": "https://images-assets.nasa.gov/image/hubble-captures-vivid-auroras-in-jupiters-atmosphere_28000029525_o/collection.json",
+    "href": "https://images-assets.nasa.gov/image/example-aurora-1/collection.json",
     "data": [
      {
-      "nasa_id": "hubble-captures-vivid-auroras-in-jupiters-atmosphere_28000029525_o",
-      "title": "Hubble Captures Vivid Auroras in Jupiter’s Atmosphere",
-      "description": "Astronomers are using the NASA/ESA Hubble Space Telescope to study auroras — stunning light shows in a planet’s atmosphere — on the poles of the largest planet in the solar system, Jupiter. This observation program is supported by measurements made by NASA’s Juno spacecraft, currently on its way to ",
+      "nasa_id": "example-aurora-1",
+      "title": "Aurora over the polar night",
+      "description": "An aurora seen from orbit.",
       "center": "GSFC",
-      "date_created": "2016-06-30T00:00:00Z",
+      "date_created": "2020-01-01T00:00:00Z",
       "keywords": [
-       "Hubble",
-       "Jupiter",
-       "Aurora",
-       "Auroras"
+       "aurora",
+       "Earth"
       ],
       "media_type": "image"
      }
     ],
     "links": [
      {
-      "href": "https://images-assets.nasa.gov/image/hubble-captures-vivid-auroras-in-jupiters-atmosphere_28000029525_o/hubble-captures-vivid-auroras-in-jupiters-atmosphere_28000029525_o~medium.jpg",
-      "rel": "alternate",
-      "render": "image"
-     }
-    ]
-   },
-   {
-    "href": "https://images-assets.nasa.gov/image/PIA01637/collection.json",
-    "data": [
-     {
-      "nasa_id": "PIA01637",
-      "title": "Io Aurorae",
-      "description": "Io Aurorae",
-      "center": "JPL",
-      "date_created": "1998-10-13T07:50:26Z",
-      "keywords": [
-       "Io",
-       "Galileo"
-      ],
-      "secondary_creator": "NASA/JPL/University of Arizona",
-      "media_type": "image"
-     }
-    ],
-    "links": [
-     {
-      "href": "https://images-assets.nasa.gov/image/PIA01637/PIA01637~thumb.jpg",
+      "href": "https://images-assets.nasa.gov/image/example-aurora-1/example-aurora-1~thumb.jpg",
       "rel": "preview",
       "render": "image"
      }
     ]
    },
    {
-    "href": "https://images-assets.nasa.gov/image/PIA06436/collection.json",
+    "href": "https://images-assets.nasa.gov/image/example-aurora-2/collection.json",
     "data": [
      {
-      "nasa_id": "PIA06436",
-      "title": "Saturn Auroras",
-      "description": "Saturn Auroras",
-      "center": "JPL",
-      "date_created": "2005-08-04T19:15:00Z",
+      "nasa_id": "example-aurora-2",
+      "title": "Green aurora ring",
+      "description": "The auroral oval from a weather satellite.",
+      "center": "GSFC",
+      "date_created": "2020-01-01T00:00:00Z",
       "keywords": [
-       "Saturn",
-       "Cassini-Huygens"
+       "aurora",
+       "satellite"
       ],
-      "secondary_creator": "NASA/JPL/University of Colorado",
       "media_type": "image"
      }
     ],
     "links": [
      {
-      "href": "https://images-assets.nasa.gov/image/PIA06436/PIA06436~thumb.jpg",
+      "href": "https://images-assets.nasa.gov/image/example-aurora-2/example-aurora-2~thumb.jpg",
       "rel": "preview",
       "render": "image"
      }
     ]
    },
    {
-    "href": "https://images-assets.nasa.gov/image/PIA10035/collection.json",
+    "href": "https://images-assets.nasa.gov/image/example-aurora-3/collection.json",
     "data": [
      {
-      "nasa_id": "PIA10035",
-      "title": "Aurorae Chaos",
-      "description": "Aurorae Chaos",
-      "center": "JPL",
-      "date_created": "2007-10-25T14:15:37Z",
+      "nasa_id": "example-aurora-3",
+      "title": "Aurora on a gas giant",
+      "description": "Auroras at the poles of a planet.",
+      "center": "GSFC",
+      "date_created": "2020-01-01T00:00:00Z",
       "keywords": [
-       "Mars",
-       "2001 Mars Odyssey"
+       "aurora",
+       "planet"
       ],
-      "secondary_creator": "NASA/JPL/ASU",
       "media_type": "image"
      }
     ],
     "links": [
      {
-      "href": "https://images-assets.nasa.gov/image/PIA10035/PIA10035~small.jpg",
-      "rel": "alternate",
+      "href": "https://images-assets.nasa.gov/image/example-aurora-3/example-aurora-3~thumb.jpg",
+      "rel": "preview",
+      "render": "image"
+     }
+    ]
+   },
+   {
+    "href": "https://images-assets.nasa.gov/image/example-coast-4/collection.json",
+    "data": [
+     {
+      "nasa_id": "example-coast-4",
+      "title": "Coastline at night",
+      "description": "City lights along a coast.",
+      "center": "GSFC",
+      "date_created": "2020-01-01T00:00:00Z",
+      "keywords": [
+       "Earth",
+       "night"
+      ],
+      "media_type": "image"
+     }
+    ],
+    "links": [
+     {
+      "href": "https://images-assets.nasa.gov/image/example-coast-4/example-coast-4~thumb.jpg",
+      "rel": "preview",
       "render": "image"
      }
     ]

@@ -1,24 +1,24 @@
 {
+ "_shape": "The Met collection API: a search id list and one /objects/{id} record, hand-written (not a recording)",
  "objectIDs": [
-  833974,
-  744200,
-  210899,
-  291329
+  9001,
+  9002,
+  9003
  ],
  "objects": [
   {
-   "objectID": 210899,
+   "objectID": 9001,
    "isPublicDomain": true,
-   "primaryImage": "https://images.metmuseum.org/CRDImages/es/original/DT5016.jpg",
-   "primaryImageSmall": "https://images.metmuseum.org/CRDImages/es/web-large/DT5016.jpg",
-   "title": "Wave bowl",
-   "objectName": "Wave bowl",
-   "artistDisplayName": "Christopher Dresser",
+   "primaryImage": "https://images.metmuseum.org/CRDImages/example/original/EX9001.jpg",
+   "primaryImageSmall": "https://images.metmuseum.org/CRDImages/example/web-large/EX9001.jpg",
+   "title": "Example wave bowl",
+   "objectName": "Bowl",
+   "artistDisplayName": "A. Maker",
    "culture": "",
    "medium": "Glazed earthenware",
-   "classification": "Ceramics-Pottery",
-   "department": "European Sculpture and Decorative Arts",
-   "objectURL": "https://www.metmuseum.org/art/collection/search/210899",
+   "classification": "Ceramics",
+   "department": "Example Department",
+   "objectURL": "https://www.metmuseum.org/art/collection/search/9001",
    "tags": null
   }
  ]
