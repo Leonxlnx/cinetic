@@ -91,8 +91,8 @@ export default function cues(): SoundEvent[] {
   ev.push(launchWhoosh(ACT.mark.from - 1, 0, 'line-drops'));
 
   // Act 4: the dome and the block land on their contact frames (springs started early by delayTo); the cut
-  // to the lockup is a soft knock as the key climbs; the name locking is the payoff, one struck note in the
-  // calm kit after a stop-down. Its slide stays silent (a whoosh into the hit would stack onto it), and no
+  // to the lockup is a soft knock as the key climbs; the name locking is the payoff, one short hit in the
+  // launch kit after a stop-down. Its slide stays silent (a whoosh into the hit would stack onto it), and no
   // ticks run through the hold: the name reads in near-silence over the music.
   ev.push({ f: CUE.pieceA, kind: 'land', weight: 1, pan: -0.15, id: 'dome' });
   ev.push({ f: CUE.pieceB, kind: 'land', weight: 1, pan: -0.25, id: 'block' });

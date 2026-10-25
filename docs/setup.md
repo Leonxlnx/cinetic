@@ -343,7 +343,7 @@ Now run the gates and build the sound:
 ```bash
 npm run check    # 5-20 s. Fails on purpose: lint-film reports the starter's placeholder errors and nothing else
 npm run cues     # 1 s. "wrote out/cues.json: 14 events (text 3, land 3, whoosh 2, tick 3, tock 2, hit 1), 21 cues, 4 copy entries, 13.00 s at 60 fps, 120 BPM; declared 6 seams, ..."
-npm run kit      # 30-75 s the first time, seconds after: earshot renders the starter's calm kit into audio/kit/
+npm run kit      # 30-75 s the first time, seconds after: earshot renders the starter's launch kit into audio/kit/
 ```
 
 - `npm run check` runs `tsc`, `lint-film.mjs` and `grid-check.ts`. On the starter the lint fails with `placeholder` errors: the palette, typeface, mark, name and the photograph slot are stand-ins, and no film may ship on them. Replacing them is the agent's Steps 2 and 3. `tsc` passing is the part that matters here. Because the lint stops the chain, run the grid check on its own: `npx tsx scripts/grid-check.ts src/timeline.ts` should print `-> pass (0 errors, 0 warnings)`.

@@ -49,7 +49,7 @@ What the kit route gives the film:
 - **Deterministic and licence-free.** The same kit renders the same takes; the bank's recipes are code.
 - **One source of truth.** Bars, cues and sync points come from `src/timeline.ts`, `src/music.ts` and the act modules, never from a second, hand-typed list.
 
-**Presets and roles.** A cue plays the role of its kind and variant; a role the kit sets to `null` is off (its cues are skipped and listed). The `launch` preset (a film cut to a track; earshot 0.4+) and the `calm` preset (effects-only, as the starters ship it):
+**Presets and roles.** A cue plays the role of its kind and variant; a role the kit sets to `null` is off (its cues are skipped and listed). The `launch` preset (a film cut to a track; earshot 0.4+, as the starters ship it) and the `calm` preset (effects-only):
 
 | Cue (kind, variant) | Role | launch: sound, bed_db, offset | calm: sound, level_db |
 |---|---|---|---|
