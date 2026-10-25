@@ -194,7 +194,7 @@ fi
 
 echo "layout-audit: $COMP frames $FRAMES$([[ "$SPEED" == 1 ]] && echo " (+ f+1 of each for text speed, max $MAXV px/f, $MAXR while read)")"
 rm -rf "$OUTDIR"; mkdir -p "$OUTDIR"
-if ! npx remotion render "$ENTRY" "$COMP" "$OUTDIR" --sequence --frames="$RENDER" --props="$ALLPROPS" \
+if ! FORCE_COLOR=0 NO_COLOR=1 npx remotion render "$ENTRY" "$COMP" "$OUTDIR" --sequence --frames="$RENDER" --props="$ALLPROPS" \
      --image-format=jpeg --concurrency="$CONC" --log=verbose > "$TMP/render.log" 2>&1; then
   grep -m1 -E "safe: (unknown preset|[a-z]+ must be)" "$TMP/render.log" >&2 || tail -30 "$TMP/render.log" >&2
   echo "layout-audit: render failed" >&2; exit 1
@@ -220,18 +220,21 @@ const readingAt = (id, f) => {
 const pairs = maxV > 0 ? want.filter((f) => f + 1 < Number(lenArg)) : []; // f -> f+1
 const byFrame = new Map();
 const tweens = new Map(); // span + curve -> the tween (deduplicated across the audited frames)
-for (const line of fs.readFileSync(log, 'utf8').split('\n')) {
+// a shell with colour on prints the console lines with ANSI escapes after the JSON: strip them, parse to the last }
+const json = (s) => JSON.parse(s.slice(0, s.lastIndexOf('}') + 1));
+for (const raw of fs.readFileSync(log, 'utf8').split('\n')) {
+  const line = raw.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
   const TAG = 'CINETIC_AUDIT ';
   const i = line.indexOf(TAG);
   const k = line.indexOf('CINETIC_TWEENS ');
   if (k >= 0) {
     try {
-      const d = JSON.parse(line.slice(k + 'CINETIC_TWEENS '.length));
+      const d = json(line.slice(k + 'CINETIC_TWEENS '.length));
       for (const t of d.tweens ?? []) tweens.set(`${Math.round(t.from * 100)}|${Math.round(t.to * 100)}|${t.token}|${t.family}`, t);
     } catch { /* truncated line */ }
   }
   if (i < 0) continue;
-  try { const d = JSON.parse(line.slice(i + TAG.length)); byFrame.set(d.frame, d); } catch { /* truncated line */ }
+  try { const d = json(line.slice(i + TAG.length)); byFrame.set(d.frame, d); } catch { /* truncated line */ }
 }
 const missing = [...new Set([...want, ...pairs.map((f) => f + 1)])].filter((f) => !byFrame.has(f));
 const audited = want.filter((f) => byFrame.has(f)).map((f) => byFrame.get(f)); // f+1 frames only feed the speed
