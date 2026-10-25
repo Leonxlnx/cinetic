@@ -210,7 +210,7 @@ export const Ripple: React.FC<RippleProps & { frame: number; x: number; y: numbe
         const r = sh ? (sh.r ?? sh.h / 2) + g.grow : g.grow;
         return <div key={i} style={{ position: 'absolute', left: -w / 2, top: -h / 2, width: w, height: h, borderRadius: r, border: `${RIPPLE.stroke * u}px solid ${props.color}`, opacity: g.opacity, boxSizing: 'border-box' }} />;
       })}
-      {s.dot && s.dot.r > 0 && <div style={{ position: 'absolute', left: -s.dot.r, top: -s.dot.r, width: 2 * s.dot.r, height: 2 * s.dot.r, borderRadius: '50%', background: props.color, opacity: s.dot.opacity }} />}
+      {s.dot && s.dot.r > 0 && <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(-s.dot.r).toFixed(2)}px, ${(-s.dot.r).toFixed(2)}px)`, width: 2 * s.dot.r, height: 2 * s.dot.r, borderRadius: '50%', background: props.color, opacity: s.dot.opacity }} />}
     </div>
   );
 };
