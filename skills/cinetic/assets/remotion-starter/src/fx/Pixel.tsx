@@ -205,10 +205,11 @@ export const mosaicIrisState = (frame: number, p: MosaicIrisProps, film?: Partia
   const done = r - ring > farCornerOf(p.origin, W, H);
   if (r > 0 && !done) {
     const [ox, oy] = p.origin;
-    const i0 = Math.max(Math.floor((ox - r) / cell), Math.floor(-ox / cell) - 1);
-    const i1 = Math.min(Math.ceil((ox + r) / cell), Math.ceil((W - ox) / cell) + 1);
-    const j0 = Math.max(Math.floor((oy - r) / cell), Math.floor(-oy / cell) - 1);
-    const j1 = Math.min(Math.ceil((oy + r) / cell), Math.ceil((H - oy) / cell) + 1);
+    // cell indices are relative to the origin: the ring's reach (+-r) clipped to the frame
+    const i0 = Math.max(Math.floor(-r / cell) - 1, Math.floor(-ox / cell) - 1);
+    const i1 = Math.min(Math.ceil(r / cell), Math.ceil((W - ox) / cell) + 1);
+    const j0 = Math.max(Math.floor(-r / cell) - 1, Math.floor(-oy / cell) - 1);
+    const j1 = Math.min(Math.ceil(r / cell), Math.ceil((H - oy) / cell) + 1);
     const tw = Math.floor((f - p.at) / 2); // colours re-picked on twos
     for (let i = i0; i <= i1; i++)
       for (let j = j0; j <= j1; j++) {
