@@ -1,0 +1,41 @@
+{
+ "name": "update",
+ "about": "An 8-20 s update film (\"vX is out\"): a hook on the version, 2-4 changes each shown as a product moment, one payoff, the end card with the version. new-film.sh --format update lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "bpm": 120,
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every update film is cut to a licensed, human-made, instrumental track (references/music.md): the track carries the film and earshot effects mark its hits; never effects only.",
+  "pick": "the dealt direction lists tracks from the shortlist in its tempo range (python3 scripts/deck.py --show); 116-128 BPM suits the template's one bar a change",
+  "add": "bash scripts/new-film.sh <dir> --format update --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end stop|button|ring",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "copy": [
+  "src/update.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/World.tsx",
+  "src/acts/Hook.tsx",
+  "src/acts/Change.tsx",
+  "src/acts/Payoff.tsx",
+  "src/acts/EndCard.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx"
+ ]
+}

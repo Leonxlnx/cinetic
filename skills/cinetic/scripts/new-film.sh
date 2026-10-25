@@ -10,6 +10,7 @@
 #                            [--pace calm|crisp] [--size 1920x1080] [--name my-film]
 #                            [--link-modules <node_modules>]
 #                            [--font <name>]... [--browser <chromium path>] [--no-install] [--force]
+#                            [--format launch|update] [--brand <kit folder or file>]... [--like <clip>]
 #                            [--music <track file> --title T --artist A --source S --page URL --licence L
 #                             --seen-quote Q --seen-url URL [--credit C] [--file-url URL] [--content-id X]
 #                             [--profile calm|crisp|punchy] | --music <file> --record <licence.json>]
@@ -37,6 +38,20 @@
 #   --browser      bake a Chromium/headless-shell path into remotion.config.ts (env REMOTION_BROWSER
 #                  or CHROMIUM_PATH at render time also works, and wins).
 #   --force        allow a non-empty <dir> (starter files overwrite same-named files).
+#   --format       launch (default: the starter's own acts, the main case, 15-45 s) or update: an 8-20 s
+#                  "vX is out" film laid over the starter from assets/templates/update (src/update.ts holds
+#                  the version and 2-4 changes; a hook on the version, one act per change shown as a product
+#                  moment, the payoff, the end card with the version). update defaults to --pace crisp and
+#                  the template's 120 BPM. Remotion only.
+#   --brand        a supplied brand kit (a folder, or files: logo SVG or PNG, colours, licensed fonts,
+#                  screenshots, product photos): scripts/brand.py writes brand/brand.json, the colour and type
+#                  roles in src/brand/tokens.ts (supplied colours marked cinetic:brand-supplied), the logo's
+#                  parts in src/brand/logo.ts and the screenshots into public/brand/; a Google font name in the
+#                  kit is vendored with add-font.mjs. With --name the product's name goes to src/brand/identity.ts.
+#                  Then deal the direction with: python3 scripts/deck.py ... --brand brand/brand.json
+#   --like         a clip the user supplies to borrow grammar from (never content): scripts/like.py measures it
+#                  into out/like.json (grammar-score.mjs --target) and out/LIKE.md (the rules); the finished
+#                  film is checked with: python3 scripts/like.py guard --film out/film.mp4 --clip <clip>
 #   --music        a film cut to a licensed, human-made, instrumental track (references/music.md): the file is
 #                  copied into <dir>/audio/music/ (git-ignored; never committed), its licence record written
 #                  (scripts/audio/track.py add with the flags above: the licence as read on the item's own page
@@ -57,6 +72,7 @@ FONTS=()
 MUSIC=""; RECORD=""; PROFILE=""; ADD=()
 PY="${PYTHON:-python3}"
 DIR=""; ENGINE=remotion; FPS=60; BPM=""; PACE=""; SIZE=1920x1080; NAME=""; LINK=""; BROWSER="${CHROMIUM_PATH:-}"; INSTALL=1; FORCE=0
+FORMAT=launch; BRANDS=(); LIKE=""; NAME_SET=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -66,7 +82,10 @@ while [[ $# -gt 0 ]]; do
     --bpm) BPM="${2:?--bpm needs a value}"; shift 2 ;;
     --pace) PACE="${2:?--pace needs calm or crisp}"; shift 2 ;;
     --size) SIZE="${2:?--size needs a value}"; shift 2 ;;
-    --name) NAME="${2:?--name needs a value}"; shift 2 ;;
+    --name) NAME="${2:?--name needs a value}"; NAME_SET=1; shift 2 ;;
+    --format) FORMAT="${2:?--format needs launch or update}"; shift 2 ;;
+    --brand) BRANDS+=("${2:?--brand needs a kit folder or file}"); shift 2 ;;
+    --like) LIKE="${2:?--like needs a clip}"; shift 2 ;;
     --link-modules) LINK="${2:?--link-modules needs a path}"; shift 2 ;;
     --browser) BROWSER="${2:?--browser needs a path}"; shift 2 ;;
     --font) FONTS+=("${2:?--font needs a family name or package}"); shift 2 ;;
@@ -88,9 +107,20 @@ done
 [[ -z "$PACE" || "$PACE" == calm || "$PACE" == crisp ]] || die "--pace must be calm or crisp"
 SRC="$SKILL/assets/$ENGINE-starter"
 [[ -d "$SRC" ]] || die "starter not found: $SRC"
+[[ "$FORMAT" == launch || "$FORMAT" == update ]] || die "--format must be launch or update"
+TPL=""
+if [[ "$FORMAT" == update ]]; then
+  [[ "$ENGINE" == remotion ]] || die "--format update is a Remotion template (use --engine remotion)"
+  TPL="$SKILL/assets/templates/update"
+  [[ -f "$TPL/template.json" ]] || die "the update template is missing: $TPL"
+  [[ -n "$PACE" ]] || PACE=crisp
+fi
+for kit in ${BRANDS[@]+"${BRANDS[@]}"}; do [[ -e "$kit" ]] || die "--brand: $kit not found"; done
+[[ -z "$LIKE" || -f "$LIKE" ]] || die "--like: $LIKE not found"
 if [[ -z "$BPM" ]]; then
-  # the starter's own tempo, unless the pace asks for the crisp one
+  # the starter's own tempo (the template's for an update film), unless the pace asks for the crisp one
   GRID="$SRC/src/timeline.ts"; [[ "$ENGINE" == hyperframes ]] && GRID="$SRC/motion.js"
+  [[ -n "$TPL" ]] && GRID="$TPL/src/timeline.ts"
   BPM=$(sed -nE 's/^[[:space:]]*(export )?const BPM = ([0-9.]+);.*/\2/p' "$GRID" | head -n 1)
   [[ "$PACE" == crisp ]] && BPM=120
   [[ -n "$BPM" ]] || die "could not read BPM from $GRID; pass --bpm"
@@ -126,12 +156,34 @@ mkdir -p "$DIR"
 DIR="$(cd "$DIR" && pwd)"
 # Copy the starter, leaving out anything installed or rendered.
 (cd "$SRC" && tar --exclude=node_modules --exclude=out --exclude=__pycache__ -cf - .) | (cd "$DIR" && tar -xf -)
+# An update film: the template's files over the starter (its timeline, acts, film and sound), the starter's
+# own acts removed (template.json lists both).
+if [[ -n "$TPL" ]]; then
+  TPL="$TPL" DIR="$DIR" node -e '
+const fs = require("fs"), path = require("path");
+const tpl = process.env.TPL, dir = process.env.DIR;
+const m = JSON.parse(fs.readFileSync(path.join(tpl, "template.json"), "utf8"));
+const keep = new Set(m.keep_if_present || []); // a brand already written into this folder (--force) stays
+for (const f of m.copy) {
+  if (keep.has(f) && fs.existsSync(path.join(dir, f))) continue;
+  fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true });
+  fs.copyFileSync(path.join(tpl, f), path.join(dir, f));
+}
+for (const f of m.remove) fs.rmSync(path.join(dir, f), { force: true });
+console.log(`new-film: update template: ${m.copy.length} files over the starter, ${m.remove.length} removed`);
+' || die "could not lay the update template over the starter"
+fi
 
 # Substitute a `const NAME = value;` line; fail loudly if the starter no longer has it.
-set_const() { # file name value
+set_const() { # file name value: the FIRST `const NAME = ...;` line only (timeline.ts derives
+  # `export const BPM = MUSIC?.bpm ?? GRID_BPM;` from the grid line below it, which must stay as it is)
   local file="$1" name="$2" value="$3"
   grep -Eq "^(export )?const $name(: [^=]+)? = [^;]+;" "$file" || die "$file has no 'const $name = ...;' line to set"
-  sed -i.bak -E "s|^((export )?const $name(: [^=]+)? = )[^;]+;|\1$value;|" "$file" && rm -f "$file.bak"
+  F="$file" N="$name" V="$value" node -e '
+const fs = require("fs"), f = process.env.F, n = process.env.N, v = process.env.V;
+const re = new RegExp("^((export )?const " + n + "(: [^=]+)? = )[^;]+;", "m");
+fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(re, (m, head) => head + v + ";"));
+' || die "could not set $name in $file"
 }
 
 if [[ "$ENGINE" == remotion ]]; then
@@ -198,6 +250,11 @@ done
 # pick.py draws from the technique library; the project keeps a copy so it runs from here too
 LIB="$SKILL/assets/library/techniques.json"; [[ -f "$LIB" ]] || LIB="$SKILL/scripts/library/techniques.json"
 if [[ -f "$LIB" ]]; then mkdir -p "$DIR/scripts/library" && cp "$LIB" "$DIR/scripts/library/"; fi
+# deck.py deals from the directions (and lists tracks from the music shortlist): the project keeps copies
+for pair in "directions/directions.json:directions" "directions/imagery.json:directions" "music/shortlist.json:music"; do
+  srcf="$SKILL/assets/${pair%%:*}"; dstd="$DIR/scripts/${pair##*:}"
+  if [[ -f "$srcf" ]]; then mkdir -p "$dstd" && cp "$srcf" "$dstd/"; fi
+done
 
 if [[ -n "$LINK" ]]; then
   [[ -d "$LINK" ]] || die "--link-modules: $LINK is not a directory"
@@ -225,6 +282,28 @@ fi
 for font in ${FONTS[@]+"${FONTS[@]}"}; do
   node "$DIR/scripts/add-font.mjs" "$font" --dir "$DIR" || die "--font $font: could not vendor it (see above)"
 done
+
+# A supplied brand kit: brand.json, the tokens, the logo's parts, the screenshots (scripts/brand.py).
+if [[ ${#BRANDS[@]} -gt 0 ]]; then
+  ABS=()
+  for kit in "${BRANDS[@]}"; do ABS+=("$(cd "$(dirname "$kit")" && pwd)/$(basename "$kit")"); done
+  if [[ "$NAME_SET" == 1 ]]; then
+    (cd "$DIR" && "$PY" scripts/brand.py "${ABS[@]}" --project . --name "$NAME") || echo "new-film: warning: brand.py reported a failed check (see above): fix the kit or the tokens before the build" >&2
+  else
+    (cd "$DIR" && "$PY" scripts/brand.py "${ABS[@]}" --project .) || echo "new-film: warning: brand.py reported a failed check (see above): fix the kit or the tokens before the build" >&2
+  fi
+  GF=$(cd "$DIR" && "$PY" -c "import json; print((json.load(open('brand/brand.json', encoding='utf-8')).get('fonts') or {}).get('google') or '')" 2>/dev/null || true)
+  if [[ -n "$GF" ]]; then
+    node "$DIR/scripts/add-font.mjs" "$GF" --dir "$DIR" --brand-supplied || echo "new-film: warning: could not vendor the brand's font $GF (node scripts/add-font.mjs \"$GF\" --brand-supplied)" >&2
+  fi
+fi
+
+# A clip to borrow grammar from: its measured grammar and the rules (scripts/like.py).
+if [[ -n "$LIKE" ]]; then
+  CLIP="$(cd "$(dirname "$LIKE")" && pwd)/$(basename "$LIKE")"
+  (cd "$DIR" && "$PY" scripts/like.py measure "$CLIP" --out out) || \
+    echo "new-film: warning: like.py could not measure $LIKE (needs ffmpeg, numpy, opencv-python): run python3 scripts/like.py measure <clip> later" >&2
+fi
 
 if [[ -n "$MUSIC" ]]; then
   mkdir -p "$DIR/audio/music"
@@ -263,7 +342,20 @@ PYEOF
 fi
 
 BEAT=$(node -e "console.log(60*$FPS/$BPM)")
-echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat${PACE:+, $PACE pace})"
+echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat${PACE:+, $PACE pace}${TPL:+, an update film})"
+if [[ -n "$TPL" ]]; then
+  cat <<EOF
+update film: write the version and 2-4 changes (1-3 words each, each with its product moment) in src/update.ts,
+  then deal its direction: python3 scripts/deck.py --brief "<one line>" --format update --changes N --options 3
+EOF
+  if [[ -z "$MUSIC" ]]; then
+    cat <<EOF
+music: the slot is empty, and every film is cut to a licensed track (never effects only): pick one from the
+  dealt direction's shortlist (python3 scripts/deck.py --show), then python3 scripts/audio/track.py add <file>
+  --title T --artist A --source S --page URL --licence L, and track.py edit / grid / check (template.json: music)
+EOF
+  fi
+fi
 if [[ "$ENGINE" == remotion ]]; then
   cat <<EOF
 next:
