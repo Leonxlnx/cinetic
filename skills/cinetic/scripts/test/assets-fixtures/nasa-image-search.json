@@ -1,0 +1,107 @@
+{
+ "collection": {
+  "items": [
+   {
+    "href": "https://images-assets.nasa.gov/image/hubble-captures-vivid-auroras-in-jupiters-atmosphere_28000029525_o/collection.json",
+    "data": [
+     {
+      "nasa_id": "hubble-captures-vivid-auroras-in-jupiters-atmosphere_28000029525_o",
+      "title": "Hubble Captures Vivid Auroras in Jupiter’s Atmosphere",
+      "description": "Astronomers are using the NASA/ESA Hubble Space Telescope to study auroras — stunning light shows in a planet’s atmosphere — on the poles of the largest planet in the solar system, Jupiter. This observation program is supported by measurements made by NASA’s Juno spacecraft, currently on its way to ",
+      "center": "GSFC",
+      "date_created": "2016-06-30T00:00:00Z",
+      "keywords": [
+       "Hubble",
+       "Jupiter",
+       "Aurora",
+       "Auroras"
+      ],
+      "media_type": "image"
+     }
+    ],
+    "links": [
+     {
+      "href": "https://images-assets.nasa.gov/image/hubble-captures-vivid-auroras-in-jupiters-atmosphere_28000029525_o/hubble-captures-vivid-auroras-in-jupiters-atmosphere_28000029525_o~medium.jpg",
+      "rel": "alternate",
+      "render": "image"
+     }
+    ]
+   },
+   {
+    "href": "https://images-assets.nasa.gov/image/PIA01637/collection.json",
+    "data": [
+     {
+      "nasa_id": "PIA01637",
+      "title": "Io Aurorae",
+      "description": "Io Aurorae",
+      "center": "JPL",
+      "date_created": "1998-10-13T07:50:26Z",
+      "keywords": [
+       "Io",
+       "Galileo"
+      ],
+      "secondary_creator": "NASA/JPL/University of Arizona",
+      "media_type": "image"
+     }
+    ],
+    "links": [
+     {
+      "href": "https://images-assets.nasa.gov/image/PIA01637/PIA01637~thumb.jpg",
+      "rel": "preview",
+      "render": "image"
+     }
+    ]
+   },
+   {
+    "href": "https://images-assets.nasa.gov/image/PIA06436/collection.json",
+    "data": [
+     {
+      "nasa_id": "PIA06436",
+      "title": "Saturn Auroras",
+      "description": "Saturn Auroras",
+      "center": "JPL",
+      "date_created": "2005-08-04T19:15:00Z",
+      "keywords": [
+       "Saturn",
+       "Cassini-Huygens"
+      ],
+      "secondary_creator": "NASA/JPL/University of Colorado",
+      "media_type": "image"
+     }
+    ],
+    "links": [
+     {
+      "href": "https://images-assets.nasa.gov/image/PIA06436/PIA06436~thumb.jpg",
+      "rel": "preview",
+      "render": "image"
+     }
+    ]
+   },
+   {
+    "href": "https://images-assets.nasa.gov/image/PIA10035/collection.json",
+    "data": [
+     {
+      "nasa_id": "PIA10035",
+      "title": "Aurorae Chaos",
+      "description": "Aurorae Chaos",
+      "center": "JPL",
+      "date_created": "2007-10-25T14:15:37Z",
+      "keywords": [
+       "Mars",
+       "2001 Mars Odyssey"
+      ],
+      "secondary_creator": "NASA/JPL/ASU",
+      "media_type": "image"
+     }
+    ],
+    "links": [
+     {
+      "href": "https://images-assets.nasa.gov/image/PIA10035/PIA10035~small.jpg",
+      "rel": "alternate",
+      "render": "image"
+     }
+    ]
+   }
+  ]
+ }
+}

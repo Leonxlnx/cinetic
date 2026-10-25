@@ -1,0 +1,62 @@
+{
+ "config": {
+  "iiif_url": "https://www.artic.edu/iiif/2",
+  "website_url": "https://www.artic.edu"
+ },
+ "data": [
+  {
+   "_score": 70985.555,
+   "id": 89503,
+   "title": "Under the Wave off Kanagawa (Kanagawa oki nami ura), also known as The Great Wave, from the series \"Thirty-Six Views of Mount Fuji (Fugaku sanjurokkei)\"",
+   "thumbnail": {
+    "lqip": "data:image/gif;base64,R0lGODlhBwAFAPUAAD5QY2Rramhtbn97bGBvdmNveHZ/foJ5Zn+Ac4yHda+efHOAhXmCgnuEg4SMhYyNgYuNhoOMipqWg7enh7mkgLyngbyng7ysjbCpkbKrlriskb6wlcGriMKuicuzjM61jcq1k862kNK7lQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAAHAAUAAAYhQJBI0/l4QpsMQDKxcBgEgaJCuUAemMEhESk0HAGEYREEADs=",
+    "width": 6645,
+    "height": 4597,
+    "alt_text": "A color woodblock print of a large crashing wave, looms over two narrow boats full of people. Mt Fuji in the background.  There is a faint peach colored sky."
+   },
+   "date_display": "1830/33",
+   "artist_display": "Katsushika Hokusai 葛飾 北斎\nJapanese, 1760-1849",
+   "medium_display": "Color woodblock print; oban",
+   "is_public_domain": true,
+   "artwork_type_title": "Print",
+   "artist_title": "Katsushika Hokusai",
+   "image_id": "2fa24f36-cc26-41b6-4b49-12bba2a6c1c8"
+  },
+  {
+   "_score": 9635.842,
+   "id": 180298,
+   "title": "Ceremonial Hanging (Palepai)",
+   "thumbnail": {
+    "lqip": "data:image/gif;base64,R0lGODlhEwAFAPYAAE42J044J0s0KEw1KE02KE82KU44Kk05LFA2KFA3KFE4KFI4KFA4KlE5KlM7KlA6LlE6Lk89M1I8MVI9MVA/MlY9MVU/MVNDMlJCM1VAMVRAM1ZBMldBM1ZDM1dDM1ZEMlZDNVVENFZENFhDMVhDM1pGNFhHNlpHNl1IM11JNV1KNVxIOVxLPWFKMGJMPFxLQWJSRHxybYJ2boR4boJ2cIJ3cIN3cIJ3cYJ3coJ3c4R5coR5c4N6d4d9d4Z8eIR8eoh+epyWlZ6YmJ6ZmZ2Ymp6Zm5+am5+bm5+cnqCbmqKcm6CbnKOdnaCdoKahoKeioaqmpqimqKyoqayrr62rr66sr6+sr6+usgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAATAAUAAAddgFNNSEeFhUlLS0xMSkJBR0lVUS8aJiYUISEUFCMjJiAmHxorT1UwDxotFygjFCAVFSkXKRoPLlBTLAEMA7y9BwYIAwgADAwaT1c/MTc7PT9AQDw5Ozc3MjM3OVKBADs=",
+    "width": 11432,
+    "height": 3112,
+    "alt_text": "Large rectangle of fabric, geometric shapes depicting ship and people, in red, blue and yellow."
+   },
+   "date_display": "19th century",
+   "artist_display": "Paminggir people\nLampung area, South Sumatra, Indonesia",
+   "medium_display": "Cotton, silk, and silver-leaf-over-lacquered-paper-strip-wrapped bast fiber (probably ramie), plain weave with supplementary patterning and brocading wefts, main warp fringe",
+   "is_public_domain": true,
+   "artwork_type_title": "Religious/Ritual Object",
+   "artist_title": "Paminggir",
+   "image_id": "ca9c6ee4-58a1-38fa-362f-b00f9a5996d4"
+  },
+  {
+   "_score": 114.380135,
+   "id": 24645,
+   "title": "Under the Wave off Kanagawa (Kanagawa oki nami ura), also known as The Great Wave, from the series \"Thirty-Six Views of Mount Fuji (Fugaku sanjūrokkei)\"",
+   "thumbnail": {
+    "lqip": "data:image/gif;base64,R0lGODlhBwAFAPUAAFpibG1vco2JfXh+g31/gXqAgo2MgoqOjY+RjJKSioiPkYySlJKVkpSYlJqblZKYmpyfm6mnmb6wlbyxl7+yl7+zmrWzormzocK1mcW2m8O6pce8pMq9oc/Bos7EqtHDp9PEpdLFqtbHqgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAAHAAUAAAYhwJDIwwF1PpsLIFKRZCCDwARD0TgQFoMg8SAcGIWGYhEEADs=",
+    "width": 6679,
+    "height": 4577,
+    "alt_text": "A crashing wave looms over two small ships, Mount Fuji in the background."
+   },
+   "date_display": "1830/33",
+   "artist_display": "Katsushika Hokusai 葛飾 北斎 \nJapanese, 1760-1849",
+   "medium_display": "Color woodblock print; oban",
+   "is_public_domain": true,
+   "artwork_type_title": "Print",
+   "artist_title": "Katsushika Hokusai",
+   "image_id": "b3974542-b9b4-7568-fc4b-966738f61d78"
+  }
+ ]
+}

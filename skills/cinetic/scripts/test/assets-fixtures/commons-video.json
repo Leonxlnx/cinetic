@@ -1,0 +1,227 @@
+{
+ "query": {
+  "pages": [
+   {
+    "pageid": 145164684,
+    "title": "File:Project Cannikin Review.ogg",
+    "index": 3,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/1e/Project_Cannikin_Review.ogg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Project_Cannikin_Review.ogg",
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1e/Project_Cannikin_Review.ogg/330px--Project_Cannikin_Review.ogg.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo",
+      "width": 400,
+      "height": 300,
+      "size": 63262112,
+      "mime": "application/ogg",
+      "duration": 853.3565532879819,
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Project Cannikin Review"
+       },
+       "Artist": {
+        "value": "United States. Department of Energy. National Nuclear Security Administration"
+       },
+       "LicenseShortName": {
+        "value": "Public domain"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "pd"
+       }
+      }
+     }
+    ],
+    "videoinfo": [
+     {
+      "derivatives": [
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/1/1e/Project_Cannikin_Review.ogg?utm_source=commons.wikimedia.org&utm_campaign=api&utm_content=original",
+        "type": "video/ogg; codecs=\"theora, vorbis\"",
+        "width": 400,
+        "height": 300,
+        "bandwidth": 593066
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/1e/Project_Cannikin_Review.ogg/Project_Cannikin_Review.ogg.240p.vp9.webm",
+        "type": "video/webm; codecs=\"vp9, opus\"",
+        "transcodekey": "240p.vp9.webm",
+        "width": 320,
+        "height": 240,
+        "bandwidth": 183168
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/1e/Project_Cannikin_Review.ogg/Project_Cannikin_Review.ogg.360p.mpeg4.mov",
+        "type": "video/quicktime; codecs=\"mp4v\"",
+        "transcodekey": "360p.mpeg4.mov",
+        "width": 400,
+        "height": 300,
+        "bandwidth": 697368
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "pageid": 180531840,
+    "title": "File:USVI MVI 5146 - Palm trees sway on a lush green hillside overlooking the crashing waves of the ocean.webm",
+    "index": 2,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/b3/USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm",
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm/1280px--USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo",
+      "width": 1920,
+      "height": 1080,
+      "size": 36327045,
+      "mime": "video/webm",
+      "duration": 38.642,
+      "extmetadata": {
+       "ObjectName": {
+        "value": "USVI MVI 5146 - Palm trees sway on a lush green hillside overlooking the crashing waves of the ocean"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/Category:Government_of_the_United_States_Virgin_Islands\" title=\"Category:Government of the United States Virgin Islands\">Category:Government of the United States "
+       },
+       "LicenseShortName": {
+        "value": "Public domain"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "pd"
+       }
+      }
+     }
+    ],
+    "videoinfo": [
+     {
+      "derivatives": [
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/b/b3/USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm?utm_source=commons.wikimedia.org&utm_campaign=api&utm_content=original",
+        "type": "video/webm; codecs=\"av01.0.08M.08, opus\"",
+        "width": 1920,
+        "height": 1080,
+        "bandwidth": 7520738
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b3/USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm/USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm.240p.vp9.webm",
+        "type": "video/webm; codecs=\"vp9, opus\"",
+        "transcodekey": "240p.vp9.webm",
+        "width": 426,
+        "height": 240,
+        "bandwidth": 361776
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b3/USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm/USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm.360p.mpeg4.mov",
+        "type": "video/quicktime; codecs=\"mp4v\"",
+        "transcodekey": "360p.mpeg4.mov",
+        "width": 640,
+        "height": 360,
+        "bandwidth": 964840
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b3/USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm/USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm.480p.vp9.webm",
+        "type": "video/webm; codecs=\"vp9, opus\"",
+        "transcodekey": "480p.vp9.webm",
+        "width": 854,
+        "height": 480,
+        "bandwidth": 936568
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b3/USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm/USVI_MVI_5146_-_Palm_trees_sway_on_a_lush_green_hillside_overlooking_the_crashing_waves_of_the_ocean.webm.1080p.vp9.webm",
+        "type": "video/webm; codecs=\"vp9, opus\"",
+        "transcodekey": "1080p.vp9.webm",
+        "width": 1920,
+        "height": 1080,
+        "bandwidth": 3412448
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "pageid": 180531988,
+    "title": "File:USVI Sequence 01 2 - Palm trees sway gently on a lush green hillside overlooking the ocean with waves crashing against rocks below.webm",
+    "index": 1,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/ef/USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm",
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm/1280px--USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo",
+      "width": 1920,
+      "height": 1080,
+      "size": 28648649,
+      "mime": "video/webm",
+      "duration": 38.664,
+      "extmetadata": {
+       "ObjectName": {
+        "value": "USVI Sequence 01 2 - Palm trees sway gently on a lush green hillside overlooking the ocean with waves crashing against rocks below"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/Category:Government_of_the_United_States_Virgin_Islands\" title=\"Category:Government of the United States Virgin Islands\">Category:Government of the United States "
+       },
+       "LicenseShortName": {
+        "value": "Public domain"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "pd"
+       }
+      }
+     }
+    ],
+    "videoinfo": [
+     {
+      "derivatives": [
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/e/ef/USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm?utm_source=commons.wikimedia.org&utm_campaign=api&utm_content=original",
+        "type": "video/webm; codecs=\"av01.0.08M.08, opus\"",
+        "width": 1920,
+        "height": 1080,
+        "bandwidth": 5927715
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/ef/USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm/USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm.240p.vp9.webm",
+        "type": "video/webm; codecs=\"vp9, opus\"",
+        "transcodekey": "240p.vp9.webm",
+        "width": 426,
+        "height": 240,
+        "bandwidth": 361536
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/ef/USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm/USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm.360p.mpeg4.mov",
+        "type": "video/quicktime; codecs=\"mp4v\"",
+        "transcodekey": "360p.mpeg4.mov",
+        "width": 640,
+        "height": 360,
+        "bandwidth": 964416
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/ef/USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm/USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm.480p.vp9.webm",
+        "type": "video/webm; codecs=\"vp9, opus\"",
+        "transcodekey": "480p.vp9.webm",
+        "width": 854,
+        "height": 480,
+        "bandwidth": 936288
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/ef/USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm/USVI_Sequence_01_2_-_Palm_trees_sway_gently_on_a_lush_green_hillside_overlooking_the_ocean_with_waves_crashing_against_rocks_below.webm.1080p.vp9.webm",
+        "type": "video/webm; codecs=\"vp9, opus\"",
+        "transcodekey": "1080p.vp9.webm",
+        "width": 1920,
+        "height": 1080,
+        "bandwidth": 3410688
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

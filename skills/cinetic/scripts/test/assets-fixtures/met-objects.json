@@ -1,0 +1,25 @@
+{
+ "objectIDs": [
+  833974,
+  744200,
+  210899,
+  291329
+ ],
+ "objects": [
+  {
+   "objectID": 210899,
+   "isPublicDomain": true,
+   "primaryImage": "https://images.metmuseum.org/CRDImages/es/original/DT5016.jpg",
+   "primaryImageSmall": "https://images.metmuseum.org/CRDImages/es/web-large/DT5016.jpg",
+   "title": "Wave bowl",
+   "objectName": "Wave bowl",
+   "artistDisplayName": "Christopher Dresser",
+   "culture": "",
+   "medium": "Glazed earthenware",
+   "classification": "Ceramics-Pottery",
+   "department": "European Sculpture and Decorative Arts",
+   "objectURL": "https://www.metmuseum.org/art/collection/search/210899",
+   "tags": null
+  }
+ ]
+}

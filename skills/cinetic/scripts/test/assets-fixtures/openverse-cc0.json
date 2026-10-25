@@ -1,0 +1,69 @@
+{
+ "result_count": 240,
+ "results": [
+  {
+   "id": "3f260d57-a9e0-4df9-a1f8-6c6f241ae3db",
+   "title": "Granite Boulder and Rock Varnish",
+   "creator": "Joshua Tree National Park",
+   "creator_url": "https://www.flickr.com/photos/115357548@N08",
+   "license": "pdm",
+   "license_version": "1.0",
+   "url": "https://live.staticflickr.com/65535/51916592018_8f5982ff97_b.jpg",
+   "thumbnail": "https://api.openverse.org/v1/images/3f260d57-a9e0-4df9-a1f8-6c6f241ae3db/thumb/",
+   "foreign_landing_url": "https://www.flickr.com/photos/115357548@N08/51916592018",
+   "source": "flickr",
+   "provider": "flickr",
+   "width": 1024,
+   "height": 661,
+   "filesize": null
+  },
+  {
+   "id": "0b4f32c7-3e4c-406d-98a8-5deab3e19484",
+   "title": "SC 199073 - Captain Eugene Kirby, Granite Falls, N.C., talks over SC-300 to a rifle company in the field.",
+   "creator": "Signal Corps Archive",
+   "creator_url": "https://www.flickr.com/photos/186360156@N02",
+   "license": "pdm",
+   "license_version": "1.0",
+   "url": "https://live.staticflickr.com/65535/52517205410_a6b45be587_b.jpg",
+   "thumbnail": "https://api.openverse.org/v1/images/0b4f32c7-3e4c-406d-98a8-5deab3e19484/thumb/",
+   "foreign_landing_url": "https://www.flickr.com/photos/186360156@N02/52517205410",
+   "source": "flickr",
+   "provider": "flickr",
+   "width": 1024,
+   "height": 839,
+   "filesize": null
+  },
+  {
+   "id": "e513405c-ddea-4799-9649-759f13cb4887",
+   "title": "A firefighter sprays a hot spot with water on the Granite Pass Complex.",
+   "creator": "Forest Service - Northern Region",
+   "creator_url": "https://www.flickr.com/photos/40882383@N03",
+   "license": "pdm",
+   "license_version": "1.0",
+   "url": "https://live.staticflickr.com/65535/51820306393_5b281941e5_b.jpg",
+   "thumbnail": "https://api.openverse.org/v1/images/e513405c-ddea-4799-9649-759f13cb4887/thumb/",
+   "foreign_landing_url": "https://www.flickr.com/photos/40882383@N03/51820306393",
+   "source": "flickr",
+   "provider": "flickr",
+   "width": 1024,
+   "height": 684,
+   "filesize": null
+  },
+  {
+   "id": "fc79d8d0-3f20-4ae4-9c44-41d3d2fc7986",
+   "title": "'Artistic Memorials in Bronze and Granite' -- 1893",
+   "creator": "JFGryphon",
+   "creator_url": "https://www.flickr.com/photos/30484128@N03",
+   "license": "cc0",
+   "license_version": "1.0",
+   "url": "https://live.staticflickr.com/65535/52545379979_2f8c5d2627.jpg",
+   "thumbnail": "https://api.openverse.org/v1/images/fc79d8d0-3f20-4ae4-9c44-41d3d2fc7986/thumb/",
+   "foreign_landing_url": "https://www.flickr.com/photos/30484128@N03/52545379979",
+   "source": "flickr",
+   "provider": "flickr",
+   "width": 378,
+   "height": 500,
+   "filesize": null
+  }
+ ]
+}

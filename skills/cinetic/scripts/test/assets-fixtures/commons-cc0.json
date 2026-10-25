@@ -1,0 +1,138 @@
+{
+ "query": {
+  "pages": [
+   {
+    "pageid": 44737705,
+    "title": "File:Heimatmuseum Bodenschätze IMG 5365.JPG",
+    "index": 17,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/6/69/Heimatmuseum_Bodensch%C3%A4tze_IMG_5365.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Heimatmuseum_Bodensch%C3%A4tze_IMG_5365.JPG",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/6/69/Heimatmuseum_Bodensch%C3%A4tze_IMG_5365.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "width": 3000,
+      "height": 4000,
+      "size": 2734702,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Heimatmuseum Bodenschätze IMG 5365"
+       },
+       "Artist": {
+        "value": "Nassauer27"
+       },
+       "LicenseShortName": {
+        "value": "CC0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc0"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "pageid": 93108967,
+    "title": "File:Basalt qapf.png",
+    "index": 19,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/79/Basalt_qapf.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Basalt_qapf.png",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/7/79/Basalt_qapf.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "width": 570,
+      "height": 600,
+      "size": 63782,
+      "mime": "image/png",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Basalt qapf"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Kent_G._Budge\" title=\"User:Kent G. Budge\">Kent G. Budge</a>"
+       },
+       "LicenseShortName": {
+        "value": "CC0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc0"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "pageid": 93366375,
+    "title": "File:Lava flow southeastern Shale Butte Wilderness Study Area.jpg",
+    "index": 11,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/ad/Lava_flow_southeastern_Shale_Butte_Wilderness_Study_Area.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Lava_flow_southeastern_Shale_Butte_Wilderness_Study_Area.jpg",
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Lava_flow_southeastern_Shale_Butte_Wilderness_Study_Area.jpg/3840px-Lava_flow_southeastern_Shale_Butte_Wilderness_Study_Area.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "width": 4288,
+      "height": 2416,
+      "size": 1962646,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Lava flow southeastern Shale Butte Wilderness Study Area"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Jstuby\" title=\"User:Jstuby\">Jstuby</a>"
+       },
+       "LicenseShortName": {
+        "value": "CC0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc0"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "pageid": 95622622,
+    "title": "File:Ice Springs basalt is1.jpg",
+    "index": 3,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/6/65/Ice_Springs_basalt_is1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Ice_Springs_basalt_is1.jpg",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/6/65/Ice_Springs_basalt_is1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "width": 510,
+      "height": 455,
+      "size": 75503,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Ice Springs basalt is1"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Jstuby\" title=\"User:Jstuby\">Jstuby</a>"
+       },
+       "LicenseShortName": {
+        "value": "CC0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc0"
+       }
+      }
+     }
+    ]
+   }
+  ]
+ }
+}
