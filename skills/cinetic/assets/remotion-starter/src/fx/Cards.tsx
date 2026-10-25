@@ -8,6 +8,7 @@ import { morphBox, type MorphBox } from '../lib/box';
 import { toOklch } from '../lib/color';
 import { defocusMix } from '../lib/defocus';
 import { type FilmCtx, f60x, fpsOf, uOf, useFilm } from '../lib/film';
+import { type CardImage, imageZoom } from '../lib/image';
 import type { Declares } from '../timeline';
 
 // UI cards and product surfaces: the states every product moment is built from. Each is a pure function
@@ -226,30 +227,8 @@ export const springBox = (f: number, start: number, o: SpringBoxOpts, film?: Par
 };
 
 // ------------------------------------------------------------------------------------------ drawing
-/**
- * A supplied picture as a card's content (a screenshot, a product shot, a photo): `src` from staticFile()
- * or a URL. `fit` cover fills the box and crops; `focus` (0..1 each way) is the point kept in view and the
- * centre of `zoom` (1 = the whole cover crop, 1.6 = a tighter crop of the same focus). `zoomTo` with
- * `zoomStart`/`zoomDur` pushes in slowly inside the card (a camera move over the image).
- */
-export type CardImage = {
-  src: string;
-  fit?: 'cover' | 'contain';
-  focus?: Pt;
-  zoom?: number;
-  zoomTo?: number;
-  zoomStart?: number;
-  zoomDur?: number;
-  background?: string;
-};
-
-/** The zoom an image shows at frame f (a slow linear push when zoomTo is set). */
-export const imageZoom = (f: number, im: CardImage, fps: number): number => {
-  const z0 = im.zoom ?? 1;
-  if (im.zoomTo === undefined) return z0;
-  const t = clamp((f - (im.zoomStart ?? 0)) / Math.max(1e-6, im.zoomDur ?? 4 * fps));
-  return Math.exp(mix(Math.log(z0), Math.log(im.zoomTo), t));
-};
+// A supplied picture as a card's content, and its slow zoom: lib/image.ts (pure, shared with fx/Develop).
+export { type CardImage, imageZoom };
 
 /** Draws a CardImage filling its parent (position absolute, inset 0). */
 export const CardPicture: React.FC<{ image: CardImage; frame?: number; radius?: number }> = ({ image, frame = 0, radius }) => {

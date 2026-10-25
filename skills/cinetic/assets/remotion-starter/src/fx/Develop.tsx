@@ -6,7 +6,7 @@ import { stepFrame } from '../lib/cadence';
 import { mixColor } from '../lib/color';
 import { type FilmCtx, f60x, fpsOf, useFilm } from '../lib/film';
 import type { Declares, SteppedRange } from '../timeline';
-import { type CardImage, imageZoom } from './Cards';
+import { type CardImage, imageZoom } from '../lib/image';
 
 // Imagery that develops: a thumbnail, a screenshot or a built panel first shows as a tint (a duotone in
 // the film's own ink and accent, or a supplied tinted plate), then comes into full colour. The tint is a
