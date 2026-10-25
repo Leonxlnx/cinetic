@@ -1450,7 +1450,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 4,
+   "aliases": [
+    "dv-focus-in-word"
+   ]
   },
   {
    "id": "ty-inplace-light-up-beats",
@@ -1520,7 +1524,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 6,
+   "impact": 4,
+   "aliases": [
+    "dv-chain-build-recentre"
+   ]
   },
   {
    "id": "ty-staggered-word-roll",
@@ -1719,9 +1727,16 @@
    "primitive": [
     "fx/Scramble"
    ],
+   "conditions": [
+    "light built into the device (core, body, falloff), never a uniform halo"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 5,
+   "aliases": [
+    "dv-centre-out-decode"
+   ]
   },
   {
    "id": "ty-front-restyle-sweep",
@@ -1745,6 +1760,14 @@
     "fx/Chain",
     "fx/Words"
    ],
+   "materials": "The sentence develops through several hues before it settles: a transparent head (feathered about 5 letters) followed by fronts of peach, pink, lilac and blue, each slower than the one before, so mid-move the line shows several hues at once; the ink front eases out (power about 2.1) and stalls at 85 % of the line before the end catches up. Reveal head about 1.2 letters per drawing (44 f to the end), the blue front about 120 f, the ink 260 f.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "jobs": [
+    "emphasis",
+    "light"
+   ],
    "ban_safe": false,
    "bans": [
     "gradient",
@@ -1752,7 +1775,11 @@
     "italic"
    ],
    "ban_safe_variant": "A one-hue front (mute -> accent -> ink per glyph through mixColor) instead of a multi-hue band, and a variable-weight wave (400 -> 700) in the film's one sans instead of switching glyphs to a serif italic.",
-   "weight": 4
+   "weight": 4,
+   "impact": 5,
+   "aliases": [
+    "dv-sweep-set-line"
+   ]
   },
   {
    "id": "ty-occlusion-spill-from-mark",
@@ -6367,7 +6394,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 7
+   "weight": 8,
+   "impact": 3,
+   "aliases": [
+    "dv-launch-exit"
+   ]
   },
   {
    "id": "ty-oversized-landing",
@@ -6389,9 +6420,18 @@
    "primitive": [
     "fx/Oversize"
    ],
+   "materials": "The landed word cools from a hot accent to ink as a sweep: a band about 30 % of the word wide (hot -> a dark shade -> ink) crosses left to right in 40 f, expo-out, while the word shrinks, so the first letters are ink while the last are still hot.",
+   "jobs": [
+    "opening",
+    "emphasis"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 6,
+   "impact": 4,
+   "aliases": [
+    "dv-oversize-landing"
+   ]
   },
   {
    "id": "ty-accelerating-payoff-cadence",
@@ -6409,11 +6449,16 @@
    "use_when": "The last fragment before a reveal, a checklist completing, a montage speeding into the end.",
    "avoid_when": "Calm reading lines in the body of the film: one accelerating run per act at most.",
    "primitive": [
-    "fx/Words"
+    "fx/Words",
+    "fx/HardStep"
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 4,
+   "aliases": [
+    "dv-accelerating-swap-run"
+   ]
   },
   {
    "id": "ty-make-room-jump",
@@ -6436,7 +6481,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 6,
+   "impact": 3,
+   "aliases": [
+    "dv-make-room-creep-jump"
+   ]
   },
   {
    "id": "ty-last-word-snap",
@@ -6463,7 +6512,10 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 6,
+   "aliases": [
+    "dv-line-scale-snap"
+   ]
   },
   {
    "id": "le-letter-build-wordmark",
@@ -6514,7 +6566,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 4
+   "weight": 4,
+   "impact": 5,
+   "aliases": [
+    "dv-letters-arc-swing"
+   ]
   },
   {
    "id": "le-tracking-tighten-collapse",
@@ -6539,7 +6595,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 4
+   "weight": 4,
+   "impact": 3,
+   "aliases": [
+    "dv-tracking-collapse-exit"
+   ]
   },
   {
    "id": "cam-scale-breath-cut",
@@ -7329,11 +7389,16 @@
    "avoid_when": "More than one target at once.",
    "primitive": [
     "fx/Markers.Markers",
-    "fx/Markers.markerState"
+    "fx/Markers.markerState",
+    "fx/Corners"
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 4,
+   "aliases": [
+    "dv-marker-echo-bars"
+   ]
   },
   {
    "id": "le-relief-device-lockup",
@@ -7362,6 +7427,2570 @@
    "ban_safe": true,
    "bans": [],
    "weight": 6
+  },
+  {
+   "id": "dv-arrow-motifs",
+   "name": "Arrows as motion motifs",
+   "category": "layout_and_composition",
+   "family": "Icons and glyphs",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "An arrow splits into a row of arrow glyphs pointing in different directions (each new glyph ink for one frame, then the accent); outlined chevrons rise past a word; pale arrows drift outward from a hero icon; a white arrow shoots from the frame edge into its target in 2 frames and holds.",
+   "recipe": "Recipe: SVG arrow glyphs with HardStep colour and simple transforms. Anatomy: Glyph row tightening on an ease-out; chevrons decelerating; drift 120 px; shoot 2 f. Sound: The voice onset on the shoot.",
+   "timing": "5-25 f.",
+   "use_when": "Direction, growth, uploads, \"go\".",
+   "avoid_when": "Decorative arrows that point nowhere.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-bleed-headline",
+   "name": "Headline set so large the frame crops it",
+   "category": "layout_and_composition",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A light headline (ascenders 20 % of the frame height) runs off the right edge, its last letter half cut, while its words fade in and the frame drifts.",
+   "recipe": "Words at a size wider than the frame, ink-in-place entrance. Anatomy: Static crop; words ink in place; drift under it. Sound: A breath swell; key-click ticks on word onsets.",
+   "timing": "Held 68 f.",
+   "use_when": "Openers on a misty plate; editorial covers.",
+   "avoid_when": "Cropping a letter that changes the word.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-bracket-shrink-wrap",
+   "name": "L-brackets frame a word and shrink-wrap it",
+   "category": "layout_and_composition",
+   "family": "Marks, markers and annotations",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "Thin L-shaped corner brackets (top-right and bottom-left, or top-left and bottom-right) frame a word and shrink-wrap it as it changes; on a swap they retract their arms to bare bars and regrow on the opposite corners; tiny L ticks ride along with every copy of a line; small link chips framed by brackets flicker at the frame edges.",
+   "recipe": "Markers with corners ['tr','bl'] drawn as L strokes (two thin rects per corner), mode 'glide'. Anatomy: 2 px strokes, arms 35-60 px; shrink 221 -> fit; follow swaps with a 14 f cubic-out; retract 8 f, bars 4 f, regrow 6 f. Sound: With pops or kicks.",
+   "timing": "Shrink 38 f quad-out; follow 14 f; flicker 4-8 f.",
+   "use_when": "Framing the key word; technical, precise brands.",
+   "avoid_when": "Thick brackets; all four corners (two diagonal ones read better).",
+   "primitive": [
+    "fx/Markers"
+   ],
+   "jobs": [
+    "emphasis"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-connector-draw",
+   "name": "Connector lines draw from one element to the next",
+   "category": "layout_and_composition",
+   "family": "Marks, markers and annotations",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A straight line grows down from a title to a new note while a curved line grows from an icon, one frame apart, so the new element is visibly connected to what made it.",
+   "recipe": "SVG paths with strokeDrawn() or a linear dash tween. Anatomy: 2 px lines, linear-ish growth, 1 f offset between lines. Sound: None. Materials: Lines start as single dots: a small round dot appears where the line will start and holds 10 f, stretches slowly into a dash (8 f), then draws fast to its end (14 f) while the camera pans; a line drawn out of a node keeps a fixed amount of ink, so it thins as it lengthens (width = 80 / length clamped to 1-4 px). A leftover arc can leave by retracting from its start toward the frame edge (34 f, ease-in) while the next word decodes.",
+   "timing": "8-12 f each.",
+   "use_when": "Showing relations: a source to a result, a step to the next.",
+   "avoid_when": "Lines that draw after the element has settled.",
+   "primitive": [
+    "fx/Stepped.strokeDrawn"
+   ],
+   "materials": "Lines start as single dots: a small round dot appears where the line will start and holds 10 f, stretches slowly into a dash (8 f), then draws fast to its end (14 f) while the camera pans; a line drawn out of a node keeps a fixed amount of ink, so it thins as it lengthens (width = 80 / length clamped to 1-4 px). A leftover arc can leave by retracting from its start toward the frame edge (34 f, ease-in) while the next word decodes.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-copy-inside-ui",
+   "name": "The tagline is set as a string inside the product UI",
+   "category": "layout_and_composition",
+   "family": "Lines, layout and swaps",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature",
+    "update"
+   ],
+   "summary": "The line of copy is not laid over the UI: it is a real string inside it (the subtitle of the top result, a field's text, a notification) at UI size, typed by the same typing primitive as the rest of the film and marked only by being the one line in a second voice.",
+   "recipe": "Recipe: put the copy into the UI mock's data and animate it with TypeOn or Chain. Anatomy: One metadata string replaced by the copy; marked by a second type voice or the accent; it continues by typing later in the shot. Sound: Key ticks, if any.",
+   "timing": "Present from the row's arrival; highlighted about 52 f; the continuation typed in about 30 f.",
+   "use_when": "Update films and UI-led launches, where overlaid copy would fight the UI.",
+   "avoid_when": "Lines longer than the field; UI sizes that become illegible in vertical.",
+   "primitive": [],
+   "jobs": [
+    "emphasis",
+    "product",
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-corner-dots-pop-breathe",
+   "name": "Corner dots bracket the line; one pops big on entry",
+   "category": "layout_and_composition",
+   "family": "Marks, markers and annotations",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Four tiny squares (8-10 px) mark the corners of a text block; one corner pops in as a large blob and shrinks to size, and the dots drift outward as the line grows; reused for each new line.",
+   "recipe": "Build: <Corners size={9} mode=\"glide\" pop={{ corner: 'tr', from: 2.5, frames: 18 }}> (fx/Corners): one corner enters oversized and settles on M.oversize; the others follow the growing line on E.jump. Anatomy: Pop 64 x 52 -> 33 x 22 px; drift about 4 px/f following the text box with a lag. Sound: With the title.",
+   "timing": "Pop settle 18 f; drift continuous.",
+   "use_when": "A system of brackets across a whole film's copy.",
+   "avoid_when": "Large dots that compete with the type.",
+   "primitive": [
+    "fx/Corners"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-corner-micro-labels",
+   "name": "Tiny labels in the empty corners",
+   "category": "layout_and_composition",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Three or four very small all-caps labels (10-12 px) and a contact line sit in the empty corners around a headline, arriving 1-2 frames apart and leaving with it.",
+   "recipe": "Words at the ui role, pop entrance, staggered 4 f. Anatomy: Corner placement, all caps, tracked out. Sound: None. Materials: A tiny label decodes through random letters of the same width (2 + 2 + resolve, 10 f) as its tick dot appears under it.",
+   "timing": "3-5 f apart in; out with the line.",
+   "use_when": "Poster-like frames; an editorial end card.",
+   "avoid_when": "Labels that need reading (they are texture).",
+   "primitive": [
+    "fx/Words"
+   ],
+   "materials": "A tiny label decodes through random letters of the same width (2 + 2 + resolve, 10 f) as its tick dot appears under it.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 2
+  },
+  {
+   "id": "dv-corner-squares-blink",
+   "name": "Four tiny corner squares that blink and jump",
+   "category": "layout_and_composition",
+   "family": "Marks, markers and annotations",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "Four small squares (14-25 px, slightly rounded, grey or ink) mark the corners of an invisible box around the current words. Each corner blinks on and off on its own uneven rhythm (on 1-8 f, off 1-6 f, rarely all four together), and the box never tweens: it jumps to new extents on word onsets (sometimes 3 f before a long word, so the frame is ready), often larger than the text; markers can each teleport on their own frame (1-6 f apart) along a layout grid, blink for a few frames after arriving, glide with the line's re-centre instead, or linger and blink alone after the phrase is gone.",
+   "recipe": "Build: <Corners boxes onsets end color size={22}> (fx/Corners): per-corner seeded blinks (short 2-4 f flickers and 12-34 f holds, off 2-8 f), per-corner jump stagger (house TR 0, TL 2, BL 8, BR 9 f), boxes on word onsets (2-6 f early for a long word), end + linger (15 f); mode=\"glide\" follows a re-centre on E.jump; cornerFrames() lists every jump for ticks. Anatomy: Corner rects at the box corners (inside the box), visibility from a seeded run-length pattern per corner (about 50-60 % on); box from a keyed table on onsets; optional per-marker jump order (TR, TL, BR, BL); optional glide on the re-centre curve with single-corner drop-outs of 1-3 f. Sound: None of its own, or ticks and hi-hats on the word steps; silence during the hold.",
+   "timing": "Box steps on word onsets (or 6 f early at 60 fps); blink runs on 2-16 f, off 2-12 f at 60 fps; marker stagger 2-12 f; linger 15 f after the text.",
+   "use_when": "A text-led opener or a calm statement that needs a living, technical frame; pointing at a word or a figure; any film with a tool or precision idea.",
+   "avoid_when": "Glow on the squares; tweening the box; markers on every line of a film (one act).",
+   "primitive": [
+    "fx/Corners"
+   ],
+   "jobs": [
+    "emphasis"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-left-stack-build",
+   "name": "Left-aligned stack builds downward beside the product",
+   "category": "layout_and_composition",
+   "family": "Lines, layout and swaps",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Beside a tilted phone, a top-anchored left-aligned stack builds line by line every 5-7 f, each line rising about 50 px from a third strength.",
+   "recipe": "<Words> per line with starts 12 f apart, left-aligned. Anatomy: Left margin about 158 px; lines added below; the last line in the accent. Sound: Voice.",
+   "timing": "Lines 10-14 f apart; each 30 f.",
+   "use_when": "Feature lists next to a device.",
+   "avoid_when": "Centred stacks next to off-centre products.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 2
+  },
+  {
+   "id": "dv-marker-pen-annotation",
+   "name": "Marker-pen strokes write on, slash and erase",
+   "category": "layout_and_composition",
+   "family": "Marks, markers and annotations",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "vertical"
+   ],
+   "summary": "Hand-drawn marker strokes in one bright colour (about 30 px, rounded) write on over the type: a big X slashes a word, holds and erases top-down; a zigzag arrow starts as a dot and draws through the line; an underline writes right to left and erases in drawing order across a cut; small arrows write and erase between words, overlapping; a dashed arrow writes dash by dash; doodles are cut mid-erase.",
+   "recipe": "Build: <PenStroke at d={penPaths.x(box).d} color width={30}> (fx/PenStroke): strokes share one pen (write 20 f on E.stdInOut, split by length; sequence=\"chain\" makes the X's second stroke start as the first ends: 61 % of it in 5 of 17 f), hold 8 f, erase in drawing order (16 f) or erase={{ order: \"reverse\" }}; penPaths: underline (rtl), x, ring, arrow, zigzag; dash={{ n }} writes dash by dash; penEraseShare() to cut a doodle mid-erase. Anatomy: Stroke draw-on at pen speed with an ease-in-out; erase as a second draw-off in drawing order; X = two strokes, the second starting as the first ends; dash-by-dash reveal. Sound: A kick on the slash; bubble pops on the underline; an onset on the X. Materials: Marker strokes have dry, fibrous edges (plus or minus 2-3 px of edge noise at about 1/6 px frequency), round blobby caps 1.1x the stroke width, small width changes along the stroke, a flat fill and no transparency: they sit opaque over black or white letters.",
+   "timing": "Write 17-22 f; hold 8-10 f; erase 12-22 f; an X in 17 f with most of it in 5 f.",
+   "use_when": "Opinionated copy (crossing out the old way); playful launches; timelines.",
+   "avoid_when": "Neat vector strokes (it must look drawn); more than one colour.",
+   "primitive": [
+    "fx/PenStroke"
+   ],
+   "materials": "Marker strokes have dry, fibrous edges (plus or minus 2-3 px of edge noise at about 1/6 px frequency), round blobby caps 1.1x the stroke width, small width changes along the stroke, a flat fill and no transparency: they sit opaque over black or white letters.",
+   "jobs": [
+    "emphasis"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-outline-shape-frames",
+   "name": "Thin outline shapes frame a caption on a photo",
+   "category": "layout_and_composition",
+   "family": "Marks, markers and annotations",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "White 1-2 px outlines (a circle overlapping a rounded rectangle, a huge thin circle, a pill) sit centred on photos around a small one-word caption, contracting 5 % around it or sliding in, while the photo pushes.",
+   "recipe": "Recipe: SVG outlines centred on the caption with E.snapOut scale; Photo push under them. Anatomy: Outlines contract on expo-out (peak 10 px/f) or slide in (60 px/f first frame) or expand circ-out. Sound: Kicks and a whoosh on the cuts. Materials: On live footage a thin white outline circle (about 420 px) or stadium sits off-centre and the phrase assembles word by word inside it, each word fading from grey to white about 10 f apart, overlapping the subjects with no backing.",
+   "timing": "16-22 f; captions fade 10 f.",
+   "use_when": "Photo-led films with short captions.",
+   "avoid_when": "Thick strokes; outlines that touch the subject's face.",
+   "primitive": [],
+   "materials": "On live footage a thin white outline circle (about 420 px) or stadium sits off-centre and the phrase assembles word by word inside it, each word fading from grey to white about 10 f apart, overlapping the subjects with no backing.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-palette-corner-swatches",
+   "name": "Corner swatches take their colour from the picture",
+   "category": "layout_and_composition",
+   "family": "Marks, markers and annotations",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Four flat 20 px squares frame a word like crop marks, and on every card they take new colours picked from that card's image.",
+   "recipe": "Build: <Corners colors={[[tl, tr, bl, br], ...]}> (fx/Corners): per box, per corner colours picked from each card's image, swapped on the cut (the box changes on its onset). Anatomy: Corner marks as palette chips; recolour on the cut frame. Sound: None.",
+   "timing": "Recolour 0 f on each cut; cards 20-30 f.",
+   "use_when": "Word cards over changing imagery; a film about images or design.",
+   "avoid_when": "Colours that clash with the house accent (pick from the image's own palette).",
+   "primitive": [
+    "fx/Corners"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-pen-line-annotation",
+   "name": "Thin pen lines circle, underline and point",
+   "category": "layout_and_composition",
+   "family": "Marks, markers and annotations",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A thin hand-drawn line annotates: an ellipse draws around a word while the word types (a short dash appears 4 f before at the ellipse's start); a loop circles a word or a dot; a curved arrow swings into a dot and retracts; a wavy underline appears under a new word on twos; a closed contour draws at constant pen speed; a thin ellipse orbits a photo.",
+   "recipe": "SVG path + strokeDrawn() at constant pen speed (65 px a frame), inside <Stepped on={2}> for the hand feel. Anatomy: 1.5-3 px strokes, slightly irregular; pen speed about 65 px/f at 60 fps, slower at corners; on twos for a hand feel. Sound: A paper rustle; none for most. Materials: A rising zigzag trend line scribbles through a big number (three segments, ending in an arrowhead past the last digit, 30 f expo-out, arrowhead on the last frame) and holds until the stat breaks apart. Annotations leave as the hero changes state, not after: the loop and arrow un-draw in 2 steps over 4 f.",
+   "timing": "Ellipse 28 f with the word; loops 20-25 f; underline 5 f in two steps; arrow draw 10 f, hold 15 f, retract 10 f.",
+   "use_when": "Circling the key word; pointing at the subject; editorial and voice-led films.",
+   "avoid_when": "Perfect geometric circles (that is a ring, not a pen).",
+   "primitive": [
+    "fx/Stepped.strokeDrawn"
+   ],
+   "materials": "A rising zigzag trend line scribbles through a big number (three segments, ending in an arrowhead past the last digit, 30 f expo-out, arrowhead on the last frame) and holds until the stat breaks apart. Annotations leave as the hero changes state, not after: the loop and arrow un-draw in 2 steps over 4 f.",
+   "jobs": [
+    "proof"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
+  },
+  {
+   "id": "dv-ring-draw-around",
+   "name": "A ring draws around the subject, then ripples",
+   "category": "layout_and_composition",
+   "family": "Marks, markers and annotations",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A thin ring draws clockwise around a caption on twos (60 % of the sweep in the first 4 frames), or a clean ring snaps on around a scribble and a second, larger ring appears and fades as a ripple.",
+   "recipe": "SVG circle with dash offset (E.snapOut) on twos; the ripple a second circle scaling and fading. Anatomy: Ring radius about 370 px or 110-150 px; draw on an ease-out; ripple ring 4 f. Sound: A breath or a short vocal sound. Materials: The ring is born as a tiny comet dash: a 20 px glowing dash with a colour fringe across it appears up-left of the caption for 4 f, then jumps to an 85 deg arc and keeps drawing clockwise into the full ring (on twos). The halo can be a thick translucent glass ring (about 16 px wide, a pale tint at 35 %, a brighter 2 px inner edge, a 12 px outer bloom) with a fainter second ring outside, which turns into a dark shadow ring (10 px at 80 -> 15 %) as the dot becomes a solid disc.",
+   "timing": "Draw 25 f on twos; ripple 10 f.",
+   "use_when": "Marking a point of interest in a voice-led graphic film.",
+   "avoid_when": "Glowing rings in house films.",
+   "primitive": [
+    "fx/Stepped.strokeDrawn"
+   ],
+   "materials": "The ring is born as a tiny comet dash: a 20 px glowing dash with a colour fringe across it appears up-left of the caption for 4 f, then jumps to an 85 deg arc and keeps drawing clockwise into the full ring (on twos). The halo can be a thick translucent glass ring (about 16 px wide, a pale tint at 35 %, a brighter 2 px inner edge, a 12 px outer bloom) with a fainter second ring outside, which turns into a dark shadow ring (10 px at 80 -> 15 %) as the dot becomes a solid disc.",
+   "conditions": [
+    "light built into the device (core, body, falloff), never a uniform halo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-selection-box-snap",
+   "name": "Design-tool selection box snaps to each word",
+   "category": "layout_and_composition",
+   "family": "Marks, markers and annotations",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A caption sits inside a thin selection rectangle with small square handles at its corners; each appended word snaps the box to the new width in one frame; a square frame with corner nodes and full-frame crosshair hairlines grows around a hero; new card corners start as long diagonal strokes and collapse into square handles.",
+   "recipe": "snapBox() from HardStep for the rect; handles as Markers with jump 1. Anatomy: 1-2 px rect, 8-12 px handles; snap per word; crosshair hairlines across the frame; diagonal strokes collapsing with tau about 1 f. Sound: Voice; a cut and voice for the hero frame.",
+   "timing": "Snaps 8-15 f apart; frame grows 10 f; collapse 23 f.",
+   "use_when": "Design, editing or creation tools; pointing at a hero object.",
+   "avoid_when": "Easing the box (it is a tool, it snaps).",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "jobs": [
+    "emphasis"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-swap-arrows",
+   "name": "Arrows shoot outward on a swap",
+   "category": "layout_and_composition",
+   "family": "Marks, markers and annotations",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "On the swap frame, thin light arrows appear at both ends of a phrase and travel outward (170 and 250 px) and fade, like the phrase pushing outward.",
+   "recipe": "Recipe: two small SVG arrows translated on E.snapOut with an opacity hump. Anatomy: Two arrows, power-out travel, fade in-out. Sound: The big hit.",
+   "timing": "Left 26 f, right 48 f; fade 34 f.",
+   "use_when": "A phrase that expands in meaning (more, wider, everywhere).",
+   "avoid_when": "Arrows on every swap.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-torn-layer-carrier",
+   "name": "Each word arrives on its own torn layer",
+   "category": "layout_and_composition",
+   "family": "Type arrivals",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Each new word is printed on its own torn-paper image layer, which tears into view in stop-motion steps; the sentence builds across a stack of torn images.",
+   "recipe": "Recipe: an SVG torn-edge mask whose reveal advances in held steps inside <Stepped>. Anatomy: Layer = image + word; the tear edge advances in 4 held steps (15, 45, 72, 100 %); layers stack. Sound: Paper tears within ±80 ms of beats. Materials: Each torn layer carries its own copy of the growing sentence, so where a new layer has torn in partway the text on it and below it sit a few pixels apart and words break across the tear (the offset = half the width of the newly added word); tear edges irregular 3-6 px with hard alpha; a new layer every 20 f.",
+   "timing": "Tear steps every 10 f (30-40 f per layer), layers 50-65 f apart.",
+   "use_when": "A crafted, editorial film with images; a statement that grows over several pictures.",
+   "avoid_when": "Product UI films.",
+   "primitive": [],
+   "materials": "Each torn layer carries its own copy of the growing sentence, so where a new layer has torn in partway the text on it and below it sit a few pixels apart and words break across the tear (the offset = half the width of the newly added word); tear edges irregular 3-6 px with hard alpha; a new layer every 20 f.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-tracking-marker-flicker",
+   "name": "Tracking squares jump over a crowd every frame",
+   "category": "layout_and_composition",
+   "family": "Marks, markers and annotations",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Small squares and arrow glyphs pop on random people in a crowd, repositioned every frame (1, 12, 5 per frame), like a tracker searching, then lock on one.",
+   "recipe": "Recipe: a seeded table of positions per frame over a list of head positions; HardStep visibility. Anatomy: Seeded positions per frame; count varies per frame. Sound: None needed.",
+   "timing": "28 f at 60 fps, new positions every frame.",
+   "use_when": "Detection, targeting, finding the one.",
+   "avoid_when": "Calm films.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-twin-disc-words",
+   "name": "Twin discs grow and hold words",
+   "category": "layout_and_composition",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Two touching discs scale up on an expo-out and thin words appear inside them one at a time.",
+   "recipe": "Cards springBox or enterState on two circles; Words inside. Anatomy: Discs about 180 px, touching; words at f+4, +7, +13. Sound: None.",
+   "timing": "Discs 16 f expo-out; words 6-12 f apart.",
+   "use_when": "A two-part idea (before / after, you / us).",
+   "avoid_when": "Long words that crowd the discs.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-words-around-object",
+   "name": "Sentence placed around an object",
+   "category": "layout_and_composition",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A sentence is distributed around a picture or card instead of sitting on one line: the first half top-left and the second bottom-right of a growing image cluster, words as tiles in the gaps of a masonry wall, one word above and one below the newest card riding its perspective, or one word cut on while a pull-back brings the other in from the frame edge.",
+   "recipe": "Words placed in the object's coordinate space (inside its transform); pull-back via camera. Anatomy: Words placed on the object's corners or in its gaps; they share its plane and drift; the next card can occlude them. Sound: A fast air whoosh; a soft UI tap then silence.",
+   "timing": "Words 10 f apart; cut on with the card; pull-back -4.3 % in 2 f.",
+   "use_when": "When copy and imagery share a frame and the layout should feel designed.",
+   "avoid_when": "Read order that becomes ambiguous.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-words-part-converge",
+   "name": "Two words part around the subject, then converge",
+   "category": "layout_and_composition",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "sting"
+   ],
+   "summary": "Two caption words either side of the subject slide apart with an expo-out (the maximum split on the strongest kick), hold, then converge on an expo-in.",
+   "recipe": "Two Words with mirrored x on E.snapOut, exit 'launch' toward each other. Anatomy: Split 180 px; 77 px/f first frame; hold; converge. Sound: Kick + sub-drop on the maximum split.",
+   "timing": "Part 28 f, hold 18 f, converge 24 f at 60 fps.",
+   "use_when": "Framing a person or product with two words.",
+   "avoid_when": "Subjects that move a lot.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-blob-launch-arc",
+   "name": "Blob launches, stretches, hangs and falls",
+   "category": "micro_interaction",
+   "family": "Icons and glyphs",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A blob pops off a bar as a small dot, rises above it stretched along its travel during the fastest frames, hangs at the top, and falls back: squash and stretch used once, on the one object that jumps.",
+   "recipe": "Build: launchHangFall(f, { at, height }) (fx/Flight): up 29 f on E.glideOut, hang 8 f, down 21 f on E.buildIn; stretchOf(speed) gives the 1.38 : 1 stretch along the travel on the fastest frames only; anim squash() on the landing. Anatomy: Stretch 1.38:1 along travel for the fastest 4 f; hang 8 f; cubic up and down. Sound: Launch on a kick; land on the next kick.",
+   "timing": "Up 29 f, hang 8 f, down 21 f.",
+   "use_when": "A playful launch of a single element (an idea leaving the bar).",
+   "avoid_when": "Stretch on type or UI panels.",
+   "primitive": [
+    "fx/Flight"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-dot-grows-into-icon",
+   "name": "A dot grows into an icon",
+   "category": "micro_interaction",
+   "family": "Icons and glyphs",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A 4 px dot appears, becomes a rounded blob, then a thick plus already rotated that spins -90 deg into place; a point grows over 3 frames, jumps 4x in one frame on a note, settles and shrinks to a point; tiny dots scattered around a folder grow into file icons in a quick stagger while the folder pops.",
+   "recipe": "MorphChain dot -> blob -> icon; SnapZoom-style one-frame jump on the note. Anatomy: Growth 12 f; snap 85 % in 1 f; settle 15 f; icons 10 f each staggered. Sound: A soft UI pop; the snap on an arpeggio note; pop SFX.",
+   "timing": "12-48 f.",
+   "use_when": "Building icons from nothing; motifs on a musical note.",
+   "avoid_when": "Icons fading in.",
+   "primitive": [
+    "fx/MorphChain"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-icon-draw-on",
+   "name": "Line icon draws itself on",
+   "category": "micro_interaction",
+   "family": "Icons and glyphs",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A line icon draws its strokes on (a paper plane while its bubble slides in; icons drawing onto objects, then updating; an icon rising inside a sphere as it blooms; an icon that breathes +12 % while its stroke inks in).",
+   "recipe": "SVG paths with strokeDrawn() or a dash tween. Anatomy: Draw-on 8-17 f roughly linear; 5 px stroke at about 70 px icons. Sound: Soft ticks; the voice onset.",
+   "timing": "8-34 f.",
+   "use_when": "Icons in UI moments; labelling objects.",
+   "avoid_when": "Filled icons (the draw-on needs strokes).",
+   "primitive": [
+    "fx/Stepped.strokeDrawn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-icon-pop",
+   "name": "Icons and badges pop in with a small life",
+   "category": "micro_interaction",
+   "family": "Icons and glyphs",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Small icons arrive with character: a crown badge pops tilted onto the corner of the top icon; an emoji pops a beat after its bubble (40 % -> 100 %); a pixel icon flips in from a 1 px line in one frame, breathes and flashes white; pixel blocks pop one by one and land with a small overshoot; a drawn clock's second hand ticks.",
+   "recipe": "Oversize from 0.4-0.7 on E.snapOut (allowed for small icons), HardStep for flips. Anatomy: Pops front-loaded 6-8 f; flips 1 f; breath +5-8 %; overshoot small. Sound: A chat pop or none. Materials: Pictorial elements arrive at full size but out of focus and sharpen over 4-6 f (blur 8 -> 3 -> 0 px, no scale), while saturation goes pale to full; text never does this. A block can also be born inside a letter of the word and slide to its slot as the word shrinks (6 f).",
+   "timing": "5-30 f.",
+   "use_when": "Badges, emoji, small rewards and states.",
+   "avoid_when": "Every icon popping at once.",
+   "primitive": [
+    "fx/Oversize"
+   ],
+   "materials": "Pictorial elements arrive at full size but out of focus and sharpen over 4-6 f (blur 8 -> 3 -> 0 px, no scale), while saturation goes pale to full; text never does this. A block can also be born inside a letter of the word and slide to its slot as the word shrinks (6 f).",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 3
+  },
+  {
+   "id": "dv-icon-row-stagger",
+   "name": "A row of icons arrives staggered, the chosen one last",
+   "category": "micro_interaction",
+   "family": "Icons and glyphs",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Toolbar icons fade in one after another and the chosen one gets a filled tile behind it last; app icons develop into some slots in random order on the strongest hit.",
+   "recipe": "Cards / kit Glyph with starts; Develop for the slots. Anatomy: Stagger 3, 3, 9 f; fades 5 f; random-order develop 1 f apart. Sound: The strongest hit for the develop.",
+   "timing": "20-30 f.",
+   "use_when": "Toolbars, app grids, options.",
+   "avoid_when": "Even stagger for the chosen item (give it a beat more).",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2
+  },
+  {
+   "id": "dv-ripple-rings",
+   "name": "Rings ripple out from a click or a pill",
+   "category": "micro_interaction",
+   "family": "Marks, markers and annotations",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Rings expand from a click point or from around a pill, one after another in decreasing greys, each fading as it grows; or one large soft ring expands from the cursor.",
+   "recipe": "Build: <Ripple at rings={3} every={10} shape={{ w, h, r }}> (fx/MicroUI): rings in the control's own shape (a stadium for a pill) launched 10 f apart, each 12 f and a step lighter. Anatomy: Stadium rings matching the pill's shape, launched every 10 f, each 10 f quad-out; greys stepping darker. Sound: A click or a hit. Materials: Filled tonal rings in stepped greys (four steps from light to near the ground) grow outward one after another, about 6 f apart, their outlines wobbling like jelly (a 4-6 px offset of the new ring for 2-4 f) before settling into a three-step tonal halo.",
+   "timing": "10-14 f per ring.",
+   "use_when": "Calling attention to a control; a broadcast or connect moment.",
+   "avoid_when": "Glowing gradient rings in house films.",
+   "primitive": [
+    "fx/MicroUI.Ripple"
+   ],
+   "materials": "Filled tonal rings in stepped greys (four steps from light to near the ground) grow outward one after another, about 6 f apart, their outlines wobbling like jelly (a 4-6 px offset of the new ring for 2-4 f) before settling into a three-step tonal halo.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-ticking-icon-swap",
+   "name": "Companion icon swaps on every tick",
+   "category": "micro_interaction",
+   "family": "Icons and glyphs",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A square icon tile beside a list changes its outline icon on every tick of the list (code, document, data, crop, image, link), one state every 4 frames.",
+   "recipe": "HardStep over an icon list. Anatomy: One-frame swaps; 4 f per state. Sound: Ticks.",
+   "timing": "10 f per state.",
+   "use_when": "Showing formats or types passing through.",
+   "avoid_when": "Icons that are hard to read at speed.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-giant-cropped-rise",
+   "name": "Giant word rises in, cropped by the frame",
+   "category": "opening_hook",
+   "family": "Type arrivals",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "sting",
+    "vertical"
+   ],
+   "summary": "One word so large the frame crops it (cap height 31-55 % of the frame) rises or drops into place on a steep expo-out; often the layout pans at the same time, so the path is a J-shaped swoop, or the product swaps underneath it.",
+   "recipe": "<Words> at display size with rise 0.8-1 em and dur 20-60 on E.snapOut inside a cropping frame; stepped variant inside <Stepped fps={16}>; the band is a LightSweep clipped to the text. Anatomy: A single display word at 3-6x body size; rise 330-740 px; variants: on every third frame held (stepped); with the whole layout panning left as it rises; dropping from above while a one-hue band about 1.5 letters wide travels through the letters. Sound: A spacebar-like click, or sub-bass plus kick when the product swaps under it.",
+   "timing": "17-60 f expo-out (tau about 15 f); pan 55 f on 16 fps steps; band crosses in 16 f.",
+   "use_when": "Opening a film or a section with one word; a word that rides over a product shot.",
+   "avoid_when": "Words whose meaning depends on the cropped letters.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-glyph-seed-open",
+   "name": "A single glyph grows, spins upright and opens the film",
+   "category": "opening_hook",
+   "family": "Icons and glyphs",
+   "role": "signature",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A single small mark appears at the frame centre on a dark ground, grows (half size within 2-3 f) and spins to upright on a longer, softer curve, landing exactly when the next device (a mask) starts; later it turns into a hole of the ground's colour and shrinks out spinning.",
+   "recipe": "Recipe: an SVG mark with scale and rotate on separate curves. Anatomy: Scale on a steep ease-out over 40 f; rotation 65 -> 180 deg on a longer tail; invert in 1 f; exit shrink on an ease-in. Sound: The first music note at 0.05 s.",
+   "timing": "64 f in; exit 52 f.",
+   "use_when": "Cold opens; a mark that seeds an iris.",
+   "avoid_when": "A sparkle as decoration (use the brand's own mark or a neutral shape).",
+   "primitive": [],
+   "ban_safe": false,
+   "bans": [
+    "sparkle"
+   ],
+   "ban_safe_variant": "The brand's mark or a plain dot as the seed.",
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-typing-accelerate-whip",
+   "name": "Typing that accelerates into a whip",
+   "category": "product_demo",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature",
+    "walkthrough"
+   ],
+   "summary": "The gaps between keys shrink (5, 2, 2, 1, 1, 1 frames) while the camera follows the caret on a decaying push, then whips away before the line ends.",
+   "recipe": "<TypeOn kind=\"prompt\" gaps={ACCEL.typing} skip> with typeOn() caret camera into whip(). Anatomy: Accelerating key gaps; camera tracks the caret (decay power 2.6) in close-up; the whip hides the last keys. Sound: One click per keystroke; the music drops out for 0.3 s before the next hit.",
+   "timing": "Gaps 5, 2, 2, 1, 1, 1 f at 60 fps (20 f in all); close-up runs 12, 12, 7, 5, 7, 5, 5, 5 f per character.",
+   "use_when": "Handing off from a typed request to the product's reaction.",
+   "avoid_when": "A line the viewer must read to the end.",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-typing-backspace-retype",
+   "name": "Placeholder deletes, the real value types in bursts",
+   "category": "product_demo",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "feature",
+    "walkthrough"
+   ],
+   "summary": "A placeholder in a field deletes quickly, then the real value types in irregular 1-2 character bursts: the field is being edited, not filled.",
+   "recipe": "Two TypeOn runs: the first with its count reversed (characters shown = n - count), the second human kind. Anatomy: Backspace run (about 11 characters in 10 f), a beat, then bursts. Sound: A chat pop mid-typing if a reply comes in.",
+   "timing": "Delete about 33 characters a second; retype about 26 a second in bursts; 48 f in all.",
+   "use_when": "A URL, a name or a setting being changed in the product.",
+   "avoid_when": "Fields the viewer has not seen filled before.",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-typing-elided",
+   "name": "Typing that starts mostly done after a cut",
+   "category": "product_demo",
+   "family": "Type arrivals",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "walkthrough",
+    "vertical"
+   ],
+   "summary": "After a cut, the prompt is already 50-80 % typed and the rest types with deceleration: the film skips the boring part.",
+   "recipe": "<TypeOn from={0.65} kind=\"stream\" ease={E.type}>. Anatomy: First frame 50-80 % typed; the rest decelerates. Sound: A keypress bed rather than per-key clicks.",
+   "timing": "About 93 cps for 5 f, then 59, 51... slowing; 75 f for 51 characters.",
+   "use_when": "Several prompts in a row, montages of requests.",
+   "avoid_when": "The first prompt of a film (show one typed in full first).",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-typing-human",
+   "name": "Typing by a person, with word-end pauses",
+   "category": "product_demo",
+   "family": "Type arrivals",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Text types the way a person types: runs inside words, a pause of 1-2 frames at word ends, an I-beam caret; the UI around it reacts (a send button pops before the sentence ends, icons pop when it is done).",
+   "recipe": "<TypeOn kind=\"human\">; a send button pop is press/springBox started 4-6 f before the last key. Anatomy: Characters cut on (optionally a 4 f fade each); variants: a line typing above the previous one so the stack builds upward; a first word that pops whole and a second that types; a wrap onto a second line. Sound: Key clicks per keystroke at -13 to -24 dBFS, or none.",
+   "timing": "24-45 characters a second inside words, +2-4 f per space; human kind: 30 cps in runs, one key pause at commas.",
+   "use_when": "A prompt or search typed into the product, a title on a device screen, any line that should feel human.",
+   "avoid_when": "Machine output (use a stream); long paragraphs.",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 3
+  },
+  {
+   "id": "dv-typing-prompt-decel",
+   "name": "Prompt typing that slows on its last word",
+   "category": "product_demo",
+   "family": "Type arrivals",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature",
+    "walkthrough"
+   ],
+   "summary": "A prompt types at a steady rate and slows on its last word, letter by letter, so the request lands with intent.",
+   "recipe": "<TypeOn kind=\"prompt\"> (last word x1.6 house; raise to x2.5 for emphasis). Anatomy: Steady about 30-33 characters a second, then one character every 4-8 f on the last word. Sound: Typing ticks, the last key softer. Materials: When the text outgrows the field it scrolls left under a feathered left edge (a 50-70 px mask) instead of a hard clip; once typing stops the caret blinks slowly (12 f on, 20 f off).",
+   "timing": "Whole prompt 50-90 f; last word 1.6-3x slower.",
+   "use_when": "The question that triggers the product's answer.",
+   "avoid_when": "Typing that is cut before it ends.",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "materials": "When the text outgrows the field it scrolls left under a feathered left edge (a 50-70 px mask) instead of a hard clip; once typing stops the caret blinks slowly (12 f on, 20 f off).",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-accelerating-cadence",
+   "name": "Line whose stagger and fade shrink word by word",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "Each later word starts sooner and fades faster than the one before, so the line gathers speed into its payoff (often the brand name).",
+   "recipe": "<Words cadence=\"accelerate\" accelTo={0.4}>. Anatomy: Geometric gaps (0.30, 0.23, 0.13, 0.10 s), fades shortening with them; variant: words cut on and slide only their last 10-12 px. Sound: A stab on word 1; or none.",
+   "timing": "Gaps 18 -> 6 f at 60 fps; second line fades 12 f with 6-8 f stagger.",
+   "use_when": "A payoff line, the last line of an act.",
+   "avoid_when": "Every line (one accelerating run per act).",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-anagram-converge",
+   "name": "Anagrams reshuffle and lock",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Two jumbled words sit apart and every 2-3 frames their letters reshuffle (real anagrams of the target words) while they converge and lock; or one word becomes another by swapping letters one at a time.",
+   "recipe": "<Scramble steps> (anagram stages); letter swap with Scramble order 'ltr' and steps of one letter. Anatomy: Letters re-ordered in steps, colour shifting each step; convergence on the last step; letter-swap variant: letters drop or rise a few px as they change. Sound: Ticks on the steps.",
+   "timing": "Steps every 4-6 f at 60 fps; 34 f; letter swap about 2 f per letter.",
+   "use_when": "A name or a claim that is \"made\" in front of the viewer.",
+   "avoid_when": "Long words (beyond about 8 letters it reads as noise).",
+   "primitive": [
+    "fx/Scramble"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-baseline-converge-overshoot",
+   "name": "Words rise and drop onto one baseline with overshoot",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "sting"
+   ],
+   "summary": "One word rises from below and the next drops from above onto a shared baseline, each landing with a real overshoot, while the background pans with a pulse.",
+   "recipe": "Recipe: per word a damped spring on y (SPR.landing) from ±0.8 em. Anatomy: Alternate directions; landing overshoot 11-19 %, zeta 0.46-0.57; a 2-step rise. Sound: A kick on the first landing, onsets per word.",
+   "timing": "Landings 12-22 f; pan 72 f.",
+   "use_when": "A playful two-word title on a coloured field.",
+   "avoid_when": "A film that already spends its one spring elsewhere.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-blur-fade-exit",
+   "name": "Words blur out and vanish",
+   "category": "typography_motion",
+   "family": "Type exits",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Text softens and fades together (blur to about 40 px with opacity on one clock), often followed by exactly one empty frame; or the previous words turn grey and blurred and stay behind the new ones as a ghost.",
+   "recipe": "<DefocusCut out empty={1}>; the ghost as a RackFocus level kept behind the new line. Anatomy: Blur 8-40 px and opacity together, most of the blur late; one empty frame; ghost variant: grey, blurred, held behind. Sound: A level swell before the cut; a quiet breath.",
+   "timing": "8-18 f; empty 1 f.",
+   "use_when": "Calm statements leaving; a line that should feel spoken into silence.",
+   "avoid_when": "Blur on small UI type.",
+   "primitive": [
+    "fx/CutFx.DefocusCut"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-brace-jump-insert",
+   "name": "Braces jump apart and the words swap inside",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature",
+    "sting"
+   ],
+   "summary": "To insert or swap a word between braces, the closing brace jumps outward one frame before the new word cuts on (59-73 % of its travel in that frame); for a swap, the braces accelerate apart during the last 0.4 s of the hold and the words change exactly at peak velocity.",
+   "recipe": "Build: <Brackets phrases={[{ at, text }...]} x y font braceColor mode=\"insert\"|\"peak\"> (fx/Brackets): insert: the closing brace jumps 66 % of its travel one frame before the word, then settles (10 f); peak: the braces run apart on an in-out (60 f) and the words swap on its fastest frame (a velocity seam). Anatomy: Braces are separate glyphs with their own motion; jump frame, expo settle (k 7-12); a 14 f drift; swap at the fastest frame. Sound: The audio onset with the word (-2 ms); the biggest hit (kick + sub-drop) on a swap.",
+   "timing": "Settle 10-12 f; swap run 60 f (in-out with the peak at the swap).",
+   "use_when": "Swapping the key word of a held statement; code-like or product-like copy.",
+   "avoid_when": "Serif or decorative braces outside a supplied brand.",
+   "primitive": [
+    "fx/Brackets"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-contrast-voice-pair",
+   "name": "Sans line with a contrasting-voice payoff word",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A short phrase pairs a plain sans word with a payoff word in a contrasting voice (a handwritten script, a serif italic, small caps); the contrasting word enters 5-7 frames later.",
+   "recipe": "<Words> with the payoff word in the second face and its own start. Anatomy: Sans word blur-fade-rise; contrasting word later; varied exits; a one-frame blank between phrases; variant: display caps fading in while a small italic connector types. Sound: A quiet breath before each cut.",
+   "timing": "Entry 10-16 f; contrasting word +10-14 f; hold creeping 146 f.",
+   "use_when": "\"No X.\" style lists; editorial films.",
+   "avoid_when": "Films whose brand has one family only.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": false,
+   "bans": [
+    "serif",
+    "italic"
+   ],
+   "ban_safe_variant": "Contrast by weight and size within the brand family (light vs heavy, or a mono payoff word).",
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-cut-on-drift",
+   "name": "Word cuts on and drifts, then leaves the same way",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Labels appear in one frame at full ink and keep drifting (diagonally apart, or sideways on an expo-out), hold briefly and accelerate out along the same line.",
+   "recipe": "<Words dur={1} rise={0}> inside a drift transform; exit 'launch' along the drift. Anatomy: Cut-on (1 f fade), drift 60-70 px, short hold, launch exit. Sound: Each label near a beat.",
+   "timing": "Drift 26-68 f; hold 8 f; exit 16 f accelerating (2, 4, 8, 14 px...).",
+   "use_when": "Two labels that relate (a pair of words apart in the frame); a single word between scenes.",
+   "avoid_when": "Text that must sit still to be read.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 2
+  },
+  {
+   "id": "dv-echo-copies-knockout",
+   "name": "Echo copies slide out from behind the word",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Copies of a word, each on its own solid knock-out box so the nearer copies hide the farther ones, slide out from behind the word in rings, then contract back.",
+   "recipe": "Build: <EchoCopies at offset={{ x, y }} x y ground back={{ at }}>{word}</EchoCopies> (fx/Echoes): rings at +1, +3, +4 f (25 fps) slide out on E.snapOut over 27 f (half way in 0.05 s, 90 % in 0.2 s), each on a box of the ground's colour so nearer rings hide farther ones; contract back in 20 f. Anatomy: Rings at +1, +3, +4 f, each expo-out (t50 0.04 s, t90 0.20 s); contraction 20 f. Sound: The full bed enters on the drop.",
+   "timing": "72 f in all.",
+   "use_when": "A key word that should feel multiplied or scaled (\"Scaling\").",
+   "avoid_when": "Long words; more than once.",
+   "primitive": [
+    "fx/Echoes.EchoCopies"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-erode-and-rise",
+   "name": "Old word erodes while new letters rise",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The old word disappears from its end, letter by letter, each blurring out horizontally, while the new word's letters rise into place behind it.",
+   "recipe": "Recipe: Letters build for the incoming word plus a per-letter exit (opacity and a horizontal ladder blur copy) in reverse order. Anatomy: Exit letters right to left, 1-2 f each with a horizontal smear; entry letters 3 f stagger, expo-out, full opacity in 3 f. Sound: Voice.",
+   "timing": "40 f in all; new letters 20 f each.",
+   "use_when": "Swapping one key word in a held line.",
+   "avoid_when": "Words the viewer has not read yet.",
+   "primitive": [
+    "fx/TypeFx.ErodeRise"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-flip-up-word",
+   "name": "Word flips up from a flat line",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A word flips up about its baseline from a flat line (rotateX) while rising and darkening.",
+   "recipe": "Recipe: rotateX(90deg -> 0) about the baseline with perspective 800 px plus the Words rise. Anatomy: Glyph height 12 -> 57 px in 3 frames, rise 66 px, grey to ink. Sound: None.",
+   "timing": "Height 8 f, position 25 f, colour 20 f.",
+   "use_when": "A word that should feel lifted off the page.",
+   "avoid_when": "Thin type (the flat phase disappears).",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-fly-past-lens-word",
+   "name": "Words fly in from behind the camera",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Each word starts about 10x its size (one letter fills the frame), blurred and off-centre, and shrinks into its slot: the words seem to come from behind the viewer.",
+   "recipe": "<Oversize from={10} dur={23} defocus={14} defocusDur={18}> per word with an x offset that converges; stagger 10. Anatomy: Per word: scale 10x to 1, a lateral start (left, centre, right in turn), blur clearing as it shrinks; staggered. Sound: The first word on a kick (+19 ms); a soft air pass per word.",
+   "timing": "About 23 f per word, stagger 10 f, sharp by the last word's landing.",
+   "use_when": "A tagline or a closing line on a strong beat; once per film.",
+   "avoid_when": "Calm films; more than 4 words.",
+   "primitive": [
+    "fx/Oversize"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-focus-travel-line",
+   "name": "Set line resolves from blur left to right",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The whole line is laid out at once but only the first words are sharp; sharpness travels across it left to right, and the last word closes a gap as it sharpens.",
+   "recipe": "<FocusWord mode=\"ui\"> with the line split into words. Anatomy: Per-word blur and opacity by position; last word gap close. Sound: None. Materials: An address bar built from separate soft pills the colour of the canvas, defined only by a drop shadow (0 6px 18px at 8 %) and an inner top highlight (0 -2px 6px white at 90 %), with thin black line icons; no borders.",
+   "timing": "Sweep 34 f; gap close 16 f; continuous drift.",
+   "use_when": "A sentence that reads in one sweep; a calm opener.",
+   "avoid_when": "Lines the viewer has to wait for.",
+   "primitive": [
+    "fx/FocusWord"
+   ],
+   "materials": "An address bar built from separate soft pills the colour of the canvas, defined only by a drop shadow (0 6px 18px at 8 %) and an inner top highlight (0 -2px 6px white at 90 %), with thin black line icons; no borders.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-ghost-reel",
+   "name": "Neighbouring words show as dim ghosts around the slot",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "While a word sits in a slot, blurred dim copies of the previous and next words remain visible just outside the mask, like a slot-machine reel; a new line can cut in at 79 % defocused and grow while ghost copies spread above and below.",
+   "recipe": "Build: <GhostReel n pitch swaps x y width slotH render> (fx/Reels): the slot sharp, the neighbours outside it through one fixed blur (6 px) at 20 %; each roll exits on E.buildIn (26 f) and settles on E.snapOut (16 f). Anatomy: Main word sharp in the slot; ghosts blurred, 10-25 % strength, moving with the roll; spreading ghosts on an ease-out. Sound: A kick on the swap.",
+   "timing": "Grow 56 f; ghosts 52 f ease-out; exit 40 f ease-in.",
+   "use_when": "Word swaps that should feel like a reel or a list; a line that is one of many.",
+   "avoid_when": "Ghosts strong enough to be read (keep them under 25 %).",
+   "primitive": [
+    "fx/Reels.GhostReel"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-glyph-scramble-lock",
+   "name": "Glyph scramble that locks into the word",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "sting"
+   ],
+   "summary": "Random glyphs (letters, digits, symbols) cycle in each slot and lock into the word, left to right or out of order, with exactly one accent glyph at a time; a sentence can scramble out the same way.",
+   "recipe": "<Scramble rateHz={10} order=\"ltr\"> (or 'random'); accent glyph via the accent prop; declares the span stepped. Anatomy: Per slot 10 changes a second, locking in order; one glyph in the accent; variants: arrow or symbol glyphs decoding into a wordmark, each new letter accent first then all ink; a sentence dropping out to random glyphs while the title resolves in the accent and flips to ink. Sound: A UI pop on the scramble's start; the title can land in a stop-down silence. Materials: Two constructions. Halo scramble: the word cycles through whole random glyph sets, each held exactly 6 f (10 Hz), inside a soft white halo (a blurred copy at 20 px, 45 %, screen) with the scrambling accent glyphs carrying a smaller accent glow; the halo switches off on the lock frame as a cut, while the word settles from 1.2x to 1.0. Positional scramble: letters keep their slots, random letters drop out, foreign glyphs and ligatures appear in the gaps, then the new string resolves through a pale tint for one state before the ink (about 4 f per state).",
+   "timing": "A state every 6 f (10 Hz); 7 states over 38 f; decode out 13 f, in 10 f, colour flip 1 f.",
+   "use_when": "A product name, a code, a version, a title once per film.",
+   "avoid_when": "Running copy; more than once per film.",
+   "primitive": [
+    "fx/Scramble"
+   ],
+   "materials": "Two constructions. Halo scramble: the word cycles through whole random glyph sets, each held exactly 6 f (10 Hz), inside a soft white halo (a blurred copy at 20 px, 45 %, screen) with the scrambling accent glyphs carrying a smaller accent glow; the halo switches off on the lock frame as a cut, while the word settles from 1.2x to 1.0. Positional scramble: letters keep their slots, random letters drop out, foreign glyphs and ligatures appear in the gaps, then the new string resolves through a pale tint for one state before the ink (about 4 f per state).",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-grid-hop-words",
+   "name": "Words hop between grid cells",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Words on small label boxes move one or two grid cells at a time, alternating axes like Manhattan routes, then all jump into the final sentence in one frame.",
+   "recipe": "Build: <GridHop words={[{ path: manhattan(from, to), at }]} origin texts font box final={{ at, positions: sentencePositions(texts, x, y, font) }}> (fx/Echoes): one cell per hop on the stepped progress 0, .19, .36, .78, .95, 1 (9 f), axes alternating, then every word jumps into the sentence on one frame. Anatomy: Hops of 120 px on 16 fps steps (progress 0, 0.19, 0.36, 0.78, 0.95, 1); the final jump is one frame. Sound: Plastic clicks on the hops; a big click on the final jump.",
+   "timing": "Each hop 8-10 f; run 75 f; final jump 1 f.",
+   "use_when": "A sentence assembled from parts; layout tools, grids, editing products.",
+   "avoid_when": "Long sentences.",
+   "primitive": [
+    "fx/Echoes.GridHop"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-hard-scale-steps",
+   "name": "Hero word shrinks in hard scale steps",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A hero word shrinks from 3.3x to rest in a few hard scale cuts with 0-2 frame holds and no tween (3.32 -> 1.71 -> 1.045 -> 1.0).",
+   "recipe": "HardStep on scale. Anatomy: Steps on single frames, each about half the remaining scale. Sound: Key-click transients on the steps.",
+   "timing": "10 f at 60 fps.",
+   "use_when": "A word arriving on key-click transients.",
+   "avoid_when": "Smooth films.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-hero-word-push",
+   "name": "One huge word fills the panel and pushes in",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "One key verb alone fills the panel (15-19 % of its height) and pushes in +24 % on an expo-out.",
+   "recipe": "Words + camera push (E.snapOut, +24 %). Anatomy: Single word, push on expo-out. Sound: On the swap after the zoom.",
+   "timing": "28 f.",
+   "use_when": "The verb of the claim, after a zoom-through.",
+   "avoid_when": "Two words.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-highlight-walk-park",
+   "name": "A highlight walks the line, parks on the keyword, new words type hot",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A grey line lights up in the accent as a whole, then the colour narrows to a window that walks word by word and parks on the keyword; new words then type in, each born in the accent and cooling to grey, while the keyword keeps its colour.",
+   "recipe": "Recipe: word spans with a colour state per frame (the window index from the clock), then TypeOn for the continuation with a per-character cool. Anatomy: Whole-line flash 8 f; the window steps about every 8 f; park 24 f; typing about one character per 2 f with word-end pauses; typed letters cool accent -> grey over 12 f; every colour change is a linear lerp over 12-16 f, never a cut. Sound: None needed.",
+   "timing": "About 90 f for the whole move.",
+   "use_when": "A line inside a UI (a subtitle, a result) that carries the claim; two colours only.",
+   "avoid_when": "Big display copy (use a tint wave or an ink path).",
+   "primitive": [],
+   "jobs": [
+    "emphasis",
+    "product"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-hub-stays",
+   "name": "Words float away; the hub stays",
+   "category": "typography_motion",
+   "family": "Type exits",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "All the words drift up on an ease-in and disappear, while an icon stays exactly in place and gains a rounded container: it becomes the hub of the next scene.",
+   "recipe": "Words exit 'launch' upward; Morph box around the icon. Anatomy: Words up 1 -> 12 px/f; the icon fixed; the container grows around it. Sound: An onset as the container appears.",
+   "timing": "16-22 f.",
+   "use_when": "Turning a statement into the product's centre.",
+   "avoid_when": "Moving the hub.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-hue-path-ink",
+   "name": "Word inks along a colour path",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Each new word appears at full size but pale and walks along a colour path into the ink, letter by letter from one end; the colour change is the reveal.",
+   "recipe": "<HueSweep> house one-hue path (9 f per word at 30 fps, words 10-12 f apart). Recipe: background-image a ten-stop gradient, background-size 300 % 100 %, background-clip text, background-position-x 100 -> 0 % over 48 f. Anatomy: Lightness held first, then darkened through the accent into the ink; the front crosses the word with the right end leading (or right to left for a cooling ramp); variant: the first word nudges 18 px into centre while it colours. Sound: A soft whoosh on the first word; word cadence off the beat. Materials: A wide spectral band slides right to left through the label and leaves ink behind: the line arrives as a horizontal rainbow (yellow, orange, magenta, red, olive), the band (about three times the label's width) slides left on a bezier (0.37, 0.13, 0.26, 0.95) at about 12 px/f, so mid-move the line reads warm at its end and cool at its start, and the tail of the band is ink. Ten stops from warm to green, teal, blue, navy and ink.",
+   "timing": "18-20 f per word, onsets 20-24 f apart; a ramp front of 13 f with a 30 f tail; AI lines 28-44 f each.",
+   "use_when": "A text-led opener, an AI line that should feel generated, a keyword.",
+   "avoid_when": "More than one per act; a full rainbow walk (it reads as a template).",
+   "primitive": [
+    "fx/HueSweep"
+   ],
+   "materials": "A wide spectral band slides right to left through the label and leaves ink behind: the line arrives as a horizontal rainbow (yellow, orange, magenta, red, olive), the band (about three times the label's width) slides left on a bezier (0.37, 0.13, 0.26, 0.95) at about 12 px/f, so mid-move the line reads warm at its end and cool at its start, and the tail of the band is ink. Ten stops from warm to green, teal, blue, navy and ink.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform",
+    "the film's one spectral accent"
+   ],
+   "jobs": [
+    "emphasis",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 5
+  },
+  {
+   "id": "dv-icon-in-sentence",
+   "name": "An icon stands in for a word in the sentence",
+   "category": "typography_motion",
+   "family": "Icons and glyphs",
+   "role": "signature",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "An icon takes a word's place inside the line: a mascot pops in where the next word would be while the giant word re-sets smaller; an outlined chip with an app logo sits inside the sentence, arriving in the accent and cooling, heating up before it swaps; a round clock icon between two words pops from 0.7 from defocus, saturates, then its hand ticks.",
+   "recipe": "Words with an inline element slot (a span with an icon), entering with Oversize from 0.7. Anatomy: Icon 1.3-2x cap height; pop 7-30 f; colour cool 10 f, heat 15 f before a swap. Sound: The spoken word. Materials: An inline brand chip changes brand by rolling: the old content warms and fades, then rolls up out of the pill while the new name rolls in from below (both visible for 2 f), the pill's 1 px border following the text colour; 16 f in all.",
+   "timing": "10-30 f.",
+   "use_when": "Product names, apps, time, anything the viewer knows as an icon.",
+   "avoid_when": "Icons that are unreadable at line size (at least 1.33x the cap height).",
+   "primitive": [
+    "fx/Words"
+   ],
+   "materials": "An inline brand chip changes brand by rolling: the old content warms and fades, then rolls up out of the pill while the new name rolls in from below (both visible for 2 f), the pill's 1 px border following the text colour; 16 f in all.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-ink-in-place",
+   "name": "In-place ink-up from partial strength",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Words or rows appear exactly in their final place, already 29-60 % strong on the first frame, and ink up to full with no movement at all; several words are often mid-fade together.",
+   "recipe": "<Words rise={0} dur={20} stagger={8}> with the first-frame strength set by the ease (E.snapOut gives about 35 %); colour-from-tint via accent = the panel tint and accentHold 0. Anatomy: Opacity only (or a colour from the panel tint or a light grey to the ink). Variants: words land grey and snap to full ink on the frame the next word lands (the recency snap); data rows dim then bright 1-2 f apart; pairs of two words at a time for small UI copy; side words fading in 7 f after a hit. Sound: Key or click ticks on word onsets for a typed feel, otherwise none.",
+   "timing": "First frame 29-60 % (house 38 %); 90 % by 10-20 f, full by 20-32 f on an expo-out. Stagger 4-12 f per word; lines 5-8 f apart; rows 2-4 f apart; a recency snap is one frame.",
+   "use_when": "Dense layouts (a page, a card, data rows, captions on photos) where motion would fight the layout, and small UI copy.",
+   "avoid_when": "A hero line that needs energy; long lines that would all be half-inked at once.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 9,
+   "impact": 3
+  },
+  {
+   "id": "dv-inline-gap-object",
+   "name": "Line opens a gap for an inline object",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A sentence splits between two words, the halves part and an object grows in the gap: an image chip that hard-cuts through several clips, a thumbnail that swaps content while the line reflows, or a pill that grows and types a sub-line.",
+   "recipe": "Build: <InlineGap leftText rightText at gap h swaps={[...]} items={[...]}> (fx/InlineGap): the halves part on E.glideOut (16 f; up to 76 for a wide gap), the chip grows from a 3 px bar once the gap is a third open (7 f) and its content hard-cuts on swaps; close={{ at }} shuts the gap (5 f, E.buildIn); anchor=\"left\" moves only the right half; halves lets each half arrive on its own. inlineGapFrames() for the cues. Anatomy: Halves part 44-410 px (expo, slow 4 f start); the object grows from a 1 px bar; content swaps inside on hard cuts; the line reflows and the block zooms up to x1.76. Sound: On the big hit; a toggle click on the pill. Materials: The object can be a photo-real character: a tiny dot in the word gap grows 6 -> 30 px in 6 f, then into a round white portrait (soft drop shadow) while the halves fly apart past the frame edges, blurring up to 25 px as the camera pushes; the portrait then rises into the next UI's header.",
+   "timing": "Part 16-76 f; object grows 7-18 f; swaps every 6-20 f; reflow 10 f; squeeze 8 f.",
+   "use_when": "Showing what a word means (\"[images]\", \"your [product]\"); the product inside the copy.",
+   "avoid_when": "Gaps that break the read (split at a natural pause).",
+   "primitive": [
+    "fx/InlineGap"
+   ],
+   "materials": "The object can be a photo-real character: a tiny dot in the word gap grows 6 -> 30 px in 6 f, then into a round white portrait (soft drop shadow) while the halves fly apart past the frame edges, blurring up to 25 px as the camera pushes; the portrait then rises into the next UI's header.",
+   "jobs": [
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 5
+  },
+  {
+   "id": "dv-jump-echo-stamp",
+   "name": "Words jump through positions, leaving fading stamps",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting",
+    "vertical"
+   ],
+   "summary": "Words teleport on ones through about five converging positions on their way to the final line; every visited position leaves a stamp of the word that fades out, with corner ticks riding along.",
+   "recipe": "Build: <EchoStamp at x y from={{ x: 640, y: -250 }} ticks={{ color }}>{word}</EchoStamp> (fx/Echoes): on ones at 30 fps through progress 0, .40, .60, .66, .75, hold, 1 (12 f at 60); each left position leaves a stamp from 75 % that fades in 10 f; the hold leaves none; two L ticks ride the live word. Anatomy: Positions on a converging path (progress 0, .40, .60, .66, .75, hold, 1); each stamp a copy at that position fading 0.2 per frame. Sound: An impact on the landing.",
+   "timing": "12 f at 60 fps for the jumps; stamps fade over 10 f; first jump 227-292 px.",
+   "use_when": "A hook line that should feel like a camera-less glitch of motion; a title in a techno film.",
+   "avoid_when": "Calm films; more than once.",
+   "primitive": [
+    "fx/Echoes.EchoStamp"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-keyword-highlight",
+   "name": "Keyword sits in a highlight block or pill",
+   "category": "typography_motion",
+   "family": "Marks, markers and annotations",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The keyword rises into a soft rounded highlight block of the accent that then wipes off, turns the accent in 2 frames, pops in a solid accent pill (62 % -> 100 % in 2 frames), or a pale card appears behind the key comment while the scroll settles; a mention is a tinted chip; two small accent ticks point at the selected row.",
+   "recipe": "Words accentOn + a rounded rect behind the word (measured under FontGate) with a Wipe exit; pill pop via Oversize from 0.62 in 2 f. Anatomy: Block with a soft edge (about 25 px feather) sized to the word; rise 6 f, hold 10 f, wipe 12 f; pill pop 2 f linear. Sound: The voice on the keyword; a shutter click.",
+   "timing": "4-40 f.",
+   "use_when": "The one word or item that matters in a line or list.",
+   "avoid_when": "Highlighting more than one word per line.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "jobs": [
+    "emphasis"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 3
+  },
+  {
+   "id": "dv-kinetic-stack-directions",
+   "name": "Words land from four directions",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "On grid paper, lines and words land with an expo-out from left, right, top and bottom in turn, with a small arrow: a kinetic poster.",
+   "recipe": "Words with a per-word rise direction, stagger 6 f. Anatomy: Entries 2-4 f apart, each from a different side, 15 f each. Sound: None needed.",
+   "timing": "33 f in all.",
+   "use_when": "Poster-style title cards.",
+   "avoid_when": "Calm films.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-letter-fade-sweep",
+   "name": "Letter-by-letter fade across a word",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A word fades in letter by letter from left to right, about one letter a frame, each with a short fade; trailing letters can rise in one at a time while the line moves.",
+   "recipe": "<Letters mode=\"pop\"> (rise 0.19 em) or build. Anatomy: Each letter a 4-8 f fade (and optionally a 60 px rise at 50 % white); 1-2 f apart. Sound: A water-drop on the start. Materials: On huge words the newest letters develop through a soft luminance front rather than whole-word fades: a ramp ink -> mid grey -> pale over 4-5 letters (about 350 px at a 150 px cap height) runs across the line at 12-20 px/f, matching the camera pan, while new words still rise about a third of a line.",
+   "timing": "30 f for 11 letters; trailing letters 13 f with 1.5 f stagger.",
+   "use_when": "An \"Introducing\" over a photo; the end of a line entering at the frame edge.",
+   "avoid_when": "Body copy.",
+   "primitive": [
+    "fx/Letters"
+   ],
+   "materials": "On huge words the newest letters develop through a soft luminance front rather than whole-word fades: a ramp ink -> mid grey -> pale over 4-5 letters (about 350 px at a 150 px cap height) runs across the line at 12-20 px/f, matching the camera pan, while new words still rise about a third of a line.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-letters-scatter-assemble",
+   "name": "Scattered letters assemble into the word",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The letters of the payoff word start scattered (random offsets above and below, grey, almost still), accelerate gently and snap into the word together, usually during a camera push.",
+   "recipe": "Recipe: Letters positions from prefix widths, each offset by a seeded vector that decays on an ease-in. Anatomy: Per letter a seeded offset (up to 330 px), slow float, then an ease-in convergence with a hard landing; grey to ink on arrival. Sound: Voice; or a soft lock on the landing.",
+   "timing": "34-60 f; float 40 f, final convergence 13 f; each glyph expo-out when it lands.",
+   "use_when": "The payoff word of an act; a word in a mono or brand face.",
+   "avoid_when": "Fast films (the drift needs a beat to read).",
+   "primitive": [
+    "fx/TypeFx.ScatterAssemble"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-make-room-early",
+   "name": "The gap opens before the word arrives",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The line starts sliding 3-6 frames before the next word (or avatar, or version token) appears, so the gap is already open when it lands; the newcomer can pop in at the slide's peak speed or shove the previous word aside.",
+   "recipe": "<Chain recentre=\"slot\" recentreLead={10}>. Anatomy: Lead 3-6 f; the token appears at peak slide speed; a shove of 70 px in 2 blurred frames plus a 3 f settle; an icon pushed back in two pushes. Sound: The token on a kick (+39 ms); a note or click on the avatar pop.",
+   "timing": "Lead 6-12 f at 60 fps; slides 30-80 f quint-out.",
+   "use_when": "Builds where the new element is visual (an avatar, a token, an icon).",
+   "avoid_when": "Opening the gap so early that it reads as a mistake (over 8 f).",
+   "primitive": [
+    "fx/Chain"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 3
+  },
+  {
+   "id": "dv-mask-rise-word",
+   "name": "Word rises out of a baseline mask",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "Each word rises from behind an invisible baseline mask while going grey to ink; the last word takes twice as long; verb-plus-object lines can follow with a 3 f lag.",
+   "recipe": "<MaskRise lastScale={2} ink>. Anatomy: Rise of about 90 px from under the baseline, ink from grey; variant: staggered hard exit. Sound: Hits on each verb.",
+   "timing": "Rise 18-20 f; second word 6 f behind; exit 14 f; lines 60 f apart.",
+   "use_when": "Short commands, verbs on hits, any line that should feel cut and precise.",
+   "avoid_when": "Long lines (the masked rise loses its snap).",
+   "primitive": [
+    "fx/MaskRise"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-object-eats-text",
+   "name": "An object sweeps through and eats the text",
+   "category": "typography_motion",
+   "family": "Type exits",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Something solid erases the words as it passes: a bar of the word's height sweeps across the keyword; a rule grows from the caret and the letters turn the accent and vanish one by one; a button slides over the line and the word disappears from its leading edge; an app icon slides to centre and the text left of it is clipped into its edge.",
+   "recipe": "Build: <Knockout at from to text x y font mode=\"clip\"|\"letters\"|\"reveal\" object=\"bar\"|\"rule\"|(edgeX) => node accent> (fx/Knockout): one closed-form edge (24 f on E.softIn) clips the text at the object's leading edge; letters removes whole letters as the edge passes their centres (about 3 f apart), each lit in the accent just before it goes; reveal writes the line on behind the object. Anatomy: Clip edge = the object's leading edge; letters 3 f apart; partial letters visible at the edge. Sound: A whoosh tail.",
+   "timing": "8-58 f.",
+   "use_when": "Replacing a word with a product action; deleting the old way.",
+   "avoid_when": "Objects that do not belong to the product.",
+   "primitive": [
+    "fx/Knockout"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
+  },
+  {
+   "id": "dv-old-line-push-dim",
+   "name": "Old line pushes up and dims in one frame",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "When the second line arrives, the first moves up on a fast S-curve and drops to about a third of its strength in a single frame.",
+   "recipe": "Words move on E.strongInOut + HardStep opacity. Anatomy: Move 111 px; opacity step 1 -> 0.36 on one frame. Sound: A kick.",
+   "timing": "Move 28 f (peak 39 px/f); dim 1 f.",
+   "use_when": "Two-line statements where the second line is the point.",
+   "avoid_when": "Keeping both lines at full strength.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-one-word-emphasis",
+   "name": "One word set apart in the line",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "One word of a line is set heavier, or in the accent, from the moment it appears; ranked rows can carry medal tones on their numerals.",
+   "recipe": "Words with a span override (accentOn index, or a weight). Anatomy: Weight step (regular to semibold or bold), or the accent colour; medal tones only on rank numerals. Sound: None.",
+   "timing": "Static.",
+   "use_when": "The key word of a closing line; the top three of a ranking.",
+   "avoid_when": "More than one emphasised word per line.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 2
+  },
+  {
+   "id": "dv-ordered-drop-out",
+   "name": "Words or items drop out one by one",
+   "category": "typography_motion",
+   "family": "Type exits",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A line or a set leaves in a designed order: words vanish from the end one frame apart while the line accelerates; words are removed one per frame until one remains; the dim line erases word by word while the big type drifts; chips fall off while words drop right to left; words spread apart and fade from the end while the camera zooms; alternate words drop out, then the rest; list lines slide out top first; image tiles cut off one at a time.",
+   "recipe": "Words/Chain exit with exitOrder 'rtl' (2 f apart) or 'stagger'; HardStep for one-per-frame removals. Anatomy: 1-4 f between removals; order right-to-left, alternate, top-first or noun-last; optional drift on an ease-in under it. Sound: Mouse clicks; a deep boom; clicks on the drop-outs. Materials: Two more constructions: words defocus out one at a time from the line's end (blur 0 -> 8 px with opacity 1 -> 0 over 16 f, staggered 8-12 f) while the word gaps widen 40 %; or a list turns grey, then each line is cropped away from the left by a hard edge, top lines first, so the left edge forms a staircase (24 f) as the lines fade.",
+   "timing": "14-30 f.",
+   "use_when": "Exits that should read as a build in reverse; leaving one word alone.",
+   "avoid_when": "All at once (that is a cut, not an exit).",
+   "primitive": [
+    "fx/Words"
+   ],
+   "materials": "Two more constructions: words defocus out one at a time from the line's end (blur 0 -> 8 px with opacity 1 -> 0 over 16 f, staggered 8-12 f) while the word gaps widen 40 %; or a list turns grey, then each line is cropped away from the left by a hard edge, top lines first, so the left edge forms a staircase (24 f) as the lines fade.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 8,
+   "impact": 3
+  },
+  {
+   "id": "dv-plain-caption-on-picture",
+   "name": "Small plain caption directly on the picture",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A short white sans caption (cap 2.3-2.8 % of the frame) sits centred on live footage or a photo's mid-tone, no box, no shadow, no scrim; the picture's shallow depth of field keeps it legible.",
+   "recipe": "<Words> with no entrance (cut-on) at caption size over <Footage>/<Photo>. Anatomy: Centred, thin to regular weight, slight negative tracking. Sound: The voice; the caption already on screen at the first syllable.",
+   "timing": "Present from the cut; held per tagline.",
+   "use_when": "Voice-locked subtitles; taglines over a photo.",
+   "avoid_when": "Busy, sharp backgrounds behind the caption.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2
+  },
+  {
+   "id": "dv-pop-low-slide",
+   "name": "Cut on low at full ink, slide home",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A word cuts on at full opacity a little below (or beside) its slot and slides home on an exponential, so the first frame is a clean hit and the motion is pure settle.",
+   "recipe": "<Words dur={1} rise={0.45} riseUnit=\"em\" riseDur={22} riseEase={E.snapOut} stagger={5}>; for a side entry rotate the rise direction. Anatomy: Opacity 1 from frame one; offset 0.27-0.45 of the cap height (18-56 px at 1080p) below or 66 px to the right; variant: two linear frames of 104 px before the expo tail for a word that must travel far (259 px); variant: slide left until it touches the previous word. Sound: Each word on a kick or a soft tick; a run of words gets one sound.",
+   "timing": "Settle 10-38 f expo-out; stagger 2-5 f; a far travel uses 2 linear frames then 20 f expo.",
+   "use_when": "Punchier copy on a beat, headline words on a coloured field, a word that should touch the one before it.",
+   "avoid_when": "Very large type (the cut-on jump reads as a glitch above about 60 px of offset).",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 2
+  },
+  {
+   "id": "dv-random-order-letters",
+   "name": "Letters appear in random order",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "feature",
+    "walkthrough"
+   ],
+   "summary": "The letters of a label or status line appear one by one in a shuffled order (each faint first, then full) until the word is whole.",
+   "recipe": "<Letters mode=\"pop\"> with onsets taken from a seeded permutation of the letter indices. Anatomy: Seeded permutation of letter onsets; each letter faint -> full in 2-4 f. Sound: Voice or none.",
+   "timing": "24-32 f for a line (about one letter a frame) on an ease-in count.",
+   "use_when": "A button label appearing, an \"Analyzing...\" status line.",
+   "avoid_when": "Headlines.",
+   "primitive": [
+    "fx/TypeFx.orderRanks"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-recentre-glide",
+   "name": "Line re-centres on a long exponential",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The line keeps re-centring on a long soft exponential while words arrive (each sliding in a little from the right, or rising into place), so the whole line drifts to its centre as one tween.",
+   "recipe": "<Chain recentre=\"glide\"> (E.expo, recentreDur 46). Anatomy: Left edge decaying about 0.75 a frame; the line itself sliding in 150-275 px from the right while words rise every 7 f; an appended half arrives grey and darkens in 3 f. Sound: Chat pop or voice phrase onsets.",
+   "timing": "Re-centre 30-60 f (t50 0.17 s, t90 0.47 s); words 14-18 f each, 6-14 f apart.",
+   "use_when": "Calm, speech-paced lines; a second half appended after a pause.",
+   "avoid_when": "Fast builds (the glide lags behind the words).",
+   "primitive": [
+    "fx/Chain"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 3
+  },
+  {
+   "id": "dv-recentre-jump",
+   "name": "Line re-centres with most of the move on frame one",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "When a word is appended to a centred line, the whole line jumps 44-88 % of the way to its new centre on the very frame the word appears and eases the rest; nothing slides under a word being read. A small icon can anchor the line and ride along.",
+   "recipe": "<Chain recentre=\"jump\"> (22 f on E.jump). Anatomy: First-frame share 55-84 % (house 66 % in the first 30 fps frame), the rest over 3-8 frames; the first frames may carry a short horizontal smear; variant: the pair re-centres in exactly one frame; variant: a stacked block of lines re-centres 6 f after each addition. Sound: Word onsets.",
+   "timing": "10-24 f in all; first-frame speed 21-77 px/f.",
+   "use_when": "Every centred build line; captions appended word by word to the voice.",
+   "avoid_when": "A slow glide under a word being read; jumping before the word exists.",
+   "primitive": [
+    "fx/Chain"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 9,
+   "impact": 4
+  },
+  {
+   "id": "dv-recentre-stepped",
+   "name": "Re-centre jumps on its own cadence",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A growing lockup or caption re-centres in one-frame jumps (about half a letter width) on a different cadence from the letters landing (jumps every 8 f, letters every 6 f), creeping between jumps; the re-centre can lead the word's resolve by 6 f.",
+   "recipe": "<Chain recentre=\"jump\" recentreDur={1}> inside <Stepped fps={7.5}> for the line, letters on their own grid via hotGlyphState. Anatomy: Jumps of 11-83 px; creep 2-3 px/f between; on twos for a stepped look. Sound: None of its own.",
+   "timing": "Jumps every 8 f; letters every 6 f; two 2-frame moves of 20 px.",
+   "use_when": "Logo lockups built letter by letter; stepped, graphic films.",
+   "avoid_when": "Smooth films.",
+   "primitive": [
+    "fx/Chain",
+    "fx/Stepped"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2
+  },
+  {
+   "id": "dv-resolution-ladder-decode",
+   "name": "Word decodes from a low-res pixel version",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A word appears as a coarse low-resolution pixel version in the accent, then half-resolved in a pale tone, then crisp in the ink, one frame each, and settles with a small posterised overshoot.",
+   "recipe": "<Pixelate> in-phase only on the word with a three-size ladder (pixelLadder of 3 sizes) and the colour stepped per state. Anatomy: Three resolution states, colour accent -> pale -> ink; a stepped spring settle. Sound: A drum on the decode, a kick on the settle.",
+   "timing": "Decode 7 f (one state per 2-3 f at 60 fps); settle 7 f on twos.",
+   "use_when": "Words in a film about images, rendering or AI generation.",
+   "avoid_when": "Small type (the low-res stage is unreadable mush below about 60 px).",
+   "primitive": [
+    "fx/Pixel.Pixelate"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-ribbon-tail-sentence",
+   "name": "Sentence lands with a ribbon tail",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "After a whip cut the sentence is still travelling and each later word sits progressively lower and later, so the line lands like a ribbon settling from its head.",
+   "recipe": "Words with stagger 2-3 f and rise growing per index (rises[]), carried from the whip speed. Anatomy: Per-word delay and a vertical offset growing with the index; the head word lands first. Sound: The cut on a hit (+48 ms).",
+   "timing": "45 f expo-out; the second word half-way at 5 f.",
+   "use_when": "The first line after a whip.",
+   "avoid_when": "Long sentences.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-roll-swap-bracket",
+   "name": "Masked roll swap with a pre-zoom",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature",
+    "sting"
+   ],
+   "summary": "A word inside a bracket rolls up out of the mask while the next word rolls in from below (vertical blur on the roll), after a small anticipation zoom; the bracket grows to the new width.",
+   "recipe": "MaskRise for the incoming word, an upward launch exit for the outgoing one inside one clip; the bracket width via a 14 f tween; SnapZoom pre with a 4 % build. Anatomy: Pre-zoom (anticipation), roll up/out and up/in, box 175 -> 327 px, cubic-out settle. Sound: A key or kick on the roll.",
+   "timing": "Pre-zoom 8 f; roll 10 f; settle 14 f.",
+   "use_when": "Swapping the key noun of a held line on a beat.",
+   "avoid_when": "Swaps faster than every 1.5 s.",
+   "primitive": [
+    "fx/MaskRise"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-room-then-type",
+   "name": "Line opens room, then the key word types in",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A held line accelerates sideways to open room, then the key word types in letter by letter in the accent, and the line leaves with blur.",
+   "recipe": "<LineSnap mode=\"room\"> then <TypeOn kind=\"human\"> in the opened slot; exit 'launch'. Anatomy: Pre-shift accelerating (-2 -> -36 px/f), typing about one letter a frame, exit left with blur. Sound: Voice.",
+   "timing": "Pre-shift 20 f; typing 20 f; exit 12 f.",
+   "use_when": "The key word of a statement.",
+   "avoid_when": "Room moves slower than the typing.",
+   "primitive": [
+    "fx/LineSnap",
+    "fx/TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-scale-out-swap-in",
+   "name": "Old line shrinks out, new line swaps in large",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "The old line shrinks a little on an ease-in, then on one frame the new line replaces it at 104-108 % and eases down to size: a swap with a breath.",
+   "recipe": "Words exit 'launchFade' on scale + Oversize from 1.08 on the swap frame. Anatomy: Shrink to 95.6 %, hard swap, 108 % -> 100 % ease-out. Sound: A whoosh pair, or on the beat.",
+   "timing": "Out 14-20 f, in 20 f, swap 0 f.",
+   "use_when": "Status lines, a title swapping to a tagline.",
+   "avoid_when": "Big scale ranges (keep it under 10 %).",
+   "primitive": [
+    "fx/Oversize"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-short-fade-exit",
+   "name": "Short stepped or accelerating fade-out",
+   "category": "typography_motion",
+   "family": "Type exits",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "When a fade is right, it is short and shaped: secondary labels fade out with an accelerating opacity, staggered, as the main element arrives; a phrase goes translucent on one frame and is gone on the next; text fades in five equal steps the frame before a colour beat; a caption fades as the picture fills the frame over it.",
+   "recipe": "Words exit 'launchFade' with a short outDur, or HardStep opacity steps. Anatomy: Ease-in opacity over 4-14 f; 2-frame exit; 5 linear steps. Sound: None; the next element's sound.",
+   "timing": "4-30 f.",
+   "use_when": "Secondary text clearing the stage for the hero; text under a growing picture.",
+   "avoid_when": "Long linear fades of the main line.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4
+  },
+  {
+   "id": "dv-shrink-exit",
+   "name": "Exit by accelerating shrink or recede",
+   "category": "typography_motion",
+   "family": "Type exits",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A held word or text card leaves by scaling down about its centre on an ease-in (60 % of the shrink in the last 10 %), the pane easing back with it, then a hard cut (or one near-white frame); a tagline recedes and fades in 3 frames; the last word shrinks and dims like it is moving away.",
+   "recipe": "Words exit 'launch' on scale (or a camera push-out on E.buildIn) cut on its last frame. Anatomy: Scale 1 -> 0.85-0.9 accelerating; dim 30 % on a decrescendo. Sound: A cut on the voice phrase; a boom or reverse on the decrescendo.",
+   "timing": "20-40 f; 14 px/f at the cut.",
+   "use_when": "Text cards between scenes; the last word of a section.",
+   "avoid_when": "Shrinking toward zero (stop at 0.85-0.9 and cut).",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 2
+  },
+  {
+   "id": "dv-signature-write-on",
+   "name": "Handwritten line writes on at pen speed",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A monoline handwritten signature draws left to right at a constant pen speed on a card; it can write twice as cards swap.",
+   "recipe": "SVG path with stroke-dashoffset from strokeDrawn() (65 px a frame at 60 fps) or a linear tween. Anatomy: One SVG stroke, dash offset at constant speed. Sound: A soft pen scratch.",
+   "timing": "52-67 f linear per write; card swap 37 f overlapping by 12 f.",
+   "use_when": "Personal, signed, approved moments.",
+   "avoid_when": "Fonts pretending to be handwriting.",
+   "primitive": [
+    "fx/Stepped.strokeDrawn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-slot-pop-on-twos",
+   "name": "Pre-centred words switch on every two frames",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature",
+    "sting",
+    "vertical"
+   ],
+   "summary": "Words appear in one frame each, at full ink, in the slots of a line that is already laid out and centred, one every 2 frames (12 words a second); they can be erased in the same order.",
+   "recipe": "<Words dur={1} rise={0} stagger={5}> (Words lays out the final centred line); erase with exit 'words' at 5 f; hit captions are HardStep on/off frames. Anatomy: Final layout solved first, words cut on in reading order, no fade, no scale; variants: huge left-aligned words (66 % of the frame width, 190 px tall) on the accent field; 10-frame steps for a slow caption; hit captions held 12-25 f and cut off in one frame. Sound: The completed phrase lands on a kick; hit captions sit on hits or in a stop-down silence.",
+   "timing": "5 f at 60 fps per word (2 f at 24-30 fps); erase 5 f apart in the same order; slow version 10 f per word; hit captions hold 30-60 f.",
+   "use_when": "A fast opener, a title that rides a camera move, hit captions over footage, huge words on a full accent field.",
+   "avoid_when": "Calm films; lines longer than 5 words (the build becomes a flicker).",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 3
+  },
+  {
+   "id": "dv-slot-word-swap",
+   "name": "Only the last word swaps",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A held line keeps its start and swaps only its last word, several times (\"for writers / editors / teams\"): the outgoing word heats in colour while the line creeps, the swap lands with two big frames and a settle; small camera nudges alternate direction with each swap.",
+   "recipe": "<LineSnap mode=\"room\"> for the creep-jump plus a slot that HardSteps the word; colour heat via HueSweep back. Anatomy: Creep 1, 2, 6 px/f; swap; two big frames; settle; variant: the last word rolls vertically while gap tiles turn into icons. Sound: Voice.",
+   "timing": "Swap 20-30 f; nudges 26-32 f in-out; roll 8 f.",
+   "use_when": "Listing audiences, use cases or outcomes in one held sentence.",
+   "avoid_when": "More than three or four swaps.",
+   "primitive": [
+    "fx/LineSnap"
+   ],
+   "jobs": [
+    "update"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-soft-edge-write-on",
+   "name": "Line written on behind a soft moving edge",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A line is revealed left to right by a soft travelling edge, near-constant speed, so it washes on; glyphs can be born in a hot accent and cool; a status line can end with a spinner turning into a check.",
+   "recipe": "<Wipe kind=\"gradient\"> on the line; accent via HueSweep or Words accent. Anatomy: Soft alpha ramp about 70 % of the element; glyphs accent -> ink as the edge passes. Sound: A soft notification ding mid-reveal, or a kick at the end.",
+   "timing": "6-24 f across 880 px (first 4 f slower); fall-off 56 f.",
+   "use_when": "Status lines, single lines over a picture.",
+   "avoid_when": "Edges narrower than a letter (that reads as a hard wipe).",
+   "primitive": [
+    "fx/Wipe"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-space-opens-after",
+   "name": "Word cuts on touching, then the space opens",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Each appended word cuts on with no word space (the line reads run-together for a frame or two), then the spaces open and the line re-centres: the word visibly docks.",
+   "recipe": "<Chain recentre=\"jump\"> with a word-space tween from 0 to the font space over 8 f (letter-spacing on the gap span). Recipe: each word's margin-left = space x k with k 0 -> 1 over 12 f (cubic out); negative start values give the overlap version. Anatomy: Spaces open over 3-4 f; re-centre 65-68 % in the first frame, x0.7 a frame after. Sound: One soft tick per word (±45 ms). Materials: Tight append: the new word lands touching the previous one (zero word space, or even overlapping it when it flies in large, glyphs compositing darker where they cross); over the next 8-16 f only the newcomer slides right and the normal space opens on an ease-out while earlier words stay put (left-aligned lines), or the line re-centres once the colour has cooled from the accent to ink.",
+   "timing": "Spaces 7-8 f; re-centre about 24 f.",
+   "use_when": "Taglines built word by word; a brand line.",
+   "avoid_when": "Long words that become unreadable when run together.",
+   "primitive": [
+    "fx/Chain"
+   ],
+   "materials": "Tight append: the new word lands touching the previous one (zero word space, or even overlapping it when it flies in large, glyphs compositing darker where they cross); over the next 8-16 f only the newcomer slides right and the normal space opens on an ease-out while earlier words stay put (left-aligned lines), or the line re-centres once the colour has cooled from the accent to ink.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
+  },
+  {
+   "id": "dv-split-word-emerge",
+   "name": "Word halves slide out from behind a plate",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The two halves of one word emerge from under a plate (masked by it) and drift outward, the word opening around the object.",
+   "recipe": "Recipe: two Words spans inside a clip-path that excludes the plate, translated outward on E.snapOut. Anatomy: Two halves clipped by the plate's edge, drifting apart. Sound: None.",
+   "timing": "40 f ease-out.",
+   "use_when": "A word that wraps a product or a dock.",
+   "avoid_when": "Words that split badly.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-streak-resolve",
+   "name": "Caption resolves out of a light streak",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting",
+    "vertical"
+   ],
+   "summary": "The next caption first exists as a thin bright horizontal streak (letters unreadable), widens, turns into a heavily smeared word, then snaps sharp: the caption is born from light rather than faded in. The exit is the same device reversed: the caption dims, gains a horizontal ghost and collapses into a wide bright streak (or a thin grey line) that vanishes.",
+   "recipe": "Build: <StreakResolve at text x y font light> (fx/Streak): the caption through a heavy sideways blur squeezed to a hairline with a bright core, opening over the first half of 15 f on E.whipBuild (width 0.89 -> 1.03 of the caption, height to the line: measured), then the word smeared sideways for 5 f, then sharp, one sample a frame; exit={{ at }} dims to 40 %, ghosts, and collapses into a widening streak on twos (18 f). Anatomy: Stage 1 streak (a 1-4 px tall bar, 200-660 px wide, front-loaded widening), stage 2 a horizontally smeared word for 2 f, stage 3 sharp. Variant: the smear grows rightward out of the previous word on twos, then a 2-frame scramble, then sharp. Exit: dim to 40 %, ghost, collapse to a 330-600 px streak on twos, accelerating. Sound: No hit of its own; it rides the voice onset. Materials: Relay construction: the outgoing caption gets a trailing ghost (4 f), blurs sideways into a doubled bar (4 f), becomes a bright horizontal streak about 1100 px wide with a fainter offset copy (+40, +12 px at 35 %) for 6 f, breaks for one frame into blocky glyph fragments (a decode) and lands sharp as the next caption; on twos except the decode frame.",
+   "timing": "Streak 3-15 f, smear 5 f, sharp: 8-20 f in all, stepped, front-loaded; the caption leads the spoken word by 2-16 f.",
+   "use_when": "Voice-led films where captions follow the narration; the first caption after a section break; a word that grows out of the one before it.",
+   "avoid_when": "Long lines; anything that must be read on its first frames.",
+   "primitive": [
+    "fx/Streak.StreakResolve"
+   ],
+   "materials": "Relay construction: the outgoing caption gets a trailing ghost (4 f), blurs sideways into a doubled bar (4 f), becomes a bright horizontal streak about 1100 px wide with a fainter offset copy (+40, +12 px at 35 %) for 6 f, breaks for one frame into blocky glyph fragments (a decode) and lands sharp as the next caption; on twos except the decode frame.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-strip-slice-type",
+   "name": "Type cut into strips that slide apart",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A number and a word are cut into horizontal strips (8-10 per glyph) that slide sideways at different offsets until they span the full width.",
+   "recipe": "Build: <Slices kind=\"strips\" at x y w h n={9}>{type}</Slices> (fx/Slices): each strip a clipped copy sliding sideways by a seeded share of the frame width on E.jump (spread by 3 f at 24 fps; 43 f); back={{ at }} gathers them. Anatomy: Strips with seeded offsets, expanding sideways; full width by 3 frames in. Sound: None needed.",
+   "timing": "43 f.",
+   "use_when": "A big number becoming a field; a transition out of a stat.",
+   "avoid_when": "Text that must stay readable.",
+   "primitive": [
+    "fx/Slices"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-tagline-metronome",
+   "name": "Taglines swap on the second with a small pop",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "vertical"
+   ],
+   "summary": "Small taglines replace each other exactly every second; the new one appears slightly small and pops to size in 2 frames while its contrast rises.",
+   "recipe": "HardStep swaps every 60 f; scale via a 2 f tween; opacity contrast over 20 f. Anatomy: Hard swap; scale 0.88 -> 1 in 2 f; contrast up over 16-28 f. Sound: On round seconds, not on beats.",
+   "timing": "Every 60 f; pop 2 f.",
+   "use_when": "A run of short claims over a photo.",
+   "avoid_when": "More than about four swaps.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 2
+  },
+  {
+   "id": "dv-through-move-line",
+   "name": "Line moves through: arrive, drift, leave as one move",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A line enters already moving (77 px/f) and decelerating, drifts at a constant slow speed while it is read, and leaves on an expo-in: one continuous move, never parked; a card can shrink fast-slow-fast and cut at the fastest point; a label can recede steadily like it is moving away; the frame can contract a few px a side during a silent hold.",
+   "recipe": "Words (rise from the side) + a drift transform + exit 'launch'. Anatomy: Expo-out arrival, linear drift (0.3 %/f or a few px/f), expo-in exit; a receding label shrinks to 0.59x over 2 s. Sound: A sub-bass hit on the arrival; silence under the contraction.",
+   "timing": "Arrival 20-30 f, drift for the read, exit 14-20 f.",
+   "use_when": "Openers, statements between scenes, loops (elements already moving on the first frame).",
+   "avoid_when": "Parking the line between its entrance and exit.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 3
+  },
+  {
+   "id": "dv-ticker-slam",
+   "name": "Ticker words slam in, old words cut off the edge",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Each new word enters from the right with a huge first-frame jump (135-290 px) and an expo tail; the older words are pushed left and cut off by the frame.",
+   "recipe": "<Chain recentre=\"jump\" ink=\"pop\" edgeMask={{ left: 0 }}> with the line anchored right. Anatomy: Jump frame + tail per word, the line shifts by the new word's width; exits on single frames at the left edge. Sound: A hit per word.",
+   "timing": "2 f jump + 12 f tail per word.",
+   "use_when": "A rapid list of verbs or features on hits.",
+   "avoid_when": "Copy that must be read in full.",
+   "primitive": [
+    "fx/Chain"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-tinted-then-white-blink",
+   "name": "A label rises in gradient ink, then a blink wave turns it white",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A small label rises from a baseline mask filled with the same gradient as the card behind it, so it is almost camouflaged; then a wave passes left to right: each letter blinks out for a few frames and comes back pure white, so for a moment the word reads white, gap, tinted.",
+   "recipe": "Recipe: MaskRise for the rise, then per-letter spans whose fill switches from the gradient clip to white after a 4 f dropout. Anatomy: Rise 12 f; tinted hold 16 f (text clipped to the card's gradient at about 0.8); dropout wave about 4 f apart per letter, each letter off for 4 f, then white. Sound: A soft tick per letter, or none.",
+   "timing": "About 76 f in all.",
+   "use_when": "A label on a gradient or tinted card; a product name inside a UI card.",
+   "avoid_when": "Long copy; plain grounds (the camouflage needs the gradient behind).",
+   "primitive": [
+    "fx/TypeFx.GradientText"
+   ],
+   "jobs": [
+    "emphasis",
+    "product"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-tracking-snap",
+   "name": "Letter spacing snaps to normal",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "sting"
+   ],
+   "summary": "A word appears too tight (letters overlapping) or too loose and snaps or tracks in to its normal spacing.",
+   "recipe": "<Letters tracking> (house +0.024 em closing over 20 f) or Wordmark trackingState. Anatomy: Tracking from 78-83 % or 102-128 % of the word's width to 100 %, on 16 fps steps or an ease-out. Sound: The hard cut.",
+   "timing": "8-15 f on steps; a slow track-in 20 f.",
+   "use_when": "Words on cards in a fast cut sequence; a small subtitle settling under a figure.",
+   "avoid_when": "Long sentences.",
+   "primitive": [
+    "fx/Letters"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2
+  },
+  {
+   "id": "dv-two-type-voices",
+   "name": "Two type voices with fixed jobs",
+   "category": "typography_motion",
+   "family": "Lines, layout and swaps",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A film gives two faces two jobs: statements in a high-contrast display face, UI in a small grotesk; a wide bold title face for one act and a light weight for the next; big caps with a tiny connector word between them.",
+   "recipe": "Two font roles in brand/tokens; Words for statements, kit Text for UI. Anatomy: Size contrast 3-5x between the voices; the display face never appears inside UI. Sound: None.",
+   "timing": "Static choice; the connector word can type while the caps fade.",
+   "use_when": "Editorial launches; films with an act structure.",
+   "avoid_when": "More than two voices; a second face that fights the brand.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": false,
+   "bans": [
+    "serif",
+    "italic"
+   ],
+   "ban_safe_variant": "Two weights and widths of the brand family (heavy display, light UI).",
+   "weight": 5,
+   "impact": 2
+  },
+  {
+   "id": "dv-typeface-cycle",
+   "name": "Typeface cycles while the line steps larger",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Every 3 frames the typeface of a title swaps (serif, mono, light grotesk, heavy), while the line steps larger; it lands on the brand face.",
+   "recipe": "Recipe: an array of font stacks indexed by a stepped frame inside <Stepped fps={8}>, measured under FontGate so each swap re-centres. Anatomy: Hard swaps of the face, the line re-centred each swap, scale stepping up. Sound: None needed; or a tick per swap. Materials: Only the brand word shuffles through font styles every 4-6 f (regular, black, thin extended, black extended, back to regular) while the rest of the line stays still; cap height constant, the extended styles pushing the word about 25 % wider. With a variable font this is a wght and wdth change per state; the house bans italic, so leave the slant axis out.",
+   "timing": "8 swaps a second (every 7-8 f); 38 f in all.",
+   "use_when": "A launch about type, image or style; a title once.",
+   "avoid_when": "Any film whose brand face must be respected from the first frame.",
+   "primitive": [
+    "fx/TypeFx.FontCycle"
+   ],
+   "materials": "Only the brand word shuffles through font styles every 4-6 f (regular, black, thin extended, black extended, back to regular) while the rest of the line stays still; cap height constant, the extended styles pushing the word about 25 % wider. With a variable font this is a wght and wdth change per state; the house bans italic, so leave the slant axis out.",
+   "ban_safe": false,
+   "bans": [
+    "serif"
+   ],
+   "ban_safe_variant": "Cycle between weights and widths of the brand family only.",
+   "weight": 2,
+   "impact": 5
+  },
+  {
+   "id": "dv-typing-colour-trail",
+   "name": "Typing with an accent trail on the newest characters",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "While text types or streams, its newest characters (or words) wear the accent and age to ink behind the caret: a colour trail that shows where the writing is.",
+   "recipe": "<TypeOn kind=\"human\"|\"stream\" trail={{ color: C.accent, chars: 10 }}>; a mention is a span with its own colour. Anatomy: Trail of 6-12 characters (about 600 px) fading accent -> ink; variants: the last 2-4 characters grey on a pale highlight block (typing in word bursts); a streamed answer with a grey leading tail; a mention token that types in its own colour and keeps it; a pink caret matching the trail. Sound: Keypress ticks for a person; none for a machine stream; a chat pop when a mention completes. Materials: A colour wave runs through the typed answer behind the caret: once about 8 characters exist a band about 5 characters wide (the accent at the centre, soft to white over 2 characters each side) starts at the first letter and travels more slowly than the typing (0.75 of its speed), so it ends after the typing does.",
+   "timing": "24-90 characters a second; word bursts every 6 f; streams at about 30 words a second; trail ages over 10 characters.",
+   "use_when": "Prompts, AI answers, streamed replies, any product typing.",
+   "avoid_when": "Two accents at once; trails longer than about 12 characters.",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "materials": "A colour wave runs through the typed answer behind the caret: once about 8 characters exist a band about 5 characters wide (the accent at the centre, soft to white over 2 characters each side) starts at the first letter and travels more slowly than the typing (0.75 of its speed), so it ends after the typing does.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 4
+  },
+  {
+   "id": "dv-typing-ease-progress",
+   "name": "Typewriter on an ease-out progress",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A line types at full opacity, character-quantised but on an ease-out: 41 % of its width after one frame, 66 % after two, then slowing; contrasting accent words type in the same pass.",
+   "recipe": "<TypeOn kind=\"stream\" ease={E.snapOut}>. Anatomy: Character count follows an ease-out; accent words in a contrasting face inline. Sound: Voice.",
+   "timing": "54 f at 60 fps.",
+   "use_when": "A line that should feel written in one stroke.",
+   "avoid_when": "Prompts (people do not type on an ease).",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-typing-smear-lead",
+   "name": "Typing whose newest characters arrive smeared",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "walkthrough"
+   ],
+   "summary": "Text types fast while its newest 2-30 characters arrive as a horizontal smear (or a soft accent ghost running ahead of the white text) that sharpens behind the caret: speed you can see.",
+   "recipe": "TypeOn kind 'stream' or 'prompt' plus a smear window: draw the last n characters a second time through a fixed horizontal-blur copy (the trail prop gives the colour half of it). Anatomy: Committed text sharp; a trailing window of the last 2-3 characters (or a 10-30 character ghost in the accent ahead of the text) with horizontal blur; typing in bursts. Sound: Keypress ticks only when the typing is slow enough to hear; a fast run takes none.",
+   "timing": "60-130 characters a second (1 char a frame at 60 fps); each character sharpens over 6 f; bursts over 22-34 f.",
+   "use_when": "A prompt or URL typed fast into the product, especially just before a cut hides the end of the sentence.",
+   "avoid_when": "Slow, readable typing (the smear then looks like a rendering fault).",
+   "primitive": [
+    "fx/TypeOn.TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-word-block-placeholder",
+   "name": "Word shown first as a block of its own size",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature",
+    "vertical"
+   ],
+   "summary": "Each word first appears as a solid colour block exactly its size, then becomes the word, which drops 25 px onto the baseline; blocks can rotate through the accents' tints.",
+   "recipe": "BlockStep silhouette per word (the incoming element's flat silhouette steps to the real word), or HardStep on/off frames with a rect of the measured word box. Anatomy: Block (the word's box, one colour, 3 f) -> word; alternate words rise or drop; 1-2 words per step. Sound: Voice words; a ding on the line's completion.",
+   "timing": "4 f per word at 60 fps; block 6 f; 4-5 f per word in a run.",
+   "use_when": "A voice-led headline in a bold, graphic film.",
+   "avoid_when": "Calm films; more than one line.",
+   "primitive": [
+    "fx/BlockStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-word-fade-rise",
+   "name": "Fade-and-rise word, front-loaded",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The default way a word arrives: it is already a third visible on its first frame and rises a third of its line box as it fades, so it reads as present at once and lands softly.",
+   "recipe": "<Words> at house numbers (dur 32, rise 0.33 line, stagger 12, cadence 'reading'); a drop uses riseDir up with a 2-frame vertical ghost; a diagonal entry offsets x by 1.2x the rise. Anatomy: One tween per word on opacity (from about 35 %) and y (0.2-0.8 em, house 0.33 line box). Variants: a drop from above with a short vertical smear for an energetic headline; a diagonal entry (from 54 px low and 68 px right) for a new line that rides a camera move; a second word starting one frame after the first on the same curve so a two-word opener reads as one object. Sound: Words sit on voice onsets; with no voice, one soft tick per fragment on the last word's landing, never one per word. Materials: Floor-reflection variant: each word rises into place trailing a faded, vertically flipped copy under it (blur 1 px, 40 % decaying to 0 in 8 f) as if it rose out of a glossy floor, the word itself going from 50 to 100 % white.",
+   "timing": "Fade 32 f on a steep ease-out (50 % at 10 % of the time, 90 % by 15 f), rise 22-25 f. Stagger 8-14 f on a reading cadence; 2 f for a two-word opener; 8-14 f for a voice-clocked caption. Travel 23-77 px at 1080p.",
+   "use_when": "Any calm statement, voice-clocked captions, the body copy of a launch or update film.",
+   "avoid_when": "A beat that needs a hit (use a pop or an oversized landing), or a line already moving with the camera.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "materials": "Floor-reflection variant: each word rises into place trailing a faded, vertically flipped copy under it (blur 1 px, 40 % decaying to 0 in 8 f) as if it rose out of a glossy floor, the word itself going from 50 to 100 % white.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 3
+  },
+  {
+   "id": "dv-field-word-flash",
+   "name": "Field fills a word at a time, each word lit for one frame",
+   "category": "ui_choreography",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "walkthrough"
+   ],
+   "summary": "A query field fills one whole word every 2 frames, each new word in the accent for exactly one frame; a prompt card can fill one line per frame.",
+   "recipe": "<TypeOn kind=\"field\" accent>. Anatomy: Words cut on whole; one-frame accent flash per word; variant: a 3-line prompt in 3 frames. Sound: Typing ticks or a bubble pop when the card completes.",
+   "timing": "12 words a second (one every 5 f at 60 fps); a line per frame for a prompt card.",
+   "use_when": "Showing that the product understands a request instantly; a montage of prompts.",
+   "avoid_when": "Text the viewer must read word by word.",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2
+  },
+  {
+   "id": "dv-pill-resizes-per-word",
+   "name": "Words added into a pill that resizes instantly",
+   "category": "ui_choreography",
+   "family": "Type arrivals",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Words appear one at a time inside a pill and the pill takes its new width in one frame each time, with uneven gaps that feel like thinking.",
+   "recipe": "<HardStep> snapBox of the measured text widths; words pop. Anatomy: Pill width = snapBox of the text width; words cut on. Sound: None, or a soft tick per word.",
+   "timing": "Word gaps 15, 33, 8 f (uneven).",
+   "use_when": "A prompt or idea being formed; a chip that grows.",
+   "avoid_when": "Eased container growth next to it (keep it hard).",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2
+  },
+  {
+   "id": "dv-stream-card-grow",
+   "name": "Answer streams and its card grows line by line",
+   "category": "ui_choreography",
+   "family": "Type arrivals",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature",
+    "walkthrough"
+   ],
+   "summary": "A reply streams in 5-6 characters a frame, line by line, and its card grows a line at a time to hold it; several text blocks of one card can stream at once.",
+   "recipe": "<TypeOn kind=\"stream\"> inside a container whose height is snapBox() of the line count (HardStep) or an E.snapOut tween per line. Anatomy: Stream text; the container height snaps (or eases 6-10 f) per new line; variant: headline, outline and body blocks stream simultaneously with live re-wrapping. Sound: None per line; one soft pop when the card completes. Materials: A tiny caret blinks, becomes an empty outlined pill (1 px white at 50 %, about 70 px placeholder), then a small caps label types into it (about 1 character a frame at 60) while the pill snaps wider with every character, no ease.",
+   "timing": "60-150 characters a second; card fills in 29-50 f.",
+   "use_when": "Showing an AI answer or a generated document.",
+   "avoid_when": "Text the viewer must read in full.",
+   "primitive": [
+    "fx/TypeOn",
+    "fx/HardStep"
+   ],
+   "materials": "A tiny caret blinks, becomes an empty outlined pill (1 px white at 50 %, about 70 px placeholder), then a small caps label types into it (about 1 character a frame at 60) while the pill snaps wider with every character, no ease.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
   }
  ]
 }
