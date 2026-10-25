@@ -161,7 +161,7 @@ export const Glass: React.FC<GlassProps & { frame: number; backdrop: React.React
         {p.backdrop}
       </div>
     );
-    const caustic = bakePlate('radial', [{ at: 0, color: '#FFFFFF', alpha: 0.95 }, { at: 0.18, color: p.caustic ?? '#77D59E', alpha: 0.8 }, { at: 1, color: p.caustic ?? '#08965A', alpha: 0 }], 160, 160);
+    const caustic = bakePlate('radial', [{ at: 0, color: '#FFFFFF', alpha: 0.95 }, { at: 0.18, color: p.caustic ?? C.accentLift, alpha: 0.8 }, { at: 1, color: p.caustic ?? C.accent, alpha: 0 }], 160, 160);
     const spec = bakePlate('radial', [{ at: 0, color: '#FFFFFF', alpha: 0.85 }, { at: 1, color: '#FFFFFF', alpha: 0 }], 96, 64);
     layers.push(
       <svg key="defs" width={0} height={0} style={{ position: 'absolute' }} aria-hidden>

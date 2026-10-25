@@ -8,7 +8,8 @@
  *      silent. lint-fixtures/timeline.ts makes the fixtures a calm film (for text-pace). A
  *      followed type-on reports its real rate (typing-follow.tsx: 180 chars/s, not 60).
  *   2. Both starters fail only on their placeholder markers, raise no text-flow warning, and lint
- *      clean once the markers are gone.
+ *      clean once the markers are gone; with another palette in tokens.ts no primitive's default
+ *      fails as an off-token colour.
  *   3. palette.py refuses banned accents and papers (exit 1) and accepts allowed ones, and
  *      --brand-supplied lets the user's own colour through; its recipes, the token check and the
  *      one-hue ramp gate.
@@ -126,6 +127,13 @@ for (const [name, sub] of STATIC
     const g = lint(dst);
     const n = g.issues.filter((x) => x.rule === 'glow').length;
     result(n === 1, 'a token-coloured glow is caught through tokens.ts (and an ink shadow is not)', `${n} glow errors`);
+    // a film's own palette (as brand.py writes it; white stays): no primitive's default may be a starter colour as a hex
+    const tokPath = join(dst, 'brand', 'tokens.ts');
+    const tok = readFileSync(tokPath, 'utf8');
+    writeFileSync(tokPath, tok.replace(/export const C = \{[\s\S]*?\n\};/, (blk) => blk.replace(/'#([0-9A-Fa-f]{6})'/g, (m, h) => h.toUpperCase() === 'FFFFFF' ? m :
+      `'#${h.slice(0, 4)}${(parseInt(h.slice(4), 16) ^ 0x05).toString(16).padStart(2, '0').toUpperCase()}'`)));
+    const own = lint(dst).issues.filter((x) => x.rule === 'off-token-color' && x.severity === 'error');
+    result(!own.length, "with the film's own palette in tokens.ts, no starter primitive fails off-token-color", own.map((x) => `${x.file}:${x.line}`).join(', '));
   }
   rmSync(tmp, { recursive: true, force: true });
 }

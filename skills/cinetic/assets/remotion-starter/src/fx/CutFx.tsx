@@ -1,4 +1,5 @@
 import React from 'react';
+import { C } from '../brand/tokens';
 import { clamp, E, type Ease, lmix, mix } from '../lib/anim';
 import { mixRgb } from '../lib/color';
 import { defocusMix, DEFOCUS_SHARP } from '../lib/defocus';
@@ -83,7 +84,7 @@ export const FlashCut: React.FC<FlashCutProps & { frame: number; out: React.Reac
   const { width, height } = film;
   const s = flashCutState(props.frame, props, film);
   const o = props.origin ?? { x: width / 2, y: height / 2 };
-  const ground = props.ground ?? '#0D0E10';
+  const ground = props.ground ?? C.ink;
   const light = props.light ?? '#FFFFFF';
   const box: React.CSSProperties = { position: 'absolute', inset: 0, overflow: 'hidden', background: ground };
   if (s.phase === 'before' || s.phase === 'whip')

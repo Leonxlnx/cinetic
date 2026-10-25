@@ -1,5 +1,6 @@
 // cinetic:light soft occluder: a static soft-edged layer the camera dives through (a gradient edge, no glow)
 import React from 'react';
+import { C } from '../brand/tokens';
 import { clamp, E, type Ease, mix } from '../lib/anim';
 import { defocusMix } from '../lib/defocus';
 import { type FilmCtx, f60x, fpsOf, sizeOf, uOf, useFilm } from '../lib/film';
@@ -117,7 +118,7 @@ export const Dive: React.FC<
         {node}
       </div>
     ));
-  const color = props.color ?? '#F5F6F7';
+  const color = props.color ?? C.paper;
   // the occluder: a soft edge, a body one frame tall, a soft edge; edge 0 = the body covers the frame exactly
   const top = s.edge * height - soft;
   return (

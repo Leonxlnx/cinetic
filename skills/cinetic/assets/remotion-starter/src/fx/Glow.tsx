@@ -83,7 +83,7 @@ export const Bloom: React.FC<BloomProps & { frame: number; children: React.React
             <feGaussianBlur stdDeviation={radii[1] * u} />
           </filter>
           <filter id={`bl${uid}2`} colorInterpolationFilters="sRGB" {...fr}>
-            <feFlood floodColor={p.spill ?? '#08965A'} />
+            <feFlood floodColor={p.spill ?? C.accent} />
             <feComposite in2="SourceAlpha" operator="in" />
             <feGaussianBlur stdDeviation={radii[2] * u} />
           </filter>
@@ -254,9 +254,9 @@ export const LightFront: React.FC<LightFrontProps & { frame: number; children: R
   const H = Math.round(film.height * res);
   const stops = p.stops ?? [
     { at: 0, color: '#FFFFFF', alpha: 1 },
-    { at: 0.3, color: '#77D59E', alpha: 0.85 },
-    { at: 0.65, color: '#08965A', alpha: 0.35 },
-    { at: 1, color: '#08965A', alpha: 0 },
+    { at: 0.3, color: C.accentLift, alpha: 0.85 },
+    { at: 0.65, color: C.accent, alpha: 0.35 },
+    { at: 1, color: C.accent, alpha: 0 },
   ];
   useLayoutEffect(() => {
     const ctx = ref.current?.getContext('2d');
