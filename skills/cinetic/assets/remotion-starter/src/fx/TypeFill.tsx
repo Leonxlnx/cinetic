@@ -88,6 +88,7 @@ const swapGaps = (p: TypeFillProps, fps: number) => ({ st: f60x(p.stagger ?? TYP
 /** Ink front: power-out to the stall, a slow creep, then the end catches up. */
 const stallCurve = (u: number, stall: number) => (u < 0.55 ? stall * (1 - (1 - u / 0.55) ** 2.1) : u < 0.8 ? stall + 0.03 * ((u - 0.55) / 0.25) : stall + 0.03 + (1 - stall - 0.03) * E.glideOut((u - 0.8) / 0.2));
 
+// cinetic:device-palette the develop fronts' cool neighbour of the accent
 /** Default develop fronts: a pale reveal, a light tint, the accent's cool neighbour, the accent, the ink. */
 export const developFronts = (ink: string = C.ink, accent: string = C.accent): DevelopFront[] => [
   { color: mixColor(accent, '#FFFFFF', 0.72), dur: TYPE_FILL.develop.durs60[0] },
@@ -277,6 +278,7 @@ export const TypeFill: React.FC<DrawProps> = (props) => {
     </text>
   );
   const span = props.span ?? TYPE_FILL.span;
+  // cinetic:device-palette the fill's default stops and the luminance masks' black and white
   const stops = props.stops ?? (props.mode === 'band' ? tintBand(ink, accent) : [mixColor(accent, '#FFFFFF', 0.35), accent, '#2DB4D6']);
   const plateW = props.mode === 'band' ? span * W : W;
   const plate = useMemo(() => (props.mode === 'band' || props.mode === 'swap' || props.mode === 'fill' ? ditherPlate(stops, plateW, H, { vertical: props.vertical && props.mode !== 'band' }) : ''), [JSON.stringify(stops), plateW, H, props.mode, props.vertical]);
