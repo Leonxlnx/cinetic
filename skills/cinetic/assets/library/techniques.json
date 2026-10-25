@@ -363,11 +363,19 @@
    "avoid_when": "One side has to be still (a held statement or a designed freeze), or the two shots would move in opposite directions. Carry a shape or an anchor across instead.",
    "primitive": [
     "lib/handoff.handoffShot",
-    "lib/handoff.carry"
+    "lib/handoff.carry",
+    "lib/camera-moves"
+   ],
+   "jobs": [
+    "transition"
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 9
+   "weight": 9,
+   "impact": 5,
+   "aliases": [
+    "dv-velocity-handoff-cut"
+   ]
   },
   {
    "id": "tr-scale-through-cut",
@@ -528,7 +536,10 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 4
+   "weight": 4,
+   "aliases": [
+    "dv-defocus-blank-cut"
+   ]
   },
   {
    "id": "tr-path-relay",
@@ -1195,9 +1206,20 @@
     "lib/camera-moves.zoomThrough",
     "lib/handoff.handoffShot"
    ],
+   "materials": "The surface reveals its material as the camera arrives: a pearly brushed face with a diagonal highlight band (white, about 250 px, at 25 deg), fine streak grain along the band (3-5 % luminance) and faint warm and green rainbow arcs at about 15 %, a 2 px two-hue split on the edges, then a white-out (luma about 16 % -> 85 %) on the section-change hit. A screen zoomed into shows world-scale scanlines (3 px pitch scaling with the camera) that vanish on the pull-back.",
+   "conditions": [
+    "the film's one spectral accent"
+   ],
+   "jobs": [
+    "transition"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 1
+   "weight": 6,
+   "impact": 4,
+   "aliases": [
+    "dv-zoom-through-object"
+   ]
   },
   {
    "id": "cam-impact-kick",
@@ -4709,9 +4731,16 @@
     "fx/Pixel.Pixelate",
     "fx/Pixel.pixelateState"
    ],
+   "jobs": [
+    "transition"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 5,
+   "aliases": [
+    "dv-pixelate-beat"
+   ]
   },
   {
    "id": "tx-wireframe-scan-build",
@@ -6631,7 +6660,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 6,
+   "impact": 3,
+   "aliases": [
+    "dv-cut-open-big-settle"
+   ]
   },
   {
    "id": "cam-whip-copy-swap",
@@ -6681,7 +6714,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 3,
+   "aliases": [
+    "dv-copy-swap-on-peak"
+   ]
   },
   {
    "id": "cam-snap-zoom-defocus",
@@ -6729,7 +6766,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 6
+   "weight": 6,
+   "impact": 4,
+   "aliases": [
+    "dv-reframe-chain"
+   ]
   },
   {
    "id": "cam-reversal-into-cut",
@@ -6752,7 +6793,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 3,
+   "aliases": [
+    "dv-reversal-push"
+   ]
   },
   {
    "id": "cam-punch-out-carry",
@@ -6775,7 +6820,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 4,
+   "aliases": [
+    "dv-punch-out-cut"
+   ]
   },
   {
    "id": "cam-defocus-pulse-hide",
@@ -6797,9 +6846,17 @@
     "fx/SnapZoom.defocusPulse",
     "fx/RackFocus"
    ],
+   "materials": "A whole-frame blur of about 3, 6, 3 px across the cut (last wide frame, first close-up frame, the next), sharp after: 8 f in all, with no exposure change.",
+   "jobs": [
+    "transition"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 4
+   "weight": 4,
+   "impact": 4,
+   "aliases": [
+    "dv-defocus-pulse-hide"
+   ]
   },
   {
    "id": "cam-footage-speed-ramp",
@@ -6822,7 +6879,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 4
+   "weight": 4,
+   "impact": 3,
+   "aliases": [
+    "dv-footage-speed-ramp"
+   ]
   },
   {
    "id": "ui-front-loaded-panel",
@@ -7109,7 +7170,11 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 4,
+   "aliases": [
+    "dv-pill-breath"
+   ]
   },
   {
    "id": "tr-exposure-bloom",
@@ -7188,9 +7253,16 @@
     "fx/Dive.Dive",
     "fx/Dive.diveState"
    ],
+   "jobs": [
+    "transition"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 5,
+   "aliases": [
+    "dv-dive-through-layer"
+   ]
   },
   {
    "id": "tr-flash-cut-whip",
@@ -7236,9 +7308,14 @@
     "fx/BlockStep.BlockStep",
     "fx/BlockStep.blockStepState"
    ],
+   "materials": "The incoming page arrives as a pure white rectangle, then decays through grey to its real dark self one step a frame (white overlay opacity 1, 0.65, 0.35, 0, no easing between), landing on a VO syllable; a 2 px white rim light with a soft glow brightest at the bottom-left keeps the page's edge lit from below.",
    "ban_safe": true,
    "bans": [],
-   "weight": 3
+   "weight": 3,
+   "impact": 4,
+   "aliases": [
+    "dv-block-silhouette-step"
+   ]
   },
   {
    "id": "tr-blob-ring",
@@ -7260,9 +7337,17 @@
     "fx/BlobRing.BlobRing",
     "fx/BlobRing.blobRingState"
    ],
+   "materials": "The brush blob under a word starts spinning, collapses edge-on into a thin vertical streak for one nearly empty frame, reappears as a thick open arc round the next word (ring thickness about 25 % of its radius), then grows about 3x a frame for 3-4 frames past the frame edge and settles as a breathing vignette (hole about 1250 x 1000 px). Ring body blurred 40-60 px with a lighter inner edge feathered 150-250 px; the words inside go from grey to ink and the accent word from a pale tint to the accent.",
+   "jobs": [
+    "reveal"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 3
+   "weight": 3,
+   "impact": 5,
+   "aliases": [
+    "dv-blob-ring-frame"
+   ]
   },
   {
    "id": "tr-soft-wipe",
@@ -7287,9 +7372,17 @@
     "fx/Wipe.wipeState",
     "fx/Wipe.edgeMask"
    ],
+   "materials": "The photos first take a gradient-map cast that creeps in from the top-left (shadows deep, mids pink, highlights warm, strength 0 -> 70 % over 24 f), then a broad soft white wash crosses left to right (feather about 40 % of the panel width, accelerating); just ahead of the white the photos turn warm, and the warm front rhymes with the palette of the sentence that follows.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 3
+   "weight": 7,
+   "impact": 4,
+   "aliases": [
+    "dv-feather-wipe"
+   ]
   },
   {
    "id": "cl-key-light-relief",
@@ -7393,9 +7486,16 @@
     "fx/Pixel.MosaicIris",
     "fx/Pixel.mosaicIrisState"
    ],
+   "jobs": [
+    "reveal"
+   ],
    "ban_safe": true,
    "bans": [],
-   "weight": 5
+   "weight": 5,
+   "impact": 5,
+   "aliases": [
+    "dv-mosaic-ring-iris"
+   ]
   },
   {
    "id": "mi-markers-echo",
@@ -7457,6 +7557,264 @@
    "weight": 6
   },
   {
+   "id": "dv-accelerate-into-cut",
+   "name": "Move accelerates into the cut",
+   "category": "camera",
+   "family": "Camera",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "The shot leaves by speeding up (a drift, a push, a pull-back, a card shrinking away) and the cut lands on its fastest frame; even a slow push that would normally settle keeps rising into the cut.",
+   "recipe": "scaleBreath (push into .cut) or punchOut; put the cut on .cut / peakFrame. Anatomy: Ease-in over the last 6-24 f; a held line growing 0.18 %/f then +3.2 % in its last 6 f; a 3-frame counter-move (0.997, 0.990, 0.976) after a slow push. Sound: Kick 24 ms after the cut; a riser or a level swell into it; a spoken word on the cut.",
+   "timing": "Last 6-70 f on an ease-in; cut speed 6-30 px/f or 0.4-1.5 %/f.",
+   "use_when": "Nearly every cut; the end of a film (the last frame at peak speed).",
+   "avoid_when": "Settling into the cut (that reads as a stall).",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 9,
+   "impact": 2
+  },
+  {
+   "id": "dv-asymmetric-whip",
+   "name": "Asymmetric whip: long build, short brake",
+   "category": "camera",
+   "family": "Camera",
+   "role": "workhorse",
+   "energy": "high",
+   "formats": [
+    "any"
+   ],
+   "summary": "A fast reframe whose speed builds for most of the move and brakes in the last third, crisp at the peak (no blur needed below about 100 px/f at 1080p); the copy swaps inside the peak frames.",
+   "recipe": "whip({ frames: 32 }) + swapAt(whip.peak). Anatomy: Build 60-70 % of the move, brake 30-40 %; a slight zoom-out rides along; placeholder -> typed swap at the peak; a second, faster whip can follow immediately. Sound: A pop or a pluck at the peak (within 30 ms).",
+   "timing": "23-69 f; peak 50-178 px/f at 63-70 % of the move; house 32 f, peak 1600 px/s.",
+   "use_when": "Changing subject inside one shot; racing up or down a phone; tilting into darkness.",
+   "avoid_when": "Symmetric eases (they read as a slide).",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 4
+  },
+  {
+   "id": "dv-caret-follow",
+   "name": "Camera follows the caret",
+   "category": "camera",
+   "family": "Camera",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "feature",
+    "walkthrough"
+   ],
+   "summary": "While text types in a field cropped by the frame, the camera pans with the caret (in pulses, starting a few frames before the typing), and may pull back in one frame to show the whole field when the line ends.",
+   "recipe": "typeSchedule() positions -> a camera x with a short lead; the jump-out as a HardStep on the framing. Anatomy: Pan speed 1-40 px/f tracking the caret; the pan starts 7 f before the typing; a one-frame jump-out at the end; a decaying roll drift while the next label types. Sound: Spacebar presses.",
+   "timing": "Over the typing (50-145 f); jump-out 1 f; settle 32 f.",
+   "use_when": "Typing in close-up.",
+   "avoid_when": "Following every character exactly (lead it slightly).",
+   "primitive": [
+    "fx/TypeOn"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 3
+  },
+  {
+   "id": "dv-flat-ui-camera",
+   "name": "The camera operates a flat UI",
+   "category": "camera",
+   "family": "Camera",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "feature",
+    "walkthrough"
+   ],
+   "summary": "The real app UI is never animated as layers: the camera zooms out, scrolls and pushes over one flat canvas, so the product looks untouched and the editing does the talking.",
+   "recipe": "One camera() on a single flat <Img> or built canvas; moves from lib/camera-moves. Anatomy: Zooms x0.70-0.92 and scrolls 94-551 px; a symmetric 1.33x zoom; an S-curve push of +30 % on a finished layout. Sound: Voice.",
+   "timing": "Zooms 30-40 f; calm scroll+zoom 75 f; S-push 92 f.",
+   "use_when": "Walkthroughs of a real product from screenshots.",
+   "avoid_when": "Fake layer animation on a screenshot.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3
+  },
+  {
+   "id": "dv-ground-falls-away",
+   "name": "Base sinks away from the launching object",
+   "category": "camera",
+   "family": "Camera",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "As an object launches (a send button, a card), the camera pushes slightly while the base it sat on drifts down and accelerates out of frame, so the object seems to lift off.",
+   "recipe": "parallax with the base on its own layer and an E.buildIn drop. Anatomy: Camera push +2-4 %; base y on an ease-in to about 29 px/f; never settles. Sound: Kicks under it.",
+   "timing": "58 f.",
+   "use_when": "The moment a request is sent; an object leaving its container.",
+   "avoid_when": "Moving the object itself fast at the same time.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-jump-reframe-on-arrival",
+   "name": "Composition jump-reframes on each arrival",
+   "category": "camera",
+   "family": "Camera",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "While a collage is sparse, the whole composition jumps in one frame (about 180 px, or x1.11) each time an element arrives, holding 2-10 f between jumps.",
+   "recipe": "collage({ camera }) steps on births (x1.05-1.11 or 150-200 px). Anatomy: Single-frame reframes on births; holds 2-10 f. Sound: None needed.",
+   "timing": "Holds 2-10 f.",
+   "use_when": "Stop-motion collage builds.",
+   "avoid_when": "Smooth films.",
+   "primitive": [
+    "fx/Stepped"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-log-zoom-into-object",
+   "name": "Zoom into an object on a log curve",
+   "category": "camera",
+   "family": "Camera",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A point or a small object grows by 3-8x in log space (accelerating then decelerating, or decelerating from the start) and keeps going past frame fill, softening as it grows; an input box can enter barrel-distorted and straighten as it grows.",
+   "recipe": "zoomThrough({ factor, frames, ease }) with lc() log blending. Anatomy: Scale on a log curve (tau about 7-15 f on the tail), slight roll 2.5 -> 0 deg/f; optional softening; barrel bulge for 6 f at the start. Sound: The fastest frame on a vocal sound or a glockenspiel note. Materials: The world is seen through a feathered porthole that opens faster than the footage zooms: the window grows about 7.6x (feathered 6 % of the radius) while the plate inside scales only about 1.9x, on twos with a few single-frame exceptions; the plate is a soft, deliberately upscaled frame.",
+   "timing": "50-86 f for x3-8; peak 0.25 log/f.",
+   "use_when": "Dot to planet, a mark to a world, the prompt box becoming the stage.",
+   "avoid_when": "Linear scale (it reads as slowing down).",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "materials": "The world is seen through a feathered porthole that opens faster than the footage zooms: the window grows about 7.6x (feathered 6 % of the radius) while the plate inside scales only about 1.9x, on twos with a few single-frame exceptions; the plate is a soft, deliberately upscaled frame.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 5
+  },
+  {
+   "id": "dv-long-decay-settle",
+   "name": "Long exponential camera settle",
+   "category": "camera",
+   "family": "Camera",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "One long move that decays exponentially over 1-2.5 s (a pull-back of 15 %, a 357 px slide, a layout easing out to 0.88, a push of 1.21x on a finished line), settling just before the next beat; it can start with a tiny anticipation push.",
+   "recipe": "A move on E.glideOut (or a decayEase) between two framings; anticipation via reversal with a short pull. Anatomy: Quint- or circ-out; t50 about 0.12-0.2 s, t90 about 0.6 s; optional +0.8 % push before a pull-back. Sound: The bed; the next beat lands on the settle.",
+   "timing": "46-160 f; tau about 48 f.",
+   "use_when": "Calm shots after a busy one; holds on photos and dashboards.",
+   "avoid_when": "Ending the settle after the next cut (then it is not a settle).",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 3
+  },
+  {
+   "id": "dv-macro-pan-type",
+   "name": "Macro pan across giant type",
+   "category": "camera",
+   "family": "Camera",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The camera slides across type so big it never fits the frame (half the frame height or more), fast at first and decaying, crisp in the centre and soft at the frame edges; a timeline can pan toward the past with speed swells.",
+   "recipe": "camera x on E.snapOut over a single huge <Words>; edge softness as a static mask with two blur levels. Anatomy: Start 300+ px/f decaying about 1/t; edge softening; swells (185 px/f, 318 -> 20 -> 261...) while a tilt accelerates. Sound: Kicks on the cut and mid-pan; a stab at the end.",
+   "timing": "29-62 f at 25-30 fps; 1881 px in 29 f.",
+   "use_when": "A giant number, a date line, a word as landscape.",
+   "avoid_when": "Text that must be read whole.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-make-room-reframe",
+   "name": "Camera reframes to make room",
+   "category": "camera",
+   "family": "Camera",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "When a new element is about to arrive, the camera (or the content) pulls back, shrinks or slides to make room, timed to finish one frame before the new element shows; a push can stay centred on an inline icon so the words part around it.",
+   "recipe": "A camera move ending at the new element's onset - 1 (whip or E.glideOut); for an icon-centred push, anchor = the icon. Anatomy: Pull-back to 0.69-0.75; a kick of -6.3 %/f at peak; a 368 px slide with an early speed peak (18 % of the move) and a long tail; a two-phase pull (decelerate, re-accelerate, settle). Sound: A kick or a click. Materials: When the cluster outgrows the panel, the whole composition shrinks about 18 % between two drawings with no in-betweens (no blur, no overshoot), paired with a new tile's cut-on, and the slow pan continues.",
+   "timing": "30-60 f; peak at 18-56 % of the move.",
+   "use_when": "Adding a second line, more cards, a label, a result under a search bar.",
+   "avoid_when": "Making room after the element has appeared.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "materials": "When the cluster outgrows the panel, the whole composition shrinks about 18 % between two drawings with no in-betweens (no blur, no overshoot), paired with a new tile's cut-on, and the slow pan continues.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 7,
+   "impact": 2
+  },
+  {
+   "id": "dv-masonry-scroll",
+   "name": "Masonry wall scrolls in, drifts, scrolls out",
+   "category": "camera",
+   "family": "Camera",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A masonry of framed photo cards with words in the gaps scrolls up on an expo-out entry, decays to a slow drift, then leaves on a circ-in.",
+   "recipe": "flickState with a short ramp, or a camera y on E.snapOut then E.launchIn. Anatomy: Entry 22 px/f with 72 % of the travel in the first 10 %; drift 0.7-0.9 px/f; exit circ-in. Sound: The bed.",
+   "timing": "In 60 f, cruise, out 42 f.",
+   "use_when": "A wall of examples or use cases.",
+   "avoid_when": "Text inside the moving cards.",
+   "primitive": [
+    "fx/Scroll"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
    "id": "dv-plate-speed-follows-read",
    "name": "Background plate speeds up and slows with the read",
    "category": "camera",
@@ -7477,6 +7835,80 @@
    "ban_safe": true,
    "bans": [],
    "weight": 1
+  },
+  {
+   "id": "dv-punch-in",
+   "name": "Punch-in zoom carried by a few frames",
+   "category": "camera",
+   "family": "Camera",
+   "role": "workhorse",
+   "energy": "high",
+   "formats": [
+    "any"
+   ],
+   "summary": "A zoom whose change happens in 1-3 explosive frames after a short creep, then an expo tail; punch-ins can be hidden on spoken words, and two punches in a row replace one push.",
+   "recipe": "<SnapZoom to pre post defocus>. Anatomy: Creep (+0.04 -> +3.3 %/f), 1-3 big frames (x1.15, 1.38, 1.60), tail; x1.11-1.47 per punch; optional 5.6 px defocus on the jump frame and a 3 f ease-in before. Sound: On the spoken word (-10 ms) or the hit.",
+   "timing": "18-45 f in all; jump 1-3 f; tail 20-40 f.",
+   "use_when": "A hit, a label landing, the spoken key word.",
+   "avoid_when": "Every cut (save it for hits).",
+   "primitive": [
+    "fx/SnapZoom"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-rotation-decay",
+   "name": "Ring or field spins in and bleeds off",
+   "category": "camera",
+   "family": "Camera",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A ring of chips, a ring of tiles or a whole field of tiles arrives already turning and its rotation decays by a constant ratio to a slow cruise that never stops.",
+   "recipe": "Build: rotationDecay(f, { start, w0: 8, ratio: 0.94, cruise: 0.5 }) (fx/Orbit, degrees and ratios per 60 fps frame): the ring arrives turning at w0 and bleeds off by the ratio to a cruise that never stops, closed form; <OrbitRing decay> draws the ring. Anatomy: Start 2.5-15 deg/f, decay x0.88-0.95 a frame, cruise 0.1-2.4 deg/f. Sound: None.",
+   "timing": "30-100 f to the cruise.",
+   "use_when": "Integrations, sources, a galaxy of features around a centre.",
+   "avoid_when": "Rotation that stops dead.",
+   "primitive": [
+    "fx/Orbit.rotationDecay"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-whip-zoom-roll",
+   "name": "Whip zoom with roll and counter-roll",
+   "category": "camera",
+   "family": "Camera transitions",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The camera whips to a new subject with an accelerating zoom (about x2) and a roll of up to +17-28 deg with motion blur, then counter-rolls past level and settles; a flat grid can tip into a perspective floor this way; a whip-left with a x1.9 zoom lands on the end of a sentence.",
+   "recipe": "whip({ roll, dip }) with the motion-blur pass on the fast frames. Anatomy: Zoom peak 1.078 a frame, roll +2.3 to +5.2 deg/f then a counter-roll to -4.5 deg/f; blur on the fastest frames. Sound: None needed; a kick on the landing.",
+   "timing": "36-98 f.",
+   "use_when": "A big change of subject; flat to 3D.",
+   "avoid_when": "Roll over about 30 deg; readable text during the whip.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "jobs": [
+    "transition"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
   },
   {
    "id": "dv-background-veil",
@@ -8441,6 +8873,126 @@
    "impact": 4
   },
   {
+   "id": "dv-xray-wireframe-pass",
+   "name": "Tiles pass through a wireframe look",
+   "category": "color_and_light",
+   "family": "Morphs and object handoffs",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Collage tiles turn white with thin dark outlines in 2 frames (a structural x-ray), the outlines and caption turn a pale tint and fade to white.",
+   "recipe": "HardStep to an outline version of each tile (a pre-drawn stroke layer), then a fade to the ground. Anatomy: Two-frame switch, then a tint, then white. Sound: A whoosh.",
+   "timing": "5 + 10 f.",
+   "use_when": "A transition that reveals structure.",
+   "avoid_when": "Busy tiles.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-barrel-roll-flyin",
+   "name": "Barrel-roll fly-in down a corridor",
+   "category": "depth_and_3d",
+   "family": "Camera",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The camera rolls about 175 deg while flying down a corridor of light tiles to a hero object, pushing about 2x.",
+   "recipe": "lib/camera roll + k on one ShotFn; tiles as a parallax field. Anatomy: Roll on a sine-out, push on an ease-in-out, light tiles passing. Sound: The music drops out.",
+   "timing": "72 f.",
+   "use_when": "The hero reveal of a 3D world, once.",
+   "avoid_when": "UI films; readable type during the roll.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-flat-to-3d-construct",
+   "name": "Flat shape builds into a 3D object",
+   "category": "depth_and_3d",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A flat outline grows into a solid: a triangle gains a fourth vertex out of plane and turns as a wireframe, its faces fill one after another; a square outline grows into a tumbling cube; a pyramid forms in halves around a hero; flat cards morph into glossy 3D balls while a ring spins.",
+   "recipe": "Recipe: CSS 3D (preserve-3d) faces with stroke-only first, fills on per-face onsets. Anatomy: Wireframe 1-2 px; faces fill 2-3 f apart; tumble 180 deg slow-in slow-out. Sound: A note on the first face fill; a celesta with the core glow. Materials: Construction hairlines stay drawn on top of the shaded solid: every edge, including back edges seen through a clear face, remains a 1 px light line at about 70 % with a non-scaling stroke through the whole beauty hold.",
+   "timing": "Construct 18-72 f.",
+   "use_when": "A product about structure, models, building; a hero object reveal.",
+   "avoid_when": "Glossy 3D in a flat UI film.",
+   "primitive": [],
+   "materials": "Construction hairlines stay drawn on top of the shaded solid: every edge, including back edges seen through a clear face, remains a 1 px light line at about 70 % with a non-scaling stroke through the whole beauty hold.",
+   "conditions": [
+    "glass as a material with real frost or refraction, not a default card style"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 5
+  },
+  {
+   "id": "dv-floating-card-field",
+   "name": "Cards fly in and drift in depth forever",
+   "category": "depth_and_3d",
+   "family": "Depth and 3D",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "About twenty tilted 3D cards fly in from all edges in a third of a second and decelerate to a slow drift that never stops; each tile keeps its own arc, one approaching, one receding, others drifting across.",
+   "recipe": "Cards cardArrive per card with a seeded tilt, then a closed-form drift with a slow z term. Anatomy: Fly-in p90 34-41 px/f decelerating to 1.15 px/f (half-life about 0.2 s); per-tile depth arcs (206 -> 397 px, 375 -> 129 px). Sound: The music drops out under the drift.",
+   "timing": "Fly-in 85 f; drift 285 f.",
+   "use_when": "Galleries, templates, examples as a world.",
+   "avoid_when": "Straight-line drifts (give each an arc).",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-foreground-bokeh",
+   "name": "Soft foreground objects pass close to the lens",
+   "category": "depth_and_3d",
+   "family": "Depth and 3D",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Out-of-focus objects in the foreground (warning signs in the corners, big soft black dots drifting in, a dark silhouette across the bottom) give the frame a near layer.",
+   "recipe": "Foreground layer at a fixed ladder blur level, moved by parallax w > 1. Anatomy: Foreground blur 10-20 px; drift along curved paths settling around the subject. Sound: None.",
+   "timing": "Arrivals 40 f sine-out; static blur moving with parallax.",
+   "use_when": "Tabletop sets, data scenes, a zoom that needs depth.",
+   "avoid_when": "Bokeh over the subject's face or the copy.",
+   "primitive": [
+    "fx/RackFocus"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3
+  },
+  {
    "id": "dv-frosted-panel-over-plate",
    "name": "Frosted panel over a living plate",
    "category": "depth_and_3d",
@@ -8468,6 +9020,81 @@
    "bans": [],
    "weight": 5,
    "impact": 4
+  },
+  {
+   "id": "dv-object-flight-3d",
+   "name": "Hero objects fly with physical arcs",
+   "category": "depth_and_3d",
+   "family": "Depth and 3D",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Objects move like objects: a glossy sphere is thrown in on a parabola (x and y on different ease-outs) and the camera tracks and overtakes it; a sphere enters huge and rolls to the vanishing point; a disc, a ring and a cylinder fly past along a diagonal axis toward the camera; small cubes rain out of a tile with the near ones defocused; a cube rides through a cylinder seen refracted; two spheres slide in from both sides and spring-land.",
+   "recipe": "Build: <Flight at from to apex scale={[a, b]} stretch orient>{object}</Flight> (fx/Flight): x on E.glideOut and the lift on its own curve (a parabola-like arc in closed form), stretched along the velocity at speed; scale by depth through scale; RackFocus by depth for the near ones. Anatomy: Parabolic paths; scale by depth (422 -> 71 px); fly-bys 120 -> 900 px in 5 f; rain 2 f apart at 15-30 px/f; spring zeta 0.70 with 7 % overshoot. Sound: A snare on the rain; a bubble pop at the landing peak. Materials: Glossy objects share one shading recipe: a pale highlight upper-left, the accent through the middle, a deep shade at the base and a large soft halo of the accent around them on light grounds (radial gradient at 35 % 30 %: near-white, light tint 30 %, accent 65 %, deep 100 %; halo blur about 60 px at 60 %). Pills get an extrusion: a duplicate in the deep shade offset (-8, +10) px behind, and a 1 px light inner top edge.",
+   "timing": "12-120 f.",
+   "use_when": "3D brand worlds; a hero object reveal.",
+   "avoid_when": "UI films; objects moving on straight eased lines.",
+   "primitive": [
+    "fx/Flight"
+   ],
+   "materials": "Glossy objects share one shading recipe: a pale highlight upper-left, the accent through the middle, a deep shade at the base and a large soft halo of the accent around them on light grounds (radial gradient at 35 % 30 %: near-white, light tint 30 %, accent 65 %, deep 100 %; halo blur about 60 px at 60 %). Pills get an extrusion: a duplicate in the deep shade offset (-8, +10) px behind, and a 1 px light inner top edge.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-parallax-depth-planes",
+   "name": "Layers move at different rates",
+   "category": "depth_and_3d",
+   "family": "Depth and 3D",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Text, tiles and the paper grid push at three different rates (text x1.16, tiles x1.08, grid not at all); walking silhouettes at five sizes move at speeds matching their depth; defocused tiles drift slowly behind a close-up.",
+   "recipe": "parallax(layers, move) with w 1, 0.5, 0. Anatomy: Rates 1 : 0.5 : 0 (type, cards, ground); far layers blurred one level. Sound: A stop-down under a fast push.",
+   "timing": "Over the move (35-63 f); background drift 1-3 px/f.",
+   "use_when": "Any flat frame that should read with depth.",
+   "avoid_when": "Equal rates (it reads as one flat layer).",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-parallax-landing-stagger",
+   "name": "Pull-back where the foreground lands first",
+   "category": "depth_and_3d",
+   "family": "Camera",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Opening on a button over a dot grid, the camera pulls back; the foreground lands about 10 frames before the background, so the depth reads from the timing alone.",
+   "recipe": "parallax(layers with different frames) on one pull. Anatomy: Background on a soft-start ease-out (peak -5.5 %/f at f7) in log scale; foreground on a shorter curve. Sound: A glockenspiel-like note at 0.05 s.",
+   "timing": "Background 58 f; foreground 38 f.",
+   "use_when": "Openers on a single object over a textured ground.",
+   "avoid_when": "Equal timing on both layers.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
   },
   {
    "id": "dv-prism-rim-glass-tiles",
@@ -8530,6 +9157,77 @@
    "impact": 4
   },
   {
+   "id": "dv-ring-orbit",
+   "name": "Tiles orbit a hero on a ring",
+   "category": "depth_and_3d",
+   "family": "Depth and 3D",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Six or seven app tiles orbit a horizontal ring around a hero object at constant angular speed; front tiles pass in front of it, back tiles behind.",
+   "recipe": "Build: <OrbitRing x y n r speed tilt render hero> (fx/Orbit): items on a tilted ring (ringPoint: depth scale 0.72-1.08) at constant angular speed, back items drawn behind hero and front items in front. Anatomy: Ring in perspective; z-order by angle. Sound: None.",
+   "timing": "Constant over 128 f.",
+   "use_when": "Integrations or features around a product.",
+   "avoid_when": "Fast orbits (about 60 deg/s).",
+   "primitive": [
+    "fx/Orbit.OrbitRing"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-rise-focus-rack",
+   "name": "Object rises into frame as focus racks in",
+   "category": "depth_and_3d",
+   "family": "Camera",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A floating platform or object rises into frame, slowing, while the image racks from soft to sharp, the focus landing later than the position.",
+   "recipe": "Cards enterState + RackFocus levels with the focus starting 4 f after the move. Anatomy: Rise 9 -> 2 px/f; focus lags by 20 f. Sound: None.",
+   "timing": "Rise 18 f; focus 40 f.",
+   "use_when": "Introducing a 3D object or a device.",
+   "avoid_when": "Racking before the move.",
+   "primitive": [
+    "fx/RackFocus"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-selective-focus",
+   "name": "Only what matters stays in focus",
+   "category": "depth_and_3d",
+   "family": "Depth and 3D",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Focus does the pointing: the layout blurs and darkens while the camera pushes and a toast appears sharp over it (the defocus leading the toast by 4-6 f); older chat messages blur and grey as they scroll under the header; the second word of a pair is held soft; a window zooms in while its wallpaper pulls into focus.",
+   "recipe": "<RackFocus levels hero>. Anatomy: Background defocus 19-28 px plus a 15 % darken; hero sharp above. Sound: Whooshes leading the toast. Materials: Fake lens depth on flat UI: in a list only the focused row is sharp and each row further away is softer (blur proportional to the distance from a focus band, isotropic, no bokeh shapes); foreground icons in the corners are huge and fully defocused; plain colour tiles placed in a grid as blurred out-of-focus depth (4-6 px, growing toward the edge) make sharp icons read nearer.",
+   "timing": "20-42 f.",
+   "use_when": "Directing attention without moving things.",
+   "avoid_when": "Blurring the copy the viewer must read.",
+   "primitive": [
+    "fx/RackFocus"
+   ],
+   "materials": "Fake lens depth on flat UI: in a list only the focused row is sharp and each row further away is softer (blur proportional to the distance from a focus band, isotropic, no bokeh shapes); foreground icons in the corners are huge and fully defocused; plain colour tiles placed in a grid as blurred out-of-focus depth (4-6 px, growing toward the edge) make sharp icons read nearer.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 4
+  },
+  {
    "id": "dv-thin-film-dome",
    "name": "Soap-bubble glass with thin-film rainbow bands",
    "category": "depth_and_3d",
@@ -8561,6 +9259,106 @@
    "impact": 5
   },
   {
+   "id": "dv-tilt-reveals-space",
+   "name": "Camera tilt turns a flat graphic into a space",
+   "category": "depth_and_3d",
+   "family": "Camera",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A flat column or ring becomes a perspective runway or a side-view carousel as the camera tilts; a grid ceiling or floor appears.",
+   "recipe": "lib/camera pitch on a 3D-transformed container (perspective 1200 px). Anatomy: Tilt of 564 px or a swing from axial to side view; grid planes appear. Sound: Between beats. Materials: After the grid tips into a perspective floor, a minute paragraph lies on the floor beside an object, rotated and foreshortened with it and softened by the floor's depth of field: animate the camera, not the text.",
+   "timing": "23-25 f in-out; then a constant orbit of 100 f.",
+   "use_when": "Moving from a flat 2D graphic into a 3D world.",
+   "avoid_when": "Without depth cues ready on the other side.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "materials": "After the grid tips into a perspective floor, a minute paragraph lies on the floor beside an object, rotated and foreshortened with it and softened by the floor's depth of field: animate the camera, not the text.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 5
+  },
+  {
+   "id": "dv-tinted-shadows",
+   "name": "Shadows and rims tinted with the accent",
+   "category": "depth_and_3d",
+   "family": "Depth and 3D",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Cards and objects cast shadows in a dark tint of the accent instead of grey, and a round window carries a soft rim of the accent's light on one side, so the whole layout feels lit by the brand's world.",
+   "recipe": "Recipe: box-shadow with an accent rgba; an offset coloured shadow for a lit rim. Anatomy: Card shadow 0 20px 50px in the accent at 35 %; a porthole rim 6px 8px 18px in the accent at 45 % on one arc (4 to 7 o'clock); card rim 1 px white; backdrop blur 10 px when the card is translucent. Sound: None. Materials: The shadow hue is the accent pulled toward its darker neighbour, never black; keep its alpha 0.3-0.45.",
+   "timing": "Static material; the rim intensifies as the object defocuses into the next scene.",
+   "use_when": "Light grounds with a strong accent; floating cards; a portal or porthole.",
+   "avoid_when": "Dark grounds, where tinted shadows vanish; mixing with grey shadows in one film.",
+   "primitive": [],
+   "materials": "The shadow hue is the accent pulled toward its darker neighbour, never black; keep its alpha 0.3-0.45.",
+   "jobs": [
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 2
+  },
+  {
+   "id": "dv-type-depth-interleave",
+   "name": "Type sits between layers of the picture",
+   "category": "depth_and_3d",
+   "family": "Depth and 3D",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "Type is placed in depth: a near tile slides over the headline and clears; across a cut the caption stays put but the product is now in front of it; a headline sits behind a circle and rises out from behind it; a large phrase fades in behind a card that overlaps it; words are uncovered by tiles sliding away.",
+   "recipe": "Recipe: render the type between two picture layers (a matte of the foreground object above it). Anatomy: Z-order changes on cuts; occluding objects moving across the type. Sound: A drum on the cut. Materials: Captions move through the plates like props: over the subject, then behind her after the mask, a product standing in front of two letters, a giant word rising behind the product; one plane change per beat, always on a cut or the mask-confirm frame. During a fast pull-back the headline can tuck behind the rising panel's top rim (the panel moving about 1.8x the headline's speed, a vertical blur of 40-60 px on both).",
+   "timing": "Occlusions 38-66 f; cut 0 f.",
+   "use_when": "Making type and product share one space.",
+   "avoid_when": "Occluding the key word for long.",
+   "primitive": [],
+   "materials": "Captions move through the plates like props: over the subject, then behind her after the mask, a product standing in front of two letters, a giant word rising behind the product; one plane change per beat, always on a cut or the mask-confirm frame. During a fast pull-back the headline can tuck behind the rising panel's top rim (the panel moving about 1.8x the headline's speed, a vertical blur of 40-60 px on both).",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
+  },
+  {
+   "id": "dv-voxel-glyph-swing",
+   "name": "A pixel glyph swings in as an extruded voxel solid",
+   "category": "depth_and_3d",
+   "family": "Depth and 3D",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A giant pixel numeral or symbol first shows as a sliver of grey side faces, then swings to face the camera as a voxel solid (white front cells, light grey extruded sides on every step) and settles flat into a slow pan.",
+   "recipe": "CSS 3D: a preserve-3d group of cell boxes (front and side faces) under one perspective rotation; a flat SVG once the angle reaches 0. Anatomy: One box per on-cell of a 7 x 9 bitmap; front faces white, side faces 78-83 % grey, extrusion 0.4 of a cell; cells about 60 px at 1080p; perspective rotateY 70 -> 0 deg. Sound: Music onset just before; a whoosh under whatever reveals it. Materials: Side faces #C8C8C8 to #D4D4D4; edges keep 1-2 px of grey anti-alias so the solid stays crisp.",
+   "timing": "12 f expo-out, then the pan.",
+   "use_when": "A pixel-font identity; one hero glyph (a currency sign, a number, a mark).",
+   "avoid_when": "Soft, organic brands.",
+   "primitive": [],
+   "materials": "Side faces #C8C8C8 to #D4D4D4; edges keep 1-2 px of grey anti-alias so the solid stays crisp.",
+   "jobs": [
+    "emphasis",
+    "logo"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
    "id": "dv-window-light-shadows",
    "name": "Soft window-blind shadows across the set",
    "category": "depth_and_3d",
@@ -8584,6 +9382,30 @@
    "bans": [],
    "weight": 1,
    "impact": 3
+  },
+  {
+   "id": "dv-yaw-orbit",
+   "name": "Camera orbits a panel in 3D",
+   "category": "depth_and_3d",
+   "family": "Camera",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A floating panel or page turns in 3D (its far side receding, the yaw flipping), sometimes with a slight wide-lens bulge on a push; new content pops in during the tail.",
+   "recipe": "Cards enterState lean on rotateY, or the camera's yaw in lib/camera.ts; barrel bow as a static SVG displacement map at two strengths. Anatomy: Yaw 2-8 deg (far side scaling 1 -> 0.85); a push of x1.57 with 3-5 % barrel bow; content pops in the tail. Sound: A level dip before the flash it leads into.",
+   "timing": "34-54 f; 5 f ease-in, peak 45 px/f, long quart-out tail.",
+   "use_when": "Product screens that should feel like objects.",
+   "avoid_when": "Yaw beyond about 15 deg on readable UI.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
   },
   {
    "id": "dv-act-composition-rule",
@@ -9647,6 +10469,31 @@
    "impact": 4
   },
   {
+   "id": "dv-opens-already-moving",
+   "name": "Shot opens already moving",
+   "category": "opening_hook",
+   "family": "Camera",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "The first frame of a film or a shot already carries a lateral drift, a pan at full speed or a decelerating push (a third of the travel in the first 10 % of the move), which settles on the subject.",
+   "recipe": "handoffShot()/carriedCut() for cuts; for the opener, a move on E.snapOut whose first frame is already partway. Anatomy: Pan 126 px/f decaying, or a push x1.43 with 36 % of the zoom in the first tenth, or a drift of 12.9 px/f plus a slow zoom-out that decays. Sound: The first music hit at about 0.15 s.",
+   "timing": "Settle 36-80 f, front-loaded; critically damped.",
+   "use_when": "The film's first frame; every shot after a transition.",
+   "avoid_when": "Starting from a parked frame (it reads as a slideshow).",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "jobs": [
+    "opening"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4
+  },
+  {
    "id": "dv-accelerating-flip-montage",
    "name": "Picture montage that accelerates behind held copy",
    "category": "pacing_structure",
@@ -9676,6 +10523,125 @@
    "bans": [],
    "weight": 3,
    "impact": 5
+  },
+  {
+   "id": "dv-empty-beat",
+   "name": "An empty beat before the logo",
+   "category": "pacing_structure",
+   "family": "Cuts and seams",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "After the last phrase blurs out, the frame stays empty (just the ground and its light) for about three quarters of a second before the logo arrives.",
+   "recipe": "A gap in the timeline with the LightField still running. Anatomy: Ground only, light field alive. Sound: Quiet.",
+   "timing": "45 f at 60 fps.",
+   "use_when": "Before the end card.",
+   "avoid_when": "Longer than about 1 s; a dead black frame without the ground's light.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 2
+  },
+  {
+   "id": "dv-log-dolly-montage",
+   "name": "Montage of constant-rate dolly-outs cut on snares",
+   "category": "pacing_structure",
+   "family": "Camera",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A run of shots (billboards, posters, streets) each with a steady pull-back at a constant log rate, cut on snares, so the whole run reads as one continuous retreat.",
+   "recipe": "<Montage> with one travel (pull) and cuts on the accent list. Anatomy: Same log rate in every shot; cuts within 45 ms of snares; the last shot longer. Sound: Cuts on snares.",
+   "timing": "Shots 25-50 f; final 85 f.",
+   "use_when": "Showing the product out in the world; the climax montage.",
+   "avoid_when": "Shots with different move directions.",
+   "primitive": [
+    "fx/Montage"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-one-still-shot",
+   "name": "One shot goes completely still",
+   "category": "pacing_structure",
+   "family": "Camera",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "After constant motion everywhere, one shot lands and holds completely still for half a second; the stillness becomes the emphasis.",
+   "recipe": "A move on E.snapOut that ends exactly; then no creep for 28 f (declare the still range). Anatomy: Pull-out into the cut accelerating, the next shot opens still moving, then stops dead. Sound: A ding on the still frame.",
+   "timing": "Out 14 f, in 20 f, still 28 f.",
+   "use_when": "The keyword of the film (\"Instantly\").",
+   "avoid_when": "More than once per film; holds longer than about 30 f.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 2
+  },
+  {
+   "id": "dv-one-take-film",
+   "name": "No hard cuts: every change hides in a camera event",
+   "category": "pacing_structure",
+   "family": "Camera transitions",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A whole film with no plain cuts: every scene change rides a cloud dive, a foreground wipe, a whip, a white-out, a zoom-through, a velocity jump or an iris; about 13 sections of 2.7 s each.",
+   "recipe": "One camera function for the film (lib/camera-moves), a seam list where every seam has a declared carrier. Anatomy: A carrier per seam from the transition families; sections 2-3 s. Sound: Transitions on whooshes and swells.",
+   "timing": "Sections about 160 f each.",
+   "use_when": "A launch film that should feel like one continuous journey.",
+   "avoid_when": "Repeating the same carrier twice in a row.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "jobs": [
+    "opening"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-shot-energy-decay",
+   "name": "Zoom energy decays shot by shot",
+   "category": "pacing_structure",
+   "family": "Camera",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "After a zoom transition, each following shot pushes in less than the one before (2.1 %/f, 0.54, 0.20, 0), so the sequence calms down without any shot being static.",
+   "recipe": "Montage with push per shot decaying (MONTAGE ratio 0.3), or per-shot creep() rates from a decaying list. Anatomy: Per shot push rate times about 0.3. Sound: The bed thins with it.",
+   "timing": "Over 65 f of shots.",
+   "use_when": "The run of shots after a big transition.",
+   "avoid_when": "Reversing the order (it reads as random).",
+   "primitive": [
+    "fx/Montage"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
   },
   {
    "id": "dv-brand-in-the-world",
@@ -9732,6 +10698,29 @@
    "ban_safe": true,
    "bans": [],
    "weight": 1
+  },
+  {
+   "id": "dv-mosaic-paint-trail",
+   "name": "Dragged paint as a pixel mosaic trailing the cursor",
+   "category": "product_demo",
+   "family": "Speed and rush",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A blob of the accent rendered in 15-20 px mosaic blocks trails behind the cursor like dragged paint, growing, its tail lagging about 10 frames, then retracting.",
+   "recipe": "Recipe: the cursor path (closed form) sampled back in time, each sample stamping blocks of a grid. Anatomy: Trail sampled from the cursor path over the last 10 f, rasterised to a block grid. Sound: None needed. Materials: The trail is a row of stamped copies of one rounded blob along the path, each older stamp darker and less saturated, all drawn through a coarse pixelation (16 px blocks at 1080p, downscale then upscale nearest-neighbour) so soft edges show 3-4 brightness steps; it grows, cruises and shrinks with the cursor's speed and is sucked into the button.",
+   "timing": "44 f; retract 35 px/f.",
+   "use_when": "Drawing, painting, brushing tools.",
+   "avoid_when": "Smooth gradients for the trail (the mosaic is the look).",
+   "primitive": [],
+   "materials": "The trail is a row of stamped copies of one rounded blob along the path, each older stamp darker and less saturated, all drawn through a coarse pixelation (16 px blocks at 1080p, downscale then upscale nearest-neighbour) so soft edges show 3-4 brightness steps; it grows, cruises and shrinks with the cursor's speed and is sucked into the button.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
   },
   {
    "id": "dv-product-in-context-footage",
@@ -10072,6 +11061,29 @@
    "bans": [],
    "weight": 3,
    "impact": 3
+  },
+  {
+   "id": "dv-discrete-smear-frames",
+   "name": "Graphic smear frames instead of motion blur",
+   "category": "texture_and_finish",
+   "family": "Speed and rush",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "Speed is drawn as designed frames, not shutter blur: 2-3 faint offset copies trail a fast card for a few frames; the nearest figure has a 50 % double behind it; a label box stretches along a hop for exactly one frame; a line lunges 64 px and smears one frame before a scale snap; words are doubled or streaked on the first frame after a cut; a logo's first frame is a rotational blur ring.",
+   "recipe": "Build: <Rush copies={{ n: 3, lag: 1, fade: 0.45 }}> (fx/Rush): 2-3 copies where the element was 1-3 frames ago, at 45 %, 20 %, 9 %, only on frames faster than 18 px/f, never across the cut; <Corners mode=\"jump\"> draws the same idea as echo bars on markers. Anatomy: Copies at decreasing opacity along the motion; one-frame stretch; one-frame ghost. Sound: A kick on the logo cut; none for most.",
+   "timing": "1-4 f.",
+   "use_when": "Stylised films where real blur would look soft; accents on single fast moments.",
+   "avoid_when": "Using it everywhere (it is an accent).",
+   "primitive": [
+    "fx/Rush"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 2
   },
   {
    "id": "dv-dither-patch-sweep",
@@ -10445,6 +11457,30 @@
    "impact": 3
   },
   {
+   "id": "dv-radiating-squares",
+   "name": "Concentric squares radiate at constant speed",
+   "category": "texture_and_finish",
+   "family": "Wipes, masks and irises",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Square outline rings are born at the centre every few frames and expand at a constant speed, thick strokes and wide gaps, like a pulse leaving the centre.",
+   "recipe": "Build: <Radiate start x y color stroke={75} speed={15}> (fx/Grids): square (or shape=\"circle\") rings born every 10-15 f (seeded, or births on the beat), growing at one constant speed; swallow={{ at }} thickens them until only hairline gaps remain. Anatomy: Births every 4-6 f; 38 px/f; stroke about 75 px, gap about 98 px at birth. Sound: None.",
+   "timing": "70 f.",
+   "use_when": "A hub, an end card, a \"broadcast\" moment.",
+   "avoid_when": "Easing the expansion (constant speed is the look).",
+   "primitive": [
+    "fx/Grids.Radiate"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
    "id": "dv-screen-texture",
    "name": "Halftone, ASCII and dither as the picture's texture",
    "category": "texture_and_finish",
@@ -10524,6 +11560,31 @@
    "bans": [],
    "weight": 1,
    "impact": 5
+  },
+  {
+   "id": "dv-speed-lines",
+   "name": "Thin speed lines while velocity is high",
+   "category": "texture_and_finish",
+   "family": "Speed and rush",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Three to five thin lines trail a fast object, converging toward it, visible only while it moves fast; comic speed dashes trail travelling items; a burst of short accent dashes streaks across horizontal bands while a title decodes; three parallel stripes shoot in at constant speed and stop dead at the hero.",
+   "recipe": "Build: <Rush lines={{ n: 5 }} lineColor> (fx/Rush): thin bars along the travel whose strength follows the speed (from 16 to 40 px/f at 60 fps), seeded rows, never drawn below the threshold. Anatomy: 1 px lines 200-400 px long, opacity tied to speed; dashes 8-60 px; stripes 20 px stopping dead. Sound: A decode bed; the music drops out on the hard stop. Materials: After the stripes stop dead at the hero, 3-4 very faint thin lines continue past it to the frame edge (opacity 20 % -> 0 along their length), as if the motion had passed through and left a trace.",
+   "timing": "With the speed; bursts 42 f; stripes 12 f linear + a hard stop.",
+   "use_when": "A thrown object, a travelling message, a decode with energy.",
+   "avoid_when": "Lines on static frames.",
+   "primitive": [
+    "fx/Rush"
+   ],
+   "materials": "After the stripes stop dead at the hero, 3-4 very faint thin lines continue past it to the frame edge (opacity 20 % -> 0 along their length), as if the motion had passed through and left a trace.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
   },
   {
    "id": "dv-string-curve-fan",
@@ -10607,6 +11668,1550 @@
    "bans": [],
    "weight": 1,
    "impact": 4
+  },
+  {
+   "id": "dv-block-burst-wipe",
+   "name": "Flat blocks burst out and reveal the next shot",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Hard-edged blocks take over the frame: outlined square blocks explode radially out of an icon and cover the frame, revealing a textured field; blocks retreat to one edge in steps while the next frame decodes; after a click, stepped white rectangles grow out of the button leaving a dark window around it; flat rectangles in two colours pop at random places for 1-2 frames each, the next shot showing through.",
+   "recipe": "<BlockStep blocks> with a seeded block list growing from the source box. Anatomy: Coverage 8.7 -> 95 % in 10 f, or +12-16 % a frame; blocks 280-560 px wide; 2-4 new blocks a step. Sound: A bubble pop; a UI click; a drum cluster.",
+   "timing": "12-29 f.",
+   "use_when": "A click that changes everything; playful, graphic brands.",
+   "avoid_when": "Gradient or glowing blocks.",
+   "primitive": [
+    "fx/BlockStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 5
+  },
+  {
+   "id": "dv-burn-to-white",
+   "name": "Scene burns out to white",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The scene over-exposes into white: a bloom ring grows while tiles fly at the camera, a collage's contrast collapses through stepped tints, or a whip pan washes to white, then a hard cut to a white page.",
+   "recipe": "<Exposure> with up = the ramp and swap at the peak, hue white. Anatomy: Luma 173-189 -> 234-237 over 5-16 f; tints stepped every 2-3 f. Sound: The loudest moment with a crack or uplifter; a whoosh.",
+   "timing": "30-40 f ramp.",
+   "use_when": "Into a white end section; the loudest moment.",
+   "avoid_when": "Tinted burns outside the brand colour.",
+   "primitive": [
+    "fx/Exposure"
+   ],
+   "ban_safe": false,
+   "bans": [
+    "orange"
+   ],
+   "ban_safe_variant": "The burn is white or a pale tint of the accent only.",
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-burst-out",
+   "name": "Things burst outward from the centre",
+   "category": "transition",
+   "family": "Speed and rush",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Satellites fly out radially, growing to about 1.45x, and leave the frame while the label swaps on a kick; a square becomes a deck of about 30 source tiles that fans and bursts along a spiral and stops in 2 frames.",
+   "recipe": "Build: burstOut(f, { at, n, from, to, grow: 1.45, spiral }) (fx/Orbit): radial positions on E.buildIn (26 f) with growth; spiral (degrees per index at full travel) fans a deck along a spiral; stop it on a HardStep. Anatomy: Radius 640 -> 925 px on an ease-in with growth; spiral burst then a hard stop. Sound: A label swap on the kick; a kick on the burst.",
+   "timing": "26-28 f.",
+   "use_when": "Releasing a hub's contents; \"from everywhere\".",
+   "avoid_when": "Calm films.",
+   "primitive": [
+    "fx/Orbit.burstOut"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 5
+  },
+  {
+   "id": "dv-collapse-to-chip",
+   "name": "Whole frame collapses into a chip or card",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "The entire image shrinks fast under heavy blur into a small rounded chip; a design shrinks into a card on paper and cuts to it living on a billboard; a collage collapses into an app-icon tile; a lockup collapses while a strip of tiles grows from its centre glyph; a sheet collapses in hard steps to one cell that turns green and sinks.",
+   "recipe": "collapse(f, { start, frames, square, into }) from MorphChain; stepped variant via HardStep widths. Anatomy: Collapse 10 f (about 230 px/f) with corner rounding and blur, then a linear shrink, a brief sharpening, a squeeze; stepped variant 835 -> 689 -> 413 -> 309 -> 277 px over 7 f. Sound: A boom; a drum (+39 ms); a sub-bass. Materials: A hairline outline (1 px white at 25 %, radius 8, inset 2 % from the text block) appears round the last words in 4 f and contracts with the photo into the chip (image corners 0 -> 40 px, extreme blur); the chip is a live window: a crop of the same photo keeps drifting about 0.75 px/f and lightens about 40 % over 70 f inside it while its label fades in 6 f.",
+   "timing": "13-64 f.",
+   "use_when": "Packing a whole scene into one object of the next scene.",
+   "avoid_when": "Collapsing on an ease-out (it must accelerate).",
+   "primitive": [
+    "fx/MorphChain"
+   ],
+   "materials": "A hairline outline (1 px white at 25 %, radius 8, inset 2 % from the text block) appears round the last words in 4 f and contracts with the photo into the chip (image corners 0 -> 40 px, extreme blur); the chip is a live window: a crop of the same photo keeps drifting about 0.75 px/f and lightens about 40 % over 70 f inside it while its label fades in 6 f.",
+   "jobs": [
+    "product"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 5
+  },
+  {
+   "id": "dv-colour-block-wipe-on",
+   "name": "A colour block wipes the line on and lingers",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A block shoots across a line (its leading edge covering 400 px in 3 frames), leaving the words behind it, its trailing edge slower; on the second line it lingers on the last word, which cools from the block's colour.",
+   "recipe": "Two Wipe edges (lead and trail) with different speeds; words revealed behind the lead. Anatomy: Lead edge fast, trail edge 3x slower; words cool 15 f. Sound: A pop.",
+   "timing": "Lead 8 f; trail 23-50 f.",
+   "use_when": "A tagline on.",
+   "avoid_when": "A second multi-hue run in the same film.",
+   "primitive": [
+    "fx/Wipe"
+   ],
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-counter-whip-swap",
+   "name": "Old layout whips out, new layout whips in from the same side",
+   "category": "transition",
+   "family": "Camera transitions",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The old composition accelerates out to the right and the new one arrives from the right moving left, decelerating: a swap that reverses direction at the cut.",
+   "recipe": "Two whips with opposite directions; declare the seam as a position seam (not velocity). Anatomy: Out quad-in to 110 px/f; in cubic-out. Sound: An onset 48 ms after the cut.",
+   "timing": "Out 30 f, in 42 f at 60 fps.",
+   "use_when": "Comparing two states (before / after, old / new).",
+   "avoid_when": "Using it as the default (it breaks velocity matching on purpose).",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-defocus-melt-under",
+   "name": "Outgoing scene melts by defocus under the next",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "The background layer blurs, smears and darkens away while the next graphic draws on top; a soft blob rises from the bottom while the shot defocuses and tints; the outgoing headline lifts 22 px in one frame and defocuses as a tilted card rises over it.",
+   "recipe": "<Dive> with a short occluder, or RackFocus levels on the outgoing layer while the next draws. Anatomy: Defocus on an ease-in, a darken or tint, a one-frame lift; the incoming element sharp from its first frame. Sound: A glockenspiel note; the voice phrase start. Materials: Before the colour finale, the photo is re-coloured into the gradient's palette as it blurs away: a faint pale blob breathes up from one corner (10 f), a second hue rises in its place (10 f), then the rest flood in from the other side and, on the same frame, the photo is gradient-mapped (dark -> deep hue, mid -> pink, light -> warm), blurred about 150 px and fades out over 16 f.",
+   "timing": "10-25 f.",
+   "use_when": "Layered scene changes where the new element arrives on top.",
+   "avoid_when": "Fading without defocus (it reads as a crossfade).",
+   "primitive": [
+    "fx/Dive"
+   ],
+   "materials": "Before the colour finale, the photo is re-coloured into the gradient's palette as it blurs away: a faint pale blob breathes up from one corner (10 f), a second hue rises in its place (10 f), then the rest flood in from the other side and, on the same frame, the photo is gradient-mapped (dark -> deep hue, mid -> pink, light -> warm), blurred about 150 px and fades out over 16 f.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-dither-zoom-cut",
+   "name": "Zoom cut through a dither dissolve",
+   "category": "transition",
+   "family": "Camera transitions",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Between two frames a globe jumps from one size to 3.4x larger through a 3-frame pixel-dither dissolve, then the view tilts on an expo-out.",
+   "recipe": "A static seeded dither mask plate stepped in three thresholds (HardStep) between the two shots. Anatomy: Scale jump on the cut; seeded dither mask dissolving over 3 f. Sound: None needed.",
+   "timing": "Cut 1 f + dither 8 f; tilt 35 f.",
+   "use_when": "Zooming into a planet, a map, an image.",
+   "avoid_when": "Fine-detail subjects (the dither eats them).",
+   "primitive": [
+    "fx/Pixel.Pixelate"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-door-split-rise",
+   "name": "Halves part like doors and the next card rises through",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The next card peeks up 31 px from the bottom edge as a preview, then the two halves of the current layout accelerate off left and right like doors, and the card rises through the gap.",
+   "recipe": "doorSplitState({ frames: 22 }) + Cards enterState for the card (peek first). Anatomy: Peek expo-out; doors ease-in; rise 13 f. Sound: A pop, a hit, a punchy accent.",
+   "timing": "Peek 23 f; doors 20-25 f; rise 13 f.",
+   "use_when": "Introducing the next product surface.",
+   "avoid_when": "Halves with content that splits a word.",
+   "primitive": [
+    "fx/CutFx.doorSplitState"
+   ],
+   "jobs": [
+    "reveal"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-dot-matrix-arrival",
+   "name": "The next shot arrives as an LED dot matrix, then melts solid",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Over the current shot the coming one appears first as round dots on a regular grid, each dot the colour of the incoming picture at that cell, in blob and band shapes that grow frame by frame (an ellipse, then full-width bands); the gaps still show the outgoing shot, so the two interleave cell by cell; then the solid image fades in under the dots and the dots go.",
+   "recipe": "Recipe: a canvas drawing circles sampled from the incoming still where mask(x, y, f) is on, then the plain image by opacity. Anatomy: Cell 12 px, dot radius 4.5 px; mask = a soft ellipse (scale 0.3 -> 1.2) plus rows switching on by a seeded hash, stepped rather than smooth; the solid image under the dots, then the dots off. Sound: A tick cluster under the music. Materials: The dots keep the picture's own colours; the gaps show the outgoing plate, never black.",
+   "timing": "About 28 f: first cluster 2 f, mask growth 14 f, solid fade 8 f, dots gone in 6 f.",
+   "use_when": "A cut into a screen, a product UI or a digital world; once per film.",
+   "avoid_when": "Calm films; a pixelate cut in the same act.",
+   "primitive": [
+    "fx/DotMatrix.DotMatrix"
+   ],
+   "materials": "The dots keep the picture's own colours; the gaps show the outgoing plate, never black.",
+   "jobs": [
+    "reveal",
+    "transition",
+    "texture"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-emerge-from-white",
+   "name": "Scene emerges from white, hero first",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A 3D room emerges from a white frame centre-out: the desk gains colour first, then the floor, the right wall, the ceiling, the window.",
+   "recipe": "Develop per region (each region a mask over the plate) with starts in order. Anatomy: Per region masks developing in order of importance. Sound: A reverse-cymbal riser.",
+   "timing": "24 f power-out.",
+   "use_when": "Revealing a set or a product scene.",
+   "avoid_when": "Without separable regions.",
+   "primitive": [
+    "fx/Develop"
+   ],
+   "jobs": [
+    "reveal"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-flash-ghost-cut",
+   "name": "Over-exposed frame with a negative ghost",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature",
+    "sting"
+   ],
+   "summary": "After a whip on an ease-in, one frame at about 92 % white carries a blurred grey negative ghost of the outgoing object, then one dark streak frame, then the next shot sliding in.",
+   "recipe": "<FlashCut whip flash streak slide pull>. Anatomy: Whip ease-in; flash 0.92 with a 0.3 ghost; one streak frame; slide in 28 f and pull back. Sound: On the swell peak.",
+   "timing": "Flash 2 f.",
+   "use_when": "A whip transition on a swell's peak.",
+   "avoid_when": "Calm films.",
+   "primitive": [
+    "fx/CutFx.FlashCut"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-fly-through-panel",
+   "name": "A soft panel flies through the camera",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "The card recedes while a large frosted white panel scales toward the camera and fills the frame, then the next scene comes out of it.",
+   "recipe": "<Dive occluder={softPanel}> with the panel scaled from 0.6 to 3 on E.buildIn. Anatomy: Card to 0.86; panel fills (centre luma 188 -> 248); next scene resolves. Sound: A glockenspiel note; a level dip before.",
+   "timing": "48 f: 14 f up, 22 f down.",
+   "use_when": "A soft, bright transition between UI scenes.",
+   "avoid_when": "Dark films (the panel reads as a flash).",
+   "primitive": [
+    "fx/Dive"
+   ],
+   "conditions": [
+    "glass as a material with real frost or refraction, not a default card style"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-gather-to-centre",
+   "name": "Side elements gather toward the centre into the cut",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "Stickers and scraps around a headline slide 45-100 px toward it while their scale holds, fastest on the last frame before the transition.",
+   "recipe": "MorphChain gather phase (linear drift then M.squeeze) or a simple E.buildIn toward the centre. Anatomy: Strong ease-in; peak 7 px/f on the last frame. Sound: The downbeat at the cut.",
+   "timing": "48 f.",
+   "use_when": "Before a cut or a pixelate on a collage.",
+   "avoid_when": "Gathering that settles.",
+   "primitive": [
+    "fx/MorphChain"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-glint-sprite-bridge",
+   "name": "Pixel glint sprite on twos bridges a cut",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature",
+    "sting"
+   ],
+   "summary": "Right after a hard cut, a tiny cluster of 3-4 bright squares (about 66, 53 and 24 px) drops diagonally across the frame, changing its arrangement every 2 frames through six poses (diagonal triplet, tall bar + square + dot, wide block + tick, two bars + dot in an L, a long bar with dots above and below, a single square), then vanishes; the new scene rises behind it on ones while the stage flashes and decays.",
+   "recipe": "Build: <Glint at x y color> (fx/Glint) on the first frame after the cut: six poses of 1-3 squares, a new pose every 4 f at 60 fps (on twos at 30), dropping down-right along a 330 px path; flip mirrors it; glintGlow(f, at) gives the stage flash (half gone in one 30 fps frame, then a 30 f tail). Anatomy: A pose table of rects in local px; the group travels a slightly accelerating path (about 34 px per pose); each square with a soft halo; stage glow to luma 36 then a decay over 30 f. Sound: A whip whoosh into the cut.",
+   "timing": "6 poses x 4 f at 60 fps (on twos at 30) = 24 f; path 340 px.",
+   "use_when": "A cut that needs a bridge with character: from a send action to the result, into a new scene on a whip.",
+   "avoid_when": "Glows on light grounds; using it more than twice per film.",
+   "primitive": [
+    "fx/Glint"
+   ],
+   "conditions": [
+    "light built into the device (core, body, falloff), never a uniform halo"
+   ],
+   "jobs": [
+    "transition"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-glitch-state-run",
+   "name": "Glitch run: distinct full-frame looks on twos",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A break out of live action in four completely different full-frame looks, each held exactly two frames, alternating bright and dark: a ghost smear with channel split, a blue block mosaic with the subject inverted, a scan-line displacement tear, a black frame with the caption collapsed into a streak; or a posterised 1-bit capture flash for four frames that breaks up.",
+   "recipe": "Recipe: a sequencer of 2-frame looks, each its own layer: offset copies, a Pixelate block level, seeded horizontal strips, a black frame with a scaleY streak. Anatomy: States held 2 f each; luma high-low-high-low (139, 29, 117, 4); bands 10-40 px tall with seeded offsets. Sound: Starts on the end of the spoken phrase; a shutter hit on the capture.",
+   "timing": "4 states x 5 f (20 f); posterise 8 f + 4 f break.",
+   "use_when": "Tearing the viewer from realism into the graphic world, once, on the end of a spoken phrase.",
+   "avoid_when": "Calm films; more than once; gradual blending between states.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 5
+  },
+  {
+   "id": "dv-glyph-handoff",
+   "name": "A glyph detaches and becomes UI",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A part of the logo (an asterisk) lifts off the wordmark and travels on an accelerating arc to become an icon in the UI; an icon dims and hands off to the matching glyph of the wordmark; a send icon flies across a cut as a smear and becomes a slider knob with the pointer.",
+   "recipe": "logoParts() to isolate the glyph, a bowed path (cursorMove's bow) to the UI icon's box, MorphChain for the shape. Anatomy: Arc on an ease-in; cross-dissolve overlap of 6-8 f; momentum continues after the cut. Sound: The film's start; or none.",
+   "timing": "18-48 f.",
+   "use_when": "Brand to product and product to brand.",
+   "avoid_when": "Glyphs that do not exist in both places.",
+   "primitive": [
+    "fx/MorphChain"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 4
+  },
+  {
+   "id": "dv-grow-into-next-scene",
+   "name": "Small element grows into the next scene",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A tooltip pill, a single cell, an inline photo pill or a white button grows (exponentially or on an expo in-out) until it is the next scene; a button can become a porthole the next subject rises into.",
+   "recipe": "growThrough({ start, frames, from, to }) (E.buildIn); the porthole is Iris at the button's size with the next subject masked inside. Anatomy: Growth x1.15 a frame while the centre moves to the frame centre; x2.44 in one frame for a cell; an inline pill accelerating its own growth in the last 7 f of a push. Sound: Water drops then a sub-drop; an onset at the cover. Materials: A notch in a custom glyph of the wordmark becomes a slit that opens into the next shot: an 8 px sliver appears exactly in the notch, then widens into a photo band whose height grows 4, 6, 12, 20, 35, 50, 75, 95, 140 px (one value a frame at 30 fps, width leading height by about 8 f) while the wordmark greys and fades to 20 %.",
+   "timing": "14-48 f; the cover frame is the cut.",
+   "use_when": "Opening a detail into its world; from a chip in a sentence to its full picture.",
+   "avoid_when": "Growth that slows before the cover (it must accelerate into the frame).",
+   "primitive": [
+    "fx/MorphChain"
+   ],
+   "materials": "A notch in a custom glyph of the wordmark becomes a slit that opens into the next shot: an 8 px sliver appears exactly in the notch, then widens into a photo band whose height grows 4, 6, 12, 20, 35, 50, 75, 95, 140 px (one value a frame at 30 fps, width leading height by about 8 f) while the wordmark greys and fades to 20 %.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 5
+  },
+  {
+   "id": "dv-implode-to-point",
+   "name": "Object implodes into a point or vortex",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A ring spirals inward into a single bright point with the caption fading inside it; a button shrinks under the cursor and the next frame is a short soft swirling ring that births the title; a white disc dissolves from the inside out.",
+   "recipe": "Build: <Implode at r x y color kind=\"spiral\"|\"vortex\"|\"hole\"> (fx/Implode): spiral: the ring coils inward on M.squeeze, posed every 5 f (radius 1, .79, .60, .17, then a point held 6 f); vortex: three tightening arcs (12 f); hole: a ground-coloured hole grows in the disc while it dims (18 f). Anatomy: Spiral radius 369 -> 291 -> 223 -> 64 -> point on twos accelerating; swirl of 2-3 soft arcs for 6 f; an inner hole growing 35 -> 218 px while the disc dims. Sound: A pop or a spoken word; no hit for the spiral. Materials: Three constructions. Burn-out: a dark soft hole grows from the disc's centre (radius 12 -> 75 % of the disc) while the outer edge defocuses 0 -> 14 px and the luma drops to about 13 %, in 18 f. Swirl: the dot grid behind bends into waves curling round the target (displacement up to 20-40 px, falling off over 400 px, roughly doubling each frame) and a trail is sucked in as a thin tongue, 8 f into the vortex. Snake: the ring's tail erases while its head keeps drawing past 360 deg on a falling radius, on twos (20 f), the caption fading under the coil.",
+   "timing": "12-20 f.",
+   "use_when": "Ending a section on a point; birthing a title from an object.",
+   "avoid_when": "Long vortices (keep under 12 f).",
+   "primitive": [
+    "fx/Implode"
+   ],
+   "materials": "Three constructions. Burn-out: a dark soft hole grows from the disc's centre (radius 12 -> 75 % of the disc) while the outer edge defocuses 0 -> 14 px and the luma drops to about 13 %, in 18 f. Swirl: the dot grid behind bends into waves curling round the target (displacement up to 20-40 px, falling off over 400 px, roughly doubling each frame) and a trail is sucked in as a thin tongue, 8 f into the vortex. Snake: the ring's tail erases while its head keeps drawing past 360 deg on a falling radius, on twos (20 f), the caption fading under the coil.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 5
+  },
+  {
+   "id": "dv-inverted-band-separator",
+   "name": "Three single frames with an inverted centre band",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "loop"
+   ],
+   "summary": "A loop resets through three one-frame images (the product UI, the key word huge, scattered tiles), each with its centre band (about 56 % of the width) colour-inverted while the outer strips stay normal; then the main shot returns.",
+   "recipe": "Build: <InvertBand at count={3} sources={[a, b, c]}> (fx/Flashes): each source one beat (2 f at 60), with an inverted copy clipped to the centre 56 % band; every image a declared flash. Anatomy: A fixed vertical band applying invert over three different sources, one frame each. Sound: None needed.",
+   "timing": "3 x 2 f; repeats every 104 f in a loop.",
+   "use_when": "A loop separator; a beat between sections in a playful film.",
+   "avoid_when": "More than once per loop.",
+   "primitive": [
+    "fx/Flashes.InvertBand"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-inverted-flash-frame",
+   "name": "One or two inverted frames between shots",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Between two shots, one frame of the scene (or two frames of the key word) appears with its colours inverted: black type on the accent, white on black.",
+   "recipe": "HardStep a one-frame layer with filter invert(1) (or a pre-built inverted card). Anatomy: Inverted colours on one or two frames; the key word alone, centred. Sound: A chat pop. Materials: The flash frame can already carry the next scene's geometry (a dashed circle split by a line, two faint perspective lines) that only arrives seconds later: a seed planted in 4 f.",
+   "timing": "1-2 f at the film rate.",
+   "use_when": "Punctuation between scenes; flashing the key word.",
+   "avoid_when": "Long flashes; more than two per film.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "materials": "The flash frame can already carry the next scene's geometry (a dashed circle split by a line, two faint perspective lines) that only arrives seconds later: a seed planted in 4 f.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 2
+  },
+  {
+   "id": "dv-iris-open",
+   "name": "Iris opens from a point already on screen",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A circle opens from the object the eye is on (the gap between two words, a sparkle, the centre of a pixel field, the space under a header) and grows by a constant ratio a frame (x1.28 at 60 fps, x1.63 at 30) until it passes the corners, revealing the next scene already moving inside; a scalloped cloud edge makes the matte the subject; it can start already 40 % wide and cover in 4 frames; a pill can widen on an ease-in as the wind-up.",
+   "recipe": "<Iris mode=\"rate\" originFrom scallop>. Anatomy: r0 about 22 px (visible on frame one), constant ratio; scallop 9 lobes at 6-8 % depth with an 8-12 px feather; inner scene zooming; porthole variant under a header. Sound: A glockenspiel note or an orchestral stab on the first frame. Materials: Scalloped iris: about 10 round lobes on the rim (lobe radius about 0.18 of the radius), edge feathered 8-12 px; it grows from about 140 px to past the frame over 72 f (ease-in, then fast) while the footage inside is already moving; the shape that started it becomes a hole in the ground colour.",
+   "timing": "8-18 f to the far corner; cloud iris 74 f in two phases (40 f expo-out, 30 f ease-in to overfill).",
+   "use_when": "Section changes; reveals from a word or a dot.",
+   "avoid_when": "Eased irises that start invisible.",
+   "primitive": [
+    "fx/Iris"
+   ],
+   "materials": "Scalloped iris: about 10 round lobes on the rim (lobe radius about 0.18 of the radius), edge feathered 8-12 px; it grows from about 140 px to past the frame over 72 f (ease-in, then fast) while the footage inside is already moving; the shape that started it becomes a hole in the ground colour.",
+   "jobs": [
+    "opening",
+    "reveal",
+    "transition"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 5
+  },
+  {
+   "id": "dv-jump-frame-hidden-cut",
+   "name": "One jump frame hides the cut inside a zoom",
+   "category": "transition",
+   "family": "Camera transitions",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "any"
+   ],
+   "summary": "A zoom builds on an exponential ease-in, then ONE frame carries a huge scale step (+30-52 %, or 71-86 % of the log move) where the cut hides, often with a brightness flash; the move then eases out in the new shot (a zoom into the input where the typed text jumps ahead; an app pulling back into a wall of app tiles).",
+   "recipe": "<SnapZoom pre post flash={{ gain }}> with the content swap on the jump frame. Anatomy: Ease-in 0.1 -> 3.7-16 %/f, the jump frame (with a +61 % luma flash optional), ease-out 11-30 f. Sound: An onset on the jump; a pop and a sub on the switch.",
+   "timing": "Build 16-20 f; jump 1 f; land 20-30 f.",
+   "use_when": "Hiding a cut or a content jump in a camera event.",
+   "avoid_when": "More than one jump frame in a move.",
+   "primitive": [
+    "fx/SnapZoom"
+   ],
+   "jobs": [
+    "transition"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 4
+  },
+  {
+   "id": "dv-letterbox-swing-open",
+   "name": "Letterbox window swings open in 3D, then flattens into a card",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A thin letterbox image window slides, opens into a perspective quad with dots at its corners, swings, then flattens into a UI card, and the shot cuts.",
+   "recipe": "Window steps for the opening plus a matrix3d swing of the quad; Markers on the corners. Anatomy: Letterbox 950 x 86 px; open 1 f; swing 6 f; flatten 2 f. Sound: A drum hit.",
+   "timing": "29 f.",
+   "use_when": "Turning an image strip into the product.",
+   "avoid_when": "Text inside the swinging window.",
+   "primitive": [
+    "fx/Window"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-letters-become-objects",
+   "name": "Letters replaced by product objects",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch"
+   ],
+   "summary": "The letters of a word are swapped in place for product renders (laptop, headphones, camera) with soft contact shadows, the row spreads, then implodes.",
+   "recipe": "Recipe: Letters positions as anchors, <Img> per letter with a FloatShadow. Anatomy: Per letter a render at the letter's box; spread circ-out; implode 13 f. Sound: None needed.",
+   "timing": "Swap 10 f; spread 90 f; implode 13 f.",
+   "use_when": "Commerce, product catalogues.",
+   "avoid_when": "Without real product renders.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-light-band-wipe",
+   "name": "A soft light band carries the old graphic out",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "The diagram slides out on an expo-in while a soft band of light travels across the frame, accelerating, taking the old graphic with it.",
+   "recipe": "<LightSweep frames={44} gain={0.55}> + the diagram's exit on E.launchIn. Recipe: an SVG fractal-noise filter stretched vertically (baseFrequency 0.06 x 0.0015) coloured to the accent, masked by a horizontal gradient, translated; bake it as a plate for render speed. Anatomy: Band about 0.45 of the width; ease-in. Sound: Voice. Materials: The light is textured: fine vertical streaks (6-20 px, plus or minus 15 % luminance) run through the band like a light curtain or a long-exposure aurora, its edge falling off to black over about 300 px; it drifts slowly, then accelerates across as the wipe (about 44 f).",
+   "timing": "44 f.",
+   "use_when": "Clearing a diagram or chart.",
+   "avoid_when": "A glow that is not part of the band (a halo round type).",
+   "primitive": [
+    "fx/Exposure.LightSweep"
+   ],
+   "materials": "The light is textured: fine vertical streaks (6-20 px, plus or minus 15 % luminance) run through the band like a light curtain or a long-exposure aurora, its edge falling off to black over about 300 px; it drifts slowly, then accelerates across as the wipe (about 44 f).",
+   "jobs": [
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-light-front-iris",
+   "name": "UI revealed inside a growing circle whose edge is a band of light",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "After the logo, the product UI appears inside a circle growing from a corner of the panel, and the circle's edge is a band of light rather than a line: the UI brightens to white at the front, saturates to the accent behind it, then falls off to the ground like a scanner passing, and the UI under the band keeps full detail.",
+   "recipe": "Iris for the mask plus a ring layer of the same radius in screen blend (a baked radial band PNG scaled by transform). Anatomy: Radius expo-out from about 150 px to beyond the diagonal; edge band 90-120 px: an inner white wash at +60 % luminance, the accent at 70 % alpha in the middle, an outer fade to the ground; the ring thins and fades as it leaves the frame. Sound: Cut on an 8th onset. Materials: The band is screen-blended over the UI, never replacing it.",
+   "timing": "76 f; the cut on an 8th.",
+   "use_when": "The first product reveal from a corner or a sidebar.",
+   "avoid_when": "Dark-on-dark with no accent; repeated reveals.",
+   "primitive": [
+    "fx/Glow.LightFront"
+   ],
+   "materials": "The band is screen-blended over the UI, never replacing it.",
+   "jobs": [
+    "reveal",
+    "product",
+    "light"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-line-split-swap",
+   "name": "Line parts from the middle, layout swaps on frame three",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The two halves of a title move apart from the middle (7 px, then 31-38 px) and on the third frame the whole layout is replaced.",
+   "recipe": "doorSplitState on the title layer only, swap on its third frame. Anatomy: Ease-in split; swap on frame 3. Sound: An orchestral stab.",
+   "timing": "6 f at 60 fps.",
+   "use_when": "A quick change of scene from a centred title.",
+   "avoid_when": "Long splits (the swap must come early).",
+   "primitive": [
+    "fx/CutFx.doorSplitState"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-match-into-world",
+   "name": "Flat layout cuts into the same layout in the world",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A flat graphic layout pans (or the camera pushes toward a monitor) and cuts into real footage where the same layout is a street hoarding or the monitor's content full-frame: the design steps out into the world.",
+   "recipe": "zoomThrough to the monitor's box then handoffShot; for the hoarding, match the layout's corners with a matrix3d onto the footage. Anatomy: Exit ease-in; the matched element at the same screen place on both sides; the cut can be silent. Sound: The cut on a beat with a boom; or a silent cut inside a silence.",
+   "timing": "Pre 42 f; post 145 f.",
+   "use_when": "Showing a design or a screen in use.",
+   "avoid_when": "Without footage that matches the layout's geometry.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-object-becomes-ui",
+   "name": "Small object becomes the next word, card or cell",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A chip, dot, button or circle carries the film into its next state instead of a cut: a squeezed chip swells +52 % and is replaced by a word at the chip's pre-swell size; a dot becomes a text caret in 2 frames and drops into the field; an icon box springs into a pill; a chosen comment collapses into a request pill; a button turns accent and shrinks into the first cell of a chart; solid capsules fly in, flash and become labelled chips; a circle grows and morphs into a rounded card; two shapes merge and pop to a new colour; a toast collapses and a larger card blooms in its place.",
+   "recipe": "<MorphChain states windows> (house: swell on M.swell 24 f, collapse 16-20 f, camera push on E.glideOut from the swap). Anatomy: Gather (linear drift, then a squeeze), swell +40-60 % on an ease-in straight into the swap, the new content at the old object's pre-swell size; radius and aspect animate with height leading width; colour flashes 2 f on a merge; one spring allowed (13 % overshoot). Sound: A beat or kick on the swap; a soft UI tap the frame before a heavy thud.",
+   "timing": "Hand-offs every 8-32 f; swell 12-24 f; caret 2 f + an over-damped 8 f drop; card bloom 4 + 42 f.",
+   "use_when": "Any handoff between product states; the strongest transition family for UI films.",
+   "avoid_when": "Morphing objects with no relation; slow morphs (keep each step short).",
+   "primitive": [
+    "fx/MorphChain"
+   ],
+   "jobs": [
+    "product"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 4
+  },
+  {
+   "id": "dv-object-carries-cut",
+   "name": "An object continues through the cut in a new role",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "One element keeps moving across a hard cut and changes role on the other side: an avatar accelerating upward becomes the small header of a chat; a mark keeps shrinking while the background cuts; a finished line keeps breathing apart through the cut; a prompt card drifts up and jumps (+10.5 %) into a sent message bubble.",
+   "recipe": "handoffShot(carry: ['x','y','k']) with the element drawn in both shots at the matched place; declare a velocity seam. Anatomy: Same screen position and speed on both sides (±20-30 px); scale may jump up to +10 % hidden by the cut. Sound: The cut on the beat (-27 ms); a footstep-like hit after. Materials: The logo icon survives the wipe: as a feathered white wipe erases the wordmark, the icon stays fully visible on top of the white for one frame, and on the next it is a small black glyph on a white tile already in its slot inside the new UI (a position jump of about 120 px).",
+   "timing": "Pre-cut 15-42 f ease-in; post-cut 23-89 f.",
+   "use_when": "Linking two states of the product; the brand mark entering the product.",
+   "avoid_when": "Changing the element's speed at the cut.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "materials": "The logo icon survives the wipe: as a feathered white wipe erases the wordmark, the icon stays fully visible on top of the white for one frame, and on the next it is a small black glyph on a white tile already in its slot inside the new UI (a position jump of about 120 px).",
+   "jobs": [
+    "transition"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 4
+  },
+  {
+   "id": "dv-one-blank-frame",
+   "name": "Cut through exactly one blank frame",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A hard cut through exactly one empty frame (black, pure white, or the brand's background colour) separates two sections like a breath.",
+   "recipe": "blackDipState({ black: 1, fadeUp: 0 }) or a one-frame flat Sequence. Anatomy: One full frame of a flat colour. Sound: Between voice words, or a shutter click and a drum just after. Materials: A panel can start from one empty frame of its ground (2 f) before the first block, again before a loop restart.",
+   "timing": "1 f at the film rate (2-3 f at 60 fps).",
+   "use_when": "Between story and finale; a section break inside a voice-led film.",
+   "avoid_when": "More than one per minute; two frames (that reads as a glitch).",
+   "primitive": [
+    "fx/CutFx.blackDipState"
+   ],
+   "materials": "A panel can start from one empty frame of its ground (2 f) before the first block, again before a loop restart.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 3
+  },
+  {
+   "id": "dv-overlap-tiles-cut",
+   "name": "Next scene's tiles fly over the outgoing shot",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Tiles of the next scene fly into the frame over the outgoing card a few frames before the cut; or the old panels hold 1-3 frames over the new photo, then blank tiles re-tile into the new layout and fill.",
+   "recipe": "Cards enterState per tile starting 8 f before the cut; HardStep holds for the overlap. Anatomy: Tiles settle expo (34 % on the first moving frame); overlap 4 f; re-tile 12 f, fill 12-20 f. Sound: An onset at the tiles; speech then a glockenspiel.",
+   "timing": "38-108 f.",
+   "use_when": "Grid-based films; image-led sequences.",
+   "avoid_when": "Tiles that do not belong to the next scene.",
+   "primitive": [
+    "fx/Cards"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2
+  },
+  {
+   "id": "dv-overscale-bridge-frame",
+   "name": "One panel at 2x for one frame",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "From a four-quadrant grid, all quadrants make their last move and on the final frame one quadrant fills the frame at 2x for exactly one frame, then a hard cut.",
+   "recipe": "HardStep the cell's scale to frame size for one frame. Anatomy: A one-frame full-frame of one cell, scaled 2x. Sound: None needed.",
+   "timing": "1 f.",
+   "use_when": "Leaving a grid of shots.",
+   "avoid_when": "More than one frame.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-panel-push-wipe",
+   "name": "Panel pushes the shot off in two stages",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A solid panel wipes in from one side to half the frame, holds while something starts inside it (typing begins), then completes the wipe; or a coloured panel floods one side in the last frames; or a hard-edged panel wipes across in 3 frames already carrying the next word.",
+   "recipe": "Two <Wipe> runs in a row, the second starting as the first lands; a hard wipe with feather 0. Anatomy: Stage 1 expo-out to half, near-hold 8 f, stage 2; hard wipe 0 -> 58 -> 74 -> 95 % coverage. Sound: Voice; a riser into stage 2. Materials: Both layers smear: at the fastest frames the entering panel and the pushed footage carry a horizontal blur of 25-35 px (blur = speed x 0.3), the footage pushed at 0.64x the edge speed and the panel's edge soft over about 30 px; the blur is gone by the park, 24 f in.",
+   "timing": "44 + 48 f; hard wipe 8 f + settle 13 f.",
+   "use_when": "Moving from footage to product UI; a beat that needs a hard graphic change.",
+   "avoid_when": "Gradient panels that are not baked and dithered.",
+   "primitive": [
+    "fx/Wipe"
+   ],
+   "materials": "Both layers smear: at the fastest frames the entering panel and the pushed footage carry a horizontal blur of 25-35 px (blur = speed x 0.3), the footage pushed at 0.64x the edge speed and the panel's edge soft over about 30 px; the blur is gone by the park, 24 f in.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-parts-reassemble-shape",
+   "name": "Parts detach and reassemble into a big shape",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "The type is cut away and its coloured tag fills detach as bars, rotate and slide into a giant arrow that fills the panel, then exit.",
+   "recipe": "assembleState with parts given explicit from offsets and rotations. Anatomy: Bars rotate and translate to target slots; quart-in exit. Sound: None needed.",
+   "timing": "Assemble 30 f; exit 18 f.",
+   "use_when": "Turning labels into a direction (next, forward, go).",
+   "avoid_when": "Too many parts (more than about 8).",
+   "primitive": [
+    "fx/Wordmark"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-period-becomes-object",
+   "name": "The full stop becomes the next object",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The last mark of a sentence (a period, a signature's dot, a hero point, a bar) turns into the next thing: it scales into a shaded ball and drips a stem that becomes the next shot's line; pops oversized, swells and drops onto a planet; grows exponentially to frame centre and cuts to an inverted frame at the same size; swells into a planet disc; or a bar retracts into a sphere that falls into the end card.",
+   "recipe": "MorphChain from the period's measured box (FontGate) to a ball, then growThrough or a drop on E.buildIn; the full-stop zoom via zoomThrough with an inverted next frame. Anatomy: Pop that starts oversized (r 14 -> 6.6 px), swell on cubic-in, drop on a quart-in with gravity (73 px/f); exponential growth x1.10 -> x1.26 a frame; a stem with 5 % overshoot. Sound: An onset on the pop, a UI pop and kicks on the drop; voice names the next thing. Materials: The swollen dot is first a flat, soft-edged disc with grain (edge feather 10 % of the radius, grain about 6 levels that changes on held frames) for 12 f, then real footage develops into it from one edge (a diagonal mask in 2-3 steps on twos) until it is a photograph.",
+   "timing": "28-75 f in all; pop 20 f, swell 10 f, drop 17-25 f.",
+   "use_when": "Ending a statement into the next scene; into the end card.",
+   "avoid_when": "Punctuation the viewer has not noticed (give it a beat).",
+   "primitive": [
+    "fx/MorphChain"
+   ],
+   "materials": "The swollen dot is first a flat, soft-edged disc with grain (edge feather 10 % of the radius, grain about 6 levels that changes on held frames) for 12 f, then real footage develops into it from one edge (a diagonal mask in 2-3 steps on twos) until it is a photograph.",
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4,
+   "impact": 5
+  },
+  {
+   "id": "dv-pixel-dissolve-to-dots",
+   "name": "Tags dissolve through low-res pixels into dots",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Tags breathe wider slowly, then dissolve as pale low-resolution pixel blocks into two small dots that hold.",
+   "recipe": "Pixelate out-phase on the tags, then two dots via HardStep. Anatomy: Breathe +3.8 %; dissolve 5 f; dots hold 8 f. Sound: A plucked note.",
+   "timing": "65 f in all.",
+   "use_when": "Ending a data moment into a minimal mark.",
+   "avoid_when": "Large blocks.",
+   "primitive": [
+    "fx/Pixel.Pixelate"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-pixel-stair-wipe",
+   "name": "Pixel-staircase wipe stepped on twos",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A wipe in the next scene's colour built from 22-23 px square blocks advances diagonally with a random staircase edge, stepped on twos, with a faint fringe; or horizontal bands of the next scene slide in over the old with a dither-staircase edge.",
+   "recipe": "Build: <StairWipe at color outgoing incoming> (fx/Grids): 22 px blocks advance diagonally (35 deg) with a seeded staircase edge (12 %), stepped at 12.5 fps, 80 % of the coverage in the middle on M.pixelStair (55 f); a fringe of blocks in the next scene's colour leads it (fringeAlpha={1} for a solid accent edge); a wipe seam. Anatomy: Coverage 0.3 -> 22 -> 62 -> 85 -> 99 % on 12.5 fps steps, 80 % in the middle 0.36 s; cells 8-23 px. Sound: A riser peak; crunchy clicks under the steps.",
+   "timing": "16-55 f.",
+   "use_when": "Image or pixel-flavoured films; a beat with crunchy clicks.",
+   "avoid_when": "Smooth films.",
+   "primitive": [
+    "fx/Grids.StairWipe"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 5
+  },
+  {
+   "id": "dv-punch-in-cut",
+   "name": "Cut tighter mid-move, same vector",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A hard cut to a 1.16-2.5x closer framing of the same thing, inside a continuing move: the content keeps moving the same way and decelerates, or the close-up pulls back 9 % on a decay, or just creeps on; a jump cut can skip forward inside an expansion.",
+   "recipe": "handoffShot with a scale factor (carry x, y); SnapZoom with pre: 0 for the one-frame version. Anatomy: Scale step 1.16-2.5x on the cut; the motion vector continues; decay or creep after; two one-frame punch-ins can coexist with two marker sets. Sound: On the beat (+40 ms) or a keypress just before.",
+   "timing": "Settle 30-70 f (34 % in the first 10 %); creep 0.4-0.6 %/f.",
+   "use_when": "Emphasis on a word, a field, a button while the action continues.",
+   "avoid_when": "Cutting to the same scale (a jump cut that reads as a mistake).",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 7,
+   "impact": 4
+  },
+  {
+   "id": "dv-ring-curl",
+   "name": "A straight row curls into a ring",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A strip of tiles starts rotating with acceleration and both ends wrap around (the leader over the top, the tail along the bottom) until the row closes into a ring, on the kick after a short silence.",
+   "recipe": "Build: <RingCurl at n pitch x y render={(i) => tile}> (fx/Gather): every tile rides a curve bent from the row into a circle of the same length by its arc length (32 f on E.buildIn: it closes at speed), the whole turning 45 deg, then still turning and slowing (tau 10 f). Anatomy: Arc-length parametrisation: tiles move along a path that morphs from a line to a circle while the whole rotates. Sound: A kick exactly on the fastest frame after a 0.35 s silence.",
+   "timing": "32 f on an ease-in; the ring closes 4-6 f after the fastest frame.",
+   "use_when": "Turning a list of things into a cycle or an ecosystem.",
+   "avoid_when": "Fewer than 5 tiles.",
+   "primitive": [
+    "fx/Gather.RingCurl"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-rush-ramp-cut",
+   "name": "Rush: geometric acceleration into the cut",
+   "category": "transition",
+   "family": "Speed and rush",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "any"
+   ],
+   "summary": "The rush: a line or a scroll drifts, then roughly doubles its speed every frame (2, 2, 3, 5, 7, 10, 18, 34, 88 px/f) and is hard-cut at the peak; the next shot opens at that speed and halves it every frame (259, 131, 54, 30, 18 px/f); a card can whip crisply (no blur) into the cut and be caught by a decelerating pan; shots can arrive smeared and settle their pan.",
+   "recipe": "Build: <Rush cut dir vCut from out in lines lineColor> (fx/Rush): the outgoing layer builds on lib/handoff launch() (speed roughly doubling every 24 fps frame) and is cut on its fastest frame; the incoming one opens at the cut speed and halves it every 24 fps frame (carry()); copies draws 2-3 faint smear copies on the fastest frames, lines thin speed lines above 16 px/f; declares a velocity seam and camera blur above 100 px/f. Anatomy: Ratio x1.4-2.4 a frame on the way in; x0.5 a frame on the way out; crisp text up to about 52 px/f. Sound: A speech onset or a sub on the cut; a punchy hit.",
+   "timing": "Exit 30-43 f; entry decay 30 f.",
+   "use_when": "Energy peaks; the hook of a launch; moving from one product moment to the next with force.",
+   "avoid_when": "More than two or three rushes per film; slowing before the cut.",
+   "primitive": [
+    "fx/Rush"
+   ],
+   "jobs": [
+    "transition"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-shape-match-cut",
+   "name": "Shape contracts and hands its outline to the next shot",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "Before each caption cut an outline circle contracts faster (expo-in in its last 3 frames) and the next shot opens on another outline of the same shape; coral circles shrink and cut to a photo with matching thin outlines that contract in place.",
+   "recipe": "Outline as an SVG ring; handoffShot carrying its radius. Anatomy: Outline contracts on an expo-in; the next outline at the same size and place. Sound: A kick on the cut (-17 ms).",
+   "timing": "Last 6 f expo-in; outlines settle 16 f.",
+   "use_when": "Photo films; chaining captions with one shape motif.",
+   "avoid_when": "Changing the motif shape between shots.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-slot-behind-line",
+   "name": "A text-height slot opens behind the line onto the photo",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "On the word swap a hard-edged slot exactly the height of the text opens behind the line and shows the coming photo; the type flips from grey to white inside it and the caret becomes a selection block for one frame; later the photo fills the frame.",
+   "recipe": "Photo clipped by an inset to the line's band, a colour step on the text, then a full-frame Photo fade. Anatomy: Slot about 9 % of the frame tall with hard edges, the photo blurred 4 px inside it; text ink -> white as the slot opens; caret block about 0.6 em at 40 % for 2 f; the full frame fades in 40 f later. Sound: The music returns on the reveal hit after a short dropout.",
+   "timing": "Caret block 2 f, slot fades in 6 f, colour flip 2 f, full frame over 40 f.",
+   "use_when": "A line that introduces imagery: a new way to see.",
+   "avoid_when": "Multi-line copy.",
+   "primitive": [],
+   "jobs": [
+    "reveal",
+    "transition"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-snap-back-to-wide",
+   "name": "Snap back from a giant word to the full line",
+   "category": "transition",
+   "family": "Camera transitions",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "From a giant first word (or a line panning off the edge while it types), a hard cut to the full line at about 36-97 % of the scale, landing slightly small and blurred and growing to rest as the defocus clears.",
+   "recipe": "punchOut-style cut with scaleBreath mode 'same' (open 0.97) and a short defocus. Anatomy: Cut lands at 0.974 scale, grows 6 f; defocus clears; the pan before runs on an expo-in. Sound: A speech hit 2 f before the cut.",
+   "timing": "1 f + 12 f at 60 fps; pans 56 f.",
+   "use_when": "Revealing the whole sentence after a close-up word.",
+   "avoid_when": "Landing exactly at rest (the slight undersize carries the motion).",
+   "primitive": [
+    "fx/SnapZoom"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-speed-contrast-cut",
+   "name": "Full blur straight into a near-static calm shot",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "From a 6800 px/s smear on white, cut straight to a calm, sharp, full-bleed landscape with a small tagline; the frame before the blur cut can show the outgoing scene sharp in an earlier position, a frozen anchor before the smear.",
+   "recipe": "Scroll or whip at peak speed with the blur pass on its frames, cut to a Photo with a 0.3 px/f drift. Anatomy: Blur at peak speed on the last frames; one sharp anchor frame; the calm shot barely moving. Sound: The blur's whoosh cut dead by the calm shot.",
+   "timing": "Cut on the grid (+120 ms vs the beat).",
+   "use_when": "Contrast between product speed and a calm promise.",
+   "avoid_when": "Blending the two speeds.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-spin-up-into-cut",
+   "name": "Spin accelerates and the frame empties at peak",
+   "category": "transition",
+   "family": "Camera transitions",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A field of tiles spins faster each frame (x1.15-1.43 a frame) while zooming out; the words are erased one every 2 frames so the frame is text-free at peak spin, the cut lands on the fastest frame and the strongest accent, and the spin decays after.",
+   "recipe": "Build: spinUp(f, { start, cut, from: 0.35, to: 7.25 }) (fx/Orbit): the spin grows by one ratio a frame into the cut on its fastest frame and decays after it with no speed step (rotationDecay from the peak); zoom out on the camera, erase the words on HardStep every 4 f so the frame is empty at the peak. Anatomy: Spin 0.7 -> 14.5 deg/f, zoom x0.90; words erased every 4 f at 60 fps; empty for 6-8 f. Sound: The peak on the strongest accent (a kick); a pop after the cut.",
+   "timing": "Spin-up 23-30 f; empty 8 f; decay 33 f.",
+   "use_when": "A galaxy of features or sources, into the next act.",
+   "avoid_when": "Text left on screen at peak spin.",
+   "primitive": [
+    "fx/Orbit.spinUp"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-split-flip-frame",
+   "name": "Frame halves flip to a new ground in turn",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The left half of the frame flips to a new ground for 3 frames, then the right half (the left reverting), then the whole frame.",
+   "recipe": "HardStep on two half-frame layers. Anatomy: Hard halves, one beat each. Sound: A snare, then a whoosh.",
+   "timing": "6 + 8 f, then full.",
+   "use_when": "A rhythmic flip into an end section.",
+   "avoid_when": "More than one per film.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-stamp-replicate",
+   "name": "One block stamped into a plus of five",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "On one frame the loader block is replicated into a plus of five blocks (each in a different phase of its animation) at 58 % scale, which then pulse smaller twice.",
+   "recipe": "HardStep the copies on one frame; each copy's animation offset by a phase. Anatomy: One-frame stamp; pulses -15 % then -11 % expo-out. Sound: An orchestral stab (+10 ms).",
+   "timing": "Stamp 1 f; pulses 22 f each.",
+   "use_when": "A loader or icon multiplying into many.",
+   "avoid_when": "Without a loop-able element to replicate.",
+   "primitive": [
+    "fx/HardStep"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-streak-whip-frames",
+   "name": "Two frames of streaks with stripe artefacts",
+   "category": "transition",
+   "family": "Speed and rush",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Two frames of heavy horizontal streaking with vertical stripe artefacts (like a smeared barcode), then the next page arrives.",
+   "recipe": "FlashCut's streak frame without the flash (streak only), held 2 f. Anatomy: The outgoing image stretched horizontally and cut into lines. Sound: A whoosh.",
+   "timing": "4 f at 60 fps.",
+   "use_when": "A whip between two product pages.",
+   "avoid_when": "More than two frames.",
+   "primitive": [
+    "fx/CutFx"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-swap-at-blur-peak",
+   "name": "The swap hides in a blur peak",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "workhorse",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "During a whip or a defocus pulse the content changes where the eye cannot hold it: typed words are replaced mid-whip; a window zooms out into extreme blur and a notification resolves at the same spot; a box goes fully soft and comes back in a new layout; a big blurred blob resolves into the next header; a cut lands blurred and morphs into a near-identical sharp image; a pill becomes a portrait card behind a defocus pulse.",
+   "recipe": "defocusPulse({ at, peakSigma, scaleJump }) + swapAt(peak); whip + swapAt for the whip version. Anatomy: Sharpness falls to near zero for 2-4 f; swap on the softest frame; the new element resolves as a lens would (focus lagging position). Sound: A whoosh and sub on the peak; an impact on the resolve.",
+   "timing": "24-60 f; blur peak 4-8 f; resolve tau 6-7 f.",
+   "use_when": "Any content change inside a fast move.",
+   "avoid_when": "Swapping on a sharp frame.",
+   "primitive": [
+    "fx/SnapZoom"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 5,
+   "impact": 5
+  },
+  {
+   "id": "dv-tapped-blur-ghosts",
+   "name": "Motion blur drawn as a few visible copies",
+   "category": "transition",
+   "family": "Speed and rush",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "On the fastest frames the blur is not a smooth streak: a launching dot is two or three overlapping soft discs stacked along its path, a whipping sentence prints three or four offset copies of each word; speed reads as a graphic.",
+   "recipe": "Recipe: render the moving layer four times at sub-frame offsets with opacity 1/4 each (the shutter with four samples and no extra blur). Anatomy: 3-4 taps at t - k dt / 4, each 25-35 % opacity, plus about 6 px of blur; dot taps 9-12 px apart, text taps about 18 px apart; only above about 12 px/f of travel. Sound: Whooshes on the whips.",
+   "timing": "6-12 f per move.",
+   "use_when": "Graphic, flat films; dots and type in flight.",
+   "avoid_when": "Photographic footage; films that use true shutter blur elsewhere.",
+   "primitive": [],
+   "jobs": [
+    "emphasis",
+    "transition"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
+   "id": "dv-text-collapses-to-object",
+   "name": "Text collapses into an object",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "A finished line stops being text and becomes a thing: both ends rush to the centre while it thickens into a short fat pill (area kept), it is replaced by one solid bar of its size that slides into a chat pill, it blooms and squeezes into a small pill, it heats and collapses to a few dots that draw an icon, blocks advance and eat it from its end, or it is erased in chunks while a square grows in the cleared space.",
+   "recipe": "<MorphChain states={[line, bar|pill|dots, object]}> with a collapse window (ease-in, blur 12-20 px) and a one-frame CHAIN_STEP swap. Anatomy: Width 258 -> 66 px, height 10 -> 28 (area constant) on a cubic-in; a solid bar for 3 f; dots for 2 f then strokes; chunks of 2-3 letters a frame. Sound: A lead-in to a kick; a kick on the eat; a click on the erase. Materials: The object can be a flip-book pixel sprite filled with a grainy two-hue gradient (cells about 40 px, gradient at 135 deg, monochrome grain at about 4 %, rim cells in a deeper shade), one drawing every 4 f, pushing the next word aside as it widens.",
+   "timing": "10-50 f; the collapse itself 6-16 f.",
+   "use_when": "Moving from a statement to the product (the line becomes the input, the button, the icon).",
+   "avoid_when": "Collapsing a line before it has been read.",
+   "primitive": [
+    "fx/MorphChain"
+   ],
+   "materials": "The object can be a flip-book pixel sprite filled with a grainy two-hue gradient (cells about 40 px, gradient at 135 deg, monochrome grain at about 4 %, rim cells in a deeper shade), one drawing every 4 f, pushing the next word aside as it widens.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 6,
+   "impact": 5
+  },
+  {
+   "id": "dv-through-the-ring",
+   "name": "Camera passes through a ring of cards",
+   "category": "transition",
+   "family": "Camera transitions",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A ring of cards seen down its axis: thin radial slivers grow in from the frame edges and thicken (tints first, then real thumbnails); the camera rises and pushes through the ring, the arch of cards sweeps out of frame, and the first word is already there on the other side.",
+   "recipe": "Cards on a 3D ring (rotateY per card, translateZ radius) with the camera's pitch and k. Anatomy: Slivers coverage 1 -> 37 %; push with vertical flow 2 -> 43 px/f; sweep 13 f; word 20 f expo-out. Sound: A chat pop; a sub-drop as the camera exits the ring. Materials: The ring's cards arrive as needle-like spikes radiating from the frame edges in a two-hue gradient (outer warm, inner deep), pure colour for 12 f; as they widen they reveal video cards seen edge-on, still tinted (colour blend, opacity = 1 - width), and the tint drains in 8 f to true colour.",
+   "timing": "Slivers 28 f; push 60 f.",
+   "use_when": "A gallery of examples as a portal.",
+   "avoid_when": "Flat rings (it needs the perspective).",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "materials": "The ring's cards arrive as needle-like spikes radiating from the frame edges in a two-hue gradient (outer warm, inner deep), pure colour for 12 f; as they widen they reveal video cards seen edge-on, still tinted (colour blend, opacity = 1 - width), and the tint drains in 8 f to true colour.",
+   "conditions": [
+    "gradients baked as dithered plates and moved by transform"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 4
+  },
+  {
+   "id": "dv-type-window",
+   "name": "Title fills with the next image and takes over",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A title pushes in accelerating, punches +11 % in one frame, its letters fill with the next image, giant echo copies appear, and the image takes over the frame.",
+   "recipe": "<TypeWindow> (letters as the window, stepped growth) with a SnapZoom punch. Anatomy: Push +6 % accelerating; punch 1 f; window 23 f; step-out 1 f. Sound: A drum hit at +45 dB on the step-out.",
+   "timing": "95 f in all.",
+   "use_when": "The title before the main section.",
+   "avoid_when": "Thin letters.",
+   "primitive": [
+    "fx/Window"
+   ],
+   "jobs": [
+    "reveal"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-vertical-carousel-handover",
+   "name": "Line leaves upward as the next rises from below",
+   "category": "transition",
+   "family": "Camera transitions",
+   "role": "workhorse",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "A finished line or status accelerates upward (with a little vertical blur) and leaves, while the next line or list rises from below, blurred, and eases into place: the reading direction becomes the motion.",
+   "recipe": "Words exit 'launch' upward + the next Words rising with focusIn. Anatomy: Exit ease-in 2 -> 19 px/f; entry rise 83 px blurred, easing 8-16 f. Sound: A punchy hit on the arrival.",
+   "timing": "Exit 20 f; entry 16-20 f; overlap 4-6 f.",
+   "use_when": "Sequences of statements or status steps.",
+   "avoid_when": "Both lines on screen and sharp at once.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-vesica-portal",
+   "name": "Two discs converge and their overlap opens a world",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Two dark spheres slide together until only their lens-shaped overlap remains at the centre, rimmed in light, and the next world shows through that overlap.",
+   "recipe": "Recipe: an SVG mask made of the intersection of two circles (clipPath inside clipPath), positions in closed form. Anatomy: Intersection of two circles as the mask; quad in-out. Sound: The beat (+10 ms); a glockenspiel just before.",
+   "timing": "12 f at 60 fps.",
+   "use_when": "Two ideas meeting; a hero reveal.",
+   "avoid_when": "Discs that do not read as objects.",
+   "primitive": [],
+   "jobs": [
+    "reveal"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-whip-to-dark-frame",
+   "name": "Exit at speed into a dark frame, next world fades up",
+   "category": "transition",
+   "family": "Camera transitions",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "any"
+   ],
+   "summary": "The outgoing shot accelerates away (an orbit ramping into a 3-frame whip, an assembly flying off, a pull-out that darkens, a last line pushing in while the floor glow sinks, a logo drifting back as it fades) into one or two dark frames, and the next world fades up from them in a few frames.",
+   "recipe": "blackDipState({ cut, black: 2, fadeUp: 8 }) after an exit on E.launchIn. Anatomy: Exit ease-in to 15 %/f or 308 px/f; 1-2 black frames; fade-up about 10 f. Sound: A beat on the black (+2 ms); a music gap begins; sub-bass under the glow.",
+   "timing": "Exit 18-50 f; black 2-5 f at 60; fade-up 8-10 f.",
+   "use_when": "Changing worlds; before the end card.",
+   "avoid_when": "Long blacks (over 2 frames at 24-30 fps).",
+   "primitive": [
+    "fx/CutFx.blackDipState"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3,
+   "impact": 3
+  },
+  {
+   "id": "dv-white-dip-fade",
+   "name": "Short fade through white between sections",
+   "category": "transition",
+   "family": "Cuts and seams",
+   "role": "accent",
+   "energy": "calm",
+   "formats": [
+    "any"
+   ],
+   "summary": "Section changes on a white ground use quick fades through white (10-28 f at 60 fps).",
+   "recipe": "blackDipState with the ground colour white and fadeUp 8-14 f. Anatomy: Opacity dip to the white ground and back. Sound: Often a ding or a pluck.",
+   "timing": "10-28 f.",
+   "use_when": "Light-ground films.",
+   "avoid_when": "Dark grounds (use a cut).",
+   "primitive": [
+    "fx/CutFx.blackDipState"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1
+  },
+  {
+   "id": "dv-window-step",
+   "name": "Next shot opens as a window; the old shot steps back",
+   "category": "transition",
+   "family": "Wipes, masks and irises",
+   "role": "signature",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A rectangle opens around the product showing the next shot at 1:1 while the old shot shrinks into a card on paper in a few held steps; or a framed photo unfolds from portrait to landscape in two stages.",
+   "recipe": "<Window rects oldScale cadence>. Anatomy: Old shot 1 -> 0.94 -> 0.80 on 16 fps holds; window grows each step. Sound: Sub-bass and a kick.",
+   "timing": "15-48 f.",
+   "use_when": "Product-to-world transitions; a framed image growing.",
+   "avoid_when": "Smooth tweens (the steps are the look).",
+   "primitive": [
+    "fx/Window"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 2,
+   "impact": 4
+  },
+  {
+   "id": "dv-z-swarm-swap",
+   "name": "Old words step into depth, new words step out",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "Copies of the old words shrink into depth in steps while copies of the new line grow out of depth along the same axis, jitter for a few frames and lock; trails fade.",
+   "recipe": "Build: <ZSwarm at x y old={line} next={line}> (fx/Gather): the old line steps back -0.15 scale per 30 fps frame (6 steps), the new one steps out from 0.2 by +0.10 (8 steps, 4 f behind), each step leaving two fading copies (45 %, 20 %); the new line jitters 6 f (6 px) and locks: 26 f in all. Anatomy: Old -0.15 scale a frame for 6 f, new +0.10 a frame for 8 f, linear; jitter 4 f; trails of each step fading. Sound: A punchy impact at full scale.",
+   "timing": "26 f at 60 fps.",
+   "use_when": "A techno title change; a hook line swap.",
+   "avoid_when": "Calm films.",
+   "primitive": [
+    "fx/Gather.ZSwarm"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
+  },
+  {
+   "id": "dv-zoom-through-glyph",
+   "name": "Zoom into a letter until it fills the frame",
+   "category": "transition",
+   "family": "Morphs and object handoffs",
+   "role": "signature",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "The middle letters of a word scale up inside their own box at a constant x1.42 a frame (x8 in 6 f) until one glyph part fills the frame, then a match cut to a label box of the same shape.",
+   "recipe": "zoomThrough({ factor: 8, frames: 14, box: glyphBox }) or <TypeMask> push; handoffShot carrying k. Anatomy: Constant log rate; the glyph's box as the cover target; label expo-out after the cut. Sound: A drip or bubble on the cover.",
+   "timing": "Zoom 14 f; label 22 f.",
+   "use_when": "From a word into its meaning; a title into the first scene.",
+   "avoid_when": "Letters with thin strokes (the fill reads as a flash).",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 5
   },
   {
    "id": "dv-accelerating-cadence",
@@ -10777,6 +13382,30 @@
    "impact": 2
   },
   {
+   "id": "dv-drum-swap",
+   "name": "Vertical drum swap with a heat and a tilt",
+   "category": "typography_motion",
+   "family": "Cuts and seams",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "Before each swap the word heats in colour, tilts away like a drum face and exits up while the next word (or icon tile) enters from below; the last one flattens and exits.",
+   "recipe": "MaskRise in + an exit with rotateX(-60deg) and rise; colour via HueSweep back. Anatomy: Heat 23 f, rotateX tilt on exit, entry from below. Sound: Plucks on the swaps; a shutter on the last.",
+   "timing": "Heat 23 f; exit 20 f; entry 23-25 f; final flatten 10 f.",
+   "use_when": "A list of sources or places in one sentence (\"from Phone / Folders / Drives\").",
+   "avoid_when": "More than three swaps.",
+   "primitive": [
+    "fx/MaskRise"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
+  },
+  {
    "id": "dv-echo-copies-knockout",
    "name": "Echo copies slide out from behind the word",
    "category": "typography_motion",
@@ -10918,6 +13547,30 @@
    "bans": [],
    "weight": 2,
    "impact": 4
+  },
+  {
+   "id": "dv-giant-ghost-backdrop",
+   "name": "Tiny word in front of a giant ghost of itself",
+   "category": "typography_motion",
+   "family": "Depth and 3D",
+   "role": "accent",
+   "energy": "medium",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A huge light-grey ghost of a word fills the frame behind a small black version of the same word, which doubles in size in one frame.",
+   "recipe": "Two Words layers (ghost at display size, foreground small) + HardStep scale. Anatomy: Ghost at 3-5 % contrast; foreground step x2 in 1 f. Sound: None needed.",
+   "timing": "Step 1 f; hold 70 f.",
+   "use_when": "A word about size or scale (\"Big\").",
+   "avoid_when": "Ghosts dark enough to compete.",
+   "primitive": [
+    "fx/Words"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
   },
   {
    "id": "dv-glyph-scramble-lock",
@@ -11299,6 +13952,28 @@
    "bans": [],
    "weight": 2,
    "impact": 4
+  },
+  {
+   "id": "dv-letters-spread-ghost",
+   "name": "Letters spread and double while the ground warms",
+   "category": "typography_motion",
+   "family": "Morphs and object handoffs",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "sting"
+   ],
+   "summary": "A stat's letters spread apart and get doubled outline ghosts while the ground warms to the accent in 4 frames.",
+   "recipe": "Recipe: Letters tracking out + one outline copy offset per letter; ground via HardStep tween. Anatomy: Tracking out, outline ghost copies offset, ground colour step. Sound: None needed.",
+   "timing": "20 f; colour 10 f.",
+   "use_when": "Leaving a statistic.",
+   "avoid_when": "Warm grounds in a cool brand.",
+   "primitive": [],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
+   "impact": 3
   },
   {
    "id": "dv-make-room-early",
@@ -12361,6 +15036,30 @@
    "ban_safe": true,
    "bans": [],
    "weight": 2,
+   "impact": 3
+  },
+  {
+   "id": "dv-tile-wall-whip",
+   "name": "Tile wall whips in with per-tile parallax",
+   "category": "ui_choreography",
+   "family": "Speed and rush",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "launch",
+    "feature"
+   ],
+   "summary": "A wall of artwork tiles enters with heavy horizontal blur, each tile decelerating at its own rate (near tiles travel further), then the wall accelerates out and the next wall comes in.",
+   "recipe": "parallax layers per tile row with whip in and out. Anatomy: Per-tile travel scaled by depth; blur on the fast frames. Sound: Whooshes.",
+   "timing": "In 28 f, out 16 f cubic-in, next wall 52 f.",
+   "use_when": "Galleries of work; a portfolio beat.",
+   "avoid_when": "All tiles on one curve.",
+   "primitive": [
+    "lib/camera-moves"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 1,
    "impact": 3
   }
  ]
