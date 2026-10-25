@@ -1,11 +1,11 @@
 import React, { useId } from 'react';
-import { Freeze, Img, OffthreadVideo } from 'remotion';
+import { Img, OffthreadVideo, Sequence, useCurrentFrame } from 'remotion';
 import { C } from '../brand/tokens';
 import { clamp, lmix } from '../lib/anim';
 import { type FilmCtx, fpsOf, sizeOf, useFilm } from '../lib/film';
 import { type ChainShot, carryChain } from '../lib/handoff';
 import type { Declares, Seam } from '../timeline';
-import { footageStepped, footageTime } from './Footage';
+import { footageStepped, footageTime, mediaFrame } from './Footage';
 import { DuotoneDefs, gradeFilter, type PhotoGrade, photoCover, TintPlate } from './Photo';
 
 /**
@@ -92,6 +92,7 @@ export const Montage: React.FC<MontageProps> = (p) => {
   const film = useFilm();
   const { width: W, height: H } = sizeOf(film);
   const uid = useId().replace(/:/g, '');
+  const cur = useCurrentFrame();
   const s = montageState(p.frame, p, film);
   const shot = p.shots[s.shot];
   const dir = shot.dir ?? [-1, 0];
@@ -109,10 +110,11 @@ export const Montage: React.FC<MontageProps> = (p) => {
   if (isVideo(shot)) {
     const t = footageTime(p.frame, { start: s.first, from: shot.from, speed: shot.speed, srcFps: shot.srcFps }, film);
     const sf = shot.srcFps ?? film.fps;
+    // a Sequence shifted so the video's own clock stands on the source frame (Freeze does not reach it)
     inner = (
-      <Freeze frame={((t.shown + 0.5) / sf) * film.fps}>
+      <Sequence from={cur - mediaFrame(t.shown, sf, film.fps)} layout="none">
         <OffthreadVideo src={shot.src} muted style={{ width: shot.w, height: shot.h, display: 'block' }} />
-      </Freeze>
+      </Sequence>
     );
   } else inner = <Img src={shot.src} style={{ width: shot.w, height: shot.h, display: 'block' }} />;
   return (
