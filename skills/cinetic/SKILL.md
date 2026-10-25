@@ -196,7 +196,7 @@ The full catalogue of tells, each with its fix, is `references/taste-and-slop.md
 - The canonical word reveal: a third visible on its first frame, 90 % by 0.25 s; a build line re-centres with a jump; exits accelerate and leave at speed, never a standalone fade on a statement; colour on type is transient (accent 18 f, a 13 f linear cool).
 
 **Colour** (`references/brand-and-color.md`)
-- Neutral grounds (C ≤ 0.025: tinted paper, mid stone, mid slate) or a deep field, ink as ink, one dominant accent with a meaning at its share of the picture; colour mass from real imagery and the accent's lightness steps, never from washing everything in the accent's hue.
+- Neutral grounds (C ≤ 0.025: tinted paper, mid stone, the mid slate as the dark default), a deep field only as a declared colour event, ink as ink, one dominant accent with a meaning on what matters (about 6–15 % of the frame); colour mass from real imagery and the accent's lightness steps, never from washing everything in the accent's hue.
 - Light, glow, spectral accents and gradients only as devices, baked and dithered; shadows from one key in the ground's hue.
 
 **Picture**
