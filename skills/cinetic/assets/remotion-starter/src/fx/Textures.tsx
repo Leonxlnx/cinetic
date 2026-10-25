@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Img, useDelayRender } from 'remotion';
+import { C } from '../brand/tokens';
 import { clamp, E, type Ease } from '../lib/anim';
 import { type FilmCtx, f60x, fpsOf, useFilm } from '../lib/film';
 import type { Declares } from '../timeline';
@@ -18,13 +19,13 @@ import { hash01 } from './plates';
  *                threshold, so the edge is a dither, not a blur; with `srcB` it dissolves one photo into the next
  *
  * Pure state: grainState(), ditherPhotoState(), inkIndex() and cellShowsB(). The develop is continuous; a
- * dither `crawl` (the pattern stepping) is declared stepped.
+ * dither `crawl` (the pattern stepping) is declared stepped, and so is grain in a film faster than its 24 fps.
  */
 
 export const TEXTURES = { grain: { sigma: 6, size: 256, tiles: 16 }, dither: { cell: 2, dur60: 44, soft: 0.35 } } as const;
 
-/** House inks for the print look: deep ground, the accent, a pale paper. */
-export const INKS_NIGHT = ['#0B100D', '#08965A', '#E9F5EE'] as const;
+/** House inks for the print look: the brand's ink, the accent and paper. */
+export const INKS_NIGHT = [C.ink, C.accent, C.paper] as const;
 
 // ---------------------------------------------------------------------------------------------------- grain
 /** The grain frame, its tile index and its offset (px) at film frame f. Pure. */
@@ -174,10 +175,20 @@ export const DitherPhoto: React.FC<DitherPhotoProps & { frame: number }> = (p) =
   );
 };
 
-/** A crawling dither steps on its own cadence: declared stepped over [from, to). The develop itself is continuous. */
-export const declares = (p?: { crawl60?: number; span?: [number, number]; id?: string }, film?: Partial<FilmCtx>): Declares => {
+/**
+ * A crawling dither steps on its own cadence: declared stepped over `span` [from, to). The develop itself is
+ * continuous. Grain re-seeds at its own rate (24 fps, Grain's `fps`): in a faster film each grain holds 2-3 frames,
+ * so `grain` (the frames the Grain layer is on screen, and its rate if not 24) is declared stepped too.
+ */
+export const declares = (
+  p?: { crawl60?: number; span?: [number, number]; id?: string; grain?: { span: [number, number]; fps?: number; id?: string } },
+  film?: Partial<FilmCtx>,
+): Declares => {
   const none: Declares = { stepped: [], flashes: [], cameraBlur: [], seams: [] };
-  if (!p?.crawl60 || !p.span) return none;
-  fpsOf(film);
-  return { ...none, stepped: [{ from: p.span[0], to: p.span[1], id: p.id ?? 'dither-crawl' }] };
+  if (!(p?.crawl60 && p.span) && !p?.grain) return none;
+  const fps = fpsOf(film);
+  const stepped: NonNullable<Declares['stepped']> = [];
+  if (p.crawl60 && p.span) stepped.push({ from: p.span[0], to: p.span[1], id: p.id ?? 'dither-crawl' });
+  if (p.grain && fps > (p.grain.fps ?? GRADIENTS.grainFps)) stepped.push({ from: p.grain.span[0], to: p.grain.span[1], id: p.grain.id ?? 'grain' });
+  return { ...none, stepped };
 };
