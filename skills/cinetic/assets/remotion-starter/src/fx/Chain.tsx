@@ -2,7 +2,7 @@ import React from 'react';
 import { C, FONT, TYPE, typeStyle } from '../brand/tokens';
 import { arrive, arriveK, blurIn, depart, E, type Ease, easeOf, holdFor, M, type Pace, prog, wordCount } from '../lib/anim';
 import { accentFade, mixColor } from '../lib/color';
-import { defocusLevel, defocusMix } from '../lib/defocus';
+import { DEFOCUS_SHARP, defocusLevel, defocusMix } from '../lib/defocus';
 import { copyOf, f60, f60x, type FilmCtx, fpsOf, paceOf, sizeOf, uOf, useFilm } from '../lib/film';
 import { measureTracked } from '../lib/measure';
 import { settleOf } from '../lib/sync';
@@ -529,18 +529,18 @@ export const Chain: React.FC<
       });
   if (!S.snap) return <div style={{ position: 'absolute', left: 0, top: 0, ...mask, ...style }}>{frags(0)}</div>;
   // snapLast: the whole line jumps larger about its finished centre in one frame; a short defocus clears on
-  // at most two fixed ladder copies (the group faded as one)
+  // at most two fixed ladder copies (the group faded as one), wrapped round the scale so the radii are
+  // on-screen px (inside a x2.2 scale every on-screen sigma under about 1.1 px would draw sharp); the two copies
+  // add in an isolated group (plus-lighter, each at its weight), the weighted mix of a transparent text layer
   const sn = S.snap;
-  const copies = (sn.sigma * u) / sn.scale >= 0.5 ? defocusMix((sn.sigma * u) / sn.scale) : [{ level: 0, weight: 1 }];
+  const copies = sn.sigma * u >= DEFOCUS_SHARP ? defocusMix(sn.sigma * u) : [{ level: 0, weight: 1 }];
   return (
-    <div style={{ position: 'absolute', left: 0, top: 0, ...mask, ...style }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, transformOrigin: `${lineCx.toFixed(2)}px ${lineCy.toFixed(2)}px`, transform: `scale(${sn.scale.toFixed(6)})` }}>
-        {copies.map((c, k) => (
-          <div key={k} style={{ position: 'absolute', left: 0, top: 0, opacity: k === 0 ? 1 : c.weight, filter: c.level > 0 ? blurFilter(c.level) : undefined }}>
-            {frags(k)}
-          </div>
-        ))}
-      </div>
+    <div style={{ position: 'absolute', left: 0, top: 0, isolation: copies.length > 1 ? 'isolate' : undefined, ...mask, ...style }}>
+      {copies.map((c, k) => (
+        <div key={k} style={{ position: 'absolute', left: 0, top: 0, opacity: c.weight, filter: c.level > 0 ? blurFilter(c.level) : undefined, mixBlendMode: k > 0 ? 'plus-lighter' : undefined }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, transformOrigin: `${lineCx.toFixed(2)}px ${lineCy.toFixed(2)}px`, transform: `scale(${sn.scale.toFixed(6)})` }}>{frags(k)}</div>
+        </div>
+      ))}
     </div>
   );
 };
