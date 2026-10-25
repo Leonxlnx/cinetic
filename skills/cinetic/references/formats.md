@@ -2,7 +2,7 @@
 
 This file has one recipe per format. Each gives the structure in bars, the device, the copy and sound budget, the format's own gates, and how to deliver it. Read it at Step 0, once you have picked a row in the formats table (SKILL.md §1).
 
-The numbers are proven defaults, not rules. Bar arithmetic and tempo choice live in `references/timing-grid.md`. The finishing commands live in `references/finishing.md`. This file only says what each format needs from them.
+The numbers are house defaults with normal ranges, not rules. Bar arithmetic and tempo choice live in `references/timing-grid.md`. The finishing commands live in `references/finishing.md`. This file only says what each format needs from them.
 
 **Contents**
 1. [Choosing and adapting a format](#1-choosing-and-adapting-a-format)
@@ -30,26 +30,37 @@ The numbers are proven defaults, not rules. Bar arithmetic and tempo choice live
   Write all three into `BRIEF.md`.
 - **Budgets scale with length, not ambition.** At 30 s a launch film holds 6–8 story beats (8–10 in crisp) and 15–25 words, 30 at most. At 15 s, halve both; don't compress the same film into half the time. Cramming is the most common failure of short formats: 3 features in 5 s reads as none.
 - **Every format keeps the five laws.** A 4-second loop still has one idea, one device, one accent meaning and one motion system, and it is still measured before it ships.
+- **Every format with sound is cut to a licensed track** (`references/music.md`); a muted loop is the one piece without one.
+
+| Format | Length | Shot band (median) | Sound |
+|---|---|---|---|
+| Launch film | 15-45 s | 1.3-2.2 s | a licensed track + the launch kit, −14 LUFS |
+| Update film | 8-20 s | 0.8-1.6 s | a licensed track + the launch kit, −14 LUFS (−16 at 8 s or less) |
+| Product / feature video | 8-30 s | 1.3-2.2 s (explainer pacing 2-3 s) | a licensed track + the launch kit |
+| Feature loop | 4-15 s, whole bars | 0.5-1.0 s for a reel-style loop | muted, or a track folded at the seam |
+| Logo sting | 3-8 s | one take | a short licensed cue or the track's button + one kit element, −16 LUFS |
+| UI walkthrough | 20-90 s | 2-3 s | a licensed track + UI effects |
+| Social re-layouts | same timeline | the master's | the master's soundtrack |
 
 ## 2. Launch film and teaser
 
 **Purpose.** Make a viewer feel a problem, see the product answer it, and remember the name.
 
-**Length.** 20–45 s at 100 BPM (a 2.4 s bar; 120 BPM for a crisp film), with 6–8 story beats per 30 s (8–10 in crisp). Keep the whole film to 15–25 words, 30 at most, in fragments of at most 4 words that arrive one at a time with picture between them.
+**Length.** 15–45 s, on the track's bars (about 100 BPM, a 2.4 s bar, for a calm film; 120 for a crisp one), with 6–8 story beats per 30 s (8–10 in crisp). Keep the whole film to 15–25 words, 30 at most, in fragments of at most 4 words that arrive one at a time with picture between them.
 
 **Act template** (30 s + tail = 15 bars + 60 f at 120 BPM; Tessel's shape, see `references/worked-example.md`). At the calm 100 BPM the same beats fill about 12–13 bars: keep each beat's share of the runtime and let each copy beat carry one fragment chain.
 
 | Bars | Time | Beat type | What happens | Sound |
 |---|---|---|---|---|
-| 1–3 | 0–6 s | hook → problem | Frame 0 is already moving, and the device is on screen. The problem is felt by 1 s and stated by 2 s, then piles up visibly. It ends in an implosion or a gather into the device. | Signature motif alone, then intro chords. A "suck" to true silence before bar 4. |
-| 4–5 | 6–10 s | turn | Drop 1 on the bar 4 downbeat: the device meets or becomes the mark. The lockup lasts 1.5 s or less, or visibly builds. The mark then opens into the product (a container morph). | Drop 1, and the motif keeps time through the hold. |
-| 6–9 | 10–18 s | proof 1 | One capability as cause → action → result. The human's one input comes first, and the product acts after it. Drop 2 lands on bar 8, where the product takes over. | Riser into drop 2. Landings sit on the chord tones. |
-| 10–12 | 18–24 s | proof 2 / consequences | One fragment per bar, each paying off earlier copy, and the picture acting between them. One consequence per fragment lands on the beat. | Whips peak on the kick. The payoff sits on the clap. |
-| 13–15 | 24–30 s | promise | Pull back to show scale. The refrain resolves, and the device becomes the mark for the last time. | Breakdown, then the resolution chord lands on the promise word. |
-| 16 + 60 f | 30–33 s | lockup / end card | Name, URL (readable ≥ 1.7 s), the bookend, and a tail that decays to digital zero. | The motif bookends; the tail runs to zero. |
+| 1–3 | 0–6 s | hook → problem | Frame 0 is already moving, and the device is on screen. The problem is felt by 1 s and stated by 2 s, then piles up visibly. It ends in an implosion or a gather into the device. | The track's intro, entering with intent; a stop or break before bar 4. |
+| 4–5 | 6–10 s | turn | The track's entry on the bar 4 downbeat: the device meets or becomes the mark, or the product arrives. A mid-film mark lasts 1.5 s or less, or visibly builds. | The entry carries it; one designed hit at most. |
+| 6–9 | 10–18 s | proof 1 | One capability as cause → action → result. The human's one input comes first, and the product acts after it. The signature shot lands here or at the payoff. | Effects on the product's state changes, levelled over the bed. |
+| 10–12 | 18–24 s | proof 2 / consequences | One fragment per bar, each paying off earlier copy, and the picture acting between them. One consequence per fragment lands on an accent. | Cuts on the track's accents; whips peak on them. |
+| 13–15 | 24–30 s | promise | A dip, then the biggest reveal on the track's entry; pull back to show scale; the device becomes the mark. | A stop or break of 0.2-0.5 s, then the entry under the promise. |
+| 16 + 60 f | 30–33 s | lockup / end card | Name, the brief's fact (readable ≥ 1.7 s), the bookend, and a tail that decays to digital zero. | `stop`, `button` or `ring`: one element at the lockup; the tail runs to zero. |
 
-- **Two drops, not five.** Energy needs somewhere to come from. Put the loudest moment on the promise, not on a mid-film drop.
-- **The signature move appears 3 times:** at the open, the middle and the close. Tessel's was the red dot's iris, flood and return. Every other transition type is used at most twice (see `references/transitions.md`).
+- **Two peaks, not five.** Energy needs somewhere to come from. Put the loudest moment on the promise or the payoff, not on a mid-film peak.
+- **One signature shot** (the dealt direction's), once, on its beat; it may echo smaller at the open or inside the lockup. Transitions vary: any kind at most 3 times (`references/transitions.md`).
 - **End card.**
   - The final frame is the poster by default, so it must carry the brand: the mark plus the name, or the mark plus the URL.
   - When the brief gives one practical fact (a date such as "next week", "out now", a URL), it goes on the end card at the secondary size under the lockup, readable for at least 1.7 s. It is the only line besides the name; a film that leaves it out has dropped the brief's call to action.
@@ -85,7 +96,7 @@ The numbers are proven defaults, not rules. Bar arithmetic and tempo choice live
 - **Show no cursor after the cause.** A cursor that keeps doing things implies the product needs babysitting.
 - **Make the product and the feature identifiable.** A stranger should know it is software and which feature this is: enough real app chrome (a window edge, the app's own header or sidebar) and the feature's name once, as a UI label (a tab, a menu item, the button that causes the action), as the one line of copy, or on the end card. "No feature name as a headline" is a copy rule; it never means "never name it". A film that shows a clever behaviour without naming it can't be searched for or asked about.
 
-**Update film** (a release or a new feature, posted to a feed). The product video's short cousin: 15–25 s at the calm pace, the news as the hook. Frame 0 shows the product already moving, never the logo. A setup fragment hands over to the product's arrival and the name lands as its own fragment ("here is the newest" → the product arrives → "earshot."); then one capability as cause → action → result, told as a chain around what the product does ("it turns sound" → [the waveform becomes code] → "into code."); then a text-free stretch of the product working; then the name with the brief's fact ("out now", a version, a URL). 8–12 words in all, film copy on at most about 60% of the frames.
+**Update film** ("vX is out", 8-20 s) is a first-class format of its own: a hook on the version or the mark, 2-4 changes each shown as a product moment, one payoff, the end card with the version; 1-3 words a fragment; a licensed track. The recipe, the deck and the template are in `references/update-films.md`.
 
 **Format gates**
 - One capability.
@@ -184,7 +195,7 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 - **Clamp every spring that could push one piece into another.** Pieces interpenetrating for a few frames on overshoot is the classic sting bug.
 - **The lockup cue sits at least 1.5 s before the end**, and scale changes by 3–20% over the last 1.5 s: alive, not dead-static, not drifting away.
 - **The ending.** End on the lockup, held and building. If the brief says the sting opens other videos, it may end on a clean cut to the backdrop on the last beat instead. Never end on a slow fade to blank that leaves the full lockup readable for less than 1.5 s.
-- **Sound.** One hit tuned to the root of the key, on the contact frame, with an optional pre-hit tick or riser that lands on the chord tone. There is no music bed unless asked. The last 10 ms are digital silence.
+- **Sound.** A short licensed cue (or the last bars of the film's track, ending on its `button`) with one kit element on the contact frame of the lockup, tuned to the track's key; the hit is the sting's loudest moment, −16 LUFS for 8 s or less. The last 10 ms are digital silence.
 
 **Alpha versions.** Register compositions that render the same acts with no background fill, and deliver two: `StingAlpha`, which ends on the lockup (for editors who hold it), and `StingAlphaClear`, which clears it on the last beat (for intros that cut to footage). A prop such as `{transparent: true, clear: true}` on one component is enough.
 - Shadows and hairlines that depend on the paper colour need a plate-independent version: design it so it reads on both a light and a dark plate, and check stills over both.
@@ -239,7 +250,7 @@ const ts = (f: number) => {
 writeFileSync('out/captions.srt', COPY.map((c, i) => `${i + 1}\n${ts(c.in)} --> ${ts(c.out)}\n${c.text}\n`).join('\n'));
 ```
 
-- **Sound.** A light bed with UI clicks at one level, about 3 dB under the music's short-window level and centred (`score.py` levels them). Typing per key with the music ducked under it, or one blip per word when it streams fast (`"typing": "auto"`, or `"muted"` under VO; `references/sound.md` §5.5c).
+- **Sound.** A licensed calm track with UI effects levelled over it (`bed_db`), centred. Typing per key, or one blip per word when it streams fast (`"typing": "auto"`, or `"muted"` under VO; `references/sound.md` §5.5c); the track never ducks.
 - **Long walkthroughs** (over 60 s) get one act per chapter, so a fix re-renders one chapter. Master with `scripts/render-chunks.sh` when the blur pass would be slow.
 
 **Format gates**
