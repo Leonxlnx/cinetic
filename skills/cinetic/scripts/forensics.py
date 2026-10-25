@@ -1458,14 +1458,15 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
     hold_end = end_rng or ((max(f0, last + 1 - int(round(2 * fps))), last + 1) if undeclared else None)
     in_end = lambda f: bool(hold_end and hold_end[0] <= f < hold_end[1])  # noqa: E731
 
-    # declared designed artifacts: a step, a flash or a hard seam is craft, not a pop
+    # declared designed artifacts: a step, a flash, a hard seam or a velocity cut (a new picture carrying the speed;
+    # carried-cut checks its direction and speed) is craft, not a pop
     disc = set()
     for r in extra.get('stepped', []):
         disc |= set(range(vf(r['from']), vf(r['to'])))
     for x in extra.get('flashes', []):
         disc |= set(range(vf(x['f']), vf(x['f']) + int(x.get('frames', 1)) + 1))
     for s in extra.get('seams', []):
-        if s.get('kind') in PUNCH:
+        if s.get('kind') in PUNCH or s.get('kind') == 'velocity':
             disc |= {vf(s['at']) - 1, vf(s['at'])}
     stepped = [(vf(r['from']), vf(r['to'])) for r in extra.get('stepped', [])]
     declared_hits = []
