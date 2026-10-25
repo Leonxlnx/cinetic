@@ -258,7 +258,7 @@ export const gooState = (f: number, p: GooProps, film: Partial<FilmCtx>) => {
   const b = gooPose(f - 0.5, p, film);
   const c = gooPose(f + 0.5, p, film);
   const v60 = (Math.abs(c.sep - b.sep) * fps) / 60; // px per 60 fps frame
-  const k = clamp(0.012 * v60, 0, 0.45);
+  const k = clamp(0.012 * v60, 0, 0.3); // at most 1.3 : 0.77, a blob, never a flat disc
   const blobs = [-1, 1].map((side) => ({ x: p.cx + side * a.sep, y: p.cy, rx: a.r * (1 + k), ry: a.r / (1 + k), still: 1 - clamp(k / 0.15) }));
   return { blobs, merged: a.done, phase: a.phase, k };
 };
