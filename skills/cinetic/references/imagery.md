@@ -76,7 +76,7 @@ Chicago, the Met, Mixkit video. With a key in the environment: `PEXELS_API_KEY`,
    ```
    Looks: `natural` (the default: each picture keeps its own colour, exposure and colour strength matched across the
    set, strong colours held back, a faint cool shadow), `matte` (lifted blacks, colour at 55 %, shadows a step
-   toward the accent hue), `silver` (neutral black and white: archives, a quiet film, the pieces of a collage),
+   toward the split hue: `--split-hue`, cool by default), `silver` (neutral black and white: archives, a quiet film, the pieces of a collage),
    `night` (low key). Three more are **device looks for one shot**, not a film's grade: `tint` (30 % of the
    picture's own colour under a one-hue wash at the accent hue), `duotone` (deep accent-hued shadows to a pale tinted
    white) and `deep` (the picture becomes a colour field). A whole film in a one-hue wash turns into a monochrome
