@@ -77,8 +77,9 @@ bands, a fixed blur on the far one).
 
 A one-hue light field made of baked, dithered plates moved by transform and opacity only: a floor glow, pools on
 closed loops, flowing bands, a rise into a reveal. **Strength is visible, not a tint:** a lightness swing of
-0.05-0.20 across the field at chroma 0.13 or less, at one hue (`lib/look.ts LIGHT`). A field at a few percent of
-accent alpha reads as a flat ground and does nothing.
+0.05-0.20 across the field at chroma 0.13 or less, at one hue (`lib/look.ts LIGHT`); behind UI keep it near neutral
+(C ≤ 0.025), and a field that fills the frame at full chroma is a declared colour event, not the stage. A field at a
+few percent of accent alpha reads as a flat ground and does nothing.
 
 - `floor: { plate, height, top?, strength, breathe?, rises?, lift? }`: a glow over the bottom of the frame (house 25 %
   of the height). `breathe` is a seamless sine (whole-number harmonics) on its opacity; `rises` brighten it into a
