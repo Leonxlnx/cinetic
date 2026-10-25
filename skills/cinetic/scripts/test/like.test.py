@@ -155,6 +155,9 @@ result(fam and fam.get('front', 0) >= max(fam.get('symmetric', 0), fam.get('back
        'the main moves read as front-loaded (arrive curves)', json.dumps(L.get('moves')))
 tr = L.get('transitions') or {}
 result(tr.get('hard', 0) >= 4 and tr.get('soft', 0) == 0, 'the hand-overs read as hard cuts', json.dumps(tr))
+chg = L.get('changes') or {}
+result(5 <= (chg.get('count') or 0) <= 7 and (chg.get('carried_share') or 0) <= 0.2 and 'Picture changes' in open(os.path.join(TMP, 'out', 'LIKE.md'), encoding='utf-8').read(),
+       'picture changes are counted (a hard-cut clip changes its picture at its cuts and nowhere else)', json.dumps(chg))
 ty = L.get('type') or {}
 result((ty.get('text_share') or 0) >= 0.5 and 0.03 <= (ty.get('line_height_median') or 0) <= 0.3, 'text share and line height are measured', json.dumps(ty))
 te = L.get('tempo') or {}

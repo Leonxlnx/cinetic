@@ -52,6 +52,7 @@ import tempfile
 sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
 FORMAT_KEYS = ('launch', 'update', 'explainer', 'reel', 'social')
+SCENE_JUMP = 0.06  # mean change of the 16 x 9 colour layout over 0.2 s (0-1) that counts as a new picture
 GUARD = {'layout': 0.80, 'colour': 0.10, 'layout_only': 0.90, 'share': 0.15, 'run': 3}
 
 
@@ -130,6 +131,30 @@ def frame_pass(clip, info, F):
         sharp.append(float(lap[tex].var()) if tex.sum() > 150 else None)
         grids.append(cv2.resize(rgb, (16, 9), interpolation=cv2.INTER_AREA).astype(np.float32))
     return luma, sharp, grids
+
+
+def scenes(grids, cuts, fps):
+    """Picture changes: the hard cuts plus every jump of the 16 x 9 colour layout over 0.2 s that stands out
+    from the motion around it (a morph, a carried hand-over, a new layout inside one take). A film that carries
+    most of its hand-overs changes its picture far more often than it cuts. Returns the change frames."""
+    n = len(grids)
+    k, win, gap = max(1, round(0.2 * fps)), max(2, round(fps)), max(2, round(0.4 * fps))
+    d = np.zeros(n)
+    for i in range(k, n):
+        d[i] = float(np.abs(grids[i] - grids[i - k]).mean() / 255.0)
+    peaks = []
+    for i in range(k, n):
+        local = float(np.median(d[max(0, i - win):min(n, i + win)]))
+        if d[i] >= max(SCENE_JUMP, 2.5 * local) and d[i] >= d[max(0, i - gap // 2):min(n, i + gap // 2 + 1)].max():
+            peaks.append(max(0, i - k // 2))
+    out = []
+    for f in sorted(set(int(c) for c in cuts) | set(peaks)):
+        if out and f - out[-1] < gap:
+            if f in cuts:  # a hard cut wins the slot
+                out[-1] = f
+            continue
+        out.append(f)
+    return out
 
 
 def moves(series, cuts, fps):
@@ -318,6 +343,7 @@ def measure(args):
     mv = moves(series, cuts, fps)
     seams = (look.get('floor') or {}).get('carried', {}).get('seams', [])
     kinds = transitions(cuts, luma, grids, seams, fps)
+    changes = scenes(grids, cuts, fps)
     samp = samples(clip, info, F)
     # type: the largest text-like line per sample, as a share of the frame height
     th, has = [], 0
@@ -382,6 +408,9 @@ def measure(args):
         'clip': os.path.basename(clip), 'seconds': r(info['frames'] / fps, 2), 'fps': r(fps, 3), 'size': [info['w'], info['h']],
         'shots': {'count': len(lens), 'median_s': r(med, 3), 'q25_s': r(q(lens, 0.25)), 'q75_s': r(q(lens, 0.75)), 'longest_s': r(max(lens) if lens else None),
                   'cuts_per_s': r(len(cuts) / max(0.1, info['frames'] / fps)), 'one_take': one_take},
+        'changes': (lambda ls: {'count': len(changes), 'median_s': r(q(ls, 0.5)), 'per_s': r(len(changes) / max(0.1, info['frames'] / fps)),
+                               'carried_share': r(1 - sum(1 for c in changes if c in set(cuts)) / max(1, len(changes)))})(
+            [(b - a) / fps for a, b in zip([0] + changes, changes + [info['frames']])]),
         'cut_on_sound': cs, 'tempo': tempo,
         'camera': {'moving_share': r(len(cam_live) / max(1, len(win))), 'zoom_share': r(len(zoom) / max(1, len(win))),
                    'speed_pxs_median': r(q([w.get('cam_pxs') for w in cam_live], 0.5), 1)},
@@ -409,7 +438,7 @@ def measure(args):
     if not args.quiet:
         L = target['like']
         print(f"like.py: {L['clip']}: {L['seconds']} s, {L['shots']['count']} shots (median {L['shots']['median_s']} s), "
-              f"cuts on a sound {(cs or {}).get('within_1f')}, camera moving {L['camera']['moving_share']}, moves {L['moves']['families']}, "
+              f"{L['changes']['count']} picture changes (median {L['changes']['median_s']} s), cuts on a sound {(cs or {}).get('within_1f')}, camera moving {L['camera']['moving_share']}, moves {L['moves']['families']}, "
               f"text {L['type']['text_share']}, blur {blur}, tempo {tempo.get('bpm')}")
         print(f'  wrote {jp} and {mp}')
     return 0
@@ -442,6 +471,9 @@ def like_md(t, clip):
         '', '## The grammar', '',
         f'- **Length and shots:** {L["seconds"]} s, {sh["count"]} shots' + ('' if sh['one_take'] else
             f', median {sh["median_s"]} s (middle half {sh["q25_s"]}-{sh["q75_s"]} s, longest {sh["longest_s"]} s), {sh["cuts_per_s"]} cuts a second') + '.',
+        (f'- **Picture changes:** {L["changes"]["count"]} (every {L["changes"]["median_s"]} s at the median, {L["changes"]["per_s"]} a second), '
+         f'{pct(L["changes"]["carried_share"])} of them without a hard cut (a morph, a carried element, a move into the next layout): '
+         'keep the rate with your own hand-overs.' if L.get('changes') else '- **Picture changes:** not measured.'),
         f'- **Cuts and sound:** {pct((L.get("cut_on_sound") or {}).get("within_1f"))} of cuts within a frame of a sound'
         + (f'; {pct(te.get("cuts_on_beat"))} on a beat, {pct(te.get("cuts_on_downbeat"))} on a downbeat' if te.get('cuts_on_beat') is not None else '') + '.',
         f'- **Tempo:** {te.get("bpm") or "not measured"} BPM' + (f' ({te.get("source")})' if te.get('bpm') else '') + '.',
