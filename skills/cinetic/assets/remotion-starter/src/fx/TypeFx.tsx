@@ -21,8 +21,9 @@ import { COOL_SPECTRUM, normStops, type Stop } from './plates';
  *   SplitFlap       a split-flap board: each character flips through seeded characters (4 f a flap, 2 f stagger
  *                   per column) to its target; the upper flap falls on E.buildIn, the lower lands on E.snapOut
  *   CodeType        code types in plain ink at `cps`; each token's syntax colour switches on `late60` (10) frames
- *                   after the token is complete, and the newest characters arrive as a sideways smear that
- *                   sharpens over 6 f (two copies, one through a fixed horizontal blur)
+ *                   after the token is complete, and the newest characters arrive as a sideways smear trailing
+ *                   back along the line that sharpens over 6 f (two copies, one through a fixed horizontal blur),
+ *                   so the caret ahead of them stays a clean bar
  *   GradientText    type filled with a dithered multi-stop plate that drifts slowly, crossed by a soft
  *                   specular band once a period (the shine of a loading or premium label)
  *   ScatterAssemble letters start scattered (seeded, grey, almost still), drift in gently and snap into the
@@ -326,7 +327,7 @@ export const CodeType: React.FC<CodeTypeProps & { frame: number; x: number; y: n
             {ch}
           </span>,
         );
-        if (sm > 0) out.push(<span key={`${ti}-${ci}s`} style={{ ...pos, opacity: sm, filter: `url(#ct${uid})`, transform: `translateX(${(0.3 * sm * cw).toFixed(2)}px) scaleX(${(1 + 0.9 * sm).toFixed(3)})`, transformOrigin: '0 50%' }}>{ch}</span>);
+        if (sm > 0) out.push(<span key={`${ti}-${ci}s`} style={{ ...pos, opacity: sm, filter: `url(#ct${uid})`, transform: `translateX(${(-0.3 * sm * cw).toFixed(2)}px) scaleX(${(1 + 0.9 * sm).toFixed(3)})`, transformOrigin: '100% 50%' }}>{ch}</span>);
         last = [col + 1, row];
       }
       col++;
