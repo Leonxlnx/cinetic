@@ -30,7 +30,7 @@ python3 scripts/audio/track.py grid                  # -> src/music.ts (Remotion
 python3 scripts/audio/track.py check                 # joins, the licence record, nothing from the track in git
 ```
 
-`bash scripts/new-film.sh <dir> --music <file> …` does the first two steps and sets up the launch kit (`kit.py init --preset launch`); `npm run music` repeats analyze, edit and grid with the settings already saved.
+`bash scripts/new-film.sh <dir> --music <file> …` does the first two steps and sets up the launch kit (`kit.py init --preset launch`); `npm run music` repeats analyze, edit and grid with the settings already saved. `analyze` keeps an analysis already made of the same file (sha256) with the same settings, so a second run takes seconds (`--force` makes it again), and `new-film.sh` reuses a `<name>.track.json` lying beside the file it is given. On a busy machine, `new-film.sh --music … --no-analyze` scaffolds without the analysis (the longest step) and prints its command, to run as its own job.
 
 **Gate (Step 3):** the licence record passes (`track.py check`); the downbeat is confident or its phase is set by hand; the reveal bar holds an entry; the ending is `button`, `stop` or `ring`; `grid-check.ts` runs in music mode clean (`music-grid`, `structural-on-music`).
 
