@@ -22,7 +22,8 @@
  *                  entries, breaks?, stops, end } }
  * f is the absolute frame the sound belongs on (fractional allowed), weight 0..2 (1 = normal),
  * pan -1..1, pitch a MIDI number or a note name such as "Eb6", apexFrac (whoosh, suck) the point
- * of the sound that lands on f, dur a length in frames. See references/sound.md. Kind `text` is
+ * of the sound that lands on f (0..1; 0 or 1 is clamped for a whoosh or suck, kept for a riser or swell),
+ * dur a length in frames. See references/sound.md. Kind `text` is
  * the one soft sound of a copy fragment landing (fx/Chain chainResolves()), never one per word.
  * structural: true marks an act or section change, the reveal or the ending, which must land on a
  * music event; force: true sounds the event even when a track accent carries the moment;
@@ -230,14 +231,15 @@ async function main() {
     if (!(Number.isFinite(pan) && pan >= -1 && pan <= 1)) errors.push(`${where}: pan must be in [-1, 1], got ${e.pan}`);
     if (e.pitch !== undefined && !(typeof e.pitch === 'number' ? Number.isFinite(e.pitch) : NOTE.test(String(e.pitch))))
       errors.push(`${where}: pitch must be a MIDI number or a note like "Eb6", got ${e.pitch}`);
-    // apexFrac exactly 0 or 1 comes from lib/sync peak() on an ease whose speed peaks at an end (E.softOut, E.buildIn,
-    // E.launchIn): the whoosh would land on its own first or last sample, so it is clamped with a warning, not refused
+    // apexFrac is 0..1. A riser or swell may peak on its frame (1) or a sound start on it (0); for a whoosh or a suck,
+    // exactly 0 or 1 comes from lib/sync peak() on an ease whose speed peaks at an end (E.softOut, E.buildIn,
+    // E.launchIn) and would land the sound on its own first or last sample, so it is clamped with a warning
     let apexFrac = e.apexFrac;
     if (apexFrac !== undefined) {
-      if (!(Number.isFinite(apexFrac) && apexFrac >= 0 && apexFrac <= 1)) errors.push(`${where}: apexFrac must be in (0, 1)`);
-      else if (apexFrac === 0 || apexFrac === 1) {
+      if (!(Number.isFinite(apexFrac) && apexFrac >= 0 && apexFrac <= 1)) errors.push(`${where}: apexFrac must be in 0..1`);
+      else if ((apexFrac === 0 || apexFrac === 1) && (e.kind === 'whoosh' || e.kind === 'suck')) {
         const c = apexFrac === 0 ? 0.05 : 0.95;
-        warnings.push(`${where}: apexFrac ${apexFrac} puts the whoosh's peak on its ${apexFrac === 0 ? 'first' : 'last'} sample (the ease's speed peaks at an end): clamped to ${c}`);
+        warnings.push(`${where}: apexFrac ${apexFrac} puts the ${e.kind}'s peak on its ${apexFrac === 0 ? 'first' : 'last'} sample (the ease's speed peaks at an end): clamped to ${c}`);
         apexFrac = c;
       }
     }
