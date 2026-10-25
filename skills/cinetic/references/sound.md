@@ -21,12 +21,15 @@ The numbers here are house numbers: starting points with a reason, not dogma. Wh
 
 ## 1. Where the sounds come from
 
-A film sounds one of two ways, and nothing else:
+**Every cinetic film has a licensed music track.** Launch films, update films, stings and loops with sound are all
+music-led: one licensed, human-made, instrumental track, edited at bar lines, with code-made effects levelled over it.
+The effects-only route stays in the code (old projects and the starters' placeholder soundtrack render with it), but a
+film you make never chooses it.
 
 | Kind | Music | Effects | Level model | Target |
 |---|---|---|---|---|
-| **Music-led** | one licensed, human-made, instrumental track, edited at bar lines (`references/music.md`) | the earshot `launch` kit, each effect levelled over the track | `bed_db`: dB over the bed as played | −14 LUFS (−16 for a sting of 8 s or less) |
-| **Effects-only** | none (`"music": "none"`) | an earshot kit: `calm` (text-led, the starters' default), `crisp` (energetic), `minimal` (designed, sub-led) | `level_db` × weight | −18 LUFS |
+| **Music-led** (every film) | one licensed, human-made, instrumental track, edited at bar lines (`references/music.md`) | the earshot `launch` kit, each effect levelled over the track | `bed_db`: dB over the bed as played | −14 LUFS (−16 for a sting of 8 s or less) |
+| Effects-only (compatibility only) | none (`"music": "none"`) | an earshot kit: `calm`, `crisp` or `minimal` | `level_db` × weight | −18 LUFS |
 
 cinetic makes no music. There is no generated bed, pad, drone or band: `"music": "synth"` exits with a message pointing here. Effects never become music either (§6): at most two pitched effects in any 4 s, no tuned run that reads as a melody, no tonal effect ringing past 1.5 s, and no pad, drone or bed from earshot.
 
@@ -209,7 +212,7 @@ The role's offset is applied by `plan.py`, never folded into the cue frame: the 
 
 ## 5. score.json
 
-An effects-only film (the starters):
+The starters' placeholder soundtrack (effects only, until the film's track replaces it):
 
 ```json
 {
@@ -284,12 +287,12 @@ With a track the arc comes from the edit, not from automation (`references/music
 
 The sound's energy must match the brand's three adjectives (`references/brand-and-color.md` §2), and the row picks the kit and the music brief:
 
-| Personality | Effects | Music brief (when the film has a track) | Lockup |
+| Personality | Effects | Music brief (every film has a track) | Lockup |
 |---|---|---|---|
-| Calm, literary, unhurried | soft touches, one tuned voice, gentle air (`calm`; with a track, `launch` with calm's `text` and `hit` swapped in) | a soft pulse, 95–110 BPM, a long intro, a `ring` ending | one struck note with a long tail |
-| Fast, exact, confident | tight clicks, pops in runs, a short sub (`crisp`; with a track, `launch`) | a clear four-on-the-floor, 120–128 BPM, an entry after a break, a `stop` ending | a stop, then one sub hit |
+| Calm, literary, unhurried | soft touches, one tuned voice, gentle air (`launch` with the `calm` kit's `text` and `hit` swapped in) | a soft pulse, 95–110 BPM, a long intro, a `ring` ending | one struck note with a long tail |
+| Fast, exact, confident | tight clicks, pops in runs, a short sub (`launch`, crisp roles) | a clear four-on-the-floor, 120–128 BPM, an entry after a break, a `stop` ending | a stop, then one sub hit |
 | Bright, friendly | pops and taps, a bell | a bouncy groove, a clear entry | the track's final hit (`button`) |
-| Precise, expensive | sparse touches, low swells (`minimal`) | minimal electronic with space | one low element after a stop |
+| Precise, expensive | sparse touches, low swells (`launch` with `minimal` roles) | minimal electronic with space | one low element after a stop |
 | Raw, mechanical | ticks, detents, metallic hits | a dry, stepped groove | a hard latch |
 
 Pick the row before writing `score.json`, and write it in `TREATMENT.md` next to the adjectives, with the music brief (mood, tempo range, an entry for the reveal, a break, the ending mode). A swapped-in role keeps the `bed_db`, `offset_ms` and `min_gap_ms` of the launch role of the same kind (`kit.py check` warns when a role has no `bed_db` in a film with a track).
@@ -333,7 +336,7 @@ The kit's `key`, `key.space` and `key.return` takes set the timbre (one take per
 - **Near-silence holds the reading.** Gaps of 0.6–1.75 s fall right after a line has fully arrived. The held line gets no ticks, pulses or moving beds; the next sound comes with the next picture event.
 - **A big low hit only for the single reveal.** About 2 hits a film; the rest of the text sounds sit low.
 - **The lockup is a stop-down and one element** (§5.3).
-- **Effects-only is a legitimate score.** `"music": "none"` masters at −18 LUFS, so a few accents keep their peaks. Choose a track (`references/music.md`) when the film wants a groove.
+- **The track carries a text-led film too.** Choose a calm track (95-110 BPM, a soft pulse, room in the mix) and let its breaks hold the reading; the effects stay few and soft over it. An old project on `"music": "none"` masters at −18 LUFS.
 
 ## 6. Tuning
 
@@ -431,7 +434,7 @@ You cannot listen, so measure what a listener hears:
 |---|---|
 | no earshot kit can be played | install earshot (`docs/setup.md`), set `EARSHOT_PYTHON`, `npm run kit`; or copy a rendered kit in (`kit.py vendor --from DIR`) |
 | N cue(s) with no earshot kit take | give the role a sound in `audio/kit.json` and `npm run kit`; for a note, add it to the role's `pitches` or drop the hand-set pitch |
-| "music": "synth" (exit 1) | cinetic makes no music: choose a licensed track (`references/music.md`) or `"none"` |
+| "music": "synth" (exit 1) | cinetic makes no music: choose a licensed track (`references/music.md`) |
 | a --draft build | never delivered: render the kit and the soundtrack again without `--draft` |
 | the stop-down before … measures N dB | the track rises into the hit: give it more weight, or let `track.py edit` cut to a break before the reveal |
 | the bed is N dB down 250 ms after … | the track breaks there (fine) or the edit lands the hit inside a break: move the reveal onto the entry |
@@ -475,7 +478,7 @@ The habits that make a launch film sound cheap, and what to do instead. Most are
 
 | Slop | Instead |
 |---|---|
-| A generated bed: a synth pad, a drone, a band made in code | a licensed, human-made track (`references/music.md`) or no music |
+| A generated bed: a synth pad, a drone, a band made in code | a licensed, human-made track (`references/music.md`) |
 | Ducking under the effects; a pumping bed | effects ride the bed by timing and spectrum; one stop-down before the big hit |
 | A track cut mid-phrase, a click at the join, a fade-out ending | whole bars, joins on the incoming attack, an ending on a stop, the track's final hit or its ring |
 | A hit on top of the track's own kick | one gesture: the track carries it |

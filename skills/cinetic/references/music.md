@@ -1,8 +1,8 @@
 # Music: the licensed track, from the licence to the cut
 
-A music-led film plays one licensed, human-made, instrumental track, edited only at bar lines, with the earshot `launch` kit levelled over it (`references/sound.md`). This file covers the track: where it may come from, its licence record, its analysis, the edit, cutting the picture to it, and the credits that travel with the film. Read it at Step 3, before the timeline, and again at Step 8.
+Every cinetic film plays one licensed, human-made, instrumental track, edited only at bar lines, with the earshot `launch` kit levelled over it (`references/sound.md`): background music is part of every film, launch or update, long or short. This file covers the track: where it may come from, its licence record, its analysis, the edit, cutting the picture to it, and the credits that travel with the film. Read it at Step 3, before the timeline, and again at Step 8.
 
-cinetic makes no music. The track is chosen, never generated: no synth bed, no AI-generated track, no music assembled from kit sounds.
+cinetic makes no music. The track is chosen, never generated: no synth bed, no AI-generated track, no music assembled from kit sounds. **Prefer licences that need no credit** (Mixkit, Pixabay): nothing on screen ever credits the music, and a film whose track needs no credit line ships cleanest. A CC BY track is the fallback when nothing else fits; its credit goes into the post text or video description, never into the picture.
 
 ## Contents
 1. [The track comes first](#1-the-track-comes-first)
@@ -131,7 +131,9 @@ Read it before editing: is bar 1 where the music starts (a pickup is fine), does
 `python3 scripts/audio/credits.py` (`npm run credits`; `deliver.sh` runs it for every film with a track) checks the licence record the score names and writes, into `out/deliver/`:
 
 - `CREDITS.md`: title, artist, source, licence and link, and the modifications ("Edited for this film: …"), plus the effects line;
-- `CREDITS_description.txt`: the CC BY credits (required) and courtesy lines for the others, ready to paste under the post or into the video description.
+- `CREDITS_description.txt`: the CC BY credits (required) and courtesy lines for the others, ready to paste under the post or into the video description when the user wants one.
+
+Credits never appear in the picture: no on-screen music credit, no end-card line. With a no-credit licence the record and `CREDITS.md` stay with the project as its proof of licence.
 
 It exits 1 when a record is missing, the licence is unknown or forbidden, `licence_seen` is missing, a CC BY track has no credit line, the file changed since it was recorded, or the soundtrack is a `--draft` build; 2 when there is no score report yet. `deliver.sh` refuses the delivery on any of these and never copies a stem, the bed or the decoded track into `out/deliver/`: the music travels only inside the film. The film's page, release notes or post carry the credits.
 
