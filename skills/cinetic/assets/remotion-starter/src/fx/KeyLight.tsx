@@ -616,7 +616,7 @@ export const ReliefScene: React.FC<ReliefSceneProps> = (scene) => {
         if (clip)
           // a well: its floor, its content, then its walls, all inside the opening
           return (
-            <div key={b.id ?? bi} style={{ ...full, clipPath: `path('${clip}')` }}>
+            <div key={`${b.id ?? ''}#${bi}`} style={{ ...full, clipPath: `path('${clip}')` }}>
               <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={full}>
                 <polygon points={pts(d.faces[bi][0].pts)} fill={d.faces[bi][0].fill} />
               </svg>
@@ -630,7 +630,7 @@ export const ReliefScene: React.FC<ReliefSceneProps> = (scene) => {
           );
         const ts = d.topShadows[bi];
         return (
-          <React.Fragment key={b.id ?? bi}>
+          <React.Fragment key={`${b.id ?? ''}#${bi}`}>
             <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={full}>
               {d.faces[bi].map((fc, j) => (
                 <polygon key={j} points={pts(fc.pts)} fill={fc.fill} />
