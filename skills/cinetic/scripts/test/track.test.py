@@ -6,7 +6,8 @@ The main bed: 124 BPM, the first downbeat at 0.37 s, 24 bars (intro 1-4, body 5-
 last 0.42 s stop dead, peak 15-22, outro 23-24) and one final thump on bar 25. Checks:
   - analyze: the tempo within 0.05 BPM, bar 1 on its attack (+-5 ms), a confident downbeat, the stop
     found (and no groove trough taken for one), the entry after the break marked as a drop, the ending
-    a button on the final thump, no bars counted in the file's trailing silence
+    a button on the final thump, no bars counted in the file's trailing silence; a second run of the same
+    file and settings keeps the analysis, another profile or --force makes it again
   - edit --end stop: the reveal's film bar holds the entry, whole bars, at most one splice per 8 bars,
     the bed stops on the bar line after the body; --end button back-times the final hit
   - grid: src/music.ts and music.js carry the MUSIC grid in film frames (t0, downbeats, ending), and the
@@ -216,6 +217,17 @@ def analyze_main(d):
             check(False, f'an MP3 analyses: {p.stderr[-300:]}')
     else:
         print('skip the MP3 check (ffmpeg cannot encode MP3 here)')
+    # a second analyze of the same file with the same settings keeps the analysis; other settings or --force redo it
+    before = os.path.getmtime(tj)
+    p = run(['analyze', 'audio/music/click_bed.wav', '--quiet'], d)
+    check(p.returncode == 0 and 'is current' in p.stdout and os.path.getmtime(tj) == before,
+          'the same file and settings: the analysis is kept, not made again' + ('' if p.returncode == 0 else f': {p.stderr[-300:]}'))
+    p = run(['analyze', 'audio/music/click_bed.wav', '--quiet', '--profile', 'calm'], d)
+    check(p.returncode == 0 and 'wrote' in p.stdout and json.load(open(tj))['analysis']['profile'] == 'calm',
+          'another profile analyses again')
+    p = run(['analyze', 'audio/music/click_bed.wav', '--quiet', '--force'], d)
+    check(p.returncode == 0 and 'wrote' in p.stdout and json.load(open(tj))['analysis']['profile'] == 'crisp',
+          '--force analyses again')
     return a
 
 

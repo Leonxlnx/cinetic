@@ -12,9 +12,10 @@ Usage (from the project root):
           --seen-quote "..." --seen-url URL [--seen-date YYYY-MM-DD] [--credit "..."] [--file-url URL]
           [--content-id "not registered"] [--ai-generated no] [--vocals no] [--modifications "..."] [--force]
       -> audio/music/<name>.licence.json (hash, licence class, the licence as read on the item's own page)
-  python3 scripts/audio/track.py analyze FILE [--profile calm|crisp|punchy] [--bpm N] [--phase N] [--json OUT]
+  python3 scripts/audio/track.py analyze FILE [--profile calm|crisp|punchy] [--bpm N] [--phase N] [--json OUT] [--force]
       -> audio/music/<name>.track.json (tempo, grid, bars, phrases, sections, entries, breaks, stops, accents,
-         ending, key, loudness)
+         ending, key, loudness); an analysis already there of the same file (sha256) with the same settings is
+         kept without loading librosa (--force analyses again)
   python3 scripts/audio/track.py edit [TRACK.json] --bars N --reveal-bar K --end button|stop|ring
           [--start-bar S] [--entry B] [--arc "-14,-12,..."] [--film-t0 0.25] [--gap 0.4] [--out audio/music/edit.json]
       -> audio/music/edit.json (source bars -> film bars, joins, the film-time grid, ending)
@@ -86,6 +87,7 @@ import mixkeys as MK  # noqa: E402
 SR = 48000
 AR = 22050                    # analysis rate (librosa features)
 PRIOR = {'calm': 100.0, 'crisp': 120.0, 'punchy': 128.0}
+ANALYSIS_VERSION = 1          # raise it when the analysis changes, so older .track.json files are made again
 BPB = 4                       # beats per bar
 DRIFT_WARN_MS = 12.0          # a robust-fit residual RMS above this: the track wanders (played live)
 CONF_MIN = 0.5                # downbeat confidence under this: edit refuses until the phase is set
@@ -702,7 +704,7 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
                 key=dict(name=key, r=round(rk, 3), per_section=per),
                 intro_bars=(first_entry - 1) if first_entry else None, fade_in=fade_in,
                 levels=dict(centres=[round(float(c), 2) for c in centres]), notes=notes,
-                analysis=dict(profile=profile, rate=AR, decoder='ffmpeg', version=1))
+                analysis=dict(profile=profile, rate=AR, decoder='ffmpeg', version=ANALYSIS_VERSION))
     return res_
 
 
@@ -1509,12 +1511,32 @@ def find_one(folder, suffix):
     raise TrackError(f'no *{suffix} in {folder}: name the file')
 
 
+def current_analysis(out, path, profile, bpm, phase):
+    """The analysis in `out` when it was made from this exact file (sha256) with these settings, else None."""
+    if not os.path.isfile(out) or not os.path.isfile(path):
+        return None
+    try:
+        old = read_json(out, 'track analysis')
+    except TrackError:
+        return None
+    an, g, tp = old.get('analysis') or {}, old.get('grid') or {}, old.get('tempo') or {}
+    same = (an.get('version') == ANALYSIS_VERSION and an.get('profile') == profile and an.get('rate') == AR
+            and tp.get('stated') == (float(bpm) if bpm else None)
+            and ((bool(g.get('phase_set')) and g.get('phase') == phase) if phase is not None else not g.get('phase_set')))
+    return old if same and old.get('sha256') == CR.sha256_file(path) else None
+
+
 def cmd_analyze(a_):
     out = a_.json or os.path.join(os.path.dirname(a_.file) or '.', stem_of(a_.file) + '.track.json')
-    res = analyze(a_.file, a_.profile, a_.bpm, a_.phase, a_.cache, log=None if a_.quiet else (lambda s: print('  ' + s)))
-    write_json(out, res)
-    print_analysis(res, print if not a_.quiet else (lambda s: None))
-    print(f'analyze: wrote {out}')
+    res = None if a_.force else current_analysis(out, a_.file, a_.profile, a_.bpm, a_.phase)
+    if res is not None:
+        print_analysis(res, print if not a_.quiet else (lambda s: None))
+        print(f'analyze: {out} is current (the same file and settings): kept (--force analyses again)')
+    else:
+        res = analyze(a_.file, a_.profile, a_.bpm, a_.phase, a_.cache, log=None if a_.quiet else (lambda s: print('  ' + s)))
+        write_json(out, res)
+        print_analysis(res, print if not a_.quiet else (lambda s: None))
+        print(f'analyze: wrote {out}')
     if res['grid']['downbeat_confidence'] < CONF_MIN and not res['grid']['phase_set']:
         print(f"  LOW downbeat confidence: grid A from {res['grid']['t0']} s (phase {res['grid']['phase']}), grid B from "
               f"{res['grid']['alt']['t0']} s (phase {res['grid']['alt']['phase']}); rerun with --phase N")
@@ -1581,6 +1603,7 @@ def main(argv=None):
     p.add_argument('--phase', type=int, help='the downbeat phase 0-3 (after a low-confidence analysis)')
     p.add_argument('--json', help='output (default audio/music/<name>.track.json next to the file)')
     p.add_argument('--cache', default='out/cache/music', help='decode cache (git-ignored)')
+    p.add_argument('--force', action='store_true', help='analyse again even when the .track.json is current')
     p.add_argument('--quiet', action='store_true')
     p = sub.add_parser('edit', help='source bars -> film bars')
     p.add_argument('track', nargs='?', help='the .track.json (default: the one in audio/music/)')
