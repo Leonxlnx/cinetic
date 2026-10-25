@@ -21,6 +21,15 @@
   7. Redraws need a reason, are recorded, change the slot, and stop after two per slot.
   8. The history down-weights recent directions and can be switched off.
   9. House wording: the deck, deck.py and a dealt sheet carry no provenance phrasing.
+ 10. Update films: the directions that make them carry an update skeleton (a hook on the version or the
+     mark, 2-4 change beats, a payoff, the end card with the version; 1-3 words a fragment); --format update
+     deals only them and times --changes N change beats; the version counts as the film's number.
+ 11. The brand: --brand maps the dealt roles onto the brand's colours (a brand colour near the recipe's
+     lightness, else the recipe on the brand's own grey, never a ground at the accent's hue), checks
+     contrast, moves to a palette that holds the brand accent when the dealt one cannot, and sets the brand's
+     face in the dealt weights; a colour world takes a second brand colour or falls back to a neutral.
+ 12. Deck hygiene: the real export names (Card), every primitive and recipe the starter has marked built,
+     a pre-softened foreground layer on by default in layered spaces, lockups made by the film's own device.
 
 Usage (from the skill root):  python3 scripts/test/deck.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -85,10 +94,17 @@ def deal(brief='x', fmt=None, pace='calm', have=(), seconds=None, seed=1, n=3, r
     return deck.options_for(DATA, inp_of(brief, fmt, pace, have, seconds), seed, n, recent, (), keep, READY)[0]
 
 
-def broken(mutate):
-    """Validate a mutated copy of the shipped deck; returns (exit code, stderr)."""
+LIBRARY = deck.load_library(deck.DEFAULT_LIBRARY)
+
+
+def broken(mutate, cli=False):
+    """Validate a mutated copy of the shipped deck; returns (exit code, error text). In process by default
+    (each CLI start costs seconds); cli=True goes through deck.py --deck ... --validate."""
     data = copy.deepcopy(DATA)
     mutate(data)
+    if not cli:
+        errors, _ = deck.validate(data, LIBRARY, deck.starter_src(), False)
+        return (2 if errors else 0), '\n'.join(errors)
     path = os.path.join(TMP, 'broken.json')
     json.dump(data, open(path, 'w', encoding='utf-8'))
     r = run('--deck', path, '--validate')
@@ -97,6 +113,11 @@ def broken(mutate):
 
 def dealable(d):
     return all(p in READY for p in d.get('requires', []))
+
+
+def UPD(x):
+    """The first direction of a deck copy that makes update films."""
+    return next(d for d in x['directions'] if 'update' in d.get('fit', {}).get('formats', []) or 'update' in d)
 
 
 # 1. the shipped deck --------------------------------------------------------------------------------
@@ -185,10 +206,21 @@ cases = [
         'picture', x['directions'][22]['signature_alt']['name'] + ' across the floor.'), 'uses the alternative signature'),
     ('a beat that repeats the signature', lambda x: x['directions'][23]['skeleton'][1].__setitem__(
         'picture', x['directions'][23]['signature']['name'] + ', once more.'), 'repeats the signature shot'),
+    ('update in fit.formats without an update skeleton', lambda x: UPD(x).pop('update'), 'carries an "update" skeleton'),
+    ('an update skeleton without the format', lambda x: UPD(x)['fit']['formats'].remove('update'), 'carries an "update" skeleton'),
+    ('an update fragment of 4 words', lambda x: UPD(x)['update']['change'].__setitem__('copy', {'words': [2, 4], 'what': 'too much'}), '1-3 words'),
+    ('an update signature on the change beat', lambda x: UPD(x)['update']['change'].__setitem__('signature', True), 'never on the repeated change beat'),
+    ('an update hook without frame 0', lambda x: UPD(x)['update']['hook'].__setitem__('picture', 'The version number arrives in the middle of the film somewhere.'), 'frame 0'),
+    ('an update end card without the version', lambda x: UPD(x)['update']['end'].__setitem__('picture', 'The mark and the name settle on the floor, nothing more to it.'), 'carries the version'),
+    ('an update film of 30 s', lambda x: UPD(x)['update'].__setitem__('seconds', [8, 30]), 'within 8-20'),
+    ('an update change without a handoff', lambda x: UPD(x)['update']['change'].pop('handoff'), 'hands over'),
+    ('a lockup over a radial plate', lambda x: x['directions'][3]['lockup'].__setitem__('shot', 'Mark, name and tag' + 'line centred over a radial plate.'), 'own device'),
+    ('a foreground turned off without a reason', lambda x: x['directions'][4]['world'].__setitem__('foreground', 'off'), 'world.foreground'),
 ]
-for name, mutate, expect in cases:
-    code, err = broken(mutate)
-    result(code == 2 and expect in err, f'validate refuses {name}', f'exit {code}; {err.strip().splitlines()[-1][:160] if err.strip() else ""}')
+for i, (name, mutate, expect) in enumerate(cases):
+    code, err = broken(mutate, cli=(i == 0))
+    result(code == 2 and expect in err, f'validate refuses {name}{" (through the CLI)" if i == 0 else ""}',
+           f'exit {code}; {err.strip().splitlines()[-1][:160] if err.strip() else ""}')
 
 # 3. determinism ---------------------------------------------------------------------------------------
 args = ['--brief', 'a ledger app that splits a bill by item', '--format', 'launch', '--pace', 'calm']
@@ -241,6 +273,8 @@ for fmt in deck.FORMATS:
                         issues.append(f'too few kinds of {what}')
                 if any(d['intensity'] >= 4 for d in pool) and not any(o['intensity'] >= 4 for o in opts):
                     issues.append('no rich direction')
+                if any(tf(d) in ('mid', 'field') for d in pool) and not any(tf(o) in ('mid', 'field') for o in opts):
+                    issues.append('no mid or colour ground')
                 if sum(1 for o in opts if o['intensity'] <= 2) > 1:
                     issues.append('two quiet directions')
                 probs = deck.option_problems(opts, pool, 3, tf)
@@ -249,7 +283,8 @@ for fmt in deck.FORMATS:
                     if any(not deck.option_problems(list(c), pool, 3, tf) for c in itertools.combinations(pool, 3)):
                         bad.append(f'{tag}: dealt {issues or probs} although a perfect set existed')
 result(not bad, f'every deal of 3 ({total} deals): distinct motion, signature, story and lockup; 3 spaces; 2 lights; 2 ground '
-                f'tones; a rich one; at most one quiet ({imperfect} imperfect, each because its pool held no perfect set)', '; '.join(bad[:4]))
+                f'tones, one of them mid or colour; a rich one; at most one quiet ({imperfect} imperfect, each because its pool held '
+                'no perfect set)', '; '.join(bad[:4]))
 missing = sorted(d['id'] for d in DIRS if dealable(d) and d['id'] not in dealt and not d['fit'].get('keywords_required'))
 result(not missing and tones_seen >= set(deck.TONES) and lights_seen >= set(deck.LIGHT_KINDS),
        f'every dealable direction, ground tone and kind of light turns up across the sweep', ', '.join(missing))
@@ -263,7 +298,8 @@ viol = []
 for s in range(100):
     for fmt in deck.FORMATS:
         none = deal('x', fmt, seed=s)
-        viol += [f'{o["id"]} without its asset' for o in none if deck.needs_of(o)]
+        # an update film owns its version as its one number (--have number is implied)
+        viol += [f'{o["id"]} without its asset' for o in none if [k for k in deck.needs_of(o, fmt) if not (fmt == 'update' and k == 'number')]]
         viol += [f'{o["id"]} for {fmt}' for o in none if fmt not in o['fit']['formats']]
         viol += [f'{o["id"]} waiting for planned primitives' for o in none if not dealable(o)]
         viol += [f'{o["id"]} without its subject' for o in none if o['fit'].get('keywords_required')]
@@ -293,8 +329,9 @@ if blocked:
            f'--direction refuses {b} while it waits for planned primitives; --allow-planned deals it with a note')
 else:
     result(True, 'no direction waits for planned primitives')
-hits = sum(1 for s in range(60) if 'document' in [o['id'] for o in options('--brief', 'a code editor for the terminal cli developer', '--format', 'launch', '--have', 'ui', '--seed', str(s))[1]])
-base = sum(1 for s in range(60) if 'document' in [o['id'] for o in options('--brief', 'a product', '--format', 'launch', '--have', 'ui', '--seed', str(s))[1]])
+# in process (the CLI prints exactly this deal, tested above): 120 CLI runs would take minutes on a busy machine
+hits = sum(1 for s in range(60) if 'document' in [o['id'] for o in deal('a code editor for the terminal cli developer', 'launch', have=['ui'], seed=s)])
+base = sum(1 for s in range(60) if 'document' in [o['id'] for o in deal('a product', 'launch', have=['ui'], seed=s)])
 result(hits > base, f'brief keywords raise a direction\'s chance ({base} -> {hits} of 60 deals)')
 
 # 6. the sheet ------------------------------------------------------------------------------------------
@@ -313,10 +350,16 @@ result(all(k in md for k in ('In this film, [', 'Competitor test', 'How the ligh
                              'The lockup', 'Beat skeleton', 'The picture never rests', 'Build methods', 'scripts/pick.py --format feature')),
        'the sheet carries the idea sentence, light build, story, signature, lockup, skeleton, floor, methods and the pick.py line')
 result(sh.get('pick', {}).get('lean') == BY_ID['census']['techniques'], 'direction.json hands pick.py the direction\'s techniques')
-mid = next(d for d in DIRS if all(RECIPES[p['recipe']]['status'] == 'planned' for p in d['palettes']))
-r = run('--show', mid['id'])
+# a recipe the starter does not have yet (made in the test: every shipped recipe is built)
+tdeck = copy.deepcopy(DATA)
+for k in ('stoneMid', 'slateMid', 'deepField'):
+    tdeck['recipes'][k]['status'] = 'planned'
+tpath = os.path.join(TMP, 'planned-recipes.json')
+json.dump(tdeck, open(tpath, 'w', encoding='utf-8'))
+mid = next(d for d in tdeck['directions'] if all(tdeck['recipes'][p['recipe']]['status'] == 'planned' for p in d['palettes']))
+r = run('--deck', tpath, '--show', mid['id'])
 result(r.returncode == 0 and 'not in lib/look.ts yet' in r.stdout and 'palette.py --paper' in r.stdout,
-       f'a palette on a planned recipe prints its numbers and how to check them ({mid["id"]})')
+       f'a palette on a planned recipe prints its numbers and how to check them ({mid["id"]}, a test-made planned recipe)')
 od2 = os.path.join(TMP, 'keep')
 r = run('--brief', 'x', '--format', 'launch', '--direction', 'rollout', '--keep', 'palette,type', '--out', od2, '--no-history')
 sk2 = json.load(open(os.path.join(od2, 'direction.json'), encoding='utf-8')) if r.returncode == 0 else {}
@@ -378,6 +421,129 @@ planted['directions'][0]['world']['set'] += ' A trick ' + 'stud' + 'ied in refer
 result(len(deck.wording_hits(planted)) >= 2, 'the wording guard catches planted phrases')
 caps = [w for w in re.findall(r'\b[A-Z][A-Z0-9]{3}\b', texts['directions.json']) if w not in ('CSS', 'SVG', 'HTML', 'OKLCH')]
 result(not caps, 'the deck carries no stray four-character upper-case codes', ', '.join(sorted(set(caps))[:8]))
+
+# 10. update films -------------------------------------------------------------------------------------
+upd = [d for d in DIRS if 'update' in d['fit']['formats']]
+result(len(upd) >= 18 and all(isinstance(d.get('update'), dict) and not deck.update_problems(d) for d in upd),
+       f'{len(upd)} of {n} directions make update films, each with a valid update skeleton')
+for k in (2, 3, 4):
+    bs = deck.update_beats(upd[0], k)
+    ok = (len(bs) == k + 3 and abs(sum(b['share'] for b in bs) - 1) < 1e-9 and sum(1 for b in bs if b['change']) == k
+          and sum(1 for b in bs if b['signature']) == 1 and bs[0]['beat'] == 'hook' and bs[-1]['beat'] == 'end')
+    result(ok, f'an update skeleton expands to a hook, {k} change beats, a payoff and the end card, shares adding to 1')
+viol = []
+for s in range(40):
+    for pace in deck.PACES:
+        for have in ((), ('ui',)):
+            opts, pool, _ = deck.options_for(DATA, inp_of('a notes app, version 2.4 is out', 'update', pace, have), s, 3, (), (), (), READY)
+            viol += [f'{o["id"]} in an update deal' for o in opts if 'update' not in o['fit']['formats']]
+            viol += [f'{o["id"]} without its asset' for o in opts if not deck.fits(o, 'update', pace, have, None, 'x', READY)[0]]
+            if len(opts) < 3:
+                viol.append(f'{pace}/{",".join(have) or "-"}/{s}: {len(opts)} options')
+result(not viol, 'every update deal of 3 holds only directions that make update films and fit the assets', '; '.join(sorted(set(viol))[:4]))
+odo = BY_ID.get('odometer')
+if odo and 'update' in odo['fit']['formats']:
+    result(deck.fits(odo, 'update', 'calm', (), None, 'x', READY)[0] and not deck.fits(odo, 'launch', 'calm', (), None, 'x', READY)[0],
+           'the version is the number an update film owns: the odometer fits an update without --have number, a launch film only with it')
+od4 = os.path.join(TMP, 'update')
+r = run('--brief', 'a notes app, 2.4 is out', '--format', 'update', '--changes', '4', '--seconds', '16', '--direction', upd[0]['id'], '--out', od4, '--no-history')
+shu = json.load(open(os.path.join(od4, 'direction.json'), encoding='utf-8')) if r.returncode == 0 else {}
+sk = shu.get('skeleton', [])
+result(r.returncode == 0 and shu.get('changes') == 4 and sum(1 for b in sk if b.get('change')) == 4 and sk[-1]['to_s'] == 16
+       and 'an update film (4 changes' in r.stdout and 'From one change to the next' in r.stdout and '--changes 4' in r.stdout
+       and all(b['copy'] is None or b['copy']['words'][1] <= 3 for b in sk),
+       'an update sheet times 4 change beats over 16 s, says how changes hand over, and keeps every fragment at 1-3 words')
+r = run('--brief', 'x', '--format', 'update', '--changes', '5', '--options', '3')
+r2 = run('--brief', 'x', '--format', 'launch', '--changes', '3', '--options', '3')
+result(r.returncode == 2 and r2.returncode == 2 and '--format update' in r2.stderr, '--changes takes 2-4 and belongs to --format update')
+result(all('update' in d['fit']['formats'] and isinstance(d.get('update'), dict) for d in DIRS),
+       'every direction carries an update skeleton (a short film suits each world)')
+nd = copy.deepcopy(DATA)
+nou = nd['directions'][0]
+nou['fit']['formats'] = [f for f in nou['fit']['formats'] if f != 'update']
+nou.pop('update', None)
+npath = os.path.join(TMP, 'no-update.json')
+json.dump(nd, open(npath, 'w', encoding='utf-8'))
+r = run('--deck', npath, '--brief', 'x', '--format', 'update', '--direction', nou['id'], '--out', os.path.join(TMP, 'nou'), '--no-history')
+result(r.returncode == 1 and 'does not fit' in r.stderr, '--format update refuses a direction without an update skeleton')
+r = run('--show', upd[0]['id'])
+result(r.returncode == 0 and 'Update skeleton' in r.stdout, '--show prints the update skeleton')
+
+# 11. the brand -----------------------------------------------------------------------------------------
+bdir = os.path.join(TMP, 'brand')
+os.makedirs(bdir, exist_ok=True)
+bjson = os.path.join(bdir, 'brand.json')
+json.dump({'version': 1, 'name': 'Ledgerly', 'colours': {'source': 'supplied', 'accent': '#1F6FEB', 'list': [
+    {'hex': '#1F6FEB'}, {'hex': '#0B1220'}, {'hex': '#F4F6FA'}, {'hex': '#8A94A6'}]}, 'fonts': {'family': 'Inter'}}, open(bjson, 'w'))
+brand = deck.read_brand(bjson)
+maps = [deck.map_palette(p, RECIPES, brand) for d in DIRS for p in d['palettes']]
+result(all(m['accent']['hex'] == '#1F6FEB' for m in maps) and all(m['ink']['contrast'] >= 7 or m['ink']['source'] != 'brand' for m in maps),
+       'a mapped palette keeps the brand accent and takes a brand ink only when it holds 7:1')
+light = [m for m in maps if m['tone'] == 'light']
+result(light and all(m['ground']['hex'] == '#F4F6FA' and m['ground']['source'] == 'brand' for m in light),
+       'a light recipe takes the brand\'s own light neutral as its ground')
+derived = [m for m in maps if m['tone'] == 'field']
+result(derived and all(m['ground']['source'] == 'recipe on the brand neutral' and deck.hex_oklch(m['ground']['hex'])[1] <= 0.025
+                       and 'no second colour' in m.get('field_note', '') for m in derived),
+       "a colour world the brand cannot fill falls back to a neutral ground, never a field at the accent's hue")
+result(all(m['ground']['source'] == 'brand' or deck.hex_oklch(m['ground']['hex'])[1] <= 0.025 for m in maps)
+       and all(m['ink']['source'] == 'brand' or deck.hex_oklch(m['ink']['hex'])[1] <= 0.025 for m in maps),
+       "every derived ground and ink stays neutral (C <= .025): the brand's accent never becomes its ground")
+# a kit whose greys lean faintly to the accent hue (a cobalt brand with cool greys): the greys are the grounds
+cool = {'file': 'x', 'name': 'x', 'accent': '#1F5EFF', 'colours': ['#1F5EFF', '#F5F7F9', '#EBEDF0', '#DFE2E6', '#0E0F13'],
+        'source': 'supplied', 'family': None}
+cmaps = [deck.map_palette(p, RECIPES, cool) for d in DIRS for p in d['palettes']]
+hn, cn = deck.brand_neutral(cool)
+result(cn <= 0.025 and all(m['ground']['hex'] in cool['colours'] or deck.hex_oklch(m['ground']['hex'])[1] <= cn + 0.002 for m in cmaps)
+       and any(m['ground']['hex'] == '#F5F7F9' for m in cmaps) and any(m['ground']['hex'] == '#0E0F13' for m in cmaps),
+       "a supplied kit's own greys and paper are the grounds; derived grounds carry no more chroma than its greys")
+second = dict(cool, colours=cool['colours'] + ['#1E5A52'])
+fm = [deck.map_palette(p, RECIPES, second) for d in DIRS for p in d['palettes'] if RECIPES[p['recipe']].get('tone') == 'field']
+result(fm and all(m['ground']['hex'] == '#1E5A52' and m['ground']['source'] == 'brand' for m in fm),
+       "a colour world takes the brand's second colour when it sits near the field's lightness")
+od5 = os.path.join(TMP, 'branded')
+r = run('--brief', 'a ledger app', '--format', 'launch', '--direction', 'odometer', '--have', 'number', '--brand', bjson, '--out', od5, '--no-history')
+shb = json.load(open(os.path.join(od5, 'direction.json'), encoding='utf-8')) if r.returncode == 0 else {}
+bm = shb.get('brand') or {}
+result(r.returncode == 0 and bm.get('ok') and bm.get('accent', {}).get('contrast', 0) >= 3 and bm.get('ink', {}).get('contrast', 0) >= 7
+       and 'mapped onto the brand' in r.stdout and 'Inter, weights' in r.stdout and 'cinetic:brand-supplied' in r.stdout,
+       'a branded sheet maps ground, ink and accent with their contrast and sets the brand\'s face in the dealt weights')
+if shb.get('palette') and bm.get('palette') != shb['palette']['id']:
+    result('maps cleanly' in bm.get('note', ''), 'when the dealt palette cannot hold the brand accent, the sheet says which palette maps cleanly')
+r = run('--brief', 'x', '--format', 'launch', '--direction', 'fold', '--brand', os.path.join(bdir, 'missing.json'), '--out', od5, '--no-history')
+result(r.returncode == 2 and 'brand.py' in r.stderr, '--brand with a missing file is refused')
+
+# 12. deck hygiene ---------------------------------------------------------------------------------------
+result('Card' in CAT and 'Cards' not in CAT and CAT['Card']['file'] == 'fx/Cards.tsx', 'the catalogue names the starter\'s real Card export')
+result(all(v['status'] == 'built' for v in RECIPES.values()), 'every colour recipe the starter has is marked built')
+SRC = deck.starter_src()
+# never dealt by name: the kit's generic Text and Check come with its panels; glass, glow plates, gradient
+# text and font cycling stay in the starter for a brand that supplies them, and the deck lights its worlds
+# with the key light and living light instead
+UNDEALT = {'Text', 'Check', 'Glass', 'Bloom', 'RimLight', 'FloorGlow', 'ColourShadow', 'LightFront', 'RadialStreaks',
+           'GradientText', 'FontCycle'}
+unlisted = []
+for sub in ('fx', 'kit'):
+    for f in sorted(os.listdir(os.path.join(SRC, sub))):
+        if f.endswith(('.ts', '.tsx')):
+            text = open(os.path.join(SRC, sub, f), encoding='utf-8').read()
+            unlisted += [f'{sub}/{f}:{n}' for n in re.findall(r'export\s+(?:const|function)\s+([A-Z][A-Za-z0-9]*[a-z][A-Za-z0-9]*)\b', text)
+                         if n not in CAT and n not in UNDEALT]
+result(not unlisted, 'every component the starter exports from fx/ and kit/ has a built catalogue entry', ', '.join(unlisted[:6]))
+result(not (UNDEALT & set(CAT)), 'glass, glow plates, gradient text and font cycling are never in the catalogue')
+key = {d['id']: d['primitives'] for d in DIRS}
+result(all(any(n in key[i] for n in ('ReliefScene', 'keyLightState', 'castShadow', 'projectOnWall')) for i in ('relief', 'sundial', 'wells', 'shadow-play')),
+       'the light-led directions lean on the directional key (ReliefScene, keyLightState, cast shadows)')
+notes = [x for x in run('--validate').stdout.splitlines() if 'mark it built' in x]
+result(not notes, 'no planned primitive or recipe is already exported by the starter', '; '.join(notes[:3]))
+lay = next(d for d in DIRS if d['world']['space'] == 'layered' and not str(d['world'].get('foreground', '')).startswith('off')
+           and 'launch' in d['fit']['formats'] and not deck.needs_of(d))
+flat = next(d for d in DIRS if d['world']['space'] == 'flat' and 'launch' in d['fit']['formats'] and not deck.needs_of(d))
+r1 = run('--brief', 'x', '--format', 'launch', '--direction', lay['id'], '--out', os.path.join(TMP, 'fg1'), '--no-history')
+r2 = run('--brief', 'x', '--format', 'launch', '--direction', flat['id'], '--out', os.path.join(TMP, 'fg2'), '--no-history')
+result('Foreground layer (on by default' in r1.stdout and 'Foreground layer' not in r2.stdout and 'pre-softened' in DATA['defaults']['foreground'],
+       f'a layered space carries a pre-softened foreground layer by default ({lay["id"]}), a flat one does not ({flat["id"]})')
+result('never a centred mark' in r1.stdout and 'LogoMark' in r1.stdout, 'the lockup section asks for the film\'s own device and the supplied logo\'s parts')
 
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')
 sys.exit(1 if failed else 0)

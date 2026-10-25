@@ -1,6 +1,6 @@
 {
  "version": 2,
- "about": "Film directions for scripts/deck.py. Each entry is a complete art direction for a 6-45 s launch or product film: its world and light, camera, cuts, type, story shape, one signature shot, the lockup, a beat skeleton and music. deck.py deals three that fit the brief; the agent chooses the one that carries the subject's idea, then the full sheet is dealt. Edit this file, then run `python3 scripts/deck.py --validate`.",
+ "about": "Film directions for scripts/deck.py. Each entry is a complete art direction for a 6-45 s launch or product film, or an 8-20 s update film: its world and light, camera, cuts, type, story shape, one signature shot, the lockup, a beat skeleton and music. deck.py deals three that fit the brief; the agent chooses the one that carries the subject's idea, then the full sheet is dealt. Edit this file, then run `python3 scripts/deck.py --validate`.",
  "floor": {
   "about": "The floor against a flat film, checked on renders: the picture never rests.",
   "moving_body_frames": 0.9,
@@ -9,6 +9,9 @@
   "signature_device_every_s": 3,
   "light_events_per_act": 1,
   "scale_contrast_cut_share": 0.3
+ },
+ "defaults": {
+  "foreground": "a pre-softened near plane: one shape or object from the product's world, 1.2-1.6x the frame height, softened once in its plate (never an animated blur), in the ground's dark tone at 30-60 % opacity, crossing or drifting at 1.5-2.5x the camera's speed near a frame edge, so every shot has a near, a middle and a far plane; a direction turns it off only with a reason"
  },
  "recipes": {
   "tintedPaper": {
@@ -80,7 +83,7 @@
    "notes": "the one system where pure white is allowed; colour arrives late, as a one-hue ramp"
   },
   "stoneMid": {
-   "status": "planned",
+   "status": "built",
    "tone": "mid",
    "ground": [
     0.74,
@@ -97,7 +100,7 @@
    "notes": "a mid stone: ground L .70-.80 at C .004-.03, cool or toward the accent hue (C .006 or less with a red or yellow accent, so it never reads as paper of the banned light-low-chroma band); ink L .12-.16 for 7:1; lit faces up to +.10 L; shade plates in ink at 12-24 %; accent L .38-.46 so graphics hold 3:1 on the ground"
   },
   "slateMid": {
-   "status": "planned",
+   "status": "built",
    "tone": "mid",
    "ground": [
     0.34,
@@ -114,7 +117,7 @@
    "notes": "a mid slate: ground L .30-.40 at C .01-.04 toward the hue (navy only with a blue hue); type L .96-.99 holds 8:1 or more; lit faces +.06-.10 L; shade plates in near-black at 20-32 %; accent L .74-.84 (a yellow .86-.90)"
   },
   "deepField": {
-   "status": "planned",
+   "status": "built",
    "tone": "field",
    "ground": [
     0.38,
@@ -410,27 +413,27 @@
   },
   "LineSnap": {
    "file": "fx/LineSnap.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "HueSweep": {
    "file": "fx/HueSweep.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "FocusWord": {
    "file": "fx/FocusWord.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "Letters": {
    "file": "fx/Letters.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "typeState": {
    "file": "fx/TypeOn.tsx",
-   "status": "planned"
+   "status": "built"
   },
-  "Cards": {
+  "Card": {
    "file": "fx/Cards.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "press": {
    "file": "fx/Cards.tsx",
@@ -494,27 +497,535 @@
   },
   "LightField": {
    "file": "fx/LightField.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "Stepped": {
    "file": "fx/Stepped.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "Pixelate": {
    "file": "fx/Pixel.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "MosaicIris": {
    "file": "fx/Pixel.tsx",
-   "status": "planned"
+   "status": "built"
   },
   "Markers": {
    "file": "fx/Markers.tsx",
-   "status": "planned"
+   "status": "built"
   },
-  "Wordmark": {
+  "Lockup": {
    "file": "fx/Wordmark.tsx",
-   "status": "planned"
+   "status": "built"
+  },
+  "AssembledMark": {
+   "file": "fx/Wordmark.tsx",
+   "status": "built"
+  },
+  "HotGlyphs": {
+   "file": "fx/Wordmark.tsx",
+   "status": "built"
+  },
+  "LogoMark": {
+   "file": "brand/Mark.tsx",
+   "status": "built"
+  },
+  "logoParts": {
+   "file": "brand/Mark.tsx",
+   "status": "built"
+  },
+  "AsciiField": {
+   "file": "fx/Ascii.tsx",
+   "status": "built"
+  },
+  "BorderBleed": {
+   "file": "fx/BorderBleed.tsx",
+   "status": "built"
+  },
+  "Brackets": {
+   "file": "fx/Brackets.tsx",
+   "status": "built"
+  },
+  "Cascade": {
+   "file": "fx/Cascade.tsx",
+   "status": "built"
+  },
+  "CellChart": {
+   "file": "fx/Charts.tsx",
+   "status": "built"
+  },
+  "Conveyor": {
+   "file": "fx/Conveyor.tsx",
+   "status": "built"
+  },
+  "Corners": {
+   "file": "fx/Corners.tsx",
+   "status": "built"
+  },
+  "FlashCut": {
+   "file": "fx/CutFx.tsx",
+   "status": "built"
+  },
+  "DefocusCut": {
+   "file": "fx/CutFx.tsx",
+   "status": "built"
+  },
+  "Cutouts": {
+   "file": "fx/Cutout.tsx",
+   "status": "built"
+  },
+  "DotMatrix": {
+   "file": "fx/DotMatrix.tsx",
+   "status": "built"
+  },
+  "EchoStamp": {
+   "file": "fx/Echoes.tsx",
+   "status": "built"
+  },
+  "EchoCopies": {
+   "file": "fx/Echoes.tsx",
+   "status": "built"
+  },
+  "GridHop": {
+   "file": "fx/Echoes.tsx",
+   "status": "built"
+  },
+  "InvertBand": {
+   "file": "fx/Flashes.tsx",
+   "status": "built"
+  },
+  "GhostPreflash": {
+   "file": "fx/Flashes.tsx",
+   "status": "built"
+  },
+  "Flight": {
+   "file": "fx/Flight.tsx",
+   "status": "built"
+  },
+  "Flip3D": {
+   "file": "fx/Flip.tsx",
+   "status": "built"
+  },
+  "Footage": {
+   "file": "fx/Footage.tsx",
+   "status": "built"
+  },
+  "Fringe": {
+   "file": "fx/Fringe.tsx",
+   "status": "built"
+  },
+  "RingCurl": {
+   "file": "fx/Gather.tsx",
+   "status": "built"
+  },
+  "BlockSwarm": {
+   "file": "fx/Gather.tsx",
+   "status": "built"
+  },
+  "Comets": {
+   "file": "fx/Gather.tsx",
+   "status": "built"
+  },
+  "Glint": {
+   "file": "fx/Glint.tsx",
+   "status": "built"
+  },
+  "GlyphField": {
+   "file": "fx/GlyphField.tsx",
+   "status": "built"
+  },
+  "GradientMap": {
+   "file": "fx/GradientMap.tsx",
+   "status": "built"
+  },
+  "TrueColourBoxes": {
+   "file": "fx/GradientMap.tsx",
+   "status": "built"
+  },
+  "CellWave": {
+   "file": "fx/Grids.tsx",
+   "status": "built"
+  },
+  "StairWipe": {
+   "file": "fx/Grids.tsx",
+   "status": "built"
+  },
+  "Radiate": {
+   "file": "fx/Grids.tsx",
+   "status": "built"
+  },
+  "Implode": {
+   "file": "fx/Implode.tsx",
+   "status": "built"
+  },
+  "InlineGap": {
+   "file": "fx/InlineGap.tsx",
+   "status": "built"
+  },
+  "ReliefScene": {
+   "file": "fx/KeyLight.tsx",
+   "status": "built"
+  },
+  "FloatShadow": {
+   "file": "fx/KeyLight.tsx",
+   "status": "built"
+  },
+  "Knockout": {
+   "file": "fx/Knockout.tsx",
+   "status": "built"
+  },
+  "Lens": {
+   "file": "fx/Lens.tsx",
+   "status": "built"
+  },
+  "BlockLoader": {
+   "file": "fx/Loaders.tsx",
+   "status": "built"
+  },
+  "ArcLoader": {
+   "file": "fx/Loaders.tsx",
+   "status": "built"
+  },
+  "Spinner": {
+   "file": "fx/Loaders.tsx",
+   "status": "built"
+  },
+  "StepCheck": {
+   "file": "fx/Loaders.tsx",
+   "status": "built"
+  },
+  "StepList": {
+   "file": "fx/Loaders.tsx",
+   "status": "built"
+  },
+  "QuadLoader": {
+   "file": "fx/Loaders.tsx",
+   "status": "built"
+  },
+  "PillWindow": {
+   "file": "fx/Meter.tsx",
+   "status": "built"
+  },
+  "CheckPop": {
+   "file": "fx/MicroUI.tsx",
+   "status": "built"
+  },
+  "Toggle": {
+   "file": "fx/MicroUI.tsx",
+   "status": "built"
+  },
+  "Ripple": {
+   "file": "fx/MicroUI.tsx",
+   "status": "built"
+  },
+  "ThinkingDots": {
+   "file": "fx/MicroUI.tsx",
+   "status": "built"
+  },
+  "TickGauge": {
+   "file": "fx/MicroUI.tsx",
+   "status": "built"
+  },
+  "EntryFlash": {
+   "file": "fx/MicroUI.tsx",
+   "status": "built"
+  },
+  "Montage": {
+   "file": "fx/Montage.tsx",
+   "status": "built"
+  },
+  "OrbitRing": {
+   "file": "fx/Orbit.tsx",
+   "status": "built"
+  },
+  "PenStroke": {
+   "file": "fx/PenStroke.tsx",
+   "status": "built"
+  },
+  "DuotoneDefs": {
+   "file": "fx/Photo.tsx",
+   "status": "built"
+  },
+  "TintPlate": {
+   "file": "fx/Photo.tsx",
+   "status": "built"
+  },
+  "Photo": {
+   "file": "fx/Photo.tsx",
+   "status": "built"
+  },
+  "FocusBand": {
+   "file": "fx/Reels.tsx",
+   "status": "built"
+  },
+  "GhostReel": {
+   "file": "fx/Reels.tsx",
+   "status": "built"
+  },
+  "ResizeBox": {
+   "file": "fx/Resize.tsx",
+   "status": "built"
+  },
+  "Rush": {
+   "file": "fx/Rush.tsx",
+   "status": "built"
+  },
+  "Seed": {
+   "file": "fx/Seed.tsx",
+   "status": "built"
+  },
+  "Slices": {
+   "file": "fx/Slices.tsx",
+   "status": "built"
+  },
+  "StreakResolve": {
+   "file": "fx/Streak.tsx",
+   "status": "built"
+  },
+  "LightLine": {
+   "file": "fx/Streak.tsx",
+   "status": "built"
+  },
+  "TypeFill": {
+   "file": "fx/TypeFill.tsx",
+   "status": "built"
+  },
+  "TypeMask": {
+   "file": "fx/TypeMask.tsx",
+   "status": "built"
+  },
+  "ProjectPanel": {
+   "file": "kit/panels.tsx",
+   "status": "built"
+  },
+  "ChatCard": {
+   "file": "kit/panels.tsx",
+   "status": "built"
+  },
+  "FeedCard": {
+   "file": "kit/panels.tsx",
+   "status": "built"
+  },
+  "StatCard": {
+   "file": "kit/panels.tsx",
+   "status": "built"
+  },
+  "ApprovalsCard": {
+   "file": "kit/panels.tsx",
+   "status": "built"
+  },
+  "BudgetCard": {
+   "file": "kit/panels.tsx",
+   "status": "built"
+  },
+  "CategoryRows": {
+   "file": "kit/panels.tsx",
+   "status": "built"
+  },
+  "ChartCard": {
+   "file": "kit/panels.tsx",
+   "status": "built"
+  },
+  "RingCard": {
+   "file": "kit/panels.tsx",
+   "status": "built"
+  },
+  "AmountToast": {
+   "file": "kit/panels.tsx",
+   "status": "built"
+  },
+  "ReportCover": {
+   "file": "kit/panels.tsx",
+   "status": "built"
+  },
+  "KitFallback": {
+   "file": "kit/panels.tsx",
+   "status": "built"
+  },
+  "Surface": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "Avatar": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "AvatarStack": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "Pending": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "Glyph": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "GlyphTile": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "Badge": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "Meter": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "Button": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "Toast": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "Sparkline": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "BarChart": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "Ring": {
+   "file": "kit/parts.tsx",
+   "status": "built"
+  },
+  "keyLightState": {
+   "file": "fx/KeyLight.tsx",
+   "status": "built"
+  },
+  "reliefState": {
+   "file": "fx/KeyLight.tsx",
+   "status": "built"
+  },
+  "castShadow": {
+   "file": "fx/KeyLight.tsx",
+   "status": "built"
+  },
+  "wellShadow": {
+   "file": "fx/KeyLight.tsx",
+   "status": "built"
+  },
+  "projectOnWall": {
+   "file": "fx/KeyLight.tsx",
+   "status": "built"
+  },
+  "floatShadowState": {
+   "file": "fx/KeyLight.tsx",
+   "status": "built"
+  },
+  "photoCover": {
+   "file": "fx/Photo.tsx",
+   "status": "built"
+  },
+  "footageTime": {
+   "file": "fx/Footage.tsx",
+   "status": "built"
+  },
+  "ditherPlate": {
+   "file": "fx/plates.ts",
+   "status": "built"
+  },
+  "kitTheme": {
+   "file": "kit/theme.ts",
+   "status": "built"
+  },
+  "ZSwarm": {
+   "file": "fx/Gather.tsx",
+   "status": "built"
+  },
+  "CardPicture": {
+   "file": "fx/Cards.tsx",
+   "status": "built"
+  },
+  "Bento": {
+   "file": "fx/Cards.tsx",
+   "status": "built"
+  },
+  "DuotoneFilter": {
+   "file": "fx/Develop.tsx",
+   "status": "built"
+  },
+  "Grade": {
+   "file": "fx/Grades.tsx",
+   "status": "built"
+  },
+  "GradeCut": {
+   "file": "fx/Grades.tsx",
+   "status": "built"
+  },
+  "GradientField": {
+   "file": "fx/Gradients.tsx",
+   "status": "built"
+  },
+  "ShapeMorph": {
+   "file": "fx/MorphPath.tsx",
+   "status": "built"
+  },
+  "Goo": {
+   "file": "fx/MorphPath.tsx",
+   "status": "built"
+  },
+  "PixelFilters": {
+   "file": "fx/Pixel.tsx",
+   "status": "built"
+  },
+  "SpectralRim": {
+   "file": "fx/Spectral.tsx",
+   "status": "built"
+  },
+  "Foil": {
+   "file": "fx/Spectral.tsx",
+   "status": "built"
+  },
+  "Disperse": {
+   "file": "fx/Spectral.tsx",
+   "status": "built"
+  },
+  "SpectralSweep": {
+   "file": "fx/Spectral.tsx",
+   "status": "built"
+  },
+  "Grain": {
+   "file": "fx/Textures.tsx",
+   "status": "built"
+  },
+  "DitherPhoto": {
+   "file": "fx/Textures.tsx",
+   "status": "built"
+  },
+  "WeightWave": {
+   "file": "fx/TypeFx.tsx",
+   "status": "built"
+  },
+  "OutlineFill": {
+   "file": "fx/TypeFx.tsx",
+   "status": "built"
+  },
+  "SplitFlap": {
+   "file": "fx/TypeFx.tsx",
+   "status": "built"
+  },
+  "CodeType": {
+   "file": "fx/TypeFx.tsx",
+   "status": "built"
+  },
+  "ScatterAssemble": {
+   "file": "fx/TypeFx.tsx",
+   "status": "built"
+  },
+  "ErodeRise": {
+   "file": "fx/TypeFx.tsx",
+   "status": "built"
+  },
+  "TypeWindow": {
+   "file": "fx/Window.tsx",
+   "status": "built"
   }
  },
  "directions": [
@@ -693,7 +1204,8 @@
      "launch",
      "feature",
      "sting",
-     "vertical"
+     "vertical",
+     "update"
     ],
     "paces": [
      "calm",
@@ -823,7 +1335,53 @@
     "origami animals or other literal craft props",
     "a clip-path or overflow on a rotating 3D wrapper (it flattens the fold)"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version number printed full-bleed on the sheet, its digits cropped by the frame, the camera already sliding along the paper; a crease starts to draw through the last digit.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is printed on the next face: the sheet folds over a crease in 14-18 f and the change is already live on the face that lands, one control moving as the fold settles.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the next fold starts from the edge of the face that just landed, so the crease carries the motion across"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The crease fold: the whole changed product opens on one full-frame face, the far half lifting about the crease and shading with its angle to the key.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The sheet folds down to the mark in two faster folds (18 f, then 12 f); the name and the version print beside it on the last face.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "relief",
@@ -962,7 +1520,9 @@
     "elements": 950,
     "primitives": [
      "toScreen",
-     "oklch"
+     "oklch",
+     "ReliefScene",
+     "keyLightState"
     ],
     "techniques": [
      "d3-spotlit-tilted-object",
@@ -1003,7 +1563,8 @@
      "launch",
      "feature",
      "loop",
-     "sting"
+     "sting",
+     "update"
     ],
     "paces": [
      "calm"
@@ -1033,7 +1594,9 @@
     "carriedCut",
     "Words",
     "Chain",
-    "scaleBreath"
+    "scaleBreath",
+    "ReliefScene",
+    "keyLightState"
    ],
    "techniques": [
     "d3-spotlit-tilted-object",
@@ -1130,7 +1693,53 @@
     "glossy or metallic materials",
     "a key light that jumps instead of travelling"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.16,
+     "picture": "Frame 0: the version number cast in the matte slab under a key at 8 degrees, each digit throwing a shadow four times its height; the key starts to climb.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is one raised element of the product relief: it rises out of the floor (40 to 120 px in 20 f), its shadow growing with it while the key holds low and rakes its edge.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the camera trucks along the floor to the next raised element while the last one sinks back as it passes"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The noon lift: the key climbs to 72 degrees in 1.2 s, every shadow shrinks, and the whole updated screen stands as one relief with the newest element keeping the only long shadow.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The mark cast in the same relief on a cleared floor, the key settling at 35 degrees; the name and the version lie debossed beside it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "macro-bench",
@@ -1308,7 +1917,8 @@
      "launch",
      "feature",
      "loop",
-     "sting"
+     "sting",
+     "update"
     ],
     "paces": [
      "calm",
@@ -1439,7 +2049,53 @@
     "reading text while it is soft",
     "chrome or mirror finishes"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.16,
+     "picture": "Frame 0: the version numerals embossed in the product material at 40x, a focus plane crossing them while a 3 px brushed edge catches the sheen.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is one physical detail of the product at macro scale: focus racks onto it in 18 f and the change works in that detail (a switch throws, a surface lights) while the rest stays soft tone.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "focus moves to the next detail over 12 f before the camera follows, so the rack leads every handover"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The focus relay: three planes rack in 30 f, the edge, the change, the product, and the last plane holds the whole updated product sharp.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The mark embossed at macro scale racks sharp out of soft tone; a pull back of x6 shows it on the product corner with the name and the version printed below.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "one-surface",
@@ -1622,7 +2278,8 @@
      "launch",
      "feature",
      "walkthrough",
-     "loop"
+     "loop",
+     "update"
     ],
     "paces": [
      "calm",
@@ -1770,7 +2427,53 @@
     "globe or world-map clichés",
     "reading text while the camera travels"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     12,
+     20
+    ],
+    "hook": {
+     "share": 0.12,
+     "picture": "Frame 0: the camera already gliding over the surface across a region printed with the version number at region size.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is one region of the surface: the camera glides to it on one strongInOut move of 1.2-1.6 s and the region runs its product state as it arrives.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the glide never stops between regions; the next region enters the frame edge while the current one still runs"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The whole-map reveal: a log-scale pull back of x12 over 2 s shows every change as one region of a single plan, all of them running.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "A last push onto the region that holds the mark at region size; the name and the version set in that region; the camera settles and creeps.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "depth-dive",
@@ -1951,7 +2654,8 @@
      "launch",
      "sting",
      "vertical",
-     "loop"
+     "loop",
+     "update"
     ],
     "paces": [
      "calm",
@@ -2083,7 +2787,53 @@
     "readable text faster than 20 px/f",
     "more than 12 live planes at once"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     18
+    ],
+    "hook": {
+     "share": 0.12,
+     "picture": "Frame 0: the camera already moving through stacked planes; the nearest plane is the old version number, swelling past both frame edges.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a plane the camera brakes at, square to the lens over 18 f: the change runs live on it, then the camera pulls away into depth.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the next plane already shows small and sharp behind the current one before the camera leaves it"
+    },
+    "payoff": {
+     "share": 0.22,
+     "picture": "The field flythrough: a 1.5 s acceleration through about twenty planes, each a state of the new version, braking onto the hero screen.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The last plane is the mark with the version; the flight stops dead on the final hit, then one creep of 1 % per second.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "rollout",
@@ -2262,7 +3012,8 @@
      "sting",
      "vertical",
      "loop",
-     "feature"
+     "feature",
+     "update"
     ],
     "paces": [
      "crisp",
@@ -2393,7 +3144,53 @@
     "per-tile sounds",
     "a departure-board clatter as decoration: every wave carries a change"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: a wall of tiles turning in a diagonal wave, their back faces printing the version number digit by digit.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change rolls across the wall: tiles turn 180 degrees in 8 f in a wave from where the change happens, and their backs carry the new product state as one picture.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the next wave starts from the tile the last wave ended on"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The flood roll: on the downbeat every tile turns in one diagonal wave and the whole updated product stands on the wall.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "A last roll leaves only the mark tiles in ink; the version and the name stand in tiles beside it, then the tiles close their gaps.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "cut-and-paste",
@@ -2571,7 +3368,8 @@
      "launch",
      "sting",
      "vertical",
-     "loop"
+     "loop",
+     "update"
     ],
     "paces": [
      "crisp",
@@ -2700,7 +3498,53 @@
     "more than one stepped cadence in a film",
     "stepped type during a read"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: cut-out numerals of the version land one per 16 fps step at irregular gaps while the camera glides at 60.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is assembled from cut-out pieces of the product screen at 16 fps, the last piece the new control, which then works at 60 fps.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the pieces of the next change start landing over the last one before it clears"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The stop-motion build: over 1.6 s the whole updated screen stacks up piece by piece at irregular 2-6 frame gaps, the camera never stepping.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The name and the version arrive as cut-out letters, one per step, the mark parts last; the camera keeps gliding over them.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "wells",
@@ -2843,7 +3687,8 @@
      "bento",
      "HardStep",
      "MorphChain",
-     "Window"
+     "Window",
+     "wellShadow"
     ],
     "techniques": [
      "lc-bento-cell-takeover",
@@ -2885,7 +3730,8 @@
      "feature",
      "sting",
      "loop",
-     "vertical"
+     "vertical",
+     "update"
     ],
     "paces": [
      "crisp",
@@ -2918,7 +3764,9 @@
     "toScreen",
     "Chain",
     "Roll",
-    "stagger"
+    "stagger",
+    "ReliefScene",
+    "wellShadow"
    ],
    "techniques": [
     "lc-bento-cell-takeover",
@@ -3019,7 +3867,53 @@
     "a flat bento board with drop shadows: the slab is a solid",
     "sliding between wells: layout steps, it never tweens",
     "condensed display faces"
-   ]
+   ],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the slab of twelve wells under a low key; the version number is cut into one well floor and the camera is already pushing toward it.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change rises out of its own well, 80 px in 24 f on settleOut, its content standing proud of the slab while the other wells settle 30 px lower.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the risen well settles back as the camera trucks to the next one"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The rise: the well holding the main change of the new version rises toward the lens while the camera pushes in x3.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The last cell lifts with the mark cut into its floor; the key swings 15 degrees across its edges; the name and the version lie on the slab.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "monument",
@@ -3197,7 +4091,8 @@
      "launch",
      "sting",
      "vertical",
-     "loop"
+     "loop",
+     "update"
     ],
     "paces": [
      "calm",
@@ -3328,7 +4223,54 @@
     "reading the small line while the giant type moves fast",
     "a name with no meaning to travel: deal another direction"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     18
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version number at 1400 px, so large the frame holds one curve of a numeral; the camera trucks along it at 2 px/f.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change opens inside a counter or a gap of the numerals: the camera pushes into it, x6 in 30 f, and the hole is the product doing the change.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the push out of one counter travels along the numeral stroke to the next"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The counter window: a push into the last counter at a constant ratio, x12 in 40 f, until the whole updated product fills the frame.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The pull back keeps going until the giant number is the version at lockup size beside the mark and the name.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    },
+    "needs_also": []
+   }
   },
   {
    "id": "census",
@@ -3508,7 +4450,8 @@
      "feature",
      "walkthrough",
      "loop",
-     "vertical"
+     "vertical",
+     "update"
     ],
     "paces": [
      "calm",
@@ -3642,7 +4585,53 @@
     "a field that moves while a line is read",
     "motion without a reason: every unit moves because it was sorted"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: hundreds of the product units fill the frame; the units that will change flip first and spell the version number across the field.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change happens to all units at once: a front crosses the field and every unit it passes takes the new behaviour (a state flips, a value updates) over 12 f.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the next front starts from the edge the last one left"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The sorting wave: one front crosses the field in 2 s and every unit slides to its ranked place under the new version.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The field sinks unit by unit from the edges in, leaving the mark; the name and the version stand on the floor beside it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "turntable",
@@ -3819,7 +4808,8 @@
      "launch",
      "feature",
      "sting",
-     "loop"
+     "loop",
+     "update"
     ],
     "paces": [
      "calm",
@@ -3852,7 +4842,9 @@
     "creep",
     "Chain",
     "carry",
-    "Words"
+    "Words",
+    "keyLightState",
+    "FloatShadow"
    ],
    "techniques": [
     "d3-extruded-slab-orbit",
@@ -3948,7 +4940,53 @@
     "edge stacks of thin layers faking a thickness",
     "spinning the object for show: every turn changes a state"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.16,
+     "picture": "Frame 0: the product block mid-turn under a fixed key; its face carries the version number as it turns square to the lens.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is on the next face: the block turns 90 degrees in 30 f with weight and the face that lands shows the change running.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "every turn starts on the last one settling, so the block never rests between changes"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The weighted half-turn: 180 degrees in 40 f with a 2-degree overshoot back, the far face the whole updated product.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The block turns a last quarter and shrinks into the mark as a solid; the name and the version print on the floor beside it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "exploded-view",
@@ -4124,7 +5162,8 @@
     "formats": [
      "launch",
      "feature",
-     "walkthrough"
+     "walkthrough",
+     "update"
     ],
     "paces": [
      "calm",
@@ -4256,7 +5295,53 @@
     "translucent layers: layers are opaque, separated by depth",
     "a slow orbit with nothing happening"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     10,
+     20
+    ],
+    "hook": {
+     "share": 0.12,
+     "picture": "Frame 0: the live interface already tilting to three-quarters; its top layer carries the version number.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is one layer: the stack lifts apart (60 px, 4 f stagger), the camera cranes 12 degrees to the changed layer and it works on its own plate.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the stack closes as the crane moves on, so the next layer lifts from a closed stack"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The layer explode: the whole stack lifts apart and the camera cranes between the layers to the newest one.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The layers collapse onto one thin plate that is the mark; the name and the version print on the floor beside it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "one-shape",
@@ -4436,7 +5521,8 @@
      "feature",
      "loop",
      "sting",
-     "vertical"
+     "vertical",
+     "update"
     ],
     "paces": [
      "calm",
@@ -4566,7 +5652,53 @@
     "a second shape competing for the eye",
     "hard cuts before the lockup"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.12,
+     "picture": "Frame 0: a pill holding the version number swells by half its width.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is one role of the shape: the pill becomes a button that is pressed, a row that lists the new item, a toggle that flips, one move of 18-24 f each.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the last role of one change is the first role of the next, with no cut between them"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The swell into a window: the shape grows past the frame aspect and its interior opens onto the whole updated product.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The window collapses into the mark silhouette in 18 f; the name and the version slide out of it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "wall",
@@ -4744,7 +5876,8 @@
      "launch",
      "feature",
      "vertical",
-     "loop"
+     "loop",
+     "update"
     ],
     "paces": [
      "crisp",
@@ -4875,7 +6008,53 @@
     "stock-looking people: each panel is a moment of the product in use",
     "a gutter grid that never changes"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.12,
+     "picture": "Frame 0: a wall of sixteen panels, each a moment of the product, the centre panel carrying the version number.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change fills a block of four panels: they pan and zoom together until they show adjacent pieces of the one state the change makes, then split back.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the next block starts to come together while the last one splits"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The converge: all sixteen panels pan and zoom on their own curves into one picture of the new version.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The one frame pulls back x3 to a single panel; the mark, the name and the version sit in the gutter below it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "odometer",
@@ -5055,7 +6234,8 @@
      "feature",
      "sting",
      "vertical",
-     "loop"
+     "loop",
+     "update"
     ],
     "paces": [
      "crisp",
@@ -5190,7 +6370,53 @@
     "slot-machine or casino imagery",
     "spinning reels during a read"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: inside the drums of the version number, the last digit spinning past the old value.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change rides a numeral drum: the strip stops on a value and its window opens onto the change as a product moment, the drum shade still on its edges.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the next drum already spins at the frame edge while the window closes"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The reel ride: the camera dives into the last digit drum, rides it down for 40 f and lands on the final digit of the new version.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The drums roll on into the name and lock letter by letter beside the version; the mark locks on the first drum.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "waveform",
@@ -5367,7 +6593,8 @@
      "feature",
      "sting",
      "loop",
-     "vertical"
+     "vertical",
+     "update"
     ],
     "paces": [
      "calm",
@@ -5497,7 +6724,53 @@
     "copy that is not what the voice says",
     "analysing audio per frame in the render"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the camera riding the product sound as a ridged landscape; the version number lies printed on the floor between the ridges.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is heard and seen: the playhead front passes and the ridges behind it take the change (cleaner, louder, one band split out) with the product control that did it standing at the front.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the playhead never stops; the next change starts wherever it is"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The clean pass: a front moves with the playhead and every ridge behind it loses its noise floor.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The last peak settles flat; the name and the version print on the floor where it stood, the mark beside them.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "document",
@@ -5666,7 +6939,8 @@
      "feature",
      "walkthrough",
      "loop",
-     "vertical"
+     "vertical",
+     "update"
     ],
     "paces": [
      "calm",
@@ -5802,7 +7076,53 @@
     "a scaled-up screenshot for the dive: zoom live text",
     "scrolling terminal filler"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the caret types the version number on a fresh line of the product document.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a line of the document that does what it says: the caret types 1-3 words and the line becomes the live control, working.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the next line is typed under the last while the last still works"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The full-stop dive: the last line ends on a full stop and the camera zooms into it, x16 over 1.2 s, onto the work the update makes possible.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "Back in the document the caret types the name and the version; the mark sits at the start of the line.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "diorama",
@@ -5939,7 +7259,9 @@
     "primitives": [
      "carry",
      "squash",
-     "toScreen"
+     "toScreen",
+     "ReliefScene",
+     "castShadow"
     ],
     "techniques": [
      "tr-conveyor-line-swap",
@@ -5980,7 +7302,8 @@
      "launch",
      "feature",
      "loop",
-     "walkthrough"
+     "walkthrough",
+     "update"
     ],
     "paces": [
      "calm",
@@ -6012,7 +7335,9 @@
     "handoffShot",
     "defocusPulse",
     "Chain",
-    "Words"
+    "Words",
+    "ReliefScene",
+    "castShadow"
    ],
    "techniques": [
     "tr-conveyor-line-swap",
@@ -6122,7 +7447,53 @@
     "metallic or glossy model parts",
     "toy-town props unrelated to the product"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     10,
+     20
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: at track level, the unit stamped with the version number already rolls out of the dark into the first station, its shadow riding with it under the 30-degree key.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is one station of the line: the unit enters, one part acts on it (a gate drops 20 px in 6 f or a press lands in 14 f) and it leaves with its top face in the new state, the change as a product fact.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the camera trucks with the unit along the track, lets it run 0.4 s ahead and catches up at the next station"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The station run through the newest station: the press lands on its contact frame with a 2 f squash, the unit leaves transformed, and the camera pulls back so every station it passed shows its work at once.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The finished unit rolls into the mark, built as a small extruded building at the end of the track; the key catches its edges and the name and the version lie printed on the table in front.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "foreground-pass",
@@ -6299,7 +7670,8 @@
      "launch",
      "feature",
      "sting",
-     "vertical"
+     "vertical",
+     "update"
     ],
     "paces": [
      "crisp",
@@ -6428,7 +7800,53 @@
     "shapes that rush toward the lens: passes are lateral",
     "more than one pass per second"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: a soft dark shape slides off the frame and reveals the version number standing in the pool of light behind it.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change happens behind an occluder: a pre-softened shape from the user day crosses in 12 f and when it clears the change is already done in the product.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the camera keeps its truck speed through every pass"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The occluder swap: one shape 1.5x the frame height crosses and the whole updated product sits behind it at the same truck speed.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "A last shape crosses and leaves the mark with the name and the version in the pool of light.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "resolution",
@@ -6603,7 +8021,8 @@
      "launch",
      "sting",
      "vertical",
-     "loop"
+     "loop",
+     "update"
     ],
     "paces": [
      "crisp",
@@ -6730,7 +8149,53 @@
     "retro game palettes or reduced colours: cells are true averages",
     "a product with nothing to do with images: deal another direction"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version number in coarse 72 px cells, resolving in steps on the beat.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change arrives out of coarse blocks: its product state resolves in 4 steps (72, 36, 12 px, exact) on the beat.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the resolved change coarsens into the blocks of the next one"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The cell front: from the change the product names, resolved image grows outward by whole cells to the frame corners in 30 f.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The mark resolves from four cells to exact; the name and the version are clean from their first frame.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "sundial",
@@ -6867,7 +8332,10 @@
     "elements": 420,
     "primitives": [
      "toScreen",
-     "stagger"
+     "stagger",
+     "ReliefScene",
+     "keyLightState",
+     "castShadow"
     ],
     "techniques": [
      "ui-push-aside-reflow",
@@ -6908,7 +8376,8 @@
      "launch",
      "feature",
      "loop",
-     "walkthrough"
+     "walkthrough",
+     "update"
     ],
     "paces": [
      "calm"
@@ -6938,7 +8407,10 @@
     "scaleBreath",
     "carriedCut",
     "Chain",
-    "Words"
+    "Words",
+    "ReliefScene",
+    "keyLightState",
+    "castShadow"
    ],
    "techniques": [
     "ui-push-aside-reflow",
@@ -7042,7 +8514,53 @@
     "a shadow crossing a line during its read",
     "more than one sun"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     10,
+     20
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: dawn, a 6-degree sun on the left; the version number stands on the floor as raised blocks, each digit throwing a shadow five times its height, the sun already climbing.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is one day-block: the shadow edge of the tall focus block reaches it, its scattered tiles slide together in 12 f (settleOut) into the shape of the change, and the block stands lit with that product fact on its top face.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the sun swings on about 25 degrees and the shadow edge sweeps across the floor to the next day-block"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The shadow week in one sweep: the sun swings the remaining arc in 2 s, the focus block's shadow crosses every block the changes rebuilt, and the cleared floor lies in one long shadow of open time.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "Sunset: the last 3-degree ray rakes the floor and catches only the mark, cut into it as a shallow relief, with the name and the version beside it in the last light.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "reel",
@@ -7205,7 +8723,8 @@
      "launch",
      "sting",
      "vertical",
-     "feature"
+     "feature",
+     "update"
     ],
     "paces": [
      "crisp",
@@ -7335,7 +8854,53 @@
     "type that moves with the footage",
     "film burn, light leaks or vignettes"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.12,
+     "picture": "Frame 0: footage at 0.3x with the version number locked onto the motion of its subject.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a clip of real use ramping from 0.3x to 3x, the product type locking onto it on the fastest frame.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "every cut lands on the fastest frame with the same direction of motion"
+    },
+    "payoff": {
+     "share": 0.18,
+     "picture": "The payoff ramp: a clip slows as its subject reaches the centre, ramps to 3x and cuts on the fastest frame into the product at work.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.18,
+     "picture": "The last ramp freezes on its peak frame; the name, the mark and the version set over the still.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "domino",
@@ -7473,7 +9038,8 @@
     "primitives": [
      "carry",
      "toScreen",
-     "squash"
+     "squash",
+     "castShadow"
     ],
     "techniques": [
      "ui-row-cascade",
@@ -7516,7 +9082,8 @@
      "loop",
      "sting",
      "vertical",
-     "walkthrough"
+     "walkthrough",
+     "update"
     ],
     "paces": [
      "crisp",
@@ -7549,7 +9116,9 @@
     "scaleBreath",
     "handoffShot",
     "Chain",
-    "Words"
+    "Words",
+    "ReliefScene",
+    "castShadow"
    ],
    "techniques": [
     "ui-row-cascade",
@@ -7645,7 +9214,53 @@
     "glossy or metallic slabs",
     "more than one chain moving at once"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.12,
+     "picture": "Frame 0: a row of standing slabs printed with the version number; a tap tips the first one.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a run of slabs that falls into it: the last slab of the run lands face-up as the product state the change makes.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "each falling run strikes the next run on its contact frame"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The topple: one push and every slab of the update falls in a chain at 5 slabs a second while the camera tracks it.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "One slab left standing turns face-on: the mark; the name and the version lie on the floor.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   },
   {
    "id": "shadow-play",
@@ -7782,7 +9397,8 @@
     "elements": 44,
     "primitives": [
      "defocusMix",
-     "camera"
+     "camera",
+     "projectOnWall"
     ],
     "techniques": [
      "tx-gobo-studio-shadows",
@@ -7823,7 +9439,8 @@
      "feature",
      "sting",
      "loop",
-     "vertical"
+     "vertical",
+     "update"
     ],
     "paces": [
      "calm",
@@ -7855,7 +9472,9 @@
     "carriedCut",
     "creep",
     "Chain",
-    "Words"
+    "Words",
+    "projectOnWall",
+    "castShadow"
    ],
    "techniques": [
     "tx-gobo-studio-shadows",
@@ -7938,7 +9557,53 @@
     "animated blur radius: mix a sharp and a softened copy",
     "showing the object before the turn"
    ],
-   "requires": []
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "hook": {
+     "share": 0.16,
+     "picture": "Frame 0: a soft shadow of the version number fills the wall and sharpens as its object moves toward the wall.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a shadow that changes shape: the object turns and its shadow becomes the new behaviour of the product (a toggle, a path, a shape).",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "each shadow shrinks into the shadow of the next object"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The reveal turn: the object moves toward the wall over 40 f, its shadow shrinks x4 and sharpens, turns 90 degrees and is the main change of the new version.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The last object turns and its shadow is the mark; the name and the version print on the wall beside it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
   }
  ]
 }

@@ -14,6 +14,8 @@ Where it sits: after the brief (Step 0) and the inventory, before the treatment 
 Usage:
   python3 scripts/deck.py --brief "<one line>" --format launch --pace calm [--have ui,footage] --options 3
   python3 scripts/deck.py --brief "<one line>" --format launch --pace calm --direction <id>  # the sheet
+  python3 scripts/deck.py --brief "<one line>" --format update --changes 3 --options 3       # a short update film
+  python3 scripts/deck.py ... --direction <id> --brand brand/brand.json  # roles mapped onto the brand's colours
   python3 scripts/deck.py --redraw palette --reason "the brand's own green fights the dealt blue"
   python3 scripts/deck.py --show                 # reprint the saved sheet (out/DIRECTION.md)
   python3 scripts/deck.py --show <id>            # one direction in full, with every variant
@@ -25,6 +27,16 @@ Usage:
               product makes or handles: a voice, a call, a sound), number (one honest number the product
               owns and can back), name (the product's name is a real word whose meaning the film can use).
               Leave it out when there is none. Directions built on an asset only fit when it exists.
+  --format    launch (15-45 s, the main case), update (8-20 s: "vX is out" with 2-4 changes), feature,
+              loop, sting, walkthrough or vertical. An update film is a hook on the version or the mark,
+              2-4 changes each shown as a product moment (never a list), one payoff and the end card with
+              the version, 1-3 words a fragment; its beats come from the direction's own update skeleton,
+              and the version counts as the one number the film owns (--have number).
+  --changes   how many changes an update film shows (2-4, default 3): one beat each.
+  --brand     brand/brand.json from scripts/brand.py: the dealt palette's ground / ink / accent roles and
+              proportions are mapped onto the brand's own colours (a brand colour where one sits near
+              the recipe's lightness, else the recipe on the brand's own grey, never at the accent's hue),
+              checked for contrast; the brand's typeface takes the dealt weights and case.
   --keep      palette,type when the brand already fixes them: the sheet deals the rest, and you map the
               brand's values onto the dealt roles.
   --seconds   the film's length: filters directions by their length range and times the beat skeleton.
@@ -51,6 +63,7 @@ import argparse
 import hashlib
 import itertools
 import json
+import math
 import os
 import random
 import re
@@ -73,7 +86,7 @@ STARTER_SRC = [os.path.join(SKILL, 'assets', 'remotion-starter', 'src'), os.path
 SHORTLIST = [os.path.join(SKILL, 'assets', 'music', 'shortlist.json'), os.path.join(HERE, 'music', 'shortlist.json')]
 PICK = os.path.join(HERE, 'pick.py')
 
-FORMATS = ['launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical']
+FORMATS = ['launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical', 'update']
 PACES = ['calm', 'crisp']
 HAVE = ['ui', 'footage', 'audio', 'number', 'name']
 HAVE_TEXT = {'ui': 'product UI', 'footage': 'footage', 'audio': 'a real recorded clip',
@@ -81,7 +94,11 @@ HAVE_TEXT = {'ui': 'product UI', 'footage': 'footage', 'audio': 'a real recorded
 KEEP = ['palette', 'type']
 SLOTS = ['palette', 'type', 'signature', 'direction']
 MAX_REDRAWS = 2
-DEFAULT_SECONDS = {'launch': 20, 'feature': 15, 'loop': 10, 'sting': 6, 'walkthrough': 30, 'vertical': 15}
+DEFAULT_SECONDS = {'launch': 20, 'feature': 15, 'loop': 10, 'sting': 6, 'walkthrough': 30, 'vertical': 15, 'update': 14}
+UPDATE_SECONDS = (8, 20)  # an update film ("vX is out"): a hook, 2-4 changes, a payoff, the end card
+CHANGES = (2, 4)  # the changes an update film shows, each as one product moment
+DEFAULT_CHANGES = 3
+UPDATE_PARTS = ['hook', 'change', 'payoff', 'end']
 
 SPACES = {'flat': 'flat', 'layered': 'layered 2.5D', 'perspective': 'perspective planes', 'relief': 'lit relief'}
 MOTIONS = ['locked', 'drift', 'travel', 'dolly', 'orbit', 'follow', 'focus', 'snap', 'split', 'crane', 'time']
@@ -199,12 +216,15 @@ def starter_src():
     return next((p for p in STARTER_SRC if os.path.isfile(os.path.join(p, 'lib', 'anim.ts'))), None)
 
 
+_EXPORTS = {}
+
+
 def _exports(src, rel, name):
     path = os.path.join(src, *rel.split('/'))
-    if not os.path.isfile(path):
-        return False
-    text = open(path, encoding='utf-8').read()
-    return re.search(r'export\s+(const|function|class)\s+' + re.escape(name) + r'\b', text) is not None
+    if path not in _EXPORTS:  # one read and one scan per file, however many primitives it holds
+        text = open(path, encoding='utf-8').read() if os.path.isfile(path) else ''
+        _EXPORTS[path] = set(re.findall(r'export\s+(?:const|function|class)\s+([A-Za-z_$][\w$]*)', text))
+    return name in _EXPORTS[path]
 
 
 def ready_names(cat, src=None):
@@ -239,9 +259,21 @@ def _words(text):
     return {w for w in re.findall(r'[a-z]+', text.lower()) if len(w) >= 4}
 
 
+_ANY = {}
+
+
+def _any(key, pats):
+    """One alternation of a pattern list, so a clean string costs one search instead of one per pattern."""
+    if key not in _ANY:
+        _ANY[key] = re.compile('|'.join(f'(?:{p})' for p in pats), re.IGNORECASE)
+    return _ANY[key]
+
+
 def wording_hits(obj):
     hits = []
     for path, s in _strings(obj):
+        if not _any('wording', WORDING).search(s):
+            continue
         for pat in WORDING:
             m = re.search(pat, s, re.IGNORECASE)
             if m:
@@ -252,6 +284,8 @@ def wording_hits(obj):
 def ban_hits(obj, prefix='', skip=()):
     out = []
     for path, s in _strings(obj, skip=skip):
+        if not _any('bans', [p for p, _ in BAN_WORDS]).search(s):
+            continue
         for pat, word in BAN_WORDS:
             if re.search(pat, s, re.IGNORECASE):
                 out.append(f'{prefix}{path}: "{word}" is a house ban (name it only in the avoid list)')
@@ -306,6 +340,11 @@ def validate(data, library=None, src=None, strict=False):
         errors.append('the deck needs a "methods" catalogue of build recipes (name -> text)')
         methods = methods if isinstance(methods, dict) else {}
     errors += ban_hits({'recipes': recipes, 'methods': methods})
+    defaults = data.get('defaults', {})
+    if not isinstance(defaults, dict) or not all(isinstance(v, str) and len(v) > 40 for v in defaults.values()):
+        errors.append('defaults: an object of house defaults (name -> text)')
+        defaults = {}
+    errors += ban_hits({'defaults': defaults})
     if not 18 <= len(dirs) <= 24:
         errors.append(f'the deck holds {len(dirs)} directions; it must hold 18-24')
     planned_caps = [n for n, p in cat.items() if isinstance(p, dict) and p.get('status') == 'planned' and re.search(r'[A-Z]', n)]
@@ -507,6 +546,17 @@ def validate(data, library=None, src=None, strict=False):
                 if (main_n and re.search(r'\b' + re.escape(main_n) + r'\b', pic) and b.get('signature') is not True
                         and j != len(sk) - 1):  # the lockup may echo it
                     e(f'skeleton {b["beat"]}: repeats the signature shot outside its beat (echo it smaller, never repeat it)')
+        # the update skeleton: present exactly when the direction makes update films
+        if ('update' in fit['formats']) != isinstance(d.get('update'), dict):
+            e('a direction that lists update in fit.formats carries an "update" skeleton, and only then')
+        elif isinstance(d.get('update'), dict):
+            for msg in update_problems(d):
+                e(msg)
+        if re.search(r'\bradial\b|\btagline\b', f'{lk["shot"]} {lk["build"]}', re.IGNORECASE):
+            e('lockup: the film\'s own device makes the mark; never a centred mark, name and tagline over a radial plate')
+        fg = w.get('foreground')
+        if fg is not None and not (isinstance(fg, str) and (not fg.lower().startswith('off') or len(fg.split()) >= 5)):
+            e('world.foreground is a sentence, or "off: <the reason>" (a layered space has a pre-softened near plane by default)')
         # primitives and techniques
         named = (list(d['primitives']) + list(d['transitions']) + list(sig['primitives']) + list(d['signature_alt']['primitives'])
                  + list(lk['primitives']))
@@ -626,10 +676,77 @@ def validate(data, library=None, src=None, strict=False):
     return errors, notes
 
 
+def update_beats(d, n=DEFAULT_CHANGES):
+    """The update skeleton expanded for n changes, shares normalised to 1: hook, change 1..n, payoff, end."""
+    u = d['update']
+    parts = [('hook', u['hook'])] + [(f'change {i + 1}', u['change']) for i in range(n)] + [('payoff', u['payoff']), ('end', u['end'])]
+    total = sum(float(p.get('share', 0)) for _, p in parts) or 1.0
+    out = []
+    for name, p in parts:
+        ch = name.startswith('change')
+        pic = str(p.get('picture', ''))
+        if ch:
+            pic = f'Change {name.split()[1]} of {n}. {pic}'
+        out.append({'beat': name, 'share': float(p.get('share', 0)) / total, 'picture': pic, 'copy': p.get('copy'),
+                    'signature': p.get('signature') is True, 'change': ch, 'handoff': p.get('handoff') if ch else None})
+    return out
+
+
+def update_problems(d):
+    """Why a direction's update skeleton cannot make an 8-20 s update film (empty when it can)."""
+    u, out = d['update'], []
+    sec = u.get('seconds')
+    if not (isinstance(sec, list) and len(sec) == 2 and all(isinstance(x, (int, float)) for x in sec)
+            and UPDATE_SECONDS[0] <= sec[0] < sec[1] <= UPDATE_SECONDS[1]):
+        out.append(f'update.seconds must be [min, max] within {UPDATE_SECONDS[0]}-{UPDATE_SECONDS[1]}')
+    if not _is_list_of(u.get('needs_also', []), ['audio', 'number', 'name'], nonempty=False):
+        out.append('update.needs_also may list audio, number, name')
+    for part in UPDATE_PARTS:
+        p = u.get(part)
+        if not isinstance(p, dict) or not isinstance(p.get('share'), (int, float)) or not 0.05 <= p['share'] <= 0.4 \
+                or len(str(p.get('picture', ''))) < 30:
+            out.append(f'update.{part}: needs a share (0.05-0.4) and a concrete picture')
+            continue
+        c = p.get('copy')
+        if c is not None and not (isinstance(c, dict) and isinstance(c.get('words'), list) and len(c['words']) == 2 and c.get('what')
+                                  and all(isinstance(x, int) for x in c['words']) and 1 <= c['words'][0] <= c['words'][1] <= 3):
+            out.append(f'update.{part}: a copy slot is {{"words": [min, max], "what": ...}} with 1-3 words (an update fragment)')
+    if out:
+        return out
+    if u['change'].get('signature') is True:
+        out.append('update.change: the signature lands once, so it is never on the repeated change beat')
+    if sum(1 for p in ('hook', 'payoff', 'end') if u[p].get('signature') is True) != 1:
+        out.append('update: exactly one of hook, payoff and end carries the signature shot')
+    if not isinstance(u['change'].get('handoff'), str) or len(u['change']['handoff']) < 20:
+        out.append('update.change: say how one change hands over to the next (handoff)')
+    if all(u[p].get('copy') is not None for p in ('hook', 'payoff', 'end')):
+        out.append('update: at least one of hook, payoff and end is picture only')
+    hook = u['hook']['picture'].lower()
+    if 'frame 0' not in hook or not re.search(r'\b(version|mark)\b', hook):
+        out.append('update.hook: says what moves on frame 0, on the version or the mark')
+    if 'version' not in u['end']['picture'].lower():
+        out.append('update.end: the end card carries the version')
+    if update_beats(d, CHANGES[0])[0]['share'] > 0.2 + 1e-9:
+        out.append('update: with 2 changes the hook takes more than 20 % of the film')
+    if any(b['share'] < 0.1 - 1e-9 for b in update_beats(d, CHANGES[1]) if b['change']):
+        out.append('update: with 4 changes a change gets under 10 % of the film; give the change beat more weight')
+    main_n = re.sub(r'^the\s+', '', str(d['signature']['name']).lower())
+    alt_n = re.sub(r'^the\s+', '', str(d['signature_alt']['name']).lower())
+    for part in UPDATE_PARTS:
+        pic = u[part]['picture'].lower()
+        if alt_n and re.search(r'\b' + re.escape(alt_n) + r'\b', pic):
+            out.append(f'update.{part}: uses the alternative signature')
+        if main_n and part != 'end' and u[part].get('signature') is not True and re.search(r'\b' + re.escape(main_n) + r'\b', pic):
+            out.append(f'update.{part}: repeats the signature shot outside its beat')
+    return out
+
+
 # ------------------------------------------------------------------------------------------------- dealing
-def needs_of(d):
+def needs_of(d, fmt=None):
     f = d['fit']
-    return [k for k in ('ui', 'footage') if f[k] == 'needs'] + list(f.get('needs_also', []))
+    also = d['update'].get('needs_also', f.get('needs_also', [])) if fmt == 'update' and isinstance(d.get('update'), dict) \
+        else f.get('needs_also', [])
+    return [k for k in ('ui', 'footage') if f[k] == 'needs'] + list(also)
 
 
 def keyword_hits(d, brief):
@@ -644,11 +761,14 @@ def fits(d, fmt, pace, have, seconds, brief='', ready=None):
         return False, f'format {fmt}'
     if pace and pace not in f['paces']:
         return False, f'pace {pace}'
-    for k in needs_of(d):
+    if fmt == 'update':  # the version is the one honest number an update film owns
+        have = set(have) | {'number'}
+    for k in needs_of(d, fmt):
         if k not in have:
             return False, f'needs {HAVE_TEXT[k]}'
-    if seconds and not f['seconds'][0] <= seconds <= f['seconds'][1]:
-        return False, f'{seconds:g} s is outside {f["seconds"][0]}-{f["seconds"][1]} s'
+    lo, hi = d['update']['seconds'] if fmt == 'update' and isinstance(d.get('update'), dict) else f['seconds']
+    if seconds and not lo <= seconds <= hi:
+        return False, f'{seconds:g} s is outside {lo}-{hi} s'
     if f.get('keywords_required') and not keyword_hits(d, brief):
         return False, 'the brief names none of its subjects'
     if ready is not None:
@@ -662,7 +782,7 @@ def weight(d, inp, recent):
     w = 1.0 + 0.9 * min(3, keyword_hits(d, inp['brief']))
     if inp['pace'] == 'crisp' and d['intensity'] <= 2:
         w *= 0.35
-    if needs_of(d):  # it only fits because the film has the asset: use it
+    if needs_of(d, inp.get('format')):  # it only fits because the film has the asset: use it
         w *= 1.5
     if d['id'] in recent:
         w *= 0.3
@@ -701,6 +821,8 @@ def option_problems(picks, pool, n, tone=None):
         want = min(k, 2, len({tone(d) for d in pool}))
         if len({tone(p) for p in picks}) < want:
             out.append('one ground tone')
+        if any(tone(d) in ('mid', 'field') for d in pool) and not any(tone(p) in ('mid', 'field') for p in picks):
+            out.append('no mid or colour ground')
     if any(d['intensity'] >= 4 for d in pool) and not any(p['intensity'] >= 4 for p in picks):
         out.append('no rich direction')
     if sum(1 for p in picks if p['intensity'] <= 2) > max(1, n // 3):
@@ -817,13 +939,17 @@ def write_history(enabled, entry):
 
 
 # ---------------------------------------------------------------------------------------------- the sheet
-def skeleton_times(d, seconds, fps=60):
+def skeleton_times(d, seconds, fps=60, fmt=None, changes=DEFAULT_CHANGES):
+    beats = update_beats(d, changes) if fmt == 'update' and isinstance(d.get('update'), dict) else d['skeleton']
     out, t = [], 0.0
-    for b in d['skeleton']:
+    for b in beats:
         a, t = t, t + b['share'] * seconds
-        out.append({'beat': b['beat'], 'from_s': round(a, 2), 'to_s': round(t, 2),
-                    'from_f': int(round(a * fps)), 'to_f': int(round(t * fps)),
-                    'picture': b['picture'], 'copy': b.get('copy'), 'signature': bool(b.get('signature'))})
+        row = {'beat': b['beat'], 'from_s': round(a, 2), 'to_s': round(t, 2),
+               'from_f': int(round(a * fps)), 'to_f': int(round(t * fps)),
+               'picture': b['picture'], 'copy': b.get('copy'), 'signature': bool(b.get('signature'))}
+        if b.get('change'):
+            row['change'], row['handoff'] = True, b.get('handoff')
+        out.append(row)
     if out:
         out[-1]['to_s'], out[-1]['to_f'] = round(seconds, 2), int(round(seconds * fps))
     return out
@@ -849,6 +975,148 @@ def shortlist_tracks(d):
     return out[:5]
 
 
+# ------------------------------------------------------------------------------------------------ the brand
+def _lin(c):
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def _gam(c):
+    c = min(1.0, max(0.0, c))
+    return 12.92 * c if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
+
+
+def hex_oklch(hx):
+    """OKLCH (L, C, h in degrees) of a #RRGGBB colour."""
+    hx = hx.strip().lstrip('#')
+    r, g, b = (_lin(int(hx[i:i + 2], 16) / 255) for i in (0, 2, 4))
+    l_ = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+    m_ = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+    s_ = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+    L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_
+    a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
+    bb = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+    return L, math.hypot(a, bb), (math.degrees(math.atan2(bb, a)) + 360) % 360
+
+
+def oklch_hex(L, C, h):
+    """#RRGGBB of an OKLCH colour, chroma reduced until it sits inside sRGB."""
+    rgb = (L, L, L)
+    for k in range(41):
+        c = C * (1 - k / 40)
+        a, b = c * math.cos(math.radians(h)), c * math.sin(math.radians(h))
+        l3 = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
+        m3 = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
+        s3 = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3
+        rgb = (4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3,
+               -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3,
+               -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3)
+        if all(-1e-4 <= x <= 1 + 1e-4 for x in rgb):
+            break
+    return '#' + ''.join(f'{round(_gam(x) * 255):02X}' for x in rgb)
+
+
+def contrast(a, b):
+    """WCAG contrast ratio of two #RRGGBB colours."""
+    def lum(hx):
+        hx = hx.lstrip('#')
+        r, g, b_ = (_lin(int(hx[i:i + 2], 16) / 255) for i in (0, 2, 4))
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b_
+    hi, lo = sorted((lum(a), lum(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+HEX = re.compile(r'^#[0-9A-Fa-f]{6}$')
+
+
+def read_brand(path):
+    """The colours and type of a brand/brand.json written by scripts/brand.py: {name, accent, colours, family, file}."""
+    data = read_json(path, 'the brand file')
+    col = data.get('colours') if isinstance(data, dict) else None
+    if not isinstance(col, dict):
+        fail(f'--brand {path}: no "colours" block (write it with scripts/brand.py)')
+    hexes = [c.get('hex') if isinstance(c, dict) else c for c in col.get('list', [])]
+    hexes = [h.upper() for h in hexes if isinstance(h, str) and HEX.match(h)]
+    acc = col.get('accent') or (max(hexes, key=lambda h: hex_oklch(h)[1]) if hexes else None)
+    if not (isinstance(acc, str) and HEX.match(acc)):
+        fail(f'--brand {path}: no accent colour (colours.accent or a colour in colours.list)')
+    fonts = data.get('fonts') or {}
+    return {'file': path, 'name': data.get('name') or '', 'accent': acc.upper(), 'colours': hexes or [acc.upper()],
+            'source': col.get('source', 'supplied'), 'family': fonts.get('family') if isinstance(fonts, dict) else None}
+
+
+def brand_neutral(brand):
+    """(hue, chroma) the brand's own greys lean to: the chroma-weighted hue of its neutrals and their highest
+    chroma (at most .025); a brand without tinted greys gets plain greys (C 0). Never the accent's hue by
+    default: grounds derived at the accent hue turn a one-accent brand into a wash of its own colour."""
+    acc = brand['accent']
+    greys = [hex_oklch(c) for c in brand['colours'] if c != acc and hex_oklch(c)[1] <= 0.06]
+    tinted = [g for g in greys if g[1] >= 0.004]
+    if not tinted:
+        return 0.0, 0.0
+    x = sum(g[1] * math.cos(math.radians(g[2])) for g in tinted)
+    y = sum(g[1] * math.sin(math.radians(g[2])) for g in tinted)
+    return math.degrees(math.atan2(y, x)) % 360, min(0.025, max(g[1] for g in tinted))
+
+
+def map_palette(p, recipes, brand):
+    """One palette's roles on the brand. The brand's own greys and papers are the grounds: a brand neutral within
+    .12 L of the recipe's ground, else the recipe's lightness on the brand's neutral (its greys' hue, chroma at
+    most theirs and .025). A colour world takes a second brand colour (30+ degrees from the accent) near its
+    lightness, else it falls back to a neutral ground at that lightness: never a field at the accent's own hue.
+    Ink is the brand neutral with the most contrast if it holds 7:1, else the recipe's ink on the brand
+    neutral; the accent is always the brand's."""
+    r = recipes.get(p['recipe']) or {}
+    acc = brand['accent']
+    _, _, ah = hex_oklch(acc)
+    hn, cn = brand_neutral(brand)
+    cols = [c for c in brand['colours'] if c != acc]
+    (gL, gC), (iL, iC) = r.get('ground', [0.95, 0.01]), r.get('ink', [0.2, 0.01])
+    field = r.get('tone') == 'field'
+    note = None
+
+    def apart(c):
+        return min(abs(hex_oklch(c)[2] - ah), 360 - abs(hex_oklch(c)[2] - ah)) >= 30
+    greys = [(abs(hex_oklch(c)[0] - gL), c) for c in cols if abs(hex_oklch(c)[0] - gL) <= 0.12 and hex_oklch(c)[1] <= 0.06]
+    if field:
+        near = [(abs(hex_oklch(c)[0] - gL), c) for c in cols
+                if abs(hex_oklch(c)[0] - gL) <= 0.15 and hex_oklch(c)[1] >= 0.05 and apart(c)]
+        if near:
+            ground, gsrc = min(near)[1], 'brand'
+        else:
+            ground, gsrc = oklch_hex(gL, cn, hn), 'recipe on the brand neutral'
+            note = ('the brand has no second colour for this colour field: a neutral ground at its lightness '
+                    "(a field at the accent's own hue would wash the film in the accent)")
+    else:
+        ground, gsrc = (min(greys)[1], 'brand') if greys else (oklch_hex(gL, min(gC, cn), hn), 'recipe on the brand neutral')
+    inks = sorted(((contrast(c, ground), c) for c in cols if c != ground and hex_oklch(c)[1] <= 0.06), reverse=True)
+    ink, isrc = (inks[0][1], 'brand') if inks and inks[0][0] >= 7 else (oklch_hex(iL, min(iC, cn), hn), 'recipe on the brand neutral')
+    ci, ca = contrast(ink, ground), contrast(acc, ground)
+    out = {'palette': p['id'], 'recipe': p['recipe'], 'tone': r.get('tone'), 'proportions': p['proportions'],
+           'ground': {'hex': ground, 'source': gsrc}, 'ink': {'hex': ink, 'source': isrc, 'contrast': round(ci, 2)},
+           'accent': {'hex': acc, 'source': 'brand', 'contrast': round(ca, 2)},
+           'neutral': {'hue': round(hn, 1), 'chroma': round(cn, 3)}, 'ok': ci >= 7 and ca >= 3}
+    if note:
+        out['field_note'] = note
+    return out
+
+
+def brand_mapping(d, palette, recipes, brand):
+    """The dealt palette mapped onto the brand, or the direction's first other palette that holds contrast with the
+    brand's accent when the dealt one cannot (a redraw for a stated reason: the brand contradicts it)."""
+    order = ([palette] if palette else []) + [p for p in d['palettes'] if not palette or p['id'] != palette['id']]
+    tried = [map_palette(p, recipes, brand) for p in order]
+    pick = next((m for m in tried if m['ok']), tried[0])
+    out = dict(pick, file=brand['file'], name=brand['name'], source=brand['source'], family=brand['family'],
+               dealt=palette['id'] if palette else None)
+    if palette and pick['palette'] != palette['id']:
+        out['note'] = (f'the dealt {palette["id"]} cannot hold the brand accent at 3:1 with 7:1 type '
+                       f'({tried[0]["accent"]["contrast"]:.1f}:1, {tried[0]["ink"]["contrast"]:.1f}:1): {pick["palette"]} maps cleanly')
+    elif not pick['ok']:
+        out['note'] = ('no palette of this direction holds the brand accent at 3:1 on its ground: keep the accent for '
+                       'large graphics only, or deal a direction with another ground tone')
+    return out
+
+
 def pick_energy(pace, d):
     if pace == 'crisp':
         return 'high' if d['intensity'] >= 4 else 'medium'
@@ -858,6 +1126,7 @@ def pick_energy(pace, d):
 def make_sheet(d, inp, seed, options, keep, history_on, data, redraws=None, variant='main', palette=None, type_=None,
                waits=()):
     seconds = inp['seconds'] or DEFAULT_SECONDS.get(inp['format'] or 'launch', 20)
+    changes = inp.get('changes') or DEFAULT_CHANGES
     if palette is None and 'palette' not in keep:
         palette = deal_slot(d, 'palette', seed)
     if type_ is None and 'type' not in keep:
@@ -866,6 +1135,10 @@ def make_sheet(d, inp, seed, options, keep, history_on, data, redraws=None, vari
     sig = d['signature'] if variant == 'main' else dict(d['signature_alt'], family=d['signature']['family'], cost=d['signature']['cost'],
                                                         elements=d['signature']['elements'])
     used = sorted({r['recipe'] for r in ([palette] if palette else d['palettes'])})
+    brand = brand_mapping(d, palette, recipes, read_brand(inp['brand'])) if inp.get('brand') else None
+    fg = d['world'].get('foreground')
+    foreground = None if d['world']['space'] != 'layered' or str(fg or '').lower().startswith('off') else (
+        fg or (data.get('defaults') or {}).get('foreground'))
     return {
         'version': 2, 'tool': 'deck.py', 'seed': seed, 'input': inp,
         'options': [o for o in options], 'chosen_from_options': d['id'] in options,
@@ -873,7 +1146,9 @@ def make_sheet(d, inp, seed, options, keep, history_on, data, redraws=None, vari
         'recipes': {r: recipes.get(r) for r in used},
         'methods': {m: methods.get(m, '') for m in d['world'].get('method', [])},
         'signature': sig, 'signature_variant': variant, 'waits_for': list(waits),
-        'seconds': seconds, 'skeleton': skeleton_times(d, seconds),
+        'seconds': seconds, 'skeleton': skeleton_times(d, seconds, 60, inp['format'], changes),
+        'changes': changes if inp['format'] == 'update' else None,
+        'brand': brand, 'foreground': foreground,
         'pick': {'format': inp['format'] or 'launch', 'energy': pick_energy(inp['pace'], d), 'seconds': seconds,
                  'lean': d['techniques'], 'signature_ids': sig['techniques'], 'avoid': d['avoid_techniques']},
         'music_tracks': shortlist_tracks(d),
@@ -893,6 +1168,10 @@ def _cmd(inp, seed, extra):
         parts.append(f'--have {",".join(inp["have"])}')
     if inp['seconds']:
         parts.append(f'--seconds {inp["seconds"]:g}')
+    if inp.get('format') == 'update' and inp.get('changes'):
+        parts.append(f'--changes {inp["changes"]}')
+    if inp.get('brand'):
+        parts.append(f'--brand {inp["brand"]}')
     parts.append(f'--seed {seed}')
     return ' '.join(parts + extra)
 
@@ -901,7 +1180,9 @@ def _fit_line(d):
     f, m = d['fit'], d['music']
     need = [HAVE_TEXT[k] for k in needs_of(d)]
     subj = ' · only when the brief names its subject' if f.get('keywords_required') else ''
-    return (f'Fits {", ".join(f["formats"])} · {f["seconds"][0]}-{f["seconds"][1]} s · pace {"/".join(f["paces"])} · '
+    upd = (f' (an update film {d["update"]["seconds"][0]}-{d["update"]["seconds"][1]} s)'
+           if isinstance(d.get('update'), dict) else '')
+    return (f'Fits {", ".join(f["formats"])}{upd} · {f["seconds"][0]}-{f["seconds"][1]} s · pace {"/".join(f["paces"])} · '
             f'{("needs " + " and ".join(need)) if need else "no assets needed"}{subj} · music {m["mode"]}, '
             f'{m["bpm"][0]}-{m["bpm"][1]} BPM, {m["ending"]} ending')
 
@@ -999,13 +1280,33 @@ def render_sheet(sh, data, library):
             f'- **Space:** {SPACES[w["space"]]}. {w["set"]}', f'- **Depth planes:** {w["planes"]}.',
             f'- **Light ({w["light_kind"]}: {LIGHT_KINDS[w["light_kind"]]}):** {w["light"]}',
             f'- **How the light is built:** {w["light_build"]}', f'- **Texture:** {w["texture"]}.']
-    if sh['palette']:
+    if sh.get('foreground'):
+        out.append(f'- **Foreground layer (on by default in a layered space):** {sh["foreground"].rstrip(".")}.')
+    bm = sh.get('brand')
+    if bm:
+        pr = bm['proportions']
+        out += [f'- **Palette (mapped onto the brand, `{bm["file"]}`):** recipe `{bm["recipe"]}` ({bm["tone"]} ground, '
+                f'palette `{bm["palette"]}`) gives the roles and the proportions; ground `{bm["ground"]["hex"]}` '
+                f'({bm["ground"]["source"]}), ink `{bm["ink"]["hex"]}` ({bm["ink"]["source"]}, {bm["ink"]["contrast"]:.1f}:1), '
+                f'accent `{bm["accent"]["hex"]}` (the brand\'s, {bm["accent"]["contrast"]:.1f}:1 on the ground); ground '
+                f'{pr["ground"]} % · ink {pr["ink"]} % · accent {pr["accent"]} % of the frame. The brand\'s colours go into '
+                'src/brand/tokens.ts marked cinetic:brand-supplied (scripts/brand.py writes them), checked for contrast and '
+                'the one-accent rule only (palette.py --check-tokens).' + (f' ({bm["note"]}.)' if bm.get('note') else '')
+                + (f' ({bm["field_note"]}.)' if bm.get('field_note') else '')
+                + " Grounds stay neutral (the brand's own greys and papers); the accent keeps to 8-15 % of the frame."]
+    if bm:
+        pass  # the mapping above names the recipe, the palette and the proportions it took
+    elif sh['palette']:
         out += ['- **Palette (dealt):**'] + ['  ' + x for x in _palette_lines(sh['palette'], recipes)]
     else:
         out += ['- **Palette:** the brand fixes it (`--keep palette`). Map its colours onto the roles below: '
                 'ground, ink, one accent; keep the proportions of a recipe this direction uses:']
         out += ['  ' + x for p in d['palettes'] for x in _palette_lines(p, recipes)]
-    if sh['type']:
+    if bm and bm.get('family') and sh['type']:
+        t = sh['type']
+        out.append(f'- **Type (the brand\'s face in the dealt setting):** {bm["family"]}, weights {t["weights"][0]}/{t["weights"][1]}, '
+                   f'{t["case"]}; {t["notes"]}.')
+    elif sh['type']:
         out += ['- **Type (dealt):**'] + ['  ' + x for x in _type_lines(sh['type'])]
     else:
         out += ['- **Type:** the brand fixes it (`--keep type`); set it in the roles of §4.']
@@ -1033,7 +1334,17 @@ def render_sheet(sh, data, library):
             f'## 7. The lockup ({lk["kind"]}: {LOCKUP_KINDS[lk["kind"]]})', '', lk['shot'], '',
             f'**Build:** {lk["build"]} Leans on {_prims(lk["primitives"], cat)}'
             + (f' and {_techs(lk["techniques"], library)}' if lk.get('techniques') else '') + '.', '',
-            f'## 8. Beat skeleton ({sh["seconds"]:g} s)', '', '| # | beat | time | picture | copy |', '|---|---|---|---|---|']
+            'With a supplied logo (brand/brand.json, src/brand/logo.ts) the mark is the real logo drawn part by part '
+            '(`LogoMark`, `AssembledMark`, `Lockup`), and it arrives through this lockup\'s device: never a centred mark, '
+            'name and tagline over a radial plate.', '']
+    if sh.get('changes'):
+        out += [f'## 8. Beat skeleton: an update film ({sh["changes"]} changes, {sh["seconds"]:g} s)', '',
+                'A hook on the version or the mark, then each change as a product moment (the product doing the new thing '
+                'in this direction\'s device, never a list, a changelog row or a bullet), one payoff, and the end card with '
+                'the version. 1-3 words a fragment, at line size (120 px) or larger.', '']
+    else:
+        out += [f'## 8. Beat skeleton ({sh["seconds"]:g} s)', '']
+    out += ['| # | beat | time | picture | copy |', '|---|---|---|---|---|']
     words = 0
     for i, b in enumerate(sh['skeleton'], 1):
         c = b['copy']
@@ -1042,6 +1353,9 @@ def render_sheet(sh, data, library):
         words += c['words'][1] if c else 0
         out.append(f'| {i}{" *" if b["signature"] else ""} | {b["beat"]} | {b["from_s"]:.1f}-{b["to_s"]:.1f} s '
                    f'(f{b["from_f"]}-f{b["to_f"]} @60) | {b["picture"]} | {cs} |')
+    hand = next((b.get('handoff') for b in sh['skeleton'] if b.get('change')), None)
+    if hand:
+        out += ['', f'From one change to the next: {hand}.']
     out += ['', f'At most {words} words of copy in all. Retell every beat in the product\'s own objects; the beats are the '
                 'shape, not the content.', '',
             '## 9. The picture never rests', '',
@@ -1115,6 +1429,14 @@ def render_entry(d, data, library, ready=None):
     for b in d['skeleton']:
         cpy = f'{b["copy"]["words"][0]}-{b["copy"]["words"][1]} words: {b["copy"]["what"]}' if b.get('copy') else 'picture only'
         out.append(f'- {b["beat"]} ({int(round(b["share"] * 100))} %){" *" if b.get("signature") else ""}: {b["picture"]} [{cpy}]')
+    if isinstance(d.get('update'), dict):
+        u = d['update']
+        out += ['', f'**Update skeleton ({u["seconds"][0]}-{u["seconds"][1]} s; the change beat repeats for each of 2-4 changes).**']
+        for part in UPDATE_PARTS:
+            b = u[part]
+            cpy = f'{b["copy"]["words"][0]}-{b["copy"]["words"][1]} words: {b["copy"]["what"]}' if b.get('copy') else 'picture only'
+            out.append(f'- {part}{" *" if b.get("signature") else ""}: {b["picture"]} [{cpy}]'
+                       + (f' Hand over: {b["handoff"]}.' if b.get('handoff') else ''))
     out += ['', '**Avoid.**'] + [f'- {a}' for a in d['avoid']]
     return '\n'.join(out) + '\n'
 
@@ -1150,6 +1472,8 @@ def main():
     ap.add_argument('--seed', type=int, help='reproduce a deal (default: derived from the brief)')
     ap.add_argument('--options', type=int, metavar='N', help='deal N directions to choose from (2-5; 3 is the house number)')
     ap.add_argument('--direction', metavar='ID', help='deal the full sheet for this direction; writes out/direction.json and out/DIRECTION.md')
+    ap.add_argument('--changes', type=int, help='--format update: how many changes the film shows (2-4, default 3)')
+    ap.add_argument('--brand', help='brand/brand.json (scripts/brand.py): map the dealt roles onto the brand\'s colours and type')
     ap.add_argument('--keep', default='', help='palette,type: the brand fixes these; the sheet deals the rest')
     ap.add_argument('--avoid', default='', help='direction ids never to deal (comma-separated)')
     ap.add_argument('--redraw', choices=SLOTS, help='re-deal one slot of the saved sheet (needs --reason)')
@@ -1252,6 +1576,8 @@ def main():
             sh[a.redraw] = new
             if a.redraw == 'palette':
                 sh['recipes'] = {new['recipe']: data['recipes'].get(new['recipe'])}
+                if inp.get('brand'):
+                    sh['brand'] = brand_mapping(d, new, data['recipes'], read_brand(inp['brand']))
             sh['redraws'].append({'slot': a.redraw, 'from': cur, 'to': new['id'], 'reason': a.reason})
         elif a.redraw == 'signature':
             cur = sh['signature_variant']
@@ -1278,7 +1604,18 @@ def main():
         print(md, end='')
         return 0
 
+    if a.changes is not None and not CHANGES[0] <= a.changes <= CHANGES[1]:
+        fail(f'--changes takes {CHANGES[0]}-{CHANGES[1]} (each change is one product moment of an update film)')
+    if a.changes is not None and a.format != 'update':
+        fail('--changes belongs to --format update')
+    if a.brand and not os.path.isfile(a.brand):
+        fail(f'--brand: {a.brand} not found (write it with scripts/brand.py)')
     inp = {'brief': a.brief, 'format': a.format, 'pace': a.pace or 'calm', 'have': have, 'seconds': a.seconds, 'avoid': avoid}
+    if a.format == 'update':
+        inp['changes'] = a.changes or DEFAULT_CHANGES
+    if a.brand:
+        read_brand(a.brand)
+        inp['brand'] = a.brand.replace(os.sep, '/')
     derived = a.seed is None
     seed = derive_seed(inp) if derived else a.seed
     history_on = not a.no_history
