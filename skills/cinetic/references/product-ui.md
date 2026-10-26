@@ -434,7 +434,8 @@ one calm fragment per beat in a fixed cell, and every framing keeps the product 
 ## 13. Walkthrough chapters
 
 UI arrivals in a walkthrough are front-loaded: 43–51 % of the travel in the first 10 % of the time, so cards, menus and
-toasts arrive on `E.snapOut` [.50], not the gentler `glideOut`.
+toasts arrive on `E.snapOut` [.50], not the gentler `glideOut`. A walkthrough whose story is the product's flow (input,
+visible work, output) starts from `--template ui-walkthrough` (`references/templates.md`).
 
 - **One chapter per 2–4 bars**, chapter changes on downbeats; 1–2 capabilities per 20 s, never a tour of every feature.
 - **Each chapter** is: a camera move onto the feature's anchor (`references/camera.md`), one cause → action → result, a caption of ≤ 6 words, and the result held ≥ 36 f before the next move.

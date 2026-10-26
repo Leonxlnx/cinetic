@@ -24,8 +24,9 @@
  *      - each fragment's `text` sound (src/sync.ts) lands within 1 f of the frame its last word
  *        visibly stops (the drawn rise, through arrive(), at the statement's size);
  *      - new-film.sh --pace crisp scaffolds a film that passes grid-check, and new-film.sh --format update
- *        one whose changes are short sentences with no error or script warning (needs bash; on Windows,
- *        Git for Windows' bash).
+ *        one whose changes are short sentences with no error or script warning, and every film template
+ *        (--template ui-walkthrough, capability-reel) one with no error and no script warning (needs bash; on
+ *        Windows, Git for Windows' bash).
  *
  * grid-check.ts runs under Node's TypeScript type stripping (Node 22.18+, or older 22.x with
  * --experimental-strip-types), so the fixtures are self-contained timelines with no imports. The
@@ -234,6 +235,15 @@ console.log(JSON.stringify({ text, rest }));
     const bad = (gu.findings ?? []).filter((x) => x.severity === 'error' || x.check === 'script');
     result(gu.code === 0 && !gu.error && !bad.length, 'new-film.sh --format update scaffolds an update film whose changes are sentences (no error, no script warning)',
       gu.error ?? bad.map((x) => `${x.check}: ${x.message.slice(0, 90)}`).join('; '));
+    // new-film.sh --template <name>: every film template scaffolds a film whose script passes as it comes
+    for (const name of ['ui-walkthrough', 'capability-reel']) {
+      const dir = join(TMP, `${name}-film`).split('\\').join('/');
+      const nt = spawnSync(bash, [join(SKILL, 'scripts', 'new-film.sh').split('\\').join('/'), dir, '--template', name, '--no-install'], { encoding: 'utf8' });
+      const gt = nt.status === 0 ? run('npx', ['tsx', GRID, join(dir, 'src', 'timeline.ts'), '--json'], STARTER) : { error: (nt.stderr || nt.stdout).trim().slice(0, 300) };
+      const worse = (gt.findings ?? []).filter((x) => x.severity === 'error' || x.check === 'script');
+      result(gt.code === 0 && !gt.error && !worse.length, `new-film.sh --template ${name} scaffolds a film that passes grid-check (no error, no script warning)`,
+        gt.error ?? worse.map((x) => `${x.check}: ${x.message.slice(0, 90)}`).join('; '));
+    }
   }
 }
 
