@@ -10,6 +10,7 @@ import { hash01 } from './plates';
  * Glass: a material faked in 2D, deterministic and cheap. CSS cannot sample what is behind a shape, so Glass
  * takes the layer behind as `backdrop` (a full-frame node, drawn by the caller underneath too) and draws an
  * altered copy of it inside the shape; filters are fixed per mode, only clip paths, transforms and opacity move.
+ * The copies sit in [data-audit-copy]: the layout audit measures the backdrop's text where it is drawn underneath.
  *
  *   frost      a copy at one blur level (22 px at 1080p), brightened and a little more saturated, a 14 % white
  *              veil, a fine grain, a 1.5 px light top edge and a soft inner shadow at the bottom; the panel
@@ -144,7 +145,7 @@ export const Glass: React.FC<GlassProps & { frame: number; backdrop: React.React
     const veil = p.tint ?? `rgba(255,255,255,${GLASS.frost.veil})`;
     layers.push(
       <div key="sh" style={{ ...box, boxShadow: `0 ${18 * u}px ${54 * u}px rgba(0,0,0,0.26), 0 ${2 * u}px ${6 * u}px rgba(0,0,0,0.12)` }} />,
-      <div key="cp" style={{ ...full, clipPath: clip }}>
+      <div key="cp" data-audit-copy style={{ ...full, clipPath: clip }}>
         <div style={{ ...full, filter: `blur(${(p.blur ?? GLASS.frost.blur) * u}px) saturate(1.15) brightness(1.06)` }}>{p.backdrop}</div>
       </div>,
       <div key="vl" style={{ ...box, background: veil }} />,
@@ -173,7 +174,7 @@ export const Glass: React.FC<GlassProps & { frame: number; backdrop: React.React
           ))}
         </defs>
       </svg>,
-      <div key="body" style={{ ...full, clipPath: clip, opacity: s.level }}>
+      <div key="body" data-audit-copy style={{ ...full, clipPath: clip, opacity: s.level }}>
         <div style={{ ...full, background: p.fill ?? C.ink }} />
         <div style={{ ...full, background: MASK, opacity: s.clear, isolation: 'isolate' }}>
           {copy(0, mg * (1 - R.split))}
@@ -210,7 +211,7 @@ export const Glass: React.FC<GlassProps & { frame: number; backdrop: React.React
       );
     });
     layers.push(
-      <div key="st" style={{ ...full, clipPath: clip }}>
+      <div key="st" data-audit-copy style={{ ...full, clipPath: clip }}>
         {strips}
       </div>,
       <div key="sh" style={{ ...box, backgroundImage: `url(${shade})`, backgroundSize: `${st}px 100%`, opacity: 0.9 * s.level }} />,
@@ -221,7 +222,7 @@ export const Glass: React.FC<GlassProps & { frame: number; backdrop: React.React
     const rot = (GLASS.film.drift * p.frame) / film.fps;
     const hl = bakePlate('radial', [{ at: 0, color: '#FFFFFF', alpha: 0.9 }, { at: 0.6, color: '#FFFFFF', alpha: 0.35 }, { at: 1, color: '#FFFFFF', alpha: 0 }], 120, 60);
     layers.push(
-      <div key="cp" style={{ ...full, clipPath: clip, opacity: s.level }}>
+      <div key="cp" data-audit-copy style={{ ...full, clipPath: clip, opacity: s.level }}>
         <div style={{ ...full, transform: `scale(${GLASS.film.scale})`, transformOrigin: `${cx}px ${cy}px`, filter: 'saturate(0.7) brightness(1.05)' }}>{p.backdrop}</div>
         <img src={plate} style={{ position: 'absolute', left: cx - R, top: cy - R, width: 2 * R, height: 2 * R, transform: `rotate(${rot.toFixed(3)}deg)`, mixBlendMode: 'screen' }} />
         <img src={hl} style={{ position: 'absolute', left: cx - 0.62 * R, top: cy - 0.78 * R, width: 0.62 * R, height: 0.3 * R, transform: 'rotate(-32deg)', opacity: 0.75 }} />

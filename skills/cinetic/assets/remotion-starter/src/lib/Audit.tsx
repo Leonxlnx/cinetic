@@ -29,7 +29,11 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 // It also logs the frame's tweens from the registry (lib/registry.ts), which audit mode switches on:
 //   CINETIC_TWEENS {"comp":"Film","frame":120,"tweens":[{"from":96,"to":128,"token":"snapOut","family":"arrive"},...]}
 // with spans in absolute frames (scripts/grammar-score.mjs reads them).
-// Tag the element whose box IS the visible text (the line, not an oversized wrapper).
+// Tag the element whose box IS the visible text (the line, not an oversized wrapper). Its size is the largest
+// computed font size among it and its descendants that hold text (a wrapper around sized spans inherits 16 px);
+// its box is cut by every overflow-clipping ancestor (a word sliding out from under a mask is measured where it
+// shows) and a box clipped away entirely is not on screen. Tagged text inside [data-audit-copy] (a primitive's
+// altered copies of a layer drawn underneath too, such as Glass's backdrop) is not measured again.
 
 export const AUDIT_TAG = 'CINETIC_AUDIT';
 export const TWEENS_TAG = 'CINETIC_TWEENS';
@@ -62,6 +66,33 @@ const opacityOf = (el: Element | null) => {
   let o = 1;
   for (let e = el; e && e !== document.body; e = e.parentElement) o *= parseFloat(getComputedStyle(e).opacity || '1');
   return o;
+};
+
+/** The font size of the visible text: the largest among the element and its descendants that hold text. */
+const fontPxOf = (el: Element) => {
+  let px = 0;
+  const walk = (e: Element) => {
+    if (Array.from(e.childNodes).some((n) => n.nodeType === Node.TEXT_NODE && (n.textContent || '').trim())) px = Math.max(px, parseFloat(getComputedStyle(e).fontSize) || 0);
+    for (const c of Array.from(e.children)) walk(c);
+  };
+  walk(el);
+  return px || parseFloat(getComputedStyle(el).fontSize);
+};
+
+/** The element's box cut by every ancestor that clips its overflow (null when nothing of it shows). */
+const visibleRect = (el: Element) => {
+  const r = el.getBoundingClientRect();
+  let [l, t, rt, b] = [r.left, r.top, r.right, r.bottom];
+  for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) {
+    const cs = getComputedStyle(e);
+    const cx = cs.overflowX !== 'visible';
+    const cy = cs.overflowY !== 'visible';
+    if (!cx && !cy) continue;
+    const a = e.getBoundingClientRect();
+    if (cx) [l, rt] = [Math.max(l, a.left), Math.min(rt, a.right)];
+    if (cy) [t, b] = [Math.max(t, a.top), Math.min(b, a.bottom)];
+  }
+  return rt - l >= 1 && b - t >= 1 ? { left: l, top: t, width: rt - l, height: b - t } : null;
 };
 
 /** Share of a 5 x 3 grid of points inside the text where a tagged mover is painted above the text. */
@@ -104,10 +135,12 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
     const els = [...document.querySelectorAll<HTMLElement>('[data-text]')];
     const boxes: (Box & { el: HTMLElement })[] = [];
     for (const el of els) {
-      const r = el.getBoundingClientRect();
+      if (el.closest('[data-audit-copy]')) continue; // a copy of a layer measured where it is drawn underneath
+      const full = el.getBoundingClientRect();
+      const r = visibleRect(el);
       const opacity = opacityOf(el);
-      if (r.width < 1 || r.height < 1 || opacity < 0.1) continue; // not on screen: nothing to read
-      const k = el.offsetWidth > 0 ? r.width / zoom / el.offsetWidth : 1; // transform scale on the text
+      if (!r || opacity < 0.1) continue; // not on screen: nothing to read
+      const k = el.offsetWidth > 0 ? full.width / zoom / el.offsetWidth : 1; // transform scale on the text
       boxes.push({
         el,
         id: el.dataset.text || '?',
@@ -118,7 +151,7 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         y: round((r.top - origin.top) / zoom),
         w: round(r.width / zoom),
         h: round(r.height / zoom),
-        px: round(parseFloat(getComputedStyle(el).fontSize) * k),
+        px: round(fontPxOf(el) * k),
         opacity: Math.round(opacity * 100) / 100,
       });
     }

@@ -261,7 +261,7 @@ export const Lockup: React.FC<LockupProps & { frame: number; x: number; y: numbe
     <div style={{ position: 'absolute', inset: 0 }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: props.markSize, height: props.markSize, transformOrigin: '50% 50%', transform: `translate(${props.x - half + lk.x}px, ${props.y - half}px) scale(${lk.scale})` }}>{props.mark}</div>
       {props.name && lk.wordmark.on && (
-        <div data-text style={{ position: 'absolute', left: 0, top: 0, opacity: lk.wordmark.opacity, transform: `translate(${(props.nameAt ?? [props.x, props.y])[0]}px, ${(props.nameAt ?? [props.x, props.y])[1] + lk.wordmark.y}px)` }}>
+        <div data-text="wordmark" style={{ position: 'absolute', left: 0, top: 0, opacity: lk.wordmark.opacity, transform: `translate(${(props.nameAt ?? [props.x, props.y])[0]}px, ${(props.nameAt ?? [props.x, props.y])[1] + lk.wordmark.y}px)` }}>
           {props.name}
         </div>
       )}
