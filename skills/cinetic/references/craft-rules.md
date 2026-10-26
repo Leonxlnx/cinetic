@@ -59,13 +59,17 @@ Four more that have homes but no automated check:
 
 1. **Two tempos of shot.** Cut-driven films hold a median shot of about 1.1-1.6 s (a launch film's band is 1.3-2.2 s,
    an update film's 0.8-1.6 s, an explainer's 2-3 s, a reel's 0.5-1 s); continuous takes run 2.3-2.8 s and carry
-   each take with beats inside it. Shot lengths vary (q75/q25 1.5-2.7): mix long holds with short punches.
+   each take with beats inside it (a take over 15 s changes its layout or type at least twice every 10 s). Shot
+   lengths vary (q75/q25 1.9-3.1; under 1.9 the cuts read as a metronome): mix long holds with short punches, and let
+   at least one change in seven happen without a hard cut (a morph, a mask, a wipe).
 2. **Change the picture about every 0.7-1 s, whatever the cut count.** A one-take film changes something inside the
    shot (a reframe, a light event, a state change) at that rate; a locked camera with only a caption changing is a
-   sag. Density: about 1.6-2.8 starts per second, 1.4-2.5 things moving at once, idle frames under 15 %.
+   sag; a layout or type change at least every 2.5 s is the floor (a creep alone reads as a held frame at feed
+   size). Density: about 1.9-2.8 starts per second, 1.6-2.5 things moving at once (two independent movers per shot:
+   chips, labels, counters in staggers), idle frames under 15 %.
 3. **Shots under 0.45 s carry no copy.** They are punctuation (a crash zoom, a caret-follow, a strobe frame).
-4. **The first frame already moves.** Something changes within 2-6 frames; the first readable word by about 0.4-1 s;
-   the premise reads by about 2 s. A still title before any motion is a slow hook.
+4. **The first frame already moves.** Something changes within 2-6 frames; at least two picture changes in the first
+   2.5 s; the first readable word by about 0.4-1 s; the premise reads by about 2 s. A still title before any motion is a slow hook.
 5. **The product appears early,** unless a problem act of 10 s or more earns the wait; then the product or the name
    lands at about 20-26 % of the runtime.
 6. **Act lengths.** The opening act runs about 12 % of the runtime (5-47 %); the proof runs 35-80 %; the outro about

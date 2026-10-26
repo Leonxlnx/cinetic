@@ -163,10 +163,12 @@ export const MEASURE = { statementMaxFW: 0.61, statementTypicalFW: [0.28, 0.58] 
 /** The grammar bands the checks read (seconds unless noted). */
 export const GRAMMAR = {
   shot: {
-    house: 1.6, usual: [0.93, 2.5] as const, short: 0.5, long: 3.7, spread: [1.5, 2.7] as const, // spread = long end / short end of `usual`
+    house: 1.6, usual: [0.93, 2.5] as const, short: 0.5, long: 3.7, spread: [1.9, 3.1] as const, // spread = q75 / q25 of the shot lengths (under 1.9 reads as a metronome)
     band: { launch: [1.3, 2.2] as const, update: [0.8, 1.6] as const, explainer: [2.0, 3.0] as const, reel: [0.5, 1.0] as const, social: [0.5, 1.0] as const },
   },
-  density: { startsPerSec: [1.6, 2.3, 2.8] as const, gapS: 0.33, concurrent: [1.4, 1.7, 2.5] as const, idleMax: 0.15 },
+  // changeMaxS: a layout or type change at least this often outside the end lock (a creep alone reads as a held frame);
+  // openerChanges: picture changes in the first 2.5 s; longTake: a take over longTake.s changes at least perTenS times every 10 s
+  density: { startsPerSec: [1.9, 2.3, 2.8] as const, gapS: 0.33, concurrent: [1.6, 2.0, 2.5] as const, idleMax: 0.15, changeMaxS: 2.5, openerChanges: 2, longTake: { s: 15, perTenS: 2 } },
   // readLockS: the camera may lock this long on each type read (life continues in the type build, the light, a counter);
   // cameraMoving: the share of the body the camera moves on (look-audit floor-moving fails under 0.70, camera-lock warns over 0.99)
   hold: { creepPerSec: [0.02, 0.06, 0.15] as const, driftPxS: [6, 30, 90] as const, intoExit60: [12, 20] as const, staticMaxS: 0.8, readLockS: [0.5, 1.0] as const, cameraMoving: [0.83, 0.95] as const, endLockS: [1, 5] as const },

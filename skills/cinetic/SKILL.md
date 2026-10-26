@@ -236,9 +236,9 @@ export const b = (n: number, beat = 0, sub = 0) =>     // whole frames within 0.
   | Words per fragment, visible | ≤ 4, ≤ 8 (≤ 5 replace) | ≤ 5, ≤ 10 |
   | Copy rate, text share | ≤ 1.2 words/s in any 5 s, ≤ 65 % | ≤ 2 words/s, ≤ 80 % |
 
-- **Density.** About 1.6–2.8 starts per second, 1.4–2.5 things moving at once, idle frames ≤ 15 %; shot bands per format (§1), shot lengths varying (q75/q25 1.5–2.7); no stretch past 72 f without an event (48 f crisp); nothing frozen for more than 0.8 s outside the end lock (1 s for a camera lock on a read).
+- **Density.** About 1.9–2.8 starts per second, 1.6–2.5 things moving at once (two independent movers per shot: chips, labels, counters in staggers), idle frames ≤ 15 %; a layout or type change at least every 2.5 s outside the end lock (a creep alone reads as a held frame); shot bands per format (§1), shot lengths varying (q75/q25 1.9–3.1), a take over 15 s changing at least twice every 10 s, one change in seven without a hard cut; no stretch past 72 f without an event (48 f crisp); nothing frozen for more than 0.8 s outside the end lock (1 s for a camera lock on a read).
 - **Energy.** An early peak, a designed lull of 1–4 s at 55–85 % inside the track's break, the biggest peak at 75–90 % on its entry; the last third keeps moving.
-- **Hook.** Frame 0 composed and moving; the sound enters with intent; the problem felt by 1 s; the product named by about a quarter of the runtime.
+- **Hook.** Frame 0 composed and moving; at least two picture changes in the first 2.5 s, the subject readable on a 240 px strip from frame 0; the sound enters with intent; the problem felt by 1 s; the product named by about a quarter of the runtime.
 - **End card.** The lockup is the film's own device (the deck's lockup kind), built from the real logo's parts, lit by the key, off-centre or as a crop of the last plane; it assembles over 60–80 f, then the one held run of the film (1–5 s declared in `END`), still or creeping ≤ 6 %; the brief's one fact under it, readable ≥ 1.7 s. Never a mark, wordmark and tagline centred over a radial glow.
 - **Hit frames.** A change meant for a cue starts at `cue − 1`; pulses peak 2 f after their sound (`hitPulse`); a spring starts at `beat − delayTo(cfg, 0.5)`.
 

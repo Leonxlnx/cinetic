@@ -99,9 +99,18 @@
  * Grammar (only for timelines that make the declarations above):
  *   shot-length    shots between act boundaries, seams and `cut` CUEs, for films of 3+ shots that
  *                  are not LOOK.oneTake: median inside the film type's band (launch 1.3-2.2 s, update
- *                  0.8-1.6 s, explainer 2.0-3.0 s, reel and social 0.5-1.0 s), q75/q25 >= 1.4, longest >= 2x
- *                  shortest, shots under 0.25 s only as declared punches, few shots over 4 s
- *                  (launch <= 15 %, others <= 30 %) (warnings)
+ *                  0.8-1.6 s, explainer 2.0-3.0 s, reel and social 0.5-1.0 s), q75/q25 >= 1.6 (not
+ *                  metronomic; aim for 1.9-3.1), longest >= 2x shortest, shots under 0.25 s only as declared punches, few
+ *                  shots over 4 s (launch <= 15 %, others <= 30 %) (warnings)
+ *   long-take      a take over 15 s (a shot, or the whole body of a LOOK.oneTake film) holds at least two
+ *                  picture changes per 10 s inside it (warning)
+ *   cut-mix        5+ picture changes (act boundaries, seams, `cut` CUEs): at least 14 % of them happen
+ *                  without a hard cut (a morph, mask, wipe, zoom-through, breath, defocus or UI dissolve)
+ *                  (warning)
+ *   picture-change a layout or type change at least every 2.5 s outside the end lock and the tail: a cut
+ *                  or seam, a COPY entry arriving or leaving, or a CUE whose salience is hit, cut, copy or
+ *                  move (a creep, light or drift is `life`, not a change) (warning)
+ *   opener         at least two picture changes in the first 2.5 s (warning)
  *   seam-plan      `fadeEnd` only as the last seam, `dissolveUi` never across an act boundary or
  *                  longer than 8 f@60 (errors); one kind more than 3 times (the signature move
  *                  exempt), carried seams under 40 % of 3+ seams, a cut film over 20 s with no
@@ -167,6 +176,8 @@ const SEAM_KINDS = ['velocity', 'morph', 'hard', 'mask', 'whip', 'defocus', 'lig
 const CARRIED = new Set(['velocity', 'morph', 'breath', 'zoomThrough', 'whip', 'snapZoom', 'mask']);
 /** Seams that make a designed punch: a shot shorter than 0.25 s next to one of them is intended. */
 const PUNCH = new Set(['snapZoom', 'stepped', 'colour', 'light']);
+/** Seams that change the picture without a hard cut: the next picture is revealed by a moving shape (cut-mix). */
+const CUT_FREE = new Set(['morph', 'mask', 'wipe', 'zoomThrough', 'breath', 'defocus', 'dissolveUi']);
 /** Seams that carry the eye through on their own: they may float off the music's accents (cut-on-sound skips them). */
 const CONTINUITY = new Set([...CARRIED, 'defocus', 'wipe', 'dissolveUi', 'fadeEnd']);
 const TEXTURES = ['clean', 'paper', 'grid', 'halftone', 'dither'];
@@ -925,7 +936,7 @@ async function main() {
       if (med < band[0] || med > band[1]) warn('shot-length', `the median shot is ${med.toFixed(2)} s; a ${filmType} film sits at ${band[0]}-${band[1]} s (LOOK.filmType)${med > band[1] ? ': cut more, or carry the shot with the camera and declare it LOOK.oneTake' : ''}`);
       if (shots.length >= 4) {
         const spread = quantile(sec, 0.75) / quantile(sec, 0.25);
-        if (spread < 1.4) warn('shot-length', `shot lengths barely vary (q75/q25 ${spread.toFixed(2)} < 1.4): mix long holds with short punches`);
+        if (spread < 1.6) warn('shot-length', `shot lengths barely vary (q75/q25 ${spread.toFixed(2)} < 1.6; aim for 1.9-3.1): the cuts read as a metronome; mix long holds with short punches (a 0.6 s insert beside a 4 s hold)`);
       }
       if (Math.max(...sec) < 2 * Math.min(...sec)) warn('shot-length', `the longest shot (${Math.max(...sec).toFixed(2)} s) is under twice the shortest (${Math.min(...sec).toFixed(2)} s)`);
       for (let i = 0; i < shots.length; i++) {
@@ -937,6 +948,41 @@ async function main() {
       const long = sec.filter((x) => x > 4).length / sec.length;
       const longMax = filmType === 'launch' || filmType === 'update' ? 0.15 : 0.3;
       if (long > longMax) warn('shot-length', `${Math.round(100 * long)} % of the shots run over 4 s; keep <= ${Math.round(100 * longMax)} % in a ${filmType} film, or declare LOOK.oneTake`);
+    }
+
+    // picture changes: cuts and seams, copy arriving or leaving, and CUEs that change the picture (hit, cut, copy,
+    // move); `life` (creep, light, drift) keeps a hold alive but is not a change
+    const endFrom = END ? Math.min(END.from, bodyEnd) : bodyEnd;
+    const changeSet = new Set<number>(cuts);
+    for (const c of COPY) for (const f of [c.in, c.out]) if (isNum(f) && f > 0 && f < endFrom) changeSet.add(f);
+    for (const q of cueFrames) if (q.f > 0 && q.f < endFrom && salienceOf(q.name) !== 'life') changeSet.add(q.f);
+    const changes = [...changeSet].filter((f) => f > 0 && f < endFrom).sort((a, b) => a - b);
+    // long-take: a take over 15 s keeps changing inside (two picture changes per 10 s)
+    const takes: [number, number][] = LOOK.oneTake ? [[0, endFrom]] : bounds.slice(1).map((f, i) => [bounds[i], Math.min(f, endFrom)] as [number, number]);
+    for (const [a, b] of takes) {
+      const len = (b - a) / FPS;
+      if (len <= 15) continue;
+      const inside = changes.filter((f) => f > a && f < b && !cuts.includes(f)).length;
+      if (inside / (len / 10) < 2) warn('long-take', `the take f${a}-f${b} runs ${len.toFixed(1)} s with ${inside} picture change(s) inside it; a take over 15 s changes its layout or type at least twice every 10 s (a word, a chip, a reframe), or cut it`);
+    }
+    // cut-mix: some changes happen without a hard cut
+    if (cuts.length >= 5) {
+      const seamAt = new Map(SEAMS.map((x) => [x.at, x.kind] as [number, string]));
+      const soft = cuts.filter((f) => CUT_FREE.has(seamAt.get(f) ?? '')).length;
+      if (soft / cuts.length < 0.14 - 1e-9) warn('cut-mix', `${soft} of ${cuts.length} picture changes happen without a hard cut (${Math.round((100 * soft) / cuts.length)} %); carry at least one in seven on a morph, mask, wipe or zoom-through`);
+    }
+    // picture-change: a layout or type change at least every 2.5 s outside the end lock
+    {
+      const marks = [0, ...changes, endFrom];
+      let worst: [number, number] | null = null;
+      for (let i = 1; i < marks.length; i++) if (!worst || marks[i] - marks[i - 1] > worst[1] - worst[0]) worst = [marks[i - 1], marks[i]];
+      if (worst && worst[1] - worst[0] > 2.5 * FPS + 1e-9)
+        warn('picture-change', `f${worst[0]}-f${worst[1]}: ${((worst[1] - worst[0]) / FPS).toFixed(2)} s with no layout or type change (no cut, copy arriving or leaving, or hit, cut, copy or move cue); change the picture at least every 2.5 s outside the end lock: a creep alone reads as a held frame`);
+    }
+    // opener: two picture changes in the first 2.5 s
+    {
+      const early = changes.filter((f) => f <= 2.5 * FPS + 1e-9).length;
+      if (endFrom > 2.5 * FPS && early < 2) warn('opener', `${early} picture change(s) in the first 2.5 s; open with at least two (a cut, a word arriving, a reframe), the subject readable from frame 0`);
     }
 
     // seam-plan

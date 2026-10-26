@@ -2,7 +2,7 @@
 // Music mode, clean: a track at 124 BPM whose first downbeat is at 0.37 s (f22.2 at 60 fps), 8 bars.
 // b() follows the music (rounded), acts start on measured downbeats, two hard cuts land on analysed
 // accents off the 16th grid (the picture 0.5 and 1.6 f ahead of the sound), the reveal comes on the
-// track's entry after a 0.3 s stop, and the cuts skip most downbeats at uneven intervals.
+// track's entry after a 0.3 s stop, and the cuts skip most downbeats at uneven intervals (q75/q25 above 1.9).
 export const FPS = 60;
 const BEATF = (60 / 124) * 60; // 29.03 f: not a whole number, the normal case with a track
 const T0 = 0.37 * 60;
@@ -65,16 +65,16 @@ export const SEAMS = [
   { at: 48, kind: 'velocity', carry: 'x', dir: -1 },
   { at: 127, kind: 'hard' },
   { at: b(3), kind: 'morph', carry: 'shape' },
-  { at: 300, kind: 'whip', carry: 'x', dir: 1 },
+  { at: 294, kind: 'whip', carry: 'x', dir: 1 },
   { at: 412, kind: 'hard' },
   { at: b(5), kind: 'hard', signature: true },
-  { at: 600, kind: 'mask' },
+  { at: 630, kind: 'mask' },
   { at: 690, kind: 'velocity', carry: 'y', dir: 1 },
   { at: b(8), kind: 'morph', carry: 'shape' },
 ];
-export const STEPPED = [{ from: 603, to: 661, fps: 12, id: 'collage' }];
+export const STEPPED = [{ from: 633, to: 688, fps: 12, id: 'collage' }];
 export const FLASHES = [{ f: b(5), frames: 1, id: 'reveal-flash' }];
-export const CAMERA_BLUR = [{ from: 294, to: 306, id: 'whip' }];
+export const CAMERA_BLUR = [{ from: 288, to: 300, id: 'whip' }];
 export const END = { from: b(8), to: TOTAL };
 export const REVEAL = b(5);
 export const SPRING_CLASS = 'pill';

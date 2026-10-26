@@ -40,7 +40,9 @@ Reads `timeline.ts` (a HyperFrames project: `timeline.js`) and checks it against
 | `anti-metronome` (warn) | outside reel and social films: at most 60 % of ordinary cuts on downbeats, cut intervals varying (coefficient of variation ≥ 0.25) |
 | `cut-on-sound` | at least 30 % of cuts within 100 ms of a sound (error); want ≥ 50 % on a sound (picture up to 3 f ahead) and ≥ 80 % within 100 ms |
 | `reveal-dip` (warn) | a stop or dip of 0.2-0.5 s ends within 2 f of `REVEAL` |
-| `shot-length` (warn) | median shot inside the format's band (`GRAMMAR.shot.band`: launch 1.3-2.2 s, update 0.8-1.6, explainer 2-3, reel and social 0.5-1); q75/q25 spread ≥ 1.4; the longest at least twice the shortest; under 0.25 s only as a declared punch; few shots over 4 s unless `LOOK.oneTake` |
+| `shot-length` (warn) | median shot inside the format's band (`GRAMMAR.shot.band`: launch 1.3-2.2 s, update 0.8-1.6, explainer 2-3, reel and social 0.5-1); q75/q25 spread ≥ 1.6 (under it the cuts read as a metronome; aim for 1.9-3.1); the longest at least twice the shortest; under 0.25 s only as a declared punch; few shots over 4 s unless `LOOK.oneTake` |
+| `long-take`, `cut-mix` (warn) | a take over 15 s (or a one-take film's body) changes its layout or type at least twice every 10 s; with 5+ changes, at least one in seven happens without a hard cut (a morph, mask, wipe, zoom-through, breath, defocus or UI dissolve) |
+| `picture-change`, `opener` (warn) | a layout or type change at least every 2.5 s outside the end lock and the tail (a cut or seam, a COPY entry arriving or leaving, a CUE whose salience is `hit`, `cut`, `copy` or `move`; `life` is not a change); at least two in the first 2.5 s |
 | `seam-plan` | a fade only ends the film; UI dissolves ≤ 8 f@60 and never across an act line; any seam kind ≤ 3 times except the signature; ≥ 40 % of seams carried; a cut film has at least one velocity seam |
 | `declares-cover` | every step, flash, camera-blur need and seam that a primitive declares is covered by the timeline's declarations |
 | `event-gap`, `density-plan` | no stretch past 72 f without an event or a reading hold (48 f in crisp); starts per second and concurrency in band |
@@ -185,8 +187,8 @@ from the timeline. `--format update` reads the update band; `--print-target` pri
 | into-cuts | moves ending at a cut on leave curves | ≥ 71 % |
 | durations | per role, the median inside the house range | ≥ 80 % of roles |
 | staggers | staggered groups irregular (gap variation ≥ 0.15) with gaps in the house range | all |
-| shots | median in the format's band, q75/q25 spread 1.5-2.7 | both |
-| density | starts per second 1.6-2.8, concurrency 1.4-2.5, idle frames ≤ 15 % | all |
+| shots | median in the format's band, q75/q25 spread 1.9-3.1 | both |
+| density | starts per second 1.9-2.8, concurrency 1.6-2.5, idle frames ≤ 15 % | all |
 | holds | hold frames that live (drift ≥ 6 px/s, creep ≥ 1 %/s, or light on the ground) | ≥ 95 % |
 | seams | carried share ≥ 40 %, no kind more than 3 times (the signature excepted), mix distance ≤ 0.35 | all |
 | cut-sync | hard cuts within 1 f of a sound (the picture may lead by up to 3 f) / within 100 ms | ≥ 50 % / ≥ 80 % |

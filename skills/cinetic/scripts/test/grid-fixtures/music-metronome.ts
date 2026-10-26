@@ -1,6 +1,6 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: anti-metronome:warn=2 reveal-dip:warn=1 shot-length:warn=2 seam-plan:warn=2
+// Fixture for scripts/test/grid-check.test.mjs. expect: anti-metronome:warn=2 reveal-dip:warn=1 shot-length:warn=2 seam-plan:warn=2 cut-mix:warn=1
 // Bar-grid editing of a launch film: a hard cut on every downbeat (all of the cuts on downbeats, even
-// intervals, shots that never vary), seven hard cuts and nothing carried across, and a reveal with
+// intervals, shots that never vary), seven hard cuts and nothing carried across (no change without a hard cut), and a reveal with
 // no stop or dip before it. Every one of these is a warning: the timeline is valid, the edit is flat.
 export const FPS = 60;
 const BEATF = (60 / 124) * 60;

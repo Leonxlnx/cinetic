@@ -21,7 +21,7 @@
  * Dimensions: role-mix (total-variation distance of arrive / reposition / leave / linear / spring
  * shares, <= 0.17), front-loaded (entrances on arrive curves, >= 71 %), into-cuts (moves ending at a
  * cut on leave curves, >= 71 %), durations (per role, medians in the house range), staggers (groups
- * irregular, gaps in the house range), shots (median in the format's band, q75/q25 spread 1.5-2.7;
+ * irregular, gaps in the house range), shots (median in the format's band, q75/q25 spread 1.9-3.1;
  * not scored on a one-take film), density (starts per second, concurrency, idle frames), holds
  * (living share >= 95 %), seams (carried >= 40 %, no kind more than 3 times except the signature,
  * mix distance <= 0.35), cut-sync (hard cuts within 1 f of a sound, the picture leading by up to 3 f,
@@ -127,8 +127,8 @@ const houseTarget = () => {
       leave: iqr(DUR.exit) && [Math.min(DUR.typeExit?.[1] ?? 99, DUR.exit[1]), DUR.exit[3]],
     },
     staggers: { gap: [STAG.letter?.[1] ?? 3, STAG.ui?.[3] ?? 17.5], cvMin: 0.15 },
-    shot: { band: G.shot?.band ?? { launch: [1.3, 2.2] }, spread: G.shot?.spread ?? [1.5, 2.7], r70: 1.75 },
-    density: { startsPerSec: [G.density?.startsPerSec?.[0] ?? 1.6, G.density?.startsPerSec?.[2] ?? 2.8], concurrent: [G.density?.concurrent?.[0] ?? 1.4, G.density?.concurrent?.[2] ?? 2.5], idleMax: G.density?.idleMax ?? 0.15 },
+    shot: { band: G.shot?.band ?? { launch: [1.3, 2.2] }, spread: G.shot?.spread ?? [1.9, 3.1], r70: 1.75 },
+    density: { startsPerSec: [G.density?.startsPerSec?.[0] ?? 1.9, G.density?.startsPerSec?.[2] ?? 2.8], concurrent: [G.density?.concurrent?.[0] ?? 1.6, G.density?.concurrent?.[2] ?? 2.5], idleMax: G.density?.idleMax ?? 0.15 },
     holds: { livingMin: 0.95 },
     seams: {
       carriedMin: 0.4,
@@ -545,7 +545,7 @@ const selfTest = () => {
   check(ov.dims.find((d) => d.name === 'overlap').value?.['enter-before-leave'] === 0.5, 'the next element entering 0-1 f before the exit ends is measured (one of two)', JSON.stringify(ov.dims.find((d) => d.name === 'overlap').value));
   check(score({ cues: cuesA, layout: { tweens: tw }, look: { ...lookA, floor: { pass: false } }, target: T, format: 'launch' }).ship === false, 'a failing floor blocks the ship bar whatever the mean');
   // shot lengths fall off as ratios; a one-take film has no cut to sync
-  const shotsAt = (len) => score({ cues: { fps: 60, total: 600, acts: {}, declared: { seams: [{ at: 100, kind: 'hard' }] }, copy: [] }, look: { floor: { pass: true }, measures: { shot_lengths: [0.8, 1, 1.2, 1.5, 1.8, 2].map((x) => (x * len) / 1.35) } }, target: T, format: 'launch' }).dims.find((d) => d.name === 'shots').score;
+  const shotsAt = (len) => score({ cues: { fps: 60, total: 600, acts: {}, declared: { seams: [{ at: 100, kind: 'hard' }] }, copy: [] }, look: { floor: { pass: true }, measures: { shot_lengths: [0.6, 0.8, 1.2, 1.5, 2, 2.4].map((x) => (x * len) / 1.35) } }, target: T, format: 'launch' }).dims.find((d) => d.name === 'shots').score;
   check(shotsAt(1.7) === 100 && shotsAt(3.2) >= 70 && shotsAt(3.2) < 100 && shotsAt(5) < 70, 'shot lengths score by their ratio to the band (launch: 1.7 s in, 3.2 s near, 5 s off)', `${shotsAt(1.7)} / ${shotsAt(3.2)} / ${shotsAt(5)}`);
   const oneTake = score({ look: { floor: { pass: true }, measures: { ...lookA.measures, one_take: true, cut_sync: { within_1f: 0, within_100ms: 0 } } }, target: T, format: 'launch' });
   check(oneTake.dims.find((d) => d.name === 'cut-sync').score === null, 'a one-take film is not scored on cut sync');
