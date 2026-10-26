@@ -177,7 +177,10 @@ accelerates into the cut and the cut frame is its fastest (house profile `LAUNCH
 is vCut·e^(−0.47·k^0.76); the last frame grows the speed about ×1.6 at 60 fps, the frames before it ×1.3-1.5; a
 geometric build of ×1.11-1.16 a frame also works). `carry(f, start, { v0 | ratio, vCut })`: the incoming shot opens at
 a share of the outgoing speed (`CARRY.ratio` 0.4-1.4, house 0.7), drops fast (60 % of it at ×0.4 a frame), then
-decays slowly (×0.78-0.93 a frame, house 0.89) to a living residual of about 0.75 px a frame. `carriedCut()` puts both
+decays slowly (×0.78-0.93 a frame, house 0.89) to a living residual of about 0.75 px a frame in the carried direction.
+Both halves take either sign: a negative `vCut` or `v0` moves left or up, the mirror image of the same curve.
+`carry(..., { settle: 60 })` brings the move to rest by that 60 fps frame instead (the last `settleOver`, house 24 f,
+ease out with no step in speed), so the camera locks for a read. `carriedCut()` puts both
 halves on one coordinate; `shotMove()` is a whole shot (opens carried, lives on its residual, launches into its own
 cut); `carryChain()` strings shots; `carryShot()` and `handoffShot()` carry a camera's x, y, log scale and roll
 through a cut. Declare the seam (`SEAMS`, kind `velocity`): forensics then fails it if direction or speed breaks
@@ -187,7 +190,9 @@ through a cut. Declare the seam (`SEAMS`, kind `velocity`): forensics then fails
 { pctPerSec })`, house 6 %/s, range 2-15 %/s) or drifts (`drift(f, from, pxPerSec)`, house 30 px/s, range 6-90),
 or sits over moving light, and turns into its exit over the last 12-20 f with `intoCut(f, cut, lead = 16)`, which
 starts flat so the hold speeds up into the cut with no step. While text is read the hold stays under 90 px/s and
-15 %/s.
+15 %/s. The ground breathes; the camera may stop: lock it for 0.5-1 s on each type read (a carried camera with
+`settle`), while the type build, the light or a counter keeps the frame alive, so the camera moves in about 85-95 % of
+the film's frames rather than all of them.
 
 **Overlap and anticipation** (`OVERLAP`): a secondary move starts before its primary is 90 % home (`overlapAt(primary,
 0.9)`); the foreground lands about 20 f before the background (`leadBy(at, 20)`); the next element enters 0-1 f

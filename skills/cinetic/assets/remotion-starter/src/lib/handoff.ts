@@ -3,9 +3,11 @@
 //
 // A velocity-carried cut is two halves:
 //   launch()  the outgoing move, accelerating INTO the cut: frames <= cut, the last one (the cut
-//             frame) the fastest. Cut on it. x = 0 on the cut frame.
+//             frame) the fastest. Cut on it. x = 0 on the cut frame. Either sign: vCut < 0 moves left
+//             or up, the mirror image of the same build.
 //   carry()   a move that opens at speed v0 and decays in two stages, a fast first drop then a slow
-//             tail, to a living residual drift. x = 0 on its `start` frame; the step into start + 1
+//             tail, to a living residual drift in the same direction (with `settle`, to rest: the
+//             camera locks for a read). x = 0 on its `start` frame; the step into start + 1
 //             is v0. For an incoming shot, start = its FIRST frame (cut + 1): v0 is then the first
 //             step a viewer sees in it, the speed the house ratio talks about (CARRY.ratio x the cut
 //             step, 0.4-1.4). For a hold that continues a move without a cut, start = the hold's
@@ -49,7 +51,7 @@ export type LaunchOpts = {
   ratio?: number; // a geometric build instead: growth of the step per 60 fps frame into the cut
   /** Explicit growth factors into the cut, oldest first (step[j+1] / step[j]); earlier frames repeat the first. Overrides a/p/ratio. */
   ratios?: number[];
-  floor?: number; // the step never falls below this going back (units per film frame): a move already under way
+  floor?: number; // the step's size never falls below this going back (units per film frame, in vCut's direction): a move already under way
   fpsRef?: number; // the frame rate a, ratio and floor are written at (default 60; ratios are per film frame)
   fps?: number; // the film's fps (default: the film context)
 };
@@ -64,8 +66,14 @@ export type LaunchOpts = {
 export const launch = (f: number, cut: number, o: LaunchOpts): Carried => {
   const fps = o.fps ?? fpsOf();
   if (f >= cut) return { x: (f - cut) * o.vCut, v: o.vCut };
+  // worked out on the speed's size, the direction put back at the end: a leftward or upward move
+  // (vCut < 0) builds exactly like its mirror image
+  if (o.vCut < 0) {
+    const m = launch(f, cut, { ...o, vCut: -o.vCut, fps });
+    return { x: -m.x, v: -m.v };
+  }
   const ref = o.fpsRef ?? 60;
-  const floor = ((o.floor ?? 0) * ref) / fps;
+  const floor = (Math.abs(o.floor ?? 0) * ref) / fps;
   const r = o.ratios && o.ratios.length ? o.ratios : null;
   const house = o.a === undefined && o.ratio === undefined;
   const a = o.a ?? (o.ratio !== undefined ? Math.log(o.ratio) : LAUNCH.a);
@@ -97,8 +105,15 @@ export type CarryOpts = {
   ratio?: number; // v0 / vCut (default CARRY.ratio house 0.7; 0.4-1.4 is the normal range)
   decay?: number; // the slow tail's decay per 60 fps frame (default 0.89; 0.78-0.93)
   fast?: { share: number; decay: number }; // the fast first drop: its share of (v0 - residual) and its decay per 60 fps frame (default 0.6, 0.4); share 0 = one stage
-  residual?: number; // the drift it settles to, units per 60 fps frame (default 0.75: 45 px/s at 1080p)
-  fpsRef?: number; // the frame rate decay, fast.decay and residual are written at (default 60)
+  residual?: number; // the drift it settles to, units per 60 fps frame, always in v0's direction (default 0.75: 45 px/s at 1080p)
+  /**
+   * 60 fps frames after `cut` by which the move is at rest, so the camera can lock for a read: the move
+   * eases out over the last `settleOver` frames (default 24, 0.4 s) and x stays put from then on.
+   * Default: never (the residual drift lives on). House: lock 0.5-1 s on each type read.
+   */
+  settle?: number;
+  settleOver?: number;
+  fpsRef?: number; // the frame rate decay, fast.decay, residual and settle are written at (default 60)
   fps?: number;
 };
 
@@ -117,18 +132,30 @@ export const carry = (f: number, cut: number, o: CarryOpts): Carried => {
   const fps = o.fps ?? fpsOf();
   const ref = o.fpsRef ?? 60;
   const v0 = carryV0(o);
-  const res = ((o.residual ?? CARRY.residual60) * ref) / fps;
+  // the drift continues the carried move: a leftward or upward carry settles drifting left or up
+  const res = ((v0 < 0 ? -1 : 1) * Math.abs(o.residual ?? CARRY.residual60) * ref) / fps;
   const ds = clamp(o.decay ?? CARRY.decay60[1], 1e-6, 0.999999) ** (ref / fps);
   const share = clamp(o.fast?.share ?? CARRY.fast.share);
   const df = clamp(o.fast?.decay ?? CARRY.fast.decay60, 1e-6, 0.999999) ** (ref / fps);
-  const n = f - cut;
-  if (n <= 0) return { x: n * v0, v: v0 };
   const amp = v0 - res;
   // sum over j = 1..n of d^(j-1) = (1 - d^n) / (1 - d), continuous in n
-  const geo = (d: number) => (1 - d ** n) / (1 - d);
-  const x = n * res + amp * (share * geo(df) + (1 - share) * geo(ds));
-  const v = res + amp * (share * df ** (n - 1) + (1 - share) * ds ** (n - 1));
-  return { x, v };
+  const at = (n: number) => (n <= 0 ? n * v0 : n * res + amp * (share * (1 - df ** n) / (1 - df) + (1 - share) * (1 - ds ** n) / (1 - ds)));
+  const n = f - cut;
+  if (o.settle === undefined) {
+    if (n <= 0) return { x: n * v0, v: v0 };
+    return { x: at(n), v: res + amp * (share * df ** (n - 1) + (1 - share) * ds ** (n - 1)) };
+  }
+  // settle: the move's own clock runs down. Up to the ease it is n; over the last W frames its rate
+  // falls linearly to 0 (the speed eases out with no step), then it stands still and so does x.
+  const N = Math.max(0, (o.settle * fps) / ref);
+  const W = Math.min(N, Math.max(1e-6, ((o.settleOver ?? 24) * fps) / ref));
+  const clock = (m: number) => {
+    if (m <= N - W) return m;
+    const u = Math.min(m, N) - (N - W);
+    return N - W + u - (u * u) / (2 * W);
+  };
+  const x = at(clock(n));
+  return { x, v: x - at(clock(n - 1)) };
 };
 
 /** The incoming half of carriedCut(): carry() options plus the unseen step across the cut. */
