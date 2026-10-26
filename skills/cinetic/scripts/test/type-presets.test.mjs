@@ -5,8 +5,8 @@
  *   1. Timing: build's word gaps (14 / 10 / 10 f and a 28 f breath before the last, half that at 30 fps), the
  *      focus pull (blur x0.65 a frame at 30 fps), the wheel's shrinking gaps (16 f to 6 f), the font cycle's
  *      6 f steps, the punch (a 24 % push in 28 f), the redaction's 2 f steps, the swarm on twos.
- *   2. Exits: the dive zooms at a constant log rate (x8.2 in 14 f) into a covering ink; push dims to 36 % on
- *      its first frame; the square full stop lands 5 f after the line.
+ *   2. Exits: the dive zooms at a constant log rate (x8.2 in 14 f) into a covering ink, a deeper zoom (diveTo)
+ *      at the same rate; push dims to 36 % on its first frame; the square full stop lands 5 f after the line.
  *   3. Properties: every preset with every exit is finite and repeatable, continuous presets give the same
  *      picture at the same second at 30 and 60 fps, and declares() marks the stepped runs and the dive seam.
  *
@@ -56,6 +56,7 @@ const cyc = { preset: 'cycle', text: 'Quiet is a feature', at: 0, key: 0 };
 const red = { preset: 'redact', text: 'Hush holds the noise', at: 0, from: 'They never stop' };
 const sw = { preset: 'swarm', text: 'Every app wants you', at: 0, seed: 's' };
 const dive = { preset: 'slice', text: 'Not right now', at: 0, out: 100, exit: 'dive' };
+const d90 = { ...dive, diveTo: 90, anchorAt: [0.5, -0.025] };
 const focus = (fps: number) => { const q = T.typeFocusFrames(tf, film(fps)); const f0 = Math.ceil(q.focus) + 1; return st(f0 + 1, tf, fps).blur / st(f0, tf, fps).blur; };
 const swOn = T.swarmFrames(sw, film(60)).on[0];
 const swScale = (f: number) => st(f, sw).glyphs[0].sx;
@@ -89,6 +90,7 @@ console.log(JSON.stringify({
   redact: T.redactFrames(red, film(60)),
   swarm: { a: swScale(swOn), b: swScale(swOn + 16), pairs: [0, 4, 8, 12].every((k) => swScale(swOn + k) === swScale(swOn + k + 1)) },
   dive: [101, 106, 111].map((f) => st(f + 1, dive).scale / st(f, dive).scale),
+  dive90: { r: st(121, d90).scale / st(120, d90).scale, gone: T.typeLineFrames(d90, M(d90), film(60)).gone, oy: st(101, d90).origin[1] },
   push: st(101, { preset: 'punch', text: 'Not right now', at: 0, out: 100, exit: 'push' }).opacity,
   dot: { at: dotF.dot, resolved: dotF.resolved },
   finite, repeat, fpsWorst,
@@ -120,6 +122,7 @@ result(near(P.swarm.a, 0.29) && near(P.swarm.b, 1) && P.swarm.pairs, 'swarm: wor
 // 2. exits and marks
 const want = 8.2 ** (1 / 14);
 result(P.dive.every((x) => near(x, want, 1e-9)), 'dive: a constant log-rate zoom, x8.2 in 14 f', `${P.dive[0].toFixed(5)} (want ${want.toFixed(5)})`);
+result(near(P.dive90.r, want, 1e-9) && near(P.dive90.gone, 100 + (14 * Math.log(90)) / Math.log(8.2), 1e-9) && near(P.dive90.oy, -0.025), 'dive: a deeper zoom keeps the rate and lasts longer; anchorAt sets the fixed point', JSON.stringify(P.dive90));
 result(near(P.push, 0.36, 1e-9), 'push: the line dims to 36 % on its first frame');
 result(P.dot.at === P.dot.resolved + 5, 'dot: the square full stop lands 5 f after the line', JSON.stringify(P.dot));
 
