@@ -187,7 +187,7 @@ Square outline rings are born at the centre every few frames and expand at a con
 - **Anatomy:** Births every 4-6 f; 38 px/f; stroke about 75 px, gap about 98 px at birth.
 - **Timing:** 70 f.
 - **Sound:** None.
-- **Build:** `<Radiate start x y color stroke={75} speed={15}>` (fx/Grids): square (or `shape="circle"`) rings born every 10-15 f (seeded, or `births` on the beat), growing at one constant speed; `swallow={{ at }}` thickens them until only hairline gaps remain.
+- **Build:** `<Radiate start x y color stroke={75} speed={15}>` (fx/Grids): square (or `shape="circle"`) rings born every 10-15 f (seeded, or `births` on the beat), growing at one constant speed; `swallow={{ at }}` thickens them until only hairline gaps remain. `bornAt={54}` pops each ring in as a solid square that opens (no tiny first frame); `speeds` gives rings their own speeds (the first a little slower reads as a pulse, not a pattern); `flood={{ at }}` fills the centre with a solid square growing ×1.09 a frame until it covers the frame, the hand-off to a full-colour end card.
 
 ### Panel pushes the shot off in two stages
 

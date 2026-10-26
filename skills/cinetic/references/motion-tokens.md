@@ -196,7 +196,8 @@ through a cut. Declare the seam (`SEAMS`, kind `velocity`): forensics then fails
 { pctPerSec })`, house 6 %/s, range 2-15 %/s) or drifts (`drift(f, from, pxPerSec)`, house 30 px/s, range 6-90),
 or sits over moving light, and turns into its exit over the last 12-20 f with `intoCut(f, cut, lead = 16)`, which
 starts flat so the hold speeds up into the cut with no step. While text is read the hold stays under 90 px/s and
-15 %/s. The ground breathes; the camera may stop: lock it for 0.5-1 s on each type read (a carried camera with
+15 %/s. A statement held on a card counter-creeps (`counterCreep(f, from)`: the line +2 %/s, the card and its grid
+-1.6 %/s), which reads as depth rather than a zoom. The ground breathes; the camera may stop: lock it for 0.5-1 s on each type read (a carried camera with
 `settle`), while the type build, the light or a counter keeps the frame alive, so the camera moves in about 85-95 % of
 the film's frames rather than all of them.
 

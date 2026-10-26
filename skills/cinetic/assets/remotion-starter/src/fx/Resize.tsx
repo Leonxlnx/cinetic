@@ -9,12 +9,17 @@ import type { Declares } from '../timeline';
  * takes 50-70 % of the change, with the corner handles stretched as echo bars from where they were, then
  * a long settle (24 f, exponential). `jumpFrames` 3 gives the field version: a slow-in, a three-frame
  * lunge and a long tail while the caret glides.
+ *
+ * `mode: 'carry'` is the cut-carry squash instead: a card that opens on a cut at the outgoing card's size and
+ * squashes to its own (a statement card arriving at the last card's height, then closing round one line). No
+ * creep, no handles: an exponential settle from the cut frame (a 20 f box at 60 fps, 17 % left after 9 f), so the
+ * first frames carry the change and the layout around it can read the live box.
  */
 
 export type RBox = { x: number; y: number; w: number; h: number };
 
 /** House numbers: frames at 60 fps, shares of the change. */
-export const RESIZE = { creep60: 12, creepShare: 0.15, jump: 0.6, settle60: 24, settleK: 6, handle: 16, echoAlpha: 0.45 } as const;
+export const RESIZE = { creep60: 12, creepShare: 0.15, jump: 0.6, settle60: 24, settleK: 6, handle: 16, echoAlpha: 0.45, carry60: 20, carryK: 3.8 } as const;
 
 export type ResizeProps = {
   at: number; // the creep starts
@@ -25,6 +30,8 @@ export type ResizeProps = {
   jumpFrames?: 1 | 2 | 3; // film frames the jump takes (house 1)
   settle?: { frames?: number; k?: number }; // 60 fps frames (house 24), exponential k (house 6)
   handles?: false | { size?: number }; // px at 1080p (house 16)
+  mode?: 'tool' | 'carry'; // tool (default): creep, jump, settle; carry: the cut-carry squash (an exponential settle from `at`)
+  carry?: { frames?: number; k?: number }; // 60 fps frames (house 20), exponential k (house 3.8)
   id?: string;
 };
 
@@ -40,6 +47,7 @@ const timing = (p: ResizeProps, fps: number) => {
 /** Progress 0..1 of the resize at frame f (whole frames inside the jump). */
 export const resizeProgress = (frame: number, p: ResizeProps, film?: Partial<FilmCtx>): number => {
   const fps = fpsOf(film);
+  if (p.mode === 'carry') return frame <= p.at ? 0 : expOut(p.carry?.k ?? RESIZE.carryK)(clamp((frame - p.at) / Math.max(1, f60x(p.carry?.frames ?? RESIZE.carry60, fps))));
   const { c, j, s, jump0, settle0 } = timing(p, fps);
   const cs = p.creep?.share ?? RESIZE.creepShare;
   const js = p.jump ?? RESIZE.jump;
@@ -61,10 +69,12 @@ export const resizeState = (frame: number, p: ResizeProps, film?: Partial<FilmCt
   const lerp = (t: number): RBox => ({ x: mix(p.from.x, p.to.x, t), y: mix(p.from.y, p.to.y, t), w: mix(p.from.w, p.to.w, t), h: mix(p.from.h, p.to.h, t) });
   const box = lerp(k);
   const F = fd(frame);
-  const jumpFrame = F >= jump0 && F < settle0;
-  const phase = frame <= p.at ? 'before' : F < jump0 ? 'creep' : jumpFrame ? 'jump' : frame < settle0 + s ? 'settle' : 'done';
+  const carry = p.mode === 'carry';
+  const jumpFrame = !carry && F >= jump0 && F < settle0;
+  const carryEnd = p.at + f60x(p.carry?.frames ?? RESIZE.carry60, fps);
+  const phase = frame <= p.at ? 'before' : carry ? (frame < carryEnd ? 'settle' : 'done') : F < jump0 ? 'creep' : jumpFrame ? 'jump' : frame < settle0 + s ? 'settle' : 'done';
   const handles: ResizeState['handles'] = [];
-  if (p.handles !== false) {
+  if (p.handles !== false && !carry) {
     const hs = (p.handles?.size ?? RESIZE.handle) * uOf(film);
     const prev = jumpFrame ? lerp(resizeProgress(F - 1, p, film)) : box;
     for (const [cx, cy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
@@ -83,6 +93,7 @@ export const resizeState = (frame: number, p: ResizeProps, film?: Partial<FilmCt
 
 /** Sync: creep start, the jump (a click or a snap), the end of the settle. */
 export const resizeFrames = (p: ResizeProps, film?: Partial<FilmCtx>) => {
+  if (p.mode === 'carry') return { creep: p.at, jump: p.at, settle: p.at, done: Math.ceil(p.at + f60x(p.carry?.frames ?? RESIZE.carry60, fpsOf(film))) };
   const { s, jump0, settle0 } = timing(p, fpsOf(film));
   return { creep: p.at, jump: jump0, settle: settle0, done: Math.ceil(settle0 + s) };
 };
@@ -116,9 +127,9 @@ export const ResizeBox: React.FC<ResizeProps & { frame: number; line?: string; h
   );
 };
 
-/** The jump frame(s) are a designed step (one sample: the echo handles must not smear). */
+/** The jump frame(s) are a designed step (one sample: the echo handles must not smear); the carry squash is continuous. */
 export const declares = (p?: Partial<ResizeProps>, film?: Partial<FilmCtx>): Declares => {
-  if (!p || p.at === undefined) return { stepped: [], flashes: [], cameraBlur: [], seams: [] };
+  if (!p || p.at === undefined || p.mode === 'carry') return { stepped: [], flashes: [], cameraBlur: [], seams: [] }; // carry: continuous
   const fr = resizeFrames(p as ResizeProps, film);
   return { stepped: [{ from: fr.jump, to: fr.settle, id: p.id ?? 'resize' }], flashes: [], cameraBlur: [], seams: [] };
 };

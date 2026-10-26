@@ -203,7 +203,7 @@ export const StairWipe: React.FC<StairWipeProps & { frame: number; outgoing: Rea
 // ---------------------------------------------------------------------------------------------- Radiate
 
 /** House numbers: px at 1080p, frames at 60 fps. */
-export const RADIATE = { every60: [10, 15] as [number, number], speed60: 15, stroke: 75, hairline: 2, swallow60: 25 } as const;
+export const RADIATE = { every60: [10, 15] as [number, number], speed60: 15, stroke: 75, hairline: 2, swallow60: 25, flood: { from: 70, growth60: 1.0915 } } as const;
 
 export type RadiateProps = {
   start: number; // the first birth
@@ -215,6 +215,9 @@ export type RadiateProps = {
   stroke?: number; // px at 1080p (house 75)
   max?: number; // rings past this half-size are dropped (default: the frame's half-diagonal + stroke)
   swallow?: { at: number; frames?: number }; // strokes thicken until only hairline gaps remain (house 25 f, accelerating)
+  bornAt?: number; // half-size a ring is born at, px at 1080p (default 0; 54 pops it in as a solid square that opens)
+  speeds?: number[]; // per-ring growth (px per 60 fps frame at 1080p) by birth order; missing rings use `speed`
+  flood?: { at: number; from?: number; growth?: number }; // the centre floods: a solid square from `from` px half-size (house 70) growing x`growth` a 60 fps frame (house 1.0915) until it covers the frame
   id?: string;
 };
 
@@ -233,6 +236,8 @@ export const radiateState = (frame: number, p: RadiateProps, film?: Partial<Film
   const u = uOf(film);
   const { width, height } = sizeOf(film);
   const v = ((p.speed ?? RADIATE.speed60) * u * 60) / fps;
+  const vOf = (k: number) => (p.speeds?.[k] !== undefined ? (p.speeds[k] * u * 60) / fps : v);
+  const born = (p.bornAt ?? 0) * u;
   const stroke0 = (p.stroke ?? RADIATE.stroke) * u;
   const max = p.max ?? Math.hypot(width, height) / 2 + stroke0;
   const births = radiateBirths(p, film);
@@ -243,8 +248,14 @@ export const radiateState = (frame: number, p: RadiateProps, film?: Partial<Film
     const k = E.buildIn(clamp((frame - p.swallow.at) / Math.max(1, f60x(p.swallow.frames ?? RADIATE.swallow60, fps))));
     stroke = mix(stroke0, Math.max(stroke0, spacing - RADIATE.hairline * u), k);
   }
-  const rings = births.filter((b) => frame >= b).map((b) => ({ r: (frame - b) * v, stroke, birth: b })).filter((r) => r.r - r.stroke / 2 < max);
-  return { rings, v };
+  const rings = births
+    .map((b, k) => ({ b, k }))
+    .filter(({ b }) => frame >= b)
+    .map(({ b, k }) => ({ r: born + (frame - b) * vOf(k), stroke, birth: b }))
+    .filter((r) => r.r - r.stroke / 2 < max);
+  const fl = p.flood;
+  const flood = fl && frame >= fl.at ? Math.min(max, (fl.from ?? RADIATE.flood.from) * u * (fl.growth ?? RADIATE.flood.growth60) ** (((frame - fl.at) * 60) / fps)) : 0;
+  return { rings, v, flood };
 };
 
 /** Draws the rings centred on (x, y): square outlines (or circles) in `color`. */
@@ -253,6 +264,8 @@ export const Radiate: React.FC<RadiateProps & { frame: number; x: number; y: num
   const s = radiateState(props.frame, props, film);
   return (
     <svg width={film.width} height={film.height} style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }} aria-hidden>
+      {s.flood > 0 && (props.shape ?? 'square') === 'square' && <rect x={props.x - s.flood} y={props.y - s.flood} width={2 * s.flood} height={2 * s.flood} rx={props.radius ?? 0} fill={props.color} />}
+      {s.flood > 0 && props.shape === 'circle' && <circle cx={props.x} cy={props.y} r={s.flood} fill={props.color} />}
       {s.rings.map((g) => {
         const r = Math.max(0.5, g.r);
         const sw = Math.min(g.stroke, 2 * r);

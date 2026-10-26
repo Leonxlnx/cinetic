@@ -285,6 +285,19 @@ export const creep = (f: number, from: number, o: { pctPerSec: number } | { pxPe
   return 'pxPerSec' in o ? o.pxPerSec * t : 1 + o.pctPerSec * t;
 };
 
+/** House counter-creep, scale per second: the subject in, its ground out (a statement card holding before a zoom-out). */
+export const COUNTER_CREEP = { text: 0.02, ground: -0.016 } as const;
+
+/**
+ * Two layers creeping against each other on a hold: the subject (the line, the product) scales in while the ground
+ * under it (the card, the grid) scales out, so the hold reads as depth, not a zoom. Scale multipliers from `from`
+ * (house +2 %/s and -1.6 %/s); add intoCut() on top to turn both into the exit.
+ */
+export const counterCreep = (f: number, from: number, o: { text?: number; ground?: number } = {}, fps: number = fpsOf()) => ({
+  text: creep(f, from, { pctPerSec: o.text ?? COUNTER_CREEP.text }, fps),
+  ground: creep(f, from, { pctPerSec: o.ground ?? COUNTER_CREEP.ground }, fps),
+});
+
 /** A linear drift in px from frame `from` (house 30 px/s at 1080p, range 6-90). */
 export const drift = (f: number, from: number, pxPerSec = 30, fps: number = fpsOf()) => (pxPerSec * Math.max(0, f - from)) / fps;
 
