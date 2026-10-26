@@ -2,7 +2,8 @@
 // a badge that switches, bars that grow, a chat that lands, a list that flicks) as pure functions of the
 // frame. Each is laid out at film size in its own box (`w` x `h`, px at 1080p times the film's unit) and
 // drawn on a lit Surface. Data defaults to the sample products (kit/sample.ts): pass the brand's own.
-// Frame them as macro crops and hero planes, not as a centred dashboard: the camera does the reading.
+// Frame them as macro crops and hero planes, not as a centred dashboard: the camera does the reading. The
+// exception is the film's one product moment (kit/moment.tsx): the panel in use, full frame on a flat field.
 import React from 'react';
 import { Bubbles, type Message } from '../fx/Bubbles';
 import { countLinear } from '../fx/Roll';

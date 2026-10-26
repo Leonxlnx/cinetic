@@ -34,7 +34,9 @@ Contents: 1. The shape · 2. The tools · 3. Writing the changes · 4. Picture �
   times it for the number of changes (`--changes 2-4`), says how one change hands over to the next, and keeps every
   fragment at 1-3 words. `--format update` implies `--have number` (the version is the honest number).
 - **Devices.** `python3 scripts/pick.py --format update --seconds 14` draws the hook, a product moment and the end card
-  first, from entries made for update films and from launch, feature and sting entries.
+  first, from entries made for update films and from launch, feature and sting entries. It reads the dealt sheet
+  (`out/direction.json`) for the format, length and `--have`; typing, caret and cursor devices come only with
+  `--have input` (the product is used by typing or pointing), UI devices only with `ui`.
 - **The template.** `bash scripts/new-film.sh <dir> --format update [--brand <kit>] [--music <file> ...]` lays the
   update template over the starter: the facts in `src/update.ts` (the version, the one before it, the changes and the
   moment each uses), a timeline that places them on the grid, one camera along one strip so every act line carries
@@ -43,9 +45,40 @@ Contents: 1. The shape · 2. The tools · 3. Writing the changes · 4. Picture �
 - **The product.** `src/kit` is the floor for the product moments (`ProjectPanel`, `ChatCard`, `FeedCard`,
   `StatCard`, `ApprovalsCard` and the rest, each with a live state switch). Rebuild the product's own screens for film
   (every web size ×1.9, nothing under 36 px), and give each change its real state change on its hit frame
-  (`references/product-ui.md`).
+  (`references/product-ui.md`). The full-frame moment below is built with `ProductMoment` and `momentPlan`.
 - **The brand.** `--brand <kit>` runs `scripts/brand.py`: tokens, the logo's parts, the name, fonts, screenshots
   (`references/brand-kits.md`).
+
+## The full-frame product moment (every launch and update film)
+
+Every film shows the product used once at full size: its own interface filling the frame on a flat field, not a
+stand-in for it (a tile grid, a thin curve on a photo, grey bars) and not a small card in a world. A viewer who
+never saw the product should see what it does from this one moment, muted.
+
+- **Picture.** The window at about 88 × 80 % of the frame (`MOMENT`), centred on one flat colour (the kit theme's
+  ground: no relief, footage or plate behind it); the camera locks or creeps under 3 % for the read.
+- **The product's own UI and data.** The real screens rebuilt at film size from the product's data module: its
+  strings, numbers, names and pictures (the sample products only until the real ones exist).
+- **Parts on beats.** Three or more parts enter one after another on the grid at about two starts a second
+  (window, list, chart, button...), each cut on whole at full ink and sliding home (`entering()`); while one part
+  arrives the one before is still settling, so two things move at once.
+- **The real state change on the hit frame.** One thing the product does changes state on a beat: a badge flips
+  to approved, a reply lands, a figure starts to climb, a search returns. Typing or a pointer only when the product
+  is used that way.
+- **In the beat sheet** this beat answers one question: which real UI state changes here, on which frame.
+
+```tsx
+import { momentPlan, ProductMoment, entering, ProjectPanel } from '../kit';
+const plan = momentPlan({ start: CUE.product, parts: ['window', 'selects', 'count', 'button'], beat: BEAT }, film);
+<ProductMoment frame={frame} plan={plan}>
+  {(s, box) => <ProjectPanel frame={frame} w={box.w} h={box.h} doneAt={plan.hit} style={entering(s.t('window'))} />}
+</ProductMoment>
+```
+
+`momentPlan` places the entrances on the beat, half beat or two beats nearest half a second, the state change one
+step after the last entrance (or on `hit`) and a 36 f hold after it; `momentState` gives each part's entrance and
+`done` from the hit frame on. In an update film each change is a smaller product moment on the shared surface;
+the payoff or one change is the full-frame one.
 
 ## 3. Writing the changes
 
