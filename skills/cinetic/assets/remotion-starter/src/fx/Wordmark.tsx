@@ -15,8 +15,10 @@ import type { Declares } from '../timeline';
  *             (house 4/3/3/7/7/4 frames at 24 fps): long thin parts shoot in at constant speed and stop
  *             dead (the impact is the stop), panels arrive front-loaded, small details pop last.
  *   lockup    the mark shrinks a little (ease in), snaps to half its size in ONE frame on the hit,
- *             settles x0.68, then slides to make room (M.lockup, 17 frames at 25 fps, peak speed past
- *             the middle) while the name rises in from the slide's middle; then it locks.
+ *             settles x0.68 (LOCKUP_FINAL: 0.29 of markSize), then slides to make room (M.lockup, 12
+ *             frames at 25 fps, peak speed past the middle); the name rises in WHOLE once the sliding mark
+ *             has cleared its place (never drawn over the mark, never revealed letter by letter from
+ *             behind it); then it locks. lockupLayout() centres mark + name as one unit.
  *   swing     the mark swings in with an anticipation (a back-swing of ~16 degrees over 2 frames) into
  *             the one logo spring (SPR.logoSwing, about 16 % over), its scale falling exponentially
  *             (tau 12 frames at 24 fps), then a slow recede.
@@ -25,8 +27,10 @@ import type { Declares } from '../timeline';
  *             when the brand supplies it (`cinetic:brand-supplied glow` in the film, BRIEF.md), and then
  *             as a baked plate whose opacity follows haloLevel(), never an animated blur.
  *
- * The default lockup is the film's own device (the last move of the story's object lands as the mark),
- * never a mark centred over a radial glow.
+ * The default end card (LOCKUP_HOUSE): frontal, on a clean flat field (no relief, footage or glow behind
+ * it), contrast 4.5:1 or more, mark + name 35-55 % of the frame width with the name 6.7 % of the frame
+ * height or more, built in one gesture (16-24 f at 25 fps from the hit to the landed name) and held
+ * 0.8-2 s, out with the ring. Never lower-left over footage, never a mark centred over a radial glow.
  */
 
 const f = Math.round;
@@ -176,10 +180,22 @@ export type LockupProps = {
   at: number; // first frame of the shrink (the mark is at scale 1 on it)
   shrink?: { frames?: number; to?: number; ease?: Ease; hold?: number }; // house 3 f@25 to 0.846 on E.buildIn, 1 held frame
   snap?: { ratio?: number }; // the one-frame snap (house 0.5)
-  settle?: { frames?: number; ratio?: number; ease?: Ease }; // house 9 f@25, x0.68 on E.glideOut
-  slide?: false | { delay?: number; frames?: number; px?: number; ease?: Ease }; // house: on the settle's last frame, 17 f@25, M.lockup
-  wordmark?: false | { at?: 'mid' | number; frames?: number; rise?: number; ease?: Ease }; // house: from the slide's middle, 14 f@25, rises 44 px, E.snapOut
+  settle?: { frames?: number; ratio?: number; ease?: Ease }; // house 5 f@25, x0.68 on E.glideOut
+  slide?: false | { delay?: number; frames?: number; px?: number; ease?: Ease }; // house: on the settle's last frame, 12 f@25, M.lockup (the library's measured device: settle 9, slide 17)
+  wordmark?: false | { at?: 'mid' | 'end' | number; frames?: number; rise?: number; ease?: Ease }; // house: <Lockup> on the frame the sliding mark clears the name's place (lockupState alone: the slide's end), 8 f@25, rises 24 px, E.snapOut
 };
+
+/** The mark's landed scale under the house shrink, snap and settle: 0.846 x 0.5 x 0.68 = 0.288 of markSize. */
+export const LOCKUP_FINAL = 0.846 * 0.5 * 0.68;
+/** The landed scale for these props (LOCKUP_FINAL with the house numbers). */
+export const lockupFinalScale = (p: Pick<LockupProps, 'shrink' | 'snap' | 'settle'>) => (p.shrink?.to ?? 0.846) * (p.snap?.ratio ?? 0.5) * (p.settle?.ratio ?? 0.68);
+
+/**
+ * The house end card. Frontal on a clean flat field; contrast against its local ground; mark + name as a
+ * share of the frame width; the name's line as a share of the frame height; built from the hit to the
+ * landed name in 16-24 f at 25 fps (0.64-0.96 s); held 0.8-2 s, out with the ring.
+ */
+export const LOCKUP_HOUSE = { contrast: 4.5, width: [0.35, 0.55], nameMinH: 0.067, build25: [16, 24], hold: [0.8, 2] } as const;
 
 export type LockupState = {
   scale: number;
@@ -194,14 +210,16 @@ const lockupTimes = (p: LockupProps, fps: number) => {
   const nS = Math.round(sh.frames ?? 3 * k);
   const hold = Math.round(sh.hold ?? 1);
   const snap = p.at + nS + hold + 1; // the snap frame
-  const nSet = Math.round(p.settle?.frames ?? 9 * k);
+  const nSet = Math.round(p.settle?.frames ?? 5 * k);
   const settled = snap + nSet;
-  const sl = p.slide === false ? null : p.slide ?? {};
+  const sl = p.slide ? p.slide : null; // no slide: the name follows the settle
   const slideAt = sl ? settled + Math.round(sl.delay ?? 0) : settled;
-  const nSl = sl ? (sl.frames ?? 17 * k) : 0;
+  const nSl = sl ? (sl.frames ?? 12 * k) : 0;
   const wm = p.wordmark === false ? null : p.wordmark ?? {};
-  const wAt = wm ? (typeof wm.at === 'number' ? wm.at : Math.round(slideAt + nSl / 2)) : Infinity;
-  return { nS, hold, snap, nSet, settled, slideAt, nSl, wAt, wFrames: wm ? (wm.frames ?? 14 * k) : 0, lock: Math.max(slideAt + Math.ceil(nSl), wm ? wAt + Math.ceil(wm.frames ?? 14 * k) : 0) };
+  // the name waits for the slide's end unless told otherwise ('mid' overlaps the sliding mark: the caller's layout must keep it clear)
+  const wAt = wm ? (typeof wm.at === 'number' ? wm.at : wm.at === 'mid' ? Math.round(slideAt + nSl / 2) : Math.round(slideAt + nSl)) : Infinity;
+  const wFrames = wm ? (wm.frames ?? 8 * k) : 0;
+  return { nS, hold, snap, nSet, settled, slideAt, nSl, wAt, wFrames, lock: Math.max(slideAt + Math.ceil(nSl), wm ? wAt + Math.ceil(wFrames) : 0) };
 };
 
 /** The lockup at frame fr: mark scale, slide offset, the name's entrance. Whole frames decide the snap. Pure. */
@@ -238,7 +256,7 @@ export const lockupState = (frame: number, p: LockupProps, film?: Partial<FilmCt
   let word = { on: false, t: 0, y: 0, opacity: 0 };
   if (wm && fr >= T.wAt) {
     const t = (wm.ease ?? E.snapOut)(clamp((frame - T.wAt + 1) / Math.max(1e-6, T.wFrames)));
-    word = { on: true, t, y: (wm.rise ?? 44) * (film?.height ?? 1080) / 1080 * (1 - t), opacity: t };
+    word = { on: true, t, y: (wm.rise ?? 24) * (film?.height ?? 1080) / 1080 * (1 - t), opacity: t };
   }
   return { scale, x, phase, wordmark: word };
 };
@@ -249,13 +267,67 @@ export const lockupFrames = (p: LockupProps, film?: Partial<FilmCtx>) => {
   return { snap: T.snap, settled: T.settled, slideStart: T.slideAt, slideEnd: T.slideAt + T.nSl, wordmark: T.wAt, lock: T.lock };
 };
 
+/** Where the mark lands (frame px): its box at the landed scale, after the slide. */
+export const lockupBox = (p: LockupProps & { x: number; y: number; markSize: number }) => {
+  const w = p.markSize * lockupFinalScale(p);
+  const px = p.slide ? p.slide.px ?? 0 : 0;
+  return { x: p.x - px - w / 2, y: p.y - w / 2, w, h: w };
+};
+
 /**
- * A lockup: `mark` (any node, drawn at `markSize` px, centred on (x, y) at scale 1) and `name` (placed
- * to the right of the landed mark by the caller's layout, rising in). `frame` is local.
+ * The first frame from which the sliding mark stays clear of the name's left edge (`nameLeft`, frame px,
+ * less `gap`): the frame <Lockup> brings the name in on by default. The slide's end when it never clears.
+ */
+export const lockupClearFrame = (p: LockupProps & { x: number; markSize: number }, nameLeft: number, gap = 0, film?: Partial<FilmCtx>) => {
+  const T = lockupFrames(p, film);
+  const right = (fr: number) => {
+    const s = lockupState(fr, { ...p, wordmark: false }, film);
+    return p.x + s.x + (p.markSize * s.scale) / 2;
+  };
+  let clear = Math.ceil(T.slideEnd);
+  for (let fr = clear; fr >= T.snap; fr--) {
+    if (Math.max(right(fr), right(fr - 0.5)) > nameLeft - gap) break; // sub-frame samples too
+    clear = fr;
+  }
+  return clear;
+};
+
+/**
+ * A centred frontal lockup (LOCKUP_HOUSE): mark and name land as one unit centred on (cx, cy). Give the
+ * name's measured width and line height at its font size (lib/measure.ts), the landed mark's height
+ * (default the name's line; the brand's LOCKUP.ratio x it when the brand sets one) and the gap (default
+ * 0.4 x the mark). Returns <Lockup>'s x, y, markSize and slide.px, the name's top-left (nameAt), the
+ * landed mark's box and the unit's width as a share of `width` (aim 0.35-0.55).
+ */
+export const lockupLayout = (o: { cx: number; cy: number; nameW: number; nameH: number; markH?: number; gap?: number; width?: number; lockup?: Pick<LockupProps, 'shrink' | 'snap' | 'settle'> }) => {
+  const markH = o.markH ?? o.nameH;
+  const gap = o.gap ?? 0.4 * markH;
+  const total = markH + gap + o.nameW;
+  const left = o.cx - total / 2;
+  const markSize = markH / lockupFinalScale(o.lockup ?? {});
+  const px = o.cx - (left + markH / 2);
+  return {
+    x: o.cx,
+    y: o.cy,
+    markSize,
+    slide: { px },
+    nameAt: [left + markH + gap, o.cy - o.nameH / 2] as [number, number],
+    box: { x: left, y: o.cy - markH / 2, w: markH, h: markH },
+    widthShare: total / (o.width ?? 1920),
+  };
+};
+
+/**
+ * A lockup: `mark` (any node, drawn at `markSize` px, centred on (x, y) at scale 1) and `name` (its
+ * top-left at `nameAt`, right of the landed mark: lockupLayout() gives both). The name rises in whole on
+ * the frame the sliding mark clears its place (lockupClearFrame; a given wordmark.at wins). `frame` is local.
  */
 export const Lockup: React.FC<LockupProps & { frame: number; x: number; y: number; markSize: number; mark: React.ReactNode; name?: React.ReactNode; nameAt?: [number, number] }> = (props) => {
   const film = useFilm();
-  const lk = lockupState(props.frame, props, film);
+  const wm = props.wordmark === false ? false : props.wordmark ?? {};
+  const auto = wm !== false && wm.at === undefined && !!props.nameAt && !!props.slide;
+  const at = auto ? lockupClearFrame(props, (props.nameAt as [number, number])[0], 0, film) : undefined;
+  const lk = lockupState(props.frame, auto ? { ...props, wordmark: { ...(wm as object), at } } : props, film);
   const half = props.markSize / 2;
   return (
     <div style={{ position: 'absolute', inset: 0 }}>

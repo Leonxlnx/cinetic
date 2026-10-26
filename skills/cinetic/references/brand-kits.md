@@ -97,9 +97,12 @@ direction, not its idea.
 ## 7. Logo devices (`fx/Wordmark`, `brand/Mark`)
 
 The lockup is the film's own device: the last move of the story's object lands as the mark (the element that rose in
-the relief becomes the mark's accent part; the stepped collage settles into the wordmark), lit by the key, off-centre
-or as a crop of the last plane. Never a mark, a wordmark and a tagline centred over a radial glow
-(`end-card-template` warns).
+the relief becomes the mark's accent part; the stepped collage settles into the wordmark). Where it lands is the house
+end card (`LOCKUP_HOUSE`): frontal, on a clean flat field (the relief, footage or plate dimmed and defocused away or
+cut to a flat ground), contrast 4.5:1 or more against its local ground, mark and name 35-55 % of the frame width with
+the name's line 6.7 % of the frame height or more, built in one gesture (16-24 f at 25 fps from the hit to the landed
+name), held 0.8-2 s and out with the ring. Never a lower-left lockup over footage, never a mark, a wordmark and a
+tagline centred over a radial glow (`end-card-template` warns).
 
 - **Assemble.** `assembleState(frame, { parts: [{ from: edge | [dx, dy], at, dur, curve: 'stop' | ease, distance,
   lead, pop }] })` and `assembleFor(logo, { start, x, y, size })` (a house plan: alternating edges, uneven gaps of
@@ -107,9 +110,13 @@ or as a crop of the last plane. Never a mark, a wordmark and a tagline centred o
   details under 3 % of the mark pop last). `assembleFrames()` gives onsets, landing frames and the build's length.
   `<AssembledMark logo parts x y size />`.
 - **Lockup.** `lockupState(frame, { at, shrink, snap, settle, slide, wordmark })`: a short ease-in shrink, a snap to
-  half size in one frame on the hit, a settle ×0.68, then the slide (`M.lockup`, about 40 f at 60 fps, peak speed past
-  the middle) while the name rises in from the slide's middle; then the lock (the one held frame run of the film).
-  `lockupFrames()`, `<Lockup />`. The snap is declared (one sample on it).
+  half size in one frame on the hit, a settle ×0.68 (the mark lands at `LOCKUP_FINAL`, 0.29 of `markSize`), then the
+  slide (`M.lockup`, 12 f at 25 fps, about 29 f at 60, peak speed past the middle); the name rises in whole (8 f at
+  25 fps) once the sliding mark has cleared its place, never drawn over the mark and never revealed letter by letter
+  from behind it; then the lock. `lockupLayout({ cx, cy, nameW, nameH })` centres mark and name as one unit and returns
+  `<Lockup />`'s `x`, `y`, `markSize`, `slide.px` and `nameAt`; `lockupBox()` is the landed mark,
+  `lockupClearFrame()` the name's first frame, `lockupFrames()` the rest. The library's measured device (settle 9,
+  slide 17 f at 25 fps) passes its frames explicitly. The snap is declared (one sample on it).
 - **Swing.** `swingState(frame, { at, from, to, back, backFrames, spring, scaleFrom, tau, recede, spin })`: an
   anticipation back-swing (about 16° over 2 f at 24 fps) into the one logo spring (`SPR.logoSwing`, 15-18 % over),
   scale falling exponentially, then a slow recede and an optional slow turn that keeps the held mark alive.
