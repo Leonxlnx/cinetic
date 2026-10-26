@@ -16,16 +16,22 @@
  *   HyperFrames  fonts/<name>-latin[-ext]-wght-normal.woff2 + fonts/<name>-LICENSE, and prints the
  *                @font-face block to paste into index.html.
  *
+ * --add <key> vendors a second (or third) family beside the film's own instead of replacing it: a product UI face
+ * or a system notification face next to the display face. fonts.ts imports it without dropping anything,
+ * tokens.ts gets FONT.<key> (a new line, or the line of that key replaced) and a FACES entry; FONT.text and
+ * FONT.mono stay as they are. Use it for the product's own faces only: the film's words keep one sans.
+ *
  * Only normal (upright) faces are copied: italics are a hard ban when you invent the look. The
  * package's own category decides the role: a monospace family becomes FONT.mono, a sans FONT.text;
  * serif, display and handwriting families are refused unless --brand-supplied (the user's brand
  * supplied it: record it in BRIEF.md).
  *
  * Usage (from the project root, or pass --dir):
- *   node scripts/add-font.mjs <name | @fontsource-variable/name[@version]> [--role text|mono]
+ *   node scripts/add-font.mjs <name | @fontsource-variable/name[@version]> [--role text|mono] [--add <key>]
  *                             [--dir <project>] [--no-tokens] [--brand-supplied] [--dry-run]
  *   e.g. node scripts/add-font.mjs manrope
  *        node scripts/add-font.mjs @fontsource-variable/jetbrains-mono --role mono
+ *        node scripts/add-font.mjs inter --add ui        (FONT.ui beside FONT.text)
  * Exit codes: 0 vendored, 1 failed (the message says why), 2 bad arguments.
  */
 import { execFileSync } from 'node:child_process';
@@ -50,12 +56,13 @@ const cleanup = () => { if (tmp) rmSync(tmp, { recursive: true, force: true }); 
 const die = (msg, code = 1) => { cleanup(); console.error(`add-font: ${msg}`); process.exit(code); };
 
 const args = process.argv.slice(2);
-let spec = null, role = null, dir = '.', tokens = true, brand = false, dry = false;
+let spec = null, role = null, dir = '.', tokens = true, brand = false, dry = false, addKey = null;
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '-h' || a === '--help') { console.log(HELP.trim()); process.exit(0); }
   else if (a === '--role') role = args[++i];
   else if (a === '--dir') dir = args[++i];
+  else if (a === '--add') addKey = args[++i] ?? '';
   else if (a === '--no-tokens') tokens = false;
   else if (a === '--brand-supplied') brand = true;
   else if (a === '--dry-run') dry = true;
@@ -65,6 +72,8 @@ for (let i = 0; i < args.length; i++) {
 }
 if (!spec) { console.log(HELP.trim()); die('missing <name | package>', 2); }
 if (role && !['text', 'mono'].includes(role)) die('--role must be text or mono', 2);
+if (addKey !== null && !/^[a-z][a-zA-Z0-9]*$/.test(addKey)) die('--add needs a key name such as ui or notice (letters and digits)', 2);
+if (addKey === 'text' || addKey === 'mono') die(`--add ${addKey} would replace the role: run without --add (with --role mono for a mono)`, 2);
 dir = resolve(dir);
 
 // ---- which package ------------------------------------------------------------------------
@@ -153,18 +162,38 @@ try {
   const { text: ft0, eol: ftEol } = existsSync(fontsTs) ? readText(fontsTs) : { text: '', eol: '\n' };
   let ft = ft0;
   const replaced = [];
-  const drop = (re) => { ft = ft.replace(re, (line) => (replaced.push(line.trim()), '')); };
+  const drop = (re) => { if (!addKey) ft = ft.replace(re, (line) => (replaced.push(line.trim()), '')); }; // --add keeps every import
   drop(role === 'mono' ? /^import '@fontsource-variable\/geist-mono(?:\/[^']*)?';[^\n]*\n?/gm : /^import '@fontsource-variable\/geist(?:\/[^']*)?';[^\n]*\n?/gm);
   drop(new RegExp(`^import '\\./fonts/(?!${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/)[^']+/index\\.css';[^\\n]*\\(${role}\\)[^\\n]*\\n?`, 'gm'));
-  if (role === 'text') ft = ft.replace(/^(?:\/\/\n)?\/\/ cinetic:placeholder[^\n]*\n(?:\/\/(?! cinetic:)[^\n]*\n)*/m, '');
-  const imp = `import './${rel}/index.css'; // ${family} (${role}), vendored: scripts/add-font.mjs`;
+  if (role === 'text' && !addKey) ft = ft.replace(/^(?:\/\/\n)?\/\/ cinetic:placeholder[^\n]*\n(?:\/\/(?! cinetic:)[^\n]*\n)*/m, '');
+  const imp = `import './${rel}/index.css'; // ${family} (${addKey ?? role}), vendored: scripts/add-font.mjs`;
   if (!ft.includes(`'./${rel}/index.css'`)) ft = ft.replace(/\s*$/, '\n') + imp + '\n';
   if (!dry) writeText(fontsTs, ft, ftEol);
   say(`src/brand/fonts.ts imports ./${rel}/index.css${replaced.length ? ` (replacing ${replaced.map((l) => l.replace(/^import /, '').replace(/;.*$/, '')).join(', ')})` : ''}`);
 
   // tokens.ts: FONT.<role> and FACES follow the family; weights clamp to the axis
   const tokTs = join(dir, 'src/brand/tokens.ts');
-  if (tokens && existsSync(tokTs)) {
+  if (tokens && existsSync(tokTs) && addKey) {
+    // --add: FONT.<key> beside the film's own families, and its FACES entry; nothing else changes
+    const { text: tk0, eol: tkEol } = readText(tokTs);
+    let tk = tk0;
+    const stack = role === 'mono' ? `"${family}", ui-monospace, monospace` : `"${family}", system-ui, sans-serif`;
+    const keyLine = new RegExp(`^(\\s*${addKey}:\\s*)'[^']*'`, 'm');
+    if (keyLine.test(tk)) tk = tk.replace(keyLine, `$1'${stack}'`);
+    else {
+      const obj = /^export const FONT\s*=\s*\{[\s\S]*?\n\};?/m.exec(tk);
+      if (!obj) die('src/brand/tokens.ts has no FONT object to add to (add the family by hand)');
+      tk = tk.replace(obj[0], obj[0].replace(/\n\};?$/, `\n  ${addKey}: '${stack}', // added beside the film's families: add-font.mjs --add\n};`));
+    }
+    tk = tk.replace(/^(export const FACES\s*=\s*\[)([^\]]*)\]/m, (all, head, body) => {
+      const faces = [...body.matchAll(/'([^']*)'/g)].map((x) => x[1]);
+      if (!faces.some((f) => f.endsWith(`"${family}"`))) faces.push(`${Math.min(axis[1], Math.max(axis[0], 400))} 16px "${family}"`);
+      return `${head}${faces.map((f) => `'${f}'`).join(', ')}]`;
+    });
+    if (!dry) writeText(tokTs, tk, tkEol);
+    say(`src/brand/tokens.ts: FONT.${addKey} = '${stack}' beside the film's own families; FACES waits for it`);
+    console.log(`next: use FONT.${addKey} for the product's own UI only (the film's words keep FONT.text), then npm run check`);
+  } else if (tokens && existsSync(tokTs)) {
     const { text: tk0, eol: tkEol } = readText(tokTs);
     let tk = tk0;
     const line = new RegExp(`^(\\s*${role}:\\s*)'([^']*)'`, 'm');
@@ -205,7 +234,7 @@ try {
   // package.json: the starter's stand-in dependency for this role is no longer used
   const pj = join(dir, 'package.json');
   const standPkg = role === 'mono' ? '@fontsource-variable/geist-mono' : '@fontsource-variable/geist';
-  if (existsSync(pj) && !dry) {
+  if (existsSync(pj) && !dry && !addKey) {
     const p = JSON.parse(readFileSync(pj, 'utf8'));
     const stillUsed = readdirSync(join(dir, 'src'), { recursive: true }).some((f) => /\.(tsx?|css)$/.test(f) &&
       readFileSync(join(dir, 'src', f), 'utf8').includes(`'${standPkg}'`));
@@ -215,7 +244,7 @@ try {
       say(`package.json: dropped ${standPkg} (the stand-in)`);
     }
   }
-  console.log(`next: choose the weights and tracking in TYPE for this family (references/copy-and-type.md §6), then npm run check && npm run stills`);
+  if (!addKey) console.log(`next: choose the weights and tracking in TYPE for this family (references/copy-and-type.md §6), then npm run check && npm run stills`);
 } finally {
   cleanup();
 }

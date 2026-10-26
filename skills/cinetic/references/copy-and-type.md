@@ -284,7 +284,10 @@ grep -rnP "\w'\w|\b1 [a-z]+s\b|lorem|ipsum|TODO|FIXME|Acme|John Doe|example\.com
 node scripts/add-font.mjs manrope                       # a sans from brand-and-color.md §2
 node scripts/add-font.mjs jetbrains-mono                # a mono, only if the product needs one
 bash scripts/new-film.sh films/x --link-modules <dir>/node_modules --font manrope   # the same, at scaffold time
+node scripts/add-font.mjs inter --add ui                # the product's own UI face beside the film's (FONT.ui)
 ```
+
+  `--add <key>` keeps the film's family and adds the product's own faces beside it (a UI face, a system notification face): `FONT.<key>` and its `FACES` entry, nothing replaced. The film's words keep one sans; the added faces belong to the rebuilt product UI only.
 
   `add-font.mjs` runs `npm pack @fontsource-variable/<name>` into a temp folder (nothing is installed), copies the package's `index.css`, the upright `.woff2` files it references and the licence into `src/brand/fonts/<name>/`, imports that CSS from `src/brand/fonts.ts` in place of the starter's stand-in, and sets `FONT` and `FACES` in `tokens.ts` to the family, clamping weights to its axis. The package's own category picks the role (a monospace family becomes `FONT.mono`) and refuses serif, display and script families unless you pass `--brand-supplied`. Verified with `@fontsource-variable/manrope` 5.3.0 in a project with a linked `node_modules`: the shared folder unchanged, `tsc` clean, and a rendered still in Manrope. The result for a sans plus a mono, once the weights are chosen:
 
