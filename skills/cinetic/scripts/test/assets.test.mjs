@@ -10,7 +10,10 @@
  *   3. Filtering (licence, size, shape, near-duplicates), interleaving, search options (keyed sources only with
  *      their key), the colour filter's scoring.
  *   4. The private licence record: where it lives (outside public/), what an entry holds, replacement.
- *   5. Contact-sheet geometry, the focus crop, the grade's filter chain, file-type sniffing, key redaction.
+ *   5. Contact-sheet geometry, the focus crop, the grade's filter chain (natural keeps the picture's colour,
+ *      night puts the median at 0.18, --strength 0 is the picture), the picture check (banned colours, the
+ *      saturated floor, the set's match, steady text), file-type sniffing, key redaction. With ffmpeg on the
+ *      PATH, real pixels: a vivid picture keeps its colour through natural; a daylight one reads as night.
  *   6. The CLI contract: --help, usage errors, exit codes. No test touches the network (fetch is replaced by a
  *      function that fails the run).
  *
@@ -277,7 +280,12 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   const flat = A.exposureMap({ lo: 0.14, hi: 0.38 }, A.LOOKS.tint);
   ok(flat.slope <= 1.45 + 1e-9 && flat.hi - flat.lo <= 1.45 * 0.24 + 1e-9, 'exposure: a flat source is stretched at most x1.45', `slope ${flat.slope.toFixed(2)}`);
   const hard = A.exposureMap({ lo: 0.01, hi: 0.99 }, A.LOOKS.tint);
-  ok(hard.slope >= 0.75, 'exposure: a contrasty source is flattened at most to x0.75');
+  ok(hard.slope >= 1 / 1.3 - 1e-9 && flat.slope <= 1.3 + 1e-9, 'exposure: never stretched or flattened past x1.3', `${flat.slope.toFixed(3)} ${hard.slope.toFixed(3)}`);
+  const bright = A.exposureMap({ lo: 0.19, hi: 0.99 }, A.LOOKS.natural); const dark = A.exposureMap({ lo: 0.04, hi: 0.38 }, A.LOOKS.natural);
+  ok((bright.lo + bright.hi) / 2 > 0.53 && (dark.lo + dark.hi) / 2 < 0.3, 'natural keeps a bright still bright and a night one dark (re-centred a quarter of the way)', `${((bright.lo + bright.hi) / 2).toFixed(2)} ${((dark.lo + dark.hi) / 2).toFixed(2)}`);
+  const bc = A.gradeFilter('natural', { stats: { lo: 0.19, hi: 0.99, sat: 0.2 } }).match(/curves=all='([^']+)'/)[1].split(' ').map((q) => q.split('/').map(Number));
+  const slopes = bc.slice(1).map((q, i) => (q[1] - bc[i][1]) / (q[0] - bc[i][0]));
+  ok(Math.max(...slopes) / Math.min(...slopes.filter((v) => v > 0)) < 1.6, 'natural on a bright still: the curve stays one line to the ends (no crushed shadows, no clipped top)', bc.map((q) => q.join('/')).join(' '));
   ok(A.satFactor({ sat: 0.02 }, 1, 1) === 1.25 && A.satFactor({ sat: 0.9 }, 1, 1) === 0.25 && A.satFactor(null, 0.55) === 0.55, 'saturation factor: bounded 0.25-1.25, the look\'s own without stats');
 }
 // the film's look is natural; one-hue washes are one-shot devices; a graded set is measured
@@ -285,10 +293,29 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   ok(Object.keys(A.LOOKS)[0] === 'natural', 'natural is the first look (and the grade default)');
   ok(['tint', 'duotone', 'deep'].every((k) => A.LOOKS[k].device) && ['natural', 'matte', 'silver', 'night'].every((k) => !A.LOOKS[k].device), 'tint, duotone and deep are marked as one-shot device looks; natural, matte, silver and night are whole-film looks');
   const nat = A.gradeFilter('natural', { accent: '#2e8c9e', stats: { lo: 0.1, hi: 0.8, sat: 0.2 } });
-  ok(/vibrance=intensity=-0\.35/.test(nat) && /eq=saturation=/.test(nat), 'natural holds strong colours back (a vibrance ceiling after the saturation match)');
-  const s1 = Number(nat.match(/eq=saturation=([\d.]+)/)[1]);
-  const s07 = Number(A.gradeFilter('natural', { accent: '#2e8c9e', stats: { lo: 0.1, hi: 0.8, sat: 0.2 }, colour: 0.7 }).match(/eq=saturation=([\d.]+)/)[1]);
-  ok(s07 < s1 && Math.abs(s07 / s1 - 0.7) < 0.02, '--strength scales the colour strength the set is matched to', `${s1} -> ${s07}`);
+  ok(!/eq=saturation=/.test(nat) && /vibrance=intensity=-0\.1(,|$)/.test(nat), 'natural keeps the picture\'s own colour (no saturation change) and only holds the strongest back a little', nat);
+  const vivid = Number((A.gradeFilter('natural', { stats: { lo: 0.1, hi: 0.8, sat: 0.6 } }).match(/eq=saturation=([\d.]+)/) || [0, 1])[1]);
+  ok(vivid >= 0.8 && vivid < 1 && A.keepFactor({ sat: 0.3 }) === 1, 'natural on a very vivid picture pulls its colour down at most to x0.8', `${vivid}`);
+  const c07 = Number(A.gradeFilter('natural', { stats: { lo: 0.1, hi: 0.8, sat: 0.2 }, colour: 0.7 }).match(/eq=saturation=([\d.]+)/)[1]);
+  ok(Math.abs(c07 - 0.7) < 1e-9, '--chroma scales the colour after the look', `${c07}`);
+  const raw = A.gradeFilter('matte', { stats: { lo: 0.1, hi: 0.8, sat: 0.2, med: 0.4 }, strength: 0 });
+  ok(!/curves=|eq=|vibrance=|colorbalance=|noise=|huesaturation=/.test(raw), '--strength 0 is the picture as it is (only crop, scale and format)', raw);
+  const m1 = Number(A.gradeFilter('matte', { stats: { lo: 0.1, hi: 0.8, sat: 0.2 } }).match(/eq=saturation=([\d.]+)/)[1]);
+  const m05 = Number(A.gradeFilter('matte', { stats: { lo: 0.1, hi: 0.8, sat: 0.2 }, strength: 0.5 }).match(/eq=saturation=([\d.]+)/)[1]);
+  ok(m05 > m1 && m05 < 1 && Math.abs(m05 - (1 + (m1 - 1) / 2)) < 0.002, '--strength 0.5 goes half way from the picture toward the look', `${m1} -> ${m05}`);
+  // night: the median luma to 0.18 through the exposure line and a gamma, warm colours drained
+  const nightAt = (st, o = {}) => {
+    const vf = A.gradeFilter('night', { stats: st, ...o });
+    const pts = vf.match(/curves=all='([^']+)'/)[1].split(' ').map((q) => q.split('/').map(Number));
+    const lin = (x) => { for (let i = 1; i < pts.length; i++) if (x <= pts[i][0]) return pts[i - 1][1] + ((x - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0])) * (pts[i][1] - pts[i - 1][1]); return pts[pts.length - 1][1]; };
+    const gm = vf.match(/eq=gamma=([\d.]+)/); const g = gm ? 1 / Number(gm[1]) : 1;
+    return { vf, med: lin(st.med) ** g };
+  };
+  const day = nightAt({ lo: 0.2, hi: 0.92, sat: 0.3, med: 0.56 }); const dim = nightAt({ lo: 0.02, hi: 0.3, sat: 0.2, med: 0.09 });
+  ok(Math.abs(day.med - 0.18) < 0.01, 'night: a daylight picture\'s median luma lands at about 0.18', day.med.toFixed(3));
+  ok(dim.med >= 0.09 && dim.med <= 0.19, 'night: a dark picture is not crushed (its median is kept or lifted toward 0.18)', dim.med.toFixed(3));
+  ok(/huesaturation=saturation=-0\.8:colors=r\+y/.test(day.vf) && !/huesaturation/.test(nightAt({ lo: 0.2, hi: 0.92, sat: 0.3, med: 0.56 }, { hueSat: false }).vf), 'night drains reds and yellows (orange skies, tan wood); without huesaturation a plain desaturation', day.vf);
+  ok(Math.abs(A.medianGamma(0.5, 0.18) - Math.log(0.18) / Math.log(0.5)) < 1e-9 && A.medianGamma(0.99) === 2.8 && A.medianGamma(0.01) === 0.7, 'medianGamma: the exponent for the target, held to 0.7-2.8');
   const tintKeep = A.gradeFilter('tint', { accent: '#2e8c9e', stats: { lo: 0.1, hi: 0.8, sat: 0.2 }, colour: 0.5 });
   ok(/split\[a\]\[b\]/.test(tintKeep), 'a device look still grades when asked for (one shot)');
   // pixels: a neutral grey, a strong teal (the accent's hue), a strong red
@@ -298,7 +325,23 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   ok(Math.abs(sh.neutral - 0.6) < 1e-9 && Math.abs(sh.saturated - 0.4) < 1e-9 && Math.abs(sh.accent - 0.3) < 1e-9, 'colour shares: neutral (C < .03), saturated (C >= .06) and accent-hued pixels counted apart', JSON.stringify(sh));
   ok(A.colourShares(Buffer.alloc(0)).neutral === 0, 'colour shares of an empty buffer are zero, not NaN');
   const wash = A.pictureVerdict([{ neutral: 0.02, saturated: 0.8, accent: 0.6 }, { neutral: 0.05, saturated: 0.7, accent: 0.5 }]);
-  ok(!wash.ok && wash.notes.length === 3 && /natural/.test(wash.notes[0]) && /--strength/.test(wash.notes[1]), 'a one-hue wash fails the neutral floor and gets all three notes', JSON.stringify(wash.notes.map((n) => n.slice(0, 40))));
+  ok(!wash.ok && wash.notes.length === 3 && /matte/.test(wash.notes[0]) && /--chroma/.test(wash.notes[1]) && !wash.notes.some((n) => /--strength/.test(n)), 'a one-hue wash fails the neutral floor and gets all three notes (matte, --chroma; never --strength, which now means how far toward the look)', JSON.stringify(wash.notes.map((n) => n.slice(0, 40))));
+  const px1 = (rgb) => A.rgbToOklch(...rgb);
+  ok(A.bannedRegion(...px1([210, 120, 40])) && A.bannedRegion(...px1([150, 70, 200])) && A.bannedRegion(...px1([225, 205, 175])), 'banned regions: orange, violet and a cream are banned (look-audit\'s numbers)');
+  ok(!A.bannedRegion(...px1([40, 150, 165])) && !A.bannedRegion(...px1([128, 128, 128])) && !A.bannedRegion(...px1([220, 60, 50])), 'banned regions: a teal, a grey and a red are not');
+  const shB = A.colourShares(Buffer.concat([px([128, 128, 128], 95), px([210, 120, 40], 5)]));
+  ok(Math.abs(shB.banned - 0.05) < 1e-9 && shB.L > 0.55 && shB.L < 0.65 && shB.C > 0, 'colour shares: banned share, median lightness and mean chroma', JSON.stringify(shB));
+  const banF = [{ neutral: 0.6, saturated: 0.1, accent: 0, banned: 0.012, file: 'bus.jpg' }, { neutral: 0.6, saturated: 0.1, accent: 0, banned: 0 }];
+  const banV = A.pictureVerdict(banF);
+  ok(!banV.ok && banV.banned === 1 && /bus\.jpg/.test(banV.notes.join(' ')) && A.pictureVerdict(banF, { allowBanned: true }).ok, 'a banned colour on 0.5 % of a frame fails the check (the film\'s banned-hue test); --brand-supplied lets the brand\'s own pass', banV.notes[0]?.slice(0, 80));
+  const greySet = A.pictureVerdict([{ neutral: 0.9, saturated: 0.01, accent: 0 }, { neutral: 0.8, saturated: 0.02, accent: 0 }]);
+  ok(greySet.ok && greySet.notes.length === 1 && /saturated floor/.test(greySet.notes[0]), 'a grey set passes with a note: under the film\'s saturated floor (4.5 %)', greySet.notes[0]?.slice(0, 60));
+  const outl = A.setOutliers([{ file: 'a', L: 0.5, C: 0.05 }, { file: 'b', L: 0.55, C: 0.06 }, { file: 'c', L: 0.52, C: 0.05 }, { file: 'night.jpg', L: 0.15, C: 0.05 }, { file: 'neon.jpg', L: 0.5, C: 0.2 }]);
+  ok(outl.length === 2 && outl[0].file === 'night.jpg' && /darker/.test(outl[0].why) && /more colour/.test(outl[1].why), 'set match: a much darker picture and a much more colourful one are outliers', JSON.stringify(outl));
+  ok(A.setOutliers([{ file: 'a', L: 0.1, C: 0.1 }, { file: 'b', L: 0.9, C: 0.01 }]).length === 0, 'set match: two pictures are no set to measure');
+  const sign = [[[40, 50, 200, 30]], [[42, 51, 198, 29]], [[300, 200, 80, 30]]];
+  ok(A.steadyText(sign).length === 2 && A.steadyText([[[10, 10, 60, 30]], [[200, 120, 60, 30]], [[400, 220, 60, 30]]]).length === 0, 'steady text: a line in the same place in two frames of a clip counts; one that moves does not');
+  ok(A.steadyText([[[10, 100, 90, 20], [120, 102, 60, 19]]]).length === 2 && A.steadyText([[[10, 100, 30, 20]]]).length === 0 && A.steadyText([[[10, 100, 120, 20]]]).length === 1, 'steady text in a still: two lines on one baseline, or one at least 4 x as wide as tall');
   const good = A.pictureVerdict([{ neutral: 0.6, saturated: 0.1, accent: 0.01 }, { neutral: 0.4, saturated: 0.55, accent: 0.02 }, { neutral: 0.7, saturated: 0.05, accent: 0 }]);
   ok(good.ok && Math.abs(good.neutral - 17 / 30) < 1e-9 && Math.abs(good.satFrames - 1 / 3) < 1e-9 && good.notes.length === 0, 'a natural set passes: mean neutral, the share of frames over half saturated', JSON.stringify(good));
   ok(A.pictureVerdict([{ neutral: 0.5, saturated: 0.2, accent: 0.2 }]).ok && A.pictureVerdict([{ neutral: 0.5, saturated: 0.2, accent: 0.2 }]).notes.length === 1, 'only the neutral floor fails; the accent ceiling is a note');
@@ -378,6 +421,30 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   ok(code === 1 && /--from/.test(out) && !/unknown licence/.test(out), 'get mixkit:<id> with no saved search says pass --from (not "unknown licence"), without a fetch', out.split('\n')[0]);
   fs.rmSync(dir, { recursive: true, force: true });
 }
+
+// real pixels (ffmpeg on the PATH): natural keeps a vivid picture's colour; night makes a daylight one read as night
+if (A.ffmpegOk()) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-grade-'));
+  const { spawnSync } = await import('node:child_process');
+  const make = (name, src) => { const f = path.join(dir, name); spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', src, '-frames:v', '1', '-y', f]); return f; };
+  // a vivid rock pool: turquoise water over a coral band, a little grey stone
+  const pool = make('pool.png', "color=c=0x14b4b4:s=640x360,drawbox=x=0:y=250:w=640:h=110:color=0xd2503c:t=fill,drawbox=x=0:y=0:w=640:h=40:color=0x8a8c8e:t=fill");
+  // a daylight harbour: pale blue sky, a warm sunset band and tan wood, mid-grey water
+  const day = make('day.png', "color=c=0x9cc4e4:s=640x360,drawbox=x=0:y=120:w=640:h=40:color=0xe8963c:t=fill,drawbox=x=0:y=160:w=640:h=120:color=0x6e7478:t=fill,drawbox=x=0:y=280:w=640:h=80:color=0xb48c5a:t=fill");
+  const log = console.log; let out = ''; console.log = (...a) => { out += `${a.join(' ')}\n`; };
+  await A.main(['grade', pool, '--out', path.join(dir, 'g'), '--aspect', 'none', '--grain', '0', '--no-check']);
+  await A.main(['grade', day, '--look', 'night', '--out', path.join(dir, 'g'), '--aspect', 'none', '--grain', '0', '--no-check']);
+  console.log = log;
+  const share = (f) => A.colourShares(A.frameGrid(f));
+  const before = share(pool); const after = share(path.join(dir, 'g', 'pool.natural.jpg'));
+  ok(after.saturated >= 0.85 * before.saturated && after.C >= 0.75 * before.C, 'natural keeps a vivid picture\'s colour (saturated share and chroma)', `saturated ${(before.saturated * 100).toFixed(0)} -> ${(after.saturated * 100).toFixed(0)} %, C ${before.C.toFixed(3)} -> ${after.C.toFixed(3)}`);
+  const nb = share(day); const na = share(path.join(dir, 'g', 'day.night.jpg'));
+  const lumaMed = (f) => { const g = A.frameGrid(f); const ys = []; for (let i = 0; i + 2 < g.length; i += 3) ys.push((0.2126 * g[i] + 0.7152 * g[i + 1] + 0.0722 * g[i + 2]) / 255); ys.sort((a, b) => a - b); return ys[ys.length >> 1]; };
+  const ln = lumaMed(path.join(dir, 'g', 'day.night.jpg'));
+  ok(ln > 0.12 && ln < 0.24, 'night: a daylight picture\'s median luma lands near 0.18', `${lumaMed(day).toFixed(2)} -> ${ln.toFixed(3)}`);
+  ok(na.banned < 0.5 * nb.banned, 'night: the orange band and tan wood lose most of their banned colour', `${(nb.banned * 100).toFixed(1)} -> ${(na.banned * 100).toFixed(1)} %`);
+  fs.rmSync(dir, { recursive: true, force: true });
+} else console.log('skip  real-pixel grade tests: no ffmpeg on the PATH');
 
 ok(fetched === 0, 'no test touched the network', `${fetched} fetch calls`);
 

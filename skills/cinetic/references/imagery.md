@@ -66,24 +66,33 @@ Chicago, the Met, Mixkit video. With a key in the environment: `PEXELS_API_KEY`,
    node scripts/assets.mjs get #2,#7 --to public/assets --res 1080 --trim 3.5,6
    ```
 5. **Grade.** One look for the whole set, so pictures from four sources read as one shoot. `grade` matches
-   exposure and colour strength across the set first, then applies the look, crops to 16:9 around a focus point and
-   adds a fine grain:
+   white balance, black level and contrast across the set first (never stretching a picture's range past ×1.3),
+   then applies the look, crops to 16:9 around a focus point and adds a fine grain. `--strength` is how far toward
+   the look (0 = the picture as it is, 1 = the look); `--chroma` scales the colour after it:
    ```
    node scripts/assets.mjs looks
    node scripts/assets.mjs grade public/assets --accent "#2e8c9e" --focus 0.5,0.45 --out public/assets/graded
    node scripts/assets.mjs sheet public/assets/graded            (check the set reads as one)
    node scripts/assets.mjs check public/assets/graded --accent "#2e8c9e"
    ```
-   Looks: `natural` (the default: each picture keeps its own colour, exposure and colour strength matched across the
-   set, strong colours held back, a faint cool shadow), `matte` (lifted blacks, colour at 55 %, shadows a step
-   toward the split hue: `--split-hue`, cool by default), `silver` (neutral black and white: archives, a quiet film, the pieces of a collage),
-   `night` (low key). Three more are **device looks for one shot**, not a film's grade: `tint` (30 % of the
+   Looks: `natural` (the default: each picture keeps its own colour and range, a bright still stays bright and a
+   night one dark; only a very vivid picture's colour comes down a little, never under ×0.8; a faint cool shadow),
+   `matte` (lifted blacks, colour at 55 %, shadows a step toward the split hue: `--split-hue`, cool by default),
+   `silver` (neutral black and white: archives, a quiet film, the pieces of a collage), `night` (low key: the
+   median luma to about 0.18, so a daylight picture reads as night and a dark one is not crushed; reds and yellows
+   drained, so an orange sky or tan wood does not survive as a banned colour). Three more are **device looks for
+   one shot**, not a film's grade: `tint` (30 % of the
    picture's own colour under a one-hue wash at the accent hue), `duotone` (deep accent-hued shadows to a pale tinted
    white) and `deep` (the picture becomes a colour field). A whole film in a one-hue wash turns into a monochrome
    accent bath; the film's colour should come from the pictures' own colour over neutral grounds, with the accent
-   kept for what it means. `check` (which `grade` also runs) holds a graded set to at least 30 % neutral pixels,
-   at most 35 % of frames heavily saturated and the accent hue on at most 10 % of the picture. Keep stills at
-   2400 px so a push stays sharp; keep footage at its own size (`--aspect none`).
+   kept for what it means. `check` (which `grade` also runs) runs the film's own colour tests on the set before
+   anything is built: it fails a set under 30 % neutral pixels and any picture with a banned colour region
+   (orange/amber, beige/cream, purple/violet, neon) on 0.5 % of a frame (the film's banned-hue test; a brand's own
+   colour passes with `--brand-supplied`), and notes frames over half saturated (ceiling 35 %), the accent hue on
+   more than 10 % of the picture, a set under the film's saturated floor (4.5 %), a picture much lighter, darker or
+   more colourful than the rest (not one shoot), and readable text or logos in the pictures (like.py's reader:
+   someone else's brand never appears in a film). Keep stills at 2400 px so a push stays sharp; keep footage at its
+   own size (`--aspect none`).
 6. **Move.** The motion system moves pictures exactly as it moves type: closed-form state, the house curves,
    carried speed across cuts, a camera that never parks.
 

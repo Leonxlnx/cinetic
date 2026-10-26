@@ -33,13 +33,18 @@
  * <film>/assets/licences.json (source, licence, author, page, the licence as read): a private record kept
  * outside public/, never shown on screen.
  *
- * Grade. `natural` is the default and the film's look: every picture keeps its own colour, exposure and colour
- * strength are matched across the set and strong colours are held back, so water reads green-black, foam
- * white, mist grey and the accent stays free for live data. `matte` and `silver` are whole-film looks too;
- * `tint`, `duotone` and `deep` are device looks for one shot (a whole film in one wash reads as a filter).
- * After grading, the set is measured: the share of neutral pixels (OKLCH C < .03) must be at least 30 %, or
- * grade exits 3 with what to change (--strength 0.7, matte, silver); frames more than half saturated and the
- * pictures' own share of the accent's hue are reported against their ceilings (35 %, 10 %).
+ * Grade. `natural` is the default and the film's look: every picture keeps its own colour and range; white
+ * balance, black level and contrast are matched across the set (never stretched past x1.3) and only the
+ * strongest colours are held back a little, so the accent stays free for live data. `matte`, `silver` and
+ * `night` (the median luma to about 0.18, warm colours drained) are whole-film looks too; `tint`, `duotone`
+ * and `deep` are device looks for one shot (a whole film in one wash reads as a filter). --strength is how far
+ * toward the look (0 = the picture as it is, 1 = the look); --chroma scales the colour after it.
+ * After grading, the set is measured (`check` runs the same on any set): the share of neutral pixels (OKLCH
+ * C < .03) must be at least 30 %, and no picture may show a banned colour region (orange/amber, beige/cream,
+ * purple/violet, neon: the film's banned-hue test) on 0.5 % of a frame, or grade exits 3 with what to change;
+ * frames more than half saturated, the pictures' own share of the accent's hue, a set under the film's
+ * saturated floor (4.5 %), pictures that do not match the set and readable text or logos in the pictures
+ * are reported as notes.
  *
  * Needs Node 18+ (built-in fetch); ffmpeg and ffprobe for sheet, grade, probe and --trim.
  * Exit codes: 0 done, 1 nothing usable / a step failed, 2 bad arguments, 3 the graded set is a colour wash.
@@ -49,7 +54,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const UA = 'cinetic-assets/1.2 (film imagery search; +https://github.com/Leonxlnx/cinetic)';
 const AIC_HEADERS = { 'AIC-User-Agent': UA };
@@ -650,8 +655,8 @@ export const rgbHex = (rgb) => `#${rgb.map((v) => Math.round(v * 255).toString(1
 // ------------------------------------------------------------------------------------------------ search
 export function parseArgs(argv) {
   const VALUED = new Set(['kind', 'source', 'orientation', 'min-width', 'colour', 'color', 'limit', 'out', 'pick', 'cols', 'cell', 'to', 'from', 'name', 'width', 'res', 'trim', 'max-mb',
-    'record', 'look', 'accent', 'split-hue', 'focus', 'aspect', 'grain', 'speed', 'fps', 'suffix', 'strength', 'scan']);
-  const FLAGS = new Set(['allow-credit', 'json', 'no-check', 'dry-run', 'help', 'force', 'keep', 'scrub']);
+    'record', 'look', 'accent', 'split-hue', 'focus', 'aspect', 'grain', 'speed', 'fps', 'suffix', 'strength', 'chroma', 'scan']);
+  const FLAGS = new Set(['allow-credit', 'json', 'no-check', 'dry-run', 'help', 'force', 'keep', 'scrub', 'brand-supplied', 'no-text']);
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -1134,8 +1139,10 @@ async function cmdGet(args) {
 // ------------------------------------------------------------------------------------------------ grade
 /**
  * Named looks: one grade for a whole set, so stills from different sources read as one shoot. Every look
- * normalises exposure (the 10th and 90th luma percentiles to `lo` / `hi`) and colour strength (mean
- * saturation to `sat`, times --strength) first, then colours: `vib` < 0 is a vibrance ceiling (strong colours
+ * normalises exposure (the 10th and 90th luma percentiles toward `lo` / `hi`, `recentre` of the way, the
+ * contrast change held to x0.77-1.3) and colour strength (mean saturation to `sat`; `keep` holds the picture's
+ * own, only pulling a mean above `satCap` down a little) first; `median` then puts the median luma there (night);
+ * `warm` drains reds and yellows (orange skies, tan wood); then colours: `vib` < 0 is a vibrance ceiling (strong colours
  * lose more than weak ones, so a turquoise bay does not outshout the set), `mode` duotone maps luma between
  * two colours at the accent hue (shadow and highlight as OKLCH L/C), `tint` keeps `keep` of the photo's own
  * colour under a duotone wash, `split` pushes shadows a step toward the split hue (--split-hue, a cool teal-slate
@@ -1144,28 +1151,48 @@ async function cmdGet(args) {
  * whole film.
  */
 export const LOOKS = {
-  natural: { about: 'the default: each picture keeps its own colour; exposure and colour strength matched across the set, strong colours held back, a faint cool shadow', lo: 0.07, hi: 0.86, sat: 0.8, vib: -0.35, mode: 'split', split: 0.025, grain: 0.18 },
+  natural: { about: 'the default: each picture keeps its own colour and range; white balance, black level and contrast matched across the set (never stretched past x1.3), only the strongest colours held back a little, a faint cool shadow', lo: 0.07, hi: 0.86, recentre: 0.25, keep: true, satCap: 0.36, vib: -0.1, mode: 'split', split: 0.02, grain: 0.18 },
   matte: { about: 'editorial matte: lifted blacks, rolled highlights, colour at 55 %, shadows a step toward the split hue (cool by default)', lo: 0.12, hi: 0.84, black: 0.06, white: 0.94, sat: 0.55, vib: -0.25, mode: 'split', split: 0.05, grain: 0.25 },
   silver: { about: 'neutral black and white, a firm curve and stronger grain (archives, a quiet film, the pieces of a collage)', lo: 0.05, hi: 0.9, sat: 0, mode: 'mono', grain: 0.4 },
-  night: { about: 'low key: exposure down, shadows sunk a step toward the split hue (cool by default), highlights kept', lo: 0.03, hi: 0.72, sat: 0.6, vib: -0.25, mode: 'split', split: 0.07, gamma: 0.85, grain: 0.3 },
+  night: { about: 'low key: the median luma to about 0.18 (a daylight picture reads as night, a dark one is not crushed), warm colours (orange skies, tan wood) drained, shadows a step toward the split hue (cool by default)', lo: 0.03, hi: 0.72, sat: 0.6, vib: -0.25, mode: 'split', split: 0.07, median: 0.18, warm: -0.8, grain: 0.3 },
   tint: { device: true, about: 'a device look for one shot: 30 % of the photo\'s own colour under a one-hue wash at the accent hue', lo: 0.08, hi: 0.88, sat: 0.3, mode: 'tint', keep: 0.3, shadow: [0.2, 0.06], mid: [0.55, 0.085], highlight: [0.95, 0.025], grain: 0.25 },
   duotone: { device: true, about: 'a device look for one shot: deep accent-hued shadows to a pale tinted white', lo: 0.06, hi: 0.9, sat: 0, mode: 'duotone', shadow: [0.2, 0.08], mid: [0.55, 0.075], highlight: [0.96, 0.03], grain: 0.3 },
   deep: { device: true, about: 'a device look for one shot: the photo becomes a colour field, shadows at L .14, highlights at the accent lifted to L .82', lo: 0.05, hi: 0.86, sat: 0, mode: 'duotone', shadow: [0.14, 0.05], mid: [0.46, 0.1], highlight: [0.82, 0.1], grain: 0.3 },
 };
 /** The picture check's thresholds (OKLCH chroma): neutral below, saturated at or above (the look audit's line). */
-export const PICTURE = { neutralC: 0.03, saturatedC: 0.06, accentDeg: 20, minNeutral: 0.3, maxSatFrames: 0.35, maxAccent: 0.1 };
+export const PICTURE = { neutralC: 0.03, saturatedC: 0.06, accentDeg: 20, minNeutral: 0.3, maxSatFrames: 0.35, maxAccent: 0.1, banned: 0.005, minSaturated: 0.045, lumaGap: 0.25, chromaX: 2.5 };
+/**
+ * The banned OKLCH regions, the same numbers as look-audit.py's banned_mask, lint-film.mjs and palette.py:
+ * neon, beige/cream, orange/amber, purple/violet. Counted on pixels of C >= .03 (as look-audit samples). Pure.
+ */
+export function bannedRegion(L, C, h) {
+  if (C < 0.03) return false;
+  const yellow = h >= 96 && h < 118;
+  const neon = (yellow ? L >= 0.91 && C >= 0.15 : (L >= 0.85 && C >= 0.15) || (L >= 0.8 && C >= 0.18)) || C >= 0.27;
+  const beige = h >= 31 && h < 118 && L >= 0.7 && C >= 0.007 && C < 0.1;
+  const orange = h >= 31 && h < 96 && C >= 0.05;
+  const purple = h >= 270 && h < 340 && C >= 0.02;
+  return neon || beige || orange || purple;
+}
 const hueGap = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
-/** Shares of neutral, saturated and accent-hued pixels in an rgb24 buffer (accent = a #hex or null). Pure. */
+/**
+ * Shares of neutral, saturated, accent-hued and banned-region pixels in an rgb24 buffer (accent = a #hex or
+ * null), with the median OKLCH lightness and the mean chroma (for the set's match). Pure.
+ */
 export function colourShares(buf, accent = null) {
   const ah = accent ? hexToOklch(accent)[2] : null;
-  let n = 0; let neutral = 0; let saturated = 0; let acc = 0;
+  let n = 0; let neutral = 0; let saturated = 0; let acc = 0; let banned = 0; let csum = 0;
+  const Ls = [];
   for (let i = 0; i + 2 < buf.length; i += 3) {
-    const [, C, h] = rgbToOklch(buf[i], buf[i + 1], buf[i + 2]);
-    n++;
+    const [L, C, h] = rgbToOklch(buf[i], buf[i + 1], buf[i + 2]);
+    n++; csum += C; Ls.push(L);
     if (C < PICTURE.neutralC) neutral++;
     if (C >= PICTURE.saturatedC) { saturated++; if (ah !== null && hueGap(h, ah) <= PICTURE.accentDeg) acc++; }
+    if (bannedRegion(L, C, h)) banned++;
   }
-  return n ? { neutral: neutral / n, saturated: saturated / n, accent: acc / n } : { neutral: 0, saturated: 0, accent: 0 };
+  if (!n) return { neutral: 0, saturated: 0, accent: 0, banned: 0, L: 0, C: 0 };
+  Ls.sort((a, b) => a - b);
+  return { neutral: neutral / n, saturated: saturated / n, accent: acc / n, banned: banned / n, L: Ls[n >> 1], C: csum / n };
 }
 /**
  * The verdict on a graded set from per-frame shares ([{ neutral, saturated, accent }], every still once, every
@@ -1174,14 +1201,58 @@ export function colourShares(buf, accent = null) {
  */
 export function pictureVerdict(frames, o = {}) {
   const P = { ...PICTURE, ...o };
-  const m = (k) => (frames.length ? frames.reduce((s, f) => s + f[k], 0) / frames.length : 0);
-  const neutral = m('neutral'); const accent = m('accent');
+  const m = (k) => (frames.length ? frames.reduce((s, f) => s + (f[k] ?? 0), 0) / frames.length : 0);
+  const neutral = m('neutral'); const accent = m('accent'); const saturated = m('saturated');
   const satFrames = frames.length ? frames.filter((f) => f.saturated > 0.5).length / frames.length : 0;
+  const bannedFrames = frames.filter((f) => (f.banned ?? 0) >= P.banned);
+  const bannedOk = P.allowBanned || !bannedFrames.length;
   const notes = [];
-  if (neutral < P.minNeutral) notes.push(`neutral ${Math.round(neutral * 100)} % is under the ${Math.round(P.minNeutral * 100)} % floor: the set reads as one colour wash and the accent will not read on live data; grade natural (the default) with --strength 0.7, or matte or silver; keep tint, duotone and deep for one shot`);
-  if (satFrames > P.maxSatFrames) notes.push(`${Math.round(satFrames * 100)} % of frames are more than half saturated (ceiling ${Math.round(P.maxSatFrames * 100)} %): lower --strength or pick pictures with grey, white or dark in them`);
-  if (accent > P.maxAccent) notes.push(`the pictures themselves carry the accent's hue on ${Math.round(accent * 100)} % of their pixels (ceiling ${Math.round(P.maxAccent * 100)} %): the accent will not stand out on them; lower --strength or move the accent's hue away from the pictures'`);
-  return { neutral, satFrames, accent, ok: neutral >= P.minNeutral, notes };
+  if (neutral < P.minNeutral) notes.push(`neutral ${Math.round(neutral * 100)} % is under the ${Math.round(P.minNeutral * 100)} % floor: the set reads as one colour wash and the accent will not read on live data; grade matte (colour at 55 %) or silver, or --chroma 0.7; keep tint, duotone and deep for one shot`);
+  if (bannedFrames.length) notes.push(`${bannedFrames.length} frame(s) show a banned colour region (orange/amber, beige/cream, purple/violet or neon) on ${Math.round(Math.max(...bannedFrames.map((f) => f.banned)) * 1000) / 10} % of the frame at most (the film's banned-hue test fails at ${P.banned * 100} %)${bannedFrames[0].file ? `: ${[...new Set(bannedFrames.map((f) => f.file))].slice(0, 4).join(', ')}` : ''}: crop it out, grade night or silver, or pick another picture${P.allowBanned ? ' (passed: --brand-supplied)' : '; the brand\'s own colour? --brand-supplied, and declare it in the tokens'}`);
+  if (satFrames > P.maxSatFrames) notes.push(`${Math.round(satFrames * 100)} % of frames are more than half saturated (ceiling ${Math.round(P.maxSatFrames * 100)} %): --chroma 0.8, matte, or pictures with grey, white or dark in them`);
+  if (frames.length && saturated < P.minSaturated) notes.push(`saturated pixels ${Math.round(saturated * 1000) / 10} % of the set, under the film's saturated floor (${P.minSaturated * 100} %): the pictures read grey; grade natural (it keeps their colour), raise --chroma, or let the accent and a support hue carry larger masses`);
+  if (accent > P.maxAccent) notes.push(`the pictures themselves carry the accent's hue on ${Math.round(accent * 100)} % of their pixels (ceiling ${Math.round(P.maxAccent * 100)} %): the accent will not stand out on them; --chroma 0.8, matte, or move the accent's hue away from the pictures'`);
+  return { neutral, satFrames, accent, saturated, banned: bannedFrames.length, ok: neutral >= P.minNeutral && bannedOk, notes };
+}
+
+/**
+ * Pictures that do not read as one shoot: per file the median OKLCH lightness and the mean chroma (of its
+ * frames) against the set's medians; a file more than `lumaGap` lighter or darker, or with more than `chromaX`
+ * times (or under 1 / chromaX of) the set's colour strength, is an outlier. rows = [{ file, L, C }]. Pure.
+ */
+export function setOutliers(rows, o = {}) {
+  const P = { ...PICTURE, ...o };
+  if (rows.length < 3) return [];
+  const med = (a) => { const b = [...a].sort((x, y) => x - y); return b[b.length >> 1]; };
+  const mL = med(rows.map((r) => r.L)); const mC = med(rows.map((r) => r.C));
+  const out = [];
+  for (const r of rows) {
+    const why = [];
+    if (Math.abs(r.L - mL) > P.lumaGap) why.push(`${r.L > mL ? 'lighter' : 'darker'} (median L ${r.L.toFixed(2)} vs ${mL.toFixed(2)})`);
+    if (mC > 0.02 && (r.C > mC * P.chromaX || r.C < mC / P.chromaX)) why.push(`${r.C > mC ? 'more' : 'less'} colour (C ${r.C.toFixed(3)} vs ${mC.toFixed(3)})`);
+    if (why.length) out.push({ file: r.file, why: why.join(', ') });
+  }
+  return out;
+}
+
+/**
+ * Readable text or a logo in the pictures (someone else's brand on a bus, a shop sign): text-like lines that
+ * stay put. like.py's text reader finds the lines in each frame; a clip's line counts when it sits in the
+ * same place (box overlap >= 0.5) in at least two of its frames, a still's when two or more lines share a
+ * baseline band or one line is at least 4 x as wide as tall. regions = [[x, y, w, h], ...] per frame. Pure.
+ */
+export function steadyText(framesRegions) {
+  const iou = (a, b) => {
+    const x = Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])); const y = Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
+    const i = x * y; return i / (a[2] * a[3] + b[2] * b[3] - i || 1);
+  };
+  if (framesRegions.length >= 2) {
+    const hits = [];
+    framesRegions.forEach((rs, i) => rs.forEach((a) => { if (framesRegions.some((other, j) => j !== i && other.some((b) => iou(a, b) >= 0.5))) hits.push(a); }));
+    return hits;
+  }
+  const rs = framesRegions[0] || [];
+  return rs.filter((a) => a[2] >= 4 * a[3] || rs.some((b) => b !== a && Math.abs(a[3] - b[3]) <= 0.25 * a[3] && Math.abs(a[1] + a[3] - (b[1] + b[3])) <= 0.5 * a[3]));
 }
 /** The crop of a w x h source at `aspect` (w/h), `zoom` x tighter, centred on focus (fx, fy in 0..1) and clamped inside. */
 export function focusCrop(w, h, aspect, fx = 0.5, fy = 0.5, zoom = 1) {
@@ -1193,13 +1264,19 @@ export function focusCrop(w, h, aspect, fx = 0.5, fy = 0.5, zoom = 1) {
   return { x, y, w: cw, h: ch };
 }
 const f3 = (v) => Number(v).toFixed(3).replace(/\.?0+$/, '') || '0';
-/** Where the 10th / 90th luma percentiles go: toward the look's, the slope held to 0.75-1.45, re-centred on the look's middle. */
+/** The most any look stretches or flattens a picture's range (x1.3 either way). */
+export const STRETCH = 1.3;
+/**
+ * Where the 10th / 90th luma percentiles go: toward the look's, the slope held to 1/1.3-1.3, re-centred
+ * `recentre` of the way to the look's middle (house 0.75; natural 0.25, so a bright still stays bright and a
+ * night one stays dark).
+ */
 export function exposureMap(stats, L) {
   const p10 = stats ? Math.min(0.45, Math.max(0.01, stats.lo)) : 0.1;
   const p90 = stats ? Math.min(0.99, Math.max(p10 + 0.15, stats.hi)) : 0.9;
-  const slope = Math.min(1.45, Math.max(0.75, (L.hi - L.lo) / (p90 - p10)));
+  const slope = Math.min(STRETCH, Math.max(1 / STRETCH, (L.hi - L.lo) / (p90 - p10)));
   const midIn = (p10 + p90) / 2;
-  const mid = midIn + (((L.lo + L.hi) / 2) - midIn) * 0.75;
+  const mid = midIn + (((L.lo + L.hi) / 2) - midIn) * (L.recentre ?? 0.75);
   const lo = Math.max(0.005, mid - (slope * (p90 - p10)) / 2);
   const hi = Math.min(0.995, mid + (slope * (p90 - p10)) / 2);
   return { p10, p90, lo, hi, slope, black: L.black ?? 0, white: L.white ?? 1 };
@@ -1208,6 +1285,16 @@ export function exposureMap(stats, L) {
 export function satFactor(stats, target, slope = 1) {
   if (!stats?.sat) return target;
   return Math.min(1.25, Math.max(0.25, (0.16 * target) / (Math.max(0.02, stats.sat) * slope)));
+}
+/** natural's colour: the picture's own, a mean saturation above `cap` pulled down a little (never under x0.8). */
+export function keepFactor(stats, cap = 0.36) {
+  if (!stats?.sat || stats.sat <= cap) return 1;
+  return Math.max(0.8, cap / stats.sat);
+}
+/** The gamma exponent that puts a median luma `m` (after the exposure map) at `target`, held to 0.7-2.8. */
+export function medianGamma(m, target = 0.18) {
+  const x = Math.min(0.98, Math.max(0.02, m));
+  return Math.min(2.8, Math.max(0.7, Math.log(target) / Math.log(x)));
 }
 /** Curves points for a duotone: luma 0..1 mapped through OKLab from the shadow to the highlight colour (5 knots). */
 export function duotoneCurves(hue, shadow, highlight, mid = null) {
@@ -1231,11 +1318,13 @@ export function hueOf(v) {
   throw new Usage('--split-hue is a hue in degrees (0-360, OKLCH) or a #rrggbb colour');
 }
 /**
- * The ffmpeg filter chain of one file for a look. stats = { lo, hi, sat } of the source (luma percentiles and
- * mean saturation, 0..1) or null; crop = focusCrop() or null; width = output width; accent = the wash hue of the
- * device looks; splitHue = the shadow hue of the split looks (degrees, SPLIT_HUE when null). Pure (tested).
+ * The ffmpeg filter chain of one file for a look. stats = { lo, hi, sat, med } of the source (luma percentiles,
+ * mean saturation and median luma, 0..1) or null; crop = focusCrop() or null; width = output width; accent =
+ * the wash hue of the device looks; splitHue = the shadow hue of the split looks (degrees, SPLIT_HUE when null);
+ * strength = how far toward the look (0 = the picture as it is, 1 = the look, up to 1.5); colour = a saturation
+ * multiplier after it (--chroma); hueSat = ffmpeg has the huesaturation filter (night's warm drain). Pure (tested).
  */
-export function gradeFilter(lookName, { accent = '#2f7d8c', splitHue = null, stats = null, crop = null, width = 2400, grain, video = false, speed = 1, colour = 1 } = {}) {
+export function gradeFilter(lookName, { accent = '#2f7d8c', splitHue = null, stats = null, crop = null, width = 2400, grain, video = false, speed = 1, colour = 1, strength = 1, hueSat = true } = {}) {
   const L = LOOKS[lookName];
   if (!L) throw new Usage(`unknown look ${lookName}: ${Object.keys(LOOKS).join(', ')}`);
   const hue = hexToOklch(accent)[2];
@@ -1244,29 +1333,51 @@ export function gradeFilter(lookName, { accent = '#2f7d8c', splitHue = null, sta
   f.push(`scale=${width}:-2:flags=lanczos`);
   if (speed !== 1) f.push(`setpts=PTS/${f3(speed)}`);
   f.push('format=gbrp');
+  // how far toward the look: every move below is a blend from the picture (s = 0) to the look (s = 1)
+  const s = Math.min(1.5, Math.max(0, strength));
+  const toward = (from, to) => from + (to - from) * s;
+  const c01 = (v) => Math.min(1, Math.max(0, v));
   // exposure: the source's 10th / 90th luma percentiles toward the look's, the contrast change held to
-  // x0.75-1.45 (a flat satellite frame must not be stretched into a neon one)
+  // x1/1.3-1.3; the ends continue the same line (no spline overshoot that crushes a bright still)
   const ex = exposureMap(stats, L);
-  f.push(`curves=all='0/${f3(ex.black)} ${f3(ex.p10)}/${f3(ex.lo)} ${f3(ex.p90)}/${f3(ex.hi)} 1/${f3(ex.white)}'`);
-  if (L.gamma) f.push(`eq=gamma=${f3(L.gamma)}`);
+  const lo = c01(toward(ex.p10, ex.lo)); const hi = c01(toward(ex.p90, ex.hi));
+  const k1 = (hi - lo) / (ex.p90 - ex.p10);
+  const y0 = Math.max(toward(0, ex.black), lo - k1 * ex.p10); const y1 = Math.min(toward(1, ex.white), hi + k1 * (1 - ex.p90));
+  const ident = Math.abs(lo - ex.p10) < 1e-4 && Math.abs(hi - ex.p90) < 1e-4 && y0 < 1e-4 && y1 > 1 - 1e-4;
+  if (!ident) f.push(`curves=all='0/${f3(y0)} ${f3(ex.p10)}/${f3(lo)} ${f3(ex.p90)}/${f3(hi)} 1/${f3(y1)}'`);
+  // night: the median to `median` (a monotonic curve moves the median exactly), held to gamma 0.7-2.8
+  if (L.median) {
+    const m = stats?.med ?? (stats ? (ex.p10 + ex.p90) / 2 : 0.45);
+    const g = toward(1, medianGamma(lo + k1 * (m - ex.p10), L.median));
+    if (Math.abs(g - 1) > 1e-3) f.push(`eq=gamma=${f3(1 / g)}`);
+  }
+  if (L.gamma) f.push(`eq=gamma=${f3(toward(1, L.gamma))}`);
   if (L.mode === 'duotone' || L.mode === 'mono' || L.mode === 'tint') {
     const luma = 'colorchannelmixer=rr=.2126:rg=.7152:rb=.0722:gr=.2126:gg=.7152:gb=.0722:br=.2126:bg=.7152:bb=.0722';
-    if (L.mode === 'mono') f.push(luma);
+    const amount = Math.min(1, s);
+    if (L.mode === 'mono') f.push(amount >= 1 ? luma : `eq=saturation=${f3(1 - amount)}`);
     else {
       const d = duotoneCurves(hue, L.shadow, L.highlight, L.mid);
-      const tone = `${luma},curves=r='${d.r}':g='${d.g}':b='${d.b}'`; // blend: the first input (the photo) on top at `keep`
-      if (L.mode === 'duotone') f.push(tone);
-      else { const sat = satFactor(stats, colour, ex.slope); f.push(`split[a][b];[b]${tone}[t];[a]eq=saturation=${f3(sat)}[k];[k][t]blend=all_mode=normal:all_opacity=${f3(L.keep)}`); }
+      const tone = `${luma},curves=r='${d.r}':g='${d.g}':b='${d.b}'`; // blend: the first input (the photo) on top
+      const keep = L.mode === 'duotone' ? 1 - amount : 1 - (1 - L.keep) * amount;
+      const sat = toward(1, satFactor(stats, 1, ex.slope)) * colour;
+      if (keep <= 1e-6) f.push(tone);
+      else f.push(`split[a][b];[b]${tone}[t];[a]eq=saturation=${f3(sat)}[k];[k][t]blend=all_mode=normal:all_opacity=${f3(keep)}`);
     }
   } else {
-    const sat = satFactor(stats, L.sat * colour, ex.slope);
-    f.push(`eq=saturation=${f3(sat)}`);
-    if (L.vib) f.push(`vibrance=intensity=${f3(L.vib)}`);
-    const [r, g, b] = oklchToRgb(0.5, 0.12, splitHue ?? SPLIT_HUE).map((v) => v - 0.5);
-    const k = L.split / Math.max(0.001, Math.max(Math.abs(r), Math.abs(g), Math.abs(b)));
-    f.push(`colorbalance=rs=${f3(r * k)}:gs=${f3(g * k)}:bs=${f3(b * k)}:rm=${f3(r * k * 0.3)}:gm=${f3(g * k * 0.3)}:bm=${f3(b * k * 0.3)}`);
+    const look = L.keep ? keepFactor(stats, L.satCap) : satFactor(stats, L.sat, ex.slope);
+    const sat = Math.max(0, toward(1, look)) * colour;
+    if (Math.abs(sat - 1) > 1e-3) f.push(`eq=saturation=${f3(sat)}`);
+    if (L.vib && s > 0) f.push(`vibrance=intensity=${f3(L.vib * s)}`);
+    if (L.warm && s > 0) f.push(hueSat ? `huesaturation=saturation=${f3(Math.max(-1, L.warm * s))}:colors=r+y` : `eq=saturation=${f3(1 + L.warm * 0.4 * Math.min(1, s))}`);
+    const split = L.split * s;
+    if (split > 0) {
+      const [r, g, b] = oklchToRgb(0.5, 0.12, splitHue ?? SPLIT_HUE).map((v) => v - 0.5);
+      const k = split / Math.max(0.001, Math.max(Math.abs(r), Math.abs(g), Math.abs(b)));
+      f.push(`colorbalance=rs=${f3(r * k)}:gs=${f3(g * k)}:bs=${f3(b * k)}:rm=${f3(r * k * 0.3)}:gm=${f3(g * k * 0.3)}:bm=${f3(b * k * 0.3)}`);
+    }
   }
-  const gr = grain ?? L.grain;
+  const gr = (grain ?? L.grain) * Math.min(1, s);
   if (gr > 0) f.push(`noise=alls=${Math.round(gr * 20)}:allf=${video ? 't+u' : 'u'}`);
   f.push(video ? 'format=yuv420p' : 'format=rgb24');
   return f.join(',');
@@ -1281,8 +1392,15 @@ export function measure(file) {
   const r = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'info', '-i', file, '-vf', 'scale=320:-2,signalstats,metadata=mode=print', '-frames:v', '1', '-f', 'null', '-'], { encoding: 'utf8' });
   const g = (k) => Number((`${r.stderr}${r.stdout}`.match(new RegExp(`lavfi\\.signalstats\\.${k}=([\\d.]+)`)) || [])[1]);
   if (!Number.isFinite(g('YLOW'))) return null;
-  return { lo: g('YLOW') / 255, hi: g('YHIGH') / 255, avg: g('YAVG') / 255, sat: g('SATAVG') / 181 };
+  const grid = frameGrid(file);
+  const ys = [];
+  for (let i = 0; i + 2 < grid.length; i += 3) ys.push((0.2126 * grid[i] + 0.7152 * grid[i + 1] + 0.0722 * grid[i + 2]) / 255);
+  ys.sort((a, b) => a - b);
+  return { lo: g('YLOW') / 255, hi: g('YHIGH') / 255, avg: g('YAVG') / 255, sat: g('SATAVG') / 181, med: ys.length ? ys[ys.length >> 1] : g('YAVG') / 255 };
 }
+let HUESAT = null;
+/** ffmpeg has the huesaturation filter (5.1+): night drains warm colours with it, else with a plain desaturation. */
+export function hasHueSat() { if (HUESAT === null) HUESAT = /\bhuesaturation\b/.test(spawnSync('ffmpeg', ['-hide_banner', '-filters'], { encoding: 'utf8' }).stdout || ''); return HUESAT; }
 async function cmdGrade(args) {
   if (!ffmpegOk()) throw new Error('grade needs ffmpeg and ffprobe on the PATH');
   const files = listLocal(args._).filter((f) => !/\.(json|txt|md)$/i.test(f));
@@ -1294,7 +1412,9 @@ async function cmdGrade(args) {
   const width = Math.round(num(args, 'width', 2400, 320, 3840)); const grain = args.grain !== undefined ? num(args, 'grain', 0.3, 0, 1) : undefined;
   const aspect = !args.aspect || args.aspect === 'none' ? (args.aspect === 'none' ? null : 16 / 9) : (() => { const [a, b] = String(args.aspect).split(/[:/x]/).map(Number); if (!(a > 0 && b > 0)) throw new Usage('--aspect is w:h (16:9) or none'); return a / b; })();
   const [fx, fy] = args.focus ? String(args.focus).split(',').map(Number) : [0.5, 0.5];
-  const trim = parseTrim(args.trim); const speed = num(args, 'speed', 1, 0.1, 8); const colour = num(args, 'strength', 1, 0.2, 1.5);
+  const trim = parseTrim(args.trim); const speed = num(args, 'speed', 1, 0.1, 8); const strength = num(args, 'strength', 1, 0, 1.5); const colour = num(args, 'chroma', 1, 0.2, 1.5);
+  const hueSat = hasHueSat();
+  if (LOOKS[look].warm && !hueSat) console.log(`${look}: this ffmpeg has no huesaturation filter (5.1+): warm colours are drained with a plain desaturation instead.`);
   const splitHue = args['split-hue'] !== undefined ? hueOf(args['split-hue']) : null;
   if (LOOKS[look].device) console.log(`${look} is a device look: grade the one shot that uses it this way and the rest of the film natural (or matte, silver).`);
   const graded = [];
@@ -1306,7 +1426,7 @@ async function cmdGrade(args) {
     const stats = measure(file);
     const crop = aspect ? focusCrop(p.width, p.height, aspect, fx, fy) : null;
     const w = Math.min(width, crop ? crop.w : p.width) - (Math.min(width, crop ? crop.w : p.width) % 2);
-    const vf = gradeFilter(look, { accent, splitHue, stats, crop, width: w, grain, video, speed, colour });
+    const vf = gradeFilter(look, { accent, splitHue, stats, crop, width: w, grain, video, speed, colour, strength, hueSat });
     const out = path.join(outDir, `${path.basename(file).replace(/\.[^.]+$/, '')}.${args.suffix || look}.${video ? 'mp4' : 'jpg'}`);
     const argv = video
       ? [...(trim ? ['-ss', String(trim.start)] : []), '-i', file, ...(trim ? ['-t', String(trim.dur / speed)] : []), '-an', '-filter_complex', `[0:v]${vf}[v]`, '-map', '[v]', ...videoEncode({ scrub: Boolean(args.scrub) }),
@@ -1320,27 +1440,78 @@ async function cmdGrade(args) {
   if (args['dry-run'] || !graded.length) return 0;
   console.log(`Check the set as one shoot: node scripts/assets.mjs sheet ${path.relative(process.cwd(), outDir) || outDir}`);
   if (args['no-check']) return 0;
-  return pictureCheck(graded, args.accent ? accent : null);
+  return pictureCheck(graded, args.accent ? accent : null, { allowBanned: Boolean(args['brand-supplied']) });
 }
 /** Pixels of one frame (a still, or a clip at t seconds) as a small rgb24 grid at 16:9. */
 export function frameGrid(file, t = null, w = 96, h = 54) {
   const r = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', ...(t !== null ? ['-ss', String(t)] : []), '-i', file, '-vf', `scale=${w}:${h}:flags=area`, '-frames:v', '1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 1 << 20 });
   return r.status === 0 ? r.stdout : Buffer.alloc(0);
 }
-/** Measures a graded set (every still once, every clip at three times), prints the verdict; 3 when the set is a wash. */
-export function pictureCheck(graded, accent = null) {
-  const frames = [];
-  console.log(`\nPicture check (OKLCH: neutral C < ${PICTURE.neutralC}, saturated C >= ${PICTURE.saturatedC}${accent ? `, accent within ${PICTURE.accentDeg} deg of ${accent}` : ''}):`);
+/**
+ * like.py's text reader over frames of the set (480 px wide): [{ file, t, regions }] or null when the project's
+ * Python cannot run it (it needs numpy and opencv-python). The frames go to a private temp folder, removed after.
+ */
+export function readText(graded) {
+  const like = path.join(path.dirname(fileURLToPath(import.meta.url)), 'like.py');
+  if (!fs.existsSync(like)) return null;
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-text-'));
+  try {
+    const jobs = [];
+    graded.forEach((g, i) => {
+      const times = g.video ? scanTimes(probeFile(g.file)?.duration || 1, 3) : [null];
+      times.forEach((t, j) => {
+        const png = path.join(tmp, `f${i}_${j}.png`);
+        const r = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', ...(t !== null ? ['-ss', String(t)] : []), '-i', g.file, '-vf', 'scale=480:-2', '-frames:v', '1', png]);
+        if (r.status === 0) jobs.push({ file: g.file, i, t, png });
+      });
+    });
+    const code = `import sys, json, importlib.util\nimport cv2\nspec = importlib.util.spec_from_file_location('like_mod', sys.argv[1]); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m); m.need()\nprint(json.dumps([m.text_regions(cv2.cvtColor(cv2.imread(p), cv2.COLOR_BGR2GRAY)) for p in sys.argv[2:]]))`;
+    const py = spawnSync(process.execPath, [path.join(path.dirname(like), 'py.mjs'), '--which'], { encoding: 'utf8' });
+    const which = (py.stdout || '').trim();
+    const cmd = fs.existsSync(which) ? [which] : which.split(/\s+/).filter(Boolean); // a path with spaces, or "py -3"
+    if (py.status !== 0 || !cmd.length || !jobs.length) return null;
+    const r = spawnSync(cmd[0], [...cmd.slice(1), '-c', code, like, ...jobs.map((j) => j.png)], { encoding: 'utf8', maxBuffer: 16 << 20 });
+    if (r.status !== 0) return null;
+    const regions = JSON.parse(r.stdout.trim().split('\n').pop());
+    return jobs.map((j, k) => ({ file: j.file, t: j.t, regions: regions[k] || [] }));
+  } catch { return null; } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}
+
+/**
+ * Measures a set (every still once, every clip at three times) and prints the verdict: 3 when the set is a
+ * colour wash or shows a banned colour region (o.allowBanned: the banned colour is the brand's own). Notes: the
+ * saturated floor, frames over half saturated, the accent's hue in the pictures, pictures that do not match the
+ * set, and readable text or logos (o.text false skips the text reader).
+ */
+export function pictureCheck(graded, accent = null, o = {}) {
+  const frames = []; const perFile = [];
+  console.log(`\nPicture check (OKLCH: neutral C < ${PICTURE.neutralC}, saturated C >= ${PICTURE.saturatedC}, banned regions on C >= .03${accent ? `, accent within ${PICTURE.accentDeg} deg of ${accent}` : ''}):`);
   for (const g of graded) {
     const times = g.video ? scanTimes(probeFile(g.file)?.duration || 1, 3) : [null];
-    const rows = times.map((t) => colourShares(frameGrid(g.file, t), accent));
+    const rows = times.map((t) => ({ ...colourShares(frameGrid(g.file, t), accent), file: path.basename(g.file) }));
     frames.push(...rows);
-    const m = (k) => String(Math.round((rows.reduce((a, r) => a + r[k], 0) / rows.length) * 100)).padStart(3);
-    console.log(`  ${path.basename(g.file).padEnd(46)} neutral ${m('neutral')} %  saturated ${m('saturated')} %${accent ? `  accent ${m('accent')} %` : ''}`);
+    const mean = (k) => rows.reduce((a, r) => a + r[k], 0) / rows.length;
+    perFile.push({ file: path.basename(g.file), L: mean('L'), C: mean('C') });
+    const m = (k) => String(Math.round(mean(k) * 100)).padStart(3);
+    const ban = Math.max(...rows.map((r) => r.banned));
+    console.log(`  ${path.basename(g.file).padEnd(46)} neutral ${m('neutral')} %  saturated ${m('saturated')} %${accent ? `  accent ${m('accent')} %` : ''}${ban >= PICTURE.banned ? `  BANNED ${(ban * 100).toFixed(1)} %` : ''}`);
   }
-  const v = pictureVerdict(frames);
+  const v = pictureVerdict(frames, { allowBanned: Boolean(o.allowBanned) });
+  for (const x of setOutliers(perFile)) v.notes.push(`${x.file} does not read as the same shoot: ${x.why}; regrade it on its own (--strength, --chroma) or replace it`);
+  if (o.text !== false) {
+    const read = readText(graded);
+    if (!read) v.notes.push('text and logos: not read (the project\'s Python needs numpy and opencv-python for like.py\'s reader); look at the sheet for signs, adverts and labels');
+    else {
+      const byFile = new Map();
+      for (const r of read) { if (!byFile.has(r.file)) byFile.set(r.file, []); byFile.get(r.file).push(r); }
+      for (const [file, rs] of byFile) {
+        const steady = steadyText(rs.map((r) => r.regions));
+        if (steady.length) v.notes.push(`${path.basename(file)} may show readable text or a logo (${steady.length} steady text-like line(s), e.g. ${steady[0].join(',')} at 480 px): someone else's brand never appears in a film; crop, defocus or replace it (the reader can mistake stripes for text: look)`);
+      }
+    }
+  }
   const pc = (x) => Math.round(x * 100);
-  console.log(`Set: neutral ${pc(v.neutral)} % (floor ${pc(PICTURE.minNeutral)} %), frames over half saturated ${pc(v.satFrames)} % (ceiling ${pc(PICTURE.maxSatFrames)} %)${accent ? `, accent ${pc(v.accent)} % (ceiling ${pc(PICTURE.maxAccent)} %)` : ''}: ${v.ok ? (v.notes.length ? 'passes, with notes' : 'passes') : 'FAILS'}`);
+  console.log(`Set: neutral ${pc(v.neutral)} % (floor ${pc(PICTURE.minNeutral)} %), saturated ${(v.saturated * 100).toFixed(1)} % (film floor ${PICTURE.minSaturated * 100} %), frames over half saturated ${pc(v.satFrames)} % (ceiling ${pc(PICTURE.maxSatFrames)} %)${accent ? `, accent ${pc(v.accent)} % (ceiling ${pc(PICTURE.maxAccent)} %)` : ''}, banned-colour frames ${v.banned}: ${v.ok ? (v.notes.length ? 'passes, with notes' : 'passes') : 'FAILS'}`);
   for (const n of v.notes) console.log(`  - ${n}`);
   return v.ok ? 0 : 3;
 }
@@ -1352,7 +1523,7 @@ function cmdCheck(args) {
   if (!files.length) throw new Usage('check needs graded image or video files (or folders)');
   if (!ffmpegOk()) throw new Error('check needs ffmpeg and ffprobe on the PATH');
   const graded = files.map((f) => ({ file: f, video: /\.(mp4|webm|mov)$/i.test(f) }));
-  return pictureCheck(graded, args.accent || null);
+  return pictureCheck(graded, args.accent || null, { allowBanned: Boolean(args['brand-supplied']), text: !args['no-text'] });
 }
 function cmdProbe(args) {
   const files = listLocal(args._); if (!files.length) throw new Usage('probe needs files');
@@ -1366,7 +1537,8 @@ function cmdProbe(args) {
 }
 function cmdLooks() {
   for (const [k, L] of Object.entries(LOOKS)) console.log(`${k.padEnd(9)} ${L.about}`);
-  console.log('\nThe film grades natural (the default); matte, silver and night are whole-film looks too; tint, duotone and deep are for one shot.');
+  console.log('\nThe film grades natural (the default), which keeps the pictures\' colour; matte, silver and night are whole-film looks too; tint, duotone and deep are for one shot.');
+  console.log('--strength 0..1.5: how far toward the look (0 = the picture as it is); --chroma 0.2..1.5: the colour after it.');
   console.log('node scripts/assets.mjs grade public/assets --accent "#2f7d8c" --out public/assets/graded');
   return 0;
 }
@@ -1389,12 +1561,15 @@ export const USAGE = `assets.mjs: photographs, footage, textures and art a film 
   sheet  <results.json> [--pick 1,4,7] | <files or folders> [--scan 6] [--cols 4] [--cell 400] [--out sheet.png]
   get    <ref|#n>[,...] --to <film>/public/assets [--from results.json] [--name stem] [--width 2400]
          [--res 1080] [--trim start,seconds] [--max-mb 150] [--allow-credit] [--record path]
-  grade  <files or folders> [--look ${Object.keys(LOOKS).join('|')}] [--strength 0.2..1.5] [--accent #hex]
-         [--split-hue deg|#hex] [--focus x,y] [--aspect 16:9|none] [--width 2400] [--grain 0..1] [--out dir]
-         [--trim start,seconds] [--speed 1] [--scrub] [--dry-run] [--no-check]   (natural is the default; a graded
-         set keeps >= 30 % neutral pixels; --split-hue: the shadows' hue in natural, matte and night, cool by default
-         and apart from --accent; --scrub: every frame a key frame, for a clip the film's clock drives)
-  check  <graded files or folders> [--accent #hex]   (the picture check grade runs, on any set)
+  grade  <files or folders> [--look ${Object.keys(LOOKS).join('|')}] [--strength 0..1.5] [--chroma 0.2..1.5]
+         [--accent #hex] [--split-hue deg|#hex] [--focus x,y] [--aspect 16:9|none] [--width 2400] [--grain 0..1]
+         [--out dir] [--trim start,seconds] [--speed 1] [--scrub] [--dry-run] [--no-check] [--brand-supplied]
+         (natural is the default and keeps the pictures' colour; --strength: how far toward the look, 0 = the
+         picture as it is; --chroma: the colour after it; a graded set keeps >= 30 % neutral pixels and no banned
+         colour region; --split-hue: the shadows' hue in natural, matte and night, cool by default and apart from
+         --accent; --scrub: every frame a key frame, for a clip the film's clock drives)
+  check  <files or folders> [--accent #hex] [--brand-supplied] [--no-text]   (the picture check grade runs, on
+         any set: neutral floor, banned colours, saturated floor, the set's match, readable text and logos)
   probe  <files> [--json]          looks          licences [--to <film>/public/assets]
 
 Refs: #n from the last search, or <source>:<id> as search prints it (a ref is looked up in the saved searches
