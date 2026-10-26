@@ -14,8 +14,8 @@ import { typeFillState } from './TypeFill';
 /**
  * Type presets: sixteen line animations, one per sentence. A launch film says its story in short
  * sentences, one clean line on screen at a time, and every line arrives its own way. Each preset is a
- * pure state function of the frame for ONE line (`typeLineState`), tuned to the timing of the strongest
- * type moves in the house tables (frames at 60 fps below, converted with the film's rate; `pace`
+ * pure state function of the frame for ONE line (`typeLineState`), tuned to the house timing for
+ * strong type moves (frames at 60 fps below, converted with the film's rate; `pace`
  * stretches every length of a preset at once). One renderer, <TypeLine>, draws all of them from the real
  * font's prefix widths, so kerning holds and every glyph is its own transform.
  *
