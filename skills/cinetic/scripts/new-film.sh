@@ -10,7 +10,7 @@
 #                            [--pace calm|crisp] [--size 1920x1080] [--name my-film]
 #                            [--link-modules <node_modules>]
 #                            [--font <name>]... [--browser <chromium path>] [--no-install] [--force]
-#                            [--format launch|update] [--brand <kit folder or file>]... [--like <clip>]
+#                            [--format launch|update] [--template <name>] [--brand <kit folder or file>]... [--like <clip>]
 #                            [--music <track file> --title T --artist A --source S --page URL --licence L
 #                             --seen-quote Q --seen-url URL --ai-generated no --vocals no [--credit C]
 #                             [--file-url URL] [--content-id X] [--certificate C] [--modifications M]
@@ -44,7 +44,12 @@
 #                  "vX is out" film laid over the starter from assets/templates/update (src/update.ts holds
 #                  the version and 2-4 changes; a hook on the version, one act per change shown as a product
 #                  moment, the payoff, the end card with the version). update defaults to --pace crisp and
-#                  the template's 120 BPM. Remotion only.
+#                  the template's 120 BPM. Remotion only. The same as --template update.
+#   --template     a film template from assets/templates/<name> laid over the starter: its timeline, acts,
+#                  film and sound (template.json lists the files it copies and the starter files it removes;
+#                  its pace and tempo become the defaults). update (a "vX is out" film) and ui-walkthrough (a
+#                  product's flow in steps: the promise, the input becoming the output, proof, a claim, then
+#                  input -> the product reads -> insight -> choice -> output, the end card). Remotion only.
 #   --brand        a supplied brand kit (a folder, or files: logo SVG or PNG, colours, licensed fonts,
 #                  screenshots, product photos): scripts/brand.py writes brand/brand.json, the colour and type
 #                  roles in src/brand/tokens.ts (supplied colours marked cinetic:brand-supplied), the logo's
@@ -84,7 +89,7 @@ MUSIC=""; RECORD=""; PROFILE=""; ADD=()
 py() { if [[ -n "${PYTHON:-}" ]]; then "$PYTHON" "$@"; else node "$SKILL/scripts/py.mjs" "$@"; fi; }
 if [[ -n "${PYTHON:-}" ]]; then PYS="$PYTHON"; [[ "$PYTHON" == *" "* ]] && PYS="\"$PYTHON\""; else PYS="node scripts/py.mjs"; fi
 DIR=""; ENGINE=remotion; FPS=60; BPM=""; PACE=""; SIZE=1920x1080; NAME=""; LINK=""; BROWSER="${CHROMIUM_PATH:-}"; INSTALL=1; FORCE=0
-FORMAT=launch; BRANDS=(); LIKE=""; NAME_SET=0; BPM_SET=0; ANALYZE=1
+FORMAT=launch; TEMPLATE=""; BRANDS=(); LIKE=""; NAME_SET=0; BPM_SET=0; ANALYZE=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -96,6 +101,7 @@ while [[ $# -gt 0 ]]; do
     --size) SIZE="${2:?--size needs a value}"; shift 2 ;;
     --name) NAME="${2:?--name needs a value}"; NAME_SET=1; shift 2 ;;
     --format) FORMAT="${2:?--format needs launch or update}"; shift 2 ;;
+    --template) TEMPLATE="${2:?--template needs a name (a folder in assets/templates)}"; shift 2 ;;
     --brand) BRANDS+=("${2:?--brand needs a kit folder or file}"); shift 2 ;;
     --like) LIKE="${2:?--like needs a clip}"; shift 2 ;;
     --link-modules) LINK="${2:?--link-modules needs a path}"; shift 2 ;;
@@ -122,16 +128,23 @@ SRC="$SKILL/assets/$ENGINE-starter"
 [[ -d "$SRC" ]] || die "starter not found: $SRC"
 [[ "$FORMAT" == launch || "$FORMAT" == update ]] || die "--format must be launch or update"
 TPL=""
-if [[ "$FORMAT" == update ]]; then
-  [[ "$ENGINE" == remotion ]] || die "--format update is a Remotion template (use --engine remotion)"
-  TPL="$SKILL/assets/templates/update"
-  [[ -f "$TPL/template.json" ]] || die "the update template is missing: $TPL"
-  [[ -n "$PACE" ]] || PACE=crisp
+[[ "$FORMAT" == update && -z "$TEMPLATE" ]] && TEMPLATE=update
+[[ "$FORMAT" == update && "$TEMPLATE" != update ]] && die "--format update is the update template: pass --format update or --template $TEMPLATE, not both"
+if [[ -n "$TEMPLATE" ]]; then
+  [[ "$TEMPLATE" =~ ^[a-z0-9-]+$ ]] || die "--template takes a template's folder name (letters, digits, dashes)"
+  TPL="$SKILL/assets/templates/$TEMPLATE"
+  if [[ ! -f "$TPL/template.json" ]]; then
+    AVAIL=$(cd "$SKILL/assets/templates" && for d in */; do [[ -f "$d/template.json" ]] && printf '%s ' "${d%/}"; done)
+    die "no template '$TEMPLATE' (assets/templates has: ${AVAIL% })"
+  fi
+  [[ "$ENGINE" == remotion ]] || die "--template $TEMPLATE is a Remotion template (use --engine remotion)"
+  TPACE=$(sed -nE 's/^[[:space:]]*"pace":[[:space:]]*"([a-z]+)".*/\1/p' "$TPL/template.json" | head -n 1)
+  [[ -n "$PACE" ]] || PACE="${TPACE:-crisp}"
 fi
 for kit in ${BRANDS[@]+"${BRANDS[@]}"}; do [[ -e "$kit" ]] || die "--brand: $kit not found"; done
 [[ -z "$LIKE" || -f "$LIKE" ]] || die "--like: $LIKE not found"
 if [[ -z "$BPM" ]]; then
-  # the starter's own tempo (the template's for an update film), unless the pace asks for the crisp one
+  # the starter's own tempo (the template's with --template), unless the pace asks for the crisp one
   GRID="$SRC/src/timeline.ts"; [[ "$ENGINE" == hyperframes ]] && GRID="$SRC/motion.js"
   [[ -n "$TPL" ]] && GRID="$TPL/src/timeline.ts"
   BPM=$(sed -nE 's/^[[:space:]]*(export )?const BPM = ([0-9.]+);.*/\2/p' "$GRID" | head -n 1)
@@ -181,8 +194,8 @@ mkdir -p "$DIR"
 DIR="$(cd "$DIR" && pwd)"
 # Copy the starter, leaving out anything installed or rendered.
 (cd "$SRC" && tar --exclude=node_modules --exclude=out --exclude=__pycache__ -cf - .) | (cd "$DIR" && tar -xf -)
-# An update film: the template's files over the starter (its timeline, acts, film and sound), the starter's
-# own acts removed (template.json lists both).
+# A template: its files over the starter (its timeline, acts, film and sound), the starter's own acts removed
+# (template.json lists both).
 if [[ -n "$TPL" ]]; then
   TPL="$TPL" DIR="$DIR" node -e '
 const fs = require("fs"), path = require("path");
@@ -195,8 +208,8 @@ for (const f of m.copy) {
   fs.copyFileSync(path.join(tpl, f), path.join(dir, f));
 }
 for (const f of m.remove) fs.rmSync(path.join(dir, f), { force: true });
-console.log(`new-film: update template: ${m.copy.length} files over the starter, ${m.remove.length} removed`);
-' || die "could not lay the update template over the starter"
+console.log(`new-film: ${m.name} template: ${m.copy.length} files over the starter, ${m.remove.length} removed`);
+' || die "could not lay the $TEMPLATE template over the starter"
 fi
 
 # Substitute a `const NAME = value;` line; fail loudly if the starter no longer has it.
@@ -372,8 +385,15 @@ PYEOF
 fi
 
 BEAT=$(node -e "console.log(60*$FPS/$BPM)")
-echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat${PACE:+, $PACE pace}${TPL:+, an update film})"
-if [[ -n "$TPL" ]]; then
+echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat${PACE:+, $PACE pace}${TEMPLATE:+, the $TEMPLATE template})"
+if [[ -n "$TPL" && "$TEMPLATE" != update ]]; then
+  # the template's own first steps (template.json "next"), then the music slot every film fills
+  TPL="$TPL" node -e 'const m = JSON.parse(require("fs").readFileSync(require("path").join(process.env.TPL, "template.json"), "utf8")); for (const l of m.next || []) console.log(l);'
+  if [[ -z "$MUSIC" ]]; then
+    echo "music: the slot is empty, and every film is cut to a licensed track (references/music.md): $PYS scripts/audio/track.py add <file> --title T ... then track.py edit / grid / check (template.json: music)"
+  fi
+fi
+if [[ "$TEMPLATE" == update ]]; then
   cat <<EOF
 update film: write the version and 2-4 changes (one short sentence each, 3-6 words, each with its product moment) in src/update.ts,
   then deal its direction: $PYS scripts/deck.py --brief "<one line>" --format update --changes N --options 3

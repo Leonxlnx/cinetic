@@ -1,0 +1,56 @@
+{
+ "name": "ui-walkthrough",
+ "about": "A product walkthrough of 25-40 s: a promise, the user's input as one object that becomes the output in place, proof piling up, a speed claim, then the product's own flow in steps (the input goes in, the product reads every item, finds what matters, the user picks, it builds), the output live and the end card. new-film.sh --template ui-walkthrough lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "bpm": 120,
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every walkthrough is cut to a licensed, human-made, instrumental track (references/music.md): the track carries the film and earshot effects mark the product's state changes; never effects only.",
+  "pick": "the dealt direction lists tracks from the shortlist in its tempo range (python3 scripts/deck.py --show); 110-128 BPM with a clear kick suits the template's half-bar steps",
+  "add": "bash scripts/new-film.sh <dir> --template ui-walkthrough --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end stop|button|ring",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "next": [
+  "ui walkthrough: fill src/walk.ts (the script's lines, 3-8 words each, and the product's own strings and numbers in every [slot]),",
+  "  rebuild the product's real screens in src/acts where the kit stands in, then deal its direction:",
+  "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3 (references/templates.md)"
+ ],
+ "copy": [
+  "src/walk.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/stage.tsx",
+  "src/acts/Open.tsx",
+  "src/acts/Card.tsx",
+  "src/acts/Proof.tsx",
+  "src/acts/Claim.tsx",
+  "src/acts/Field.tsx",
+  "src/acts/Feed.tsx",
+  "src/acts/Insight.tsx",
+  "src/acts/Pick.tsx",
+  "src/acts/Page.tsx",
+  "src/acts/End.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ]
+}
