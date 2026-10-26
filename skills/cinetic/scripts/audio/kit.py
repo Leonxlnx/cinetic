@@ -550,6 +550,21 @@ def tune(kit, key, knobs=None):
     penta = [(tonic + i) % 12 for i in ([0, 3, 5, 7, 10] if minor else [0, 2, 4, 7, 9])]
     triad = [(tonic + i) % 12 for i in ([0, 3, 7] if minor else [0, 4, 7])]
     changes = []
+
+    def span(sound):
+        """The sound's playable MIDI range from the bank's knobs, or None."""
+        kp = ((knobs or {}).get(sound) or {}).get('pitch') or {}
+        return tuple(to_midi(f) for f in kp['range_hz']) if kp.get('range_hz') else None
+
+    def fit(ms, rng):
+        """The notes moved by whole octaves into the sound's range, as far as they fit (earshot refuses a
+        pitch outside it: D3 on mallet/pluck, whose f0 starts at 150 Hz)."""
+        if rng:
+            while min(ms) < rng[0] - 1e-6 and max(ms) + 12 <= rng[1] + 1e-6:
+                ms = [m + 12 for m in ms]
+            while max(ms) > rng[1] + 1e-6 and min(ms) - 12 >= rng[0] - 1e-6:
+                ms = [m - 12 for m in ms]
+        return ms
     for role, spec in (kit.get('roles') or {}).items():
         if not spec:
             continue
@@ -560,16 +575,17 @@ def tune(kit, key, knobs=None):
             # chords of the key share); a kit with only 3 text notes keeps the tonic triad
             pcs = penta if role == 'bell' or (role == 'text' and len(old) > 3) else triad if role == 'text' else scale
             m = nearest_pc(tonic, min(old))
-            new = []
-            while len(new) < len(old):
+            ms = []
+            while len(ms) < len(old):
                 if m % 12 in pcs:
-                    new.append(note(m))
+                    ms.append(m)
                 m += 1
+            new = [note(x) for x in fit(ms, span(spec.get('sound', '')))]
             if new != list(spec['pitches']):
                 changes.append((role, list(spec['pitches']), new))
                 spec['pitches'] = new
         elif ed.get('pitch') is not None:
-            new = note(nearest_pc(tonic, to_midi(ed['pitch'])))
+            new = note(fit([nearest_pc(tonic, to_midi(ed['pitch']))], span(spec.get('sound', '')))[0])
             if new != ed['pitch']:
                 changes.append((role, ed['pitch'], new))
                 ed['pitch'] = new

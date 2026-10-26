@@ -393,6 +393,10 @@ def kit_helpers():
           and r['click.confirm']['edits']['pitch'] == 'G5' and r['hit']['edits']['pitch'] == 'G4' and 'edits' not in r['tick'],
           f"tuning to G major: bell pentatonic, text triad, nearest tonics ({r})")
     check(r['drop'].get('edits', {}).get('pitch') == 'G1', f"a cut_hit drop is pitched to the root ({r['drop']})")
+    kit = {'roles': {'text': {'sound': 'mallet/pluck', 'pitches': ['G3', 'A3', 'B3', 'D4', 'E4']}}}
+    K.tune(kit, (2, [0, 2, 3, 5, 7, 8, 10], 'D minor'), {'mallet/pluck': {'pitch': {'native_hz': 262.0, 'range_hz': [150.0, 3200.0]}}})
+    check(kit['roles']['text']['pitches'] == ['D4', 'F4', 'G4', 'A4', 'C5'],
+          f"tuning to D minor moves the text set an octave up into mallet/pluck's range ({kit['roles']['text']['pitches']})")
     check('mallet' in K.TONAL and 'cut_hit' in K.TONAL and 'launch' in K.PRESETS, 'kit.py knows the launch kit and its tonal members')
     note = 'Soft, short effects. Levels are median values measured over a set of sample clips; the rest stays. A pluck for text.'
     check(K.house_wording(note) == 'Soft, short effects. The numbers are house numbers for music-led films; the rest stays. '
