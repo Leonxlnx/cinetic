@@ -135,6 +135,8 @@ export type TypeLineSpec = {
   colors?: TypeColors;
   pace?: number; // stretches every length of the preset (1 = the house timing)
   anchor?: number; // dive: the glyph the camera dives through (default the keyword's middle glyph)
+  diveTo?: number; // dive: the total zoom (default the house x8.2); the length follows the house rate, x8.2 in 14 f
+  anchorAt?: [number, number]; // dive: the point inside that glyph, as a share of its advance and em from the line's centre (down +); aim at ink (a stem, a crossbar) so the zoom lands on solid colour (default [0.32, 0.08])
   seed?: string | number;
   id?: string;
 };
@@ -940,13 +942,19 @@ export const typeLineFrames = (s: TypeLineSpec, m: LineMetrics, film?: Partial<F
     push: T(E60.push60),
     split: T(E60.split60),
     swarm: T(E60.swarm60),
-    dive: T(E60.dive60),
+    dive: T(diveLen60(s)),
   };
   const dotAt = s.dot ? resolved + T(P.dot.late60) : undefined;
   return { in: s.at, resolved: Math.ceil(resolved), ticks: ticks.map((t) => Math.round(t)), out, gone: out + exitLen[ex], dot: dotAt === undefined ? undefined : Math.round(dotAt) };
 };
 
 // ------------------------------------------------------------------------------------------------ exits
+
+/** A dive's length in 60 fps frames: the house rate (x8.2 in 14 f) held until the zoom reaches `diveTo`. */
+export const diveLen60 = (s: TypeLineSpec) => {
+  const X = TYPE_PRESETS.exit;
+  return (X.dive60 * Math.log(Math.max(1.01, s.diveTo ?? X.diveScale))) / Math.log(X.diveScale);
+};
 
 const applyExit = (st: TypeLineState, c: Ctx) => {
   const out = c.s.out;
@@ -1045,12 +1053,13 @@ const applyExit = (st: TypeLineState, c: Ctx) => {
     return st;
   }
   // dive: the camera zooms through one glyph at a constant log rate; its ink covers the frame at the end
-  const dive = c.T(X.dive60);
+  const dive = c.T(diveLen60(c.s));
   if (q >= dive) return gone();
   const a = clamp(Math.round(c.s.anchor ?? Math.floor((c.W.starts[c.key] + c.W.ends[c.key]) / 2)), 0, c.W.chars.length - 1);
-  const ox = (c.m.xs[a] + c.m.ws[a] * 0.32 - c.m.width / 2) / c.m.size;
-  st.origin = [ox, 0.08];
-  st.scale *= lmix(1, X.diveScale, clamp(q / dive));
+  const [ax, ay] = c.s.anchorAt ?? [0.32, 0.08];
+  const ox = (c.m.xs[a] + c.m.ws[a] * ax - c.m.width / 2) / c.m.size;
+  st.origin = [ox, ay];
+  st.scale *= lmix(1, c.s.diveTo ?? X.diveScale, clamp(q / dive));
   st.layers.push({ kind: 'cover', opacity: clamp((q - (dive - c.T(X.cover60))) / c.T(X.cover60)), color: st.glyphs[a]?.color ?? c.col.ink });
   return st;
 };
@@ -1102,7 +1111,7 @@ export const declares = (s?: TypeLineSpec, film?: Partial<FilmCtx>): Declares =>
   if (s.preset === 'swarm') stepped.push({ from: Math.floor(s.at), to: fr.resolved + 1, on: 2, id });
   if (s.preset === 'decode') stepped.push({ from: Math.floor(s.at), to: fr.resolved + 1, id });
   if (s.out !== undefined && s.exit === 'swarm') stepped.push({ from: Math.floor(s.out), to: Math.ceil(s.out + T(TYPE_PRESETS.exit.swarm60)) + 1, on: 2, id: `${id}-exit` });
-  if (s.out !== undefined && s.exit === 'dive') seams.push({ at: Math.ceil(s.out + T(TYPE_PRESETS.exit.dive60)), kind: 'zoomThrough', carry: 'scale', id: `${id}-dive` });
+  if (s.out !== undefined && s.exit === 'dive') seams.push({ at: Math.ceil(s.out + T(diveLen60(s))), kind: 'zoomThrough', carry: 'scale', id: `${id}-dive` });
   return { ...none, stepped, seams };
 };
 
