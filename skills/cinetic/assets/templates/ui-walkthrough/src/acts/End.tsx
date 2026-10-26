@@ -1,6 +1,6 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { TYPE, typeStyle, U } from '../brand/tokens';
+import { C, TYPE, typeStyle, U } from '../brand/tokens';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
 import { Defocus } from '../fx/Defocus';
@@ -30,7 +30,7 @@ export const End: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
       {/* the output as the far plane: soft, cropped by the right edge */}
-      <div style={{ position: 'absolute', left: W * 0.62, top: 140 * U, opacity: 0.55 }}>
+      <div style={{ position: 'absolute', left: W * 0.74, top: 140 * U, opacity: 0.45 }}>
         <Defocus sigma={12}>
           <Surface theme={LIGHT} w={900 * U} h={1100 * U} lift={40} r={40 * U}>
             <div style={{ position: 'absolute', left: 60 * U, top: 300 * U }}>
@@ -44,6 +44,7 @@ export const End: React.FC = () => {
           <LogoMark
             logo={LOGO}
             size={markSize}
+            fill={(part) => (part.items.some((it) => it.fill?.toLowerCase() === C.ink.toLowerCase()) ? t.text : undefined)} // the mark's ink parts read on the dark ground
             poses={(_, j) => {
               const p = prog(F, CUE.mark + j * f60x(5), CUE.mark + f60x(24) + j * f60x(5), E.glideOut);
               const glint = j === LOGO.parts.length - 1 ? 0.1 * hitPulse(F - CUE.rest, 2, 9, FPS) : 0;
