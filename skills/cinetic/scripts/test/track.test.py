@@ -255,10 +255,18 @@ def edit_grid_check(d, a):
     # grid: TypeScript and HyperFrames
     os.makedirs(os.path.join(d, 'src'), exist_ok=True)
     open(os.path.join(d, 'src', 'timeline.ts'), 'w').write('export const FPS = 60;\n')
+    sj = os.path.join(d, 'audio', 'score.json')
+    placeholder = {'music': {'track': 'audio/music/track.mp3', 'edit': 'audio/music/edit.json',
+                             'licence': 'audio/music/track.licence.json'}, 'key': 'G major', 'bpm': 120, 'ending': 'stop'}
+    json.dump(placeholder, open(sj, 'w'))
     p = run(['grid'], d)
     ts = os.path.join(d, 'src', 'music.ts')
     check(p.returncode == 0 and os.path.isfile(ts), 'grid writes src/music.ts (fps read from timeline.ts)'
           + ('' if p.returncode == 0 else f': {p.stderr[-300:]}'))
+    sc = json.load(open(sj))
+    check(sc['music']['track'] == e['track'] and sc['music']['licence'] == e['licence'] and sc.get('key') == e['key']
+          and 'bpm' not in sc and sc.get('ending') == 'stop',
+          f"grid points audio/score.json at the edit's track, licence and key ({sc.get('music')}, {sc.get('key')})")
     if os.path.isfile(ts):
         txt = open(ts, encoding='utf-8').read()
         m = re.search(r'\bt0: ([0-9.]+)', txt)
@@ -281,6 +289,7 @@ def edit_grid_check(d, a):
     p = run(['grid', '--out', 'music.js', '--fps', '60'], d)
     js = os.path.join(d, 'music.js')
     check(p.returncode == 0 and 'root.MUSIC_GRID = API' in open(js, encoding='utf-8').read(), 'grid writes music.js for HyperFrames')
+    json.dump(placeholder, open(sj, 'w'))  # back on the placeholder: check must say so
     # check: the joins on the edited bed
     p = run(['check', '--json', 'out/qa/track_check.json'], d)
     rep = json.load(open(os.path.join(d, 'out', 'qa', 'track_check.json'))) if os.path.isfile(
@@ -291,6 +300,8 @@ def edit_grid_check(d, a):
           f"every join: attack on the film downbeat, no click ({[(j['attack_off_ms'], j['click_db']) for j in joins]}; {jp})")
     lic = [x for x in (rep or {}).get('problems', []) if x.startswith('licence') or x.startswith('no licence')]
     check(p.returncode == 1 and lic, 'check fails without a licence record')
+    check(any(x.startswith('audio/score.json plays audio/music/track.mp3') for x in (rep or {}).get('problems', [])),
+          'check names an audio/score.json that plays another track')
     # button ending: the final hit back-timed into the tail
     p = run(['edit', '--bars', '8', '--reveal-bar', '4', '--end', 'button', '--out', 'audio/music/edit_button.json'], d)
     eb = os.path.join(music, 'edit_button.json')

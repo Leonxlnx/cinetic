@@ -23,9 +23,11 @@ Usage (from the project root):
       -> audio/music/edit.json (source bars -> film bars, joins, the film-time grid, ending); --map gives the
          film's bars by hand (film bar:source bar x bars, in order) instead of the planner's choice
   python3 scripts/audio/track.py grid [--edit audio/music/edit.json] [--fps N] [--out src/music.ts | music.js]
-      -> src/music.ts (Remotion) or music.js (HyperFrames): the film-time grid the timeline imports
+      -> src/music.ts (Remotion) or music.js (HyperFrames): the film-time grid the timeline imports; an
+         audio/score.json there is pointed at the edit (music.track, .edit, .licence; the key; no bpm)
   python3 scripts/audio/track.py check [--edit audio/music/edit.json] [--json out/qa/track_check.json]
-      -> the joins measured on the edited bed, the licence record, and nothing made from the track in git
+      -> the joins measured on the edited bed, the licence record, audio/score.json playing this edit's track,
+         and nothing made from the track in git
   python3 scripts/audio/track.py music [--edit audio/music/edit.json]          (npm run music)
       -> analyze, edit and grid again with the settings the analysis and edit.json already hold
 
@@ -1360,6 +1362,17 @@ def cmd_grid(a_):
           f"{m['bars']} bars to f{body_end} (body = TOTAL - TAIL = {round(body_end)} f), {len(m['accents'])} accents, "
           f"{len(m['entries'])} entries, {len(m['stops'])} stops, ending {m['end']['mode']} at f{m['end']['f']}")
     print('  timeline: BPM = MUSIC?.bpm ?? <grid tempo>; b() rounds bar(); grid-check runs in music mode')
+    sp = 'audio/score.json'
+    if os.path.isfile(sp):
+        sc = read_json(sp, 'score')
+        mu = sc.get('music') if isinstance(sc.get('music'), dict) else {}
+        sc['music'] = {**mu, 'track': edit['track'], 'edit': os.path.relpath(a_.edit).replace(os.sep, '/'), 'licence': edit.get('licence')}
+        if edit.get('key'):
+            sc['key'] = edit['key']
+        sc.pop('bpm', None)  # the tempo comes from the grid
+        with open(sp, 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write(json.dumps(sc, indent=2, ensure_ascii=False) + '\n')
+        print(f"  {sp} plays {edit['track']} (key {sc.get('key')}, licence {edit.get('licence')})")
     return 0
 
 
@@ -1467,6 +1480,12 @@ def cmd_check(a_):
         rep['notes'] += [f'licence: {n}' for n in notes]
     else:
         rep['problems'].append(f'no licence record ({edit.get("licence")}): track.py add writes it')
+    if os.path.isfile('audio/score.json'):
+        mu = read_json('audio/score.json', 'score').get('music')
+        plays = mu.get('track') if isinstance(mu, dict) else mu
+        if not isinstance(mu, dict) or plays != edit['track'] or mu.get('licence') != edit.get('licence'):
+            rep['problems'].append(f"audio/score.json plays {plays}, not this edit's {edit['track']} "
+                                   f"(licence {edit.get('licence')}): track.py grid points it at the edit")
     gp, gn = git_ok(os.getcwd(), edit)
     rep['problems'] += gp
     rep['notes'] += gn
