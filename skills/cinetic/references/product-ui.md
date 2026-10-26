@@ -257,6 +257,12 @@ sample.
   drawn in code: no icon library), `Meter`, `Button` (press amount from `fx/Cards press().q`), `Toast`, `Sparkline`,
   `BarChart` (bars rise out of the baseline in turn), `Ring`, `Photo` (a product photograph made in code, or a
   supplied `src`).
+- Flow parts (`kit/flow.tsx`), the pieces of a product flow: `Field` (a well, a glyph, the value as children, an action
+  button with press and flash), `Tile` (a result: picture, two-line title, meta, a corner badge), `Row` (a choice whose
+  `selected` rings it in the accent with a dark halo), `Pill` (a spinner or a check, a label, a live value), `Chip`,
+  `DataRow` (a record's label and value), `Notice` (a system notification for a proof stack). The glyph set covers a
+  capability ticker too (link, list, search, star, monitor, speaker, camera, braces, table, globe, lock, play, chat,
+  cart, heart). Every string comes from the caller.
 - Panels with live states: `ProjectPanel` (status, team, selects with approvals, count, bar, the primary action;
   `doneAt` switches badge, count, tick and button in one frame), `ChatCard` (`fx/Bubbles`, the composer types the next
   line at 30 a second), `FeedCard` (`flick` lands a hand-thrown scroll on the highlight), `StatCard` (a figure

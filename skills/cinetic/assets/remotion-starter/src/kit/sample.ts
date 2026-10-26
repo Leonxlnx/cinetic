@@ -7,7 +7,9 @@ export type Person = { initials: string; name: string };
 export type ChatLine = { text: string; side: 'in' | 'out'; kind?: 'typing' };
 export type FeedRow = { who: number; ref: string; text: string };
 export type Category = { name: string; glyph: GlyphName; budget: number; spent: number };
-export type GlyphName = 'pen' | 'code' | 'mega' | 'doc' | 'grid' | 'team' | 'image' | 'send' | 'check' | 'clock' | 'plus' | 'bolt';
+export type GlyphName =
+  | 'pen' | 'code' | 'mega' | 'doc' | 'grid' | 'team' | 'image' | 'send' | 'check' | 'clock' | 'plus' | 'bolt'
+  | 'link' | 'list' | 'search' | 'star' | 'monitor' | 'speaker' | 'camera' | 'braces' | 'table' | 'globe' | 'lock' | 'play' | 'chat' | 'cart' | 'heart';
 
 const TEAM: Person[] = [
   { initials: 'MK', name: 'Mara K.' },
