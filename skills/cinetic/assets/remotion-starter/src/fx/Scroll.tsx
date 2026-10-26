@@ -33,6 +33,32 @@ export type FlickProps = {
 export type FlickState = { y: number; v: number; phase: 'before' | 'ramp' | 'peak' | 'brake' | 'rest' };
 
 const HOUSE = { growth60: 1.05, ramp60: 66, peakPxS: 2600, hold60: 6, fast60: 0.82, share: 0.4, slow60: 0.977 } as const;
+
+/**
+ * A feed flicked hard by a thumb (house numbers at 60 fps, px at 1080p): it opens on a carried speed (1920 px/s,
+ * x0.837 a frame) decaying into a crawl (285 px/s), ramps x1.054 a frame over 86 f to 5280 px/s (twice the house
+ * peak), holds 4 f, brakes fast (x0.922 for a share of 0.6) and coasts (x0.977). The read-every-row feed of a UI
+ * walkthrough: a counter climbing beside it, the list landing on the row the next shot is about.
+ */
+export const FLICK_FEED = { leadPxS: 1920, leadDecay60: 0.837, crawlPxS: 285, ramp60: 86, growth60: 1.054, peakPxS: 5280, hold60: 4, fast60: 0.922, share: 0.6, slow60: 0.977 } as const;
+
+/** FlickProps for a feed flick from `start` at this film's rate and size (FLICK_FEED); `over` replaces any of them. */
+export const flickFeed = (start: number, film?: Partial<FilmCtx>, over: Partial<FlickProps> = {}): FlickProps => {
+  const fps = fpsOf(film);
+  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const F = FLICK_FEED;
+  return {
+    start,
+    lead: { v: (F.leadPxS * u) / fps, decay: F.leadDecay60 },
+    crawl: (F.crawlPxS * u) / fps,
+    ramp: { frames: Math.round((F.ramp60 * fps) / 60), growth: F.growth60 },
+    peak: (F.peakPxS * u) / fps,
+    hold: Math.round((F.hold60 * fps) / 60),
+    brake: { fast: F.fast60, share: F.share, slow: F.slow60 },
+    fpsRef: 60,
+    ...over,
+  };
+};
 const MAX_FRAMES = 4000;
 
 type Profile = { v: number[]; x: number[]; scale: number; rampN: number; holdN: number; end: number; crawl: number }; // crawl: the speed before the start

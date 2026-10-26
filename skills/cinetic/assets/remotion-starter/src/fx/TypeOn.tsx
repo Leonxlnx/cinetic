@@ -53,6 +53,27 @@ export const TYPE_HOUSE = {
   elide: [0.5, 0.8] as const, // a cut into typing lands with this share already typed
 } as const;
 
+/**
+ * A held backspace clearing a field (a placeholder, an old value): the first key, the repeat delay, then the
+ * repeat speeding up to a character every frame at 60 fps. Gaps in 60 fps frames between removed characters,
+ * the last one repeating.
+ */
+export const ERASE_HOUSE = { gaps60: [4, 6, 4, 3, 2, 2, 1] } as const;
+export type TypeErase = { start: number; gaps?: readonly number[] };
+
+/** The whole frame on which each character of a `len`-character string is erased, last character first (index = character). */
+export const eraseSchedule = (len: number, e: TypeErase, film?: Partial<FilmCtx>): number[] => {
+  const fps = fpsOf(film);
+  const gaps = e.gaps?.length ? e.gaps : ERASE_HOUSE.gaps60;
+  const at = new Array<number>(len);
+  let t = e.start;
+  for (let k = 0; k < len; k++) {
+    t += ((gaps[Math.min(k, gaps.length - 1)] ?? 1) * fps) / 60;
+    at[len - 1 - k] = Math.ceil(t - 1e-9);
+  }
+  return at;
+};
+
 const boxOf = (len: number, t: TypeTiming, film?: Partial<FilmCtx>) =>
   t.cps ? (len * fpsOf(film)) / t.cps : Math.max(1, t.dur ?? f60(paceOf(film).fx.typeFPerChar * len, fpsOf(film)));
 
@@ -274,7 +295,9 @@ export const typeOn = (text: string, frame: number, t: TypeTiming & TypeFont, fi
  * frames after it appeared (an accent that relaxes to ink over 12 f: references/product-ui.md §6).
  * 1.2 (`kind`, see TypeKind): human, field, prompt and stream typing, elision by a cut (`from`); `accent`
  * colours the field's newest word for its one frame, `trail` colours the newest characters and lets
- * them age to the ink over `trail.chars` characters (a colour trail behind the caret).
+ * them age to the ink over `trail.chars` characters (a colour trail behind the caret). `erase` clears the string
+ * with a held backspace (ERASE_HOUSE: the first key, the repeat delay, the repeat speeding up), last character
+ * first: a placeholder or an old value leaving before the new one is typed by a second TypeOn.
  * Typing is for what the product types (a prompt, a command, a field): a person at 30 chars/s or
  * less (lint-film warns: typing-rate), a stream at 50-150; hold the finished string >= 72 f after its
  * last key before it changes. Headlines and film copy are never typed: they arrive as fragments (fx/Chain).
@@ -293,10 +316,11 @@ export const TypeOn: React.FC<
       accent?: string; // field: the newest word's colour on its one frame
       accentFrames?: number;
       trail?: { color: string; chars?: number; ink?: string }; // the newest characters in `color`, ageing to `ink` over `chars` characters (house 10)
+      erase?: TypeErase; // a held backspace from `start` (ERASE_HOUSE): the characters leave from the end, the caret solid while it runs
       style?: React.CSSProperties;
       charStyle?: (i: number, age: number) => React.CSSProperties;
     }
-> = ({ text, frame, id = 'type', fade: fadeProp, caret = true, caretColor = 'currentColor', blink: blinkProp, caretOut, accent, accentFrames, trail, style, charStyle, ...t }) => {
+> = ({ text, frame, id = 'type', fade: fadeProp, caret = true, caretColor = 'currentColor', blink: blinkProp, caretOut, accent, accentFrames, trail, erase, style, charStyle, ...t }) => {
   const film = useFilm();
   const fade = fadeProp ?? (t.kind ? 0 : f60(4, film.fps));
   const blink = blinkProp ?? f60(30, film.fps);
@@ -305,9 +329,15 @@ export const TypeOn: React.FC<
   const role = t.role ?? 'display';
   const lead = TYPE[role].lead;
   const F = fd(frame);
-  // Caret: solid while typing; idle, it blinks with a phase anchored on the typing edges.
-  const anchor = F < t.start ? t.start : s.last;
-  const on = s.typing || Math.floor(Math.abs(F - anchor) / Math.max(1, blink)) % 2 === 0;
+  // A held backspace: characters erased from the end on their whole frames; the caret follows them back.
+  const gone = erase ? eraseSchedule(text.length, erase, film) : null;
+  const goneEnd = gone && erase ? Math.max(erase.start, ...gone) : -Infinity;
+  const left = gone ? gone.filter((k) => k > F).length : text.length;
+  const erasing = !!erase && F >= erase.start && F < goneEnd;
+  const shownN = Math.min(s.n, left);
+  // Caret: solid while typing (or erasing); idle, it blinks with a phase anchored on the typing edges.
+  const anchor = F < t.start ? t.start : erase && F >= erase.start ? Math.max(s.last, goneEnd) : s.last;
+  const on = s.typing || erasing || Math.floor(Math.abs(F - anchor) / Math.max(1, blink)) % 2 === 0;
   const showCaret = caret && (caretOut === undefined || F < caretOut);
   const ink = inkBox('Hg', s.size, s.weight, s.family);
   const base = baselineOf(s.size, s.weight, lead, s.family);
@@ -316,12 +346,13 @@ export const TypeOn: React.FC<
   const ch = ink.ascent + ink.descent + 0.14 * s.size;
   // CSS puts the (negative) tracking after each glyph, so the last glyph's ink can reach past the
   // next glyph's origin: clear it by the tracking plus a hairline gap.
-  const cx = s.n > 0 ? s.caretX + Math.max(0, -s.track) * s.size + 0.03 * s.size : 0;
+  const caretX = shownN === s.n ? s.caretX : measureTracked(text.slice(0, shownN), s.size, s.weight, s.track, s.family);
+  const cx = shownN > 0 ? caretX + Math.max(0, -s.track) * s.size + 0.03 * s.size : 0;
   const trailN = trail?.chars ?? 10;
   return (
     <span data-text={id} style={{ ...typeStyle(role, s.size), fontFamily: s.family, position: 'relative', display: 'inline-block', ...style }}>
       {[...text].map((c, i) => {
-        const shown = F >= s.at[i];
+        const shown = F >= s.at[i] && (!gone || F < gone[i]);
         const o = !shown ? 0 : fade > 0 ? prog(frame, s.at[i] - 1, s.at[i] - 1 + fade, E.ui) : 1;
         let color: string | undefined;
         if (shown && ts?.accent[i] && accent) color = accent;
@@ -355,8 +386,12 @@ export const TypeOn: React.FC<
  * What a TypeOn instance does on purpose: keys are discrete steps on whole frames, so a 1.2 typing run
  * declares its span stepped (one sample a frame, never shutter-blurred); the 1.1 form declares nothing.
  */
-export const declares = (p?: Partial<TypeTiming> & { text?: string; id?: string }, film?: Partial<FilmCtx>): Declares => {
+export const declares = (p?: Partial<TypeTiming> & { text?: string; id?: string; erase?: TypeErase }, film?: Partial<FilmCtx>): Declares => {
   const none: Declares = { stepped: [], flashes: [], cameraBlur: [], seams: [] };
+  if (p?.erase && p.text) {
+    const gone = eraseSchedule(p.text.length, p.erase, film);
+    return { ...none, stepped: [{ from: Math.min(...gone), to: Math.max(...gone) + 1, id: `${p.id ?? 'type'}-erase` }] };
+  }
   if (!p || !p.kind || p.text === undefined || p.start === undefined) return none;
   const at = typeSchedule(p.text, p as TypeTiming, film);
   return { ...none, stepped: [{ from: Math.min(...at), to: Math.max(...at) + 1, id: p.id ?? 'type' }] };
