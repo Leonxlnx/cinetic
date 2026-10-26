@@ -1,0 +1,53 @@
+{
+ "name": "capability-reel",
+ "about": "A 15-25 s launch close (or a short launch film on its own): one line inside a ring of sources, the page darkening as a ring becomes a disc that grows into one real record, a statement on a light card that squashes round its line, a ticker through what the product returns, the big claim on the accent in two beats, a graphic transition out of its full stop, and the end card. new-film.sh --template capability-reel lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "bpm": 120,
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every reel is cut to a licensed, human-made, instrumental track (references/music.md): its cuts and swaps sit on the track's drum onsets and earshot effects mark the state changes; never effects only.",
+  "pick": "the dealt direction lists tracks from the shortlist in its tempo range (python3 scripts/deck.py --show); 115-130 BPM with a punchy kick suits the template's cuts on kicks",
+  "add": "bash scripts/new-film.sh <dir> --template capability-reel --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end stop|button|ring",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "next": [
+  "capability reel: fill src/reel.ts (the script's lines, 3-8 words each, and the product's own sources, record and capabilities in every [slot]),",
+  "  rebuild the product's real record in src/acts/Record.tsx where the kit stands in, then deal its direction:",
+  "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3 (references/templates.md)"
+ ],
+ "copy": [
+  "src/reel.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/stage.tsx",
+  "src/acts/Sources.tsx",
+  "src/acts/Record.tsx",
+  "src/acts/Statement.tsx",
+  "src/acts/Ticker.tsx",
+  "src/acts/Claim.tsx",
+  "src/acts/Rings.tsx",
+  "src/acts/End.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ]
+}

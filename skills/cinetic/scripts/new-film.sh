@@ -47,9 +47,11 @@
 #                  the template's 120 BPM. Remotion only. The same as --template update.
 #   --template     a film template from assets/templates/<name> laid over the starter: its timeline, acts,
 #                  film and sound (template.json lists the files it copies and the starter files it removes;
-#                  its pace and tempo become the defaults). update (a "vX is out" film) and ui-walkthrough (a
+#                  its pace and tempo become the defaults). update (a "vX is out" film), ui-walkthrough (a
 #                  product's flow in steps: the promise, the input becoming the output, proof, a claim, then
-#                  input -> the product reads -> insight -> choice -> output, the end card). Remotion only.
+#                  input -> the product reads -> insight -> choice -> output, the end card) and capability-reel
+#                  (a launch close: a ring of sources, one real record, a statement, a capability ticker, the
+#                  big claim on the accent, a transition out of its full stop, the end card). Remotion only.
 #   --brand        a supplied brand kit (a folder, or files: logo SVG or PNG, colours, licensed fonts,
 #                  screenshots, product photos): scripts/brand.py writes brand/brand.json, the colour and type
 #                  roles in src/brand/tokens.ts (supplied colours marked cinetic:brand-supplied), the logo's
