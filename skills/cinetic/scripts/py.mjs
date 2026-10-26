@@ -5,8 +5,9 @@
  * The npm scripts call it instead of a bare `python3`, which is missing on a plain Windows install (or is
  * the Microsoft Store alias, which exits 49) and never names a Windows virtualenv (its interpreter is
  * python.exe). It runs $PYTHON when that is set, else the first of python3, python and (on Windows)
- * `py -3` that runs Python 3.10 or newer, with the arguments as given and stdin, stdout and stderr passed
- * through; the exit code is the script's own.
+ * `py -3` that runs Python 3.10 or newer and imports numpy (if none imports it, the first that runs 3.10+,
+ * with a warning), with the arguments as given and stdin, stdout and stderr passed through; the exit code
+ * is the script's own.
  *
  * Usage (from the project root):  node scripts/py.mjs <script.py> [args ...]
  *                                 node scripts/py.mjs --which     (print the interpreter it would use)
@@ -25,11 +26,16 @@ if (!args.length || args[0] === '--help' || args[0] === '-h') {
 const win = process.platform === 'win32';
 const env = process.env.PYTHON;
 const cands = env ? [[env]] : [['python3'], ['python'], ...(win ? [['py', '-3']] : [])];
-const ok = ([exe, ...pre]) =>
-  env || spawnSync(exe, [...pre, '-c', 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'], { stdio: 'ignore' }).status === 0;
-const use = cands.find(ok);
+const runs = ([exe, ...pre], imports) =>
+  spawnSync(exe, [...pre, '-c', `import sys${imports}; sys.exit(0 if sys.version_info >= (3, 10) else 1)`], { stdio: 'ignore' }).status === 0;
+const tried = cands.map((c) => c.join(' ')).join(', ');
+let use = env ? cands[0] : cands.find((c) => runs(c, ', numpy'));
 if (!use) {
-  console.error(`py.mjs: no Python 3.10+ found (tried ${cands.map((c) => c.join(' ')).join(', ')}): install it with the packages in docs/setup.md, or set PYTHON to the interpreter of that environment`);
+  use = cands.find((c) => runs(c, ''));
+  if (use) console.error(`py.mjs: none of ${tried} imports numpy; using ${use.join(' ')}: install the packages in docs/setup.md into it, or set PYTHON to the interpreter of an environment that has them`);
+}
+if (!use) {
+  console.error(`py.mjs: no Python 3.10+ found (tried ${tried}): install it with the packages in docs/setup.md, or set PYTHON to the interpreter of that environment`);
   process.exit(127);
 }
 if (args[0] === '--which') {
