@@ -65,9 +65,9 @@ Chicago, the Met, Mixkit video. With a key in the environment: `PEXELS_API_KEY`,
    ```
    node scripts/assets.mjs get #2,#7 --to public/assets --res 1080 --trim 3.5,6
    ```
-5. **Grade.** One look for the whole set, so pictures from four sources read as one shoot. `grade` matches
-   white balance, black level and contrast across the set first (never stretching a picture's range past ×1.3),
-   then applies the look, crops to 16:9 around a focus point and adds a fine grain. `--strength` is how far toward
+5. **Grade.** One look for the whole set, so pictures from four sources read as one shoot. `grade` brings
+   black level and contrast toward the set's first (never stretching a picture's range past ×1.3), then applies
+   the look, crops to 16:9 around a focus point and adds a fine grain. `--strength` is how far toward
    the look (0 = the picture as it is, 1 = the look); `--chroma` scales the colour after it:
    ```
    node scripts/assets.mjs looks
@@ -90,7 +90,8 @@ Chicago, the Met, Mixkit video. With a key in the environment: `PEXELS_API_KEY`,
    (orange/amber, beige/cream, purple/violet, neon) on 0.5 % of a frame (the film's banned-hue test; a brand's own
    colour passes with `--brand-supplied`), and notes frames over half saturated (ceiling 35 %), the accent hue on
    more than 10 % of the picture, a set under the film's saturated floor (4.5 %), a picture much lighter, darker or
-   more colourful than the rest (not one shoot), and readable text or logos in the pictures (like.py's reader:
+   more colourful than the rest (not one shoot: regrade it on its own or replace it; the grade does not match white
+   balance, so choose pictures shot in one light), and readable text or logos in the pictures (like.py's reader:
    someone else's brand never appears in a film). Keep stills at 2400 px so a push stays sharp; keep footage at its
    own size (`--aspect none`).
 6. **Move.** The motion system moves pictures exactly as it moves type: closed-form state, the house curves,
