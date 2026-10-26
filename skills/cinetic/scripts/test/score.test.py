@@ -1004,9 +1004,10 @@ def credits_gate(d):
 AVAUDIT = os.path.join(HERE, '..', 'av-audit.py')
 
 
-def av_run(d, name, events, sig, report=None, music=None, sounded=None):
+def av_run(d, name, events, sig, report=None, music=None, sounded=None, silent=None, sounded_age=5):
     """av-audit --audio/--stems on a synthetic soundtrack (sig, mono) for `events`; returns (exit, report).
-    sounded: the events of a cues_sounded.json (intended times) written beside, newer than the cues."""
+    sounded: the events of a cues_sounded.json (intended times) written beside, `sounded_age` s newer than the
+    cues (negative: older), with `silent` as its silent rows."""
     out = os.path.join(d, name)
     os.makedirs(os.path.join(out, 'stems'), exist_ok=True)
     os.makedirs(os.path.join(out, 'qa'), exist_ok=True)
@@ -1014,8 +1015,8 @@ def av_run(d, name, events, sig, report=None, music=None, sounded=None):
     json.dump(cues_with(events), open(cues, 'w'))
     if sounded is not None:
         sp = os.path.join(out, 'qa', 'cues_sounded.json')
-        json.dump(cues_with(sounded), open(sp, 'w'))
-        os.utime(sp, (os.path.getmtime(cues) + 5, os.path.getmtime(cues) + 5))
+        json.dump(dict(cues_with(sounded), silent=silent or []), open(sp, 'w'))
+        os.utime(sp, (os.path.getmtime(cues) + sounded_age, os.path.getmtime(cues) + sounded_age))
     st = np.stack([sig, sig], axis=1).astype(np.float32)
     sf.write(os.path.join(out, 'mix.wav'), st, SR, subtype='FLOAT')
     sf.write(os.path.join(out, 'stems', 'sfx.wav'), st, SR, subtype='FLOAT')
@@ -1079,6 +1080,16 @@ def av_audit(d):
     rows = (r or {}).get('sync', {}).get('rows', [])
     check(r is not None and r.get('intended') and len(rows) == 1 and abs(rows[0]['offset_f']) < 0.5,
           f"av-audit judges sync against the intended times of cues_sounded.json ({rows})")
+    # 4b. cues re-exported after the plan with the same events: cues_sounded.json is still current (the silent
+    # cue stays unexpected); with an event the plan never saw it is stale and every cue is expected again
+    planned = [dict(f=120 - 0.033 * FPS, cue_f=120, kind='click', id='a:c', role='click')]
+    quiet = [dict(f=200, kind='hit', id='a:carried', status='carried')]
+    p, r = av_run(d, 'intended-older', ev, sig, sounded=planned, silent=quiet, sounded_age=-5)
+    check(r is not None and r.get('intended') and len((r.get('sync') or {}).get('rows', [])) == 1,
+          f"av-audit keeps an older cues_sounded.json planned from the same events ({r and r.get('intended')})")
+    p, r = av_run(d, 'intended-stale', ev + [dict(f=250, kind='tock', id='a:new')], sig, sounded=planned, silent=quiet, sounded_age=-5)
+    check(r is not None and not r.get('intended') and any('older than' in n for n in r.get('notes', [])),
+          f"av-audit drops an older cues_sounded.json whose events differ, and says so ({r and r.get('notes')})")
     # 5. a --draft soundtrack fails
     p, r = av_run(d, 'draft', [dict(f=60, kind='click', id='a:c')], np.zeros(n) + 0, {'events': {'skipped': []}, 'draft': True})
     check(r is not None and any(f['check'] == 'draft' and f['severity'] == 'fail' for f in r['flags']),

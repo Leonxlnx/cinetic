@@ -282,13 +282,31 @@ def effects_only(sc):
     return music == 'none' and not sc.get('bed')
 
 
-def sounded_path(args):
-    """out/qa/cues_sounded.json (the intended sound times) when it is current for these cues, else None"""
-    p = args.sounded or os.path.join(os.path.dirname(os.path.abspath(args.cues)), 'qa', 'cues_sounded.json')
+def sounded_default(args):
+    return os.path.join(os.path.dirname(os.path.abspath(args.cues)), 'qa', 'cues_sounded.json')
+
+
+def same_events(sounded, cues):
+    """True when cues_sounded.json was planned from these events: its sounded rows (at their cue frame) and its
+    silent rows are exactly the cues' (frame, kind) pairs, so a re-export that changed no event keeps it current."""
     try:
-        if os.path.isfile(p) and (args.sounded or os.path.getmtime(p) >= os.path.getmtime(args.cues)):
+        have = {(round(float(e.get('cue_f', e['f'])), 3), e['kind']) for e in sounded.get('events', [])}
+        have |= {(round(float(x['f']), 3), x['kind']) for x in sounded.get('silent', []) if 'f' in x and 'kind' in x}
+        want = {(round(float(e['f']), 3), e['kind']) for e in cues.get('events', []) if isinstance(e, dict)}
+        return bool(want) and have == want and sounded.get('fps') == cues.get('fps')
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def sounded_path(args):
+    """out/qa/cues_sounded.json (the intended sound times) when it is current for these cues (newer than
+    cues.json, or planned from the same events), else None"""
+    p = args.sounded or sounded_default(args)
+    try:
+        if os.path.isfile(p) and (args.sounded or os.path.getmtime(p) >= os.path.getmtime(args.cues)
+                                  or same_events(json.load(open(p, encoding='utf-8')), json.load(open(args.cues, encoding='utf-8')))):
             return p
-    except OSError:
+    except (OSError, ValueError):
         pass
     return None
 
@@ -488,6 +506,9 @@ def main():
     if not fps:
         die('no fps: pass --fps or put fps in cues.json')
     notes = []
+    if not sp and os.path.isfile(sounded_default(args)):
+        notes.append(f'{sounded_default(args)} is older than {args.cues} and its events differ: every cue is expected to '
+                     'sound; run plan.py (or npm run audio) to plan the new cues')
     if vinfo and cues['fps'] and abs(cues['fps'] - vinfo['fps']) > 0.01:
         notes.append(f'cues.json says {cues["fps"]} fps but the video is {vinfo["fps"]:.3f}; using {fps:.3f}')
 
