@@ -28,9 +28,9 @@ export const C = {
   slate: '#35383C',
   slateRaised: '#45484C',
   accentLift: '#77D59E',
-  // A film may add one second hue for a moment (lib/look.ts COLOUR.second): a second data series, a state the
-  // accent cannot be, a highlight; at most 5 % of the frame while it shows, in at most a quarter of the frames.
-  // Declare it here as `second`, commented ui-state, so the one-accent checks leave it out and kit/ uses it.
+  // The support hue beside the accent (lib/look.ts COLOUR.second): a second brand colour, data beside the accent,
+  // a state the accent cannot be; 40 degrees or more from the accent, in 10-30 % of the film, up to 8 % of the frame
+  // while it shows. Declare it here as `second`, commented ui-state, so the one-accent checks leave it out and kit/ uses it.
 };
 
 /**

@@ -26,7 +26,7 @@ export type KitTheme = {
   accentInk: string; // text and glyphs drawn on the accent
   accentSoft: string; // a quiet tint of the accent, under the saturated line (chips, the other bars, the selected row)
   accentDeep: string; // the accent at depth (the duotone shadow, a pressed button)
-  second?: string; // the optional second hue for a moment (lib/look.ts COLOUR.second), at the lightness the ground needs
+  second?: string; // the support hue beside the accent (lib/look.ts COLOUR.second): 10-30 % of the film, at the lightness the ground needs
   shade: [r: number, g: number, b: number]; // the shadow colour (a neutral near-black), for rgba() shadows
   shadeA: number; // the base alpha of a cast shadow on this ground
   tones: string[]; // avatar tones: neutral greys, six lightness steps
@@ -36,7 +36,7 @@ export type KitTheme = {
 export type KitOptions = {
   /** The film's greys (a token such as C.mute): their hue, and their chroma up to NEUTRAL.houseC[1]. */
   greys?: string;
-  /** A second hue for a moment (C.second when the film declares one). */
+  /** The support hue beside the accent (C.second when the film declares one). */
   second?: string;
 };
 
