@@ -26,10 +26,14 @@ Usage:
   python3 scripts/deck.py ... --no-imagery       # leave out the imagery-led directions
 
   --have      what really exists (comma-separated): ui (the product has an interface to show, built in
-              code from the real product), footage (real video supplied), audio (a real recorded clip the
-              product makes or handles: a voice, a call, a sound), number (one honest number the product
-              owns and can back), name (the product's name is a real word whose meaning the film can use).
-              Leave it out when there is none. Directions built on an asset only fit when it exists.
+              code from the real product), input (it is used by typing or pointing: a text field, a prompt,
+              a command line, a pointer; pick.py deals typing and cursor devices only then), footage (real
+              video supplied), audio (a real recorded clip the product makes or handles: a voice, a call, a
+              sound), number (one honest number the product owns and can back), name (the product's name is
+              a real word whose meaning the film can use). Leave it out when there is none. Directions built
+              on an asset only fit when it exists, and the deal leans hard toward directions that use what
+              exists and toward the subjects the brief names (each brief word a direction knows triples
+              its chance, up to three).
   --format    launch (15-45 s, the main case), update (8-20 s: "vX is out" with 2-4 changes), feature,
               loop, sting, walkthrough or vertical. An update film is a hook on the version or the mark,
               2-4 changes each shown as a product moment (never a list), one payoff and the end card with
@@ -100,8 +104,8 @@ PICK = os.path.join(HERE, 'pick.py')
 
 FORMATS = ['launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical', 'update']
 PACES = ['calm', 'crisp']
-HAVE = ['ui', 'footage', 'audio', 'number', 'name']
-HAVE_TEXT = {'ui': 'product UI', 'footage': 'footage', 'audio': 'a real recorded clip',
+HAVE = ['ui', 'input', 'footage', 'audio', 'number', 'name']
+HAVE_TEXT = {'ui': 'product UI', 'input': 'a field, prompt or pointer the product is used with', 'footage': 'footage', 'audio': 'a real recorded clip',
              'number': 'one honest number', 'name': 'a name that means something'}
 KEEP = ['palette', 'type']
 SLOTS = ['palette', 'type', 'signature', 'direction']
@@ -425,12 +429,12 @@ def validate(data, library=None, src=None, strict=False):
     decks = data.get('decks')
     if isinstance(decks, dict) and decks:
         for i, (name, ids) in enumerate(decks.items()):
-            if i == 0 and not 18 <= len(ids) <= 24:
-                errors.append(f'the {name} deck holds {len(ids)} directions; the main deck holds 18-24')
+            if i == 0 and not 18 <= len(ids) <= 28:
+                errors.append(f'the {name} deck holds {len(ids)} directions; the main deck holds 18-28')
             elif i > 0 and len(ids) < 3:
                 errors.append(f'the {name} deck holds {len(ids)} directions; a deck that adds directions holds at least 3')
-    elif not 18 <= len(dirs) <= 24:
-        errors.append(f'the deck holds {len(dirs)} directions; it must hold 18-24')
+    elif not 18 <= len(dirs) <= 28:
+        errors.append(f'the deck holds {len(dirs)} directions; it must hold 18-28')
     planned_caps = [n for n, p in cat.items() if isinstance(p, dict) and p.get('status') == 'planned' and re.search(r'[A-Z]', n)]
 
     seen, fam, cls, keys = {}, {}, {}, {}
@@ -892,11 +896,22 @@ def fits(d, fmt, pace, have, seconds, brief='', ready=None, imagery=True):
     return True, ''
 
 
+KEYWORD_X = 3.0  # each subject of the brief a direction knows multiplies its weight (up to three)
+
+
+def uses_of(d):
+    """The assets a direction can put on screen when they exist (ui, footage, audio, number, name)."""
+    f = d['fit']
+    return {k for k in ('ui', 'footage') if f[k] != 'none'} | set(f.get('needs_also', []))
+
+
 def weight(d, inp, recent):
-    w = 1.0 + 0.9 * min(3, keyword_hits(d, inp['brief']))
+    w = KEYWORD_X ** min(3, keyword_hits(d, inp['brief']))
     if inp['pace'] == 'crisp' and d['intensity'] <= 2:
         w *= 0.35
     if needs_of(d, inp.get('format')):  # it only fits because the film has the asset: use it
+        w *= 2.0
+    elif set(inp.get('have') or []) & uses_of(d) - {'ui'}:  # footage, audio, a number or a name it can use
         w *= 1.5
     if d['id'] in recent:
         w *= 0.3
@@ -1226,6 +1241,12 @@ def brand_mapping(d, palette, recipes, brand):
     pick = next((m for m in tried if m['ok']), tried[0])
     out = dict(pick, file=brand['file'], name=brand['name'], source=brand['source'], family=brand['family'],
                dealt=palette['id'] if palette else None)
+    lights = [c for c in brand['colours'] if c != brand['accent'] and hex_oklch(c)[0] >= 0.9 and hex_oklch(c)[1] <= 0.03]
+    darks = [c for c in brand['colours'] if c != brand['accent'] and hex_oklch(c)[0] <= 0.3]
+    if lights and not darks and pick.get('tone') in ('dark', 'mid', 'field'):
+        out['tone_note'] = (f'the brand is a light brand (its paper {lights[0]}, no dark neutral) but this palette puts it on a '
+                            f'{pick["tone"]} ground ({pick["ground"]["hex"]}): redraw the palette for a light one '
+                            '(deck.py --redraw palette --reason "the brand is light"), or say in BRIEF.md why the film goes dark')
     if palette and pick['palette'] != palette['id']:
         out['note'] = (f'the dealt {palette["id"]} cannot hold the brand accent at 3:1 with 7:1 type '
                        f'({tried[0]["accent"]["contrast"]:.1f}:1, {tried[0]["ink"]["contrast"]:.1f}:1): {pick["palette"]} maps cleanly')
@@ -1370,11 +1391,16 @@ def render_options(opts, inp, seed, recent, pool_size, derived, data, keep):
     return '\n'.join(out) + '\n'
 
 
+FIELD_EVENT = ('A colour field is an event, not the film\'s ground: it holds the frame for one act at most (about 20 % of '
+               'the film: the signature or the payoff); the other acts sit on the dark or mid stage of the same hue '
+               '(inkStage or slateMid), so the film is never more than half saturated for long.')
+
+
 def _palette_lines(p, recipes):
     pr = p['proportions']
     return [f'- **{p["id"]}** ({tone_of(p, recipes)} ground): recipe `{p["recipe"]}`{_recipe_note(p["recipe"], recipes)}, accent from '
             f'{" or ".join(p["accent"])}; ground {pr["ground"]} % · ink {pr["ink"]} % · accent {pr["accent"]} % of the frame. '
-            f'{p["notes"][:1].upper() + p["notes"][1:]}.']
+            f'{p["notes"][:1].upper() + p["notes"][1:]}.' + (f' {FIELD_EVENT}' if tone_of(p, recipes) == 'field' else '')]
 
 
 def _type_lines(t):
@@ -1436,6 +1462,8 @@ def render_sheet(sh, data, library):
                 'the one-accent rule only (palette.py --check-tokens).' + (f' ({bm["note"]}.)' if bm.get('note') else '')
                 + (f' ({bm["field_note"]}.)' if bm.get('field_note') else '')
                 + " Grounds stay neutral (the brand's own greys and papers); the accent keeps to 8-15 % of the frame."]
+        if bm.get('tone_note'):
+            out.append(f'- **BRAND GROUND, READ THIS:** {bm["tone_note"]}.')
     if bm:
         pass  # the mapping above names the recipe, the palette and the proportions it took
     elif sh['palette']:
@@ -1611,7 +1639,7 @@ def main():
     ap.add_argument('--brief', default='', help='the product and the film in one line')
     ap.add_argument('--format', choices=FORMATS, help='the film format (the same names as pick.py)')
     ap.add_argument('--pace', choices=PACES, help='calm (the default) or crisp')
-    ap.add_argument('--have', default='', help='what really exists: ui, footage, audio, number, name (comma-separated)')
+    ap.add_argument('--have', default='', help='what really exists: ui, input, footage, audio, number, name (comma-separated)')
     ap.add_argument('--seconds', type=float, help='the film length in seconds')
     ap.add_argument('--seed', type=int, help='reproduce a deal (default: derived from the brief)')
     ap.add_argument('--options', type=int, metavar='N', help='deal N directions to choose from (2-5; 3 is the house number)')

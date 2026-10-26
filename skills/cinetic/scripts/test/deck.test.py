@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """deck.test.py: regression tests for deck.py, the film-direction deal.
 
-  1. The shipped decks validate merged: the main deck 18-24 directions, the imagery deck at least 3,
+  1. The shipped decks validate merged: the main deck 18-28 directions, the imagery deck at least 3,
      every library id and primitive name real, the
      catalogue's built primitives exported by the starter; four kinds of space; at least half the deck
      rich; light, mid, dark and colour grounds; many story shapes, lockups and kinds of light; every
@@ -31,6 +31,10 @@
      face in the dealt weights; a colour world takes a second brand colour or falls back to a neutral.
  12. Deck hygiene: the real export names (Card), every primitive and recipe the starter has marked built,
      a pre-softened foreground layer on by default in layered spaces, lockups made by the film's own device.
+ 14. Steering: each brief subject a direction knows triples its weight (a calendar brief deals sundial, which no
+     other brief gets); --have input is a word; two type-led directions set frontal type on clean flat grounds and
+     a type brief deals them; waveform speaks of the product's sound, never a voice the music ducks under; a
+     colour field palette says it is an event, not the film's ground; a light brand put on a darker ground says so.
  13. Imagery decks: every deck file in assets/directions/ is dealt; an imagery-led direction carries a picture
      brief (kind, count, inventory, queries, sources, one grade, choose, refuse) that its sheet prints, for a
      launch and for an update film; a deal of 3 holds an imagery-led direction and a built world when its pool
@@ -135,8 +139,8 @@ r = run('--validate', '--strict')
 result(r.returncode == 0, 'the shipped deck validates (--strict: library, starter source, look.ts)', (r.stdout + r.stderr).strip()[-300:])
 n = len(DIRS)
 PER = DATA.get('decks', {})
-result(not DECK_PROBLEMS and 18 <= len(PER.get('directions', [])) <= 24 and len(PER) >= 2 and all(len(v) >= 3 for v in PER.values()),
-       f'the main deck holds 18-24 directions, every deck that adds directions at least 3 ({", ".join(f"{k} {len(v)}" for k, v in PER.items())})',
+result(not DECK_PROBLEMS and 18 <= len(PER.get('directions', [])) <= 28 and len(PER) >= 2 and all(len(v) >= 3 for v in PER.values()),
+       f'the main deck holds 18-28 directions, every deck that adds directions at least 3 ({", ".join(f"{k} {len(v)}" for k, v in PER.items())})',
        '; '.join(DECK_PROBLEMS[:3]))
 GROW = max(1.0, n / 24)  # the share caps hold per 24 directions
 lib = deck.load_library(deck.DEFAULT_LIBRARY)
@@ -202,7 +206,7 @@ cases = [
     ('skeleton shares that do not add up', lambda x: x['directions'][11]['skeleton'][0].__setitem__('share', 0.5), 'add up'),
     ('a palette outside the accent families', lambda x: x['directions'][12]['palettes'][0].__setitem__('accent', ['pink']), 'accent families'),
     ('a primitive marked built that the starter lacks', lambda x: x['primitives'].__setitem__('NoSuchPrimitive', {'file': 'fx/NoSuchPrimitive.tsx', 'status': 'built'}), 'does not export'),
-    ('too few directions', lambda x: x.__setitem__('directions', x['directions'][:10]), '18-24'),
+    ('too few directions', lambda x: x.__setitem__('directions', x['directions'][:10]), '18-28'),
     ('a lockup that waits for a planned primitive', lambda x: (x['primitives'].__setitem__('PlannedOnly', {'file': 'fx/PlannedOnly.tsx', 'status': 'planned'}), x['directions'][13]['lockup']['primitives'].append('PlannedOnly')), 'a lockup is built from primitives that exist'),
     ('a signature on a planned primitive it does not declare', lambda x: (x['primitives'].__setitem__('PlannedOnly', {'file': 'fx/PlannedOnly.tsx', 'status': 'planned'}), x['directions'][14]['signature']['primitives'].append('PlannedOnly')), 'list it in requires'),
     ('a vague signature shot', lambda x: x['directions'][15]['signature'].__setitem__('shot', 'Something beautiful happens to the product.'), 'quantities'),
@@ -638,6 +642,40 @@ for name, mutate, expect in (
         ('an unknown kind of picture', lambda x: x['directions'][4]['assets'].__setitem__('kind', ['hologram']), 'assets.kind')):
     _, err = broken_folder(mutate)
     result(expect in err, f'a deck folder with {name} is refused', err.strip().splitlines()[0][:160] if err.strip() else 'no error')
+
+# 14. steering, type-led directions, no borrowed nouns ----------------------------------------------
+cal = sum(1 for s_ in range(40) if 'sundial' in [o['id'] for o in deal('a calendar that schedules your week', 'launch', seed=s_)])
+cam = sum(1 for s_ in range(40) if 'sundial' in [o['id'] for o in deal('a camera app for night photos', 'launch', seed=s_)])
+result(cal >= 24 and cam == 0, 'a calendar brief deals sundial most of the time; a camera brief never gets the calendar world', f'{cal} vs {cam} of 40')
+inp1 = inp_of('a ledger app', 'launch', 'calm', ())
+w0 = deck.weight(BY_ID['document'], inp1, ())
+w2 = deck.weight(BY_ID['document'], inp_of('a code editor for the terminal', 'launch', 'calm', ()), ())
+result(abs(w2 / w0 - deck.KEYWORD_X ** min(3, deck.keyword_hits(BY_ID['document'], 'a code editor for the terminal'))) < 1e-9 and w2 >= 9 * w0,
+       'each brief subject a direction knows multiplies its weight by 3', f'{w0:g} -> {w2:g}')
+r = run('--brief', 'a prompt box that writes SQL', '--format', 'launch', '--have', 'ui,input', '--direction', 'statement', '--out', os.path.join(TMP, 'inp'), '--no-history')
+shi = json.load(open(os.path.join(TMP, 'inp', 'direction.json'), encoding='utf-8')) if r.returncode == 0 else {}
+result(r.returncode == 0 and 'input' in shi.get('input', {}).get('have', []) and '--direction out/direction.json' in r.stdout,
+       '--have input is accepted and reaches the sheet (pick.py reads it from out/direction.json)', r.stderr.strip()[:120])
+TYPE_LED = [BY_ID[i] for i in ('statement', 'slot-line') if i in BY_ID]
+result(len(TYPE_LED) == 2 and all(d['world']['space'] == 'flat' and d['world']['texture'].startswith('clean')
+                                  and all(RECIPES[p['recipe']]['tone'] != 'field' for p in d['palettes']) for d in TYPE_LED),
+       'two type-led directions: flat, clean grounds, no colour-field palette')
+tl = sum(1 for s_ in range(40) if {'statement', 'slot-line'} & {o['id'] for o in deal('a manifesto in a few simple words', 'launch', seed=s_)})
+result(tl >= 30, 'a type brief deals a type-led direction', f'{tl} of 40')
+anyb = sum(1 for s_ in range(60) if {'statement', 'slot-line'} & {o['id'] for o in deal('a product', 'launch', seed=s_)})
+result(anyb >= 6, 'a plain brief still meets the type-led directions now and then', f'{anyb} of 60')
+wv = {k: v for k, v in BY_ID['waveform'].items() if k != 'keywords'}
+result(not re.search(r'voice|spoken|speech|duck|every word|syllable', json.dumps(wv), re.I),
+       'waveform speaks of the product\'s sound: no voice, speech or ducking outside its keywords')
+fp = next((p for p in BY_ID['monument']['palettes'] if RECIPES[p['recipe']]['tone'] == 'field'), None)
+result(fp is not None and 'an event, not the film' in ' '.join(deck._palette_lines(fp, RECIPES)), 'a colour field palette says it is an event, not the film\'s ground')
+light = {'file': 'brand/brand.json', 'name': 'x', 'accent': '#1F5EFF', 'colours': ['#1F5EFF', '#FFFFFF', '#F4F5F7', '#C9CDD3'], 'source': 'supplied', 'family': None}
+dark_pal = next(p for p in BY_ID['statement']['palettes'] if RECIPES[p['recipe']]['tone'] == 'dark')
+bmap = deck.brand_mapping(BY_ID['statement'], dark_pal, RECIPES, light)
+result('light brand' in bmap.get('tone_note', '') and '--redraw palette' in bmap['tone_note'],
+       'a light brand put on a dark ground gets a loud note with the redraw', bmap.get('tone_note', '')[:100])
+white_pal = next(p for p in BY_ID['statement']['palettes'] if RECIPES[p['recipe']]['tone'] == 'light')
+result('tone_note' not in deck.brand_mapping(BY_ID['statement'], white_pal, RECIPES, light), 'a light brand on a light ground: no note')
 
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')
 sys.exit(1 if failed else 0)

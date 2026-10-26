@@ -2420,7 +2420,7 @@
     "grade": {
      "look": "natural",
      "accent": "the film's accent",
-     "notes": "both sides natural; the better side may keep more of its own colour (--strength 1.1 against 0.7)"
+     "notes": "both sides natural; the better side may keep more of its own colour (--chroma 1.1 against 0.7)"
     },
     "choose": "Pairs with the same camera height and horizon; reject a pair whose perspective differs.",
     "avoid": [

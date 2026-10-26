@@ -6425,7 +6425,7 @@
    "idea": "The product's real sound becomes a landscape, and the camera rides it as it plays.",
    "story": {
     "shape": "call-response",
-    "line": "A voice speaks into noise; the product answers by clearing the ground under every word; the voice and the landscape end on the same syllable."
+    "line": "A sound plays into noise; the product answers by clearing the ground under it; the sound and the landscape end on the same note."
    },
    "world": {
     "space": "perspective",
@@ -6452,7 +6452,7 @@
       "ink": 22,
       "accent": 6
      },
-     "notes": "near-white ridge lines on a dark field; spoken peaks lift to the accent"
+     "notes": "near-white ridge lines on a dark field; the sound's own peaks lift to the accent"
     },
     {
      "id": "slate-ridge",
@@ -6492,7 +6492,7 @@
       600
      ],
      "case": "sentence case",
-     "notes": "each spoken word printed flat on the floor by its peak"
+     "notes": "each copy fragment printed flat on the floor by the peak it names"
     },
     {
      "id": "grotesk",
@@ -6521,7 +6521,7 @@
      "hard",
      "breath"
     ],
-    "on_sound": "The clip is the soundtrack's lead; music sits under it and ducks for every word."
+    "on_sound": "The clip is the soundtrack's lead; the music is chosen to leave its band open and is never lowered under it."
    },
    "type": {
     "modes": [
@@ -6533,8 +6533,8 @@
      "line",
      "display"
     ],
-    "scale_contrast": "One spoken word at a time printed on the floor at display size beside its peak, against a landscape that fills the frame.",
-    "behaviour": "A word appears on the floor when it is said and stays for its reading hold; copy is what the voice says, nothing more."
+    "scale_contrast": "One copy fragment at a time printed on the floor at display size beside the peak it names, against a landscape that fills the frame.",
+    "behaviour": "A fragment lands on the floor beside the peak it names and stays for its reading hold; copy names what the product does to the sound, nothing more."
    },
    "transitions": [
     "carry",
@@ -6545,7 +6545,7 @@
    "signature": {
     "name": "The clean pass",
     "family": "clean-wave",
-    "shot": "As the voice starts, a front moves with the playhead: every ridge it passes loses its noise floor (bands under the speech threshold drop to zero height over 6 f), so behind the front (ridges 40 px apart) the field is flat and quiet except the spoken peaks, which stand up x1.4 as each word is said, the word printed flat on the floor beside its peak.",
+    "shot": "As the sound starts, a front moves with the playhead: every ridge it passes loses its noise floor (bands under the threshold drop to zero height over 6 f), so behind the front (ridges 40 px apart) the field is flat and quiet except the sound's own peaks, which stand up x1.4 as each one plays, a copy fragment printed flat on the floor beside the peak it names.",
     "build": "48 SVG paths (filled ridges painted back to front, fill = ground so nearer ridges hide farther ones, a 1.5 px line in ink); one transform for the floor plane (rotateX 60, perspective 1600 px); heights from the build-time analysis (a json of 48 x 64 energies, never analysed per frame); the camera a translateZ along time at field depth / clip seconds; the noise drop a closed-form ramp per ridge from its time.",
     "cost": "light",
     "elements": 60,
@@ -6560,7 +6560,7 @@
    },
    "signature_alt": {
     "name": "The word that rises",
-    "shot": "One spoken word's peak keeps rising after it is said, up out of the landscape to 3x the frame height in 30 f, and the camera tilts up with it into the next shot.",
+    "shot": "One peak keeps rising after it plays, up out of the landscape to 3x the frame height in 30 f, and the camera tilts up with it into the next shot.",
     "build": "One ridge path's heights scaled by a closed-form curve after its word ends; the camera's pitch follows it with carry; handoffShot at the top.",
     "primitives": [
      "carry",
@@ -6572,7 +6572,7 @@
    },
    "lockup": {
     "kind": "typed",
-    "shot": "The voice says the name last; its peak stands up, settles flat, and the name is printed on the floor where it stood, the mark beside it; the ride slows to a creep.",
+    "shot": "The sound's last peak stands up, settles flat, and the name is printed on the floor where it stood, the mark beside it; the ride slows to a creep.",
     "build": "The name's word timing from the same analysis; Words on the floor plane; the supplied logo as SVG; creep.",
     "primitives": [
      "Words",
@@ -6584,8 +6584,8 @@
    },
    "idea_sentences": [
     "In this film, [the product's own recorded sound] becomes a landscape the camera rides.",
-    "In this film, [what the product removes from a recording] becomes the ground going flat under every word.",
-    "In this film, [the words the product hears] become peaks that stand up as they are said."
+    "In this film, [what the product removes from a recording] becomes the ground going flat under the sound.",
+    "In this film, [the moments the product hears] become peaks that stand up as they play."
    ],
    "fit": {
     "formats": [
@@ -6617,7 +6617,7 @@
      80,
      110
     ],
-    "feel": "sparse, under the voice; a soft pulse that leaves the speech band empty",
+    "feel": "sparse, under the clip; a soft pulse that leaves the clip's band empty",
     "ending": "ring"
    },
    "primitives": [
@@ -6665,28 +6665,28 @@
      "signature": false
     },
     {
-     "beat": "voice",
+     "beat": "sound",
      "share": 0.2,
-     "picture": "The voice starts: peaks rise out of the noise as words are said.",
+     "picture": "The sound starts: peaks rise out of the noise as it plays.",
      "copy": {
       "words": [
        2,
        3
       ],
-      "what": "what is said"
+      "what": "what the product hears"
      },
      "signature": false
     },
     {
      "beat": "clean",
      "share": 0.26,
-     "picture": "The clean pass: the ground goes flat under every word.",
+     "picture": "The clean pass: the ground goes flat under the sound.",
      "copy": {
       "words": [
        2,
        4
       ],
-      "what": "what is said next"
+      "what": "what it clears"
      },
      "signature": true
     },
@@ -6706,7 +6706,7 @@
     {
      "beat": "lockup",
      "share": 0.22,
-     "picture": "The voice says the name; its peak settles into the name on the floor.",
+     "picture": "The sound's last peak settles into the name on the floor.",
      "copy": {
       "words": [
        1,
@@ -6721,7 +6721,7 @@
     "an invented waveform: use the real clip",
     "equaliser bars bouncing to music",
     "a ridgeline poster look: the camera rides, the landscape plays",
-    "copy that is not what the voice says",
+    "copy that does not name what the product does to the sound",
     "analysing audio per frame in the render"
    ],
    "requires": [],
@@ -8389,7 +8389,7 @@
      40
     ],
     "needs_also": [],
-    "keywords_required": false
+    "keywords_required": true
    },
    "music": {
     "mode": "either",
@@ -9595,6 +9595,717 @@
     "end": {
      "share": 0.16,
      "picture": "The last object turns and its shadow is the mark; the name and the version print on the wall beside it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   }
+  },
+  {
+   "id": "statement",
+   "name": "The statement",
+   "intensity": 4,
+   "idea": "The words are the picture: one line at full size on a clean field, built word by word on the beat, and the product answers it full frame.",
+   "story": {
+    "shape": "call-response",
+    "line": "The line calls (the problem in a few words); the product answers full frame; the line calls again, shorter; the answer is the result; the last word left on the field is the name."
+   },
+   "world": {
+    "space": "flat",
+    "set": "A clean flat field fills the frame: no texture, no plate, no footage behind a read. The copy is set frontal and centred at 9-12 % of the frame height, one line at a time, and the product appears full frame on the same field between lines, its real interface at reading size.",
+    "planes": "2: the field and the type, or the field and the full-frame product (its window on a soft 30 % ink shadow plate)",
+    "light_kind": "exposure",
+    "light": "A frame-wide exposure event: on the payoff word the whole field flips in one frame from the ground to the accent field and the type turns near-white, then holds; every other shot keeps the plain ground.",
+    "light_build": "exposure-plate method: one full-frame plate in the accent, opacity stepped 0 to 1 on the beat frame (a declared colour seam); the type's colour swaps on the same frame.",
+    "method": [
+     "exposure-plate"
+    ],
+    "texture": "clean: one flat colour, no grain plate and no texture"
+   },
+   "palettes": [
+    {
+     "id": "white-statement",
+     "recipe": "whiteWorld",
+     "accent": [
+      "blue",
+      "red"
+     ],
+     "proportions": {
+      "ground": 70,
+      "ink": 22,
+      "accent": 8
+     },
+     "notes": "near-black type on a white field; the accent is the payoff field and the one word that changed"
+    },
+    {
+     "id": "ink-statement",
+     "recipe": "inkStage",
+     "accent": [
+      "green",
+      "blue"
+     ],
+     "proportions": {
+      "ground": 68,
+      "ink": 24,
+      "accent": 8
+     },
+     "notes": "near-white type on a dark stage; the payoff floods the field in the accent"
+    },
+    {
+     "id": "slate-statement",
+     "recipe": "slateMid",
+     "accent": [
+      "yellow",
+      "teal"
+     ],
+     "proportions": {
+      "ground": 70,
+      "ink": 22,
+      "accent": 8
+     },
+     "notes": "a mid slate field with near-white type; the accent field arrives on the payoff"
+    }
+   ],
+   "type_options": [
+    {
+     "id": "grotesk-display",
+     "sans": "a neutral grotesk at a bold weight",
+     "weights": [
+      600,
+      760
+     ],
+     "case": "sentence case",
+     "notes": "tight tracking (-0.02 em) at display size; the line at 9-12 % of the frame height, one line at a time"
+    },
+    {
+     "id": "geometric-display",
+     "sans": "a geometric sans",
+     "weights": [
+      560,
+      720
+     ],
+     "case": "lowercase",
+     "notes": "round open counters, so a word read on a 240 px strip still reads"
+    }
+   ],
+   "camera": {
+    "class": "type-lock",
+    "motion": "locked",
+    "animator": "The type and the product move; the camera locks for every read and pushes only into the product.",
+    "in_shot": "Locked for each read (0.5-1 s still while the next word builds); a 4-6 % push into the full-frame product over its beat.",
+    "between": "Hard cuts on the beat between a line and the product; the line re-centres as each word lands."
+   },
+   "cuts": {
+    "kind": "on-sound",
+    "grammar": "Hard cuts on beats between the line and the product; each word lands on a beat; one colour seam on the payoff.",
+    "carried_min": 0.4,
+    "seams": [
+     "hard",
+     "colour",
+     "breath",
+     "velocity"
+    ],
+    "on_sound": "Every word lands on a beat; the cut to the product lands on a downbeat; the field flips on the track's biggest hit."
+   },
+   "type": {
+    "modes": [
+     "build",
+     "replace"
+    ],
+    "recentre": "jump",
+    "cadence": "accelerate",
+    "roles": [
+     "line",
+     "display",
+     "hero"
+    ],
+    "scale_contrast": "The line at 9-12 % of the frame height (100-130 px), the largest thing in its shots; the product full frame between lines; one hero word at 22 % on the payoff.",
+    "behaviour": "One line at a time, frontal and centred, built word by word on the beat (each word whole on its first frame, never letter by letter); the line re-centres with most of the move on frame one; nothing moves during a read but the next word arriving."
+   },
+   "transitions": [
+    "swapAt",
+    "scaleBreath",
+    "intoCut",
+    "accentFade"
+   ],
+   "signature": {
+    "name": "The built line",
+    "family": "word-build",
+    "shot": "On four consecutive beats one word each cuts on at full size, centred and frontal on the flat field (the line at 11 % of the frame height, each word whole on its first frame); the line re-centres 70 % of its shift on frame one; on the fourth beat the field flips to the accent in 1 f and the type to near-white, and the line holds still for 0.8 s.",
+    "build": "Words in one flex row (mode build, recentre jump) on a plain div field; the field flip is one full-frame plate whose opacity steps 0 to 1 on the beat frame (accentFade over 1 f); no transform on the field.",
+    "cost": "light",
+    "elements": 12,
+    "primitives": [
+     "Words",
+     "accentFade"
+    ],
+    "techniques": [
+     "ty-recentre-line-build",
+     "dv-ground-flip-on-beat"
+    ]
+   },
+   "signature_alt": {
+    "name": "The step stack",
+    "shot": "Three lines stack downward, each cut on a beat at a smaller size (14 %, 10 % and 7 % of the frame height), left-aligned on the field, then the stack clears in one frame.",
+    "build": "Three Words rows in a column, each cut on whole; the clear is one hard cut to the empty field.",
+    "primitives": [
+     "Words"
+    ],
+    "techniques": [
+     "dv-left-stack-build"
+    ]
+   },
+   "lockup": {
+    "kind": "hard-stop",
+    "shot": "The last line's words leave on one frame except the last, which is the name; the mark cuts on beside it on the next beat, the unit frontal and centred on the clean field at 45 % of the frame width, held 1 s.",
+    "build": "Lockup placed by lockupLayout (mark and name as one centred unit) on the plain field; the other words removed on one frame; Words for the name.",
+    "primitives": [
+     "Lockup",
+     "Words"
+    ],
+    "techniques": [
+     "lc-mark-as-inline-word"
+    ]
+   },
+   "idea_sentences": [
+    "In this film, [the one sentence the product makes true] becomes a line that builds word by word and is answered full frame.",
+    "In this film, [the product's promise in four words] becomes the picture itself.",
+    "In this film, [the problem the product removes] becomes the words, and the product's own screen becomes the answer."
+   ],
+   "fit": {
+    "formats": [
+     "launch",
+     "feature",
+     "sting",
+     "vertical",
+     "update"
+    ],
+    "paces": [
+     "calm",
+     "crisp"
+    ],
+    "ui": "optional",
+    "footage": "none",
+    "seconds": [
+     8,
+     40
+    ],
+    "needs_also": [],
+    "keywords_required": false
+   },
+   "music": {
+    "mode": "track",
+    "bpm": [
+     96,
+     128
+    ],
+    "feel": "a clear pulse with accents a word can land on; one big hit for the field flip",
+    "ending": "stop"
+   },
+   "primitives": [
+    "Words",
+    "swapAt",
+    "scaleBreath",
+    "intoCut",
+    "accentFade",
+    "Lockup",
+    "creep",
+    "Card",
+    "press"
+   ],
+   "techniques": [
+    "ty-recentre-line-build",
+    "dv-ground-flip-on-beat",
+    "dv-left-stack-build",
+    "lc-mark-as-inline-word",
+    "dv-accelerating-cadence",
+    "dv-background-veil",
+    "dv-recentre-jump",
+    "pd-hard-swap-on-cause"
+   ],
+   "avoid_techniques": [
+    "dv-kinetic-stack-directions",
+    "dv-fly-past-lens-word"
+   ],
+   "keywords": [
+    "manifesto",
+    "statement",
+    "announcement",
+    "promise",
+    "message",
+    "minimal",
+    "clarity",
+    "writing",
+    "copy",
+    "words",
+    "simple"
+   ],
+   "skeleton": [
+    {
+     "beat": "hook",
+     "share": 0.1,
+     "picture": "Frame 0: the first word already on the field at 11 % of the frame height, the next word cutting on with the first beat.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the problem, word by word"
+     },
+     "signature": false
+    },
+    {
+     "beat": "call",
+     "share": 0.24,
+     "picture": "The line builds word by word on the beat, frontal and centred, re-centring as each word lands; the camera is locked for the read.",
+     "copy": {
+      "words": [
+       2,
+       4
+      ],
+      "what": "the turn"
+     },
+     "signature": false
+    },
+    {
+     "beat": "answer",
+     "share": 0.18,
+     "picture": "A hard cut on the downbeat to the product full frame on the same field: its real state changes on the hit frame, two or three parts entering on their own beats.",
+     "copy": null,
+     "signature": false
+    },
+    {
+     "beat": "payoff",
+     "share": 0.3,
+     "picture": "The built line: the payoff line builds on four beats and the field flips to the accent on the last.",
+     "copy": {
+      "words": [
+       2,
+       4
+      ],
+      "what": "the result"
+     },
+     "signature": true
+    },
+    {
+     "beat": "lockup",
+     "share": 0.18,
+     "picture": "The line clears to its last word, the name; the mark cuts on beside it, centred on the clean field, held 1 s.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the name"
+     },
+     "signature": false
+    }
+   ],
+   "avoid": [
+    "type in perspective or skewed",
+    "relief, texture or footage behind a read",
+    "a lower-left caption",
+    "letter-by-letter reveals on the line",
+    "more than one line on screen at a time"
+   ],
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     18
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version number cut on at 22 % of the frame height, centred on the clean field, the product's name arriving beside it on the first beat.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.22,
+     "picture": "Each change is one or two words at hero size on the field, cut on the beat, then a hard cut to the product full frame making that change on the hit frame.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the change's last word leaves on one frame and the product cuts on the next beat; the next change's first word cuts in over the product's last frame"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The built line: the payoff builds on four beats and the field flips to the accent on the last, the type in near-white.",
+     "copy": {
+      "words": [
+       2,
+       3
+      ],
+      "what": "what the update adds up to"
+     },
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The version and the mark cut on as one centred unit on the clean field, the name beside them, held 1 s.",
+     "copy": null
+    }
+   }
+  },
+  {
+   "id": "slot-line",
+   "name": "The slot line",
+   "intensity": 4,
+   "idea": "One fixed phrase stays centred on a clean field while its last word rolls on the beat, and every new word opens the product full frame doing exactly that.",
+   "story": {
+    "shape": "one-to-many",
+    "line": "One phrase, many endings: each rolled word is one thing the product does, shown full frame; the last word the slot lands on is the name."
+   },
+   "world": {
+    "space": "flat",
+    "set": "A clean flat field; one phrase set frontal at 9 % of the frame height with a word slot at its end (a window the width of the longest word, a 1 px hairline under it). Between rolls the product fills the frame on the same field and the phrase rides over it on a 40 % veil of the ground.",
+    "planes": "2-3: the field, the phrase with its slot, the full-frame product under its veil",
+    "light_kind": "pool",
+    "light": "A soft one-hue pool (the accent at 12 % over the field, 60 % of the frame wide) slides under the slot each time it rolls, so the newest word sits in the brightest part of the frame.",
+    "light_build": "plate-light method: one dithered pool plate in the accent hue whose x follows the slot's centre (translateX on a closed form of the roll time).",
+    "method": [
+     "plate-light"
+    ],
+    "texture": "clean"
+   },
+   "palettes": [
+    {
+     "id": "paper-slot",
+     "recipe": "paperEditorial",
+     "accent": [
+      "blue",
+      "green"
+     ],
+     "proportions": {
+      "ground": 66,
+      "ink": 24,
+      "accent": 10
+     },
+     "notes": "ink phrase on a neutral paper; the slot word and the pool in the accent"
+    },
+    {
+     "id": "stone-slot",
+     "recipe": "stoneMid",
+     "accent": [
+      "red",
+      "teal"
+     ],
+     "proportions": {
+      "ground": 68,
+      "ink": 22,
+      "accent": 10
+     },
+     "notes": "a mid stone field, the phrase in near-white, the slot word in the accent"
+    },
+    {
+     "id": "ink-slot",
+     "recipe": "inkStage",
+     "accent": [
+      "yellow",
+      "green"
+     ],
+     "proportions": {
+      "ground": 66,
+      "ink": 24,
+      "accent": 10
+     },
+     "notes": "near-white phrase on a dark stage; the slot word lifts to the accent"
+    }
+   ],
+   "type_options": [
+    {
+     "id": "neo-grotesk-slot",
+     "sans": "a neutral neo-grotesk with tabular figures",
+     "weights": [
+      500,
+      700
+     ],
+     "case": "sentence case",
+     "notes": "the slot word one weight step above the phrase; tight tracking"
+    },
+    {
+     "id": "humanist-slot",
+     "sans": "a humanist sans",
+     "weights": [
+      480,
+      680
+     ],
+     "case": "lowercase",
+     "notes": "open shapes that read on a 240 px strip"
+    }
+   ],
+   "camera": {
+    "class": "slot-hold",
+    "motion": "focus",
+    "animator": "The slot rolls and the product runs; the camera holds still and racks focus between the phrase and the product.",
+    "in_shot": "Locked; a rack (defocusMix 0 to 8 px over 14 f) moves the read from the phrase to the product and back; a 3 % push over each product beat.",
+    "between": "Carried: the roll's speed carries into the product's first move (launch into the roll, carry out of it)."
+   },
+   "cuts": {
+    "kind": "carried",
+    "grammar": "The roll is the seam: each word rolls up out of the slot at speed and the product's first move carries that speed; one hard cut on the payoff.",
+    "carried_min": 0.6,
+    "seams": [
+     "velocity",
+     "defocus",
+     "hard",
+     "stepped"
+    ],
+    "on_sound": "Each roll lands on a beat; the product's state change lands on the next one."
+   },
+   "type": {
+    "modes": [
+     "replace"
+    ],
+    "recentre": "slot",
+    "cadence": "even",
+    "roles": [
+     "line",
+     "display",
+     "ui"
+    ],
+    "scale_contrast": "The phrase at 9 % of the frame height over a full-frame product: the type and the product each own the frame in turn.",
+    "behaviour": "The phrase never moves; only the slot word rolls (a masked vertical roll of 10-14 f, whole words, never letters), and the phrase holds still for each read."
+   },
+   "transitions": [
+    "Roll",
+    "carriedCut",
+    "defocusMix",
+    "swapAt"
+   ],
+   "signature": {
+    "name": "The slot roll",
+    "family": "slot-roll",
+    "shot": "The slot word rolls up out of its window in 12 f (a masked roll on snapOut, the new word whole on its first frame at 9 % of the frame height) on the beat; as it lands, the product behind the phrase cuts to the state that word names, its first move carrying the roll's 40 px/f; four rolls over 4 bars, each 0.5 s sooner than the last.",
+    "build": "Roll (a masked vertical roll inside a clip-path window the slot's width) for the word; the product layer swaps with swapAt on the landing frame and moves with carriedCut; the phrase is one Words row that never moves.",
+    "cost": "light",
+    "elements": 30,
+    "primitives": [
+     "Roll",
+     "swapAt",
+     "carriedCut"
+    ],
+    "techniques": [
+     "ty-slot-roller-fixed-phrase",
+     "pd-hard-swap-on-cause"
+    ]
+   },
+   "signature_alt": {
+    "name": "The ghost reel",
+    "shot": "The slot shows the neighbouring words as dim ghosts above and below at 30 % ink, so each roll reads as a reel that stops on the chosen word.",
+    "build": "The Roll's clip-path window opened to three lines, the outer two at 30 % opacity.",
+    "primitives": [
+     "Roll"
+    ],
+    "techniques": [
+     "dv-ghost-reel"
+    ]
+   },
+   "lockup": {
+    "kind": "typed",
+    "shot": "The slot rolls one last time, to the name; the phrase leaves on one frame, the name re-centres with the mark beside it, the unit centred on the clean field at 40 % of the frame width, held 1 s.",
+    "build": "Roll (its clip-path window) for the last word; Lockup placed by lockupLayout for the centred unit with Words for the name; the phrase removed on one frame.",
+    "primitives": [
+     "Roll",
+     "Lockup"
+    ],
+    "techniques": [
+     "dv-slot-word-swap"
+    ]
+   },
+   "idea_sentences": [
+    "In this film, [the one phrase people use about the product] becomes a line whose last word keeps changing.",
+    "In this film, [each thing the product does] becomes a word that rolls into the slot and opens the product full frame.",
+    "In this film, [the product's name] becomes the last word the slot lands on."
+   ],
+   "fit": {
+    "formats": [
+     "launch",
+     "feature",
+     "loop",
+     "vertical",
+     "update"
+    ],
+    "paces": [
+     "calm",
+     "crisp"
+    ],
+    "ui": "optional",
+    "footage": "none",
+    "seconds": [
+     8,
+     35
+    ],
+    "needs_also": [],
+    "keywords_required": false
+   },
+   "music": {
+    "mode": "track",
+    "bpm": [
+     100,
+     130
+    ],
+    "feel": "an even pulse with a clear backbeat; each roll on a beat, a build that tightens",
+    "ending": "button"
+   },
+   "primitives": [
+    "Roll",
+    "swapAt",
+    "carriedCut",
+    "defocusMix",
+    "Lockup",
+    "Words",
+    "launch",
+    "carry",
+    "Card",
+    "press",
+    "creep"
+   ],
+   "techniques": [
+    "ty-slot-roller-fixed-phrase",
+    "pd-hard-swap-on-cause",
+    "dv-ghost-reel",
+    "dv-slot-word-swap",
+    "ui-card-arrival-demotion",
+    "dv-live-thumbnails",
+    "tr-velocity-handoff-cut",
+    "dv-background-veil"
+   ],
+   "avoid_techniques": [
+    "dv-slot-pop-on-twos",
+    "dv-kinetic-stack-directions"
+   ],
+   "keywords": [
+    "features",
+    "workflow",
+    "tasks",
+    "automate",
+    "everything",
+    "toolkit",
+    "platform",
+    "suite",
+    "integrations",
+    "all-in-one"
+   ],
+   "skeleton": [
+    {
+     "beat": "hook",
+     "share": 0.12,
+     "picture": "Frame 0: the phrase already centred on the field, its slot word rolling up on the first beat.",
+     "copy": {
+      "words": [
+       2,
+       4
+      ],
+      "what": "the phrase and its first ending"
+     },
+     "signature": false
+    },
+    {
+     "beat": "rolls",
+     "share": 0.2,
+     "picture": "Two rolls on downbeats; each landing cuts the product full frame to the state the word names, under the phrase on its veil.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "two more endings"
+     },
+     "signature": false
+    },
+    {
+     "beat": "product",
+     "share": 0.3,
+     "picture": "The product full frame without the phrase: its real state change on the hit frame, three parts entering on their own beats, the camera locked for the read.",
+     "copy": null,
+     "signature": false
+    },
+    {
+     "beat": "run",
+     "share": 0.22,
+     "picture": "The slot roll: four rolls over four bars, each sooner than the last, each opening its product state.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the endings, faster"
+     },
+     "signature": true
+    },
+    {
+     "beat": "lockup",
+     "share": 0.16,
+     "picture": "The slot lands on the name; the phrase leaves on one frame and the mark sets beside the name, centred, held 1 s.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the name"
+     },
+     "signature": false
+    }
+   ],
+   "avoid": [
+    "the phrase moving while it is read",
+    "letters rolling one by one",
+    "a lower-left caption",
+    "texture or footage behind the phrase",
+    "a slot word wider than the slot's window"
+   ],
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     18
+    ],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the phrase centred on the clean field, the version number rolling into its slot on the first beat.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.22,
+     "picture": "Each change rolls into the slot as one word and the product cuts full frame to that change on the landing frame, running.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the next word starts its roll on the beat the product's change completes, carrying the product's last move"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The slot roll: the changes roll back through the slot in one accelerating run and the whole updated product holds full frame.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The slot lands on the name with the version beside it, the mark set to its left, centred on the field, held 1 s.",
      "copy": {
       "words": [
        1,
