@@ -1033,6 +1033,10 @@ def cmd_cast(a, score_python):
         if r['was'] != r['sound']:
             print(f"  role {name}: {r['was']} -> {r['sound']}")
     print(f"  signature: {', '.join(rep['signature'])}")
+    for act, words in sorted((rep.get('weak') or {}).items()):
+        print(f'  note: the bank sounds {act} weakly (no member wins earshot\'s forced choice against cheap-synth '
+              f'alternatives): a real effect: node scripts/music.mjs search --kind sfx --mood "{words}", then get \'#n\' '
+              f'--kind sfx --to audio/sfx and python3 scripts/audio/kit.py real audio/sfx/<file> --action {act}')
     if a.dry_run:
         print('kit cast: --dry-run: audio/kit.json and the history unchanged')
         return 0

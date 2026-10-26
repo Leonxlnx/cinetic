@@ -115,6 +115,10 @@ def cast_rules(home):
     check(new['roles']['tick']['sound'] == acts['detent']['sound'] and new['roles']['tick.letter']['sound'] == acts['letter']['sound'],
           'two actions on ticks: detent on tick (first and as many), letter on tick.letter')
     check(acts['lock']['sound'] == 'knock/plastic', f"a variant naming a member is preferred ({acts['lock']['sound']})")
+    check(rep['weak'] == {'swipe': 'swoosh'}, f"a weak action names the real-effect search ({rep['weak']})")
+    lead = {a: AC.ACTIONS[a]['sounds'][0] for a in ('detent', 'type', 'whip', 'toggle')}
+    check(all(acts[a]['sound'] in AC.ACTIONS[a]['sounds'][:3] for a in ('detent', 'type') if a in acts),
+          f'a first film takes from the head of each list ({lead})')
     check(new['roles']['whoosh.short']['sound'] in AC.ACTIONS['swipe']['sounds'] and 'pitches' not in new['roles']['tock'],
           'a swap whoosh plays a swipe; an untuned role has no pitches')
     check(new['roles']['text'].get('pitches') and new['roles']['text']['sound'] in AC.ACTIONS['text']['sounds'],

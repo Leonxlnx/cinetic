@@ -4,7 +4,9 @@ actions.py: what each effect of a film is for, and the earshot bank sounds that 
 
 A kind (pop, tock, whoosh ...) says how loud and where an effect sits; the action says what the picture does:
 a card landing, a toggle, typing, a swipe, a logo lock, a transition through a shape. Every action has its own
-short list of bank sounds in order of fit, so a film never plays one generic whoosh or pop for everything, and
+short list of bank sounds in order of fit (earshot's ears first: the members that win its forced choice of the
+action's own description against cheap-synth alternatives lead, the rest follow by how close they came), so a film
+never plays one generic whoosh or pop for everything, and
 `kit.py cast` gives each action of the film one sound (the same action always the same sound, alternating its
 takes), different actions different sounds, and avoids the previous film's signature sounds (the history in
 ~/.cinetic/sound-history.json, or $CINETIC_HOME).
@@ -17,6 +19,10 @@ An event's action, first that applies:
   4. its kind's default (tick detent, tock lock, pop appear, land land, hit reveal, drop thud, snap shutter,
      whoosh whip when short and pass when long, key type, click press, text text, bell chime, swell swell,
      riser build).
+
+Where the bank is weak (no member wins that forced choice: swipe, slide, build, press), kit.py cast says so and
+names the real-effect route: a free no-credit sound effect found with music.mjs search --kind sfx, recorded with
+its licence and made the action's takes with kit.py real.
 
 Restraint (plan.py): when the effects in any 10 s pass the film's restraint number, whole actions go quiet,
 the lightest first (letters and detents, then pops, cuts, touches ...): the music carries them. The
@@ -50,13 +56,14 @@ def A(kinds, words, sounds, query, rank):
 # of word hits the earlier action wins.
 ACTIONS = {
     'logo-lock': A(('hit', 'drop', 'land', 'pop', 'snap', 'bell'), ('logo', 'lockup', 'wordmark'),
-                   ['cut_hit/sub', 'pro_impact/short', 'notify/mid_wood', 'cut_hit/punch', 'pluck/kalimba_ring',
-                    'pro_sub_drop/quick'], 'one clean low hit under a logo', None),
+                   ['pluck/kalimba_ring', 'pro_sub_drop/quick', 'notify/mid_wood', 'pro_impact/short', 'cut_hit/punch',
+                    'cut_hit/sub'], 'one clean low hit under a logo', None),
     'error': A(('hit', 'snap', 'click', 'pop', 'tock'), ('error', 'fail', 'failed', 'failure', 'warning', 'denied',
                                                           'invalid', 'glitch'),
-               ['glitch/mid', 'knock/double', 'glitch/hit', 'glitch/chirp'], 'a short error buzz', None),
+               ['glitch/mid', 'glitch/chirp', 'glitch/hit', 'knock/double'], 'a short error buzz', None),
     'letter': A(('tick', 'tock', 'pop'), ('letter', 'glyph', 'char', 'character', 'initial'),
-                ['pro_click/soft', 'pro_tap/glass', 'hover_tick/mid', 'pro_click/tink', 'tap/glass', 'pro_click/mouse'],
+                ['pro_tap/glass', 'tap/glass', 'hover_tick/mid', 'pro_click/soft', 'pro_click/mouse',
+                 'pro_click/tink'],
                 'a tiny soft tap, a letter settling', 0),
     'detent': A(('tick', 'tock'), ('ratchet', 'detent', 'notch', 'dial', 'count', 'counter', 'digit', 'step', 'row',
                                    'scroll', 'clock', 'odometer', 'reel'),
@@ -64,67 +71,70 @@ ACTIONS = {
                  'hover_tick/air', 'pro_hover_tick/ping'], 'a small mechanical tick, a detent clicking over', 1),
     'appear': A(('pop',), ('appear', 'part', 'piece', 'chip', 'badge', 'icon', 'item', 'dot', 'bubble', 'pill', 'tag',
                            'label', 'avatar', 'emoji', 'spawn'),
-                ['ui_pop/soft', 'ui_pop/step', 'ui_pop/boop', 'fit/pop/mouth_plop', 'ui_pop/fall', 'fit/pop/lip_pop',
-                 'drip/tiny', 'ui_pop/wide'], 'a soft rounded pop, something appearing', 2),
+                ['fit/pop/mouth_plop', 'fit/pop/lip_pop', 'drip/tiny', 'ui_pop/boop', 'ui_pop/step', 'ui_pop/wide',
+                 'ui_pop/soft', 'ui_pop/fall'], 'a soft rounded pop, something appearing', 2),
     'jump-cut': A(('tock', 'snap'), ('jump', 'cut', 'splice'),
                   ['shutter/quick', 'knock/snap', 'toggle/micro', 'fit/snap/switch_flip', 'pro_click/mouse', 'knock/plastic'],
                   'a dry quick click on a cut', 3),
     'touch': A(('land', 'click', 'tock'), ('tap', 'touch', 'finger', 'thumb'),
-               ['pro_tap/finger', 'tap/finger', 'pro_tap/soft', 'fit/land.light/finger_phone', 'tap/soft', 'pro_tap/glass'],
+               ['fit/land.light/finger_phone', 'tap/soft', 'tap/finger', 'pro_tap/glass', 'pro_tap/finger',
+                'pro_tap/soft'],
                'a light finger tap on a screen', 4),
     'lock': A(('tock', 'snap'), ('lock', 'latch', 'seat', 'slot', 'seal', 'settle', 'align', 'engage', 'clamp', 'dock'),
-              ['knock/wood', 'knock/plastic', 'knock/snap', 'knock/desk', 'fit/hit/bamboo_tok', 'knock/double',
-               'pro_tap/knock'], 'a short wooden or plastic knock, a part locking into place', 5),
+              ['knock/wood', 'knock/snap', 'fit/hit/bamboo_tok', 'pro_tap/knock', 'knock/plastic', 'knock/double',
+               'knock/desk'], 'a short wooden or plastic knock, a part locking into place', 5),
     'press': A(('click',), ('click', 'press', 'button', 'cursor', 'select', 'submit'),
-               ['click/soft', 'click/double', 'pro_click/mouse', 'fit/click/floss_lid', 'click/thock', 'tap/glass'],
+               ['fit/click/floss_lid', 'pro_click/mouse', 'tap/glass', 'click/double', 'click/soft', 'click/thock'],
                'a soft mouse or button click', 5),
     'toggle': A(('snap', 'click', 'tock'), ('toggle', 'switch', 'checkbox', 'radio', 'enable', 'disable'),
                 ['toggle/on', 'toggle/latch', 'toggle/rocker', 'toggle/micro', 'fit/snap/switch_flip'],
                 'a small switch being flipped', 6),
     'shutter': A(('snap',), ('shutter', 'snap', 'zoom', 'capture', 'photo', 'camera', 'flash', 'frame'),
-                 ['shutter/snap', 'shutter/dslr', 'shutter/quick', 'shutter/film', 'shutter/mirror'], 'a camera shutter', 7),
+                 ['shutter/snap', 'shutter/mirror', 'shutter/dslr', 'shutter/quick', 'shutter/film'], 'a camera shutter', 7),
     'slide': A(('whoosh',), ('slide', 'text', 'line', 'caption', 'nudge', 'drift', 'glide'),
-               ['swish/blade', 'swish/stick', 'swish/soft', 'swish/zing', 'swish/cane', 'swish/bright'],
+               ['swish/stick', 'swish/soft', 'swish/cane', 'swish/blade', 'swish/bright', 'swish/zing'],
                'a thin quick swish, something sliding', 8),
     'type': A(('key',), ('type', 'typing', 'key', 'keystroke'),
               ['typing_key/clicky', 'typing_key/crisp', 'typing_key/laptop', 'typing_key/light', 'fit/key/lubed',
                'fit/key/medium', 'fit/key/thock', 'typing_key/thock', 'typing_key/deep'], 'a mechanical keyboard key press', 9),
     'swipe': A(('whoosh',), ('swipe', 'swap', 'deal', 'carousel', 'flip', 'turn', 'page', 'card', 'sheet'),
-               ['swipe/flick', 'swipe/paper', 'swipe/cloth', 'swipe/glide', 'fit/whoosh.short/bamboo_swish', 'swish/soft'],
+               ['fit/whoosh.short/bamboo_swish', 'swipe/cloth', 'swipe/flick', 'swipe/paper', 'swipe/glide',
+                'swish/soft'],
                'a card or a page swiped across a surface', 10),
     'whip': A(('whoosh',), ('whip', 'pan', 'fly', 'flight', 'dash', 'rush', 'zip'),
               ['whoosh_fast/tight', 'whoosh_fast/crisp', 'whoosh_fast/heavy', 'whoosh_fast/sleeve', 'whoosh_fast/whistle',
                'swish/flick', 'whoosh_fast/whip'], 'a fast air whoosh, a whip pan', 10),
     'card-land': A(('land', 'pop', 'tock'), ('card', 'panel', 'tile', 'sheet', 'modal', 'page', 'photo', 'plate', 'deck',
                                              'stack'),
-                   ['pro_pop_in/knock', 'tap/table', 'knock/desk', 'pro_pop_in/airy', 'fit/land.light/finger_wood',
-                    'pro_tap/double'], 'a card or a sheet landing on a table', 11),
+                   ['pro_pop_in/knock', 'tap/table', 'pro_pop_in/airy', 'fit/land.light/finger_wood', 'pro_tap/double',
+                    'knock/desk'], 'a card or a sheet landing on a table', 11),
     'land': A(('land',), ('land', 'drop', 'thump'),
-              ['pro_pop_in/round', 'pro_pop_in/knock', 'pro_pop_in/double', 'pro_pop_in/airy', 'pro_pop_in/deep', 'tap/table'],
+              ['pro_pop_in/round', 'pro_pop_in/airy', 'pro_pop_in/deep', 'pro_pop_in/double', 'tap/table',
+               'pro_pop_in/knock'],
               'a soft low thump, something landing', 12),
     'success': A(('bell', 'click'), ('success', 'done', 'check', 'confirm', 'sent', 'saved', 'complete', 'notify', 'toast'),
                  ['notify/mid_tine', 'notify/mid_wood', 'pro_notify/ding_2045', 'mallet/marimba', 'pro_notify/ding_1822'],
                  'a soft rounded ding, a success', 13),
     'chime': A(('bell',), ('chime', 'bell', 'ring'),
                ['mallet/glock', 'mallet/celesta', 'mallet/marimba', 'pluck/kalimba'], 'a struck bell note', 14),
-    'text': A(('text',), (), ['mallet/pluck', 'mallet/marimba', 'pluck/kalimba_soft', 'mallet/celesta', 'mallet/glock'],
+    'text': A(('text',), (), ['pluck/kalimba_soft', 'mallet/glock', 'mallet/celesta', 'mallet/marimba', 'mallet/pluck'],
               'a soft plucked or tapped note', 15),
     'reveal': A(('hit',), ('reveal', 'slam', 'title', 'impact', 'hero', 'payoff'),
-                ['cut_hit/punch', 'cut_hit/air', 'pro_impact/short', 'cut_hit/sub', 'pro_impact/air'],
+                ['pro_impact/air', 'cut_hit/punch', 'pro_impact/short', 'cut_hit/air', 'cut_hit/sub'],
                 'a single clean low impact', None),
     'thud': A(('drop',), ('thud', 'drop', 'sub', 'weight'),
-              ['cut_hit/kick', 'cut_hit/sub', 'pro_sub_drop/quick', 'sub_drop/punch', 'pro_impact/short'],
+              ['pro_sub_drop/quick', 'sub_drop/punch', 'pro_impact/short', 'cut_hit/sub', 'cut_hit/kick'],
               'a deep short sub thud', None),
     'pass': A(('whoosh',), ('pass', 'scene', 'transition', 'push', 'pull', 'dolly', 'ride', 'sweep'),
-              ['whoosh_big/thump', 'whoosh_big/thump_airy', 'whoosh_big/cape', 'whoosh_big/swell', 'whoosh_big/gust',
-               'whoosh_big/thump_deep', 'pro_whoosh_big/windy'], 'a big low whoosh, a scene passing', None),
+              ['whoosh_big/thump', 'whoosh_big/cape', 'whoosh_big/swell', 'whoosh_big/thump_deep',
+               'whoosh_big/gust', 'pro_whoosh_big/windy', 'whoosh_big/thump_airy'], 'a big low whoosh, a scene passing', None),
     'shape': A(('whoosh', 'swell'), ('morph', 'shape', 'mask', 'iris', 'wipe', 'through', 'portal', 'ring', 'circle',
                                      'blob', 'liquid'),
-               ['reverse_swell/breath', 'swipe/velvet', 'whoosh_big/reverse', 'pro_zip/down_warm', 'reverse_swell/short',
-                'swish/soft'], 'a soft air transition through a shape', None),
-    'swell': A(('swell',), (), ['reverse_swell/dark', 'reverse_swell/breath', 'reverse_swell/short', 'reverse_swell/cymbal',
-                                'pro_whoosh_big/swell'], 'a reverse swell', None),
-    'build': A(('riser',), (), ['riser/dark', 'riser/snatch', 'pro_riser/roll', 'riser/build', 'pro_riser/air_gate'],
+               ['swipe/velvet', 'swish/soft', 'reverse_swell/short', 'whoosh_big/reverse', 'reverse_swell/breath',
+                'pro_zip/down_warm'], 'a soft air transition through a shape', None),
+    'swell': A(('swell',), (), ['reverse_swell/cymbal', 'pro_whoosh_big/swell', 'reverse_swell/short', 'reverse_swell/dark',
+                                'reverse_swell/breath'], 'a reverse swell', None),
+    'build': A(('riser',), (), ['pro_riser/air_gate', 'pro_riser/roll', 'riser/snatch', 'riser/dark', 'riser/build'],
                'a short dark riser', None),
 }
 ALIASES = {'card': 'card-land', 'logo': 'logo-lock', 'lockup': 'logo-lock', 'tap': 'touch', 'click': 'press',
@@ -135,6 +145,9 @@ DEFAULT = {'tick': 'detent', 'tock': 'lock', 'pop': 'appear', 'land': 'land', 'h
            'riser': 'build'}
 WHOOSH_SHORT_S = 0.5    # kit.WHOOSH_SHORT_S: a short move whips, a long one passes
 SIGNATURE = ('reveal', 'logo-lock', 'thud', 'pass', 'shape', 'swell', 'build', 'text')
+# the actions no bank member sounds convincingly to earshot's ears, with the words to search a real effect by
+WEAK = {'swipe': 'swoosh', 'slide': 'swish', 'build': 'swell', 'press': 'mouse click'}
+VARIANT_BONUS = 8.0     # a variant naming a member of the action: the author's choice, unless the history forbids it
 UNCAST = ('key.space',)  # generic roles cast leaves alone (the one space bar recording)
 
 
@@ -314,7 +327,7 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
             if s in older:
                 c += 1.5
             if s.split('/')[-1] in variants.get(a, ()):
-                c -= 2.5
+                c -= VARIANT_BONUS
             return c + 1.6 * jitter(film, a, s), why
         scored = sorted(((cost(k, s), k, s) for k, s in enumerate(cands)), key=lambda x: (x[0][0], x[1]))
         (_, _), k, s = scored[0]
@@ -346,10 +359,11 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
         report['actions'][a] = dict(sound=c['sound'], events=count[a], roles=sorted(groups[a]), avoided=c['avoided'])
     top = max(count, key=lambda a: (count[a], -first_t[a])) if count else None
     report['signature'] = sorted({chosen[a]['sound'] for a in chosen if a in SIGNATURE or a == top})
+    report['weak'] = {a: WEAK[a] for a in chosen if a in WEAK and not str(chosen[a]['sound']).startswith('real:')}
     kit['cast'] = {'cast': 1, 'film': film, 'date': datetime.date.today().isoformat(),
-                   'previous': report['previous'], 'roles': cast_roles,
-                   'actions': {a: dict(sound=c['sound'], events=count[a]) for a, c in chosen.items()},
-                   'signature': report['signature'], 'real': (old.get('real') or {})}
+        'previous': report['previous'], 'roles': cast_roles,
+                           'actions': {a: dict(sound=c['sound'], events=count[a]) for a, c in chosen.items()},
+                                                       'signature': report['signature'], 'real': (old.get('real') or {})}
     return kit, report
 
 

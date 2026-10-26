@@ -68,21 +68,21 @@ What the kit route gives the film:
 | `bell` | `bell` | a glockenspiel note on the pentatonic, set wide, 7.5 dB, −20 ms | the kalimba on two octaves of the pentatonic |
 | `suck` | `suck` | off (the stop-down does its job) | off |
 
-**Every sound for its action.** A kind says where an effect sits and how loud; its action says what the picture does, and the action picks the sound. `scripts/audio/actions.py` holds the actions, each with its own bank members in order of fit and the words that name it:
+**Every sound for its action.** A kind says where an effect sits and how loud; its action says what the picture does, and the action picks the sound. `scripts/audio/actions.py` holds the actions, each with its own bank members in order of fit and the words that name it. earshot's ears ordered each list: the members that win its forced choice of the action's own description against cheap-synth alternatives (a laser zap, a video-game blip, an 8-bit sound, a rising synth whip) lead, the rest follow by how close they came. Where no member wins (swipe, slide, build, press: the bank is weak there), `kit.py cast` says so and names the real-effect route (item 3 above):
 
 | Action | Kinds | The sound (bank members, first in order of fit) |
 |---|---|---|
-| `card-land` | land, pop, tock | a card or a sheet landing on a table (`pro_pop_in/knock`, `tap/table`, `knock/desk`) |
-| `appear` | pop | a soft rounded pop, something appearing (`ui_pop/soft`, `ui_pop/step`, `ui_pop/boop`) |
+| `card-land` | land, pop, tock | a card or a sheet landing on a table (`pro_pop_in/knock`, `tap/table`, `pro_pop_in/airy`) |
+| `appear` | pop | a soft rounded pop, something appearing (`fit/pop/mouth_plop`, `fit/pop/lip_pop`, `drip/tiny`) |
 | `toggle` | snap, click, tock | a small switch flipped (`toggle/on`, `toggle/latch`, `toggle/rocker`) |
-| `press`, `touch` | click; land, click, tock | a soft button click (`click/soft`, `click/double`); a finger tap on a screen (`pro_tap/finger`, `tap/finger`) |
+| `press`, `touch` | click; land, click, tock | a soft button click (`fit/click/floss_lid`, `pro_click/mouse`; weak); a finger tap on a screen (`fit/land.light/finger_phone`, `tap/soft`) |
 | `type` | key | a mechanical key (`typing_key/clicky`, `typing_key/crisp`, `typing_key/laptop`, `fit/key/lubed`) |
-| `swipe`, `slide`, `whip` | whoosh | a card or a page swiped (`swipe/flick`, `swipe/paper`); a thin quick swish (`swish/blade`); a fast whip (`whoosh_fast/tight`) |
-| `pass`, `shape` | whoosh, swell | a big low whoosh, a scene passing (`whoosh_big/thump`, `whoosh_big/cape`); a soft air transition through a shape (`reverse_swell/breath`, `swipe/velvet`) |
-| `lock`, `jump-cut`, `detent`, `letter` | tock, snap, tick | a knock, a part locking in (`knock/wood`, `knock/plastic`); a dry click on a cut (`shutter/quick`); a detent (`pro_hover_tick/detent`); a tiny letter tap (`pro_click/soft`) |
-| `logo-lock` | hit, drop, land, pop, snap, bell at the lockup | one clean low hit under the logo (`cut_hit/sub`, `pro_impact/short`, `notify/mid_wood`) |
-| `reveal`, `thud` | hit; drop | a single clean impact (`cut_hit/punch`, `cut_hit/air`); a deep short sub (`cut_hit/kick`, `cut_hit/sub`) |
-| `shutter`, `success`, `chime`, `text`, `swell`, `build`, `error` | snap; bell, click; bell; text; swell; riser; hit, snap | a camera shutter; a rounded ding; a struck bell; a soft plucked note; a reverse swell; a short dark riser; a short buzz |
+| `swipe`, `slide`, `whip` | whoosh | a card or a page swiped (`fit/whoosh.short/bamboo_swish`, `swipe/cloth`; weak); a thin quick swish (`swish/stick`; weak); a fast whip (`whoosh_fast/tight`, `whoosh_fast/crisp`) |
+| `pass`, `shape` | whoosh, swell | a big low whoosh, a scene passing (`whoosh_big/thump`, `whoosh_big/cape`); a soft air transition through a shape (`swipe/velvet`, `swish/soft`) |
+| `lock`, `jump-cut`, `detent`, `letter` | tock, snap, tick | a knock, a part locking in (`knock/wood`, `knock/snap`); a dry click on a cut (`shutter/quick`); a detent (`pro_hover_tick/detent`); a tiny letter tap (`pro_tap/glass`) |
+| `logo-lock` | hit, drop, land, pop, snap, bell at the lockup | one clean element under the logo (`pluck/kalimba_ring`, `pro_sub_drop/quick`, `notify/mid_wood`) |
+| `reveal`, `thud` | hit; drop | a single clean impact (`pro_impact/air`, `cut_hit/punch`); a deep short sub (`pro_sub_drop/quick`, `sub_drop/punch`) |
+| `shutter`, `success`, `chime`, `text`, `swell`, `build`, `error` | snap; bell, click; bell; text; swell; riser; hit, snap | a camera shutter; a rounded ding; a struck bell; a soft plucked note; a reverse swell; a short riser (weak); a short buzz |
 
 - **The action of an event:** its own `action` field in `src/sync.ts` (a name above, or an alias: `card`, `logo`, `tap`, `switch` …), else a hit, drop, land, pop, snap or bell within 3 frames of the `lockup` cue is the logo lock, else the words of its id and variant (`c2:card-3-lands` is a card landing, `hook:ratchet-2` a detent), else its kind's default (tick detent, tock lock, pop appear, land land, hit reveal, drop thud, snap shutter, a short whoosh whips and a long one passes, key type, click press). `python3 scripts/audio/actions.py --cues out/cues.json` prints every event's action.
 - **The cast:** `python3 scripts/audio/kit.py cast` (after `npm run cues`, before `npm run kit`) gives each action of the film one bank sound: the same action always the same sound, different actions different sounds. The action a kind plays most re-voices that kind's role (its `bed_db`, `offset_ms` and `min_gap_ms` stay); any other action on the kind gets a role of its own, `<role>.<action>` (`land.card_land`). A variant that names a member (`variant: 'plastic'`) is preferred; near-equal members differ from film to film. A tonal role keeps its pitches on a pitched member and is tuned again. `kit.json` keeps a `cast` block (the roles' own specs, so casting again starts clean).
