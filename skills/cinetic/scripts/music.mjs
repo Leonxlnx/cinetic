@@ -74,7 +74,7 @@ export const LICENCES = {
     limits: 'inside a larger work only (a film, a video, a broadcast); never redistribute the file on its own, as stock or in a template; never register it with a rights service',
     seen: { quote: 'Items under the Mixkit Sound Effects Free License can be used in your commercial and non-commercial projects for free.',
       url: 'https://mixkit.co/license/modal/sfxFree/', date: '2026-10-26' },
-    notice: /free sound effects license|Sound Effects Free License/i,
+    notice: /data-license="sfxFree"|free sound effects license|Sound Effects Free License/i,
   },
 };
 /** Catalogs: what the finder reads, and the one it cannot (with the reason, as found on 2026-10-26). */
@@ -128,6 +128,8 @@ export const TEMPO_PRIORS = {
   'trailer-music': [80, 130], 'percussion-trailer': [90, 130], rock: [100, 140], 'nu-jazz': [90, 125], 'acid-jazz': [95, 120], 'jazz-funk': [95, 120],
 };
 const VOCAL = /\b(vocals?|voice|vocal|singing|singer|choir|rap|spoken|lyrics?)\b/i;
+/** Effects whose names promise decoration a film's UI sound never wants (the house bans laser zaps and game blips). */
+const DECOR = /\b(fire|laser|magic|magical|fairy|spell|spellcaster|ghost|cartoon|arcade|game|sci-?fi|horror|monster|zombie|explosion|gun|sword)\b/i;
 const SKIP = new Set(['the', 'a', 'an', 'of', 'in', 'on', 'at', 'and', 'or', 'for', 'with', 'from', 'to', 'by', 'music', 'track', 'song']);
 
 export const words = (q) => String(q || '').toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w && !SKIP.has(w));
@@ -365,7 +367,8 @@ function fftMag(re) {
 
 /**
  * A quick tempo from mono samples: spectral flux (512-point frames, hop 128), its autocorrelation over 60-200 BPM
- * weighted toward 120 (one octave either side), refined between lags. Good enough to shortlist; track.py measures.
+ * weighted toward 120 (one octave either side), refined between lags, folded into 80-170 BPM (film music's usual span:
+ * a half-time reading of a 124 BPM track reads 124). Good enough to shortlist; track.py measures.
  */
 export function quickTempo(pcm, sr) {
   const N = 512, H = 128; const frames = Math.floor((pcm.length - N) / H);
@@ -396,7 +399,10 @@ export function quickTempo(pcm, sr) {
   const y0 = ac(best.lag - 1), y1 = ac(best.lag), y2 = ac(best.lag + 1);
   const d = y0 - 2 * y1 + y2;
   const lag = best.lag + (d !== 0 ? (0.5 * (y0 - y2)) / d : 0);
-  return Math.round(((60 * fps) / lag) * 10) / 10;
+  let bpm = (60 * fps) / lag;
+  while (bpm < 80) bpm *= 2;
+  while (bpm > 170) bpm /= 2;
+  return Math.round(bpm * 10) / 10;
 }
 
 // ------------------------------------------------------------------------------------------------ ranking
@@ -410,7 +416,8 @@ export function scoreItem(it, want = {}) {
   const hits = [];
   for (const w of want.words || []) {
     const cands = [w, ...(SYNONYMS[w] || [])];
-    const strong = cands.find((c) => (it.tags?.genre || []).includes(c) || (it.tags?.mood || []).includes(c) || (it.tags?.category || []).includes(c));
+    const strong = cands.find((c) => (it.tags?.genre || []).includes(c) || (it.tags?.mood || []).includes(c) || (it.tags?.category || []).includes(c)
+      || (it.found || []).includes(c));
     const weak = cands.find((c) => tagset.has(c));
     if (strong) { s += 2; hits.push(strong); } else if (weak) { s += 1; hits.push(weak); }
   }
@@ -419,6 +426,12 @@ export function scoreItem(it, want = {}) {
     if ((it.tags?.genre || []).includes(pair)) { s += 2; hits.push(pair); }
   }
   if (hits.length) why.push(`matches ${[...new Set(hits)].join(', ')}`);
+  if (it.kind === 'sfx') {
+    if (DECOR.test([it.title, ...(it.tags?.category || [])].join(' '))) { s -= 2; why.push('decorated (fire, laser, magic, game ...): not a film UI sound'); }
+    if (it.seconds != null) {
+      if (it.seconds <= 1) { s += 0.5; why.push('short'); } else if (it.seconds > (want.maxS || 2)) { s -= 1; why.push(`${it.seconds} s: longer than an effect needs`); }
+    }
+  }
   const L = want.length;
   if (L && it.seconds != null && it.kind === 'music') {
     if (it.seconds < L + 4) return { score: -Infinity, why: [`${it.seconds} s: shorter than the film plus its ending`] };
@@ -593,7 +606,11 @@ export async function search(args, { env = process.env, log = console.log } = {}
     let html = null;
     try { html = await http(p.url); } catch (e) { notes.push(`${p.url}: ${e.message}`); continue; }
     if (!html) { notes.push(`${p.url}: no such page`); continue; }
-    for (const it of parseMixkit(html, p.url, kind)) if (!items.has(it.ref)) items.set(it.ref, it);
+    // a card shows only some of its tags: the page it was listed on counts as one of them (found)
+    for (const it of parseMixkit(html, p.url, kind)) {
+      const had = items.get(it.ref);
+      if (had) { if (!had.found.includes(p.slug)) had.found.push(p.slug); } else items.set(it.ref, { ...it, found: [p.slug] });
+    }
   }
   const cache = tempoCache(env);
   let list = [...items.values()];
@@ -639,7 +656,9 @@ async function cmdSearch(args) {
   r.items.forEach((it, k) => console.log(row(it, k)));
   for (const h of r.held) console.log(`held back: ${h.ref} "${h.title}": ${h.why.at(-1)}`);
   if (kind === 'music') console.log(`also: ${SOURCES.pixabay.name}: ${SOURCES.pixabay.why}`);
-  console.log(`next: node scripts/music.mjs sheet ${out} --measure   (audition the first three), then get #n --to <film>/audio/${kind === 'sfx' ? 'sfx' : 'music'}`);
+  console.log(kind === 'sfx'
+    ? `next: get '#n' --kind sfx --from ${out} --to <film>/audio/sfx, then kit.py real <file> --action <action> and kit.py listen (judge it)`
+    : `next: node scripts/music.mjs sheet ${out} --measure   (audition the first three), then get '#n' --to <film>/audio/music`);
   return 0;
 }
 
@@ -672,6 +691,8 @@ async function cmdSheet(args, env = process.env) {
       }
     } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
     writeJson(tempoPath(env), tc);
+    const want = { words: words(r.query?.mood), bpm: r.query?.bpm || null, length: r.query?.length || null, shortlist: shortlistRefs() };
+    for (const [k, it] of chosen) r.items[k] = Object.assign(it, scoreItem(it, want));
     writeJson(file, r);
   }
   if (args.json) { console.log(JSON.stringify(chosen.map(([, it]) => it), null, 1)); return 0; }

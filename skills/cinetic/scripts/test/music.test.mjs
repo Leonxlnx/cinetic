@@ -79,6 +79,12 @@ const items = M.parseMixkit(musicHtml, 'https://mixkit.co/free-stock-music/tech-
   check(sfx.length === 1 && sfx[0].licence === 'mixkit-sfx' && sfx[0].file_url === 'https://assets.mixkit.co/active_storage/sfx/7001/7001.wav' && eq(sfx[0].tags.category, ['paper', 'slide']),
     'sfx: the WAV, the page\'s free licence, categories', JSON.stringify(sfx[0] && [sfx[0].licence, sfx[0].file_url]));
   check(M.parseMixkit(musicHtml, '', 'sfx').length === 0, 'music cards are not sound effects');
+  const plain = M.scoreItem({ ...sfx[0], seconds: 1 }, { words: ['paper'] }).score;
+  const decor = M.scoreItem({ ...sfx[0], seconds: 1, title: 'Magic fire swoosh' }, { words: ['paper'] }).score;
+  const long = M.scoreItem({ ...sfx[0], seconds: 5 }, { words: ['paper'] }).score;
+  check(plain - decor === 2 && plain - long === 1.5, 'sfx: a decorated or long effect loses ground', `${plain} / ${decor} / ${long}`);
+  const linked = M.parseMixkit('<p>under the <a href="/license/#sfxFree" data-license="sfxFree">Mixkit License</a></p>' + fs.readFileSync(path.join(FIX, 'mixkit-sfx-list.html'), 'utf8').replace(/free sound effects license/g, 'licence'), '', 'sfx');
+  check(linked[0]?.licence === 'mixkit-sfx', 'sfx: the page\'s licence link names the free licence');
 }
 
 // 3. energy from waveform data
@@ -125,6 +131,9 @@ function waveform(levels, px = 0.2, sr = 44100) {
   const a = { ...items[0], tempo: M.tempoOf(items[0], {}) };
   const sa = M.scoreItem(a, want);
   check(sa.score > 0 && sa.why.some((w) => /mechanical/.test(w)) && sa.why.some((w) => /tech-house/.test(w)), 'the words and the two-word genre match', sa.why.join('; '));
+  const listed = M.scoreItem({ ...items[1], tempo: {}, found: ['mechanical'] }, { words: ['mechanical'] });
+  const unlisted = M.scoreItem({ ...items[1], tempo: {} }, { words: ['mechanical'] });
+  check(listed.score - unlisted.score === 2, 'listed on a mood page counts as that mood (a card shows only some tags)', `${listed.score} vs ${unlisted.score}`);
   const short = M.scoreItem({ ...items[1], tempo: {} }, { length: 60 });
   check(short.score === -Infinity && /shorter than the film/.test(short.why[0]), 'a track shorter than the film is refused');
   const slow = M.scoreItem({ ...a, tempo: { value: 96, kind: 'quick' } }, want).score;
