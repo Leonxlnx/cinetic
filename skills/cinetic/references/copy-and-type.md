@@ -120,14 +120,14 @@ Read in order it is a story, and line 6 pays off line 1 by changing one word.
 | # | Role | Line | Words |
 |---|---|---|---|
 | 1 | hook | This pull request has 2,184 lines. | 6 |
-| 2 | problem | You approve it in forty seconds. | 6 |
-| 3 | problem (typed into the review box) | Looks good to me. | 4 |
-| 4 | turn | Three of them can break production. | 6 |
+| 2 | problem (typed into the review box) | Looks good to me. | 4 |
+| 3 | proof | This one assigns instead of compares. | 6 |
+| 4 | proof | Three of them can break production. | 6 |
 | 5 | product | Plumb finds those three first. | 5 |
-| 6 | proof | This one assigns instead of compares. | 6 |
-| 7 | payoff (typed again) | Looks good to me. | 4 |
+| 6 | payoff (typed again) | Looks good to me. | 4 |
 
-The same four words open and close the proof: a tired lie, then the truth.
+The turn belongs to the picture (a plumb bob falls and stops dead on one line, with no line on screen), and the same
+four words open and close the proof: a tired lie, then the truth. The full treatment is in `assets/TREATMENT.md`.
 
 **Good: an update film, Plumb 2.4 (14 s).**
 
