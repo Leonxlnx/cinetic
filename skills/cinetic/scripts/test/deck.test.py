@@ -40,6 +40,11 @@
      launch and for an update film; a deal of 3 holds an imagery-led direction and a built world when its pool
      has both; --no-imagery deals none; broken deck folders are refused (a thin deck, a catalogue entry two decks
      define differently, a direction id in two decks, a missing or thin picture brief).
+ 15. Text first, imagery opt-in: an imagery-led direction fits only with --have photos or footage (never dealt
+     without, dealt with); type-led directions weigh x4 and graphic ones x1.5, so a plain brief meets a
+     type-led direction in about half the deals or more; the sheet asks for a script (6-9 short sentences, one clean line at a time, each
+     with its own text animation), its skeleton gives each copy beat one sentence, and an update sheet one short
+     sentence per change.
 
 Usage (from the skill root):  python3 scripts/test/deck.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -579,9 +584,9 @@ IMG = [d for d in DIRS if deck.is_imagery(d)]
 result(len(IMG) >= 3 and {d['id'] for d in IMG} == set(PER.get('imagery', [])),
        f'the imagery deck is dealt with the main deck ({len(IMG)} imagery-led directions)')
 upd_img = next(d for d in IMG if 'update' in d['fit']['formats'] and not deck.needs_of(d, 'update'))
-r1 = run('--brief', 'a tide forecast for small boats', '--format', 'update', '--direction', upd_img['id'], '--out', os.path.join(TMP, 'img1'), '--no-history')
+r1 = run('--brief', 'a tide forecast for small boats', '--format', 'update', '--have', 'photos', '--direction', upd_img['id'], '--out', os.path.join(TMP, 'img1'), '--no-history')
 launch_img = next(d for d in IMG if 'launch' in d['fit']['formats'] and not deck.needs_of(d) and d['id'] != upd_img['id'])
-r2 = run('--brief', 'a tide forecast for small boats', '--format', 'launch', '--direction', launch_img['id'], '--out', os.path.join(TMP, 'img2'), '--no-history')
+r2 = run('--brief', 'a tide forecast for small boats', '--format', 'launch', '--have', 'photos', '--direction', launch_img['id'], '--out', os.path.join(TMP, 'img2'), '--no-history')
 result(r1.returncode == 0 and '**Imagery (real pictures are this world):**' in r1.stdout and '## 8. Beat skeleton: an update film' in r1.stdout
        and '**Queries**' in r1.stdout and 'assets.mjs' in r1.stdout,
        f'an imagery-led direction deals an update film with its picture brief ({upd_img["id"]})', (r1.stderr or '')[-200:])
@@ -593,7 +598,7 @@ mixed, none_img, swept = [], [], 0
 for fmt in deck.FORMATS:
     for pace in deck.PACES:
         for s_ in range(20):
-            inp = inp_of('test', fmt, pace)
+            inp = inp_of('test', fmt, pace, ('photos',))
             opts, pool, _ = deck.options_for(DATA, inp, s_, 3, (), (), (), READY)
             swept += 1
             why = ('no imagery' if len(opts) >= 2 and any(deck.is_imagery(d) for d in pool) and not any(deck.is_imagery(o) for o in opts)
@@ -608,7 +613,7 @@ for fmt in deck.FORMATS:
             none_img += [o['id'] for o in opts if deck.is_imagery(o)]
 result(not mixed, f'every deal of 3 holds an imagery-led direction and a built world when its pool has both and a perfect set exists ({swept} deals)', '; '.join(mixed[:4]))
 result(not none_img, '--no-imagery deals no imagery-led direction', ', '.join(sorted(set(none_img))[:4]))
-r = run('--brief', 'x', '--format', 'launch', '--options', '3', '--no-imagery', '--seed', '2', '--no-history')
+r = run('--brief', 'x', '--format', 'launch', '--have', 'photos', '--options', '3', '--no-imagery', '--seed', '2', '--no-history')
 result(r.returncode == 0 and '--no-imagery' in r.stdout.splitlines()[0] and 'imagery-led' not in r.stdout,
        '--no-imagery reaches the CLI deal and its reproducible command line')
 IMG_RAW = json.load(open(IMAGERY, encoding='utf-8'))
@@ -676,6 +681,37 @@ result('light brand' in bmap.get('tone_note', '') and '--redraw palette' in bmap
        'a light brand put on a dark ground gets a loud note with the redraw', bmap.get('tone_note', '')[:100])
 white_pal = next(p for p in BY_ID['statement']['palettes'] if RECIPES[p['recipe']]['tone'] == 'light')
 result('tone_note' not in deck.brand_mapping(BY_ID['statement'], white_pal, RECIPES, light), 'a light brand on a light ground: no note')
+
+# 15. text first, imagery opt-in --------------------------------------------------------------------
+no_pics, with_pics, foot = set(), set(), set()
+for s_ in range(60):
+    for fmt in ('launch', 'update'):
+        no_pics |= {o['id'] for o in deal('a tide forecast for small boats', fmt, seed=s_) if deck.is_imagery(o)}
+        no_pics |= {o['id'] for o in deal('a notes app', fmt, have=['ui'], seed=s_) if deck.is_imagery(o)}
+        with_pics |= {o['id'] for o in deal('a tide forecast for small boats', fmt, have=['photos'], seed=s_) if deck.is_imagery(o)}
+        foot |= {o['id'] for o in deal('a tide forecast for small boats', fmt, have=['footage'], seed=s_) if deck.is_imagery(o)}
+ok_fit, why_fit = deck.fits(IMG[0], 'launch', 'calm', [], None, 'x', READY)
+result(not no_pics and len(with_pics) >= 3 and foot and not ok_fit and 'only with --have photos or footage' in why_fit,
+       'an imagery-led direction fits only with --have photos or footage', f'without: {sorted(no_pics)[:3]}; with photos: {len(with_pics)}')
+r = run('--brief', 'a tide forecast', '--format', 'launch', '--direction', IMG[0]['id'], '--out', os.path.join(TMP, 'img-no'), '--no-history')
+result(r.returncode != 0 and 'photos' in (r.stderr + r.stdout), 'the sheet of an imagery-led direction is refused without --have photos or footage', (r.stderr or r.stdout).strip()[:120])
+TL = [d for d in DIRS if deck.is_type_led(d)]
+GR = [d for d in DIRS if deck.is_graphic(d) and not deck.is_type_led(d)]
+inp0 = inp_of('a product', 'launch', 'calm', ())
+base_w = lambda d: deck.KEYWORD_X ** min(3, deck.keyword_hits(d, 'a product'))  # noqa: E731
+result({d['id'] for d in TL} >= {'statement', 'slot-line'} and GR and not any(deck.is_imagery(d) for d in GR)
+       and all(abs(deck.weight(d, inp0, ()) - deck.TYPE_LED_X * base_w(d)) < 1e-9 for d in TL if not deck.needs_of(d))
+       and all(abs(deck.weight(d, inp0, ()) - deck.GRAPHIC_X * base_w(d)) < 1e-9 for d in GR if not deck.needs_of(d)),
+       'type-led directions weigh x4, graphic ones x1.5', f'type-led {sorted(d["id"] for d in TL)}')
+plain = sum(1 for s_ in range(60) if any(deck.is_type_led(o) for o in deal('a product', 'launch', seed=s_)))
+result(plain >= 27, 'a plain brief meets a type-led direction in about half the deals or more', f'{plain} of 60')
+r = run('--brief', 'a ledger app', '--format', 'launch', '--direction', 'statement', '--out', os.path.join(TMP, 'script'), '--no-history')
+result(r.returncode == 0 and '**The words are a script:**' in r.stdout and 'one sentence:' in r.stdout and '| line |' in r.stdout
+       and '2. Write the script' in r.stdout and '--lines <n>' in r.stdout and 'type-led' in r.stdout,
+       'the sheet asks for a script, gives each copy beat one sentence and draws one text animation per line', (r.stderr or '')[-160:])
+r = run('--brief', 'a notes app, version 2.4 is out', '--format', 'update', '--direction', 'statement', '--out', os.path.join(TMP, 'script-u'), '--no-history')
+result(r.returncode == 0 and 'One short sentence per change (3-6 words)' in r.stdout and '1-3 words a fragment' not in r.stdout,
+       'an update sheet asks for one short sentence per change', (r.stderr or '')[-160:])
 
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')
 sys.exit(1 if failed else 0)

@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
 """Deal a film direction from the deck, so every film gets its own visual idea.
 
-Left alone, an agent makes the same film every time: calm fragments on a plain ground, a push-in, an
+Left alone, an agent makes the same film every time: keyword fragments on a plain ground, a push-in, an
 end card. deck.py deals three complete art directions from the decks in assets/directions/ that fit
 the brief (format, pace, the assets that exist), each with its own space (flat, layered, perspective
 planes or a lit relief), light, camera language, cut grammar, type behaviour, story shape, lockup and
 one signature shot. directions.json is the main deck; every other deck file there adds its directions,
 primitives and methods to the deal: imagery.json holds the imagery-led directions, where real
-photographs and footage found under licences that need no credit (scripts/assets.mjs) are the world. The agent chooses the one that can carry something only this product has (the idea
-sentence and the competitor test), then deals the full sheet for it. The sheet is the art direction for
-the film: the treatment, the technique draw (pick.py) and the build follow it.
+photographs and footage are the world. Those are opt-in: they fit only with --have photos or footage
+(pictures worth building on, or the product's own), because sloppy stock is worse than none. The deal
+favours type-led directions (the line itself is the shot: built word by word, a rolling slot word, the
+name at giant scale) x4 and graphic ones (code-made on clean grounds) x1.5, since text animation is the
+main event of a cinetic film and graphic effects surround it. The agent chooses the one that can carry
+something only this product has (the idea sentence and the competitor test), then deals the full sheet
+for it. The sheet is the art direction for the film: the script, the treatment, the technique draw
+(pick.py) and the build follow it.
 
-Where it sits: after the brief (Step 0) and the inventory, before the treatment and pick.py (Step 1).
+Where it sits: after the brief (Step 0) and the inventory, before the script, the treatment and pick.py
+(Step 1).
 
 Usage:
-  python3 scripts/deck.py --brief "<one line>" --format launch --pace calm [--have ui,footage] --options 3
+  python3 scripts/deck.py --brief "<one line>" --format launch --pace calm [--have ui,input] --options 3
+  python3 scripts/deck.py --brief "<one line>" --format launch --have ui,photos --options 3  # pictures worth showing
   python3 scripts/deck.py --brief "<one line>" --format launch --pace calm --direction <id>  # the sheet
   python3 scripts/deck.py --brief "<one line>" --format update --changes 3 --options 3       # a short update film
   python3 scripts/deck.py ... --direction <id> --brand brand/brand.json  # roles mapped onto the brand's colours
@@ -27,8 +34,10 @@ Usage:
 
   --have      what really exists (comma-separated): ui (the product has an interface to show, built in
               code from the real product), input (it is used by typing or pointing: a text field, a prompt,
-              a command line, a pointer; pick.py deals typing and cursor devices only then), footage (real
-              video supplied), audio (a real recorded clip the product makes or handles: a voice, a call, a
+              a command line, a pointer; pick.py deals typing and cursor devices only then), photos
+              (high-quality pictures that carry the idea: the product's own photography or screens, or a set
+              worth building a film on; it opens the imagery-led directions), footage (real video supplied;
+              it opens them too), audio (a real recorded clip the product makes or handles: a voice, a call, a
               sound), number (one honest number the product owns and can back), name (the product's name is
               a real word whose meaning the film can use). Leave it out when there is none. Directions built
               on an asset only fit when it exists, and the deal leans hard toward directions that use what
@@ -37,7 +46,7 @@ Usage:
   --format    launch (15-45 s, the main case), update (8-20 s: "vX is out" with 2-4 changes), feature,
               loop, sting, walkthrough or vertical. An update film is a hook on the version or the mark,
               2-4 changes each shown as a product moment (never a list), one payoff and the end card with
-              the version, 1-3 words a fragment; its beats come from the direction's own update skeleton,
+              the version, one short sentence a change; its beats come from the direction's own update skeleton,
               and the version counts as the one number the film owns (--have number).
   --changes   how many changes an update film shows (2-4, default 3): one beat each.
   --brand     brand/brand.json from scripts/brand.py: the dealt palette's ground / ink / accent roles and
@@ -51,10 +60,10 @@ Usage:
               the same brief always deals the same three: rerunning is not a way to fish for another deal.
   --allow-planned  deal or sheet a direction whose signature still waits for a planned primitive (you
               build that primitive inside the film).
-  --no-imagery  deal no imagery-led direction (the brief rules out found pictures). Without it, real
-              imagery comes first: a deal holds at least one imagery-led direction when one fits, and its
-              sheet carries the picture brief (what to list from the subject, the queries, how many
-              pictures, the one grade, what to refuse) for scripts/assets.mjs.
+  --no-imagery  deal no imagery-led direction even with --have photos or footage. With photos or footage
+              and without it, a deal holds at least one imagery-led direction when one fits, and its sheet
+              carries the picture brief (what to list from the subject, the queries, how many pictures, the
+              one grade, what to refuse) for scripts/assets.mjs.
   --deck      a deck file (only that file), or a folder whose *.json decks are merged (default: the
               skill's assets/directions/, or scripts/directions/ in a film project).
 
@@ -63,8 +72,8 @@ really has, away from the directions of your last films (a small history in ~/.c
 or CINETIC_DECK_HISTORY; --no-history turns it off; --recent ids names them instead, and every printed
 command carries the --recent it was dealt with, so it reproduces the deal). The three options always differ in camera motion,
 signature, story shape and lockup, span three kinds of space and two kinds of light, deal palettes of at
-least two ground tones, and include at least one rich, high-intensity direction, one imagery-led
-direction and one built world when the brief fits them.
+least two ground tones, and include at least one rich, high-intensity direction and, when --have opens
+them, one imagery-led direction beside one built world.
 
 Redraw one slot (palette | type | signature | direction) only for a reason you can state: it contradicts
 the brand, needs an asset that does not exist, or cannot carry the idea. Never to get something more
@@ -104,8 +113,9 @@ PICK = os.path.join(HERE, 'pick.py')
 
 FORMATS = ['launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical', 'update']
 PACES = ['calm', 'crisp']
-HAVE = ['ui', 'input', 'footage', 'audio', 'number', 'name']
-HAVE_TEXT = {'ui': 'product UI', 'input': 'a field, prompt or pointer the product is used with', 'footage': 'footage', 'audio': 'a real recorded clip',
+HAVE = ['ui', 'input', 'photos', 'footage', 'audio', 'number', 'name']
+HAVE_TEXT = {'ui': 'product UI', 'input': 'a field, prompt or pointer the product is used with',
+             'photos': 'pictures worth building on', 'footage': 'footage', 'audio': 'a real recorded clip',
              'number': 'one honest number', 'name': 'a name that means something'}
 KEEP = ['palette', 'type']
 SLOTS = ['palette', 'type', 'signature', 'direction']
@@ -291,6 +301,26 @@ def load_deck(path):
 def is_imagery(d):
     """A direction whose world is real photographs and footage (fit.imagery: "sourced")."""
     return bool((d.get('fit') or {}).get('imagery'))
+
+
+# The film's text animation is the main event: the deal leans toward directions where the line is the shot, and
+# toward graphic worlds made in code on clean grounds. Imagery-led directions are opt-in (--have photos or footage).
+TYPE_LED_SIGNATURES = {'word-build', 'slot-roll', 'counter-window'}  # the line built word by word, the slot word, the giant name
+TYPE_LED_X = 4.0
+GRAPHIC_X = 1.5
+IMAGERY_HAVE = {'photos', 'footage'}
+
+
+def is_type_led(d):
+    """A direction whose signature is the type itself."""
+    return (d.get('signature') or {}).get('family') in TYPE_LED_SIGNATURES
+
+
+def is_graphic(d):
+    """A direction made of code-built graphics on a clean ground (not a lit material world, not found pictures)."""
+    w = d.get('world') or {}
+    return (not is_imagery(d) and w.get('space') in ('flat', 'layered', 'perspective')
+            and str(w.get('texture', '')).startswith('clean'))
 
 
 def starter_src():
@@ -875,6 +905,8 @@ def fits(d, fmt, pace, have, seconds, brief='', ready=None, imagery=True):
     f = d['fit']
     if not imagery and is_imagery(d):
         return False, 'imagery-led (--no-imagery)'
+    if is_imagery(d) and not IMAGERY_HAVE & set(have or ()):
+        return False, 'imagery-led: only with --have photos or footage'
     if fmt and fmt not in f['formats']:
         return False, f'format {fmt}'
     if pace and pace not in f['paces']:
@@ -907,6 +939,10 @@ def uses_of(d):
 
 def weight(d, inp, recent):
     w = KEYWORD_X ** min(3, keyword_hits(d, inp['brief']))
+    if is_type_led(d):  # text animation is the main event
+        w *= TYPE_LED_X
+    elif is_graphic(d):
+        w *= GRAPHIC_X
     if inp['pace'] == 'crisp' and d['intensity'] <= 2:
         w *= 0.35
     if needs_of(d, inp.get('format')):  # it only fits because the film has the asset: use it
@@ -1321,7 +1357,7 @@ def _cmd(inp, seed, extra):
 
 def _fit_line(d):
     f, m = d['fit'], d['music']
-    need = [HAVE_TEXT[k] for k in needs_of(d)]
+    need = [HAVE_TEXT[k] for k in needs_of(d)] + (['pictures worth building on or footage (--have photos)'] if is_imagery(d) else [])
     subj = ' · only when the brief names its subject' if f.get('keywords_required') else ''
     upd = (f' (an update film {d["update"]["seconds"][0]}-{d["update"]["seconds"][1]} s)'
            if isinstance(d.get('update'), dict) else '')
@@ -1331,7 +1367,7 @@ def _fit_line(d):
 
 
 def _tag(d):
-    return (('imagery-led · ' if is_imagery(d) else '') + f'intensity {d["intensity"]}/5 · {SPACES[d["world"]["space"]]} · light {d["world"]["light_kind"]} · '
+    return (('imagery-led · ' if is_imagery(d) else 'type-led · ' if is_type_led(d) else '') + f'intensity {d["intensity"]}/5 · {SPACES[d["world"]["space"]]} · light {d["world"]["light_kind"]} · '
             f'camera {d["camera"]["motion"]} · {d["cuts"]["kind"]} cuts · story {d["story"]["shape"]} · '
             f'lockup {d["lockup"]["kind"]}')
 
@@ -1491,8 +1527,10 @@ def render_sheet(sh, data, library):
             f'- **Line system:** {" and ".join(ty["modes"])} chains; re-centre `{ty["recentre"]}`; cadence `{ty["cadence"]}`; '
             f'roles {", ".join(ty["roles"])}.', f'- **Scale contrast:** {ty["scale_contrast"]}',
             f'- **Behaviour:** {ty["behaviour"]}',
-            '- Copy stays calm: fragments of 1-4 words, one at a time, picture between them ("here is the newest" -> '
-            'the animation -> the rest).', '',
+            '- **The words are a script:** 6-9 short real sentences for a launch film (3-8 words each: a claim, a turn '
+            'or a payoff; together hook, problem, turn, product, proof, payoff), written before any build. One clean '
+            'line on screen at a time, each with its own text animation (pick.py draws one per line), with this '
+            'direction\'s camera and graphic effects around it. Never a pile of keywords.', '',
             f'## 5. The story shape: {st["shape"]}', '', st['line'], '',
             f'## 6. The signature shot: {sig["name"]}' + (' (the alternative)' if sh['signature_variant'] != 'main' else ''), '',
             sig['shot'], '', f'**How to build it in Chromium:** {sig["build"]}', '',
@@ -1511,23 +1549,25 @@ def render_sheet(sh, data, library):
         out += [f'## 8. Beat skeleton: an update film ({sh["changes"]} changes, {sh["seconds"]:g} s)', '',
                 'A hook on the version or the mark, then each change as a product moment (the product doing the new thing '
                 'in this direction\'s device, never a list, a changelog row or a bullet), one payoff, and the end card with '
-                'the version. 1-3 words a fragment, at line size (120 px) or larger.', '']
+                'the version. One short sentence per change (3-6 words) that says what the picture just did, one line at '
+                'a time, at 72 px or more.', '']
     else:
         out += [f'## 8. Beat skeleton ({sh["seconds"]:g} s)', '']
-    out += ['| # | beat | time | picture | copy |', '|---|---|---|---|---|']
+    out += ['| # | beat | time | picture | line |', '|---|---|---|---|---|']
     words = 0
     for i, b in enumerate(sh['skeleton'], 1):
         c = b['copy']
-        cs = f'{c["words"][0]}-{c["words"][1]} words: {c["what"]}' if c and c['words'][0] != c['words'][1] else (
-            f'{c["words"][0]} word(s): {c["what"]}' if c else '(picture only)')
-        words += c['words'][1] if c else 0
+        name = bool(c) and c['words'][1] <= 2 and bool(re.search(r'\b(name|version|wordmark)\b', c['what'], re.I))  # not a sentence
+        cs = (f'{c["what"]} (not a sentence)' if name else f'one sentence: {c["what"]}') if c else '(picture only)'
+        words += 1 if c and not name else 0
         out.append(f'| {i}{" *" if b["signature"] else ""} | {b["beat"]} | {b["from_s"]:.1f}-{b["to_s"]:.1f} s '
                    f'(f{b["from_f"]}-f{b["to_f"]} @60) | {b["picture"]} | {cs} |')
     hand = next((b.get('handoff') for b in sh['skeleton'] if b.get('change')), None)
     if hand:
         out += ['', f'From one change to the next: {hand}.']
-    out += ['', f'At most {words} words of copy in all. Retell every beat in the product\'s own objects; the beats are the '
-                'shape, not the content.', '',
+    out += ['', f'{words} beats carry a line here. Write the script first (6-9 sentences for a launch film, 4-6 for an '
+                'update film; a beat may carry two lines one after the other), then give each beat its sentence. Retell '
+                'every beat in the product\'s own objects; the beats are the shape, not the content.', '',
             '## 9. The picture never rests', '',
             f'- **Life inside a shot:** {cam["in_shot"]}',
             f'- **The floor against a flat film** (checked on renders): the camera or the ground moves on at least '
@@ -1560,11 +1600,14 @@ def render_sheet(sh, data, library):
                 + ('--direction out/direction.json ' if has_dir else '') + '--json out/qa/picks.json')
     out += ['', '## Next', '',
             '1. Write the idea sentence and the competitor test into TREATMENT.md, under the direction\'s name and seed.',
-            f'2. Draw the techniques: `{pick_cmd}`.' + ('' if has_dir else
+            '2. Write the script (TREATMENT.md, Script): 6-9 short real sentences, 3-8 words each, read in order they '
+            'tell the story; one clean line on screen at a time.',
+            f'3. Draw the techniques (the picture plan, and one text animation per line): `{pick_cmd} --lines <n>`.' + ('' if has_dir else
                ' Retell every pick in this direction\'s world and camera; a pick that fights the direction counts as '
                'fighting the concept (reroll it with `--category <cat> --exclude <id>`, at most twice).'),
-            '3. Write the treatment on the skeleton above: the beats, the device path, the signature beat and the lockup.',
-            '4. Redraw a slot only for a stated reason: `python3 scripts/deck.py --redraw palette|type|signature|direction '
+            '4. Write the treatment on the skeleton above: the beats, each sentence with its text animation, the device '
+            'path, the signature beat and the lockup.',
+            '5. Redraw a slot only for a stated reason: `python3 scripts/deck.py --redraw palette|type|signature|direction '
             '--reason "..."`.']
     return '\n'.join(out) + '\n'
 
