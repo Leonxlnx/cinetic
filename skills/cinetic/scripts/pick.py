@@ -113,7 +113,7 @@ CATEGORIES = ['opening_hook', 'transition', 'camera', 'typography_motion', 'ui_c
               'data_and_numbers', 'product_demo', 'logo_and_end_card', 'color_and_light',
               'texture_and_finish', 'layout_and_composition', 'pacing_structure',
               'micro_interaction', 'depth_and_3d']
-# Calm copy, rich picture: these categories set the words and the film's shape and keep the calm rule;
+# Calm copy, a picture that never rests: these categories set the words and the film's shape and keep the calm rule;
 # every other category is picture.
 COPY_CATEGORIES = {'typography_motion', 'pacing_structure'}
 FORMATS = ['launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical', 'update']

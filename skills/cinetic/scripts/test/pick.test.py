@@ -3,9 +3,9 @@
 
   1. The fixture library validates; broken libraries are refused with exit 2 and a reason.
   2. Draws are reproducible per seed, honour --format, --exclude and --avoid, and never break the
-     signature cap of a film. The default energy is calm: calm copy, rich picture (a copy category
-     never draws a high-energy entry, a picture category draws one at half weight), a calm plan holds
-     one technique per 3.5 s, and a slot with nothing calm left passes down the order.
+     signature cap of a film. The default energy is calm: calm copy, a picture that never rests (a
+     copy category never draws a high-energy entry, a picture category draws one at half weight), a
+     calm plan holds one technique per 3.5 s, and a slot with nothing calm left passes down the order.
   3. Ban-unsafe entries print their ban-safe variant unless the brand supplies every banned look.
   4. Weights do what the docstring says: workhorses come up more often than signatures.
   5. The shipped library (assets/library/techniques.json) validates, every entry has a family and a
@@ -180,7 +180,7 @@ any_hits = set()
 for s_ in range(40):
     any_hits |= set(ids(draw_json('--category', 'typography_motion', '--n', '2', '--seed', str(s_), '--energy', 'any')[1]))
 result(type_hits and not type_hits & HIGH, 'a calm draw (the default) never takes a high-energy copy entry', str(sorted(type_hits & HIGH)))
-result(calm_hits & HIGH, 'calm copy, rich picture: a calm draw can take a high-energy picture entry', str(sorted(calm_hits)))
+result(calm_hits & HIGH, 'calm copy, a picture that never rests: a calm draw can take a high-energy picture entry', str(sorted(calm_hits)))
 result(any_hits & HIGH, '--energy any draws high-energy copy entries too', str(sorted(any_hits & HIGH)))
 with tempfile.TemporaryDirectory() as tmp:
     lib = os.path.join(tmp, 'type-high.json')

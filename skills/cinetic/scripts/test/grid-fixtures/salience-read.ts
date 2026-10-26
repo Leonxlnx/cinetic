@@ -1,5 +1,5 @@
 // Fixture for scripts/test/grid-check.test.mjs. expect: read-quiet:warn=2
-// Calm copy, rich picture: while a line is read (f63-f213) a slow light drift (life) and a camera move
+// Calm copy, a picture that never rests: while a line is read (f63-f213) a slow light drift (life) and a camera move
 // away from the text (move) run and pass; a hit (the default salience) and a cut there still warn.
 export const FPS = 60;
 export const BPM = 100;
