@@ -75,7 +75,7 @@ LOCK = 'kit.lock.json'
 SOURCE = 'kit.source.json'  # written by render: which kit.json (by digest) the takes in this folder belong to
 PRESETS = ('calm', 'crisp', 'minimal', 'launch')
 LAUNCH_MIN = (0, 4)  # the earshot version the launch preset and the mix keys need
-INSTALL_HINT = ('install earshot 0.3+ in its own virtualenv (https://github.com/Leonxlnx/earshot, README "Install") and '
+INSTALL_HINT = ('install earshot 0.4+ in its own virtualenv (https://github.com/Leonxlnx/earshot, README "Install") and '
                 'point EARSHOT_PYTHON at that interpreter (cinetic docs/setup.md, "Sound from earshot")')
 # a role the kit does not name borrows the nearest one of its family; with none, score.py's synth voice plays
 FAMILY = {'tick.crisp': ['tick'], 'land.light': ['land'], 'whoosh.short': ['whoosh.long', 'whoosh'],
