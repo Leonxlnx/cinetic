@@ -19,7 +19,8 @@ Look checks (warn unless marked fail):
   banned-hue      fail: saturated colour in a banned region (orange/amber, beige/cream, purple/violet,
                   neon) on >= 0.5 % of the frame for >= 3 samples, unless it is a brand-supplied colour
                   (tokens lines marked cinetic:brand-supplied, or --brand). Brand colours are checked
-                  only for contrast (here: none) and the one-accent rule (hue-count still counts them)
+                  only for contrast (here: none) and the one-accent rule: hue-count counts the hues of
+                  every brand-supplied colour together as one family (a mark of three hues is one brand)
   accent-share    the accent's hue family (within 20 degrees) covers more than 25 % of the frame outside a
                   declared colour event and outside one designed flood (a run <= 2 s)
   second-hue      a second hue (>= 1 % of the frame, 40 degrees or more from the accent) shows in more than
@@ -1110,6 +1111,12 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     if len(film_groups) >= 2 and sec_read.get('declared') and sec_read.get('moment'):
         # the declared second hue, kept to a moment, is not a second accent family
         film_groups = [g for g in film_groups if hue_dist(g['h'], sec_read['h']) > 30] or film_groups
+    brand_h = [lch[2] for lch in (lch_of_hex(b) for b in brand) if lch[1] >= 0.06]
+    own = [g for g in film_groups if any(hue_dist(g['h'], bh) <= 20 for bh in brand_h)]
+    if len(own) >= 2:
+        # the brand-supplied hues are one family: the brand chose them together
+        keep = max(own, key=lambda g: g['samples'])
+        film_groups = [g for g in film_groups if g is keep or g not in own]
     if len(film_groups) >= 3:
         add('hue-count', 'fail', 0, f"{len(film_groups)} hue groups across the film ({', '.join(str(g['h']) for g in film_groups)} deg): one accent family; several hues live only inside imagery (--imagery)")
     elif len(film_groups) == 2:
@@ -1515,6 +1522,9 @@ def self_test(F, part='all'):
             three.append(img)
         rep = run('hues', three)
         check(bool(has(rep, 'hue-count', 'fail')), 'three accent hues fail hue-count')
+        rep = run('hues-brand', three, extra=('--brand', '#DC2832,#1EA050,#285ADC'))
+        check(not has(rep, 'hue-count') and rep.get('measures', {}).get('hue_groups') == 1,
+              'three brand-supplied hues are one family', str(rep.get('measures', {}).get('hue_groups')))
         one = [card(paper, 60 + i * 2, 80, 140, (30, 120, 200)) for i in range(60)]
         rep = run('onehue', one)
         check(not has(rep, 'hue-count'), 'one accent hue passes hue-count')

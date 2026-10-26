@@ -127,7 +127,8 @@ drift), or measure the seam on a textured region.
 
 ## 6. look-audit and the floors (`scripts/look-audit.py`)
 
-Rendered look checks: `hue-count` (2 hue groups warn, 3 fail, outside declared devices and imagery), `banned-hue`
+Rendered look checks: `hue-count` (2 hue groups warn, 3 fail, outside declared devices and imagery; the hues of the
+brand-supplied colours count as one family), `banned-hue`
 (supplied colours pass), `accent-share`, the wash ceiling (a film is not one colour wash), `tinted-ink`,
 `negative-space`, `living-ground`, `clean-finish`, `type-size` (with the layout JSON), `luminance-flip`,
 `blur-policy`, `word-first-frame`, `fade-detect`, `arrival-front-load`, `image-develop` (a hint). Flags:
