@@ -75,6 +75,7 @@ Every step writes a file, and every gate is a check you run. Work inline; subage
 - Choose the engine (Remotion by default; HyperFrames for an HTML project or `--batch` renders) and the pace (calm unless the brief asks for energy).
 - Copy the hard bans into `BRIEF.md`, plus brand-supplied exceptions: critics are prompted with it word for word.
 - Scaffold: `bash <skill>/scripts/new-film.sh films/<name> --fps 60 --size 1920x1080 [--format update] [--brand <kit>] [--like <clip>] [--music <file> + licence flags] [--pace crisp] [--engine hyperframes] [--link-modules <dir>/node_modules]`.
+- Python: the commands below say `python3`; on Windows that name is often the Microsoft Store alias. Set `PYTHON` to the interpreter of an environment with the packages (`node scripts/py.mjs --which` prints the one the npm scripts and `render.sh` use) and run the scripts with it.
 - **Gate:** a spec line, e.g. `1920x1080@60, 30s, pace: calm, format: launch, audio: licensed track + launch kit, stop ending`.
 
 ### Step 1: Direction → `out/direction.json`, `TREATMENT.md`
