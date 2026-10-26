@@ -152,13 +152,15 @@ A one-take film is judged on 2 s segments and has no seam or cut items.
 
 | Reading | Floor (fails the film) | Target (`picture-target` warning) |
 |---|---|---|
-| flat ground: blocks with almost no variation | mean ≤ 75 %, no more than 88 % of frames over 60 % flat | mean ≤ 55 %, no more than 40 % of frames over 60 % flat |
-| edges: structure (words, numbers, imagery, UI) | ≥ 1.8 % of the frame | ≥ 3 % |
+| flat ground: blocks with almost no variation | mean ≥ 25 % and ≥ 5 % of frames over 60 % flat (a clean field somewhere); mean ≤ 90 % (an empty film) | mean 43-85 %, ≥ 18 % of frames over 60 % flat |
+| edges: busy-ness (texture, footage, small type) | ≤ 12 % of the frame; ≥ 0.6 % (an empty film) | ≤ 5.9 % |
 | saturated pixels (OKLCH C ≥ 0.06): colour mass | ≥ 2.2 % of the frame | ≥ 6 % |
-| bleed: the subject framed past two edges at 1.2× the frame or more | in at least half the acts | in every act |
+| bleed: the subject framed past two edges at 1.2× the frame or more | in at least a quarter of the acts | in every act |
 | skeleton bars: glyphless grey bars in focus | no more than 3 in a frame (2 samples or more fail) | none |
 | focus falloff: a crisp plane and a defocused one in the same frame | (target only) | ≥ 35 % of frames |
 
+Type reads large and frontal on clean grounds, so a film with every frame on relief, footage or grain fails
+`picture-flat` and usually `picture-edges` too. Give each type beat a clean field, or dim and defocus the plate behind the type.
 A white world is judged without the flat and colour readings; a grid film without bleed. Framing warnings:
 `framing-centred` (the subject dead centre and inside the frame in more than half of the framed samples),
 `framing-hold` (one framing over 0.8 s with no depth plane moving), `small-text`.

@@ -70,20 +70,25 @@ without one, all but the last 2 s):
   A one-take film (LOOK.oneTake, or no cut) is judged on 2 s segments and has no seam or cut items.
 
 The picture floor (fail; beside the motion floor, which is blind to content: lib/look.ts PICTURE). Body
-frames for flat, edges and bleed; every frame for colour and bars:
-  picture-flat     flat ground (16 px blocks at 480 wide with std < 1.5 levels): mean <= 0.75 and no
-                   more than 88 % of frames over 60 % flat
-  picture-edges    structure: Canny edge pixels >= 1.8 % of the frame on average
+frames for flat, edges and bleed; every frame for colour and bars. Type reads large and frontal on clean,
+flat grounds; texture is an accent, not the ground of every shot:
+  picture-flat     flat ground (16 px blocks at 480 wide with std < 1.5 levels): mean >= 0.25 and >= 5 % of
+                   frames over 60 % flat (a clean field somewhere: not everything on texture), mean <= 0.90
+                   (an empty film)
+  picture-edges    busy-ness: Canny edge pixels <= 12 % of the frame on average (texture and footage
+                   everywhere), and >= 0.6 % (an empty film)
   picture-saturated colour mass: pixels at OKLCH C >= 0.06 >= 2.2 % of the frame on average
   picture-wash     the ceiling: saturated pixels over 45 % of the frame on average, or more than 45 % of the
                    frames over half saturated (frames inside a declared colour event are left out): one hue
                    over the whole picture hides the accent it was meant to show
   picture-bleed    the subject (the largest region of structure) touches two frame edges and spans >= 60 %
-                   of the frame one way in at least half of the acts (no cues: 8 s parts)
+                   of the frame one way in at least a quarter of the acts (no cues: 8 s parts)
   skeleton-bars    more than 3 glyphless bars in focus (solid, uniform, grey, text-line high, 3-60x as long,
                    sharp-edged) on 2 or more samples: placeholder lines, not content
-  picture-target   (warn) the floor is cleared but the house target is not: flat <= 0.55 and <= 40 % of frames
-                   over 60 % flat, edges >= 3 %, saturated >= 6 %, bleed in every act, and a crisp plane with a
+  picture-target   (warn) the floor is cleared but the house target is not:
+                   flat 0.43-0.85 and >= 18 % of frames over 60 % flat (every type beat on a clean field, or on
+                   a plate dimmed and defocused behind it), edges <= 5.9 %, saturated >= 6 %, bleed in every
+                   act, and a crisp plane with a
                    defocused one (cell edge sharpness, size-independent) in >= 35 % of frames; colour: neutral
                    pixels (OKLCH C < 0.03) >= 40 %, saturated <= 30 %, <= 33 % of frames over half saturated,
                    the accent's hue family 6-15 % of the frame (lib/look.ts COLOUR)
@@ -226,18 +231,18 @@ def ground_of(rgb8):
 # the picture: what a frame holds (lib/look.ts PICTURE)
 # ------------------------------------------------------------------------------------------
 PIC = dict(
-    # two levels: the floor (fail) and the house target (a picture-target warning): where a rich frame sits
-    flat_max=0.75,  # mean share of flat 16 px blocks (at 480 wide)
-    flat_over=0.60, flat_share=0.88,  # and no more than 88 % of frames over 60 % flat
-    edges_min=0.018,  # mean edge-pixel share (Canny 60/140 at 480 wide)
+    # two levels: the floor (fail) and the house target (a picture-target warning): type on clean ground, texture as an accent
+    flat_min=0.25, flat_max=0.90,  # mean share of flat 16 px blocks (at 480 wide): some clean ground, not an empty film
+    flat_over=0.60, flat_frames=0.05,  # and at least 5 % of frames over 60 % flat (a clean field somewhere)
+    edges_min=0.006, edges_max=0.12,  # mean edge-pixel share (Canny 60/140 at 480 wide): not empty, not busy everywhere
     saturated_min=0.022,  # mean share of saturated pixels (OKLCH C >= 0.06)
     sat_c=0.06,
-    bleed_share=0.5,  # acts in which the subject bleeds off two edges at scale (at least half; the target: every act)
+    bleed_share=0.25,  # acts in which the subject bleeds off two edges at scale (a quarter; the target: every act)
     bleed_extent=0.60,  # a subject touching two frame edges, visible over >= 60 % of the frame's width or height
     skeleton_max=3,  # glyphless bars in focus in one frame
     skeleton_samples=2,  # samples over the limit before it fails
     crisp=0.6, soft=0.4, soft_floor=0.05, plane_ratio=1.5,  # cell edge sharpness (p99 gradient / contrast range): a crisp plane, a defocused form, their ratio
-    target=dict(flat_max=0.55, flat_share=0.40, edges_min=0.03, falloff_share=0.35, saturated_min=0.06, bleed_share=1.0,
+    target=dict(flat_min=0.43, flat_max=0.85, flat_share=0.18, edges_max=0.059, falloff_share=0.35, saturated_min=0.06, bleed_share=1.0,
                 saturated_max=0.30, wash_share=0.33, neutral_min=0.40, accent=(0.06, 0.15)),
     # colour (lib/look.ts NEUTRAL, COLOUR): the wash ceiling fails, the neutral share and the accent band are targets
     neutral_c=0.03,  # a pixel under this chroma is neutral
@@ -551,8 +556,8 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
     edges = [P['edges'][i] for i in body]
     fall = [falloff_of(P['fall_top'][i], P['fall_low'][i]) for i in body] if P.get('fall_top') else [P['falloff'][i] for i in body]
     smp = [s for s in P['samples'] if not (end_rng and end_rng[0] <= s['f'] < end_rng[1])] or P['samples']
-    flat_mean = float(np.mean(flat)) if flat else 1.0
-    flat_over = float(np.mean([x > PIC['flat_over'] for x in flat])) if flat else 1.0
+    flat_mean = float(np.mean(flat)) if flat else 0.0
+    flat_over = float(np.mean([x > PIC['flat_over'] for x in flat])) if flat else 0.0
     edges_mean = float(np.mean(edges)) if edges else 0.0
     fall_share = float(np.mean(fall)) if fall else 0.0
     sat_mean = float(np.mean([s['sat'] for s in P['samples']])) if P['samples'] else 0.0
@@ -571,9 +576,12 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
     T = PIC['target']
     col = colour_reads(P, fps, events, accent_h, second_h)
     pf = dict(
-        flat=dict(mean=round(flat_mean, 3), frames_over=round(flat_over, 3), need=[PIC['flat_max'], PIC['flat_share']], target=[T['flat_max'], T['flat_share']],
-                  ok=flat_mean <= PIC['flat_max'] and flat_over <= PIC['flat_share'], target_ok=flat_mean <= T['flat_max'] and flat_over <= T['flat_share']),
-        edges=dict(mean=round(edges_mean, 4), need=PIC['edges_min'], target=T['edges_min'], ok=edges_mean >= PIC['edges_min'], target_ok=edges_mean >= T['edges_min']),
+        flat=dict(mean=round(flat_mean, 3), frames_over=round(flat_over, 3), need=dict(mean=[PIC['flat_min'], PIC['flat_max']], frames_over=PIC['flat_frames']),
+                  target=dict(mean=[T['flat_min'], T['flat_max']], frames_over=T['flat_share']),
+                  ok=PIC['flat_min'] <= flat_mean <= PIC['flat_max'] and flat_over >= PIC['flat_frames'],
+                  target_ok=T['flat_min'] <= flat_mean <= T['flat_max'] and flat_over >= T['flat_share']),
+        edges=dict(mean=round(edges_mean, 4), need=[PIC['edges_min'], PIC['edges_max']], target=T['edges_max'], ok=PIC['edges_min'] <= edges_mean <= PIC['edges_max'],
+                   target_ok=PIC['edges_min'] <= edges_mean <= T['edges_max']),
         saturated=dict(mean=round(sat_mean, 4), hsv=round(float(np.mean([s['sat_hsv'] for s in P['samples']])) if P['samples'] else 0.0, 4), need=PIC['saturated_min'],
                        target=T['saturated_min'], ok=sat_mean >= PIC['saturated_min'], target_ok=sat_mean >= T['saturated_min']),
         bleed=dict(acts=bleed_rows, share=round(bleed_share, 3), need=PIC['bleed_share'], target=T['bleed_share'], ok=bleed_share >= PIC['bleed_share'] - 1e-9,
@@ -614,9 +622,14 @@ def picture_flags(pf, framing, add, fps):
     T = PIC['target']
     missing = ', '.join(r['act'] for r in pf['bleed']['acts'] if not r['ok'])
     msgs = {
-        'flat': f"{pf['flat']['mean'] * 100:.0f} % of the frame is flat ground on average (floor {PIC['flat_max'] * 100:.0f} %), {pf['flat']['frames_over'] * 100:.0f} % of frames over 60 % flat "
-                f"(floor {PIC['flat_share'] * 100:.0f} %): calm copy sits on a rich picture (product, imagery, depth, light)",
-        'edges': f"edge pixels {pf['edges']['mean'] * 100:.1f} % of the frame (floor {PIC['edges_min'] * 100:.1f} %): the frame holds too little structure (real UI, numbers, imagery, type at film size)",
+        'flat': (f"{pf['flat']['mean'] * 100:.0f} % of the frame is flat ground on average (cap {PIC['flat_max'] * 100:.0f} %): an empty film; give every beat a subject "
+                 f"(the product, a word at film size, imagery)") if pf['flat']['mean'] > PIC['flat_max'] else
+                (f"{pf['flat']['mean'] * 100:.0f} % of the frame is flat ground on average (floor {PIC['flat_min'] * 100:.0f} %), {pf['flat']['frames_over'] * 100:.0f} % of frames over 60 % flat "
+                 f"(floor {PIC['flat_frames'] * 100:.0f} %): everything sits on texture. Set the type beats on a clean field, or dim and defocus the plate behind the type "
+                 f"(the house band: 43-85 % flat ground, 18 % of frames or more over 60 % flat); texture is an accent, not the ground of every shot"),
+        'edges': (f"edge pixels {pf['edges']['mean'] * 100:.1f} % of the frame (ceiling {PIC['edges_max'] * 100:.0f} %, house <= 5.9 %): busy everywhere. "
+                  f"Flatten, dim or defocus the texture and footage behind the type and give the eye a clean field") if pf['edges']['mean'] > PIC['edges_max'] else
+                 f"edge pixels {pf['edges']['mean'] * 100:.1f} % of the frame (floor {PIC['edges_min'] * 100:.1f} %): the frame is near empty (no words, numbers, UI or imagery at film size)",
         'saturated': f"saturated pixels {pf['saturated']['mean'] * 100:.1f} % of the frame (floor {PIC['saturated_min'] * 100:.1f} %): colour mass, not a 1 % accent dot (the accent on what matters, real imagery, a declared colour moment)",
         'bleed': f"the subject bleeds off two edges at scale in {pf['bleed']['share'] * 100:.0f} % of the acts (floor {PIC['bleed_share'] * 100:.0f} %; missing: {missing}): "
                  f"frame the hero at 1.2x the frame or more, off-centre, cropped by it",
@@ -632,8 +645,9 @@ def picture_flags(pf, framing, add, fps):
             add('skeleton-bars' if key == 'skeleton' else f'picture-{key}', 'fail', at, msg)
     if pf['ok'] and not pf['target']['ok']:
         why = {
-            'flat': f"flat ground {pf['flat']['mean'] * 100:.0f} % (target <= {T['flat_max'] * 100:.0f} %, frames over 60 % flat <= {T['flat_share'] * 100:.0f} %)",
-            'edges': f"edges {pf['edges']['mean'] * 100:.1f} % (target >= {T['edges_min'] * 100:.0f} %)",
+            'flat': f"flat ground {pf['flat']['mean'] * 100:.0f} % with {pf['flat']['frames_over'] * 100:.0f} % of frames over 60 % flat (target {T['flat_min'] * 100:.0f}-{T['flat_max'] * 100:.0f} % "
+                    f"and >= {T['flat_share'] * 100:.0f} % of frames: the type beats on a clean field)",
+            'edges': f"edges {pf['edges']['mean'] * 100:.1f} % (target <= {T['edges_max'] * 100:.1f} %: dim or defocus the texture behind the type)",
             'saturated': f"saturated {pf['saturated']['mean'] * 100:.1f} % (target >= {T['saturated_min'] * 100:.0f} %)",
             'bleed': f"bleed in {pf['bleed']['share'] * 100:.0f} % of acts (target: every act)",
             'falloff': f"a sharp and a soft plane in {pf['falloff']['share'] * 100:.0f} % of frames (target >= {T['falloff_share'] * 100:.0f} %)",
@@ -1589,9 +1603,9 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         json.dump(obj, open(p, 'w'))
         return p
 
-    def text_rows(img, x, y, rows, scale=0.5, col=(30, 32, 36), gap=22):
+    def text_rows(img, x, y, rows, scale=0.5, col=(30, 32, 36), gap=22, th=1):
         for k, s in enumerate(rows):
-            cv2.putText(img, s, (int(x), int(y + k * gap)), cv2.FONT_HERSHEY_SIMPLEX, scale, col, 1, cv2.LINE_AA)
+            cv2.putText(img, s, (int(x), int(y + k * gap)), cv2.FONT_HERSHEY_SIMPLEX, scale, col, th, cv2.LINE_AA)
         return img
 
     def photo(seed, ww, hh, sat=True):
@@ -1604,32 +1618,48 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         return np.clip(g * np.array([0.3, 0.72, 1.0], np.float32)[None, None, :] + np.array([10, 20, 30], np.float32), 0, 255).astype(np.uint8)
 
     if part in ('all', 'a'):
-        # --- the picture floor: a flat film fails every reading; a rich picture passes them all
-        flat = [card(paper, 180 + i * 0.3, 100, 120, (30, 32, 36)) for i in range(60)]
-        rep_f = run_pic('pflat', flat)
+        # --- the picture floor: an empty film fails every reading; a picture busy everywhere fails flat ground and
+        # edges; type beats on a clean field beside a plate (its far half defocused) pass and meet the target
+        empty = [card(paper, 180 + i * 0.3, 110, 70, (30, 32, 36)) for i in range(60)]
+        rep_f = run_pic('pempty', empty)
         pf = rep_f.get('picture', {})
-        check(bool(has(rep_f, 'picture-flat', 'fail')) and not pf.get('flat', {}).get('ok', True), 'a card on paper fails picture-flat', f"flat {pf.get('flat', {}).get('mean')}")
+        check(bool(has(rep_f, 'picture-flat', 'fail')) and not pf.get('flat', {}).get('ok', True), 'a small card on paper fails picture-flat (an empty film)', f"flat {pf.get('flat', {}).get('mean')}")
         check(bool(has(rep_f, 'picture-edges', 'fail')), 'a near-empty frame fails picture-edges', f"edges {pf.get('edges', {}).get('mean')}")
         check(bool(has(rep_f, 'picture-saturated', 'fail')), 'grey on paper fails picture-saturated', f"saturated {pf.get('saturated', {}).get('mean')}")
         check(bool(has(rep_f, 'picture-bleed', 'fail')), 'a subject inside the frame fails picture-bleed')
         check(pf.get('falloff', {}).get('target_ok') is False, 'one sharp plane misses the falloff target', f"falloff {pf.get('falloff', {}).get('share')}")
-        rich = []
-        P0 = photo(3, w + 200, h + 60, sat=False)  # a neutral picture with colour in one band (the accent's share)
+        PB = photo(7, w + 200, h + 60, sat=False)
+        PB = np.repeat((PB if PB.ndim == 2 else PB.mean(axis=2)).astype(np.uint8)[..., None], 3, axis=2)
+        busy = [text_rows(PB[30:30 + h, 10 + i:10 + i + w].copy(), 30, 240, ['Harbour 11,000 coasts'], 0.5, (250, 250, 250)) for i in range(60)]
+        rep_b = run_pic('pbusy', busy)
+        pb_ = rep_b.get('picture', {})
+        check(bool(has(rep_b, 'picture-flat', 'fail')), 'a caption on texture everywhere fails picture-flat (no clean ground)',
+              f"flat {pb_.get('flat', {}).get('mean')}, frames over 60 % {pb_.get('flat', {}).get('frames_over')}")
+        check(bool(has(rep_b, 'picture-edges', 'fail')), 'the same busy picture fails picture-edges (busy everywhere)', f"edges {pb_.get('edges', {}).get('mean')}")
+        P0 = photo(3, w + 200, h + 60, sat=False)
         P0 = np.repeat((P0 if P0.ndim == 2 else P0.mean(axis=2)).astype(np.uint8)[..., None], 3, axis=2)
-        band = int(0.8 * h) + 30
-        P0[band:] = photo(3, w + 200, h + 60)[band:]
-        for i in range(60):
-            img = P0[30:30 + h, 10 + i:10 + i + w].copy()
-            soft = cv2.GaussianBlur(img[:, :w // 2], (0, 0), 5)  # the far plane, defocused
-            img[:, :w // 2] = soft
-            cv2.rectangle(img, (300, 40), (w + 40, h + 40), (236, 238, 241), -1)  # a panel bleeding off the right and bottom
-            text_rows(img, 316, 80, ['Q3 budget 48,200', 'Design 8,140', 'Engineering 17,220', 'Marketing 6,100', 'Spent 31,460'], 0.5)
+        green = (24, 150, 92)
+        rich = []
+        for i in range(90):
+            img = paper.copy()
+            if i < 40:  # a type beat on a clean field: the line large and frontal, the accent on one bar
+                text_rows(img, 40 + i * 0.4, 120, ['Ears for'], 1.9, (30, 32, 36), 70, 4)
+                text_rows(img, 40 + i * 0.4, 190, ['coding agents.'], 1.9, (30, 32, 36), 70, 4)
+                cv2.rectangle(img, (40, 212), (330, 244), green, -1)
+            else:  # a plate bleeding off three edges, its far half defocused, beside the type
+                k = i - 40
+                plate = cv2.GaussianBlur(P0[30:30 + h, 10 + k:10 + k + 260].copy(), (0, 0), 1.5)
+                plate[:, :130] = cv2.GaussianBlur(plate[:, :130], (0, 0), 5)
+                img[:, :260] = plate
+                text_rows(img, 290, 110, ['Local.', 'CPU only.'], 1.3, (30, 32, 36), 56, 3)
+                cv2.rectangle(img, (290, int(192 - k * 0.2)), (470, int(252 - k * 0.2)), green, -1)
             rich.append(img)
-        rep_r = run_pic('prich', rich)
+        rep_r = run_pic('pclean', rich)
         pr = rep_r.get('picture', {})
-        check(not has(rep_r, 'picture-target') and pr.get('target', {}).get('ok') is True, 'the same picture meets the house target (no picture-target warning)', json.dumps(pr.get('target')))
+        check(not has(rep_r, 'picture-target') and pr.get('target', {}).get('ok') is True, 'type beats on a clean field beside a plate meet the house target (no picture-target warning)',
+              json.dumps({'target': pr.get('target'), 'flat': pr.get('flat', {}).get('mean'), 'edges': pr.get('edges', {}).get('mean')}))
         for key in ('flat', 'edges', 'falloff', 'saturated', 'bleed'):
-            check(pr.get(key, {}).get('ok') is True and not has(rep_r, f'picture-{key}'), f'a dense picture with a soft plane, colour and a bleeding panel passes picture-{key}',
+            check(pr.get(key, {}).get('ok') is True and not has(rep_r, f'picture-{key}'), f'type on a clean field with a soft plate, colour and a bleeding plate passes picture-{key}',
                   json.dumps({k: v for k, v in pr.get(key, {}).items() if k != 'acts'})[:120])
         # skeleton bars: grey placeholder lines fail; real strings in the same layout pass
         skel, real = [], []

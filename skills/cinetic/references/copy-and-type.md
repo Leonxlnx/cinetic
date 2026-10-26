@@ -3,8 +3,8 @@
 Covers the words (budget, voice, fragment chains, callback copy, stock phrasing, string audit) and the letters
 (choosing and loading the family, type roles at film size, the line system, the type devices, type as the set,
 reveals that never misspell, measuring and fitting). Read the copy half at Step 1 while writing the beat sheet and
-the type half at Step 2 before writing `src/brand/tokens.ts`. **Calm copy, rich picture:** the words stay few, short
-and readable; the picture around them never rests. Numbers are house defaults at 1920×1080 and 60 fps with normal
+the type half at Step 2 before writing `src/brand/tokens.ts`. **Calm copy, clean picture:** the words stay few, short
+and readable, large and frontal on a clean ground; the picture around them never rests. Numbers are house defaults at 1920×1080 and 60 fps with normal
 ranges. A supplied brand voice or typeface wins over every default here.
 
 **Contents**

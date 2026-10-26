@@ -1,6 +1,6 @@
 ---
 name: cinetic
-description: Direct, build and render premium cinematic motion design from code — launch films, update films ("vX is out"), product and feature videos, looping feature animations for landing pages and social, logo stings and reveals, UI walkthroughs, app demos, kinetic type, teasers, trailers, intros and promo clips. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion, HyperFrames, HTML/GSAP or React, or asks to storyboard, time, score, render, polish or critique one — even if they only say "make a video about X", "animate this feature", "we need a launch clip" or "make it feel like this clip". It supplies a dealt art direction with one signature shot, calm copy over a rich picture made of real imagery, light and a deep device vocabulary, brand-kit intake that defers to a supplied brand, a beat-locked timeline that drives the picture and a soundtrack built from a licensed music track cut to the picture plus code-made effects, choreography and transition craft, real product UI in motion, film-grade finishing (declared motion blur, no banding, BT.709, sync-checked mux) and a measured self-critique loop on contact sheets and renders.
+description: Direct, build and render premium cinematic motion design from code — launch films, update films ("vX is out"), product and feature videos, looping feature animations for landing pages and social, logo stings and reveals, UI walkthroughs, app demos, kinetic type, teasers, trailers, intros and promo clips. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion, HyperFrames, HTML/GSAP or React, or asks to storyboard, time, score, render, polish or critique one — even if they only say "make a video about X", "animate this feature", "we need a launch clip" or "make it feel like this clip". It supplies a dealt art direction with one signature shot, calm copy set large on clean grounds beside real imagery, light and a deep device vocabulary, brand-kit intake that defers to a supplied brand, a beat-locked timeline that drives the picture and a soundtrack built from a licensed music track cut to the picture plus code-made effects, choreography and transition craft, real product UI in motion, film-grade finishing (declared motion blur, no banding, BT.709, sync-checked mux) and a measured self-critique loop on contact sheets and renders.
 license: MIT
 compatibility: Needs Node 22+, ffmpeg 6+ with libx264, Python 3.11+ with numpy, scipy, soundfile, pyloudnorm, opencv-python and librosa (librosa and ffmpeg analyse the licensed track; fonttools, brotli and uharfbuzz for outlined logos; pillow for gradient plates), and Chromium or Chrome Headless Shell for rendering; earshot 0.4+ (in its own virtualenv) renders the effects kit and listens to the soundtrack. Works with Remotion 4 (React) or HyperFrames (HTML and GSAP).
 ---
@@ -19,13 +19,13 @@ You are directing a short film, not animating a web page. Picture, copy and soun
 
 The target is a film people watch twice and ask "how was that made?": one idea the product owns, told in pictures, where every frame looks chosen.
 - **Substance before polish.** Show the specific, clever thing this product does, the thing a simpler product wouldn't.
-- **Calm copy, rich picture.** Words arrive as short calm fragments; the picture never rests: the camera is the main animator, real imagery or a lit world gives it depth and light, devices carry each beat, speed carries through the cuts. A tidy but sparse film is a failure, not restraint.
+- **Calm copy, clean picture.** Words arrive as short calm fragments, large and frontal on clean, flat grounds; the picture never rests: the camera is the main animator, real imagery or a lit world gives it depth and light, devices carry each beat, speed carries through the cuts. Texture is an accent, not the ground of every shot: behind type the ground is a clean field, or a plate dimmed and defocused.
 - **One signature shot per film**, dealt with the direction: the one moment built to be remembered.
 - **Its own look.** Every film gets a direction from the deck and a palette from its brand, never the starter's look or your last film's.
 - **Ultra clean and smooth.** Every move eased by role, weighted, deterministic at 60 fps: no jitter, no pops, no effects standing in for ideas.
 - **Visual, not narrated.** The idea reads with the sound off; the words confirm what the picture already said.
 - **Music in every film.** A licensed, human-made track cut to the picture, with effects caused by something visible.
-- **No decoration, never a sparse picture.** Every element has a job; the picture is always alive.
+- **No decoration; the picture is clean, not sparse.** Every element has a job; the picture is always alive.
 - **Proof, not impression.** You only know once you have watched the render and measured it.
 
 ## Hard bans
@@ -149,7 +149,7 @@ python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --json out/qa/
 python3 scripts/look-audit.py out/preview.mp4 --cues out/cues.json --layout out/qa/layout-Film.json --json out/qa/look.json
 node scripts/grammar-score.mjs --cues out/cues.json --layout out/qa/layout-Film.json --look out/qa/look.json --forensics out/qa/forensics.json
 ```
-- **The floor against a flat film** (look-audit, fails the film): the camera or ground moves on ≥ 90 % of the body; two depth planes at different rates in ≥ 50 % of shots; ≥ 40 % of seams carried; a designed moment at least every 3 s; a light event in every act; a clear scale change on ≥ 30 % of cuts. **The picture floor:** flat ground, edges, colour mass, bleed and skeleton bars (target: mostly structure, real colour mass, bleed in every act, focus falloff).
+- **The floor against a flat film** (look-audit, fails the film): the camera or ground moves on ≥ 90 % of the body; two depth planes at different rates in ≥ 50 % of shots; ≥ 40 % of seams carried; a designed moment at least every 3 s; a light event in every act; a clear scale change on ≥ 30 % of cuts. **The picture floor:** some clean flat ground (not everything on texture), edges under a ceiling (not busy everywhere), colour mass, bleed and skeleton bars (target: 43-85 % flat ground with type beats on clean fields, edges ≤ 5.9 %, real colour mass, bleed in every act, focus falloff).
 - **grammar-score:** mean ≥ 90, no dimension under 70 (or against `out/like.json` with a clip). Write the weakest dimension into the notes and fix it first.
 
 ### Step 8: Sound → `public/audio/soundtrack.wav`

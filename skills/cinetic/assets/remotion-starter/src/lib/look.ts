@@ -173,18 +173,21 @@ export const GRAMMAR = {
 /**
  * The picture (scripts/look-audit.py measures it on the render, beside the motion floor, which is blind
  * to content): what a frame holds, not how it moves. Two levels: the floor fails a film, the target is
- * where a rich frame sits (a warning until it is met).
+ * the house band (a warning until it is met). Type reads large and frontal on clean, flat grounds; texture is
+ * an accent, not the ground of every shot.
  *   flat       share of the frame that is flat ground (16 px blocks at 480 wide with almost no
- *              variation): floor mean <= 0.75 and no more than 88 % of frames over 0.60 flat; target
- *              mean <= 0.55 and no more than 40 % of frames over 0.60
- *   edges      structure (words, numbers, imagery, UI): edge pixels >= 1.8 % of the frame (target 3 %)
+ *              variation): floor mean >= 0.25 and >= 5 % of frames over 0.60 flat (a clean field
+ *              somewhere), mean <= 0.90 (an empty film); target mean 0.43-0.85 and >= 18 % of frames
+ *              over 0.60 flat: every type beat on a clean field or on a plate dimmed and defocused behind it
+ *   edges      busy-ness: edge pixels <= 12 % of the frame (floor: busy to the edges everywhere),
+ *              target <= 5.9 %; and >= 0.6 % (an empty film)
  *   saturated  colour mass: saturated pixels (OKLCH C >= 0.06) >= 2.2 % of the frame (target 6 %: the
  *              accent on what matters, real imagery; one accent dot on grey is not colour)
  *   wash       and a ceiling (COLOUR): saturated pixels <= 45 % of the frame on average and no more than 45 %
  *              of the frames over half saturated (target: <= 30 % and <= 33 % of frames, neutral pixels
  *              >= 40 %, the accent's hue family 6-15 % of the frame); declared colour events left out
- *   bleed      the subject framed past two edges at 1.2x the frame or more in at least half the acts
- *              (target: every act)
+ *   bleed      the subject framed past two edges at 1.2x the frame or more in at least a quarter of the
+ *              acts (target: every act; a type beat on a clean field is the exception it allows)
  *   skeleton   no more than 3 glyphless bars in focus in a frame: placeholder lines are not content
  *   falloff    depth of field (target only, the motion floor asks for two planes already): a crisp plane
  *              and a defocused one in the same frame in >= 35 % of frames
@@ -192,15 +195,17 @@ export const GRAMMAR = {
  * is held longer than 0.8 s without a depth plane moving.
  */
 export const PICTURE = {
-  flatMax: 0.75,
-  flatFrame: { over: 0.6, maxShare: 0.88 },
-  edgesMin: 0.018,
+  flatMin: 0.25,
+  flatMax: 0.9,
+  flatFrame: { over: 0.6, minShare: 0.05 },
+  edgesMax: 0.12,
+  edgesMin: 0.006,
   saturatedMin: 0.022,
   saturatedMax: 0.45,
   washFrame: { over: 0.5, maxShare: 0.45 },
-  bleed: { share: 0.5, edges: 2, scale: 1.2 },
+  bleed: { share: 0.25, edges: 2, scale: 1.2 },
   skeletonBarsMax: 3,
-  target: { flatMax: 0.55, flatShare: 0.4, edgesMin: 0.03, saturatedMin: 0.06, bleedShare: 1, falloffShare: 0.35, saturatedMax: 0.3, washShare: 0.33, neutralMin: 0.4, accent: [0.06, 0.15] as const },
+  target: { flatMin: 0.43, flatMax: 0.85, flatShare: 0.18, edgesMax: 0.059, saturatedMin: 0.06, bleedShare: 1, falloffShare: 0.35, saturatedMax: 0.3, washShare: 0.33, neutralMin: 0.4, accent: [0.06, 0.15] as const },
   subject: { scale: [1.1, 1.6] as const, offCentre: 0.08 },
   holdMaxS: 0.8,
 } as const;

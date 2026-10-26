@@ -151,12 +151,23 @@ const houseTarget = () => {
       accent: P.target?.accent ?? CO.accent?.share ?? [0.06, 0.15],
     },
     // the picture: the floor (look-audit fails under it) scores 70, the house target 100 (lib/look.ts PICTURE)
+    // flat ground has a floor (texture everywhere fails) and an empty-film cap; edges a ceiling (busy everywhere) and an empty-film floor
     picture: {
-      floor: { flatMax: P.flatMax ?? 0.75, flatShare: P.flatFrame?.maxShare ?? 0.88, edgesMin: P.edgesMin ?? 0.018, saturatedMin: P.saturatedMin ?? 0.022, bleedShare: P.bleed?.share ?? 0.5, falloffShare: 0 },
+      floor: {
+        flatMin: P.flatMin ?? 0.25,
+        flatMax: P.flatMax ?? 0.9,
+        flatShare: P.flatFrame?.minShare ?? 0.05,
+        edgesMin: P.edgesMin ?? 0.006,
+        edgesMax: P.edgesMax ?? 0.12,
+        saturatedMin: P.saturatedMin ?? 0.022,
+        bleedShare: P.bleed?.share ?? 0.25,
+        falloffShare: 0,
+      },
       target: {
-        flatMax: P.target?.flatMax ?? 0.55,
-        flatShare: P.target?.flatShare ?? 0.4,
-        edgesMin: P.target?.edgesMin ?? 0.03,
+        flatMin: P.target?.flatMin ?? 0.43,
+        flatMax: P.target?.flatMax ?? 0.85,
+        flatShare: P.target?.flatShare ?? 0.18,
+        edgesMax: P.target?.edgesMax ?? 0.059,
         saturatedMin: P.target?.saturatedMin ?? 0.06,
         bleedShare: P.target?.bleedShare ?? 1,
         falloffShare: P.target?.falloffShare ?? 0.35,
@@ -433,9 +444,9 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
     const Tg = T.picture?.target ?? {};
     const bleed = Pm.bleed_share ?? (Pm.bleed_acts?.length ? Pm.bleed_acts.filter(Boolean).length / Pm.bleed_acts.length : 1);
     const parts = [
-      tier(Pm.flat, Fl.flatMax ?? 0.75, Tg.flatMax ?? 0.55),
-      tier(Pm.flat_frames_over, Fl.flatShare ?? 0.88, Tg.flatShare ?? 0.4),
-      tier(Pm.edges, Fl.edgesMin ?? 0.018, Tg.edgesMin ?? 0.03),
+      Pm.flat > (Tg.flatMax ?? 0.85) ? tier(Pm.flat, Fl.flatMax ?? 0.9, Tg.flatMax ?? 0.85) : tier(Pm.flat, Fl.flatMin ?? 0.25, Tg.flatMin ?? 0.43),
+      tier(Pm.flat_frames_over, Fl.flatShare ?? 0.05, Tg.flatShare ?? 0.18),
+      Pm.edges < (Fl.edgesMin ?? 0.006) ? 60 : tier(Pm.edges, Fl.edgesMax ?? 0.12, Tg.edgesMax ?? 0.059), // under the edge floor: an empty film
       tier(Pm.saturated, Fl.saturatedMin ?? 0.022, Tg.saturatedMin ?? 0.06),
       tier(bleed, Fl.bleedShare ?? 0.5, Tg.bleedShare ?? 1),
       tier(Pm.falloff, Fl.falloffShare ?? 0, Tg.falloffShare ?? 0.35),
@@ -588,12 +599,12 @@ const selfTest = () => {
   pair('type', score({ layout: { warnings: [] }, look: lookA, target: T, format: 'launch' }), score({ layout: { warnings: Array.from({ length: 4 }, () => ({ kind: 'type-size' })) }, look: lookA, target: T, format: 'launch' }), 'type: no role warnings score 100; four do not');
   pair(
     'picture',
-    withM({ picture: { flat: 0.4, flat_frames_over: 0.2, edges: 0.045, falloff: 0.8, saturated: 0.14, bleed_acts: [true, true], skeleton_samples: 0 } }),
-    withM({ picture: { flat: 0.87, flat_frames_over: 1, edges: 0.01, falloff: 0.3, saturated: 0.003, bleed_acts: [false, false], skeleton_samples: 12 } }),
-    'picture: a rich frame scores 100; a flat frame of skeleton cards does not',
+    withM({ picture: { flat: 0.5, flat_frames_over: 0.3, edges: 0.04, falloff: 0.8, saturated: 0.14, bleed_acts: [true, true], skeleton_samples: 0 } }),
+    withM({ picture: { flat: 0.06, flat_frames_over: 0, edges: 0.16, falloff: 0.3, saturated: 0.003, bleed_acts: [false, false], skeleton_samples: 12 } }),
+    'picture: type on clean ground beside imagery scores 100; texture everywhere with skeleton cards does not',
   );
   {
-    const atFloor = dimOf(withM({ picture: { flat: 0.75, flat_frames_over: 0.88, edges: 0.018, falloff: 0, saturated: 0.022, bleed_share: 0.5, skeleton_samples: 0 } }), 'picture').score;
+    const atFloor = dimOf(withM({ picture: { flat: 0.25, flat_frames_over: 0.05, edges: 0.12, falloff: 0, saturated: 0.022, bleed_share: 0.25, skeleton_samples: 0 } }), 'picture').score;
     check(atFloor >= 70 && atFloor <= 72, 'picture: a frame exactly at the floor scores 70 (the target scores 100)', `${atFloor}`);
   }
   console.log(`grammar-score self-test: ${bad ? `${bad} failed` : 'all pass'}`);
