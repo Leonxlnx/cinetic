@@ -85,7 +85,7 @@ export type WordsSpec = {
   exitEase?: Ease; // default E.launchIn (launch) / E.buildIn (launchFade)
   exitFade?: number; // film frames of a launchFade's opacity drop (default the pace's exitFade, 10 f@60)
   accent?: string; // the accent colour: words land in it and cool to `color`
-  color?: string; // the ink the accent cools to (default the brand's ink)
+  color?: string; // the words' ink, and the one the accent cools to (default: the ink the line inherits; the brand's ink under an accent)
   accentHold?: number; // film frames (default the pace's accentHold, 18 f@60)
   accentCool?: number; // film frames (default the pace's accentCool, 13 f@60)
   accentSpace?: 'srgb' | 'oklab';
@@ -396,6 +396,7 @@ export const Words: React.FC<WordsProps> = ({ frame, style, wordStyle, ...spec }
         display: 'inline-flex',
         flexWrap: 'nowrap',
         whiteSpace: 'pre',
+        color: spec.color, // the words' ink without an accent too (an accented word overrides it while it cools)
         ...(spec.oversize || spec.snapLast ? { transformOrigin: spec.oversize?.origin ?? 'center', transform: `scale(${s.scale.toFixed(6)})` } : {}),
         filter: lineBlur > 0 ? blurFilter(lineBlur) : undefined,
         ...(spec.edgeMask ? edgeMask({ left: (spec.edgeMask.left ?? 250) * (film.height / 1080), right: spec.edgeMask.right !== undefined ? spec.edgeMask.right * (film.height / 1080) : undefined }) : {}),
