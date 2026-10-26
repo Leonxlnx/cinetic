@@ -41,7 +41,7 @@ accent's hue. The film keeps one accent: a second brand hue is recorded for prod
 
 Usage (from the film project root, or pass --project):
   python3 scripts/brand.py <kit folder or files...> [--name "Quill"] [--project .]
-          [--colours colours.json] [--accent '#1F6FEB'] [--font "Inter"] [--dry-run] [--force]
+          [--colours colours.json] [--accent '#1F6FEB'] [--font "Inter"] [--dry-run]
   python3 scripts/brand.py --check [--project .]   # re-check brand/brand.json against src/brand/tokens.ts
 Then: python3 scripts/deck.py ... --brand brand/brand.json maps a direction's ground / ink / accent
 proportions onto these colours.
