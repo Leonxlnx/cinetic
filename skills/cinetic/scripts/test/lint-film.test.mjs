@@ -158,6 +158,7 @@ for (const [args, want, why] of [
   [['--accent', '#1F86CD', '--recipe', 'inkStage'], 1, 'an accent too dark for the ink stage refused (L 0.63-0.85)'],
   [['--accent', '#C92F33', '--recipe', 'deepField'], 1, 'a red deep field refused (blue, teal or green only)'],
   [['--accent', 'oklch(0.42 0.15 250)', '--recipe', 'stoneMid'], 0, 'the stone recipe with a deep accent'],
+  [['--accent', 'oklch(0.80 0.10 210)', '--recipe', 'stoneMid', '--stage', 'dark'], 2, 'a light recipe asked for a dark stage refused (not built light)'],
   [['--accent', '#1F86CD', '--paper', '#FFFFFF'], 1, 'a pure white paper refused outside the white-world recipe'],
   [['--accent', '#1F86CD', '--ramp', '#EEF3F9,#D3E2F2,#A9C7E8'], 0, 'a one-hue light field passes the ramp gate'],
   [['--accent', '#1F86CD', '--ramp', '#EEF3F9,#B5E3D5,#A9C7E8'], 1, 'a field that leans to another hue fails the ramp gate'],

@@ -324,7 +324,7 @@ def main():
     ap.add_argument('--list-recipes', action='store_true', help='print the recipes and exit')
     ap.add_argument('--check-tokens', metavar='FILE', help="check a film's tokens file (or an HTML :root palette) instead of building one")
     ap.add_argument('--ramp', help='comma-separated stops of a light field or sweep: one-hue check against --accent')
-    ap.add_argument('--stage', choices=['light', 'dark'], default='light', help='the ground most shots sit on')
+    ap.add_argument('--stage', choices=['light', 'dark'], help="the ground most shots sit on (default light, or the recipe's own)")
     ap.add_argument('--temp', choices=['neutral', 'cool', 'warm'], default='neutral',
                     help='tint of the neutrals (warm makes a beige paper: needs --brand-supplied)')
     ap.add_argument('--stage-hue', type=float, help="the stage's own hue from the brand's world (OKLCH h, e.g. 160 for pine-black)")
@@ -352,8 +352,13 @@ def main():
             print(f'palette.py: {e}', file=sys.stderr)
             return 2
     recipe = RECIPES.get(a.recipe) if a.recipe else None
-    if recipe:
-        a.stage = recipe['stage']
+    if recipe and a.stage and a.stage != recipe['stage']:
+        twins = ', '.join(k for k, v in RECIPES.items() if v['stage'] == a.stage and k != 'deepField')
+        twin = {'stoneMid': ' (slateMid is its dark twin)', 'slateMid': ' (stoneMid is its light twin)'}.get(a.recipe, '')
+        print(f"palette.py: --recipe {a.recipe} is a {recipe['stage']} stage, not {a.stage}: a {a.stage} recipe is one of "
+              f"{twins}{twin}", file=sys.stderr)
+        return 2
+    a.stage = recipe['stage'] if recipe else (a.stage or 'light')
     try:
         aL, aC, ah = parse_colour(a.accent)
     except ValueError as e:
