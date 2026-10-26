@@ -10,6 +10,14 @@ How to use it:
 - Numbers are frames at 60 fps (`f`) and pixels at 1080p unless an entry says otherwise.
 - Rainbow, spectral and iridescent accents, multi-hue gradients and light or glow are allowed when they are part of a device: one dominant accent per film, every gradient baked and dithered. Entries that rely on them say so under **Conditions**; entries that rely on a look the house still bans carry a **ban-safe default**.
 
+## Text animations: one per line
+
+Text animation is the main event of a cinetic film: the script's lines (3-8 words each, one on screen at a time) each arrive their own way, no two alike. `pick.py` draws one per line (its line track, `--lines`); give each line the one that says what it says.
+
+- **The presets** (`fx/TypePresets`, `<TypeLine spec={{ preset, text, at, out, exit }}>`): sixteen one-line animations from one spec and one renderer that measures the real font. `develop` (colour fronts run through the line), `build` (word by word on the beat), `typeFocus` (typed out of focus, the focus pulling in), `arc` (letters swing into their slots), `assemble` (letters gather from above and below the baseline), `decode` (the line opens from its centre behind accent blocks), `wheel` (the keyword rolls like a picker drum), `erode` (an old word erodes, the new one rises in its slot), `cycle` (the keyword shuffles weight and width), `punch` (a short line set big, a focus snap and a camera punch), `echo` (copies ring out on knockout boxes), `open` (words cut on touching, then the spaces open), `highlight` (an accent block walks to the keyword and parks), `slice` (strips snap together), `redact` (a box hops over the words as they change), `swarm` (words grow out of depth). Exits: cut, blur, drop, drift, push, split, swarm, dive. What each is for: `references/copy-and-type.md` §8.
+- **The type families** hold the rest: [type arrivals](type-arrivals.md), [lines, layout and swaps](lines-layout-and-swaps.md), [type exits](type-exits.md), and [marks, markers and annotations](marks-markers-and-annotations.md) for the keyword.
+- **Around the line:** the graphic effects of the materials section below (dithered gradients, glass, spectral colour, glyph textures, grades as transitions), a morph from the last shot, a grid, a loader, the product's UI. Pictures only as an accent, when the film has ones worth showing ([photos and footage](photos-and-footage.md)).
+
 ## Pick by job
 
 | job | first picks | also |
