@@ -16,6 +16,8 @@
  *   8. fx/Resize carry: no creep, front-loaded from the cut frame, home by 20 f.
  *   9. fx/Grids radiateState(): bornAt, per-ring speeds and the flood.
  *  10. lib/handoff counterCreep(), fx/Roll growthSteps().
+ *  11. fx/DitherBands ditherBandsState(): the switched share follows E.stdInOut over 16 f at 60 fps (8 at 30),
+ *      cells only ever switch on, the runs hold exactly the switched cells, declares() a stepped run and a seam.
  *
  * It runs src through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/primitives.test.mjs [--verbose]
@@ -61,6 +63,7 @@ import * as Rz from '${url('fx/Resize.tsx')}';
 import * as Gr from '${url('fx/Grids.tsx')}';
 import * as Ho from '${url('lib/handoff.ts')}';
 import * as Ro from '${url('fx/Roll.tsx')}';
+import * as Db from '${url('fx/DitherBands.tsx')}';
 const film60 = { fps: 60, width: 1920, height: 1080 };
 const film30 = { fps: 30, width: 1920, height: 1080 };
 const box = (w: number, h: number) => ({ x: 0, y: 0, w, h });
@@ -83,6 +86,10 @@ console.log(JSON.stringify({
   radiate: [Gr.radiateState(100, { start: 100, births: [100, 110], bornAt: 54, speeds: [12] }, film60), Gr.radiateState(120, { start: 100, births: [100, 110], bornAt: 54, speeds: [12] }, film60), Gr.radiateState(122, { start: 100, births: [100], flood: { at: 100 } }, film60)],
   creep: Ho.counterCreep(160, 100, {}, 60),
   growth: Ro.growthSteps(0, 3412, {}, 60),
+  bands: range(38, 58).map((f) => { const s = Db.ditherBandsState(f, { at: 40 }, film60); return { f, share: s.share, count: s.count, n: s.cells, cols: s.cols, rows: s.rows, done: s.done, cellsInRuns: s.runs.reduce((a, r) => a + Math.round(r.w / s.cell), 0), want: A.E.stdInOut(Math.min(1, Math.max(0, (f - 40) / 16))) }; }),
+  bands30: [Db.ditherBandsFrames({ at: 20 }, film30), Db.ditherBandsState(28, { at: 20 }, film30).done, Db.ditherBandsState(27, { at: 20 }, film30).done],
+  bandsSubset: (() => { const o = Db.ditherOrder(192, 108, {}); const a = Db.ditherBandsState(44, { at: 40 }, film60).count; const b = Db.ditherBandsState(45, { at: 40 }, film60).count; let ok = a <= b; for (let i = 0; i < o.rank.length; i++) if (o.rank[i] < a && !(o.rank[i] < b)) ok = false; return { ok, unique: new Set(Array.from(o.rank)).size === o.rank.length }; })(),
+  bandsDecl: Db.declares({ at: 40 }, film60),
   dir: { slow: D.dirBlurMix(1, { fps: 60 }), v10: D.dirBlurMix(-10, { fps: 60 }), v20at30: D.dirBlurMix(20, { fps: 30 }), fast: D.dirBlurMix(200, { fps: 60 }) },
 }));
 `;
@@ -178,6 +185,20 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   const vals = g.map((s) => s.value);
   result(vals[0] === 0 && vals.every((v, i) => i === 0 || v > vals[i - 1]) && vals[vals.length - 1] === 3412, 'growthSteps: 0, rising every step, ending on the total', vals.join(','));
   result(g.every((s, i) => i === 0 || s.at - g[i - 1].at === 12), 'growthSteps: a step every 12 f at 60 fps');
+}
+// 11. dither bands
+{
+  const b = P.bands;
+  const n = b[0].n;
+  result(b[0].cols === 192 && b[0].rows === 108, 'ditherBands: 10 px cells at 1080p (192 x 108)', `${b[0].cols} x ${b[0].rows}`);
+  result(b[0].share === 0 && b[1].share === 0 && b.every((s) => Math.abs(s.share - s.want) <= 1 / n + 1e-12), 'ditherBands: nothing before at, then the switched share is E.stdInOut over 16 f');
+  result(!b.find((s) => s.f === 55).done && b.find((s) => s.f === 56).done, 'ditherBands: whole on the 16th frame at 60 fps');
+  result(b.every((s) => s.done || s.cellsInRuns === s.count), 'ditherBands: the runs hold exactly the switched cells');
+  result(P.bandsSubset.ok && P.bandsSubset.unique, 'ditherBands: one fixed order, a switched cell stays switched');
+  const [fr30, done28, done27] = P.bands30;
+  result(fr30.end === 28 && done28 && !done27, 'ditherBands: 8 f at 30 fps');
+  const d = P.bandsDecl;
+  result(d.stepped.length === 1 && d.stepped[0].from === 40 && d.stepped[0].to === 57 && d.seams[0].at === 56 && d.seams[0].kind === 'wipe', 'ditherBands declares: every frame a step, a wipe seam when whole', JSON.stringify(d));
 }
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }

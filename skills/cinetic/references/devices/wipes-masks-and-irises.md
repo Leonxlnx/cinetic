@@ -39,6 +39,7 @@ A wipe in the next scene's colour built from 22-23 px square blocks advances dia
 - **Timing:** 16-55 f.
 - **Sound:** A riser peak; crunchy clicks under the steps.
 - **Build:** `<StairWipe at color outgoing incoming>` (fx/Grids): 22 px blocks advance diagonally (35 deg) with a seeded staircase edge (12 %), stepped at 12.5 fps, 80 % of the coverage in the middle on M.pixelStair (55 f); a fringe of blocks in the next scene's colour leads it (`fringeAlpha={1}` for a solid accent edge); a wipe seam.
+- **Build (bands):** `<DitherBands at outgoing incoming>` (fx/DitherBands): six wide rectangles (2.5-7 times wider than tall) open from their own centres, born over the first 45 % of the run, their rims an ordered dither of 10 px cells 0.06 of the frame height deep; 16 f at 60 fps on E.stdInOut, every frame a step (declared), a wipe seam on the last. Works on any two scenes, no photo; it reads only between grounds that differ (type on paper into a UI, light into dark). `frames={3}` for a dither cut hidden in a zoom jump.
 
 ### Ring of pixel blocks expands and reveals
 
