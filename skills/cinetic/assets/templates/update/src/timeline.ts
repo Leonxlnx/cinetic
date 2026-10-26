@@ -101,7 +101,7 @@ export const CUE: Record<string, number> = {
 /** How fast moves render: 'crisp' (house default, flat graphics stay sharp) or 'camera' (180-degree shutter on fast moves). */
 export type BlurPolicy = 'crisp' | 'camera';
 /** The film's type sets its shot-length band (lib/look.ts GRAMMAR.shot.band; grammar-score --format update reads the update band). */
-export type FilmType = 'launch' | 'explainer' | 'reel' | 'social';
+export type FilmType = 'launch' | 'update' | 'explainer' | 'reel' | 'social';
 /** One surface material per film, or none. */
 export type Texture = 'clean' | 'paper' | 'grid' | 'halftone' | 'dither';
 export type Look = { blur: BlurPolicy; texture: Texture; filmType: FilmType; oneTake: boolean; whiteWorld: boolean };
@@ -119,7 +119,7 @@ export type Declares = { stepped?: SteppedRange[]; flashes?: Flash[]; cameraBlur
 export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 
 /** One camera carries the whole film along one strip (no hard cut): a one-take film. */
-export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'launch', oneTake: true, whiteWorld: false };
+export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'update', oneTake: true, whiteWorld: false };
 /** Every seam: the camera is at its fastest on each act line, so speed carries across every one. */
 export const SEAMS: Seam[] = [
   ...UPDATE.changes.map((c, i): Seam => ({ at: beat(BEATS.change(i)), kind: i ? 'whip' : 'velocity', carry: 'x', dir: 1, id: `to-${c.id}` })),

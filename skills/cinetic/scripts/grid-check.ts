@@ -97,8 +97,8 @@
  *                  SEAMS at the same frame and kind (error)
  * Grammar (only for timelines that make the declarations above):
  *   shot-length    shots between act boundaries, seams and `cut` CUEs, for films of 3+ shots that
- *                  are not LOOK.oneTake: median inside the film type's band (launch 1.3-2.2 s,
- *                  explainer 2.0-3.0 s, reel and social 0.5-1.0 s), q75/q25 >= 1.4, longest >= 2x
+ *                  are not LOOK.oneTake: median inside the film type's band (launch 1.3-2.2 s, update
+ *                  0.8-1.6 s, explainer 2.0-3.0 s, reel and social 0.5-1.0 s), q75/q25 >= 1.4, longest >= 2x
  *                  shortest, shots under 0.25 s only as declared punches, few shots over 4 s
  *                  (launch <= 15 %, others <= 30 %) (warnings)
  *   seam-plan      `fadeEnd` only as the last seam, `dissolveUi` never across an act boundary or
@@ -169,9 +169,9 @@ const PUNCH = new Set(['snapZoom', 'stepped', 'colour', 'light']);
 /** Seams that carry the eye through on their own: they may float off the music's accents (cut-on-sound skips them). */
 const CONTINUITY = new Set([...CARRIED, 'defocus', 'wipe', 'dissolveUi', 'fadeEnd']);
 const TEXTURES = ['clean', 'paper', 'grid', 'halftone', 'dither'];
-const FILM_TYPES = ['launch', 'explainer', 'reel', 'social'];
+const FILM_TYPES = ['launch', 'update', 'explainer', 'reel', 'social'];
 /** House shot-length bands in seconds (median shot), by film type. */
-const SHOT_BAND: Record<string, [number, number]> = { launch: [1.3, 2.2], explainer: [2.0, 3.0], reel: [0.5, 1.0], social: [0.5, 1.0] };
+const SHOT_BAND: Record<string, [number, number]> = { launch: [1.3, 2.2], update: [0.8, 1.6], explainer: [2.0, 3.0], reel: [0.5, 1.0], social: [0.5, 1.0] };
 const median = (a: number[]) => {
   const s = [...a].sort((x, y) => x - y);
   const m = s.length >> 1;
@@ -934,7 +934,7 @@ async function main() {
         if (!punch) warn('shot-length', `the shot f${a}-f${b} lasts ${sec[i].toFixed(2)} s; under 0.25 s only as a declared punch (a flash, a step, a snap zoom, a colour or light seam)`);
       }
       const long = sec.filter((x) => x > 4).length / sec.length;
-      const longMax = filmType === 'launch' ? 0.15 : 0.3;
+      const longMax = filmType === 'launch' || filmType === 'update' ? 0.15 : 0.3;
       if (long > longMax) warn('shot-length', `${Math.round(100 * long)} % of the shots run over 4 s; keep <= ${Math.round(100 * longMax)} % in a ${filmType} film, or declare LOOK.oneTake`);
     }
 

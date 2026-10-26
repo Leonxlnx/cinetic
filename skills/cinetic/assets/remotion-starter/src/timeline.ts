@@ -112,7 +112,7 @@ export const CUE = {
 /** How fast moves render: 'crisp' (house default, flat graphics stay sharp) or 'camera' (180-degree shutter on fast moves). */
 export type BlurPolicy = 'crisp' | 'camera';
 /** The film's type sets its shot-length band and whether a grid-locked edit is allowed (reel, social). */
-export type FilmType = 'launch' | 'explainer' | 'reel' | 'social';
+export type FilmType = 'launch' | 'update' | 'explainer' | 'reel' | 'social';
 /** One surface material per film, or none. */
 export type Texture = 'clean' | 'paper' | 'grid' | 'halftone' | 'dither';
 export type Look = { blur: BlurPolicy; texture: Texture; filmType: FilmType; oneTake: boolean; whiteWorld: boolean };

@@ -49,8 +49,8 @@ Reads `timeline.ts` (a HyperFrames project: `timeline.js`) and checks it against
 | `read-quiet` (calm) | nothing that asks for the eye starts while a fragment is read. Only cues whose `SALIENCE` is `copy`, `hit` or `cut` are guarded (missing = `hit`); `life` (creep, light, drift, carried decay) and `move` (camera moves away from the text) run freely and count toward density |
 
 In a calm film a missing or short picture beat, two lines arriving together and copy on more than 75 % of the body are
-errors. `LOOK.filmType` takes `launch`, `explainer`, `reel` or `social`; an update film sets `launch` in the timeline
-and is scored on the update band by `grammar-score.mjs --format update`.
+errors. `LOOK.filmType` takes `launch`, `update`, `explainer`, `reel` or `social`; an update film sets `update`, so
+grid-check and `grammar-score.mjs` read the update band (`--format update` overrides the format for a film that does not).
 
 ## 3. lint-film (`scripts/lint-film.mjs`)
 

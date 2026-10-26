@@ -194,7 +194,7 @@ craft and still fail the undeclared ones:
 
 | Export | What it declares |
 |---|---|
-| `LOOK` | `{ blur: 'crisp' or 'camera', texture, filmType: 'launch', 'explainer', 'reel' or 'social', oneTake, whiteWorld }` |
+| `LOOK` | `{ blur: 'crisp' or 'camera', texture, filmType: 'launch', 'update', 'explainer', 'reel' or 'social', oneTake, whiteWorld }` |
 | `SEAMS` | every shot change: `{ at, kind, carry?, dir?, signature?, id? }` (`references/transitions.md` §1) |
 | `STEPPED` | frames on a lower cadence or held on twos or threes: `{ from, to, fps? or on?, id }` |
 | `FLASHES` | designed one- or two-frame flashes and colour flips: `{ f, frames, id }` |
