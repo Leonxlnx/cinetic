@@ -1,6 +1,6 @@
 # HyperFrames engine
 
-Covers HyperFrames 0.8.79 as cinetic uses it: how it renders, the composition and timeline contract, the CLI, the traps its linter misses, and how to carry the beat grid, easing tokens, springs, sync and finishing over from the Remotion kit. Read it at Step 4 when the film is built in HyperFrames (HTML plus one paused GSAP timeline), and before the first render.
+Covers HyperFrames 0.8.79 as cinetic uses it: how it renders, the composition and timeline contract, the CLI, the traps its linter misses, and how to carry the beat grid, easing tokens, springs, sync and finishing over from the Remotion kit. Read it at Step 6 when the film is built in HyperFrames (HTML plus one paused GSAP timeline), and before the first render.
 
 Everything here was checked against the 0.8.79 source and by rendering `assets/hyperframes-starter/` with a sandbox headless Chromium. The numbers are house defaults and starting points; the craft rules in the other references apply unchanged.
 

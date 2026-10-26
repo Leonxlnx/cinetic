@@ -1,8 +1,8 @@
 # Craft rules: what code films get wrong, and the house fix
 
 The twenty mistakes that make a film read as made by code, each with the house fix and the check that catches it,
-then the house rules for pacing, transitions, the camera, the product, colour over time and layout. Read it in Step 1
-when you shape the beat sheet, in Steps 3-4 when you set durations, curves and staggers, and in review whenever a film
+then the house rules for pacing, transitions, the camera, the product, colour over time and layout. Read it in Step 5
+when you shape the beat sheet, in Steps 5-6 when you set durations, curves and staggers, and in review whenever a film
 feels slow, busy, floaty, flat or cheap.
 
 Conventions: **f** is a frame at 60 fps; speeds are px/f or px/s at 1080p; **FH** and **FW** are shares of the frame

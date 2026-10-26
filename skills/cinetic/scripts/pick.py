@@ -84,7 +84,7 @@ product demo), with one signature move, or two in a plan of 10 or more. A slot w
 nothing left at this energy (or only families the film already holds twice) passes to the next
 category in that order.
 
-Rules for the agent (SKILL.md, Step 1): draw before you design; build the picks the concept can
+Rules for the agent (SKILL.md, Step 5): draw before you design; build the picks the concept can
 carry, each retold in the film's objects; reroll a pick that fights the concept (--exclude it,
 same --category, --keep the plan so its families still count) at most twice, or drop it, and write
 down why. Never add a technique the draw did not give you: draw one with --category or --family.
@@ -589,7 +589,7 @@ def library_markdown(entries, data):
     out = ['# Technique library', '', GENERATED, '',
            f'{len(entries)} techniques and devices in {len(fams)} families, each with a build recipe, the starter primitive '
            'that builds it when there is one, default timing at 60 fps, and when to use it. Don\'t choose from the library '
-           'by hand: draw with `scripts/pick.py` (SKILL.md, Step 1), read a drawn entry with `pick.py --show <id>`, and come '
+           'by hand: draw with `scripts/pick.py` (SKILL.md, Step 5), read a drawn entry with `pick.py --show <id>`, and come '
            'to its family file to find an alternative after a reroll or a small device for one beat '
            '(`pick.py --family "<family>" --n 2` draws from one family).', '',
            'Roles: a **workhorse** carries a film and can recur, an **accent** spices one moment, a **signature** is a hero '

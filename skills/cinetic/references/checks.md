@@ -5,14 +5,15 @@ each one applies, the levels (error / warn / info) and the flags that matter. Th
 check reads a declaration from `timeline.ts` (`LOOK`, `SEAMS`, `STEPPED`, `FLASHES`, `CAMERA_BLUR`, `END`, `REVEAL`,
 `SPRING_CLASS`, `STRUCTURAL`, `SALIENCE`), the declaration turns a designed artifact into craft instead of a fault.
 
-Contents: 1. The order · 2. grid-check · 3. lint-film · 4. layout-audit · 5. forensics · 6. look-audit and the
+Contents: 1. The order · 1b. copy-check · 2. grid-check · 3. lint-film · 4. layout-audit · 5. forensics · 6. look-audit and the
 floors · 7. grammar-score · 8. measure-speed and the render wrappers · 9. palette · 10. Sound checks ·
 11. The test suites
 
 ## 1. The order
 
 ```
-npx tsx scripts/grid-check.ts src/timeline.ts                 # Step 3, and after every timeline edit
+python3 scripts/copy-check.py TREATMENT.md                    # Step 1b, before any picture work
+npx tsx scripts/grid-check.ts src/timeline.ts                 # Step 5, and after every timeline edit
 node scripts/lint-film.mjs src [--strict]                     # Step 2 and every build step
 npm run cues                                                  # out/cues.json (declarations, copy, events)
 bash scripts/render.sh Film out/preview.mp4 --preview
@@ -24,9 +25,30 @@ python3 scripts/av-audit.py out/preview.mp4 --cues out/cues.json --stems out/ste
 ```
 
 After each round write the weakest grammar-score dimension and the weakest floor reading into the review note, and
-fix that first. A ship needs, on the final render: lint `--strict` and grid-check clean; forensics passing;
+fix that first. A ship needs, on the final render: copy-check, lint `--strict` and grid-check clean; forensics passing;
 look-audit passing with both floors; grammar-score mean ≥ 90, no dimension under 70; the sound gates
 (`references/sound.md`); probe and check-sync (`references/finishing.md`); the rubric (`references/review-loop.md`).
+
+## 1b. copy-check (`scripts/copy-check.py`): is the script clear
+
+Run it on `TREATMENT.md` at Step 1b, before any picture work, and again on `out/cues.json` once the timeline exists
+(`grid-check.ts` runs it on `COPY` inside its `script` rule). It reads the script the way a stranger does.
+
+| Rule | Fails when | Level |
+|---|---|---|
+| `what-it-is` | no line says what the product is by 3 s ("[Name] is a [plain category] for [who]." or "[Name] turns [input] into [output]."); an update film: no "[Name] [version]" by 3 s | error |
+| `name` | the product's name never appears on screen | error |
+| `long`, `keyword` | a line over 7 words; a one-word line (a name, a version or the close excepted) | error |
+| `vague` | fancy or vague words a customer would not say (unleash, reimagine, seamless, effortless, elevate, supercharge, next-level, the future of, magic, journey, unlock, empower, revolutionize, beyond, redefine, game-changing, built different, ...) | error |
+| `metaphor` | a figure of speech instead of the thing (a superpower, a second brain, rocket fuel, on autopilot, a copilot) | error |
+| `slogan` | "Meet X", "X, reimagined", "Less X. More Y.", "X meets Y", "made simple", "your way", a question, an exclamation | error |
+| `claims` | two sentences, a list, or two clauses joined by and/but in one line | error |
+| `verb` | no verb (an abstract noun alone: "Total control.") | error |
+| `together` | two lines on screen at once outside a declared swap | error |
+| `close` | the end lacks the name or what to do (a URL, "Out now") | warning |
+
+It prints every line with its second, the findings, and "a stranger reads": what it is, what it does, what to do,
+and a verdict. `--allow <word>` keeps a word the brand's own voice owns (record it in `BRIEF.md`); `--json` for tools.
 
 ## 2. grid-check (`scripts/grid-check.ts`)
 
@@ -47,7 +69,7 @@ Reads `timeline.ts` (a HyperFrames project: `timeline.js`) and checks it against
 | `declares-cover` | every step, flash, camera-blur need and seam that a primitive declares is covered by the timeline's declarations |
 | `event-gap`, `density-plan` | no stretch past 72 f without an event or a reading hold (48 f in crisp); starts per second and concurrency in band |
 | `stagger-shape`, `accent-time`, `end-lock`, `exit-length` | irregular staggers in the house range; the accent transient on type; the end lock held; exits long enough to read as moves |
-| `script` | the film's words are a script: every line (an entry, a build chain joined, a replace fragment; not ui strings, `kind: 'name'` or the end card) holds 3–8 words (over 8 an error, 1–2 a warning, a single word called a keyword); more than half the lines under 3 words warns as a keyword pile; two lines on screen together after the first one's read is an error unless the later one declares `swap: '<id>'`; a sentence set on two lines warns. A film whose lines are mostly sentences reads at the script's budget: 50 words, 2.4 words a second in any 5 s, 1.6 over the body, text on up to 85 % (`references/copy-and-type.md` §1–2b) |
+| `script` | the film's words are a script: every line (an entry, a build chain joined, a replace fragment; not ui strings, `kind: 'name'` or the end card) holds 2–7 words (over 7 an error, a single word a warning, called a keyword); more than half the lines a single word warns as a keyword pile; then `copy-check.py` reads every entry as a stranger would and its errors are script errors (vague or fancy words, metaphors, slogan shapes, no verb, two claims in a line, no name, nothing that says what the product is by 3 s; an update film: the name and the version by 3 s, from `LOOK.filmType`; `--no-copy` skips it); two lines on screen together after the first one's read is an error unless the later one declares `swap: '<id>'`; a sentence set on two lines warns. A film whose lines are mostly sentences reads at the script's budget: 50 words, 2.4 words a second in any 5 s, 1.6 over the body, text on up to 85 % (`references/copy-and-type.md` §1–2b) |
 | text flow | `fragment` (chain parts), `copy-lines`, `copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`, `chain-beat`, `word-rate`, `word-total`, `text-hold`, `text-share` (`references/copy-and-type.md`) |
 | `read-quiet` (calm) | nothing that asks for the eye starts while a line is read. Only cues whose `SALIENCE` is `copy`, `hit` or `cut` are guarded (missing = `hit`); `life` (creep, light, drift, carried decay) and `move` (camera moves away from the text) run freely and count toward density |
 

@@ -1,6 +1,6 @@
 # Review loop
 
-How to critique a render and decide whether it ships: the round procedure, the critic lenses, the verify pass, the design-off for a weak act, the rubric, severity, the ship gate, recurring problems and every QA threshold. Read it at Step 7, and whenever a script flags something you do not understand.
+How to critique a render and decide whether it ships: the round procedure, the critic lenses, the verify pass, the design-off for a weak act, the rubric, severity, the ship gate, recurring problems and every QA threshold. Read it at Step 10, and whenever a script flags something you do not understand.
 
 The numbers here are proven defaults from building and shipping films, not dogma. Tighten or loosen them for a film with a reason, and write the reason down.
 
@@ -174,7 +174,7 @@ The templates are in `assets/critics/`. Each ends with the same return schema:
 - Say what changed, so it gets checked hardest.
 - Say "Do not re-report fixed issues", or every round re-litigates old notes.
 - Ask the creative question every round: **is the picture doing something a template would not?** A film that is clean, synced and correct but could be any product's is not finished.
-- Say "Don't propose adding text": critics reach for captions when a picture does not read, and the fix is the picture. Do let them propose rewriting a keyword as a sentence, cutting a line to 3-8 words, and giving two lines that share an animation different ones, which are fixes of the same kind.
+- Say "Don't propose adding text": critics reach for captions when a picture does not read, and the fix is the picture. Do let them propose rewriting a vague line in plain words, cutting a line to 2-7 words, and giving two lines that share an animation different ones, which are fixes of the same kind.
 - Ask for a ranking by impact per minute of fixing, with the time left. Near the end, only small, safe, high-impact fixes are worth it.
 - Batch images into sheets. Images are the expensive part of a critic's context, and one 48-tile sheet costs about the same as one still.
 
@@ -234,7 +234,7 @@ Score each dimension 1 to 5. The anchors are for 1, 3 and 5, and 2 and 4 sit bet
 |---|---|---|---|---|
 | **Idea and device** | a feature tour | a clear idea, but the device drops out, or the film would be just as true of a simpler product | one idea specific to this product that reads muted; the device is an object this product owns, survives every cut and resolves (into the mark, or in a loop or product video into the product's finished state) | watch sheets with the sound off; the specificity answer in `TREATMENT.md` |
 | **Hook (0–2 s)** | a blank or static frame | motion, but the problem lands after 2 s | frame 0 composed and moving; the problem felt by 1 s | first watch sheet; `energy_per_second[0:2]` |
-| **Copy and type** | a keyword pile, labels, bullets, a line over 8 words, two lines at once, mixed fonts | sentences that are clean but generic, or lines that all arrive the same way | a script of short sentences that tells the story, one line at a time (3–8 words, at least 8 f per word in a reveal), each with its own text animation, lines that pay off the film's own words, one family on one token set, zero collisions | art lens; `grid-check.ts` script, words, holds and text flow |
+| **Copy and type** | no line says what the product is by 3 s, vague or fancy words, a keyword pile, labels, bullets, a line over 7 words, two lines at once, mixed fonts | plain lines, but clever before clear, or lines that all arrive the same way | what it is by 3 s, then one concrete thing it does a line while the UI shows it, the name and what to do (2–7 words, at least 8 f per word in a reveal), each with its own text animation, one family on one token set, zero collisions | art lens; `copy-check.py`; `grid-check.ts` script, words, holds and text flow |
 | **Colour and brand** | a monochrome accent wash, neon, decorative gradients or glow, beige defaults; the starter's look | disciplined, but generic: the accent carries no meaning, or the brand has no personality | a look of its own from the brand's personality (or the supplied kit); one dominant accent with one meaning over neutral grounds; spectral, gradient and glow only inside devices; no banding; an ownable mark | art lens; look-audit colour checks; banding sheet; the mark sheet |
 | **Picture** | flat: grey cards on a plain ground, a parked camera, a sampler of devices; or everything on texture, busy to the edges | tidy and moving, but thin: one plane, no light event, code shapes where the subject has a world | clean and alive: real imagery or a lit world, three depth planes, light that moves, type beats on clean fields, one signature shot, a device per beat from many families; both floors pass and the picture target is met | look-audit floors and `picture` readings; watch sheets; `out/direction.json` |
 | **Composition** | centred web layout, voids | correct, but framing errors or crops that slice glyphs | bleeding and off-centre framing, one focal point per shot, headroom kept, type at film size | layout-audit; legibility sheet |

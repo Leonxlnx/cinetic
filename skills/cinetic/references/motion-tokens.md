@@ -2,7 +2,7 @@
 
 The house motion system: curves by role, special curves for primitives, spring presets and the one spring class, the
 duration, time-constant, stagger, typing and speed tables, velocity carried through cuts, holds that creep, overlap,
-oversized landings, stepped time, the pace knob and the `hitPulse` envelope. Read it before Step 4 (Build), and
+oversized landings, stepped time, the pace knob and the `hitPulse` envelope. Read it before Step 6 (Build), and
 whenever motion looks floaty, bouncy, uniform or mechanical.
 
 Everything lives in `src/lib/anim.ts` (curves, springs, tables), `src/lib/pace.ts` (the pace), `src/lib/handoff.ts`

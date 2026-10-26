@@ -1,6 +1,6 @@
 # Finishing: motion blur, banding, colour, encode, mux and deliverables
 
-Covers everything between "the picture code is done" and "the files are shipped": the render modes, true motion blur as a render pass, banding, BT.709 colour, encoder settings, the audio mux, splicing, and every deliverable format. Read it before Step 6 (Render and finish) and Step 8 (Deliver), and whenever a render looks different from the Studio.
+Covers everything between "the picture code is done" and "the files are shipped": the render modes, true motion blur as a render pass, banding, BT.709 colour, encoder settings, the audio mux, splicing, and every deliverable format. Read it before Step 9 (Render and finish) and Step 11 (Deliver), and whenever a render looks different from the Studio.
 
 The numbers here are house defaults with normal ranges. Start from them; change one when a measurement tells you to.
 
