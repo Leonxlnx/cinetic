@@ -46,16 +46,16 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 
 **Purpose.** Make a viewer feel a problem, see the product answer it, and remember the name.
 
-**Length.** 15–45 s, on the track's bars (about 100 BPM, a 2.4 s bar, for a calm film; 120 for a crisp one), with 6–8 story beats per 30 s (8–10 in crisp). Keep the whole film to 15–25 words, 30 at most, in fragments of at most 4 words that arrive one at a time with picture between them.
+**Length.** 15–45 s, on the track's bars (about 100 BPM, a 2.4 s bar, for a calm film; 120 for a crisp one), with 6–8 story beats per 30 s (8–10 in crisp). Write it as a script of 6–9 short sentences (3–8 words each, about 25–50 words in all), one clean line on screen at a time, each with its own text animation (`references/copy-and-type.md` §1–2b).
 
-**Act template** (30 s + tail = 15 bars + 60 f at 120 BPM; Tessel's shape, see `references/worked-example.md`). At the calm 100 BPM the same beats fill about 12–13 bars: keep each beat's share of the runtime and let each copy beat carry one fragment chain.
+**Act template** (30 s + tail = 15 bars + 60 f at 120 BPM; Tessel's shape, see `references/worked-example.md`). At the calm 100 BPM the same beats fill about 12–13 bars: keep each beat's share of the runtime and let each copy beat carry one sentence of the script.
 
 | Bars | Time | Beat type | What happens | Sound |
 |---|---|---|---|---|
 | 1–3 | 0–6 s | hook → problem | Frame 0 is already moving, and the device is on screen. The problem is felt by 1 s and stated by 2 s, then piles up visibly. It ends in an implosion or a gather into the device. | The track's intro, entering with intent; a stop or break before bar 4. |
 | 4–5 | 6–10 s | turn | The track's entry on the bar 4 downbeat: the device meets or becomes the mark, or the product arrives. A mid-film mark lasts 1.5 s or less, or visibly builds. | The entry carries it; one designed hit at most. |
 | 6–9 | 10–18 s | proof 1 | One capability as cause → action → result. The human's one input comes first, and the product acts after it. The signature shot lands here or at the payoff. | Effects on the product's state changes, levelled over the bed. |
-| 10–12 | 18–24 s | proof 2 / consequences | One fragment per bar, each paying off earlier copy, and the picture acting between them. One consequence per fragment lands on an accent. | Cuts on the track's accents; whips peak on them. |
+| 10–12 | 18–24 s | proof 2 / consequences | One line per bar, each paying off earlier copy, the picture proving it as it lands. One consequence per line lands on an accent. | Cuts on the track's accents; whips peak on them. |
 | 13–15 | 24–30 s | promise | A dip, then the biggest reveal on the track's entry; pull back to show scale; the device becomes the mark. | A stop or break of 0.2-0.5 s, then the entry under the promise. |
 | 16 + 60 f | 30–33 s | lockup / end card | Name, the brief's fact (readable ≥ 1.7 s), the bookend, and a tail that decays to digital zero. | `stop`, `button` or `ring`: one element at the lockup; the tail runs to zero. |
 
@@ -79,7 +79,7 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 
 **Purpose.** Show one capability so clearly that the viewer could explain it afterwards.
 
-**Length.** 8–30 s at 100 BPM. Budget one capability per 8–10 s and 12 words or fewer, in fragments of at most 4.
+**Length.** 8–30 s at 100 BPM. Budget one capability per 8–10 s and 3–6 short sentences of 3–7 words, one line at a time.
 
 **Structure.** Cause → action → result, with the product doing the work:
 
@@ -96,7 +96,7 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 - **Show no cursor after the cause.** A cursor that keeps doing things implies the product needs babysitting.
 - **Make the product and the feature identifiable.** A stranger should know it is software and which feature this is: enough real app chrome (a window edge, the app's own header or sidebar) and the feature's name once, as a UI label (a tab, a menu item, the button that causes the action), as the one line of copy, or on the end card. "No feature name as a headline" is a copy rule; it never means "never name it". A film that shows a clever behaviour without naming it can't be searched for or asked about.
 
-**Update film** ("vX is out", 8-20 s) is a first-class format of its own: a hook on the version or the mark, 2-4 changes each shown as a product moment, one payoff, the end card with the version; 1-3 words a fragment; a licensed track. The recipe, the deck and the template are in `references/update-films.md`.
+**Update film** ("vX is out", 8-20 s) is a first-class format of its own: a hook on the version or the mark, 2-4 changes each shown as a product moment, one payoff, the end card with the version; one short sentence per beat (3–6 words), one line at a time; a licensed track. The recipe, the deck and the template are in `references/update-films.md`.
 
 **Format gates**
 - One capability.
@@ -221,7 +221,7 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 
 **Purpose.** Teach a flow: the viewer can repeat it afterwards. It is calmer than a launch film but never static.
 
-**Length.** 20–90 s at 90–100 BPM, with one chapter per 2–4 bars and 5 words or fewer per caption, arriving as one fragment or a chain of two.
+**Length.** 20–90 s at 90–100 BPM, with one chapter per 2–4 bars and one line of 3–8 words per step, one line at a time.
 
 **Chapter template** (repeat per feature; chapter changes land on downbeats):
 
@@ -331,9 +331,9 @@ PY
 | Request | Recipe | Adjustments |
 |---|---|---|
 | Teaser or trailer | §2, teaser variant | hook → turn → lockup, 15–20 s, 6–10 words |
-| Release or update post ("here is the newest …") | §3, update film | 15–25 s, calm, 8–12 words, the setup fragment handing over to the product's arrival |
+| Release or update post ("here is the newest …") | §3, update film | 15–25 s, calm, 4–6 short sentences, the hook line handing over to the product's arrival |
 | Intro or outro for other videos | §5 | 3–5 s; the outro reverses the intro's entrance; provide an alpha version |
-| Kinetic type piece | §2 structure, words as the device | fragment chains, one fragment per 1–1.5 bars, with picture beats and text-free stretches; recipes in `references/copy-and-type.md` §2b and §8 |
+| Kinetic type piece | §2 structure, words as the device | a script of short sentences, one line per 1–1.5 bars, each with its own text animation (the presets), graphic effects around them and text-free stretches; recipes in `references/copy-and-type.md` §2b and §8 |
 | App demo | §3 if one capability, §6 if a flow | real components, a data module with asserts |
 | Promo clip with footage | §3 structure | the footage is the product surface; the brand's footage and grade win; add type and sound on the grid |
 | Social cut-down of a finished film | §7 | re-layout from the same timeline; trim at bar boundaries, never mid-bar |
