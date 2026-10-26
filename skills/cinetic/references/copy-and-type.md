@@ -1,51 +1,66 @@
 # Copy and type
 
-Covers the words (budget, voice, fragment chains, callback copy, stock phrasing, string audit) and the letters
-(choosing and loading the family, type roles at film size, the line system, the type devices, type as the set,
-reveals that never misspell, measuring and fitting). Read the copy half at Step 1 while writing the beat sheet and
-the type half at Step 2 before writing `src/brand/tokens.ts`. **Calm copy, clean picture:** the words stay few, short
-and readable, large and frontal on a clean ground; the picture around them never rests. Numbers are house defaults at 1920×1080 and 60 fps with normal
-ranges. A supplied brand voice or typeface wins over every default here.
+Covers the words (the script, writing a line, good and bad scripts, one line at a time, callback copy, stock
+phrasing, string audit) and the letters (choosing and loading the family, type roles at film size, sizing one line,
+the text animations, the line system, the type devices, type as the set, reveals that never misspell, measuring and
+fitting). Read the copy half at Step 1b, when you write the script, and the type half at Step 2 before writing
+`src/brand/tokens.ts`. **A script, one clean line at a time:** the words are short real sentences that tell the
+story; each line stands large and frontal on a clean ground, arrives with its own text animation, and graphic effects
+work around it. Numbers are house defaults at 1920×1080 and 60 fps with normal ranges. A supplied brand voice or
+typeface wins over every default here.
 
 **Contents**
-1. [Copy budget](#1-copy-budget)
+1. [The script](#1-the-script)
 2. [Writing a line](#2-writing-a-line)
-2b. [Fragment chains](#2b-fragment-chains)
+2a. [Good and bad scripts](#2a-good-and-bad-scripts)
+2b. [One line at a time](#2b-one-line-at-a-time)
 3. [Callback copy](#3-callback-copy)
 4. [Stock phrasing to cut](#4-stock-phrasing-to-cut)
 5. [String audit](#5-string-audit)
 6. [One family, chosen for the brand](#6-one-family-chosen-for-the-brand)
 7. [Type roles at film size](#7-type-roles-at-film-size)
-8. [The line system: Words, Chain, Oversize](#8-the-line-system-words-chain-oversize)
+8. [The text animations: TypeLine, Words, Chain, Oversize](#8-the-text-animations-typeline-words-chain-oversize)
 9. [Type devices](#9-type-devices)
 10. [Measuring and fitting text](#10-measuring-and-fitting-text)
 
 ---
 
-## 1. Copy budget
+## 1. The script
 
-Count every word of the film's own voice: statements, captions, the end-card line. Strings the product itself shows
-(a typed terminal command, code, a URL, an app label) are not the film talking: put them in `COPY` with `kind: 'ui'`
-(and `data-ui` on the element that renders them), and the checks count them apart instead of against the budget.
-They still have to be real, readable and held long enough when the story needs them read.
+A cinetic film is written before it is built: a short script of real sentences, read in order like a story. Each
+sentence is one line on screen, and each line is one beat of the film. Write it at Step 1b, into the Script block of
+`TREATMENT.md`, before the beat sheet and before any code.
 
-| Format | Words in the film | New per fragment | Visible at once |
+| Format | Lines | Words a line | In all |
 |---|---|---|---|
-| Launch film, 15-45 s | aim 15-25, cap 30 | ≤ 4 (about 22 characters) | ≤ 8 in a build chain, ≤ 5 in a replace chain |
-| Update film, 8-20 s | ≤ 15 | 1-3 | ≤ 6 |
-| Product / feature video | ≤ 12 | ≤ 4 | ≤ 8 build, ≤ 5 replace |
-| Feature loop | ≤ 6, must read muted | ≤ 4 | ≤ 4 |
-| Logo sting | the name + ≤ 3 | ≤ 3 | the name + 3 |
-| UI walkthrough | ≤ 5 per caption | ≤ 4 | one caption |
+| Launch film, 15-45 s | 6-9 | 3-8 (sweet spot 4-6) | about 25-50 |
+| Update film, 8-20 s | 4-6: a hook, one per change, a payoff | 3-6 | about 15-30 |
+| Product / feature video | 3-6 | 3-7 | up to 35 |
+| Feature loop | 1-2, must read muted | 3-6 | up to 12 |
+| Logo sting | the name + at most 1 | 3-5 | the name + 5 |
+| UI walkthrough | one per step | 3-8 | |
 
-A **fragment** is the unit of copy: 1-4 words that arrive together and are read as one glance. A thought longer than
-that is a **chain** of fragments with picture between them (§2b). "Visible at once" counts every word of film copy
-readable on one frame; product strings a viewer tries to read count toward it too, so keep copy and readable UI
-together under about 14 words on any frame.
+**The shape.** Read in order, the lines are hook, problem, turn, product, proof, payoff; a 30 s launch film gives
+about one line to each and two to the proof. Every line is one of three things:
+- a **claim**: something true that the viewer did not know or had not put into words ("Your week doesn't fit.");
+- a **turn**: the moment the film changes direction ("So the week rearranges itself.");
+- a **payoff**: the line that lands the idea, best as an echo of an earlier one ("Now your week fits.").
 
-Why so few: a viewer reads about 3 words per second while also watching motion, and every word you add steals
-attention from the picture that is meant to carry the idea. A fragment of 2-3 words is read in under a second, so the
-eye is back on the picture for the beat that follows.
+**Why sentences.** A keyword pile ("Speed." "Less noise." "Total control.") gives the viewer nothing to repeat; a
+sentence carries a claim, and a run of them carries a story. A viewer reads about 3 words a second while watching
+motion, so a line of 3-8 words is read in 1-2.5 s and the eye is back on the picture for what follows. Over 8 words a
+line turns into a paragraph; under 3 it turns into a label.
+
+**What is not a line.** Strings the product itself shows (a typed terminal command, code, a URL, an app label) are
+the product talking, not the film: put them in `COPY` with `kind: 'ui'` (and `data-ui` on the element that renders
+them), and the checks count them apart. The product's name and the version on the end card are `kind: 'name'`. UI
+strings still have to be real, readable and held long enough when the story needs them read.
+
+**The checks.** `grid-check.ts` reads the script (`script`): every line 3-8 words; a single word is called a keyword
+and two words a label; more than half the lines under 3 words is a keyword pile; two lines on screen at once is an
+error unless the later one declares a swap (§2b); a sentence set on two lines warns. A film written as a script reads
+at the script's budget: 50 words, at most 2.4 words a second in any 5 s and 1.6 over the body, a line on screen on up
+to 85 % of the body, with a text-free 1.5 s in every 10 s for the product to act.
 
 ## 2. Writing a line
 
@@ -54,121 +69,149 @@ eye is back on the picture for the beat that follows.
   me." "Not again.")
 - Nouns, verbs and numbers. Cut praise adjectives (fast, powerful, smart, beautiful); a number beats an adjective.
 - Present tense, active voice. Make the viewer's world the subject, not the product: "Meetings move over." rather than
-  "Tessel moves your meetings."
-- Sentence case, with a period at the end of a statement; an all-lowercase voice is a brand choice. In a chain the
-  period comes only with the sentence's last fragment. No exclamation marks, questions, emoji or suspense ellipses.
+  "Tessel moves your meetings." The product's name belongs in one line, the product line.
+- Sentence case, with a period at the end of a statement; an all-lowercase voice is a brand choice. In a line built
+  in beats the period comes only with its last part. No exclamation marks, questions, emoji or suspense ellipses.
 
 **The line test.** Every line must pass all six:
 1. It is true on its own paused frame: the picture agrees with it.
 2. A competitor could not say it.
-3. Each fragment has ≤ 4 words; a longer thought is a chain (§2b).
+3. It is one sentence of 3-8 words that says something: a claim, a turn or a payoff, never a keyword or a label.
 4. It contains no praise adjective.
 5. Read aloud, it sounds like a person talking.
 6. It will still be true in a year, so no "new", "now with" or "introducing". An update film, whose whole job is the
-   news, is the one exception: one setup fragment or the version may carry it ("here is the newest", "v2.4"), handing
-   over to the product (`references/update-films.md`).
+   news, is the one exception: its hook may carry it ("Plumb 2.4 is out."), handing over to the product
+   (`references/update-films.md`).
 
-**Generating lines.** Write 15-20 candidates per slot quickly, pulling words from the inventory in `TREATMENT.md`
-(verbs, the number, the pain scene). Cut with the line test. Read the survivors in order, aloud, on the beat, and keep
-the set whose words echo one another: that echo is the start of a callback. Then cut each survivor into fragments
-(§2b) and decide what the picture does between them.
+**Generating lines.** Write 15-20 candidates for each place in the shape, pulling words from the inventory in
+`TREATMENT.md` (verbs, the number, the pain scene). Cut with the line test. Read the survivors in order, aloud, on the
+beat: the script must tell the story with the picture off. Keep the set whose words echo one another: that echo is
+the start of a callback (§3). Then give each line its text animation (§8) and decide what the picture does while it
+is read.
 
-## 2b. Fragment chains
+## 2a. Good and bad scripts
 
-A sentence never lands on screen as one block. It arrives as **fragments** of 1-4 words, one after another, and the
-picture works between them. A beat shows about 2 new words; a fragment holds 1.0-1.5 s in the calm pace (the house
-range for a fragment's hold is 0.6-1.2 s, and calm sits at its slow end); about half of the beats continue a sentence
-begun on an earlier one; text and the hero action take turns.
+All products here are invented. Each script is for a 25-35 s launch film unless it says otherwise.
 
-**What a fragment is**
-- 1-4 words, sweet spot 2-3, about 22 characters at most. It reads as one glance: a subject ("Your week"), a predicate
-  ("doesn't fit."), a setup that wants its payoff ("here is the newest").
-- Break at grammar: after the subject, before the object, before the payoff noun, before the name. A fragment may end
-  on a cliffhanger only when the very next beat, picture or words, resolves it within 90 f.
-- Never split a name, a number from its unit ("2,184 lines"), or an article from its noun, unless the next beat
-  completes it on purpose.
-- One type role per chain, one baseline, one centre. Punctuation only on the sentence's last fragment.
-- A thought longer than 4 words is a **chain** of 2-4 fragments, 12 words at most. A thought that needs more is two
-  thoughts.
+**Bad: a keyword pile.** Nothing is claimed, nothing turns, nothing can be repeated.
+> Calendar. · Chaos. · Smart scheduling. · Effortless. · Tessel.
 
-**Build or replace.** Every chain picks one mode (`mode` in `COPY`):
+**Bad: labels.** Each line names a feature, none says what it does for anyone.
+> Auto-reschedule. · Focus blocks. · Team sync. · Analytics.
 
-| Mode | What happens | Visible at once | Use it for |
+**Bad: a sentence dump.** One line says everything, so nothing lands, and it reads like a landing page.
+> Tessel is the AI-powered calendar that automatically resolves conflicts and protects your focus time.
+
+**Good: Tessel, a calendar that moves meetings for you.**
+
+| # | Role | Line | Words |
 |---|---|---|---|
-| **build** | Fragments append to one held line. The line makes room for each new fragment with a jump on the very frame it shows (`recentre: 'jump'`, 22 f on `E.jump`, most of the move in its first frame), so the new words arrive in open space and the read words ride the move. The newest fragment lands in the accent, holds it 18 f and cools to ink over 13 f. The finished line holds, then leaves at speed. | ≤ 8 words on one line (about 45 characters) | a sentence whose halves belong together: setup → payoff, subject → predicate |
-| **replace** | Each fragment leaves whole at speed, then the next rises in its place on the same centre (`chain()` ends the exit before the next fragment starts), and the eye never travels. | ≤ 5 words | verbs or nouns in a row, a cause → effect run ("queued" → "built" → "shipped") |
+| 1 | hook | Your week doesn't fit. | 4 |
+| 2 | problem | Three meetings want the same hour. | 6 |
+| 3 | turn | So the week rearranges itself. | 5 |
+| 4 | product | Tessel moves only what can move. | 6 |
+| 5 | proof | Forty clashes gone by Monday. | 5 |
+| 6 | payoff | Now your week fits. | 4 |
 
-**Recipes**
+Read in order it is a story, and line 6 pays off line 1 by changing one word.
 
-1. **The animation is the verb.** Write the sentence around the demo: 2-4 words before it, the demo, 1-3 words after.
-   "Now it reads" → [the recording turns into labelled lines] → "who spoke." The words never describe what the
-   picture shows. The middle of a sentence may be several seconds of product story with no text at all.
-2. **The cliffhanger cut.** End a fragment one step before its payoff and let the picture deliver it: "here is the
-   newest" → the product arrives → "earshot." The name lands as its own fragment, in the accent.
-3. **Build on a held line.** "Your week" holds, the meetings pile in and overflow it, "doesn't fit." appends. Earlier
-   words never move except for the one jump, so the reader keeps their eye position and reads only the new words.
-4. **Stem and rotating slot.** A list is never a list. The stem holds and only the last word turns over: "syncs to" |
-   "your phone" → "your laptop" → "the whole team." (`fx/Reels`, or a make-room swap); a swap every 60-90 f in calm,
-   about every 0.55-0.85 s in crisp.
-5. **An image as a word.** Open a gap in the line and let the product, an icon or a photo stand in for a word: "from
-   [the phone's screen] to every screen." (`fx/InlineGap`). The image then becomes the next shot.
-6. **Giant keyword, small continuation.** One word or number at the giant or hero role, then the continuation at line
-   size beside it: "1.2 s" + "from push to preview". The giant word is the set of that moment (§7). Once per film.
-7. **Edit, don't replace.** Keep the anchor and change the tail: "Your notes stay messy." → backspace "messy." →
-   "findable." The meaning turns on the new word while the eye stays put.
-8. **A persistent container.** A pill, a pair of brackets or a selection box stays while the words inside it change,
-   so separate fragments read as one thought (`fx/Brackets`, `fx/Corners`, `fx/Morph`); never cross-fade two
-   containers.
-9. **One accent, on the newest or the last word.** Emphasis comes from colour, never from a bounce: the newest
-   fragment lands in the accent and cools to ink (`accent: 'transient'`), or the last fragment keeps the accent
-   (`'hold'`, for the payoff), or the keyword inks along a sweep once it is readable (`HueSweep`). Not a new colour
-   trick on every fragment.
-10. **Text-free picture stretches.** Between runs of text the picture gets stretches with no copy at all: at least one
-    of 90 f or more in every 10 s, and film copy on at most about 65 % of the frames. Stretches of 1.5 s or more are
-    where the picture carries the story.
-11. **The read is quiet; the picture is not.** While a fragment is read, nothing that asks for the eye starts: no new
-    copy, no hit, no cut, no fast move across the text (`SALIENCE` `copy`, `hit`, `cut`). Life keeps going: the camera
-    creeps or drifts, light moves on the ground, a carried move decays, a camera move away from the text continues
-    (`life`, `move`); they count toward the picture's density. The music may thin or stop for 0.6-1.75 s right after a
-    key line completes, and the reading happens in that quiet.
+**Good: Plumb, code review that finds the three lines that can break production.**
 
-**Timing.** Frames at 60 fps, `PACE.calm` (`references/motion-tokens.md` §9). With a licensed track the bar is the
-track's; at 100 BPM a bar is 144 f (2.4 s) and a fragment's reveal, its read and the picture beat after it take 1-1.5
-bars.
+| # | Role | Line | Words |
+|---|---|---|---|
+| 1 | hook | This pull request has 2,184 lines. | 6 |
+| 2 | problem | You approve it in forty seconds. | 6 |
+| 3 | problem (typed into the review box) | Looks good to me. | 4 |
+| 4 | turn | Three of them can break production. | 6 |
+| 5 | product | Plumb finds those three first. | 5 |
+| 6 | proof | This one assigns instead of compares. | 6 |
+| 7 | payoff (typed again) | Looks good to me. | 4 |
+
+The same four words open and close the proof: a tired lie, then the truth.
+
+**Good: an update film, Plumb 2.4 (14 s).**
+
+| # | Role | Line | Words |
+|---|---|---|---|
+| 1 | hook | Plumb 2.4 is out. | 4 |
+| 2 | change | Approvals take one tap. | 4 |
+| 3 | change | Replies land in the thread. | 5 |
+| 4 | change | Counts update while you watch. | 5 |
+| 5 | payoff | Review it before lunch. | 4 |
+
+## 2b. One line at a time
+
+- **One clean line on screen at a time.** A line arrives, resolves, is read and leaves (or turns into the next line
+  in one move) before the next one arrives. Nothing else to read beside it, except the product's own UI and the end
+  card's name.
+- **A deliberate swap** is the one exception: the next line takes the old one's place in a single move (an erode,
+  where the old word's letters fall away and the new word rises in its slot; a redaction box that hops over the old
+  words; a wheel that rolls the keyword; a make-room). Declare it on the incoming line: `swap: '<id of the line it
+  replaces>'`.
+- **Set it on one line, sized to fit** (§7). Never wrap a sentence onto two lines; a sentence that does not fit at
+  72 px is too long: cut words.
+- **A line may build in beats.** A sentence can arrive in two or three parts with the picture working between them
+  (`chain()` in build mode: "It lands" → the dot falls and lands → "on cue."). It is still one line: grid-check reads
+  a build chain as one sentence, and its parts follow the chain rules (each read before the next, 30-90 f of picture
+  between them with a cue in it). A replace chain makes each part its own line, so each part must be a sentence; a run
+  of single words in one place ("queued" → "built" → "shipped") is a keyword pile.
+- **The line says what the picture is doing; the picture proves it.** Write the line around the demo: the line lands,
+  the product does exactly that, the next line moves on. The middle of a film may run a few seconds of product story
+  with no line at all.
+- **Stem and rotating slot.** A list is never a list: the sentence holds and only its last word turns over: "It syncs
+  to your phone." → "your laptop." → "the whole team." (the `wheel` preset, `fx/Reels`): one line with a moving slot,
+  not three lines, a swap every 60-90 f in calm.
+- **An image as a word.** A window opens in the line and the product, an icon or a picture stands in for a word:
+  "Nothing stands [the moving picture] still." (`fx/InlineGap`). The image then becomes the next shot.
+- **Edit, don't replace.** Keep the anchor and change the tail: "Your notes stay messy." → the last word erodes →
+  "findable." (the `erode` preset, a declared swap). The meaning turns on the new word while the eye stays put.
+- **One accent, on the keyword.** Emphasis comes from colour or the line's own animation, never from a bounce: the
+  keyword lands in the accent and cools to ink, or the payoff keeps it (`highlight`, `develop`, `HueSweep`). Not a new
+  colour trick on every line.
+- **Text-free picture stretches.** At least one of 90 f or more in every 10 s, where the product acts; the lines take
+  up to about 85 % of the body.
+- **The read is quiet; the picture is not.** While a line is read, nothing that asks for the eye starts: no new copy,
+  no hit, no cut, no fast move across the text (`SALIENCE` `copy`, `hit`, `cut`). Life keeps going: the line's own
+  animation finishing, the camera creeping or drifting, light moving on the ground, a carried move decaying, a camera
+  move away from the text (`life`, `move`). The music may thin or stop for 0.6-1.75 s right after a key line lands,
+  and the reading happens in that quiet.
+
+**Timing.** Frames at 60 fps, `PACE.calm` (`references/motion-tokens.md` §9), for a line drawn with the canonical
+reveal; a preset (§8) brings its own frames. With a licensed track the bar is the track's; at 100 BPM a bar is 144 f
+(2.4 s), and a line's arrival and read take about a bar.
 
 | Step | Frames | Seconds |
 |---|---|---|
 | A word's entry (fade 32 f on `E.snapOut`, rise a third of the line box over 25 f on `M.rise`) | 32 f | a third visible on its first frame, 90 % by about 0.25 s |
-| Word gap inside a fragment | 12 f on the reading cadence (a longer word earns a longer gap) | 0.2 s |
-| A fragment of n words resolves | 32 + 12·(n − 1): 32, 44, 56, 68 f | 0.53-1.13 s |
-| Reading hold after it resolves | max(60, 42 + 8 f per word): 60, 60, 66, 74 f | 1.0-1.25 s |
-| A build line's hold (its full word count) | 6 words 90 f, 8 words 106 f | 1.5, 1.75 s |
-| Picture beat between two fragments of a chain | 30-90 f after the earlier one has been read | 0.5-1.5 s |
-| The newest fragment's accent | holds 18 f, cools 13 f linearly | 0.5 s |
-| Exit | 17 f at speed (`launch` into a cut or mask at full opacity; `launchFade` otherwise) | 0.28 s |
-| Copy rate | ≤ 6 words resolving in any 5 s; ≤ 0.9 words per second film-wide | |
+| Word gap inside a line | 12 f on the reading cadence (a longer word earns a longer gap) | 0.2 s |
+| A line of n words resolves | 32 + 12·(n − 1): 56, 68, 80, 92, 104, 116 f for 3-8 words | 0.9-1.9 s |
+| Reading hold after it resolves | max(60, 42 + 8 f per word): 66, 74, 82, 90, 98, 106 f for 3-8 words | 1.1-1.8 s |
+| A preset line resolves | its own frames (`TYPE_PRESETS`, stretched with `pace`; `typeLineFrames()` gives `resolved`) | |
+| Between two lines | the old line's exit (17 f at speed) is over before the next arrives, unless the next declares a swap | 0.28 s |
+| The keyword's accent | holds 18 f, cools 13 f linearly | 0.5 s |
+| Copy rate (a script) | at most 12 words resolving in any 5 s; at most 1.6 words a second over the body | |
 
-**Before and after.** Original copy, with the picture beat that carries the missing words:
+**Before and after.**
 
-| Before: it lands at once | After: fragments (mode), and the picture between them |
+| Before | After: one line, and how it arrives |
 |---|---|
-| "Here is the newest earshot. It turns sound into code." (10 words, two sentences on one card) | "here is the newest" → [the product arrives] → "earshot." (build) · 1.5 s with no text: a recording plays · "it turns sound" → [the waveform folds into lines of code] → "into code." (build) |
-| "Every sound you heard was made by code." (8 words at once) | "every sound you heard" → [the film's earlier sounds flash back as waveforms] → "was made" → "by code." (replace) |
-| "Syncs to your phone, your laptop and your whole team." (a list) | "syncs to" with a rotating slot: "your phone" → "your laptop" → "the whole team." |
-| "Your week doesn't fit." (the overflow is the story) | "Your week" → [meetings pile in and overflow the week] → "doesn't fit." (build) |
-| "Builds go from push to preview in 1.2 s." (a full sentence) | giant "1.2 s" counting up → "from push to preview" small beside it |
-| "Your notes stay messy." then, a card later, "Your notes stay findable." | "Your notes stay messy." → backspace → "findable." (edit, don't replace) |
+| "Speed." "Less noise." "Total control." (a keyword pile) | "Your builds never wait on you." (one sentence; `develop`: colour fronts run through it and the keyword keeps the accent longest) |
+| "Here is the newest earshot. It turns sound into code." (two sentences on one card) | "Here is the newest earshot." (`assemble`) → the product arrives → "It turns sound into code." (`decode`), one line at a time |
+| "Every sound you heard was made by code." landing as one block | the same sentence built word by word on the beat, the last word after a breath (`build`) |
+| "Syncs to your phone, your laptop and your whole team." (a list) | "It syncs to your phone." with a rotating slot: "your laptop." → "the whole team." (`wheel`) |
+| "Builds go from push to preview in 1.2 s." set small under a chart | "Push to preview in 1.2 s." set big, the number punching in (`punch`) while the figure counts up behind it |
+| "Your notes stay messy." then, a card later, "Your notes stay findable." | "Your notes stay messy." → the last word erodes → "findable." (`erode`, a declared swap) |
 
-Write a chain in `COPY` with the `chain()` helper (`references/timing-grid.md`): it emits one entry per fragment
-(`<id>.1`, `<id>.2`, …) with its `chain` id and `mode`, timed from the pace. Render it with `<Chain chain="<id>">`
-(§8). `grid-check.ts` then measures it: `fragment`, `copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`,
-`chain-beat`, `read-quiet` (by salience), `word-rate` and `text-share` (`references/checks.md`). A phrase that comes
-into focus whole (`FocusWord`, word mode) declares `reveal: 'focus'` on its `COPY` entry: `reveal-rate` then reads its
-hold, not a rate per word.
+Write each line in `COPY` (`references/timing-grid.md`): `line()` for a line drawn with the canonical reveal,
+`chain()` for a line built in beats, or an entry with the preset's own frames for a `TypeLine` (`in` = its `at`,
+`resolved` = `typeLineFrames(spec, metrics).resolved`, `out` = its exit's first frame). `grid-check.ts` then measures
+it: `script`, `text-hold`, `copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`, `chain-beat`, `read-quiet` (by
+salience), `word-rate` and `text-share` (`references/checks.md`). A line that comes into focus whole (`FocusWord`,
+word mode) declares `reveal: 'focus'`: `reveal-rate` then reads its hold, not a rate per word.
 
 ## 3. Callback copy
 
-A callback plants a phrase early and pays it off later, changed by what the film has shown. It is how a 20-word film feels written rather than labelled.
+A callback plants a phrase early and pays it off later, changed by what the film has shown. It is how a short script feels written rather than labelled.
 
 | Mechanism | Setup → payoff | Example |
 |---|---|---|
@@ -184,15 +227,16 @@ Rules:
 - The payoff lands on the payoff beat, which is also the loudest sound in the film.
 - The setup holds long enough to be remembered: at least its reading hold, max(60, 42 + 8 f per word), after it resolves.
 - Never explain the callback on screen.
-- Use one main chain per film, plus at most one echo. More than that becomes a gimmick.
+- Use one main callback per film, plus at most one echo. More than that becomes a gimmick.
 
 ## 4. Stock phrasing to cut
 
 **Hard bans** (`SKILL.md`). These never appear in copy you write, because they are landing-page grammar and the fastest tells of generated work:
 - **eyebrow or kicker labels** above a headline ("NEW FEATURE", "INTRODUCING", "01 / SPEED");
 - **stacked taglines**: a tagline over or under a headline, or a second statement under the first;
-- **"Introducing…"** in any position. A setup fragment that hands over to the product's arrival ("here is the newest" → the product → its name) is not this: it is half of a chain, it leaves room for the picture, and it never sits as a label over the name;
-- **text walls**: more than one statement readable at once, paragraphs, bullet lists, a list with blurred neighbours, a full sentence of 5 or more words arriving as one block (§2b), two or three type sizes stacked into one card (a number over a word over a line);
+- **"Introducing…"** in any position. A line that hands over to the product's arrival ("Here is the newest earshot.", then the product) is not this: it is a sentence of the script, it leaves room for the picture, and it never sits as a label over the name;
+- **keyword piles**: lines of one or two words that say nothing ("Speed." "Less noise." "Total control."), and runs of single words in one place (§2a);
+- **text walls**: two lines readable at once (a declared swap excepted, §2b), paragraphs, bullet lists, a list with blurred neighbours, a line over 8 words, two or three type sizes stacked into one card (a number over a word over a line);
 - **random filler text**: decorative mono captions, fake metrics, version strings, coordinates and timestamps nobody reads, labels that name the obvious ("DASHBOARD"), lorem ipsum.
 
 Every word on screen earns its place: it is counted in the §1 budget, held long enough to read (§5), and true on its paused frame. Text inside the product UI follows the same rule: real strings from `data.ts` that the story needs, and nothing added to make a frame look busy.
@@ -228,7 +272,7 @@ Run this before every review round. Proofing bugs read as "fake" faster than any
 grep -rnP "\w'\w|\b1 [a-z]+s\b|lorem|ipsum|TODO|FIXME|Acme|John Doe|example\.com" src/
 ```
 
-**Reading time** is owned by `references/timing-grid.md` §9: hold a fragment max(60, 42 + 8 f per word) after it resolves (1–2 words → 60 f, 3 → 66 f, 4 → 74 f; a build line counts its full word count: 90 f at 6 words, 106 f at 8), leave 30–90 f of picture between two fragments of a chain, keep the copy rate at or under 6 words in any 5 s, hold the lockup 1.5–2 s, and keep a URL readable ≥ 1.7 s. A crisp film holds 36 f + 6 f per word. `scripts/grid-check.ts` enforces these from `COPY`.
+**Reading time** is owned by `references/timing-grid.md` §9: hold a line max(60, 42 + 8 f per word) after it resolves (3 words → 66 f, 5 → 82 f, 8 → 106 f; a line built in beats counts its full word count), leave 30–90 f of picture between the parts of a line built in beats, keep a script's copy rate at or under 12 words in any 5 s, hold the lockup 1.5–2 s, and keep a URL readable ≥ 1.7 s. A crisp film holds 36 f + 6 f per word. `scripts/grid-check.ts` enforces these from `COPY`.
 
 ## 6. One family, chosen for the brand
 
@@ -292,8 +336,8 @@ export const TYPE = { // the roles of section 7, set in this family
 |---|---|---|---|
 | `ui` | 40 | (UI) | product strings rebuilt for film |
 | `caption` | 46 | 2.3-4 % | captions, the end card's one line, a URL |
-| `line` | 120 | statement band 5-14 % | build chains and calm statements (≤ 8 words on one line) |
-| `display` | 200 | statement band | a short statement, a payoff fragment |
+| `line` | 120 | statement band 5-14 % | a line of the script (3-5 words at 120 px; longer lines fitted down to 72 px) |
+| `display` | 200 | statement band | a short line (up to about 16 characters), a payoff |
 | `hero` | 240 | 14-26 % | one hero word or number per moment (at least 2× the statement it answers) |
 | `giant` | 900 | 26-90 % | the set of one moment: once per film |
 
@@ -307,9 +351,13 @@ export const TYPE = { // the roles of section 7, set in this family
 - **`UI_FILM = 1.9`, `uiFilm(webPx)`.** Product UI is rebuilt for film, never screenshotted at page size: every size of
   the web design times 1.8-2 (house 1.9), never under `TEXT_MIN` (a 16 px label becomes 36, a 20 px body 38, a 32 px
   figure 61). Frame UI as macro crops and hero planes; the camera does the reading.
-- Keep a ratio of at least 2:1 between a statement and anything secondary; a flat scale reads as a slide. A statement
-  stays under 61 % of the frame width, a payoff under 84 % (`MEASURE`).
-- At most 2 non-UI roles on screen at once; one role per chain.
+- **Sizing one line.** A line of the script sits on one line, 72 px or more, under 84 % of the frame width (a short
+  statement under 61 %, `MEASURE`), sized from the real font with `fitSize(text, maxWidth, max, weight, track)`.
+  Roughly, at 1920 wide in a sans at about 0.5 em a character: up to 16 characters (2-3 words) at `display` 200 px or
+  `hero` 240; 17-28 characters (3-5 words) at `line` 120 px; 29-40 characters (6-8 words) at 88-100 px. Past about 44
+  characters even 72 px will not hold it on one line: cut words, never wrap.
+- Keep a ratio of at least 2:1 between a line and anything secondary; a flat scale reads as a slide.
+- At most 2 non-UI roles on screen at once; one role per line.
 - **The type reads at feed size** (`look-audit.py type-read`, with the layout JSON and the cues): the statement lines and
   the lockup name are 72 px or more (6.7 % of the frame height; the house `line` is 120), each line reads at 4.5:1 or
   more against the ground right under it (under 3:1 fails, and on a busy ground anything under 4.5:1 fails), and it
@@ -325,11 +373,55 @@ export const TYPE = { // the roles of section 7, set in this family
   bottom ~20%, where the feed UI sits.
 - `secondary` (48) stays for acts written against 1.1.
 
-## 8. The line system: Words, Chain, Oversize
+## 8. The text animations: TypeLine, Words, Chain, Oversize
 
-Calm fragments, drawn with a lot of life. Three primitives share one set of house numbers (`lib/pace.ts`,
-`lib/anim.ts`) and the film context (`useFilm()`), so they run the same at any fps and frame size. Each is a pure
-state function plus a thin component: `wordState()`, `recentreState()` / `chainState()`, `oversizeState()`.
+Text animation is the main event of a cinetic film: every line of the script arrives its own way, and no two lines
+share an animation. `pick.py` draws one per line (its line track, `--lines`); build each one with a preset, a type
+device (§9) or the line system below.
+
+**The presets** (`fx/TypePresets`): sixteen one-line animations behind one spec and one renderer. `<TypeLine
+spec={{ preset, text, at, out, exit }} frame size>` draws a line from the real font's prefix widths (kerning holds,
+every glyph its own transform); `typeLineState()` is the pure state for one frame, `typeLineFrames()` its `resolved`
+frame and ticks, `declares()` its stepped runs and seams. `key` picks the keyword (the last word by default), `words`
+the values a wheel rolls through, `from` the word an erode replaces, `dot` adds a square full stop in the accent, `pace`
+stretches every length of a preset at once.
+
+| Preset | What the line does | Use it for |
+|---|---|---|
+| `develop` | colour fronts run through the set line: a pale head reveals it, then a tint, the accent and the ink, the last word in colour longest | a claim that should glow into place |
+| `build` | word by word on the beat (14, 10, 10 f apart, a breath before the last word), each word sharpening and darkening from the accent to ink while the line re-centres | the hook; a line read at speaking pace |
+| `typeFocus` | a big line types (30 characters a second) out of focus; focus pulls in partway, the keyword turns accent, the camera creeps 4 % | a line the product itself would type |
+| `arc` | each letter swings down into its slot on a short arc, 2 f apart | a short, light line |
+| `assemble` | letters gather from above and below the baseline and ink as they land; the camera pushes 6 % | an arrival, the product line |
+| `decode` | the line opens from its centre behind accent blocks, data dashes streaking out of the middle | a technical claim, once per film |
+| `wheel` | the keyword rolls like a picker drum, faster and faster, and lands; the line re-flows round it | the rotating slot: one sentence, several endings |
+| `erode` | the old word in the keyword's slot erodes letter by letter while the new word rises in | edit, don't replace (a declared swap) |
+| `cycle` | the keyword shuffles weight and width every 6 f, the line stepping larger, then lands | a line about change or choice (a variable face) |
+| `punch` | a short line set big: focus snaps in over 6 f and the camera punches in 24 %, then keeps creeping | the payoff, a number |
+| `echo` | copies slide out from behind the line on knockout boxes, ring by ring, then the stack contracts | a line about many, or about repeating |
+| `open` | each word cuts on touching the last, then the space opens and the line re-centres | a crisp statement |
+| `highlight` | a soft accent block hops word to word, parks on the keyword and wipes off, leaving it in the accent | a line with one word that matters |
+| `slice` | the line arrives cut into 9 horizontal strips that snap together | a hard turn |
+| `redact` | a box hops over the old line's words as they change under it, then over the new line's, and is gone | a correction, before and after (a declared swap) |
+| `swarm` | every word grows out of depth along a wandering path, leaving fading stamps, then locks | a line about arriving from everywhere |
+
+Exits (`exit` at `out`): `cut`, `blur`, `drop`, `drift`, `push`, `split`, `swarm`, and `dive` (the camera zooms through
+one glyph until its ink fills the frame and becomes the next shot's ground: a declared zoom-through seam).
+
+```tsx
+import { TypeLine } from '../fx/TypePresets';
+const c = copy('hook');
+<TypeLine spec={{ preset: 'build', text: c.text, at: c.in, out: c.out, exit: 'push' }} frame={frame} size={TYPE.line.size * U} />
+```
+
+Give a preset line's `COPY` entry the frames the preset draws (`resolved` from `typeLineFrames()`), so the checks
+read the line as the viewer does. Graphic effects frame it: a dithered gradient field, glass, a spectral edge, a morph
+from the last shot, a grid, a loader, the product's UI (`references/devices/INDEX.md`, materials and VFX).
+
+**The line system.** For a line drawn with the canonical reveal, three primitives share one set of house numbers
+(`lib/pace.ts`, `lib/anim.ts`) and the film context (`useFilm()`), so they run the same at any fps and frame size.
+Each is a pure state function plus a thin component: `wordState()`, `recentreState()` / `chainState()`,
+`oversizeState()`.
 
 **The canonical word reveal** (`Words`, and every word of a `Chain`): a word fades in and rises as one front-loaded
 tween: a third of it visible on its first frame, 90 % by about 0.25 s, home by 0.53 s.
@@ -344,9 +436,9 @@ tween: a third of it visible on its first frame, 90 % by about 0.25 s, home by 0
 
 - Words rise on their own composited layer (`subpixel`), so the last pixel of the rise is as smooth as the first.
 - `wordFrames()` returns each word's start, end and `settle` (the frame it reads as landed: its drawn rise under the
-  fastest hold drift, 90 px/s). One soft text sound per fragment goes on the last word's settle (`chainResolves()`),
+  fastest hold drift, 90 px/s). One soft text sound per line (per part of a line built in beats) goes on the last word's settle (`chainResolves()`),
   never one per word, and the accent hold counts from it.
-- **Cadence:** `'reading'` (house: each gap 0.7-1.4× the stagger by the previous word's length, the fragment's span
+- **Cadence:** `'reading'` (house: each gap 0.7-1.4× the stagger by the previous word's length, the line's span
   unchanged), `'even'`, `'accelerate'` (gaps shrink to `accelTo` × the stagger, house 0.5: a payoff, one run per act at
   most), explicit gaps (`ACCEL.rows`, `ACCEL.montage`), `starts[]` (a word pinned to a voice onset).
 
@@ -388,9 +480,9 @@ step) or resolving over `defocusDur`. A defocused first word that snaps sharp ex
 the strongest version: the focus snap is the hit.
 
 **Recipes**
-- **The calm statement:** `Chain` build, two fragments, `recentre: 'jump'`, transient accent, reading cadence; the line
+- **A line built in beats:** `Chain` build, two parts, `recentre: 'jump'`, transient accent, reading cadence; the line
   leaves with `exit: 'launch'` into a velocity-carried cut.
-- **The payoff:** the last fragment on `cadence: 'accelerate'` with the accent held on its last word, then a held hero
+- **The payoff:** the last part on `cadence: 'accelerate'` with the accent held on its last word, then a held hero
   word with `Oversize` (`from` 1.6-1.9, sweep cool), its hold kept alive by a camera creep.
 - **The printed line:** `Chain` with `ink: 'partial'` and a short jump: a terminal-like build without a caret.
 - **The thrown title:** `Words` with `exit: 'launch'`, `exitDir: 'left'`, full opacity, cut on the hit; the next shot
@@ -401,8 +493,8 @@ the strongest version: the focus snap is the hit.
 Primitives that do one decisive thing to type each: `LineSnap`, `FocusWord`, `HueSweep`, `Letters`, `MaskRise`,
 `Scramble`, `TypeOn`, plus `TypeFx`, `TypeFill`, `TypeMask`, `Knockout`, `Echoes`, `Streak`, `PenStroke` and
 `Brackets` (the device book's [type arrivals](devices/type-arrivals.md), [lines, layout and swaps](devices/lines-layout-and-swaps.md)
-and [type exits](devices/type-exits.md) families). Use them sparingly: **one device per beat** (about 1.5-2.5 s), calm
-fragments for the copy, the device on the one word that earns it. A film made of devices is a sampler, not a film.
+and [type exits](devices/type-exits.md) families). **One text animation per line, all different:** a preset (§8) or one
+of these devices, chosen for what the line says. Inside a line, one device: a line wearing three tricks is a sampler.
 
 - **Make room** (`LineSnap mode="room"`, `makeRoomState`): a held line answers a new word by making room in one frame.
   Creep 0.2-0.4 s (house 0.28 s, 17 % of the distance, speed rising), jump 60-75 % of the distance on one frame
@@ -450,9 +542,10 @@ make-room jumps and the snap as one-frame stepped ranges.
 **Type as the set: composing the devices into a film.** A type-led launch still needs a picture.
 - **One giant word or figure is architecture** (§7): extruded under the key, cropped past two edges, the camera
   trucking along it, focus falling off along it; the line that lands holds still on its own plane.
-- **A decode title sits on a real picture:** footage or a photograph of the subject's world (`references/imagery.md`),
-  pushed in and turned a degree or two, slightly soft behind sharp type; darken the ground under the title from the
-  key's opposite side instead of laying a box under it.
+- **A decode title sits on a graphic field:** a dithered gradient, a hairline grid, glass over the product's UI, or
+  the product's own screen out of focus, pushed in and turned a degree or two behind sharp type; a picture only when
+  it carries the idea (`references/imagery.md`). Darken the ground under the title from the key's opposite side
+  instead of laying a box under it.
 - **Make room and snap on the beat.** The jump frame (`makeRoomState().jumpFrame`) and the snap frame (`snap.at`) are
   one-frame events: put them on accents of the track with a short percussive effect on that exact frame.
 - **Type into the product, not onto the frame.** A prompt types into a real field (contact shadow, a cast shadow from
@@ -489,7 +582,7 @@ Then make a sheet of every frame of the reveal (`python3 scripts/sheet.py --comp
 - **Ink versus box.**
   - Chromium includes the trailing letter-spacing in the measured width, so with negative tracking a glyph with a small right side bearing can overhang the box by up to |track| × size (about 9 px at 176 px and −0.05 em). Pad covering boxes by about 8 px.
   - Side bearings offset the ink from the box on the left too: in the starter's sans, a 176 px "m" starts 13 px inside its box. Align ink rather than boxes, nudging by a bearing measured in a still.
-- **Break lines by hand.** Put one string per fragment in `COPY` (one per line for a multi-line UI note) and render one block per fragment. Automatic wrapping leaves widows (one word alone on the last line), and HyperFrames bans `<br>`.
+- **One line, never wrapped.** Put one string per line of the script in `COPY` (one per part for a line built in beats; one per row for a multi-line UI note) and render it as one block sized to fit. Automatic wrapping leaves widows (one word alone on the last line), and HyperFrames bans `<br>`.
 - **`@remotion/layout-utils`**, if you use it:
   - `fitText({text, withinWidth, fontFamily, fontWeight, letterSpacing})` returns `{fontSize}`; it measures at 100 px and scales.
   - `fitTextOnNLines({text, maxLines, maxBoxWidth, fontFamily, fontWeight, letterSpacing, maxFontSize})` returns `{fontSize, lines}`. It binary-searches the size and breaks greedily on single spaces, so you don't choose the breaks; prefer hand-set lines for statements.
