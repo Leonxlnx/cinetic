@@ -707,8 +707,9 @@ plain = sum(1 for s_ in range(60) if any(deck.is_type_led(o) for o in deal('a pr
 result(plain >= 27, 'a plain brief meets a type-led direction in about half the deals or more', f'{plain} of 60')
 r = run('--brief', 'a ledger app', '--format', 'launch', '--direction', 'statement', '--out', os.path.join(TMP, 'script'), '--no-history')
 result(r.returncode == 0 and '**The words are a script:**' in r.stdout and 'one sentence:' in r.stdout and '| line |' in r.stdout
-       and '2. Write the script' in r.stdout and '--lines <n>' in r.stdout and 'type-led' in r.stdout,
-       'the sheet asks for a script, gives each copy beat one sentence and draws one text animation per line', (r.stderr or '')[-160:])
+       and '2. Write the script' in r.stdout and '--lines <n>' in r.stdout and 'type-led' in r.stdout
+       and '`TypeLine` from `fx/TypePresets.tsx`' in r.stdout,
+       'the sheet asks for a script, gives each copy beat one sentence and draws one text animation per line (TypeLine)', (r.stderr or '')[-160:])
 r = run('--brief', 'a notes app, version 2.4 is out', '--format', 'update', '--direction', 'statement', '--out', os.path.join(TMP, 'script-u'), '--no-history')
 result(r.returncode == 0 and 'One short sentence per change (3-6 words)' in r.stdout and '1-3 words a fragment' not in r.stdout,
        'an update sheet asks for one short sentence per change', (r.stderr or '')[-160:])

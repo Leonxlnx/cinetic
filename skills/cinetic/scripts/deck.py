@@ -1529,8 +1529,9 @@ def render_sheet(sh, data, library):
             f'- **Behaviour:** {ty["behaviour"]}',
             '- **The words are a script:** 6-9 short real sentences for a launch film (3-8 words each: a claim, a turn '
             'or a payoff; together hook, problem, turn, product, proof, payoff), written before any build. One clean '
-            'line on screen at a time, each with its own text animation (pick.py draws one per line), with this '
-            'direction\'s camera and graphic effects around it. Never a pile of keywords.', '',
+            'line on screen at a time, each with its own text animation (pick.py draws one per line; `TypeLine` '
+            'from `fx/TypePresets.tsx` plays the presets), with this direction\'s camera and graphic effects around '
+            'it. Never a pile of keywords.', '',
             f'## 5. The story shape: {st["shape"]}', '', st['line'], '',
             f'## 6. The signature shot: {sig["name"]}' + (' (the alternative)' if sh['signature_variant'] != 'main' else ''), '',
             sig['shot'], '', f'**How to build it in Chromium:** {sig["build"]}', '',

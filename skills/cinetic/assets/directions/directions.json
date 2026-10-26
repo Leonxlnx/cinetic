@@ -1026,6 +1026,14 @@
   "TypeWindow": {
    "file": "fx/Window.tsx",
    "status": "built"
+  },
+  "TypeLine": {
+   "file": "fx/TypePresets.tsx",
+   "status": "built"
+  },
+  "ProductMoment": {
+   "file": "kit/moment.tsx",
+   "status": "built"
   }
  },
  "directions": [
