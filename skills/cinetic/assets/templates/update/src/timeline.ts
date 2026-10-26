@@ -61,7 +61,7 @@ export const BEATS = { hook: 0, change: (i: number) => 4 + 6 * i, payoff: 4 + 6 
 // Acts: contiguous, [from, from + dur). Each act is its own composition in Root.tsx (in this order). A change
 // starts on a bar or on its middle: the half-bar lines keep the cuts off a metronome.
 export const ACT: Record<string, { from: number; dur: number }> = {
-  hook: { from: beat(BEATS.hook), dur: beat(BEATS.change(0)) - beat(BEATS.hook) }, // the version is the set; its last numeral rolls on
+  hook: { from: 0, dur: beat(BEATS.change(0)) }, // the version is the set; its last numeral rolls on (frame 0 on: with a track, beat 0 is its first downbeat)
   ...Object.fromEntries(UPDATE.changes.map((_c, i) => [`change${i + 1}`, { from: beat(BEATS.change(i)), dur: beat(BEATS.change(i + 1)) - beat(BEATS.change(i)) }])),
   payoff: { from: beat(BEATS.payoff), dur: beat(BEATS.end) - beat(BEATS.payoff) }, // the camera pulls back; the version returns in front of every change
   end: { from: beat(BEATS.end), dur: beat(BEATS.last) + TAIL - beat(BEATS.end) }, // the mark and the name set beside the version; the lock holds

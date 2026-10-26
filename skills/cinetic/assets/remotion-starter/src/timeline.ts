@@ -67,7 +67,7 @@ export const TAIL = FPS;
 // Acts: contiguous, [from, from + dur), on the grid. Each act is its own composition in Root.tsx.
 // Six shots in four acts (a cut inside an act is a declared seam): every hand-over carries something.
 export const ACT = {
-  line: { from: b(1), dur: b(3, 1) - b(1) }, // the statement builds round the dot's landing, then launches left
+  line: { from: 0, dur: b(3, 1) }, // the statement builds round the dot's landing, then launches left (frame 0 on: with a track, b(1) is its first downbeat)
   plate: { from: b(3, 1), dur: b(4, 1) - b(3, 1) }, // offgrid: the cut lands where the launch peaks, a beat into the bar
   frame: { from: b(4, 1), dur: b(5, 1, 2) - b(4, 1) }, // offgrid: the plate shrinks into the line a bar after it arrived
   mark: { from: b(5, 1, 2), dur: b(7) + TAIL - b(5, 1, 2) }, // offgrid: the line drops into the relief a 16th before the beat the dome lands on
