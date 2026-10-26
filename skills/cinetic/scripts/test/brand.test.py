@@ -17,6 +17,12 @@
   6. --check re-reads brand.json and fails when the tokens no longer hold contrast; a folder that is not
      a film project is refused; deck.py --brand reads what brand.py wrote.
   7. House wording in brand.py.
+  8. Real kits: --out writes brand.json before a project exists, and a folder that is not a project is refused
+     before anything is copied into it; a photos folder wins over a file name (photos/landmark.jpg is a photo);
+     files it cannot place are listed as unused; CSS comments are skipped and custom properties win over rules;
+     --bg names the ground and --border the line; an orange brand's lifted accent is marked brand-supplied (or
+     is the accent itself when it holds 3:1 on the slate); a warm-grey kit with a dark neutral keeps its slate
+     off brown and mauve.
 
 Usage (from the skill root):  python3 scripts/test/brand.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -276,6 +282,46 @@ pats = [r'reference[ ](films?|clips?|videos?)', r'\bT[0-9]{2}\b', r'\blearned[ ]
         r'\bmedian\b', r'\bstud(y|ied)\b']
 leaks = [m.group(0) for p in pats for m in [re.search(p, src, re.I)] if m]
 result(not leaks, 'brand.py carries no provenance phrasing', ', '.join(leaks))
+
+# 8. real kits ------------------------------------------------------------------------------------------
+k8 = os.path.join(TMP, 'kit-real')
+os.makedirs(os.path.join(k8, 'photos'))
+os.makedirs(os.path.join(k8, 'logo'))
+shutil.copy2(os.path.join(FIX, 'kit-a', 'ledgerly-mark.svg'), os.path.join(k8, 'logo', 'kiln-mark.svg'))
+png(os.path.join(k8, 'photos', 'landmark.png'), 24, 16, lambda x, y: (90, 120, 140, 255))
+png(os.path.join(k8, 'photos', 'bookmark-shelf.png'), 24, 16, lambda x, y: (60, 70, 80, 255))
+open(os.path.join(k8, 'notes.pdf'), 'wb').write(b'%PDF-1.4')
+open(os.path.join(k8, 'brand-colours.css'), 'w', encoding='utf-8').write(
+    '/* the old orange, retired: #FF8800 */\n:root {\n  --bg: #FAF8F5; /* paper */\n  --text: #1C1A18;\n  --primary: #E8590C;\n'
+    '  --border: #E2DED8;\n  --grey-warm: #D9D2C9;\n  --stone: #8C8279;\n}\n.button { color: #123456; } // a rule, not the palette\n')
+out8 = os.path.join(TMP, 'standalone', 'brand.json')
+r = run(k8, '--out', out8, '--name', 'Kiln')
+b8 = json.loads(read(out8) or '{}')
+hexes = {c['hex'] for c in (b8.get('colours') or {}).get('list', [])}
+result(r.returncode in (0, 1) and b8.get('name') == 'Kiln' and not os.path.exists(os.path.join(TMP, 'standalone', 'src')),
+       '--out writes brand.json alone, before any project exists', r.stderr.strip()[-160:])
+result('#FF8800' not in hexes and '#123456' not in hexes and {'#FAF8F5', '#1C1A18', '#E8590C', '#E2DED8'} <= hexes,
+       'CSS comments are skipped and the custom properties are the palette (a rule\'s colour is not)', str(sorted(hexes)))
+roles = {c['hex']: c.get('role') for c in b8['colours']['list']}
+result(roles.get('#FAF8F5') == 'ground' and roles.get('#E2DED8') == 'line' and roles.get('#E8590C') == 'accent',
+       '--bg names the ground, --border the line, --primary the accent', str(roles))
+t8 = b8['colours']['tokens']
+result(t8['line']['hex'] == '#E2DED8' and t8['line']['supplied'], 'the named border colour is the line token')
+result(len(b8['photos']) == 2 and (b8['logo']['mark'] or {}).get('file') == 'kiln-mark.svg' and not b8['logo']['raster'],
+       'a photos folder wins over a file name: landmark and bookmark stay photos, the logo folder holds the mark', str(b8['photos']))
+result(any('not used' in n and 'notes.pdf' in n for n in b8['notes']), 'files it cannot place are listed as unused', str(b8['notes'])[:160])
+slate = t8['slate']['hex']
+sl = mod.lch(slate)
+result(not (30 <= sl[2] <= 100 and sl[1] > 0.02) and sl[1] <= 0.03, "a warm-grey kit's slate stays off brown (C <= .03, never a warm hue at strength)", f'{slate} {sl}')
+pr8 = project('kiln-film')
+r = run(k8, '--project', pr8, '--name', 'Kiln')
+tk8 = read(pr8, 'src', 'brand', 'tokens.ts')
+lift_line = next((ln for ln in tk8.splitlines() if ln.strip().startswith('accentLift:')), '')
+result('cinetic:brand-supplied' in lift_line, "an orange brand's accentLift is marked brand-supplied (derived from the brand's accent), so lint and the bans pass it", lift_line.strip()[:140])
+bare = os.path.join(TMP, 'not-a-film-2')
+os.makedirs(bare)
+r = run(k8, '--project', bare)
+result(r.returncode == 2 and '--out' in r.stderr and not os.listdir(bare), 'a folder that is not a film project is refused before anything is copied into it', str(os.listdir(bare)))
 
 shutil.rmtree(TMP, ignore_errors=True)
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')

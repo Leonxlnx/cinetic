@@ -18,7 +18,7 @@ its colours, its typeface, its real screens. brand.py reads a kit (a folder, or 
                           with an @font-face sheet); a Google font name is recorded for add-font.mjs
   src/brand/assets.ts     staticFile paths of the screenshots and photos copied into public/brand/
 
-What it recognises (by extension, then by name or folder):
+What it recognises (by extension, then by folder, then by name; what it cannot place is listed as unused):
   logo         .svg (preferred; names with logo, mark, symbol, icon, wordmark, logotype, lockup) or a raster
                logo .png/.webp/.jpg with one of those words; a wordmark/logotype/lockup file is the wordmark,
                a mark/symbol/icon file the mark; one logo file is both
@@ -31,7 +31,10 @@ What it recognises (by extension, then by name or folder):
   screenshots  .png/.jpg/.webp in a folder named screenshots, screens, ui or app, or with screen, ui, app,
                dashboard in the name: rebuild them as live UI with the product kit (src/kit) at film size;
                the image itself only under a camera move
-  photos       images in a folder or with a name of photo, product, hero, lifestyle
+  photos       images in a folder or with a name of photo, product, hero, lifestyle (a photo folder wins over a
+               name: photos/landmark.jpg is a photo, never a logo)
+  colour files CSS and SCSS comments are skipped; a file with custom properties (--name: value) is read from
+               those only; border, hairline, divider and stroke names give the line role
 Roles: the accent is a colour named primary/accent/brand, else the most chromatic colour; the ground and ink
 are the named background/text colours, else the lightest and darkest neutrals. The kit's own greys and
 papers are the grounds: paper, mist, line, mute, slate and the raised surfaces each take a supplied neutral
@@ -42,9 +45,12 @@ accent's hue. The film keeps one accent: a second brand hue is recorded for prod
 Usage (from the film project root, or pass --project):
   python3 scripts/brand.py <kit folder or files...> [--name "Quill"] [--project .]
           [--colours colours.json] [--accent '#1F6FEB'] [--font "Inter"] [--dry-run]
+  python3 scripts/brand.py <kit> --out brand.json [--name "Quill"]   # before a project exists: brand.json only
   python3 scripts/brand.py --check [--project .]   # re-check brand/brand.json against src/brand/tokens.ts
 Then: python3 scripts/deck.py ... --brand brand/brand.json maps a direction's ground / ink / accent
-proportions onto these colours.
+proportions onto these colours. With a kit and no project yet: brand.py <kit> --out brand.json, then
+deck.py --brand brand.json, then new-film.sh <dir> --brand <kit> (it runs brand.py inside the project).
+A project is checked before anything is copied into it.
 
 Exit 0 written (or --dry-run printed), 1 a check failed (contrast, more than one accent where the film needs
 one, no logo when a logo was expected), 2 bad input. Python standard library; Pillow or OpenCV, when
@@ -66,15 +72,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 IMG = ('.png', '.jpg', '.jpeg', '.webp')
 FONT_EXT = ('.ttf', '.otf', '.woff', '.woff2')
 COLOUR_EXT = ('.json', '.css', '.scss', '.txt', '.md', '.gpl')
-LOGO_WORDS = re.compile(r'logo|mark|symbol|icon|glyph|wordmark|logotype|lockup|brand', re.I)
+# a logo word as a word of the file name: logo-mark.svg and logomark.png are logos, landmark.jpg is not
+LOGO_WORDS = re.compile(r'logo|wordmark|logotype|lockup|symbol|(?<![a-z])(?:mark|icon|glyph|brand)(?![a-z])', re.I)
+PHOTO_DIRS = re.compile(r'^(photos?|photography|images?|pictures?|product|products|lifestyle|hero|imagery)$', re.I)
 WORDMARK_WORDS = re.compile(r'wordmark|logotype|lockup|horizontal|full', re.I)
 SCREEN_WORDS = re.compile(r'screen|^ui$|[-_ ]ui[-_ .]|^app|dashboard|interface', re.I)
 SCREEN_DIRS = re.compile(r'^(screenshots?|screens|ui|app|product-ui|interface)$', re.I)
 PHOTO_WORDS = re.compile(r'photo|product|hero|lifestyle|shot', re.I)
 # the specific words first: a CSS variable named --brand-background is a ground, not the accent
 ROLE_WORDS = [('accent', re.compile(r'primary|accent', re.I)),
-              ('ground', re.compile(r'background|bg|surface|paper|canvas', re.I)),
-              ('ink', re.compile(r'text|ink|foreground|fg|body|heading', re.I)),
+              ('line', re.compile(r'border|hairline|divider|stroke|outline|separator|(?<![a-z])line(?![a-z])', re.I)),
+              ('ground', re.compile(r'background|\bbg\b|surface|paper|canvas', re.I)),
+              ('ink', re.compile(r'text|\bink\b|foreground|\bfg\b|body|heading', re.I)),
               ('accent', re.compile(r'brand|main|key', re.I))]
 WEIGHTS = [('thin', 100), ('hairline', 100), ('extralight', 200), ('ultralight', 200), ('light', 300), ('regular', 400),
            ('book', 400), ('normal', 400), ('medium', 500), ('semibold', 600), ('demibold', 600), ('extrabold', 800),
@@ -155,6 +164,14 @@ def colours_from_text(text, name=''):
                     out.append((hx, ' '.join(path)))
         walk(data, [])
     else:
+        if name.endswith(('.css', '.scss', '.less')):
+            # comments never hold the brand's colours (an old value, a note): drop them; with custom properties,
+            # the declarations are the palette and the rules that use them are not
+            text = re.sub(r'/\*[\s\S]*?\*/', '', text)
+            text = re.sub(r'(?m)(^|[^:])//.*$', r'\1', text)
+            decl = [ln for ln in text.splitlines() if re.match(r'\s*--[\w-]+\s*:', ln) and re.search(r'#[0-9a-fA-F]{3}|rgba?\(', ln)]
+            if decl:
+                text = '\n'.join(decl)
         for line in text.splitlines():
             if name.endswith('.gpl'):
                 m = re.match(r'\s*(\d+)\s+(\d+)\s+(\d+)\s*(.*)', line)
@@ -332,11 +349,11 @@ def assign_roles(cols):
     chrom = [c for c in cols if c['C'] >= 0.06]
     named = lambda role, pool: next((c for c in pool if c.get('named_role') == role), None)  # noqa: E731
     acc = named('accent', chrom) or (max(chrom, key=lambda c: (c['C'] * (0.5 + c.get('share', 0.2)), c['C'])) if chrom else None)
-    neutral = [c for c in cols if c['C'] < 0.06 and c is not acc]
+    neutral = [c for c in cols if c['C'] < 0.06 and c is not acc and c.get('named_role') != 'line']
     ground = named('ground', cols) or (max(neutral, key=lambda c: c['L']) if neutral else None)
     ink = named('ink', [c for c in cols if c is not ground]) or (min((c for c in neutral if c is not ground), key=lambda c: c['L'], default=None))
     for c in cols:
-        c['role'] = 'accent' if c is acc else 'ground' if c is ground else 'ink' if c is ink else 'extra'
+        c['role'] = 'accent' if c is acc else 'ground' if c is ground else 'ink' if c is ink else 'line' if c.get('named_role') == 'line' else 'extra'
     second = [c for c in chrom if acc and c is not acc and min(abs(c['h'] - acc['h']), 360 - abs(c['h'] - acc['h'])) > 30]
     for c in second:
         c['role'] = 'second-hue'
@@ -481,12 +498,19 @@ def classify(paths):
         elif ext in FONT_EXT:
             kit['fonts'].append(f)
         elif ext in IMG:
-            if LOGO_WORDS.search(name) or re.search(r'^(logo|logos|brand|marks?)$', folder, re.I):
+            # the folder says what a picture is before its name does (photos/landmark.jpg is a photo)
+            if re.search(r'^(logo|logos|brand|marks?|logotype|identity)$', folder, re.I):
                 kit['raster_logo'].append(f)
-            elif SCREEN_DIRS.search(folder) or SCREEN_WORDS.search(name):
+            elif SCREEN_DIRS.search(folder):
                 kit['screens'].append(f)
-            elif PHOTO_WORDS.search(name) or PHOTO_WORDS.search(folder):
+            elif PHOTO_DIRS.search(folder):
                 kit['photos'].append(f)
+            elif PHOTO_WORDS.search(name):
+                kit['photos'].append(f)
+            elif LOGO_WORDS.search(name):
+                kit['raster_logo'].append(f)
+            elif SCREEN_WORDS.search(name):
+                kit['screens'].append(f)
             else:
                 kit['images'].append(f)
         elif ext in COLOUR_EXT and (re.search(r'colou?r|palette|brand|tokens?|theme|swatch', name, re.I) or ext == '.gpl'):
@@ -525,6 +549,12 @@ def build(args):
         supplied = [c for c in supplied if c['hex'] != hx]
         supplied.insert(0, {'hex': hx, 'label': '--accent', 'named_role': 'accent'})
     mark, word, raster = pick_logos(kit['svg'], kit['raster_logo'])
+    unused = [os.path.basename(f) for f in kit['other'] if not re.search(r'^(readme|license|licence)', os.path.basename(f), re.I)]
+    unused += [os.path.basename(f) for f in kit['raster_logo'] if f not in (raster,) and (mark or word)]
+    unused += [os.path.basename(f) for f in kit['svg'] if f not in (mark, word)]
+    if unused:
+        notes.append(f'not used: {", ".join(unused[:12])}{" ..." if len(unused) > 12 else ""} (a colours file is read when its name says '
+                     'colours, palette, tokens or theme, or with --colours; a logo when its name or folder says logo, mark or symbol)')
     measured = {}
     for s in [x for x in (mark, word) if x]:
         for hx, n in svg_colours(open(s, encoding='utf-8', errors='replace').read()).items():
@@ -589,17 +619,36 @@ def build(args):
         used.add(id(got[0][2]))
         return got[0][2]
 
+    GC = 0.024  # a derived ground's chroma stays under palette.py's neutral line (.025) after the hex rounds
+
     def role(c, L, C):
-        return (c['hex'], src(c)) if c is not None else (derive(L, min(C, cn), hn), False)
-    slate_c = grey(0.28, 0.42, 0.34)
+        return (c['hex'], src(c)) if c is not None else (derive(L, min(C, cn, GC), hn), False)
+    # a colour the kit names as its border or hairline is the line, before any other role can take it
+    named_line = next((c for c in cols if c.get('named_role') == 'line' and c['C'] < 0.06 and id(c) not in used), None)
+    if named_line is not None:
+        used.add(id(named_line))
+    # the slate: a kit grey near L .34, else the nearest dark or mid neutral the kit supplies, else derived from its
+    # dark neutrals' own hue (a warm-grey kit must not turn the dark stage brown or mauve)
+    slate_c = grey(0.28, 0.42, 0.34) or grey(0.16, 0.5, 0.34, lambda c: c['C'] <= 0.03)
+    darks_all = [c for c in neutral if c['L'] <= 0.3]
+    hd, cd = kit_neutral(darks_all) if darks_all else (hn, cn)
     mist_c = grey(max(0.8, pL - 0.1), pL - 0.01, pL - 0.03)
-    line_c = grey(0.74, pL - 0.04, max(0.8, pL - 0.12))
+    line_c = named_line or grey(0.74, pL - 0.04, max(0.8, pL - 0.12))
     mute_c = grey(0.4, 0.62, 0.52, lambda c: P.contrast(c['hex'], paper) >= 4.5)
     ink2_c = grey(inkL + 0.02, 0.34, min(0.32, inkL + 0.05))
     raised_c = grey(0.38, 0.5, 0.4)
     T = {'ink2': role(ink2_c, min(0.32, inkL + 0.05), 0.012), 'mist': role(mist_c, max(0.86, pL - 0.03), 0.008),
          'line': role(line_c, max(0.8, pL - 0.12), 0.01), 'mute': role(mute_c, 0.52, 0.01),
-         'slate': role(slate_c, 0.34, 0.025), 'slateRaised': role(raised_c, 0.4, 0.025)}
+         'slate': (slate_c['hex'], src(slate_c)) if slate_c is not None else (derive(0.34, min(GC, cd), hd), False),
+         'slateRaised': role(raised_c, 0.4, 0.025)}
+    # the accent on the slate: the brand's own when it clears 3:1 there, else lifted to L .80 and marked as derived
+    # from the supplied accent (a lifted orange is still the brand's orange: lint and the bans treat it as supplied)
+    if acc and P.contrast(accent, T['slate'][0]) >= 3:
+        lift, lift_src = accent, src(acc)
+    elif acc and lift == accent:
+        lift_src = src(acc)
+    else:
+        lift_src = f'derived from {src(acc)} (lifted for the slate)' if acc else False
     tok = {
         'ink': (inkx, src(ink_c), 'type, marks, dark stages'),
         'ink2': (*T['ink2'], 'raised surfaces on ink'),
@@ -611,7 +660,7 @@ def build(args):
         'accent': (accent, src(acc) if acc else False, 'the one accent'),
         'slate': (*T['slate'], 'the dark stage: a mid slate'),
         'slateRaised': (*T['slateRaised'], 'raised surfaces on the slate'),
-        'accentLift': (lift, src(acc) if (acc and lift == accent) else False, 'the accent lifted to L .80 for the slate stage'),
+        'accentLift': (lift, lift_src, 'the accent lifted to L .80 for the slate stage (the accent itself when it holds 3:1 there)'),
     }
     checks, fails, more = verdict({k: v[0] for k, v in tok.items()}, stage)
     notes += more
@@ -746,6 +795,9 @@ def font_sheet(family, faces, dest):
 def write_project(args, brand, tok, src_files):
     proj = os.path.abspath(args.project)
     out = []
+    if not os.path.isfile(os.path.join(proj, 'src', 'brand', 'tokens.ts')):  # before anything is copied into it
+        die(f'{os.path.join(proj, "src", "brand", "tokens.ts")} not found: run brand.py in a film project made by new-film.sh '
+            '(or pass --project), or write brand.json alone with --out brand.json')
     bdir = os.path.join(proj, 'brand')
     os.makedirs(bdir, exist_ok=True)
     # originals, so the film keeps its kit
@@ -861,6 +913,7 @@ def main():
     ap.add_argument('--font-file', action='append', help='a licensed font file (repeatable), besides the ones in the kit')
     ap.add_argument('--dry-run', action='store_true', help='print brand.json and the colour block, write nothing')
     ap.add_argument('--check', action='store_true', help='re-check brand/brand.json and src/brand/tokens.ts (palette.py --check-tokens)')
+    ap.add_argument('--out', help='write brand.json here and nothing else (no project needed: deal with deck.py --brand <file> first)')
     a = ap.parse_args()
     if a.check:
         bj = os.path.join(a.project, 'brand', 'brand.json')
@@ -883,6 +936,14 @@ def main():
         print(json.dumps(brand, indent=1, ensure_ascii=False))
         print(tokens_block(tok))
         print(summary(brand), file=sys.stderr)
+        return 1 if brand['fails'] else 0
+    if a.out:
+        brand['file'] = a.out
+        os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
+        write_text(a.out, json.dumps(brand, indent=1, ensure_ascii=False) + '\n')
+        print(summary(brand))
+        print(f'  wrote {a.out} (nothing else: no project yet)')
+        print(f'  next: python3 scripts/deck.py ... --brand {a.out}, then bash scripts/new-film.sh <dir> --brand <kit> writes the tokens, logo and fonts')
         return 1 if brand['fails'] else 0
     written = write_project(a, brand, tok, src_files)
     print(summary(brand))

@@ -14,8 +14,15 @@ Contents: 1. Intake · 2. Colours · 3. Fonts · 4. Logo · 5. Screenshots and p
 python3 scripts/brand.py <kit folder or files> [--name "Product"] [--colours colours.json] [--accent '#…']
                          [--font "Family"] [--font-file f.woff2 ...] [--project films/x] [--dry-run]
 bash scripts/new-film.sh films/x --brand <kit>        (the same, at scaffold time)
+python3 scripts/brand.py <kit> --out brand.json      (before a project exists: brand.json alone)
 python3 scripts/brand.py --check                     (after an edit)
 ```
+
+With a kit and no project yet the order is `brand.py <kit> --out brand.json`, then `deck.py ... --brand brand.json`
+(the direction dealt onto the brand's own colours), then `new-film.sh <dir> --brand <kit>`. A folder that is not a
+film project is refused before anything is copied into it. Pictures are sorted by their folder first (a `photos/`
+folder wins over a name, so `photos/landmark.jpg` is a photo), then by name; files it cannot place are listed as
+not used.
 
 It writes `brand/brand.json` (what was supplied and how each role was mapped), `src/brand/tokens.ts` (the colour
 block marked `cinetic:brand-supplied`), `src/brand/logo.ts` (the logo's parts), `src/brand/identity.ts` (the name),
@@ -25,7 +32,8 @@ critics read it, and it is why a supplied serif wordmark or a supplied orange is
 ## 2. Colours
 
 From a colours file (JSON keys, CSS custom properties, text, a GIMP palette: names such as primary, accent,
-background, surface, text give the roles) or `--accent`; with none, measured from the logo and the screenshots. The
+background, bg, surface, text give the roles; border, hairline, divider and stroke give the line) or `--accent`. CSS
+comments are skipped, and a file with custom properties is read from those declarations only; with none, measured from the logo and the screenshots. The
 accent is the named one or the most chromatic.
 
 - **The kit's own greys and papers are the grounds.** Paper, soft panels, hairlines, secondary text, the slate and the
@@ -43,7 +51,10 @@ accent is the named one or the most chromatic.
 - **Supplied colours skip the house colour bans** and are checked only for contrast (statements 7:1 on the stage the
   brand plays: paper for a light brand, the brand's ink for a dark one, or the accent lifted on the slate; the accent
   3:1 on it) and the one-accent rule. Each marker says what the kit supplied:
-  `// cinetic:brand-supplied the kit colour background`.
+  `// cinetic:brand-supplied the kit colour background`. The accent on the slate is the brand's own accent when it
+  holds 3:1 there; otherwise the lift to L 0.80 is marked as derived from the supplied accent (a lifted orange is
+  still the brand's orange). The slate takes a supplied dark or mid neutral before it is derived, and a derived one
+  takes the hue of the kit's dark neutrals, so a warm-grey kit never gets a brown or mauve dark stage.
 
 ## 3. Fonts
 
