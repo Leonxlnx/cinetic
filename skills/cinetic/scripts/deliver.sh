@@ -63,11 +63,14 @@
 #   --score-report FILE  score.py's report (default out/qa/score.json): a --draft build is refused
 # Exit 0 = everything written and every check passed, 1 = a step or check failed.
 set -euo pipefail
-# Python: $PYTHON when it is set (the interpreter of a full environment; new-film.sh and npm's scripts/py.mjs
-# honour it too), else python3 on PATH
-python3() { if [ -n "${PYTHON:-}" ]; then "$PYTHON" "$@"; else command python3 "$@"; fi; }
-
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# Python: $PYTHON when it is set (the interpreter of a full environment; new-film.sh and npm's scripts/py.mjs
+# honour it too), else the one scripts/py.mjs picks (python3, python or py -3, one that imports numpy first),
+# so the Microsoft Store alias is never run
+PYCMD=()
+if [[ -n "${PYTHON:-}" ]]; then PYCMD=("$PYTHON")
+else read -r -a PYCMD <<< "$(node "$SCRIPT_DIR/py.mjs" --which 2>/dev/null || echo python3)"; fi
+python3() { "${PYCMD[@]}" "$@"; }
 usage() { sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d' | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 die() { echo "deliver.sh: $*" >&2; exit 1; }
 step() { echo "[deliver] $*" >&2; }
@@ -266,7 +269,7 @@ if [[ $GIF -eq 1 ]]; then
   ffmpeg -v error -y -i "$MASTER" -i "$QA/.palette.png" -lavfi "$F[x];[x][1:v]paletteuse=dither=${GIF_DITHER}:diff_mode=rectangle" \
     -loop 0 "$OUTDIR/$NAME.gif"
   rm -f "$QA/.palette.png"
-  mb=$(python3 -c "import os;print(round(os.path.getsize('$OUTDIR/$NAME.gif')/1e6,2))")
+  mb=$(python3 -c 'import os, sys; print(round(os.path.getsize(sys.argv[1]) / 1e6, 2))' "$OUTDIR/$NAME.gif")
   if python3 -c "import sys; sys.exit(0 if $mb <= $GIF_MAX else 1)"; then
     note '{"file":"'"$NAME.gif"'","check":"size","pass":true,"mb":'"$mb"'}'
   else
