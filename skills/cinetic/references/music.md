@@ -4,6 +4,8 @@ Every cinetic film plays one licensed, human-made, instrumental track, edited on
 
 cinetic makes no music. The track is chosen, never generated: no synth bed, no AI-generated track, no music assembled from kit sounds. **Prefer licences that need no credit** (Mixkit, Pixabay): nothing on screen ever credits the music, and a film whose track needs no credit line ships cleanest. A CC BY track is the fallback when nothing else fits; its credit goes into the post text or video description, never into the picture.
 
+**Every film its own track.** The track is found for this film's mood and pace, never reused from the last film and never the same few files every time: `scripts/music.mjs` searches free catalogs, keeps a history per user, and downloads the choice with its licence record.
+
 ## Contents
 1. [The track comes first](#1-the-track-comes-first)
 2. [Licences you may use, and what to refuse](#2-licences-you-may-use-and-what-to-refuse)
@@ -17,22 +19,22 @@ cinetic makes no music. The track is chosen, never generated: no synth bed, no A
 
 ## 1. The track comes first
 
-At Step 3, before a single act is timed: choose the track, record its licence, analyse it, edit it to the film's bars, and write the film-time grid the timeline imports. The picture is then cut to the music; the music is never re-timed to the picture.
+At Step 3, before a single act is timed: find the track, record its licence, analyse it, edit it to the film's bars, and write the film-time grid the timeline imports. The picture is then cut to the music; the music is never re-timed to the picture.
 
 ```bash
-python3 scripts/audio/track.py add audio/music/deep_urban.mp3 --title "Deep Urban" --artist "Eugenio Mininni" \
-    --source Mixkit --page https://mixkit.co/free-stock-music/tech-house/ --licence "Mixkit Stock Music Free License" \
-    --seen-quote "…the licence text, as read on the item's own page now…" --seen-url https://mixkit.co/license/modal/musicFree/ \
-    --ai-generated no --vocals no                       # -> audio/music/deep_urban.licence.json
-python3 scripts/audio/track.py analyze audio/music/deep_urban.mp3 --profile crisp    # -> deep_urban.track.json
+node scripts/music.mjs search --mood "mechanical driving minimal" --bpm 118-128 --length 30   # -> out/music/search.json
+node scripts/music.mjs sheet --measure              # the first three: mood, tempo, length, energy curve (audition them)
+node scripts/music.mjs get '#2' --to audio/music     # -> audio/music/<name>.mp3 + <name>.licence.json
+python3 scripts/audio/listen.py --track audio/music/<name>.mp3                       # possible vocals, tempo
+python3 scripts/audio/track.py analyze audio/music/<name>.mp3 --profile crisp        # -> <name>.track.json
 python3 scripts/audio/track.py edit --bars 16 --reveal-bar 7 --end stop              # -> audio/music/edit.json
 python3 scripts/audio/track.py grid                  # -> src/music.ts (Remotion) or music.js (HyperFrames)
 python3 scripts/audio/track.py check                 # joins, the licence record, nothing from the track in git
 ```
 
-`bash scripts/new-film.sh <dir> --music <file> …` does the first two steps and sets up the launch kit (`kit.py init --preset launch`); `npm run music` repeats analyze, edit and grid with the settings already saved. `analyze` keeps an analysis already made of the same file (sha256) with the same settings, so a second run takes seconds (`--force` makes it again), and `new-film.sh` reuses a `<name>.track.json` lying beside the file it is given. On a busy machine, `new-film.sh --music … --no-analyze` scaffolds without the analysis (the longest step) and prints its command, to run as its own job.
+A track found by hand elsewhere is recorded with `track.py add` as you download it (`--title`, `--artist`, `--source`, `--page`, `--licence`, `--seen-quote "…the licence text, as read on the item's own page now…"`, `--seen-url`, `--ai-generated no --vocals no`): the same record `music.mjs get` writes. `bash scripts/new-film.sh <dir> --music <file> …` does the record and the analysis and sets up the launch kit (`kit.py init --preset launch`); `npm run music` repeats analyze, edit and grid with the settings already saved. `analyze` keeps an analysis already made of the same file (sha256) with the same settings, so a second run takes seconds (`--force` makes it again), and `new-film.sh` reuses a `<name>.track.json` lying beside the file it is given. On a busy machine, `new-film.sh --music … --no-analyze` scaffolds without the analysis (the longest step) and prints its command, to run as its own job.
 
-A Mixkit track has no page of its own: `--page` is the listing it was found on (the genre page), and the licence text is read at `https://mixkit.co/license/modal/musicFree/` (the `/license/` page only opens it in a panel): that is the `--seen-url`.
+A Mixkit track has no page of its own: the record's `page` is the listing it was found on (a genre or mood page, whose data names the track's licence), and the licence text is read at `https://mixkit.co/license/modal/musicFree/` (the `/license/` page only opens it in a panel): that is the `licence_seen` URL. `music.mjs get` reads that page again before every download and refuses when its sentence has changed.
 
 **Gate (Step 3):** the licence record passes (`track.py check`); the downbeat is confident or its phase is set by hand; the reveal bar holds an entry; the ending is `button`, `stop` or `ring`; `grid-check.ts` runs in music mode clean (`music-grid`, `structural-on-music`).
 
@@ -40,8 +42,8 @@ A Mixkit track has no page of its own: `--page` is the listing it was found on (
 
 | Source | Licence | Commercial video | Credit | Limits | Download |
 |---|---|---|---|---|---|
-| Mixkit | Mixkit Stock Music Free License | yes: any web or social platform, ads, video on demand | none needed (a courtesy line) | no TV or radio broadcast, no CD/DVD, no video games; never redistribute the file; never register it with a rights service | the file URL works from a script |
-| Pixabay Music | Pixabay Content License | yes | none needed (courtesy: "by X via Pixabay") | never share the file on its own; refuse a track the page marks "AI generated"; prefer tracks not registered with Content ID (keep the certificate of one that is) | the user downloads from the page |
+| Mixkit | Mixkit Stock Music Free License | yes: any web or social platform, ads, video on demand | none needed (a courtesy line) | no TV or radio broadcast, no CD/DVD, no video games; never remix it into a music-only track, redistribute the file or register it with a rights service | `music.mjs search` / `get` |
+| Pixabay Music | Pixabay Content License | yes | none needed (courtesy: "by X via Pixabay") | never share the file on its own; refuse a track the page marks "AI generated"; prefer tracks not registered with Content ID (keep the certificate of one that is) | the user downloads from the page (pixabay.com answers scripts with a bot check, which the finder never tries to pass; its API serves no music), then `track.py add` |
 | incompetech (Kevin MacLeod) | CC BY 4.0 | yes | required, in the composer's template | TV/radio ads, or a format where a credit is impossible, need the paid licence; name modifications beyond cutting and splicing | the file URL works from a script |
 | Scott Buckley | CC BY 4.0 | yes | required, in the description, not in the video | never re-upload the file on its own | from the page |
 | Free Music Archive, Chosic | per track: CC BY or CC0 only | yes, with the credit | copy the page's exact line | refuse NC, ND, SA; an aggregator is never the authority: confirm on the artist's own page | per track |
@@ -61,7 +63,7 @@ A Mixkit track has no page of its own: `--page` is the listing it was found on (
 
 - Download the full file (not a preview) into the film's `audio/music/`, which is git-ignored together with everything mixed from it: the soundtrack, the stems, the decode cache (`out/cache/music/`), the renders. Only the record, the analysis and the edit are committed (JSON, no audio).
 - Record the licence at download time with `track.py add`, never afterwards. `--seen-quote` and `--seen-url` hold a short quote of the licence text as read on the item's own page now, with its URL (`--seen-date` defaults to today): a record without them is unconfirmed, and `track.py check`, `credits.py` and `deliver.sh` refuse it. Never fill them in from memory or from a list.
-- Shortlist 2–3 candidates, analyse each, pick one, and name the runner-up in the delivery note so the user can audition and swap it.
+- Audition 3 candidates (`music.mjs sheet --measure`, then listen), pick one, analyse it, and name the runner-up in the delivery note so the user can audition and swap it.
 
 The record (`audio/music/<name>.licence.json`; `audio/music/licence.template.json` shows every field):
 
@@ -79,9 +81,19 @@ The record (`audio/music/<name>.licence.json`; `audio/music/licence.template.jso
 
 A CC BY record carries `credit` in the composer's template form; the credits name the modifications. The file's `sha256` must match: a changed file is re-recorded after reading its page again (`track.py add --force`).
 
-`assets/music/shortlist.json` lists free tracks that pass these rules, with their licence, credit line, length, measured tempo, mood and profile, and the date each page was last checked. It is a starting point, not a licence: read the page again every time.
+`assets/music/shortlist.json` lists free tracks that pass these rules, with their licence, credit line, length, measured tempo, mood and profile, and the date each page was last checked. The example films used them, so the finder ranks them lower: take one only when nothing it finds fits, and read its page again.
 
 ## 4. Choosing
+
+`music.mjs search --mood "<words>" --bpm <lo-hi> --length <film s>` reads the catalog pages the words name (a genre such as "tech house", a mood such as "calm" or "driving", an instrument, or the catalog's search for any other word; house words such as "precise" or "punchy" read as the catalog's moods and genres) and ranks the tracks:
+
+- **mood:** the words their tags match (genre and mood count double);
+- **length:** never shorter than the film plus its ending; at least 1.5 times the film, so the best bars and a natural ending both fit;
+- **tempo:** a tempo measured before (`sheet --measure`, the shortlist), else the genre's usual range, marked estimated; half or double time counts; `track.py analyze` measures the one you keep;
+- **energy curve,** read from the catalog's own waveform data without downloading: a break followed by an entry (a place for the reveal) and contrast win, a flat track loses; `sheet` shows the curve as a strip of levels with the intro, the breaks and their entries, and the ending (fade, button or ring);
+- **the history** (`~/.cinetic/music-history.json`, or `$CINETIC_HOME`): the last film's track is held back, the tracks of the five films before lose ground, the shortlist's tracks too, and the first track offered is never the one the previous search offered first. `get` records the film's choice; `history` shows it.
+
+Choose among the first three by the film's mood and pace, after listening:
 
 - **Profile and tempo.** The row of the personality table (`references/sound.md` §5.5a) picks the music brief: calm 95–110 BPM with a soft pulse, crisp 120–128 with a clear four-on-the-floor, punchy 124–130. Any tempo works: `src/music.ts` gives `b()` the track's own fractional frames.
 - **Structure.** The film needs an entry for the reveal (a bar where a part comes in, ideally after a break or a stop), a break for the mid-film dip, and an ending (`button`, `ring`, or a body that can stop on a bar line). `track.py analyze` lists them.
@@ -152,4 +164,6 @@ It exits 1 when a record is missing, the licence is unknown or forbidden, `licen
 | a key clash across a join | sections in different keys | the edit refuses key changes across a jump; pick another entry |
 | a loudness step at a join | the jump lands in a quieter or louder part | the edit penalises steps of 3 LU or more; set `--arc` to keep the body level |
 | a Content ID claim on the upload | the track is registered, or a false claim | dispute with the record (page, licence, download date; the certificate for a registered track) |
-| credits missing or refused at delivery | no record, no `licence_seen`, no CC BY credit line | `track.py add` again after reading the page; `npm run credits` |
+| credits missing or refused at delivery | no record, no `licence_seen`, no CC BY credit line | `music.mjs get` (or `track.py add`) again after reading the page; `npm run credits` |
+| every film sounds alike | the same few tracks, the last film's track | `music.mjs search` with the film's own mood words and tempo; the history holds the last film's track back |
+| `get` refuses: the licence page changed | the sentence read on 2026-10-26 is no longer there | read the page; record the track by hand (`track.py add`) only if it still allows a film |

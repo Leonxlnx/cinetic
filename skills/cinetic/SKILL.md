@@ -107,8 +107,9 @@ Read `references/brand-and-color.md` (and `references/brand-kits.md` with a kit,
 
 ### Step 3: Music first → `audio/music/`, `src/music.ts`
 Read `references/music.md` now. The track is chosen before the timeline; the picture is cut to it.
-- **Choose** a licensed, human-made, instrumental track, preferring licences that need no credit (Mixkit, Pixabay; `assets/music/shortlist.json` is a starting point, never a licence). The personality row (`references/sound.md` §5.5a) gives the brief: tempo range, an entry for the reveal, a break, an ending.
-- **Record it as you download it:** `python3 scripts/audio/track.py add <file> --title … --artist … --source … --page … --licence … --seen-quote "<as read on the item's page now>" --seen-url …` (`new-film.sh --music` does this and sets up the launch kit).
+- **Find it for this film:** a licensed, human-made, instrumental track chosen by the film's mood and pace, under a licence that needs no credit. The personality row (`references/sound.md` §5.5a) gives the brief (mood words, a tempo range, an entry for the reveal, a break, an ending); `node scripts/music.mjs search --mood "<the brief's words>" --bpm <range> --length <s>` searches the free catalogs and ranks by mood, tempo, length and energy curve.
+- **Audition three, keep one:** `node scripts/music.mjs sheet --measure` lists the first three with mood, tempo, length and energy curve (intro, break and entry, ending); listen to them, choose by the brief, name the runner-up in the delivery note. Never the last film's track: the finder holds it back and never offers the same track first twice in a row (`~/.cinetic/music-history.json`).
+- **Download it with its record:** `node scripts/music.mjs get #n --to audio/music` writes `<name>.licence.json` (the licence page read again now); a track found elsewhere is recorded as you download it with `python3 scripts/audio/track.py add <file> --title … --artist … --source … --page … --licence … --seen-quote "<as read on the item's page now>" --seen-url …` (`new-film.sh --music` does this and sets up the launch kit).
 - **Analyse, edit, grid:** `track.py analyze <file>`, `track.py edit --bars N --reveal-bar K --end stop|button|ring`, `track.py grid` (writes `src/music.ts`; `npm run music` repeats them).
 - **Gate:** `track.py check` passes (licence record, joins, nothing from the track in git); the downbeat is confident or its phase set by hand; the reveal bar holds an entry.
 
@@ -166,10 +167,10 @@ node scripts/grammar-score.mjs --cues out/cues.json --layout out/qa/layout-Film.
 ### Step 8: Sound → `public/audio/soundtrack.wav`
 Read `references/sound.md` now.
 - `npx tsx scripts/export-cues.ts` (`npm run cues`) writes `out/cues.json`: sync points come from the picture code (contact frames, 50 % pops, velocity peaks, settles, a line's resolve), never typed by hand.
-- **The kit:** `python3 scripts/audio/kit.py init --preset launch` (with the personality row's swaps), `npm run kit` (earshot 0.4+ renders the takes, cached), `kit.py check`, `kit.py tune` to the track's key.
-- `src/sync.ts`: one event per discrete state change, `structural: true` on acts, the reveal and the ending. Text gets one soft sound per line (or per fragment of a line built in beats); the lockup is a stop and ONE element.
-- `npm run plan` (`out/qa/sfx_plan.json`: placed, carried by the track, thinned, off; gains over the bed; stop-downs; density), then `npm run audio` (score: soundtrack, stems, report), then `npm run listen` (earshot's ears).
-- **Gate:** no generated music and every effect from the kit (a `--draft` build never passes); over-bed within ±2 dB per role; a stop-down before every hit, drop and swell (≤ 3 per 10 s); no ducking; clean joins; density 3–13 per 10 s (no floor for a sting of 8 s or less); one gesture at a time; one element at the lockup; −14 LUFS (−16 for a sting of 8 s or less) ±0.5, −1.5 dBTP on the WAV; every sound has a visible cause.
+- **The kit:** `python3 scripts/audio/kit.py init --preset launch` (with the personality row's swaps), then, with the cues written, `python3 scripts/audio/kit.py cast`: every sound is chosen for its action (a card landing, a toggle, typing, a swipe, a logo lock, a transition through a shape; `scripts/audio/actions.py`), each action of the film its own bank sound, the previous film's signature sounds avoided. `npm run kit` (earshot 0.4+ renders the takes, cached), `kit.py check`, `kit.py tune` to the track's key, `kit.py listen` (each role judged against its action). Where the bank sounds an action weakly, a free no-credit effect (`music.mjs search --kind sfx`, `get`, `kit.py real`) through the same licence record.
+- `src/sync.ts`: one event per discrete state change, named by what it does (`id: 'c2:card-3-lands'`, or `action: 'card-land'`), `structural: true` on acts, the reveal and the ending. Text gets one soft sound per line (or per fragment of a line built in beats); the lockup is a stop and ONE element. Fewer, better sounds: the music carries most moments.
+- `npm run plan` (`out/qa/sfx_plan.json`: placed, carried by the track, thinned, off; each action's sound; restraint; gains over the bed; stop-downs; density), then `npm run audio` (score: soundtrack, stems, report), then `npm run listen` (earshot's ears).
+- **Gate:** no generated music and every effect from the kit (a `--draft` build never passes); over-bed within ±2 dB per role; a stop-down before every hit, drop and swell (≤ 3 per 10 s); no ducking; clean joins; density 3–13 per 10 s (no floor for a sting of 8 s or less) and restraint (at most 10 in any 10 s: the lightest actions go quiet first); the kit cast for the film; no take heard twice within 3 s; one gesture at a time; one element at the lockup; −14 LUFS (−16 for a sting of 8 s or less) ±0.5, −1.5 dBTP on the WAV; every sound has a visible cause.
 
 ### Step 9: Render and finish → `out/film.mp4`
 Read `references/finishing.md` now.
@@ -379,8 +380,9 @@ Read each file when its step comes up; never all at once.
 | pixel QA, holds, carried cuts, dissolves, the end card, loop seam | `scripts/forensics.py` (`--loop`) |
 | the rendered look, the motion and picture floors, the one-hue gate | `scripts/look-audit.py` (`--trajectory`, `--imagery`, `--picture-only`) |
 | closeness to the house grammar (or a clip's) | `scripts/grammar-score.mjs` (`--target`, `--format`) |
+| the film's track from free no-credit catalogs: search by mood, tempo and length, the sheet, download with its licence record, the history; a real effect where the bank is weak | `scripts/music.mjs` (`search`, `sheet --measure`, `get`, `history`, `licences`; `--kind sfx`) |
 | the track: licence record, analysis, edit, grid, check | `scripts/audio/track.py` (`add`, `analyze`, `edit`, `grid`, `check`, `music`) |
-| the effects kit: init, tune, render, vendor, check, audition, listen | `scripts/audio/kit.py` (earshot) |
+| the effects kit: init, cast (each action its own sound), real effects, tune, render, vendor, check, audition, listen | `scripts/audio/kit.py` (earshot); the actions and their sounds: `scripts/audio/actions.py` |
 | the effects plan; score, mix and master; credits | `scripts/audio/plan.py`; `scripts/audio/score.py`, `master.py`, `dsp.py`, `mixkeys.py` (and `draft.py`, placeholder voices for a `--draft` timing check only); `scripts/audio/credits.py` |
 | earshot's ears on the soundtrack, the track or the kit | `scripts/audio/listen.py` |
 | previews, masters, the blur pass, splices, chunked renders | `scripts/render.sh` (`--preview`, `--blur`, `--policy`, `--frames`, `--budget`, `--build-audio`), `scripts/render-chunks.sh` |
@@ -391,4 +393,4 @@ Read each file when its step comes up; never all at once.
 | brand kit export; outlined lettering | `scripts/brand-kit.sh`; `scripts/outline-text.py` |
 | the HyperFrames finish | `scripts/hf-finish.sh` |
 | the Python the npm scripts run (`$PYTHON`, else `python3`, `python` or `py -3`) | `scripts/py.mjs` (`--which`) |
-| the scripts' own tests (not a film's) | `scripts/test/` (`lint-film`, `grid-check`, `tokens`, `mirror`, `scripts-docs`, `provenance`, `pick`, `deck`, `brand`, `like`, `track`, `score`, `assets`) |
+| the scripts' own tests (not a film's) | `scripts/test/` (`lint-film`, `grid-check`, `tokens`, `mirror`, `scripts-docs`, `provenance`, `pick`, `deck`, `brand`, `like`, `track`, `score`, `cast`, `assets`, `music`) |
