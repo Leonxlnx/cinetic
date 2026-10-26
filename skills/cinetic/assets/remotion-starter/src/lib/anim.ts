@@ -80,6 +80,64 @@ const table = (ys: readonly number[]): Ease => {
   };
 };
 
+/**
+ * A measured curve as an ease: progress samples at t = 0, 1/n ... 1 (a clip's move read frame by frame,
+ * normalised), drawn through with the same monotone cubic as the house tables. For a move whose shape no
+ * token matches; a role token stays the default.
+ */
+export const curveOf = (samples: readonly number[]): Ease => {
+  if (samples.length < 3) throw new Error('curveOf: give at least 3 samples (t = 0, .5, 1)');
+  return table(samples);
+};
+
+/** A measured track: [frame, value] keys, in frame order. */
+export type TrackKey = readonly [frame: number, value: number];
+
+/**
+ * The value of a measured track at frame f: a monotone cubic through the keys (no overshoot between two
+ * keys, continuous speed), the first and last values held outside them. One table replaces a chain of
+ * tweens when a move was measured (a card's width, a pan's edge, a zoom read from a clip). Pure.
+ */
+export const track = (f: number, keys: readonly TrackKey[]): number => {
+  const n = keys.length;
+  if (!n) return 0;
+  if (f <= keys[0][0]) return keys[0][1];
+  if (f >= keys[n - 1][0]) return keys[n - 1][1];
+  let i = 0;
+  while (i < n - 2 && f > keys[i + 1][0]) i++;
+  const d = (k: number) => (keys[k + 1][1] - keys[k][1]) / (keys[k + 1][0] - keys[k][0]);
+  const m = (k: number) => {
+    if (k === 0) return d(0);
+    if (k === n - 1) return d(n - 2);
+    const a = d(k - 1);
+    const b = d(k);
+    if (a * b <= 0) return 0;
+    const ha = keys[k][0] - keys[k - 1][0];
+    const hb = keys[k + 1][0] - keys[k][0];
+    return (3 * (ha + hb)) / ((2 * hb + ha) / a + (hb + 2 * ha) / b);
+  };
+  const [x0, y0] = keys[i];
+  const [x1, y1] = keys[i + 1];
+  const h = x1 - x0;
+  const t = (f - x0) / h;
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (2 * t3 - 3 * t2 + 1) * y0 + (t3 - 2 * t2 + t) * h * m(i) + (-2 * t3 + 3 * t2) * y1 + (t3 - t2) * h * m(i + 1);
+};
+
+/** The straight-line twin of track(): linear between keys (a ramp, a luma halving per frame read as steps). */
+export const trackLinear = (f: number, keys: readonly TrackKey[]): number => {
+  const n = keys.length;
+  if (!n) return 0;
+  if (f <= keys[0][0]) return keys[0][1];
+  if (f >= keys[n - 1][0]) return keys[n - 1][1];
+  let i = 0;
+  while (i < n - 2 && f > keys[i + 1][0]) i++;
+  const [x0, y0] = keys[i];
+  const [x1, y1] = keys[i + 1];
+  return y0 + ((y1 - y0) * (f - x0)) / (x1 - x0);
+};
+
 /** The house standard in-out, as progress at t = 0 ... 1 (peak speed at 35 %). */
 export const STD_IN_OUT = [0, 0.04, 0.127, 0.316, 0.55, 0.756, 0.871, 0.924, 0.962, 0.986, 1] as const;
 /** The house whip, as progress at t = 0 ... 1: a long build and a short brake (peak speed at 55-60 %). */

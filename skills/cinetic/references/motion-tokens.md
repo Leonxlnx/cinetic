@@ -103,6 +103,12 @@ moment stays a prop of that moment; it does not become a token.
 | `M.ringTighten` | reposition | a ring wipe tightening |
 | `M.focusSlide` | arrive | a word sliding home while it comes into focus |
 
+**Measured moves.** When a move is read from a clip frame by frame, keep the numbers instead of hunting for a token:
+`track(f, [[frame, value], ...])` draws a monotone cubic through the keys (no overshoot between two keys, the end
+values held outside them) and `trackLinear()` draws straight lines; `curveOf([0, ..., 1])` turns progress samples at
+t = 0, 1/n ... 1 into an ease for `prog()`. One table replaces a chain of tweens for a card's width, a pan's edge or
+a zoom. A measured curve is still a one-off for its moment: it lives in the act or the primitive's props.
+
 ## 4. Springs and the one spring class
 
 `SPR` presets (Remotion configs, mass 1; ζ = damping / (2√(stiffness·mass)); settle = within 2 % of rest at 60 fps):
