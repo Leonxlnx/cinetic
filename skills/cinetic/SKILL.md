@@ -140,7 +140,7 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
 The full pick-by-job table, the materials and VFX notes (gradients and dither, type built from gradients, spectral and iridescent, glass, glow anatomy, glyph textures, grades as transitions, coloured shadows) and one line per device are in [`references/devices/INDEX.md`](references/devices/INDEX.md).
 
 ### Step 7: Checks → `out/qa/`
-Read `references/checks.md`. After each build step, on a preview:
+Read `references/checks.md`. After each build step, on a preview (`--no-audio` until Step 8 has written the soundtrack):
 ```
 npm run cues && bash scripts/render.sh Film out/preview.mp4 --preview --audio public/audio/soundtrack.wav
 bash scripts/layout-audit.sh Film --every 6 --json out/qa/layout-Film.json
