@@ -133,7 +133,11 @@ Rendered look checks: `hue-count` (2 hue groups warn, 3 fail, outside declared d
 brand-supplied colours count as one family), `banned-hue`
 (supplied colours pass), `accent-share`, the wash ceiling (a film is not one colour wash), `tinted-ink`,
 `negative-space`, `living-ground`, `camera-lock` (the camera never stops, or never on a read: lock 0.5-1 s on each read), `clean-finish`, `type-size` (with the layout JSON), `luminance-flip`,
-`blur-policy`, `word-first-frame`, `fade-detect`, `arrival-front-load`, `image-develop` (a hint). Flags:
+`blur-policy`, `word-first-frame`, `fade-detect`, `arrival-front-load`, `image-develop` (a hint), and with the
+layout JSON and the cues the type gate: `type-read` (fails when the largest copy line is under 6.7 % of the frame
+height, 72 px at 1080p, or a line of 48 px or more reads under 3:1 against its local ground; under 4.5:1 warns, and
+fails on a busy ground) and `type-beat` (warns when no line of 6.7 % or more, at 4.5:1, sits on a clean field for a
+second or more). Flags:
 `--imagery x,y,w,h` (boxes holding photographs: natural colour there is not designed colour), `--colour-event
 FROM,TO` (a declared colour event pauses the wash and accent ceilings; the timeline's `COLOUR` ranges are read from the cues), `--second '#…'` (a declared support hue),
 `--tokens`, `--brand`, `--picture-only` (the picture floor alone, fast), `--no-picture`, `--no-floor`.

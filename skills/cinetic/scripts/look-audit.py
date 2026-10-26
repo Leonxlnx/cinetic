@@ -102,6 +102,14 @@ Framing and type (warn):
   framing-hold     one framing held over 0.8 s with no depth plane moving (camera, second plane and layers still;
                    1 s inside a copy read window)
   small-text       (--layout) a string under 36 px at 1080p held over 6 f@60 (UI strings included)
+  type-read        (--layout and cues copy; fail) the film's largest copy line is under 6.7 % of the frame height
+                   (72 px at 1080p: nothing reads at feed size), or a copy line of 48 px or more reads under 3:1
+                   against its local ground (its strokes against the median of its box, the best of three
+                   frames in its read; warn under 4.5:1, and fail under it on a busy ground: 10 % or more edge
+                   pixels around the line). Type reads
+                   frontal: a line seen in perspective settles frontal for its read
+  type-beat        (--layout and cues copy) no beat where the type is the design: a copy line of 6.7 % or more,
+                   4.5:1 or more, on a clean field (under 2 % edge pixels in a ring around it), read for 1 s or more
 --picture-only runs the picture floor alone (no motion probe; --every N reads every Nth frame, the colour and
 framing samples stay at two a second). Colour events: cues `declared.colour` [{from, to}] (also inside
 `declared.fx`), or --colour-event FROM,TO (frames; repeatable).
@@ -143,6 +151,11 @@ MOVING_FLOOR = 0.70  # floor-moving: the camera or the ground moves on this shar
 READ_LOCK_S = 1.0  # the camera may lock this long on each type read (lib/look.ts GRAMMAR.hold.readLockS)
 LOCK_MIN_S = 0.5  # a lock shorter than this is not a lock
 CAMERA_NEVER_LOCKS = 0.99  # camera-lock: the camera moves on more than this share of the body
+TYPE_LINE = 0.067  # type-read: the film's largest copy line (font size) at least this share of the frame height
+TYPE_CONTRAST = (3.0, 4.5)  # type-read: local contrast under the first fails, under the second warns (WCAG large / normal text)
+TYPE_CONTRAST_MIN_PX = 48  # contrast is read on lines at least this tall (px at 1080p; smaller type blurs at the analysis size)
+TYPE_CLEAN_RING = 0.02  # type-beat: edge pixels in the ring around the line under this share: a clean field
+TYPE_BUSY_RING = 0.10  # type-read: over this share the ground is busy (its own extremes inflate the contrast): 4.5:1 or it fails
 M1 = [[0.4122214708, 0.5363325363, 0.0514459929], [0.2119034982, 0.6806995451, 0.1073969566], [0.0883024619, 0.2817188376, 0.6299787005]]
 M2 = [[0.2104542553, 0.7936177850, -0.0040720468], [1.9779984951, -2.4285922050, 0.4505937099], [0.0259040371, 0.7827717662, -0.8086757660]]
 
@@ -762,6 +775,35 @@ def audio_onsets(path, fps):
     return out
 
 
+def rel_lum(rgb8):
+    """WCAG relative luminance of sRGB pixels (uint8, ... x 3)."""
+    c = rgb8.astype(np.float32) / 255.0
+    c = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    return 0.2126 * c[..., 0] + 0.7152 * c[..., 1] + 0.0722 * c[..., 2]
+
+
+def type_read_at(rgb, gray, box, edges):
+    """One copy line at one frame: its local contrast (the glyphs, the p2 or p98 relative luminance farther from the
+    box's median, against that median, the ground the strokes sit on, as a WCAG ratio; over the box and a margin of a
+    tenth of its height) and the edge share of a ring around it (half a line height wide)."""
+    h, w = gray.shape
+    x, y, bw, bh = box
+    m = max(1, bh // 10)
+    x0, y0, x1, y1 = max(0, x - m), max(0, y - m), min(w, x + bw + m), min(h, y + bh + m)
+    if x1 - x0 < 2 or y1 - y0 < 2:
+        return dict(contrast=None, ring=None)
+    lum = rel_lum(rgb[y0:y1, x0:x1])
+    lo, mid, hi = np.percentile(lum, (2, 50, 98))
+    ink = lo if mid - lo >= hi - mid else hi
+    r = max(2, bh // 2)
+    X0, Y0, X1, Y1 = max(0, x - r), max(0, y - r), min(w, x + bw + r), min(h, y + bh + r)
+    ring = edges[Y0:Y1, X0:X1].copy().astype(np.float32)
+    inner = np.zeros_like(ring, bool)
+    inner[max(0, y0 - Y0):y1 - Y0, max(0, x0 - X0):x1 - X0] = True
+    n_ring = int((~inner).sum())
+    return dict(contrast=round(float((max(ink, mid) + 0.05) / (min(ink, mid) + 0.05)), 2), ring=round(float(ring[~inner].mean()), 4) if n_ring >= 20 else None)
+
+
 # ------------------------------------------------------------------------------------------
 # the measurement pass
 # ------------------------------------------------------------------------------------------
@@ -782,12 +824,13 @@ def measure(args, info, F, accent, brand, layout, cues):
         k = W / info['w']
         imagery.append((int(x * k), int(y * k), int(w * k), int(h * k)))
     # text regions (layout boxes at each COPY entry's resolved frame), for the word checks
-    rois = {}
+    rois, boxes, fr_h = {}, {}, {}
     if layout and cues:
         boxes = {}
         for fr in layout.get('boxes', []):
             for b in fr.get('boxes', []):
                 boxes.setdefault(b['id'], []).append((fr['frame'], b))
+            fr_h[fr['frame']] = fr.get('height')
         for c in cues.get('copy', []):
             cid = c.get('id')
             cand = boxes.get(cid) or boxes.get(str(cid).split('.')[0])
@@ -800,8 +843,28 @@ def measure(args, info, F, accent, brand, layout, cues):
             sx = W / (layout.get('width') or args.comp_width or info['w'])
             rois[cid] = dict(box=(int(b['x'] * sx), int(b['y'] * sx), max(2, int(b['w'] * sx * share)), max(2, int(b['h'] * sx))),
                              at=c['in'], resolved=c['resolved'], out=c.get('out'), role_px=b.get('px'), words=len(text.split()))
-    want_roi = {}
+    # type reads: every film copy line's full box at three frames of its read (contrast, the ground around it)
+    reads, want_read = {}, {}
     k_ = fps / (cues.get('fps') or fps) if cues else 1.0
+    if layout and cues:
+        cfps = cues.get('fps') or fps
+        for c in cues.get('copy', []):
+            if c.get('kind') == 'ui':
+                continue
+            cid = c.get('id')
+            cand = boxes.get(cid) or boxes.get(str(cid).split('.')[0])
+            if not cand or not isinstance(c.get('resolved'), (int, float)):
+                continue
+            r0, r1 = c['resolved'], c.get('out') if isinstance(c.get('out'), (int, float)) else c['resolved'] + cfps
+            fr, b = min(cand, key=lambda x: abs(x[0] - (r0 + r1) / 2))
+            hgt = fr_h.get(fr) or layout.get('height') or args.comp_height or 1080
+            sx = W / (layout.get('width') or args.comp_width or info['w'])
+            at = sorted({int(round(min(r1 - 1, r0 + 0.3 * cfps) * k_)), int(round((r0 + r1) / 2 * k_)), int(round(max(r0, r1 - 0.2 * cfps) * k_))})
+            reads[cid] = dict(box=(int(b['x'] * sx), int(b['y'] * sx), max(2, int(b['w'] * sx)), max(2, int(b['h'] * sx))), px=round(b['px'] * 1080.0 / hgt, 1),
+                              hold_s=round((r1 - r0) / cfps, 2), frames=at, text=(c.get('text') or '')[:40])
+            for f in at:
+                want_read.setdefault(f, []).append(cid)
+    want_roi = {}
     for cid, r in rois.items():
         a = int(r['at'] * k_) - 3
         z = int(r['resolved'] * k_) + int(0.4 * fps)
@@ -811,7 +874,7 @@ def measure(args, info, F, accent, brand, layout, cues):
             for f in range(int(r['out'] * k_) - 3, int(r['out'] * k_) + int(0.8 * fps)):
                 want_roi.setdefault(f, []).append(cid)
 
-    S = dict(luma=[], ground_L=[], sharp=[], roi={cid: {} for cid in rois}, samples=[], tiles_prev=[])
+    S = dict(luma=[], ground_L=[], sharp=[], roi={cid: {} for cid in rois}, samples=[], tiles_prev=[], reads={cid: dict(r, at=[]) for cid, r in reads.items()})
     S['pic'] = new_pic()
     for f, rgb in F.decode(args.video, info, 0, None, size=(W, H)):
         gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
@@ -824,6 +887,8 @@ def measure(args, info, F, accent, brand, layout, cues):
         tex = F.textured(gray)
         S['sharp'].append(float(lap[tex].var()) if tex.sum() > 200 else None)
         edges_px = pic_frame(S['pic'], f, rgb, gray)
+        for cid in want_read.get(f, []):
+            S['reads'][cid]['at'].append(type_read_at(rgb, gray, reads[cid]['box'], edges_px))
         for cid in want_roi.get(f, []):
             x, y, w, h = rois[cid]['box']
             patch = gray[max(0, y):y + h, max(0, x):x + w]
@@ -1379,6 +1444,30 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
             add('fade-detect', 'warn', fs[vis], f'"{cid}" fades in over {ramp60:.0f} f@60 without moving: words cut on in place or rise as one snapOut move')
         if front is not None and front < 0.2:
             add('arrival-front-load', 'warn', fs[vis], f'"{cid}" puts {front * 100:.0f} % of its arrival in the first 10 % of its time: arrivals are front-loaded (peak speed on the first frame)')
+    # the type gate: the largest line reads at feed size, every line holds its contrast, one beat is type on a clean field
+    type_rows_read = []
+    for cid, r in (S.get('reads') or {}).items():
+        got = [x for x in r.get('at', []) if x.get('contrast') is not None]
+        best = max((x['contrast'] for x in got), default=None)
+        ring = min((x['ring'] for x in got if x.get('ring') is not None), default=None)
+        type_rows_read.append(dict(id=cid, px=r['px'], line=round(r['px'] / 1080.0, 4), contrast=best, ring=ring, hold_s=r['hold_s'], frame=(r['frames'] or [0])[0], text=r['text']))
+    if type_rows_read:
+        top = max(type_rows_read, key=lambda x: x['px'])
+        if top['line'] < TYPE_LINE:
+            add('type-read', 'fail', top['frame'], f"the largest copy line (\"{top['text']}\") is {top['line'] * 100:.1f} % of the frame height ({top['px']:g} px at 1080p): under {TYPE_LINE * 100:.1f} % "
+                f"nothing reads at feed size; set the statement and the lockup name at 72 px or more (house line 120, display 200)")
+        for x in type_rows_read:
+            if x['contrast'] is None or x['px'] < TYPE_CONTRAST_MIN_PX:
+                continue
+            busy = x['ring'] is not None and x['ring'] >= TYPE_BUSY_RING
+            if x['contrast'] < TYPE_CONTRAST[1]:
+                add('type-read', 'fail' if x['contrast'] < TYPE_CONTRAST[0] or busy else 'warn', x['frame'],
+                    f"\"{x['text']}\" reads at {x['contrast']:.1f}:1 against its local ground (floor {TYPE_CONTRAST[0]:g}:1, house {TYPE_CONTRAST[1]:g}:1 or more): light the type, "
+                    f"or flatten, dim or defocus the ground under it" + (f" (a busy ground: {x['ring'] * 100:.0f} % edge pixels around the line, so it needs {TYPE_CONTRAST[1]:g}:1)" if busy else ''))
+        beat = [x for x in type_rows_read if x['line'] >= TYPE_LINE and (x['contrast'] or 0) >= TYPE_CONTRAST[1] and x['ring'] is not None and x['ring'] < TYPE_CLEAN_RING and x['hold_s'] >= 1.0]
+        if not beat:
+            add('type-beat', 'warn', top['frame'], f"no beat where the type is the design: a line of {TYPE_LINE * 100:.1f} % of the frame height or more, {TYPE_CONTRAST[1]:g}:1 or more, "
+                f"on a clean field (under {TYPE_CLEAN_RING * 100:.0f} % edge pixels around it), read for 1 s or more. Give one beat to the words: large, frontal, on a flat field, built word by word")
     # imagery developing from a tint (a hint)
     dev_rows = []
     im = [(s['f'], s['imagery']) for s in samples]
@@ -1429,7 +1518,7 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
         ground_C=round(float(np.median([s['ground_C'] for s in samples])), 4) if samples else None,
         ink_L=round(float(np.median([s['ink_L'] for s in samples if s['ink_L'] is not None])), 4) if any(s['ink_L'] is not None for s in samples) else None,
         grain=round(float(np.median(grains)), 3) if grains else None, vignette=round(float(np.median(vigs)), 4) if vigs else None,
-        type_issues=len(type_rows), words=word_rows, small_text=len(small_rows),
+        type_issues=len(type_rows), words=word_rows, small_text=len(small_rows), type_reads=type_rows_read,
         picture=dict(flat=pf['flat']['mean'], flat_frames_over=pf['flat']['frames_over'], edges=pf['edges']['mean'], falloff=pf['falloff']['share'],
                      saturated=pf['saturated']['mean'], bleed_acts=[r['ok'] for r in pf['bleed']['acts']], bleed_share=pf['bleed']['share'], skeleton_samples=pf['skeleton']['samples'],
                      saturated_out=pf['wash']['saturated'], wash_share=pf['wash']['frames_over'], neutral=pf['neutral']['mean'], accent=pf['accent']['mean'],
@@ -1944,6 +2033,27 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         check(bool(has(rep, 'small-text', 'warn')), 'a 24 px label held for a second warns small-text')
         rep = run('type-good', plain, None, extra=('--layout', lay_good))
         check(not has(rep, 'type-size') and not has(rep, 'small-text'), 'a 120 px line and a 40 px label pass type-size and small-text')
+
+        # --- the type gate (layout + cues copy): a large dark line on paper reads and is a type beat; the same line grey
+        # on a busy grey ground fails its contrast and is no type beat; a 40 px line as the largest fails the size
+        tc = cues_for(90)
+        tc['copy'] = [dict(id='line', text='Ears for agents', **{'in': 0}, resolved=4, out=86, read=[[4, 86]])]
+
+        def lay_line(px):
+            return write_json(f'layout-line-{px}.json', dict(width=1920, height=1080, boxes=[dict(frame=f_, width=1920, height=1080, boxes=[
+                dict(id='line', px=px, x=160, y=368, w=1320, h=224, opacity=1)]) for f_ in range(0, 90, 6)]))
+        PG = photo(11, w + 200, h + 60, sat=False)
+        PG = np.repeat((PG if PG.ndim == 2 else PG.mean(axis=2)).astype(np.uint8)[..., None], 3, axis=2)
+        good_t = [text_rows(paper.copy(), 40 + i * 0.1, 140, ['Ears for agents'], 1.9, (30, 32, 36), 60, 4) for i in range(90)]
+        bad_t = [text_rows(PG[30:30 + h, 10 + i:10 + i + w].copy(), 40 + i * 0.1, 140, ['Ears for agents'], 1.9, (150, 150, 150), 60, 4) for i in range(90)]
+        rep = run('type-read-good', good_t, tc, extra=('--layout', lay_line(168)))
+        check(not has(rep, 'type-read') and not has(rep, 'type-beat'), 'a large dark line on paper passes type-read and is a type beat',
+              json.dumps(rep.get('measures', {}).get('type_reads')))
+        rep = run('type-read-bad', bad_t, tc, extra=('--layout', lay_line(168)))
+        check(bool(has(rep, 'type-read', 'fail')) and bool(has(rep, 'type-beat', 'warn')), 'the same line grey on a busy grey ground fails type-read and warns type-beat',
+              json.dumps(rep.get('measures', {}).get('type_reads')))
+        rep = run('type-read-small', good_t, tc, extra=('--layout', lay_line(40)))
+        check(bool(has(rep, 'type-read', 'fail')), 'a 40 px line as the largest copy fails type-read (nothing reads at feed size)', json.dumps(rep.get('measures', {}).get('type_reads')))
 
         # --- image-develop: imagery that arrives at full colour in one frame (twice) warns; developing from grey does not
         ramp = np.linspace(0.15, 1.0, 200, dtype=np.float32)[None, :, None]  # a picture: its colour varies across it

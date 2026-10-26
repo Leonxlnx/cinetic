@@ -193,7 +193,7 @@ The full catalogue of tells, each with its fix, is `references/taste-and-slop.md
 - Pay off the film's own words; no stock phrasing (seamless, unlock, AI-powered); never a feature name as a headline.
 
 **Type**
-- One clean sans chosen for the personality, two weights, tabular figures. Roles at film size: `line` 120, `display` 200, `hero` 240, `giant` 900 (the set of one moment, once per film, never a watermark), `caption` 46, `ui` 40; nothing under 36 px held in focus.
+- One clean sans chosen for the personality, two weights, tabular figures. Roles at film size: `line` 120, `display` 200, `hero` 240, `giant` 900 (the set of one moment, once per film, never a watermark), `caption` 46, `ui` 40; nothing under 36 px held in focus. Statements and the lockup name at 72 px or more, 4.5:1 against the ground under them, frontal for the read; one beat per film where the type is the design (large, on a flat field, built word by word); never a lower-left subtitle as the default caption (`look-audit.py type-read`, `type-beat`).
 - The canonical word reveal: a third visible on its first frame, 90 % by 0.25 s; a build line re-centres with a jump; exits accelerate and leave at speed, never a standalone fade on a statement; colour on type is transient (accent 18 f, a 13 f linear cool).
 
 **Colour** (`references/brand-and-color.md`)

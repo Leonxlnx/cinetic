@@ -310,6 +310,15 @@ export const TYPE = { // the roles of section 7, set in this family
 - Keep a ratio of at least 2:1 between a statement and anything secondary; a flat scale reads as a slide. A statement
   stays under 61 % of the frame width, a payoff under 84 % (`MEASURE`).
 - At most 2 non-UI roles on screen at once; one role per chain.
+- **The type reads at feed size** (`look-audit.py type-read`, with the layout JSON and the cues): the statement lines and
+  the lockup name are 72 px or more (6.7 % of the frame height; the house `line` is 120), each line reads at 4.5:1 or
+  more against the ground right under it (under 3:1 fails, and on a busy ground anything under 4.5:1 fails), and it
+  reads frontal: a line seen in perspective or debossed in a relief settles frontal for its read. A caption is never
+  a lower-left subtitle over footage by default; it sits on a clean field, or the plate under it is dimmed and
+  defocused.
+- **One beat where the type is the design** (`type-beat`): at least once per film a line of 72 px or more stands
+  large, centred or frontal, on a flat field (no structure around it), read for a second or more, built word by word.
+  It is the frame the film is remembered by at feed size.
 - Contrast against the ground: statements ≥ 7:1, secondary lines ≥ 3:1 at caption size and up.
 - Size the wordmark optically: its cap height about equal to the mark's height, checked in a still.
 - For 9:16, re-lay the type rather than cropping the master (`references/formats.md`): keep it out of the top ~14 % and
