@@ -23,13 +23,14 @@ export const NEUTRAL = { maxC: 0.025, houseC: [0.004, 0.012] as const, pixelC: 0
  *              imagery: on the thing that matters (the state that changed, the number, the mark), never
  *              on the ground; no frame over 25 % except inside a declared colour event
  *   wash       saturated pixels have a floor (PICTURE.saturatedMin) and a ceiling (PICTURE.saturatedMax,
- *              PICTURE.washFrame): a film is not one colour wash; the target keeps a third of the frames or
- *              fewer over half saturated
- *   second     one optional second hue, for a moment: data beside the accent, a state the accent cannot be
- *              (an alert, a warning), a highlight. It sits 40 degrees or more from the accent, covers at
- *              most 5 % of the frame while it shows and shows in at most a quarter of the film's frames;
- *              declare it in the tokens (C.second, commented ui-state) so the checks know it. A hue in more
- *              than half the frames at over 8 % of the frame is a second accent (a warning)
+ *              PICTURE.washFrame): a film is not one colour wash; the target is 4.5-32 % saturated with a
+ *              quarter of the frames or fewer over half saturated: commit to colour, do not drain it
+ *   second     a support hue beside the accent (the default palette is accent + support): a second brand
+ *              colour, data beside the accent, a state the accent cannot be, or the photographs' own second
+ *              hue. It sits 40 degrees or more from the accent in an allowed family, shows in 10-30 % of the
+ *              samples (the target; under 9 % warns as timid colour) at up to 8 % of the frame while it shows;
+ *              declare it in the tokens (C.second) so the one-accent checks know it. A hue in more than 80 %
+ *              of the frames at over 15 % of the frame is a second accent (a warning)
  *   event      a declared colour event (cues `declared.colour` [{ from, to }], or one designed flood up to
  *              2 s): a deep field, an accent flood, a colour cut; the ceilings pause inside it
  *   grade      real imagery keeps its own colour: `natural` is the default grade (kit/theme.ts photoGrade,
@@ -38,7 +39,7 @@ export const NEUTRAL = { maxC: 0.025, houseC: [0.004, 0.012] as const, pixelC: 0
 export const COLOUR = {
   neutralTarget: 0.4,
   accent: { share: [0.06, 0.15] as const, frameMax: 0.25, deg: 20 },
-  second: { minDeg: 40, maxShare: 0.05, maxFrames: 0.25, presentShare: 0.01, warn: { frames: 0.5, share: 0.08 } }, // warn: a second accent
+  second: { minDeg: 40, frames: [0.1, 0.3] as const, maxShare: 0.08, presentShare: 0.01, timidFrames: 0.09, warn: { frames: 0.8, share: 0.15 } }, // warn: a second accent
   event: { floodMaxS: 2 },
   grade: 'natural',
 } as const;
@@ -181,11 +182,12 @@ export const GRAMMAR = {
  *              over 0.60 flat: every type beat on a clean field or on a plate dimmed and defocused behind it
  *   edges      busy-ness: edge pixels <= 12 % of the frame (floor: busy to the edges everywhere),
  *              target <= 5.9 %; and >= 0.6 % (an empty film)
- *   saturated  colour mass: saturated pixels (OKLCH C >= 0.06) >= 2.2 % of the frame (target 6 %: the
- *              accent on what matters, real imagery; one accent dot on grey is not colour)
- *   wash       and a ceiling (COLOUR): saturated pixels <= 45 % of the frame on average and no more than 45 %
- *              of the frames over half saturated (target: <= 30 % and <= 33 % of frames, neutral pixels
+ *   saturated  colour mass: saturated pixels (OKLCH C >= 0.06) >= 2.2 % of the frame (target 4.5 %: the
+ *              accent on what matters, a support hue, real imagery; one accent dot on grey is not colour)
+ *   wash       and a ceiling (COLOUR): saturated pixels <= 60 % of the frame on average and no more than 65 %
+ *              of the frames over half saturated (target: <= 32 % and <= 25 % of frames, neutral pixels
  *              >= 40 %, the accent's hue family 6-15 % of the frame); declared colour events left out
+ *   second     (target) a support hue in 9 % of the samples or more (COLOUR.second)
  *   bleed      the subject framed past two edges at 1.2x the frame or more in at least a quarter of the
  *              acts (target: every act; a type beat on a clean field is the exception it allows)
  *   skeleton   no more than 3 glyphless bars in focus in a frame: placeholder lines are not content
@@ -201,11 +203,11 @@ export const PICTURE = {
   edgesMax: 0.12,
   edgesMin: 0.006,
   saturatedMin: 0.022,
-  saturatedMax: 0.45,
-  washFrame: { over: 0.5, maxShare: 0.45 },
+  saturatedMax: 0.6,
+  washFrame: { over: 0.5, maxShare: 0.65 },
   bleed: { share: 0.25, edges: 2, scale: 1.2 },
   skeletonBarsMax: 3,
-  target: { flatMin: 0.43, flatMax: 0.85, flatShare: 0.18, edgesMax: 0.059, saturatedMin: 0.06, bleedShare: 1, falloffShare: 0.35, saturatedMax: 0.3, washShare: 0.33, neutralMin: 0.4, accent: [0.06, 0.15] as const },
+  target: { flatMin: 0.43, flatMax: 0.85, flatShare: 0.18, edgesMax: 0.059, saturatedMin: 0.045, bleedShare: 1, falloffShare: 0.35, saturatedMax: 0.32, washShare: 0.25, neutralMin: 0.4, accent: [0.06, 0.15] as const, secondFrames: 0.09 },
   subject: { scale: [1.1, 1.6] as const, offCentre: 0.08 },
   holdMaxS: 0.8,
 } as const;

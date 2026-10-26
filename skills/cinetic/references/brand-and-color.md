@@ -25,7 +25,7 @@ Covers the brand's personality and what it decides, naming, exploring and buildi
 
 The brand wins. Everything below is for what you have to invent, plus the method for fitting a real brand into a film. With a kit, run `python3 scripts/brand.py <kit>` first (`references/brand-kits.md`): it maps the kit's own greys and papers onto the grounds, takes the brand accent, vendors the fonts and splits the logo into parts.
 
-- **Colours.** Map them to roles: the kit's greys and papers become the grounds by lightness (never a ground at the accent's hue), the darkest neutral `ink`. Choose *one* brand colour as the film's accent and write down its meaning. A second brand colour may appear in product UI states and imagery, or as the film's one second hue for a moment (§9b); never as a second accent.
+- **Colours.** Map them to roles: the kit's greys and papers become the grounds by lightness (never a ground at the accent's hue), the darkest neutral `ink`. Choose *one* brand colour as the film's accent and write down its meaning. A second brand colour is the film's support hue (§9b): in product UI states, data and imagery, beside the accent in 10–30 % of the film; never a second accent.
 - **Typeface.** Use it, serif and condensed included. Ship it locally (`@font-face` or a `@fontsource-variable/*` package) and gate it with `FontGate`.
 - **Supplied things the hard bans would catch** (their orange, their cream paper, their serif wordmark face) are the brand's identity, so they stay. List each one in `BRIEF.md` as a brand-supplied exception, so the critics don't flag it, and mark the lines that set it with `// cinetic:brand-supplied <what>` (in the file's leading comment it covers the whole file), so `lint-film.mjs` accepts them. `palette.py` takes `--brand-supplied` for the same reason.
 - **Logo.** Use the vector file. Don't redraw or "improve" it. Find the device in its geometry (a dot, a corner, a counter, a stroke end); if there is none, the device is the accent colour itself. Build the sting by splitting the logo along its existing shapes.
@@ -293,7 +293,7 @@ export const C = {
   accent: '#C92F33', // MEANING: "set aside" (hull red, OKLCH 0.55 0.19 25). On what matters, 6-15 % of the frame on average; arrives in it, cools to ink.
   slate: '#35383C',  // the dark stage (RECIPE.slateMid, a neutral grey at L .34), when a shot goes dark
   accentLift: '#E8696B', // the accent lifted for the slate (L .74-.84): it signals by lightness there
-  // second: '#…', // one optional second hue for a moment (ui-state): 40° or more from the accent, ≤ 5 % of the frame
+  // second: '#…', // the support hue beside the accent: 40° or more from it, in 10-30 % of the film, ≤ 8 % of the frame
 };
 export const FONT = { text: '"Hanken Grotesk Variable", system-ui, sans-serif', mono: '"JetBrains Mono Variable", ui-monospace, monospace' };
 export const FACES = ['400 16px "Hanken Grotesk Variable"', '520 16px "Hanken Grotesk Variable"', '400 16px "JetBrains Mono Variable"']; // what FontGate waits for
@@ -419,15 +419,18 @@ ground when it can; plan a light/dark sequence and flip it on carried transition
 |---|---|---|
 | Neutral pixels (C < 0.03) | 40 % of the frame or more over the film | |
 | The accent's hue family (within 20°), outside imagery | 6–15 % of the frame on average | no frame over 25 % outside a declared colour event |
-| Saturated pixels (C ≥ 0.06): colour mass | about 6 % or more (the floor is 2.2 %) | the wash ceiling: ≤ 30 % on average and no more than a third of the frames over half saturated (the floor fails at 45 %) |
-| A second hue | optional, for a moment: data beside the accent, a state the accent cannot be (an alert), a highlight; 40° or more from the accent, ≤ 5 % of the frame while it shows, in at most a quarter of the frames | a hue in more than half the frames at over 8 % is a second accent (a warning) |
+| Saturated pixels (C ≥ 0.06): colour mass | 4.5–32 %, about 11 % in a committed film (the floor is 2.2 %) | the wash ceiling: ≤ 32 % on average and no more than a quarter of the frames over half saturated (the floor fails at 60 % and 65 %) |
+| A support hue | the default palette is the accent plus one support hue: a second brand colour, data beside the accent, a state the accent cannot be, or the photographs' own second hue; 40° or more from the accent in an allowed family, in 10–30 % of the samples, ≤ 8 % of the frame while it shows (under 9 % of the samples is a target miss: timid colour) | a hue in more than 80 % of the frames at over 15 % is a second accent (a warning) |
 | A colour event | a deep field, an accent flood, a colour cut: declared (the timeline's `COLOUR` ranges or a primitive's `declares()` colour, written to `declared.colour` in the cues; `--colour-event FROM,TO`), or one designed flood up to 2 s | the ceilings pause inside it |
 
+- **Commit to colour.** One accent on neutral with nothing beside it, then a grade that drains the photographs, reads
+  as timid: plan the colour mass per act (the accent on the hero state, the support hue on data or a second element,
+  imagery at its own chroma) and check it on the graded set before the film is built.
 - **Colour mass comes from the right places:** the accent on what matters, real imagery in its own colours (the
   `natural` grade is the default; tint, duotone and deep are device looks for one shot), the accent's own lightness
   steps, and a colour event for a moment. A one-accent dot on grey is not colour; grounds, surfaces, shadows and
   pictures all at the accent's hue is a wash (D15 in `references/taste-and-slop.md`).
-- **Declare the second hue** in the tokens (`C.second`, commented `ui-state`) so the one-accent checks leave it out and
+- **Declare the support hue** in the tokens (`C.second`) so the one-accent checks leave it out and
   `src/kit` uses it. Imagery boxes are declared with `look-audit.py --imagery x,y,w,h` so natural colour inside a
   photograph is not read as designed colour.
 - **Check a frame at thumbnail size:** if no brand colour shows on a key beat, the film has no identity; if everything

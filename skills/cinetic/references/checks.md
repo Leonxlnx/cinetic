@@ -133,7 +133,7 @@ brand-supplied colours count as one family), `banned-hue`
 `negative-space`, `living-ground`, `clean-finish`, `type-size` (with the layout JSON), `luminance-flip`,
 `blur-policy`, `word-first-frame`, `fade-detect`, `arrival-front-load`, `image-develop` (a hint). Flags:
 `--imagery x,y,w,h` (boxes holding photographs: natural colour there is not designed colour), `--colour-event
-FROM,TO` (a declared colour event pauses the wash and accent ceilings; the timeline's `COLOUR` ranges are read from the cues), `--second '#…'` (a declared second hue),
+FROM,TO` (a declared colour event pauses the wash and accent ceilings; the timeline's `COLOUR` ranges are read from the cues), `--second '#…'` (a declared support hue),
 `--tokens`, `--brand`, `--picture-only` (the picture floor alone, fast), `--no-picture`, `--no-floor`.
 
 **The floor against a flat film (motion)** fails the film when any of these is missed:
@@ -154,7 +154,8 @@ A one-take film is judged on 2 s segments and has no seam or cut items.
 |---|---|---|
 | flat ground: blocks with almost no variation | mean ≥ 25 % and ≥ 5 % of frames over 60 % flat (a clean field somewhere); mean ≤ 90 % (an empty film) | mean 43-85 %, ≥ 18 % of frames over 60 % flat |
 | edges: busy-ness (texture, footage, small type) | ≤ 12 % of the frame; ≥ 0.6 % (an empty film) | ≤ 5.9 % |
-| saturated pixels (OKLCH C ≥ 0.06): colour mass | ≥ 2.2 % of the frame | ≥ 6 % |
+| saturated pixels (OKLCH C ≥ 0.06): colour mass | ≥ 2.2 % of the frame; the wash ceiling ≤ 60 % and ≤ 65 % of frames over half | 4.5-32 %, ≤ 25 % of frames over half |
+| a support hue (40° or more from the accent) | (target only) | in ≥ 9 % of the samples (house 10-30 %) |
 | bleed: the subject framed past two edges at 1.2× the frame or more | in at least a quarter of the acts | in every act |
 | skeleton bars: glyphless grey bars in focus | no more than 3 in a frame (2 samples or more fail) | none |
 | focus falloff: a crisp plane and a defocused one in the same frame | (target only) | ≥ 35 % of frames |

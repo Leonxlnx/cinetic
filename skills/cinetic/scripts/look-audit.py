@@ -14,8 +14,8 @@ how, where the cuts fall and what they carry. Speeds are px/s at a 1080-high fra
 Look checks (warn unless marked fail):
   hue-count       saturated pixels (OKLab C >= 0.06, >= 0.2 % of the frame on >= 3 samples) grouped by
                   hue across the film: 2 groups more than 30 degrees apart warn, 3 or more fail. One
-                  accent family; imagery is excluded with --imagery. A second hue declared in the tokens
-                  (C.second, or --second) that stays a moment (see second-hue) does not count as a group
+                  accent family; imagery is excluded with --imagery. A support hue declared in the tokens
+                  (C.second, or --second) that is not a second accent (see second-hue) does not count as a group
   banned-hue      fail: saturated colour in a banned region (orange/amber, beige/cream, purple/violet,
                   neon) on >= 0.5 % of the frame for >= 3 samples, unless it is a brand-supplied colour
                   (tokens lines marked cinetic:brand-supplied, or --brand). Brand colours are checked
@@ -24,9 +24,9 @@ Look checks (warn unless marked fail):
   accent-share    the accent's hue family (within 20 degrees) covers more than 25 % of the frame outside a
                   declared colour event and outside one designed flood (a run <= 2 s)
   second-hue      a second hue (>= 1 % of the frame, 40 degrees or more from the accent) shows in more than
-                  half the samples and covers more than 8 % of the frame while it shows: a second accent. The
-                  house second hue is a moment (data, a state, a highlight): <= 25 % of the samples, <= 5 % of
-                  the frame while it shows
+                  80 % of the samples and covers more than 15 % of the frame while it shows: a second accent.
+                  The house palette is the accent plus a support hue in 10-30 % of the samples at up to 8 % of
+                  the frame (under 9 % of the samples is a picture-target miss: timid colour)
   tinted-ink      pure #000 ink or ground on more than 10 % of samples; a pure #FFF ground without
                   LOOK.whiteWorld (brand-supplied black or white excepted)
   negative-space  in reading windows the non-ground share has a median over 30 %, or a dense run
@@ -78,7 +78,7 @@ flat grounds; texture is an accent, not the ground of every shot:
   picture-edges    busy-ness: Canny edge pixels <= 12 % of the frame on average (texture and footage
                    everywhere), and >= 0.6 % (an empty film)
   picture-saturated colour mass: pixels at OKLCH C >= 0.06 >= 2.2 % of the frame on average
-  picture-wash     the ceiling: saturated pixels over 45 % of the frame on average, or more than 45 % of the
+  picture-wash     the ceiling: saturated pixels over 60 % of the frame on average, or more than 65 % of the
                    frames over half saturated (frames inside a declared colour event are left out): one hue
                    over the whole picture hides the accent it was meant to show
   picture-bleed    the subject (the largest region of structure) touches two frame edges and spans >= 60 %
@@ -90,8 +90,9 @@ flat grounds; texture is an accent, not the ground of every shot:
                    a plate dimmed and defocused behind it), edges <= 5.9 %, saturated >= 6 %, bleed in every
                    act, and a crisp plane with a
                    defocused one (cell edge sharpness, size-independent) in >= 35 % of frames; colour: neutral
-                   pixels (OKLCH C < 0.03) >= 40 %, saturated <= 30 %, <= 33 % of frames over half saturated,
-                   the accent's hue family 6-15 % of the frame (lib/look.ts COLOUR)
+                   pixels (OKLCH C < 0.03) >= 40 %, saturated 4.5-32 %, <= 25 % of frames over half saturated,
+                   the accent's hue family 6-15 % of the frame, a support hue in >= 9 % of the samples
+                   (lib/look.ts COLOUR)
 Framing and type (warn):
   framing-centred  the subject sits dead centre (within 8 %) and inside the frame in over half the samples
   framing-hold     one framing held over 0.8 s with no depth plane moving (camera, second plane and layers still)
@@ -242,17 +243,17 @@ PIC = dict(
     skeleton_max=3,  # glyphless bars in focus in one frame
     skeleton_samples=2,  # samples over the limit before it fails
     crisp=0.6, soft=0.4, soft_floor=0.05, plane_ratio=1.5,  # cell edge sharpness (p99 gradient / contrast range): a crisp plane, a defocused form, their ratio
-    target=dict(flat_min=0.43, flat_max=0.85, flat_share=0.18, edges_max=0.059, falloff_share=0.35, saturated_min=0.06, bleed_share=1.0,
-                saturated_max=0.30, wash_share=0.33, neutral_min=0.40, accent=(0.06, 0.15)),
+    target=dict(flat_min=0.43, flat_max=0.85, flat_share=0.18, edges_max=0.059, falloff_share=0.35, saturated_min=0.045, bleed_share=1.0,
+                saturated_max=0.32, wash_share=0.25, neutral_min=0.40, accent=(0.06, 0.15), second_frames=0.09),
     # colour (lib/look.ts NEUTRAL, COLOUR): the wash ceiling fails, the neutral share and the accent band are targets
     neutral_c=0.03,  # a pixel under this chroma is neutral
-    saturated_max=0.45,  # mean share of saturated pixels outside colour events
-    wash_over=0.5, wash_share=0.45,  # no more than 45 % of the frames over half saturated
+    saturated_max=0.60,  # mean share of saturated pixels outside colour events
+    wash_over=0.5, wash_share=0.65,  # no more than 65 % of the frames over half saturated
     hue_bin=10,  # degrees per bin of the saturated-hue histogram a sample keeps
     accent_deg=20,  # the accent's hue family
     accent_frame_max=0.25, flood_s=2.0,  # no frame over 25 % accent outside a colour event, one flood up to 2 s excepted
-    second_deg=40, second_present=0.01, second_frames=0.25, second_share=0.05,  # a second hue as a moment (the house rule)
-    second_warn_frames=0.5, second_warn_share=0.08,  # a second accent: longer and larger than this warns
+    second_deg=40, second_present=0.01, second_frames=(0.10, 0.30), second_share=0.08,  # a support hue beside the accent (the house palette)
+    second_warn_frames=0.8, second_warn_share=0.15,  # a second accent: longer and larger than this warns
     centred=0.08,  # a subject whose centre sits within 8 % of the frame's centre (both ways) and touches no edge
     centred_share=0.5,  # warn when more than half of the framed samples are centred
     hold_s=0.8,  # a framing held this long with no depth plane moving
@@ -534,8 +535,8 @@ def colour_reads(P, fps, events=None, accent_h=None, second_h=None):
         a = np.radians(sec_hues)
         sec_hue = round(float(np.degrees(np.arctan2(np.sin(a).mean(), np.cos(a).mean())) % 360), 1)
     declared = second_h is not None and sec_hue is not None and hue_dist(sec_hue, second_h) <= 30
-    moment = sec_frames <= PIC['second_frames'] + 1e-9 and sec_when <= PIC['second_share'] + 1e-9
     second_accent = sec_frames > PIC['second_warn_frames'] and sec_when > PIC['second_warn_share']
+    support = not second_accent  # a support hue: anything short of a second accent (target 10-30 % of the samples, <= 8 % of the frame)
     sat_out = float(np.mean([s['sat'] for s in out_])) if out_ else 0.0
     wash = float(np.mean([s['sat'] > PIC['wash_over'] for s in out_])) if out_ else 0.0
     neutral = float(np.mean([s.get('neu', 0.0) for s in smp])) if smp else 0.0
@@ -543,7 +544,7 @@ def colour_reads(P, fps, events=None, accent_h=None, second_h=None):
     return dict(neutral=round(neutral, 4), saturated=round(sat_out, 4), wash_share=round(wash, 3), events=[list(e) for e in events],
                 accent=dict(h=None if accent_h is None else round(accent_h, 1), source=source, mean=round(acc_mean, 4),
                             p95=round(float(np.percentile([r['acc'] for r in rows], 95)), 4) if rows else 0.0, runs=run_rows, flood_ok=flood_ok),
-                second=dict(h=sec_hue, frames=round(sec_frames, 3), share_when=round(sec_when, 4), moment=moment, second_accent=second_accent, declared=declared))
+                second=dict(h=sec_hue, frames=round(sec_frames, 3), share_when=round(sec_when, 4), support=support, second_accent=second_accent, declared=declared))
 
 
 def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, second_h=None):
@@ -598,6 +599,8 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
         neutral=dict(mean=col['neutral'], target=T['neutral_min'], ok=True, target_ok=col['neutral'] >= T['neutral_min']),
         accent=dict(mean=col['accent']['mean'], h=col['accent']['h'], source=col['accent']['source'], target=list(T['accent']), ok=True,
                     target_ok=T['accent'][0] <= col['accent']['mean'] <= T['accent'][1]),
+        # a support hue beside the accent (target only): one accent on grey with nothing beside it reads as timid colour
+        second=dict(frames=col['second']['frames'], h=col['second']['h'], target=T['second_frames'], ok=True, target_ok=col['second']['frames'] >= T['second_frames']),
     )
     pf['colour'] = col
     pf['ok'] = all(v['ok'] for v in pf.values() if isinstance(v, dict) and 'ok' in v)
@@ -630,7 +633,7 @@ def picture_flags(pf, framing, add, fps):
         'edges': (f"edge pixels {pf['edges']['mean'] * 100:.1f} % of the frame (ceiling {PIC['edges_max'] * 100:.0f} %, house <= 5.9 %): busy everywhere. "
                   f"Flatten, dim or defocus the texture and footage behind the type and give the eye a clean field") if pf['edges']['mean'] > PIC['edges_max'] else
                  f"edge pixels {pf['edges']['mean'] * 100:.1f} % of the frame (floor {PIC['edges_min'] * 100:.1f} %): the frame is near empty (no words, numbers, UI or imagery at film size)",
-        'saturated': f"saturated pixels {pf['saturated']['mean'] * 100:.1f} % of the frame (floor {PIC['saturated_min'] * 100:.1f} %): colour mass, not a 1 % accent dot (the accent on what matters, real imagery, a declared colour moment)",
+        'saturated': f"saturated pixels {pf['saturated']['mean'] * 100:.1f} % of the frame (floor {PIC['saturated_min'] * 100:.1f} %): colour mass, not a 1 % accent dot (the accent on what matters, a support hue, real imagery in its own colour, a declared colour moment)",
         'bleed': f"the subject bleeds off two edges at scale in {pf['bleed']['share'] * 100:.0f} % of the acts (floor {PIC['bleed_share'] * 100:.0f} %; missing: {missing}): "
                  f"frame the hero at 1.2x the frame or more, off-centre, cropped by it",
         'skeleton': f"{pf['skeleton']['samples']} sample(s) show more than {PIC['skeleton_max']} glyphless bars in focus (max {pf['skeleton']['max_bars']}): placeholder lines are not content; "
@@ -648,13 +651,14 @@ def picture_flags(pf, framing, add, fps):
             'flat': f"flat ground {pf['flat']['mean'] * 100:.0f} % with {pf['flat']['frames_over'] * 100:.0f} % of frames over 60 % flat (target {T['flat_min'] * 100:.0f}-{T['flat_max'] * 100:.0f} % "
                     f"and >= {T['flat_share'] * 100:.0f} % of frames: the type beats on a clean field)",
             'edges': f"edges {pf['edges']['mean'] * 100:.1f} % (target <= {T['edges_max'] * 100:.1f} %: dim or defocus the texture behind the type)",
-            'saturated': f"saturated {pf['saturated']['mean'] * 100:.1f} % (target >= {T['saturated_min'] * 100:.0f} %)",
+            'saturated': f"saturated {pf['saturated']['mean'] * 100:.1f} % (target >= {T['saturated_min'] * 100:.1f} %: commit to colour)",
             'bleed': f"bleed in {pf['bleed']['share'] * 100:.0f} % of acts (target: every act)",
             'falloff': f"a sharp and a soft plane in {pf['falloff']['share'] * 100:.0f} % of frames (target >= {T['falloff_share'] * 100:.0f} %)",
             'skeleton': 'glyphless bars',
             'wash': f"saturated {pf['wash']['saturated'] * 100:.0f} % (target <= {T['saturated_max'] * 100:.0f} %), {pf['wash']['frames_over'] * 100:.0f} % of frames over half saturated (target <= {T['wash_share'] * 100:.0f} %)",
             'neutral': f"neutral pixels {pf['neutral']['mean'] * 100:.0f} % (target >= {T['neutral_min'] * 100:.0f} %: grounds and surfaces neutral)",
             'accent': f"the accent's hue family {pf['accent']['mean'] * 100:.1f} % of the frame (target {T['accent'][0] * 100:.0f}-{T['accent'][1] * 100:.0f} %, on what matters)",
+            'second': f"a second hue in {pf['second']['frames'] * 100:.0f} % of the samples (target 10-30 %: a support hue beside the accent, declared as C.second, or the photographs' own second hue)",
         }
         add('picture-target', 'warn', 0, 'the picture clears the floor but not the house target: ' + '; '.join(why[k] for k in pf['target']['misses']))
     if framing['samples'] >= 4 and framing['centred_share'] > PIC['centred_share']:
@@ -664,7 +668,7 @@ def picture_flags(pf, framing, add, fps):
 
 def colour_flags(pf, add):
     """The look's colour warnings from the picture's colour reads: the accent over its per-frame ceiling, a second
-    hue that stays longer than a moment."""
+    hue large and long enough to be a second accent."""
     col = pf.get('colour') or {}
     acc = col.get('accent') or {}
     if acc and not acc.get('flood_ok', True):
@@ -674,7 +678,7 @@ def colour_flags(pf, add):
     sec = col.get('second') or {}
     if sec.get('h') is not None and sec.get('second_accent'):
         add('second-hue', 'warn', 0, f"a second hue ({sec['h']} deg) shows in {sec['frames'] * 100:.0f} % of the samples at {sec['share_when'] * 100:.1f} % of the frame: a second accent. "
-            f"A second hue is a moment (data, a state or a highlight: <= {PIC['second_frames'] * 100:.0f} % of the samples, <= {PIC['second_share'] * 100:.0f} % of the frame); "
+            f"The support hue sits beside the accent ({PIC['second_frames'][0] * 100:.0f}-{PIC['second_frames'][1] * 100:.0f} % of the samples, <= {PIC['second_share'] * 100:.0f} % of the frame); "
             f"imagery in its own colours is declared with --imagery")
 
 
@@ -1122,8 +1126,8 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
             else:
                 film_groups.append(dict(h=hh, samples=count))
     sec_read = (pf.get('colour') or {}).get('second') or {}
-    if len(film_groups) >= 2 and sec_read.get('declared') and sec_read.get('moment'):
-        # the declared second hue, kept to a moment, is not a second accent family
+    if len(film_groups) >= 2 and sec_read.get('declared') and sec_read.get('support'):
+        # the declared support hue, short of a second accent, is not a second accent family
         film_groups = [g for g in film_groups if hue_dist(g['h'], sec_read['h']) > 30] or film_groups
     brand_h = [lch[2] for lch in (lch_of_hex(b) for b in brand) if lch[1] >= 0.06]
     own = [g for g in film_groups if any(hue_dist(g['h'], bh) <= 20 for bh in brand_h)]
@@ -1134,7 +1138,7 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     if len(film_groups) >= 3:
         add('hue-count', 'fail', 0, f"{len(film_groups)} hue groups across the film ({', '.join(str(g['h']) for g in film_groups)} deg): one accent family; several hues live only inside imagery (--imagery)")
     elif len(film_groups) == 2:
-        add('hue-count', 'warn', 0, f"2 hue groups more than 30 degrees apart ({film_groups[0]['h']} and {film_groups[1]['h']} deg): one accent family")
+        add('hue-count', 'warn', 0, f"2 hue groups more than 30 degrees apart ({film_groups[0]['h']} and {film_groups[1]['h']} deg): one accent family, plus a support hue declared in the tokens (C.second, or --second)")
     banned = [s for s in samples if s['banned'] >= 0.005]
     if len(banned) >= 3:
         add('banned-hue', 'fail', banned[0]['f'], f"a banned colour region (orange/amber, beige/cream, purple/violet or neon) covers >= 0.5 % of {len(banned)} samples; a brand-supplied colour is declared in the tokens (cinetic:brand-supplied) or with --brand")
@@ -1382,7 +1386,7 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
         picture=dict(flat=pf['flat']['mean'], flat_frames_over=pf['flat']['frames_over'], edges=pf['edges']['mean'], falloff=pf['falloff']['share'],
                      saturated=pf['saturated']['mean'], bleed_acts=[r['ok'] for r in pf['bleed']['acts']], bleed_share=pf['bleed']['share'], skeleton_samples=pf['skeleton']['samples'],
                      saturated_out=pf['wash']['saturated'], wash_share=pf['wash']['frames_over'], neutral=pf['neutral']['mean'], accent=pf['accent']['mean'],
-                     accent_flood_ok=pf['colour']['accent']['flood_ok'], second_frames=pf['colour']['second']['frames'], second_moment=pf['colour']['second']['moment'], second_accent=pf['colour']['second']['second_accent'],
+                     accent_flood_ok=pf['colour']['accent']['flood_ok'], second_frames=pf['colour']['second']['frames'], second_support=pf['colour']['second']['support'], second_accent=pf['colour']['second']['second_accent'],
                      target_misses=pf['target']['misses'], pass_=pf['ok']),
         framing=framing,
     )
@@ -1653,8 +1657,10 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
                 img[:, :260] = plate
                 text_rows(img, 290, 110, ['Local.', 'CPU only.'], 1.3, (30, 32, 36), 56, 3)
                 cv2.rectangle(img, (290, int(192 - k * 0.2)), (470, int(252 - k * 0.2)), green, -1)
+                if 20 <= k < 40:  # the support hue on a second element, in about a quarter of the film
+                    cv2.rectangle(img, (290, 20), (380, 60), (40, 120, 205), -1)
             rich.append(img)
-        rep_r = run_pic('pclean', rich)
+        rep_r = run_pic('pclean', rich, ('--accent', '#18965C', '--second', '#2878CD'))
         pr = rep_r.get('picture', {})
         check(not has(rep_r, 'picture-target') and pr.get('target', {}).get('ok') is True, 'type beats on a clean field beside a plate meet the house target (no picture-target warning)',
               json.dumps({'target': pr.get('target'), 'flat': pr.get('flat', {}).get('mean'), 'edges': pr.get('edges', {}).get('mean')}))
@@ -1705,7 +1711,7 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         rep = run_pic('offcentre', off)
         check(not has(rep, 'framing-centred'), 'the same subject off-centre does not', f"share {rep.get('framing', {}).get('centred_share')}")
         # --- colour: one hue over the frame fails picture-wash; neutral grounds with the accent on one card pass and
-        # meet the colour targets; the wash declared as a colour event passes; a second hue is a moment, not an accent
+        # meet the colour targets; the wash declared as a colour event passes; a support hue sits beside the accent, a second accent warns
         slate, teal, green, blue = (52, 56, 60), (18, 112, 124), (24, 150, 92), (40, 120, 205)
 
         def ui_on(ground, i, accent_box=True, extra=None):
@@ -1726,18 +1732,21 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         misses = pc.get('target', {}).get('misses', ['?'])
         check(not has(rep, 'picture-wash') and not {'wash', 'neutral', 'accent'} & set(misses), 'neutral grounds with the accent on one card pass picture-wash and meet the colour targets',
               json.dumps({'neutral': pc.get('neutral', {}).get('mean'), 'accent': pc.get('accent', {}).get('mean'), 'misses': misses}))
-        rep = run_pic('wash-half', wash + neutral_ui)
-        check(bool(has(rep, 'picture-wash', 'fail')), 'two seconds of wash in four fail picture-wash undeclared', f"frames over half {rep.get('picture', {}).get('wash', {}).get('frames_over')}")
-        rep = run_pic('wash-event', wash + neutral_ui, ('--colour-event', '0,60'))
+        check('second' in misses, 'one accent alone misses the support-hue target', json.dumps(pc.get('second')))
+        rep = run_pic('wash-most', wash + wash[:30] + neutral_ui[:30])
+        check(bool(has(rep, 'picture-wash', 'fail')), 'three seconds of wash in four fail picture-wash undeclared', f"frames over half {rep.get('picture', {}).get('wash', {}).get('frames_over')}")
+        rep = run_pic('wash-event', wash + wash[:30] + neutral_ui[:30], ('--colour-event', '0,90'))
         check(not has(rep, 'picture-wash'), 'the same wash declared as a colour event passes', f"frames over half {rep.get('picture', {}).get('wash', {}).get('frames_over')}")
-        chip = lambda img: cv2.rectangle(img, (24, 30), (110, 90), blue, -1)  # noqa: E731  a second hue: ~4 % of the frame
-        moment = [ui_on(slate, i, extra=chip if 40 <= i < 55 else None) for i in range(120)]
-        rep = run_pic('second-moment', moment, ('--second', '#2878CD'))
-        check(not has(rep, 'second-hue'), 'a second hue for half a second at 4 % of the frame is a moment (no second-hue warning)', json.dumps(rep.get('picture', {}).get('colour', {}).get('second')))
-        big = lambda img: cv2.rectangle(img, (24, 20), (190, 120), blue, -1)  # noqa: E731  ~13 % of the frame, all film long
+        chip = lambda img: cv2.rectangle(img, (24, 30), (110, 90), blue, -1)  # noqa: E731  a support hue: ~4 % of the frame
+        support = [ui_on(slate, i, extra=chip if 30 <= i < 60 else None) for i in range(120)]
+        rep = run_pic('second-support', support, ('--second', '#2878CD'))
+        ps = rep.get('picture', {})
+        check(not has(rep, 'second-hue') and not has(rep, 'hue-count') and 'second' not in ps.get('target', {}).get('misses', ['second']),
+              'a declared support hue in a quarter of the film at 4 % of the frame passes (no second-hue or hue-count warning, the target met)', json.dumps(ps.get('colour', {}).get('second')))
+        big = lambda img: cv2.rectangle(img, (24, 10), (244, 150), blue, -1)  # noqa: E731  ~24 % of the frame, all film long
         second = [ui_on(slate, i, extra=big) for i in range(120)]
-        rep = run_pic('second-accent', second)
-        check(bool(has(rep, 'second-hue', 'warn')), 'a second hue on 13 % of the frame all film long warns second-hue', json.dumps(rep.get('picture', {}).get('colour', {}).get('second')))
+        rep = run_pic('second-accent', second, ('--accent', '#18965C'))
+        check(bool(has(rep, 'second-hue', 'warn')), 'a second hue on a quarter of the frame all film long warns second-hue', json.dumps(rep.get('picture', {}).get('colour', {}).get('second')))
 
     if part in ('all', 'b'):
         # --- framing-hold and floor-device: a still frame held for 5 s; the rich film moves through both
