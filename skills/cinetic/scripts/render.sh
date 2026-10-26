@@ -86,11 +86,15 @@
 # Run it from the project root (the folder holding src/index.ts); the other scripts are found
 # next to this one.
 set -euo pipefail
-# Python: $PYTHON when it is set (the interpreter of a full environment; new-film.sh and npm's scripts/py.mjs
-# honour it too), else python3 on PATH
-python3() { if [ -n "${PYTHON:-}" ]; then "$PYTHON" "$@"; else command python3 "$@"; fi; }
-
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# Python: $PYTHON when it is set (the interpreter of a full environment; new-film.sh and npm's scripts/py.mjs
+# honour it too), else the one scripts/py.mjs picks (python3, python or py -3, one that imports numpy first),
+# so the Microsoft Store alias is never run. Paths go to it as arguments, never inside -c strings: Git Bash
+# converts /e/... to E:/... only for arguments.
+PYCMD=()
+if [[ -n "${PYTHON:-}" ]]; then PYCMD=("$PYTHON")
+else read -r -a PYCMD <<< "$(node "$SCRIPT_DIR/py.mjs" --which 2>/dev/null || echo python3)"; fi
+python3() { "${PYCMD[@]}" "$@"; }
 usage() { sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d' | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 die() { echo "render.sh: $*" >&2; exit 1; }
 T0=$(date +%s)
@@ -144,7 +148,14 @@ if [[ ! -f "$ENTRY" ]]; then
   if [[ -f "$SCRIPT_DIR/../$ENTRY" ]]; then cd "$SCRIPT_DIR/.."; else die "no $ENTRY here; run from the project root or pass --entry"; fi
 fi
 ROOT=$(pwd)
-for tool in npx ffmpeg ffprobe "${PYTHON:-python3}"; do command -v "$tool" >/dev/null || die "$tool not found on PATH"; done
+for tool in npx ffmpeg ffprobe; do command -v "$tool" >/dev/null || die "$tool not found on PATH"; done
+# the Python modules this run needs, checked before a minute of bundling (the Store alias and an
+# interpreter without numpy both fail here, not after the frames)
+PYMODS=numpy
+[[ $NOCHECK -eq 0 && $NOAUDIO -eq 0 || $BUILD_AUDIO -eq 1 ]] && PYMODS="$PYMODS, scipy, soundfile"
+[[ $MODE == blur ]] && PYMODS="$PYMODS, cv2"
+python3 -c "import $PYMODS" >/dev/null 2>&1 \
+  || die "Python (${PYCMD[*]}) cannot import $PYMODS: set PYTHON to the interpreter of an environment that has them (docs/setup.md)"
 mkdir -p "$(dirname "$OUT")" out/qa
 OUT_ABS=$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")
 NAME=$(basename "${OUT%.*}")
@@ -280,7 +291,7 @@ PY
     read -r SA SB <<< "$(subframe_span "$SAMPLES" "$FROM" "$TO")"
     if [[ $((SB - SA + 1)) -eq $N ]]; then
       # crisp, or nothing fast: every frame renders from one sample, so the master is a sharp render
-      step "no frame in $FROM-$TO needs blur samples ($(python3 -c "import json;print(json.load(open('$SAMPLES')).get('policy','camera'))") policy): rendering the sharp master"
+      step "no frame in $FROM-$TO needs blur samples ($(python3 -c "import json, sys;print(json.load(open(sys.argv[1])).get('policy','camera'))" "$SAMPLES") policy): rendering the sharp master"
       npx remotion render "$B" "$COMP" "$PIC" ${RANGE[@]+"${RANGE[@]}"} --crf="${CRF:-14}" --x264-preset=slow --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
         || die "remotion render failed"
       SKIP_SUB=1
@@ -369,11 +380,11 @@ if [[ $NOCHECK -eq 0 ]]; then
   python3 "$SCRIPT_DIR/probe.py" "$OUT_ABS" ${PARGS[@]+"${PARGS[@]}"} >/dev/null || STATUS=1
 fi
 
-SIZE_MB=$(python3 -c "import os;print(f'{os.path.getsize(\"$OUT_ABS\")/1e6:.1f}')")
+SIZE_MB=$(python3 -c 'import os, sys; print(f"{os.path.getsize(sys.argv[1]) / 1e6:.1f}")' "$OUT_ABS")
 changed=$(find src -type f -newer "$WORK/.bundled" 2>/dev/null | head -3 | tr '\n' ' ' || true)
 [[ -z "$changed" ]] || echo "render.sh: warning: src/ changed while this rendered ($changed); $OUT shows the source as it was when bundled" >&2
 if [[ $MODE == blur && -f "$SAMPLES" ]]; then
-  FAST=$(python3 -c "import json;d=json.load(open('$SAMPLES'));print(' '.join(str(f - $FROM) for f in d.get('fastest_frames', [])[:4] if $FROM <= f <= $TO))" 2>/dev/null || true)
+  FAST=$(python3 -c "import json, sys;d=json.load(open(sys.argv[1]));print(' '.join(str(f - $FROM) for f in d.get('fastest_frames', [])[:4] if $FROM <= f <= $TO))" "$SAMPLES" 2>/dev/null || true)
   [[ -z "$FAST" ]] || echo "render.sh: look at the fastest frames at full size for stepped copies: bash scripts/grab.sh $OUT $FAST" >&2
 fi
 if [[ $STATUS -eq 0 ]]; then
