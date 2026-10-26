@@ -12,7 +12,8 @@
 #                            [--font <name>]... [--browser <chromium path>] [--no-install] [--force]
 #                            [--format launch|update] [--brand <kit folder or file>]... [--like <clip>]
 #                            [--music <track file> --title T --artist A --source S --page URL --licence L
-#                             --seen-quote Q --seen-url URL [--credit C] [--file-url URL] [--content-id X]
+#                             --seen-quote Q --seen-url URL --ai-generated no --vocals no [--credit C]
+#                             [--file-url URL] [--content-id X] [--certificate C] [--modifications M]
 #                             [--profile calm|crisp|punchy] | --music <file> --record <licence.json>]
 #
 #   --fps, --bpm   one beat must be a whole number of frames (60*fps/bpm). At 60 fps:
@@ -49,19 +50,23 @@
 #                  roles in src/brand/tokens.ts (supplied colours marked cinetic:brand-supplied), the logo's
 #                  parts in src/brand/logo.ts and the screenshots into public/brand/; a Google font name in the
 #                  kit is vendored with add-font.mjs. With --name the product's name goes to src/brand/identity.ts.
-#                  Then deal the direction with: python3 scripts/deck.py ... --brand brand/brand.json
+#                  Then deal the direction with: node scripts/py.mjs scripts/deck.py ... --brand brand/brand.json
 #   --like         a clip the user supplies to borrow grammar from (never content): scripts/like.py measures it
 #                  into out/like.json (grammar-score.mjs --target) and out/LIKE.md (the rules); the finished
-#                  film is checked with: python3 scripts/like.py guard --film out/film.mp4 --clip <clip>
+#                  film is checked with: node scripts/py.mjs scripts/like.py guard --film out/film.mp4 --clip <clip>
 #   --music        a film cut to a licensed, human-made, instrumental track (references/music.md): the file is
 #                  copied into <dir>/audio/music/ (git-ignored; never committed), its licence record written
 #                  (scripts/audio/track.py add with the flags above: the licence as read on the item's own page
-#                  now, never from memory; or --record, an existing record for the same file), the track
+#                  now, never from memory, --ai-generated and --vocals included: the gate refuses a record that
+#                  leaves either unknown, so the scaffold asks for both before it starts; or --record, an existing
+#                  record for the same file), the track
 #                  analysed (track.py analyze; an analysis of the same file beside it, <name>.track.json,
 #                  is reused), the launch kit set up (kit.py init --preset launch, with earshot 0.4+) and
 #                  audio/score.json pointed at the track. The tempo comes from the track, so the whole-beat
 #                  check below is skipped. Then: track.py edit, track.py grid (printed).
-#                  Python: $PYTHON, else python3 (numpy, scipy, soundfile, librosa, ffmpeg).
+#                  Python (every step here): $PYTHON, else the interpreter scripts/py.mjs picks (python3, python,
+#                  then py -3 on Windows: the first 3.10+ that imports numpy); the steps need numpy, scipy,
+#                  soundfile, librosa and ffmpeg. node scripts/py.mjs --which prints the one it uses.
 #   --no-analyze   with --music: leave the analysis (the longest step) for its own job; the command is
 #                  printed. The key in audio/score.json is set when the analysis is there.
 #
@@ -74,8 +79,10 @@ die() { echo "new-film: $*" >&2; exit 1; }
 SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FONTS=()
 MUSIC=""; RECORD=""; PROFILE=""; ADD=()
-PY="${PYTHON:-python3}"
-PYS="$PY"; [[ "$PY" == *" "* ]] && PYS="\"$PY\""   # the interpreter as the printed commands show it
+# Python: $PYTHON when set, else what scripts/py.mjs picks (on Windows python3 is often the Store alias, which runs
+# nothing): every Python step goes through py(), and the printed commands show the same form.
+py() { if [[ -n "${PYTHON:-}" ]]; then "$PYTHON" "$@"; else node "$SKILL/scripts/py.mjs" "$@"; fi; }
+if [[ -n "${PYTHON:-}" ]]; then PYS="$PYTHON"; [[ "$PYTHON" == *" "* ]] && PYS="\"$PYTHON\""; else PYS="node scripts/py.mjs"; fi
 DIR=""; ENGINE=remotion; FPS=60; BPM=""; PACE=""; SIZE=1920x1080; NAME=""; LINK=""; BROWSER="${CHROMIUM_PATH:-}"; INSTALL=1; FORCE=0
 FORMAT=launch; BRANDS=(); LIKE=""; NAME_SET=0; BPM_SET=0; ANALYZE=1
 
@@ -99,7 +106,7 @@ while [[ $# -gt 0 ]]; do
     --record) RECORD="${2:?--record needs a licence record}"; shift 2 ;;
     --profile) PROFILE="${2:?--profile needs calm, crisp or punchy}"; shift 2 ;;
     --no-analyze) ANALYZE=0; shift ;;
-    --title|--artist|--source|--page|--licence|--seen-quote|--seen-url|--seen-date|--credit|--file-url|--content-id|--licence-url|--limits)
+    --title|--artist|--source|--page|--licence|--seen-quote|--seen-url|--seen-date|--credit|--file-url|--content-id|--licence-url|--limits|--ai-generated|--vocals|--certificate|--modifications)
       ADD+=("$1" "${2:?$1 needs a value}"); shift 2 ;;
     --force) FORCE=1; shift ;;
     -*) die "unknown option $1 (see --help)" ;;
@@ -140,6 +147,11 @@ if [[ -n "$MUSIC" ]]; then
   [[ -f "$MUSIC" ]] || die "--music: $MUSIC not found"
   [[ -n "$RECORD" || ${#ADD[@]} -gt 0 ]] || die "--music needs its licence: --record <licence.json>, or --title --artist --source --page --licence --seen-quote --seen-url (read on the item's own page)"
   [[ -z "$RECORD" || -f "$RECORD" ]] || die "--record: $RECORD not found"
+  if [[ -z "$RECORD" ]]; then  # the gate refuses a record that leaves these unknown: ask before anything is copied
+    for need in --title --artist --source --page --licence --ai-generated --vocals; do
+      printf '%s\n' "${ADD[@]}" | grep -qx -- "$need" || die "--music needs $need (as the item's own page says; --ai-generated and --vocals are no or yes): the licence record is refused without it"
+    done
+  fi
   [[ -z "$PROFILE" || "$PROFILE" =~ ^(calm|crisp|punchy)$ ]] || die "--profile must be calm, crisp or punchy"
 fi
 
@@ -301,11 +313,11 @@ if [[ ${#BRANDS[@]} -gt 0 ]]; then
   ABS=()
   for kit in "${BRANDS[@]}"; do ABS+=("$(cd "$(dirname "$kit")" && pwd)/$(basename "$kit")"); done
   if [[ "$NAME_SET" == 1 ]]; then
-    (cd "$DIR" && "$PY" scripts/brand.py "${ABS[@]}" --project . --name "$NAME") || echo "new-film: warning: brand.py reported a failed check (see above): fix the kit or the tokens before the build" >&2
+    (cd "$DIR" && py scripts/brand.py "${ABS[@]}" --project . --name "$NAME") || echo "new-film: warning: brand.py reported a failed check (see above): fix the kit or the tokens before the build" >&2
   else
-    (cd "$DIR" && "$PY" scripts/brand.py "${ABS[@]}" --project .) || echo "new-film: warning: brand.py reported a failed check (see above): fix the kit or the tokens before the build" >&2
+    (cd "$DIR" && py scripts/brand.py "${ABS[@]}" --project .) || echo "new-film: warning: brand.py reported a failed check (see above): fix the kit or the tokens before the build" >&2
   fi
-  GF=$(cd "$DIR" && "$PY" -c "import json; print((json.load(open('brand/brand.json', encoding='utf-8')).get('fonts') or {}).get('google') or '')" 2>/dev/null || true)
+  GF=$(cd "$DIR" && py -c "import json; print((json.load(open('brand/brand.json', encoding='utf-8')).get('fonts') or {}).get('google') or '')" 2>/dev/null || true)
   if [[ -n "$GF" ]]; then
     node "$DIR/scripts/add-font.mjs" "$GF" --dir "$DIR" --brand-supplied || echo "new-film: warning: could not vendor the brand's font $GF (node scripts/add-font.mjs \"$GF\" --brand-supplied)" >&2
   fi
@@ -314,7 +326,7 @@ fi
 # A clip to borrow grammar from: its measured grammar and the rules (scripts/like.py).
 if [[ -n "$LIKE" ]]; then
   CLIP="$(cd "$(dirname "$LIKE")" && pwd)/$(basename "$LIKE")"
-  (cd "$DIR" && "$PY" scripts/like.py measure "$CLIP" --out out) || \
+  (cd "$DIR" && py scripts/like.py measure "$CLIP" --out out) || \
     echo "new-film: warning: like.py could not measure $LIKE (needs ffmpeg, numpy, opencv-python): run $PYS scripts/like.py measure <clip> later" >&2
 fi
 
@@ -330,16 +342,16 @@ if [[ -n "$MUSIC" ]]; then
   if [[ -f "$SRCTJ" && ! -e "$DIR/$TJ" ]]; then cp "$SRCTJ" "$DIR/$TJ"; fi
   if [[ -n "$RECORD" ]]; then
     cp "$RECORD" "$DIR/$REC"
-    (cd "$DIR" && "$PY" scripts/audio/credits.py --check "$REC" --track "$TRK") || die "--record: the licence record does not pass (see above)"
+    (cd "$DIR" && py scripts/audio/credits.py --check "$REC" --track "$TRK") || die "--record: the licence record does not pass (see above)"
   else
-    (cd "$DIR" && "$PY" scripts/audio/track.py add "$TRK" "${ADD[@]}" --out "$REC") || die "the licence record was refused (see above): a track the gate cannot license never goes into a film"
+    (cd "$DIR" && py scripts/audio/track.py add "$TRK" "${ADD[@]}" --out "$REC") || die "the licence record was refused (see above): a track the gate cannot license never goes into a film"
   fi
   if [[ "$ANALYZE" == 1 ]]; then
-    (cd "$DIR" && "$PY" scripts/audio/track.py analyze "$TRK" ${PROFILE:+--profile "$PROFILE"} --quiet) || \
+    (cd "$DIR" && py scripts/audio/track.py analyze "$TRK" ${PROFILE:+--profile "$PROFILE"} --quiet) || \
       echo "new-film: warning: track.py analyze did not resolve the downbeat (see above): rerun it with --phase N before track.py edit" >&2
   fi
   # score.json: the track, its edit and its record; the key from the analysis; the tempo comes from src/music.ts
-  (cd "$DIR" && TRK="$TRK" REC="$REC" TJ="$TJ" "$PY" - <<'PYEOF'
+  (cd "$DIR" && TRK="$TRK" REC="$REC" TJ="$TJ" py - <<'PYEOF'
 import json, os
 p = 'audio/score.json'
 s = json.load(open(p, encoding='utf-8'))
@@ -355,8 +367,8 @@ open(p, 'w', encoding='utf-8', newline='\n').write(json.dumps(s, indent=2) + '\n
 print(f"new-film: audio/score.json plays {s['music']['track']} (key {s.get('key')})")
 PYEOF
   ) || die "could not point audio/score.json at the track"
-  (cd "$DIR" && "$PY" scripts/audio/kit.py init --preset launch --force) || \
-    echo "new-film: warning: the launch kit needs earshot 0.4+ (docs/setup.md); run $PYS scripts/audio/kit.py init --preset launch --force once it is installed" >&2
+  (cd "$DIR" && py scripts/audio/kit.py init --preset launch --force) || \
+    echo "new-film: warning: the launch kit needs earshot 0.4+ (references/sound.md, Finding earshot: EARSHOT_PYTHON); run $PYS scripts/audio/kit.py init --preset launch --force once it is installed" >&2
 fi
 
 BEAT=$(node -e "console.log(60*$FPS/$BPM)")
@@ -370,7 +382,8 @@ EOF
     cat <<EOF
 music: the slot is empty, and every film is cut to a licensed track (never effects only): pick one from the
   dealt direction's shortlist (the deal above prints it; $PYS scripts/deck.py --show reprints it once dealt), then $PYS scripts/audio/track.py add <file>
-  --title T --artist A --source S --page URL --licence L, and track.py edit / grid / check (template.json: music)
+  --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL --ai-generated no --vocals no,
+  and track.py edit / grid / check (template.json: music)
 EOF
   fi
 fi
@@ -415,6 +428,6 @@ EOF
 EOF
 fi
 # the effects come from earshot's kit (audio/kit.json): say now whether this machine can render it
-if [[ -f "$DIR/audio/kit.json" ]] && command -v "$PY" >/dev/null; then
-  (cd "$DIR" && "$PY" scripts/audio/kit.py where 2>/dev/null | tail -n 1 | sed 's/^kit:/sound:/') || true
+if [[ -f "$DIR/audio/kit.json" ]] && py -c "" >/dev/null 2>&1; then
+  (cd "$DIR" && py scripts/audio/kit.py where 2>/dev/null | tail -n 1 | sed 's/^kit:/sound:/') || true
 fi
