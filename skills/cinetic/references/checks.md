@@ -194,7 +194,9 @@ from the timeline. `--format update` reads the update band; `--print-target` pri
 
 A dimension scores 100 inside its band and falls to 0 at twice the band's width outside it; shot lengths and their
 spread score 70 at 1.75× beyond the band's edge. A one-take film scores neither shots nor cut sync. **Ship: mean ≥ 90,
-no dimension under 70, both floors passing.**
+no dimension under 70, both floors passing.** Read `density` (and look-audit's concurrency and moving share) on a
+full-size render at the master's quality: on a half-size dev render, x264 noise on a grain or a textured ground reads
+as optical flow (one film measured concurrency 3.97 there and 1.50 on its 1920x1080 master).
 
 ## 8. measure-speed and the render wrappers
 
