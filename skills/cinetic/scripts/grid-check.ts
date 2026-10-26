@@ -14,9 +14,20 @@
  *   text-hold      resolved text holds >= max(holdMin, holdBase + holdPerWord * words) before it
  *                  leaves (calm: 60 f, or 42 f + 8 f/word; crisp: 36 f + 6 f/word); a build chain's
  *                  line holds that long for all its words after its last fragment resolves
- *   fragment       words per COPY entry: a warning above maxNewWords (calm 4, crisp 5), an error
- *                  above maxNewWords + 2 when calm (a full sentence arriving at once) or above
- *                  10 when crisp; kind: 'ui' entries are exempt
+ *   script         the film's words are a script of short real sentences, one clean line on screen at a
+ *                  time. A line is a COPY entry, a build chain (its fragments joined) or one fragment of a
+ *                  replace chain; ui strings, `kind: 'name'` entries and the end card (an entry that holds
+ *                  to the end of the body or resolves inside END) are not lines. Every line holds 3-8
+ *                  words (over 8: an error, say it in two sentences; 1-2: a warning, and a single word is
+ *                  a keyword, not a line); more than half the lines under 3 words is a keyword pile
+ *                  (warning); two lines on screen at once (one arrives before the other starts to leave,
+ *                  after its read) is an error unless the later one declares `swap: '<id>'` (or true):
+ *                  a deliberate swap that takes the old line's place in one move. A film whose lines are
+ *                  mostly sentences (60 % or more of 3-8 words) is held to the script's reading budget:
+ *                  50 words, 2.4 words a second in any 5 s, 1.6 over the body, text on 85 % of it
+ *   fragment       words per chain fragment: a warning above maxNewWords (calm 4, crisp 5), an error
+ *                  above maxNewWords + 2 when calm or above 10 when crisp; a line that is not a chain is
+ *                  held to the script rule instead; kind: 'ui' entries are exempt
  *   copy-lines     <= 2 lines per entry (warning)
  *   copy-concurrent film words on screen at once (in <= f < out + exitDur: a leaving fragment is
  *                  still seen until its exit is over): an error above maxVisibleBuild (calm 8), or
@@ -40,17 +51,19 @@
  *   read-quiet     calm: no CUE starts inside a reading window (READ) other than a text's own
  *                  frames: what was just said is read in the quiet (warning)
  *   word-rate      film words resolving in any 5 s window <= 5 * maxWordsPerSec (calm 6), and the
- *                  body's average <= avgWordsPerSec (calm 0.9 w/s) (warnings)
+ *                  body's average <= avgWordsPerSec (calm 0.9 w/s) (warnings); a script's budget is wider
+ *                  (see script)
  *   text-share     film copy on screen on <= textShare of the body's frames (calm 65%; a warning,
  *                  an error when calm and more than 10 points over), and every 10 s of body (all
  *                  of it, if shorter) holds a text-free run >= freeRun frames (calm 90 f): the
  *                  picture gets its turns (warning)
- *   word-total     on-screen words <= --max-words (default: the pace's maxWords, calm 30, crisp 35);
+ *   word-total     on-screen words <= --max-words (default: the pace's maxWords, calm 30, crisp 35; a script 50);
  *                  entries with kind: 'ui' (terminal commands, code, URLs, app labels the product
  *                  shows) are counted apart, not budgeted
  *   event-gap      no stretch without an event (cue, copy change, act change, or a cues.json event
  *                  with --cues) longer than --max-gap frames (default: the pace's maxGap, calm 72 f,
- *                  crisp 48 f), tail excluded. A reading window counts as alive: a hold being read
+ *                  crisp 48 f), tail excluded. A line's words arriving through its reveal are events,
+ *                  and a reading window counts as alive: a hold being read
  *                  needs a slow drift, not a tick planted in it. The windows are the timeline's
  *                  READ (src/lib/pace.ts readingWindows(): from `resolved` for at most readMax, calm
  *                  150 f; an earlier fragment of a chain only for its own hold, so a chain's picture
@@ -157,7 +170,13 @@ import { pathToFileURL } from 'node:url';
 import { createContext, runInContext } from 'node:vm';
 
 type Act = { from: number; dur: number };
-type Copy = { id: string; text: string; in: number; resolved: number; out?: number | null; kind?: string; chain?: string; mode?: string; reveal?: string };
+type Copy = { id: string; text: string; in: number; resolved: number; out?: number | null; kind?: string; chain?: string; mode?: string; reveal?: string; swap?: string | boolean };
+/**
+ * The script (house numbers): a line is one short sentence of 3-8 words, one clean line on screen at a time.
+ * A film whose lines are mostly sentences (modeShare) reads at the script's budget: total words, words a second
+ * in any 5 s and over the body, and the share of the body with a line on screen.
+ */
+const SCRIPT = { minWords: 3, maxWords: 8, modeShare: 0.6, words: 50, wordsPerSec: 2.4, avgWordsPerSec: 1.6, textShare: 0.85 };
 type Finding = { check: string; severity: 'error' | 'warn'; message: string };
 type Span = { from: number; to: number; label?: string };
 type Music = {
@@ -328,13 +347,33 @@ async function main() {
   const P: Pace = { ...BUILTIN[paceName], ...(exported ?? {}) };
 
   const s = FPS / 60; // the 60 fps rules, scaled to this film
-  const maxWords = Number(val('--max-words') ?? P.maxWords);
   const maxGap = Number(val('--max-gap') ?? Math.round(P.maxGap * s));
   const BEAT = (60 / BPM) * FPS;
   const BAR = BEAT * 4;
   const S16 = BEAT / 4;
   const TAIL = T.TAIL !== undefined ? Number(T.TAIL) : 0;
   const bodyEnd = TOTAL - TAIL;
+
+  // The script's lines: entries, build chains joined, replace fragments; never ui strings, names or the end card.
+  type Line = { id: string; text: string; n: number; in: number; resolved: number; out: number; ids: string[]; chain?: string; swap?: string | boolean };
+  const endDecl = T.END as { from?: number } | undefined;
+  const endFrom = endDecl && isNum(endDecl.from) && endDecl.from > 0 ? endDecl.from : Infinity;
+  const isCard = (c: Copy) => c.kind === 'name' || (c.out ?? TOTAL) >= bodyEnd || c.resolved >= endFrom;
+  const lines: Line[] = [];
+  const joined = new Set<string>();
+  for (const c of COPY) {
+    if (!c || c.kind === 'ui' || !isNum(c.in) || !isNum(c.resolved) || isCard(c)) continue;
+    const frags = c.chain ? COPY.filter((x) => x && x.chain === c.chain && isNum(x.in)).sort((a, b) => a.in - b.in) : [c];
+    if (c.chain && (frags[0].mode ?? 'build') === 'build') {
+      // a build chain is one line, however many fragments build it
+      if (joined.has(c.chain)) continue;
+      joined.add(c.chain);
+      const text = frags.map((x) => String(x.text)).join(' ');
+      lines.push({ id: c.chain, text, n: wordsOf(text), in: frags[0].in, resolved: frags[frags.length - 1].resolved, out: Math.max(...frags.map((x) => x.out ?? TOTAL)), ids: frags.map((x) => x.id), chain: c.chain, swap: frags[0].swap });
+    } else lines.push({ id: c.id, text: String(c.text), n: wordsOf(c.text), in: c.in, resolved: c.resolved, out: c.out ?? TOTAL, ids: [c.id], chain: c.chain, swap: c.swap });
+  }
+  const scriptMode = lines.length > 0 && lines.filter((l) => l.n >= SCRIPT.minWords && l.n <= SCRIPT.maxWords).length >= SCRIPT.modeShare * lines.length;
+  const maxWords = Number(val('--max-words') ?? (scriptMode ? Math.max(P.maxWords, SCRIPT.words) : P.maxWords));
   const out: Finding[] = [];
   const err = (check: string, message: string) => out.push({ check, severity: 'error', message });
   const warn = (check: string, message: string) => out.push({ check, severity: 'warn', message });
@@ -560,13 +599,35 @@ async function main() {
     if (hold < holdNeed(n) && ui) warn('text-hold', `COPY ${id} (ui) "${c.text}" holds ${hold} f resolved; ${n} word(s) want >= ${holdNeed(n)} f if it must be read`);
     else if (hold < holdNeed(n)) err('text-hold', `COPY ${id} "${c.text}" holds ${hold} f resolved; ${n} word(s) need >= ${holdNeed(n)} f`);
     if (ui) continue; // UI strings keep the product's own layout
-    if (n > fragErr) err('fragment', `COPY ${id} "${c.text}" shows ${n} words at once; a thought longer than ${P.maxNewWords} words arrives as a chain of fragments (timeline.ts chain())`);
+    if (!c.chain) {
+      // a line that is not a chain: the script rule holds it to 3-8 words
+    } else if (n > fragErr) err('fragment', `COPY ${id} "${c.text}" shows ${n} words at once; a thought longer than ${P.maxNewWords} words arrives as a chain of fragments (timeline.ts chain())`);
     else if (n > P.maxNewWords) warn('fragment', `COPY ${id} "${c.text}" has ${n} words; a fragment holds 1-${P.maxNewWords} (split it into a chain)`);
     const lines = String(c.text).split('\n');
     if (lines.length > 2) warn('copy-lines', `COPY ${id}: ${lines.length} lines on screen at once (keep <= 2)`);
     const rate = (c.resolved - c.in) / Math.max(1, n - 1);
     if (n >= 3 && rate < 8 * s && c.reveal !== 'focus') warn('reveal-rate', `COPY ${id} "${c.text}" reveals ${n} words in ${c.resolved - c.in} f (${rate.toFixed(1)} f per word < ${8 * s}): a block, not a read; stagger the words or split the line`);
   }
+  // --- script: every line one short sentence (3-8 words); one clean line on screen at a time
+  for (const l of lines) {
+    if (l.n > SCRIPT.maxWords) err('script', `line ${l.id} "${l.text}" has ${l.n} words; a line holds ${SCRIPT.minWords}-${SCRIPT.maxWords}: say it in two sentences, each its own line`);
+    else if (l.n === 1) warn('script', `line ${l.id} "${l.text}" is a single keyword: write a sentence that says something (${SCRIPT.minWords}-${SCRIPT.maxWords} words: a claim, a turn or a payoff)`);
+    else if (l.n < SCRIPT.minWords) warn('script', `line ${l.id} "${l.text}" has ${l.n} words: a label, not a sentence; a line holds ${SCRIPT.minWords}-${SCRIPT.maxWords} words that say something`);
+    if (l.ids.length === 1 && /\n/.test(l.text)) warn('script', `line ${l.id} "${l.text.replace(/\n/g, ' / ')}" is set on ${l.text.split('\n').length} lines: one clean line, sized to fit (copy-and-type.md, the script)`);
+  }
+  const shortLines = lines.filter((l) => l.n < SCRIPT.minWords);
+  if (lines.length >= 3 && shortLines.length > lines.length / 2)
+    warn('script', `${shortLines.length} of ${lines.length} lines are under ${SCRIPT.minWords} words: a pile of keywords, not a script. Write short sentences that tell the story in order (hook, problem, turn, product, proof, payoff), one line at a time`);
+  const lineOrder = [...lines].sort((a, b) => a.in - b.in);
+  for (let i = 0; i < lineOrder.length; i++)
+    for (let j = i + 1; j < lineOrder.length; j++) {
+      const [a, b] = [lineOrder[i], lineOrder[j]];
+      if (a.chain && a.chain === b.chain) continue; // a chain's own fragments: chain-gap times them
+      if (b.in >= a.out) continue; // a starts to leave before b arrives: a clean handover, or a swap in motion
+      if (b.in < a.resolved + holdNeed(a.n)) continue; // before a's read: read-first reports it
+      if (b.swap === true || (typeof b.swap === 'string' && (b.swap === a.id || a.ids.includes(b.swap)))) continue;
+      err('script', `lines ${a.id} "${a.text}" and ${b.id} "${b.text}" are on screen together (f${b.in}-f${Math.min(a.out, b.out)}): one clean line at a time. Let ${a.id} leave before ${b.id} arrives, or mark ${b.id} swap: '${a.id}' when it takes ${a.id}'s place in one move (an erode, a redaction, a wheel, a make-room)`);
+    }
   if (words > maxWords) err('word-total', `${words} on-screen words; the budget is ${maxWords} (--max-words). Typed commands, code, URLs and app labels belong in COPY with kind: 'ui' and are not budgeted`);
 
   // --- reading windows: the timeline's READ, else the cues.json copy block's `read`, else the same rule here
@@ -661,14 +722,17 @@ async function main() {
     const n = resolves.filter((x) => x.f >= r.f && x.f < r.f + win5).reduce((m, x) => m + x.n, 0);
     if (n > peak.n) peak = { n, f: r.f };
   }
-  const maxIn5 = Math.round(5 * P.maxWordsPerSec);
-  if (peak.n > maxIn5) warn('word-rate', `${peak.n} film words resolve in the 5 s from f${peak.f}; keep <= ${maxIn5} (${P.maxWordsPerSec} w/s): fewer words, or let the picture take the time`);
+  const perSec = scriptMode ? Math.max(P.maxWordsPerSec, SCRIPT.wordsPerSec) : P.maxWordsPerSec; // a script reads faster
+  const avgMax = scriptMode ? Math.max(P.avgWordsPerSec, SCRIPT.avgWordsPerSec) : P.avgWordsPerSec;
+  const shareMax = scriptMode ? Math.max(P.textShare, SCRIPT.textShare) : P.textShare;
+  const maxIn5 = Math.round(5 * perSec);
+  if (peak.n > maxIn5) warn('word-rate', `${peak.n} film words resolve in the 5 s from f${peak.f}; keep <= ${maxIn5} (${perSec} w/s): fewer words, or let the picture take the time`);
   const bodySec = bodyEnd / FPS;
   const avg = bodySec > 0 ? words / bodySec : 0;
-  if (avg > P.avgWordsPerSec) warn('word-rate', `${avg.toFixed(2)} film words per second over the body; keep <= ${P.avgWordsPerSec}`);
+  if (avg > avgMax) warn('word-rate', `${avg.toFixed(2)} film words per second over the body; keep <= ${avgMax}`);
   const share = bodyEnd > 0 ? textFrames / bodyEnd : 0;
-  if (film.length && share > P.textShare)
-    (calm && share > P.textShare + 0.1 ? err : warn)('text-share', `film copy is on screen on ${(100 * share).toFixed(1)}% of the body; keep <= ${Math.round(100 * P.textShare)}%: give the picture beats with no copy`);
+  if (film.length && share > shareMax)
+    (calm && share > shareMax + 0.1 ? err : warn)('text-share', `film copy is on screen on ${(100 * share).toFixed(1)}% of the body; keep <= ${Math.round(100 * shareMax)}%: give the picture beats with no copy`);
   // the longest text-free run inside every 10 s window of the body (the whole body when shorter)
   const freeNeed = Math.round(P.freeRun * s);
   const win10 = Math.min(bodyEnd, Math.round(10 * FPS));
@@ -709,6 +773,8 @@ async function main() {
   for (const c of cueFrames) events.add(c.f);
   for (const [, a] of acts) events.add(a.from);
   for (const c of valid) for (const f of [c.in, c.resolved, c.out]) events.add(f);
+  // a line's words arriving through its reveal are events too: a 6-word sentence builds for a second or more
+  for (const c of valid) for (let k = 1; k < c.n; k++) events.add(Math.round(c.in + (k * (c.resolved - c.in)) / c.n));
   for (const e of soundEvents) events.add(Math.round(e.f));
   // Reading windows: a resolved line being read is alive, so it fills the gap it sits in.
   const reading = Object.values(READ).flat();

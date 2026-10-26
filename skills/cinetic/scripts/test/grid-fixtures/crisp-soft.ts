@@ -9,7 +9,7 @@ export const ACT = { a: { from: 0, dur: 1080 + TAIL } };
 export const TOTAL = 1080 + TAIL;
 export const CUE = { a: 0, b: 195, c: 240, d: 270, e: 645, f: 690, g: 1035, end: 1080 };
 export const COPY = [
-  { id: 'x', text: 'Ship it', in: 0, resolved: 32, out: 150 },
+  { id: 'x', text: 'Ship it now', in: 0, resolved: 32, out: 150 },
   { id: 'y', text: 'today for real', in: 10, resolved: 54, out: 150 },
   { id: 'c.1', text: 'One move', in: 300, resolved: 332, out: 600, chain: 'c', mode: 'build' },
   { id: 'c.2', text: 'then more', in: 420, resolved: 452, out: 600, chain: 'c', mode: 'build' },

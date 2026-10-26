@@ -8,6 +8,8 @@
  *      A fixture may add arguments on an `args:` line (files resolve next to the fixture), e.g.
  *      `args: --cues declares-cover.cues.json`. Music mode: music-124 (a 124 BPM track whose first
  *      downbeat is at 0.37 s) passes clean; music-errors and music-metronome fail and warn as declared.
+ *      The script: script-pile (a keyword pile) and script-lines (two lines at once, a declared swap, a
+ *      sentence on two lines, the script's reading budget) warn and fail as declared.
  *   2. The HyperFrames starter: grid-check reads its timeline.js (FILM, with the pace from
  *      motion.js) and passes it as calm with no finding, at its own 120 BPM and at 100 BPM; the
  *      accent's fall always lands on CUE.hit (DUR.fall comes from the grid); chain() in replace
@@ -21,7 +23,8 @@
  *        before the next fragment rises);
  *      - each fragment's `text` sound (src/sync.ts) lands within 1 f of the frame its last word
  *        visibly stops (the drawn rise, through arrive(), at the statement's size);
- *      - new-film.sh --pace crisp scaffolds a film that passes grid-check (needs bash; on Windows,
+ *      - new-film.sh --pace crisp scaffolds a film that passes grid-check, and new-film.sh --format update
+ *        one whose changes are short sentences with no error or script warning (needs bash; on Windows,
  *        Git for Windows' bash).
  *
  * grid-check.ts runs under Node's TypeScript type stripping (Node 22.18+, or older 22.x with
@@ -181,7 +184,9 @@ if (!calm || /another platform/.test(calm.error ?? '')) {
   const tl = readFileSync(join(STARTER, 'src', 'timeline.ts'), 'utf8');
   writeFileSync(join(rep, 'timeline.ts'), tl.replace("chain('statement', 'build',", "chain('statement', 'replace',"));
   const r = run('npx', ['tsx', GRID, join(rep, 'timeline.ts'), '--json'], STARTER);
-  result(!tl.includes("chain('statement', 'build',") ? false : clean(r, 'calm'), 'the starter statement as a replace chain passes as calm (each exit ends before the next fragment)', why(r));
+  const timing = { ...r, findings: (r.findings ?? []).filter((x) => x.check !== 'script') }; // its fragments become lines of 2-3 words
+  result(!tl.includes("chain('statement', 'build',") ? false : clean(timing, 'calm'),
+    'the starter statement as a replace chain passes as calm (each exit ends before the next fragment)', why(timing));
 
   // each fragment's text sound meets the frame its last word visibly stops
   const probe = join(TMP, 'probe.mts'); // .mts: an ES module (top-level await) wherever it sits
@@ -194,7 +199,7 @@ const { STATEMENT_SIZE } = await at('/src/acts/Act1.tsx');
 const cues = (await at('/src/sync.ts')).default();
 const p = A.pace, ease = A.easeOf(p);
 const text = cues.filter((e: any) => e.kind === 'text').map((e: any) => e.f);
-const rest = [...chainOf('statement'), copy('frame')].map((c: any) => { // the demo's text sounds: the statement's fragments, then "Every frame"
+const rest = [...chainOf('statement'), copy('frame')].map((c: any) => { // the demo's text sounds: the statement's fragments, then the frame line
   const n = c.text.split(/\\s+/).filter(Boolean).length;
   const s = c.in + f60((n - 1) * p.stagger), e = s + f60(p.wordDur);
   const k = A.arriveK(p.rise * STATEMENT_SIZE, e - s, ease);
@@ -222,6 +227,13 @@ console.log(JSON.stringify({ text, rest }));
     const nf = spawnSync(bash, [join(SKILL, 'scripts', 'new-film.sh').split('\\').join('/'), film, '--pace', 'crisp', '--no-install'], { encoding: 'utf8' });
     const g = nf.status === 0 ? run('npx', ['tsx', GRID, join(film, 'src', 'timeline.ts'), '--json'], STARTER) : { error: (nf.stderr || nf.stdout).trim().slice(0, 300) };
     result(clean(g, 'crisp') && g.summary?.bpm === 120, 'new-film.sh --pace crisp scaffolds a film that passes grid-check (120 BPM, crisp)', why(g));
+    // new-film.sh --format update: the template's changes are short sentences, one line at a time
+    const upd = join(TMP, 'update-film').split('\\').join('/');
+    const nu = spawnSync(bash, [join(SKILL, 'scripts', 'new-film.sh').split('\\').join('/'), upd, '--format', 'update', '--no-install'], { encoding: 'utf8' });
+    const gu = nu.status === 0 ? run('npx', ['tsx', GRID, join(upd, 'src', 'timeline.ts'), '--json'], STARTER) : { error: (nu.stderr || nu.stdout).trim().slice(0, 300) };
+    const bad = (gu.findings ?? []).filter((x) => x.severity === 'error' || x.check === 'script');
+    result(gu.code === 0 && !gu.error && !bad.length, 'new-film.sh --format update scaffolds an update film whose changes are sentences (no error, no script warning)',
+      gu.error ?? bad.map((x) => `${x.check}: ${x.message.slice(0, 90)}`).join('; '));
   }
 }
 

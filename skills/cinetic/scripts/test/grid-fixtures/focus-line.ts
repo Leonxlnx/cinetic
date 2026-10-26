@@ -13,6 +13,6 @@ export const CUE = { a: b(1), beat: b(1, 3), b: b(2), exit: b(3), x1: b(3, 2), c
 export const COPY = [
   { id: 's.1', text: 'Built on', in: 0, resolved: 47, out: 288, chain: 's', mode: 'build' },
   { id: 's.2', text: 'the beat', in: 144, resolved: 191, out: 288, chain: 's', mode: 'build' },
-  { id: 'r.1', text: 'One move', in: 432, resolved: 479, out: 546, chain: 'r', mode: 'replace' },
+  { id: 'r.1', text: 'One move lands', in: 432, resolved: 470, out: 546, chain: 'r', mode: 'replace' },
   { id: 'r.2', text: 'then the next', in: 576, resolved: 590, out: 720, chain: 'r', mode: 'replace', reveal: 'focus' },
 ];
