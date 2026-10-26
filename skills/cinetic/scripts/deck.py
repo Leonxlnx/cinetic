@@ -1509,9 +1509,7 @@ def render_sheet(sh, data, library):
             f'{floor.get("signature_device_every_s", 3)} s; {floor.get("light_events_per_act", 1)} light event per act; a '
             f'clear scale change on at least {int(floor.get("scale_contrast_cut_share", .3) * 100)} % of cuts.', '',
             '## 10. Music', '',
-            f'- {mus["mode"]}: {mus["bpm"][0]}-{mus["bpm"][1]} BPM, {mus["feel"]}; a `{mus["ending"]}` ending.']
-    if mus['mode'] == 'either':
-        out.append('- A calm effects-only film suits this direction too (no track, the earshot kit, -18 LUFS).')
+            f'- A licensed track (every film has one): {mus["bpm"][0]}-{mus["bpm"][1]} BPM, {mus["feel"]}; a `{mus["ending"]}` ending.']
     if sh['music_tracks']:
         out.append('- On the shortlist in this tempo range: ' + '; '.join(f'{t["title"]} ({t["bpm"]} BPM: {t["mood"]})' for t in sh['music_tracks']) + '.')
     out += ['', '## 11. Library and primitives', '',
