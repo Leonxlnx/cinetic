@@ -398,6 +398,7 @@ export const GradientText: React.FC<GradientTextProps & Line & { frame: number; 
       </defs>
       <g clipPath={`url(#gt${uid})`}>
         <image href={plate} x={x0 - s.shift * 2 * tw} y={p.y - p.size * 0.2} width={tw * 2} height={p.size * 1.4} preserveAspectRatio="none" />
+        {/* lint-ok: the skew leans the shine image inside the glyph clip, not the text */}
         <image href={shine} x={x0 + s.band * tw - bw / 2} y={p.y - p.size * 0.2} width={bw} height={p.size * 1.4} preserveAspectRatio="none" transform={`skewX(-18)`} style={{ transformBox: 'fill-box', transformOrigin: 'center' }} />
       </g>
     </svg>

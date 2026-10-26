@@ -122,6 +122,9 @@ for (const [name, sub] of STATIC
   result(after.code === 0 && after.errors === 0, `${name} lints clean once the markers are replaced`, `${after.errors} errors, ${after.warnings} warnings`);
   if (after.errors) for (const x of after.issues) console.log(`      ${x.file}:${x.line} ${x.rule} ${x.message.slice(0, 90)}`);
   if (sub.startsWith('remotion')) {
+    // the primitives' own colour helpers (lab(m.color), rgb(mix(...))) are code, not literals: --strict passes too
+    const warns = after.issues.filter((x) => x.severity === 'warn');
+    result(!warns.length, `${name} raises no warning once the markers are replaced (--strict passes)`, warns.map((x) => `${x.file}:${x.line} ${x.rule}`).join('; '));
     // a glow built from a token: the colour resolves through src/brand/tokens.ts
     writeFileSync(join(dst, 'Glow.tsx'), "import { C } from './brand/tokens';\nexport const s = { boxShadow: `0 0 40px ${C.accent}`, textShadow: `0 2px 8px ${C.ink}` };\n");
     const g = lint(dst);

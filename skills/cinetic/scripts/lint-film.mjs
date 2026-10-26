@@ -960,6 +960,8 @@ for (const file of files) {
   });
   each(/\b(rgba?|hsla?|oklch|oklab|lab|lch)\(\s*([^)]*)\)/g, (m, i) => {
     if (/\$\{/.test(m[2])) return; // built from tokens at runtime
+    // a helper called on a variable (lab(m.color), rgb(mix(a, b))) in script: code, not a literal
+    if (isScript && /^[A-Za-z_$]/.test(m[2]) && !/^(none|from)\b/.test(m[2])) return;
     if (/^(rgba?|oklch)$/.test(m[1])) banColor(i, m[0].slice(0, 40), colorOf(m[0]));
     if (isTokens) return;
     const nums = m[2].split(/[\s,/]+/).filter(Boolean);
