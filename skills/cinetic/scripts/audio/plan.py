@@ -42,9 +42,9 @@ Step by step:
   width      roles with a width keep the stereo they were rendered with; whooshes, risers and swells travel
              along the cue's pan; every other effect is mono within +-0.15 of the centre
 
-Report: density per 10 s against the kit's band (music-led 3-13; a typing run counts once), one gesture (a
-hit, drop, landing or long whoosh within 30 ms of a strong track accent: let the track carry it or move
-it), runs, stop-downs (length, depth, the track's own dip, the depth added), statuses.
+Report: density per 10 s against the kit's band (music-led 3-13, no floor for a sting of 8 s or less; a typing
+run counts once), one gesture (a hit, drop, landing or long whoosh within 30 ms of a strong track accent: let
+the track carry it or move it), runs, stop-downs (length, depth, the track's own dip, the depth added), statuses.
 
 Exit codes: 0 planned; 1 invalid input, a role missing from the kit or its lock, a stale lock (kit.json
 changed since the render: npm run kit), an explicit note no take sounds; 2 no rendered kit at all.
@@ -79,6 +79,7 @@ QUIET_DB = -7.0
 WEIGHT_DB = (-12.0, 6.0)
 CEILING_DB = -1.0
 DENSITY_BAND = (3, 13)
+STING_S = 8.0               # a film this long or shorter is a sting: one kit element, no density floor
 WIDE_KINDS = ('whoosh', 'riser', 'swell', 'suck')
 SFX_PAN = 0.15
 ACCENT_AT_END = ('click.confirm', 'land', 'drop')
@@ -534,7 +535,8 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
     band = density_band(kit) if music else None
     density = dict(median=round(float(np.median(dens)), 1) if dens else 0.0, max=round(float(max(dens)), 1) if dens else 0.0,
                    band=list(band) if band else None, count=len(pts))
-    if band and dens and not band[0] <= density['median'] <= band[1]:
+    lo = 0 if song.dur <= STING_S else band[0] if band else 0  # a sting carries one kit element: no floor
+    if band and dens and not lo <= density['median'] <= band[1]:
         warnings.append(f"density {density['median']} effects per 10 s is outside the music-led band {band[0]}-{band[1]}")
     gesture = []
     if music:

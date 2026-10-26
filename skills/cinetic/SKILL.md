@@ -157,7 +157,7 @@ Read `references/sound.md` now.
 - **The kit:** `python3 scripts/audio/kit.py init --preset launch` (with the personality row's swaps), `npm run kit` (earshot 0.4+ renders the takes, cached), `kit.py check`, `kit.py tune` to the track's key.
 - `src/sync.ts`: one event per discrete state change, `structural: true` on acts, the reveal and the ending. Text gets one soft sound per fragment; the lockup is a stop and ONE element.
 - `npm run plan` (`out/qa/sfx_plan.json`: placed, carried by the track, thinned, off; gains over the bed; stop-downs; density), then `npm run audio` (score: soundtrack, stems, report), then `npm run listen` (earshot's ears).
-- **Gate:** no generated music and every effect from the kit (a `--draft` build never passes); over-bed within ±2 dB per role; a stop-down before every hit, drop and swell (≤ 3 per 10 s); no ducking; clean joins; density 3–13 per 10 s; one gesture at a time; one element at the lockup; −14 LUFS (−16 for a sting of 8 s or less) ±0.5, −1.5 dBTP on the WAV; every sound has a visible cause.
+- **Gate:** no generated music and every effect from the kit (a `--draft` build never passes); over-bed within ±2 dB per role; a stop-down before every hit, drop and swell (≤ 3 per 10 s); no ducking; clean joins; density 3–13 per 10 s (no floor for a sting of 8 s or less); one gesture at a time; one element at the lockup; −14 LUFS (−16 for a sting of 8 s or less) ±0.5, −1.5 dBTP on the WAV; every sound has a visible cause.
 
 ### Step 9: Render and finish → `out/film.mp4`
 Read `references/finishing.md` now.
