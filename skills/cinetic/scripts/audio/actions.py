@@ -146,7 +146,7 @@ DEFAULT = {'tick': 'detent', 'tock': 'lock', 'pop': 'appear', 'land': 'land', 'h
 WHOOSH_SHORT_S = 0.5    # kit.WHOOSH_SHORT_S: a short move whips, a long one passes
 SIGNATURE = ('reveal', 'logo-lock', 'thud', 'pass', 'shape', 'swell', 'build', 'text')
 # the actions no bank member sounds convincingly to earshot's ears, with the words to search a real effect by
-WEAK = {'swipe': 'swoosh', 'slide': 'swish', 'build': 'swell', 'press': 'mouse click'}
+WEAK = {'swipe': 'paper slide', 'slide': 'slide', 'build': 'swell', 'press': 'mouse click'}
 VARIANT_BONUS = 8.0     # a variant naming a member of the action: the author's choice, unless the history forbids it
 UNCAST = ('key.space',)  # generic roles cast leaves alone (the one space bar recording)
 
@@ -273,10 +273,12 @@ def revoice(spec, sound, action, knobs=None, why=''):
     return new
 
 
-def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None, role_for=None):
+def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None, role_for=None, avoid=()):
     """(kit dict with the film's actions cast, report). events: out/cues.json events; kit: audio/kit.json (a kit cast
     before is restored to its own roles first); knobs: {bank id: knobs} from earshot (candidates outside it are
-    skipped; None trusts the table); role_for(kind, variant, weight, dur_s) -> the generic role (kit.role_for)."""
+    skipped; None trusts the table); role_for(kind, variant, weight, dur_s) -> the generic role (kit.role_for); avoid:
+    sounds the film's own listening or plan judged poorly (masked under this track, flagged by the ears): taken only
+    when the action has nothing else; kept in the cast block, so casting again avoids them too."""
     import copy
     if role_for is None:
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -300,6 +302,7 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
         first_t.setdefault(a, float(e['f']) / fps)
         if e.get('variant'):
             variants.setdefault(a, set()).add(str(e['variant']).lower())
+    avoid = set(avoid or ()) | set(old.get('avoid') or [])
     prev = previous_films(history or {}, film)
     last = prev[0] if prev else None
     older = {s for x in prev[1:4] for s in (x.get('sounds') or {}).values()}
@@ -318,6 +321,9 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
             why = []
             if s in taken:
                 c += 20
+            if s in avoid:
+                c += 40
+                why.append('avoided for this film')
             if s in sig:
                 c += 50
                 why.append("the previous film's signature")
@@ -363,7 +369,7 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
     kit['cast'] = {'cast': 1, 'film': film, 'date': datetime.date.today().isoformat(),
         'previous': report['previous'], 'roles': cast_roles,
                            'actions': {a: dict(sound=c['sound'], events=count[a]) for a, c in chosen.items()},
-                                                       'signature': report['signature'], 'real': (old.get('real') or {})}
+                                                       'signature': report['signature'], 'avoid': sorted(avoid), 'real': (old.get('real') or {})}
     return kit, report
 
 

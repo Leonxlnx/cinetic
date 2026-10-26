@@ -767,8 +767,8 @@ def main(argv=None):
         for q in plan['restraint']['silenced']:
             print(f"  restraint: {q['action']} quiet ({q['events']} effect(s); the 10 s from {q['window_s']:.1f} s held more "
                   f"than {plan['restraint']['target']:g})")
-        for a, c in (plan.get('cast') or {}).items():
-            print(f"  cast: {a}: {', '.join(c['sounds'])} ({c['placed']} placed)")
+        for act, c in (plan.get('cast') or {}).items():
+            print(f"  cast: {act}: {', '.join(c['sounds'])} ({c['placed']} placed)")
         for s in plan['stopdowns']:
             print(f"  stop-down for {s['for']} at {s['t']:.3f} s: {s['status']}"
                   + (f" ({s['length_s']:.3f} s, {s['depth_db']:g} dB, the track already dips {s['track_dip_db']:g}, "

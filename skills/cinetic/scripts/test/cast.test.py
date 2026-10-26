@@ -115,7 +115,7 @@ def cast_rules(home):
     check(new['roles']['tick']['sound'] == acts['detent']['sound'] and new['roles']['tick.letter']['sound'] == acts['letter']['sound'],
           'two actions on ticks: detent on tick (first and as many), letter on tick.letter')
     check(acts['lock']['sound'] == 'knock/plastic', f"a variant naming a member is preferred ({acts['lock']['sound']})")
-    check(rep['weak'] == {'swipe': 'swoosh'}, f"a weak action names the real-effect search ({rep['weak']})")
+    check(rep['weak'] == {'swipe': 'paper slide'}, f"a weak action names the real-effect search ({rep['weak']})")
     lead = {a: AC.ACTIONS[a]['sounds'][0] for a in ('detent', 'type', 'whip', 'toggle')}
     check(all(acts[a]['sound'] in AC.ACTIONS[a]['sounds'][:3] for a in ('detent', 'type') if a in acts),
           f'a first film takes from the head of each list ({lead})')
@@ -148,6 +148,11 @@ def cast_rules(home):
     AC.write_history(AC.record(h, 'film-b', repb))
     AC.write_history(AC.record(AC.read_history(), 'film-a', rep))
     check([x['film'] for x in AC.read_history()['films']] == ['film-b', 'film-a'], 'casting a film again moves it to the newest')
+    av, repv = AC.cast(EVENTS, kit, 60.0, {'lockup': 900}, {'films': []}, 'film-a', BANK, K.role_for, avoid=[acts['appear']['sound']])
+    again2, _ = AC.cast(EVENTS, av, 60.0, {'lockup': 900}, {'films': []}, 'film-a', BANK, K.role_for)
+    check(repv['actions']['appear']['sound'] != acts['appear']['sound'] and av['cast']['avoid'] == [acts['appear']['sound']]
+          and again2['roles']['pop']['sound'] == av['roles']['pop']['sound'],
+          'an avoided sound gives way to the next member, and casting again remembers it')
     lim = {s: {} for s in BANK if s != AC.ACTIONS['reveal']['sounds'][0]}
     _, repc = AC.cast(EVENTS, kit, 60.0, {}, {'films': []}, 'film-c', lim, K.role_for)
     check(repc['actions']['reveal']['sound'] != AC.ACTIONS['reveal']['sounds'][0], 'a sound outside the bank is never cast')

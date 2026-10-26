@@ -18,7 +18,7 @@ corr, mix). `init` rewrites the preset's notes into house wording.
 Usage (from the project root):
   python3 scripts/audio/kit.py init [--preset calm|crisp|minimal|launch] [--force]
                                    # write audio/kit.json from an earshot preset, tuned to the film's key
-  python3 scripts/audio/kit.py cast [--film NAME] [--dry-run]
+  python3 scripts/audio/kit.py cast [--film NAME] [--avoid SOUND,SOUND] [--dry-run]
                                    # give each action of the film (out/cues.json) its own bank sound
   python3 scripts/audio/kit.py real FILE --action ACTION [--licence RECORD]
                                    # a free real effect (music.mjs get --kind sfx) as the takes of an action
@@ -54,7 +54,8 @@ action always the same sound, different actions different sounds, and the previo
 sounds avoided (~/.cinetic/sound-history.json). The action that plays a kind most often re-voices that
 kind's role (its bed_db, offset_ms and min_gap_ms stay); another action on the same kind gets a role of its
 own, "<role>.<action>" (land.card_land). kit.json keeps a "cast" block (the roles' own specs, to cast again);
-the history records the film's sounds. Then tune and render.
+the history records the film's sounds. Then tune and render. --avoid names sounds this film's listening or plan
+judged poorly (masked under the track, flagged by kit.py listen): the cast takes the next member, and remembers.
 
 Real effects (real): where the bank sounds an action weakly, a free effect whose licence needs no credit
 (Mixkit's free sound effects, downloaded with `music.mjs get --kind sfx`, its licence record beside it) plays
@@ -1022,8 +1023,13 @@ def cmd_cast(a, score_python):
     knobs = {k: (v.get('knobs') or {}) for k, v in rows.items()}
     film = a.film or project_of(a.kit)
     hist = AC.read_history()
+    avoid = [x.strip() for x in (a.avoid or '').split(',') if x.strip()]
+    unknown = [x for x in avoid if x not in knobs]
+    if unknown:
+        print(f"kit.py: --avoid: not bank sounds: {', '.join(unknown)}", file=sys.stderr)
+        return 1
     new, rep = AC.cast(doc.get('events', []), kit, float(doc.get('fps', 60)), doc.get('cue') or {}, hist, film, knobs,
-                       role_for)
+                       role_for, avoid)
     print(f"kit cast: {len(rep['actions'])} action(s) for {film}"
           + (f" (the previous film: {rep['previous']})" if rep['previous'] else ' (no previous film in the history)'))
     for act, r in sorted(rep['actions'].items(), key=lambda x: -x[1]['events']):
@@ -1182,6 +1188,7 @@ def main(argv=None):
     ap.add_argument('--json', metavar='PATH', help='check / listen: write the report here')
     ap.add_argument('--film', help='cast: the film\'s name in the sound history (default: the project folder)')
     ap.add_argument('--dry-run', action='store_true', help='cast: print the cast, change nothing')
+    ap.add_argument('--avoid', help='cast: bank sounds to avoid for this film (comma-separated; remembered)')
     ap.add_argument('--action', help='real: the action the effect plays (actions.py)')
     ap.add_argument('--licence', help='real: its licence record (default: <file stem>.licence.json)')
     a = ap.parse_args(argv)
