@@ -27,77 +27,98 @@ typeface wins over every default here.
 
 ## 1. The script
 
-A cinetic film is written before it is built: a short script of real sentences, read in order like a story. Each
-sentence is one line on screen, and each line is one beat of the film. Write it at Step 1b, into the Script block of
-`TREATMENT.md`, before the beat sheet and before any code.
+A cinetic film is written before it is built: a short script of plain sentences that a stranger understands with
+the sound off. **Within 5 seconds the viewer knows what the product is and what it does.** Each sentence is one line
+on screen, and each line is one beat of the film. Write it at Step 1b, into the Script block of `TREATMENT.md`, and
+run `python3 scripts/copy-check.py TREATMENT.md` before any picture work.
+
+**The launch formula.**
+1. **What it is**, as line 1 (or line 2, after one short hook), on screen by 3 s, in plain words:
+   "[Name] is a [plain category] for [who]." or "[Name] turns [input] into [output]."
+   ("Tessel is a calendar for busy teams." "Plumb turns pull requests into a risk list.")
+2. **What it does**, 3-5 lines, each one concrete thing, said with a verb, while the product's UI shows exactly that
+   thing on screen ("It moves meetings when plans change." over the meeting card sliding to Thursday).
+3. **The close**: the name and what to do ("Tessel is out now." with `tessel.app` under the name).
+
+**The update formula.** "[Name] [version]" first ("Plumb 2.4 is out."), then one line per change, each a result the
+user sees ("Approvals take one tap."), then the name and the version on the end card.
 
 | Format | Lines | Words a line | In all |
 |---|---|---|---|
-| Launch film, 15-45 s | 6-9 | 3-8 (sweet spot 4-6) | about 25-50 |
-| Update film, 8-20 s | 4-6: a hook, one per change, a payoff | 3-6 | about 15-30 |
-| Product / feature video | 3-6 | 3-7 | up to 35 |
-| Feature loop | 1-2, must read muted | 3-6 | up to 12 |
-| Logo sting | the name + at most 1 | 3-5 | the name + 5 |
-| UI walkthrough | one per step | 3-8 | |
+| Launch film, 15-45 s | 5-8: what it is, 3-5 things it does, the close | 2-7 (sweet spot 4-6) | about 20-45 |
+| Update film, 8-20 s | 4-6: name and version, one per change, the close | 2-6 | about 12-30 |
+| Product / feature video | 3-6: what it is, what it does | 2-7 | up to 35 |
+| Feature loop | 1-2, must read muted | 2-6 | up to 12 |
+| Logo sting | the name + at most 1 | 2-5 | the name + 5 |
+| UI walkthrough | what it is, then one per step | 2-7 | |
 
-**The shape.** Read in order, the lines are hook, problem, turn, product, proof, payoff; a 30 s launch film gives
-about one line to each and two to the proof. Every line is one of three things:
-- a **claim**: something true that the viewer did not know or had not put into words ("Your week doesn't fit.");
-- a **turn**: the moment the film changes direction ("So the week rearranges itself.");
-- a **payoff**: the line that lands the idea, best as an echo of an earlier one ("Now your week fits.").
+**Plain words.** Short real sentences, one clean line on screen at a time, 2-7 words a line. No metaphors ("a second
+brain", "rocket fuel"), no slogans ("Calendar, reimagined." "Less noise. More focus."), no abstract nouns without a
+verb ("Total control."), no fancy words (unleash, seamless, elevate, unlock, the future of: §4). Use the words a
+customer would use to tell a friend what the thing does. If a line needs the picture to make sense, it is the
+picture's job, not a line.
 
-**Why sentences.** A keyword pile ("Speed." "Less noise." "Total control.") gives the viewer nothing to repeat; a
-sentence carries a claim, and a run of them carries a story. A viewer reads about 3 words a second while watching
-motion, so a line of 3-8 words is read in 1-2.5 s and the eye is back on the picture for what follows. Over 8 words a
-line turns into a paragraph; under 3 it turns into a label.
+**Why.** A viewer who does not know the product reads about 3 words a second while watching motion. A clever line
+that hides what the product is ("Your week doesn't fit.") spends the one moment when the viewer decides to keep
+watching; "Tessel is a calendar for busy teams." spends it on the only thing they need first. Feeling and callbacks
+come after the viewer knows what they are looking at.
 
 **What is not a line.** Strings the product itself shows (a typed terminal command, code, a URL, an app label) are
 the product talking, not the film: put them in `COPY` with `kind: 'ui'` (and `data-ui` on the element that renders
 them), and the checks count them apart. The product's name and the version on the end card are `kind: 'name'`. UI
 strings still have to be real, readable and held long enough when the story needs them read.
 
-**The checks.** `grid-check.ts` reads the script (`script`): every line 3-8 words; a single word is called a keyword
-and two words a label; more than half the lines under 3 words is a keyword pile; two lines on screen at once is an
-error unless the later one declares a swap (§2b); a sentence set on two lines warns. A film written as a script reads
-at the script's budget: 50 words, at most 2.4 words a second in any 5 s and 1.6 over the body, a line on screen on up
-to 85 % of the body, with a text-free 1.5 s in every 10 s for the product to act.
+**The checks.** `copy-check.py` reads the script the way a stranger does and fails on a line over 7 words, a one-word
+line, vague or fancy words, metaphors, slogan shapes (an opener, "X, reimagined", a question), a line with no verb or
+more than one claim, two lines on screen at once, no product name, and no line that says what the product is by 3 s
+(an update film: no name and version by 3 s); it warns when the end lacks the name and what to do. It prints what a
+stranger reads: what it is, what it does, what to do. It reads `TREATMENT.md` (the Script table, with an optional `At`
+column in seconds), `out/cues.json` or a plain list of lines, and `grid-check.ts` runs it on `COPY` inside its
+`script` rule. `grid-check.ts` then measures the timing: every line 2-7 words, two lines on screen at once an error
+unless the later one declares a swap (§2b), a sentence set on two lines a warning, and the script's budget: 50 words,
+at most 2.4 words a second in any 5 s and 1.6 over the body, a line on screen on up to 85 % of the body, with a
+text-free 1.5 s in every 10 s for the product to act.
 
 ## 2. Writing a line
 
 **Voice**
-- Use the viewer's words at the moment of pain, not the marketer's. What would they say out loud? ("Looks good to
-  me." "Not again.")
-- Nouns, verbs and numbers. Cut praise adjectives (fast, powerful, smart, beautiful); a number beats an adjective.
-- Present tense, active voice. Make the viewer's world the subject, not the product: "Meetings move over." rather than
-  "Tessel moves your meetings." The product's name belongs in one line, the product line.
+- Plain words a customer would say out loud. Nouns, verbs and numbers; cut praise adjectives (fast, powerful,
+  smart, beautiful); a number beats an adjective ("Builds finish in 40 seconds.").
+- Present tense, active voice, one verb doing the work: "Tessel moves the meeting." The product's name is in the
+  what-it-is line and on the end card; between them, "It" is enough.
+- One claim a line. "It moves meetings and blocks your mornings." is two lines.
 - Sentence case, with a period at the end of a statement; an all-lowercase voice is a brand choice. In a line built
   in beats the period comes only with its last part. No exclamation marks, questions, emoji or suspense ellipses.
 
 **The line test.** Every line must pass all six:
-1. It is true on its own paused frame: the picture agrees with it.
-2. A competitor could not say it.
-3. It is one sentence of 3-8 words that says something: a claim, a turn or a payoff, never a keyword or a label.
-4. It contains no praise adjective.
-5. Read aloud, it sounds like a person talking.
-6. It will still be true in a year, so no "new", "now with" or "introducing". An update film, whose whole job is the
-   news, is the one exception: its hook may carry it ("Plumb 2.4 is out."), handing over to the product
-   (`references/update-films.md`).
+1. A stranger understands it with the sound off, without knowing the product.
+2. It names a concrete thing the product does (or what the product is), with a verb.
+3. It is one sentence of 2-7 words with one claim: never a keyword, a label or a list.
+4. It has no metaphor, slogan shape, praise adjective or fancy word.
+5. The product's UI shows exactly that thing while the line is on screen.
+6. It will still be true in a year, so no "new" or "introducing". An update film, whose whole job is the news, is
+   the one exception: its first line carries the version ("Plumb 2.4 is out.", `references/update-films.md`).
 
-**Generating lines.** Write 15-20 candidates for each place in the shape, pulling words from the inventory in
-`TREATMENT.md` (verbs, the number, the pain scene). Cut with the line test. Read the survivors in order, aloud, on the
-beat: the script must tell the story with the picture off. Keep the set whose words echo one another: that echo is
-the start of a callback (§3). Then give each line its text animation (§8) and decide what the picture does while it
-is read.
+**Generating lines.** List what the product really does, one verb each, from the inventory in `TREATMENT.md` (the
+product's objects, its one number, what the user stops doing). Write the what-it-is line three ways (a category,
+input into output, the name plus a verb) and keep the one a stranger gets fastest. Pick the 3-5 things the product
+can show on screen, one line each. Read the lines aloud in order: with the picture off they must tell a stranger
+what this is and why they would use it. Then give each line its text animation (§8), decide what the UI shows while
+it is read, and run `copy-check.py`.
 
 ## 2a. Good and bad scripts
 
-All products here are invented. Each script is for a 25-35 s launch film unless it says otherwise.
+All products here are invented. Each script is for a 20-35 s launch film unless it says otherwise.
 
-**Bad: a keyword pile.** Nothing is claimed, nothing turns, nothing can be repeated.
+**Bad: clever, but what is it?** A stranger watches 10 s and still does not know the product: the film never says
+what it is selling.
+> Your week doesn't fit. · Three meetings want one hour. · So the week rearranges itself. · Now your week fits.
+
+**Bad: fancy words.** Every line is landing-page grammar; nothing concrete is said.
+> Unleash your team's potential. · Scheduling, reimagined. · Seamless by design. · The future of work is here.
+
+**Bad: a keyword pile.** Nothing is claimed, nothing happens, nothing can be repeated.
 > Calendar. · Chaos. · Smart scheduling. · Effortless. · Tessel.
-
-**Bad: labels.** Each line names a feature, none says what it does for anyone.
-> Auto-reschedule. · Focus blocks. · Team sync. · Analytics.
 
 **Bad: a sentence dump.** One line says everything, so nothing lands, and it reads like a landing page.
 > Tessel is the AI-powered calendar that automatically resolves conflicts and protects your focus time.
@@ -106,38 +127,37 @@ All products here are invented. Each script is for a 25-35 s launch film unless 
 
 | # | Role | Line | Words |
 |---|---|---|---|
-| 1 | hook | Your week doesn't fit. | 4 |
-| 2 | problem | Three meetings want the same hour. | 6 |
-| 3 | turn | So the week rearranges itself. | 5 |
-| 4 | product | Tessel moves only what can move. | 6 |
-| 5 | proof | Forty clashes gone by Monday. | 5 |
-| 6 | payoff | Now your week fits. | 4 |
+| 1 | what it is | Tessel is a calendar for busy teams. | 7 |
+| 2 | does (the card slides to Thursday) | It moves meetings when plans change. | 6 |
+| 3 | does (three invites become one slot) | It finds one hour that works. | 6 |
+| 4 | does (the mornings stay grey, locked) | Your mornings stay free for work. | 6 |
+| 5 | close | Tessel is out now. | 4 |
 
-Read in order it is a story, and line 6 pays off line 1 by changing one word.
+The URL `tessel.app` sits under the name on the end card as `kind: 'ui'`. A stranger reads: a calendar for busy
+teams that moves meetings, finds a common hour and keeps mornings free; it is out now.
 
-**Good: Plumb, code review that finds the three lines that can break production.**
+**Good: Plumb, code review that finds the risky lines in a pull request.**
 
 | # | Role | Line | Words |
 |---|---|---|---|
-| 1 | hook | This pull request has 2,184 lines. | 6 |
-| 2 | problem (typed into the review box) | Looks good to me. | 4 |
-| 3 | proof | This one assigns instead of compares. | 6 |
-| 4 | proof | Three of them can break production. | 6 |
-| 5 | product | Plumb finds those three first. | 5 |
-| 6 | payoff (typed again) | Looks good to me. | 4 |
+| 1 | what it is | Plumb reviews your pull requests. | 5 |
+| 2 | does (the diff scrolls, 2,184 lines) | It reads every changed line. | 5 |
+| 3 | does (three lines turn yellow) | It flags the lines that can break. | 7 |
+| 4 | does (a note opens on line 1,284) | It explains each risk in plain words. | 7 |
+| 5 | close | Try Plumb free today. | 4 |
 
-The turn belongs to the picture (a plumb bob falls and stops dead on one line, with no line on screen), and the same
-four words open and close the proof: a tired lie, then the truth. The full treatment is in `assets/TREATMENT.md`.
+The picture carries the drama (a plumb bob falls through the diff and stops dead on line 1,284) while the lines say
+plainly what the product does. The full treatment is in `assets/TREATMENT.md`.
 
 **Good: an update film, Plumb 2.4 (14 s).**
 
 | # | Role | Line | Words |
 |---|---|---|---|
-| 1 | hook | Plumb 2.4 is out. | 4 |
+| 1 | name and version | Plumb 2.4 is out. | 4 |
 | 2 | change | Approvals take one tap. | 4 |
 | 3 | change | Replies land in the thread. | 5 |
-| 4 | change | Counts update while you watch. | 5 |
-| 5 | payoff | Review it before lunch. | 4 |
+| 4 | change | Counts update as you watch. | 5 |
+| 5 | close | Update Plumb today. | 3 |
 
 ## 2b. One line at a time
 
@@ -184,8 +204,8 @@ reveal; a preset (§8) brings its own frames. With a licensed track the bar is t
 |---|---|---|
 | A word's entry (fade 32 f on `E.snapOut`, rise a third of the line box over 25 f on `M.rise`) | 32 f | a third visible on its first frame, 90 % by about 0.25 s |
 | Word gap inside a line | 12 f on the reading cadence (a longer word earns a longer gap) | 0.2 s |
-| A line of n words resolves | 32 + 12·(n − 1): 56, 68, 80, 92, 104, 116 f for 3-8 words | 0.9-1.9 s |
-| Reading hold after it resolves | max(60, 42 + 8 f per word): 66, 74, 82, 90, 98, 106 f for 3-8 words | 1.1-1.8 s |
+| A line of n words resolves | 32 + 12·(n − 1): 44, 56, 68, 80, 92, 104 f for 2-7 words | 0.7-1.7 s |
+| Reading hold after it resolves | max(60, 42 + 8 f per word): 60, 66, 74, 82, 90, 98 f for 2-7 words | 1.0-1.6 s |
 | A preset line resolves | its own frames (`TYPE_PRESETS`, stretched with `pace`; `typeLineFrames()` gives `resolved`) | |
 | Between two lines | the old line's exit (17 f at speed) is over before the next arrives, unless the next declares a swap | 0.28 s |
 | The keyword's accent | holds 18 f, cools 13 f linearly | 0.5 s |
@@ -211,7 +231,9 @@ word mode) declares `reveal: 'focus'`: `reveal-rate` then reads its hold, not a 
 
 ## 3. Callback copy
 
-A callback plants a phrase early and pays it off later, changed by what the film has shown. It is how a short script feels written rather than labelled.
+A callback plants a phrase early and pays it off later, changed by what the film has shown. It comes after the
+what-it-is line, never in its place: a stranger first learns what the product is, then hears the echo. Every
+line of a callback still passes the line test (§2).
 
 | Mechanism | Setup → payoff | Example |
 |---|---|---|
@@ -231,12 +253,14 @@ Rules:
 
 ## 4. Stock phrasing to cut
 
-**Hard bans** (`SKILL.md`). These never appear in copy you write, because they are landing-page grammar and the fastest tells of generated work:
+**Hard bans** (`SKILL.md`). These never appear in copy you write, because they are landing-page grammar and the
+fastest tells of generated work. `copy-check.py` fails on them (its lists are in the script: vague words,
+metaphors, slogan shapes); a word the brand's own voice owns passes with `--allow <word>`, recorded in `BRIEF.md`:
 - **eyebrow or kicker labels** above a headline ("NEW FEATURE", "INTRODUCING", "01 / SPEED");
 - **stacked taglines**: a tagline over or under a headline, or a second statement under the first;
 - **"Introducing…"** in any position. A line that hands over to the product's arrival ("Here is the newest earshot.", then the product) is not this: it is a sentence of the script, it leaves room for the picture, and it never sits as a label over the name;
 - **keyword piles**: lines of one or two words that say nothing ("Speed." "Less noise." "Total control."), and runs of single words in one place (§2a);
-- **text walls**: two lines readable at once (a declared swap excepted, §2b), paragraphs, bullet lists, a list with blurred neighbours, a line over 8 words, two or three type sizes stacked into one card (a number over a word over a line);
+- **text walls**: two lines readable at once (a declared swap excepted, §2b), paragraphs, bullet lists, a list with blurred neighbours, a line over 7 words, two or three type sizes stacked into one card (a number over a word over a line);
 - **random filler text**: decorative mono captions, fake metrics, version strings, coordinates and timestamps nobody reads, labels that name the obvious ("DASHBOARD"), lorem ipsum.
 
 Every word on screen earns its place: it is counted in the §1 budget, held long enough to read (§5), and true on its paused frame. Text inside the product UI follows the same rule: real strings from `data.ts` that the story needs, and nothing added to make a frame look busy.
@@ -244,8 +268,9 @@ Every word on screen earns its place: it is counted in the §1 budget, held long
 The rest of this list marks a film as a template too. Cut it on sight unless the brand's own voice uses it.
 
 - **Openers:** Meet, Say hello to, Say goodbye to, Ready to…?, What if…?, Imagine…, One more thing.
-- **Claims:** the future of, reimagined, redefined, next-gen, revolutionary, game-changing, like never before, and more.
-- **Verbs:** unlock, supercharge, streamline, elevate, empower, level up, transform your, harness.
+- **Claims:** the future of, reimagined, redefined, next-gen, revolutionary, game-changing, like never before, beyond, built different, and more.
+- **Verbs:** unleash, unlock, supercharge, streamline, elevate, empower, revolutionize, level up, transform your, harness.
+- **Metaphors:** magic, superpower, second brain, rocket fuel, on autopilot, a journey, at your fingertips, a copilot: say the real thing it does.
 - **Adjectives:** seamless(ly), effortless(ly), powerful, smart, intelligent, AI-powered, all-in-one, at scale.
 - **Nouns:** workflow, productivity, solution, experience, journey.
 - **Structures:** a feature name as a headline ("Smart Split"); three-item lists ("Plan. Track. Win.").
@@ -357,7 +382,7 @@ export const TYPE = { // the roles of section 7, set in this family
 - **Sizing one line.** A line of the script sits on one line, 72 px or more, under 84 % of the frame width (a short
   statement under 61 %, `MEASURE`), sized from the real font with `fitSize(text, maxWidth, max, weight, track)`.
   Roughly, at 1920 wide in a sans at about 0.5 em a character: up to 16 characters (2-3 words) at `display` 200 px or
-  `hero` 240; 17-28 characters (3-5 words) at `line` 120 px; 29-40 characters (6-8 words) at 88-100 px. Past about 44
+  `hero` 240; 17-28 characters (3-5 words) at `line` 120 px; 29-40 characters (6-7 words) at 88-100 px. Past about 44
   characters even 72 px will not hold it on one line: cut words, never wrap.
 - Keep a ratio of at least 2:1 between a line and anything secondary; a flat scale reads as a slide.
 - At most 2 non-UI roles on screen at once; one role per line.

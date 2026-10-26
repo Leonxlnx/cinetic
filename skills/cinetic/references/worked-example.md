@@ -59,6 +59,22 @@ The typed prompt is product UI rather than film copy: *"Protect my mornings. Gym
 - they set up the refrain that the finale resolves ("fit too" becomes "Everything fits.");
 - a viewer who reads only the big type still gets the story.
 
+**The script, written plain today.** Tessel's weak point was the copy, not the craft: the descriptor that says
+what the product is arrived only at the turn, about 5 s in, after a hook a stranger could not place. A viewer who
+left at 4 s had seen a clever line and no product. Written to today's formula (`references/copy-and-type.md` §1),
+what it is comes first and every next line says one thing it does while the week shows it; `copy-check.py` passes it:
+
+| # | Role | Line | Words |
+|---|---|---|---|
+| 1 | what it is | Tessel is a calendar that plans itself. | 7 |
+| 2 | does (the typed request) | You type what matters this week. | 6 |
+| 3 | does (the meetings slide aside) | It moves meetings out of the way. | 7 |
+| 4 | does (the mornings stay grey) | Your mornings stay free. | 4 |
+| 5 | close (under the mark) | Tessel is out now at tessel.app. | 6 |
+
+The overbooked week still opens the film as the picture, and the callback lives in the product's own strings (the
+typed "Protect my mornings." becomes the free mornings on screen).
+
 ## 3. The device: the red now-dot
 
 One red dot, the calendar's *now* marker, is handed from shot to shot and never leaves the screen. Colour carries its meaning, so the film reads muted.

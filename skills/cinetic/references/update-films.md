@@ -13,16 +13,18 @@ Contents: 1. The shape · 2. The tools · 3. Writing the changes · 4. Picture �
 
 | Beat | What happens | Length (house) |
 |---|---|---|
-| Hook | the version or the product's mark on frame 0, already moving: giant numerals cropped by the frame with the last numeral rolling from the old value to the new, or the mark in its world; the hook line ("Plumb 2.4 is out.") | about 1 bar (2 s) |
-| Change × 2-4 | each change is **one sentence and its moment**: the camera arrives on the product's surface, the product does the new thing on its beat (a review approved, a reply landing, a figure starting to climb), and one short sentence of 3-6 words says what was just seen | about 1-1.5 bars each |
+| Name and version | the product's name and the version on frame 0, already moving: the name over giant numerals cropped by the frame, the last numeral rolling from the old value to the new, or the mark in its world; the first line says both ("Plumb 2.4 is out.") by 3 s | about 1 bar (2 s) |
+| Change × 2-4 | each change is **one sentence and its moment**: the camera arrives on the product's surface, the product does the new thing on its beat (a review approved, a reply landing, a figure starting to climb), and one short sentence of 2-6 words says the result the user sees | about 1-1.5 bars each |
 | Payoff | the one change that matters most, or all of them seen together (the camera pulls back over every change while the version swings back in front) | about 1 bar |
 | End card | the mark and the name, with the version as the one practical fact; built from the film's device, then the one still hold | to a whole bar, plus a 1 s tail |
 
 - **Never a changelog.** A change is never a list row, a bullet or a line of text describing a feature. It is the
   product's real state change on its hit frame, at film size.
-- **One short sentence per beat:** 4-6 lines in all (a hook, one per change, a payoff), 3-6 words each, one line on
-  screen at a time, at 72 px or more. A change's line says what the picture just did ("Approvals take one tap." as
-  the approval lands), never what it is about to do, and never as a keyword ("Approvals.").
+- **The formula:** "[Name] [version]" first, then one line per change, each a result the user sees, then the name
+  and the version on the end card. 4-6 lines in all, 2-6 words each, plain words, one line on screen at a time, at
+  72 px or more. A change's line says what the picture just did ("Approvals take one tap." as the approval lands),
+  never what it is about to do, never a feature name ("Smart Approvals."), never a fancy word ("Approvals,
+  reimagined."). `python3 scripts/copy-check.py TREATMENT.md --format update` checks it.
 - **The version is the film's one honest number.** It opens the film or closes it, never both as the same still.
 - **Device variety.** Each change gets its own device from a different family (a press, a make-room, a counter, a
   morph into the next change) and its line its own text animation, joined by the film's one camera. Repeating one device for every change reads as a
@@ -86,19 +88,29 @@ the payoff or one change is the full-frame one.
 
 `src/update.ts` holds the facts. Write each change as **one sentence and its moment**:
 
-| `words`: one sentence, 3-6 words | `moment`: the state change on its hit frame |
+| `words`: one sentence, 2-6 words | `moment`: the state change on its hit frame |
 |---|---|
 | "Approvals take one tap." | the review badge flips to approved under one press |
 | "Replies land in the thread." | a reply bubble lands under its parent, the thread re-flowing |
 | "Budgets update as you spend." | a new entry drops in and the remaining figure counts down |
 | "Search answers before you stop typing." | the results arrive while the caret is still moving |
 
+**A whole update script (Plumb 2.4, 14 s).**
+
+| # | Role | Line | Words |
+|---|---|---|---|
+| 1 | name and version | Plumb 2.4 is out. | 4 |
+| 2 | change | Approvals take one tap. | 4 |
+| 3 | change | Replies land in the thread. | 5 |
+| 4 | change | Counts update as you watch. | 5 |
+| 5 | close | Update Plumb today. | 3 |
+
 - `words`: written after you know what the picture shows; it says what the viewer just saw, in a person's words. At
   the template's 120 BPM a change's bar holds a line of 3-4 words read in full; a longer line needs a slower track or
-  a longer change. `update.ts` refuses anything outside 3-6 words.
+  a longer change. `update.ts` refuses anything outside 2-6 words.
 - `moment`: one state change you can point at on a frame, never a list row or a bullet.
 
-Then test it like a launch film's proof: would a stranger, watching muted, say the change's own word? Is it
+Then test it like a launch film's lines: would a stranger, watching muted, say what changed in the same words? Is it
 specific to this product's version, or true of any update? If a change cannot be shown as a state change (a
 performance gain, a fix), show its consequence: the waiting that no longer happens, the number that changed.
 
@@ -140,7 +152,7 @@ shorter than a launch film's.
 ## 7. Gates and traps
 
 - `grid-check.ts` and the ship gate apply as for any film; `grammar-score.mjs --format update` reads the update band.
-- Traps: a list of features in text, or a keyword per change instead of a sentence; the same device or the same text
+- Traps: no name in the first 3 s (a version number alone does not say which product); a list of features in text, or a keyword per change instead of a sentence; the same device or the same text
   animation on every change; the version shown twice as the same still;
   the product too small to read (push in until the changed state fills the frame); a music bed added after the cut
   (cut the picture to the track, never the reverse); an end card that sits still for longer than the beat.
