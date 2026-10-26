@@ -62,7 +62,23 @@ out/qa/round-2/
    python3 scripts/sheet.py out/preview.mp4 --every 60 --width 480 --out $R/legibility.png
    ```
    The first command writes one sheet per 4 s chunk at 12 fps, each about 1950 × 850 px with 48 labelled tiles. The second writes one frame per second at phone size. For one act before the full film exists, use `sheet.py --comp Act3 --every 2 --offset <ACT.x.from>`; to tile stills or frames you already have, `sheet.py --images out/stills/*.png --out ...`.
-4. **Read the flags yourself first** (§4), for five minutes. Declare what is designed (§3) and re-run, so the lenses see only real candidates.
+   **Feed-size strips.** Then read the film the way it is met, small and fast: six frames over 2.5 s at 240 px wide,
+   one strip for the opener, each signature beat, every type beat and the lockup (at 60 fps `--every 25` over 150 f):
+   ```bash
+   python3 scripts/sheet.py out/preview.mp4 --from <f> --to <f+149> --every 25 --width 240 --cols 6 --out $R/strip-<beat>.png
+   ```
+   Judge each strip on its own before the full frames. A strip whose 4-6 frames look the same is a held frame (the
+   picture changes inside 2.5 s, `grid-check picture-change`); a word that cannot be read, a curve that crumples or
+   a signature that reads as an overlay on a still is too small. Signature minimums at feed size: the change moves 15 %
+   of the frame height or more, strokes are 8 px or more and data labels 48 px or more at 1080p.
+   **The blind pair test** (every round from round 2, and before the ship gate): cut ten 2.5 s moments of the film
+   (the opener, the signature beats, a type beat, a product moment, the lockup) and ten moments of the same roles from
+   the clips the user named as the bar (or the `like.py` clip); render each as a 6-frame strip at 240 px, no audio,
+   names and brand words hidden, files renamed by hash, A and B in random order. Give the ten pairs to a subagent with
+   no brief and ask, per pair, which one was made by the film and what gave it away. If it picks the film in more than
+   7 of 10 pairs, its list of giveaways (held frames, texture everywhere, small or skewed type, timid colour, stand-in
+   UI, a camera that never locks, busy edges) is the brief of the next round, ahead of the lens issues.
+4. **Read the flags yourself first** (§4), for five minutes, after the feed-size strips. Declare what is designed (§3) and re-run, so the lenses see only real candidates.
 5. **Run the lenses** (§5) as parallel subagents with the filled templates. If the harness has no subagents, or usage is tight, run them one after another in your own context (at the least the director and art lenses; the scripts cover forensics and sync), and open each lens's sheets *before* reading any code: the code tells you what you meant, the sheets show what you made.
 6. **Verify** every P0 and P1 (§6).
 7. **Fix** in order of impact per minute (§7). Write `fixes.md`: each issue id, what changed, and which frames prove it.
