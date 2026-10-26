@@ -149,6 +149,10 @@ both nondeterministic and expensive. So:
 - **`<RackFocus levels>`** follows `t × blur` exactly with those copies; `hero` keeps the product, the word or the
   button sharp above the blurred stack while the world goes soft. `rackState(t, blur)` returns the copies. Without
   `levels` it keeps the 1.1 cross-fade of a sharp and a constant-blur copy.
+- **`<Defocus sigma>`** (`fx/Defocus`) wraps any layer in those copies: a hidden cut's jump frame, a toast stepping back
+  in a stack. **`<DirBlur v axis>`** smears along the motion only, from the layer's speed (sigma = px/s × 0.0048 s,
+  the smear of a 180° shutter at 30 fps), each level a static one-axis SVG gaussian: flick scrolls, whips and cards
+  leaving at speed in a crisp film, without the shutter pass.
 - **Defocus as a timing tool:** a focus-in word (`FocusWord`), a defocus pulse that hides a change, a defocus cut (9 f
   out, one empty frame, 9 f in), a foreground plate pre-softened once in its bake. Never `filter: blur()` animated on a
   large layer, never `will-change` beside an animated blur.

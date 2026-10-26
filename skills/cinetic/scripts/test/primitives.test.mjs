@@ -5,6 +5,8 @@
  *
  *   1. lib/anim.ts curveOf(), track(), trackLinear(): a measured curve passes through its samples, a
  *      track through its keys, monotone between them (no overshoot), held outside them.
+ *   2. fx/Defocus dirBlurMix(): sharp under 120 px/s, sigma = px/s x 0.0048 s on the defocus ladder, at most
+ *      two copies, the same smear for the same px/s at 30 and 60 fps.
  *
  * It runs src through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/primitives.test.mjs [--verbose]
@@ -40,6 +42,7 @@ if (!existsSync(TSX)) {
 const url = (p) => pathToFileURL(join(SRC, p)).href;
 const PROBE = `
 import * as A from '${url('lib/anim.ts')}';
+import * as D from '${url('fx/Defocus.tsx')}';
 const range = (a: number, b: number, s = 1) => Array.from({ length: Math.floor((b - a) / s) + 1 }, (_, i) => a + i * s);
 const keys: [number, number][] = [[10, 0], [14, 300], [20, 380], [30, 400]];
 const samples = [0, 0.5, 0.72, 0.84, 0.91, 0.95, 0.97, 0.985, 0.993, 0.998, 1];
@@ -50,6 +53,7 @@ console.log(JSON.stringify({
   track: range(0, 40, 0.25).map((f) => A.track(f, keys)),
   trackAt: keys.map(([f]) => A.track(f, keys)),
   lin: [A.trackLinear(12, keys), A.trackLinear(5, keys), A.trackLinear(35, keys)],
+  dir: { slow: D.dirBlurMix(1, { fps: 60 }), v10: D.dirBlurMix(-10, { fps: 60 }), v20at30: D.dirBlurMix(20, { fps: 30 }), fast: D.dirBlurMix(200, { fps: 60 }) },
 }));
 `;
 
@@ -75,6 +79,15 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   result(monotone(P.track) && Math.max(...P.track) <= 400 + 1e-9, 'track: monotone keys give a monotone track with no overshoot', `max ${Math.max(...P.track).toFixed(3)}`);
   result(P.track[0] === 0 && P.track[P.track.length - 1] === 400, 'track: holds the first and last value outside its keys');
   result(close(P.lin[0], 150) && P.lin[1] === 0 && P.lin[2] === 400, 'trackLinear: straight between keys, held outside');
+}
+
+// 2. directional smear
+{
+  const sig = (cs) => cs.reduce((a, c) => a + c.level * c.weight, 0);
+  result(P.dir.slow.length === 1 && P.dir.slow[0].level === 0, 'dirBlurMix: a layer under 120 px/s stays sharp');
+  result(Math.abs(sig(P.dir.v10) - 2.88) < 1e-6 && P.dir.v10.length <= 2, 'dirBlurMix: 600 px/s smears sigma 2.88 on two ladder levels (sign ignored)', JSON.stringify(P.dir.v10));
+  result(JSON.stringify(P.dir.v10) === JSON.stringify(P.dir.v20at30), 'dirBlurMix: the same px/s smears the same at 30 and 60 fps');
+  result(P.dir.fast.length === 1 && P.dir.fast[0].level === 32, 'dirBlurMix: past the ladder the top level alone', JSON.stringify(P.dir.fast));
 }
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
