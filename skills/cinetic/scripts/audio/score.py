@@ -290,9 +290,10 @@ class Song:
         sfx = score.get('sfx') or {}
         if not isinstance(sfx, dict):
             raise ScoreError('sfx is an object: {"engine": "auto", "kit": "audio/kit.json", "python": null}')
-        extra = sorted(set(sfx) - {'engine', 'kit', 'takes', 'python'})
+        extra = sorted(set(sfx) - {'engine', 'kit', 'takes', 'python', 'restraint'})
         if extra:
-            self.warnings.append(f'sfx: unknown key(s) {", ".join(extra)} ignored (engine, kit, takes, python)')
+            self.warnings.append(f'sfx: unknown key(s) {", ".join(extra)} ignored (engine, kit, takes, python, restraint)')
+        self.restraint = sfx.get('restraint')  # plan.py: effects in any 10 s before whole actions go quiet ("off": none)
         self.engine = str(sfx.get('engine', 'auto')).lower()
         if self.engine not in ENGINES:
             raise ScoreError(f'sfx.engine "{self.engine}": use one of {", ".join(ENGINES)}')
@@ -1833,6 +1834,7 @@ def main(argv=None):
         rep['density'] = plan['density_per_10s']
         rep['one_gesture'] = plan['one_gesture']
         rep['runs'] = plan['runs']
+        rep['restraint'], rep['repeats'], rep['cast'] = plan.get('restraint'), plan.get('repeats'), plan.get('cast')
         song.warnings.extend(plan['warnings'] + g['warnings'])
         fails += g['fails']
         rep['lockup'] = lockup_after_stop(song, plan, y, rep)

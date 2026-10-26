@@ -11,9 +11,18 @@ Usage (from the project root):
           [--out out/qa/sfx_plan.json] [--sounded out/qa/cues_sounded.json] [--quiet]
 
 Step by step:
-  roles      each event's role (kit.role_for: kind, variant, weight, length); a role the kit sets null is
-             off (listed as silent); a role the kit does not name is an error (an earshot kit role or nothing:
+  roles      each event's action (actions.py) and role: in a cast kit (kit.py cast) the action's own role
+             "<role>.<action>" when the kit has one, else the role of its kind and variant (kit.role_for: kind,
+             variant, weight, length), which carries the kind's main action; a role the kit sets null is off
+             (listed as silent); a role the kit does not name is an error (an earshot kit role or nothing:
              effects never come from placeholder voices outside a --draft build)
+  takes      a new take per cue, the least recently played, never one heard within 3 s while the role has
+             another (keys keep one take per key identity); a take that repeats within 3 s is listed
+  restraint  with a track, while any 10 s holds more effects than the restraint number (10; score.json
+             "sfx": {"restraint": N | "off"}; a typing run counts once), whole actions go quiet, the lightest
+             first (actions.py ranks them): the music carries them. Never the reveal, the logo lock, the thud,
+             a pass, a shape transition, a swell, a build or an error, nor an action with a structural, forced,
+             payoff or lockup event
   keys       the typing plan (thinning to about 12 keys/s, word accents, sigma 2.5 dB, no jump over 5 dB),
              and no two keys closer than max(60 ms, the role's min_gap_ms); each run's dynamics are centred
              on the role's bed_db (the run's median key sits on it)
@@ -60,6 +69,7 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import actions as AC  # noqa: E402
 import kit as K  # noqa: E402
 import mixkeys as MK  # noqa: E402
 
@@ -80,6 +90,7 @@ WEIGHT_DB = (-12.0, 6.0)
 CEILING_DB = -1.0
 DENSITY_BAND = (3, 13)
 STING_S = 8.0               # a film this long or shorter is a sting: one kit element, no density floor
+RESTRAINT = 10.0            # effects in any 10 s, with a track: over it, whole actions go quiet, the lightest first
 WIDE_KINDS = ('whoosh', 'riser', 'swell', 'suck')
 SFX_PAN = 0.15
 ACCENT_AT_END = ('click.confirm', 'land', 'drop')
@@ -103,6 +114,74 @@ def stop_down_cfg(kit):
     before = [r for r in (sd.get('before') or list(STOP_ROLES)) if r in STOP_ROLES]
     return dict(depth=(float(depth[0]), float(depth[-1])), length=(float(length[0]), float(length[-1])),
                 before=before or list(STOP_ROLES), from_lock=bool(sd))
+
+
+def restraint_target(song, music):
+    """the restraint number for this film: score.json sfx.restraint (a number, or "off"), else RESTRAINT with a track;
+    None: no restraint (effects-only, or off)"""
+    v = getattr(song, 'restraint', None)
+    if not music or (isinstance(v, str) and v.lower() in ('off', 'none', 'false')) or v is False:
+        return None
+    try:
+        return float(v) if v is not None else RESTRAINT
+    except (TypeError, ValueError):
+        return RESTRAINT
+
+
+def restrain(rows, events, song, runs_k, target, special):
+    """whole actions thinned while any 10 s window holds more than `target` placed effects (a typing run counts
+    once), the lowest restraint rank first, then the action with the most effects in the window; an action with a
+    structural, forced, payoff or lockup event, or one actions.py never silences, stays. Returns the silenced
+    actions [{action, events, window_s}]."""
+    if target is None:
+        return []
+    out, tried = [], set()
+    scale = 10.0 / min(10.0, song.dur) if song.dur > 0 else 1.0
+    while True:
+        pts, seen = [], set()
+        for r in rows:
+            if r.get('status') != 'placed':
+                continue
+            if r['kind'] == 'key':
+                ri = next((k for k, rr in enumerate(runs_k) if r['i'] in rr['idx']), None)
+                if ri is not None:
+                    if ri in seen:
+                        continue
+                    seen.add(ri)
+            pts.append((r['cue_t'], r))
+        if not pts:
+            break
+        best = None
+        for a0 in np.arange(0.0, max(0.01, song.dur - 10.0) + 1e-9, 0.5):
+            win = [r for t, r in pts if a0 <= t < a0 + 10.0]
+            if best is None or len(win) > len(best[1]):
+                best = (float(a0), win)
+        a0, win = best
+        if len(win) * scale <= target + 1e-9:
+            break
+        acts = {}
+        for r in win:
+            if r.get('action'):
+                acts[r['action']] = acts.get(r['action'], 0) + 1
+        cand = []
+        for a, n in acts.items():
+            rank = (AC.ACTIONS.get(a) or {}).get('rank')
+            if a in tried or rank is None:
+                continue
+            members = [r for r in rows if r.get('status') == 'placed' and r.get('action') == a]
+            if any(events[r['i']].get('structural') or events[r['i']].get('force') or special(r['cue_t']) for r in members):
+                tried.add(a)
+                continue
+            cand.append((rank, -n, a, members))
+        if not cand:
+            break
+        _, _, a, members = min(cand, key=lambda c: (c[0], c[1], c[2]))
+        tried.add(a)
+        for r in members:
+            r.update(status='thinned', why=f'restraint: the music carries {a} (over {target:g} effects in the 10 s from '
+                                           f'{a0:.1f} s)')
+        out.append(dict(action=a, events=len(members), window_s=round(a0, 2)))
+    return out
 
 
 def is_accent(role):
@@ -261,8 +340,14 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
             continue
         kp = tplan.get(i) if kind == 'key' else None
         role = K.role_for(kind, kp['kind'] if kp else e.get('variant'), w, dur)
-        row['role'] = role
-        st, name, spec = kit.lookup(role)
+        action = AC.action_of(e, fps, cue_names)
+        row.update(role=role, action=action)
+        row['for'] = role
+        own = f'{role}.{AC.slug(action)}' if action and getattr(kit, 'cast', None) else None
+        if own and own in kit.roles:
+            st, name, spec = ('ok', own, kit.roles[own]) if kit.roles[own] else ('off', own, None)
+        else:
+            st, name, spec = kit.lookup(role)
         if st == 'off':
             row.update(status='off', why=f'{name} is off in the kit')
             rows.append(row)
@@ -307,7 +392,7 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
         if kp:
             kk = kp['kind']
             index = kp['strike'] if kk == 'word' else kp['seed'] if kk not in ('space', 'return') else None
-        tk = kit.pick(name, f"{e.get('id', i)}|{f:g}", target, explicit, index)
+        tk = kit.pick(name, f"{e.get('id', i)}|{f:g}", target, explicit, index, t=kp['t'] if kp else t)
         if tk is None:
             row.update(status='missing', why=f'kit role {name} has no take for this cue')
             missing.append(row)
@@ -329,12 +414,16 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
             continue
         last_key = row
 
+    # ---- restraint: with a track, whole actions go quiet while any 10 s is too busy
+    target = restraint_target(song, music)
+    hushed = restrain(rows, events, song, runs_k, target, special)
+
     # ---- runs: 3+ of one role within 250 ms of each other, spaced to min_gap_ms
     runs = []
     by_role = {}
     for row in rows:
         if row.get('status') == 'placed' and row['kind'] != 'key':
-            by_role.setdefault(row['role'], []).append(row)
+            by_role.setdefault(row['for'], []).append(row)
     for role, rs in sorted(by_role.items()):
         grp = []
         for row in rs + [None]:
@@ -349,11 +438,11 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
                     g['run'], g['moved_ms'] = rid, round((t2 - g['cue_t']) * 1000, 1)
                     g['cue_t'] = t2
                 end_t = spaced[-1]
-                acc = [x for x in rows if x.get('status') == 'placed' and is_accent(x.get('role'))
+                acc = [x for x in rows if x.get('status') == 'placed' and is_accent(x.get('for'))
                        and 0 <= x['cue_t'] - end_t <= RUN_GAP_S]
                 gaps = [round((b - a) * 1000) for a, b in zip(spaced[:-1], spaced[1:])]
                 runs.append(dict(id=rid, role=role, count=len(grp), gap_ms=gap, gaps_ms=gaps,
-                                 accent=acc[0]['role'] if acc else None, t=[r4(spaced[0]), r4(end_t)]))
+                                 accent=acc[0]['for'] if acc else None, t=[r4(spaced[0]), r4(end_t)]))
                 if not acc:
                     warnings.append(f"run {rid} ({len(grp)} x {role} at {spaced[0]:.2f}-{end_t:.2f} s) ends without an accent "
                                     f"({', '.join(ACCENT_AT_END)} or a variant such as land.light, within 250 ms): give the run its landing")
@@ -364,7 +453,7 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
     for row in rows:
         if row.get('status') == 'placed' and row.get('midi') is not None:
             pri = (0 if special(row['cue_t']) or events[row['i']].get('structural') else 1,
-                   0 if row['role'] in ('hit', 'drop') else 1, -row['weight'], row['cue_t'])
+                   0 if row['for'] in ('hit', 'drop') else 1, -row['weight'], row['cue_t'])
             cands.append((pri, row['cue_t'], row['i']))
     keep, tw = tuned_budget(cands)
     for row in rows:
@@ -393,7 +482,7 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
     if music:
         targets = []
         for row in rows:
-            if row.get('status') in ('placed', 'carried') and row.get('role') in sd['before']:
+            if row.get('status') in ('placed', 'carried') and row.get('for') in sd['before']:
                 targets.append(dict(t=row['sync_s'], w=row['weight'], id=f"{row['kind']}:{row['id'] or row['i']}",
                                     row=row, special=special(row['cue_s']) or bool(events[row['i']].get('structural'))))
         for a in song.stopdowns.get('add', []):
@@ -541,21 +630,51 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
     gesture = []
     if music:
         for r in sounded:
-            if r['role'] in HEAVY_GESTURE:
+            if r['for'] in HEAVY_GESTURE:
                 acc = [a for a in accents if a['db'] >= CARRY_DB and abs(a['t'] - r['sync_s']) <= GESTURE_S]
                 if acc:
                     gesture.append(dict(id=r['id'], role=r['role'], t=r['sync_s'], accent_t=acc[0]['t'], accent_db=acc[0]['db']))
                     warnings.append(f"{r['role']} {r['id']} at {r['sync_s']:.3f} s doubles the track's accent at "
                                     f"{acc[0]['t']:.3f} s: let the track carry it or move it")
+    # ---- takes heard twice within REPEAT_S (keys keep one take per key identity)
+    repeats, heard = [], {}
+    for r in sorted(sounded, key=lambda x: x['cue_t']):
+        if r['kind'] == 'key':
+            continue
+        ident = K.take_id(r['tk'])
+        if ident in heard and r['cue_t'] - heard[ident][0] < K.REPEAT_S - 1e-9:
+            n_t = len((kit.roles.get(r['role']) or {}).get('takes') or [])
+            repeats.append(dict(id=r['id'], role=r['role'], take=r['take'], t=r4(r['cue_t']), after=heard[ident][1],
+                                gap_s=r4(r['cue_t'] - heard[ident][0])))
+            warnings.append(f"{r['role']} {r['id']} at {r['cue_t']:.2f} s plays the take {r['take']} heard "
+                            f"{r['cue_t'] - heard[ident][0]:.2f} s before ({n_t} take(s) for the note or role): give the role "
+                            'more takes (kit.json "takes")')
+        heard[ident] = (r['cue_t'], r['id'])
+    # ---- the cast: which sound each action played
+    cast_rep = None
+    if getattr(kit, 'cast', None):
+        cast_rep = {}
+        for r in sounded:
+            a = r.get('action') or '-'
+            c = cast_rep.setdefault(a, dict(sounds=set(), roles=set(), placed=0))
+            c['sounds'].add((kit.roles.get(r['role']) or {}).get('sound'))
+            c['roles'].add(r['role'])
+            c['placed'] += 1
+        cast_rep = {a: dict(sounds=sorted(x for x in c['sounds'] if x), roles=sorted(c['roles']), placed=c['placed'])
+                    for a, c in sorted(cast_rep.items())}
+    elif music and sounded:
+        warnings.append('the kit is not cast for this film: every action of a kind plays one sound (python3 '
+                        'scripts/audio/kit.py cast, then npm run kit)')
     for r in rows:
         if r.get('status') in ('off', 'thinned', 'carried', 'missing'):
             silent.append(dict(i=r['i'], id=r['id'], kind=r['kind'], f=r['f'], role=r.get('role'), status=r['status'],
-                               why=r.get('why')))
+                               why=r.get('why'), action=r.get('action')))
     out_events = []
     for r in rows:
         if r.get('status') != 'placed':
             continue
-        out_events.append(dict(i=r['i'], id=r['id'], kind=r['kind'], role=r['role'], f=r['f'], cue_s=r['cue_s'],
+        out_events.append(dict(i=r['i'], id=r['id'], kind=r['kind'], role=r['role'], action=r.get('action'),
+                               generic=r.get('for'), f=r['f'], cue_s=r['cue_s'],
                                take=r['take'], midi=r.get('midi'), align=r['align'], offset_ms=r['offset_ms'],
                                start_s=r['start_s'], sync_s=r['sync_s'], bed_lufs=r.get('bed_lufs'),
                                bed_read=r.get('bed_read'), bed_db=r.get('bed_db'), level=r['level'],
@@ -572,6 +691,7 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
             'events': out_events, 'silent': silent, 'stopdowns': stops, 'runs': runs,
             'stop_down': dict(length=list(sd['length']), depth=list(sd['depth']), before=sd['before']),
             'density_per_10s': density, 'one_gesture': gesture, 'warnings': warnings,
+            'restraint': dict(target=target, silenced=hushed), 'repeats': repeats, 'cast': cast_rep,
             'missing': [dict(i=r['i'], id=r['id'], kind=r['kind'], f=r['f'], why=r['why']) for r in missing],
             'draft': bool(draft)}
     say(f"plan: {len(out_events)} placed, {len(silent)} silent, {len([s for s in stops if s.get('status') == 'added'])} "
@@ -591,6 +711,8 @@ def sounded_cues(cues, plan):
         e['cue_f'] = e['f']
         e['f'] = round(p['sync_s'] * fps, 3)
         e['role'] = p['role']
+        if p.get('action'):
+            e['action'] = p['action']
         e['offset_ms'] = p['offset_ms']
         e['align'] = p['align']
         rows.append(e)
@@ -631,7 +753,7 @@ def main(argv=None):
             raise PlanError(f"no rendered kit to plan with ({st['why']}): npm run kit (kit.py render), or vendor the takes", 2)
         if st['status'] == 'stale':
             raise PlanError(f"the takes are stale ({st['why']}): render the kit again (npm run kit)")
-        kit = K.Kit(st['lock'], takes, st['status'])
+        kit = K.Kit(st['lock'], takes, st['status'], cast=(st['kit'] or {}).get('cast'))
         bed, edit = SC.load_music(song, base_dir, int(round(song.dur * SR)) + 4 * SR)
         plan = make(cues, song, kit, bed, edit, a.draft, None if a.quiet else (lambda s: print(s)))
     except (PlanError, SC.ScoreError, K.KitError) as e:
@@ -642,6 +764,11 @@ def main(argv=None):
     if not a.quiet:
         for w in plan['warnings']:
             print(f'  warning: {w}')
+        for q in plan['restraint']['silenced']:
+            print(f"  restraint: {q['action']} quiet ({q['events']} effect(s); the 10 s from {q['window_s']:.1f} s held more "
+                  f"than {plan['restraint']['target']:g})")
+        for a, c in (plan.get('cast') or {}).items():
+            print(f"  cast: {a}: {', '.join(c['sounds'])} ({c['placed']} placed)")
         for s in plan['stopdowns']:
             print(f"  stop-down for {s['for']} at {s['t']:.3f} s: {s['status']}"
                   + (f" ({s['length_s']:.3f} s, {s['depth_db']:g} dB, the track already dips {s['track_dip_db']:g}, "

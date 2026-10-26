@@ -18,6 +18,10 @@ corr, mix). `init` rewrites the preset's notes into house wording.
 Usage (from the project root):
   python3 scripts/audio/kit.py init [--preset calm|crisp|minimal|launch] [--force]
                                    # write audio/kit.json from an earshot preset, tuned to the film's key
+  python3 scripts/audio/kit.py cast [--film NAME] [--dry-run]
+                                   # give each action of the film (out/cues.json) its own bank sound
+  python3 scripts/audio/kit.py real FILE --action ACTION [--licence RECORD]
+                                   # a free real effect (music.mjs get --kind sfx) as the takes of an action
   python3 scripts/audio/kit.py tune                 # retune the tonal roles to score.json's key
   python3 scripts/audio/kit.py render [--force]     # audio/kit/*.wav + kit.lock.json (cached)
   python3 scripts/audio/kit.py vendor [--from DIR]  # check (or first copy in) the takes score.py plays
@@ -43,6 +47,21 @@ drop, key, key.space, key.return, click, click.confirm, snap, swell, bell, text.
 off (score.py skips its cues and says so); a cue whose role the kit does not name fails the soundtrack's
 gate. The effects-only presets keep riser, swell and suck off and give the lockup one clean element.
 
+Cast (after npm run cues, before npm run kit): every event has an action (actions.py: a card landing, a
+toggle, typing, a swipe, a logo lock, a transition through a shape ...; its "action" field, else the words of
+its id, else its kind's default). Each action of the film gets one bank sound from its own list: the same
+action always the same sound, different actions different sounds, and the previous film's signature
+sounds avoided (~/.cinetic/sound-history.json). The action that plays a kind most often re-voices that
+kind's role (its bed_db, offset_ms and min_gap_ms stay); another action on the same kind gets a role of its
+own, "<role>.<action>" (land.card_land). kit.json keeps a "cast" block (the roles' own specs, to cast again);
+the history records the film's sounds. Then tune and render.
+
+Real effects (real): where the bank sounds an action weakly, a free effect whose licence needs no credit
+(Mixkit's free sound effects, downloaded with `music.mjs get --kind sfx`, its licence record beside it) plays
+that action instead: measured (onset, peak, end, loudness), peak-normalised, cut to 2.5 s, written as a take
+(audio/kit/real-<role>_1.wav, audio/kit/real.lock.json), with the role's own mix keys. kit.py listen judges it
+with earshot's ears like any role; credits.py lists its record.
+
 Tuning (init, tune): roles with `pitches` or `edits.pitch` move to the film's key in their own
 register: bell to the key's pentatonic, text to the pentatonic too (the tonic triad when it has 3
 notes or fewer; score.py steps a chain through the chord's tones among them), a single pitch to the
@@ -58,7 +77,7 @@ when a launch kit plays an effects-only film.
 
 Exit codes: 0 done (render also when earshot is missing: it says what score.py will play instead, and a
 build never fails only because earshot is missing); 1 a failed check or render, or invalid input; 2 earshot
-not found (init, audition and where; tune, vendor, check and listen work without it).
+not found (init, cast, audition and where; tune, vendor, check, real and listen work without it).
 """
 import argparse
 import hashlib
@@ -86,6 +105,9 @@ TUNE_ROLES = ('hit', 'drop', 'bell', 'text', 'click.confirm')  # roles init/tune
 TONAL = ('pluck', 'notify', 'pro_notify', 'sub_drop', 'pro_sub_drop', 'impact', 'pro_impact', 'mallet',
          'cut_hit')  # bank categories with a pitch knob (a cut_hit is tuned on the drop, never on the hit)
 MIX_KEYS = ('bed_db', 'offset_ms', 'min_gap_ms', 'width')
+REPEAT_S = 3.0          # s: a take (the same rendered sound) never plays twice within this, where its role has others
+REAL_LOCK = 'real.lock.json'
+REAL_MAX_S = 2.5        # s: a real effect is cut to this (a fade over its last 50 ms)
 AUDITION_BED_S = 2.0
 # earshot's text may say where its numbers came from; a film's kit.json and reports say it in house wording.
 # Generic rules (no quoted phrases): a sentence that ties a number to measured clips or films, an instrument
@@ -358,6 +380,37 @@ def _median(xs):
     return xs[k] if len(xs) % 2 else 0.5 * (xs[k - 1] + xs[k])
 
 
+def take_id(tk):
+    """a take's identity: its rendered sound (earshot's take key: sound, seed, pitch, edits), else its file"""
+    return tk.get('key') or tk.get('sha1') or tk['file']
+
+
+def read_real(takes):
+    """the real effects of a takes folder (real.lock.json: {"real": 1, "roles": {role: lock role}}), or {}"""
+    p = os.path.join(takes, REAL_LOCK)
+    if not os.path.isfile(p):
+        return {}
+    try:
+        with open(p, encoding='utf-8') as fh:
+            doc = json.load(fh)
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) and doc.get('real') == 1 else {}
+
+
+def event_role(e, fps=60.0, cue=None, roles=None, cast=None):
+    """the role one cue event plays in a kit: its action's own role when the kit is cast and has it, else the
+    generic role of its kind and variant (role_for)"""
+    dur = float(e['dur']) / fps if 'dur' in e else None
+    g = role_for(e.get('kind'), e.get('variant'), float(e.get('weight', 1.0)), dur)
+    if cast and roles:
+        import actions as AC
+        a = AC.action_of(e, fps, cue)
+        if a and f'{g}.{AC.slug(a)}' in roles:
+            return f'{g}.{AC.slug(a)}'
+    return g
+
+
 class Kit:
     """A rendered kit (kit.lock.json + takes) as score.py plays it. roles[role] is None (off) or
     {sound, align, level_db, lufs_spread, takes: [{file, pitch, midi, onset_s, peak_s, end_s, checks,
@@ -368,10 +421,15 @@ class Kit:
     lufs_m_max, at most LEVEL_TRIM_DB either way), so a role plays at one level whichever take a cue
     gets; lufs_spread is the role's spread before the trim. A lock without lufs_m_max trims nothing."""
 
-    def __init__(self, lock, takes, source):
+    def __init__(self, lock, takes, source, cast=None):
         self.lock, self.dir, self.source = lock, takes, source
+        self.cast = cast or {}
         self.roles = {}
-        for role, r in (lock.get('roles') or {}).items():
+        self.real = read_real(takes)
+        croles = self.cast.get('roles') or {}
+        real = {k: v for k, v in (self.real.get('roles') or {}).items()  # a real effect plays the action it was taken for
+                if not croles or (croles.get(k) or {}).get('action') in (None, (v or {}).get('action'))}
+        for role, r in dict(lock.get('roles') or {}, **real).items():
             if not r:
                 self.roles[role] = None
                 continue
@@ -391,6 +449,7 @@ class Kit:
         self.mix = lock.get('mix') or {}  # the kit-level mix block (stop-down ranges, runs, density): earshot 0.4
         self._audio = {}
         self._last = {}
+        self._used = {}  # take identity -> the last time it played (pick with t)
 
     def lookup(self, role):
         """(status, name, spec): ('ok', role or the family member used, spec), ('off', name, None) when the
@@ -399,6 +458,18 @@ class Kit:
             if name in self.roles:
                 return ('ok', name, self.roles[name]) if self.roles[name] else ('off', name, None)
         return 'missing', None, None
+
+    def cast_role(self, e, generic, fps=60.0, cue=None):
+        """(role, action) of one cue event in a cast kit: the action's own role "<generic>.<action>" when the kit
+        has it, else None (the generic role plays: it carries the kind's main action); (None, None) uncast."""
+        if not self.cast:
+            return None, None
+        import actions as AC
+        a = AC.action_of(e, fps, cue)
+        if a is None:
+            return None, None
+        name = f'{generic}.{AC.slug(a)}'
+        return (name if name in self.roles else None), a
 
     def audio(self, tk):
         if tk['file'] not in self._audio:
@@ -416,12 +487,14 @@ class Kit:
         ns = self.notes(name)
         return target is None or not ns or min(abs(m - target) for m in ns) <= PITCH_TOL
 
-    def pick(self, name, key, target=None, explicit=False, index=None):
+    def pick(self, name, key, target=None, explicit=False, index=None, t=None):
         """One take of role `name`, or None when an explicit note has no take (see covers()). Pitched
         roles first choose the pitch: an explicit target (a progress rung, a motif note, a text step) takes
         the take on that note; a derived one the nearest pitch class (the kit keeps its register). Among
         the takes left, `index` (a key's identity) or a stable hash of `key` (the event's id and frame)
-        picks one, never the same file twice in a row for a role that has more."""
+        picks one, never the same file twice in a row for a role that has more. With `t` (the cue's time,
+        s, cues in time order) and no index: the take least recently played, never one heard within REPEAT_S
+        while the role has another (a take is its rendered sound: two roles cast with one sound share it)."""
         import zlib
         tks = self.roles[name]['takes']
         pitched = [t for t in tks if t['midi'] is not None]
@@ -435,10 +508,23 @@ class Kit:
                 best = min(pitched, key=lambda t: (round(pc(t), 6), abs(t['midi'] - target)))
             tks = [t for t in pitched if abs(t['midi'] - best['midi']) < 1e-6]
         k = (index if index is not None else zlib.crc32(str(key).encode())) % len(tks)
+        if t is not None and index is None and len(tks) > 1:
+            order = tks[k:] + tks[:k]
+            fresh = [x for x in order if t - self._used.get(take_id(x), -1e9) >= REPEAT_S - 1e-9]
+            choice = min(fresh or order, key=lambda x: (self._used.get(take_id(x), -1e9), order.index(x)))
+            self._used[take_id(choice)] = t
+            self._last[name] = choice['file']
+            return choice
         if len(tks) > 1 and self._last.get(name) == tks[k]['file']:
             k = (k + 1) % len(tks)
         self._last[name] = tks[k]['file']
+        if t is not None:
+            self._used[take_id(tks[k])] = t
         return tks[k]
+
+    def last_heard(self, tk):
+        """when the take's sound last played (pick with t), or None"""
+        return self._used.get(take_id(tk))
 
     def warnings(self, roles=None):
         """The audit warnings earshot stored per take (rising glide, stacked attacks, ...), for `roles`."""
@@ -486,7 +572,7 @@ def resolve(engine, kit_path, takes=None, python=None, log=None):
         why = None if st['status'] in ('current', 'unchecked', 'stale') and st['lock'] else (
             st['why'] + ('' if es else '; earshot not found (' + '; '.join(tried) + ')'))
     if why is None and st['lock']:
-        kit = Kit(st['lock'], takes, st['status'])
+        kit = Kit(st['lock'], takes, st['status'], cast=(st['kit'] or {}).get('cast'))
         info['source'] = 'earshot kit (rendered now)' if rendered else (
             'earshot kit' if st['status'] == 'current' else f"vendored kit ({st['status']})")
         info['bank'], info['earshot_version'], info['name'] = st['lock'].get('bank'), st['lock'].get('earshot'), \
@@ -589,7 +675,8 @@ def tune(kit, key, knobs=None):
             if new != ed['pitch']:
                 changes.append((role, ed['pitch'], new))
                 ed['pitch'] = new
-        elif knobs and role in TUNE_ROLES and spec.get('sound', '').split('/')[0] in TONAL \
+        elif knobs and any(role == r or role.startswith(r + '.') for r in TUNE_ROLES) \
+                and spec.get('sound', '').split('/')[0] in TONAL \
                 and not (role == 'hit' and spec.get('sound', '').startswith('cut_hit/')):
             kp = (knobs.get(spec['sound']) or {}).get('pitch')
             if not kp:
@@ -630,16 +717,16 @@ def role_for(kind, variant=None, weight=1.0, dur_s=None):
     return kind
 
 
-def cue_kinds(cues_path):
-    """{role: count} of the film's cues (out/cues.json), or None without the file."""
+def cue_kinds(cues_path, roles=None, cast=None):
+    """{role: count} of the film's cues (out/cues.json), or None without the file (a cast kit: each event's
+    action role where the kit has one)."""
     if not cues_path or not os.path.isfile(cues_path):
         return None
     doc = read_json(cues_path, 'cues')
     fps = float(doc.get('fps', 60))
     out = {}
     for e in doc.get('events', []):
-        dur = float(e['dur']) / fps if 'dur' in e else None
-        role = role_for(e.get('kind'), e.get('variant'), float(e.get('weight', 1.0)), dur)
+        role = event_role(e, fps, doc.get('cue'), roles, cast)
         out[role] = out.get(role, 0) + 1
     return out
 
@@ -764,7 +851,7 @@ def cmd_check(a, score_python):
         (rep['notes'] if st['status'] == 'unchecked' else rep['problems']).append(st['why'])
     kit = st['kit'] or {}
     roles = kit.get('roles') or {}
-    used = cue_kinds(a.cues)
+    used = cue_kinds(a.cues, roles, kit.get('cast'))
     music = None
     if os.path.isfile(a.score):
         try:
@@ -791,7 +878,7 @@ def cmd_check(a, score_python):
                 rep['notes'].append(f'{n} {role} cue(s): {name} is off in the kit, so score.py skips them')
             rep['roles'][role] = dict(cues=n, role=name, sound=(roles.get(name) or {}).get('sound') if name else None)
     if st['lock']:
-        for role, sound, codes in Kit(st['lock'], a.takes, st['status']).warnings():
+        for role, sound, codes in Kit(st['lock'], a.takes, st['status'], cast=kit.get('cast')).warnings():
             msg = f'{role} ({sound}): ' + ', '.join(codes)
             if 'rising_glide' in codes:
                 msg += ' (a rising pitch glide reads as a cheap synth whip: pick another sound)'
@@ -854,7 +941,7 @@ def cmd_audition_over_bed(a):
     seg = bed[int(t0 * MK.SR):int((t0 + AUDITION_BED_S) * MK.SR)]
     if len(seg) < int(AUDITION_BED_S * MK.SR) // 2:
         seg = bed[:int(AUDITION_BED_S * MK.SR)]
-    kit = Kit(st['lock'], a.takes, st['status'])
+    kit = Kit(st['lock'], a.takes, st['status'], cast=(st['kit'] or {}).get('cast'))
     parts, index, t = [], [], 0.0
     gap = np.zeros((int(0.3 * MK.SR), 2))
     for role, r in kit.roles.items():
@@ -904,6 +991,162 @@ def cmd_audition(a, score_python):
     return 0
 
 
+def bank_rows(es):
+    """{sound id: row} from `earshot sfx list --json` (ids, kinds, knobs); {} when it cannot be read."""
+    code, res, _ = es.run_json(['sfx', 'list'])
+    rows = res.get('sounds') if isinstance(res, dict) else None
+    return {r['id']: r for r in rows} if code == 0 and rows else {}
+
+
+def project_of(kit_path):
+    """the film a kit belongs to: the folder above audio/ (audio/kit.json -> the project root)"""
+    return os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(kit_path)), os.pardir)).replace(os.sep, '/')
+
+
+def cmd_cast(a, score_python):
+    """each action of the film its own bank sound (actions.py), written into kit.json, the history updated, then
+    tuned; --dry-run prints the cast only"""
+    import actions as AC
+    if not os.path.isfile(a.cues):
+        print(f'kit.py: no {a.cues}: export the cues first (npm run cues)', file=sys.stderr)
+        return 1
+    doc = read_json(a.cues, 'cues')
+    kit = read_json(a.kit, 'kit')
+    es = need_earshot(a, score_python)
+    if not es:
+        return 2
+    rows = bank_rows(es)
+    if not rows:
+        print('kit.py: could not read the bank (earshot sfx list): nothing cast', file=sys.stderr)
+        return 1
+    knobs = {k: (v.get('knobs') or {}) for k, v in rows.items()}
+    film = a.film or project_of(a.kit)
+    hist = AC.read_history()
+    new, rep = AC.cast(doc.get('events', []), kit, float(doc.get('fps', 60)), doc.get('cue') or {}, hist, film, knobs,
+                       role_for)
+    print(f"kit cast: {len(rep['actions'])} action(s) for {film}"
+          + (f" (the previous film: {rep['previous']})" if rep['previous'] else ' (no previous film in the history)'))
+    for act, r in sorted(rep['actions'].items(), key=lambda x: -x[1]['events']):
+        print(f"  {act:10s} {r['events']:3d} event(s)  {r['sound']:28s} roles {', '.join(r['roles'])}"
+              + (f"  (avoided {', '.join(r['avoided'])})" if r['avoided'] else ''))
+    for name, r in sorted(rep['roles'].items()):
+        if r['was'] != r['sound']:
+            print(f"  role {name}: {r['was']} -> {r['sound']}")
+    print(f"  signature: {', '.join(rep['signature'])}")
+    if a.dry_run:
+        print('kit cast: --dry-run: audio/kit.json and the history unchanged')
+        return 0
+    write_json(a.kit, new)
+    AC.write_history(AC.record(hist, film, rep))
+    tune_file(a, knobs)
+    print(f'kit cast: wrote {a.kit} and {AC.history_path()}; next: npm run kit (render), kit.py listen (judge), npm run plan')
+    return 0
+
+
+def measure_take(x, sr=48000):
+    """onset, loudest 5 ms, end (the last 5 ms within 50 dB of it), length, peak and loudness of a take, the way
+    earshot's lock records them"""
+    import numpy as np
+    sys.path.insert(0, HERE)
+    import mixkeys as MK
+    m = np.abs(x if x.ndim == 1 else x.max(axis=1))
+    pk = float(m.max()) if len(m) else 0.0
+    w = max(1, int(0.005 * sr))
+    env = np.sqrt(np.convolve(m * m, np.ones(w) / w, mode='same'))
+    top = float(env.max()) if len(env) else 0.0
+    onset = int(np.argmax(m >= 0.1 * pk)) if pk > 0 else 0
+    peak = int(np.argmax(env)) if top > 0 else 0
+    loud = np.nonzero(env >= top * 10 ** (-50 / 20))[0] if top > 0 else np.array([0])
+    return dict(onset_s=round(onset / sr, 4), peak_s=round(peak / sr, 4), end_s=round(int(loud[-1]) / sr, 4),
+                dur_s=round(len(m) / sr, 4), peak_db=round(20 * math.log10(max(pk, 1e-9)), 2),
+                lufs_m_max=round(MK.loud_lufs(x, sr, int(0.4 * sr)), 2), l50_lufs=round(MK.loud_lufs(x, sr), 2))
+
+
+def cmd_real(a):
+    """a free real effect (its licence record beside it) as three takes of the role that plays its action"""
+    import numpy as np
+    import soundfile as sf
+    from scipy import signal
+    import actions as AC
+    sys.path.insert(0, HERE)
+    import credits as CR
+    if not a.file or not os.path.isfile(a.file):
+        print(f'kit.py: real needs the effect file (music.mjs get --kind sfx downloads one): {a.file}', file=sys.stderr)
+        return 1
+    act = AC.ALIASES.get(a.action or '', a.action)
+    if act not in AC.ACTIONS:
+        print(f"kit.py: --action is one of {', '.join(AC.ACTIONS)}", file=sys.stderr)
+        return 1
+    rec_path = a.licence or os.path.splitext(a.file)[0] + '.licence.json'
+    try:
+        rec = CR.read_json(rec_path)
+    except CR.CreditError as e:
+        print(f'kit.py: {e} (music.mjs get --kind sfx writes the record beside the file)', file=sys.stderr)
+        return 1
+    probs, _ = CR.check_record(rec, rec_path, a.file)
+    if rec.get('kind') != 'sfx':
+        probs.append('not a sound-effect record ("kind": "sfx")')
+    if rec.get('credit_required'):
+        probs.append('its licence asks for a credit: a film plays only effects that need none')
+    if probs:
+        for x in probs:
+            print(f'  problem: {x}', file=sys.stderr)
+        print('kit.py: real: refused (the licence record)', file=sys.stderr)
+        return 1
+    kit = read_json(a.kit, 'kit')
+    cast = kit.get('cast') or {}
+    names = [n for n, r in (cast.get('roles') or {}).items() if r.get('action') == act]
+    if not names:
+        have = sorted({r.get('action') for r in (cast.get('roles') or {}).values()})
+        print(f"kit.py: no role of the cast plays {act}: cast the kit first (kit.py cast)"
+              + (f"; this film's actions: {', '.join(have)}" if have else ''), file=sys.stderr)
+        return 1
+    try:
+        x = read_take(a.file)
+    except Exception as e:  # noqa: BLE001 (soundfile reads WAV, FLAC and OGG; an MP3 may need converting)
+        print(f'kit.py: cannot read {a.file} ({e}): convert it to WAV (ffmpeg -i in.mp3 out.wav)', file=sys.stderr)
+        return 1
+    m = np.abs(x if x.ndim == 1 else x.max(axis=1))
+    pk = float(m.max()) if len(m) else 0.0
+    if pk < 1e-5:
+        print(f'kit.py: {a.file} is silent', file=sys.stderr)
+        return 1
+    start = max(0, int(np.argmax(m >= 0.01 * pk)) - int(0.005 * 48000))
+    x = x[start:]
+    n = int(REAL_MAX_S * 48000)
+    if len(x) > n:
+        x = x[:n].copy()
+        f = int(0.05 * 48000)
+        ramp = np.linspace(1, 0, f)
+        x[-f:] *= ramp if x.ndim == 1 else ramp[:, None]
+    takes = takes_dir_for(a.kit, a.takes)
+    os.makedirs(takes, exist_ok=True)
+    real = read_real(takes) or {'real': 1, 'roles': {}}
+    real.setdefault('roles', {})
+    rel = lambda q: os.path.relpath(os.path.abspath(q), project_of(a.kit)).replace(os.sep, '/')  # noqa: E731
+    for name in names:
+        spec = (kit.get('roles') or {}).get(name) or {}
+        tks = []
+        for k, rate in enumerate((1.0, 0.97, 1.03), 1):  # three takes: the file and two small speed variants
+            y = x if rate == 1.0 else signal.resample_poly(x, 100, int(round(100 * rate)), axis=0)
+            y = y / max(1e-9, float(np.abs(y).max())) * 10 ** (-1 / 20)
+            fn = f"real-{name.replace('.', '-')}_{k}.wav"
+            path = os.path.join(takes, fn)
+            sf.write(path, y.astype(np.float32), 48000, subtype='PCM_24')
+            h = sha1_file(path)
+            tks.append(dict(file=fn, seed=None, pitch=None, **measure_take(y), sha1=h, key=f'real:{h}', checks=[]))
+        real['roles'][name] = dict(sound=f"real:{rec.get('source', 'source')}:{os.path.basename(a.file)}",
+                                   align=spec.get('align', 'onset'), level_db=float(spec.get('level_db') or 0.0),
+                                   max_s=None, **{k: float(spec[k]) for k in MIX_KEYS if spec.get(k) is not None},
+                                   takes=tks, action=act, file=rel(a.file), licence=rel(rec_path))
+        print(f"kit real: {name} ({act}) plays {os.path.basename(a.file)}: 3 takes in {takes} "
+              f"(onset {tks[0]['onset_s'] * 1000:.0f} ms, {tks[0]['dur_s']:.2f} s, l50 {tks[0]['l50_lufs']:.1f} LUFS)")
+    write_json(os.path.join(takes, REAL_LOCK), real)
+    print(f'kit real: wrote {os.path.join(takes, REAL_LOCK)}; judge it: python3 scripts/audio/kit.py listen; '
+          'credits.py lists its licence record')
+    return 0
+
+
 def cmd_listen(a):
     """Delegates to listen.py --kit (one earshot process, models loaded once)."""
     args = [sys.executable, os.path.join(HERE, 'listen.py'), '--kit', a.kit, '--takes', a.takes, '--score', a.score]
@@ -915,9 +1158,11 @@ def cmd_listen(a):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="The film's earshot sound kit: init, tune, render, vendor, check, "
-                                             'audition, listen, where.')
-    ap.add_argument('cmd', choices=('init', 'tune', 'render', 'vendor', 'check', 'audition', 'listen', 'where'))
+    ap = argparse.ArgumentParser(description="The film's earshot sound kit: init, cast, real, tune, render, vendor, "
+                                             'check, audition, listen, where.')
+    ap.add_argument('cmd', choices=('init', 'cast', 'real', 'tune', 'render', 'vendor', 'check', 'audition', 'listen',
+                                    'where'))
+    ap.add_argument('file', nargs='?', help='real: the effect file (its licence record beside it)')
     ap.add_argument('--kit', default='audio/kit.json')
     ap.add_argument('--takes', help='folder of the rendered takes (default: the kit path without .json)')
     ap.add_argument('--score', default='audio/score.json')
@@ -931,6 +1176,10 @@ def main(argv=None):
     ap.add_argument('--over-bed', action='store_true', help="audition: every take over 2 s of the film's own track at its "
                     'bed_db (needs audio/music/edit.json)')
     ap.add_argument('--json', metavar='PATH', help='check / listen: write the report here')
+    ap.add_argument('--film', help='cast: the film\'s name in the sound history (default: the project folder)')
+    ap.add_argument('--dry-run', action='store_true', help='cast: print the cast, change nothing')
+    ap.add_argument('--action', help='real: the action the effect plays (actions.py)')
+    ap.add_argument('--licence', help='real: its licence record (default: <file stem>.licence.json)')
     a = ap.parse_args(argv)
     a.takes = takes_dir_for(a.kit, a.takes)
     try:
@@ -941,6 +1190,10 @@ def main(argv=None):
             return cmd_where(a, score_python)
         if a.cmd == 'init':
             return cmd_init(a, score_python)
+        if a.cmd == 'cast':
+            return cmd_cast(a, score_python)
+        if a.cmd == 'real':
+            return cmd_real(a)
         if a.cmd == 'tune':
             es = None if a.python is None and score_python is None and not os.environ.get('EARSHOT_PYTHON') else \
                 find_earshot(a.python, score_python)[0]

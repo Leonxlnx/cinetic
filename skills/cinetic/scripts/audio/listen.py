@@ -13,6 +13,8 @@ and genre and mood tags as hints for TREATMENT.md. It never blocks.
 With --kit it listens to the kit instead: one take per role, earshot's description and a forced choice
 between the role's own description and cheap-synth alternatives (a laser zap, a video-game blip, an
 8-bit sound, a rising synth whip) -> out/qa/kit_listen.json; a role an alternative outranks is flagged.
+A cast kit (kit.py cast) is judged against each role's action ("a card or a sheet landing on a table"),
+and a real effect (kit.py real, audio/kit/real.lock.json) is judged like any role.
 
 Usage (from the project root):
   python3 scripts/audio/listen.py [--audio public/audio/soundtrack.wav] [--cues out/cues.json]
@@ -117,19 +119,35 @@ def _soundtrack(a, api, earshot):
 def _kit(a, api, earshot):
     with open(os.path.join(a.takes, 'kit.lock.json'), encoding='utf-8') as fh:
         lock = json.load(fh)
+    real, cast = {}, {}
+    try:
+        with open(os.path.join(a.takes, 'real.lock.json'), encoding='utf-8') as fh:
+            real = (json.load(fh) or {}).get('roles') or {}
+    except (OSError, ValueError):
+        pass
+    try:
+        with open(a.kit, encoding='utf-8') as fh:
+            cast = ((json.load(fh) or {}).get('cast') or {}).get('roles') or {}
+    except (OSError, ValueError):
+        pass
+    sys.path.insert(0, HERE)
+    import actions as AC
     rep = dict(listened=True, earshot=earshot.__version__, kit=a.kit, takes=a.takes, bank=lock.get('bank'), roles={},
                flagged=[], errors={})
     t0 = time.time()
-    for role, r in (lock.get('roles') or {}).items():
+    for role, r in dict(lock.get('roles') or {}, **real).items():
         if not r or not r.get('takes'):
             continue
         f = os.path.join(a.takes, r['takes'][0]['file'])
-        q = ROLE_QUERY.get(role, ROLE_QUERY.get(role.split('.')[0], 'a sound effect'))
+        act = (cast.get(role) or {}).get('action') or r.get('action')
+        q = AC.ACTIONS[act]['query'] if act in AC.ACTIONS else \
+            ROLE_QUERY.get(role, ROLE_QUERY.get(role.split('.')[0], 'a sound effect'))
         try:
             m = api.match(f, q, alts=SLOP)
             d = api.describe(f)
             alts = sorted(m.get('alts') or [], key=lambda x: -x['p'])
-            row = dict(sound=r['sound'], file=r['takes'][0]['file'], query=q, verdict=m.get('verdict'),
+            row = dict(sound=r['sound'], action=act, real=role in real, file=r['takes'][0]['file'], query=q,
+                       verdict=m.get('verdict'),
                        p_vs_alts=m.get('p_vs_alts'), top_alt=alts[0] if alts else None,
                        sounds_like=d.get('summary'))
             if alts and alts[0]['p'] > (m.get('p_vs_alts') or 0):

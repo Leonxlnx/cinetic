@@ -9,7 +9,9 @@ was read on the item's own page (licence_seen). This script checks those records
 credits that travel with the film:
 
   out/deliver/CREDITS.md                every track that is heard: title, artist, source, licence and link,
-                                        and the modifications sentence; the effects line
+                                        and the modifications sentence; the effects line, and each real
+                                        effect the kit plays (kit.py real: audio/kit/real.lock.json) with
+                                        its own record, checked like a track's
   out/deliver/CREDITS_description.txt   paste-ready lines for the post or the video description: the
                                         required CC BY credits, and a courtesy line for the others
 
@@ -18,9 +20,10 @@ Usage (from the project root):
   python3 scripts/audio/credits.py --check audio/music/<name>.licence.json [--track FILE]   # one record
   python3 scripts/audio/credits.py --classify "CC BY 4.0"                                   # the classifier
 
-Licences (the classifier, music only):
+Licences (the classifier):
   allowed    cc0, pd (public domain mark), cc-by-3.0, cc-by-4.0, mixkit-music (Mixkit Stock Music Free
-             License), pixabay (Pixabay Content License)
+             License), pixabay (Pixabay Content License); for a sound effect ("kind": "sfx") also mixkit-sfx
+             (Mixkit Sound Effects Free License), which never covers a music track
   forbidden  NonCommercial, NoDerivatives (syncing to picture is an adaptation), ShareAlike, personal,
              editorial or custom licences, all rights reserved
   unknown    anything else: refused until the item's own page names a licence above
@@ -47,7 +50,9 @@ ALLOWED = {
     'cc-by-4.0': ('CC BY 4.0', CC + 'licenses/by/4.0/', True),
     'mixkit-music': ('Mixkit Stock Music Free License', 'https://mixkit.co/license/#musicFree', False),
     'pixabay': ('Pixabay Content License', 'https://pixabay.com/service/license-summary/', False),
+    'mixkit-sfx': ('Mixkit Sound Effects Free License', 'https://mixkit.co/license/#sfxFree', False),
 }
+SFX_ONLY = ('mixkit-sfx',)  # licences that cover a sound effect, never a music track
 FORBID = [  # (pattern on the lower-cased licence text, reason)
     (r'\bnc\b|non-?commercial', 'NonCommercial: a launch film is commercial use'),
     (r'\bnd\b|no-?deriv', 'NoDerivatives: cutting a track to picture is an adaptation'),
@@ -86,10 +91,10 @@ def classify(text):
     elif 'public domain' in s or 'publicdomain/mark' in s:
         key = 'pd'
     elif 'mixkit' in s:
-        key = 'mixkit-music' if 'music' in s or 'stock' in s else None
+        key = 'mixkit-sfx' if ('sound effect' in s or 'sfx' in s) else 'mixkit-music' if 'music' in s or 'stock' in s else None
         if key is None:
             return dict(id='unknown', status='unknown', name=text, url=None, attribution=False,
-                        reason='a Mixkit licence other than the Stock Music Free License: name the music licence')
+                        reason='a Mixkit licence other than the Stock Music or Sound Effects Free License: name it')
     elif 'pixabay' in s:
         key = 'pixabay'
     else:
@@ -158,6 +163,9 @@ def check_record(rec, rec_path='', track=None, need_file=True):
         probs.append(f'licence_id "{lid}" but the licence text classifies as "{c["id"]}"')
     if lid and lid not in ALLOWED:
         probs.append(f'licence_id "{lid}" is not allowed ({", ".join(ALLOWED)})')
+    sfx = rec.get('kind') == 'sfx'
+    if not sfx and (lid in SFX_ONLY or c['id'] in SFX_ONLY):
+        probs.append(f'{c["name"]} covers sound effects, not a music track')
     if rec.get('ai_generated') is not False:
         probs.append('"ai_generated" must be false (a track the page marks as AI generated is refused; '
                      'null means unchecked)')
@@ -212,6 +220,27 @@ def credit_lines(rec):
     return '\n'.join(md), desc, req
 
 
+def effect_records(score, base):
+    """[(role, record path)] of the real effects the film's kit plays (audio/kit/real.lock.json beside the kit)"""
+    kit = locate(str((score.get('sfx') or {}).get('kit') or 'audio/kit.json'), base)
+    takes = (score.get('sfx') or {}).get('takes') or os.path.splitext(kit)[0]
+    lock = os.path.join(locate(takes, base), 'real.lock.json')
+    if not os.path.isfile(lock):
+        return []
+    roles = (read_json(lock, 'real effects') or {}).get('roles') or {}
+    root = os.path.dirname(os.path.dirname(os.path.abspath(kit)))
+    return [(r, os.path.join(root, v['licence']) if not os.path.isabs(v.get('licence') or '') else v['licence'])
+            for r, v in sorted(roles.items()) if v.get('licence')]
+
+
+def effect_line(rec):
+    """(credits.md line, description line) of one real effect's valid record"""
+    c = classify(rec.get('licence'))
+    return (f'- "{rec.get("title")}" ({rec.get("source")}, {rec.get("page")}): {c["name"]} ({rec.get("licence_url") or c["url"]}), '
+            'no credit required',
+            f'Sound effect: "{rec.get("title")}" ({rec.get("source")})')
+
+
 def records_of(score):
     """The licence record paths a score.json names: music.licence (one track)."""
     m = score.get('music')
@@ -227,7 +256,7 @@ def locate(path, base):
     return path
 
 
-def write_credits(out, items, effects=True):
+def write_credits(out, items, effects=True, real=()):
     os.makedirs(out, exist_ok=True)
     md = ['# Credits', '']
     desc = []
@@ -237,7 +266,8 @@ def write_credits(out, items, effects=True):
             md += [block, '']
             desc.append(line)
     if effects:
-        md += ['## Sound effects', '', EFFECTS_LINE, '']
+        md += ['## Sound effects', '', EFFECTS_LINE, ''] + ([m for m, _ in real] + [''] if real else [])
+        desc += [d for _, d in real]
     with open(os.path.join(out, 'CREDITS.md'), 'w', encoding='utf-8', newline='\n') as fh:
         fh.write('\n'.join(md).rstrip() + '\n')
     text = '\n\n'.join(desc + ([EFFECTS_LINE] if effects else []))
@@ -305,12 +335,28 @@ def main(argv=None):
                 bad += [f'{os.path.basename(lp)}: {x}' for x in probs]
                 continue
             items.append(credit_lines(rec))
+        real = []
+        for role, lp in effect_records(score, base):
+            try:
+                rec = read_json(lp)
+            except CreditError as e:
+                bad.append(f'{role}: {e}')
+                continue
+            probs, notes = check_record(rec, lp)
+            if rec.get('kind') != 'sfx':
+                probs.append('a real effect\'s record says "kind": "sfx"')
+            if rec.get('credit_required'):
+                probs.append('a real effect needs a licence without a credit')
+            if probs:
+                bad += [f'{role} ({os.path.basename(lp)}): {x}' for x in probs]
+                continue
+            real.append(effect_line(rec))
         if bad:
             for b in bad:
                 print(f'  problem: {b}', file=sys.stderr)
             print(f'credits.py: REFUSED: {len(bad)} problem(s); no credits written', file=sys.stderr)
             return 1
-        text = write_credits(a.out, items)
+        text = write_credits(a.out, items, real=real)
         if not a.quiet:
             print(f"credits: wrote {os.path.join(a.out, 'CREDITS.md')} and CREDITS_description.txt "
                   f"({len(items)} track(s){', CC BY credit required' if any(r for _, _, r in items) else ''})")

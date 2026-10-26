@@ -38,8 +38,9 @@ cinetic makes no music. There is no generated bed, pad, drone or band: `"music":
 In order of preference:
 
 1. **An earshot kit** (always): a preset edited per film. Every take is deterministic, audited (`kit.py check`: clicks, cut tails, a pitch that climbs, stacked attacks) and tuned through its recipe's own pitch parameter, never resampled.
-2. **An earshot fit of a recording**: `earshot fit` turns a public-domain (CC0) recording, or one the user owns, into a recipe that renders variations of it; earshot adds it to the bank as `fit/<role>/<name>` and the kit names it like any other sound. Use it when a role needs a material the bank lacks. Downloaded effects are never used.
-3. **Nothing else ships.** A cue whose role the kit does not name, or an explicit note no take sounds, fails the soundtrack's gate. `score.py --draft` plays placeholder voices for them, for a timing check only: its report says `"draft": true`, and `deliver.sh`, `credits.py` and `av-audit.py` refuse it.
+2. **An earshot fit of a recording**: `earshot fit` turns a public-domain (CC0) recording, or one the user owns, into a recipe that renders variations of it; earshot adds it to the bank as `fit/<role>/<name>` and the kit names it like any other sound. Use it when a role needs a material the bank lacks.
+3. **A free real effect where the bank is weak for an action**: a sound effect under a licence that needs no credit (Mixkit's free sound effects), found with `node scripts/music.mjs search --kind sfx --mood "<the action in words>"` (paper slide, camera shutter, switch), downloaded with `get '#n' --kind sfx --to audio/sfx` (its licence record beside it, the same record a track has), made the takes of that action's role with `python3 scripts/audio/kit.py real audio/sfx/<file> --action <action>` (measured, peak-normalised, three takes at the role's own mix keys) and judged with `kit.py listen` against the action like any role; `credits.py` lists its record. No other downloaded effect is used.
+4. **Nothing else ships.** A cue whose role the kit does not name, or an explicit note no take sounds, fails the soundtrack's gate. `score.py --draft` plays placeholder voices for them, for a timing check only: its report says `"draft": true`, and `deliver.sh`, `credits.py` and `av-audit.py` refuse it.
 
 What the kit route gives the film:
 
@@ -67,6 +68,28 @@ What the kit route gives the film:
 | `bell` | `bell` | a glockenspiel note on the pentatonic, set wide, 7.5 dB, −20 ms | the kalimba on two octaves of the pentatonic |
 | `suck` | `suck` | off (the stop-down does its job) | off |
 
+**Every sound for its action.** A kind says where an effect sits and how loud; its action says what the picture does, and the action picks the sound. `scripts/audio/actions.py` holds the actions, each with its own bank members in order of fit and the words that name it:
+
+| Action | Kinds | The sound (bank members, first in order of fit) |
+|---|---|---|
+| `card-land` | land, pop, tock | a card or a sheet landing on a table (`pro_pop_in/knock`, `tap/table`, `knock/desk`) |
+| `appear` | pop | a soft rounded pop, something appearing (`ui_pop/soft`, `ui_pop/step`, `ui_pop/boop`) |
+| `toggle` | snap, click, tock | a small switch flipped (`toggle/on`, `toggle/latch`, `toggle/rocker`) |
+| `press`, `touch` | click; land, click, tock | a soft button click (`click/soft`, `click/double`); a finger tap on a screen (`pro_tap/finger`, `tap/finger`) |
+| `type` | key | a mechanical key (`typing_key/clicky`, `typing_key/crisp`, `typing_key/laptop`, `fit/key/lubed`) |
+| `swipe`, `slide`, `whip` | whoosh | a card or a page swiped (`swipe/flick`, `swipe/paper`); a thin quick swish (`swish/blade`); a fast whip (`whoosh_fast/tight`) |
+| `pass`, `shape` | whoosh, swell | a big low whoosh, a scene passing (`whoosh_big/thump`, `whoosh_big/cape`); a soft air transition through a shape (`reverse_swell/breath`, `swipe/velvet`) |
+| `lock`, `jump-cut`, `detent`, `letter` | tock, snap, tick | a knock, a part locking in (`knock/wood`, `knock/plastic`); a dry click on a cut (`shutter/quick`); a detent (`pro_hover_tick/detent`); a tiny letter tap (`pro_click/soft`) |
+| `logo-lock` | hit, drop, land, pop, snap, bell at the lockup | one clean low hit under the logo (`cut_hit/sub`, `pro_impact/short`, `notify/mid_wood`) |
+| `reveal`, `thud` | hit; drop | a single clean impact (`cut_hit/punch`, `cut_hit/air`); a deep short sub (`cut_hit/kick`, `cut_hit/sub`) |
+| `shutter`, `success`, `chime`, `text`, `swell`, `build`, `error` | snap; bell, click; bell; text; swell; riser; hit, snap | a camera shutter; a rounded ding; a struck bell; a soft plucked note; a reverse swell; a short dark riser; a short buzz |
+
+- **The action of an event:** its own `action` field in `src/sync.ts` (a name above, or an alias: `card`, `logo`, `tap`, `switch` …), else a hit, drop, land, pop, snap or bell within 3 frames of the `lockup` cue is the logo lock, else the words of its id and variant (`c2:card-3-lands` is a card landing, `hook:ratchet-2` a detent), else its kind's default (tick detent, tock lock, pop appear, land land, hit reveal, drop thud, snap shutter, a short whoosh whips and a long one passes, key type, click press). `python3 scripts/audio/actions.py --cues out/cues.json` prints every event's action.
+- **The cast:** `python3 scripts/audio/kit.py cast` (after `npm run cues`, before `npm run kit`) gives each action of the film one bank sound: the same action always the same sound, different actions different sounds. The action a kind plays most re-voices that kind's role (its `bed_db`, `offset_ms` and `min_gap_ms` stay); any other action on the kind gets a role of its own, `<role>.<action>` (`land.card_land`). A variant that names a member (`variant: 'plastic'`) is preferred; near-equal members differ from film to film. A tonal role keeps its pitches on a pitched member and is tuned again. `kit.json` keeps a `cast` block (the roles' own specs, so casting again starts clean).
+- **Film to film:** the sound history (`~/.cinetic/sound-history.json`, or `$CINETIC_HOME`) records each film's cast and its signature sounds (the reveal, the logo lock, the thud, passes, shapes, swells, builds, the text sound and the film's most frequent action). The next film never takes the previous film's signature sounds while its action has another, and the sounds it used lose ground. `python3 scripts/audio/actions.py --history` shows it.
+- **Takes:** each cue plays the take of its role least recently played, never one heard within 3 s while the role has another (two roles cast with one sound share their takes' identity); keys keep one take per key identity. `plan.py` lists a take that repeats within 3 s.
+- **Restraint:** fewer, better sounds; the music carries most moments. With a track, while any 10 s holds more than 10 effects (`score.json` `"sfx": {"restraint": N}`, or `"off"`; a typing run counts once), `plan.py` silences whole actions, the lightest first (letters and detents, then pops, cuts, touches, locks, presses, toggles, shutters, slides, typing, swipes, whips, card landings, landings), never part of one (coverage stays whole) and never the reveal, the logo lock, the thud, a pass, a shape transition, a swell, a build, an error or an action one of whose events is structural, forced, the payoff or the lockup.
+
 The calm kit's fitted roles are public-domain recordings that earshot fitted as code; each role's `note` in `audio/kit.json` says why it was chosen. `kit.py init --preset <name> --force` writes a preset (tuned to `score.json`'s key; the notes in house wording); `earshot sfx list` shows the whole bank; `kit.py audition` plays every take at its level, and `kit.py audition --over-bed` plays every take over 2 s of the film's own track at its `bed_db`.
 
 **kit.json** (schema 1, written by `kit.py init`, edited by hand):
@@ -80,7 +103,7 @@ The calm kit's fitted roles are public-domain recordings that earshot fitted as 
  "mix": {"level": "bed", "duck_db": 0, "stop_down": {"before": ["hit", "drop", "whoosh.long", "swell"], "depth_db": [6, 12], "length_s": [0.3, 0.5]}}}
 ```
 
-`sound` is a bank id; `takes` how many to render (a new take per cue, by a hash of its id and frame, never the same file twice in a row; keys keep one take per key identity); `edits` the knobs every take renders with (`dur`, `apex`, `pitch`, `peak_db`); `pitches` one set of takes per note; `align` the sync point (`onset`, `peak` for whooshes, risers and swells); `max_s` fades a long tail; `level_db` the effects-only level; `bed_db`, `offset_ms`, `min_gap_ms`, `width` the mix keys (§7); `mix` the kit-level stop-down ranges and density band. Change a role, run `npm run kit` (only the changed takes render again).
+`sound` is a bank id; `takes` how many to render (a new take per cue, the least recently played, never one heard within 3 s while the role has another; keys keep one take per key identity); `edits` the knobs every take renders with (`dur`, `apex`, `pitch`, `peak_db`); `pitches` one set of takes per note; `align` the sync point (`onset`, `peak` for whooshes, risers and swells); `max_s` fades a long tail; `level_db` the effects-only level; `bed_db`, `offset_ms`, `min_gap_ms`, `width` the mix keys (§7); `mix` the kit-level stop-down ranges and density band. Change a role, run `npm run kit` (only the changed takes render again).
 
 **Finding earshot** (`kit.py where` says which one is used and whether it has the launch preset): `--python`, `score.json` `sfx.python`, `$EARSHOT_PYTHON`, an `earshot` importable in the interpreter running the script, `earshot` on `PATH`. earshot normally lives in its own virtualenv: point `EARSHOT_PYTHON` at that interpreter (`docs/setup.md`). `EARSHOT_PYTHON=none` turns it off; the rendered takes in `audio/kit/` then play as they are (vendored), so a film rebuilds where earshot is not installed. With neither earshot nor takes the build fails.
 
@@ -89,6 +112,7 @@ The calm kit's fitted roles are public-domain recordings that earshot fitted as 
 ```bash
 # Step 3, a film with a track (references/music.md): track.py add / analyze / edit / grid / check  (npm run music)
 npx tsx scripts/export-cues.ts                       # src/sync.ts -> out/cues.json        (npm run cues)
+python3 scripts/audio/kit.py cast                    # each action of the film its own bank sound -> audio/kit.json
 python3 scripts/audio/kit.py render                  # audio/kit.json -> audio/kit/ takes   (npm run kit, cached)
 python3 scripts/audio/plan.py                        # out/qa/sfx_plan.json + out/qa/cues_sounded.json (npm run plan)
 python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json \
@@ -129,7 +153,8 @@ After the mux, `scripts/check-sync.py` gates lag ≤ 48 samples and ≤ −1 dBT
 | `pitch` | optional MIDI number or note (`"Eb6"`). Leave it out: the chord logic picks a tone in key |
 | `apexFrac` | `whoosh`/`suck`: the fraction of the move that lands on `f` (default 0.5 / 0.85) |
 | `dur` | frames; length of the move under a `whoosh`, `riser`, `swell`, `suck` |
-| `variant` | `key`: `word` (word start), `space`, `return`, `back`; `tick`: `crisp`; `click`: `confirm`; `land`: `light`; `pop`: `down` |
+| `variant` | `key`: `word` (word start), `space`, `return`, `back`; `tick`: `crisp`; `click`: `confirm`; `land`: `light`; `pop`: `down`. A variant that names a bank member of the event's action (`plastic` for `knock/plastic`) is preferred by the cast |
+| `action` | what the picture does (§1, every sound for its action): `card-land`, `toggle`, `type`, `swipe`, `logo-lock`, `shape` …; without it the id's words and the kind decide |
 | `structural` | `true`: an act or section change, the reveal, the ending. `av-audit.py` checks it lands on the music (`references/music.md` §7) |
 | `force` | `true`: sound this hit even where the track's own accent carries the moment |
 | `offset_ms` | this event only: where the take's sync point sits against the frame (−500..500), instead of its role's offset (rare) |
@@ -199,6 +224,7 @@ Where the sound goes (the helpers and their spring numbers are in `references/ti
 
 The role's offset is applied by `plan.py`, never folded into the cue frame: the picture's frame stays the truth, and taps, knocks, clicks and bell notes lead it by their designed few milliseconds while pop-in thumps and whoosh peaks land after.
 
+- **Name each event by what it does:** `id: 'c2:card-3-lands'`, `'s:theme-toggle'`, `'m:circle-morph'`, or an `action` field: the cast gives each action its own sound (§1).
 - **Every sound has a visible cause; not every picture event gets a sound.** Sound discrete state changes (a press, an insert, a lock, a counter landing, the logo assembling) and leave continuous motion silent (scrolls, streaming text, progress bars, rolling counters, hovers). With a track, 3–13 designed effects per 10 s; an effects-led passage runs denser. Effects cluster where the music is sparse (a cold open, typing, the logo build) and thin out once the full groove plays.
 - **Coverage is all or nothing.** Once a class of action is sounded, every instance gets the same sound at the same level.
 - **Most cuts carry no sound of their own.** The music carries them; cut them on its accents (`references/music.md` §7). A whoosh (about 2 a film) goes only on a camera-scale move or a logo zoom; a hit (about 2 a film) is structural.
@@ -250,7 +276,7 @@ A film cut to a track (`audio/score.track.example.json`; `new-film.sh --music` w
 | `key` | `"C major"` | tonic + mode (major, minor, dorian, mixolydian, lydian, phrygian). With a track, the track's key (`track.py analyze`) |
 | `bpm` | timeline | optional; must equal the timeline's `BPM` (with a track, `src/music.ts`'s); leave it out with a track |
 | `music` | `"none"` | `"none"`: effects only. `{track, edit, licence, gain_db}`: the licensed track, its edit (`track.py edit`), its licence record (`track.py add`) and a trim after staging. `"synth"` exits 1 |
-| `sfx` | `{"engine": "auto", "kit": "audio/kit.json"}` | `engine` `auto` (render when stale, else the takes as they are) or `earshot` (render or fail); `kit` the kit file (its takes in the folder of the same name, or `takes`); `python` the interpreter that has earshot. `"synth"` is a `--draft` build only |
+| `sfx` | `{"engine": "auto", "kit": "audio/kit.json"}` | `engine` `auto` (render when stale, else the takes as they are) or `earshot` (render or fail); `kit` the kit file (its takes in the folder of the same name, or `takes`); `python` the interpreter that has earshot; `restraint` the effects any 10 s may hold before whole actions go quiet (default 10 with a track; `"off"`). `"synth"` is a `--draft` build only |
 | `chords` | — | optional, one entry per bar: it steers which tones a text chain steps through. Without it the tuned roles follow the key's scale and triad |
 | `stopdowns` | `{"auto": "kit"}` | `auto`: a stop-down before every hit, drop and swell the kit lock names (`"off"` for none); `add`: extra targets (`{at, weight?, depth?: "stop"}`); `skip`: event ids or cue names to leave alone; `quiet_db`: where an effect plays with no bed under it (default −7, §7) |
 | `ending` | — | informational (`{mode, at}`): the edit decides the ending (`stop`, `button`, `ring`) |
@@ -369,7 +395,8 @@ Taps, knocks, clicks and bell notes lead the cut by a few milliseconds; pop-in t
 
 - **Runs.** Three or more events of one role within 250 ms of each other are a run: spaced to the role's `min_gap_ms`, and a run ends on an accent (`click.confirm`, `land` or `drop`), or the report says so.
 - **Width.** Roles with a `width` keep the stereo earshot rendered them with (L/R correlation 0.1 for ticks, 0.6 for bells); whooshes, risers and swells travel along the cue's `pan`; every other effect is mono (as dual mono at unity: the level model's own measure) within ±0.15 of the centre.
-- **Density.** 3–13 effects per 10 s in a music-led film (a typing run counts once); 18–30 under a brand's voice-over; 30–38 in an effects-led passage.
+- **Density.** 3–13 effects per 10 s in a music-led film (a typing run counts once); 18–30 under a brand's voice-over; 30–38 in an effects-led passage. Restraint keeps every 10 s at 10 or fewer by silencing whole light actions (§1).
+- **Takes.** The least recently played take of the role, never one heard within 3 s while the role has another.
 - **One gesture.** A `hit` or `drop` within a frame of a strong `low` or `mid` track accent (6 dB or more over its bed) is carried by the track; a heavy designed effect within 30 ms of a strong accent warns.
 
 ## 8. Mix
@@ -452,6 +479,9 @@ You cannot listen, so measure what a listener hears:
 | limiter over 1.5 dB at t | too many loud effects on one frame: lower the weights there |
 | … plays at level_db in a film with a track | give the role a `bed_db` (the launch role of the same kind) |
 | typing … is bright | a darker member for the key role in `audio/kit.json` |
+| the kit is not cast for this film | `python3 scripts/audio/kit.py cast`, then `npm run kit` |
+| … plays the take … heard N s before | the role has too few takes for its rate: raise its `takes` in `audio/kit.json` (`npm run kit`) |
+| restraint: … quiet | expected: the music carries that action; give an event `structural: true` or `force: true` only when it must sound, or set `sfx.restraint` |
 | starts inside the end fade | move the event before the fade (`master.fade` + 0.03 s from the end) |
 
 ## 11. Failure modes
@@ -496,6 +526,9 @@ The habits that make a launch film sound cheap, and what to do instead. Most are
 | A sound on every word of a text build; ticks through the held line | one soft `text` sound per fragment; the held line in near-silence |
 | Brickwall limiting to 0 dBFS with overs between samples | −14 LUFS, −1 dBTP with oversampling, PLR 12–16 dB |
 | A rising synth whip into a cut | air without pitch, or nothing; `kit.py check` flags a role whose pitch climbs |
+| One generic whoosh and one pop for every move and every appearance | each action its own sound (`kit.py cast`): a card landing, a toggle, typing, a swipe, a logo lock, a transition through a shape |
+| The same handful of sounds in every film | the cast avoids the previous film's signature sounds (the sound history) |
+| An effect on everything | restraint: the music carries most moments; whole light actions go quiet first |
 
 Premium, in one line: restraint, one palette, a licensed track cut on its bars, effects at their place over it, a breath before the big hit, and an ending that subtracts. Good sound design mostly disappears.
 
@@ -513,7 +546,8 @@ Premium, in one line: restraint, one palette, a licensed track cut on its bars, 
 - A mid-film dip from the track's own break, about 5 LU down at 40–80% of the runtime.
 
 **Effects**
-- 3–13 effects per 10 s with a track; most hard cuts silent; about 2 whooshes and 2 hits a film.
+- 3–13 effects per 10 s with a track, at most 10 in any 10 s (restraint); most hard cuts silent; about 2 whooshes and 2 hits a film.
+- Each action of a film its own sound; no take heard twice within 3 s while its role has another; none of the previous film's signature sounds.
 - Over the bed: ticks and taps 3 dB, text and snap 4, keys and clicks 6.5, drop 7, hit and bell 7.5, land and riser 8, pop 8.5, whooshes 8.5–9, swell 9.5; the overall median 3–10 dB.
 - Offsets: taps −60 ms, knocks −40, bells −20, clicks −11; pops +4, keys +8, snaps +9, landings +30, whoosh peaks +3 to +37, swell peaks +42, riser peaks −23.
 - Run gaps: ticks and snaps 66 ms, clicks 85, keys 87, bells and text 110, pops 114, light taps 115, landings 159.
