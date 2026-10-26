@@ -1,9 +1,10 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: declarations=10 seam-plan=2 end-lock:warn=1
+// Fixture for scripts/test/grid-check.test.mjs. expect: declarations=10 declarations:warn=1 seam-plan=2 end-lock:warn=1
 // Declarations that do not hold: a seam on frame 0, a seam of an unknown kind, two seams on one frame,
 // a step range that ends before it starts and one at the film's own 60 fps, a 3-frame "flash", a
 // camera-blur range past the end, STRUCTURAL and SALIENCE naming what is not there, a LOOK.blur that
 // does not exist (errors); a fade between shots and a dissolve across an act boundary (seam-plan
-// errors); a 6.7 s end lock (warning).
+// errors); a 6.7 s end lock and a 12 fps step range of 5 f (warnings). A 1-frame step range is one discrete
+// frame (a snap): no warning.
 export const FPS = 60;
 export const BPM = 100;
 export const PACE_NAME = 'calm';
@@ -26,6 +27,8 @@ export const SEAMS = [
 export const STEPPED = [
   { from: 100, to: 90, fps: 12, id: 'backwards' },
   { from: 600, to: 640, fps: 60, id: 'not-a-step' },
+  { from: 300, to: 301, id: 'snap' },
+  { from: 320, to: 325, fps: 12, id: 'one-step' },
 ];
 export const FLASHES = [{ f: 500, frames: 3, id: 'long-flash' }];
 export const CAMERA_BLUR = [{ from: 700, to: 900, id: 'past-the-end' }];

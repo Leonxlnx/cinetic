@@ -88,7 +88,8 @@
  *   declarations   shapes and places: seams, steps, flashes and camera-blur ranges inside the film,
  *                  known kinds, to > from, flashes of 1-2 frames, step cadences below the film fps,
  *                  no duplicates or overlaps, STRUCTURAL and SALIENCE naming real CUEs (errors); a
- *                  range crossing an act boundary, a step range shorter than two steps or a
+ *                  range crossing an act boundary, a step range shorter than two steps (a 1-frame
+ *                  range is one discrete frame, a snap such as fx/Loaders' row ticks) or a
  *                  camera-blur range over 2 s (warnings)
  *   declares-cover with --cues: what the primitives declare about themselves (cues.json
  *                  declared.fx, from each fx's declares()) is covered by the timeline's own
@@ -804,7 +805,7 @@ async function main() {
       else if (r.fps !== undefined && r.fps >= FPS) err('declarations', `STEPPED ${id}: a ${r.fps} fps cadence is not a step in a ${FPS} fps film`);
       if (r.on !== undefined && ![2, 3].includes(r.on)) err('declarations', `STEPPED ${id}: on must be 2 or 3`);
       const step = r.on ?? (r.fps ? FPS / r.fps : 2);
-      if (r.to - r.from < 2 * step) warn('declarations', `STEPPED ${id} lasts ${r.to - r.from} f, under two steps of ${step.toFixed(2)} f: a step nobody sees is a dropped frame`);
+      if (r.to - r.from > 1 && r.to - r.from < 2 * step) warn('declarations', `STEPPED ${id} lasts ${r.to - r.from} f, under two steps of ${step.toFixed(2)} f: a step nobody sees is a dropped frame`);
     });
     rangeCheck(CAMERA_BLUR, 'CAMERA_BLUR', (r, id) => {
       if (r.to - r.from > 2 * FPS) warn('declarations', `CAMERA_BLUR ${id} lasts ${((r.to - r.from) / FPS).toFixed(2)} s: a camera-blur moment is a flick or a whip; for a whole camera film set LOOK.blur = 'camera'`);
