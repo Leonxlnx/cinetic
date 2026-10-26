@@ -192,6 +192,18 @@ if [[ "$SPEED" == 1 ]]; then
   SPEEDMAX="$MAXV"
 fi
 
+# Remotion refuses a concurrency above the cores it sees (the lower of nproc, which honours OMP_NUM_THREADS,
+# and node's availableParallelism): clamp to them here, not after a failed render
+clamp_conc() {
+  local cores np
+  cores=$(node -e "const o=require('os');console.log(o.availableParallelism?o.availableParallelism():o.cpus().length)")
+  np=$(nproc 2>/dev/null || echo "$cores"); [[ "$np" =~ ^[0-9]+$ ]] && (( np < cores )) && cores=$np
+  if [[ "$CONC" =~ ^[0-9]+$ ]] && (( CONC > cores )); then
+    echo "$1: --concurrency $CONC is above the $cores core(s) Remotion sees here; using $cores" >&2; CONC=$cores
+  fi
+  return 0
+}
+clamp_conc layout-audit
 echo "layout-audit: $COMP frames $FRAMES$([[ "$SPEED" == 1 ]] && echo " (+ f+1 of each for text speed, max $MAXV px/f, $MAXR while read)")"
 rm -rf "$OUTDIR"; mkdir -p "$OUTDIR"
 if ! FORCE_COLOR=0 NO_COLOR=1 npx remotion render "$ENTRY" "$COMP" "$OUTDIR" --sequence --frames="$RENDER" --props="$ALLPROPS" \

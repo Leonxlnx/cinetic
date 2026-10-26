@@ -227,8 +227,19 @@ N=$((TO - FROM + 1))
 DUR=$(python3 -c "print(f'{$N/$FPS:.3f}')")
 AOFF=${AOFF:-$FROM}
 AOFF_S=$(python3 -c "print(f'{$AOFF/$FPS:.6f}')")
+# Remotion refuses a concurrency above the cores it sees (the lower of nproc, which honours OMP_NUM_THREADS,
+# and node's availableParallelism): clamp to them here, not after a failed render
+clamp_conc() {
+  local cores np
+  cores=$(node -e "const o=require('os');console.log(o.availableParallelism?o.availableParallelism():o.cpus().length)")
+  np=$(nproc 2>/dev/null || echo "$cores"); [[ "$np" =~ ^[0-9]+$ ]] && (( np < cores )) && cores=$np
+  if [[ "$CONC" =~ ^[0-9]+$ ]] && (( CONC > cores )); then
+    echo "$1: --concurrency $CONC is above the $cores core(s) Remotion sees here; using $cores" >&2; CONC=$cores
+  fi
+  return 0
+}
 RARGS=(--muted --log=error)
-[[ -n "$CONC" ]] && RARGS+=(--concurrency="$CONC")
+[[ -n "$CONC" ]] && clamp_conc render.sh && RARGS+=(--concurrency="$CONC")
 [[ $LOOP == 1 ]] && RARGS+=(--image-format=png)
 RARGS+=(${EXTRA[@]+"${EXTRA[@]}"})
 PIC="$WORK/picture.mp4"
