@@ -47,6 +47,7 @@ import json
 import math
 import os
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -420,6 +421,14 @@ result('recent films' in r.stdout and 'census' in r.stdout.split('recent films')
 with_h = sum(1 for s in range(300) if 'census' in [o['id'] for o in deal('x', 'launch', seed=s, recent=['census'])])
 without = sum(1 for s in range(300) if 'census' in [o['id'] for o in deal('x', 'launch', seed=s)])
 result(with_h < without * 0.7, f'a recent direction is dealt less often ({without} -> {with_h} of 300)')
+cmd = re.search(r'<!-- python3 scripts/deck\.py (.*?) -->', r.stdout)
+args = shlex.split(cmd.group(1)) if cmd else []
+ids = lambda out: re.findall(r'^## \d+\. `([a-z0-9-]+)`', out, re.M)  # noqa: E731
+other = dict(ENV, CINETIC_DECK_HISTORY=os.path.join(TMP, 'h-other.json'))
+again = run(*args, env=other) if args else None
+result('--recent census' in (cmd.group(1) if cmd else '') and again is not None and ids(again.stdout) == ids(r.stdout),
+       'the printed command carries --recent and deals the same options on a machine with another history',
+       f"{cmd.group(1) if cmd else 'no command'}: {ids(r.stdout)} vs {again and ids(again.stdout)}")
 size = os.path.getsize(hist)
 run('--brief', 'x', '--format', 'launch', '--direction', 'fold', '--out', os.path.join(TMP, 'h2'), '--no-history', env=env)
 result(os.path.getsize(hist) == size, '--no-history leaves the history alone')

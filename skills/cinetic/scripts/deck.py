@@ -56,7 +56,8 @@ Usage:
 
 The deal is weighted toward directions whose keywords appear in the brief and that use an asset the film
 really has, away from the directions of your last films (a small history in ~/.cinetic/deck-history.json,
-or CINETIC_DECK_HISTORY; --no-history turns it off). The three options always differ in camera motion,
+or CINETIC_DECK_HISTORY; --no-history turns it off; --recent ids names them instead, and every printed
+command carries the --recent it was dealt with, so it reproduces the deal). The three options always differ in camera motion,
 signature, story shape and lockup, span three kinds of space and two kinds of light, deal palettes of at
 least two ground tones, and include at least one rich, high-intensity direction, one imagery-led
 direction and one built world when the brief fits them.
@@ -1291,6 +1292,8 @@ def _cmd(inp, seed, extra):
         parts.append(f'--brand {inp["brand"]}')
     if inp.get('imagery') is False:
         parts.append('--no-imagery')
+    if inp.get('recent'):
+        parts.append(f'--recent {",".join(inp["recent"])}')
     parts.append(f'--seed {seed}')
     return ' '.join(parts + extra)
 
@@ -1619,6 +1622,8 @@ def main():
     ap.add_argument('--brand', help='brand/brand.json (scripts/brand.py): map the dealt roles onto the brand\'s colours and type')
     ap.add_argument('--keep', default='', help='palette,type: the brand fixes these; the sheet deals the rest')
     ap.add_argument('--avoid', default='', help='direction ids never to deal (comma-separated)')
+    ap.add_argument('--recent', help='direction ids to deal less often, instead of the history (comma-separated; '
+                    'the printed commands carry it, so a deal reproduces anywhere)')
     ap.add_argument('--redraw', choices=SLOTS, help='re-deal one slot of the saved sheet (needs --reason)')
     ap.add_argument('--reason', default='', help='why the slot must change (required with --redraw)')
     ap.add_argument('--show', nargs='?', const='', metavar='ID', help='a direction in full; without an id, reprint the saved sheet')
@@ -1770,7 +1775,12 @@ def main():
     derived = a.seed is None
     seed = derive_seed(inp) if derived else a.seed
     history_on = not a.no_history
-    recent = [h['direction'] for h in read_history(history_on)][:4]
+    if a.recent is not None:
+        recent = [x.strip() for x in a.recent.split(',') if x.strip()]
+    else:
+        recent = [h['direction'] for h in read_history(history_on)][:4]
+    if recent:
+        inp['recent'] = recent  # after the seed: the printed commands carry it
     if a.options is not None and not 2 <= a.options <= 5:
         fail('--options takes 2-5')
     opts, pool, weights = options_for(data, inp, seed, a.options or 3, recent, avoid, keep, ready, a.allow_planned)
