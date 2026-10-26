@@ -375,7 +375,7 @@ BEAT=$(node -e "console.log(60*$FPS/$BPM)")
 echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat${PACE:+, $PACE pace}${TPL:+, an update film})"
 if [[ -n "$TPL" ]]; then
   cat <<EOF
-update film: write the version and 2-4 changes (1-3 words each, each with its product moment) in src/update.ts,
+update film: write the version and 2-4 changes (one short sentence each, 3-6 words, each with its product moment) in src/update.ts,
   then deal its direction: $PYS scripts/deck.py --brief "<one line>" --format update --changes N --options 3
 EOF
   if [[ -z "$MUSIC" ]]; then

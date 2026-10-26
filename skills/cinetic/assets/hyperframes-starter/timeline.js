@@ -83,9 +83,9 @@
   const WORD_EASE = arriving(E[pace.ease]);
 
   /**
-   * One thought as a chain of fragments, one COPY entry each (`<id>.1`, `<id>.2`, ...), like the
-   * Remotion starter's timeline.ts chain(): 1-4 words per fragment, never a whole sentence at once,
-   * with a picture beat between fragments. Give each fragment its first frame; `resolved` follows
+   * One line built in beats, one COPY entry per fragment (`<id>.1`, `<id>.2`, ...), like the Remotion
+   * starter's timeline.ts chain(): the script's sentence (3-8 words in all) arrives in parts with a
+   * picture beat between them, and grid-check reads a build chain as one line. Give each fragment its first frame; `resolved` follows
    * from the pace, the frame its last word is fully in when its words are pace.stagger apart.
    *   build    fragments append to one held line that clears as a whole at `out`
    *   replace  each fragment leaves whole (over pace.exitDur: 24 f when calm) and has gone 6 f

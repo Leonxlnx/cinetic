@@ -15,7 +15,7 @@ import { Paper } from './ground';
 import { OPEN, PLATE_MOVE, PLATE_PARALLAX, PLATE_SLICES, plateRoom, plateShift, SET_FRAMES } from './plate';
 
 // ACT 3 - the picture becomes a word. On the cut the full-frame plate contracts into a window in the middle of
-// the frame (still drifting: one continuous picture), and the line forms round it: "Every" and "frame" rise on
+// the frame (still drifting: one continuous picture), and the line forms round it: "Nothing stands" and "still" rise on
 // either side on the beat's rule, drawn in again, the window as the gap between them (fx/InlineGap's anatomy:
 // margins, radius, hard-cut swaps).
 // The window cuts through two more frames of the set on the 8ths, then holds for the read. The line and its
@@ -23,7 +23,9 @@ import { OPEN, PLATE_MOVE, PLATE_PARALLAX, PLATE_SLICES, plateRoom, plateShift, 
 
 const L = (abs: number) => abs - ACT.frame.from; // absolute cue -> act-local frame
 const LINE = copy('frame');
-const [LEFT, RIGHT] = LINE.text.split(' ');
+// the window opens before the line's last word: "Nothing stands [picture] still"
+const LEFT = LINE.text.slice(0, LINE.text.lastIndexOf(' '));
+const RIGHT = LINE.text.slice(LINE.text.lastIndexOf(' ') + 1);
 
 /** The window's shape: height in em of the line's size, and its aspect. */
 const WIN = { em: 1.15, aspect: 1.6 };
@@ -107,7 +109,7 @@ export const Act3: React.FC = () => {
         {f >= L(LINE.in) - 1 && (
           <div data-text="frame" style={{ position: 'absolute', left: x0, top, width: total, height: size * disp.lead }}>
             <span style={{ ...text, ...word(0) }}>{LEFT}</span>
-            <span style={{ ...text, left: total - per100.r * size, ...word(1) }}>{RIGHT}</span>
+            <span style={{ ...text, left: total - per100.r * size, ...word(spans.length - 1) }}>{RIGHT}</span>
           </div>
         )}
       </div>

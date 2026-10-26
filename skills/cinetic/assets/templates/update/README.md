@@ -6,13 +6,13 @@ acts it removes).
 
 **The shape.** A hook on the version (giant numerals cropped by the frame, the last numeral rolling from
 the old value to the new), one act per change (2-4), each a product moment: the camera arrives on the
-product's surface, the product does the new thing on its beat, and one fragment of 1-3 words names what
+product's surface, the product does the new thing on its beat, and one short sentence of 3-6 words says what
 was just seen. Then the payoff (the camera pulls back over every change as the version swings back in
 front) and the end card (the version recedes into the set; the mark's parts and the name are set before
 it). One camera carries the whole film along one strip, so every act line is a velocity seam.
 
 **What to write.**
-- `src/update.ts`: the version, the version before it and the changes (`words`: a product fact in 1-3
+- `src/update.ts`: the version, the version before it and the changes (`words`: one short sentence, 3-6
   words; `moment`: how it is shown). Delete its placeholder lines.
 - The product moments: `src/kit` is the floor (a review approved, a reply landing, a figure climbing, a
   budget entry). Rebuild the product's own screens for film (every size x1.9, nothing under 36 px) and

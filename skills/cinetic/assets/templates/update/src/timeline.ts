@@ -74,7 +74,7 @@ export const changeAct = (i: number) => ACT[`change${i + 1}`];
 
 // Named sync points (absolute frames), all on the 16th grid. Picture code reads these; src/sync.ts turns
 // them into sound events. Per change i: c<i> the act seam (the camera's peak speed), hit<i> the product
-// doing the new thing (its contact frame), say<i> the fragment that names it rising in, life<i> the product
+// doing the new thing (its contact frame), say<i> the sentence that says it rising in, life<i> the product
 // still living under the read (a counter, a cursor, a list settling: no new event for the eye).
 export const CUE: Record<string, number> = {
   roll: beat(1), // the version's last numeral rolls from the old value to the new one
@@ -152,10 +152,11 @@ export type Copy = {
   in: number; // first frame any of it is visible
   resolved: number; // first frame it is fully readable
   out: number; // first frame it starts to leave (TOTAL if it stays)
-  kind?: 'copy' | 'ui'; // 'ui': a string the product shows; not budgeted
+  kind?: 'copy' | 'ui' | 'name'; // 'ui': a string the product shows, not budgeted; 'name': the name or the version, not a line of the script
   chain?: string;
   mode?: 'build' | 'replace';
   reveal?: 'focus'; // the phrase comes into focus whole (fx/FocusWord): grid-check reads its hold, not a per-word rate
+  swap?: string | boolean; // a deliberate swap: this line takes the named line's place in one move
 };
 
 const pace = PACE[PACE_NAME];
@@ -184,11 +185,11 @@ export const ROLL = 26;
 /** Frames before the next act line at which a change's words leave (they launch into the camera move). */
 export const SAY_OUT = 16;
 
-// Every on-screen word. The version is the set (giant numerals), each change one fragment of 1-3 words
-// that names what the picture just showed, then the version again and the name.
+// Every on-screen word. The version is the set (giant numerals), each change one short sentence (3-6 words)
+// that says what the picture just showed, one line at a time, then the version again and the name.
 export const COPY: Copy[] = [
   { id: 'from', text: UPDATE.from, kind: 'ui', in: 0, resolved: 0, out: CUE.roll },
-  { id: 'version', text: UPDATE.version, in: CUE.roll, resolved: CUE.roll + f60(ROLL), out: beat(BEATS.change(0)) - f60(SAY_OUT) },
+  { id: 'version', text: UPDATE.version, kind: 'name', in: CUE.roll, resolved: CUE.roll + f60(ROLL), out: beat(BEATS.change(0)) - f60(SAY_OUT) },
   ...UPDATE.changes.map((c, i) => line(`change${i + 1}`, c.words, CUE[`say${i}`], beat(BEATS.change(i + 1)) - f60(SAY_OUT))),
   { id: 'release', text: UPDATE.version, in: CUE.gather + f60(6), resolved: CUE.land, out: TOTAL },
   { id: 'wordmark', text: UPDATE.name, in: CUE.lockup - f60(30), resolved: CUE.lockup, out: TOTAL },

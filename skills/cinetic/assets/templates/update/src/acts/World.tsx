@@ -197,7 +197,7 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
   );
 };
 
-/** The fragment that names change i: line size or display size by length, lower left, launching into the next move. */
+/** The sentence that says change i: line size or display size by length, lower left, launching into the next move. */
 const ChangeWords: React.FC<{ i: number; F: number }> = ({ i, F }) => {
   const c = copy(`change${i + 1}`);
   const role = c.text.length <= 12 ? 'display' : 'line';
