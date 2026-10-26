@@ -369,7 +369,7 @@ EOF
   if [[ -z "$MUSIC" ]]; then
     cat <<EOF
 music: the slot is empty, and every film is cut to a licensed track (never effects only): pick one from the
-  dealt direction's shortlist ($PYS scripts/deck.py --show), then $PYS scripts/audio/track.py add <file>
+  dealt direction's shortlist (the deal above prints it; $PYS scripts/deck.py --show reprints it once dealt), then $PYS scripts/audio/track.py add <file>
   --title T --artist A --source S --page URL --licence L, and track.py edit / grid / check (template.json: music)
 EOF
   fi
