@@ -136,7 +136,9 @@ export type EndLock = { from: number; to: number };
  * use; export-cues writes them under `declared.fx`, and grid-check fails when the timeline's own
  * declarations below do not cover them.
  */
-export type Declares = { stepped?: SteppedRange[]; flashes?: Flash[]; cameraBlur?: CameraBlurRange[]; seams?: Seam[] };
+/** A colour event (a deep field, an accent flood, a colour cut): look-audit pauses its wash and accent ceilings inside it. */
+export type ColourRange = { from: number; to: number; id: string };
+export type Declares = { stepped?: SteppedRange[]; flashes?: Flash[]; cameraBlur?: CameraBlurRange[]; seams?: Seam[]; colour?: ColourRange[] };
 /**
  * What a CUE asks of the eye. read-quiet guards `copy`, `hit` and `cut` (and fast moves over the
  * text being read); `life` (creep, light, drift, a carried decay) and camera moves away from the
@@ -167,6 +169,8 @@ export const STEPPED: SteppedRange[] = [
 ];
 export const FLASHES: Flash[] = [];
 export const CAMERA_BLUR: CameraBlurRange[] = [];
+/** Colour events (a deep field, an accent flood, a colour cut, up to 2 s each): written to cues declared.colour. */
+export const COLOUR: ColourRange[] = [];
 /** The one lock: the name holds beside the mark to the end, the key and a slow dolly keeping it alive. */
 export const END: EndLock = { from: CUE.lockup, to: TOTAL };
 /** The biggest reveal (its stop-down or dip ends here): the lockup. */

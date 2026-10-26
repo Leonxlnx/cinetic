@@ -133,7 +133,7 @@ brand-supplied colours count as one family), `banned-hue`
 `negative-space`, `living-ground`, `clean-finish`, `type-size` (with the layout JSON), `luminance-flip`,
 `blur-policy`, `word-first-frame`, `fade-detect`, `arrival-front-load`, `image-develop` (a hint). Flags:
 `--imagery x,y,w,h` (boxes holding photographs: natural colour there is not designed colour), `--colour-event
-FROM,TO` (a declared colour event pauses the wash and accent ceilings), `--second '#…'` (a declared second hue),
+FROM,TO` (a declared colour event pauses the wash and accent ceilings; the timeline's `COLOUR` ranges are read from the cues), `--second '#…'` (a declared second hue),
 `--tokens`, `--brand`, `--picture-only` (the picture floor alone, fast), `--no-picture`, `--no-floor`.
 
 **The floor against a flat film (motion)** fails the film when any of these is missed:

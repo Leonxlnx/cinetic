@@ -270,7 +270,7 @@ export const Radiate: React.FC<RadiateProps & { frame: number; x: number; y: num
 
 /** CellWave: its twos span; StairWipe: the stepped run and a wipe seam on its first frame; Radiate: nothing. */
 export const declares = (p?: { wave?: Partial<CellWaveProps>; stair?: Partial<StairWipeProps> }, film?: Partial<FilmCtx>): Declares => {
-  const out: Required<Declares> = { stepped: [], flashes: [], cameraBlur: [], seams: [] };
+  const out: Required<Pick<Declares, 'stepped' | 'flashes' | 'cameraBlur' | 'seams'>> = { stepped: [], flashes: [], cameraBlur: [], seams: [] };
   if (p?.wave?.at !== undefined) out.stepped.push({ from: p.wave.at, to: Math.ceil(p.wave.at + f60x(p.wave.twos ?? CELL_WAVE.twos60, fpsOf(film))), on: 2, id: p.wave.id ?? 'cellWave' });
   if (p?.stair?.at !== undefined) {
     const fr = stairWipeFrames(p.stair as StairWipeProps, film);

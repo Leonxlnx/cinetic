@@ -114,7 +114,8 @@ export type SteppedRange = { from: number; to: number; fps?: 12 | 16 | 20 | 30; 
 export type Flash = { f: number; frames: 1 | 2; id: string };
 export type CameraBlurRange = { from: number; to: number; id: string };
 export type EndLock = { from: number; to: number };
-export type Declares = { stepped?: SteppedRange[]; flashes?: Flash[]; cameraBlur?: CameraBlurRange[]; seams?: Seam[] };
+export type ColourRange = { from: number; to: number; id: string };
+export type Declares = { stepped?: SteppedRange[]; flashes?: Flash[]; cameraBlur?: CameraBlurRange[]; seams?: Seam[]; colour?: ColourRange[] };
 export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 
 /** One camera carries the whole film along one strip (no hard cut): a one-take film. */
@@ -128,6 +129,8 @@ export const SEAMS: Seam[] = [
 export const STEPPED: SteppedRange[] = [];
 export const FLASHES: Flash[] = [];
 export const CAMERA_BLUR: CameraBlurRange[] = [];
+/** Colour events (a deep field, an accent flood, a colour cut, up to 2 s each): written to cues declared.colour. */
+export const COLOUR: ColourRange[] = [];
 /** The one lock: the version, the mark and the name hold to the end. */
 export const END: EndLock = { from: CUE.lockup, to: TOTAL };
 /** The biggest reveal: the lockup. */

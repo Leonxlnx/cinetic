@@ -421,7 +421,7 @@ ground when it can; plan a light/dark sequence and flip it on carried transition
 | The accent's hue family (within 20°), outside imagery | 6–15 % of the frame on average | no frame over 25 % outside a declared colour event |
 | Saturated pixels (C ≥ 0.06): colour mass | about 6 % or more (the floor is 2.2 %) | the wash ceiling: ≤ 30 % on average and no more than a third of the frames over half saturated (the floor fails at 45 %) |
 | A second hue | optional, for a moment: data beside the accent, a state the accent cannot be (an alert), a highlight; 40° or more from the accent, ≤ 5 % of the frame while it shows, in at most a quarter of the frames | a hue in more than half the frames at over 8 % is a second accent (a warning) |
-| A colour event | a deep field, an accent flood, a colour cut: declared (`declared.colour` in the cues, `--colour-event FROM,TO`), or one designed flood up to 2 s | the ceilings pause inside it |
+| A colour event | a deep field, an accent flood, a colour cut: declared (the timeline's `COLOUR` ranges or a primitive's `declares()` colour, written to `declared.colour` in the cues; `--colour-event FROM,TO`), or one designed flood up to 2 s | the ceilings pause inside it |
 
 - **Colour mass comes from the right places:** the accent on what matters, real imagery in its own colours (the
   `natural` grade is the default; tint, duotone and deep are device looks for one shot), the accent's own lightness
