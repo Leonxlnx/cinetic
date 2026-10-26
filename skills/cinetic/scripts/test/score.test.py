@@ -398,6 +398,9 @@ def kit_helpers():
     check(kit['roles']['text']['pitches'] == ['D4', 'F4', 'G4', 'A4', 'C5'],
           f"tuning to D minor moves the text set an octave up into mallet/pluck's range ({kit['roles']['text']['pitches']})")
     check('mallet' in K.TONAL and 'cut_hit' in K.TONAL and 'launch' in K.PRESETS, 'kit.py knows the launch kit and its tonal members')
+    import plan as PL  # noqa: E402
+    check(PL.is_accent('land.light') and PL.is_accent('click.confirm') and PL.is_accent('drop') and not PL.is_accent('click')
+          and not PL.is_accent('landing') and not PL.is_accent(None), "a run's landing: click.confirm, land, drop and their variants")
     note = 'Soft, short effects. Levels are median values measured over a set of sample clips; the rest stays. A pluck for text.'
     check(K.house_wording(note) == 'Soft, short effects. The numbers are house numbers for music-led films; the rest stays. '
           'A pluck for text.' and K.house_wording('x.wav vs 7 sample clips') == 'x.wav vs 7 sample clips',

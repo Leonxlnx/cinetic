@@ -104,6 +104,11 @@ def stop_down_cfg(kit):
                 before=before or list(STOP_ROLES), from_lock=bool(sd))
 
 
+def is_accent(role):
+    """A role that lands a run: click.confirm, land or drop, or a variant of one (land.light)."""
+    return bool(role) and any(role == a or role.startswith(a + '.') for a in ACCENT_AT_END)
+
+
 def density_band(kit):
     d = (((getattr(kit, 'lock', None) or {}).get('mix') or {}).get('density_per_10s') or {}).get('music_led')
     return tuple(d) if d else DENSITY_BAND
@@ -343,14 +348,14 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
                     g['run'], g['moved_ms'] = rid, round((t2 - g['cue_t']) * 1000, 1)
                     g['cue_t'] = t2
                 end_t = spaced[-1]
-                acc = [x for x in rows if x.get('status') == 'placed' and x.get('role') in ACCENT_AT_END
+                acc = [x for x in rows if x.get('status') == 'placed' and is_accent(x.get('role'))
                        and 0 <= x['cue_t'] - end_t <= RUN_GAP_S]
                 gaps = [round((b - a) * 1000) for a, b in zip(spaced[:-1], spaced[1:])]
                 runs.append(dict(id=rid, role=role, count=len(grp), gap_ms=gap, gaps_ms=gaps,
                                  accent=acc[0]['role'] if acc else None, t=[r4(spaced[0]), r4(end_t)]))
                 if not acc:
                     warnings.append(f"run {rid} ({len(grp)} x {role} at {spaced[0]:.2f}-{end_t:.2f} s) ends without an accent "
-                                    f"({', '.join(ACCENT_AT_END)} within 250 ms): give the run its landing")
+                                    f"({', '.join(ACCENT_AT_END)} or a variant such as land.light, within 250 ms): give the run its landing")
             grp = [row] if row is not None else []
 
     # ---- tuned budget
