@@ -312,7 +312,10 @@ sample.
   speed builds ×1.05 a frame for 66 f to the peak (house 2600 px/s), holds 6 f, brakes in two stages (a quick drop
   ×0.82 a frame for 40 % of the speed, a long coast ×0.977); `distance` lands it on the target row. Its frames above
   900 px/s are declared as a `CAMERA_BLUR` range: copy it into the timeline and the blur pass renders them with the
-  shutter inside a crisp film. `<Scroll edgeMask>` fades lines in out of nothing at the edge.
+  shutter inside a crisp film. `<Scroll edgeMask>` fades lines in out of nothing at the edge. `flickFeed(start, film)`
+  is the hard thumb flick of a feed (`FLICK_FEED`: a carried speed decaying into a crawl, ×1.054 a frame for 86 f to
+  5280 px/s, a 4 f hold, a fast brake for 60 % of the speed, then the coast); `<DirBlur v>` (`fx/Defocus`) smears its
+  fast frames along the scroll when the film keeps no shutter pass.
 - **Develop** (`fx/Develop.tsx`): `developState()` 0 = the tint, 1 = full colour; house 24 f per picture on
   `M.develop`, columns 4 f apart; `steps: { animFps: 16 }` puts it on stepped holds. The tint is a static duotone filter
   on one copy; the colour copy fades in above it. Built UI develops too.
@@ -321,7 +324,18 @@ sample.
 - **Counters** (`fx/Roll.tsx`): `countLinear(f, { from, perSec, start, round, animFps, phase, to }, film)`: counters run
   linear and are cut mid-count; several in one frame at different rates (14 : 5 : 1 reads as live data).
   `steppedTail(to, end)` lands a final value in decelerating steps; `<Roll hard>` swaps digits in one frame; a rolling
-  digit slides 18 f. The device book's [data and numbers](devices/data-and-numbers.md), [micro-interactions](devices/micro-interactions.md),
+  digit slides 18 f. `growthSteps(start, total)` is the count that grows as the product reads (a step every 12 f,
+  ×1.65 a step) and jumps to the total once it passes 55 % of it: cadence that accelerates into the payoff.
+- **Stack** (`fx/Stack.tsx`): notifications piling up as proof. The newest rises 144 px from behind into the front
+  slot (scale 0.92 → 1 on `E.snapOut`, 16 f); every older one steps back a slot on the same curve: 4.5 % smaller,
+  2.4 px softer, closer to the one in front (199, 175, 150, 135 px); the pile re-centres 92 px an item. Arrivals speed
+  up into the payoff. `stackState()` and `stackFrames()` (a soft pop on each arrival's 50 % frame).
+- **MaskList** (`fx/Reels.tsx`): a capability ticker. One row every 10 f, hard, unblurred, an icon swapping on the same
+  frame; a fixed alpha mask keeps the neighbours faint (0.62 at the selected row's edge, 0.10 a row out, a 0.05 floor
+  to 2.5 rows). Every step is declared stepped.
+- **Resize carry** (`fx/Resize.tsx` `mode: 'carry'`): a card that opens on a cut at the outgoing card's size and squashes
+  to its own, front-loaded from the cut frame (20 f): a statement card arriving at the last card's height.
+- The device book's [data and numbers](devices/data-and-numbers.md), [micro-interactions](devices/micro-interactions.md),
   [loaders and progress](devices/loaders-and-progress.md) and [UI choreography](devices/ui-choreography.md) families hold
   the rest (charts from cells, loaders, check pops, toggles, the agent's step list).
 
@@ -335,8 +349,10 @@ screen recording.
   arcs). `cursorTilt()`: it swings in (up to 60° over a few frames), then settles upright from 16-24° over 36 f on
   `E.settleOut`. `cursorRing(f, at)`: a thin ring that expands 10 → 34 px and fades on the click (a ring, never a glow).
   `cursorState(f, { from, moves, tilt, shape, switches, click }, film)` returns everything for `<Cursor>`.
-- `<Cursor x y angle shape shadow ring press scale />`: `shape` arrow (hotspot at the tip) or ibeam (hotspot at its
-  visual centre, so a swap never moves the point that acts); `shadow` drop, cast (floating above the UI) or none.
+- `<Cursor x y angle shape shadow ring press scale />`: `shape` arrow (hotspot at the tip), ibeam (hotspot at its
+  visual centre, so a swap never moves the point that acts) or hand (over a link or a button, hotspot at the
+  fingertip); `shadow` drop, cast (floating above the UI) or none. `cursorRise(f, at, target)`: the hand rising
+  straight up from below the frame onto a button, 75 % of its 400 px in the first 8 f, then into `cursorMove`.
 - Dwell 10-16 f on the target before the press; the target shows its hover state about 6 f before; at most one click
   per 30 f, on irregular gaps. Place it by transform in screen space, at `toScreen(shot, point)`.
 - Put the click sound on the press frame. Keep the arc inside the frame and clear of the text being read.
@@ -348,7 +364,9 @@ punctuation), `"field"` (word by word every 5 frames), `"prompt"` (5 → 19 char
 or `"stream"` (machine output, 50-150 a second) (`references/copy-and-type.md` §9). The schedule is computed once
 (`typeSchedule()`) and exported for the sound and a caret-following camera (`typeOn()`); discrete state is decided on
 `fd(f)`. The newest characters can carry an accent trail that ages to ink; the caret is solid while typing and blinks
-30 f on / 30 f off when idle. Keep the typed field alive: a slow push on the bar and a parallax drift behind it. A
+30 f on / 30 f off when idle. `erase` clears a field first with a held backspace (`ERASE_HOUSE`: the first key, a
+repeat delay, then a character a frame), last character first, the caret solid while it runs; a second `TypeOn` types
+the new value in bursts. Keep the typed field alive: a slow push on the bar and a parallax drift behind it. A
 headline is never typed.
 
 ## 10. Supplied screenshots and product shots
@@ -377,6 +395,9 @@ the same grammar as built UI.
 | Develop | a `stepped` range when `steps` is set |
 | HardStep | one `stepped` frame per jump |
 | Roll | a `stepped` range for a hard counter on a 12/16/20/30 fps cadence |
+| TypeOn | a `stepped` range for a 1.2 typing run, or for its `erase` |
+| Reels | one `stepped` frame per MaskList step (and per GhostReel jump in step mode) |
+| Stack, Defocus, DirBlur, Resize carry | nothing (continuous) |
 
 List the instances the acts use in `src/sync.ts` `declares()`; grid-check fails when the timeline does not cover them.
 
@@ -405,6 +426,9 @@ one calm fragment per beat in a fixed cell, and every framing keeps the product 
   boxes open, so no frame shows two half-transparent layouts.
 
 ## 13. Walkthrough chapters
+
+UI arrivals in a walkthrough are front-loaded: 43–51 % of the travel in the first 10 % of the time, so cards, menus and
+toasts arrive on `E.snapOut` [.50], not the gentler `glideOut`.
 
 - **One chapter per 2–4 bars**, chapter changes on downbeats; 1–2 capabilities per 20 s, never a tour of every feature.
 - **Each chapter** is: a camera move onto the feature's anchor (`references/camera.md`), one cause → action → result, a caption of ≤ 6 words, and the result held ≥ 36 f before the next move.

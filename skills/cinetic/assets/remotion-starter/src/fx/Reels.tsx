@@ -1,5 +1,5 @@
 import React from 'react';
-import { clamp, E, type Ease, fd, mix } from '../lib/anim';
+import { clamp, E, type Ease, fd, mix, trackLinear, type TrackKey } from '../lib/anim';
 import { type FilmCtx, f60x, fpsOf, useFilm } from '../lib/film';
 import type { Declares } from '../timeline';
 
@@ -12,6 +12,9 @@ import type { Declares } from '../timeline';
  *   GhostReel  a word sits in a slot while dim, softened copies of the previous and next words stay visible
  *              just outside it, like a slot-machine reel; it rolls to the next word on an exit-then-settle
  *              curve (or hard steps every few frames, the picker version); the ghosts move with the roll
+ *   MaskList   a capability ticker: a word list steps one row every 10 f at 60 fps, hard (no ease, no blur), while
+ *              a fixed alpha mask keeps the rows around the selected one faint (0.62 at its edge, 0.10 a row
+ *              away, a 0.05 floor out to 2.5 rows, then gone): the eye reads one word, the list reads as many
  */
 
 // ---------------------------------------------------------------------------------------------- FocusBand
@@ -161,10 +164,66 @@ export const GhostReel: React.FC<GhostReelProps & { frame: number; x: number; y:
   );
 };
 
+// ---------------------------------------------------------------------------------------------- MaskList
+
+/** House numbers: 60 fps frames a step, rows drawn each side, the mask as [rows from the selected row's edge, alpha]. */
+export const MASK_LIST = { every60: 10, rows: 4, mask: [[0, 0.62], [0.64, 0.1], [1, 0.05], [2.56, 0.05], [3.2, 0]] as TrackKey[] } as const;
+
+export type MaskListProps = {
+  n: number; // rows in the list
+  pitch: number; // px between rows
+  start: number; // the first step (row 0 is selected before it)
+  every?: number; // 60 fps frames between steps (house 10)
+  steps?: number[]; // explicit step frames instead (put them on the kicks)
+  rows?: number; // rows drawn each side of the selected one (house 4)
+  mask?: TrackKey[]; // [rows from the selected row's edge, alpha] (house MASK_LIST.mask)
+  id?: string;
+};
+
+/** The step frames of a mask list (whole frames). */
+export const maskListSteps = (p: MaskListProps, film?: Partial<FilmCtx>): number[] => {
+  if (p.steps?.length) return p.steps.map(Math.round);
+  const every = f60x(p.every ?? MASK_LIST.every60, fpsOf(film));
+  return Array.from({ length: Math.max(0, p.n - 1) }, (_, k) => Math.round(p.start + k * every));
+};
+
+/** The selected row at frame f and every drawn row's offset (px from the selected row) and alpha. Pure, whole frames. */
+export const maskListState = (frame: number, p: MaskListProps, film?: Partial<FilmCtx>) => {
+  const steps = maskListSteps(p, film);
+  const index = Math.min(p.n - 1, steps.filter((s) => fd(frame) >= s).length);
+  const g = p.rows ?? MASK_LIST.rows;
+  const mask = p.mask ?? MASK_LIST.mask;
+  const rows: { i: number; dy: number; opacity: number }[] = [];
+  for (let i = Math.max(0, index - g); i <= Math.min(p.n - 1, index + g); i++) {
+    const d = Math.abs(i - index);
+    rows.push({ i, dy: (i - index) * p.pitch, opacity: d === 0 ? 1 : trackLinear(d - 0.5, mask) });
+  }
+  return { index, rows, steps };
+};
+
+/** Draws the list with the selected row centred on (x, y); `render(i, selected)` draws row i. Unblurred, hard steps. */
+export const MaskList: React.FC<MaskListProps & { frame: number; x: number; y: number; width: number; render: (i: number, selected: boolean) => React.ReactNode }> = (props) => {
+  const film = useFilm();
+  const s = maskListState(props.frame, props, film);
+  return (
+    <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${props.x - props.width / 2}px, ${props.y - props.pitch / 2}px)` }}>
+      {s.rows.map((r) => (
+        <div key={r.i} style={{ position: 'absolute', left: 0, top: 0, width: props.width, height: props.pitch, opacity: r.opacity, transform: `translate3d(0, ${r.dy.toFixed(2)}px, 0)` }}>
+          {props.render(r.i, r.i === s.index)}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // ---------------------------------------------------------------------------------------------- declares
 
-/** FocusBand: nothing (continuous). GhostReel: its jumps in step mode. */
-export const declares = (p?: { reel?: Partial<GhostReelProps> }, _film?: Partial<FilmCtx>): Declares => {
+/** FocusBand: nothing (continuous). GhostReel: its jumps in step mode. MaskList: every step. */
+export const declares = (p?: { reel?: Partial<GhostReelProps>; list?: MaskListProps }, film?: Partial<FilmCtx>): Declares => {
+  if (p?.list) {
+    const list = p.list;
+    return { stepped: maskListSteps(list, film).map((s, i) => ({ from: s, to: s + 1, id: `${list.id ?? 'maskList'}-${i}` })), flashes: [], cameraBlur: [], seams: [] };
+  }
   const r = p?.reel;
   if (!r?.swaps?.length || (r.mode ?? 'ease') !== 'step') return { stepped: [], flashes: [], cameraBlur: [], seams: [] };
   return { stepped: r.swaps.map((s, i) => ({ from: s, to: s + 1, id: `${r.id ?? 'ghostReel'}-${i}` })), flashes: [], cameraBlur: [], seams: [] };

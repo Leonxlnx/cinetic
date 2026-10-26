@@ -26,6 +26,32 @@ export const countSteps = (a: number, b: number, start: number, dur: number, eas
   return out;
 };
 
+/** House numbers of a count that grows as it is read: 60 fps frames a step, the growth a step, the share of the total where it jumps. */
+export const GROWTH = { every60: 12, ratio: 1.65, jumpAt: 0.55 } as const;
+
+/**
+ * A count that grows geometrically while the product reads (0, 1, 2, 4, 7, 12, 19 ... on a step every 12 f at 60
+ * fps, x1.65 a step), then jumps to the total once it passes `jumpAt` of it: "reading 3,412 replies" that
+ * accelerates into its payoff instead of rolling at one rate. Every step is a whole-frame RollStep (tick the last).
+ */
+export const growthSteps = (start: number, to: number, o: { every?: number; ratio?: number; jumpAt?: number; from?: number } = {}, fps: number = fpsOf()): RollStep[] => {
+  const every = ((o.every ?? GROWTH.every60) * fps) / 60;
+  const ratio = o.ratio ?? GROWTH.ratio;
+  const out: RollStep[] = [{ at: Math.round(start), value: o.from ?? 0 }];
+  let v = Math.max(1, o.from ?? 0);
+  for (let k = 1; k < 200; k++) {
+    const at = Math.round(start + k * every);
+    if (v >= to * (o.jumpAt ?? GROWTH.jumpAt)) {
+      out.push({ at, value: to });
+      break;
+    }
+    const value = Math.max(out[out.length - 1].value + 1, Math.round(v));
+    out.push({ at, value: Math.min(value, to) });
+    v = Math.max(v * ratio, value + 1);
+  }
+  return out;
+};
+
 /**
  * The steps that get a sound: at most `perSec` a second (default 12), always keeping the last, so a
  * fast count ticks as a steady run instead of a buzz. The picture still rolls every step.
