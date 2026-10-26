@@ -145,6 +145,14 @@ for (const bpm of [120, 100]) {
   const added = run(process.execPath, [...strip, '--no-warnings', GRID, join(dir, 'timeline.js'), '--json']);
   result(dipWarn(bare) && !dipWarn(added), "reveal-dip counts a score.json stop-down that ends on the reveal (stopdowns.add, depth 'stop')",
     `without it: ${dipWarn(bare) ? 'warns' : 'no warning'}; with it: ${dipWarn(added) ? 'still warns' : 'clean'}`);
+  // the kit's own stop-down, placed by plan.py (out/qa/sfx_plan.json), ends on the reveal too
+  const { dir: dir2 } = hfAt(100, { music: { ...music, stops: [] } });
+  mkdirSync(join(dir2, 'out', 'qa'), { recursive: true });
+  writeFileSync(join(dir2, 'out', 'qa', 'sfx_plan.json'), JSON.stringify({ stopdowns: [
+    { for: 'a:hit', t: reveal / 60, from: reveal / 60 - 0.4, status: 'added' }, { for: 'a:far', t: 0.5, status: 'skipped' }] }));
+  const planned = run(process.execPath, [...strip, '--no-warnings', GRID, join(dir2, 'timeline.js'), '--json']);
+  result(!dipWarn(planned), "reveal-dip counts the kit's stop-down that plan.py placed on the reveal (out/qa/sfx_plan.json)",
+    dipWarn(planned) ? 'still warns' : '');
 }
 {
   const { FILM, MOTION } = hfAt(120);

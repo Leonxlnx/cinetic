@@ -79,8 +79,9 @@
  *   anti-metronome outside reel and social films: at most 60 % of the ordinary cuts on downbeats,
  *                  and the cut intervals vary (coefficient of variation >= 0.25) (warnings)
  *   reveal-dip     a stop or dip of 0.2-0.5 s ends within 2 f of REVEAL (warning): the track's own stops and
- *                  breaks, stop or dip events in --cues, and audio/score.json stopdowns.add (a depth 'stop'
- *                  lasts stop_len, 0.2-0.7 s, default 0.4; a dip about 0.4 s)
+ *                  breaks, stop or dip events in --cues, audio/score.json stopdowns.add (a depth 'stop'
+ *                  lasts stop_len, 0.2-0.7 s, default 0.4; a dip about 0.4 s) and the stop-downs the kit
+ *                  adds (out/qa/sfx_plan.json, written by plan.py)
  *
  * Declarations (LOOK, SEAMS, STEPPED, FLASHES, CAMERA_BLUR, END, REVEAL, SPRING_CLASS, STRUCTURAL,
  * SALIENCE; all optional, a timeline without them is checked exactly as before):
@@ -410,6 +411,19 @@ async function main() {
       if (isNum(f)) out.push({ from: f - (obj?.depth === 'stop' ? stopLen : 0.4) * FPS, to: f, label: 'score.json stop-down' });
     }
     return out;
+  };
+  /** The stop-downs plan.py placed (out/qa/sfx_plan.json: the kit's own and score.json's), as film-frame spans. */
+  const planStopdowns = (): Span[] => {
+    const dir = dirname(tlPath);
+    const p = [join(dir, '..', 'out', 'qa', 'sfx_plan.json'), join(dir, 'out', 'qa', 'sfx_plan.json')].find((x) => existsSync(x));
+    try {
+      const rows = p ? JSON.parse(readFileSync(p, 'utf8'))?.stopdowns : undefined;
+      if (!Array.isArray(rows)) return [];
+      return rows.filter((r) => r && ['added', 'arrangement'].includes(r.status) && isNum(r.from) && isNum(r.t))
+        .map((r) => ({ from: r.from * FPS, to: r.t * FPS, label: 'sfx_plan.json stop-down' }));
+    } catch {
+      return [];
+    }
   };
   // Sound onsets a cut or a cue can land on: the track's accents, entries, measured downbeats, stop
   // ends and ending; the designed effects (--cues); an analysed onset list (--onsets).
@@ -887,7 +901,7 @@ async function main() {
     if (REVEAL !== null) {
       const dips: Span[] = [...(MUSIC.stops ?? []), ...(MUSIC.breaks ?? [])].filter((x) => x && isNum(x.from) && isNum(x.to));
       for (const e of soundEvents) if (/^(stop|dip|stopdown)$/i.test(e.kind) && isNum(e.dur)) dips.push({ from: e.f, to: e.f + e.dur });
-      dips.push(...scoreStopdowns());
+      dips.push(...scoreStopdowns(), ...planStopdowns());
       const near = dips.filter((x) => Math.abs(x.to - REVEAL) <= 2 + 1e-9);
       const good = near.filter((x) => (x.to - x.from) / FPS >= 0.2 - 1e-9 && (x.to - x.from) / FPS <= 0.5 + 1e-9);
       if (!near.length) warn('reveal-dip', `no stop or dip ends within 2 f of REVEAL (f${REVEAL}): before the biggest reveal, stop the track (or dip it) for 0.2-0.5 s and land the reveal on its return`);
