@@ -42,7 +42,7 @@ Beat frames = `60 / BPM × fps`. These tempos give whole-frame beats at 60 fps:
 | 150 | 24 f | 12 | 6 | 96 f | 1.6 | teasers with whole 16ths |
 | 180 | 20 f | 10 | 5 | 80 f | 1.33 | stings and fast cut sections only |
 
-- **100 at 60 fps is the default.** Beat 36 f, bar 2.4 s, every 16th whole (9 f). A fragment of 2–3 words takes 1–1.5 bars at an unhurried pace: it resolves in about 50 f, holds about 60–66 f, and then the picture takes its beat of 30–90 f. The house range for a fragment's hold is 0.6-1.2 s; calm sits at its slow end.
+- **100 at 60 fps is the default.** Beat 36 f, bar 2.4 s, every 16th whole (9 f). A line of the script (3–8 words) takes about a bar at an unhurried pace: with the canonical reveal a 5-word line resolves in 80 f and holds 82 f, and a preset brings its own frames; then the picture takes its beat. The house range for a line's hold is 1.1–1.8 s at calm.
 - **120 is the crisp tempo.** Beat 30 f, bar exactly 2 s, every 8th whole. The 16th is 7.5 f; `b()` rounds it (8, 15, 23), which is fine for landings. When a crisp section needs whole 16ths (typing, ratchets, ripple waves), choose 150.
 - **Use 60 fps whenever UI, text or the camera moves.** At 30 fps slow drifts step and fast moves strobe. Never use 24 fps for UI.
 - **Other frame rates** (same formula): at 30 fps, 120 → 15 f, 100 → 18, 90 → 20, 150 → 12. At 50 fps, 100 → 30, 120 → 25, 150 → 20. At 24 fps, 120 → 12, 90 → 16. A GIF is resampled from the 60 fps master at 25 fps (GIF delays are whole hundredths of a second, so 30 fps would play fast); its beats need not be whole frames, because the timing lives in the master.
@@ -348,14 +348,14 @@ export const RAIN_AT = Array.from({ length: N }, (_, k) =>
 
 | Rule | Calm (default) | Crisp | Why |
 |---|---|---|---|
-| Fragment hold after it resolves | max(60, 42 + 8 f per word): 1–2 words 60 f, 3 → 66 f, 4 → 74 f | 36 f + 6 f per word | about 0.7 s to find the fragment, then a word every 8 f, read while watching motion |
-| Build line hold, after its last fragment | 42 + 8 f per word of the whole line (90 f at 6 words, 106 f at 8) | 36 f + 6 f per word of the line | the finished line is read once more as a whole |
+| Line hold after it resolves | max(60, 42 + 8 f per word): 3 words 66 f, 5 → 82 f, 8 → 106 f | 36 f + 6 f per word | about 0.7 s to find the line, then a word every 8 f, read while watching motion |
+| A line built in beats, after its last part | 42 + 8 f per word of the whole line (90 f at 6 words, 106 f at 8) | 36 f + 6 f per word of the line | the finished line is read once more as a whole |
 | Picture beat between fragments of a chain | 30–90 f, from the earlier fragment being read to the next one's `in`, with a cue in it | 18–90 f | the picture acts; past 90 f the viewer loses the start of the thought |
 | Reading windows (`READ`) | from `resolved` for at most 150 f; an earlier fragment of a chain only for its own hold; a build line once more after its last fragment | at most 120 f | one rule for every check: a read counts as alive in the event-gap check, nothing new starts inside one, and the frame stays near still |
-| Words per fragment | ≤ 4 | ≤ 5 | one glance |
-| Words visible at once | ≤ 8 in a build chain, ≤ 5 in replace mode | ≤ 10 | one line per thought |
-| Copy rate | ≤ 6 words resolving in any 5 s (1.2 words/s); ≤ 0.9 words/s over the film; ≤ 30 words | ≤ 2 words/s in any 5 s; ≤ 1.2 over the film; ≤ 35 words | a viewer reads about 3 words a second while watching; calm leaves most of it to the picture |
-| Text share | film copy on ≤ about 65% of the body frames; a text-free run of ≥ 90 f in every 10 s | ≤ 80%; a text-free run of ≥ 60 f in every 10 s | the picture needs stretches of its own |
+| Words a line | 3–8, one line on screen at a time (a part of a line built in beats ≤ 4) | 3–8 (a part ≤ 5) | a sentence that says something, read in one or two glances |
+| Words visible at once | ≤ 8 | ≤ 10 | one line per thought |
+| Copy rate | a script: ≤ 12 words resolving in any 5 s (2.4 words/s), ≤ 1.6 words/s over the film, ≤ 50 words (fragments: 1.2, 0.9, 30) | a script: the same (fragments: 2, 1.2, 35) | a viewer reads about 3 words a second while watching |
+| Text share | a script: a line on screen on ≤ about 85% of the body frames, a text-free run of ≥ 90 f in every 10 s (fragments: 65%) | ≤ 85% (fragments: 80%); a text-free run of ≥ 60 f in every 10 s | the product needs stretches of its own |
 | Unresolved text | never exits | never exits | a line that leaves mid-reveal reads as a mistake |
 | Life in a hold | a reading hold with a 0.3–1 px/f drift or a 1–3% creep is alive; anywhere else, ≤ 72 f without a visible event | ≤ 48 f without a visible event | past that, a muted feed reads a frozen frame as a stalled player; slow life is not a stall |
 | Designed freeze | ≤ 15 f, exactly on a silence | the same | stillness is intent only when the sound agrees |
@@ -389,7 +389,7 @@ for (const l of COPY)
 | Fast moves | ordinary moves ≤ 25 px/f; at most 2 fast moves per film, at most 1 of them a whip; none while text is being read | whips of 60–70 px/f beside real stillness |
 | Story beats | 6–8 per 30 s; 1–2 product capabilities | 8–10 per 30 s; 1–2 capabilities |
 
-**Calm is not sparse.** Calm copy sits over a rich picture. The calm profile keeps: frame 0 moving, slow drift or creep in every hold, the device and the product's state alive, the energy arc (an early peak, a designed lull of 1–4 s, the biggest peak at 75–90%), a last third that keeps moving and an end card that builds. Slower and fewer is different from frozen, and peaks come from one hero move per section, never from more text.
+**Calm is not sparse.** The script's lines sit in a picture that never rests. The calm profile keeps: frame 0 moving, slow drift or creep in every hold, the device and the product's state alive, the energy arc (an early peak, a designed lull of 1–4 s, the biggest peak at 75–90%), a last third that keeps moving and an end card that builds. Slower and fewer is different from frozen, and peaks come from one hero move per section, never from more text.
 
 **Hook (first 2 s)**
 - Frame 0 is already composed and moving. No fade from black, no blank frame.
@@ -413,8 +413,8 @@ A 33 s launch film at 120 BPM, 60 fps: beat 30 f, bar 120 f, 8th 15 f, 16th 7.5 
 Hold lessons:
 - A static dot after the opening iris reads as a stalled player: the line draws 0.25 s after the iris lands, the grid
   at 1.0 s, the rain from 1.5 s.
-- One 2-word statement per 2 s bar at line size reads well in crisp; a calm film carries one 2–3 word fragment per
-  1–1.5 bars.
+- One line of 3–5 words per 2 s bar reads well in crisp; a calm film carries one line of up to 8 words per bar or
+  bar and a half.
 - A logo hold of 2.75 s reads as dead air even with a push and beat pulses: keep a lockup hold ≤ 1.5 s, or make it
   build visibly (a push of 20 % or more).
 

@@ -1,6 +1,6 @@
 # Concept and story
 
-Covers how to get from a brief to an idea worth pitching, a story device, a beat structure and an ending. Read it at Step 1 before any pixel exists, and again whenever a critic says "tour", "generic", "oversimplified" or "weak end". Numbers here are house defaults and starting points, not dogma. **Calm copy, rich picture:** the words stay few; the picture carries a device in every beat, one signature shot, real material, light that moves.
+Covers how to get from a brief to an idea worth pitching, a story device, a beat structure and an ending. Read it at Step 1 before any pixel exists, and again whenever a critic says "tour", "generic", "oversimplified" or "weak end". Numbers here are house defaults and starting points, not dogma. **A script, and a picture that never rests:** the story is told in short real sentences, one clean line at a time, each arriving with its own text animation; the picture carries a device in every beat, one signature shot, graphic effects and the product's own UI, light that moves.
 
 **Contents**
 1. [What a concept is](#1-what-a-concept-is)
@@ -94,9 +94,9 @@ Run these prompts, one at a time, against the inventory:
 
 ## 3b. Directions: the deck, the idea sentence and the signature shot
 
-Left alone, an agent makes the same film every time: calm fragments on a plain ground, small marks, a push-in, an end
-card. Calm copy is right; a calm *picture* is not. The direction deck gives every film its own visual idea before the
-treatment exists.
+Left alone, an agent makes the same film every time: keyword fragments on a plain ground, small marks, a push-in, an
+end card. Short sentences, one line at a time, are right; a plain *picture* is not. The direction deck gives every film
+its own visual idea before the script and the treatment exist.
 
 **What a direction is** (`assets/directions/directions.json`, read through `scripts/deck.py`, never whole): a complete
 art direction for a 6-45 s film:
@@ -118,8 +118,8 @@ art direction for a 6-45 s film:
   shadow, the mark resolves), built from primitives that exist; a centred mark, name and tagline over a radial plate is
   refused;
 - idea-sentence templates, the fit (formats, paces, assets, length), the music character and its tempo range, the
-  primitives it leans on and the ones that fight it, a 4-6 beat skeleton with calm copy slots (1-4 words each, at most
-  30 in all), an **update skeleton** (hook, change, payoff, end) and an avoid list;
+  primitives it leans on and the ones that fight it, a 4-6 beat skeleton whose speaking beats each take one sentence of
+  the script, an **update skeleton** (hook, change, payoff, end) and an avoid list;
 - a pre-softened foreground layer in layered spaces (one shape from the product's world, 1.2-1.6× the frame height,
   softened once in its plate, crossing near a frame edge at 1.5-2.5× the camera's speed), unless the direction turns it
   off with a reason.
@@ -127,12 +127,13 @@ art direction for a 6-45 s film:
 **The deal.**
 ```
 python3 scripts/deck.py --brief "<one line>" --format <launch|update|...> --pace <calm|crisp> \
-        [--have ui,footage,audio,number,name] [--seconds N] [--changes 2-4] [--brand brand/brand.json] --options 3
+        [--have ui,input,photos,footage,audio,number,name] [--seconds N] [--changes 2-4] [--brand brand/brand.json] --options 3
 python3 scripts/deck.py --brief "<one line>" --format <fmt> --direction <id>     # the sheet: out/direction.json, out/DIRECTION.md
 python3 scripts/deck.py --show [<id>]        python3 scripts/deck.py --redraw palette|type|signature|direction --reason "..."
 ```
-- `--have` names what really exists (product UI, supplied footage, a real recorded clip, one honest number, a name whose
-  meaning the film can use); directions built on an asset fit only when it exists.
+- `--have` names what really exists (product UI, an input the product is used with, pictures worth building on,
+  supplied footage, a real recorded clip, one honest number, a name whose meaning the film can use); directions built
+  on an asset fit only when it exists.
 - A deal of three always differs in camera motion, signature, story shape and lockup; spans three kinds of space and
   two kinds of light; holds one rich direction whenever one fits, and at most one quiet one.
 - The seed comes from the brief, so the same brief deals the same three; a small history deals the directions of the
@@ -141,8 +142,10 @@ python3 scripts/deck.py --show [<id>]        python3 scripts/deck.py --redraw pa
   brand (`references/brand-kits.md` §6).
 - Redraw a slot only when it contradicts the brand, needs an asset that does not exist, or cannot carry the idea;
   `--reason` is required, each slot at most twice, every redraw logged in the sheet.
-- When the film has no product UI to show, or the brief wants a world, read the imagery-led directions in
-  `assets/directions/imagery.json` beside the dealt three (`references/imagery.md` §8).
+- Text first: the deal favours type-led directions (the line itself is the shot) x4 and graphic ones, made in code on
+  clean grounds, x1.5. Imagery-led directions (`assets/directions/imagery.json`) are opt-in: dealt only with `--have
+  photos` (the product's own pictures, or a set worth building on) or `footage`, because sloppy stock is worse than
+  none (`references/imagery.md` §8).
 
 **Choose by the idea.** Hold each direction against the inventory: which way of making the picture can carry something
 only this product has? Choose that one, not the most familiar, and write one line on why. Then adopt it: do not blend
@@ -169,8 +172,10 @@ carried, a designed moment at least every 3 s, one light event per act, a clear 
 (`references/checks.md` §6).
 
 **Concepts inside the direction.** The three lenses (§3) still run, but the direction supplies the concept's Grammar
-row: the lenses find the idea; the direction decides how the film looks and moves. Then draw the devices with
-`pick.py` and write the treatment on the dealt skeleton: beats, device path, the signature beat, the lockup, the copy.
+row: the lenses find the idea; the direction decides how the film looks and moves. Then write the script
+(`references/copy-and-type.md` §1-2b: 6-9 short sentences for a launch film, one line at a time), draw the devices and
+one text animation per line with `pick.py --lines <n>`, and write the treatment on the dealt skeleton: beats, each
+sentence with its text animation, device path, the signature beat, the lockup.
 
 **Devices, with variety.** A device per beat (about 1.5-2.5 s), drawn with `pick.py` and read in the device book
 (`references/devices/INDEX.md`), from many families; one device everywhere is a template unless it is the film's
@@ -250,6 +255,10 @@ Rules for the path:
 | **Promise** | The idea stated once, as a callback to the setup words | 2–4 s | the line reuses a word from the hook | a slogan unrelated to what we saw |
 | **Lockup** | The device becomes the mark; name; URL if needed | 3–5 s with tail | the final frame works as the poster | a replayed reveal, a fade to black |
 
+Every beat that speaks carries one sentence of the script: the hook a claim from inside the problem, the problem a
+claim that makes it worse, the turn a turn, the proof a claim the picture proves on the same beat, the promise the
+payoff, best an echo of the hook.
+
 **Cause → action → result**, for every product action on screen:
 - **Cause.** Something visible makes the action necessary: a typed intent, an arriving event, an accumulated mess, a threshold crossed. A UI block that moves because the timeline said so reads as a screensaver.
 - **Action.** The product's real behaviour, shown in its own UI (see `references/product-ui.md`). No sparkle standing in for "magic".
@@ -269,7 +278,7 @@ Production recipes (act templates, loop seams, stings, social layouts) are in `r
 | Teaser, ≤ 15 s | the effect without the product → the name and a date | a partial glimpse of the mark | the name |
 | Before/after | the same shot twice with an identical camera move: without, then with | the camera move itself | the difference |
 
-Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, proof ~35–40%, promise ~15%, lockup and tail ~15–20%. Write the copy into those beats as fragment chains, and give each chain its picture beat in the beat sheet: what the product does between "here is the newest" and "earshot." is part of the story, not a gap (`references/copy-and-type.md` §2b). Tessel: problem 0–6 s, turn 6–10 s, proof 10–24 s, promise and lockup 24–33 s.
+Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, proof ~35–40%, promise ~15%, lockup and tail ~15–20%. Write the script into those beats, one sentence a beat (6–9 in a 30 s film), and give each line what the picture does while it is read and right after: the line lands, the product does exactly that, and the next line moves on (`references/copy-and-type.md` §2b). Tessel: problem 0–6 s, turn 6–10 s, proof 10–24 s, promise and lockup 24–33 s.
 
 **Loops need a cyclic story.** Don't build enter → hold → exit; build a process whose end state is its start state (a line that dries and is watered, an inbox that clears and refills). Put both sides of the seam at rest, or at the same velocity.
 
@@ -302,7 +311,7 @@ A soil sensor and app that tells you when a houseplant actually needs water.
 - **(a) Verb:** the soil "tells": the reading rises out of the pot as a line. **(b) Pain:** a calendar reminder waters an already-wet pot and the waterline overflows. **(c) Formal:** one cross-section of one pot fills the frame, and the waterline in the soil is the only thing that moves.
 - **Tests.** (b) is negative and needs a before; a loop has no room. (c) passes muted and is cyclic by nature.
 - **Chosen:** (c) with (a)'s idea that the soil speaks. The waterline is the device: it drifts down as the soil dries (from rest, eased in), touches the 18% tick, becomes the progress bar in the plant card that rises from the lower edge, and underlines "Water now" in the accent. Water arrives; the line climbs back to 42% and settles at rest, which is frame 0.
-- **Copy (6 words).** "18%. Water now." → "42%. Leave it." Same grammar twice: the loop is the callback.
+- **Script (2 lines).** "This pot needs water now." → "This pot can wait now." Same grammar twice: the loop is the callback.
 
 ### Hush: a product video (20 s)
 An on-call tool that folds an alert storm into one incident and wakes one person.
@@ -310,23 +319,23 @@ An on-call tool that folds an alert storm into one incident and wakes one person
 - **(a) Verb:** 412 alert rows fold like a paper fan into one card. **(b) Pain:** a lock screen stacks notifications faster than they can be read until the phone is a solid slab. **(c) Formal:** counter as spine, plus a bookend on the clock.
 - **Tests.** The nightstand shot fails ownership, but the lock screen stays as the hook image. (a) + (c) pass muted: the number goes down as the pile folds.
 - **Chosen:** (a) + (c), with a rule of the frame: after the turn the film only gets quieter. The element count, motion speed and sound density all fall until one thing moves. The device is the incident card, a product object with states. It is born as the first alert row; the other 411 fold into it as a visible stack (the count on its edge ticks down as each lands), it gains its owner's name when grouping finishes, and it slides into the lock screen as the one notification that wakes one person. Its "handled" state (a quiet sage) is the accent, and the card's folded edge is the mark.
-- **Copy (12 words).** "3:12 a.m." / "412 alerts." / "One incident." / "One person paged." / "3:13 a.m." / "Hush". The clock is the bookend; one digit changed is the whole promise.
+- **Script (5 lines).** "It is 3:12, and it won't stop." / "412 alerts share one cause." / "Hush folds them into one incident." / "One person wakes up, not ten." / "It is 3:13, and it's quiet." Then the name. The clock is the bookend; one digit changed is the whole promise.
 
 ### Keel: a UI walkthrough (45 s)
 A money app that keeps a buffer below the waterline of your balance, so a surprise bill never tips you over.
 - **Inventory.** Name: a keel keeps a boat upright; hulls are painted red below the waterline. Non-obvious behaviour: unlike a savings pot, it fills the buffer first from every paycheck, so a surprise bill drains the buffer and never the spending money. Verbs: set aside, top up, steady, absorb, refill. Objects: the deposit row, the balance bar, the buffer under its baseline, the bill card. Numbers: a $480 buffer, a $380 repair, $1,350 of spending money. Clichés: piggy banks, stacks of coins, up-and-right charts, a person smiling at a phone.
 - **(a) Verb:** the balance as a hull on a horizon, rocked by a bill and righting itself. That is an illustration world, not the UI, so it fails truth. **(b) Pain:** a $380 repair lands two days before rent and the balance dips below zero. **(c) Formal:** follow one paycheck through every chapter.
 - **Chosen:** (c) with (a)'s rule of the frame: the camera may tilt when a bill hits, but the balance baseline never does. The device is the one deposit row. It lands, pours first into the buffer below the baseline, drawn in the accent (hull red, meaning "below the line: set aside"), and the rest rises above the line as spending money. (b)'s repair is chapter 3: it drains the buffer, and the part above the line never moves.
-- **Captions (≤ 6 words each).** "Pay lands. Buffer first." / "A $380 surprise." / "The buffer takes it." / "Spending money stays spending money." / "Payday tops it up." / "Stay level." The fourth line's repetition *is* the proof: nothing touched it.
+- **Script (6 lines, one per chapter).** "Every paycheck fills the buffer first." / "A $380 repair lands Tuesday." / "The buffer takes the hit." / "Spending money stays spending money." / "Payday tops the buffer up." / "Your balance stays level." The fourth line's repetition *is* the proof: nothing touched it.
 
 ## 11. Output and gate
 
-Write the chosen concept into `TREATMENT.md` from `assets/TREATMENT.md`: the Direction block (deck seed and id, palette and type, the idea sentence and the competitor test, the story shape, the signature shot and its beat, the lockup kind, redraws with reasons), the inventory (name and non-obvious behaviour first), the three finalists with test results, the concept (idea, device, grammar), logline, arc, device path, beat sheet, copy and final frame.
+Write the chosen concept into `TREATMENT.md` from `assets/TREATMENT.md`: the Direction block (deck seed and id, palette and type, the idea sentence and the competitor test, the story shape, the signature shot and its beat, the lockup kind, redraws with reasons), the Script block (each sentence, its role and its word count), the inventory (name and non-obvious behaviour first), the three finalists with test results, the concept (idea, device, grammar), logline, arc, device path, beat sheet (each sentence with its text animation) and final frame.
 
 Gate before Step 2:
 - the logline is ≤ 15 words and has no "and" joining two ideas;
 - the chosen concept passes the ownership, deletion and specificity tests, with the results written down; the specificity answer names the non-obvious behaviour and the beat that shows it;
-- the word count is within the format budget (`references/copy-and-type.md`); every fragment is 1–4 words, no beat shows more than 8 words (5 in replace mode), and every thought of more than 4 words is a chain with a picture beat between its fragments;
+- the script is written before the build (`references/copy-and-type.md`): the format's count of sentences (6–9 for a launch film), every line 3–8 words and a claim, a turn or a payoff, read in order it tells the story with the picture off; one line on screen at a time, each with its own text animation, no two alike;
 - the device appears in every beat row, and its last link is the mark;
 - the final frame is described, and it contains the mark and the name.
 - the idea sentence and the competitor test are written; the signature shot sits on one beat and no beat uses the alternative; the beats follow the dealt skeleton (re-timed freely); the lockup is the dealt kind;

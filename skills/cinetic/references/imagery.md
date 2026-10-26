@@ -1,13 +1,27 @@
-# Imagery: real photographs and footage as the film's material
+# Imagery: pictures as an accent
 
-A film drawn entirely in code (cards, bars and shapes on a flat ground) reads as a demo, however good its motion.
-Real photographs, footage, textures and archive pictures give a film a world: light that was really there, depth,
-grain, places and materials a viewer recognises. In cinetic they are the main material whenever the subject has a
-world to show; code-drawn UI and type sit on them as support. This page is the route from a brief to a graded,
-moving picture. The tool is `scripts/assets.mjs` (Node 22, no dependencies, no keys needed for the keyless sources).
+A cinetic film is made of type in motion, graphic effects (dithered gradients, glass, spectral colour, morphs, grids,
+loaders) and the product's own UI. A picture joins them only when it earns its beat: the product's own screens or
+photography, or a high-quality picture that carries the idea. Sloppy stock (people at laptops, handshakes, generic
+city time-lapses, low resolution, mixed grades) is worse than none, so most films use no found picture at all, and no
+film uses pictures as its base. This page is the route for a film that does have pictures worth showing: when one
+earns a beat, where it comes from, how to choose, grade and move it. The tool is `scripts/assets.mjs` (Node 22, no
+dependencies, no keys needed for the keyless sources).
 
-Contents: 1. The licence rule · 2. Where it sits in the workflow · 3. The route · 4. The imagery primitives ·
-5. Premium or stock · 6. Footage · 7. Works and archives as the world · 8. The imagery directions · 9. Checks
+Contents: 0. When a picture earns a beat · 1. The licence rule · 2. Where it sits in the workflow · 3. The route ·
+4. The imagery primitives · 5. Premium or stock · 6. Footage · 7. Works and archives as the world · 8. The imagery
+directions · 9. Checks
+
+## 0. When a picture earns a beat
+
+- **It is the product's own:** its screens, its hardware, its photography, the brand kit's pictures (`brand.py`).
+  These come first, and a screenshot is rebuilt as live UI where it can be (`references/product-ui.md`).
+- **It shows what the line names and a graphic cannot:** the coast for a tide app, the cloth for a fabric brand, the
+  archive print for a heritage brand. One picture, on one beat, with the line it answers.
+- **It is sharp at full frame and grades into the film's look:** 2400 px stills, 1080p footage, one light, one grade.
+- Otherwise the beat is a graphic effect: a dithered gradient field, glass over the product's UI, a hairline grid, a
+  morph, a loader (`references/devices/INDEX.md`, materials and VFX). Never fill a beat with a stock picture because
+  the beat felt empty.
 
 ## 1. The licence rule
 
@@ -28,13 +42,16 @@ Chicago, the Met, Mixkit video. With a key in the environment: `PEXELS_API_KEY`,
 
 ## 2. Where it sits in the workflow
 
-- **Step 1 (concept).** The inventory names the subject's world; the direction decides how pictures are used (a word
-  cut out of the world, a montage on the music, UI drawn into a real place, a collage, a loupe over a collection).
-  When the film has no product UI to show, or the brief wants a world, start from the imagery directions (section 8).
-- **Step 2 (brand and look).** Search, sheet, choose and grade here, beside the palette: the grade and the palette are
+- **Step 0 (brief).** Name what exists: the product's own pictures, a brand kit's photography, footage the user
+  supplied. Only these, or a picture that carries the idea, pass `--have photos` (or `footage`) to `deck.py`.
+- **Step 1 (concept).** The direction decides whether and how pictures are used (a word cut out of the world, a
+  montage on the music, UI drawn into a real place, a collage, a loupe over a collection). Imagery-led directions are
+  dealt only with `--have photos` or `footage` (section 8); without them the film is type, graphics and UI.
+- **Step 4 (optional: pictures).** Search, sheet, choose and grade beside the palette: the grade and the palette are
   one decision. A supplied brand's product photos come in through `brand.py` (`references/brand-kits.md`) and are
   graded with the rest.
-- **Step 4 (build).** Move the pictures with the imagery primitives (section 4) inside the film's one camera.
+- **Step 6 (build).** Move the pictures with the imagery primitives (section 4) inside the film's one camera, each on
+  the beat of the line it answers.
 - The asset folders live in the film project (`public/assets/`, `public/assets/graded/`, the record in
   `assets/licences.json`), never in the skill.
 
@@ -110,7 +127,7 @@ Chicago, the Met, Mixkit video. With a key in the environment: `PEXELS_API_KEY`,
 | `fx/GradientMap`, `fx/Textures`, `fx/Develop` | A picture mapped onto the film's inks, a photo that develops through a dither, an image developing from a tint to full colour | see the device book: [photos and footage](devices/photos-and-footage.md), [colour and light](devices/colour-and-light.md) |
 
 They compose with everything else: a `Photo` or `Footage` sits inside the anchor camera (`lib/camera.ts`), under a
-`Wipe` or `Iris`, behind a `Chain` of fragments; `photoPoint` gives the frame position of any image point on any
+`Wipe` or `Iris`, behind a line of the script (dimmed and defocused under it); `photoPoint` gives the frame position of any image point on any
 frame, so a line, a number or a pinned product state stays glued to a place in the picture as it moves. The device
 book's [photos and footage](devices/photos-and-footage.md) and [collage and composition](devices/collage-and-composition.md)
 families hold the devices built on these.
@@ -169,19 +186,22 @@ advertisement, and a recognisable modern brand or sign in an archive photograph 
 
 ## 8. The imagery directions
 
-`assets/directions/imagery.json` holds nine imagery-led directions in the deck's schema: the campaign (a word cut out
+`assets/directions/imagery.json` holds nine imagery-led directions in the deck's schema, dealt only with `--have
+photos` or `footage`: the campaign (a word cut out
 of the world), cut to the score (a footage montage on the music), the product in its place (UI drawn into real
 photographs), the material (macro textures as the set), the collage (cut-out photographs with shadows), two worlds (a
 split the product drags), then and now (archive and today on one line), one long photograph, and the collection
 (works seen through a loupe, the name as a window onto them). Each carries an `assets` block (what to list from the
-subject, the queries, how many pictures, the grade, what to refuse) and an update skeleton. Read the one or two that
-fit the brief beside the three directions `deck.py` deals, choose by the idea as usual, and copy the chosen
-direction's world, light, camera, signature and lockup into `TREATMENT.md`'s Direction block.
+subject, the queries, how many pictures, the grade, what to refuse) and an update skeleton. With pictures in hand, deal
+with `--have photos` (or `footage`): a deal of three then holds one imagery-led direction beside built worlds. Choose
+by the idea as usual, and copy the chosen direction's world, light, camera, signature and lockup into `TREATMENT.md`'s
+Direction block. Even in an imagery-led film the script leads: one clean line at a time, each with its own text
+animation, the pictures under and between the lines.
 
 ## 9. Checks
 
 - `assets.mjs check` on the graded set (neutral share, saturated frames, accent share).
 - `look-audit.py --imagery x,y,w,h` declares the boxes that hold photographs, so natural colour inside a picture
   (sand, rock, skin) is not read as designed colour; it never loosens the checks for the film's own colour.
-- The picture floor (`references/checks.md`) counts real imagery toward edges and colour mass: a film whose picture
-  is mostly real material passes it easily; a film of grey cards over a flat ground does not.
+- The picture floor (`references/checks.md`) counts real imagery toward edges and colour mass, and graphic effects
+  just as well; a film of grey cards over a flat ground passes neither way.
