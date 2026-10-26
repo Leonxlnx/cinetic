@@ -246,34 +246,43 @@ export const Scramble: React.FC<
     if (title) {
       // the title opens from its centre: the text is clipped to the open span, accent blocks ride the two fronts
       const tr = titleReveal(F, opts, film);
-      const mid = fullW / 2;
-      const lo = mid - tr.open;
-      const hi = mid + tr.open;
-      const top = (size * TYPE[role].lead - cap) / 2;
-      const cellPx = Math.max(2, size * 0.09);
-      const bands = edge === 'none' || tr.q >= 1 ? [] : [[mid - tr.h, lo], [hi, mid + tr.h]];
+      // one whole-pixel lattice anchored on the title's centre: the open span ends on a cell edge and the
+      // blocks start on it, so no block overlaps the bright title and no edge is anti-aliased (an AA block
+      // edge over the ink reads as extra bright width)
+      const cellPx = Math.max(2, Math.round(size * 0.09));
+      const mid = Math.round(fullW / 2);
+      const kOpen = Math.floor(tr.open / cellPx + 1e-9);
+      const kFront = tr.q >= 1 ? kOpen : Math.max(kOpen, Math.ceil(tr.h / cellPx - 1e-9));
+      const lo = mid - kOpen * cellPx;
+      const hi = mid + kOpen * cellPx;
+      const top = Math.round((size * TYPE[role].lead - cap) / 2);
       const n = Math.ceil(cap / cellPx);
+      const cols = kFront - kOpen;
+      const block = Math.max(1, cellPx - Math.max(1, Math.round(cellPx * 0.1)));
+      const shown = tr.q >= 1 ? null : `inset(-20% ${Math.max(0, fullW - hi + track * size)}px -20% ${Math.max(0, lo)}px)`;
       return (
         <span data-text={id} style={{ ...typeStyle(role, size), fontFamily: family, position: 'relative', display: 'inline-block', ...style }}>
-          <span style={{ display: 'inline-block', clipPath: `inset(-20% ${Math.max(0, fullW - hi + track * size).toFixed(2)}px -20% ${Math.max(0, lo).toFixed(2)}px)` }}>
+          <span style={{ display: 'inline-block', clipPath: shown ?? undefined }}>
             {chars.map((ch, i) => (
               <span key={i} style={g[i].state === 'locked' ? lockStyle?.(i, g[i].age) : undefined}>
                 {ch}
               </span>
             ))}
           </span>
-          {bands.map(([a, b], k) => {
-            const cols = Math.max(1, Math.round((b - a) / cellPx));
-            return (
-              <span key={`b${k}`} aria-hidden style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${a.toFixed(2)}px, ${top.toFixed(2)}px)` }}>
-                {Array.from({ length: cols * n }, (_, c) => c)
-                  .filter((c) => rand(`${t.seed ?? 0}:tb:${k}:${c}:${F}`) < 0.42 - 0.3 * Math.abs((c % cols) / cols - (k === 0 ? 1 : 0)))
-                  .map((c) => (
-                    <span key={c} style={{ position: 'absolute', left: 0, top: 0, width: cellPx * 0.9, height: cellPx * 0.9, background: mosaicColor, transform: `translate(${((c % cols) * cellPx).toFixed(2)}px, ${(Math.floor(c / cols) * cellPx).toFixed(2)}px)` }} />
-                  ))}
-              </span>
-            );
-          })}
+          {edge !== 'none' && cols > 0 && (
+            <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, transform: `translate(0px, ${top}px)` }}>
+              {[0, 1].flatMap((k) =>
+                Array.from({ length: cols * n }, (_, c) => c)
+                  // densest next to the open title, thinning toward the front's leading edge
+                  .filter((c) => rand(`${t.seed ?? 0}:tb:${k}:${c}:${F}`) < 0.42 - 0.3 * (((c % cols) + 0.5) / cols))
+                  .map((c) => {
+                    const j = kOpen + (c % cols); // lattice column out from the centre
+                    const x = k === 0 ? mid - (j + 1) * cellPx : mid + j * cellPx;
+                    return <span key={`${k}-${c}`} style={{ position: 'absolute', left: 0, top: 0, width: block, height: block, background: mosaicColor, transform: `translate(${x}px, ${Math.floor(c / cols) * cellPx}px)` }} />;
+                  }),
+              )}
+            </span>
+          )}
         </span>
       );
     }
