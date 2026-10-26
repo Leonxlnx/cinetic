@@ -16,6 +16,12 @@
      that only fit a loop, a walkthrough or a vertical film.
   7. Variety: at most two entries from one family per film (--max-per-family, --keep), entries an
      earlier film drew come up less often (--recent, the pick history), merged ids still resolve.
+  8. Hard bans, what exists and the dealt direction: an entry whose recipe puts overshoot or bounce on
+     copy, or a script, handwritten, serif or italic face, is never drawn (a brand's serif lifts that
+     one); --have keeps UI devices to films with ui and typing or cursor devices to films with input;
+     --direction (out/direction.json by default) sets the plan's format, honours its --have, weights its
+     techniques up, never draws the ones that fight it and holds one signature, its own; --family takes
+     the start of a name.
 
 Usage (from the skill root):  python3 scripts/test/pick.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -368,6 +374,107 @@ with tempfile.TemporaryDirectory() as tmp:
     r = pick('--show', 'dv-old-camera', library=lib)
     _, d = draw_json('--category', 'camera', '--n', '2', '--exclude', 'dv-old-camera', '--energy', 'any', '--seed', '1', library=lib)
     result(r.returncode == 0 and '`fx-camera`' in r.stdout and 'fx-camera' not in ids(d), 'a merged id still names its entry (--show, --exclude)')
+
+# 8. Hard bans, what exists, the dealt direction -------------------------------------------------
+def entry(id_, category, family, **kw):
+    base = dict(id=id_, name=id_.replace('-', ' '), category=category, summary=f'Fixture entry {id_}.', recipe=f'Build {id_}.',
+                timing='12 f.', use_when='Tests.', avoid_when='Never.', formats=['any'], energy='any', role='accent',
+                ban_safe=True, evidence=4, family=family, primitive=[])
+    base.update(kw)
+    return base
+
+
+ban_lib = json.load(open(FIXTURE, encoding='utf-8'))
+ban_lib['families'] += [{'name': 'Cursor', 'about': 'Fixture.'}]
+ban_lib['techniques'] += [
+    entry('fx-type-overshoot', 'typography_motion', 'Fam typography motion', recipe='Per word a damped spring with a landing overshoot of 15 %.'),
+    entry('fx-type-calm-land', 'typography_motion', 'Fam typography motion', recipe='Words land on E.softOut with no overshoot.'),
+    entry('fx-cam-overshoot', 'camera', 'Fam camera', recipe='The camera lands with a small overshoot.'),
+    entry('fx-type-script', 'typography_motion', 'Fam typography motion', recipe='The name, then a pen-written script suffix.'),
+    entry('fx-type-serif-cycle', 'typography_motion', 'Fam typography motion', summary='The title swaps through a serif and a mono.'),
+    entry('fx-type-sans', 'typography_motion', 'Fam typography motion', recipe='One sans-serif face, never italic.'),
+    entry('fx-cursor-click', 'micro_interaction', 'Cursor', summary='A cursor glides to the button and presses it.'),
+    entry('fx-ui-typing', 'product_demo', 'Fam product demo', summary='The prompt fills by typing, then the answer streams.'),
+    entry('fx-ui-panel', 'ui_choreography', 'Fam ui choreography', summary='Panels slide in on a stagger.'),
+]
+with tempfile.TemporaryDirectory() as tmp:
+    blib = os.path.join(tmp, 'bans.json')
+    json.dump(ban_lib, open(blib, 'w', encoding='utf-8'))
+    by = {e['id']: e for e in ban_lib['techniques']}
+    result(all(mod.breaks_ban(by[i]) for i in ('fx-type-overshoot', 'fx-type-script', 'fx-type-serif-cycle'))
+           and not any(mod.breaks_ban(by[i]) for i in ('fx-type-calm-land', 'fx-cam-overshoot', 'fx-type-sans')),
+           'hard bans: overshoot on copy, a script suffix and a serif face break them; "no overshoot", a camera overshoot and "sans-serif, never italic" do not',
+           str({i: mod.breaks_ban(by[i]) for i in ('fx-type-overshoot', 'fx-type-script', 'fx-type-serif-cycle', 'fx-type-sans')}))
+    result(not mod.breaks_ban(by['fx-type-serif-cycle'], {'serif'}), 'a brand that supplies serif lifts the serif ban')
+    seen = set()
+    for s_ in range(60):
+        seen |= set(ids(draw_json('--category', 'typography_motion', '--n', '4', '--energy', 'any', '--seed', str(s_), '--max-per-family', '0', library=blib)[1]))
+    result(not seen & {'fx-type-overshoot', 'fx-type-script', 'fx-type-serif-cycle'} and {'fx-type-calm-land', 'fx-type-sans'} <= seen,
+           'a draw never deals an entry that breaks a hard ban', str(sorted(seen)))
+    r = pick('--category', 'typography_motion', '--n', '2', '--seed', '1', '--energy', 'any', library=blib)
+    result('never drawn, the recipe breaks a hard ban' in r.stdout and 'fx-type-overshoot (overshoot on copy)' in r.stdout,
+           'the plan names the entries it left out for a hard ban')
+    # --have
+    def drawn(*extra, n=60):
+        got = set()
+        for s_ in range(n):
+            got |= set(ids(draw_json('--category', extra[0], '--n', '3', '--energy', 'any', '--seed', str(s_), '--max-per-family', '0', *extra[1:], library=blib)[1]))
+        return got
+    mi_free, mi_ui, mi_in = drawn('micro_interaction'), drawn('micro_interaction', '--have', 'ui'), drawn('micro_interaction', '--have', 'ui,input')
+    result('fx-cursor-click' in mi_free and 'fx-cursor-click' not in mi_ui and 'fx-cursor-click' in mi_in,
+           '--have: a cursor device needs input (drawn without --have, not with ui alone, again with ui,input)', f'{sorted(mi_ui)}')
+    pd_ui, pd_in = drawn('product_demo', '--have', 'ui'), drawn('product_demo', '--have', 'input')
+    result('fx-ui-typing' not in pd_ui and 'fx-ui-typing' in pd_in and 'fx-product-demo' in pd_ui, '--have: a typing product moment needs input (input implies ui)')
+    r = pick('--category', 'ui_choreography', '--n', '2', '--seed', '2', '--have', 'none', library=blib)
+    result(r.returncode == 1 and 'no ui_choreography technique is left' in r.stderr, '--have none: no UI device is drawn for a product with no interface', r.stderr.strip()[:100])
+    result(pick('--have', 'ui,printer', library=blib).returncode == 2, '--have: an unknown word is a usage error')
+    # --direction
+    sheet = {'version': 2, 'tool': 'deck.py', 'direction': {'id': 'fixture-dir'}, 'input': {'have': ['ui'], 'format': 'launch'},
+             'pick': {'format': 'sting', 'energy': 'medium', 'seconds': 6, 'lean': ['fx-tr-accent'], 'signature_ids': ['fx-tr-sig-a'],
+                      'avoid': ['fx-tr-workhorse']}}
+    dpath = os.path.join(tmp, 'direction.json')
+    json.dump(sheet, open(dpath, 'w', encoding='utf-8'))
+    lean_n = base_n = 0
+    sigs, avoided, ui_in = set(), 0, 0
+    for s_ in range(80):
+        r, d = draw_json('--category', 'transition', '--n', '2', '--seed', str(s_), '--direction', dpath, '--energy', 'any', library=blib)
+        got = ids(d)
+        lean_n += 'fx-tr-accent' in got
+        sigs |= {i for i in got if by[i]['role'] == 'signature'}
+        avoided += 'fx-tr-workhorse' in got
+        base_n += 'fx-tr-accent' in ids(draw_json('--category', 'transition', '--n', '2', '--seed', str(s_), '--direction', 'none', '--energy', 'any', library=blib)[1])
+    result(avoided == 0, '--direction: a technique that fights the direction is never drawn')
+    result(lean_n > 1.4 * base_n, '--direction: a technique the direction leans on comes up far more often', f'{lean_n} vs {base_n} of 80')
+    result(sigs <= {'fx-tr-sig-a'}, '--direction: the only signature drawn is the direction\'s own', str(sorted(sigs)))
+    worst = max(sum(by[i]['role'] == 'signature' for i in ids(draw_json('--seed', str(s_), '--direction', dpath, '--energy', 'high', '--seconds', '45', '--format', 'launch', library=blib)[1])) for s_ in range(40))
+    result(worst <= 1, '--direction: a long plan still holds one signature move', f'worst {worst}')
+    r, d = draw_json('--seed', '3', '--direction', dpath, library=blib)
+    head = r.stdout.splitlines()[0] if r.stdout else ''
+    result(d.get('format') == 'sting' and '--energy medium' in head and '--have ui' in head and f'--direction {dpath}' in head
+           and 'fx-cursor-click' not in ids(d), '--direction: format, energy, length and --have come from the sheet', head[:160])
+    cwd = os.getcwd()
+    os.makedirs(os.path.join(tmp, 'film', 'out'))
+    json.dump(sheet, open(os.path.join(tmp, 'film', 'out', 'direction.json'), 'w', encoding='utf-8'))
+    os.chdir(os.path.join(tmp, 'film'))
+    try:
+        r_auto = pick('--seed', '3', library=blib)
+        r_none = pick('--seed', '3', '--direction', 'none', library=blib)
+    finally:
+        os.chdir(cwd)
+    result('--direction out' in r_auto.stdout.splitlines()[0] and 'the dealt direction fixture-dir' in r_auto.stdout and '--direction none' in r_none.stdout.splitlines()[0],
+           'out/direction.json is read by default; --direction none ignores it')
+    result(pick('--direction', os.path.join(tmp, 'missing.json'), library=blib).returncode == 2, '--direction: a missing sheet is an error, not a silent plan')
+    # --family by the start of its name
+    r1 = pick('--family', 'Shared', '--n', '1', '--seed', '1', '--energy', 'any', library=blib)
+    r2 = pick('--family', 'Fam', '--n', '1', '--seed', '1', library=blib)
+    result(r1.returncode == 0 and 'Shared seams' in r1.stdout and r2.returncode == 2 and 'starts' in r2.stderr, '--family takes the start of a name, and says when it is not unique')
+# the shipped library: no plan for any format deals an entry that breaks a hard ban
+shipped_bad = set()
+for fmt in mod.FORMATS:
+    for s_ in range(12):
+        shipped_bad |= {i for i in ids(draw_json('--format', fmt, '--seed', str(s_), '--energy', 'any', '--direction', 'none', library=SHIPPED)[1]) if i in {
+            'dv-baseline-converge-overshoot', 'ty-letter-arc-swing', 'dv-wordmark-soft-reveal', 'dv-signature-write-on', 'dv-typeface-cycle'}}
+result(not shipped_bad, 'the shipped library: plans for every format never deal the type-overshoot or script-face entries', str(sorted(shipped_bad)))
 
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')
 sys.exit(1 if failed else 0)

@@ -15,7 +15,19 @@ words), while every picture category draws calm and medium entries at 1.0 and hi
 energy (same energy 1.0, "any" 0.7, other 0.25), or --energy any to draw without the energy weight.
 Entries whose formats don't include the film's format (or "any") are never drawn. Entries that
 rely on a house-banned look (ban_safe false) are drawn with their ban-safe variant as the recipe,
-unless --brand-supplied names every look in the entry's "bans" list.
+unless --brand-supplied names every look in the entry's "bans" list. Entries whose own recipe breaks a
+hard ban are never drawn: overshoot, bounce or an elastic landing on copy, and a script, handwritten,
+serif or italic face (a brand that supplies serif or italic lifts that one).
+
+What exists: --have (deck.py's words, plus input) says what the film really has. UI devices (UI
+choreography, micro-interactions, loaders, the cursor) are drawn only with ui; typing, caret, cursor and
+prompt devices only with input (the product is used by typing or pointing: a text field, a prompt, a
+command line, a pointer). Without --have (and no direction) nothing is filtered.
+
+The dealt direction: out/direction.json (deck.py's sheet; --direction names another, --direction none
+ignores it) sets the format, energy, length and --have the plan did not get on the command line, weights
+the techniques the direction leans on x3, never draws the techniques that fight it, and holds the film to
+one signature move: the direction's own (its signature techniques; no other signature entry is drawn).
 
 Variety: every entry belongs to a family (type arrivals, camera transitions, glass, glow and
 spectral, loaders...). A film draws across many families: never more than two entries from one
@@ -27,6 +39,8 @@ so the same call reproduces it.
 
 Usage:
   python3 scripts/pick.py --format launch --seconds 25               # a calm whole-film plan (7 picks)
+  python3 scripts/pick.py --direction out/direction.json --json out/qa/picks.json  # the dealt direction's plan
+  python3 scripts/pick.py --format launch --have ui,input --seconds 25  # a product used by typing
   python3 scripts/pick.py --format launch --energy high --seconds 25  # an energetic one (10 picks)
   python3 scripts/pick.py --format loop --seed 41                     # reproducible plan (10 s: 4 picks)
   python3 scripts/pick.py --format update --seconds 14                # a short update film ("vX is out")
@@ -149,6 +163,73 @@ def plan_slots(fmt, seconds, energy=None):
 
 BANS = ['glass', 'glow', 'serif', 'italic', 'orange', 'beige', 'purple', 'gradient', 'filler-text',
         'emoji', 'sparkle', 'confetti', 'particles']
+
+# Hard bans a drawn entry's own recipe must not break (SKILL.md "Hard bans"): overshoot, bounce or an
+# elastic landing on copy; a script, handwritten, serif or italic face.
+TYPE_FAMILIES = {'Type arrivals', 'Type exits', 'Lines, layout and swaps'}
+_OVERSHOOT = re.compile(r'\b(overshoot\w*|bounc\w*|elastic|spr\.landing)\b', re.I)
+_NOT_OVERSHOOT = re.compile(r'\b(no|without|never|zero|not)\s+(\w+\s+){0,2}(overshoot|bounce)', re.I)
+_SCRIPT_FACE = re.compile(r'\b(handwrit\w*|hand-lettered|cursive|calligraph\w*|pen-written|script (?:face|font|type|word|suffix|lettering)'
+                          r'|(?<!sans-)(?<!sans )serif|italic\w*|oblique)\b', re.I)
+_NEGATED = re.compile(r'\b(no|never|not|without|avoid)\b[^.;]{0,24}$', re.I)
+
+# What a film has (deck.py's --have words, plus input), and what an entry needs of it.
+HAVE = ['ui', 'input', 'footage', 'audio', 'number', 'name']
+UI_FAMILIES = {'UI choreography', 'Micro-interactions', 'Cursor', 'Loaders and progress'}
+UI_CATEGORIES = {'ui_choreography', 'micro_interaction'}
+_INPUT = re.compile(r'\b(typing|typed|types into|keystroke\w*|caret|cursor\w*|prompt|command line|terminal|search (?:box|field|bar)'
+                    r'|text field|input field|autocomplete)\b', re.I)
+LEAN_FACTOR = 3.0  # the weight of a technique the dealt direction leans on
+
+
+def breaks_ban(e, allowed=frozenset()):
+    """The hard ban an entry's own recipe breaks ('' when none): overshoot or bounce on copy, a script face."""
+    text = ' '.join(str(e.get(k, '')) for k in ('name', 'summary', 'recipe'))
+    if e.get('category') in COPY_CATEGORIES or e.get('family') in TYPE_FAMILIES:
+        m = _OVERSHOOT.search(text)
+        if m and not _NOT_OVERSHOOT.search(text):
+            return f'{m.group(0).lower()} on copy'
+    for m in _SCRIPT_FACE.finditer(text):
+        word = m.group(0).lower()
+        if _NEGATED.search(text[:m.start()]):
+            continue
+        if ('italic' in word or 'oblique' in word) and 'italic' in allowed or 'serif' in word and 'serif' in allowed:
+            continue
+        return f'a {word} face'
+    return ''
+
+
+def needs(e):
+    """What must exist for an entry: 'ui' (the product's interface), 'input' (it is used by typing or pointing)."""
+    text = f"{e.get('name', '')} {e.get('summary', '')}"
+    out = set()
+    if e.get('family') in UI_FAMILIES or e.get('category') in UI_CATEGORIES:
+        out.add('ui')
+    if e.get('family') == 'Cursor' or (e.get('category') in UI_CATEGORIES | {'product_demo'} and _INPUT.search(text)):
+        out |= {'ui', 'input'}
+    return out
+
+
+def has_what(e, have):
+    """True when the film has what the entry needs (have None = unknown: everything fits)."""
+    if have is None:
+        return True
+    got = set(have) | ({'ui'} if 'input' in have else set())
+    return needs(e) <= got
+
+
+def read_direction(path):
+    """deck.py's sheet: {'lean', 'avoid', 'signature', 'format', 'energy', 'seconds', 'have', 'id'}, or None."""
+    try:
+        sh = json.load(open(path, encoding='utf-8'))
+    except (OSError, ValueError) as e:
+        fail(f'--direction {path}: {e}')
+    if not isinstance(sh, dict) or not isinstance(sh.get('pick'), dict):
+        fail(f'--direction {path}: not a sheet from deck.py --direction (no "pick" block)')
+    pk, inp = sh['pick'], sh.get('input') or {}
+    return {'id': (sh.get('direction') or {}).get('id'), 'lean': set(pk.get('lean') or []), 'avoid': set(pk.get('avoid') or []),
+            'signature': set(pk.get('signature_ids') or []), 'format': pk.get('format'), 'energy': pk.get('energy'),
+            'seconds': pk.get('seconds'), 'have': list(inp.get('have') or [])}
 
 
 def fail(msg, code=2):
@@ -301,8 +382,10 @@ def calm_fit(e):
     return {'calm': 1.0, 'any': 1.0, 'medium': 1.0, 'high': 0.5}[e['energy']]
 
 
-def weight(e, energy, recent=()):
+def weight(e, energy, recent=(), lean=()):
     w = ROLE_WEIGHT[e['role']] * min(3.0, 1.0 + float(weight_of(e) or 0) / 4.0)
+    if e['id'] in lean:
+        w *= LEAN_FACTOR
     if energy == 'calm':
         w *= calm_fit(e)  # the words never slam, whip or glitch in a calm film; the picture may move
     elif energy and energy != 'any':
@@ -316,14 +399,14 @@ def fits(e, fmt):
     return not fmt or 'any' in e['formats'] or fmt in e['formats'] or bool(set(FORMAT_ALSO.get(fmt, ())) & set(e['formats']))
 
 
-def draw(pool, n, rng, energy, taken, signature_left, families=None, cap=MAX_PER_FAMILY, recent=()):
+def draw(pool, n, rng, energy, taken, signature_left, families=None, cap=MAX_PER_FAMILY, recent=(), lean=()):
     """Weighted draw without replacement. Returns (picks, signature_left).
 
     families counts the picks per family so far (updated in place); with cap > 0 a family the film
-    already holds cap times is not drawn again."""
+    already holds cap times is not drawn again. lean: ids the dealt direction leans on (x LEAN_FACTOR)."""
     families = {} if families is None else families
     picks = []
-    cand = [e for e in pool if e['id'] not in taken and weight(e, energy, recent) > 0]
+    cand = [e for e in pool if e['id'] not in taken and weight(e, energy, recent, lean) > 0]
     while len(picks) < n and cand:
         if signature_left <= 0:
             cand = [e for e in cand if e['role'] != 'signature']
@@ -331,7 +414,7 @@ def draw(pool, n, rng, energy, taken, signature_left, families=None, cap=MAX_PER
             cand = [e for e in cand if not e.get('family') or families.get(e['family'], 0) < cap]
         if not cand:
             break
-        ws = [weight(e, energy, recent) for e in cand]
+        ws = [weight(e, energy, recent, lean) for e in cand]
         e = rng.choices(cand, weights=ws, k=1)[0]
         picks.append(e)
         taken.add(e['id'])
@@ -534,11 +617,13 @@ def main():
                                  epilog=__doc__.split('\n\n', 1)[1])
     ap.add_argument('--library', default=DEFAULT_LIBRARY, help='techniques JSON (default: assets/library/techniques.json in the skill, scripts/library/techniques.json in a film project)')
     ap.add_argument('--format', choices=FORMATS, help='the film format; filters entries and sets the plan shape')
-    ap.add_argument('--energy', choices=ENERGIES + ['any'], default='calm',
-                    help='weights entries toward this energy (default calm: calm copy, rich picture; any: no energy weight)')
+    ap.add_argument('--energy', choices=ENERGIES + ['any'],
+                    help='weights entries toward this energy (default the direction\'s, else calm: calm copy, rich picture; any: no energy weight)')
+    ap.add_argument('--have', help=f'what the film really has (comma-separated: {", ".join(HAVE)}); UI devices need ui, typing and cursor devices input')
+    ap.add_argument('--direction', help='the dealt sheet (deck.py --direction writes out/direction.json, read by default when it exists; "none" ignores it)')
     ap.add_argument('--seconds', type=float, help='the film length: about one technique per 3.5 s calm, 2.5 s otherwise (default per format)')
     ap.add_argument('--category', choices=CATEGORIES, help='draw only from this category')
-    ap.add_argument('--family', help='draw (or --list, or --markdown) only from this family (its name or file name)')
+    ap.add_argument('--family', help='draw (or --list, or --markdown) only from this family (its name, file name or the start of its name)')
     ap.add_argument('--n', type=int, default=1, help='how many to draw with --category or --family (default 1)')
     ap.add_argument('--plan', action='store_true', help='draw a whole-film plan (the default without --category or --family)')
     ap.add_argument('--seed', type=int, help='seed for a reproducible draw (default: random, printed)')
@@ -566,6 +651,10 @@ def main():
     family = None
     if a.family is not None:
         hit = [f for f in fams + ['Other'] if a.family in (f, slug(f)) or a.family.lower() == f.lower()]
+        if not hit:  # the start of a name: "Glass" for "Glass, glow and spectral"
+            hit = [f for f in fams + ['Other'] if f.lower().startswith(a.family.lower()) or slug(f).startswith(slug(a.family))]
+            if len(hit) > 1:
+                fail(f'--family: {a.family!r} starts {len(hit)} families: {", ".join(hit)}')
         if not hit:
             fail(f'--family: no family {a.family!r}; the families: {", ".join(fams)}')
         family = hit[0]
@@ -620,6 +709,22 @@ def main():
     unknown = allowed - set(BANS)
     if unknown:
         fail(f'--brand-supplied: unknown look(s) {", ".join(sorted(unknown))}; choose from {", ".join(BANS)}')
+    # the dealt direction: out/direction.json unless told otherwise
+    dpath = a.direction if a.direction not in (None, 'none') else (os.path.join('out', 'direction.json') if a.direction is None else None)
+    direc = read_direction(dpath) if dpath and (a.direction or os.path.isfile(dpath)) else None
+    if direc:
+        a.format = a.format or (direc['format'] if direc['format'] in FORMATS else None)
+        a.energy = a.energy or (direc['energy'] if direc['energy'] in ENERGIES + ['any'] else None)
+        a.seconds = a.seconds or direc['seconds']
+    a.energy = a.energy or 'calm'
+    if a.have is not None:
+        have = [h.strip().lower() for h in a.have.split(',') if h.strip() and h.strip().lower() != 'none']
+        bad = [h for h in have if h not in HAVE]
+        if bad:
+            fail(f'--have: unknown {", ".join(bad)}; choose from {", ".join(HAVE)}')
+    else:
+        have = [h for h in direc['have'] if h in HAVE] if direc else None
+    lean = direc['lean'] if direc else set()
     canon = lambda i: aliases.get(i, i)
     taken = {canon(x.strip()) for x in a.exclude.split(',') if x.strip()}
     if a.avoid:
@@ -639,26 +744,31 @@ def main():
     recent = [i for i in recent if i in by_id]
     rec = set(recent)
     cap = a.max_per_family
-    pool = [e for e in entries if fits(e, a.format) and (not family or (e.get('family') or 'Other') == family)]
+    if direc:
+        taken |= {canon(i) for i in direc['avoid']}
+    banned = {e['id']: breaks_ban(e, allowed) for e in entries}
+    pool = [e for e in entries if fits(e, a.format) and (not family or (e.get('family') or 'Other') == family)
+            and not banned[e['id']] and has_what(e, have)
+            and not (direc and e['role'] == 'signature' and e['id'] not in direc['signature'])]
 
     picks = []
     single = (a.category or family) and not a.plan
     if single:
         cat_pool = [e for e in pool if not a.category or e['category'] == a.category]
-        picks, _ = draw(cat_pool, a.n, rng, a.energy, taken, a.n, families, cap, rec)
+        picks, _ = draw(cat_pool, a.n, rng, a.energy, taken, 1 if direc else a.n, families, cap, rec, lean)
     else:
         fmt = a.format or 'launch'
         seconds = a.seconds if a.seconds else DEFAULT_SECONDS[fmt]
         size = plan_size(fmt, seconds, a.energy)
-        sig = 2 if size >= 10 else 1  # signature moves per film
+        sig = 1 if direc or size < 10 else 2  # signature moves per film (a dealt direction holds its own one)
         for cat, n in plan_slots(fmt, seconds, a.energy).items():
-            got, sig = draw([e for e in pool if e['category'] == cat], n, rng, a.energy, taken, sig, families, cap, rec)
+            got, sig = draw([e for e in pool if e['category'] == cat], n, rng, a.energy, taken, sig, families, cap, rec, lean)
             picks += got
         # A slot whose category has nothing at this energy passes on down the format's order.
         rest = ORDER[fmt][size:] + ORDER[fmt]
         while len(picks) < size and rest:
             cat = rest.pop(0)
-            got, sig = draw([e for e in pool if e['category'] == cat], 1, rng, a.energy, taken, sig, families, cap, rec)
+            got, sig = draw([e for e in pool if e['category'] == cat], 1, rng, a.energy, taken, sig, families, cap, rec, lean)
             picks += got
     if not picks:
         if single:
@@ -676,8 +786,22 @@ def main():
             + (f' --family "{family}"' if family and single else '')
             + (f" --n {a.n}" if single else '')
             + (f" --max-per-family {cap}" if cap != MAX_PER_FAMILY else '')
+            + (f" --have {','.join(have)}" if have else (' --have none' if have is not None else ''))
+            + (f" --direction {dpath}" if direc else (' --direction none' if a.direction == 'none' else ''))
+            + (f" --brand-supplied {','.join(sorted(allowed))}" if allowed else '')
             + (f" --recent {','.join(recent)}" if recent else '') + ' -->')
     print(head)
+    skipped = sorted(i for i, why in banned.items() if why and fits(by_id[i], a.format)
+                     and (not a.category or by_id[i]['category'] == a.category) and (not family or by_id[i].get('family') == family))
+    if direc:
+        print(f"<!-- the dealt direction {direc['id'] or dpath}: {len(direc['lean'])} techniques weighted up x{LEAN_FACTOR:g}, "
+              f"{len(direc['avoid'])} that fight it left out, one signature (its own) -->")
+    if have is not None:
+        print(f"<!-- what exists: {', '.join(have) or 'nothing named'}; devices that need "
+              f"{' or '.join(sorted({'ui', 'input'} - set(have) - ({'ui'} if 'input' in have else set()))) or 'nothing more'} are not drawn -->")
+    if skipped:
+        print(f"<!-- never drawn, the recipe breaks a hard ban: {', '.join(f'{i} ({banned[i]})' for i in skipped[:8])}"
+              + (f' and {len(skipped) - 8} more' if len(skipped) > 8 else '') + ' -->')
     print(f"# Drawn techniques (seed {seed})\n")
     print('Build the picks the concept can carry, each retold in its objects. Reroll a pick at most twice, or drop it, with a written reason.\n')
     if len(picks) > 1:
@@ -691,7 +815,7 @@ def main():
         os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
         with open(a.json, 'w', encoding='utf-8') as fh:
             json.dump({'seed': seed, 'format': a.format, 'energy': a.energy, 'category': a.category, 'family': family,
-                       'recent': recent,
+                       'recent': recent, 'have': have, 'direction': direc['id'] if direc else None,
                        'picks': [{'id': e['id'], 'name': e['name'], 'category': e['category'], 'family': e.get('family'),
                                   'role': e['role']} for e in picks]}, fh, indent=1)
         if not single:
