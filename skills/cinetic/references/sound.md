@@ -255,7 +255,7 @@ A film cut to a track (`audio/score.track.example.json`; `new-film.sh --music` w
 | `stopdowns` | `{"auto": "kit"}` | `auto`: a stop-down before every hit, drop and swell the kit lock names (`"off"` for none); `add`: extra targets (`{at, weight?, depth?: "stop"}`); `skip`: event ids or cue names to leave alone; `quiet_db`: where an effect plays with no bed under it (default −7, §7) |
 | `ending` | — | informational (`{mode, at}`): the edit decides the ending (`stop`, `button`, `ring`) |
 | `silences` | `[]` | `{from, to, depth?}`: true silence for a designed freeze; mutes everything, effects included; the picture freeze sits exactly on it (≤ 15 f) |
-| `payoff` | — | the moment that must be loudest: the reveal on the track's entry, about 30–60% into the film (in a sting, its hit); the report checks it. When a `stop` ending's one element is the lockup, the payoff is the reveal, never that element (it sits 2 LU or more under the payoff) |
+| `payoff` | — | the moment that must be loudest: the reveal on the track's entry, about 30–60% into the film (in a sting, its hit); the report checks it. When a `stop` ending's one element is the lockup, the payoff is the reveal, never that element (it sits 2 LU or more under the payoff). On a `ring` ending whose last hit is the reveal (a sting), that hit is the payoff: add no drop on it (it doubles the track's accent) and keep at most a swell into it |
 | `progress` | — | `{match, kind?, start?, tonic?, resolve?, gain?}`: the progress climb (§5.5b) |
 | `typing` | `"auto"` | how `key` events sound: `auto`, `soft`, `mechanical`, `pitched`, `muted`, `word` or `off` (§5.5c) |
 | `keyup` | `false` | `true` adds a key-release click on slow typing |
