@@ -1151,7 +1151,7 @@ async function cmdGet(args) {
  * whole film.
  */
 export const LOOKS = {
-  natural: { about: 'the default: each picture keeps its own colour and range; black level and contrast a quarter of the way toward the set's (never stretched past x1.3), only the strongest colours held back a little, a faint cool shadow', lo: 0.07, hi: 0.86, recentre: 0.25, keep: true, satCap: 0.36, vib: -0.1, mode: 'split', split: 0.02, grain: 0.18 },
+  natural: { about: 'the default: each picture keeps its own colour and range; black level and contrast a quarter of the way toward the whole set (never stretched past x1.3), only the strongest colours held back a little, a faint cool shadow', lo: 0.07, hi: 0.86, recentre: 0.25, keep: true, satCap: 0.36, vib: -0.1, mode: 'split', split: 0.02, grain: 0.18 },
   matte: { about: 'editorial matte: lifted blacks, rolled highlights, colour at 55 %, shadows a step toward the split hue (cool by default)', lo: 0.12, hi: 0.84, black: 0.06, white: 0.94, sat: 0.55, vib: -0.25, mode: 'split', split: 0.05, grain: 0.25 },
   silver: { about: 'neutral black and white, a firm curve and stronger grain (archives, a quiet film, the pieces of a collage)', lo: 0.05, hi: 0.9, sat: 0, mode: 'mono', grain: 0.4 },
   night: { about: 'low key: the median luma to about 0.18 (a daylight picture reads as night, a dark one is not crushed), warm colours (orange skies, tan wood) drained, shadows a step toward the split hue (cool by default)', lo: 0.03, hi: 0.72, sat: 0.6, vib: -0.25, mode: 'split', split: 0.07, median: 0.18, warm: -0.8, grain: 0.3 },
