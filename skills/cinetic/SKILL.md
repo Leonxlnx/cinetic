@@ -118,7 +118,7 @@ Read `references/copy-and-type.md` and `references/timing-grid.md` now.
 Before you write motion, read `references/motion-tokens.md`, `references/camera.md`, `references/transitions.md`, `references/lighting.md`, and `references/product-ui.md` if the product appears. Keep `references/chromium-rendering.md` open while you debug.
 - Each act is a pure function of `useCurrentFrame()`, one `<Sequence>` per act in `Film.tsx`, each registered as its own composition.
 - **Build with the primitives** (pure state functions with thin components, reading the film context): pick by job below; read the device book for anything else. Never a raw bezier or an inline spring in an act.
-- **One camera for the film**, never parked: creep or drift on every hold, cuts on the fastest frame with speed carried across (`launch`, `carry`, `handoffShot`), three depth planes, the soft foreground.
+- **One camera for the film.** The ground breathes; the camera may stop: it moves on about 83–95 % of the body and locks for 0.5–1 s on each type read (life continues in the type build, the light, a counter), creeps or drifts through the other holds, cuts on the fastest frame with speed carried across (`launch`, `carry`, `handoffShot`), three depth planes, the soft foreground.
 - **Light:** one key light (`KeyLight`, `ReliefScene`) and living light (`LightField`), one light event per act.
 - **The product** as real components at film size (`src/kit`, every web size ×1.9, nothing under 36 px in focus), data from one `data.ts` with asserts that hold on every frame.
 - Words reach the screen through `COPY` only (`Chain`, `Words`); never a string literal in an act. A progressive reveal never spells another word partway.
@@ -149,7 +149,7 @@ python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --json out/qa/
 python3 scripts/look-audit.py out/preview.mp4 --cues out/cues.json --layout out/qa/layout-Film.json --json out/qa/look.json
 node scripts/grammar-score.mjs --cues out/cues.json --layout out/qa/layout-Film.json --look out/qa/look.json --forensics out/qa/forensics.json
 ```
-- **The floor against a flat film** (look-audit, fails the film): the camera or ground moves on ≥ 90 % of the body; two depth planes at different rates in ≥ 50 % of shots; ≥ 40 % of seams carried; a designed moment at least every 3 s; a light event in every act; a clear scale change on ≥ 30 % of cuts. **The picture floor:** some clean flat ground (not everything on texture), edges under a ceiling (not busy everywhere), colour mass, bleed and skeleton bars (target: 43-85 % flat ground with type beats on clean fields, edges ≤ 5.9 %, real colour mass, bleed in every act, focus falloff).
+- **The floor against a flat film** (look-audit, fails the film): the camera or ground moves on ≥ 70 % of the body (a read lock of up to 1 s counts as alive); two depth planes at different rates in ≥ 50 % of shots; ≥ 40 % of seams carried; a designed moment at least every 3 s; a light event in every act; a clear scale change on ≥ 30 % of cuts. **The picture floor:** some clean flat ground (not everything on texture), edges under a ceiling (not busy everywhere), colour mass, bleed and skeleton bars (target: 43-85 % flat ground with type beats on clean fields, edges ≤ 5.9 %, real colour mass, bleed in every act, focus falloff).
 - **grammar-score:** mean ≥ 90, no dimension under 70 (or against `out/like.json` with a clip). Write the weakest dimension into the notes and fix it first.
 
 ### Step 8: Sound → `public/audio/soundtrack.wav`
@@ -236,7 +236,7 @@ export const b = (n: number, beat = 0, sub = 0) =>     // whole frames within 0.
   | Words per fragment, visible | ≤ 4, ≤ 8 (≤ 5 replace) | ≤ 5, ≤ 10 |
   | Copy rate, text share | ≤ 1.2 words/s in any 5 s, ≤ 65 % | ≤ 2 words/s, ≤ 80 % |
 
-- **Density.** About 1.6–2.8 starts per second, 1.4–2.5 things moving at once, idle frames ≤ 15 %; shot bands per format (§1), shot lengths varying (q75/q25 1.5–2.7); no stretch past 72 f without an event (48 f crisp); nothing frozen for more than 0.8 s outside the end lock.
+- **Density.** About 1.6–2.8 starts per second, 1.4–2.5 things moving at once, idle frames ≤ 15 %; shot bands per format (§1), shot lengths varying (q75/q25 1.5–2.7); no stretch past 72 f without an event (48 f crisp); nothing frozen for more than 0.8 s outside the end lock (1 s for a camera lock on a read).
 - **Energy.** An early peak, a designed lull of 1–4 s at 55–85 % inside the track's break, the biggest peak at 75–90 % on its entry; the last third keeps moving.
 - **Hook.** Frame 0 composed and moving; the sound enters with intent; the problem felt by 1 s; the product named by about a quarter of the runtime.
 - **End card.** The lockup is the film's own device (the deck's lockup kind), built from the real logo's parts, lit by the key, off-centre or as a crop of the last plane; it assembles over 60–80 f, then the one held run of the film (1–5 s declared in `END`), still or creeping ≤ 6 %; the brief's one fact under it, readable ≥ 1.7 s. Never a mark, wordmark and tagline centred over a radial glow.
@@ -270,7 +270,7 @@ Tokens live in `src/lib/anim.ts` (`E`, `M`, `SPR`, `DUR`, `TAU`, `STAG`, `ACCEL`
 - **Springs:** `critical` (default), `criticalFast`, `criticalSlow`; one underdamped class per film (`SPRING_CLASS`, usually `landing`: ζ 0.59, about 10 %, 23 f); never overshoot on type.
 - **Never scale from zero:** start oversized at 1.28–1.9× and settle (`Oversize`).
 - **Speed through cuts:** launch into the cut (its last frame the fastest), carry out at 0.4–1.4× (house 0.7) decaying ×0.78–0.93 a frame to a living residual; declare velocity seams.
-- **Holds live:** creep 2–15 %/s (house 6) or drift 6–90 px/s (house 30), turning into the exit over the last 12–20 f (`intoCut`); under 90 px/s while text is read.
+- **Holds live:** creep 2–15 %/s (house 6) or drift 6–90 px/s (house 30), turning into the exit over the last 12–20 f (`intoCut`); while text is read the camera locks for 0.5–1 s or stays under 90 px/s.
 - **Duration grows with distance:** calm 0.5 s + 1.6 ms/px, camera 0.9–3.0 s; the slowest move ≥ 3× the fastest; durations by class (`DUR`, `TAU` 3 / 8 / 17 / 30 f for markers / elements / hero / world).
 - **Blur and defocus:** blur is the declared policy (§3 Step 9); defocus is a timing tool drawn at fixed levels, two copies at most (`defocusMix`), never an animated blur radius.
 - **Envelope:** every punch and tick uses `hitPulse(t, 2, 5)`. **Log space** for scale and zoom (`lmix`). **Shape** settles 6 f before position; contacts squash.

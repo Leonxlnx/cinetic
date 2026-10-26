@@ -32,7 +32,10 @@ Look checks (warn unless marked fail):
   negative-space  in reading windows the non-ground share has a median over 30 %, or a dense run
                   (> 30 %) lasts more than 6 s
   living-ground   the camera stands still for more than 0.8 s while the ground does not change either
-                  (outside the end lock)
+                  (outside the end lock; 1 s inside a copy read window: the read lock)
+  camera-lock     the camera never locks: it moves on more than 99 % of the body (3 s or longer), or no
+                  copy read of 0.8 s or more holds it still for 0.5 s (two reads or more). The ground breathes;
+                  the camera may stop for 0.5-1 s on each read
   clean-finish    grain on flat ground over 0.6 L* (full-resolution samples) or a vignette over 2 %
                   unless LOOK.texture is not 'clean'
   type-size       (--layout) cap height off its role's band (caption 2.3-4 %, statement 5-14 %, hero
@@ -51,9 +54,10 @@ Look checks (warn unless marked fail):
 
 The floor against a flat film (fail; the ship gate). Body = outside the end lock (cues `declared.end`;
 without one, all but the last 2 s):
-  floor-moving    the camera or the ground moves on >= 90 % of body frames (camera fit >= 6 px/s or
+  floor-moving    the camera or the ground moves on >= 70 % of body frames (camera fit >= 6 px/s or
                   >= 1 %/s, the flat ground changing as light moves over it, or a layer carrying at least
-                  a quarter of the frame's structure moving >= 6 px/s)
+                  a quarter of the frame's structure moving >= 6 px/s); inside each copy read window up to
+                  1 s of a locked camera counts as alive (the read lock)
   floor-depth     >= 2 depth planes moving at different rates (a plane the camera move does not
                   explain, moving >= 6 px/s, while the camera moves) in >= 50 % of shots
   floor-carried   carried seams >= 40 % of all seams, to the nearest seam (declared kinds velocity,
@@ -95,7 +99,8 @@ flat grounds; texture is an accent, not the ground of every shot:
                    (lib/look.ts COLOUR)
 Framing and type (warn):
   framing-centred  the subject sits dead centre (within 8 %) and inside the frame in over half the samples
-  framing-hold     one framing held over 0.8 s with no depth plane moving (camera, second plane and layers still)
+  framing-hold     one framing held over 0.8 s with no depth plane moving (camera, second plane and layers still;
+                   1 s inside a copy read window)
   small-text       (--layout) a string under 36 px at 1080p held over 6 f@60 (UI strings included)
 --picture-only runs the picture floor alone (no motion probe; --every N reads every Nth frame, the colour and
 framing samples stay at two a second). Colour events: cues `declared.colour` [{from, to}] (also inside
@@ -134,6 +139,10 @@ CARRY_ZOOM = 1.0  # %/s of zoom on both sides (the living-creep bound): scale ca
 DEVICE_PXS = 600.0  # a move peaking faster than this (px/s at 1080p) is a designed beat
 DEVICE_ZOOM = 8.0  # %/s: a snap of scale
 DEVICE_BURST = 3  # regions starting in the same frame: a coordinated launch
+MOVING_FLOOR = 0.70  # floor-moving: the camera or the ground moves on this share of the body (a read lock counts as alive)
+READ_LOCK_S = 1.0  # the camera may lock this long on each type read (lib/look.ts GRAMMAR.hold.readLockS)
+LOCK_MIN_S = 0.5  # a lock shorter than this is not a lock
+CAMERA_NEVER_LOCKS = 0.99  # camera-lock: the camera moves on more than this share of the body
 M1 = [[0.4122214708, 0.5363325363, 0.0514459929], [0.2119034982, 0.6806995451, 0.1073969566], [0.0883024619, 0.2817188376, 0.6299787005]]
 M2 = [[0.2104542553, 0.7936177850, -0.0040720468], [1.9779984951, -2.4285922050, 0.4505937099], [0.0259040371, 0.7827717662, -0.8086757660]]
 
@@ -980,13 +989,44 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
                 start_frames.append((f, k_new))
     S['start_burst'] = start_frames
 
+    # copy read windows (cues copy `read`, else [resolved, out)): the camera may lock on each read
+    reading = []
+    for c in (cues or {}).get('copy', []):
+        for w in (c.get('read') or [[c.get('resolved', 0), c.get('out', 0)]]):
+            reading.append((vf(w[0]), vf(w[1])))
+
+    def in_read(a, b):
+        """Most of the run [a, b] lies inside one read window."""
+        return any(min(b + 1, y) - max(a, x) >= 0.5 * (b + 1 - a) for x, y in reading)
+
+    def hold_limit(a, b, base):
+        return READ_LOCK_S if in_read(a, b) else base
+
     # --- floor 1: camera or ground moving
     states = {f: wat(f) for f in body if f >= kwin}
     meas = [f for f, w in states.items() if w]
     # the frame moves when the camera or the ground does; a layer that carries a large share of the
     # structure (MOVING_LAYER) counts as ground
     live = [f for f in meas if states[f]['live'] or (states[f]['layer_pxs'] >= F.LIVE_PXS and states[f].get('moving_share', 0) >= MOVING_LAYER)]
-    moving_share = len(live) / max(1, len(meas))
+    live_set = set(live)
+    lock_frames = set()  # the read lock: up to READ_LOCK_S of a still frame inside each read window counts as alive
+    for a, b in reading:
+        lock_frames |= set([f for f in meas if a <= f < b and f not in live_set][:int(round(READ_LOCK_S * fps))])
+    moving_share = (len(live) + len(lock_frames)) / max(1, len(meas))
+    # the camera alone (body windows): does it ever lock, and does it lock on the reads?
+    cam_still = lambda w: w['cam_pxs'] < F.LIVE_PXS and w['cam_pct'] < F.LIVE_PCT  # noqa: E731
+    body_win = [f for f in sorted(win) if f in bodyset and f not in cut_near]
+    camera_share = sum(1 for f in body_win if not cam_still(win[f])) / max(1, len(body_win))
+    read_rows = []
+    for a, b in reading:
+        if (b - a) / fps < 0.8:
+            continue
+        best = cur = 0
+        for f in range(a, b):
+            w = states.get(f)
+            cur = cur + 1 if (w is not None and cam_still(w)) else 0
+            best = max(best, cur)
+        read_rows.append(dict(read=[a, b], lock_s=round(best / fps, 2), locked=best / fps >= LOCK_MIN_S - 1e-9))
     # --- floor 2: depth planes per shot (segment)
     depth_rows = []
     for a, b in seg:
@@ -1079,7 +1119,7 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     scale_share = sum(1 for r in scale_rows if r['contrast']) / max(1, len(scale_rows))
 
     floor = dict(
-        moving=dict(share=round(moving_share, 3), need=0.9, ok=moving_share >= 0.9),
+        moving=dict(share=round(moving_share, 3), need=MOVING_FLOOR, ok=moving_share >= MOVING_FLOOR, read_lock_frames=len(lock_frames)),
         depth=dict(share=round(depth_share, 3), need=0.5, ok=depth_share >= 0.5, shots=depth_rows),
         carried=dict(share=round(carried_share, 3), need=0.4, ok=one_take or not seam_rows or carried_n >= carried_need, seams=seam_rows, na=one_take or not seam_rows),
         device=dict(max_gap_s=round(max([(b - a) / fps for a, b in gaps] or [0]), 2), need_s=3, ok=not gaps, gaps=[[a, b] for a, b in gaps]),
@@ -1099,7 +1139,7 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     colour_flags(pf, add)
     if not args.no_floor:
         msgs = {
-            'moving': f"the camera or the ground moves on {moving_share * 100:.0f} % of the body (floor 90 %): creep, drift or light the ground through every hold",
+            'moving': f"the camera or the ground moves on {moving_share * 100:.0f} % of the body (floor {MOVING_FLOOR * 100:.0f} %, a read lock of up to {READ_LOCK_S:g} s counted): creep, drift or light the ground through the holds",
             'depth': f"{depth_share * 100:.0f} % of the shots show two planes moving at different rates (floor 50 %): parallax, a foreground pass, type over a moving ground",
             'carried': f"{carried_share * 100:.0f} % of the seams carry something across (floor 40 %): velocity, morph, breath, whip, mask",
             'device': f"{len(gaps)} stretch(es) over 3 s with nothing designed happening (longest {floor['device']['max_gap_s']} s): a device in every beat",
@@ -1152,10 +1192,6 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     pw = sum(1 for s in samples if min(s['ground']) >= 252 and s['ground_share'] > 0.3) / max(1, len(samples))
     if pw > 0.1 and not look.get('whiteWorld') and not white_brand:
         add('tinted-ink', 'warn', 0, f'a pure white ground on {pw * 100:.0f} % of the samples: a light stage is a tinted white (L 0.93-0.99, C <= 0.015 toward a cool accent); pure white is the white-world look')
-    reading = []
-    for c in (cues or {}).get('copy', []):
-        for w in (c.get('read') or [[c.get('resolved', 0), c.get('out', 0)]]):
-            reading.append((vf(w[0]), vf(w[1])))
     rs = [s for s in samples if any(a <= s['f'] < b for a, b in reading)]
     if rs:
         med = float(np.median([s['nonground'] for s in rs]))
@@ -1178,14 +1214,24 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
         if still:
             cur.append(f)
         else:
-            if len(cur) > 0.8 * fps:
+            if cur and len(cur) > hold_limit(cur[0], cur[-1], 0.8) * fps:
                 lg_runs.append((cur[0], cur[-1]))
             cur = []
-    if len(cur) > 0.8 * fps:
+    if cur and len(cur) > hold_limit(cur[0], cur[-1], 0.8) * fps:
         lg_runs.append((cur[0], cur[-1]))
     if lg_runs:
         a, b = max(lg_runs, key=lambda r: r[1] - r[0])
-        add('living-ground', 'warn', f'{a}-{b}', f'{len(lg_runs)} stretch(es) where the camera and the ground both stand still (longest {(b - a + 1) / fps:.1f} s): when type locks off, the ground keeps moving')
+        add('living-ground', 'warn', f'{a}-{b}', f'{len(lg_runs)} stretch(es) where the camera and the ground both stand still (longest {(b - a + 1) / fps:.1f} s): a read lock lasts up to {READ_LOCK_S:g} s; past it the ground keeps moving')
+    # camera-lock: the camera never stops, or never stops on a read
+    if len(body_win) * ws >= 3 * fps:
+        locked = [r for r in read_rows if r['locked']]
+        if camera_share > CAMERA_NEVER_LOCKS or (len(read_rows) >= 2 and not locked):
+            why = (f'the camera moves on {camera_share * 100:.0f} % of the body' if camera_share > CAMERA_NEVER_LOCKS else '') + \
+                  ('; ' if camera_share > CAMERA_NEVER_LOCKS and len(read_rows) >= 2 and not locked else '') + \
+                  (f'none of the {len(read_rows)} reads holds it still for {LOCK_MIN_S:g} s' if len(read_rows) >= 2 and not locked else '')
+            add('camera-lock', 'warn', read_rows[0]['read'][0] if read_rows else 0,
+                f'the camera never locks ({why}): lock it for {LOCK_MIN_S:g}-{READ_LOCK_S:g} s on each type read (life continues in the type build, the light, a counter); '
+                f'the house camera moves on 83-95 % of the body')
     # framing-hold: one framing held with no depth plane moving (the camera still, no second plane, no layer)
     fh_runs, cur = [], []
     for f in body:
@@ -1194,10 +1240,10 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
         if held:
             cur.append(f)
         else:
-            if len(cur) > PIC['hold_s'] * fps:
+            if cur and len(cur) > hold_limit(cur[0], cur[-1], PIC['hold_s']) * fps:
                 fh_runs.append((cur[0], cur[-1]))
             cur = []
-    if len(cur) > PIC['hold_s'] * fps:
+    if cur and len(cur) > hold_limit(cur[0], cur[-1], PIC['hold_s']) * fps:
         fh_runs.append((cur[0], cur[-1]))
     if fh_runs:
         a, b = max(fh_runs, key=lambda r: r[1] - r[0])
@@ -1375,7 +1421,8 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
         starts_per_s=round(merged / body_s, 3), region_starts_per_s=round(onsets / body_s, 3), concurrency=round(float(np.mean(conc)), 3) if conc else None,
         idle_share=round(idle / max(1, len(conc)), 3) if conc else None,
         living_holds=round(len(living) / max(1, len(holds)), 3) if holds else None,
-        moving_share=round(moving_share, 3), carried_share=round(carried_share, 3) if seam_rows else None, seams=len(seam_rows),
+        moving_share=round(moving_share, 3), camera_share=round(camera_share, 3), read_locks=read_rows,
+        carried_share=round(carried_share, 3) if seam_rows else None, seams=len(seam_rows),
         cut_sync=sync,
         hue_groups=len(film_groups), accent_p95=round(float(np.percentile([s['accent'] for s in accs], 95)), 4) if accs else None,
         ground_L=round(float(np.median([s['ground_L'] for s in samples])), 4) if samples else None,
@@ -1764,6 +1811,29 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         rep = run('moving5', moving, cues_for(180, seams=[dict(at=60, kind='velocity', carry='x', id='c1'), dict(at=120, kind='velocity', carry='x', id='c2')]))
         check(not has(rep, 'framing-hold') and not has(rep, 'living-ground'), 'a creeping ground with a card moving apart passes framing-hold and living-ground')
         check(rep.get('floor', {}).get('device', {}).get('ok') is True, 'designed seams every 2 s pass floor-device')
+        # --- camera-lock and the read lock: a camera creeping through both reads warns camera-lock; a film that locks
+        # 1 s on each of three reads (camera, card and ground still) passes floor-moving only because the locks sit on reads
+        two = cues_for(180, seams=[dict(at=60, kind='velocity', carry='x', id='c1'), dict(at=120, kind='velocity', carry='x', id='c2')])
+        two['copy'] = [dict(id='r1', text='every note', **{'in': 20}, resolved=24, out=60, read=[[24, 60]]),
+                       dict(id='r2', text='in place', **{'in': 110}, resolved=114, out=150, read=[[114, 150]])]
+        rep = run('nolock', moving, two)
+        check(bool(has(rep, 'camera-lock', 'warn')), 'a camera creeping through both reads warns camera-lock', json.dumps(rep.get('measures', {}).get('read_locks')))
+        locks = [(15, 45), (65, 95), (115, 145)]
+        lockfilm, t_ = [], 0
+        for i in range(180):
+            if not any(a < i < b for a, b in locks):
+                t_ += 1
+            g = F.warp(A, dx=-t_ * 1.5, k=1 + 0.002 * t_)[:h, :w]
+            lockfilm.append(card(g, 60 + t_ * 1.6, 80, 140, (25, 60, 110), stripes=True))
+        three = cues_for(180)
+        three['copy'] = [dict(id=f'r{k}', text='every note', **{'in': a - 5}, resolved=a - 5, out=b + 5, read=[[a - 5, b + 5]]) for k, (a, b) in enumerate(locks)]
+        rep = run('readlock', lockfilm, three)
+        fm = rep.get('floor', {}).get('moving', {})
+        check(fm.get('ok') is True and not has(rep, 'camera-lock') and not has(rep, 'living-ground') and not has(rep, 'framing-hold'),
+              'a 1 s camera lock on each read counts as alive (floor-moving passes; no camera-lock, living-ground or framing-hold warning)',
+              json.dumps({'moving': fm, 'flags': sorted({x['check'] for x in rep.get('flags', [])})}))
+        rep = run('readlock-noreads', lockfilm, cues_for(180))
+        check(rep.get('floor', {}).get('moving', {}).get('ok') is False, 'the same locks without reads fail floor-moving', json.dumps(rep.get('floor', {}).get('moving')))
 
         # --- accent-share: the accent over 25 % of the frame for 3 s warns; at 3 % it does not
         acc_hex = '#1E78C8'

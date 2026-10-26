@@ -167,7 +167,9 @@ export const GRAMMAR = {
     band: { launch: [1.3, 2.2] as const, update: [0.8, 1.6] as const, explainer: [2.0, 3.0] as const, reel: [0.5, 1.0] as const, social: [0.5, 1.0] as const },
   },
   density: { startsPerSec: [1.6, 2.3, 2.8] as const, gapS: 0.33, concurrent: [1.4, 1.7, 2.5] as const, idleMax: 0.15 },
-  hold: { creepPerSec: [0.02, 0.06, 0.15] as const, driftPxS: [6, 30, 90] as const, intoExit60: [12, 20] as const, staticMaxS: 0.8, endLockS: [1, 5] as const },
+  // readLockS: the camera may lock this long on each type read (life continues in the type build, the light, a counter);
+  // cameraMoving: the share of the body the camera moves on (look-audit floor-moving fails under 0.70, camera-lock warns over 0.99)
+  hold: { creepPerSec: [0.02, 0.06, 0.15] as const, driftPxS: [6, 30, 90] as const, intoExit60: [12, 20] as const, staticMaxS: 0.8, readLockS: [0.5, 1.0] as const, cameraMoving: [0.83, 0.95] as const, endLockS: [1, 5] as const },
   cut: { within1f: 0.5, within100ms: 0.8, leadMaxF: 3, dipS: [0.2, 0.5] as const, dipDb: [7, 10] as const },
 } as const;
 

@@ -171,13 +171,16 @@ the cut hides in the speed.
 
 ## 7. Holds stay alive; speed carries through cuts
 
-A locked-off frame reads as a stalled player in a muted feed. Nothing is frozen for more than 0.8 s outside the end
-lock (`forensics.py hold-drift`).
+A frame locked off for seconds reads as a stalled player in a muted feed; a camera that never stops reads as a
+screensaver. The ground breathes; the camera may stop: it moves on about 83–95 % of the body and **locks for 0.5–1 s
+on each type read**, while life continues in the type build, the light or a counter. Nothing is frozen for more than
+0.8 s outside the end lock, 1 s for a read lock (`forensics.py hold-drift`; `look-audit.py camera-lock` warns when the
+camera never locks on a read).
 
 | Hold | Life | Number |
 |---|---|---|
 | any near-hold | creep or drift | `creep()` house 6 %/s (2-15 %/s), or `drift()` house 30 px/s (6-90) |
-| text being read | slow drift, creep or moving light under it | under 90 px/s and 15 %/s; a re-centre jump is a decisive move, not drift |
+| text being read | a camera lock with the type building, light moving under it, or a slow drift | lock 0.5-1 s, else under 90 px/s and 15 %/s; a re-centre jump is a decisive move, not drift |
 | typing or reading | background parallax under a sharp foreground | background −16 px and +2.5 % while the foreground pushes |
 | logo / lockup | a creep of ≤ 6 % for a still hold up to 1.3 s; 10-20 % over about 2 s for a longer one | then the one still hold of the film |
 
@@ -189,7 +192,8 @@ lock (`forensics.py hold-drift`).
 - **Chained moves never stall.** When one move hands over to another, start the second on a zero-slope curve while
   the first is still moving (about 20 f of overlap for moves of similar speed, more when the first is slow); the
   secondary starts before the primary is 90 % home (`overlapAt`).
-- Stillness is still allowed: a designed freeze of ≤ 15 f on a silence, and the one still hold at the end lock.
+- Stillness is still allowed: a read lock of 0.5-1 s, a designed freeze of ≤ 15 f on a silence, and the one still hold
+  at the end lock.
 
 ## 8. Depth: three planes, parallax, occlusion
 

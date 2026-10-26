@@ -130,14 +130,15 @@ drift), or measure the seam on a textured region.
 Rendered look checks: `hue-count` (2 hue groups warn, 3 fail, outside declared devices and imagery; the hues of the
 brand-supplied colours count as one family), `banned-hue`
 (supplied colours pass), `accent-share`, the wash ceiling (a film is not one colour wash), `tinted-ink`,
-`negative-space`, `living-ground`, `clean-finish`, `type-size` (with the layout JSON), `luminance-flip`,
+`negative-space`, `living-ground`, `camera-lock` (the camera never stops, or never on a read: lock 0.5-1 s on each read), `clean-finish`, `type-size` (with the layout JSON), `luminance-flip`,
 `blur-policy`, `word-first-frame`, `fade-detect`, `arrival-front-load`, `image-develop` (a hint). Flags:
 `--imagery x,y,w,h` (boxes holding photographs: natural colour there is not designed colour), `--colour-event
 FROM,TO` (a declared colour event pauses the wash and accent ceilings; the timeline's `COLOUR` ranges are read from the cues), `--second '#…'` (a declared support hue),
 `--tokens`, `--brand`, `--picture-only` (the picture floor alone, fast), `--no-picture`, `--no-floor`.
 
 **The floor against a flat film (motion)** fails the film when any of these is missed:
-- the camera or the ground moves on at least 90 % of the body (everything outside the end lock);
+- the camera or the ground moves on at least 70 % of the body (everything outside the end lock); inside each copy read
+  window up to 1 s of a locked camera counts as alive (the read lock);
 - at least half of the shots show two depth planes moving at different rates;
 - at least 40 % of the seams carry something across (velocity, morph, breath, zoom-through, whip, snap zoom, mask,
   wipe, defocus; an undeclared cut counts when motion keeps its direction across it at 30 px/s or more, or the scale
@@ -164,7 +165,7 @@ Type reads large and frontal on clean grounds, so a film with every frame on rel
 `picture-flat` and usually `picture-edges` too. Give each type beat a clean field, or dim and defocus the plate behind the type.
 A white world is judged without the flat and colour readings; a grid film without bleed. Framing warnings:
 `framing-centred` (the subject dead centre and inside the frame in more than half of the framed samples),
-`framing-hold` (one framing over 0.8 s with no depth plane moving), `small-text`.
+`framing-hold` (one framing over 0.8 s with no depth plane moving; 1 s inside a read), `small-text`.
 
 **The one-hue gate:** `look-audit.py clip.mp4 --trajectory --roi x,y,w,h --accent '#RRGGBB' [--target t.json]` reads
 the colour of a region over time: it keeps the accent's hue (within 6° wherever C ≥ 0.03) and, with a target, follows

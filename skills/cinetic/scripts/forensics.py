@@ -62,10 +62,10 @@ an older cues file they are info, so its verdict does not change). Speeds are px
 over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), so a slow creep reads:
   declared     a spike or stall on a declared stepped range, flash or hard seam (cues `declared`,
                including what each primitive declares) is craft                            info
-  hold-drift   a run > 0.8 s outside the end lock (cues END; a film without declarations: its last
-               2 s, as look-audit.py) where the camera neither drifts 6 px/s nor creeps
-               1 %/s, no layer moves 6 px/s, the ground does not change and no content changes
-               (typing, a counter: 0.2 % of the frame)                                        fail
+  hold-drift   a run > 0.8 s (1 s inside a reading window: the read lock) outside the end lock
+               (cues END; a film without declarations: its last 2 s, as look-audit.py) where the
+               camera neither drifts 6 px/s nor creeps 1 %/s, no layer moves 6 px/s, the ground
+               does not change and no content changes (typing, a counter: 0.2 % of the frame)  fail
                inside a reading window: faster than 90 px/s or 15 %/s                       warn
   static-share more than 15 % of the body stands still (camera, layers and ground)          warn
   still-cut    more than 30 % of the cuts go from a still frame to a still frame            warn
@@ -112,6 +112,7 @@ SW, SH = 480, 270  # MAD analysis size; the thresholds are calibrated at this si
 # Hold and quiet limits per pace: a calm film holds its reads longer (a drifting line is alive).
 PACE_LIMITS = {'calm': dict(max_hold=72, quiet_mad=0.10), 'crisp': dict(max_hold=48, quiet_mad=0.15)}
 READ_MAD = 0.02  # inside a reading window, a run with at least this mean change is a read, not a stall
+READ_LOCK_S = 1.0  # hold-drift: a frozen run inside a reading window may last this long (the camera locks on a read)
 APEX_KINDS = ('whoosh', 'sweep', 'suck')  # the loudest point of the sound sits on f
 END_KINDS = ('riser', 'swell')  # the sound builds and ends on f
 
@@ -1490,15 +1491,20 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
         frozen = [f for f in body if state[f] is not None and not state[f]['live'] and state[f]['layer_pxs'] < LIVE_PXS
                   and state[f].get('change', 0) < CHANGE_LIVE]
         fz = set(frozen)
+
+        def too_long(r):  # 0.8 s; a read lock may hold 1 s inside a reading window (lib/look.ts GRAMMAR.hold.readLockS)
+            lock = any(min(r[-1] + 1, y) - max(r[0], x) >= 0.5 * len(r) for x, y in reading)
+            return len(r) > (READ_LOCK_S if lock else 0.8) * fps
+
         runs_f, run = [], []
         for f in body:
             if f in fz and (not run or f == run[-1] + 1):
                 run.append(f)
             else:
-                if len(run) > 0.8 * fps:
+                if run and too_long(run):
                     runs_f.append((run[0], run[-1]))
                 run = [f] if f in fz else []
-        if len(run) > 0.8 * fps:
+        if run and too_long(run):
             runs_f.append((run[0], run[-1]))
         for a, b in runs_f:
             add('hold-drift', sev('fail'), f'{a}-{b}', f'{b - a + 1} f ({(b - a + 1) / fps:.1f} s) frozen outside the end lock: nothing drifts '
