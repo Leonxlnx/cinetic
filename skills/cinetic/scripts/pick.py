@@ -7,12 +7,24 @@ fits the film (format, energy) and toward proven workhorses, and prints the buil
 draw. The seed is printed, so a plan can be reproduced and written into TREATMENT.md.
 
 Weights: role (workhorse 3, accent 2, signature 1) x proof (1 + weight / 4, capped at 3; the house
-weight 0-9 of each entry) x energy fit. The energy defaults to calm, the house pace. Calm copy, rich
-picture: in a calm draw the copy categories (typography in motion, pacing and structure) keep the
-energy rule (calm 1.0, "any" 0.7, medium 0.25, high never: no slams, whips or glitch streaks on the
-words), while every picture category draws calm and medium entries at 1.0 and high-energy ones at
-0.5, so a calm film still gets a rich, moving picture. Pass --energy high for a brief that asks for
-energy (same energy 1.0, "any" 0.7, other 0.25), or --energy any to draw without the energy weight.
+weight 0-9 of each entry) x energy fit x kind. The energy defaults to calm, the house pace. In a calm
+draw the copy categories (typography in motion, pacing and structure) keep the energy rule (calm 1.0,
+"any" 0.7, medium 0.25, high never: no slams, whips or glitch streaks on the words), while every
+picture category draws calm and medium entries at 1.0 and high-energy ones at 0.5, so a calm film
+still gets a moving picture. Pass --energy high for a brief that asks for energy (same energy 1.0,
+"any" 0.7, other 0.25), or --energy any to draw without the energy weight. Kind: text animation is the
+main event, so the type families (type arrivals, lines, layout and swaps, type exits) weigh x2; imagery
+devices (photos and footage, cut-outs, montages, gradient-mapped photographs) weigh x0.2 unless --have
+names photos or footage.
+
+The script's lines: a film is a short script of real sentences, one clean line on screen at a time, and
+every line gets its own text animation. A whole-film plan therefore draws two parts: the picture plan
+(one device per beat from many families: VFX, camera, seams, the product, the end card) and the line
+track, one text animation per sentence (--lines N; default from the format and the length: a launch
+film 6-9, an update film 4-6), all different, from the type arrivals and the lines, layout and swaps
+families, plus type exits for about half the lines (the others leave by a cut or turn into the next line
+by a swap). The line track is outside the family cap; the picture plan then draws no type device of its
+own. --lines 0 turns the line track off.
 Entries whose formats don't include the film's format (or "any") are never drawn. Entries that
 rely on a house-banned look (ban_safe false) are drawn with their ban-safe variant as the recipe,
 unless --brand-supplied names every look in the entry's "bans" list. Entries whose own recipe breaks a
@@ -22,7 +34,9 @@ serif or italic face (a brand that supplies serif or italic lifts that one).
 What exists: --have (deck.py's words, plus input) says what the film really has. UI devices (UI
 choreography, micro-interactions, loaders, the cursor) are drawn only with ui; typing, caret, cursor and
 prompt devices only with input (the product is used by typing or pointing: a text field, a prompt, a
-command line, a pointer). Without --have (and no direction) nothing is filtered.
+command line, a pointer); imagery devices come up at their full weight only with photos (high-quality
+pictures that carry the idea, or the product's own) or footage. Without --have (and no direction) nothing
+is filtered, and imagery stays an accent.
 
 The dealt direction: out/direction.json (deck.py's sheet; --direction names another, --direction none
 ignores it) sets the format, energy, length and --have the plan did not get on the command line, weights
@@ -38,7 +52,9 @@ file, "off" or --no-history turns it off), and the plan's header prints the --re
 so the same call reproduces it.
 
 Usage:
-  python3 scripts/pick.py --format launch --seconds 25               # a calm whole-film plan (7 picks)
+  python3 scripts/pick.py --format launch --seconds 25               # a calm whole-film plan (7 picks, 7 lines)
+  python3 scripts/pick.py --format launch --seconds 25 --lines 8     # the script has 8 sentences: 8 text animations
+  python3 scripts/pick.py --format launch --have ui,photos            # the film holds pictures worth showing
   python3 scripts/pick.py --direction out/direction.json --json out/qa/picks.json  # the dealt direction's plan
   python3 scripts/pick.py --format launch --have ui,input --seconds 25  # a product used by typing
   python3 scripts/pick.py --format launch --energy high --seconds 25  # an energetic one (10 picks)
@@ -174,7 +190,21 @@ _SCRIPT_FACE = re.compile(r'\b(handwrit\w*|hand-lettered|cursive|calligraph\w*|p
 _NEGATED = re.compile(r'\b(no|never|not|without|avoid)\b[^.;]{0,24}$', re.I)
 
 # What a film has (deck.py's --have words, plus input), and what an entry needs of it.
-HAVE = ['ui', 'input', 'footage', 'audio', 'number', 'name']
+HAVE = ['ui', 'input', 'photos', 'footage', 'audio', 'number', 'name']
+# Text animation is the main event: the type families weigh up; imagery is an accent unless the film has pictures.
+TYPE_FACTOR = 2.0
+IMAGERY_FACTOR = 0.2
+IMAGERY_HAVE = {'photos', 'footage'}
+IMAGERY_FAMILIES = {'Photos and footage'}
+IMAGERY_MODULES = {'fx/Photo', 'fx/Footage', 'fx/FootageRamp', 'fx/Montage', 'fx/Cutout', 'fx/TypeMask', 'fx/Lens', 'fx/GradientMap'}
+_IMAGERY = re.compile(r'\b(photo\w*|footage)\b', re.I)
+# The line track: one text animation per sentence of the script, all different.
+LINE_ARRIVAL_FAMILIES = {'Type arrivals', 'Lines, layout and swaps'}
+LINE_EXIT_FAMILIES = {'Type exits'}
+LINE_CATEGORIES = {'typography_motion', 'opening_hook', 'color_and_light'}
+LINES = {'launch': (6, 9), 'update': (4, 6), 'feature': (3, 6), 'vertical': (4, 7), 'loop': (1, 2), 'sting': (1, 1),
+         'walkthrough': (5, 12)}  # sentences per film: (fewest, most); about one per 3.5 s in between
+SECONDS_PER_LINE = 3.5
 UI_FAMILIES = {'UI choreography', 'Micro-interactions', 'Cursor', 'Loaders and progress'}
 UI_CATEGORIES = {'ui_choreography', 'micro_interaction'}
 _INPUT = re.compile(r'\b(typing|typed|types into|keystroke\w*|caret|cursor\w*|prompt|command line|terminal|search (?:box|field|bar)'
@@ -216,6 +246,45 @@ def has_what(e, have):
         return True
     got = set(have) | ({'ui'} if 'input' in have else set())
     return needs(e) <= got
+
+
+def is_type(e):
+    """A text animation: an entry of the type families (type reveals, type layout and swaps, type exits)."""
+    return e.get('family') in TYPE_FAMILIES
+
+
+def is_imagery(e):
+    """An imagery device: photographs or footage are its material (an accent unless the film has pictures)."""
+    if e.get('family') in IMAGERY_FAMILIES:
+        return True
+    if any(p.partition('.')[0] in IMAGERY_MODULES for p in e.get('primitive') or []):
+        return True
+    return bool(_IMAGERY.search(e.get('name', '')))
+
+
+def kind_factor(e, imagery_ok=False):
+    """Text animation up, imagery down unless the film has photos or footage."""
+    f = TYPE_FACTOR if is_type(e) else 1.0
+    if is_imagery(e) and not imagery_ok:
+        f *= IMAGERY_FACTOR
+    return f
+
+
+def line_count(fmt, seconds):
+    """How many sentences the film's script holds (one text animation each)."""
+    lo, hi = LINES[fmt]
+    return max(lo, min(hi, int(round(seconds / SECONDS_PER_LINE))))
+
+
+def line_pools(pool, has_type_families):
+    """(arrivals, exits) the line track draws from: the type families, or, in a library that has none of them,
+    every typography entry."""
+    if has_type_families:
+        arrivals = [e for e in pool if e.get('family') in LINE_ARRIVAL_FAMILIES and e['category'] in LINE_CATEGORIES]
+        exits = [e for e in pool if e.get('family') in LINE_EXIT_FAMILIES]
+    else:
+        arrivals, exits = [e for e in pool if e['category'] == 'typography_motion'], []
+    return arrivals, exits
 
 
 def read_direction(path):
@@ -287,6 +356,15 @@ def module_exports(src, mod):
                 break
         _EXPORTS[key] = names
     return _EXPORTS[key]
+
+
+def type_presets(src):
+    """The one-line text animations src/fx/TypePresets.tsx builds (TYPE_PRESET_NAMES), or [] when it is not there."""
+    path = os.path.join(src, 'fx', 'TypePresets.tsx') if src else ''
+    if not path or not os.path.isfile(path):
+        return []
+    m = re.search(r'TYPE_PRESET_NAMES\b[^=]*=\s*\[([^\]]*)\]', open(path, encoding='utf-8').read())
+    return re.findall(r"['\"]([A-Za-z]\w*)['\"]", m.group(1)) if m else []
 
 
 def weight_of(e):
@@ -376,14 +454,14 @@ def alias_map(entries):
 
 
 def calm_fit(e):
-    """The energy factor of a calm draw: calm copy, rich picture."""
+    """The energy factor of a calm draw: calm words (no slam on a line), a moving picture."""
     if e['category'] in COPY_CATEGORIES:
         return {'calm': 1.0, 'any': 0.7, 'medium': 0.25, 'high': 0.0}[e['energy']]
     return {'calm': 1.0, 'any': 1.0, 'medium': 1.0, 'high': 0.5}[e['energy']]
 
 
-def weight(e, energy, recent=(), lean=()):
-    w = ROLE_WEIGHT[e['role']] * min(3.0, 1.0 + float(weight_of(e) or 0) / 4.0)
+def weight(e, energy, recent=(), lean=(), imagery_ok=False):
+    w = ROLE_WEIGHT[e['role']] * min(3.0, 1.0 + float(weight_of(e) or 0) / 4.0) * kind_factor(e, imagery_ok)
     if e['id'] in lean:
         w *= LEAN_FACTOR
     if energy == 'calm':
@@ -399,14 +477,15 @@ def fits(e, fmt):
     return not fmt or 'any' in e['formats'] or fmt in e['formats'] or bool(set(FORMAT_ALSO.get(fmt, ())) & set(e['formats']))
 
 
-def draw(pool, n, rng, energy, taken, signature_left, families=None, cap=MAX_PER_FAMILY, recent=(), lean=()):
+def draw(pool, n, rng, energy, taken, signature_left, families=None, cap=MAX_PER_FAMILY, recent=(), lean=(), imagery_ok=False):
     """Weighted draw without replacement. Returns (picks, signature_left).
 
     families counts the picks per family so far (updated in place); with cap > 0 a family the film
-    already holds cap times is not drawn again. lean: ids the dealt direction leans on (x LEAN_FACTOR)."""
+    already holds cap times is not drawn again. lean: ids the dealt direction leans on (x LEAN_FACTOR).
+    imagery_ok: the film has photos or footage, so imagery devices keep their full weight."""
     families = {} if families is None else families
     picks = []
-    cand = [e for e in pool if e['id'] not in taken and weight(e, energy, recent, lean) > 0]
+    cand = [e for e in pool if e['id'] not in taken and weight(e, energy, recent, lean, imagery_ok) > 0]
     while len(picks) < n and cand:
         if signature_left <= 0:
             cand = [e for e in cand if e['role'] != 'signature']
@@ -414,7 +493,7 @@ def draw(pool, n, rng, energy, taken, signature_left, families=None, cap=MAX_PER
             cand = [e for e in cand if not e.get('family') or families.get(e['family'], 0) < cap]
         if not cand:
             break
-        ws = [weight(e, energy, recent, lean) for e in cand]
+        ws = [weight(e, energy, recent, lean, imagery_ok) for e in cand]
         e = rng.choices(cand, weights=ws, k=1)[0]
         picks.append(e)
         taken.add(e['id'])
@@ -604,10 +683,11 @@ def write_history(enabled, entry):
         pass
 
 
-def read_picks(path, flag):
+def read_picks(path, flag, parts=('picks',)):
+    """The entries of an earlier --json draw: the picture plan ('picks'), and with parts the line track too."""
     try:
         prev = json.load(open(path, encoding='utf-8'))
-        return [p for p in prev.get('picks', []) if isinstance(p, dict) and p.get('id')]
+        return [p for k in parts for p in prev.get(k, []) if isinstance(p, dict) and p.get('id')]
     except (OSError, ValueError, AttributeError, TypeError) as e:
         fail(f'{flag} {path}: {e}')
 
@@ -618,8 +698,9 @@ def main():
     ap.add_argument('--library', default=DEFAULT_LIBRARY, help='techniques JSON (default: assets/library/techniques.json in the skill, scripts/library/techniques.json in a film project)')
     ap.add_argument('--format', choices=FORMATS, help='the film format; filters entries and sets the plan shape')
     ap.add_argument('--energy', choices=ENERGIES + ['any'],
-                    help='weights entries toward this energy (default the direction\'s, else calm: calm copy, rich picture; any: no energy weight)')
-    ap.add_argument('--have', help=f'what the film really has (comma-separated: {", ".join(HAVE)}); UI devices need ui, typing and cursor devices input')
+                    help='weights entries toward this energy (default the direction\'s, else calm: calm words, a moving picture; any: no energy weight)')
+    ap.add_argument('--have', help=f'what the film really has (comma-separated: {", ".join(HAVE)}); UI devices need ui, typing and cursor devices input, imagery devices photos or footage')
+    ap.add_argument('--lines', type=int, help='sentences in the script: one text animation each, all different (default per format and length; 0 = no line track)')
     ap.add_argument('--direction', help='the dealt sheet (deck.py --direction writes out/direction.json, read by default when it exists; "none" ignores it)')
     ap.add_argument('--seconds', type=float, help='the film length: about one technique per 3.5 s calm, 2.5 s otherwise (default per format)')
     ap.add_argument('--category', choices=CATEGORIES, help='draw only from this category')
@@ -702,6 +783,8 @@ def main():
         fail('--n must be at least 1')
     if a.max_per_family < 0:
         fail('--max-per-family must be 0 (no cap) or more')
+    if a.lines is not None and not 0 <= a.lines <= 16:
+        fail('--lines must be 0 (no line track) to 16')
 
     seed = a.seed if a.seed is not None else int.from_bytes(os.urandom(4), 'big')
     rng = random.Random(seed)
@@ -724,13 +807,15 @@ def main():
             fail(f'--have: unknown {", ".join(bad)}; choose from {", ".join(HAVE)}')
     else:
         have = [h for h in direc['have'] if h in HAVE] if direc else None
+    imagery_ok = have is not None and bool(IMAGERY_HAVE & set(have))
     lean = direc['lean'] if direc else set()
     canon = lambda i: aliases.get(i, i)
     taken = {canon(x.strip()) for x in a.exclude.split(',') if x.strip()}
     if a.avoid:
-        taken |= {canon(p['id']) for p in read_picks(a.avoid, '--avoid')}
+        taken |= {canon(p['id']) for p in read_picks(a.avoid, '--avoid', ('picks', 'lines', 'exits'))}
     families = {}
     if a.keep:
+        taken |= {canon(p['id']) for p in read_picks(a.keep, '--keep', ('lines', 'exits'))}  # the line track: outside the cap
         for p in read_picks(a.keep, '--keep'):
             e = by_id.get(canon(p['id']))
             taken.add(canon(p['id']))
@@ -740,7 +825,8 @@ def main():
     if a.recent is not None:
         recent = [canon(x.strip()) for x in a.recent.split(',') if x.strip()]
     else:
-        recent = list(dict.fromkeys(canon(i) for h in read_history(hist)[:RECENT_FILMS] for i in h['ids']))
+        recent = list(dict.fromkeys(canon(i) for h in read_history(hist)[:RECENT_FILMS]
+                                    for i in h['ids'] + [x for x in (h.get('lines') or []) if isinstance(x, str)]))
     recent = [i for i in recent if i in by_id]
     rec = set(recent)
     cap = a.max_per_family
@@ -751,25 +837,34 @@ def main():
             and not banned[e['id']] and has_what(e, have)
             and not (direc and e['role'] == 'signature' and e['id'] not in direc['signature'])]
 
-    picks = []
+    picks, line_picks, exit_picks, lines_n = [], [], [], 0
     single = (a.category or family) and not a.plan
     if single:
         cat_pool = [e for e in pool if not a.category or e['category'] == a.category]
-        picks, _ = draw(cat_pool, a.n, rng, a.energy, taken, 1 if direc else a.n, families, cap, rec, lean)
+        picks, _ = draw(cat_pool, a.n, rng, a.energy, taken, 1 if direc else a.n, families, cap, rec, lean, imagery_ok)
     else:
         fmt = a.format or 'launch'
         seconds = a.seconds if a.seconds else DEFAULT_SECONDS[fmt]
         size = plan_size(fmt, seconds, a.energy)
+        lines_n = a.lines if a.lines is not None else line_count(fmt, seconds)
         sig = 1 if direc or size < 10 else 2  # signature moves per film (a dealt direction holds its own one)
+        # With a line track the words get their animations there, so the picture plan draws no type device.
+        pic = [e for e in pool if not (lines_n and (is_type(e) or e['category'] == 'typography_motion'))]
         for cat, n in plan_slots(fmt, seconds, a.energy).items():
-            got, sig = draw([e for e in pool if e['category'] == cat], n, rng, a.energy, taken, sig, families, cap, rec, lean)
+            got, sig = draw([e for e in pic if e['category'] == cat], n, rng, a.energy, taken, sig, families, cap, rec, lean, imagery_ok)
             picks += got
         # A slot whose category has nothing at this energy passes on down the format's order.
-        rest = ORDER[fmt][size:] + ORDER[fmt]
+        rest = ORDER[fmt][size:] + ORDER[fmt] * 2  # twice: the type slots a line track takes pass on too
         while len(picks) < size and rest:
             cat = rest.pop(0)
-            got, sig = draw([e for e in pool if e['category'] == cat], 1, rng, a.energy, taken, sig, families, cap, rec, lean)
+            got, sig = draw([e for e in pic if e['category'] == cat], 1, rng, a.energy, taken, sig, families, cap, rec, lean, imagery_ok)
             picks += got
+        if lines_n:
+            # The line track: one text animation per sentence, all different, outside the family cap; exits for
+            # about half the lines (the others leave by a cut or turn into the next line by a swap).
+            arrivals, exits = line_pools(pool, any(is_type(e) for e in entries))
+            line_picks, sig = draw(arrivals, lines_n, rng, a.energy, taken, sig if direc else 0, None, 0, rec, lean, imagery_ok)
+            exit_picks, _ = draw(exits, lines_n // 2, rng, a.energy, taken, 0, None, 0, rec, lean, imagery_ok)
     if not picks:
         if single:
             what = ' '.join(x for x in (a.category, f'family {family!r}' if family else '') if x)
@@ -786,6 +881,7 @@ def main():
             + (f' --family "{family}"' if family and single else '')
             + (f" --n {a.n}" if single else '')
             + (f" --max-per-family {cap}" if cap != MAX_PER_FAMILY else '')
+            + (f" --lines {a.lines}" if a.lines is not None and not single else '')
             + (f" --have {','.join(have)}" if have else (' --have none' if have is not None else ''))
             + (f" --direction {dpath}" if direc else (' --direction none' if a.direction == 'none' else ''))
             + (f" --brand-supplied {','.join(sorted(allowed))}" if allowed else '')
@@ -799,6 +895,8 @@ def main():
     if have is not None:
         print(f"<!-- what exists: {', '.join(have) or 'nothing named'}; devices that need "
               f"{' or '.join(sorted({'ui', 'input'} - set(have) - ({'ui'} if 'input' in have else set()))) or 'nothing more'} are not drawn -->")
+    print(f"<!-- text animation first: type devices x{TYPE_FACTOR:g}; imagery devices "
+          + ('at full weight (the film has photos or footage)' if imagery_ok else f'x{IMAGERY_FACTOR:g}, an accent (no --have photos or footage)') + ' -->')
     if skipped:
         print(f"<!-- never drawn, the recipe breaks a hard ban: {', '.join(f'{i} ({banned[i]})' for i in skipped[:8])}"
               + (f' and {len(skipped) - 8} more' if len(skipped) > 8 else '') + ' -->')
@@ -809,17 +907,46 @@ def main():
             fam = f", {e['family']}" if e.get('family') else ''
             print(f"- {e['category']}: {e['name']} (`{e['id']}`, {e['role']}{fam})")
         print()
+    if lines_n:
+        print(f"## Text animations: one per line ({lines_n} sentences)\n")
+        print('The script is read one clean line at a time, and every sentence arrives its own way: give each line the '
+              'animation that says what it says (the order is free), and write the pairing into the beat sheet. Never '
+              'the same animation on two lines.\n')
+        for k, e in enumerate(line_picks, 1):
+            print(f"{k}. {e['name']} (`{e['id']}`, {e.get('family') or e['category']})")
+        if exit_picks:
+            print('\nExits, for the lines that leave on their own (the others cut, or turn into the next line by a swap): '
+                  + '; '.join(f"{e['name']} (`{e['id']}`)" for e in exit_picks) + '.')
+        presets = type_presets(starter_src())
+        if len(line_picks) < lines_n:
+            print(f"\nOnly {len(line_picks)} text animations fit this film from the library: build the other "
+                  f"{lines_n - len(line_picks)} from the device book's type families"
+                  + (' or from the presets below' if presets else '') + '.')
+        if presets:
+            print(f"\n`src/fx/TypePresets.tsx` builds {len(presets)} one-line animations from one spec "
+                  f"(`<TypeLine spec={{{{ preset, text, at, out, exit }}}}>`): {', '.join(presets)}. A drawn entry and a "
+                  'preset may be the same move: one preset per line, never one for two lines.')
+        print()
     for e in picks:
         print(render(e, allowed))
+    for k, e in enumerate(line_picks, 1):
+        print(render(e, allowed).replace('### ', f'### Line {k}: ', 1))
+    for e in exit_picks:
+        print(render(e, allowed).replace('### ', '### Exit: ', 1))
     if a.json:
         os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
-        with open(a.json, 'w', encoding='utf-8') as fh:
-            json.dump({'seed': seed, 'format': a.format, 'energy': a.energy, 'category': a.category, 'family': family,
-                       'recent': recent, 'have': have, 'direction': direc['id'] if direc else None,
-                       'picks': [{'id': e['id'], 'name': e['name'], 'category': e['category'], 'family': e.get('family'),
-                                  'role': e['role']} for e in picks]}, fh, indent=1)
+        row = lambda e: {'id': e['id'], 'name': e['name'], 'category': e['category'], 'family': e.get('family'), 'role': e['role']}  # noqa: E731
+        out = {'seed': seed, 'format': a.format, 'energy': a.energy, 'category': a.category, 'family': family,
+               'recent': recent, 'have': have, 'direction': direc['id'] if direc else None,
+               'picks': [row(e) for e in picks]}
         if not single:
-            write_history(hist, {'ids': [e['id'] for e in picks], 'format': a.format or 'launch'})
+            out.update({'line_count': lines_n, 'lines': [dict(row(e), line=k) for k, e in enumerate(line_picks, 1)],
+                        'exits': [row(e) for e in exit_picks]})
+        with open(a.json, 'w', encoding='utf-8') as fh:
+            json.dump(out, fh, indent=1)
+        if not single:
+            write_history(hist, {'ids': [e['id'] for e in picks], 'lines': [e['id'] for e in line_picks + exit_picks],
+                                 'format': a.format or 'launch'})
     return 0
 
 

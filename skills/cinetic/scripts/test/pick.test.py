@@ -22,6 +22,12 @@
      --direction (out/direction.json by default) sets the plan's format, honours its --have, weights its
      techniques up, never draws the ones that fight it and holds one signature, its own; --family takes
      the start of a name.
+  9. The script's lines: a whole-film plan carries a line track, one text animation per sentence (--lines,
+     default from the format and length), all different, from the type families, outside the family cap,
+     with exits for about half the lines; the picture plan then draws no type device; --lines 0 turns it
+     off; type devices weigh x2, imagery devices x0.2 unless --have photos or footage; the JSON and the
+     history carry the lines, and the next plan's --recent names them; the plan names the presets of
+     src/fx/TypePresets.tsx when the starter has them.
 
 Usage (from the skill root):  python3 scripts/test/pick.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -143,7 +149,7 @@ result(not seen_loop_only, '--format launch never draws a loop-only entry')
 loop_hits = sum('fx-tr-loop-only' in ids(draw_json('--format', 'loop', '--energy', 'calm', '--seconds', '20', '--seed', str(s))[1]) for s in range(40))
 result(loop_hits > 0, '--format loop can draw a loop-only entry', f'{loop_hits}/40')
 
-sizes = {(f, sec): len(draw_json('--format', f, '--seconds', str(sec), '--seed', '2', '--energy', 'high')[1]['picks'])
+sizes = {(f, sec): len(draw_json('--format', f, '--seconds', str(sec), '--seed', '2', '--energy', 'high', '--lines', '0')[1]['picks'])
          for f, sec in (('vertical', 12), ('launch', 30), ('launch', 45), ('sting', 6), ('loop', 10), ('walkthrough', 90))}
 result(sizes[('vertical', 12)] == 5 and sizes[('launch', 30)] == 12, 'an energetic plan holds about one technique per 2.5 s', str(sizes))
 calm = {sec: len(draw_json('--format', 'launch', '--seconds', str(sec), '--seed', '2')[1]['picks']) for sec in (30, 45)}
@@ -475,6 +481,74 @@ for fmt in mod.FORMATS:
         shipped_bad |= {i for i in ids(draw_json('--format', fmt, '--seed', str(s_), '--energy', 'any', '--direction', 'none', library=SHIPPED)[1]) if i in {
             'dv-baseline-converge-overshoot', 'ty-letter-arc-swing', 'dv-wordmark-soft-reveal', 'dv-signature-write-on', 'dv-typeface-cycle'}}
 result(not shipped_bad, 'the shipped library: plans for every format never deal the type-overshoot or script-face entries', str(sorted(shipped_bad)))
+
+# 9. The script's lines ---------------------------------------------------------------------------
+TYPE_FAMS = {'Type arrivals', 'Lines, layout and swaps', 'Type exits'}
+result([mod.line_count('launch', s_) for s_ in (15, 20, 30, 45)] == [6, 6, 9, 9] and mod.line_count('update', 14) == 4
+       and mod.line_count('sting', 6) == 1 and mod.line_count('loop', 10) == 2,
+       'a script holds 6-9 sentences in a launch film, 4 in a 14 s update, 1 in a sting, 2 in a loop')
+bad_l, mixed, short = [], [], []
+for s_ in range(12):
+    r, d = draw_json('--format', 'launch', '--seconds', '30', '--seed', str(s_), '--direction', 'none', library=SHIPPED)
+    lines, exits, pic = d.get('lines', []), d.get('exits', []), d['picks']
+    lids = [x['id'] for x in lines]
+    if len(lines) != 9 or len(set(lids)) != 9 or [x['line'] for x in lines] != list(range(1, 10)):
+        short.append(f'{s_}: {len(lines)} lines')
+    bad_l += [x['id'] for x in lines if x['family'] not in {'Type arrivals', 'Lines, layout and swaps'}]
+    bad_l += [x['id'] for x in exits if x['family'] != 'Type exits']
+    if len(exits) != 4 or set(lids) & {x['id'] for x in pic} or set(lids) & {x['id'] for x in exits}:
+        short.append(f'{s_}: {len(exits)} exits, or a line also drawn elsewhere')
+    mixed += [x['id'] for x in pic if x['family'] in TYPE_FAMS or x['category'] == 'typography_motion']
+result(not short and not bad_l, 'a 30 s launch plan draws 9 different text animations (one per line) and 4 exits from the type families',
+       '; '.join(short[:3]) + ' ' + ', '.join(bad_l[:3]))
+result(not mixed, 'with a line track the picture plan draws no type device of its own', ', '.join(sorted(set(mixed))[:4]))
+r, d = draw_json('--format', 'launch', '--seconds', '30', '--seed', '3', '--lines', '7', '--direction', 'none', library=SHIPPED)
+head = r.stdout.splitlines()[0] if r.stdout else ''
+result(len(d.get('lines', [])) == 7 and '--lines 7' in head and '## Text animations: one per line (7 sentences)' in r.stdout,
+       '--lines 7: seven text animations, and the header reproduces it', head[:120])
+off = [x for s_ in range(12) for x in draw_json('--format', 'launch', '--seconds', '30', '--seed', str(s_), '--lines', '0', '--direction', 'none', library=SHIPPED)[1]['picks']]
+r0, d0 = draw_json('--format', 'launch', '--seed', '1', '--lines', '0', '--direction', 'none', library=SHIPPED)
+result(not d0.get('lines') and 'Text animations' not in r0.stdout and any(x['category'] == 'typography_motion' for x in off),
+       '--lines 0 turns the line track off; the picture plan draws type devices again')
+result(pick('--format', 'launch', '--lines', '17').returncode == 2, '--lines outside 0-16 is a usage error')
+shipped_by = {e['id']: e for e in json.load(open(SHIPPED, encoding='utf-8'))['techniques']}
+typ = next(e for e in shipped_by.values() if e['family'] == 'Type arrivals' and e['category'] == 'typography_motion')
+img = next(e for e in shipped_by.values() if e['family'] == 'Photos and footage')
+plain = next(e for e in shipped_by.values() if e['family'] == 'Camera' and not mod.is_imagery(e))
+result(mod.kind_factor(typ) == 2.0 and mod.kind_factor(img) == 0.2 and mod.kind_factor(img, True) == 1.0 and mod.kind_factor(plain) == 1.0
+       and abs(mod.weight(img, 'any', (), (), True) - 5 * mod.weight(img, 'any')) < 1e-9,
+       'type devices weigh x2; imagery devices x0.2, at full weight only when the film has photos or footage')
+result(mod.is_imagery(shipped_by['dv-mark-in-photo-window']) and mod.is_imagery(shipped_by['dv-object-vocabulary'])
+       and not mod.is_imagery(shipped_by['dv-painted-light-plates']), 'imagery devices: photos and footage, cut-outs, a mark in a photo window; not a baked light plate')
+
+
+def img_count(*extra):
+    n = 0
+    for s_ in range(30):
+        _, d = draw_json('--format', 'launch', '--seconds', '30', '--seed', str(s_), '--direction', 'none', *extra, library=SHIPPED)
+        n += sum(1 for x in d['picks'] if mod.is_imagery(shipped_by[x['id']]))
+    return n
+
+
+n_none, n_ui, n_photos = img_count(), img_count('--have', 'ui'), img_count('--have', 'ui,photos')
+result(n_photos > 2 * max(1, n_ui) and n_none <= n_photos, 'imagery devices come up rarely unless --have photos (or footage)', f'no have {n_none}, ui {n_ui}, ui+photos {n_photos} of 30 plans')
+r = pick('--format', 'launch', '--have', 'photos', '--seed', '2', '--direction', 'none', library=SHIPPED)
+result(r.returncode == 0 and 'imagery devices at full weight' in r.stdout, '--have photos is a word, and the plan says imagery is at full weight')
+with tempfile.TemporaryDirectory() as tmp:
+    hist = os.path.join(tmp, 'history.json')
+    env = dict(os.environ, CINETIC_PICK_HISTORY=hist)
+    pick('--format', 'launch', '--seed', '5', '--direction', 'none', '--json', os.path.join(tmp, 'a.json'), library=SHIPPED, env=env)
+    a_ = json.load(open(os.path.join(tmp, 'a.json'), encoding='utf-8'))
+    r = pick('--format', 'launch', '--seed', '6', '--direction', 'none', library=SHIPPED, env=env)
+    h = json.load(open(hist, encoding='utf-8'))
+    lids = [x['id'] for x in a_['lines']]
+    result(h[0].get('lines') and set(lids) <= set(h[0]['lines']) and all(i in r.stdout.splitlines()[0] for i in lids),
+           'the history keeps the line track, and the next plan down-weights it through --recent')
+presets = mod.type_presets(mod.starter_src())
+if os.path.isfile(os.path.join(SKILL, 'assets', 'remotion-starter', 'src', 'fx', 'TypePresets.tsx')):
+    r = pick('--format', 'launch', '--seed', '2', '--direction', 'none', library=SHIPPED)
+    result(len(presets) >= 8 and 'src/fx/TypePresets.tsx' in r.stdout and all(p_ in r.stdout for p_ in presets[:4]),
+           'the plan names the presets of src/fx/TypePresets.tsx', f'{len(presets)} presets')
 
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')
 sys.exit(1 if failed else 0)
