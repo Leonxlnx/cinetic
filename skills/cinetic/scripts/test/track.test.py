@@ -15,7 +15,9 @@ last 0.42 s stop dead, peak 15-22, outro 23-24) and one final thump on bar 25. C
     TypeScript file loads under node's type stripping when node can do it
   - check: every join measured on the edited bed (attack on the film downbeat, no click)
   - a bed with no bar accent (identical clicks): analyze exits 2 (downbeat unresolved), edit refuses,
-    and --phase N resolves it
+    and --phase N resolves it (the phase it already has: confirmed in place, no second analysis)
+  - a bed whose clicks leave the downbeat unsettled but whose kick comes in on a downbeat: the low-band
+    entrance confirms the grid, analyze exits 0 and edit runs with a warning
   - a bed that ends on a hit and a 2.5 s ring over level bars (the ring's tail a near-silent last bar):
     the ending is a ring on that hit, not a fade, and edit --end ring accepts it
   - add: an NC licence and a record without licence_seen are refused; a CC BY record needs its credit
@@ -355,6 +357,58 @@ def ring_ending(d):
     check(p.returncode == 0, 'edit --end ring accepts it' + ('' if p.returncode == 0 else f': {p.stderr[-300:]}'))
 
 
+KICK_BARS, KICK_ENTRY = 16, 9
+
+
+def kick_bed(seed=7):
+    """A four-on-the-floor bed whose downbeat the features cannot settle (stereo float32 at 48 kHz): a mid-band
+    click on every beat, the fourth a little louder, and a low kick on every beat from bar KICK_ENTRY on."""
+    n = int((T0 + (KICK_BARS + 1) * BAR + 2.0) * SR)
+    y = np.zeros(n)
+    r = np.random.default_rng(seed)
+
+    def add(x, t, g):
+        i = int(round(t * SR))
+        m = min(len(x), n - i)
+        y[i:i + m] += x[:m] * g
+    t1 = np.arange(int(0.05 * SR)) / SR
+    click = signal.sosfilt(signal.butter(2, [800, 4000], 'band', fs=SR, output='sos'), r.standard_normal(len(t1)))
+    click *= np.exp(-t1 / 0.008) * np.minimum(1, t1 / 0.001)
+    t2 = np.arange(int(0.3 * SR)) / SR
+    kick = signal.sosfilt(signal.butter(2, 120, 'low', fs=SR, output='sos'), r.standard_normal(len(t2)))
+    kick *= 8 * np.exp(-t2 / 0.09) * np.minimum(1, t2 / 0.0015)
+    for k in range(KICK_BARS * 4):
+        add(click, T0 + k * BEAT, 0.75 if k % 4 == 3 else 0.5)
+        if k >= (KICK_ENTRY - 1) * 4:
+            add(kick, T0 + k * BEAT, 0.6)
+    y = y / (np.abs(y).max() + 1e-9) * 0.9
+    return np.stack([y, y], 1).astype(np.float32)
+
+
+def kick_entry(d):
+    """Low confidence that the biggest low-band entrance settles: analyze exits 0 with a note, edit runs with a
+    warning, no second analysis."""
+    d2 = os.path.join(d, 'kick')
+    os.makedirs(os.path.join(d2, 'audio', 'music'))
+    sf.write(os.path.join(d2, 'audio', 'music', 'kick.wav'), kick_bed(), SR, subtype='FLOAT')
+    p = run(['analyze', 'audio/music/kick.wav', '--quiet'], d2)
+    tj = os.path.join(d2, 'audio', 'music', 'kick.track.json')
+    if not os.path.isfile(tj):
+        check(False, f'the kick bed analyses: {(p.stderr or p.stdout)[-300:]}')
+        return
+    g = json.load(open(tj))['grid']
+    le = g.get('low_entry') or {}
+    entry_t = T0 + (KICK_ENTRY - 1) * BAR
+    check(g['downbeat_confidence'] < 0.5, f"the clicks alone leave the downbeat unsettled ({g['downbeat_confidence']})")
+    check(abs(le.get('t', -1) - entry_t) < 0.02 and le.get('downbeat_in_phase') == 0 and g['phase'] == 0,
+          f"the biggest low-band entrance is the kick at bar {KICK_ENTRY}, on phase 0 ({le})")
+    check(p.returncode == 0 and g['entry_confirms'] and 'confirmed by the biggest low-band entrance' in p.stdout,
+          f"it confirms the grid: analyze exits 0 with a note (exit {p.returncode})")
+    p = run(['edit', '--bars', '8', '--reveal-bar', '6', '--end', 'stop'], d2)
+    check(p.returncode == 0 and 'warning' in p.stderr, 'edit runs on that grid with a warning'
+          + ('' if p.returncode == 0 else f': {p.stderr[-200:]}'))
+
+
 def low_confidence(d):
     d2 = os.path.join(d, 'flat')
     os.makedirs(os.path.join(d2, 'audio', 'music'))
@@ -363,8 +417,12 @@ def low_confidence(d):
     check(p.returncode == 2 and 'LOW downbeat confidence' in p.stdout, f'identical clicks: analyze exits 2 (downbeat unresolved, exit {p.returncode})')
     p = run(['edit', '--bars', '4', '--reveal-bar', '2', '--end', 'stop'], d2)
     check(p.returncode == 2 and '--phase' in p.stderr, 'and edit refuses until the phase is set')
-    p = run(['analyze', 'audio/music/flat.wav', '--quiet', '--phase', '0'], d2)
-    check(p.returncode == 0, '--phase 0 resolves it' + ('' if p.returncode == 0 else f': {p.stderr[-200:]}'))
+    tj = os.path.join(d2, 'audio', 'music', 'flat.track.json')
+    ph = json.load(open(tj))['grid']['phase'] if os.path.isfile(tj) else 0
+    p = run(['analyze', 'audio/music/flat.wav', '--quiet', '--phase', str(ph)], d2)
+    check(p.returncode == 0 and 'confirmed in' in p.stdout and json.load(open(tj))['grid']['phase_set'],
+          f'--phase {ph} (the grid it has) resolves it in place, without a second analysis'
+          + ('' if p.returncode == 0 else f': {p.stderr[-200:]}'))
     p = run(['analyze', 'audio/music/flat.wav', '--quiet'], d2)
     check(p.returncode == 0 and 'is current' in p.stdout,
           f'a run without --phase keeps the analysis whose phase was set by hand (exit {p.returncode})')
@@ -421,6 +479,7 @@ def main():
         if a:
             edit_grid_check(d, a)
         low_confidence(d)
+        kick_entry(d)
         ring_ending(d)
         add_records(d)
         strict_json(d)

@@ -37,7 +37,7 @@ A track found by hand elsewhere is recorded with `track.py add` as you download 
 
 A Mixkit track has no page of its own: the record's `page` is the listing it was found on (a genre or mood page, whose data names the track's licence), and the licence text is read at `https://mixkit.co/license/modal/musicFree/` (the `/license/` page only opens it in a panel): that is the `licence_seen` URL. `music.mjs get` reads that page again before every download and refuses when its sentence has changed.
 
-**Gate (Step 3):** the licence record passes (`track.py check`); the downbeat is confident or its phase is set by hand; the reveal bar holds an entry; the ending is `button`, `stop` or `ring`; `grid-check.ts` runs in music mode clean (`music-grid`, `structural-on-music`).
+**Gate (Step 3):** the licence record passes (`track.py check`); the downbeat is confident, confirmed by the biggest low-band entrance, or its phase set by hand; the reveal bar holds an entry; the ending is `button`, `stop` or `ring`; `grid-check.ts` runs in music mode clean (`music-grid`, `structural-on-music`).
 
 ## 2. Licences you may use, and what to refuse
 
@@ -110,7 +110,7 @@ Choose among the first three by the film's mood and pace, after listening:
 `track.py analyze FILE [--profile calm|crisp|punchy] [--bpm N] [--phase N]` (numpy, scipy, librosa, ffmpeg; no models, no network) writes `<name>.track.json` and prints the bar table:
 
 - **Tempo:** librosa's beats give a first period; the period and phase whose fold of a fine spectral flux collects the most onset energy over the whole track give the exact tempo; every beat is then measured on its own attack: the drift (RMS and max). Over 12 ms RMS the track wanders (played live): cut to its accents, not its grid. `--bpm` uses a tempo the composer states (the phase is still fitted).
-- **Downbeat:** each of the four beat phases is scored by low-band onsets, harmonic change, the level and timbre change across the beat, and the entrances (a part or a kick coming in votes for its beat). `downbeat_confidence` is the gap to the runner-up. **Under 0.5, `analyze` exits 2 and `edit` refuses** until you decide: the note prints both grids and where the biggest entrance lands; read the bar table (the first note, section entrances, chord changes) and rerun with `--phase N`. A four-on-the-floor track often needs this: every beat has a kick.
+- **Downbeat:** each of the four beat phases is scored by low-band onsets, harmonic change, the level and timbre change across the beat, and the entrances (a part or a kick coming in votes for its beat). `downbeat_confidence` is the gap to the runner-up. **Under 0.5, `analyze` exits 2 and `edit` refuses** until you decide: the note prints both grids and where the biggest entrance lands; read the bar table (the first note, section entrances, chord changes) and rerun with `--phase N`. `--phase` with the grid's own phase confirms it in place (no second analysis); another phase analyses again. A four-on-the-floor track often reads low (every beat has a kick): when the biggest low-band entrance (a kick or bass coming in 12 dB or more) lands on the chosen downbeat, the grid stands, `analyze` exits 0 with a note and `edit` warns.
 - **Bars:** every downbeat on its own attack; per bar its loudness (LUFS), low band, onset density, centroid and novelty. **Phrases** (the 4- or 8-bar lattice with the most novelty), **sections** (intro, body, break, peak, outro), **entries** (a bar ≥ 4 dB over the two before with the low band ≥ 6 dB up, or ≥ 2.5 dB with the low band ≥ 12 dB up), **breaks** (a bar ≥ 5 dB down), **stops** (0.15–1 s of near-silence that departs from the bar's own pattern: the track's own stop-downs), **accents** (attacks ≥ 6 dB over the bed of the second before, with their band: `low` kick or sub, `mid` snare, clap or stab, `high` hats), the **ending** (`button`, `ring`, `fade`, `loop`), the **key** (and per section), loudness, true peak and LRA.
 
 Read it before editing: is bar 1 where the music starts (a pickup is fine), does the biggest entry land on a bar line, where are the breaks, how does it end?
@@ -158,7 +158,7 @@ It exits 1 when a record is missing, the licence is unknown or forbidden, `licen
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `analyze` exits 2: downbeat confidence LOW | every beat sounds alike (four-on-the-floor), or the track opens on a pickup | read the bar table and the note (where the biggest entrance lands), decide, rerun with `--phase N` |
+| `analyze` exits 2: downbeat confidence LOW | every beat sounds alike (four-on-the-floor), or the track opens on a pickup | read the bar table and the note (where the biggest entrance lands), decide, rerun with `--phase N` (the current phase is confirmed in place) |
 | the track wanders (drift over 12 ms RMS) | played live, rubato | cut to its accents (`accentNear`), not its bar grid |
 | the ending is a fade | the track fades out | `--end stop`: end on a bar line, then one element |
 | possible vocals (`listen.py --track`) | a vocal sample in an "instrumental" track | check the page; choose another track |

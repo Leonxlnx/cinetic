@@ -40,8 +40,10 @@ Analysis (numpy, scipy, librosa, ffmpeg; no models, no network):
   phase      the grid moved onto the measured attacks (the flux trails an attack by a few ms)
   downbeat   each of the 4 beat phases scored by low-band onsets, harmonic change, the level change across
              the beat and the timbre change across it; confidence = the gap to the runner-up (under 0.5
-             both grids are printed, edit refuses: rerun with --phase N); 8-bar windows where another
-             phase wins are listed
+             both grids are printed, edit refuses: rerun with --phase N, which confirms the current phase in
+             place; unless the biggest low-band entrance, a kick or bass coming in 12 dB or more, lands on
+             the chosen downbeat: then the grid stands with a warning); 8-bar windows where another phase
+             wins are listed
   bars       every bar's downbeat on its own attack (a played track breathes); loudness (K-weighted), low
              band, onset density, centroid, chroma and timbre; novelty against the bar before
   phrases    the 4- or 8-bar lattice (and offset) that collects the most novelty
@@ -100,6 +102,7 @@ ENTRY_DB, ENTRY_LOW_DB, BREAK_DB = 4.0, 6.0, -5.0
 ENTRY_VOTE_DB, VOTE_WEIGHT, VOTE_MIN_DB = 3.0, 1.0, 6.0
 ENTRY_LOW_VOTE_DB = 6.0       # a low-band rise over this (kick or bass coming in) votes for its beat's phase           # downbeat: rises of a part over this vote for their beat's phase
 ENTRY_KICK_DB, ENTRY_KICK_LOW_DB = 2.5, 12.0   # a kick entering under an intro: a smaller step, a big low-band rise
+ENTRY_CONFIRM_DB, ENTRY_CONFIRM_GAP_DB = 12.0, 2.0  # a low-band entrance this big, this clear of other phases, confirms a low-confidence grid
 STOP_DB, STOP_MIN_S, STOP_MAX_S = 12.0, 0.15, 1.0
 ACCENT_DB = 6.0
 FADE_INTO_HIT_DB = 2.0        # ending: a fade with a hit in its last bars has fallen this much over the 2 bars before it
@@ -458,6 +461,18 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
     conf = float(ph_score[order[0]] - ph_score[order[1]])
     use_phase = auto_phase if phase is None else int(phase) % BPB
     alt_phase = int(order[1]) if use_phase == auto_phase else auto_phase
+    # the biggest low-band entrance (a kick or bass coming in ENTRY_CONFIRM_DB or more, clear of the best rise
+    # in every other phase by ENTRY_CONFIRM_GAP_DB) lands on a downbeat: a hi-hat or a pad never decides it.
+    # One beat after against the two before, so the beat before the entrance (whose two-beat window already
+    # holds it) does not rise with it
+    lo_step = np.where(settled, np.array([lvl_lo(t - g_, t + T - g_) for t in grid]) - lo_before, 0.0)
+    low_entry = None
+    if len(lo_step):
+        il = int(np.argmax(lo_step))
+        other = max([float(lo_step[q::BPB].max()) for q in range(BPB) if q != il % BPB and len(lo_step[q::BPB])] or [0.0])
+        if lo_step[il] >= ENTRY_CONFIRM_DB and lo_step[il] - other >= ENTRY_CONFIRM_GAP_DB:
+            low_entry = dict(t=r3(grid[il]), low_db=round(float(lo_step[il]), 1), downbeat_in_phase=int(il % BPB))
+    entry_confirms = bool(conf < CONF_MIN and low_entry and low_entry['downbeat_in_phase'] == use_phase)
     local = []
     W = 8 * BPB
     for s0 in range(0, len(grid) - W + 1, 4 * BPB):
@@ -688,14 +703,23 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
     notes = []
     if drift_rms > DRIFT_WARN_MS:
         notes.append(f'the track wanders ({drift_rms:.1f} ms RMS off a straight grid): cut to its accents, not its bars')
-    if conf < CONF_MIN and phase is None:
+    if entry_confirms and phase is None:
+        notes.append(f'downbeat confidence {conf:.2f} is low, but the biggest low-band entrance ({low_entry["t"]} s, '
+                     f'+{low_entry["low_db"]:g} dB) lands on a downbeat of this grid (phase {use_phase}): the grid stands. '
+                     f'Set --phase {alt_phase} only if the bar table (the first note, chord changes) says the bars start at '
+                     f'{grid[alt_phase]:.3f} s instead')
+    elif conf < CONF_MIN and phase is None:
         hint = ''
-        if big_rises:
+        if low_entry:
+            hint = (f'; the biggest low-band entrance ({low_entry["t"]} s, +{low_entry["low_db"]:g} dB) lands on a downbeat '
+                    f'with --phase {low_entry["downbeat_in_phase"]}')
+        elif big_rises:
             r0 = big_rises[0]
             hint = (f'; the biggest entrance ({r0["t"]} s) lands on a downbeat with --phase {r0["downbeat_in_phase"]}')
-        notes.append(f'downbeat confidence {conf:.2f} is LOW: bars may start at {grid[alt_phase]:.3f} + {bar_len:.4f}*n s '
-                     f'instead (--phase {alt_phase}){hint}; decide from the bar table (the first note, section entrances, '
-                     'chord changes) and rerun analyze with --phase N')
+        notes.append(f'downbeat confidence {conf:.2f} is LOW: bars start at {grid[use_phase]:.3f} s (phase {use_phase}) or at '
+                     f'{grid[alt_phase]:.3f} + {bar_len:.4f}*n s (--phase {alt_phase}){hint}; decide from the bar table '
+                     '(the first note, section entrances, chord changes) and rerun analyze with --phase N (the current '
+                     'phase is confirmed in place, without a second analysis)')
     if kind == 'fade':
         notes.append('the track ends on a fade: end the film on a stop (track.py edit --end stop)')
     fade_in = bool(nb > 3 and lufs[1] - lufs[0] > 6 and lufs[2] - lufs[1] > 3)
@@ -712,6 +736,7 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
                           phase_set=phase is not None, alt=dict(phase=alt_phase, t0=r3(grid[alt_phase])),
                           transient_shift_ms=round(shift * 1000, 1), half_beat_flip=half_beat_flip,
                           entry_votes=[round(v, 3) for v in vote_share], big_rises=big_rises,
+                          low_entry=low_entry, entry_confirms=entry_confirms,
                           local_disagreements=local, pickup_t=pickup,
                           beats_per_bar=BPB),
                 bars=bars, phrases=dict(len=plen, offset=poff, starts=pstarts),
@@ -1062,11 +1087,18 @@ def cmd_edit(a_):
     tj = a_.track or find_one('audio/music', '.track.json')
     a = read_json(tj, 'track analysis')
     g = a['grid']
-    if g['downbeat_confidence'] < CONF_MIN and not g.get('phase_set'):
+    if g['downbeat_confidence'] < CONF_MIN and not g.get('phase_set') and g.get('entry_confirms'):
+        le = g.get('low_entry') or {}
+        print(f"track.py: warning: downbeat confidence {g['downbeat_confidence']} is under {CONF_MIN}; the biggest low-band "
+              f"entrance ({le.get('t')} s) lands on a downbeat of this grid (phase {g['phase']}), so the edit uses it "
+              f"(`track.py analyze {a['file']} --phase {g['alt']['phase']}` if the bars start at {g['alt']['t0']} s)",
+              file=sys.stderr)
+    elif g['downbeat_confidence'] < CONF_MIN and not g.get('phase_set'):
         print(f"track.py: downbeat confidence {g['downbeat_confidence']} is under {CONF_MIN}: the bars may start at "
               f"{g['t0']} s (phase {g['phase']}) or at {g['alt']['t0']} s (phase {g['alt']['phase']}). Decide from the "
               "music (the first note, section entrances, chord changes in the bar table) and rerun "
-              f"`track.py analyze {a['file']} --phase N`; edit refuses until the phase is set", file=sys.stderr)
+              f"`track.py analyze {a['file']} --phase N` (--phase {g['phase']} confirms this grid without a second "
+              "analysis); edit refuses until the phase is set", file=sys.stderr)
         return 2
     arc = [float(v) for v in a_.arc.split(',')] if a_.arc else None
     if a_.end == 'stop' and not 0.2 <= a_.gap <= 0.7:
@@ -1592,14 +1624,21 @@ def current_analysis(out, path, profile, bpm, phase):
     same = (an.get('version') == ANALYSIS_VERSION and an.get('rate') == AR
             and (profile is None or an.get('profile') == profile)
             and (bpm is None or tp.get('stated') == float(bpm))
-            and (phase is None or (bool(g.get('phase_set')) and g.get('phase') == phase)))
+            and (phase is None or (g.get('phase') == phase and (bool(g.get('phase_set')) or g.get('auto_phase') == phase))))
     return old if same and old.get('sha256') == CR.sha256_file(path) else None
 
 
 def cmd_analyze(a_):
     out = a_.json or os.path.join(os.path.dirname(a_.file) or '.', stem_of(a_.file) + '.track.json')
     res = None if a_.force else current_analysis(out, a_.file, a_.profile, a_.bpm, a_.phase)
-    if res is not None:
+    if res is not None and a_.phase is not None and not res['grid'].get('phase_set'):
+        # the grid already has this phase: setting it by hand gives the same analysis, so it is confirmed in place
+        res['grid']['phase_set'] = True
+        res['notes'] = [n for n in res.get('notes', []) if not n.startswith('downbeat confidence')]
+        write_json(out, res)
+        print_analysis(res, print if not a_.quiet else (lambda s: None))
+        print(f'analyze: phase {a_.phase} confirmed in {out} (the grid it already had: no second analysis)')
+    elif res is not None:
         print_analysis(res, print if not a_.quiet else (lambda s: None))
         print(f'analyze: {out} is current (the same file and settings): kept (--force analyses again)')
     else:
@@ -1608,9 +1647,14 @@ def cmd_analyze(a_):
         write_json(out, res)
         print_analysis(res, print if not a_.quiet else (lambda s: None))
         print(f'analyze: wrote {out}')
-    if res['grid']['downbeat_confidence'] < CONF_MIN and not res['grid']['phase_set']:
-        print(f"  LOW downbeat confidence: grid A from {res['grid']['t0']} s (phase {res['grid']['phase']}), grid B from "
-              f"{res['grid']['alt']['t0']} s (phase {res['grid']['alt']['phase']}); rerun with --phase N")
+    g = res['grid']
+    if g['downbeat_confidence'] < CONF_MIN and not g['phase_set'] and g.get('entry_confirms'):
+        print(f"  low downbeat confidence, confirmed by the biggest low-band entrance ({g['low_entry']['t']} s): grid A from "
+              f"{g['t0']} s (phase {g['phase']}) stands; grid B from {g['alt']['t0']} s is --phase {g['alt']['phase']}")
+    elif g['downbeat_confidence'] < CONF_MIN and not g['phase_set']:
+        print(f"  LOW downbeat confidence: grid A from {g['t0']} s (phase {g['phase']}), grid B from "
+              f"{g['alt']['t0']} s (phase {g['alt']['phase']}); rerun with --phase N (--phase {g['phase']} confirms grid A "
+              "in place)")
         return 2
     return 0
 
