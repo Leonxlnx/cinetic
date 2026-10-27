@@ -13,7 +13,7 @@ import { shadowTone } from './KeyLight';
  *   - a 1 px rim highlight on the edges that face the key, computed in the panel's own coordinates (keyLocal), so the
  *     rim slides round the edge as the panel turns and brightens as an edge turns into the light;
  *   - the face catches more or less light as it turns (n . l against a front-on panel: a light lift toward the key,
- *     a shade away from it) plus a soft sheen across it, lighter on the key side;
+ *     a shade away from it) plus a soft sheen across it, lighter on the key side, both in the light's colour (rim.color);
  *   - a ground-coloured spill: the ground's bounce light on the side away from the key;
  *   - a cast shadow on the backing plane `lift` px behind the panel and parallel to it (so a turned panel never cuts
  *     through its own ground), thrown away from the key by lift x (in-plane light / facing light), its penumbra
@@ -57,7 +57,7 @@ export type LitProps = {
   enter?: LitEnter; // settle in from a steeper tilt (house from y +90 px, lift 0, tilt 24 / -18 over 48 f at 60 fps)
   ground: string; // the ground colour behind the panel: the shadow's hue and the spill's colour
   light?: FilmLight; // the film's light (house FILM_LIGHT)
-  rim?: { color?: string; alpha?: number }; // the rim's colour (house C.white) and peak alpha (house light.rim)
+  rim?: { color?: string; alpha?: number }; // the light's colour (house C.white: the rim, the sheen and the lift take it) and the rim's peak alpha (house light.rim)
   shadow?: { alpha?: number; dL?: number }; // the cast shadow's opacity and how much darker than the ground it is
   perspective?: number; // px (house 2200)
   vanish?: [number, number]; // perspective origin on screen (house the frame centre)
@@ -244,8 +244,8 @@ export const Lit: React.FC<LitProps & { frame: number; children: React.ReactNode
       </div>
       <div data-ui style={{ ...box, borderRadius: r, overflow: 'hidden', opacity: s.opacity, transform: pose }}>
         {props.children}
-        <div style={{ position: 'absolute', inset: 0, background: s.tone.light ? rgbaOf(C.white, s.tone.alpha) : rgbaOf(tone, s.tone.alpha) }} />
-        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(${s.sheen.angle.toFixed(2)}deg, ${rgbaOf(C.white, s.sheen.alpha)} 0%, ${rgbaOf(C.white, 0)} 62%)` }} />
+        <div style={{ position: 'absolute', inset: 0, background: s.tone.light ? rgbaOf(rimColor, s.tone.alpha) : rgbaOf(tone, s.tone.alpha) }} />
+        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(${s.sheen.angle.toFixed(2)}deg, ${rgbaOf(rimColor, s.sheen.alpha)} 0%, ${rgbaOf(rimColor, 0)} 62%)` }} />
         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(${s.spill.angle.toFixed(2)}deg, ${rgbaOf(props.ground, s.spill.alpha)} 0%, ${rgbaOf(props.ground, 0)} 55%)` }} />
         <RimEdge w={w} h={h} r={r} line={s.rim} color={rimColor} id={uid} />
       </div>
