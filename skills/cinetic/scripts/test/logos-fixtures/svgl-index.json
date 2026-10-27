@@ -1,0 +1,4 @@
+[
+ { "id": 7, "title": "Tidepool", "category": "Software", "route": { "light": "https://svgl.app/library/tidepool.svg", "dark": "https://svgl.app/library/tidepool_dark.svg" }, "wordmark": "https://svgl.app/library/tidepool_wordmark.svg", "url": "https://www.tidepool.example", "brandUrl": "https://tidepool.example/brand" },
+ { "id": 9, "title": "Sharecrop", "category": "Software", "route": "https://svgl.app/library/sharecrop.svg", "url": "https://sharecrop.example" }
+]
