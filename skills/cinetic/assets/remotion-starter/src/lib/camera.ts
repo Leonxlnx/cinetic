@@ -3,7 +3,7 @@
 // shots chain without drift: lc(lc(A, B, t1), C, t2). Anchors lerp linearly, k in log space.
 import type React from 'react';
 import { clamp, E, type Ease, lmix, mix } from './anim';
-import { f60, type FilmCtx, fpsOf, sizeOf } from './film';
+import { f60, f60x, type FilmCtx, fpsOf, sizeOf } from './film';
 
 export type Shot = {
   ax: number; // world point that is framed ...
@@ -163,3 +163,128 @@ export const camVel = (f: number, base: Shot, moves: readonly CamMove[], atIn?: 
   const vy = at.y - q.y;
   return { vx, vy, speed: Math.hypot(vx, vy), angle: (Math.atan2(vy, vx) * 180) / Math.PI, vk: Math.log(now.k / was.k) };
 };
+
+// ------------------------------------------------------------------------------------------------ 3D: the film's one turn
+
+/**
+ * The one 3D camera move of a UI film, as numbers: the camera turns once, on one axis (yaw: a vertical hinge; pitch:
+ * a tabletop), 15-30 degrees in total, over 72-150 f at 60 fps (house 22 degrees over 108 f on E.strongInOut), landing
+ * on a resting angle (house 4: nearly front-on for the read, or a lit tilt of 8-14) and creeping on after it. Under the
+ * turn the layout's planes parallax for real: place them at a depth with place(x, y, z) inside camera3d().
+ * Perspective 1800-2600 px (house 2200); roll stays within 11 degrees.
+ */
+export const CAM3D = { deg: [15, 30] as const, house: 22, rest: 4, frames60: [72, 150] as const, house60: 108, minAxis60: 48, otherMax: 6, perspective: 2200, perspectiveRange: [1800, 2600] as const, rollMax: 11, creep: 0.06, creep60: 600 } as const;
+
+/**
+ * camera() for a world with depth: the same anchor framing, with `transform-style: preserve-3d` and the scale applied
+ * on all three axes (scale3d(k, k, k)), so children placed at a depth (place(x, y, z)) keep it under the camera's yaw
+ * and pitch: near layers swing further than far ones and a push grows them faster. The turn pivots on the framed point.
+ */
+export const camera3d = (s: Shot, perspective: number = CAM3D.perspective): React.CSSProperties => {
+  const k = Math.max(1e-4, s.k);
+  return {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    transformOrigin: '0 0',
+    transformStyle: 'preserve-3d',
+    transform: `translate(${s.sx}px, ${s.sy}px) perspective(${perspective}px) rotateZ(${s.roll ?? 0}deg) rotateX(${s.pitch ?? 0}deg) rotateY(${s.yaw ?? 0}deg) scale3d(${k}, ${k}, ${k}) translate(${-s.ax}px, ${-s.ay}px)`,
+  };
+};
+
+/**
+ * Where an element sits in the world, by transform only: left and top stay 0 and the place is one translate3d (plus
+ * any rotation or scale after it). Moving elements placed with fractional left/top snap to whole pixels at full size
+ * and jump; a transform moves them by sub-pixels. z (px toward the viewer) only reads inside camera3d().
+ */
+export const place = (x: number, y: number, z = 0, after = ''): React.CSSProperties => ({
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  transform: `translate3d(${x.toFixed(3)}px, ${y.toFixed(3)}px, ${z.toFixed(3)}px)${after ? ` ${after}` : ''}`,
+});
+
+export type Swing3dOpts = {
+  at: number; // first frame of the turn
+  frames?: number; // film frames (house 108 at 60 fps)
+  axis?: 'yaw' | 'pitch';
+  from?: number; // deg the camera starts turned (house rest + 22)
+  to?: number; // deg it lands on (house 4)
+  ease?: Ease; // house E.strongInOut
+  zoom?: number; // a push or pull riding the turn (ratio)
+  pan?: { x?: number; y?: number };
+  look?: { x?: number; y?: number };
+  creep?: number | false; // share of the turn it keeps drifting on after landing (house 0.06 over 10 s)
+  film?: Partial<FilmCtx>;
+};
+
+/**
+ * The film's one turn as camera-path moves: `start` holds the starting angle to merge into the base shot, `moves` the
+ * turn (with any zoom, pan and look riding it) and a slow creep that carries on in the same direction from 80 % of
+ * the turn, so the landing never freezes.
+ *   const sw = swing3d({ at: 30 });  const shot = camPath(f, { ...base, ...sw.start }, sw.moves);
+ */
+export const swing3d = (o: Swing3dOpts): { start: Pick<Shot, 'yaw' | 'pitch'>; moves: CamMove[] } => {
+  const fps = fpsOf(o.film);
+  const frames = o.frames ?? f60x(CAM3D.house60, fps);
+  const axis = o.axis ?? 'yaw';
+  const to = o.to ?? CAM3D.rest;
+  const from = o.from ?? to + CAM3D.house;
+  const turn = to - from;
+  const moves: CamMove[] = [{ at: o.at, frames, ease: o.ease ?? E.strongInOut, [axis]: turn, ...(o.zoom !== undefined ? { zoom: o.zoom } : {}), ...(o.pan ? { pan: o.pan } : {}), ...(o.look ? { look: o.look } : {}) }];
+  const creep = o.creep === undefined ? CAM3D.creep : o.creep;
+  if (creep) moves.push({ at: o.at + frames * 0.8, frames: f60x(CAM3D.creep60, fps), ease: E.linear, [axis]: turn * creep });
+  return { start: axis === 'yaw' ? { yaw: from } : { pitch: from }, moves };
+};
+
+/**
+ * Checks a camera path against the one-turn rule: the range of yaw, pitch and roll over the moves' span; exactly one
+ * axis turning 15-30 degrees (the other within 6), roll within 11, and the turning move at least 48 f at 60 fps long.
+ * `issues` says what breaks the rule (empty when it holds).
+ */
+export const cam3dCheck = (base: Shot, moves: readonly CamMove[], film?: Partial<FilmCtx>) => {
+  const fps = fpsOf(film);
+  const a = Math.min(...moves.map((m) => m.at), 0);
+  const b = Math.max(...moves.map((m) => m.at + m.frames), 1);
+  const ext = { yaw: [Infinity, -Infinity], pitch: [Infinity, -Infinity], roll: [Infinity, -Infinity] } as Record<'yaw' | 'pitch' | 'roll', number[]>;
+  const n = Math.max(64, Math.ceil(b - a));
+  for (let i = 0; i <= n; i++) {
+    const s = camPath(a + ((b - a) * i) / n, base, moves);
+    for (const ax of ['yaw', 'pitch', 'roll'] as const) {
+      const v = s[ax] ?? 0;
+      ext[ax][0] = Math.min(ext[ax][0], v);
+      ext[ax][1] = Math.max(ext[ax][1], v);
+    }
+  }
+  const yaw = ext.yaw[1] - ext.yaw[0];
+  const pitch = ext.pitch[1] - ext.pitch[0];
+  const roll = Math.max(Math.abs(ext.roll[0]), Math.abs(ext.roll[1]));
+  const axis: 'yaw' | 'pitch' = yaw >= pitch ? 'yaw' : 'pitch';
+  const deg = Math.max(yaw, pitch);
+  const other = Math.min(yaw, pitch);
+  const turning = moves.filter((m) => Math.abs(m[axis] ?? 0) >= 1).map((m) => m.frames);
+  const issues: string[] = [];
+  if (deg < CAM3D.deg[0]) issues.push(`the turn is ${deg.toFixed(1)} deg: a 3D move turns ${CAM3D.deg[0]}-${CAM3D.deg[1]}`);
+  if (deg > CAM3D.deg[1]) issues.push(`the turn is ${deg.toFixed(1)} deg: more than ${CAM3D.deg[1]} reads as a spin, not a move through the layout`);
+  if (other > CAM3D.otherMax) issues.push(`both axes turn (${yaw.toFixed(1)} yaw, ${pitch.toFixed(1)} pitch): one axis per move, the other within ${CAM3D.otherMax}`);
+  if (roll > CAM3D.rollMax) issues.push(`roll ${roll.toFixed(1)} deg: keep it within ${CAM3D.rollMax}`);
+  if (turning.length && Math.max(...turning) < f60x(CAM3D.minAxis60, fps)) issues.push(`the turn lasts ${Math.max(...turning).toFixed(0)} f: at least ${CAM3D.minAxis60} f at 60 fps`);
+  return { axis, deg, yaw, pitch, roll, issues, ok: issues.length === 0 };
+};
+
+/**
+ * A depth layer's shot under the camera: weight w takes w of the camera's pan (sx, sy), look (ax, ay) and turn (yaw,
+ * pitch) away from `base`, and zooms at w on log scale (base.k x (k / base.k)^w). w 1 rides the camera, 0 stays put,
+ * above 1 is nearer than the subject. Roll stays rigid. fx/DepthStack (0.5 / 1 / 1.6) and fx/Grounds Planes
+ * (bg 0.25 / mid 0.6 / fg 1) draw each plane through it.
+ */
+export const weighShot = (shot: Shot, base: Shot, w: number, extra: { yaw?: number; pitch?: number } = {}): Shot => ({
+  ax: base.ax + (shot.ax - base.ax) * w,
+  ay: base.ay + (shot.ay - base.ay) * w,
+  sx: base.sx + (shot.sx - base.sx) * w,
+  sy: base.sy + (shot.sy - base.sy) * w,
+  k: base.k * Math.exp(w * Math.log(Math.max(1e-6, shot.k) / Math.max(1e-6, base.k))),
+  yaw: (base.yaw ?? 0) + ((shot.yaw ?? 0) - (base.yaw ?? 0)) * w + (extra.yaw ?? 0),
+  pitch: (base.pitch ?? 0) + ((shot.pitch ?? 0) - (base.pitch ?? 0)) * w + (extra.pitch ?? 0),
+  roll: shot.roll ?? 0,
+});
