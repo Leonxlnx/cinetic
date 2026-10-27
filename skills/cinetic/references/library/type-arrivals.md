@@ -91,13 +91,13 @@ Each later word starts sooner and fades faster than the one before, so the line 
 
 `dv-soft-edge-write-on` · typography in motion · workhorse · energy calm · any
 
-A line is revealed left to right by a soft travelling edge, near-constant speed, so it washes on; glyphs can be born in a hot accent and cool; a status line can end with a spinner turning into a check.
+A line is revealed left to right by a travelling edge about one letter soft, near-constant speed, so it writes on; glyphs can be born in a hot accent and cool; a status line can end with a spinner turning into a check.
 
-- **Build:** <Wipe kind="gradient"> on the line; accent via HueSweep or Words accent. Anatomy: Soft alpha ramp about 70 % of the element; glyphs accent -> ink as the edge passes. Sound: A soft notification ding mid-reveal, or a kick at the end. Keep the edge crisp: at most about 1.2 em of feather, and the letters behind it at full strength (a long ramp into the ground reads as half-faded words, never as writing); the TypeLine preset `develop` is the crisp version.
+- **Build:** <Wipe kind="gradient"> on the line; accent via HueSweep or Words accent. Anatomy: an alpha edge of about 1 em (1.2 em at most) and the letters behind it at full strength; glyphs accent -> ink as the edge passes. A long ramp from the ink into the ground (a third of the line or more) reads as half-faded words, never as writing. Sound: a soft notification ding mid-reveal, or a kick at the end. As one line: the TypeLine preset `develop` (a 1.1 em edge in the tint, then the accent and the ink).
 - **Primitive:** `fx/Wipe`
 - **Timing:** 6-24 f across 880 px (first 4 f slower); fall-off 56 f.
 - **Use when:** Status lines, single lines over a picture.
-- **Avoid when:** Edges narrower than a letter (that reads as a hard wipe).
+- **Avoid when:** Edges narrower than a letter (that reads as a hard wipe); edges wider than a word (fade soup); a hero line.
 
 ### Masked rise that stops dead
 
