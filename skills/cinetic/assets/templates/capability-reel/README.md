@@ -16,7 +16,7 @@ sentence's full stop, the end card. State changes are hard steps; only the camer
 | 4 | `ticker` | what it returns | the zoom carried across | an icon tile and a word wheel stepping one row every 10 f (closer when a fast track shortens the act), hard and unblurred (`MaskList`), the icon swapping on the same frame; the exit launches left | `capabilities` |
 | 5 | `claim` | the big claim on the accent (the film's one colour event) | momentum carried left | the first fragment's words pop; it pushes up and dims to a third as the second rises in from low and right; the full stop is its own square; the words erase and the camera zooms into the stop | `lines.claim` (two fragments, the second ending on its full stop) |
 | 6 | `rings` | the graphic transition, inverted | through the full stop | the stop is the first ring; square rings leave it at one speed on the beats (`Radiate` with `bornAt`, `speeds`); the centre floods with the ink until it covers the frame | |
-| 7 | `end` | the end card on the ink | the flood | the title's first word pops and the rest types on as it rises; the mark's parts rise beside it; the key passes once; the title shrinks out and the tagline settles from 108 % into focus | `lines.title`, `lines.tagline`, the name |
+| 7 | `end` | the end card on the ink | the flood | the title's name pops and the rest types on as it rises; the mark's parts rise beside it; the key passes once; the title shrinks out and the tagline settles from 108 % into focus | `lines.title`, `lines.tagline`, the name |
 
 **What to write.**
 - `src/reel.ts`: the script (the sources line, the statement, the claim in two fragments, the end card's title and

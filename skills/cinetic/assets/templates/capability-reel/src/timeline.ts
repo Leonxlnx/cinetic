@@ -77,7 +77,7 @@ export const TOTAL = bt(BEATS.last) + TAIL;
 /** The ticker's steps: one row every 10 f at 60 fps (hard), from its first step; closer when they would not fit the act (TICKS). */
 export const TICK_GAP = 10;
 
-/** The end card's title: its first word pops, the rest types over this many 60 fps frames from TITLE_LEAD after it. */
+/** The end card's title: its name pops, the rest types over this many 60 fps frames from TITLE_LEAD after it. */
 export const TITLE_TYPE = 36;
 export const TITLE_LEAD = 6;
 /** The first quarter-beat position at or after `from` whose frame is at least `f`: a cue that waits for a read. */
@@ -143,7 +143,7 @@ export const CUE: Record<string, number> = {
   born4: bt(29.75),
   born5: bt(30.25),
   flood: bt(31),
-  // end: the title's first word pops and the rest types, the mark rises beside it; the tagline takes its place
+  // end: the title's name pops and the rest types, the mark rises beside it; the tagline takes its place
   end: bt(32),
   title: bt(TITLE_AT),
   mark: bt(32.5),

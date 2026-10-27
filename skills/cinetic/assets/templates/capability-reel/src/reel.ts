@@ -15,7 +15,7 @@ export const REEL = {
     sources: '[Product] turns [sources] into [data].', // what it is, by 3 s (up to 5 words fit the act): centred inside the ring of sources
     statement: 'Each [record] comes out clean.', // on the light card that squashes round it
     claim: ['It exports to', '[N] formats.'] as const, // what it does, on the accent, in two beats
-    title: '[Product] is out today.', // the end card's title: its first word pops, the rest types
+    title: '[Product] is out today.', // the end card's title: the name (from IDENTITY, whole) pops, the rest types
     tagline: 'Try it at [product.com].', // what to do: takes the title's place and holds to the end
   },
   /** The sources around the first line (8-12), each with a line glyph. */

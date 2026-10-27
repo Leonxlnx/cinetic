@@ -8,19 +8,21 @@ import { TypeOn } from '../fx/TypeOn';
 import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
 import { creep } from '../lib/handoff';
 import { measureTracked } from '../lib/measure';
+import { REEL } from '../reel';
 import { ACT, copy, CUE, f60, f60x, FPS, H, TITLE_LEAD, TITLE_TYPE, W } from '../timeline';
 import { INK, lineSize, useAbs } from './stage';
 
-// END - on the ink the flood left: the title's first word (the name) pops, the rest types on as the title rises a
-// little; the mark's parts rise beside it a beat later. The key passes once across the set. The title shrinks out
-// and the tagline takes its place, settling from 108 % as it comes into focus; the mark and the tagline hold.
+// END - on the ink the flood left: the title's name (its first word, or every word of a longer name) pops, the rest
+// types on as the title rises a little; the mark's parts rise beside it a beat later. The key passes once across the
+// set. The title shrinks out and the tagline takes its place, settling from 108 % as it comes into focus; the mark and
+// the tagline hold.
 
 export const End: React.FC = () => {
   const F = useAbs('end');
   const t = INK;
   const title = copy('title');
   const tag = copy('tagline');
-  const first = title.text.split(' ')[0];
+  const first = title.text.startsWith(`${REEL.name} `) ? REEL.name : title.text.split(' ')[0]; // the name whole, however many words
   const rest = title.text.slice(first.length);
   const size = lineSize(title.text, 'display', 0.74);
   const tagSize = lineSize(tag.text, 'display', 0.74);
