@@ -217,6 +217,8 @@ A one-take film is judged on 2 s segments and has no seam or cut items.
 | a support hue (40° or more from the accent) | (target only) | in ≥ 9 % of the samples (house 10-30 %) |
 | bleed: the subject framed past two edges at 1.2× the frame or more | in at least a quarter of the acts | in every act |
 | skeleton bars: glyphless grey bars in focus | no more than 3 in a frame (2 samples or more fail) | none |
+| `filler-shape`: faint shapes on the ground (0.015-0.07 L off it, ≥ 1.2 % of the frame, floating, flat, edged) that carry no text, icon or mark | on fewer than 3 samples or under 10 % of them (2 samples warn) | none |
+| `ground-haze`: the ground's light rising to a dome inside the frame over its brightest edge (a pool, a white haze, a fog vignette) | over 0.025 L on fewer than 3 samples or under 20 % of the measured ones (2 samples warn) | none; a key gradient from one side reads 0 |
 | focus falloff: a crisp plane and a defocused one in the same frame | (target only) | ≥ 35 % of frames |
 
 Type reads large and frontal on clean grounds, so a film with every frame on relief, footage or grain fails

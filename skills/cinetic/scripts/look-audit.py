@@ -96,6 +96,14 @@ flat grounds; texture is an accent, not the ground of every shot:
                    of the frame one way in at least a quarter of the acts (no cues: 8 s parts)
   skeleton-bars    more than 3 glyphless bars in focus (solid, uniform, grey, text-line high, 3-60x as long,
                    sharp-edged) on 2 or more samples: placeholder lines, not content
+  filler-shape     every element in frame has a job: faint shapes on the ground that carry no text, icon or mark
+                   (0.015-0.07 L off the ground's own light, >= 1.2 % of the frame each, filling their box,
+                   floating, flat inside, with an edge, not an object's shadow or halo) on >= 3 samples and >= 10 %
+                   of them: plates floating in a void, blank boxes, empty glow pills, gobo shadows (warn from 2)
+  ground-haze      light is motivated and subtle: the ground's light field (the ground connected to the frame
+                   edge, fitted smooth) rises to a dome inside the frame more than 0.025 L over its brightest edge
+                   on >= 3 samples and >= 20 % of the measured ones: a pool of light or a white haze behind the
+                   content, a vignette that reads as fog. A key gradient from one side reads 0 (warn from 2)
   picture-target   (warn) the floor is cleared but the house target is not:
                    flat 0.43-0.85 and >= 18 % of frames over 60 % flat (every type beat on a clean field, or on
                    a plate dimmed and defocused behind it), edges <= 5.9 %, saturated >= 6 %, bleed in every
@@ -396,6 +404,131 @@ def glyphless_bars(gray, C):
     return out
 
 
+# every element in frame has a job; light is motivated and subtle (references/lighting.md, references/taste-and-slop.md)
+FILL = dict(
+    lo=0.015, hi=0.07,  # OKLab L off the local ground: a faint shape (fainter is noise, stronger is drawn content)
+    area=0.012,  # share of the frame a shape covers before it counts
+    fill=0.45,  # share of its bounding box it fills (a plate, a pill, a blob; not a ring or a halo)
+    adj=0.25,  # share of its outline touching drawn structure: over this it is that object's shadow, halo or part
+    plateau=0.6,  # share of its pixels within 70 % of its peak contrast: a shape, not a falloff of light
+    tex=0.05,  # share of its core with a gradient (0.004 L/px, or 15 % of its contrast): blurred content keeps texture, a blank plate has none
+    edge=0.1,  # its outline's gradient over its contrast (per px at 480 wide): a shape with an edge, not a soft light
+    carried=6, carried_share=0.004,  # edge pixels inside it (text, an icon, a mark): then it is a surface carrying content
+    samples=3, share=0.10,  # fail: filler on this many samples and this share of them; warn from 2 samples
+)
+HAZE = dict(
+    lift=0.025,  # OKLab L: the light field's dome inside the frame over its brightest edge (a pool, a haze, a fog vignette)
+    samples=3, share=0.20,  # fail: haze on this many samples and this share of the measured ones; warn from 2 samples
+    cells=(16, 9), cover=0.3, tol=0.15, min_cells=24,  # ground cells, the ground share a cell needs, L off the ground, cells to fit
+)
+
+
+def _odd(n, s):
+    return max(3, int(round(n * s)) | 1)
+
+
+def _erode(mask, k):
+    """A boolean mask eroded by a k x k square, with nothing outside it (a shape cut by its crop is eroded there too)."""
+    return cv2.erode(mask.astype(np.uint8), np.ones((k, k), np.uint8), borderType=cv2.BORDER_CONSTANT, borderValue=0) > 0
+
+
+def ground_field(Ls):
+    """The ground's own light under the drawn things: a median over about a quarter of the frame width (at half
+    size), so a shape smaller than that sits on it and a light field larger than that is it."""
+    h, w = Ls.shape
+    sw, sh = max(8, w // 2), max(8, h // 2)
+    small = cv2.resize(Ls, (sw, sh), interpolation=cv2.INTER_AREA)
+    k = _odd(0.26 * sw, 1)
+    bg = cv2.medianBlur(np.clip(small * 255 + 0.5, 0, 255).astype(np.uint8), k).astype(np.float32) / 255.0
+    return cv2.resize(cv2.GaussianBlur(bg, (0, 0), k / 6.0), (w, h), interpolation=cv2.INTER_LINEAR)
+
+
+def filler_and_haze(rgb, L, edges, keep=None):
+    """Filler: faint shapes on the ground that carry no text, icon or mark (a plate floating in the void, a blank
+    box, a glow pill with nothing in it, a gobo shadow), measured against the ground's own light (ground_field):
+    0.015-0.07 L off it, at least 1.2 % of the frame, filling its box, floating (touching no frame edge), not an
+    object's shadow or halo (its outline mostly off drawn structure), flat inside (no texture: blurred content keeps
+    texture), with an edge (not a soft light) and no edges inside it. Haze: the ground's light field (the ground
+    connected to the frame edge, in cells, fitted with a smooth quadratic) rising to a dome inside the frame over its
+    brightest edge: a pool of light behind the content, a white haze, a vignette that reads as fog. A key gradient
+    from one side has its brightest point on the edge and reads 0. Returns (shapes [[x, y, w, h, contrast]], haze or
+    None when too little ground shows)."""
+    h, w = L.shape
+    s = w / 480.0
+    Ls = cv2.GaussianBlur(L.astype(np.float32), (0, 0), max(0.6, 1.0 * s))
+    R = Ls - ground_field(Ls)
+    strong = (np.abs(R) >= FILL['hi']) | (cv2.dilate(edges.astype(np.uint8), np.ones((3, 3), np.uint8)) > 0)
+    if keep is not None:
+        strong = strong | ~keep
+    g = np.hypot(cv2.Sobel(Ls, cv2.CV_32F, 1, 0, ksize=3), cv2.Sobel(Ls, cv2.CV_32F, 0, 1, ksize=3)) / 8.0 * s
+    k3 = np.ones((3, 3), np.uint8)
+    ring_k, close_k = np.ones((_odd(7, s),) * 2, np.uint8), _odd(9, s)
+    shapes, faint_any = [], np.zeros((h, w), bool)
+    for sign in (1, -1):
+        faint = cv2.morphologyEx((((sign * R) >= FILL['lo']) & ((sign * R) < FILL['hi']) & ~strong).astype(np.uint8), cv2.MORPH_OPEN, k3) > 0
+        faint_any |= faint
+        n, lab, st, _ = cv2.connectedComponentsWithStats(faint.astype(np.uint8), connectivity=8)
+        for i in range(1, n):
+            x, y, bw, bh, area = (int(st[i, c]) for c in (cv2.CC_STAT_LEFT, cv2.CC_STAT_TOP, cv2.CC_STAT_WIDTH, cv2.CC_STAT_HEIGHT, cv2.CC_STAT_AREA))
+            if area < FILL['area'] * h * w or x <= 1 or y <= 1 or x + bw >= w - 1 or y + bh >= h - 1 or area < FILL['fill'] * bw * bh:
+                continue
+            comp = lab[y:y + bh, x:x + bw] == i
+            v = (sign * R[y:y + bh, x:x + bw])[comp]
+            if float((v >= 0.7 * np.percentile(v, 90)).mean()) < FILL['plateau']:
+                continue
+            pad = ring_k.shape[0]
+            xa, ya, xb, yb = max(0, x - pad), max(0, y - pad), min(w, x + bw + pad), min(h, y + bh + pad)
+            ca = (lab[ya:yb, xa:xb] == i).astype(np.uint8)
+            ring = (cv2.dilate(ca, ring_k) > 0) & (ca == 0)
+            if ring.any() and float(strong[ya:yb, xa:xb][ring].mean()) > FILL['adj']:
+                continue
+            core = _erode(comp, _odd(max(7 * s, 0.3 * min(bw, bh)), 1))  # the middle, past any soft edge
+            if core.sum() < 20:  # a thin or ragged shape: its middle is what a smaller erosion leaves
+                core = _erode(comp, _odd(7, s))
+            con = float(v.mean())
+            if core.sum() < 20 or float((g[y:y + bh, x:x + bw][core] >= max(0.004, 0.15 * con)).mean()) >= FILL['tex']:
+                continue
+            bnd = comp & ~_erode(comp, 3)
+            if not bnd.any() or float(np.median(g[y:y + bh, x:x + bw][bnd])) / max(1e-4, con) < FILL['edge']:
+                continue
+            xc, yc, xd, yd = max(0, x - close_k), max(0, y - close_k), min(w, x + bw + close_k), min(h, y + bh + close_k)
+            closed = cv2.morphologyEx((lab[yc:yd, xc:xd] == i).astype(np.uint8), cv2.MORPH_CLOSE, np.ones((close_k, close_k), np.uint8))
+            flood = cv2.copyMakeBorder(closed, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=0)
+            cv2.floodFill(flood, np.zeros((flood.shape[0] + 2, flood.shape[1] + 2), np.uint8), (0, 0), 1)
+            inner = _erode((closed > 0) | (flood[1:-1, 1:-1] == 0), 5)
+            if int((edges[yc:yd, xc:xd] & inner).sum()) >= max(FILL['carried'], FILL['carried_share'] * area):
+                continue  # a surface carrying text, an icon or a mark
+            shapes.append([x, y, bw, bh, round(con * sign, 4)])
+    # haze: the ground connected to the frame edge, its light in cells, a quadratic field, its dome over the edge
+    free = ~(cv2.dilate((strong | faint_any).astype(np.uint8), np.ones((_odd(7, s),) * 2, np.uint8)) > 0)
+    if free.sum() < 0.05 * h * w:
+        return shapes, None
+    gm = free & (np.abs(Ls - float(np.median(Ls[free]))) <= HAZE['tol'])
+    n2, lab2, st2, _ = cv2.connectedComponentsWithStats(gm.astype(np.uint8), connectivity=4)
+    edge_lab = [i for i in range(1, n2) if st2[i, cv2.CC_STAT_LEFT] <= 0 or st2[i, cv2.CC_STAT_TOP] <= 0 or
+                st2[i, cv2.CC_STAT_LEFT] + st2[i, cv2.CC_STAT_WIDTH] >= w or st2[i, cv2.CC_STAT_TOP] + st2[i, cv2.CC_STAT_HEIGHT] >= h]
+    gb = np.isin(lab2, edge_lab) if edge_lab else np.zeros((h, w), bool)
+    CX, CY = HAZE['cells']
+    xs, ys, vs = [], [], []
+    for j in range(CY):
+        for i in range(CX):
+            y0, y1, x0, x1 = j * h // CY, (j + 1) * h // CY, i * w // CX, (i + 1) * w // CX
+            m = gb[y0:y1, x0:x1]
+            if m.mean() >= HAZE['cover']:
+                xs.append((i + 0.5) / CX * 2 - 1)
+                ys.append((j + 0.5) / CY * 2 - 1)
+                vs.append(float(np.median(Ls[y0:y1, x0:x1][m])))
+    if len(vs) < HAZE['min_cells']:
+        return shapes, None
+    X, Y = np.array(xs), np.array(ys)
+    coef = np.linalg.lstsq(np.stack([np.ones_like(X), X, Y, X * X, X * Y, Y * Y], 1), np.array(vs), rcond=None)[0]
+    gx_, gy_ = np.meshgrid(np.linspace(-1, 1, 41), np.linspace(-1, 1, 41))
+    field = coef[0] + coef[1] * gx_ + coef[2] * gy_ + coef[3] * gx_ ** 2 + coef[4] * gx_ * gy_ + coef[5] * gy_ ** 2
+    inner = (np.abs(gx_) <= 0.7) & (np.abs(gy_) <= 0.7)
+    rim = (np.abs(gx_) >= 0.95) | (np.abs(gy_) >= 0.95)
+    return shapes, round(float(field[inner].max() - field[rim].max()), 4)
+
+
 def pic_frame(P, f, rgb, gray):
     """The per-frame picture reads (every frame): flat share, edge share, focus falloff."""
     e = cv2.Canny(rgb, 60, 140) > 0
@@ -427,16 +560,18 @@ def hue_dist(a, b):
     return min(d, 360 - d)
 
 
-def pic_sample(P, f, rgb, gray, C, nong, edges, H=None, keep=None):
+def pic_sample(P, f, rgb, gray, C, nong, edges, H=None, keep=None, L=None):
     """The sampled picture reads (twice a second): colour mass (saturated, neutral, the saturated hues outside
-    imagery), the subject's framing, placeholder bars."""
+    imagery), the subject's framing, placeholder bars, filler shapes and haze over the ground."""
     hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
     sub = subject_of(rgb, gray, nong, edges)
     bars = glyphless_bars(gray, C)
-    if H is None:
+    if H is None or L is None:
         L_, A_, B_ = oklab(rgb)
-        H = (np.degrees(np.arctan2(B_, A_)) + 360) % 360
-    P['samples'].append(dict(f=f, sat=round(float((C >= PIC['sat_c']).mean()), 4),
+        H = (np.degrees(np.arctan2(B_, A_)) + 360) % 360 if H is None else H
+        L = L_ if L is None else L
+    filler, haze = filler_and_haze(rgb, L, edges, keep)
+    P['samples'].append(dict(f=f, filler=len(filler), filler_boxes=filler[:8], haze=haze, sat=round(float((C >= PIC['sat_c']).mean()), 4),
                              sat_hsv=round(float(((hsv[..., 1] > 89) & (hsv[..., 2] > 64)).mean()), 4),
                              neu=round(float((C < PIC['neutral_c']).mean()), 4), hues=hue_hist(C, H, keep),
                              subject={k: (round(v, 3) if isinstance(v, float) else v) for k, v in sub.items()}, bars=len(bars), bar_boxes=bars[:12]))
@@ -571,7 +706,7 @@ def measure_picture(args, info, F):
             mk = args.mark_at(f) if getattr(args, 'mark_at', None) else []  # the official marks drawn on this frame
             P.setdefault('marks', []).append(len(mk))
             pic_sample(P, f, rgb, gray, np.hypot(A, B), nong, e, (np.degrees(np.arctan2(B, A)) + 360) % 360,
-                       imagery_mask(L.shape, boxes + mk) if mk else keep)
+                       imagery_mask(L.shape, boxes + mk) if mk else keep, L)
     return P, (W, H)
 
 
@@ -667,6 +802,13 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
         bleed_rows.append(dict(act=name, frames=[a, b], bleed_at=hit, ok=hit is not None))
     bleed_share = sum(1 for r in bleed_rows if r['ok']) / max(1, len(bleed_rows)) if bleed_rows else 1.0
     over = [s['f'] for s in P['samples'] if s['bars'] > PIC['skeleton_max']]
+    # filler and haze count every sample (an end card is no place for a floating plate or a pool of light either)
+    fill_f = [s['f'] for s in P['samples'] if s.get('filler')]
+    hz = [s for s in P['samples'] if s.get('haze') is not None]
+    haze_f = [s['f'] for s in hz if s['haze'] > HAZE['lift']]
+    n_smp = max(1, len(P['samples']))
+    filler_ok = not (len(fill_f) >= FILL['samples'] and len(fill_f) / n_smp >= FILL['share'])
+    haze_ok = not (len(haze_f) >= HAZE['samples'] and len(haze_f) / max(1, len(hz)) >= HAZE['share'])
     framed = [s for s in smp if s['subject'].get('found')]
     centred = [s['f'] for s in framed if s['subject'].get('centred')]
     T = PIC['target']
@@ -684,6 +826,11 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
                    target_ok=bleed_share >= T['bleed_share'] - 1e-9),
         skeleton=dict(frames=over[:20], samples=len(over), max_bars=max([s['bars'] for s in P['samples']] or [0]), need=PIC['skeleton_max'], ok=len(over) < PIC['skeleton_samples'],
                       target_ok=len(over) < PIC['skeleton_samples']),
+        filler=dict(frames=fill_f[:20], samples=len(fill_f), share=round(len(fill_f) / n_smp, 3), boxes=next((s['filler_boxes'] for s in P['samples'] if s.get('filler')), []),
+                    need=dict(samples=FILL['samples'], share=FILL['share']), ok=filler_ok, target_ok=filler_ok),
+        haze=dict(frames=haze_f[:20], samples=len(haze_f), measured=len(hz), share=round(len(haze_f) / max(1, len(hz)), 3),
+                  max=max([s['haze'] for s in hz] or [0.0]), median=round(float(np.median([s['haze'] for s in hz])), 4) if hz else None,
+                  need=dict(lift=HAZE['lift'], samples=HAZE['samples'], share=HAZE['share']), ok=haze_ok, target_ok=haze_ok),
         # depth of field is a target only: the motion floor (floor-depth) already asks for two planes at different rates
         falloff=dict(share=round(fall_share, 3), raw=round(float(np.mean([P['falloff_raw'][i] for i in body])) if body else 0.0, 3), target=T['falloff_share'], ok=True,
                      target_ok=fall_share >= T['falloff_share']),
@@ -713,6 +860,7 @@ def picture_line(video, pf, framing, ok):
             f"({pf['flat']['frames_over'] * 100:.0f} % of frames over 60 %), edges {pf['edges']['mean'] * 100:.1f} %, falloff {pf['falloff']['share']}, "
             f"saturated {pf['saturated']['mean'] * 100:.1f} % ({pf['wash']['frames_over'] * 100:.0f} % of frames over half), neutral {pf['neutral']['mean'] * 100:.0f} %, "
             f"accent {pf['accent']['mean'] * 100:.1f} %, bleed {pf['bleed']['share'] * 100:.0f} % of acts, glyphless bars max {pf['skeleton']['max_bars']}, "
+            f"filler {pf['filler']['samples']} sample(s), haze max {pf['haze']['max']:.3f}, "
             f"centred {framing['centred_share']}; target {tgt}")
 
 
@@ -733,14 +881,23 @@ def picture_flags(pf, framing, add, fps):
                  f"frame the hero at 1.2x the frame or more, off-centre, cropped by it",
         'skeleton': f"{pf['skeleton']['samples']} sample(s) show more than {PIC['skeleton_max']} glyphless bars in focus (max {pf['skeleton']['max_bars']}): placeholder lines are not content; "
                     f"show real strings, numbers and images (src/kit)",
+        'filler': f"{pf['filler']['samples']} sample(s) ({pf['filler']['share'] * 100:.0f} %) show faint shapes on the ground that carry no text, icon or mark (first at {pf['filler']['boxes'][:2]}, "
+                  f"analysis px x, y, w, h, L off the ground): every element in frame has a job. Take out the floating plates, blank boxes, empty pills and gobo shapes, "
+                  f"or give each one its content (the product's real state, a mark, a line)",
+        'haze': f"the ground's light rises to a pool inside the frame on {pf['haze']['samples']} of {pf['haze']['measured']} samples (max {pf['haze']['max']:.3f} L over the brightest edge, "
+                f"limit {HAZE['lift']}): a haze, a light pool or a fog vignette behind the content. Light is motivated and subtle: a flat ground or a key gradient from one side "
+                f"(fx/Grounds wash, a swing of 0.02-0.10), no radial glow behind a line or a lockup",
         'wash': f"one colour washes the picture: saturated pixels {pf['wash']['saturated'] * 100:.0f} % of the frame (ceiling {PIC['saturated_max'] * 100:.0f} %), "
                 f"{pf['wash']['frames_over'] * 100:.0f} % of frames over half saturated (ceiling {PIC['wash_share'] * 100:.0f} %): grounds and UI neutral (C <= .025), "
                 f"the accent on what matters, imagery graded natural; declare a deliberate colour moment (cues declared.colour)",
     }
+    names = {'skeleton': 'skeleton-bars', 'filler': 'filler-shape', 'haze': 'ground-haze'}
     for key, msg in msgs.items():
         if not pf[key]['ok']:
-            at = pf['skeleton']['frames'][0] if key == 'skeleton' and pf['skeleton']['frames'] else 0
-            add('skeleton-bars' if key == 'skeleton' else f'picture-{key}', 'fail', at, msg)
+            at = pf[key]['frames'][0] if key in names and pf[key].get('frames') else 0
+            add(names.get(key, f'picture-{key}'), 'fail', at, msg)
+        elif key in ('filler', 'haze') and pf[key]['samples'] >= 2:  # under the floor: a review hint
+            add(names[key], 'warn', pf[key]['frames'][0], msg)
     if pf['ok'] and not pf['target']['ok']:
         why = {
             'flat': f"flat ground {pf['flat']['mean'] * 100:.0f} % with {pf['flat']['frames_over'] * 100:.0f} % of frames over 60 % flat (target {T['flat_min'] * 100:.0f}-{T['flat_max'] * 100:.0f} % "
@@ -750,6 +907,8 @@ def picture_flags(pf, framing, add, fps):
             'bleed': f"bleed in {pf['bleed']['share'] * 100:.0f} % of acts (target: every act)",
             'falloff': f"a sharp and a soft plane in {pf['falloff']['share'] * 100:.0f} % of frames (target >= {T['falloff_share'] * 100:.0f} %)",
             'skeleton': 'glyphless bars',
+            'filler': 'filler shapes',
+            'haze': 'haze over the ground',
             'wash': f"saturated {pf['wash']['saturated'] * 100:.0f} % (target <= {T['saturated_max'] * 100:.0f} %), {pf['wash']['frames_over'] * 100:.0f} % of frames over half saturated (target <= {T['wash_share'] * 100:.0f} %)",
             'neutral': f"neutral pixels {pf['neutral']['mean'] * 100:.0f} % (target >= {T['neutral_min'] * 100:.0f} %: grounds and surfaces neutral)",
             'accent': f"the accent's hue family {pf['accent']['mean'] * 100:.1f} % of the frame (target {T['accent'][0] * 100:.0f}-{T['accent'][1] * 100:.0f} %, on what matters)",
@@ -992,7 +1151,7 @@ def measure(args, info, F, accent, brand, layout, cues):
             # element scale: the median height of the non-ground blobs
             n_lab, _, st, _ = cv2.connectedComponentsWithStats(nong.astype(np.uint8), connectivity=8)
             hs = [st[i, cv2.CC_STAT_HEIGHT] for i in range(1, n_lab) if st[i, cv2.CC_STAT_AREA] >= 6]
-            pic_sample(S['pic'], f, rgb, gray, C, nong, edges_px, Hh, imagery_mask(L.shape, imagery + mk) if imagery or mk else None)
+            pic_sample(S['pic'], f, rgb, gray, C, nong, edges_px, Hh, imagery_mask(L.shape, imagery + mk) if imagery or mk else None, L)
             S['samples'].append(dict(marks=len(mk),
                 f=f, groups=groups, banned=round(float(ban.mean()), 4), ground=[int(v) for v in gcol], ground_share=round(gshare, 3),
                 ground_L=round(float(gL[0]), 4), ground_C=round(float(math.hypot(ga[0], gb[0])), 4), nonground=round(float(nong.mean()), 4),
@@ -1604,6 +1763,7 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
         type_issues=len(type_rows), words=word_rows, small_text=len(small_rows), type_reads=type_rows_read,
         picture=dict(flat=pf['flat']['mean'], flat_frames_over=pf['flat']['frames_over'], edges=pf['edges']['mean'], falloff=pf['falloff']['share'],
                      saturated=pf['saturated']['mean'], bleed_acts=[r['ok'] for r in pf['bleed']['acts']], bleed_share=pf['bleed']['share'], skeleton_samples=pf['skeleton']['samples'],
+                     filler_samples=pf['filler']['samples'], haze_samples=pf['haze']['samples'], haze_max=pf['haze']['max'],
                      saturated_out=pf['wash']['saturated'], wash_share=pf['wash']['frames_over'], neutral=pf['neutral']['mean'], accent=pf['accent']['mean'],
                      accent_flood_ok=pf['colour']['accent']['flood_ok'], second_frames=pf['colour']['second']['frames'], second_support=pf['colour']['second']['support'], second_accent=pf['colour']['second']['second_accent'],
                      target_misses=pf['target']['misses'], pass_=pf['ok']),
@@ -2012,6 +2172,43 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         second = [ui_on(slate, i, extra=big) for i in range(120)]
         rep = run_pic('second-accent', second, ('--accent', '#18965C'))
         check(bool(has(rep, 'second-hue', 'warn')), 'a second hue on a quarter of the frame all film long warns second-hue', json.dumps(rep.get('picture', {}).get('colour', {}).get('second')))
+        # --- filler-shape and ground-haze: faint blank plates floating round a line fail and the same plates carrying
+        # labels pass; the line on a clean ground passes both; a pool of light behind it fails ground-haze and a key
+        # gradient from one side passes
+        void = np.full((h, w, 3), (24, 27, 30), np.uint8)
+        yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+        spots = ((40, 30, 120, 60), (300, 40, 130, 66), (170, 190, 140, 56))
+
+        def lifted(base, field):
+            return np.clip(base.astype(np.float32) + field[..., None], 0, 255).astype(np.uint8)
+
+        plate_f = np.zeros((h, w), np.float32)
+        for (px, py, pw, ph) in spots:
+            m = np.zeros((h, w), np.float32)
+            cv2.rectangle(m, (px, py), (px + pw, py + ph), 1.0, -1)
+            plate_f += cv2.GaussianBlur(m, (0, 0), 2.0) * 9.0  # about 0.04 L over the void
+        plates = lifted(void, plate_f)
+
+        def line_on(img, i, labels=False):
+            img = img.copy()
+            text_rows(img, 60 + i * 0.3, 150, ['Asks three models.'], 0.9, (236, 238, 241), 40, 2)
+            if labels:
+                for (px, py, pw, ph) in spots:
+                    text_rows(img, px + 10, py + ph // 2 + 5, ['Lisbon 3 days'], 0.42, (200, 204, 210))
+            return img
+        rep = run_pic('filler', [line_on(plates, i) for i in range(60)])
+        check(bool(has(rep, 'filler-shape', 'fail')), 'faint blank plates floating round a line fail filler-shape', json.dumps({k: rep.get('picture', {}).get('filler', {}).get(k) for k in ('samples', 'boxes')}))
+        rep = run_pic('filler-carried', [line_on(plates, i, labels=True) for i in range(60)])
+        check(not has(rep, 'filler-shape'), 'the same plates carrying labels pass filler-shape (surfaces with content)', json.dumps(rep.get('picture', {}).get('filler', {}).get('samples')))
+        rep = run_pic('clean-void', [line_on(void, i) for i in range(60)])
+        check(not has(rep, 'filler-shape') and not has(rep, 'ground-haze'), 'the line on a clean ground passes filler-shape and ground-haze',
+              json.dumps({k: rep.get('picture', {}).get('haze', {}).get(k) for k in ('max', 'samples')}))
+        pool = np.exp(-2.0 * (((xx - w / 2) / (0.45 * w)) ** 2 + ((yy - h / 2) / (0.5 * h)) ** 2)) * 22.0
+        rep = run_pic('pool', [line_on(lifted(void, pool), i) for i in range(60)])
+        check(bool(has(rep, 'ground-haze', 'fail')), 'a pool of light behind the line fails ground-haze', json.dumps({k: rep.get('picture', {}).get('haze', {}).get(k) for k in ('max', 'samples', 'measured')}))
+        key = (1.0 - (xx / w + yy / h) / 2.0) * 12.0  # lighter toward the upper left, the key's side
+        rep = run_pic('key-gradient', [line_on(lifted(void, key), i) for i in range(60)])
+        check(not has(rep, 'ground-haze'), 'a key gradient from one side passes ground-haze', json.dumps({k: rep.get('picture', {}).get('haze', {}).get(k) for k in ('max', 'samples')}))
 
     if part in ('all', 'b'):
         # --- framing-hold and floor-device: a still frame held for 5 s; the rich film moves through both
