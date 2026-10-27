@@ -87,6 +87,8 @@
 #                  soundfile, librosa and ffmpeg. node scripts/py.mjs --which prints the one it uses.
 #   --no-analyze   with --music: leave the analysis (the longest step) for its own job; the command is
 #                  printed. The key in audio/score.json is set when the analysis is there.
+#   --profile      with --music: the tempo prior the beat tracker starts from (track.py analyze --profile):
+#                  calm 100 BPM, crisp 120 (the default), punchy 128.
 #
 # Exit codes: 0 created, 1 bad arguments or a failed step (the message says which).
 set -euo pipefail
