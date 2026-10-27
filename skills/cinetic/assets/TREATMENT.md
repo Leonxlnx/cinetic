@@ -11,7 +11,7 @@ For an update film, the beat sheet follows the direction's update skeleton (the 
 **Spec:** `<W>x<H>@<fps>, <length>s, pace: <calm | crisp>, format: <launch | update | …>, audio: licensed track "<title>" (<licence>) + launch kit, <stop | button | ring> ending` · **Format:** <launch film | update film | product video | feature loop | logo sting | UI walkthrough> · **Engine:** <Remotion | HyperFrames>
 **Name:** <the product's name, as written> · **Product:** <what it is and does, in plain words> · **Viewer:** <who watches, and where: feed, landing page, keynote>
 **Assumptions:** <anything you inferred rather than were told>
-**Supplied:** <brand kit (brand/brand.json) | a clip to feel like (out/LIKE.md: its three or four strongest habits) | pictures worth building on | footage | none>
+**Supplied:** <brand kit (brand/brand.json) | a clip to feel like (out/LIKE.md: its three or four strongest habits) | the product's own or supplied pictures | supplied footage | none>
 
 ## 0. Direction
 `<!-- deck.py --seed <n> --direction <id> -->` (paste the line `scripts/deck.py` printed)
@@ -115,7 +115,7 @@ Checks: every line 2–7 words · `copy-check.py` passes · one line on screen a
 - [ ] the Direction block is filled: the idea sentence passes the competitor test; the signature shot sits on one beat; the beats follow the dealt skeleton; the lockup is the dealt kind
 - [ ] the music is chosen and recorded (`track.py add` with `--seen-quote`), and the beat sheet's structure sits on the track's events
 - [ ] the final frame contains the mark and the name
-- [ ] nothing here breaks a hard ban (`SKILL.md`): no keyword pile, two lines at once, line over 8 words, eyebrow, stacked tagline, "Introducing…" or filler text; no springy overshoot on copy; pictures only as an accent; a sans; one dominant accent over neutral grounds; light, glow, spectral colour and glass only inside devices; no emoji or effects; one spring class; a licensed track, no credits on screen. Brand-supplied exceptions are listed in `BRIEF.md`
+- [ ] nothing here breaks a hard ban (`SKILL.md`): no keyword pile, two lines at once, line over 7 words, eyebrow, stacked tagline, "Introducing…" or filler text; no springy overshoot on copy; pictures only as an accent; a sans; one dominant accent over neutral grounds; light, glow, spectral colour and glass only inside devices; no emoji or effects; one spring class; a licensed track, no credits on screen. Brand-supplied exceptions are listed in `BRIEF.md`
 
 ---
 

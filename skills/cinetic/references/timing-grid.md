@@ -413,7 +413,7 @@ A 33 s launch film at 120 BPM, 60 fps: beat 30 f, bar 120 f, 8th 15 f, 16th 7.5 
 Hold lessons:
 - A static dot after the opening iris reads as a stalled player: the line draws 0.25 s after the iris lands, the grid
   at 1.0 s, the rain from 1.5 s.
-- One line of 3–5 words per 2 s bar reads well in crisp; a calm film carries one line of up to 8 words per bar or
+- One line of 3–5 words per 2 s bar reads well in crisp; a calm film carries one line of up to 7 words per bar or
   bar and a half.
 - A logo hold of 2.75 s reads as dead air even with a push and beat pulses: keep a lockup hold ≤ 1.5 s, or make it
   build visibly (a push of 20 % or more).

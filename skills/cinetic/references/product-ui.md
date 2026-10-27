@@ -432,11 +432,11 @@ List the instances the acts use in `src/sync.ts` `declares()`; grid-check fails 
 ## 12. A product moment in one camera
 
 One continuous camera over one desk, five beats, about 9 s, plus an end card. Each beat adds one device; the copy is
-one calm fragment per beat in a fixed cell, and every framing keeps the product out of that cell.
+one line of the script per beat (2-7 words) in a fixed cell, and every framing keeps the product out of that cell.
 
 | Beat | Picture | Primitives | Copy |
 |---|---|---|---|
-| 1 | the project panel enters front-loaded on a tilted plane (lean 20-25° flattening 6 f behind, a short entry defocus); the cursor swings upright as it lands on the button | `enterState`, `cursorState` | the hook, 1-2 words |
+| 1 | the project panel enters front-loaded on a tilted plane (lean 20-25° flattening 6 f behind, a short entry defocus); the cursor swings upright as it lands on the button | `enterState`, `cursorState` | what it is, by 3 s |
 | 2 | push in on the press; the button squeezes, the ring expands, and the film's one spring pops it open into its confirmation; the last pending badge switches in one frame | `press`, `cursorRing`, `springBox`, `stepValue` | none (the animation is the line) |
 | 3 | the next card lands (position and tilt on one curve) while the panel steps back; bubbles cut on and slide home, the composer types at the house rate | `cardArrive`, `demote`, `Bubbles` | the claim |
 | 4 | pull back: every card unfolds into the dashboard on one shared curve, the pictures develop from a duotone, the light pool brightens once as the board opens | `bento`, `Develop`, `LightField` | the second claim |

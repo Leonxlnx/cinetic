@@ -28,7 +28,7 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
   - which aspect ratios you owe.
 
   Write all three into `BRIEF.md`.
-- **Budgets scale with length, not ambition.** At 30 s a launch film holds 6–8 story beats (8–10 in crisp) and 15–25 words, 30 at most. At 15 s, halve both; don't compress the same film into half the time. Cramming is the most common failure of short formats: 3 features in 5 s reads as none.
+- **Budgets scale with length, not ambition.** At 30 s a launch film holds 6–8 story beats (8–10 in crisp) and a script of 5–8 lines, 25–40 words, 50 at most. At 15 s, halve both; don't compress the same film into half the time. Cramming is the most common failure of short formats: 3 features in 5 s reads as none.
 - **Every format keeps the five laws.** A 4-second loop still has one idea, one device, one accent meaning and one motion system, and it is still measured before it ships.
 - **Every format with sound is cut to a licensed track** (`references/music.md`); a muted loop is the one piece without one.
 
@@ -69,7 +69,7 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 
 **Format gates**
 - There are 6–8 beat rows per 30 s in `TREATMENT.md` (8–10 in crisp), and the device appears in every row.
-- Film copy is on screen for at most about 65% of the runtime, with at least 1.5 s of picture without text in every 10 s (`grid-check.ts` `text-share`).
+- Film copy is on screen for at most about 85% of the runtime, with at least 1.5 s of picture without text in every 10 s (`grid-check.ts` `text-share`).
 - The loudest momentary loudness is on the promise or payoff, with limiter gain reduction under 1.5 dB (`av-audit.py`).
 - The poster exists and shows the brand.
 
@@ -79,7 +79,7 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 
 **Purpose.** Show one capability so clearly that the viewer could explain it afterwards.
 
-**Length.** 8–30 s at 100 BPM. Budget one capability per 8–10 s and 3–6 short sentences of 3–7 words, one line at a time.
+**Length.** 8–30 s at 100 BPM. Budget one capability per 8–10 s and 3–6 short sentences of 2–7 words, one line at a time.
 
 **Structure.** Cause → action → result, with the product doing the work:
 
@@ -96,7 +96,7 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 - **Show no cursor after the cause.** A cursor that keeps doing things implies the product needs babysitting.
 - **Make the product and the feature identifiable.** A stranger should know it is software and which feature this is: enough real app chrome (a window edge, the app's own header or sidebar) and the feature's name once, as a UI label (a tab, a menu item, the button that causes the action), as the one line of copy, or on the end card. "No feature name as a headline" is a copy rule; it never means "never name it". A film that shows a clever behaviour without naming it can't be searched for or asked about.
 
-**Update film** ("vX is out", 8-20 s) is a first-class format of its own: a hook on the version or the mark, 2-4 changes each shown as a product moment, one payoff, the end card with the version; one short sentence per beat (3–6 words), one line at a time; a licensed track. The recipe, the deck and the template are in `references/update-films.md`.
+**Update film** ("vX is out", 8-20 s) is a first-class format of its own: a hook on the version or the mark, 2-4 changes each shown as a product moment, one payoff, the end card with the version; one short sentence per beat (2–6 words), one line at a time; a licensed track. The recipe, the deck and the template are in `references/update-films.md`.
 
 **Format gates**
 - One capability.
@@ -178,7 +178,7 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 
 **Purpose.** The mark arrives with intent, makes one sound, and holds long enough to be read and remembered.
 
-**Length.** 3–8 s at 100–120 BPM. The copy is the name plus at most 3 words.
+**Length.** 3–8 s at 100–120 BPM. The copy is the name plus at most one short line (2–5 words).
 
 **Scale.** At its resolved size the lockup spans about 28–45% of the frame's width (540–860 px at 1920), with the mark and the name proportioned as in `references/brand-and-color.md` §6. Smaller than that and the brand becomes a small object in a void: the sting's whole job is to be read.
 
@@ -227,7 +227,7 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 
 | Phase | Bars | What happens |
 |---|---|---|
-| Establish | ½–1 | Wide on the product. The camera anchor is the whole window, and the chapter caption enters in the lower third. |
+| Establish | ½–1 | Wide on the product. The camera anchor is the whole window, and the chapter's line enters at the eye line beside the product, never as a lower-third subtitle. |
 | Push | ½ | The camera moves to the feature's anchor on `cam` (duration grows with distance: 0.35 s + 1.35 ms per px). |
 | Cause | ½–1 | The cursor travels a bezier arc over 36–48 f, presses (0.88 over 4 f) and makes one click; or the user types at about 20 characters/s, then the line holds at least 72 f. |
 | Action → result | 1–2 | The product responds, and the result holds for at least the caption's reading hold (max(60, 42 + 8 f per word)) while the caption is readable. |
@@ -235,7 +235,7 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 
 - **Camera.** Use one anchor camera for the whole walkthrough (`references/camera.md`), and chain the anchors so every move starts where the previous one ended. During holds, the UI drifts 0.5–1.5 px/f so the shot is never locked off.
 - **Cursor.** Follow the physics in `references/product-ui.md`: an arcing path, velocity that decays, and at most one click per 30 f. The cursor is placed by transform only.
-- **Captions** are burned in for muted viewing, 28 px or larger in the lower third, and taken from `COPY`. Export an SRT file from the same data:
+- **Captions:** the script's lines are the burned-in captions for muted viewing: one at a time, at the `line` role (never under 36 px in focus), taken from `COPY`. Export an SRT file from the same data:
 
 ```ts
 // scripts/srt.ts: npx tsx scripts/srt.ts → out/captions.srt
@@ -254,7 +254,7 @@ writeFileSync('out/captions.srt', COPY.map((c, i) => `${i + 1}\n${ts(c.in)} --> 
 - **Long walkthroughs** (over 60 s) get one act per chapter, so a fix re-renders one chapter. Master with `scripts/render-chunks.sh` when the blur pass would be slow.
 
 **Format gates**
-- Each chapter has exactly one caption, 5 words or fewer, never arriving as one block of 5.
+- Each chapter has exactly one line, 2–7 words, never arriving as one block of 5 or more.
 - Every result hold passes `grid-check.ts`.
 - The SRT timings match the burned-in captions.
 - The legibility sheet at 480 px can be read.
@@ -278,7 +278,7 @@ const LAY = layoutFor(width, height); // type sizes, camera anchors, safe box, l
 ```
 
 - **Timing stays identical**, so the soundtrack and `cues.json` are reused unchanged. Only positions, sizes, line breaks and camera anchors change.
-- **Line breaks change.** A 4-word fragment at 120 px on 16:9 becomes two lines of 2 at 110–140 px on 9:16, and a build line of 6–8 words becomes a build over two lines. Put the break in `COPY` or the layout table, never in a width that happens to wrap.
+- **Line breaks change.** A 4-word fragment at 120 px on 16:9 becomes two lines of 2 at 110–140 px on 9:16, and a build line of 6–7 words becomes a build over two lines. Put the break in `COPY` or the layout table, never in a width that happens to wrap.
 - **The product's framing changes.** A tall frame wants the camera closer on one region, with the anchor moved rather than the scale reduced.
 
 **Vertical (9:16) composition.** A tall frame is not a wide frame with bars: use the height. A 16:9 layout moved into 1080 × 1920 leaves the product as a strip in the middle and the lower half empty, and on a phone that empty half is what the viewer sees above the caption.
