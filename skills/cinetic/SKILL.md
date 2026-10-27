@@ -377,6 +377,7 @@ Read each file when its step comes up; never all at once.
 | official marks of the products it works with (integrations, sources, models, platforms): search, get, list, check; the record of source, licence and owner | `scripts/logos.mjs` |
 | a font family vendored without `npm install` | `scripts/add-font.mjs` (or `new-film.sh --font`) |
 | the free face closest to a reference frame or a brand face, by measured width and x-height; its weight, size and tracking | `scripts/font-match.mjs` (`--crop`, `--like`, `--sheet`, `--fetch`) |
+| the film's type family (calm or bold): the six roles and the face weights written into the tokens | `scripts/type-family.mjs bold` (or `calm`; `--check`; `new-film.sh --type`, a template's `type_family`) |
 | a palette from a recipe and one accent; token, ramp and coverage checks | `scripts/palette.py` (`--recipe`, `--check-tokens`, `--ramp`, `--cover`) |
 | baked, dithered plates for gradients, light fields, pools and shadows | `scripts/dither-gradient.py` (`--check`) |
 | the pace copied into the checks and the HyperFrames mirror | `scripts/gen-pace.mjs` |
