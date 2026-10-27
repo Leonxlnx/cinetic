@@ -239,9 +239,9 @@ line of a callback still passes the line test (§2).
 |---|---|---|
 | Same words, new truth | The line returns unchanged; the picture changed its meaning | Plumb: "Looks good to me." (a tired lie at 0:04) → "Looks good to me." (true at 0:22) |
 | One word flips | The refrain changes by one word | Tessel: "Your week doesn't fit." → "Everything fits." |
-| The digit | A number or time changes by the smallest amount | Hush: "3:12 a.m." → "3:13 a.m." |
+| The digit | A number or time changes by the smallest amount | Hush: 3:12 on the lock screen → "By 3:13, your phone is quiet." |
 | The user's words | Text the user typed into the product returns as statements | Tessel: typed "Protect my mornings." → "Mornings stay yours." |
-| Grammar rhyme | Lines share one structure, so the difference is the message | Loam: "18%. Water now." / "42%. Leave it." |
+| Grammar rhyme | Lines share one structure, so the difference is the message | Loam: "This pot needs water now." / "This pot can wait now." |
 | Tautology as proof | Repetition shows that nothing was touched | Keel: "Spending money stays spending money." |
 
 Rules:
