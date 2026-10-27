@@ -91,8 +91,8 @@
  * Continuous motion (warnings; forensics.py's motion gates measure the render). Outside fx/ and lib/:
  *   snap-step         a one-frame snap primitive (HardStep, hardStepState, stepValue, snapBox; SnapZoom,
  *                     snapZoomState; LineSnap, scaleSnapState, makeRoomState, Chain snapLast or recentre
- *                     'room') that src/sync.ts does not declare (its declares()) and the timeline does not
- *                     name: glide it (fx/GlideStep, lib/continuity glideValue, glideBox); and more than one
+ *                     'room') that src/sync.ts does not declare (its declares()) and the timeline's code
+ *                     does not name (comments do not count): glide it (fx/GlideStep, lib/continuity glideValue, glideBox); and more than one
  *                     snap device in the film, declared or not (a film keeps one)
  *   hold-drift        an act with 2+ tweens and nothing continuous (no E.linear creep, drift, holdDrift,
  *                     breath, camera path, gliding list, flick, light field, photo or footage move, no
@@ -454,6 +454,7 @@ const findUp = (start, names) => {
 };
 const timelineFile = findUp(root, ['timeline.ts', join('src', 'timeline.ts'), 'motion.js']);
 const timelineSrc = timelineFile ? readFileSync(timelineFile, 'utf8') : '';
+const timelineCode = stripComments(timelineSrc, false); // what the timeline names in code: a comment about fx/Chain declares nothing
 const filmPace = timelineSrc.match(/\bPACE_NAME\b[^=\n]*=\s*['"](\w+)['"]/)?.[1] ?? null; // null: written before paces (crisp rules)
 const filmFps = Number(timelineSrc.match(/\bconst FPS\s*=\s*(\d+)/)?.[1] ?? 60);
 const OVERSHOOT = new Set(['snap', 'pop', 'land', 'word', 'detent', 'micro']); // the shipped presets, if no anim file is found
@@ -587,7 +588,9 @@ const SYNC_DECLARES = new Set(
 const SNAP_DEVICES = [
   { name: 'HardStep', mods: ['HardStep'], re: /<HardStep\b|(?<![\w$.])(?:hardStepState|stepValue|snapBox)\s*\(/g, fix: 'fx/GlideStep for a list, lib/continuity glideValue for a value, GlideStep glideBox for a box: 16 f@60 on E.glideOut' },
   { name: 'SnapZoom', mods: ['SnapZoom'], seam: 'snapZoom', re: /<SnapZoom\b|(?<![\w$.])snapZoomState\s*\(/g, fix: 'a push on an arrive curve over 34 f@60 or more (lib/camera camPath)' },
-  { name: 'LineSnap', mods: ['LineSnap', 'Chain'], re: /<LineSnap\b|(?<![\w$.])(?:scaleSnapState|makeRoomState)\s*\(|\bsnapLast\s*[:=]\s*(?!\{?\s*false\b)|\brecentre\s*[:=]\s*\{?\s*['"]room['"]/g, fix: "the line scaled through the camera, or Chain recentre 'glide'" },
+  { name: 'LineSnap', mods: ['LineSnap'], re: /<LineSnap\b|(?<![\w$.])(?:scaleSnapState|makeRoomState)\s*\(/g, fix: 'the line scaled through the camera' },
+  // the same device inside a chain: only Chain's declares() covers it (every starter film's sync.ts imports Chain's)
+  { name: 'LineSnap', mods: ['Chain'], re: /\bsnapLast\s*[:=]\s*(?!\{?\s*false\b)|\brecentre\s*[:=]\s*\{?\s*['"]room['"]/g, fix: "Chain recentre 'glide'" },
 ];
 const snapUses = []; // uses of snap primitives across the film, for the one-device rule
 /** Anything in an act that keeps moving through its holds (hold-drift). */
@@ -1781,7 +1784,7 @@ for (const file of files) {
     if (isScript && !house && !isTokens) {
       for (const d of SNAP_DEVICES) {
         each(d.re, (m, i) => {
-          const declared = d.mods.some((x) => SYNC_DECLARES.has(x) || new RegExp(`\\b${x}\\b`).test(timelineSrc)) || (!!d.seam && new RegExp(`kind\\s*:\\s*['"]${d.seam}['"]`).test(timelineSrc));
+          const declared = d.mods.some((x) => SYNC_DECLARES.has(x) || new RegExp(`\\b${x}\\b`).test(timelineCode)) || (!!d.seam && new RegExp(`kind\\s*:\\s*['"]${d.seam}['"]`).test(timelineCode));
           const { line, col } = pos(i);
           snapUses.push({ device: d.name, file: rel, line, col, excerpt: (lines[line - 1] ?? '').trim().slice(0, 140), ok: lineHas(i, /lint-ok\s*:\s*\S/) });
           if (!declared)
