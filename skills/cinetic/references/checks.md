@@ -132,7 +132,8 @@ evaluate (what `grammar-score.mjs` reads for curve roles, durations, staggers an
 - Type roles (warnings; `--strict` fails): cap height against bands that hold both type families (caption 2.3-4 %,
   line 4-9 %, display 9-14 %, hero 14-26 %, giant 26-90 % of the frame height; over 90 % warns), readable text under
   the ui size, more than 2 non-UI sizes at once, a line wider than 61 % of the frame (a calm sentence under a 6.5 % cap
-  75 %), a display or hero line wider than 84 %. `grammar-score.mjs` counts them per text, not per audited frame.
+  75 %), a display or hero line wider than 84 %. `grammar-score.mjs` re-measures the boxes on the same bands and counts
+  faults per text, not per audited frame.
 - The safe zone holds resting states: a line inside a type push in flight (`data-audit-push="moving"`, `fx/TypePush`)
   is a camera move (no safe-area, speed or role check); a push landed as a declared bleed must cross the frame's edge,
   never rest half in the margin; a claim on the accent (`data-audit-claim`, `fx/TypeClaim`) keeps a 2.5 % left margin;
@@ -247,7 +248,7 @@ from the timeline. `--format update` reads the update band; `--print-target` pri
 | cut-sync | hard cuts within 1 f of a sound (the picture may lead by up to 3 f) / within 100 ms | ≥ 50 % / ≥ 80 % |
 | velocity-seams | declared velocity seams that carry speed and direction | 100 % |
 | colour | one accent hue group, accent share in band, neutral grounds, ink and ground in band | all |
-| type | type-role warnings from the layout audit | none |
+| type | texts off the type bands both families share (the layout audit's boxes re-measured: under the ui size, over the giant band, past their width, 3+ sizes at once), one fault per text however many frames; an older audit is re-scored on today's bands | none (−10 per text) |
 | overlap | secondaries start before the primary reaches 90 %; the foreground lands 10-30 f@60 before the background; the next element enters 0-1 f before the previous leaves | ≥ 70 % / 50 % / 70 % |
 | picture | the picture readings | 100 at the target, 70 at the floor |
 

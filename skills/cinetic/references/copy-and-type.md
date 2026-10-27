@@ -371,14 +371,14 @@ export const TYPE = { // the calm family of section 7 in this face (Manrope meas
 - **calm** (the default and the usual family: the largest line on screen a 5.9-8.5 % box of the frame height, median 7.8 %): small sentence lines, regular weights, the face's own letter fit at every size, an open lead, 85 % white or more. Explainers, walkthroughs, anything said one sentence at a time.
 - **bold** (the punchy one: a 9.3-14.8 % box, median 10.6 %): big semibold lines whose tracking tightens with size. Launch teasers, ads, reels cut on the beat.
 
-| Role | Calm | Bold | Cap height band | Use |
+| Role | Calm | Bold | Cap height, calm / bold (audit band) | Use |
 |---|---|---|---|---|
-| `ui` | 40 / 450 / +0.01 | 40 / 500 / −0.01 | 2.6 % | product strings rebuilt for film, labels (measured 37-55 px) |
-| `caption` | 46 / 450 / +0.01 | 46 / 500 / −0.01 | 2.3-4 % | captions, the end card's tagline, a URL |
-| `line` | 84 / 450 / 0, lead 1.2 | 120 / 600 / −0.03, lead 1.05 | 5-6 % calm, 7.4-8.3 % bold | a line of the script, 2-4 words (median 3, rarely past 7) |
-| `display` | 160 / 500 / −0.01 | 200 / 600 / −0.035 | 10-14 % | a short statement (up to about 16 characters), the end card's name |
-| `hero` | 200 / 500 / −0.01 | 240 / 600 / −0.04 | 11-23 % | one hero word or number per moment (at least 2× the statement it answers) |
-| `giant` | 640 / 500 / +0.02 | 900 / 600 / −0.045 | 40-90 % | the set of one moment: once per film (calm: whole in frame; bold: cropped) |
+| `ui` | 40 / 450 / +0.01 | 40 / 500 / −0.01 | 2.7 % (ui: 30 px or more) | product strings rebuilt for film, labels (measured 37-55 px) |
+| `caption` | 46 / 450 / +0.01 | 46 / 500 / −0.01 | 3.1 % (caption 2.3-4 %) | captions, the end card's tagline, a URL |
+| `line` | 84 / 450 / 0, lead 1.2 | 120 / 600 / −0.03, lead 1.05 | 5.6 % / 8 % (line 4-9 %) | a line of the script, 2-4 words (median 3, rarely past 7) |
+| `display` | 160 / 500 / −0.01 | 200 / 600 / −0.035 | 10.7 % / 13.3 % (display 9-14 %) | a short statement (up to about 16 characters), the end card's name |
+| `hero` | 200 / 500 / −0.01 | 240 / 600 / −0.04 | 13.3 % (display) / 16 % (hero 14-26 %) | one hero word or number per moment (at least 2× the statement it answers) |
+| `giant` | 640 / 500 / +0.02 | 900 / 600 / −0.045 | 42.7 % / 60 % (giant 26-90 %) | the set of one moment: once per film (calm: whole in frame; bold: cropped) |
 
 Size / weight / tracking (em, in the starter's Geist). Sentence case everywhere; capitals only on small labels. Two weights per family.
 
@@ -386,8 +386,9 @@ Size / weight / tracking (em, in the starter's Geist). Sentence case everywhere;
 against bands that meet, so no role of either family falls between two: caption 2.3-4 %, line 4-9 % (calm 84 px is
 5.6 %, fitted down to 66-72 px 4.4-4.8 %; bold 120 px 8 %), display 9-14 % (160-200 px), hero 14-26 % (bold 240 px 16 %,
 a claim 16 % or more, a name re-set at a quarter of the frame), giant 26-90 %. Widths: a line 61 % of the frame, a calm
-sentence (a line under a 6.5 % cap) 75 %, a display or hero line 84 %. `grammar-score.mjs` counts type warnings per
-text, not per audited frame. Resting states only: a line inside a type push in flight is a camera move; a claim on the
+sentence (a line under a 6.5 % cap) 75 %, a display or hero line 84 %. `grammar-score.mjs` re-measures the audit's
+boxes on the same bands and counts faults per text, not per audited frame (`--print-target` lists where each role of
+both families lands). Resting states only: a line inside a type push in flight is a camera move; a claim on the
 accent keeps its own 3 % margin (§8).
 
 - **`TEXT_MIN = 36`.** No text under 36 px is held in focus for more than 6 frames. Smaller text is mush on a phone and
