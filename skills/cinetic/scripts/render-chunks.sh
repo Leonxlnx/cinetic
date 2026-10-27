@@ -29,11 +29,14 @@
 #   --keep              keep the work directory
 # Exit 0 = rendered and gates passed, 1 = a chunk, the join or a gate failed.
 set -euo pipefail
-# Python: $PYTHON when it is set (the interpreter of a full environment; new-film.sh and npm's scripts/py.mjs
-# honour it too), else python3 on PATH
-python3() { if [ -n "${PYTHON:-}" ]; then "$PYTHON" "$@"; else command python3 "$@"; fi; }
-
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# Python: $PYTHON when it is set (the interpreter of a full environment; new-film.sh and npm's scripts/py.mjs
+# honour it too), else the one scripts/py.mjs picks (python3, python or py -3, each only after it runs), so the
+# Microsoft Store alias is never run
+PYCMD=()
+if [[ -n "${PYTHON:-}" ]]; then PYCMD=("$PYTHON")
+else read -r -a PYCMD <<< "$(node "$SCRIPT_DIR/py.mjs" --which 2>/dev/null || echo python3)"; fi
+python3() { "${PYCMD[@]}" "$@"; }
 usage() { sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d' | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 die() { echo "render-chunks.sh: $*" >&2; exit 1; }
 T0=$(date +%s)

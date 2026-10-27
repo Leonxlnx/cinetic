@@ -39,6 +39,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { findPython } from '../py.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIX = path.join(HERE, 'music-fixtures');
@@ -200,16 +201,15 @@ function waveform(levels, px = 0.2, sr = 44100) {
     check(threw, 'no record for an unknown licence');
     const rp = path.join(tmp, 'quiet_engine_mixkit.licence.json');
     fs.writeFileSync(rp, JSON.stringify(rec));
-    const py = [process.env.PYTHON, 'python3', 'python', ...(process.platform === 'win32' ? ['py'] : [])].filter(Boolean)
-      .find((c) => spawnSync(c, ['-c', 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'], { stdio: 'ignore' }).status === 0);
+    const py = findPython({ numpy: false, quiet: true });
     if (py) {
-      const r = spawnSync(py, [path.join(SKILL, 'scripts', 'audio', 'credits.py'), '--check', rp], { encoding: 'utf8' });
+      const r = spawnSync(py[0], [...py.slice(1), path.join(SKILL, 'scripts', 'audio', 'credits.py'), '--check', rp], { encoding: 'utf8' });
       check(r.status === 0, 'credits.py --check accepts the record', (r.stdout + r.stderr).trim().split('\n').slice(-2).join(' | '));
       const sfx = M.parseMixkit(fs.readFileSync(path.join(FIX, 'mixkit-sfx-list.html'), 'utf8'), 'https://mixkit.co/free-sound-effects/paper/', 'sfx')[0];
       fs.writeFileSync(path.join(tmp, 'paper_slide_mixkit.wav'), buf);
       const rs = path.join(tmp, 'paper_slide_mixkit.licence.json');
       fs.writeFileSync(rs, JSON.stringify(M.licenceRecord(sfx, { file: 'paper_slide_mixkit.wav', sha256: sha, bytes: buf.length, date: '2026-10-26' })));
-      const r2 = spawnSync(py, [path.join(SKILL, 'scripts', 'audio', 'credits.py'), '--check', rs], { encoding: 'utf8' });
+      const r2 = spawnSync(py[0], [...py.slice(1), path.join(SKILL, 'scripts', 'audio', 'credits.py'), '--check', rs], { encoding: 'utf8' });
       check(r2.status === 0, 'credits.py --check accepts a sound effect\'s record', (r2.stdout + r2.stderr).trim().split('\n').slice(-2).join(' | '));
     } else console.log('skip  credits.py cross-check: no Python 3.10+ on the PATH');
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
@@ -356,10 +356,9 @@ const ov = M.parseOpenverse(fixJson('openverse-search.json'), 'sfx');
     check(Object.keys(tpl).every((k) => k in rec), 'the CC0 record has every field of the template');
     const rp = path.join(tmp, 'glass_engine_commons.licence.json');
     fs.writeFileSync(rp, JSON.stringify(rec));
-    const py = [process.env.PYTHON, 'python3', 'python', ...(process.platform === 'win32' ? ['py'] : [])].filter(Boolean)
-      .find((c) => spawnSync(c, ['-c', 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'], { stdio: 'ignore' }).status === 0);
+    const py = findPython({ numpy: false, quiet: true });
     if (py) {
-      const r = spawnSync(py, [path.join(SKILL, 'scripts', 'audio', 'credits.py'), '--check', rp], { encoding: 'utf8' });
+      const r = spawnSync(py[0], [...py.slice(1), path.join(SKILL, 'scripts', 'audio', 'credits.py'), '--check', rp], { encoding: 'utf8' });
       check(r.status === 0, 'credits.py --check accepts the CC0 record', (r.stdout + r.stderr).trim().split('\n').slice(-2).join(' | '));
     } else console.log('skip  credits.py cross-check of the CC0 record: no Python 3.10+ on the PATH');
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }

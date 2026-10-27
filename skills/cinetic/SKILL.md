@@ -78,7 +78,7 @@ Every step writes a file, and every gate is a check you run. Work inline; subage
 - Choose the engine (Remotion by default; HyperFrames for an HTML project or `--batch` renders) and the pace (calm unless the brief asks for energy).
 - Copy the hard bans into `BRIEF.md`, plus brand-supplied exceptions: critics are prompted with it word for word.
 - Scaffold: `bash <skill>/scripts/new-film.sh films/<name> --fps 60 --size 1920x1080 [--format update | --template ui-walkthrough|capability-reel|prompt-run|camera-teaser|social-ad|type-explainer] [--brand <kit>] [--like <clip>] [--music <file> + licence flags] [--pace crisp] [--engine hyperframes] [--link-modules <dir>/node_modules]`. A template lays a whole film's structure over the starter (timeline, acts, choreography, sound plan, a content file of slots): a product's flow in steps, a launch close from breadth to the name, a request worked through in steps, a dark teaser the camera tells, a 15 s ad cut on pictures, or an explainer told in type one sentence at a time; `references/templates.md` says which fits.
-- Python: the commands below say `python3`; on Windows that name is often the Microsoft Store alias. Set `PYTHON` to the interpreter of an environment with the packages (`node scripts/py.mjs --which` prints the one the npm scripts and `render.sh` use) and run the scripts with it.
+- Python: the commands below say `python3`; on Windows that name is often the Microsoft Store alias. Set `PYTHON` to the interpreter of an environment with the packages (`node scripts/py.mjs --which` prints the one the npm scripts, the shell scripts and the checks use) and run the scripts with it.
 - **Gate:** a spec line, e.g. `1920x1080@60, 30s, pace: calm, format: launch, audio: licensed track + launch kit, stop ending`.
 
 ### Step 1: Direction → `out/direction.json`, `TREATMENT.md`
@@ -395,5 +395,5 @@ Read each file when its step comes up; never all at once.
 | poster, GIF, WebM, loop seam, alpha, variants, credits | `scripts/deliver.sh` |
 | brand kit export; outlined lettering | `scripts/brand-kit.sh`; `scripts/outline-text.py` |
 | the HyperFrames finish | `scripts/hf-finish.sh` |
-| the Python the npm scripts run (`$PYTHON`, else `python3`, `python` or `py -3`) | `scripts/py.mjs` (`--which`) |
+| the Python every script runs (`$PYTHON`, else the first of `python3`, `python` or `py -3` that runs a version check) | `scripts/py.mjs` (`--which`) |
 | the scripts' own tests (not a film's) | `scripts/test/` (`copy-check`, `lint-film`, `grid-check`, `tokens`, `mirror`, `scripts-docs`, `provenance`, `pick`, `deck`, `brand`, `like`, `track`, `score`, `cast`, `library`, `assets`, `music`, `primitives`, `type-presets`, `handoff`, `moment`, `wordmark`, `encode-tags`, `bash32`) |

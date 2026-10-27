@@ -17,8 +17,8 @@
  *      grammar-score.mjs each run --self-test (synthetic clips and reports built in code).
  *
  * A fixture can be a folder (a small film): it is linted as one, and its expect.txt says what it must
- * produce. Python: $CINETIC_PYTHON, else python3 (a real interpreter; 4 also needs numpy and opencv,
- * and is skipped with a note when they are missing).
+ * produce. Python: the one scripts/py.mjs finds ($PYTHON, else $CINETIC_PYTHON, else python3, python or
+ * py -3, each only after it runs; 4 also needs numpy and opencv, and is skipped with a note when they are missing).
  *
  * Usage (from the skill root):  node scripts/test/lint-film.test.mjs [--verbose] [--part static|rendered|forensics|look-a|look-b|look-c|speed]
  * --part static runs 1-3 and the grammar-score self-test; --part rendered runs only 4 (the slow,
@@ -32,6 +32,7 @@ import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, write
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findPython } from '../py.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL = resolve(HERE, '..', '..');
@@ -53,7 +54,8 @@ const TEXT = ['copy-literal', 'text-spring', 'text-pace', 'typing-rate', 'per-le
 const GRAMMAR = ['ease-family', 'token-drift', 'whip-shape', 'spring-budget', 'spring-range', 'scale-from-zero', 'fade-exit', 'linear-opacity',
   'crossfade', 'shutter', 'blur-on-crisp', 'pure-ink', 'accent-count', 'gradient-shape', 'type-role', 'deprecated-token', 'timeline-constant', 'gpu-cost',
   'card-content', 'small-text', 'giant-watermark', 'giant-once', 'end-card-template', 'clip-text', 'svg-text'];
-const PY = process.env.CINETIC_PYTHON || 'python3';
+const [PY, ...PY_PRE] = findPython({ quiet: true }) ?? ['python3']; // python3 only to report that none runs
+const py = (args, opts) => spawnSync(PY, [...PY_PRE, ...args], opts);
 
 let failed = 0;
 const result = (ok, name, detail = '') => {
@@ -167,21 +169,21 @@ for (const [args, want, why] of [
   [['--check-tokens', join(FIX, 'film', 'src', 'brand', 'tokens.ts')], 1, 'tokens with pure black ink and a second accent fail the token check'],
   [['--check-tokens', join(FIX, 'brand-kit', 'src', 'brand', 'tokens.ts')], 0, "a supplied brand's orange passes: contrast and one accent only"],
 ].filter(() => STATIC)) {
-  const r = spawnSync(PY, [PALETTE, ...args], { encoding: 'utf8' });
+  const r = py([PALETTE, ...args], { encoding: 'utf8' });
   result(r.status === want, `palette.py ${why}`, `exit ${r.status}, want ${want}`);
   if (verbose || r.status !== want) console.log((r.stderr || '').split('\n').slice(0, 3).map((l) => '      ' + l).join('\n'));
 }
 
 // 4. the rendered checks' own fixtures (synthetic clips made in code; needs numpy, opencv and ffmpeg)
-const probe = spawnSync(PY, ['-c', 'import cv2, numpy'], { encoding: 'utf8' });
+const probe = py(['-c', 'import cv2, numpy'], { encoding: 'utf8' });
 const ff = spawnSync('ffmpeg', ['-version'], { encoding: 'utf8' });
 if (!RENDERED) {
   /* --part static */
 } else if (probe.status !== 0 || ff.status !== 0) {
-  console.log(`skip  the rendered checks' self-tests: ${probe.status !== 0 ? `${PY} has no numpy/opencv (set CINETIC_PYTHON)` : 'no ffmpeg on PATH'}`);
+  console.log(`skip  the rendered checks' self-tests: ${probe.status !== 0 ? `${[PY, ...PY_PRE].join(' ')} has no numpy/opencv (set PYTHON)` : 'no ffmpeg on PATH'}`);
 } else {
   for (const [key, script, sub] of [['forensics', 'forensics.py'], ['look-a', 'look-audit.py', 'a'], ['look-b', 'look-audit.py', 'b'], ['look-c', 'look-audit.py', 'c'], ['speed', 'measure-speed.py']].filter(([k]) => runs(k))) {
-    const r = spawnSync(PY, [join(SKILL, 'scripts', script), '--self-test', ...(sub ? [sub] : [])], { encoding: 'utf8', timeout: 600000 });
+    const r = py([join(SKILL, 'scripts', script), '--self-test', ...(sub ? [sub] : [])], { encoding: 'utf8', timeout: 600000 });
     const lines = (r.stdout || '').split('\n').filter((l) => /^(pass|FAIL)\s/.test(l));
     for (const l of lines) result(l.startsWith('pass'), l.replace(/^(pass|FAIL)\s+/, ''));
     if (r.status !== 0 && !lines.some((l) => l.startsWith('FAIL'))) result(false, `${script} --self-test ${sub ?? ''} ran (${key})`, (r.stderr || r.stdout || '').trim().split('\n').slice(-2).join(' | '));

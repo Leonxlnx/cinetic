@@ -23,7 +23,7 @@
  *                  lines on screen at once (one arrives before the other starts to leave, after its read)
  *                  is an error unless the later one declares `swap: '<id>'` (or true): a deliberate swap
  *                  that takes the old line's place in one move. Then the wording, by copy-check.py (beside
- *                  this script; Python 3 from $PYTHON, python3, python or py -3): every COPY entry is read
+ *                  this script; the Python scripts/py.mjs finds): every COPY entry is read
  *                  as a stranger reads it, and its errors are script errors: vague or fancy words, metaphors,
  *                  slogan shapes, a line with no verb or more than one claim, no name, no line that says
  *                  what the product is by 3 s (an update film: the name and the version by 3 s, from
@@ -174,6 +174,7 @@ import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createContext, runInContext } from 'node:vm';
+import { findPython } from './py.mjs';
 
 type Act = { from: number; dur: number };
 type Copy = { id: string; text: string; in: number; resolved: number; out?: number | null; kind?: string; chain?: string; mode?: string; reveal?: string; swap?: string | boolean };
@@ -642,15 +643,14 @@ async function main() {
   if (!has('--no-copy') && COPY.length) {
     const doc = { fps: FPS, total: bodyEnd, ...(Number.isFinite(endFrom) ? { end: endFrom } : {}), copy: COPY, ...((T.LOOK as { filmType?: string } | undefined)?.filmType === 'update' ? { format: 'update' } : {}) };
     const script = fileURLToPath(new URL('./copy-check.py', import.meta.url));
-    const win = process.platform === 'win32';
-    const cands = process.env.PYTHON ? [[process.env.PYTHON]] : [['python3'], ['python'], ...(win ? [['py', '-3']] : [])];
+    const py = existsSync(script) ? findPython({ numpy: false }) : null;
     let rep: { findings?: { rule: string; severity: string; line?: number | null; text?: string | null; message: string }[] } | null = null;
-    for (const [exe, ...pre] of existsSync(script) ? cands : []) {
+    if (py) {
+      const [exe, ...pre] = py;
       const r = spawnSync(exe, [...pre, script, '--stdin', '--json'], { input: JSON.stringify(doc), encoding: 'utf8', env: { ...process.env, PYTHONUTF8: '1' } });
-      if (r.error || !(r.status === 0 || r.status === 1)) continue;
-      try { rep = JSON.parse(r.stdout); break; } catch { continue; }
+      if (!r.error && (r.status === 0 || r.status === 1)) try { rep = JSON.parse(r.stdout); } catch { rep = null; }
     }
-    if (!rep) warn('script', 'copy-check.py did not run (no Python 3 found: set PYTHON), so the wording was not checked');
+    if (!rep) warn('script', `copy-check.py did not run (${py ? `${py.join(' ')} failed` : 'no Python 3.10+ found'}: set PYTHON), so the wording was not checked`);
     // grid-check measures length, keywords and lines on screen together itself, on its own frames
     for (const f of rep?.findings ?? []) {
       if (['long', 'keyword', 'together'].includes(f.rule)) continue;

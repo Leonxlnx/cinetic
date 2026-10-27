@@ -9,6 +9,10 @@
  *   3. SKILL.md, README.md and docs/setup.md name the same internal helpers as the exceptions.
  *   4. docs/setup.md refreshes a project's scripts with new-film.sh's own copy, which leaves out
  *      scripts/test/ (its fixtures break the rules on purpose), never with a plain cp -R.
+ *   5. One way to find Python: what scripts/py.mjs --which prints passes a version check (on Windows
+ *      python3 is often the Microsoft Store alias, which runs nothing), $PYTHON and then $CINETIC_PYTHON
+ *      are taken as given, no Python on the PATH exits 127, and no script or test spawns a bare python3
+ *      or reads those variables itself (shell scripts honour $PYTHON, then ask py.mjs --which).
  *   README.md and docs/ are checked only in a clone of the repository.
  *
  * Usage (from the skill root):  node scripts/test/scripts-docs.test.mjs [--verbose]
@@ -112,6 +116,35 @@ if (existsSync(setup)) {
   result(!!scaffold && doc.includes(scaffold), 'docs/setup.md: refreshes a project\'s scripts with new-film.sh\'s tar copy');
 } else {
   console.log('skip  docs/setup.md: not in this checkout');
+}
+
+// 5. one way to find Python
+{
+  const PYMJS = join(SCRIPTS, 'py.mjs');
+  const bare = { ...process.env };
+  delete bare.PYTHON; delete bare.CINETIC_PYTHON;
+  const which = (env) => spawnSync(process.execPath, [PYMJS, '--which'], { encoding: 'utf8', env });
+  const w = which(bare);
+  const cmd = w.stdout.trim().split(/\s+/).filter(Boolean);
+  if (w.status === 0) {
+    const v = spawnSync(cmd[0], [...cmd.slice(1), '-c', 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'], { stdio: 'ignore' });
+    result(v.status === 0, `py.mjs --which names a Python that runs 3.10+ (${cmd.join(' ')})`, `exit ${v.status}`);
+  } else console.log(`skip  py.mjs --which: no Python 3.10+ here (exit ${w.status})`);
+  result(which({ ...bare, CINETIC_PYTHON: '/opt/py/bin/python' }).stdout.trim() === '/opt/py/bin/python', 'py.mjs honours $CINETIC_PYTHON');
+  result(which({ ...bare, PYTHON: '/a/python', CINETIC_PYTHON: '/b/python' }).stdout.trim() === '/a/python', 'py.mjs: $PYTHON comes before $CINETIC_PYTHON');
+  const empty = mkdtempSync(join(tmpdir(), 'cinetic-nopy-'));
+  try {
+    const n = which({ ...bare, PATH: empty, Path: empty });
+    result(n.status === 127 && n.stdout === '', 'py.mjs --which with no Python on the PATH: exit 127, nothing named', `exit ${n.status} ${n.stdout.trim()}`);
+  } finally { rmSync(empty, { recursive: true, force: true }); }
+  const files = [];
+  for (const sub of ['', 'audio', 'test']) for (const f of readdirSync(join(SCRIPTS, sub))) if (/\.(mjs|cjs|js|ts|sh)$/.test(f)) files.push(join(sub, f));
+  const offenders = files.filter((f) => f !== 'py.mjs' && f !== join('test', 'scripts-docs.test.mjs')).filter((f) => {
+    const src = read(join(SCRIPTS, f));
+    return /(spawnSync|execFileSync|execSync|spawn)\(\s*['"]python3?['"]/.test(src) || /command python3/.test(src)
+      || /process\.env\.(CINETIC_)?PYTHON\b/.test(src);
+  });
+  result(!offenders.length, 'every script and test finds Python through py.mjs (no bare python3, no own $PYTHON lookup)', offenders.join(', '));
 }
 
 process.exit(failed ? 1 : 0);
