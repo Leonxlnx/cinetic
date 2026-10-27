@@ -505,9 +505,10 @@ def measure_picture(args, info, F):
 
 
 def colour_reads(P, fps, events=None, accent_h=None, second_h=None):
-    """The colour of the picture from the samples: neutral share, saturated mass and the wash ceiling (frames
-    inside declared colour events left out), the accent's hue family (the given accent's hue, or the film's
-    dominant saturated hue), the flood runs over the per-frame ceiling and the second hue."""
+    """The colour of the picture from the samples: neutral share, saturated mass, the wash ceiling and the accent's
+    share (frames inside declared colour events left out: a declared flood is the film's one colour moment, not its
+    everyday colour), the accent's hue family (the given accent's hue, or the film's dominant saturated hue), the
+    flood runs over the per-frame ceiling and the second hue."""
     smp = P['samples']
     events = events or []
     inside = lambda f: any(a <= f < b for a, b in events)  # noqa: E731
@@ -561,11 +562,12 @@ def colour_reads(P, fps, events=None, accent_h=None, second_h=None):
     support = not second_accent  # a support hue: anything short of a second accent (target 10-30 % of the samples, <= 8 % of the frame)
     sat_out = float(np.mean([s['sat'] for s in out_])) if out_ else 0.0
     wash = float(np.mean([s['sat'] > PIC['wash_over'] for s in out_])) if out_ else 0.0
-    neutral = float(np.mean([s.get('neu', 0.0) for s in smp])) if smp else 0.0
-    acc_mean = float(np.mean([r['acc'] for r in rows])) if rows else 0.0
+    neutral = float(np.mean([s.get('neu', 0.0) for s in (out_ or smp)])) if smp else 0.0
+    rows_out = [r for r in rows if not r['event']] or rows
+    acc_mean = float(np.mean([r['acc'] for r in rows_out])) if rows_out else 0.0
     return dict(neutral=round(neutral, 4), saturated=round(sat_out, 4), wash_share=round(wash, 3), events=[list(e) for e in events],
                 accent=dict(h=None if accent_h is None else round(accent_h, 1), source=source, mean=round(acc_mean, 4),
-                            p95=round(float(np.percentile([r['acc'] for r in rows], 95)), 4) if rows else 0.0, runs=run_rows, flood_ok=flood_ok),
+                            p95=round(float(np.percentile([r['acc'] for r in rows_out], 95)), 4) if rows_out else 0.0, runs=run_rows, flood_ok=flood_ok),
                 second=dict(h=sec_hue, frames=round(sec_frames, 3), share_when=round(sec_when, 4), support=support, second_accent=second_accent, declared=declared))
 
 
@@ -1247,7 +1249,9 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     banned = [s for s in samples if s['banned'] >= 0.005]
     if len(banned) >= 3:
         add('banned-hue', 'fail', banned[0]['f'], f"a banned colour region (orange/amber, beige/cream, purple/violet or neon) covers >= 0.5 % of {len(banned)} samples; a brand-supplied colour is declared in the tokens (cinetic:brand-supplied) or with --brand")
-    accs = [s for s in samples if s['accent'] is not None]
+    # the accent's share outside declared colour events (a declared flood is the one colour moment, not the film's colour)
+    ev_ = getattr(args, 'events', None) or []
+    accs = [s for s in samples if s['accent'] is not None and not any(a <= s['f'] < b for a, b in ev_)] or [s for s in samples if s['accent'] is not None]
     # accent-share (the hue family over the per-frame ceiling) is raised with the picture flags
     pb = sum(1 for s in samples if s['pure_black']) / max(1, len(samples))
     black_brand = any(hex_rgb(b) == [0, 0, 0] for b in brand)
@@ -1873,6 +1877,15 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         check(bool(has(rep, 'picture-wash', 'fail')), 'three seconds of wash in four fail picture-wash undeclared', f"frames over half {rep.get('picture', {}).get('wash', {}).get('frames_over')}")
         rep = run_pic('wash-event', wash + wash[:30] + neutral_ui[:30], ('--colour-event', '0,90'))
         check(not has(rep, 'picture-wash'), 'the same wash declared as a colour event passes', f"frames over half {rep.get('picture', {}).get('wash', {}).get('frames_over')}")
+        # one declared accent flood (the film's colour event) is left out of the accent's share: the film's colour is what remains
+        flood = [np.full((h, w, 3), green, np.uint8) for _ in range(30)]
+        film_ev = neutral_ui + flood + neutral_ui
+        r_ev = run('flood-event', film_ev, extra=('--colour-event', '60,90', '--accent', '#18965C'))
+        r_no = run('flood-undeclared', film_ev, extra=('--accent', '#18965C'))
+        p_ev, p_no = r_ev.get('measures', {}).get('accent_p95'), r_no.get('measures', {}).get('accent_p95')
+        a_ev = r_ev.get('measures', {}).get('picture', {}).get('accent')
+        check(p_ev is not None and p_no is not None and p_ev < 0.25 < p_no and a_ev is not None and a_ev < 0.2,
+              'a declared one-colour flood is left out of the accent share (p95 and mean); undeclared it counts', json.dumps({'declared': p_ev, 'mean': a_ev, 'undeclared': p_no}))
         chip = lambda img: cv2.rectangle(img, (24, 30), (110, 90), blue, -1)  # noqa: E731  a support hue: ~4 % of the frame
         support = [ui_on(slate, i, extra=chip if 30 <= i < 60 else None) for i in range(120)]
         rep = run_pic('second-support', support, ('--second', '#2878CD'))

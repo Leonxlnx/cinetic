@@ -28,7 +28,8 @@
  * >= 50 %; within 100 ms >= 80 %; not scored on a one-take film), velocity-seams (every declared one
  * carries speed), colour (one hue group, neutral grounds, ink and ground in band, and from the picture reads:
  * neutral pixels >= 40 %, no colour wash, the accent's hue family 6-15 % of the frame, no second accent;
- * lib/look.ts NEUTRAL, COLOUR, PICTURE), type (no role
+ * lib/look.ts NEUTRAL, COLOUR, PICTURE; frames inside a declared colour event are left out of the accent's
+ * share, its p95 and the neutral share, so one declared flood is never scored as the film's colour), type (no role
  * warnings), overlap (secondaries start before the primary reaches 90 %, the foreground lands about
  * 20 f@60 before the background, the next element enters 0-1 f before the previous leaves).
  *
