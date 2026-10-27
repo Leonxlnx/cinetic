@@ -423,12 +423,12 @@ ground when it can; plan a light/dark sequence and flip it on carried transition
 | A support hue | the default palette is the accent plus one support hue: a second brand colour, data beside the accent, a state the accent cannot be, or the photographs' own second hue; 40° or more from the accent in an allowed family, in 10–30 % of the samples, ≤ 8 % of the frame while it shows (under 9 % of the samples is a target miss: timid colour) | a hue in more than 80 % of the frames at over 15 % is a second accent (a warning) |
 | A colour event | a deep field, an accent flood, a colour cut: declared (the timeline's `COLOUR` ranges or a primitive's `declares()` colour, written to `declared.colour` in the cues; `--colour-event FROM,TO`), or one designed flood up to 2 s | the ceilings pause inside it |
 
-- **Commit to colour.** One accent on neutral with nothing beside it, then a grade that drains the photographs, reads
-  as timid: plan the colour mass per act (the accent on the hero state, the support hue on data or a second element,
-  imagery at its own chroma) and check it on the graded set before the film is built.
-- **Colour mass comes from the right places:** the accent on what matters, real imagery in its own colours (the
-  `natural` grade is the default; tint, duotone and deep are device looks for one shot), the accent's own lightness
-  steps, and a colour event for a moment. A one-accent dot on grey is not colour; grounds, surfaces, shadows and
+- **Commit to colour.** One accent on neutral with nothing beside it reads as timid: plan the colour mass per act
+  (the accent on the hero state, the support hue on data or a second element, pictures, when the film has them, at
+  their own chroma) and check it on the style stills before the film is built.
+- **Colour mass comes from the right places:** the accent on what matters, the product's UI and the graphic fields
+  in their colours, pictures (when the film has them) in their own colours (the `natural` grade is the default; tint,
+  duotone and deep are device looks for one shot), the accent's own lightness steps, and a colour event for a moment. A one-accent dot on grey is not colour; grounds, surfaces, shadows and
   pictures all at the accent's hue is a wash (D15 in `references/taste-and-slop.md`).
 - **Declare the support hue** in the tokens (`C.second`) so the one-accent checks leave it out and
   `src/kit` uses it. Imagery boxes are declared with `look-audit.py --imagery x,y,w,h` so natural colour inside a

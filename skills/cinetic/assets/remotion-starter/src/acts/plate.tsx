@@ -4,10 +4,12 @@
 // absolute frame, carried from the statement's launch and drifting on after it.
 //
 // cinetic:placeholder - the plate is a stand-in drawn in code (forested ridges in blue-hour mist, a photograph's
-// own colour and texture, never the accent's hue), so the starter commits no media. Put the film's own photographs in public/assets/ (node scripts/assets.mjs
-// search / get / grade: sources whose licences need no credit), point PLATE and SET_FRAMES at them with their
-// real pixel sizes and focus points (SET_FRAMES: one photo per frame), redraw PLATE_SLICES along the real photo's edges (or delete them), then
-// delete these lines. Real imagery keeps its own colour (grade 'natural'); credits never go on screen.
+// own colour and texture, never the accent's hue), so the starter commits no media. A film with pictures of its own
+// (the product's photography or screens, or pictures the user supplies) puts them in public/assets/ (node
+// scripts/assets.mjs grade), points PLATE and SET_FRAMES at them with their real pixel sizes and focus points
+// (SET_FRAMES: one photo per frame) and redraws PLATE_SLICES along the real photo's edges (or deletes them); a film
+// without (most films: no stock as the base) builds these shots from the product's UI or a graphic field instead.
+// Then delete these lines. Pictures keep their own colour (grade 'natural'); credits never go on screen.
 import { CARRY } from '../lib/anim';
 import { carry } from '../lib/handoff';
 import type { DepthSlice, PhotoMove, PhotoSrc } from '../fx/Photo';

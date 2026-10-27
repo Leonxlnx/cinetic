@@ -20,7 +20,7 @@ directions · 9. Checks
   archive print for a heritage brand. One picture, on one beat, with the line it answers.
 - **It is sharp at full frame and grades into the film's look:** 2400 px stills, 1080p footage, one light, one grade.
 - Otherwise the beat is a graphic effect: a dithered gradient field, glass over the product's UI, a hairline grid, a
-  morph, a loader (`references/devices/INDEX.md`, materials and VFX). Never fill a beat with a stock picture because
+  morph, the product's UI built in code (`references/devices/INDEX.md`, materials and VFX). Never fill a beat with a stock picture because
   the beat felt empty.
 
 ## 1. The licence rule
@@ -43,7 +43,8 @@ Chicago, the Met, Mixkit video. With a key in the environment: `PEXELS_API_KEY`,
 ## 2. Where it sits in the workflow
 
 - **Step 0 (brief).** Name what exists: the product's own pictures, a brand kit's photography, footage the user
-  supplied. Only these, or a picture that carries the idea, pass `--have photos` (or `footage`) to `deck.py`.
+  supplied. Only these pass `--have photos` (or `footage`) to `deck.py`; one found picture that carries one line
+  is an accent inside a graphic direction, never a reason for an imagery-led one.
 - **Step 1 (concept).** The direction decides whether and how pictures are used (a word cut out of the world, a
   montage on the music, UI drawn into a real place, a collage, a loupe over a collection). Imagery-led directions are
   dealt only with `--have photos` or `footage` (section 8); without them the film is type, graphics and UI.

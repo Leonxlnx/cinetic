@@ -655,7 +655,7 @@ def picture_flags(pf, framing, add, fps):
         'edges': (f"edge pixels {pf['edges']['mean'] * 100:.1f} % of the frame (ceiling {PIC['edges_max'] * 100:.0f} %, house <= 5.9 %): busy everywhere. "
                   f"Flatten, dim or defocus the texture and footage behind the type and give the eye a clean field") if pf['edges']['mean'] > PIC['edges_max'] else
                  f"edge pixels {pf['edges']['mean'] * 100:.1f} % of the frame (floor {PIC['edges_min'] * 100:.1f} %): the frame is near empty (no words, numbers, UI or imagery at film size)",
-        'saturated': f"saturated pixels {pf['saturated']['mean'] * 100:.1f} % of the frame (floor {PIC['saturated_min'] * 100:.1f} %): colour mass, not a 1 % accent dot (the accent on what matters, a support hue, real imagery in its own colour, a declared colour moment)",
+        'saturated': f"saturated pixels {pf['saturated']['mean'] * 100:.1f} % of the frame (floor {PIC['saturated_min'] * 100:.1f} %): colour mass, not a 1 % accent dot (the accent on what matters, a support hue, the product's UI and graphic fields in colour, pictures in their own colour, a declared colour moment)",
         'bleed': f"the subject bleeds off two edges at scale in {pf['bleed']['share'] * 100:.0f} % of the acts (floor {PIC['bleed_share'] * 100:.0f} %; missing: {missing}): "
                  f"frame the hero at 1.2x the frame or more, off-centre, cropped by it",
         'skeleton': f"{pf['skeleton']['samples']} sample(s) show more than {PIC['skeleton_max']} glyphless bars in focus (max {pf['skeleton']['max_bars']}): placeholder lines are not content; "
