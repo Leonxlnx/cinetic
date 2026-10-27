@@ -438,8 +438,8 @@ toasts arrive on `E.snapOut` [.50], not the gentler `glideOut`. A walkthrough wh
 visible work, output) starts from `--template ui-walkthrough` (`references/templates.md`).
 
 - **One chapter per 2–4 bars**, chapter changes on downbeats; 1–2 capabilities per 20 s, never a tour of every feature.
-- **Each chapter** is: a camera move onto the feature's anchor (`references/camera.md`), one cause → action → result, a caption of ≤ 6 words, and the result held ≥ 36 f before the next move.
-- **Captions** sit on the eye line or the lower third, never over the action, and follow the reading-hold rule (max(60, 42 + 8 f per word); crisp 36 f + 6 f per word). Burn them in for sound-off viewing and ship an SRT (`references/finishing.md`).
+- **Each chapter** is: a camera move onto the feature's anchor (`references/camera.md`), one cause → action → result, one line of the script, and the result held ≥ 36 f before the next move.
+- **The chapter's line** sits on the eye line, large and frontal like every line of the script (never a lower-third subtitle), never over the action, and follows the reading-hold rule (max(60, 42 + 8 f per word); crisp 36 f + 6 f per word). Burn them in for sound-off viewing and ship an SRT (`references/finishing.md`).
 - **A persistent anchor** (the story device, or the product's own "now" or selection marker) carries across chapters, so the walkthrough reads as one continuous product, not a slideshow.
 - Screen recordings of the real app are useful as texture and as a guide to its real behaviour; rebuild the hero moments as components so they can be timed to the grid.
 

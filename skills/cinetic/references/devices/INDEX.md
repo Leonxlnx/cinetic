@@ -1,6 +1,6 @@
 # Device book: index
 
-The creative vocabulary of a cinetic film, big and small, in 466 devices: every move the house knows, from four tiny corner squares that blink around a word to a glass dome with thin-film colour. Each device has its own entry in its family file: what it is and when it earns its place, its anatomy, house timing at 60 fps, the sound that goes with it, how to build it (the primitive and its props, or a recipe in plain layers), and, where it matters, the materials and their numbers.
+The creative vocabulary of a cinetic film, big and small, in 466 devices: every move the house knows, from a word that inks along a colour path to a glass dome with thin-film colour. None is a default: each film draws its own (`scripts/pick.py`), and a device named once in a brief is one beat's device, not the whole film's. Each device has its own entry in its family file: what it is and when it earns its place, its anatomy, house timing at 60 fps, the sound that goes with it, how to build it (the primitive and its props, or a recipe in plain layers), and, where it matters, the materials and their numbers.
 
 How to use it:
 
