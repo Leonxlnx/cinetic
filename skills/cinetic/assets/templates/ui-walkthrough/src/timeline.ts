@@ -236,7 +236,7 @@ export const END: EndLock = { from: CUE.lockup, to: TOTAL };
 export const REVEAL = CUE.lockup;
 /** The one element class allowed an underdamped spring: the chosen row landing in its ring. */
 export const SPRING_CLASS = 'chosen-row';
-/** CUE names that must land on a music event. None without a track; with one, add 'card', 'feed' and 'lockup'. */
+/** CUE names that must land on a music event. None without a track; with one, add 'rise', 'feed' and 'end' (downbeats). */
 export const STRUCTURAL: string[] = [];
 /** Each CUE's salience (missing = 'hit'). */
 export const SALIENCE: Record<string, Salience> = {
@@ -287,12 +287,13 @@ export const line = (id: string, text: string, inF: number, out?: number, o: { i
 
 /** The claim's words after its giant first one arrive this far apart (60 fps frames), from the snap. */
 export const CLAIM_GAP = 8;
-const claimN = wordCount(WALK.lines.claim);
+/** Each claim word's first frame (acts/Claim.tsx draws them on these): the giant first word a second before the act, word i a gap x i after the snap. */
+export const CLAIM_STARTS = Array.from({ length: wordCount(WALK.lines.claim) }, (_, i) => (i === 0 ? CUE.claim - f60(60) : CUE.claimSnap + f60(CLAIM_GAP * i)));
 
 // Every on-screen word of the film. The product's own strings (walk.ts) are UI, drawn by the kit, not budgeted.
 export const COPY: Copy[] = [
   line('promise', WALK.lines.promise, CUE.line, CUE.exitOpen, { ink: 'pop' }),
-  { id: 'claim', text: WALK.lines.claim, in: CUE.claim, resolved: CUE.claimSnap + f60((claimN - 2) * CLAIM_GAP) + f60(pace.wordDur), out: CUE.exitClaim },
+  { id: 'claim', text: WALK.lines.claim, in: CUE.claim, resolved: CLAIM_STARTS[CLAIM_STARTS.length - 1] + f60(pace.wordDur), out: CUE.exitClaim },
   line('step1', WALK.lines.step1, CUE.step1, CUE.step1Out),
   line('insight', WALK.lines.insight, CUE.say4, CUE.exitInsight),
   line('pick', WALK.lines.pick, CUE.say5, CUE.exitPick),

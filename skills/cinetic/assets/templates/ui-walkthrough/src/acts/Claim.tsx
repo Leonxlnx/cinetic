@@ -5,7 +5,7 @@ import { Defocus } from '../fx/Defocus';
 import { Words } from '../fx/Words';
 import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
 import { creep, intoCut } from '../lib/handoff';
-import { ACT, CLAIM_GAP, copy, CUE, f60, f60x, FPS, H, W } from '../timeline';
+import { ACT, CLAIM_STARTS, copy, CUE, f60x, FPS, H, W } from '../timeline';
 import { Cam, LIGHT, lineSize, useAbs } from './stage';
 
 // CLAIM - the speed claim. Its first word arrives giant (the film's one giant word), revealed bottom-up behind the
@@ -25,7 +25,7 @@ export const Claim: React.FC = () => {
   const reveal = prog(F, CUE.claim, CUE.claim + f60x(12), E.snapOut);
   const soft = snapped ? mix(6, 0, clamp((F - CUE.claimSnap) / f60x(6))) : 0;
   const k = creep(F, CUE.claimSnap, { pctPerSec: 0.05 }, FPS) * lmix(1, 1.35, intoCut(F, ACT.field.from, 30, FPS)); // x1.35 keeps the read type under 20 px/f into the cut
-  const starts = words.map((_, i) => (i === 0 ? CUE.claim - f60(60) : CUE.claimSnap + f60(CLAIM_GAP * i)));
+  const starts = CLAIM_STARTS; // the timeline's COPY resolves the claim on the same frames
   const key = 0.06 * hitPulse(F - CUE.claimLight, 8, 48, FPS); // one light event under the read: the key swells across the line
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
