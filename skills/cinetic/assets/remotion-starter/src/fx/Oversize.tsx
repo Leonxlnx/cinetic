@@ -52,6 +52,13 @@ export type OversizeState = {
 
 const HOUSE = { from: 1.6, dur60: 36, coolLead60: 12, sweepWidth: 0.8 } as const;
 
+/**
+ * The first word of a kinetic opener: cut in at x2.67, defocused 6 px, settling in 24 f at 60 fps, and snapping sharp
+ * (defocusUntil) on the frame the second word lands: the focus snap is the hit. Spread into OversizeOpts with
+ * `defocusUntil` set to the second word's frame (f60x the dur for other rates).
+ */
+export const OVERSIZE_FIRST = { from: 2.67, dur60: 24, defocus: 6 } as const;
+
 /** The house oversize numbers in film frames at `fps`. */
 export const oversizeDefaults = (fps: number) => ({ from: HOUSE.from, dur: f60x(HOUSE.dur60, fps), coolLead: f60x(HOUSE.coolLead60, fps), range: OVERSIZE });
 

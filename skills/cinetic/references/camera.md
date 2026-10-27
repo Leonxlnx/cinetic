@@ -81,6 +81,12 @@ export declare const camVel: (f: number, base: Shot, moves: CamMove[], at?: { x:
   for the smear: `<DirBlur v={vel.speed / u} angle={vel.angle} shutter={DIR_BLUR.whipShutter}>` on translation only
   (pushes stay crisp), sharp under 120 px/s. Pin a camera track on measured element boxes, never on a frame where
   a hero element moves on its own.
+- **Entrances that never stop** (`lib/handoff` `expoTail(f, at, from)`): a window or a box rising into a camera shot
+  arrives on an expo tail (x0.938 a 60 fps frame, about 90 % home in 36 f) and keeps a residual drift (0.06 px a frame)
+  into the next move, so a chained camera never inherits a dead stop.
+- **The modal moment** (`lib/camera-moves` `modalPush(f, at)`): the scene under a dialog blurs to 14 px and takes an ink
+  veil to 0.45 over 20 f while the camera pushes x1.43 over 42 f; the toast pops sharp at the push's midpoint (opacity in
+  8 f, x0.86 to 1 in 10 f, its own blur clearing over 22 f, rising 24 px). Leave on a circ-in pull-out to black.
 - Overlays that track the product (a cursor, the story device, a caption pinned to a row) are drawn in screen space at
   the projected point every frame: `toScreen(shot, SEND_BUTTON)`. Under rotation, project with the same maths as the
   transform. A photo's points project with `photoPoint` (`references/imagery.md`).

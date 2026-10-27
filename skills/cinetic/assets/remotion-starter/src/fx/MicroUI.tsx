@@ -382,6 +382,12 @@ export const declares = (
  * fill through `stops` (the brand's colours, ending on the held one) while it holds 18 f, then settles back in 6 f.
  * The cursor squashes on the same frame (Cursor pressDepth 0.2). Pure: scale, fill and progress at frame f.
  */
+/** A pop with no spring: from 62 % to full size in 2 f at 60 fps, linear, no overshoot (an accent pill landing on a cut). */
+export const POP = { from: 0.62, frames60: 2 } as const;
+/** The pop's scale at frame f (1 before `at`'s first frame is drawn is the caller's choice: it shows from `at`). Pure. */
+export const popScale = (frame: number, at: number, o: { from?: number; frames?: number } = {}, film?: Partial<FilmCtx>) =>
+  mix(o.from ?? POP.from, 1, clamp((frame - at) / Math.max(1, f60x(o.frames ?? POP.frames60, fpsOf(film)))));
+
 export const SWELL = { to: 1.38, in60: 6, hold60: 18, out60: 6 } as const;
 export type SwellProps = { at: number; stops: string[]; to?: number; in?: number; hold?: number; out?: number };
 export const swellState = (frame: number, p: SwellProps, film?: Partial<FilmCtx>) => {

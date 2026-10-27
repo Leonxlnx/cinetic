@@ -351,6 +351,9 @@ sample.
   walking its fill through the brand's colours to a held one, back in 6 f), then leaves spinning (`cursorExit()`).
   `StepList rise` lifts each new row inside the stack as it steps in; a `pending` row never checks and pales.
   `TypeOn kind="stream"` takes `rates` (a fast run slowing from a given character) and `skip` (a burst on one frame).
+- **Launch and pop**: a send button that takes off leaves on a J (`fx/Flight` `jLaunch()`: x on a cubic-out, y on a
+  cubic-in, growing x1.74 over 36 f); an accent pill landing on a cut pops from 62 % to full in 2 f with no spring
+  (`fx/MicroUI` `popScale()`): an overshoot there reads as a toy.
 - **Scatter** (`fx/Gather.tsx` `scatterState()`): satellites clearing along their own vectors (quad-in, growing x1.45)
   on the frame their container swaps its label.
 - **MaskList** (`fx/Reels.tsx`): a capability ticker. One row every 10 f, hard, unblurred, an icon swapping on the same

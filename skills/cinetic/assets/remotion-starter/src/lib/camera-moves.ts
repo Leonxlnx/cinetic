@@ -20,7 +20,7 @@
 // written at 60 fps and converted with the film's fps, so the same call reads the same at 24-60 fps.
 import { BREATH, clamp, DUR, E, type Ease, lmix, mix, prog } from './anim';
 import { lc, type Shot } from './camera';
-import { f60x, fpsOf } from './film';
+import { f60x, type FilmCtx, fpsOf } from './film';
 import { carry, type CarryOpts, launch, LAUNCH } from './handoff';
 
 /** A framing for any frame. */
@@ -542,4 +542,26 @@ export const parallax = (
 };
 
 /** BREATH (lib/anim.ts) re-exported here: the normal ranges the breath defaults sit in. */
+/**
+ * The modal moment, measured: the scene under a dialog blurs (to 14 px at 1080p) and dims (an ink veil to 0.45) over
+ * 20 f while the camera pushes x1.43 over 42 f on E.stdInOut; the toast pops at the push's midpoint: opacity in 8 f,
+ * scale 0.86 -> 1 in 10 f, its own blur 5 -> 0 over 22 f, rising 24 px. 60 fps frames.
+ */
+export const MODAL = { blur: 14, veil: 0.45, dim60: 20, push: 1.43, push60: 42, pop60: 8, scaleFrom: 0.86, scale60: 10, toastBlur: 5, blur60: 22, rise: 24 } as const;
+
+/** The modal push at frame f from `at` (the scene's blur, veil and camera scale; the toast's opacity, scale, blur and rise). Pure. */
+export const modalPush = (f: number, at: number, film?: Partial<FilmCtx>) => {
+  const fps = fpsOf(film);
+  const dim = E.stdInOut(clamp((f - at) / f60x(MODAL.dim60, fps)));
+  const k = lmix(1, MODAL.push, E.stdInOut(clamp((f - at) / f60x(MODAL.push60, fps))));
+  const t = f - (at + f60x(MODAL.push60 / 2, fps)); // the toast pops at the push's midpoint
+  const sc = E.snapOut(clamp(t / f60x(MODAL.scale60, fps)));
+  return {
+    blur: MODAL.blur * dim,
+    veil: MODAL.veil * dim,
+    k,
+    toast: { shown: t >= 0, opacity: clamp(t / f60x(MODAL.pop60, fps)), scale: mix(MODAL.scaleFrom, 1, sc), blur: t < 0 ? MODAL.toastBlur : MODAL.toastBlur * (1 - clamp(t / f60x(MODAL.blur60, fps))), rise: MODAL.rise * (1 - sc) },
+  };
+};
+
 export { BREATH };

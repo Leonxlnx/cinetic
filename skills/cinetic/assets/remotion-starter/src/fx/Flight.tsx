@@ -121,4 +121,19 @@ export const Flight: React.FC<ArcOpts & { frame: number; stretch?: boolean; orie
 };
 
 /** Flights are continuous: nothing to declare. */
+/** A J-curve launch: the button leaves on x cubic-out and y cubic-in over 36 f at 60 fps, growing x1.74 as it goes. */
+export const J_LAUNCH = { frames60: 36, grow: 1.74 } as const;
+
+/**
+ * An object launched off the frame on a J (a send button that takes off): it moves out along x on a cubic-out while it
+ * sinks into y on a cubic-in, so it starts sideways and ends rising fast; it grows linearly (house x1.74). `x`, `y` are
+ * the offsets at the end (px at 1080p, x u). Returns its offset, scale and whether it is gone. Pure.
+ */
+export const jLaunch = (frame: number, o: { at: number; x: number; y: number; frames?: number; grow?: number }, film?: Partial<FilmCtx>) => {
+  const fps = fpsOf(film);
+  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const t = clamp((frame - o.at) / Math.max(1, f60x(o.frames ?? J_LAUNCH.frames60, fps)));
+  return { dx: o.x * u * (1 - (1 - t) ** 3), dy: o.y * u * t ** 3, scale: mix(1, o.grow ?? J_LAUNCH.grow, t), t, gone: t >= 1 };
+};
+
 export const declares = (_p?: Partial<ArcOpts>, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

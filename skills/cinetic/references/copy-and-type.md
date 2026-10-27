@@ -522,7 +522,8 @@ element cuts in larger and settles to its size, never below: from ×1.6 (normal 
 word that also starts defocused) over 36 f on `M.oversize` (22-56 f); colour accent → ink, home about 12 f before the
 scale (`cool: 'sweep'` cools it behind a soft front); `defocus` held until `defocusUntil` (a snap to sharp: a declared
 step) or resolving over `defocusDur`. A defocused first word that snaps sharp exactly when the second word lands is
-the strongest version: the focus snap is the hit.
+the strongest version: the focus snap is the hit (`OVERSIZE_FIRST`: x2.67, 6 px defocus, settling in 24 f, with
+`defocusUntil` on the second word's frame).
 
 **Recipes**
 - **A line built in beats:** `Chain` build, two parts, `recentre: 'jump'`, transient accent, reading cadence; the line

@@ -298,6 +298,20 @@ export const counterCreep = (f: number, from: number, o: { text?: number; ground
   ground: creep(f, from, { pctPerSec: o.ground ?? COUNTER_CREEP.ground }, fps),
 });
 
+/** The entrance that never stops: an expo tail (x0.938 a 60 fps frame) that keeps a residual drift (px per 60 fps frame at 1080p). */
+export const TAIL = { decay60: 0.938, drift60: 0.06 } as const;
+
+/**
+ * An element arriving on an expo tail: `from` px away at `at`, the rest shrinking by TAIL.decay60 every 60 fps frame
+ * (90 % home in about 36 f), with a residual drift of `drift` px a 60 fps frame (x u) that never stops, so a window
+ * that has risen keeps rising a little into the next move. Returns the offset in px (from -> 0, then past it).
+ */
+export const expoTail = (f: number, at: number, from: number, o: { decay60?: number; drift60?: number; u?: number } = {}, fps: number = fpsOf()): number => {
+  if (f < at) return from;
+  const t = ((f - at) * 60) / fps;
+  return from * (o.decay60 ?? TAIL.decay60) ** t - Math.sign(from || 1) * (o.drift60 ?? TAIL.drift60) * (o.u ?? 1) * t;
+};
+
 /** A linear drift in px from frame `from` (house 30 px/s at 1080p, range 6-90). */
 export const drift = (f: number, from: number, pxPerSec = 30, fps: number = fpsOf()) => (pxPerSec * Math.max(0, f - from)) / fps;
 

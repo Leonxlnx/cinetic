@@ -34,6 +34,10 @@
  *      the stack and a pending row that never checks.
  *  17. type fills: fx/HueSweep clipText() pads the clipped box (descenders), bandFill() and frontFill() give stops in
  *      increasing px (a band ink | accent | ink; a front with the ink behind it).
+ *  19. entrances and exits: lib/handoff expoTail() (x0.938 a frame, a residual drift past home), fx/Flight jLaunch()
+ *      (x on a cubic-out, y on a cubic-in, growing x1.74), lib/camera-moves modalPush() (blur and veil over 20 f, x1.43,
+ *      the toast at the push's midpoint), fx/MicroUI popScale() (62 % to full in 2 f, no overshoot), fx/Oversize
+ *      OVERSIZE_FIRST (x2.67 over 24 f, 6 px defocus).
  *  18. fx/Words arriveX: each word lands beside its slot and settles home on an expo-out (half of it in 8 f at 60 fps,
  *      home by arriveDur), one value per word when given a list.
  *
@@ -92,6 +96,9 @@ import * as Ga from '${url('fx/Gather.tsx')}';
 import * as Mu from '${url('fx/MicroUI.tsx')}';
 import * as Lo from '${url('fx/Loaders.tsx')}';
 import * as Hs from '${url('fx/HueSweep.tsx')}';
+import * as Fl from '${url('fx/Flight.tsx')}';
+import * as Cmv from '${url('lib/camera-moves.ts')}';
+import * as Ov from '${url('fx/Oversize.tsx')}';
 const camBase = { ax: 960, ay: 540, sx: 960, sy: 540, k: 1 };
 const camMoves = [{ at: 0, frames: 20, zoom: 0.5, ease: A.E.glideOut }, { at: 15, frames: 20, pan: { x: -400 }, ease: A.E.launchIn }];
 const panOnly = [{ at: 0, frames: 10, pan: { x: 100 }, ease: A.E.linear }];
@@ -145,6 +152,12 @@ console.log(JSON.stringify({
   steps: [10, 20, 40, 120].map((f) => Lo.stepListState(f, { rows: [{ at: 0 }, { at: 10 }, { at: 20, pending: true }], rise: 18 }, film60).rows),
   fills: { clip: Hs.clipText('linear-gradient(red, blue)'), band: Hs.bandFill({ tail: 150, head: 700, ink: '#111', band: '#06c' }), rtl: Hs.frontFill({ front: 676, ink: '#111', ramp: [[60, '#222'], [720, '#999'], [220, '#555']] }), ltr: Hs.frontFill({ front: 100, ink: '#111', ramp: [[60, '#222']], dir: 'ltr' }) },
   arrive: [1, 8, 28, 50].map((f) => Wo.wordState(100 + f, { text: 'one two', start: 100, starts: [100, 104], arriveX: [0.3, 0.1], size: 80 }, film60).words.map((w) => w.x)),
+  tailIn: [0, 1, 36, 200].map((f) => Ho.expoTail(100 + f, 100, 400, {}, 60)),
+  tail30: Ho.expoTail(118, 100, 400, {}, 30),
+  jl: [0, 18, 36].map((f) => Fl.jLaunch(f, { at: 0, x: 500, y: -800 }, film60)),
+  modal: [0, 10, 20, 21, 31, 42, 80].map((f) => Cmv.modalPush(f, 0, film60)),
+  pop: [-1, 0, 1, 2, 5].map((f) => Mu.popScale(f, 0, {}, film60)),
+  first: Ov.OVERSIZE_FIRST,
   launchCap: (() => { const big = Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1); const last = (1 - A.E.launchIn(13 / 14)) * big * 120; return { big, last, small: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 30, 1), fade: Wo.exitDistanceEm('launchFade', A.E.buildIn, 14, 120, 1), given: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1, 2) }; })(),
   trackFit: Me.solveTracking([{ w0: 100, n: 5, size: 80, target: 124 }, { w0: 200, n: 6, size: 80, target: 228.8 }]),
   dir: { slow: D.dirBlurMix(1, { fps: 60 }), v10: D.dirBlurMix(-10, { fps: 60 }), v20at30: D.dirBlurMix(20, { fps: 30 }), fast: D.dirBlurMix(200, { fps: 60 }) },
@@ -329,6 +342,19 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   const a = P.arrive;
   result(a[0][0] > 0.27 && a[0][0] < 0.3 && Math.abs(a[1][0] / 0.3 - 0.52) < 0.06 && a[2][0] > 0.02 && a[2][0] < 0.035 && a[3][0] === 0 && a[3][1] === 0 && a[1][1] > a[1][0] / 3 && a[1][1] < 0.1,
     'Words arriveX: lands 0.3 em right, half home in 8 f, 90 % by 28 f, home by 45 f; a second word on its own distance', JSON.stringify(a));
+}
+// 19. entrances and exits
+{
+  const [t0, t1, t36, t200] = P.tailIn;
+  result(t0 === 400 && Math.abs(t1 - (400 * 0.938 - 0.06)) < 1e-9 && t36 < 40 && t36 > 0 && t200 < 0, 'expoTail: from 400 px, x0.938 a frame, about 90 % home by 36 f, drifting past home', JSON.stringify(P.tailIn));
+  result(Math.abs(P.tail30 - t36) < 1e-9, 'expoTail: the same tail at 30 fps', `${P.tail30} vs ${t36}`);
+  const [j0, j1, j2] = P.jl;
+  result(j0.dx === 0 && j0.dy === 0 && j1.dx > 400 && j1.dy > -120 && j2.dx === 500 && j2.dy === -800 && Math.abs(j2.scale - 1.74) < 1e-9 && j2.gone, 'jLaunch: sideways first (cubic-out x), rising late (cubic-in y), x1.74, gone at 36 f', JSON.stringify(j1));
+  const m = P.modal;
+  result(m[0].blur === 0 && m[2].blur === 14 && Math.abs(m[2].veil - 0.45) < 1e-9 && !m[1].toast.shown && m[3].toast.shown && m[4].toast.opacity === 1 && Math.abs(m[5].k - 1.43) < 1e-9 && m[6].toast.blur === 0 && m[6].toast.scale === 1,
+    'modalPush: blur 14 and veil .45 by 20 f, the toast from the midpoint (21 f), sharp and full size, x1.43 at 42 f', JSON.stringify(m[3]));
+  result(JSON.stringify(P.pop.map((x) => +x.toFixed(3))) === JSON.stringify([0.62, 0.62, 0.81, 1, 1]), 'popScale: 62 % to full in 2 f, never over', JSON.stringify(P.pop));
+  result(P.first.from === 2.67 && P.first.dur60 === 24 && P.first.defocus === 6, 'OVERSIZE_FIRST: x2.67 over 24 f, 6 px defocus');
 }
 // 14. a launch keeps readable type under the audit's 20 px/f
 {
