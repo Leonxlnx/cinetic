@@ -62,7 +62,7 @@ export const TYPE_HOUSE = {
 export const ERASE_HOUSE = { gaps60: [4, 6, 4, 3, 2, 2, 1] } as const;
 export type TypeErase = { start: number; gaps?: readonly number[] };
 
-/** The whole frame on which each character of a `len`-character string is erased, last character first (index = character). */
+/** The whole frame on which each character of a `len`-character string ([...text].length) is erased, last character first (index = character). */
 export const eraseSchedule = (len: number, e: TypeErase, film?: Partial<FilmCtx>): number[] => {
   const fps = fpsOf(film);
   const gaps = e.gaps?.length ? e.gaps : ERASE_HOUSE.gaps60;
@@ -99,15 +99,16 @@ export const typeFrames = (len: number, t: TypeTiming, film?: Partial<FilmCtx>):
   return at;
 };
 
-const isFinal = (text: string, i: number) => i === text.length - 1 && /[?.!]/.test(text[i]);
+// Characters are code points ([...text]) everywhere: an emoji is one key, one schedule entry, one backspace.
+const isFinal = (chars: readonly string[], i: number) => i === chars.length - 1 && /[?.!]/.test(chars[i]);
 const isComma = (c: string | undefined) => c !== undefined && /[,;:]/.test(c);
 
 /** The index of the first character of the last word (closing punctuation is not a word). */
-const lastWordStart = (text: string) => {
-  let e = text.length - 1;
-  while (e >= 0 && /[?.!\s]/.test(text[e])) e--;
+const lastWordStart = (chars: readonly string[]) => {
+  let e = chars.length - 1;
+  while (e >= 0 && /[?.!\s]/.test(chars[e])) e--;
   let s = e;
-  while (s > 0 && !/\s/.test(text[s - 1])) s--;
+  while (s > 0 && !/\s/.test(chars[s - 1])) s--;
   return { s, e };
 };
 
@@ -189,7 +190,7 @@ export const typeSchedule = (text: string, t: TypeTiming, film?: Partial<FilmCtx
     for (let i = len - 2; i >= pre; i--) if (/\s/.test(chars[i])) at[i] = at[i + 1];
     return at;
   }
-  const { s: lw, e: le } = lastWordStart(text);
+  const { s: lw, e: le } = lastWordStart(chars);
   const seed = t.seed ?? 0;
   const burstSet = Array.isArray(t.bursts) ? new Set(t.bursts) : null;
   const share = typeof t.bursts === 'number' ? t.bursts : H.bursts;
@@ -219,8 +220,8 @@ export const typeSchedule = (text: string, t: TypeTiming, film?: Partial<FilmCtx
       if (i === lw && lw > 0) d += (pz.beforeLast ?? H.beforeLast) * u;
       const slow = t.slowLast ?? H.slowLast;
       if (i <= le && i > le - slow && i > lw) d += u; // the last letters at twice the length
-      if (isFinal(text, i)) d += (pz.final ?? H.final) * u;
-      const inWord = i > 0 && !/\s/.test(c) && !/\s/.test(chars[i - 1]) && !isComma(c) && !isFinal(text, i);
+      if (isFinal(chars, i)) d += (pz.final ?? H.final) * u;
+      const inWord = i > 0 && !/\s/.test(c) && !/\s/.test(chars[i - 1]) && !isComma(c) && !isFinal(chars, i);
       if (k > 0 && inWord && (burstSet ? burstSet.has(i) : rand(`${seed}:burst:${i}`) < share)) d = 0;
     } else if (i >= lw) d *= t.slowLast ?? P.slowLast;
     clock += d;
@@ -278,11 +279,12 @@ export const typeOn = (text: string, frame: number, t: TypeTiming & TypeFont, fi
   const size = t.size ?? TYPE[role].size * uOf(film);
   const { weight, track } = TYPE[role];
   const family = t.family ?? FONT.text;
-  const len = text.length;
+  const chars = [...text];
+  const len = chars.length;
   const at = t.kind ? typeSchedule(text, t, film) : typeFrames(len, t, film);
   const F = fd(frame);
   const n = at.filter((k) => k <= F).length;
-  const wOf = (k: number) => (k <= 0 ? 0 : measureTracked(text.slice(0, k), size, weight, track, family));
+  const wOf = (k: number) => (k <= 0 ? 0 : measureTracked(chars.slice(0, k).join(''), size, weight, track, family));
   let c: number;
   if (t.kind) {
     // continuous count between key frames, for a camera that follows the caret
@@ -347,9 +349,10 @@ export const TypeOn: React.FC<
   const lead = TYPE[role].lead;
   const F = fd(frame);
   // A held backspace: characters erased from the end on their whole frames; the caret follows them back.
-  const gone = erase ? eraseSchedule(text.length, erase, film) : null;
+  const chars = [...text];
+  const gone = erase ? eraseSchedule(chars.length, erase, film) : null;
   const goneEnd = gone && erase ? Math.max(erase.start, ...gone) : -Infinity;
-  const left = gone ? gone.filter((k) => k > F).length : text.length;
+  const left = gone ? gone.filter((k) => k > F).length : chars.length;
   const erasing = !!erase && F >= erase.start && F < goneEnd;
   const shownN = Math.min(s.n, left);
   // Caret: solid while typing (or erasing); idle, it blinks with a phase anchored on the typing edges.
@@ -363,12 +366,12 @@ export const TypeOn: React.FC<
   const ch = ink.ascent + ink.descent + 0.14 * s.size;
   // CSS puts the (negative) tracking after each glyph, so the last glyph's ink can reach past the
   // next glyph's origin: clear it by the tracking plus a hairline gap.
-  const caretX = shownN === s.n ? s.caretX : measureTracked(text.slice(0, shownN), s.size, s.weight, s.track, s.family);
+  const caretX = shownN === s.n ? s.caretX : measureTracked(chars.slice(0, shownN).join(''), s.size, s.weight, s.track, s.family);
   const cx = shownN > 0 ? caretX + Math.max(0, -s.track) * s.size + 0.03 * s.size : 0;
   const trailN = trail?.chars ?? 10;
   return (
     <span data-text={id} style={{ ...typeStyle(role, s.size), fontFamily: s.family, position: 'relative', display: 'inline-block', ...style }}>
-      {[...text].map((c, i) => {
+      {chars.map((c, i) => {
         const shown = F >= s.at[i] && (!gone || F < gone[i]);
         const o = !shown ? 0 : fade > 0 ? prog(frame, s.at[i] - 1, s.at[i] - 1 + fade, E.ui) : 1;
         let color: string | undefined;
@@ -406,7 +409,7 @@ export const TypeOn: React.FC<
 export const declares = (p?: Partial<TypeTiming> & { text?: string; id?: string; erase?: TypeErase }, film?: Partial<FilmCtx>): Declares => {
   const none: Declares = { stepped: [], flashes: [], cameraBlur: [], seams: [] };
   if (p?.erase && p.text) {
-    const gone = eraseSchedule(p.text.length, p.erase, film);
+    const gone = eraseSchedule([...p.text].length, p.erase, film);
     return { ...none, stepped: [{ from: Math.min(...gone), to: Math.max(...gone) + 1, id: `${p.id ?? 'type'}-erase` }] };
   }
   if (!p || !p.kind || p.text === undefined || p.start === undefined) return none;
