@@ -17,7 +17,12 @@
  *   7. The licence record: every field of the starter's licence.template.json; credits.py accepts it (with a
  *      Python 3 on the PATH).
  *   8. The CLI contract: --help, usage errors (exit 2), Pixabay named as unreachable without a request.
- *   No test touches the network (fetch is replaced by a function that fails the run).
+ *   9. The CC0 catalogs (Wikimedia Commons, ccMixter, Openverse; hand-written answers in music-fixtures/, every
+ *      value invented): --source, the query URLs, CC0 only (an attribution licence, a voice, speech, a sample
+ *      pack refused), a stated tempo, a whole search across catalogs on a stand-in network (one entry per
+ *      recording, a refused catalog never requested), the licence read again before a download, the CC0 record
+ *      (credits.py accepts it), the energy curve from samples.
+ *   No test touches the network (fetch and the large-header transport are replaced by functions that fail the run).
  *
  * Usage (from the skill root):  node scripts/test/music.test.mjs [--verbose]
  * Exit codes: 0 all pass, 1 a test failed.
@@ -40,6 +45,8 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
 let fetched = 0;
 globalThis.fetch = async (u) => { fetched++; throw new Error(`network used in an offline test: ${String(u).slice(0, 60)}`); };
 const M = await import(pathToFileURL(path.join(HERE, '..', 'music.mjs')).href);
+const offlineLarge = async (u) => { fetched++; throw new Error(`network used in an offline test: ${String(u).slice(0, 60)}`); };
+M.transport.large = offlineLarge;
 
 let failed = 0, passed = 0;
 const check = (ok, name, detail = '') => {
@@ -218,6 +225,154 @@ function waveform(levels, px = 0.2, sr = 44100) {
   check(pix.items.length === 0 && pix.unreachable === 'Pixabay Music' && logs.some((l) => /bot check/.test(l)), 'Pixabay is named as unreachable, no request made');
   const r = spawnSync(process.execPath, [path.join(HERE, '..', 'music.mjs'), '--help'], { encoding: 'utf8' });
   check(r.status === 0 && /music\.mjs/.test(r.stdout), 'the script answers --help as a process');
+}
+// 9. the CC0 catalogs
+const fixJson = (f) => JSON.parse(fs.readFileSync(path.join(FIX, f), 'utf8'));
+{
+  check(eq(M.sourcesFor('all', 'music').use, ['mixkit', 'commons', 'ccmixter']) && eq(M.sourcesFor(undefined, 'sfx').use, ['mixkit', 'commons', 'openverse']),
+    'the default catalogs per kind', `${M.sourcesFor('all', 'music').use} / ${M.sourcesFor('all', 'sfx').use}`);
+  const fma = M.sourcesFor('mixkit,fma', 'music');
+  check(eq(fma.use, ['mixkit']) && fma.refused[0]?.id === 'fma' && /login/.test(fma.refused[0].why), 'a catalog that needs a login is refused with its reason');
+  let bad = 0;
+  for (const [v, k] of [['bogus', 'music'], ['ccmixter', 'sfx']]) { try { M.sourcesFor(v, k); } catch (e) { if (e instanceof M.Usage) bad++; } }
+  check(bad === 2, 'an unknown catalog, or one that does not serve the kind, is a usage error');
+  const cu = decodeURIComponent(M.commonsUrl('tech house driving', 'music').replace(/\+/g, ' '));
+  check(/incategory:"CC-Zero" music \(/.test(cu) && /"tech house" OR driving/.test(cu) && /iiextmetadatafilter=LicenseShortName/.test(cu), 'Commons: CC0 files, the words joined by OR', cu.slice(0, 160));
+  const xu = M.ccmixterUrl('calm piano', { offset: 20, limit: 20 });
+  check(/lic=zero/.test(xu) && /search_type=any/.test(xu) && /offset=20/.test(xu), 'ccMixter: CC0 uploads, any word', xu);
+  check(/license=cc0/.test(M.openverseUrl('paper slide')), 'Openverse: CC0 only');
+}
+const commons = M.parseCommons(fixJson('commons-search.json'), 'music');
+{
+  const [a, , c, d, e] = commons;
+  check(commons.length === 5 && a.ref === 'commons:5101' && a.title === 'Glass Engine' && a.artist === 'Example Collective' && a.seconds === 151,
+    'Commons: id, title and artist from the file name and its page, length', JSON.stringify([a.ref, a.title, a.artist, a.seconds]));
+  check(a.licence === 'cc0' && a.file_url.endsWith('Glass_Engine.ogg') && !a.file_url.includes('?') && eq(a.tags.genre, ['electronic', 'techno']),
+    'Commons: CC0 with no attribution, the original file, genres from its categories', JSON.stringify(a.tags.genre));
+  check(a.notes.some((n) => /not reviewed/.test(n)), 'Commons: a licence not yet reviewed is noted');
+  check(c.licence === 'unknown' && M.scoreItem({ ...c, tempo: {} }, {}).score === -Infinity, 'Commons: an attribution licence (CC BY-SA) is refused');
+  check(d.unfit === true && M.scoreItem({ ...d, tempo: {} }, {}).score === -Infinity, 'Commons: a pronunciation is not a film track');
+  check(e.genre === 'ambient' && e.notice.startsWith('CC0'), 'Commons: the notice quotes the page');
+}
+const ccm = M.parseCcmixter(fixJson('ccmixter-query.json'));
+{
+  const [a, b, c, d] = ccm;
+  check(ccm.length === 4 && a.ref === 'ccmixter:7101' && a.file_url.endsWith('.mp3') && a.seconds === 192 && a.licence === 'cc0' && a.artist === 'Ada Example',
+    'ccMixter: the audio file (not the zip), length, CC0', JSON.stringify([a.ref, a.file_url.slice(-20), a.seconds]));
+  check(eq(M.tempoOf(a, {}), { value: 122, kind: 'stated' }) && eq(a.tags.instrument, ['synth', 'drums']), 'ccMixter: the uploader\'s tempo, instruments from tags', JSON.stringify(a.tags.instrument));
+  check(b.vocals === true && b.artist === 'ben_s', 'ccMixter: an a cappella is a voice (refused)');
+  check(c.licence === 'unknown' && eq(M.tempoOf(c, {}).range, [95, 100]), 'ccMixter: an attribution licence is refused; a tempo tag reads as a range');
+  check(d.unfit === true, 'ccMixter: a sample pack of loops is not a track');
+}
+const ov = M.parseOpenverse(fixJson('openverse-search.json'), 'sfx');
+{
+  check(ov.length === 2 && ov[0].licence === 'cc0' && ov[0].origin === 'freesound' && ov[0].seconds === 1.2 && ov[0].notes.some((n) => /preview/.test(n)),
+    'Openverse: CC0, its origin, length, the preview noted', JSON.stringify([ov[0].licence, ov[0].seconds]));
+  check(ov[1].licence === 'unknown' && M.sourceName(ov[0]) === 'Openverse (freesound)', 'Openverse: CC BY refused; the record names where the file lives');
+  const sfxScore = M.scoreItem({ ...ov[0], seconds: 1 }, { words: ['paper', 'slide'] });
+  check(sfxScore.score >= 4, 'Openverse: its tags count as the effect\'s categories', String(sfxScore.score));
+}
+{
+  // a whole search on a stand-in network: Mixkit pages, the Commons API, ccMixter (large headers), Openverse
+  const mixHtml = fs.readFileSync(path.join(FIX, 'mixkit-music-list.html'), 'utf8');
+  const seen = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (u) => {
+    const s = String(u); seen.push(s);
+    const json = (o) => new Response(JSON.stringify(o), { status: 200, headers: { 'content-type': 'application/json' } });
+    if (s.startsWith(M.COMMONS_API)) return json(fixJson('commons-search.json'));
+    if (s.startsWith('https://mixkit.co/free-stock-music/')) return new Response(mixHtml, { status: 200 });
+    return new Response('', { status: 404 });
+  };
+  M.transport.large = async (u) => { seen.push(String(u)); return { status: 200, body: JSON.stringify(fixJson('ccmixter-query.json')) }; };
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-music-home-'));
+  const logs = [];
+  let r;
+  try {
+    r = await M.search({ _: [], mood: 'electronic driving', source: 'mixkit,commons,ccmixter,pixabay', length: '60', 'no-history': true }, { env: { CINETIC_HOME: home }, log: (x) => logs.push(x) });
+  } finally { globalThis.fetch = realFetch; M.transport.large = offlineLarge; fs.rmSync(home, { recursive: true, force: true }); }
+  const refs = r.items.map((x) => x.ref);
+  check(eq(r.sources, ['mixkit', 'commons', 'ccmixter']) && logs.some((l) => /Pixabay Music: not used/.test(l)) && !seen.some((u) => /pixabay/.test(u)),
+    'search: the catalogs asked for, a refused one named and never requested', `${r.sources} | ${logs.join(' ')}`);
+  check(refs.includes('mixkit:9001') && refs.includes('commons:5101') && refs.includes('ccmixter:7101'), 'search: tracks from every catalog', refs.join(','));
+  check(!refs.includes('commons:5102'), 'search: one entry per recording (the same track twice on Commons)');
+  check(!refs.some((x) => ['commons:5103', 'commons:5104', 'ccmixter:7102', 'ccmixter:7103', 'ccmixter:7104', 'mixkit:9003', 'mixkit:9004'].includes(x)), 'search: refused items never offered');
+  check(r.items.every((x) => x.seconds >= 64), 'search: nothing shorter than the film plus its ending');
+}
+{
+  // the licence read again before a download, on the stand-in network
+  const realFetch = globalThis.fetch;
+  let commonsAnswer = fixJson('commons-search.json');
+  const landing = fs.readFileSync(path.join(FIX, 'openverse-landing.html'), 'utf8');
+  let landingAnswer = landing;
+  globalThis.fetch = async (u) => {
+    const s = String(u);
+    const json = (o) => new Response(JSON.stringify(o), { status: 200 });
+    if (s.startsWith(M.COMMONS_API)) return json({ query: { pages: commonsAnswer.query.pages.filter((p) => s.includes(`pageids=${p.pageid}`)) } });
+    if (s.startsWith(M.OPENVERSE_API)) return json(fixJson('openverse-search.json').results.find((x) => s.includes(x.id)) || {});
+    if (s.startsWith('https://freesound.org/')) return new Response(landingAnswer, { status: 200 });
+    return new Response('', { status: 404 });
+  };
+  M.transport.large = async (u) => ({ status: 200, body: JSON.stringify(fixJson('ccmixter-query.json').filter((x) => String(u).includes(`ids=${x.upload_id}`))) });
+  let ok1, ok2, ok3, bad1, bad2;
+  try {
+    ok1 = await M.verifyLicence(commons[0]);
+    ok2 = await M.verifyLicence(ccm[0]);
+    ok3 = await M.verifyLicence(ov[0]);
+    commonsAnswer = JSON.parse(JSON.stringify(commonsAnswer));
+    commonsAnswer.query.pages[0].imageinfo[0].extmetadata.AttributionRequired.value = 'true';
+    bad1 = await M.verifyLicence(commons[0]);
+    landingAnswer = landing.replace(/publicdomain\/zero\/1\.0\//, 'licenses/by/4.0/');
+    bad2 = await M.verifyLicence(ov[0]);
+  } finally { globalThis.fetch = realFetch; M.transport.large = offlineLarge; }
+  check(ok1.ok && /CC0/.test(ok1.quote) && ok1.url === commons[0].page, 'get: a Commons file\'s page read again (CC0, no attribution)', JSON.stringify(ok1));
+  check(ok2.ok && /CC0/.test(ok2.quote) && ok2.url === ccm[0].page, 'get: a ccMixter upload\'s record read again', JSON.stringify(ok2));
+  check(ok3.ok && ok3.url === ov[0].page, 'get: an Openverse item and its own page read again', JSON.stringify(ok3));
+  check(!bad1.ok && /no longer/.test(bad1.why), 'get: a Commons page that now asks for attribution is refused', bad1.why);
+  check(!bad2.ok && /does not link the CC0/.test(bad2.why), 'get: an origin page without the CC0 dedication is refused', bad2.why);
+  check((await M.verifyLicence(ccm[2])).ok === false, 'get: an item with no usable licence is refused before any request');
+}
+{
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-music-rec-'));
+  try {
+    let threw = false;
+    try { M.licenceRecord(commons[0], { file: 'x.ogg', sha256: '', bytes: 0, date: '2026-10-27' }); } catch { threw = true; }
+    check(threw, 'a CC0 record needs the item\'s own page as read now');
+    const buf = Buffer.from('OggS a stand-in for the downloaded file');
+    fs.writeFileSync(path.join(tmp, 'glass_engine_commons.ogg'), buf);
+    const sha = crypto.createHash('sha256').update(buf).digest('hex');
+    const rec = M.licenceRecord(commons[0], { file: 'glass_engine_commons.ogg', sha256: sha, bytes: buf.length, date: '2026-10-27', seenQuote: 'CC0: Creative Commons Zero, Public Domain Dedication (attribution required: false)', seenUrl: commons[0].page });
+    check(rec.licence_id === 'cc0' && rec.source === 'Wikimedia Commons' && rec.licence_seen.url === commons[0].page && /even for commercial purposes/.test(rec.licence_deed.quote) && rec.credit_required === false,
+      'the CC0 record: the page as read, the dedication\'s sentence, no credit required');
+    const tpl = JSON.parse(fs.readFileSync(path.join(SKILL, 'assets', 'remotion-starter', 'audio', 'music', 'licence.template.json'), 'utf8'));
+    check(Object.keys(tpl).every((k) => k in rec), 'the CC0 record has every field of the template');
+    const rp = path.join(tmp, 'glass_engine_commons.licence.json');
+    fs.writeFileSync(rp, JSON.stringify(rec));
+    const py = [process.env.PYTHON, 'python3', 'python', ...(process.platform === 'win32' ? ['py'] : [])].filter(Boolean)
+      .find((c) => spawnSync(c, ['-c', 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'], { stdio: 'ignore' }).status === 0);
+    if (py) {
+      const r = spawnSync(py, [path.join(SKILL, 'scripts', 'audio', 'credits.py'), '--check', rp], { encoding: 'utf8' });
+      check(r.status === 0, 'credits.py --check accepts the CC0 record', (r.stdout + r.stderr).trim().split('\n').slice(-2).join(' | '));
+    } else console.log('skip  credits.py cross-check of the CC0 record: no Python 3.10+ on the PATH');
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}
+{
+  const sr = 2000; const pcm = new Float32Array(sr * 60);
+  for (let i = 0; i < pcm.length; i++) { const t = i / sr; const a = t < 4 ? 0.1 : t >= 30 && t < 36 ? 0.08 : 0.6; pcm[i] = a * Math.sin(2 * Math.PI * 110 * t); }
+  const e = M.energyFromPcm(pcm, sr);
+  check(e && Math.abs(e.seconds - 60) < 0.5 && e.breaks.length === 1 && Math.abs(e.breaks[0].entry_s - 36) < 1.5, 'the energy curve from samples: length, the break and its entry', JSON.stringify(e?.breaks));
+}
+{
+  const logs = []; const errs = [];
+  const ol = console.log, oe = console.error;
+  console.log = (...a) => logs.push(a.join(' ')); console.error = (...a) => errs.push(a.join(' '));
+  let fmaCode, badCode;
+  try {
+    fmaCode = await M.main(['search', '--mood', 'calm', '--source', 'fma', '--no-history']);
+    badCode = await M.main(['search', '--mood', 'calm', '--source', 'soundcloud']);
+  } finally { console.log = ol; console.error = oe; }
+  check(fmaCode === 1 && logs.some((l) => /Free Music Archive: not used/.test(l)), 'CLI: --source fma names its reason, exit 1, no request', logs.join(' | '));
+  check(badCode === 2 && errs.some((l) => /unknown --source soundcloud/.test(l)), 'CLI: an unknown --source is a usage error (exit 2)');
 }
 check(fetched === 0, 'no network used', `${fetched} request(s)`);
 
