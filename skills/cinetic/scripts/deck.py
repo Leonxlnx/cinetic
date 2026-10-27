@@ -1307,7 +1307,7 @@ def make_sheet(d, inp, seed, options, keep, history_on, data, redraws=None, vari
     return {
         'version': 2, 'tool': 'deck.py', 'seed': seed, 'input': inp,
         'options': [o for o in options], 'chosen_from_options': d['id'] in options,
-        'direction': d, 'palette': palette, 'type': type_, 'keep': sorted(keep),
+        'direction': d, 'palette': palette, 'type': type_, 'face': face_for(type_, seed, d['id']) if type_ else None, 'keep': sorted(keep),
         'recipes': {r: recipes.get(r) for r in used},
         'methods': {m: methods.get(m, '') for m in d['world'].get('method', [])},
         'signature': sig, 'signature_variant': variant, 'waits_for': list(waits),
@@ -1429,8 +1429,53 @@ def _palette_lines(p, recipes):
             f'{p["notes"][:1].upper() + p["notes"][1:]}.' + (f' {FIELD_EVENT}' if tone_of(p, recipes) == 'field' else '')]
 
 
-def _type_lines(t):
-    return [f'- **{t["id"]}**: {t["sans"]}, weights {t["weights"][0]}/{t["weights"][1]}, {t["case"]}; {t["notes"]}.']
+# The face set (scripts/faces.json): a type option's words pick a look, and the deal picks the face inside it.
+FACES_FILE = os.path.join(HERE, 'faces.json')
+LOOK_ORDER = ['technical', 'friendly', 'geometric', 'tight', 'neutral']
+
+
+def _face_set():
+    try:
+        with open(FACES_FILE, encoding='utf-8') as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def face_for(t, seed=None, did=''):
+    """The face set's look for a type option (matched on its sans words, then its notes) and the face in it: the
+    look's main face, or with a seed a dealt one (the main face twice as likely as each sans alternate)."""
+    fs = _face_set()
+    if not fs or not t:
+        return None
+    looks = {lk['id']: lk for lk in fs['looks']}
+
+    def match(words):
+        words = words.lower()
+        return next((looks[i] for i in LOOK_ORDER if i in looks and any(k in words for k in looks[i].get('keywords', []))), None)
+    look = match(t.get('sans', '')) or match(t.get('notes', '')) or next((lk for lk in fs['looks'] if lk.get('default')), fs['looks'][0])
+    pool = [look['display']] + [a for a in look.get('alternates', []) if fs['faces'].get(a, {}).get('category') == 'sans']
+    name = pool[0] if seed is None else slot_rng(seed, did, 'face', t.get('id', '')).choices(pool, weights=[2] + [1] * (len(pool) - 1))[0]
+    f = fs['faces'][name]
+    return {'look': look['id'], 'look_name': look['name'], 'face': name, 'family': f['family'], 'offset_em': f['offset_em'],
+            'weight_offset': f['weight_offset'], 'mono': look.get('mono'), 'default': name == fs.get('default')}
+
+
+def _face_line(fc):
+    if not fc:
+        return ''
+    fam = fc['family'].replace(' Variable', '')
+    adj = [x for x in ((f'weights {fc["weight_offset"]:+d}' if fc['weight_offset'] else ''),
+                       (f'tracking {fc["offset_em"]:+g} em' if fc['offset_em'] else '')) if x]
+    how = ('the starter\'s face: keep it (delete its `cinetic:placeholder` marker and write the look in TREATMENT.md)' if fc['default']
+           else f'`node scripts/add-font.mjs {fc["face"]}`' + (f' ({", ".join(adj)} on the house numbers)' if adj else ''))
+    return f'{fam}, the {fc["look"]} look ({fc["look_name"]}, `scripts/faces.json`): {how}'
+
+
+def _type_lines(t, seed=None, did=''):
+    fc = face_for(t, seed, did)
+    face = f' Face: {_face_line(fc)}.' if fc else ''
+    return [f'- **{t["id"]}**: {t["sans"]}, weights {t["weights"][0]}/{t["weights"][1]}, {t["case"]}; {t["notes"]}.{face}']
 
 
 def _prims(names, cat):
@@ -1503,7 +1548,7 @@ def render_sheet(sh, data, library):
         out.append(f'- **Type (the brand\'s face in the dealt setting):** {bm["family"]}, weights {t["weights"][0]}/{t["weights"][1]}, '
                    f'{t["case"]}; {t["notes"]}.')
     elif sh['type']:
-        out += ['- **Type (dealt):**'] + ['  ' + x for x in _type_lines(sh['type'])]
+        out += ['- **Type (dealt):**'] + ['  ' + x for x in _type_lines(sh['type'], sh.get('seed'), d['id'])]
     else:
         out += ['- **Type:** the brand fixes it (`--keep type`); set it in the roles of §4.']
     out += ['', '## 3. Camera and cuts', '',
@@ -1801,6 +1846,8 @@ def main():
             if not new:
                 fail(f'this direction has no other {a.redraw} to deal; keep {cur}', 1)
             sh[a.redraw] = new
+            if a.redraw == 'type':
+                sh['face'] = face_for(new, seed, d['id'])
             if a.redraw == 'palette':
                 sh['recipes'] = {new['recipe']: data['recipes'].get(new['recipe'])}
                 if inp.get('brand'):
