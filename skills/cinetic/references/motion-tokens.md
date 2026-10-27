@@ -41,6 +41,12 @@ seconds at 24, 25, 30 or 60 fps.
 - **Entrances decay, exits accelerate; never fade a statement out.** A statement leaves at speed (into a cut or a
   mask at full opacity, or with a short fade in the last half of a moving exit). A standalone opacity fade of more
   than 12 f@60 on a line is a tell (`fade-exit`). Opacity on type never runs on `E.linear` (`linear-opacity`).
+- **Type is solid early and moves while it lands.** A word reads as near-solid ink within 4-8 f@60: it cuts on at
+  35-100 %, rises out of a mask, or lands from a scale. A blur lasts 2-6 f, or rides a landing scale and clears on the
+  landing frame. Colour, not opacity, marks the newest word (the accent or a tint at full strength, cooling to ink over
+  13-18 f). Never two words half-faded and soft at once, never a soft reveal edge wider than about 1.2 em. A hero line
+  takes a confident preset (`HERO_PRESETS` in `fx/TypePresets`; `heroPreset()` turns a soft one into `crisp`), and its
+  exit carries it out at speed (`slide`, `drift`, `spread`, `collapse`), never a fade.
 - **Duration grows with distance.** Calm: 0.5 s + 1.6 ms per px, camera moves 0.9-3.0 s (crisp: 0.35 s + 1.35 ms/px,
   0.6-2.4 s): `durFor(px, camera?)`. The slowest move in a film is at least 3× the fastest.
 - **One hero motion plus at most two supporting ones.** Ordinary moves stay under about 25 px/f; fast moves sit next
