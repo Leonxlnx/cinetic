@@ -492,18 +492,33 @@ repeat across lines, while the devices below stay one per line. **An end card ne
 name and tagline arrive as words or as one piece (`END_CARD_PRESETS`; `endCardPreset(p)` turns a letter-unit preset into
 `crisp`), and the name is read whole the first frame it is legible.
 
-**The presets** (`fx/TypePresets`): the two entries and sixteen one-line animations behind one spec and one renderer. `<TypeLine
+**The presets** (`fx/TypePresets`): the two entries and twenty-three one-line animations behind one spec and one renderer. `<TypeLine
 spec={{ preset, text, at, out, exit }} frame size>` draws a line from the real font's prefix widths (kerning holds,
 every glyph its own transform); `typeLineState()` is the pure state for one frame, `typeLineFrames()` its `resolved`
 frame and ticks, `declares()` its stepped runs and seams. `key` picks the keyword (the last word by default), `words`
-the values a wheel rolls through, `from` the word an erode replaces, `dot` adds a square full stop in the accent, `pace`
-stretches every length of a preset at once.
+the values a wheel rolls through, `from` the word an erode replaces, `lead` the words a landing lands together,
+`scaleFrom` the scale a landing or a flight starts at, `dot` adds a square full stop in the accent, `pace` stretches
+every length of a preset at once.
+
+**A hero line takes a confident preset** (`HERO_PRESETS`: crisp, mask, land, fly, snap, room, glide, fall, open, build,
+punch): every word is near-solid ink within a few frames and moves while it lands, and colour, not opacity, marks the
+newest word. The soft ones (`SOFT_PRESETS`: typeFocus; `SOFT_EXITS`: blur) read blurred or half-faded for a stretch: a
+body line or a product moment at most, never a hero line (`heroPreset(p)` turns them into `crisp`). A write-on behind a
+wide soft ramp (the accent fading into the ground ahead of the ink) is fade soup: use `develop` (a crisp 1.1 em edge,
+the letters behind it at full strength) or `mask`. `snap` and `room` each spend the film's one declared snap.
 
 | Preset | What the line does | Use it for |
 |---|---|---|
-| `develop` | colour fronts run through the set line: a pale head reveals it, then a tint, the accent and the ink, the last word in colour longest | a claim that should glow into place |
-| `build` | word by word on the beat (14, 10, 10 f apart, a breath before the last word), each word sharpening and darkening from the accent to ink while the line re-centres | the hook; a line read at speaking pace |
-| `typeFocus` | a big line types (30 characters a second) out of focus; focus pulls in partway, the keyword turns accent, the camera creeps 4 % | a line the product itself would type |
+| `mask` | each word rises out of a mask on its baseline: a near-linear head that stops dead (8 f), darkening from the mute to the ink; words 8 f apart, the last 2.5x slower | a hero line read at speaking pace; a line over a busy picture |
+| `land` | the line cuts in oversized (x1.7) and lands in 34 f, a slight defocus clearing as it lands; with `lead` the first words land and the rest append 12 f apart while the line re-centres; given an accent, it lands in it and cools to ink | the claim, the payoff, the first word of a story |
+| `fly` | each word flies in from the lens at x5 and soft and lands touching the last in 14 f; then the spaces open and the accent cools left to right | an opening line, a promise, a line that should feel close |
+| `snap` | the words read small; the last word lands with one declared frame of x2.2 on the whole line, a short defocus and a settle | the payoff word, a number |
+| `room` | the held words creep, then make room in one declared frame (two thirds of the way), and the last word cuts on in the gap | the word that turns the sentence |
+| `glide` | the whole line arrives sliding and slows into a drift while its words resolve left to right, 3.5 f apart | a line that rides a cut at speed or a camera move |
+| `fall` | each word drops a short way into place from above, from the mute to the ink, 9 f apart; the last word lands in the accent | a line over a deep, dark product world |
+| `develop` | colour fronts run through the set line: the tint reveals it behind a crisp edge, then the accent and the ink, the last word in colour longest | a claim that should glow into place |
+| `build` | word by word on the beat (14, 10, 10 f apart, a breath before the last word), each word cut on solid in a tint of the accent, walking to the accent and darkening to ink while the line re-centres | the hook; a line read at speaking pace |
+| `typeFocus` | (soft) a big line types (30 characters a second) a little out of focus; focus pulls in early, the keyword turns accent, the camera creeps 4 % | a line the product itself would type; never a hero line |
 | `arc` | each letter swings down into its slot on a short arc, 2 f apart | a short, light line |
 | `assemble` | letters gather from above and below the baseline and ink as they land; the camera pushes 6 % | an arrival, the product line |
 | `decode` | the line opens from its centre behind accent blocks, data dashes streaking out of the middle | a technical claim, once per film |
@@ -512,14 +527,17 @@ stretches every length of a preset at once.
 | `cycle` | the keyword shuffles weight and width every 6 f, the line stepping larger, then lands | a line about change or choice (a variable face) |
 | `punch` | a short line set big: focus snaps in over 6 f and the camera punches in 24 %, then keeps creeping | the payoff, a number |
 | `echo` | copies slide out from behind the line on knockout boxes, ring by ring, then the stack contracts | a line about many, or about repeating |
-| `open` | each word cuts on touching the last, then the space opens and the line re-centres | a crisp statement |
+| `open` | each word cuts on soft and in the accent, touching the last; the space opens, the line re-centres with a trail and the accent cools to ink | a crisp statement |
 | `highlight` | a soft accent block hops word to word, parks on the keyword and wipes off, leaving it in the accent | a line with one word that matters |
 | `slice` | the line arrives cut into 9 horizontal strips that snap together | a hard turn |
 | `redact` | a box hops over the old line's words as they change under it, then over the new line's, and is gone | a correction, before and after (a declared swap) |
 | `swarm` | every word grows out of depth along a wandering path, leaving fading stamps, then locks | a line about arriving from everywhere |
 
-Exits (`exit` at `out`): `cut`, `blur`, `drop`, `drift`, `push`, `split`, `swarm`, and `dive` (the camera zooms through
-one glyph until its ink fills the frame and becomes the next shot's ground: a declared zoom-through seam).
+Exits (`exit` at `out`) leave at speed and are cut on their fastest frame: `cut`, `slide` (sideways on an ease-in, the
+last words dropping off right to left), `spread` (the words track apart into a zoom toward the first word), `collapse`
+(the tracking collapses toward the centre into the cut), `drop`, `drift` (up and away, never faded), `push`, `split`,
+`swarm`, and `dive` (the camera zooms through one glyph until its ink fills the frame and becomes the next shot's
+ground: a declared zoom-through seam). `blur` (a defocus and a fade) is soft: a small secondary line only.
 
 ```tsx
 import { TypeLine } from '../fx/TypePresets';
