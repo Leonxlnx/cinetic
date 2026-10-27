@@ -179,7 +179,6 @@ export const Scroll: React.FC<
   );
 };
 
-/** What a flick declares: its fast frames as a camera-blur range (the shutter renders them even in a crisp film). */
 /**
  * A masonry wall scrolling up into place, every tile on its own settle (never one rigid plane): a tile travels
  * `depth` x the wall's travel (house 0.6-1.4: nearer tiles move further) on an expo-out entry, `lag` x 6 f late at
@@ -206,6 +205,7 @@ export const masonryState = (frame: number, p: MasonryProps, film?: Partial<Film
   return p.tiles.map((t, i) => ({ i, x: t.x * u, y: t.y * u + offAt(t, frame), w: t.w * u, h: t.h * u, v: offAt(t, frame) - offAt(t, frame - 1) }));
 };
 
+/** What a flick declares: its fast frames as a camera-blur range (the shutter renders them even in a crisp film). */
 export const declares = (p?: Partial<FlickProps> & { id?: string }, film?: Partial<FilmCtx>): Declares => {
   if (!p || p.start === undefined) return { stepped: [], flashes: [], cameraBlur: [], seams: [] };
   const r = flickBlurRange(p as FlickProps, film);

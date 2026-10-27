@@ -101,7 +101,6 @@ export const Stack: React.FC<StackProps & { frame: number; x: number; y: number;
   );
 };
 
-/** Continuous: nothing to declare. */
 /**
  * A pile of photo cards dealt one ON TOP of the last (the opposite layering of the notification stack): each card
  * drops in from up-right (house 34, -30 px at 1080p per card of fan) with a short smear, lands on an alternating tilt
@@ -194,4 +193,5 @@ export const fanState = (frame: number, p: FanProps, film?: Partial<FilmCtx>) =>
   return { q, cards };
 };
 
+/** Continuous: nothing to declare. */
 export const declares = (_p?: Partial<StackProps>, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

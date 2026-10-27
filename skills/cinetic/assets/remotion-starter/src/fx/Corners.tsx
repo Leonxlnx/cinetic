@@ -78,8 +78,8 @@ export type CornersProps = {
   id?: string;
 };
 
-/** One drawn piece of a corner: the marker itself (echo false) or one of its echo bars. */
-/** seg: an echo bar's centre line (x0, y0, x1, y1), drawn as a bar of the marker's width along the path (any angle). */
+/** One drawn piece of a corner: the marker itself (echo false) or one of its echo bars; seg: an echo bar's centre line
+ *  (x0, y0, x1, y1), drawn as a bar of the marker's width along the path (any angle). */
 export type CornerRect = { x: number; y: number; w: number; h: number; opacity: number; echo: boolean; seg?: [number, number, number, number] };
 export type CornerState = { corner: Corner; x: number; y: number; size: number; visible: boolean; color: string; scale: number; target: number; rects: CornerRect[] };
 export type CornersState = { active: boolean; corners: CornerState[] };

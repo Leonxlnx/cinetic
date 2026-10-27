@@ -130,14 +130,14 @@ export type Flash = { f: number; frames: 1 | 2; id: string };
 export type CameraBlurRange = { from: number; to: number; id: string };
 /** The film's one end lock: frames [from, to), 1-5 s. */
 export type EndLock = { from: number; to: number };
+/** A colour event (a deep field, an accent flood, a colour cut): look-audit pauses its wash and accent ceilings inside it. */
+export type ColourRange = { from: number; to: number; id: string };
 /**
  * What one primitive instance does on purpose, from its own props: every fx exports
  * `declares(props, film): Declares`. src/sync.ts `declares()` lists them for the instances the acts
  * use; export-cues writes them under `declared.fx`, and grid-check fails when the timeline's own
  * declarations below do not cover them.
  */
-/** A colour event (a deep field, an accent flood, a colour cut): look-audit pauses its wash and accent ceilings inside it. */
-export type ColourRange = { from: number; to: number; id: string };
 export type Declares = { stepped?: SteppedRange[]; flashes?: Flash[]; cameraBlur?: CameraBlurRange[]; seams?: Seam[]; colour?: ColourRange[] };
 /**
  * What a CUE asks of the eye. read-quiet guards `copy`, `hit` and `cut` (and fast moves over the

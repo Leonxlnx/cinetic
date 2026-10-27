@@ -541,7 +541,6 @@ export const parallax = (
     });
 };
 
-/** BREATH (lib/anim.ts) re-exported here: the normal ranges the breath defaults sit in. */
 /**
  * The modal moment, measured: the scene under a dialog blurs (to 14 px at 1080p) and dims (an ink veil to 0.45) over
  * 20 f while the camera pushes x1.43 over 42 f on E.stdInOut; the toast pops at the push's midpoint: opacity in 8 f,
@@ -564,4 +563,5 @@ export const modalPush = (f: number, at: number, film?: Partial<FilmCtx>) => {
   };
 };
 
+/** BREATH (lib/anim.ts) re-exported here: the normal ranges the breath defaults sit in. */
 export { BREATH };

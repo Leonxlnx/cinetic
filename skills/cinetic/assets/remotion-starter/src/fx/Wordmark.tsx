@@ -452,12 +452,6 @@ export const HotGlyphs: React.FC<HotGlyphProps & { text: string; frame: number; 
 export const trackingState = (frame: number, p: { at: number; from?: number; to?: number; frames?: number; ease?: Ease }, film?: Partial<FilmCtx>) =>
   mix(p.from ?? 0.032, p.to ?? 0, (p.ease ?? E.softOut)(clamp((frame - p.at) / Math.max(1e-6, p.frames ?? f60x(10, fpsOf(film))))));
 
-// ------------------------------------------------------------------------------------- declarations
-
-/**
- * The lockup's snap is a one-frame scale step (a `stepped` seam inside the shot: one sample on it); a
- * stripe's hard stop is continuous. Pass `lockup` and/or `assemble` props.
- */
 /**
  * Spin-in: the mark enters large and turning, its scale settling on a circular ease-out while the rotation, faster,
  * settles first (more than a turn of rotational smear on the opening frames: draw it through fx/Defocus SpinBlur
@@ -495,6 +489,12 @@ export const spinInState = (frame: number, p: SpinInProps, film?: Partial<FilmCt
   };
 };
 
+// ------------------------------------------------------------------------------------- declarations
+
+/**
+ * The lockup's snap is a one-frame scale step (a `stepped` seam inside the shot: one sample on it); a
+ * stripe's hard stop is continuous. Pass `lockup` and/or `assemble` props.
+ */
 export const declares = (p?: { lockup?: LockupProps; assemble?: AssembleProps; id?: string }, film?: Partial<FilmCtx>): Declares => {
   const out: Declares = { stepped: [], flashes: [], cameraBlur: [], seams: [] };
   if (p?.lockup) {
