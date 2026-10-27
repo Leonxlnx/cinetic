@@ -8,50 +8,139 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 ## [Unreleased]
 
-## [1.2.0] - 2026-10-25
+## [1.2.0] - 2026-10-27
 
-cinetic 1.2 is built for the two films a product team makes most, the launch film and the update video, and makes them richer. Every film is dealt its own direction, builds its picture from real imagery and a book of devices, wears the brand it is given, and is cut to a licensed music track with the effects levelled over it.
+cinetic 1.2 is built for the two films a product team makes most, the launch film and the update video. A film starts from a plain script that tells a stranger within 5 seconds what the product is and does. It shows that script one line at a time, each line with its own text animation, builds the product's screens in code in a lit place with depth, shows the real marks of the products it works with, and is cut to a licensed music track with a sound cast for each action. Seven film templates give a whole film's structure to start from, and new gates fail a film whose motion snaps, freezes or stops dead.
 
-### Highlights
+### Templates and the template route
 
-- **The direction deck.** `scripts/deck.py` deals three complete art directions that fit the brief from `assets/directions/`: 33 of them, 24 in drawn worlds and 9 where real photographs and footage are the world. Each has its space (flat, layered, perspective planes or a lit relief), light, camera language, cut grammar, type behaviour, story shape, lockup, palette proportions and one signature shot, and an update-film variant. The agent writes an idea sentence for each, keeps the one a competitor could not claim and deals the full sheet for it (`out/DIRECTION.md`); `--brand` maps its roles onto a supplied brand.
-- **The device book.** `references/devices/` holds 466 devices in 25 family files, from four tiny corner squares that blink around a word to a glass dome with thin-film colour, with an index that picks by job (opening hook, reveal, emphasis, transition, proof, product moment, update change, lockup, texture, light). Each entry gives its job, anatomy, house timing at 60 fps, its sound and how to build it. The library `pick.py` draws from grows to 721 entries in 27 families; the draw weights by family, primitive and house weight, keeps calm copy over a richer picture, and a variety rule stops one family from filling a film.
-- **Update films.** `new-film.sh --format update` scaffolds an 8–20 s update video: a hook on the version or the mark from frame 0, two to four changes each shown as a product moment, one payoff and the end card with the version, in fragments of one to three words. `pick.py --format update`, the deck's update variants, shot bands in the grid checks and `references/update-films.md` follow it.
-- **Real imagery.** `scripts/assets.mjs` searches open collections whose licences need no credit (Openverse's CC0 and public-domain marks, Wikimedia Commons, NASA, two museums' open access and Mixkit without a key; Pexels, Unsplash and Pixabay with one), shows a sheet to choose from, downloads with a private licence record, grades a set into one look (natural by default) and measures it. `Photo`, `Footage`, `Montage`, `TypeMask`, `Cutout` and `Lens` move it in the film; `references/imagery.md` is the guide. Credits never go on screen.
-- **Real marks.** `scripts/logos.mjs` fetches the official colour marks of the products a product works with (its integrations, sources, models, platforms) from SVG Logos, svgl, Simple Icons and Wikimedia Commons, with each file's licence gated and recorded beside its trademark owner, never on screen. The kit sets them as app-icon tiles, chips, marks at cap height inside a line, walls and rings (`kit/logos.tsx`); the capability reel's ring and the walkthrough's input use them by default. Generic glyphs are Phosphor Icons in line, bold, fill and duotone.
-- **Brand kits.** `scripts/brand.py` takes in a supplied kit (a logo as SVG or PNG, colours, fonts, screenshots, product photos) and writes `brand/brand.json`, the starter's tokens and fonts, and the logo split into parts for `Mark` and `Wordmark`; the kit's own greys become the grounds. Supplied colours are checked only for contrast and the one-accent rule. `new-film.sh --brand` runs it at intake; `references/brand-kits.md`.
-- **Clip match.** `scripts/like.py measure` turns a clip the user supplies into the film's grammar targets (shot band, cut rhythm, cut-on-sound share, camera activity, curve families, seams, type scale and share, density, palette proportions, blur, tempo) in `out/like.json` and the rules in `out/LIKE.md`: borrow the grammar, never the content. `like.py guard` checks the finished film against the clip so it never reads as a recreation. `new-film.sh --like`; `references/clip-match.md`.
-- **Music on every film.** A film is cut to one licensed, human-made, instrumental track: `scripts/audio/track.py` writes the licence record (the licence as read on the item's own page), analyses tempo, bars, phrases, entries, stops, the ending and the key, edits at bar lines, writes the film-time grid the timeline follows (`src/music.ts`, `music.js`) and measures every join. The earshot `launch` kit places each effect at its level over the bed; stop-downs replace ducking; credits for the post go into the delivery folder. `new-film.sh --music` sets all of it up; `references/music.md`.
-- **A richer picture, measured.** Neutral grounds and surfaces with one accent on what matters (the recipes in `lib/look.ts`, a mid slate for the dark stage, a product theme computed from the recipe); `look-audit.py` fails a render under the picture and motion floors, and `grammar-score.mjs` scores a film against the house grammar or a clip's.
+A template lays a whole film's structure over the Remotion starter: the timeline (acts on whole bars, every state change a cue, the declarations), one act per shot type with the choreography between them, the sound plan and one content file of slots. The product, the words, the brand and the direction stay yours.
 
-### Added
+- `new-film.sh --template <name>` scaffolds from `assets/templates/<name>`. Its `template.json` lists the files it copies and the starter acts it removes, and its pace, tempo and type family become the film's defaults (`--bpm` and `--type` override them). `--format update` is the same as `--template update`.
+- Seven templates, all for Remotion:
+  - `update`, 15–23 s: "vX is out". The name over the version from frame 0, one product moment per change, the payoff and the end card with the version.
+  - `ui-walkthrough`, 25–40 s: the user's input becomes the output on one hidden cut, proof piles up, a claim, then the product's flow in steps and the output live.
+  - `capability-reel`, 15–25 s: a ring of sources, one real record, a capability ticker, the claim on the accent and the end card. It also works as a launch film's close.
+  - `camera-teaser`, 20–25 s: a dark teaser of the product's screens where the camera does the moving, with one 3D turn.
+  - `prompt-run`, 18–20 s: a request typed and sent, the steps the product runs, the running row turning into the result.
+  - `social-ad`, 15 s: an ad cut on the product's own pictures, every seam inside a motion.
+  - `type-explainer`, 20–30 s: one short sentence at a time on a white page, the mark becoming the hub of the product's parts.
+- `references/templates.md` says which template fits (say the film in one sentence), what each one lays down act by act, and the grammar every template keeps when it is retimed or moved into a dealt direction's world.
+- A fresh scaffold passes `tsc`, `grid-check` and `lint-film` with only the placeholder markers left. Every string on screen comes from the content file, and its marker fails the lint until the product's own words and data are in.
+- Acts sit on whole bars, so `track.py grid` puts every act line on a downbeat of the film's track, and every read still holds on a faster or slower track.
+- `FilmEvery` renders every 4th frame of the film for a quick whole-film check while you build.
 
-- The film context (`useFilm()`): every primitive runs at the film's fps and frame size. The HyperFrames starter's `motion.js` mirrors the motion core, checked by `mirror.test.mjs`.
-- The motion core in 1.2 names: curves by role (`E.snapOut`, `E.glideOut`, `E.liftOut`, `E.stdInOut`, `E.buildIn`, `E.whipBuild` and more), one spring class per film (`SPR.landing` and its kin), the house tables in `references/motion-tokens.md`. The 1.1 names keep their shapes and lint as deprecated.
-- The line system: `Words` and `Chain` make room, snap the last word, focus in, sweep and mask their edge; `LineSnap`, `FocusWord`, `HueSweep`, `Letters`, `TypeFill`, `TypeFx`, `InlineGap`, `Brackets` and `Knockout` join them, and `MaskRise`, `Scramble` and `TypeOn` grow new modes.
-- 57 new primitives in `src/fx/` for the device book. Camera and seams: `Rush`, `Flip`, `Orbit`, `Implode`, `Slices`, `Glint`, `Flight`, `Gather`. Light, glass and colour: `LightField`, `KeyLight` (a directional key with cast and contact shadows over a lit relief, `ReliefScene`), `Glow`, `Glass`, `Spectral`, `Gradients`, `GradientMap`, `Grades`, `Fringe`, `BorderBleed`, `Streak`. Texture: `Textures`, `Ascii`, `DotMatrix`, `GlyphField`, `Cascade`, `Pixel`, `Stepped`, `Grids`. UI and data: the product kit in `src/kit/` (a theme, parts, panels and sample products with real states), `MicroUI`, `Loaders`, `Charts`, `Meter`, `Conveyor`, `Reels`, `Resize`, `Seed`. Marks: `Markers`, `Corners`, `Echoes`, `PenStroke`, `Flashes`. Shape: `MorphPath`. Imagery: `Photo`, `Footage`, `Montage`, `TypeMask`, `Cutout`, `Lens`. The brand: `Mark` splits a supplied SVG into parts and `Wordmark` assembles, swings and locks it up.
-- Declarations in `timeline.ts`: `LOOK` (blur policy, texture, film type), `SEAMS`, `STEPPED`, `FLASHES`, `CAMERA_BLUR`, `END`, `REVEAL`, `SPRING_CLASS`, `STRUCTURAL` and `SALIENCE`. Every primitive exports `declares()`; `export-cues.ts` writes them into `out/cues.json`, and `grid-check.ts`, `forensics.py` and the blur sampling treat a declared step, flash or seam as craft while still failing an undeclared pop.
-- `look-audit.py`: the motion floor (the camera or the ground moving through the body, two planes at different rates, carried seams, a device in every beat, a light event in every act, scale contrast across cuts), the picture floor (flat share, structure, colour mass, bleed), a colour-wash ceiling, a neutral-share target and a declared second hue. `grammar-score.mjs` scores shot bands, curve roles, density, seams, colour and the picture, against the house or a `like.json` target.
-- `lint-film.mjs`: card content, small text, the giant word, the end-card template, declared device palettes (`cinetic:device-palette <job>`) and deprecated tokens. `grid-check.ts`: the music grid, shot bands per format and the declarations. `forensics.py`: self-test pairs for a static share, a hold into an exit and the end card.
-- `references/devices/` and `references/library/` (one generated file per family), `imagery.md`, `music.md`, `lighting.md`, `checks.md`, `update-films.md`, `brand-kits.md` and `clip-match.md`.
-- Tests: `tokens.test.mjs`, `mirror.test.mjs`, `provenance.test.mjs` (house wording, no audio and no video with sound in git), `deck.test.py`, `track.test.py`, `brand.test.py`, `like.test.py` and `assets.test.mjs`; `lint-film.test.mjs --part static|rendered` splits the suite in two.
-- A new starter demo: 13 s in four acts. "Built on" and "the beat" build on a drawn rule around an accent dot that lands on the downbeat, the line launches left into a photograph slot (a stand-in drawn in code until the film's own photographs go in), the picture contracts into the gap of "Every frame", and the mark lands as a relief under a turning key before the name slides out. It clears the picture and motion floors; its `audio/score.json` plays the track the user adds, with a cue plan for a 124 BPM bed.
-- Evals: Lattice, a 25 s launch film cut to music with real photography, and Ferry, a 15 s v2 update video in a supplied brand; both check the licence record, no credit on screen, cuts at bar lines, effects at their levels over the bed and no draft voices.
+### Clear copy and copy-check
 
-### Changed
+The script is written first, before any picture work, so that a stranger knows within 5 seconds what the product is and does.
 
-- Type roles at film size: `ui` 30 → 40, `line` 84 → 120 and `display` 128 → 200 px at 1080p, with a 36 px floor for small text.
-- Colour: grounds and surfaces are neutral greys, the dark default is the mid slate (`C.slate`; `inkStage` remains), the accent sits at its share of the frame, and real imagery is graded natural. `look-audit.py` fails a film under the picture floor (`--no-picture` reports without failing).
-- The hard bans: light, glow, glass, spectral and iridescent colour and multi-hue gradients are allowed as part of a device with a job, always baked and dithered; a monochrome wash of the accent joins the bans.
-- A content-less `<Card>` draws kit UI, and the lint errors on it (pass `blank` for a deliberate empty surface).
-- `SKILL.md` follows the 1.2 workflow from the dealt direction to the ship gate; the critics read the direction, a rich picture, device variety and the music rule; `TREATMENT.md` gains a Direction block, the drawn devices, and music and imagery rows.
-- Sound: earshot 0.4 for the `launch` kit and its mix keys, and `kit.py init` writes preset notes in house wording. Every effect is an earshot kit take: a cue whose role the kit does not name fails the soundtrack's gate, and `score.py --draft` plays placeholder voices for a timing check that `deliver.sh`, `credits.py` and `av-audit.py` refuse.
-- The starters: the Remotion starter's `audio/score.json` plays the track the user adds (`audio/music/README.md`); the HyperFrames starter uses the 1.2 easing names and loads `music.js` before `timeline.js`.
+- The launch formula: line 1 (or 2, after one short hook) says what the product is, on screen by 3 s: "[Name] is a [plain category] for [who]." or "[Name] turns [input] into [output]." Then 3–5 lines that each say one thing it does, with a verb, while the UI shows it. Then the name and what to do. An update film opens on "[Name] [version]" and says one result a line.
+- `scripts/copy-check.py` reads `TREATMENT.md`, `out/cues.json`, a text file or stdin. It fails a line over 7 words, a lone keyword, vague and fancy words, metaphors, slogan shapes, a line with no verb or with two claims, two lines at once, a script without the name, and a film that does not say what the product is by 3 s. It prints what a stranger reads. A line that names 2–4 of the film's real marks counts as one claim.
+- One clean line on screen at a time, 2–7 words, set on one line and sized to fit. A deliberate swap of two lines is declared with `swap`.
+- `grid-check.ts` gains the script rule: words a line, one line at a time, the copy rate, the text share, and copy-check on `COPY`.
+- `TREATMENT.md` gains a Script block. The starter's demo, the templates' slots and the worked concepts carry scripts that pass copy-check.
+- New hard bans: a film that does not say what the product is by 3 s; vague, fancy or metaphor copy and slogan shapes; keyword piles; two lines on screen at once; a line over 7 words or with two claims; letters moving one by one outside a line's own text animation.
+
+### Motion design and product UI built in code
+
+Text animation is the main event: every line of the script arrives its own way. The product is rebuilt as live components at film size, and the camera carries the picture.
+
+- `TypeLine` (`fx/TypePresets`) plays sixteen one-line text animations from one spec, with one renderer that measures the real font: develop, build, typeFocus, arc, assemble, decode, wheel, erode, cycle, punch, echo, open, highlight, slice, redact and swarm. Eight exits: cut, blur, drop, drift, push, split, swarm and dive. `crisp` and `calm` entries serve hero and body lines, and an end card never builds letter by letter. `pick.py --lines` draws one text animation per line, no two alike.
+- `TypePush` pushes the camera through a line from 1.0 to 2.2×, following the reading point. `fx/TypeClaim` sets the claim large on the accent, flush left. `ObjectLine` and `InlineObject` set the thing a sentence names (a mark, a glyph, a chip, a small UI piece) inside the line at cap height.
+- The line system: `Words` and `Chain` make room, snap the last word, focus in and mask their edge, and `Words` can build a line at the pace of speech (`arriveX`). `LineSnap`, `FocusWord`, `HueSweep`, `Letters`, `TypeFill`, `TypeFx`, `InlineGap`, `Brackets` and `Knockout` join them.
+- The product kit in `src/kit/`: a theme computed from the colour recipe, parts and panels at film size, sample products with real states, `ProductMoment` (the film's one full-frame product moment) and the parts of a flow (`Field`, `Tile`, `Row`, `Pill`, `Chip`, `DataRow`, `Notice`, `Composer`, `CodePanel`, `Bubble`). A `<Card>` with no content draws kit UI, and the lint flags it.
+- UI motion: the cursor's hand and pointer, its rise, press and spin-out; a held backspace and bursts of typing (`TypeOn`); a feed flick and a masonry settle (`Scroll`); a pile and a fan of cards (`Stack`); a ticker (`MaskList`); a count that speeds up into its total (`growthSteps`); a card that opens at the last card's size (`Resize` carry); a click that swells and a pop with no spring (`MicroUI`); the agent's step list (`StepList`); a send button taking off (`jLaunch`); the modal push (`modalPush`).
+- Camera and seams: `camPath` chains moves so a camera-led shot never holds, and `camVel` reads its speed; `DirBlur` smears along the motion without the shutter pass, and `Defocus` softens at fixed levels; `blurBridge`, `irisReveal`, a spin-in mark (`spinInState`, `SpinBlur`), an entrance that keeps drifting under a moving camera (`expoTail`), `DitherBands` (a dissolve through dithered rectangles), `Radiate` rings and floods, and `counterCreep`.
+- More primitives for the device book: camera and seams (`Rush`, `Flip`, `Orbit`, `Implode`, `Slices`, `Glint`, `Flight`, `Gather`), light, glass and colour (`Glow`, `Glass`, `Spectral`, `Gradients`, `GradientMap`, `Grades`, `Fringe`, `BorderBleed`, `Streak`), texture (`Textures`, `Ascii`, `DotMatrix`, `GlyphField`, `Cascade`, `Pixel`, `Stepped`, `Grids`), UI and data (`MicroUI`, `Loaders`, `Charts`, `Meter`, `Conveyor`, `Reels`, `Resize`, `Seed`, `Trace`), marks (`Markers`, `Corners`, `Echoes`, `PenStroke`, `Flashes`) and shape (`MorphPath`). The brand's `Mark` splits a supplied SVG into parts, and `Wordmark` assembles and locks it up.
+- The house end card (`Lockup`) is frontal and centred, built in one gesture, and never draws the name over the mark.
+- The motion core in 1.2 names: curves by role (`E.snapOut`, `E.glideOut`, `E.liftOut`, `E.stdInOut`, `E.buildIn`, `E.whipBuild` and more), one spring class per film (`SPR.landing` and its kin) and the house tables in `references/motion-tokens.md`. The 1.1 names keep their shapes and lint as deprecated. `track()`, `trackLinear()` and `curveOf()` turn keyed values or progress samples into a move.
+- The film context (`useFilm()`): every primitive runs at the film's fps and frame size. The HyperFrames starter's `motion.js` mirrors the motion core.
+- Declarations in `timeline.ts`: `LOOK`, `SEAMS`, `STEPPED`, `FLASHES`, `CAMERA_BLUR`, `COLOUR`, `END`, `REVEAL`, `SPRING_CLASS`, `STRUCTURAL` and `SALIENCE`. Every primitive exports `declares()`, `export-cues.ts` writes them into `out/cues.json`, and the checks treat a declared step, flash or seam as craft while still failing an undeclared pop.
+
+### Type families and font matching
+
+- Type roles come in two families, one per film (`TYPE_FAMILY` in `tokens.ts`). Calm, the default: `line` 84, `display` 160, `hero` 200 and `giant` 640 px at 1080p, in regular weights at the face's own letter fit. Bold: `line` 120, `display` 200, `hero` 240 and `giant` 900, semibold, with tracking that tightens with size. Both have `ui` 40 and `caption` 46, and nothing under 36 px is held in focus.
+- `scripts/type-family.mjs calm|bold` writes a family's six roles and face weights into `src/brand/tokens.ts`, and `--check` says whether they are in step. `new-film.sh --type` and a template's `type_family` run it.
+- `scripts/font-match.mjs` finds the free face closest to a target (a crop of a frame, a brand face that cannot ship, or numbers) by ink width, x-height and stems measured in Remotion's own Chrome, with the weight, size and tracking that match. `--sheet` draws the target over every candidate; `--fetch` packs candidates from npm into a temp folder.
+- `add-font.mjs --add <key>` vendors the product's own faces, such as a UI face, beside the film's.
+- `look-audit.py` reads the finished film's type: `type-read` fails when the largest line is under 6.7 % of the frame height (72 px at 1080p) or reads under 3:1 against its ground, and `type-beat` warns when no line sits large on a clean field for a second. The layout audit's role bands hold both families, and `grammar-score.mjs` re-measures type from the layout boxes.
+- Gradient fills clipped to type keep their descenders (`clipText`, `bandFill`, `frontFill`). `lint-film.mjs` warns on an unpadded `background-clip: text` and on SVG `<text>` in an act.
+
+### Real marks and icons
+
+- `scripts/logos.mjs` (`search`, `get`, `list`, `check`) fetches the official colour marks of the products a product works with (its integrations, sources, models and platforms) from SVG Logos, svgl, Simple Icons and Wikimedia Commons, with each file's licence gated. `get` writes the mark, its version for dark grounds, the wordmark and one-colour files into `public/logos/` with their colours unaltered, and records source, licence and trademark owner in `logos.json`, never on screen. A brand's full-colour mark or app tile wins over a one-colour glyph.
+- `kit/logos.tsx` sets the marks as `AppIcon` tiles, `LogoChip`s, `InlineLogo`s at cap height inside a line, `LogoWall`s and `LogoRing`s, in the colours and proportions they are published in.
+- The capability reel's ring, the walkthrough's input and the camera teaser's connect line show real marks by default; a text pill stands in until a mark is fetched.
+- Real marks appear only for what the product really touches, never implying endorsement (`references/brand-and-color.md` §1b).
+- `look-audit.py` leaves the pixels of every recorded mark out of the colour rules, following the mark wherever the film draws it.
+- Generic glyphs are Phosphor Icons 2.1.1 (MIT) in line, bold, fill and duotone, in place of the hand-drawn set, with twelve more names.
+
+### Depth, light and dense UI
+
+- `Lit` tilts a product panel 8–14 degrees in the film's one light (`FILM_LIGHT`): a rim on the edges that face the key, a lift or shade as the face turns, a sheen, a cast and a contact shadow, and a sway that never rests.
+- `DepthStack` sets a beat in three planes (far, mid, near) at fixed defocus levels with parallax, and `depthPush` moves the camera through them. `camera3d`, `swing3d`, `place` and `cam3dCheck` give a UI film its one 3D turn, 15–30 degrees on one axis.
+- `LitGround` builds lit places in code (a wash, pools, bars, a floor glow, window beams), dealt so that no ground holds more than two shots in a row. `Planes` draws the background, middle and foreground under one camera.
+- `KeyLight` and `ReliefScene` give a directional key with cast and contact shadows over a lit relief, and `LightField` gives living light over baked plates. Light, glow, glass, spectral colour and multi-hue gradients are allowed as part of a device with a job, always baked and dithered.
+- `DenseScreen` shows the product in use: the app's chrome around a records table, figures, a feed and a chart, 25 to 200 strings as texture, and exactly one line held readable by `FocusLens`.
+- `sampleWorld(seed)` deals a believable workspace whose numbers add up (statuses agree with dates, totals with their rows), seeded by the film so that two films never share data. `checkWorld()` asserts it.
+- People are crafted portraits (`Avatar`, `AvatarStack`, a halftone portrait), never grey silhouettes or circles of initials.
+- `ContentTile`, `ContentWall`, `ContentRing` and `ContentTicker` fill walls, rings and tickers with tiles that carry content (a real mark or a glyph, a label, a small preview), never a blank tile.
+
+### Direction, brand kits and pictures
+
+- `scripts/deck.py` deals three complete art directions that fit the brief from 35: 26 in worlds built in code and 9 where the product's own photographs or footage are the world. Each has its space, light, camera language, cut grammar, type behaviour, story shape, lockup, palette proportions, one signature shot and an update-film variant. Type-led and graphic directions are favoured; imagery-led ones are dealt only with `--have photos` or `--have footage`. Every printed command carries `--recent`, so a deal can be reproduced.
+- The device book, `references/devices/`, holds 466 devices in 25 family files with an index that picks by job. `pick.py` draws a film's picture plan and its line track from 721 entries in 27 families, follows `--have` and the dealt direction, and never draws a technique that breaks a hard ban.
+- `scripts/brand.py` takes in a supplied kit (a logo, colours, fonts, screenshots, product photos) and writes `brand/brand.json`, the tokens, the fonts on the weights the kit supplies, and the logo split into parts for `Mark` and `Wordmark`. The kit's own greys become the grounds. `new-film.sh --brand` runs it; `references/brand-kits.md` is the guide.
+- `scripts/like.py measure` turns a clip the user supplies into the film's grammar targets (shot lengths, cut rhythm, camera activity, curve families, type scale, density, palette proportions, tempo), and `like.py guard` checks that the finished film borrows the grammar and not the content. `new-film.sh --like` runs it; `references/clip-match.md` is the guide.
+- Pictures are an accent: the product's own or supplied ones first, a found one only when it carries the idea. `scripts/assets.mjs` searches open collections whose licences need no credit, shows a sheet, downloads with a private licence record, grades a set into one natural look and checks it. `Photo`, `Footage`, `Montage`, `TypeMask`, `Cutout` and `Lens` move them. Credits never go on screen.
+- Colour: neutral grounds and surfaces (the mid slate is the dark default), one accent on what matters, and an optional support hue in 10–30 % of the film.
+
+### Motion gates and the checks
+
+- `forensics.py` gains six motion gates that fail the film: one-frame snaps outside a declared snap (one declared snap device per film), frozen runs, moves that settle too fast, more than two primary moves in 3 s, moves that stop dead, and cuts into a braking move.
+- `lib/continuity.ts` gives the fixes: `glideValue` and `glideList` (a state change glides over 16 f on `E.glideOut`), `holdDrift` (0.3–1 px a frame through every hold), `landBeforeCut` (it throws when a cut or an unmount falls mid-move) and `latestStart`. `fx/GlideStep` is the gliding list.
+- `lint-film.mjs` warns on the same in the source (`snap-step`, `hold-drift`, `unmount-moving`, `move-queue`), and on card content, small text, the giant word, the end-card template, undeclared device palettes and deprecated tokens.
+- `look-audit.py` fails a render under the motion floor (the camera or the ground moving on 70 % of the body, with a lock of up to 1 s on each read counted as alive; two planes at different rates; carried seams; a designed moment every 3 s; a light event in every act; scale changes across cuts) or the picture floor (some clean flat ground, a ceiling on edges, colour mass, bleed). It also checks the accent, the support hue, a colour-wash ceiling and the type.
+- `grammar-score.mjs` scores a film against the house grammar, or against a supplied clip's.
+- `grid-check.ts` checks the music grid, shot bands per format (`LOOK.filmType` takes `update`), a picture change every 2.5 s and two in the opener, long takes, the cut mix and the script rule.
+- The review loop reads feed-size strips (six frames over 2.5 s at 240 px) for the opener, the signature and type beats and the lockup, and from round 2 runs a blind pair test against clips the user names as the bar. The ship gate's rubric gains a Picture dimension: 12 dimensions, Picture at 4 or more.
+- The layout audit measures the text's own size, cuts each box by its clipping ancestors, reads a ghost or a smear once, and leaves smears and scrolling rows out of the speed check.
+
+### Sound: the music finder, the library and real effects
+
+Every film is cut to its own licensed, human-made, instrumental track, and every effect is cast for the action it sounds.
+
+- `scripts/music.mjs search` finds the track in free catalogs whose licence needs no credit (Mixkit, and CC0 recordings from Wikimedia Commons, ccMixter and Openverse), ranked by the brief's mood words, tempo, length and energy curve. `sheet --measure` lists the first three to audition; `get` reads the licence page again, downloads the file and writes its licence record. A catalog that fails the licence bar is named with its reason and never requested.
+- `music.mjs pick` ranks a curated music library of analysed tracks (`--library`, `$CINETIC_MUSIC_LIBRARY` or `~/.cinetic/music-library.json`) by mood, length and tempo, each with its cut points, with the offers spread across artists. The history holds back every track an earlier film used.
+- `scripts/audio/track.py` (`add`, `analyze`, `edit`, `grid`, `check`) writes the licence record, analyses tempo, bars, phrases, entries, stops, the ending and the key (an unchanged analysis is kept), edits at bar lines (`--map` takes the bars by hand), writes the film's grid in `src/music.ts` and points `audio/score.json` at the edit.
+- `kit.py cast` gives each action in the film its own sound (a card landing, a toggle, typing, a swipe, a logo lock, a transition through a shape; `scripts/audio/actions.py`), in the order earshot's ears rank them, checked for masking where each action lands on the track, and avoids the last film's signature sounds. `--avoid` replaces a sound the film's listening judged poorly. Takes alternate, so the same take is not heard twice within 3 s.
+- Real effects where the bank is weak: `music.mjs search --kind sfx` and `get` find a free effect that needs no credit, and `kit.py real` makes it an action's takes. `scripts/audio/library.py` (`add`, `listen`, `list`, `check`) keeps a library of real effects by action, each cut to one gesture and levelled. `kit.py cast` draws from the bank and the library together, matched to the track's tempo, band and key, so no two films share one set.
+- `plan.py` lays the effects out over the bed: each role at its level, a stop-down before each hit that matters instead of ducking, and at most 10 effects in any 10 s. `score.py` mixes and masters to −14 LUFS (−16 for a sting of 8 s or less), and its masking check reads an effect's attack. `credits.py` writes any credit into the delivery folder, never into the picture.
+- earshot 0.4 and its `launch` kit. `score.py --draft` plays placeholder voices for a timing check, and `deliver.sh`, `credits.py` and `av-audit.py` refuse that build.
+
+### Rendering and Windows fixes
+
+- `render.sh` renders previews and masters in parts of 300 frames from a bundle built once into `out/render/<name>/`. A render stopped by a job time limit, a crash or `--max-min` (exit 75) resumes on the next run, `--part K` renders one part, and the join writes BT.709 into the stream and the container. The parts stay until every gate has passed; `deliver.sh` removes them, and `--clean` and `--keep` handle them by hand.
+- `scripts/py.mjs` is the one way every script, npm script and test finds Python: `$PYTHON`, else `$CINETIC_PYTHON`, else the first of `python3`, `python` and `py -3` that runs 3.10 or newer and imports numpy. It never runs the Microsoft Store alias, and `--which` prints its choice.
+- Under Git Bash on Windows, `render.sh`, `deliver.sh`, `hf-finish.sh` and `brand-kit.sh` pass paths to Python as arguments and check the modules a run needs before the bundle, and `new-film.sh` runs every Python step through `py.mjs`.
+- `render.sh` and `layout-audit.sh` clamp `--concurrency` to the cores Remotion sees, and the layout audit reads its output with colour on.
+- `new-film.sh --music` refuses before copying anything when a licence field is missing. Without `--bpm` at 25 fps, a scaffold takes the nearest tempo with whole-frame beats. The first act starts on frame 0.
+- `Footage` and `Montage` draw clips on a shifted `Sequence`, because a `Freeze` does not reach `OffthreadVideo`'s clock in Remotion 4.0.529.
+- `blurBridge`, `DirBlur` and `camVel` give the same result at any frame size. `TypeOn` counts characters as code points. `add-font.mjs --add` writes its key only inside `FONT`. `track.py` writes a drift it could not measure as null, never NaN. `kit.py tune` moves notes by whole octaves into each sound's range.
+
+### Starters, evals and tests
+
+- The starter demo runs 13 s in four acts: "plinth cuts" and "to music." build around an accent dot that lands as the line's full stop, the line launches left into a picture slot, the picture contracts into the gap of "Every cut lands.", and the mark lands as a relief under a turning key before the name slides out. Its `audio/score.json` plays the track the user adds.
+- The HyperFrames starter uses the 1.2 easing names, loads `music.js` before `timeline.js` and plays a licensed track.
+- `SKILL.md` follows the 1.2 workflow from the brief, the dealt direction and the script to the ship gate (Steps 0–11). The critics judge the script as a stranger would, ask for a different text animation on every line and a picture that never rests.
+- Evals: Lattice, a 25 s launch film cut to music, and Ferry, a 15 s v2 update video in a supplied brand. Both check the licence record, no credit on screen, cuts at bar lines and effects at their levels over the bed.
+- New tests in `scripts/test/` cover copy-check, the type presets, type moves and type families, the primitives, continuity, handoffs, depth and light, the dense kit, the product moment, the wordmark, logos and the logo kit, the music finder, the cast and the sound library, the track, brand intake, clip match, the deck, imagery, render parts, the HyperFrames mirror and provenance (house wording, no audio in git).
 
 ### Removed
 
-- The generated band (`"music": "synth"` now exits 1, and sections, motifs, drums, pads and arps are ignored), the sidechain, the hit and typing ducks and the suck. `synth.py` is split into `dsp.py` and `draft.py`.
-- The fallback to generated effect voices when no kit is rendered.
+- The generated band (`"music": "synth"` exits 1, and sections, motifs, drums, pads and arps are ignored), the sidechain, the hit and typing ducks and the suck. `synth.py` is split into `dsp.py` and `draft.py`.
+- The fallback to generated effect voices when no kit is rendered. `kit.py init` starts from the `launch` kit; the effects-only presets stay for older projects.
+- The hand-drawn glyph set, and the grey silhouette and circle of initials as avatars.
 
 ## [1.1.0] - 2026-10-18
 
@@ -340,7 +429,8 @@ First version: a skill for directing, building and rendering launch films, produ
 - Guides: timing grid, motion tokens, camera, transitions, product UI, concept and story, copy and type, brand and color, sound, finishing, the Remotion and HyperFrames engines, 16 Chromium rendering traps, and 80 generated-look tells with fixes. `assets/TREATMENT.md` is the Step 1 template.
 - Evals: three briefs (a feature loop, a launch teaser and a logo sting), each with objective checks (size, duration, 60 fps and BT.709 tags, plus true peak on the two with sound and loudness on the teaser) and visual ones, used to compare runs with and without the skill.
 
-[Unreleased]: https://github.com/Leonxlnx/cinetic/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Leonxlnx/cinetic/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Leonxlnx/cinetic/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Leonxlnx/cinetic/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Leonxlnx/cinetic/compare/v1.0.0-beta...v1.0.0
 [1.0.0-beta]: https://github.com/Leonxlnx/cinetic/compare/v0.5.0...v1.0.0-beta
