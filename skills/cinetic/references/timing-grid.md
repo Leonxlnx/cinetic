@@ -394,7 +394,7 @@ for (const l of COPY)
 **Hook (first 2 s)**
 - Frame 0 is already composed and moving. No fade from black, no blank frame.
 - Something visibly changes about every 1 s (calm) or 0.5 s (crisp), and the picture never freezes between.
-- The problem is felt by 1 s and stated by 2 s.
+- The problem is felt by 1 s, and the first line says what the product is by 3 s.
 
 ## 10. A crisp grid, worked
 

@@ -52,8 +52,8 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 
 | Bars | Time | Beat type | What happens | Sound |
 |---|---|---|---|---|
-| 1–3 | 0–6 s | hook → problem | Frame 0 is already moving, and the device is on screen. The problem is felt by 1 s and stated by 2 s, then piles up visibly. It ends in an implosion or a gather into the device. | The track's intro, entering with intent; a stop or break before bar 4. |
-| 4–5 | 6–10 s | turn | The track's entry on the bar 4 downbeat: the device meets or becomes the mark, or the product arrives. A mid-film mark lasts 1.5 s or less, or visibly builds. | The entry carries it; one designed hit at most. |
+| 1–3 | 0–6 s | hook → what it is → problem | Frame 0 is already moving, and the device is on screen. The problem is felt in the picture by 1 s while the first line says what the product is by 3 s; then the problem piles up visibly. It ends in an implosion or a gather into the device. | The track's intro, entering with intent; a stop or break before bar 4. |
+| 4–5 | 6–10 s | turn | The track's entry on the bar 4 downbeat: the device meets or becomes the mark, or the product takes the frame. A mid-film mark lasts 1.5 s or less, or visibly builds. | The entry carries it; one designed hit at most. |
 | 6–9 | 10–18 s | proof 1 | One capability as cause → action → result. The human's one input comes first, and the product acts after it. The signature shot lands here or at the payoff. | Effects on the product's state changes, levelled over the bed. |
 | 10–12 | 18–24 s | proof 2 / consequences | One line per bar, each paying off earlier copy, the picture proving it as it lands. One consequence per line lands on an accent. | Cuts on the track's accents; whips peak on them. |
 | 13–15 | 24–30 s | promise | A dip, then the biggest reveal on the track's entry; pull back to show scale; the device becomes the mark. | A stop or break of 0.2-0.5 s, then the entry under the promise. |

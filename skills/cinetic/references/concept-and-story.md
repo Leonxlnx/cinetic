@@ -248,7 +248,7 @@ Rules for the path:
 
 | Beat | Job | Typical length | It works when | It fails as |
 |---|---|---|---|---|
-| **Hook** | Put the viewer inside the problem, already moving at frame 0 | 1–2 s | the problem is felt by 1 s and stated by 2 s | a logo, "Introducing…", a question, a blank frame |
+| **Hook** | Put the viewer inside the problem, already moving at frame 0 | 1–2 s | the problem is felt by 1 s while the first line says what the product is by 3 s | a logo, "Introducing…", a question, a blank frame |
 | **Problem** | Escalate the pain as a visible quantity | 2–4 s | a stranger could name the pain muted | a statement with no picture under it |
 | **Turn** | The product or device intervenes; the film's biggest change so far, on a downbeat | 1–2 s | it is the strongest visual event yet (flood, drop, implosion, silence then drop) | the product simply appears |
 | **Proof** | One capability as cause → action → result | 4–8 s each, 1–2 in a film | the result holds ≥ 36 f before the camera leaves | a feature list |
@@ -270,15 +270,15 @@ Production recipes (act templates, loop seams, stings, social layouts) are in `r
 
 | Format | Arc | Device's job | Where the idea lands |
 |---|---|---|---|
-| Launch film, 20–45 s | hook → problem → turn → proof ×1–2 → promise → lockup | carries every shot, becomes the mark | the turn at ~20–25% of the film, the callback at the promise |
+| Launch film, 20–45 s | hook and what it is → problem → turn → proof ×1–2 → promise → lockup | carries every shot, becomes the mark | the turn at ~20–25% of the film, the callback at the promise |
 | Product / feature video, 8–30 s | situation → cause → action → result (held) → name | it is the unit the product acts on | the result |
 | Feature loop, 4–15 s | rest A → cause → action → result → rest A | its state *is* the loop | mid-loop; the last frame is the first |
 | Logo sting, 3–8 s | gather → assemble with a contact → hit → wordmark → building hold | the primitives are the device | the hit |
 | UI walkthrough, 20–90 s | cold open on the end result (2–4 s) → chapters, each cause → action → result → recap image → lockup | one record followed through every chapter | each chapter's result |
-| Teaser, ≤ 15 s | the effect without the product → the name and a date | a partial glimpse of the mark | the name |
+| Teaser, ≤ 15 s | what it is over the effect → the name and a date | a partial glimpse of the mark | the name |
 | Before/after | the same shot twice with an identical camera move: without, then with | the camera move itself | the difference |
 
-Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, proof ~35–40%, promise ~15%, lockup and tail ~15–20%. Write the script into those beats, one sentence a beat (6–9 in a 30 s film), and give each line what the picture does while it is read and right after: the line lands, the product does exactly that, and the next line moves on (`references/copy-and-type.md` §2b). Tessel: problem 0–6 s, turn 6–10 s, proof 10–24 s, promise and lockup 24–33 s.
+Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, proof ~35–40%, promise ~15%, lockup and tail ~15–20%. Write the script into those beats, one sentence a beat (5–8 in a 30 s film), and give each line what the picture does while it is read and right after: the line lands, the product does exactly that, and the next line moves on (`references/copy-and-type.md` §2b). Tessel: problem 0–6 s, turn 6–10 s, proof 10–24 s, promise and lockup 24–33 s.
 
 **Loops need a cyclic story.** Don't build enter → hold → exit; build a process whose end state is its start state (a line that dries and is watered, an inbox that clears and refills). Put both sides of the seam at rest, or at the same velocity.
 
