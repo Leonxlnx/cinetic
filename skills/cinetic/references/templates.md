@@ -26,12 +26,12 @@ signature replace the template's), then cut it to the track: `track.py grid` mov
 | `capability-reel` | 15-25 s | the product's breadth is the story (sources, formats, integrations), or a launch film needs its close | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
 | `camera-teaser` | 20-25 s | a dark, fast teaser of a product's screens where the motion is the camera's: whips, pushes, one 3D turn over one layout per shot | the request box arriving tilted in the light, a whip into its close-up and the send button, the window streaming code under the one 3D turn, the proof in depth with the real marks of what it works with, the page with a modal toast, the stages, the mark; each act deals one of two or three devices |
 | `prompt-run` | 18-20 s | the product does work from a request (an agent, an assistant, a generator): what goes in is a sentence, what comes out is done work | a pill among the real marks of the tools it connects, the label swapping on the kick, the request box out of the pill, the request typed, a punch-in and the send, the steps it runs under one 3D turn, the result, the lockup; each act deals one of two or three devices |
-| `social-ad` | 15 s | a short ad for a feed: the product is pictures (things people save, make, buy, plan) and you have them (the product's own or the user's; the kit's still life stands in until then, never stock), the cut is the energy | the opener built word by word onto a pile of pictures, the mark spinning in on a picture, a wall round the claim, two rivers under a label that swaps its last word, two imperatives, the lockup |
-| `type-explainer` | 20-30 s | the idea is simple to say and the words carry it: an explainer on a white page, quiet in its small, airy type and crisp in its word pace, little or no product UI | the name as a giant word, what it is said at the pace of speech, the problem, the promise with a picture inside it that becomes the shot, one soft wipe, the mark between the words becoming the hub of the product's parts, the close |
+| `social-ad` | 17-22 s | a short ad for a feed: everything the product holds, fast (things people save, make, buy, plan), shown as the product's own content built in code (never stock; its own pictures only when the brief supplies them), the motion is the energy | the opener in one confident move spreading onto a stack of what it holds, the mark, the claim inside a field of that content on its accent pill, a label that rolls its last word over moving content, two imperatives, the lockup; each act deals one of two or three devices |
+| `type-explainer` | 20-30 s | the idea is simple to say and the words carry it: an explainer on a clean lit page, quiet in its small, airy type and crisp in its word pace, the product's own screen built in code as its one picture | the name with its mark as the next word, what it is in a confident line move, the problem, the promise with the product standing in it and becoming the shot, one wipe, the mark between the words becoming the hub of the product's parts, the close; each act deals one of two or three devices |
 
 The test: say the film in one sentence. "You give it X and get Y" is a walkthrough; "It works with everything and
 returns anything" is a reel; "Here is what changed" is an update; "It is X, it fixes Y, and these are its parts" told
-in words is an explainer; "Here is everything it is for, fast" over the product's pictures is an ad; "Ask it, it does the steps, here is the result" is a prompt run (a
+in words is an explainer; "Here is everything it is for, fast" over the product's own content is an ad; "Ask it, it does the steps, here is the result" is a prompt run (a
 walkthrough when the user does the steps); the same story as a dark, fast tease where the camera does the moving is a
 camera teaser. When none fits, start from the starter. A launch
 film may end on the reel's close (rebuild its acts after your own) or open on the walkthrough's first three acts.
@@ -100,31 +100,43 @@ dense screen; the result as a morph or the claim on the accent), one colour even
 
 ## social-ad
 
-Fifteen seconds, every seam inside a motion, pictures carrying the colour. Six acts on whole bars at 150 BPM (15.4 s):
-`open` (the opener built word by word: the name cut in at x2.67 defocused, each new word landing in the accent at the
-line's end while the line re-centres and relaxes; the line breathes apart through the cut and its two words carry on
-either side of a hero card while a pile of pictures is dealt onto it, `pileState`), `brand` (a picture pulling back on a
-circ-out, the mark spinning in from x2.06, `spinInState` and `SpinBlur`, the name sliding out; the lockup rises into the
-cut), `wall` (a masonry wall settling tile by tile, `masonryState`, the claim riding the hero tile, its last word on an
-accent pill popped in 2 f), `rivers` (two diagonal streams of pictures, `Conveyor` with a staircase and depth sizes,
-smeared by `DirBlur` along their angle, a label receding and swapping its last word), `taglines` (the hero picture on a
-long pull-back with a drift, two imperatives, a push into the cut), `end` (the spin-in again, the close). Slots:
-`src/ad.ts`.
+A short ad, every seam inside a motion, the product's own content built in code carrying the colour: its items as
+content tiles, its dense screen, the real marks of what it works with; never stock. Six acts on whole bars at 150 BPM,
+9 in the house plan; every exit cue waits for its line's read and an act grows a bar only where a read needs it
+(`ACT_BARS`; 17-22 s at 104-150 BPM): `open` (the opener as one confident `TypeLine` move, land or build, spreading
+apart into the cut; "Save" and its last word carry on outward either side of a hero tile while the items are dealt
+onto it, `pileState`, or fan out behind it, `fanState`; the words leave once read and the stack takes a second beat),
+`brand` (the mark spinning in over the stack receding into the far plane, `spinInState` and `SpinBlur`, or the hero
+tile growing into the app's own tile; the name sliding out; the lockup rising into the cut), `field` (the claim rising
+out of a mask inside kit `ContentWall`, `ContentRing` or a `DepthStack` of a few large tiles, its last word on the
+accent pill growing round it in 10 f; a type push into the pill; the field leaving up), `label` (a chip whose last word
+rolls once over two `Conveyor` streams, a `ContentTicker` or the product's `DenseScreen` with a gliding lens; the rush
+out to the right), `taglines` (beside the product's screen as a `Lit` panel on the film's one 3D turn, `fall` with a
+`drop` exit, or as the claim on the accent, `AccentClaim`; a push into the cut), `end` (the spin when the brand did not
+spin, or the mark and the name rising out of a mask; the close on `glide`). Each act deals one of two or three devices
+per film from the name (`src/deal.ts`, template.json "deal"), so no two ads run one fixed sequence. Slots: `src/ad.ts`
+(with `items`, `world` and `integrations`, the slugs of the real marks).
 
 ## type-explainer
 
-One short sentence at a time on a white page; pictures and the mark stand in for words, and every seam is made of
-content. Seven acts on whole bars at 90 BPM (25 s): `open` (the name as one giant word with a band of the accent running
-through it; the mark arrives as the next word with the name re-set smaller in one frame; then what it is, said at the
-pace of speech: uneven onsets, `Words` `arriveX`, the line drifting as it builds, leaving right with its words gone
-last to first), `pain` (the whole line in one frame coming into focus as it drifts, a hold, an ease-in exit the same
-way), `promise` (the picture opens as a pill after the first half; the second half is appended with a one-frame
-re-centre and re-scale inside a running push; the pill grows into the cut), `picture` (the same picture full bleed,
-the name over it), `system` (the film's one soft wipe, `Wipe` feather from the right; the mark stands between the
-halves, a push centred on it, the words float off), `grid` (the product's parts born round the mark in one radial
-wave, three labels one a second), `end` (the mark steps into the lockup, the close settles into focus). The sentence
-role is the calm family's line: small and airy by size, weight and white space (84 px at the face's own letter fit,
-never tracked wide): 3-5 words a line. Slots: `src/explain.ts`.
+One short sentence at a time on a clean lit page; the product and the mark stand in for words, and every seam is made
+of content. Seven acts on whole bars at 90 BPM, 9 in the house plan, an act growing a bar where a read needs it
+(`ACT_BARS`, `GROWN` says why): `open` (the name: one giant word with an accent band and a pull-back as the mark
+arrives as its next word, the name and mark as one line pushed through onto the mark, or the name landing from x1.35,
+crisp in 8 f; then what it is in the dealt voice: said at the pace of speech on the crisp entry, risen out of a mask,
+or built word by word; it leaves right at full ink into a cut at speed), `pain` (landing oversized in the accent, a type
+push through it, `fx/TypePush`, or in front of the real marks of the tools it names in a `DepthStack`), `promise` (the
+product opening in the line as a pill that looks into its screen, after a roll through the real marks of what it works
+with, or with the camera pushing through the line into it; the second half appended; the pill grows into the cut),
+`picture` (the product's own `DenseScreen` as a `Lit` panel on the film's one 3D turn or in a depth stack; it recedes
+out of focus as the mark and the name arrive), `system` (the one wipe: the feathered `Wipe`, the push-wipe parked by
+the mark until the second half, or a lit sheet; the mark between the halves, a push in on it, the words folding into
+it on the cut), `grid` (the product's parts as content tiles round the mark: a radial wave, a ring or three planes;
+three read one a second, nearest the hub), `end` (the lockup with the close on `mask`, or the claim on the accent,
+`AccentClaim`; about 1.5 s of hold with a creep and a drift). The sentence role is the calm family's line: small and
+airy by size, weight and white space at the face's own letter fit, never tracked wide: 3-5 words a line. Each act deals
+one of two or three devices per film from the name (`src/deal.ts`, template.json "deal"). Slots: `src/explain.ts` (with
+`integrations`, the slugs of the real marks).
 
 ## The grammar every template keeps
 
