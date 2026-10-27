@@ -2,7 +2,7 @@
 
 Every cinetic film plays one licensed, human-made, instrumental track, edited only at bar lines, with the earshot `launch` kit levelled over it (`references/sound.md`): background music is part of every film, launch or update, long or short. This file covers the track: where it may come from, its licence record, its analysis, the edit, cutting the picture to it, and the credits that travel with the film. Read it at Step 3, before the timeline, and again at Step 8.
 
-cinetic makes no music. The track is chosen, never generated: no synth bed, no AI-generated track, no music assembled from kit sounds. **Prefer licences that need no credit** (Mixkit, Pixabay): nothing on screen ever credits the music, and a film whose track needs no credit line ships cleanest. A CC BY track is the fallback when nothing else fits; its credit goes into the post text or video description, never into the picture.
+cinetic makes no music. The track is chosen, never generated: no synth bed, no AI-generated track, no music assembled from kit sounds. **Prefer licences that need no credit** (Mixkit, Pixabay): nothing on screen ever credits the music, and a film whose track needs no credit line ships cleanest. A CC BY track only when the user asks for that one; its credit goes into the post text or video description, never into the picture.
 
 **Every film its own track.** The track is found for this film's mood and pace, never reused from the last film and never the same few files every time: `scripts/music.mjs` searches free catalogs, keeps a history per user, and downloads the choice with its licence record.
 

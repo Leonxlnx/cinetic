@@ -12,10 +12,13 @@ item's own page), `<name>.track.json` (`track.py analyze`: tempo, bars, entries,
 `audio/score.json` already plays `audio/music/track.mp3`, which a starter cannot ship: until a licensed file is
 here, `npm run audio` stops with "not found". To add one (or let `new-film.sh --music FILE` do all of it):
 
-1. Choose a track whose licence allows use in a published video with no on-screen credit (`references/music.md`
-   lists the licences that pass and how to search). Copy it here.
-2. `python3 scripts/audio/track.py add audio/music/<file> --title ... --artist ... --source ... --page URL
-   --licence "..." --seen-quote "..." --seen-url URL` writes the record; then `track.py analyze audio/music/<file>`.
+1. Find this film's own track in the free catalogs whose licence needs no credit: `node scripts/music.mjs search
+   --mood "<the film's mood words>" --bpm <lo-hi> --length <film s>`, then `music.mjs sheet --measure` (audition the
+   first three) and `music.mjs get '#n' --to audio/music`, which downloads it and writes its record. Never the last
+   film's track (`references/music.md`).
+2. A track found elsewhere: copy it here and record it as you download it, `python3 scripts/audio/track.py add
+   audio/music/<file> --title ... --artist ... --source ... --page URL --licence "..." --seen-quote "..." --seen-url
+   URL`. Then `track.py analyze audio/music/<file>`.
 3. Point `audio/score.json` `music.track` and `music.licence` at the file and its record, and set `key` from the
    analysis; `python3 scripts/audio/kit.py tune` puts the kit's tonal roles in that key. `audio/kit.json` is
    already the earshot `launch` kit, whose effects sit at their level over the music.

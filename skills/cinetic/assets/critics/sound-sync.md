@@ -5,7 +5,7 @@ Prompt template for one review lens (see `references/review-loop.md`, §5). The 
 ## Context
 
 - Film: {{FILM}}, {{SPEC}}. Project root: {{ROOT}}.
-- The soundtrack is rendered by `scripts/audio/score.py` from `out/cues.json`, which `scripts/export-cues.ts` computes from the same constants the picture animates with. A film sounds one of two ways: **music-led** (one licensed, human-made, instrumental track edited at bar lines by `scripts/audio/track.py`, with the earshot `launch` kit levelled over it by `scripts/audio/plan.py`) or **effects-only** (an earshot kit at its roles' levels). Every effect is a take of the film's kit (`audio/kit.json`, rendered into `audio/kit/` by `scripts/audio/kit.py`). `audio/score.json` names the music (`"none"` or `{track, edit, licence}`), the stop-downs, silences, payoff and master. Read `references/sound.md` and `references/music.md` for the house rules.
+- The soundtrack is rendered by `scripts/audio/score.py` from `out/cues.json`, which `scripts/export-cues.ts` computes from the same constants the picture animates with. Every film is **music-led**: one licensed, human-made, instrumental track found for this film (`scripts/music.mjs`) and edited at bar lines by `scripts/audio/track.py`, with the earshot `launch` kit cast for the film's actions (`kit.py cast`) and levelled over it by `scripts/audio/plan.py`. The effects-only route (`"music": "none"`) is only for old projects. Every effect is a take of the film's kit (`audio/kit.json`, rendered into `audio/kit/` by `scripts/audio/kit.py`). `audio/score.json` names the music (`"none"` or `{track, edit, licence}`), the stop-downs, silences, payoff and master. Read `references/sound.md` and `references/music.md` for the house rules.
 - File under review: {{VIDEO}} ({{KIND}}). Frames are 0-based: frame = t × {{FPS}}.
 - QA folder for this round: {{QA}}. It holds:
   - `av.json`, from `python3 scripts/av-audit.py {{VIDEO}} --cues out/cues.json --stems out/stems` (sync against the intended times of `cues_sounded.json`, `music_sync`, per-role masking);
@@ -22,8 +22,9 @@ Prompt template for one review lens (see `references/review-loop.md`, §5). The 
 You cannot listen, so you measure, and earshot listens for you. You judge whether the sound makes the picture feel better: locked, levelled, restrained, cut to the music, with an arc.
 
 0. **Source.** Read `score.json` `music` and `sfx`.
-   - Generated music of any kind (a synth bed, a pad, a drone, a band made in code) is a **P0**: cinetic makes no music. The track is licensed or there is none.
+   - Generated music of any kind (a synth bed, a pad, a drone, a band made in code) is a **P0**: cinetic makes no music. The track is licensed, and every film has one: a new film with `"music": "none"` is a **P0** too.
    - A film with a track whose licence record is missing, unconfirmed (no `licence_seen`) or, for CC BY, without its credit line is a **P0** for delivery (`credits.py`, `deliver.sh` refuse it).
+   - The kit is cast for this film: `audio/kit.json` holds a `cast` block, each action of the film its own sound, the previous film's signature sounds avoided. A preset kit that was never cast (the same whoosh and pop as every film) is a **P1**: `kit.py cast`, then render, plan and score again.
    - `"draft": true` (placeholder voices) is never delivered: a **P0** for delivery. `sfx.missing` lists cues no kit take sounds: give each role a sound. `off` lists cues of roles the kit leaves off (fine for `suck`, and for `riser`, `swell` in the effects-only kits). A `vendored kit (stale)` source plays takes older than `audio/kit.json`.
 1. **Lock.** Read `av.json` `sync` (strict, with `--stems`; `intended` names the `cues_sounded.json` it judged against): the hit rate, the median and p90 offsets, and the misses.
    - A median offset beyond ±1 f is a systematic lag: check the mux and the priming (`sync.json`).

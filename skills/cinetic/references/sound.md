@@ -1,6 +1,6 @@
 # Sound: effects, the track, the mix and the master from the cues
 
-Covers the soundtrack end to end: where the sounds come from (a licensed track or none, and the earshot kit for every effect), the `out/cues.json` contract, writing `src/sync.ts`, the `audio/score.json` schema, the effects plan, the stop-down, the mix and the master, and listening to the result. Read it before Step 5 (Sound), and again whenever sound and picture disagree. The track itself (choosing, licensing, analysing, editing it, and cutting the picture to it) is `references/music.md`, Step 3.
+Covers the soundtrack end to end: where the sounds come from (the licensed track every film has, and the earshot kit for every effect), the `out/cues.json` contract, writing `src/sync.ts`, the `audio/score.json` schema, the effects plan, the stop-down, the mix and the master, and listening to the result. Read it before Step 8 (Sound), and again whenever sound and picture disagree. The track itself (choosing, licensing, analysing, editing it, and cutting the picture to it) is `references/music.md`, Step 3.
 
 The numbers here are house numbers: starting points with a reason, not dogma. When the brand supplies a sonic logo or a voice-over, the brand wins: time everything else around it (§5.6).
 
@@ -23,7 +23,7 @@ The numbers here are house numbers: starting points with a reason, not dogma. Wh
 
 **Every cinetic film has a licensed music track.** Launch films, update films, stings and loops with sound are all
 music-led: one licensed, human-made, instrumental track, edited at bar lines, with code-made effects levelled over it.
-The effects-only route stays in the code (old projects and the starters' placeholder soundtrack render with it), but a
+The effects-only route stays in the code (old projects render with it), but a
 film you make never chooses it.
 
 | Kind | Music | Effects | Level model | Target |
@@ -111,7 +111,7 @@ The calm kit's fitted roles are public-domain recordings that earshot fitted as 
 ## 2. Pipeline and gate
 
 ```bash
-# Step 3, a film with a track (references/music.md): track.py add / analyze / edit / grid / check  (npm run music)
+# Step 3 (references/music.md): music.mjs search / sheet / get, then track.py analyze / edit / grid / check  (npm run music)
 npx tsx scripts/export-cues.ts                       # src/sync.ts -> out/cues.json        (npm run cues)
 python3 scripts/audio/kit.py cast                    # each action of the film its own bank sound -> audio/kit.json
 python3 scripts/audio/kit.py render                  # audio/kit.json -> audio/kit/ takes   (npm run kit, cached)
@@ -126,7 +126,7 @@ python3 scripts/audio/credits.py                     # Step 8: CREDITS.md + CRED
 
 `plan.py` decides every effect before anything is mixed (role, take, start, gain over the bed, width, runs, the hits the track carries, the stop-downs) and `score.py` renders exactly that plan over the staged, edited track (an effects-only film renders its kit at `level_db`). It writes a 48 kHz, 24-bit stereo WAV exactly `TOTAL / FPS` seconds long, the stems (`bed.wav` as played and `sfx.wav`, which sum to the premix) and the report. `render.sh --audio` muxes it (`references/finishing.md` §6); never let Remotion encode the audio. `render.sh --build-audio` runs cues, kit, plan and score first.
 
-**Gate (Step 5):**
+**Gate (Step 8):**
 - loudness: the target ±0.5 LUFS integrated (§9), true peak ≤ −1.5 dBTP on the WAV, last 480 samples digital zero;
 - no generated music (`music.source` is `none` or `track:<record>`) and every effect from the kit (no placeholder voice, nothing missing; a `--draft` render never passes);
 - with a track: every effect within ±2 dB of its role's `bed_db` (warn per role), a measured dip of 6 dB or more before every stop-down target and the bed back within 3 dB on the hit (a failure at the payoff), no ducking anywhere (the bed's gain moves only for stop-downs, silences and the end fade), every join clean (no click, the incoming attack within ±2 ms of its film downbeat, a loudness step under 3 LU unless it is the entry), density 3–13 effects per 10 s (no floor for a sting of 8 s or less: one element), one gesture (no heavy effect on the track's own accent), one element at the lockup;
@@ -239,23 +239,10 @@ The role's offset is applied by `plan.py`, never folded into the cue frame: the 
 
 ## 5. score.json
 
-The starters' placeholder soundtrack (effects only, until the film's track replaces it):
-
-```json
-{
-  "key": "G major",
-  "bpm": 100,
-  "music": "none",
-  "sfx": { "engine": "auto", "kit": "audio/kit.json", "python": null },
-  "chords": ["Em9", "Cmaj9", "Am11", "Am11 D7sus4", "Gadd9", "-"],
-  "typing": "auto",
-  "payoff": "@lockup",
-  "mix": { "music": 1.0, "sfx": 1.0, "reverb": 1.0 },
-  "master": { "ceiling": 0.77, "fade": 1.3 }
-}
-```
-
-A film cut to a track (`audio/score.track.example.json`; `new-film.sh --music` writes it):
+The starter's `audio/score.json` already plays a track at `audio/music/track.mp3`, which a starter cannot ship:
+until the film's licensed file and its record are there, `npm run audio` stops with "not found"
+(`audio/music/README.md`). A film cut to its own track (`audio/score.track.example.json`; `new-film.sh --music`
+and `track.py grid` write it):
 
 ```json
 {

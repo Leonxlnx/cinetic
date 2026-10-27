@@ -8,15 +8,15 @@ place those takes on the cue frames. The rendered takes stay with the project, s
 where earshot is not installed; with neither, the soundtrack fails its gate (score.py --draft plays
 placeholder voices for a timing check, never delivered).
 
-Presets: calm (text-led, effects-only, the default), crisp (energetic, effects-only), minimal (designed,
-sub-led, effects-only) and launch (a film cut to a licensed track; earshot 0.4+): every launch role names
+Presets: launch (a film cut to a licensed track, every new film, the default; earshot 0.4+), and for old
+effects-only projects calm (text-led), crisp (energetic) and minimal (designed, sub-led): every launch role names
 its level over the music bed (bed_db), where it sits against the cut (offset_ms), how close a run may go
 (min_gap_ms) and, for ticks and bells, its stereo width; the kit-level "mix" block holds the stop-down
 ranges. The lock passes all of it through (bed_db, offset_ms, min_gap_ms, width, the takes' l50_lufs and
 corr, mix). `init` rewrites the preset's notes into house wording.
 
 Usage (from the project root):
-  python3 scripts/audio/kit.py init [--preset calm|crisp|minimal|launch] [--force]
+  python3 scripts/audio/kit.py init [--preset launch|calm|crisp|minimal] [--force]
                                    # write audio/kit.json from an earshot preset, tuned to the film's key
   python3 scripts/audio/kit.py cast [--film NAME] [--avoid SOUND,SOUND] [--dry-run]
                                    # give each action of the film (out/cues.json) its own bank sound
@@ -1178,8 +1178,8 @@ def main(argv=None):
     ap.add_argument('--score', default='audio/score.json')
     ap.add_argument('--cues', default='out/cues.json')
     ap.add_argument('--python', help='the interpreter that has earshot (overrides sfx.python and EARSHOT_PYTHON)')
-    ap.add_argument('--preset', default='calm', choices=PRESETS, help='init: calm (text-led, default), crisp, minimal, '
-                    'launch (a film cut to a licensed track; earshot 0.4+)')
+    ap.add_argument('--preset', default='launch', choices=PRESETS, help='init: launch (a film cut to a licensed track, '
+                    'the default; earshot 0.4+), or calm, crisp, minimal (old effects-only projects)')
     ap.add_argument('--force', action='store_true', help='init: replace audio/kit.json; render: render every take again')
     ap.add_argument('--from', dest='source', metavar='DIR', help='vendor: copy a rendered kit (takes + lock) from here')
     ap.add_argument('-o', '--output', default='out/qa/kit_audition.wav', help='audition: the WAV to write')
