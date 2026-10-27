@@ -8,8 +8,9 @@ import React, { useId } from 'react';
 import { Img } from 'remotion';
 import { C, FONT, TEXT_MIN, TYPE } from '../brand/tokens';
 import { clamp, E, mix, prog, rand } from '../lib/anim';
-import { mixColor, toOklch } from '../lib/color';
+import { mixColor } from '../lib/color';
 import { uOf, useFilm } from '../lib/film';
+import { HalftonePortrait, MonogramTile, PortraitMark } from './avatars';
 import { ICON_GRID, ICONS, type IconPaths } from './icons';
 import type { GlyphName } from './sample';
 import { type KitTheme, lit, shadeRgba } from './theme';
@@ -138,52 +139,90 @@ export const Surface: React.FC<SurfaceProps> = ({ theme: t, w, h, x = 0, y = 0, 
   );
 };
 
-/** A team member as a disc of one of the theme's tones with their initials (one hue, never a rainbow). */
-export const Avatar: React.FC<{ theme: KitTheme; i: number; initials: string; size: number; ring?: string; x?: number; y?: number }> = ({ theme: t, i, initials, size, ring, x, y }) => {
-  const tone = t.tones[((i % t.tones.length) + t.tones.length) % t.tones.length];
-  const ink = toOklch(tone)[0] > 0.6 ? t.dark ? t.accentInk : t.text : t.dark ? t.text : t.accentInk;
+/** How an avatar is drawn: a lit gradient portrait, a halftone portrait, or a monogram tile (24-40 px chips only). */
+export type AvatarKind = 'auto' | 'portrait' | 'halftone' | 'monogram';
+/** Up to this size (px at 1080p) an avatar is a monogram tile; above it, a portrait. */
+export const AVATAR_MONOGRAM_MAX = 40;
+
+/**
+ * A person, crafted (kit/avatars.tsx): a lit gradient portrait in a disc by default, a halftone portrait with
+ * `kind="halftone"`, a monogram tile only on a 24-40 px chip (`auto` picks it at AVATAR_MONOGRAM_MAX and under).
+ * Never a grey silhouette, never a circle of initials. `seed` is the person (default: their initials and index), so
+ * the same person has the same face in every shot; `ring` draws the rim that separates it from what it overlaps.
+ */
+export const Avatar: React.FC<{ theme: KitTheme; i: number; initials: string; size: number; ring?: string; x?: number; y?: number; seed?: string | number; kind?: AvatarKind; scale?: number }> = ({
+  theme: t,
+  i,
+  initials,
+  size,
+  ring,
+  x,
+  y,
+  seed,
+  kind = 'auto',
+  scale,
+}) => {
+  const u = useKitScale(scale);
+  const who = seed ?? `${initials}:${i}`;
+  const k: AvatarKind = kind === 'auto' ? (size <= AVATAR_MONOGRAM_MAX * u ? 'monogram' : 'portrait') : kind;
+  const rim = ring ? Math.max(1.5 * u, size * 0.055) : 0;
   return (
     <div
+      data-ui
       style={{
         position: x === undefined ? 'relative' : 'absolute',
         left: x,
         top: y,
         width: size,
         height: size,
-        borderRadius: '50%',
-        background: `linear-gradient(${keyAngle()}deg, ${lit(t, tone, 0.12)}, ${tone})`,
-        boxShadow: ring ? `0 0 0 ${(size * 0.06).toFixed(2)}px ${ring}` : undefined,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        borderRadius: k === 'monogram' ? size * 0.3 : '50%',
+        boxShadow: [ring && `0 0 0 ${rim.toFixed(2)}px ${ring}`, `0 ${(size * 0.04).toFixed(2)}px ${(size * 0.12).toFixed(2)}px ${shadeRgba(t, t.shadeA * 0.6)}`].filter(Boolean).join(', '),
         flex: 'none',
       }}
     >
-      {size * 0.38 >= TEXT_MIN ? (
-        <span data-text={`kit-avatar-${initials}`} style={face(size * 0.38, 600, ink, 0)}>
-          {initials}
-        </span>
+      {k === 'monogram' ? (
+        <MonogramTile theme={t} seed={who} initials={initials} size={size} font={(px, w, c) => face(px, w, c, 0)} />
+      ) : k === 'halftone' ? (
+        <HalftonePortrait theme={t} seed={who} size={size} />
       ) : (
-        // initials would fall under TEXT_MIN: a small avatar is a person, drawn, never mush
-        <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 24 24" style={{ display: 'block' }}>
-          <circle cx={12} cy={8.2} r={4.4} fill={ink} opacity={0.78} />
-          <path d="M3.6 21.5c.9-4.6 4.3-7.2 8.4-7.2s7.5 2.6 8.4 7.2z" fill={ink} opacity={0.78} />
-        </svg>
+        <PortraitMark theme={t} seed={who} size={size} />
       )}
     </div>
   );
 };
 
-/** Overlapping avatars (the people on a project). */
-export const AvatarStack: React.FC<{ theme: KitTheme; people: { initials: string }[]; size: number; ring: string; n?: number }> = ({ theme, people, size, ring, n = people.length }) => (
-  <div style={{ display: 'flex' }}>
-    {people.slice(0, n).map((p, k) => (
-      <div key={k} style={{ marginLeft: k ? -size * 0.24 : 0 }}>
-        <Avatar theme={theme} i={k} initials={p.initials} size={size} ring={ring} />
-      </div>
-    ))}
-  </div>
-);
+/**
+ * Overlapping avatars (the people on a project): each one rimmed in `ring` (the surface it sits on) so the overlap
+ * reads as depth, the first on top; `more` adds a count tile ("+12") after the last face.
+ */
+export const AvatarStack: React.FC<{ theme: KitTheme; people: { initials: string; seed?: string }[]; size: number; ring: string; n?: number; overlap?: number; more?: number; kind?: AvatarKind }> = ({
+  theme: t,
+  people,
+  size,
+  ring,
+  n = people.length,
+  overlap = 0.28,
+  more,
+  kind,
+}) => {
+  const shown = people.slice(0, n);
+  return (
+    <div data-ui style={{ display: 'flex', alignItems: 'center' }}>
+      {shown.map((p, k) => (
+        <div key={k} style={{ marginLeft: k ? -size * overlap : 0, position: 'relative', zIndex: shown.length - k }}>
+          <Avatar theme={t} i={k} initials={p.initials} seed={p.seed} size={size} ring={ring} kind={kind} />
+        </div>
+      ))}
+      {more !== undefined && more > 0 && (
+        <div style={{ marginLeft: -size * overlap, width: size, height: size, borderRadius: '50%', background: t.well, boxShadow: `0 0 0 ${Math.max(1.5, size * 0.055).toFixed(2)}px ${ring}`, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingLeft: size * overlap * 0.8, boxSizing: 'border-box', flex: 'none' }}>
+          <span {...(size * 0.36 >= TEXT_MIN ? { 'data-text': 'kit-avatar-more' } : { 'data-texture': '' })} style={face(size * 0.36, 600, t.mute, -0.02)}>
+            {`+${more}`}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
 
 /** A round tick: done. */
 export const Check: React.FC<{ size: number; fill: string; tick: string; ring?: string }> = ({ size, fill, tick, ring }) => (
