@@ -799,6 +799,29 @@ def stopdown(d):
               f"no ducking outside the stop-down ({name}: {r['no_duck']})")
 
 
+def stop_payoff(d):
+    """A stop ending whose one element is the payoff: one warning that names the fix, the element is not measured
+    against itself and not called quieter than the loudest moment; a payoff on the reveal before the stop is
+    compared with the element."""
+    launch_kit(d)
+    block = music_project(d, test_bed(), [(1, 6)], ending=dict(mode='stop'))
+    ev = [dict(f=300, kind='hit', id='a:reveal'), dict(f=120, kind='pop', id='a:p'), dict(f=756, kind='pop', id='a:lockup')]
+    cues = cues_with(ev, total=840, cue={'reveal': 300, 'lockup': 756})
+    p, r = run(d, 'stoplock', cues, music_score(block, payoff='@lockup'), NO_EARSHOT)
+    if not r:
+        check(False, f'a stop-ending film renders: {p.stderr.strip()[-300:]}')
+        return
+    w = r['warnings']
+    check(any("is the stop ending's element" in x for x in w) and not any('LU under the payoff' in x for x in w)
+          and not any('is not the loudest moment' in x for x in w) and (r.get('lockup') or {}).get('under_payoff_lu') is None,
+          f"a payoff on the stop's element: one warning naming the fix, no self-comparison ({[x[:60] for x in w]})")
+    p, r = run(d, 'stoprev', cues, music_score(block, payoff='@reveal'), NO_EARSHOT)
+    lk = (r or {}).get('lockup') or {}
+    check(r is not None and not any("is the stop ending's element" in x for x in r['warnings'])
+          and lk.get('under_payoff_lu') is not None,
+          f"a payoff on the reveal: the element is measured under it ({lk.get('under_payoff_lu')} LU)")
+
+
 def width_and_bed_levels(d):
     """width_kept: a role with a width plays its stereo take (L / R decorrelated) while a role without one is mono;
     over_bed: on a steady bed every effect's loudest 50 ms lands on its bed_db (within 0.5 dB)."""
@@ -1144,7 +1167,7 @@ def main():
     tests = [('effects_only_baseline', lambda d: effects_only_baseline(d, baseline))] + [(fn.__name__, fn) for fn in (
         kit_engine, kit_only, vendored, tuned_budget, stack_guard, music_none, music_synth_refused, typing_word_kit,
         progress_kit, text_chord_kit, typing_bright_kit, land_light_and_levels, kit_tools, bed_edit, stopdown,
-        width_and_bed_levels, on_beat_over_bed, carried_by_track, mixkeys_parity, credits_gate, av_audit, real_earshot)]
+        stop_payoff, width_and_bed_levels, on_beat_over_bed, carried_by_track, mixkeys_parity, credits_gate, av_audit, real_earshot)]
     for name, fn in tests:
         if only and name not in only:
             continue

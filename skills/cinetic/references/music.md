@@ -28,7 +28,7 @@ node scripts/music.mjs sheet --measure              # the first three: mood, tem
 node scripts/music.mjs get '#2' --to audio/music     # -> audio/music/<name>.mp3 + <name>.licence.json
 python3 scripts/audio/listen.py --track audio/music/<name>.mp3                       # possible vocals, tempo
 python3 scripts/audio/track.py analyze audio/music/<name>.mp3 --profile crisp        # -> <name>.track.json
-python3 scripts/audio/track.py edit --bars 16 --reveal-bar 7 --end stop              # -> audio/music/edit.json
+python3 scripts/audio/track.py edit --bars 16 --reveal-bar 13 --end stop             # -> audio/music/edit.json
 python3 scripts/audio/track.py grid                  # -> src/music.ts (Remotion) or music.js (HyperFrames)
 python3 scripts/audio/track.py check                 # joins, the licence record, nothing from the track in git
 ```

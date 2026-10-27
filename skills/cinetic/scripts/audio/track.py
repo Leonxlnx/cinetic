@@ -1680,7 +1680,7 @@ def main(argv=None):
     p = sub.add_parser('edit', help='source bars -> film bars')
     p.add_argument('track', nargs='?', help='the .track.json (default: the one in audio/music/)')
     p.add_argument('--bars', type=int, required=True, help='film bars in the body (before the tail)')
-    p.add_argument('--reveal-bar', type=int, required=True, help='the film bar of the hero reveal (30-60%% in)')
+    p.add_argument('--reveal-bar', type=int, required=True, help='the film bar of the biggest reveal (about 75-90%% in)')
     p.add_argument('--end', required=True, choices=('button', 'stop', 'ring'))
     p.add_argument('--start-bar', type=int)
     p.add_argument('--entry', type=int, help='the source entry bar to land on the reveal (default: the biggest drop)')

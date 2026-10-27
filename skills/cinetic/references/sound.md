@@ -273,7 +273,7 @@ and `track.py grid` write it):
 | `stopdowns` | `{"auto": "kit"}` | `auto`: a stop-down before every hit, drop and swell the kit lock names (`"off"` for none); `add`: extra targets (`{at, weight?, depth?: "stop"}`); `skip`: event ids or cue names to leave alone; `quiet_db`: where an effect plays with no bed under it (default −7, §7) |
 | `ending` | — | informational (`{mode, at}`): the edit decides the ending (`stop`, `button`, `ring`) |
 | `silences` | `[]` | `{from, to, depth?}`: true silence for a designed freeze; mutes everything, effects included; the picture freeze sits exactly on it (≤ 15 f) |
-| `payoff` | — | the moment that must be loudest: the reveal on the track's entry, about 30–60% into the film (in a sting, its hit); the report checks it. When a `stop` ending's one element is the lockup, the payoff is the reveal, never that element (it sits 2 LU or more under the payoff). On a `ring` ending whose last hit is the reveal (a sting), that hit is the payoff: add no drop on it (it doubles the track's accent) and keep at most a swell into it |
+| `payoff` | — | the moment that must be loudest: the biggest reveal on the track's entry, about 75–90% into the film (`references/formats.md` §2; in a sting, its hit); the report checks it. When a `stop` ending's one element is the lockup, the payoff is the reveal, never that element (it sits 2 LU or more under the payoff). On a `ring` ending whose last hit is the reveal (a sting), that hit is the payoff: add no drop on it (it doubles the track's accent) and keep at most a swell into it |
 | `progress` | — | `{match, kind?, start?, tonic?, resolve?, gain?}`: the progress climb (§5.5b) |
 | `typing` | `"auto"` | how `key` events sound: `auto`, `soft`, `mechanical`, `pitched`, `muted`, `word` or `off` (§5.5c) |
 | `keyup` | `false` | `true` adds a key-release click on slow typing |
@@ -425,7 +425,7 @@ python3 scripts/audio/master.py --measure public/audio/soundtrack.wav --json -  
 
 **Loudness per film.** With a track, −14 LUFS integrated: streaming and social players normalise loud films down to about that and never turn quiet ones up. A sting of 8 s or less with a track may sit at −16. An effects-only film defaults to −18 LUFS: its loudness comes from a handful of accents, and pushing them to −14 puts the limiter on every one (−16 to −18 is the range; raise it only while the limiter stays under 1.5 dB). Set `"master": {"lufs": …}` or pass `--lufs`. Keep −1 dBTP after the encode either way.
 
-Targets: the film's LUFS ±0.5; true peak ≤ −1.5 dBTP on the WAV and ≤ −1 dBTP after the encode; limiter under 1.5 dB at the payoff; LRA 5–8 LU for a film with a track of 20 s or more; the payoff 2–3 LU over the median momentary loudness, about 30–60% into the film; the end card 8–20 dB under the peak; the lockup element after a `stop` at −9 to −6 dBFS peak and 2 LU or more under the payoff; the tail's last 50 ms under −45 dB.
+Targets: the film's LUFS ±0.5; true peak ≤ −1.5 dBTP on the WAV and ≤ −1 dBTP after the encode; limiter under 1.5 dB at the payoff; LRA 5–8 LU for a film with a track of 20 s or more; the payoff 2–3 LU over the median momentary loudness, about 75–90% into the film; the end card 8–20 dB under the peak; the lockup element after a `stop` at −9 to −6 dBFS peak and 2 LU or more under the payoff; the tail's last 50 ms under −45 dB.
 
 You cannot listen, so measure what a listener hears:
 
@@ -531,7 +531,7 @@ Premium, in one line: restraint, one palette, a licensed track cut on its bars, 
 **Loudness and arc**
 - −14 LUFS integrated with a track (−16 for a sting of 8 s or less), −18 effects-only; −1 dBTP after the encode (the WAV holds −1.5); PLR 12–16 dB.
 - LRA 5–8 LU for a film with a track of 20 s or more.
-- The loudest moment is the payoff, 2–3 LU or more over the median momentary loudness, about 30–60% into the film; the end card 8–20 dB under it.
+- The loudest moment is the payoff, 2–3 LU or more over the median momentary loudness, about 75–90% into the film; the end card 8–20 dB under it.
 - The intro runs 5–12 LU under the body for 2–3 s; the first sound arrives by 0.15–0.45 s.
 
 **The track**

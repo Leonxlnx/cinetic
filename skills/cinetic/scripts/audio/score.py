@@ -129,6 +129,7 @@ OVER_BED_TOL = 2.0
 STOP_MIN_DIP_DB, STOP_RETURN_DB = 6.0, 3.0
 LOCKUP_PEAK = (-9.0, -6.0)  # dBFS: the one element after a stop ending
 LOCKUP_UNDER_PAYOFF = 2.0   # LU
+REVEAL_BAND = (0.75, 0.90)  # share of the runtime: the biggest reveal, the payoff (SKILL.md energy, formats.md §2)
 
 
 class ScoreError(Exception):
@@ -1689,6 +1690,8 @@ def lockup_after_stop(song, plan, y, rep):
     w_ = (tm >= p['sync_s'] - 0.2) & (tm <= p['sync_s'] + 0.8)
     mmax = float(mom[w_].max()) if w_.any() else None
     pay = (rep.get('payoff') or {}).get('momentary_max')
+    if (rep.get('payoff') or {}).get('after_stop') or (song.payoff is not None and song.payoff >= p['sync_s'] - 3 / song.fps):
+        pay = None  # the payoff is this element: compared with itself it would read 0 LU under
     row = dict(id=p['id'], role=p['role'], t=p['sync_s'], peak_dbfs=round(peak, 2), momentary_max=None if mmax is None else round(mmax, 2),
                under_payoff_lu=None if (mmax is None or pay is None) else round(pay - mmax, 2), quiet_db=plan['bed']['quiet_db'])
     want = sum(LOCKUP_PEAK) / 2
@@ -1778,12 +1781,22 @@ def main(argv=None):
     rep['sfx'] = sfx_report(song, kinfo, kit, ev, a.draft)
     rep['stacks'] = stack_guard(song, ev['placed'], events, cues)
     tm, mom = M.blocks(y, 0.4, 0.1)
+    end_ = ((edit or {}).get('ending') or {}) if song.has_music else {}
+    stop_s = end_.get('bed_stops_film_s') if end_.get('mode') == 'stop' else None
     if song.payoff is not None:
         win = (tm >= song.payoff - 0.2) & (tm <= song.payoff + 1.0)
         i0, i1 = int(song.payoff * SR), int((song.payoff + 1.0) * SR)
         rep['payoff'] = dict(t=round(song.payoff, 3), momentary_max=round(float(mom[win].max()), 2) if win.any() else None,
                              limiter_gr_db=round(float(lim[i0:i1].max()), 2) if i1 > i0 else None)
-        if win.any() and mom[win].max() < rep['momentary_max'] - 0.5:
+        # a payoff after the bed stops is the stop ending's one element, which sits under the payoff by design: it
+        # is not measured as the loudest moment, nor compared with itself (lockup_after_stop)
+        on_stop = stop_s is not None and song.payoff >= stop_s - 0.05
+        rep['payoff']['after_stop'] = on_stop
+        if on_stop:
+            song.warnings.append(f'"payoff" ({song.payoff:.2f}s) is the stop ending\'s element (the bed stops at {stop_s:.2f}s), '
+                                 'which sits 2 LU or more under the payoff: point "payoff" at the reveal before the stop, or '
+                                 'end on "button" or "ring" when the reveal is the lockup')
+        elif win.any() and mom[win].max() < rep['momentary_max'] - 0.5:
             song.warnings.append(f'the payoff ({song.payoff:.2f}s) is not the loudest moment: '
                                  f'{mom[win].max():.1f} vs {rep["momentary_max"]} LUFS-M at {rep["momentary_max_t"]}s'
                                  + (': a later section of the track is louder; edit the track so the entry on the reveal '
@@ -1791,7 +1804,7 @@ def main(argv=None):
         if rep['payoff']['limiter_gr_db'] and rep['payoff']['limiter_gr_db'] > 1.5:
             song.warnings.append(f'limiter takes {rep["payoff"]["limiter_gr_db"]} dB off the payoff (keep it under 1.5)')
         audible = mom[mom > -70]
-        if win.any() and len(audible):
+        if win.any() and len(audible) and not on_stop:
             lift = float(mom[win].max() - np.median(audible))
             rep['payoff']['over_median_lu'] = round(lift, 2)
             if lift < 2.0:
@@ -1810,10 +1823,10 @@ def main(argv=None):
     if song.dur > 8 and rep.get('momentary_max_t') is not None:
         frac = rep['momentary_max_t'] / song.dur
         rep['loudest_frac'] = round(frac, 2)
-        if frac > 0.8:
+        if frac > REVEAL_BAND[1]:
             song.warnings.append(f'the loudest moment is at {frac * 100:.0f}% of the film ({rep["momentary_max_t"]}s): the ending '
-                                 'should subtract, not slam. Peak on the hero reveal (30-60%) and point "payoff" there; end on '
-                                 'a stop, the track\'s final hit or its ring')
+                                 f'should subtract, not slam. Peak on the biggest reveal ({REVEAL_BAND[0]:.0%}-{REVEAL_BAND[1]:.0%} '
+                                 'in) and point "payoff" there; end on a stop, the track\'s final hit or its ring')
     if rep.get('tail_50ms_db') is not None and rep['tail_50ms_db'] > -45:
         song.warnings.append(f'the ending is not silent: the last 50 ms measure {rep["tail_50ms_db"]} dB (want under -45)')
     if song.dur >= 20 and rep.get('lra') is not None and rep['lra'] < 5 and song.has_music:
