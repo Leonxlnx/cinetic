@@ -1034,6 +1034,70 @@
   "ProductMoment": {
    "file": "kit/moment.tsx",
    "status": "built"
+  },
+  "Defocus": {
+   "file": "fx/Defocus.tsx",
+   "status": "built"
+  },
+  "DirBlur": {
+   "file": "fx/Defocus.tsx",
+   "status": "built"
+  },
+  "SpinBlur": {
+   "file": "fx/Defocus.tsx",
+   "status": "built"
+  },
+  "DitherBands": {
+   "file": "fx/DitherBands.tsx",
+   "status": "built"
+  },
+  "MaskList": {
+   "file": "fx/Reels.tsx",
+   "status": "built"
+  },
+  "Stack": {
+   "file": "fx/Stack.tsx",
+   "status": "built"
+  },
+  "Field": {
+   "file": "kit/flow.tsx",
+   "status": "built"
+  },
+  "Tile": {
+   "file": "kit/flow.tsx",
+   "status": "built"
+  },
+  "Row": {
+   "file": "kit/flow.tsx",
+   "status": "built"
+  },
+  "Pill": {
+   "file": "kit/flow.tsx",
+   "status": "built"
+  },
+  "Chip": {
+   "file": "kit/flow.tsx",
+   "status": "built"
+  },
+  "DataRow": {
+   "file": "kit/flow.tsx",
+   "status": "built"
+  },
+  "Notice": {
+   "file": "kit/flow.tsx",
+   "status": "built"
+  },
+  "Composer": {
+   "file": "kit/flow.tsx",
+   "status": "built"
+  },
+  "CodePanel": {
+   "file": "kit/flow.tsx",
+   "status": "built"
+  },
+  "Bubble": {
+   "file": "kit/flow.tsx",
+   "status": "built"
   }
  },
  "directions": [
