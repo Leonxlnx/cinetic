@@ -20,9 +20,11 @@ signature replace the template's), then cut it to the track: `track.py grid` mov
 | `update` | 8-20 s | "vX is out": 2-4 changes to show | the version as the set, one product moment per change, the payoff, the end card with the version |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | the product's breadth is the story (sources, formats, integrations), or a launch film needs its close | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
+| `type-explainer` | 20-30 s | the idea is simple to say and the words carry it: a calm explainer on a white page, little or no product UI | the name as a giant word, what it is said at the pace of speech, the problem, the promise with a picture inside it that becomes the shot, one soft wipe, the mark between the words becoming the hub of the product's parts, the close |
 
 The test: say the film in one sentence. "You give it X and get Y" is a walkthrough; "It works with everything and
-returns anything" is a reel; "Here is what changed" is an update. When none fits, start from the starter. A launch
+returns anything" is a reel; "Here is what changed" is an update; "It is X, it fixes Y, and these are its parts" told
+in words is an explainer. When none fits, start from the starter. A launch
 film may end on the reel's close (rebuild its acts after your own) or open on the walkthrough's first three acts.
 
 ## ui-walkthrough
@@ -47,6 +49,20 @@ squashes round its line, `Resize` carry, and counter-creeps into a zoom-out), `t
 a hard step every 10 f), `claim` (the film's one colour event: two fragments, the first pushing up and dimming as the
 second rises, the full stop its own square), `rings` (square rings born from that stop, `Radiate` with `bornAt`, then
 the flood), `end` (the name pops, the rest types, the tagline takes its place). Slots: `src/reel.ts`.
+
+## type-explainer
+
+One short sentence at a time on a white page; pictures and the mark stand in for words, and every seam is made of
+content. Seven acts on whole bars at 90 BPM (25 s): `open` (the name as one giant word with a band of the accent running
+through it; the mark arrives as the next word with the name re-set smaller in one frame; then what it is, said at the
+pace of speech: uneven onsets, `Words` `arriveX`, the line drifting as it builds, leaving right with its words gone
+last to first), `pain` (the whole line in one frame coming into focus as it drifts, a hold, an ease-in exit the same
+way), `promise` (the picture opens as a pill after the first half; the second half is appended with a one-frame
+re-centre and re-scale inside a running push; the pill grows into the cut), `picture` (the same picture full bleed,
+the name over it), `system` (the film's one soft wipe, `Wipe` feather from the right; the mark stands between the
+halves, a push centred on it, the words float off), `grid` (the product's parts born round the mark in one radial
+wave, three labels one a second), `end` (the mark steps into the lockup, the close settles into focus). The sentence
+role is small and airy (about 84 px, tracked out +0.05 em): 3-5 words a line. Slots: `src/explain.ts`.
 
 ## The grammar every template keeps
 

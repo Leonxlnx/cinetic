@@ -49,9 +49,13 @@
 #                  film and sound (template.json lists the files it copies and the starter files it removes;
 #                  its pace and tempo become the defaults). update (a "vX is out" film), ui-walkthrough (a
 #                  product's flow in steps: the promise, the input becoming the output, proof, a claim, then
-#                  input -> the product reads -> insight -> choice -> output, the end card) and capability-reel
+#                  input -> the product reads -> insight -> choice -> output, the end card), capability-reel
 #                  (a launch close: a ring of sources, one real record, a statement, a capability ticker, the
-#                  big claim on the accent, a transition out of its full stop, the end card). Remotion only.
+#                  big claim on the accent, a transition out of its full stop, the end card) and type-explainer
+#                  (one short sentence at a time on a white page: the name as a giant word, what it is said at
+#                  the pace of speech, a picture inside a line that becomes the shot, one soft wipe, the mark as
+#                  the hub of the product's parts, the close). A template keeps its own tempo (template.json
+#                  bpm) unless --bpm is given. Remotion only.
 #   --brand        a supplied brand kit (a folder, or files: logo SVG or PNG, colours, licensed fonts,
 #                  screenshots, product photos): scripts/brand.py writes brand/brand.json, the colour and type
 #                  roles in src/brand/tokens.ts (supplied colours marked cinetic:brand-supplied), the logo's
@@ -150,7 +154,7 @@ if [[ -z "$BPM" ]]; then
   GRID="$SRC/src/timeline.ts"; [[ "$ENGINE" == hyperframes ]] && GRID="$SRC/motion.js"
   [[ -n "$TPL" ]] && GRID="$TPL/src/timeline.ts"
   BPM=$(sed -nE 's/^[[:space:]]*(export )?const BPM = ([0-9.]+);.*/\2/p' "$GRID" | head -n 1)
-  [[ "$PACE" == crisp ]] && BPM=120
+  [[ "$PACE" == crisp && -z "$TPL" ]] && BPM=120  # a template keeps its own tempo
   [[ -n "$BPM" ]] || die "could not read BPM from $GRID; pass --bpm"
 fi
 [[ "$BPM" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "--bpm must be a number"
