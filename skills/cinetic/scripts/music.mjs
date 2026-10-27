@@ -686,16 +686,19 @@ export const readHistory = (env = process.env) => {
 // every track a film used stays in the history (a track is never used twice); searches keep the last 50
 export const writeHistory = (h, env = process.env) => writeJson(histPath(env), { ...h, searches: h.searches.slice(-50), used: h.used.slice(-5000) });
 
+// the skill's assets/music/shortlist.json, or a film's copy in scripts/music/ (new-film.sh puts it there)
+const shortlistFile = () => [path.join(HERE, '..', 'assets', 'music', 'shortlist.json'), path.join(HERE, 'music', 'shortlist.json')].find((f) => fs.existsSync(f));
+
 /** The Mixkit refs of assets/music/shortlist.json (tracks the example films used). */
 export function shortlistRefs() {
-  const sl = readJson(path.join(HERE, '..', 'assets', 'music', 'shortlist.json'), {});
+  const sl = readJson(shortlistFile(), {});
   return new Set((sl.tracks || []).map((t) => (String(t.file_url || '').match(/assets\.mixkit\.co\/music\/(\d+)\//) || [])[1]).filter(Boolean).map((id) => `mixkit:${id}`));
 }
 
 /** Measured tempos: the shortlist's measured rows (by their Mixkit file id) and the user's own measurements. */
 export function tempoCache(env = process.env) {
   const out = {};
-  const sl = readJson(path.join(HERE, '..', 'assets', 'music', 'shortlist.json'), {});
+  const sl = readJson(shortlistFile(), {});
   for (const t of sl.tracks || []) {
     const id = (String(t.file_url || '').match(/assets\.mixkit\.co\/music\/(\d+)\//) || [])[1];
     if (id && t.bpm?.kind === 'measured' && Number.isFinite(t.bpm.value)) out[`mixkit:${id}`] = { bpm: t.bpm.value, kind: 'measured' };

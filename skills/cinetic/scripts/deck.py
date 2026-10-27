@@ -108,7 +108,6 @@ MAIN_DECK = 'directions.json'  # the deck that also holds the recipes, the defau
 DEFAULT_LIBRARY = _first([os.path.join(SKILL, 'assets', 'library', 'techniques.json'),
                           os.path.join(HERE, 'library', 'techniques.json')])
 STARTER_SRC = [os.path.join(SKILL, 'assets', 'remotion-starter', 'src'), os.path.join(SKILL, 'src')]
-SHORTLIST = [os.path.join(SKILL, 'assets', 'music', 'shortlist.json'), os.path.join(HERE, 'music', 'shortlist.json')]
 PICK = os.path.join(HERE, 'pick.py')
 
 FORMATS = ['launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical', 'update']
@@ -1124,24 +1123,15 @@ def skeleton_times(d, seconds, fps=60, fmt=None, changes=DEFAULT_CHANGES):
     return out
 
 
-def shortlist_tracks(d):
-    path = next((p for p in SHORTLIST if os.path.isfile(p)), None)
-    if not path:
-        return []
-    try:
-        data = json.load(open(path, encoding='utf-8'))
-    except (OSError, ValueError):
-        return []
+def music_find(d, seconds):
+    """Where this film's track comes from: music.mjs, which holds back every track an earlier film used. The deck never
+    lists tracks itself (the shortlist's are the example films' tracks, and a list here would let a film reuse one)."""
     lo, hi = d['music']['bpm']
-    out = []
-    for t in data.get('tracks', []) if isinstance(data, dict) else []:
-        b = t.get('bpm') or {}
-        rng = b.get('range') or ([b['value'], b['value']] if isinstance(b.get('value'), (int, float)) else None)
-        half = b.get('half_time')
-        if rng and (rng[0] <= hi + 2 and rng[1] >= lo - 2 or (half and half[0] <= hi + 2 and half[1] >= lo - 2)):
-            bpm = f'{rng[0]:g}' if rng[0] == rng[1] else f'{rng[0]:g}-{rng[1]:g}'
-            out.append({'title': t.get('title', '?'), 'bpm': bpm, 'mood': t.get('mood', '')})
-    return out[:5]
+    q = f'--mood "<the brief\'s mood words>" --bpm {lo}-{hi} --length {seconds:g}'
+    return {'search': f'node scripts/music.mjs search {q}', 'pick': f'node scripts/music.mjs pick {q}',
+            'about': "this film's own track: search the catalogs, or pick from a music library when you keep one; then "
+                     "sheet --measure and get '#n' --to audio/music. Both hold back every track an earlier film used: "
+                     "never take a track from an earlier film or the shortlist by hand (references/music.md)."}
 
 
 # ------------------------------------------------------------------------------------------------ the brand
@@ -1326,7 +1316,7 @@ def make_sheet(d, inp, seed, options, keep, history_on, data, redraws=None, vari
         'brand': brand, 'foreground': foreground,
         'pick': {'format': inp['format'] or 'launch', 'energy': pick_energy(inp['pace'], d), 'seconds': seconds,
                  'lean': d['techniques'], 'signature_ids': sig['techniques'], 'avoid': d['avoid_techniques']},
-        'music_tracks': shortlist_tracks(d),
+        'music_find': music_find(d, seconds),
         'idea_sentence': '', 'competitor_test': '',
         'redraws': redraws or [], 'history': history_on,
     }

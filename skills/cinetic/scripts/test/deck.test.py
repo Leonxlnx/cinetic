@@ -18,7 +18,8 @@
      deal a direction that cannot make the film.
   6. The sheet: --direction writes out/direction.json and out/DIRECTION.md with the idea sentence, the
      world and its light build, the story shape, the signature, the lockup, a timed skeleton, the build
-     methods and the pick.py line; --keep leaves the brand's slots alone.
+     methods and the pick.py line; no tracks, only the music.mjs lines that find the film's own; --keep
+     leaves the brand's slots alone.
   7. Redraws need a reason, are recorded, change the slot, and stop after two per slot.
   8. The history down-weights recent directions and can be switched off.
   9. House wording: the deck, deck.py and a dealt sheet carry no provenance phrasing.
@@ -374,6 +375,10 @@ result(all(k in md for k in ('In this film, [', 'Competitor test', 'How the ligh
                              'The lockup', 'Beat skeleton', 'The picture never rests', 'Build methods', 'scripts/pick.py --format feature')),
        'the sheet carries the idea sentence, light build, story, signature, lockup, skeleton, floor, methods and the pick.py line')
 result(sh.get('pick', {}).get('lean') == BY_ID['census']['techniques'], 'direction.json hands pick.py the direction\'s techniques')
+mf = sh.get('music_find', {})
+lo, hi = BY_ID['census']['music']['bpm']
+result('music_tracks' not in sh and all(f'node scripts/music.mjs {c} ' in mf.get(c, '') and f'--bpm {lo}-{hi} --length 15' in mf.get(c, '') for c in ('search', 'pick')),
+       'direction.json lists no tracks: it points to music.mjs search and pick, which hold back every track an earlier film used', str(mf)[:160])
 # a recipe the starter does not have yet (made in the test: every shipped recipe is built)
 tdeck = copy.deepcopy(DATA)
 for k in ('stoneMid', 'slateMid', 'deepField'):

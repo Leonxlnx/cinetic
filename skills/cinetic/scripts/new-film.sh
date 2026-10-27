@@ -303,7 +303,7 @@ done
 # pick.py draws from the technique library; the project keeps a copy so it runs from here too
 LIB="$SKILL/assets/library/techniques.json"; [[ -f "$LIB" ]] || LIB="$SKILL/scripts/library/techniques.json"
 if [[ -f "$LIB" ]]; then mkdir -p "$DIR/scripts/library" && cp "$LIB" "$DIR/scripts/library/"; fi
-# deck.py deals from the directions (and lists tracks from the music shortlist): the project keeps copies
+# deck.py deals from the directions and music.mjs ranks the shortlist's tracks lower: the project keeps copies
 for pair in "directions/directions.json:directions" "directions/imagery.json:directions" "music/shortlist.json:music"; do
   srcf="$SKILL/assets/${pair%%:*}"; dstd="$DIR/scripts/${pair##*:}"
   if [[ -f "$srcf" ]]; then mkdir -p "$dstd" && cp "$srcf" "$dstd/"; fi
