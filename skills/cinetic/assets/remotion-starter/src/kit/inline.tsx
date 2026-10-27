@@ -225,10 +225,13 @@ export const ObjectLine: React.FC<ObjectLineProps> = (p) => {
   const size = fitLine(base, natural, film.width, film.height, p.maxWidth);
   const ws = wordState(p.frame, { ...spec, size }, film).words;
   const landed = objectLineLanded(p, film);
+  // the line's centre placed by transform, never by left/top (fractional offsets would snap to whole pixels)
+  const cx = p.x ?? film.width / 2;
+  const cy = p.y ?? film.height / 2;
   return (
     <div
       data-text={p.id ?? 'object-line'}
-      style={{ position: 'absolute', left: p.x ?? film.width / 2, top: p.y ?? film.height / 2, transform: 'translate(-50%, -50%)', display: 'inline-flex', alignItems: 'baseline', whiteSpace: 'pre', fontFamily: FONT.text, fontSize: size, fontWeight: role.weight, letterSpacing: `${role.track}em`, lineHeight: 1, color: p.color, ...p.style }}
+      style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${cx.toFixed(2)}px, ${cy.toFixed(2)}px) translate(-50%, -50%)`, display: 'inline-flex', alignItems: 'baseline', whiteSpace: 'pre', fontFamily: FONT.text, fontSize: size, fontWeight: role.weight, letterSpacing: `${role.track}em`, lineHeight: 1, color: p.color, ...p.style }}
     >
       {tokens.map((t, i) => {
         const w = ws[i];
