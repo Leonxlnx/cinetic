@@ -248,7 +248,21 @@ jobs:
       - name: Music track tests (track.py on test beds made in code)
         run: python3 "skills/$SKILL/scripts/test/track.test.py"
 
-      - name: Install the Remotion starter (for its type check, token, mirror and grid-check cases)
+      - name: Sound library tests (signals made in code, no earshot)
+        run: python3 "skills/$SKILL/scripts/test/library.test.py"
+
+      - name: Copy check tests (copy-check.py)
+        run: python3 "skills/$SKILL/scripts/test/copy-check.test.py"
+
+      - name: Real marks and music finder tests (logos.mjs, music.mjs; offline fixtures, no network)
+        run: |
+          node "skills/$SKILL/scripts/test/logos.test.mjs"
+          node "skills/$SKILL/scripts/test/music.test.mjs"
+
+      - name: Forensics self-test (the checks and the motion gates on clips made in code)
+        run: python3 "skills/$SKILL/scripts/forensics.py" --self-test
+
+      - name: Install the Remotion starter (for its type check and the tests that run its src through tsx)
         run: cd "skills/$SKILL/assets/remotion-starter" && npm install --no-audit --no-fund --loglevel=error
 
       - name: Remotion starter type check (tsc --noEmit)
@@ -267,6 +281,19 @@ jobs:
             echo "::error::the Remotion starter cases were skipped (its npm install did not take)"
             exit 1
           fi
+
+      - name: Starter primitive tests (continuity, depth and light, kit, type, transitions; through the starter's tsx)
+        run: |
+          fail=0
+          for t in continuity depth-light kit-dense type-moves type-presets transitions handoff primitives moment wordmark logo-kit; do
+            echo "::group::$t.test.mjs"
+            node "skills/$SKILL/scripts/test/$t.test.mjs" || { echo "::error::$t.test.mjs failed"; fail=1; }
+            echo "::endgroup::"
+          done
+          exit "$fail"
+
+      - name: Type family tests (type-family.mjs, and new-film.sh --template and --type on a temp folder)
+        run: node "skills/$SKILL/scripts/test/type-family.test.mjs"
 
       - name: Score regression tests (the effects-only path bit for bit against main's score.py)
         run: |
