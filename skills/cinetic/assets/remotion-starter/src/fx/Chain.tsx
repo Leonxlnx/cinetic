@@ -12,7 +12,7 @@ import { type SweepOpts, sweepColor } from './HueSweep';
 import { type MakeRoomOpts, makeRoomState, type ScaleSnapOpts, type ScaleSnapState, scaleSnapState } from './LineSnap';
 import { blurFilter, type OversizeOpts, oversizeState } from './Oversize';
 import { edgeMask } from './Wipe';
-import { cadenceOffsets, landedOf, launchSeam, unitIfKnown, WORDS_HOUSE } from './Words';
+import { cadenceOffsets, exitDistanceEm, landedOf, launchSeam, unitIfKnown, WORDS_HOUSE } from './Words';
 
 type Role = keyof typeof TYPE;
 const split = (text: string) => text.split(/\s+/).filter(Boolean);
@@ -332,10 +332,10 @@ export const chainState = (F: number, o: ChainSpec, film?: Partial<FilmCtx>): Ch
   const order = o.exitOrder ?? (exitMode === 'words' ? 'stagger' : 'together');
   const es = o.exitStagger ?? f60x(order === 'stagger' ? WORDS_HOUSE.staggerOrder60 : WORDS_HOUSE.exitStagger60, fps);
   const dir = o.exitDir ?? 'up';
-  const dist = o.exitDistance ?? (exitMode === 'launchFade' ? WORDS_HOUSE.fadeDistance : WORDS_HOUSE.exitDistance);
   const exitEase = o.exitEase ?? (exitMode === 'launch' ? E.launchIn : E.buildIn);
   const exitFade = o.exitFade ?? f60x(pace.exitFade ?? WORDS_HOUSE.exitFade60, fps);
   const u = unitIfKnown(film) ?? uOf(film);
+  const dist = exitDistanceEm(exitMode, exitEase, od, size, u, o.exitDistance);
   const snapO = o.snapLast ? (o.snapLast === true ? {} : o.snapLast) : null;
   const snapAt = snapO ? (snapO.at ?? list[last].in + 1) : undefined;
   const snap = snapO && snapAt !== undefined ? { ...scaleSnapState(F, { ...snapO, at: snapAt }, film), at: snapAt } : undefined;

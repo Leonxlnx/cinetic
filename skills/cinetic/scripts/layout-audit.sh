@@ -8,7 +8,8 @@
 # data-mover (sampled with elementsFromPoint, so z-order counts), more film words readable at once
 # than the pace allows (8 when calm; product strings tagged data-ui count apart) and, with --speed,
 # readable text that moves too fast: 20 px/f while it enters or travels (motion blur turns it into
-# a double image), 3 px/f while it is being read; a declared re-centre jump of a build chain (the line
+# a double image; text inside an active DirBlur smear is left out: it is blurred along its motion),
+# 3 px/f while it is being read; a declared re-centre jump of a build chain (the line
 # making room for its next fragment, 2/3 of the distance in 1/30 s) is a decisive move, not a drift,
 # and is held to the travel limit instead. Type roles (cap height bands, the ui size, at most 2 non-UI
 # sizes at once, statement and payoff widths) are warnings; --strict makes them fail. The audit stills
@@ -269,6 +270,7 @@ for (const f of pairs) {
     if (!Number.isFinite(d)) continue; // gone (or faded out) on f+1
     box.speed = Math.round(d * k * 10) / 10;
     if (box.opacity < 0.5 || box.px < (a.minPx ?? 0)) continue;
+    if (box.smear) continue; // drawn inside an active smear (fx/Defocus DirBlur): blurred along its motion, not a double image
     if (!fastest || box.speed > fastest.speed) fastest = { frame: f, id: box.id, speed: box.speed };
     const jump = jumpingAt(box.id, f);
     const read = readingAt(box.id, f) && !jump;

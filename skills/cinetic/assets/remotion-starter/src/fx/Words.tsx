@@ -36,7 +36,9 @@ import { edgeMask } from './Wipe';
  *   words       1.1: word by word at half the stagger, accelerating on E.in, blurring once fast.
  *   launch      the line accelerates out at FULL opacity (E.launchIn over `outDur`, `exitDistance` em
  *               towards `exitDir`) and is cut on its fastest frame: `exitAt` is that last frame (the
- *               next shot starts on exitAt + 1). Declares a velocity seam there.
+ *               next shot starts on exitAt + 1). Declares a velocity seam there. The house distance
+ *               shrinks so the fastest frame moves the text at most 20 px/f (exitDistanceEm): the speed
+ *               the next shot carries belongs to the camera or the container, not to readable type.
  *   launchFade  the same move with a short fade (`exitFade`, 10 f@60) in its last half, ending on the
  *               move's end: for exits with no cut or mask to hide them.
  *   auto        launch when `exitAt` is given (a cut or mask ends the move), else launchFade.
@@ -81,7 +83,7 @@ export type WordsSpec = {
   exitOrder?: 'together' | 'rtl' | 'ltr' | 'stagger';
   exitStagger?: number; // film frames between word exits (rtl/ltr 2 f@60, stagger 6 f@60)
   exitDir?: 'up' | 'down' | 'left' | 'right';
-  exitDistance?: number; // em (default 1.25 for launch, 0.6 for launchFade)
+  exitDistance?: number; // em (default 1.25 for launch, shortened so its fastest frame stays under 20 px/f at 1080p; 0.6 for launchFade)
   exitEase?: Ease; // default E.launchIn (launch) / E.buildIn (launchFade)
   exitFade?: number; // film frames of a launchFade's opacity drop (default the pace's exitFade, 10 f@60)
   accent?: string; // the accent colour: words land in it and cool to `color`
@@ -131,7 +133,19 @@ export type WordState = {
 export type WordsState = { words: WordState[]; scale: number; blur: number; frames: WordFrame[] };
 
 /** House numbers of the line system's exits and cadence (60 fps frames where marked). */
-export const WORDS_HOUSE = { exitDistance: 1.25, fadeDistance: 0.6, exitStagger60: 2, staggerOrder60: 6, exitFade60: 10, accelTo: 0.5, lead: 1.1 } as const;
+export const WORDS_HOUSE = { exitDistance: 1.25, fadeDistance: 0.6, exitStagger60: 2, staggerOrder60: 6, exitFade60: 10, accelTo: 0.5, lead: 1.1, maxTextPx: 20 } as const;
+
+/**
+ * The exit distance in em: `given` when set, else the house distance, which a launch shortens so its fastest frame
+ * moves readable text at most WORDS_HOUSE.maxTextPx px a frame at 1080p (the layout audit's text-speed limit: faster
+ * full-opacity type turns into a double image). A launchFade keeps its distance: it fades before it is fast.
+ */
+export const exitDistanceEm = (mode: 'together' | 'words' | 'launch' | 'launchFade', ease: Ease, od: number, px: number, u: number, given?: number): number => {
+  if (given !== undefined) return given;
+  if (mode !== 'launch') return WORDS_HOUSE.fadeDistance;
+  const last = od > 1 ? 1 - ease((od - 1) / od) : 1; // the share of the travel on the move's last frame
+  return last > 0 && px > 0 ? Math.min(WORDS_HOUSE.exitDistance, (WORDS_HOUSE.maxTextPx * u) / (last * px)) : WORDS_HOUSE.exitDistance;
+};
 
 /**
  * Speed (px/s at 1080p) under which a settling word reads as landed: the fastest house hold drift
@@ -275,10 +289,10 @@ export const wordState = (frame: number, o: WordsSpec, film?: Partial<FilmCtx>):
   const hold = o.accentHold ?? f60x(k.pace.accentHold ?? 18, k.fps);
   const cool = o.accentCool ?? f60x(k.pace.accentCool ?? 13, k.fps);
   const dir = o.exitDir ?? 'up';
-  const dist = o.exitDistance ?? (k.mode === 'launchFade' ? WORDS_HOUSE.fadeDistance : WORDS_HOUSE.exitDistance);
   const n = frames.length;
   const u = unitIfKnown(film) ?? uOf(film);
   const em = px ?? TYPE.line.size * u; // px per em for px-valued devices
+  const dist = exitDistanceEm(k.mode, k.exitEase, k.od, em, u, o.exitDistance);
   const focus = o.focusIn ? (o.focusIn === true ? {} : o.focusIn) : null;
   const sweep = o.sweep ? (o.sweep === true ? {} : o.sweep) : null;
   const snapO = o.snapLast ? (o.snapLast === true ? {} : o.snapLast) : null;
@@ -389,6 +403,7 @@ export const Words: React.FC<WordsProps> = ({ frame, style, wordStyle, ...spec }
   const words = splitWords(spec.text);
   const sub = spec.subpixel ?? isNew(spec.pace ?? film.pace);
   const lineBlur = s.blur > 0 ? defocusLevel(s.blur * (film.height / 1080)) : 0;
+  const shown = s.words.some((w) => w.opacity > 0.001); // a line whose words are all gone is gone (the layout audit reads the tagged line)
   return (
     <span
       data-text={id}
@@ -401,6 +416,7 @@ export const Words: React.FC<WordsProps> = ({ frame, style, wordStyle, ...spec }
         filter: lineBlur > 0 ? blurFilter(lineBlur) : undefined,
         ...(spec.edgeMask ? edgeMask({ left: (spec.edgeMask.left ?? 250) * (film.height / 1080), right: spec.edgeMask.right !== undefined ? spec.edgeMask.right * (film.height / 1080) : undefined }) : {}),
         ...style,
+        ...(shown ? {} : { opacity: 0 }),
       }}
     >
       {words.map((w, i) => {

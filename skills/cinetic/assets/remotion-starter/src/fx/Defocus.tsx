@@ -8,7 +8,8 @@ import type { Declares } from '../timeline';
  * the two are cross-faded by opacity, so no blur radius ever animates.
  *
  *   Defocus   an even softening of `sigma` px (at 1080p): a hidden cut's jump frame, a layer stepping back in a
- *             stack, a punch-in clearing. The copies sit in an isolated group, so a blend inside stays inside.
+ *             stack, a punch-in clearing. The copies sit in an isolated group, so a blend inside stays inside; every
+ *             copy after the first is marked data-audit-copy, so the layout audit reads the text once.
  *   DirBlur   a smear along the motion only, from the layer's speed: sigma = speed (px/s) x DIR_BLUR.seconds,
  *             the smear a 180-degree shutter leaves at 30 fps (sigma 0.15 x px per 30 fps frame). For flick
  *             scrolls, whips, a grid rising fast and cards leaving at speed in a crisp film, where the shutter
@@ -42,7 +43,7 @@ export const Defocus: React.FC<{ sigma: number; style?: React.CSSProperties; chi
   return (
     <div style={base}>
       {defocusMix(s).map((c, i) => (
-        <div key={c.level} style={{ ...layer, opacity: i === 0 ? 1 : c.weight, filter: c.level > 0 ? `blur(${c.level}px)` : undefined }}>
+        <div key={c.level} data-audit-copy={i > 0 ? '' : undefined} style={{ ...layer, opacity: i === 0 ? 1 : c.weight, filter: c.level > 0 ? `blur(${c.level}px)` : undefined }}>
           {children}
         </div>
       ))}
@@ -63,13 +64,14 @@ export const DirBlur: React.FC<{ v: number; axis?: 'x' | 'y'; angle?: number; id
   const copies = dirBlurMix(v, film, { seconds, shutter }).map((c) => ({ ...c, level: c.level * uOf(film) }));
   const base: React.CSSProperties = { ...layer, isolation: 'isolate', ...style };
   if (copies.length === 1 && copies[0].level === 0) return <div style={base}>{children}</div>;
+  const smear = { 'data-audit-smear': '' }; // the layout audit's text-speed check leaves smeared text out: it is blurred along its motion
   if (angle !== undefined && angle % 180 !== 0) {
     const { width, height } = sizeOf(film);
     const d = Math.ceil(Math.hypot(width, height));
     const box: React.CSSProperties = { position: 'absolute', left: (width - d) / 2, top: (height - d) / 2, width: d, height: d, transform: `rotate(${angle}deg)` };
     const back: React.CSSProperties = { position: 'absolute', left: (d - width) / 2, top: (d - height) / 2, width, height, transform: `rotate(${-angle}deg)` };
     return (
-      <div style={base}>
+      <div style={base} {...smear}>
         <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
           {copies.filter((c) => c.level > 0).map((c) => (
             <filter key={c.level} id={`${name}-a${Math.round(c.level * 100)}`} x="-10%" y="0%" width="120%" height="100%" colorInterpolationFilters="sRGB">
@@ -78,7 +80,7 @@ export const DirBlur: React.FC<{ v: number; axis?: 'x' | 'y'; angle?: number; id
           ))}
         </svg>
         {copies.map((c, i) => (
-          <div key={c.level} style={{ ...box, opacity: i === 0 ? 1 : c.weight, filter: c.level > 0 ? `url(#${name}-a${Math.round(c.level * 100)})` : undefined }}>
+          <div key={c.level} data-audit-copy={i > 0 ? '' : undefined} style={{ ...box, opacity: i === 0 ? 1 : c.weight, filter: c.level > 0 ? `url(#${name}-a${Math.round(c.level * 100)})` : undefined }}>
             <div style={back}>{children}</div>
           </div>
         ))}
@@ -87,7 +89,7 @@ export const DirBlur: React.FC<{ v: number; axis?: 'x' | 'y'; angle?: number; id
   }
   const ax = angle === undefined ? axis : 'x';
   return (
-    <div style={base}>
+    <div style={base} {...smear}>
       <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
         {copies
           .filter((c) => c.level > 0)
@@ -98,7 +100,7 @@ export const DirBlur: React.FC<{ v: number; axis?: 'x' | 'y'; angle?: number; id
           ))}
       </svg>
       {copies.map((c, i) => (
-        <div key={c.level} style={{ ...layer, opacity: i === 0 ? 1 : c.weight, filter: c.level > 0 ? `url(#${name}-${Math.round(c.level * 100)})` : undefined }}>
+        <div key={c.level} data-audit-copy={i > 0 ? '' : undefined} style={{ ...layer, opacity: i === 0 ? 1 : c.weight, filter: c.level > 0 ? `url(#${name}-${Math.round(c.level * 100)})` : undefined }}>
           {children}
         </div>
       ))}

@@ -21,6 +21,8 @@
  *  12. lib/camera camPath(), camVel(): moves add and chain without a hold, zoom in log space, the velocity of the
  *      framed point; fx/Defocus dirBlurMix shutter: 180 degrees at 30 fps = the house smear, 360 = twice it.
  *  13. lib/measure solveTracking(): the least-squares em tracking that matches measured widths.
+ *  14. fx/Words exitDistanceEm(): a launch's fastest frame moves readable type at most 20 px/f at 1080p (a small line
+ *      keeps the house 1.25 em, a launchFade 0.6 em, a given distance wins).
  *
  * It runs src through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/primitives.test.mjs [--verbose]
@@ -69,6 +71,7 @@ import * as Ro from '${url('fx/Roll.tsx')}';
 import * as Db from '${url('fx/DitherBands.tsx')}';
 import * as Cm from '${url('lib/camera.ts')}';
 import * as Me from '${url('lib/measure.ts')}';
+import * as Wo from '${url('fx/Words.tsx')}';
 const camBase = { ax: 960, ay: 540, sx: 960, sy: 540, k: 1 };
 const camMoves = [{ at: 0, frames: 20, zoom: 0.5, ease: A.E.glideOut }, { at: 15, frames: 20, pan: { x: -400 }, ease: A.E.launchIn }];
 const panOnly = [{ at: 0, frames: 10, pan: { x: 100 }, ease: A.E.linear }];
@@ -104,6 +107,7 @@ console.log(JSON.stringify({
     moving: range(1, 34).map((f) => { const v = Cm.camVel(f, camBase, camMoves); return v.speed + Math.abs(v.vk); }), still: Cm.camVel(36, camBase, camMoves),
     pan: Cm.camVel(5, camBase, panOnly), zoom: Cm.camVel(5, camBase, zoomOnly) },
   shutter: { house30: D.dirBlurMix(20, film30), s180: D.dirBlurMix(20, film30, { shutter: 180 }), s360: D.dirBlurMix(20, film30, { shutter: 360 }), h60: D.dirBlurMix(20, film60), s360at60: D.dirBlurMix(20, film60, { shutter: 360 }) },
+  launchCap: (() => { const big = Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1); const last = (1 - A.E.launchIn(13 / 14)) * big * 120; return { big, last, small: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 30, 1), fade: Wo.exitDistanceEm('launchFade', A.E.buildIn, 14, 120, 1), given: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1, 2) }; })(),
   trackFit: Me.solveTracking([{ w0: 100, n: 5, size: 80, target: 124 }, { w0: 200, n: 6, size: 80, target: 228.8 }]),
   dir: { slow: D.dirBlurMix(1, { fps: 60 }), v10: D.dirBlurMix(-10, { fps: 60 }), v20at30: D.dirBlurMix(20, { fps: 30 }), fast: D.dirBlurMix(200, { fps: 60 }) },
 }));
@@ -234,6 +238,12 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
 {
   const t = P.trackFit;
   result(close(t.em, 0.06, 1e-12) && t.residue.every((r) => Math.abs(r) < 1e-12), 'solveTracking: recovers +0.06 em from two measured widths', JSON.stringify(t));
+}
+// 14. a launch keeps readable type under the audit's 20 px/f
+{
+  const L = P.launchCap;
+  result(L.last <= 20 + 1e-9 && L.last > 19 && L.big < 1.25, 'exitDistanceEm: a 120 px launch moves at most 20 px on its fastest frame', JSON.stringify(L));
+  result(L.small === 1.25 && L.fade === 0.6 && L.given === 2, 'exitDistanceEm: a small line keeps 1.25 em, a launchFade 0.6, a given distance wins', JSON.stringify(L));
 }
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
