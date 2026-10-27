@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { CalculateMetadataFunction, Freeze, useCurrentFrame } from 'remotion';
+import { CalculateMetadataFunction, Freeze, Sequence, useCurrentFrame } from 'remotion';
 import { subframes } from './blur';
 import { Film } from './Film';
 import { TOTAL as FILM_TOTAL } from './timeline';
@@ -29,16 +29,19 @@ export const subMetadata: CalculateMetadataFunction<FilmSubProps> = ({ props }) 
 
 // The film sampled for a quick dev round: frame j of this composition is film frame offset + j x step (every 4th
 // frame by default), so a whole-film check renders in a quarter of the time and a paired sheet still shows every
-// move. Alternate the offset between rounds (0, then 2) to see the frames the last round skipped. Discrete state
-// still keys off the film frame (Freeze), so nothing differs from the full render on the frames it shows.
+// move. Alternate the offset between rounds (0, then 2) to see the frames the last round skipped. The film inside reads
+// the film frame itself, so nothing differs from the full render on the frames it shows. Not <Freeze>: Remotion clamps
+// the timeline position to the composition's own length (here a quarter of the film's), so a frozen frame past it
+// would show the last frame of that range instead; a Sequence shifted by (j - f) is not clamped.
 export type FilmEveryProps = { step?: number; offset?: number };
 
 export const FilmEvery: React.FC<FilmEveryProps> = ({ step = 4, offset = 0 }) => {
   const j = useCurrentFrame();
+  const f = offset + j * Math.max(1, Math.round(step));
   return (
-    <Freeze frame={offset + j * Math.max(1, Math.round(step))}>
+    <Sequence from={j - f} layout="none" name={`film frame ${f}`}>
       <Film />
-    </Freeze>
+    </Sequence>
   );
 };
 
