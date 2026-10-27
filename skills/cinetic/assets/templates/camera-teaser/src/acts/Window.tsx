@@ -64,7 +64,9 @@ const Code: React.FC<{ F: number; maxW: number; scale?: number }> = ({ F, maxW, 
   const rows = track(((F - CUE.stream) * 60) / film.fps, STREAM.map(([f, s]) => [f, s * n] as [number, number]));
   const size = 30 * U * scale;
   const longest = Math.max(...TEASER.code.map((l) => measureTracked(l.map((t) => t.s).join(''), size, 450, 0, FONT.mono)));
-  const w = Math.min(maxW, longest + size * 3.5);
+  // the split column is narrow: the code takes the whole column (the panel keeps its type at a readable floor, so a
+  // width measured at the smaller size would crop it)
+  const w = scale < 1 ? maxW : Math.min(maxW, longest + size * 3.5);
   // the lens: a soft strip on the line being written, then on the lens cue it glides back to the first line (what it built)
   const lh = size * 1.5;
   const follow = Math.min(n - 1, Math.max(0, rows - 0.6));
@@ -86,8 +88,8 @@ export const Window: React.FC = () => {
   const head = WIN.head * U;
   const ui = 38 * U;
   const split = DEAL.window === 'split';
-  // split: the code takes the left 42 % at a smaller size (every line whole), the product's screen the right 58 %
-  const codeW = split ? w * 0.42 - 1.5 * ui : w - 2 * ui;
+  // split: the code takes the left 48 % (its long lines run under the screen pane, as in an editor), the screen the right 52 %
+  const codeW = split ? w * 0.48 - 1.5 * ui : w - 2 * ui;
   // after the dive the shot opens inside the button: the accent with a hole that opens from the centre (an iris)
   const iris = DEAL.launch === 'dive' ? prog(F, ACT.window.from, ACT.window.from + f60x(24), E.snapOut) : 1;
   const r = (40 + (Math.hypot(W, H) / 2 / U + 20 - 40) * iris) * U;
@@ -102,8 +104,8 @@ export const Window: React.FC = () => {
               <Code F={F} maxW={codeW} scale={split ? 0.7 : 1} />
             </div>
             {split && (
-              <div style={{ position: 'absolute', left: 0, top: 0, width: w * 0.58, height: h - head, overflow: 'hidden', transform: `translate3d(${(w * 0.42).toFixed(2)}px, ${head.toFixed(2)}px, 0)`, boxShadow: `inset ${(1.5 * U).toFixed(2)}px 0 0 ${INK.line}` }}>
-                <DenseScreen frame={F} theme={INK} seed={TEASER.name} kind={TEASER.world.kind} layout="board" w={w * 0.58} h={h - head} scale={0.7} view={0.9} focus={[{ at: CUE.stream, row: 0 }, { at: CUE.stream + f60(60), row: 1 }, { at: CUE.lens, row: 2 }]} drawAt={CUE.stream} lift={0} />
+              <div style={{ position: 'absolute', left: 0, top: 0, width: w * 0.52, height: h - head, overflow: 'hidden', transform: `translate3d(${(w * 0.48).toFixed(2)}px, ${head.toFixed(2)}px, 0)`, boxShadow: `inset ${(1.5 * U).toFixed(2)}px 0 0 ${INK.line}` }}>
+                <DenseScreen frame={F} theme={INK} seed={TEASER.name} kind={TEASER.world.kind} layout="board" w={w * 0.52} h={h - head} scale={0.7} view={0.9} focus={[{ at: CUE.stream, row: 0 }, { at: CUE.stream + f60(60), row: 1 }, { at: CUE.lens, row: 2 }]} drawAt={CUE.stream} lift={0} />
               </div>
             )}
           </div>

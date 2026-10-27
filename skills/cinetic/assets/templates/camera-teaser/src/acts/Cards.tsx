@@ -119,8 +119,8 @@ export const Cards: React.FC = () => {
         {/* the tiles keep the whole centre column clear (the line and the cards are read there): large, few, cropped by the frame edges */}
         {DEAL.cards === 'wall' && <ContentWall nodes={nodes} frame={F} start={CUE.cards} theme={INK} seed={`${TEASER.name}:wall`} tile={300 * U} cols={6} rows={3} clear={{ w: 1200 * U, h: 1400 * U }} />}
         {DEAL.cards === 'ring' && (
-          <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate3d(0, ${(90 * U).toFixed(2)}px, 0)` }}>
-            <ContentRing nodes={nodes} frame={F} start={CUE.cards} theme={INK} seed={`${TEASER.name}:ring`} tile={250 * U} count={8} rx={840 * U} ry={400 * U} />
+          <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate3d(0, ${(140 * U).toFixed(2)}px, 0)` }}>
+            <ContentRing nodes={nodes} frame={F} start={CUE.cards} theme={INK} seed={`${TEASER.name}:ring`} tile={240 * U} count={8} rx={860 * U} ry={330 * U} />
           </div>
         )}
       </World>
