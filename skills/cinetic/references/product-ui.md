@@ -46,9 +46,14 @@ takes the film context or reads it inside a component.
   target. It is the one UI move fast enough to want camera blur: it declares its own blur range.
 - **Imagery develops.** Pictures arrive as a tint in the film's own colours and come into full colour column by
   column, on a static filter plus an opacity fade.
-- **Real content, film sizes.** A believable product with its own name, data that adds up, drawn icons, avatars as
-  shapes, real states (hover, pressed, typing, approved). Every web size ×1.9 (`uiFilm()`), nothing under 36 px in
-  focus; product numbers and labels at `caption` and up (`references/copy-and-type.md` §7).
+- **Real content, film sizes.** A believable product with its own name, data that adds up, drawn icons, people as
+  crafted portraits, real states (hover, pressed, typing, approved). Every web size ×1.9 (`uiFilm()`), nothing under
+  36 px in focus; product numbers and labels at `caption` and up (`references/copy-and-type.md` §7).
+- **A screen is dense; one line reads.** A product screen shows the product in use: 25 or more real strings (names,
+  ids, amounts, dates, statuses that agree), most of them at 12-16 px (6-8 px on a half-size still) as texture, and
+  exactly one line at 4 % of the frame height or more, lifted and readable while the rest is dimmed and softened
+  (`kit/dense.tsx`, §5). A card of five rows and grey bars reads as a mock; a wall of small true strings with one
+  lifted line reads as software, and the viewer still reads only what the film says.
 - **Cause → action → result.** Every product action has a visible cause (a click, a typed request, an incoming
   event), the action itself, and a result that holds ≥ 36 f before the camera leaves. One element carries the action
   per shot.
@@ -251,9 +256,12 @@ moment: replace its strings and numbers with the brand's own, and pass `data=` t
 sample.
 
 - `kitTheme(recipe, accent)`: every colour of the kit computed from one recipe at the accent's hue (no hex in the kit;
-  surfaces are neutral, avatars one hue at several lightnesses, never a rainbow).
-- Parts: `Surface` (a lit face with a contact shadow and a cast shadow away from the key), `Avatar` (initials at 36 px
-  and up, a drawn person below that), `AvatarStack`, `Badge`, `Check`, `Pending`, `Glyph` / `GlyphTile` (generic
+  surfaces are neutral; portraits take the accent's hue at the theme's lightnesses in the backdrop and the garment, faces
+  near neutral, never a rainbow).
+- Parts: `Surface` (a lit face with a contact shadow and a cast shadow away from the key), `Avatar` (a person, crafted:
+  a lit gradient portrait dealt from their seed, a halftone portrait with `kind="halftone"`, a monogram tile only on a
+  24-40 px chip; never a grey silhouette, never a circle of initials), `AvatarStack` (faces rimmed in the surface they
+  overlap, the first on top, `more` adds a +N tile), `Badge`, `Check`, `Pending`, `Glyph` / `GlyphTile` (generic
   glyphs from Phosphor Icons, MIT, shipped in `kit/icons.ts`: a regular or bold line by `weight`, `variant` fill or
   duotone; a tile is duotone on its soft face and filled on the solid one), `Meter`, `Button` (press amount from `fx/Cards press().q`), `Toast`, `Sparkline`,
   `BarChart` (bars rise out of the baseline in turn), `Ring`, `Photo` (a product photograph made in code, or a
@@ -284,8 +292,29 @@ sample.
   `ReportCover`, and `KitFallback` (the panel that fits a box's shape).
 - Sample data (`REVIEW`, `BUDGETS`): two believable products whose numbers add up and whose copy states a product
   fact. They are the shape to copy, never the content to ship.
+- Dense screens (`kit/dense.tsx`): `DenseScreen` puts the app's chrome (title bar, workspace, nav with counts, team,
+  the viewer) around a records `table` (tabs with the rows' counts, four figures, the table, activity, a chart) or a
+  `board` (the records as cards in their status columns). `focus` is the readable row, or a schedule `[{ at, row }]` the
+  lens glides along (16 f at 60 fps on `E.snapOut`); `view` is the scale the screen is seen at (a camera push, a fit),
+  so the line keeps 4 % of the frame. `FocusLens` is the focus helper over any dense layer (a veil, two fixed blur
+  levels, the one line on a raised strip); `Micro` is texture type, tagged `data-texture` (not copy: the layout audit
+  leaves it out); `StatusPill` draws a status by its dot's shape, the accent only on the story's state; `focusPx`,
+  `focusState`, `AppWindow`. Set the screen tilted and lit in its place (`references/lighting.md` §7) and let the
+  camera travel along the lens; a flat screen held front-on reads as a slide.
+- Sample worlds (`kit/data.ts`): `sampleWorld('<film>')` deals a workspace from the film's name, so two films never
+  share data: six kinds (billing, deploys, support, orders, pipeline, hiring), people, fourteen records, statuses that
+  agree with the dates, tab counts and totals that are the rows' own, a chart whose points sum to the total, every
+  status with rows, and the story's record (`focus`). `checkWorld()` asserts it. Replace it with the product's real
+  data in the same shape before the film ships.
+- Content tiles (`kit/tiles.tsx`): `ContentTile` (the real mark or a glyph, a label, a sub line and a tiny preview: a
+  document with a marked line, a chart, bars, a checklist, a person, a table, code), placed by `ContentWall`,
+  `ContentRing` and `ContentTicker`: they arrive tumbling 20-60 degrees, settle on depth bands (smaller and softer
+  further back) and drift with parallax; the film's own nodes take the near slots and every other slot is filled from
+  the world (`worldNodes()`). Ring, wall and ticker nodes always carry content: the real marks where the product
+  touches other products (`scripts/logos.mjs`), otherwise icon, label and preview; never a bare pill or a bare accent
+  square.
 - Every kit part is a pure function of its props and `frame`, text tagged `data-text` under a `data-ui` root (the
-  layout audit counts product strings apart from copy).
+  layout audit counts product strings apart from copy); texture strings carry `data-texture` instead.
 - **Cards require content.** `<Card>` and `<Bento>` tiles show built UI (`children` / `content`), a supplied picture
   (`image`), or nothing on purpose (`blank`). A card given none renders kit UI in its box instead of an empty slab,
   and lint errors (`card-content`). Never draw grey placeholder bars: a frame without words, numbers or pictures that
