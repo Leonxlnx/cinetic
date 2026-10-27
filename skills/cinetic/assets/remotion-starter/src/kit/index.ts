@@ -2,7 +2,9 @@
 // Use it to rebuild the brand's product for the film (pass the brand's own strings, numbers and pictures),
 // or, until the product exists, as the floor a card falls back to: never an empty slab, never grey bars.
 // The film's one full-frame product moment (moment.tsx) puts a panel in use at full size on a flat field.
+// Generic glyphs come from icons.ts (Phosphor Icons, MIT).
 export * from './flow';
+export * from './icons';
 export * from './moment';
 export * from './panels';
 export * from './parts';

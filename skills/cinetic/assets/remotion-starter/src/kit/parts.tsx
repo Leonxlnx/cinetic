@@ -10,6 +10,7 @@ import { C, FONT, TEXT_MIN, TYPE } from '../brand/tokens';
 import { clamp, E, mix, prog, rand } from '../lib/anim';
 import { mixColor, toOklch } from '../lib/color';
 import { uOf, useFilm } from '../lib/film';
+import { ICON_GRID, ICONS, type IconPaths } from './icons';
 import type { GlyphName } from './sample';
 import { type KitTheme, lit, shadeRgba } from './theme';
 
@@ -200,47 +201,29 @@ export const Pending: React.FC<{ size: number; stroke: string; fill: string }> =
   </svg>
 );
 
-const GLYPHS: Record<GlyphName, string> = {
-  pen: 'M15.5 4.5l4 4L9 19H5v-4z M13.5 6.5l4 4',
-  code: 'M8.5 7L3.5 12l5 5 M15.5 7l5 5-5 5 M13.5 4.5l-3 15',
-  mega: 'M4 10v4h3l7 4V6L7 10z M17.5 9a4 4 0 010 6',
-  doc: 'M6 3h8l4 4v14H6z M14 3v4h4 M9 12h6 M9 16h6',
-  grid: 'M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z',
-  team: 'M9 11a3 3 0 100-6 3 3 0 000 6z M3.5 19a5.5 5.5 0 0111 0 M16.5 11a2.5 2.5 0 100-5 M15.5 14a5 5 0 015 5',
-  image: 'M4 5h16v14H4z M4 16l5-5 4 4 2-2 5 5 M15.5 9.5h.01',
-  send: 'M4 12l16-7-6 16-3-7z M11 14l9-9',
-  check: 'M5 12.5l4.5 4.5L19 7.5',
-  clock: 'M12 21a9 9 0 100-18 9 9 0 000 18z M12 7v5l3.5 2',
-  plus: 'M12 5v14 M5 12h14',
-  bolt: 'M13 3L5 13h6l-1 8 8-10h-6z',
-  link: 'M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1.2 1.2 M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1.2-1.2',
-  list: 'M9 6h11 M9 12h11 M9 18h11 M4.5 6h.01 M4.5 12h.01 M4.5 18h.01',
-  search: 'M10.5 17a6.5 6.5 0 100-13 6.5 6.5 0 000 13z M15.5 15.5L20 20',
-  star: 'M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z',
-  monitor: 'M3.5 5h17v11h-17z M9 20h6 M12 16v4',
-  speaker: 'M4 9.5v5h3.5L12 18V6L7.5 9.5z M15.5 9a4 4 0 010 6 M18 6.5a7.5 7.5 0 010 11',
-  camera: 'M4 8h3l2-2.5h6L17 8h3v11H4z M12 16.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z',
-  braces: 'M9 4H8a2 2 0 00-2 2v3.5L4.5 12 6 14.5V18a2 2 0 002 2h1 M15 4h1a2 2 0 012 2v3.5l1.5 2.5-1.5 2.5V18a2 2 0 01-2 2h-1',
-  table: 'M4 5h16v14H4z M4 10h16 M4 14.5h16 M10 5v14',
-  globe: 'M12 21a9 9 0 100-18 9 9 0 000 18z M3 12h18 M12 3a14 14 0 010 18 M12 3a14 14 0 000 18',
-  lock: 'M6 11h12v9H6z M8.5 11V8a3.5 3.5 0 017 0v3',
-  play: 'M8 5.5v13l10.5-6.5z',
-  chat: 'M4.5 5.5h15v10h-8l-4.5 3.5v-3.5h-2.5z',
-  cart: 'M3.5 4.5h2.5l2 10.5h10l2-7.5H7 M10 19.5h.01 M17 19.5h.01',
-  heart: 'M12 19.5s-7.5-4.6-7.5-9.7A4.2 4.2 0 0112 7.3a4.2 4.2 0 017.5 2.5c0 5.1-7.5 9.7-7.5 9.7z',
+/** How a glyph is drawn: a line (regular, or bold from weight 2.3), filled, or duotone (a quiet tone under the line). */
+export type GlyphStyle = 'line' | 'fill' | 'duotone';
+
+/**
+ * A generic glyph (kit/icons.ts, Phosphor): `weight` keeps the old stroke scale (2 = the regular line, 2.3 and up the
+ * bold one); `variant` fills it or lays the duotone's tone (`tone`, default the line colour at 20 %) under the line.
+ * For a product, source or model the film names, use its real mark (kit/logos.tsx) instead.
+ */
+export const Glyph: React.FC<{ name: GlyphName; size: number; color: string; weight?: number; variant?: GlyphStyle; tone?: string }> = ({ name, size, color, weight = 2, variant = 'line', tone }) => {
+  const p: IconPaths = ICONS[name];
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${ICON_GRID} ${ICON_GRID}`} style={{ display: 'block' }}>
+      {variant === 'fill' && <path d={p.fill} fill={color} />}
+      {variant === 'duotone' && <path d={p.tone} fill={tone ?? color} opacity={tone ? 1 : 0.2} />}
+      {variant !== 'fill' && <path d={variant === 'duotone' ? p.duo ?? p.regular : weight >= 2.3 ? p.bold : p.regular} fill={color} />}
+    </svg>
+  );
 };
 
-/** A line glyph of the product (stroke icons drawn here: no icon library). */
-export const Glyph: React.FC<{ name: GlyphName; size: number; color: string; weight?: number }> = ({ name, size, color, weight = 2 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: 'block' }}>
-    <path d={GLYPHS[name]} stroke={color} strokeWidth={weight} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-/** A glyph on a soft accent tile (a category, an app icon). */
-export const GlyphTile: React.FC<{ theme: KitTheme; name: GlyphName; size: number; solid?: boolean }> = ({ theme: t, name, size, solid }) => (
+/** A glyph on a soft accent tile (a category, a generic action): duotone on the soft tile, filled on the solid one. */
+export const GlyphTile: React.FC<{ theme: KitTheme; name: GlyphName; size: number; solid?: boolean; variant?: GlyphStyle }> = ({ theme: t, name, size, solid, variant }) => (
   <div style={{ width: size, height: size, borderRadius: size * 0.28, background: solid ? t.accent : t.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-    <Glyph name={name} size={size * 0.54} color={solid ? t.accentInk : t.dark ? t.text : t.accentDeep} weight={2.2} />
+    <Glyph name={name} size={size * 0.56} color={solid ? t.accentInk : t.dark ? t.text : t.accentDeep} weight={2.2} variant={variant ?? (solid ? 'fill' : 'duotone')} />
   </div>
 );
 

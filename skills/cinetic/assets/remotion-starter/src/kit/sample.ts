@@ -2,14 +2,14 @@
 // states a product fact. They are the fallback when a film has no product UI of its own yet (a card is
 // never an empty slab or a stack of grey bars), and the shape to copy when you rebuild the real product:
 // replace every string and number with the brand's own before the film ships.
+import type { IconName } from './icons';
 
 export type Person = { initials: string; name: string };
 export type ChatLine = { text: string; side: 'in' | 'out'; kind?: 'typing' };
 export type FeedRow = { who: number; ref: string; text: string };
 export type Category = { name: string; glyph: GlyphName; budget: number; spent: number };
-export type GlyphName =
-  | 'pen' | 'code' | 'mega' | 'doc' | 'grid' | 'team' | 'image' | 'send' | 'check' | 'clock' | 'plus' | 'bolt'
-  | 'link' | 'list' | 'search' | 'star' | 'monitor' | 'speaker' | 'camera' | 'braces' | 'table' | 'globe' | 'lock' | 'play' | 'chat' | 'cart' | 'heart';
+/** A generic glyph's name (kit/icons.ts): generic actions only; a named product, source or model is its real mark (kit/logos.tsx). */
+export type GlyphName = IconName;
 
 const TEAM: Person[] = [
   { initials: 'MK', name: 'Mara K.' },
