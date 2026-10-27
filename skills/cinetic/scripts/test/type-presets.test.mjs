@@ -12,6 +12,10 @@
  *   4. The entries: crisp (words 7 f apart, each rising 0.32 em and sharpening from 8 px on E.out over 26 f, moving
  *      while it resolves; crispWords() for <Words>), calm (PACE.calm's reveal in any film), and no letter-by-letter
  *      preset on an end card.
+ *   5. The confident moves: mask (8 f linear-stop head, last word 2.5x), land (x1.7 over 34 f, defocus riding the
+ *      scale, lead + append), fly (x5 in 14 f, landing touching, spaces opening), snap and room (one declared jump
+ *      frame), glide, fall, the rebuilt open (soft first frame, transient accent, trail) and build (solid, no blur).
+ *   6. Exits at speed: slide (right-to-left drops), spread, collapse, drift never fading; the hero / soft roles.
  *
  * It runs src/fx through the starter's own tsx (npm install in assets/remotion-starter first; CINETIC_TSX may
  * name another tsx cli.mjs).
@@ -90,6 +94,26 @@ const caF = T.typeLineFrames(calm, M(calm), film(60));
 const cw30 = T.crispWords(film(30));
 const dot = { preset: 'punch', text: 'Quiet', at: 0, dot: true };
 const dotF = T.typeLineFrames(dot, M(dot), film(60));
+// the confident moves
+const mk = { preset: 'mask', text: 'All your notes sync up', at: 0 };
+const mkF = T.maskFrames(mk, film(60));
+const g0 = (s: any, f: number, i = 0) => st(f, s).glyphs[i];
+const ld = { preset: 'land', text: 'One home for everything', at: 0, lead: 2 };
+const ldF = T.landFrames(ld, film(60));
+const fl = { preset: 'fly', text: 'Plan your launch', at: 0 };
+const flF = T.flyFrames(fl, film(60));
+const sn = { preset: 'snap', text: 'Try one now', at: 0 };
+const snF = T.snapFrames(sn, film(60));
+const rm = { preset: 'room', text: 'Map the journey', at: 0 };
+const rmF = T.roomFrames(rm, film(60));
+const gl = { preset: 'glide', text: 'Send it out on any phone', at: 0 };
+const fa = { preset: 'fall', text: 'An honest health guide', at: 0 };
+const op = { preset: 'open', text: 'Your creative teams', at: 0 };
+const bd = { preset: 'build', text: 'Give it your touch', at: 0 };
+const opOn = T.openOnsets(op, film(60));
+const ex = (exit: string, f: number) => st(f, { preset: 'crisp', text: 'plans change but people stay', at: -400, out: 0, exit });
+const exF = (exit: string) => T.typeLineFrames({ preset: 'crisp', text: 'plans change but people stay', at: -400, out: 0, exit }, M({ text: 'plans change but people stay' }), film(60));
+const wordOp = (s: any) => s.glyphs.filter((g: any) => g.ch !== ' ').map((g: any) => g.opacity);
 console.log(JSON.stringify({
   build60: diffs(T.buildOnsets(build, film(60))), build30: diffs(T.buildOnsets({ ...build, at: 50 }, film(30))),
   focus30: focus(30), focus60: focus(60),
@@ -106,6 +130,23 @@ console.log(JSON.stringify({
   calm: { ticks: caF.ticks, f1: st(101, calm).glyphs[0], blurMax: Math.max(...Array.from({ length: 80 }, (_, k) => Math.max(...st(100 + k, calm).glyphs.map((g: any) => g.blur)))) },
   cw30: { dur: cw30.dur, stagger: cw30.stagger, blur: cw30.blur, rise: cw30.rise },
   end: T.END_CARD_PRESETS, endArc: T.endCardPreset('arc'), endOpen: T.endCardPreset('open'),
+  mask: { gaps: diffs(mkF.on), heads: mkF.heads, f0: g0(mk, 0), f4: g0(mk, 4), f8: g0(mk, 8), f12: g0(mk, 12), f20: g0(mk, 20), dy8: 1.05 * (1 - 0.85) },
+  land: { landed: ldF.landed, on: ldF.on, s0: st(0, ld).scale, s17: st(17, ld).scale, s34: st(34, ld).scale, b0: st(0, ld).blur * st(0, ld).scale, b34: st(34, ld).blur, w2before: g0(ld, ldF.on[2] - 1, 9).opacity, w2at: g0(ld, ldF.on[2], 9).opacity, w2solid: g0(ld, ldF.on[2] + 6, 9).opacity, k: T.TYPE_PRESETS.land },
+  fly: { on: flF.on, s0: g0(fl, 0).sx, s7: g0(fl, 7).sx, s14: g0(fl, 14).sx, s0w1: g0(fl, 10, 5).sx, b14: g0(fl, 14).blur, open: flF.open, end: flF.end, dxShut: g0(fl, flF.open - 1, 10).dx, dxOpen: g0(fl, flF.end + 1, 10).dx },
+  snap: { at: snF.at, before: st(snF.at - 1, sn).scale, at1: st(snF.at, sn).scale, last0: g0(sn, snF.at - 1, 8).opacity, lastAt: g0(sn, snF.at, 8).opacity, decl: T.declares(sn, film(60)).stepped },
+  room: { jump: rmF.jump, xs: [rmF.jump - 3, rmF.jump - 2, rmF.jump - 1, rmF.jump, rmF.jump + 1, rmF.jump + 20].map((f) => st(f, rm).x), lastBefore: g0(rm, rmF.jump - 1, 8).opacity, lastAt: g0(rm, rmF.jump, 8).opacity, decl: T.declares(rm, film(60)).stepped },
+  glide: { ons: diffs(T.glideFrames(gl, film(60)).on), x0: st(0, gl).x, x96: st(96, gl).x, w0: g0(gl, 1), w0end: g0(gl, 9) },
+  fall: { f1: g0(fa, 1), f12: g0(fa, 12), gap: diffs(T.fallFrames(fa, film(60)).on)[0] },
+  open: { on: opOn, f0: g0(op, 0), f2: g0(op, 2), f6: g0(op, 6), f30: g0(op, 30), smear: st(opOn[1] + 1, op).glyphs[0].smear[0] },
+  build: { f0: g0(bd, 0), maxBlur: Math.max(...Array.from({ length: 120 }, (_, f) => Math.max(...st(f, bd).glyphs.map((g: any) => g.blur)))) },
+  developFeather: T.TYPE_PRESETS.develop.feather,
+  exits: {
+    slide: { len: exF('slide').gone, f10: ex('slide', 10).x, f15: wordOp(ex('slide', 15)), f17: wordOp(ex('slide', 17)), f19: wordOp(ex('slide', 19)), f21: wordOp(ex('slide', 21)), gone: ex('slide', 22).visible },
+    spread: { len: exF('spread').gone, s25: ex('spread', 25).scale, last10: ex('spread', 10).glyphs.at(-1).opacity, last25: ex('spread', 25).glyphs.at(-1).opacity, first25: ex('spread', 25).glyphs[0].opacity, dxLast: ex('spread', 20).glyphs.at(-1).dx },
+    collapse: { len: exF('collapse').gone, dx9: ex('collapse', 9).glyphs.at(-1).dx, gone: ex('collapse', 10).visible },
+    drift: { op: ex('drift', 20).opacity, y: ex('drift', 29).y },
+  },
+  roles: { hero: T.HERO_PRESETS, soft: T.SOFT_PRESETS, softExits: T.SOFT_EXITS, heroTF: T.heroPreset('typeFocus'), heroMask: T.heroPreset('mask') },
   finite, repeat, fpsWorst,
   decl: { cycle: T.declares(cyc, film(60)).stepped?.length ?? 0, redact: T.declares(red, film(60)).stepped?.length ?? 0, swarm: T.declares(sw, film(60)).stepped?.[0]?.on ?? 0, dive: T.declares(dive, film(60)).seams?.[0]?.kind ?? '' },
 }));
@@ -153,6 +194,49 @@ result(C.w3before === 0 && C.w3at > 0, 'crisp: the last word waits for its own o
 result(P.calm.ticks[0] === 100 && P.calm.ticks.at(-1) === 100 + 12 * 4 && P.calm.f1.dy > 0.3 && P.calm.blurMax === 0, "calm: the calm pace's reading cadence (a 48 f span for five words), a third of the line box of rise, no blur, in a crisp film too", JSON.stringify({ ticks: P.calm.ticks, dy: +P.calm.f1.dy.toFixed(3) }));
 result(near(P.cw30.dur, 13) && near(P.cw30.stagger, 3.5) && near(P.cw30.blur, 8) && P.cw30.rise === 0.32, 'crispWords(): the same entry for <Words>, in film frames at 30 fps', JSON.stringify(P.cw30));
 result(!['arc', 'assemble', 'decode', 'typeFocus', 'erode'].some((p) => P.end.includes(p)) && P.end.includes('crisp') && P.endArc === 'crisp' && P.endOpen === 'open', 'end cards: no preset that fades in letter by letter (arc becomes crisp; open stays)', P.end.join(','));
+
+// 5. the confident moves (the house numbers in the header of src/fx/TypePresets.tsx)
+const K = P.mask;
+result(K.gaps.every((d) => near(d, 8)) && near(K.heads.at(-1), 20) && K.heads.slice(0, -1).every((h) => near(h, 8)), 'mask: words 8 f apart, an 8 f head, the last word 2.5x as long', `${K.gaps.join('/')} | ${K.heads.join('/')}`);
+result(K.f0.opacity === 0 && near(K.f0.clip, 1.02) && near(K.f0.dy, 1.05) && near(K.f8.dy, K.dy8, 1e-6) && K.f4.dy > 0.55 && K.f4.dy < 0.75 && K.f12.dy < 0.08 && K.f20.dy < 0.025,
+  'mask: under the mask on its first frame, a near-linear head (85 % of 1.05 em in 8 f) that stops dead', JSON.stringify({ f4: +K.f4.dy.toFixed(3), f8: +K.f8.dy.toFixed(4), f12: +K.f12.dy.toFixed(4) }));
+const L = P.land;
+result(near(L.s0, 1.7) && near(L.s34, 1) && L.s17 > 1.03 && L.s17 < 1.2 && near(L.b0, 0.05 * 0.7, 1e-9) && L.b34 === 0, 'land: cuts in at x1.7, lands on E.glideOut in 34 f, a slight defocus riding the scale (sharp as it lands)', JSON.stringify({ s17: +L.s17.toFixed(3), b0: +L.b0.toFixed(3) }));
+result(L.on[2] === L.landed && near(L.on[3] - L.on[2], 12) && L.w2before === 0 && near(L.w2at, 0.45) && near(L.w2solid, 1), 'land: with a lead, the other words append 12 f apart once it has landed, cut on at 45 % and solid in 6 f', JSON.stringify(L.on));
+const Y = P.fly;
+result(Y.on.join() === '0,10,20' && near(Y.s0, 5) && near(Y.s14, 1) && Y.s7 > 1 && Y.s7 < 1.3 && near(Y.s0w1, 5) && Y.b14 === 0, 'fly: every word flies in from x5 and lands in 14 f (log scale on E.snapOut), 10 f after the last', JSON.stringify({ s7: +Y.s7.toFixed(3) }));
+result(near(Y.open, 42) && near(Y.dxShut, -0.56, 1e-6) && Math.abs(Y.dxOpen) < 1e-9, 'fly: the words land touching; 8 f after the last lands the spaces open in 10 f', JSON.stringify({ shut: Y.dxShut, open: Y.dxOpen }));
+const S = P.snap;
+result(S.at === 20 && near(S.before, 1 / 2.2, 1e-9) && S.at1 === 1 && S.last0 === 0 && near(S.lastAt, 0.16) && S.decl.some((r) => r.from === 20 && r.to === 21),
+  'snap: the read words sit at 1/2.2; ONE frame (declared) takes the line to full size as the last word lands from 16 %', JSON.stringify({ at: S.at, before: +S.before.toFixed(4) }));
+const R = P.room;
+const D = R.xs[0] > 0 ? 2.24 : NaN; // 'You are' centred in a 15-letter mono line
+result(R.jump === 44 && near((R.xs[2] - R.xs[3]) / D, 0.675, 0.01) && R.xs[0] > R.xs[2] && Math.abs(R.xs[5]) < 0.01 && R.lastBefore === 0 && R.lastAt === 1 && R.decl.some((r) => r.from === 44 && r.to === 45),
+  'room: the held words creep, cover 67.5 % in ONE declared frame and settle; the last word cuts on in the room', R.xs.map((x) => x.toFixed(3)).join('/'));
+const G = P.glide;
+result(G.ons.every((d) => near(d, 3.5)) && near(G.x0, 2.4) && Math.abs(G.x96) < 1e-9 && G.w0.opacity > 0.2 && G.w0.opacity < 1 && G.w0.blur > 0 && near(G.w0end.opacity, 1) && G.w0end.blur === 0,
+  'glide: the set line slides in 2.4 em and slows into a drift; words resolve left to right 3.5 f apart, solid in 8 f', JSON.stringify({ w0: [+G.w0.opacity.toFixed(3), +G.w0.blur.toFixed(4)] }));
+const F = P.fall;
+result(F.f1.dy < 0 && F.f1.smear[1] < 0 && F.f1.opacity >= 0.4 && F.f1.opacity < 1 && F.f12.dy === 0 && F.f12.opacity === 1 && near(F.gap, 9), 'fall: each word drops into place from above in 12 f, trailing a short smear, 9 f apart', JSON.stringify({ dy1: +F.f1.dy.toFixed(3) }));
+const O = P.open;
+result(O.on.join() === '0,12,19' && near(O.f0.blur, 0.05) && near(O.f2.blur, 0.05 * 0.41, 1e-9) && O.f0.color === O.f6.color && O.f30.color !== O.f0.color && O.smear > 0,
+  'open: a new word cuts on soft (falling to 0.41 a 30 fps frame) and in the accent, holds 6 f and cools; the re-centre trails', JSON.stringify({ blur2: O.f2.blur, smear: +O.smear.toFixed(4) }));
+result(P.build.f0.opacity === 1 && P.build.maxBlur === 0, 'build: words cut on solid (a tint walking to ink), never half-faded or soft');
+result(P.developFeather <= 1.2, 'develop: the head reveals the line behind a crisp edge (1.1 em), not a long feather', String(P.developFeather));
+
+// 6. exits leave at speed
+const X = P.exits;
+const ones = (a, k) => a.slice(0, k).every((v) => v === 1);
+const zeros = (a, k) => a.slice(a.length - k).every((v) => v === 0);
+result(X.slide.len === 22 && X.slide.f10 > 0 && X.slide.f15.every((v) => v === 1) && zeros(X.slide.f17, 4) && ones(X.slide.f17, 20) && zeros(X.slide.f19, 10) && zeros(X.slide.f21, 13) && ones(X.slide.f21, 11) && X.slide.gone === false,
+  'slide: the line accelerates sideways for 22 f; its last three words drop off right to left 2 f apart; nothing fades', JSON.stringify(X.slide.f19));
+result(X.spread.len === 26 && X.spread.s25 > 1.35 && X.spread.s25 <= 1.6 && X.spread.last10 === 1 && X.spread.last25 === 0 && X.spread.first25 > 0 && X.spread.dxLast > 0,
+  'spread: the words track apart while the camera zooms toward the first one; they go right to left', JSON.stringify(X.spread));
+result(X.collapse.len === 10 && X.collapse.dx9 < 0 && X.collapse.gone === false, 'collapse: the tracking collapses toward the centre and the line is cut after 10 f', JSON.stringify(X.collapse));
+result(X.drift.op === 1 && X.drift.y < 0, 'drift: carried up and away at speed, never faded', JSON.stringify(X.drift));
+const RL = P.roles;
+result(['crisp', 'mask', 'land', 'snap', 'room'].every((p) => RL.hero.includes(p)) && RL.soft.join() === 'typeFocus' && RL.softExits.join() === 'blur' && RL.heroTF === 'crisp' && RL.heroMask === 'mask',
+  'roles: confident presets for hero lines; the soft ones (typeFocus, the blur exit) never take one', JSON.stringify(RL));
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
 console.log('\nall pass');

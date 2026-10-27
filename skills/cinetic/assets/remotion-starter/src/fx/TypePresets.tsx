@@ -7,6 +7,8 @@ import { PACE } from '../lib/pace';
 import type { Declares, Seam, SteppedRange } from '../timeline';
 import { ECHO_COPIES, echoCopiesState } from './Echoes';
 import { arcOffset, letterState } from './Letters';
+import { LINESNAP_HOUSE, makeRoomState, scaleSnapState } from './LineSnap';
+import { maskProgress } from './MaskRise';
 import { decodeState, mosaicCells } from './Scramble';
 import { slicesState } from './Slices';
 import { erodeRiseState, fontCycleState, type FontState } from './TypeFx';
@@ -14,7 +16,7 @@ import { typeFillState } from './TypeFill';
 import { wordFrames, type WordsSpec, wordState } from './Words';
 
 /**
- * Type presets: two entries and sixteen line animations. A launch film says its story in short
+ * Type presets: two entries and twenty-three line animations. A launch film says its story in short
  * sentences, one clean line on screen at a time, and every line arrives its own way. Each preset is a
  * pure state function of the frame for ONE line (`typeLineState`), tuned to the house timing for
  * strong type moves (frames at 60 fps below, converted with the film's rate; `pace`
@@ -28,15 +30,49 @@ import { wordFrames, type WordsSpec, wordState } from './Words';
  *   calm       a body line: the canonical reveal at the calm pace whatever the film's pace (32 f on E.snapOut, a
  *              third of the line box of rise over 25 f on M.rise, 12 f apart on the reading cadence, no blur: calmWords())
  * An end card never fades in letter by letter: END_CARD_PRESETS leaves out the letter-unit presets (TYPE_PRESET_UNIT).
+ * A hero line takes a confident preset (HERO_PRESETS: every word is solid ink within a few frames and moves while it
+ * lands); the soft ones (SOFT_PRESETS: a line that reads blurred or half-faded for a long stretch) never take a hero
+ * line: heroPreset(p) turns them into crisp.
  *
- *   develop   colour fronts run through the line: a pale head that reveals it (22 f), a tint (40 f), the
- *              accent (64 f), then the ink (130 f), which stalls at 85 % of the line and catches up last,
- *              so the last word stays in colour longest (TypeFill develop under the hood)
- *   build      the line builds word by word, 14 / 10 / 10 f apart and a 28 f breath before the last word;
- *              each word arrives at 35 % opacity, blurred and in the accent, sharpens over 24 f and
- *              darkens to ink over 26 f while the whole line re-centres (E.settleOut, 24 f)
- *   typeFocus  a big line types on an eased typewriter (30 characters a second, E.type) while it is out
- *              of focus; at 45 % of the typing the focus pulls in (blur x0.65 per frame at 30 fps); the
+ * The confident moves, at the house numbers (60 fps frames):
+ *   mask       each word rises out of a mask on its baseline: a near-linear head that covers 85 % of 1.05 em in 8 f
+ *              and stops dead, darkening from the mute to the ink as it rises; words 8 f apart, the last word 2.5x
+ *              slower (MaskRise's linear stop): no fade and no blur, the mask does the reveal
+ *   land       the line cuts in oversized (house x1.7; x1.3-2.4 in use) and lands on E.glideOut over 34 f, never
+ *              below its size, crisp: a slight defocus rides the scale (0.05 em per unit of scale over 1, sharp as it
+ *              lands); given an accent (`colors.accent`) it lands in it and cools to ink 12 f before the scale; with
+ *              `lead` only the first words land, the rest append 12 f apart, each cut on at 45 % (solid in 6 f; in the
+ *              accent, cooling 13 f after a 6 f hold) while the line re-centres (E.glideOut, 24 f)
+ *   fly        every word flies in from the camera: it shows at x5 and soft (0.3 em at that size, the defocus riding
+ *              the scale), lands in log scale on E.snapOut in 14 f, 10 f after the last, touching the word before;
+ *              8 f after the last lands the spaces open (10 f) and the accent cools to ink left to right, 7 f apart;
+ *              then the line recedes 0.15 % a frame (6 % at most)
+ *   snap       the words read small (1 / 2.2 of their size, 6 f apart, each solid within 4 f) and, 14 f after the
+ *              second last, the last word lands with ONE frame of x2.2 on the whole line: the read words settle
+ *              31 px@1080 on E.glideOut, a 3.1 px defocus clears in 7/30 s and the new word fades from 16 % with an
+ *              11 px rise (LineSnap scale snap; the jump frame is declared)
+ *   room       the held words sit centred; 36 f after the second last the held words creep (17 % of the way,
+ *              speeding up 28x), cover 67.5 % in ONE frame and settle on a 0.24 s tail, and the last word cuts on
+ *              in the room it made, settling up 0.07 em in 8 f (LineSnap make room; the jump frame is declared)
+ *   glide      the set line arrives whole and already moving, sliding 2.4 em from the right on an expo-out (k 3.3,
+ *              96 f: it keeps x0.966 of its speed a frame, so it slows into a drift); laid out at 20 % behind a
+ *              0.07 em blur, its words resolve left to right, 3.5 f apart, to solid in 8 f; the last word takes 2.5x
+ *              as long and closes a 0.3 em gap
+ *   fall       each word drops 0.28 em into place from above on E.snapOut in 12 f, from 40 % and the mute to the
+ *              ink, trailing a short vertical smear, 9 f apart; the last word lands in the accent and cools over 30 f
+ *   open       each word cuts on soft and in the accent, touching the last (a 0.05 em defocus that falls to 0.41 of
+ *              itself a frame at 30 fps), then the space opens in 7 f and the line re-centres on E.jump with a
+ *              motion trail on its fast frames; the accent holds 6 f and cools to ink over 13 f; 12 / 7 / 12 f apart
+ *   build      the line builds word by word, 14 / 10 / 10 f apart and a 28 f breath before the last word; each
+ *              word cuts on solid in a tint of the accent, walks to the accent (45 % of 18 f) and darkens to the
+ *              ink while the line re-centres on E.jump over 22 f
+ *
+ * The devices:
+ *   develop   colour fronts run through the line: the tint reveals it behind a crisp 1.1 em edge (22 f), then the
+ *              accent (64 f) and the ink (130 f), which stalls at 85 % of the line and catches up last, so the last
+ *              word stays in colour longest (TypeFill develop under the hood)
+ *   typeFocus  (soft) a big line types on an eased typewriter (30 characters a second, E.type) a little out of
+ *              focus (0.12 em); at 25 % of the typing the focus pulls in (blur x0.65 per frame at 30 fps); the
  *              keyword turns accent once typed and the camera creeps in 4 %
  *   arc        every letter swings down into its slot on a short arc: shown at 0.45x, turned 25 deg and
  *              soft, landing on M.letterArc (4 % over) in 10 f, 2 f apart (Letters arc)
@@ -59,8 +95,6 @@ import { wordFrames, type WordsSpec, wordState } from './Words';
  *   echo       copies of the line slide out from behind it on knockout boxes, ring by ring (2.4, 7.2 and
  *              9.6 f after the first; 27 f each), so nearer copies hide farther ones; the stack then
  *              contracts 5 % over 48 f (Echoes echo copies)
- *   open       each word cuts on with no word space, then the space opens in 7 f and the line re-centres
- *              on E.jump (most of the move on the first frame); words 12 / 7 / 12 / 12 f apart
  *   highlight  the line rises in grey; a soft accent block lands on the first word, hops word to word
  *              every 8 f (the words it passed turn ink), parks on the keyword for 24 f and wipes off from
  *              its left edge in 12 f, leaving the keyword in the accent
@@ -71,18 +105,24 @@ import { wordFrames, type WordsSpec, wordState } from './Words';
  *   swarm      every word grows out of depth (0.29x -> 1, stepped on twos, 16 f) along a wandering path,
  *              leaving fading stamps, jitters for 8 f and locks
  *
- * Exits (`exit` at `out`): cut; blur (defocus to 0.35 em and fade, 18 f); drop (words fall right to
- * left, 4 f apart, E.buildIn 14 f); drift (dead still, then away on E.launchIn, 30 f); push (the line
- * moves up a line and a quarter on E.liftOut over 28 f and dims to 36 % on its first frame); split (strips
- * spread apart, 43 f); swarm (words shrink into depth on twos, 12 f, leaving stamps); dive (the camera
- * zooms through one glyph at a constant log rate, x8.2 in 14 f, and the glyph's ink fills the frame: the
- * line becomes the next shot's ground). `dot` adds a square full stop in the accent that lands 5 f after
- * the line and grows from 82 % in 13 f.
+ * Exits (`exit` at `out`) leave at speed and are cut on their fastest frame; none of them fades a statement out:
+ *   cut; slide (the line accelerates sideways on E.buildIn, 1.5 em in 22 f, and its last three words drop off
+ *   right to left 2 f apart before the cut); spread (the words track apart on E.launchIn, 0.5 em per word of the line
+ *   further out, while the camera zooms x1.6 toward the first word and the words go right to left, 26 f); collapse
+ *   (the tracking collapses toward the line's centre on E.buildIn, 12 % of each glyph's distance, trailing toward the
+ *   edges, cut after 10 f); drop (words fall right to left, 4 f apart, E.buildIn 14 f); drift
+ *   (dead still, then up and away on E.launchIn, 0.5 em in 30 f, smeared, never faded); push (the line moves up a line
+ *   and a quarter on E.liftOut over 28 f and dims to 36 % on its first frame); split (strips spread apart, 43 f);
+ *   swarm (words shrink into depth on twos, 12 f, leaving stamps); dive (the camera zooms through one glyph at a
+ *   constant log rate, x8.2 in 14 f, and the glyph's ink fills the frame: the line becomes the next shot's ground);
+ *   blur (soft: defocus to 0.35 em and fade, 18 f, for a small secondary line only). `dot` adds a square full stop in
+ *   the accent that lands 5 f after the line and grows from 82 % in 13 f.
  *
  * Offsets, blurs and sizes in the state are em of the type size; positions come from `LineMetrics`
  * (the renderer measures the real font; tests pass monoMetrics()). Pure and Node-safe except
  * <TypeLine> and measureLine() (call those under <FontGate>). declares(): the font cycle, the redaction
- * hops, the swarm's twos and the decode's blocks are stepped runs; a dive exit is a zoom-through seam.
+ * hops, the swarm's twos and the decode's blocks are stepped runs; the snap's and the make-room's jump frames are
+ * one-frame steps; a dive exit is a zoom-through seam.
  */
 
 // ------------------------------------------------------------------------------------------------ house numbers
@@ -91,9 +131,16 @@ import { wordFrames, type WordsSpec, wordState } from './Words';
 export const TYPE_PRESETS = {
   crisp: { dur60: 26, gap60: 7, riseEm: 0.32, blurPx: 8 }, // the hero entry (blurPx at 1080p, scaled with the frame)
   calm: { pace: 'calm' as const }, // the body entry: PACE.calm's canonical reveal (lib/pace.ts)
-  develop: { head60: 22, fronts60: [40, 64, 130], stall: 0.85, feather: 2.6, edge: 0.45 },
-  build: { gaps60: [14, 10, 10], lastGap60: 28, from: 0.35, appear60: 12, blur60: 24, blurEm: 0.16, ink60: 26, recentre60: 24 },
-  typeFocus: { cps: 30, blurEm: 0.3, decay30: 0.65, focusAt: 0.45, accent60: 10, push: 0.04, push60: 150, blink60: 32 },
+  mask: { stagger60: 8, head60: 8, last: 2.5, travel: 1.05, clip: 1.02, inkOfHead: 1.14, inkPower: 1.5 },
+  land: { from: 1.7, settle60: 34, blurPerScale: 0.05, coolEarly60: 12, gap60: 12, appearFrom: 0.45, appear60: 6, hold60: 6, cool60: 13, recentre60: 24 },
+  fly: { gap60: 10, land60: 14, from: 5, blurEm: 0.3, openLate60: 8, open60: 10, coolStep60: 7, cool60: 13, recede: 0.0015, recedeMax: 0.06 },
+  snap: { gap60: 6, hold60: 14, appear60: 4, appearFrom: 0.45, recentre60: 22 },
+  room: { gap60: 8, hold60: 36, settle60: 8, settleEm: 0.07, recentre60: 22 },
+  glide: { step60: 3.5, resolve60: 8, from: 0.2, blurEm: 0.07, last: 2.5, gapEm: 0.3, slideEm: 2.4, slide60: 96, slideK: 3.3 },
+  fall: { gap60: 9, drop60: 12, dropEm: 0.28, from: 0.4, smear: 0.12, linger60: 30 },
+  develop: { head60: 22, fronts60: [40, 64, 130], stall: 0.85, feather: 1.1, edge: 0.45 },
+  build: { gaps60: [14, 10, 10], lastGap60: 28, ink60: 18, tintShare: 0.45, recentre60: 22 },
+  typeFocus: { cps: 30, blurEm: 0.12, decay30: 0.65, focusAt: 0.25, accent60: 10, push: 0.04, push60: 150, blink60: 32 },
   arc: { stagger60: 2, dur60: 10, from: 0.45, angle: 25, blurEm: 0.06 },
   assemble: { delay60: 20, land60: 16, dyEm: [0.45, 1.3] as [number, number], dxEm: 0.12, push: 0.06, push60: 150 },
   decode: { perGlyph60: 3, bloom60: 16, dashes: 18, dash60: 22 },
@@ -102,12 +149,12 @@ export const TYPE_PRESETS = {
   cycle: { every60: 6, scaleFrom: 0.86, word60: 12 },
   punch: { push: 0.24, push60: 28, creep: 0.03, creep60: 120, blurEm: 0.08, focus60: 6 },
   echo: { lead60: 12, lags60: ECHO_COPIES.lags60, out60: ECHO_COPIES.out60, contract: 0.05, contract60: 48, ox: 0.62, oy: 0.82, pad: 0.05 },
-  open: { gaps60: [12, 7, 12, 12, 12], open60: 7, recentre60: 22 },
+  open: { gaps60: [12, 7, 12, 12, 12], open60: 7, recentre60: 22, focusEm: 0.05, focusDecay30: 0.41, hold60: 6, cool60: 13, trail: 0.5 },
   highlight: { stagger60: 4, word60: 20, rise: 0.14, start60: 24, step60: 8, hop60: 6, grow60: 6, park60: 24, wipe60: 12, feather: 0.08, pad: 0.1, h: 0.98 },
   slice: { n: 9, frames60: 43, spread: 0.55 },
   redact: { per60: 2, pad: 0.1, h: 0.92 },
   swarm: { spread60: 6, grow60: 16, from: 0.29, wander: 1.4, stamps: 3, jitter60: 8, jitterEm: 0.035 },
-  exit: { blur60: 18, blurEm: 0.35, drop60: 14, dropStagger60: 4, dropEm: 0.6, drift60: 30, driftEm: 0.5, push60: 28, pushEm: 1.25, pushDim: 0.36, split60: 43, splitSpread: 0.5, swarm60: 12, swarmTo: 0.24, dive60: 14, diveScale: 8.2, cover60: 4 },
+  exit: { blur60: 18, blurEm: 0.35, drop60: 14, dropStagger60: 4, dropEm: 0.6, drift60: 30, driftEm: 0.5, push60: 28, pushEm: 1.25, pushDim: 0.36, split60: 43, splitSpread: 0.5, swarm60: 12, swarmTo: 0.24, dive60: 14, diveScale: 8.2, cover60: 4, slide60: 22, slideEm: 1.5, slideDrop60: 2, slideDrops: 3, spread60: 26, spreadEm: 0.5, spreadZoom: 1.6, spreadFade60: 8, collapse60: 10, collapse: 0.12 },
   dot: { late60: 5, grow60: 13, from: 0.82, size: 0.2 },
 } as const;
 
@@ -124,20 +171,33 @@ export const CYCLE_STATES: Vary[] = [
 
 export type TypePresetName =
   | 'crisp' | 'calm'
+  | 'mask' | 'land' | 'fly' | 'snap' | 'room' | 'glide' | 'fall'
   | 'develop' | 'build' | 'typeFocus' | 'arc' | 'assemble' | 'decode' | 'wheel' | 'erode'
   | 'cycle' | 'punch' | 'echo' | 'open' | 'highlight' | 'slice' | 'redact' | 'swarm';
-export type TypeExit = 'cut' | 'blur' | 'drop' | 'drift' | 'push' | 'split' | 'swarm' | 'dive';
-export const TYPE_PRESET_NAMES: TypePresetName[] = ['crisp', 'calm', 'develop', 'build', 'typeFocus', 'arc', 'assemble', 'decode', 'wheel', 'erode', 'cycle', 'punch', 'echo', 'open', 'highlight', 'slice', 'redact', 'swarm'];
-export const TYPE_EXITS: TypeExit[] = ['cut', 'blur', 'drop', 'drift', 'push', 'split', 'swarm', 'dive'];
+export type TypeExit = 'cut' | 'slide' | 'spread' | 'collapse' | 'drop' | 'drift' | 'push' | 'split' | 'swarm' | 'dive' | 'blur';
+export const TYPE_PRESET_NAMES: TypePresetName[] = ['crisp', 'calm', 'mask', 'land', 'fly', 'snap', 'room', 'glide', 'fall', 'open', 'build', 'punch', 'develop', 'typeFocus', 'arc', 'assemble', 'decode', 'wheel', 'erode', 'cycle', 'echo', 'highlight', 'slice', 'redact', 'swarm'];
+export const TYPE_EXITS: TypeExit[] = ['cut', 'slide', 'spread', 'collapse', 'drop', 'drift', 'push', 'split', 'swarm', 'dive', 'blur'];
 /** What each preset moves: a letter at a time, a word at a time, or the line as one. */
 export const TYPE_PRESET_UNIT: Record<TypePresetName, 'letter' | 'word' | 'line'> = {
-  crisp: 'word', calm: 'word', develop: 'line', build: 'word', typeFocus: 'letter', arc: 'letter', assemble: 'letter', decode: 'letter',
+  crisp: 'word', calm: 'word', mask: 'word', land: 'line', fly: 'word', snap: 'word', room: 'word', glide: 'word', fall: 'word',
+  develop: 'line', build: 'word', typeFocus: 'letter', arc: 'letter', assemble: 'letter', decode: 'letter',
   wheel: 'word', erode: 'letter', cycle: 'word', punch: 'line', echo: 'line', open: 'word', highlight: 'word', slice: 'line', redact: 'word', swarm: 'word',
 };
 /** Presets an end card's name or tagline may arrive with: never letter by letter (the name is read whole, once). */
 export const END_CARD_PRESETS: TypePresetName[] = TYPE_PRESET_NAMES.filter((p) => TYPE_PRESET_UNIT[p] !== 'letter');
 /** The preset an end-card line takes: `p` when it moves words or the whole line, else the crisp entry. */
 export const endCardPreset = (p: TypePresetName): TypePresetName => (TYPE_PRESET_UNIT[p] === 'letter' ? 'crisp' : p);
+/**
+ * The confident presets a hero line (the hook, the claim, the promise) takes: every word is solid ink within a few
+ * frames and moves while it lands. crisp stays the hero default when no device is the idea.
+ */
+export const HERO_PRESETS: TypePresetName[] = ['crisp', 'mask', 'land', 'fly', 'snap', 'room', 'glide', 'fall', 'open', 'build', 'punch'];
+/** Presets that read blurred or half-faded for a long stretch: a body line or a product moment at most, never a hero line. */
+export const SOFT_PRESETS: TypePresetName[] = ['typeFocus'];
+/** Exits that fade a line instead of carrying it out at speed: a small secondary line only. */
+export const SOFT_EXITS: TypeExit[] = ['blur'];
+/** The preset a hero line takes: `p` unless it is a soft one, then the crisp entry. */
+export const heroPreset = (p: TypePresetName): TypePresetName => (SOFT_PRESETS.includes(p) ? 'crisp' : p);
 
 /** Variable-font axes of a glyph or a word. */
 export type Vary = { wght?: number; wdth?: number };
@@ -159,6 +219,8 @@ export type TypeLineSpec = {
   anchor?: number; // dive: the glyph the camera dives through (default the keyword's middle glyph)
   diveTo?: number; // dive: the total zoom (default the house x8.2); the length follows the house rate, x8.2 in 14 f
   anchorAt?: [number, number]; // dive: the point inside that glyph, as a share of its advance and em from the line's centre (down +); aim at ink (a stem, a crossbar) so the zoom lands on solid colour (default [0.32, 0.08])
+  lead?: number; // land: how many words land oversized together (default all); the others append after the landing
+  scaleFrom?: number; // land: the scale the line cuts in at (default the house x1.7); fly: the scale each word starts at (default x5)
   seed?: string | number;
   id?: string;
 };
@@ -187,6 +249,7 @@ export type GlyphState = {
   vary?: Vary;
   mosaic?: number; // 0..1: drawn as accent blocks (decode front)
   glow?: number; // 0..1: the decode bloom
+  clip?: number; // em from the top of the glyph's box at rest: a mask edge fixed in the line; ink below it is hidden (mask)
 };
 export type SlotItem = { text: string; x: number; y: number; opacity: number; blur: number; smear: [number, number]; color: string; vary?: Vary; scale?: number };
 /** The keyword drawn as its own items (wheel, erode, cycle): the rest of the line re-flows around `width` (px). */
@@ -398,7 +461,7 @@ const entry = (c: Ctx): TypeLineState => {
 const develop = (c: Ctx): TypeLineState => {
   const D = TYPE_PRESETS.develop;
   const st = blank(c, c.col.ink);
-  const pale = mixColor(c.col.tint, c.col.ground, 0.35);
+  const pale = c.col.tint; // the head reveals the line in the tint at full strength behind a crisp edge: never a pale, half-faded run
   const fronts = [
     { color: pale, dur: D.head60 * (c.s.pace ?? 1), ease: E.linear },
     { color: c.col.tint, dur: D.fronts60[0] * (c.s.pace ?? 1) },
@@ -426,6 +489,12 @@ const develop = (c: Ctx): TypeLineState => {
   return st;
 };
 
+/** A word's colour on the build path at `k` (0..1 of its 18 f): the tint walks to the accent, then darkens to the ink. */
+const buildColor = (c: Ctx, k: number, to = c.col.ink) => {
+  const B = TYPE_PRESETS.build;
+  return k < B.tintShare ? mixColor(c.col.tint, c.col.accent, smoothstep(k / B.tintShare)) : mixColor(c.col.accent, to, clamp((k - B.tintShare) / (1 - B.tintShare)));
+};
+
 const build = (c: Ctx): TypeLineState => {
   const B = TYPE_PRESETS.build;
   const st = blank(c, c.col.ink);
@@ -435,13 +504,11 @@ const build = (c: Ctx): TypeLineState => {
     const w = c.W.wordOf[i];
     if (w < 0) return;
     const o = on[w];
-    const a = prog(c.f, o, o + c.T(B.appear60), E.snapOut);
-    g.opacity = c.f >= o ? B.from + (1 - B.from) * a : 0;
-    g.blur = B.blurEm * (1 - prog(c.f, o, o + c.T(B.blur60), E.softOut));
-    const ink = prog(c.f, o, o + c.T(B.ink60), E.stdInOut);
-    g.color = keepKey && w === c.key ? c.col.accent : mixColor(c.col.accent, c.col.ink, ink);
+    g.opacity = c.f >= o ? 1 : 0; // cut on solid: the colour marks the new word, never a half-faded one
+    const k = clamp((c.f - o) / c.T(B.ink60));
+    g.color = buildColor(c, k, keepKey && w === c.key ? c.col.accent : c.col.ink);
   });
-  st.x = recentre(c, on, c.T(B.recentre60), E.settleOut);
+  st.x = recentre(c, on, c.T(B.recentre60), E.jump);
   return st;
 };
 
@@ -730,6 +797,9 @@ const open = (c: Ctx): TypeLineState => {
   const on = openOnsets(c.s, c.film);
   const space = c.m.space / c.m.size;
   const k = on.map((o, w) => (w === 0 ? 1 : expOut(6)(clamp((c.f - o) / c.T(O.open60)))));
+  st.x = recentre(c, on, c.T(O.recentre60), E.jump);
+  // the line's fast frames trail behind it (a shutter's smear, half the frame's travel)
+  const v = st.x - recentre({ ...c, f: c.f - 1 }, on, c.T(O.recentre60), E.jump);
   st.glyphs.forEach((g, i) => {
     const w = c.W.wordOf[i];
     if (w < 0) return;
@@ -737,9 +807,14 @@ const open = (c: Ctx): TypeLineState => {
     let closed = 0;
     for (let j = 1; j <= w; j++) closed += 1 - k[j];
     g.dx = -space * closed;
-    if (c.s.key !== undefined && w === c.key) g.color = c.col.accent;
+    // the new word cuts on soft and sharpens in about three frames at 30 fps (the defocus falls to 0.41 a frame)
+    const age = c.f - on[w];
+    if (age >= 0) g.blur = O.focusEm * O.focusDecay30 ** ((age * 30) / c.fps);
+    if (Math.abs(v) > 0.004) g.smear = [-v * O.trail, 0];
+    // the transient accent: the newest word lands in the accent, holds 6 f and cools to the ink over 13 f
+    const keep = c.s.key !== undefined && w === c.key;
+    g.color = keep ? c.col.accent : mixColor(c.col.accent, c.col.ink, prog(c.f, on[w] + c.T(O.hold60), on[w] + c.T(O.hold60 + O.cool60), E.softOut));
   });
-  st.x = recentre(c, on, c.T(O.recentre60), E.jump);
   return st;
 };
 
@@ -900,7 +975,264 @@ const swarm = (c: Ctx): TypeLineState => {
   return st;
 };
 
-const PRESETS: Record<TypePresetName, (c: Ctx) => TypeLineState> = { crisp: entry, calm: entry, develop, build, typeFocus, arc, assemble, decode, wheel, erode, cycle, punch, echo, open, highlight, slice, redact, swarm };
+// ------------------------------------------------------------------------------------------------ the confident moves
+
+const T60 = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
+  const fps = fpsOf(film);
+  return (v: number) => f60x(v * (s.pace ?? 1), fps);
+};
+
+/** `mask`: each word's onset and head (8 f apart at 60 fps, the last head 2.5x as long), and the line's end. */
+export const maskFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
+  const K = TYPE_PRESETS.mask;
+  const T = T60(s, film);
+  const n = wordMap(s.text).n;
+  const on = Array.from({ length: n }, (_, w) => s.at + T(K.stagger60) * w);
+  const heads = on.map((_, w) => T(K.head60) * (w === n - 1 && n > 1 ? K.last : 1));
+  return { on, heads, end: n ? on[n - 1] + heads[n - 1] : s.at };
+};
+
+const mask = (c: Ctx): TypeLineState => {
+  const K = TYPE_PRESETS.mask;
+  const st = blank(c, c.col.ink);
+  const mf = maskFrames(c.s, c.film);
+  st.glyphs.forEach((g, i) => {
+    const w = c.W.wordOf[i];
+    if (w < 0) return;
+    const o = mf.on[w];
+    const p = maskProgress(c.f, { start: o, dur: mf.heads[w] }, 'linearStop', E.out, 0.94, c.fps);
+    g.dy = K.travel * (1 - p);
+    g.clip = K.clip;
+    g.opacity = c.f > o ? 1 : 0;
+    const ink = clamp((c.f - o) / (mf.heads[w] * K.inkOfHead)) ** K.inkPower;
+    g.color = mixColor(c.col.mute, c.s.key !== undefined && w === c.key ? c.col.accent : c.col.ink, ink);
+  });
+  return st;
+};
+
+/** `land`: the lead group's landing (34 f), each appended word's onset (12 f apart once the lead has landed), the end. */
+export const landFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
+  const L = TYPE_PRESETS.land;
+  const T = T60(s, film);
+  const n = wordMap(s.text).n;
+  const lead = clamp(Math.round(s.lead ?? n), 1, Math.max(1, n));
+  const landed = s.at + T(L.settle60);
+  const on = Array.from({ length: n }, (_, w) => (w < lead ? s.at : landed + T(L.gap60) * (w - lead)));
+  return { lead, on, landed, end: n > lead ? Math.max(landed, on[n - 1] + T(L.recentre60)) : landed };
+};
+
+const land = (c: Ctx): TypeLineState => {
+  const L = TYPE_PRESETS.land;
+  const st = blank(c, c.col.ink);
+  const lf = landFrames(c.s, c.film);
+  const from = Math.max(1, c.s.scaleFrom ?? L.from);
+  const s = from + (1 - from) * prog(c.f, c.s.at, lf.landed, E.glideOut);
+  st.scale = s;
+  st.blur = (L.blurPerScale * (s - 1)) / s; // the defocus rides the scale (on screen); the group's filter is drawn before its scale
+  st.x = centreShift(c, lf.lead - 1);
+  for (let w = lf.lead; w < c.W.n; w++) st.x += (centreShift(c, w) - centreShift(c, w - 1)) * prog(c.f, lf.on[w], lf.on[w] + c.T(L.recentre60), E.glideOut);
+  st.origin = [((c.m.xs[0] ?? 0) + right(c.m, c.W.ends[lf.lead - 1]) - c.m.width) / 2 / c.m.size, 0]; // the lead's centre stays put
+  // the colour cools from the accent only when the line names one (like an oversized landing): else it lands in ink
+  const hot = c.s.colors?.accent !== undefined ? c.col.accent : c.col.ink;
+  const cool = prog(c.f, c.s.at, lf.landed - c.T(L.coolEarly60), E.glideOut);
+  st.glyphs.forEach((g, i) => {
+    const w = c.W.wordOf[i];
+    if (w < 0) return;
+    const keep = c.s.key !== undefined && w === c.key;
+    if (w < lf.lead) {
+      g.color = keep ? c.col.accent : mixColor(hot, c.col.ink, cool);
+      return;
+    }
+    const o = lf.on[w];
+    g.opacity = c.f < o ? 0 : L.appearFrom + (1 - L.appearFrom) * prog(c.f, o, o + c.T(L.appear60), E.snapOut);
+    g.color = keep ? c.col.accent : mixColor(hot, c.col.ink, prog(c.f, o + c.T(L.hold60), o + c.T(L.hold60 + L.cool60), E.softOut));
+  });
+  return st;
+};
+
+/** `fly`: each word's onset (10 f apart) and landing (14 f), when the spaces open (8 f after the last lands) and the end. */
+export const flyFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
+  const Y = TYPE_PRESETS.fly;
+  const T = T60(s, film);
+  const n = wordMap(s.text).n;
+  const on = Array.from({ length: n }, (_, w) => s.at + T(Y.gap60) * w);
+  const landed = on.map((o) => o + T(Y.land60));
+  const open = (landed[n - 1] ?? s.at) + T(Y.openLate60);
+  return { on, landed, open, end: open + T(Y.open60) };
+};
+
+const fly = (c: Ctx): TypeLineState => {
+  const Y = TYPE_PRESETS.fly;
+  const st = blank(c, c.col.ink);
+  const ff = flyFrames(c.s, c.film);
+  const from = Math.max(1.01, c.s.scaleFrom ?? Y.from);
+  const n = c.W.n;
+  const shut = (1 - prog(c.f, ff.open, ff.end, E.glideOut)) * (c.m.space / c.m.size); // em each word space is still closed
+  st.glyphs.forEach((g, i) => {
+    const w = c.W.wordOf[i];
+    if (w < 0) return;
+    const o = ff.on[w];
+    if (c.f < o) {
+      g.opacity = 0;
+      return;
+    }
+    const s = Math.exp(Math.log(from) * (1 - E.snapOut(clamp((c.f - o) / c.T(Y.land60))))); // log scale: one speed toward the lens
+    const closed = -shut * (w - (n - 1) / 2); // the words land touching, the line still centred
+    const gx = (c.m.xs[i] + c.m.ws[i] / 2 - c.m.width / 2) / c.m.size + closed; // the glyph's centre, em from the line's centre
+    g.dx = closed + gx * (s - 1); // scaled about the frame's centre, as a camera would
+    g.dy = 0.28 * (s - 1); // keeps the glyph's middle on the line's centre (it scales about 78 % of its box)
+    g.sx = s;
+    g.sy = s;
+    g.blur = (Y.blurEm * (s - 1)) / (from - 1) / s;
+    const coolAt = ff.open + c.T(Y.coolStep60) * w;
+    g.color = c.s.key !== undefined && w === c.key ? c.col.accent : mixColor(c.col.accent, c.col.ink, prog(c.f, coolAt, coolAt + c.T(Y.cool60), E.softOut));
+  });
+  if (c.f > ff.end) st.scale = 1 - Math.min(Y.recedeMax, (c.f - ff.end) * (60 / c.fps) * Y.recede); // the line recedes
+  return st;
+};
+
+/** `snap`: the read words' onsets (6 f apart), the jump frame (14 f after the second last; a whole frame) and the end. */
+export const snapFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
+  const S = TYPE_PRESETS.snap;
+  const H = LINESNAP_HOUSE.snap;
+  const fps = fpsOf(film);
+  const T = T60(s, film);
+  const n = wordMap(s.text).n;
+  const on = Array.from({ length: n }, (_, w) => s.at + T(S.gap60) * w);
+  const at = n > 1 ? Math.ceil(on[n - 2] + T(S.hold60) - 1e-6) : Math.ceil(s.at - 1e-6);
+  if (n) on[n - 1] = at;
+  return { on, at, end: at + Math.ceil(Math.max(H.sigmaS, H.settleS, H.wordFadeS) * fps) };
+};
+
+const snap = (c: Ctx): TypeLineState => {
+  const S = TYPE_PRESETS.snap;
+  const H = LINESNAP_HOUSE.snap;
+  const st = blank(c, c.col.ink);
+  const sf = snapFrames(c.s, c.film);
+  const n = c.W.n;
+  const ss = scaleSnapState(c.f, { at: sf.at }, c.film);
+  const em = uOf(c.film) / c.m.size; // em per px at 1080p
+  const small = 1 / H.factor;
+  st.scale = ss.snapped ? 1 : small;
+  if (!ss.snapped && n > 1) st.x = small * recentre(c, sf.on.slice(0, n - 1), c.T(S.recentre60), E.jump); // centre the read words while small
+  if (ss.snapped) st.blur = ss.sigma * em;
+  st.glyphs.forEach((g, i) => {
+    const w = c.W.wordOf[i];
+    if (w < 0) return;
+    const keep = c.s.key !== undefined && w === c.key;
+    if (w === n - 1) {
+      g.opacity = ss.snapped ? ss.wordOpacity : 0;
+      g.dy = ss.snapped ? ss.wordY * em : 0;
+      if (keep) g.color = c.col.accent;
+      return;
+    }
+    const o = sf.on[w];
+    g.opacity = c.f < o ? 0 : S.appearFrom + (1 - S.appearFrom) * prog(c.f, o, o + c.T(S.appear60), E.snapOut);
+    if (ss.snapped) g.dx = ss.settleX * em; // the read words land beside the new one
+    if (keep) g.color = c.col.accent;
+  });
+  return st;
+};
+
+/** `room`: the held words' onsets (8 f apart), the jump frame (36 f after the second last), the creep's first frame, the end. */
+export const roomFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
+  const R = TYPE_PRESETS.room;
+  const T = T60(s, film);
+  const n = wordMap(s.text).n;
+  const on = Array.from({ length: n }, (_, w) => s.at + T(R.gap60) * w);
+  const jump = n > 1 ? Math.ceil(on[n - 2] + T(R.hold60) - 1e-6) : Math.ceil(s.at - 1e-6);
+  if (n) on[n - 1] = jump;
+  const probe = makeRoomState(0, { start: 0, distance: 1000 }, film);
+  const start = jump - probe.jumpFrame;
+  return { on, jump, start, end: Math.max(start + probe.end, jump + T(R.settle60)) };
+};
+
+const room = (c: Ctx): TypeLineState => {
+  const R = TYPE_PRESETS.room;
+  const st = blank(c, c.col.ink);
+  const rf = roomFrames(c.s, c.film);
+  const n = c.W.n;
+  if (n > 1) {
+    const held = recentre(c, rf.on.slice(0, n - 1), c.T(R.recentre60), E.jump);
+    const mr = makeRoomState(c.f, { start: rf.start, distance: -centreShift(c, n - 2) * 1000 }, c.film); // creep, ONE frame, a tail
+    st.x = held + mr.x / 1000;
+  }
+  st.glyphs.forEach((g, i) => {
+    const w = c.W.wordOf[i];
+    if (w < 0) return;
+    const o = rf.on[w];
+    g.opacity = c.f >= o ? 1 : 0;
+    g.dy = R.settleEm * (1 - prog(c.f, o, o + c.T(R.settle60), E.snapOut));
+    if (c.s.key !== undefined && w === c.key) g.color = c.col.accent;
+  });
+  return st;
+};
+
+/** `glide`: each word's onset (3.5 f apart) and resolve (8 f, the last 2.5x), and the end. */
+export const glideFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
+  const G = TYPE_PRESETS.glide;
+  const T = T60(s, film);
+  const n = wordMap(s.text).n;
+  const on = Array.from({ length: n }, (_, w) => s.at + T(G.step60) * w);
+  const durs = on.map((_, w) => T(G.resolve60) * (w === n - 1 && n > 1 ? G.last : 1));
+  return { on, durs, end: n ? on[n - 1] + durs[n - 1] : s.at };
+};
+
+const glideSlide = expOut(TYPE_PRESETS.glide.slideK);
+
+const glide = (c: Ctx): TypeLineState => {
+  const G = TYPE_PRESETS.glide;
+  const st = blank(c, c.col.ink);
+  const gf = glideFrames(c.s, c.film);
+  const n = c.W.n;
+  // arrives moving (about 0.09 em a frame at 60 fps) and keeps x0.966 of its speed a frame: it slows into a drift
+  st.x = G.slideEm * (1 - glideSlide(clamp((c.f - c.s.at) / c.T(G.slide60))));
+  st.glyphs.forEach((g, i) => {
+    const w = c.W.wordOf[i];
+    if (w < 0) return;
+    const o = gf.on[w];
+    const p = prog(c.f, o, o + gf.durs[w], E.snapOut); // the whole line is laid out from its first frame, faint and soft
+    g.opacity = G.from + (1 - G.from) * p;
+    g.blur = G.blurEm * (1 - p);
+    if (w === n - 1 && n > 1) g.dx = G.gapEm * (1 - prog(c.f, o, o + gf.durs[w], E.glideOut)); // the last word closes its gap
+    if (c.s.key !== undefined && w === c.key) g.color = c.col.accent;
+  });
+  return st;
+};
+
+/** `fall`: each word's onset (9 f apart) and landing (12 f), and the end. */
+export const fallFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
+  const F = TYPE_PRESETS.fall;
+  const T = T60(s, film);
+  const n = wordMap(s.text).n;
+  const on = Array.from({ length: n }, (_, w) => s.at + T(F.gap60) * w);
+  return { on, end: (on[n - 1] ?? s.at) + T(F.drop60) };
+};
+
+const fall = (c: Ctx): TypeLineState => {
+  const F = TYPE_PRESETS.fall;
+  const st = blank(c, c.col.ink);
+  const ff = fallFrames(c.s, c.film);
+  const n = c.W.n;
+  const accentWord = c.s.key !== undefined ? c.key : n - 1;
+  st.glyphs.forEach((g, i) => {
+    const w = c.W.wordOf[i];
+    if (w < 0) return;
+    const o = ff.on[w];
+    const p = prog(c.f, o, o + c.T(F.drop60), E.snapOut);
+    g.opacity = c.f < o ? 0 : F.from + (1 - F.from) * p;
+    g.dy = -F.dropEm * (1 - p);
+    if (c.f >= o && p < 1) g.smear = [0, -F.smear * (1 - p)]; // the trail above, where it came from
+    if (w === accentWord) {
+      const lands = o + c.T(F.drop60);
+      const to = c.s.key !== undefined ? c.col.accent : mixColor(c.col.accent, c.col.ink, prog(c.f, lands, lands + c.T(F.linger60), E.softOut));
+      g.color = mixColor(c.col.mute, to, p);
+    } else g.color = mixColor(c.col.mute, c.col.ink, p);
+  });
+  return st;
+};
+
+const PRESETS: Record<TypePresetName, (c: Ctx) => TypeLineState> = { crisp: entry, calm: entry, mask, land, fly, snap, room, glide, fall, develop, build, typeFocus, arc, assemble, decode, wheel, erode, cycle, punch, echo, open, highlight, slice, redact, swarm };
 
 // ------------------------------------------------------------------------------------------------ frames
 
@@ -1004,6 +1336,48 @@ export const typeLineFrames = (s: TypeLineSpec, m: LineMetrics, film?: Partial<F
       resolved = Math.max(...sf.locked);
       break;
     }
+    case 'mask': {
+      const mf = maskFrames(s, film);
+      ticks = mf.on;
+      resolved = mf.end + T(4);
+      break;
+    }
+    case 'land': {
+      const lf = landFrames(s, film);
+      ticks = [s.at, ...lf.on.slice(lf.lead)];
+      resolved = lf.end;
+      break;
+    }
+    case 'fly': {
+      const ff = flyFrames(s, film);
+      ticks = ff.on;
+      resolved = ff.end;
+      break;
+    }
+    case 'snap': {
+      const sf = snapFrames(s, film);
+      ticks = sf.on;
+      resolved = sf.end;
+      break;
+    }
+    case 'room': {
+      const rf = roomFrames(s, film);
+      ticks = rf.on;
+      resolved = rf.end;
+      break;
+    }
+    case 'glide': {
+      const gf = glideFrames(s, film);
+      ticks = gf.on;
+      resolved = gf.end;
+      break;
+    }
+    case 'fall': {
+      const ff = fallFrames(s, film);
+      ticks = ff.on;
+      resolved = ff.end;
+      break;
+    }
   }
   const out = s.out ?? Infinity;
   const ex = s.exit ?? 'cut';
@@ -1017,6 +1391,9 @@ export const typeLineFrames = (s: TypeLineSpec, m: LineMetrics, film?: Partial<F
     split: T(E60.split60),
     swarm: T(E60.swarm60),
     dive: T(diveLen60(s)),
+    slide: T(E60.slide60),
+    spread: T(E60.spread60),
+    collapse: T(E60.collapse60),
   };
   const dotAt = s.dot ? resolved + T(P.dot.late60) : undefined;
   return { in: s.at, resolved: Math.ceil(resolved), ticks: ticks.map((t) => Math.round(t)), out, gone: out + exitLen[ex], dot: dotAt === undefined ? undefined : Math.round(dotAt) };
@@ -1051,11 +1428,59 @@ const applyExit = (st: TypeLineState, c: Ctx) => {
     return st;
   }
   if (ex === 'drift') {
-    if (q >= c.T(X.drift60)) return gone();
-    const p = E.launchIn(clamp(q / c.T(X.drift60)));
+    // dead still, then up and away at speed, cut on its fastest frame: never faded
+    const len = c.T(X.drift60);
+    if (q >= len) return gone();
+    const p = E.launchIn(clamp(q / len));
     st.y -= X.driftEm * p;
-    st.opacity *= 1 - p;
-    st.blur += 0.04 * p;
+    const v = X.driftEm * (p - E.launchIn(clamp((q - 1) / len)));
+    if (v > 0.004) st.glyphs.forEach((g) => (g.smear = [g.smear[0], g.smear[1] + v * 0.5])); // the trail below it
+    return st;
+  }
+  if (ex === 'slide') {
+    // the line accelerates sideways; its last words drop off right to left, 2 f apart, before the cut
+    const len = c.T(X.slide60);
+    if (q >= len) return gone();
+    st.x += X.slideEm * E.buildIn(clamp(q / len));
+    const dropAt = (w: number) => {
+      const r = c.W.n - 1 - w;
+      return r < X.slideDrops ? len - c.T(X.slideDrop60) * (X.slideDrops - r) : Infinity;
+    };
+    st.glyphs.forEach((g, i) => {
+      const w = c.W.wordOf[i];
+      if (w >= 0 && q >= dropAt(w)) g.opacity = 0;
+    });
+    if (st.slot && q >= dropAt(st.slot.word)) st.slot.items.forEach((it) => (it.opacity = 0));
+    return st;
+  }
+  if (ex === 'spread') {
+    // the words track apart while the camera zooms toward the first one; they go from the end, right to left
+    const len = c.T(X.spread60);
+    if (q >= len) return gone();
+    const p = E.launchIn(clamp(q / len));
+    const n = c.W.n;
+    st.glyphs.forEach((g, i) => {
+      const w = c.W.wordOf[i];
+      if (w < 0) return;
+      g.dx += X.spreadEm * w * p;
+      const s0 = len * (0.4 + (0.45 * (n - 1 - w)) / Math.max(1, n - 1));
+      g.opacity *= 1 - clamp((q - s0) / c.T(X.spreadFade60));
+    });
+    st.origin = [((c.m.xs[c.W.starts[0]] + right(c.m, c.W.ends[0])) / 2 - c.m.width / 2) / c.m.size, 0];
+    st.scale *= Math.exp(Math.log(X.spreadZoom) * p);
+    return st;
+  }
+  if (ex === 'collapse') {
+    // the tracking collapses toward the line's centre, faster and faster, and the line is cut while it moves
+    const len = c.T(X.collapse60);
+    if (q >= len) return gone();
+    const p = E.buildIn(clamp(q / len));
+    const v = p - E.buildIn(clamp((q - 1) / len));
+    st.glyphs.forEach((g, i) => {
+      const gx = (c.m.xs[i] + c.m.ws[i] / 2 - c.m.width / 2) / c.m.size;
+      g.dx -= gx * X.collapse * p;
+      if (v > 0) g.smear = [gx * X.collapse * v * 1.5, g.smear[1]]; // each glyph trails toward the edge it came from (double images)
+    });
     return st;
   }
   if (ex === 'push') {
@@ -1169,7 +1594,7 @@ export const typeLineState = (f: number, s: TypeLineSpec, m: LineMetrics, film?:
 
 // ------------------------------------------------------------------------------------------------ declares
 
-/** What a line does on purpose: stepped runs (font cycle, redaction hops, swarm on twos, decode blocks) and a dive's seam. */
+/** What a line does on purpose: stepped runs (font cycle, redaction hops, swarm on twos, decode blocks, the snap's and the make-room's jump frames) and a dive's seam. */
 export const declares = (s?: TypeLineSpec, film?: Partial<FilmCtx>): Declares => {
   const none: Declares = { stepped: [], flashes: [], cameraBlur: [], seams: [] };
   if (!s) return none;
@@ -1184,6 +1609,14 @@ export const declares = (s?: TypeLineSpec, film?: Partial<FilmCtx>): Declares =>
   if (s.preset === 'redact') stepped.push({ from: Math.floor(s.at), to: Math.ceil(fr.resolved) + 1, id });
   if (s.preset === 'swarm') stepped.push({ from: Math.floor(s.at), to: fr.resolved + 1, on: 2, id });
   if (s.preset === 'decode') stepped.push({ from: Math.floor(s.at), to: fr.resolved + 1, id });
+  if (s.preset === 'snap' && wordMap(s.text).n > 1) {
+    const at = snapFrames(s, film).at;
+    stepped.push({ from: at, to: at + 1, id: `${id}-jump` }); // the one-frame scale jump
+  }
+  if (s.preset === 'room' && wordMap(s.text).n > 1) {
+    const at = roomFrames(s, film).jump;
+    stepped.push({ from: at, to: at + 1, id: `${id}-jump` }); // the one frame that makes the room
+  }
   if (s.out !== undefined && s.exit === 'swarm') stepped.push({ from: Math.floor(s.out), to: Math.ceil(s.out + T(TYPE_PRESETS.exit.swarm60)) + 1, on: 2, id: `${id}-exit` });
   if (s.out !== undefined && s.exit === 'dive') seams.push({ at: Math.ceil(s.out + T(diveLen60(s))), kind: 'zoomThrough', carry: 'scale', id: `${id}-dive` });
   return { ...none, stepped, seams };
@@ -1280,6 +1713,8 @@ export const TypeLine: React.FC<TypeLineProps> = (p) => {
         transform: `translate(${px((g.dx + dx) * size)}, ${px((g.dy + dy) * size)}) rotate(${g.rot.toFixed(2)}deg) scale(${g.sx.toFixed(4)}, ${g.sy.toFixed(4)})`,
         transformOrigin: '50% 78%',
         filter: g.blur > 0.002 ? `blur(${px(g.blur * size)})` : undefined,
+        // a mask edge fixed in the line (the glyph's box is 1 em tall; its local edge moves up as the glyph moves down)
+        clipPath: g.clip !== undefined && !fill ? `inset(-60% -40% ${((1 - g.clip + g.dy + dy) * 100).toFixed(2)}% -40%)` : undefined,
         fontVariationSettings: fvsOf(g.vary, weight, p.vary),
         // a filled glyph is clipped to its box: padded so its descender survives, the margin and the origin taken back (line-height 1)
         ...(fill ? { backgroundImage: fill, backgroundSize: `${px(m.width)} 100%`, backgroundPosition: `${px(-m.xs[i])} 0`, backgroundRepeat: 'no-repeat', WebkitBackgroundClip: 'text', backgroundClip: 'text', padding: '0.18em 0 0.32em', marginTop: '-0.18em', transformOrigin: '50% 64%' } : {}),
