@@ -1,22 +1,22 @@
 // The reel's facts: the script's lines and every string the product UI shows. The timeline, the acts and the sound
 // read this file; nothing else holds the film's content.
 //
-// cinetic:placeholder - slots, not copy: write the script (each line one short real sentence of 3-8 words) and the
-// product's own sources, record fields and capabilities in place of every [bracket], rebuild the product's real
-// record where the kit stands in, then delete these four lines.
+// cinetic:placeholder - slots, not copy: write the script in plain words (line 1 says what the product is, 2-7 words
+// a line, scripts/copy-check.py) and the product's own sources, record fields and capabilities in place of every
+// [bracket], rebuild the product's real record where the kit stands in, then delete these four lines.
 import type { GlyphName } from './kit';
 import { IDENTITY } from './brand/identity';
 
 /** A launch close: what it connects to, one real record, the statement, what it can do, the claim, the name. */
 export const REEL = {
   name: IDENTITY.name,
-  /** The script, one clean line at a time (3-8 words each); the claim is built in two fragments; the tagline holds to the end. */
+  /** The script, plain words, one clean line at a time (2-7 words each); the claim is built in two fragments; the tagline holds to the end. */
   lines: {
-    sources: '[Product] works with [every source].', // centred inside the ring of sources
-    statement: '[Your data], ready to use.', // on the light card that squashes round it
-    claim: ['[Product] does [X],', 'in one [place].'] as const, // the big claim on the accent, in two beats
+    sources: '[Product] turns [sources] into [data].', // what it is, by 3 s (up to 5 words fit the act): centred inside the ring of sources
+    statement: 'Each [record] comes out clean.', // on the light card that squashes round it
+    claim: ['It exports to', '[N] formats.'] as const, // what it does, on the accent, in two beats
     title: '[Product] is out today.', // the end card's title: its first word pops, the rest types
-    tagline: 'Now you can [Y].', // takes the title's place and holds to the end
+    tagline: 'Try it at [product.com].', // what to do: takes the title's place and holds to the end
   },
   /** The sources around the first line (8-12), each with a line glyph. */
   sources: [
@@ -64,7 +64,7 @@ export const REEL = {
 
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 for (const [k, s] of Object.entries({ ...REEL.lines, claim: REEL.lines.claim.join(' ') })) {
-  if (words(s) < 3 || words(s) > 8) throw new Error(`reel.ts: line "${k}" ("${s}") is ${words(s)} words; a line is one short sentence of 3-8 words`);
+  if (words(s) < 2 || words(s) > 7) throw new Error(`reel.ts: line "${k}" ("${s}") is ${words(s)} words; a line is one short sentence of 2-7 words`);
 }
 if (REEL.lines.claim.some((f) => words(f) > 5)) throw new Error('reel.ts: each claim fragment holds at most 5 words');
 if (REEL.sources.length < 6 || REEL.sources.length > 12) throw new Error('reel.ts: 6-12 sources around the first line');

@@ -397,7 +397,7 @@ if [[ -n "$TPL" && "$TEMPLATE" != update ]]; then
 fi
 if [[ "$TEMPLATE" == update ]]; then
   cat <<EOF
-update film: write the version and 2-4 changes (one short sentence each, 3-6 words, each with its product moment) in src/update.ts,
+update film: write the version and 2-4 changes (one plain sentence each, 2-6 words, a result the user sees, each with its product moment) in src/update.ts,
   then deal its direction: $PYS scripts/deck.py --brief "<one line>" --format update --changes N --options 3
 EOF
   if [[ -z "$MUSIC" ]]; then
@@ -413,6 +413,8 @@ if [[ "$ENGINE" == remotion ]]; then
   cat <<EOF
 next:
   cd $DIR
+  $PYS scripts/copy-check.py TREATMENT.md   # the script first, before any picture: what the product is by 3 s,
+                            # one thing it does a line, the close; plain words (references/copy-and-type.md)
   npm run check             # tsc, lint-film, grid-check: fails on purpose until the placeholder brand
                             # (palette, typeface, mark and name: cinetic:placeholder in src/brand and
                             # COPY) is replaced; see brand-and-color.md
@@ -425,6 +427,7 @@ else
   cat <<EOF
 next:
   cd $DIR
+  $PYS scripts/copy-check.py TREATMENT.md   # the script first, before any picture: what the product is by 3 s
   node scripts/lint-film.mjs .   # cinetic bans; fails on purpose until the placeholder palette
                                  # and font in index.html are replaced (references/brand-and-color.md)
   node scripts/grid-check.ts timeline.js   # the grid, the reads and the text flow (Node 22.18+;

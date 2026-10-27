@@ -185,9 +185,11 @@ export const ROLL = 26;
 /** Frames before the next act line at which a change's words leave (they launch into the camera move). */
 export const SAY_OUT = 16;
 
-// Every on-screen word. The version is the set (giant numerals), each change one short sentence (3-6 words)
-// that says what the picture just showed, one line at a time, then the version again and the name.
+// Every on-screen word. The name and the version open the film ("[Name] [version]": a stranger knows which product
+// by 3 s), the version is the set (giant numerals), each change one short sentence (2-6 words) that says the result
+// the picture just showed, one line at a time, then the version again and the name.
 export const COPY: Copy[] = [
+  { ...line('product', UPDATE.name, 0, beat(BEATS.change(0)) - f60(SAY_OUT)), kind: 'name' },
   { id: 'from', text: UPDATE.from, kind: 'ui', in: 0, resolved: 0, out: CUE.roll },
   { id: 'version', text: UPDATE.version, kind: 'name', in: CUE.roll, resolved: CUE.roll + f60(ROLL), out: beat(BEATS.change(0)) - f60(SAY_OUT) },
   ...UPDATE.changes.map((c, i) => line(`change${i + 1}`, c.words, CUE[`say${i}`], beat(BEATS.change(i + 1)) - f60(SAY_OUT))),

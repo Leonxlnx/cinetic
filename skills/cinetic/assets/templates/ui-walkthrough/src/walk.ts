@@ -1,22 +1,22 @@
 // The walkthrough's facts: the script's lines and every string and number the product UI shows. The timeline, the
 // acts and the sound read this file; nothing else holds the film's content.
 //
-// cinetic:placeholder - slots, not copy: write the script (each line one short real sentence of 3-8 words that says
-// what the picture is doing) and the product's own strings and numbers in place of every [bracket], rebuild the
-// product's real screens where the kit stands in, then delete these four lines.
+// cinetic:placeholder - slots, not copy: write the script in plain words (line 1 says what the product is, each next
+// line one thing it does, 2-7 words, scripts/copy-check.py) and the product's own strings and numbers in place of
+// every [bracket], rebuild the product's real screens where the kit stands in, then delete these four lines.
 import { IDENTITY } from './brand/identity';
 
 /** The story the UI tells: the input goes in, the product reads it, finds what matters, the user picks, it builds the output. */
 export const WALK = {
   name: IDENTITY.name,
-  /** The script, one clean line on screen at a time (3-8 words each); the end card's line holds to the end. */
+  /** The script, plain words, one clean line on screen at a time (2-7 words each); the end card's line holds to the end. */
   lines: {
-    promise: 'Now you can [Y].', // the promise, word by word, the last word snapping the line larger
-    claim: 'Ready in [N] minutes.', // the speed claim: its first word giant, then the line
+    promise: '[Product] is a [category].', // what it is, by 3 s (4-5 words fit the act): word by word, the last word snapping the line larger
+    claim: 'Setup takes [N] minutes.', // the speed claim, with a verb: its first word giant, then the line
     step1: 'Paste in [your input].', // step one, over the field
-    insight: 'It finds what [people] ask for.', // the insight the product surfaced
-    pick: 'Pick one. [Product] builds it.', // step three, over the choice
-    payoff: '[Product] does [X].', // the end card's line beside the name
+    insight: 'It finds what [people] ask for.', // what the product found
+    pick: '[Product] builds your pick.', // step three, over the choice
+    payoff: 'Try it free at [product.com].', // the close, beside the name: what to do
   },
   /** The user's input as one object (a channel, a store, a repository, a document): it becomes the output in place. */
   input: { title: '[Your input]', handle: '[@your-handle]', stats: ['[N] [items]', '[N] [people]'] },
@@ -75,7 +75,7 @@ export const WALK = {
 
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 for (const [k, s] of Object.entries(WALK.lines)) {
-  if (words(s) < 3 || words(s) > 8) throw new Error(`walk.ts: line "${k}" ("${s}") is ${words(s)} words; a line is one short sentence of 3-8 words`);
+  if (words(s) < 2 || words(s) > 7) throw new Error(`walk.ts: line "${k}" ("${s}") is ${words(s)} words; a line is one short sentence of 2-7 words`);
 }
 if (WALK.feed.key >= WALK.feed.rows.length) throw new Error('walk.ts: feed.key must name one of the feed rows');
 if (WALK.pick >= WALK.options.length) throw new Error('walk.ts: pick must name one of the options');

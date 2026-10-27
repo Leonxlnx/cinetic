@@ -9,7 +9,7 @@ it builds the output), so the viewer always knows what the product does; five sh
 
 | # | act | shot | in | what happens | the slot |
 |---|---|---|---|---|---|
-| 1 | `open` | statement on the paper | cold open, already moving | words a word gap apart, the last one snaps the line x2.2 in one frame; launches up | `lines.promise` ("Now you can [Y].") |
+| 1 | `open` | statement on the paper | cold open, already moving | words a word gap apart, the last one snaps the line x2.2 in one frame; launches up | `lines.promise` ("[Product] is a [category].": what it is, by 3 s) |
 | 2 | `card` | the input as one tilted card (the signature) | carried up on the line's speed | it rises while the ground turns edges-first; ease into a zoom; ONE jump frame (scale, tilt, a tinted swell) and the same card is the output: title wipes on, subtitle swaps, three steps check, two punch-ins | `input`, `output` |
 | 3 | `proof` | notices piling up | a blur-snap zoom | `fx/Stack`, arrivals speeding up; a light panel wipes up into the claim | `proof` |
 | 4 | `claim` | the claim, its first word giant | the wipe | the giant word reveals bottom-up, one frame snaps out to the line, the hold pushes in and accelerates into the cut | `lines.claim` |
@@ -21,8 +21,9 @@ it builds the output), so the viewer always knows what the product does; five sh
 | 10 | `end` | the lockup | the page softening | the mark's parts, the name, the payoff line; the key passes once; a slow push | `lines.payoff`, the name |
 
 **What to write.**
-- `src/walk.ts`: the script (five lines and the payoff, 3-8 words each, real sentences that say what the picture is
-  doing) and the product's own strings and numbers in every `[slot]`. Delete its placeholder lines.
+- `src/walk.ts`: the script in plain words (line 1 says what the product is, then one thing it does a line, the
+  close says what to do; 2-7 words each; `python3 scripts/copy-check.py` reads it with the timeline's `COPY` through
+  `grid-check.ts`) and the product's own strings and numbers in every `[slot]`. Delete its placeholder lines.
 - The product: the acts draw kit parts (`kit/flow.tsx`: `Field`, `Tile`, `Row`, `Pill`, `Notice`, `Chip`,
   `DataRow`) as the floor. Rebuild the product's real screens at film size (every web size x1.9, nothing under
   36 px) where they differ; keep each step one cause, one action, one result.

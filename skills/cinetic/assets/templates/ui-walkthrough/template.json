@@ -17,7 +17,7 @@
   ]
  },
  "next": [
-  "ui walkthrough: fill src/walk.ts (the script's lines, 3-8 words each, and the product's own strings and numbers in every [slot]),",
+  "ui walkthrough: fill src/walk.ts (the script in plain words: line 1 says what the product is, 2-7 words a line, and the product's own strings and numbers in every [slot]),",
   "  rebuild the product's real screens in src/acts where the kit stands in, then deal its direction:",
   "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3 (references/templates.md)"
  ],

@@ -4,16 +4,16 @@ An 8-20 s update film ("vX is out"), laid over the Remotion starter by
 `bash scripts/new-film.sh <dir> --format update` (template.json lists the files it copies and the starter
 acts it removes).
 
-**The shape.** A hook on the version (giant numerals cropped by the frame, the last numeral rolling from
-the old value to the new), one act per change (2-4), each a product moment: the camera arrives on the
-product's surface, the product does the new thing on its beat, and one short sentence of 3-6 words says what
-was just seen. Then the payoff (the camera pulls back over every change as the version swings back in
+**The shape.** The name and the version first (the name over giant numerals cropped by the frame, the last
+numeral rolling from the old value to the new: "[Name] [version]" by 3 s), one act per change (2-4), each a product moment: the camera arrives on the
+product's surface, the product does the new thing on its beat, and one plain sentence of 2-6 words says the result
+the user sees. Then the payoff (the camera pulls back over every change as the version swings back in
 front) and the end card (the version recedes into the set; the mark's parts and the name are set before
 it). One camera carries the whole film along one strip, so every act line is a velocity seam.
 
 **What to write.**
-- `src/update.ts`: the version, the version before it and the changes (`words`: one short sentence, 3-6
-  words; `moment`: how it is shown). Delete its placeholder lines.
+- `src/update.ts`: the version, the version before it and the changes (`words`: one plain sentence, 2-6
+  words, a result the user sees; `moment`: how it is shown). Delete its placeholder lines.
 - The product moments: `src/kit` is the floor (a review approved, a reply landing, a figure climbing, a
   budget entry). Rebuild the product's own screens for film (every size x1.9, nothing under 36 px) and
   give each change its real state change on its hit frame.

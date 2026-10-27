@@ -20,7 +20,7 @@ sentence's full stop, the end card. State changes are hard steps; only the camer
 
 **What to write.**
 - `src/reel.ts`: the script (the sources line, the statement, the claim in two fragments, the end card's title and
-  tagline: 3-8 words each, real sentences) and the product's own sources, one real record and 12-14 capabilities
+  tagline: 2-7 words each, plain sentences: the first says what the product is, the tagline what to do) and the product's own sources, one real record and 12-14 capabilities
   with their glyphs. Delete its placeholder lines.
 - The record: `acts/Record.tsx` draws kit parts (`DataRow`, `Chip`, `Meter`, a `Photo`) as the floor; rebuild the
   product's real output at film size (every web size x1.9, nothing under 36 px).

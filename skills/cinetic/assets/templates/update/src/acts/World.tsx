@@ -1,5 +1,5 @@
-// The update film's world: one strip the camera travels. The version opens as the set (giant numerals,
-// cropped by the frame, its last numeral rolling to the new value); each change is a product surface on
+// The update film's world: one strip the camera travels. The name and the version open it (the name over giant
+// numerals cropped by the frame, the last numeral rolling to the new value); each change is a product surface on
 // the strip that does the new thing on its beat while one fragment names it; the camera pulls back over
 // every change (softened, a far plane) as the version swings back in front; the version recedes into the
 // set and the mark and the name are set before it. Every act renders this world at its own frames, so
@@ -28,6 +28,8 @@ const T = THEME;
 // ---------------------------------------------------------------------------------------------- layout
 /** The version numerals: giant, cropped by the frame (the set), in the hook and again from the payoff on. */
 export const NUM = { size: 1500 * U, x: 150 * U, lead: 0.92, weight: TYPE.giant.weight, track: TYPE.giant.track } as const;
+/** The product's name over the version in the hook: line size, top left; the numerals drop to make room for it. */
+export const NAME_HOOK = { y: 80 * U, drop: 300 * U } as const;
 /** Where the version lands in the payoff and where it rests behind the lockup (screen px). */
 export const NUM_LAND = { size: 1180 * U, x: 560 * U, rest: 820 * U } as const;
 /** The strip: change i's surface is centred at x0 + i * gap (world px), alternating above and below. */
@@ -163,8 +165,14 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
       {/* the key: raking from the upper left, brightening on each hit (one light event per act) */}
       <AbsoluteFill style={{ background: `linear-gradient(158deg, rgba(255,255,255,${key.toFixed(3)}) 0%, rgba(255,255,255,0) 42%, rgba(${T.shade.join(', ')}, 0.22) 100%)` }} />
       {showNum && (
-        <div style={{ position: 'absolute', left: 0, top: 0, width: numW + 40, transform: `translate3d(${numX.toFixed(2)}px, ${((H - numSize * NUM.lead) / 2 - 40 * U).toFixed(2)}px, 0)` }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: numW + 40, transform: `translate3d(${numX.toFixed(2)}px, ${((H - numSize * NUM.lead) / 2 - 40 * U + (F < CUE.gather ? NAME_HOOK.drop : 0)).toFixed(2)}px, 0)` }}>
           <Numerals F={F} size={numSize} color={numTone} shade={mixColor(numTone, T.ground, 0.38)} rollAt={CUE.roll} />
+        </div>
+      )}
+      {/* the name over the version: "[Name] [version]" from frame 0, leaving left with the numerals */}
+      {showNum && F < CUE.gather && (
+        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${(numX + 16 * U).toFixed(2)}px, ${NAME_HOOK.y.toFixed(2)}px, 0)` }}>
+          <Words id="product" text={copy('product').text} frame={F} start={copy('product').in - 1} size={TYPE.line.size * U} style={{ ...typeStyle('line', TYPE.line.size * U), color: T.text }} />
         </div>
       )}
       {/* the end card's light event: one soft band of the key crossing the version behind the name */}
