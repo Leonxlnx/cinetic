@@ -418,7 +418,7 @@ the same grammar as built UI.
 | Develop | a `stepped` range when `steps` is set |
 | HardStep | one `stepped` frame per jump |
 | Roll | a `stepped` range for a hard counter on a 12/16/20/30 fps cadence |
-| TypeOn | a `stepped` range for a 1.2 typing run, or for its `erase` |
+| TypeOn | a `stepped` range for a 1.2 typing run and/or for its `erase` |
 | Reels | one `stepped` frame per MaskList step (and per GhostReel jump in step mode) |
 | Stack, Defocus, DirBlur, Resize carry | nothing (continuous) |
 

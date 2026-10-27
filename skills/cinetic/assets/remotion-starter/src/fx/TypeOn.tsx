@@ -404,15 +404,20 @@ export const TypeOn: React.FC<
 
 /**
  * What a TypeOn instance does on purpose: keys are discrete steps on whole frames, so a 1.2 typing run
- * declares its span stepped (one sample a frame, never shutter-blurred); the 1.1 form declares nothing.
+ * declares its span stepped (one sample a frame, never shutter-blurred), and an `erase` its backspaces;
+ * an instance that types and then erases declares both. The 1.1 form declares nothing.
  */
 export const declares = (p?: Partial<TypeTiming> & { text?: string; id?: string; erase?: TypeErase }, film?: Partial<FilmCtx>): Declares => {
   const none: Declares = { stepped: [], flashes: [], cameraBlur: [], seams: [] };
-  if (p?.erase && p.text) {
-    const gone = eraseSchedule([...p.text].length, p.erase, film);
-    return { ...none, stepped: [{ from: Math.min(...gone), to: Math.max(...gone) + 1, id: `${p.id ?? 'type'}-erase` }] };
+  if (!p?.text) return none;
+  const stepped: NonNullable<Declares['stepped']> = [];
+  if (p.kind && p.start !== undefined) {
+    const at = typeSchedule(p.text, p as TypeTiming, film);
+    stepped.push({ from: Math.min(...at), to: Math.max(...at) + 1, id: p.id ?? 'type' });
   }
-  if (!p || !p.kind || p.text === undefined || p.start === undefined) return none;
-  const at = typeSchedule(p.text, p as TypeTiming, film);
-  return { ...none, stepped: [{ from: Math.min(...at), to: Math.max(...at) + 1, id: p.id ?? 'type' }] };
+  if (p.erase) {
+    const gone = eraseSchedule([...p.text].length, p.erase, film);
+    stepped.push({ from: Math.min(...gone), to: Math.max(...gone) + 1, id: `${p.id ?? 'type'}-erase` });
+  }
+  return { ...none, stepped };
 };
