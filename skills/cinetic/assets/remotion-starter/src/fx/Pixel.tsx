@@ -202,7 +202,9 @@ export const mosaicIrisState = (frame: number, p: MosaicIrisProps, film?: Partia
   const seed = p.seed ?? 'mosaic';
   const dens = p.density ?? 0.86;
   const cells: MosaicCell[] = [];
-  const done = r - ring > farCornerOf(p.origin, W, H);
+  // done once the inner edge reaches the far corner: the radius tops out at exactly farCorner + ring, so the
+  // test allows half a pixel (a strict > never held, and the outgoing scene was drawn to the end of the act)
+  const done = r - ring >= farCornerOf(p.origin, W, H) - 0.5;
   if (r > 0 && !done) {
     const [ox, oy] = p.origin;
     // cell indices are relative to the origin: the ring's reach (+-r) clipped to the frame
