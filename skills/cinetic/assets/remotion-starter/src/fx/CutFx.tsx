@@ -298,17 +298,17 @@ export const declares = (p?: Partial<FlashCutProps & DefocusCutProps> & { kind?:
 /**
  * A blur bridge across a hard punch-in (a wide shot cut to its close-up at x2-2.5): the wide shot softens on its last
  * two frames and the close-up opens soft for two, so the scale jump reads as one push (house sigmas at 1080p: out
- * 1.2 then 4, in 3 then 1.2). `cut` is the close-up's first frame. Feed the sigma to fx/Defocus; pair it with a
+ * 1.2 then 4, in 3 then 1.2). `cut` is the close-up's first frame. The sigma is px at 1080p at any frame size: feed
+ * it to fx/Defocus, which scales it with the frame (multiply by u only for a blur you draw yourself). Pair it with a
  * decaying pull-back on the close-up (lib/handoff creep) so it breathes. Pure.
  */
 export const BLUR_BRIDGE = { out: [1.2, 4] as number[], in: [3, 1.2] as number[] } as const;
 export const blurBridge = (frame: number, cut: number, o: { out?: number[]; in?: number[] } = {}, film?: Partial<FilmCtx>) => {
   const fps = fpsOf(film);
-  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
   const out = o.out ?? BLUR_BRIDGE.out;
   const inn = o.in ?? BLUR_BRIDGE.in;
   const k = Math.floor(((frame - cut) * 60) / fps / 2); // the house numbers are per 30 fps frame: two 60 fps frames each
-  if (k < 0 && -k <= out.length) return out[out.length + k] * u;
-  if (k >= 0 && k < inn.length) return inn[k] * u;
+  if (k < 0 && -k <= out.length) return out[out.length + k];
+  if (k >= 0 && k < inn.length) return inn[k];
   return 0;
 };

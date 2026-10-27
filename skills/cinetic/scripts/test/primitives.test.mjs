@@ -135,6 +135,7 @@ console.log(JSON.stringify({
   spinCopies: [D.spinBlurCopies(0.5), D.spinBlurCopies(30), D.spinBlurCopies(-90)],
   iris: [0, 2, 4, 10, 12].map((f) => Ir.irisRadius(f, Ir.irisReveal(0, {}, film60), film60)),
   bridge: range(96, 104).map((f) => Cf.blurBridge(f, 100, {}, film60)),
+  bridge4k: range(96, 104).map((f) => Cf.blurBridge(f, 100, {}, { fps: 60, width: 3840, height: 2160 })),
   scatter: [0, 13, 26].map((f) => Ga.scatterState(f, { at: 0, items: [{ vx: 100, vy: 0 }, { vx: 0, vy: -50 }] }, film60)),
   cursorOut: [0, 10, 20].map((f) => Cu.cursorExit(f, 0, {}, film60)),
   swell: [-1, 6, 20, 40].map((f) => Mu.swellState(f, { at: 0, stops: ['#ff0000', '#00ff00', '#0000ff'] }, film60)),
@@ -297,6 +298,7 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   const ir = P.iris;
   result(Math.abs(ir[0] - 0.37 * 1080) < 1e-6 && ir[1] / ir[0] > 1.6 && ir[3] >= Math.hypot(960, 540) && ir[4] === ir[3], 'irisReveal: opens at 37 % of the height, most growth first, covers the frame in 10 f', ir.map((r) => r.toFixed(0)).join(','));
   result(JSON.stringify(P.bridge) === JSON.stringify([1.2, 1.2, 4, 4, 3, 3, 1.2, 1.2, 0]), 'blurBridge: 1.2, 4 out | 3, 1.2 in, two 60 fps frames each', JSON.stringify(P.bridge));
+  result(JSON.stringify(P.bridge4k) === JSON.stringify(P.bridge), 'blurBridge: px at 1080p at any size (Defocus scales it with the frame)', JSON.stringify(P.bridge4k));
   const sct = P.scatter;
   result(sct[0][0].dx === 0 && Math.abs(sct[1][0].dx - 25) < 1 && sct[2][0].dx === 100 && sct[2][1].dy === -50 && Math.abs(sct[2][0].scale - 1.45) < 1e-9 && sct[2][0].gone, 'scatterState: each along its own vector on a quad-in, growing x1.45', JSON.stringify(sct[1]));
   const co = P.cursorOut;
