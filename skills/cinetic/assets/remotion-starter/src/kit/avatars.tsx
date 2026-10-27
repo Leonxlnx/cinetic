@@ -336,7 +336,8 @@ export const MonogramTile: React.FC<{ theme: KitTheme; seed: string | number; in
   const st = portraitStyle(seed);
   const c = portraitColours(t, st);
   const fill = st.shirtAccent ? t.accentSoft : c.bg;
-  const ink = toOklch(fill)[0] > 0.6 ? t.dark ? t.accentInk : t.accentDeep : t.text;
+  // a pale tile takes dark initials, a deep one light initials, on either theme (a light theme's text is dark ink)
+  const ink = toOklch(fill)[0] > 0.6 ? (t.dark ? t.accentInk : t.accentDeep) : t.dark ? t.text : t.accentInk;
   return (
     <div style={{ width: size, height: size, borderRadius: size * 0.3, background: `linear-gradient(135deg, ${mixColor(fill, C.white, 0.18)}, ${fill})`, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', ...style }}>
       <span data-texture style={font(size * 0.42, 650, ink)}>
