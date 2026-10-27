@@ -330,8 +330,9 @@ sample.
 - **Counters** (`fx/Roll.tsx`): `countLinear(f, { from, perSec, start, round, animFps, phase, to }, film)`: counters run
   linear and are cut mid-count; several in one frame at different rates (14 : 5 : 1 reads as live data).
   `steppedTail(to, end)` lands a final value in decelerating steps; `<Roll hard>` swaps digits in one frame; a rolling
-  digit slides 18 f. `growthSteps(start, total)` is the count that grows as the product reads (a step every 12 f,
-  ×1.65 a step) and jumps to the total once it passes 55 % of it: cadence that accelerates into the payoff.
+  digit slides 18 f. `growthSteps(start, total)` is the count that grows as the product reads (a step every 6 f,
+  ×2.1 a step) and jumps to the total once it passes 55 % of it: cadence that accelerates into the payoff; `within`
+  fits the whole count inside a window (a one-bar feed) by raising the growth.
 - **Stack** (`fx/Stack.tsx`): notifications piling up as proof. The newest rises 144 px from behind into the front
   slot (scale 0.92 → 1 on `E.snapOut`, 16 f); every older one steps back a slot on the same curve: 4.5 % smaller,
   2.4 px softer, closer to the one in front (199, 175, 150, 135 px); the pile re-centres 92 px an item. Arrivals speed

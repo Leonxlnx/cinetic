@@ -27,21 +27,27 @@ export const countSteps = (a: number, b: number, start: number, dur: number, eas
 };
 
 /** House numbers of a count that grows as it is read: 60 fps frames a step, the growth a step, the share of the total where it jumps. */
-export const GROWTH = { every60: 12, ratio: 1.65, jumpAt: 0.55 } as const;
+export const GROWTH = { every60: 6, ratio: 2.1, jumpAt: 0.55 } as const;
 
 /**
- * A count that grows geometrically while the product reads (0, 1, 2, 4, 7, 12, 19 ... on a step every 12 f at 60
- * fps, x1.65 a step), then jumps to the total once it passes `jumpAt` of it: "reading 3,412 replies" that
- * accelerates into its payoff instead of rolling at one rate. Every step is a whole-frame RollStep (tick the last).
+ * A count that grows geometrically while the product reads (0, 1, 2, 4, 9, 19, 41 ... on a step every 6 f at 60
+ * fps, x2.1 a step: 1,000 lands inside one bar), then jumps to the total once it passes `jumpAt` of it: "reading
+ * 3,412 replies" that accelerates into its payoff instead of rolling at one rate. `within` (film frames) fits the
+ * whole count, jump included, inside that window by raising the growth when the house rate would run past it (a
+ * one-bar feed). Every step is a whole-frame RollStep (tick the last).
  */
-export const growthSteps = (start: number, to: number, o: { every?: number; ratio?: number; jumpAt?: number; from?: number } = {}, fps: number = fpsOf()): RollStep[] => {
+export const growthSteps = (start: number, to: number, o: { every?: number; ratio?: number; jumpAt?: number; from?: number; within?: number } = {}, fps: number = fpsOf()): RollStep[] => {
   const every = ((o.every ?? GROWTH.every60) * fps) / 60;
-  const ratio = o.ratio ?? GROWTH.ratio;
+  const jumpAt = o.jumpAt ?? GROWTH.jumpAt;
+  // the steps that fit the window (the first is the start value, the last the jump): growth enough to reach jumpAt by then
+  const fit = o.within !== undefined ? Math.max(3, Math.floor(o.within / every) + 1) : 0;
+  const need = fit ? Math.exp(Math.log(Math.max(2, to * jumpAt) / Math.max(1, o.from ?? 1)) / Math.max(1, fit - 2)) : 0;
+  const ratio = Math.max(o.ratio ?? GROWTH.ratio, need);
   const out: RollStep[] = [{ at: Math.round(start), value: o.from ?? 0 }];
   let v = Math.max(1, o.from ?? 0);
   for (let k = 1; k < 200; k++) {
     const at = Math.round(start + k * every);
-    if (v >= to * (o.jumpAt ?? GROWTH.jumpAt)) {
+    if (v >= to * jumpAt || (fit && k >= fit - 1)) {
       out.push({ at, value: to });
       break;
     }
