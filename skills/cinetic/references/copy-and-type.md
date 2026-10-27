@@ -431,7 +431,21 @@ Text animation is the main event of a cinetic film: every line of the script arr
 share an animation. `pick.py` draws one per line (its line track, `--lines`); build each one with a preset, a type
 device (§9) or the line system below.
 
-**The presets** (`fx/TypePresets`): sixteen one-line animations behind one spec and one renderer. `<TypeLine
+**Two entries: crisp for hero lines, calm for body lines.** When no device is the idea, a line still never appears
+in place: its words move while they resolve.
+
+| Entry | What each word does | Use it for |
+|---|---|---|
+| `crisp` | starts 7 f after the last (6-8 f at 60 fps), fades, rises 0.32 em and sharpens from an 8 px blur (at 1080p) on `E.out` over 26 f: the rise runs on after the word reads | hero lines: the hook, the claim, the promise, a statement |
+| `calm` | the calm pace's canonical reveal (32 f on `E.snapOut`, a third of the line box of rise over 25 f on `M.rise`, 12 f apart on the reading cadence, no blur), in a crisp film too | body lines: what it is, how it works, a caption read at speaking pace |
+
+Both are `TypeLine` presets (`preset: 'crisp'`, `'calm'`) and `<Words>` props (`{...crispWords(film)}`,
+`{...calmWords(film)}`), so a `Chain` or `Words` line takes the same entry. They are defaults, not devices: they may
+repeat across lines, while the devices below stay one per line. **An end card never fades in letter by letter**: its
+name and tagline arrive as words or as one piece (`END_CARD_PRESETS`; `endCardPreset(p)` turns a letter-unit preset into
+`crisp`), and the name is read whole the first frame it is legible.
+
+**The presets** (`fx/TypePresets`): the two entries and sixteen one-line animations behind one spec and one renderer. `<TypeLine
 spec={{ preset, text, at, out, exit }} frame size>` draws a line from the real font's prefix widths (kerning holds,
 every glyph its own transform); `typeLineState()` is the pure state for one frame, `typeLineFrames()` its `resolved`
 frame and ticks, `declares()` its stepped runs and seams. `key` picks the keyword (the last word by default), `words`

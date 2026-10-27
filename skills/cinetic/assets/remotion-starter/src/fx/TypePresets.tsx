@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { C, FONT, TYPE } from '../brand/tokens';
 import { clamp, E, type Ease, expOut, fd, lmix, mix, perFrame, prog, rand } from '../lib/anim';
 import { mixColor } from '../lib/color';
-import { type FilmCtx, f60x, fpsOf, useFilm } from '../lib/film';
+import { type FilmCtx, f60x, fpsOf, uOf, useFilm } from '../lib/film';
+import { PACE } from '../lib/pace';
 import type { Declares, Seam, SteppedRange } from '../timeline';
 import { ECHO_COPIES, echoCopiesState } from './Echoes';
 import { arcOffset, letterState } from './Letters';
@@ -10,16 +11,25 @@ import { decodeState, mosaicCells } from './Scramble';
 import { slicesState } from './Slices';
 import { erodeRiseState, fontCycleState, type FontState } from './TypeFx';
 import { typeFillState } from './TypeFill';
+import { wordFrames, type WordsSpec, wordState } from './Words';
 
 /**
- * Type presets: sixteen line animations, one per sentence. A launch film says its story in short
+ * Type presets: two entries and sixteen line animations. A launch film says its story in short
  * sentences, one clean line on screen at a time, and every line arrives its own way. Each preset is a
  * pure state function of the frame for ONE line (`typeLineState`), tuned to the house timing for
  * strong type moves (frames at 60 fps below, converted with the film's rate; `pace`
  * stretches every length of a preset at once). One renderer, <TypeLine>, draws all of them from the real
  * font's prefix widths, so kerning holds and every glyph is its own transform.
  *
- *   develop    colour fronts run through the line: a pale head that reveals it (22 f), a tint (40 f), the
+ * The two entries are the plain arrival of a line when no device is the idea (defaults, not devices: they may repeat):
+ *   crisp      a hero line: word by word 7 f apart (6-8), each word rising 0.32 em and sharpening from an 8 px blur
+ *              (at 1080p) on E.out over 26 f, so the words move while they resolve (crispWords(): the same entry
+ *              for <Words> and <Chain>)
+ *   calm       a body line: the canonical reveal at the calm pace whatever the film's pace (32 f on E.snapOut, a
+ *              third of the line box of rise over 25 f on M.rise, 12 f apart on the reading cadence, no blur: calmWords())
+ * An end card never fades in letter by letter: END_CARD_PRESETS leaves out the letter-unit presets (TYPE_PRESET_UNIT).
+ *
+ *   develop   colour fronts run through the line: a pale head that reveals it (22 f), a tint (40 f), the
  *              accent (64 f), then the ink (130 f), which stalls at 85 % of the line and catches up last,
  *              so the last word stays in colour longest (TypeFill develop under the hood)
  *   build      the line builds word by word, 14 / 10 / 10 f apart and a 28 f breath before the last word;
@@ -79,6 +89,8 @@ import { typeFillState } from './TypeFill';
 
 /** House numbers: frames at 60 fps, offsets in em. Tuned frame by frame on rendered moves. */
 export const TYPE_PRESETS = {
+  crisp: { dur60: 26, gap60: 7, riseEm: 0.32, blurPx: 8 }, // the hero entry (blurPx at 1080p, scaled with the frame)
+  calm: { pace: 'calm' as const }, // the body entry: PACE.calm's canonical reveal (lib/pace.ts)
   develop: { head60: 22, fronts60: [40, 64, 130], stall: 0.85, feather: 2.6, edge: 0.45 },
   build: { gaps60: [14, 10, 10], lastGap60: 28, from: 0.35, appear60: 12, blur60: 24, blurEm: 0.16, ink60: 26, recentre60: 24 },
   typeFocus: { cps: 30, blurEm: 0.3, decay30: 0.65, focusAt: 0.45, accent60: 10, push: 0.04, push60: 150, blink60: 32 },
@@ -111,11 +123,21 @@ export const CYCLE_STATES: Vary[] = [
 // ------------------------------------------------------------------------------------------------ types
 
 export type TypePresetName =
+  | 'crisp' | 'calm'
   | 'develop' | 'build' | 'typeFocus' | 'arc' | 'assemble' | 'decode' | 'wheel' | 'erode'
   | 'cycle' | 'punch' | 'echo' | 'open' | 'highlight' | 'slice' | 'redact' | 'swarm';
 export type TypeExit = 'cut' | 'blur' | 'drop' | 'drift' | 'push' | 'split' | 'swarm' | 'dive';
-export const TYPE_PRESET_NAMES: TypePresetName[] = ['develop', 'build', 'typeFocus', 'arc', 'assemble', 'decode', 'wheel', 'erode', 'cycle', 'punch', 'echo', 'open', 'highlight', 'slice', 'redact', 'swarm'];
+export const TYPE_PRESET_NAMES: TypePresetName[] = ['crisp', 'calm', 'develop', 'build', 'typeFocus', 'arc', 'assemble', 'decode', 'wheel', 'erode', 'cycle', 'punch', 'echo', 'open', 'highlight', 'slice', 'redact', 'swarm'];
 export const TYPE_EXITS: TypeExit[] = ['cut', 'blur', 'drop', 'drift', 'push', 'split', 'swarm', 'dive'];
+/** What each preset moves: a letter at a time, a word at a time, or the line as one. */
+export const TYPE_PRESET_UNIT: Record<TypePresetName, 'letter' | 'word' | 'line'> = {
+  crisp: 'word', calm: 'word', develop: 'line', build: 'word', typeFocus: 'letter', arc: 'letter', assemble: 'letter', decode: 'letter',
+  wheel: 'word', erode: 'letter', cycle: 'word', punch: 'line', echo: 'line', open: 'word', highlight: 'word', slice: 'line', redact: 'word', swarm: 'word',
+};
+/** Presets an end card's name or tagline may arrive with: never letter by letter (the name is read whole, once). */
+export const END_CARD_PRESETS: TypePresetName[] = TYPE_PRESET_NAMES.filter((p) => TYPE_PRESET_UNIT[p] !== 'letter');
+/** The preset an end-card line takes: `p` when it moves words or the whole line, else the crisp entry. */
+export const endCardPreset = (p: TypePresetName): TypePresetName => (TYPE_PRESET_UNIT[p] === 'letter' ? 'crisp' : p);
 
 /** Variable-font axes of a glyph or a word. */
 export type Vary = { wght?: number; wdth?: number };
@@ -326,6 +348,51 @@ export const buildOnsets = (s: TypeLineSpec, film?: Partial<FilmCtx>): number[] 
   const out = [s.at];
   for (let w = 1; w < n; w++) out.push(out[w - 1] + T(w === n - 1 && n > 2 ? B.lastGap60 : B.gaps60[Math.min(w - 1, B.gaps60.length - 1)]));
   return out;
+};
+
+/**
+ * The crisp entry as <Words> props: word by word 7 f apart (60 fps frames), each word fading, rising 0.32 em and
+ * sharpening from 8 px (at 1080p) on E.out over 26 f, so it moves while it resolves. Spread it into a hero line's
+ * <Words> or <Chain> ({...crispWords(film)}); `stretch` lengthens every length at once. Words clears an entry blur at
+ * 60 % of the fade (about 4 f in on E.out); the rise runs the whole 26 f.
+ */
+export const crispWords = (film?: Partial<FilmCtx>, stretch = 1): Partial<WordsSpec> => {
+  const X = TYPE_PRESETS.crisp;
+  const fps = fpsOf(film);
+  const T = (v: number) => f60x(v * stretch, fps);
+  return { dur: T(X.dur60), ease: E.out, rise: X.riseEm, riseUnit: 'em', riseDur: T(X.dur60), riseEase: E.out, blur: X.blurPx * uOf(film), stagger: T(X.gap60), cadence: 'even', subpixel: true };
+};
+
+/** The calm entry as <Words> props: PACE.calm's canonical reveal whatever the film's pace (a body line in a crisp film). */
+export const calmWords = (film?: Partial<FilmCtx>, stretch = 1): Partial<WordsSpec> => {
+  const P = PACE[TYPE_PRESETS.calm.pace];
+  const fps = fpsOf(film);
+  const T = (v: number) => f60x(v * stretch, fps);
+  return { pace: P, dur: T(P.wordDur), stagger: T(P.stagger), riseDur: T(P.riseDur ?? P.wordDur), blur: 0 };
+};
+
+/** The Words spec an entry preset draws its line with (crisp or calm). */
+const entrySpec = (s: TypeLineSpec, film?: Partial<FilmCtx>): WordsSpec => ({
+  text: s.text,
+  start: s.at,
+  ...(s.preset === 'crisp' ? crispWords(film, s.pace ?? 1) : calmWords(film, s.pace ?? 1)),
+});
+
+/** crisp and calm: each word moves as the Words entry draws it (opacity, rise, blur); a given keyword sits in the accent. */
+const entry = (c: Ctx): TypeLineState => {
+  const st = blank(c, c.col.ink);
+  const ws = wordState(c.f, { ...entrySpec(c.s, c.film), size: c.m.size }, c.film).words;
+  st.glyphs.forEach((g, i) => {
+    const w = c.W.wordOf[i];
+    if (w < 0 || !ws.length) return;
+    const q = ws[Math.min(w, ws.length - 1)];
+    g.opacity = q.opacity;
+    g.dy = q.y;
+    g.dx = q.x;
+    g.blur = q.blur / c.m.size;
+    if (c.s.key !== undefined && w === c.key) g.color = c.col.accent;
+  });
+  return st;
 };
 
 const develop = (c: Ctx): TypeLineState => {
@@ -833,7 +900,7 @@ const swarm = (c: Ctx): TypeLineState => {
   return st;
 };
 
-const PRESETS: Record<TypePresetName, (c: Ctx) => TypeLineState> = { develop, build, typeFocus, arc, assemble, decode, wheel, erode, cycle, punch, echo, open, highlight, slice, redact, swarm };
+const PRESETS: Record<TypePresetName, (c: Ctx) => TypeLineState> = { crisp: entry, calm: entry, develop, build, typeFocus, arc, assemble, decode, wheel, erode, cycle, punch, echo, open, highlight, slice, redact, swarm };
 
 // ------------------------------------------------------------------------------------------------ frames
 
@@ -847,6 +914,13 @@ export const typeLineFrames = (s: TypeLineSpec, m: LineMetrics, film?: Partial<F
   let resolved = s.at;
   let ticks: number[] = [s.at];
   switch (s.preset) {
+    case 'crisp':
+    case 'calm': {
+      const wf = wordFrames(entrySpec(s, film), { ...film, fps });
+      ticks = wf.map((w) => w.start);
+      resolved = Math.max(...wf.map((w) => w.settle));
+      break;
+    }
     case 'develop':
       resolved = s.at + T(P.develop.head60);
       ticks = [s.at, s.at + T(P.develop.fronts60[2])];

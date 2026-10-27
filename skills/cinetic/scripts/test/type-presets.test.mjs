@@ -9,6 +9,9 @@
  *      at the same rate; push dims to 36 % on its first frame; the square full stop lands 5 f after the line.
  *   3. Properties: every preset with every exit is finite and repeatable, continuous presets give the same
  *      picture at the same second at 30 and 60 fps, and declares() marks the stepped runs and the dive seam.
+ *   4. The entries: crisp (words 7 f apart, each rising 0.32 em and sharpening from 8 px on E.out over 26 f, moving
+ *      while it resolves; crispWords() for <Words>), calm (PACE.calm's reveal in any film), and no letter-by-letter
+ *      preset on an end card.
  *
  * It runs src/fx through the starter's own tsx (npm install in assets/remotion-starter first; CINETIC_TSX may
  * name another tsx cli.mjs).
@@ -79,6 +82,12 @@ for (const p of ['develop', 'build', 'arc', 'assemble', 'punch', 'echo', 'open',
     fpsWorst = Math.max(fpsWorst, Math.abs(a.scale - b.scale), Math.abs(a.x - b.x), ...a.glyphs.map((g: any, i: number) => Math.abs(g.dy - b.glyphs[i].dy) + Math.abs(g.opacity - b.glyphs[i].opacity) + Math.abs(g.blur - b.glyphs[i].blur)));
   }
 }
+const crisp = { preset: 'crisp', text: 'Notes in thirty seconds', at: 100 };
+const calm = { preset: 'calm', text: 'It reads the whole meeting', at: 100 };
+const cr = (f: number) => st(f, crisp).glyphs[0];
+const crF = T.typeLineFrames(crisp, M(crisp), film(60));
+const caF = T.typeLineFrames(calm, M(calm), film(60));
+const cw30 = T.crispWords(film(30));
 const dot = { preset: 'punch', text: 'Quiet', at: 0, dot: true };
 const dotF = T.typeLineFrames(dot, M(dot), film(60));
 console.log(JSON.stringify({
@@ -93,6 +102,10 @@ console.log(JSON.stringify({
   dive90: { r: st(121, d90).scale / st(120, d90).scale, gone: T.typeLineFrames(d90, M(d90), film(60)).gone, oy: st(101, d90).origin[1] },
   push: st(101, { preset: 'punch', text: 'Not right now', at: 0, out: 100, exit: 'push' }).opacity,
   dot: { at: dotF.dot, resolved: dotF.resolved },
+  crisp: { ticks: diffs(crF.ticks), resolved: crF.resolved, f1: cr(101), f8: cr(108), f20: cr(120), f126: cr(126), w3before: st(121, crisp).glyphs[17].opacity, w3at: st(122, crisp).glyphs[17].opacity },
+  calm: { ticks: caF.ticks, f1: st(101, calm).glyphs[0], blurMax: Math.max(...Array.from({ length: 80 }, (_, k) => Math.max(...st(100 + k, calm).glyphs.map((g: any) => g.blur)))) },
+  cw30: { dur: cw30.dur, stagger: cw30.stagger, blur: cw30.blur, rise: cw30.rise },
+  end: T.END_CARD_PRESETS, endArc: T.endCardPreset('arc'), endOpen: T.endCardPreset('open'),
   finite, repeat, fpsWorst,
   decl: { cycle: T.declares(cyc, film(60)).stepped?.length ?? 0, redact: T.declares(red, film(60)).stepped?.length ?? 0, swarm: T.declares(sw, film(60)).stepped?.[0]?.on ?? 0, dive: T.declares(dive, film(60)).seams?.[0]?.kind ?? '' },
 }));
@@ -130,6 +143,16 @@ result(P.dot.at === P.dot.resolved + 5, 'dot: the square full stop lands 5 f aft
 result(P.finite && P.repeat, 'every preset with every exit is finite and repeatable');
 result(P.fpsWorst < 1e-6, 'continuous presets give the same picture at the same second at 30 and 60 fps', P.fpsWorst.toExponential(2));
 result(P.decl.cycle === 1 && P.decl.redact === 1 && P.decl.swarm === 2 && P.decl.dive === 'zoomThrough', 'declares(): stepped runs for the cycle, the redaction and the swarm (on twos); a dive is a zoom-through seam', JSON.stringify(P.decl));
+
+// 4. the entries
+const C = P.crisp;
+result(C.ticks.join() === '7,7,7' && C.resolved > 121 && C.resolved <= 147, 'crisp: words 7 f apart (60 fps), the line landed within 26 f of its last word', `${C.ticks.join('/')} resolved ${C.resolved}`);
+result(C.f1.opacity > 0.15 && C.f1.dy > 0.15 && near(C.f1.blur, 0.08 * Math.max(0, 1 - C.f1.opacity / 0.6), 1e-6) && C.f1.blur > 0 && C.f8.dy > 0.005 && C.f8.dy < C.f1.dy && C.f8.opacity > 0.85 && C.f20.dy > 0 && C.f126.dy === 0 && C.f126.blur === 0 && C.f126.opacity === 1,
+  'crisp: a word shows on its first frame soft and low, rises 0.32 em on E.out and still moves once it reads (an 8 px blur at 1080p), home by 26 f', JSON.stringify({ f1: [C.f1.opacity, C.f1.dy, C.f1.blur].map((v) => +v.toFixed(3)), f8: +C.f8.dy.toFixed(4), f20: +C.f20.dy.toFixed(5) }));
+result(C.w3before === 0 && C.w3at > 0, 'crisp: the last word waits for its own onset, 21 f after the first', `${C.w3before} -> ${C.w3at}`);
+result(P.calm.ticks[0] === 100 && P.calm.ticks.at(-1) === 100 + 12 * 4 && P.calm.f1.dy > 0.3 && P.calm.blurMax === 0, "calm: the calm pace's reading cadence (a 48 f span for five words), a third of the line box of rise, no blur, in a crisp film too", JSON.stringify({ ticks: P.calm.ticks, dy: +P.calm.f1.dy.toFixed(3) }));
+result(near(P.cw30.dur, 13) && near(P.cw30.stagger, 3.5) && near(P.cw30.blur, 8) && P.cw30.rise === 0.32, 'crispWords(): the same entry for <Words>, in film frames at 30 fps', JSON.stringify(P.cw30));
+result(!['arc', 'assemble', 'decode', 'typeFocus', 'erode'].some((p) => P.end.includes(p)) && P.end.includes('crisp') && P.endArc === 'crisp' && P.endOpen === 'open', 'end cards: no preset that fades in letter by letter (arc becomes crisp; open stays)', P.end.join(','));
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
 console.log('\nall pass');
