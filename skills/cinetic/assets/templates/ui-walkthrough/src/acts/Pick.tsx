@@ -3,8 +3,9 @@ import { AbsoluteFill } from 'remotion';
 import { U } from '../brand/tokens';
 import { countLinear } from '../fx/Roll';
 import { TypeOn } from '../fx/TypeOn';
-import { DataRow, Photo, Pill, Row, Surface } from '../kit';
+import { DataRow, Photo, Pill, Row, Surface, surfaceShadow } from '../kit';
 import { clamp, E, lmix, mix, prog, track } from '../lib/anim';
+import { DirBlur } from '../fx/Defocus';
 import { carry } from '../lib/handoff';
 import { ACT, CUE, f60, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
@@ -30,6 +31,7 @@ export const Pick: React.FC = () => {
   // the whip's leftward speed carried in, settling: the options arrive from the right and come to rest in place
   const co = { vCut: WHIP_LEFT.vCut, settle: 70, fps: FPS };
   const inX = carry(F, ACT.pick.from, co).x - carry(ACT.pick.from + f60(200), ACT.pick.from, co).x;
+  const inV = F > ACT.pick.from ? carry(F, ACT.pick.from, co).v / U : 0; // the carried speed (px/f at 1080p) smears the arrival
   const k = zoomAt(F);
   const rowY = (i: number) => ROWS.y + i * (ROWS.h + ROWS.gap);
   const oy = rowY(pick) + ROWS.h / 2;
@@ -41,6 +43,7 @@ export const Pick: React.FC = () => {
   const pct = Math.min(99, Math.floor(countLinear(F, { from: 0, perSec: 38, start: CUE.build }, { fps: FPS }).value));
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
+      <DirBlur v={inV} axis="x" id="pick-carry">
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate3d(${inX.toFixed(2)}px, 0, 0)` }}>
         <ScriptLine id="pick" F={F} top={180 * U} color={t.text} exitDir="up" />
         <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${oy}px`, transform: `scale(${(F < CUE.toPill ? k : mix(k, 1, m)).toFixed(5)})` }}>
@@ -55,7 +58,8 @@ export const Pick: React.FC = () => {
             const y = mix(rowY(i), PILL.y, lift);
             return (
               <div key={i} style={{ position: 'absolute', left: 0, top: 0, opacity: (chosen ? 1 : 1 - gone) * clamp(p * 1.5), transform: `translate3d(${((W - w) / 2 + (1 - p) * 260 * U).toFixed(2)}px, ${y.toFixed(2)}px, 0)` }}>
-                <div style={{ width: w, height: h, borderRadius: mix(ROWS.h * 0.26, PILL.h / 2, lift), overflow: 'hidden', position: 'relative' }}>
+                {/* the container carries its own surface and the choice's ring through the morph, so the box reads on any ground */}
+                <div style={{ width: w, height: h, borderRadius: mix(ROWS.h * 0.26, PILL.h / 2, lift), overflow: 'hidden', position: 'relative', background: chosen && lift > 0 ? t.surface : undefined, boxShadow: chosen && lift > 0 ? `${surfaceShadow(t, mix(14, 30, lift), U)}, inset 0 0 0 ${(3 * U).toFixed(2)}px ${t.accent}` : undefined }}>
                   <div style={{ opacity: 1 - clamp(lift / 0.4), transform: `translate3d(0, ${(-26 * U * lift).toFixed(2)}px, 0)` }}>
                     <Row theme={t} w={ROWS.w} h={ROWS.h} glyph={(['grid', 'doc', 'star'] as const)[i % 3]} title={o.title} meta={o.meta} value={o.value} selected={chosen ? ring : 0} id={`option-${i}`} />
                   </div>
@@ -95,6 +99,7 @@ export const Pick: React.FC = () => {
           </>
         )}
       </div>
+      </DirBlur>
     </AbsoluteFill>
   );
 };

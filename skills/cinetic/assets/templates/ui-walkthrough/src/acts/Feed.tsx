@@ -23,7 +23,7 @@ export const PILL_BOX = { w: 960 * U, h: 132 * U, cx: W / 2, cy: 600 * U } as co
 
 const flick = flickFeed(ACT.feed.from, { fps: FPS, width: W, height: H }, { brake: { fast: 0.922, share: 0.6, slow: 0.96 }, distance: FEED.landRow * FEED.pitch });
 /** The counter's steps (whole frames): it grows as the feed is read, then jumps to the total. */
-export const COUNT = growthSteps(CUE.count, WALK.feed.total, {}, FPS);
+export const COUNT = growthSteps(CUE.count, WALK.feed.total, { within: CUE.land - CUE.count - f60x(6) }, FPS); // the whole count lands just before the flick does, at any tempo
 const countAt = (F: number) => COUNT.filter((s) => fd(F) >= s.at).pop()?.value ?? 0;
 /** The feed row shown at list index i (the key row lands on index landRow). */
 const rowOf = (i: number) => WALK.feed.rows[(((i - FEED.landRow + WALK.feed.key) % WALK.feed.rows.length) + WALK.feed.rows.length) % WALK.feed.rows.length];
@@ -60,6 +60,7 @@ export const Feed: React.FC = () => {
   const cx = (W - FEED.w) / 2;
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
+      <div data-audit-scroll style={{ position: 'absolute', inset: 0 }}>
       <DirBlur v={s.v} axis="y" id="feed-flick" style={{ maskImage: 'linear-gradient(180deg, transparent 0%, black 22%, black 82%, transparent 100%)' }}>
         {Array.from({ length: FEED.rows }, (_, i) => {
           const y = H / 2 - FEED.h / 2 + i * FEED.pitch - s.y;
@@ -73,6 +74,7 @@ export const Feed: React.FC = () => {
           );
         })}
       </DirBlur>
+      </div>
       {F >= CUE.lift && (
         <div style={{ position: 'absolute', left: 0, top: 0, width: box.w, height: box.h, borderRadius: mix(30 * U, PILL_BOX.h / 2, m), overflow: 'hidden', background: t.surface, boxShadow: `${surfaceShadow(t, 34, U)}, inset 0 0 0 ${(3 * U).toFixed(2)}px ${t.accent}`, transform: `translate3d(${(W / 2 - box.w / 2).toFixed(2)}px, ${(box.cy - box.h / 2).toFixed(2)}px, 0)` }}>
           <div style={{ opacity: 1 - clamp(m / 0.35), transform: `translate3d(0, ${(-26 * U * m).toFixed(2)}px, 0)` }}>

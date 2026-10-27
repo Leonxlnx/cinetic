@@ -5,6 +5,7 @@ import { Cursor, cursorRise, pressAt } from '../fx/Cursor';
 import { TypeOn, typeSchedule } from '../fx/TypeOn';
 import { Field as FieldPart, Tile } from '../kit';
 import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
+import { DirBlur } from '../fx/Defocus';
 import { launch } from '../lib/handoff';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
@@ -21,7 +22,7 @@ const GRID = { cols: 3, w: 470 * U, gap: 44 * U, y: 620 * U, rowH: 420 * U };
 /** The pull-back's scale and the screen height it scales about (the upper third: the content rises as it shrinks). */
 const PULL = { k: 0.66, oy: 0.28 * H };
 /** The whip into the feed: px per frame on the cut, upward. */
-export const WHIP_UP = { vCut: -150 * U };
+export const WHIP_UP = { vCut: -60 * U }; // the flick in the feed picks this up; faster smears the results' read labels into a double image
 
 /** When each result tile appears (absolute frame): +8 f a column, +20 f a row. */
 export const tileAt = (i: number) => CUE.develop + f60x(8) * (i % GRID.cols) + f60x(20) * Math.floor(i / GRID.cols);
@@ -37,6 +38,7 @@ export const Field: React.FC = () => {
   // the whip: 0 until it builds, the whole travel on the last frame (launch() is measured from the cut)
   const lo = { vCut: WHIP_UP.vCut, fps: FPS };
   const up = launch(F, ACT.feed.from - 1, lo).x - launch(ACT.feed.from - 1 - f60x(90), ACT.feed.from - 1, lo).x;
+  const whipV = launch(F, ACT.feed.from - 1, lo).v / U; // the whip's speed (px/f at 1080p) smears the layer along it
   const arrive = prog(F, ACT.field.from, ACT.field.from + f60x(20), E.snapOut);
   // the hand: up from below the frame onto the button, the press, then off the frame once the product works alone
   const btn = { x: fieldX + FIELD.w - FIELD.button / 2 - 20 * U, y: FIELD.y + FIELD.h / 2 + 10 * U };
@@ -47,6 +49,7 @@ export const Field: React.FC = () => {
   const erased = F >= CUE.typeIn - 1;
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
+      <DirBlur v={whipV} axis="y" id="field-whip">
       <Cam k={k} oy={PULL.oy} dy={up}>
         <ScriptLine id="step1" F={F} top={170 * U} color={t.text} exitDir="up" />
         <At x={fieldX} y={FIELD.y + (1 - arrive) * 60 * U} style={{ opacity: arrive }}>
@@ -89,6 +92,7 @@ export const Field: React.FC = () => {
           );
         })}
       </Cam>
+      </DirBlur>
       {F >= CUE.cursor && away < 1 && (
         <Cursor x={hand.x} y={hand.y + mix(0, H * 0.7, away)} opacity={hand.opacity * (1 - away)} shape="hand" press={press} fill={t.text} outline={t.ground} scale={1.6 * U} shadow="drop" />
       )}

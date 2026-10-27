@@ -24,7 +24,7 @@ export const Claim: React.FC = () => {
   const snapped = F >= CUE.claimSnap;
   const reveal = prog(F, CUE.claim, CUE.claim + f60x(12), E.snapOut);
   const soft = snapped ? mix(6, 0, clamp((F - CUE.claimSnap) / f60x(6))) : 0;
-  const k = creep(F, CUE.claimSnap, { pctPerSec: 0.05 }, FPS) * lmix(1, 1.6, intoCut(F, ACT.field.from, 30, FPS));
+  const k = creep(F, CUE.claimSnap, { pctPerSec: 0.05 }, FPS) * lmix(1, 1.35, intoCut(F, ACT.field.from, 30, FPS)); // x1.35 keeps the read type under 20 px/f into the cut
   const starts = words.map((_, i) => (i === 0 ? CUE.claim - f60(60) : CUE.claimSnap + f60(CLAIM_GAP * i)));
   const key = 0.06 * hitPulse(F - CUE.claimLight, 8, 48, FPS); // one light event under the read: the key swells across the line
   return (

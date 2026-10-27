@@ -28,13 +28,15 @@ export const Claim: React.FC = () => {
   const x0 = 170 * U;
   const y1 = H / 2 - size * 1.05;
   const y2 = H / 2 + size * 0.02;
-  const push = prog(F, CUE.dim, CUE.dim + f60x(8), E.jump); // the first fragment pushes up and dims
+  const push = prog(F, CUE.dim, CUE.dim + f60x(20), E.stdInOut); // the first fragment pushes up and dims (under 20 px/f: it stays readable)
   const rise = prog(F, CUE.frag2, CUE.frag2 + f60x(12), E.snapOut);
   const erase = prog(F, CUE.erase, CUE.erase + f60x(14), E.buildIn); // the words wipe away right to left, the stop stays
   const stopIn = prog(F, CUE.stop, CUE.stop + f60x(10), E.snapOut);
   const side = size * 0.2;
   const stop = { x: x0 + w2 + side * 0.25, y: y2 + size * TYPE.hero.lead * 0.78 - side };
-  const inX = carry(F, ACT.claim.from, { vCut: TICKER_EXIT.vCut, settle: 50, fps: FPS }).x - carry(ACT.claim.from + f60(200), ACT.claim.from, { vCut: TICKER_EXIT.vCut, settle: 50, fps: FPS }).x;
+  // the type takes 60 % of the carried move and settles in 14 f: its words pop under 20 px/f and are read near still
+  const co = { vCut: TICKER_EXIT.vCut, settle: 14, settleOver: 10, fps: FPS };
+  const inX = 0.6 * (carry(F, ACT.claim.from, co).x - carry(ACT.claim.from + f60(200), ACT.claim.from, co).x);
   // the zoom through the full stop: its centre travels to the frame's centre while it grows to the hand-off size
   const z = prog(F, CUE.zoomIn, ACT.rings.from, E.launchIn);
   const k = lmix(1, STOP_HANDOFF / side, z);

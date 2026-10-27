@@ -17,8 +17,13 @@ export const DARK = kitTheme('slateMid', C.accent);
 /** The absolute film frame inside an act (acts are Sequences: their own frame starts at 0). */
 export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;
 
-/** The size a line of the script is set at: its role's size, smaller only when it would not fit the safe width. */
-export const lineSize = (text: string, role: 'line' | 'display' = 'line', share = 1) =>
+/**
+ * The size a line of the script is set at: its role's size, smaller only when it would not fit `share` of the safe
+ * width. The default share keeps a statement under 61 % of the frame (the layout audit's statement width) with room
+ * for a hold's creep and a push into the cut; pass a larger share only for a payoff or a giant word.
+ */
+export const LINE_SHARE = 0.64;
+export const lineSize = (text: string, role: 'line' | 'display' = 'line', share = LINE_SHARE) =>
   Math.min(TYPE[role].size * U, fitSize(text, (W - 2 * SAFE.x) * share, TYPE[role].size * U, TYPE[role].weight, TYPE[role].track));
 
 /**

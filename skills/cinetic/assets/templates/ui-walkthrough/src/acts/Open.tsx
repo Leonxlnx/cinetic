@@ -18,7 +18,7 @@ export const Open: React.FC = () => {
   const c = copy('promise');
   const snap = LINESNAP_HOUSE.snap.factor;
   // the finished (snapped) line fits the safe width at the display role: before the snap it is that size / x2.2
-  const size = lineSize(c.text, 'display') / snap;
+  const size = lineSize(c.text, 'display', 0.58) / snap; // narrower than a statement: the hold's creep and the push grow it to about 60 % by the cut
   const n = c.text.trim().split(/\s+/).length;
   const starts = Array.from({ length: n }, (_, i) => c.in + f60(PROMISE_GAP * i));
   const k = creep(F, 0, { pctPerSec: 0.05 }, FPS) * lmix(1, 1.04, prog(F, CUE.exitOpen, ACT.card.from, E.launchIn));
