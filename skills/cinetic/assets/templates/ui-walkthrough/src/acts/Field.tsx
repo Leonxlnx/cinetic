@@ -2,7 +2,7 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { U } from '../brand/tokens';
 import { Cursor, cursorRise, pressAt } from '../fx/Cursor';
-import { TypeOn, typeSchedule } from '../fx/TypeOn';
+import { ERASE_HOUSE, eraseSchedule, TypeOn, typeSchedule } from '../fx/TypeOn';
 import { Field as FieldPart, Tile } from '../kit';
 import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
 import { DirBlur } from '../fx/Defocus';
@@ -26,6 +26,18 @@ export const WHIP_UP = { vCut: -60 * U }; // the flick in the feed picks this up
 
 /** When each result tile appears (absolute frame): +8 f a column, +20 f a row. */
 export const tileAt = (i: number) => CUE.develop + f60x(8) * (i % GRID.cols) + f60x(20) * Math.floor(i / GRID.cols);
+/**
+ * The held backspace from CUE.erase: the house rhythm, its gaps shortened in proportion when the placeholder would
+ * not clear by the frame before the value's first key (a long placeholder, a fast track), so it never ends in a pop.
+ */
+export const ERASE = (() => {
+  const n = [...WALK.field.placeholder].length;
+  const room = CUE.typeIn - 1 - CUE.erase;
+  const need = Math.max(1, ...eraseSchedule(n, { start: 0 }, { fps: FPS }));
+  const k = Math.min(1, room / need);
+  if (k < 0.5) throw new Error(`Field: the placeholder's ${n} characters need ${need} f to clear and the erase has ${room} f (CUE.erase to CUE.typeIn): shorten the placeholder or move CUE.erase earlier`);
+  return { start: CUE.erase, gaps: ERASE_HOUSE.gaps60.map((g) => g * k) };
+})();
 /** The frame the typed value's last key lands (for the sound). */
 export const typedKeys = () => typeSchedule(WALK.field.value, { start: CUE.typeIn, kind: 'human' }, { fps: FPS });
 
@@ -68,7 +80,7 @@ export const Field: React.FC = () => {
           >
             {!erased ? (
               <span style={{ color: t.mute }}>
-                <TypeOn id="field-placeholder" text={WALK.field.placeholder} frame={F} start={ACT.field.from - 1} kind="human" from={1} erase={{ start: CUE.erase }} caretColor={t.accent} role="ui" size={FIELD.h * 0.36} />
+                <TypeOn id="field-placeholder" text={WALK.field.placeholder} frame={F} start={ACT.field.from - 1} kind="human" from={1} erase={ERASE} caretColor={t.accent} role="ui" size={FIELD.h * 0.36} />
               </span>
             ) : (
               <TypeOn id="field-value" text={WALK.field.value} frame={F} start={CUE.typeIn} kind="human" caretColor={t.accent} caretOut={CUE.press} role="ui" size={FIELD.h * 0.36} />
