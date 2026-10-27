@@ -167,4 +167,17 @@ export const BorderBleed: React.FC<BorderBleedProps & { frame: number; x: number
 };
 
 /** Continuous by design (the absorb is a cut of tiny dots on a kick: a cue, not a stepped run). */
+/** A turning rim: a conic gradient of the section's colours around a container's border, 3 deg a 60 fps frame. */
+export const SPIN_RIM = { deg60: 3 } as const;
+
+/**
+ * The background of a rim that turns (a pill whose border runs its colours round after its label swaps): a conic
+ * gradient through `stops` (closed back to the first), turned SPIN_RIM.deg60 a 60 fps frame from `at` (0 before).
+ * Paint it on the outer box and lay the fill inset by the rim's width over it. Pure.
+ */
+export const spinRim = (frame: number, at: number, stops: string[], o: { deg60?: number; from?: number } = {}, film?: Partial<FilmCtx>): string => {
+  const deg = (o.from ?? 0) + (Math.max(0, frame - at) * (o.deg60 ?? SPIN_RIM.deg60) * 60) / fpsOf(film);
+  return `conic-gradient(from ${deg.toFixed(2)}deg, ${[...stops, stops[0]].join(', ')})`;
+};
+
 export const declares = (_p?: Partial<BorderBleedProps>, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

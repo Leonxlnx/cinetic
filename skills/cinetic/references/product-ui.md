@@ -351,6 +351,10 @@ sample.
   walking its fill through the brand's colours to a held one, back in 6 f), then leaves spinning (`cursorExit()`).
   `StepList rise` lifts each new row inside the stack as it steps in; a `pending` row never checks and pales.
   `TypeOn kind="stream"` takes `rates` (a fast run slowing from a given character) and `skip` (a burst on one frame).
+- **Glass and rims**: frost over a live layer is the browser's own (`fx/Glass` `backdropGlass()`: backdrop-filter is
+  deterministic in Remotion's Chrome), with your own rim and shadow; the copy modes stay for refraction and reeds. A
+  container whose border runs its colours round (after its label swaps) paints `fx/BorderBleed` `spinRim()` (a conic,
+  3 deg a 60 fps frame) on the outer box with the fill inset over it.
 - **Launch and pop**: a send button that takes off leaves on a J (`fx/Flight` `jLaunch()`: x on a cubic-out, y on a
   cubic-in, growing x1.74 over 36 f); an accent pill landing on a cut pops from 62 % to full in 2 f with no spring
   (`fx/MicroUI` `popScale()`): an overshoot there reads as a toy.

@@ -7,9 +7,12 @@ import { bakeGrain, bakePixels, bakePlate } from './Gradients';
 import { hash01 } from './plates';
 
 /**
- * Glass: a material faked in 2D, deterministic and cheap. CSS cannot sample what is behind a shape, so Glass
- * takes the layer behind as `backdrop` (a full-frame node, drawn by the caller underneath too) and draws an
- * altered copy of it inside the shape; filters are fixed per mode, only clip paths, transforms and opacity move.
+ * Glass: a material faked in 2D, deterministic and cheap. The copy modes take the layer behind as `backdrop` (a
+ * full-frame node, drawn by the caller underneath too) and draw an altered copy of it inside the shape; filters are
+ * fixed per mode, only clip paths, transforms and opacity move. For plain frost over a live layer, `backdropGlass()`
+ * lets the browser sample what is behind: backdrop-filter renders deterministically in Remotion's Chrome (angle and
+ * swangle alike), so a panel blurs whatever passes under it with no copy; keep the copy modes for refraction, reeds
+ * and thin film, which backdrop-filter cannot draw.
  * The copies sit in [data-audit-copy]: the layout audit measures the backdrop's text where it is drawn underneath.
  *
  *   frost      a copy at one blur level (22 px at 1080p), brightened and a little more saturated, a 14 % white
@@ -239,4 +242,17 @@ export const Glass: React.FC<GlassProps & { frame: number; backdrop: React.React
 };
 
 /** Glass is a material: nothing steps or flashes. */
+/** Browser frost: the blur behind the panel (px at 1080p), its saturation, and a veil of `tint` at this share. */
+export const GLASS_BACKDROP = { blur: 10, saturate: 1.2, veil: 0.14 } as const;
+
+/**
+ * CSS for a frosted panel that blurs what is really behind it (backdrop-filter, with the -webkit- twin) under a thin
+ * veil of `tint` (default the white token; on a dark stage pass the stage's surface). `u` scales the blur (the film's
+ * unit). Spread it on the panel; add the rim and shadow yourself.
+ */
+export const backdropGlass = (o: { blur?: number; saturate?: number; veil?: number; tint?: string; u?: number } = {}): React.CSSProperties => {
+  const f = `blur(${((o.blur ?? GLASS_BACKDROP.blur) * (o.u ?? 1)).toFixed(2)}px) saturate(${o.saturate ?? GLASS_BACKDROP.saturate})`;
+  return { backdropFilter: f, WebkitBackdropFilter: f, background: `color-mix(in srgb, ${o.tint ?? C.white} ${((o.veil ?? GLASS_BACKDROP.veil) * 100).toFixed(1)}%, transparent)` };
+};
+
 export const declares = (_p?: Partial<GlassProps>, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });
