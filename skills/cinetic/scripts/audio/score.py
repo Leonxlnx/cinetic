@@ -1026,7 +1026,16 @@ def band_snr(evt, bus):
     A-weighted energy (a landing is heard by its knock, not its sub). Returns (band_hz, snr_db)."""
     if len(evt) < 256:
         return None
-    w = np.hanning(len(evt))
+    # flat with raised-cosine edges (1 ms in, 5 ms out): a Hann window over the take would weigh its attack, in its
+    # first milliseconds, at nearly nothing (a pop read 10-15 dB under what plays) while the steady music keeps its level
+    w = np.ones(len(evt))
+    for k, head in ((min(len(evt) // 4, int(0.001 * SR)), True), (min(len(evt) // 4, int(0.005 * SR)), False)):
+        if k > 1:
+            r = 0.5 - 0.5 * np.cos(np.pi * np.arange(k) / k)
+            if head:
+                w[:k] = r
+            else:
+                w[-k:] = r[::-1]
     A = np.abs(np.fft.rfft(evt.mean(axis=1) * w)) ** 2
     B = np.abs(np.fft.rfft(bus.mean(axis=1) * w)) ** 2
     fr = np.fft.rfftfreq(len(evt), 1 / SR)
