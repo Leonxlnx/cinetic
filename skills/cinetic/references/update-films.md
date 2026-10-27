@@ -128,9 +128,10 @@ performance gain, a fix), show its consequence: the waiting that no longer happe
 ## 5. Sound
 
 Like every cinetic film, an update film is cut to a licensed, human-made, instrumental track
-(`references/music.md`). Pick it first: the dealt direction lists shortlist tracks in its tempo range
-(`deck.py --show`); 116-128 BPM suits one bar a change. Bring it in with `new-film.sh --music <file>` and its licence
-flags (or later `python3 scripts/audio/track.py add`), then `track.py edit --bars N --reveal-bar K --end
+(`references/music.md`). Find it first, for this film: `node scripts/music.mjs search --mood "<the film's mood
+words>" --bpm 116-128 --length <s>` (116-128 BPM suits one bar a change), `sheet --measure`, then `get '#n' --to
+audio/music` (its licence record beside it; never the last film's track). Bring it in with `new-film.sh --music
+<file> --record <licence.json>` (or a track found elsewhere with `python3 scripts/audio/track.py add`), then `track.py edit --bars N --reveal-bar K --end
 stop|button|ring`, `track.py grid` and `track.py check`: `src/music.ts` then carries the track and `b()` follows its
 bars. The effects mark the version locking, each change's contact frame, one soft sound per line, the moves
 between acts, and the one element at the lockup (`references/sound.md`). A short update film often ends on `button`
