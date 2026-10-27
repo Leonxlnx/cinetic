@@ -20,12 +20,14 @@ signature replace the template's), then cut it to the track: `track.py grid` mov
 | `update` | 8-20 s | "vX is out": 2-4 changes to show | the version as the set, one product moment per change, the payoff, the end card with the version |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | the product's breadth is the story (sources, formats, integrations), or a launch film needs its close | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
+| `prompt-run` | 18-20 s | the product does work from a request (an agent, an assistant, a generator): what goes in is a sentence, what comes out is done work | a pill among the tools it connects, the label swapping on the kick, an iris onto the request box, the request typed, a punch-in and the click, the steps it runs, the running row becoming the result, the lockup |
 | `social-ad` | 15 s | a short ad for a feed: the product is pictures (things people save, make, buy, plan), the cut is the energy | the opener built word by word onto a pile of pictures, the mark spinning in on a picture, a wall round the claim, two rivers under a label that swaps its last word, two imperatives, the lockup |
 | `type-explainer` | 20-30 s | the idea is simple to say and the words carry it: a calm explainer on a white page, little or no product UI | the name as a giant word, what it is said at the pace of speech, the problem, the promise with a picture inside it that becomes the shot, one soft wipe, the mark between the words becoming the hub of the product's parts, the close |
 
 The test: say the film in one sentence. "You give it X and get Y" is a walkthrough; "It works with everything and
 returns anything" is a reel; "Here is what changed" is an update; "It is X, it fixes Y, and these are its parts" told
-in words is an explainer; "Here is everything it is for, fast" over the product's pictures is an ad. When none fits, start from the starter. A launch
+in words is an explainer; "Here is everything it is for, fast" over the product's pictures is an ad; "Ask it, it does the steps, here is the result" is a prompt run (a
+walkthrough when the user does the steps). When none fits, start from the starter. A launch
 film may end on the reel's close (rebuild its acts after your own) or open on the walkthrough's first three acts.
 
 ## ui-walkthrough
@@ -50,6 +52,19 @@ squashes round its line, `Resize` carry, and counter-creeps into a zoom-out), `t
 a hard step every 10 f), `claim` (the film's one colour event: two fragments, the first pushing up and dimming as the
 second rises, the full stop its own square), `rings` (square rings born from that stop, `Radiate` with `bornAt`, then
 the flood), `end` (the name pops, the rest types, the tagline takes its place). Slots: `src/reel.ts`.
+
+## prompt-run
+
+One object through many states; the product's UI tells the story. Six acts on whole bars at 120 BPM (19 s): `pill`
+(the label written by a front among the tools it connects; on the kick the tools leave along their own vectors,
+`scatterState`, the label swaps, the rim turns; a cubic-in wind-up), `ask` (the reveal iris, `irisReveal`, out of the
+pill onto a field in the accent's hue, the film's one colour event; the request box, kit `Composer`, pushes in while its
+width unfolds on its own track; the line over it written by a front; the request typed fast with a burst, `TypeOn`
+stream `rates` and `skip`), `click` (a punch-in with a blur bridge, `blurBridge`, the close-up breathing back; the
+pointer, `Cursor` shape `pointer`, clicks, the send button swells, `swellState`, the pointer spins out, `cursorExit`; an
+ease-in whip up), `run` (the request as a `Bubble`, a status with `ThinkingDots`, `StepList` rows rising in on an
+accelerating cadence, the last pending), `done` (the running row grows into the result card), `end`. Slots:
+`src/run.ts`.
 
 ## social-ad
 

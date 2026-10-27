@@ -1,0 +1,52 @@
+{
+ "name": "prompt-run",
+ "about": "An 18-20 s demo of a product that does work from a request, one object through many states: a pill holding what it is among the tools it connects; on the kick the tools fly off and the label swaps; a wind-up opens an iris onto a colour field where the request box pushes in and the request types; a punch-in with a blur bridge, the pointer clicks send and the button swells; a whip up into the run (the request as a bubble, the steps ticking in, the last still running); the row becomes the result; the lockup. new-film.sh --template prompt-run lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "bpm": 120,
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every demo is cut to a licensed, human-made, instrumental track (references/music.md): its kick carries the swap and the act lines; earshot effects mark the product's state changes (the click, the checks, the result); never effects only.",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 110-128 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); 110-128 BPM with a clear kick suits the swap on the kick",
+  "add": "bash scripts/new-film.sh <dir> --template prompt-run --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end stop|button|ring",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "next": [
+  "prompt run: fill src/run.ts (the script in plain words: line 1 says what the product is, 2-7 words a line, and the product's own",
+  "  tools, request, model, status, steps and result in every [slot]), rebuild the product's real request box and run view where",
+  "  the kit stands in, then deal its direction: python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3"
+ ],
+ "copy": [
+  "src/run.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/stage.tsx",
+  "src/acts/Pill.tsx",
+  "src/acts/Ask.tsx",
+  "src/acts/Click.tsx",
+  "src/acts/Run.tsx",
+  "src/acts/Done.tsx",
+  "src/acts/End.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ]
+}

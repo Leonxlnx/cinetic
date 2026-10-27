@@ -51,7 +51,9 @@
 #                  product's flow in steps: the promise, the input becoming the output, proof, a claim, then
 #                  input -> the product reads -> insight -> choice -> output, the end card), capability-reel
 #                  (a launch close: a ring of sources, one real record, a statement, a capability ticker, the
-#                  big claim on the accent, a transition out of its full stop, the end card), social-ad (a 15 s
+#                  big claim on the accent, a transition out of its full stop, the end card), prompt-run (a
+#                  request in, the work in steps, the result out: a pill among the tools, an iris onto the request
+#                  box, the click, the steps, the row becoming the result), social-ad (a 15 s
 #                  ad: the opener built word by word onto a pile of pictures, the mark spinning in, a wall round
 #                  the claim, two rivers of pictures, two imperatives, the lockup) and type-explainer
 #                  (one short sentence at a time on a white page: the name as a giant word, what it is said at
