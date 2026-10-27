@@ -289,7 +289,7 @@ result(P.CARRY.ratio[1] === 0.7 && P.CARRY.decay60[1] === 0.89 && P.SPEED.residu
   const k = P.PACE.crisp;
   const okCalm = c.wordDur === 32 && c.ease === 'snapOut' && c.rise === 0.33 && c.riseUnit === 'line' && c.riseDur === 25 && c.blur === 0 && c.stagger === 12 && c.cadence === 'reading'
     && c.exit === 'auto' && c.exitDur === 17 && c.exitFade === 10 && c.recentre === 'jump' && c.recentreDur === 22 && c.recentreLead === 0
-    && c.accentHold === 18 && c.accentCool === 13 && c.accentSpace === 'srgb' && c.fx.typeFPerChar === 2 && c.fx.iris === 18 && c.fx.irisMode.ratio === 1.28;
+    && c.accentHold === 18 && c.accentCool === 13 && c.accentSpace === 'oklab' && c.fx.typeFPerChar === 2 && c.fx.iris === 18 && c.fx.irisMode.ratio === 1.28;
   const okCrisp = k.wordDur === 26 && k.riseDur === 22 && k.stagger === 8 && k.blur === 0 && k.exitDur === 14 && k.exitFade === 8 && k.recentreDur === 16 && k.accentHold === 7 && k.accentCool === 13 && k.fx.mask.stagger === 8;
   const holds = c.holdBase === 42 && c.holdPerWord === 8 && c.holdMin === 60 && c.readMax === 150 && k.holdBase === 36 && k.holdMin === 42 && k.readMax === 120;
   result(okCalm, 'pace calm: 32 f on snapOut, rise a third of the line over 25 f, 12 f apart on the reading cadence, exit 17 f, jump 22 f, accent 18 + 13 f');

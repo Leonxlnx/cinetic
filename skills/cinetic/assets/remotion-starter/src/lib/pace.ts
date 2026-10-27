@@ -7,7 +7,8 @@
 //   fragment's hold: 0.6-1.2 s; calm sits at the slow end, about 1.0-1.5 s) and takes turns with
 //   the picture. A build line re-centres with a jump (22 f on E.jump, no lead); exits accelerate
 //   (into a cut or a mask at full opacity, otherwise with a short fade in the move's last half);
-//   the newest fragment holds the accent 18 f, then cools to ink linearly over 13 f.
+//   the newest fragment holds the accent 18 f, then cools to ink linearly over 13 f in OKLab (its hue held:
+//   an sRGB mix drifts it on the way to ink).
 // - crisp: the denser launch tempo (26 f entrances, 8 f apart, faster exits) for briefs that ask
 //   for energy: teasers, drops, dev-tool launches.
 // src/timeline.ts picks one with PACE_NAME; the components read their defaults from the film
@@ -58,7 +59,7 @@ export type Pace = {
   accentDur: number; // frames the newest fragment shows the accent before it is ink again (1.1 components: an eased relax over this; 1.2: accentHold + accentCool)
   accentHold?: number; // 1.2: frames the accent holds after the fragment lands
   accentCool?: number; // 1.2: frames of the linear cool to ink
-  accentSpace?: 'srgb' | 'oklab'; // 1.2: the space the cool is linear in (lib/color.ts accentFade)
+  accentSpace?: 'srgb' | 'oklab'; // 1.2: the space the cool is linear in (lib/color.ts accentFade; house OKLab, which holds the hue)
   recentre?: 'jump' | 'glide' | 'slot'; // 1.2: how a build line makes room (jump: E.jump, lead 0; glide: 1.1 E.expo; slot: opens recentreLead early)
   recentreDur: number; // frames of a build line's re-centre
   recentreLead: number; // frames the re-centre starts before the new fragment (0 for a jump)
@@ -106,7 +107,7 @@ export const PACE: Record<PaceName, Pace> = {
     accentDur: 31,
     accentHold: 18,
     accentCool: 13,
-    accentSpace: 'srgb',
+    accentSpace: 'oklab',
     recentre: 'jump',
     recentreDur: 22,
     recentreLead: 0,
@@ -152,7 +153,7 @@ export const PACE: Record<PaceName, Pace> = {
     accentDur: 20,
     accentHold: 7,
     accentCool: 13,
-    accentSpace: 'srgb',
+    accentSpace: 'oklab',
     recentre: 'jump',
     recentreDur: 16,
     recentreLead: 0,

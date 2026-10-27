@@ -352,7 +352,7 @@ export const chainState = (F: number, o: ChainSpec, film?: Partial<FilmCtx>): Ch
     let fragColor: string;
     if (accent === 'none') fragColor = mixColor(color, color, 0);
     else if (accent === 'hold' && j === last) fragColor = mixColor(accentColor, accentColor, 0);
-    else if (accent === 'transient') fragColor = accentFade(F, settles[j], { accent: accentColor, ink: color, hold: (hold * 60) / fps, cool: (cool * 60) / fps, space: o.accentSpace ?? pace.accentSpace ?? 'srgb', fps });
+    else if (accent === 'transient') fragColor = accentFade(F, settles[j], { accent: accentColor, ink: color, hold: (hold * 60) / fps, cool: (cool * 60) / fps, space: o.accentSpace ?? pace.accentSpace ?? 'oklab', fps });
     else fragColor = mixColor(accentColor, color, prog(F, settles[j], settles[j] + f60(pace.accentDur, fps), E.smooth)); // 1.1 recency (and the earlier fragments of 'hold')
     let scale = 1;
     let fblur = 0;

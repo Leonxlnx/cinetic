@@ -48,8 +48,8 @@ import { edgeMask } from './Wipe';
  * 'rtl' / 'ltr' `exitStagger` apart (2 f@60), 'stagger' 6 f@60 apart left to right, 'together'.
  *
  * Accent (`accent` colour): each word lands in it and cools to `color` (the ink) after `accentHold`,
- * linearly over `accentCool` (pace: 18 + 13 f@60 calm), in `accentSpace` (house sRGB, the way the
- * cool reads on screen). `accentOn` picks the words (all, first, last, or indices).
+ * linearly over `accentCool` (pace: 18 + 13 f@60 calm), in `accentSpace` (house OKLab: the hue holds
+ * while the chroma falls; an sRGB mix drifts the hue on the way to ink). `accentOn` picks the words (all, first, last, or indices).
  * Oversize (`oversize`): the fragment cuts in larger (house x1.6) and settles to size on M.oversize
  * (fx/Oversize), optionally defocused until a frame; it is anchored at `oversize.origin`.
  *
@@ -382,7 +382,7 @@ export const wordState = (frame: number, o: WordsSpec, film?: Partial<FilmCtx>):
     const colors = sweep ? [...fr.word].map((_, li) => sweepColor(frame, { ...sweep, start: fr.start }, li, fr.word.length, film)) : undefined;
     let color: string | undefined;
     if (o.accent && accentPicked(o.accentOn, i, frames.length)) {
-      const a = { accent: o.accent, ink, hold: (hold * 60) / k.fps, cool: (cool * 60) / k.fps, space: o.accentSpace ?? k.pace.accentSpace ?? 'srgb', fps: k.fps };
+      const a = { accent: o.accent, ink, hold: (hold * 60) / k.fps, cool: (cool * 60) / k.fps, space: o.accentSpace ?? k.pace.accentSpace ?? 'oklab', fps: k.fps };
       if (!o.accentEase) color = accentFade(frame, fr.settle, a);
       else {
         const t = o.accentEase(accentT(frame, fr.settle, a));

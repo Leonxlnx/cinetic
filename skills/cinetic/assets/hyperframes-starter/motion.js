@@ -49,7 +49,7 @@
       cadence: 'reading', exit: 'auto', exitDur: 17, exitFade: 10, exitLift: 0.12, holdBase: 42, holdPerWord: 8,
       holdMin: 60, readMax: 150, gapMin: 30, gapMax: 90, maxNewWords: 4, maxVisibleBuild: 8, maxVisibleReplace: 5,
       maxWordsPerSec: 1.2, avgWordsPerSec: 0.9, maxWords: 30, textShare: 0.65, freeRun: 90, maxGap: 72, accentDur: 31,
-      accentHold: 18, accentCool: 13, accentSpace: 'srgb', recentre: 'jump', recentreDur: 22, recentreLead: 0,
+      accentHold: 18, accentCool: 13, accentSpace: 'oklab', recentre: 'jump', recentreDur: 22, recentreLead: 0,
       move: { base: 0.5, perPx: 0.0016, camMin: 0.9, camMax: 3 },
       fx: {
         mask: { stagger: 10, dur: 10, exitDur: 22, head: 'linearStop', lastScale: 2.8 }, typeFPerChar: 2,
@@ -62,7 +62,7 @@
       cadence: 'reading', exit: 'auto', exitDur: 14, exitFade: 8, exitLift: 0.19, holdBase: 36, holdPerWord: 6,
       holdMin: 42, readMax: 120, gapMin: 18, gapMax: 90, maxNewWords: 5, maxVisibleBuild: 10, maxVisibleReplace: 10,
       maxWordsPerSec: 2, avgWordsPerSec: 1.2, maxWords: 35, textShare: 0.8, freeRun: 60, maxGap: 48, accentDur: 20,
-      accentHold: 7, accentCool: 13, accentSpace: 'srgb', recentre: 'jump', recentreDur: 16, recentreLead: 0,
+      accentHold: 7, accentCool: 13, accentSpace: 'oklab', recentre: 'jump', recentreDur: 16, recentreLead: 0,
       move: { base: 0.35, perPx: 0.00135, camMin: 0.6, camMax: 2.4 },
       fx: {
         mask: { stagger: 8, dur: 10, exitDur: 16, head: 'linearStop', lastScale: 2.8 }, typeFPerChar: 2,

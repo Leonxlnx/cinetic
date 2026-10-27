@@ -651,7 +651,7 @@ launch with `exitOrder: 'rtl'` and `exitStagger` of one frame: the words vanish 
 last frames and the cut comes at speed.
 
 **The transient accent.** The newest thing lands in the accent, holds it, then cools to ink linearly: `accentHold` /
-`accentCool` (house 18 + 13 f calm, 7 + 13 crisp), `accentSpace` (`'srgb'`, or `'oklab'` for even lightness steps),
+`accentCool` (house 18 + 13 f calm, 7 + 13 crisp), `accentSpace` (`'oklab'`, house: the hue holds while the chroma falls; `'srgb'` drifts the hue on the way to ink),
 `accentOn` (`'all'`, `'first'`, `'last'`, indices). `Chain` `accent`: `'transient'` (house), `'hold'` (the payoff keeps
 it), `'recency'` (1.1), `'none'`. Colour on type is transient: a word that stays accent-coloured is the payoff, once.
 

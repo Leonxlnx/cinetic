@@ -817,7 +817,7 @@ The gaps between keys shrink (5, 2, 2, 1, 1, 1 frames) while the camera follows 
 
 Whatever just landed wears the accent for a moment, then cools to ink in a straight line, so a short coloured wake leads the eye.
 
-- **Build:** Words: accent={C.accent} color={C.ink} (accentOn 'all', 'first', 'last' or indices). Chain: accent="transient" (the 1.2 pace's default). Each word or fragment holds the accent accentHold after its settle (the frame it reads as landed: its rise slower than the fastest hold drift), then cools linearly over accentCool in accentSpace 'srgb' (lib/color.ts accentFade). accent="hold" keeps the last fragment in the accent for a payoff. Objects use accentFade() directly on their fill.
+- **Build:** Words: accent={C.accent} color={C.ink} (accentOn 'all', 'first', 'last' or indices). Chain: accent="transient" (the 1.2 pace's default). Each word or fragment holds the accent accentHold after its settle (the frame it reads as landed: its rise slower than the fastest hold drift), then cools linearly over accentCool in accentSpace 'oklab' (lib/color.ts accentFade). accent="hold" keeps the last fragment in the accent for a payoff. Objects use accentFade() directly on their fill.
 - **Primitive:** `fx/Words`, `fx/Chain`
 - **Timing:** Hold 18 f@60 then a 13 f@60 linear cool (calm); 7 + 13 (crisp). Normal: the cool starts 3-4 f@30 after the landing and lasts 6-7 f@30.
 - **Use when:** Statements building word by word, prompts typing, generated items appearing: the newest piece leads.

@@ -77,12 +77,12 @@ export const accentT = (f: number, land: number, o: { hold?: number; cool?: numb
 
 /**
  * A transient accent: the colour at frame f of something that landed on `land` in `accent` and
- * cools to `ink` (accentT's timing), linear in `space`: 'srgb' (house: how the cool reads on screen)
- * or 'oklab'.
+ * cools to `ink` (accentT's timing), linear in `space`: 'oklab' (house: the hue holds while the chroma
+ * falls) or 'srgb' (the 1.1 mix, whose in-betweens drift in hue on the way to ink).
  */
 export const accentFade = (f: number, land: number, o: { accent: string; ink: string; hold?: number; cool?: number; space?: 'srgb' | 'oklab'; fps?: number }) => {
   const t = accentT(f, land, o);
-  return (o.space ?? 'srgb') === 'srgb' ? mixRgb(o.accent, o.ink, t) : mixColor(o.accent, o.ink, t);
+  return (o.space ?? 'oklab') === 'srgb' ? mixRgb(o.accent, o.ink, t) : mixColor(o.accent, o.ink, t);
 };
 
 /**
