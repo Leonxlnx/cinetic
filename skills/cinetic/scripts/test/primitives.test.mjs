@@ -18,6 +18,9 @@
  *  10. lib/handoff counterCreep(), fx/Roll growthSteps().
  *  11. fx/DitherBands ditherBandsState(): the switched share follows E.stdInOut over 16 f at 60 fps (8 at 30),
  *      cells only ever switch on, the runs hold exactly the switched cells, declares() a stepped run and a seam.
+ *  12. lib/camera camPath(), camVel(): moves add and chain without a hold, zoom in log space, the velocity of the
+ *      framed point; fx/Defocus dirBlurMix shutter: 180 degrees at 30 fps = the house smear, 360 = twice it.
+ *  13. lib/measure solveTracking(): the least-squares em tracking that matches measured widths.
  *
  * It runs src through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/primitives.test.mjs [--verbose]
@@ -64,6 +67,12 @@ import * as Gr from '${url('fx/Grids.tsx')}';
 import * as Ho from '${url('lib/handoff.ts')}';
 import * as Ro from '${url('fx/Roll.tsx')}';
 import * as Db from '${url('fx/DitherBands.tsx')}';
+import * as Cm from '${url('lib/camera.ts')}';
+import * as Me from '${url('lib/measure.ts')}';
+const camBase = { ax: 960, ay: 540, sx: 960, sy: 540, k: 1 };
+const camMoves = [{ at: 0, frames: 20, zoom: 0.5, ease: A.E.glideOut }, { at: 15, frames: 20, pan: { x: -400 }, ease: A.E.launchIn }];
+const panOnly = [{ at: 0, frames: 10, pan: { x: 100 }, ease: A.E.linear }];
+const zoomOnly = [{ at: 0, frames: 20, zoom: 0.5, ease: A.E.linear }];
 const film60 = { fps: 60, width: 1920, height: 1080 };
 const film30 = { fps: 30, width: 1920, height: 1080 };
 const box = (w: number, h: number) => ({ x: 0, y: 0, w, h });
@@ -90,6 +99,11 @@ console.log(JSON.stringify({
   bands30: [Db.ditherBandsFrames({ at: 20 }, film30), Db.ditherBandsState(28, { at: 20 }, film30).done, Db.ditherBandsState(27, { at: 20 }, film30).done],
   bandsSubset: (() => { const o = Db.ditherOrder(192, 108, {}); const a = Db.ditherBandsState(44, { at: 40 }, film60).count; const b = Db.ditherBandsState(45, { at: 40 }, film60).count; let ok = a <= b; for (let i = 0; i < o.rank.length; i++) if (o.rank[i] < a && !(o.rank[i] < b)) ok = false; return { ok, unique: new Set(Array.from(o.rank)).size === o.rank.length }; })(),
   bandsDecl: Db.declares({ at: 40 }, film60),
+  cam: { k: [0, 20, 40].map((f) => Cm.camPath(f, camBase, camMoves).k), sx: [0, 35, 60].map((f) => Cm.camPath(f, camBase, camMoves).sx),
+    moving: range(1, 34).map((f) => { const v = Cm.camVel(f, camBase, camMoves); return v.speed + Math.abs(v.vk); }), still: Cm.camVel(36, camBase, camMoves),
+    pan: Cm.camVel(5, camBase, panOnly), zoom: Cm.camVel(5, camBase, zoomOnly) },
+  shutter: { house30: D.dirBlurMix(20, film30), s180: D.dirBlurMix(20, film30, { shutter: 180 }), s360: D.dirBlurMix(20, film30, { shutter: 360 }), h60: D.dirBlurMix(20, film60), s360at60: D.dirBlurMix(20, film60, { shutter: 360 }) },
+  trackFit: Me.solveTracking([{ w0: 100, n: 5, size: 80, target: 124 }, { w0: 200, n: 6, size: 80, target: 228.8 }]),
   dir: { slow: D.dirBlurMix(1, { fps: 60 }), v10: D.dirBlurMix(-10, { fps: 60 }), v20at30: D.dirBlurMix(20, { fps: 30 }), fast: D.dirBlurMix(200, { fps: 60 }) },
 }));
 `;
@@ -199,6 +213,24 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   result(fr30.end === 28 && done28 && !done27, 'ditherBands: 8 f at 30 fps');
   const d = P.bandsDecl;
   result(d.stepped.length === 1 && d.stepped[0].from === 40 && d.stepped[0].to === 57 && d.seams[0].at === 56 && d.seams[0].kind === 'wipe', 'ditherBands declares: every frame a step, a wipe seam when whole', JSON.stringify(d));
+}
+
+{
+  const c = P.cam; // 12. camera path, camera velocity, shutter smear
+  result(close(c.k[0], 1) && close(c.k[1], 0.5) && close(c.k[2], 0.5) && close(c.sx[0], 960) && close(c.sx[1], 560) && close(c.sx[2], 560), 'camPath: every move lands on its amount (zoom as a ratio, pan in px)', JSON.stringify(c));
+  result(c.moving.every((v) => v > 1e-6) && c.still.speed === 0 && c.still.vk === 0, 'camPath: overlapping moves chain with no held frame, still after the last');
+  result(close(c.pan.vx, 10) && close(c.pan.vy, 0) && close(c.pan.angle, 0), 'camVel: a 100 px pan over 10 f moves 10 px a frame along +x');
+  result(close(c.zoom.vk, Math.log(0.5) / 20) && close(c.zoom.speed, 0, 1e-9), 'camVel: a zoom about the framed point: ln k per frame, no travel there');
+  const lv = (m) => m.map((x) => x.level).join(',');
+  const sig = (m) => m.reduce((a, x, i) => a + (i === 0 && m.length > 1 ? x.level * (1 - (m[1]?.weight ?? 0)) : x.level * x.weight), 0);
+  const sh = P.shutter;
+  result(lv(sh.house30) === lv(sh.s180) && Math.abs(sig(sh.house30) - sig(sh.s180)) < 0.1, 'dirBlurMix shutter: 180 degrees at 30 fps is the house smear', `${JSON.stringify(sh.house30)} vs ${JSON.stringify(sh.s180)}`);
+  result(sig(sh.s360) > 1.8 * sig(sh.s180) && lv(sh.s360at60) === lv(sh.h60), 'dirBlurMix shutter: 360 doubles it at 30 fps; at 60 fps it is the house smear', `${JSON.stringify(sh.s360)} ${JSON.stringify(sh.s360at60)}`);
+}
+// 13. tracking fit
+{
+  const t = P.trackFit;
+  result(close(t.em, 0.06, 1e-12) && t.residue.every((r) => Math.abs(r) < 1e-12), 'solveTracking: recovers +0.06 em from two measured widths', JSON.stringify(t));
 }
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }

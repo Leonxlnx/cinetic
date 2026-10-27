@@ -1,6 +1,6 @@
 import React from 'react';
 import { DEFOCUS_SHARP, defocusMix, type DefocusCopy } from '../lib/defocus';
-import { type FilmCtx, fpsOf, uOf, useFilm } from '../lib/film';
+import { type FilmCtx, fpsOf, sizeOf, uOf, useFilm } from '../lib/film';
 import type { Declares } from '../timeline';
 
 /**
@@ -13,18 +13,20 @@ import type { Declares } from '../timeline';
  *             the smear a 180-degree shutter leaves at 30 fps (sigma 0.15 x px per 30 fps frame). For flick
  *             scrolls, whips, a grid rising fast and cards leaving at speed in a crisp film, where the shutter
  *             pass (render.sh --blur) is not wanted. Each level is its own static SVG gaussian (x or y only);
- *             only the copies' opacity changes from frame to frame.
+ *             only the copies' opacity changes from frame to frame. `shutter` (deg) sets the smear from the travel per
+ *             film frame instead (sigma = px/frame x shutter/360 / sqrt 12): camera whips and rivers of cards read
+ *             at 360 (sigma 0.29 x px/frame), twice the house smear at 30 fps. `angle` smears along any direction.
  */
 
 /** House numbers: the smear in seconds of travel (sigma = px/s x seconds), the speed under which nothing smears. */
-export const DIR_BLUR = { seconds: 0.0048, minPxS: 120 } as const;
+export const DIR_BLUR = { seconds: 0.0048, minPxS: 120, whipShutter: 360 } as const;
 
 /** The copies that draw a smear of a layer moving `v` px per film frame (signed; px at 1080p). Pure. */
-export const dirBlurMix = (v: number, film?: Partial<FilmCtx>, o: { seconds?: number; minPxS?: number } = {}): DefocusCopy[] => {
+export const dirBlurMix = (v: number, film?: Partial<FilmCtx>, o: { seconds?: number; minPxS?: number; shutter?: number } = {}): DefocusCopy[] => {
   const fps = fpsOf(film);
   const pxS = Math.abs(v) * fps;
   if (pxS < (o.minPxS ?? DIR_BLUR.minPxS)) return [{ level: 0, weight: 1 }];
-  const sigma = pxS * (o.seconds ?? DIR_BLUR.seconds);
+  const sigma = o.shutter !== undefined ? (Math.abs(v) * o.shutter) / 360 / Math.sqrt(12) : pxS * (o.seconds ?? DIR_BLUR.seconds);
   return sigma < DEFOCUS_SHARP ? [{ level: 0, weight: 1 }] : defocusMix(sigma);
 };
 
@@ -50,23 +52,48 @@ export const Defocus: React.FC<{ sigma: number; style?: React.CSSProperties; chi
 
 /**
  * A smear along `axis` for a layer moving `v` px per film frame (pass the speed the act already computes: a flick's
- * flickState().v, a whip's step). Sharp under DIR_BLUR.minPxS. `id` names the filters (one per instance).
+ * flickState().v, a whip's step, camVel().speed). Sharp under DIR_BLUR.minPxS. `id` names the filters (one per
+ * instance). `angle` (deg, 0 = +x, 90 = down; camVel().angle) smears along any direction: the layer is turned onto
+ * the travel inside a box as large as the frame's diagonal, smeared on x and turned back.
  */
-export const DirBlur: React.FC<{ v: number; axis?: 'x' | 'y'; id?: string; seconds?: number; style?: React.CSSProperties; children: React.ReactNode }> = ({ v, axis = 'y', id, seconds, style, children }) => {
+export const DirBlur: React.FC<{ v: number; axis?: 'x' | 'y'; angle?: number; id?: string; seconds?: number; shutter?: number; style?: React.CSSProperties; children: React.ReactNode }> = ({ v, axis = 'y', angle, id, seconds, shutter, style, children }) => {
   const film = useFilm();
   const auto = React.useId();
   const name = safeId(id ?? `dirblur${auto}`);
-  const copies = dirBlurMix(v, film, { seconds }).map((c) => ({ ...c, level: c.level * uOf(film) }));
+  const copies = dirBlurMix(v, film, { seconds, shutter }).map((c) => ({ ...c, level: c.level * uOf(film) }));
   const base: React.CSSProperties = { ...layer, isolation: 'isolate', ...style };
   if (copies.length === 1 && copies[0].level === 0) return <div style={base}>{children}</div>;
+  if (angle !== undefined && angle % 180 !== 0) {
+    const { width, height } = sizeOf(film);
+    const d = Math.ceil(Math.hypot(width, height));
+    const box: React.CSSProperties = { position: 'absolute', left: (width - d) / 2, top: (height - d) / 2, width: d, height: d, transform: `rotate(${angle}deg)` };
+    const back: React.CSSProperties = { position: 'absolute', left: (d - width) / 2, top: (d - height) / 2, width, height, transform: `rotate(${-angle}deg)` };
+    return (
+      <div style={base}>
+        <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
+          {copies.filter((c) => c.level > 0).map((c) => (
+            <filter key={c.level} id={`${name}-a${Math.round(c.level * 100)}`} x="-10%" y="0%" width="120%" height="100%" colorInterpolationFilters="sRGB">
+              <feGaussianBlur stdDeviation={`${c.level} 0`} />
+            </filter>
+          ))}
+        </svg>
+        {copies.map((c, i) => (
+          <div key={c.level} style={{ ...box, opacity: i === 0 ? 1 : c.weight, filter: c.level > 0 ? `url(#${name}-a${Math.round(c.level * 100)})` : undefined }}>
+            <div style={back}>{children}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  const ax = angle === undefined ? axis : 'x';
   return (
     <div style={base}>
       <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
         {copies
           .filter((c) => c.level > 0)
           .map((c) => (
-            <filter key={c.level} id={`${name}-${Math.round(c.level * 100)}`} x={axis === 'x' ? '-20%' : '0%'} y={axis === 'y' ? '-20%' : '0%'} width={axis === 'x' ? '140%' : '100%'} height={axis === 'y' ? '140%' : '100%'} colorInterpolationFilters="sRGB">
-              <feGaussianBlur stdDeviation={axis === 'x' ? `${c.level} 0` : `0 ${c.level}`} />
+            <filter key={c.level} id={`${name}-${Math.round(c.level * 100)}`} x={ax === 'x' ? '-20%' : '0%'} y={ax === 'y' ? '-20%' : '0%'} width={ax === 'x' ? '140%' : '100%'} height={ax === 'y' ? '140%' : '100%'} colorInterpolationFilters="sRGB">
+              <feGaussianBlur stdDeviation={ax === 'x' ? `${c.level} 0` : `0 ${c.level}`} />
             </filter>
           ))}
       </svg>

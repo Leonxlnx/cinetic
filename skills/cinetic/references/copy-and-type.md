@@ -379,6 +379,15 @@ export const TYPE = { // the roles of section 7, set in this family
 - **`UI_FILM = 1.9`, `uiFilm(webPx)`.** Product UI is rebuilt for film, never screenshotted at page size: every size of
   the web design times 1.8-2 (house 1.9), never under `TEXT_MIN` (a 16 px label becomes 36, a 20 px body 38, a 32 px
   figure 61). Frame UI as macro crops and hero planes; the camera does the reading.
+- **Small sentence lines track out; display sizes track in.** The house roles are the launch-film look (`line` 120 px,
+  negative tracking). A calm explainer that says one short sentence at a time sets it smaller and airier: about 80 px
+  (5-6 % of the frame height), weight 500, tracking **+0.06 em**, on 90 % white space. Keep negative tracking for
+  display, hero and giant sizes only.
+- **A face that stands in for another is fitted by width, not cap height.** Matching cap height alone leaves words
+  10-26 % too narrow or wide, and the line's rhythm goes with it. Set 4-6 words of the copy in 2-4 candidate faces,
+  then `fitTracking([{ text, width, size }], weight, family, axes)` (`lib/measure.ts`) returns the em tracking that
+  matches the widths and each word's residue: under 3 % the face fits, over 6 % try the next one. Optical-size axes
+  change widths 3-5 %: pass them (`axes: "'opsz' 32"`) to `measureTracked` and `fitTracking` both.
 - **Sizing one line.** A line of the script sits on one line, 72 px or more, under 84 % of the frame width (a short
   statement under 61 %, `MEASURE`), sized from the real font with `fitSize(text, maxWidth, max, weight, track)`.
   Roughly, at 1920 wide in a sans at about 0.5 em a character: up to 16 characters (2-3 words) at `display` 200 px or

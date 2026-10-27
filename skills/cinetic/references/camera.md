@@ -65,12 +65,22 @@ export declare const toScreen: (s: Shot, p: { x: number; y: number }) => { x: nu
 export declare const dip: (t: number, depth?: number) => number;  // 1 - depth * sin^2(pi t): a hop out through a whip
 export declare const handoff: (t: number, v0: number, settle?: number) => number;      // carry a log-scale speed
 export declare const zoomHandoff: (t: number, v0: number, settle?: number) => number;  // the same for a zoom-through
+export declare const camPath: (f: number, base: Shot, moves: CamMove[]) => Shot;       // moves that add and chain
+export declare const camVel: (f: number, base: Shot, moves: CamMove[]) => { vx: number; vy: number; speed: number; angle: number; vk: number };
 ```
 
 - Moving between two framings lerps the anchors linearly and `k` in log space, so the subject travels a straight
   screen path at an even zoom rate. Lerping translate and scale separately makes the subject swing off its line.
 - The transform reads right to left (anchor to origin, scale, rotate, place on screen), so every punch pivots on the
   subject, not on a corner.
+- **When the camera is the animator** (a teaser where every shot is one static layout under a moving camera), write
+  the shot as `camPath(f, base, moves)`: each move is `{ at, frames, ease, zoom?, pan?, look?, roll? }` and moves
+  add, so the next one starts on the frame the last one slows and the camera never holds (a slide-in settling into a
+  pull-back x0.65, a rise's drift into a zoom-out x0.48, a push x1.57 into a whip-out). Whips are asymmetric (about
+  12 f in on `E.launchIn`, cut at peak; 7 f out on `E.glideOut`). `camVel` gives the picture's speed and direction
+  for the smear: `<DirBlur v={vel.speed} angle={vel.angle} shutter={DIR_BLUR.whipShutter}>` on translation only
+  (pushes stay crisp), sharp under 120 px/s. Pin a camera track on measured element boxes, never on a frame where
+  a hero element moves on its own.
 - Overlays that track the product (a cursor, the story device, a caption pinned to a row) are drawn in screen space at
   the projected point every frame: `toScreen(shot, SEND_BUTTON)`. Under rotation, project with the same maths as the
   transform. A photo's points project with `photoPoint` (`references/imagery.md`).

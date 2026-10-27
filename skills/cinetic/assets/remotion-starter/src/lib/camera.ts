@@ -2,7 +2,7 @@
 // sits at screen point (sx, sy) at scale k", which is how a director thinks about framing, and
 // shots chain without drift: lc(lc(A, B, t1), C, t2). Anchors lerp linearly, k in log space.
 import type React from 'react';
-import { clamp, lmix, mix } from './anim';
+import { clamp, E, type Ease, lmix, mix } from './anim';
 import { f60, fpsOf } from './film';
 
 export type Shot = {
@@ -102,4 +102,62 @@ export const handoff = (t: number, v0: number, settle?: number, fps: number = fp
 export const zoomHandoff = (t: number, v0: number, settle?: number, fps: number = fpsOf()) => {
   const h = handoff(t, v0, settle, fps);
   return { k: Math.exp(h.d), v: h.v, from: Math.exp(h.from) };
+};
+
+/**
+ * One move of a camera path (camPath): from frame `at`, over `frames`, on `ease`, the shot travels by these
+ * amounts. zoom is a scale ratio (0.48 = pull out to 48 %, 1.57 = push in), applied in log space; pan moves the
+ * framed screen point (sx, sy) in px, look moves the framed world point (ax, ay) in world px; roll, yaw and pitch
+ * add degrees. A cut-at-peak whip is a move on E.launchIn whose last frame is the cut.
+ */
+export type CamMove = {
+  at: number;
+  frames: number;
+  ease?: Ease; // house E.strongInOut (a reframe); E.launchIn into a cut; E.glideOut out of one
+  zoom?: number;
+  pan?: { x?: number; y?: number };
+  look?: { x?: number; y?: number };
+  roll?: number;
+  yaw?: number;
+  pitch?: number;
+};
+
+/**
+ * The camera as the animator: one layout under one shot per frame, the shot = `base` plus every move's share of
+ * its amounts at frame f. Moves add, so a move that starts before the previous one ends takes over without a hold
+ * (their speeds add through the overlap): chain a slide-in's settle into a pull-back, a rise's drift into a
+ * zoom-out, a push into a whip-out, the next move starting on the frame the last one slows. Pure, any frame order.
+ */
+export const camPath = (f: number, base: Shot, moves: readonly CamMove[]): Shot => {
+  let lnk = Math.log(Math.max(1e-6, base.k));
+  const s: Shot = { ...base, yaw: base.yaw ?? 0, pitch: base.pitch ?? 0, roll: base.roll ?? 0 };
+  for (const m of moves) {
+    const t = (m.ease ?? E.strongInOut)(clamp((f - m.at) / Math.max(1, m.frames)));
+    if (m.zoom !== undefined) lnk += Math.log(Math.max(1e-6, m.zoom)) * t;
+    s.sx += (m.pan?.x ?? 0) * t;
+    s.sy += (m.pan?.y ?? 0) * t;
+    s.ax += (m.look?.x ?? 0) * t;
+    s.ay += (m.look?.y ?? 0) * t;
+    s.roll = (s.roll ?? 0) + (m.roll ?? 0) * t;
+    s.yaw = (s.yaw ?? 0) + (m.yaw ?? 0) * t;
+    s.pitch = (s.pitch ?? 0) + (m.pitch ?? 0) * t;
+  }
+  s.k = Math.exp(lnk);
+  return s;
+};
+
+/**
+ * How fast the picture moves under a camera path at frame f (from f - 1 to f): the screen velocity (px per film
+ * frame) of the world point framed at `at` (default the frame's centre), its speed and direction (deg, 0 = +x,
+ * 90 = down: DirBlur's `angle`), and the zoom speed (ln k per frame). Feed the speed to DirBlur for a camera
+ * smear on translation; pushes stay crisp.
+ */
+export const camVel = (f: number, base: Shot, moves: readonly CamMove[], at: { x: number; y: number } = { x: 960, y: 540 }) => {
+  const now = camPath(f, base, moves);
+  const was = camPath(f - 1, base, moves);
+  const p = { x: now.ax + (at.x - now.sx) / now.k, y: now.ay + (at.y - now.sy) / now.k }; // the world point under `at` now
+  const q = toScreen(was, p);
+  const vx = at.x - q.x;
+  const vy = at.y - q.y;
+  return { vx, vy, speed: Math.hypot(vx, vy), angle: (Math.atan2(vy, vx) * 180) / Math.PI, vk: Math.log(now.k / was.k) };
 };
