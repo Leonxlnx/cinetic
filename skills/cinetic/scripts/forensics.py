@@ -1267,7 +1267,14 @@ def evaluate(args, info, M, decl):
 
     # --- ghosts (a declared flash, step or hard seam is designed: the timeline's or a primitive's declares())
     designed = [(int(round(x['f'] * k_)), int(round((x['f'] + int(x.get('frames', 1)) - 1) * k_))) for x in extra.get('flashes', [])]
-    designed += [(int(round(r['from'] * k_)), int(round(r['to'] * k_)) - 1) for r in extra.get('stepped', [])]
+    # a stepped range covers a one-frame image only where its poses may last one frame: a declared cadence that holds
+    # each pose 2 video frames or more never draws one, so a ghost inside it is still a fault (a stale layer, a race)
+    def pose_frames(r):
+        if _num(r.get('fps')) and r['fps'] > 0:
+            return fps / float(r['fps'])
+        return float(r['on']) * k_ if _num(r.get('on')) else None
+    designed += [(int(round(r['from'] * k_)), int(round(r['to'] * k_)) - 1) for r in extra.get('stepped', [])
+                 if pose_frames(r) is None or pose_frames(r) < 2]
     designed += [(int(round(s['at'] * k_)), int(round(s['at'] * k_))) for s in extra.get('seams', []) if s.get('kind') in PUNCH]
     for g in M['ghosts']:
         if ignored(g['frame']) or in_ranges(g['frame'], cuts, 1) or in_ranges(g['frame'], designed, 1):
@@ -2234,6 +2241,10 @@ def self_test():
     steps = [warp(A, dx=6 * (i // 3)) for i in range(n)]
     rep = run('stepped', steps, cues(n, stepped=[{'from': 0, 'to': n, 'fps': 10, 'id': 'steps'}]))
     check(not flags(rep, 'stall', 'fail') and not flags(rep, 'spike', 'fail'), 'held frames inside a declared stepped range are craft', f"{len(flags(rep, 'declared'))} declared note(s)")
+    race = list(steps)
+    race[46] = np.full_like(A, 250)  # mid-pose: a pose held 3 frames never makes a one-frame image
+    rep = run('stepghost', race, cues(n, stepped=[{'from': 0, 'to': n, 'fps': 10, 'id': 'steps'}]))
+    check(bool(flags(rep, 'ghost', 'fail')), 'a one-frame image inside a stepped range of 3-frame poses is still a ghost', f"{len(flags(rep, 'ghost'))} ghost")
     # the motion gates through the CLI: a list that jumps a row in one frame fails motion-snap and its dead holds motion-frozen
     L = ui_list(w, h * 2)
     hard = [warp(L, dy=-12.0 * sum(1 for a in (12, 27, 42, 57, 72) if i >= a)) for i in range(n)]
