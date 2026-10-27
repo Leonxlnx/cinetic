@@ -24,6 +24,16 @@ Where the bank is weak (no member wins that forced choice: swipe, slide, build, 
 names the real-effect route: a free no-credit sound effect found with music.mjs search --kind sfx, recorded with
 its licence and made the action's takes with kit.py real.
 
+With a sound library (library.py: real recordings whose licence needs no credit, cut, levelled and tagged by
+action), its sounds for an action stand beside the bank's members, in order of fit (earshot's ears), first where
+the bank is weak, interleaved elsewhere. Every candidate is then matched to the film's track (music_cost): a tail
+longer than the action's share of the beat (BEATS) at the track's tempo costs, a centroid within an octave of the
+track's (the band the music fills: an effect is read there by its spectrum, never by level) costs, and a tonal
+real effect is tuned to the key by up to a semitone (the rest costs). A sound plays one action of a film, never
+two; an action with four events or more that takes a library sound gets a second one of the same action beside
+it (its takes alternate, so a run never repeats one recording); and the film's set of sounds never equals an
+earlier film's (the history): the action that loses least takes its next sound.
+
 Restraint (plan.py): when the effects in any 10 s pass the film's restraint number, whole actions go quiet,
 the lightest first (letters and detents, then pops, cuts, touches ...): the music carries them. The
 reveal, the logo lock, the thud, big passes, transitions through a shape, swells, builds and errors never
@@ -38,6 +48,7 @@ Exit codes: 0 done; 1 a missing or unreadable input.
 import argparse
 import datetime
 import json
+import math
 import os
 import re
 import sys
@@ -149,6 +160,17 @@ SIGNATURE = ('reveal', 'logo-lock', 'thud', 'pass', 'shape', 'swell', 'build', '
 WEAK = {'swipe': 'paper slide', 'slide': 'slide', 'build': 'swell', 'press': 'mouse click'}
 VARIANT_BONUS = 8.0     # a variant naming a member of the action: the author's choice, unless the history forbids it
 UNCAST = ('key.space',)  # generic roles cast leaves alone (the one space bar recording)
+# the tempo budget: a sound for the action should have rung out (its peak plus a 20 dB decay) within this many beats
+# of the track; longer, it smears the groove (a pop is a half-beat gesture, a logo lock may ring a bar or two)
+BEATS = {'letter': 0.5, 'detent': 0.5, 'press': 0.5, 'touch': 0.5, 'type': 0.5, 'jump-cut': 0.5, 'appear': 0.75,
+         'toggle': 0.75, 'lock': 1, 'shutter': 1, 'card-land': 1, 'land': 1, 'error': 1, 'slide': 1, 'swipe': 1.5,
+         'whip': 1.5, 'success': 2, 'chime': 2, 'text': 2, 'pass': 3, 'shape': 3, 'reveal': 4, 'thud': 4,
+         'logo-lock': 8, 'swell': 8, 'build': 8}
+PENTA_ACTIONS = ('chime', 'text', 'success', 'logo-lock')  # tonal sounds tuned to the key's pentatonic, else its scale
+LIB_START, LIB_START_WEAK, LIB_STEP = 0.5, -2.0, 1.0  # a library sound's place among the bank's members (0, 1, 2 ...)
+LIB_LOST = 3.0          # a library sound earshot's ears heard lose to a cheap-synth alternative for this action
+PARTNER_MIN = 4         # events: an action this busy that takes a library sound takes a second one beside it
+RETUNE_MAX = 1.0        # semitones a tonal library sound is moved to the key; the rest of the distance costs
 
 
 def slug(action):
@@ -235,8 +257,9 @@ def previous_films(h, film):
 
 def record(h, film, report, date=None):
     """h with this film's cast as its newest entry (an earlier entry of the same film replaced)"""
-    entry = dict(film=film, date=date or datetime.date.today().isoformat(),
-                 sounds={a: r['sound'] for a, r in report['actions'].items()}, signature=report['signature'])
+    sounds = {a: r['sound'] for a, r in report['actions'].items()}
+    sounds.update({f'{a}+': r['partner'] for a, r in report['actions'].items() if r.get('partner')})  # a second sound
+    entry = dict(film=film, date=date or datetime.date.today().isoformat(), sounds=sounds, signature=report['signature'])
     films = [x for x in h.get('films') or [] if x.get('film') != film] + [entry]
     return dict(h, films=films)
 
@@ -273,16 +296,66 @@ def revoice(spec, sound, action, knobs=None, why=''):
     return new
 
 
-def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None, role_for=None, avoid=()):
+def key_pcs(key, action):
+    """the pitch classes a tonal sound of the action may sit on: the key's pentatonic for bells, plucks, dings and the
+    logo lock, else its scale; key = (tonic pc, mode intervals, ...)"""
+    tonic, iv = key[0], key[1]
+    if action in PENTA_ACTIONS:
+        iv = [0, 3, 5, 7, 10] if iv[2] == 3 else [0, 2, 4, 7, 9]
+    return sorted({(tonic + i) % 12 for i in iv})
+
+
+def retune(midi, key, action):
+    """semitones from midi to the nearest note of the key for the action (signed)"""
+    best = None
+    for pc in key_pcs(key, action):
+        d = (pc - midi) % 12
+        for x in (d, d - 12):
+            if best is None or abs(x) < abs(best):
+                best = x
+    return round(best, 3)
+
+
+def music_cost(feat, action, music, tuned=False):
+    """(cost, why) of a sound's measured features (library.py measure: dur_s, peak_s, t20_ms, centroid_hz, midi)
+    against the film's track (music: bpm, centroid, key); 0 without either. tuned: kit.py tune moves it to the key."""
+    if not feat or not music:
+        return 0.0, []
+    c, why = 0.0, []
+    bpm = music.get('bpm')
+    if bpm and feat.get('dur_s'):
+        t20 = feat.get('t20_ms')
+        tail = float(feat.get('peak_s') or 0) + (float(t20) / 1000 if t20 is not None else float(feat['dur_s']))
+        budget = BEATS.get(action, 2) * 60.0 / float(bpm)
+        if tail > budget:
+            c += min(2.0, 1.5 * (tail / budget - 1))
+            why.append(f'rings {tail:.2f} s, over {BEATS.get(action, 2):g} beat(s) at {float(bpm):.0f} BPM')
+    cen, tc = feat.get('centroid_hz'), music.get('centroid')
+    if cen and tc:
+        d = abs(math.log2(float(cen) / float(tc)))
+        if d < 1:
+            c += 1.2 * (1 - d)
+            why.append(f"its centroid ({float(cen):.0f} Hz) in the track's band ({float(tc):.0f} Hz)")
+    if not tuned and feat.get('midi') is not None and music.get('key'):
+        st = abs(retune(float(feat['midi']), music['key'], action))
+        c += 0.3 * min(st, RETUNE_MAX) + 1.5 * max(0.0, st - RETUNE_MAX)
+    return round(c, 3), why
+
+
+def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None, role_for=None, avoid=(),
+         library=None, music=None, feats=None):
     """(kit dict with the film's actions cast, report). events: out/cues.json events; kit: audio/kit.json (a kit cast
     before is restored to its own roles first); knobs: {bank id: knobs} from earshot (candidates outside it are
     skipped; None trusts the table); role_for(kind, variant, weight, dur_s) -> the generic role (kit.role_for); avoid:
     sounds the film's own listening or plan judged poorly (masked under this track, flagged by the ears): taken only
-    when the action has nothing else; kept in the cast block, so casting again avoids them too."""
+    when the action has nothing else; kept in the cast block, so casting again avoids them too. library: a loaded
+    sound library (library.py load) whose sounds join each action's candidates as "lib:<id>"; music: the film's track
+    {bpm, centroid, key: (tonic pc, mode intervals, text)}; feats: {bank id: measured features} for music_cost."""
     import copy
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     if role_for is None:
-        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         from kit import role_for  # noqa: E402
+    import library as LB
     kit = copy.deepcopy(kit)
     roles = kit.setdefault('roles', {})
     old = kit.get('cast') or {}
@@ -308,38 +381,91 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
     older = {s for x in prev[1:4] for s in (x.get('sounds') or {}).values()}
     count = {a: sum(len(v) for v in gs.values()) for a, gs in groups.items()}
     order = sorted(groups, key=lambda a: (ACTIONS[a]['rank'] is not None, -count[a], first_t[a]))
-    taken, chosen = set(), {}
+    sig = set((last or {}).get('signature') or [])
+    used = set(((last or {}).get('sounds') or {}).values())
+    taken, chosen, scored_of = set(), {}, {}
+    lib_by_id = {LB.lib_id(x): x for x in (library or {}).get('sounds') or []}
+
+    def cost(a, k, s, feat, tuned):
+        c = float(k)
+        why = []
+        if s in avoid:
+            c += 40
+            why.append('avoided for this film')
+        if s in sig:
+            c += 50
+            why.append("the previous film's signature")
+        elif s in used:
+            c += 4
+            why.append('used by the previous film')
+        if s in older:
+            c += 1.5
+        if s.split('/')[-1] in variants.get(a, ()):
+            c -= VARIANT_BONUS
+        m, mwhy = music_cost(feat, a, music, tuned)
+        return c + m + 1.6 * jitter(film, a, s), why, mwhy
+
+    def candidates_of(a):
+        """[(base cost, sound, features, tuned)]: the bank's members, then the library's sounds for the action"""
+        out = []
+        for k, s in enumerate(ACTIONS[a]['sounds']):
+            if knobs is None or s in knobs:
+                out.append((k, s, (feats or {}).get(s), bool(((knobs or {}).get(s) or {}).get('pitch'))))
+        start = LIB_START_WEAK if a in WEAK else LIB_START
+        for j, x in enumerate(LB.candidates(library, a) if library else []):
+            ears = (x.get('ears') or {}).get(a) or {}
+            base = start + j * LIB_STEP + (LIB_LOST if ears.get('p') is not None and not ears.get('won') else 0)
+            out.append((base, LB.lib_id(x), x, False))
+        return out
     for a in order:
-        cands = [s for s in ACTIONS[a]['sounds'] if knobs is None or s in knobs]
+        cands = candidates_of(a)
         if not cands:
             continue
-        sig = set((last or {}).get('signature') or [])
-        used = set(((last or {}).get('sounds') or {}).values())
-
-        def cost(k, s):
-            c = float(k)
-            why = []
-            if s in taken:
-                c += 20
-            if s in avoid:
-                c += 40
-                why.append('avoided for this film')
-            if s in sig:
-                c += 50
-                why.append("the previous film's signature")
-            elif s in used:
-                c += 4
-                why.append('used by the previous film')
-            if s in older:
-                c += 1.5
-            if s.split('/')[-1] in variants.get(a, ()):
-                c -= VARIANT_BONUS
-            return c + 1.6 * jitter(film, a, s), why
-        scored = sorted(((cost(k, s), k, s) for k, s in enumerate(cands)), key=lambda x: (x[0][0], x[1]))
-        (_, _), k, s = scored[0]
-        avoided = [x[2] for x in scored[1:] if x[0][1] and x[1] < k]
-        chosen[a] = dict(sound=s, rank=k, avoided=avoided)
+        scored = sorted(((cost(a, k, s, f, t), k, s) for k, s, f, t in cands), key=lambda x: (x[0][0], x[1]))
+        scored_of[a] = scored
+        free = [x for x in scored if x[2] not in taken] or scored  # a sound plays one action, unless nothing is left
+        (_, _, mwhy), k, s = free[0]
+        avoided = [x[2] for x in scored if x[0][1] and x[1] < k and not str(x[2]).startswith('lib:')]
+        chosen[a] = dict(sound=s, rank=k, avoided=avoided, music=mwhy)
         taken.add(s)
+    # the film's set of sounds is never an earlier film's: the action that loses least takes its next sound
+    earlier = [sorted(set((x.get('sounds') or {}).values())) for x in prev]
+    for _ in range(6):
+        if sorted({c['sound'] for c in chosen.values()}) not in earlier:
+            break
+        swaps = []
+        for a, c in chosen.items():
+            nxt = [x for x in scored_of[a] if x[2] not in taken]
+            if nxt:
+                best = next(x for x in scored_of[a] if x[2] == c['sound'])
+                swaps.append((nxt[0][0][0] - best[0][0], a, nxt[0]))
+        if not swaps:
+            break
+        _, a, x = min(swaps, key=lambda z: (z[0], z[1]))
+        taken.discard(chosen[a]['sound'])
+        chosen[a] = dict(sound=x[2], rank=x[1], avoided=[], music=x[0][2], why='an earlier film had this set')
+        taken.add(x[2])
+    # a busy action on a library sound: a second library sound of the same action beside it
+    for a, c in chosen.items():
+        if not str(c['sound']).startswith('lib:') or count[a] < PARTNER_MIN:
+            continue
+        mine = lib_by_id[c['sound']]
+        pool = [x for x in scored_of[a] if str(x[2]).startswith('lib:') and x[2] not in taken and x[2] not in avoid]
+        same = [x for x in pool if (lib_by_id[x[2]].get('tags') or {}).get('length') == (mine.get('tags') or {}).get('length')]
+        pick = (same or pool)[:1]
+        if pick:
+            c['partner'] = pick[0][2]
+            taken.add(pick[0][2])
+    # a library pick: the bank sound its role renders as a fallback (kit.json names a bank sound), its tuning
+    for a, c in chosen.items():
+        if not str(c['sound']).startswith('lib:'):
+            continue
+        bank = [x[2] for x in scored_of[a] if not str(x[2]).startswith('lib:')]
+        c['fallback'] = next((b for b in bank if b not in taken), bank[0] if bank else None)
+        x = lib_by_id[c['sound']]
+        if x.get('midi') is not None and (music or {}).get('key') and float(x.get('tonal') or 0) >= 0.5:
+            st = retune(float(x['midi']), music['key'], a)
+            c['retune'] = st if abs(st) <= RETUNE_MAX else 0.0
     cast_roles, report = {}, dict(actions={}, roles={}, film=film, previous=(last or {}).get('film'))
     by_generic = {}
     for a, gs in groups.items():
@@ -353,23 +479,37 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
                 continue
             name = g if n == 0 else f'{g}.{slug(a)}'
             why = f"{ACTIONS[a]['query']}; {len(ids)} event(s)"
-            roles[name] = revoice(base, chosen[a]['sound'], a, knobs, why)
+            c = chosen[a]
+            if str(c['sound']).startswith('lib:'):  # the library sound plays (kit.py places its takes); the bank's renders
+                why += f"; plays {c['sound']}" + (f" and {c['partner']}" if c.get('partner') else '') + \
+                       f" from the sound library, {c.get('fallback') or base.get('sound')} renders as its fallback"
+                roles[name] = revoice(base, c.get('fallback') or base.get('sound'), a, knobs, why)
+            else:
+                roles[name] = revoice(base, c['sound'], a, knobs, why)
             cast_roles[name] = dict(action=a, base=base if n == 0 else None, added=n > 0, generic=g)
-            report['roles'][name] = dict(action=a, sound=chosen[a]['sound'], was=base.get('sound'), events=len(ids))
+            report['roles'][name] = dict(action=a, sound=c['sound'], was=base.get('sound'), events=len(ids))
     t = chosen.get('type')
     if t and t['sound'].startswith('typing_key/') and isinstance(roles.get('key.return'), dict):
         base = copy.deepcopy(roles['key.return'])
         roles['key.return'] = dict(base, sound=t['sound'], note='cast: the typing run\'s own switch on its own seeds')
         cast_roles['key.return'] = dict(action='type', base=base, added=False, generic='key.return')
+    lib = {}
     for a, c in chosen.items():
-        report['actions'][a] = dict(sound=c['sound'], events=count[a], roles=sorted(groups[a]), avoided=c['avoided'])
+        report['actions'][a] = dict(sound=c['sound'], events=count[a], roles=sorted(groups[a]), avoided=c['avoided'],
+                                    music=c.get('music') or [], **({'why': c['why']} if c.get('why') else {}))
+        if str(c['sound']).startswith('lib:'):
+            lib[a] = dict(sound=c['sound'], partner=c.get('partner'), retune=c.get('retune'), fallback=c.get('fallback'),
+                          roles=sorted(n for n, r in cast_roles.items() if r['action'] == a))
+            report['actions'][a].update(partner=c.get('partner'), retune=c.get('retune'))
     top = max(count, key=lambda a: (count[a], -first_t[a])) if count else None
     report['signature'] = sorted({chosen[a]['sound'] for a in chosen if a in SIGNATURE or a == top})
-    report['weak'] = {a: WEAK[a] for a in chosen if a in WEAK and not str(chosen[a]['sound']).startswith('real:')}
+    report['weak'] = {a: WEAK[a] for a in chosen if a in WEAK and not str(chosen[a]['sound']).startswith(('real:', 'lib:'))}
+    report['library'] = lib
     kit['cast'] = {'cast': 1, 'film': film, 'date': datetime.date.today().isoformat(),
-        'previous': report['previous'], 'roles': cast_roles,
-                           'actions': {a: dict(sound=c['sound'], events=count[a]) for a, c in chosen.items()},
-                                                       'signature': report['signature'], 'avoid': sorted(avoid), 'real': (old.get('real') or {})}
+                   'previous': report['previous'], 'roles': cast_roles,
+                   'actions': {a: dict(sound=c['sound'], events=count[a]) for a, c in chosen.items()},
+                   'signature': report['signature'], 'avoid': sorted(avoid), 'real': (old.get('real') or {}),
+                   'library': lib}
     return kit, report
 
 

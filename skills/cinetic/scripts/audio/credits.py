@@ -221,7 +221,8 @@ def credit_lines(rec):
 
 
 def effect_records(score, base):
-    """[(role, record path)] of the real effects the film's kit plays (audio/kit/real.lock.json beside the kit)"""
+    """[(role, record path)] of the real effects the film's kit plays (audio/kit/real.lock.json beside the kit): each
+    role's record and the records of its other sounds ("also": a second library sound), each record once"""
     kit = locate(str((score.get('sfx') or {}).get('kit') or 'audio/kit.json'), base)
     takes = (score.get('sfx') or {}).get('takes') or os.path.splitext(kit)[0]
     lock = os.path.join(locate(takes, base), 'real.lock.json')
@@ -229,8 +230,16 @@ def effect_records(score, base):
         return []
     roles = (read_json(lock, 'real effects') or {}).get('roles') or {}
     root = os.path.dirname(os.path.dirname(os.path.abspath(kit)))
-    return [(r, os.path.join(root, v['licence']) if not os.path.isabs(v.get('licence') or '') else v['licence'])
-            for r, v in sorted(roles.items()) if v.get('licence')]
+    out, seen = [], set()
+    for r, v in sorted(roles.items()):
+        for lp in [v.get('licence')] + list(v.get('also') or []):
+            if not lp:
+                continue
+            p = lp if os.path.isabs(lp) else os.path.join(root, lp)
+            if os.path.normcase(os.path.abspath(p)) not in seen:
+                seen.add(os.path.normcase(os.path.abspath(p)))
+                out.append((r, p))
+    return out
 
 
 def effect_line(rec):

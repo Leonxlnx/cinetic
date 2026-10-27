@@ -18,8 +18,8 @@ corr, mix). `init` rewrites the preset's notes into house wording.
 Usage (from the project root):
   python3 scripts/audio/kit.py init [--preset launch|calm|crisp|minimal] [--force]
                                    # write audio/kit.json from an earshot preset, tuned to the film's key
-  python3 scripts/audio/kit.py cast [--film NAME] [--avoid SOUND,SOUND] [--dry-run]
-                                   # give each action of the film (out/cues.json) its own bank sound
+  python3 scripts/audio/kit.py cast [--film NAME] [--avoid SOUND,SOUND] [--library PATH | --no-library] [--dry-run]
+                                   # give each action of the film (out/cues.json) its own sound (bank or library)
   python3 scripts/audio/kit.py real FILE --action ACTION [--licence RECORD]
                                    # a free real effect (music.mjs get --kind sfx) as the takes of an action
   python3 scripts/audio/kit.py tune                 # retune the tonal roles to score.json's key
@@ -56,6 +56,13 @@ kind's role (its bed_db, offset_ms and min_gap_ms stay); another action on the s
 own, "<role>.<action>" (land.card_land). kit.json keeps a "cast" block (the roles' own specs, to cast again);
 the history records the film's sounds. Then tune and render. --avoid names sounds this film's listening or plan
 judged poorly (masked under the track, flagged by kit.py listen): the cast takes the next member, and remembers.
+With a sound library (library.py; --library, $CINETIC_SFX_LIBRARY or ~/.cinetic/sfx-library.json) its real
+recordings join each action's candidates, and with a track every candidate is matched to it (actions.py
+music_cost: tempo, the track's band, the key; the bank's sounds measured once per earshot version into
+~/.cinetic/bank-feats.json). A sound plays one action, a busy action on a library sound takes a second one, and the
+set never repeats an earlier film's. A library pick is copied into audio/sfx/ with its licence record and placed as
+the takes of its action's roles (audio/kit/real.lock.json, "cast": true; tonal ones tuned to the key); its role in
+kit.json renders a bank sound as the fallback.
 
 Real effects (real): where the bank sounds an action weakly, a free effect whose licence needs no credit
 (Mixkit's free sound effects, downloaded with `music.mjs get --kind sfx`, its licence record beside it) plays
@@ -1004,10 +1011,170 @@ def project_of(kit_path):
     return os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(kit_path)), os.pardir)).replace(os.sep, '/')
 
 
-def cmd_cast(a, score_python):
-    """each action of the film its own bank sound (actions.py), written into kit.json, the history updated, then
-    tuned; --dry-run prints the cast only"""
+def music_of(kit_path, score_path):
+    """the film's track as the cast matches sounds to it: {bpm, centroid (Hz, the median over the track's bars from
+    track.py analyze), key (tonic pc, mode intervals, text)}; {} for a film without a track"""
+    out = {}
+    try:
+        k = key_of(score_path)
+    except KitError:
+        k = None
+    sc = read_json(score_path, 'score') if score_path and os.path.isfile(score_path) else {}
+    m = sc.get('music') if isinstance(sc.get('music'), dict) else {}
+    if not m:
+        return out
+    if k:
+        out['key'] = k
+    root = project_of(kit_path)
+    here = lambda p: p if os.path.isabs(p) else os.path.join(root, p)  # noqa: E731
+    ep = here(m.get('edit') or 'audio/music/edit.json')
+    if os.path.isfile(ep):
+        ed = read_json(ep, 'edit')
+        if ed.get('bpm'):
+            out['bpm'] = float(ed['bpm'])
+        ap = here(ed['analysis']) if ed.get('analysis') else None
+        if ap and os.path.isfile(ap):
+            bars = read_json(ap, 'analysis').get('bars') or []
+            cs = sorted(float(b['centroid']) for b in bars if b.get('centroid'))
+            if cs:
+                out['centroid'] = cs[len(cs) // 2]
+    return out
+
+
+BANK_FEATS = 'bank-feats.json'
+
+
+def bank_feats(es, ids):
+    """{bank id: measured features} for the cast's match to the track: each sound rendered once by earshot at its
+    own defaults and measured like a library sound (library.py measure), kept per earshot version in
+    $CINETIC_HOME/bank-feats.json; {} when earshot has no interpreter here"""
     import actions as AC
+    p = os.path.join(AC.home_dir(), BANK_FEATS)
+    try:
+        with open(p, encoding='utf-8') as fh:
+            cache = json.load(fh)
+    except (OSError, ValueError):
+        cache = {}
+    ver = str(es.version or 'unknown')
+    have = dict(cache.get(ver) or {})
+    miss = [i for i in dict.fromkeys(ids) if i not in have]
+    if miss and es.python:
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            out = os.path.join(d, 'feats.json')
+            print(f'kit cast: measuring {len(miss)} bank sound(s) once for the match to the track (kept in {p})')
+            subprocess.run([es.python, os.path.join(HERE, 'library.py'), '_bankfeats', '--out', out, '--ids',
+                            ','.join(miss)], capture_output=True, text=True, timeout=900)
+            if os.path.isfile(out):
+                with open(out, encoding='utf-8') as fh:
+                    have.update(json.load(fh))
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        write_json(p, {ver: have})
+    return {i: have[i] for i in ids if i in have}
+
+
+def real_takes(clips, takes, name, variants=3):
+    """takes (files written into the takes folder, measured) of a role from [(audio, tonal)]: per clip the cut as it
+    is and small variants (speed by 3 % for a toneless sound; for a tonal one the same pitch, a softer top or a
+    shorter tail), interleaved clip by clip"""
+    import numpy as np
+    import soundfile as sf
+    from scipy import signal
+    per = []
+    for x, tonal in clips:
+        vs = []
+        for k in range(variants):
+            if k == 0:
+                y = x
+            elif not tonal:
+                y = signal.resample_poly(x, 100, (97, 103)[(k - 1) % 2], axis=0)
+            elif k == 1:
+                y = signal.sosfilt(signal.butter(2, 7000, 'low', fs=48000, output='sos'), x, axis=0)
+            else:
+                y = x.copy()
+                n = len(y)
+                f = max(1, int(0.3 * n))
+                ramp = np.linspace(1, 0, f) ** 2
+                y[n - f:] *= ramp if y.ndim == 1 else ramp[:, None]
+            vs.append(y / max(1e-9, float(np.abs(y).max())) * 10 ** (-1 / 20))
+        per.append(vs)
+    out = []
+    order = [v for k in range(variants) for vs in per for v in vs[k:k + 1]]
+    for k, y in enumerate(order, 1):
+        fn = f"real-{name.replace('.', '-')}_{k}.wav"
+        path = os.path.join(takes, fn)
+        sf.write(path, y.astype(np.float32), 48000, subtype='PCM_24')
+        h = sha1_file(path)
+        out.append(dict(file=fn, seed=None, pitch=None, **measure_take(y), sha1=h, key=f'real:{h}', checks=[]))
+    return out
+
+
+def place_library(kit_path, takes, kit, lib, music=None, log=print):
+    """the cast's library picks played: each sound (and a partner) copied into the film's audio/sfx/ with its licence
+    record, tuned to the key when the cast says so, made the takes of every role of its action (real.lock.json,
+    marked "cast"); the takes an earlier cast placed go first. Returns the roles placed."""
+    import actions as AC
+    from scipy import signal
+    sys.path.insert(0, HERE)
+    import library as LB
+    root = project_of(kit_path)
+    rel = lambda q: os.path.relpath(os.path.abspath(q), root).replace(os.sep, '/')  # noqa: E731
+    sfx = os.path.join(root, 'audio', 'sfx')
+    had = os.path.isfile(os.path.join(takes, REAL_LOCK))
+    if not had and not (kit.get('cast') or {}).get('library'):
+        return []
+    os.makedirs(takes, exist_ok=True)
+    real = read_real(takes) or {'real': 1, 'roles': {}}
+    roles = real.setdefault('roles', {})
+    for n in [n for n, r in roles.items() if (r or {}).get('cast')]:
+        for tk in roles[n].get('takes') or []:
+            q = os.path.join(takes, tk['file'])
+            if os.path.isfile(q):
+                os.remove(q)
+        roles.pop(n)
+    by_id = {LB.lib_id(s): s for s in (lib or {}).get('sounds') or []}
+    placed = []
+    for act, c in ((kit.get('cast') or {}).get('library') or {}).items():
+        clips, files, recs = [], [], []
+        for sid in [c['sound']] + ([c['partner']] if c.get('partner') else []):
+            s = by_id.get(sid)
+            if not s:
+                raise KitError(f"{sid} is not in the sound library {(lib or {}).get('_path')}: cast again")
+            os.makedirs(sfx, exist_ok=True)
+            dst, rd = os.path.join(sfx, s['id'] + '.wav'), os.path.join(sfx, s['id'] + '.licence.json')
+            shutil.copyfile(s['_file'], dst)
+            shutil.copyfile(s['_licence'], rd)
+            x = read_take(dst)
+            tonal = s.get('midi') is not None and float(s.get('tonal') or 0) >= 0.5
+            st = float(c.get('retune') or 0) if sid == c['sound'] else (
+                AC.retune(float(s['midi']), music['key'], act) if tonal and (music or {}).get('key') else 0.0)
+            if abs(st) > AC.RETUNE_MAX:
+                st = 0.0
+            if st:
+                x = signal.resample_poly(x, 1000, int(round(1000 * 2 ** (st / 12))), axis=0)
+            clips.append((x, tonal))
+            files.append(rel(dst))
+            recs.append(rel(rd))
+        for name in c.get('roles') or []:
+            spec = (kit.get('roles') or {}).get(name) or {}
+            tks = real_takes(clips, takes, name, variants=3 if len(clips) == 1 else 2)
+            roles[name] = dict(sound=c['sound'] + (f"+{c['partner']}" if c.get('partner') else ''),
+                               align=spec.get('align', 'onset'), level_db=float(spec.get('level_db') or 0.0),
+                               max_s=None, **{k: float(spec[k]) for k in MIX_KEYS if spec.get(k) is not None},
+                               takes=tks, action=act, file=files[0], licence=recs[0], also=recs[1:], cast=True)
+            placed.append(name)
+            log(f"kit cast: {name} ({act}) plays {', '.join(files)}: {len(tks)} takes"
+                + (f", tuned {c['retune']:+.2f} semitone(s) to the key" if c.get('retune') else ''))
+    write_json(os.path.join(takes, REAL_LOCK), real)
+    return placed
+
+
+def cmd_cast(a, score_python):
+    """each action of the film its own sound, from earshot's bank and the sound library (actions.py), written into
+    kit.json, the library's picks placed as takes, the history updated, then tuned; --dry-run prints the cast only"""
+    import actions as AC
+    sys.path.insert(0, HERE)
+    import library as LB
     if not os.path.isfile(a.cues):
         print(f'kit.py: no {a.cues}: export the cues first (npm run cues)', file=sys.stderr)
         return 1
@@ -1023,18 +1190,40 @@ def cmd_cast(a, score_python):
     knobs = {k: (v.get('knobs') or {}) for k, v in rows.items()}
     film = a.film or project_of(a.kit)
     hist = AC.read_history()
+    lib = None
+    if not a.no_library:
+        lp, how = LB.resolve(a.library)
+        if lp and os.path.isfile(lp):
+            try:
+                lib = LB.load(lp)
+            except LB.LibraryError as e:
+                print(f'kit.py: {e}', file=sys.stderr)
+                return 1
+            print(f"kit cast: the sound library {lp} ({len(lib['sounds'])} sounds) beside the bank")
+        elif a.library:
+            print(f'kit.py: no sound library at {lp}', file=sys.stderr)
+            return 1
     avoid = [x.strip() for x in (a.avoid or '').split(',') if x.strip()]
-    unknown = [x for x in avoid if x not in knobs]
+    lib_ids = {LB.lib_id(s) for s in (lib or {}).get('sounds') or []}
+    unknown = [x for x in avoid if x not in knobs and x not in lib_ids]
     if unknown:
-        print(f"kit.py: --avoid: not bank sounds: {', '.join(unknown)}", file=sys.stderr)
+        print(f"kit.py: --avoid: not bank or library sounds: {', '.join(unknown)}", file=sys.stderr)
         return 1
+    music = music_of(a.kit, a.score)
+    if music:
+        print(f"kit cast: matched to the track: {music.get('bpm') or '?'} BPM, centroid {music.get('centroid') or '?'} Hz, "
+              f"{(music.get('key') or (0, 0, '?'))[2]}")
+    ids = sorted({s for x in AC.ACTIONS.values() for s in x['sounds'] if s in knobs})
+    feats = bank_feats(es, ids) if music else {}
     new, rep = AC.cast(doc.get('events', []), kit, float(doc.get('fps', 60)), doc.get('cue') or {}, hist, film, knobs,
-                       role_for, avoid)
+                       role_for, avoid, library=lib, music=music, feats=feats)
     print(f"kit cast: {len(rep['actions'])} action(s) for {film}"
           + (f" (the previous film: {rep['previous']})" if rep['previous'] else ' (no previous film in the history)'))
     for act, r in sorted(rep['actions'].items(), key=lambda x: -x[1]['events']):
         print(f"  {act:10s} {r['events']:3d} event(s)  {r['sound']:28s} roles {', '.join(r['roles'])}"
-              + (f"  (avoided {', '.join(r['avoided'])})" if r['avoided'] else ''))
+              + (f" + {r['partner']}" if r.get('partner') else '')
+              + (f"  (avoided {', '.join(r['avoided'])})" if r['avoided'] else '')
+              + (f"  ({r['why']})" if r.get('why') else ''))
     for name, r in sorted(rep['roles'].items()):
         if r['was'] != r['sound']:
             print(f"  role {name}: {r['was']} -> {r['sound']}")
@@ -1047,6 +1236,11 @@ def cmd_cast(a, score_python):
         print('kit cast: --dry-run: audio/kit.json and the history unchanged')
         return 0
     write_json(a.kit, new)
+    try:
+        place_library(a.kit, a.takes, new, lib, music)
+    except KitError as e:
+        print(f'kit.py: {e}', file=sys.stderr)
+        return 1
     AC.write_history(AC.record(hist, film, rep))
     tune_file(a, knobs)
     print(f'kit cast: wrote {a.kit} and {AC.history_path()}; next: npm run kit (render), kit.py listen (judge), npm run plan')
@@ -1188,7 +1382,10 @@ def main(argv=None):
     ap.add_argument('--json', metavar='PATH', help='check / listen: write the report here')
     ap.add_argument('--film', help='cast: the film\'s name in the sound history (default: the project folder)')
     ap.add_argument('--dry-run', action='store_true', help='cast: print the cast, change nothing')
-    ap.add_argument('--avoid', help='cast: bank sounds to avoid for this film (comma-separated; remembered)')
+    ap.add_argument('--avoid', help='cast: bank or library sounds to avoid for this film (comma-separated; remembered)')
+    ap.add_argument('--library', help='cast: the sound library (library.json; default: $CINETIC_SFX_LIBRARY, then '
+                    '~/.cinetic/sfx-library.json)')
+    ap.add_argument('--no-library', action='store_true', help='cast: the bank alone')
     ap.add_argument('--action', help='real: the action the effect plays (actions.py)')
     ap.add_argument('--licence', help='real: its licence record (default: <file stem>.licence.json)')
     a = ap.parse_args(argv)
