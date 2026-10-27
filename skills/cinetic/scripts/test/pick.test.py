@@ -549,6 +549,10 @@ if os.path.isfile(os.path.join(SKILL, 'assets', 'remotion-starter', 'src', 'fx',
     r = pick('--format', 'launch', '--seed', '2', '--direction', 'none', library=SHIPPED)
     result(len(presets) >= 8 and 'src/fx/TypePresets.tsx' in r.stdout and all(p_ in r.stdout for p_ in presets[:4]),
            'the plan names the presets of src/fx/TypePresets.tsx', f'{len(presets)} presets')
+    hero = mod.type_presets(mod.starter_src(), 'HERO_PRESETS')
+    soft = mod.type_presets(mod.starter_src(), 'SOFT_PRESETS')
+    result(hero and set(hero) <= set(presets) and not set(hero) & set(soft) and 'A hero line' in r.stdout and all(p_ in r.stdout for p_ in soft),
+           'the plan names the confident presets a hero line takes, and the soft ones it never does', f'{len(hero)} hero, {len(soft)} soft')
 
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')
 sys.exit(1 if failed else 0)

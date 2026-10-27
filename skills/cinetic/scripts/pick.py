@@ -358,12 +358,13 @@ def module_exports(src, mod):
     return _EXPORTS[key]
 
 
-def type_presets(src):
-    """The one-line text animations src/fx/TypePresets.tsx builds (TYPE_PRESET_NAMES), or [] when it is not there."""
+def type_presets(src, which='TYPE_PRESET_NAMES'):
+    """The one-line text animations src/fx/TypePresets.tsx builds (TYPE_PRESET_NAMES; or HERO_PRESETS, SOFT_PRESETS),
+    or [] when it is not there."""
     path = os.path.join(src, 'fx', 'TypePresets.tsx') if src else ''
     if not path or not os.path.isfile(path):
         return []
-    m = re.search(r'TYPE_PRESET_NAMES\b[^=]*=\s*\[([^\]]*)\]', open(path, encoding='utf-8').read())
+    m = re.search(which + r'\b[^=]*=\s*\[([^\]]*)\]', open(path, encoding='utf-8').read())
     return re.findall(r"['\"]([A-Za-z]\w*)['\"]", m.group(1)) if m else []
 
 
@@ -926,6 +927,10 @@ def main():
             print(f"\n`src/fx/TypePresets.tsx` builds {len(presets)} one-line animations from one spec "
                   f"(`<TypeLine spec={{{{ preset, text, at, out, exit }}}}>`): {', '.join(presets)}. A drawn entry and a "
                   'preset may be the same move: one preset per line, never one for two lines.')
+            hero, soft = type_presets(starter_src(), 'HERO_PRESETS'), type_presets(starter_src(), 'SOFT_PRESETS')
+            if hero:
+                print(f"A hero line (the hook, the claim, the promise) takes a confident one: {', '.join(hero)}"
+                      + (f"; never a soft one ({', '.join(soft)})" if soft else '') + '.')
         print()
     for e in picks:
         print(render(e, allowed))
