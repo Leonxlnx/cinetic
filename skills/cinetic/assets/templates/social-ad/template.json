@@ -1,0 +1,52 @@
+{
+ "name": "social-ad",
+ "about": "A 15 s social ad on a white page, every seam hidden inside a motion: the opener built word by word (the name landing oversized and defocused, each new word in the accent at the line's end, the line re-centring) and breathing apart through the cut onto a pile of pictures, the mark spinning in over a picture that pulls back, a wall of pictures settling tile by tile round the claim and its accent pill, two rivers of pictures under a label that recedes and swaps its last word, two taglines over the hero picture, the lockup. new-film.sh --template social-ad lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "bpm": 150,
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every ad is cut to a licensed, human-made, instrumental track (references/music.md): a driving track whose downbeats carry the act lines and whose hits the pops, spins and rushes ride; earshot effects mark what lands; never effects only.",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 140-160 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); 140-160 BPM (or a half-time 70-80) with clear hits suits one bar an act",
+  "add": "bash scripts/new-film.sh <dir> --template social-ad --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end stop|button|ring",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "next": [
+  "social ad: fill src/ad.ts (the script in plain words: the opener says what the product is with its name first, 2-7 words a line)",
+  "  and put the ad's own pictures in public/ (ad.ts pictures: the plate, the hero and 20+ cards), then deal its direction:",
+  "  python3 scripts/deck.py --brief \"<one line>\" --format launch --options 3 (references/templates.md)"
+ ],
+ "copy": [
+  "src/ad.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/stage.tsx",
+  "src/acts/Open.tsx",
+  "src/acts/Brand.tsx",
+  "src/acts/Wall.tsx",
+  "src/acts/Rivers.tsx",
+  "src/acts/Taglines.tsx",
+  "src/acts/End.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ]
+}

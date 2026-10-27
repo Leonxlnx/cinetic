@@ -77,7 +77,7 @@ Every step writes a file, and every gate is a check you run. Work inline; subage
 - **Inventory what is supplied:** a brand kit (logo, colours, fonts, screenshots, product photos), a clip to feel like, real footage or pictures worth building on, a sonic logo, a voice. Each has a route: `brand.py` (Step 2), `like.py` (Step 2), pictures (Step 4, optional), the kit (Step 8).
 - Choose the engine (Remotion by default; HyperFrames for an HTML project or `--batch` renders) and the pace (calm unless the brief asks for energy).
 - Copy the hard bans into `BRIEF.md`, plus brand-supplied exceptions: critics are prompted with it word for word.
-- Scaffold: `bash <skill>/scripts/new-film.sh films/<name> --fps 60 --size 1920x1080 [--format update | --template ui-walkthrough|capability-reel|type-explainer] [--brand <kit>] [--like <clip>] [--music <file> + licence flags] [--pace crisp] [--engine hyperframes] [--link-modules <dir>/node_modules]`. A template lays a whole film's structure over the starter (timeline, acts, choreography, sound plan, a content file of slots): a product's flow in steps, a launch close from breadth to the name, or an explainer told in type one sentence at a time; `references/templates.md` says which fits.
+- Scaffold: `bash <skill>/scripts/new-film.sh films/<name> --fps 60 --size 1920x1080 [--format update | --template ui-walkthrough|capability-reel|social-ad|type-explainer] [--brand <kit>] [--like <clip>] [--music <file> + licence flags] [--pace crisp] [--engine hyperframes] [--link-modules <dir>/node_modules]`. A template lays a whole film's structure over the starter (timeline, acts, choreography, sound plan, a content file of slots): a product's flow in steps, a launch close from breadth to the name, a 15 s ad cut on pictures, or an explainer told in type one sentence at a time; `references/templates.md` says which fits.
 - Python: the commands below say `python3`; on Windows that name is often the Microsoft Store alias. Set `PYTHON` to the interpreter of an environment with the packages (`node scripts/py.mjs --which` prints the one the npm scripts and `render.sh` use) and run the scripts with it.
 - **Gate:** a spec line, e.g. `1920x1080@60, 30s, pace: calm, format: launch, audio: licensed track + launch kit, stop ending`.
 
@@ -331,7 +331,7 @@ Read each file when its step comes up; never all at once.
 | When | File | What it gives you |
 |---|---|---|
 | Step 0, a format | `references/formats.md` | a recipe per format, shot bands and sound per format, social re-layouts |
-| Step 0, a template | `references/templates.md` | which film template fits (update, ui-walkthrough, capability-reel, type-explainer), what each lays down, the grammar to keep |
+| Step 0, a template | `references/templates.md` | which film template fits (update, ui-walkthrough, capability-reel, social-ad, type-explainer), what each lays down, the grammar to keep |
 | Before the first film | `references/worked-example.md` | Tessel from idea to master, with its mistakes and fixes |
 | Step 1 | `references/concept-and-story.md` | inventory, lenses, the direction deck, the idea sentence, the signature shot, arcs, end cards |
 | Step 1 | `assets/TREATMENT.md` | the treatment template with the Direction and Script blocks |

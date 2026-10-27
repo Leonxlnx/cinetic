@@ -20,11 +20,12 @@ signature replace the template's), then cut it to the track: `track.py grid` mov
 | `update` | 8-20 s | "vX is out": 2-4 changes to show | the version as the set, one product moment per change, the payoff, the end card with the version |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | the product's breadth is the story (sources, formats, integrations), or a launch film needs its close | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
+| `social-ad` | 15 s | a short ad for a feed: the product is pictures (things people save, make, buy, plan), the cut is the energy | the opener built word by word onto a pile of pictures, the mark spinning in on a picture, a wall round the claim, two rivers under a label that swaps its last word, two imperatives, the lockup |
 | `type-explainer` | 20-30 s | the idea is simple to say and the words carry it: a calm explainer on a white page, little or no product UI | the name as a giant word, what it is said at the pace of speech, the problem, the promise with a picture inside it that becomes the shot, one soft wipe, the mark between the words becoming the hub of the product's parts, the close |
 
 The test: say the film in one sentence. "You give it X and get Y" is a walkthrough; "It works with everything and
 returns anything" is a reel; "Here is what changed" is an update; "It is X, it fixes Y, and these are its parts" told
-in words is an explainer. When none fits, start from the starter. A launch
+in words is an explainer; "Here is everything it is for, fast" over the product's pictures is an ad. When none fits, start from the starter. A launch
 film may end on the reel's close (rebuild its acts after your own) or open on the walkthrough's first three acts.
 
 ## ui-walkthrough
@@ -49,6 +50,19 @@ squashes round its line, `Resize` carry, and counter-creeps into a zoom-out), `t
 a hard step every 10 f), `claim` (the film's one colour event: two fragments, the first pushing up and dimming as the
 second rises, the full stop its own square), `rings` (square rings born from that stop, `Radiate` with `bornAt`, then
 the flood), `end` (the name pops, the rest types, the tagline takes its place). Slots: `src/reel.ts`.
+
+## social-ad
+
+Fifteen seconds, every seam inside a motion, pictures carrying the colour. Six acts on whole bars at 150 BPM (15.4 s):
+`open` (the opener built word by word: the name cut in at x2.67 defocused, each new word landing in the accent at the
+line's end while the line re-centres and relaxes; the line breathes apart through the cut and its two words carry on
+either side of a hero card while a pile of pictures is dealt onto it, `pileState`), `brand` (a picture pulling back on a
+circ-out, the mark spinning in from x2.06, `spinInState` and `SpinBlur`, the name sliding out; the lockup rises into the
+cut), `wall` (a masonry wall settling tile by tile, `masonryState`, the claim riding the hero tile, its last word on an
+accent pill popped in 2 f), `rivers` (two diagonal streams of pictures, `Conveyor` with a staircase and depth sizes,
+smeared by `DirBlur` along their angle, a label receding and swapping its last word), `taglines` (the hero picture on a
+long pull-back with a drift, two imperatives, a push into the cut), `end` (the spin-in again, the close). Slots:
+`src/ad.ts`.
 
 ## type-explainer
 
