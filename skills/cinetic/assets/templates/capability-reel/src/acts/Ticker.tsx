@@ -3,7 +3,7 @@ import { AbsoluteFill } from 'remotion';
 import { TYPE, typeStyle, U } from '../brand/tokens';
 import { DirBlur } from '../fx/Defocus';
 import { MaskList, maskListState } from '../fx/Reels';
-import { GlyphTile } from '../kit';
+import { AppIcon, GlyphTile, hasLogo } from '../kit';
 import { E, lmix, prog } from '../lib/anim';
 import { launch } from '../lib/handoff';
 import { ACT, CUE, f60x, FPS, H, TICKS, W } from '../timeline';
@@ -11,7 +11,8 @@ import { REEL } from '../reel';
 import { LIGHT, lineSize, useAbs } from './stage';
 
 // TICKER - what the product returns, as a wheel: an icon tile and a word list that steps a row every 10 f (or closer: TICKS), hard
-// and unblurred (fx/Reels MaskList), the neighbours kept faint by a fixed mask, the icon swapping on the same frame.
+// and unblurred (fx/Reels MaskList), the neighbours kept faint by a fixed mask, the icon swapping on the same frame (a
+// capability that is another product shows its real mark on an app-icon tile, the rest a generic glyph).
 // The act opens still zooming out from the statement; its exit launches left, its last frame the fastest, and the
 // claim opens on that speed.
 
@@ -38,7 +39,7 @@ export const Ticker: React.FC = () => {
       <DirBlur v={exitV} axis="x" id="ticker-exit">
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: '50% 50%', transform: `translate3d(${dx.toFixed(2)}px, 0, 0) scale(${k.toFixed(5)})` }}>
         <div style={{ position: 'absolute', left: x0, top: H / 2 - TILE / 2 }}>
-          <GlyphTile theme={t} name={REEL.capabilities[idx].glyph} size={TILE} solid />
+          {hasLogo(REEL.capabilities[idx].logo) ? <AppIcon logo={REEL.capabilities[idx].logo} size={TILE} theme={t} lift={30} /> : <GlyphTile theme={t} name={REEL.capabilities[idx].glyph} size={TILE} solid />}
         </div>
         <MaskList
           {...list}

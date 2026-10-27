@@ -3,7 +3,7 @@ import { AbsoluteFill } from 'remotion';
 import { FONT, U } from '../brand/tokens';
 import { Defocus } from '../fx/Defocus';
 import { StepList } from '../fx/Loaders';
-import { Avatar, Chip, face, KIT_TYPE, Photo, Surface } from '../kit';
+import { AppIcon, Avatar, Chip, face, hasLogo, KIT_TYPE, Photo, Surface } from '../kit';
 import { clamp, E, hitPulse, lmix, mix, prog, track } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { creep, intoCut } from '../lib/handoff';
@@ -67,7 +67,7 @@ export const Card: React.FC = () => {
               {(!swapped || drop < 1) && (
                 <div style={{ position: 'absolute', inset: 0, opacity: swapped ? 1 - drop : 1, transform: `translate3d(0, ${(drop * 10 * U).toFixed(2)}px, 0)` }}>
                   <div style={{ position: 'absolute', left: pad, top: pad }}>
-                    <Avatar theme={t} i={2} initials={initials(WALK.input.title)} size={150 * U} />
+                    {hasLogo(WALK.input.source) ? <AppIcon logo={WALK.input.source} size={150 * U} theme={t} lift={20} /> : <Avatar theme={t} i={2} initials={initials(WALK.input.title)} size={150 * U} />}
                   </div>
                   <div style={{ position: 'absolute', left: pad, top: 250 * U, display: 'flex', gap: 18 * U }}>
                     {WALK.input.stats.map((s, i) => (

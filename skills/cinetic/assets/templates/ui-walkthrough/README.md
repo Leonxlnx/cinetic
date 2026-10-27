@@ -10,7 +10,7 @@ it builds the output), so the viewer always knows what the product does; six sho
 | # | act | shot | in | what happens | the slot |
 |---|---|---|---|---|---|
 | 1 | `open` | statement on the paper | cold open, already moving | words a word gap apart, the last one snaps the line x2.2 in one frame; launches up | `lines.promise` ("[Product] is a [category].": what it is, by 3 s) |
-| 2 | `card` | the input as one tilted card (the signature) | carried up on the line's speed | it rises while the ground turns edges-first; ease into a zoom; ONE jump frame (scale, tilt, a tinted swell) and the same card is the output: title wipes on, subtitle swaps, three steps check, two punch-ins | `input`, `output` |
+| 2 | `card` | the input as one tilted card (the signature), its source's real mark on an app-icon tile | carried up on the line's speed | it rises while the ground turns edges-first; ease into a zoom; ONE jump frame (scale, tilt, a tinted swell) and the same card is the output: title wipes on, subtitle swaps, three steps check, two punch-ins | `input`, `output` |
 | 3 | `proof` | notices piling up | a blur-snap zoom | `fx/Stack`, arrivals speeding up; a light panel wipes up into the claim | `proof` |
 | 4 | `claim` | the claim, its first word giant | the wipe | the giant word reveals bottom-up, one frame snaps out to the line, the hold pushes in and accelerates into the cut | `lines.claim` |
 | 5 | `field` | step one in the product | the push carried across the cut | a held backspace clears the placeholder, the value types in bursts, the hand rises and presses, results develop tile by tile, pull-back about the upper third, whip up | `lines.step1`, `field`, `results` |
@@ -27,6 +27,9 @@ it builds the output), so the viewer always knows what the product does; six sho
 - The product: the acts draw kit parts (`kit/flow.tsx`: `Field`, `Tile`, `Row`, `Pill`, `Notice`, `Chip`,
   `DataRow`) as the floor. Rebuild the product's real screens at film size (every web size x1.9, nothing under
   36 px) where they differ; keep each step one cause, one action, one result.
+- The input's source: `input.source` names the slug of the real mark of the product the input lives on (a video
+  site, a store, a code host); fetch it with `node scripts/logos.mjs get <name> --film .` and the card and the field
+  show it (initials and a link glyph until then). Only a product the input really comes from.
 - The brand: `--brand <kit>` writes the tokens, the logo's parts and the name; without a kit, replace the
   placeholders by hand. The pictures are the kit's still life until the product's own imagery is supplied
   (`Photo src=`).

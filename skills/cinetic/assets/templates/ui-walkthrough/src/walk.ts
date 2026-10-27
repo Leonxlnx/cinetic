@@ -18,8 +18,12 @@ export const WALK = {
     pick: '[Product] builds the [output] you chose.', // step three, over the choice: what it makes from the pick
     payoff: 'Try it free at [product.com].', // the close, beside the name: what to do
   },
-  /** The user's input as one object (a channel, a store, a repository, a document): it becomes the output in place. */
-  input: { title: '[Your input]', handle: '[@your-handle]', stats: ['[N] [items]', '[N] [people]'] },
+  /**
+   * The user's input as one object (a channel, a store, a repository, a document): it becomes the output in place.
+   * `source` is the slug of the real mark of the product it lives on (node scripts/logos.mjs get <name> --film .): the
+   * card shows it on an app-icon tile and the field leads with it; until it is fetched, initials and a link glyph.
+   */
+  input: { title: '[Your input]', handle: '[@your-handle]', stats: ['[N] [items]', '[N] [people]'], source: '[source-slug]' },
   /** The output the product makes from it, and the three steps it shows while it works. */
   output: { title: '[Your output]', sub: '[What it does for you]', steps: ['[Reading the input]', '[Finding the pattern]', '[Building the result]'] },
   /** Proof: results arriving as notices, faster and faster. */

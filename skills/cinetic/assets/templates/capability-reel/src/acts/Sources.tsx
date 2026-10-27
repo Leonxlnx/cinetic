@@ -2,7 +2,7 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { TYPE, typeStyle, U } from '../brand/tokens';
 import { Words } from '../fx/Words';
-import { Chip } from '../kit';
+import { AppIcon, Chip, hasLogo, LogoChip } from '../kit';
 import { clamp, E, mix, prog, track } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { creep } from '../lib/handoff';
@@ -13,7 +13,8 @@ import { INK, LIGHT, lineSize, useAbs } from './stage';
 // SOURCES - one line in the middle of a ring of sources: the line arrives word by word, the sources pop in round it
 // on a stagger and orbit slowly. Then the page darkens fast (most of the way in a few frames), the sources shrink
 // out one by one, the outer ring stretches into a stadium and the inner ring closes into a disc: the record grows
-// out of that disc in the next act.
+// out of that disc in the next act. The sources are their real marks: app-icon tiles when every source has one
+// (scripts/logos.mjs), a mark and its name on a pill for one that has, the text pill for one that has not.
 
 /** The ring the sources sit on (px at 1080p, about the frame centre) and the inner ring that becomes the disc. */
 export const RING = { rx: 700 * U, ry: 360 * U, inner: { rx: 470 * U, ry: 210 * U }, disc: 80 * U, clear: 28 } as const;
@@ -28,6 +29,9 @@ const angleOf = (i: number, n: number) => {
   return (deg * Math.PI) / 180;
 };
 const CHIP_H = 76 * U;
+const TILE = 124 * U;
+/** Every source has its real mark: the ring is app-icon tiles (no names: the marks say them). */
+const TILES = REEL.sources.every((s) => hasLogo(s.logo));
 
 export const Sources: React.FC = () => {
   const F = useAbs('sources');
@@ -61,7 +65,13 @@ export const Sources: React.FC = () => {
           const y = H / 2 + Math.sin(a) * RING.ry;
           return (
             <div key={i} style={{ position: 'absolute', left: 0, top: 0, opacity: clamp(pop * 1.4), transform: `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${(mix(1.25, 1, pop) * shrink).toFixed(4)})` }}>
-              <Chip theme={t} label={s.label} glyph={s.glyph} h={CHIP_H} id={`source-${i}`} />
+              {TILES ? (
+                <AppIcon logo={s.logo} size={TILE} theme={t} lift={mix(40, 18, pop)} />
+              ) : hasLogo(s.logo) ? (
+                <LogoChip theme={t} logo={s.logo!} label={s.label} h={CHIP_H} id={`source-${i}`} />
+              ) : (
+                <Chip theme={t} label={s.label} glyph={s.glyph} h={CHIP_H} id={`source-${i}`} />
+              )}
             </div>
           );
         })}

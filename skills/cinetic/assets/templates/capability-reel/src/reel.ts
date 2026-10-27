@@ -18,19 +18,23 @@ export const REEL = {
     title: '[Product] is out today.', // the end card's title: the name (from IDENTITY, whole) pops, the rest types
     tagline: 'Try it at [product.com].', // what to do: takes the title's place and holds to the end
   },
-  /** The sources around the first line (8-12), each with a line glyph. */
+  /**
+   * The sources around the first line (8-12): the products it really reads from or works with. `logo` is the slug of
+   * the source's real mark (node scripts/logos.mjs get <name> --film .): when every source has its mark the ring is
+   * app-icon tiles; a source without one is a pill with its name (and `glyph`, a generic stand-in) until it is fetched.
+   */
   sources: [
-    { label: '[Source one]', glyph: 'globe' },
-    { label: '[Source two]', glyph: 'doc' },
-    { label: '[Source three]', glyph: 'table' },
-    { label: '[Source four]', glyph: 'image' },
-    { label: '[Source five]', glyph: 'chat' },
-    { label: '[Source six]', glyph: 'cart' },
-    { label: '[Source seven]', glyph: 'play' },
-    { label: '[Source eight]', glyph: 'link' },
-    { label: '[Source nine]', glyph: 'braces' },
-    { label: '[Source ten]', glyph: 'search' },
-  ] as { label: string; glyph: GlyphName }[],
+    { label: '[Source one]', logo: '[source-one]', glyph: 'globe' },
+    { label: '[Source two]', logo: '[source-two]', glyph: 'doc' },
+    { label: '[Source three]', logo: '[source-three]', glyph: 'table' },
+    { label: '[Source four]', logo: '[source-four]', glyph: 'image' },
+    { label: '[Source five]', logo: '[source-five]', glyph: 'chat' },
+    { label: '[Source six]', logo: '[source-six]', glyph: 'cart' },
+    { label: '[Source seven]', logo: '[source-seven]', glyph: 'play' },
+    { label: '[Source eight]', logo: '[source-eight]', glyph: 'link' },
+    { label: '[Source nine]', logo: '[source-nine]', glyph: 'braces' },
+    { label: '[Source ten]', logo: '[source-ten]', glyph: 'search' },
+  ] as { label: string; logo?: string; glyph: GlyphName }[],
   /** One real record the product returns: a picture, its fields, three tags and one measure. */
   record: {
     rows: [
@@ -44,7 +48,8 @@ export const REEL = {
     tags: ['[Tag]', '[Tag]', '[Tag]'],
     measure: { label: '[Measure]', value: 0.82 },
   },
-  /** What it can return, one noun each with its glyph (12-14): the ticker steps through them. */
+  /** What it can return, one noun each with its generic glyph (12-14): the ticker steps through them. A capability that
+   *  is another product (an export to it, a model it runs) takes that product's mark too (`logo`, as for the sources). */
   capabilities: [
     { word: '[Format one]', glyph: 'braces' },
     { word: '[Format two]', glyph: 'doc' },
@@ -59,7 +64,7 @@ export const REEL = {
     { word: '[Format eleven]', glyph: 'speaker' },
     { word: '[Format twelve]', glyph: 'camera' },
     { word: '[Format thirteen]', glyph: 'code' },
-  ] as { word: string; glyph: GlyphName }[],
+  ] as { word: string; glyph: GlyphName; logo?: string }[],
 } as const;
 
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;

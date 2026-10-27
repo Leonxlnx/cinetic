@@ -10,7 +10,7 @@ sentence's full stop, the end card. State changes are hard steps; only the camer
 
 | # | act | shot | in | what happens | the slot |
 |---|---|---|---|---|---|
-| 1 | `sources` | one line inside a ring of sources | cold open | words arrive, the sources pop in on a stagger and orbit; the page darkens fast, the sources shrink out one by one, the outer ring stretches into a stadium, the inner one closes into a disc | `lines.sources`, `sources` |
+| 1 | `sources` | one line inside a ring of sources | cold open | words arrive, the sources (their real marks on app-icon tiles) pop in on a stagger and orbit; the page darkens fast, the sources shrink out one by one, the outer ring stretches into a stadium, the inner one closes into a disc | `lines.sources`, `sources` |
 | 2 | `record` | one real record on the ink stage | the disc grows into the card | width and height lead, the height overshoots once and lands, the fill catches up late; the accent rises through its picture; a whip pan opens the card into its fields (one per two or three frames, top down); the page grid is the card's own and two accent cells hop on the kicks | `record` |
 | 3 | `statement` | the statement on a light card | a hard cut on a kick | the card opens at the record's size and squashes round its line (`Resize` carry), the words pop a word gap apart; the line creeps in while the card and its grid creep out (`counterCreep`); it zooms out, accelerating into the cut | `lines.statement` |
 | 4 | `ticker` | what it returns | the zoom carried across | an icon tile and a word wheel stepping one row every 10 f (closer when a fast track shortens the act), hard and unblurred (`MaskList`), the icon swapping on the same frame; the exit launches left | `capabilities` |
@@ -22,6 +22,11 @@ sentence's full stop, the end card. State changes are hard steps; only the camer
 - `src/reel.ts`: the script (the sources line, the statement, the claim in two fragments, the end card's title and
   tagline: 2-7 words each, plain sentences: the first says what the product is, the tagline what to do) and the product's own sources, one real record and 12-14 capabilities
   with their glyphs. Delete its placeholder lines.
+- The sources' real marks: each source names the slug of its mark (`logo`); fetch them with
+  `node scripts/logos.mjs get <name> --film .` (official colours, the record in `public/logos/logos.json`). When every
+  source has its mark the ring is app-icon tiles; a source without one stays a pill with its name. Marks only for what
+  the product really reads from or works with; a capability that is another product takes its mark in the ticker too.
+  Look at `npx remotion still KitLogos` at half size first.
 - The record: `acts/Record.tsx` draws kit parts (`DataRow`, `Chip`, `Meter`, a `Photo`) as the floor; rebuild the
   product's real output at film size (every web size x1.9, nothing under 36 px).
 - The brand: `--brand <kit>` writes the tokens, the logo's parts and the name. The claim sits on the brand's accent

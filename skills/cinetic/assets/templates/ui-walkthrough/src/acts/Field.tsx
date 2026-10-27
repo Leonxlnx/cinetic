@@ -3,7 +3,7 @@ import { AbsoluteFill } from 'remotion';
 import { U } from '../brand/tokens';
 import { Cursor, cursorRise, pressAt } from '../fx/Cursor';
 import { ERASE_HOUSE, eraseSchedule, TypeOn, typeSchedule } from '../fx/TypeOn';
-import { Field as FieldPart, Tile } from '../kit';
+import { AppIcon, Field as FieldPart, hasLogo, Tile } from '../kit';
 import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
 import { DirBlur } from '../fx/Defocus';
 import { launch } from '../lib/handoff';
@@ -70,6 +70,7 @@ export const Field: React.FC = () => {
             w={FIELD.w}
             h={FIELD.h}
             glyph="link"
+            lead={hasLogo(WALK.input.source) ? <AppIcon logo={WALK.input.source} size={FIELD.h * 0.68} theme={t} lift={6} /> : undefined}
             focus={prog(F, CUE.erase - f60x(10), CUE.erase, E.snapOut)}
             button={{
               w: FIELD.button,
