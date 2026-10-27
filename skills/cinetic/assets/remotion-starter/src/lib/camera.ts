@@ -148,9 +148,9 @@ export const camPath = (f: number, base: Shot, moves: readonly CamMove[]): Shot 
 
 /**
  * How fast the picture moves under a camera path at frame f (from f - 1 to f): the screen velocity (px per film
- * frame) of the world point framed at `at` (default the centre of `film`'s frame, 960, 540 without it), its speed
- * and direction (deg, 0 = +x, 90 = down: DirBlur's `angle`), and the zoom speed (ln k per frame). Feed the speed to
- * DirBlur for a camera smear on translation; pushes stay crisp.
+ * frame, film px) of the world point framed at `at` (default the centre of `film`'s frame; the timeline's size
+ * without one), its speed and direction (deg, 0 = +x, 90 = down: DirBlur's `angle`), and the zoom speed (ln k per
+ * frame). Feed speed / u to DirBlur for a camera smear on translation; pushes stay crisp.
  */
 export const camVel = (f: number, base: Shot, moves: readonly CamMove[], atIn?: { x: number; y: number }, film?: Partial<FilmCtx>) => {
   const size = sizeOf(film);

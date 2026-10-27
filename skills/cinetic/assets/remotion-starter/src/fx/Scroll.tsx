@@ -189,7 +189,7 @@ export const Scroll: React.FC<
 export const MASONRY = { travel: 520, enter60: 64, lag60: 6, exit60: 26, exitBy: 1300 } as const;
 export type MasonryTile = { x: number; y: number; w: number; h: number; depth?: number; lag?: number };
 export type MasonryProps = { at: number; out?: number; tiles: MasonryTile[]; travel?: number; enter?: number; exit?: number; exitBy?: number };
-/** Every tile at frame f: its rest box moved by its own settle and the shared exit, and its speed (px per film frame, up = negative). Pure. */
+/** Every tile at frame f: its rest box moved by its own settle and the shared exit, and its speed (film px per film frame, up = negative; DirBlur takes v / u). Pure. */
 export const masonryState = (frame: number, p: MasonryProps, film?: Partial<FilmCtx>) => {
   const fps = fpsOf(film);
   const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;

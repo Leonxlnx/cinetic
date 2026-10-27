@@ -52,8 +52,9 @@ export const Defocus: React.FC<{ sigma: number; style?: React.CSSProperties; chi
 };
 
 /**
- * A smear along `axis` for a layer moving `v` px per film frame (pass the speed the act already computes: a flick's
- * flickState().v, a whip's step, camVel().speed). Sharp under DIR_BLUR.minPxS. `id` names the filters (one per
+ * A smear along `axis` for a layer moving `v` px per film frame at 1080p (pass the speed the act already computes,
+ * divided by u when it is in film px: a flick's flickState().v / u, a whip's step / u, camVel().speed / u, a pile
+ * card's or masonry tile's v / u); the levels scale with the frame. Sharp under DIR_BLUR.minPxS. `id` names the filters (one per
  * instance). `angle` (deg, 0 = +x, 90 = down; camVel().angle) smears along any direction: the layer is turned onto
  * the travel inside a box as large as the frame's diagonal, smeared on x and turned back.
  */

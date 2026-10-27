@@ -146,7 +146,7 @@ export const pileState = (frame: number, p: PileProps, film?: Partial<FilmCtx>) 
       y: i * fan.y + dir.y * out + shift.y,
       rot: (i % 2 ? -1 : 1) * (p.tilt ?? PILE.tilt) * mix(1.6, 1, q),
       scale: mix(PILE.scaleFrom, 1, q),
-      v: (q - q0) * drop, // px the card travelled this frame along the fan (DirBlur along its angle)
+      v: (q - q0) * drop, // film px the card travelled this frame along the fan (DirBlur v / u along its angle)
       opacity: clamp(q * 3),
     });
   });

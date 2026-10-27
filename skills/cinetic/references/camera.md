@@ -66,7 +66,7 @@ export declare const dip: (t: number, depth?: number) => number;  // 1 - depth *
 export declare const handoff: (t: number, v0: number, settle?: number) => number;      // carry a log-scale speed
 export declare const zoomHandoff: (t: number, v0: number, settle?: number) => number;  // the same for a zoom-through
 export declare const camPath: (f: number, base: Shot, moves: CamMove[]) => Shot;       // moves that add and chain
-export declare const camVel: (f: number, base: Shot, moves: CamMove[]) => { vx: number; vy: number; speed: number; angle: number; vk: number };
+export declare const camVel: (f: number, base: Shot, moves: CamMove[], at?: { x: number; y: number }, film?: Partial<FilmCtx>) => { vx: number; vy: number; speed: number; angle: number; vk: number };
 ```
 
 - Moving between two framings lerps the anchors linearly and `k` in log space, so the subject travels a straight
@@ -78,7 +78,7 @@ export declare const camVel: (f: number, base: Shot, moves: CamMove[]) => { vx: 
   add, so the next one starts on the frame the last one slows and the camera never holds (a slide-in settling into a
   pull-back x0.65, a rise's drift into a zoom-out x0.48, a push x1.57 into a whip-out). Whips are asymmetric (about
   12 f in on `E.launchIn`, cut at peak; 7 f out on `E.glideOut`). `camVel` gives the picture's speed and direction
-  for the smear: `<DirBlur v={vel.speed} angle={vel.angle} shutter={DIR_BLUR.whipShutter}>` on translation only
+  for the smear: `<DirBlur v={vel.speed / u} angle={vel.angle} shutter={DIR_BLUR.whipShutter}>` on translation only
   (pushes stay crisp), sharp under 120 px/s. Pin a camera track on measured element boxes, never on a frame where
   a hero element moves on its own.
 - Overlays that track the product (a cursor, the story device, a caption pinned to a row) are drawn in screen space at

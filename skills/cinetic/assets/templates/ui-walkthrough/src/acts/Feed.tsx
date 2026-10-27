@@ -61,7 +61,7 @@ export const Feed: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
       <div data-audit-scroll style={{ position: 'absolute', inset: 0 }}>
-      <DirBlur v={s.v} axis="y" id="feed-flick" style={{ maskImage: 'linear-gradient(180deg, transparent 0%, black 22%, black 82%, transparent 100%)' }}>
+      <DirBlur v={s.v / U} axis="y" id="feed-flick" style={{ maskImage: 'linear-gradient(180deg, transparent 0%, black 22%, black 82%, transparent 100%)' }}>
         {Array.from({ length: FEED.rows }, (_, i) => {
           const y = H / 2 - FEED.h / 2 + i * FEED.pitch - s.y;
           if (y < -FEED.h * 2 || y > H + FEED.h) return null;
