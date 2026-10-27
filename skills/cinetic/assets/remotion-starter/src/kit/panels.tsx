@@ -33,6 +33,7 @@ import {
   useKitScale,
   type Vessel,
 } from './parts';
+import { DenseScreen } from './dense';
 import { BUDGETS, budgetTotals, money, REVIEW } from './sample';
 import { type KitTheme, kitTheme } from './theme';
 
@@ -464,9 +465,10 @@ export const ReportCover: React.FC<Base & { data?: typeof BUDGETS; growAt?: numb
 
 // ------------------------------------------------------------------------------------------ fallback
 /**
- * Real product UI for a box that was given none: picked by the box's shape from the sample products
- * (wide: the budget card; tall: the comment feed; square and large: the project panel; square and small:
- * a live figure). It is the floor, not the goal: give a card the brand's own UI or picture.
+ * Real product UI for a box that was given none: picked by the box's shape (a large landscape box: a dense product
+ * screen from the sample world of `seed`, kit/dense.tsx; wide: the budget card; tall: the comment feed; square and
+ * large: the project panel; square and small: a live figure). It is the floor, not the goal: give a card the brand's
+ * own UI or picture.
  */
 export const KitFallback: React.FC<{ frame: number; w: number; h: number; seed?: number; theme?: KitTheme }> = ({ frame, w, h, seed = 0, theme }) => {
   const t = theme ?? kitTheme();
@@ -474,11 +476,13 @@ export const KitFallback: React.FC<{ frame: number; w: number; h: number; seed?:
   const unit = Math.min(film.width, film.height) / 1080;
   const a = w / Math.max(1, h);
   // lay the panel out at its design size and fit it to the box (UI scales as a whole, never re-wraps)
-  const pick = a > 1.7 ? 'budget' : a < 0.85 ? 'feed' : w * h > 600000 * unit * unit ? 'project' : seed % 2 ? 'ring' : 'stat';
-  const design = { budget: [900, 440], feed: [980, 1200], project: [1160, 740], ring: [560, 620], stat: [640, 560] }[pick].map((v) => v * unit);
+  const pick = a >= 1.3 && a <= 2.3 && w * h > 700000 * unit * unit ? 'screen' : a > 1.7 ? 'budget' : a < 0.85 ? 'feed' : w * h > 600000 * unit * unit ? 'project' : seed % 2 ? 'ring' : 'stat';
+  const design = { screen: [1600, 920], budget: [900, 440], feed: [980, 1200], project: [1160, 740], ring: [560, 620], stat: [640, 560] }[pick].map((v) => v * unit);
   const k = Math.min(w / design[0], h / design[1]);
   const node =
-    pick === 'budget' ? (
+    pick === 'screen' ? (
+      <DenseScreen frame={frame} theme={t} seed={'fallback:' + seed} lift={0} view={k} />
+    ) : pick === 'budget' ? (
       <BudgetCard frame={frame} theme={t} lift={0} />
     ) : pick === 'feed' ? (
       <FeedCard frame={frame} theme={t} h={design[1]} lift={0} />
