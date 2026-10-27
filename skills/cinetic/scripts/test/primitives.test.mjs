@@ -116,6 +116,7 @@ console.log(JSON.stringify({
   list: [Re.maskListState(99, { n: 12, pitch: 100, start: 100 }, film60), Re.maskListState(121, { n: 12, pitch: 100, start: 100 }, film60)],
   carry: range(100, 125).map((f) => Rz.resizeState(f, { at: 100, from: box(600, 420), to: box(600, 250), mode: 'carry' }, film60).box.h),
   radiate: [Gr.radiateState(100, { start: 100, births: [100, 110], bornAt: 54, speeds: [12] }, film60), Gr.radiateState(120, { start: 100, births: [100, 110], bornAt: 54, speeds: [12] }, film60), Gr.radiateState(122, { start: 100, births: [100], flood: { at: 100 } }, film60)],
+  floodOff: [Gr.radiateState(300, { start: 100, births: [100], flood: { at: 100 }, x: 300, y: 540 }, film60).flood, Gr.radiateState(300, { start: 100, births: [100], flood: { at: 100 } }, film60).flood],
   creep: Ho.counterCreep(160, 100, {}, 60),
   growth: Ro.growthSteps(0, 3412, {}, 60),
   growthBar: [Ro.growthSteps(100, 12840, { within: 100 }, 60), Ro.growthSteps(100, 12840, { within: 100 }, 30), Ro.growthSteps(100, 40, { within: 100 }, 60)],
@@ -232,6 +233,8 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   result(Math.abs(r0.rings[0].r - 54) < 1e-9, 'radiate: a ring is born at bornAt');
   result(Math.abs(r1.rings[0].r - (54 + 20 * 12)) < 1e-9 && Math.abs(r1.rings[1].r - (54 + 10 * 15)) < 1e-9, 'radiate: per-ring speeds, the rest at the house speed');
   result(Math.abs(rf.flood - 70 * 1.0915 ** 22) < 1e-6, 'radiate: the flood grows x1.0915 a frame from 70 px', rf.flood.toFixed(1));
+  const [off, mid] = P.floodOff;
+  result(off >= Math.hypot(1620, 540) && Math.abs(mid - (Math.hypot(960, 540) + 75)) < 1e-6, 'radiate: an off-centre flood grows to the farthest corner; the centred one stops at the half-diagonal', `${off.toFixed(0)} ${mid.toFixed(0)}`);
 }
 // 10. counter-creep and growth
 {

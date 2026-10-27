@@ -213,7 +213,7 @@ export type RadiateProps = {
   seed?: string | number;
   speed?: number; // half-size growth, px per 60 fps frame at 1080p (house 15)
   stroke?: number; // px at 1080p (house 75)
-  max?: number; // rings past this half-size are dropped (default: the frame's half-diagonal + stroke)
+  max?: number; // rings past this half-size are dropped and the flood stops here (default: from the centre (x, y) to the frame's farthest corner, + stroke)
   swallow?: { at: number; frames?: number }; // strokes thicken until only hairline gaps remain (house 25 f, accelerating)
   bornAt?: number; // half-size a ring is born at, px at 1080p (default 0; 54 pops it in as a solid square that opens)
   speeds?: number[]; // per-ring growth (px per 60 fps frame at 1080p) by birth order; missing rings use `speed`
@@ -230,8 +230,8 @@ export const radiateBirths = (p: RadiateProps, film?: Partial<FilmCtx>): number[
   return all.filter((b) => b <= end);
 };
 
-/** Every live ring at frame f: half-size (px), stroke (px). Constant speed, closed form. */
-export const radiateState = (frame: number, p: RadiateProps, film?: Partial<FilmCtx>) => {
+/** Every live ring at frame f: half-size (px), stroke (px). Constant speed, closed form. (x, y): the centre, px (default the frame's). */
+export const radiateState = (frame: number, p: RadiateProps & { x?: number; y?: number }, film?: Partial<FilmCtx>) => {
   const fps = fpsOf(film);
   const u = uOf(film);
   const { width, height } = sizeOf(film);
@@ -239,7 +239,10 @@ export const radiateState = (frame: number, p: RadiateProps, film?: Partial<Film
   const vOf = (k: number) => (p.speeds?.[k] !== undefined ? (p.speeds[k] * u * 60) / fps : v);
   const born = (p.bornAt ?? 0) * u;
   const stroke0 = (p.stroke ?? RADIATE.stroke) * u;
-  const max = p.max ?? Math.hypot(width, height) / 2 + stroke0;
+  // an off-centre ring or flood must reach the farthest corner before it covers the frame
+  const cx = p.x ?? width / 2;
+  const cy = p.y ?? height / 2;
+  const max = p.max ?? Math.hypot(Math.max(cx, width - cx), Math.max(cy, height - cy)) + stroke0;
   const births = radiateBirths(p, film);
   const gaps = births.slice(1).map((b, i) => b - births[i]);
   const spacing = (gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : f60x(12, fps)) * v;
