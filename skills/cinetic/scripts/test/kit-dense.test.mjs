@@ -72,6 +72,8 @@ const differ = { people: A.people.filter((p: any) => B.people.some((q: any) => q
 const screens: Record<string, string> = {};
 for (const [name, layout, recipe, seed, view] of [['table-light', 'table', 'tintedPaper', 'film-a', 1], ['table-dark', 'table', 'inkStage', 'film-b', 1], ['board-dark', 'board', 'slateMid', 'film-c', 1], ['board-light', 'board', 'tintedPaper', 'film-d', 1], ['table-small', 'table', 'tintedPaper', 'film-e', 0.6]] as const)
   screens[name] = film(60, h(K.DenseScreen, { frame: 120, theme: K.kitTheme(recipe as any), seed, layout, view }));
+// mid-glide (k 5/16, both lines on screen): still exactly one readable line
+const glides = ['table', 'board'].map((layout) => film(60, h(K.DenseScreen, { frame: 105, theme: K.kitTheme('tintedPaper'), seed: 'film-g', layout, focus: [{ at: 0, row: 2 }, { at: 100, row: 6 }] })));
 const fs60 = [0, 1, 4, 8, 16, 40].map((d) => K.focusState(100 + d, [{ at: 0, row: 2 }, { at: 100, row: 6 }], { fps: 60 }));
 const fs30 = K.focusState(104, [{ at: 0, row: 2 }, { at: 100, row: 6 }], { fps: 30 });
 const fixed = K.focusState(77, 5);
@@ -90,7 +92,7 @@ const wall = film(60, h(K.ContentWall, { nodes: nodes.slice(0, 4), frame: 400, t
 const ring = film(60, h(K.ContentRing, { nodes: nodes.slice(0, 3), frame: 400, theme: t, seed: 'r', count: 14, blur: false }));
 const ticker = film(60, h(K.ContentTicker, { nodes: nodes.slice(0, 3), frame: 400, theme: t, seed: 'k', blur: false }));
 const fallback = film(60, h(K.KitFallback, { frame: 60, w: 1500, h: 860, seed: 3, theme: t }));
-console.log(JSON.stringify({ worlds, same, differ, screens, fs60, fs30, fixed, av: { big: avatar(96), chip: avatar(32), half: avatar(220, 'halftone') }, cuts, dots: { n: dots.length, rs: dots.map((d: any) => d[2]), maxY: Math.max(...dots.map((d: any) => d[1])), corner: cornerR(dots), invCorner: cornerR(inv) }, stack, tiles, fallbackTile, nodes, wall, ring, ticker, fallback, wallSlots: K.wallSlots(4, { cols: Math.max(4, Math.round(1920 / (230 * 1.24)) + 1), rows: Math.max(3, Math.round(1080 / (230 * 1.24 * 0.92)) + 1), cell: 230 * 1.24, w: 1920, h: 1080, seed: 'w' }).length }));
+console.log(JSON.stringify({ worlds, same, differ, screens, glides, fs60, fs30, fixed, av: { big: avatar(96), chip: avatar(32), half: avatar(220, 'halftone') }, cuts, dots: { n: dots.length, rs: dots.map((d: any) => d[2]), maxY: Math.max(...dots.map((d: any) => d[1])), corner: cornerR(dots), invCorner: cornerR(inv) }, stack, tiles, fallbackTile, nodes, wall, ring, ticker, fallback, wallSlots: K.wallSlots(4, { cols: Math.max(4, Math.round(1920 / (230 * 1.24)) + 1), rows: Math.max(3, Math.round(1080 / (230 * 1.24 * 0.92)) + 1), cell: 230 * 1.24, w: 1920, h: 1080, seed: 'w' }).length }));
 `;
 
 /** The strings in a markup: data-text elements and data-texture spans, each with its largest font size. */
@@ -157,6 +159,11 @@ try {
     result(s.length >= 25, `DenseScreen ${name}: 25+ product strings`, `${s.length}`);
     result(texts.length === 1 && texts[0].id === 'kit-dense-focus' && texts[0].px >= minFocus, `DenseScreen ${name}: exactly one readable line, at >= ${minFocus} px (4 % of the frame at its view)`, JSON.stringify(texts.slice(0, 4)));
     result(micro >= 25 && textures.every((x) => !(x.px >= minFocus)), `DenseScreen ${name}: the rest is texture, most of it at 12-16 px`, `${micro} micro of ${textures.length}`);
+  }
+
+  for (const [i, html] of P.glides.entries()) {
+    const texts = strings(html).filter((x) => x.kind === 'text');
+    result(texts.length === 1 && texts[0].id === 'kit-dense-focus', `DenseScreen ${i ? 'board' : 'table'} mid-glide: the leaving and the arriving line are never both readable (one data-text)`, JSON.stringify(texts));
   }
 
   // 3. focus schedule

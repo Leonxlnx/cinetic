@@ -6,7 +6,7 @@
 //                data-texture, never data-text: it is not copy and nobody is asked to read it
 //   FocusLens    the focus helper: dims the screen under a veil (and softens it with `blur`), lifts the one readable
 //                line on a raised strip at >= 4 % of the frame height, and glides it from row to row (16 f at 60 fps
-//                on E.snapOut) when `focus` is a schedule
+//                on E.glideOut) when `focus` is a schedule
 //   AppWindow    the chrome: title bar, workspace, nav with counts, team, the viewer
 //   DenseScreen  a whole screen from a sample world (kit/data.ts): `layout` 'table' (tabs, KPIs, a records table,
 //                activity and a chart) or 'board' (the records as cards in status columns), with the lens on top
@@ -262,14 +262,16 @@ const LensLine: React.FC<{ t: KitTheme; W: SampleWorld; row: number; px: number;
   const r = W.records[row];
   if (!r) return null;
   const st = W.statuses[r.status];
-  const q = E.snapOut(k);
+  const q = E.glideOut(k);
   const op = mode === 'in' ? clamp((k - 0.25) / 0.5) : mode === 'out' ? 1 - clamp(k / 0.45) : 1;
   const dy = mode === 'in' ? (1 - q) * px * 0.32 : mode === 'out' ? -q * px * 0.2 : 0;
   const small = Math.max(px * 0.36, 14 * u);
+  // one readable line at a time: through a glide the line that leads (the leaving one until k 0.4) carries data-text
+  const lead = mode === 'still' || (mode === 'in' ? k >= 0.4 : k < 0.4);
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, display: 'flex', alignItems: 'center', gap: px * 0.42, padding: `0 ${px * 0.55}px`, boxSizing: 'border-box', opacity: op, transform: `translateY(${dy.toFixed(2)}px)` }}>
       <Avatar theme={t} i={r.who} initials={W.people[r.who].initials} seed={W.people[r.who].seed} size={px * 1.1} kind="portrait" />
-      <div data-text="kit-dense-focus" style={{ display: 'flex', alignItems: 'baseline', gap: px * 0.4, flex: 1, minWidth: 0 }}>
+      <div data-text={lead ? 'kit-dense-focus' : undefined} style={{ display: 'flex', alignItems: 'baseline', gap: px * 0.4, flex: 1, minWidth: 0 }}>
         <span style={{ ...face(px, 600, t.text, -0.02, 1.1), flex: 'none' }}>{r.title}</span>
         <span style={{ ...face(px * 0.62, 500, t.mute, -0.01, 1.1), flex: 'none' }}>{r.value}</span>
       </div>
@@ -280,6 +282,7 @@ const LensLine: React.FC<{ t: KitTheme; W: SampleWorld; row: number; px: number;
 };
 
 const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, focus, veil, blur, drawAt }) => {
+  const { fps } = useFilm(); // the lens glides at the composition's rate (a variant cut at 30 fps)
   const pad = 26 * u;
   const insW = m.w > 1150 * u ? 300 * u : 0; // the inspector column when there is room
   const tw = m.w - 2 * pad - (insW ? insW + pad * 0.8 : 0);
@@ -301,7 +304,7 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
     [W.statuses[2].label, W.kind === 'hiring' || W.kind === 'deploys' || W.kind === 'support' ? String(overdue.length) : W.fmt(overdue.reduce((sum, r) => sum + r.amount, 0))],
     ['Share', `${Math.round(100 * W.total.share)} %`],
   ];
-  const fs = focus === null ? null : focusState(f, focus);
+  const fs = focus === null ? null : focusState(f, focus, { fps });
   const fpx = focusPx(H, view);
   const lensH = Math.max(rowH * 1.25, fpx * 1.75);
   const rowY = (i: number) => m.y + tableY + hdrH + i * rowH + rowH / 2 - lensH / 2;
@@ -427,7 +430,7 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
   if (!fs) return screen;
   const lensX = m.x + pad - 18 * u;
   const lensW = tw + 36 * u;
-  const yNow = mix(rowY(fs.prev), rowY(fs.row), E.snapOut(fs.k));
+  const yNow = mix(rowY(fs.prev), rowY(fs.row), E.glideOut(fs.k));
   return (
     <FocusLens
       theme={t}
@@ -450,6 +453,7 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
 };
 
 const Board: React.FC<Inner> = ({ t, W, m, u, f, H, view, focus, veil, blur }) => {
+  const { fps } = useFilm(); // the lens glides at the composition's rate (a variant cut at 30 fps)
   const pad = 24 * u;
   const n = W.statuses.length;
   const gap = 16 * u;
@@ -472,7 +476,7 @@ const Board: React.FC<Inner> = ({ t, W, m, u, f, H, view, focus, veil, blur }) =
     const slot = placed.find((c) => c.i === i)!;
     return { x: m.x + pad + slot.col * (colW + gap), y: m.y + top + 40 * u + slot.k * (cardH + cardGap) };
   };
-  const fs = focus === null ? null : focusState(f, focus);
+  const fs = focus === null ? null : focusState(f, focus, { fps });
   const fpx = focusPx(H, view);
   const screen = (
     <div style={{ position: 'absolute', left: m.x, top: m.y, width: m.w, height: m.h }}>
@@ -537,7 +541,7 @@ const Board: React.FC<Inner> = ({ t, W, m, u, f, H, view, focus, veil, blur }) =
   };
   const from = lensAt(fs.prev);
   const to = lensAt(fs.row);
-  const glide = E.snapOut(fs.k);
+  const glide = E.glideOut(fs.k);
   return (
     <FocusLens
       theme={t}
