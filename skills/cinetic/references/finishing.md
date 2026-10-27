@@ -24,7 +24,7 @@ Remotion always renders the picture muted; ffmpeg attaches the sound; two script
 | Mode | Command | What happens | Relative cost |
 |---|---|---|---|
 | Preview | `bash scripts/render.sh Film out/preview.mp4 --preview` | CRF 20, x264 veryfast, BT.709 tags | 1× |
-| Sharp master | `bash scripts/render.sh Film out/film.mp4` | CRF 14, x264 slow, BT.709 tags | ~1.2× |
+| Sharp master | `bash scripts/render.sh Film out/film.mp4` | CRF 14, x264 slow, BT.709 tags; parts of 300 f from a kept bundle, joined with `-c copy` (a stopped run resumes; `--max-min 8` under a job limit, exit 75 = rerun) | ~1.2× |
 | Blurred master | `bash scripts/render.sh Film out/film.mp4 --blur` | sharp pass → speed → sub-frames → float accumulate | 3–8× typical; `--budget` caps it |
 | One act | `... --blur --frames 600-839` | the same, on a film-frame range; audio from the same range | per act |
 | Chunked | `bash scripts/render-chunks.sh Film out/film.mp4 4` | N browsers at concurrency 1, joined with `-c copy` | often faster on GPU-heavy scenes |
@@ -254,6 +254,7 @@ ffmpeg -i picture.mp4 -ss <offset> -i public/audio/soundtrack.wav -map 0:v:0 -ma
 
 ## 7. Chunked renders and splices
 
+- **`render.sh` parts** (the master and `--preview`): the bundle is built once into `out/render/<name>/` and rebuilt only when `src/` or `public/` change (`render-key.cjs`); the frames render in parts of `--chunk-frames` (300) one Remotion call at a time, each finished part kept, so a render stopped by a 10-minute job limit, a crash or `--max-min M` (exit 75) resumes on the next run; `--part K` renders one part as its own job; the join is a stream copy that writes the BT.709 tags into the stream (`h264_metadata`) and the container. `--bundle DIR` renders from a bundle you built; `--single` is the one-call route.
 - **`render-chunks.sh <Comp> <out> [chunks] [crf]`** bundles once, renders N frame ranges as N separate browsers at concurrency 1, and joins them with the concat demuxer (`-c copy`, lossless, since each chunk starts on a keyframe with identical settings). On scenes limited by the GPU or compositor this often beats one browser with N tabs. Sharp renders only.
 - **Re-render only what changed.** Render the master as act-sized parts with no audio, join them, and mux once. After a late fix, re-render only that part. Act boundaries are safe splice points by construction, because blur samples never cross them.
 

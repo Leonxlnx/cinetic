@@ -8,9 +8,11 @@
 #   bash scripts/render.sh Film out/film.mp4                   # sharp master (CRF 14, x264 slow)
 #   bash scripts/render.sh Film out/film.mp4 --blur            # motion-blurred master
 #   bash scripts/render.sh Film out/act3.mp4 --blur --frames 600-839   # one act, for a splice
+#   bash scripts/render.sh Film out/film.mp4 --max-min 8               # under a job limit: rerun until exit 0
 #
 # Modes:
-#   (default)  sharp master: one Remotion encode at CRF 14, BT.709 tagged (--color-space=bt709).
+#   (default)  sharp master: CRF 14, BT.709 tagged (--color-space=bt709), rendered in parts from a
+#              pre-built bundle and joined losslessly (see Parts below).
 #   --preview  same pipeline, CRF 20 on x264 veryfast (about 3x faster to encode). Same tags as the
 #              master, so colour and banding judgements carry over.
 #   --blur     true motion blur, as the film declares it (--policy): sharp render -> measure-speed.py
@@ -30,11 +32,23 @@
 # The source is bundled once at the start and every pass renders from that frozen bundle, so edits
 # to src/ during a render are not in it; render.sh warns at the end if src/ changed meanwhile.
 #
+# Parts (the master and the preview): the frames render in parts of --chunk-frames (default 300) from a
+# bundle built once into out/render/<name>/ (or --bundle DIR, one you built with `npx remotion bundle`),
+# one Remotion render at a time; each finished part is kept there, so a run stopped by a job limit
+# (a shared machine's 10-minute cap) or a crash resumes where it stopped: rerun the same command. The
+# bundle is rebuilt, and the parts dropped, when src/ or public/ changed since it was built. --max-min M
+# stops starting parts once the next one would pass M minutes (from its measured pace) and exits 75 with
+# the parts left; --part K renders part K alone and exits (a scheduler runs each part as its own job).
+# When every part is there, ffmpeg joins them with the concat demuxer (stream copy, no re-encode) and
+# writes the BT.709 colour tags into the stream and the container, then the mux and the gates below run.
+# --single renders the whole range in one Remotion call instead (the 1.1 route).
+#
 # Every mode then muxes the WAV with ffmpeg (AAC 320k, 48 kHz, +faststart; the audio is padded or
 # trimmed to the picture) because Remotion's own AAC mux leaves ~2048 samples of encoder priming,
 # i.e. audio 2-3 frames late. Then check-sync.py (lag <= 48 samples, true peak <= -1 dBTP after
 # decode) and probe.py (size, fps, frame count, yuv420p, BT.709 tags, AAC 48 kHz) gate the file;
-# reports go to out/qa/. Exit 0 = rendered and every gate passed, 1 = a step or gate failed.
+# reports go to out/qa/. Exit 0 = rendered and every gate passed, 1 = a step or gate failed, 75 =
+# --max-min stopped it with parts left (rerun the same command to continue).
 #
 # Options:
 #   --audio FILE        soundtrack (default public/audio/soundtrack.wav)
@@ -56,6 +70,12 @@
 #   --entry FILE        Remotion entry point (default src/index.ts)
 #   --sub ID            sub-frame composition for --blur (default <Comp>Sub)
 #   --frames A-B        render only film frames A..B (inclusive); audio is taken from the same range
+#   --chunk-frames N    frames per part (default 300; --preview and the master); 0 or --single: one call
+#   --max-min M         stop starting parts once the next would pass M minutes; exit 75 with parts left
+#   --part K            render part K (0-based) alone and exit 0 (no join, no mux)
+#   --parts DIR         where the bundle and the parts live (default out/render/<out name>)
+#   --bundle DIR        render from this pre-built bundle (npx remotion bundle src/index.ts --out-dir DIR)
+#   --single            the whole range in one Remotion render (no parts)
 #   --crf N             override the final CRF (preview 20, master 14, blur 14)
 #   --10bit             (--blur) encode the master as yuv420p10le, High 10: the cleanest gradients and
 #                       the smallest file, for masters that will be graded or re-encoded; ship 8-bit
@@ -79,7 +99,7 @@
 #   --measure "ARGS"    extra measure-speed.py arguments, e.g. --measure "--max 64 --step 2"
 #   --spec WxH@fps      extra expectation for probe.py (default: the composition's own size/fps)
 #   --no-check          skip check-sync.py and probe.py
-#   --keep              keep the work directory (bundle, sharp.mp4, sub.mp4, picture.mp4)
+#   --keep              keep the work directory (bundle, sharp.mp4, sub.mp4, picture.mp4) and the parts
 #   -- ARGS             passed to every `remotion render` call (e.g. -- --image-format=png --scale=0.5)
 #
 # Needs: node/npx with @remotion/cli, ffmpeg >= 6, python3 with numpy scipy soundfile opencv.
@@ -103,6 +123,7 @@ step() { echo "[render $(( $(date +%s) - T0 ))s] $*" >&2; }
 COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0; POLICY=auto
 ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
 SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0; ACCEPT_FAST=""; ACCEPT_CUT=""
+CHUNK=300; MAXMIN=0; ONLY_PART=""; PARTS=""; PREBUILT=""; SINGLE=0
 POS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -121,6 +142,12 @@ while [[ $# -gt 0 ]]; do
     --entry) ENTRY=${2:?}; shift ;;
     --sub) SUB=${2:?}; shift ;;
     --frames) FRAMES=${2:?}; shift ;;
+    --chunk-frames) CHUNK=${2:?--chunk-frames needs a number}; shift ;;
+    --max-min) MAXMIN=${2:?--max-min needs minutes}; shift ;;
+    --part) ONLY_PART=${2:?--part needs an index}; shift ;;
+    --parts) PARTS=${2:?--parts needs a folder}; shift ;;
+    --bundle) PREBUILT=${2:?--bundle needs a folder}; shift ;;
+    --single) SINGLE=1 ;;
     --crf) CRF=${2:?}; shift ;;
     --10bit) TENBIT=1 ;;
     --concurrency) CONC=${2:?}; shift ;;
@@ -142,6 +169,10 @@ done
 case "$POLICY" in auto|crisp|camera) ;; *) die "--policy is auto, crisp or camera (got $POLICY)" ;; esac
 [[ $TENBIT -eq 0 || $MODE == blur ]] || die "--10bit applies to --blur masters (accumulate.py encodes them)"
 COMP=${POS[0]}; OUT=${POS[1]}
+[[ "$CHUNK" =~ ^[0-9]+$ ]] || die "--chunk-frames wants a whole number of frames"
+[[ "$MAXMIN" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "--max-min wants minutes"
+[[ -z "$ONLY_PART" || "$ONLY_PART" =~ ^[0-9]+$ ]] || die "--part wants a 0-based index"
+[[ "$CHUNK" -eq 0 ]] && SINGLE=1
 
 # project root: the current folder if it has the entry, else the folder above this script
 if [[ ! -f "$ENTRY" ]]; then
@@ -203,10 +234,33 @@ fi
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/cinetic-render.XXXXXX")
 if [[ $KEEP -eq 1 ]]; then echo "render.sh: keeping work files in $WORK" >&2; else trap 'rm -rf "$WORK"' EXIT; fi
 
-step "bundling $ENTRY"
 touch "$WORK/.bundled"
-npx remotion bundle "$ENTRY" --out-dir "$WORK/bundle" --log=error >/dev/null || die "bundle failed"
-B="$WORK/bundle"
+# the parts route keeps its bundle and parts in a folder of the project, so a stopped run resumes
+CHUNKED=0; [[ $MODE != blur && $SINGLE -eq 0 ]] && CHUNKED=1
+PARTS=${PARTS:-out/render/$NAME}
+if [[ -n "$PREBUILT" ]]; then
+  [[ -f "$PREBUILT/index.html" ]] || die "--bundle $PREBUILT is not a Remotion bundle (no index.html)"
+  B=$(cd "$PREBUILT" && pwd)
+  step "pre-built bundle: $B"
+elif [[ $CHUNKED -eq 1 ]]; then
+  mkdir -p "$PARTS"
+  # the source's fingerprint: every file under src/ (path, size, content) and public/ (path, size)
+  SRC_KEY=$(node "$SCRIPT_DIR/render-key.cjs" src public) || die "could not fingerprint src/"
+  if [[ -f "$PARTS/bundle/index.html" && "$(cat "$PARTS/bundle.key" 2>/dev/null)" == "$SRC_KEY" ]]; then
+    step "reusing the bundle in $PARTS (src/ and public/ unchanged since it was built)"
+  else
+    [[ -d "$PARTS/bundle" ]] && step "src/ or public/ changed since the last bundle: rebuilding it and dropping its parts"
+    rm -rf "$PARTS/bundle" "$PARTS"/part-*.mp4 "$PARTS/bundle.key"
+    step "bundling $ENTRY into $PARTS/bundle"
+    npx remotion bundle "$ENTRY" --out-dir "$PARTS/bundle" --log=error >/dev/null || die "bundle failed"
+    echo "$SRC_KEY" > "$PARTS/bundle.key"
+  fi
+  B=$(cd "$PARTS/bundle" && pwd)
+else
+  step "bundling $ENTRY"
+  npx remotion bundle "$ENTRY" --out-dir "$WORK/bundle" --log=error >/dev/null || die "bundle failed"
+  B="$WORK/bundle"
+fi
 step "frozen bundle: $B (every pass renders from it; edits to src/ from now on are not in this render)"
 LIST=$(npx remotion compositions "$B" 2>/dev/null) || die "could not list compositions"
 meta() { awk -v id="$1" '$1 == id && $2 ~ /^[0-9.]+$/ && $3 ~ /^[0-9]+x[0-9]+$/ { print $2, $3, $4; exit }' <<< "$LIST"; }
@@ -261,9 +315,47 @@ PY
 case "$MODE" in
   preview|master)
     if [[ $MODE == preview ]]; then Q=(--crf="${CRF:-20}" --x264-preset=veryfast); else Q=(--crf="${CRF:-14}" --x264-preset=slow); fi
-    step "rendering $COMP ($MODE)"
-    npx remotion render "$B" "$COMP" "$PIC" ${RANGE[@]+"${RANGE[@]}"} ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
-      || die "remotion render failed"
+    if [[ $CHUNKED -eq 0 ]]; then
+      step "rendering $COMP ($MODE)"
+      npx remotion render "$B" "$COMP" "$PIC" ${RANGE[@]+"${RANGE[@]}"} ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
+        || die "remotion render failed"
+    else
+      # parts of CHUNK frames, one Remotion render at a time; a finished part (its frame count checked) is kept
+      frames_of() { ffprobe -v error -count_packets -select_streams v:0 -show_entries stream=nb_read_packets -of csv=p=0 "$1" 2>/dev/null || echo 0; }
+      NP=$(( (N + CHUNK - 1) / CHUNK ))
+      [[ -z "$ONLY_PART" || "$ONLY_PART" -lt "$NP" ]] || die "--part $ONLY_PART: this range has $NP part(s), 0-$((NP - 1))"
+      part_file() { local a=$((FROM + $1 * CHUNK)); local b=$((a + CHUNK - 1)); (( b > TO )) && b=$TO; echo "$PARTS/part-$(printf %06d "$a")-$(printf %06d "$b").mp4"; }
+      LAST_S=0; left=0
+      step "$N frames in $NP part(s) of <= $CHUNK in $PARTS$([[ "$MAXMIN" != 0 ]] && echo ", stopping before ${MAXMIN} min")"
+      for ((k = 0; k < NP; k++)); do
+        [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue
+        a=$((FROM + k * CHUNK)); b=$((a + CHUNK - 1)); (( b > TO )) && b=$TO
+        f=$(part_file "$k")
+        if [[ -f "$f" && "$(frames_of "$f")" -eq $((b - a + 1)) ]]; then continue; fi
+        # under a time limit: start a part only if it fits, judged by the last part's pace
+        if [[ "$MAXMIN" != 0 ]] && node -e "const [e,l,m]=process.argv.slice(1).map(Number);process.exit(e + 1.15 * l > m * 60 ? 0 : 1)" "$(( $(date +%s) - T0 ))" "$LAST_S" "$MAXMIN"; then
+          left=$((left + 1)); continue
+        fi
+        t1=$(date +%s)
+        step "part $((k + 1))/$NP: frames $a-$b"
+        rm -f "$f.tmp.mp4"
+        npx remotion render "$B" "$COMP" "$f.tmp.mp4" --frames="$a-$b" ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
+          || die "remotion render failed on part $((k + 1)) (frames $a-$b); the finished parts are kept in $PARTS: rerun to resume"
+        mv -f "$f.tmp.mp4" "$f"
+        LAST_S=$(( $(date +%s) - t1 ))
+      done
+      if [[ -n "$ONLY_PART" ]]; then step "part $ONLY_PART done: $(part_file "$ONLY_PART")"; exit 0; fi
+      if [[ $left -gt 0 ]]; then
+        step "stopped before the ${MAXMIN}-minute limit: $left of $NP part(s) left in $PARTS; rerun the same command to continue"
+        exit 75
+      fi
+      step "joining $NP part(s) (stream copy) with BT.709 tags"
+      # the list sits beside the parts and names them relative to itself (no POSIX/Windows path translation)
+      for ((k = 0; k < NP; k++)); do echo "file '$(basename "$(part_file "$k")")'"; done > "$PARTS/parts.txt"
+      ffmpeg -v error -y -f concat -safe 0 -i "$PARTS/parts.txt" -map 0:v:0 -c copy \
+        -bsf:v h264_metadata=colour_primaries=1:transfer_characteristics=1:matrix_coefficients=1:video_full_range_flag=0 \
+        -color_primaries bt709 -color_trc bt709 -colorspace bt709 -color_range tv "$PIC" || die "joining the parts failed"
+    fi
     ;;
   blur)
     SUB=${SUB:-${COMP}Sub}
@@ -398,6 +490,7 @@ if [[ $MODE == blur && -f "$SAMPLES" ]]; then
   FAST=$(python3 -c "import json, sys;d=json.load(open(sys.argv[1]));print(' '.join(str(f - $FROM) for f in d.get('fastest_frames', [])[:4] if $FROM <= f <= $TO))" "$SAMPLES" 2>/dev/null || true)
   [[ -z "$FAST" ]] || echo "render.sh: look at the fastest frames at full size for stepped copies: bash scripts/grab.sh $OUT $FAST" >&2
 fi
+if [[ ${CHUNKED:-0} -eq 1 && -z "$PREBUILT" && $KEEP -eq 0 && $STATUS -eq 0 ]]; then rm -rf "$PARTS"; fi
 if [[ $STATUS -eq 0 ]]; then
   step "done: $OUT (${SIZE_MB} MB, ${DUR}s, $MODE)"
 else
