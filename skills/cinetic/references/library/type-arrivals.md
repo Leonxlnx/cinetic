@@ -93,8 +93,8 @@ Each later word starts sooner and fades faster than the one before, so the line 
 
 A line is revealed left to right by a travelling edge about one letter soft, near-constant speed, so it writes on; glyphs can be born in a hot accent and cool; a status line can end with a spinner turning into a check.
 
-- **Build:** <Wipe kind="gradient"> on the line; accent via HueSweep or Words accent. Anatomy: an alpha edge of about 1 em (1.2 em at most) and the letters behind it at full strength; glyphs accent -> ink as the edge passes. A long ramp from the ink into the ground (a third of the line or more) reads as half-faded words, never as writing. Sound: a soft notification ding mid-reveal, or a kick at the end. As one line: the TypeLine preset `develop` (a 1.1 em edge in the tint, then the accent and the ink).
-- **Primitive:** `fx/Wipe`
+- **Build:** <Wipe kind="gradient" feather={about 1.1 em in px} span={the line's width}> on the line (give the edge: the gradient's house edge, 0.7 of the span, is the long ramp); accent via HueSweep or Words accent. Anatomy: an alpha edge of about 1 em (1.2 em at most) and the letters behind it at full strength; glyphs accent -> ink as the edge passes. A long ramp from the ink into the ground (a third of the line or more) reads as half-faded words, never as writing. Sound: a soft notification ding mid-reveal, or a kick at the end. As one line: the TypeLine preset `develop` (a 1.1 em edge in the tint, then the accent and the ink).
+- **Primitive:** `fx/Wipe.Wipe`, `fx/TypePresets.TypeLine`
 - **Timing:** 6-24 f across 880 px (first 4 f slower); fall-off 56 f.
 - **Use when:** Status lines, single lines over a picture.
 - **Avoid when:** Edges narrower than a letter (that reads as a hard wipe); edges wider than a word (fade soup); a hero line.

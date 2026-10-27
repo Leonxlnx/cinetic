@@ -96,9 +96,9 @@ A soft foreground layer (mist, a frosted panel, a cloud bank) rises while the sc
 
 The camera whips on an ease-in that never brakes; one over-exposed frame with a faint ghost, one dark frame of horizontal streaks, and the next shot is already sliding in and pulls back as it lands.
 
-- **Build:** <FlashCut frame cut whip={{ dir }} slide pull out in />; put the swell's peak on the flash frame. Declare the flash (declares()).
+- **Build:** <FlashCut frame cut whip={{ dir }} slide pull out in />; put the swell's peak on the flash frame. The whip's tail and the slide's head carry the whip-shutter streak (smear 'draw', house: DirBlur at 360 degrees); smear 'shutter' declares those frames as camera blur for the finishing pass instead. Declare the flash (declares()).
 - **Primitive:** `fx/CutFx.FlashCut`, `fx/CutFx.flashCutState`
-- **Timing:** Whip 24 f on E.launchIn over 0.24 of the frame width (fastest on its last frame); flash 1 f at about 92 % white with a 0.3 ghost; streak 1 f; slide 28 f on E.snapOut from 0.55 of the width; pull 28 f to 0.65 on E.glideOut.
+- **Timing:** Whip 24 f on E.launchIn over 0.24 of the frame width (fastest on its last frame); flash 1 f at about 92 % white with a 0.3 ghost; streak 1 f; slide 28 f on E.snapOut from 0.55 of the width, opening at several times the whip's last speed, so its first frames are the most smeared of the cut and it sharpens as it lands; pull 28 f to 0.65 on E.glideOut.
 - **Use when:** A fast camera move between two parts of the product; the energetic join of a launch film.
 - **Avoid when:** Calm films with no whips; more than once a film.
 

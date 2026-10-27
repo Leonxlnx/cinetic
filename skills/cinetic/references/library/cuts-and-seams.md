@@ -151,7 +151,7 @@ A huge disc rises from the bottom edge like a planet horizon, its rim washing ov
 
 The two halves of a title move apart from the middle (7 px, then 31-38 px) and on the third frame the whole layout is replaced.
 
-- **Build:** doorSplitState on the title layer only, swap on its third frame. Anatomy: Ease-in split; swap on frame 3. Sound: An orchestral stab.
+- **Build:** doorSplitState(f, { start, frames: 6 at 60 fps, rise: false }) on the title layer only (the measured door path: each step about x1.5 the last; no card rises), swap on its third frame. Anatomy: Ease-in split; swap on frame 3. Sound: An orchestral stab.
 - **Primitive:** `fx/CutFx.doorSplitState`
 - **Timing:** 6 f at 60 fps.
 - **Use when:** A quick change of scene from a centred title.
@@ -341,7 +341,7 @@ A break out of live action in four completely different full-frame looks, each h
 
 After a whip on an ease-in, one frame at about 92 % white carries a blurred grey negative ghost of the outgoing object, then one dark streak frame, then the next shot sliding in.
 
-- **Build:** <FlashCut whip flash streak slide pull>. Anatomy: Whip ease-in; flash 0.92 with a 0.3 ghost; one streak frame; slide in 28 f and pull back. Sound: On the swell peak.
+- **Build:** <FlashCut whip flash streak slide pull> (smear 'draw', house: the whip's tail and the slide's head streak). Anatomy: Whip ease-in; flash 0.92 with a 0.3 ghost; one streak frame; slide in 28 f, most smeared on its first frames, and pull back. Sound: On the swell peak.
 - **Primitive:** `fx/CutFx.FlashCut`
 - **Timing:** Flash 2 f.
 - **Use when:** A whip transition on a swell's peak.

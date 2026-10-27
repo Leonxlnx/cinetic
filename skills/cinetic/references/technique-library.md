@@ -23,7 +23,7 @@ Fields: **Primitive** names the starter export that builds the entry (`fx/Cards.
 | [Camera transitions](library/camera-transitions.md) | 18 | Cuts the camera makes: whips, snap zooms, zoom-throughs, dives and moves carried across the seam. |
 | [Cuts and seams](library/cuts-and-seams.md) | 34 | How one shot becomes the next: carried cuts, hard cuts on sound, flashes, defocus and blank-frame seams. |
 | [Morphs and object handoffs](library/morphs-and-object-handoffs.md) | 27 | One object carries the cut: a pill becomes a window, a shape becomes the next card, a mark becomes the UI. |
-| [Wipes, masks and irises](library/wipes-masks-and-irises.md) | 25 | Reveals cut from what is on screen: irises from a point, soft wipes, slices, mosaic rings and window masks. |
+| [Wipes, masks and irises](library/wipes-masks-and-irises.md) | 25 | Reveals cut from what is on screen: irises from a point, push and soft wipes, door splits, slices, mosaic rings and window masks. |
 | [Speed and rush](library/speed-and-rush.md) | 10 | Speed as a material: rushes into the cut, smears, streaks, thrown objects and decaying spin. |
 | [UI choreography](library/ui-choreography.md) | 53 | Product UI in motion: panels, cards, bento, lists and states that arrive front-loaded and keep the camera alive. |
 | [Product moments](library/product-moments.md) | 21 | A real product doing its job on screen: prompts, results, diffs, scrubs and native transitions shown, never listed. |

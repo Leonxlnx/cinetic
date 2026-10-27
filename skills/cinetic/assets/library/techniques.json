@@ -63,7 +63,7 @@
   },
   {
    "name": "Wipes, masks and irises",
-   "about": "Reveals cut from what is on screen: irises from a point, soft wipes, slices, mosaic rings and window masks."
+   "about": "Reveals cut from what is on screen: irises from a point, push and soft wipes, door splits, slices, mosaic rings and window masks."
   },
   {
    "name": "Speed and rush",
@@ -459,11 +459,14 @@
     "any"
    ],
    "summary": "The hero shape leaves one shot at a known point and size, and the next shot opens on a matching shape (the mark, the flat UI, the real object) on the same point, so the object's identity carries across a change of world.",
-   "recipe": "Record the outgoing shape's centre and size on its last frame (toScreen from src/lib/camera.ts, or inkBox from src/lib/measure.ts for type). Open the incoming act with the matching shape centred there within ±20 px, at 0.57-1.3x that size. Keep motion on both sides. The outgoing shape shrinks 2-4% over its last 4 f on E.in (or a coin turns face-on, rotateY 90 → 10 deg over 22 f on E.out). The incoming shape keeps going, for example k = lmix(0.57, 1, prog(f, 0, 18, E.out)), with no overshoot. Match colour, corner radius and stroke weight so only the medium changes (device screen to flat UI, coin emblem to logotype, circle to app icon), and hold the result 12-30 f before it moves on.",
-   "timing": "Cut in 0 f. Centre offset ≤ 20 px. Scale ratio 0.57-1.3x. Incoming settle 18 f on E.out, with half the change done in about 2 f. Outgoing pre-cut shrink 4 f on E.in. Hold 12-30 f.",
+   "recipe": "<MatchCut frame cut from to outgoing incoming ground /> (matchCutState() for the numbers alone). `from` is the outgoing shape's screen box on its last frames (a function of the frame when it moves: toScreen from src/lib/camera.ts, or inkBox from src/lib/measure.ts for type), `to` its rest box in the incoming layout, centred within ±20 px at 0.57-1.3x that size. The incoming shot opens with the shape one outgoing step further along (position and size, size in log space: ratio 1, house) and settles onto its own layout in 36 f, the inherited speed falling to about a third in the first frames and landing with zero speed: where it would carry past its rest it brakes. ratio: 0 matches the box at rest; carry: ['x', 'y'] keeps the centre and opens at the new size; draw the incoming paper as `ground`. Keep motion on both sides: the outgoing shape shrinks 2-4% over its last 4 f on E.in (or a coin turns face-on, rotateY 90 → 10 deg over 22 f on E.out). Match colour, corner radius and stroke weight so only the medium changes (device screen to flat UI, coin emblem to logotype, circle to app icon), and hold the result 12-30 f before it moves on. It declares a morph seam and the camera blur of its fast frames.",
+   "timing": "Cut in 0 f. Centre offset ≤ 20 px. Scale ratio 0.57-1.3x. The incoming shot opens one outgoing step on and settles in 36 f, about two thirds of the inherited speed gone in the first frames, at rest with zero speed. Outgoing pre-cut shrink 4 f on E.in. Hold 12-30 f.",
    "use_when": "Turning a problem shape into the answer, a device mockup into the bare UI, or a physical object into the mark.",
    "avoid_when": "The silhouettes differ (round against tall), so the match cannot be seen. Use a dot relay or a container morph instead.",
-   "primitive": [],
+   "primitive": [
+    "fx/MatchCut.MatchCut",
+    "fx/MatchCut.matchCutState"
+   ],
    "ban_safe": true,
    "bans": [],
    "weight": 4
@@ -578,14 +581,16 @@
     "vertical"
    ],
    "summary": "The next scene opens through a circle that starts in the gap between two words of the line being read and grows by the same ratio every frame, so it is visible at once and accelerates off the corners.",
-   "recipe": "<Iris frame start originFrom={{ text, gap, left, top, size }} mode=\"rate\">{nextScene}</Iris>; start it on the hit frame. shape (with frames and to) spreads the ratios: a burst out of the point and an acceleration off the corners. scallop gives a cloud edge.",
-   "timing": "x1.28 a frame at 60 fps (x1.64 at 30) from 22 px at 1080p; about 16-19 f to the far corner. Normal 1.2-1.35 a frame.",
+   "recipe": "<Iris frame start originFrom={{ text, gap, left, top, size }} mode=\"rate\">{nextScene}</Iris>; start it on the hit frame. shape (with frames and to) spreads the ratios: a burst out of the point and an acceleration off the corners. scallop gives a cloud edge. Opened in a line that is moving, the iris carries its speed: the line around the circle accelerates out (launch()) and the line inside opens moving the same way at 1.15x that speed, decaying to its drift (carriedCut(f, cover, { vCut }, { ratio: IRIS_CARRY.ratio, decay: IRIS_CARRY.decay60, fast: { share: 0, decay: 0.4 } }) on the one coordinate both lines ride); the circle stays where it opened.",
+   "timing": "x1.28 a frame at 60 fps (x1.64 at 30) from 22 px at 1080p; about 16-19 f to the far corner. Normal 1.2-1.35 a frame. Carried line: 1.15x the cover speed, decaying x0.806 a 60 fps frame (x0.65 at 30).",
    "use_when": "A line is on screen and the next scene answers it.",
    "avoid_when": "The line has a single word (open from a glyph or the period instead).",
    "primitive": [
     "fx/Iris.Iris",
     "fx/Iris.irisRadius",
-    "fx/Iris.gapOrigin"
+    "fx/Iris.gapOrigin",
+    "fx/Iris.IRIS_CARRY",
+    "lib/handoff.carriedCut"
    ],
    "ban_safe": true,
    "bans": [],
@@ -4382,12 +4387,15 @@
     "any"
    ],
    "summary": "Fast whips, flings and flicked scrolls streak like a real shutter while holds and slow drifts stay pin-sharp, so the eye rests on the readable frames.",
-   "recipe": "Never fake speed blur per layer in the browser (CameraMotionBlur and an animated filter: blur() quantise to 8 bits and step); design the moves and let the master's render pass make the blur: `bash scripts/render.sh Film out/film.mp4 --blur` renders a 240-degree shutter centred on each frame, takes samples from measured speed (1 under 2 px/f, 4 up to 18 px/f, 14 at 60, 18 at 80) and averages them in float. Shape every fast move so its peak sits between 12 and 70 px/f (E.whip or E.inOut, or inertia() for a flicked scroll) and both ends fall under 2 px/f, so the streak exists only mid-move. Put every hard cut on an act boundary so samples never smear across it, and drive typed text, counters, carets and grain from fd(frame) so all sub-samples of a frame agree. Where optical flow cannot see the speed (a flat band wiping the whole frame) pass `--floor A-B:px` or analytic speed; in HyperFrames render at 4x fps and run `accumulate.py --uniform 4`, which is clean only to about 12-18 px/f.",
-   "timing": "Whip 12-20 f on E.whip with a 40-70 px/f peak, the shots either side at 0.3-1.5 px/f; streak length is about 2/3 of the per-frame travel (a 60 px/f card smears ~40 px); a flick is inertia(f, start, 50-70, 0.89), coasting ~8.6 x v0 px and under 0.5 px/f after its `settle` frames; nothing above 80 px/f.",
+   "recipe": "Never fake speed blur with CameraMotionBlur or an animated filter: blur() (they quantise to 8 bits and step); design the moves and let the master's render pass make the blur: `bash scripts/render.sh Film out/film.mp4 --blur` renders a 240-degree shutter centred on each frame, takes samples from measured speed (1 under 2 px/f, 4 up to 18 px/f, 14 at 60, 18 at 80) and averages them in float. Shape every fast move so its peak sits between 12 and 70 px/f (E.whip or E.inOut, or inertia() for a flicked scroll) and both ends fall under 2 px/f, so the streak exists only mid-move. Put every hard cut on an act boundary so samples never smear across it, and drive typed text, counters, carets and grain from fd(frame) so all sub-samples of a frame agree. Where optical flow cannot see the speed (a flat band wiping the whole frame) pass `--floor A-B:px` or analytic speed; in HyperFrames render at 4x fps and run `accumulate.py --uniform 4`, which is clean only to about 12-18 px/f. A crisp film renders only its fast frames with the shutter: declare them with blurRanges(shot, from, to, { film }) (lib/camera-moves.ts) for a camera move or fastRanges(speed, from, to) (lib/handoff.ts) for any speed (the frames over 720 px/s at 1080p, padded a frame each side) in CAMERA_BLUR or a primitive's declares(). Where the shutter pass is not wanted, draw the streak with DirBlur (fx/Defocus) from the layer's speed, as FlashCut and Wipe kind=\"push\" do (smear 'draw'); never both on one layer.",
+   "timing": "Whip 12-20 f on E.whip with a 40-70 px/f peak, the shots either side at 0.3-1.5 px/f; streak length is about 2/3 of the per-frame travel (a 60 px/f card smears ~40 px); a flick is inertia(f, start, 50-70, 0.89), coasting ~8.6 x v0 px and under 0.5 px/f after its `settle` frames; nothing above 80 px/f. A move smears above 720 px/s at 1080p (24 px a frame at 30 fps, 12 at 60); a travelling hard edge carries a ramp 0.3 of its step.",
    "use_when": "Any film with whips, flings, drops or flicked scrolls; walkthroughs that travel fast between setups and need every hold razor-sharp.",
    "avoid_when": "Moves that would need more than 80 px/f (redesign as a cut on the beat, a match cut or a mask wipe); readable text moving above 20 px/f; a deliberately stepped on-twos section.",
    "primitive": [
-    "lib/defocus"
+    "lib/defocus",
+    "lib/camera-moves.blurRanges",
+    "lib/handoff.fastRanges",
+    "fx/Defocus.DirBlur"
    ],
    "ban_safe": true,
    "bans": [],
@@ -7371,8 +7379,8 @@
     "vertical"
    ],
    "summary": "The camera whips on an ease-in that never brakes; one over-exposed frame with a faint ghost, one dark frame of horizontal streaks, and the next shot is already sliding in and pulls back as it lands.",
-   "recipe": "<FlashCut frame cut whip={{ dir }} slide pull out in />; put the swell's peak on the flash frame. Declare the flash (declares()).",
-   "timing": "Whip 24 f on E.launchIn over 0.24 of the frame width (fastest on its last frame); flash 1 f at about 92 % white with a 0.3 ghost; streak 1 f; slide 28 f on E.snapOut from 0.55 of the width; pull 28 f to 0.65 on E.glideOut.",
+   "recipe": "<FlashCut frame cut whip={{ dir }} slide pull out in />; put the swell's peak on the flash frame. The whip's tail and the slide's head carry the whip-shutter streak (smear 'draw', house: DirBlur at 360 degrees); smear 'shutter' declares those frames as camera blur for the finishing pass instead. Declare the flash (declares()).",
+   "timing": "Whip 24 f on E.launchIn over 0.24 of the frame width (fastest on its last frame); flash 1 f at about 92 % white with a 0.3 ghost; streak 1 f; slide 28 f on E.snapOut from 0.55 of the width, opening at several times the whip's last speed, so its first frames are the most smeared of the cut and it sharpens as it lands; pull 28 f to 0.65 on E.glideOut.",
    "use_when": "A fast camera move between two parts of the product; the energetic join of a launch film.",
    "avoid_when": "Calm films with no whips; more than once a film.",
    "primitive": [
@@ -7457,14 +7465,15 @@
     "walkthrough",
     "loop"
    ],
-   "summary": "The next shot is revealed behind a wide soft edge that decelerates across the frame (feathered), or a line of type washes on behind an edge as wide as most of the line at one speed (gradient).",
-   "recipe": "<Wipe frame start kind angle feather outgoing incoming />; edgeMask({ left: 250 }) on a line that scrolls through the frame.",
-   "timing": "Feathered: 350 px edge at 1080p, 30 f on E.softOut (lands at about a third of its starting speed). Gradient: edge 70 % of the line, 3360 px/s at 1080p (112 px/f at 30 fps).",
-   "use_when": "A quiet reveal; two-stage push-wipes (two in a row).",
-   "avoid_when": "A wipe with a hard edge (that is a cut with a line in it).",
+   "summary": "The next shot is revealed behind a wide soft edge that decelerates across the frame (feathered), or a panel or picture washes on behind an edge as wide as most of it at one speed (gradient).",
+   "recipe": "<Wipe frame start kind=\"feather\" angle feather outgoing incoming /> (`feather` is the edge width in px; kind=\"gradient\" for the wash, whose edge is 0.7 of `span`); edgeMask({ left: 250 }) on a line that scrolls through the frame. The wipe is finished on the frame its run ends (wipeEnd()), even when its edge lands a hair short of the frame: <Wipe> stops drawing the outgoing shot from there. A hard edge that pushes the old shot along is kind=\"push\" (the panel push-wipe); a line of type keeps its edge about a letter wide (the soft-edge write-on, or the TypeLine preset `develop`).",
+   "timing": "Feathered: 350 px edge at 1080p, 30 f on E.softOut (lands at about a third of its starting speed). Gradient: edge 70 % of the element it reveals, 3360 px/s at 1080p (112 px/f at 30 fps).",
+   "use_when": "A quiet reveal across the frame or a panel.",
+   "avoid_when": "A hard edge (that is the push-wipe, kind=\"push\"); a line of type behind the wide gradient ramp (it reads as half-faded words, fade soup).",
    "primitive": [
     "fx/Wipe.Wipe",
     "fx/Wipe.wipeState",
+    "fx/Wipe.wipeEnd",
     "fx/Wipe.edgeMask"
    ],
    "materials": "The photos first take a gradient-map cast that creeps in from the top-left (shadows deep, mids pink, highlights warm, strength 0 -> 70 % over 24 f), then a broad soft white wash crosses left to right (feather about 40 % of the panel width, accelerating); just ahead of the white the photos turn warm, and the warm front rhymes with the palette of the sentence that follows.",
@@ -14108,9 +14117,9 @@
     "launch",
     "feature"
    ],
-   "summary": "The next card peeks up 31 px from the bottom edge as a preview, then the two halves of the current layout accelerate off left and right like doors, and the card rises through the gap.",
-   "recipe": "doorSplitState({ frames: 22 }) + Cards enterState for the card (peek first). Anatomy: Peek expo-out; doors ease-in; rise 13 f. Sound: A pop, a hit, a punchy accent.",
-   "timing": "Peek 23 f; doors 20-25 f; rise 13 f.",
+   "summary": "The next card peeks up 32 px from the bottom edge as a preview, then the two halves of the current layout accelerate off left and right like doors, and the card rides up through the gap with their speed.",
+   "recipe": "doorSplitState(f, { start, rise: { top } }): each half's `offset` (px away from the split) and the card's `rise` (px below its rest); draw the card above the halves. Anatomy: the card peeks 32 px over 12 f, 18 f before the doors move, then creeps; the doors run the measured door path (each step about x1.5 the last, leaving at about 250 px a frame at 1080p and 24 fps); the card rides up from the bottom edge a third into the doors' run, peaks with them (about 110 px a frame at 24 fps) and decays home. Sound: A pop, a hit, a punchy accent.",
+   "timing": "Peek 12 f, from 18 f before the doors; doors 30 f; rise 50 f from a third into the doors' run.",
    "use_when": "Introducing the next product surface.",
    "avoid_when": "Halves with content that splits a word.",
    "primitive": [
@@ -14193,7 +14202,7 @@
     "sting"
    ],
    "summary": "After a whip on an ease-in, one frame at about 92 % white carries a blurred grey negative ghost of the outgoing object, then one dark streak frame, then the next shot sliding in.",
-   "recipe": "<FlashCut whip flash streak slide pull>. Anatomy: Whip ease-in; flash 0.92 with a 0.3 ghost; one streak frame; slide in 28 f and pull back. Sound: On the swell peak.",
+   "recipe": "<FlashCut whip flash streak slide pull> (smear 'draw', house: the whip's tail and the slide's head streak). Anatomy: Whip ease-in; flash 0.92 with a 0.3 ghost; one streak frame; slide in 28 f, most smeared on its first frames, and pull back. Sound: On the swell peak.",
    "timing": "Flash 2 f.",
    "use_when": "A whip transition on a swell's peak.",
    "avoid_when": "Calm films.",
@@ -14597,7 +14606,7 @@
     "feature"
    ],
    "summary": "The two halves of a title move apart from the middle (7 px, then 31-38 px) and on the third frame the whole layout is replaced.",
-   "recipe": "doorSplitState on the title layer only, swap on its third frame. Anatomy: Ease-in split; swap on frame 3. Sound: An orchestral stab.",
+   "recipe": "doorSplitState(f, { start, frames: 6 at 60 fps, rise: false }) on the title layer only (the measured door path: each step about x1.5 the last; no card rises), swap on its third frame. Anatomy: Ease-in split; swap on frame 3. Sound: An orchestral stab.",
    "timing": "6 f at 60 fps.",
    "use_when": "A quick change of scene from a centred title.",
    "avoid_when": "Long splits (the swap must come early).",
@@ -14766,12 +14775,14 @@
     "any"
    ],
    "summary": "A solid panel wipes in from one side to half the frame, holds while something starts inside it (typing begins), then completes the wipe; or a coloured panel floods one side in the last frames; or a hard-edged panel wipes across in 3 frames already carrying the next word.",
-   "recipe": "Two <Wipe> runs in a row, the second starting as the first lands; a hard wipe with feather 0. Anatomy: Stage 1 expo-out to half, near-hold 8 f, stage 2; hard wipe 0 -> 58 -> 74 -> 95 % coverage. Sound: Voice; a riser into stage 2. Materials: Both layers smear: at the fastest frames the entering panel and the pushed footage carry a horizontal blur of 25-35 px (blur = speed x 0.3), the footage pushed at 0.64x the edge speed and the panel's edge soft over about 30 px; the blur is gone by the park, 24 f in.",
-   "timing": "44 + 48 f; hard wipe 8 f + settle 13 f.",
+   "recipe": "<Wipe kind=\"push\"> (its house stages are this device: the edge starts off-frame so the outgoing shot is already moving, arrives fast and settles to 0.483 of the frame in 54 f, creeps, then leaves on E.buildIn over 42 f and is cut at speed; the footage rides 0.62 of the edge's travel in the arrival; the edge streaks 0.3 of its step, and smear 'draw' (house) streaks the pushed footage, 'shutter' declares it as camera blur instead). `stages` for other runs ([{ to, frames, ease, push, gap }]: a gap holds and creeps before the next stage), `ride: 1` pins the incoming panel to the edge as a sliding sheet. Anatomy: arrival to just under half, creep, stage 2 at speed; the hard panel 0 -> 58 -> 74 -> 95 % coverage. Sound: Voice; a riser into stage 2. Materials: Both layers smear: at the fastest frames the entering panel and the pushed footage carry a horizontal blur of 25-35 px (blur = speed x 0.3), the footage pushed at 0.64x the edge speed and the panel's edge soft over about 30 px; the blur is gone by the park, 24 f in.",
+   "timing": "Arrival 54 f to 0.483 of the frame (the edge from 0.075 off-frame, its speed peaking a quarter of the way in at about 7 % of the frame a 60 fps frame), creep 0.13 % a frame, leave 42 f on E.buildIn; the hard panel 8 f + settle 13 f.",
    "use_when": "Moving from footage to product UI; a beat that needs a hard graphic change.",
    "avoid_when": "Gradient panels that are not baked and dithered.",
    "primitive": [
-    "fx/Wipe"
+    "fx/Wipe.Wipe",
+    "fx/Wipe.wipeState",
+    "fx/Wipe.PUSH"
    ],
    "materials": "Both layers smear: at the fastest frames the entering panel and the pushed footage carry a horizontal blur of 25-35 px (blur = speed x 0.3), the footage pushed at 0.64x the edge speed and the panel's edge soft over about 30 px; the blur is gone by the park, 24 f in.",
    "ban_safe": true,
@@ -16759,12 +16770,13 @@
     "any"
    ],
    "summary": "A line is revealed left to right by a travelling edge about one letter soft, near-constant speed, so it writes on; glyphs can be born in a hot accent and cool; a status line can end with a spinner turning into a check.",
-   "recipe": "<Wipe kind=\"gradient\"> on the line; accent via HueSweep or Words accent. Anatomy: an alpha edge of about 1 em (1.2 em at most) and the letters behind it at full strength; glyphs accent -> ink as the edge passes. A long ramp from the ink into the ground (a third of the line or more) reads as half-faded words, never as writing. Sound: a soft notification ding mid-reveal, or a kick at the end. As one line: the TypeLine preset `develop` (a 1.1 em edge in the tint, then the accent and the ink).",
+   "recipe": "<Wipe kind=\"gradient\" feather={about 1.1 em in px} span={the line's width}> on the line (give the edge: the gradient's house edge, 0.7 of the span, is the long ramp); accent via HueSweep or Words accent. Anatomy: an alpha edge of about 1 em (1.2 em at most) and the letters behind it at full strength; glyphs accent -> ink as the edge passes. A long ramp from the ink into the ground (a third of the line or more) reads as half-faded words, never as writing. Sound: a soft notification ding mid-reveal, or a kick at the end. As one line: the TypeLine preset `develop` (a 1.1 em edge in the tint, then the accent and the ink).",
    "timing": "6-24 f across 880 px (first 4 f slower); fall-off 56 f.",
    "use_when": "Status lines, single lines over a picture.",
    "avoid_when": "Edges narrower than a letter (that reads as a hard wipe); edges wider than a word (fade soup); a hero line.",
    "primitive": [
-    "fx/Wipe"
+    "fx/Wipe.Wipe",
+    "fx/TypePresets.TypeLine"
    ],
    "ban_safe": true,
    "bans": [],
