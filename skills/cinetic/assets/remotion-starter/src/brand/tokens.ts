@@ -6,6 +6,7 @@
 // (references/brand-and-color.md). lint-film.mjs errors while a placeholder marker is left in src/,
 // because a film that keeps the starter's palette and mark looks like every other starter film.
 import type React from 'react';
+import type { TypeFamily } from '../lib/look';
 import { safeInsets } from '../lib/safe';
 import { H, W } from '../timeline';
 
@@ -47,22 +48,30 @@ export const FONT = {
 };
 
 /** Faces the FontGate waits for before anything renders or measures (one entry per weight in use). */
-export const FACES = ['400 16px "Geist Variable"', '600 16px "Geist Variable"', '400 16px "Geist Mono Variable"'];
+export const FACES = ['450 16px "Geist Variable"', '500 16px "Geist Variable"', '400 16px "Geist Mono Variable"'];
 
 /** Layout unit: 1 at 1080p, scales every size with the short side of the frame (16:9, 9:16, 1:1). */
 export const U = Math.min(W, H) / 1080;
 
-// One token per role, reused everywhere, so nothing is "almost matched" (size in px at 1080p; the
-// cap height is about 0.72 em, given below as a share of the frame height after camera scale). Film
-// sizes, not page sizes: a line is 120 px, a statement 200, and the one giant word of a film (400 px
-// and up) is the set the camera travels, never a faint watermark behind the copy.
+/**
+ * The film's type family, the director's pick (lib/look.ts TYPE_LOOK, references/copy-and-type.md §7): 'calm', the
+ * default (small airy sentence lines at the face's own letter fit), or 'bold' (big, semibold, tight lines). TYPE below holds that family's numbers, written out because the scripts read them
+ * (lint-film, add-font, brand.py): for a bold film set TYPE_FAMILY = 'bold' and copy TYPE_LOOK.bold's six roles in.
+ */
+export const TYPE_FAMILY: TypeFamily = 'calm';
+
+// One token per role, reused everywhere, so nothing is "almost matched" (size in px at 1080p; the cap height is about
+// 0.71 em in Geist, given below as a share of the frame height). Film sizes, the house numbers: a sentence line
+// is 84 px (cap 5.5 %), a statement 160, and the one giant word of a film (400 px and up) is the set the camera
+// travels, never a faint watermark behind the copy. Tracking is the letter fit measured in this face: another face
+// takes its own (scripts/font-match.mjs fits it to a reference frame, then write its weight and track here).
 export const TYPE = {
-  ui: { size: 40, weight: 500, track: -0.005, lead: 1.3 }, // product strings, labels: cap 2.7 % FH, the smallest size held in focus (TEXT_MIN)
-  caption: { size: 46, weight: 500, track: -0.01, lead: 1.25 }, // descriptor lines, URLs, captions: cap 3.1 % (2.3-4)
-  line: { size: 120, weight: 500, track: -0.025, lead: 1.1 }, // fragment chains (fx/Chain) and build lines: cap 8 % (5-14)
-  display: { size: 200, weight: 600, track: -0.04, lead: 1.0 }, // statements and the wordmark: cap 13 %, the top of the statement band
-  hero: { size: 240, weight: 600, track: -0.045, lead: 0.95 }, // the payoff word: cap 16 % (14-26)
-  giant: { size: 900, weight: 600, track: -0.05, lead: 0.9 }, // the set: one word at 400 px or more (cap 27-90 %), once per film, cropped by the frame
+  ui: { size: 40, weight: 450, track: 0.01, lead: 1.3 }, // product strings, labels: cap 2.6 % FH, the smallest size held in focus (TEXT_MIN)
+  caption: { size: 46, weight: 450, track: 0.01, lead: 1.3 }, // descriptor lines, URLs, the end card's tagline: cap 3 % (2.3-4)
+  line: { size: 84, weight: 450, track: 0, lead: 1.2 }, // the sentence line, chains (fx/Chain) and build lines: cap 5.5 % (5-6)
+  display: { size: 160, weight: 500, track: -0.01, lead: 1.05 }, // short statements and the end card's name: cap 10.5 % (10-14)
+  hero: { size: 200, weight: 500, track: -0.01, lead: 1.0 }, // the payoff word: cap 13 % (11-23)
+  giant: { size: 640, weight: 500, track: 0.02, lead: 0.9 }, // the set: one word at 400 px or more (cap 42 %, up to 90 % cropped), once per film
   secondary: { size: 48, weight: 450, track: -0.02, lead: 1.15 }, // 1.1 role, kept for old acts: use caption
 };
 

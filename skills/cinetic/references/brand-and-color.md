@@ -296,14 +296,15 @@ export const C = {
   // second: '#…', // the support hue beside the accent: 40° or more from it, in 10-30 % of the film, ≤ 8 % of the frame
 };
 export const FONT = { text: '"Hanken Grotesk Variable", system-ui, sans-serif', mono: '"JetBrains Mono Variable", ui-monospace, monospace' };
-export const FACES = ['400 16px "Hanken Grotesk Variable"', '520 16px "Hanken Grotesk Variable"', '400 16px "JetBrains Mono Variable"']; // what FontGate waits for
-export const TYPE = {  // one token per role at film size (references/copy-and-type.md §7)
-  ui: { size: 40, weight: 400, track: -0.005, lead: 1.3 },
-  caption: { size: 46, weight: 400, track: -0.01, lead: 1.25 },
-  line: { size: 120, weight: 520, track: -0.03, lead: 1.0 },
-  display: { size: 200, weight: 520, track: -0.04, lead: 0.95 },
-  hero: { size: 240, weight: 520, track: -0.04, lead: 0.95 },
-  giant: { size: 900, weight: 600, track: -0.05, lead: 0.9 },
+export const FACES = ['440 16px "Hanken Grotesk Variable"', '520 16px "Hanken Grotesk Variable"', '400 16px "JetBrains Mono Variable"']; // what FontGate waits for
+export const TYPE_FAMILY = 'calm'; // quiet and expensive: the calm family (references/copy-and-type.md §7)
+export const TYPE = {  // one token per role at film size, the calm roles in Hanken (font-match.mjs: about 1 % wider than Geist)
+  ui: { size: 40, weight: 440, track: 0, lead: 1.3 },
+  caption: { size: 46, weight: 440, track: 0, lead: 1.3 },
+  line: { size: 84, weight: 440, track: -0.01, lead: 1.2 },
+  display: { size: 160, weight: 520, track: -0.02, lead: 1.05 },
+  hero: { size: 200, weight: 520, track: -0.02, lead: 1.0 },
+  giant: { size: 640, weight: 520, track: 0.01, lead: 0.9 },
 };
 // add as needed: SHADOW (§11), RADIUS ({ mark: 12, card: 20, chip: 10 }), a LOCKUP token (§6)
 // `python3 scripts/palette.py --recipe <name> --accent '#…'` writes the colour block from a house recipe (§9)

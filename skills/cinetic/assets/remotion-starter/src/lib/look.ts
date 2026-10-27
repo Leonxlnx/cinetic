@@ -160,6 +160,42 @@ export const LIGHT = {
 /** Line measure as a share of the frame width: a statement up to 0.61 (typically 0.28-0.58), a payoff up to 0.84. */
 export const MEASURE = { statementMaxFW: 0.61, statementTypicalFW: [0.28, 0.58] as const, payoffMaxFW: 0.84 } as const;
 
+/**
+ * The house type roles, measured, in two families; the director picks one per film (brand/tokens.ts TYPE_FAMILY,
+ * and TYPE holds that family's numbers). Sizes in px at 1080p; tracking in em in the starter's face (Geist), fitted
+ * to target frames with scripts/font-match.mjs, so the letter fit is measured, not a convention.
+ *   calm   the usual family (the largest line on screen a 5.9-8.5 % box of the frame height, median 7.8 %): small
+ *          sentence lines (cap 5-6 % of the frame height, 84 px), regular weights (measured 380-500), the face's own letter fit at every size (Geist measured -0.01 to +0.03 em on sentence lines,
+ *          labels, UI text and a giant word), an open lead and 85 % white or more. "Airy" is size, weight and space,
+ *          not wide tracking: positive tracking is only what a tight face needs to reach that fit (Inter's display
+ *          cut needs +0.02 to +0.06 em); a wide-tracked title at rest is a slop tell.
+ *   bold   the punchy one (a 9.3-14.8 % box, median 10.6 %): big lines (cap 7.4-8.3 %, 120 px), semibold
+ *          (measured 540-600), tracking that tightens with size (-0.036 em at a line, -0.044 to -0.047 at the big
+ *          type and the end title).
+ * Both, measured: sentence case (capitals only on small labels, tracked +0.04 to +0.08 em);
+ * 2-4 words a line (median 3, rarely past 7); a statement 28-58 % of the frame width (MEASURE); UI text 37-55 px; the
+ * end card's name with a cap or ascender 10-14 % of the frame height, its tagline a caption. Two weights per family.
+ */
+export const TYPE_LOOK = {
+  calm: {
+    ui: { size: 40, weight: 450, track: 0.01, lead: 1.3 }, // labels and UI text (measured 37-52 px, +0.015 to +0.024 em)
+    caption: { size: 46, weight: 450, track: 0.01, lead: 1.3 },
+    line: { size: 84, weight: 450, track: 0, lead: 1.2 }, // the sentence line (measured 62-85 px, -0.010 to +0.005 em)
+    display: { size: 160, weight: 500, track: -0.01, lead: 1.05 }, // a short statement, the end card's name: cap 10.5 %
+    hero: { size: 200, weight: 500, track: -0.01, lead: 1.0 }, // the payoff word: cap 13 %
+    giant: { size: 640, weight: 500, track: 0.02, lead: 0.9 }, // the one giant word, whole in frame (measured 622 px, +0.03 em)
+  },
+  bold: {
+    ui: { size: 40, weight: 500, track: -0.01, lead: 1.3 },
+    caption: { size: 46, weight: 500, track: -0.01, lead: 1.25 },
+    line: { size: 120, weight: 600, track: -0.03, lead: 1.05 }, // measured 90-120 px at 540-600, -0.036 em
+    display: { size: 200, weight: 600, track: -0.035, lead: 1.0 }, // titles measured 154-175 px, -0.047 to -0.017 em
+    hero: { size: 240, weight: 600, track: -0.04, lead: 0.95 }, // big type measured 253 px at 580, -0.044 em
+    giant: { size: 900, weight: 600, track: -0.045, lead: 0.9 }, // cropped by the frame (cap 41-91 %)
+  },
+} as const;
+export type TypeFamily = keyof typeof TYPE_LOOK;
+
 /** The grammar bands the checks read (seconds unless noted). */
 export const GRAMMAR = {
   shot: {

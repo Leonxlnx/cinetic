@@ -303,6 +303,14 @@ grep -rnP "\w'\w|\b1 [a-z]+s\b|lorem|ipsum|TODO|FIXME|Acme|John Doe|example\.com
 
 - **Choose the family for the brand's personality**, from the table in `references/brand-and-color.md` §2: a humanist sans for a calm brand, a tight grotesk for a fast tool, a rounded sans for a playful one, a neo-grotesk for a premium one. It is always a clean sans, plus a mono if the product needs one, because serif and italic are hard bans when you invent the look. The starter's Geist is a stand-in marked `// cinetic:placeholder`, and `lint-film.mjs` fails until you replace it or keep it on purpose. Why a local variable font: the axis lets you pick 640 exactly, local files render identically offline, and one family makes display, UI and wordmark agree.
 - **Compare before you commit.** Render the name and the key statement in two or three candidate sans faces and compare the numerals, the "a", "g" and "t", and the width at display size. The ubiquitous UI default families read as "template" unless you chose them for a reason.
+- **Match a target by measured width, never by eye.** When there is a target face (a reference frame to match, or a brand face that cannot ship), the closest free face changes from film to film: matched by cap height alone, a stand-in runs 10-26 % too narrow or wide. `scripts/font-match.mjs` sets the test line in every candidate in Remotion's own Chrome, measures each render the way it measures the target (ink width, x-height, ascender, stems) and prints, per face, the weight whose stems match, the size whose x-height matches, the tracking that closes the width and the natural width error, ranked; `--sheet` draws the target over every candidate:
+
+```bash
+node scripts/font-match.mjs --crop ref/frame.png --box 400,420,1480,580 --text "plans change but people stay" --sheet out/font-match.png
+node scripts/font-match.mjs --like brand/Brand-Medium.otf --text "Ship it on Friday" --fetch   # a brand face's free stand-in
+```
+
+  Under 3 % natural width the face fits as it is; up to 10 % it fits with the printed tracking (0.08 em or less); past that try the next face. Candidates are the faces the project has (`src/brand/fonts/`, `node_modules/@fontsource-variable/`), files you pass, and with `--fetch` the §2 table's families, npm-packed into a temp folder. Vendor the pick with `add-font.mjs`, then write its weight and tracking into every `TYPE` role (the role's own tracking plus the face's fitted offset). Measured: the closest free face changes with the target (Geist, Inter's display cut, Outfit, Manrope and Hanken Grotesk each came out first for one), one face needed anything from -0.047 to +0.036 em, and a calm sentence line that Inter's display cut matched only at +0.06 em matched in Geist at 0.
 - **Vendor it into the project, then load it.** A family ships as local files behind `FontGate`, never fetched at render time. The clean way works whether `node_modules` is the project's own or a folder shared through `new-film.sh --link-modules`, where `npm install <font>` would write into the shared folder and change every film that uses it:
 
 ```bash
@@ -327,14 +335,14 @@ export const FONT = {
   text: '"Manrope Variable", system-ui, sans-serif', // the film's one family; typeStyle and measure.ts read it
   mono: '"JetBrains Mono Variable", ui-monospace, monospace',
 };
-export const FACES = ['450 16px "Manrope Variable"', '640 16px "Manrope Variable"', '400 16px "JetBrains Mono Variable"'];
-export const TYPE = { // the roles of section 7, set in this family
-  ui: { size: 40, weight: 450, track: -0.01, lead: 1.3 },
-  caption: { size: 46, weight: 450, track: -0.01, lead: 1.25 },
-  line: { size: 120, weight: 600, track: -0.04, lead: 1.0 },
-  display: { size: 200, weight: 640, track: -0.05, lead: 0.95 },
-  hero: { size: 240, weight: 640, track: -0.05, lead: 0.95 },
-  giant: { size: 900, weight: 700, track: -0.06, lead: 0.9 },
+export const FACES = ['440 16px "Manrope Variable"', '500 16px "Manrope Variable"', '400 16px "JetBrains Mono Variable"'];
+export const TYPE = { // the calm family of section 7 in this face (Manrope measured about 1 % wider than Geist: -0.01 em)
+  ui: { size: 40, weight: 440, track: 0, lead: 1.3 },
+  caption: { size: 46, weight: 440, track: 0, lead: 1.3 },
+  line: { size: 84, weight: 440, track: -0.01, lead: 1.2 },
+  display: { size: 160, weight: 500, track: -0.02, lead: 1.05 },
+  hero: { size: 200, weight: 500, track: -0.02, lead: 1.0 },
+  giant: { size: 640, weight: 500, track: 0.01, lead: 0.9 },
 };
 ```
 
@@ -347,27 +355,32 @@ export const TYPE = { // the roles of section 7, set in this family
 - **One token per role.** If display is 640 / −0.04 em, it is exactly that in every scene. Near-miss values across scenes (620, 640, 660; −0.035, −0.04, −0.045) read as "almost matched".
 - **Numerals.** `fontVariantNumeric: 'tabular-nums'` on anything that counts, changes or aligns, so counters don't jitter in width.
 
-**Tracking tightens as size grows:**
+**Tracking by family** (measured in Geist; another face adds its fitted offset from `font-match.mjs`):
 
-| Size at 1080p | Tracking | Leading |
-|---|---|---|
-| ≥ 160 px (display, hero, giant, wordmark) | −0.05 to −0.06 em | 0.95 |
-| 88–160 px (lines, statements) | −0.04 to −0.05 em | 0.95–1.05 |
-| 36–48 px (UI, captions) | −0.01 to 0 em | 1.25–1.4 |
-| All caps, if the brand uses them | +0.04 to +0.08 em | – |
+| Size at 1080p | Calm | Bold | Leading |
+|---|---|---|---|
+| ≥ 160 px (display, hero, giant, wordmark) | −0.01 em (a whole giant word +0.02) | −0.035 to −0.045 em | 0.9–1.05 |
+| 72–120 px (the sentence line, statements) | 0 em: the face's own fit | −0.03 em | 1.2 calm, 1.05 bold |
+| 36–48 px (UI, captions) | +0.01 em | −0.01 em | 1.25–1.3 |
+| All caps, small labels only | +0.04 to +0.08 em | +0.04 to +0.08 em | – |
 
 ## 7. Type roles at film size
 
-`TYPE` in `src/brand/tokens.ts` (px at 1080p); the layout audit reads cap height as a share of the frame height.
+`TYPE` in `src/brand/tokens.ts` (px at 1080p); the layout audit reads cap height as a share of the frame height. The numbers are measured house numbers (`lib/look.ts` `TYPE_LOOK`) and come in two families. **The director picks one per film** and writes it as `TYPE_FAMILY`, with that family's numbers in `TYPE`:
 
-| Role | Size | Cap height band | Use |
-|---|---|---|---|
-| `ui` | 40 | (UI) | product strings rebuilt for film |
-| `caption` | 46 | 2.3-4 % | captions, the end card's one line, a URL |
-| `line` | 120 | statement band 5-14 % | a line of the script (3-5 words at 120 px; longer lines fitted down to 72 px) |
-| `display` | 200 | statement band | a short line (up to about 16 characters), a payoff |
-| `hero` | 240 | 14-26 % | one hero word or number per moment (at least 2× the statement it answers) |
-| `giant` | 900 | 26-90 % | the set of one moment: once per film |
+- **calm** (the default and the usual family: the largest line on screen a 5.9-8.5 % box of the frame height, median 7.8 %): small sentence lines, regular weights, the face's own letter fit at every size, an open lead, 85 % white or more. Explainers, walkthroughs, anything said one sentence at a time.
+- **bold** (the punchy one: a 9.3-14.8 % box, median 10.6 %): big semibold lines whose tracking tightens with size. Launch teasers, ads, reels cut on the beat.
+
+| Role | Calm | Bold | Cap height band | Use |
+|---|---|---|---|---|
+| `ui` | 40 / 450 / +0.01 | 40 / 500 / −0.01 | 2.6 % | product strings rebuilt for film, labels (measured 37-55 px) |
+| `caption` | 46 / 450 / +0.01 | 46 / 500 / −0.01 | 2.3-4 % | captions, the end card's tagline, a URL |
+| `line` | 84 / 450 / 0, lead 1.2 | 120 / 600 / −0.03, lead 1.05 | 5-6 % calm, 7.4-8.3 % bold | a line of the script, 2-4 words (median 3, rarely past 7) |
+| `display` | 160 / 500 / −0.01 | 200 / 600 / −0.035 | 10-14 % | a short statement (up to about 16 characters), the end card's name |
+| `hero` | 200 / 500 / −0.01 | 240 / 600 / −0.04 | 11-23 % | one hero word or number per moment (at least 2× the statement it answers) |
+| `giant` | 640 / 500 / +0.02 | 900 / 600 / −0.045 | 40-90 % | the set of one moment: once per film (calm: whole in frame; bold: cropped) |
+
+Size / weight / tracking (em, in the starter's Geist). Sentence case everywhere; capitals only on small labels. Two weights per family.
 
 - **`TEXT_MIN = 36`.** No text under 36 px is held in focus for more than 6 frames. Smaller text is mush on a phone and
   on every contact sheet: a string under it is out of focus (a far plane), on screen for under 6 f, or set larger
@@ -379,24 +392,26 @@ export const TYPE = { // the roles of section 7, set in this family
 - **`UI_FILM = 1.9`, `uiFilm(webPx)`.** Product UI is rebuilt for film, never screenshotted at page size: every size of
   the web design times 1.8-2 (house 1.9), never under `TEXT_MIN` (a 16 px label becomes 36, a 20 px body 38, a 32 px
   figure 61). Frame UI as macro crops and hero planes; the camera does the reading.
-- **Small sentence lines track out; display sizes track in.** The house roles are the launch-film look (`line` 120 px,
-  negative tracking). A calm explainer that says one short sentence at a time sets it smaller and airier: about 80 px
-  (5-6 % of the frame height), weight 500, tracking **+0.06 em**, on 90 % white space. Keep negative tracking for
-  display, hero and giant sizes only.
+- **Airy is size, weight and space, not tracking.** A calm film's sentence line is small (84 px, a 5-6 % cap), regular
+  weight, on 85 % white or more, at the face's own letter fit; tracked wide it reads as a title gimmick. Where a
+  reference looks tracked out, its face has open spacing: fit the tracking to it (next point), which comes out positive
+  for a tight face (Inter's display cut +0.02 to +0.06 em) and near 0 for an open one (Geist).
 - **A face that stands in for another is fitted by width, not cap height.** Matching cap height alone leaves words
-  10-26 % too narrow or wide, and the line's rhythm goes with it. Set 4-6 words of the copy in 2-4 candidate faces,
+  10-26 % too narrow or wide, and the line's rhythm goes with it. Pick the face with `scripts/font-match.mjs` (§6),
+  which ranks the candidates against a reference crop or a brand face. Inside a film, set 4-6 words of the copy in the face,
   then `fitTracking([{ text, width, size }], weight, family, axes)` (`lib/measure.ts`) returns the em tracking that
   matches the widths and each word's residue: under 3 % the face fits, over 6 % try the next one. Optical-size axes
   change widths 3-5 %: pass them (`axes: "'opsz' 32"`) to `measureTracked` and `fitTracking` both.
 - **Sizing one line.** A line of the script sits on one line, 72 px or more, under 84 % of the frame width (a short
   statement under 61 %, `MEASURE`), sized from the real font with `fitSize(text, maxWidth, max, weight, track)`.
-  Roughly, at 1920 wide in a sans at about 0.5 em a character: up to 16 characters (2-3 words) at `display` 200 px or
-  `hero` 240; 17-28 characters (3-5 words) at `line` 120 px; 29-40 characters (6-7 words) at 88-100 px. Past about 44
-  characters even 72 px will not hold it on one line: cut words, never wrap.
+  Roughly, at 1920 wide in a sans at about 0.5 em a character: up to 16 characters (2-3 words) at `display` or
+  `hero`; up to about 28 characters (3-5 words) at the calm `line` 84 px held under 61 % of the width (the bold 120 px
+  holds about 20); longer lines fitted down toward 72 px. Past about 44 characters even 72 px will not hold it on one
+  line: cut words, never wrap.
 - Keep a ratio of at least 2:1 between a line and anything secondary; a flat scale reads as a slide.
 - At most 2 non-UI roles on screen at once; one role per line.
 - **The type reads at feed size** (`look-audit.py type-read`, with the layout JSON and the cues): the statement lines and
-  the lockup name are 72 px or more (6.7 % of the frame height; the house `line` is 120), each line reads at 4.5:1 or
+  the lockup name are 72 px or more (6.7 % of the frame height; the calm `line` is 84, the bold 120), each line reads at 4.5:1 or
   more against the ground right under it (under 3:1 fails, and on a busy ground anything under 4.5:1 fails), and it
   reads frontal: a line seen in perspective or debossed in a relief settles frontal for its read. A caption is never
   a lower-left subtitle over footage by default; it sits on a clean field, or the plate under it is dimmed and
@@ -448,7 +463,7 @@ one glyph until its ink fills the frame and becomes the next shot's ground: a de
 ```tsx
 import { TypeLine } from '../fx/TypePresets';
 const c = copy('hook');
-<TypeLine spec={{ preset: 'build', text: c.text, at: c.in, out: c.out, exit: 'push' }} frame={frame} size={TYPE.line.size * U} />
+<TypeLine spec={{ preset: 'build', text: c.text, at: c.in, out: c.out, exit: 'push' }} frame={frame} /> // set in TYPE.line; role="display", size, weight or track override it
 ```
 
 Give a preset line's `COPY` entry the frames the preset draws (`resolved` from `typeLineFrames()`), so the checks

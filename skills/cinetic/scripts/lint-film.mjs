@@ -512,8 +512,8 @@ for (const m of timelineSrc.matchAll(/\bchain\(\s*['"]([\w.-]+)['"]\s*,\s*['"](?
   const words = [...body.matchAll(/(['"`])((?:(?!\1)[^\n])*)\1/g)].reduce((n, s) => n + (s[2].match(/\S+/g) ?? []).length, 0);
   CHAIN_WORDS.set(m[1], words);
 }
-// type roles (px at 1080p) from the tokens file, else the house scale
-const TYPE_SIZES = new Map(Object.entries({ ui: 40, caption: 46, line: 120, display: 200, hero: 240, giant: 900 }));
+// type roles (px at 1080p) from the tokens file, else the house scale (the calm family, lib/look.ts TYPE_LOOK)
+const TYPE_SIZES = new Map(Object.entries({ ui: 40, caption: 46, line: 84, display: 160, hero: 200, giant: 640 }));
 let TYPE_DEP = { secondary: 'caption' };
 if (tokensPath) {
   const t = readFileSync(tokensPath, 'utf8');

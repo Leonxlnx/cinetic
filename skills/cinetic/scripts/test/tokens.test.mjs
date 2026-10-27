@@ -11,7 +11,8 @@
  *   2. Special curves (M): job names only, each with a family, at most 20.
  *   3. Springs: every 1.2 preset's zeta (+-0.01), overshoot (+-1 pp of its range) and 2 % settle
  *      (+-2 f at 60 fps) as Remotion's spring() renders them; the 1.1 presets keep their configs.
- *   4. Tables and the retuned pace: the house numbers the components default to.
+ *   4. Tables and the retuned pace: the house numbers the components default to; the type roles are the calm family
+ *      (TYPE_FAMILY), the measured numbers of lib/look.ts TYPE_LOOK, with the bold family beside it.
  *   5. Helpers: perFrame, expIn/expOut, the velocity-carry halves (launch, carry: closed form against
  *      their frame-by-frame sums), creep, intoCut, overlapAt, leadBy, the cadence helpers, defocusMix,
  *      the colour additions, and the film context (filmDefaults() throws under CINETIC_STRICT_FILM=1,
@@ -140,7 +141,7 @@ if (mode === 'strict') {
     E: tok(A.E), M: tok(A.M), E_DEPRECATED: A.E_DEPRECATED, legacyRef,
     SPR: A.SPR, SPR_META: A.SPR_META, SPR_DEPRECATED: A.SPR_DEPRECATED, springs,
     DUR: A.DUR, PRESS: A.PRESS, TAU: A.TAU, STAG: A.STAG, ACCEL: A.ACCEL, CPS: A.CPS, SPEED: A.SPEED, CARRY: A.CARRY, BREATH: A.BREATH, OVERSIZE: A.OVERSIZE,
-    PACE: A.PACE, TYPE: T.TYPE, LIGHT: L.LIGHT, RECIPE_GROUND: L.RECIPE.tintedPaper.ground,
+    PACE: A.PACE, TYPE: T.TYPE, TYPE_FAMILY: T.TYPE_FAMILY, TYPE_LOOK: L.TYPE_LOOK, LIGHT: L.LIGHT, RECIPE_GROUND: L.RECIPE.tintedPaper.ground,
     perFrame: A.perFrame(0.89, 60, 30), expIn: grid(A.expIn(2.66), 10), expOut: grid(A.expOut(6), 10),
     hitPulse30: A.hitPulse(4, 2, 5, 30), hitPulse60: A.hitPulse(8, 2, 5, 60),
     series, launchSteps, launchFrac, launchGeo, launchExp, carryX, carryFrac, carry30,
@@ -297,7 +298,16 @@ result(P.CARRY.ratio[1] === 0.7 && P.CARRY.decay60[1] === 0.89 && P.SPEED.residu
 }
 {
   const t = P.TYPE;
-  result(t.ui.size === 40 && t.caption.size === 46 && t.line.size === 120 && t.display.size === 200 && t.hero.size === 240 && t.giant.size === 900 && t.secondary.size === 48, 'TYPE roles ui 40, caption 46, line 120, display 200, hero 240, giant 900 (secondary kept)');
+  const sizes = (o) => ['ui', 'caption', 'line', 'display', 'hero', 'giant'].map((k) => o[k].size).join();
+  result(sizes(t) === '40,46,84,160,200,640' && t.secondary.size === 48, 'TYPE roles (calm) ui 40, caption 46, line 84, display 160, hero 200, giant 640 (secondary kept)', sizes(t));
+  const same = ['ui', 'caption', 'line', 'display', 'hero', 'giant'].every((k) => JSON.stringify(t[k]) === JSON.stringify(P.TYPE_LOOK[P.TYPE_FAMILY][k]));
+  result(P.TYPE_FAMILY === 'calm' && same, 'TYPE is TYPE_LOOK[TYPE_FAMILY], the calm family, number for number');
+  const c = P.TYPE_LOOK.calm, b = P.TYPE_LOOK.bold;
+  result(c.line.track === 0 && c.line.weight === 450 && c.line.lead === 1.2 && Math.abs(c.ui.track) <= 0.02 && Math.abs(c.giant.track) <= 0.03,
+    'calm: a regular-weight sentence line at the letter fit of its face (track 0, lead 1.2); small and giant sizes within 0.03 em of it');
+  result(sizes(b) === '40,46,120,200,240,900' && b.line.weight === 600 && ['line', 'display', 'hero', 'giant'].every((k, i, a) => b[k].track < 0 && (i === 0 || b[k].track <= b[a[i - 1]].track)),
+    'bold: line 120 / display 200 / hero 240 / giant 900, semibold, tracking tightening with size', sizes(b));
+  result([c, b].every((f) => new Set(Object.values(f).map((r) => r.weight)).size === 2), 'each family uses two weights');
   result(P.LIGHT.dL[0] === 0.05 && P.LIGHT.dL[1] === 0.2 && P.LIGHT.maxC === 0.13 && P.LIGHT.poolSpeedPxS === 240, 'LIGHT band: dL 0.05-0.20, C <= 0.13, pools 240 px/s');
   result(P.RECIPE_GROUND[0] >= 0.93 && P.RECIPE_GROUND[0] <= 0.99 && P.RECIPE_GROUND[1] <= 0.015, 'RECIPE tinted paper ground in L .93-.99, C <= .015');
 }

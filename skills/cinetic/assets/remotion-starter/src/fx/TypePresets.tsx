@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { C, FONT } from '../brand/tokens';
+import { C, FONT, TYPE } from '../brand/tokens';
 import { clamp, E, type Ease, expOut, fd, lmix, mix, perFrame, prog, rand } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { type FilmCtx, f60x, fpsOf, useFilm } from '../lib/film';
@@ -1158,24 +1158,27 @@ export type TypeLineProps = {
   frame: number;
   x?: number; // the line box's centre, px (default the frame's centre)
   y?: number;
-  size: number; // px
-  weight?: number;
+  role?: keyof typeof TYPE; // the type role the line is set in (default 'line', the sentence line of the film's family)
+  size?: number; // px (default: the role's size at the film's frame)
+  weight?: number; // default: the role's
   family?: string;
-  track?: number; // em
+  track?: number; // em (default: the role's)
   vary?: Vary; // the line's own axes (cycle lands on these)
   metrics?: LineMetrics; // measured elsewhere (default: measureLine under FontGate)
 };
 
 /**
- * <TypeLine spec frame size>: one sentence, drawn from its preset's state. The line box is centred on
+ * <TypeLine spec frame>: one sentence, drawn from its preset's state, set in a type role (default the film's sentence
+ * line: TYPE.line's size, weight and tracking; size, weight and track override it). The line box is centred on
  * (x, y); every glyph is its own span at its measured prefix position, moved only by transforms.
  */
 export const TypeLine: React.FC<TypeLineProps> = (p) => {
   const film = useFilm();
-  const weight = p.weight ?? 600;
+  const role = TYPE[p.role ?? 'line'];
+  const weight = p.weight ?? role.weight;
   const family = p.family ?? FONT.text;
-  const track = p.track ?? 0;
-  const size = p.size;
+  const track = p.track ?? role.track;
+  const size = p.size ?? (role.size * Math.min(film.width, film.height)) / 1080;
   const m = useMemo(() => p.metrics ?? measureLine(p.spec, size, weight, track, family, p.vary), [p.metrics, p.spec, size, weight, track, family, p.vary]);
   const st = typeLineState(p.frame, p.spec, m, film);
   if (!st.visible) return null;

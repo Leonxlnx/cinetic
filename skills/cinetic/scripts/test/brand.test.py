@@ -169,9 +169,10 @@ result('delete these four lines' not in tok and no_w(tok) == no_w(starter) and '
 w3 = [400, 500, 700]
 snapped, used = mod.snap_type(starter, w3)
 roles = dict(re.findall(r'^\s+(\w+): \{ size: \d+, weight: (\d+)', type_block(snapped), re.M))
-result(roles.get('ui') == '500' and roles.get('line') == '500' and roles.get('display') == '700' and roles.get('hero') == '700'
-       and roles.get('secondary') == '500' and used == {500, 700} and mod.css_weight(300, w3) == 400 and mod.css_weight(450, [400, 600]) == 400,
-       'faces 400/500/700: the 600 roles draw at 700 and the 450 role at 500, as a browser matches them', json.dumps(roles))
+result(roles.get('ui') == '500' and roles.get('line') == '500' and roles.get('display') == '500' and roles.get('giant') == '500'
+       and roles.get('secondary') == '500' and used == {500} and mod.css_weight(600, w3) == 700 and mod.css_weight(300, w3) == 400
+       and mod.css_weight(450, [400, 600]) == 400,
+       'faces 400/500/700: the calm roles (450 and 500) draw at 500, a 600 role at 700, as a browser matches them', json.dumps(roles))
 chk = run('--check-tokens', os.path.join(proj, 'src', 'brand', 'tokens.ts'), script=os.path.join(SKILL, 'scripts', 'palette.py'))
 result(chk.returncode == 0, 'the written tokens pass palette.py --check-tokens (contrast and one accent)', (chk.stdout + chk.stderr)[-300:])
 logo = read(proj, 'src', 'brand', 'logo.ts')
