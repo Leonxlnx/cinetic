@@ -73,10 +73,18 @@ def sublabel(f, acts, cue, half):
     return ' / '.join(parts) if parts else None
 
 
+def npx():
+    """npx as a path subprocess can run: on Windows it is npx.cmd, which a bare 'npx' does not find."""
+    found = shutil.which('npx')
+    if not found:
+        die('npx not found on PATH: install Node.js (npx comes with npm)')
+    return found
+
+
 def comp_meta(comp, entry):
     """(fps, durationInFrames) from `npx remotion compositions`."""
     try:
-        out = subprocess.run(['npx', 'remotion', 'compositions', entry], capture_output=True, text=True, timeout=600)
+        out = subprocess.run([npx(), 'remotion', 'compositions', entry], capture_output=True, text=True, timeout=600)
     except (OSError, subprocess.TimeoutExpired) as e:
         die(f'npx remotion compositions failed: {e}')
     for line in out.stdout.splitlines():
@@ -89,7 +97,7 @@ def comp_meta(comp, entry):
 def render_comp(args, a, b, every):
     """Render frames a..b every N of a composition; returns {frame: bgr image}."""
     tmp = tempfile.mkdtemp(prefix='sheet_')
-    cmd = ['npx', 'remotion', 'render', args.entry, args.comp, tmp, '--sequence', f'--frames={a}-{b}',
+    cmd = [npx(), 'remotion', 'render', args.entry, args.comp, tmp, '--sequence', f'--frames={a}-{b}',
            '--image-format=jpeg', '--jpeg-quality=90', '--log=error']
     if every > 1:
         cmd.append(f'--every-nth-frame={every}')
