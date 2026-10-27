@@ -4,6 +4,14 @@ A cinetic film is lit. Every raised thing casts a shadow from one key, sits on a
 lighter toward the key; the ground carries light that moves; every act has a light event. Light is how a code-made
 picture stops looking flat. A radial glow behind the subject or the lockup is not light: it is the stock look.
 
+**Light is motivated and subtle.** Every light has a source the picture could have (the key, a window, a lamp, the
+product's own screen) and you feel it more than you see it: a ground is flat or a key falloff from one side of
+0.02-0.10 L, a face lifts 5 % toward the key at most, a lift on arrival stays inside the arriving element. No white
+haze over the frame, no pool of light behind a line or a lockup, no vignette that reads as fog, no glow pill behind a
+line unless it is a real part of the product's UI. **Every element in frame has a job:** no plate, box, pill or shape
+floats on the ground unless it carries text, an icon, a mark or the product's real state. `look-audit.py` fails a
+pool or haze over the ground (`ground-haze`) and faint shapes that carry nothing (`filler-shape`).
+
 Every primitive here is a pure state function of the frame (`xxxState(frame, props, film)`, closed form, any order,
 any fps) plus a thin component drawn with transforms, opacity, clip paths and SVG polygons. Blur radii are fixed props
 (one shadow group, two ladder copies at most), never animated. Every fx exports `declares(props, film)`. Numbers are
@@ -80,7 +88,9 @@ A one-hue light field made of baked, dithered plates moved by transform and opac
 closed loops, flowing bands, a rise into a reveal. **Strength is visible, not a tint:** a lightness swing of
 0.05-0.20 across the field at chroma 0.13 or less, at one hue (`lib/look.ts LIGHT`); behind UI keep it near neutral
 (C ≤ 0.025), and a field that fills the frame at full chroma is a declared colour event, not the stage. A field at a
-few percent of accent alpha reads as a flat ground and does nothing.
+few percent of accent alpha reads as a flat ground and does nothing. A light field is a place's light (a lit floor, a
+window, a lamp the film shows) or a light event, never the default ground behind type and UI: there the ground stays
+flat or keyed from one side, and a pool sitting behind a line reads as haze (`ground-haze`).
 
 - `floor: { plate, height, top?, strength, breathe?, rises?, lift? }`: a glow over the bottom of the frame (house 25 %
   of the height). `breathe` is a seamless sine (whole-number harmonics) on its opacity; `rises` brighten it into a
@@ -110,8 +120,9 @@ The floor against a flat film asks for one light event in every act. Any of thes
 - **A raking swing.** Elevation 3-15°, azimuth swinging 20-40° over a shot, so every raised thing shows by its shadow
   before it shows as a screen.
 - **A glow rise** of the light field into the hit, or a pool travelling onto the subject.
-- **An exposure event** (`fx/Exposure`, `references/transitions.md`): the whole frame blooms into light and settles
-  out of it, or a light front sweeps across and reveals.
+- **An exposure event** (`fx/Exposure`, `references/transitions.md`): the arriving element lifts one step and settles,
+  the frame passes through light on a declared light seam, or a light front sweeps across and reveals; it never
+  leaves a white haze held over the picture.
 - **A colour event** declared in `FLASHES` (a one-frame ground flip on a hit, colour withheld until the mark lands).
 
 ## 5. Glow, spectral light and materials as devices
@@ -181,8 +192,8 @@ rim, its shadow, the ground's lit side and the beams of a window ground all foll
 | perspective | 2200 px | 1800-2600 |
 | lift off its backing | 36 px | 24-60 |
 | rim | 1 px on the edges facing the key, peak alpha 0.8 | the gradient runs to nothing on the far side |
-| face | lift (light colour) or shade by n . l against front-on, gain 0.35, at most 0.22 | |
-| sheen | the light's colour at 0.09 from the key side to 62 % across | |
+| face | lift (light colour) or shade by n . l against front-on, gain 0.35: the lift at most 0.05, the shade at most 0.22 | no veil over the product |
+| sheen | the light's colour at 0.03 along the key-side edge, gone by 40 % across | never a white wash over the face |
 | spill | the ground colour at 0.14 from the far side to 55 % across | 0.08-0.22 |
 | shadow | on a backing plane parallel to the panel, thrown lift x in-plane light / facing light (at most 3 x lift), penumbra 2 + 0.34 x throw between two fixed levels (6 and 20 px), alpha 0.55, the ground 0.26 darker | |
 | contact | the footprint grown 6 px, a fixed 14 px blur, 0.38 | |
@@ -190,31 +201,36 @@ rim, its shadow, the ground's lit side and the beams of a window ground all foll
 | entry | from tilt 24 / -18, 90 px low, lift 0, on E.settleOut over 48 f | |
 
 ```tsx
-<LitGround frame={f} spec={{ kind: 'bars', base: theme.ground, seed: 4 }} />
+<LitGround frame={f} spec={{ kind: 'wash', base: theme.ground }} />
 <Lit frame={f} x={1010} y={560} w={1160} h={740} r={56} ground={theme.ground} enter={{ at: CUE.panel }}>
   <ProjectPanel frame={f} theme={theme} w={1160} h={740} lift={0} />
 </Lit>
 ```
 
 Draw the panel at (0, 0) in its own box (a kit surface with `lift` 0-6: Lit draws the shadow its real pose throws).
+The light is the rim and the shadow; the product's own colours and type stay as designed (no bloom, no haze).
 Under a coloured key (a floor glow in the accent's lift) pass `rim={{ color }}`: the rim, the sheen and the lift take
 the light's colour. `RimEdge` and `rimLine()` give any other turned box the same rim (fx/DepthStack uses them).
 `litFrames()` gives the entry and its landing for the sound; Lit declares nothing.
 
-**Grounds (`fx/Grounds`).** The place behind the product, built in code: a lit gradient keyed to the film's light (the
-key side lighter, the far side in the ground's shade) and procedural plates from a seed, each a signed-distance falloff
-baked once as a dithered half-size sprite and moved by transform (no animated blur, no banding, no bokeh discs).
+**Grounds (`fx/Grounds`).** The place behind the product, built in code and clean: the flat base, or a very subtle
+lit falloff keyed to the film's light (the key side a little lighter, the far side a little into the ground's shade).
+Plates are for a film whose place has that light and asks for it by name; each is a signed-distance falloff baked
+once as a dithered half-size sprite and moved by transform (no animated blur, no banding, no bokeh discs).
 
-| kind | the plates | reads as |
+| kind | what it draws | reads as |
 |---|---|---|
-| `wash` | the key gradient and one broad gaussian pool on the key side | a lit wall, studio paper |
-| `pools` | the wash and 2-3 pools at different depths | light falling through a space |
-| `bars` | the wash and 3-5 tall bars defocused by about their own width, tapering at both ends | a lit room behind the product, out of focus |
-| `floor` | a glow rising from the bottom edge and bars standing in it, brighter at their foot | a stage lit from below |
-| `window` | 2-3 beams slanting along the key, brighter at the key end | sun through a window |
+| `flat` | the base colour alone | a clean field (house, with wash) |
+| `wash` | the base and the key falloff, nothing else | a lit wall, studio paper (house) |
+| `pools` (asked) | the wash, one broad pool on the key side and 2-3 pools at different depths | lamplight falling through a space |
+| `bars` (asked) | the wash and 3-5 tall bars defocused by about their own width, tapering at both ends | a lit room behind the product, out of focus |
+| `floor` (asked) | a rise of light from the bottom edge and bars standing in it, brighter at their foot | a stage lit from below |
+| `window` (asked) | 2-3 beams slanting along the key, brighter at the key end | sun through a window |
 
-- **Strength:** a lightness swing of 0.12 across the frame (0.05-0.20, `lib/look.ts LIGHT`); each kind's plates stay
-  within its gain x the swing (wash 0.8, pools 0.9, bars 1.1, window 1.0, floor 1.6: a light source may read brighter).
+- **Strength:** a lightness swing of 0.06 across the frame (0.02-0.10: the key is felt, never seen); a kind the film
+  asked for keeps its plates within its gain x the swing (pools 0.9, bars 1.1, window 1.0, floor 1.6). Name the light
+  in the file (`cinetic:light <a lamp, a lit room, sun through a window>`): lint-film warns on plates with no light
+  named for them (`filler-light`).
   On paper light has nowhere to go: the swing comes from the shade and the shapes become soft shadows (bars widen into
   shadow bands, there is no pool). A `floor` in the accent's lift (`light: C.accentLift`) is a coloured light field:
   chroma 0.13 or less, and behind UI keep it low or white.
@@ -223,13 +239,14 @@ baked once as a dithered half-size sprite and moved by transform (no animated bl
 - **Variety:** never the same ground on more than 2 consecutive shots. `groundKey()` names a ground (kind and base: a
   re-seeded field of the same kind is the same ground), `groundRuns()` lists the runs that break the rule and
   `dealGrounds(n, { bases, seed })` deals a film's grounds with holds of at most 2 shots (a held ground keeps its seed:
-  the same place across the cut).
+  the same place across the cut): the clean kinds on the film's bases, unless `kinds` names the ones its place has.
 
 **Composition in planes.** `<Planes base shot bg mid fg />` draws three sibling layers under one camera at the weights
 bg 0.25, mid 0.6, fg 1.0 (`layerShot()`, lib/camera `weighShot()`); at least one element is cropped by the frame edge
 (`croppedByEdge()`: 12 % of its own size past an edge, `cropCheck()` on a frame's boxes). A frame that holds everything
 whole inside the margins reads as a slide. The multi-object beat in three scaled, defocused planes is `fx/DepthStack`
-(`references/camera.md` §8).
+(`references/camera.md` §8): every item in it says what it carries (`carries`: ui, text, mark, icon, photo, data) and
+shows it, a far tile softer and smaller but still a real screen or mark, never a blank card at depth.
 
 ## 8. Checks
 
@@ -237,8 +254,12 @@ whole inside the margins reads as a slide. The multi-object beat in three scaled
   Lit, Grounds and DepthStack are continuous and declare nothing (DepthStack a camera-blur range when given one);
   forensics and the blur sampler treat declared ranges as craft.
 - `look-audit.py`: `living-ground` (the ground's light moves), the floor's light event per act, `clean-finish`
-  (no banding), and the one-hue gate `--trajectory` for a light field, a hue sweep or a cooling glyph.
+  (no banding), `ground-haze` (the ground's light rising to a pool inside the frame more than 0.025 L over its
+  brightest edge: a haze, a pool behind the content, a fog vignette), `filler-shape` (faint shapes on the ground that
+  carry no text, icon or mark), and the one-hue gate `--trajectory` for a light field, a hue sweep or a cooling glyph.
 - `palette.py --ramp 'c1,c2,...'` checks the stops of a light field or a sweep against the accent's hue.
 - `lint-film.mjs`: a coloured radial falloff outside `fx/` and `lib/` is a glow and is flagged, unless the line or the
   file's leading comment declares it (`cinetic:light <what>`); element halos (box, text and drop shadows with blur in
-  a light colour) are flagged everywhere; `gpu-cost` flags large blurs, animated filters and `backdrop-filter`.
+  a light colour) are flagged everywhere; `filler-light` warns on a baked pool, haze or glow asset and on ground
+  plates with no light named for them, `filler-plate` on blank boxes generated at depth and depth-stack items with no
+  `carries`; `gpu-cost` flags large blurs, animated filters and `backdrop-filter`.
