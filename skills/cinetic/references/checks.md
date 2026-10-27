@@ -143,8 +143,9 @@ evaluate (what `grammar-score.mjs` reads for curve roles, durations, staggers an
 
 ## 5. forensics (`scripts/forensics.py`)
 
-Pixel QA on a render: pops, stalls, dead holds, ghost frames, border slivers, judder, sharpness steps, banding and
-compression smear on flat fields; `--loop` checks the seam; `--cuts` and `--freeze-ok` declare designed cuts and
+Pixel QA on a render: pops, stalls, dead holds, ghost frames, border slivers (a flat band at the frame's edge that holds
+still while the picture beside it moves; content crossing the edge moves with it and passes, a band on a held picture
+warns), judder, sharpness steps, banding and compression smear on flat fields; `--loop` checks the seam; `--cuts` and `--freeze-ok` declare designed cuts and
 freezes for a film without cues. A film with cues declares its own: act boundaries and seams are its cuts, and a
 declared step, flash or hard seam (the timeline's or a primitive's `declares()`) is never a pop or a ghost. With a
 cues file that carries the declarations:

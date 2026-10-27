@@ -41,7 +41,11 @@ Frames are 0-based and absolute (frame = t * fps). Defaults (every number is a f
                > 2000 px (full-res equivalent) and nothing moves within 192 px         fail
                (the same pattern inside motion is a fast element crossing: info)
   border       the outer 1-3 rows/columns differ by > 40 from rows 5-7 inside, on > 25%
-               of the edge, at a constant depth for >= 3 frames (a sliver or gap)      fail
+               of the edge, at a constant depth for >= 3 frames, in one flat colour that
+               holds still while the picture beside it moves (a sliver or gap)        fail
+               the same band on a held picture (a sliver or a designed edge)         warn
+               (a band that moves with the picture or varies along the edge is content
+               crossing the edge; inside a declared stepped range the band is skipped)
   judder       phase-correlated 256 px patches (3x3 grid, or --track) that move in
                whole-pixel stairs (rests and isolated 1 px jumps) in a slow move     warn
   sharpness    a region's Laplacian variance steps x3 in one frame while the region
@@ -519,12 +523,17 @@ def grid_boxes(w, h, n=3, size=256):
             for j in range(n) for i in range(n)]
 
 
+BORDER_FLAT_STD = 12.0   # grey levels: the differing outer pixels of a gap hold one colour (the stage behind it)
+BORDER_STILL = 1.5       # mean grey-level change per frame under which the outer band holds still
+
+
 def edge_depth(rows, delta, frac):
-    """rows[0] is the outermost line of an edge. Returns how many outer lines (1-3) differ from
-    rows 5-7, or 0 when nothing differs or the reference rows themselves disagree (an edge of
-    content passing through, not a sliver)."""
+    """rows[0] is the outermost line of an edge. Returns (depth, flat): how many outer lines (1-3) differ
+    from rows 5-7, or 0 when nothing differs or the reference rows themselves disagree (an edge of
+    content passing through, not a sliver); flat when the differing outer pixels hold one colour, as the
+    stage behind a gap does (strokes, a texture or a photo crossing the edge vary)."""
     if (np.abs(rows[5] - rows[7]) > delta).mean() > frac / 2:
-        return 0
+        return 0, False
     inner = rows[5:8].mean(0)
     depth = 0
     for r in range(4):
@@ -532,7 +541,10 @@ def edge_depth(rows, delta, frac):
             depth = r + 1
         else:
             break
-    return depth if depth <= 3 else 0
+    if not 0 < depth <= 3:
+        return 0, False
+    band = rows[:depth]
+    return depth, bool(band[np.abs(band - inner[None]) > delta].std() <= BORDER_FLAT_STD)
 
 
 BAND_T = 64
@@ -911,10 +923,11 @@ def analyse(args, info):
     ghost_margin = 96  # half-res px: a fast element moves up to ~190 full-res px per frame
 
     M = dict(idx=[], d=[], d2=[], nchg=[], dr=[], sharp=[], depth={e: [] for e in ('top', 'bottom', 'left', 'right')},
-             tv={k: [] for k in tracks}, tr={k: [] for k in tracks}, ghosts=[], crossings=[], band=[], det=[],
+             edge_move={e: [] for e in ('top', 'bottom', 'left', 'right')}, tv={k: [] for k in tracks}, tr={k: [] for k in tracks}, ghosts=[], crossings=[], band=[], det=[],
              tracks=tracks, sboxes=sboxes, rboxes=rboxes)
     smallq = deque(maxlen=3)
     halfq = deque(maxlen=3)
+    prev_band = {}
     prev_gray = None
     first_small = None
     other = None
@@ -966,9 +979,15 @@ def analyse(args, info):
             first_small = small
         gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
         g16 = gray.astype(np.int16)
-        for name, rows in (('top', g16[:8]), ('bottom', g16[-1:-9:-1]), ('left', g16[:, :8].T),
-                           ('right', g16[:, -1:-9:-1].T)):
+        for name, rows in (('top', g16[:16]), ('bottom', g16[-1:-17:-1]), ('left', g16[:, :16].T),
+                           ('right', g16[:, -1:-17:-1].T)):
             M['depth'][name].append(edge_depth(rows, args.border_delta, args.border_frac))
+            # how much each of the outer 3 lines and the lines 5-15 beside them change from the frame before: a gap
+            # holds still while the picture beside it moves; content crossing the edge moves with it
+            pb = prev_band.get(name)
+            M['edge_move'][name].append(None if pb is None else tuple(float(np.abs(rows[r] - pb[r]).mean()) for r in range(3))
+                                        + (float(np.abs(rows[5:16] - pb[5:16]).mean()),))
+            prev_band[name] = rows.copy()
 
         half = cv2.resize(gray, (hw, hh), interpolation=cv2.INTER_AREA).astype(np.int16)
         halfq.append((f, half))
@@ -1282,10 +1301,16 @@ def evaluate(args, info, M, decl):
         add('ghost', 'fail', g['frame'], f'one-frame image on {g["px"]} px that neither neighbour has and nothing '
             'near it moves (stale layer, compositor race, one-frame flash): inspect with grab.sh', bbox=g['bbox'])
 
-    # --- border slivers: constant depth for >= N frames
+    # --- border slivers: a flat outer band at a constant depth for >= N frames that holds still while the
+    # picture beside it moves (the stage showing through a gap). A band that moves with the picture, or one
+    # that varies along the edge, is content crossing the edge; a band on a held picture cannot be told from
+    # a designed edge (a warning), and inside a declared stepped range it is the step's own held pose
     borders = []
+    stepped_v = [(int(round(r['from'] * k_)), int(round(r['to'] * k_))) for r in extra.get('stepped', [])]
     for edge, dep in M['depth'].items():
-        dep = np.array(dep)
+        flat = np.array([x[1] for x in dep], bool)
+        dep = np.array([x[0] for x in dep])
+        mv = M['edge_move'][edge]
         k = 0
         while k < n:
             if dep[k] == 0:
@@ -1294,10 +1319,23 @@ def evaluate(args, info, M, decl):
             j = k
             while j + 1 < n and dep[j + 1] == dep[k]:
                 j += 1
-            if j - k + 1 >= args.sliver_frames and not ignored(f0 + k):
-                borders.append(dict(edge=edge, depth_px=int(dep[k]), frames=[f0 + k, f0 + j]))
-                add('border', 'fail', f'{f0 + k}-{f0 + j}', f'{edge} edge: the outer {dep[k]} px differ from the '
-                    f'pixels inside for {j - k + 1} frames (a sliver or gap); overscan moving layers, clamp the camera')
+            if j - k + 1 >= args.sliver_frames and not ignored(f0 + k) and flat[k:j + 1].mean() >= 0.5:
+                ch = [mv[i] for i in range(k + 1, j + 1) if mv[i] is not None]
+                oc = float(np.median([np.mean(c[:dep[k]]) for c in ch])) if ch else 0.0
+                ic = float(np.median([c[3] for c in ch])) if ch else 0.0
+                in_step = any(a <= f0 + k and f0 + j < b for a, b in stepped_v)
+                where = f'{edge} edge: the outer {dep[k]} px differ from the pixels inside for {j - k + 1} frames'
+                row = dict(edge=edge, depth_px=int(dep[k]), frames=[f0 + k, f0 + j], band_change=round(oc, 2),
+                           inside_change=round(ic, 2))
+                if oc <= BORDER_STILL and ic >= 2 * oc + 1.0 and not in_step:
+                    borders.append(dict(row, verdict='fail'))
+                    add('border', 'fail', f'{f0 + k}-{f0 + j}', f'{where}, one flat colour holding still while the picture '
+                        f'beside it moves ({oc:.1f} vs {ic:.1f} levels a frame): a sliver or gap; overscan moving layers, '
+                        'clamp the camera')
+                elif oc <= BORDER_STILL and not in_step:
+                    borders.append(dict(row, verdict='warn'))
+                    add('border', 'warn', f'{f0 + k}-{f0 + j}', f'{where}, one flat colour on a held picture: a sliver '
+                        '(a layer short of the frame) or a designed edge; inspect the crop with grab.sh')
             k = j + 1
 
     # --- judder (whole-pixel stairs)
@@ -2256,6 +2294,25 @@ def self_test():
     rep = run('flash', flash, cues(n, flashes=[{'f': 45, 'frames': 1, 'id': 'flash'}]))
     check(not flags(rep, 'ghost', 'fail') and not flags(rep, 'spike', 'fail'), 'a declared flash frame is neither a ghost nor a pop',
           f"{len(flags(rep, 'ghost'))} ghost, {len(flags(rep, 'spike'))} spike")
+    # border: a flat band that holds still while the picture pans is a gap; dark strokes scrolling along the edge
+    # over paper are content crossing it; the same flat band on a held picture only warns
+    def banded(img):
+        o = img.copy()
+        o[:2] = 18
+        return o
+    rep = run('sliver', [banded(warp(A, dx=3.0 * i)) for i in range(45)], cues(45))
+    check(bool(flags(rep, 'border', 'fail')), 'a flat 2 px band holding still while the picture pans fails border',
+          json.dumps([x['note'][:90] for x in flags(rep, 'border')]))
+    strokes = np.full((2, w * 3, 3), 236, np.uint8)
+    for x in range(0, w * 3, 14):
+        strokes[:, x:x + 9] = 40
+    paper = np.full_like(A, 236)
+    rep = run('edgeink', [np.concatenate([strokes[:, 5 * i:5 * i + w], paper[2:]]) for i in range(45)], cues(45))
+    check(not flags(rep, 'border'), 'strokes scrolling along the edge over paper are content, not a sliver',
+          f"{len(flags(rep, 'border'))} border")
+    rep = run('heldband', [banded(A)] * 45, cues(45))
+    check(bool(flags(rep, 'border', 'warn')) and not flags(rep, 'border', 'fail'), 'a flat band on a held picture warns, never fails',
+          f"{[x['severity'] for x in flags(rep, 'border')]}")
     bad += motion_self_test(check)
     shutil.rmtree(tmp, ignore_errors=True)
     print('forensics self-test: ' + ('all pass' if not bad else f'{bad} failed'))
