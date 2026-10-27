@@ -113,6 +113,12 @@
  *   giant-once        giant words in more than one act: the set of one moment, once per film
  *   end-card-template a mark, a wordmark and a tagline centred over a radial gradient: the stock end
  *                     card; build the lockup from the film's own device
+ *   filler-plate      every element in frame has a job: a map or Array.from callback that draws only a
+ *                     filled, childless box, defocused or faint (plates floating at depth, faint cards round
+ *                     a line), or a depth-stack item ({ id, plane }) with no `carries` (fx/DepthStack)
+ *   filler-light      light is motivated and subtle: a baked pool, glow, haze, bloom, bokeh or fog asset
+ *                     (staticFile), or ground plates (kind/kinds pools, bars, floor, window) in a file that
+ *                     names no light for them (`cinetic:light <what it is>`)
  *
  * Hard bans (SKILL.md "Hard bans"): errors whenever you invent the look.
  *   banned-color      any colour (tokens, :root palette, literals, CSS names) in a banned OKLCH region:
@@ -1947,6 +1953,40 @@ for (const file of files) {
         const texts = (region.match(/<(Words|Chain|MaskRise|Scramble)\b|\btypeStyle\s*\(|\bfontSize\b|\bdata-text\b|\btxt\s*\(/g) ?? []).length;
         if (mark && centred && texts >= 2)
           report(i, 'end-card-template', 'warn', 'a mark, a wordmark and a tagline centred over a radial gradient: the stock end card. Build the lockup from the film\'s own device (the deck\'s lockup: the device becomes the mark, printed on the last plane), lit by the key, off-centre or as a crop; no radial glow behind it');
+      });
+    }
+
+    // filler-plate / filler-light: every element in frame has a job; light is motivated and subtle
+    if (isScript && !house && !isTokens) {
+      const CONTENT = /data-(text|logo|ui|icon)\b|\bcopy\s*\(|<(Img|img|svg|path|Words|Chain|MaskRise|TypeOn|Scramble|Roll|Photo|Footage|Video|OffthreadVideo)\b|<\w*(Logo|Icon|Mark|Glyph|Avatar|Portrait|Screen|Row|Text|Tile|Chip|Card|Panel|Line|Label|Number|Count|Chart|UI)\b|\{\s*children\s*\}|\brender\s*\(|>\s*[^<>{}\s][^<>{}]*<\//;
+      const BOX = /\b(background|backgroundColor|backgroundImage)\s*:/;
+      const FAINT = /\bblur\b|<Defocus\b|\bfilter\s*:|\bopacity\s*[:=]\s*\{?\s*0?\.[0-4]\d*\s*[,}\s]/; // set back: defocused or faint
+      // a field of blank boxes: a callback that maps or generates elements and draws only a filled, childless box,
+      // defocused or faint (plates at depth); a box in full view is a UI part (a dot, a bar, a connector) and passes
+      each(/\bArray\.from\s*\(\s*\{\s*length\s*:|\.map\s*\(/g, (m, i) => {
+        const open = code.indexOf('(', i + (m[0].startsWith('.') ? 0 : 'Array.from'.length));
+        if (open < 0) return;
+        const body = parenGroup(code, open);
+        if (body.length > 4000 || !/=>/.test(body) || CONTENT.test(body) || !FAINT.test(body)) return;
+        const tags = [...body.matchAll(/<([a-z][\w.]*|AbsoluteFill)\b/g)].map((t) => tagAt(body, t.index)).filter(Boolean);
+        const blank = tags.find((t) => /\/\s*>$/.test(t.text) && BOX.test(t.text));
+        if (blank)
+          report(i, 'filler-plate', 'warn', 'a field of blank boxes: the callback draws a filled box with nothing in it, once per item (plates floating at depth, faint cards, squares around a line). Every element in frame has a job: give each one real content (the product\'s state, a mark, a line, a number) or take the field out (look-audit filler-shape fails them in the render)');
+      });
+      // a depth stack whose items do not say what they carry (fx/DepthStack carries: ui, text, mark, icon, photo, data)
+      each(/\{\s*id\s*:[^{}]*?\bplane\s*:\s*['"](far|mid|near)['"][^{}]*\}/g, (m, i) => {
+        if (/\bcarries\s*:/.test(m[0]) || /\.\.\./.test(m[0])) return;
+        report(i, 'filler-plate', 'warn', `a depth-stack item on the ${m[1]} plane that does not say what it carries: set carries ('ui', 'text', 'mark', 'icon', 'photo' or 'data') and draw that in its render; a blank tile at depth is filler (fx/DepthStack depthFiller)`);
+      });
+      // light pools and haze: a baked pool, glow or haze asset, or ground plates no light in the place asks for
+      each(/\bstaticFile\s*\(\s*['"`]([^'"`]*\b(pool|haze|glow|bloom|bokeh|orbs?|halo|leak|fog)[^'"`]*)['"`]/gi, (m, i) => {
+        if (LIGHT_RE.test(raw)) return;
+        report(i, 'filler-light', 'warn', `a baked ${m[2].toLowerCase()} over the ground (${m[1]}): light is motivated and subtle. Use a flat ground or a key gradient from one side (fx/Grounds flat or wash); a light the place really has is named in the file (cinetic:light <what it is>). look-audit ground-haze fails a pool of light behind the content`);
+      });
+      each(/\bkinds?\s*:\s*(\[[^\]]*\]|['"]\w+['"])/g, (m, i) => {
+        const plate = (m[1].match(/['"](pools|bars|floor|window)['"]/g) ?? []).map((x) => x.slice(1, -1));
+        if (!plate.length || LIGHT_RE.test(raw)) return;
+        report(i, 'filler-light', 'warn', `ground plates (${[...new Set(plate)].join(', ')}) with no light named for them: a ground is clean (fx/Grounds flat or wash); plates are for a place that has that light, named in the file (cinetic:light <a lamp, a lit room, sun through a window>)`);
       });
     }
 
