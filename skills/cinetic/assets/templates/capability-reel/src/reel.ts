@@ -67,5 +67,7 @@ for (const [k, s] of Object.entries({ ...REEL.lines, claim: REEL.lines.claim.joi
   if (words(s) < 2 || words(s) > 7) throw new Error(`reel.ts: line "${k}" ("${s}") is ${words(s)} words; a line is one short sentence of 2-7 words`);
 }
 if (REEL.lines.claim.some((f) => words(f) > 5)) throw new Error('reel.ts: each claim fragment holds at most 5 words');
+const claimEnd: string = REEL.lines.claim[1];
+if (!claimEnd.endsWith('.')) throw new Error(`reel.ts: the claim's second fragment ("${claimEnd}") ends on a full stop: the camera zooms through that square into the rings`);
 if (REEL.sources.length < 6 || REEL.sources.length > 12) throw new Error('reel.ts: 6-12 sources around the first line');
 if (REEL.capabilities.length < 8) throw new Error('reel.ts: the ticker needs 8 or more capabilities');
