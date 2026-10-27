@@ -157,6 +157,25 @@ export const LIGHT = {
   revealBrighten: { gain: 2, dur: 0.9 }, // seconds
 } as const;
 
+/**
+ * The ground and its light. Every element in frame has a job; light is motivated and subtle. A living light field
+ * (LIGHT) is a place's light (a lit floor, a window, a lamp the film shows) or a light event, never the default ground
+ * behind type and UI. The ground is flat or keyed from one side (a lightness swing of 0.02-0.10, house 0.06: fx/Grounds
+ * flat and wash); a pool, bars or beams only where the place has that light, named in the film (cinetic:light <what>);
+ * never a white haze, a pool behind a line or a lockup, or a vignette that reads as fog (look-audit ground-haze: the
+ * ground's light rising to a dome more than 0.025 L over its brightest edge). Nothing floats on the ground without
+ * content: a shape 0.015-0.07 L off the ground that carries no text, icon or mark is filler (look-audit filler-shape);
+ * a far plane is softer and smaller, never dimmed into a blank shape. A lit panel's face lifts 5 % toward the key at
+ * most (fx/Lit): the light is the rim and the shadow, not a veil over the product.
+ */
+export const GROUND_LOOK = {
+  swing: [0.02, 0.1] as const, // OKLCH L across the frame behind content
+  swingHouse: 0.06,
+  haze: 0.025, // the most the ground's light may rise to a dome inside the frame over its brightest edge
+  filler: [0.015, 0.07] as const, // L off the ground: a faint shape in this band must carry text, an icon or a mark
+  faceLift: 0.05, // the most a lit panel's face lifts toward the key
+} as const;
+
 /** Line measure as a share of the frame width: a statement up to 0.61 (typically 0.28-0.58), a payoff up to 0.84. */
 export const MEASURE = { statementMaxFW: 0.61, statementTypicalFW: [0.28, 0.58] as const, payoffMaxFW: 0.84 } as const;
 
