@@ -13,7 +13,7 @@ cinetic is a skill: a folder (`SKILL.md`, `references/`, `scripts/`, `assets/`) 
 5. [Render times and `--budget`](#5-render-times-and---budget)
 6. [Troubleshooting](#6-troubleshooting)
 
-**Short version**, for Claude Code on macOS (on Linux, replace the first line with the [apt steps](#ubuntu-and-debian-apt) and use your Python 3.11 or newer where it says `python3.12`):
+**Short version**, for Claude Code on macOS (on Linux, replace the first line with the [apt steps](#ubuntu-and-debian-apt) and use your Python 3.11 or newer where it says `python3.12`; on Windows, follow the [Git Bash steps](#windows-git-bash)):
 
 ```bash
 brew install node ffmpeg python@3.12
@@ -150,7 +150,7 @@ To update, delete the old folder first and repeat the steps: `rm -rf ~/.claude/s
 
 Remotion bundles an ffmpeg of its own for its internal encodes, but `render.sh`, `accumulate.py`, `hf-finish.sh` and the QA scripts call `ffmpeg` and `ffprobe` from your `PATH`. Any version from 6 on works: ffmpeg 7.1 and newer take a file's colour tags from the decoded frames, so the scripts' encodes end with a `setparams` step that writes all four BT.709 tags (do the same in your own encodes, see [`references/finishing.md` §4](../skills/cinetic/references/finishing.md#4-colour-bt709-everywhere)).
 
-The scripts are bash and were developed and tested on Linux (CI runs on Ubuntu). They avoid GNU-only tools and bash 4 features so that they also run on macOS with its built-in bash 3.2, and CI parses every script with bash 3.2.57, the version macOS ships. macOS is still less tested; please report anything that breaks. On Windows, WSL2 with the Ubuntu steps below is the likely route; it has not been tested.
+The scripts are bash and were developed and tested on Linux (CI runs on Ubuntu). They avoid GNU-only tools and bash 4 features so that they also run on macOS with its built-in bash 3.2, and CI parses every script with bash 3.2.57, the version macOS ships. macOS is still less tested; please report anything that breaks. Windows is supported through Git Bash ([Windows (Git Bash)](#windows-git-bash)): the scripts find Python with `scripts/py.mjs`, pass paths to it as arguments, and link `node_modules` with a directory junction. WSL2 with the Ubuntu steps below is another route; it has not been tested.
 
 ### macOS (Homebrew)
 
@@ -178,6 +178,32 @@ node --version && ffmpeg -version | head -1 && python3 --version
 - **ffmpeg.** Ubuntu 24.04 and Debian 13 ship ffmpeg 6 or newer. Ubuntu 22.04 (4.4) and Debian 12 (5.1) are too old: use a static build linked from [ffmpeg.org/download.html](https://ffmpeg.org/download.html) that includes libx264, and put it first on your `PATH`.
 - **Python.** Ubuntu 22.04 ships Python 3.10, which is too old. Install 3.11 or newer (for example `python3.12` and `python3.12-venv` from the deadsnakes PPA) and create the environment below with that interpreter: `python3.12 -m venv ~/.venvs/cinetic`.
 
+### Windows (Git Bash)
+
+Run the scripts, and the agent that calls them, in Git Bash (it comes with [Git for Windows](https://git-scm.com/download/win)), so the `.sh` scripts and their paths work. One way to install the tools, from PowerShell or Git Bash:
+
+```bash
+winget install Git.Git
+winget install OpenJS.NodeJS.LTS
+winget install Gyan.FFmpeg
+winget install Python.Python.3.12
+```
+
+Then, in a new Git Bash window, the environment from [Python packages](#python-packages) lives in `Scripts/`, not `bin/`:
+
+```bash
+py -3.12 -m venv ~/.venvs/cinetic
+source ~/.venvs/cinetic/Scripts/activate
+pip install numpy scipy soundfile pyloudnorm opencv-python librosa fonttools brotli uharfbuzz pillow
+echo 'export PYTHON="$HOME/.venvs/cinetic/Scripts/python.exe"' >> ~/.bashrc
+node --version && ffmpeg -version | head -1 && "$HOME/.venvs/cinetic/Scripts/python.exe" --version
+```
+
+- **Python.** On a plain Windows install `python3` is often the Microsoft Store alias, which runs nothing, and a virtual environment's interpreter is `python.exe`. Every script, npm script and test finds Python through `scripts/py.mjs` (`findPython`): it takes `$PYTHON` as given and runs any other name only after a version check, trying `py -3` too, so the alias is never run. Set `PYTHON` as above and every step uses the environment; `node scripts/py.mjs --which` prints the choice.
+- **Paths.** Git Bash turns `/e/...` into `E:/...` only for arguments, so the scripts hand paths to Python as arguments, never inside `-c` strings. Keep your own commands the same way.
+- **Line endings.** `.gitattributes` checks every file out with LF, so the scripts run under Git Bash even when `core.autocrlf` is on (the Git for Windows default).
+- **`node_modules`.** `new-film.sh --link-modules` makes a directory junction, because `ln -s` in Git Bash copies the whole folder unless Windows symlinks are enabled.
+
 ### Python packages
 
 Create one virtual environment for cinetic and install everything with a single line:
@@ -197,7 +223,7 @@ python3 -c "import numpy, scipy, soundfile, pyloudnorm, cv2, librosa, fontTools,
 | `fonttools`, `brotli`, `uharfbuzz` | outlined lettering: `outline-text.py`, the SVG lockups in `brand-kit.sh`, and the fonts of a supplied brand kit (`brand.py`) |
 | `pillow` | `dither-gradient.py` (banding-free gradient PNGs), a PNG logo in a brand kit (`brand.py`) |
 
-Every script finds Python one way, through `scripts/py.mjs`: `$PYTHON` when it is set (else `$CINETIC_PYTHON`), else the first of `python3`, `python` and (on Windows) `py -3` that runs Python 3.10 or newer, so the Microsoft Store alias is never run (`node scripts/py.mjs --which` prints it). Many agents open a fresh shell for each command, so either set `PYTHON` to the environment's interpreter, activate the environment in the terminal before you start the agent, or put it first on your `PATH` in your shell profile:
+Every script finds Python one way, through `scripts/py.mjs`: `$PYTHON` when it is set (else `$CINETIC_PYTHON`), else the first of `python3`, `python` and (on Windows) `py -3` that runs Python 3.10 or newer and imports numpy (if none imports it, the first that runs 3.10 or newer, with a warning), so the Microsoft Store alias is never run (`node scripts/py.mjs --which` prints it; scripts and tests that shell out to Python import its `findPython`). Many agents open a fresh shell for each command, so either set `PYTHON` to the environment's interpreter, activate the environment in the terminal before you start the agent, or put it first on your `PATH` in your shell profile:
 
 ```bash
 echo 'export PATH="$HOME/.venvs/cinetic/bin:$PATH"' >> ~/.zshrc    # or ~/.bashrc
@@ -324,8 +350,9 @@ cd films/first-film
 | `<dir>` | (required) | target folder; must be empty unless `--force` |
 | `--engine remotion\|hyperframes` | `remotion` | which starter to copy |
 | `--fps N` | `60` | frame rate |
-| `--bpm N` | the starter's own: 120 for both (and with `--pace crisp`); with `--music` the track's | tempo while the film has no track grid; one beat must be a whole number of frames (at 60 fps: 90 → 40 f, 100 → 36, 120 → 30, 144 → 25, 150 → 24) |
-| `--pace calm\|crisp` | `calm` | the film's pace (`PACE_NAME`): calm fragments that take turns with the picture, or the denser crisp tempo for a brief that asks for energy |
+| `--bpm N` | the starter's own: 120 for both (and with `--pace crisp`); a template's own (`template.json` bpm); with `--music` the track's | tempo while the film has no track grid; one beat must be a whole number of frames (at 60 fps: 90 → 40 f, 100 → 36, 120 → 30, 144 → 25, 150 → 24) |
+| `--pace calm\|crisp` | `calm` (a template's own) | the film's pace (`PACE_NAME`): calm fragments that take turns with the picture, or the denser crisp tempo for a brief that asks for energy |
+| `--type calm\|bold` | the template's `type_family`, else `calm` | the type family (`TYPE_LOOK` in `lib/look.ts`): calm, the starter's small airy sentence lines at the face's own letter fit, or bold, big semibold lines with tracking that tightens with size; `scripts/type-family.mjs` writes `TYPE_FAMILY`, the six roles of `TYPE` and the `FACES` weights into `src/brand/tokens.ts` (run it later to switch). Remotion only |
 | `--size WxH` | `1920x1080` | frame size, even in both dimensions (`1080x1920` for 9:16, `1080x1080` for 1:1) |
 | `--name NAME` | the folder name | project and package name |
 | `--font NAME` | none | vendor a `@fontsource-variable/*` family (repeatable) |
@@ -333,7 +360,8 @@ cd films/first-film
 | `--link-modules DIR` | none | link an existing `node_modules` instead of running `npm install` (a symlink; a directory junction on Windows, where `ln -s` would copy the folder) |
 | `--no-install` | off | skip `npm install` |
 | `--force` | off | allow a non-empty `<dir>` |
-| `--format launch\|update` | `launch` | `update` lays the update-film template over the starter: a hook on the version, one act per change, the payoff, the end card with the version (Remotion) |
+| `--format launch\|update` | `launch` | `update` lays the update-film template over the starter: a hook on the version, one act per change, the payoff, the end card with the version (Remotion); the same as `--template update` |
+| `--template NAME` | none (the starter's own acts) | lay a film template from `assets/templates/<name>` over the starter: its timeline, acts, film and sound (`template.json` lists the files it copies and the starter files it removes; its pace, tempo and type family become the defaults). `update`, `ui-walkthrough`, `capability-reel`, `camera-teaser`, `prompt-run`, `social-ad` or `type-explainer` ([`references/templates.md`](../skills/cinetic/references/templates.md)). A template keeps its own tempo unless `--bpm` is given. Remotion only |
 | `--brand PATH` | none | take in a supplied brand kit with `brand.py` (repeatable) |
 | `--like CLIP` | none | measure a clip to borrow its grammar with `like.py measure` |
 | `--music FILE` + licence flags | none | copy in the licensed track, write and check its record, analyse it, point `audio/score.json` at it and set up the `launch` kit ([Music](#music)) |
@@ -449,6 +477,7 @@ The full pipeline is in [`references/finishing.md`](../skills/cinetic/references
 | `npm run check` fails with `placeholder` errors | by design: the starter's brand is a stand-in | replace the palette, typeface, mark and name ([`references/brand-and-color.md`](../skills/cinetic/references/brand-and-color.md)); this is the agent's Step 2 |
 | `error: externally-managed-environment` from `pip` | the system Python refuses global installs | use the virtual environment from [Python packages](#python-packages) |
 | `ModuleNotFoundError: No module named 'cv2'` (or `soundfile`, `librosa`) | the shell running the script does not see the venv | activate it before starting the agent, or put `~/.venvs/cinetic/bin` first on `PATH`; rerun the pip line |
+| `py.mjs: none of python3, python, py -3 imports numpy; using ...` (Windows) | the environment is not on `PATH`, and its `Scripts\python.exe` is never found by name | set `PYTHON` to it ([Windows (Git Bash)](#windows-git-bash)); `node scripts/py.mjs --which` should print it |
 | `outline-text.py: ...; pip install fonttools brotli uharfbuzz` (exit 2) | the lettering packages are missing | install them; `brand-kit.sh` needs them for the SVG lockups |
 | `render.sh: ffmpeg not found on PATH` (or `ffprobe`, `npx`, `python3`) | a required tool is missing | install it ([Requirements](#2-requirements)) |
 | `Unknown encoder 'libx264'` during `--blur` or `hf-finish.sh` | your ffmpeg was built without libx264 (common in minimal or LGPL-only builds) | check with `ffmpeg -hide_banner -encoders \| grep libx264`; install Homebrew's or the distribution's `ffmpeg`, or a static GPL build |
