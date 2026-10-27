@@ -38,8 +38,7 @@
  *      (x on a cubic-out, y on a cubic-in, growing x1.74), lib/camera-moves modalPush() (blur and veil over 20 f, x1.43,
  *      the toast at the push's midpoint), fx/MicroUI popScale() (62 % to full in 2 f, no overshoot), fx/Oversize
  *      OVERSIZE_FIRST (x2.67 over 24 f, 6 px defocus).
- *  20. surfaces: fx/Glass backdropGlass() (backdrop-filter and its -webkit- twin, the blur scaled by u, a veil), fx/BorderBleed
- *      spinRim() (a closed conic turning 3 deg a 60 fps frame from its cue, the same turn at 30 fps).
+ *  20. rims: fx/BorderBleed spinRim() (a closed conic turning 3 deg a 60 fps frame from its cue, the same turn at 30 fps).
  *  18. fx/Words arriveX: each word lands beside its slot and settles home on an expo-out (half of it in 8 f at 60 fps,
  *      home by arriveDur), one value per word when given a list.
  *
@@ -101,7 +100,6 @@ import * as Hs from '${url('fx/HueSweep.tsx')}';
 import * as Fl from '${url('fx/Flight.tsx')}';
 import * as Cmv from '${url('lib/camera-moves.ts')}';
 import * as Ov from '${url('fx/Oversize.tsx')}';
-import * as Gl from '${url('fx/Glass.tsx')}';
 import * as Bb from '${url('fx/BorderBleed.tsx')}';
 const camBase = { ax: 960, ay: 540, sx: 960, sy: 540, k: 1 };
 const camMoves = [{ at: 0, frames: 20, zoom: 0.5, ease: A.E.glideOut }, { at: 15, frames: 20, pan: { x: -400 }, ease: A.E.launchIn }];
@@ -162,7 +160,6 @@ console.log(JSON.stringify({
   modal: [0, 10, 20, 21, 31, 42, 80].map((f) => Cmv.modalPush(f, 0, film60)),
   pop: [-1, 0, 1, 2, 5].map((f) => Mu.popScale(f, 0, {}, film60)),
   first: Ov.OVERSIZE_FIRST,
-  glassCss: Gl.backdropGlass({ u: 2, tint: '#202020' }),
   rim: [Bb.spinRim(5, 10, ['red', 'blue']), Bb.spinRim(30, 10, ['red', 'blue'], {}, film60), Bb.spinRim(20, 10, ['red', 'blue'], {}, film30)],
   launchCap: (() => { const big = Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1); const last = (1 - A.E.launchIn(13 / 14)) * big * 120; return { big, last, small: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 30, 1), fade: Wo.exitDistanceEm('launchFade', A.E.buildIn, 14, 120, 1), given: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1, 2) }; })(),
   trackFit: Me.solveTracking([{ w0: 100, n: 5, size: 80, target: 124 }, { w0: 200, n: 6, size: 80, target: 228.8 }]),
@@ -362,10 +359,8 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   result(JSON.stringify(P.pop.map((x) => +x.toFixed(3))) === JSON.stringify([0.62, 0.62, 0.81, 1, 1]), 'popScale: 62 % to full in 2 f, never over', JSON.stringify(P.pop));
   result(P.first.from === 2.67 && P.first.dur60 === 24 && P.first.defocus === 6, 'OVERSIZE_FIRST: x2.67 over 24 f, 6 px defocus');
 }
-// 20. surfaces
+// 20. rims
 {
-  const g = P.glassCss;
-  result(g.backdropFilter === 'blur(20.00px) saturate(1.2)' && g.WebkitBackdropFilter === g.backdropFilter && /#202020 14\.0%/.test(g.background), 'backdropGlass: backdrop-filter with its twin, the blur x u, a 14 % veil', JSON.stringify(g));
   const [r0, r1, r2] = P.rim;
   result(r0 === 'conic-gradient(from 0.00deg, red, blue, red)' && r1 === 'conic-gradient(from 60.00deg, red, blue, red)' && r2 === r1, 'spinRim: still before its cue, 3 deg a 60 fps frame after, the same turn at 30 fps, the stops closed', `${r1} | ${r2}`);
 }
