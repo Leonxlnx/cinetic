@@ -2,11 +2,11 @@ import React from 'react';
 import { AbsoluteFill, getStaticFiles, Html5Audio, Sequence, staticFile } from 'remotion';
 import { Brand } from './acts/Brand';
 import { End } from './acts/End';
+import { Field } from './acts/Field';
+import { Label } from './acts/Label';
 import { Open } from './acts/Open';
-import { Rivers } from './acts/Rivers';
 import { PAGE } from './acts/stage';
 import { Taglines } from './acts/Taglines';
-import { Wall } from './acts/Wall';
 import { Audit } from './lib/Audit';
 import { FontGate } from './lib/FontGate';
 import type { SafeSpec } from './lib/safe';
@@ -19,7 +19,7 @@ export const SOUNDTRACK = 'audio/soundtrack.wav';
 export type FilmProps = { audit?: boolean; safe?: SafeSpec };
 
 /** The act component for each ACT entry, in film order. */
-export const ACTS: Record<ActName, React.FC> = { open: Open, brand: Brand, wall: Wall, rivers: Rivers, taglines: Taglines, end: End };
+export const ACTS: Record<ActName, React.FC> = { open: Open, brand: Brand, field: Field, label: Label, taglines: Taglines, end: End };
 export const actComponent = (name: string): React.FC => ACTS[name as ActName];
 
 // The film: one Sequence per act, handing off on exact frames (every act line hidden inside a motion).

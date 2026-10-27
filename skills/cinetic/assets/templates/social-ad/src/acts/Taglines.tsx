@@ -1,42 +1,91 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { U } from '../brand/tokens';
-import { Words } from '../fx/Words';
-import { lmix, prog } from '../lib/anim';
-import { Photo, shadeRgba } from '../kit';
-import { ACT, chainOf, CUE, f60, f60x, H, POP_GAP, W } from '../timeline';
-import { adSize, adStyle, circOut, pictureSrc, quadIn, SHOT, useAbs } from './stage';
+import { C, SAFE, U } from '../brand/tokens';
+import { LitGround } from '../fx/Grounds';
+import { Lit } from '../fx/Lit';
+import { AccentClaim, inkOn } from '../fx/TypeClaim';
+import { TypeLine } from '../fx/TypePresets';
+import { settleLeft } from '../fx/Words';
+import { DenseScreen } from '../kit';
+import { E, mix, prog } from '../lib/anim';
+import { CAM3D } from '../lib/camera';
+import { creep } from '../lib/handoff';
+import { DEAL } from '../deal';
+import { ACT, chainOf, CUE, f60x, FPS, H, W } from '../timeline';
+import { LightEvent, lineSize, lineWidth, PAGE, quadIn, SHOT, SLATE, useAbs, WORLD } from './stage';
 
-// TAGLINES - the hero picture full bleed on one long circ-out pull-back (x1.183 to 1 over about 2.5 s) with a drift on
-// the same curve, then a quad-in push of 3.7 % over the last 24 f into the cut. Two short taglines take turns over it,
-// each popping on word by word and leaving up before the next arrives.
+// TAGLINES - two short imperatives taking turns, then a push into the cut. The shot opens on the label's rightward
+// rush, carried and decaying. The taglines slot's device (src/deal.ts):
+//   panel  the product's own dense screen as a lit, tilted panel on the slate (fx/Lit: rim on the key side, its
+//          shadow on the ground), crossing the frame's right edge; the film's one 3D turn: the camera swings round it
+//          (CAM3D.house degrees on one axis over 108 f, E.strongInOut) and creeps on. The imperatives sit flush left
+//          beside it: the first drops into place word by word (fx/TypePresets fall) and leaves dropping off right to
+//          left; the second falls in and is cut on the push
+//   claim  the accent sweeps in from the left on the rush (E.glideOut, 24 f: the film's one colour event) and the
+//          imperatives are set as the claim on it (fx/TypeClaim: cap 16 % of the frame or more, flush left at 3 %,
+//          -0.04 em, semibold, word by word on the crisp entry); the first leaves up at speed before the second
 
-export const PULL = { from: 1.183, frames: 154, drift: [146, 82] as [number, number], push: 0.037 } as const;
+/** The turn (60 fps frames) and the panel at rest (px at 1080p). */
+export const TURN = { frames: 108, from: -8 - CAM3D.house, to: -8 } as const;
+const PANEL = { w: 1100, h: 660, x: 1430, y: 560 } as const;
 
 export const Taglines: React.FC = () => {
   const F = useAbs('taglines');
-  const t = circOut(prog(F, ACT.taglines.from, ACT.taglines.from + f60x(PULL.frames), (x) => x));
-  const push = 1 + PULL.push * quadIn(prog(F, CUE.push, ACT.end.from, (x) => x));
-  const k = lmix(PULL.from, 1, t) * push;
-  const dx = PULL.drift[0] * U * (1 - t);
-  const dy = PULL.drift[1] * U * (1 - t);
+  const cut = ACT.end.from;
   const tags = chainOf('tag');
+  // a creep all act long (the holds never freeze), then a push into the cut
+  const push = creep(F, ACT.taglines.from, { pctPerSec: 0.015 }, FPS) * (1 + 0.05 * prog(F, CUE.push, cut, quadIn));
+  const carry = 220 * U * settleLeft(F - ACT.taglines.from, f60x(32)); // the rush, carried and decaying (moving right)
+  if (DEAL.taglines === 'claim') {
+    const sweep = prog(F, ACT.taglines.from - 1, ACT.taglines.from + f60x(24), E.glideOut);
+    const ink = inkOn(C.accent);
+    return (
+      <AbsoluteFill style={{ background: PAGE.ground, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, background: C.accent, transform: `translate3d(${(-W * (1 - sweep)).toFixed(2)}px, 0, 0)` }} />
+        <div style={{ position: 'absolute', inset: 0, transformOrigin: `${(W * 0.03).toFixed(1)}px 50%`, transform: `scale(${push.toFixed(5)})` }}>
+          {tags.map((c, i) => {
+            const leave = i === 0 ? prog(F, c.out, c.out + f60x(16), E.launchIn) : 0;
+            if (F < c.in - 1 || leave >= 1) return null;
+            return (
+              <div key={c.id} style={{ position: 'absolute', inset: 0, transform: `translate3d(${(i === 0 ? carry * 0.4 : 0).toFixed(2)}px, ${(-0.75 * H * leave).toFixed(2)}px, 0)` }}>
+                <AccentClaim text={c.text} at={c.in - 1} frame={F} flood={false} ground={C.accent} color={ink} id={c.id} creep={0.02} />
+              </div>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    );
+  }
+  const p = prog(F, ACT.taglines.from - f60x(10), ACT.taglines.from - f60x(10) + f60x(TURN.frames), E.strongInOut);
+  const creepT = Math.max(0, F - ACT.taglines.from - f60x(TURN.frames)) / FPS;
+  const yaw = mix(TURN.from, TURN.to, p) + 0.5 * creepT;
+  const w = PANEL.w * U;
+  const h = PANEL.h * U;
   return (
     <AbsoluteFill style={{ background: SHOT.ground, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate3d(${dx.toFixed(2)}px, ${dy.toFixed(2)}px, 0) scale(${k.toFixed(5)})` }}>
-        <Photo theme={SHOT} w={W} h={H} seed={23} src={pictureSrc('hero')} />
+      <LitGround frame={F} spec={SLATE} cam={{ base: { ax: W / 2, ay: H / 2, sx: W / 2, sy: H / 2, k: 1 }, shot: { ax: W / 2, ay: H / 2, sx: W / 2 + carry * 0.25, sy: H / 2, k: push } }} />
+      <LightEvent F={F} act="taglines" dark />
+      <div style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', transform: `scale(${push.toFixed(5)})` }}>
+        <Lit frame={F} x={PANEL.x * U + carry} y={PANEL.y * U} w={w} h={h} r={22 * U} tilt={{ x: 9, y: yaw }} ground={SHOT.ground} id="panel">
+          <DenseScreen frame={F} theme={PAGE} world={WORLD} layout="table" w={w} h={h} scale={w / 1600} focus={null} lift={0} drawAt={ACT.taglines.from} />
+        </Lit>
+        {/* the imperatives on their own layer in front of the panel's 3D space */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 5, transform: 'translateZ(200px)' }}>
+        {tags.map((c, i) => {
+          const size = lineSize(c.text, 0.4);
+          return (
+            <TypeLine
+              key={c.id}
+              spec={{ preset: 'fall', text: c.text, at: c.in - 1, out: i === 0 ? c.out : undefined, exit: 'drop', colors: { ink: SHOT.text, accent: PAGE.accent, mute: SHOT.mute }, id: c.id }}
+              frame={F}
+              size={size}
+              x={SAFE.x + lineWidth(c.text, size) / 2 + carry * 0.6}
+              y={H / 2}
+            />
+          );
+        })}
+        </div>
       </div>
-      <AbsoluteFill style={{ background: `radial-gradient(ellipse 55% 35% at 50% 50%, ${shadeRgba(SHOT, 0.35)}, ${shadeRgba(SHOT, 0)})` }} />
-      {tags.map((c) => {
-        if (F < c.in - 1 || F > c.out + f60x(16)) return null;
-        const size = adSize(c.text, 0.5) * 1.15;
-        const n = c.text.trim().split(/\s+/).length;
-        return (
-          <div key={c.id} style={{ position: 'absolute', left: 0, top: H / 2 - (size * 1.1) / 2, width: W, display: 'flex', justifyContent: 'center' }}>
-            <Words id={c.id} text={c.text} frame={F} start={c.in - 1} starts={Array.from({ length: n }, (_, i) => c.in - 1 + f60(POP_GAP * i))} size={size} dur={f60x(3)} rise={0.12} riseUnit="em" out={c.out} exit="launchFade" exitDir="up" style={adStyle(size, SHOT.text)} />
-          </div>
-        );
-      })}
     </AbsoluteFill>
   );
 };

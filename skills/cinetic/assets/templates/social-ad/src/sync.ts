@@ -1,11 +1,13 @@
 // The sound events of the ad, computed from the picture code. scripts/export-cues.ts calls the default export and
 // writes out/cues.json; scripts/audio/score.py voices each event with the film's kit on its exact frame. The track
-// drives the ad; the effects mark what lands: each word of the opener, the pile (thinned), the mark's spin and the
-// name, the rise, the pill, the rivers rushing out, the swap, each tagline, the lockup.
+// drives the ad and carries its cuts; the effects mark what lands, few enough to survive the plan's restraint (10 per
+// 10 s): the name landing and the opener whole, the stack, the mark and its name, the rise, the field and the pill, the
+// label and its swap, the rush, each tagline, ONE element at the lockup. Each dealt device brings its own sounds
+// (src/deal.ts), so ads from this template do not sound alike.
 import { E } from './lib/anim';
 import { peak } from './lib/sync';
-import { ACT, buildStarts, copy, CUE, type Declares, DEALS, f60, type Salience, TOTAL } from './timeline';
-import { AD } from './ad';
+import { DEAL } from './deal';
+import { ACT, copy, CUE, type Declares, DEALS, f60, type Salience, TOTAL } from './timeline';
 
 export type Kind =
   | 'tick' | 'tock' | 'hit' | 'land' | 'pop' | 'whoosh' | 'riser'
@@ -36,35 +38,35 @@ const across = (at: number, dur: number, weight: number, pan: number, id: string
   return { f: apex, kind: 'whoosh', weight, pan, dur: Math.max(f60(18), dur), apexFrac: (apex - from) / (to - from), id };
 };
 
-/** What the primitives the acts use declare on purpose: the timeline's SEAMS cover them. */
+/** What the primitives the acts use declare on purpose: the timeline's SEAMS and COLOUR cover them. */
 export const declares = (): (Declares & { id?: string })[] => [];
 
 export default function cues(): SoundEvent[] {
   const ev: SoundEvent[] = [];
-  // open: each word of the opener lands; the pile is dealt (every other card)
-  buildStarts(CUE.what, AD.lines.what.trim().split(/\s+/).length).forEach((f, i) => ev.push({ f, kind: i ? 'tick' : 'drop', weight: i ? 0.55 : 0.9, pan: -0.2 + 0.12 * i, id: `word-${i + 1}` }));
-  ev.push({ f: CUE.pile, kind: 'hit', weight: 0.7, pan: 0, id: 'pile' });
-  DEALS.forEach((f, i) => {
-    if (i % 2 === 1) ev.push({ f: f + f60(2), kind: 'snap', weight: 0.45, pan: 0.15, id: `deal-${i}` });
-  });
-  // brand: the cut, the spin, the name, the rise into the wall
-  ev.push({ f: ACT.brand.from, kind: 'hit', weight: 0.8, pan: 0, id: 'cut-to-the-mark' });
-  ev.push({ f: CUE.mark + f60(6), kind: 'whoosh', weight: 0.7, pan: 0, dur: f60(40), apexFrac: 0.2, id: 'spin-in' });
+  const what = copy('what');
+  // open: the opener (its device's landing), whole; the stack (dealt or fanned)
+  ev.push(DEAL.open === 'land' ? { f: what.in + f60(28), kind: 'drop', weight: 0.85, pan: 0, id: 'name-lands' } : { f: what.in + f60(12), kind: 'tock', weight: 0.6, pan: -0.15, id: 'first-word-lands' });
+  ev.push({ f: what.resolved, kind: 'text', weight: 0.6, pan: 0.1, id: 'opener-whole' });
+  ev.push({ f: CUE.pile, kind: 'hit', weight: 0.7, pan: 0, id: 'the-stack' });
+  if (DEAL.stack === 'pile') ev.push({ f: DEALS[3] + f60(2), kind: 'snap', weight: 0.45, pan: 0.15, id: 'dealt' });
+  else ev.push({ f: CUE.deal + f60(14), kind: 'whoosh', weight: 0.45, pan: -0.2, dur: f60(22), apexFrac: 0.6, id: 'fanned' });
+  // brand: the mark (spun or the tile grown), its name, the rise into the field
+  ev.push(DEAL.brand === 'spin' ? { f: CUE.mark + f60(6), kind: 'whoosh', weight: 0.7, pan: 0, dur: f60(40), apexFrac: 0.2, id: 'spin-in' } : { f: ACT.brand.from + f60(2), kind: 'swell', weight: 0.65, pan: 0, dur: f60(30), id: 'the-tile-grows' });
   ev.push({ f: copy('brandName').in, kind: 'pop', weight: 0.7, pan: 0.15, id: 'name' });
-  ev.push(across(ACT.wall.from, f60(24), 0.7, 0, 'rise-into-the-wall'));
-  // wall: the pill; the wall leaves up
-  ev.push({ f: copy('find').resolved - f60(4), kind: 'pop', weight: 0.8, pan: 0.1, id: 'pill' });
-  ev.push(across(ACT.rivers.from, f60(24), 0.6, 0, 'wall-leaves'));
-  // rivers: the label, the swap, the rush out
-  ev.push({ f: copy('plan').resolved, kind: 'text', weight: 0.6, pan: 0, id: 'label' });
-  ev.push({ f: CUE.swap, kind: 'snap', weight: 0.8, pan: 0, id: 'swap' });
-  ev.push({ f: CUE.rushOut + f60(10), kind: 'riser', weight: 0.7, pan: 0, dur: ACT.taglines.from - CUE.rushOut - f60(10), apexFrac: 0.95, id: 'rush-out' });
-  // taglines: the hero, each tagline
-  ev.push({ f: ACT.taglines.from, kind: 'swell', weight: 0.7, pan: 0, dur: f60(48), id: 'hero' });
+  ev.push(across(ACT.field.from, f60(24), 0.6, 0, 'rise-into-the-field'));
+  // field: the content arriving (one sound), the pill
+  ev.push({ f: ACT.field.from + f60(8), kind: DEAL.field === 'ring' ? 'tock' : 'pop', weight: 0.45, pan: -0.1, id: 'the-field' });
+  ev.push({ f: copy('find').in + f60(8 * (copy('find').text.trim().split(/\s+/).length - 1)) + f60(2), kind: 'pop', weight: 0.8, pan: 0.1, id: 'pill' });
+  // label: the chip, the swap, the rush out
+  ev.push({ f: copy('plan').in, kind: 'tick', weight: 0.5, pan: 0, id: 'label' });
+  ev.push({ f: CUE.swap + f60(4), kind: 'snap', weight: 0.75, pan: 0, id: 'swap' });
+  ev.push({ f: CUE.rushOut + f60(6), kind: 'riser', weight: 0.65, pan: 0, dur: ACT.taglines.from - CUE.rushOut - f60(6), apexFrac: 0.95, id: 'rush-out' });
+  // taglines: the accent sweeping in (claim), each tagline whole
+  if (DEAL.taglines === 'claim') ev.push({ f: ACT.taglines.from + f60(2), kind: 'swell', weight: 0.6, pan: -0.3, dur: f60(30), id: 'the-accent' });
   ev.push({ f: copy('tag.1').resolved, kind: 'text', weight: 0.7, pan: -0.1, id: 'tagline-1' });
   ev.push({ f: copy('tag.2').resolved, kind: 'text', weight: 0.7, pan: 0.1, id: 'tagline-2' });
-  // end: the spin, the lockup
-  ev.push({ f: CUE.endMark + f60(6), kind: 'whoosh', weight: 0.6, pan: 0, dur: f60(40), apexFrac: 0.2, id: 'end-spin' });
+  // end: the mark (spun or risen), the lockup as ONE clean element
+  ev.push(DEAL.end === 'spin' ? { f: CUE.endMark + f60(6), kind: 'whoosh', weight: 0.55, pan: 0, dur: f60(40), apexFrac: 0.2, id: 'end-spin' } : { f: CUE.endMark + f60(8), kind: 'tock', weight: 0.55, pan: -0.1, id: 'end-rise' });
   ev.push({ f: CUE.lockup, kind: 'hit', weight: 1, pan: 0, id: 'lockup' });
 
   for (const e of ev) {

@@ -1,25 +1,29 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { FONT, TYPE, U } from '../brand/tokens';
-import { SpinBlur } from '../fx/Defocus';
+import { Defocus, SpinBlur } from '../fx/Defocus';
 import { SPIN_IN, spinInState } from '../fx/Wordmark';
-import { lmix, prog } from '../lib/anim';
+import { clamp, E, lmix, mix, prog } from '../lib/anim';
 import { useFilm } from '../lib/film';
 import { measureTracked } from '../lib/measure';
-import { ACT, copy, CUE, H, W } from '../timeline';
-import { Photo } from '../kit';
-import { circOut, MarkAt, PAGE, pictureSrc, quadIn, useAbs } from './stage';
+import { DEAL } from '../deal';
+import { ACT, copy, CUE, f60x, H, W } from '../timeline';
+import { CARD, StackPicture, stackPush } from './Open';
+import { ActGround, Item, MarkAt, PAGE, quadIn, useAbs } from './stage';
 
-// BRAND - the mark on a picture. The plate pulls back from x1.13 on a circ-out across the act (it never drifts); the
-// mark spins in from x2.06 over more than a turn, its rotation settling before its scale (fx/Wordmark spinInState,
-// smeared by fx/Defocus SpinBlur while it turns fast), then steps aside while the name slides out from behind it.
-// On the last beat the lockup and the plate rise on a quad-in: the cut into the wall carries that upward speed.
+// BRAND - the mark. The brand slot's device (src/deal.ts):
+//   spin  the stack carries on receding behind it into the far plane (x0.6, a 6 px defocus, E.glideOut over 40 f:
+//         the seam is the stack's own scale); the mark spins in from x2.06 over more than a turn, its rotation
+//         settling before its scale (fx/Wordmark spinInState, smeared by fx/Defocus SpinBlur only while it turns
+//         fast), then steps aside while the name slides out from behind it
+//   tile  the stack's hero tile carries across the cut and grows into the app's own tile (E.glideOut, 30 f), its
+//         content giving way to the accent and the mark in 14 f; it steps aside and the name slides out from behind it
+// On the last beat the lockup rises on a quad-in: the cut into the field carries that upward speed.
 
-export const LOCK = { mark: 190, name: 150, gap: 0.32 } as const;
+export const LOCK = { mark: 190, tile: 240, name: 150, gap: 0.32 } as const;
 
 /** The lockup's geometry: the mark's centre at rest and the name's left edge, for a name at the display weight. */
-export const lockupGeometry = (name: string, cy: number) => {
-  const mark = LOCK.mark * U;
+export const lockupGeometry = (name: string, cy: number, mark = LOCK.mark * U) => {
   const size = LOCK.name * U;
   const gap = size * LOCK.gap;
   const nameW = measureTracked(name, size, TYPE.display.weight, TYPE.display.track, FONT.text, { trailing: false });
@@ -27,21 +31,23 @@ export const lockupGeometry = (name: string, cy: number) => {
   return { mark, size, gap, nameW, cx: left + mark / 2, cy, nameLeft: left + mark + gap, room: -(gap + nameW) / 2 };
 };
 
-/** The mark spinning in, aside, and the name sliding out from behind it (used again by the end card). */
+/** The name sliding out from behind the mark (clipped at the mark's centre), at the display role. */
+const SlidingName: React.FC<{ name: string; id: string; x: number; cy: number; size: number; hide: number; opacity: number; color: string }> = ({ name, id, x, cy, size, hide, opacity, color }) => (
+  <div data-text={id} style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${x.toFixed(2)}px, ${(cy - size * 0.56).toFixed(2)}px, 0)`, clipPath: `inset(-20% -5% -30% ${Math.max(0, hide).toFixed(2)}px)`, opacity, fontFamily: FONT.text, fontSize: size, fontWeight: TYPE.display.weight, letterSpacing: `${TYPE.display.track}em`, lineHeight: 1, whiteSpace: 'pre', color }}>
+    {name}
+  </div>
+);
+
+/** The mark spinning in, aside, and the name sliding out from behind it (the end card's spin uses it too). */
 export const SpunLockup: React.FC<{ F: number; at: number; name: string; id: string; cy: number; color: string }> = ({ F, at, name, id, cy, color }) => {
   const g = lockupGeometry(name, cy);
   const s = spinInState(F, { at, room: g.room / U }, useFilm());
   if (!s.shown) return null;
   const mx = W / 2 + s.x;
   const nameX = g.nameLeft - (SPIN_IN.slide * U - s.name.x);
-  const hide = Math.max(0, mx - nameX); // the part of the name still behind the mark's centre
   return (
     <>
-      {s.name.shown && (
-        <div data-text={id} style={{ position: 'absolute', left: nameX, top: cy - g.size * 0.56, clipPath: `inset(-20% -5% -30% ${hide.toFixed(2)}px)`, opacity: s.name.opacity, fontFamily: FONT.text, fontSize: g.size, fontWeight: TYPE.display.weight, letterSpacing: `${TYPE.display.track}em`, lineHeight: 1, whiteSpace: 'pre', color }}>
-          {name}
-        </div>
-      )}
+      {s.name.shown && <SlidingName name={name} id={id} x={nameX} cy={cy} size={g.size} hide={mx - nameX} opacity={s.name.opacity} color={color} />}
       <SpinBlur omega={s.omega} cx={mx} cy={cy}>
         <MarkAt x={mx} y={cy} size={g.mark} s={s.scale} rot={s.rot} />
       </SpinBlur>
@@ -49,18 +55,58 @@ export const SpunLockup: React.FC<{ F: number; at: number; name: string; id: str
   );
 };
 
+/** The hero tile becoming the app's tile with the mark on it, stepping aside, the name sliding out. */
+const TileLockup: React.FC<{ F: number; name: string; id: string; cy: number }> = ({ F, name, id, cy }) => {
+  const film = useFilm();
+  const tile = LOCK.tile * U;
+  const g = lockupGeometry(name, cy, tile);
+  const k0 = stackPush(ACT.brand.from);
+  const grow = prog(F, ACT.brand.from, ACT.brand.from + f60x(30), E.glideOut);
+  const face = prog(F, ACT.brand.from + f60x(4), ACT.brand.from + f60x(18), E.stdInOut);
+  const s = spinInState(F, { at: ACT.brand.from + f60x(10), room: g.room / U, turns: 0, from: 1 }, film);
+  const w = lmix(CARD.w * k0, tile, grow);
+  const h = lmix(CARD.h * k0, tile, grow);
+  const r = mix(Math.min(CARD.w, CARD.h) * 0.13 * k0, tile * 0.23, grow);
+  const mx = W / 2 + s.x;
+  const nameX = g.nameLeft - (SPIN_IN.slide * U - s.name.x);
+  return (
+    <>
+      {s.name.shown && <SlidingName name={name} id={id} x={nameX} cy={cy} size={g.size} hide={mx - nameX} opacity={s.name.opacity} color={PAGE.text} />}
+      <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transform: `translate3d(${(mx - w / 2).toFixed(2)}px, ${(cy - h / 2).toFixed(2)}px, 0)`, borderRadius: r, overflow: 'hidden', boxShadow: `0 ${(18 * U).toFixed(1)}px ${(40 * U).toFixed(1)}px rgba(0,0,0,${(0.16 * (1 - 0.4 * grow)).toFixed(3)})` }}>
+        {face < 1 && (
+          <div style={{ position: 'absolute', left: 0, top: 0, transformOrigin: '0 0', transform: `scale(${(w / CARD.w).toFixed(5)}, ${(h / CARD.h).toFixed(5)})` }}>
+            <Item i={0} w={CARD.w} h={CARD.h} lift={0} />
+          </div>
+        )}
+        <div style={{ position: 'absolute', inset: 0, background: PAGE.accent, opacity: face }}>
+          <MarkAt x={w / 2} y={h / 2} size={tile * 0.56} fill={PAGE.accentInk} s={mix(0.8, 1, face)} />
+        </div>
+      </div>
+    </>
+  );
+};
+
 export const Brand: React.FC = () => {
   const F = useAbs('brand');
   const nm = copy('brandName');
-  const pull = lmix(1.13, 1, circOut(prog(F, ACT.brand.from, ACT.wall.from, (t) => t)));
-  const rise = -0.42 * H * quadIn(prog(F, CUE.rise, ACT.wall.from, (t) => t));
+  const rise = -0.42 * H * quadIn(prog(F, CUE.rise, ACT.field.from, (t) => t));
+  const recede = prog(F, ACT.brand.from, ACT.brand.from + f60x(40), E.glideOut);
+  const k = lmix(stackPush(ACT.brand.from), 0.6, recede) * (1 - 0.01 * Math.max(0, F - ACT.brand.from - f60x(40)) / 60);
   return (
     <AbsoluteFill style={{ background: PAGE.ground, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate3d(0, ${rise.toFixed(2)}px, 0) scale(${pull.toFixed(5)})` }}>
-        <Photo theme={PAGE} w={W} h={H} seed={11} src={pictureSrc('plate')} />
-      </div>
+      <ActGround F={F} act="brand" />
+      {DEAL.brand === 'spin' && (
+        // the stack, as the open left it, carried on into the far plane: smaller, softer, rising with the lockup at its weight
+        <div style={{ position: 'absolute', inset: 0, opacity: clamp(1 - 0.25 * recede), transformOrigin: '50% 50%', transform: `translate3d(0, ${(rise * 0.4).toFixed(2)}px, 0) scale(${k.toFixed(5)})` }}>
+          <Defocus sigma={6 * U * recede}>
+            <div style={{ position: 'absolute', inset: 0 }}>
+              <StackPicture F={ACT.brand.from - 1} />
+            </div>
+          </Defocus>
+        </div>
+      )}
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate3d(0, ${rise.toFixed(2)}px, 0)` }}>
-        <SpunLockup F={F} at={CUE.mark} name={nm.text} id="brandName" cy={H / 2} color={PAGE.text} />
+        {DEAL.brand === 'spin' ? <SpunLockup F={F} at={CUE.mark} name={nm.text} id="brandName" cy={H / 2} color={PAGE.text} /> : <TileLockup F={F} name={nm.text} id="brandName" cy={H / 2} />}
       </div>
     </AbsoluteFill>
   );

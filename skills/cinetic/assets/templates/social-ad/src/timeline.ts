@@ -1,14 +1,13 @@
-// The single source of truth for time, for a 15 s social ad on a white page: the opener built word by word (its
-// first word, the name, landing oversized and defocused; each new word landing in the accent at the line's end while
-// the line re-centres), the words spreading through the cut around a pile of pictures dealt on a hero card, the mark
-// spinning in over a picture that pulls back, a wall of pictures settling tile by tile round the claim, two rivers of
-// pictures under a label that recedes and swaps its last word, the taglines over the hero picture, the lockup.
-// Picture (src/acts), sound (src/sync.ts -> out/cues.json) and QA (scripts/grid-check.ts) all import this file. The
-// facts live in src/ad.ts. Think in beats, never in seconds. Keep it free of React and CSS imports: Node scripts load
-// it directly.
+// The single source of truth for time, for a 15 s social ad: the opener said in one confident move onto a stack of
+// what the product holds, the mark, the claim inside a field of the product's own content, a label that swaps its
+// last word over moving content, two imperatives, the lockup. The devices each slot plays are dealt per film
+// (src/deal.ts); the structure and the timing below hold for every deal. Picture (src/acts), sound (src/sync.ts ->
+// out/cues.json) and QA (scripts/grid-check.ts) all import this file. The facts live in src/ad.ts. Think in beats,
+// never in seconds. Keep it free of React and CSS imports: Node scripts load it directly.
 import { holdFor, PACE, readingWindows, wordCount, type PaceName } from './lib/pace';
 import { bar, MUSIC } from './music';
 import { AD } from './ad';
+import { DEAL } from './deal';
 
 export { PACE } from './lib/pace'; // grid-check checks COPY against the film's own pace numbers
 /**
@@ -17,6 +16,7 @@ export { PACE } from './lib/pace'; // grid-check checks COPY against the film's 
  * music's bars. An ad is cut to a driving track: choose it first.
  */
 export { MUSIC } from './music';
+export { DEAL } from './deal';
 
 export const FPS = 60;
 /**
@@ -33,6 +33,7 @@ export const W = 1920;
 export const H = 1080;
 /** The film's pace (src/lib/pace.ts): the crisp launch tempo. */
 export const PACE_NAME: PaceName = 'crisp';
+const pace = PACE[PACE_NAME];
 
 /** Frames per beat (a whole number without a track: 60 fps -> 90, 100, 120, 144, 150 BPM). */
 export const BEAT = (60 / BPM) * FPS;
@@ -50,83 +51,204 @@ export const bt = (x: number) => {
   const n = Math.floor(q / 4);
   return b(1 + Math.floor(n / 4), n % 4, q % 4);
 };
+/** The latest 16th-grid frame at or before `f` (never before `floor`). */
+export const onGrid = (f: number, floor = 0) => {
+  let lo = 0;
+  let hi = 4 * 200;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    if (bt(mid / 4) <= f) lo = mid;
+    else hi = mid - 1;
+  }
+  return Math.max(floor, bt(lo / 4));
+};
+/** The earliest 16th-grid frame at or after `f`. */
+export const onGridUp = (f: number) => {
+  const g = onGrid(f);
+  if (g >= f) return g;
+  let x = 0;
+  while (bt(x / 4) < f && x < 4 * 200) x++;
+  return bt(x / 4);
+};
 
 /** After the last bar the picture holds while the audio decays to digital silence. */
 export const TAIL = FPS;
 
-/**
- * Where each act starts, in beats (9 bars at 150 BPM: 15.4 s with the tail). Every act line sits on a bar line, so with
- * a track in each one lands on a downbeat (grid-check structural-on-music): the 2-bar open (the opener, then the
- * pile), a 1-bar mark, a 1-bar wall, the 2-bar rivers, the 2-bar taglines and the 1-bar lockup. Retime in whole bars.
- */
-export const BEATS = { open: 0, brand: 8, wall: 12, rivers: 16, taglines: 24, end: 32, last: 36 } as const;
-
-// Acts: contiguous, [from, from + dur). Each act is its own composition in Root.tsx (in this order). The first act
-// starts on frame 0 even when the track's first downbeat comes later (a pickup): its own cues start on that downbeat.
-const order = ['open', 'brand', 'wall', 'rivers', 'taglines', 'end'] as const;
+const order = ['open', 'brand', 'field', 'label', 'taglines', 'end'] as const;
 export type ActName = (typeof order)[number];
-export const ACT = Object.fromEntries(
-  order.map((k, i) => {
-    const from = i === 0 ? 0 : bt(BEATS[k]);
-    const to = i + 1 < order.length ? bt(BEATS[order[i + 1]]) : bt(BEATS.last) + TAIL;
-    return [k, { from, dur: to - from }];
-  }),
-) as Record<ActName, { from: number; dur: number }>;
+const L = AD.lines;
+const w = (s: string) => wordCount(s);
 
-export const TOTAL = bt(BEATS.last) + TAIL;
-
-/** The opener's word gaps (60 fps frames): the first word's settle, then quicker. */
-export const BUILD = [18, 12, 12, 10] as const;
-/** The onset of each of `n` words from `start` on the build gaps. */
-export const buildStarts = (start: number, n: number): number[] => {
-  const out = [start];
-  for (let i = 1; i < n; i++) out.push(out[i - 1] + f60(BUILD[Math.min(i - 1, BUILD.length - 1)]));
-  return out;
-};
-/** Words that pop on at full ink, this far apart (60 fps frames): the claim, the label, the taglines (8: each word read). */
-export const POP_GAP = 8;
-/** The pile: a card dealt every DEAL frames (60 fps), this many. */
-export const DEAL = 6;
+/**
+ * When a line set with a confident preset (fx/TypePresets TypeLine, its house numbers in TYPE_PRESETS) is whole, in
+ * 60 fps frames from its first frame: land (the leading words in 34 f, then each next word 12 f apart, solid 6 f after
+ * it cuts on), build (14, 10, 10 ... f apart with a 28 f breath before the last, each ink 18 f after it cuts on),
+ * glide (words resolving 3.5 f apart, the last 2.5x slower, while the line slides in), mask (words
+ * 8 f apart, each head 8 f, the last 2.5x slower), fall (words 9 f apart, each dropping in 12 f), crisp (7 f apart,
+ * read 16 f after the last starts).
+ */
+export const HERO_END = {
+  land: (n: number, lead = 1) => (lead >= n ? 34 : 34 + 12 * (n - 1 - lead) + 6),
+  build: (n: number) => (n < 2 ? 0 : n === 2 ? 14 : 14 + 10 * (n - 3) + 28) + 18,
+  glide: (n: number) => 3.5 * (n - 1) + 20,
+  mask: (n: number) => 8 * (n - 1) + (n > 1 ? 20 : 8),
+  fall: (n: number) => 9 * (n - 1) + 12,
+  crisp: (n: number) => 7 * (n - 1) + 16,
+} as const;
+/** The spread exit (fx/TypePresets exit spread, 26 f at 60 fps): the cut takes it 18 f in, its words still tracking apart at speed. */
+export const SPREAD = 18;
+/** The pile: a card dealt every DEAL_EVERY frames (60 fps), this many. */
+export const DEAL_EVERY = 6;
 export const PILE_CARDS = 7;
+/** The label's last word rolls to its new word over SWAP frames (60 fps): a glide, never a pop. */
+export const SWAP = 16;
 
-// Named sync points (absolute frames), all on the 16th grid. Picture code reads these; src/sync.ts turns them into
-// sound events. Salience below says what each asks of the eye.
-export const CUE: Record<string, number> = {
-  // open: the opener built word by word; its words spread apart through the cut onto the pile
-  what: bt(0),
-  spread: bt(4.75),
-  pile: bt(5),
-  deal: bt(5.25),
-  // brand: the mark spins in over a picture pulling back, the name slides out of it; the lockup and plate rise into the cut
-  brand: bt(8),
-  mark: bt(8.25),
-  rise: bt(11),
-  // wall: the pictures settle tile by tile, the claim in the gap, its last word on the accent pill; the wall leaves up
-  wall: bt(12),
-  find: bt(12),
-  wallOut: bt(15.75),
-  // rivers: two streams of pictures, a label receding over them, its last word swapping; the streams rush out
-  rivers: bt(16),
-  plan: bt(16.5),
-  swap: bt(20),
-  rushOut: bt(22.5),
-  // taglines: the hero picture pulling back, two taglines, a push into the cut
-  taglines: bt(24),
-  tag1: bt(24.25),
-  tagOut: bt(27),
-  tagGone: bt(27.75),
-  tag2: bt(28.5),
-  push: bt(31),
-  // end: the mark spins in on white, the name slides out, the close under them; the lockup holds
-  end: bt(32),
-  endMark: bt(32),
-  close: bt(35.5),
-  lockup: bt(35.5),
-  last: bt(36),
+export type Copy = {
+  id: string;
+  text: string; // exactly what is on screen (\n separates lines)
+  in: number; // first frame any of it is visible
+  resolved: number; // first frame it is fully readable
+  out: number; // first frame it starts to leave (TOTAL if it stays)
+  kind?: 'copy' | 'ui' | 'name'; // 'ui': a string the product shows, not budgeted; 'name': the name, not a line of the script
+  chain?: string;
+  mode?: 'build' | 'replace';
+  reveal?: 'focus';
+  swap?: string | boolean;
 };
 
-/** The pile's deals: one card every DEAL frames from the deal cue. */
-export const DEALS = Array.from({ length: PILE_CARDS }, (_, i) => CUE.deal + f60(DEAL * i));
+/** A line on a confident preset: resolved when the preset has set it whole. */
+const set = (id: string, preset: keyof typeof HERO_END, text: string, inF: number, out: number, o: Partial<Copy> = {}): Copy => ({ id, text, in: inF, resolved: inF + f60(HERO_END[preset](w(text))), out, ...o });
+/** The read of a line of `n` words (film frames). */
+const hold = (n: number) => f60(holdFor(n, pace));
+
+type Plan = Record<ActName, number>;
+/**
+ * The house plan: 9 bars (a 2-bar open, a 1-bar mark, a 1-bar field, the 2-bar label, the 2-bar taglines, the 1-bar
+ * lockup). Every exit cue waits for its line's read, so a longer line or a faster track grows the act that needs it by
+ * a bar: at 150 BPM the field and the lockup take 2 (17 s with the tail; a 3-word opener keeps the open at 2), at
+ * 104-120 BPM the house holds (18-21 s). Inside an act the beats spread to fill it, so nothing waits dead.
+ */
+const HOUSE: Plan = { open: 2, brand: 1, field: 1, label: 2, taglines: 2, end: 1 };
+
+/** Places the acts on a bar plan and every cue and line inside them; `late` lists acts whose line would be cut before its read. */
+const build = (plan: Plan) => {
+  const BEATS = {} as Record<ActName | 'last', number>;
+  let acc = 0;
+  for (const k of order) {
+    BEATS[k] = acc;
+    acc += 4 * plan[k];
+  }
+  BEATS.last = acc;
+  const ACT = Object.fromEntries(
+    order.map((k, i) => {
+      const from = i === 0 ? 0 : bt(BEATS[k]);
+      const to = i + 1 < order.length ? bt(BEATS[order[i + 1]]) : bt(BEATS.last) + TAIL;
+      return [k, { from, dur: to - from }];
+    }),
+  ) as Record<ActName, { from: number; dur: number }>;
+  const TOTAL = bt(BEATS.last) + TAIL;
+  // a cue x beats into its act (an act given a bar more keeps its cues; the reads and exits below place the rest)
+  const at = (act: ActName, x: number) => bt(BEATS[act] + x);
+  const cut = (act: ActName) => ACT[act].from + ACT[act].dur;
+  const C: Record<string, number> = {};
+  // every exit cue waits for its line's read (a cue never shortens a read); an act that cannot hold its reads in
+  // its bars gets a bar more (late, below)
+  const tagPreset = DEAL.taglines === 'claim' ? 'crisp' : 'fall';
+  const readEnd = (preset: keyof typeof HERO_END, text: string, inF: number, lead?: number) => inF + f60(HERO_END[preset](w(text), lead)) + hold(w(text));
+  // open: the opener in one confident move; its words spread apart into the cut onto the stack, dealt or fanned
+  C.what = at('open', 0);
+  // land builds word by word (the first word leading) when the open holds it, else the whole line lands at once
+  const fits = (lead: number) => onGridUp(onGridUp(Math.max(at('open', 4), readEnd(DEAL.open, L.what, C.what, lead))) + f60(SPREAD)) + f60(4) + hold(w(L.save.join(' '))) <= cut('open');
+  const lead = DEAL.open === 'land' && !fits(1) ? w(L.what) : 1;
+  C.spread = onGridUp(Math.max(at('open', 4), readEnd(DEAL.open, L.what, C.what, lead)));
+  C.pile = onGridUp(C.spread + f60(SPREAD));
+  C.deal = onGridUp(C.pile + f60(6));
+  // the two words leave outward once read; the stack holds the frame alone (a beat with no copy)
+  const saveRead = C.pile + f60(4) + hold(w(L.save.join(' ')));
+  C.saveOut = saveRead + f60(6) <= cut('open') - f60(16) ? onGridUp(saveRead + f60(6)) : cut('open');
+  // then the stack's own second beat (the fan closing, the pile pushed in), within 40 f of the words leaving
+  C.gather = onGrid(Math.min(C.saveOut + f60(40), (C.saveOut + f60(16) + cut('open')) / 2));
+  // brand: the mark arrives (spin or tile), the name slides out of it, the lockup rises into the cut
+  C.brand = at('brand', 0);
+  C.mark = DEAL.brand === 'tile' ? C.brand : at('brand', 0.25);
+  C.rise = at('brand', 3);
+  // field: the claim in the product's content; the field leaves up
+  C.field = at('field', 0);
+  C.find = at('field', 0.5);
+  C.fieldOut = onGrid(cut('field') - f60(14));
+  // once the claim is read the camera leans into its pill (a type push), then the field leaves up
+  C.fieldPush = onGrid(Math.max(C.find + f60(30), Math.min(C.fieldOut - f60(30), (readEnd('mask', L.find, C.find) + C.fieldOut) / 2)));
+  // label: the label over moving content, its last word swapping once; the content rushes out
+  C.label = at('label', 0);
+  C.plan = at('label', 0.25);
+  const planRead = readEnd('crisp', L.plan[0], C.plan);
+  C.swap = onGridUp(Math.max(planRead, Math.min(at('label', 2 * plan.label), planRead + f60(40)))); // toward the act's middle, once read
+  C.rushOut = onGridUp(Math.max(cut('label') - Math.max(f60(30), BEAT), C.swap + f60(SWAP) + hold(w(L.plan[1]))));
+  // taglines: two imperatives taking turns; a push into the cut
+  C.taglines = at('taglines', 0);
+  C.tag1 = at('taglines', 0.25);
+  C.tagOut = onGridUp(readEnd(tagPreset, L.taglines[0], C.tag1));
+  C.tag2 = onGridUp(Math.max(C.tagOut + f60(20), Math.min(at('taglines', 2 * plan.taglines), C.tagOut + f60(44)))); // the first one's 14 f drop is over first
+  C.push = onGrid(Math.max(C.tag2 + f60(20), cut('taglines') - Math.min(f60(46), Math.max(f60(30), BEAT))));
+  // end: the mark and the name, the close under them; the lockup holds about a beat with a creep, then the tail
+  C.end = at('end', 0);
+  C.endMark = C.end;
+  const nameIn = DEAL.end === 'spin' ? C.endMark + f60(30) : C.endMark + f60(8);
+  C.close = onGridUp(Math.max(at('end', 1.5), nameIn + f60(16) + hold(1)));
+  C.lockup = onGridUp(C.close + f60(HERO_END.glide(w(L.close))));
+  C.last = bt(BEATS.last);
+  const nameAt = C.mark + (DEAL.brand === 'tile' ? f60(40) : f60(30));
+  const COPY: Copy[] = [
+    { id: 'what', text: L.what, in: C.what, resolved: C.what + f60(HERO_END[DEAL.open](w(L.what), lead)), out: C.spread },
+    { id: 'save', text: L.save.join(' '), in: C.pile, resolved: C.pile + f60(4), out: C.saveOut },
+    { id: 'brandName', text: AD.name, kind: 'name', in: nameAt, resolved: nameAt + f60(12), out: cut('brand') },
+    set('find', 'mask', L.find, C.find, C.fieldOut),
+    set('plan', 'crisp', L.plan[0], C.plan, C.swap),
+    { id: 'swap', text: L.plan[1], in: C.swap, resolved: C.swap + f60(SWAP), out: C.rushOut + f60(12), swap: 'plan' },
+    set('tag.1', tagPreset, L.taglines[0], C.tag1, C.tagOut, { chain: 'tag', mode: 'replace' }),
+    set('tag.2', tagPreset, L.taglines[1], C.tag2, cut('taglines'), { chain: 'tag', mode: 'replace' }), // cut on the push, still read
+    { id: 'wordmark', text: AD.name, kind: 'name', in: nameIn, resolved: nameIn + f60(16), out: TOTAL },
+    set('close', 'glide', L.close, C.close, TOTAL),
+  ];
+  // a cue never shortens a read: a line whose read runs past its exit cue makes its act late (it gets a bar more)
+  const late: ActName[] = [];
+  for (const c of COPY) {
+    if (c.kind || c.out >= TOTAL) continue;
+    if (c.resolved + hold(w(c.text)) > c.out) late.push(order[order.findIndex((k) => cut(k) > c.in)] ?? 'end');
+  }
+  // the stack holds its two words' read, the field and the label leave in time, the lockup is whole before the bar ends
+  if (saveRead > cut('open')) late.push('open');
+
+  if (C.rushOut > cut('label') - f60(20)) late.push('label');
+  if (C.push < C.tag2) late.push('taglines');
+  if (C.lockup > cut('end') - TAIL) late.push('end');
+  return { BEATS, ACT, TOTAL, C, COPY, late, lead };
+};
+
+// An act whose line cannot be read inside its bars at this tempo gets a bar more until it can (a faster track).
+const plan: Plan = { ...HOUSE };
+let made = build(plan);
+for (let i = 0; i < 12 && made.late.length; i++) {
+  for (const a of new Set(made.late)) plan[a] += 1;
+  made = build(plan);
+}
+if (made.late.length) throw new Error(`timeline: the ${made.late.join(', ')} line cannot be read at ${BPM} BPM: shorten it (ad.ts)`);
+
+/** Bars per act at this tempo (the house plan, grown where a read needs it). */
+export const ACT_BARS: Readonly<Plan> = plan;
+/** Bars in the body: track.py edit --bars takes this number. */
+export const BARS = order.reduce((s, a) => s + plan[a], 0);
+/** Where each act starts, in beats (every act line on a bar line: with a track each lands on a downbeat). */
+export const BEATS: Readonly<Record<ActName | 'last', number>> = made.BEATS;
+/** The acts, contiguous; each is its own composition in Root.tsx (in this order). */
+export const ACT = made.ACT;
+export const TOTAL = made.TOTAL;
+export const CUE: Record<string, number> = made.C;
+/** How many words of the opener land together (land: the first leads when the open holds it, else all of them). */
+export const OPEN_LEAD = made.lead;
+
+/** The pile's deals: one card every DEAL_EVERY frames from the deal cue. */
+export const DEALS = Array.from({ length: PILE_CARDS }, (_, i) => CUE.deal + f60(DEAL_EVERY * i));
 
 // ---- Declarations: what the picture does on purpose (grid-check validates them; export-cues writes them).
 
@@ -150,81 +272,70 @@ export type ColourRange = { from: number; to: number; id: string };
 export type Declares = { stepped?: SteppedRange[]; flashes?: Flash[]; cameraBlur?: CameraBlurRange[]; seams?: Seam[]; colour?: ColourRange[] };
 export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 
-/** A crisp film: fast pictures smear along their own travel (fx/Defocus DirBlur, SpinBlur), no shutter pass. */
+/** A crisp film: fast tiles smear along their own travel (fx/Defocus DirBlur, SpinBlur), no shutter pass. */
 export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'launch', oneTake: false, whiteWorld: false };
-/** Every seam is hidden inside a motion: the spread carried through the cut, the rise into the wall, the speed cuts. */
+/** Every seam is hidden inside a motion: the spread carried through the cut, the stack carried into the mark, the rise, the rush. */
 export const SEAMS: Seam[] = [
-  { at: CUE.pile, kind: 'velocity', carry: 'x', id: 'spread-carries-across' },
-  { at: ACT.brand.from, kind: 'hard', id: 'cut-to-the-mark' },
-  { at: ACT.wall.from, kind: 'velocity', carry: 'y', dir: -1, id: 'rise-into-the-wall' },
-  { at: ACT.rivers.from, kind: 'velocity', carry: 'y', dir: -1, id: 'wall-leaves-up' },
-  { at: ACT.taglines.from, kind: 'velocity', carry: 'x', dir: 1, signature: true, id: 'rivers-rush-out' },
+  { at: CUE.pile, kind: 'velocity', carry: 'scale', dir: 1, id: 'spread-carries-across' },
+  DEAL.brand === 'tile' ? { at: ACT.brand.from, kind: 'morph', carry: 'shape', id: 'the-tile-becomes-the-mark' } : { at: ACT.brand.from, kind: 'morph', carry: 'scale', id: 'the-stack-recedes-behind-the-mark' },
+  { at: ACT.field.from, kind: 'velocity', carry: 'y', dir: -1, id: 'rise-into-the-field' },
+  { at: ACT.label.from, kind: 'velocity', carry: 'y', dir: -1, id: 'field-leaves-up' },
+  { at: ACT.taglines.from, kind: 'velocity', carry: 'x', dir: 1, signature: true, id: 'the-rush' },
   { at: ACT.end.from, kind: 'hard', id: 'push-into-the-lockup' },
 ];
-/** The designed steps: none (the pill's 2-frame pop is a scale, not a step). */
+/** No designed one-frame steps: every change glides (lib/continuity). */
 export const STEPPED: SteppedRange[] = [];
 export const FLASHES: Flash[] = [];
 export const CAMERA_BLUR: CameraBlurRange[] = [];
-/** Colour events: none; the accent lands on each new word, the pill and the mark. */
-export const COLOUR: ColourRange[] = [];
+/** Colour events: the taglines' claim floods the frame with the accent; otherwise the accent stays on words, pills and the mark. */
+export const COLOUR: ColourRange[] = DEAL.taglines === 'claim' ? [{ from: ACT.taglines.from, to: ACT.end.from, id: 'claim-on-the-accent' }] : [];
 /** The one lock: the mark, the name and the close hold to the end. */
 export const END: EndLock = { from: CUE.lockup, to: TOTAL };
 /** The biggest reveal: the lockup. */
 export const REVEAL = CUE.lockup;
-/** No underdamped spring: pops land without overshoot. */
+/** No underdamped spring: every landing settles critically. */
 export const SPRING_CLASS = '';
 /** CUE names that must land on a music event. None without a track; with one, add 'pile', 'brand' and 'lockup'. */
 export const STRUCTURAL: string[] = [];
 /** Each CUE's salience (missing = 'hit'). */
 export const SALIENCE: Record<string, Salience> = {
-  what: 'copy', spread: 'move', pile: 'cut', deal: 'hit',
+  what: 'copy', spread: 'move', pile: 'cut', deal: 'hit', saveOut: 'move', gather: 'move',
   brand: 'cut', mark: 'hit', rise: 'move',
-  wall: 'cut', find: 'copy', wallOut: 'move',
-  rivers: 'cut', plan: 'copy', swap: 'copy', rushOut: 'move',
-  taglines: 'cut', tag1: 'copy', tagOut: 'move', tagGone: 'life', tag2: 'copy', push: 'move',
+  field: 'cut', find: 'copy', fieldPush: 'move', fieldOut: 'move',
+  label: 'cut', plan: 'copy', swap: 'copy', rushOut: 'move',
+  taglines: 'cut', tag1: 'copy', tagOut: 'move', tag2: 'copy', push: 'move',
   end: 'cut', endMark: 'hit', close: 'copy', lockup: 'hit', last: 'cut',
 };
 
-export type Copy = {
-  id: string;
-  text: string; // exactly what is on screen (\n separates lines)
-  in: number; // first frame any of it is visible
-  resolved: number; // first frame it is fully readable
-  out: number; // first frame it starts to leave (TOTAL if it stays)
-  kind?: 'copy' | 'ui' | 'name'; // 'ui': a string the product shows, not budgeted; 'name': the name, not a line of the script
-  chain?: string;
-  mode?: 'build' | 'replace';
-  reveal?: 'focus';
-  swap?: string | boolean;
+/** Every on-screen word of the film. */
+export const COPY: Copy[] = made.COPY;
+
+/**
+ * Each act's light event (acts/stage.tsx LightEvent: the light on the page changes once) in the act's longest
+ * stretch where nothing arrives or leaves, a second or more after its cut where the act is long enough (look-audit
+ * skips the second after a cut), on the 16th grid.
+ */
+const lightCue = (act: ActName) => {
+  const a = ACT[act].from;
+  const z = a + ACT[act].dur - (act === 'end' ? TAIL : 0);
+  const marks = [...Object.values(CUE), ...COPY.flatMap((c) => [c.in, c.resolved, c.out])].filter((f) => f > a && f < z).sort((p, q) => p - q);
+  let best: [number, number] = [a, z];
+  let edge = a;
+  let len = 0;
+  for (const f of [...marks, z]) {
+    if (f - edge > len) {
+      len = f - edge;
+      best = [edge, f];
+    }
+    edge = f;
+  }
+  const want = Math.max(a + Math.min(f60(60), ACT[act].dur * 0.4), Math.round((best[0] + best[1]) / 2));
+  const g = onGridUp(want);
+  return g < z ? g : onGrid(z - 1, a);
 };
-
-const pace = PACE[PACE_NAME];
-
-/** A line whose words pop on at full ink POP_GAP apart: resolved a few frames after its last word. */
-const popped = (id: string, text: string, inF: number, out: number, o: Partial<Copy> = {}): Copy => ({ id, text, in: inF, resolved: inF + f60(POP_GAP * (wordCount(text) - 1)) + f60(4), out, ...o });
-
-const what = buildStarts(CUE.what, wordCount(AD.lines.what));
-const tagLeave = f60(pace.exitDur) + f60(6);
-
-// Every on-screen word of the film.
-export const COPY: Copy[] = [
-  { id: 'what', text: AD.lines.what, in: CUE.what, resolved: what[what.length - 1] + f60(4), out: CUE.spread },
-  popped('save', AD.lines.save.join(' '), CUE.pile, ACT.brand.from),
-  { id: 'brandName', text: AD.name, kind: 'name', in: CUE.mark + f60(30), resolved: CUE.mark + f60(42), out: ACT.wall.from },
-  popped('find', AD.lines.find, CUE.find, CUE.wallOut),
-  popped('plan', AD.lines.plan[0], CUE.plan, CUE.swap),
-  { id: 'swap', text: AD.lines.plan[1], in: CUE.swap, resolved: CUE.swap + f60(10), out: CUE.rushOut + f60(12), swap: 'plan', reveal: 'focus' },
-  popped('tag.1', AD.lines.taglines[0], CUE.tag1, Math.min(CUE.tagOut, CUE.tag2 - tagLeave), { chain: 'tag', mode: 'replace' }),
-  popped('tag.2', AD.lines.taglines[1], CUE.tag2, ACT.end.from, { chain: 'tag', mode: 'replace' }), // cut on the push, still read
-  { id: 'wordmark', text: AD.name, kind: 'name', in: CUE.endMark + f60(30), resolved: CUE.endMark + f60(42), out: TOTAL },
-  { id: 'close', text: AD.lines.close, in: CUE.close, resolved: CUE.close + f60(10), out: TOTAL, reveal: 'focus' },
-];
-
-// A cue placed in beats never shortens a read: at a faster track the beats shrink, so a line leaves on its read instead
-// of its cue (the acts take each line's exit from COPY). Where an act line comes first, the cut takes the line.
-for (const c of COPY) {
-  if (c.kind || c.out >= TOTAL) continue;
-  c.out = Math.min(TOTAL, Math.max(c.out, c.resolved + f60(holdFor(wordCount(c.text), pace))));
+for (const act of order) {
+  CUE[`${act}Light`] = lightCue(act);
+  SALIENCE[`${act}Light`] = 'life';
 }
 
 /** When each COPY entry is being read: [from, to) frame ranges by id (src/lib/pace.ts readingWindows()). */
