@@ -99,7 +99,8 @@ looks; `accent-count` still applies.
 
 **Copy and type:** `copy-literal`, `text-spring`, `text-pace` (calm: stagger < 10, word < 29 or exit < 16 f@60),
 `typing-rate` (human typing over 45 chars/s or under 15; `kind="stream"` up to 150), `per-letter`, `type-role` (a
-`fontSize` that is not a `TYPE` role; more than 2 non-UI roles), `small-text` (under 36 px at 1080p),
+`fontSize` that is not a role size of either type family in `lib/look.ts` `TYPE_LOOK`, calm or bold; more than 2
+non-UI roles), `small-text` (under 36 px at 1080p),
 `giant-watermark` (a giant word at opacity ≤ 0.29), `giant-once` (giant words in more than one act),
 `card-content` (error: a `<Card>` or bento tile with no content, image or `blank`).
 
@@ -111,6 +112,14 @@ of its band: give a retuned curve a new name), `whip-shape` (error: a whip that 
 over more than 12 f@60 with nothing moving), `linear-opacity`, `crossfade` (error: two full-frame layers dissolving
 over more than 8 f@60; a UI dissolve carries `data-ui`), `shutter` (outside 120-180°), `blur-on-crisp`,
 `deprecated-token` (a 1.1 easing, spring or type name: the 1.2 name to use).
+
+**Continuous motion** (warnings, outside `fx/` and `lib/`; `references/motion-tokens.md` §6): `snap-step` (a one-frame
+snap primitive, `HardStep`, `stepValue`, `snapBox`, `SnapZoom`, `LineSnap`, `Chain` `snapLast` or `recentre: 'room'`,
+that `src/sync.ts` does not declare through its `declares()`; and a second snap device in the film: glide it with
+`fx/GlideStep`, `glideValue` or `glideBox`), `hold-drift` (an act with two or more tweens and nothing continuous under
+them: no creep, drift, `holdDrift`, camera path, light field or footage move), `unmount-moving` (a layer unmounted by
+`F < X &&` or a `<Sequence>` end while a tween inside it, timed off the same frame, still runs above 10 % of its peak
+speed: `landBeforeCut`), `move-queue` (three moves timed off the same frame queued one after another inside 3 s).
 
 ## 4. layout-audit (`scripts/layout-audit.sh`, `lib/Audit.tsx`)
 
@@ -135,7 +144,9 @@ evaluate (what `grammar-score.mjs` reads for curve roles, durations, staggers an
 
 Pixel QA on a render: pops, stalls, dead holds, ghost frames, border slivers, judder, sharpness steps, banding and
 compression smear on flat fields; `--loop` checks the seam; `--cuts` and `--freeze-ok` declare designed cuts and
-freezes for a film without cues. With a cues file that carries the declarations:
+freezes for a film without cues. A film with cues declares its own: act boundaries and seams are its cuts, and a
+declared step, flash or hard seam (the timeline's or a primitive's `declares()`) is never a pop or a ghost. With a
+cues file that carries the declarations:
 
 | Check | Rule | Level |
 |---|---|---|
@@ -148,8 +159,17 @@ freezes for a film without cues. With a cues file that carries the declarations:
 | carried-cut | a declared velocity seam: direction cosine ≥ 0.7, incoming speed 0.4-1.4× the outgoing, then decaying | fail |
 | dissolve-detect | ≥ 4 f@60 that are a rising mix of two different images, or a fade to black before the last 2 s, unless declared (`dissolveUi`, `light`, `fadeEnd`) | fail |
 | end-card | with `END` declared: nothing assembles in the 1.5 s before the lock, or the card fades in | warn |
+| motion-snap | more than 0.6 one-frame changes per 3 s outside a declared snap (a change of 2+ values with both neighbours under 35 % of it, not a declared cut), or more than one declared snap device | fail |
+| motion-frozen | 6 f@30 in a row where the mean change is under 0.05 and fewer than 8 px change by 4+ values, after the first 0.5 s and outside the end lock and declared freezes (a film without declarations may hold still 1 s in all) | fail |
+| motion-decay | moves fall from their peak to 20 % of their speed in a median under 3.5 f@30 (3+ moves) | fail |
+| motion-density | more than 2 primary moves (peaks at 25 % of the film's 90th-percentile move or more) per 3 s | fail |
+| motion-stop | a move goes still in one frame from above 15 % of its peak speed | fail |
+| motion-cut | a visible cut while a braking move is above 10 % of its peak, unless a whip, velocity or zoomThrough seam or a camera-blur range carries it (fail over 0.25 per 3 s) | warn |
 
-Without the declarations these report as info; `--no-grammar` skips them.
+The motion gates read mean luma change at 160x90, one sample per 1/30 s (landings also at the film's own rate), so a
+60 fps film and a 24 fps one are judged alike. In a declared film every jump that is not a declared cut counts as a
+snap. The report lists every snap, frozen run, move with its settle length, stop and braking cut under
+`checks.grammar.motion`. Without the declarations these report as info; `--no-grammar` skips them.
 
 `carried-cut` measures the outgoing vector with optical flow, which cannot see motion along a texture of parallel bands
 (water ripples, stripes, scan lines: the aperture problem): there it reads only the motion across the bands, and a
@@ -273,7 +293,8 @@ as optical flow (one film measured concurrency 3.97 there and 1.50 on its 1920x1
 
 `scripts/test/` holds the tests of the scripts themselves (not of a film): `lint-film.test.mjs` (every lint fixture,
 both starters, the palette cases, and the self-tests of forensics, look-audit, measure-speed and grammar-score on
-synthetic clips; `--part` splits it for a machine that limits job length), `grid-check.test.mjs`, `tokens.test.mjs`,
+synthetic clips; `--part` splits it for a machine that limits job length), `continuity.test.mjs` (the glides, hold
+drift and land-before-cut helpers against the motion gates), `grid-check.test.mjs`, `tokens.test.mjs`,
 `mirror.test.mjs` (the HyperFrames mirror equals the Remotion tokens), `scripts-docs.test.mjs` (every script answers
 `--help`; the docs name the internal helpers), `provenance.test.mjs` (public text speaks as house craft; no audio,
 stray images or videos with sound in git), and the Python tests (`pick`, `deck`, `brand`, `like`, `track`, `score`,

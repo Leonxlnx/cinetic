@@ -146,7 +146,7 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
 | Emphasis on a word | `LineSnap`, `FocusWord`, `HueSweep`, `Letters`, `MaskRise`, `Scramble`, `Corners`, `Brackets` | [marks, markers and annotations](references/devices/marks-markers-and-annotations.md) |
 | Camera | `lib/camera-moves` (`scaleBreath`, `whip`, `zoomThrough`, `reframeChain`, `reversal`, `punchOut`, `parallax`), `SnapZoom`, `RackFocus` | [camera](references/devices/camera.md), [camera transitions](references/devices/camera-transitions.md) |
 | Seams | `MorphChain`, `Iris`, `Exposure`, `Window`, `Dive`, `BlobRing`, `Wipe`, `CutFx`, `BlockStep`, `Pixel` | [cuts and seams](references/devices/cuts-and-seams.md), [morphs](references/devices/morphs-and-object-handoffs.md), [wipes, masks and irises](references/devices/wipes-masks-and-irises.md), [speed and rush](references/devices/speed-and-rush.md) |
-| Product moment | `Cards`, `Bubbles`, `Scroll`, `Develop`, `HardStep`, `Cursor`, `Roll`, `TypeOn`, `src/kit` | [UI choreography](references/devices/ui-choreography.md), [micro-interactions](references/devices/micro-interactions.md), [cursor](references/devices/cursor.md), [loaders](references/devices/loaders-and-progress.md), [data and numbers](references/devices/data-and-numbers.md) |
+| Product moment | `Cards`, `Bubbles`, `Scroll`, `Develop`, `GlideStep`, `Cursor`, `Roll`, `TypeOn`, `src/kit` | [UI choreography](references/devices/ui-choreography.md), [micro-interactions](references/devices/micro-interactions.md), [cursor](references/devices/cursor.md), [loaders](references/devices/loaders-and-progress.md), [data and numbers](references/devices/data-and-numbers.md) |
 | Pictures (an accent, only with pictures worth showing) | `Photo`, `Footage`, `FootageRamp`, `Montage`, `TypeMask`, `Cutout`, `Lens`, `GradientMap` | [photos and footage](references/devices/photos-and-footage.md), [collage and composition](references/devices/collage-and-composition.md) |
 | Light, colour, materials | `KeyLight`, `ReliefScene`, `LightField`, `Glow`, `Spectral`, `Glass`, `Gradients`, `Grades`, `TypeFill`, `Textures` | [colour and light](references/devices/colour-and-light.md), [glass, glow and spectral](references/devices/glass-glow-and-spectral.md), [texture, grids and finish](references/devices/texture-grids-and-finish.md) |
 | Depth, cadence, timing | `parallax`, `Stepped`, `Markers`, `Flip`, `Orbit`, `Rush` | [depth and 3D](references/devices/depth-and-3d.md), [cadence and grammar](references/devices/cadence-and-grammar.md), [sound and timing](references/devices/sound-and-timing.md) |
@@ -164,6 +164,7 @@ python3 scripts/look-audit.py out/preview.mp4 --cues out/cues.json --layout out/
 node scripts/grammar-score.mjs --cues out/cues.json --layout out/qa/layout-Film.json --look out/qa/look.json --forensics out/qa/forensics.json
 ```
 - **The floor against a flat film** (look-audit, fails the film): the camera or ground moves on ≥ 70 % of the body (a read lock of up to 1 s counts as alive); two depth planes at different rates in ≥ 50 % of shots; ≥ 40 % of seams carried; a designed moment at least every 3 s; a light event in every act; a clear scale change on ≥ 30 % of cuts. **The picture floor:** some clean flat ground (not everything on texture), edges under a ceiling (not busy everywhere), colour mass, bleed and skeleton bars (target: 43-85 % flat ground with type beats on clean fields, edges ≤ 5.9 %, real colour mass, bleed in every act, focus falloff).
+- **Continuous motion** (forensics motion gates, fail the film): at most 0.6 one-frame snaps per 3 s outside a declared snap and one declared snap device per film; no run of 6 f@30 where nothing moves (every hold drifts 0.3–1 px/f, `holdDrift`); moves settle from peak to 20 % of their speed in a median ≥ 3.5 f@30 (`E.glideOut` over 16 f@60 or longer); at most 2 primary moves per 3 s; no move stops dead or is cut mid-ease (`landBeforeCut`). lint-film warns on the same in the source (`snap-step`, `hold-drift`, `unmount-moving`, `move-queue`). Fixes: `references/motion-tokens.md` §6 "Continuous motion".
 - **grammar-score:** mean ≥ 90, no dimension under 70 (or against `out/like.json` with a clip). Write the weakest dimension into the notes and fix it first.
 
 ### Step 8: Sound → `public/audio/soundtrack.wav`
@@ -272,7 +273,7 @@ export const b = (n: number, beat = 0, sub = 0) =>     // whole frames within 0.
 
 ## 6. Motion system essentials
 
-Tokens live in `src/lib/anim.ts` (`E`, `M`, `SPR`, `DUR`, `TAU`, `STAG`, `ACCEL`, `CPS`, `SPEED`, `CARRY`, `BREATH`, `OVERSIZE`, `enter`, `leave`, `move`, `prog`, `lmix`, `hitPulse`, `arrive`, `fd`), with `lib/handoff.ts` (`launch`, `carry`, `carriedCut`, `carryChain`, `creep`, `drift`, `intoCut`, `overlapAt`, `leadBy`, `handoffShot`), `lib/cadence.ts`, `lib/defocus.ts` and `lib/film.ts`. Details: `references/motion-tokens.md`.
+Tokens live in `src/lib/anim.ts` (`E`, `M`, `SPR`, `DUR`, `TAU`, `STAG`, `ACCEL`, `CPS`, `SPEED`, `CARRY`, `BREATH`, `OVERSIZE`, `enter`, `leave`, `move`, `prog`, `lmix`, `hitPulse`, `arrive`, `fd`), with `lib/handoff.ts` (`launch`, `carry`, `carriedCut`, `carryChain`, `creep`, `drift`, `intoCut`, `overlapAt`, `leadBy`, `handoffShot`), `lib/continuity.ts` (`glideValue`, `glideList`, `holdDrift`, `landBeforeCut`, `latestStart`), `lib/cadence.ts`, `lib/defocus.ts` and `lib/film.ts`. Details: `references/motion-tokens.md`.
 
 | Role | Tokens (house duration at 60 fps) | Use |
 |---|---|---|
@@ -290,6 +291,7 @@ Tokens live in `src/lib/anim.ts` (`E`, `M`, `SPR`, `DUR`, `TAU`, `STAG`, `ACCEL`
 - **Blur and defocus:** blur is the declared policy (§3 Step 9); defocus is a timing tool drawn at fixed levels, two copies at most (`defocusMix`), never an animated blur radius.
 - **Envelope:** every punch and tick uses `hitPulse(t, 2, 5)`. **Log space** for scale and zoom (`lmix`). **Shape** settles 6 f before position; contacts squash.
 - **Smoothness is a ship gate:** zero `forensics.py` fails; designed steps, flashes and seams are declared, everything else that pops is a bug.
+- **Continuity is a ship gate:** nothing changes state in one frame (state changes glide 16 f@60 on `E.glideOut` with a shutter smear: `GlideStep`, `glideValue`, `glideBox`; one declared snap per film), no hold freezes (`holdDrift` 0.3–1 px/f), every move lands under 10 % of its peak speed before its cut or unmount (`landBeforeCut`), and each 3 s rides one carrying move with overlapping secondaries.
 
 ## 7. Engine non-negotiables
 
@@ -399,4 +401,4 @@ Read each file when its step comes up; never all at once.
 | brand kit export; outlined lettering | `scripts/brand-kit.sh`; `scripts/outline-text.py` |
 | the HyperFrames finish | `scripts/hf-finish.sh` |
 | the Python every script runs (`$PYTHON`, else the first of `python3`, `python` or `py -3` that runs a version check) | `scripts/py.mjs` (`--which`) |
-| the scripts' own tests (not a film's) | `scripts/test/` (`copy-check`, `lint-film`, `grid-check`, `tokens`, `mirror`, `scripts-docs`, `add-font`, `provenance`, `pick`, `deck`, `brand`, `like`, `track`, `score`, `cast`, `library`, `assets`, `logos`, `logo-kit`, `music`, `primitives`, `type-presets`, `handoff`, `moment`, `wordmark`, `encode-tags`, `bash32`) |
+| the scripts' own tests (not a film's) | `scripts/test/` (`copy-check`, `lint-film`, `grid-check`, `tokens`, `mirror`, `scripts-docs`, `add-font`, `provenance`, `pick`, `deck`, `brand`, `like`, `track`, `score`, `cast`, `library`, `assets`, `logos`, `logo-kit`, `music`, `primitives`, `continuity`, `type-presets`, `handoff`, `moment`, `wordmark`, `encode-tags`, `bash32`) |

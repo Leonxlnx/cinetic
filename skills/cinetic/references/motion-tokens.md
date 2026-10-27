@@ -6,7 +6,8 @@ oversized landings, stepped time, the pace knob and the `hitPulse` envelope. Rea
 whenever motion looks floaty, bouncy, uniform or mechanical.
 
 Everything lives in `src/lib/anim.ts` (curves, springs, tables), `src/lib/pace.ts` (the pace), `src/lib/handoff.ts`
-(carry, creep, overlap) and `src/lib/cadence.ts` (stepped and irregular time); HyperFrames carries the same numbers in
+(carry, creep, overlap), `src/lib/continuity.ts` (glides, hold drift, landing before a cut) and `src/lib/cadence.ts`
+(stepped and irregular time); HyperFrames carries the same numbers in
 `motion.js` (`scripts/test/mirror.test.mjs` keeps them equal). Numbers are house defaults with normal ranges at 60 fps
 (`f@60`); every helper takes the film's fps from the film context, so the same numbers give the same motion in
 seconds at 24, 25, 30 or 60 fps.
@@ -48,6 +49,9 @@ seconds at 24, 25, 30 or 60 fps.
 - **Smooth, or it doesn't ship.** Jitter, pixel-snap stairs, single-frame pops and stall-then-lurch block the ship
   (zero `forensics.py` fails, Finish 5). Designed artifacts (steps, flashes, hard seams) are declared, so they read as
   craft (`references/checks.md`).
+- **Continuous, or it reads as generated.** No state change happens in one frame (a film keeps one declared snap), no
+  hold freezes, every move lands before its cut, and each 3 s is built around one long carrying move rather than a
+  queue of short ones (§6 "Continuous motion"; the `forensics.py` motion gates).
 - **Discrete state reads whole frames.** Typed characters, labels, counters and layout switches use `fd(f)`
   (`Math.round`), so every motion-blur sub-sample of a frame agrees.
 - **Pass the curve explicitly.** `prog(f, a, b, E.glideOut)`, never `prog(f, a, b)`: the default is a 1.1 arrival.
@@ -205,6 +209,30 @@ the film's frames rather than all of them.
 0.9)`); the foreground lands about 20 f before the background (`leadBy(at, 20)`); the next element enters 0-1 f
 before the previous one leaves. Without overlap, two moves that each ease to rest read as stall-then-lurch.
 
+### Continuous motion: glide, drift, land before the cut
+
+Generated motion has a measurable signature: many short events that start and stop in one frame, dead holds between
+them, settles that fall from full speed to rest in a frame or two, and moves cut while they are still fast. Crafted
+motion is one long carrying move per few seconds with secondaries riding it, holds that keep drifting, and every move
+landing with a tail. `lib/continuity.ts` holds the fixes; `forensics.py` measures the result on the render (mean luma
+change at 160x90, one sample per 1/30 s) and `lint-film.mjs` catches the source patterns.
+
+| Rule | Number | Helper | Gate |
+|---|---|---|---|
+| No state change in one frame | a list step, a selection box, a counter's roll or a field's width glides 16 f@60 on `E.glideOut` (8 f at 30 fps), smeared along its motion by a 180° shutter; a step that starts before the last has landed blends out of it | `fx/GlideStep` (a list: `HardStep`'s props), `glideValue`, `glideBox` | `motion-snap`: at most 0.6 undeclared one-frame changes per 3 s; lint `snap-step` |
+| One snap per film | a stepped list, a snap zoom or a line snap is the film's one snap device, declared through its `declares()` in `src/sync.ts` (declarations named alike, `tick-0` ... `tick-9`, are one device) | `fx/HardStep`, `fx/SnapZoom`, `fx/LineSnap` | `motion-snap`: more than 1 declared device fails; lint `snap-step` |
+| No hold freezes | every hold drifts 0.3-1 px a 60 fps frame at 1080p (house 0.5 = 30 px/s): a line, a card, the camera or the ground; at 0.3 px/f even one line on a clean field moves its edges enough to read as alive. When the camera locks for a read, the type build, the light or the drift of one layer keeps the frame moving | `holdDrift(f, from, { px, angle })`, `creep`, `drift`, a light that crosses | `motion-frozen`: 6 f@30 in a row where the mean change is under 0.05 and fewer than 8 px change by 4 values fails (the opening 0.5 s, the end lock and declared freezes aside); lint `hold-drift` |
+| Moves land with a tail | arrivals settle from their peak to 20 % of their speed over 4-6 f@30: `E.glideOut` over 16 f@60 or more, `E.settleOut` for UI cards. The 1.1 `E.out` over 16 f settles in 3 f@30 and the film's median drops under the gate | arrive tokens (§2) | `motion-decay`: a median under 3.5 f@30 fails |
+| One carrying move per 3 s | at most 2 primary moves per 3 s, each 48 f@60 or longer; secondaries overlap the primary by 30-50 % instead of queueing after it | `overlapAt`, `leadBy`, `camPath` | `motion-density`: more than 2 primary moves per 3 s fails; lint `move-queue` |
+| Land before the cut | a cut or an unmount waits until the move is under 10 % of its peak speed, unless a declared whip or velocity seam carries it across | `landBeforeCut(move, cut)` (throws at import with the frame it lands on), `latestStart(cut, dur, ease)`, `landedAt(move)` | `motion-stop`: a move going still in one frame from above 15 % of its peak fails; `motion-cut`: a cut into a braking move warns; lint `unmount-moving` |
+
+```ts
+const rows = <GlideStep frame={F} jump={ROW} at={[CUE.a, CUE.b, CUE.c]} width={W} height={H}>{list}</GlideStep>;
+const box = glideBox(F, [{ at: CUE.pick, value: picked }], resting);          // a selection box glides to its row
+const d = holdDrift(F, CUE.settle, { px: 0.5, angle: -90 });                  // the card keeps rising 30 px/s
+const exitAt = landBeforeCut({ from: CUE.slide, dur: f60(34), ease: E.glideOut }, ACT.next.from); // fails at import if early
+```
+
 ## 7. Scale: log space, oversized landings, breath
 
 - **Scale and zoom interpolate in log space**: `lmix(a, b, t) = exp(mix(log a, log b, t))`. Remotion's
@@ -222,7 +250,8 @@ before the previous one leaves. Without overlap, two moves that each ease to res
 - `<Stepped fps={16}>` (`fx/Stepped`) runs its children on stepped time while the camera and footage outside stay
   smooth; `on={2}` holds every pose two frames. It is built on a shifted `Sequence`, not `Freeze`, so nested sequences
   see the right frame. Stepped layers get no shutter blur, and their range is declared (`STEPPED`), so forensics reads
-  the holds as craft. `collage({...})` builds a stop-motion collage: elements born as cuts on irregular gaps (house
+  the holds as craft. A stepped layer, like `HardStep`, is the film's one snap device (§6 "Continuous motion"): a
+  second one glides instead (`fx/GlideStep`, `glideValue`). `collage({...})` builds a stop-motion collage: elements born as cuts on irregular gaps (house
   4 f average, 1-10 f), some re-cut larger a few frames later, a camera that steps on births and one slow push under
   the whole build (`M.collagePush`).
 - Remotion's `posterize` holds an interpolation input for n frames; use `Stepped` for anything bigger than one value.
@@ -298,10 +327,12 @@ use (`deprecated-token`):
 ## 12. Checks
 
 - `lint-film.mjs`: `raw-easing`, `spring-config`, `ease-family`, `token-drift`, `whip-shape`, `spring-budget`,
-  `spring-range`, `scale-from-zero`, `fade-exit`, `linear-opacity`, `deprecated-token`, `interpolate-clamp`.
+  `spring-range`, `scale-from-zero`, `fade-exit`, `linear-opacity`, `deprecated-token`, `interpolate-clamp`, and the
+  continuous-motion rules `snap-step`, `hold-drift`, `unmount-moving`, `move-queue`.
 - `grammar-score.mjs`: `role-mix`, `front-loaded`, `into-cuts`, `durations`, `staggers`, `holds`, `velocity-seams`,
   `overlap` (`references/checks.md`).
 - `forensics.py`: `hold-drift`, `carried-cut`, stalls between two moving stretches (a hand-over eased to rest), spikes
-  on fades.
+  on fades, and the motion gates `motion-snap`, `motion-frozen`, `motion-decay`, `motion-density`, `motion-stop`,
+  `motion-cut` (§6 "Continuous motion").
 - Contact sheets at `--every 1` across every landing: the contact frame shows the squash, the frame before shows
   speed, nothing interpenetrates on the overshoot frames.
