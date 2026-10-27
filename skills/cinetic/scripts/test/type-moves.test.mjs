@@ -79,7 +79,7 @@ console.log(JSON.stringify({
   claim, long, heavy, capEm: K.CLAIM.capEm, ink: [K.inkOn('#08965A'), K.inkOn('#1F3FBF'), K.inkOn('#E8D24A')],
   creep: Array.from({ length: 601 }, (_, f) => K.claimCreep(f, 0, 4, film(60))),
   claimDecl: [K.declares({ at: 300, hold: 240 }), K.declares({ at: 300, hold: 240, flood: false })],
-  slot: { f0: slot(0, 'each'), f30: slot(30, 'each'), f33: slot(33, 'each'), f36: slot(36, 'each'), max33: slot(33, 'max'), f90: slot(90, 'each') },
+  slot: { f0: slot(0, 'each'), f48: slot(48, 'each'), f56: slot(56, 'each'), f64: slot(64, 'each'), max56: slot(56, 'max'), f120: slot(120, 'each'), roll30: Array.from({ length: 9 }, (_, i) => slot(48 + 2 * i, 'each').q) },
   chip: { small: I.chipSize(60), big: I.chipSize(160) },
   ol: { slot: ol.slot, text: ol.spec.text, tokens: ol.tokens, slot2: ol2.slot, text2: ol2.spec.text },
   fit: { line: I.fitLine(160, 2400, 1920, 1080), calm: I.fitLine(84, 1500, 1920, 1080), fits: I.fitLine(84, 900, 1920, 1080), given: I.fitLine(160, 2400, 1920, 1080, 0.5) },
@@ -128,7 +128,12 @@ result(JSON.stringify(D.claimDecl[0].colour) === '[{"from":300,"to":540,"id":"cl
 
 // 3. objects inside a line
 const S = D.slot;
-result(S.f0.i === 0 && S.f0.k === 1 && near(S.f0.width, 100) && S.f30.i === 1 && S.f30.prev === 0 && near(S.f36.width, 300) && S.f33.width > 100 && S.f33.width < 300 && near(S.max33.width, 300) && S.f90.i === 2 && S.f90.k === 1, 'InlineObject: a roll every 30 f in 6 f, the slot re-flowing (each) or holding the widest (max), the last object held', JSON.stringify({ f33: S.f33.width, q: S.f33.q }));
+result(S.f0.i === 0 && S.f0.k === 1 && near(S.f0.width, 100) && S.f48.i === 1 && S.f48.prev === 0 && near(S.f64.width, 300) && S.f56.width > 100 && S.f56.width < 300 && near(S.max56.width, 300) && S.f120.i === 2 && S.f120.k === 1, 'InlineObject: a roll every 48 f in 16 f, the slot re-flowing (each) or holding the widest (max), the last object held', JSON.stringify({ f56: S.f56.width, q: S.f56.q }));
+// the roll lands with a tail: from its peak speed to 20 % of it in 3.5 samples at 30 fps or more (forensics motion-decay)
+const rollV = S.roll30.slice(1).map((q, i) => q - S.roll30[i]);
+const rollPk = rollV.indexOf(Math.max(...rollV));
+const rollTail = rollV.slice(rollPk).findIndex((v) => v < 0.2 * rollV[rollPk]);
+result(rollTail >= 3.5 || rollTail < 0, 'InlineObject: the roll glides on E.glideOut and lands with a tail (motion-decay)', JSON.stringify(rollV.map((v) => +v.toFixed(3))));
 result(near(D.chip.small.label, 36) && near(D.chip.small.h, 72) && near(D.chip.big.h, 160) && near(D.chip.big.label, 80), 'InlineObject: a chip is the cap height with its label at half, the label never under TEXT_MIN (the pill grows round it)', JSON.stringify(D.chip));
 result(D.ol.slot === 2 && D.ol.text === 'Notes from mark in thirty seconds' && D.ol.slot2 === 4 && D.ol.text2 === 'Works with your tools mark', 'ObjectLine: "[]" stands in the sentence as one word (without it the object ends the line)', JSON.stringify(D.ol));
 const capPct = (px) => (0.72 * px * 100) / 1080;

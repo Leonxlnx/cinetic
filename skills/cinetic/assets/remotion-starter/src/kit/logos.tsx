@@ -18,7 +18,7 @@ import { TEXT_MIN, U } from '../brand/tokens';
 import { Defocus } from '../fx/Defocus';
 import { clamp, E, mix, prog, rand } from '../lib/anim';
 import { oklch as fromLch } from '../lib/color';
-import { f60x, fpsOf } from '../lib/film';
+import { f60x, fpsOf, useFilm } from '../lib/film';
 import { inkBox } from '../lib/measure';
 import { LOGOS } from '../logos';
 import { Chip } from './flow';
@@ -209,12 +209,12 @@ export const capHeight = (size: number, weight = 450) => {
 
 /**
  * Which mark an inline slot shows at `frame`: marks change every `every` frames from `start` (60 fps frames, scaled
- * to the film), each change a `swap`-frame roll (house 6 f at 60): `i` the mark coming in, `prev` the one leaving,
+ * to the film; house 48), each change a `swap`-frame roll (house 16 f at 60): `i` the mark coming in, `prev` the one leaving,
  * `k` 0..1 through the roll (1 when settled). With `loop` it cycles; without, it holds the last mark.
  */
 export const inlineLogoState = (frame: number, n: number, o: { start?: number; every?: number; swap?: number; loop?: boolean; fps?: number } = {}) => {
   const fps = o.fps ?? fpsOf();
-  const every = f60x(o.every ?? 30, fps), swap = Math.max(1, f60x(o.swap ?? 6, fps));
+  const every = f60x(o.every ?? 48, fps), swap = Math.max(1, f60x(o.swap ?? 16, fps));
   const t = frame - (o.start ?? 0);
   if (n <= 0) return { i: 0, prev: 0, k: 1 };
   const step = Math.max(0, Math.floor(t / every));
@@ -228,21 +228,22 @@ export const inlineLogoState = (frame: number, n: number, o: { start?: number; e
 /**
  * Marks at 1.0 cap height inside a line of type: put it between words (an inline-block on the baseline, as wide as
  * the widest mark at cap height). Every `every` frames the marks roll one slot up as one strip over `swap` frames
- * (front-loaded, E.snapOut), clipped to the line's cap box: the next mark rises from under the baseline as the last one
+ * (E.glideOut, landing with a tail), clipped to the line's cap box: the next mark rises from under the baseline as the last one
  * leaves over the cap line, the two never overlapping. `size` and `weight` are the line's own.
  */
 export const InlineLogo: React.FC<{ logos: LogoRef[]; size: number; frame: number; start?: number; every?: number; swap?: number; loop?: boolean; weight?: number; ground?: Ground; mono?: boolean }> = ({
-  logos, size, frame, start = 0, every = 30, swap = 6, loop = false, weight = 450, ground = 'light', mono = false,
+  logos, size, frame, start = 0, every = 48, swap = 16, loop = false, weight = 450, ground = 'light', mono = false,
 }) => {
   const cap = capHeight(size, weight);
   const files = logos.map((l) => { const e = logoOf(l); return e ? logoFile(e, 'mark', ground, mono) : null; });
   const width = Math.max(cap, ...files.map((f) => (f ? cap * Math.min(1.6, f.aspect) : cap)));
-  const { i, prev, k } = inlineLogoState(frame, logos.length, { start, every, swap, loop });
+  const { fps } = useFilm();
+  const { i, prev, k } = inlineLogoState(frame, logos.length, { start, every, swap, loop, fps });
   const one = (j: number, p: number, leaving: boolean) => {
     const f = files[j];
     if (!f) return null;
     const e = logoOf(logos[j])!;
-    const q = E.snapOut(p); // one strip: both marks move together
+    const q = E.glideOut(p); // one strip: both marks move together
     const w = Math.min(width, cap * f.aspect), h = w / f.aspect;
     const pitch = 1.2 * cap;
     const y = leaving ? -q * pitch : (1 - q) * pitch;

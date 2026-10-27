@@ -580,8 +580,8 @@ is the claim of a slide deck.
 **Objects inside a line** (`kit/inline.tsx`): the thing a sentence names sits in the sentence, at 1.0 cap height on
 the baseline, so type and product share one shot. `InlineObject` is the slot: a real mark (a slug, `scripts/logos.mjs`),
 a glyph for a generic action, a chip (a label at half the cap height, never under `TEXT_MIN`: the pill grows round it)
-or a small UI piece drawn in code (`{ kind: 'ui', aspect, draw: (cap) => ... }`). Every 30 f the objects roll one slot
-up as one strip over 6 f, clipped to the cap box; with chips or UI pieces the line re-flows round each object's width
+or a small UI piece drawn in code (`{ kind: 'ui', aspect, draw: (cap) => ... }`). Every 48 f the objects roll one slot
+up as one strip, gliding 16 f on `E.glideOut`, clipped to the cap box; with chips or UI pieces the line re-flows round each object's width
 (`fit: 'each'`), with marks it keeps the widest. `ObjectLine` is the whole sentence with `[]` where the object sits:
 its words and the slot arrive as one line on the crisp entry (or `entry: 'calm'`), the slot as a word, the rolls
 starting once it has landed, the size fitted to what the layout audit allows it. It is the default for a promise line:

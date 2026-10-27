@@ -3,8 +3,8 @@
 // of its props and `frame`:
 //   InlineObject  a slot inside a line: a real mark (scripts/logos.mjs), a glyph (kit/icons.ts), a chip or a small UI
 //                 piece drawn in code, at 1.0 cap height on the baseline; every `every` frames the objects roll one
-//                 slot up as one strip over 6 f (60 fps frames), clipped to the cap box, and the line re-flows round
-//                 the slot's width while it rolls (`fit: 'each'`) or keeps the widest (`fit: 'max'`)
+//                 slot up as one strip over 16 f (60 fps frames) on E.glideOut, clipped to the cap box, and the line
+//                 re-flows round the slot's width while it rolls (`fit: 'each'`) or keeps the widest (`fit: 'max'`)
 //   ObjectLine    a whole sentence with the slot in it ("[]" marks the place): its words and the slot arrive as one
 //                 line on the crisp entry (hero lines, the default) or the calm one (fx/TypePresets crispWords,
 //                 calmWords), the slot as a word; the swaps start once the slot has landed. The default for a
@@ -34,7 +34,7 @@ export type InlineItem =
 export type InlineRef = InlineItem | string;
 
 /** House numbers: 60 fps frames; sizes as shares of the cap height. */
-export const INLINE = { every60: 30, swap60: 6, pitch: 1.2, clip: 0.06, maxAspect: 1.6, glyphInk: 0.82, maxWidth: 0.84, chip: { label: 0.5, pad: 0.42, gap: 0.22, mark: 0.56 } } as const;
+export const INLINE = { every60: 48, swap60: 16, pitch: 1.2, clip: 0.06, maxAspect: 1.6, glyphInk: 0.82, maxWidth: 0.84, chip: { label: 0.5, pad: 0.42, gap: 0.22, mark: 0.56 } } as const;
 
 const itemOf = (r: InlineRef): InlineItem => (typeof r === 'string' ? { kind: 'logo', logo: r } : r);
 
@@ -68,13 +68,13 @@ export const inlineWidth = (r: InlineRef, cap: number, ground: Ground = 'light',
 };
 
 /**
- * The slot at `frame`: which object shows, the one leaving, the roll's progress `k` (0..1, front-loaded on E.snapOut)
- * and the slot's width. A new object every `every` 60 fps frames from `start`, each change a `swap`-frame roll (house
- * 6 f); `loop` cycles, else the last object holds. Pure.
+ * The slot at `frame`: which object shows, the one leaving, the roll's progress `k` (0..1, eased on E.glideOut) and
+ * the slot's width. A new object every `every` 60 fps frames from `start` (house 48), each change a `swap`-frame roll
+ * (house 16 f: it lands with a tail, forensics motion-decay); `loop` cycles, else the last object holds. Pure.
  */
 export const inlineSlotState = (frame: number, widths: number[], o: { start?: number; every?: number; swap?: number; loop?: boolean; fps?: number; fit?: 'each' | 'max' } = {}) => {
   const s = inlineLogoState(frame, widths.length, { start: o.start, every: o.every ?? INLINE.every60, swap: o.swap ?? INLINE.swap60, loop: o.loop, fps: o.fps });
-  const q = E.snapOut(s.k);
+  const q = E.glideOut(s.k);
   const width = (o.fit ?? 'max') === 'max' ? Math.max(0, ...widths) : mix(widths[s.prev] ?? 0, widths[s.i] ?? 0, q);
   return { ...s, q, width };
 };
@@ -113,8 +113,8 @@ export type InlineObjectProps = {
   size: number; // the line's font size (px)
   frame: number;
   start?: number; // the first object shows from here; the first roll is `every` later
-  every?: number; // 60 fps frames between rolls (house 30)
-  swap?: number; // 60 fps frames of a roll (house 6)
+  every?: number; // 60 fps frames between rolls (house 48)
+  swap?: number; // 60 fps frames of a roll (house 16)
   loop?: boolean;
   fit?: 'each' | 'max'; // the slot's width: each object's own (the line re-flows while it rolls) or the widest
   weight?: number; // the line's weight (its cap height)
@@ -125,7 +125,7 @@ export type InlineObjectProps = {
 
 /**
  * Objects at 1.0 cap height inside a line of type: put it between words (an inline-block on the baseline). Every
- * `every` frames the objects roll one slot up as one strip over `swap` frames (E.snapOut), clipped to the line's cap
+ * `every` frames the objects roll one slot up as one strip over `swap` frames (E.glideOut), clipped to the line's cap
  * box: the next rises from under the baseline as the last leaves over the cap line, never overlapping.
  */
 export const InlineObject: React.FC<InlineObjectProps> = ({ objects, size, frame, start = 0, every, swap, loop = false, fit, weight = TYPE.line.weight, ground = 'light', theme, id }) => {
