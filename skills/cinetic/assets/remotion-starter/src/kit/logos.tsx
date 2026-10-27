@@ -227,8 +227,9 @@ export const inlineLogoState = (frame: number, n: number, o: { start?: number; e
 
 /**
  * Marks at 1.0 cap height inside a line of type: put it between words (an inline-block on the baseline, as wide as
- * the widest mark at cap height). Every `every` frames the next mark rolls in from below over `swap` frames while the
- * last one leaves upward. `size` and `weight` are the line's own.
+ * the widest mark at cap height). Every `every` frames the marks roll one slot up as one strip over `swap` frames
+ * (front-loaded, E.snapOut), clipped to the line's cap box: the next mark rises from under the baseline as the last one
+ * leaves over the cap line, the two never overlapping. `size` and `weight` are the line's own.
  */
 export const InlineLogo: React.FC<{ logos: LogoRef[]; size: number; frame: number; start?: number; every?: number; swap?: number; loop?: boolean; weight?: number; ground?: Ground; mono?: boolean }> = ({
   logos, size, frame, start = 0, every = 30, swap = 6, loop = false, weight = 450, ground = 'light', mono = false,
@@ -241,17 +242,18 @@ export const InlineLogo: React.FC<{ logos: LogoRef[]; size: number; frame: numbe
     const f = files[j];
     if (!f) return null;
     const e = logoOf(logos[j])!;
-    const q = leaving ? E.buildIn(p) : E.snapOut(p);
+    const q = E.snapOut(p); // one strip: both marks move together
     const w = Math.min(width, cap * f.aspect), h = w / f.aspect;
-    const y = leaving ? -q * 0.7 * cap : (1 - q) * 0.7 * cap;
-    const op = leaving ? 1 - q : clamp(q * 1.6);
+    const pitch = 1.2 * cap;
+    const y = leaving ? -q * pitch : (1 - q) * pitch;
+    const op = leaving ? 1 - 0.5 * q : 1;
     return (
       <Img key={`${j}-${leaving ? 'out' : 'in'}`} src={staticFile(f.src)} data-logo={e.name}
-        style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, display: 'block', opacity: op, transform: `translate(${((width - w) / 2).toFixed(2)}px, ${((cap - h) / 2 + y).toFixed(2)}px) scale(${mix(0.86, 1, leaving ? 1 - q : q).toFixed(4)})` }} />
+        style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, display: 'block', opacity: op, transform: `translate(${((width - w) / 2).toFixed(2)}px, ${((cap - h) / 2 + y).toFixed(2)}px)` }} />
     );
   };
   return (
-    <span data-ui style={{ display: 'inline-block', position: 'relative', width, height: cap, verticalAlign: 'baseline', clipPath: `inset(${(-0.22 * cap).toFixed(2)}px -2px ${(-0.22 * cap).toFixed(2)}px -2px)` }}>
+    <span data-ui style={{ display: 'inline-block', position: 'relative', width, height: cap, verticalAlign: 'baseline', clipPath: `inset(${(-0.06 * cap).toFixed(2)}px -2px ${(-0.06 * cap).toFixed(2)}px -2px)` }}>
       {k < 1 && one(prev, k, true)}
       {one(i, k, false)}
     </span>

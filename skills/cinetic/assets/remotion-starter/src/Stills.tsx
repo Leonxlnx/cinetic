@@ -93,8 +93,8 @@ export const BrandHeader: React.FC<{ ground: Ground }> = ({ ground }) => (
 /** The marks to show: given ones, else every mark the film fetched (src/logos.ts). */
 const marksOf = (logos?: LogoRef[]) => (logos && logos.length ? logos : Object.keys(LOGOS));
 
-/** Every logo part at film size on a light and a dark stage: tiles, chips, wordmarks and an inline mark in a line; `zoom` pushes in on the top left (the marks must hold under a camera push). */
-export const LogoSheet: React.FC<{ logos?: LogoRef[]; zoom?: number }> = ({ logos, zoom = 1 }) => {
+/** Every logo part at film size on a light and a dark stage: tiles, chips, wordmarks and an inline mark in a line (`frame`: a mark every 30 f, frame 33 is mid-roll); `zoom` pushes in on the top left (the marks must hold under a camera push). */
+export const LogoSheet: React.FC<{ logos?: LogoRef[]; zoom?: number; frame?: number }> = ({ logos, zoom = 1, frame = 0 }) => {
   const marks = marksOf(logos).slice(0, 10);
   const paper = kitTheme('tintedPaper', C.accent);
   const ink = kitTheme('inkStage', C.accent);
@@ -112,7 +112,7 @@ export const LogoSheet: React.FC<{ logos?: LogoRef[]; zoom?: number }> = ({ logo
             </div>
             <div style={{ display: 'flex', gap: 64 * U, alignItems: 'center' }}>
               <span data-text={`sheet-line-${half}`} style={{ ...typeStyle('line', line), color: t.text }}>
-                {'Works with '}<InlineLogo logos={marks} size={line} frame={0} ground={half ? 'dark' : 'light'} />{' and more'}
+                {'Works with '}<InlineLogo logos={marks} size={line} frame={frame} ground={half ? 'dark' : 'light'} />{' and more'}
               </span>
               {marks.slice(0, 3).map((m, i) => <BrandLogo key={i} logo={m} kind="wordmark" h={58 * U} ground={half ? 'dark' : 'light'} />)}
             </div>
