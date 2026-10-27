@@ -121,6 +121,15 @@ def cutting(d):
     check(e3['note'] == 'A4' and abs(e3['midi'] - 69) < 0.3 and 'tonal' in e3['tags']['character'],
           f"a struck tone is tonal, its note A4 ({e3['note']}, {e3['midi']}, tonal {e3['tonal']})")
     check(e3['dur_s'] <= LB.MAX_S['chime'] + 1e-3, f"cut at the action's length ({e3['dur_s']} s <= {LB.MAX_S['chime']})")
+    # a whoosh: noise through a sweeping band-pass, a smooth spectrum however narrow its band: not tonal, no note
+    from scipy import signal
+    n = int(0.5 * SR)
+    wn = np.random.default_rng(6).standard_normal(n)
+    sos = signal.butter(2, [600, 2400], 'bandpass', fs=SR, output='sos')
+    wh = signal.sosfilt(sos, wn) * np.sin(np.pi * np.arange(n) / n) ** 2
+    wt = LB.tonality(wh / np.abs(wh).max())
+    check(wt < 0.25 and LB.tonality(tone(440.0, 1.0, tau=0.25)) > 0.8,
+          f"a band-passed whoosh is not tonal ({wt:.3f}), a struck tone is")
     w4 = write(os.path.join(d, 'thump.wav'), np.concatenate([silence(0.02), tone(55.0, 0.5, amp=0.9, tau=0.08)]))
     record(w4)
     e4 = LB.add(lp, w4, ['land', 'card-land'], log=quiet)

@@ -32,7 +32,7 @@ the bank alone.
 
 Usage:
   python3 scripts/audio/library.py add FILE --action ACTION[,ACTION] [--licence REC] [--id ID] [--library PATH]
-  python3 scripts/audio/library.py listen [--action ACTION] [--python PY]
+  python3 scripts/audio/library.py listen [--action ACTION[,ACTION]] [--python PY]
   python3 scripts/audio/library.py list [--action ACTION] [--json]
   python3 scripts/audio/library.py check
   python3 scripts/audio/library.py where
@@ -265,21 +265,11 @@ def measure(y):
     centroid = float((f[band] * P[band]).sum() / tot)
     low = float(P[(f >= 20) & (f < 150)].sum() / tot)
     high = float(P[f > 4000].sum() / tot)
-    # tonal: 1 - the spectral flatness (100 Hz - 10 kHz) of its loud frames, against white noise's 0.56; the note:
-    # the strongest peak of 60 Hz - 4 kHz (its octave below when that holds 30 % of it)
+    # tonal: the share of its loud frames' energy (40 Hz - 12 kHz) in narrow peaks, bins 10 dB over the median of
+    # their third of an octave (a filtered noise, a whoosh or a click has a smooth spectrum, whatever its shape: near
+    # 0; a struck note near 1); the note: the strongest peak of 60 Hz - 4 kHz (its octave below when that holds 30 %)
     tonal, midi = 0.0, None
-    fr, hop = 1024, 256
-    ff = np.fft.rfftfreq(fr, 1 / SR)
-    fb = (ff >= 100) & (ff <= 10000)
-    frames = [seg[i:i + fr] for i in range(0, max(1, len(seg) - fr + 1), hop)] if len(seg) >= fr else [np.pad(seg, (0, fr - len(seg)))]
-    rows = []
-    for w in frames:
-        q = np.abs(np.fft.rfft(w * np.hanning(fr))) ** 2 + 1e-20
-        rows.append((float(q[fb].sum()), float(np.exp(np.mean(np.log(q[fb]))) / np.mean(q[fb]))))
-    if rows:
-        emax = max(r[0] for r in rows)
-        flat = [r[1] for r in rows if r[0] >= emax * 0.01]
-        tonal = float(min(1.0, max(0.0, 1 - float(np.median(flat)) / 0.56)))
+    tonal = tonality(seg)
     mag = np.sqrt(P)
     sel = np.nonzero((f >= 60) & (f <= 4000))[0]
     if tonal >= 0.5 and len(sel):
@@ -300,6 +290,31 @@ def measure(y):
                  peak_db=round(20 * math.log10(max(float(np.abs(y).max()), 1e-9)), 2))
     feats['tags'] = tags(feats)
     return feats
+
+
+def tonality(seg):
+    """0..1: the energy share of narrow spectral peaks (10 dB over the local median, 31 bins of 11.7 Hz) in the
+    loud 4096-sample frames of seg, energy-weighted"""
+    np = _np()
+    from scipy.ndimage import median_filter
+    fr, hop = 4096, 1024
+    ff = np.fft.rfftfreq(fr, 1 / SR)
+    fb = (ff >= 40) & (ff <= 12000)
+    if len(seg) < fr:
+        frames = [np.pad(seg, (0, fr - len(seg)))]
+    else:
+        frames = [seg[i:i + fr] for i in range(0, len(seg) - fr + 1, hop)]
+    rows = []
+    win = np.hanning(fr)
+    for w in frames:
+        q = np.abs(np.fft.rfft(w * win)) ** 2 + 1e-24
+        loc = median_filter(q, size=31, mode='nearest')
+        qb, lb = q[fb], loc[fb]
+        e = float(qb.sum())
+        rows.append((e, float(qb[qb > 10 * lb].sum()) / e))
+    emax = max(r[0] for r in rows)
+    sel = [(e, r) for e, r in rows if e >= emax * 0.01]
+    return float(sum(e * r for e, r in sel) / max(1e-30, sum(e for e, _ in sel)))
 
 
 def tags(m):
@@ -440,9 +455,10 @@ def inner_listen(path, only, out_json):
     from listen import SLOP
     doc = load(path)
     res = {}
+    only = {x.strip() for x in (only or '').split(',') if x.strip()}
     for s in doc['sounds']:
         for a in s['actions']:
-            if only and a != only:
+            if only and a not in only:
                 continue
             q = AC.ACTIONS[a]['query']
             try:
@@ -519,7 +535,7 @@ def main(argv=None):
     ap.add_argument('cmd', choices=('add', 'listen', 'list', 'check', 'where', '_inner', '_bankfeats'))
     ap.add_argument('file', nargs='?', help='add: the effect file (its licence record beside it)')
     ap.add_argument('--library', help='the library.json (default: $CINETIC_SFX_LIBRARY, then ~/.cinetic/sfx-library.json)')
-    ap.add_argument('--action', help='add: the action(s) it plays (comma-separated); list / listen: only this one')
+    ap.add_argument('--action', help='add: the action(s) it plays; listen: only these (comma-separated); list: only this one')
     ap.add_argument('--licence', help='add: its licence record (default: <file stem>.licence.json)')
     ap.add_argument('--id', help='add: its id in the library (default: the file name)')
     ap.add_argument('--json', action='store_true', help='list: the ids by action as JSON')
