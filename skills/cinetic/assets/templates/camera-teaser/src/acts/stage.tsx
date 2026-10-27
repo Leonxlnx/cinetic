@@ -12,6 +12,7 @@ import { Words } from '../fx/Words';
 import { kitTheme, shadeRgba } from '../kit';
 import { camera, type CamMove, camPath, camVel, type Shot } from '../lib/camera';
 import { useFilm } from '../lib/film';
+import { expoTail } from '../lib/handoff';
 import { fitSize } from '../lib/measure';
 import { ACT, type ActName, copy, H, W } from '../timeline';
 
@@ -71,11 +72,8 @@ export const MarkAt: React.FC<{ x: number; y: number; size: number; s?: number; 
   </div>
 );
 
-/** The entrance that never stops: an expo tail (x0.94 a 60 fps frame) with a residual drift (px per frame). */
-export const tail = (F: number, at: number, from: number, fps: number, drift = 0.06) => {
-  const t = Math.max(0, ((F - at) * 60) / fps);
-  return F < at ? from : from * 0.94 ** t - drift * t * U;
-};
+/** The entrance that never stops (lib/handoff expoTail): an expo tail with a residual drift (px per 60 fps frame at 1080p). */
+export const tail = (F: number, at: number, from: number, fps: number, drift = 0.06) => expoTail(F, at, from, { drift60: drift, u: U }, fps);
 export const cubicOut = (t: number) => 1 - (1 - Math.min(1, Math.max(0, t))) ** 3;
 export const cubicIn = (t: number) => Math.min(1, Math.max(0, t)) ** 3;
 export const circIn = (t: number) => 1 - Math.sqrt(1 - Math.min(1, Math.max(0, t)) ** 2);

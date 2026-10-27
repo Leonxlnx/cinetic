@@ -2,10 +2,10 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { U } from '../brand/tokens';
 import { DirBlur } from '../fx/Defocus';
+import { popScale } from '../fx/MicroUI';
 import { masonryState, type MasonryTile } from '../fx/Scroll';
-import { mix, prog } from '../lib/anim';
 import { useFilm } from '../lib/film';
-import { copy, CUE, f60, f60x, H, POP_GAP, W } from '../timeline';
+import { copy, CUE, f60, H, POP_GAP, W } from '../timeline';
 import { adSize, adStyle, adWidth, PictureCard, PAGE, useAbs } from './stage';
 
 // WALL - a wall of pictures enters scrolling up, and it is not one rigid plane: every tile settles on its own depth
@@ -26,15 +26,14 @@ export const TILES: MasonryTile[] = [
 ];
 /** The wall's shared exit (60 fps frames): short, so it is fast on the cut. */
 export const WALL_EXIT = 10;
-/** The pill's pop: from 62 % to full in 2 f at 60 fps, no spring. */
-export const PILL_POP = { from: 0.62, frames: 2 } as const;
 
 export const Wall: React.FC = () => {
   const F = useAbs('wall');
   const c = copy('find');
   const words = c.text.trim().split(/\s+/);
   const n = words.length;
-  const tiles = masonryState(F, { at: CUE.wall, out: CUE.wallOut, exit: WALL_EXIT, tiles: TILES }, useFilm());
+  const film = useFilm();
+  const tiles = masonryState(F, { at: CUE.wall, out: CUE.wallOut, exit: WALL_EXIT, tiles: TILES }, film);
   const ride = tiles[0].y - TILES[0].y * U;
   const fast = tiles.reduce((m, t) => Math.max(m, Math.abs(t.v)), 0);
   const size = adSize(c.text, 0.6);
@@ -45,7 +44,7 @@ export const Wall: React.FC = () => {
   let x = (W - total) / 2;
   return (
     <AbsoluteFill style={{ background: PAGE.ground, overflow: 'hidden' }}>
-      <DirBlur v={fast} axis="y" id="wall">
+      <DirBlur v={fast / U} axis="y" id="wall">
         {tiles.map((t) => (
           <div key={t.i} style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${t.x.toFixed(2)}px, ${t.y.toFixed(2)}px, 0)` }}>
             <PictureCard i={t.i + 8} w={t.w} h={t.h} />
@@ -60,7 +59,7 @@ export const Wall: React.FC = () => {
           x += ws[i] + space + (last ? 2 * padX : 0);
           if (F < at) return null;
           if (!last) return <span key={i} style={{ ...adStyle(size), position: 'absolute', left, top: 0 }}>{w}</span>;
-          const k = mix(PILL_POP.from, 1, prog(F, at, at + f60x(PILL_POP.frames), (t) => t));
+          const k = popScale(F, at, {}, film); // 62 % to full in 2 f, no spring (fx/MicroUI)
           return (
             <span key={i} style={{ position: 'absolute', left: left - padX, top: -0.08 * size, padding: `${(0.08 * size).toFixed(1)}px ${padX.toFixed(1)}px`, borderRadius: size * 0.62, background: PAGE.accent, transform: `scale(${k.toFixed(4)})`, transformOrigin: '50% 50%' }}>
               <span style={adStyle(size, PAGE.accentInk)}>{w}</span>

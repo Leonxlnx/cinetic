@@ -112,7 +112,7 @@ export const CUE: Record<string, number> = {
   sib1: bt(25.25),
   sib2: bt(26.5),
   dim: bt(28.5),
-  toast: bt(29),
+  toast: bt(28.5) + f60(21), // offgrid: the toast pops at the modal push's midpoint (lib/camera-moves MODAL.push60 / 2)
   blackout: bt(31.5),
   // stages: the first word decodes in corner brackets, rolls to the second under a zoom in, to the third receding
   stage1: bt(32),

@@ -1,7 +1,7 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { U } from '../brand/tokens';
-import { blurFilter } from '../fx/Oversize';
+import { blurFilter, OVERSIZE_FIRST } from '../fx/Oversize';
 import { DirBlur } from '../fx/Defocus';
 import { pileState } from '../fx/Stack';
 import { E, lmix, mix, prog } from '../lib/anim';
@@ -18,7 +18,7 @@ import { adSize, adStyle, adWidth, PictureCard, circOut, cubicOut, PAGE, useAbs 
 // paths (circ-out, grey to ink) either side of a hero card that settles from x1.16 while pictures are dealt onto it.
 
 /** The opener's measured house numbers: the first word's oversize and settle, the relax per word, the spread. */
-export const OPENER = { from: 2.67, settle: 24, defocus: 6, glide: 24, relax: 0.07, cool: 13, spread: 6.6 } as const;
+export const OPENER = { from: OVERSIZE_FIRST.from, settle: OVERSIZE_FIRST.dur60, defocus: OVERSIZE_FIRST.defocus, glide: 24, relax: 0.07, cool: 13, spread: 6.6 } as const;
 
 export const Open: React.FC = () => {
   const F = useAbs('open');
@@ -82,7 +82,7 @@ export const Open: React.FC = () => {
               <PictureCard i={0} w={cardW} h={cardH} />
             </div>
           </div>
-          <DirBlur v={fast} angle={pile.angle} id="pile">
+          <DirBlur v={fast / U} angle={pile.angle} id="pile">
             {pile.cards.map((k) => (
               <div key={k.i} style={{ position: 'absolute', left: W / 2 - cardW / 2, top: H / 2 - cardH / 2, opacity: k.opacity, transform: `translate3d(${k.x.toFixed(2)}px, ${k.y.toFixed(2)}px, 0) rotate(${k.rot.toFixed(3)}deg) scale(${k.scale.toFixed(5)})` }}>
                 <PictureCard i={k.i + 1} w={cardW} h={cardH} />

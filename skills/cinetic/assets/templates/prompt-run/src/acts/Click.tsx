@@ -43,7 +43,7 @@ export const Click: React.FC = () => {
   const sigma = blurBridge(F, ACT.click.from, {}, film);
   return (
     <AbsoluteFill style={{ background: PAGE.ground, overflow: 'hidden' }}>
-      <DirBlur v={whipV} axis="y" id="click-whip">
+      <DirBlur v={whipV / U} axis="y" id="click-whip">
         <Defocus sigma={sigma}>
           <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: '0 0', transform: `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${S.toFixed(5)})` }}>
             <ComposerShot F={F} />

@@ -30,7 +30,7 @@ const River: React.FC<{ F: number; p: ConveyorProps; cy: number; seed: number }>
   const s = conveyorState(F, p, useFilm());
   const items = [...s.items].sort((a, b) => a.along - b.along); // later along the travel draws on top
   return (
-    <DirBlur v={s.v} angle={p.angle} id={`river${seed}`}>
+    <DirBlur v={s.v / U} angle={p.angle} id={`river${seed}`}>
       {items.map((it) => {
         const k = RIVER.sizes[0] + (RIVER.sizes[1] - RIVER.sizes[0]) * rand(seed * 97 + it.i);
         const w = RIVER.card * U * k;

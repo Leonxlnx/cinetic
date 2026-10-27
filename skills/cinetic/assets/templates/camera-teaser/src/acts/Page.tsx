@@ -5,6 +5,7 @@ import { Defocus } from '../fx/Defocus';
 import { face } from '../kit';
 import { clamp, E, mix, prog } from '../lib/anim';
 import type { CamMove, Shot } from '../lib/camera';
+import { MODAL, modalPush } from '../lib/camera-moves';
 import { useFilm } from '../lib/film';
 import { ACT, copy, CUE, f60, f60x, H, W } from '../timeline';
 import { TEASER } from '../teaser';
@@ -47,18 +48,18 @@ export const Page: React.FC = () => {
   const base: Shot = { ...BASE, k: PAGE_LAYOUT.from };
   const moves: CamMove[] = [
     { at: CUE.page, frames: f60(40), zoom: 1 / PAGE_LAYOUT.from, ease: E.glideOut },
-    { at: CUE.dim, frames: f60(42), zoom: 1.43, ease: E.stdInOut },
+    { at: CUE.dim, frames: f60(MODAL.push60), zoom: MODAL.push, ease: E.stdInOut },
     { at: CUE.blackout, frames: ACT.stages.from - CUE.blackout, zoom: 0.63, ease: circIn },
   ];
-  const dim = prog(F, CUE.dim, CUE.dim + f60x(20), E.stdInOut);
+  const modal = modalPush(F, CUE.dim, film);
   const black = prog(F, CUE.blackout, ACT.stages.from, E.buildIn);
-  const toastT = F - CUE.toast;
+  const toast = modal.toast;
   const tw = 620 * U;
   const th = 130 * U;
   const toastOut = prog(F, CUE.blackout, ACT.stages.from - f60x(6), E.buildIn);
   return (
     <AbsoluteFill style={{ background: INK.ground, overflow: 'hidden' }}>
-      <Defocus sigma={14 * dim}>
+      <Defocus sigma={modal.blur}>
         <World F={F} base={base} moves={moves} smear={false}>
           <div data-text="title" style={{ position: 'absolute', left: 0, top: PAGE_LAYOUT.titleY * U - size * 0.5, width: W, display: 'flex', justifyContent: 'center', fontFamily: FONT.text, fontSize: size, fontWeight: TYPE.display.weight, letterSpacing: `${TYPE.display.track}em`, lineHeight: 1, whiteSpace: 'pre', color: INK.text }}>
             {/* lint-ok: hero word (the page's one title word swings in letter by letter) */}
@@ -76,10 +77,10 @@ export const Page: React.FC = () => {
           {F >= CUE.sib1 && <PlanCard i={0} x={W / 2 - step - slide(CUE.sib1, 900 * U)} y={cy} />}
           {F >= CUE.sib2 && <PlanCard i={2} x={W / 2 + step + slide(CUE.sib2, 900 * U)} y={cy} />}
         </World>
-        <AbsoluteFill style={{ background: INK.ground, opacity: 0.45 * dim }} />
+        <AbsoluteFill style={{ background: INK.ground, opacity: modal.veil }} />
       </Defocus>
-      {F >= CUE.toast && (
-        <div data-ui style={{ position: 'absolute', left: (W - tw) / 2, top: H / 2 - th / 2, width: tw, height: th, display: 'flex', alignItems: 'center', gap: 28 * U, padding: `0 ${36 * U}px`, boxSizing: 'border-box', opacity: clamp(toastT / f60x(8)) * (1 - toastOut), transform: `translate3d(0, ${((1 - clamp(toastT / f60x(10))) * 24 * U).toFixed(2)}px, 0) scale(${mix(0.86, 1, E.snapOut(clamp(toastT / f60x(10)))).toFixed(4)})`, filter: toastT < f60x(22) ? `blur(${(5 * U * (1 - toastT / f60x(22))).toFixed(2)}px)` : undefined, ...glass(th / 2) }}>
+      {toast.shown && (
+        <div data-ui style={{ position: 'absolute', left: (W - tw) / 2, top: H / 2 - th / 2, width: tw, height: th, display: 'flex', alignItems: 'center', gap: 28 * U, padding: `0 ${36 * U}px`, boxSizing: 'border-box', opacity: toast.opacity * (1 - toastOut), transform: `translate3d(0, ${(toast.rise * U).toFixed(2)}px, 0) scale(${toast.scale.toFixed(4)})`, filter: toast.blur > 0.05 ? `blur(${(toast.blur * U).toFixed(2)}px)` : undefined, ...glass(th / 2) }}>
           <div style={{ width: th * 0.42, height: th * 0.42, borderRadius: th, background: INK.accent }} />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span data-text="toast" style={face(40 * U, 600, INK.text)}>{TEASER.page.toast.title}</span>
