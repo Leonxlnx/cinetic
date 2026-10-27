@@ -103,7 +103,8 @@
 #                       because if it is a hard cut its sub-frames blend the two shots into one
 #                       double-exposed frame: make the cut an ACT boundary in src/timeline.ts instead
 #   --measure "ARGS"    extra measure-speed.py arguments, e.g. --measure "--max 64 --step 2"
-#   --spec WxH@fps      extra expectation for probe.py (default: the composition's own size/fps)
+#   --spec WxH@fps      extra expectation for probe.py (default: the composition's own size/fps,
+#                       scaled by a --scale passed after --)
 #   --no-check          skip check-sync.py and probe.py
 #   --keep              keep the work directory (bundle, sharp.mp4, sub.mp4, picture.mp4), and the parts
 #                       always (deliver.sh and later runs leave them; a run without --keep clears the mark)
@@ -287,6 +288,22 @@ if [[ -z "${FPS:-}" ]]; then
   die "no video composition '$COMP' (stills render with 'npx remotion still'). Available: $ids"
 fi
 
+# The file's size: a --scale passed through to Remotion (-- --scale=0.5) scales each side, made even the way
+# Remotion makes it for H.264, so probe expects that size and a half-size preview passes its own gate
+SCALE=""; _prev=""
+for _a in ${EXTRA[@]+"${EXTRA[@]}"}; do
+  case "$_a" in --scale=*) SCALE=${_a#--scale=} ;; esac
+  [[ "$_prev" == --scale ]] && SCALE=$_a
+  _prev=$_a
+done
+OUTSIZE=$SIZE
+if [[ -n "$SCALE" ]]; then
+  OUTSIZE=$(node -e 'const [w, h] = process.argv[1].split("x").map(Number), s = Number(process.argv[2]);
+if (!(s > 0)) process.exit(1);
+const side = (d) => { while (Math.round(d * s) % 2) d--; return Math.round(d * s); };
+console.log(`${side(w)}x${side(h)}`);' "$SIZE" "$SCALE") || die "--scale wants a positive number (got $SCALE)"
+fi
+
 FROM=0; TO=$((TOTAL - 1)); RANGE=()
 if [[ -n "$FRAMES" ]]; then
   [[ "$FRAMES" =~ ^([0-9]+)-([0-9]+)$ ]] || die "--frames wants A-B, e.g. 600-839"
@@ -314,7 +331,7 @@ RARGS=(--muted --log=error)
 [[ $LOOP == 1 ]] && RARGS+=(--image-format=png)
 RARGS+=(${EXTRA[@]+"${EXTRA[@]}"})
 PIC="$WORK/picture.mp4"
-step "$COMP: ${SIZE}@${FPS}, frames $FROM-$TO ($N f, ${DUR}s), mode $MODE"
+step "$COMP: ${SIZE}@${FPS}$([[ "$OUTSIZE" != "$SIZE" ]] && echo " (written at $OUTSIZE, --scale $SCALE)"), frames $FROM-$TO ($N f, ${DUR}s), mode $MODE"
 
 # subframe_span SAMPLES A B: the first and last sub-frame of film frames A-B. A function, because
 # bash 3.2 (macOS) cannot parse a heredoc inside $( ).
@@ -494,7 +511,7 @@ if [[ $NOCHECK -eq 0 ]]; then
     python3 "$SCRIPT_DIR/check-sync.py" "$OUT_ABS" "$AUDIO" --ref-offset "$AOFF_S" --json "out/qa/sync-$NAME.json" >/dev/null || STATUS=1
   fi
   step "probe"
-  PARGS=(--spec "${SPEC:-${SIZE}@${FPS}}" --frames "$N" --json "out/qa/probe-$NAME.json" --no-loudness)
+  PARGS=(--spec "${SPEC:-${OUTSIZE}@${FPS}}" --frames "$N" --json "out/qa/probe-$NAME.json" --no-loudness)
   [[ $NOAUDIO -eq 1 ]] && PARGS+=(--audio none)
   [[ $TENBIT -eq 1 ]] && PARGS+=(--pix-fmt yuv420p10le)
   python3 "$SCRIPT_DIR/probe.py" "$OUT_ABS" ${PARGS[@]+"${PARGS[@]}"} >/dev/null || STATUS=1
