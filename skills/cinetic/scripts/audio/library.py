@@ -28,13 +28,17 @@ the bank alone.
   listen   earshot's ears on every sound for each of its actions: a forced choice between the action's own
            description and cheap-synth alternatives (listen.py's); the winners rank first in the cast.
   list     the library by action; check: every file there, unchanged, and its licence record valid with no
-           credit asked (credits.py's rules); where: which library is used.
+           credit asked (credits.py's rules); measure: every cut measured again (after an update of these
+           measures; the files stay as they are); where: which library is used.
+  Every sound also keeps its power per octave band, where in them it is heard (A-weighted) and its mean power
+  against its loudest 5 ms: the cast weighs them against the film's track (a sound masked there loses ground).
 
 Usage:
   python3 scripts/audio/library.py add FILE --action ACTION[,ACTION] [--licence REC] [--id ID] [--library PATH]
   python3 scripts/audio/library.py listen [--action ACTION[,ACTION]] [--python PY]
   python3 scripts/audio/library.py list [--action ACTION] [--json]
   python3 scripts/audio/library.py check
+  python3 scripts/audio/library.py measure
   python3 scripts/audio/library.py where
 Exit codes: 0 done; 1 a refused or invalid input, a failed check; 2 no library (list, check, listen) or no earshot
 (listen).
@@ -282,14 +286,35 @@ def measure(y):
     corr = round(MK.corr(y if y.ndim == 2 and y.shape[1] == 2 else y[:, 0] if y.ndim == 2 else y), 3)
     dur = len(mono) / SR
     attack = 1000 * max(0, pk - on) / SR
+    bands, heard, fill = octave_bands(mono, env)
     feats = dict(dur_s=round(dur, 4), onset_s=round(on / SR, 4), peak_s=round(pk / SR, 4), end_s=round(end / SR, 4),
                  attack_ms=round(attack, 1), t20_ms=t20, centroid_hz=int(round(centroid)), low_share=round(low, 3),
                  high_share=round(high, 3), tonal=round(tonal, 3), midi=midi,
                  note=note_name(midi) if midi is not None else None, corr=corr,
                  l50_lufs=MK.loud_lufs(y[:, 0] if y.ndim == 2 and y.shape[1] == 1 else y, SR),
-                 peak_db=round(20 * math.log10(max(float(np.abs(y).max()), 1e-9)), 2))
+                 peak_db=round(20 * math.log10(max(float(np.abs(y).max()), 1e-9)), 2), bands=bands, heard=heard,
+                 fill_db=fill)
     feats['tags'] = tags(feats)
     return feats
+
+
+OCTAVES = [63, 125, 250, 500, 1000, 2000, 4000, 8000]  # score.py's bands for the masking check
+A_WEIGHT_DB = [-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1]
+
+
+def octave_bands(mono, env=None):
+    """(bands, heard, fill_db) of a sound: its power share per octave band (OCTAVES), the A-weighted share
+    (where it is heard: a landing by its knock, not its sub) and its mean power over its length against its loudest
+    5 ms, in dB (a click near -15, a held tone near -3): with a level over the bed, what the masking check needs"""
+    np = _np()
+    x = np.asarray(mono, dtype=np.float64)
+    P = np.abs(np.fft.rfft(x * np.hanning(len(x)))) ** 2
+    fr = np.fft.rfftfreq(len(x), 1 / SR)
+    e = np.array([P[(fr >= c / math.sqrt(2)) & (fr < c * math.sqrt(2))].sum() for c in OCTAVES]) + 1e-30
+    h = e * 10 ** (np.array(A_WEIGHT_DB) / 10)
+    env = envelope(x[:, None]) if env is None else env
+    fill = 10 * math.log10(max(1e-30, float(np.mean(x * x))) / max(1e-30, float(np.max(env)) ** 2))
+    return ([round(float(v), 4) for v in e / e.sum()], [round(float(v), 4) for v in h / h.sum()], round(fill, 2))
 
 
 def tonality(seg):
@@ -532,7 +557,7 @@ def cmd_listen(a, path):
 # ------------------------------------------------------------------------------------------
 def main(argv=None):
     ap = argparse.ArgumentParser(description='The sound library: real effects by action, for the cast.')
-    ap.add_argument('cmd', choices=('add', 'listen', 'list', 'check', 'where', '_inner', '_bankfeats'))
+    ap.add_argument('cmd', choices=('add', 'listen', 'list', 'check', 'measure', 'where', '_inner', '_bankfeats'))
     ap.add_argument('file', nargs='?', help='add: the effect file (its licence record beside it)')
     ap.add_argument('--library', help='the library.json (default: $CINETIC_SFX_LIBRARY, then ~/.cinetic/sfx-library.json)')
     ap.add_argument('--action', help='add: the action(s) it plays; listen: only these (comma-separated); list: only this one')
@@ -564,6 +589,12 @@ def main(argv=None):
         if a.cmd == 'listen':
             return cmd_listen(a, path)
         doc = load(path)
+        if a.cmd == 'measure':
+            for snd in doc['sounds']:
+                snd.update(measure(read_audio(snd['_file'])))
+            save(doc, path)
+            print(f"library: measured {len(doc['sounds'])} sound(s) again (their files unchanged); wrote {path}")
+            return 0
         if a.cmd == 'check':
             probs = check(doc)
             for p in probs:

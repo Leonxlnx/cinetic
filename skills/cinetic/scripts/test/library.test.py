@@ -228,6 +228,35 @@ def music():
     check(t0 == 0.0 and t1 > 0 and t2 == 0.0, 'an off-key tonal real effect costs; a tuned bank sound does not')
     check(AC.music_cost(ring, 'appear', None) == (0.0, []) and AC.music_cost(None, 'appear', dict(bpm=120)) == (0.0, []),
           'no track or no measurement: no cost')
+    # masking: a bass-heavy track hides a low thump, not a bright click; measured bands win over the centroid
+    bass = dict(bands=[0.6, 0.2, 0.08, 0.05, 0.03, 0.02, 0.01, 0.01], centroid=300)
+    thump = LB.measure(np.concatenate([silence(0.01), tone(70.0, 0.3, tau=0.06)])[:, None])
+    tick = LB.measure(np.concatenate([silence(0.01), np.pad(click(seed=9), (0, 4000))])[:, None])
+    mt, mc = AC.masked_db(thump, bass, 8), AC.masked_db(tick, bass, 8)
+    ct, why = AC.music_cost(thump, 'land', bass, bed_db=8)
+    cc, _ = AC.music_cost(tick, 'land', bass, bed_db=8)
+    check(mt[0] < AC.MASK_DB <= mc[0] and ct > 1 and cc == 0 and 'masked' in why[0] and len(thump['bands']) == 8,
+          f'a 70 Hz thump is masked under a bass-heavy track ({mt}), a click is not ({mc}); the cost follows')
+    # where the events land: a busy 500 Hz moment at 1 s, a quiet one at 3 s
+    rows = [[round(0.085 * i, 3), 1.0] + ([0.05, 0.05, 0.05, 0.6, 0.1, 0.05, 0.05, 0.05] if 0.8 <= 0.085 * i <= 1.5 else
+                                         [0.4, 0.3, 0.1, 0.05, 0.05, 0.04, 0.03, 0.03]) for i in range(60)]
+    tr = dict(bands=[0.3] * 8, film_bands=rows)
+    b1, b3 = AC.local_bands(tr, [1.0]), AC.local_bands(tr, [3.0])
+    check(b1[3] > 10 * b3[3] and AC.local_bands(tr, []) is None and AC.local_bands({}, [1.0]) is None,
+          f'the music where an event lands: 500 Hz at 1 s ({b1[3]}) over 3 s ({b3[3]})')
+    # score.py's band check reads a take's attack: a click at the start of its window over steady noise
+    import score as S
+    n = int(0.5 * SR)
+    take = np.zeros((n, 2))
+    take[:len(click())] = click()[:, None]
+    noise = np.random.default_rng(3).standard_normal((n, 2)) * 0.01
+    r = S.band_snr(take, noise)
+    A = np.abs(np.fft.rfft(take.mean(axis=1))) ** 2
+    B = np.abs(np.fft.rfft(noise.mean(axis=1))) ** 2
+    fr = np.fft.rfftfreq(n, 1 / SR)
+    band = (fr >= r[0] / math.sqrt(2)) & (fr < r[0] * math.sqrt(2))
+    flat = 10 * math.log10(A[band].sum() / B[band].sum())
+    check(abs(r[1] - flat) < 2.0, f"score.py's band check reads the attack at the window's start ({r[1]:.1f} dB, unwindowed {flat:.1f})")
 
 
 # ------------------------------------------------------------------------------------------
@@ -318,6 +347,33 @@ def cast_library(home):
     moved = [a for a, r in rep5['actions'].items() if r['sound'] != s4[a]]
     check(len(moved) == 1 and rep5['actions'][moved[0]].get('why') == 'an earlier film had this set',
           f'the set of a film five back is not repeated: one action takes its next sound ({moved})')
+    # the ears: an author's variant on a member heard to lose gives way once a library shutter won (to it or to the
+    # bank member that won) ...
+    won = dict(ears={'shutter': dict(p=0.99, won=True)})
+    shot = [dict(f=10, kind='snap', id='s:camera-shutter', variant='film')]
+    sk = dict(base_kit())
+    sk['roles'] = dict(sk['roles'], snap=dict(sound='shutter/dslr', takes=3, align='onset', bed_db=4.0))
+    _, r6 = AC.cast(shot, sk, 60, {}, None, 'v1', None, K.role_for, (),
+                    library={'sounds': [lib_entry('cam-1', ['shutter'], **won)]})
+    _, r7 = AC.cast(shot, sk, 60, {}, None, 'v1', None, K.role_for, ())
+    check('shutter/film' in AC.LOST['shutter'] and r6['actions']['shutter']['sound'] in ('lib:cam-1', 'shutter/snap')
+          and r7['actions']['shutter']['sound'] == 'shutter/film',
+          f"a variant heard to lose gives way once a library sound won ({r6['actions']['shutter']['sound']}); "
+          f"without a library the variant stands ({r7['actions']['shutter']['sound']})")
+    # ... a library sound that lost does not displace it
+    _, r8 = AC.cast(shot, sk, 60, {}, None, 'v1', None, K.role_for, (),
+                    library={'sounds': [lib_entry('cam-2', ['shutter'], ears={'shutter': dict(p=0.1, won=False)})]})
+    check(r8['actions']['shutter']['sound'] == 'shutter/film', f"a library sound that lost leaves the variant ({r8['actions']['shutter']['sound']})")
+    # two presets of one recipe for two actions lose ground
+    check(AC.family('knock/plastic') == AC.family('knock/snap') == 'knock' and AC.family('pro_hover_tick/detent') == 'hover_tick'
+          and AC.family('fit/pop/lip_pop') == 'fit/pop' and AC.family('lib:x') is None, 'the recipe family of a bank sound')
+    two = [dict(f=10, kind='tock', id='a:part-locks'), dict(f=40, kind='tock', id='b:part-locks'),
+           dict(f=80, kind='tock', id='c:jump-cut', action='jump-cut')]
+    fams = set()
+    for film in ('k1', 'k2', 'k3', 'k4', 'k5', 'k6'):
+        _, r9 = AC.cast(two, base_kit(), 60, {}, None, film, None, K.role_for, ())
+        fams.add(AC.family(r9['actions']['lock']['sound']) == AC.family(r9['actions']['jump-cut']['sound']))
+    check(fams == {False}, 'the lock and the jump cut never take two presets of one recipe (six films)')
     os.environ.pop('CINETIC_HOME', None)
 
 
@@ -367,7 +423,22 @@ def placing(d):
     f0 = np.fft.rfftfreq(1 << 17, 1 / SR)[int(np.argmax(spec))]
     check(abs(12 * math.log2(f0 / 440.0)) < 0.15, f'the bell at 425 Hz plays tuned to A4 in D minor ({f0:.1f} Hz)')
     y1, _ = sf.read(os.path.join(takes, b['takes'][1]['file']))
-    check(abs(len(y1) - len(y)) <= 1, "a tonal sound's takes keep its pitch (no speed variants)")
+    y1 = y1 if y1.ndim == 1 else y1.mean(axis=1)
+    f1 = np.fft.rfftfreq(1 << 17, 1 / SR)[int(np.argmax(np.abs(np.fft.rfft(y1 * np.hanning(len(y1)), 1 << 17))))]
+    check([t['pitch'] for t in b['takes']] == ['A4', 'C5'] and abs(12 * math.log2(f1 / 523.25)) < 0.15,
+          f"a pitched role: a take on each of its notes ({[t['pitch'] for t in b['takes']]}, C5 at {f1:.1f} Hz)")
+    nb = copy.deepcopy(new)
+    nb['roles']['bell'].pop('pitches')
+    K.place_library(kp, takes, nb, lib, m, log=quiet)
+    b2 = K.read_real(takes)['roles']['bell']
+    l2 = [len(sf.read(os.path.join(takes, t['file']))[0]) for t in b2['takes']]
+    check(len(l2) == 3 and max(l2) - min(l2) <= 1 and not any(t['pitch'] for t in b2['takes']),
+          "a tonal sound on a role without notes: its takes keep its pitch (no speed variants)")
+    K.place_library(kp, takes, new, lib, m, log=quiet)
+    raw = [(tone(440.0, 0.3), 69.0, True), (tone(110.0, 0.3), 45.0, True), (click(), None, False)]
+    pc = K.pitched_clips(raw, ['A4', 'C5', 'E5'])
+    check(sorted(n[2] for n in pc if n[2]) == ['A4', 'C5', 'E4'] and {n[3] for n in pc} == {0, 2},
+          f"pitched takes stay in the first sound's register: a sound two octaves off is left out ({[n[2] for n in pc]})")
     old_files = [t['file'] for t in pop['takes']]
     new2, _ = AC.cast(ev, new, 60, {}, None, 'p1', {'nothing': {}}, K.role_for, (), library=None, music=m)
     K.place_library(kp, takes, new2, None, m, log=quiet)

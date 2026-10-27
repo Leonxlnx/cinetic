@@ -27,12 +27,15 @@ its licence and made the action's takes with kit.py real.
 With a sound library (library.py: real recordings whose licence needs no credit, cut, levelled and tagged by
 action), its sounds for an action stand beside the bank's members, in order of fit (earshot's ears), first where
 the bank is weak, interleaved elsewhere. Every candidate is then matched to the film's track (music_cost): a tail
-longer than the action's share of the beat (BEATS) at the track's tempo costs, a centroid within an octave of the
-track's (the band the music fills: an effect is read there by its spectrum, never by level) costs, and a tonal
-real effect is tuned to the key by up to a semitone (the rest costs). A sound plays one action of a film, never
-two; an action with four events or more that takes a library sound gets a second one of the same action beside
-it (its takes alternate, so a run never repeats one recording); and the film's set of sounds never equals an
-earlier film's (the history): the action that loses least takes its next sound.
+longer than the action's share of the beat (BEATS) at the track's tempo costs, a sound masked under the track costs
+(masked_db: per octave band its power against the track's where the action's events land, played at its role's
+level over the bed, the best band of those where it is heard under MASK_DB; without the bands, a centroid within an
+octave of the track's), and a tonal real effect is tuned to the key by up to a semitone (the rest costs). A bank
+member the ears heard lose (LOST) gives way to a library sound of its action that won, an author's variant on such
+a member too. A sound plays one action of a film, never two, and a second preset of a recipe already cast
+(knock/snap after knock/plastic) loses ground; an action with four events or more that takes a library sound gets a
+second one of the same action beside it (its takes alternate, so a run never repeats one recording); and the film's
+set of sounds never equals an earlier film's (the history): the action that loses least takes its next sound.
 
 Restraint (plan.py): when the effects in any 10 s pass the film's restraint number, whole actions go quiet,
 the lightest first (letters and detents, then pops, cuts, touches ...): the music carries them. The
@@ -158,6 +161,31 @@ WHOOSH_SHORT_S = 0.5    # kit.WHOOSH_SHORT_S: a short move whips, a long one pas
 SIGNATURE = ('reveal', 'logo-lock', 'thud', 'pass', 'shape', 'swell', 'build', 'text')
 # the actions no bank member sounds convincingly to earshot's ears, with the words to search a real effect by
 WEAK = {'swipe': 'paper slide', 'slide': 'slide', 'build': 'swell', 'press': 'mouse click'}
+# the members earshot 0.4's ears heard lose the forced choice of the action's own words against the cheap-synth
+# alternatives (rendered at their defaults): with a library sound of the action that won, they give way to it
+LOST = {
+    'logo-lock': ('notify/mid_wood', 'pro_impact/short', 'cut_hit/punch', 'cut_hit/sub'),
+    'error': ('glitch/chirp', 'glitch/hit', 'knock/double'),
+    'letter': ('hover_tick/mid', 'pro_click/soft', 'pro_click/mouse', 'pro_click/tink'),
+    'appear': ('fit/pop/lip_pop', 'drip/tiny', 'ui_pop/boop', 'ui_pop/step', 'ui_pop/wide', 'ui_pop/soft', 'ui_pop/fall'),
+    'touch': ('tap/soft', 'tap/finger', 'pro_tap/glass', 'pro_tap/finger', 'pro_tap/soft'),
+    'lock': ('pro_tap/knock', 'knock/plastic', 'knock/double', 'knock/desk'),
+    'press': ('fit/click/floss_lid', 'pro_click/mouse', 'tap/glass', 'click/double', 'click/soft', 'click/thock'),
+    'shutter': ('shutter/mirror', 'shutter/dslr', 'shutter/quick', 'shutter/film'),
+    'slide': ('swish/stick', 'swish/soft', 'swish/cane', 'swish/blade', 'swish/bright', 'swish/zing'),
+    'swipe': ('fit/whoosh.short/bamboo_swish', 'swipe/cloth', 'swipe/flick', 'swipe/paper', 'swipe/glide', 'swish/soft'),
+    'whip': ('whoosh_fast/whip',),
+    'card-land': ('knock/desk',),
+    'land': ('pro_pop_in/double', 'pro_pop_in/knock'),
+    'chime': ('mallet/celesta',),
+    'text': ('mallet/glock', 'mallet/celesta', 'mallet/marimba', 'mallet/pluck'),
+    'reveal': ('cut_hit/punch', 'pro_impact/short', 'cut_hit/air', 'cut_hit/sub'),
+    'thud': ('cut_hit/sub', 'cut_hit/kick'),
+    'pass': ('whoosh_big/thump', 'whoosh_big/thump_deep', 'whoosh_big/gust', 'pro_whoosh_big/windy', 'whoosh_big/thump_airy'),
+    'shape': ('swish/soft', 'reverse_swell/short', 'whoosh_big/reverse', 'reverse_swell/breath', 'pro_zip/down_warm'),
+    'swell': ('reverse_swell/short', 'reverse_swell/dark', 'reverse_swell/breath'),
+    'build': ('pro_riser/air_gate', 'pro_riser/roll', 'riser/snatch', 'riser/dark', 'riser/build'),
+}
 VARIANT_BONUS = 8.0     # a variant naming a member of the action: the author's choice, unless the history forbids it
 UNCAST = ('key.space',)  # generic roles cast leaves alone (the one space bar recording)
 # the tempo budget: a sound for the action should have rung out (its peak plus a 20 dB decay) within this many beats
@@ -167,10 +195,28 @@ BEATS = {'letter': 0.5, 'detent': 0.5, 'press': 0.5, 'touch': 0.5, 'type': 0.5, 
          'whip': 1.5, 'success': 2, 'chime': 2, 'text': 2, 'pass': 3, 'shape': 3, 'reveal': 4, 'thud': 4,
          'logo-lock': 8, 'swell': 8, 'build': 8}
 PENTA_ACTIONS = ('chime', 'text', 'success', 'logo-lock')  # tonal sounds tuned to the key's pentatonic, else its scale
-LIB_START, LIB_START_WEAK, LIB_STEP = 0.5, -2.0, 1.0  # a library sound's place among the bank's members (0, 1, 2 ...)
+LIB_START, LIB_START_WEAK, LIB_STEP = 0.5, -2.0, 0.35  # a library sound's place among the bank's members (0, 1, 2 ...):
+# its winners differ little among themselves (each won the forced choice), so the track decides between them
 LIB_LOST = 3.0          # a library sound earshot's ears heard lose to a cheap-synth alternative for this action
 PARTNER_MIN = 4         # events: an action this busy that takes a library sound takes a second one beside it
+OCTAVE_HZ = (63, 125, 250, 500, 1000, 2000, 4000, 8000)  # library.py OCTAVES, score.py's masking bands
+BED_DB = 7.0            # a role's level over the bed when the kit does not say (the house median)
+MASK_DB = 3.0           # a sound whose best band stands less than this over the busy track is masked there: it costs
+FAMILY_COST = 2.5       # a bank sound whose recipe already plays another action of the film
 RETUNE_MAX = 1.0        # semitones a tonal library sound is moved to the key; the rest of the distance costs
+
+
+def family(sound):
+    """the recipe a bank sound renders from (knock/plastic and knock/snap: knock; fit/pop/lip_pop: fit/pop;
+    pro_hover_tick/detent: hover_tick), so two actions of a film are not two presets of one recipe; None for a
+    library sound"""
+    s = str(sound)
+    if s.startswith(('lib:', 'real:')):
+        return None
+    parts = s.split('/')
+    if parts[0] == 'fit' and len(parts) > 1:
+        return 'fit/' + parts[1]
+    return parts[0][4:] if parts[0].startswith('pro_') else parts[0]
 
 
 def slug(action):
@@ -316,9 +362,54 @@ def retune(midi, key, action):
     return round(best, 3)
 
 
-def music_cost(feat, action, music, tuned=False):
-    """(cost, why) of a sound's measured features (library.py measure: dur_s, peak_s, t20_ms, centroid_hz, midi)
-    against the film's track (music: bpm, centroid, key); 0 without either. tuned: kit.py tune moves it to the key."""
+def local_bands(music, times, win=0.4, around=0.125):
+    """the track's band powers where an action's events land (music film_bands, kit.py track_bands), on the scale
+    of the level an effect is set against (the music's power within around s of the event): per event, each band
+    over the win s from the event against that level; per band the 80th percentile over the events; None without"""
+    rows = (music or {}).get('film_bands')
+    if not rows or not times:
+        return None
+    per = []
+    for t in times:
+        lev = [r[1] for r in rows if abs(r[0] - t) <= around + 0.043]
+        span = [r[2:] for r in rows if t - 0.043 <= r[0] <= t + win + 0.043]
+        if not lev or not span:
+            continue
+        lv = sum(lev) / len(lev)
+        per.append([sum(x[j] for x in span) / len(span) / max(lv, 1e-12) for j in range(len(span[0]))])
+    if not per:
+        return None
+    out = []
+    for j in range(len(per[0])):
+        v = sorted(x[j] for x in per)
+        out.append(round(v[min(len(v) - 1, int(0.8 * len(v)))], 5))
+    return out
+
+
+def masked_db(feat, music, bed_db=None, bands=None):
+    """(best band SNR dB, its band Hz) of a sound over the film's track, or None: per octave band, the sound's power
+    share against the track's power there at its louder moments (kit.py track_bands), the sound played bed_db over
+    the bed (its loudest 5 ms against the track's level) for its whole length (fill_db); the best of the bands that
+    hold 15 % of where it is heard (score.py's band check, before the mix)"""
+    eb, hb, fill, mb = feat.get('bands'), feat.get('heard'), feat.get('fill_db'), bands or (music or {}).get('bands')
+    if not (eb and hb and mb and fill is not None) or len(eb) != len(mb):
+        return None
+    bed = BED_DB if bed_db is None else float(bed_db)
+    best = None
+    for hz, e, h, m in zip(OCTAVE_HZ, eb, hb, mb):
+        if h < 0.15:
+            continue
+        snr = bed + float(fill) + 10 * math.log10(max(float(e), 1e-12) / max(float(m), 1e-12))
+        if best is None or snr > best[0]:
+            best = (round(snr, 1), hz)
+    return best
+
+
+def music_cost(feat, action, music, tuned=False, bed_db=None, bands=None):
+    """(cost, why) of a sound's measured features (library.py measure: dur_s, peak_s, t20_ms, centroid_hz, midi,
+    bands, heard, fill_db) against the film's track (music: bpm, centroid, bands, key); 0 without either. tuned:
+    kit.py tune moves it to the key; bed_db: the level its role plays over the bed; bands: the track's bands where
+    the action's events land (local_bands), else its own louder moments."""
     if not feat or not music:
         return 0.0, []
     c, why = 0.0, []
@@ -330,8 +421,13 @@ def music_cost(feat, action, music, tuned=False):
         if tail > budget:
             c += min(2.0, 1.5 * (tail / budget - 1))
             why.append(f'rings {tail:.2f} s, over {BEATS.get(action, 2):g} beat(s) at {float(bpm):.0f} BPM')
+    mk = masked_db(feat, music, bed_db, bands)
     cen, tc = feat.get('centroid_hz'), music.get('centroid')
-    if cen and tc:
+    if mk is not None:
+        if mk[0] < MASK_DB:
+            c += min(4.0, 0.3 * (MASK_DB - mk[0]))
+            why.append(f'masked under the track: {mk[0]:+.1f} dB in its best band ({mk[1]} Hz)')
+    elif cen and tc:
         d = abs(math.log2(float(cen) / float(tc)))
         if d < 1:
             c += 1.2 * (1 - d)
@@ -364,7 +460,7 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
             roles[name] = r['base']
         elif r.get('added'):
             roles.pop(name, None)
-    groups, first_t, variants = {}, {}, {}
+    groups, first_t, variants, times = {}, {}, {}, {}
     for e in sorted(events, key=lambda x: x['f']):
         dur = float(e['dur']) / fps if 'dur' in e else None
         g = role_for(e.get('kind'), e.get('variant'), float(e.get('weight', 1.0)), dur)
@@ -373,6 +469,7 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
             continue
         groups.setdefault(a, {}).setdefault(g, []).append(e.get('id', ''))
         first_t.setdefault(a, float(e['f']) / fps)
+        times.setdefault(a, []).append(float(e['f']) / fps)
         if e.get('variant'):
             variants.setdefault(a, set()).add(str(e['variant']).lower())
     avoid = set(avoid or ()) | set(old.get('avoid') or [])
@@ -380,11 +477,17 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
     last = prev[0] if prev else None
     older = {s for x in prev[1:4] for s in (x.get('sounds') or {}).values()}
     count = {a: sum(len(v) for v in gs.values()) for a, gs in groups.items()}
+    bed_of = {a: (roles.get(max(gs, key=lambda g: len(gs[g]))) or {}).get('bed_db') for a, gs in groups.items()}
+    here_of = {a: local_bands(music, times[a]) for a in groups}  # the music where the action's events land
     order = sorted(groups, key=lambda a: (ACTIONS[a]['rank'] is not None, -count[a], first_t[a]))
     sig = set((last or {}).get('signature') or [])
     used = set(((last or {}).get('sounds') or {}).values())
-    taken, chosen, scored_of = set(), {}, {}
+    taken, chosen, scored_of, fams = set(), {}, {}, set()
     lib_by_id = {LB.lib_id(x): x for x in (library or {}).get('sounds') or []}
+
+    def lib_won(a):
+        """the library has a sound for the action that won the ears' forced choice"""
+        return any(((x.get('ears') or {}).get(a) or {}).get('won') for x in (LB.candidates(library, a) if library else []))
 
     def cost(a, k, s, feat, tuned):
         c = float(k)
@@ -401,16 +504,24 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
         if s in older:
             c += 1.5
         if s.split('/')[-1] in variants.get(a, ()):
-            c -= VARIANT_BONUS
-        m, mwhy = music_cost(feat, a, music, tuned)
+            if s in LOST.get(a, ()) and lib_won(a):
+                why.append("the author's variant, heard to lose to a cheap-synth alternative: a real recording leads")
+            else:
+                c -= VARIANT_BONUS
+        if family(s) and family(s) in fams:
+            c += FAMILY_COST
+            why.append('its recipe already plays another action')
+        m, mwhy = music_cost(feat, a, music, tuned, bed_of.get(a), here_of.get(a))
         return c + m + 1.6 * jitter(film, a, s), why, mwhy
 
     def candidates_of(a):
         """[(base cost, sound, features, tuned)]: the bank's members, then the library's sounds for the action"""
         out = []
+        lost = LIB_LOST if lib_won(a) else 0.0  # a member the ears heard lose gives way to a library sound that won
         for k, s in enumerate(ACTIONS[a]['sounds']):
             if knobs is None or s in knobs:
-                out.append((k, s, (feats or {}).get(s), bool(((knobs or {}).get(s) or {}).get('pitch'))))
+                out.append((k + (lost if s in LOST.get(a, ()) else 0.0), s, (feats or {}).get(s),
+                            bool(((knobs or {}).get(s) or {}).get('pitch'))))
         start = LIB_START_WEAK if a in WEAK else LIB_START
         for j, x in enumerate(LB.candidates(library, a) if library else []):
             ears = (x.get('ears') or {}).get(a) or {}
@@ -428,6 +539,7 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
         avoided = [x[2] for x in scored if x[0][1] and x[1] < k and not str(x[2]).startswith('lib:')]
         chosen[a] = dict(sound=s, rank=k, avoided=avoided, music=mwhy)
         taken.add(s)
+        fams.add(family(s))
     # the film's set of sounds is never an earlier film's: the action that loses least takes its next sound
     earlier = [sorted(set((x.get('sounds') or {}).values())) for x in prev]
     for _ in range(6):
@@ -451,7 +563,9 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
             continue
         mine = lib_by_id[c['sound']]
         pool = [x for x in scored_of[a] if str(x[2]).startswith('lib:') and x[2] not in taken and x[2] not in avoid]
-        same = [x for x in pool if (lib_by_id[x[2]].get('tags') or {}).get('length') == (mine.get('tags') or {}).get('length')]
+        near = [x for x in pool if x[0][0] <= pool[0][0][0] + 1.5] if pool else []  # the length, among the best
+        length = (mine.get('tags') or {}).get('length')
+        same = [x for x in near if (lib_by_id[x[2]].get('tags') or {}).get('length') == length]
         pick = (same or pool)[:1]
         if pick:
             c['partner'] = pick[0][2]

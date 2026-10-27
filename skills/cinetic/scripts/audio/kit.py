@@ -58,11 +58,12 @@ the history records the film's sounds. Then tune and render. --avoid names sound
 judged poorly (masked under the track, flagged by kit.py listen): the cast takes the next member, and remembers.
 With a sound library (library.py; --library, $CINETIC_SFX_LIBRARY or ~/.cinetic/sfx-library.json) its real
 recordings join each action's candidates, and with a track every candidate is matched to it (actions.py
-music_cost: tempo, the track's band, the key; the bank's sounds measured once per earshot version into
-~/.cinetic/bank-feats.json). A sound plays one action, a busy action on a library sound takes a second one, and the
-set never repeats an earlier film's. A library pick is copied into audio/sfx/ with its licence record and placed as
-the takes of its action's roles (audio/kit/real.lock.json, "cast": true; tonal ones tuned to the key); its role in
-kit.json renders a bank sound as the fallback.
+music_cost: tempo, masking per octave band where the action's events land (track_bands reads the edit), the key;
+the bank's sounds measured once per earshot version into ~/.cinetic/bank-feats.json). A sound plays one action, a
+busy action on a library sound takes a second one, and the set never repeats an earlier film's. A library pick is
+copied into audio/sfx/ with its licence record and placed as the takes of its action's roles (audio/kit/real.lock.json,
+"cast": true; tonal ones tuned to the key, on a role with notes a take on each note); its role in kit.json renders
+a bank sound as the fallback.
 
 Real effects (real): where the bank sounds an action weakly, a free effect whose licence needs no credit
 (Mixkit's free sound effects, downloaded with `music.mjs get --kind sfx`, its licence record beside it) plays
@@ -781,7 +782,7 @@ def cmd_init(a, score_python):
     return tune_file(a, bank_knobs(es))
 
 
-def tune_file(a, knobs=None):
+def tune_file(a, knobs=None, placing=False):
     key = key_of(a.score)
     if key is None:
         print(f'kit: no {a.score}: tonal roles keep their notes (run `kit.py tune` once the key is set)')
@@ -792,6 +793,8 @@ def tune_file(a, knobs=None):
         write_json(a.kit, kit)
     print(f'kit: tuned to {key[2]}: ' + ('; '.join(f'{r} {b or "native"} -> {n}' for r, b, n in ch) if ch
                                           else 'every tonal role already in key'))
+    if ch and not placing and (kit.get('cast') or {}).get('library'):
+        print("kit: the sound library's takes keep the notes they were placed on: cast again (kit.py cast) to move them")
     return 0
 
 
@@ -1038,10 +1041,51 @@ def music_of(kit_path, score_path):
             cs = sorted(float(b['centroid']) for b in bars if b.get('centroid'))
             if cs:
                 out['centroid'] = cs[len(cs) // 2]
+        tb = track_bands(here(ed.get('track') or m.get('track') or ''), ed.get('segments') or [],
+                         os.path.join(root, 'out', 'cache', 'music'))
+        if tb:
+            out['bands'], out['film_bands'] = tb
     return out
 
 
+def track_bands(path, segments, cache_dir):
+    """(bands, film) of the track as the edit plays it, or None when it cannot be decoded here (no ffmpeg, numpy):
+    bands, its power per octave band (library.OCTAVES) at its louder moments (the 80th percentile of 170 ms frames)
+    against its mean power; film, [[film s, its power, the 8 band powers], ...] on the same scale every 85 ms of the
+    film (its segments' src_from..src_to placed at their film_s), so the cast reads the music where each action's
+    events land"""
+    try:
+        import numpy as np
+        sys.path.insert(0, HERE)
+        import library as LB
+        import track as TR
+        x, _ = TR.decode(path, cache_dir)
+    except Exception:  # noqa: BLE001 (the cast then weighs the centroid alone)
+        return None
+    m = x.mean(axis=1)
+    segs = [g for g in segments if g.get('src_from') is not None and g.get('src_to') is not None]
+    segs = segs or [dict(film_s=0.0, src_from=0.0, src_to=len(m) / 48000)]
+    n, hop = 8192, 4096
+    w = np.hanning(n)
+    fr = np.fft.rfftfreq(n, 1 / 48000)
+    sel = [(fr >= c / math.sqrt(2)) & (fr < c * math.sqrt(2)) for c in LB.OCTAVES]
+    rows, film = [], []
+    for g in segs:
+        y = m[int(float(g['src_from']) * 48000):int(float(g['src_to']) * 48000)]
+        for i in range(0, len(y) - n + 1, hop):
+            P = np.abs(np.fft.rfft(y[i:i + n] * w)) ** 2
+            rows.append([P.sum()] + [P[q].sum() for q in sel])
+            film.append(float(g.get('film_s') or 0.0) + (i + n / 2) / 48000)
+    if not rows:
+        return None
+    rows = np.array(rows) + 1e-30
+    mean = rows[:, 0].mean()
+    bands = [round(float(v), 4) for v in np.percentile(rows[:, 1:], 80, axis=0) / mean]
+    return bands, [[round(t, 3)] + [round(float(v), 5) for v in r / mean] for t, r in zip(film, rows)]
+
+
 BANK_FEATS = 'bank-feats.json'
+FEATS_VERSION = 2       # library.py measure's fields (2: octave bands, heard, fill): a new version measures again
 
 
 def bank_feats(es, ids):
@@ -1055,7 +1099,7 @@ def bank_feats(es, ids):
             cache = json.load(fh)
     except (OSError, ValueError):
         cache = {}
-    ver = str(es.version or 'unknown')
+    ver = f"{es.version or 'unknown'}|{FEATS_VERSION}"
     have = dict(cache.get(ver) or {})
     miss = [i for i in dict.fromkeys(ids) if i not in have]
     if miss and es.python:
@@ -1074,16 +1118,19 @@ def bank_feats(es, ids):
 
 
 def real_takes(clips, takes, name, variants=3):
-    """takes (files written into the takes folder, measured) of a role from [(audio, tonal)]: per clip the cut as it
-    is and small variants (speed by 3 % for a toneless sound; for a tonal one the same pitch, a softer top or a
-    shorter tail), interleaved clip by clip"""
+    """takes (files written into the takes folder, measured) of a role from [(audio, tonal[, pitch])]: per clip the
+    cut as it is and small variants (speed by 3 % for a toneless sound; for a tonal one the same pitch, a softer top
+    or a shorter tail), interleaved clip by clip; a clip with a pitch (a note name) is one take on that note"""
     import numpy as np
     import soundfile as sf
     from scipy import signal
-    per = []
-    for x, tonal in clips:
+    per, notes = [], []
+    for c in clips:
+        x, tonal = c[0], c[1]
+        note = c[2] if len(c) > 2 else None
+        notes.append(note)
         vs = []
-        for k in range(variants):
+        for k in range(1 if note else variants):
             if k == 0:
                 y = x
             elif not tonal:
@@ -1099,13 +1146,44 @@ def real_takes(clips, takes, name, variants=3):
             vs.append(y / max(1e-9, float(np.abs(y).max())) * 10 ** (-1 / 20))
         per.append(vs)
     out = []
-    order = [v for k in range(variants) for vs in per for v in vs[k:k + 1]]
-    for k, y in enumerate(order, 1):
+    order = [(v, notes[j]) for k in range(variants) for j, vs in enumerate(per) for v in vs[k:k + 1]]
+    for k, (y, note) in enumerate(order, 1):
         fn = f"real-{name.replace('.', '-')}_{k}.wav"
         path = os.path.join(takes, fn)
         sf.write(path, y.astype(np.float32), 48000, subtype='PCM_24')
         h = sha1_file(path)
-        out.append(dict(file=fn, seed=None, pitch=None, **measure_take(y), sha1=h, key=f'real:{h}', checks=[]))
+        out.append(dict(file=fn, seed=None, pitch=note, **measure_take(y), sha1=h, key=f'real:{h}', checks=[]))
+    return out
+
+
+PITCH_REACH = 6  # semitones a tonal library sound is moved to a note of its role (the nearest octave of the note)
+
+
+def pitched_clips(raw, pitches):
+    """[(audio, tonal, note name, index in raw)] of the tonal library sounds raw = [(audio untuned, midi or None, tonal)] on the
+    notes of a pitched role (its "pitches"): each note's pitch class in the octave around the recording's own
+    note, so a take moves at most PITCH_REACH semitones; a second sound more than PITCH_REACH from the first is
+    left out (a text chain stays in one register); toneless sounds as they are; [] when none is tonal"""
+    from scipy import signal
+    sys.path.insert(0, HERE)
+    import library as LB
+    want = [w for w in (to_midi(p) for p in pitches or []) if w is not None]
+    if not want or not any(t and m is not None for _, m, t in raw):
+        return []
+    out, first = [], None
+    for i, (x, m, tonal) in enumerate(raw):
+        if not tonal or m is None:
+            out.append((x, False, None, i))
+            continue
+        m = float(m)
+        if first is None:
+            first = m
+        elif abs(m - first) > PITCH_REACH:
+            continue
+        for t in sorted({int(round(w)) + 12 * int(round((m - round(w)) / 12)) for w in want}):
+            st = t - m
+            y = signal.resample_poly(x, 1000, int(round(1000 * 2 ** (st / 12))), axis=0) if abs(st) > 1e-3 else x
+            out.append((y, True, LB.note_name(t), i))
     return out
 
 
@@ -1135,8 +1213,9 @@ def place_library(kit_path, takes, kit, lib, music=None, log=print):
     by_id = {LB.lib_id(s): s for s in (lib or {}).get('sounds') or []}
     placed = []
     for act, c in ((kit.get('cast') or {}).get('library') or {}).items():
-        clips, files, recs = [], [], []
-        for sid in [c['sound']] + ([c['partner']] if c.get('partner') else []):
+        clips, files, recs, raw = [], [], [], []
+        sids = [c['sound']] + ([c['partner']] if c.get('partner') else [])
+        for sid in sids:
             s = by_id.get(sid)
             if not s:
                 raise KitError(f"{sid} is not in the sound library {(lib or {}).get('_path')}: cast again")
@@ -1146,6 +1225,7 @@ def place_library(kit_path, takes, kit, lib, music=None, log=print):
             shutil.copyfile(s['_licence'], rd)
             x = read_take(dst)
             tonal = s.get('midi') is not None and float(s.get('tonal') or 0) >= 0.5
+            raw.append((x, s.get('midi'), tonal))
             st = float(c.get('retune') or 0) if sid == c['sound'] else (
                 AC.retune(float(s['midi']), music['key'], act) if tonal and (music or {}).get('key') else 0.0)
             if abs(st) > AC.RETUNE_MAX:
@@ -1157,14 +1237,18 @@ def place_library(kit_path, takes, kit, lib, music=None, log=print):
             recs.append(rel(rd))
         for name in c.get('roles') or []:
             spec = (kit.get('roles') or {}).get(name) or {}
-            tks = real_takes(clips, takes, name, variants=3 if len(clips) == 1 else 2)
-            roles[name] = dict(sound=c['sound'] + (f"+{c['partner']}" if c.get('partner') else ''),
+            notes = pitched_clips(raw, spec.get('pitches'))  # a pitched role (text, bell): a take on each of its notes
+            used = sorted({n[3] for n in notes}) if notes else list(range(len(clips)))
+            tks = real_takes([n[:3] for n in notes] or clips, takes, name, variants=3 if len(clips) == 1 else 2)
+            roles[name] = dict(sound='+'.join(sids[i] for i in used),
                                align=spec.get('align', 'onset'), level_db=float(spec.get('level_db') or 0.0),
                                max_s=None, **{k: float(spec[k]) for k in MIX_KEYS if spec.get(k) is not None},
-                               takes=tks, action=act, file=files[0], licence=recs[0], also=recs[1:], cast=True)
+                               takes=tks, action=act, file=files[used[0]], licence=recs[used[0]],
+                               also=[recs[i] for i in used[1:]], cast=True)
             placed.append(name)
-            log(f"kit cast: {name} ({act}) plays {', '.join(files)}: {len(tks)} takes"
-                + (f", tuned {c['retune']:+.2f} semitone(s) to the key" if c.get('retune') else ''))
+            log(f"kit cast: {name} ({act}) plays {', '.join(files[i] for i in used)}: {len(tks)} takes"
+                + (f" on its notes {', '.join(sorted({t['pitch'] for t in tks if t.get('pitch')}))}" if notes else
+                   f", tuned {c['retune']:+.2f} semitone(s) to the key" if c.get('retune') else ''))
     write_json(os.path.join(takes, REAL_LOCK), real)
     return placed
 
@@ -1236,13 +1320,13 @@ def cmd_cast(a, score_python):
         print('kit cast: --dry-run: audio/kit.json and the history unchanged')
         return 0
     write_json(a.kit, new)
+    tune_file(a, knobs, placing=True)  # the roles' notes first: a tonal library sound takes them
     try:
-        place_library(a.kit, a.takes, new, lib, music)
+        place_library(a.kit, a.takes, read_json(a.kit, 'kit'), lib, music)
     except KitError as e:
         print(f'kit.py: {e}', file=sys.stderr)
         return 1
     AC.write_history(AC.record(hist, film, rep))
-    tune_file(a, knobs)
     print(f'kit cast: wrote {a.kit} and {AC.history_path()}; next: npm run kit (render), kit.py listen (judge), npm run plan')
     return 0
 
