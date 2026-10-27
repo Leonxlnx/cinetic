@@ -24,6 +24,9 @@ The numbers here are proven defaults from building and shipping films, not dogma
 - **Launch films and walkthroughs** get at least 2 rounds. **Stings and loops** need 1 round if every script passes.
 - Stop after 5 rounds, or as soon as the ship gate in §10 is met. Past that point, scores flatten and fixes start to fight each other.
 - Round 1 runs four lenses: director, forensics, sound-sync and art-copy-ui. Later rounds drop art-copy-ui unless copy, type, colour or UI changed.
+- **A dev round can render every 4th frame.** The `FilmEvery` composition is the film sampled (`step` 4 by default,
+  `offset` 0; the next round `--props='{"step":4,"offset":2}'`): a whole-film check at half size in about a quarter of
+  the time, with a paired sheet that still shows every move. Judge timing and spacing on it, motion on a preview.
 - **Every critique round reviews a preview** (`render.sh --preview`), which carries the same BT.709 tags as the master, so colour and banding judgements carry over. Previews are minutes; a blurred master is tens of minutes, and blurring a film that is still changing wastes them.
 - **The blurred master is rendered once, after the last critique round, and gets a check, not a round:** `forensics.py` and `av-audit.py` on the master, the fastest frames at full size (`fastest_frames` in `out/samples.json`, printed by `render.sh`), and a quick director glance at the watch sheets for stamped copies, smears and blur across cuts. If that check finds a problem in one act, re-render that act's range and splice it (§7) rather than re-blurring the film.
 

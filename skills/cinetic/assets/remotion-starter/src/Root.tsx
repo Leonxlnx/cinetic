@@ -6,7 +6,7 @@ import { Act3 } from './acts/Act3';
 import { Act4 } from './acts/Act4';
 import { C, U } from './brand/tokens';
 import { Film, FilmProps } from './Film';
-import { FilmSub, subMetadata } from './FilmSub';
+import { FilmEvery, everyMetadata, FilmSub, subMetadata } from './FilmSub';
 import { Audit } from './lib/Audit';
 import { FontGate } from './lib/FontGate';
 import { BrandAvatar, BrandHeader, BrandLockup, BrandMark, MarkSizes, MarkStill } from './Stills';
@@ -45,6 +45,8 @@ export const RemotionRoot: React.FC = () => (
       defaultProps={{ groups: [] as number[] }}
       calculateMetadata={subMetadata}
     />
+    {/* The film sampled for a dev round: every 4th frame (--props='{"step":4,"offset":2}' for the others). */}
+    <Composition id="FilmEvery" component={FilmEvery} durationInFrames={TOTAL} fps={FPS} width={W} height={H} defaultProps={{ step: 4, offset: 0 }} calculateMetadata={everyMetadata} />
 
     <Folder name="Acts">
       <Composition id="Act1" component={Act1Solo} durationInFrames={ACT.line.dur} fps={FPS} width={W} height={H} defaultProps={{ audit: false } as FilmProps} />
