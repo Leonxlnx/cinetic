@@ -80,8 +80,8 @@ When a word is appended to a centred line, the whole line jumps 44-88 % of the w
 
 A held line creeps, then jumps most of the way in a single frame to open room for the next word, and settles; the new word cuts on in the open space.
 
-- **Build:** <LineSnap mode="room" held="You're" word="scaling" room={{ start }} /> or, in a chain, <Chain recentre="room" ink="pop" />. makeRoomState() creeps 0.28 s (17 % of the distance, speed rising), covers 67.5 % on one frame, settles over 0.24 s; the jump frame is declared (one stepped frame) so it is never shutter-blurred. The new word shows on the jump frame (wordAt / the fragment's first frame).
-- **Primitive:** `fx/LineSnap`, `fx/Chain`
+- **Build:** <LineSnap mode="room" held="You're" word="scaling" room={{ start }} /> or, in a chain, <Chain recentre="room" ink="pop" />. makeRoomState() creeps 0.28 s (17 % of the distance, speed rising), covers 67.5 % on one frame, settles over 0.24 s; the jump frame is declared (one stepped frame) so it is never shutter-blurred. The new word shows on the jump frame (wordAt / the fragment's first frame). As one line: `<TypeLine spec={{ preset: 'room', text, at }}>` (the held words creep, cover 67.5 % in one declared frame, the last word cuts on in the room).
+- **Primitive:** `fx/TypePresets.TypeLine`, `fx/LineSnap`, `fx/Chain`
 - **Timing:** Creep 0.2-0.4 s, jump 60-75 % in one frame, tail 0.2-0.3 s; one per line at most.
 - **Use when:** A statement whose next word is the point: the room appearing is the emphasis.
 - **Avoid when:** Every fragment of a chain (use the jump re-centre); lines that would travel more than about 300 px.
@@ -235,8 +235,8 @@ After a whip cut the sentence is still travelling and each later word sits progr
 
 On the frame the payoff word lands the whole line jumps about 2.2x larger in one frame; the read words settle a few pixels and a short defocus clears while the new word fades in.
 
-- **Build:** <LineSnap mode="snap" held="You Can" word="Now" snap={{ at }} origin="left" /> or snapLast on Chain / Words. House: x2.2, settle 31 px (1080p) on E.glideOut over 7 f@30, defocus 3.1 px on a half cosine over 7 f@30 (at most two ladder copies), new word 16 % -> 100 % over 5 f@30 with an 11 px rise. The snap frame is declared.
-- **Primitive:** `fx/LineSnap`, `fx/Chain`, `fx/Words`
+- **Build:** <LineSnap mode="snap" held="You Can" word="Now" snap={{ at }} origin="left" /> or snapLast on Chain / Words. House: x2.2, settle 31 px (1080p) on E.glideOut over 7 f@30, defocus 3.1 px on a half cosine over 7 f@30 (at most two ladder copies), new word 16 % -> 100 % over 5 f@30 with an 11 px rise. The snap frame is declared. As one line: `<TypeLine spec={{ preset: 'snap', text, at }}>` (the read words at 1/2.2, the last word lands with one declared x2.2 frame).
+- **Primitive:** `fx/TypePresets.TypeLine`, `fx/LineSnap`, `fx/Chain`, `fx/Words`
 - **Timing:** One frame of snap; everything settled within about 0.25 s.
 - **Use when:** The last word of a statement or a launch line: the payoff.
 - **Avoid when:** More than once per film; small type that would still be small after the snap.
@@ -260,8 +260,8 @@ A film gives two faces two jobs: statements in a high-contrast display face, UI 
 
 Each appended word cuts on with no word space (the line reads run-together for a frame or two), then the spaces open and the line re-centres: the word visibly docks.
 
-- **Build:** <Chain recentre="jump"> with a word-space tween from 0 to the font space over 8 f (letter-spacing on the gap span). Recipe: each word's margin-left = space x k with k 0 -> 1 over 12 f (cubic out); negative start values give the overlap version. Anatomy: Spaces open over 3-4 f; re-centre 65-68 % in the first frame, x0.7 a frame after. Sound: One soft tick per word (±45 ms). Materials: Tight append: the new word lands touching the previous one (zero word space, or even overlapping it when it flies in large, glyphs compositing darker where they cross); over the next 8-16 f only the newcomer slides right and the normal space opens on an ease-out while earlier words stay put (left-aligned lines), or the line re-centres once the colour has cooled from the accent to ink.
-- **Primitive:** `fx/Chain`
+- **Build:** <Chain recentre="jump"> with a word-space tween from 0 to the font space over 8 f (letter-spacing on the gap span). Recipe: each word's margin-left = space x k with k 0 -> 1 over 12 f (cubic out); negative start values give the overlap version. Anatomy: Spaces open over 3-4 f; re-centre 65-68 % in the first frame, x0.7 a frame after. Sound: One soft tick per word (±45 ms). Materials: Tight append: the new word lands touching the previous one (zero word space, or even overlapping it when it flies in large, glyphs compositing darker where they cross); over the next 8-16 f only the newcomer slides right and the normal space opens on an ease-out while earlier words stay put (left-aligned lines), or the line re-centres once the colour has cooled from the accent to ink. As one line: `<TypeLine spec={{ preset: 'open', text, at }}>` (each word soft for its first frames and in the accent, the space opening in 7 f, the line re-centring on E.jump with a trail).
+- **Primitive:** `fx/TypePresets.TypeLine`, `fx/Chain`
 - **Materials:** Tight append: the new word lands touching the previous one (zero word space, or even overlapping it when it flies in large, glyphs compositing darker where they cross); over the next 8-16 f only the newcomer slides right and the normal space opens on an ease-out while earlier words stay put (left-aligned lines), or the line re-centres once the colour has cooled from the accent to ink.
 - **Timing:** Spaces 7-8 f; re-centre about 24 f.
 - **Use when:** Taglines built word by word; a brand line.

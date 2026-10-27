@@ -1436,11 +1436,12 @@
     "any"
    ],
    "summary": "Each word rises out of a mask under its baseline on a near-linear head and stops dead, darkening from a light grey as it rises; the last word takes its time.",
-   "recipe": "<MaskRise text by=\"word\" ink={{ from }} /> with a 1.2 pace: head 10 f@60 (85 % of the rise), the rest on the next frame and a quiet tail; the last word x2.8; starts[] puts words on voice onsets. With an explicit ease or a 1.1 pace the 1.1 rise is kept.",
+   "recipe": "<MaskRise text by=\"word\" ink={{ from }} /> with a 1.2 pace: head 10 f@60 (85 % of the rise), the rest on the next frame and a quiet tail; the last word x2.8; starts[] puts words on voice onsets. With an explicit ease or a 1.1 pace the 1.1 rise is kept. As one line: `<TypeLine spec={{ preset: 'mask', text, at }}>` (an 8 f linear-stop head over 1.05 em, words 8 f apart, the last 2.5x, mute to ink as it rises, a mask edge fixed in the line).",
    "timing": "5 f@30 a word, 3-6 f@30 apart; the last word about 14 f@30.",
    "use_when": "A statement read on a voice or a beat, word by word, with a firm landing.",
    "avoid_when": "Soft, floating moods (use the canonical reveal).",
    "primitive": [
+    "fx/TypePresets.TypeLine",
     "fx/MaskRise"
    ],
    "ban_safe": true,
@@ -6473,11 +6474,12 @@
     "any"
    ],
    "summary": "A statement does not fade away: it accelerates out at full opacity and the film cuts on its fastest frame, carrying that speed into the next shot.",
-   "recipe": "exit=\"launch\" exitAt={cutFrame} exitDir=\"left\" (or 'up') on Words or Chain: the line accelerates on E.launchIn over outDur (17 f@60 calm, 14 crisp), 1.25 em, opacity 1 to the last frame. exitAt is the last frame drawn; the next shot starts on exitAt + 1 and opens carried at 0.4-1.4 x the cut speed (lib/handoff.ts carriedCut() or carryChain()). Give `out` too to cut mid-move, before the curve ends. exitOrder 'rtl' removes the words right to left 2 f@60 apart. declares() returns the velocity seam: add it to SEAMS. Without a cut use exit=\"launchFade\" (E.buildIn, 0.6 em, a 10 f fade in the move's last half).",
+   "recipe": "exit=\"launch\" exitAt={cutFrame} exitDir=\"left\" (or 'up') on Words or Chain: the line accelerates on E.launchIn over outDur (17 f@60 calm, 14 crisp), 1.25 em, opacity 1 to the last frame. exitAt is the last frame drawn; the next shot starts on exitAt + 1 and opens carried at 0.4-1.4 x the cut speed (lib/handoff.ts carriedCut() or carryChain()). Give `out` too to cut mid-move, before the curve ends. exitOrder 'rtl' removes the words right to left 2 f@60 apart. declares() returns the velocity seam: add it to SEAMS. Without a cut use exit=\"launchFade\" (E.buildIn, 0.6 em, a 10 f fade in the move's last half). For a TypeLine: `exit: 'slide'` (E.buildIn, 1.5 em in 22 f, the last three words dropping off right to left 2 f apart before the cut) or `exit: 'drift'` (up and away, never faded).",
    "timing": "8-12 f at 30 fps (17-24 f@60); 100-170 px of travel; 23-110 px/f on the last frame at 1080p; the next element visible on the first frame after the cut, or already on the line's last frame (exitOverlap 1: one frame of overlap, the seam moves with it).",
    "use_when": "Every statement that hands over to a new shot; title cards before a scene change.",
    "avoid_when": "A line that stays for the end lock; small UI labels (they fade in 3-6 f).",
    "primitive": [
+    "fx/TypePresets.TypeLine",
     "fx/Words",
     "fx/Chain"
    ],
@@ -6502,11 +6504,12 @@
     "vertical"
    ],
    "summary": "The payoff word cuts in larger than its rest size and settles down to it, never below, while the accent cools to ink behind a soft front that crosses the word.",
-   "recipe": "<Oversize start={f} from={1.6} dur={36 f@60} accent={C.accent} ink={C.ink} cool=\"sweep\" coolEase={E.glideOut} sweep={{ width: 0.8 }}> around the word (text inside uses currentColor). The settle runs on M.oversize on a composited layer; origin 'center' for a centred title, 'left center' for a left-aligned line. A first word may also start defocused and snap sharp exactly when the second word lands (defocus, defocusUntil: a declared step). In a chain use oversizeFirst; in a fragment Words oversize={{ from, dur }}.",
+   "recipe": "<Oversize start={f} from={1.6} dur={36 f@60} accent={C.accent} ink={C.ink} cool=\"sweep\" coolEase={E.glideOut} sweep={{ width: 0.8 }}> around the word (text inside uses currentColor). The settle runs on M.oversize on a composited layer; origin 'center' for a centred title, 'left center' for a left-aligned line. A first word may also start defocused and snap sharp exactly when the second word lands (defocus, defocusUntil: a declared step). In a chain use oversizeFirst; in a fragment Words oversize={{ from, dur }}. As one line: `<TypeLine spec={{ preset: 'land', text, at, lead, scaleFrom }}>` (x1.7 on E.glideOut over 34 f, a slight defocus riding the scale, a given accent home 12 f early; with `lead` the other words append 12 f apart while the line re-centres).",
    "timing": "From x1.28-1.9 (house 1.6; up to about x2.7 with a defocused start), settle 22-56 f@60 (house 36), colour home about 12 f@60 before the scale.",
    "use_when": "The payoff word, a first word, a product name: one per act.",
    "avoid_when": "Long lines (the oversized frame crops them); several oversized landings in a row (the device wears out).",
    "primitive": [
+    "fx/TypePresets.TypeLine",
     "fx/Oversize"
    ],
    "materials": "The landed word cools from a hot accent to ink as a sweep: a band about 30 % of the word wide (hot -> a dark shade -> ink) crosses left to right in 40 f, expo-out, while the word shrinks, so the first letters are ink while the last are still hot.",
@@ -6560,11 +6563,12 @@
     "any"
    ],
    "summary": "A held line creeps, then jumps most of the way in a single frame to open room for the next word, and settles; the new word cuts on in the open space.",
-   "recipe": "<LineSnap mode=\"room\" held=\"You're\" word=\"scaling\" room={{ start }} /> or, in a chain, <Chain recentre=\"room\" ink=\"pop\" />. makeRoomState() creeps 0.28 s (17 % of the distance, speed rising), covers 67.5 % on one frame, settles over 0.24 s; the jump frame is declared (one stepped frame) so it is never shutter-blurred. The new word shows on the jump frame (wordAt / the fragment's first frame).",
+   "recipe": "<LineSnap mode=\"room\" held=\"You're\" word=\"scaling\" room={{ start }} /> or, in a chain, <Chain recentre=\"room\" ink=\"pop\" />. makeRoomState() creeps 0.28 s (17 % of the distance, speed rising), covers 67.5 % on one frame, settles over 0.24 s; the jump frame is declared (one stepped frame) so it is never shutter-blurred. The new word shows on the jump frame (wordAt / the fragment's first frame). As one line: `<TypeLine spec={{ preset: 'room', text, at }}>` (the held words creep, cover 67.5 % in one declared frame, the last word cuts on in the room).",
    "timing": "Creep 0.2-0.4 s, jump 60-75 % in one frame, tail 0.2-0.3 s; one per line at most.",
    "use_when": "A statement whose next word is the point: the room appearing is the emphasis.",
    "avoid_when": "Every fragment of a chain (use the jump re-centre); lines that would travel more than about 300 px.",
    "primitive": [
+    "fx/TypePresets.TypeLine",
     "fx/LineSnap",
     "fx/Chain"
    ],
@@ -6590,11 +6594,12 @@
     "vertical"
    ],
    "summary": "On the frame the payoff word lands the whole line jumps about 2.2x larger in one frame; the read words settle a few pixels and a short defocus clears while the new word fades in.",
-   "recipe": "<LineSnap mode=\"snap\" held=\"You Can\" word=\"Now\" snap={{ at }} origin=\"left\" /> or snapLast on Chain / Words. House: x2.2, settle 31 px (1080p) on E.glideOut over 7 f@30, defocus 3.1 px on a half cosine over 7 f@30 (at most two ladder copies), new word 16 % -> 100 % over 5 f@30 with an 11 px rise. The snap frame is declared.",
+   "recipe": "<LineSnap mode=\"snap\" held=\"You Can\" word=\"Now\" snap={{ at }} origin=\"left\" /> or snapLast on Chain / Words. House: x2.2, settle 31 px (1080p) on E.glideOut over 7 f@30, defocus 3.1 px on a half cosine over 7 f@30 (at most two ladder copies), new word 16 % -> 100 % over 5 f@30 with an 11 px rise. The snap frame is declared. As one line: `<TypeLine spec={{ preset: 'snap', text, at }}>` (the read words at 1/2.2, the last word lands with one declared x2.2 frame).",
    "timing": "One frame of snap; everything settled within about 0.25 s.",
    "use_when": "The last word of a statement or a launch line: the payoff.",
    "avoid_when": "More than once per film; small type that would still be small after the snap.",
    "primitive": [
+    "fx/TypePresets.TypeLine",
     "fx/LineSnap",
     "fx/Chain",
     "fx/Words"
@@ -15516,7 +15521,7 @@
    "recipe": "<DefocusCut out empty={1}>; the ghost as a RackFocus level kept behind the new line. Anatomy: Blur 8-40 px and opacity together, most of the blur late; one empty frame; ghost variant: grey, blurred, held behind. Sound: A level swell before the cut; a quiet breath.",
    "timing": "8-18 f; empty 1 f.",
    "use_when": "Calm statements leaving; a line that should feel spoken into silence.",
-   "avoid_when": "Blur on small UI type.",
+   "avoid_when": "Blur on small UI type; a hero line or a statement (they leave at speed: slide, drift, spread, collapse).",
    "primitive": [
     "fx/CutFx.DefocusCut"
    ],
@@ -15707,11 +15712,12 @@
     "sting"
    ],
    "summary": "Each word starts about 10x its size (one letter fills the frame), blurred and off-centre, and shrinks into its slot: the words seem to come from behind the viewer.",
-   "recipe": "<Oversize from={10} dur={23} defocus={14} defocusDur={18}> per word with an x offset that converges; stagger 10. Anatomy: Per word: scale 10x to 1, a lateral start (left, centre, right in turn), blur clearing as it shrinks; staggered. Sound: The first word on a kick (+19 ms); a soft air pass per word.",
+   "recipe": "<Oversize from={10} dur={23} defocus={14} defocusDur={18}> per word with an x offset that converges; stagger 10. Anatomy: Per word: scale 10x to 1, a lateral start (left, centre, right in turn), blur clearing as it shrinks; staggered. Sound: The first word on a kick (+19 ms); a soft air pass per word. As one line: `<TypeLine spec={{ preset: 'fly', text, at }}>` (each word from x5 and soft, landing in 14 f in log scale on E.snapOut, 10 f apart, touching; the spaces open after the last lands).",
    "timing": "About 23 f per word, stagger 10 f, sharp by the last word's landing.",
    "use_when": "A tagline or a closing line on a strong beat; once per film.",
    "avoid_when": "Calm films; more than 4 words.",
    "primitive": [
+    "fx/TypePresets.TypeLine",
     "fx/Oversize"
    ],
    "ban_safe": true,
@@ -15731,11 +15737,12 @@
     "feature"
    ],
    "summary": "The whole line is laid out at once but only the first words are sharp; sharpness travels across it left to right, and the last word closes a gap as it sharpens.",
-   "recipe": "<FocusWord mode=\"ui\"> with the line split into words. Anatomy: Per-word blur and opacity by position; last word gap close. Sound: None. Materials: An address bar built from separate soft pills the colour of the canvas, defined only by a drop shadow (0 6px 18px at 8 %) and an inner top highlight (0 -2px 6px white at 90 %), with thin black line icons; no borders.",
+   "recipe": "<FocusWord mode=\"ui\"> with the line split into words. Anatomy: Per-word blur and opacity by position; last word gap close. Sound: None. Materials: An address bar built from separate soft pills the colour of the canvas, defined only by a drop shadow (0 6px 18px at 8 %) and an inner top highlight (0 -2px 6px white at 90 %), with thin black line icons; no borders. As one line: `<TypeLine spec={{ preset: 'glide', text, at }}>` (the set line slides in 2.4 em and slows into a drift while its words resolve left to right, 3.5 f apart, solid in 8 f).",
    "timing": "Sweep 34 f; gap close 16 f; continuous drift.",
    "use_when": "A sentence that reads in one sweep; a calm opener.",
    "avoid_when": "Lines the viewer has to wait for.",
    "primitive": [
+    "fx/TypePresets.TypeLine",
     "fx/FocusWord"
    ],
    "materials": "An address bar built from separate soft pills the colour of the canvas, defined only by a drop shadow (0 6px 18px at 8 %) and an inner top highlight (0 -2px 6px white at 90 %), with thin black line icons; no borders.",
@@ -16229,11 +16236,12 @@
     "any"
    ],
    "summary": "Each word rises from behind an invisible baseline mask while going grey to ink; the last word takes twice as long; verb-plus-object lines can follow with a 3 f lag.",
-   "recipe": "<MaskRise lastScale={2} ink>. Anatomy: Rise of about 90 px from under the baseline, ink from grey; variant: staggered hard exit. Sound: Hits on each verb.",
+   "recipe": "<MaskRise lastScale={2} ink>. Anatomy: Rise of about 90 px from under the baseline, ink from grey; variant: staggered hard exit. Sound: Hits on each verb. As one line: the TypeLine preset `mask`.",
    "timing": "Rise 18-20 f; second word 6 f behind; exit 14 f; lines 60 f apart.",
    "use_when": "Short commands, verbs on hits, any line that should feel cut and precise.",
    "avoid_when": "Long lines (the masked rise loses its snap).",
    "primitive": [
+    "fx/TypePresets.TypeLine",
     "fx/MaskRise"
    ],
    "ban_safe": true,
@@ -16321,11 +16329,12 @@
     "any"
    ],
    "summary": "A line or a set leaves in a designed order: words vanish from the end one frame apart while the line accelerates; words are removed one per frame until one remains; the dim line erases word by word while the big type drifts; chips fall off while words drop right to left; words spread apart and fade from the end while the camera zooms; alternate words drop out, then the rest; list lines slide out top first; image tiles cut off one at a time.",
-   "recipe": "Words/Chain exit with exitOrder 'rtl' (2 f apart) or 'stagger'; HardStep for one-per-frame removals. Anatomy: 1-4 f between removals; order right-to-left, alternate, top-first or noun-last; optional drift on an ease-in under it. Sound: Mouse clicks; a deep boom; clicks on the drop-outs. Materials: Two more constructions: words defocus out one at a time from the line's end (blur 0 -> 8 px with opacity 1 -> 0 over 16 f, staggered 8-12 f) while the word gaps widen 40 %; or a list turns grey, then each line is cropped away from the left by a hard edge, top lines first, so the left edge forms a staircase (24 f) as the lines fade.",
+   "recipe": "Words/Chain exit with exitOrder 'rtl' (2 f apart) or 'stagger'; HardStep for one-per-frame removals. Anatomy: 1-4 f between removals; order right-to-left, alternate, top-first or noun-last; optional drift on an ease-in under it. Sound: Mouse clicks; a deep boom; clicks on the drop-outs. Materials: Two more constructions: words defocus out one at a time from the line's end (blur 0 -> 8 px with opacity 1 -> 0 over 16 f, staggered 8-12 f) while the word gaps widen 40 %; or a list turns grey, then each line is cropped away from the left by a hard edge, top lines first, so the left edge forms a staircase (24 f) as the lines fade. For a TypeLine: `exit: 'slide'` carries the right-to-left drop-out on a sideways launch.",
    "timing": "14-30 f.",
    "use_when": "Exits that should read as a build in reverse; leaving one word alone.",
    "avoid_when": "All at once (that is a cut, not an exit).",
    "primitive": [
+    "fx/TypePresets.TypeLine",
     "fx/Words"
    ],
    "materials": "Two more constructions: words defocus out one at a time from the line's end (blur 0 -> 8 px with opacity 1 -> 0 over 16 f, staggered 8-12 f) while the word gaps widen 40 %; or a list turns grey, then each line is cropped away from the left by a hard edge, top lines first, so the left edge forms a staircase (24 f) as the lines fade.",
@@ -16750,7 +16759,7 @@
     "any"
    ],
    "summary": "A line is revealed left to right by a soft travelling edge, near-constant speed, so it washes on; glyphs can be born in a hot accent and cool; a status line can end with a spinner turning into a check.",
-   "recipe": "<Wipe kind=\"gradient\"> on the line; accent via HueSweep or Words accent. Anatomy: Soft alpha ramp about 70 % of the element; glyphs accent -> ink as the edge passes. Sound: A soft notification ding mid-reveal, or a kick at the end.",
+   "recipe": "<Wipe kind=\"gradient\"> on the line; accent via HueSweep or Words accent. Anatomy: Soft alpha ramp about 70 % of the element; glyphs accent -> ink as the edge passes. Sound: A soft notification ding mid-reveal, or a kick at the end. Keep the edge crisp: at most about 1.2 em of feather, and the letters behind it at full strength (a long ramp into the ground reads as half-faded words, never as writing); the TypeLine preset `develop` is the crisp version.",
    "timing": "6-24 f across 880 px (first 4 f slower); fall-off 56 f.",
    "use_when": "Status lines, single lines over a picture.",
    "avoid_when": "Edges narrower than a letter (that reads as a hard wipe).",
@@ -16759,7 +16768,7 @@
    ],
    "ban_safe": true,
    "bans": [],
-   "weight": 2,
+   "weight": 1,
    "impact": 3
   },
   {
@@ -16774,11 +16783,12 @@
     "feature"
    ],
    "summary": "Each appended word cuts on with no word space (the line reads run-together for a frame or two), then the spaces open and the line re-centres: the word visibly docks.",
-   "recipe": "<Chain recentre=\"jump\"> with a word-space tween from 0 to the font space over 8 f (letter-spacing on the gap span). Recipe: each word's margin-left = space x k with k 0 -> 1 over 12 f (cubic out); negative start values give the overlap version. Anatomy: Spaces open over 3-4 f; re-centre 65-68 % in the first frame, x0.7 a frame after. Sound: One soft tick per word (±45 ms). Materials: Tight append: the new word lands touching the previous one (zero word space, or even overlapping it when it flies in large, glyphs compositing darker where they cross); over the next 8-16 f only the newcomer slides right and the normal space opens on an ease-out while earlier words stay put (left-aligned lines), or the line re-centres once the colour has cooled from the accent to ink.",
+   "recipe": "<Chain recentre=\"jump\"> with a word-space tween from 0 to the font space over 8 f (letter-spacing on the gap span). Recipe: each word's margin-left = space x k with k 0 -> 1 over 12 f (cubic out); negative start values give the overlap version. Anatomy: Spaces open over 3-4 f; re-centre 65-68 % in the first frame, x0.7 a frame after. Sound: One soft tick per word (±45 ms). Materials: Tight append: the new word lands touching the previous one (zero word space, or even overlapping it when it flies in large, glyphs compositing darker where they cross); over the next 8-16 f only the newcomer slides right and the normal space opens on an ease-out while earlier words stay put (left-aligned lines), or the line re-centres once the colour has cooled from the accent to ink. As one line: `<TypeLine spec={{ preset: 'open', text, at }}>` (each word soft for its first frames and in the accent, the space opening in 7 f, the line re-centring on E.jump with a trail).",
    "timing": "Spaces 7-8 f; re-centre about 24 f.",
    "use_when": "Taglines built word by word; a brand line.",
    "avoid_when": "Long words that become unreadable when run together.",
    "primitive": [
+    "fx/TypePresets.TypeLine",
     "fx/Chain"
    ],
    "materials": "Tight append: the new word lands touching the previous one (zero word space, or even overlapping it when it flies in large, glyphs compositing darker where they cross); over the next 8-16 f only the newcomer slides right and the normal space opens on an ease-out while earlier words stay put (left-aligned lines), or the line re-centres once the colour has cooled from the accent to ink.",
@@ -17822,6 +17832,72 @@
    "bans": [],
    "weight": 1,
    "impact": 3
+  },
+  {
+   "id": "ty-drop-from-above",
+   "name": "Words drop into the line from above",
+   "category": "typography_motion",
+   "family": "Type arrivals",
+   "role": "workhorse",
+   "energy": "any",
+   "formats": [
+    "any"
+   ],
+   "summary": "Each word drops a short way into its slot from above, from a muted grey to the ink, trailing a short vertical smear; the last word lands in the accent and cools.",
+   "recipe": "Word w starts at at + 9w f; p = prog(f, o, o + 12, E.snapOut); translateY = -0.28 em x (1 - p); opacity = 0.4 + 0.6p; colour mixColor(mute, ink, p); a smear of 0.12 em x (1 - p) above it (two or three fading copies). The last word mixes toward the accent instead and cools to the ink over 30 f after it lands. As one line: `<TypeLine spec={{ preset: 'fall', text, at }}>`.",
+   "timing": "Per word 12 f, 9 f apart (8-10), drop 0.28 em (0.2-0.3); a four-word line lands in about 40 f.",
+   "use_when": "A line over a dark, deep ground (a product world, a night UI) where a rise from below would fight the composition; a claim that settles down onto the product.",
+   "avoid_when": "Two lines in a row that both drop; a light, airy film where the canonical rise is the voice.",
+   "primitive": [
+    "fx/TypePresets.TypeLine"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 4
+  },
+  {
+   "id": "ty-tracking-spread-exit",
+   "name": "Words track apart into a zoom",
+   "category": "typography_motion",
+   "family": "Type exits",
+   "role": "accent",
+   "energy": "high",
+   "formats": [
+    "any"
+   ],
+   "summary": "The line leaves by its words tracking apart faster and faster while the camera zooms toward the first word; the words go from the end, right to left, and the cut lands on the peak.",
+   "recipe": "From `out`: q = (f - out) / 26; word w moves +0.5 em x w x E.launchIn(q); the line scales x1.6^E.launchIn(q) about the first word's centre; word w (rank r from the last) fades over 8 f from 26 x (0.4 + 0.45 r / (n - 1)) f. Cut on frame 26 (the first words still show). For a TypeLine: `exit: 'spread'`.",
+   "timing": "26 f; word drift 0.5 em per word index; zoom x1.6 (x2.3 when the camera carries on into the next shot); fades 8 f, right to left.",
+   "use_when": "A line that hands over to a bigger moment (a drop, a product reveal) through a zoom; typed lines that should leave as typing became motion.",
+   "avoid_when": "A quiet line before a hold; two tracking exits in one film.",
+   "primitive": [
+    "fx/TypePresets.TypeLine"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3
+  },
+  {
+   "id": "ty-tracking-collapse-exit",
+   "name": "Tracking collapses into the cut",
+   "category": "typography_motion",
+   "family": "Type exits",
+   "role": "accent",
+   "energy": "any",
+   "formats": [
+    "any"
+   ],
+   "summary": "A held line contracts toward its centre, letter spacing collapsing faster and faster with each glyph smeared toward the edge it left, and is cut while it moves.",
+   "recipe": "From `out`: p = E.buildIn((f - out) / 10); each glyph moves -12 % of its distance from the line's centre x p; a trail of that frame's travel toward the edge. Cut on frame 10 (about 9 % narrower on the last frame shown). For a TypeLine: `exit: 'collapse'`.",
+   "timing": "10 f (4-5 f at 30 fps); 9-12 % narrower at the cut.",
+   "use_when": "A caption that should leave without a direction, sucked into the next shot (a search field, a chip, a mark at the centre).",
+   "avoid_when": "Long lines (the outer glyphs travel too far); a line that should be read again.",
+   "primitive": [
+    "fx/TypePresets.TypeLine"
+   ],
+   "ban_safe": true,
+   "bans": [],
+   "weight": 3
   }
  ]
 }
