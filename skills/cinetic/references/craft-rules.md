@@ -97,7 +97,8 @@ Four more that have homes but no automated check:
 ## 3. Transitions
 
 1. **Every change is carried by something:** a velocity, a relay object, a morph, a shape match, a held anchor. At
-   least 40 % of seams are carried; no dissolves between scenes; a 1-2 f blend on a motion peak reads as a cut.
+   least 40 % of seams are carried and the house aims for about two thirds; no dissolves between scenes; a 1-2 f
+   blend on a motion peak reads as a cut.
 2. **Hide the cut.** Cut on the fastest frame; cross a foreground object through the frame at the camera's peak speed;
    leave one blank frame (ground only) after a hard cut to reset the eye; hide a big scale jump in one frame of
    motion; swap text on the frame of peak background speed instead of cutting; cut only the background under a locked
@@ -114,6 +115,10 @@ Four more that have homes but no automated check:
 7. **Vary, then bookend.** The same wipe twice in a row reads as a preset; close by mirroring the opening (a window
    leaves as the time-reverse of its entrance, the opening shape returns in a word gap).
 8. **Polarity flips are seams.** Change stage polarity only at act boundaries, with a different device each time.
+9. **The next shot inherits.** It opens one step further along the outgoing move: the object the eye was on in the
+   same place and size (`MatchCut`), a door split's speed turned into the card rising through the gap, an iris's line
+   moving on at 1.15× (`IRIS_CARRY`), the pushed shot of a push-wipe riding 0.62 of its edge. Fast seams streak
+   (0.3-0.5 of the step above about 720 px/s, `references/transitions.md` §11); slow ones stay sharp.
 
 ## 4. Camera and depth
 

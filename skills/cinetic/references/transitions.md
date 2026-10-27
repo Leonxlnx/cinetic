@@ -18,7 +18,7 @@ so the checks treat them as craft. Numbers are 60 fps frames (`f@60`) unless the
 2. [Seam laws](#2-seam-laws)
 3. [Pick the transition from the content](#3-pick-the-transition-from-the-content)
 4. [Iris](#4-iris)
-5. [Morph and MorphChain](#5-morph-and-morphchain)
+5. [Morph, MorphChain and MatchCut](#5-morph-morphchain-and-matchcut)
 6. [Exposure and LightSweep](#6-exposure-and-lightsweep)
 7. [BlockStep, Window, TypeWindow](#7-blockstep-window-typewindow)
 8. [Dive, BlobRing, Wipe](#8-dive-blobring-wipe)
@@ -51,7 +51,9 @@ treatment's beat sheet before building. The house mix for a 30-60 s film, as a s
 | `dissolveUi` | inside UI only | a dissolve of at most 8 f under camera motion, never across an act line |
 | `fadeEnd` | the last seam only | a fade only ends the film |
 
-- **At least 40 % of seams are carried** (velocity, morph, breath, zoom-through, whip, snap zoom, mask, wipe, defocus).
+- **At least 40 % of seams are carried** (velocity, morph, breath, zoom-through, whip, snap zoom, mask, wipe, defocus);
+  the house aims for about two thirds: the motion runs through the cut, and the next shot opens
+  already moving, already holding the object, the shape or the speed the eye was on.
 - **No kind more than 3 times**, except the film's signature transition (mark it `signature: true`).
 - **No dissolve between unrelated shots, and no fade to black except at the very end.**
 - A cut film of more than a few seconds has at least one velocity seam.
@@ -82,6 +84,8 @@ treatment's beat sheet before building. The house mix for a 30-60 s film, as a s
 | The outgoing shot ends on | Use | Seam kind |
 |---|---|---|
 | a small UI object (chip, pill, dot, button) that means the next thing | `MorphChain`: the object gathers, swells and becomes the next word or panel | `morph` |
+| an object the eye is on that goes on in the next shot (a product pushed into, a ring, a card, a tile) | `MatchCut`: the next shot opens with that object where it was, one step further along its move, and settles | `morph` |
+| a frame built of two panels | `doorSplitState`: the halves leave at speed and the next card rides up through the gap | `mask` |
 | a line of type with a gap between two words | `Iris` from the gap, rate mode | `mask` |
 | a framed image or card that should become the next scene | `pillBreath` into the cut, then `Window` steps | `mask` |
 | a big soft foreground object, mist, a frosted panel | `Dive` through it | `defocus` |
@@ -90,7 +94,7 @@ treatment's beat sheet before building. The house mix for a 30-60 s film, as a s
 | a statement that should feel spoken in silence | `DefocusCut` through one empty frame | `defocus` |
 | a section change into one centred statement | `BlobRing` around it | `mask` |
 | a hard beat with nothing to carry | `BlockStep` (blocks, then the incoming element's silhouette) | `stepped` |
-| a soft reveal across the frame | `Wipe` (feathered or gradient edge) | `wipe` |
+| a reveal across the frame | `Wipe kind="push"` (a hard edge pushing the old shot along); `feather` or `gradient` for a soft wash | `wipe` |
 | a downbeat with imagery on both sides | `Pixelate` or `MosaicIris` | `stepped` / `mask` |
 | any other cut | `scaleBreath`, or a velocity hand-over | `breath` / `velocity` |
 
@@ -114,9 +118,14 @@ paces make rate mode the default (`pace.fx.irisMode`); `mode="ease"` keeps the e
   first radius 37 % of the frame height, never a dot) and covers the frame in 10 f at 60 fps, most of the growth on its
   first frames (radius ratios about 1.76, 1.21, 1.10, 1.07 per 30 fps frame). Wind up first: the container widens on
   an ease-in for a few frames and the iris opens on the next beat. Keep the dot for logo stings.
+- **An iris carries speed.** Opened in a line that is moving, the line around the circle accelerates out
+  (`launch()`) into the frame the circle covers the frame on, and the line inside opens moving the same way at 1.15×
+  that speed, decaying in one stage (×0.65 a 30 fps frame) to its drift: `carriedCut(f, cover, { vCut }, { ratio:
+  IRIS_CARRY.ratio, decay: IRIS_CARRY.decay60, fast: { share: 0, decay: 0.4 } })` on the one coordinate both lines
+  ride. The circle itself stays where it opened.
 - Start it on the hit frame. Declares a `mask` seam carrying the shape.
 
-## 5. Morph and MorphChain
+## 5. Morph, MorphChain and MatchCut
 
 `Morph` (the container morph) keeps its 1.1 API; `path={{ a, b }}` draws the container as an outline morph between
 two SVG paths (`morphPath(a, b, p)`) with the content clipped by it, and `seam` declares it. `fx/MorphPath` morphs
@@ -145,6 +154,25 @@ outlines that travel round the shape, with followers and goo.
 - `pillBreath(f, { start, from, to, h, stretch, hold, contract, end })`: a pill mask stretches front-loaded (house 44 f
   on `E.snapOut`), holds 12 f, and contracts into the cut on `E.launchIn` (22 f to 0.86 of its width); pair it with
   `Window` so the next shot opens from the pill's own box.
+
+**MatchCut: the cut that keeps the object.** `<MatchCut frame cut from to outgoing incoming ground />`
+(`matchCutState()` for the numbers alone). The eye is on one thing; the world changes around it on the cut and the
+thing does not jump. `from` is the object's screen box in the outgoing shot (a function of the frame when it moves),
+`to` its rest box in the incoming shot's own layout. The incoming shot opens placed so its object sits one outgoing
+step further along (position and size, size in log space: a push of ×1.09 a frame opens ×1.09 bigger than the last
+outgoing frame), then settles onto its layout in 36 f, the inherited speed falling to about a third in the first
+frames and landing with zero speed.
+
+- Give the incoming rest box a little more room than the inherited one in the direction of the move (a packshot a
+  touch bigger than the last pushed frame) so the push lands; where the inherited speed would carry it past its rest
+  it brakes instead of bouncing.
+- `carry: ['x', 'y']` keeps the position and opens at the new size (a ring that reappears big on the same centre);
+  `ratio: 0` matches the box with the object at rest. Draw the incoming shot's paper or colour field as `ground` (it
+  never moves, so no edge shows while the shot opens smaller than its rest).
+- A shape carried across photo cuts is a match cut too: two discs contracting into the cut become an outline ring on
+  the pair's centre and a frame on the pair's box, each opening at the inherited size and still contracting.
+- Declares a `morph` seam on the incoming first frame (carrying scale for a push into the object) and camera blur on
+  the frames the object moves fast enough to smear.
 
 ## 6. Exposure and LightSweep
 
@@ -188,11 +216,21 @@ product as it lands, or a light event that carries a cut. Both count as the act'
   frame and frames the next statement, then breathes (tightens on `M.ringTighten`, loosens, its centre wandering).
   House: swirl 8 f from a hole 1.6× its rest size; hole 0.74 × 1.12 of the frame; soft edge 0.36 of the radius;
   tighten to 0.86 over 28 f; wobble 25 px over 2 s. Two or three section changes into a statement at most.
-- **`<Wipe frame start kind angle feather outgoing incoming />`**: the incoming shot behind a travelling soft edge (an
-  alpha ramp in a mask, never a blurred element). `kind: 'feather'` (house): a 350 px edge that decelerates across the
-  frame (it lands at about a third of its starting speed), 30 f on `E.softOut`. `kind: 'gradient'`: an edge as wide as
-  70 % of the element it reveals, at one speed (house 3360 px/s): a line of type washing on. A two-stage push-wipe is
-  two wipes in a row, the second starting as the first lands, the same direction.
+- **`<Wipe frame start kind angle outgoing incoming />`**: the incoming shot behind a travelling edge (an alpha ramp in
+  a mask, never a blurred element).
+  - `kind: 'push'`, the studio wipe: a hard edge that pushes the outgoing shot along. The edge starts off-frame, so
+    the old shot is already moving when it enters; it arrives fast (its speed peaks a quarter of the way in, about 7 %
+    of the frame a 60 fps frame), decelerates to 0.483 of the frame in 54 f, creeps, then leaves on `E.buildIn` over
+    42 f and is cut at speed. The outgoing shot rides 0.62 of the edge's travel in the arrival and holds while the
+    edge leaves. The edge streaks 0.3 of its step (a box-blurred hard edge is a ramp), so it is sharp when slow and
+    smeared when fast; the pushed shot is smeared along the travel (`smear: 'draw'`, or `'shutter'` to declare camera
+    blur instead). `stages` sets other runs (`[{ to, frames, ease, push, gap }]`), `ride: 1` pins the incoming shot to
+    the edge as a sliding sheet.
+  - `kind: 'feather'`: a 350 px edge that decelerates across the frame (it lands at about a third of its starting
+    speed), 30 f on `E.softOut`. `kind: 'gradient'`: an edge as wide as 70 % of the element it reveals, at one speed
+    (house 3360 px/s): a line of type washing on.
+  - A wipe is finished on the frame its run ends (`wipeEnd()`), even when its edge lands a hair short of the frame:
+    `<Wipe>` stops drawing the outgoing shot from there.
 - **Edge masks**: `edgeMask({ left: 250 })` (and `<Scroll edgeMask>`) is the static version for lines that scroll
   through the frame: a line comes out of nothing instead of being cut by the frame.
 
@@ -206,7 +244,9 @@ product as it lands, or a light event that carries a cut. Both count as the act'
   then one over-exposed frame (about 92 % white) with a faint ghost of what was there, then one dark frame of
   horizontal streaks, then the next shot already sliding in, decelerating, and pulling back the moment it lands.
   House: whip 24 f on `E.launchIn` over 0.24 of the frame width; flash 0.92 with a 0.3 ghost; slide 28 f on
-  `E.snapOut` from 0.55 of the width; pull 28 f to 0.65 on `E.glideOut`. Cut on a swell's peak.
+  `E.snapOut` from 0.55 of the width; pull 28 f to 0.65 on `E.glideOut`. Cut on a swell's peak. The slide opens at
+  several times the whip's last speed, so its first frames are the most smeared of the cut: the whip's tail and the
+  slide's head are drawn with the whip-shutter streak (`smear: 'draw'`, house) and sharpen as the shot lands.
 - **`<DefocusCut frame at out empty in outgoing incoming ground />`**: the outgoing line blurs out and fades together
   (most of the blur late), exactly one empty frame, and the next line arrives very soft and pulls into focus, its blur
   shrinking by about the same ratio each frame until it snaps sharp. House: out 18 f to 32 px on `E.buildIn`; 1 empty
@@ -214,8 +254,11 @@ product as it lands, or a light event that carries a cut. Both count as the act'
 - Small cuts (state functions; draw them with any layers):
   - `blackDipState(f, { cut, black, fadeUp })`: a whip that ends on 1-2 black frames, the next shot fading up (house 2
     black frames, 8 f linear).
-  - `doorSplitState(f, { start, frames, axis })`: the frame splits down the middle and both halves slide apart,
-    accelerating (house 24 f on `E.buildIn`).
+  - `doorSplitState(f, { start, frames, axis, rise })`: the frame splits down the middle and both halves slide apart
+    on the measured door path (each step about ×1.5 the last, leaving at about 250 px a frame at 24 fps; 30 f), and
+    the next card inherits their speed turned through 90°: it peeks 32 px over 12 f before the doors move, creeps,
+    then rides up from the bottom edge a third into the doors' run, peaks with them and decays home in 50 f (`rise`,
+    px below its rest; give its rest `top`). Draw the card above the halves.
   - `fillSwapState(f, { at, n, every, grow, fills })`: hard swaps of full-frame fills a few frames apart, each 4 %
     bigger than the last (house 3 swaps 10 f apart).
   - `tintThroughGrey(f, { start, frames, a, b, grey })`: a colour change that passes through a neutral grey of the
@@ -243,6 +286,17 @@ The camera makes many of the best seams: `scaleBreath` (every cut breathes), `wh
 `zoomThrough` with `handoffShot`, `SnapZoom` (one jump frame), `defocusPulse`, `reversal` into the last cut,
 `punchOut` (`references/camera.md`). Speed through a cut comes from `lib/handoff.ts` (`launch`, `carry`,
 `carriedCut`, `carryChain`). Declare each one.
+
+**Fast seams streak.** Slow moves stay crisp; above about 720 px/s at 1080p (24 px a frame at 30 fps, 12 at 60) a
+whip, a scroll into a cut, a slide out of a flash or a pushed shot carries a streak of 0.3-0.5 of its per-frame
+travel along the move, and a travelling hard edge a ramp 0.3 of its step. Two ways, never both on one layer:
+
+- Draw it: `DirBlur` (`fx/Defocus`) along the move from the layer's speed (the whip shutter, 360°, for whips and the
+  slide out of a flash cut). `FlashCut` and `Wipe kind="push"` do this themselves (`smear: 'draw'`).
+- Declare it: `blurRanges(shot, from, to, { film })` (`lib/camera-moves.ts`) returns the frames a camera move is fast
+  enough to smear on, `fastRanges(speed, from, to)` (`lib/handoff.ts`) the same for any speed; put them in
+  `CAMERA_BLUR` (or a primitive's `declares()`, with `smear: 'shutter'`) and the finishing pass renders exactly those
+  frames with the shutter. A crisp film keeps its holds sharp and still streaks its whips.
 
 ## 12. Sound-led cuts
 

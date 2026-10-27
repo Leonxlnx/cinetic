@@ -104,10 +104,10 @@ Two dark spheres slide together until only their lens-shaped overlap remains at 
 
 The next card peeks up 31 px from the bottom edge as a preview, then the two halves of the current layout accelerate off left and right like doors, and the card rises through the gap. **When:** Introducing the next product surface. **Avoid:** Halves with content that splits a word.
 
-- **Anatomy:** Peek expo-out; doors ease-in; rise 13 f.
-- **Timing:** Peek 23 f; doors 20-25 f; rise 13 f.
+- **Anatomy:** Peek 32 px; doors on the measured path (each step about x1.5 the last, leaving at speed); the card rides up from the bottom edge a third into the doors' run, peaks with them, decays home.
+- **Timing:** Peek 12 f; doors 30 f; rise 50 f.
 - **Sound:** A pop, a hit, a punchy accent.
-- **Build:** doorSplitState({ frames: 22 }) + Cards enterState for the card (peek first).
+- **Build:** doorSplitState({ start, rise: { top } }): the halves' offset and the card's `rise`; draw the card above the halves.
 
 ### Next shot opens as a window; the old shot steps back
 
@@ -199,7 +199,7 @@ A solid panel wipes in from one side to half the frame, holds while something st
 - **Anatomy:** Stage 1 expo-out to half, near-hold 8 f, stage 2; hard wipe 0 -> 58 -> 74 -> 95 % coverage.
 - **Timing:** 44 + 48 f; hard wipe 8 f + settle 13 f.
 - **Sound:** Voice; a riser into stage 2.
-- **Build:** Two `<Wipe>` runs in a row, the second starting as the first lands; a hard wipe with feather 0.
+- **Build:** `<Wipe kind="push">` (its house stages are this device: arrival to 0.483 of the frame in 54 f, creep, leave in 42 f at speed, the footage riding 0.62 of the edge, the edge streaking 0.3 of its step); `stages` for other runs.
 - **Materials and numbers:** Both layers smear: at the fastest frames the entering panel and the pushed footage carry a horizontal blur of 25-35 px (blur = speed x 0.3), the footage pushed at 0.64x the edge speed and the panel's edge soft over about 30 px; the blur is gone by the park, 24 f in.
 
 ### A soft light band carries the old graphic out
