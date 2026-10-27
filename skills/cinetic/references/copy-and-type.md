@@ -573,8 +573,8 @@ the accent: cap height 16.5 % of the frame height (16 % at the least; Inter 245 
 margin, tracking −0.04 em, weight 600-700, lead 0.98, one to three lines broken at word boundaries (`claimLayout()`
 brings the size down toward 16 % before it adds a fourth line), centred on the frame's height (`align` bottom or top).
 Its words arrive on the crisp entry across the lines; the type is paper or ink on the accent, whichever reads
-(`inkOn()`); the block creeps 1.5 % a second (up to 3 %) through its hold. The accent flood is a declared colour event:
-put its span in the cues' `declared.colour`. Never centred, never at a sentence line's size: under-scaled and centred
+(`inkOn()`); once built, the block creeps from 1.5 % a second, easing toward 3 %, through its hold. The accent flood is
+a declared colour event: list its `declares({ at, hold })` in `src/sync.ts`. Never centred, never at a sentence line's size: under-scaled and centred
 is the claim of a slide deck.
 
 **Objects inside a line** (`kit/inline.tsx`): the thing a sentence names sits in the sentence, at 1.0 cap height on

@@ -3,6 +3,7 @@ import { C, FONT } from '../brand/tokens';
 import { clamp } from '../lib/anim';
 import { type FilmCtx, fpsOf, sizeOf, useFilm } from '../lib/film';
 import { measureTracked } from '../lib/measure';
+import type { Declares } from '../timeline';
 import { crispWords } from './TypePresets';
 import { Words } from './Words';
 
@@ -12,9 +13,9 @@ import { Words } from './Words';
  * (house 600), lead 0.98, one to three lines broken at word boundaries so each line fits the frame, the block centred on
  * the frame's height (or sitting on the bottom or the top margin). The words arrive with the crisp entry, one after
  * another across the lines (7 f apart), so the claim builds as it is read. The accent fills the frame behind it (a
- * declared colour event: put its span in the cues' `declared.colour`), the type in paper or ink, whichever reads. Once
- * it is built the block creeps 1.5 % a second about its left margin, up to 3 % (a few tenths of a px a frame at its far
- * edge; the layout leaves room for it), so the hold is never a frozen frame.
+ * declared colour event: list declares({ at, hold }) in src/sync.ts), the type in paper or ink, whichever reads. Once
+ * its last word has landed the block creeps about its left margin from 1.5 % a second, easing toward 3 % (a few
+ * tenths of a px a frame at its far edge; the layout leaves room for it): the hold keeps moving and never stops dead.
  *
  * The block is tagged data-audit-claim: the layout audit holds it to a 2.5 % left margin instead of the zone's (the
  * claim's 3 % sits inside the title-safe 5 % on purpose); its other edges keep the zone. claimLayout() is pure (pass
@@ -105,6 +106,17 @@ export const contrast = (a: string, b: string) => {
 export const inkOn = (ground: string, light: string = C.paper, dark: string = C.ink) => (contrast(ground, light) >= contrast(ground, dark) ? light : dark);
 
 /**
+ * The hold's creep at `frame`, as the block's scale less 1: nothing until the last of `words` (from `at`, on the crisp
+ * entry) has landed, then `creep` a second easing toward CLAIM.creepMax, so it never stops dead at the cap. Pure.
+ */
+export const claimCreep = (frame: number, at: number, words: number, film?: Partial<FilmCtx>, creep: number = CLAIM.creep) => {
+  const crisp = crispWords(film);
+  const built = at + Math.max(0, words - 1) * (crisp.stagger ?? 0) + (crisp.dur ?? 0);
+  const t = Math.max(0, frame - built) / fpsOf(film);
+  return creep > 0 ? CLAIM.creepMax * (1 - Math.exp((-creep * t) / CLAIM.creepMax)) : 0;
+};
+
+/**
  * <AccentClaim text at frame>: the claim on the accent. `flood` fills the frame with the accent (default true; false sets
  * the claim on whatever is under it, in `color`). Each line is a <Words> line on the crisp entry, the next line's first
  * word 7 f after the last line's last word; `id` tags the lines id.0, id.1 ... for the layout audit.
@@ -117,10 +129,11 @@ export const AccentClaim: React.FC<ClaimSpec & { at: number; frame: number; floo
   const ink = color ?? inkOn(ground);
   const crisp = crispWords(film);
   const gap = crisp.stagger ?? 0;
+  const grow = claimCreep(frame, at, L.lines.reduce((sum, l) => sum + l.words, 0), film, creep);
   let n = 0;
   return (
     <div style={{ position: 'absolute', inset: 0, background: flood ? ground : undefined, overflow: 'hidden', ...style }}>
-      <div data-audit-claim style={{ position: 'absolute', inset: 0, transformOrigin: `${L.left}px 50%`, transform: `scale(${(1 + Math.min(CLAIM.creepMax, (creep * Math.max(0, frame - at)) / fpsOf(film))).toFixed(5)})` }}>
+      <div data-audit-claim style={{ position: 'absolute', inset: 0, transformOrigin: `${L.left}px 50%`, transform: `scale(${(1 + grow).toFixed(5)})` }}>
         {L.lines.map((l, i) => {
           const start = at + n * gap;
           n += l.words;
@@ -144,3 +157,16 @@ export const AccentClaim: React.FC<ClaimSpec & { at: number; frame: number; floo
     </div>
   );
 };
+
+/**
+ * What a claim does on purpose: the accent flood is a colour event, from `at` for `hold` frames (the claim's time on
+ * screen). None with `flood: false`. List it in src/sync.ts declares() so look-audit and grammar-score pause their
+ * colour ceilings over it.
+ */
+export const declares = (p?: { at?: number; hold?: number; flood?: boolean; id?: string }, _film?: Partial<FilmCtx>): Declares => ({
+  stepped: [],
+  flashes: [],
+  cameraBlur: [],
+  seams: [],
+  colour: p?.at !== undefined && p.hold !== undefined && p.flood !== false ? [{ from: p.at, to: p.at + p.hold, id: p.id ?? 'claim' }] : [],
+});

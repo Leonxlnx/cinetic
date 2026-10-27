@@ -60,7 +60,8 @@ const lnk = Array.from({ length: 60 }, (_, k) => Math.log(s(100 + k).k));
 const steps = lnk.slice(1).map((v, i) => v - lnk[i]);
 const m = monoMetrics('Notes in thirty seconds', 100);
 const claim = K.claimLayout({ text: 'Notes in thirty seconds.' }, film(60));
-const half = (t: string, size: number, _w: number, tr: number) => [...t].length * size * (0.5 + tr);
+// 0.52 em a character: two 7-letter words miss the line at 16.5 % (Inter's display cap, 0.727 em) and fit it at 16 %
+const half = (t: string, size: number, _w: number, tr: number) => [...t].length * size * (0.52 + tr);
 const long = K.claimLayout({ text: 'aaaaaaa bbbbbbb ccccccc ddddddd eeeeeee fffffff' }, film(60), half);
 const heavy = K.claimLayout({ text: 'Ship it', weight: 900 }, film(60));
 const W = [100, 300, 200];
@@ -75,7 +76,9 @@ console.log(JSON.stringify({
     word: P.wordPoint('Notes in thirty seconds', m, 960, 540, 2), last: P.wordPoint('Notes in thirty seconds', m, 960, 540),
     noBleed: s(160, 60, { ...push, bleed: false }).audit ?? null,
   },
-  claim, long, heavy, ink: [K.inkOn('#08965A'), K.inkOn('#1F3FBF'), K.inkOn('#E8D24A')],
+  claim, long, heavy, capEm: K.CLAIM.capEm, ink: [K.inkOn('#08965A'), K.inkOn('#1F3FBF'), K.inkOn('#E8D24A')],
+  creep: Array.from({ length: 601 }, (_, f) => K.claimCreep(f, 0, 4, film(60))),
+  claimDecl: [K.declares({ at: 300, hold: 240 }), K.declares({ at: 300, hold: 240, flood: false })],
   slot: { f0: slot(0, 'each'), f30: slot(30, 'each'), f33: slot(33, 'each'), f36: slot(36, 'each'), max33: slot(33, 'max'), f90: slot(90, 'each') },
   chip: { small: I.chipSize(60), big: I.chipSize(160) },
   ol: { slot: ol.slot, text: ol.spec.text, tokens: ol.tokens, slot2: ol2.slot, text2: ol2.spec.text },
@@ -107,12 +110,21 @@ result(near(p.word.x, 960 - 1288 / 2 + (504 + 504 + 336) / 2, 1e-6) && near(p.la
 
 // 2. claim on accent
 const c = D.claim;
-const capOf = (L) => (L.size * 0.71) / 1080;
+const capOf = (L) => (L.size * D.capEm) / 1080; // the face's cap in em, as TypeClaim measures it
 result(near(capOf(c), 0.165, 1e-9) && c.left === 58 && c.track === -0.04 && c.weight === 600 && c.fits, 'claim: cap height 16.5 % of the frame height, flush left at 3 % (58 px), -0.04 em, weight 600', JSON.stringify({ size: c.size, left: c.left }));
 result(c.lines.length >= 2 && c.lines.length <= 3 && c.lines.every((l) => l.x === 58 && l.x + l.width <= 1920 - 96) && near(c.lines[1].top - c.lines[0].top, c.size * 0.98, 1e-6) && Math.abs((c.lines[0].top + c.lines[c.lines.length - 1].top + c.size) / 2 - 540) < 1e-6, 'claim: broken into lines that fit, flush left, lead 0.98, centred on the frame height', c.lines.map((l) => l.text).join(' / '));
 result(D.long.cap >= 0.16 - 1e-9 && D.long.cap < 0.165 && D.long.lines.length === 3 && D.long.fits, 'claim: a long claim comes down toward 16 % to hold in three lines, never under', JSON.stringify({ cap: D.long.cap, lines: D.long.lines.length, fits: D.long.fits }));
 result(D.heavy.weight === 700, 'claim: the weight stays in 600-700', String(D.heavy.weight));
 result(D.ink.join() === '#0D0E10,#F5F6F7,#0D0E10', 'claim: the type is paper or ink on the accent, whichever reads', D.ink.join());
+{
+  const cr = D.creep;
+  const v = cr.slice(1).map((x, i) => x - cr[i]);
+  const built = cr.findIndex((x) => x > 0) - 1; // the last of 4 words lands at 47 (3 gaps of 7 f, a 26 f entry)
+  const after = v.slice(built + 1);
+  const smooth = after.every((x, i) => i === 0 || x <= after[i - 1] + 1e-12 && x >= after[i - 1] * 0.99);
+  result(built === 47 && cr[built] === 0 && Math.max(...cr) <= 0.03 && smooth && v[built + 3 * 60] > 0, 'claim: the hold creeps once the claim is built, eases toward 3 % and never stops dead', JSON.stringify({ built, end: +cr[600].toFixed(4), v1: +(v[built + 1] * 60).toFixed(4) }));
+}
+result(JSON.stringify(D.claimDecl[0].colour) === '[{"from":300,"to":540,"id":"claim"}]' && D.claimDecl[1].colour.length === 0, 'claim: declares() gives the accent flood as a colour event (none without the flood)', JSON.stringify(D.claimDecl.map((d) => d.colour)));
 
 // 3. objects inside a line
 const S = D.slot;
