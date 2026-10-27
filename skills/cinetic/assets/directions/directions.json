@@ -3,7 +3,7 @@
  "about": "Film directions for scripts/deck.py. Each entry is a complete art direction for a 6-45 s launch or product film, or an 8-20 s update film: its world and light, camera, cuts, type, story shape, one signature shot, the lockup, a beat skeleton and music. deck.py deals three that fit the brief; the agent chooses the one that carries the subject's idea, then the full sheet is dealt. Edit this file, then run `python3 scripts/deck.py --validate`.",
  "floor": {
   "about": "The floor against a flat film, checked on renders: the picture never rests.",
-  "moving_body_frames": 0.9,
+  "moving_body_frames": 0.7,
   "depth_planes_shot_share": 0.5,
   "carried_seams_min": 0.4,
   "signature_device_every_s": 3,
@@ -1229,7 +1229,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      90,
      110
@@ -1587,7 +1587,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      72,
      100
@@ -4833,7 +4833,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      90,
      116
@@ -6620,7 +6620,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      80,
      110
@@ -6964,7 +6964,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      90,
      120
@@ -8400,7 +8400,7 @@
     "keywords_required": true
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      76,
      100
@@ -9464,7 +9464,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      80,
      108

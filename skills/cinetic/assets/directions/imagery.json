@@ -294,7 +294,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      96,
      124
@@ -1085,7 +1085,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      90,
      118
@@ -1478,7 +1478,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      70,
      104
@@ -1854,7 +1854,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      96,
      120
@@ -2234,7 +2234,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      92,
      122
@@ -2619,7 +2619,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      72,
      104
@@ -3011,7 +3011,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      80,
      110
@@ -3393,7 +3393,7 @@
     "keywords_required": false
    },
    "music": {
-    "mode": "either",
+    "mode": "track",
     "bpm": [
      84,
      124
