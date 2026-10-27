@@ -11,8 +11,13 @@
 # a double image; text inside an active DirBlur smear is left out: it is blurred along its motion),
 # 3 px/f while it is being read; a declared re-centre jump of a build chain (the line
 # making room for its next fragment, 2/3 of the distance in 1/30 s) is a decisive move, not a drift,
-# and is held to the travel limit instead. Type roles (cap height bands, the ui size, at most 2 non-UI
-# sizes at once, statement and payoff widths) are warnings; --strict makes them fail. The audit stills
+# and is held to the travel limit instead. Type roles (cap height bands that hold both type families:
+# caption 2.3-4 %, line 4-9 %, display 9-14 %, hero 14-26 %, giant 26-90 %; the ui size; at most 2 non-UI
+# sizes at once; line, sentence, display and hero widths) are warnings; --strict makes them fail. The safe
+# zone holds resting states: a line inside a type push in flight (data-audit-push="moving", fx/TypePush) is
+# a camera move (no safe-area, speed or role check); a push landed as a declared bleed must cross the frame's
+# edge; a claim flush left on the accent (data-audit-claim) keeps a 2.5 % left margin; with --speed, a box
+# moving faster than the read limit outside its reading window is listed apart (`moving`), not failed. The audit stills
 # (boxes drawn, safe zone dashed) are kept, and the tweens the audited frames evaluate (lib/registry.ts)
 # are collected for scripts/grammar-score.mjs.
 #
@@ -271,6 +276,7 @@ for (const f of pairs) {
     box.speed = Math.round(d * k * 10) / 10;
     if (box.opacity < 0.5 || box.px < (a.minPx ?? 0)) continue;
     if (box.smear) continue; // drawn inside an active smear (fx/Defocus DirBlur): blurred along its motion, not a double image
+    if (box.push === 'moving') continue; // inside a type push in flight (fx/TypePush): a camera move about the reading point, not text travelling
     if (!fastest || box.speed > fastest.speed) fastest = { frame: f, id: box.id, speed: box.speed };
     const jump = jumpingAt(box.id, f);
     const read = readingAt(box.id, f) && !jump;
@@ -285,12 +291,23 @@ for (const f of pairs) {
         : `${box.speed} px/f > ${maxV}${at}: slow it under ${maxV} px/f, or fade its text out for the flight and resolve it on landing`, speed: box.speed });
   }
 }
+// The safe zone holds resting states: a box measured moving faster than the read limit on its frame (entering,
+// leaving, travelling) is not at rest, so its excursion past the zone is listed apart, not failed; at rest it is held.
+const moving = [];
+if (pairs.length)
+  for (let i = issues.length - 1; i >= 0; i--) {
+    const x = issues[i];
+    if (x.kind !== 'safe-area') continue;
+    const box = byFrame.get(x.frame)?.boxes.find((b) => b.id === x.id && b.speed !== undefined);
+    if (box && box.speed > maxR && !readingAt(x.id, x.frame)) moving.push({ ...issues.splice(i, 1)[0], speed: box.speed });
+  }
 issues.sort((p, q) => p.frame - q.frame);
 const report = {
   tool: 'layout-audit', comp, frames: want, audited: audited.length, missing, stills: outDir,
   width: audited[0]?.width, height: audited[0]?.height,
   pass: issues.length === 0 && missing.length === 0 && audited.length > 0 && !(strict && warnings.length),
-  issues, warnings, jumps: jumped,
+  issues, warnings, jumps: jumped, moving: moving.sort((p, q) => p.frame - q.frame),
+  typeBands: audited[0]?.bands, typeWidths: audited[0]?.widths,
   tweens: [...tweens.values()].sort((p, q) => p.from - q.from),
   speed: maxV > 0 ? { max: maxV, read: maxR, pairs: pairs.length, fastest, fastestRead } : null,
   words: audited.reduce((m, d) => (d.words !== undefined && (!m || d.words > m.max) ? { max: d.words, frame: d.frame, ui: d.uiWords ?? 0 } : m), null),
@@ -300,6 +317,7 @@ const report = {
 fs.writeFileSync(jsonPath, JSON.stringify(report, null, 1) + '\n');
 for (const x of issues) console.log(`  f${x.frame}  ${x.kind}  ${x.id}  ${x.detail}`);
 for (const x of warnings.slice(0, 20)) console.log(`  f${x.frame}  warn ${x.kind}  ${x.id}  ${x.detail}`);
+if (moving.length) console.log(`  ${moving.length} box(es) past the safe zone while moving faster than ${maxR} px/f (not at rest, listed apart): ${[...new Set(moving.map((x) => x.id))].join(', ')}`);
 if (jumped.length) console.log(`  ${jumped.length} declared re-centre jump frame(s) moved read text faster than ${maxR} px/f (held to ${maxV}): fastest ${Math.max(...jumped.map((j) => j.speed))} px/f`);
 if (!byFrame.size) console.log(`  no CINETIC_AUDIT output: does ${comp} accept the audit prop and render <Audit/> inside <FontGate>?`);
 else if (missing.length) console.log(`  no audit line for frames ${missing.join(',')}`);

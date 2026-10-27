@@ -30,8 +30,9 @@
  * neutral pixels >= 40 %, no colour wash, the accent's hue family 6-15 % of the frame, no second accent;
  * lib/look.ts NEUTRAL, COLOUR, PICTURE; frames inside a declared colour event are left out of the accent's
  * share, its p95 and the neutral share, so one declared flood is never scored as the film's colour), type (no role
- * warnings), overlap (secondaries start before the primary reaches 90 %, the foreground lands about
- * 20 f@60 before the background, the next element enters 0-1 f before the previous leaves).
+ * warnings from layout-audit.sh, whose bands hold both type families; counted per text, not per audited frame),
+ * overlap (secondaries start before the primary reaches 90 %, the foreground lands about 20 f@60 before the
+ * background, the next element enters 0-1 f before the previous leaves).
  *
  * Usage (from the project root):
  *   node scripts/grammar-score.mjs [--cues out/cues.json] [--layout out/qa/layout-Film.json]
@@ -458,8 +459,10 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
 
   // type
   if (layout && Array.isArray(layout.warnings)) {
-    const n = layout.warnings.filter((w) => w.kind === 'type-size').length;
-    dim('type', n, n === 0 ? 100 : Math.max(0, 100 - 10 * n), 'measured', `${n} type-size warnings`);
+    // per text, not per sampled frame: a line whose size misses its role on every audited frame is one fault
+    const ws = layout.warnings.filter((w) => w.kind === 'type-size');
+    const n = new Set(ws.map((w, i) => (w.id ? String(w.id).split('.')[0] : `#${i}`))).size;
+    dim('type', n, n === 0 ? 100 : Math.max(0, 100 - 10 * n), 'measured', `${n} text(s) with type-size warnings (${ws.length} on audited frames)`);
   } else if (M && M.type_issues !== undefined && opt.layout) dim('type', M.type_issues, M.type_issues ? Math.max(0, 100 - 10 * M.type_issues) : 100, 'measured');
   else dim('type', null, null, 'unmeasured', 'needs layout-audit.sh');
 
@@ -598,6 +601,11 @@ const selfTest = () => {
     check(dimOf(withM({ ground_C: 0.04 }), 'colour').score === 60, 'colour: a ground at the accent chroma (C .04) is not a house ground (60)');
   }
   pair('type', score({ layout: { warnings: [] }, look: lookA, target: T, format: 'launch' }), score({ layout: { warnings: Array.from({ length: 4 }, () => ({ kind: 'type-size' })) }, look: lookA, target: T, format: 'launch' }), 'type: no role warnings score 100; four do not');
+  {
+    const persistent = dimOf(score({ layout: { warnings: Array.from({ length: 40 }, (_, f) => ({ kind: 'type-size', frame: f * 6, id: 'what' })) }, look: lookA, target: T, format: 'launch' }), 'type');
+    const parts = dimOf(score({ layout: { warnings: [{ kind: 'type-size', id: 'what.0' }, { kind: 'type-size', id: 'what.1' }, { kind: 'type-size', id: 'claim' }] }, look: lookA, target: T, format: 'launch' }), 'type');
+    check(persistent.score === 90 && parts.score === 80, 'type: counted per text, not per audited frame (one line warned on 40 frames scores 90; two parts of one entry count once)', `${persistent.score} / ${parts.score}`);
+  }
   pair(
     'picture',
     withM({ picture: { flat: 0.5, flat_frames_over: 0.3, edges: 0.04, falloff: 0.8, saturated: 0.14, bleed_acts: [true, true], skeleton_samples: 0 } }),

@@ -382,6 +382,14 @@ export const TYPE = { // the calm family of section 7 in this face (Manrope meas
 
 Size / weight / tracking (em, in the starter's Geist). Sentence case everywhere; capitals only on small labels. Two weights per family.
 
+**The audits hold both families.** `layout-audit.sh` (and `look-audit.py`, from its JSON) reads cap height (0.72 em)
+against bands that meet, so no role of either family falls between two: caption 2.3-4 %, line 4-9 % (calm 84 px is
+5.6 %, fitted down to 66-72 px 4.4-4.8 %; bold 120 px 8 %), display 9-14 % (160-200 px), hero 14-26 % (bold 240 px 16 %,
+a claim 16 % or more, a name re-set at a quarter of the frame), giant 26-90 %. Widths: a line 61 % of the frame, a calm
+sentence (a line under a 6.5 % cap) 75 %, a display or hero line 84 %. `grammar-score.mjs` counts type warnings per
+text, not per audited frame. Resting states only: a line inside a type push in flight is a camera move; a claim on the
+accent keeps its own 3 % margin (§8).
+
 - **`TEXT_MIN = 36`.** No text under 36 px is held in focus for more than 6 frames. Smaller text is mush on a phone and
   on every contact sheet: a string under it is out of focus (a far plane), on screen for under 6 f, or set larger
   (`small-text`).
@@ -481,7 +489,7 @@ const c = copy('hook');
 ```
 
 Give a preset line's `COPY` entry the frames the preset draws (`resolved` from `typeLineFrames()`), so the checks
-read the line as the viewer does. Graphic effects frame it: a dithered gradient field, glass, a spectral edge, a morph
+read the line as the viewer does (a `TypeLine` carries its spec's `id` as `data-text`, measured over its glyph run). Graphic effects frame it: a dithered gradient field, glass, a spectral edge, a morph
 from the last shot, a grid, a loader, the product's UI (`references/devices/INDEX.md`, materials and VFX).
 
 **The line system.** For a line drawn with the canonical reveal, three primitives share one set of house numbers

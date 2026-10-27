@@ -120,9 +120,15 @@ evaluate (what `grammar-score.mjs` reads for curve roles, durations, staggers an
 
 - Readable text moves at most about 3 px/f while it is read; a re-centre jump is a decisive move, held to the travel
   limit (20 px/f), not the reading limit, and listed as a jump.
-- Type roles (warnings; `--strict` fails): cap height between role bands (caption 2.3-4 %, statement 5-14 %, hero
-  14-26 %, giant 26-90 % of the frame height), readable text under 36 px, more than 2 non-UI sizes at once, a
-  statement wider than 61 % of the frame, a payoff wider than 84 %.
+- Type roles (warnings; `--strict` fails): cap height against bands that hold both type families (caption 2.3-4 %,
+  line 4-9 %, display 9-14 %, hero 14-26 %, giant 26-90 % of the frame height; over 90 % warns), readable text under
+  the ui size, more than 2 non-UI sizes at once, a line wider than 61 % of the frame (a calm sentence under a 6.5 % cap
+  75 %), a display or hero line wider than 84 %. `grammar-score.mjs` counts them per text, not per audited frame.
+- The safe zone holds resting states: a line inside a type push in flight (`data-audit-push="moving"`, `fx/TypePush`)
+  is a camera move (no safe-area, speed or role check); a push landed as a declared bleed must cross the frame's edge,
+  never rest half in the margin; a claim on the accent (`data-audit-claim`, `fx/TypeClaim`) keeps a 2.5 % left margin;
+  with `--speed`, a box past the zone while moving faster than the read limit outside its read is listed apart
+  (`moving`), not failed.
 - `--cues` adds the cue frames; `--safe feed9x16` the feed presets.
 
 ## 5. forensics (`scripts/forensics.py`)

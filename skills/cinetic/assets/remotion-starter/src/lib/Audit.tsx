@@ -19,9 +19,14 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 //   pace's limit (pace.maxVisibleBuild: 8 when calm). Product strings (a typed command, code, a
 //   URL, an app label) carry data-ui on their tagged element and are counted apart.
 // - the type roles (warnings, never a fail unless layout-audit.sh --strict): each readable box's cap
-//   height as a share of the frame height against the role bands (TYPE_BANDS: caption 2.3-4 %,
-//   statement 5-9 %, hero 11-23 %, giant 40-90 %), text under the ui role (30 px at 1080p), more than
-//   2 non-UI sizes at once, a statement wider than 61 % of the frame, a payoff wider than 84 %.
+//   height as a share of the frame height against the role bands, which hold both type families (TYPE_BANDS:
+//   caption 2.3-4 %, line 4-9 %, display 9-14 %, hero 14-26 %, giant 26-90 %), text under the ui role (30 px at
+//   1080p), more than 2 non-UI sizes at once, a line wider than 61 % of the frame (a calm sentence under a 6.5 % cap:
+//   75 %), a display or hero line wider than 84 %.
+// - resting states only: a line inside a type push in flight ([data-audit-push="moving"], fx/TypePush) is a camera
+//   move, held to no safe zone, width or role band; a push landed at a bleed scale ([data-audit-push="bleed"]) is a
+//   declared bleed: past the safe zone it must cross the frame's edge, never rest half in the margin. A claim set flush
+//   left on the accent ([data-audit-claim], fx/TypeClaim) keeps a 2.5 % margin on the left instead of the zone's.
 // It draws the boxes and the safe zone, and logs one JSON line per frame:
 //   CINETIC_AUDIT {"comp":"Film","frame":120,"safe":{...},"minPx":22,"words":4,"uiWords":0,"boxes":[...],"issues":[...],"warnings":[...]}
 // Each box carries its effective opacity (its own times its ancestors', times its most opaque text inside: a line
@@ -50,19 +55,26 @@ export const MIN_TEXT_PX_TALL = 32;
 /** The ui type role, px at 1080p: readable text under it gets a type-size warning (the fail floor stays MIN_TEXT_PX). */
 export const UI_TEXT_PX = 30;
 /**
- * Type roles by cap height (0.72 em) as a share of the frame height, after camera scale: a box whose
- * cap height falls between bands, more than 2 non-UI sizes at once, a statement wider than 61 % of the
- * frame or a payoff wider than 84 % get a type-size warning (warnings never fail the audit unless
- * layout-audit.sh --strict). `ui` is below caption.
+ * Type roles by cap height (0.72 em) as a share of the frame height, after camera scale, for both type families
+ * (lib/look.ts TYPE_LOOK): calm line 84 px is 5.6 % (fitted down to 66-72 px: 4.4-4.8 %), bold line 120 px 8 %; calm
+ * display 160 10.7 %, calm hero and bold display 200 13.3 %; bold hero 240 16 % and a claim 16 % or more; a name re-set
+ * at a quarter of the frame 25-28 %; calm giant 640 43 %, bold giant 900 60 %. The bands meet, so a role of either family
+ * never falls between two; a box over the giant band, more than 2 non-UI sizes at once or a line past its width
+ * (TYPE_WIDTH) gets a type-size warning (warnings never fail the audit unless layout-audit.sh --strict). `ui` is below caption.
  */
 export const TYPE_BANDS: [role: string, lo: number, hi: number][] = [
   ['caption', 2.3, 4],
-  ['statement', 5, 9],
-  ['hero', 11, 23],
-  ['giant', 40, 90],
+  ['line', 4, 9],
+  ['display', 9, 14],
+  ['hero', 14, 26],
+  ['giant', 26, 90],
 ];
+/** Widths as a share of the frame width: a line (a statement) 61 %, a calm sentence (a line under a 6.5 % cap) 75 %, a display or hero line 84 %. */
+export const TYPE_WIDTH = { line: 0.61, sentence: 0.75, sentenceCap: 6.5, display: 0.84, hero: 0.84 } as const;
+/** A claim flush left on the accent keeps this share of the frame width on its left (fx/TypeClaim: 3 %). */
+export const CLAIM_MARGIN = 0.025;
 
-type Box = { id: string; text: string; words: number; ui: boolean; smear?: boolean; scroll?: boolean; x: number; y: number; w: number; h: number; px: number; opacity: number; role?: string; cap?: number };
+type Box = { id: string; text: string; words: number; ui: boolean; smear?: boolean; scroll?: boolean; push?: 'moving' | 'bleed'; claim?: boolean; crosses?: boolean; x: number; y: number; w: number; h: number; px: number; opacity: number; role?: string; cap?: number };
 type Issue = { kind: 'safe-area' | 'overlap' | 'small-text' | 'covered' | 'words'; id: string; detail: string };
 type Warning = { kind: 'type-size'; id: string; detail: string };
 
@@ -160,6 +172,8 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
       const opacity = opacityOf(el);
       if (!r || opacity < 0.1) continue; // not on screen: nothing to read
       const k = el.offsetWidth > 0 ? full.width / zoom / el.offsetWidth : 1; // transform scale on the text
+      const push = el.closest('[data-audit-push]')?.getAttribute('data-audit-push');
+      const fl = (full.left - origin.left) / zoom, ft = (full.top - origin.top) / zoom;
       boxes.push({
         el,
         id: el.dataset.text || '?',
@@ -168,6 +182,9 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         ui: el.closest('[data-ui]') !== null,
         scroll: el.closest('[data-audit-scroll]') !== null || undefined, // a row of a list scrolling through the frame (a feed): it crosses the edges and passes under the UI floating over it
         smear: el.closest('[data-audit-smear]') !== null || undefined, // drawn inside an active smear (fx/Defocus DirBlur): blurred along its motion
+        push: push === 'moving' || push === 'bleed' ? push : undefined, // inside a type push (fx/TypePush): in flight, or landed as a declared bleed
+        claim: el.closest('[data-audit-claim]') !== null || undefined, // a claim flush left on the accent (fx/TypeClaim)
+        crosses: fl < -1 || ft < -1 || fl + full.width / zoom > width + 1 || ft + full.height / zoom > height + 1 || undefined, // the unclipped box runs past the frame's edge
         x: round((r.left - origin.left) / zoom),
         y: round((r.top - origin.top) / zoom),
         w: round(r.width / zoom),
@@ -186,13 +203,16 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
     }
     const issues: Issue[] = [];
     for (const b of boxes) {
+      const left = b.claim ? Math.min(SAFE.left, Math.round(CLAIM_MARGIN * width)) : SAFE.left;
       const out = [
-        b.x < SAFE.left && `left ${b.x}px < ${SAFE.left}`,
+        b.x < left && `left ${b.x}px < ${left}`,
         b.x + b.w > width - SAFE.right && `right ${round(b.x + b.w)}px > ${width - SAFE.right}`,
         b.y < SAFE.top && `top ${b.y}px < ${SAFE.top}`,
         b.y + b.h > height - SAFE.bottom && `bottom ${round(b.y + b.h)}px > ${height - SAFE.bottom}`,
       ].filter(Boolean);
-      if (out.length && !b.scroll) issues.push({ kind: 'safe-area', id: b.id, detail: `${out.join(', ')} (${zone})` });
+      // resting states only: a push in flight is a camera move; a landed push is a declared bleed that must cross the frame's edge
+      if (out.length && !b.scroll && b.push !== 'moving' && !(b.push === 'bleed' && b.crosses))
+        issues.push({ kind: 'safe-area', id: b.id, detail: `${out.join(', ')} (${zone})${b.push === 'bleed' ? ': a pushed line rests half in the margin; push it on until it crosses the frame edge, or land it inside the safe zone' : ''}` });
       if (b.px < minPx) issues.push({ kind: 'small-text', id: b.id, detail: `${b.px}px < ${round(minPx)}px` });
       const cov = coverOf(b.el);
       if (cov.hits) issues.push({ kind: 'covered', id: b.id, detail: `${cov.hits}/15 sample points under ${cov.by.join(', ')}` });
@@ -221,19 +241,23 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
     // Type roles: each readable box's cap height against the role bands (warnings only).
     const warnings: Warning[] = [];
     const sizes: number[] = [];
+    const top = TYPE_BANDS[TYPE_BANDS.length - 1][2];
     for (const b of readable) {
       const cap = Math.round(((0.72 * b.px) / height) * 1000) / 10;
       b.cap = cap;
-      b.role = b.ui ? 'ui' : (TYPE_BANDS.find(([, lo, hi]) => cap >= lo && cap <= hi)?.[0] ?? (cap < TYPE_BANDS[0][1] ? 'ui' : 'between'));
+      b.role = b.ui ? 'ui' : (TYPE_BANDS.find(([, lo, hi]) => cap >= lo && cap <= hi)?.[0] ?? (cap < TYPE_BANDS[0][1] ? 'ui' : 'over'));
+      if (b.push === 'moving') continue; // a size passing through a push is the camera's, not a role
+      const share = round((b.w / width) * 100);
       if (b.px < UI_TEXT_PX * U) warnings.push({ kind: 'type-size', id: b.id, detail: `${b.px}px is under the ui role (${round(UI_TEXT_PX * U)}px)` });
-      if (b.role === 'between') warnings.push({ kind: 'type-size', id: b.id, detail: `cap height ${cap}% of the frame sits between roles (caption 2.3-4, statement 5-9, hero 11-23, giant 40-90)` });
-      if (b.role === 'statement' && b.w > 0.61 * width) warnings.push({ kind: 'type-size', id: b.id, detail: `a statement ${round((b.w / width) * 100)}% of the frame wide (<= 61%)` });
-      if (b.role === 'hero' && b.w > 0.84 * width) warnings.push({ kind: 'type-size', id: b.id, detail: `a payoff ${round((b.w / width) * 100)}% of the frame wide (<= 84%)` });
+      if (b.role === 'over') warnings.push({ kind: 'type-size', id: b.id, detail: `cap height ${cap}% of the frame is over the giant band (<= ${top}%)` });
+      const wide = b.push === 'bleed' || b.claim ? null : b.role === 'line' ? (cap < TYPE_WIDTH.sentenceCap ? TYPE_WIDTH.sentence : TYPE_WIDTH.line) : b.role === 'display' || b.role === 'hero' ? TYPE_WIDTH[b.role] : null;
+      if (wide !== null && b.w > wide * width)
+        warnings.push({ kind: 'type-size', id: b.id, detail: `a ${b.role === 'line' ? (cap < TYPE_WIDTH.sentenceCap ? 'sentence' : 'line') : `${b.role} line`} ${share}% of the frame wide (<= ${Math.round(wide * 100)}%; cap ${cap}%)` });
       if (!b.ui && !sizes.some((s) => Math.abs(s - b.px) <= 0.08 * s)) sizes.push(b.px);
     }
-    if (sizes.length > 2) warnings.push({ kind: 'type-size', id: readable.filter((b) => !b.ui).map((b) => b.id).join('+'), detail: `${sizes.length} non-UI type sizes at once: one size per scene, change size through the camera` });
+    if (sizes.length > 2) warnings.push({ kind: 'type-size', id: readable.filter((b) => !b.ui && b.push !== 'moving').map((b) => b.id).join('+'), detail: `${sizes.length} non-UI type sizes at once: one size per scene, change size through the camera` });
     const clean = boxes.map(({ el: _el, ...b }) => b);
-    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, issues, warnings })}`);
+    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, issues, warnings, bands: TYPE_BANDS, widths: TYPE_WIDTH })}`);
     // the tweens evaluated for this frame, their spans moved into absolute frames (a caller's frame argument is its own clock)
     const tweens = drain().map((r) => ({ from: r.from + (frame - r.frame), to: r.to + (frame - r.frame), token: r.token, family: r.family }));
     console.log(`${TWEENS_TAG} ${JSON.stringify({ comp, frame, tweens })}`);

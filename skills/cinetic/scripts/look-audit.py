@@ -38,9 +38,10 @@ Look checks (warn unless marked fail):
                   the camera may stop for 0.5-1 s on each read
   clean-finish    grain on flat ground over 0.6 L* (full-resolution samples) or a vignette over 2 %
                   unless LOOK.texture is not 'clean'
-  type-size       (--layout) cap height off its role's band (caption 2.3-4 %, statement 5-14 %, hero
-                  14-26 %, giant 26-90 % of the frame height: line 120 px is 8 %, display 200 13 %), more than 2 non-UI sizes at once, a
-                  statement wider than 61 % of the frame (a payoff 84 %)
+  type-size       (--layout) cap height off the role bands layout-audit.sh wrote (both type families: caption 2.3-4 %,
+                  line 4-9 %, display 9-14 %, hero 14-26 %, giant 26-90 % of the frame height: calm line 84 px is 5.6 %,
+                  bold line 120 8 %), more than 2 non-UI sizes at once, a line wider than 61 % of the frame (a calm
+                  sentence under a 6.5 % cap 75 %, a display or hero line 84 %); a type push in flight is left out
   luminance-flip  the stage flips light/dark by a hard cut with nothing moving across it, or flips
                   twice inside one bar
   blur-policy     LOOK.blur 'crisp': fast-moving structure (> 600 px/s) keeps under 80 % of its still
@@ -1384,23 +1385,27 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
                 small_rows.append(dict(id=bid, px=min(r[1] for r in rows_), frame=best[0], held60=round(held60, 1)))
         for r in small_rows[:12]:
             add('small-text', 'warn', r['frame'], f"\"{r['id']}\" at {r['px']:g} px held {r['held60']:g} f@60: under {PIC['text_min']} px (at 1080p) a string held in focus over {PIC['text_hold60']} f is mush; set it at 36+ (UI rebuilt for film at x1.8-2)")
-        # role bands as cap height in % of the frame height: line 120 px is 8 %, display 200 13 %, hero 240 16 %, giant 400+ 27 %+
-        bands = [('caption', 2.3, 4.0), ('statement', 5.0, 14.0), ('hero', 14.0, 26.0), ('giant', 26.0, 90.0)]
+        # role bands as cap height in % of the frame height, for both type families, as layout-audit.sh wrote them
+        # (lib/Audit.tsx TYPE_BANDS; this default is the same): calm line 84 px is 5.6 %, bold line 120 8 %, display 160-200
+        # 10.7-13.3 %, bold hero 240 16 %, giant 640-900 43-60 %. The bands meet, so no role of either family falls between two.
+        bands = [tuple(x) for x in (layout.get('typeBands') or [('caption', 2.3, 4.0), ('line', 4.0, 9.0), ('display', 9.0, 14.0), ('hero', 14.0, 26.0), ('giant', 26.0, 90.0)])]
+        widths = {'line': 0.61, 'sentence': 0.75, 'sentenceCap': 6.5, 'display': 0.84, 'hero': 0.84, **(layout.get('typeWidths') or {})}
         for fr in layout.get('boxes', []):
             hgt = fr.get('height') or layout.get('height') or args.comp_height or 1080
             wid = fr.get('width') or layout.get('width') or args.comp_width or 1920
             non_ui = []
             for b in fr.get('boxes', []):
-                if b.get('ui') or b.get('opacity', 1) < 0.5:
+                if b.get('ui') or b.get('opacity', 1) < 0.5 or b.get('push') == 'moving':  # a size passing through a type push is the camera's
                     continue
                 cap = 0.72 * b['px'] / hgt * 100
                 role = next((r for r, lo, hi in bands if lo <= cap <= hi), None)
-                if role is None and cap >= 2.0:
+                if role is None and cap > bands[-1][2]:
+                    type_rows.append(dict(frame=fr['frame'], id=b['id'], cap=round(cap, 2), issue='over the giant band'))
+                elif role is None and cap >= 2.0 and cap >= bands[0][1]:
                     type_rows.append(dict(frame=fr['frame'], id=b['id'], cap=round(cap, 2), issue='between roles'))
-                if role == 'statement' and b['w'] / wid > 0.61:
-                    type_rows.append(dict(frame=fr['frame'], id=b['id'], cap=round(cap, 2), issue='statement wider than 61 % of the frame'))
-                if role == 'hero' and b['w'] / wid > 0.84:
-                    type_rows.append(dict(frame=fr['frame'], id=b['id'], cap=round(cap, 2), issue='payoff wider than 84 % of the frame'))
+                wide = None if b.get('push') == 'bleed' or b.get('claim') else (widths['sentence'] if cap < widths['sentenceCap'] else widths['line']) if role in ('line', 'statement') else widths.get(role) if role in ('display', 'hero') else None
+                if wide is not None and b['w'] / wid > wide:
+                    type_rows.append(dict(frame=fr['frame'], id=b['id'], cap=round(cap, 2), issue=f'{role} wider than {round(wide * 100)} % of the frame'))
                 non_ui.append(b['px'])
             sizes = []
             for px in sorted(non_ui):
@@ -1409,7 +1414,7 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
             if len(sizes) > 2:
                 type_rows.append(dict(frame=fr['frame'], id='+'.join(b['id'] for b in fr.get('boxes', [])), issue=f'{len(sizes)} non-UI sizes at once'))
         for r in type_rows[:20]:
-            add('type-size', 'warn', r['frame'], f"{r['id']}: {r['issue']}" + (f" (cap {r['cap']} % of the frame height; caption 2.3-4, statement 5-14, hero 14-26, giant 26-90)" if 'cap' in r else ''))
+            add('type-size', 'warn', r['frame'], f"{r['id']}: {r['issue']}" + (f" (cap {r['cap']} % of the frame height; " + ', '.join(f'{n} {lo:g}-{hi:g}' for n, lo, hi in bands) + ')' if 'cap' in r else ''))
     # word arrivals and fades (layout + copy)
     word_rows = []
     for cid, series in S['roi'].items():
@@ -2037,15 +2042,15 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
 
         # --- type-size and small-text from the layout audit (the same clip, two layouts)
         lay_bad = write_json('layout-bad.json', dict(width=1920, height=1080, boxes=[dict(frame=f_, width=1920, height=1080, boxes=[
-            dict(id='between', px=68, x=200, y=200, w=600, h=80, opacity=1), dict(id='label', px=24, x=200, y=700, w=300, h=30, opacity=1, ui=True)]) for f_ in range(0, 60, 6)]))
+            dict(id='wide', px=68, x=100, y=200, w=1600, h=80, opacity=1), dict(id='label', px=24, x=200, y=700, w=300, h=30, opacity=1, ui=True)]) for f_ in range(0, 60, 6)]))
         lay_good = write_json('layout-good.json', dict(width=1920, height=1080, boxes=[dict(frame=f_, width=1920, height=1080, boxes=[
-            dict(id='line', px=120, x=200, y=200, w=900, h=130, opacity=1), dict(id='label', px=40, x=200, y=700, w=300, h=48, opacity=1, ui=True)]) for f_ in range(0, 60, 6)]))
+            dict(id='line', px=120, x=200, y=200, w=900, h=130, opacity=1), dict(id='calm', px=84, x=200, y=420, w=1300, h=100, opacity=1), dict(id='label', px=40, x=200, y=700, w=300, h=48, opacity=1, ui=True)]) for f_ in range(0, 60, 6)]))
         plain = [card(paper, 40 + i, 60, 120, (30, 32, 36)) for i in range(60)]
         rep = run('type-bad', plain, None, extra=('--layout', lay_bad))
-        check(bool(has(rep, 'type-size', 'warn')), 'a cap height between the role bands warns type-size')
+        check(bool(has(rep, 'type-size', 'warn')), 'a calm sentence wider than 75 % of the frame warns type-size')
         check(bool(has(rep, 'small-text', 'warn')), 'a 24 px label held for a second warns small-text')
         rep = run('type-good', plain, None, extra=('--layout', lay_good))
-        check(not has(rep, 'type-size') and not has(rep, 'small-text'), 'a 120 px line and a 40 px label pass type-size and small-text')
+        check(not has(rep, 'type-size') and not has(rep, 'small-text'), 'a bold 120 px line, a calm 84 px sentence at 68 % of the width and a 40 px label pass type-size and small-text')
 
         # --- the type gate (layout + cues copy): a large dark line on paper reads and is a type beat; the same line grey
         # on a busy grey ground fails its contrast and is no type beat; a 40 px line as the largest fails the size

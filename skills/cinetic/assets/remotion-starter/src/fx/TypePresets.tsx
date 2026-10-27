@@ -1413,10 +1413,23 @@ export const TypeLine: React.FC<TypeLineProps> = (p) => {
     filter: st.blur > 0.002 ? `blur(${px(st.blur * size)})` : undefined,
   };
   const dashes = layers.find((l) => l.kind === 'dashes') as Extract<TypeLayer, { kind: 'dashes' }> | undefined;
+  // what the layout audit reads: one transparent copy of the line over its glyph run (its id, its size after the line's
+  // scale, as visible as its most visible glyph), so a preset line is measured like any tagged text
+  const seen = Math.max(0, ...st.glyphs.map((g) => g.opacity), ...(st.slot?.items.map((it) => it.opacity) ?? []));
+  const probe = (
+    <span
+      data-text={p.spec.id ?? `type-${p.spec.preset}`}
+      aria-hidden
+      style={{ ...font, left: padX + lineShift, width: m.width + slotShift, height: size, color: 'transparent', opacity: Math.min(1, seen), overflow: 'hidden' }}
+    >
+      {p.spec.text}
+    </span>
+  );
 
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
       <div style={group}>
+        {probe}
         {dashes
           ? dashes.dashes.map((d, k) => (
               <div key={`dash${k}`} style={{ position: 'absolute', left: boxW / 2 + d.x * size, top: boxH / 2 + d.y * size, width: d.w * size, height: Math.max(2, size * 0.06), background: dashes.color, opacity: d.opacity }} />
