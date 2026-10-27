@@ -126,7 +126,8 @@ console.log(JSON.stringify({
   bandsDecl: Db.declares({ at: 40 }, film60),
   cam: { k: [0, 20, 40].map((f) => Cm.camPath(f, camBase, camMoves).k), sx: [0, 35, 60].map((f) => Cm.camPath(f, camBase, camMoves).sx),
     moving: range(1, 34).map((f) => { const v = Cm.camVel(f, camBase, camMoves); return v.speed + Math.abs(v.vk); }), still: Cm.camVel(36, camBase, camMoves),
-    pan: Cm.camVel(5, camBase, panOnly), zoom: Cm.camVel(5, camBase, zoomOnly) },
+    pan: Cm.camVel(5, camBase, panOnly), zoom: Cm.camVel(5, camBase, zoomOnly),
+    zoomTall: Cm.camVel(5, { ax: 540, ay: 960, sx: 540, sy: 960, k: 1 }, zoomOnly, undefined, { fps: 60, width: 1080, height: 1920 }) },
   shutter: { house30: D.dirBlurMix(20, film30), s180: D.dirBlurMix(20, film30, { shutter: 180 }), s360: D.dirBlurMix(20, film30, { shutter: 360 }), h60: D.dirBlurMix(20, film60), s360at60: D.dirBlurMix(20, film60, { shutter: 360 }) },
   pile: [0, 20, 40, 60].map((f) => St.pileState(f, { arrivals: [0, 6, 12, 18] }, film60)),
   pileLate: St.pileState(200, { arrivals: [0, 6, 12, 18] }, film60),
@@ -267,6 +268,7 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   result(c.moving.every((v) => v > 1e-6) && c.still.speed === 0 && c.still.vk === 0, 'camPath: overlapping moves chain with no held frame, still after the last');
   result(close(c.pan.vx, 10) && close(c.pan.vy, 0) && close(c.pan.angle, 0), 'camVel: a 100 px pan over 10 f moves 10 px a frame along +x');
   result(close(c.zoom.vk, Math.log(0.5) / 20) && close(c.zoom.speed, 0, 1e-9), 'camVel: a zoom about the framed point: ln k per frame, no travel there');
+  result(close(c.zoomTall.speed, 0, 1e-9), 'camVel: measured at the centre of a 1080x1920 frame by default', String(c.zoomTall.speed));
   const lv = (m) => m.map((x) => x.level).join(',');
   const sig = (m) => m.reduce((a, x, i) => a + (i === 0 && m.length > 1 ? x.level * (1 - (m[1]?.weight ?? 0)) : x.level * x.weight), 0);
   const sh = P.shutter;

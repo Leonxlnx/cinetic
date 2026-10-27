@@ -3,7 +3,7 @@
 // shots chain without drift: lc(lc(A, B, t1), C, t2). Anchors lerp linearly, k in log space.
 import type React from 'react';
 import { clamp, E, type Ease, lmix, mix } from './anim';
-import { f60, fpsOf } from './film';
+import { f60, type FilmCtx, fpsOf, sizeOf } from './film';
 
 export type Shot = {
   ax: number; // world point that is framed ...
@@ -148,11 +148,13 @@ export const camPath = (f: number, base: Shot, moves: readonly CamMove[]): Shot 
 
 /**
  * How fast the picture moves under a camera path at frame f (from f - 1 to f): the screen velocity (px per film
- * frame) of the world point framed at `at` (default the frame's centre), its speed and direction (deg, 0 = +x,
- * 90 = down: DirBlur's `angle`), and the zoom speed (ln k per frame). Feed the speed to DirBlur for a camera
- * smear on translation; pushes stay crisp.
+ * frame) of the world point framed at `at` (default the centre of `film`'s frame, 960, 540 without it), its speed
+ * and direction (deg, 0 = +x, 90 = down: DirBlur's `angle`), and the zoom speed (ln k per frame). Feed the speed to
+ * DirBlur for a camera smear on translation; pushes stay crisp.
  */
-export const camVel = (f: number, base: Shot, moves: readonly CamMove[], at: { x: number; y: number } = { x: 960, y: 540 }) => {
+export const camVel = (f: number, base: Shot, moves: readonly CamMove[], atIn?: { x: number; y: number }, film?: Partial<FilmCtx>) => {
+  const size = sizeOf(film);
+  const at = atIn ?? { x: size.width / 2, y: size.height / 2 };
   const now = camPath(f, base, moves);
   const was = camPath(f - 1, base, moves);
   const p = { x: now.ax + (at.x - now.sx) / now.k, y: now.ay + (at.y - now.sy) / now.k }; // the world point under `at` now
