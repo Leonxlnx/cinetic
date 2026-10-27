@@ -1,11 +1,13 @@
 // The sound events of the explainer, computed from the picture code. scripts/export-cues.ts calls the default export
 // and writes out/cues.json; scripts/audio/score.py voices each event with the film's kit on its exact frame. A calm
-// track carries the film; the effects mark what lands: the giant name, the mark arriving as a word, each line said
-// (once, when it is whole), the cuts at speed, the picture opening and becoming the shot, the name over it, the one
-// wipe, the parts born round the mark (thinned), the three labels, the gather, the name and ONE element at the lockup.
-import { cells, bornAt } from './acts/Grid';
-import { E } from './lib/anim';
-import { peak } from './lib/sync';
+// track carries the film and its cuts (the cuts get nothing: the track's downbeats are on them); the effects mark the
+// story's own moments, so they survive the plan's restraint (10 per 10 s): the name landing, the mark arriving as a
+// word, each line once it is whole, the product opening in the line and becoming the shot, the name over it, the seam
+// off the product, the parts' wave (one sound), the three parts read, the gather, the name and ONE element at the
+// lockup. Each dealt device brings its own sounds (src/deal.ts), so films from this template do not sound alike.
+import { bornAt, cells } from './acts/Grid';
+import { ROLLS } from './acts/Promise';
+import { DEAL } from './deal';
 import { ACT, copy, CUE, type Declares, f60, LABELS, type Salience, TOTAL } from './timeline';
 
 export type Kind =
@@ -29,48 +31,46 @@ export type SoundEvent = {
 };
 
 const actOf = (f: number) => Object.entries(ACT).find(([, a]) => f >= a.from && f < a.from + a.dur)?.[0] ?? 'tail';
-/** A move peaking on frame `at`: a whoosh as long as the move, its apex on the peak. */
-const across = (at: number, dur: number, weight: number, pan: number, id: string): SoundEvent => {
-  const from = at - dur / 2;
-  const to = at + dur / 2;
-  const apex = peak(from, to, E.strongInOut);
-  return { f: apex, kind: 'whoosh', weight, pan, dur: Math.max(f60(18), dur), apexFrac: (apex - from) / (to - from), id };
-};
 
-/** What the primitives the acts use declare on purpose: the timeline's SEAMS and STEPPED cover them. */
+/** What the primitives the acts use declare on purpose: the timeline's SEAMS and COLOUR cover them. */
 export const declares = (): (Declares & { id?: string })[] => [];
 
 export default function cues(): SoundEvent[] {
   const ev: SoundEvent[] = [];
-  // open: the giant name lands, the mark arrives as a word, the cut at speed, what it is said
-  ev.push({ f: CUE.giant + f60(8), kind: 'drop', weight: 0.9, pan: 0, id: 'name-lands' });
-  ev.push({ f: CUE.mark, kind: 'pop', weight: 0.8, pan: 0.2, id: 'mark-as-a-word' });
-  ev.push(across(CUE.what, f60(24), 0.6, -0.3, 'cut-at-speed'));
+  // open: the name (its device's sound), the mark arriving as a word, what it is said
+  if (DEAL.open === 'band') ev.push({ f: CUE.giant + f60(10), kind: 'drop', weight: 0.85, pan: 0, id: 'name-lands' });
+  else if (DEAL.open === 'focus') ev.push({ f: CUE.giant, kind: 'swell', weight: 0.7, pan: 0, dur: f60(36), id: 'name-focuses' });
+  else ev.push({ f: CUE.giant + f60(6), kind: 'key', weight: 0.6, pan: -0.1, id: 'name-set' });
+  ev.push({ f: CUE.mark + f60(2), kind: 'pop', weight: 0.75, pan: 0.2, id: 'mark-as-a-word' });
+  if (DEAL.open === 'push') ev.push({ f: CUE.what - f60(4), kind: 'whoosh', weight: 0.5, pan: 0, dur: f60(30), apexFrac: 0.85, id: 'push-through-the-name' });
   ev.push({ f: copy('what').resolved, kind: 'text', weight: 0.7, pan: 0, id: 'what-said' });
-  // pain and promise: each line whole; the picture opening; it grows into the shot
-  ev.push(across(ACT.pain.from, f60(20), 0.5, 0.3, 'what-leaves'));
-  ev.push({ f: copy('pain').resolved, kind: 'text', weight: 0.7, pan: 0, id: 'pain-said' });
-  ev.push(across(ACT.promise.from, f60(20), 0.5, 0.3, 'pain-leaves'));
-  ev.push({ f: CUE.pill + f60(2), kind: 'pop', weight: 0.7, pan: 0, id: 'picture-opens' });
+  // pain: the line whole; its device's move
+  if (DEAL.pain !== 'land') ev.push({ f: copy('pain').resolved, kind: 'text', weight: 0.65, pan: 0.1, id: 'pain-said' });
+  if (DEAL.pain === 'land') ev.push({ f: CUE.pain + f60(30), kind: 'land', weight: 0.55, pan: 0, id: 'the-line-lands' });
+  if (DEAL.pain === 'push') ev.push({ f: CUE.painPush + f60(14), kind: 'whoosh', weight: 0.4, pan: 0, dur: f60(40), apexFrac: 0.3, id: 'push-through-the-line' });
+  if (DEAL.pain === 'crowd') ev.push({ f: CUE.pain + f60(10), kind: 'tock', weight: 0.45, pan: -0.2, id: 'the-tools-arrive' });
+  // promise: the slot opening (and rolling), the line whole, the product becoming the shot
+  ev.push({ f: CUE.pill + f60(2), kind: 'pop', weight: 0.7, pan: 0, id: 'the-product-opens' });
+  if (DEAL.promise === 'roll') ROLLS.forEach((f, i) => ev.push({ f: Math.round(f), kind: 'tick', weight: 0.4, pan: 0.05 * (i + 1), id: `roll-${i + 1}` }));
   ev.push({ f: copy('promise').resolved, kind: 'text', weight: 0.7, pan: 0.1, id: 'promise-said' });
-  ev.push({ f: CUE.grow + f60(6), kind: 'riser', weight: 0.6, pan: 0, dur: ACT.picture.from - CUE.grow, apexFrac: 0.95, id: 'picture-grows' });
-  // picture: the cut onto it, the name over it
-  ev.push({ f: ACT.picture.from, kind: 'swell', weight: 0.8, pan: 0, dur: f60(40), id: 'picture-is-the-shot' });
-  ev.push({ f: CUE.title, kind: 'pop', weight: 0.8, pan: -0.1, id: 'name-on-the-picture' });
-  // system: the one wipe, the line, the float off
-  ev.push(across(CUE.wipe + f60(12), f60(26), 0.7, -0.4, 'the-one-wipe'));
+  ev.push(DEAL.promise === 'lens' ? { f: ACT.picture.from, kind: 'suck', weight: 0.7, pan: 0, dur: ACT.picture.from - CUE.grow, apexFrac: 0.95, id: 'through-the-word' } : { f: ACT.picture.from, kind: 'swell', weight: 0.75, pan: 0, dur: f60(40), id: 'the-product-is-the-shot' });
+  // picture: the name over the product
+  ev.push({ f: CUE.title, kind: 'pop', weight: 0.75, pan: -0.1, id: 'name-on-the-product' });
+  // system: the seam off the product, the line whole, the float off
+  if (DEAL.system === 'push') {
+    // the push-wipe: the edge arriving and pushing the product along, then leaving at speed on the second half
+    ev.push({ f: CUE.wipe + f60(8), kind: 'whoosh', weight: 0.5, pan: -0.3, dur: f60(30), apexFrac: 0.3, id: 'the-push-wipe' });
+    ev.push({ f: CUE.system2 + f60(12), kind: 'whoosh', weight: 0.5, pan: 0.4, dur: f60(26), apexFrac: 0.8, id: 'the-edge-leaves' });
+  } else ev.push({ f: CUE.wipe + f60(10), kind: 'whoosh', weight: DEAL.system === 'sheet' ? 0.55 : 0.6, pan: -0.4, dur: f60(28), apexFrac: 0.4, id: DEAL.system === 'sheet' ? 'the-sheet' : 'the-one-wipe' });
   ev.push({ f: copy('system').resolved, kind: 'text', weight: 0.7, pan: 0, id: 'system-said' });
-  ev.push({ f: CUE.floatOff + f60(6), kind: 'whoosh', weight: 0.4, pan: 0, dur: f60(18), id: 'words-float-off' });
-  // grid: every few parts born pop (the track carries the rest), the labels, the gather
-  cells()
-    .filter((c) => c.module >= 0)
-    .forEach((c, i) => {
-      if (i % 2 === 0) ev.push({ f: Math.round(bornAt(c.d)) + f60(2), kind: 'pop', weight: 0.45, pan: Math.max(-0.4, Math.min(0.4, (c.x - 960) / 2400)), id: `part-${i}` });
-    });
-  LABELS.forEach((f, i) => ev.push({ f, kind: 'tick', weight: 0.6, pan: 0.15, id: `label-${i + 1}` }));
-  ev.push({ f: CUE.gather + f60(20), kind: 'suck', weight: 0.6, pan: 0, dur: f60(22), apexFrac: 0.8, id: 'parts-gather' });
-  // end: the name, the close, the lockup (one clean element)
-  ev.push({ f: CUE.name, kind: 'pop', weight: 0.8, pan: -0.2, id: 'name' });
+  // grid: the parts' wave as one sound, the three read, the gather
+  const born = cells().filter((c) => c.module >= 0).map((c) => Math.round(bornAt(c)));
+  ev.push({ f: Math.min(...born) + f60(4), kind: DEAL.grid === 'ring' ? 'tock' : 'pop', weight: 0.55, pan: 0, id: 'the-parts-arrive' });
+  LABELS.forEach((f, i) => ev.push({ f, kind: 'tick', weight: 0.55, pan: [-0.2, 0.2, 0][i], id: `part-read-${i + 1}` }));
+  ev.push({ f: CUE.gather + f60(20), kind: 'suck', weight: 0.55, pan: 0, dur: f60(22), apexFrac: 0.8, id: 'parts-gather' });
+  // end: the name, the lockup (one clean element)
+  if (DEAL.end === 'claim') ev.push({ f: ACT.end.from + f60(6), kind: 'swell', weight: 0.6, pan: 0, dur: f60(36), id: 'the-accent-floods' });
+  ev.push({ f: CUE.name, kind: 'pop', weight: 0.75, pan: -0.2, id: 'name' });
   ev.push({ f: CUE.lockup, kind: 'hit', weight: 1, pan: 0, id: 'lockup' });
 
   for (const e of ev) {
