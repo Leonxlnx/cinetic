@@ -29,8 +29,13 @@
  * carries speed), colour (one hue group, neutral grounds, ink and ground in band, and from the picture reads:
  * neutral pixels >= 40 %, no colour wash, the accent's hue family 6-15 % of the frame, no second accent;
  * lib/look.ts NEUTRAL, COLOUR, PICTURE; frames inside a declared colour event are left out of the accent's
- * share, its p95 and the neutral share, so one declared flood is never scored as the film's colour), type (no role
- * warnings from layout-audit.sh, whose bands hold both type families; counted per text, not per audited frame),
+ * share, its p95 and the neutral share, so one declared flood is never scored as the film's colour), type (the
+ * layout audit's boxes re-measured against the type bands both families share, lib/Audit.tsx TYPE_BANDS and
+ * TYPE_WIDTH: text under the ui role, a cap over the giant band or between two bands, a line past its width (a calm
+ * sentence 75 %, a line 61 %, display and hero 84 %), more than 2 non-UI sizes at once; a push in flight is the
+ * camera's, a landed push and a claim may bleed; counted per text, not per audited frame, so an old audit is
+ * re-scored on today's bands; without boxes, layout-audit.sh's type-size warnings; `--print-target` shows where each
+ * role of the calm and the bold family, lib/look.ts TYPE_LOOK, lands in the bands),
  * overlap (secondaries start before the primary reaches 90 %, the foreground lands about 20 f@60 before the
  * background, the next element enters 0-1 f before the previous leaves).
  *
@@ -103,6 +108,57 @@ const literal = (src, name) => {
     return null;
   }
 };
+/** An exported array literal of a TypeScript file (TYPE_BANDS), evaluated (its type annotation skipped). */
+const arrayLiteral = (src, name) => {
+  const m = new RegExp(`export const ${name}\\b[^=]*=\\s*\\[`).exec(src);
+  if (!m) return null;
+  const open = m.index + m[0].length - 1;
+  let depth = 0;
+  let j = open;
+  for (; j < src.length; j++) {
+    if (src[j] === '[') depth++;
+    else if (src[j] === ']' && --depth === 0) break;
+  }
+  try {
+    return Function(`return (${src.slice(open, j + 1).replace(/\s+as\s+const\b/g, '')});`)();
+  } catch {
+    return null;
+  }
+};
+/** An exported number constant of a TypeScript file. */
+const numConst = (src, name) => {
+  const m = new RegExp(`export const ${name}\\b[^=]*=\\s*(-?[\\d.]+)\\s*;`).exec(src);
+  return m ? Number(m[1]) : null;
+};
+// The type bands both families share, as lib/Audit.tsx holds them (used when no src is found): cap height (0.72 em) in %
+// of the frame height; a calm line 84 px is 5.6 %, a bold line 120 px 8 %, display 160-200 10.7-13.3 %, a bold hero
+// 240 px 16 %, a name re-set at a quarter of the frame 25-28 %, a giant 640-900 px 43-60 %.
+const TYPE_HOUSE = {
+  bands: [['caption', 2.3, 4], ['line', 4, 9], ['display', 9, 14], ['hero', 14, 26], ['giant', 26, 90]],
+  widths: { line: 0.61, sentence: 0.75, sentenceCap: 6.5, display: 0.84, hero: 0.84 },
+  uiPx: 30,
+  minPx: 22,
+  minPxTall: 32,
+};
+const capOf = (px, height = 1080) => Math.round(((0.72 * px) / height) * 1000) / 10;
+/** The band a cap height falls in: a role, or 'ui' under the first, 'over' past the last, 'between' in a gap. */
+const bandOf = (cap, bands) => bands.find(([, lo, hi]) => cap >= lo && cap <= hi)?.[0] ?? (cap < bands[0][1] ? 'ui' : cap > bands[bands.length - 1][2] ? 'over' : 'between');
+/** The type part of the target: the audit's bands and widths, and where each role of each family lands in them at 1080p. */
+const typeTarget = (audit = '', typeLook = {}) => {
+  const B = arrayLiteral(audit, 'TYPE_BANDS');
+  const bands = Array.isArray(B) && B.length && B.every((b) => Array.isArray(b) && b.length === 3) ? B : TYPE_HOUSE.bands;
+  const families = Object.fromEntries(
+    Object.entries(typeLook ?? {}).map(([fam, roles]) => [fam, Object.fromEntries(Object.entries(roles).filter(([r, v]) => r !== 'ui' && Number.isFinite(v?.size)).map(([r, v]) => [r, { px: v.size, cap: capOf(v.size), band: bandOf(capOf(v.size), bands) }]))]),
+  );
+  return {
+    bands,
+    widths: { ...TYPE_HOUSE.widths, ...(literal(audit, 'TYPE_WIDTH') ?? {}) },
+    uiPx: numConst(audit, 'UI_TEXT_PX') ?? TYPE_HOUSE.uiPx,
+    minPx: numConst(audit, 'MIN_TEXT_PX') ?? TYPE_HOUSE.minPx,
+    minPxTall: numConst(audit, 'MIN_TEXT_PX_TALL') ?? TYPE_HOUSE.minPxTall,
+    families,
+  };
+};
 const findSrc = () => {
   for (const d of [opt.src, 'src', join(HERE, '..', 'assets', 'remotion-starter', 'src')].filter(Boolean)) if (existsSync(join(d, 'lib', 'look.ts'))) return d;
   return null;
@@ -117,9 +173,12 @@ const houseTarget = () => {
   const P = literal(look, 'PICTURE') ?? {};
   const N = literal(look, 'NEUTRAL') ?? {};
   const CO = literal(look, 'COLOUR') ?? {};
+  const audit = src && existsSync(join(src, 'lib', 'Audit.tsx')) ? readFileSync(join(src, 'lib', 'Audit.tsx'), 'utf8') : '';
   const iqr = (row, lo = 1, hi = 3) => (Array.isArray(row) ? [row[lo], row[hi]] : null);
   return {
     source: src ? 'house (lib/look.ts GRAMMAR, lib/anim.ts DUR and STAG)' : 'house (built-in)',
+    // the type bands both families share (lib/Audit.tsx) and where each TYPE_LOOK role lands in them
+    type: typeTarget(audit, literal(look, 'TYPE_LOOK') ?? {}),
     roleMix: { shares: { arrive: 0.55, reposition: 0.16, leave: 0.19, linear: 0.08, spring: 0.02 }, tvdMax: 0.17 },
     frontLoaded: 0.71,
     intoCuts: 0.71,
@@ -229,6 +288,53 @@ const read = (p) => {
     console.error(`grammar-score: cannot read ${p}: ${e.message}`);
     process.exit(2);
   }
+};
+
+/**
+ * Type faults re-measured from the layout audit's boxes, the way lib/Audit.tsx warns, on the bands both families share
+ * (the JSON's own typeBands when the audit wrote them, else the target's): readable text (opacity >= 0.5, at least the
+ * minimum size) under the ui role, a cap over the giant band or in a gap between two, a line past its width (a calm
+ * sentence, cap under sentenceCap, 75 % of the frame; a line 61 %; display and hero 84 %; a landed push or a claim may
+ * bleed), more than 2 non-UI sizes at once (within 8 % is one size). A box in a push in flight is the camera's. One
+ * fault per text (an entry's parts, "what.0" and "what.1", are one text), however many audited frames it misses on.
+ * null when the JSON carries no boxes.
+ */
+const typeFaults = (layout, TT) => {
+  const frames = Array.isArray(layout?.boxes) ? layout.boxes.filter((f) => f && Array.isArray(f.boxes)) : [];
+  if (!frames.length) return null;
+  const bands = Array.isArray(layout.typeBands) && layout.typeBands.length ? layout.typeBands : TT.bands;
+  const W = { ...TT.widths, ...(layout.typeWidths ?? {}) };
+  const root = (id) => String(id ?? '?').split('.')[0];
+  const faults = new Map();
+  const add = (key, frame, detail) => {
+    if (!faults.has(key)) faults.set(key, { id: key, frame, frames: 0, detail });
+    faults.get(key).frames++;
+  };
+  for (const fr of frames) {
+    const width = fr.width ?? layout.width ?? 1920;
+    const height = fr.height ?? layout.height ?? 1080;
+    const U = Math.min(width, height) / 1080;
+    const minPx = (height / width > 1.5 ? TT.minPxTall : TT.minPx) * U;
+    const sizes = [];
+    const ids = new Set();
+    for (const b of fr.boxes.filter((x) => (x.opacity ?? 1) >= 0.5 && x.px >= minPx)) {
+      if (b.push === 'moving') continue;
+      const cap = capOf(b.px, height);
+      const role = b.ui ? 'ui' : bandOf(cap, bands);
+      if (b.px < TT.uiPx * U) add(root(b.id), fr.frame, `${b.px} px is under the ui role (${Math.round(TT.uiPx * U)} px)`);
+      if (role === 'over') add(root(b.id), fr.frame, `cap ${cap} % is over the giant band (<= ${bands[bands.length - 1][2]} %)`);
+      if (role === 'between') add(root(b.id), fr.frame, `cap ${cap} % falls between two bands`);
+      const sentence = role === 'line' && cap < W.sentenceCap;
+      const wide = b.push === 'bleed' || b.claim ? null : role === 'line' ? (sentence ? W.sentence : W.line) : role === 'display' || role === 'hero' ? W[role] : null;
+      if (wide !== null && b.w > wide * width) add(root(b.id), fr.frame, `${role === 'line' ? (sentence ? 'a sentence' : 'a line') : `a ${role} line`} ${Math.round((b.w / width) * 1000) / 10} % of the frame wide (<= ${Math.round(wide * 100)} %; cap ${cap} %)`);
+      if (!b.ui) {
+        ids.add(root(b.id));
+        if (!sizes.some((s) => Math.abs(s - b.px) <= 0.08 * s)) sizes.push(b.px);
+      }
+    }
+    if (sizes.length > 2) add([...ids].sort().join('+'), fr.frame, `${sizes.length} non-UI sizes at once`);
+  }
+  return { faults: [...faults.values()], frames: frames.length };
 };
 
 // ---------------------------------------------------------------------------------- the score
@@ -457,8 +563,13 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
     dim('picture', { flat: Pm.flat, edges: Pm.edges, falloff: Pm.falloff, saturated: Pm.saturated, bleed: Math.round(bleed * 100) / 100, skeleton: Pm.skeleton_samples ?? 0 }, Math.min(...parts), 'measured');
   } else dim('picture', null, null, 'unmeasured', 'needs look-audit.py (the picture floor)');
 
-  // type
-  if (layout && Array.isArray(layout.warnings)) {
+  // type: the layout boxes re-measured on the bands both families share; without boxes, the audit's own warnings
+  const tf = layout ? typeFaults(layout, T.type ?? typeTarget()) : null;
+  if (tf) {
+    const n = tf.faults.length;
+    const shown = tf.faults.slice(0, 3).map((f) => `${f.id}: ${f.detail} (${f.frames} f)`);
+    dim('type', n, n === 0 ? 100 : Math.max(0, 100 - 10 * n), 'measured', `${n} text(s) off the type bands of both families, re-measured on ${tf.frames} audited frames${n ? `: ${shown.join('; ')}${n > 3 ? '; ...' : ''}` : ''}`);
+  } else if (layout && Array.isArray(layout.warnings)) {
     // per text, not per sampled frame: a line whose size misses its role on every audited frame is one fault
     const ws = layout.warnings.filter((w) => w.kind === 'type-size');
     const n = new Set(ws.map((w, i) => (w.id ? String(w.id).split('.')[0] : `#${i}`))).size;
@@ -605,6 +716,45 @@ const selfTest = () => {
     const persistent = dimOf(score({ layout: { warnings: Array.from({ length: 40 }, (_, f) => ({ kind: 'type-size', frame: f * 6, id: 'what' })) }, look: lookA, target: T, format: 'launch' }), 'type');
     const parts = dimOf(score({ layout: { warnings: [{ kind: 'type-size', id: 'what.0' }, { kind: 'type-size', id: 'what.1' }, { kind: 'type-size', id: 'claim' }] }, look: lookA, target: T, format: 'launch' }), 'type');
     check(persistent.score === 90 && parts.score === 80, 'type: counted per text, not per audited frame (one line warned on 40 frames scores 90; two parts of one entry count once)', `${persistent.score} / ${parts.score}`);
+  }
+  {
+    // the type bands hold both families: every role of the calm and the bold family lands in a band, none between or over
+    const fams = T.type?.families ?? {};
+    const off = Object.entries(fams).flatMap(([f, roles]) => Object.entries(roles).filter(([, r]) => ['between', 'over', 'ui'].includes(r.band)).map(([r, v]) => `${f} ${r} ${v.cap} % ${v.band}`));
+    check(fams.calm && fams.bold && Object.keys(fams.calm).length >= 5 && off.length === 0, 'type: every role of both families (lib/look.ts TYPE_LOOK) lands inside a band of lib/Audit.tsx TYPE_BANDS', off.join('; ') || Object.entries(fams).map(([f, r]) => `${f} ${Object.entries(r).map(([k, v]) => `${k} ${v.cap}`).join(' ')}`).join(' | '));
+    // films audited frame by frame (boxes as layout-audit.sh writes them, 1920x1080, every 6 f)
+    const film = (shots) => ({ warnings: [], boxes: shots.flatMap((boxes, s) => Array.from({ length: 12 }, (_, k) => ({ frame: s * 72 + k * 6, width: 1920, height: 1080, boxes }))) });
+    const box = (id, px, w, more = {}) => ({ id, text: id, words: 4, ui: false, x: (1920 - w) / 2, y: 400, w, h: px, px, opacity: 1, ...more });
+    const calm = film([
+      [box('what', 84, 1270)], // the calm sentence at 66 % of the width (cap 5.6 %)
+      [box('pain', 70, 1380)], // fitted down to 70 px at 72 %
+      [box('name', 520, 1390)], // the name re-set at a quarter of the frame (cap 34.7 %)
+      [box('payoff', 160, 900), box('tag', 46, 500)], // the calm display and a caption
+      [box('giant', 640, 1500)],
+    ]);
+    const bold = film([
+      [box('line', 120, 1110)], // a bold line at 58 %
+      [box('hero', 240, 1560)], // the bold hero at 81 %
+      [box('push', 260, 2600, { push: 'bleed' })], // a landed type push crossing the frame
+      [box('claim', 250, 1800, { claim: true })], // the claim on the accent (cap 16.7 %)
+      [box('giant', 900, 2900, { push: 'bleed' })],
+      [box('flight', 420, 3400, { push: 'moving' })], // a push in flight is the camera's
+    ]);
+    const cS = dimOf(score({ layout: calm, look: lookA, target: T, format: 'launch' }), 'type');
+    const bS = dimOf(score({ layout: bold, look: lookA, target: T, format: 'launch' }), 'type');
+    check(cS.score === 100 && bS.score === 100, 'type: a calm film (84 px sentence at 66 %, a name at a quarter of the frame, a 640 px giant) and a bold one (120 px line, 240 px hero, a landed push, a claim) both score 100', `${cS.score} ${cS.detail} | ${bS.score} ${bS.detail}`);
+    const stale = dimOf(score({ layout: { ...calm, warnings: Array.from({ length: 73 }, (_, f) => ({ kind: 'type-size', id: f % 2 ? 'what' : 'name', frame: f * 6 })) }, look: lookA, target: T, format: 'launch' }), 'type');
+    check(stale.score === 100, 'type: an audit written on older bands is re-scored from its boxes on today\'s (its 73 stale warnings do not count)', `${stale.score}`);
+    const faults = film([
+      [box('line', 120, 1340)], // a bold line at 70 % (over 61 %)
+      [box('what', 84, 1500)], // a calm sentence at 78 % (over 75 %)
+      [box('a', 120, 600), box('b', 200, 600, { y: 100 }), box('c', 46, 400, { y: 900 })], // three sizes at once
+      [box('label', 26, 200)], // under the ui role
+    ]);
+    const fS = dimOf(score({ layout: faults, look: lookA, target: T, format: 'launch' }), 'type');
+    check(fS.score === 60 && fS.value === 4, 'type: a line past 61 %, a sentence past 75 %, three sizes at once and text under the ui role are four faults, one per text however many frames (60)', `${fS.score} ${fS.detail}`);
+    const gaps = dimOf(score({ layout: { ...calm, typeBands: [['caption', 2.3, 4], ['statement', 5, 9], ['hero', 11, 23], ['giant', 40, 90]] }, look: lookA, target: T, format: 'launch' }), 'type');
+    check(gaps.value >= 1, 'type: the bands an audit wrote into its JSON are the ones it is scored on (a name at 34.7 % falls between bands that do not meet)', `${gaps.value} ${gaps.detail}`);
   }
   pair(
     'picture',
