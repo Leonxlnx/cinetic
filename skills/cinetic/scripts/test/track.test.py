@@ -13,7 +13,8 @@ last 0.42 s stop dead, peak 15-22, outro 23-24) and one final thump on bar 25. C
     bars given by hand, and refuses a gap or a button ending off the bar before the final hit
   - grid: src/music.ts and music.js carry the MUSIC grid in film frames (t0, downbeats, ending), and the
     TypeScript file loads under node's type stripping when node can do it
-  - check: every join measured on the edited bed (attack on the film downbeat, no click)
+  - check: every join measured on the edited bed (attack on the film downbeat, no click); a step down into the
+    break before the reveal or into a ring ending's last bars passes, the same step in the body does not
   - a bed with no bar accent (identical clicks): analyze exits 2 (downbeat unresolved), edit refuses,
     and --phase N resolves it (the phase it already has: confirmed in place, no second analysis)
   - a bed whose clicks leave the downbeat unsettled but whose kick comes in on a downbeat: the low-band
@@ -430,6 +431,44 @@ def low_confidence(d):
     check(p.returncode == 0, 'edit runs on the set phase' + ('' if p.returncode == 0 else f': {p.stderr[-200:]}'))
 
 
+def join_kinds(d):
+    """join_report on a bed made here: a step down into the bars before the reveal is a break and passes, the same
+    step in the body fails, a step down into the last bars of a ring ending passes, a step up there fails."""
+    sys.path.insert(0, os.path.dirname(TRACK))
+    import track as TR
+    film_t0, n_bars, join_bar = 0.25, 8, 4
+    n = int((film_t0 + (n_bars + 1) * BAR) * SR)
+    r = np.random.default_rng(11)
+    y = signal.sosfilt(signal.butter(2, [200, 3000], 'band', fs=SR, output='sos'), r.standard_normal(n)) * 0.1
+    tj = film_t0 + (join_bar - 1) * BAR
+    t = np.arange(int(0.05 * SR)) / SR
+    hit = signal.sosfilt(signal.butter(2, 120, 'low', fs=SR, output='sos'), r.standard_normal(len(t))) * 6 * np.exp(-t / 0.02)
+    for k in range(int(n_bars * 4)):
+        i = int(round((film_t0 + k * BEAT) * SR))
+        y[i:i + len(hit)] += hit
+    def bed(step_db):
+        z = y.copy()
+        z[int(tj * SR):] *= 10 ** (step_db / 20)
+        return np.stack([z, z], 1)
+    def edit(reveal_bar, end_mode):
+        down = [round(film_t0 + b * BAR, 4) for b in range(n_bars + 1)]
+        return {'beat_s': BEAT, 'film': {'entries': [], 'downbeats': down},
+                'joins': [{'film_s': round(tj, 4), 'film_bar': join_bar, 'tail_ms': 60.0}],
+                'segments': [{'film_s': film_t0}, {'film_s': round(tj, 4)}],
+                'reveal': {'film_bar': reveal_bar, 'film_s': down[reveal_bar - 1]}, 'ending': {'mode': end_mode}}
+    def step_probs(rows):
+        return [p for p in rows[0]['problems'] if 'loudness step' in p]
+    rows = TR.join_report(bed(-8.0), edit(join_bar + 2, 'stop'))
+    check(rows[0]['kind'] == 'dip' and not step_probs(rows), f"a step down 2 bars before the reveal is a break ({rows[0]['kind']}, "
+          f"{rows[0]['loudness_step_lu']} LU, {step_probs(rows)})")
+    rows = TR.join_report(bed(-8.0), edit(1, 'stop'))
+    check(rows[0]['kind'] == 'body' and step_probs(rows), f"the same step in the body is a problem ({rows[0]['kind']})")
+    rows = TR.join_report(bed(-8.0), edit(1, 'ring'))
+    check(rows[0]['kind'] == 'ending' and not step_probs(rows), f"a step down into a ring ending's last bars passes ({rows[0]['kind']})")
+    rows = TR.join_report(bed(8.0), edit(1, 'ring'))
+    check(step_probs(rows), 'a step up there is still a problem')
+
+
 def add_records(d):
     music = os.path.join(d, 'audio', 'music')
     f = 'audio/music/click_bed.wav'
@@ -481,6 +520,7 @@ def main():
         low_confidence(d)
         kick_entry(d)
         ring_ending(d)
+        join_kinds(d)
         add_records(d)
         strict_json(d)
     finally:

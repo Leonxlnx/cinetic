@@ -70,7 +70,8 @@ under the end card). A track whose own ending is a fade must end on `stop`.
 Joins: the incoming segment starts 8 ms before its downbeat's attack with an 8 ms fade-in, so the downbeat's
 transient comes whole from the incoming bar; the outgoing segment runs on 60 ms with a tail fade (150 ms
 when it sustains). `check` measures each join on the edited bed: no click, the attack within +-2 ms of the
-film downbeat, a loudness step under 3 LU unless it is an entry, no chopped note, no start inside a note.
+film downbeat, a loudness step under 3 LU unless it is an entry (or a step down into the break before the
+reveal, or into the last bars of a button or ring ending), no chopped note, no start inside a note.
 
 Exit codes: 0 done; 1 invalid input, a refused licence, a failed check; 2 tempo or downbeat unresolved
 (low confidence: rerun analyze with --phase N, or choose another track).
@@ -107,6 +108,7 @@ STOP_DB, STOP_MIN_S, STOP_MAX_S = 12.0, 0.15, 1.0
 ACCENT_DB = 6.0
 FADE_INTO_HIT_DB = 2.0        # ending: a fade with a hit in its last bars has fallen this much over the 2 bars before it
 PRE_MS, TAIL_MS, TAIL_SUSTAIN_MS = 8.0, 60.0, 150.0
+JOIN_ATTACK_MS = 2.0          # check: the incoming attack within this of the film downbeat
 STOP_FADE_S, STOP_GUARD_S = 0.025, 0.003
 LEVEL_FLOOR = -90.0           # LUFS / dB: digital silence reads as this, so depths and novelty stay finite
 AUDIO_EXT = ('.wav', '.mp3', '.flac', '.ogg', '.m4a', '.aac', '.aif', '.aiff', '.opus')
@@ -1435,6 +1437,10 @@ def join_report(bed, edit, src=None):
     hsrc = signal.sosfilt(hp8, np.asarray(src, np.float64)) if src is not None else None
     rows = []
     entries = edit['film'].get('entries', [])
+    bar_s = BPB * float(edit['beat_s'])
+    reveal_s = (edit.get('reveal') or {}).get('film_s')
+    end_mode = (edit.get('ending') or {}).get('mode')
+    last_s = edit['segments'][-1]['film_s'] if edit.get('segments') else None
     for j in edit.get('joins', []):
         t = j['film_s']
         ta, rdb = attack_near(e, t, 0.02)
@@ -1455,9 +1461,13 @@ def join_report(bed, edit, src=None):
             click_db = float(20 * np.log10(hb.max() / (np.median(hb) + 1e-12)))
             click_lim = 10.0
         L = lambda a, b: -0.691 + 10 * np.log10(np.mean(MK.kpower(bed[max(0, int(a * SR)):int(b * SR)])) + 1e-24)  # noqa: E731
-        bar_s = BPB * float(edit['beat_s'])  # whole bars on both sides: a bar's first beats are louder than its last
-        step = float(L(t, t + bar_s) - L(t - bar_s, t))
+        step = float(L(t, t + bar_s) - L(t - bar_s, t))  # whole bars on both sides: a bar's first beats are louder
         is_entry = any(abs(t - x) < 0.02 for x in entries)
+        # what the join is for: an entry may step either way; a break into the reveal (the dip within 2 bars
+        # before it) and the resolve into the last bars of a button or ring ending may step down
+        kind = ('entry' if is_entry else
+                'dip' if reveal_s is not None and t < reveal_s - 0.02 and reveal_s - t <= 2 * bar_s + 0.02 else
+                'ending' if end_mode in ('button', 'ring') and last_s is not None and abs(t - last_s) < 0.02 else 'body')
         out_tail = j.get('tail_ms', TAIL_MS)
         # chop: the outgoing source still sounds near its last 50 ms level and over what enters, with a short tail
         x_out = 20 * np.log10(np.sqrt(np.mean(m[max(0, i - int(0.06 * SR)):i - int(0.01 * SR)] ** 2)) + 1e-9)
@@ -1466,16 +1476,17 @@ def join_report(bed, edit, src=None):
         sustain_start = bool(rdb < 3.0)
         row = dict(film_s=t, attack_off_ms=round(off_ms, 2), attack_rise_db=round(rdb, 1), click_db=round(click_db, 1),
                    click_ref='the sources' if hsrc is not None else 'its neighbours',
-                   loudness_step_lu=round(step, 2), entry=is_entry, chop=chop, sustain_start=sustain_start,
+                   loudness_step_lu=round(step, 2), entry=is_entry, kind=kind, chop=chop, sustain_start=sustain_start,
                    tail_ms=out_tail)
         prob = []
-        if abs(off_ms) > 2.0:
-            prob.append(f'the incoming attack is {off_ms:+.1f} ms from the film downbeat (want +-2)')
+        if abs(off_ms) > JOIN_ATTACK_MS + 0.05:  # the attack is read in 1 ms blocks: -2.0 ms is inside +-2
+            prob.append(f'the incoming attack is {off_ms:+.1f} ms from the film downbeat (want +-{JOIN_ATTACK_MS:g})')
         if click_db >= click_lim:
             prob.append(f'a click: a {click_db:.0f} dB high-frequency burst at the join (over '
                         + ('what the two sources have there)' if hsrc is not None else 'its neighbours)'))
-        if abs(step) >= 3 and not is_entry:
-            prob.append(f'a {step:+.1f} LU loudness step (an entry may step; this join is not one)')
+        if abs(step) >= 3 and kind == 'body' or step >= 3 and kind in ('dip', 'ending'):
+            prob.append(f'a {step:+.1f} LU loudness step (an entry may step, and a break before the reveal or the '
+                        'resolve into a button or ring ending may step down; this join is none of them)')
         if chop:
             prob.append('a chopped note: the outgoing bar still sounds over what enters, with a short tail '
                         '(use a 150 ms tail or join on another bar)')
