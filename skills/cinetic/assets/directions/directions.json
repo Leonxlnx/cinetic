@@ -11,7 +11,7 @@
   "scale_contrast_cut_share": 0.3
  },
  "defaults": {
-  "foreground": "a pre-softened near plane: one shape or object from the product's world, 1.2-1.6x the frame height, softened once in its plate (never an animated blur), in the ground's dark tone at 30-60 % opacity, crossing or drifting at 1.5-2.5x the camera's speed near a frame edge, so every shot has a near, a middle and a far plane; a direction turns it off only with a reason"
+  "foreground": "a pre-softened near plane made of the product's own things: a real card, chip, tile or mark from the film, in its own colours and with its content, legible as itself, 1.2-1.6x the frame height, softened once in its plate (never an animated blur), crossing or drifting at 1.5-2.5x the camera's speed near a frame edge, so every shot has a near, a middle and a far plane. Never a blank or dark-toned shape at low opacity: every element in frame has a job, and a faint plate with nothing on it is filler; a direction turns it off only with a reason"
  },
  "recipes": {
   "tintedPaper": {
@@ -137,8 +137,8 @@
  "methods": {
   "relief": "Extruded solids on a floor under one key, drawn as one SVG per frame (no CSS 3D, no filters on the blocks). Each block is a footprint polygon and a height h in px at 1080p. Project its corners every frame with one perspective function written once for the film (camera position, pitch and focal length as functions of the frame), then frame the result with the shot (toScreen or camera()): the top face is the footprint lifted by h; draw only the side faces whose outward normal faces the camera (at most two for a box). Paint back to front, sorted by the depth of each footprint's centre. Face fills come from the face-shade method. Cast shadows: for a key at elevation e and azimuth a, a block's shadow is the convex hull of its footprint and the footprint moved h x cot(e) along a; all shadows go into ONE path inside a group at opacity 0.14-0.24, so overlapping shadows never darken twice; shadows are drawn after the floor and before the blocks. A constant 1.5 px blur on that one group gives a penumbra (never an animated blur radius). Budget: 400 blocks of three polygons plus the shadow path is about 1,200 SVG nodes, fine at 1080p60.",
   "face-shade": "Matte faces lit by one fixed key. For each face, n.l is the cosine between its current normal and the key direction; its shade overlay (a div or SVG polygon in ink over the face) has opacity k x (1 - (a + (1 - a) x max(0, n.l))) with ambient a 0.55-0.70 and k 0.5-0.8, so a face turned fully away sits 0.12-0.22 L below one facing the key. Matte only: no specular band, no moving highlight. Solids have real faces (backface-visibility hidden on a preserve-3d box of true thickness), never a stack of thin layers faking an edge.",
-  "plate-light": "The house light field built from plain parts: one or two baked, dithered one-hue plates (made once with the dither script, scripts/dither-*.py, at half size and scaled up) moved by transform and opacity only. A pool is a plate translated along a path at 180-300 px/s; a reveal lifts a full-frame plate x2 over 0.9 s. Lightness swing 0.05-0.20 at chroma 0.13 or less, accent hue only. Never animated CSS colour ramps.",
-  "exposure-plate": "An exposure event from plain parts: a full-frame plate in the ground's lighter step (ink for a dip) above the scene, opacity 0 -> peak -> 0 over 0.5-0.9 s on softOut (peak 0.10-0.18 for a lift, 0.15-0.25 for a dip), or CSS filter brightness() on the scene root within 0.92-1.10. At least one per act; never a dip to black.",
+  "plate-light": "The house light field built from plain parts: one or two baked, dithered one-hue plates (made once with the dither script, scripts/dither-*.py, at half size and scaled up) moved by transform and opacity only. Light is motivated and subtle: a key falloff from one side (a lightness swing of 0.02-0.10 behind content), or a pool only where the place has a lamp, a window or a lit object, travelling at 180-300 px/s; never a lit patch behind a line, a lockup or a card, and never a white haze over the frame. A reveal lifts the key plate x2 over 0.9 s. Chroma 0.13 or less, accent hue only. Never animated CSS colour ramps.",
+  "exposure-plate": "An exposure event from plain parts: the arriving element's own plate one step lighter (or the frame through CSS filter brightness() on the scene root within 0.94-1.08), opacity 0 -> peak -> 0 over 0.5-0.9 s on softOut (peak 0.06-0.12 for a lift, 0.15-0.25 for a dip); a full-frame veil of the lighter step only on a declared light seam, never held. At least one per act; never a dip to black, never a white haze that stays.",
   "tile-field": "Many identical elements driven by one front: N absolutely positioned elements (divs, or SVG above 400), each with a fixed slot. A front is a function d(i): distance from an origin, a diagonal col + row, or a rank. Element i starts at t0 + d(i) x stagger and runs one fixed curve over D frames, closed form in the frame; no element reads another's state. Elements under 12 px on screen drop their shadow and inner detail.",
   "projection": "A point light throws silhouettes on a wall. An object at distance z from the light, with the wall at distance W, casts a shadow scaled W / z about the light's axis; turning the object turns its shadow exactly, because the shadow is the same flat pieces drawn a second time through a planar projection matrix (matrix3d from the light position onto the wall plane), filled in ink at 45-60 %. Penumbra: two copies of the shadow layer, sharp and one with a constant 14 px blur, mixed by defocusMix of (W - z) / z; never an animated blur radius. The wall itself is a mid-tone plane with a plate-light falloff around the light's axis."
  },
@@ -1097,6 +1097,126 @@
   },
   "Bubble": {
    "file": "kit/flow.tsx",
+   "status": "built"
+  },
+  "DepthStack": {
+   "file": "fx/DepthStack.tsx",
+   "status": "built"
+  },
+  "GlideStep": {
+   "file": "fx/GlideStep.tsx",
+   "status": "built"
+  },
+  "LitGround": {
+   "file": "fx/Grounds.tsx",
+   "status": "built"
+  },
+  "Planes": {
+   "file": "fx/Grounds.tsx",
+   "status": "built"
+  },
+  "RimEdge": {
+   "file": "fx/Lit.tsx",
+   "status": "built"
+  },
+  "Lit": {
+   "file": "fx/Lit.tsx",
+   "status": "built"
+  },
+  "MatchCut": {
+   "file": "fx/MatchCut.tsx",
+   "status": "built"
+  },
+  "Trace": {
+   "file": "fx/Trace.tsx",
+   "status": "built"
+  },
+  "AccentClaim": {
+   "file": "fx/TypeClaim.tsx",
+   "status": "built"
+  },
+  "TypePush": {
+   "file": "fx/TypePush.tsx",
+   "status": "built"
+  },
+  "PortraitMark": {
+   "file": "kit/avatars.tsx",
+   "status": "built"
+  },
+  "HalftonePortrait": {
+   "file": "kit/avatars.tsx",
+   "status": "built"
+  },
+  "MonogramTile": {
+   "file": "kit/avatars.tsx",
+   "status": "built"
+  },
+  "Micro": {
+   "file": "kit/dense.tsx",
+   "status": "built"
+  },
+  "StatusPill": {
+   "file": "kit/dense.tsx",
+   "status": "built"
+  },
+  "FocusLens": {
+   "file": "kit/dense.tsx",
+   "status": "built"
+  },
+  "AppWindow": {
+   "file": "kit/dense.tsx",
+   "status": "built"
+  },
+  "DenseScreen": {
+   "file": "kit/dense.tsx",
+   "status": "built"
+  },
+  "InlineObject": {
+   "file": "kit/inline.tsx",
+   "status": "built"
+  },
+  "ObjectLine": {
+   "file": "kit/inline.tsx",
+   "status": "built"
+  },
+  "BrandLogo": {
+   "file": "kit/logos.tsx",
+   "status": "built"
+  },
+  "AppIcon": {
+   "file": "kit/logos.tsx",
+   "status": "built"
+  },
+  "LogoChip": {
+   "file": "kit/logos.tsx",
+   "status": "built"
+  },
+  "InlineLogo": {
+   "file": "kit/logos.tsx",
+   "status": "built"
+  },
+  "LogoWall": {
+   "file": "kit/logos.tsx",
+   "status": "built"
+  },
+  "LogoRing": {
+   "file": "kit/logos.tsx",
+   "status": "built"
+  },
+  "ContentTile": {
+   "file": "kit/tiles.tsx",
+   "status": "built"
+  },
+  "ContentWall": {
+   "file": "kit/tiles.tsx",
+   "status": "built"
+  },
+  "ContentRing": {
+   "file": "kit/tiles.tsx",
+   "status": "built"
+  },
+  "ContentTicker": {
+   "file": "kit/tiles.tsx",
    "status": "built"
   }
  },
@@ -2182,11 +2302,13 @@
     "space": "flat",
     "set": "One very large flat canvas, 5-12 frames wide, holds every shot as a region (the problem, each proof, the payoff), laid out like a plan and joined by the product's own connectors.",
     "planes": "2: the canvas and a slower ground plane under it (parallax on log scale)",
-    "light_kind": "pool",
-    "light": "The region the camera arrives at lies in a soft pool that travels with the camera; the rest of the canvas falls off 0.08 L; at the reveal the pool widens until the surface is evenly lit.",
-    "light_build": "plate-light method: one pool plate on the camera layer's counter-transform, its scale growing x6 for the reveal.",
+    "light_kind": "raking-key",
+    "light": "One low key from the upper left rakes across the canvas: every region on it throws a short shadow away from the key, and the canvas carries a very subtle falloff from the key side (0.05 L across the frame) that stays put while the camera travels; at the reveal the whole surface lifts one exposure step. No pool follows the camera.",
+    "light_build": "relief method for the regions' shadows from the one key; plate-light method for the static key falloff under the canvas; the reveal an exposure lift of 0.10 over 0.9 s.",
     "method": [
-     "plate-light"
+     "relief",
+     "plate-light",
+     "exposure-plate"
     ],
     "texture": "clean"
    },
@@ -2558,11 +2680,11 @@
    },
    "world": {
     "space": "perspective",
-    "set": "A field that reads as thirty to forty flat planes (cards, statements, real states of the product) floating at different depths in one void, facing the camera. Near ones swell and slide off the edges; far ones barely drift. Depth is a lightness step toward the ground, set at build time.",
+    "set": "A field that reads as thirty to forty planes, each a real state of the product (a screen with its type, a card with its data, a statement, a mark), floating at different depths in one clean void, facing the camera. Near ones swell and slide off the edges; far ones barely drift. A far plane is smaller and softer but keeps its own colours and content, never dimmed into a blank shape; no plane is a blank card, and nothing else floats in the void.",
     "planes": "12 live plane slots, recycled so the field reads as 30-40 planes",
     "light_kind": "exposure",
-    "light": "The arrival plane lifts to full contrast as it lands square to the lens; the field behind it sinks one step toward the ground.",
-    "light_build": "exposure-plate method on the arrival (a lift of 0.14 over 0.6 s); per-plane depth tone set once at build time.",
+    "light": "The arrival plane lands square to the lens at full contrast; the planes behind it soften one focus step. The void stays clean: no pool of light, no haze, no lit patch behind the line.",
+    "light_build": "exposure-plate method on the arrival plane (its own plate lifts 0.10 over 0.6 s); each plane's focus level set once at build time (no depth dimming toward the ground).",
     "method": [
      "exposure-plate"
     ],
@@ -2595,7 +2717,7 @@
       "ink": 22,
       "accent": 6
      },
-     "notes": "a void in the accent's own hue at depth; far planes sink into it, the arrival plane is near-white"
+     "notes": "a void in the accent's own hue at depth; far planes soften in it, keeping their content, the arrival plane is near-white"
     },
     {
      "id": "white-void",
@@ -10043,13 +10165,13 @@
    },
    "world": {
     "space": "flat",
-    "set": "A clean flat field; one phrase set frontal at 9 % of the frame height with a word slot at its end (a window the width of the longest word, a 1 px hairline under it). Between rolls the product fills the frame on the same field and the phrase rides over it on a 40 % veil of the ground.",
+    "set": "A clean flat field; one phrase set frontal at 9 % of the frame height with a word slot at its end (a window the width of the longest word, a 1 px hairline under it). Between rolls the product fills the frame on the same field and steps back (scaled 0.9, softened one step) while the phrase reads on the field above it: no veil over the product.",
     "planes": "2-3: the field, the phrase with its slot, the full-frame product under its veil",
-    "light_kind": "pool",
-    "light": "A soft one-hue pool (the accent at 12 % over the field, 60 % of the frame wide) slides under the slot each time it rolls, so the newest word sits in the brightest part of the frame.",
-    "light_build": "plate-light method: one dithered pool plate in the accent hue whose x follows the slot's centre (translateX on a closed form of the roll time).",
+    "light_kind": "exposure",
+    "light": "Each roll lands with a one-step exposure lift inside the slot (0.06 over 0.4 s) and the newest word takes the accent, so the eye goes to it without a lit patch behind the line; the field stays clean.",
+    "light_build": "exposure-plate method: the slot's own plate lifts on each landing frame; the word's colour swaps on the same frame.",
     "method": [
-     "plate-light"
+     "exposure-plate"
     ],
     "texture": "clean"
    },
@@ -10066,7 +10188,7 @@
       "ink": 24,
       "accent": 10
      },
-     "notes": "ink phrase on a neutral paper; the slot word and the pool in the accent"
+     "notes": "ink phrase on a neutral paper; the slot word in the accent"
     },
     {
      "id": "stone-slot",
