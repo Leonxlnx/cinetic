@@ -23,10 +23,11 @@ it). One camera carries the whole film along one strip, so every act line is a v
   retell this floor in its world: its space, light, camera and signature replace the strip.
 
 **Music (the slot every film fills).** An update film is cut to a licensed, human-made, instrumental
-track, never effects only (`template.json` → `music`, references/music.md). Pick it first: the dealt
-direction lists shortlist tracks in its tempo range (`python3 scripts/deck.py --show`); 116-128 BPM
-suits one bar a change. Bring it in with `--music <file>` and its licence flags (or later
-`python3 scripts/audio/track.py add`), then `track.py edit --bars N --reveal-bar K --end stop|button|ring`,
+track, never effects only (`template.json` → `music`, references/music.md). Find it first, for this
+film: `node scripts/music.mjs search --mood "<the film's mood words>" --bpm 116-128 --length <s>` (116-128
+BPM suits one bar a change), `sheet --measure`, then `get '#n' --to audio/music` (its licence record
+beside it; never the last film's track). Bring it in with `--music <file> --record <licence.json>` (a track
+found elsewhere: its licence flags, or later `python3 scripts/audio/track.py add`), then `track.py edit --bars N --reveal-bar K --end stop|button|ring`,
 `track.py grid` and `track.py check`: `src/music.ts` then carries the track and `b()` follows its bars.
 
 **Timing.** One bar per change at the template's 120 BPM (crisp): 2 changes 12 s, 3 changes 14 s,

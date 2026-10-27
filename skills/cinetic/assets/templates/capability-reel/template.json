@@ -8,7 +8,7 @@
   "required": true,
   "slot": "audio/music/",
   "about": "Every reel is cut to a licensed, human-made, instrumental track (references/music.md): its cuts and swaps sit on the track's drum onsets and earshot effects mark the state changes; never effects only.",
-  "pick": "the dealt direction lists tracks from the shortlist in its tempo range (python3 scripts/deck.py --show); 115-130 BPM with a punchy kick suits the template's cuts on kicks",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 115-130 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); 115-130 BPM with a punchy kick suits the template's cuts on kicks",
   "add": "bash scripts/new-film.sh <dir> --template capability-reel --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
   "then": [
    "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end stop|button|ring",

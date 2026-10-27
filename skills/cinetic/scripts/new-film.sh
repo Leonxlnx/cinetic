@@ -21,8 +21,8 @@
 #                  starter keeps its own 120 BPM, a placeholder until track.py grid writes the
 #                  track's grid; at an fps where 120 gives no whole beat (25 fps) the nearest tempo
 #                  that does (125). A bpm in audio/score.json follows it.
-#   --pace         calm (default): text arrives as short fragments that take turns with the
-#                  picture and holds about 1-1.5 s; crisp: the denser launch-film tempo. Sets
+#   --pace         calm (default): the script's lines arrive one at a time with reading holds of
+#                  about 1-1.5 s between picture beats; crisp: the denser launch-film tempo. Sets
 #                  PACE_NAME (src/timeline.ts, or motion.js), which the components, grid-check
 #                  and lint-film read.
 #   --size         WxH, e.g. 1920x1080, 1080x1920 (9:16), 1080x1080. The demo lays out from the short side.
@@ -389,25 +389,14 @@ fi
 BEAT=$(node -e "console.log(60*$FPS/$BPM)")
 echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat${PACE:+, $PACE pace}${TEMPLATE:+, the $TEMPLATE template})"
 if [[ -n "$TPL" && "$TEMPLATE" != update ]]; then
-  # the template's own first steps (template.json "next"), then the music slot every film fills
+  # the template's own first steps (template.json "next"); the music slot every film fills is printed below
   TPL="$TPL" node -e 'const m = JSON.parse(require("fs").readFileSync(require("path").join(process.env.TPL, "template.json"), "utf8")); for (const l of m.next || []) console.log(l);'
-  if [[ -z "$MUSIC" ]]; then
-    echo "music: the slot is empty, and every film is cut to a licensed track (references/music.md): $PYS scripts/audio/track.py add <file> --title T ... then track.py edit / grid / check (template.json: music)"
-  fi
 fi
 if [[ "$TEMPLATE" == update ]]; then
   cat <<EOF
 update film: write the version and 2-4 changes (one plain sentence each, 2-6 words, a result the user sees, each with its product moment) in src/update.ts,
   then deal its direction: $PYS scripts/deck.py --brief "<one line>" --format update --changes N --options 3
 EOF
-  if [[ -z "$MUSIC" ]]; then
-    cat <<EOF
-music: the slot is empty, and every film is cut to a licensed track (never effects only): pick one from the
-  dealt direction's shortlist (the deal above prints it; $PYS scripts/deck.py --show reprints it once dealt), then $PYS scripts/audio/track.py add <file>
-  --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL --ai-generated no --vocals no,
-  and track.py edit / grid / check (template.json: music)
-EOF
-  fi
 fi
 if [[ "$ENGINE" == remotion ]]; then
   cat <<EOF
@@ -435,6 +424,18 @@ next:
   npm run preview                # HyperFrames Studio
   npm run cues && npm run kit && npm run audio && npm run render:preview   # then: npm run render
   npm run listen                 # earshot's ears on the soundtrack: out/qa/listen.json + sound_sheet.png
+EOF
+fi
+if [[ -z "$MUSIC" ]]; then
+  cat <<EOF
+music first: the slot is empty, and every film is cut to its own licensed track, never effects only
+(references/music.md). In $DIR:
+  node scripts/music.mjs search --mood "<the film's mood words>" --bpm <lo-hi> --length <film s>
+  node scripts/music.mjs sheet --measure      # audition the first three; never the last film's track
+  node scripts/music.mjs get '#n' --to audio/music   # the file and its licence record
+  (a track found elsewhere: $PYS scripts/audio/track.py add <file> --title T --artist A --source S --page URL
+   --licence L --seen-quote Q --seen-url URL --ai-generated no --vocals no)
+  then $PYS scripts/audio/track.py analyze audio/music/<file>, and track.py edit / grid / check
 EOF
 fi
 if [[ -n "$MUSIC" ]]; then
