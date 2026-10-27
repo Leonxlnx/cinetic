@@ -22,11 +22,14 @@
  *
  * Candidates: --candidates a,b,c, each an @fontsource-variable name (looked up in src/brand/fonts/<name>/, then
  * node_modules/@fontsource-variable/<name>/; --fetch npm-packs the rest into a temp folder, nothing installed) or a
- * font file (.woff2, .woff, .ttf, .otf). The default list: geist (the starter's), inter, manrope, outfit and the sans
- * faces of references/brand-and-color.md §2. Names it cannot find are skipped and listed.
+ * font file (.woff2, .woff, .ttf, .otf). The default list is the face set's match pool (scripts/faces.json: the
+ * set's faces first, Inter the default, then a few more neutral sans); --pool mono or --pool serif ranks the set's
+ * mono or serif stand-ins instead (a serif only stands in for a brand-supplied serif). An optical-size face (Inter,
+ * DM Sans) is measured from its opsz file, at the cut its size takes. Names it cannot find are skipped and listed.
  *
  * Other options:
  *   --text "..."      the test line, exactly as it reads in the target (required; 2-6 words, lowercase-led)
+ *   --pool sans|mono|serif  which of the face set's match pools to rank when --candidates is not given (default sans)
  *   --weights a,b,..  the weights tried per face (default 300-700 every 50); --weight N fixes one (no stem match)
  *   --top N           rows printed (default 8)
  *   --json <file>     every measurement as JSON
@@ -53,7 +56,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const HELP = readFileSync(fileURLToPath(import.meta.url), 'utf8').replace(/\r\n/g, '\n').split('*/')[0].replace(/^#!.*\n\/\*\*?/, '').replace(/^ \* ?/gm, '');
-const DEFAULT = ['geist', 'inter', 'manrope', 'outfit', 'hanken-grotesk', 'public-sans', 'instrument-sans', 'schibsted-grotesk', 'ibm-plex-sans', 'figtree', 'source-sans-3', 'nunito-sans', 'commissioner'];
+// the face set's match pools (scripts/faces.json); the fallback list keeps the script usable without it
+const SET = (() => { try { return JSON.parse(readFileSync(join(HERE, 'faces.json'), 'utf8')); } catch { return null; } })();
+const POOLS = { sans: ['inter', 'inter-tight', 'geist', 'dm-sans', 'google-sans-flex', 'urbanist', 'manrope', 'plus-jakarta-sans', 'public-sans', 'hanken-grotesk', 'instrument-sans', 'mona-sans', 'outfit'], mono: ['geist-mono', 'jetbrains-mono'], serif: ['literata', 'newsreader', 'source-serif-4'], ...(SET?.match ?? {}) };
 const WIN = process.platform === 'win32';
 let tmp = null;
 const cleanup = () => { if (tmp) rmSync(tmp, { recursive: true, force: true }); tmp = null; };
@@ -73,7 +78,7 @@ for (let i = 0; i < argv.length; i++) {
   A[key] = v;
   i++;
 }
-const known = ['crop', 'box', 'frame-h', 'like', 'like-weight', 'like-track', 'width', 'xh', 'asc', 'stem', 'candidates', 'text', 'weights', 'weight', 'top', 'json', 'sheet', 'dir', 'fetch'];
+const known = ['crop', 'box', 'frame-h', 'like', 'like-weight', 'like-track', 'width', 'xh', 'asc', 'stem', 'candidates', 'pool', 'text', 'weights', 'weight', 'top', 'json', 'sheet', 'dir', 'fetch'];
 for (const k of Object.keys(A)) if (!known.includes(k)) die(`unknown option --${k} (see --help)`, 2);
 if (!A.text) die('--text is required: the test line exactly as it reads in the target', 2);
 const kinds = [A.crop && 'crop', A.like && 'like', A.width && 'numbers'].filter(Boolean);
@@ -115,7 +120,9 @@ const findFace = (spec) => {
   try { const f = fetchFace(name); return f ? { name, file: f } : null; } catch { return null; }
 };
 const b64 = (f) => readFileSync(f).toString('base64');
-const specs = (A.candidates ? A.candidates.split(',') : DEFAULT).map((s) => s.trim()).filter(Boolean);
+if (A.pool && !POOLS[A.pool]) die(`--pool is one of ${Object.keys(POOLS).join(', ')}`, 2);
+if (A.pool && A.candidates) die('give --candidates or --pool, not both', 2);
+const specs = (A.candidates ? A.candidates.split(',') : POOLS[A.pool ?? 'sans']).map((s) => s.trim()).filter(Boolean);
 const faces = [];
 const missing = [];
 for (const s of specs) {
@@ -363,6 +370,8 @@ if (best) {
   const sz = k1080 ? `, ${(best.size * k1080).toFixed(0)} px at 1080p` : target.kind === 'like' ? `, at ${((best.size / 200) * 100).toFixed(1)} % of the brand face's size` : '';
   console.log(`pick: ${best.name}, weight ${best.weight}${sz}, tracking ${best.track >= 0 ? '+' : ''}${best.track.toFixed(3)} em (${best.fit}; natural width ${pct(best.natErr)}, fitted residue ${pct(best.residue)})`);
   console.log(`  TYPE role for this line: { weight: ${best.weight}, track: ${Number(best.track.toFixed(3))} }  ->  node scripts/add-font.mjs ${best.name}`);
+  const looks = (SET?.looks ?? []).filter((l) => [l.display, l.text, l.mono, ...(l.alternates ?? [])].includes(best.name)).map((l) => l.id);
+  if (SET) console.log(looks.length ? `  in the face set: ${looks.join(', ')} (scripts/faces.json)` : '  outside the face set (scripts/faces.json): keep it only for a stated reason in TREATMENT.md');
 }
 if (A.json) writeFileSync(resolve(A.json), JSON.stringify({ text: A.text, target: { kind: target.kind, ...T, frameH }, ranked: res.ok, skipped: res.rows.filter((x) => x.error), missing }, null, 1));
 if (A.sheet && res.sheet) writeFileSync(resolve(A.sheet), Buffer.from(res.sheet.split(',')[1], 'base64'));

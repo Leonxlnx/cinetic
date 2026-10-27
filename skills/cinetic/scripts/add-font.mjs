@@ -26,10 +26,17 @@
  * serif, display and handwriting families are refused unless --brand-supplied (the user's brand
  * supplied it: record it in BRIEF.md).
  *
+ * The face set (scripts/faces.json) is the list to choose from: --list prints it by look (display and
+ * text faces, alternates, weights, tracking offset). A face from the set is vendored from the CSS file the
+ * set names (opsz.css for Inter and DM Sans, so film sizes take the display cut; --css <file> picks
+ * another), and the script prints the set's weights and the tracking offset to add to every TYPE role.
+ * A face outside the set is vendored with a warning: compare it against the set with font-match.mjs first.
+ *
  * Usage (from the project root, or pass --dir):
  *   node scripts/add-font.mjs <name | @fontsource-variable/name[@version]> [--role text|mono] [--add <key>]
- *                             [--dir <project>] [--no-tokens] [--brand-supplied] [--dry-run]
- *   e.g. node scripts/add-font.mjs manrope
+ *                             [--css <file.css>] [--dir <project>] [--no-tokens] [--brand-supplied] [--dry-run]
+ *   node scripts/add-font.mjs --list
+ *   e.g. node scripts/add-font.mjs dm-sans               (the geometric look)
  *        node scripts/add-font.mjs @fontsource-variable/jetbrains-mono --role mono
  *        node scripts/add-font.mjs inter --add ui        (FONT.ui beside FONT.text)
  * Exit codes: 0 vendored, 1 failed (the message says why), 2 bad arguments.
@@ -55,11 +62,30 @@ let tmp = null; // the npm pack folder, removed on every exit
 const cleanup = () => { if (tmp) rmSync(tmp, { recursive: true, force: true }); tmp = null; };
 const die = (msg, code = 1) => { cleanup(); console.error(`add-font: ${msg}`); process.exit(code); };
 
+// the face set: looks, faces, the CSS file each face is vendored from, its weights and tracking offset
+const SET = (() => { try { return JSON.parse(readFileSync(new URL('./faces.json', import.meta.url), 'utf8')); } catch { return null; } })();
+const looksOf = (name) => (SET?.looks ?? []).filter((l) => [l.display, l.text, l.mono, ...(l.alternates ?? [])].includes(name));
+const printSet = () => {
+  if (!SET) die('scripts/faces.json not found next to this script');
+  const em = (v) => `${v >= 0 ? '+' : ''}${v} em`;
+  console.log(`The face set (scripts/faces.json): free faces, SIL OFL 1.1, fetched from @fontsource-variable. Default: ${SET.default}.`);
+  for (const l of SET.looks) {
+    const w = l.weights;
+    console.log(`\n${l.id}${l.default ? ' (default)' : ''}: ${l.name}\n  display ${l.display}, text ${l.text}, mono ${l.mono}; alternates ${(l.alternates ?? []).join(', ') || '-'}` +
+      `\n  weights: text ${w.text}, display ${w.display_calm} calm / ${w.display_bold} bold, wordmark ${w.wordmark}\n  for: ${l.for}`);
+  }
+  console.log('\nfaces (tracking offset to add to every TYPE role; weight offset to add to every TYPE weight):');
+  for (const [n, f] of Object.entries(SET.faces)) console.log(`  ${n.padEnd(18)} "${f.family}"  ${f.css}  offset ${em(f.offset_em)}, weight ${f.weight_offset >= 0 ? '+' : ''}${f.weight_offset}`);
+  console.log('\nsetting:\n' + SET.setting.map((s) => `  - ${s}`).join('\n'));
+};
+
 const args = process.argv.slice(2);
-let spec = null, role = null, dir = '.', tokens = true, brand = false, dry = false, addKey = null;
+let spec = null, role = null, dir = '.', tokens = true, brand = false, dry = false, addKey = null, cssFile = null;
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '-h' || a === '--help') { console.log(HELP.trim()); process.exit(0); }
+  else if (a === '--list') { printSet(); process.exit(0); }
+  else if (a === '--css') cssFile = args[++i];
   else if (a === '--role') role = args[++i];
   else if (a === '--dir') dir = args[++i];
   else if (a === '--add') addKey = args[++i] ?? '';
@@ -72,6 +98,7 @@ for (let i = 0; i < args.length; i++) {
 }
 if (!spec) { console.log(HELP.trim()); die('missing <name | package>', 2); }
 if (role && !['text', 'mono'].includes(role)) die('--role must be text or mono', 2);
+if (cssFile !== null && !/^[\w.-]+\.css$/.test(cssFile || '')) die('--css needs the name of a CSS file in the package, such as opsz.css', 2);
 if (addKey !== null && !/^[a-z][a-zA-Z0-9]*$/.test(addKey)) die('--add needs a key name such as ui or notice (letters and digits)', 2);
 if (addKey === 'text' || addKey === 'mono') die(`--add ${addKey} would replace the role: run without --add (with --role mono for a mono)`, 2);
 dir = resolve(dir);
@@ -105,7 +132,11 @@ if (!existsSync(join(root, 'index.css')) || m[3]) {
 try {
   const meta = existsSync(join(root, 'metadata.json')) ? JSON.parse(readFileSync(join(root, 'metadata.json'), 'utf8')) : {};
   const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
-  const css = readFileSync(join(root, 'index.css'), 'utf8');
+  // the CSS the set names for this face (opsz.css: weight and optical size), else index.css
+  const setFace = scope === '@fontsource-variable' ? SET?.faces?.[name] : null;
+  const cssName = cssFile ?? (setFace?.css && existsSync(join(root, setFace.css)) ? setFace.css : 'index.css');
+  if (!existsSync(join(root, cssName))) die(`${pkg} has no ${cssName} (its CSS files: ${readdirSync(root).filter((f) => f.endsWith('.css')).join(', ')})`);
+  const css = readFileSync(join(root, cssName), 'utf8');
   const blocks = [...css.matchAll(/(\/\*[^*]*\*\/\s*)?@font-face\s*\{[^}]*\}/g)].map((b) => b[0]).filter((b) => !/font-style:\s*(italic|oblique)/.test(b));
   if (!blocks.length) die(`${pkg} has no upright @font-face in index.css`);
   const family = /font-family:\s*['"]([^'"]+)['"]/.exec(blocks[0])?.[1];
@@ -122,6 +153,21 @@ try {
   const lic = ['LICENSE', 'LICENSE.md', 'OFL.txt'].find((f) => existsSync(join(root, f)));
   const kb = (fs) => Math.round(fs.reduce((s, f) => s + statSync(join(root, f)).size, 0) / 1024);
   const say = (s) => console.log(`add-font: ${s}`);
+  // the set's setting for this face, or a warning when it is outside the set
+  const setAdvice = () => {
+    if (!SET) return;
+    const looks = looksOf(name);
+    if (!setFace) {
+      if (!brand) console.warn(`add-font: ${name} is outside the face set (scripts/faces.json, node scripts/add-font.mjs --list): rank it against the set with font-match.mjs and record why it wins in TREATMENT.md`);
+      return;
+    }
+    const sgn = (v) => `${v >= 0 ? '+' : ''}${v}`;
+    const w = looks[0]?.weights;
+    say(`face set: ${looks.map((l) => `${l.id} (${l.name})`).join(', ') || 'a set face'}; vendored from ${cssName}` +
+      `${setFace.offset_em ? `; add ${sgn(setFace.offset_em)} em to every TYPE tracking` : '; TYPE tracking as written (the house numbers are Inter\'s)'}` +
+      `${setFace.weight_offset ? `, ${sgn(setFace.weight_offset)} to every TYPE weight` : ''}` +
+      `${w && role === 'text' ? `; the look's weights: text ${w.text}, display ${w.display_calm} calm / ${w.display_bold} bold, wordmark ${w.wordmark}` : ''}`);
+  };
 
   if (engine === 'hyperframes') {
     const pick = files.filter((f) => /-(latin|latin-ext)-[\w-]*normal\.woff2$/.test(f));
@@ -138,6 +184,7 @@ try {
         const range = /unicode-range:\s*([^;]+);/.exec(b)?.[1];
         return `@font-face {\n  font-family: "${family}";\n  src: url("fonts/${basename(f)}") format("woff2");\n  font-weight: ${axis.join(' ')};\n  font-style: normal;${range ? `\n  unicode-range: ${range};` : ''}\n}`;
       }).join('\n'));
+    setAdvice();
     cleanup();
     process.exit(0);
   }
@@ -145,7 +192,7 @@ try {
   // ---- Remotion: vendor the CSS and its files ------------------------------------------------
   const rel = `fonts/${name}`;
   const dst = join(dir, 'src/brand', rel);
-  const header = `/* ${family} ${version}, vendored from ${pkg} by scripts/add-font.mjs (upright faces only).\n` +
+  const header = `/* ${family} ${version}, vendored from ${pkg}/${cssName} by scripts/add-font.mjs (upright faces only).\n` +
     `   Licence: ./LICENSE. Weight axis ${axis.join('-')}. Loaded by src/brand/fonts.ts; FontGate waits for FACES. */\n\n`;
   if (!dry) {
     rmSync(dst, { recursive: true, force: true });
@@ -163,7 +210,8 @@ try {
   let ft = ft0;
   const replaced = [];
   const drop = (re) => { if (!addKey) ft = ft.replace(re, (line) => (replaced.push(line.trim()), '')); }; // --add keeps every import
-  drop(role === 'mono' ? /^import '@fontsource-variable\/geist-mono(?:\/[^']*)?';[^\n]*\n?/gm : /^import '@fontsource-variable\/geist(?:\/[^']*)?';[^\n]*\n?/gm);
+  // the starter's stand-in package: Inter (opsz.css) for text, Geist Mono for mono; Geist in films made before Inter
+  drop(role === 'mono' ? /^import '@fontsource-variable\/geist-mono(?:\/[^']*)?';[^\n]*\n?/gm : /^import '@fontsource-variable\/(?:inter|geist)(?:\/[^']*)?';[^\n]*\n?/gm);
   drop(new RegExp(`^import '\\./fonts/(?!${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/)[^']+/index\\.css';[^\\n]*\\(${role}\\)[^\\n]*\\n?`, 'gm'));
   if (role === 'text' && !addKey) ft = ft.replace(/^(?:\/\/\n)?\/\/ cinetic:placeholder[^\n]*\n(?:\/\/(?! cinetic:)[^\n]*\n)*/m, '');
   const imp = `import './${rel}/index.css'; // ${family} (${addKey ?? role}), vendored: scripts/add-font.mjs`;
@@ -233,17 +281,18 @@ try {
 
   // package.json: the starter's stand-in dependency for this role is no longer used
   const pj = join(dir, 'package.json');
-  const standPkg = role === 'mono' ? '@fontsource-variable/geist-mono' : '@fontsource-variable/geist';
+  const standPkgs = role === 'mono' ? ['@fontsource-variable/geist-mono'] : ['@fontsource-variable/inter', '@fontsource-variable/geist'];
   if (existsSync(pj) && !dry && !addKey) {
     const p = JSON.parse(readFileSync(pj, 'utf8'));
-    const stillUsed = readdirSync(join(dir, 'src'), { recursive: true }).some((f) => /\.(tsx?|css)$/.test(f) &&
-      readFileSync(join(dir, 'src', f), 'utf8').includes(`'${standPkg}'`));
-    if (p.dependencies?.[standPkg] && !stillUsed) {
-      delete p.dependencies[standPkg];
+    const srcText = readdirSync(join(dir, 'src'), { recursive: true }).filter((f) => /\.(tsx?|css)$/.test(f)).map((f) => readFileSync(join(dir, 'src', f), 'utf8')).join('\n');
+    const dropped = standPkgs.filter((sp) => p.dependencies?.[sp] && !srcText.includes(`'${sp}'`) && !srcText.includes(`'${sp}/`));
+    for (const sp of dropped) delete p.dependencies[sp];
+    if (dropped.length) {
       writeFileSync(pj, JSON.stringify(p, null, 2) + '\n');
-      say(`package.json: dropped ${standPkg} (the stand-in)`);
+      say(`package.json: dropped ${dropped.join(', ')} (the stand-in)`);
     }
   }
+  setAdvice();
   if (!addKey) console.log(`next: choose the weights and tracking in TYPE for this family (references/copy-and-type.md §6), then npm run check && npm run stills`);
 } finally {
   cleanup();

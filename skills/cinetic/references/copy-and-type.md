@@ -17,7 +17,7 @@ typeface wins over every default here.
 3. [Callback copy](#3-callback-copy)
 4. [Stock phrasing to cut](#4-stock-phrasing-to-cut)
 5. [String audit](#5-string-audit)
-6. [One family, chosen for the brand](#6-one-family-chosen-for-the-brand)
+6. [One family from the face set](#6-one-family-from-the-face-set)
 7. [Type roles at film size](#7-type-roles-at-film-size)
 8. [The text animations: TypeLine, Words, Chain, Oversize](#8-the-text-animations-typeline-words-chain-oversize)
 9. [Type devices](#9-type-devices)
@@ -299,10 +299,47 @@ grep -rnP "\w'\w|\b1 [a-z]+s\b|lorem|ipsum|TODO|FIXME|Acme|John Doe|example\.com
 
 **Reading time** is owned by `references/timing-grid.md` §9: hold a line max(60, 42 + 8 f per word) after it resolves (3 words → 66 f, 5 → 82 f, 8 → 106 f; a line built in beats counts its full word count), leave 30–90 f of picture between the parts of a line built in beats, keep a script's copy rate at or under 12 words in any 5 s, hold the lockup 1.5–2 s, and keep a URL readable ≥ 1.7 s. A crisp film holds 36 f + 6 f per word. `scripts/grid-check.ts` enforces these from `COPY`.
 
-## 6. One family, chosen for the brand
+## 6. One family from the face set
 
-- **Choose the family for the brand's personality**, from the table in `references/brand-and-color.md` §2: a humanist sans for a calm brand, a tight grotesk for a fast tool, a rounded sans for a playful one, a neo-grotesk for a premium one. It is always a clean sans, plus a mono if the product needs one, because serif and italic are hard bans when you invent the look. The starter's Geist is a stand-in marked `// cinetic:placeholder`, and `lint-film.mjs` fails until you replace it or keep it on purpose. Why a local variable font: the axis lets you pick 640 exactly, local files render identically offline, and one family makes display, UI and wordmark agree.
-- **Compare before you commit.** Render the name and the key statement in two or three candidate sans faces and compare the numerals, the "a", "g" and "t", and the width at display size. The ubiquitous UI default families read as "template" unless you chose them for a reason.
+Premium product type is set in a quiet, exact grotesk at regular to medium weights, tight on display sizes and in
+sentence case; the personality comes from size, weight, tracking, colour and motion, not from quirky letterforms. A
+rounded, techno, script, condensed or "friendly geometric" face picked for character reads cheap at film size, and
+one set at 700 reads heavier still. So the face comes from a small curated set, `scripts/faces.json` (all SIL OFL 1.1,
+free for commercial use in video, fetched from `@fontsource-variable` by `add-font.mjs`; `node scripts/add-font.mjs
+--list` prints it), by look:
+
+| Look | Display / text | Alternates | Weights (text · display calm / bold · wordmark) | For |
+|---|---|---|---|---|
+| **neutral** (default) | Inter (opsz) / Inter | Geist, Inter Tight | 450 · 500 / 600 · 600 | launch, product and feature films, walkthroughs: the default |
+| **tight** | Inter Tight / Inter Tight | Public Sans | 450 · 550 / 650 · 650 | big, firm headline systems set tight, flush left or cropped: ads, teasers, reels on the beat |
+| **geometric** | DM Sans (opsz) / DM Sans | Google Sans Flex, Urbanist | 450 · 500 / 600 · 600 | round, open product type: consumer apps, assistants, platforms |
+| **friendly** | Manrope / Manrope | Plus Jakarta Sans, DM Sans | 500 · 600 / 700 · 700 | calm, warm brands: care, learning, community, feed ads |
+| **technical** | Geist / Geist + Geist Mono | JetBrains Mono | 450 · 500 / 600 · 600 | developer tools, APIs, infrastructure, data |
+
+- **Pick the look, then the face.** `deck.py` deals a type option per direction and names the face from the set for
+  its look (the look's main face, sometimes an alternate); the brand's three adjectives (`references/brand-and-color.md`
+  §2) confirm it. The default is the neutral look in Inter, and it is the right answer more often than not: keep it
+  unless the brand asks for another look, and say which look in `TREATMENT.md`. A face outside the set needs a
+  reason (a brand face, a target frame) and a `font-match.mjs` ranking against the set first. It is always a clean
+  sans, plus a mono if the product needs one, because serif and italic are hard bans when you invent the look. The
+  starter's face is marked `// cinetic:placeholder` and `lint-film.mjs` fails until you vendor the film's face or keep
+  the starter's on purpose (delete the marker and write the look in `TREATMENT.md`).
+- **Each face carries its offsets.** `TYPE`'s house numbers are written for Inter at its display cut. Every other face
+  in the set lists `weight_offset` (add it to every `TYPE` weight: Manrope's stems match Inter's 110 units heavier) and
+  `offset_em` (add it to every `TYPE` tracking: Inter Tight +0.03, Geist −0.01, Public Sans −0.02), measured with
+  `font-match.mjs --like` against Inter at the same x-height. `add-font.mjs` prints both when it vendors a set face.
+- **Optical size.** Inter, DM Sans and Google Sans Flex have an optical-size axis: the set vendors their `opsz.css`, and
+  with `font-optical-sizing` on auto every film size (32 px and up) takes the display cut, which is tighter and finer
+  than the text cut. The plain `index.css` of Inter is the text cut only and sets loose and wide on screen.
+- **Setting that reads premium.** Sentence case for every line, capitals only for labels of one or two words (+0.04 to
+  +0.08 em). Statements regular to medium (450–500 calm, 600 bold); 650 and up only for a wordmark or one claim on the
+  accent. Tracking keeps the face's own fit in the calm family and tightens with size in the bold one (table below).
+  Tabular figures for anything that counts or aligns; a single static hero number may take
+  `fontVariantNumeric: 'proportional-nums'`. Lead 1.05 display, 1.2 line, 1.3 UI.
+- **Why a local variable font:** the axis lets you pick 640 exactly, local files render identically offline, and one
+  family makes display, UI and wordmark agree.
+- **Compare before you commit.** Render the name and the key statement in the look's main face and one alternate and
+  compare the numerals, the "a", "g" and "t", and the width at display size.
 - **Match a target by measured width, never by eye.** When there is a target face (a reference frame to match, or a brand face that cannot ship), the closest free face changes from film to film: matched by cap height alone, a stand-in runs 10-26 % too narrow or wide. `scripts/font-match.mjs` sets the test line in every candidate in Remotion's own Chrome, measures each render the way it measures the target (ink width, x-height, ascender, stems) and prints, per face, the weight whose stems match, the size whose x-height matches, the tracking that closes the width and the natural width error, ranked; `--sheet` draws the target over every candidate:
 
 ```bash
@@ -310,11 +347,12 @@ node scripts/font-match.mjs --crop ref/frame.png --box 400,420,1480,580 --text "
 node scripts/font-match.mjs --like brand/Brand-Medium.otf --text "Ship it on Friday" --fetch   # a brand face's free stand-in
 ```
 
-  Under 3 % natural width the face fits as it is; up to 10 % it fits with the printed tracking (0.08 em or less); past that try the next face. Candidates are the faces the project has (`src/brand/fonts/`, `node_modules/@fontsource-variable/`), files you pass, and with `--fetch` the §2 table's families, npm-packed into a temp folder. Vendor the pick with `add-font.mjs`, then write its weight and tracking into every `TYPE` role (the role's own tracking plus the face's fitted offset). Measured: the closest free face changes with the target (Geist, Inter's display cut, Outfit, Manrope and Hanken Grotesk each came out first for one), one face needed anything from -0.047 to +0.036 em, and a calm sentence line that Inter's display cut matched only at +0.06 em matched in Geist at 0.
+  Under 3 % natural width the face fits as it is; up to 10 % it fits with the printed tracking (0.08 em or less); past that try the next face. Candidates are the face set's match pool (`scripts/faces.json`: the set first, then a few more neutral sans; `--pool mono` or `--pool serif` for those stand-ins), looked up in the project (`src/brand/fonts/`, `node_modules/@fontsource-variable/`), files you pass, and with `--fetch` npm-packed into a temp folder; the result says whether the pick is in the set. Vendor the pick with `add-font.mjs`, then write its weight and tracking into every `TYPE` role (the role's own tracking plus the face's fitted offset). Measured: the closest free face changes with the target (DM Sans, Inter, Google Sans Flex, Inter Tight, Manrope and Geist each came out first for one), and one face needed anything from −0.05 to +0.03 em.
 - **Vendor it into the project, then load it.** A family ships as local files behind `FontGate`, never fetched at render time. The clean way works whether `node_modules` is the project's own or a folder shared through `new-film.sh --link-modules`, where `npm install <font>` would write into the shared folder and change every film that uses it:
 
 ```bash
-node scripts/add-font.mjs manrope                       # a sans from brand-and-color.md §2
+node scripts/add-font.mjs --list                        # the face set by look, with weights and offsets
+node scripts/add-font.mjs manrope                       # a face from the set (the friendly look)
 node scripts/add-font.mjs jetbrains-mono                # a mono, only if the product needs one
 bash scripts/new-film.sh films/x --link-modules <dir>/node_modules --font manrope   # the same, at scaffold time
 node scripts/add-font.mjs inter --add ui                # the product's own UI face beside the film's (FONT.ui)
@@ -322,7 +360,7 @@ node scripts/add-font.mjs inter --add ui                # the product's own UI f
 
   `--add <key>` keeps the film's family and adds the product's own faces beside it (a UI face, a system notification face): `FONT.<key>` and its `FACES` entry, nothing replaced. The film's words keep one sans; the added faces belong to the rebuilt product UI only.
 
-  `add-font.mjs` runs `npm pack @fontsource-variable/<name>` into a temp folder (nothing is installed), copies the package's `index.css`, the upright `.woff2` files it references and the licence into `src/brand/fonts/<name>/`, imports that CSS from `src/brand/fonts.ts` in place of the starter's stand-in, and sets `FONT` and `FACES` in `tokens.ts` to the family, clamping weights to its axis. The package's own category picks the role (a monospace family becomes `FONT.mono`) and refuses serif, display and script families unless you pass `--brand-supplied`. Verified with `@fontsource-variable/manrope` 5.3.0 in a project with a linked `node_modules`: the shared folder unchanged, `tsc` clean, and a rendered still in Manrope. The result for a sans plus a mono, once the weights are chosen:
+  `add-font.mjs` runs `npm pack @fontsource-variable/<name>` into a temp folder (nothing is installed), copies the package's CSS (`index.css`, or the file the face set names: `opsz.css` for Inter, DM Sans and Google Sans Flex; `--css <file>` picks another), the upright `.woff2` files it references and the licence into `src/brand/fonts/<name>/`, imports that CSS from `src/brand/fonts.ts` in place of the starter's stand-in, and sets `FONT` and `FACES` in `tokens.ts` to the family, clamping weights to its axis. The package's own category picks the role (a monospace family becomes `FONT.mono`) and refuses serif, display and script families unless you pass `--brand-supplied`. Verified with `@fontsource-variable/manrope` 5.3.0 in a project with a linked `node_modules`: the shared folder unchanged, `tsc` clean, and a rendered still in Manrope. The result for a sans plus a mono, once the weights are chosen:
 
 ```ts
 // src/brand/fonts.ts: bundled with the film; only FontGate imports this file
@@ -335,27 +373,27 @@ export const FONT = {
   text: '"Manrope Variable", system-ui, sans-serif', // the film's one family; typeStyle and measure.ts read it
   mono: '"JetBrains Mono Variable", ui-monospace, monospace',
 };
-export const FACES = ['440 16px "Manrope Variable"', '500 16px "Manrope Variable"', '400 16px "JetBrains Mono Variable"'];
-export const TYPE = { // the calm family of section 7 in this face (Manrope measured about 1 % wider than Geist: -0.01 em)
-  ui: { size: 40, weight: 440, track: 0, lead: 1.3 },
-  caption: { size: 46, weight: 440, track: 0, lead: 1.3 },
-  line: { size: 84, weight: 440, track: -0.01, lead: 1.2 },
-  display: { size: 160, weight: 500, track: -0.02, lead: 1.05 },
-  hero: { size: 200, weight: 500, track: -0.02, lead: 1.0 },
-  giant: { size: 640, weight: 500, track: 0.01, lead: 0.9 },
+export const FACES = ['560 16px "Manrope Variable"', '610 16px "Manrope Variable"', '400 16px "JetBrains Mono Variable"'];
+export const TYPE = { // the calm family of section 7 in this face: faces.json gives Manrope weight +110, tracking -0.005 em
+  ui: { size: 40, weight: 560, track: 0.005, lead: 1.3 },
+  caption: { size: 46, weight: 560, track: 0.005, lead: 1.3 },
+  line: { size: 84, weight: 560, track: -0.005, lead: 1.2 },
+  display: { size: 160, weight: 610, track: -0.015, lead: 1.05 },
+  hero: { size: 200, weight: 610, track: -0.015, lead: 1.0 },
+  giant: { size: 640, weight: 610, track: 0.015, lead: 0.9 },
 };
 ```
 
   - **By hand** (offline, or a family that is not on npm): download or `npm pack` the package anywhere outside the project, copy its `index.css` and the `files/*-wght-normal.woff2` it references into `src/brand/fonts/<name>/` keeping the relative paths, and import that CSS from `fonts.ts`. For a brand's own `.ttf`, convert it (`fonttools ttLib.woff2 compress Brand.ttf`) and write the `@font-face` yourself, one block per file with the weight range (`font-weight: 100 900` for a variable font).
   - **Own `node_modules`** (a project that ran `npm install` itself): `npm i @fontsource-variable/<name>` and `import '@fontsource-variable/<name>'` in `fonts.ts` is fine too.
   - A weight outside the package's axis silently falls back to the nearest one, so check the range: `add-font.mjs` prints it and clamps `FACES`; the `font-weight` line of the vendored `index.css` has it too (`200 800` for Manrope). In HyperFrames, `add-font.mjs` copies the `.woff2` into `fonts/` and prints the `@font-face` block to paste (`assets/hyperframes-starter/fonts/README.md`).
-- **Two weights** from the variable axis, for example 640 for display and 450 for text. Never animate weight on text that reflows (a chip whose weight changes pushes the rest of the line).
+- **Two weights** from the variable axis, for example 600 for display and 450 for text (plus the face's `weight_offset`). Never animate weight on text that reflows (a chip whose weight changes pushes the rest of the line).
 - **Mono** only for code, terminal output or aligned data, unless the brand's voice is a mono (the "raw, mechanical" row). Mono timestamps in a consumer UI read as a developer-tool tell.
 - **No serif, no italic.** Both are hard bans when you invent the look, and so is a skew that fakes an italic, because serif or italic "elegance" is what generated work reaches for (condensed display faces for "impact" are the same tell). Personality comes from which sans you pick, its weight, case and tracking; emphasis comes from size or motion. A serif the brand supplies is the exception (`references/brand-and-color.md` §1).
 - **One token per role.** If display is 640 / −0.04 em, it is exactly that in every scene. Near-miss values across scenes (620, 640, 660; −0.035, −0.04, −0.045) read as "almost matched".
 - **Numerals.** `fontVariantNumeric: 'tabular-nums'` on anything that counts, changes or aligns, so counters don't jitter in width.
 
-**Tracking by family** (measured in Geist; another face adds its fitted offset from `font-match.mjs`):
+**Tracking by family** (the house numbers, written for Inter at its display cut; another face adds its `offset_em` from `scripts/faces.json`, or the offset `font-match.mjs` fits to a target):
 
 | Size at 1080p | Calm | Bold | Leading |
 |---|---|---|---|
@@ -380,7 +418,7 @@ export const TYPE = { // the calm family of section 7 in this face (Manrope meas
 | `hero` | 200 / 500 / −0.01 | 240 / 600 / −0.04 | 13.3 % (display) / 16 % (hero 14-26 %) | one hero word or number per moment (at least 2× the statement it answers) |
 | `giant` | 640 / 500 / +0.02 | 900 / 600 / −0.045 | 42.7 % / 60 % (giant 26-90 %) | the set of one moment: once per film (calm: whole in frame; bold: cropped) |
 
-Size / weight / tracking (em, in the starter's Geist). Sentence case everywhere; capitals only on small labels. Two weights per family.
+Size / weight / tracking (em, in the starter's Inter at its display cut). Sentence case everywhere; capitals only on small labels. Two weights per family.
 
 **The audits hold both families.** `layout-audit.sh` (and `look-audit.py`, from its JSON) reads cap height (0.72 em)
 against bands that meet, so no role of either family falls between two: caption 2.3-4 %, line 4-9 % (calm 84 px is
@@ -404,7 +442,7 @@ accent keeps its own 3 % margin (§8).
 - **Airy is size, weight and space, not tracking.** A calm film's sentence line is small (84 px, a 5-6 % cap), regular
   weight, on 85 % white or more, at the face's own letter fit; tracked wide it reads as a title gimmick. Where a
   reference looks tracked out, its face has open spacing: fit the tracking to it (next point), which comes out positive
-  for a tight face (Inter's display cut +0.02 to +0.06 em) and near 0 for an open one (Geist).
+  for a tight face (Inter Tight about +0.03 em) and near 0 for the set's main faces (Inter, DM Sans).
 - **A face that stands in for another is fitted by width, not cap height.** Matching cap height alone leaves words
   10-26 % too narrow or wide, and the line's rhythm goes with it. Pick the face with `scripts/font-match.mjs` (§6),
   which ranks the candidates against a reference crop or a brand face. Inside a film, set 4-6 words of the copy in the face,
@@ -513,7 +551,7 @@ a bleed scale it is a declared bleed and must cross the frame's edge (`bleed: fa
 state again, held to the zone).
 
 **The claim on accent** (`fx/TypeClaim`, `<AccentClaim text at frame>`): the launch close's claim set like a poster on
-the accent: cap height 16.5 % of the frame height (16 % at the least; Geist 251 px at 1080p), flush left at a 3 %
+the accent: cap height 16.5 % of the frame height (16 % at the least; Inter 245 px at 1080p), flush left at a 3 %
 margin, tracking −0.04 em, weight 600-700, lead 0.98, one to three lines broken at word boundaries (`claimLayout()`
 brings the size down toward 16 % before it adds a fourth line), centred on the frame's height (`align` bottom or top).
 Its words arrive on the crisp entry across the lines; the type is paper or ink on the accent, whichever reads
