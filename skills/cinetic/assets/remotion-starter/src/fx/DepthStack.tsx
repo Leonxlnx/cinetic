@@ -49,7 +49,7 @@ export const DEPTH = {
   farTurn: 16, // deg, the far plane's turn (rotateY; give farAxis 'x' for a tabletop)
   farTurnRange: [8, 25] as const,
   perspective: 2200,
-  pass: [1.45, 1.85] as const, // the near plane's own zoom over which it fades out as it passes the lens
+  pass: [1.2, 1.5] as const, // the near plane's own zoom over which it fades out as it passes the lens (gone before the house push lands)
   push: { zoom: 1.32, pan: -90, yaw: 6, frames60: 120, creep: 1.04, creep60: 600 },
   enter: { frames60: 34, scale: 0.88, rise: 40 },
 } as const;
@@ -82,7 +82,7 @@ export type DepthStackProps = {
   farTurn?: number; // deg, signed (house 16; |turn| 8-25)
   farAxis?: 'y' | 'x'; // a receding wall (yaw) or a tabletop (pitch)
   planes?: Partial<Record<DepthPlane, Partial<PlaneSpec>>>;
-  pass?: readonly [number, number] | false; // fade the near plane out between these zooms of its own (house 1.45-1.85)
+  pass?: readonly [number, number] | false; // fade the near plane out between these zooms of its own (house 1.2-1.5)
   enter60?: number; // an item's arrival, 60 fps frames (house 34)
   ease?: Ease; // the arrival curve (house E.glideOut)
   shutter?: { from: number; to: number; id?: string }; // a camera-blur range to declare (a fast pass through the near plane)

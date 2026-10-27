@@ -133,6 +133,7 @@ console.log(JSON.stringify({
     end: S(10 + 120).planes.map((p) => ({ plane: p.plane, k: p.shot.k, sx: p.shot.sx, yaw: p.shot.yaw, opacity: p.opacity })),
     end30: S(5 + 60, stack30, f30).planes.map((p) => ({ k: p.shot.k, sx: p.shot.sx })),
     deep: S(10 + 120, deep).planes.map((p) => p.opacity),
+    nearPass: [10 + 60, 10 + 120, 10 + 720].map((f) => S(f).planes[2].opacity),
     ks: range(130, 600).map((f) => S(f).planes[1].shot.k),
     items0: S(0).items.map((i) => ({ id: i.id, scale: i.scale, opacity: i.opacity, box: i.box })),
     itemsIn: S(20 + 34).items.map((i) => ({ id: i.id, scale: i.scale, opacity: i.opacity })),
@@ -245,7 +246,8 @@ const none = (d) => !d.stepped.length && !d.flashes.length && !d.cameraBlur.leng
   const lm = Math.log(mid.k);
   result(close(Math.log(near.k) / lm, 1.6, 1e-9) && close(Math.log(far.k) / lm, 0.5, 1e-9) && mid.k > 1.25, 'depthStackState: on the push the near plane zooms at 1.6 and the far at 0.5 on log scale', `k ${far.k.toFixed(4)} / ${mid.k.toFixed(4)} / ${near.k.toFixed(4)}`);
   result(close((near.sx - 960) / (mid.sx - 960), 1.6, 1e-9) && close((far.sx - 960) / (mid.sx - 960), 0.5, 1e-9) && close(near.yaw / mid.yaw, 1.6, 1e-9), 'depthStackState: the pan and the turn split at the same weights', `sx ${far.sx.toFixed(1)} / ${mid.sx.toFixed(1)} / ${near.sx.toFixed(1)}`);
-  result(near.opacity < 1 && near.opacity > 0 && D.deep[2] === 0 && D.deep[1] === 1, 'depthStackState: the near plane fades as it passes the lens (gone on a x1.7 push)', `${near.opacity.toFixed(3)} | ${D.deep.join(' ')}`);
+  const [nMid, nLand, nLate] = D.nearPass;
+  result(nMid < 1 && nMid > 0 && nLand === 0 && nLate === 0 && near.opacity === 0 && D.deep[2] === 0 && D.deep[1] === 1, 'depthStackState: the near plane fades as the house push passes the lens and is gone when it lands (never a half-transparent veil)', `${D.nearPass.map((o) => o.toFixed(3)).join(' ')} | ${D.deep.join(' ')}`);
   const still = D.ks.some((k, i) => i > 0 && Math.abs(k - D.ks[i - 1]) < 1e-7);
   result(!still, 'depthPush: the camera creeps on after the push: never two equal frames', `k ${D.ks[0].toFixed(5)} -> ${D.ks[D.ks.length - 1].toFixed(5)}`);
   result(D.end30.every((p, i) => close(p.k, D.end[i].k, 1e-9) && close(p.sx, D.end[i].sx, 1e-6)), 'depthPush: the same move at the same time at 30 and 60 fps');
