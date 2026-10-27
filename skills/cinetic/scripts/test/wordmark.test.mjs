@@ -10,6 +10,9 @@
  *      sliding mark clears its place: on no frame (sub-frames included) is the name drawn while the mark's
  *      right edge is past the name's left edge.
  *   4. lockupState() alone brings the name in on the slide's end; 'mid' and a number still do what they say.
+ *   5. The starter's own lockup (acts/Act4.tsx nameOffset): on every reveal frame the name sits level with its
+ *      slot (no sideways offset, so no frame shows part of the word, its end first), rising from below the
+ *      slot on the cut to home on CUE.lockup, and staying home through the hold.
  *
  * It runs src/fx/Wordmark.tsx through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/wordmark.test.mjs [--verbose]
@@ -45,6 +48,8 @@ if (!existsSync(TSX)) {
 const url = (p) => pathToFileURL(join(SRC, p)).href;
 const PROBE = `
 import * as W from '${url('fx/Wordmark.tsx')}';
+import * as A4 from '${url('acts/Act4.tsx')}';
+import { CUE } from '${url('timeline.ts')}';
 const out: Record<string, unknown> = { FINAL: W.LOCKUP_FINAL, HOUSE: W.LOCKUP_HOUSE };
 const lay = W.lockupLayout({ cx: 960, cy: 540, nameW: 560, nameH: 96, width: 1920 });
 out.layout = lay;
@@ -67,6 +72,7 @@ out.plain = W.lockupFrames({ at: 0, slide: { px: 300 } }, film25);
 out.mid = W.lockupFrames({ at: 0, slide: { px: 300 }, wordmark: { at: 'mid' } }, film25);
 out.num = W.lockupFrames({ at: 0, slide: { px: 300 }, wordmark: { at: 7 } }, film25);
 out.noSlide = W.lockupFrames({ at: 0 }, film25);
+out.act4 = { cut: CUE.lockCut, lockup: CUE.lockup, rows: Array.from({ length: CUE.lockup - CUE.lockCut + 31 }, (_, i) => ({ f: CUE.lockCut - 1 + i, ...A4.nameOffset(CUE.lockCut - 1 + i) })) };
 console.log(JSON.stringify(out));
 `;
 
@@ -115,6 +121,17 @@ for (const fps of [25, 30, 60]) {
 result(P.plain.wordmark === P.plain.slideEnd, 'lockupState alone: the name on the slide\'s end', `${P.plain.wordmark} / ${P.plain.slideEnd}`);
 result(P.mid.wordmark === Math.round((P.mid.slideStart + P.mid.slideEnd) / 2) && P.num.wordmark === 7, "wordmark.at 'mid' and a number keep their meaning");
 result(P.noSlide.slideEnd === P.noSlide.settled && P.noSlide.wordmark === P.noSlide.settled, 'no slide: the name follows the settle');
+
+// 5. the starter's lockup
+{
+  const A = P.act4;
+  const side = A.rows.filter((r) => r.x !== 0);
+  result(side.length === 0, 'Act4: the name is level with its slot on every frame (the whole word or none of it, never its end first)', side.length ? `x ${side[0].x} at f${side[0].f}` : '');
+  const at = (f) => A.rows.find((r) => r.f === f);
+  const mono = A.rows.every((r, i) => i === 0 || r.y <= A.rows[i - 1].y + 1e-12);
+  result(at(A.cut).y === 1 && at(A.lockup).y === 0 && mono && A.rows.filter((r) => r.f >= A.lockup).every((r) => r.y === 0),
+    'Act4: the name rises from below its slot on the cut to home on CUE.lockup, and holds there', `cut ${at(A.cut).y}, lockup ${at(A.lockup).y}, monotone ${mono}`);
+}
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
 console.log('\nall pass');

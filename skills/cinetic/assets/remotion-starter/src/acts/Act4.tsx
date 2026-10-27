@@ -14,8 +14,9 @@ import { DROP } from './Act3';
 // line's downward speed (the camera carried, decaying to a drift). The accent dot already sits on the slab;
 // the dome and the block drop onto it, each landing ON its beat (the film's one spring class), their shadows
 // closing in under them as they fall. Cut to the lockup on the next beat as the key climbs (the noon lift:
-// every shadow shortens), and the name slides out from behind the mark along the slab. The lock lives on: the
-// key keeps turning and the camera keeps a slow push, so the hold never freezes.
+// every shadow shortens), and the name rises in whole beside the mark, through a slot in the slab: every letter
+// shows from its first frame (a name slid out from behind the mark would show its end first). The lock lives on:
+// the key keeps turning and the camera keeps a slow push, so the hold never freezes.
 
 /**
  * The slab (floor px at 1080p): a raised platform wider than the frame, so the set bleeds off both sides; it runs
@@ -43,6 +44,15 @@ export const KEY_PLAN: KeyLightProps = {
   ],
   seam: { at: CUE.lockCut, id: 'noon-lift' },
 };
+
+/** The name's rise (absolute frames): from the cut to the lockup, landing on the payoff's hit. */
+export const NAME_RISE = { from: CUE.lockCut, to: CUE.lockup, ease: M.lockup };
+/**
+ * The name's offset in its slot at absolute frame F, as a share of its line box: x is always 0 (the whole word
+ * is level with its slot on every frame, so no frame shows part of it), y falls from 1 (below the slot's near
+ * edge) to 0 on CUE.lockup.
+ */
+export const nameOffset = (F: number) => ({ x: 0, y: 1 - prog(F, NAME_RISE.from, NAME_RISE.to, NAME_RISE.ease) });
 
 const toFloor = (mx: number, my: number, k: number) => (q: [number, number][]): Pt[] => q.map(([u, v]) => [mx + u * k, my + v * k]);
 /** A piece's footprint scaled about its centre (the squash on contact widens it). */
@@ -81,15 +91,15 @@ export const Act4: React.FC = () => {
   const dot = place(circle(MARK.D.cx, MARK.D.cy, MARK.D.r));
 
   // The name printed on the slab's top face (fx/KeyLight maps the HTML onto it), beside the mark: its baseline on
-  // the mark's near edge, sliding out from behind the mark through a window that starts at the mark's edge.
+  // the mark's near edge, rising in whole through a slot as wide as the word (nameOffset): never slid sideways.
   const nameH = nameSize * 1.25;
   const nameTop = my + S - baselineOf(nameSize, disp.weight, 1);
-  const lk = prog(F, CUE.lockCut, CUE.lockup, M.lockup);
+  const off = nameOffset(F);
   const win = { x: mx + S + gap / 2 - SLAB.x, y: nameTop - SLAB.y, w: nameW + gap, h: nameH };
   const nameNode =
     F >= CUE.lockCut ? (
       <div style={{ position: 'absolute', left: win.x, top: win.y, width: win.w, height: win.h, overflow: 'hidden' }}>
-        <span data-text="wordmark" style={{ ...typeStyle('display', nameSize), lineHeight: 1, color: C.paper, position: 'absolute', left: gap / 2, top: 0, transform: `translateX(${(-(1 - lk) * (nameW + gap)).toFixed(2)}px)` }}>
+        <span data-text="wordmark" style={{ ...typeStyle('display', nameSize), lineHeight: 1, color: C.paper, position: 'absolute', left: gap / 2, top: 0, transform: `translate(${(off.x * nameW).toFixed(2)}px, ${(off.y * nameH).toFixed(2)}px)` }}>
           {NAME.text}
         </span>
       </div>
