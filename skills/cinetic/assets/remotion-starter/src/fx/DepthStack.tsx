@@ -26,6 +26,14 @@ import { RimEdge, rimLine } from './Lit';
  * through the stack's perspective); `rim` gives every item the film's key-side rim (fx/Lit RimEdge) from its plane's
  * turn plus its own. An item may arrive (E.glideOut from 12 % smaller and 40 px lower, 34 f at 60 fps).
  *
+ * Every layer carries real content: every element in frame has a job. Each item says what it shows (`carries`: the
+ * product's UI, a line of text, a mark, an icon, a photo, a number) and its render draws that, legible as that thing
+ * even when its plane is soft: a far tile is a real screen or a mark at 0.6, a near one a real card crossing the edge.
+ * The stack draws nothing of its own (no spacer plates, no blank cards, no glow behind the planes), and an item that
+ * does not say what it carries is drawn with data-filler on its box; depthFiller() lists those items, lint-film warns
+ * on them (filler-plate) and look-audit fails faint blank shapes in the render (filler-shape). A blank rounded box
+ * floating at depth is the filler the eye reads as machine-made.
+ *
  * The camera: give `cam` (moves on a base shot, or any ShotFn); the house move is depthPush(): a push of x1.32 with a
  * 90 px pan and a 6 degree yaw over 120 f at 60 fps on E.strongInOut, then a slow creep, so nothing ever freezes.
  * depthStackState() is pure (any frame, any order, any fps); <DepthStack> draws it.
@@ -48,10 +56,14 @@ export const DEPTH = {
 
 export type DepthPlane = keyof typeof DEPTH.planes;
 export type PlaneSpec = { scale: number; blur: number; parallax: number };
+/** What an item shows: its job in the frame. */
+export type DepthContent = 'ui' | 'text' | 'mark' | 'icon' | 'photo' | 'data';
+export const DEPTH_CONTENT: readonly DepthContent[] = ['ui', 'text', 'mark', 'icon', 'photo', 'data'];
 
 export type DepthItem = {
   id: string;
   plane: DepthPlane;
+  carries?: DepthContent; // what it shows (the product's UI, a line, a mark, an icon, a photo, a number); none: a filler item
   x: number; // the item's centre at rest, screen px (camera at its base shot)
   y: number;
   w: number; // the item's own size before the plane's scale, px
@@ -153,6 +165,9 @@ export const depthStackState = (frame: number, p: DepthStackProps, film?: Partia
   return { planes, items };
 };
 
+/** The items that do not say what they carry (no `carries`, or not one of DEPTH_CONTENT): filler until they do. Pure. */
+export const depthFiller = (items: readonly Pick<DepthItem, 'id' | 'carries'>[]) => items.filter((it) => !it.carries || !DEPTH_CONTENT.includes(it.carries)).map((it) => it.id);
+
 /** Sync: the camera's moves (start, the frame it is home) and each item's arrival and landing. */
 export const depthStackFrames = (p: DepthStackProps, film?: Partial<FilmCtx>) => {
   const fps = fpsOf(film);
@@ -172,6 +187,7 @@ export const DepthStack: React.FC<DepthStackProps & { frame: number; render: (id
   const s = depthStackState(props.frame, props, film);
   const light = props.light ?? FILM_LIGHT;
   const rim = props.rim ? (props.rim === true ? {} : props.rim) : null;
+  const carries = new Map(props.items.map((d) => [d.id, d.carries && DEPTH_CONTENT.includes(d.carries) ? d.carries : undefined]));
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, overflow: 'hidden', ...props.style }}>
       {s.planes.map((pl) => {
@@ -182,6 +198,9 @@ export const DepthStack: React.FC<DepthStackProps & { frame: number; render: (id
             {items.map((it) => (
               <div
                 key={it.id}
+                data-depth-item={it.id}
+                data-carries={carries.get(it.id)}
+                data-filler={carries.get(it.id) ? undefined : ''}
                 style={{
                   position: 'absolute',
                   left: 0,

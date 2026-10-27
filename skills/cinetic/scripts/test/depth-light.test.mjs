@@ -6,18 +6,22 @@
  *      screen direction, a turned panel's normal (CSS rotateZ rotateX rotateY), the light it catches, the key in its
  *      own axes, a point's shadow on the layout plane.
  *   2. fx/Lit litState(): rest tilt 10 / -12 inside 8-14, the rim's key end on the key side and sliding as the panel
- *      turns, the shadow thrown away from the key (longer and softer with the lift), the sway never at rest (0.3-1.5
- *      px a frame at 30 fps on a 1160 px panel), the entry home at 48 f at 60 fps (the same time at 30 fps).
+ *      turns, the shadow thrown away from the key (longer and softer with the lift), no haze on the face (the light
+ *      side lifts 5 % at most, the sheen 3 %), the sway never at rest (0.3-1.5 px a frame at 30 fps on a 1160 px
+ *      panel), the entry home at 48 f at 60 fps (the same time at 30 fps).
  *   3. fx/DepthStack: planes 0.6 / 1 / 1.4, blur 6 / 0 / 10, parallax 0.5 / 1 / 1.6 (log zoom and pan at those
  *      weights), the far plane turned 8-25 degrees, the near plane fading as it passes the lens, a camera that never
- *      freezes after the push, the same move at 30 and 60 fps, items arriving to their plane's scale; declares().
+ *      freezes after the push, the same move at 30 and 60 fps, items arriving to their plane's scale; declares();
+ *      depthFiller() lists the items that do not say what they carry.
  *   4. lib/camera: swing3d() (the one turn: 26 -> 4 degrees over 108 f at 60 fps, creeping on), cam3dCheck() (15-30
  *      degrees, one axis, at least 48 f, roll within 11), camera3d() and place() (preserve-3d, scale3d, transforms
  *      only), weighShot().
- *   5. fx/Grounds: shapes from a seed (the same seed, the same ground), the lift budget (the key gradient swings
- *      about `lift`, no shape brighter than its kind's gain), drift 6-30 px/s that never stops and loops, the camera
- *      at the background weight 0.25, soft sprites (no hard edge), groundRuns() / dealGrounds() (no ground on more
- *      than 2 consecutive shots), croppedByEdge() / cropCheck(), layerShot() at 0.25 / 0.6 / 1.
+ *   5. fx/Grounds: clean by default (flat and wash put no shape on the ground, a house swing of 0.06 inside
+ *      0.02-0.10, dealGrounds() deals only the clean kinds unless a film names others), shapes from a seed for the kinds
+ *      a film asks for (the same seed, the same ground), the lift budget (the key gradient swings about `lift`, no
+ *      shape brighter than its kind's gain), drift 6-30 px/s that never stops and loops, the camera at the background
+ *      weight 0.25, soft sprites (no hard edge), groundRuns() / dealGrounds() (no ground on more than 2 consecutive
+ *      shots), croppedByEdge() / cropCheck(), layerShot() at 0.25 / 0.6 / 1.
  *
  * It runs src through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/depth-light.test.mjs [--verbose]
@@ -97,6 +101,7 @@ const slate = '#35383C';
 const paper = '#F5F6F7';
 const kinds = Gr.GROUND_KINDS;
 const shapes = kinds.map((kind) => Gr.groundShapes({ kind, base: slate, seed: 3 }));
+const ki = (k: string) => kinds.indexOf(k as any);
 const again = Gr.groundShapes({ kind: 'pools', base: slate, seed: 3 });
 const other = Gr.groundShapes({ kind: 'pools', base: slate, seed: 4 });
 const gs = (f: number, g: any, film: any = f30, cam?: any) => Gr.groundState(f, g, film, cam);
@@ -108,6 +113,7 @@ const rowA = (p: any, y: number) => range(0, p.W - 1).map((x) => p.px[(y * p.W +
 const colA = (p: any, x: number) => range(0, p.H - 1).map((y) => p.px[(y * p.W + x) * 4 + 3]);
 const dealt = Gr.dealGrounds(24, { bases: [slate, '#45484C'], seed: 7 });
 const dealt2 = Gr.dealGrounds(24, { bases: [slate, '#45484C'], seed: 7 });
+const asked = Gr.dealGrounds(24, { bases: [slate, '#45484C'], seed: 7, kinds: Gr.GROUND_KINDS });
 const camPan = { shot: { ...base, sx: 1360 }, base };
 console.log(JSON.stringify({
   light: { house: Li.FILM_LIGHT, key: Li.toKey(), dir: Li.keyDir(), away: Li.awayAngle(), awayBelow: Li.awayAngle({ azimuth: 180 }) },
@@ -115,7 +121,8 @@ console.log(JSON.stringify({
   faces: { front: Li.faceLight({}), house: Li.faceShift({ x: 10, y: -12 }), away: Li.faceShift({ x: -10, y: 12 }) },
   local: { front: Li.keyLocal({}), turned: Li.keyLocal({ y: 30 }) },
   ground: Li.onGround([100, 100, 36]),
-  lit: { rest: { tilt: rest.tilt, rim: rest.rim, shadow: rest.shadow, tone: rest.tone, sheen: rest.sheen, spill: rest.spill }, flipped: { rim: flipped.rim, shadow: flipped.shadow, tone: flipped.tone }, high: high.shadow, range: Lt.LIT.tiltRange, declares: Lt.declares(), frames: Lt.litFrames({ ...panel, enter: { at: 10 } }, f60) },
+  lit: { rest: { tilt: rest.tilt, rim: rest.rim, shadow: rest.shadow, tone: rest.tone, sheen: rest.sheen, spill: rest.spill }, flipped: { rim: flipped.rim, shadow: flipped.shadow, tone: flipped.tone }, high: high.shadow, range: Lt.LIT.tiltRange, declares: Lt.declares(), frames: Lt.litFrames({ ...panel, enter: { at: 10 } }, f60),
+    raking: Lt.litState(0, { ...panel, sway: false, tilt: { x: 14, y: -14 }, light: { ...Li.FILM_LIGHT, elevation: 12 } }, f60).tone, house: { liftMax: Lt.LIT.liftMax, sheen: Lt.LIT.sheen, reach: Lt.LIT.sheenReach } },
   sway: { min: Math.min(...sway), max: Math.max(...sway), mean: sway.reduce((a, b) => a + b, 0) / sway.length },
   enter: { start: Lt.litState(10, { ...panel, sway: false, enter: { at: 10 } }, f60).opacity, home60: enter(60, 0.8), home30: enter(30, 0.8), half60: enter(60, 0.4).tilt, half30: enter(30, 0.4).tilt },
   depth: {
@@ -129,6 +136,7 @@ console.log(JSON.stringify({
     itemsIn: S(20 + 34).items.map((i) => ({ id: i.id, scale: i.scale, opacity: i.opacity })),
     declares: [Ds.declares({}), Ds.declares({ shutter: { from: 10, to: 40, id: 'pass' } })],
     frames: Ds.depthStackFrames(stack60, f60),
+    filler: [Ds.depthFiller(items), Ds.depthFiller(items.map((i) => ({ ...i, carries: 'ui' as const }))), Ds.depthFiller([{ id: 'x', carries: 'glow' as any }])],
   },
   cam: {
     sw: { start: sw.start, moves: sw.moves.length, at29: swAt(29).yaw, landed: swAt(30 + 108).yaw, later: swAt(30 + 108 + 300).yaw, mid: swAt(30 + 54).yaw },
@@ -137,12 +145,17 @@ console.log(JSON.stringify({
   },
   grounds: {
     counts: shapes.map((s) => s.length),
-    same: JSON.stringify(again) === JSON.stringify(shapes[1]),
-    differ: JSON.stringify(other) !== JSON.stringify(shapes[1]),
-    beams: shapes[4].map((s) => s.rot),
+    kinds,
+    clean: Gr.CLEAN_KINDS,
+    plate: Gr.PLATE_KINDS,
+    isClean: kinds.map((k) => Gr.isClean({ kind: k })),
+    house: { lift: Gr.GROUND.lift, range: Gr.GROUND.liftRange },
+    same: JSON.stringify(again) === JSON.stringify(shapes[ki('pools')]),
+    differ: JSON.stringify(other) !== JSON.stringify(shapes[ki('pools')]),
+    beams: shapes[ki('window')].map((s) => s.rot),
     alphasSlate: Gr.washAlphas(slate, 0.12),
     alphasPaper: Gr.washAlphas(paper, 0.12),
-    peak: kinds.map((kind, i) => ({ kind, max: Math.max(...shapes[i].map((s) => s.alpha)) })),
+    peak: kinds.map((kind, i) => ({ kind, max: Math.max(0, ...shapes[i].map((s) => s.alpha)) })),
     paperShapes: Gr.groundShapes({ kind: 'wash', base: paper, seed: 1 }).length,
     drift: { min: Math.min(...drift), max: Math.max(...drift) },
     loop: [gs(0, wash).wash, gs(14 * 30, wash).wash],
@@ -155,6 +168,8 @@ console.log(JSON.stringify({
     dealt: dealt.map((g) => g.kind + '|' + g.base + '|' + g.seed),
     dealtRuns: Gr.groundRuns(dealt),
     dealtSame: JSON.stringify(dealt) === JSON.stringify(dealt2),
+    asked: asked.map((g) => g.kind),
+    askedRuns: Gr.groundRuns(asked),
     crop: [Gr.croppedByEdge({ x: 1700, y: 300, w: 400, h: 200 }, f60), Gr.croppedByEdge({ x: 100, y: 100, w: 400, h: 200 }, f60), Gr.croppedByEdge({ x: 2000, y: 100, w: 400, h: 200 }, f60), Gr.croppedByEdge({ x: 300, y: 1000, w: 400, h: 400 }, f60)],
     cropCheck: [Gr.cropCheck([{ id: 'a', x: 100, y: 100, w: 300, h: 300 }], f60), Gr.cropCheck([{ id: 'a', x: 100, y: 100, w: 300, h: 300 }, { id: 'b', x: -120, y: 600, w: 500, h: 300 }], f60)],
     layers: (['bg', 'mid', 'fg'] as const).map((p) => Gr.layerShot({ ...base, sx: 1360, k: 2 }, base, p)),
@@ -207,6 +222,8 @@ const none = (d) => !d.stepped.length && !d.flashes.length && !d.cameraBlur.leng
   result(s0.dx > 0 && s0.dy > 0, 'litState: the shadow falls away from the key (down-right in the panel axes)', `${s0.dx.toFixed(1)}, ${s0.dy.toFixed(1)}`);
   result(close(Math.hypot(s1.dx, s1.dy), 2 * Math.hypot(s0.dx, s0.dy), 1e-6) && s1.blur > s0.blur, 'litState: twice the lift, twice the throw and a softer penumbra', `${Math.hypot(s0.dx, s0.dy).toFixed(1)} -> ${Math.hypot(s1.dx, s1.dy).toFixed(1)}, blur ${s0.blur.toFixed(1)} -> ${s1.blur.toFixed(1)}`);
   result(L.rest.sheen.alpha > 0 && L.rest.spill.alpha > 0 && close((L.rest.spill.angle - L.rest.sheen.angle + 360) % 360, 180, 1e-6), 'litState: a sheen from the key side and the ground spill from the far side', `${L.rest.sheen.angle.toFixed(1)} / ${L.rest.spill.angle.toFixed(1)}`);
+  result(L.house.liftMax <= 0.05 && L.house.sheen <= 0.03 && L.house.reach <= 0.4 && L.rest.sheen.alpha <= 0.03 && L.raking.alpha <= 0.05 + 1e-9 && L.rest.tone.alpha <= 0.05 + 1e-9,
+    'litState: no haze on the face: the light side lifts 5 % at most (even turned into a raking key), the sheen 3 % along the key edge', `rest ${L.rest.tone.alpha.toFixed(3)}, raking ${L.raking.alpha.toFixed(3)}, sheen ${L.rest.sheen.alpha.toFixed(3)}`);
   const sw = P.sway;
   result(sw.min >= 0.3 && sw.max <= 1.5, 'litState: the sway never rests: the corner moves 0.3-1.5 px every frame at 30 fps', `min ${sw.min.toFixed(3)} max ${sw.max.toFixed(3)} mean ${sw.mean.toFixed(3)}`);
   const E = P.enter;
@@ -235,6 +252,7 @@ const none = (d) => !d.stepped.length && !d.flashes.length && !d.cameraBlur.leng
   result(D.itemsIn[1].scale === 1 && D.itemsIn[1].opacity === 1, 'depthStackState: an arrival is home at 34 f at 60 fps');
   result(none(D.declares[0]) && D.declares[1].cameraBlur.length === 1 && D.declares[1].cameraBlur[0].id === 'pass', 'DepthStack: declares nothing, or the camera-blur range it is given');
   result(D.frames.moves.length === 2 && D.frames.moves[0].at === 10 && D.frames.items[0].home === 54, 'depthStackFrames: the moves and the arrivals for the sound', JSON.stringify(D.frames));
+  result(D.filler[0].join(',') === 'a,b,c' && D.filler[1].length === 0 && D.filler[2][0] === 'x', 'depthFiller: an item that does not say what it carries (ui, text, mark, icon, photo, data) is filler', JSON.stringify(D.filler));
 }
 
 // 4. the one 3D move
@@ -254,7 +272,11 @@ const none = (d) => !d.stepped.length && !d.flashes.length && !d.cameraBlur.leng
 // 5. grounds
 {
   const G = P.grounds;
-  result(G.counts.every((n) => n >= 1) && G.counts[1] >= 3 && G.counts[2] >= 3, 'groundShapes: every kind has plates; pools and bars several', G.counts.join(' '));
+  const at = (k) => G.kinds.indexOf(k);
+  result(G.clean.join(',') === 'flat,wash' && G.clean.every((k) => G.counts[at(k)] === 0) && G.isClean[at('flat')] && G.isClean[at('wash')] && !G.isClean[at('pools')],
+    'groundShapes: the clean kinds (flat, wash) put no shape on the ground: no plate, no pool', G.counts.join(' '));
+  result(G.plate.every((k) => G.counts[at(k)] >= 1) && G.counts[at('pools')] >= 3 && G.counts[at('bars')] >= 3, 'groundShapes: a kind a film asks for has its plates; pools and bars several', G.counts.join(' '));
+  result(G.house.lift === 0.06 && G.house.range[0] === 0.02 && G.house.range[1] === 0.1, 'GROUND: a house swing of 0.06 inside 0.02-0.10 (the key is felt, never seen as a glow)', JSON.stringify(G.house));
   result(G.same && G.differ, 'groundShapes: the same seed gives the same ground, another seed another');
   result(G.beams.every((r) => close(r, 45, 1e-9)), 'groundShapes: window beams slant along the light (away from the house key: 45 deg)', G.beams.join(' '));
   const sl = G.alphasSlate;
@@ -274,7 +296,9 @@ const none = (d) => !d.stepped.length && !d.flashes.length && !d.cameraBlur.leng
   result(step(G.bar.row) <= 4 && step(G.bar.col) <= 4 && G.bar.row[0] <= 1, 'shapePixels: a bar is defocused, no hard edge across or along it', `steps ${step(G.bar.row)} / ${step(G.bar.col)}`);
   result(G.runs[0].length === 0 && G.runs[1].length === 1 && G.runs[1][0].from === 0 && G.runs[1][0].to === 2, 'groundRuns: two in a row pass, three in a row fail', JSON.stringify(G.runs));
   const kinds = new Set(G.dealt.map((d) => d.split('|')[0]));
-  result(G.dealtRuns.length === 0 && kinds.size >= 4 && G.dealtSame, 'dealGrounds: 24 shots, no ground on more than 2 in a row, 4+ kinds, the same deal from the same seed', `${kinds.size} kinds; ${G.dealt.slice(0, 6).join(', ')}`);
+  result(G.dealtRuns.length === 0 && [...kinds].every((k) => G.clean.includes(k)) && kinds.size === 2 && G.dealtSame, 'dealGrounds: 24 shots of the clean kinds by default, no ground on more than 2 in a row, the same deal from the same seed', `${[...kinds].join(' ')}; ${G.dealt.slice(0, 6).join(', ')}`);
+  const askedKinds = new Set(G.asked);
+  result(G.askedRuns.length === 0 && askedKinds.size >= 4, 'dealGrounds: the kinds a film names are dealt (4+ kinds over 24 shots, no ground on more than 2 in a row)', [...askedKinds].join(' '));
   result(G.crop[0] && !G.crop[1] && !G.crop[2] && G.crop[3], 'croppedByEdge: a box past the right or bottom edge counts; one inside or off frame does not', G.crop.join(' '));
   result(!G.cropCheck[0].ok && G.cropCheck[1].ok && G.cropCheck[1].cropped[0] === 'b', 'cropCheck: a frame needs at least one element cropped by the edge');
   const [bg, mid, fg] = G.layers;

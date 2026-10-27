@@ -12,8 +12,10 @@ import { shadowTone } from './KeyLight';
  * (lib/light FILM_LIGHT) does the rest:
  *   - a 1 px rim highlight on the edges that face the key, computed in the panel's own coordinates (keyLocal), so the
  *     rim slides round the edge as the panel turns and brightens as an edge turns into the light;
- *   - the face catches more or less light as it turns (n . l against a front-on panel: a light lift toward the key,
- *     a shade away from it) plus a soft sheen across it, lighter on the key side, both in the light's colour (rim.color);
+ *   - the face catches more or less light as it turns (n . l against a front-on panel: a faint lift toward the key,
+ *     capped at 5 %, a shade away from it) plus a faint sheen along the key-side edge (3 %, gone by 40 % of the face),
+ *     both in the light's colour (rim.color). No bloom and no haze: the face never takes a white veil, so the
+ *     product's own colours and type stay as designed; the light is the rim and the shadow;
  *   - a ground-coloured spill: the ground's bounce light on the side away from the key;
  *   - a cast shadow on the backing plane `lift` px behind the panel and parallel to it (so a turned panel never cuts
  *     through its own ground), thrown away from the key by lift x (in-plane light / facing light), its penumbra
@@ -35,8 +37,11 @@ export const LIT = {
   lift: 36, // px between the panel and its backing plane
   perspective: 2200, // px (references/camera.md §9: 1800-2600)
   sway: { deg: 1.4, period: 7, float: 18, floatPeriod: 9 }, // tilt: degrees on X and Y a quarter-turn apart, s per loop; float: px/s on a 1:2 loop (never at rest)
-  sheen: 0.09, // white across the face, key side first, at full in-plane light
-  gain: 0.35, // the face's light change per unit of n . l change (white toward the key, shade away)
+  sheen: 0.03, // the light's colour along the key-side edge at full in-plane light (never a veil across the face)
+  sheenReach: 0.4, // share of the face the sheen crosses before it is gone
+  gain: 0.35, // the face's light change per unit of n . l change (the light's colour toward the key, shade away)
+  liftMax: 0.05, // the most the light side may lift the face (a white veil over the product is haze)
+  shadeMax: 0.22, // the most the far side may shade it
   rimWidth: 1, // px at 1080p
   shadow: { dL: 0.26, alpha: 0.55, soft: 0.34, maxThrow: 3, levels: [6, 20] as [number, number], contact: { grow: 6, blur: 14, alpha: 0.38 } },
   enter60: 48,
@@ -146,7 +151,7 @@ export const litState = (frame: number, p: LitProps, film?: Partial<FilmCtx>): L
     face,
     shift,
     sheen: { angle: away, alpha: LIT.sheen * clamp(m / 0.83) },
-    tone: { light: shift >= 0, alpha: clamp(LIT.gain * Math.abs(shift), 0, 0.22) },
+    tone: { light: shift >= 0, alpha: clamp(LIT.gain * Math.abs(shift), 0, shift >= 0 ? LIT.liftMax : LIT.shadeMax) },
     rim: rimLine(tilt, p.w, p.h, light, p.rim?.alpha ?? light.rim),
     spill: { angle: (away + 180) % 360, alpha: light.spill * (0.6 + 0.4 * clamp(m / 0.83)) },
     shadow: { dx: -dx * throwLen, dy: -dy * throwLen, blur: 2 * u + LIT.shadow.soft * throwLen, alpha: (p.shadow?.alpha ?? LIT.shadow.alpha) * fade },
@@ -245,7 +250,7 @@ export const Lit: React.FC<LitProps & { frame: number; children: React.ReactNode
       <div data-ui style={{ ...box, borderRadius: r, overflow: 'hidden', opacity: s.opacity, transform: pose }}>
         {props.children}
         <div style={{ position: 'absolute', inset: 0, background: s.tone.light ? rgbaOf(rimColor, s.tone.alpha) : rgbaOf(tone, s.tone.alpha) }} />
-        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(${s.sheen.angle.toFixed(2)}deg, ${rgbaOf(rimColor, s.sheen.alpha)} 0%, ${rgbaOf(rimColor, 0)} 62%)` }} />
+        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(${s.sheen.angle.toFixed(2)}deg, ${rgbaOf(rimColor, s.sheen.alpha)} 0%, ${rgbaOf(rimColor, 0)} ${(LIT.sheenReach * 100).toFixed(0)}%)` }} />
         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(${s.spill.angle.toFixed(2)}deg, ${rgbaOf(props.ground, s.spill.alpha)} 0%, ${rgbaOf(props.ground, 0)} 55%)` }} />
         <RimEdge w={w} h={h} r={r} line={s.rim} color={rimColor} id={uid} />
       </div>

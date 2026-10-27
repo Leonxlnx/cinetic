@@ -1,5 +1,5 @@
 // The film's one light: a single key direction that every depth-and-light primitive reads (fx/Lit, fx/DepthStack,
-// fx/Grounds), so a tilted panel's rim, its cast shadow, the ground's lit side and the drift of its light pools all
+// fx/Grounds), so a tilted panel's rim, its cast shadow, the ground's lit side and the drift of its light all
 // agree on where the light comes from. Change FILM_LIGHT once per film (the brief's light: upper-left window, a floor
 // glow from below, a raking side key); never per shot. Node-safe, no imports.
 //

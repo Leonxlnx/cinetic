@@ -12,28 +12,36 @@ import { bakePixels, bakePlate } from './Gradients';
 import { hash01 } from './plates';
 
 /**
- * cinetic:light lit grounds: the place a product sits in, built in code (no photograph): a lit gradient with a stated
- * key direction (the film's one light, lib/light FILM_LIGHT: the side the key comes from is lighter, the far side
- * falls into the ground's own shade), drifting slowly on a closed loop, plus procedural plates generated from a seed
- * in the film's palette: soft light pools, tall light bars, a floor glow with bars standing in it, or window beams
- * slanting along the key. On a light ground the same shapes are soft shadows instead (white light on paper does
- * nothing). Every shape is a signed-distance falloff baked once as a dithered sprite at half size (no animated blur,
- * no CSS gradient that bands) and moved by transform and opacity only; there are no bokeh discs.
+ * cinetic:light lit grounds: the place a product sits in, built in code (no photograph). A ground is clean: the flat
+ * base, or a very subtle lit gradient with a stated key direction (the film's one light, lib/light FILM_LIGHT: the
+ * side the key comes from is a little lighter, the far side falls a little into the ground's own shade), drifting
+ * slowly on a closed loop. Every element in frame has a job, and a ground's job is to stay clean behind the words and
+ * the product: no floating plates, no light pools, no haze. Light is motivated and subtle.
+ *
+ * Plates are for a film that asks for them by name (dealGrounds({ kinds }) or a spec's kind) because the place it
+ * shows has that light: soft pools of a lamp, the tall bars of a lit room, a stage's floor light, sun through a
+ * window. On a light ground the same shapes are soft shadows instead (white light on paper does nothing). Every
+ * shape is a signed-distance falloff baked once as a dithered sprite at half size (no animated blur, no CSS gradient
+ * that bands) and moved by transform and opacity only; there are no bokeh discs.
  *
  *   kind     what                                                       reads as
- *   wash     the key gradient and one broad pool on the key side        a lit wall, studio paper
- *   pools    the wash plus 2-3 soft pools at different depths           light falling through a space
- *   bars     the wash plus 3-5 tall soft bars                           a lit room behind the product, out of focus
- *   floor    a glow rising from the bottom edge, bars standing in it    light from below, a stage
- *   window   2-4 beams slanting along the key across the wall           sun through a window
+ *   flat     the base colour alone                                      a clean field (the house, with wash)
+ *   wash     the base and the key gradient, nothing else                a lit wall, studio paper (the house)
+ *   pools    the wash plus a broad pool and 2-3 soft pools (asked)      lamplight falling through a space
+ *   bars     the wash plus 3-5 tall soft bars (asked)                   a lit room behind the product, out of focus
+ *   floor    a glow rising from the bottom edge, bars in it (asked)     light from below, a stage
+ *   window   2-4 beams slanting along the key (asked)                   sun through a window
  *
- * Numbers (lib/look.ts LIGHT, GRAMMAR.hold): a lightness swing of 0.05-0.20 across the frame (house 0.10); the light
- * drifts 6-30 px/s at 1080p (house 12) on loops of 9-16 s, so a hold over a ground never freezes; the ground rides
- * the camera at the background weight 0.25 (Planes: fg 1.0, mid 0.6, bg 0.25).
+ * Numbers (GRAMMAR.hold): a lightness swing of 0.02-0.10 across the frame (house 0.06: you feel the key, you never see
+ * a glow); the light drifts 6-30 px/s at 1080p (house 12) on loops of 9-16 s, so a hold over a ground never freezes;
+ * the ground rides the camera at the background weight 0.25 (Planes: fg 1.0, mid 0.6, bg 0.25). look-audit.py's
+ * ground-haze read fails a pool of light inside the frame above its threshold, and filler-shape fails faint shapes
+ * that carry no text, icon or mark.
  *
  * Variety: never the same ground on more than 2 consecutive shots (GROUND.run). groundKey() names a ground (its kind
  * and base), groundRuns() lists the runs that break the rule, dealGrounds() deals a film's grounds from a seed with
- * holds of at most 2 shots (a held ground keeps its seed: the same place across the cut).
+ * holds of at most 2 shots (a held ground keeps its seed: the same place across the cut); it deals the clean kinds
+ * (flat and wash on the film's bases) unless the film names others.
  *
  * Composition: <Planes> draws bg, mid and fg layers under one camera at 0.25 / 0.6 / 1.0, and cropCheck() asks for
  * at least one element cropped by the frame edge (a frame that holds everything whole inside the margins is a slide).
@@ -41,8 +49,8 @@ import { hash01 } from './plates';
 
 /** House numbers: px at 1080p, seconds, shares. */
 export const GROUND = {
-  lift: 0.12, // lightness swing across the frame (OKLCH L), lib/look.ts LIGHT.dL
-  liftRange: [0.05, 0.2] as const,
+  lift: 0.06, // lightness swing across the frame (OKLCH L): the key is felt, never seen as a glow
+  liftRange: [0.02, 0.1] as const,
   driftPxS: 12, // the light's drift, px/s at 1080p (GRAMMAR.hold.driftPxS 6-30-90)
   driftRange: [6, 30] as const,
   period: [9, 16] as const, // s per loop
@@ -54,14 +62,19 @@ export const GROUND = {
   crop: 0.12, // share of an element's own width or height past a frame edge for it to count as cropped
 } as const;
 
-export type GroundKind = 'wash' | 'pools' | 'bars' | 'floor' | 'window';
-export const GROUND_KINDS: readonly GroundKind[] = ['wash', 'pools', 'bars', 'floor', 'window'];
+export type GroundKind = 'flat' | 'wash' | 'pools' | 'bars' | 'floor' | 'window';
+/** Every kind. */
+export const GROUND_KINDS: readonly GroundKind[] = ['flat', 'wash', 'pools', 'bars', 'floor', 'window'];
+/** The clean kinds a film gets unless it asks for more: no shape on the ground at all. */
+export const CLEAN_KINDS: readonly GroundKind[] = ['flat', 'wash'];
+/** The kinds that put plates on the ground: only for a film that asks, because its place has that light. */
+export const PLATE_KINDS: readonly GroundKind[] = ['pools', 'bars', 'floor', 'window'];
 
 export type GroundSpec = {
   kind: GroundKind;
   base: string; // the ground colour: a neutral token (C.slate, C.paper, C.mist ...)
   light?: string; // the light's colour on a dark base (house C.white; an accent lift only at low strength)
-  lift?: number; // lightness swing 0.05-0.2 (house 0.1)
+  lift?: number; // lightness swing 0.02-0.1 (house 0.06)
   key?: Pick<FilmLight, 'azimuth' | 'elevation'>; // house FILM_LIGHT
   drift?: number; // px/s at 1080p (house 12)
   seed?: number;
@@ -106,11 +119,14 @@ export const washAlphas = (base: string, lift: number = GROUND.lift) => {
 };
 
 /** How bright each kind's shapes are against the lift (their peak lightness change over lift): light sources read brighter. */
-export const KIND_GAIN: Record<GroundKind, number> = { wash: 0.8, pools: 0.9, bars: 1.1, floor: 1.6, window: 1.0 };
+export const KIND_GAIN: Record<GroundKind, number> = { flat: 0, wash: 0, pools: 0.9, bars: 1.1, floor: 1.6, window: 1.0 };
+
+/** True when the ground puts no shape on its base (flat or wash): the clean ground every film starts from. */
+export const isClean = (g: Pick<GroundSpec, 'kind'>) => CLEAN_KINDS.includes(g.kind);
 
 /**
  * The procedural plates of a ground: shapes from its seed, in its kind's arrangement, keyed to the light, each with
- * its final peak alpha (the lift budget of its base). Pure.
+ * its final peak alpha (the lift budget of its base). The clean kinds have none. Pure.
  */
 export const groundShapes = (g: GroundSpec): GroundShape[] => {
   const rnd = seeded((g.seed ?? 1) * 7919 + GROUND_KINDS.indexOf(g.kind) * 104729);
@@ -129,8 +145,9 @@ export const groundShapes = (g: GroundSpec): GroundShape[] => {
   };
   const keySide = (d: number) => ({ x: 0.5 + kx * d, y: 0.5 + ky * d }); // a point toward the key, d in frame shares
   const out: GroundShape[] = [];
+  if (isClean(g)) return out; // flat and wash: the base and the key gradient, never a shape
   const beamAngle = (Math.atan2(-ky, -kx) * 180) / Math.PI; // light travels away from the key
-  if ((g.kind === 'wash' || g.kind === 'pools') && wa.dark) {
+  if (g.kind === 'pools' && wa.dark) {
     const c = keySide(0.38);
     out.push({ form: 'pool', x: c.x, y: c.y, w: 2300, h: 1600, rot: beamAngle, soft: 0, alpha: peak(lift * gain * 0.9), depth: 0.2, orbit: orbit() });
   }
@@ -308,10 +325,15 @@ export const spriteSize = (sh: GroundShape, s: number = GROUND.bake) => {
   return { W: Math.max(2, Math.round((sh.w + 2 * margin) * s)), H: Math.max(2, Math.round((sh.h + 2 * margin) * s)), margin };
 };
 
-/** A lit ground: base colour, the key plate, the floor glow and the shapes, under the camera at their depths. */
+/**
+ * A lit ground: the base colour and the key gradient (wash), and for a kind the film asked for, the floor glow and the
+ * shapes, under the camera at their depths. A flat ground is the base colour alone.
+ */
 export const LitGround: React.FC<{ frame: number; spec: GroundSpec; cam?: { shot: Shot; base: Shot }; style?: React.CSSProperties }> = ({ frame, spec, cam, style }) => {
   const film = useFilm();
   const { width: W, height: H } = sizeOf(film);
+  const abs0: React.CSSProperties = { position: 'absolute', left: 0, top: 0 };
+  if (spec.kind === 'flat') return <div style={{ ...abs0, width: W, height: H, background: spec.base, ...style }} />;
   const s = groundState(frame, spec, film, cam);
   const ink = groundInks(spec);
   const b = GROUND.bake;
@@ -364,11 +386,12 @@ export const groundRuns = (list: readonly Pick<GroundSpec, 'kind' | 'base'>[], m
 /**
  * Deals one ground per shot from a seed: kinds and bases rotate so no ground holds more than `max` consecutive shots
  * (house 2) and no kind comes back while another is unused for long; a held ground keeps its spec (the same place
- * across the cut). `hold` is the chance a shot keeps the previous ground when the rule allows it (house 0.35).
+ * across the cut). `hold` is the chance a shot keeps the previous ground when the rule allows it (house 0.35). The
+ * kinds are the clean ones (flat, wash) unless the film names the kinds its place really has.
  */
 export const dealGrounds = (n: number, o: { bases: readonly string[]; kinds?: readonly GroundKind[]; seed?: number; hold?: number; max?: number; light?: string; lift?: number; key?: GroundSpec['key'] }): GroundSpec[] => {
   const rnd = seeded((o.seed ?? 1) * 2654435761);
-  const kinds = o.kinds?.length ? o.kinds : GROUND_KINDS;
+  const kinds = o.kinds?.length ? o.kinds : CLEAN_KINDS;
   const max = o.max ?? GROUND.run;
   const hold = o.hold ?? 0.35;
   const out: GroundSpec[] = [];
