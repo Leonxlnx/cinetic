@@ -102,4 +102,96 @@ export const Stack: React.FC<StackProps & { frame: number; x: number; y: number;
 };
 
 /** Continuous: nothing to declare. */
+/**
+ * A pile of photo cards dealt one ON TOP of the last (the opposite layering of the notification stack): each card
+ * drops in from up-right (house 34, -30 px at 1080p per card of fan) with a short smear, lands on an alternating tilt
+ * and stays; the pile's origin walks down-left as it grows so the whole pile stays framed. Cards land every ~6 f at
+ * 60 fps (a flick build). Draw `cards` in order: the newest is last, on top.
+ */
+export const PILE = { fan: { x: 34, y: -30 }, drop: 220, enter60: 7, tilt: 5.5, walk: { x: -0.5, y: 0.45 }, scaleFrom: 1.12 } as const;
+
+export type PileProps = {
+  arrivals: number[]; // frame each card starts to drop (oldest first)
+  fan?: { x: number; y: number }; // px at 1080p each newer card sits from the one before (house up-right)
+  drop?: number; // px at 1080p a card travels in from, along the fan direction (house 220)
+  enter?: number; // 60 fps frames of a drop (house 7: front-loaded on E.snapOut)
+  tilt?: number; // deg, alternating sign card to card (house 5.5)
+  walk?: { x: number; y: number }; // share of the fan the pile's origin walks back per card (house -0.5, 0.45: down-left)
+};
+export type PileCard = { i: number; x: number; y: number; rot: number; scale: number; v: number; opacity: number };
+
+/** Every dealt card at frame f (oldest first, the newest on top) and the pile's origin shift. Pure. */
+export const pileState = (frame: number, p: PileProps, film?: Partial<FilmCtx>) => {
+  const fps = fpsOf(film);
+  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const fan = { x: (p.fan?.x ?? PILE.fan.x) * u, y: (p.fan?.y ?? PILE.fan.y) * u };
+  const drop = (p.drop ?? PILE.drop) * u;
+  const dur = Math.max(1, f60x(p.enter ?? PILE.enter60, fps));
+  const walk = p.walk ?? PILE.walk;
+  const len = Math.hypot(fan.x, fan.y) || 1;
+  const dir = { x: fan.x / len, y: fan.y / len };
+  const at = (a: number, f: number) => E.snapOut(clamp((f - a) / dur));
+  const placed = (f: number) => p.arrivals.reduce((n, a) => n + (f >= a ? at(a, f) : 0), 0);
+  const n = placed(frame);
+  const shift = { x: walk.x * Math.abs(fan.x) * Math.max(0, n - 1), y: walk.y * Math.abs(fan.y) * Math.max(0, n - 1) };
+  const cards: PileCard[] = [];
+  p.arrivals.forEach((a, i) => {
+    if (frame < a) return;
+    const q = at(a, frame);
+    const q0 = at(a, frame - 1);
+    const out = (1 - q) * drop;
+    cards.push({
+      i,
+      x: i * fan.x + dir.x * out + shift.x,
+      y: i * fan.y + dir.y * out + shift.y,
+      rot: (i % 2 ? -1 : 1) * (p.tilt ?? PILE.tilt) * mix(1.6, 1, q),
+      scale: mix(PILE.scaleFrom, 1, q),
+      v: (q - q0) * drop, // px the card travelled this frame along the fan (DirBlur along its angle)
+      opacity: clamp(q * 3),
+    });
+  });
+  return { cards, count: n, shift, angle: (Math.atan2(dir.y, dir.x) * 180) / Math.PI + 180 };
+};
+
+/**
+ * A fan: the front card eases aside while the cards behind it slide out the other way in 3D and tilt (house: two
+ * cards behind, spread on E.in over 20 f at 60 fps into a blur peak, collapsing back on E.out over 22 f). Offsets
+ * are px at 1080p from the front card's rest centre; rotateZ lags the spread (q^1.4). Smear the cards by the
+ * spread's speed (DirBlur) on its fastest frames.
+ */
+export const FAN = {
+  slots: [{ x: 120, y: 33, z: 0 }, { x: -135, y: -31, z: -1 }, { x: -349, y: -87, z: -2 }],
+  rotZ: -7.3,
+  rotY: -9,
+  rotX: 6,
+  scaleBehind: 0.97,
+  spread60: 20,
+  collapse60: 22,
+} as const;
+export type FanProps = { open: number; close?: number; spread?: number; collapse?: number; slots?: { x: number; y: number; z: number }[] };
+export type FanCard = { i: number; x: number; y: number; z: number; rotZ: number; rotY: number; rotX: number; scale: number; q: number };
+
+/** The fan at frame f: q (0 closed .. 1 open) and each card's offset and turn, the front card first. Pure. */
+export const fanState = (frame: number, p: FanProps, film?: Partial<FilmCtx>) => {
+  const fps = fpsOf(film);
+  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const sp = Math.max(1, f60x(p.spread ?? FAN.spread60, fps));
+  const cl = Math.max(1, f60x(p.collapse ?? FAN.collapse60, fps));
+  const opening = E.in(clamp((frame - p.open) / sp));
+  const q = p.close !== undefined && frame >= p.close ? opening * (1 - E.out(clamp((frame - p.close) / cl))) : opening;
+  const slots = p.slots ?? FAN.slots;
+  const cards: FanCard[] = slots.map((s, i) => ({
+    i,
+    x: s.x * u * q,
+    y: s.y * u * q,
+    z: s.z,
+    rotZ: i === 0 ? 0 : FAN.rotZ * Math.pow(q, 1.4),
+    rotY: i === 0 ? 0 : FAN.rotY * q,
+    rotX: i === 0 ? 0 : FAN.rotX * q,
+    scale: i === 0 ? 1 : mix(1, FAN.scaleBehind, q),
+    q,
+  }));
+  return { q, cards };
+};
+
 export const declares = (_p?: Partial<StackProps>, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

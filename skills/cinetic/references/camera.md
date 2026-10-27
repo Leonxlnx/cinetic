@@ -300,3 +300,8 @@ Six camera ideas in about 9.5 s, one per beat, every cut carried.
 moment: declare its range in `CAMERA_BLUR` and only those frames get shutter samples. Declared steps (a snap zoom's
 jump, a stepped layer), flashes and hard seams always render from one sample. `measure-speed.py --policy auto` and
 `render.sh --blur` follow the declaration (`references/finishing.md`).
+
+A spinning element smears around its centre, not along a line: `SpinBlur` (fx/Defocus) draws copies turned back
+over half the frame's turn as a running mean (sharp under 1 degree a frame); a mark that spins in
+(`fx/Wordmark` `spinInState()`: from x2.06 and over a turn, the turn settling before the scale, then aside to make
+room while the name slides out) passes its `omega` to it.

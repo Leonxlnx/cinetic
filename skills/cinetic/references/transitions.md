@@ -110,6 +110,10 @@ paces make rate mode the default (`pace.fx.irisMode`); `mode="ease"` keeps the e
 - `originFrom={{ text, gap, left, top, size, weight, track, lead }}` opens it from the gap after word `gap`
   (`gapOrigin()`: halfway across the space, at mid cap height). Measure under `FontGate`.
 - `scallop`: a cloud edge (house 9 lobes, cusps 8 % of the radius deep) that turns a third of a lobe as it opens.
+- **The reveal iris** (`irisReveal(start, { x, y })`): a product shot opening onto a new stage opens already big (its
+  first radius 37 % of the frame height, never a dot) and covers the frame in 10 f at 60 fps, most of the growth on its
+  first frames (radius ratios about 1.76, 1.21, 1.10, 1.07 per 30 fps frame). Wind up first: the container widens on
+  an ease-in for a few frames and the iris opens on the next beat. Keep the dot for logo stings.
 - Start it on the hit frame. Declares a `mask` seam carrying the shape.
 
 ## 5. Morph and MorphChain
@@ -193,6 +197,10 @@ product as it lands, or a light event that carries a cut. Both count as the act'
   through the frame: a line comes out of nothing instead of being cut by the frame.
 
 ## 9. CutFx: cuts dressed with what is on screen
+
+- **Blur bridge** (`blurBridge(f, cut)`): a hard punch-in from a wide shot to its close-up (x2-2.5) softens the wide
+  shot's last two frames and the close-up's first two (house sigma 1.2, 4 | 3, 1.2 at 1080p, through `Defocus`), and
+  the close-up eases back about 9 % on a decaying pull-back, so the jump reads as one push and the close-up breathes.
 
 - **`<FlashCut frame cut whip flash streak slide pull out in />`**: the camera whips on an ease-in that never brakes,
   then one over-exposed frame (about 92 % white) with a faint ghost of what was there, then one dark frame of

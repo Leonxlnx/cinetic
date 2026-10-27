@@ -41,6 +41,7 @@ export type TypeTiming = {
   skip?: { at: number; count: number }[]; // prompt/human: from character `at`, `count` characters land on one frame
   gaps?: number[]; // prompt: 60 fps frames between visible keys (a space lands with the letter after it, a burst with the key before), e.g. ACCEL.typing; then the ramp's end rate
   wordFrames?: number; // field: frames per word (house 5 at 60 fps)
+  rates?: { at: number; cps: number }[]; // stream: from character `at` on, this rate (a fast wide shot slowing in the close-up); with `skip` a burst lands at once
 };
 export type TypeFont = { role?: Role; size?: number; family?: string };
 
@@ -144,6 +145,22 @@ export const typeSchedule = (text: string, t: TypeTiming, film?: Partial<FilmCtx
         let F = Math.ceil(t.start);
         while (F < t.start + box + 1 && t.ease(clamp((F - t.start) / box)) + 1e-9 < need) F++;
         at[i] = F;
+      }
+      return at;
+    }
+    if (t.rates?.length || t.skip?.length) {
+      // piecewise rates from given characters; a skip lands `count` characters on one frame
+      const rates = [...(t.rates ?? [])].sort((p, q) => p.at - q.at);
+      const rateAt = (i: number) => rates.filter((r) => r.at <= i).pop()?.cps ?? cps;
+      const burst = new Map((t.skip ?? []).map((k) => [k.at, k.count]));
+      let time = t.start;
+      for (let i = 0; i < len; i++) {
+        if (i < pre) { at[i] = Math.ceil(t.start); continue; }
+        const b = burst.get(i);
+        time += fps / rateAt(i);
+        at[i] = Math.ceil(time - 1e-9);
+        if (b) for (let j = 1; j < b && i + j < len; j++) at[i + j] = at[i];
+        if (b) i += b - 1;
       }
       return at;
     }

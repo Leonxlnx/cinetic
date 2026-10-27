@@ -108,5 +108,32 @@ export const DirBlur: React.FC<{ v: number; axis?: 'x' | 'y'; angle?: number; id
   );
 };
 
+/**
+ * A rotational smear for a layer spinning `omega` degrees per film frame about (cx, cy) px: copies turned back over
+ * the shutter (house 180 degrees: half the frame's turn), averaged as a running mean (copy k at opacity 1 / (k + 1)),
+ * one copy every `stepDeg` (house 6 degrees, at most 10). Sharp under 1 degree a frame. A mark spinning in, a dial.
+ */
+export const SPIN_BLUR = { shutter: 180, stepDeg: 6, max: 10 } as const;
+export const spinBlurCopies = (omega: number, o: { shutter?: number; stepDeg?: number; max?: number } = {}) => {
+  const sweep = Math.abs(omega) * ((o.shutter ?? SPIN_BLUR.shutter) / 360);
+  if (Math.abs(omega) < 1) return [0];
+  const n = Math.max(2, Math.min(o.max ?? SPIN_BLUR.max, Math.ceil(sweep / (o.stepDeg ?? SPIN_BLUR.stepDeg)) + 1));
+  return Array.from({ length: n }, (_, k) => -Math.sign(omega) * sweep * (k / (n - 1))); // degrees behind the current angle
+};
+export const SpinBlur: React.FC<{ omega: number; cx: number; cy: number; shutter?: number; style?: React.CSSProperties; children: React.ReactNode }> = ({ omega, cx, cy, shutter, style, children }) => {
+  const back = spinBlurCopies(omega, { shutter });
+  const base: React.CSSProperties = { ...layer, isolation: 'isolate', ...style };
+  if (back.length === 1) return <div style={base}>{children}</div>;
+  return (
+    <div style={base} data-audit-smear="">
+      {back.map((d, k) => (
+        <div key={k} data-audit-copy={k > 0 ? '' : undefined} style={{ ...layer, opacity: 1 / (k + 1), transformOrigin: `${cx}px ${cy}px`, transform: `rotate(${d.toFixed(3)}deg)` }}>
+          {children}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 /** Defocus and DirBlur are continuous: nothing to declare. */
 export const declares = (_props?: unknown, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

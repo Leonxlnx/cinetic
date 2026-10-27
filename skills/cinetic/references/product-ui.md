@@ -337,6 +337,19 @@ sample.
   slot (scale 0.92 → 1 on `E.snapOut`, 16 f); every older one steps back a slot on the same curve: 4.5 % smaller,
   2.4 px softer, closer to the one in front (199, 175, 150, 135 px); the pile re-centres 92 px an item. Arrivals speed
   up into the payoff. `stackState()` and `stackFrames()` (a soft pop on each arrival's 50 % frame).
+- **Pile and fan** (`fx/Stack.tsx`): `pileState()` deals photo cards one on top of the last (each drops in from
+  up-right, 34, -30 px a card, on an alternating tilt, about every 6 f at 60 fps, smeared along its drop) while the
+  pile's origin walks down-left so it stays framed; `fanState()` spreads two cards out from behind the front one in
+  3D (offsets, rotateZ lagging the spread, rotateY -9, rotateX 6) on `E.in` into a blur peak and collapses back.
+- **Masonry** (`fx/Scroll.tsx` `masonryState()`): a wall scrolling up into place, every tile on its own settle (its
+  depth x the travel, a lag of up to 6 f), text in a gap riding its tile; one shared ease-in exit.
+- **Pointer, swell and steps**: `Cursor shape="pointer"` is the filled, rounded product cursor in the brand colour with
+  a pale rim; it clicks with `pressDepth` 0.2 while the button swells (`fx/MicroUI` `swellState()`: x1.38 in 6 f,
+  walking its fill through the brand's colours to a held one, back in 6 f), then leaves spinning (`cursorExit()`).
+  `StepList rise` lifts each new row inside the stack as it steps in; a `pending` row never checks and pales.
+  `TypeOn kind="stream"` takes `rates` (a fast run slowing from a given character) and `skip` (a burst on one frame).
+- **Scatter** (`fx/Gather.tsx` `scatterState()`): satellites clearing along their own vectors (quad-in, growing x1.45)
+  on the frame their container swaps its label.
 - **MaskList** (`fx/Reels.tsx`): a capability ticker. One row every 10 f, hard, unblurred, an icon swapping on the same
   frame; a fixed alpha mask keeps the neighbours faint (0.62 at the selected row's edge, 0.10 a row out, a 0.05 floor
   to 2.5 rows). Every step is declared stepped.

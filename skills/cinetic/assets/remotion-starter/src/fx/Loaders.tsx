@@ -207,7 +207,7 @@ export const ArcLoader: React.FC<ArcLoaderProps & { frame: number; x: number; y:
 export const STEP_LIST = { rowH: 76, spin60: 20, partial: 0.45, inkDelay60: 6, fade60: 14, swap60: 3, drain60: 6, window: 4, jump60: 8, lastDone60: 36 } as const;
 
 export type StepListProps = {
-  rows: { at: number; done?: number }[]; // each row's cut-on frame; done = its check (default: the next row's onset)
+  rows: { at: number; done?: number; pending?: boolean }[]; // each row's cut-on frame; done = its check (default: the next row's onset); pending: it never checks and pales to the mute ink
   rowH?: number; // px at 1080p
   window?: number; // rows visible before the list starts to jump (house 4)
   jump?: 'snap' | 'expo'; // snap: one frame, unanimated (house); expo: a short E.jump step
@@ -219,10 +219,12 @@ export type StepListProps = {
   fade?: number; // 60 fps frames of the fade up (house 14)
   swap?: number; // spinner -> check, 60 fps frames (house 3)
   drain?: number; // the verb's accent drains to ink, 60 fps frames (house 6)
+  rise?: number; // px at 1080p a new row rises inside the stack as it steps in (0: none; a run of agent steps: 18)
+  riseFrames?: number; // 60 fps frames of that rise on E.snapOut (house 20)
   id?: string;
 };
 
-export type StepRowState = { i: number; visible: boolean; y: number; ink: number; spin: number; check: number; accent: number };
+export type StepRowState = { i: number; visible: boolean; y: number; ink: number; spin: number; check: number; accent: number; pending: number };
 
 /** Row onsets on the house cadence: gaps shorten toward the end (ACCEL.rows, 60 fps frames), from `start`. */
 export const stepCadence = (start: number, n: number, film?: Partial<FilmCtx>, gaps60: readonly number[] = ACCEL.rows): number[] => {
@@ -249,12 +251,14 @@ export const stepListState = (frame: number, p: StepListProps, film?: Partial<Fi
   const rows: StepRowState[] = p.rows.map((r, i) => {
     const visible = F >= r.at;
     const next = p.rows[i + 1]?.at;
-    const done = r.done ?? next ?? r.at + Math.round(f60x(STEP_LIST.lastDone60, fps));
+    const done = r.pending ? Infinity : (r.done ?? next ?? r.at + Math.round(f60x(STEP_LIST.lastDone60, fps)));
     const d0 = r.at + f60x(p.inkDelay ?? STEP_LIST.inkDelay60, fps);
     const ink = mix(p.partial ?? STEP_LIST.partial, 1, prog(frame, d0, d0 + f60x(p.fade ?? STEP_LIST.fade60, fps), E.snapOut));
     const check = F < done ? 0 : prog(frame, done - 1, done - 1 + f60x(p.swap ?? STEP_LIST.swap60, fps), E.snapOut);
     const accent = next === undefined || F < next ? 1 : 1 - clamp((frame - next) / Math.max(1, f60x(p.drain ?? STEP_LIST.drain60, fps)));
-    return { i, visible, y: i * rowH - offset, ink, spin: ((p.spin ?? STEP_LIST.spin60) * 60 * (frame - r.at)) / fps, check, accent };
+    const rise = (p.rise ?? 0) * u * (1 - E.snapOut(clamp((frame - r.at) / Math.max(1, f60x(p.riseFrames ?? 20, fps)))));
+    const pending = r.pending ? prog(frame, r.at + f60x(30, fps), r.at + f60x(60, fps), E.stdInOut) : 0;
+    return { i, visible, y: i * rowH - offset + rise, ink, spin: ((p.spin ?? STEP_LIST.spin60) * 60 * (frame - r.at)) / fps, check, accent, pending };
   });
   return { offset, rowH, rows };
 };
@@ -263,7 +267,7 @@ export const stepListState = (frame: number, p: StepListProps, film?: Partial<Fi
 export const stepListFrames = (p: StepListProps, film?: Partial<FilmCtx>) => {
   const fps = fpsOf(film);
   const rows = p.rows.map((r) => r.at);
-  const checks = p.rows.map((r, i) => r.done ?? p.rows[i + 1]?.at ?? r.at + Math.round(f60x(STEP_LIST.lastDone60, fps)));
+  const checks = p.rows.filter((r) => !r.pending).map((r) => r.done ?? p.rows[p.rows.indexOf(r) + 1]?.at ?? r.at + Math.round(f60x(STEP_LIST.lastDone60, fps)));
   const jumps = p.rows.slice(p.window ?? STEP_LIST.window).map((r) => r.at);
   return { rows, checks, jumps };
 };
@@ -304,7 +308,7 @@ export const StepList: React.FC<StepListProps & { frame: number; labels: StepLab
             <div style={{ position: 'relative', width: icon, height: icon, flex: 'none' }}>
               {r.check < 1 && (
                 <div style={{ position: 'absolute', inset: 0, opacity: 1 - clamp(r.check * 2) }}>
-                  <Spinner size={icon} color={props.colors.mute} angle={r.spin} dashed={props.dashed} />
+                  <Spinner size={icon} color={props.colors.mute} angle={r.spin} dashed={props.dashed || r.pending > 0} />
                 </div>
               )}
               {r.check > 0 && (
@@ -313,7 +317,7 @@ export const StepList: React.FC<StepListProps & { frame: number; labels: StepLab
                 </div>
               )}
             </div>
-            <div style={{ fontFamily: props.font.family, fontSize: props.font.size, fontWeight: props.font.weight, letterSpacing: '-0.01em', whiteSpace: 'pre', opacity: r.ink }}>
+            <div style={{ fontFamily: props.font.family, fontSize: props.font.size, fontWeight: props.font.weight, letterSpacing: '-0.01em', whiteSpace: 'pre', opacity: r.ink * (1 - 0.45 * r.pending) }}>
               <span style={{ color: mixC(props.colors.accent, props.colors.ink, r.accent) }}>{props.labels[r.i]?.verb}</span>
               {props.labels[r.i]?.detail && <span style={{ color: props.colors.mute }}>{` ${props.labels[r.i].detail}`}</span>}
             </div>

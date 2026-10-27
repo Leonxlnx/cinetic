@@ -1,6 +1,6 @@
 import React from 'react';
 import { C, FONT } from '../brand/tokens';
-import { clamp, E, type Ease, lmix, perFrame, prog } from '../lib/anim';
+import { clamp, curveOf, E, type Ease, lmix, perFrame, prog } from '../lib/anim';
 import { f60, type FilmCtx, fpsOf, sizeOf, uOf, useFilm } from '../lib/film';
 import { baselineOf, measureTracked } from '../lib/measure';
 import type { Declares } from '../timeline';
@@ -33,6 +33,18 @@ export type IrisRateOpts = {
   frames?: number; // run length in film frames; default from the ratio: ln(to / r0) / ln(ratio per film frame)
   width?: number; // frame size for the default `to` (default the film's)
   height?: number;
+};
+
+/**
+ * The reveal iris: it opens already big (37 % of the frame height as its first radius, never from a dot) and covers
+ * the frame in 10 frames at 60 fps, most of the growth up front (radius ratios about 1.76, 1.21, 1.10, 1.07 per
+ * 30 fps frame). For a product shot opening onto a new stage; keep IRIS (from the point) for logo stings.
+ */
+export const IRIS_REVEAL = { r0Share: 0.37, frames60: 10, shape: [0, 0.565, 0.756, 0.851, 0.919, 1] as number[] } as const;
+/** Rate-mode options for the reveal iris from (x, y): pass them to irisRadius / <Iris rate>. */
+export const irisReveal = (start: number, o: { x?: number; y?: number } = {}, film?: Partial<FilmCtx>): IrisRateOpts => {
+  const size = sizeOf(film);
+  return { start, r0: IRIS_REVEAL.r0Share * size.height, frames: (IRIS_REVEAL.frames60 * fpsOf(film)) / 60, shape: curveOf(IRIS_REVEAL.shape), x: o.x, y: o.y };
 };
 
 /** The run of a rate-mode iris: its start, the first frame it has reached `to`, its length and end radius. */

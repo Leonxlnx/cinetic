@@ -1,6 +1,6 @@
 import React from 'react';
-import { clamp, perFrame, SPEED } from '../lib/anim';
-import { type FilmCtx, fpsOf, uOf, useFilm } from '../lib/film';
+import { clamp, E, perFrame, SPEED } from '../lib/anim';
+import { type FilmCtx, f60x, fpsOf, uOf, useFilm } from '../lib/film';
 import type { CameraBlurRange, Declares } from '../timeline';
 import { edgeMask as wipeEdge } from './Wipe';
 
@@ -180,6 +180,32 @@ export const Scroll: React.FC<
 };
 
 /** What a flick declares: its fast frames as a camera-blur range (the shutter renders them even in a crisp film). */
+/**
+ * A masonry wall scrolling up into place, every tile on its own settle (never one rigid plane): a tile travels
+ * `depth` x the wall's travel (house 0.6-1.4: nearer tiles move further) on an expo-out entry, `lag` x 6 f late at
+ * 60 fps, so the wall lands like a stack of separate cards; text set in a gap rides its tile's track. One shared
+ * ease-in exit carries every tile out together (the wall accelerating into the cut). Boxes in px at 1080p.
+ */
+export const MASONRY = { travel: 520, enter60: 64, lag60: 6, exit60: 26, exitBy: 1300 } as const;
+export type MasonryTile = { x: number; y: number; w: number; h: number; depth?: number; lag?: number };
+export type MasonryProps = { at: number; out?: number; tiles: MasonryTile[]; travel?: number; enter?: number; exit?: number; exitBy?: number };
+/** Every tile at frame f: its rest box moved by its own settle and the shared exit, and its speed (px per film frame, up = negative). Pure. */
+export const masonryState = (frame: number, p: MasonryProps, film?: Partial<FilmCtx>) => {
+  const fps = fpsOf(film);
+  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const travel = (p.travel ?? MASONRY.travel) * u;
+  const enter = Math.max(1, f60x(p.enter ?? MASONRY.enter60, fps));
+  const exit = Math.max(1, f60x(p.exit ?? MASONRY.exit60, fps));
+  const exitBy = (p.exitBy ?? MASONRY.exitBy) * u;
+  const offAt = (t: MasonryTile, f: number) => {
+    const a = p.at + (t.lag ?? 0) * f60x(MASONRY.lag60, fps);
+    const settle = (t.depth ?? 1) * travel * (1 - E.out(clamp((f - a) / enter)));
+    const leave = p.out === undefined ? 0 : exitBy * E.in(clamp((f - p.out) / exit));
+    return settle - leave;
+  };
+  return p.tiles.map((t, i) => ({ i, x: t.x * u, y: t.y * u + offAt(t, frame), w: t.w * u, h: t.h * u, v: offAt(t, frame) - offAt(t, frame - 1) }));
+};
+
 export const declares = (p?: Partial<FlickProps> & { id?: string }, film?: Partial<FilmCtx>): Declares => {
   if (!p || p.start === undefined) return { stepped: [], flashes: [], cameraBlur: [], seams: [] };
   const r = flickBlurRange(p as FlickProps, film);

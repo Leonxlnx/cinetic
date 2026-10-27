@@ -346,3 +346,20 @@ export const declares = (p?: { swarm?: Partial<BlockSwarmProps>; z?: Partial<ZSw
   }
   return { stepped, flashes: [], cameraBlur: [], seams: [] };
 };
+
+/**
+ * Satellites clearing: each item flies out along its OWN vector (not radially from the centre) on a quad-in over 26 f
+ * at 60 fps, growing to x1.45 as it goes and fading in its last third, while the container they circled changes on
+ * the same frame (a label swap on the kick). Pure: each item's offset, scale and opacity at frame f.
+ */
+export const SCATTER = { frames60: 26, grow: 1.45 } as const;
+export type ScatterProps = { at: number; items: { vx: number; vy: number; delay?: number }[]; frames?: number; grow?: number };
+export const scatterState = (frame: number, p: ScatterProps, film?: Partial<FilmCtx>) => {
+  const fps = fpsOf(film);
+  const dur = Math.max(1, f60x(p.frames ?? SCATTER.frames60, fps));
+  return p.items.map((it, i) => {
+    const t = clamp((frame - p.at - f60x(it.delay ?? 0, fps)) / dur);
+    const q = t * t;
+    return { i, dx: it.vx * q, dy: it.vy * q, scale: mix(1, p.grow ?? SCATTER.grow, q), opacity: 1 - clamp((t - 0.66) / 0.34), gone: t >= 1 };
+  });
+};

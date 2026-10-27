@@ -1,5 +1,6 @@
 import React from 'react';
 import { clamp, E, fd, hitPulse, mix, SPR, spr, type Spr } from '../lib/anim';
+import { mixColor } from '../lib/color';
 import { type FilmCtx, f60x, fpsOf, uOf, useFilm } from '../lib/film';
 import type { Declares, Flash, SteppedRange } from '../timeline';
 
@@ -374,4 +375,29 @@ export const declares = (
     } else flashes.push({ f: e.at, frames: 1, id: `${e.id ?? 'entryFlash'}-${i}` });
   });
   return { stepped, flashes, cameraBlur: [], seams: [] };
+};
+
+/**
+ * A click that swells instead of pressing down: the button grows to `to` (house x1.38) in 6 f at 60 fps, walks its
+ * fill through `stops` (the brand's colours, ending on the held one) while it holds 18 f, then settles back in 6 f.
+ * The cursor squashes on the same frame (Cursor pressDepth 0.2). Pure: scale, fill and progress at frame f.
+ */
+export const SWELL = { to: 1.38, in60: 6, hold60: 18, out60: 6 } as const;
+export type SwellProps = { at: number; stops: string[]; to?: number; in?: number; hold?: number; out?: number };
+export const swellState = (frame: number, p: SwellProps, film?: Partial<FilmCtx>) => {
+  const fps = fpsOf(film);
+  const a = f60x(p.in ?? SWELL.in60, fps);
+  const h = f60x(p.hold ?? SWELL.hold60, fps);
+  const o = f60x(p.out ?? SWELL.out60, fps);
+  const t = frame - p.at;
+  const up = E.snapOut(clamp(t / Math.max(1, a)));
+  const down = E.stdInOut(clamp((t - a - h) / Math.max(1, o)));
+  const scale = t < 0 ? 1 : mix(1, p.to ?? SWELL.to, up * (1 - down));
+  // the walk: across the stops over the swell and the hold, back to the first on the way down
+  const w = clamp(t / Math.max(1, a + h * 0.6));
+  const n = Math.max(1, p.stops.length - 1);
+  const seg = Math.min(n - 1, Math.floor(w * n));
+  const walked = p.stops.length > 1 ? mixColor(p.stops[seg], p.stops[seg + 1], E.stdInOut(clamp(w * n - seg))) : p.stops[0];
+  const fill = t < 0 ? p.stops[0] : down > 0 ? mixColor(walked, p.stops[0], down) : walked;
+  return { scale, fill, t: clamp(t / Math.max(1, a + h + o)), on: t >= 0 && t < a + h + o };
 };

@@ -458,6 +458,43 @@ export const trackingState = (frame: number, p: { at: number; from?: number; to?
  * The lockup's snap is a one-frame scale step (a `stepped` seam inside the shot: one sample on it); a
  * stripe's hard stop is continuous. Pass `lockup` and/or `assemble` props.
  */
+/**
+ * Spin-in: the mark enters large and turning, its scale settling on a circular ease-out while the rotation, faster,
+ * settles first (more than a turn of rotational smear on the opening frames: draw it through fx/Defocus SpinBlur
+ * with `omega`); then it travels aside on a quint-out to make room, and the name slides out from behind it toward
+ * the side it left, fading up from 45 % in its first quarter second. House numbers at 60 fps; px at 1080p.
+ */
+export const SPIN_IN = { from: 2.06, scale60: 52, turns: 1.1, rot60: 40, room60: 36, roomAt60: 30, slide: 165, slide60: 48, fade60: 15, nameAlpha: 0.45 } as const;
+export type SpinInProps = {
+  at: number; // the first frame the mark shows
+  from?: number; // its starting scale (house x2.06)
+  turns?: number; // turns it unwinds (house 1.1; negative turns the other way)
+  room?: number; // px at 1080p the mark travels aside once it has landed (0: it stays; negative: to the left)
+  slide?: number; // px at 1080p the name slides out from behind the mark (house 165)
+};
+const circOut = (t: number) => Math.sqrt(1 - (1 - clamp(t)) ** 2);
+/** The spin-in at frame f: the mark's scale, rotation (deg), offset aside (px) and spin speed (deg per film frame), and the name's slide and opacity. Pure. */
+export const spinInState = (frame: number, p: SpinInProps, film?: Partial<FilmCtx>) => {
+  const fps = fpsOf(film);
+  const u = film?.width !== undefined && film?.height !== undefined ? Math.min(film.width, film.height) / 1080 : 1;
+  const rotAt = (f: number) => -(p.turns ?? SPIN_IN.turns) * 360 * (1 - circOut((f - p.at) / f60x(SPIN_IN.rot60, fps)));
+  const sq = circOut((frame - p.at) / f60x(SPIN_IN.scale60, fps));
+  const from = p.from ?? SPIN_IN.from;
+  const r0 = p.at + f60x(SPIN_IN.roomAt60, fps);
+  const room = (p.room ?? 0) * u * E.outSoft(clamp((frame - r0) / f60x(SPIN_IN.room60, fps)));
+  const nq = clamp((frame - r0) / f60x(SPIN_IN.slide60, fps));
+  const slide = (p.slide ?? SPIN_IN.slide) * u * (1 - (1 - nq) ** 3); // cubic-out
+  const fade = Math.sin((Math.PI / 2) * clamp((frame - r0) / f60x(SPIN_IN.fade60, fps)));
+  return {
+    shown: frame >= p.at,
+    scale: Math.exp(Math.log(from) * (1 - sq)),
+    rot: frame < p.at ? rotAt(p.at) : rotAt(frame),
+    omega: frame <= p.at ? 0 : rotAt(frame) - rotAt(frame - 1),
+    x: room,
+    name: { x: slide, opacity: frame < r0 ? 0 : mix(SPIN_IN.nameAlpha, 1, fade), shown: frame >= r0 },
+  };
+};
+
 export const declares = (p?: { lockup?: LockupProps; assemble?: AssembleProps; id?: string }, film?: Partial<FilmCtx>): Declares => {
   const out: Declares = { stepped: [], flashes: [], cameraBlur: [], seams: [] };
   if (p?.lockup) {

@@ -23,6 +23,15 @@
  *  13. lib/measure solveTracking(): the least-squares em tracking that matches measured widths.
  *  14. fx/Words exitDistanceEm(): a launch's fastest frame moves readable type at most 20 px/f at 1080p (a small line
  *      keeps the house 1.25 em, a launchFade 0.6 em, a given distance wins).
+ *  15. cards and marks: fx/Stack pileState() (each card lands on top, alternating tilt, the origin walks), fanState()
+ *      (opens on E.in, collapses back to closed), fx/Scroll masonryState() (tiles settle on their own depth and lag,
+ *      exit together), fx/Wordmark spinInState() (more than a turn unwound, the turn settled before the scale, the name
+ *      sliding out after), fx/Defocus spinBlurCopies() (sharp under 1 deg/f, copies over half the turn).
+ *  16. reveals, cuts and UI: fx/Iris irisReveal() (opens at 37 % of the height, covers in 10 f at 60 fps), fx/CutFx
+ *      blurBridge() (1.2, 4 | 3, 1.2 around the cut), fx/Gather scatterState() (own vectors, quad-in, x1.45),
+ *      fx/Cursor cursorExit() (spins and flies out), fx/MicroUI swellState() (x1.38, walks to the held colour, back),
+ *      fx/TypeOn rates (a fast run slowing on a given character, a burst on one frame), fx/Loaders rows that rise inside
+ *      the stack and a pending row that never checks.
  *
  * It runs src through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/primitives.test.mjs [--verbose]
@@ -72,6 +81,12 @@ import * as Db from '${url('fx/DitherBands.tsx')}';
 import * as Cm from '${url('lib/camera.ts')}';
 import * as Me from '${url('lib/measure.ts')}';
 import * as Wo from '${url('fx/Words.tsx')}';
+import * as Wm from '${url('fx/Wordmark.tsx')}';
+import * as Ir from '${url('fx/Iris.tsx')}';
+import * as Cf from '${url('fx/CutFx.tsx')}';
+import * as Ga from '${url('fx/Gather.tsx')}';
+import * as Mu from '${url('fx/MicroUI.tsx')}';
+import * as Lo from '${url('fx/Loaders.tsx')}';
 const camBase = { ax: 960, ay: 540, sx: 960, sy: 540, k: 1 };
 const camMoves = [{ at: 0, frames: 20, zoom: 0.5, ease: A.E.glideOut }, { at: 15, frames: 20, pan: { x: -400 }, ease: A.E.launchIn }];
 const panOnly = [{ at: 0, frames: 10, pan: { x: 100 }, ease: A.E.linear }];
@@ -107,6 +122,19 @@ console.log(JSON.stringify({
     moving: range(1, 34).map((f) => { const v = Cm.camVel(f, camBase, camMoves); return v.speed + Math.abs(v.vk); }), still: Cm.camVel(36, camBase, camMoves),
     pan: Cm.camVel(5, camBase, panOnly), zoom: Cm.camVel(5, camBase, zoomOnly) },
   shutter: { house30: D.dirBlurMix(20, film30), s180: D.dirBlurMix(20, film30, { shutter: 180 }), s360: D.dirBlurMix(20, film30, { shutter: 360 }), h60: D.dirBlurMix(20, film60), s360at60: D.dirBlurMix(20, film60, { shutter: 360 }) },
+  pile: [0, 20, 40, 60].map((f) => St.pileState(f, { arrivals: [0, 6, 12, 18] }, film60)),
+  pileLate: St.pileState(200, { arrivals: [0, 6, 12, 18] }, film60),
+  fan: [0, 10, 20, 40, 50, 80].map((f) => St.fanState(f, { open: 0, close: 40 }, film60).q),
+  masonry: [0, 30, 70, 90, 140, 160].map((f) => Sc.masonryState(f, { at: 0, out: 140, tiles: [{ x: 0, y: 0, w: 100, h: 100, depth: 0.6 }, { x: 0, y: 0, w: 100, h: 100, depth: 1.4, lag: 1 }] }, film60).map((t) => t.y)),
+  spin: range(0, 120, 4).map((f) => Wm.spinInState(f, { at: 0, room: -200 }, film60)),
+  spinCopies: [D.spinBlurCopies(0.5), D.spinBlurCopies(30), D.spinBlurCopies(-90)],
+  iris: [0, 2, 4, 10, 12].map((f) => Ir.irisRadius(f, Ir.irisReveal(0, {}, film60), film60)),
+  bridge: range(96, 104).map((f) => Cf.blurBridge(f, 100, {}, film60)),
+  scatter: [0, 13, 26].map((f) => Ga.scatterState(f, { at: 0, items: [{ vx: 100, vy: 0 }, { vx: 0, vy: -50 }] }, film60)),
+  cursorOut: [0, 10, 20].map((f) => Cu.cursorExit(f, 0, {}, film60)),
+  swell: [-1, 6, 20, 40].map((f) => Mu.swellState(f, { at: 0, stops: ['#ff0000', '#00ff00', '#0000ff'] }, film60)),
+  rates: Ty.typeSchedule('abcdefghij', { start: 0, kind: 'stream', cps: 60, rates: [{ at: 5, cps: 20 }], skip: [{ at: 2, count: 3 }] }, film60),
+  steps: [10, 20, 40, 120].map((f) => Lo.stepListState(f, { rows: [{ at: 0 }, { at: 10 }, { at: 20, pending: true }], rise: 18 }, film60).rows),
   launchCap: (() => { const big = Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1); const last = (1 - A.E.launchIn(13 / 14)) * big * 120; return { big, last, small: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 30, 1), fade: Wo.exitDistanceEm('launchFade', A.E.buildIn, 14, 120, 1), given: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1, 2) }; })(),
   trackFit: Me.solveTracking([{ w0: 100, n: 5, size: 80, target: 124 }, { w0: 200, n: 6, size: 80, target: 228.8 }]),
   dir: { slow: D.dirBlurMix(1, { fps: 60 }), v10: D.dirBlurMix(-10, { fps: 60 }), v20at30: D.dirBlurMix(20, { fps: 30 }), fast: D.dirBlurMix(200, { fps: 60 }) },
@@ -238,6 +266,40 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
 {
   const t = P.trackFit;
   result(close(t.em, 0.06, 1e-12) && t.residue.every((r) => Math.abs(r) < 1e-12), 'solveTracking: recovers +0.06 em from two measured widths', JSON.stringify(t));
+}
+// 15. cards and marks
+{
+  const pl = P.pile[3].cards;
+  result(pl.length === 4 && pl[3].x > pl[0].x && pl[3].y < pl[0].y && Math.sign(pl[0].rot) !== Math.sign(pl[1].rot) && P.pileLate.shift.x < 0 && P.pileLate.shift.y > 0 && P.pileLate.cards.every((c) => c.v === 0),
+    'pileState: newer cards up-right on top, alternating tilt, the origin walks down-left, landed cards rest', JSON.stringify(P.pileLate.shift));
+  const fq = P.fan;
+  result(fq[0] === 0 && fq[1] < 0.2 && Math.abs(fq[2] - 1) < 1e-9 && Math.abs(fq[3] - 1) < 1e-9 && fq[4] < 1 && fq[5] === 0, 'fanState: opens on E.in to 1, collapses back to closed', fq.join(','));
+  const m = P.masonry;
+  result(m[0][1] > m[0][0] && m[1][1] > m[1][0] && m[3].every((y) => Math.abs(y) < 1) && m[4].every((y) => Math.abs(y) < 1e-6) && m[5][0] === m[5][1] && m[5][0] < -100,
+    'masonryState: the deeper, later tile travels further, all at rest after the entry, the exit shared', JSON.stringify(m));
+  const sp = P.spin;
+  const rotDone = sp.findIndex((x) => Math.abs(x.rot) < 0.5);
+  const scaleDone = sp.findIndex((x) => Math.abs(x.scale - 1) < 0.005);
+  result(sp[0].rot < -360 && sp[0].scale > 2 && rotDone > 0 && scaleDone > rotDone && sp[sp.length - 1].x < -199 && sp[sp.length - 1].name.opacity === 1 && sp[2].name.opacity === 0 && Math.abs(sp[1].omega) > 20,
+    'spinInState: over a turn unwound, the turn settles before the scale, then the mark makes room and the name slides out', `rot0 ${sp[0].rot.toFixed(0)} rot@${rotDone * 4} scale@${scaleDone * 4}`);
+  const sc = P.spinCopies;
+  result(sc[0].length === 1 && sc[1].length >= 3 && Math.abs(sc[1][sc[1].length - 1] + 15) < 1e-9 && sc[2][sc[2].length - 1] === 45 && sc[2].length <= 10, 'spinBlurCopies: sharp under 1 deg/f, copies over half the turn (180 deg shutter), at most 10', JSON.stringify(sc));
+}
+// 16. reveals, cuts and UI
+{
+  const ir = P.iris;
+  result(Math.abs(ir[0] - 0.37 * 1080) < 1e-6 && ir[1] / ir[0] > 1.6 && ir[3] >= Math.hypot(960, 540) && ir[4] === ir[3], 'irisReveal: opens at 37 % of the height, most growth first, covers the frame in 10 f', ir.map((r) => r.toFixed(0)).join(','));
+  result(JSON.stringify(P.bridge) === JSON.stringify([1.2, 1.2, 4, 4, 3, 3, 1.2, 1.2, 0]), 'blurBridge: 1.2, 4 out | 3, 1.2 in, two 60 fps frames each', JSON.stringify(P.bridge));
+  const sct = P.scatter;
+  result(sct[0][0].dx === 0 && Math.abs(sct[1][0].dx - 25) < 1 && sct[2][0].dx === 100 && sct[2][1].dy === -50 && Math.abs(sct[2][0].scale - 1.45) < 1e-9 && sct[2][0].gone, 'scatterState: each along its own vector on a quad-in, growing x1.45', JSON.stringify(sct[1]));
+  const co = P.cursorOut;
+  result(co[0].dx === 0 && co[1].dx > 0 && co[1].dy < 0 && co[2].angle <= -400 && co[2].gone, 'cursorExit: flies up-right on a quad-in, spinning', JSON.stringify(co[2]));
+  const sw = P.swell;
+  result(sw[0].scale === 1 && sw[1].scale > 1.37 && /^(#0000ff|rgb\(0, 0, 255\))$/.test(sw[2].fill) && sw[3].scale === 1 && /^(#ff0000|rgb\(255, 0, 0\))$/.test(sw[3].fill), 'swellState: x1.38 in 6 f, walks to the held colour, back to the first', JSON.stringify(sw.map((x) => [x.scale.toFixed(3), x.fill])));
+  const r = P.rates;
+  result(r[2] === r[3] && r[3] === r[4] && r[5] - r[4] >= 3 && r[1] - r[0] === 1, 'typeSchedule rates: 1 frame a key at 60 cps, a 3-key burst on one frame, 3 frames a key from character 5', r.join(','));
+  const st = P.steps;
+  result(st[0][1].y > st[0][0].y + 76 && Math.abs(st[2][1].y - 76) < 0.5 && st[3][2].check === 0 && st[3][2].pending === 1 && st[3][0].check === 1, 'stepListState: a new row rises inside the stack, a pending row never checks and pales', JSON.stringify(st[3].map((x) => [x.y, x.check, x.pending])));
 }
 // 14. a launch keeps readable type under the audit's 20 px/f
 {

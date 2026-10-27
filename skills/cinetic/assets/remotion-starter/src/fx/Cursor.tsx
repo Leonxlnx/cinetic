@@ -6,8 +6,9 @@ import type { Declares, SteppedRange } from '../timeline';
 
 type Pt = { x: number; y: number };
 
-/** Cursor shapes: the arrow (hotspot at its tip), the text I-beam (hotspot at its centre) and the link hand (hotspot at the fingertip). */
-export type CursorShape = 'arrow' | 'ibeam' | 'hand';
+/** Cursor shapes: the arrow (hotspot at its tip), the text I-beam (hotspot at its centre), the link hand (hotspot at the fingertip) and the
+ *  pointer (a filled, rounded location arrow drawn large in the brand colour with a pale rim: a product-film cursor, hotspot at its tip). */
+export type CursorShape = 'arrow' | 'ibeam' | 'hand' | 'pointer';
 
 const ARROW = 'M3 2 L3 33 L10.2 26.4 L15 38 L20.2 35.8 L15.4 24.4 L25 24.4 Z';
 // an I-beam with soft serifs, 24 x 46 at scale 1, centred on (12, 23)
@@ -16,10 +17,13 @@ const IBEAM =
 // the pointing hand over a link or a button, 28 x 33 at scale 1, the fingertip at (10.5, 1.4)
 const HAND =
   'M10.5 1.2 C9.1 1.2 8 2.3 8 3.7 L8 17.2 L6.6 15.8 C5.6 14.8 4 14.8 3 15.8 C2.1 16.7 2 18.1 2.8 19.1 L8.4 27 C9.9 29.3 12.4 30.8 15.2 30.8 L18.2 30.8 C22.1 30.8 25.2 27.7 25.2 23.8 L25.2 15.6 C25.2 14.3 24.2 13.3 22.9 13.3 C21.6 13.3 20.6 14.3 20.6 15.6 L20.6 14.2 C20.6 12.9 19.6 11.9 18.3 11.9 C17 11.9 16 12.9 16 14.2 L16 13.1 C16 11.8 15 10.8 13.7 10.8 C13.4 10.8 13.2 10.8 13 10.9 L13 3.7 C13 2.3 11.9 1.2 10.5 1.2 Z';
+// the filled pointer: a rounded arrowhead pointing up-left, 40 x 40 at scale 1, the tip at (4, 4)
+const POINTER = 'M6.2 4.6 L35.8 16.1 C38.1 17 38 20.3 35.6 21 L23.7 24.4 C22.9 24.6 22.3 25.2 22.1 26 L18.6 37.6 C17.9 39.9 14.6 40 13.8 37.7 L4.6 6.2 C4.1 4.9 5 4.1 6.2 4.6 Z';
 const SHAPES: Record<CursorShape, { d: string; w: number; h: number; hot: Pt; stroke: number }> = {
   arrow: { d: ARROW, w: 30, h: 42, hot: { x: 3, y: 2 }, stroke: 2.4 },
   ibeam: { d: IBEAM, w: 24, h: 46, hot: { x: 12, y: 23 }, stroke: 2.2 }, // hotspot at the glyph's centre (it is symmetric)
   hand: { d: HAND, w: 28, h: 33, hot: { x: 10.5, y: 1.4 }, stroke: 2.2 },
+  pointer: { d: POINTER, w: 40, h: 40, hot: { x: 4.6, y: 4.6 }, stroke: 4.5 },
 };
 
 /**
@@ -45,8 +49,9 @@ export const Cursor: React.FC<{
   ring?: { r: number; opacity: number } | null;
   fill?: string;
   outline?: string;
-}> = ({ x, y, scale = 1, press = 0, opacity = 1, angle, shape, shadow, ring, fill = C.ink, outline = C.white }) => {
-  if (angle === undefined && shape === undefined && shadow === undefined && ring === undefined) {
+  pressDepth?: number; // how far a full press squashes it (house 0.12; a large pointer clicks at 0.2)
+}> = ({ x, y, scale = 1, press = 0, opacity = 1, angle, shape, shadow, ring, fill = C.ink, outline = C.white, pressDepth = 0.12 }) => {
+  if (angle === undefined && shape === undefined && shadow === undefined && ring === undefined && pressDepth === 0.12) {
     // the 1.1 drawing, unchanged
     return (
       <div
@@ -67,7 +72,7 @@ export const Cursor: React.FC<{
     );
   }
   const sh = SHAPES[shape ?? 'arrow'];
-  const k = scale * (1 - 0.12 * press);
+  const k = scale * (1 - pressDepth * press);
   const glyph = (paint: string, line: string | undefined, key: string, extra?: React.CSSProperties) => (
     <svg key={key} width={sh.w} height={sh.h} viewBox={`0 0 ${sh.w} ${sh.h}`} style={{ position: 'absolute', left: -sh.hot.x, top: -sh.hot.y, overflow: 'visible', ...extra }}>
       <path d={sh.d} fill={paint} stroke={line} strokeWidth={line ? sh.stroke : 0} strokeLinejoin="round" />
@@ -120,6 +125,21 @@ export const cursorArc = (a: Pt, b: Pt, t: number, bow = 0.2): Pt => {
   const cx = mx - dy * bow; // perpendicular offset (bows to the left of travel; negate bow to flip)
   const cy = my + dx * bow;
   return { x: mix(mix(a.x, cx, t), mix(cx, b.x, t), t), y: mix(mix(a.y, cy, t), mix(cy, b.y, t), t) };
+};
+
+/**
+ * A pointer leaving once its click is done: it flies off along `to` (px) on a quad-in over `frames` (house 20 at 60
+ * fps) while it spins (house -45 degrees a 60 fps frame: a quarter turn in a beat), fading in its last third. Add dx,
+ * dy to its position and pass angle to Cursor's `angle`. Pure.
+ */
+export const CURSOR_EXIT = { frames60: 20, spin60: -22.5, to: { x: 420, y: -620 } } as const;
+export const cursorExit = (frame: number, at: number, o: { to?: Pt; frames?: number; spin?: number } = {}, film?: Partial<FilmCtx>) => {
+  const fps = fpsOf(film);
+  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const t = clamp((frame - at) / Math.max(1, f60x(o.frames ?? CURSOR_EXIT.frames60, fps)));
+  const q = t * t;
+  const to = o.to ?? { x: CURSOR_EXIT.to.x * u, y: CURSOR_EXIT.to.y * u };
+  return { dx: to.x * q, dy: to.y * q, angle: frame <= at ? 0 : ((o.spin ?? CURSOR_EXIT.spin60) * 60 * (frame - at)) / fps, opacity: 1 - clamp((t - 0.66) / 0.34), gone: t >= 1 };
 };
 
 /** Click press 0..1 for Cursor's `press` prop: down over 4 f from `at`, recoil over the next 8 f (60 fps frames; `fps` converts). */
