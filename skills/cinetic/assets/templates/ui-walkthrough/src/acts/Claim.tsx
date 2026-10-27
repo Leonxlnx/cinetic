@@ -1,6 +1,6 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { TYPE, typeStyle, U } from '../brand/tokens';
+import { GIANT_MIN, TYPE, typeStyle, U } from '../brand/tokens';
 import { Defocus } from '../fx/Defocus';
 import { Words } from '../fx/Words';
 import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
@@ -20,7 +20,7 @@ export const Claim: React.FC = () => {
   const c = copy('claim');
   const words = c.text.trim().split(/\s+/);
   const size = lineSize(c.text, 'display');
-  const giant = Math.max(TYPE.giant.size * U * 0.6, size * 2.4);
+  const giant = Math.max(GIANT_MIN * U, TYPE.giant.size * U * 0.6, size * 2.4); // the set: never under the giant floor
   const snapped = F >= CUE.claimSnap;
   const reveal = prog(F, CUE.claim, CUE.claim + f60x(12), E.snapOut);
   const soft = snapped ? mix(6, 0, clamp((F - CUE.claimSnap) / f60x(6))) : 0;

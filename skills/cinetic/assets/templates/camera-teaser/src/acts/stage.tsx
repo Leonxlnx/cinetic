@@ -53,11 +53,11 @@ export const World: React.FC<{ F: number; moves: readonly CamMove[]; base?: Shot
   );
 };
 
-/** The script's caption in screen space (the camera moves the world, not the words): revealed word by word, white. */
+/** The script's caption in screen space (the camera moves the world, not the words): revealed word by word, white, at the line role's size up to 96 px. */
 export const Caption: React.FC<{ id: string; F: number; y: number; pop?: boolean }> = ({ id, F, y, pop }) => {
   const c = copy(id);
   if (F < c.in - 1 || F >= c.out + 20) return null;
-  const size = Math.max(72 * U, Math.min(TYPE.line.size * U * 0.8, fitSize(c.text, (W - 2 * SAFE.x) * 0.62, TYPE.line.size * U, TYPE.line.weight, TYPE.line.track)));
+  const size = Math.max(72 * U, Math.min(Math.min(TYPE.line.size, 96) * U, fitSize(c.text, (W - 2 * SAFE.x) * 0.62, TYPE.line.size * U, TYPE.line.weight, TYPE.line.track)));
   return (
     <div style={{ position: 'absolute', left: 0, top: y - size * 0.55, width: W, display: 'flex', justifyContent: 'center' }}>
       <Words id={id} text={c.text} frame={F} start={c.in} size={size} {...(pop ? { dur: 2 } : {})} out={c.out} exit="launchFade" exitDir="up" style={{ ...typeStyle('line', size), color: INK.text }} />

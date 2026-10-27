@@ -19,11 +19,12 @@ export const SHOT = kitTheme('slateMid', C.accent);
 export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;
 
 /**
- * The sentence role: one short sentence on a white page is set small and airy (about 84 px, 5-6 % of the frame
- * height, weight 500, tracked OUT +0.05 em), never the launch film's tight 120 px line. Display sizes keep their
- * negative tracking (the giant name uses TYPE.giant).
+ * The sentence role: one short sentence on a white page, set small and airy. It is the calm family's line
+ * (brand/tokens.ts TYPE.line: 84 px, a cap 5-6 % of the frame height, a regular weight, the face's own letter fit,
+ * lead 1.2), never a bold film's tight 120 px line and never tracked wide: the measured airiness is size, weight
+ * and white space. A film that swaps the face keeps the line's widths by fitting its tracking (scripts/font-match.mjs).
  */
-export const SENTENCE = { size: 84, weight: TYPE.line.weight, track: 0.05, lead: 1.2 } as const;
+export const SENTENCE = TYPE.line;
 
 /**
  * The size a sentence is set at: the role's size, smaller only when it would not fit `share` of the safe width (0.66:
