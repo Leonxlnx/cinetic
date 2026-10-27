@@ -2,11 +2,12 @@
 // the output in place, proof piling up, a speed claim, then the product's own flow in steps (the input goes in,
 // the product reads, finds what matters, the user picks, it builds), the output live and the end card. Picture
 // (src/acts), sound (src/sync.ts -> out/cues.json) and QA (scripts/grid-check.ts) all import this file. The facts
-// live in src/walk.ts; this file only places them on the grid. Think in beats, never in seconds. Keep it free of
-// React and CSS imports: Node scripts load it directly.
+// live in src/walk.ts and the dealt devices in src/deal.ts; this file only places them on the grid. Think in beats,
+// never in seconds. Keep it free of React and CSS imports: Node scripts load it directly.
+import { DEAL } from './deal';
 import { holdFor, PACE, readingWindows, revealFor, wordCount, type PaceName } from './lib/pace';
 import { bar, MUSIC } from './music';
-import { WALK } from './walk';
+import { CLAIM, PROMISE, WALK } from './walk';
 
 export { PACE } from './lib/pace'; // grid-check checks COPY against the film's own pace numbers
 /**
@@ -49,24 +50,23 @@ export const bt = (x: number) => {
   return b(1 + Math.floor(n / 4), n % 4, q % 4);
 };
 
-/** The promise's words arrive this far apart (60 fps frames: the crisp word gap); its last word snaps the line larger. */
-export const PROMISE_GAP = 8;
-
 /** After the last bar the picture holds while the audio decays to digital silence. */
 export const TAIL = FPS;
 
 /**
  * Where each act starts, in beats (18 bars at 120 BPM: 37 s with the tail). Every act line sits on a bar line, so with
- * a track in each one lands on a downbeat (grid-check structural-on-music): a 1-bar promise, the object's 3-bar
- * transformation, a 1-bar proof, a 2-bar claim, then one 2-bar act per step of the flow, the 1-bar output and the
- * 2-bar end card. The shape, not the numbers, is the template: move a step's length with its content, in whole bars.
+ * a track in each one lands on a downbeat (grid-check structural-on-music): a 2-bar promise, the object's 2-bar
+ * transformation, a 1-bar proof, a 2-bar claim, one 2-bar act per step of the flow, the 1-bar output and the 2-bar end
+ * card. A line is read inside its act at 104-136 BPM (the check below fails the import when a track's bars are too
+ * short for one). The shape, not the numbers, is the template: move a step's length with its content, in whole bars.
  */
-export const BEATS = { open: 0, card: 4, proof: 16, claim: 20, field: 28, feed: 36, insight: 44, pick: 52, page: 60, end: 64, last: 72 } as const;
+export const BEATS = { open: 0, card: 8, proof: 16, claim: 20, field: 28, feed: 36, insight: 44, pick: 52, page: 60, end: 64, last: 72 } as const;
 
 // Acts: contiguous, [from, from + dur). Each act is its own composition in Root.tsx (in this order). The first act
 // starts on frame 0 even when the track's first downbeat comes later (a pickup): its own cues start on that downbeat.
 const order = ['open', 'card', 'proof', 'claim', 'field', 'feed', 'insight', 'pick', 'page', 'end'] as const;
 export type ActName = (typeof order)[number];
+export const ACT_ORDER: readonly ActName[] = order;
 export const ACT = Object.fromEntries(
   order.map((k, i) => {
     const from = i === 0 ? 0 : bt(BEATS[k]);
@@ -74,101 +74,96 @@ export const ACT = Object.fromEntries(
     return [k, { from, dur: to - from }];
   }),
 ) as Record<ActName, { from: number; dur: number }>;
+/** The act's last frame + 1 (its cut). */
+export const actEnd = (a: ActName) => ACT[a].from + ACT[a].dur;
 
 export const TOTAL = bt(BEATS.last) + TAIL;
 
 // Named sync points (absolute frames), all on the 16th grid. Picture code reads these; src/sync.ts turns them into
-// sound events. Salience below says what each asks of the eye.
+// sound events. Salience below says what each asks of the eye. Every state change is a move of 16 f@60 or more (no
+// one-frame snap anywhere in the template), and every hold drifts.
 export const CUE: Record<string, number> = {
-  // open: the promise, word by word; the last word snaps the line larger; the line launches up into the cut
+  // open: the promise with the source's mark in it, crisp word by word; held (pushed through, or inside its stack);
+  // the camera launches up into the cut
   line: bt(0),
-  snap: bt(0) + f60(PROMISE_GAP * (wordCount(WALK.lines.promise) - 1)), // offgrid: the last word snaps on its own reveal frame, a word gap after the one before
-
-  exitOpen: bt(3.25),
-  // card: the input rises as a tilted card while the ground turns to the stage; a hidden cut swaps it for the output
-  rise: bt(4),
-  creep: bt(5),
-  turn: bt(6),
-  zoomIn: bt(7),
-  jump: bt(7.5), // the one jump frame of the hidden cut: scale, tilt and a tinted swell hide the swap
-  swap: bt(7.75), // the output's title types on in the same card
-  sub: bt(8.25),
-  row1: bt(9),
-  punch1: bt(10),
-  row2: bt(10.25),
-  done1: bt(10.5),
-  row3: bt(11.5),
-  done2: bt(11.75),
-  punch2: bt(12.5),
-  done3: bt(13),
-  hold: bt(14.25),
-  outCard: bt(15.25),
-  // proof: notices pile up, faster and faster
+  object: bt(1), // the source's mark lands in its slot in the line
+  push: bt(4.5),
+  exitOpen: bt(6.5),
+  // card: the input rises as a lit card while the camera makes the film's one 3D turn; it becomes the output in place
+  rise: bt(8),
+  turned: bt(9.25), // the 3D turn is most of the way round
+  swap: bt(10), // the transformation starts (flip, sheen or slide: 40-48 f)
+  sub: bt(10.75),
+  row1: bt(11.25),
+  done1: bt(12),
+  row2: bt(12),
+  done2: bt(12.75),
+  row3: bt(12.75),
+  done3: bt(13.5),
+  lean: bt(11.25), // the camera leans in on the rows as they build (overlapping them)
+  outCard: bt(15), // the push into the card, accelerating into the zoom-through
+  // proof: results arriving, faster and faster
   proof: bt(16),
   toast0: bt(16.25),
-  toast1: bt(17.25),
-  toast2: bt(18),
-  toast3: bt(18.5),
-  toast4: bt(18.75),
-  wipe: bt(19.75),
-  // claim: the first word giant, then the line; a push that accelerates into the cut
-  claim: bt(20),
-  claimSnap: bt(20.5),
-  push: bt(22.25),
-  claimLight: bt(23.75), // the key swells once across the claim while it is read
+  toast1: bt(16.75),
+  toast2: bt(17.25),
+  toast3: bt(17.5),
+  toast4: bt(17.75),
+  wipe: bt(19), // a panel of the claim's ground wipes up into the claim
+  // claim: on the accent (or pushed through, or with its object), creeping; a push into the cut
+  claim: bt(20.25),
+  claimPush: bt(22.25), // device 'push': the camera pushes through the line
+  claimLight: bt(23.5), // the key swells once across the claim while it is read
   pushOut: bt(26.25),
-  exitClaim: bt(27.5),
+  exitClaim: bt(27.25), // the push is at speed
   // field (step one): the field, its placeholder erased, the value typed, the hand presses, the results develop
   field: bt(28),
   step1: bt(28.25),
   erase: bt(29.5),
   typeIn: bt(30.5),
   cursor: bt(31),
-  step1Out: bt(32.25),
   press: bt(32.5),
   busy: bt(32.75),
-  develop: bt(33.25),
-  pullBack: bt(34.25),
-  whipUp: bt(35.5),
-  // feed (step two): the product reads every item, a counter climbing; the flick lands on the one that matters
+  develop: bt(33),
+  pullBack: bt(33.5),
+  rows2: bt(34.25), // the second row of results has developed
+  whipUp: bt(35.25),
+  // feed (step two): the product reads every item; the read lands on the one that matters
   feed: bt(36),
   count: bt(36.25),
   flick: bt(37),
-  rows: bt(38.25),
-  peak: bt(39.25),
+  rows: bt(38),
+  peak: bt(39),
   brake: bt(40.25),
-  slow: bt(41),
-  land: bt(42),
-  total: bt(42.5),
-  lift: bt(43),
-  morph: bt(43.5),
-  // insight: the item collapses into a pill; the count chip; the line says what was found
+  land: bt(41.5),
+  lift: bt(42.25),
+  morph: bt(43),
+  // insight: the item is the pill; the line says what was found; the count chip
   insight: bt(44),
-  say4: bt(44.75),
-  chip: bt(47.75), // the count chip pops once the line is in: its proof
-  glow: bt(50.25), // the key swells once before the whip
-  exitInsight: bt(51.5),
-  whipLeft: bt(51.75),
-  // pick (step three): the options arrive, one is chosen, it becomes the progress pill and the output builds
+  say4: bt(44.5),
+  chip: bt(47), // the count chip glides in once the line is in: its proof
+  glow: bt(49.25), // the key swells once before the whip
+  exitInsight: bt(50.5),
+  whipLeft: bt(51.25),
+  // pick (step three): the options arrive, one is chosen, it becomes the build's head and the output builds
   pick: bt(52),
-  options: bt(52.25),
-  say5: bt(53),
-  select: bt(55.5),
-  chosen: bt(56),
-  exitPick: bt(57.25),
-  toPill: bt(57.5),
-  build: bt(58),
-  pct: bt(59),
-  // page: the output, live, flies in over the build, flattens, its picture develops, it scrolls
+  options: bt(52.5),
+  say5: bt(52.75),
+  select: bt(55),
+  chosen: bt(55.75),
+  toPill: bt(56.75),
+  build: bt(57.25),
+  pct: bt(58),
+  built: bt(59), // the output's last section is in
+  // page: the output, live, rises over the build, lands on its lit tilt, its preview develops, it scrolls
   page: bt(60),
   pageLand: bt(60.75),
   art: bt(61),
-  scroll: bt(62),
-  sections: bt(62.75),
-  recede: bt(63.25),
+  scroll: bt(61.75),
+  recede: bt(63),
   // end: the mark assembles, the name is set, the payoff line rises beside it; the lock lives on the key
   end: bt(64),
-  mark: bt(64.5),
+  mark: bt(64.25),
   lockup: bt(65.5),
   payoff: bt(67),
   light: bt(67.5),
@@ -198,57 +193,67 @@ export type ColourRange = { from: number; to: number; id: string };
 export type Declares = { stepped?: SteppedRange[]; flashes?: Flash[]; cameraBlur?: CameraBlurRange[]; seams?: Seam[]; colour?: ColourRange[] };
 export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 
-/** A crisp film: the feed's flick smears through fx/Defocus DirBlur, no shutter pass. */
+/**
+ * Where each act stands, by the dealt stage: 'mixed' (statements on paper, the product on the slate), 'light' (all
+ * paper, the claim on the slate) or 'dark' (all slate, the claim on paper). The feed and the insight share one ground:
+ * the found item morphs into the pill across that act line.
+ */
+const PLAN: Record<(typeof DEAL)['stage'], Record<ActName, 'light' | 'dark'>> = {
+  mixed: { open: 'light', card: 'dark', proof: 'dark', claim: 'light', field: 'dark', feed: 'dark', insight: 'dark', pick: 'light', page: 'dark', end: 'dark' },
+  light: { open: 'light', card: 'light', proof: 'light', claim: 'dark', field: 'light', feed: 'light', insight: 'light', pick: 'light', page: 'dark', end: 'light' },
+  dark: { open: 'dark', card: 'dark', proof: 'dark', claim: 'light', field: 'dark', feed: 'dark', insight: 'dark', pick: 'dark', page: 'light', end: 'dark' },
+};
+export const TONE: Record<ActName, 'light' | 'dark'> = PLAN[DEAL.stage];
+/** A cut into act `a`: a colour cut where the stage turns between paper and slate, else a hard cut (the moves still run into it at speed). */
+const cutInto = (a: ActName): SeamKind => (TONE[a] !== TONE[order[order.indexOf(a) - 1]] ? 'colour' : 'hard');
+
+/** A crisp film: the read's fast moves smear through fx/Defocus DirBlur, no shutter pass. */
 export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'explainer', oneTake: false, whiteWorld: false };
 /**
- * Every seam: speed carried through each act line, scale hidden inside one-frame jumps, the content morphing from
- * one container into the next. Exits ease in and cut on their fastest frame; the next shot opens moving the same way.
+ * Every seam: the whole frame's speed carried through three act lines (the promise's launch, the two whips; measured:
+ * the incoming shot opens moving the same way at 0.6-0.8 of the outgoing speed and decays), the content morphing from one container into the next, a wipe
+ * of the claim's ground; where the picture is new, a cut taken at the top of an accelerating push or whip (hard, or a colour cut where
+ * the stage turns between paper and slate), the next shot opening on the same motion.
  */
 export const SEAMS: Seam[] = [
   { at: ACT.card.from, kind: 'velocity', carry: 'y', dir: -1, id: 'promise-launches-up' },
-  { at: CUE.jump, kind: 'snapZoom', carry: 'scale', dir: -1, signature: true, id: 'input-becomes-output' },
-  { at: CUE.punch1, kind: 'snapZoom', carry: 'scale', id: 'punch-row-1' },
-  { at: CUE.punch2, kind: 'snapZoom', carry: 'scale', id: 'punch-row-3' },
-  { at: ACT.proof.from, kind: 'defocus', carry: 'scale', id: 'blur-snap-into-proof' },
+  { at: CUE.swap, kind: 'morph', carry: 'shape', signature: true, id: 'input-becomes-output' },
+  { at: ACT.proof.from, kind: cutInto('proof'), carry: 'scale', dir: 1, id: 'push-into-the-card' },
   { at: ACT.claim.from, kind: 'wipe', carry: 'y', dir: -1, id: 'wipe-up' },
-  { at: CUE.claimSnap, kind: 'snapZoom', carry: 'scale', dir: -1, id: 'claim-opens' },
-  { at: ACT.field.from, kind: 'velocity', carry: 'scale', id: 'push-across' },
+  { at: ACT.field.from, kind: cutInto('field'), carry: 'scale', dir: 1, id: 'push-through-the-claim' },
   { at: ACT.feed.from, kind: 'velocity', carry: 'y', dir: -1, id: 'whip-up' },
   { at: ACT.insight.from, kind: 'morph', carry: 'shape', id: 'item-to-pill' },
-  { at: ACT.pick.from, kind: 'whip', carry: 'x', dir: -1, id: 'whip-left' },
-  { at: CUE.toPill, kind: 'morph', carry: 'shape', id: 'row-to-pill' },
-  { at: ACT.page.from, kind: 'mask', carry: 'y', dir: -1, id: 'page-flies-over' },
-  { at: ACT.end.from, kind: 'defocus', id: 'page-to-lockup' },
+  { at: ACT.pick.from, kind: 'velocity', carry: 'x', dir: -1, id: 'whip-left' },
+  { at: CUE.toPill, kind: 'morph', carry: 'shape', id: 'row-to-head' },
+  { at: ACT.page.from, kind: cutInto('page'), carry: 'y', dir: -1, id: 'page-rises' },
+  { at: ACT.end.from, kind: cutInto('end'), id: 'page-to-lockup' },
 ];
-/** The designed one-frame steps: the promise's snap, the hidden cut's jump, the claim's snap. */
-export const STEPPED: SteppedRange[] = [
-  { from: CUE.snap, to: CUE.snap + 1, id: 'promise-snap' },
-  { from: CUE.jump, to: CUE.jump + 1, id: 'hidden-cut' },
-  { from: CUE.claimSnap, to: CUE.claimSnap + 1, id: 'claim-snap' },
-];
+/** No one-frame step anywhere: every list, zoom and swap glides (forensics motion-snap allows one declared snap a film; this one keeps none). */
+export const STEPPED: SteppedRange[] = [];
 export const FLASHES: Flash[] = [];
-export const CAMERA_BLUR: CameraBlurRange[] = [];
-/** Colour events (a deep field, an accent flood, a colour cut, up to 2 s each): none; the accent stays on what matters. */
-export const COLOUR: ColourRange[] = [];
+/** The flick's fast travel smears through DirBlur: declared as camera blur (the lens and the ticker glide and flow). */
+export const CAMERA_BLUR: CameraBlurRange[] = DEAL.read === 'flick' ? [{ from: CUE.flick, to: CUE.brake, id: 'read-flick' }] : [];
+/** The colour event: the claim on the accent (claim device 'accent'), up to 2 s past its build; none otherwise. */
+export const COLOUR: ColourRange[] = DEAL.claim === 'accent' ? [{ from: ACT.claim.from, to: Math.min(ACT.field.from, ACT.claim.from + 2 * FPS + f60(54)), id: 'claim-on-the-accent' }] : [];
 /** The one lock: the mark, the name and the payoff line hold to the end. */
 export const END: EndLock = { from: CUE.lockup, to: TOTAL };
 /** The biggest reveal: the lockup. */
 export const REVEAL = CUE.lockup;
-/** The one element class allowed an underdamped spring: the chosen row landing in its ring. */
+/** The one element class allowed an underdamped spring: none (the template's landings are all eased). */
 export const SPRING_CLASS = 'chosen-row';
 /** CUE names that must land on a music event. None without a track; with one, add 'rise', 'feed' and 'end' (downbeats). */
 export const STRUCTURAL: string[] = [];
 /** Each CUE's salience (missing = 'hit'). */
 export const SALIENCE: Record<string, Salience> = {
-  line: 'copy', snap: 'hit', exitOpen: 'copy',
-  rise: 'cut', creep: 'life', turn: 'life', zoomIn: 'move', jump: 'cut', swap: 'hit', sub: 'move', row1: 'hit', punch1: 'cut', row2: 'hit', done1: 'hit', row3: 'hit', done2: 'hit', punch2: 'cut', done3: 'hit', hold: 'life', outCard: 'move',
+  line: 'copy', object: 'hit', push: 'move', exitOpen: 'move',
+  rise: 'cut', turned: 'move', swap: 'hit', sub: 'move', row1: 'hit', done1: 'hit', row2: 'hit', done2: 'hit', row3: 'hit', done3: 'hit', lean: 'move', outCard: 'move',
   proof: 'cut', toast0: 'hit', toast1: 'hit', toast2: 'hit', toast3: 'hit', toast4: 'hit', wipe: 'move',
-  claim: 'cut', claimSnap: 'cut', push: 'move', claimLight: 'life', pushOut: 'move', exitClaim: 'copy',
-  field: 'cut', step1: 'copy', erase: 'hit', typeIn: 'hit', cursor: 'move', step1Out: 'copy', press: 'hit', busy: 'hit', develop: 'hit', pullBack: 'move', whipUp: 'move',
-  feed: 'cut', count: 'life', flick: 'move', rows: 'life', peak: 'move', brake: 'life', slow: 'life', land: 'hit', total: 'hit', lift: 'move', morph: 'move',
+  claim: 'copy', claimPush: 'move', claimLight: 'life', pushOut: 'move', exitClaim: 'move',
+  field: 'cut', step1: 'copy', erase: 'hit', typeIn: 'hit', cursor: 'move', press: 'hit', busy: 'hit', develop: 'hit', pullBack: 'move', rows2: 'life', whipUp: 'move',
+  feed: 'cut', count: 'life', flick: 'move', rows: 'life', peak: 'move', brake: 'life', land: 'hit', lift: 'move', morph: 'move',
   insight: 'cut', say4: 'copy', chip: 'hit', glow: 'life', exitInsight: 'copy', whipLeft: 'move',
-  pick: 'cut', options: 'hit', say5: 'copy', select: 'move', chosen: 'hit', exitPick: 'copy', toPill: 'move', build: 'hit', pct: 'life',
-  page: 'cut', pageLand: 'hit', art: 'hit', scroll: 'move', sections: 'life', recede: 'move',
+  pick: 'cut', options: 'hit', say5: 'copy', select: 'move', chosen: 'hit', toPill: 'move', build: 'hit', pct: 'life', built: 'hit',
+  page: 'cut', pageLand: 'hit', art: 'hit', scroll: 'move', recede: 'move',
   end: 'cut', mark: 'hit', lockup: 'hit', payoff: 'copy', light: 'life', rest: 'life', last: 'cut',
 };
 
@@ -267,16 +272,16 @@ export type Copy = {
 
 const pace = PACE[PACE_NAME];
 
-/** How the words of a line arrive: the pace's reveal, or cut on ('pop'), or part-inked ('partial'). */
-export type Ink = 'reveal' | 'pop' | 'partial';
-const revealSpan = (n: number, ink: Ink = 'reveal'): number => {
-  const last = (Math.max(0, n - 1) * pace.stagger * FPS) / 60;
-  return ink === 'pop' ? Math.floor(last) + 1 : ink === 'partial' ? Math.ceil(last + (10 * FPS) / 60) : f60(revealFor(n, pace));
-};
+/** The crisp hero entry (fx/TypePresets TYPE_PRESETS.crisp, crispWords): 26 f a word on E.out, 7 f apart (60 fps frames). */
+export const CRISP = { dur60: 26, gap60: 7 } as const;
+/** How the words of a line arrive: the crisp hero entry (house for the script's lines), the pace's reveal, or cut on ('pop'). */
+export type Ink = 'crisp' | 'reveal' | 'pop';
+const revealSpan = (n: number, ink: Ink = 'crisp'): number =>
+  ink === 'crisp' ? f60(Math.max(0, n - 1) * CRISP.gap60 + CRISP.dur60) : ink === 'pop' ? Math.floor((Math.max(0, n - 1) * pace.stagger * FPS) / 60) + 1 : f60(revealFor(n, pace));
 
 /**
- * One line of copy revealed word by word with this film's pace; `out` defaults to the pace's hold, and a cue placed
- * in beats never cuts that hold short: at a faster track the beats shrink, so the line leaves on its read instead.
+ * One line of copy revealed word by word (the crisp hero entry by default); `out` defaults to the pace's hold, and a
+ * cue placed in beats never cuts that hold short: at a faster track the beats shrink, so the line leaves on its read.
  */
 export const line = (id: string, text: string, inF: number, out?: number, o: { ink?: Ink } = {}): Copy => {
   const n = wordCount(text);
@@ -285,18 +290,16 @@ export const line = (id: string, text: string, inF: number, out?: number, o: { i
   return { id, text, in: inF, resolved, out: Math.max(out ?? read, read) };
 };
 
-/** The claim's words after its giant first one arrive this far apart (60 fps frames), from the snap. */
-export const CLAIM_GAP = 8;
-/** Each claim word's first frame (acts/Claim.tsx draws them on these): the giant first word a second before the act, word i a gap x i after the snap. */
-export const CLAIM_STARTS = Array.from({ length: wordCount(WALK.lines.claim) }, (_, i) => (i === 0 ? CUE.claim - f60(60) : CUE.claimSnap + f60(CLAIM_GAP * i)));
+/** Frames a line takes to leave (its launch or blur exit), 60 fps frames. */
+export const LINE_EXIT = 24;
 
 // Every on-screen word of the film. The product's own strings (walk.ts) are UI, drawn by the kit, not budgeted.
 export const COPY: Copy[] = [
-  line('promise', WALK.lines.promise, CUE.line, CUE.exitOpen, { ink: 'pop' }),
-  { id: 'claim', text: WALK.lines.claim, in: CUE.claim, resolved: CLAIM_STARTS[CLAIM_STARTS.length - 1] + f60(pace.wordDur), out: CUE.exitClaim },
-  line('step1', WALK.lines.step1, CUE.step1, CUE.step1Out),
+  line('promise', PROMISE, CUE.line, CUE.exitOpen),
+  line('claim', CLAIM, CUE.claim, CUE.pushOut),
+  line('step1', WALK.lines.step1, CUE.step1, CUE.press - f60(12)),
   line('insight', WALK.lines.insight, CUE.say4, CUE.exitInsight),
-  line('pick', WALK.lines.pick, CUE.say5, CUE.exitPick),
+  line('pick', WALK.lines.pick, CUE.say5, CUE.toPill),
   { ...line('payoff', WALK.lines.payoff, CUE.payoff), out: TOTAL },
   { id: 'wordmark', text: WALK.name, kind: 'name', in: CUE.mark, resolved: CUE.lockup, out: TOTAL },
 ];
@@ -317,3 +320,13 @@ export const chainOf = (id: string): Copy[] => {
   if (!list.length) throw new Error(`timeline: no COPY chain "${id}"`);
   return list;
 };
+
+// A line is read inside its own act: at a faster track the act's bars shrink while the read does not, so a line that
+// would still be on screen at its act's cut fails here, at import, with the fix (a slower track, a shorter line, a bar more).
+const ACT_OF: Record<string, ActName> = { promise: 'open', claim: 'claim', step1: 'field', insight: 'insight', pick: 'pick' };
+for (const [id, act] of Object.entries(ACT_OF)) {
+  const c = copy(id);
+  const end = actEnd(act);
+  if (c.out + f60(LINE_EXIT) > end)
+    throw new Error(`timeline: the ${id} line ("${c.text}") is read until f${c.out} and leaves by f${c.out + f60(LINE_EXIT)}, after its act's cut (f${end}) at ${BPM} BPM: shorten the line, give the act a bar more, or cut to a slower track`);
+}

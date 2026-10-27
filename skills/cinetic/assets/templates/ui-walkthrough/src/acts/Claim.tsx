@@ -1,50 +1,78 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { GIANT_MIN, TYPE, typeStyle, U } from '../brand/tokens';
-import { Defocus } from '../fx/Defocus';
+import { C, FONT, TYPE, typeStyle } from '../brand/tokens';
+import { DEAL } from '../deal';
+import { AccentClaim } from '../fx/TypeClaim';
+import { crispWords } from '../fx/TypePresets';
+import { TypePush } from '../fx/TypePush';
 import { Words } from '../fx/Words';
-import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
-import { creep, intoCut } from '../lib/handoff';
-import { ACT, CLAIM_STARTS, copy, CUE, f60x, FPS, H, W } from '../timeline';
-import { Cam, LIGHT, lineSize, useAbs } from './stage';
+import { ObjectLine } from '../kit/inline';
+import { E, hitPulse, lmix, prog } from '../lib/anim';
+import { intoCut } from '../lib/handoff';
+import { measureTracked } from '../lib/measure';
+import { ACT, copy, CUE, FPS, H, W } from '../timeline';
+import { WALK, withSlot } from '../walk';
+import { drift, Ground, lineSize, themeOf, useAbs } from './stage';
 
-// CLAIM - the speed claim. Its first word arrives giant (the film's one giant word), revealed bottom-up behind the
-// wipe that opened the act; on ONE frame the camera snaps out to the whole line (the giant word becomes its first
-// word, a defocus clearing) and the other words arrive a word gap apart. The hold pushes in and accelerates into the
-// cut, and the field opens on that push; the key swells once across the line while it is read. An inline picture (fx/InlineGap) may take a word's place: an icon for the
-// number, the product's mark for its name.
+// CLAIM - the speed claim, by the dealt device: 'accent' sets it on the accent like a poster (fx/TypeClaim: cap 16 % of
+// the frame, flush left at 3 %, -0.04 em, semibold; the film's one colour event), 'push' sends the camera through the
+// line on its lit ground to 2.2x onto the number it claims (fx/TypePush, bleeding off the frame), 'object' sets the
+// claim's object (its glyph, at cap height) inside the line (kit ObjectLine). Every one builds on the crisp entry and
+// keeps creeping; the key swells once while it is read, and a push into the claim accelerates into the zoom-through
+// that opens the field.
+
+/** The zoom into the field: the claim's scale on the cut (the field opens settling from it). */
+export const CLAIM_EXIT = { k: 1.35 } as const;
+
+/** The reading point of the claim's number (the word with a digit, else its last word), centred on (cx, cy). */
+const numberPoint = (text: string, size: number, cx: number, cy: number) => {
+  const words = text.split(/\s+/);
+  const i = Math.max(0, words.findIndex((w) => /\d/.test(w)) >= 0 ? words.findIndex((w) => /\d/.test(w)) : words.length - 1);
+  const role = TYPE.display;
+  const m = (s: string) => measureTracked(s, size, role.weight, role.track, FONT.text);
+  const full = m(text);
+  const before = i ? m(`${words.slice(0, i).join(' ')} `) : 0;
+  return { x: cx - full / 2 + before + m(words[i]) / 2, y: cy };
+};
 
 export const Claim: React.FC = () => {
   const F = useAbs('claim');
-  const t = LIGHT;
+  const t = themeOf('claim');
   const c = copy('claim');
-  const words = c.text.trim().split(/\s+/);
-  const size = lineSize(c.text, 'display');
-  const giant = Math.max(GIANT_MIN * U, TYPE.giant.size * U * 0.6, size * 2.4); // the set: never under the giant floor
-  const snapped = F >= CUE.claimSnap;
-  const reveal = prog(F, CUE.claim, CUE.claim + f60x(12), E.snapOut);
-  const soft = snapped ? mix(6, 0, clamp((F - CUE.claimSnap) / f60x(6))) : 0;
-  const k = creep(F, CUE.claimSnap, { pctPerSec: 0.05 }, FPS) * lmix(1, 1.35, intoCut(F, ACT.field.from, 30, FPS)); // x1.35 keeps the read type under 20 px/f into the cut
-  const starts = CLAIM_STARTS; // the timeline's COPY resolves the claim on the same frames
-  const key = 0.06 * hitPulse(F - CUE.claimLight, 8, 48, FPS); // one light event under the read: the key swells across the line
+  const film = { fps: FPS, width: W, height: H };
+  const out = lmix(1, CLAIM_EXIT.k, intoCut(F, ACT.field.from, 30, FPS)); // the push into the cut
+  const key = 0.07 * hitPulse(F - CUE.claimLight, 8, 48, FPS); // one light event under the read
+  const d = drift('claim', F, 180, 0.4);
+  const size = lineSize(c.text, 'display', 0.84);
+  const read = numberPoint(c.text, size, W / 2, H / 2);
+  const light = <AbsoluteFill style={{ background: `linear-gradient(200deg, rgba(255,255,255,${key.toFixed(3)}) 0%, rgba(255,255,255,0) 60%)` }} />;
+  if (DEAL.claim === 'accent') {
+    return (
+      <AbsoluteFill style={{ background: C.accent, overflow: 'hidden' }}>
+        {/* a 7 % linear creep over the act and the push into the cut, both grown from the flush-left margin, so no word crosses that edge */}
+        <div style={{ position: 'absolute', inset: 0, transformOrigin: `${(W * 0.03).toFixed(1)}px ${H / 2}px`, transform: `scale(${(out * lmix(1, 1.07, prog(F, ACT.claim.from, ACT.field.from, E.linear))).toFixed(5)})` }}>
+          <AccentClaim id="claim" text={c.text} at={c.in} frame={F} />
+        </div>
+        {light}
+      </AbsoluteFill>
+    );
+  }
+  const k = DEAL.claim === 'object' ? lmix(1, 1.08, prog(F, c.resolved, ACT.field.from, E.linear)) : 1;
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
-      <AbsoluteFill style={{ background: `linear-gradient(200deg, rgba(255,255,255,${key.toFixed(3)}) 0%, rgba(255,255,255,0) 60%)` }} />
-      <Defocus sigma={soft}>
-        <Cam k={k}>
-          {!snapped ? (
-            <div style={{ position: 'absolute', left: 0, top: H / 2 - (giant * TYPE.giant.lead) / 2, width: W, display: 'flex', justifyContent: 'center', clipPath: `inset(${((1 - reveal) * 100).toFixed(2)}% 0 0 0)` }}>
-              <span data-text="claim-giant" style={{ ...typeStyle('giant', giant), color: t.text, transform: `translate3d(0, ${((1 - reveal) * 0.25 * giant).toFixed(2)}px, 0)` }}>
-                {words[0]}
-              </span>
+      <Ground act="claim" F={F} />
+      <div style={{ position: 'absolute', inset: 0, transformOrigin: `${read.x.toFixed(1)}px ${H / 2}px`, transform: `translate3d(${d.x.toFixed(3)}px, ${d.y.toFixed(3)}px, 0) scale(${(out * k).toFixed(5)})` }}>
+        {DEAL.claim === 'push' ? (
+          <TypePush push={{ at: CUE.claimPush, read: [{ x: W / 2, y: H / 2 }, read], toward: { x: W * 0.46, y: H / 2 } }} frame={F}>
+            <div style={{ position: 'absolute', left: 0, top: 0, width: W, display: 'flex', justifyContent: 'center', transform: `translate3d(0, ${(H / 2 - (size * TYPE.display.lead) / 2).toFixed(2)}px, 0)` }}>
+              <Words id="claim" text={c.text} frame={F} start={c.in} size={size} {...crispWords(film)} style={{ ...typeStyle('display', size), color: t.text }} />
             </div>
-          ) : (
-            <div style={{ position: 'absolute', left: 0, top: H / 2 - (size * TYPE.display.lead) / 2, width: W, display: 'flex', justifyContent: 'center' }}>
-              <Words id="claim" text={c.text} frame={F} start={starts[0]} starts={starts} size={size} style={{ ...typeStyle('display', size), color: t.text }} />
-            </div>
-          )}
-        </Cam>
-      </Defocus>
+          </TypePush>
+        ) : (
+          <ObjectLine id="claim" text={withSlot(WALK.lines.claim)} objects={[{ kind: 'glyph', name: WALK.claimObject, variant: 'duotone', color: t.accent }]} at={c.in} frame={F} role="display" x={W / 2} y={H / 2} color={t.text} ground={t.dark ? 'dark' : 'light'} theme={t} entry="crisp" />
+        )}
+      </div>
+      {light}
     </AbsoluteFill>
   );
 };

@@ -1,6 +1,6 @@
 {
  "name": "ui-walkthrough",
- "about": "A product walkthrough of 25-40 s: a promise, the user's input as one object that becomes the output in place, proof piling up, a speed claim, then the product's own flow in steps (the input goes in, the product reads every item, finds what matters, the user picks, it builds), the output live and the end card. new-film.sh --template ui-walkthrough lays these files over the Remotion starter.",
+ "about": "A product walkthrough of 25-40 s: a promise with the input's source mark in its line, the user's input as one lit card that becomes the output in place under the film's one 3D turn, proof arriving, a speed claim, then the product's own flow in steps (the input goes in, the product reads every item, finds what matters, the user picks, it builds), the output live and the end card. Every slot deals one of two or three devices per film (src/deal.ts). new-film.sh --template ui-walkthrough lays these files over the Remotion starter.",
  "engine": "remotion",
  "pace": "crisp",
  "type_family": "calm",
@@ -18,13 +18,15 @@
   ]
  },
  "next": [
-  "ui walkthrough: fill src/walk.ts (the script in plain words: line 1 says what the product is, 2-7 words a line, and the product's own strings and numbers in every [slot]),",
+  "ui walkthrough: fill src/walk.ts (the script in plain words: line 1 says what the product is, with [] where the input's source mark sits; 2-7 words a line; the product's own strings and numbers in every [slot]),",
+  "  fetch the input's source mark: node scripts/logos.mjs get <name> --film . (its slug in walk.ts input.source, its name in input.sourceName),",
+  "  see the devices this film was dealt: npx tsx -e \"import { DEAL } from './src/deal'; console.log(DEAL)\" (src/deal.ts: PIN a slot, or SEED to re-deal),",
   "  rebuild the product's real screens in src/acts where the kit stands in, then deal its direction:",
-  "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3 (references/templates.md)",
-  "  the input's source mark: node scripts/logos.mjs get <name> --film . (its slug in walk.ts input.source)"
+  "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3 (references/templates.md)"
  ],
  "copy": [
   "src/walk.ts",
+  "src/deal.ts",
   "src/timeline.ts",
   "src/Film.tsx",
   "src/Root.tsx",
@@ -54,5 +56,55 @@
   "src/acts/Act4.tsx",
   "src/acts/ground.tsx",
   "src/acts/plate.tsx"
- ]
+ ],
+ "deal": {
+  "file": "src/deal.ts",
+  "seed": "the product's name (IDENTITY.name), or SEED in src/deal.ts; PIN chooses a slot by hand",
+  "print": "npx tsx -e \"import { DEAL } from './src/deal'; console.log(DEAL)\""
+ },
+ "slots": {
+  "stage": {
+   "mixed": "statements on paper, the product on the slate",
+   "light": "every act on paper, the claim on the slate",
+   "dark": "every act on the slate, the claim on paper"
+  },
+  "open": {
+   "line": "the promise with the source's mark inside it (kit ObjectLine, crisp entry) in a slow push",
+   "push": "the same line, then the camera pushes through it to 2.2x onto the mark (fx/TypePush), bleeding off the frame",
+   "stack": "the line in the mid plane of a depth stack of the input's own items (fx/DepthStack)"
+  },
+  "turn": {
+   "flip": "the lit card turns over through edge-on; its back is the output",
+   "sheen": "a lit band sweeps the card and develops the output behind it",
+   "slide": "the input slides out of the card's window as the output slides in, smeared along its travel"
+  },
+  "proof": {
+   "stack": "notices stacking in front, the newest from behind (fx/Stack), tilted in the light",
+   "river": "notices flowing up through three depths at their own speeds",
+   "wall": "result tiles tumbling into a content wall the camera pushes through (kit ContentWall)"
+  },
+  "claim": {
+   "accent": "on the accent like a poster: cap 16 %, flush left at 3 %, -0.04 em (fx/TypeClaim); the film's colour event",
+   "push": "the camera pushes through the line to 2.2x onto its number (fx/TypePush)",
+   "object": "the claim with its object at cap height in the line (kit ObjectLine)"
+  },
+  "read": {
+   "lens": "the product's dense screen; its focus line glides down the rows to the key row (kit DenseScreen)",
+   "flick": "a feed flicked past, braking onto the key item (fx/Scroll, DirBlur)",
+   "ticker": "the items flowing past as content tiles on two depths (kit ContentTicker)"
+  },
+  "build": {
+   "pill": "the chosen row becomes a progress head whose percentage climbs over the build",
+   "assemble": "the output's sections fly in from in front of the page and land in their slots",
+   "stream": "the output types in top-down under a progress rule"
+  },
+  "page": {
+   "lit": "one lit page rises, settles onto its tilt (fx/Lit) and scrolls",
+   "stack": "the page between its siblings in a depth stack the camera pushes through"
+  },
+  "end": {
+   "side": "the lockup beside the output as a soft far plane cropped by the edge",
+   "wall": "the lockup over a soft wall of the film's own screens"
+  }
+ }
 }

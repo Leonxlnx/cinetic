@@ -1,104 +1,157 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { U } from '../brand/tokens';
+import { DEAL } from '../deal';
+import { DirBlur } from '../fx/Defocus';
+import { Lit } from '../fx/Lit';
+import { Spinner } from '../fx/Loaders';
 import { countLinear } from '../fx/Roll';
 import { TypeOn } from '../fx/TypeOn';
-import { DataRow, Photo, Pill, Row, Surface, surfaceShadow } from '../kit';
-import { clamp, E, lmix, mix, prog, track } from '../lib/anim';
-import { DirBlur } from '../fx/Defocus';
-import { carry } from '../lib/handoff';
-import { ACT, CUE, f60, f60x, FPS, H, W } from '../timeline';
+import { Check, ContentTile, DataRow, face, KIT_TYPE, Row, Surface, surfaceShadow } from '../kit';
+import { clamp, E, lmix, mix, prog } from '../lib/anim';
+import { mixColor } from '../lib/color';
+import { CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { WHIP_LEFT } from './Insight';
-import { LIGHT, ScriptLine, useAbs } from './stage';
+import { carryIn, drift, Ground, GROUNDS, ScriptLine, themeOf, useAbs } from './stage';
 
-// PICK - step three. The options arrive on the whip's leftward speed; the line says what to do. The camera zooms
-// onto the chosen one (ease in, two frames carrying most of the change, a soft landing) while the others vanish in
-// two frames; the choice rings in the accent. It lightens, its content lifts away and it collapses into the progress
-// pill (most of the change on the last frames); under the pill the output builds from the top down while the label
-// types its state and the percentage climbs.
+// PICK - step three. The options arrive on the whip's leftward speed, carried and settling; the line says what the
+// product makes from the pick. The camera eases in onto the chosen row (a settle of 40 f, never a jump), the others
+// fall back and fade, the choice rings in the accent; the row glides up into the build's head while the output builds
+// below it, by the dealt device: 'pill' makes the head a progress pill whose percentage climbs over the build, 'assemble'
+// flies the output's sections in from depth onto a lit page, 'stream' types the output in top-down under a progress rule.
 
-const ROWS = { w: 1180 * U, h: 150 * U, gap: 30 * U, y: 430 * U } as const;
-const PILL = { h: 112 * U, y: 250 * U } as const;
-const BUILD = { w: 1040 * U, h: 620 * U, y: 400 * U } as const;
-/** The zoom onto the chosen row: x1.43, most of it on two frames in the middle (a measured table of the move). */
-const zoomAt = (F: number) => lmix(1, 1.43, track(F, [[CUE.select, 0], [CUE.select + f60x(14), 0.12], [CUE.select + f60x(18), 0.82], [CUE.select + f60x(34), 1]]));
+const ROWS = { w: 1400 * U, h: 168 * U, gap: 28 * U, y: 400 * U } as const;
+const HEAD = { w: 820 * U, h: 112 * U, y: 250 * U } as const;
+/** The chooser's sheet behind the rows. */
+const SHEET = { w: 1540 * U, h: 3 * 168 * U + 2 * 28 * U + 64 * U + 80 * U, y: 400 * U - 64 * U - 40 * U } as const;
+/** The options' plane: tilted in the film's light like every product panel. */
+const TILTED: React.CSSProperties = { position: 'absolute', inset: 0, transformOrigin: '50% 55%', transform: `perspective(${2200 * U}px) rotateX(7deg) rotateY(-6deg)` };
+const BUILD = { w: 1240 * U, h: 700 * U, cy: 790 * U } as const; // its foot runs off the frame
+/** The camera onto the chosen row: x1.22, a 40 f settle. */
+const zoomAt = (F: number) => lmix(1, 1.22, prog(F, CUE.select, CUE.select + f60x(40), E.settleOut));
+/** The build's progress 0..99 (it never shows 100 before the page takes over). */
+const pctAt = (F: number) => Math.min(99, Math.floor(countLinear(F, { from: 0, perSec: 38, start: CUE.build }, { fps: FPS }).value));
+
+/** The output being built: a lit panel whose preview develops and whose sections arrive by the dealt device. */
+const Build: React.FC<{ F: number }> = ({ F }) => {
+  const t = themeOf('pick');
+  const pct = pctAt(F);
+  const pad = 36 * U;
+  const enter = prog(F, CUE.build - f60x(6), CUE.build + f60x(40), E.settleOut);
+  const node = { glyph: 'doc' as const, label: WALK.page.headline, sub: WALK.page.sub, preview: 'doc' as const, seed: `${WALK.name}:build` };
+  const rowAt = (i: number) => CUE.build + f60x(16) + i * f60x(DEAL.build === 'assemble' ? 14 : 10);
+  return (
+    <Lit frame={F} x={W / 2} y={BUILD.cy} w={BUILD.w} h={BUILD.h} r={34 * U} tilt={{ x: 11, y: 9 }} ground={GROUNDS.pick.base} enter={{ at: CUE.build - f60x(6), dur60: 46 }} id="build">
+      <Surface theme={t} w={BUILD.w} h={BUILD.h} lift={4} r={34 * U}>
+        {DEAL.build === 'stream' && (
+          <div style={{ position: 'absolute', left: 0, top: 0, width: BUILD.w * (pct / 100), height: 6 * U, background: t.accent }} />
+        )}
+        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${pad}px, ${pad}px, 0)`, opacity: enter }}>
+          {DEAL.build === 'stream' ? (
+            <span data-text="build-headline" style={face(KIT_TYPE.head * U, 650, t.text, -0.03)}>
+              <TypeOn id="build-head" text={WALK.page.headline} frame={F} start={CUE.build + f60x(8)} kind="stream" cps={70} caret={false} role="ui" size={KIT_TYPE.head * U} />
+            </span>
+          ) : (
+            <ContentTile node={node} theme={t} w={BUILD.w - 2 * pad} aspect={(BUILD.w - 2 * pad) / (250 * U)} lift={6} />
+          )}
+        </div>
+        {WALK.page.rows.map((r, i) => {
+          const at = rowAt(i);
+          const p = prog(F, at, at + f60x(DEAL.build === 'assemble' ? 36 : 26), DEAL.build === 'assemble' ? E.settleOut : E.glideOut);
+          const y = (DEAL.build === 'stream' ? 140 : 320) * U + i * 88 * U;
+          // assemble: each section flies in from in front of the page (larger, offset, soft), landing in its slot
+          const s = DEAL.build === 'assemble' ? mix(1.5, 1, p) : 1;
+          const dx = DEAL.build === 'assemble' ? (1 - p) * (i % 2 ? 220 : -220) * U : 0;
+          const dy = (1 - p) * (DEAL.build === 'assemble' ? -120 : 24) * U;
+          return (
+            <div key={i} style={{ position: 'absolute', left: 0, top: 0, opacity: clamp(p * 1.5), transform: `translate3d(${(pad + dx).toFixed(2)}px, ${(y + dy).toFixed(2)}px, 0) scale(${s.toFixed(4)})`, transformOrigin: '50% 50%' }}>
+              <DataRow theme={t} w={BUILD.w - 2 * pad} h={78 * U} label={r} value={DEAL.build === 'pill' ? `${Math.min(100, pct + 12 * (2 - i))}%` : WALK.page.cta} id={`build-row-${i}`} />
+            </div>
+          );
+        })}
+      </Surface>
+    </Lit>
+  );
+};
 
 export const Pick: React.FC = () => {
   const F = useAbs('pick');
-  const t = LIGHT;
+  const t = themeOf('pick');
   const pick = WALK.pick;
-  // the whip's leftward speed carried in, settling: the options arrive from the right and come to rest in place
-  const co = { vCut: WHIP_LEFT.vCut, settle: 70, fps: FPS };
-  const inX = carry(F, ACT.pick.from, co).x - carry(ACT.pick.from + f60(200), ACT.pick.from, co).x;
-  const inV = F > ACT.pick.from ? carry(F, ACT.pick.from, co).v / U : 0; // the carried speed (px/f at 1080p) smears the arrival
-  const k = zoomAt(F);
+  const carried = carryIn('pick', F, WHIP_LEFT.vCut, 60, 0.75);
+  const cv = (carried - carryIn('pick', F - 1, WHIP_LEFT.vCut, 60, 0.75)) / U;
+  const d = drift('pick', F, 340, 0.4);
   const rowY = (i: number) => ROWS.y + i * (ROWS.h + ROWS.gap);
   const oy = rowY(pick) + ROWS.h / 2;
-  const gone = prog(F, CUE.select + f60x(14), CUE.select + f60x(18), E.linear); // the other rows vanish in two frames
-  const ring = prog(F, CUE.chosen, CUE.chosen + f60x(20), E.snapOut);
-  // the chosen row -> the progress pill: 70 % of the change on its last frames
-  const m = track(F, [[CUE.toPill, 0], [CUE.toPill + f60x(10), 0.3], [CUE.toPill + f60x(14), 1]]);
-  const pillOn = F >= CUE.toPill + f60x(14);
-  const pct = Math.min(99, Math.floor(countLinear(F, { from: 0, perSec: 38, start: CUE.build }, { fps: FPS }).value));
+  const gone = prog(F, CUE.select + f60x(8), CUE.select + f60x(34), E.stdInOut); // the other rows fall back and fade
+  const ring = prog(F, CUE.chosen, CUE.chosen + f60x(24), E.glideOut);
+  // the chosen row glides into the build's head (shape and place on one curve) while the camera eases back out
+  const m = prog(F, CUE.toPill, CUE.toPill + f60x(28), E.strongInOut);
+  const zoom = mix(zoomAt(F), 1, m);
+  const headOn = F >= CUE.toPill + f60x(28);
+  const pct = pctAt(F);
+  const sheetIn = prog(F, CUE.options - f60x(6), CUE.options + f60x(30), E.glideOut); // the chooser arrives with its rows
   return (
-    <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
-      <DirBlur v={inV} axis="x" id="pick-carry">
-      <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate3d(${inX.toFixed(2)}px, 0, 0)` }}>
-        <ScriptLine id="pick" F={F} top={180 * U} color={t.text} exitDir="up" />
-        <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${oy}px`, transform: `scale(${(F < CUE.toPill ? k : mix(k, 1, m)).toFixed(5)})` }}>
-          {WALK.options.map((o, i) => {
-            const at = CUE.options + i * f60x(6);
-            const p = prog(F, at, at + f60x(20), E.snapOut);
-            const chosen = i === pick;
-            if (F < at || (chosen && pillOn) || (!chosen && gone >= 1)) return null;
-            const lift = chosen ? m : 0;
-            const w = mix(ROWS.w, ROWS.w * 0.66, lift);
-            const h = mix(ROWS.h, PILL.h, lift);
-            const y = mix(rowY(i), PILL.y, lift);
-            return (
-              <div key={i} style={{ position: 'absolute', left: 0, top: 0, opacity: (chosen ? 1 : 1 - gone) * clamp(p * 1.5), transform: `translate3d(${((W - w) / 2 + (1 - p) * 260 * U).toFixed(2)}px, ${y.toFixed(2)}px, 0)` }}>
-                {/* the container carries its own surface and the choice's ring through the morph, so the box reads on any ground */}
-                <div style={{ width: w, height: h, borderRadius: mix(ROWS.h * 0.26, PILL.h / 2, lift), overflow: 'hidden', position: 'relative', background: chosen && lift > 0 ? t.surface : undefined, boxShadow: chosen && lift > 0 ? `${surfaceShadow(t, mix(14, 30, lift), U)}, inset 0 0 0 ${(3 * U).toFixed(2)}px ${t.accent}` : undefined }}>
-                  <div style={{ opacity: 1 - clamp(lift / 0.4), transform: `translate3d(0, ${(-26 * U * lift).toFixed(2)}px, 0)` }}>
-                    <Row theme={t} w={ROWS.w} h={ROWS.h} glyph={(['grid', 'doc', 'star'] as const)[i % 3]} title={o.title} meta={o.meta} value={o.value} selected={chosen ? ring : 0} id={`option-${i}`} />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {pillOn && (
-          <>
-            <div style={{ position: 'absolute', left: 0, top: PILL.y, width: W, display: 'flex', justifyContent: 'center' }}>
-              <Pill theme={t} h={PILL.h} spin={(F - CUE.toPill) * 9} label={<TypeOn id="build-label" text={WALK.build.label} frame={F} start={CUE.toPill + f60x(14)} kind="stream" cps={84} caret={false} role="ui" size={PILL.h * 0.36} />} value={`${pct}%`} id="build-pill" />
-            </div>
-            {/* the output building from the top down: its picture develops, its fields arrive in turn */}
-            <div style={{ position: 'absolute', left: (W - BUILD.w) / 2, top: BUILD.y }}>
-              <Surface theme={t} w={BUILD.w} h={BUILD.h} lift={30} r={36 * U}>
-                <div style={{ position: 'absolute', left: 36 * U, top: 36 * U, width: BUILD.w - 72 * U, height: 260 * U, borderRadius: 24 * U, overflow: 'hidden', opacity: prog(F, CUE.build, CUE.build + f60x(8), E.snapOut) }}>
-                  {/* the picture develops: a ghost copy (a static filter) under the colour copy fading in */}
-                  <div style={{ position: 'absolute', inset: 0, filter: 'grayscale(1) contrast(0.4) brightness(1.9)' }}>
-                    <Photo theme={t} w={BUILD.w - 72 * U} h={260 * U} seed={21} />
-                  </div>
-                  <div style={{ position: 'absolute', inset: 0, opacity: prog(F, CUE.build + f60x(8), CUE.build + f60x(32), E.stdInOut) }}>
-                    <Photo theme={t} w={BUILD.w - 72 * U} h={260 * U} seed={21} />
-                  </div>
-                </div>
-                {WALK.page.rows.map((r, i) => {
-                  const at = CUE.build + f60x(10) + i * f60x(9);
-                  const p = prog(F, at, at + f60x(16), E.snapOut);
-                  return (
-                    <div key={i} style={{ position: 'absolute', left: 36 * U, top: (330 + i * 86) * U, opacity: p, transform: `translate3d(0, ${((1 - p) * 24 * U).toFixed(2)}px, 0)` }}>
-                      <DataRow theme={t} w={BUILD.w - 72 * U} h={78 * U} label={r} value={`${Math.min(100, pct + 12 * (2 - i))}%`} id={`build-row-${i}`} />
+    <AbsoluteFill style={{ background: GROUNDS.pick.base, overflow: 'hidden' }}>
+      <DirBlur v={cv} axis="x" id="pick-carry">
+        <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(carried + d.x).toFixed(2)}px, ${d.y.toFixed(3)}px, 0)` }}>
+          <Ground act="pick" F={F} />
+          <ScriptLine id="pick" F={F} top={70 * U} color={t.text} />
+          <div style={TILTED}>
+          {/* the sheet the options sit on: the product's chooser, lit and tilted with them; it falls back as the build takes over */}
+          <div style={{ position: 'absolute', left: 0, top: 0, opacity: (1 - m) * sheetIn, transformOrigin: `${(SHEET.w / 2).toFixed(2)}px ${(oy - SHEET.y).toFixed(2)}px`, transform: `translate3d(${((W - SHEET.w) / 2).toFixed(2)}px, ${SHEET.y.toFixed(2)}px, 0) scale(${(zoom * mix(0.94, 1, sheetIn)).toFixed(5)})` }}>
+            <Surface theme={t} w={SHEET.w} h={SHEET.h} tone="raised" lift={30} r={36 * U}>
+              <div style={{ position: 'absolute', left: 0, top: 0, width: SHEET.w, height: 64 * U, background: mixColor(t.surface, t.ground, 0.25), boxShadow: `inset 0 -${(1 * U).toFixed(2)}px 0 ${t.line}` }} />
+            </Surface>
+          </div>
+          <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${oy}px`, transform: `scale(${zoom.toFixed(5)})` }}>
+            {WALK.options.map((o, i) => {
+              const at = CUE.options + i * f60x(6);
+              const p = prog(F, at, at + f60x(30), E.glideOut);
+              const chosen = i === pick;
+              if (F < at || (chosen && headOn) || (!chosen && gone >= 1)) return null;
+              const lift = chosen ? m : 0;
+              // the morph into the head, drawn in the camera's frame: the head's screen box divided back through the zoom
+              const hw = HEAD.w / zoom;
+              const hh = HEAD.h / zoom;
+              const hy = oy + (HEAD.y - oy) / zoom;
+              const w = mix(ROWS.w, hw, lift);
+              const h = mix(ROWS.h, hh, lift);
+              const y = mix(rowY(i), hy, lift);
+              return (
+                <div key={i} style={{ position: 'absolute', left: 0, top: 0, opacity: (chosen ? 1 : 1 - gone) * clamp(p * 1.5), transform: `translate3d(${((W - w) / 2 + (1 - p) * 200 * U).toFixed(2)}px, ${(y + (chosen ? 0 : gone * 40 * U)).toFixed(2)}px, 0)` }}>
+                  {/* the container carries its own surface and the choice's ring through the morph, so the box reads on any ground */}
+                  <div style={{ width: w, height: h, borderRadius: mix(ROWS.h * 0.26, hh / 2, lift), overflow: 'hidden', position: 'relative', background: chosen ? t.surface : undefined, boxShadow: chosen ? `${surfaceShadow(t, mix(14, 30, lift), U)}, inset 0 0 0 ${(3 * U * Math.max(ring, lift)).toFixed(2)}px ${t.accent}` : undefined }}>
+                    <div style={{ opacity: 1 - clamp(lift / 0.4), transform: `translate3d(0, ${(-26 * U * lift).toFixed(2)}px, 0)` }}>
+                      <Row theme={t} w={ROWS.w} h={ROWS.h} glyph={(['grid', 'doc', 'star'] as const)[i % 3]} title={o.title} meta={o.meta} value={o.value} selected={0} id={`option-${i}`} />
                     </div>
-                  );
-                })}
-              </Surface>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          </div>
+          {F >= CUE.build - f60x(6) && <Build F={F} />}
+          <div style={TILTED}>
+          {headOn && (
+            // the head: the morph's own box (no pop where the row hands over), its content arriving inside it
+            <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: HEAD.w, height: HEAD.h, display: 'flex', alignItems: 'center', gap: 22 * U, padding: `0 ${34 * U}px`, boxSizing: 'border-box', borderRadius: HEAD.h / 2, background: t.surface, boxShadow: `${surfaceShadow(t, 30, U)}, inset 0 0 0 ${(3 * U).toFixed(2)}px ${t.accent}`, transform: `translate3d(${((W - HEAD.w) / 2).toFixed(2)}px, ${HEAD.y.toFixed(2)}px, 0)` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 22 * U, flex: 1, opacity: prog(F, CUE.toPill + f60x(28), CUE.toPill + f60x(44), E.glideOut) }}>
+                {DEAL.build === 'pill' ? <Spinner size={HEAD.h * 0.46} color={t.accent} angle={(F - CUE.toPill) * 9} /> : <Check size={HEAD.h * 0.5} fill={t.accent} tick={t.accentInk} />}
+                <span data-text="build-head-label" style={{ ...face(HEAD.h * 0.36, 600, t.text, -0.01), flex: 1 }}>
+                  {DEAL.build === 'pill' ? <TypeOn id="build-label" text={WALK.build.label} frame={F} start={CUE.toPill + f60x(30)} kind="stream" cps={84} caret={false} role="ui" size={HEAD.h * 0.36} /> : WALK.options[pick].title}
+                </span>
+                {DEAL.build === 'pill' && (
+                  <span data-text="build-pct" style={face(HEAD.h * 0.36, 650, t.mute, -0.01)}>
+                    {`${pct}%`}
+                  </span>
+                )}
+              </div>
             </div>
-          </>
-        )}
-      </div>
+          )}
+          </div>
+        </div>
       </DirBlur>
     </AbsoluteFill>
   );

@@ -1,137 +1,195 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { FONT, U } from '../brand/tokens';
-import { Defocus } from '../fx/Defocus';
+import { DEAL } from '../deal';
+import { DirBlur } from '../fx/Defocus';
+import { Lit } from '../fx/Lit';
 import { StepList } from '../fx/Loaders';
-import { AppIcon, Avatar, Chip, face, hasLogo, KIT_TYPE, Photo, Surface } from '../kit';
-import { clamp, E, hitPulse, lmix, mix, prog, track } from '../lib/anim';
-import { mixColor } from '../lib/color';
-import { creep, intoCut } from '../lib/handoff';
-import { ACT, CUE, f60, f60x, FPS, H, W } from '../timeline';
+import { AppIcon, Chip, ContentTile, face, hasLogo, KIT_TYPE, PortraitMark, sampleWorld, Surface, worldNodes } from '../kit';
+import { clamp, E, lmix, mix, prog } from '../lib/anim';
+import { intoCut } from '../lib/handoff';
+import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
-import { DARK, LIGHT, useAbs } from './stage';
+import { OPEN_EXIT } from './Open';
+import { carryIn, drift, Ground, GROUNDS, themeOf, useAbs } from './stage';
 
-// CARD - the signature: the user's input as one object, rising as a tilted card while the ground turns from the
-// paper to the stage edges-first. It creeps, eases into a zoom, and on ONE frame (the hidden cut) jumps to half its
-// size and flat, softened, under a short tinted swell: the same card is now the output. Its title wipes on, the old
-// subtitle wipes out as the new one wipes in, the input's details drop away, and a three-row checklist builds in the
-// card while two punch-ins (one-frame scale steps) follow the rows. Continuity comes from the container, never a cut.
+// CARD - the signature: the user's input as one lit card (fx/Lit: tilted in the film's one light, rimmed on its key
+// side, casting its shadow on the ground) carried up on the promise's speed, while the film makes its one 3D turn: the
+// card swings 24 degrees round to face the viewer over 108 f, the chips beside it parallaxing. Then the same card
+// becomes the output in place, by the dealt device: 'flip' turns it over through edge-on (its back is the output),
+// 'sheen' sweeps a lit band across it that develops the output behind it, 'slide' runs the content through the card's
+// window. The output's three steps build in it while the camera leans in, and a push into the card accelerates into
+// the zoom-through that opens the proof. Continuity comes from the container, never from a cut or a one-frame jump.
 
-/** The card in world px (at k = 1 it sits whole in the frame) and the screen scales of its story. */
-export const CARD = { w: 1040 * U, h: 760 * U, k0: 2.1, tilt0: 30, tilt1: 21, tilt2: 14, pre: 0.85, jump: 0.52, after: 0.47, punch: 1.12 } as const;
+/** The card at film size and the turn it makes (degrees). */
+export const CARD = { w: 1120 * U, h: 640 * U, r: 40 * U, turn: { from: -36, to: -12, x: 10, frames60: 108 } } as const;
 const cx = W / 2;
-const cy = H / 2 + 20 * U;
-const left = cx - CARD.w / 2;
-const top = cy - CARD.h / 2;
+const cy = H / 2 + 14 * U;
+const pad = 64 * U;
+/** The output's preview on the card (its own screen replaces it). */
+const PREVIEW = { w: 380 * U, aspect: 0.86 } as const;
+const OUT_NODE = { glyph: 'doc' as const, label: WALK.output.title, sub: WALK.output.sub, preview: 'doc' as const, value: WALK.output.steps[2], seed: `${WALK.name}:output` };
+/** Two people of the input's world (kit/data.ts), drawn as crafted portraits beside the card. */
+const PEOPLE = sampleWorld(`${WALK.name}:input`).people.slice(1, 3);
 
-/** The camera's scale at absolute frame F: creep, the ease into the jump, the jump, the settle, two punches, the push into the cut. */
-export const cardK = (F: number) => {
-  const pre = lmix(1, CARD.pre, prog(F, CUE.zoomIn, CUE.jump, E.buildIn));
-  const settle = lmix(CARD.jump / CARD.pre, CARD.after / CARD.pre, prog(F, CUE.jump, CUE.jump + f60x(22), E.snapOut));
-  const jumped = F >= CUE.jump ? settle : 1;
-  const punches = (F >= CUE.punch1 ? CARD.punch : 1) * (F >= CUE.punch2 ? CARD.punch : 1);
-  return CARD.k0 * creep(F, CUE.creep, { pctPerSec: 0.03 }, FPS) * pre * jumped * punches * lmix(1, 1.15, intoCut(F, ACT.proof.from, 30, FPS));
+/** The transformation's progress 0..1 (44 f on E.strongInOut from CUE.swap). */
+export const turnAt = (F: number) => prog(F, CUE.swap, CUE.swap + f60x(44), E.strongInOut);
+
+/** The camera's scale: lean in on the rows, then the push into the card that runs into the zoom-through. */
+export const cardK = (F: number) => lmix(1, 1.1, prog(F, CUE.lean, CUE.lean + f60x(72), E.settleOut)) * lmix(1, 1.6, intoCut(F, ACT.proof.from, 30, FPS));
+
+const InputFace: React.FC<{ w: number; h: number }> = ({ w, h }) => {
+  const t = themeOf('card');
+  const nodes = worldNodes(sampleWorld(`${WALK.name}:input`), 4).map((n, i) => ({ ...n, label: WALK.results[i]?.title ?? n.label, sub: WALK.results[i]?.meta ?? n.sub }));
+  const tile = (w - 2 * pad - 3 * 16 * U) / 4;
+  return (
+    <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${pad}px, ${pad}px, 0)` }}>
+        {hasLogo(WALK.input.source) ? <AppIcon logo={WALK.input.source} size={150 * U} theme={t} lift={16} /> : <PortraitMark theme={t} seed={WALK.input.title} size={150 * U} shape="tile" />}
+      </div>
+      <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${pad + 180 * U}px, ${pad + 22 * U}px, 0)`, display: 'flex', flexDirection: 'column', gap: 8 * U }}>
+        <span data-text="card-title-in" style={face(KIT_TYPE.head * U, 650, t.text, -0.03)}>
+          {WALK.input.title}
+        </span>
+        <span data-text="card-sub-in" style={face(KIT_TYPE.body * U, 500, t.mute)}>
+          {WALK.input.handle}
+        </span>
+      </div>
+      <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${pad}px, ${250 * U}px, 0)`, display: 'flex', gap: 18 * U }}>
+        {WALK.input.stats.map((s, i) => (
+          <Chip key={i} theme={t} label={s} h={64 * U} id={`card-stat-${i}`} />
+        ))}
+      </div>
+      {/* a strip of what the input holds, drawn as content tiles (the product's own previews replace them) */}
+      <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${pad}px, ${h - tile - pad}px, 0)`, display: 'flex', gap: 16 * U }}>
+        {nodes.map((n, i) => (
+          <ContentTile key={i} node={n} theme={t} w={tile} lift={8} />
+        ))}
+      </div>
+    </div>
+  );
 };
 
-/** The card's tilt (deg, rotateX): 30 on the rise, creeping to 21, 14 into the jump, flat from it. */
-const tiltAt = (F: number) => (F >= CUE.jump ? 0 : track(F, [[CUE.rise, CARD.tilt0], [CUE.zoomIn, CARD.tilt1], [CUE.jump, CARD.tilt2]]));
-
-/** The tinted swell around the jump frame (opacity of a light accent-tinted veil), 5 frames at 30 fps. */
-const swell = (F: number) => track(F, [[CUE.jump - f60(4), 0], [CUE.jump - f60(2), 0.12], [CUE.jump, 0.55], [CUE.jump + f60(2), 0.46], [CUE.jump + f60(4), 0.2], [CUE.jump + f60(8), 0]]);
-
-const initials = (s: string) => s.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'IN';
+const OutputFace: React.FC<{ w: number; h: number; F: number }> = ({ w, h, F }) => {
+  const t = themeOf('card');
+  const sub = prog(F, CUE.sub, CUE.sub + f60x(30), E.glideOut);
+  const dev = prog(F, CUE.done1, CUE.done3 + f60x(20), E.stdInOut);
+  return (
+    <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${pad}px, ${pad}px, 0)`, display: 'flex', flexDirection: 'column', gap: 10 * U }}>
+        <span data-text="card-title-out" style={face(KIT_TYPE.head * U, 650, t.text, -0.03)}>
+          {WALK.output.title}
+        </span>
+        <span data-text="card-sub-out" style={{ ...face(KIT_TYPE.body * U, 500, t.mute), opacity: sub, transform: `translate3d(0, ${((1 - sub) * 16 * U).toFixed(2)}px, 0)` }}>
+          {WALK.output.sub}
+        </span>
+      </div>
+      {/* the output forming beside its steps: a preview that develops from ghost to colour as each step checks */}
+      <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${(w - pad - PREVIEW.w).toFixed(2)}px, ${(h - pad - PREVIEW.w / PREVIEW.aspect).toFixed(2)}px, 0)` }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, filter: 'grayscale(1) contrast(0.5) brightness(1.3)', opacity: 1 - dev }}>
+          <ContentTile node={OUT_NODE} theme={t} w={PREVIEW.w} aspect={PREVIEW.aspect} lift={10} />
+        </div>
+        <div style={{ position: 'absolute', left: 0, top: 0, opacity: dev }}>
+          <ContentTile node={OUT_NODE} theme={t} w={PREVIEW.w} aspect={PREVIEW.aspect} lift={10} />
+        </div>
+      </div>
+      {F >= CUE.row1 - 1 && (
+        <StepList
+          frame={F}
+          rows={[
+            { at: CUE.row1, done: CUE.done1 },
+            { at: CUE.row2, done: CUE.done2 },
+            { at: CUE.row3, done: CUE.done3 },
+          ]}
+          rowH={110}
+          rise={26}
+          partial={0}
+          labels={WALK.output.steps.map((s) => ({ verb: s }))}
+          x={pad}
+          y={250 * U}
+          width={w - 3 * pad - PREVIEW.w}
+          font={{ size: KIT_TYPE.body * U, weight: 560, family: FONT.text }}
+          colors={{ ink: t.text, mute: t.mute, accent: t.accent, ground: t.raised }}
+        />
+      )}
+    </div>
+  );
+};
 
 export const Card: React.FC = () => {
   const F = useAbs('card');
-  const t = DARK;
+  const t = themeOf('card');
+  const g = GROUNDS.card.base;
+  const carried = carryIn('card', F, OPEN_EXIT.vCut); // the whole frame arrives on the promise's speed
+  const cv = carried - carryIn('card', F - 1, OPEN_EXIT.vCut);
+  const d = drift('card', F, 160, 0.4);
+  // the film's one 3D turn: the card swings round to face the viewer (its tilt is the camera's yaw against it)
+  const swing = prog(F, CUE.rise + f60x(4), CUE.rise + f60x(4 + CARD.turn.frames60), E.strongInOut);
+  const yaw = mix(CARD.turn.from, CARD.turn.to, swing);
+  const p = turnAt(F);
   const k = cardK(F);
-  const rise = prog(F, CUE.rise, CUE.rise + f60x(34), E.snapOut);
-  const dy = (1 - rise) * H * 0.9;
-  // the ground turns from the paper to the stage edges-first under the rising card (10 f)
-  const turn = prog(F, CUE.rise, CUE.rise + f60x(10), E.snapOut);
-  const r = mix(120, -20, turn);
-  // the content swap, inside the same card
-  const swapped = F >= CUE.swap;
-  const wipe = prog(F, CUE.swap, CUE.swap + f60x(8), E.snapOut); // the output's title wipes on
-  const subOut = prog(F, CUE.sub - f60x(6), CUE.sub + f60x(10), E.stdInOut);
-  const drop = prog(F, CUE.swap, CUE.swap + f60x(8), E.buildIn); // the input's details blur, fade and drop away
-  const soft = F >= CUE.jump ? mix(5, 0, clamp((F - CUE.jump) / f60x(6))) + 3 * (hitPulse(F - CUE.punch1, 1, 3, FPS) + hitPulse(F - CUE.punch2, 1, 3, FPS)) : 0;
-  const pad = 64 * U;
+  // the transformation's tilt and faces
+  let tiltX = mix(18, CARD.turn.x, swing);
+  let face: 'in' | 'out' | 'both' = F < CUE.swap ? 'in' : p >= 1 ? 'out' : 'both';
+  if (DEAL.turn === 'flip' && F >= CUE.swap && p < 1) {
+    tiltX = p < 0.5 ? mix(CARD.turn.x, 90, p / 0.5) : mix(-90, CARD.turn.x, (p - 0.5) / 0.5);
+    face = p < 0.5 ? 'in' : 'out';
+  }
+  const band = mix(-0.2, 1.2, p); // 'sheen': the band's centre across the card (share of its width)
+  const slide = DEAL.turn === 'slide' ? p : 0;
+  const slideV = DEAL.turn === 'slide' ? (turnAt(F) - turnAt(F - 1)) * CARD.w : 0;
+  // the chips beside the card parallax with the turn (near plane: they slide furthest)
+  const near = (yaw - CARD.turn.to) * 7 * U;
   return (
-    <AbsoluteFill style={{ background: `radial-gradient(circle at 50% 50%, ${LIGHT.ground} ${Math.max(0, r - 30).toFixed(1)}%, ${t.ground} ${Math.max(0.1, r).toFixed(1)}%)`, overflow: 'hidden' }}>
-      <Defocus sigma={soft}>
-        <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${cx}px ${top + CARD.h * 0.35}px`, transform: `translate3d(0, ${dy.toFixed(2)}px, 0) scale(${k.toFixed(5)})` }}>
-          <div style={{ position: 'absolute', left, top, width: CARD.w, height: CARD.h, transformOrigin: `50% 35%`, transform: `perspective(${2680 * U}px) rotateX(${tiltAt(F).toFixed(3)}deg)` }}>
-            <Surface theme={t} w={CARD.w} h={CARD.h} tone="raised" lift={48} r={44 * U}>
-              {/* the input: who or what it is, its numbers, a strip of its pictures fading into the card */}
-              {(!swapped || drop < 1) && (
-                <div style={{ position: 'absolute', inset: 0, opacity: swapped ? 1 - drop : 1, transform: `translate3d(0, ${(drop * 10 * U).toFixed(2)}px, 0)` }}>
-                  <div style={{ position: 'absolute', left: pad, top: pad }}>
-                    {hasLogo(WALK.input.source) ? <AppIcon logo={WALK.input.source} size={150 * U} theme={t} lift={20} /> : <Avatar theme={t} i={2} initials={initials(WALK.input.title)} size={150 * U} />}
-                  </div>
-                  <div style={{ position: 'absolute', left: pad, top: 250 * U, display: 'flex', gap: 18 * U }}>
-                    {WALK.input.stats.map((s, i) => (
-                      <Chip key={i} theme={t} label={s} h={64 * U} id={`card-stat-${i}`} />
-                    ))}
-                  </div>
-                  <div style={{ position: 'absolute', left: 0, top: CARD.h - 300 * U, width: CARD.w, height: 300 * U, display: 'flex', gap: 16 * U, padding: `0 ${pad}px`, boxSizing: 'border-box' }}>
-                    {[3, 5, 7, 9].map((seed) => (
-                      <div key={seed} style={{ width: 210 * U, height: 236 * U, borderRadius: 20 * U, overflow: 'hidden', flex: 'none' }}>
-                        <Photo theme={t} w={210 * U} h={236 * U} seed={seed} />
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ position: 'absolute', left: 0, top: CARD.h - 320 * U, width: CARD.w, height: 320 * U, background: `linear-gradient(180deg, transparent 0%, ${t.raised} 92%)` }} />
+    <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
+      <DirBlur v={cv / U} axis="y" id="card-carry">
+        <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${d.x.toFixed(3)}px, ${(carried + d.y).toFixed(3)}px, 0)` }}>
+          <Ground act="card" F={F} />
+          <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${cx}px ${cy + 60 * U}px`, transform: `scale(${k.toFixed(5)})` }}>
+            <Lit frame={F} x={cx} y={cy} w={CARD.w} h={CARD.h} r={CARD.r} tilt={{ x: tiltX, y: yaw }} ground={g} id="card">
+              <Surface theme={t} w={CARD.w} h={CARD.h} tone="raised" lift={4} r={CARD.r}>
+                {DEAL.turn === 'slide' && face === 'both' ? (
+                  <DirBlur v={slideV / U} axis="x" id="card-slide">
+                    <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(-slide * CARD.w).toFixed(2)}px, 0, 0)` }}>
+                      <InputFace w={CARD.w} h={CARD.h} />
+                    </div>
+                    <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${((1 - slide) * CARD.w).toFixed(2)}px, 0, 0)` }}>
+                      <OutputFace w={CARD.w} h={CARD.h} F={F} />
+                    </div>
+                  </DirBlur>
+                ) : DEAL.turn === 'sheen' && face === 'both' ? (
+                  <>
+                    <div style={{ position: 'absolute', inset: 0, clipPath: `inset(0 0 0 ${(clamp(band) * 100).toFixed(2)}%)` }}>
+                      <InputFace w={CARD.w} h={CARD.h} />
+                    </div>
+                    <div style={{ position: 'absolute', inset: 0, clipPath: `inset(0 ${((1 - clamp(band)) * 100).toFixed(2)}% 0 0)` }}>
+                      <OutputFace w={CARD.w} h={CARD.h} F={F} />
+                    </div>
+                    {/* the lit band that develops the output: one soft bar of the key's light crossing the face */}
+                    <div style={{ position: 'absolute', left: 0, top: 0, width: CARD.w * 0.34, height: CARD.h, transform: `translate3d(${((band - 0.17) * CARD.w).toFixed(2)}px, 0, 0)`, background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,${(0.34 * Math.sin(Math.PI * p)).toFixed(3)}) 50%, rgba(255,255,255,0) 100%)` }} />
+                  </>
+                ) : face === 'out' ? (
+                  <OutputFace w={CARD.w} h={CARD.h} F={F} />
+                ) : (
+                  <InputFace w={CARD.w} h={CARD.h} />
+                )}
+              </Surface>
+            </Lit>
+            {/* the input's people as portraits in the near plane, parallaxing with the turn and dropping away once it is the output */}
+            {PEOPLE.map((p, i) => {
+              const out = prog(F, CUE.swap, CUE.swap + f60x(30), E.buildIn);
+              if (out >= 1) return null;
+              const x = (i ? cx + CARD.w * 0.6 : cx - CARD.w * 0.62) + near * (i ? 1.1 : 1.35);
+              const y = (i ? cy - CARD.h * 0.4 : cy + CARD.h * 0.34) + out * 60 * U;
+              return (
+                <div key={i} style={{ position: 'absolute', left: 0, top: 0, opacity: 1 - out, transform: `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) translate(-50%, -50%)` }}>
+                  <PortraitMark theme={t} seed={p.seed} size={(i ? 120 : 150) * U} />
                 </div>
-              )}
-              {/* the title: the input's, then the output's wiping on over it */}
-              <div style={{ position: 'absolute', left: pad + (swapped ? 0 : 180 * U), top: swapped ? pad : pad + 22 * U }}>
-                {!swapped || wipe < 1 ? (
-                  <span data-text="card-title-in" style={{ ...face(KIT_TYPE.head * U, 650, t.text, -0.03), opacity: swapped ? 0 : 1 }}>
-                    {WALK.input.title}
-                  </span>
-                ) : null}
-                {swapped && (
-                  <span data-text="card-title-out" style={{ ...face(KIT_TYPE.head * U, 650, t.text, -0.03), position: 'absolute', left: 0, top: 0, clipPath: `inset(0 ${((1 - wipe) * 100).toFixed(2)}% 0 0)` }}>
-                    {WALK.output.title}
-                  </span>
-                )}
-              </div>
-              {/* the subtitle: the input's handle wipes out left to right while the output's line wipes in */}
-              <div style={{ position: 'absolute', left: pad + (swapped ? 0 : 180 * U), top: swapped ? pad + 100 * U : pad + 118 * U }}>
-                <span data-text="card-sub-in" style={{ ...face(KIT_TYPE.body * U, 500, t.mute), clipPath: `inset(0 0 0 ${(subOut * 100).toFixed(2)}%)`, display: swapped && subOut >= 1 ? 'none' : undefined }}>
-                  {WALK.input.handle}
-                </span>
-                {swapped && (
-                  <span data-text="card-sub-out" style={{ ...face(KIT_TYPE.body * U, 500, t.mute), position: 'absolute', left: 0, top: 0, clipPath: `inset(0 ${((1 - subOut) * 100).toFixed(2)}% 0 0)` }}>
-                    {WALK.output.sub}
-                  </span>
-                )}
-              </div>
-              {/* the output's steps, built in the same card */}
-              {F >= CUE.row1 - 1 && (
-                <StepList
-                  frame={F}
-                  rows={[
-                    { at: CUE.row1, done: CUE.done1 },
-                    { at: CUE.row2, done: CUE.done2 },
-                    { at: CUE.row3, done: CUE.done3 },
-                  ]}
-                  rowH={110}
-                  labels={WALK.output.steps.map((s) => ({ verb: s }))}
-                  x={pad}
-                  y={300 * U}
-                  width={CARD.w - 2 * pad}
-                  font={{ size: KIT_TYPE.body * U, weight: 560, family: FONT.text }}
-                  colors={{ ink: t.text, mute: t.mute, accent: t.accent, ground: t.raised }}
-                />
-              )}
-            </Surface>
+              );
+            })}
           </div>
         </div>
-      </Defocus>
-      {/* the swell that hides the swap: a light veil tinted by the accent */}
-      {swell(F) > 0.001 && <AbsoluteFill style={{ background: mixColor(t.text, t.accent, 0.3), opacity: swell(F) }} />}
+      </DirBlur>
     </AbsoluteFill>
   );
 };

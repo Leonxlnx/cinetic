@@ -9,10 +9,15 @@ import { IDENTITY } from './brand/identity';
 /** The story the UI tells: the input goes in, the product reads it, finds what matters, the user picks, it builds the output. */
 export const WALK = {
   name: IDENTITY.name,
-  /** The script, plain words, one clean line on screen at a time (2-7 words each); the end card's line holds to the end. */
+  /**
+   * The script, plain words, one clean line on screen at a time (2-7 words each, counted as read); the end card's line
+   * holds to the end. "[]" in the promise is where the input's source mark sits inside the sentence (it is read as
+   * `input.sourceName`); in the claim it is where the claim's object sits (the device 'object'; at the line's head when
+   * the claim has none).
+   */
   lines: {
-    promise: '[Product] is a [category].', // what it is, by 3 s (4-5 words fit the act): word by word, the last word snapping the line larger
-    claim: 'Setup takes [N] minutes.', // the speed claim, with a verb: its first word giant, then the line
+    promise: '[Product] turns [] [inputs] into [outputs].', // what it is, by 3 s, with the source's mark in the line
+    claim: 'Setup takes [N] minutes.', // the speed claim, with a verb: on the accent, pushed through, or with its object
     step1: 'Paste in [your input].', // step one, over the field
     insight: 'It finds what [people] ask for.', // what the product found
     pick: '[Product] builds the [output] you chose.', // step three, over the choice: what it makes from the pick
@@ -21,9 +26,12 @@ export const WALK = {
   /**
    * The user's input as one object (a channel, a store, a repository, a document): it becomes the output in place.
    * `source` is the slug of the real mark of the product it lives on (node scripts/logos.mjs get <name> --film .): the
-   * card shows it on an app-icon tile and the field leads with it; until it is fetched, initials and a link glyph.
+   * card shows it on an app-icon tile, the field leads with it and the promise holds it in its line; until it is fetched,
+   * a chip with `sourceName`, the way that product's name is written (the word its mark stands for).
    */
-  input: { title: '[Your input]', handle: '[@your-handle]', stats: ['[N] [items]', '[N] [people]'], source: '[source-slug]' },
+  input: { title: '[Your input]', handle: '[@your-handle]', stats: ['[N] [items]', '[N] [people]'], source: '[source-slug]', sourceName: '[Source]' },
+  /** The claim's object (claim device 'object'): the generic glyph of what the claim measures (a clock for time). */
+  claimObject: 'clock',
   /** The output the product makes from it, and the three steps it shows while it works. */
   output: { title: '[Your output]', sub: '[What it does for you]', steps: ['[Reading the input]', '[Finding the pattern]', '[Building the result]'] },
   /** Proof: results arriving as notices, faster and faster. */
@@ -45,12 +53,12 @@ export const WALK = {
     { title: '[Fifth result title]', meta: '[meta]', badge: '[0:37]' },
     { title: '[Sixth result title]', meta: '[meta]', badge: '[1:26]' },
   ],
-  /** Step two: the feed the product reads (a counter climbing beside it), landing on the item that matters. */
+  /** Step two: what the product reads (a count of it beside), landing on the item that matters. Each row is a real person and what they wrote. */
   feed: {
     label: '[Reading]',
     unit: '[items]',
     total: 3412,
-    key: 6, // the row the flick lands on: the insight
+    key: 6, // the row the read lands on: the insight
     rows: [
       { who: '[Name]', initials: 'AB', text: '[A reply, a review, a request]' },
       { who: '[Name]', initials: 'CD', text: '[Another one, a little longer]' },
@@ -77,8 +85,18 @@ export const WALK = {
   page: { headline: '[Your page headline]', sub: '[The promise in one line]', cta: '[Get it]', rows: ['[Section one]', '[Section two]', '[Section three]'] },
 } as const;
 
+/** A line as it is read: its object slot "[]" read as the word it stands for (`object`; none: the slot is a picture). */
+export const spoken = (s: string, object = ''): string => s.replace(/\s*\[\]\s*/g, object ? ` ${object} ` : ' ').replace(/\s+/g, ' ').trim();
+/** The promise as it is read (its COPY text): the mark read as the source's name. */
+export const PROMISE = spoken(WALK.lines.promise, WALK.input.sourceName);
+/** The claim as it is read: its object is a picture, not a word. */
+export const CLAIM = spoken(WALK.lines.claim);
+/** A line with its object slot: the slot where the line has one, else at its head. */
+export const withSlot = (s: string): string => (s.includes('[]') ? s : `[] ${s}`);
+
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
-for (const [k, s] of Object.entries(WALK.lines)) {
+for (const [k, raw] of Object.entries(WALK.lines)) {
+  const s = k === 'promise' ? PROMISE : spoken(raw);
   if (words(s) < 2 || words(s) > 7) throw new Error(`walk.ts: line "${k}" ("${s}") is ${words(s)} words; a line is one short sentence of 2-7 words`);
 }
 if (WALK.feed.key >= WALK.feed.rows.length) throw new Error('walk.ts: feed.key must name one of the feed rows');

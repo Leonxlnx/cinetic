@@ -2,34 +2,35 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { U } from '../brand/tokens';
 import { Cursor, cursorRise, pressAt } from '../fx/Cursor';
-import { ERASE_HOUSE, eraseSchedule, TypeOn, typeSchedule } from '../fx/TypeOn';
-import { AppIcon, Field as FieldPart, hasLogo, Tile } from '../kit';
-import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
 import { DirBlur } from '../fx/Defocus';
-import { launch } from '../lib/handoff';
+import { type LitProps, Lit } from '../fx/Lit';
+import { ERASE_HOUSE, eraseSchedule, TypeOn, typeSchedule } from '../fx/TypeOn';
+import { AppIcon, AppWindow, ContentTile, Field as FieldPart, hasLogo, Micro, sampleWorld, type TileNode } from '../kit';
+import { mixColor } from '../lib/color';
+import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
+import { landBeforeCut } from '../lib/continuity';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
-import { At, Cam, DARK, ScriptLine, useAbs } from './stage';
+import { CLAIM_EXIT } from './Claim';
+import { At, Cam, drift, Ground, GROUNDS, launchOut, onLit, ScriptLine, themeOf, useAbs } from './stage';
 
-// FIELD - step one, in the product's own UI. The field arrives on the push the claim left with; its placeholder is
-// cleared by a held backspace and the input is typed in bursts; the hand rises from below onto the button and
-// presses (the face lifts, the label types its busy state); the results develop in tile by tile (ghost to colour,
-// columns then rows) while the camera pulls back about the upper third; the shot whips up into the feed.
+// FIELD - step one, in the product's own window: a lit app window (fx/Lit, kit AppWindow: the workspace, its nav and
+// its people around the field, dense and real) arrives on the claim's zoom. The field's placeholder is cleared by a held
+// backspace, the input is typed in bursts, the hand rises onto the button and presses (the face lifts, the label types
+// its busy state); the results arrive as content tiles that develop from ghost to colour while the camera pulls back
+// about the upper third (landing before the whip), and the whole frame whips up into the read.
 
-/** Layout (px at 1080p): the field, the results grid under it. */
-const FIELD = { w: 1280 * U, h: 132 * U, y: 400 * U, button: 230 * U };
-const GRID = { cols: 3, w: 470 * U, gap: 44 * U, y: 620 * U, rowH: 420 * U };
+/** The window at film size, centred under the line; its bottom runs off the frame (a cropped element). */
+const WIN = { w: 1600 * U, h: 980 * U, cx: W / 2, cy: 650 * U } as const;
+/** The field and the results grid inside the window's main area (px from the main area's top-left). */
+const FIELD = { h: 112 * U, top: 44 * U, button: 210 * U };
+const GRID = { cols: 3, gap: 30 * U, top: 200 * U, aspect: 1.32 };
 /** The pull-back's scale and the screen height it scales about (the upper third: the content rises as it shrinks). */
-const PULL = { k: 0.66, oy: 0.28 * H };
-/** The whip into the feed: px per frame on the cut, upward. */
-export const WHIP_UP = { vCut: -60 * U }; // the flick in the feed picks this up; faster smears the results' read labels into a double image
+const PULL = { k: 0.8, oy: 0.3 * H, frames60: 48 };
+/** The whip into the read: px per frame on the cut, upward (the read act arrives on it). */
+export const WHIP_UP = { vCut: -64 * U };
 
-/** When each result tile appears (absolute frame): +8 f a column, +20 f a row. */
-export const tileAt = (i: number) => CUE.develop + f60x(8) * (i % GRID.cols) + f60x(20) * Math.floor(i / GRID.cols);
-/**
- * The held backspace from CUE.erase: the house rhythm, its gaps shortened in proportion when the placeholder would
- * not clear by the frame before the value's first key (a long placeholder, a fast track), so it never ends in a pop.
- */
+/** The held backspace from CUE.erase: the house rhythm, shortened in proportion when the placeholder would not clear before the value's first key. */
 export const ERASE = (() => {
   const n = [...WALK.field.placeholder].length;
   const room = CUE.typeIn - 1 - CUE.erase;
@@ -38,78 +39,118 @@ export const ERASE = (() => {
   if (k < 0.5) throw new Error(`Field: the placeholder's ${n} characters need ${need} f to clear and the erase has ${room} f (CUE.erase to CUE.typeIn): shorten the placeholder or move CUE.erase earlier`);
   return { start: CUE.erase, gaps: ERASE_HOUSE.gaps60.map((g) => g * k) };
 })();
-/** The frame the typed value's last key lands (for the sound). */
+/** The frames the typed value's keys land (for the sound). */
 export const typedKeys = () => typeSchedule(WALK.field.value, { start: CUE.typeIn, kind: 'human' }, { fps: FPS });
+/** When each result tile starts to arrive: +6 f a column, +14 f a row (60 fps frames), overlapping into one cascade. */
+export const tileAt = (i: number) => CUE.develop + f60x(6) * (i % GRID.cols) + f60x(14) * Math.floor(i / GRID.cols);
+
+// the pull-back lands (under 10 % of its peak speed) before the whip takes the frame
+landBeforeCut({ from: CUE.pullBack, dur: f60x(PULL.frames60), ease: E.strongInOut, id: 'field pull-back' }, CUE.whipUp - f60x(4));
 
 export const Field: React.FC = () => {
   const F = useAbs('field');
-  const t = DARK;
-  const fieldX = (W - FIELD.w) / 2;
-  // the push carried in from the claim, settling; the pull-back about the upper third; the whip up into the cut
-  const k = lmix(1.35, 1, prog(F, ACT.field.from, ACT.field.from + f60x(26), E.snapOut)) * lmix(1, PULL.k, prog(F, CUE.pullBack, CUE.pullBack + f60x(40), E.strongInOut));
-  // the whip: 0 until it builds, the whole travel on the last frame (launch() is measured from the cut)
-  const lo = { vCut: WHIP_UP.vCut, fps: FPS };
-  const up = launch(F, ACT.feed.from - 1, lo).x - launch(ACT.feed.from - 1 - f60x(90), ACT.feed.from - 1, lo).x;
-  const whipV = launch(F, ACT.feed.from - 1, lo).v / U; // the whip's speed (px/f at 1080p) smears the layer along it
-  const arrive = prog(F, ACT.field.from, ACT.field.from + f60x(20), E.snapOut);
-  // the hand: up from below the frame onto the button, the press, then off the frame once the product works alone
-  const btn = { x: fieldX + FIELD.w - FIELD.button / 2 - 20 * U, y: FIELD.y + FIELD.h / 2 + 10 * U };
-  const hand = cursorRise(F, CUE.cursor, btn, {}, { fps: FPS, width: W, height: H });
-  const away = prog(F, CUE.press + f60x(14), CUE.press + f60x(34), E.launchIn);
+  const t = themeOf('field');
+  const world = sampleWorld(`${WALK.name}:field`);
+  const lit: LitProps = { x: WIN.cx, y: WIN.cy, w: WIN.w, h: WIN.h, r: 26 * U, tilt: { x: 9, y: -8 }, ground: GROUNDS.field.base };
+  // the claim's zoom carried in and settling; the pull-back about the upper third; the whip up into the cut
+  const k = lmix(CLAIM_EXIT.k, 1, prog(F, ACT.field.from, ACT.field.from + f60x(40), E.glideOut)) * lmix(1, PULL.k, prog(F, CUE.pullBack, CUE.pullBack + f60x(PULL.frames60), E.strongInOut));
+  const up = launchOut('field', F, WHIP_UP.vCut);
+  const whipV = (up - launchOut('field', F - 1, WHIP_UP.vCut)) / U;
+  const d = drift('field', F, 20, 0.4);
+  // the window's main area and the field inside it (px in the window)
+  const side = Math.min(250 * U, WIN.w * 0.18);
+  const main = { x: side, y: 46 * U, w: WIN.w - side, h: WIN.h - 46 * U };
+  const pad = 40 * U;
+  const fieldW = main.w - 2 * pad;
+  // the hand: up from below onto the button of the tilted window, the press, then off the frame
+  const btnIn = { x: main.x + pad + fieldW - FIELD.button / 2 - 20 * U, y: main.y + FIELD.top + FIELD.h / 2 };
+  const btn = onLit(F, lit, btnIn.x - WIN.w / 2, btnIn.y - WIN.h / 2);
+  const hand = cursorRise(F, CUE.cursor, { x: btn.x, y: btn.y + 10 * U }, {}, { fps: FPS, width: W, height: H });
+  const away = prog(F, CUE.press + f60x(14), CUE.press + f60x(40), E.buildIn);
   const press = pressAt(F, CUE.press, FPS);
-  const flash = F >= CUE.press ? hitPulse(F - CUE.press, 1, 8, FPS) : 0;
+  const flash = F >= CUE.press ? hitPulse(F - CUE.press, 2, 8, FPS) : 0;
   const erased = F >= CUE.typeIn - 1;
+  const tile = (fieldW - (GRID.cols - 1) * GRID.gap) / GRID.cols;
+  const nodes: TileNode[] = WALK.results.map((r, i) => ({ glyph: (['play', 'doc', 'chart', 'list', 'image', 'table'] as const)[i % 6], label: r.title, sub: r.meta, value: r.badge, preview: (['chart', 'doc', 'list', 'table', 'bars', 'person'] as const)[i % 6], seed: `${WALK.name}:result:${i}` }));
   return (
-    <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
+    <AbsoluteFill style={{ background: GROUNDS.field.base, overflow: 'hidden' }}>
       <DirBlur v={whipV} axis="y" id="field-whip">
-      <Cam k={k} oy={PULL.oy} dy={up}>
-        <ScriptLine id="step1" F={F} top={170 * U} color={t.text} exitDir="up" />
-        <At x={fieldX} y={FIELD.y + (1 - arrive) * 60 * U} style={{ opacity: arrive }}>
-          <FieldPart
-            theme={t}
-            w={FIELD.w}
-            h={FIELD.h}
-            glyph="link"
-            lead={hasLogo(WALK.input.source) ? <AppIcon logo={WALK.input.source} size={FIELD.h * 0.68} theme={t} lift={6} /> : undefined}
-            focus={prog(F, CUE.erase - f60x(10), CUE.erase, E.snapOut)}
-            button={{
-              w: FIELD.button,
-              q: press,
-              flash,
-              label: F < CUE.busy ? WALK.field.action : <TypeOn id="field-busy" text={WALK.field.busy} frame={F} start={CUE.busy} kind="stream" cps={60} caret={false} role="ui" size={FIELD.h * 0.3} />,
-            }}
-          >
-            {!erased ? (
-              <span style={{ color: t.mute }}>
-                <TypeOn id="field-placeholder" text={WALK.field.placeholder} frame={F} start={ACT.field.from - 1} kind="human" from={1} erase={ERASE} caretColor={t.accent} role="ui" size={FIELD.h * 0.36} />
-              </span>
-            ) : (
-              <TypeOn id="field-value" text={WALK.field.value} frame={F} start={CUE.typeIn} kind="human" caretColor={t.accent} caretOut={CUE.press} role="ui" size={FIELD.h * 0.36} />
+        <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${d.x.toFixed(3)}px, ${(up + d.y).toFixed(3)}px, 0)` }}>
+          <Ground act="field" F={F} />
+          <Cam k={k} oy={PULL.oy}>
+            <ScriptLine id="step1" F={F} top={70 * U} color={t.text} exitDir="up" />
+            <Lit frame={F} {...lit} id="field-window">
+              <AppWindow theme={t} world={world} w={WIN.w} h={WIN.h} frame={F}>
+                {(m) => (
+                  <>
+                    <At x={m.x + pad} y={m.y + FIELD.top}>
+                      <FieldPart
+                        theme={t}
+                        w={fieldW}
+                        h={FIELD.h}
+                        glyph="link"
+                        lead={hasLogo(WALK.input.source) ? <AppIcon logo={WALK.input.source} size={FIELD.h * 0.68} theme={t} lift={6} /> : undefined}
+                        focus={prog(F, CUE.erase - f60x(10), CUE.erase, E.snapOut)}
+                        button={{
+                          w: FIELD.button,
+                          q: press,
+                          flash,
+                          label: F < CUE.busy ? WALK.field.action : <TypeOn id="field-busy" text={WALK.field.busy} frame={F} start={CUE.busy} kind="stream" cps={60} caret={false} role="ui" size={FIELD.h * 0.3} />,
+                        }}
+                      >
+                        {!erased ? (
+                          <span style={{ color: t.mute }}>
+                            <TypeOn id="field-placeholder" text={WALK.field.placeholder} frame={F} start={ACT.field.from - 1} kind="human" from={1} erase={ERASE} caretColor={t.accent} role="ui" size={FIELD.h * 0.36} />
+                          </span>
+                        ) : (
+                          <TypeOn id="field-value" text={WALK.field.value} frame={F} start={CUE.typeIn} kind="human" caretColor={t.accent} caretOut={CUE.press} role="ui" size={FIELD.h * 0.36} />
+                        )}
+                      </FieldPart>
+                    </At>
+                    {/* the workspace's recent items under the field (texture: the product in use), clearing as the results arrive */}
+                    {prog(F, CUE.develop - f60x(10), CUE.develop + f60x(16), E.stdInOut) < 1 && (
+                      <div style={{ position: 'absolute', left: 0, top: 0, opacity: 1 - prog(F, CUE.develop - f60x(10), CUE.develop + f60x(16), E.stdInOut), transform: `translate3d(${(m.x + pad).toFixed(2)}px, ${(m.y + GRID.top).toFixed(2)}px, 0)` }}>
+                        <Micro px={13 * U} weight={600} color={t.mute} upper>
+                          {world.screen}
+                        </Micro>
+                        {world.records.slice(0, 9).map((r, i) => (
+                          <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 24 * U, width: fieldW, height: 54 * U, boxShadow: `inset 0 -${(1 * U).toFixed(2)}px 0 ${t.line}`, transform: `translate3d(0, ${(10 * U).toFixed(2)}px, 0)` }}>
+                            <Micro px={14 * U} color={t.mute} mono>{r.id}</Micro>
+                            <Micro px={15 * U} weight={600} color={i === 0 ? t.text : mixColor(t.text, t.mute, 0.35)}>{r.title}</Micro>
+                            <span style={{ flex: 1 }} />
+                            <Micro px={14 * U} color={t.mute}>{r.date}</Micro>
+                            <Micro px={14 * U} color={t.text}>{r.value}</Micro>
+                            <Micro px={13 * U} color={i === 0 ? t.accent : t.mute}>{world.statuses[r.status].label}</Micro>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* the results: each tile rises in as a ghost and develops to colour */}
+                    {nodes.map((n, i) => {
+                      const at = tileAt(i);
+                      if (F < at) return null;
+                      const p = prog(F, at, at + f60x(30), E.glideOut);
+                      const dev = prog(F, at + f60x(10), at + f60x(36), E.stdInOut);
+                      const x = m.x + pad + (i % GRID.cols) * (tile + GRID.gap);
+                      const y = m.y + GRID.top + Math.floor(i / GRID.cols) * (tile / GRID.aspect + GRID.gap) + (1 - p) * 36 * U;
+                      const card = <ContentTile node={n} theme={t} w={tile} aspect={GRID.aspect} lift={10} />;
+                      return (
+                        <At key={i} x={x} y={y} w={tile} style={{ opacity: clamp(p * 1.4) }}>
+                          <div style={{ position: 'absolute', left: 0, top: 0, filter: 'grayscale(1) contrast(0.5) brightness(1.5)', opacity: 1 - dev }}>{card}</div>
+                          <div style={{ position: 'absolute', left: 0, top: 0, opacity: dev }}>{card}</div>
+                        </At>
+                      );
+                    })}
+                  </>
+                )}
+              </AppWindow>
+            </Lit>
+            {F >= CUE.cursor && away < 1 && (
+              <Cursor x={hand.x} y={hand.y + mix(0, H * 0.7, away)} opacity={hand.opacity * (1 - away)} shape="hand" press={press} fill={t.text} outline={t.ground} scale={1.6 * U} shadow="drop" />
             )}
-          </FieldPart>
-        </At>
-        {/* the results: each tile rises in as a ghost and develops to colour (two static copies cross-faded) */}
-        {WALK.results.map((r, i) => {
-          const at = tileAt(i);
-          if (F < at) return null;
-          const p = prog(F, at, at + f60x(16), E.snapOut);
-          const dev = prog(F, at + f60x(8), at + f60x(30), E.stdInOut);
-          const x = (W - (GRID.cols * GRID.w + (GRID.cols - 1) * GRID.gap)) / 2 + (i % GRID.cols) * (GRID.w + GRID.gap);
-          const y = GRID.y + Math.floor(i / GRID.cols) * GRID.rowH + (1 - p) * 40 * U;
-          const tile = <Tile theme={t} w={GRID.w} seed={11 + i * 3} title={r.title} meta={r.meta} badge={r.badge} id={`result-${i}`} />;
-          return (
-            <At key={i} x={x} y={y} w={GRID.w} style={{ opacity: clamp(p * 1.4) }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, width: GRID.w, filter: 'grayscale(1) contrast(0.4) brightness(1.9)', opacity: 1 - dev }}>{tile}</div>
-              <div style={{ position: 'absolute', left: 0, top: 0, width: GRID.w, opacity: dev }}>{tile}</div>
-            </At>
-          );
-        })}
-      </Cam>
+          </Cam>
+        </div>
       </DirBlur>
-      {F >= CUE.cursor && away < 1 && (
-        <Cursor x={hand.x} y={hand.y + mix(0, H * 0.7, away)} opacity={hand.opacity * (1 - away)} shape="hand" press={press} fill={t.text} outline={t.ground} scale={1.6 * U} shadow="drop" />
-      )}
     </AbsoluteFill>
   );
 };
-
