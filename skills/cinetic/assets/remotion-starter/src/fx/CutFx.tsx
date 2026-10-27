@@ -1,9 +1,11 @@
 import React from 'react';
 import { C } from '../brand/tokens';
-import { clamp, E, type Ease, lmix, mix } from '../lib/anim';
+import { clamp, curveOf, E, type Ease, lmix, mix } from '../lib/anim';
 import { mixRgb } from '../lib/color';
 import { defocusMix, DEFOCUS_SHARP } from '../lib/defocus';
+import { DIR_BLUR, DirBlur } from './Defocus';
 import { type FilmCtx, f60x, fpsOf, sizeOf, uOf, useFilm } from '../lib/film';
+import { fastRanges } from '../lib/handoff';
 import type { Declares } from '../timeline';
 
 // Cuts dressed with what is on screen: the flash cut inside a whip, the defocus cut through one empty
@@ -21,7 +23,9 @@ import type { Declares } from '../timeline';
  *
  * House numbers (60 fps): whip 24 f on E.launchIn over 0.24 of the frame width; flash 0.92 with a
  * 0.3 ghost; streak frame; slide 28 f on E.snapOut from 0.55 of the width; pull 28 f to 0.65 on
- * E.glideOut. Cut on a swell's peak.
+ * E.glideOut. Cut on a swell's peak. The whip's tail and the slide's head are smeared along x (the
+ * slide opens at several times the whip's last speed, so its first frames are the most smeared of
+ * the cut and the picture sharpens as it lands).
  */
 export type FlashCutProps = {
   cut: number; // the flash frame (the whip's last frame is cut - 1)
@@ -30,6 +34,13 @@ export type FlashCutProps = {
   streak?: boolean; // one streak frame after the flash (house true)
   slide?: { frames?: number; from?: number; ease?: Ease };
   pull?: { frames?: number; to?: number; ease?: Ease };
+  /**
+   * The streak of the fast frames (the whip's tail, the slide's head): 'draw' (house) smears them in the picture
+   * along the move (fx/Defocus DirBlur at the whip shutter, 360 degrees: the slide is still soft as it lands),
+   * 'shutter' declares them as camera blur for the
+   * finishing pass instead (render.sh --blur), false keeps them crisp.
+   */
+  smear?: 'draw' | 'shutter' | false;
   id?: string;
 };
 
@@ -41,6 +52,7 @@ export type FlashCutState = {
   flash: number; // the white veil, 0..1 (the flash frame only)
   ghost: number; // the ghost's opacity on the flash frame
   streak: boolean;
+  v: number; // the moving layer's step into this frame, px (outgoing in the whip, incoming in the slide; 0 on the flash, streak and pull)
 };
 
 /** The frames of a flash cut: whip start, flash, streak, slide start, pull start and end. */
@@ -53,8 +65,7 @@ export const flashCutFrames = (p: FlashCutProps, film?: Partial<FilmCtx>) => {
   return { whipFrom: p.cut - 1 - whip, flash: p.cut, streak: p.streak === false ? null : p.cut + 1, slideFrom, pullFrom: slideFrom + slide, pullTo: slideFrom + slide + pull };
 };
 
-/** The flash cut at frame f. Pure; the flash and streak frames decide on whole frames. */
-export const flashCutState = (f: number, p: FlashCutProps, film?: Partial<FilmCtx>): FlashCutState => {
+const flashCutPose = (f: number, p: FlashCutProps, film?: Partial<FilmCtx>): Omit<FlashCutState, 'v'> => {
   const { width } = sizeOf(film);
   const fr = flashCutFrames(p, film);
   const dir = p.whip?.dir ?? 1;
@@ -74,6 +85,15 @@ export const flashCutState = (f: number, p: FlashCutProps, film?: Partial<FilmCt
   return { ...base, phase: f < fr.pullTo ? 'pull' : 'after', inX: 0, inK };
 };
 
+/** The flash cut at frame f. Pure; the flash and streak frames decide on whole frames. */
+export const flashCutState = (f: number, p: FlashCutProps, film?: Partial<FilmCtx>): FlashCutState => {
+  const a = flashCutPose(f, p, film);
+  const b = flashCutPose(f - 1, p, film);
+  // the slide's first frame was not drawn before: its speed is the step it leaves with (the slide's fastest)
+  const v = a.phase === 'whip' ? a.outX - b.outX : a.phase === 'slide' ? (b.phase === 'slide' ? a.inX - b.inX : flashCutPose(f + 1, p, film).inX - a.inX) : 0;
+  return { ...a, v };
+};
+
 /**
  * Renders a flash cut: `out` whipping, the flash frame (the veil over a faint, soft ghost of `out`),
  * the streak frame (`out` stretched along the whip and cut into thin lines), then `in` sliding in and
@@ -87,10 +107,13 @@ export const FlashCut: React.FC<FlashCutProps & { frame: number; out: React.Reac
   const ground = props.ground ?? C.ink;
   const light = props.light ?? '#FFFFFF';
   const box: React.CSSProperties = { position: 'absolute', inset: 0, overflow: 'hidden', background: ground };
+  const u = uOf(film);
+  const draw = (props.smear ?? 'draw') === 'draw';
+  const smeared = (node: React.ReactNode, id: string) => (draw && s.v ? <DirBlur v={s.v / u} axis="x" shutter={DIR_BLUR.whipShutter} id={`${props.id ?? 'flashCut'}-${id}`}>{node}</DirBlur> : node);
   if (s.phase === 'before' || s.phase === 'whip')
     return (
       <div style={box}>
-        <div style={{ position: 'absolute', inset: 0, transform: `translateX(${s.outX.toFixed(3)}px)` }}>{props.out}</div>
+        <div style={{ position: 'absolute', inset: 0, transform: `translateX(${s.outX.toFixed(3)}px)` }}>{smeared(props.out, 'out')}</div>
       </div>
     );
   if (s.phase === 'flash')
@@ -112,7 +135,7 @@ export const FlashCut: React.FC<FlashCutProps & { frame: number; out: React.Reac
   }
   return (
     <div style={box}>
-      <div style={{ position: 'absolute', inset: 0, transformOrigin: `${o.x}px ${o.y}px`, transform: `translateX(${s.inX.toFixed(3)}px) scale(${s.inK.toFixed(5)})` }}>{props.in}</div>
+      <div style={{ position: 'absolute', inset: 0, transformOrigin: `${o.x}px ${o.y}px`, transform: `translateX(${s.inX.toFixed(3)}px) scale(${s.inK.toFixed(5)})` }}>{smeared(props.in, 'in')}</div>
     </div>
   );
 };
@@ -233,18 +256,69 @@ export const blackDipState = (f: number, o: { cut: number; black?: 1 | 2; fadeUp
 };
 
 /**
- * Door split: the outgoing frame splits down the middle (or across) and both halves slide apart,
- * accelerating, revealing the incoming shot behind them (house 24 f at 60 fps on E.buildIn, each half
- * travels its own width). Returns each half's offset (px, positive = away from the split) and progress.
+ * Door split: the outgoing frame splits down the middle (or across) and both halves slide apart on the
+ * measured door path, revealing the incoming shot behind them: a geometric build (each step about x1.5
+ * the last) that leaves the frame at about 250 px a frame at 1080p and 24 fps, 30 f at 60 fps; each half
+ * travels its own width.
+ *
+ * The incoming element inherits the doors' speed, turned through 90 degrees: it peeks first (its top
+ * edge rises `peek` px into the frame over 12 f, starting 18 f before the doors move: the anticipation),
+ * creeps, then rides up through the gap with the doors' build (from a third into their run), peaks with
+ * them at about 110 px a frame at 1080p and 24 fps and decays after (the measured path: 7 % of the rise
+ * in its first 24 fps frame, a third by the fourth, 77 % by the eighth, home in 50 f at 60 fps). It rises
+ * from the frame's bottom edge: give its rest top (`top`, px) or it travels 0.82 of the frame height.
+ * Draw it above the halves. Returns each half's offset (px, positive = away from the split), the
+ * progress, and the incoming element's offset below its rest (`rise`, px; 0 = home).
  */
-export const doorSplitState = (f: number, o: { start: number; frames?: number; ease?: Ease; axis?: 'x' | 'y' }, film?: Partial<FilmCtx>) => {
+export const DOOR = {
+  frames60: 30,
+  rise: { from: 0.817, frames60: 50, at: 1 / 3, peek: 32, peek60: 12, lead60: 18, creep: 24 },
+  // progress of each half per 24 fps frame (12 frames), the measured door path normalised
+  doors: [0, 0.001, 0.0052, 0.0115, 0.0219, 0.0375, 0.0604, 0.0938, 0.1438, 0.2344, 0.501, 0.7688, 1] as number[],
+  // progress of the rise per 24 fps frame (20 frames), the measured path of the element's top edge normalised
+  path: [0, 0.0726, 0.1474, 0.2313, 0.3265, 0.4331, 0.5601, 0.6848, 0.7732, 0.8299, 0.8685, 0.8934, 0.9184, 0.9388, 0.9569, 0.9705, 0.9796, 0.9864, 0.9921, 0.9966, 1] as number[],
+} as const;
+const doorPath: Ease = curveOf(DOOR.doors);
+const doorRise: Ease = curveOf(DOOR.path);
+
+export type DoorSplitOpts = {
+  start: number; // the doors start moving
+  frames?: number; // film frames (house 30 f at 60 fps)
+  ease?: Ease; // the doors' path (house: the measured door path; E.buildIn is a softer build)
+  axis?: 'x' | 'y';
+  /**
+   * the incoming element's rise through the gap: from its rest top `top` (px; it starts with that top on the frame's
+   * bottom edge) or `from` (share of the frame height below its rest, house 0.82), over `frames` (60 fps, house 50),
+   * starting at `at` of the doors' run (house 1/3); `peek` px (house 32 at 1080p) over `peek60` frames, `lead60`
+   * frames before the doors, then a creep of `creep` px/s until the rise. false = no rise (rise stays 0).
+   */
+  rise?: false | { top?: number; from?: number; frames?: number; at?: number; peek?: number; peek60?: number; lead60?: number; creep?: number; ease?: Ease };
+};
+
+export const doorSplitState = (f: number, o: DoorSplitOpts, film?: Partial<FilmCtx>) => {
   const fps = fpsOf(film);
   const { width, height } = sizeOf(film);
-  const frames = Math.max(1, o.frames ?? f60x(24, fps));
+  const frames = Math.max(1, o.frames ?? f60x(DOOR.frames60, fps));
   const t = clamp((f - o.start) / frames);
   const half = (o.axis === 'y' ? height : width) / 2;
-  const k = (o.ease ?? E.buildIn)(t);
-  return { offset: k * half, t, open: t >= 1 };
+  const k = (o.ease ?? doorPath)(t);
+  let rise = 0;
+  let riseAt = o.start + frames * DOOR.rise.at;
+  if (o.rise !== false) {
+    const r = o.rise ?? {};
+    const u = Math.min(width, height) / 1080;
+    const from = r.top !== undefined ? height - r.top : (r.from ?? DOOR.rise.from) * height;
+    const peek = (r.peek ?? DOOR.rise.peek) * u;
+    const peekF = Math.max(1, f60x(r.peek60 ?? DOOR.rise.peek60, fps));
+    const peek0 = o.start - f60x(r.lead60 ?? DOOR.rise.lead60, fps);
+    riseAt = o.start + frames * (r.at ?? DOOR.rise.at);
+    const rf = Math.max(1, f60x(r.frames ?? DOOR.rise.frames60, fps));
+    // the hold between the peek and the rise creeps on (never frozen)
+    const creep = (((r.creep ?? DOOR.rise.creep) * u) / fps) * clamp(Math.min(f, riseAt) - (peek0 + peekF), 0, Infinity);
+    const held = from - peek * E.settleOut(clamp((f - peek0) / peekF)) - creep;
+    rise = held * (1 - (r.ease ?? doorRise)(clamp((f - riseAt) / rf)));
+  }
+  return { offset: k * half, t, open: t >= 1, rise, riseAt };
 };
 
 /**
@@ -276,7 +350,8 @@ export const tintThroughGrey = (f: number, o: { start: number; frames?: number; 
 
 /**
  * What the cuts declare. Flash cut: the flash frame is a designed flash, flash and streak frames are
- * stepped (one sample each), and the cut is a `whip` seam carrying x. Defocus cut: a `defocus` seam on
+ * stepped (one sample each), the cut is a `whip` seam carrying x; with smear 'shutter' the whip's fast
+ * tail and the slide's fast head are camera blur (the flash and streak frames stay one sample). Defocus cut: a `defocus` seam on
  * the empty frame.
  */
 export const declares = (p?: Partial<FlashCutProps & DefocusCutProps> & { kind?: 'flash' | 'defocus' }, film?: Partial<FilmCtx>): Declares => {
@@ -284,10 +359,14 @@ export const declares = (p?: Partial<FlashCutProps & DefocusCutProps> & { kind?:
   if ((p.kind ?? (p.cut !== undefined ? 'flash' : 'defocus')) === 'flash' && p.cut !== undefined) {
     const id = p.id ?? 'flashCut';
     const fr = flashCutFrames(p as FlashCutProps, film);
+    // smear 'shutter': the whip's last frames and the slide's first ones are camera blur on exactly those frames
+    const { width, height } = sizeOf(film);
+    const speed = (f: number) => Math.abs(flashCutState(f, p as FlashCutProps, film).v);
+    const shutter = p.smear === 'shutter';
     return {
       stepped: [{ from: fr.flash, to: (fr.streak ?? fr.flash) + 1, id }],
       flashes: [{ f: fr.flash, frames: 1, id }],
-      cameraBlur: [],
+      cameraBlur: shutter ? fastRanges(speed, fr.whipFrom, fr.pullTo, { u: Math.min(width, height) / 1080, fps: fpsOf(film), id: `${id}-smear` }) : [],
       seams: [{ at: fr.flash, kind: 'whip', carry: 'x', dir: p.whip?.dir ?? 1, id }],
     };
   }
