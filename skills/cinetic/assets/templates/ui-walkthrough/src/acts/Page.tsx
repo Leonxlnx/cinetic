@@ -78,10 +78,10 @@ export const Page: React.FC = () => {
               cam={{ base: CENTRE, moves: depthPush(ACT.page.from, { film, frames: ACT.page.dur * 1.2, zoom: 1.18, pan: -60, yaw: 5 }) }}
               rim
               items={[
-                { id: 'far-0', plane: 'far', x: W * 0.16, y: H * 0.62, w: PAGE.w * 0.7, h: PAGE.h * 0.7, at: ACT.page.from },
-                { id: 'far-1', plane: 'far', x: W * 0.86, y: H * 0.7, w: PAGE.w * 0.7, h: PAGE.h * 0.7, at: ACT.page.from + f60x(6) },
-                { id: 'page', plane: 'mid', x: W / 2, y: top - 40 * U, w: PAGE.w, h: PAGE.h, r: 40 * U, tilt: { x: 10, y: -8 }, at: ACT.page.from },
-                { id: 'near-0', plane: 'near', x: W * 0.06, y: H * 0.95, w: 520 * U, h: 380 * U, at: ACT.page.from + f60x(10) },
+                { id: 'far-0', plane: 'far', carries: 'ui', x: W * 0.16, y: H * 0.62, w: PAGE.w * 0.7, h: PAGE.h * 0.7, at: ACT.page.from },
+                { id: 'far-1', plane: 'far', carries: 'ui', x: W * 0.86, y: H * 0.7, w: PAGE.w * 0.7, h: PAGE.h * 0.7, at: ACT.page.from + f60x(6) },
+                { id: 'page', plane: 'mid', carries: 'ui', x: W / 2, y: top - 40 * U, w: PAGE.w, h: PAGE.h, r: 40 * U, tilt: { x: 10, y: -8 }, at: ACT.page.from },
+                { id: 'near-0', plane: 'near', carries: 'ui', x: W * 0.06, y: H * 0.95, w: 520 * U, h: 380 * U, at: ACT.page.from + f60x(10) },
               ]}
               render={(id) => (id === 'page' ? <PageFace F={F} scroll={scroll} /> : id.startsWith('far') ? <PageFace F={F} seed={id} w={PAGE.w * 0.7} h={PAGE.h * 0.7} /> : <ContentTile node={{ glyph: 'check', label: WALK.page.cta, sub: WALK.page.rows[1], preview: 'list', seed: `${WALK.name}:near` }} theme={PAGE_THEME} w={520 * U} aspect={520 / 380} />)}
             />

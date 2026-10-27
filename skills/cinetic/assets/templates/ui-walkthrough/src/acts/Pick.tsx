@@ -91,13 +91,13 @@ export const Pick: React.FC = () => {
   const zoom = mix(zoomAt(F), 1, m);
   const headOn = F >= CUE.toPill + f60x(28);
   const pct = pctAt(F);
-  const sheetIn = prog(F, CUE.options - f60x(6), CUE.options + f60x(30), E.glideOut); // the chooser arrives with its rows
+  const sheetIn = prog(F, CUE.options - f60x(20), CUE.options + f60x(24), E.glideOut); // the chooser arrives with its rows, already in on the cut
   return (
     <AbsoluteFill style={{ background: GROUNDS.pick.base, overflow: 'hidden' }}>
       <DirBlur v={cv} axis="x" id="pick-carry">
         <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(carried + d.x).toFixed(2)}px, ${d.y.toFixed(3)}px, 0)` }}>
           <Ground act="pick" F={F} />
-          <ScriptLine id="pick" F={F} top={70 * U} color={t.text} />
+          <ScriptLine id="pick" F={F} top={70 * U} color={t.text} accent={t.accent} mute={t.mute} />
           <div style={TILTED}>
           {/* the sheet the options sit on: the product's chooser, lit and tilted with them; it falls back as the build takes over */}
           <div style={{ position: 'absolute', left: 0, top: 0, opacity: (1 - m) * sheetIn, transformOrigin: `${(SHEET.w / 2).toFixed(2)}px ${(oy - SHEET.y).toFixed(2)}px`, transform: `translate3d(${((W - SHEET.w) / 2).toFixed(2)}px, ${SHEET.y.toFixed(2)}px, 0) scale(${(zoom * mix(0.94, 1, sheetIn)).toFixed(5)})` }}>
@@ -107,7 +107,7 @@ export const Pick: React.FC = () => {
           </div>
           <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${oy}px`, transform: `scale(${zoom.toFixed(5)})` }}>
             {WALK.options.map((o, i) => {
-              const at = CUE.options + i * f60x(6);
+              const at = CUE.options - f60x(14) + i * f60x(5); // the first row is most of the way in on the cut: the whip lands on content
               const p = prog(F, at, at + f60x(30), E.glideOut);
               const chosen = i === pick;
               if (F < at || (chosen && headOn) || (!chosen && gone >= 1)) return null;

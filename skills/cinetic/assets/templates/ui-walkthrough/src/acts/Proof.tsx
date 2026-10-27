@@ -88,10 +88,10 @@ export const Proof: React.FC = () => {
         {DEAL.proof === 'river' ? (
           <River F={F} />
         ) : DEAL.proof === 'wall' ? (
-          <ContentWall nodes={nodes} frame={F} start={CUE.toast0} tile={250 * U} stagger={3} theme={t} seed={`${WALK.name}:proof`} clear={{ w: 0, h: 0 }} />
+          <ContentWall nodes={nodes} frame={F} start={ACT.proof.from - Math.round(f60x(26))} tile={250 * U} stagger={3} theme={t} seed={`${WALK.name}:proof`} clear={{ w: 0, h: 0 }} />
         ) : (
           <div style={{ position: 'absolute', inset: 0, transformOrigin: `${W / 2}px ${H / 2}px`, transform: `perspective(${2200 * U}px) rotateX(9deg) rotateY(-11deg)` }}>
-            <Stack frame={F} arrivals={TOASTS.slice(0, n)} enter={24} x={W / 2} y={H / 2 - 40 * U} width={NOTICE.w} height={NOTICE.h} render={(i) => <N i={i} />} />
+            <Stack frame={F} arrivals={[ACT.proof.from - Math.round(f60x(18)), ...TOASTS.slice(1, n)]} enter={24} x={W / 2} y={H * 0.3} width={NOTICE.w} height={NOTICE.h} render={(i) => <N i={i} />} />
           </div>
         )}
       </Cam>

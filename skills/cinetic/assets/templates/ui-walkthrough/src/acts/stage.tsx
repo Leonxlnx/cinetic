@@ -1,25 +1,30 @@
 // What every act of the walkthrough shares: the stage plan (which acts stand on paper and which on the slate, dealt
-// per film), one lit ground per act (fx/Grounds: a lit gradient keyed to the film's one light, its plates drifting, never
-// the same ground on more than two consecutive shots), the absolute frame, a line of the script on the crisp entry,
+// per film), one clean lit ground per act (fx/Grounds: the flat base or a very subtle gradient keyed to the film's one
+// light, no plates, no pools, no haze; never the same ground on more than two consecutive shots), the absolute frame,
+// a line of the script on its dealt move (acts/type.tsx),
 // the camera helpers, the whole-frame launch and carry at a velocity seam, and the hold drift every shot keeps.
 // Retell it in the dealt direction's world (out/DIRECTION.md): its grounds, light and type replace this floor; the
 // product's own screens replace the kit parts the acts use.
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
-import { C, SAFE, TYPE, typeStyle, U } from '../brand/tokens';
+import { C, SAFE, TYPE, U } from '../brand/tokens';
 import { DEAL_SEED } from '../deal';
-import { crispWords } from '../fx/TypePresets';
-import { type GroundKind, type GroundSpec, LitGround, seeded } from '../fx/Grounds';
+import { type GroundKind, groundKey, type GroundSpec, LitGround, seeded } from '../fx/Grounds';
 import { LIT, type LitProps, litState } from '../fx/Lit';
 import { panelMatrix } from '../lib/light';
-import { Words, type WordsSpec } from '../fx/Words';
 import { kitTheme, type KitTheme } from '../kit';
 import { clamp, E, prog } from '../lib/anim';
+import { mixColor } from '../lib/color';
 import { type Shot } from '../lib/camera';
 import { holdDrift } from '../lib/continuity';
 import { carry, launch } from '../lib/handoff';
 import { fitSize } from '../lib/measure';
-import { ACT, ACT_ORDER, type ActName, copy, f60, f60x, FPS, H, LINE_EXIT, TONE, W } from '../timeline';
+import { LINES } from '../deal';
+import { ACT, ACT_ORDER, type ActName, copy, f60x, FPS, H, moveOf, TONE, W } from '../timeline';
+import { HeroLine } from './type';
+
+/** The launch out of the promise into the card: px per frame on the cut at 1080p, upward (the card act opens carried at 0.8 of it). */
+export const OPEN_EXIT = { vCut: -46 * U };
 
 /** The paper stage and the slate stage: neutral grounds, one accent. */
 export const LIGHT = kitTheme('tintedPaper', C.accent);
@@ -31,26 +36,30 @@ export const toneOf = (a: ActName) => TONE[a];
 export const themeOf = (a: ActName): KitTheme => (toneOf(a) === 'light' ? LIGHT : DARK);
 
 /**
- * One lit ground per act, dealt from the film's seed: the kind rotates so no ground (kind and base) holds more than two
- * consecutive acts and never the kind of the act before (the feed and the insight share theirs: one place across the
- * morph). Grounds on the slate get light pools and bars; on paper, soft shadow shapes.
+ * One clean ground per act, dealt from the film's seed: the flat base or the subtle key gradient (fx/Grounds CLEAN_KINDS)
+ * on one of two bases of the act's stage, so the place changes across the cut and no ground (kind and base) holds more
+ * than two consecutive acts. The feed and the insight share theirs: one place across the morph. No plates, no pools.
  */
 export const GROUNDS: Record<ActName, GroundSpec> = (() => {
   const rnd = seeded((DEAL_SEED % 1e6) * 7919 + 17);
-  const kinds: GroundKind[] = ['wash', 'pools', 'bars', 'floor', 'window'];
+  const bases = { light: [LIGHT.ground, mixColor(LIGHT.ground, C.mist, 0.7)], dark: [DARK.ground, mixColor(DARK.ground, C.ink, 0.32)] };
+  const kinds: GroundKind[] = ['wash', 'flat'];
   const out = {} as Record<ActName, GroundSpec>;
-  let prev: GroundKind | null = null;
+  const keys: string[] = [];
   for (const a of ACT_ORDER) {
     if (a === 'insight') {
       out[a] = out.feed;
+      keys.push(groundKey(out.feed));
       continue;
     }
     const tone = toneOf(a);
-    // paper takes the broad light (a lit wall, window beams); soft pools and bars on paper read as smudges
-    const pool = kinds.filter((k) => k !== prev && (tone === 'dark' || k === 'wash' || k === 'window'));
-    const kind = pool[Math.floor(rnd() * pool.length)];
-    prev = kind;
-    out[a] = { kind, base: tone === 'light' ? C.mist : C.slate, lift: tone === 'light' ? 0.08 : 0.12, seed: Math.floor(rnd() * 1e6), drift: 14 };
+    const all = kinds.flatMap((kind) => bases[tone].map((base) => ({ kind, base })));
+    const run = keys.length >= 2 && keys[keys.length - 1] === keys[keys.length - 2] ? keys[keys.length - 1] : null;
+    // change the place at most cuts (two in three), never let one ground run past two acts
+    const pool = all.filter((g) => groundKey(g) !== run && (rnd() < 0.34 || groundKey(g) !== keys[keys.length - 1]));
+    const pick = (pool.length ? pool : all)[Math.floor(rnd() * (pool.length || all.length))];
+    out[a] = { ...pick, lift: tone === 'light' ? 0.04 : 0.06, seed: Math.floor(rnd() * 1e6), drift: 12 };
+    keys.push(groundKey(out[a]));
   }
   return out;
 })();
@@ -71,34 +80,13 @@ export const lineSize = (text: string, role: 'line' | 'display' = 'line', share 
   Math.min(TYPE[role].size * U, fitSize(text, (W - 2 * SAFE.x) * share, TYPE[role].size * U, TYPE[role].weight, TYPE[role].track));
 
 /**
- * A line of the script (a COPY entry) on one line, centred on the frame at `top` (px), its words rising and sharpening
- * on the crisp hero entry (fx/TypePresets crispWords), leaving at its `out` frame toward `exitDir` (a launch whose last
- * frame is `exitAt`, or a short launch-fade inside the act).
+ * A line of the script (a COPY entry) on one line, centred on the frame at `top` (px, the line's top), on the move and
+ * the exit the film dealt it (src/deal.ts LINES, acts/type.tsx HeroLine): it leaves at its `out` frame at speed.
  */
-export const ScriptLine: React.FC<{ id: string; F: number; top: number; color: string; role?: 'line' | 'display'; exitDir?: WordsSpec['exitDir']; exitAt?: number; size?: number; spec?: Partial<WordsSpec> }> = ({ id, F, top, color, role = 'line', exitDir = 'up', exitAt, size, spec }) => {
+export const ScriptLine: React.FC<{ id: string; F: number; top: number; color: string; role?: 'line' | 'display'; size?: number; x?: number; accent?: string; mute?: string }> = ({ id, F, top, color, role = 'line', size, x = W / 2, accent, mute }) => {
   const c = copy(id);
   const px = size ?? lineSize(c.text, role);
-  if (F < c.in - 1) return null;
-  const film = { fps: FPS, width: W, height: H };
-  return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width: W, display: 'flex', justifyContent: 'center', transform: `translate3d(0, ${top.toFixed(2)}px, 0)` }}>
-      <Words
-        id={id}
-        text={c.text}
-        frame={F}
-        start={c.in}
-        size={px}
-        {...crispWords(film)}
-        out={c.out}
-        outDur={f60(LINE_EXIT)}
-        exit={exitAt === undefined ? 'launchFade' : 'launch'}
-        exitDir={exitDir}
-        exitAt={exitAt}
-        {...spec}
-        style={{ ...typeStyle(role, px), color }}
-      />
-    </div>
-  );
+  return <HeroLine id={id} text={c.text} at={c.in} frame={F} move={moveOf(id)} out={c.out} exit={LINES.exit[id]} x={x} y={top + (px * TYPE[role].lead) / 2} role={role} size={px} color={color} accent={accent ?? C.accent} mute={mute} />;
 };
 
 /** A layer scaled by `k` about the screen point (ox, oy) and moved by (dx, dy): an act's camera on its world. */

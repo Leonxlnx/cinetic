@@ -10,8 +10,7 @@ import { clamp, E, lmix, mix, prog } from '../lib/anim';
 import { intoCut } from '../lib/handoff';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
-import { OPEN_EXIT } from './Open';
-import { carryIn, drift, Ground, GROUNDS, themeOf, useAbs } from './stage';
+import { carryIn, drift, Ground, GROUNDS, OPEN_EXIT, themeOf, useAbs } from './stage';
 
 // CARD - the signature: the user's input as one lit card (fx/Lit: tilted in the film's one light, rimmed on its key
 // side, casting its shadow on the ground) carried up on the promise's speed, while the film makes its one 3D turn: the
@@ -22,7 +21,7 @@ import { carryIn, drift, Ground, GROUNDS, themeOf, useAbs } from './stage';
 // the zoom-through that opens the proof. Continuity comes from the container, never from a cut or a one-frame jump.
 
 /** The card at film size and the turn it makes (degrees). */
-export const CARD = { w: 1120 * U, h: 640 * U, r: 40 * U, turn: { from: -36, to: -12, x: 10, frames60: 108 } } as const;
+export const CARD = { w: 1340 * U, h: 760 * U, r: 44 * U, turn: { from: -36, to: -12, x: 10, frames60: 108 } } as const;
 const cx = W / 2;
 const cy = H / 2 + 14 * U;
 const pad = 64 * U;
@@ -38,7 +37,8 @@ export const turnAt = (F: number) => prog(F, CUE.swap, CUE.swap + f60x(44), E.st
 /** The camera's scale: lean in on the rows, then the push into the card that runs into the zoom-through. */
 export const cardK = (F: number) => lmix(1, 1.1, prog(F, CUE.lean, CUE.lean + f60x(72), E.settleOut)) * lmix(1, 1.6, intoCut(F, ACT.proof.from, 30, FPS));
 
-const InputFace: React.FC<{ w: number; h: number }> = ({ w, h }) => {
+/** The input's face of the card (the open's 'card' device shows it rising before the act). */
+export const InputFace: React.FC<{ w: number; h: number }> = ({ w, h }) => {
   const t = themeOf('card');
   const nodes = worldNodes(sampleWorld(`${WALK.name}:input`), 4).map((n, i) => ({ ...n, label: WALK.results[i]?.title ?? n.label, sub: WALK.results[i]?.meta ?? n.sub }));
   const tile = (w - 2 * pad - 3 * 16 * U) / 4;

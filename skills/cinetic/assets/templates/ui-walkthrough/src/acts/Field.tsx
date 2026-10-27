@@ -78,7 +78,7 @@ export const Field: React.FC = () => {
         <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${d.x.toFixed(3)}px, ${(up + d.y).toFixed(3)}px, 0)` }}>
           <Ground act="field" F={F} />
           <Cam k={k} oy={PULL.oy}>
-            <ScriptLine id="step1" F={F} top={70 * U} color={t.text} exitDir="up" />
+            <ScriptLine id="step1" F={F} top={70 * U} color={t.text} accent={t.accent} mute={t.mute} />
             <Lit frame={F} {...lit} id="field-window">
               <AppWindow theme={t} world={world} w={WIN.w} h={WIN.h} frame={F}>
                 {(m) => (

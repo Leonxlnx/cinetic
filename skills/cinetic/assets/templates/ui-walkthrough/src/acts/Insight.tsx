@@ -2,32 +2,41 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { U } from '../brand/tokens';
 import { DirBlur } from '../fx/Defocus';
-import { DepthStack } from '../fx/DepthStack';
-import { ContentTile, surfaceShadow, type TileNode } from '../kit';
-import { E, hitPulse, lmix, prog } from '../lib/anim';
-import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
+import { Avatar, face, KIT_TYPE, surfaceShadow } from '../kit';
+import { E, lmix, prog } from '../lib/anim';
+import { ACT, CUE, f60x, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { PILL_BOX, PillContent } from './Feed';
-import { CENTRE, drift, Ground, launchOut, ScriptLine, themeOf, useAbs } from './stage';
+import { drift, Ground, launchOut, ScriptLine, themeOf, useAbs } from './stage';
 
 // INSIGHT - what the product found, as one pill: the people who asked (crafted portraits), the insight, a count chip
-// that glides in on its beat. The people who wrote it stand round the pill in depth as content tiles, their names and
-// their words (fx/DepthStack: smaller and softer far away, large and soft near the lens) while the camera pushes slowly
-// in; the line above says it in a sentence on the crisp entry; the key light swells once before the whole frame whips
-// left into the choice, its last frame the fastest.
+// that glides in on its beat; the line above says it in a sentence on its dealt move. Under the pill the words people
+// wrote rise as three quote cards, the outer two cropped by the frame's edges, riding a slower plane than the pill
+// while the camera pushes slowly in. Then the whole frame whips left into the choice, its last frame the fastest.
 
 /** The whip into the choice: px per frame on the cut, leftward. */
 export const WHIP_LEFT = { vCut: -96 * U };
 
-/** Where the people stand round the pill (share of the frame) and on which plane. */
-const SPOTS: { plane: 'far' | 'near'; x: number; y: number }[] = [
-  { plane: 'far', x: 0.12, y: 0.24 },
-  { plane: 'far', x: 0.86, y: 0.2 },
-  { plane: 'far', x: 0.1, y: 0.82 },
-  { plane: 'far', x: 0.9, y: 0.84 },
-  { plane: 'near', x: 0.98, y: 0.55 },
-  { plane: 'near', x: 0.02, y: 0.5 },
-];
+const QUOTE = { w: 700 * U, h: 190 * U, gap: 40 * U, y: 760 * U } as const;
+
+/** One of the words people wrote: a portrait, the name, the message. */
+const Quote: React.FC<{ i: number }> = ({ i }) => {
+  const t = themeOf('insight');
+  const r = WALK.feed.rows[(WALK.feed.key + i + 1) % WALK.feed.rows.length];
+  return (
+    <div data-ui style={{ width: QUOTE.w, height: QUOTE.h, borderRadius: 28 * U, background: t.surface, boxShadow: surfaceShadow(t, 22, U), display: 'flex', alignItems: 'center', gap: 24 * U, padding: `0 ${30 * U}px`, boxSizing: 'border-box' }}>
+      <Avatar theme={t} i={i + 3} initials={r.initials} seed={r.who} size={88 * U} kind="portrait" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 * U, minWidth: 0 }}>
+        <span data-text={`quote-who-${i}`} style={face(KIT_TYPE.label * U, 600, t.mute)}>
+          {r.who}
+        </span>
+        <span data-text={`quote-text-${i}`} style={{ ...face(KIT_TYPE.body * U, 540, t.text), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {r.text}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 export const Insight: React.FC = () => {
   const F = useAbs('insight');
@@ -37,25 +46,27 @@ export const Insight: React.FC = () => {
   const whipV = (dx - launchOut('insight', F - 1, WHIP_LEFT.vCut)) / U;
   const k = lmix(1, 1.06, prog(F, ACT.insight.from, ACT.pick.from, E.linear));
   const d = drift('insight', F, 90, 0.35);
-  const key = 0.05 * prog(F, ACT.insight.from, ACT.insight.from + f60x(40), E.softOut) + 0.06 * hitPulse(F - CUE.glow, 6, 40, FPS); // the key comes up, then swells once under the read
-  const people: TileNode[] = WALK.feed.rows.slice(0, SPOTS.length).map((r, i) => ({ glyph: 'chat', label: r.who, sub: r.text, preview: 'person', seed: `${r.who}:${i}` }));
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
       <DirBlur v={whipV} axis="x" id="insight-whip">
         <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(dx + d.x).toFixed(3)}px, ${d.y.toFixed(3)}px, 0)` }}>
           <Ground act="insight" F={F} />
-          <AbsoluteFill style={{ background: `linear-gradient(160deg, rgba(255,255,255,${key.toFixed(3)}) 0%, rgba(255,255,255,0) 55%)` }} />
-          {/* the people who wrote it, round the pill in depth */}
-          <DepthStack
-            frame={F}
-            cam={{ base: CENTRE, moves: [{ at: ACT.insight.from, frames: ACT.insight.dur, zoom: 1.06, ease: E.linear }] }}
-            planes={{ far: { blur: 3 }, near: { blur: 7 } }}
-            rim
-            items={SPOTS.map((s, i) => ({ id: `p${i}`, plane: s.plane, x: W * s.x, y: H * s.y, w: 330 * U, h: 300 * U, tilt: { x: 0, y: s.x < 0.5 ? 14 : -14 }, at: ACT.insight.from + f60x(6 + 6 * i) }))}
-            render={(id) => <ContentTile node={people[Number(id.slice(1))]} theme={t} w={330 * U} aspect={1.1} />}
-          />
+          {/* the words people wrote: a slower plane (0.6 of the push), the outer cards cropped by the frame */}
+          <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${H / 2}px`, transform: `scale(${lmix(1, k, 0.6).toFixed(5)})` }}>
+            {[-1, 0, 1].map((j, i) => {
+              const at = CUE.say4 + f60x(18 + 8 * i);
+              const p = prog(F, at, at + f60x(40), E.glideOut);
+              if (p <= 0) return null;
+              const x = W / 2 + j * (QUOTE.w + QUOTE.gap) - QUOTE.w / 2;
+              return (
+                <div key={j} style={{ position: 'absolute', left: 0, top: 0, opacity: Math.min(1, p * 1.8), transform: `translate3d(${x.toFixed(2)}px, ${(QUOTE.y + (1 - p) * 120 * U).toFixed(2)}px, 0)` }}>
+                  <Quote i={i} />
+                </div>
+              );
+            })}
+          </div>
           <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${H / 2}px`, transform: `scale(${k.toFixed(5)})` }}>
-            <ScriptLine id="insight" F={F} top={300 * U} color={t.text} />
+            <ScriptLine id="insight" F={F} top={300 * U} color={t.text} accent={t.accent} mute={t.mute} />
             <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: PILL_BOX.w, height: PILL_BOX.h, borderRadius: PILL_BOX.h / 2, background: t.surface, boxShadow: `${surfaceShadow(t, 34, U)}, inset 0 0 0 ${(3 * U).toFixed(2)}px ${t.accent}`, transform: `translate3d(${(PILL_BOX.cx - PILL_BOX.w / 2).toFixed(2)}px, ${(PILL_BOX.cy - PILL_BOX.h / 2).toFixed(2)}px, 0)` }}>
               <PillContent chip={chip} />
             </div>

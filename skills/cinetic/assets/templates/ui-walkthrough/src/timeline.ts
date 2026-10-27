@@ -4,8 +4,8 @@
 // (src/acts), sound (src/sync.ts -> out/cues.json) and QA (scripts/grid-check.ts) all import this file. The facts
 // live in src/walk.ts and the dealt devices in src/deal.ts; this file only places them on the grid. Think in beats,
 // never in seconds. Keep it free of React and CSS imports: Node scripts load it directly.
-import { DEAL } from './deal';
-import { holdFor, PACE, readingWindows, revealFor, wordCount, type PaceName } from './lib/pace';
+import { DEAL, EXIT60, LINES, type Move, NAME_MOVE, RESOLVE60 } from './deal';
+import { holdFor, PACE, readingWindows, wordCount, type PaceName } from './lib/pace';
 import { bar, MUSIC } from './music';
 import { CLAIM, PROMISE, WALK } from './walk';
 
@@ -54,13 +54,13 @@ export const bt = (x: number) => {
 export const TAIL = FPS;
 
 /**
- * Where each act starts, in beats (18 bars at 120 BPM: 37 s with the tail). Every act line sits on a bar line, so with
+ * Where each act starts, in beats (17 bars at 120 BPM: 35 s with the tail). Every act line sits on a bar line, so with
  * a track in each one lands on a downbeat (grid-check structural-on-music): a 2-bar promise, the object's 2-bar
- * transformation, a 1-bar proof, a 2-bar claim, one 2-bar act per step of the flow, the 1-bar output and the 2-bar end
- * card. A line is read inside its act at 104-136 BPM (the check below fails the import when a track's bars are too
+ * transformation, a 1-bar proof, a 2-bar claim, one 2-bar act per step of the flow, the 1-bar output and the 1-bar end
+ * card (its lock holds about a second and a half, then the tail). A line is read inside its act at 104-136 BPM (the check below fails the import when a track's bars are too
  * short for one). The shape, not the numbers, is the template: move a step's length with its content, in whole bars.
  */
-export const BEATS = { open: 0, card: 8, proof: 16, claim: 20, field: 28, feed: 36, insight: 44, pick: 52, page: 60, end: 64, last: 72 } as const;
+export const BEATS = { open: 0, card: 8, proof: 16, claim: 20, field: 28, feed: 36, insight: 44, pick: 52, page: 60, end: 64, last: 68 } as const;
 
 // Acts: contiguous, [from, from + dur). Each act is its own composition in Root.tsx (in this order). The first act
 // starts on frame 0 even when the track's first downbeat comes later (a pickup): its own cues start on that downbeat.
@@ -88,7 +88,9 @@ export const CUE: Record<string, number> = {
   line: bt(0),
   object: bt(1), // the source's mark lands in its slot in the line
   push: bt(4.5),
+  held: bt(5.5), // the promise holds on its push (or its stack): the hold drifts on
   exitOpen: bt(6.5),
+  launch: bt(7.25), // the whole frame starts its launch up into the card
   // card: the input rises as a lit card while the camera makes the film's one 3D turn; it becomes the output in place
   rise: bt(8),
   turned: bt(9.25), // the 3D turn is most of the way round
@@ -101,6 +103,7 @@ export const CUE: Record<string, number> = {
   row3: bt(12.75),
   done3: bt(13.5),
   lean: bt(11.25), // the camera leans in on the rows as they build (overlapping them)
+  leaned: bt(14.25), // the lean has settled; the built card holds, drifting, before the push
   outCard: bt(15), // the push into the card, accelerating into the zoom-through
   // proof: results arriving, faster and faster
   proof: bt(16),
@@ -113,7 +116,8 @@ export const CUE: Record<string, number> = {
   // claim: on the accent (or pushed through, or with its object), creeping; a push into the cut
   claim: bt(20.25),
   claimPush: bt(22.25), // device 'push': the camera pushes through the line
-  claimLight: bt(23.5), // the key swells once across the claim while it is read
+  claimHold: bt(23.5), // the claim holds on its creep (the poster's margin creep, or the push landed and creeping)
+  claimBreath: bt(25), // the creep carries on toward the push out: the hold never parks
   pushOut: bt(26.25),
   exitClaim: bt(27.25), // the push is at speed
   // field (step one): the field, its placeholder erased, the value typed, the hand presses, the results develop
@@ -142,12 +146,11 @@ export const CUE: Record<string, number> = {
   insight: bt(44),
   say4: bt(44.5),
   chip: bt(47), // the count chip glides in once the line is in: its proof
-  glow: bt(49.25), // the key swells once before the whip
   exitInsight: bt(50.5),
   whipLeft: bt(51.25),
   // pick (step three): the options arrive, one is chosen, it becomes the build's head and the output builds
   pick: bt(52),
-  options: bt(52.5),
+  options: bt(52),
   say5: bt(52.75),
   select: bt(55),
   chosen: bt(55.75),
@@ -161,14 +164,13 @@ export const CUE: Record<string, number> = {
   art: bt(61),
   scroll: bt(61.75),
   recede: bt(63),
-  // end: the mark assembles, the name is set, the payoff line rises beside it; the lock lives on the key
+  // end: the mark assembles, the name lands beside it (lockup: the name read), the payoff line arrives under it; it holds
   end: bt(64),
-  mark: bt(64.25),
-  lockup: bt(65.5),
-  payoff: bt(67),
-  light: bt(67.5),
-  rest: bt(69.5),
-  last: bt(72),
+  mark: bt(64),
+  lockup: bt(64.5),
+  payoff: bt(66.25),
+  rest: bt(67),
+  last: bt(68),
 };
 
 // ---- Declarations: what the picture does on purpose (grid-check validates them; export-cues writes them).
@@ -245,16 +247,16 @@ export const SPRING_CLASS = 'chosen-row';
 export const STRUCTURAL: string[] = [];
 /** Each CUE's salience (missing = 'hit'). */
 export const SALIENCE: Record<string, Salience> = {
-  line: 'copy', object: 'hit', push: 'move', exitOpen: 'move',
+  line: 'copy', object: 'hit', push: 'move', exitOpen: 'move', launch: 'move', held: 'life', leaned: 'life', claimHold: 'life', claimBreath: 'life',
   rise: 'cut', turned: 'move', swap: 'hit', sub: 'move', row1: 'hit', done1: 'hit', row2: 'hit', done2: 'hit', row3: 'hit', done3: 'hit', lean: 'move', outCard: 'move',
   proof: 'cut', toast0: 'hit', toast1: 'hit', toast2: 'hit', toast3: 'hit', toast4: 'hit', wipe: 'move',
-  claim: 'copy', claimPush: 'move', claimLight: 'life', pushOut: 'move', exitClaim: 'move',
+  claim: 'copy', claimPush: 'move', pushOut: 'move', exitClaim: 'move',
   field: 'cut', step1: 'copy', erase: 'hit', typeIn: 'hit', cursor: 'move', press: 'hit', busy: 'hit', develop: 'hit', pullBack: 'move', rows2: 'life', whipUp: 'move',
   feed: 'cut', count: 'life', flick: 'move', rows: 'life', peak: 'move', brake: 'life', land: 'hit', lift: 'move', morph: 'move',
-  insight: 'cut', say4: 'copy', chip: 'hit', glow: 'life', exitInsight: 'copy', whipLeft: 'move',
+  insight: 'cut', say4: 'copy', chip: 'hit', exitInsight: 'copy', whipLeft: 'move',
   pick: 'cut', options: 'hit', say5: 'copy', select: 'move', chosen: 'hit', toPill: 'move', build: 'hit', pct: 'life', built: 'hit',
   page: 'cut', pageLand: 'hit', art: 'hit', scroll: 'move', recede: 'move',
-  end: 'cut', mark: 'hit', lockup: 'hit', payoff: 'copy', light: 'life', rest: 'life', last: 'cut',
+  end: 'cut', mark: 'hit', lockup: 'hit', payoff: 'copy', rest: 'life', last: 'cut',
 };
 
 export type Copy = {
@@ -272,36 +274,34 @@ export type Copy = {
 
 const pace = PACE[PACE_NAME];
 
-/** The crisp hero entry (fx/TypePresets TYPE_PRESETS.crisp, crispWords): 26 f a word on E.out, 7 f apart (60 fps frames). */
-export const CRISP = { dur60: 26, gap60: 7 } as const;
-/** How the words of a line arrive: the crisp hero entry (house for the script's lines), the pace's reveal, or cut on ('pop'). */
-export type Ink = 'crisp' | 'reveal' | 'pop';
-const revealSpan = (n: number, ink: Ink = 'crisp'): number =>
-  ink === 'crisp' ? f60(Math.max(0, n - 1) * CRISP.gap60 + CRISP.dur60) : ink === 'pop' ? Math.floor((Math.max(0, n - 1) * pace.stagger * FPS) / 60) + 1 : f60(revealFor(n, pace));
+/** Frames from a move's start until a line of `n` words is read (src/deal.ts RESOLVE60, at this film's fps). */
+export const resolveSpan = (move: Move, n: number): number => Math.ceil(f60x(RESOLVE60[move][Math.min(8, Math.max(1, n)) - 1])) + 1;
+/** The move and exit this film dealt a line (src/deal.ts LINES; the wordmark and UI strings take none). */
+export const moveOf = (id: string): Move => LINES.move[id] ?? 'crisp';
 
 /**
- * One line of copy revealed word by word (the crisp hero entry by default); `out` defaults to the pace's hold, and a
- * cue placed in beats never cuts that hold short: at a faster track the beats shrink, so the line leaves on its read.
+ * One line of copy on its dealt move (src/deal.ts LINES); `out` defaults to the pace's hold, and a cue placed in beats
+ * never cuts that hold short: at a faster track the beats shrink, so the line leaves on its read.
  */
-export const line = (id: string, text: string, inF: number, out?: number, o: { ink?: Ink } = {}): Copy => {
+export const line = (id: string, text: string, inF: number, out?: number, o: { move?: Move } = {}): Copy => {
   const n = wordCount(text);
-  const resolved = inF + revealSpan(n, o.ink);
+  const resolved = inF + resolveSpan(o.move ?? moveOf(id), n);
   const read = resolved + f60(holdFor(n, pace));
   return { id, text, in: inF, resolved, out: Math.max(out ?? read, read) };
 };
 
-/** Frames a line takes to leave (its launch or blur exit), 60 fps frames. */
-export const LINE_EXIT = 24;
+/** Frames (60 fps) the line `id` takes to leave on its dealt exit. */
+export const lineExit = (id: string, text: string): number => (LINES.exit[id] ? EXIT60(LINES.exit[id], wordCount(text)) : 24);
 
 // Every on-screen word of the film. The product's own strings (walk.ts) are UI, drawn by the kit, not budgeted.
 export const COPY: Copy[] = [
   line('promise', PROMISE, CUE.line, CUE.exitOpen),
-  line('claim', CLAIM, CUE.claim, CUE.pushOut),
+  line('claim', CLAIM, CUE.claim, CUE.pushOut, { move: DEAL.claim === 'accent' ? 'crisp' : undefined }), // the poster builds on the crisp entry (fx/TypeClaim)
   line('step1', WALK.lines.step1, CUE.step1, CUE.press - f60(12)),
   line('insight', WALK.lines.insight, CUE.say4, CUE.exitInsight),
   line('pick', WALK.lines.pick, CUE.say5, CUE.toPill),
   { ...line('payoff', WALK.lines.payoff, CUE.payoff), out: TOTAL },
-  { id: 'wordmark', text: WALK.name, kind: 'name', in: CUE.mark, resolved: CUE.lockup, out: TOTAL },
+  { id: 'wordmark', text: WALK.name, kind: 'name', in: CUE.lockup - resolveSpan(NAME_MOVE, wordCount(WALK.name)), resolved: CUE.lockup, out: TOTAL },
 ];
 
 /** When each COPY entry is being read: [from, to) frame ranges by id (src/lib/pace.ts readingWindows()). */
@@ -327,6 +327,6 @@ const ACT_OF: Record<string, ActName> = { promise: 'open', claim: 'claim', step1
 for (const [id, act] of Object.entries(ACT_OF)) {
   const c = copy(id);
   const end = actEnd(act);
-  if (c.out + f60(LINE_EXIT) > end)
-    throw new Error(`timeline: the ${id} line ("${c.text}") is read until f${c.out} and leaves by f${c.out + f60(LINE_EXIT)}, after its act's cut (f${end}) at ${BPM} BPM: shorten the line, give the act a bar more, or cut to a slower track`);
+  if (c.out + f60(lineExit(id, c.text)) > end)
+    throw new Error(`timeline: the ${id} line ("${c.text}") is read until f${c.out} and leaves by f${c.out + f60(lineExit(id, c.text))}, after its act's cut (f${end}) at ${BPM} BPM: shorten the line, give the act a bar more, or cut to a slower track`);
 }

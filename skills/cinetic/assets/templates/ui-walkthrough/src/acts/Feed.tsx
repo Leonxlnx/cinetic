@@ -113,11 +113,13 @@ export const Feed: React.FC = () => {
         <DenseScreen frame={F} theme={t} world={readWorld()} layout="table" w={1640 * U} h={940 * U} focus={LENS} view={lmix(1, 1.18, prog(F, CUE.flick, CUE.land, E.strongInOut))} lift={0} />
       </Lit>
     ) : DEAL.read === 'ticker' ? (
-      <div style={{ position: 'absolute', inset: 0, transform: `translate3d(0, ${(80 * U).toFixed(2)}px, 0)` }}>
+      // overscanned past the frame's edges (the hold's drift never shows the ticker's own edge) and already flowing on
+      // the cut: the whip lands on content
+      <div style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', transform: `translate3d(0, ${(80 * U).toFixed(2)}px, 0) scale(1.08)` }}>
         <ContentTicker
           nodes={WALK.feed.rows.map((r, i): TileNode => ({ glyph: 'chat', label: r.who, sub: r.text, preview: 'person', seed: `${r.who}:${i}` }))}
           frame={F}
-          start={ACT.feed.from}
+          start={ACT.feed.from - Math.round(f60x(150))}
           tile={390 * U}
           aspect={1.1}
           speed={300 * U}

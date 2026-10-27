@@ -32,6 +32,7 @@
   "src/Root.tsx",
   "src/sync.ts",
   "src/acts/stage.tsx",
+  "src/acts/type.tsx",
   "src/acts/Open.tsx",
   "src/acts/Card.tsx",
   "src/acts/Proof.tsx",
@@ -59,8 +60,8 @@
  ],
  "deal": {
   "file": "src/deal.ts",
-  "seed": "the product's name (IDENTITY.name), or SEED in src/deal.ts; PIN chooses a slot by hand",
-  "print": "npx tsx -e \"import { DEAL } from './src/deal'; console.log(DEAL)\""
+  "seed": "the product's name (IDENTITY.name), or SEED in src/deal.ts; PIN chooses a slot by hand, MOVE_PIN and EXIT_PIN a line's move and exit",
+  "print": "npx tsx -e \"import { DEAL, LINES } from './src/deal'; console.log(DEAL, LINES)\""
  },
  "slots": {
   "stage": {
@@ -69,9 +70,9 @@
    "dark": "every act on the slate, the claim on paper"
   },
   "open": {
-   "line": "the promise with the source's mark inside it (kit ObjectLine, crisp entry) in a slow push",
+   "line": "the promise with the source's mark inside it (acts/type.tsx MarkLine, on its dealt move) in a slow push",
    "push": "the same line, then the camera pushes through it to 2.2x onto the mark (fx/TypePush), bleeding off the frame",
-   "stack": "the line in the mid plane of a depth stack of the input's own items (fx/DepthStack)"
+   "card": "the line high in the frame while the input's own lit card rises into it from below, cropped by the bottom edge: the next act's object"
   },
   "turn": {
    "flip": "the lit card turns over through edge-on; its back is the output",
@@ -86,7 +87,7 @@
   "claim": {
    "accent": "on the accent like a poster: cap 16 %, flush left at 3 %, -0.04 em (fx/TypeClaim); the film's colour event",
    "push": "the camera pushes through the line to 2.2x onto its number (fx/TypePush)",
-   "object": "the claim with its object at cap height in the line (kit ObjectLine)"
+   "object": "the claim with its object at cap height inside the line (acts/type.tsx MarkLine)"
   },
   "read": {
    "lens": "the product's dense screen; its focus line glides down the rows to the key row (kit DenseScreen)",
@@ -103,8 +104,11 @@
    "stack": "the page between its siblings in a depth stack the camera pushes through"
   },
   "end": {
-   "side": "the lockup beside the output as a soft far plane cropped by the edge",
-   "wall": "the lockup over a soft wall of the film's own screens"
+   "side": "the lockup beside the output, live and sharp, lit and tilted, cropped by the frame's edge",
+   "centre": "the lockup alone in the middle of a clean ground, the mark's parts arriving in turn"
+  },
+  "lines": {
+   "moves": "each line of the script arrives on mask, land, fall or glide (fx/TypePresets; src/deal.ts LINES), never the same move twice in a row, the payoff on a quick one; it leaves on slide, spread, collapse, push or drop"
   }
  }
 }
