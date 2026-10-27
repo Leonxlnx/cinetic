@@ -20,6 +20,7 @@ signature replace the template's), then cut it to the track: `track.py grid` mov
 | `update` | 8-20 s | "vX is out": 2-4 changes to show | the version as the set, one product moment per change, the payoff, the end card with the version |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | the product's breadth is the story (sources, formats, integrations), or a launch film needs its close | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
+| `camera-teaser` | 18-22 s | a dark, fast teaser of a product's screens where the motion is the camera's: whips, pushes, pull-outs over one layout per shot | the request box rising, a whip with a flash frame, its close-up and the button launching, the window streaming code under a zoom-out and a 3D push, cards fanning, the page with a modal toast, the stages in brackets, comets onto the mark |
 | `prompt-run` | 18-20 s | the product does work from a request (an agent, an assistant, a generator): what goes in is a sentence, what comes out is done work | a pill among the tools it connects, the label swapping on the kick, an iris onto the request box, the request typed, a punch-in and the click, the steps it runs, the running row becoming the result, the lockup |
 | `social-ad` | 15 s | a short ad for a feed: the product is pictures (things people save, make, buy, plan), the cut is the energy | the opener built word by word onto a pile of pictures, the mark spinning in on a picture, a wall round the claim, two rivers under a label that swaps its last word, two imperatives, the lockup |
 | `type-explainer` | 20-30 s | the idea is simple to say and the words carry it: a calm explainer on a white page, little or no product UI | the name as a giant word, what it is said at the pace of speech, the problem, the promise with a picture inside it that becomes the shot, one soft wipe, the mark between the words becoming the hub of the product's parts, the close |
@@ -27,7 +28,8 @@ signature replace the template's), then cut it to the track: `track.py grid` mov
 The test: say the film in one sentence. "You give it X and get Y" is a walkthrough; "It works with everything and
 returns anything" is a reel; "Here is what changed" is an update; "It is X, it fixes Y, and these are its parts" told
 in words is an explainer; "Here is everything it is for, fast" over the product's pictures is an ad; "Ask it, it does the steps, here is the result" is a prompt run (a
-walkthrough when the user does the steps). When none fits, start from the starter. A launch
+walkthrough when the user does the steps); the same story as a dark, fast tease where the camera does the moving is a
+camera teaser. When none fits, start from the starter. A launch
 film may end on the reel's close (rebuild its acts after your own) or open on the walkthrough's first three acts.
 
 ## ui-walkthrough
@@ -52,6 +54,19 @@ squashes round its line, `Resize` carry, and counter-creeps into a zoom-out), `t
 a hard step every 10 f), `claim` (the film's one colour event: two fragments, the first pushing up and dimming as the
 second rises, the full stop its own square), `rings` (square rings born from that stop, `Radiate` with `bornAt`, then
 the flood), `end` (the name pops, the rest types, the tagline takes its place). Slots: `src/reel.ts`.
+
+## camera-teaser
+
+The camera is the animator: one layout per shot under `camPath` (`World` in `acts/stage.tsx`), moves chained with no
+hold, whips smeared by the camera's own velocity (`camVel` into `DirBlur`), pushes crisp. Seven acts on whole bars at
+120 BPM (21 s): `input` (the request box rising with an expo tail, focus trailing position, a rim light, the what line;
+a creep, a whip left, a whip right into the cut through one declared flash frame), `launch` (the close-up slides in at
+x2.3 and pulls back on the frame the slide settles; the send button leaves on a J-curve), `window` (the app window
+rising, the code streaming in kit `CodePanel`; a zoom-out whip into a blur peak, a 3D push, a whip out), `cards` (a card
+lands by shrinking, two fan out in 3D, `fanState`, the stack leaves up), `page` (title letters on an arc, cards rising and
+sliding in; the modal: blur, dim and push with the toast sharp at the midpoint, a circ-in pull-out to black), `stages`
+(the product's stages decoding and rolling in corner brackets under a zoom in and a zoom out), `end` (`Comets` meeting on
+the mark). Slots: `src/teaser.ts`.
 
 ## prompt-run
 

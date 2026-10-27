@@ -51,7 +51,10 @@
 #                  product's flow in steps: the promise, the input becoming the output, proof, a claim, then
 #                  input -> the product reads -> insight -> choice -> output, the end card), capability-reel
 #                  (a launch close: a ring of sources, one real record, a statement, a capability ticker, the
-#                  big claim on the accent, a transition out of its full stop, the end card), prompt-run (a
+#                  big claim on the accent, a transition out of its full stop, the end card), camera-teaser (a
+#                  dark teaser where the camera is the animator: one layout per shot under camPath, whips with a
+#                  flash frame, a launch, code streaming, cards fanning, a modal, the stages, comets onto the
+#                  mark), prompt-run (a
 #                  request in, the work in steps, the result out: a pill among the tools, an iris onto the request
 #                  box, the click, the steps, the row becoming the result), social-ad (a 15 s
 #                  ad: the opener built word by word onto a pile of pictures, the mark spinning in, a wall round

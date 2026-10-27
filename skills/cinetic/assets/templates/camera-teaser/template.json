@@ -1,0 +1,53 @@
+{
+ "name": "camera-teaser",
+ "about": "A 20 s product teaser told by the camera on a near-black stage: every shot is one layout under one camera path (lib/camera camPath), the moves chained with no hold. The request box rising, a whip with one flash frame, its close-up and the send button launching, the app window streaming code under a zoom-out whip and a 3D push, cards landing and fanning, the page it made with a modal toast, the product's stages rolling in corner brackets, two comets meeting on the end mark. new-film.sh --template camera-teaser lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "bpm": 120,
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every teaser is cut to a licensed, human-made, instrumental track (references/music.md): its hits carry the whips and the act lines, designed whooshes ride the camera; never effects only.",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 110-130 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); 110-130 BPM, dark and driving, with hits to cut on",
+  "add": "bash scripts/new-film.sh <dir> --template camera-teaser --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end stop|button|ring",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "next": [
+  "camera teaser: fill src/teaser.ts (the script in plain words: line 1 says what the product is, 2-7 words a line, and the product's",
+  "  own request, code, cards, page, toast and stages in every [slot]), rebuild the product's real screens where the kit stands in,",
+  "  then deal its direction: python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3"
+ ],
+ "copy": [
+  "src/teaser.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/stage.tsx",
+  "src/acts/Input.tsx",
+  "src/acts/Launch.tsx",
+  "src/acts/Window.tsx",
+  "src/acts/Cards.tsx",
+  "src/acts/Page.tsx",
+  "src/acts/Stages.tsx",
+  "src/acts/End.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ]
+}
