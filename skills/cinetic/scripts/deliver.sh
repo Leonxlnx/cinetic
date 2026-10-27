@@ -61,6 +61,8 @@
 #                        motion is <= 12 px/f.
 #   --score FILE         the film's score.json, for the credits gate (default audio/score.json)
 #   --score-report FILE  score.py's report (default out/qa/score.json): a --draft build is refused
+# When every check passes it removes the render parts render.sh keeps until every gate has passed
+# (out/render/<master name>, and each variant's), unless render.sh --keep marked them.
 # Exit 0 = everything written and every check passed, 1 = a step or check failed.
 set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -117,6 +119,7 @@ mkdir -p "$OUTDIR/qa"
 QA="$OUTDIR/qa"
 NAME=$(basename "${MASTER%.*}")
 STATUS=0
+PARTS_DONE=("out/render/$NAME")  # render.sh's kept parts, removed once every check has passed
 CHECKS="$QA/.checks.jsonl"; : > "$CHECKS"
 note() { printf '%s\n' "$1" >> "$CHECKS"; }
 
@@ -336,6 +339,7 @@ if [[ -n "$VARIANTS" ]]; then
     [[ -n "$VSAMPLES" ]] && VA+=(--blur --samples-from "$VSAMPLES" --samples "$QA/samples-$V.json")
     if bash "$SCRIPT_DIR/render.sh" "$V" "$OUTDIR/$V.mp4" ${VA[@]+"${VA[@]}"} --entry "$ENTRY"; then
       note '{"file":"'"$V.mp4"'","check":"render","pass":true}'
+      PARTS_DONE+=("out/render/$V")
     else
       note '{"file":"'"$V.mp4"'","check":"render","pass":false}'; STATUS=1
     fi
@@ -382,5 +386,10 @@ fi
 rm -f "$CHECKS"
 stray=$(find "$OUTDIR" -maxdepth 1 -type f \( -name '*.json' -o -name 'sheet*' -o -name 'qa-*' -o -name '*.log' \) | head -3 | tr '\n' ' ')
 [[ -z "$stray" ]] || echo "deliver.sh: warning: QA files at the top of $OUTDIR ($stray); move them into $QA, the top level is for deliverables" >&2
+if [[ $STATUS -eq 0 ]]; then  # every gate has passed: the render parts render.sh kept go (a --keep mark stays)
+  for P in "${PARTS_DONE[@]}"; do
+    if [[ -f "$P/bundle.key" && ! -f "$P/.keep" ]]; then rm -rf "$P"; step "removed the render parts in $P"; fi
+  done
+fi
 step "$([[ $STATUS -eq 0 ]] && echo 'done' || echo 'FAILED a check'): $QA/manifest.json"
 exit $STATUS

@@ -41,6 +41,10 @@
 # the parts left; --part K renders part K alone and exits (a scheduler runs each part as its own job).
 # When every part is there, ffmpeg joins them with the concat demuxer (stream copy, no re-encode) and
 # writes the BT.709 colour tags into the stream and the container, then the mux and the gates below run.
+# The parts stay after the join until every gate has passed, render.sh's own and then the film's (forensics,
+# look-audit and the rest), so a gate failing after the join costs no re-render while src/ and public/ are
+# unchanged: rerun the same command and it joins the kept parts. deliver.sh, which runs once every gate has
+# passed, cleans them (--clean does it by hand); --keep keeps them always.
 # --single renders the whole range in one Remotion call instead (the 1.1 route).
 #
 # Every mode then muxes the WAV with ffmpeg (AAC 320k, 48 kHz, +faststart; the audio is padded or
@@ -76,6 +80,8 @@
 #   --parts DIR         where the bundle and the parts live (default out/render/<out name>)
 #   --bundle DIR        render from this pre-built bundle (npx remotion bundle src/index.ts --out-dir DIR)
 #   --single            the whole range in one Remotion render (no parts)
+#   --clean             every gate has passed: remove the bundle and the parts of <out.mp4> (out/render/<name>,
+#                       or --parts DIR) and exit; deliver.sh does this when its checks pass
 #   --crf N             override the final CRF (preview 20, master 14, blur 14)
 #   --10bit             (--blur) encode the master as yuv420p10le, High 10: the cleanest gradients and
 #                       the smallest file, for masters that will be graded or re-encoded; ship 8-bit
@@ -99,7 +105,8 @@
 #   --measure "ARGS"    extra measure-speed.py arguments, e.g. --measure "--max 64 --step 2"
 #   --spec WxH@fps      extra expectation for probe.py (default: the composition's own size/fps)
 #   --no-check          skip check-sync.py and probe.py
-#   --keep              keep the work directory (bundle, sharp.mp4, sub.mp4, picture.mp4) and the parts
+#   --keep              keep the work directory (bundle, sharp.mp4, sub.mp4, picture.mp4), and the parts
+#                       always (deliver.sh and later runs leave them; a run without --keep clears the mark)
 #   -- ARGS             passed to every `remotion render` call (e.g. -- --image-format=png --scale=0.5)
 #
 # Needs: node/npx with @remotion/cli, ffmpeg >= 6, python3 with numpy scipy soundfile opencv.
@@ -122,7 +129,7 @@ step() { echo "[render $(( $(date +%s) - T0 ))s] $*" >&2; }
 
 COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0; POLICY=auto
 ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
-SPEC=""; NOCHECK=0; KEEP=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0; ACCEPT_FAST=""; ACCEPT_CUT=""
+SPEC=""; NOCHECK=0; KEEP=0; CLEAN=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0; ACCEPT_FAST=""; ACCEPT_CUT=""
 CHUNK=300; MAXMIN=0; ONLY_PART=""; PARTS=""; PREBUILT=""; SINGLE=0
 POS=()
 while [[ $# -gt 0 ]]; do
@@ -159,6 +166,7 @@ while [[ $# -gt 0 ]]; do
     --spec) SPEC=${2:?}; shift ;;
     --no-check) NOCHECK=1 ;;
     --keep) KEEP=1 ;;
+    --clean) CLEAN=1 ;;
     --) shift; EXTRA=("$@"); break ;;
     -*) die "unknown option $1 (see --help)" ;;
     *) POS+=("$1") ;;
@@ -179,6 +187,15 @@ if [[ ! -f "$ENTRY" ]]; then
   if [[ -f "$SCRIPT_DIR/../$ENTRY" ]]; then cd "$SCRIPT_DIR/.."; else die "no $ENTRY here; run from the project root or pass --entry"; fi
 fi
 ROOT=$(pwd)
+if [[ $CLEAN -eq 1 ]]; then  # every gate has passed: the kept bundle and parts go
+  P=${PARTS:-out/render/$(basename "${OUT%.*}")}
+  [[ -d "$P" ]] || { echo "render.sh: no parts at $P" >&2; exit 0; }
+  [[ -f "$P/bundle.key" || -n "$(find "$P" -maxdepth 1 -name 'part-*.mp4' 2>/dev/null | head -1)" ]] \
+    || die "$P holds no render parts (no bundle.key, no part-*.mp4): not removing it"
+  rm -rf "$P"
+  echo "render.sh: removed the bundle and the parts in $P" >&2
+  exit 0
+fi
 for tool in npx ffmpeg ffprobe; do command -v "$tool" >/dev/null || die "$tool not found on PATH"; done
 # the Python modules this run needs, checked before a minute of bundling (the Store alias and an
 # interpreter without numpy both fail here, not after the frames)
@@ -490,7 +507,11 @@ if [[ $MODE == blur && -f "$SAMPLES" ]]; then
   FAST=$(python3 -c "import json, sys;d=json.load(open(sys.argv[1]));print(' '.join(str(f - $FROM) for f in d.get('fastest_frames', [])[:4] if $FROM <= f <= $TO))" "$SAMPLES" 2>/dev/null || true)
   [[ -z "$FAST" ]] || echo "render.sh: look at the fastest frames at full size for stepped copies: bash scripts/grab.sh $OUT $FAST" >&2
 fi
-if [[ ${CHUNKED:-0} -eq 1 && -z "$PREBUILT" && $KEEP -eq 0 && $STATUS -eq 0 ]]; then rm -rf "$PARTS"; fi
+if [[ ${CHUNKED:-0} -eq 1 && -z "$PREBUILT" ]]; then
+  # the parts stay until every gate has passed (the film's gates run after this): a late gate costs no re-render
+  if [[ $KEEP -eq 1 ]]; then touch "$PARTS/.keep"; else rm -f "$PARTS/.keep"; fi
+  [[ $STATUS -eq 0 ]] && step "the bundle and the parts stay in $PARTS until every gate has passed: deliver.sh cleans them, or rerun with --clean$([[ $KEEP -eq 1 ]] && echo ' (--keep: they stay)')"
+fi
 if [[ $STATUS -eq 0 ]]; then
   step "done: $OUT (${SIZE_MB} MB, ${DUR}s, $MODE)"
 else
