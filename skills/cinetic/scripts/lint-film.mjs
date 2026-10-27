@@ -80,14 +80,30 @@
  *   accent-count      error: a second saturated hue (C >= 0.06) outside a 30-degree band; tokens that
  *                     live in imagery or one product state carry an `imagery` / `ui-state` comment
  *   gradient-shape    gradient stops more than 7 degrees of hue apart (stage light is one hue)
- *   type-role         in an act: a fontSize that is not a TYPE role; more than 2 non-UI roles
+ *   type-role         in an act: a fontSize that is not a TYPE role of either family (lib/look.ts TYPE_LOOK: calm,
+ *                     the default, and bold); more than 2 non-UI roles
  *   deprecated-token  a 1.1 easing, spring or type name (kept, with its 1.1 shape): the 1.2 name to use
  *   timeline-constant error: FPS, W, H or COPY imported from the timeline in fx/ or lib/ (lib/film.ts
  *                     excepted): primitives read the film context
  *   gpu-cost          blurs over 40 px, more than 2 blurred layers in a file, an SVG filter animated by
  *                     the frame, backdrop-filter, a 1.2 chain holding more than 24 word layers
  *
- * Picture (the frame holds real content at film size; look-audit.py measures the render):
+ * Continuous motion (warnings; forensics.py's motion gates measure the render). Outside fx/ and lib/:
+ *   snap-step         a one-frame snap primitive (HardStep, hardStepState, stepValue, snapBox; SnapZoom,
+ *                     snapZoomState; LineSnap, scaleSnapState, makeRoomState, Chain snapLast or recentre
+ *                     'room') that src/sync.ts does not declare (its declares()) and the timeline does not
+ *                     name: glide it (fx/GlideStep, lib/continuity glideValue, glideBox); and more than one
+ *                     snap device in the film, declared or not (a film keeps one)
+ *   hold-drift        an act with 2+ tweens and nothing continuous (no E.linear creep, drift, holdDrift,
+ *                     breath, camera path, gliding list, flick, light field, photo or footage move, no
+ *                     frame-linear term): its holds freeze between the tweens
+ *   unmount-moving    a layer unmounted (`F < X &&`, `F >= A && F < X &&`, a <Sequence> end) while a tween
+ *                     inside it, timed off the same frame, still runs above 10 % of its peak speed (lib/continuity
+ *                     landBeforeCut; the curve's speed is read from lib/anim.ts)
+ *   move-queue        three or more moves (arrive, reposition or leave tweens of 8 f@60 or more driving a
+ *                     transform, a position or the camera) timed off the same frame, queued one after another
+ *                     (overlapping less than 30 %) within 3 s: one carrying move, secondaries overlapping
+ * * Picture (the frame holds real content at film size; look-audit.py measures the render):
  *   card-content      error: a <Card> with no children, image or blank, or a bento tile with no
  *                     content, image or blank: an empty slab (at render it falls back to kit UI)
  *   small-text        text under 36 px at 1080p (a fontSize, a typeStyle size, a role under the floor):
@@ -529,6 +545,75 @@ if (tokensPath) {
   const dep = t.match(/\bTYPE_DEPRECATED\b[^=]*=\s*\{([^}]*)\}/)?.[1];
   TYPE_DEP = dep ? Object.fromEntries([...dep.matchAll(/(\w+)\s*:\s*'(\w+)'/g)].map((m) => [m[1], m[2]])) : TYPE_SIZES.has('secondary') ? TYPE_DEP : {};
 }
+// every role size of both type families (lib/look.ts TYPE_LOOK: calm, the default, and bold, the director's pick):
+// a fontSize from either is a role size, whichever family the film's tokens hold
+const LOOK_SIZES = new Map(); // size -> 'family role'
+{
+  const lookPath = findUp(root, [join('lib', 'look.ts'), join('src', 'lib', 'look.ts')]);
+  const src = lookPath ? stripComments(readFileSync(lookPath, 'utf8'), false) : '';
+  const at = src.search(/\bTYPE_LOOK\s*=\s*\{/);
+  let fams = [];
+  if (at >= 0) {
+    const open = src.indexOf('{', at);
+    let depth = 0;
+    let j = open;
+    for (; j < src.length; j++) {
+      if (src[j] === '{') depth++;
+      else if (src[j] === '}' && --depth === 0) break;
+    }
+    const body = src.slice(open + 1, j);
+    fams = [...body.matchAll(/(\w+)\s*:\s*\{((?:\s*\w+\s*:\s*\{[^}]*\}\s*,?)+)\s*\}/g)].map((m) => [m[1], [...m[2].matchAll(/(\w+)\s*:\s*\{[^}]*\bsize\s*:\s*([\d.]+)/g)].map((r) => [r[1], Number(r[2])])]);
+  }
+  if (!fams.length)
+    fams = [
+      ['calm', Object.entries({ ui: 40, caption: 46, line: 84, display: 160, hero: 200, giant: 640 })],
+      ['bold', Object.entries({ ui: 40, caption: 46, line: 120, display: 200, hero: 240, giant: 900 })],
+    ];
+  for (const [fam, roles] of fams) for (const [role, size] of roles) if (!LOOK_SIZES.has(size)) LOOK_SIZES.set(size, `${fam} ${role}`);
+}
+// what the film declares on purpose: the primitives whose declares() src/sync.ts imports, and the timeline's own text
+const syncPath = findUp(root, ['sync.ts', join('src', 'sync.ts')]);
+const syncSrc = syncPath ? readFileSync(syncPath, 'utf8') : '';
+const SYNC_DECLARES = new Set(
+  [...syncSrc.matchAll(/import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/g)].filter((m) => /\bdeclares\b/.test(m[1])).map((m) => m[2].split('/').pop().replace(/\.(tsx?|jsx?|mjs)$/, '')),
+);
+/** The one-frame snap primitives (snap-step): their uses, the modules whose declares() covers them, and the glide to use instead. */
+const SNAP_DEVICES = [
+  { name: 'HardStep', mods: ['HardStep'], re: /<HardStep\b|(?<![\w$.])(?:hardStepState|stepValue|snapBox)\s*\(/g, fix: 'fx/GlideStep for a list, lib/continuity glideValue for a value, GlideStep glideBox for a box: 16 f@60 on E.glideOut' },
+  { name: 'SnapZoom', mods: ['SnapZoom'], seam: 'snapZoom', re: /<SnapZoom\b|(?<![\w$.])snapZoomState\s*\(/g, fix: 'a push on an arrive curve over 34 f@60 or more (lib/camera camPath)' },
+  { name: 'LineSnap', mods: ['LineSnap', 'Chain'], re: /<LineSnap\b|(?<![\w$.])(?:scaleSnapState|makeRoomState)\s*\(|\bsnapLast\s*[:=]\s*(?!\{?\s*false\b)|\brecentre\s*[:=]\s*\{?\s*['"]room['"]/g, fix: "the line scaled through the camera, or Chain recentre 'glide'" },
+];
+const snapUses = []; // uses of snap primitives across the film, for the one-device rule
+/** Anything in an act that keeps moving through its holds (hold-drift). */
+const CONTINUOUS_RE =
+  /\bE\.linear\b|\(?\s*\bt\s*\)?\s*=>\s*t\s*[,)]|(?<![\w$.])(?:holdDrift|drift|creep|counterCreep|expoTail|breathK|breath|breathe|camPath|glideList|flickState|keyLightState|masonryState|plateMove|photoMove)\s*\(|<(?:GlideStep|Scroll|Conveyor|KeyLight|LightField|Photo|Footage|DepthStack|Ground\w*)\b|\bbreathe\s*:|\b(?:F|frame)\s*\*\s*[\d.]|[\d.]\s*\*\s*\(?\s*(?:F|frame)\b|\b(?:F|frame)\s*\/\s*(?:FPS|fps)\b|\bPLATE_MOVE\b/;
+/** A frame expression as { base, off } (off in film frames): CUE.x, CUE.x + 12, ACT.a.from - f60x(6), 120; else null. */
+const frameTerm = (expr) => {
+  if (expr === undefined || expr === null) return null;
+  let t = String(expr).replace(/\s+/g, '');
+  if (/^-?[\d.]+$/.test(t)) return { base: '', off: Number(t) };
+  let off = 0;
+  for (;;) {
+    const m = t.match(/^(.*[^+\-*/(,])([+-])(f60x?\(([\d.]+)\)|[\d.]+)$/);
+    if (!m) break;
+    const v = m[4] !== undefined ? (Number(m[4]) * filmFps) / 60 : Number(m[3]);
+    off += m[2] === '+' ? v : -v;
+    t = m[1];
+  }
+  return /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\[['"]?\w+['"]?\])*$/.test(t) ? { base: t, off } : null;
+};
+/** The share of its peak speed a tween on `ease` (an E.* token) runs at, at progress t (0..1): read from the curve in lib/anim.ts, else from its role. */
+const speedShareAt = (ease, t) => {
+  const tok = TOK.get(String(ease ?? '').trim());
+  if (!tok) return null;
+  const fn = tok.shape ? curveOf(tok.shape) : null;
+  if (!fn) return { arrive: t >= 0.6 ? 0.05 : 0.5, reposition: t <= 0.1 || t >= 0.85 ? 0.05 : 0.5, leave: 1, linear: 1 }[tok.family] ?? null;
+  const n = 200;
+  const v = (x) => Math.abs(fn(Math.min(1, x + 0.5 / n)) - fn(Math.max(0, x - 0.5 / n)));
+  let peak = 1e-12;
+  for (let k = 0; k <= n; k++) peak = Math.max(peak, v(k / n));
+  return v(t) / peak;
+};
 const blurPath = findUp(root, ['blur.ts', join('src', 'blur.ts')]);
 /** A house curve's progress at t = .1 ... .9 must sit in this band (the house curve table) at >= 7 of 9 points. */
 const HOUSE_BAND = {
@@ -1670,11 +1755,11 @@ for (const file of files) {
 
     // type-role: sizes come from TYPE roles; one or two non-UI roles per act
     if (isScript && isActFile) {
-      const sizes = [...TYPE_SIZES.values()];
+      const sizes = [...TYPE_SIZES.values(), ...LOOK_SIZES.keys()];
       each(/\bfontSize\s*:\s*([\d.]+)\b(?!\s*[*/]\s*(?![Uu]\b)[\w(])/g, (m, i) => {
         const v = Number(m[1]);
         if (!sizes.some((s) => Math.abs(s - v) <= 0.5))
-          report(i, 'type-role', 'warn', `fontSize ${m[1]} is not a type role (${[...TYPE_SIZES].map(([k, s]) => `${k} ${s}`).join(', ')}): size changes through the camera, not by restyling`);
+          report(i, 'type-role', 'warn', `fontSize ${m[1]} is not a type role (${[...TYPE_SIZES].map(([k, s]) => `${k} ${s}`).join(', ')}; or the other family's: ${[...LOOK_SIZES].filter(([sz]) => ![...TYPE_SIZES.values()].includes(sz)).map(([sz, r]) => `${r} ${sz}`).join(', ')}): size changes through the camera, not by restyling`);
       });
       const roles = new Map();
       each(/\btypeStyle\(\s*['"](\w+)['"]|\bTYPE\.(\w+)\b|\brole\s*=\s*(?:\{\s*)?['"](\w+)['"]/g, (m, i) => {
@@ -1684,6 +1769,97 @@ for (const file of files) {
       });
       if (roles.size > 2)
         report([...roles.values()][2], 'type-role', 'warn', `${roles.size} type roles in one act (${[...roles.keys()].join(', ')}): one size per scene, a hero at least 2x the statement; change size through the camera`);
+    }
+
+    // snap-step: a one-frame snap primitive outside fx/ and lib/ is the film's one declared snap, or it glides
+    if (isScript && !house && !isTokens) {
+      for (const d of SNAP_DEVICES) {
+        each(d.re, (m, i) => {
+          const declared = d.mods.some((x) => SYNC_DECLARES.has(x) || new RegExp(`\\b${x}\\b`).test(timelineSrc)) || (!!d.seam && new RegExp(`kind\\s*:\\s*['"]${d.seam}['"]`).test(timelineSrc));
+          const { line, col } = pos(i);
+          snapUses.push({ device: d.name, file: rel, line, col, excerpt: (lines[line - 1] ?? '').trim().slice(0, 140), ok: lineHas(i, /lint-ok\s*:\s*\S/) });
+          if (!declared)
+            report(i, 'snap-step', 'warn', `${d.name} changes state in one frame outside a declared snap: beside eased motion a one-frame jump reads as a dropped frame (forensics motion-snap). Glide it (${d.fix}), or make it the film's one snap and declare it (its declares() in src/sync.ts)`);
+        });
+      }
+    }
+
+    // hold-drift: an act whose tweens are separated by holds where nothing moves
+    if (isScript && isActFile && !house) {
+      const tws = tweensIn(code).filter((t) => !/^(E\.linear|\(?\s*t\s*\)?\s*=>\s*t)$/.test(String(t.ease).trim()));
+      const sps = callsIn(code, ['spr', 'spring']);
+      if (tws.length + sps.length >= 2 && !CONTINUOUS_RE.test(code))
+        report((tws[0] ?? sps[0]).index, 'hold-drift', 'warn', `nothing in this act keeps moving between its ${tws.length + sps.length} tweens (no creep, drift, carried camera or light): every hold keeps a drift of 0.3-1 px/f (lib/continuity holdDrift, a camera creep on E.linear, a light crossing), or the picture freezes between the moves (forensics motion-frozen)`);
+    }
+
+    // unmount-moving: a layer leaves (a guard or a Sequence end) while a tween inside it still runs
+    if (isScript && isActFile && !house) {
+      const tweenOf = new Map();
+      for (const [lhs, rhs] of decls) if (/^[A-Za-z_$][\w$]*$/.test(lhs)) { const t = tweensIn(rhs); if (t.length) tweenOf.set(lhs, t); }
+      const closeOf = (open) => {
+        let depth = 0;
+        for (let j = open; j < code.length; j++) {
+          if (code[j] === '{') depth++;
+          else if (code[j] === '}' && --depth === 0) return j;
+        }
+        return code.length;
+      };
+      const guards = [];
+      for (const re of [/\{\s*\(?\s*(?:F|frame)\s*<(=?)\s*([^&|?{}()]+?)\s*\)?\s*&&/g, /\{\s*\(?\s*(?:F|frame)\s*>=?\s*[^&|{}]+?&&\s*(?:F|frame)\s*<(=?)\s*([^&|?{}()]+?)\s*\)?\s*&&/g])
+        each(re, (m, i) => guards.push({ index: i, x: m[2], plus: m[1] ? 1 : 0, body: code.slice(i + m[0].length, closeOf(i)) }));
+      each(/<Sequence\b/g, (m, i) => {
+        const tag = tagAt(code, i);
+        const from = tag?.text.match(/\bfrom\s*=\s*\{([^}]+)\}/)?.[1];
+        const dur = tag?.text.match(/\bdurationInFrames\s*=\s*\{([^}]+)\}/)?.[1];
+        const end = code.indexOf('</Sequence>', i);
+        if (from && dur && end > 0) guards.push({ index: i, x: `${from} + ${dur}`, plus: 0, body: code.slice(i, end) });
+      });
+      for (const g of guards) {
+        const X = frameTerm(g.x);
+        if (!X) continue;
+        const tws = [...tweensIn(g.body), ...[...new Set(namesIn(g.body))].flatMap((n) => tweenOf.get(n) ?? [])];
+        for (const t of tws) {
+          const A = frameTerm(t.a);
+          const B = frameTerm(t.b);
+          const x = X.off + g.plus;
+          if (!A || !B || A.base !== X.base || B.base !== X.base || !(A.off < x && x < B.off)) continue;
+          const share = speedShareAt(t.ease, (x - A.off) / (B.off - A.off));
+          if (share !== null && share <= 0.1) continue;
+          report(g.index, 'unmount-moving', 'warn', `this layer unmounts on ${g.x.trim()}${g.plus ? ' + 1' : ''} while a tween inside it (${String(t.a).trim()} to ${String(t.b).trim()}${t.ease ? `, ${String(t.ease).trim()}` : ''}) still runs${share === null ? '' : ` at about ${Math.round(share * 100)} % of its peak speed`}: let it land under 10 % first (lib/continuity landBeforeCut) or keep the layer mounted until it has; a move cut mid-ease stops dead (forensics motion-stop)`);
+          break;
+        }
+      }
+    }
+
+    // move-queue: three or more moves queued one after another inside 3 s, timed off the same frame
+    if (isScript && isActFile && !house) {
+      const moveRe = /transform|translate|scale\(|rotate|\b[xyk]\s*:|\bcam\b|camera|\bpan\b|\bzoom\b/;
+      const moves = [];
+      for (const t of tweensIn(code)) {
+        const fam = famOf(String(t.ease).trim()) ?? { enter: 'arrive', leave: 'leave', move: 'reposition' }[t.name] ?? null;
+        if (!fam || fam === 'linear') continue;
+        const A = frameTerm(t.a);
+        const B = frameTerm(t.b);
+        if (!A || !B || A.base !== B.base || B.off <= A.off || ((B.off - A.off) * 60) / filmFps < 8) continue;
+        const d = decls.find(([l, r, k]) => k <= t.index && t.index <= code.indexOf(r, k) + r.length);
+        const name = d && /^[A-Za-z_$][\w$]*$/.test(d[0]) ? d[0] : null;
+        const { line } = pos(t.index);
+        const drives = moveRe.test(lines[line - 1] ?? '') || (name && lines.some((l) => new RegExp(`(?<![\\w$.])${name.replace(/\$/g, '\\$')}\\b`).test(l) && moveRe.test(l) && !new RegExp(`\\b(?:const|let|var)\\s+${name.replace(/\$/g, '\\$')}\\b`).test(l)));
+        if (drives && !moves.some((x) => x.base === A.base && x.a === A.off && x.b === B.off)) moves.push({ base: A.base, a: A.off, b: B.off, index: t.index, text: `${String(t.a).trim()} to ${String(t.b).trim()}` });
+      }
+      for (const base of new Set(moves.map((x) => x.base))) {
+        const group = moves.filter((x) => x.base === base).sort((p, q) => p.a - q.a || p.b - q.b);
+        const chain = [group[0]];
+        for (const mv of group.slice(1)) {
+          const last = chain[chain.length - 1];
+          if (mv.a >= last.b - 0.3 * Math.min(mv.b - mv.a, last.b - last.a)) chain.push(mv);
+        }
+        for (let k = 0; k + 2 < chain.length; k++)
+          if (((chain[k + 2].a - chain[k].a) * 60) / filmFps <= 180) {
+            report(chain[k + 2].index, 'move-queue', 'warn', `three moves queued one after another inside 3 s (${chain.slice(k, k + 3).map((x) => x.text).join('; ')}): build the 3 s around one carrying move of 48 f@60 or more and overlap the secondaries by 30-50 %, never queue them (forensics motion-density)`);
+            break;
+          }
+      }
     }
 
     // card-content: a card or a bento tile shows built UI, a picture, or nothing on purpose (blank): never an empty slab
@@ -1830,6 +2006,19 @@ if (!opt.allow.has('giant-once') && giantUses.length > 1) {
         message: `a giant word in ${giantUses.length} acts (${giantUses.map((x) => x.file).join(', ')}): the giant role is the set of one moment, once per film; elsewhere scale changes through the camera`,
         excerpt: u.excerpt,
       });
+}
+
+// ---------------------------------------------------------------------------------- film-wide: snap-step (one device)
+// A film keeps one snap device (a stepped list, a snap zoom, a line snap), declared; the others glide.
+if (!opt.allow.has('snap-step')) {
+  const live = snapUses.filter((u) => !u.ok);
+  const devices = [...new Set(live.map((u) => u.device))];
+  if (devices.length > 1)
+    for (const u of live.filter((x) => x.device !== devices[0])) {
+      const message = `${devices.length} snap devices in the film (${devices.join(', ')}): a film keeps one, declared; glide the others (fx/GlideStep, lib/continuity glideValue) (forensics motion-snap)`;
+      if (!issues.some((x) => x.file === u.file && x.line === u.line && x.rule === 'snap-step' && x.message === message))
+        issues.push({ file: u.file, line: u.line, col: u.col, rule: 'snap-step', severity: 'warn', message, excerpt: u.excerpt });
+    }
 }
 
 // ---------------------------------------------------------------------------------- report

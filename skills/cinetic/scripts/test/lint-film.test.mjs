@@ -53,7 +53,8 @@ const TEXT = ['copy-literal', 'text-spring', 'text-pace', 'typing-rate', 'per-le
 // the grammar rules: silent unless a fixture names them
 const GRAMMAR = ['ease-family', 'token-drift', 'whip-shape', 'spring-budget', 'spring-range', 'scale-from-zero', 'fade-exit', 'linear-opacity',
   'crossfade', 'shutter', 'blur-on-crisp', 'pure-ink', 'accent-count', 'gradient-shape', 'type-role', 'deprecated-token', 'timeline-constant', 'gpu-cost',
-  'card-content', 'small-text', 'giant-watermark', 'giant-once', 'end-card-template', 'clip-text', 'svg-text'];
+  'card-content', 'small-text', 'giant-watermark', 'giant-once', 'end-card-template', 'clip-text', 'svg-text',
+  'snap-step', 'hold-drift', 'unmount-moving', 'move-queue'];
 const [PY, ...PY_PRE] = findPython({ quiet: true }) ?? ['python3']; // python3 only to report that none runs
 const py = (args, opts) => spawnSync(PY, [...PY_PRE, ...args], opts);
 
