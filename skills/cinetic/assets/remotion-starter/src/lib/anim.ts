@@ -81,13 +81,17 @@ const table = (ys: readonly number[]): Ease => {
 };
 
 /**
- * A measured curve as an ease: progress samples at t = 0, 1/n ... 1 (a clip's move read frame by frame,
- * normalised), drawn through with the same monotone cubic as the house tables. For a move whose shape no
- * token matches; a role token stays the default.
+ * A measured curve as an ease: progress samples at t = 0, 1/n ... 1 (a clip's move read frame by frame),
+ * drawn through with the same monotone cubic as the house tables. The samples are normalised so the first is
+ * 0 and the last 1 (a noisy first or last frame never leaves the move part-way at its start or its end). For a
+ * move whose shape no token matches; a role token stays the default.
  */
 export const curveOf = (samples: readonly number[]): Ease => {
   if (samples.length < 3) throw new Error('curveOf: give at least 3 samples (t = 0, .5, 1)');
-  return table(samples);
+  const y0 = samples[0];
+  const span = samples[samples.length - 1] - y0;
+  if (!(Math.abs(span) > 1e-9)) throw new Error('curveOf: the first and last samples are equal: there is no move to draw');
+  return table(samples.map((y) => (y - y0) / span));
 };
 
 /** A measured track: [frame, value] keys, in frame order. */

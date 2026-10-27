@@ -3,8 +3,8 @@
  * primitives.test.mjs: the measured-motion helpers and the UI primitives of the Remotion starter
  * against their house numbers.
  *
- *   1. lib/anim.ts curveOf(), track(), trackLinear(): a measured curve passes through its samples, a
- *      track through its keys, monotone between them (no overshoot), held outside them.
+ *   1. lib/anim.ts curveOf(), track(), trackLinear(): a measured curve passes through its samples (normalised to
+ *      start at 0 and land on 1), a track through its keys, monotone between them (no overshoot), held outside them.
  *   2. fx/Defocus dirBlurMix(): sharp under 120 px/s, sigma = px/s x 0.0048 s on the defocus ladder, at most
  *      two copies, the same smear for the same px/s at 30 and 60 fps.
  *   3. fx/Cursor cursorRise(): 75 % of the travel in the first 8 f at 60 fps, home at the end; the hand shape exists.
@@ -112,8 +112,12 @@ const range = (a: number, b: number, s = 1) => Array.from({ length: Math.floor((
 const keys: [number, number][] = [[10, 0], [14, 300], [20, 380], [30, 400]];
 const samples = [0, 0.5, 0.72, 0.84, 0.91, 0.95, 0.97, 0.985, 0.993, 0.998, 1];
 const c = A.curveOf(samples);
+const noisy = A.curveOf([0.05, 0.5, 0.97]);
+let flat = 'ok'; try { A.curveOf([0.4, 0.6, 0.4]); } catch { flat = 'threw'; }
 console.log(JSON.stringify({
   curve: range(0, 10).map((i) => c(i / 10)),
+  curveNoisy: [noisy(0), noisy(0.5), noisy(1)],
+  curveFlat: flat,
   curveDense: range(0, 1, 0.01).map((t) => c(t)),
   track: range(0, 40, 0.25).map((f) => A.track(f, keys)),
   trackAt: keys.map(([f]) => A.track(f, keys)),
@@ -185,6 +189,8 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   const samples = [0, 0.5, 0.72, 0.84, 0.91, 0.95, 0.97, 0.985, 0.993, 0.998, 1];
   result(P.curve.every((y, i) => close(y, samples[i], 1e-9)), 'curveOf: passes through every sample');
   result(monotone(P.curveDense) && P.curveDense.every((y) => y >= 0 && y <= 1), 'curveOf: monotone between samples, inside 0..1');
+  result(P.curveNoisy[0] === 0 && close(P.curveNoisy[1], 0.45 / 0.92, 1e-9) && P.curveNoisy[2] === 1 && P.curveFlat === 'threw',
+    'curveOf: samples that start above 0 or end below 1 are normalised (starts at 0, lands on 1); equal ends throw', JSON.stringify(P.curveNoisy));
   result(P.trackAt.every((y, i) => close(y, [0, 300, 380, 400][i])), 'track: passes through every key');
   result(monotone(P.track) && Math.max(...P.track) <= 400 + 1e-9, 'track: monotone keys give a monotone track with no overshoot', `max ${Math.max(...P.track).toFixed(3)}`);
   result(P.track[0] === 0 && P.track[P.track.length - 1] === 400, 'track: holds the first and last value outside its keys');
