@@ -129,7 +129,7 @@ export const cursorArc = (a: Pt, b: Pt, t: number, bow = 0.2): Pt => {
 
 /**
  * A pointer leaving once its click is done: it flies off along `to` (px) on a quad-in over `frames` (house 20 at 60
- * fps) while it spins (house -45 degrees a 60 fps frame: a quarter turn in a beat), fading in its last third. Add dx,
+ * fps) while it spins (house -22.5 degrees a 60 fps frame: a turn and a quarter over the 20 f), fading in its last third. Add dx,
  * dy to its position and pass angle to Cursor's `angle`. Pure.
  */
 export const CURSOR_EXIT = { frames60: 20, spin60: -22.5, to: { x: 420, y: -620 } } as const;
