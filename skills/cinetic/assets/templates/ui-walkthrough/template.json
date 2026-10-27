@@ -3,6 +3,7 @@
  "about": "A product walkthrough of 25-40 s: a promise, the user's input as one object that becomes the output in place, proof piling up, a speed claim, then the product's own flow in steps (the input goes in, the product reads every item, finds what matters, the user picks, it builds), the output live and the end card. new-film.sh --template ui-walkthrough lays these files over the Remotion starter.",
  "engine": "remotion",
  "pace": "crisp",
+ "type_family": "calm",
  "bpm": 120,
  "music": {
   "required": true,

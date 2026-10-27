@@ -3,6 +3,7 @@
  "about": "A 15-23 s update film (\"vX is out\"): a hook on the version, 2-4 changes each shown as a product moment, one payoff, the end card with the version. new-film.sh --format update lays these files over the Remotion starter.",
  "engine": "remotion",
  "pace": "crisp",
+ "type_family": "bold",
  "bpm": 120,
  "music": {
   "required": true,

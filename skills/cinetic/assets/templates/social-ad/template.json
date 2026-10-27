@@ -3,6 +3,7 @@
  "about": "A 15 s social ad on a white page, every seam hidden inside a motion: the opener built word by word (the name landing oversized and defocused, each new word in the accent at the line's end, the line re-centring) and breathing apart through the cut onto a pile of pictures, the mark spinning in over a picture that pulls back, a wall of pictures settling tile by tile round the claim and its accent pill, two rivers of pictures under a label that recedes and swaps its last word, two taglines over the hero picture, the lockup. new-film.sh --template social-ad lays these files over the Remotion starter.",
  "engine": "remotion",
  "pace": "crisp",
+ "type_family": "bold",
  "bpm": 150,
  "music": {
   "required": true,

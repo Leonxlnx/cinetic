@@ -3,6 +3,7 @@
  "about": "A 20 s product teaser told by the camera on a near-black stage: every shot is one layout under one camera path (lib/camera camPath), the moves chained with no hold. The request box rising, a whip with one flash frame, its close-up and the send button launching, the app window streaming code under a zoom-out whip and a 3D push, cards landing and fanning, the page it made with a modal toast, the product's stages rolling in corner brackets, two comets meeting on the end mark. new-film.sh --template camera-teaser lays these files over the Remotion starter.",
  "engine": "remotion",
  "pace": "crisp",
+ "type_family": "bold",
  "bpm": 120,
  "music": {
   "required": true,

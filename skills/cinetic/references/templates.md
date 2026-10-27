@@ -3,7 +3,11 @@
 A template is a whole film's structure laid over the Remotion starter: its timeline (acts in beats, every state
 change a CUE, the declarations), one act per shot type with the choreography between them, the sound plan and a
 content file of slots. `bash scripts/new-film.sh <dir> --template <name>` scaffolds from it (`assets/templates/<name>`;
-`template.json` lists the files it copies and the starter acts it removes, its pace and tempo become the defaults).
+`template.json` lists the files it copies and the starter acts it removes; its pace, tempo and type family become the
+defaults). `type_family` (`calm` or `bold`) picks the type roles: new-film.sh writes that family's numbers from
+`lib/look.ts` `TYPE_LOOK` into the film's `src/brand/tokens.ts` (`scripts/type-family.mjs`; `--type` overrides it, and
+the script switches a film later). The type-explainer, ui-walkthrough and prompt-run are calm; the update,
+capability-reel, camera-teaser and social-ad are bold.
 A scaffold passes `tsc`, `grid-check` and `lint-film` with only the `cinetic:placeholder` markers left: the brand's
 and the content file's.
 
@@ -109,7 +113,8 @@ re-centre and re-scale inside a running push; the pill grows into the cut), `pic
 the name over it), `system` (the film's one soft wipe, `Wipe` feather from the right; the mark stands between the
 halves, a push centred on it, the words float off), `grid` (the product's parts born round the mark in one radial
 wave, three labels one a second), `end` (the mark steps into the lockup, the close settles into focus). The sentence
-role is small and airy (about 84 px, tracked out +0.05 em): 3-5 words a line. Slots: `src/explain.ts`.
+role is the calm family's line: small and airy by size, weight and white space (84 px at the face's own letter fit,
+never tracked wide): 3-5 words a line. Slots: `src/explain.ts`.
 
 ## The grammar every template keeps
 
@@ -120,7 +125,15 @@ designed rather than assembled:
   cue placed in beats never shortens a read (`line()` keeps the hold at a faster track). Retime in whole bars.
 - **Speed through every act line.** Exits ease in and cut on their fastest frame; the next shot opens moving the
   same way at a matched speed (`launch`, `carry`), or the container carries across (a morph, a carry squash).
-- **Scale changes hide inside one frame** with a short defocus (`Defocus`), on a word or a kick.
+- **Type changes size through the camera:** a push through the line (`fx/TypePush`, 1.0-2.2× on `E.cam` over
+  45-60 f, following the reading point, crossing the frame's edges), never a one-frame snap; other scale changes hide
+  inside one frame with a short defocus (`Defocus`), on a word or a kick.
+- **Hero lines enter crisp, body lines calm** (`TypeLine` presets `crisp` and `calm`, `crispWords()` / `calmWords()`
+  for `Words`): words rise and sharpen while they resolve, never appear in place; an end card never fades in letter
+  by letter.
+- **The promise line holds its object** (`kit/inline.tsx` `ObjectLine`): the product's mark, a glyph, a chip or a small
+  UI piece at cap height inside the sentence, swapping in 6 f; **the claim sits on the accent** (`fx/TypeClaim`): cap
+  16 % of the frame or more, flush left at 3 %, −0.04 em, semibold.
 - **Nothing holds still.** Every hold creeps or counter-creeps and accelerates into its exit (`creep`, `counterCreep`,
   `intoCut`).
 - **Cadence accelerates into payoffs:** notices arriving faster, a count that grows then jumps (`growthSteps`), a

@@ -7,7 +7,7 @@
 #
 # Usage:
 #   bash scripts/new-film.sh <dir> [--engine remotion|hyperframes] [--fps 60] [--bpm N]
-#                            [--pace calm|crisp] [--size 1920x1080] [--name my-film]
+#                            [--pace calm|crisp] [--type calm|bold] [--size 1920x1080] [--name my-film]
 #                            [--link-modules <node_modules>]
 #                            [--font <name>]... [--browser <chromium path>] [--no-install] [--force]
 #                            [--format launch|update] [--template <name>] [--brand <kit folder or file>]... [--like <clip>]
@@ -25,6 +25,11 @@
 #                  about 1-1.5 s between picture beats; crisp: the denser launch-film tempo. Sets
 #                  PACE_NAME (src/timeline.ts, or motion.js), which the components, grid-check
 #                  and lint-film read.
+#   --type         the type family (lib/look.ts TYPE_LOOK): calm, the starter's (small airy sentence lines at the
+#                  face's own letter fit), or bold (big semibold lines, tracking tightening with size). Default: the
+#                  template's type_family (template.json), else calm. scripts/type-family.mjs writes TYPE_FAMILY, the
+#                  six roles of TYPE and the FACES weights into src/brand/tokens.ts; run it later to switch.
+#                  Remotion only.
 #   --size         WxH, e.g. 1920x1080, 1080x1920 (9:16), 1080x1080. The demo lays out from the short side.
 #   --engine       remotion (default): sets FPS/BPM/W/H in src/timeline.ts. hyperframes: sets them in
 #                  motion.js and rewrites index.html's root data-fps/-width/-height/-duration (TOTAL/FPS),
@@ -104,7 +109,7 @@ MUSIC=""; RECORD=""; PROFILE=""; ADD=()
 py() { if [[ -n "${PYTHON:-}" ]]; then "$PYTHON" "$@"; else node "$SKILL/scripts/py.mjs" "$@"; fi; }
 if [[ -n "${PYTHON:-}" ]]; then PYS="$PYTHON"; [[ "$PYTHON" == *" "* ]] && PYS="\"$PYTHON\""; else PYS="node scripts/py.mjs"; fi
 DIR=""; ENGINE=remotion; FPS=60; BPM=""; PACE=""; SIZE=1920x1080; NAME=""; LINK=""; BROWSER="${CHROMIUM_PATH:-}"; INSTALL=1; FORCE=0
-FORMAT=launch; TEMPLATE=""; BRANDS=(); LIKE=""; NAME_SET=0; BPM_SET=0; ANALYZE=1
+FORMAT=launch; TEMPLATE=""; BRANDS=(); LIKE=""; NAME_SET=0; BPM_SET=0; ANALYZE=1; TYPEFAM=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -113,6 +118,7 @@ while [[ $# -gt 0 ]]; do
     --fps) FPS="${2:?--fps needs a value}"; shift 2 ;;
     --bpm) BPM="${2:?--bpm needs a value}"; BPM_SET=1; shift 2 ;;
     --pace) PACE="${2:?--pace needs calm or crisp}"; shift 2 ;;
+    --type) TYPEFAM="${2:?--type needs calm or bold}"; shift 2 ;;
     --size) SIZE="${2:?--size needs a value}"; shift 2 ;;
     --name) NAME="${2:?--name needs a value}"; NAME_SET=1; shift 2 ;;
     --format) FORMAT="${2:?--format needs launch or update}"; shift 2 ;;
@@ -139,6 +145,7 @@ done
 [[ "$ENGINE" == remotion || "$ENGINE" == hyperframes ]] || die "--engine must be remotion or hyperframes"
 [[ "$FPS" =~ ^[0-9]+$ && "$FPS" -gt 0 ]] || die "--fps must be a positive integer"
 [[ -z "$PACE" || "$PACE" == calm || "$PACE" == crisp ]] || die "--pace must be calm or crisp"
+[[ -z "$TYPEFAM" || "$TYPEFAM" == calm || "$TYPEFAM" == bold ]] || die "--type must be calm or bold"
 SRC="$SKILL/assets/$ENGINE-starter"
 [[ -d "$SRC" ]] || die "starter not found: $SRC"
 [[ "$FORMAT" == launch || "$FORMAT" == update ]] || die "--format must be launch or update"
@@ -155,7 +162,11 @@ if [[ -n "$TEMPLATE" ]]; then
   [[ "$ENGINE" == remotion ]] || die "--template $TEMPLATE is a Remotion template (use --engine remotion)"
   TPACE=$(sed -nE 's/^[[:space:]]*"pace":[[:space:]]*"([a-z]+)".*/\1/p' "$TPL/template.json" | head -n 1)
   [[ -n "$PACE" ]] || PACE="${TPACE:-crisp}"
+  TFAM=$(sed -nE 's/^[[:space:]]*"type_family":[[:space:]]*"([a-z]+)".*/\1/p' "$TPL/template.json" | head -n 1)
+  [[ -z "$TFAM" || "$TFAM" == calm || "$TFAM" == bold ]] || die "$TEMPLATE/template.json: type_family must be calm or bold (got $TFAM)"
+  [[ -n "$TYPEFAM" ]] || TYPEFAM="$TFAM"
 fi
+[[ -z "$TYPEFAM" || "$ENGINE" == remotion ]] || die "--type is a Remotion option (the HyperFrames starter keeps its own type)"
 for kit in ${BRANDS[@]+"${BRANDS[@]}"}; do [[ -e "$kit" ]] || die "--brand: $kit not found"; done
 [[ -z "$LIKE" || -f "$LIKE" ]] || die "--like: $LIKE not found"
 if [[ -z "$BPM" ]]; then
@@ -336,6 +347,12 @@ for font in ${FONTS[@]+"${FONTS[@]}"}; do
   node "$DIR/scripts/add-font.mjs" "$font" --dir "$DIR" || die "--font $font: could not vendor it (see above)"
 done
 
+# The type family: the template's or --type's roles from lib/look.ts TYPE_LOOK into src/brand/tokens.ts (before a brand
+# kit, which fits its own face over them).
+if [[ -n "$TYPEFAM" ]]; then
+  node "$SKILL/scripts/type-family.mjs" "$TYPEFAM" --dir "$DIR" || die "could not write the $TYPEFAM type family into $DIR/src/brand/tokens.ts"
+fi
+
 # A supplied brand kit: brand.json, the tokens, the logo's parts, the screenshots (scripts/brand.py).
 if [[ ${#BRANDS[@]} -gt 0 ]]; then
   ABS=()
@@ -400,7 +417,7 @@ PYEOF
 fi
 
 BEAT=$(node -e "console.log(60*$FPS/$BPM)")
-echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat${PACE:+, $PACE pace}${TEMPLATE:+, the $TEMPLATE template})"
+echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat${PACE:+, $PACE pace}${TYPEFAM:+, $TYPEFAM type}${TEMPLATE:+, the $TEMPLATE template})"
 if [[ -n "$TPL" && "$TEMPLATE" != update ]]; then
   # the template's own first steps (template.json "next"); the music slot every film fills is printed below
   TPL="$TPL" node -e 'const m = JSON.parse(require("fs").readFileSync(require("path").join(process.env.TPL, "template.json"), "utf8")); for (const l of m.next || []) console.log(l);'

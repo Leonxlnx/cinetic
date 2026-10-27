@@ -3,6 +3,7 @@
  "about": "A 15-25 s launch close (or a short launch film on its own): one line inside a ring of sources, the page darkening as a ring becomes a disc that grows into one real record, a statement on a light card that squashes round its line, a ticker through what the product returns, the big claim on the accent in two beats, a graphic transition out of its full stop, and the end card. new-film.sh --template capability-reel lays these files over the Remotion starter.",
  "engine": "remotion",
  "pace": "crisp",
+ "type_family": "bold",
  "bpm": 120,
  "music": {
   "required": true,

@@ -56,7 +56,8 @@ export const U = Math.min(W, H) / 1080;
 /**
  * The film's type family, the director's pick (lib/look.ts TYPE_LOOK, references/copy-and-type.md §7): 'calm', the
  * default (small airy sentence lines at the face's own letter fit), or 'bold' (big, semibold, tight lines). TYPE below holds that family's numbers, written out because the scripts read them
- * (lint-film, add-font, brand.py): for a bold film set TYPE_FAMILY = 'bold' and copy TYPE_LOOK.bold's six roles in.
+ * (lint-film, add-font, brand.py): switch with node scripts/type-family.mjs bold (new-film.sh --type, or a template's
+ * type_family, runs it), which writes TYPE_FAMILY, the six roles and the FACES weights; never paste them by hand.
  */
 export const TYPE_FAMILY: TypeFamily = 'calm';
 

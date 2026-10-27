@@ -3,6 +3,7 @@
  "about": "A 20-30 s type-led explainer on a white page, one short sentence at a time: the name as one giant word with a band of the accent running through it and the mark arriving as the next word, what the product is said at the pace of speech, the problem as one drifting line, the promise with a picture inside it that grows into the next shot, the name over that picture, one soft wipe, how it fits together with the mark standing between the words, the mark becoming the hub of the product's parts, the close. new-film.sh --template type-explainer lays these files over the Remotion starter.",
  "engine": "remotion",
  "pace": "crisp",
+ "type_family": "calm",
  "bpm": 90,
  "music": {
   "required": true,

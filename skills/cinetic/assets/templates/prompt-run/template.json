@@ -3,6 +3,7 @@
  "about": "An 18-20 s demo of a product that does work from a request, one object through many states: a pill holding what it is among the tools it connects; on the kick the tools fly off and the label swaps; a wind-up opens an iris onto a colour field where the request box pushes in and the request types; a punch-in with a blur bridge, the pointer clicks send and the button swells; a whip up into the run (the request as a bubble, the steps ticking in, the last still running); the row becomes the result; the lockup. new-film.sh --template prompt-run lays these files over the Remotion starter.",
  "engine": "remotion",
  "pace": "crisp",
+ "type_family": "calm",
  "bpm": 120,
  "music": {
   "required": true,

@@ -366,7 +366,7 @@ export const TYPE = { // the calm family of section 7 in this face (Manrope meas
 
 ## 7. Type roles at film size
 
-`TYPE` in `src/brand/tokens.ts` (px at 1080p); the layout audit reads cap height as a share of the frame height. The numbers are measured house numbers (`lib/look.ts` `TYPE_LOOK`) and come in two families. **The director picks one per film** and writes it as `TYPE_FAMILY`, with that family's numbers in `TYPE`:
+`TYPE` in `src/brand/tokens.ts` (px at 1080p); the layout audit reads cap height as a share of the frame height. The numbers are measured house numbers (`lib/look.ts` `TYPE_LOOK`) and come in two families. **The director picks one per film**: `new-film.sh --type calm|bold` (or the template's `type_family`) writes it as `TYPE_FAMILY`, with that family's numbers in `TYPE` and its weights in `FACES`; `node scripts/type-family.mjs bold` switches a film later (`--check` says whether the tokens are in step):
 
 - **calm** (the default and the usual family: the largest line on screen a 5.9-8.5 % box of the frame height, median 7.8 %): small sentence lines, regular weights, the face's own letter fit at every size, an open lead, 85 % white or more. Explainers, walkthroughs, anything said one sentence at a time.
 - **bold** (the punchy one: a 9.3-14.8 % box, median 10.6 %): big semibold lines whose tracking tightens with size. Launch teasers, ads, reels cut on the beat.
