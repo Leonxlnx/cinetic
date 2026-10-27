@@ -394,10 +394,10 @@ export const swellState = (frame: number, p: SwellProps, film?: Partial<FilmCtx>
   const down = E.stdInOut(clamp((t - a - h) / Math.max(1, o)));
   const scale = t < 0 ? 1 : mix(1, p.to ?? SWELL.to, up * (1 - down));
   // the walk: across the stops over the swell and the hold, back to the first on the way down
-  const w = clamp(t / Math.max(1, a + h * 0.6));
+  const walk = clamp(t / Math.max(1, a + h * 0.6));
   const n = Math.max(1, p.stops.length - 1);
-  const seg = Math.min(n - 1, Math.floor(w * n));
-  const walked = p.stops.length > 1 ? mixColor(p.stops[seg], p.stops[seg + 1], E.stdInOut(clamp(w * n - seg))) : p.stops[0];
+  const seg = Math.min(n - 1, Math.floor(walk * n));
+  const walked = p.stops.length > 1 ? mixColor(p.stops[seg], p.stops[seg + 1], E.stdInOut(clamp(walk * n - seg))) : p.stops[0];
   const fill = t < 0 ? p.stops[0] : down > 0 ? mixColor(walked, p.stops[0], down) : walked;
   return { scale, fill, t: clamp(t / Math.max(1, a + h + o)), on: t >= 0 && t < a + h + o };
 };

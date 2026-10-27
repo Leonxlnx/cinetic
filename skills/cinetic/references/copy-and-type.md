@@ -551,6 +551,11 @@ of these devices, chosen for what the line says. Inside a line, one device: a li
   default is one hue (the accent's), with the house lightness and chroma trajectories. A path across hues is reserved
   for a supplied brand's own colour stops (`path`); a spectral moment belongs to a spectral device instead
   (`references/lighting.md` §5). In a chain: `sweep`, `sweepOn`.
+- **Clipped fills** (`fx/HueSweep`): `clipText(fill)` sets a gradient into the type with the box padded so g, p and y
+  keep their descenders (`lint-film clip-text` warns on an unpadded clip); `bandFill()` runs an accent band through
+  a giant word (ink | accent | ink, soft edges, the head leading; the cut may come before it finishes);
+  `frontFill()` inks a line by a front moving in px, the colour ahead of it a function of the distance (an answer
+  written right to left).
 - **Letters** (`Letters`, `letterState`, `letterFrames`), for the one word that earns it (a wordmark, a product name,
   the payoff): `build` (the first letter grows from its baseline, the others slide home 2 frames apart and darken from
   a light grey, then the word settles about 9 % smaller as one), `arc` (each letter swings up on a short arc, about

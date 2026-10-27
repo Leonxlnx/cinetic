@@ -32,6 +32,8 @@
  *      fx/Cursor cursorExit() (spins and flies out), fx/MicroUI swellState() (x1.38, walks to the held colour, back),
  *      fx/TypeOn rates (a fast run slowing on a given character, a burst on one frame), fx/Loaders rows that rise inside
  *      the stack and a pending row that never checks.
+ *  17. type fills: fx/HueSweep clipText() pads the clipped box (descenders), bandFill() and frontFill() give stops in
+ *      increasing px (a band ink | accent | ink; a front with the ink behind it).
  *
  * It runs src through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/primitives.test.mjs [--verbose]
@@ -87,6 +89,7 @@ import * as Cf from '${url('fx/CutFx.tsx')}';
 import * as Ga from '${url('fx/Gather.tsx')}';
 import * as Mu from '${url('fx/MicroUI.tsx')}';
 import * as Lo from '${url('fx/Loaders.tsx')}';
+import * as Hs from '${url('fx/HueSweep.tsx')}';
 const camBase = { ax: 960, ay: 540, sx: 960, sy: 540, k: 1 };
 const camMoves = [{ at: 0, frames: 20, zoom: 0.5, ease: A.E.glideOut }, { at: 15, frames: 20, pan: { x: -400 }, ease: A.E.launchIn }];
 const panOnly = [{ at: 0, frames: 10, pan: { x: 100 }, ease: A.E.linear }];
@@ -135,6 +138,7 @@ console.log(JSON.stringify({
   swell: [-1, 6, 20, 40].map((f) => Mu.swellState(f, { at: 0, stops: ['#ff0000', '#00ff00', '#0000ff'] }, film60)),
   rates: Ty.typeSchedule('abcdefghij', { start: 0, kind: 'stream', cps: 60, rates: [{ at: 5, cps: 20 }], skip: [{ at: 2, count: 3 }] }, film60),
   steps: [10, 20, 40, 120].map((f) => Lo.stepListState(f, { rows: [{ at: 0 }, { at: 10 }, { at: 20, pending: true }], rise: 18 }, film60).rows),
+  fills: { clip: Hs.clipText('linear-gradient(red, blue)'), band: Hs.bandFill({ tail: 150, head: 700, ink: '#111', band: '#06c' }), rtl: Hs.frontFill({ front: 676, ink: '#111', ramp: [[60, '#222'], [720, '#999'], [220, '#555']] }), ltr: Hs.frontFill({ front: 100, ink: '#111', ramp: [[60, '#222']], dir: 'ltr' }) },
   launchCap: (() => { const big = Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1); const last = (1 - A.E.launchIn(13 / 14)) * big * 120; return { big, last, small: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 30, 1), fade: Wo.exitDistanceEm('launchFade', A.E.buildIn, 14, 120, 1), given: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1, 2) }; })(),
   trackFit: Me.solveTracking([{ w0: 100, n: 5, size: 80, target: 124 }, { w0: 200, n: 6, size: 80, target: 228.8 }]),
   dir: { slow: D.dirBlurMix(1, { fps: 60 }), v10: D.dirBlurMix(-10, { fps: 60 }), v20at30: D.dirBlurMix(20, { fps: 30 }), fast: D.dirBlurMix(200, { fps: 60 }) },
@@ -300,6 +304,15 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   result(r[2] === r[3] && r[3] === r[4] && r[5] - r[4] >= 3 && r[1] - r[0] === 1, 'typeSchedule rates: 1 frame a key at 60 cps, a 3-key burst on one frame, 3 frames a key from character 5', r.join(','));
   const st = P.steps;
   result(st[0][1].y > st[0][0].y + 76 && Math.abs(st[2][1].y - 76) < 0.5 && st[3][2].check === 0 && st[3][2].pending === 1 && st[3][0].check === 1, 'stepListState: a new row rises inside the stack, a pending row never checks and pales', JSON.stringify(st[3].map((x) => [x.y, x.check, x.pending])));
+}
+// 17. type fills
+{
+  const F = P.fills;
+  const px = (g) => [...g.matchAll(/(-?[\d.]+)px/g)].map((m) => Number(m[1]));
+  const inc = (a) => a.every((v, i) => i === 0 || v >= a[i - 1]);
+  result(F.clip.padding === '0.18em 0 0.32em' && F.clip.marginTop === '-0.18em' && F.clip.backgroundClip === 'text', 'clipText: the clipped box is padded for descenders and the margin taken back', JSON.stringify(F.clip));
+  result(inc(px(F.band)) && px(F.band).length === 4 && inc(px(F.rtl)) && px(F.rtl).pop() === 676 && /#111 676/.test(F.rtl) && inc(px(F.ltr)) && /^linear-gradient\(90deg, #111 100/.test(F.ltr),
+    'bandFill and frontFill: stops in increasing px, the ink behind the front', `${F.band} | ${F.rtl}`);
 }
 // 14. a launch keeps readable type under the audit's 20 px/f
 {

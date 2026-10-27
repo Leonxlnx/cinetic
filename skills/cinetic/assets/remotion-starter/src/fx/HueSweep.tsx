@@ -192,3 +192,47 @@ export const HueSweep: React.FC<
 
 /** A sweep is a continuous colour change: it declares nothing. */
 export const declares = (_props?: Partial<SweepOpts>, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });
+
+/**
+ * A gradient clipped to type, padded so its descenders survive: background-clip: text clips to the element box, so
+ * at line-height 1 the bottoms of g, p and y are cut. The padding (.18em above, .32em below) is taken back by a
+ * negative margin, so the line sits where it would. Spread it on the span that holds the text.
+ */
+export const clipText = (fill: string): React.CSSProperties => ({
+  backgroundImage: fill,
+  backgroundClip: 'text',
+  WebkitBackgroundClip: 'text',
+  color: 'transparent',
+  WebkitTextFillColor: 'transparent',
+  padding: '0.18em 0 0.32em',
+  marginTop: '-0.18em',
+  marginBottom: '-0.32em',
+  display: 'inline-block',
+});
+
+/**
+ * A colour band running through a word: ink | band | ink, its tail and head in px of the word's box (the head leads),
+ * each edge `edge` px soft. A giant subject word with the accent passing through it; it need not finish (the cut
+ * does). Use with clipText().
+ */
+export const bandFill = (o: { tail: number; head: number; edge?: number; ink: string; band: string }): string => {
+  const e = o.edge ?? 120;
+  const px = (v: number) => `${v.toFixed(1)}px`;
+  return `linear-gradient(90deg, ${o.ink} ${px(o.tail - e / 2)}, ${o.band} ${px(o.tail + e / 2)}, ${o.band} ${px(o.head - e / 2)}, ${o.ink} ${px(o.head + e / 2)})`;
+};
+
+/**
+ * Ink by a front moving in px rather than by letters: the part the front has passed is in its ink, the part ahead the colour
+ * is a function of the distance to the front (`ramp`: [px ahead of the front, colour] pairs). An answer inking from
+ * right to left as it is written (rtl: the front moves left, the ink is behind it on the right). Use with clipText().
+ */
+export const frontFill = (o: { front: number; ink: string; ramp: [number, string][]; dir?: 'rtl' | 'ltr' }): string => {
+  const near = [...o.ramp].sort((p, q) => p[0] - q[0]);
+  if ((o.dir ?? 'rtl') === 'rtl') {
+    // the front moves left: behind it (right) the ink, ahead of it (left) the ramp by distance
+    const stops = [...near].reverse().map(([d, c]) => `${c} ${(o.front - d).toFixed(1)}px`);
+    return `linear-gradient(90deg, ${stops.join(', ')}, ${o.ink} ${o.front.toFixed(1)}px)`;
+  }
+  const stops = near.map(([d, c]) => `${c} ${(o.front + d).toFixed(1)}px`);
+  return `linear-gradient(90deg, ${o.ink} ${o.front.toFixed(1)}px, ${stops.join(', ')})`;
+};

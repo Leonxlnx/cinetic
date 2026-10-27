@@ -1204,7 +1204,8 @@ export const TypeLine: React.FC<TypeLineProps> = (p) => {
         transformOrigin: '50% 78%',
         filter: g.blur > 0.002 ? `blur(${px(g.blur * size)})` : undefined,
         fontVariationSettings: fvsOf(g.vary, weight, p.vary),
-        ...(fill ? { backgroundImage: fill, backgroundSize: `${px(m.width)} 100%`, backgroundPosition: `${px(-m.xs[i])} 0`, backgroundRepeat: 'no-repeat', WebkitBackgroundClip: 'text', backgroundClip: 'text' } : {}),
+        // a filled glyph is clipped to its box: padded so its descender survives, the margin and the origin taken back (line-height 1)
+        ...(fill ? { backgroundImage: fill, backgroundSize: `${px(m.width)} 100%`, backgroundPosition: `${px(-m.xs[i])} 0`, backgroundRepeat: 'no-repeat', WebkitBackgroundClip: 'text', backgroundClip: 'text', padding: '0.18em 0 0.32em', marginTop: '-0.18em', transformOrigin: '50% 64%' } : {}),
         ...extra,
       }}
     >

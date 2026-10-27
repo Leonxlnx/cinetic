@@ -14,6 +14,12 @@
  *   off-token-color   hex colours not declared in the tokens file; other colour literals (warning)
  *   gradient-low-span opaque gradients spanning < 30 code values (they band in 8 bit; use a dithered PNG)
  *   premount          premountFor is a no-op in renders and ignored with layout="none" (warning)
+ *   clip-text         a gradient clipped to text (background-clip: text) on a box with no padding: the clip is the
+ *                     element box, so g, p and y lose their descenders at line-height 1 (warning; spread fx/HueSweep
+ *                     clipText(), or pad .18em 0 .32em with a -.18em margin)
+ *   svg-text          an SVG <text> in an act: under a CSS transform (a camera, a scale, a 3D turn) Remotion's
+ *                     Chrome draws it at the wrong size and place (warning; set type as HTML placed by its
+ *                     baseline, keep SVG for paths)
  *   inbrowser-blur    CameraMotionBlur / HtmlInCanvasMotionBlur / Trail (8-bit accumulation; use render.sh --blur)
  *   remote-font       font packages or stylesheets fetched over the network (ship local variable fonts)
  *   hf-*              HyperFrames: gsap .from(), repeat: -1, <br>, <audio> without id
@@ -1151,6 +1157,20 @@ for (const file of files) {
     if (/layout\s*=\s*(\{\s*)?['"]none['"]/.test(tag)) report(i, 'premount', 'warn', 'premountFor is silently ignored with layout="none" (and in every render); remove it');
     else report(i, 'premount', 'warn', 'premountFor does nothing in a render (it only hides preview loading); remove it unless the Studio needs it');
   });
+
+  // --- clip-text: a gradient clipped to text is clipped to the element box (descenders cut at line-height 1)
+  each(/\b(?:Webkit)?[bB]ackgroundClip\s*:\s*['"]text['"]/g, (m, i) => {
+    const open = code.lastIndexOf('{', i);
+    const close = code.indexOf('}', i);
+    const obj = code.slice(open < 0 ? 0 : open, close < 0 ? undefined : close);
+    if (/\bpadding|clipText/.test(obj)) return;
+    report(i, 'clip-text', 'warn', 'background-clip: text clips to the element box, so g, p and y lose their descenders at line-height 1: spread clipText() (fx/HueSweep) or pad the box (.18em 0 .32em with a -.18em margin)');
+  });
+  // --- svg-text: SVG <text> in an act renders at the wrong size and place under CSS transforms
+  if (/(^|\/)acts\//.test(norm) || /^(act|scene|shot)(\d|[-_.])/i.test(basename(file)))
+    each(/<text[\s>]/g, (m, i) =>
+      report(i, 'svg-text', 'warn', "an SVG <text> under a CSS transform (a camera, a scale, a 3D turn) draws at the wrong size and place in the render's Chrome: set the type as HTML placed by its baseline and keep SVG for paths"),
+    );
 
   // --- in-browser motion blur, remote fonts
   each(/\b(CameraMotionBlur|HtmlInCanvasMotionBlur|Trail)\b/g, (m, i) => {
