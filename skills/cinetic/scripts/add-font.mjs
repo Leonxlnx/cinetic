@@ -178,13 +178,13 @@ try {
     const { text: tk0, eol: tkEol } = readText(tokTs);
     let tk = tk0;
     const stack = role === 'mono' ? `"${family}", ui-monospace, monospace` : `"${family}", system-ui, sans-serif`;
+    // only inside FONT: the same key elsewhere (C.accent, C.line ...) is a colour, never a font
+    const obj = /^export const FONT\s*=\s*\{[\s\S]*?\n\};?/m.exec(tk);
+    if (!obj) die('src/brand/tokens.ts has no FONT object to add to (add the family by hand)');
     const keyLine = new RegExp(`^(\\s*${addKey}:\\s*)'[^']*'`, 'm');
-    if (keyLine.test(tk)) tk = tk.replace(keyLine, `$1'${stack}'`);
-    else {
-      const obj = /^export const FONT\s*=\s*\{[\s\S]*?\n\};?/m.exec(tk);
-      if (!obj) die('src/brand/tokens.ts has no FONT object to add to (add the family by hand)');
-      tk = tk.replace(obj[0], obj[0].replace(/\n\};?$/, `\n  ${addKey}: '${stack}', // added beside the film's families: add-font.mjs --add\n};`));
-    }
+    const font = keyLine.test(obj[0]) ? obj[0].replace(keyLine, (_, head) => `${head}'${stack}'`)
+      : obj[0].replace(/\n\};?$/, `\n  ${addKey}: '${stack}', // added beside the film's families: add-font.mjs --add\n};`);
+    tk = tk.replace(obj[0], () => font);
     tk = tk.replace(/^(export const FACES\s*=\s*\[)([^\]]*)\]/m, (all, head, body) => {
       const faces = [...body.matchAll(/'([^']*)'/g)].map((x) => x[1]);
       if (!faces.some((f) => f.endsWith(`"${family}"`))) faces.push(`${Math.min(axis[1], Math.max(axis[0], 400))} 16px "${family}"`);

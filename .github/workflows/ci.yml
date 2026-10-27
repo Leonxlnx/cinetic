@@ -285,6 +285,9 @@ jobs:
       - name: Script --help contract and docs tests
         run: node "skills/$SKILL/scripts/test/scripts-docs.test.mjs"
 
+      - name: add-font.mjs --add tests (a font package written in code)
+        run: node "skills/$SKILL/scripts/test/add-font.test.mjs"
+
       - name: Python syntax (py_compile)
         run: |
           shopt -s globstar nullglob

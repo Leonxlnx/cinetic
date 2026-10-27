@@ -396,4 +396,4 @@ Read each file when its step comes up; never all at once.
 | brand kit export; outlined lettering | `scripts/brand-kit.sh`; `scripts/outline-text.py` |
 | the HyperFrames finish | `scripts/hf-finish.sh` |
 | the Python every script runs (`$PYTHON`, else the first of `python3`, `python` or `py -3` that runs a version check) | `scripts/py.mjs` (`--which`) |
-| the scripts' own tests (not a film's) | `scripts/test/` (`copy-check`, `lint-film`, `grid-check`, `tokens`, `mirror`, `scripts-docs`, `provenance`, `pick`, `deck`, `brand`, `like`, `track`, `score`, `cast`, `library`, `assets`, `music`, `primitives`, `type-presets`, `handoff`, `moment`, `wordmark`, `encode-tags`, `bash32`) |
+| the scripts' own tests (not a film's) | `scripts/test/` (`copy-check`, `lint-film`, `grid-check`, `tokens`, `mirror`, `scripts-docs`, `add-font`, `provenance`, `pick`, `deck`, `brand`, `like`, `track`, `score`, `cast`, `library`, `assets`, `music`, `primitives`, `type-presets`, `handoff`, `moment`, `wordmark`, `encode-tags`, `bash32`) |

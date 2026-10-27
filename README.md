@@ -311,6 +311,7 @@ node skills/cinetic/scripts/test/mirror.test.mjs
 node skills/cinetic/scripts/test/lint-film.test.mjs --part static
 node skills/cinetic/scripts/test/grid-check.test.mjs    # the Remotion starter cases need: npm install in assets/remotion-starter
 node skills/cinetic/scripts/test/scripts-docs.test.mjs
+node skills/cinetic/scripts/test/add-font.test.mjs
 node skills/cinetic/scripts/test/provenance.test.mjs
 node skills/cinetic/scripts/test/assets.test.mjs
 python3 skills/cinetic/scripts/test/pick.test.py
