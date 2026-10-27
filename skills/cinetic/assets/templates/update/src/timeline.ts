@@ -50,16 +50,17 @@ export const TAIL = FPS;
 export const N = UPDATE.changes.length;
 /** Absolute frame of the n-th beat from the film's first downbeat (sub = 16ths): a whole frame on the grid. */
 export const beat = (n: number, sub = 0) => b(1 + Math.floor(n / 4), n % 4, sub);
-/** The end card's beats: 6 or 8, so the body is whole bars (a loop and the track's bar lines end cleanly). */
-const END_BEATS = N % 2 ? 6 : 8;
+/** The end card's beats: one bar, so every act line is a bar line (with a track, a downbeat); the tail holds it. */
+const END_BEATS = 4;
 /**
- * Where each part starts, in beats: the hook is one bar, each change a bar and a half (the product moment,
- * then its words read in the quiet), the payoff one bar, the end card a bar and a half or two, then the tail.
+ * Where each part starts, in beats: the hook is one bar, each change two bars (the product moment, then its words read
+ * in the quiet), the payoff one bar, the end card one bar, then the tail. Every act line sits on a bar line, so with a
+ * track in each lands on a downbeat (grid-check structural-on-music).
  */
-export const BEATS = { hook: 0, change: (i: number) => 4 + 6 * i, payoff: 4 + 6 * N, end: 8 + 6 * N, last: 8 + 6 * N + END_BEATS } as const;
+export const BEATS = { hook: 0, change: (i: number) => 4 + 8 * i, payoff: 4 + 8 * N, end: 8 + 8 * N, last: 8 + 8 * N + END_BEATS } as const;
 
-// Acts: contiguous, [from, from + dur). Each act is its own composition in Root.tsx (in this order). A change
-// starts on a bar or on its middle: the half-bar lines keep the cuts off a metronome.
+// Acts: contiguous, [from, from + dur). Each act is its own composition in Root.tsx (in this order). Every change
+// starts on a bar line; its hit and its words land off the downbeat, so the cuts inside it stay off a metronome.
 export const ACT: Record<string, { from: number; dur: number }> = {
   hook: { from: 0, dur: beat(BEATS.change(0)) }, // the version is the set; its last numeral rolls on (frame 0 on: with a track, beat 0 is its first downbeat)
   ...Object.fromEntries(UPDATE.changes.map((_c, i) => [`change${i + 1}`, { from: beat(BEATS.change(i)), dur: beat(BEATS.change(i + 1)) - beat(BEATS.change(i)) }])),
@@ -77,22 +78,22 @@ export const changeAct = (i: number) => ACT[`change${i + 1}`];
 // doing the new thing (its contact frame), say<i> the sentence that says it rising in, life<i> the product
 // still living under the read (a counter, a cursor, a list settling: no new event for the eye).
 export const CUE: Record<string, number> = {
-  roll: beat(1), // the version's last numeral rolls from the old value to the new one
+  roll: beat(0, 2), // the version's last numeral rolls from the old value to the new one
   ...Object.fromEntries(
     UPDATE.changes.flatMap((_c, i) => [
       [`c${i}`, beat(BEATS.change(i))],
-      [`hit${i}`, beat(BEATS.change(i) + 1)],
-      [`say${i}`, beat(BEATS.change(i) + 1, 2)],
-      [`life${i}`, beat(BEATS.change(i) + 4)],
+      [`hit${i}`, beat(BEATS.change(i) + 1, 1)],
+      [`say${i}`, beat(BEATS.change(i) + 2)],
+      [`life${i}`, beat(BEATS.change(i) + 5)],
     ]),
   ),
   gather: beat(BEATS.payoff), // the pull back begins: every change at once, the version swinging back in front
   swing: beat(BEATS.payoff + 1), // the version swings into the frame as the strip finishes softening
   land: beat(BEATS.payoff + 2), // the version lands as the subject, on the beat
   lockup: beat(BEATS.end + 1), // the mark and the name are set: the payoff of the end card
-  light: beat(BEATS.end + 3), // the key passes across the version behind the name (the end card's light event)
-  glint: beat(BEATS.end + END_BEATS - 2), // the mark's last part catches the key
-  rest: beat(BEATS.end + END_BEATS - 1), // the slow push reaches the name: the lock keeps living
+  light: beat(BEATS.end + 2), // the key passes across the version behind the name (the end card's light event)
+  glint: beat(BEATS.end + 2, 3), // the mark's last part catches the key
+  rest: beat(BEATS.end + 3, 2), // the slow push reaches the name: the lock keeps living
   end: beat(BEATS.last), // last bar line; TAIL follows
 };
 

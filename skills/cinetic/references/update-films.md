@@ -14,7 +14,7 @@ Contents: 1. The shape · 2. The tools · 3. Writing the changes · 4. Picture �
 | Beat | What happens | Length (house) |
 |---|---|---|
 | Name and version | the product's name and the version on frame 0, already moving: the name over giant numerals cropped by the frame, the last numeral rolling from the old value to the new, or the mark in its world; the first line says both ("Plumb 2.4 is out.") by 3 s | about 1 bar (2 s) |
-| Change × 2-4 | each change is **one sentence and its moment**: the camera arrives on the product's surface, the product does the new thing on its beat (a review approved, a reply landing, a figure starting to climb), and one short sentence of 2-6 words says the result the user sees | about 1-1.5 bars each |
+| Change × 2-4 | each change is **one sentence and its moment**: the camera arrives on the product's surface, the product does the new thing on its beat (a review approved, a reply landing, a figure starting to climb), and one short sentence of 2-6 words says the result the user sees | two bars each (every act line on a downbeat) |
 | Payoff | the one change that matters most, or all of them seen together (the camera pulls back over every change while the version swings back in front) | about 1 bar |
 | End card | the mark and the name, with the version as the one practical fact; built from the film's device, then the one still hold | to a whole bar, plus a 1 s tail |
 
@@ -106,8 +106,7 @@ the payoff or one change is the full-frame one.
 | 5 | close | Update Plumb today. | 3 |
 
 - `words`: written after you know what the picture shows; it says what the viewer just saw, in a person's words. At
-  the template's 120 BPM a change's bar holds a line of 3-4 words read in full; a longer line needs a slower track or
-  a longer change. `update.ts` refuses anything outside 2-6 words.
+  the template's 120 BPM a change's two bars hold a line of 2-6 words read in full, at any track from 100 to 140 BPM. `update.ts` refuses anything outside 2-6 words.
 - `moment`: one state change you can point at on a frame, never a list row or a bullet.
 
 Then test it like a launch film's lines: would a stranger, watching muted, say what changed in the same words? Is it
@@ -129,7 +128,7 @@ performance gain, a fix), show its consequence: the waiting that no longer happe
 
 Like every cinetic film, an update film is cut to a licensed, human-made, instrumental track
 (`references/music.md`). Find it first, for this film: `node scripts/music.mjs search --mood "<the film's mood
-words>" --bpm 116-128 --length <s>` (116-128 BPM suits one bar a change), `sheet --measure`, then `get '#n' --to
+words>" --bpm 116-128 --length <s>` (116-128 BPM suits two bars a change), `sheet --measure`, then `get '#n' --to
 audio/music` (its licence record beside it; never the last film's track). Bring it in with `new-film.sh --music
 <file> --record <licence.json>` (or a track found elsewhere with `python3 scripts/audio/track.py add`), then `track.py edit --bars N --reveal-bar K --end
 stop|button|ring`, `track.py grid` and `track.py check`: `src/music.ts` then carries the track and `b()` follows its
@@ -139,13 +138,13 @@ between acts, and the one element at the lockup (`references/sound.md`). A short
 
 ## 6. Timing table
 
-At 120 BPM (a 2 s bar), one bar a change:
+At 120 BPM (a 2 s bar), two bars a change, every act line on a bar line (with the track, on a downbeat):
 
 | Changes | Body | With the tail |
 |---|---|---|
-| 2 | 12 s | 13 s |
-| 3 | 14 s | 15 s |
-| 4 | 16 s | 17 s |
+| 2 | 14 s | 15 s |
+| 3 | 18 s | 19 s |
+| 4 | 22 s | 23 s |
 
 With a track, its own bars decide; the shot band for the format is 0.8-1.6 s median (`GRAMMAR.shot.band.update`),
 shorter than a launch film's.

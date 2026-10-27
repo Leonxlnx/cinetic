@@ -2,7 +2,7 @@
 
 A 15-25 s launch close (the back half of a launch film, or a short launch film on its own), laid over the Remotion
 starter by `bash scripts/new-film.sh <dir> --template capability-reel` (template.json lists the files it copies and
-the starter acts it removes). Crisp pace, 120 BPM until the track's grid is in; 19 s as written.
+the starter acts it removes). Crisp pace, 120 BPM until the track's grid is in; 10 bars, 21 s as written.
 
 **The shape.** Breadth, then one real proof, then the claim and the name: what it connects to, one record it
 returns, what that means, everything it can return, the one sentence to remember, the transition out of that
@@ -29,7 +29,9 @@ sentence's full stop, the end card. State changes are hard steps; only the camer
 - The direction: deal it (`python3 scripts/deck.py --brief "..." --format launch --have ui --options 3`) and retell
   this floor in its world: its grounds and type replace `acts/stage.tsx`.
 
-**Timing.** `src/timeline.ts` places every act in beats (`BEATS`) and every state change as a CUE on the 16th grid;
+**Timing.** `src/timeline.ts` places every act on a bar line (`BEATS`, whole bars: with a track in, every act line lands
+on a downbeat; the first act starts on frame 0 and its cues on the track's first downbeat) and every state change as a
+CUE on the 16th grid (the tagline waits for the title's read at a faster track);
 `TICKS` and `HOPS` are declared steps. Keep the grammar when you retime: cuts and swaps on the track's drum onsets,
 no overshoot on type, holds that counter-creep into an exit, speed and zoom carried across every act line, the
 transition born from something already on screen (the full stop), one colour event.

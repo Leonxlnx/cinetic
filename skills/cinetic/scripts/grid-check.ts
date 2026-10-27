@@ -548,7 +548,10 @@ async function main() {
   let at = 0;
   for (const [name, a] of acts) {
     if (!(a.dur > 0)) err('acts', `ACT.${name} has dur ${a.dur}`);
-    if (a.from !== at) err('acts', `ACT.${name} starts at ${a.from}, expected ${at} (${a.from > at ? 'gap' : 'overlap'} of ${Math.abs(a.from - at)} f)`);
+    if (a.from !== at)
+      err('acts', at === 0 && MUSIC && isNum(MUSIC.t0) && Math.abs(a.from - MUSIC.t0) <= 1
+        ? `ACT.${name} starts on the track's first downbeat (f${a.from}), expected 0: the first act starts on frame 0 and only its cues wait for b(1) (from = i === 0 ? 0 : bt(...))`
+        : `ACT.${name} starts at ${a.from}, expected ${at} (${a.from > at ? 'gap' : 'overlap'} of ${Math.abs(a.from - at)} f)`);
     const off = Math.abs(a.from - Math.round(a.from / BAR) * BAR);
     if (!MUSIC && off > 0.5 && !offgrid.has(name)) warn('acts-on-bar', `ACT.${name} starts at ${a.from}, ${off.toFixed(1)} f off a bar line`);
     at = a.from + a.dur;

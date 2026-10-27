@@ -2,7 +2,7 @@
 
 A 25-40 s walkthrough of a product's flow, laid over the Remotion starter by
 `bash scripts/new-film.sh <dir> --template ui-walkthrough` (template.json lists the files it copies and the starter
-acts it removes). Crisp pace, 120 BPM until the track's grid is in; 34 s as written.
+acts it removes). Crisp pace, 120 BPM until the track's grid is in; 18 bars, 37 s as written.
 
 **The shape.** The UI tells the story (the input goes in, the product reads it, finds what matters, the user picks,
 it builds the output), so the viewer always knows what the product does; five short lines say what each step means.
@@ -33,11 +33,13 @@ it builds the output), so the viewer always knows what the product does; five sh
 - The direction: deal it (`python3 scripts/deck.py --brief "..." --format launch --have ui --options 3`) and retell
   this floor in its world: its grounds, light and type replace `acts/stage.tsx`'s two stages.
 
-**Timing.** `src/timeline.ts` places every act in beats (`BEATS`) and every state change as a CUE on the 16th grid.
+**Timing.** `src/timeline.ts` places every act on a bar line (`BEATS`, in whole bars) and every state change as a CUE on
+the 16th grid; with a track in, every act line lands on a downbeat, the first act starts on frame 0 and its own cues
+on the track's first downbeat, and a line never leaves before its read at a faster tempo (`line()` keeps the hold).
 The grammar to keep when you retime: exits ease in and cut on their fastest frame, and the next shot opens moving
 the same way; scale changes hide inside one frame with a short defocus; every hold creeps and accelerates into its
 exit; cadences speed up into a payoff (notices, the count, the backspace); UI arrives front-loaded (`E.snapOut`);
-one springy landing at most, never on type. A step that needs more time gets it in whole beats.
+one springy landing at most, never on type. A step that needs more time gets it in whole bars.
 
 **Music and sound.** Cut to a licensed, human-made, instrumental track (`template.json` -> `music`): 110-128 BPM with
 a clear kick; then `track.py edit`, `grid` and `check`. `src/sync.ts` places the effects from the picture's own

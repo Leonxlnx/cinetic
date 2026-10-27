@@ -24,9 +24,10 @@
  *      - each fragment's `text` sound (src/sync.ts) lands within 1 f of the frame its last word
  *        visibly stops (the drawn rise, through arrive(), at the statement's size);
  *      - new-film.sh --pace crisp scaffolds a film that passes grid-check, and new-film.sh --format update
- *        one whose changes are short sentences with no error or script warning, and every film template
- *        (--template ui-walkthrough, capability-reel) one with no error and no script warning (needs bash; on
- *        Windows, Git for Windows' bash).
+ *        one whose changes are short sentences with no error or script warning, and every film template in
+ *        assets/templates one with no error and no script warning, which with a track in (104 and 136 BPM, the
+ *        first downbeat 0.25 s in) still has every act line on a downbeat and no error (needs bash; on Windows,
+ *        Git for Windows' bash).
  *
  * grid-check.ts runs under Node's TypeScript type stripping (Node 22.18+, or older 22.x with
  * --experimental-strip-types), so the fixtures are self-contained timelines with no imports. The
@@ -236,14 +237,34 @@ console.log(JSON.stringify({ text, rest }));
     const bad = (gu.findings ?? []).filter((x) => x.severity === 'error' || x.check === 'script');
     result(gu.code === 0 && !gu.error && !bad.length, 'new-film.sh --format update scaffolds an update film whose changes are sentences (no error, no script warning)',
       gu.error ?? bad.map((x) => `${x.check}: ${x.message.slice(0, 90)}`).join('; '));
-    // new-film.sh --template <name>: every film template scaffolds a film whose script passes as it comes
-    for (const name of ['ui-walkthrough', 'capability-reel']) {
-      const dir = join(TMP, `${name}-film`).split('\\').join('/');
+    // new-film.sh --template <name>: every film template scaffolds a film whose script passes as it comes, and with a
+    // track in (a steady fake one whose first downbeat is 0.25 s in, at a slow and a fast tempo) every act line still
+    // lands on a downbeat, the first act starts on frame 0 and no line loses its read (no error)
+    const templates = readdirSync(join(SKILL, 'assets', 'templates')).filter((n) => existsSync(join(SKILL, 'assets', 'templates', n, 'template.json'))).sort();
+    for (const name of templates) {
+      const dir = join(TMP, `tpl-${name}`).split('\\').join('/');
       const nt = spawnSync(bash, [join(SKILL, 'scripts', 'new-film.sh').split('\\').join('/'), dir, '--template', name, '--no-install'], { encoding: 'utf8' });
       const gt = nt.status === 0 ? run('npx', ['tsx', GRID, join(dir, 'src', 'timeline.ts'), '--json'], STARTER) : { error: (nt.stderr || nt.stdout).trim().slice(0, 300) };
       const worse = (gt.findings ?? []).filter((x) => x.severity === 'error' || x.check === 'script');
       result(gt.code === 0 && !gt.error && !worse.length, `new-film.sh --template ${name} scaffolds a film that passes grid-check (no error, no script warning)`,
         gt.error ?? worse.map((x) => `${x.check}: ${x.message.slice(0, 90)}`).join('; '));
+      const sm = gt.summary;
+      if (!sm) continue;
+      const musicTs = join(dir, 'src', 'music.ts');
+      const stub = readFileSync(musicTs, 'utf8');
+      const bars = Math.round((sm.total - sm.fps) / sm.bar);
+      for (const bpm of [104, 136]) {
+        const beatF = (60 / bpm) * sm.fps;
+        const t0 = 0.25 * sm.fps;
+        const D = Array.from({ length: bars + 1 }, (_, k) => +(t0 + k * 4 * beatF).toFixed(3));
+        const M = `export const MUSIC: Music | null = { bpm: ${bpm}, beatS: ${60 / bpm}, fps: ${sm.fps}, t0: ${t0}, bars: ${bars}, phraseLen: 4, downbeats: ${JSON.stringify(D)}, accents: [], phrases: [${t0}], entries: [], breaks: [], stops: [], end: { mode: 'stop', f: ${D[bars]} } };`;
+        writeFileSync(musicTs, stub.replace('export const MUSIC: Music | null = null;', M));
+        const gm = run('npx', ['tsx', GRID, join(dir, 'src', 'timeline.ts'), '--json'], STARTER);
+        const errs = (gm.findings ?? []).filter((x) => x.severity === 'error');
+        result(!gm.error && !errs.length && gm.summary?.bpm === bpm, `--template ${name} with a ${bpm} BPM track (first downbeat 0.25 s in): acts on downbeats, no error`,
+          gm.error ?? errs.map((x) => `${x.check}: ${x.message.slice(0, 90)}`).join('; '));
+      }
+      writeFileSync(musicTs, stub);
     }
   }
 }

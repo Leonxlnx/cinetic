@@ -28,7 +28,7 @@ film may end on the reel's close (rebuild its acts after your own) or open on th
 ## ui-walkthrough
 
 The UI tells the story, so the viewer always knows what the product does; five short lines say what each step
-means. Ten acts at 120 BPM (34 s): `open` (the promise, its last word snapping the line x2.2 in one frame), `card`
+means. Ten acts on whole bars at 120 BPM (37 s): `open` (the promise, its last word snapping the line x2.2 in one frame), `card`
 (the user's input as one tilted card rising while the ground turns; ONE hidden-cut frame of scale, tilt and a tinted
 swell makes the same card the output, which then builds its three steps), `proof` (notices piling up, `fx/Stack`),
 `claim` (its first word giant, then a one-frame snap out to the line), `field` (a held backspace, the value typed in
@@ -40,7 +40,7 @@ builds), `page` (the output flies up and flattens), `end`. Slots: `src/walk.ts`.
 ## capability-reel
 
 Breadth, then one real proof, then the claim and the name; state changes are hard steps, only the camera and the
-containers ease. Seven acts at 120 BPM (19 s): `sources` (one line inside a ring of sources; the page darkens as the
+containers ease. Seven acts on whole bars at 120 BPM (21 s): `sources` (one line inside a ring of sources; the page darkens as the
 inner ring closes into a disc), `record` (the disc grows into one real record; a whip pan opens its fields; the page
 grid is the card's own and two accent cells hop on the kicks), `statement` (a hard cut on a kick to a light card that
 squashes round its line, `Resize` carry, and counter-creeps into a zoom-out), `ticker` (`MaskList` and an icon tile,
@@ -52,6 +52,9 @@ the flood), `end` (the name pops, the rest types, the tagline takes its place). 
 
 When you retime a template or move it into a direction's world, keep these; they are what makes the floor read as
 designed rather than assembled:
+- **Acts on bar lines.** `BEATS` are whole bars, so with the track in every act line lands on a downbeat
+  (grid-check structural-on-music); the first act starts on frame 0 and its cues on the track's first downbeat; a
+  cue placed in beats never shortens a read (`line()` keeps the hold at a faster track). Retime in whole bars.
 - **Speed through every act line.** Exits ease in and cut on their fastest frame; the next shot opens moving the
   same way at a matched speed (`launch`, `carry`), or the container carries across (a morph, a carry squash).
 - **Scale changes hide inside one frame** with a short defocus (`Defocus`), on a word or a kick.

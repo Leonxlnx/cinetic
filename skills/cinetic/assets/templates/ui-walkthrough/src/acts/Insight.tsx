@@ -10,7 +10,7 @@ import { PILL_BOX } from './Feed';
 import { DARK, ScriptLine, useAbs } from './stage';
 
 // INSIGHT - what the product found, as one pill: the people who asked, the insight, a count chip that pops on its
-// beat. The line above says it in a sentence; the key light swells once under the read. The shot whips left into
+// beat. The line above says it in a sentence; the key light swells once before the whip. The shot whips left into
 // the choice, its last frame the fastest.
 
 /** The whip into the choice: px per frame on the cut, leftward. */

@@ -56,18 +56,20 @@ export const PROMISE_GAP = 8;
 export const TAIL = FPS;
 
 /**
- * Where each act starts, in beats (32 bars of story at 120 BPM: 34 s with the tail). The shape, not the numbers, is
- * the template: a 2 s promise, the object's 5.5 s transformation, a 1.5 s proof, a 3 s claim, then one act per step
- * of the flow (4 s each, the insight 3 s), the output 3 s and the end card. Move a step's length with its content.
+ * Where each act starts, in beats (18 bars at 120 BPM: 37 s with the tail). Every act line sits on a bar line, so with
+ * a track in each one lands on a downbeat (grid-check structural-on-music): a 1-bar promise, the object's 3-bar
+ * transformation, a 1-bar proof, a 2-bar claim, then one 2-bar act per step of the flow, the 1-bar output and the
+ * 2-bar end card. The shape, not the numbers, is the template: move a step's length with its content, in whole bars.
  */
-export const BEATS = { open: 0, card: 4, proof: 15, claim: 18, field: 24, feed: 32, insight: 40.5, pick: 46.5, page: 54.5, end: 60.5, last: 68 } as const;
+export const BEATS = { open: 0, card: 4, proof: 16, claim: 20, field: 28, feed: 36, insight: 44, pick: 52, page: 60, end: 64, last: 72 } as const;
 
-// Acts: contiguous, [from, from + dur). Each act is its own composition in Root.tsx (in this order).
+// Acts: contiguous, [from, from + dur). Each act is its own composition in Root.tsx (in this order). The first act
+// starts on frame 0 even when the track's first downbeat comes later (a pickup): its own cues start on that downbeat.
 const order = ['open', 'card', 'proof', 'claim', 'field', 'feed', 'insight', 'pick', 'page', 'end'] as const;
 export type ActName = (typeof order)[number];
 export const ACT = Object.fromEntries(
   order.map((k, i) => {
-    const from = bt(BEATS[k]);
+    const from = i === 0 ? 0 : bt(BEATS[k]);
     const to = i + 1 < order.length ? bt(BEATS[order[i + 1]]) : bt(BEATS.last) + TAIL;
     return [k, { from, dur: to - from }];
   }),
@@ -99,78 +101,79 @@ export const CUE: Record<string, number> = {
   done2: bt(11.75),
   punch2: bt(12.5),
   done3: bt(13),
-  hold: bt(13.5),
-  outCard: bt(14.5),
+  hold: bt(14.25),
+  outCard: bt(15.25),
   // proof: notices pile up, faster and faster
-  proof: bt(15),
-  toast0: bt(15.25),
-  toast1: bt(16),
-  toast2: bt(16.5),
-  toast3: bt(17),
-  toast4: bt(17.25),
-  wipe: bt(17.75),
+  proof: bt(16),
+  toast0: bt(16.25),
+  toast1: bt(17.25),
+  toast2: bt(18),
+  toast3: bt(18.5),
+  toast4: bt(18.75),
+  wipe: bt(19.75),
   // claim: the first word giant, then the line; a push that accelerates into the cut
-  claim: bt(18),
-  claimSnap: bt(18.5),
-  push: bt(20),
-  pushOut: bt(22),
-  exitClaim: bt(23.5),
+  claim: bt(20),
+  claimSnap: bt(20.5),
+  push: bt(22.25),
+  claimLight: bt(23.75), // the key swells once across the claim while it is read
+  pushOut: bt(26.25),
+  exitClaim: bt(27.5),
   // field (step one): the field, its placeholder erased, the value typed, the hand presses, the results develop
-  field: bt(24),
-  step1: bt(24.25),
-  erase: bt(25.5),
-  typeIn: bt(26.5),
-  cursor: bt(27),
-  step1Out: bt(28),
-  press: bt(28.25),
-  busy: bt(28.5),
-  develop: bt(29),
-  pullBack: bt(30),
-  whipUp: bt(31.5),
+  field: bt(28),
+  step1: bt(28.25),
+  erase: bt(29.5),
+  typeIn: bt(30.5),
+  cursor: bt(31),
+  step1Out: bt(32.25),
+  press: bt(32.5),
+  busy: bt(32.75),
+  develop: bt(33.25),
+  pullBack: bt(34.25),
+  whipUp: bt(35.5),
   // feed (step two): the product reads every item, a counter climbing; the flick lands on the one that matters
-  feed: bt(32),
-  count: bt(32.25),
-  flick: bt(33),
-  rows: bt(34.5),
-  peak: bt(35.5),
-  brake: bt(36.5),
-  slow: bt(37.5),
-  land: bt(38.5),
-  total: bt(39),
-  lift: bt(39.5),
-  morph: bt(40),
+  feed: bt(36),
+  count: bt(36.25),
+  flick: bt(37),
+  rows: bt(38.25),
+  peak: bt(39.25),
+  brake: bt(40.25),
+  slow: bt(41),
+  land: bt(42),
+  total: bt(42.5),
+  lift: bt(43),
+  morph: bt(43.5),
   // insight: the item collapses into a pill; the count chip; the line says what was found
-  insight: bt(40.5),
-  chip: bt(40.75),
-  say4: bt(41.25),
-  glow: bt(44),
-  exitInsight: bt(46),
-  whipLeft: bt(46.25),
+  insight: bt(44),
+  say4: bt(44.75),
+  chip: bt(47.75), // the count chip pops once the line is in: its proof
+  glow: bt(50.25), // the key swells once before the whip
+  exitInsight: bt(51.5),
+  whipLeft: bt(51.75),
   // pick (step three): the options arrive, one is chosen, it becomes the progress pill and the output builds
-  pick: bt(46.5),
-  options: bt(46.75),
-  say5: bt(47.5),
-  select: bt(50),
-  chosen: bt(50.5),
-  exitPick: bt(51.75),
-  toPill: bt(52),
-  build: bt(52.5),
-  pct: bt(53.5),
+  pick: bt(52),
+  options: bt(52.25),
+  say5: bt(53),
+  select: bt(55.5),
+  chosen: bt(56),
+  exitPick: bt(57.25),
+  toPill: bt(57.5),
+  build: bt(58),
+  pct: bt(59),
   // page: the output, live, flies in over the build, flattens, its picture develops, it scrolls
-  page: bt(54.5),
-  pageLand: bt(55.5),
-  art: bt(56),
-  scroll: bt(57.5),
-  sections: bt(58.5),
-  recede: bt(59.5),
+  page: bt(60),
+  pageLand: bt(60.75),
+  art: bt(61),
+  scroll: bt(62),
+  sections: bt(62.75),
+  recede: bt(63.25),
   // end: the mark assembles, the name is set, the payoff line rises beside it; the lock lives on the key
-  end: bt(60.5),
-  mark: bt(61),
-  lockup: bt(62),
-  payoff: bt(63.5),
-  light: bt(64),
-  rest: bt(66),
-  last: bt(68),
+  end: bt(64),
+  mark: bt(64.5),
+  lockup: bt(65.5),
+  payoff: bt(67),
+  light: bt(67.5),
+  rest: bt(69.5),
+  last: bt(72),
 };
 
 // ---- Declarations: what the picture does on purpose (grid-check validates them; export-cues writes them).
@@ -240,10 +243,10 @@ export const SALIENCE: Record<string, Salience> = {
   line: 'copy', snap: 'hit', exitOpen: 'copy',
   rise: 'cut', creep: 'life', turn: 'life', zoomIn: 'move', jump: 'cut', swap: 'hit', sub: 'move', row1: 'hit', punch1: 'cut', row2: 'hit', done1: 'hit', row3: 'hit', done2: 'hit', punch2: 'cut', done3: 'hit', hold: 'life', outCard: 'move',
   proof: 'cut', toast0: 'hit', toast1: 'hit', toast2: 'hit', toast3: 'hit', toast4: 'hit', wipe: 'move',
-  claim: 'cut', claimSnap: 'cut', push: 'life', pushOut: 'move', exitClaim: 'copy',
+  claim: 'cut', claimSnap: 'cut', push: 'move', claimLight: 'life', pushOut: 'move', exitClaim: 'copy',
   field: 'cut', step1: 'copy', erase: 'hit', typeIn: 'hit', cursor: 'move', step1Out: 'copy', press: 'hit', busy: 'hit', develop: 'hit', pullBack: 'move', whipUp: 'move',
   feed: 'cut', count: 'life', flick: 'move', rows: 'life', peak: 'move', brake: 'life', slow: 'life', land: 'hit', total: 'hit', lift: 'move', morph: 'move',
-  insight: 'cut', chip: 'hit', say4: 'copy', glow: 'life', exitInsight: 'copy', whipLeft: 'move',
+  insight: 'cut', say4: 'copy', chip: 'hit', glow: 'life', exitInsight: 'copy', whipLeft: 'move',
   pick: 'cut', options: 'hit', say5: 'copy', select: 'move', chosen: 'hit', exitPick: 'copy', toPill: 'move', build: 'hit', pct: 'life',
   page: 'cut', pageLand: 'hit', art: 'hit', scroll: 'move', sections: 'life', recede: 'move',
   end: 'cut', mark: 'hit', lockup: 'hit', payoff: 'copy', light: 'life', rest: 'life', last: 'cut',
@@ -271,11 +274,15 @@ const revealSpan = (n: number, ink: Ink = 'reveal'): number => {
   return ink === 'pop' ? Math.floor(last) + 1 : ink === 'partial' ? Math.ceil(last + (10 * FPS) / 60) : f60(revealFor(n, pace));
 };
 
-/** One line of copy revealed word by word with this film's pace; `out` defaults to the pace's hold. */
+/**
+ * One line of copy revealed word by word with this film's pace; `out` defaults to the pace's hold, and a cue placed
+ * in beats never cuts that hold short: at a faster track the beats shrink, so the line leaves on its read instead.
+ */
 export const line = (id: string, text: string, inF: number, out?: number, o: { ink?: Ink } = {}): Copy => {
   const n = wordCount(text);
   const resolved = inF + revealSpan(n, o.ink);
-  return { id, text, in: inF, resolved, out: out ?? resolved + f60(holdFor(n, pace)) };
+  const read = resolved + f60(holdFor(n, pace));
+  return { id, text, in: inF, resolved, out: Math.max(out ?? read, read) };
 };
 
 /** The claim's words after its giant first one arrive this far apart (60 fps frames), from the snap. */

@@ -3,7 +3,7 @@ import { Composition, Folder, Still } from 'remotion';
 import { DARK } from './acts/stage';
 import { U } from './brand/tokens';
 import { actComponent, Film, FilmProps } from './Film';
-import { FilmSub, subMetadata } from './FilmSub';
+import { everyMetadata, FilmEvery, FilmSub, subMetadata } from './FilmSub';
 import { Audit } from './lib/Audit';
 import { FontGate } from './lib/FontGate';
 import { BrandAvatar, BrandHeader, BrandLockup, BrandMark, MarkSizes, MarkStill } from './Stills';
@@ -30,6 +30,8 @@ export const RemotionRoot: React.FC = () => (
     <Composition id="Film" component={Film} durationInFrames={TOTAL} fps={FPS} width={W} height={H} defaultProps={{ audit: false } as FilmProps} />
     {/* The film as sub-frames for the motion-blurred master (render.sh --blur passes out/samples.json). */}
     <Composition id="FilmSub" component={FilmSub} durationInFrames={TOTAL} fps={FPS} width={W} height={H} defaultProps={{ groups: [] as number[] }} calculateMetadata={subMetadata} />
+    {/* The film sampled for a dev round: every 4th frame (--props='{"step":4,"offset":2}' for the others). */}
+    <Composition id="FilmEvery" component={FilmEvery} durationInFrames={TOTAL} fps={FPS} width={W} height={H} defaultProps={{ step: 4, offset: 0 }} calculateMetadata={everyMetadata} />
 
     <Folder name="Acts">
       {ACTS.map((a, k) => (

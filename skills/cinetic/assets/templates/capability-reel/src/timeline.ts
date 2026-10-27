@@ -53,17 +53,20 @@ export const bt = (x: number) => {
 export const TAIL = FPS;
 
 /**
- * Where each act starts, in beats (9 bars at 120 BPM: 19 s with the tail). The shape is the template: a 3 s ring of
- * sources, a 2.5 s record, a 2 s statement, a 2.5 s ticker, the 3.25 s claim, a 1.75 s transition, a 3 s end card.
+ * Where each act starts, in beats (10 bars at 120 BPM: 21 s with the tail). Every act line sits on a bar line, so with a
+ * track in each one lands on a downbeat (grid-check structural-on-music). The shape is the template: a 2-bar ring of
+ * sources, a 1-bar record, a 1-bar statement, a 1-bar ticker, the 2-bar claim, a 1-bar transition, a 2-bar end card.
  */
-export const BEATS = { sources: 0, record: 6, statement: 11, ticker: 15, claim: 20, rings: 26.5, end: 30, last: 36 } as const;
+export const BEATS = { sources: 0, record: 8, statement: 12, ticker: 16, claim: 20, rings: 28, end: 32, last: 40 } as const;
 
+// Acts: contiguous, [from, from + dur). The first act starts on frame 0 even when the track's first downbeat comes
+// later (a pickup): its own cues start on that downbeat.
 const order = ['sources', 'record', 'statement', 'ticker', 'claim', 'rings', 'end'] as const;
 export type ActName = (typeof order)[number];
-// Acts: contiguous, [from, from + dur). Each act is its own composition in Root.tsx (in this order).
+// Each act is its own composition in Root.tsx (in this order).
 export const ACT = Object.fromEntries(
   order.map((k, i) => {
-    const from = bt(BEATS[k]);
+    const from = i === 0 ? 0 : bt(BEATS[k]);
     const to = i + 1 < order.length ? bt(BEATS[order[i + 1]]) : bt(BEATS.last) + TAIL;
     return [k, { from, dur: to - from }];
   }),
@@ -74,39 +77,53 @@ export const TOTAL = bt(BEATS.last) + TAIL;
 /** The ticker's steps: one row every 10 f at 60 fps (hard), from its first step. */
 export const TICK_GAP = 10;
 
+/** The end card's title: its first word pops, the rest types over this many 60 fps frames from TITLE_LEAD after it. */
+export const TITLE_TYPE = 36;
+export const TITLE_LEAD = 6;
+/** The first quarter-beat position at or after `from` whose frame is at least `f`: a cue that waits for a read. */
+export const beatAfter = (f: number, from: number) => {
+  let q = Math.ceil(from * 4);
+  while (bt(q / 4) < f && q < 4096) q++;
+  return q / 4;
+};
+/** The end card: the title at beat 32.25; the tagline takes its place once the title is read (beat 35.5 at 120 BPM,
+ *  later at a faster track, so the read never shrinks with the beats). */
+const TITLE_AT = 32.25;
+const TAGLINE_AT = beatAfter(bt(TITLE_AT) + f60(TITLE_LEAD + TITLE_TYPE + holdFor(wordCount(REEL.lines.title), PACE[PACE_NAME])), 35.5);
+
 // Named sync points (absolute frames), all on the 16th grid. Picture code reads these; src/sync.ts turns them into
 // sound events. Salience below says what each asks of the eye.
 export const CUE: Record<string, number> = {
   // sources: the line, the sources popping in round it, a slow orbit; the page darkens and the inner ring becomes a disc
   line: bt(0.25),
-  chips: bt(0.5),
-  chipsIn: bt(2.5),
+  chips: bt(0),
+  chipsIn: bt(2),
   orbit: bt(3.5),
-  exitLine: bt(4.75),
-  darken: bt(5),
-  disc: bt(5.5),
+  exitLine: bt(6.25),
+  darken: bt(6.5),
+  disc: bt(7.25),
   // record: the disc grows into the card, the accent rises through its picture, a whip pan reveals its fields; the
   // grid cells under it hop on the kicks; a hard cut on a kick
-  card: bt(6),
-  grad: bt(6.5),
-  pan: bt(7.25),
-  rows: bt(8),
-  hop1: bt(8.5),
-  hop2: bt(9),
-  hop3: bt(9.5),
-  hop4: bt(10),
-  hold: bt(10.5),
+  card: bt(8),
+  grad: bt(8.25),
+  pan: bt(9.5),
+  hop1: bt(10.25),
+  rows: bt(10.5),
+  hop2: bt(10.75),
+  hop3: bt(11.25),
+  hold: bt(11.5),
+  hop4: bt(11.75),
   // statement: the light card opens at the record's height and squashes round its line; counter-creep; zoom out
-  statement: bt(11),
-  squashed: bt(11.75),
-  creep: bt(12.5),
-  turn: bt(13.5),
-  exitStatement: bt(14.5),
+  statement: bt(12),
+  squashed: bt(12.75),
+  creep: bt(13.5),
+  turn: bt(14.5),
+  exitStatement: bt(15.5),
   // ticker: an icon tile and a word wheel stepping one row every 10 f; the exit launches left
-  ticker: bt(15),
-  tick0: bt(15.5),
-  tick1: bt(16.5),
-  tick2: bt(17.5),
+  ticker: bt(16),
+  tick0: bt(16.25),
+  tick1: bt(17),
+  tick2: bt(17.75),
   tick3: bt(18.5),
   tick4: bt(19),
   exitTicker: bt(19.5),
@@ -116,25 +133,25 @@ export const CUE: Record<string, number> = {
   frag2: bt(23),
   stop: bt(23.5),
   drift: bt(24.5),
-  erase: bt(25.5),
-  zoomIn: bt(26),
+  erase: bt(26.5),
+  zoomIn: bt(27),
   // rings: inverted, squares radiate from the full stop at one speed, then the centre floods
-  rings: bt(26.5),
-  born1: bt(26.75),
-  born2: bt(27.25),
-  born3: bt(27.75),
-  born4: bt(28.25),
-  born5: bt(28.75),
-  flood: bt(29),
+  rings: bt(28),
+  born1: bt(28.25),
+  born2: bt(28.75),
+  born3: bt(29.25),
+  born4: bt(29.75),
+  born5: bt(30.25),
+  flood: bt(31),
   // end: the title's first word pops and the rest types, the mark rises beside it; the tagline takes its place
-  end: bt(30),
-  title: bt(30.25),
-  mark: bt(30.5),
-  key: bt(32),
-  tagline: bt(33.75),
-  lockup: bt(34.25),
-  rest: bt(35),
-  last: bt(36),
+  end: bt(32),
+  title: bt(TITLE_AT),
+  mark: bt(32.5),
+  key: bt(34),
+  tagline: bt(TAGLINE_AT),
+  lockup: bt(TAGLINE_AT + 0.5),
+  rest: bt(Math.max(37, TAGLINE_AT + 1.25)),
+  last: bt(40),
 };
 
 /** The ticker's step frames (whole frames): one fewer than the capabilities, TICK_GAP apart from tick0. */
@@ -231,7 +248,8 @@ const revealSpan = (n: number, ink: Ink = 'reveal'): number => {
 export const line = (id: string, text: string, inF: number, out?: number, o: { ink?: Ink } = {}): Copy => {
   const n = wordCount(text);
   const resolved = inF + revealSpan(n, o.ink);
-  return { id, text, in: inF, resolved, out: out ?? resolved + f60(holdFor(n, pace)) };
+  const read = resolved + f60(holdFor(n, pace)); // a cue placed in beats never cuts the read short at a faster track
+  return { id, text, in: inF, resolved, out: Math.max(out ?? read, read) };
 };
 
 /** One line built in beats (fx/Chain's contract): `<id>.1`, `<id>.2` ... one sentence for the script rule. */
@@ -248,9 +266,6 @@ export const chain = (id: string, mode: 'build' | 'replace', fragments: [text: s
   return base.map((c, i) => ({ ...c, out: base[i + 1] ? base[i + 1].in - leave : (o.out ?? c.resolved + f60(holdFor(wordCount(c.text), pace))) }));
 };
 
-/** The end card's title: its first word pops, the rest types over this many 60 fps frames from TITLE_LEAD after it. */
-export const TITLE_TYPE = 36;
-export const TITLE_LEAD = 6;
 
 // Every on-screen word of the film. The product's own strings (reel.ts sources, record, capabilities) are UI.
 export const COPY: Copy[] = [
