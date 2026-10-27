@@ -180,3 +180,107 @@ export const Notice: React.FC<{ theme: KitTheme; w: number; h: number; glyph?: G
     </div>
   );
 };
+
+/**
+ * A prompt composer: a rounded box with the request (children: a TypeOn) at the top, and a row of controls along
+ * the bottom: an add button, the model chip (`chip`), and the round send button in the accent, which a click swells
+ * (`send.scale`, `send.fill` from fx/MicroUI swellState). `focus` lights the rim in the accent. Pass the product's own
+ * placeholder and chip label.
+ */
+export const Composer: React.FC<{
+  theme: KitTheme;
+  w: number;
+  h: number;
+  chip?: string;
+  focus?: number;
+  send?: { scale?: number; fill?: string };
+  id?: string;
+  scale?: number;
+  children?: React.ReactNode;
+}> = ({ theme: t, w, h, chip, focus = 0, send = {}, id = 'kit-composer', scale, children }) => {
+  const u = useKitScale(scale);
+  const pad = Math.min(h * 0.19, 44 * u);
+  const ctl = Math.min(h * 0.3, 68 * u);
+  const r = Math.min(h * 0.22, 44 * u);
+  return (
+    <div data-ui style={{ position: 'relative', width: w, height: h, borderRadius: r, background: t.surface, boxShadow: `${surfaceShadow(t, 34, u)}, inset 0 0 0 ${(2.5 * u).toFixed(2)}px ${mixColor(t.line, t.accent, clamp(focus))}`, boxSizing: 'border-box' }}>
+      <div style={{ position: 'absolute', left: pad, top: pad * 0.85, right: pad, height: h - ctl - pad * 2, overflow: 'hidden', ...face(fit(Math.min(h * 0.19, 44 * u), u), 450, t.text, -0.015) }}>{children}</div>
+      <div style={{ position: 'absolute', left: pad, right: pad, bottom: pad * 0.75, height: ctl, display: 'flex', alignItems: 'center', gap: ctl * 0.25 }}>
+        <div style={{ width: ctl, height: ctl, borderRadius: ctl * 0.3, background: t.well, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Glyph name="plus" size={ctl * 0.5} color={t.mute} />
+        </div>
+        {chip && (
+          <div style={{ height: ctl, padding: `0 ${ctl * 0.35}px`, borderRadius: ctl * 0.3, background: t.well, display: 'flex', alignItems: 'center', gap: ctl * 0.18 }}>
+            <Glyph name="bolt" size={ctl * 0.42} color={t.accent} />
+            <span data-text={`${id}-chip`} style={face(fit(ctl * 0.36, u), 550, t.text, -0.01)}>
+              {chip}
+            </span>
+          </div>
+        )}
+        <div style={{ flex: 1 }} />
+        <div style={{ width: ctl, height: ctl, borderRadius: ctl / 2, background: send.fill ?? t.accent, transform: `scale(${(send.scale ?? 1).toFixed(4)})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Glyph name="send" size={ctl * 0.46} color={t.accentInk} weight={2.4} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/** One token of a code line: its kind sets its colour from the theme (one hue family: keywords in the accent). */
+export type CodeToken = { k: 'kw' | 'fn' | 'str' | 'num' | 'txt' | 'com'; s: string };
+const codeColour = (t: KitTheme, k: CodeToken['k']) =>
+  k === 'kw' ? t.accent : k === 'str' ? mixColor(t.accent, t.text, 0.45) : k === 'num' ? mixColor(t.accent, t.text, 0.25) : k === 'com' ? t.mute : k === 'fn' ? t.text : mixColor(t.text, t.mute, 0.35);
+
+/**
+ * A code panel that streams: a numbered gutter that is always full, and rows of tokens arriving by line cadence
+ * (`rows` shown, fractional: the current row typing through its characters). Product code reads as code in one hue
+ * family (keywords in the accent, strings and numbers in its tints, comments muted). Pass the product's own code.
+ */
+export const CodePanel: React.FC<{ theme: KitTheme; w: number; lines: CodeToken[][]; rows: number; size?: number; gutter?: number; family?: string; id?: string; scale?: number }> = ({ theme: t, w, lines, rows, size, gutter = 40, family = 'ui-monospace, monospace', id = 'kit-code', scale }) => {
+  const u = useKitScale(scale);
+  const fs = fit(size ?? 30 * u, u);
+  const lh = fs * 1.5;
+  const shown = Math.floor(rows);
+  const part = rows - shown;
+  return (
+    <div data-ui style={{ position: 'relative', width: w, display: 'flex', gap: fs * 0.9, fontFamily: family, fontSize: fs, lineHeight: `${lh}px`, whiteSpace: 'pre' }}>
+      <div style={{ flex: 'none', textAlign: 'right', color: t.mute, opacity: 0.6, minWidth: fs * 1.6 }}>
+        {Array.from({ length: gutter }, (_, i) => (
+          <div key={i}>{i + 1}</div>
+        ))}
+      </div>
+      <div data-text={id} style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+        {lines.slice(0, Math.min(lines.length, shown + (part > 0 ? 1 : 0))).map((line, i) => {
+          const total = line.reduce((n, tk) => n + tk.s.length, 0);
+          let budget = i < shown ? total : Math.floor(part * total);
+          return (
+            <div key={i} style={{ height: lh }}>
+              {line.map((tk, j) => {
+                const s = tk.s.slice(0, Math.max(0, budget));
+                budget -= tk.s.length;
+                return s ? (
+                  <span key={j} style={{ color: codeColour(t, tk.k), fontStyle: 'normal' }}>
+                    {s}
+                  </span>
+                ) : null;
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/** A chat message from the user: a rounded bubble, right-aligned by the caller, its text from the product's own words. */
+export const Bubble: React.FC<{ theme: KitTheme; text: React.ReactNode; size?: number; maxW?: number; id?: string; scale?: number }> = ({ theme: t, text, size, maxW, id = 'kit-bubble', scale }) => {
+  const u = useKitScale(scale);
+  const fs = fit(size ?? 38 * u, u);
+  return (
+    <div data-ui style={{ display: 'inline-block', maxWidth: maxW, padding: `${fs * 0.6}px ${fs * 0.8}px`, borderRadius: fs * 0.66, background: t.dark ? t.raised : t.surface, boxShadow: surfaceShadow(t, 20, u) }}>
+      <span data-text={id} style={face(fs, 450, t.text, -0.01)}>
+        {text}
+      </span>
+    </div>
+  );
+};

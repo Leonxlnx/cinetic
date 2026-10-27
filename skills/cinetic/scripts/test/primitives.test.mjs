@@ -34,6 +34,8 @@
  *      the stack and a pending row that never checks.
  *  17. type fills: fx/HueSweep clipText() pads the clipped box (descenders), bandFill() and frontFill() give stops in
  *      increasing px (a band ink | accent | ink; a front with the ink behind it).
+ *  18. fx/Words arriveX: each word lands beside its slot and settles home on an expo-out (half of it in 8 f at 60 fps,
+ *      home by arriveDur), one value per word when given a list.
  *
  * It runs src through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/primitives.test.mjs [--verbose]
@@ -139,6 +141,7 @@ console.log(JSON.stringify({
   rates: Ty.typeSchedule('abcdefghij', { start: 0, kind: 'stream', cps: 60, rates: [{ at: 5, cps: 20 }], skip: [{ at: 2, count: 3 }] }, film60),
   steps: [10, 20, 40, 120].map((f) => Lo.stepListState(f, { rows: [{ at: 0 }, { at: 10 }, { at: 20, pending: true }], rise: 18 }, film60).rows),
   fills: { clip: Hs.clipText('linear-gradient(red, blue)'), band: Hs.bandFill({ tail: 150, head: 700, ink: '#111', band: '#06c' }), rtl: Hs.frontFill({ front: 676, ink: '#111', ramp: [[60, '#222'], [720, '#999'], [220, '#555']] }), ltr: Hs.frontFill({ front: 100, ink: '#111', ramp: [[60, '#222']], dir: 'ltr' }) },
+  arrive: [1, 8, 28, 50].map((f) => Wo.wordState(100 + f, { text: 'one two', start: 100, starts: [100, 104], arriveX: [0.3, 0.1], size: 80 }, film60).words.map((w) => w.x)),
   launchCap: (() => { const big = Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1); const last = (1 - A.E.launchIn(13 / 14)) * big * 120; return { big, last, small: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 30, 1), fade: Wo.exitDistanceEm('launchFade', A.E.buildIn, 14, 120, 1), given: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1, 2) }; })(),
   trackFit: Me.solveTracking([{ w0: 100, n: 5, size: 80, target: 124 }, { w0: 200, n: 6, size: 80, target: 228.8 }]),
   dir: { slow: D.dirBlurMix(1, { fps: 60 }), v10: D.dirBlurMix(-10, { fps: 60 }), v20at30: D.dirBlurMix(20, { fps: 30 }), fast: D.dirBlurMix(200, { fps: 60 }) },
@@ -313,6 +316,12 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   result(F.clip.padding === '0.18em 0 0.32em' && F.clip.marginTop === '-0.18em' && F.clip.backgroundClip === 'text', 'clipText: the clipped box is padded for descenders and the margin taken back', JSON.stringify(F.clip));
   result(inc(px(F.band)) && px(F.band).length === 4 && inc(px(F.rtl)) && px(F.rtl).pop() === 676 && /#111 676/.test(F.rtl) && inc(px(F.ltr)) && /^linear-gradient\(90deg, #111 100/.test(F.ltr),
     'bandFill and frontFill: stops in increasing px, the ink behind the front', `${F.band} | ${F.rtl}`);
+}
+// 18. words at the pace of speech
+{
+  const a = P.arrive;
+  result(a[0][0] > 0.27 && a[0][0] < 0.3 && Math.abs(a[1][0] / 0.3 - 0.52) < 0.06 && a[2][0] > 0.02 && a[2][0] < 0.035 && a[3][0] === 0 && a[3][1] === 0 && a[1][1] > a[1][0] / 3 && a[1][1] < 0.1,
+    'Words arriveX: lands 0.3 em right, half home in 8 f, 90 % by 28 f, home by 45 f; a second word on its own distance', JSON.stringify(a));
 }
 // 14. a launch keeps readable type under the audit's 20 px/f
 {

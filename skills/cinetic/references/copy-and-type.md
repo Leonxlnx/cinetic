@@ -504,6 +504,14 @@ every move for the layout audit (a jump is held to the travel limit, not the rea
 `exitOverlap: 1`). A launch exit declares a `velocity` seam: put it in `SEAMS` and open the next shot carried
 (`carriedCut()`, `carryChain()`). `exitOrder`: `'rtl'` / `'ltr'` 2 f apart, `'stagger'` 6 f apart, `'together'`.
 
+**Words at the pace of speech.** A calm explainer builds its line at speaking cadence, not on a stagger rule: give
+`starts` (the frames each word is said: gaps of 2-5 f at 30 fps are normal) and `arriveX` (em, one value or one per
+word: each word lands 0.1-0.4 em right of its slot and settles home on an exponential, half home in 8 f and 90 % by
+`arriveDur`, house 28 f at 60 fps: `settleLeft()`) while the whole line drifts the same way on the same curve so the
+finished line is centred. Leave it on a
+launch with `exitOrder: 'rtl'` and `exitStagger` of one frame: the words vanish in reverse reading order on the move's
+last frames and the cut comes at speed.
+
 **The transient accent.** The newest thing lands in the accent, holds it, then cools to ink linearly: `accentHold` /
 `accentCool` (house 18 + 13 f calm, 7 + 13 crisp), `accentSpace` (`'srgb'`, or `'oklab'` for even lightness steps),
 `accentOn` (`'all'`, `'first'`, `'last'`, indices). `Chain` `accent`: `'transient'` (house), `'hold'` (the payoff keeps

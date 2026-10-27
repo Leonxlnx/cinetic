@@ -260,7 +260,10 @@ sample.
 - Flow parts (`kit/flow.tsx`), the pieces of a product flow: `Field` (a well, a glyph, the value as children, an action
   button with press and flash), `Tile` (a result: picture, two-line title, meta, a corner badge), `Row` (a choice whose
   `selected` rings it in the accent with a dark halo), `Pill` (a spinner or a check, a label, a live value), `Chip`,
-  `DataRow` (a record's label and value), `Notice` (a system notification for a proof stack). The glyph set covers a
+  `DataRow` (a record's label and value), `Notice` (a system notification for a proof stack), `Composer` (a prompt box:
+  the request at the top, an add button, the model chip and the round send button along the bottom; `focus` lights the
+  rim, `send` takes `swellState()` for the click), `CodePanel` (a numbered gutter that is always full and rows of tokens
+  streaming by line cadence, keywords in the accent and the rest in its tints), `Bubble` (the user's message). The glyph set covers a
   capability ticker too (link, list, search, star, monitor, speaker, camera, braces, table, globe, lock, play, chat,
   cart, heart). Every string comes from the caller.
 - Panels with live states: `ProjectPanel` (status, team, selects with approvals, count, bar, the primary action;

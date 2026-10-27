@@ -84,6 +84,8 @@ export type WordsSpec = {
   exitStagger?: number; // film frames between word exits (rtl/ltr 2 f@60, stagger 6 f@60)
   exitDir?: 'up' | 'down' | 'left' | 'right';
   exitDistance?: number; // em (default 1.25 for launch, shortened so its fastest frame stays under 20 px/f at 1080p; 0.6 for launchFade)
+  arriveX?: number | number[]; // em: each word arrives this far beside its slot (positive: from the right) and settles home on an exponential (speech-rhythm builds: 0.1-0.4 em)
+  arriveDur?: number; // 60 fps frames until it is 90 % home (house 28: half of it in 8 f, home at 1.6x)
   exitEase?: Ease; // default E.launchIn (launch) / E.buildIn (launchFade)
   exitFade?: number; // film frames of a launchFade's opacity drop (default the pace's exitFade, 10 f@60)
   accent?: string; // the accent colour: words land in it and cool to `color`
@@ -133,7 +135,20 @@ export type WordState = {
 export type WordsState = { words: WordState[]; scale: number; blur: number; frames: WordFrame[] };
 
 /** House numbers of the line system's exits and cadence (60 fps frames where marked). */
-export const WORDS_HOUSE = { exitDistance: 1.25, fadeDistance: 0.6, exitStagger60: 2, staggerOrder60: 6, exitFade60: 10, accelTo: 0.5, lead: 1.1, maxTextPx: 20 } as const;
+export const WORDS_HOUSE = { exitDistance: 1.25, fadeDistance: 0.6, exitStagger60: 2, staggerOrder60: 6, exitFade60: 10, accelTo: 0.5, lead: 1.1, maxTextPx: 20, arrive60: 28 } as const;
+
+/**
+ * The share of an arrival offset still to travel `t` frames after a word shows, for a settle that is 90 % home after
+ * `t90` frames: an exponential (half home at 0.3 x t90, the long tail of speech-paced builds), cut to exactly 0 at 1.6 x t90.
+ */
+export const settleLeft = (t: number, t90: number): number => {
+  if (t <= 0) return 1;
+  const tau = Math.max(1e-6, t90) / Math.LN10;
+  const end = 1.6 * Math.max(1e-6, t90);
+  if (t >= end) return 0;
+  const tail = Math.exp(-end / tau);
+  return (Math.exp(-t / tau) - tail) / (1 - tail);
+};
 
 /**
  * The exit distance in em: `given` when set, else the house distance, which a launch shortens so its fastest frame
@@ -354,6 +369,8 @@ export const wordState = (frame: number, o: WordsSpec, film?: Partial<FilmCtx>):
         if (frame >= end && (k.mode === 'launchFade' || o.exitAt === undefined)) visible = false; // gone at the move's end (a cut hides it earlier)
       }
     }
+    const ax = Array.isArray(o.arriveX) ? (o.arriveX[i] ?? 0) : (o.arriveX ?? 0);
+    if (ax) x += ax * settleLeft(frame - fr.start, f60x(o.arriveDur ?? WORDS_HOUSE.arrive60, k.fps));
     if (snap && i === n - 1) {
       opacity = snap.wordOpacity;
       y = (snap.wordY * u) / em / snap.scale; // inside the scaled span: on-screen px divide by the scale
