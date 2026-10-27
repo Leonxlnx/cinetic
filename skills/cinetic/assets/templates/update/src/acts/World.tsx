@@ -61,6 +61,9 @@ const creep = (s: Shot, F: number, from: number, to: number): Shot => {
   const t = clamp((F - from) / Math.max(1, to - from));
   return { ...s, ax: s.ax + ((F - from) * 24 * U) / 60, k: s.k * mix(1, 1.04, t) };
 };
+/** A change's second picture beat (CUE.push<i>): a 6 % push in on its surface over 36 f while its words are read. */
+const PUSH = { k: 1.06, frames: 36 } as const;
+const pushIn = (s: Shot, F: number, at: number): Shot => ({ ...s, k: s.k * lmix(1, PUSH.k, prog(F, at, at + f60(PUSH.frames), E.stdInOut)) });
 
 /** The camera at absolute frame F: the hook's creep, a move across every act line, the pull back, a slow push to the end. */
 export const shotAt = (F: number): Shot => {
@@ -68,7 +71,7 @@ export const shotAt = (F: number): Shot => {
   for (let i = 0; i < N; i++) {
     const at = beat(BEATS.change(i));
     const next = beat(BEATS.change(i + 1));
-    s = lc(s, creep(shotOf(i), F, at, next), across(F, at));
+    s = lc(s, pushIn(creep(shotOf(i), F, at, next), F, CUE[`push${i}`]), across(F, at));
   }
   s = lc(s, WIDE, prog(F, CUE.gather - f60(18), CUE.gather + f60(54), E.strongInOut));
   return { ...s, k: s.k * lmix(1, 1.05, prog(F, CUE.gather + f60(54), TOTAL, E.linear)) };
@@ -172,7 +175,7 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
       {/* the name over the version: "[Name] [version]" from frame 0, leaving left with the numerals */}
       {showNum && F < CUE.gather && (
         <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${(numX + 16 * U).toFixed(2)}px, ${NAME_HOOK.y.toFixed(2)}px, 0)` }}>
-          <Words id="product" text={copy('product').text} frame={F} start={copy('product').in - 1} size={TYPE.line.size * U} style={{ ...typeStyle('line', TYPE.line.size * U), color: T.text }} />
+          <Words id="product" text={copy('product').text} frame={F} start={copy('product').in - 1} dur={f60(2)} size={TYPE.line.size * U} style={{ ...typeStyle('line', TYPE.line.size * U), color: T.text }} />
         </div>
       )}
       {/* the end card's light event: one soft band of the key crossing the version behind the name */}

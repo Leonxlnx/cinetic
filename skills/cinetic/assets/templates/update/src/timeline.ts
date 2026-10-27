@@ -73,18 +73,36 @@ export const TOTAL = beat(BEATS.last) + TAIL;
 /** The act of change i (0-based). */
 export const changeAct = (i: number) => ACT[`change${i + 1}`];
 
+/** How long the version's last numeral takes to roll (60 fps frames). */
+export const ROLL = 17;
+/** Frames before the next act line at which a change's words leave (they launch into the camera move). */
+export const SAY_OUT = 16;
+/**
+ * The roll (a 16th-grid frame): once the name, which pops on with the set, is read, and early enough that the new
+ * version is read before the camera takes it; at a fast track the version's read wins and the roll comes sooner.
+ */
+const ROLL_AT = (() => {
+  const read1 = f60(holdFor(1, PACE[PACE_NAME])); // a one-word read
+  const nameRead = 1 + read1; // the name pops on frame 0 (ink 'pop'): read one word's hold later
+  const latest = beat(BEATS.change(0)) - f60(SAY_OUT) - f60(ROLL) - read1;
+  const at16 = (q: number) => beat(Math.floor(q / 4), q % 4);
+  let q = 0;
+  while (at16(q) < nameRead && at16(q + 1) <= latest) q++;
+  return at16(q);
+})();
+
 // Named sync points (absolute frames), all on the 16th grid. Picture code reads these; src/sync.ts turns
 // them into sound events. Per change i: c<i> the act seam (the camera's peak speed), hit<i> the product
-// doing the new thing (its contact frame), say<i> the sentence that says it rising in, life<i> the product
-// still living under the read (a counter, a cursor, a list settling: no new event for the eye).
+// doing the new thing (its contact frame), say<i> the sentence that says it rising in, push<i> the camera
+// pushing in on the surface under the read (the change's second picture beat: its words hold most of two bars).
 export const CUE: Record<string, number> = {
-  roll: beat(0, 2), // the version's last numeral rolls from the old value to the new one
+  roll: ROLL_AT, // the version's last numeral rolls from the old value to the new one, once the name is read
   ...Object.fromEntries(
     UPDATE.changes.flatMap((_c, i) => [
       [`c${i}`, beat(BEATS.change(i))],
       [`hit${i}`, beat(BEATS.change(i) + 1, 1)],
       [`say${i}`, beat(BEATS.change(i) + 2)],
-      [`life${i}`, beat(BEATS.change(i) + 5)],
+      [`push${i}`, beat(BEATS.change(i) + 5)],
     ]),
   ),
   gather: beat(BEATS.payoff), // the pull back begins: every change at once, the version swinging back in front
@@ -143,7 +161,7 @@ export const STRUCTURAL: string[] = [];
 /** Each CUE's salience (missing = 'hit'). */
 export const SALIENCE: Record<string, Salience> = {
   roll: 'hit',
-  ...Object.fromEntries(UPDATE.changes.flatMap((_c, i) => [[`c${i}`, 'cut' as Salience], [`hit${i}`, 'hit' as Salience], [`say${i}`, 'copy' as Salience], [`life${i}`, 'life' as Salience]])),
+  ...Object.fromEntries(UPDATE.changes.flatMap((_c, i) => [[`c${i}`, 'cut' as Salience], [`hit${i}`, 'hit' as Salience], [`say${i}`, 'copy' as Salience], [`push${i}`, 'move' as Salience]])),
   gather: 'move', swing: 'move', land: 'hit', lockup: 'hit', light: 'life', glint: 'life', rest: 'life', end: 'cut',
 };
 
@@ -181,16 +199,11 @@ export const line = (id: string, text: string, inF: number, out?: number, o: { i
   return { id, text, in: inF, resolved, out: out ?? resolved + f60(holdFor(n, pace)) };
 };
 
-/** How long the version's last numeral takes to roll (60 fps frames). */
-export const ROLL = 26;
-/** Frames before the next act line at which a change's words leave (they launch into the camera move). */
-export const SAY_OUT = 16;
-
 // Every on-screen word. The name and the version open the film ("[Name] [version]": a stranger knows which product
 // by 3 s), the version is the set (giant numerals), each change one short sentence (2-6 words) that says the result
 // the picture just showed, one line at a time, then the version again and the name.
 export const COPY: Copy[] = [
-  { ...line('product', UPDATE.name, 0, beat(BEATS.change(0)) - f60(SAY_OUT)), kind: 'name' },
+  { ...line('product', UPDATE.name, 0, beat(BEATS.change(0)) - f60(SAY_OUT), { ink: 'pop' }), kind: 'name' }, // pops on with the set
   { id: 'from', text: UPDATE.from, kind: 'ui', in: 0, resolved: 0, out: CUE.roll },
   { id: 'version', text: UPDATE.version, kind: 'name', in: CUE.roll, resolved: CUE.roll + f60(ROLL), out: beat(BEATS.change(0)) - f60(SAY_OUT) },
   ...UPDATE.changes.map((c, i) => line(`change${i + 1}`, c.words, CUE[`say${i}`], beat(BEATS.change(i + 1)) - f60(SAY_OUT))),
