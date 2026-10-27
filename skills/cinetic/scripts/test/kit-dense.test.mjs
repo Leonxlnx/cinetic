@@ -12,7 +12,8 @@
  *   3. focusState(): a fixed row, and a schedule that glides 16 f at 60 fps (8 at 30) from one row to the next.
  *   4. Avatars: a portrait (an SVG with a head, hair and features) above 40 px, a monogram tile with the initials at
  *      40 px and under, never the old grey silhouette; seeds deal at least five hair cuts; the halftone portrait has
- *      dots of many sizes; a stack rims each face and draws "+N".
+ *      dots of many sizes, covers the whole box, reads as a figure on a pale ground (small dots in the backdrop's
+ *      corner, large ones in the hair and garment) and turns positive with `invert`; a stack rims each face and draws "+N".
  *   5. Tiles: each preview kind carries content; worldNodes() gives labelled nodes from the world; a wall, a ring and
  *      a ticker render a tile with content in every slot (no blank tile, no bare square); an unfetched mark falls
  *      back to a glyph tile with its label.
@@ -78,6 +79,8 @@ const t = K.kitTheme('tintedPaper');
 const avatar = (size: number, kind?: string) => film(60, h(K.Avatar, { theme: t, i: 0, initials: 'MK', size, kind, seed: 'mara' }));
 const cuts = new Set(Array.from({ length: 50 }, (_, i) => K.portraitStyle('p' + i).hair)).size;
 const dots = K.halftoneDots('someone', 28);
+const inv = K.halftoneDots('someone', 28, true);
+const cornerR = (ds: any[]) => Math.max(0, ...ds.filter((d: any) => d[0] < 9 && d[1] < 9).map((d: any) => d[2]));
 const stack = film(60, h(K.AvatarStack, { theme: t, people: A.people.slice(0, 4), size: 64, ring: t.surface, more: 9 }));
 const tiles: Record<string, string> = {};
 for (const preview of ['doc', 'chart', 'bars', 'list', 'person', 'table', 'code']) tiles[preview] = film(60, h(K.ContentTile, { node: { glyph: 'doc', label: 'Pricing page', sub: 'INV-0412 · $1,840.00', preview, seed: 'x' }, theme: t, w: 240 }));
@@ -87,7 +90,7 @@ const wall = film(60, h(K.ContentWall, { nodes: nodes.slice(0, 4), frame: 400, t
 const ring = film(60, h(K.ContentRing, { nodes: nodes.slice(0, 3), frame: 400, theme: t, seed: 'r', count: 14, blur: false }));
 const ticker = film(60, h(K.ContentTicker, { nodes: nodes.slice(0, 3), frame: 400, theme: t, seed: 'k', blur: false }));
 const fallback = film(60, h(K.KitFallback, { frame: 60, w: 1500, h: 860, seed: 3, theme: t }));
-console.log(JSON.stringify({ worlds, same, differ, screens, fs60, fs30, fixed, av: { big: avatar(96), chip: avatar(32), half: avatar(220, 'halftone') }, cuts, dots: { n: dots.length, rs: dots.map((d: any) => d[2]) }, stack, tiles, fallbackTile, nodes, wall, ring, ticker, fallback, wallSlots: K.wallSlots(4, { cols: Math.max(4, Math.round(1920 / (230 * 1.24)) + 1), rows: Math.max(3, Math.round(1080 / (230 * 1.24 * 0.92)) + 1), cell: 230 * 1.24, w: 1920, h: 1080, seed: 'w' }).length }));
+console.log(JSON.stringify({ worlds, same, differ, screens, fs60, fs30, fixed, av: { big: avatar(96), chip: avatar(32), half: avatar(220, 'halftone') }, cuts, dots: { n: dots.length, rs: dots.map((d: any) => d[2]), maxY: Math.max(...dots.map((d: any) => d[1])), corner: cornerR(dots), invCorner: cornerR(inv) }, stack, tiles, fallbackTile, nodes, wall, ring, ticker, fallback, wallSlots: K.wallSlots(4, { cols: Math.max(4, Math.round(1920 / (230 * 1.24)) + 1), rows: Math.max(3, Math.round(1080 / (230 * 1.24 * 0.92)) + 1), cell: 230 * 1.24, w: 1920, h: 1080, seed: 'w' }).length }));
 `;
 
 /** The strings in a markup: data-text elements and data-texture spans, each with its largest font size. */
@@ -169,6 +172,7 @@ try {
   result(P.cuts >= 5, 'portraitStyle: 50 people get at least five hair cuts', String(P.cuts));
   const rs = P.dots.rs;
   result(P.dots.n > 300 && Math.max(...rs) > 2.5 * Math.min(...rs) && (P.av.half.match(/<circle/g) ?? []).length > 300, 'HalftonePortrait: a dot screen of many sizes', `${P.dots.n} dots, r ${Math.min(...rs).toFixed(2)}-${Math.max(...rs).toFixed(2)}`);
+  result(P.dots.maxY >= 96 && P.dots.corner < 0.5 * Math.max(...rs) && P.dots.invCorner > P.dots.corner, 'HalftonePortrait: covers the box, a figure on a pale ground, positive when inverted', `bottom row y ${P.dots.maxY.toFixed(1)}, corner r ${P.dots.corner.toFixed(2)} (inverted ${P.dots.invCorner.toFixed(2)}), max r ${Math.max(...rs).toFixed(2)}`);
   result((P.stack.match(/<svg/g) ?? []).length === 4 && /0 0 0 [\d.]+px/.test(P.stack) && /\+9/.test(P.stack), 'AvatarStack: four rimmed portraits and "+9"');
 
   // 5. tiles

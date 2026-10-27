@@ -204,52 +204,98 @@ export const PortraitMark: React.FC<{ theme: KitTheme; seed: string | number; si
   );
 };
 
-/** The darkness (0 paper .. 1 ink) of a face-like shape at (x, y) in a 100 box, lit from the upper left. Pure. */
-export const halftoneField = (x: number, y: number, st: PortraitStyle): number => {
+/** The darkness (0 paper .. 1 ink) of a face-like shape at (x, y) in a 100 box, lit from the upper left. Pure.
+ * Read like a printed portrait: a pale backdrop (the figure's shadow falls on it away from the key), dark hair, a face
+ * lit on the key side and turned into shade on the far side with a drawn contour, eyes, brows, the nose's shade,
+ * the mouth, the neck dark under the jaw, a garment in the person's tone. The head is framed a little larger than
+ * PortraitMark's (head and shoulders fill the disc). */
+export const halftoneField = (x0: number, y0: number, st: PortraitStyle): number => {
+  const z = 1.16;
+  const x = 50 + (x0 - 50) / z;
+  const y = 52 + (y0 - 52) / z;
   const hx = 50;
   const hy = 43;
-  const e = ((x - hx) / st.rx) ** 2 + ((y - hy) / st.ry) ** 2;
-  const light = [-0.52, -0.58, 0.62];
-  const lambert = (nx: number, ny: number, nz: number) => Math.max(0, nx * light[0] + ny * light[1] + nz * light[2]);
-  // hair over the crown (above a curved hairline), and long hair down the sides
-  const hairline = hy - st.ry * 0.55 + 0.004 * (x - hx) ** 2 * (st.hair === 'side' ? 1.6 : 1);
-  const crown = ((x - hx) / (st.rx + 1.4)) ** 2 + ((y - (hy - 2)) / (st.ry + 2.2)) ** 2 <= 1 && y < hairline;
-  const longSide = st.hair === 'long' && Math.abs(x - hx) > st.rx * 0.82 && Math.abs(x - hx) < st.rx + 3.5 && y > hy - 6 && y < 68;
-  const bun = st.hair === 'bun' && (x - 50) ** 2 + (y - 17.5) ** 2 <= 42;
-  if (crown || longSide || bun) return 0.86 - 0.3 * lambert((x - hx) / (st.rx + 2), (y - hy) / (st.ry + 2), 0.5);
+  const rx = st.rx * 1.04;
+  const ry = st.ry;
+  const L = [-0.55, -0.55, 0.63];
+  const lam = (nx: number, ny: number, nz: number) => clamp(nx * L[0] + ny * L[1] + nz * L[2], 0, 1);
+  const g = (cx: number, cy: number, sx: number, sy: number) => Math.exp(-(((x - cx) / sx) ** 2 + ((y - cy) / sy) ** 2));
+  const ax = Math.abs(x - hx);
+  const nx = (x - hx) / rx;
+  const ny = (y - hy) / ry;
+  const e = nx * nx + ny * ny;
+  const grey = st.hairL > 0.5;
+  const hairInk = () => clamp((grey ? 0.44 : 0.93) - (grey ? 0.24 : 0.34) * lam((x - hx) / (rx + 3), (y - hy) / (ry + 3), 0.55) - 0.18 * g(hx - rx * 0.42, hy - ry * 0.72, 4, 2.4));
+  // hair: a dome over the crown down to the temples, its hairline curving down at the sides (a side part drops one side)
+  const part = st.hair === 'side' || st.hair === 'wave' ? 0.1 * (x - hx) : 0;
+  const hairline = hy - ry * (st.hair === 'buzz' ? 0.6 : 0.5) + 0.03 * (x - hx) ** 2 + part;
+  const ang = Math.atan2(y - (hy - 2), x - hx);
+  const grow = st.hair === 'curls' ? 1.12 + 0.06 * Math.sin(ang * 12) : st.hair === 'buzz' ? 0.98 : st.hair === 'wave' ? 1.06 + 0.02 * Math.sin(ang * 5) : 1.03;
+  const dx = (x - hx) / ((rx + 1.6) * grow);
+  const dy = (y - (hy - 1.5)) / ((ry + 2.6) * grow);
+  const dome = dx * dx + dy * dy <= 1 && y < Math.min(hairline, hy + (st.hair === 'curls' ? 5 : 1));
+  const bun = st.hair === 'bun' && (x - hx) ** 2 + ((y - (hy - ry - 5.5)) / 0.9) ** 2 <= 36;
+  if (dome || bun) return hairInk();
+  // long hair strands over the face's edges
+  const longCut = st.hair === 'long';
+  if (longCut && e <= 1 && ax > rx * 0.8 && y < hy + ry * 0.55) return hairInk();
+  // ears
+  for (const sd of [-1, 1]) if (((x - (hx + sd * (rx + 0.2))) / 2.3) ** 2 + ((y - (hy + 2.5)) / 3.8) ** 2 <= 1 && !longCut) return sd < 0 ? 0.24 : 0.52;
   if (e <= 1) {
-    const nx = (x - hx) / st.rx;
-    const ny = (y - hy) / st.ry;
-    const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
-    let d = 0.3 - 0.26 * lambert(nx, ny, nz) + 0.12 * Math.max(0, nx) ** 2; // lit toward the key, the far cheek a little in shade
-    const socket = (cx: number) => Math.exp(-(((x - cx) / 3.6) ** 2 + ((y - (hy + 1.5)) / 2.2) ** 2));
-    d += 0.62 * (socket(hx - st.rx * 0.4) + socket(hx + st.rx * 0.4));
-    const brow = (cx: number) => Math.exp(-(((x - cx) / 3.4) ** 2 + ((y - (hy - 2.2)) / 0.9) ** 2));
-    d += 0.5 * (brow(hx - st.rx * 0.4) + brow(hx + st.rx * 0.4));
-    d += 0.34 * Math.exp(-(((x - (hx + 2.2)) / 1.8) ** 2 + ((y - (hy + 8)) / 3.4) ** 2)); // the nose's shade, away from the key
-    d += 0.55 * Math.exp(-(((x - hx) / 4.2) ** 2 + ((y - (hy + 12.8)) / 1.2) ** 2)); // the mouth
-    d += 0.25 * clamp((y - (hy + st.ry * 0.7)) / (st.ry * 0.3)); // the jaw's turn under the chin
-    return clamp(d, 0, 1);
+    const nz = Math.sqrt(Math.max(0, 1 - e));
+    let d = 0.48 - 0.42 * lam(nx, ny, nz); // lit toward the key (about 0.1), turned into shade on the far side (about 0.5)
+    d += 0.26 * clamp((e - 0.82) / 0.18) * (nx > -0.2 ? 1 : 0.35); // the contour, drawn on the shade side and the jaw
+    for (const sd of [-1, 1]) {
+      const ex = hx + sd * rx * 0.38;
+      d += 0.2 * g(ex, hy + 1.5, 3.8, 2.4); // the socket
+      d += 0.92 * g(ex, hy + 2.3, 1.75, 0.95); // the eye
+      d += 0.6 * g(ex, hy - 2.2 + (sd > 0 ? st.brow : 0), 3.3, 0.72); // the brow
+      if (st.glasses) d += 0.5 * Math.exp(-(((Math.max(Math.abs(x - ex) / 4.3, Math.abs(y - (hy + 2.3)) / 2.8) - 1) / 0.13) ** 2));
+    }
+    if (st.glasses) d += 0.45 * g(hx, hy + 2, 1.5, 0.45); // the bridge
+    d += 0.3 * g(hx + 2, hy + 7, 1.2, 3); // the nose's shade, away from the key
+    d += 0.48 * g(hx + 0.8, hy + 9.4, 2.1, 0.7); // under the nose
+    d += 0.7 * g(hx, hy + 12.4 + st.smile * 0.22, 3.8 + st.smile * 0.4, 0.68); // the mouth
+    d += 0.2 * g(hx + 0.5, hy + 14.3 + st.smile * 0.22, 2.5, 0.8); // under the lip
+    d += 0.2 * clamp((y - (hy + ry * 0.76)) / (ry * 0.24)); // the jaw turning under
+    return clamp(d);
   }
-  if (Math.abs(x - hx) < 8 && y > hy + st.ry * 0.7 && y < 74) return 0.46 + 0.2 * clamp((hy + st.ry + 4 - y) / 6); // the neck, darkest under the jaw
-  const sh = ((x - 50) / 45) ** 2 + ((y - 102) / 30) ** 2 <= 1 && y > 71;
-  if (sh) return 0.66 - 0.36 * lambert((x - 50) / 45, -0.6, 0.6) + 0.12 * ((y - 71) / 30);
-  return 0.34 + 0.14 * (y / 100) + 0.08 * clamp((x - 50) / 50, 0, 1); // the backdrop: a mid tone, darker away from the key, so the lit face stands out
+  // the garment: broad shoulders in the person's tone (dark or light), lit on the key side, with its collar
+  const shoulder = 69.5 + 15 * ((x - hx) / 40) ** 2;
+  const neck = ax < 6.4 && y > hy + ry * 0.6;
+  if (neck && y < shoulder + 2.5) return clamp((longCut ? 0.32 : 0.44) + 0.34 * clamp((hy + ry + 5 - y) / 7) + (x > hx ? 0.1 : 0)); // dark under the jaw
+  // long hair behind the neck and down to the shoulders
+  if (longCut && y > hy - 4 && y < shoulder + 4 - 0.004 * (x - hx) ** 2 && ax < rx + 2.5 + 0.1 * Math.max(0, y - hy)) return hairInk();
+  if (y > shoulder) {
+    const sx = (x - hx) / 46;
+    const dark = st.shirtL < 0.6 || st.shirtAccent;
+    const base = dark ? 0.76 : 0.42;
+    let d = base - (dark ? 0.3 : 0.22) * lam(sx, -0.62, 0.6) + 0.12 * clamp((y - shoulder) / 24) + (dark ? 0 : 0.22 * clamp(1 - (y - shoulder) / 1.6)); // a light garment keeps its edge
+    if (st.collar === 'v' && ax < 8.5 - 0.62 * (y - shoulder) && y > shoulder) d = 0.44 + (x > hx ? 0.12 : 0); // skin in the V
+    if (st.collar === 'crew') d += 0.32 * Math.exp(-(((y - (shoulder + 2.4 + 0.012 * (x - hx) ** 2)) / 0.85) ** 2)) * (ax < 12 ? 1 : 0);
+    if (st.collar === 'shirt') d = dark ? d - 0.42 * clamp(1 - Math.abs(ax - (y - shoulder) * 0.62 - 3) / 2.4) * (y < shoulder + 12 ? 1 : 0) : d + 0.3 * clamp(1 - Math.abs(ax - (y - shoulder) * 0.62 - 3) / 1.2) * (y < shoulder + 12 ? 1 : 0);
+    if (st.collar === 'turtle' && ax < 9.5 && y < shoulder + 6) d = base + 0.08 * (x > hx ? 1 : -1);
+    return clamp(d);
+  }
+  // the backdrop: pale, a touch deeper toward the lower right, with the figure's soft shadow cast away from the key
+  return clamp(0.06 + 0.1 * clamp((x0 + y0 - 60) / 140) + 0.12 * g(hx + 9, hy + 18, 22, 30));
 };
 
-/** The dots of a halftone portrait: a hex screen of `grid` columns, radius from the field's darkness. Pure. */
-export const halftoneDots = (seed: string | number, grid = 28): [x: number, y: number, r: number][] => {
+/** The dots of a halftone portrait: a hex screen of `grid` columns covering the whole box, radius from the field's
+ * darkness (`invert`: from its lightness, for light dots on a dark field). Pure. */
+export const halftoneDots = (seed: string | number, grid = 28, invert = false): [x: number, y: number, r: number][] => {
   const st = portraitStyle(seed);
   const cell = 100 / grid;
+  const row = cell * 0.866;
   const out: [number, number, number][] = [];
-  for (let j = 0; j <= grid + 1; j++)
-    for (let i = 0; i <= grid + 1; i++) {
+  for (let j = 0; j * row <= 100 + row; j++)
+    for (let i = -1; i <= grid + 1; i++) {
       const x = (i + (j % 2 ? 0.5 : 0)) * cell;
-      const y = j * cell * 0.9;
-      if (y > 100.5) continue;
-      const d = halftoneField(x, y, st);
-      const r = 0.56 * cell * Math.sqrt(d);
-      if (r > 0.08 * cell) out.push([x, y, r]);
+      const y = j * row;
+      const f = halftoneField(x, y, st);
+      const d = invert ? 1 - f : f;
+      const r = 0.6 * cell * Math.sqrt(d);
+      if (r > 0.1 * cell) out.push([x, y, r]);
     }
   return out;
 };
@@ -261,7 +307,7 @@ export const halftoneDots = (seed: string | number, grid = 28): [x: number, y: n
 export const HalftonePortrait: React.FC<{ theme: KitTheme; seed: string | number; size: number; grid?: number; inverse?: boolean; shape?: 'disc' | 'tile' | 'none'; style?: React.CSSProperties }> = ({ theme: t, seed, size, grid, inverse, shape = 'disc', style }) => {
   const id = `ht${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const g = grid ?? Math.round(clamp(size / 6, 16, 48));
-  const dots = halftoneDots(seed, g);
+  const dots = halftoneDots(seed, g, inverse);
   const paper = inverse ? t.accent : mixColor(t.accentSoft, t.dark ? t.text : C.white, 0.35);
   const ink = inverse ? mixColor(t.accent, C.white, 0.85) : t.accentDeep;
   return (
