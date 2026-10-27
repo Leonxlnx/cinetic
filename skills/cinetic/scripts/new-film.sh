@@ -40,7 +40,7 @@
 #   --browser      bake a Chromium/headless-shell path into remotion.config.ts (env REMOTION_BROWSER
 #                  or CHROMIUM_PATH at render time also works, and wins).
 #   --force        allow a non-empty <dir> (starter files overwrite same-named files).
-#   --format       launch (default: the starter's own acts, the main case, 15-45 s) or update: an 8-20 s
+#   --format       launch (default: the starter's own acts, the main case, 15-45 s) or update: a 15-23 s
 #                  "vX is out" film laid over the starter from assets/templates/update (src/update.ts holds
 #                  the version and 2-4 changes; a hook on the version, one act per change shown as a product
 #                  moment, the payoff, the end card with the version). update defaults to --pace crisp and

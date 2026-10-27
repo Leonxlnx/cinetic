@@ -17,7 +17,7 @@ signature replace the template's), then cut it to the track: `track.py grid` mov
 | Template | Length | Use it when | Shape |
 |---|---|---|---|
 | none (the starter) | 15-45 s | a launch film whose idea is its own device: most films | the dealt direction's skeleton |
-| `update` | 8-20 s | "vX is out": 2-4 changes to show | the version as the set, one product moment per change, the payoff, the end card with the version |
+| `update` | 15-23 s | "vX is out": 2-4 changes to show | the version as the set, one product moment per change, the payoff, the end card with the version |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | the product's breadth is the story (sources, formats, integrations), or a launch film needs its close | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
 | `camera-teaser` | 18-22 s | a dark, fast teaser of a product's screens where the motion is the camera's: whips, pushes, pull-outs over one layout per shot | the request box rising, a whip with a flash frame, its close-up and the button launching, the window streaming code under a zoom-out and a 3D push, cards fanning, the page with a modal toast, the stages in brackets, comets onto the mark |
@@ -34,7 +34,7 @@ film may end on the reel's close (rebuild its acts after your own) or open on th
 
 ## ui-walkthrough
 
-The UI tells the story, so the viewer always knows what the product does; five short lines say what each step
+The UI tells the story, so the viewer always knows what the product does; six short lines say what each step
 means. Ten acts on whole bars at 120 BPM (37 s): `open` (the promise, its last word snapping the line x2.2 in one frame), `card`
 (the user's input as one tilted card rising while the ground turns; ONE hidden-cut frame of scale, tilt and a tinted
 swell makes the same card the output, which then builds its three steps), `proof` (notices piling up, `fx/Stack`),

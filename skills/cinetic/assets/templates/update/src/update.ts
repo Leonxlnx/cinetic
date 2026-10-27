@@ -28,6 +28,7 @@ export const UPDATE: { name: string; from: string; version: string; changes: Cha
 
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 if (UPDATE.changes.length < 2 || UPDATE.changes.length > 4) throw new Error(`update.ts: an update film shows 2-4 changes (it has ${UPDATE.changes.length})`);
-// one short sentence per change: at the template's 120 BPM a change's bar holds 3-4 words read in full (more needs a slower track or a longer change)
+// one short sentence per change: at the template's 120 BPM a change is two bars, the product moment and then its words read
+// in full under the push (a longer sentence needs a slower track or a longer change)
 for (const c of UPDATE.changes) if (words(c.words) < 2 || words(c.words) > 6) throw new Error(`update.ts: "${c.words}" is ${words(c.words)} words; a change is one short sentence of 2-6 words`);
 if (UPDATE.from.length !== UPDATE.version.length) throw new Error('update.ts: from and version need the same number of characters (pad the old one, e.g. 1.9 -> 2.0)');

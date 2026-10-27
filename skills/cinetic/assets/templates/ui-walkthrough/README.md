@@ -5,7 +5,7 @@ A 25-40 s walkthrough of a product's flow, laid over the Remotion starter by
 acts it removes). Crisp pace, 120 BPM until the track's grid is in; 18 bars, 37 s as written.
 
 **The shape.** The UI tells the story (the input goes in, the product reads it, finds what matters, the user picks,
-it builds the output), so the viewer always knows what the product does; five short lines say what each step means.
+it builds the output), so the viewer always knows what the product does; six short lines say what each step means.
 
 | # | act | shot | in | what happens | the slot |
 |---|---|---|---|---|---|

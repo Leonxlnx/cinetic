@@ -1,6 +1,6 @@
 # The update template
 
-An 8-20 s update film ("vX is out"), laid over the Remotion starter by
+A 15-23 s update film ("vX is out"; 2-4 changes at 120 BPM, shorter on a faster track), laid over the Remotion starter by
 `bash scripts/new-film.sh <dir> --format update` (template.json lists the files it copies and the starter
 acts it removes).
 

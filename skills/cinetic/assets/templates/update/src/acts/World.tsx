@@ -82,6 +82,7 @@ export const shotAt = (F: number): Shot => {
 const Numerals: React.FC<{ F: number; size: number; color: string; shade: string; rollAt: number }> = ({ F, size, color, shade, rollAt }) => {
   const p = prog(F, rollAt, rollAt + f60(ROLL), E.snapOut);
   const box = size * NUM.lead;
+  // lint-ok: digits and points have no descenders, and the drum's box is the numeral's own height (clipText's padding would break the roll)
   const fill: React.CSSProperties = { backgroundImage: `linear-gradient(180deg, ${color} 0%, ${color} 46%, ${shade} 100%)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' };
   return (
     <div data-text="version" style={{ display: 'flex', ...typeStyle('giant', size), lineHeight: NUM.lead }}>
@@ -182,7 +183,7 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
       {F >= CUE.light && F < CUE.light + f60(80) && (
         <AbsoluteFill
           style={{
-            background: `linear-gradient(112deg, rgba(255,255,255,0) ${mix(-30, 110, prog(F, CUE.light, CUE.light + f60(80), E.smooth)) - 14}%, rgba(255,255,255,0.11) ${mix(-30, 110, prog(F, CUE.light, CUE.light + f60(80), E.smooth))}%, rgba(255,255,255,0) ${mix(-30, 110, prog(F, CUE.light, CUE.light + f60(80), E.smooth)) + 14}%)`,
+            background: `linear-gradient(112deg, rgba(255,255,255,0) ${mix(-30, 110, prog(F, CUE.light, CUE.light + f60(80), E.strongInOut)) - 14}%, rgba(255,255,255,0.11) ${mix(-30, 110, prog(F, CUE.light, CUE.light + f60(80), E.strongInOut))}%, rgba(255,255,255,0) ${mix(-30, 110, prog(F, CUE.light, CUE.light + f60(80), E.strongInOut)) + 14}%)`,
           }}
         />
       )}
@@ -200,6 +201,7 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
             }}
           />
           <div style={{ position: 'absolute', left: 0, top: 200 * U, color: T.text, transform: `translateX(${((1 - lock) * -40 * U).toFixed(2)}px)` }}>
+            {/* lint-ok: this file is every act of one camera strip; the end card's name is its own scene's one role */}
             <Words id="wordmark" text={name.text} frame={F} start={name.in} size={TYPE.display.size * U} style={{ ...typeStyle('display', TYPE.display.size * U), color: T.text }} />
           </div>
         </div>
