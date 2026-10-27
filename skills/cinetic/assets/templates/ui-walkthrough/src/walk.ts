@@ -15,7 +15,7 @@ export const WALK = {
     claim: 'Setup takes [N] minutes.', // the speed claim, with a verb: its first word giant, then the line
     step1: 'Paste in [your input].', // step one, over the field
     insight: 'It finds what [people] ask for.', // what the product found
-    pick: '[Product] builds your pick.', // step three, over the choice
+    pick: '[Product] builds the [output] you chose.', // step three, over the choice: what it makes from the pick
     payoff: 'Try it free at [product.com].', // the close, beside the name: what to do
   },
   /** The user's input as one object (a channel, a store, a repository, a document): it becomes the output in place. */

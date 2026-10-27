@@ -13,7 +13,7 @@ export const REEL = {
   /** The script, plain words, one clean line at a time (2-7 words each); the claim is built in two fragments; the tagline holds to the end. */
   lines: {
     sources: '[Product] turns [sources] into [data].', // what it is, by 3 s (up to 5 words fit the act): centred inside the ring of sources
-    statement: 'Each [record] comes out clean.', // on the light card that squashes round it
+    statement: 'Every [record] gets [its fields filled].', // the result the user sees on each record, on the light card that squashes round it
     claim: ['It exports to', '[N] formats.'] as const, // what it does, on the accent, in two beats
     title: '[Product] is out today.', // the end card's title: the name (from IDENTITY, whole) pops, the rest types
     tagline: 'Try it at [product.com].', // what to do: takes the title's place and holds to the end
