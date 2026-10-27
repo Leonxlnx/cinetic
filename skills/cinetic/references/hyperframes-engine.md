@@ -136,7 +136,7 @@ A single-file film works (the starter is one), but lint then warns `nested_struc
 
 - **Ship every face as a local `.woff2` with an `@font-face`**, in the file that uses it (inside the `<template>` for acts). The renderer embeds a small set of common families and silently aliases well-known system names to one of them, so a family you name but don't ship can render as a different face with no warning. A hosted web-font link is fetched at build time and fails offline.
 - **Lint errors** on any `font-family` it cannot resolve (`font_family_without_font_face`). It skips `var(...)` values, so write family names literally in `font-family`.
-- **Load before you measure.** `document.fonts.ready` can resolve before a face has even started loading; call `document.fonts.load('600 144px "Geist"')` first, as the starter does, or measurements use the fallback's widths.
+- **Load before you measure.** `document.fonts.ready` can resolve before a face has even started loading; call `document.fonts.load('600 144px "Inter Variable"')` first, as the starter does, or measurements use the fallback's widths.
 - Swapping faces, variable fonts and brand files: `assets/hyperframes-starter/fonts/README.md`. Type choice: `references/copy-and-type.md`.
 
 ## 7. Media and audio

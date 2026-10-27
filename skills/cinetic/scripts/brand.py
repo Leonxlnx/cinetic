@@ -770,7 +770,7 @@ def rewrite_tokens(path, tok, family, faces):
     src = re.sub(r'//\n// cinetic:placeholder - delete these four lines[^\n]*\n(//[^\n]*\n)*?(?=import)', '//\n// The brand\'s own palette and type, written by scripts/brand.py from brand/brand.json.\n', src)
     src = re.sub(r'\nexport const C = \{[\s\S]*?\n\};', '\n' + tokens_block(tok), src, count=1)
     if family:
-        src = re.sub(r'// cinetic:placeholder - the family is the starter\'s stand-in[^\n]*\n(//[^\n]*\n)*', '', src)
+        src = re.sub(r'// cinetic:placeholder - the family is[^\n]*\n(//[^\n]*\n)*', '', src)
         src = re.sub(r"(export const FONT = \{\s*\n\s*text: )'[^']*'", lambda m: m.group(1) + f"'\"{family}\", system-ui, sans-serif'", src, count=1)
         ws = sorted({x['weight'] for x in faces}) or [400, 600]
         # supplied faces: each TYPE role on a weight the kit has, and FACES loads every weight a role uses
@@ -829,8 +829,8 @@ def write_project(args, brand, tok, src_files):
             shutil.copy2(x['file'], os.path.join(d, os.path.basename(x['file'])))
         write_text(os.path.join(d, 'index.css'), font_sheet(fam, src_files['faces'], d))
         ft = open(fpath, encoding='utf-8').read().replace('\r\n', '\n')
-        ft = re.sub(r'// cinetic:placeholder - Geist is the starter\'s stand-in[^\n]*\n(//[^\n]*\n)*', f'// {fam}: the brand\'s licensed faces (scripts/brand.py).\n', ft)
-        ft = re.sub(r"import '@fontsource-variable/geist';\n", f"import './fonts/{slug(fam)}/index.css';\n", ft, count=1)
+        ft = re.sub(r'// cinetic:placeholder - (?:Inter is the face set\'s default|Geist is the starter\'s stand-in)[^\n]*\n(//[^\n]*\n)*', f'// {fam}: the brand\'s licensed faces (scripts/brand.py).\n', ft)
+        ft = re.sub(r"import '@fontsource-variable/(?:inter|geist)(?:/[^']*)?';\n", f"import './fonts/{slug(fam)}/index.css';\n", ft, count=1)
         if f"./fonts/{slug(fam)}/index.css" not in ft:
             ft = ft.replace("import React", f"import './fonts/{slug(fam)}/index.css';\nimport React", 1)
         write_text(fpath, ft)

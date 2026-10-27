@@ -40,15 +40,15 @@ export const C = {
  */
 export const MASK = '#000000';
 
-// cinetic:placeholder - the family is the starter's stand-in: choose one for this brand (fonts.ts
-// says how), set FONT and FACES to its CSS family name ("<Name> Variable"), then delete this line.
+// cinetic:placeholder - the family is the face set's default, Inter (fonts.ts says how to choose): vendor the
+// film's face with add-font.mjs, which sets FONT and FACES, or keep Inter on purpose; then delete these lines.
 export const FONT = {
-  text: '"Geist Variable", "Geist", system-ui, sans-serif', // the film's one sans, for every role; typeStyle and measure.ts read it
+  text: '"Inter Variable", "Inter", system-ui, sans-serif', // the film's one sans, for every role; typeStyle and measure.ts read it
   mono: '"Geist Mono Variable", "Geist Mono", ui-monospace, monospace',
 };
 
 /** Faces the FontGate waits for before anything renders or measures (one entry per weight in use). */
-export const FACES = ['450 16px "Geist Variable"', '500 16px "Geist Variable"', '400 16px "Geist Mono Variable"'];
+export const FACES = ['450 16px "Inter Variable"', '500 16px "Inter Variable"', '400 16px "Geist Mono Variable"'];
 
 /** Layout unit: 1 at 1080p, scales every size with the short side of the frame (16:9, 9:16, 1:1). */
 export const U = Math.min(W, H) / 1080;
@@ -62,17 +62,17 @@ export const U = Math.min(W, H) / 1080;
 export const TYPE_FAMILY: TypeFamily = 'calm';
 
 // One token per role, reused everywhere, so nothing is "almost matched" (size in px at 1080p; the cap height is about
-// 0.71 em in Geist, given below as a share of the frame height). Film sizes, the house numbers: a sentence line
-// is 84 px (cap 5.5 %), a statement 160, and the one giant word of a film (400 px and up) is the set the camera
-// travels, never a faint watermark behind the copy. Tracking is the letter fit measured in this face: another face
-// takes its own (scripts/font-match.mjs fits it to a reference frame, then write its weight and track here).
+// 0.727 em in Inter, given below as a share of the frame height). Film sizes, the house numbers: a sentence line
+// is 84 px (cap 5.7 %), a statement 160, and the one giant word of a film (400 px and up) is the set the camera
+// travels, never a faint watermark behind the copy. Tracking is the letter fit measured in this face (Inter at its
+// display cut): another face adds its offsets from scripts/faces.json, or font-match.mjs fits it to a target frame.
 export const TYPE = {
-  ui: { size: 40, weight: 450, track: 0.01, lead: 1.3 }, // product strings, labels: cap 2.6 % FH, the smallest size held in focus (TEXT_MIN)
-  caption: { size: 46, weight: 450, track: 0.01, lead: 1.3 }, // descriptor lines, URLs, the end card's tagline: cap 3 % (2.3-4)
-  line: { size: 84, weight: 450, track: 0, lead: 1.2 }, // the sentence line, chains (fx/Chain) and build lines: cap 5.5 % (5-6)
-  display: { size: 160, weight: 500, track: -0.01, lead: 1.05 }, // short statements and the end card's name: cap 10.5 % (10-14)
-  hero: { size: 200, weight: 500, track: -0.01, lead: 1.0 }, // the payoff word: cap 13 % (11-23)
-  giant: { size: 640, weight: 500, track: 0.02, lead: 0.9 }, // the set: one word at 400 px or more (cap 42 %, up to 90 % cropped), once per film
+  ui: { size: 40, weight: 450, track: 0.01, lead: 1.3 }, // product strings, labels: cap 2.7 % FH, the smallest size held in focus (TEXT_MIN)
+  caption: { size: 46, weight: 450, track: 0.01, lead: 1.3 }, // descriptor lines, URLs, the end card's tagline: cap 3.1 % (2.3-4)
+  line: { size: 84, weight: 450, track: 0, lead: 1.2 }, // the sentence line, chains (fx/Chain) and build lines: cap 5.7 % (5-6)
+  display: { size: 160, weight: 500, track: -0.01, lead: 1.05 }, // short statements and the end card's name: cap 10.8 % (10-14)
+  hero: { size: 200, weight: 500, track: -0.01, lead: 1.0 }, // the payoff word: cap 13.5 % (11-23)
+  giant: { size: 640, weight: 500, track: 0.02, lead: 0.9 }, // the set: one word at 400 px or more (cap 43.1 %, up to 90 % cropped), once per film
   secondary: { size: 48, weight: 450, track: -0.02, lead: 1.15 }, // 1.1 role, kept for old acts: use caption
 };
 

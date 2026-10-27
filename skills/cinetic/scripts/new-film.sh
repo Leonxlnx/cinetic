@@ -346,6 +346,13 @@ fi
 for font in ${FONTS[@]+"${FONTS[@]}"}; do
   node "$DIR/scripts/add-font.mjs" "$font" --dir "$DIR" || die "--font $font: could not vendor it (see above)"
 done
+# The starter's faces come from packages (Remotion: src/brand/fonts.ts imports them; HyperFrames: setup.mjs copies
+# them). A linked node_modules made before the default face became Inter may not have it: say so, with the fix.
+if [[ -n "$LINK" ]]; then
+  for p in $(grep -ho "@fontsource-variable/[a-z0-9-]*" "$DIR/src/brand/fonts.ts" "$DIR/setup.mjs" 2>/dev/null | sort -u); do
+    [[ -d "$DIR/node_modules/$p" ]] || echo "new-film: warning: the linked node_modules has no $p (the starter's face): npm i $p in $LINK, or vendor it into this film with node scripts/add-font.mjs ${p#@fontsource-variable/} --dir $DIR" >&2
+  done
+fi
 
 # The type family: the template's or --type's roles from lib/look.ts TYPE_LOOK into src/brand/tokens.ts (before a brand
 # kit, which fits its own face over them).

@@ -10,12 +10,12 @@
     <script src="timeline.js"></script>
     <style>
       /* Local variable font: bundled families alias silently, hosted fonts fail offline.
-         cinetic:placeholder - Geist is the starter's stand-in: pick the family for this brand's
-         personality (references/brand-and-color.md), copy its woff2 into fonts/ (setup.mjs, see
+         cinetic:placeholder - Inter (opsz: its display cut at film sizes) is the face set's default:
+         pick the look (references/copy-and-type.md §6), copy its woff2 into fonts/ (setup.mjs, see
          fonts/README.md), point this block and font-family at it, then delete these three lines. */
       @font-face {
-        font-family: "Geist";
-        src: url("fonts/geist-latin-wght-normal.woff2") format("woff2");
+        font-family: "Inter Variable";
+        src: url("fonts/inter-latin-opsz-normal.woff2") format("woff2");
         font-weight: 100 900;
         font-style: normal;
         font-display: block;
@@ -47,7 +47,7 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        font-family: "Geist", sans-serif;
+        font-family: "Inter Variable", sans-serif;
       }
       .clip {
         position: absolute;
@@ -210,7 +210,7 @@
           if (typeof window.__hfForceTimelineRebind === "function") window.__hfForceTimelineRebind();
         }
 
-        Promise.all([document.fonts.load('600 144px "Geist"'), document.fonts.ready]).then(build, build);
+        Promise.all([document.fonts.load('600 144px "Inter Variable"'), document.fonts.ready]).then(build, build);
       })();
     </script>
   </body>

@@ -7,7 +7,7 @@
  * its use and states the new cap height) and the FACES the FontGate waits for (the text face at the family's weights).
  * Other roles, colours and the face itself stay as they are. new-film.sh runs it for --type or a template's
  * type_family; run it again any time to switch (a brand's fitted tracking is replaced by the family's: re-fit with
- * scripts/font-match.mjs if the face is not Geist).
+ * scripts/faces.json's offsets, or scripts/font-match.mjs, if the face is not Inter).
  *
  * Usage (from the project root):
  *   node scripts/type-family.mjs <calm|bold> [--dir <film>] [--check] [--quiet]
@@ -82,7 +82,7 @@ const look = readFileSync(LOOK, 'utf8');
 const roles = familyRoles(look, family);
 let tokens = readFileSync(TOKENS, 'utf8');
 const before = tokens;
-const capPct = (size) => Math.round(((size * 0.71) / 1080) * 1000) / 10; // Geist's cap is about 0.71 em
+const capPct = (size) => Math.round(((size * 0.727) / 1080) * 1000) / 10; // Inter's cap is 0.727 em
 
 // TYPE_FAMILY
 const famRe = /^(export const TYPE_FAMILY(?:: TypeFamily)? = )'(calm|bold)';/m;

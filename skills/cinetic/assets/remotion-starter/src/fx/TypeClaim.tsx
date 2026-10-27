@@ -8,7 +8,7 @@ import { Words } from './Words';
 
 /**
  * Claim on accent: the big claim of a launch close, set like a poster on the accent. Cap height 16 % of the frame
- * height or more (house 16.5 %: 251 px in Geist at 1080p), flush left at a 3 % margin, tracking -0.04 em, weight 600-700
+ * height or more (house 16.5 %: 245 px in Inter at 1080p), flush left at a 3 % margin, tracking -0.04 em, weight 600-700
  * (house 600), lead 0.98, one to three lines broken at word boundaries so each line fits the frame, the block centred on
  * the frame's height (or sitting on the bottom or the top margin). The words arrive with the crisp entry, one after
  * another across the lines (7 f apart), so the claim builds as it is read. The accent fills the frame behind it (a
@@ -22,7 +22,7 @@ import { Words } from './Words';
  */
 
 /** House numbers: the cap height as a share of the frame height, the margin as a share of its width, the face's cap in em. */
-export const CLAIM = { cap: 0.165, capMin: 0.16, margin: 0.03, track: -0.04, weight: 600, weights: [600, 700] as const, lead: 0.98, capEm: 0.71, maxLines: 3, creep: 0.015, creepMax: 0.03 } as const;
+export const CLAIM = { cap: 0.165, capMin: 0.16, margin: 0.03, track: -0.04, weight: 600, weights: [600, 700] as const, lead: 0.98, capEm: 0.727, maxLines: 3, creep: 0.015, creepMax: 0.03 } as const;
 
 export type ClaimSpec = {
   text: string;

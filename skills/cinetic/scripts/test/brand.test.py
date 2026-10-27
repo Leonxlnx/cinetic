@@ -184,7 +184,7 @@ result("FONT = {\n  text: '\"Ledger Sans\", system-ui, sans-serif'" in tok and "
        'FONT and FACES name the vendored family at its real weight')
 ft = read(proj, 'src', 'brand', 'fonts.ts')
 css = read(proj, 'src', 'brand', 'fonts', 'ledger-sans', 'index.css')
-result("import './fonts/ledger-sans/index.css';" in ft and "import '@fontsource-variable/geist';" not in ft
+result("import './fonts/ledger-sans/index.css';" in ft and "import '@fontsource-variable/inter" not in ft and 'cinetic:placeholder' not in ft
        and "font-weight: 600" in css and "format('truetype')" in css
        and os.path.isfile(os.path.join(proj, 'src', 'brand', 'fonts', 'ledger-sans', 'LedgerSans-SemiBold.ttf'))
        and not os.path.isfile(os.path.join(proj, 'src', 'brand', 'fonts', 'ledger-sans', 'LedgerSans-Italic.ttf')),

@@ -53,7 +53,7 @@ You are the art director, the copy editor and the product designer. Judge every 
 4. **Brand personality and the mark.**
    - Do the family, weights, case, stage, accent and shapes follow from the three adjectives in `TREATMENT.md` (`references/brand-and-color.md` §2)? A calm brand in a heavy grotesk, or a fire-named dev tool on a pale SaaS stage, is a mismatch.
    - With a supplied kit (`brand/brand.json`): the real logo's parts, the kit's colours and greys as grounds, the kit's typeface; a redrawn or recoloured logo is a **P0**.
-   - Does anything look like the starter or Tessel: the starter's Geist or palette, a red "now" dot, a block-and-accent-dot or dome-and-block mark? That is house-style convergence (D9).
+   - Does anything look like the starter or Tessel: the starter's palette, its face kept with no look chosen, a red "now" dot, a block-and-accent-dot or dome-and-block mark? That is house-style convergence (D9).
    - Is the mark ownable: it passes the 16 px test, links to the name or the product, and could not belong to ten other startups? Is the resolved lockup 28–45% of the frame's width?
    - **Misread test.** Grab the mark at 64 px (a frame of the lockup scaled down, or `out/stills/`), look for half a second and name it. If the first read is a common symbol (a minus or plus, an emoticon, a menu or "more" icon, a padlock, a play button, ±), it is a **P0** (D12): the fix is new geometry, `references/brand-and-color.md` §4.
    - **Lockup typography.** Do the mark and the name read as one object: the name's stems within about 15% of the mark's stroke, a gap about as wide as the widest space inside the name, a shared baseline? A careless setting is a **P1** (`references/brand-and-color.md` §6, three settings side by side).

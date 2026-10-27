@@ -162,16 +162,17 @@ export const MEASURE = { statementMaxFW: 0.61, statementTypicalFW: [0.28, 0.58] 
 
 /**
  * The house type roles, measured, in two families; the director picks one per film (brand/tokens.ts TYPE_FAMILY,
- * and TYPE holds that family's numbers). Sizes in px at 1080p; tracking in em in the starter's face (Geist), fitted
- * to target frames with scripts/font-match.mjs, so the letter fit is measured, not a convention.
+ * and TYPE holds that family's numbers). Sizes in px at 1080p; tracking in em in the starter's face (Inter at its display
+ * cut), fitted to target frames with scripts/font-match.mjs, so the letter fit is measured, not a convention; another
+ * face adds its offsets from scripts/faces.json.
  *   calm   the usual family (the largest line on screen a 5.9-8.5 % box of the frame height, median 7.8 %): small
- *          sentence lines (cap 5-6 % of the frame height, 84 px), regular weights (measured 380-500), the face's own letter fit at every size (Geist measured -0.01 to +0.03 em on sentence lines,
- *          labels, UI text and a giant word), an open lead and 85 % white or more. "Airy" is size, weight and space,
- *          not wide tracking: positive tracking is only what a tight face needs to reach that fit (Inter's display
- *          cut needs +0.02 to +0.06 em); a wide-tracked title at rest is a slop tell.
+ *          sentence lines (cap 5-6 % of the frame height, 84 px), regular weights (measured 380-500), the face's own letter fit at every size (Inter measured -0.015 to +0.03 em on sentence lines,
+ *          labels and UI text), an open lead and 85 % white or more. "Airy" is size, weight and space,
+ *          not wide tracking: positive tracking is only what a tight face needs to reach that fit (Inter Tight
+ *          needs about +0.03 em); a wide-tracked title at rest is a slop tell.
  *   bold   the punchy one (a 9.3-14.8 % box, median 10.6 %): big lines (cap 7.4-8.3 %, 120 px), semibold
- *          (measured 540-600), tracking that tightens with size (-0.036 em at a line, -0.044 to -0.047 at the big
- *          type and the end title).
+ *          (measured 540-600), tracking that tightens with size (in Inter, -0.034 em measured at a line, -0.04 to -0.05
+ *          at the big type and the end title).
  * Both, measured: sentence case (capitals only on small labels, tracked +0.04 to +0.08 em);
  * 2-4 words a line (median 3, rarely past 7); a statement 28-58 % of the frame width (MEASURE); UI text 37-55 px; the
  * end card's name with a cap or ascender 10-14 % of the frame height, its tagline a caption. Two weights per family.

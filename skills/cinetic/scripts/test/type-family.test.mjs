@@ -61,8 +61,8 @@ try {
   const t1 = readFileSync(TOK, 'utf8');
   const got = rolesIn(t1, 'export const TYPE = {');
   result(r1.status === 0 && /TYPE_FAMILY: TypeFamily = 'bold';/.test(t1) && ROLES.every((r) => JSON.stringify(got[r]) === JSON.stringify(bold[r])), 'bold writes TYPE_FAMILY and the six roles, TYPE_LOOK.bold number for number', JSON.stringify(got.line));
-  result(/FACES = \['500 16px "Geist Variable"', '600 16px "Geist Variable"', '400 16px "Geist Mono Variable"'\]/.test(t1), 'bold sets FACES to the family\'s weights (500 and 600) and keeps the mono', t1.match(/FACES = .*/)?.[0]);
-  result(/line: \{ size: 120[^\n]*\/\/ the sentence line, chains \(fx\/Chain\) and build lines: cap 7\.9 %/.test(t1) && /secondary: \{ size: 48/.test(t1), 'a role\'s comment keeps its use with the new cap height; other roles stay', t1.match(/ {2}line: .*/)?.[0]);
+  result(/FACES = \['500 16px "Inter Variable"', '600 16px "Inter Variable"', '400 16px "Geist Mono Variable"'\]/.test(t1), 'bold sets FACES to the family\'s weights (500 and 600) and keeps the mono', t1.match(/FACES = .*/)?.[0]);
+  result(/line: \{ size: 120[^\n]*\/\/ the sentence line, chains \(fx\/Chain\) and build lines: cap 8\.1 %/.test(t1) && /secondary: \{ size: 48/.test(t1), 'a role\'s comment keeps its use with the new cap height; other roles stay', t1.match(/ {2}line: .*/)?.[0]);
   result(run('bold', '--dir', tmp, '--check').status === 0 && run('calm', '--dir', tmp, '--check').status === 1, '--check: in step with bold, out of step with calm');
 
   const r2 = run('calm', '--dir', tmp, '--quiet');

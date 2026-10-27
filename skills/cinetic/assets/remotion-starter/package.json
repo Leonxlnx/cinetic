@@ -19,7 +19,7 @@
     "qa": "mkdir -p out/qa && node scripts/py.mjs scripts/probe.py out/film.mp4 --spec 1920x1080@60 && node scripts/py.mjs scripts/forensics.py out/film.mp4 --cues out/cues.json --json out/qa/forensics.json && node scripts/py.mjs scripts/av-audit.py out/film.mp4 --cues out/cues.json --stems out/stems --json out/qa/av.json && node scripts/py.mjs scripts/sheet.py out/film.mp4 --out out/qa/sheet.png"
   },
   "dependencies": {
-    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@remotion/cli": "4.0.529",
     "@remotion/layout-utils": "4.0.529",
