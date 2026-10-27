@@ -14,8 +14,8 @@ import { type KitTheme, lit } from './theme';
 const fit = (n: number, u: number) => Math.max(TEXT_MIN * u, n);
 
 /**
- * An input field and its action: a well with a leading glyph, the value (children: a TypeOn, or a string), and a
- * button. `focus` 0..1 lights its rim in the accent; `button.q` is the press, `button.flash` a one-off lift of the
+ * An input field and its action: a well with a leading glyph (or `lead`: the source's real mark on an AppIcon,
+ * kit/logos.tsx), the value (children: a TypeOn, or a string), and a button. `focus` 0..1 lights its rim in the accent; `button.q` is the press, `button.flash` a one-off lift of the
  * button's face after the click (0..1, decaying), `button.label` may be typed on by the caller.
  */
 export const Field: React.FC<{
@@ -23,16 +23,18 @@ export const Field: React.FC<{
   w: number;
   h: number;
   glyph?: GlyphName;
+  /** drawn in the glyph's place (the source's mark: <AppIcon logo=... size={h * 0.68} />) */
+  lead?: React.ReactNode;
   focus?: number;
   button?: { label: React.ReactNode; w: number; q?: number; flash?: number };
   scale?: number;
   children?: React.ReactNode;
-}> = ({ theme: t, w, h, glyph = 'link', focus = 0, button, scale, children }) => {
+}> = ({ theme: t, w, h, glyph = 'link', lead, focus = 0, button, scale, children }) => {
   const u = useKitScale(scale);
   const pad = h * 0.16;
   return (
     <div data-ui style={{ position: 'relative', width: w, height: h, borderRadius: h / 2, background: t.surface, boxShadow: `${surfaceShadow(t, 30, u)}, inset 0 0 0 ${(2.5 * u).toFixed(2)}px ${mixColor(t.line, t.accent, clamp(focus))}`, display: 'flex', alignItems: 'center', gap: pad, padding: `0 ${pad}px`, boxSizing: 'border-box' }}>
-      <GlyphTile theme={t} name={glyph} size={h - 2 * pad} />
+      {lead ?? <GlyphTile theme={t} name={glyph} size={h - 2 * pad} />}
       <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', ...face(fit(h * 0.36, u), 500, t.text, -0.02) }}>{children}</div>
       {button && (
         <div style={{ position: 'relative', flex: 'none', filter: button.flash ? `brightness(${(1 + 0.35 * clamp(button.flash)).toFixed(3)})` : undefined }}>

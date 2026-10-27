@@ -2,7 +2,9 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { Mark, placeMark } from './brand/Mark';
 import { C, TYPE, U, typeStyle } from './brand/tokens';
+import { AppIcon, BrandLogo, InlineLogo, kitTheme, LogoChip, type LogoRef, LogoRing, LogoWall } from './kit';
 import { FontGate } from './lib/FontGate';
+import { LOGOS } from './logos';
 import { baselineOf, inkBox, measureTracked } from './lib/measure';
 import { copy } from './timeline';
 
@@ -86,3 +88,48 @@ export const BrandHeader: React.FC<{ ground: Ground }> = ({ ground }) => (
     </AbsoluteFill>
   </FontGate>
 );
+
+// ---- Real marks: the kit's logo parts on paper and on ink (npx remotion still KitLogos; KitLogoWall --props='{"frame":40}') ----
+/** The marks to show: given ones, else every mark the film fetched (src/logos.ts). */
+const marksOf = (logos?: LogoRef[]) => (logos && logos.length ? logos : Object.keys(LOGOS));
+
+/** Every logo part at film size on a light and a dark stage: tiles, chips, wordmarks and an inline mark in a line; `zoom` pushes in on the top left (the marks must hold under a camera push). */
+export const LogoSheet: React.FC<{ logos?: LogoRef[]; zoom?: number }> = ({ logos, zoom = 1 }) => {
+  const marks = marksOf(logos).slice(0, 10);
+  const paper = kitTheme('tintedPaper', C.accent);
+  const ink = kitTheme('inkStage', C.accent);
+  const line = TYPE.line.size * U;
+  return (
+    <FontGate>
+      <AbsoluteFill style={{ background: paper.ground, transformOrigin: '0 0', transform: `scale(${zoom})` }}>
+        {([paper, ink] as const).map((t, half) => (
+          <div key={half} style={{ position: 'absolute', left: 0, top: half * 540 * U, width: 1920 * U, height: 540 * U, background: t.ground, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 44 * U, padding: `0 ${96 * U}px`, boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', gap: 34 * U, alignItems: 'center' }}>
+              {marks.map((m, i) => <AppIcon key={i} logo={m} size={132 * U} theme={t} tone={half === 1 && i % 2 ? 'dark' : 'light'} />)}
+            </div>
+            <div style={{ display: 'flex', gap: 22 * U, alignItems: 'center', flexWrap: 'nowrap' }}>
+              {marks.slice(0, 5).map((m, i) => <LogoChip key={i} theme={t} logo={m} h={76 * U} id={`sheet-chip-${half}-${i}`} tile={i === 4} />)}
+            </div>
+            <div style={{ display: 'flex', gap: 64 * U, alignItems: 'center' }}>
+              <span data-text={`sheet-line-${half}`} style={{ ...typeStyle('line', line), color: t.text }}>
+                {'Works with '}<InlineLogo logos={marks} size={line} frame={0} ground={half ? 'dark' : 'light'} />{' and more'}
+              </span>
+              {marks.slice(0, 3).map((m, i) => <BrandLogo key={i} logo={m} kind="wordmark" h={58 * U} ground={half ? 'dark' : 'light'} />)}
+            </div>
+          </div>
+        ))}
+      </AbsoluteFill>
+    </FontGate>
+  );
+};
+
+/** A wall of marks at one frame of its arrival (frame 0 = the first tile's start), round a clear centre. */
+export const LogoWallStill: React.FC<{ logos?: LogoRef[]; frame?: number; ground?: 'light' | 'dark'; ring?: boolean }> = ({ logos, frame = 120, ground = 'light', ring = false }) => {
+  const t = kitTheme(ground === 'dark' ? 'inkStage' : 'tintedPaper', C.accent);
+  const marks = marksOf(logos);
+  return (
+    <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
+      {ring ? <LogoRing logos={marks} frame={frame} theme={t} /> : <LogoWall logos={marks} frame={frame} theme={t} clear={{ w: 760 * U, h: 300 * U }} />}
+    </AbsoluteFill>
+  );
+};

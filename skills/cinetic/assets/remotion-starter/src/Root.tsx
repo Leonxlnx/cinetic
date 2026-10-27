@@ -9,7 +9,7 @@ import { Film, FilmProps } from './Film';
 import { FilmEvery, everyMetadata, FilmSub, subMetadata } from './FilmSub';
 import { Audit } from './lib/Audit';
 import { FontGate } from './lib/FontGate';
-import { BrandAvatar, BrandHeader, BrandLockup, BrandMark, MarkSizes, MarkStill } from './Stills';
+import { BrandAvatar, BrandHeader, BrandLockup, BrandMark, LogoSheet, LogoWallStill, MarkSizes, MarkStill } from './Stills';
 import { ACT, FPS, H, TOTAL, W } from './timeline';
 
 // An act on its own, font-gated like the film, so it can be iterated without scrubbing the film.
@@ -59,6 +59,9 @@ export const RemotionRoot: React.FC = () => (
       <Still id="Mark16" component={MarkStill} width={16} height={16} defaultProps={{ size: 16, surface: 'paper' as const }} />
       <Still id="MarkLarge" component={MarkStill} width={W} height={H} defaultProps={{ size: 640 * U, surface: 'paper' as const }} />
       <Still id="MarkSizes" component={MarkSizes} width={W} height={H} />
+      {/* the real marks the film fetched (scripts/logos.mjs) in the kit's logo parts */}
+      <Still id="KitLogos" component={LogoSheet} width={W} height={H} defaultProps={{ logos: [] as string[] }} />
+      <Still id="KitLogoWall" component={LogoWallStill} width={W} height={H} defaultProps={{ logos: [] as string[], frame: 120, ground: 'light' as const, ring: false }} />
     </Folder>
 
     {/* The brand as files, for a brand the film invented: bash scripts/brand-kit.sh renders these. */}

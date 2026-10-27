@@ -253,8 +253,9 @@ sample.
 - `kitTheme(recipe, accent)`: every colour of the kit computed from one recipe at the accent's hue (no hex in the kit;
   surfaces are neutral, avatars one hue at several lightnesses, never a rainbow).
 - Parts: `Surface` (a lit face with a contact shadow and a cast shadow away from the key), `Avatar` (initials at 36 px
-  and up, a drawn person below that), `AvatarStack`, `Badge`, `Check`, `Pending`, `Glyph` / `GlyphTile` (line glyphs
-  drawn in code: no icon library), `Meter`, `Button` (press amount from `fx/Cards press().q`), `Toast`, `Sparkline`,
+  and up, a drawn person below that), `AvatarStack`, `Badge`, `Check`, `Pending`, `Glyph` / `GlyphTile` (generic
+  glyphs from Phosphor Icons, MIT, shipped in `kit/icons.ts`: a regular or bold line by `weight`, `variant` fill or
+  duotone; a tile is duotone on its soft face and filled on the solid one), `Meter`, `Button` (press amount from `fx/Cards press().q`), `Toast`, `Sparkline`,
   `BarChart` (bars rise out of the baseline in turn), `Ring`, `Photo` (a product photograph made in code, or a
   supplied `src`).
 - Flow parts (`kit/flow.tsx`), the pieces of a product flow: `Field` (a well, a glyph, the value as children, an action
@@ -265,7 +266,17 @@ sample.
   rim, `send` takes `swellState()` for the click), `CodePanel` (a numbered gutter that is always full and rows of tokens
   streaming by line cadence, keywords in the accent and the rest in its tints), `Bubble` (the user's message). The glyph set covers a
   capability ticker too (link, list, search, star, monitor, speaker, camera, braces, table, globe, lock, play, chat,
-  cart, heart). Every string comes from the caller.
+  cart, heart, mail, calendar, chart, database, folder, user, bell, gear, cloud, cpu, terminal, video). Glyphs are for
+  generic actions only: a product, source or model the film names is shown by its real mark (`kit/logos.tsx`). Every string comes from the caller.
+- Real marks (`kit/logos.tsx`), for the products the film's product works with, imports from, runs on or names: fetch
+  them with `node scripts/logos.mjs get <name>` (official colour files, the record in `public/logos/logos.json`, the
+  index in `src/logos.ts`), then `BrandLogo` (a mark or wordmark as SVG at any size, the version for its ground),
+  `AppIcon` (a squircle tile with a top light, an inner rim and a soft contact shadow, the mark at its optical size;
+  a brand whose mark is its own tile fills it), `LogoChip` (mark and name on a pill), `InlineLogo` (a mark at 1.0 cap
+  height inside a line, the next one rolling in over 6 f), `LogoWall` and `LogoRing` (12-30 tiles that arrive tumbling
+  20-60 degrees, settle on depth bands, drift with parallax and soften only behind the near half). A name the film has
+  not fetched falls back to the text pill or a glyph tile. `npx remotion still KitLogos` and `KitLogoWall` show them
+  on paper and ink; look at them at half size before the marks go into a shot.
 - Panels with live states: `ProjectPanel` (status, team, selects with approvals, count, bar, the primary action;
   `doneAt` switches badge, count, tick and button in one frame), `ChatCard` (`fx/Bubbles`, the composer types the next
   line at 30 a second), `FeedCard` (`flick` lands a hand-thrown scroll on the highlight), `StatCard` (a figure
