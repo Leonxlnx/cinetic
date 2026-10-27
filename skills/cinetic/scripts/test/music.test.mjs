@@ -426,6 +426,11 @@ const ov = M.parseOpenverse(fixJson('openverse-search.json'), 'sfx');
     const rk = M.rankLibrary(tracks, want, { used: [{ ref: 'mixkit:9101', film: '/f/one' }, { ref: 'commons:99990001' }], searches: [{ kind: 'music', first: 'mixkit:9104' }] });
     check(eq(rk.held.map((x) => x.ref).sort(), ['commons:99990001', 'mixkit:9101']), 'library: every earlier film\'s track is held back, not only the last', rk.held.map((x) => x.ref).join(','));
     check(eq(rk.items.map((x) => x.ref), ['mixkit:9102', 'mixkit:9104']), 'library: the previous first offer is not first again', rk.items.map((x) => x.ref).join(','));
+    const same = [{ ...tracks[0], ref: 'mixkit:9201', title: 'One' }, { ...tracks[0], ref: 'mixkit:9202', title: 'Two' }, { ...tracks[0], ref: 'mixkit:9203', title: 'Three' }];
+    const sr = M.rankLibrary(same, want, {});
+    check(eq(sr.items.map((x) => x.score), [s['mixkit:9101'].score, s['mixkit:9101'].score - 1, s['mixkit:9101'].score - 2]), 'library: each higher offer by the same artist costs 1', sr.items.map((x) => x.score).join(','));
+    const ra = M.rankLibrary([tracks[0]], want, { used: [{ ref: 'mixkit:1', artist: 'Ada Example' }] });
+    check(ra.items[0].score === s['mixkit:9101'].score - 1, 'library: an artist a recent film used costs 1');
     check(M.planText(tracks[1]) === 'reveal on the entry at 1:03 (bar 25); body from bar 5; ends fade; key F major; analyse with --phase 2', 'library: the cut points line', M.planText(tracks[1]));
 
     // pick on the CLI, under a temporary home

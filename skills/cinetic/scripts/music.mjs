@@ -41,7 +41,8 @@
  *           brief's words name them: "precise" is driving, "premium" elegant, "bright" uplifting ...). Ranked by
  *           mood (its own mood first, a second mood next), length (never shorter than the film plus its ending),
  *           tempo (--bpm; double or half time counts), the lift for the reveal and the library's quality mark;
- *           a track any earlier film used is held back, the previous first offer is never first again. Writes
+ *           a second track by one artist, or an artist a recent film used, loses ground; a track any earlier
+ *           film used is held back, the previous first offer is never first again. Writes
  *           the results where search does (each with its cut points: the reveal's bar and time, the body, the
  *           ending, the key, a --phase to analyse with), so sheet and get read them. The library: --library
  *           PATH, $CINETIC_MUSIC_LIBRARY, else $CINETIC_HOME/music-library.json (a library or {"link": path});
@@ -855,12 +856,27 @@ export function libraryItem(t, r = scoreLibraryTrack(t)) {
   };
 }
 
-/** The library ranked for a film: scored, too-short tracks dropped, then the history's rules (applyHistory). {items, held}. */
+/**
+ * The library ranked for a film: scored, too-short tracks dropped; so the offers are not one artist's, each track
+ * loses 1 for every higher-ranked track by the same artist and 1 when one of the last five films used that artist;
+ * then the history's rules (applyHistory). {items, held}.
+ */
 export function rankLibrary(tracks, want = {}, hist = {}) {
   const list = [];
   for (const t of tracks) {
     const r = scoreLibraryTrack(t, want);
     if (r.score > -Infinity) list.push(libraryItem(t, r));
+  }
+  const key = (a) => String(a || '').trim().toLowerCase();
+  const recent = new Set((hist?.used || []).filter((u) => (u.kind || 'music') === 'music').slice(-5).map((u) => key(u.artist)).filter(Boolean));
+  const seen = {};
+  for (const it of list.sort((a, b) => b.score - a.score || String(a.ref).localeCompare(String(b.ref)))) {
+    const a = key(it.artist);
+    if (!a) continue;
+    const n = seen[a] || 0;
+    if (n) { it.score = Math.round((it.score - n) * 100) / 100; it.why = [...it.why, `${n} higher offer${n > 1 ? 's' : ''} by the same artist`]; }
+    if (recent.has(a)) { it.score = Math.round((it.score - 1) * 100) / 100; it.why = [...it.why, 'an artist one of your recent films used']; }
+    seen[a] = n + 1;
   }
   return applyHistory(list, hist);
 }
@@ -1265,7 +1281,7 @@ async function cmdGet(args, env = process.env) {
   writeJson(recPath, rec);
   if (!args['no-history']) {
     const h = readHistory(env);
-    h.used.push({ date, ref: it.ref, title: it.title, kind: it.kind, film: path.resolve(args.film || path.join(args.to, '..', '..')) });
+    h.used.push({ date, ref: it.ref, title: it.title, artist: it.artist || null, kind: it.kind, film: path.resolve(args.film || path.join(args.to, '..', '..')) });
     writeHistory(h, env);
   }
   console.log(`get: ${dest} (${(d.bytes / 1e6).toFixed(1)} MB${local ? ', the library\'s copy' : ''}) and ${recPath} (${L.name}, no credit needed; its licence read again now at ${v.url})`);
