@@ -10,11 +10,11 @@
 //   worldNodes     tile nodes from a sample world (kit/data.ts): its records and its people
 // Labels are texture (data-texture) unless a tile is large enough to read (>= TEXT_MIN): then data-text.
 import React from 'react';
-import { FONT, TEXT_MIN, U } from '../brand/tokens';
+import { FONT, TEXT_MIN } from '../brand/tokens';
 import { Defocus } from '../fx/Defocus';
 import { clamp, mix, rand } from '../lib/anim';
 import { mixColor } from '../lib/color';
-import { f60x, fpsOf } from '../lib/film';
+import { f60x, uOf, useFilm } from '../lib/film';
 import { PortraitMark } from './avatars';
 import { type SampleWorld, sampleWorld } from './data';
 import { AppIcon, DEPTH, depthBlur, hasLogo, type LogoRef, ringSlots, type TileSlot, tileArrival, wallSlots } from './logos';
@@ -197,7 +197,8 @@ type FieldCommon = {
 };
 
 const Placed: React.FC<{ slot: TileSlot; node: TileNode; frame: number; at: number; o: FieldCommon; x: number; y: number; size: number; extraY?: number }> = ({ slot, node, frame, at, o, x, y, size, extraY = 0 }) => {
-  const a = tileArrival(frame, at, { dur: o.dur, tilt: slot.tilt, depthPx: 520 * U, dropPx: 70 * U });
+  const u = useKitScale();
+  const a = tileArrival(frame, at, { dur: o.dur, tilt: slot.tilt, depthPx: 520 * u, dropPx: 70 * u });
   if (a.opacity <= 0) return null;
   const s = mix(DEPTH.scale[0], DEPTH.scale[1], slot.depth);
   const sigma = o.blur === false ? 0 : depthBlur(slot.depth);
@@ -221,8 +222,10 @@ const fillFor = (o: FieldCommon, n: number) => {
  * the wall drifts with parallax. `clear` keeps a box free for a line or a hub (px about the centre).
  */
 export const ContentWall: React.FC<FieldCommon & { cols?: number; rows?: number; clear?: { w: number; h: number } }> = (props) => {
-  const { nodes, frame, start = 0, w = 1920 * U, h = 1080 * U, tile = 230 * U, stagger = 2, drift = 14 * U, seed = 'wall' } = props;
-  const fps = fpsOf();
+  const film = useFilm(); // the composition's size and rate, never the timeline's (a variant cut)
+  const u = uOf(film);
+  const { nodes, frame, start = 0, w = film.width, h = film.height, tile = 230 * u, stagger = 2, drift = 14 * u, seed = 'wall' } = props;
+  const fps = film.fps;
   const cell = tile * 1.24;
   const cols = props.cols ?? Math.max(4, Math.round(w / cell) + 1);
   const rows = props.rows ?? Math.max(3, Math.round(h / (cell * 0.92)) + 1);
@@ -231,7 +234,7 @@ export const ContentWall: React.FC<FieldCommon & { cols?: number; rows?: number;
   const t = Math.max(0, frame - start) / fps;
   let k = 0;
   return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, perspective: `${(1900 * U).toFixed(0)}px`, transformStyle: 'preserve-3d' }}>
+    <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, perspective: `${(1900 * u).toFixed(0)}px`, transformStyle: 'preserve-3d' }}>
       {slots.map((s, i) => {
         const node = s.logo !== null ? nodes[s.logo] : filler(k++);
         const dx = drift * t * mix(DEPTH.drift[0], DEPTH.drift[1], s.depth);
@@ -243,14 +246,16 @@ export const ContentWall: React.FC<FieldCommon & { cols?: number; rows?: number;
 
 /** A ring of content tiles round a centre kept free: they arrive tumbling in turn, then orbit (`orbit` deg a second); the far side is smaller and softer. */
 export const ContentRing: React.FC<FieldCommon & { count?: number; rx?: number; ry?: number; orbit?: number }> = (props) => {
-  const { nodes, frame, start = 0, w = 1920 * U, h = 1080 * U, tile = 200 * U, stagger = 3, rx = 680 * U, ry = 350 * U, orbit = 4, seed = 'ring' } = props;
-  const fps = fpsOf();
+  const film = useFilm();
+  const u = uOf(film);
+  const { nodes, frame, start = 0, w = film.width, h = film.height, tile = 200 * u, stagger = 3, rx = 680 * u, ry = 350 * u, orbit = 4, seed = 'ring' } = props;
+  const fps = film.fps;
   const n = Math.max(nodes.length, props.count ?? 14);
   const filler = fillFor(props, n);
   const t = Math.max(0, frame - start) / fps;
   const slots = ringSlots(n, { rx, ry, w, h, turn: (orbit * Math.PI * t) / 180, seed });
   return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, perspective: `${(1900 * U).toFixed(0)}px`, transformStyle: 'preserve-3d' }}>
+    <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, perspective: `${(1900 * u).toFixed(0)}px`, transformStyle: 'preserve-3d' }}>
       {slots.map((s, i) => (
         <Placed key={i} slot={{ ...s, depth: s.depth * 0.8 }} node={i < nodes.length ? nodes[i] : filler(i - nodes.length)} frame={frame} at={start + f60x(stagger, fps) * s.order} o={{ ...props, blur: props.blur ?? true }} x={s.x} y={s.y} size={tile} />
       ))}
@@ -264,8 +269,10 @@ export const ContentRing: React.FC<FieldCommon & { count?: number; rx?: number; 
  * arrive tumbling in turn from `start`, then ride the flow. Positions are closed-form in the frame.
  */
 export const ContentTicker: React.FC<FieldCommon & { rows?: number; speed?: number; curve?: number; gap?: number }> = (props) => {
-  const { nodes, frame, start = 0, w = 1920 * U, h = 1080 * U, tile = 240 * U, stagger = 2, speed = 90 * U, curve = 16, seed = 'ticker', rows = 2, gap = 34 * U } = props;
-  const fps = fpsOf();
+  const film = useFilm();
+  const u = uOf(film);
+  const { nodes, frame, start = 0, w = film.width, h = film.height, tile = 240 * u, stagger = 2, speed = 90 * u, curve = 16, seed = 'ticker', rows = 2, gap = 34 * u } = props;
+  const fps = film.fps;
   const t = (frame - start) / fps;
   const th = tile / (props.aspect ?? 1);
   const filler = fillFor(props, 24);
@@ -293,5 +300,5 @@ export const ContentTicker: React.FC<FieldCommon & { rows?: number; speed?: numb
       );
     }
   }
-  return <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, perspective: `${(1700 * U).toFixed(0)}px`, transformStyle: 'preserve-3d', overflow: 'hidden' }}>{out}</div>;
+  return <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, perspective: `${(1700 * u).toFixed(0)}px`, transformStyle: 'preserve-3d', overflow: 'hidden' }}>{out}</div>;
 };
