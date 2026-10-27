@@ -24,9 +24,54 @@
 //
 // Speeds are px (or any unit) per FILM frame; shapes are written per 60 fps frame (`fpsRef`) and
 // converted, so the same numbers give the same motion in seconds at 24, 25, 30 or 60 fps.
+//
+// Smear: a move fast enough to streak (SMEAR.threshold) is declared as camera blur on exactly those
+// frames (fastRanges()), so the finishing pass smears it the way a shutter would; a hard mask edge
+// that travels draws its own streak as a ramp `smearEdge()` px wide (a box-blurred step is a ramp).
+import type { CameraBlurRange } from '../timeline';
 import { CARRY, clamp, E, prog } from './anim';
 import { handoff, type Shot } from './camera';
 import { f60x, fpsOf } from './film';
+
+/**
+ * When a move smears, house numbers. Slow moves stay crisp in every film; above about 720 px/s at
+ * 1080p (24 px a frame at 30 fps, 12 at 60) a camera move, a whip, a scroll into a cut or a slide out
+ * of a flash carries a streak of about 0.3-0.5 of its per-frame travel. A travelling hard edge (a
+ * push-wipe's edge, a door's seam) streaks 0.3 of its step.
+ */
+export const SMEAR = { threshold: 720, share: 0.3, pad: 1 } as const;
+
+/**
+ * The frames of a move fast enough to smear, as camera-blur ranges [from, to): every frame in
+ * [from, to] whose speed (|speed(f)|, frame px per film frame: the step into f) is over `threshold`
+ * (px/s at 1080p, house SMEAR.threshold, scaled by `u`), padded by `pad` frames each side (house 1:
+ * the shutter opens a little before the peak) and merged. Declare them (CAMERA_BLUR or a primitive's
+ * declares()) so a crisp film still renders its whips and flicks with a shutter.
+ */
+export const fastRanges = (
+  speed: (f: number) => number,
+  from: number,
+  to: number,
+  o: { threshold?: number; pad?: number; u?: number; fps?: number; id?: string } = {},
+): CameraBlurRange[] => {
+  const fps = o.fps ?? fpsOf();
+  const per = ((o.threshold ?? SMEAR.threshold) * (o.u ?? 1)) / fps;
+  const pad = Math.max(0, Math.round(o.pad ?? SMEAR.pad));
+  const out: CameraBlurRange[] = [];
+  const id = o.id ?? 'smear';
+  for (let f = Math.ceil(from); f <= Math.floor(to); f++) {
+    if (!(Math.abs(speed(f)) > per)) continue;
+    const a = f - pad;
+    const b = f + pad + 1;
+    const last = out[out.length - 1];
+    if (last && a <= last.to) last.to = Math.max(last.to, b);
+    else out.push({ from: a, to: b, id: `${id}-${out.length}` });
+  }
+  return out;
+};
+
+/** The streak a hard edge draws at speed v (px per film frame): a ramp `share` x |v| wide (house SMEAR.share), never under `min` px (anti-aliasing). */
+export const smearEdge = (v: number, o: { share?: number; min?: number } = {}) => Math.max(o.min ?? 1.5, (o.share ?? SMEAR.share) * Math.abs(v));
 
 /** Position and speed of one half of a carried cut: x relative to the cut frame, v = the step into this frame. */
 export type Carried = { x: number; v: number };

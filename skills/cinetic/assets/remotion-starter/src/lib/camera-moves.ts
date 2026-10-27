@@ -7,6 +7,7 @@
 //   scaleBreath   a cut that breathes: push into the cut (accelerating), the next shot opens off its
 //                 rest and settles (mode 'flip' reverses the push, 'same' keeps its direction)
 //   whip          a fast reframe with a long build and a short brake; .peak is its fastest frame
+//   blurRanges    the frames a camera move is fast enough to smear on (declare them as camera blur)
 //   whipCurve     a whip's curve drawn from its speed profile: where the peak sits, how sharp each side is
 //   peakFrame     the fastest frame of any eased move: cut, swap copy or sound on it
 //   swapAt        a copy swap timed on a peak: the old copy leaves on it, the new one is already arriving
@@ -20,8 +21,8 @@
 // written at 60 fps and converted with the film's fps, so the same call reads the same at 24-60 fps.
 import { BREATH, clamp, DUR, E, type Ease, lmix, mix, prog } from './anim';
 import { lc, type Shot } from './camera';
-import { f60x, type FilmCtx, fpsOf } from './film';
-import { carry, type CarryOpts, launch, LAUNCH } from './handoff';
+import { f60x, type FilmCtx, fpsOf, sizeOf, uOf } from './film';
+import { carry, type CarryOpts, fastRanges, launch, LAUNCH } from './handoff';
 
 /** A framing for any frame. */
 export type ShotFn = (f: number) => Shot;
@@ -259,6 +260,44 @@ export const whip = (o: WhipOpts) => {
     return { ...s, k: s.k * (1 - (o.dip ?? 0) * hop), roll: (s.roll ?? 0) + (o.roll ?? 0) * hop };
   };
   return withProps(fn, { peak: peakFrame(ease, o.start, frames), start: o.start, end: o.start + frames });
+};
+
+/**
+ * How fast the picture moves under a camera at frame f: the largest screen displacement (px per film
+ * frame, the step from f - 1 to f) of the frame's four corners and centre, pan, zoom and roll
+ * together. Feed it to fastRanges() (lib/handoff.ts) for the frames a whip smears on.
+ */
+export const shotSpeed = (shot: ShotFn, f: number, size: { width: number; height: number }): number => {
+  const a = shot(f - 1);
+  const b = shot(f);
+  const ra = ((a.roll ?? 0) * Math.PI) / 180;
+  const rb = ((b.roll ?? 0) * Math.PI) / 180;
+  let best = 0;
+  for (const [qx, qy] of [[0, 0], [size.width, 0], [0, size.height], [size.width, size.height], [size.width / 2, size.height / 2]]) {
+    // the world point under screen point q at f - 1, then where it is at f
+    const dx = (qx - a.sx) / a.k;
+    const dy = (qy - a.sy) / a.k;
+    const wx = a.ax + dx * Math.cos(ra) + dy * Math.sin(ra);
+    const wy = a.ay - dx * Math.sin(ra) + dy * Math.cos(ra);
+    const ex = (wx - b.ax) * b.k;
+    const ey = (wy - b.ay) * b.k;
+    const px = b.sx + ex * Math.cos(rb) - ey * Math.sin(rb);
+    const py = b.sy + ex * Math.sin(rb) + ey * Math.cos(rb);
+    best = Math.max(best, Math.hypot(px - qx, py - qy));
+  }
+  return best;
+};
+
+/**
+ * The camera-blur ranges of a camera move between `from` and `to`: the frames whose screen speed
+ * (shotSpeed) is over the smear threshold (lib/handoff.ts SMEAR, 720 px/s at 1080p), padded and
+ * merged. A whip peaks on its fastest frames, so a 32 f house whip declares about its middle third.
+ * Declare them as CAMERA_BLUR (or return them from an act's declares()); in a crisp film only those
+ * frames render with the shutter, so the whip carries a real streak and the holds stay sharp.
+ */
+export const blurRanges = (shot: ShotFn, from: number, to: number, o: { film?: Partial<FilmCtx>; threshold?: number; pad?: number; id?: string } = {}) => {
+  const size = sizeOf(o.film);
+  return fastRanges((f) => shotSpeed(shot, f, size), from, to, { threshold: o.threshold, pad: o.pad, u: uOf(o.film), fps: fpsOf(o.film), id: o.id ?? 'camera' });
 };
 
 // ------------------------------------------------------------------------------------------------
