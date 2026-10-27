@@ -492,6 +492,50 @@ Give a preset line's `COPY` entry the frames the preset draws (`resolved` from `
 read the line as the viewer does (a `TypeLine` carries its spec's `id` as `data-text`, measured over its glyph run). Graphic effects frame it: a dithered gradient field, glass, a spectral edge, a morph
 from the last shot, a grid, a loader, the product's UI (`references/devices/INDEX.md`, materials and VFX).
 
+**Type changes size through the camera** (`fx/TypePush`): a line is set once at its role's size and the camera pushes
+through it, 1.0 -> 2.2× on `E.cam` over 45-60 f (house 52 f at 60 fps), in log space, following the reading point,
+and lets the line cross the frame's edges. It never snaps from one size to another. `wordPoint(text, metrics, cx, cy, w)`
+gives a word's centre; give `read` the first word and the keyword, and the push travels from one to the other as it
+grows (the first point holds still on the first frame; the last lands a third of the way to the frame's centre, or at
+`toward`). After landing it creeps 2 % a second, so the hold is alive. `typePushFrames()` gives its peak and the frame
+it has settled (speed under 10 % of the peak): cut or swap after that, never mid-push.
+
+```tsx
+const m = measureLine(spec, TYPE.display.size, TYPE.display.weight, TYPE.display.track, FONT.text);
+<TypePush push={{ at: 70, read: [wordPoint(spec.text, m, cx, cy, 0), wordPoint(spec.text, m, cx, cy, 2)] }} frame={frame}>
+  <TypeLine spec={spec} frame={frame} role="display" metrics={m} />
+</TypePush>
+```
+
+The layout audit holds the line at rest (before the push) to the safe zone; in flight it is a camera move; landed at
+a bleed scale it is a declared bleed and must cross the frame's edge (`bleed: false` makes the landed state a resting
+state again, held to the zone).
+
+**The claim on accent** (`fx/TypeClaim`, `<AccentClaim text at frame>`): the launch close's claim set like a poster on
+the accent: cap height 16.5 % of the frame height (16 % at the least; Geist 251 px at 1080p), flush left at a 3 %
+margin, tracking −0.04 em, weight 600-700, lead 0.98, one to three lines broken at word boundaries (`claimLayout()`
+brings the size down toward 16 % before it adds a fourth line), centred on the frame's height (`align` bottom or top).
+Its words arrive on the crisp entry across the lines; the type is paper or ink on the accent, whichever reads
+(`inkOn()`); the block creeps 1.5 % a second (up to 3 %) through its hold. The accent flood is a declared colour event:
+put its span in the cues' `declared.colour`. Never centred, never at a sentence line's size: under-scaled and centred
+is the claim of a slide deck.
+
+**Objects inside a line** (`kit/inline.tsx`): the thing a sentence names sits in the sentence, at 1.0 cap height on
+the baseline, so type and product share one shot. `InlineObject` is the slot: a real mark (a slug, `scripts/logos.mjs`),
+a glyph for a generic action, a chip (a label at half the cap height, never under `TEXT_MIN`: the pill grows round it)
+or a small UI piece drawn in code (`{ kind: 'ui', aspect, draw: (cap) => ... }`). Every 30 f the objects roll one slot
+up as one strip over 6 f, clipped to the cap box; with chips or UI pieces the line re-flows round each object's width
+(`fit: 'each'`), with marks it keeps the widest. `ObjectLine` is the whole sentence with `[]` where the object sits:
+its words and the slot arrive as one line on the crisp entry (or `entry: 'calm'`), the slot as a word, the rolls
+starting once it has landed, the size fitted to what the layout audit allows it. It is the default for a promise line:
+
+```tsx
+<ObjectLine id="promise" text="Notes from [] in thirty seconds" objects={['zoom', 'slack', { kind: 'chip', label: 'Standup', glyph: 'calendar' }]}
+  at={c.in} frame={frame} role="display" />
+```
+
+`InlineLogo` (`kit/logos.tsx`) is the marks-only form. Marks only for products the film's product really touches.
+
 **The line system.** For a line drawn with the canonical reveal, three primitives share one set of house numbers
 (`lib/pace.ts`, `lib/anim.ts`) and the film context (`useFilm()`), so they run the same at any fps and frame size.
 Each is a pure state function plus a thin component: `wordState()`, `recentreState()` / `chainState()`,
