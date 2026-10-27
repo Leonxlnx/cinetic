@@ -10,7 +10,8 @@ any fps) plus a thin component drawn with transforms, opacity, clip paths and SV
 60 fps frames (`f@60`) and pixels at 1080p unless they say otherwise.
 
 Contents: 1. The key (`fx/KeyLight`) · 2. Lit worlds · 3. Living light (`fx/LightField`) · 4. Light events ·
-5. Glow, spectral light and materials as devices · 6. Baked plates (`dither-gradient.py`) · 7. Checks
+5. Glow, spectral light and materials as devices · 6. Baked plates (`dither-gradient.py`) · 7. Product UI in a lit
+place (`lib/light`, `fx/Lit`, `fx/Grounds`) · 8. Checks
 
 ## 1. The default light of a film: a directional key (`fx/KeyLight`)
 
@@ -159,9 +160,81 @@ not just the alpha, is dithered by one code value. `--check` verifies the light 
 longest at most 64); `"brand": true` exempts a supplied brand colour from the hue and chroma rules. Exit 3 when a
 plate fails.
 
-## 7. Checks
+## 7. Product UI in a lit place (`lib/light`, `fx/Lit`, `fx/Grounds`)
+
+A product placed in a lit space with depth reads as crafted; a front-on card on one flat ground reads as a template.
+Three primitives fix that without a photograph, all read the same light and all are pure functions of the frame.
+
+**The film's one light (`lib/light.ts` `FILM_LIGHT`).** One token for the whole film: `azimuth` (where the key comes
+from on the layout: 0 top, 90 right, 180 from below the frame, 270 left; house 315, the upper left), `elevation` (house
+34), the rim's peak alpha (house 0.8) and the ground spill (house 0.14). Set it once from the brief (an upper-left
+window, a floor glow from below at azimuth 180-210 and elevation 15-25, a raking side key) and never per shot: a panel's
+rim, its shadow, the ground's lit side and the beams of a window ground all follow it. The maths (`toKey`, `keyDir`,
+`awayAngle`, `panelNormal`, `faceLight`, `faceShift`, `keyLocal`, `onGround`) follows the CSS axes of a panel turned by
+`rotateZ rotateX rotateY` and the fx/KeyLight conventions, so relief scenes and lit panels share one sun.
+
+**A lit panel (`fx/Lit`).** The default for a product screen that is not full-frame:
+
+| Number | House | Range |
+|---|---|---|
+| tilt | rotateX 10, rotateY -12 | 8-14 on each axis at rest; one axis may be 0 |
+| perspective | 2200 px | 1800-2600 |
+| lift off its backing | 36 px | 24-60 |
+| rim | 1 px on the edges facing the key, peak alpha 0.8 | the gradient runs to nothing on the far side |
+| face | lift (light colour) or shade by n . l against front-on, gain 0.35, at most 0.22 | |
+| sheen | the light's colour at 0.09 from the key side to 62 % across | |
+| spill | the ground colour at 0.14 from the far side to 55 % across | 0.08-0.22 |
+| shadow | on a backing plane parallel to the panel, thrown lift x in-plane light / facing light (at most 3 x lift), penumbra 2 + 0.34 x throw between two fixed levels (6 and 20 px), alpha 0.55, the ground 0.26 darker | |
+| contact | the footprint grown 6 px, a fixed 14 px blur, 0.38 | |
+| life | a 1.4 degree sway on X and Y a quarter-turn apart (7 s) and an 18 px/s float on a 1:2 loop (9 s): 0.3-1.1 px a frame at 30 fps, never at rest | |
+| entry | from tilt 24 / -18, 90 px low, lift 0, on E.settleOut over 48 f | |
+
+```tsx
+<LitGround frame={f} spec={{ kind: 'bars', base: theme.ground, seed: 4 }} />
+<Lit frame={f} x={1010} y={560} w={1160} h={740} r={56} ground={theme.ground} enter={{ at: CUE.panel }}>
+  <ProjectPanel frame={f} theme={theme} w={1160} h={740} lift={0} />
+</Lit>
+```
+
+Draw the panel at (0, 0) in its own box (a kit surface with `lift` 0-6: Lit draws the shadow its real pose throws).
+Under a coloured key (a floor glow in the accent's lift) pass `rim={{ color }}`: the rim, the sheen and the lift take
+the light's colour. `RimEdge` and `rimLine()` give any other turned box the same rim (fx/DepthStack uses them).
+`litFrames()` gives the entry and its landing for the sound; Lit declares nothing.
+
+**Grounds (`fx/Grounds`).** The place behind the product, built in code: a lit gradient keyed to the film's light (the
+key side lighter, the far side in the ground's shade) and procedural plates from a seed, each a signed-distance falloff
+baked once as a dithered half-size sprite and moved by transform (no animated blur, no banding, no bokeh discs).
+
+| kind | the plates | reads as |
+|---|---|---|
+| `wash` | the key gradient and one broad gaussian pool on the key side | a lit wall, studio paper |
+| `pools` | the wash and 2-3 pools at different depths | light falling through a space |
+| `bars` | the wash and 3-5 tall bars defocused by about their own width, tapering at both ends | a lit room behind the product, out of focus |
+| `floor` | a glow rising from the bottom edge and bars standing in it, brighter at their foot | a stage lit from below |
+| `window` | 2-3 beams slanting along the key, brighter at the key end | sun through a window |
+
+- **Strength:** a lightness swing of 0.12 across the frame (0.05-0.20, `lib/look.ts LIGHT`); each kind's plates stay
+  within its gain x the swing (wash 0.8, pools 0.9, bars 1.1, window 1.0, floor 1.6: a light source may read brighter).
+  On paper light has nowhere to go: the swing comes from the shade and the shapes become soft shadows (bars widen into
+  shadow bands, there is no pool). A `floor` in the accent's lift (`light: C.accentLift`) is a coloured light field:
+  chroma 0.13 or less, and behind UI keep it low or white.
+- **Life:** the key plate drifts 7-12 px/s on a 14 s loop, every plate on its own 9-16 s loop and a slow breath, so a
+  hold over a ground never freezes; with the camera (`cam: { shot, base }`) the ground rides at the background weight.
+- **Variety:** never the same ground on more than 2 consecutive shots. `groundKey()` names a ground (kind and base: a
+  re-seeded field of the same kind is the same ground), `groundRuns()` lists the runs that break the rule and
+  `dealGrounds(n, { bases, seed })` deals a film's grounds with holds of at most 2 shots (a held ground keeps its seed:
+  the same place across the cut).
+
+**Composition in planes.** `<Planes base shot bg mid fg />` draws three sibling layers under one camera at the weights
+bg 0.25, mid 0.6, fg 1.0 (`layerShot()`, lib/camera `weighShot()`); at least one element is cropped by the frame edge
+(`croppedByEdge()`: 12 % of its own size past an edge, `cropCheck()` on a frame's boxes). A frame that holds everything
+whole inside the margins reads as a slide. The multi-object beat in three scaled, defocused planes is `fx/DepthStack`
+(`references/camera.md` §8).
+
+## 8. Checks
 
 - A key light, a light field and stepped layers `declare()` what they do on purpose (light seams, stepped ranges);
+  Lit, Grounds and DepthStack are continuous and declare nothing (DepthStack a camera-blur range when given one);
   forensics and the blur sampler treat declared ranges as craft.
 - `look-audit.py`: `living-ground` (the ground's light moves), the floor's light event per act, `clean-finish`
   (no banding), and the one-hue gate `--trajectory` for a light field, a hue sweep or a cooling glyph.

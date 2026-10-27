@@ -228,12 +228,40 @@ The floor against a flat film asks for two depth planes moving at different rate
 - **The foreground lands about 20 f before the background** (`leadBy`).
 - **Lit depth:** blocks that cast shadows from one key (`references/lighting.md`) read as depth even under a locked
   camera.
+- **A beat with several objects is a depth stack** (`fx/DepthStack`): far, mid and near planes at scale 0.6 / 1 / 1.4,
+  a fixed defocus of 6 / 0 / 10 px and parallax 0.5 / 1 / 1.6 (each plane a sibling world under its share of the
+  camera: `lib/camera weighShot()`, zoom on log scale), the far plane turned 8-25 degrees (house 16) as a receding
+  wall, items carrying their own turn (rotateX / rotateY 8-25, cards stacked in perspective) and the film's key-side
+  rim (`rim`). The camera moves through it: `depthPush(at)` pushes x1.32 with a 90 px pan and a 6 degree yaw over
+  120 f on E.strongInOut and creeps on; the near plane grows 1.6x as fast, slides out past the edges and fades as it
+  passes the lens. Copy and the product sit on the mid plane, sharp.
+  ```tsx
+  <DepthStack frame={f} items={items} cam={{ moves: depthPush(CUE.stack) }} rim render={(id) => <Toast ... />} />
+  ```
+- **The shot's composition in planes** (`fx/Grounds` `Planes`): bg 0.25 (the ground), mid 0.6 (the product), fg 1.0
+  (near elements), with at least one element cropped by the frame edge (`cropCheck()`).
 
 ## 9. 3D, perspective and axes
 
 - **Perspective 1800-2600 px** on a 1920-wide frame. Below that UI distorts like a wide lens; above, 3D reads flat.
-- **Each act gets its own axis:** a vertical hinge (yaw) in one act, a tabletop (pitch) in another, a roll or
-  pull-back in a third. The same tilted-card angle three times in 15 s is a template tell.
+- **One 3D turn per UI film** (`lib/camera` `swing3d`, `CAM3D`): the camera turns once, on one axis, 15-30 degrees
+  in total (house 26 -> 4 over 108 f on E.strongInOut, landing nearly front-on for the read, then creeping on the same
+  way) through a layout whose layers sit at a depth: `camera3d(shot)` (preserve-3d, the scale on all three axes) with
+  each layer placed by `place(x, y, z)`, so near layers swing further than far ones. `cam3dCheck(base, moves)` holds
+  the rule (one axis within 15-30, the other within 6, at least 48 f, roll within 11).
+  ```tsx
+  const sw = swing3d({ at: CUE.turn });
+  const shot = camPath(f, { ...base, ...sw.start }, sw.moves);
+  <div style={{ ...camera3d(shot), width: W, height: H }}>
+    <div style={place(300, 210, -260)}>{chart}</div>
+    <div style={place(780, 300, 0)}>{panel}</div>
+    <div style={place(1420, 760, 180)}>{toast}</div>
+  </div>
+  ```
+- **Place moving elements with transforms**, never with left/top: a fractional left/top snaps to whole pixels at full
+  size and jumps a pixel at a time; `place()` and the fx primitives move everything by translate3d.
+- **Each act gets its own axis:** the film's one turn in one act, tilted lit panels (`fx/Lit`) or a tabletop (pitch)
+  in another, a roll or pull-back in a third. The same tilted-card angle three times in 15 s is a template tell.
 - **Keep roll rigid and outside the tilt:** `perspective(P) rotateZ(roll) rotateX(tilt)`. The reverse order shears type
   into a faux italic.
 - **Limits:** roll ≤ 11°, total visible shear ≤ 7° (for example pitch 42° with roll ≤ 12°).
