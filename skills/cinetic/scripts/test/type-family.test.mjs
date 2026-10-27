@@ -5,7 +5,8 @@
  *   1. scripts/type-family.mjs bold writes TYPE_FAMILY, the six roles of TYPE (TYPE_LOOK.bold number for number) and
  *      the FACES weights into a copy of the starter's tokens; the comments keep their use; --check agrees; calm on the
  *      starter's own tokens changes nothing; calm after bold gives the calm numbers back; bad arguments exit 2.
- *   2. Every template declares type_family (calm or bold) in template.json, and new-film.sh reads it (--type wins).
+ *   2. Every template declares type_family (calm or bold) in template.json, and new-film.sh, run on a temp folder,
+ *      writes it into the film's tokens (--type wins; needs bash: on Windows, Git for Windows).
  *
  * Usage (from the skill root):  node scripts/test/type-family.test.mjs [--verbose]
  * Exit codes: 0 all pass, 1 a test failed.
@@ -77,8 +78,31 @@ try {
 const TPL = join(SKILL, 'assets', 'templates');
 const fams = readdirSync(TPL).filter((d) => existsSync(join(TPL, d, 'template.json'))).map((d) => [d, JSON.parse(readFileSync(join(TPL, d, 'template.json'), 'utf8')).type_family]);
 result(fams.length >= 7 && fams.every(([, f]) => f === 'calm' || f === 'bold'), 'every template declares type_family calm or bold', fams.map(([d, f]) => `${d}:${f}`).join(' '));
-const nf = readFileSync(join(SKILL, 'scripts', 'new-film.sh'), 'utf8');
-result(/"type_family"/.test(nf) && /--type\)/.test(nf) && /type-family\.mjs/.test(nf) && /\[\[ -n "\$TYPEFAM" \]\] \|\| TYPEFAM="\$TFAM"/.test(nf), 'new-film.sh reads the template\'s type_family, --type wins, and type-family.mjs writes it');
+// new-film.sh itself, on a temp folder: a bold template's film gets bold type, and --type wins over the template
+const gitBash = 'C:\\Program Files\\Git\\bin\\bash.exe';
+const bash = process.platform === 'win32' ? (existsSync(gitBash) ? gitBash : null) : 'bash';
+if (!bash) console.log('skip  new-film.sh --template (no bash: install Git for Windows)');
+else {
+  const [tpl, fam] = fams.find(([, f]) => f === 'bold') ?? fams[0];
+  const other = fam === 'bold' ? 'calm' : 'bold';
+  const nfTmp = mkdtempSync(join(tmpdir(), 'cinetic-typefam-nf-'));
+  const slash = (p) => p.split('\\').join('/');
+  const film = (name, ...more) => {
+    const dir = join(nfTmp, name);
+    const r = spawnSync(bash, [slash(join(SKILL, 'scripts', 'new-film.sh')), slash(dir), '--template', tpl, '--no-install', ...more], { encoding: 'utf8' });
+    const tok = join(dir, 'src', 'brand', 'tokens.ts');
+    const got = existsSync(tok) ? readFileSync(tok, 'utf8').match(/export const TYPE_FAMILY: TypeFamily = '(\w+)'/)?.[1] : null;
+    return { status: r.status, fam: got ?? null, err: (r.stderr || r.stdout || '').trim().slice(-300) };
+  };
+  try {
+    const own = film('own');
+    result(own.status === 0 && own.fam === fam, `new-film.sh --template ${tpl} writes the template's type_family (${fam}) into the film's tokens`, own.status === 0 ? String(own.fam) : own.err);
+    const forced = film('forced', '--type', other);
+    result(forced.status === 0 && forced.fam === other, `new-film.sh --type ${other} wins over the template's ${fam}`, forced.status === 0 ? String(forced.fam) : forced.err);
+  } finally {
+    rmSync(nfTmp, { recursive: true, force: true });
+  }
+}
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
 console.log('\nall pass');
