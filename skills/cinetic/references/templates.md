@@ -25,7 +25,7 @@ signature replace the template's), then cut it to the track: `track.py grid` mov
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | the product's breadth is the story (sources, formats, integrations), or a launch film needs its close | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
 | `camera-teaser` | 20-25 s | a dark, fast teaser of a product's screens where the motion is the camera's: whips, pushes, one 3D turn over one layout per shot | the request box arriving tilted in the light, a whip into its close-up and the send button, the window streaming code under the one 3D turn, the proof in depth with the real marks of what it works with, the page with a modal toast, the stages, the mark; each act deals one of two or three devices |
-| `prompt-run` | 18-20 s | the product does work from a request (an agent, an assistant, a generator): what goes in is a sentence, what comes out is done work | a pill among the tools it connects, the label swapping on the kick, an iris onto the request box, the request typed, a punch-in and the click, the steps it runs, the running row becoming the result, the lockup |
+| `prompt-run` | 18-20 s | the product does work from a request (an agent, an assistant, a generator): what goes in is a sentence, what comes out is done work | a pill among the real marks of the tools it connects, the label swapping on the kick, the request box out of the pill, the request typed, a punch-in and the send, the steps it runs under one 3D turn, the result, the lockup; each act deals one of two or three devices |
 | `social-ad` | 15 s | a short ad for a feed: the product is pictures (things people save, make, buy, plan) and you have them (the product's own or the user's; the kit's still life stands in until then, never stock), the cut is the energy | the opener built word by word onto a pile of pictures, the mark spinning in on a picture, a wall round the claim, two rivers under a label that swaps its last word, two imperatives, the lockup |
 | `type-explainer` | 20-30 s | the idea is simple to say and the words carry it: an explainer on a white page, quiet in its small, airy type and crisp in its word pace, little or no product UI | the name as a giant word, what it is said at the pace of speech, the problem, the promise with a picture inside it that becomes the shot, one soft wipe, the mark between the words becoming the hub of the product's parts, the close |
 
@@ -83,16 +83,20 @@ Slots: `src/teaser.ts` (with `integrations`, the slugs of the real marks).
 
 ## prompt-run
 
-One object through many states; the product's UI tells the story. Six acts on whole bars at 120 BPM (19 s): `pill`
-(the label written by a front among the tools it connects; on the kick the tools leave along their own vectors,
-`scatterState`, the label swaps, the rim turns; a cubic-in wind-up), `ask` (the reveal iris, `irisReveal`, out of the
-pill onto a field in the accent's hue, the film's one colour event; the request box, kit `Composer`, pushes in while its
-width unfolds on its own track; the line over it written by a front; the request typed fast with a burst, `TypeOn`
-stream `rates` and `skip`), `click` (a punch-in with a blur bridge, `blurBridge`, the close-up breathing back; the
-pointer, `Cursor` shape `pointer`, clicks, the send button swells, `swellState`, the pointer spins out, `cursorExit`; an
-ease-in whip up), `run` (the request as a `Bubble`, a status with `ThinkingDots`, `StepList` rows rising in on an
-accelerating cadence, the last pending), `done` (the running row grows into the result card), `end`. Slots:
-`src/run.ts`.
+One object through many states; the product's UI tells the story. Six acts on whole bars at 120 BPM (19.6 s with a 1.6 s
+tail): `pill` (the label landing inside a pill among app-icon tiles of the tools it really connects, their real marks;
+it drops out before the kick, the second label lands on it, the pill re-fits on a glide and its rim turns; a cubic-in
+wind-up), `ask` (the request box, kit `Composer`, out of the pill; the line over it; the request typed fast with a
+burst, `TypeOn` stream `rates` and `skip`; the send button arming), `click` (a punch-in blurred on both sides on
+continuous ramps, the film's one declared snap; the close-up breathing back; the send swells, `swellState`; an ease-in
+whip up), `run` (under the film's one 3D turn: the request as a `Bubble` with the people it is for, `AvatarStack`, a
+status with `ThinkingDots`, the steps gliding in solid on an accelerating cadence, spinners turning to checks, the last
+still running), `done` (the result), `end` (the lockup, about 1.6 s). Every script line lands on the film's dealt voice
+(`TypeLine`: mask, land or fall); the grounds are clean lit pages. Each act deals one of two or three devices per film
+from a seed (`src/deal.ts`, template.json "deal": e.g. the tools ringing, docking inside the pill or on a far wall; the
+iris onto the accent or the pill stretching into the box; the run in a lit panel, a depth stack or beside the product's
+dense screen; the result as a morph or the claim on the accent), one colour event per film. Slots: `src/run.ts` (with
+`tools`, the slugs of the real marks).
 
 ## social-ad
 

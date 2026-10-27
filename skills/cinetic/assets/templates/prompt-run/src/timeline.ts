@@ -1,9 +1,11 @@
 // The single source of truth for time, for a prompt-to-result demo: one object through many states. A pill holding
-// what the product is among the tools it connects; on the kick the tools fly off and the label swaps; a wind-up opens an
-// iris onto a colour field where the request box pushes in and the request types; a punch-in to the box, the pointer
-// clicks send; a whip up into the run (the request as a bubble, the steps ticking in); the result; the lockup. Picture
-// (src/acts), sound (src/sync.ts -> out/cues.json) and QA (scripts/grid-check.ts) all import this file. The facts live
-// in src/run.ts. Think in beats, never in seconds. Keep it free of React and CSS imports: Node scripts load it directly.
+// what the product is among the real marks of the tools it connects; on the kick the label swaps; into the request box
+// (out of the pill), the request types; a punch-in to the box and the send; a whip up into the run (the request as a
+// bubble, the steps checking in under the film's one 3D turn); the result; the lockup. Each act plays one of two or
+// three devices on the same cues (src/deal.ts DEAL); the declarations below follow the deal. Picture (src/acts), sound
+// (src/sync.ts -> out/cues.json) and QA (scripts/grid-check.ts) all import this file. The facts live in src/run.ts.
+// Think in beats, never in seconds. Keep it free of React and CSS imports: Node scripts load it directly.
+import { DEAL } from './deal';
 import { holdFor, PACE, readingWindows, wordCount, type PaceName } from './lib/pace';
 import { bar, MUSIC } from './music';
 import { RUN } from './run';
@@ -15,6 +17,7 @@ export { PACE } from './lib/pace'; // grid-check checks COPY against the film's 
  * music's bars. A demo is cut to its track: choose it first.
  */
 export { MUSIC } from './music';
+export { DEAL } from './deal';
 
 export const FPS = 60;
 /**
@@ -49,8 +52,8 @@ export const bt = (x: number) => {
   return b(1 + Math.floor(n / 4), n % 4, q % 4);
 };
 
-/** After the last bar the picture holds while the audio decays to digital silence. */
-export const TAIL = FPS;
+/** After the last bar the lockup holds while the track's last hit rings out (1.6 s: the name and the close are read, then out). */
+export const TAIL = Math.round(1.6 * FPS);
 
 /**
  * Where each act starts, in beats (9 bars at 120 BPM: 19 s with the tail). Every act line sits on a bar line, so with a
@@ -73,38 +76,48 @@ export const ACT = Object.fromEntries(
 
 export const TOTAL = bt(BEATS.last) + TAIL;
 
-/** A line inked by a front crossing it (fx/HueSweep frontFill): at least this many 60 fps frames, 8 a word (each word read). */
-export const INK_FRONT = 22;
-export const inkFrames = (text: string) => Math.max(INK_FRONT, 8 * (wordCount(text) - 1) + 4);
-/** The request's typing: a fast wide-shot rate, a burst of characters on one frame, a slower close-up rate (cps). */
-export const TYPING = { wide: 84, burstAt: 0.45, burst: 10, close: 36 } as const;
+/**
+ * How long the film's voice (DEAL.voice, fx/TypePresets house numbers at 60 fps) takes to land a line of n words:
+ * mask, words 8 f apart, each head 8 f, the last 2.5x; land, the whole line in 34 f; fall, words 9 f apart, 12 f each.
+ */
+export const VOICE60: Record<'mask' | 'land' | 'fall' | 'crisp', (n: number) => number> = {
+  mask: (n) => 8 * Math.max(0, n - 1) + 8 * (n > 1 ? 2.5 : 1),
+  land: () => 34,
+  fall: (n) => 9 * Math.max(0, n - 1) + 12,
+  crisp: (n) => 26 + 7 * Math.max(0, n - 1), // the claim's lines (fx/TypeClaim AccentClaim: the crisp entry)
+};
+/** The 60 fps frames a line takes to land on the film's voice. */
+export const voiceFrames = (text: string) => VOICE60[DEAL.voice](wordCount(text));
+/** The request's typing: a fast wide-shot rate and a slower rate toward its end (cps). */
+export const TYPING = { wide: 84, close: 36 } as const;
 
 // Named sync points (absolute frames), all on the 16th grid. Picture code reads these; src/sync.ts turns them into
 // sound events. Salience below says what each asks of the eye.
 export const CUE: Record<string, number> = {
-  // pill: the label among the tools; on the kick the tools fly off along their own vectors, the label swaps and inks,
-  // the rim starts to turn; a wind-up widens the pill into the iris
+  // pill: the label among the tools; on the kick the tools leave (fly off, dock in the pill, or the wall falls back) and
+  // the label swaps, the rim starts to turn; a wind-up before the act line
   pill: bt(0),
-  what: bt(0.25),
-  kick: bt(4),
+  tools: bt(0.5), // the tools' tiles have tumbled in round the pill (or onto the far wall)
+  what: bt(0), // the label lands from the first frame: each label is read whole before the next (5 words: 52 f to land, 66 f to read)
+  kick: bt(4.5),
   windup: bt(7.5),
-  // ask: the iris opens big onto a colour field; the request box pushes in while its width unfolds; the line over it
-  // inks; the request types fast with a burst; the field fades to the stage; a hard punch-in on the act line
+  // ask: the box arrives (out of the iris's accent field, or the pill stretching into it); the line over it lands; the
+  // request types fast; the field gives way to the page; the send button arms; a hard punch-in on the act line
   iris: bt(8),
   tell: bt(9),
   type: bt(9.5),
   fieldOut: bt(10),
-  burst: bt(11.5),
   creep: bt(13),
+  arm: bt(13.5), // the request is in: the send button arms (from the well's grey to the accent on a glide)
   settle: bt(14.5),
-  // click: the close-up breathes back; the typing slows; the pointer glides in, clicks, the send button swells; the
-  // pointer spins out; an ease-in whip up into the cut
+  // click: the close-up breathes back; the typing slows; the pointer glides in and clicks (or a tap lands), the send
+  // button swells; an ease-in whip up into the cut
   close: bt(16),
   cursor: bt(16.75),
   press: bt(18),
   away: bt(18.5),
   whip: bt(19.5),
-  // run: the request rises as a bubble, the status line, the steps ticking in, the last one still running
+  // run: the request rises as a bubble, the status line, the steps checking in under the turn, the last still running
   bubble: bt(20),
   status: bt(20.75),
   step1: bt(21.5),
@@ -113,14 +126,14 @@ export const CUE: Record<string, number> = {
   step4: bt(24.5),
   checked: bt(26),
   pending: bt(27),
-  // done: the run steps back and the result card rises; the line over it
+  // done: the running row grows into the result card (or the accent floods and the line is the claim); the line
   done: bt(28),
-  doneLine: bt(28.5),
+  doneLine: bt(28.25),
   // end: the lockup, the close
   end: bt(32),
-  name: bt(32.25),
-  closeLine: bt(34.25),
-  lockup: bt(34.5),
+  name: bt(32.5),
+  closeLine: bt(34.75), // the name is read first at any tempo (14 f to resolve + its hold), then the close
+  lockup: bt(34.75),
   last: bt(36),
 };
 
@@ -151,21 +164,22 @@ export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 
 /** A crisp film: the whip and the punch-in smear through fx/Defocus (DirBlur, blurBridge), no shutter pass. */
 export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'launch', oneTake: false, whiteWorld: false };
-/** One object through many states: the pill becomes the iris, the box is punched into, a whip up into the run, the run becomes the result. */
+/** One object through many states: the pill becomes the box, the box is punched into, a whip up into the run, the run becomes the result. */
 export const SEAMS: Seam[] = [
-  { at: CUE.kick, kind: 'stepped', id: 'label-swaps-on-the-kick' },
-  { at: ACT.ask.from, kind: 'mask', carry: 'scale', signature: true, id: 'pill-opens-the-iris' },
+  DEAL.ask === 'iris' ? { at: ACT.ask.from, kind: 'mask', carry: 'scale', signature: true, id: 'pill-opens-the-iris' } : { at: ACT.ask.from, kind: 'morph', carry: 'shape', signature: true, id: 'pill-stretches-into-the-box' },
   { at: ACT.click.from, kind: 'snapZoom', carry: 'scale', id: 'punch-in-with-a-blur-bridge' },
   { at: ACT.run.from, kind: 'whip', carry: 'y', dir: -1, id: 'whip-up-into-the-run' },
-  { at: ACT.done.from, kind: 'morph', carry: 'shape', id: 'run-becomes-the-result' },
-  { at: ACT.end.from, kind: 'defocus', id: 'result-to-lockup' },
+  DEAL.done === 'claim' ? { at: ACT.done.from, kind: 'wipe', carry: 'y', dir: -1, id: 'the-accent-rises-over-the-run' } : { at: ACT.done.from, kind: 'morph', carry: 'shape', id: 'run-becomes-the-result' },
+  DEAL.done === 'claim' ? { at: ACT.end.from, kind: 'wipe', carry: 'y', dir: -1, id: 'the-accent-leaves-up' } : { at: ACT.end.from, kind: 'defocus', id: 'result-to-lockup' },
 ];
-/** The designed steps: the label swapping on the kick. */
-export const STEPPED: SteppedRange[] = [{ from: CUE.kick, to: CUE.kick + 1, id: 'label-swap' }];
+/** The designed cuts, for forensics.py --cuts: the punch-in (the declared snap zoom), the whip's blur peak and the wipes. */
+export const CUTS: number[] = SEAMS.filter((x) => x.kind === 'snapZoom' || x.kind === 'whip' || x.kind === 'hard' || x.kind === 'wipe').map((x) => x.at);
+/** No designed steps: the label swaps on its own exit and entry, the steps check in on glides. */
+export const STEPPED: SteppedRange[] = [];
 export const FLASHES: Flash[] = [];
 export const CAMERA_BLUR: CameraBlurRange[] = [];
-/** The one colour event: the field behind the iris, in the accent's hue, under a second. */
-export const COLOUR: ColourRange[] = [{ from: CUE.iris, to: CUE.fieldOut + f60(18), id: 'field-behind-the-iris' }];
+/** The one colour event: the accent field behind the iris (under a second), or the claim's flood over the result act. */
+export const COLOUR: ColourRange[] = DEAL.ask === 'iris' ? [{ from: CUE.iris, to: CUE.fieldOut + f60(18), id: 'field-behind-the-iris' }] : DEAL.done === 'claim' ? [{ from: ACT.done.from, to: ACT.end.from, id: 'the-result-on-the-accent' }] : [];
 /** The one lock: the mark, the name and the close hold to the end. */
 export const END: EndLock = { from: CUE.lockup, to: TOTAL };
 /** The biggest reveal: the lockup. */
@@ -176,8 +190,8 @@ export const SPRING_CLASS = '';
 export const STRUCTURAL: string[] = [];
 /** Each CUE's salience (missing = 'hit'). */
 export const SALIENCE: Record<string, Salience> = {
-  pill: 'cut', what: 'copy', kick: 'hit', windup: 'move',
-  iris: 'cut', tell: 'copy', type: 'life', fieldOut: 'move', burst: 'hit', creep: 'life', settle: 'life',
+  pill: 'cut', what: 'copy', tools: 'move', kick: 'hit', windup: 'move',
+  iris: 'cut', tell: 'copy', type: 'life', fieldOut: 'move', creep: 'life', arm: 'move', settle: 'life',
   close: 'cut', cursor: 'move', press: 'hit', away: 'move', whip: 'move',
   bubble: 'cut', status: 'life', step1: 'hit', step2: 'hit', step3: 'hit', step4: 'hit', checked: 'hit', pending: 'life',
   done: 'cut', doneLine: 'copy',
@@ -199,22 +213,22 @@ export type Copy = {
 
 const pace = PACE[PACE_NAME];
 
-/** A line inked by a front: resolved when the front has crossed it. */
-const inked = (id: string, text: string, inF: number, out: number, o: Partial<Copy> = {}): Copy => ({ id, text, in: inF, resolved: inF + f60(inkFrames(text)), out, ...o });
+/** A script line on the film's voice: resolved when its last word has landed. */
+const voiced = (id: string, text: string, inF: number, out: number, o: Partial<Copy> = {}): Copy => ({ id, text, in: inF, resolved: inF + f60(voiceFrames(text)), out, ...o });
 
 // Every on-screen word of the film. The request, the model, the status, the steps and the result are the product's
-// own strings (UI).
+// own strings (UI). The pill's first label drops out of the pill before the kick, so the second lands alone on it.
 export const COPY: Copy[] = [
-  inked('what', RUN.lines.what, CUE.what, CUE.kick),
-  inked('ask', RUN.lines.ask, CUE.kick, ACT.ask.from, { swap: 'what' }),
-  inked('tell', RUN.lines.tell, CUE.tell, ACT.click.from),
+  voiced('what', RUN.lines.what, CUE.what, CUE.kick - f60(20)),
+  voiced('ask', RUN.lines.ask, CUE.kick, ACT.ask.from),
+  voiced('tell', RUN.lines.tell, CUE.tell, ACT.click.from),
   { id: 'request', text: RUN.request, kind: 'ui', in: CUE.type, resolved: CUE.press, out: ACT.done.from },
   { id: 'status', text: RUN.status, kind: 'ui', in: CUE.status, resolved: CUE.status + f60(10), out: ACT.done.from },
-  ...RUN.steps.map((s, i): Copy => ({ id: `step${i + 1}`, text: `${s.verb} ${s.detail}`, kind: 'ui', in: STEPS[i], resolved: STEPS[i] + f60(20), out: ACT.done.from })),
+  ...RUN.steps.map((x, i): Copy => ({ id: `step${i + 1}`, text: `${x.verb} ${x.detail}`, kind: 'ui', in: STEPS[i], resolved: STEPS[i] + f60(20), out: ACT.done.from })),
   { id: 'result', text: `${RUN.result.title} ${RUN.result.body}`, kind: 'ui', in: CUE.done, resolved: CUE.done + f60(16), out: ACT.end.from },
-  inked('done', RUN.lines.done, CUE.doneLine, ACT.end.from),
+  DEAL.done === 'claim' ? { id: 'done', text: RUN.lines.done, in: CUE.doneLine, resolved: CUE.doneLine + f60(VOICE60.crisp(wordCount(RUN.lines.done))), out: ACT.end.from } : voiced('done', RUN.lines.done, CUE.doneLine, ACT.end.from),
   { id: 'wordmark', text: RUN.name, kind: 'name', in: CUE.name, resolved: CUE.name + f60(14), out: TOTAL },
-  { id: 'close', text: RUN.lines.close, in: CUE.closeLine, resolved: CUE.closeLine + f60(12), out: TOTAL, reveal: 'focus' },
+  voiced('close', RUN.lines.close, CUE.closeLine, TOTAL),
 ];
 
 // A cue placed in beats never shortens a read: at a faster track the beats shrink, so a line leaves on its read instead
