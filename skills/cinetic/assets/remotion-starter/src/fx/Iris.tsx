@@ -16,6 +16,15 @@ export const farCorner = (x: number, y: number, w: number, h: number) => Math.hy
  */
 export const IRIS = { ratio: 1.28, r0: 22, margin: 2, scallop: { lobes: 9, depth: 0.08, turn: 0.35 } } as const;
 
+/**
+ * The speed an iris carries, house numbers (60 fps): an iris opened inside a moving line is a carried seam. The
+ * line around it accelerates out (lib/handoff launch()) into the frame the circle covers the frame on; the line
+ * inside opens moving the same way at 1.15 x that speed and decays in one stage, x0.806 a 60 fps frame (x0.65 at
+ * 30 fps), to its residual drift. Feed it to carriedCut(f, cover, { vCut }, { ratio: IRIS_CARRY.ratio, decay:
+ * IRIS_CARRY.decay60, fast: { share: 0, decay: 0.4 } }) on the one coordinate both lines ride.
+ */
+export const IRIS_CARRY = { ratio: 1.15, decay60: 0.806 } as const;
+
 /** A rate-mode iris: equal radius ratios per frame (or ratios spread by `shape`) from `r0` to `to`. */
 export type IrisRateOpts = {
   start: number; // the first frame the circle shows (radius r0 on it)
