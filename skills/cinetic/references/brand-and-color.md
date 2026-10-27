@@ -42,7 +42,8 @@ mark, the model's own spark, never a generic envelope or a star standing in. It 
   customer it does not have; never a mark in a slot that would read as "used by".
 - **Fetched, never redrawn.** `node scripts/logos.mjs search <name>`, then `get <name> --film .`: the official colour
   files from open collections whose terms allow use (the mark, its dark-ground version, the wordmark, one-colour
-  files), cleaned and trimmed to the art. Colours and proportions stay as published: no recolouring into the palette,
+  files), cleaned and trimmed to the art. The brand's official full-colour mark or app tile is taken before another
+  collection's one-colour glyph or older drawing (`--source <collection>` forces one). Colours and proportions stay as published: no recolouring into the palette,
   no squeeze, no outline or effect on the mark itself. The tile, the chip and the shadow round it are the film's.
 - **Clear space kept.** The kit sets a mark at its optical size with room round it (`AppIcon` 54 % of the tile,
   `LogoChip` half the pill's height, `InlineLogo` 1.0 cap height); a brand's own guidelines (minimum size, clear space,

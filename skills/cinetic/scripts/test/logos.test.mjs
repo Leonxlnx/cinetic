@@ -13,7 +13,9 @@
  *      share-alike refused); trademark owners by domain.
  *   5. The whole get on hand-written collections (logos-fixtures/: made-up brands, no real mark): files per variant,
  *      the record (source, licence, owner, trademark line), the kit's index (no colours), list and check; a black
- *      mark gets a dark-ground version; a mark that is its own tile; a refused licence; an unknown owner.
+ *      mark gets a dark-ground version; a mark that is its own tile; a refused licence; an unknown owner; the brand's
+ *      full-colour app tile wins over another collection's black glyph (--source still forces the glyph), and a brand
+ *      whose own colour is black keeps the collections' order.
  *   6. Stops: a 403, repeated 429s and a challenge page end the run with what to do (never worked around).
  *   7. The CLI contract: --help, usage errors, exit codes; the starter's src/logos.ts is the empty index.
  * No test touches the network: fetch is replaced by a map of collection URLs to fixture files that fails the run
@@ -54,8 +56,12 @@ const ROUTES = {
   'https://cdn.jsdelivr.net/npm/simple-icons@16/icons/tidepool.svg': 'si-tidepool.svg',
   'https://cdn.jsdelivr.net/npm/simple-icons@16/icons/squarecap.svg': 'si-squarecap.svg',
   'https://cdn.jsdelivr.net/npm/simple-icons@16/icons/sharecrop.svg': 'si-sharecrop.svg',
+  'https://svgl.app/library/glowbox.svg': 'svgl-glowbox.svg',
+  'https://svgl.app/library/slatework.svg': 'svgl-slatework.svg',
+  'https://cdn.jsdelivr.net/npm/simple-icons@16/icons/glowbox.svg': 'si-glowbox.svg',
+  'https://cdn.jsdelivr.net/npm/simple-icons@16/icons/slatework.svg': 'si-slatework.svg',
 };
-for (const f of ['tidepool-icon.svg', 'tidepool.svg', 'tidepool-monochrome-icon.svg', 'inkwell.svg', 'squarecap-icon.svg', 'tidepool-studio.svg']) ROUTES[`https://raw.githubusercontent.com/gilbarbara/logos/main/logos/${f}`] = f;
+for (const f of ['tidepool-icon.svg', 'tidepool.svg', 'tidepool-monochrome-icon.svg', 'inkwell.svg', 'squarecap-icon.svg', 'tidepool-studio.svg', 'glowbox-icon.svg', 'slatework-icon.svg']) ROUTES[`https://raw.githubusercontent.com/gilbarbara/logos/main/logos/${f}`] = f;
 let stray = [];
 let override = null;
 const requested = [];
@@ -151,6 +157,8 @@ try {
     result(!L.licenceOk('CC-BY-4.0').ok && L.licenceOk('CC-BY-4.0', { allowCredit: true }).ok && !L.licenceOk('CC-BY-SA-4.0', { allowCredit: true }).ok && !L.licenceOk(undefined).ok,
       'licence: CC BY only with --allow-credit; share-alike and unknown refused');
     result(L.ownerOf('https://mail.google.com/x') === 'Google LLC' && L.ownerOf('https://www.claude.ai') === 'Anthropic PBC' && L.ownerOf('https://tidepool.example/') === null, 'owners: the host, then its parent domains; unknown is null');
+    result(L.ownerOf('https://www.instagram.com/') === 'Meta Platforms, Inc.' && L.ownerOf('https://www.threads.net/') === 'Meta Platforms, Inc.' && L.ownerOf('https://www.tiktok.com/') === 'ByteDance Ltd.'
+      && L.ownerOf('https://trello.com/b/x') === 'Atlassian' && L.ownerOf('https://huggingface.co/') === 'Hugging Face, Inc.', 'owners: the common brands a film shows (social, work tools, models)');
   }
 
   // 5. the whole get, offline
@@ -194,6 +202,15 @@ try {
     const ref = await cli(['get', 'svgl:7', '--film', film, '--as', 'tidepool-svgl', '--owner', 'Tidepool Inc.']);
     const re = JSON.parse(fs.readFileSync(path.join(film, 'public', 'logos', 'logos.json'), 'utf8')).logos['tidepool-svgl'];
     result(ref.code === 0 && re.files.mark.from === 'svgl' && re.files.markDark?.from === 'svgl' && re.files.wordmark?.from === 'svgl', 'get svgl:7 --as: that collection\'s mark, its own dark version and wordmark', JSON.stringify(re?.files && Object.fromEntries(Object.entries(re.files).map(([k, v]) => [k, v.from]))));
+    const rec2 = () => JSON.parse(fs.readFileSync(path.join(film, 'public', 'logos', 'logos.json'), 'utf8')).logos;
+    const gb = await cli(['get', 'glowbox', '--film', film, '--owner', 'Glowbox Inc.']);
+    const ge = rec2().glowbox;
+    result(gb.code === 0 && ge.files.mark.from === 'svgl' && ge.tone === 'colour' && ge.tile === 'own' && ge.files.mono?.from === 'simple-icons',
+      "get glowbox: the brand's full-colour app tile wins over another collection's black glyph", JSON.stringify({ mark: ge?.files?.mark?.from, tone: ge?.tone, tile: ge?.tile }));
+    const gg = await cli(['get', 'glowbox', '--film', film, '--source', 'gilbarbara', '--as', 'glowbox-glyph', '--owner', 'Glowbox Inc.']);
+    result(gg.code === 0 && rec2()['glowbox-glyph'].files.mark.from === 'gilbarbara' && rec2()['glowbox-glyph'].tone === 'dark', "get glowbox --source gilbarbara: the forced collection's file, glyph and all");
+    const sw = await cli(['get', 'slatework', '--film', film, '--owner', 'Slatework Ltd.']);
+    result(sw.code === 0 && rec2().slatework.files.mark.from === 'gilbarbara' && rec2().slatework.tone === 'dark', "get slatework: a brand whose own colour is black keeps the collections' order (no colour variant preferred)", rec2().slatework?.files?.mark?.from);
     const list = await cli(['list', '--film', film]);
     result(list.code === 0 && /tidepool\s+Tidepool\s+Tidepool Inc\./.test(list.out) && /inkwell: no trademark owner/.test(list.out), 'list: every mark with its owner and licences; the unknown owner noted', list.out.split('\n')[0]);
     const chk = await cli(['check', '--film', film]);

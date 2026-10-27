@@ -29,7 +29,9 @@
  * endorsement or partnership; the record names the owner; nothing is credited on screen.
  *
  * Variants (files in <film>/public/logos/, the brand's colours unaltered):
- *   <slug>.svg                 the full-colour mark (for light grounds)
+ *   <slug>.svg                 the full-colour mark (for light grounds): the brand's official mark or app tile in
+ *                              colour wins over a one-colour glyph or an older drawing in another collection, unless
+ *                              the brand's own colour is black or white; --source forces one collection's file
  *   <slug>.dark.svg            the mark for dark grounds: the collection's own dark version, else the mark with
  *                              its neutrals reversed (black parts white, white parts ink; colours untouched)
  *   <slug>.wordmark[.dark].svg the wordmark or horizontal lockup, when a collection has one
@@ -113,6 +115,22 @@ export const OWNERS = {
   'discord.com': 'Discord Inc.', 'adobe.com': 'Adobe Inc.', 'atlassian.com': 'Atlassian', 'shopify.com': 'Shopify Inc.', 'x.com': 'X Corp.',
   'linear.app': 'Linear Orbit, Inc.', 'vercel.com': 'Vercel Inc.', 'hubspot.com': 'HubSpot, Inc.', 'mistral.ai': 'Mistral AI', 'nvidia.com': 'NVIDIA Corporation',
   'paypal.com': 'PayPal, Inc.', 'reddit.com': 'Reddit, Inc.', 'zoom.us': 'Zoom Communications, Inc.', 'dribbble.com': 'Dribbble Holdings Ltd.',
+  'threads.net': 'Meta Platforms, Inc.', 'threads.com': 'Meta Platforms, Inc.', 'messenger.com': 'Meta Platforms, Inc.', 'oculus.com': 'Meta Platforms, Inc.',
+  'icloud.com': 'Apple Inc.', 'outlook.com': 'Microsoft Corporation', 'live.com': 'Microsoft Corporation', 'skype.com': 'Microsoft Corporation',
+  'xbox.com': 'Microsoft Corporation', 'visualstudio.com': 'Microsoft Corporation', 'microsoft365.com': 'Microsoft Corporation',
+  'tiktok.com': 'ByteDance Ltd.', 'snapchat.com': 'Snap Inc.', 'snap.com': 'Snap Inc.', 'twitch.tv': 'Twitch Interactive, Inc.',
+  'netflix.com': 'Netflix, Inc.', 'uber.com': 'Uber Technologies, Inc.', 'airbnb.com': 'Airbnb, Inc.', 'ebay.com': 'eBay Inc.', 'etsy.com': 'Etsy, Inc.',
+  'booking.com': 'Booking.com B.V.', 'duolingo.com': 'Duolingo, Inc.', 'medium.com': 'A Medium Corporation', 'substack.com': 'Substack Inc.',
+  'gitlab.com': 'GitLab Inc.', 'atlassian.net': 'Atlassian', 'trello.com': 'Atlassian', 'bitbucket.org': 'Atlassian', 'asana.com': 'Asana, Inc.',
+  'monday.com': 'monday.com Ltd.', 'canva.com': 'Canva Pty Ltd', 'zapier.com': 'Zapier, Inc.', 'webflow.com': 'Webflow, Inc.', 'framer.com': 'Framer B.V.',
+  'sketch.com': 'Sketch B.V.', 'evernote.com': 'Evernote Corporation', 'box.com': 'Box, Inc.', 'grammarly.com': 'Grammarly, Inc.',
+  'zendesk.com': 'Zendesk, Inc.', 'twilio.com': 'Twilio Inc.', 'okta.com': 'Okta, Inc.', 'datadoghq.com': 'Datadog, Inc.', 'cloudflare.com': 'Cloudflare, Inc.',
+  'netlify.com': 'Netlify, Inc.', 'heroku.com': 'Salesforce, Inc.', 'docker.com': 'Docker, Inc.', 'mongodb.com': 'MongoDB, Inc.', 'supabase.com': 'Supabase, Inc.',
+  'elastic.co': 'Elasticsearch B.V.', 'redis.io': 'Redis Ltd.', 'jetbrains.com': 'JetBrains s.r.o.', 'mozilla.org': 'Mozilla Foundation', 'firefox.com': 'Mozilla Foundation',
+  'brave.com': 'Brave Software, Inc.', 'intuit.com': 'Intuit Inc.', 'squareup.com': 'Block, Inc.', 'cash.app': 'Block, Inc.', 'mastercard.com': 'Mastercard International Incorporated',
+  'huggingface.co': 'Hugging Face, Inc.', 'perplexity.ai': 'Perplexity AI, Inc.', 'cursor.com': 'Anysphere, Inc.', 'ibm.com': 'International Business Machines Corporation',
+  'intel.com': 'Intel Corporation', 'amd.com': 'Advanced Micro Devices, Inc.', 'samsung.com': 'Samsung Electronics Co., Ltd.', 'sony.com': 'Sony Group Corporation',
+  'tesla.com': 'Tesla, Inc.',
 };
 /** The home host of a URL without www. ('' when it is not a URL). */
 export const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, '').toLowerCase(); } catch { return ''; } };
@@ -724,13 +742,29 @@ export async function getBrand(group, film, o = {}) {
   const slug = o.as ? slugOf(o.as) : slugOf(group.name);
   const dir = path.join(film, 'public', 'logos');
   const got = {};
+  const loaded = new Map();
   const load = async (c) => {
+    if (loaded.has(c.url)) return loaded.get(c.url) && { ...c, ...loaded.get(c.url) };
+    let p = null;
     try {
       const raw = await svgAt(c.url, { refresh: o.refresh });
-      if (!raw) { notes.push(`${c.collection}: ${c.url} is gone`); return null; }
-      return { ...c, ...prepare(raw, { tile: o.tile }) };
-    } catch (e) { if (e instanceof Blocked) throw e; notes.push(`${c.collection}: ${c.url}: ${e.message}`); return null; }
+      if (!raw) notes.push(`${c.collection}: ${c.url} is gone`);
+      else p = prepare(raw, { tile: o.tile });
+    } catch (e) { if (e instanceof Blocked) throw e; notes.push(`${c.collection}: ${c.url}: ${e.message}`); }
+    loaded.set(c.url, p);
+    return p && { ...c, ...p };
   };
+  // The mark first: the brand's official full-colour mark or app tile wins over a one-colour glyph or an older
+  // drawing (one collection draws a brand as a black glyph, another as its colour app tile). When the brand's own
+  // colour (Simple Icons' hex) is a colour, or not known, the first candidate in colour is the mark; a brand whose
+  // colour is black or white keeps the collections' order. --source keeps that collection's file.
+  const siHex = by(group, 'simple-icons')?.hex;
+  if (!o.source && (!rgbOf(siHex) || lc(rgbOf(siHex)).C >= 0.04)) {
+    for (const c of cands.filter((x) => x.role === 'mark' || (x.role === 'base' && !x.wordOnly))) {
+      const p = await load(c);
+      if (p && p.aspect <= 1.6 && toneOf(p.svg) === 'colour') { got.mark = p; break; }
+    }
+  }
   // The full-colour mark (always) and the wordmark (when asked): named roles first, then base files by their
   // proportions (wider than 1.6:1 is a wordmark). A dark version pairs only with a light one of its own collection.
   const wanted = (r) => (r.startsWith('word') ? variants.has('wordmark') : true);
