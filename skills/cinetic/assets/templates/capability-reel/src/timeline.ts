@@ -74,7 +74,7 @@ export const ACT = Object.fromEntries(
 
 export const TOTAL = bt(BEATS.last) + TAIL;
 
-/** The ticker's steps: one row every 10 f at 60 fps (hard), from its first step. */
+/** The ticker's steps: one row every 10 f at 60 fps (hard), from its first step; closer when they would not fit the act (TICKS). */
 export const TICK_GAP = 10;
 
 /** The end card's title: its first word pops, the rest types over this many 60 fps frames from TITLE_LEAD after it. */
@@ -154,8 +154,18 @@ export const CUE: Record<string, number> = {
   last: bt(40),
 };
 
-/** The ticker's step frames (whole frames): one fewer than the capabilities, TICK_GAP apart from tick0. */
-export const TICKS = Array.from({ length: REEL.capabilities.length - 1 }, (_, k) => CUE.tick0 + f60(TICK_GAP * k));
+/**
+ * The ticker's step frames (whole frames): one fewer than the capabilities, TICK_GAP apart from tick0, or closer
+ * (whole 60 fps frames, never under 6) so the last step lands 2 f before the claim: the act shrinks with the tempo.
+ */
+const TICK_EVERY = (() => {
+  const gaps = REEL.capabilities.length - 2;
+  const room = ((ACT.claim.from - CUE.tick0) * 60) / FPS - 2;
+  const g = gaps > 0 ? Math.min(TICK_GAP, Math.floor(room / gaps)) : TICK_GAP;
+  if (g < 6) throw new Error(`timeline: ${REEL.capabilities.length} capabilities need a step every ${g} f at 60 fps to fit the ticker act; cut the list or choose a slower track`);
+  return g;
+})();
+export const TICKS = Array.from({ length: REEL.capabilities.length - 1 }, (_, k) => CUE.tick0 + f60(TICK_EVERY * k));
 /** The record grid's hops (the accent cells change place on the kicks). */
 export const HOPS = [CUE.hop1, CUE.hop2, CUE.hop3, CUE.hop4];
 
@@ -266,12 +276,21 @@ export const chain = (id: string, mode: 'build' | 'replace', fragments: [text: s
   return base.map((c, i) => ({ ...c, out: base[i + 1] ? base[i + 1].in - leave : (o.out ?? c.resolved + f60(holdFor(wordCount(c.text), pace))) }));
 };
 
+/**
+ * The claim's words pop 9 f then 7 f apart (60 fps frames: quickening, and never under the house 8 f a word over a
+ * fragment of 3-5 words), each in over CLAIM_POP f. acts/Claim.tsx draws them on claimStarts().
+ */
+export const CLAIM_POP = 2;
+export const CLAIM_GAPS = { first: 9, then: 7 } as const;
+export const claimStarts = (text: string, inF: number) => text.trim().split(/\s+/).map((_, i) => inF + Math.floor(f60x(i ? CLAIM_GAPS.first + CLAIM_GAPS.then * (i - 1) : 0)));
+/** A claim fragment is read once its last word is in, on the act's own cadence (not the pace's stagger). */
+const claimRead = (c: Copy): Copy => ({ ...c, resolved: Math.ceil(Math.max(...claimStarts(c.text, c.in)) + f60x(CLAIM_POP)) });
 
 // Every on-screen word of the film. The product's own strings (reel.ts sources, record, capabilities) are UI.
 export const COPY: Copy[] = [
   line('sources', REEL.lines.sources, CUE.line, CUE.exitLine),
   line('statement', REEL.lines.statement, CUE.statement, CUE.exitStatement, { ink: 'pop' }),
-  ...chain('claim', 'build', [[REEL.lines.claim[0], CUE.claim], [REEL.lines.claim[1], CUE.frag2]], { ink: 'pop', out: CUE.zoomIn }),
+  ...chain('claim', 'build', [[REEL.lines.claim[0], CUE.claim], [REEL.lines.claim[1], CUE.frag2]], { ink: 'pop', out: CUE.zoomIn }).map(claimRead),
   { id: 'title', text: REEL.lines.title, in: CUE.title, resolved: CUE.title + f60(TITLE_LEAD + TITLE_TYPE), out: CUE.tagline },
   { id: 'tagline', text: REEL.lines.tagline, in: CUE.tagline, resolved: CUE.tagline + f60(14), out: TOTAL, reveal: 'focus', swap: 'title' },
 ];

@@ -10,7 +10,7 @@ import { ACT, CUE, f60x, FPS, H, TICKS, W } from '../timeline';
 import { REEL } from '../reel';
 import { LIGHT, lineSize, useAbs } from './stage';
 
-// TICKER - what the product returns, as a wheel: an icon tile and a word list that steps one row every 10 f, hard
+// TICKER - what the product returns, as a wheel: an icon tile and a word list that steps a row every 10 f (or closer: TICKS), hard
 // and unblurred (fx/Reels MaskList), the neighbours kept faint by a fixed mask, the icon swapping on the same frame.
 // The act opens still zooming out from the statement; its exit launches left, its last frame the fastest, and the
 // claim opens on that speed.

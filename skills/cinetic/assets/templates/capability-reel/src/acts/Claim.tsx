@@ -5,7 +5,7 @@ import { Words } from '../fx/Words';
 import { clamp, E, lmix, mix, prog } from '../lib/anim';
 import { carry } from '../lib/handoff';
 import { measureTracked } from '../lib/measure';
-import { ACT, chainOf, CUE, f60, f60x, FPS, H, W } from '../timeline';
+import { ACT, chainOf, CLAIM_POP, claimStarts, CUE, f60, f60x, FPS, H, W } from '../timeline';
 import { TICKER_EXIT } from './Ticker';
 import { LIGHT, lineSize, useAbs } from './stage';
 
@@ -42,17 +42,17 @@ export const Claim: React.FC = () => {
   const k = lmix(1, STOP_HANDOFF / side, z);
   const sc = { x: stop.x + side / 2, y: stop.y + side / 2 };
   const shift = { x: (W / 2 - sc.x) * z, y: (H / 2 - sc.y) * z };
-  // the words pop at full strength, 7.5 f then 5 f apart
-  const starts = (c: typeof a) => c.text.trim().split(/\s+/).map((_, i) => c.in + Math.floor(f60x(i ? 7.5 + 5 * (i - 1) : 0)));
+  // the words pop at full strength, 9 f then 7 f apart (the timeline resolves each fragment on the same frames)
+  const starts = (c: typeof a) => claimStarts(c.text, c.in);
   return (
     <AbsoluteFill style={{ background: C.accent, overflow: 'hidden' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${sc.x.toFixed(2)}px ${sc.y.toFixed(2)}px`, transform: `translate3d(${(shift.x + inX).toFixed(2)}px, ${shift.y.toFixed(2)}px, 0) scale(${k.toFixed(5)})` }}>
         <div style={{ position: 'absolute', left: x0, top: y1, clipPath: `inset(0 ${(erase * 100).toFixed(2)}% 0 0)`, opacity: mix(1, 0.29, push), transform: `translate3d(0, ${(-push * 0.5 * size).toFixed(2)}px, 0)` }}>
-          <Words id="claim.1" text={a.text} frame={F} start={a.in} starts={starts(a)} size={size} dur={f60x(2)} style={{ ...typeStyle('hero', size), color: ink }} />
+          <Words id="claim.1" text={a.text} frame={F} start={a.in} starts={starts(a)} size={size} dur={f60x(CLAIM_POP)} style={{ ...typeStyle('hero', size), color: ink }} />
         </div>
         {F >= b2.in - 1 && (
           <div style={{ position: 'absolute', left: x0, top: y2, clipPath: `inset(0 ${(erase * 100).toFixed(2)}% 0 0)`, transform: `translate3d(${((1 - rise) * 68 * U).toFixed(2)}px, ${((1 - rise) * 54 * U).toFixed(2)}px, 0)` }}>
-            <Words id="claim.2" text={second} frame={F} start={b2.in} starts={starts(b2)} size={size} dur={f60x(2)} style={{ ...typeStyle('hero', size), color: ink }} />
+            <Words id="claim.2" text={second} frame={F} start={b2.in} starts={starts(b2)} size={size} dur={f60x(CLAIM_POP)} style={{ ...typeStyle('hero', size), color: ink }} />
           </div>
         )}
         {hasStop && F >= CUE.stop && (
