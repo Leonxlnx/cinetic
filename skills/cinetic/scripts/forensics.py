@@ -77,6 +77,23 @@ over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), 
                fade to black before the last 2 s, unless a seam declares it (dissolveUi,
                light, fadeEnd)                                                              fail
   end-card     with END declared: the 1.5 s before the lock barely move, or it fades in   warn
+Motion gates (with the grammar): no event starts or ends in one frame and no hold freezes. Mean luma change
+at 160x90, one sample per 1/30 s (landings also at the film's own rate), outside the end lock:
+  motion-snap  one-sample changes (>= 2 code values, both neighbours under 35 % of it) that are not cuts:
+               more than 0.6 per 3 s outside a declared snap (stepped ranges, flashes, snapZoom seams), or
+               more than 1 declared snap device (declarations named alike, 'tick-0' ... 'tick-9', are one) fail
+  motion-frozen  6 f@30 or more in a row where the mean change is under 0.05 and fewer than 8 px change by
+               4 values or more (a 0.3 px/f drift keeps even a sparse frame alive), after the first 0.5 s
+               and outside declared freezes; without declarations 1 s of still in all is allowed       fail
+  motion-decay the median move falls from its peak to 20 % of its speed in under 3.5 f@30 (3+ moves)   fail
+  motion-density more than 2 primary moves (peaks >= 25 % of the film's 90th-percentile move) per 3 s  fail
+  motion-stop  a move goes still in one frame from above 15 % of its peak speed (cut off mid-ease)    fail
+  motion-cut   a visible cut while a braking move is still above 10 % of its peak speed               warn
+               (fail over 0.25 per 3 s), unless a whip, velocity or zoomThrough seam or a camera-blur
+               range carries it into the cut
+  What machine-made motion looks like here: many short events that start and stop in one frame, dead holds
+  between them, and moves cut while still fast. The fixes: fx/GlideStep and lib/continuity (glideValue,
+  holdDrift, landBeforeCut); references/motion-tokens.md "Continuous motion".
 --no-grammar skips them.
   determinism  (--against) frames whose change between two renders > max(0.3, 5*median) fail
 
@@ -911,8 +928,12 @@ def analyse(args, info):
     dis_n = max(2, int(round(4 * fps / 60)))  # a dissolve shows as a blend over >= 4 f@60
     disq = deque(maxlen=dis_n + 2)
     M['dissolve'] = []
+    mc = None if getattr(args, 'no_grammar', False) else MotionCurves(fps)  # the motion gates' luma curves
+    M['motion'] = mc
     for f, rgb in decode(args.video, info, start, count):
         small = cv2.resize(rgb, (SW, SH), interpolation=cv2.INTER_AREA).astype(np.int16)
+        if mc is not None:
+            mc.feed(f, motion_luma(small.astype(np.uint8)))
         if probe_m is not None or getattr(args, '_dissolve', False):
             g8 = cv2.cvtColor(small.astype(np.uint8), cv2.COLOR_RGB2GRAY) if probe_m is None or (probe_m.w, probe_m.h) == (SW, SH) else \
                 cv2.resize(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY), (probe_m.w, probe_m.h), interpolation=cv2.INTER_AREA)
@@ -1244,9 +1265,12 @@ def evaluate(args, info, M, decl):
                 'hard change (a cut, a reveal, a surge) by about 1.3 s. Start inside the action, put a push or drift '
                 'under the first read, or declare a designed still with --freeze-ok')
 
-    # --- ghosts
+    # --- ghosts (a declared flash, step or hard seam is designed: the timeline's or a primitive's declares())
+    designed = [(int(round(x['f'] * k_)), int(round((x['f'] + int(x.get('frames', 1)) - 1) * k_))) for x in extra.get('flashes', [])]
+    designed += [(int(round(r['from'] * k_)), int(round(r['to'] * k_)) - 1) for r in extra.get('stepped', [])]
+    designed += [(int(round(s['at'] * k_)), int(round(s['at'] * k_))) for s in extra.get('seams', []) if s.get('kind') in PUNCH]
     for g in M['ghosts']:
-        if ignored(g['frame']) or in_ranges(g['frame'], cuts, 1):
+        if ignored(g['frame']) or in_ranges(g['frame'], cuts, 1) or in_ranges(g['frame'], designed, 1):
             continue
         add('ghost', 'fail', g['frame'], f'one-frame image on {g["px"]} px that neither neighbour has and nothing '
             'near it moves (stale layer, compositor race, one-frame flash): inspect with grab.sh', bbox=g['bbox'])
@@ -1609,7 +1633,359 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
                 'snap or settle it, slide the lockup, then hold')
         if faded:
             add('end-card', sev('warn'), faded[0]['frm'], 'the end card fades in: a lockup assembles (parts, a snap, a slide), never a fade-in on a static card')
+
+    # continuous, decaying motion: snaps, frozen runs, settle length, event density, landings
+    mc = M.get('motion')
+    if mc is not None and mc.first is not None:
+        out['motion'] = motion_gates(mc, fps, extra, vf, cuts, freezes, acts, hold_end, not undeclared, add, sev, ignored)
     return out
+
+
+# ------------------------------------------------------------------------------------------
+# motion gates: no event starts or ends in one frame, no hold freezes
+# ------------------------------------------------------------------------------------------
+# Measured on luma at 160x90 (area), sampled every round(fps / 30)-th frame (about 30 fps); the landings
+# also at the film's own rate. The bands separate continuous, decaying motion (one long carrying move, holds
+# that drift, moves that land) from the generated kind (short events that start and stop in one frame,
+# dead holds between them, moves cut while still fast).
+MOTION_W, MOTION_H = 160, 90
+MOTION = dict(
+    floor=0.05,  # a sample whose mean luma change (code values) is under this, ...
+    live_delta=4,  # ... and on which fewer than `live_px` pixels change by this many code values or more, is still
+    live_px=8,  # (a slow drift moves its edges by that much: 0.3 px/f@60 shifts a line's edge 5-10 values at 160x90)
+    run=6,  # a frozen run: this many still samples at 30 fps
+    snap_min=2.0,  # a one-sample change at least this large, ...
+    snap_side=0.35,  # ... both neighbours under this share of it, is a snap
+    snaps_per3=0.6,  # undeclared snaps per 3 s of body
+    snap_devices=1,  # declared snap runs per film (a stepped list, a snap zoom, a flash)
+    cut_min=20.0,  # a visible cut: a change this large ...
+    cut_ratio=2.0,  # ... and this many times its neighbours
+    peak_min=0.5,  # a motion event peaks at least this high
+    key=0.2,  # an event starts and lands under this share of its peak
+    decay_min=3.5,  # median samples (30 fps) from an event's peak down to `key` of it
+    decay_events=3,  # the decay gate needs this many events
+    primary=0.25,  # a primary move peaks at this share of the film's 90th-percentile event or more
+    primary_per3=2.0,  # primary moves per 3 s of body
+    stop=0.15,  # a move that goes still in one frame from above this share of its peak stops dead
+    brake=0.10,  # a visible cut while a braking move is above this share of its peak cuts it mid-ease
+    braking_per3=0.25,  # such cuts per 3 s of body
+    frozen_s=1.0,  # without declarations: still this long in total is the film's one held stop
+    episode_s=0.5,  # snaps closer than this are one device (a ticker)
+    open_s=0.5,  # the opening may start from a still
+)
+MOTION_CUT_SEAMS = ('hard', 'velocity', 'whip', 'zoomThrough', 'colour', 'light', 'defocus', 'mask', 'wipe')
+MOTION_SNAP_SEAMS = ('snapZoom', 'stepped')
+MOTION_CARRY_SEAMS = ('whip', 'velocity', 'zoomThrough')
+
+
+def motion_luma(img):
+    """A frame (RGB or luma, any size) as the motion gates' 160x90 luma plane (float32)."""
+    a = np.asarray(img)
+    if a.dtype != np.uint8:
+        a = np.clip(a, 0, 255).astype(np.uint8)
+    if a.ndim == 3:
+        if a.shape[:2] != (MOTION_H, MOTION_W):
+            a = cv2.resize(a, (MOTION_W, MOTION_H), interpolation=cv2.INTER_AREA)
+        return cv2.cvtColor(a, cv2.COLOR_RGB2GRAY).astype(np.float32)
+    if a.shape != (MOTION_H, MOTION_W):
+        a = cv2.resize(a, (MOTION_W, MOTION_H), interpolation=cv2.INTER_AREA)
+    return a.astype(np.float32)
+
+
+class MotionCurves:
+    """The motion gates' curves, fed one frame at a time: d1[i] the mean luma change from the frame before,
+    dk[i] the change over 1/30 s (from `step` frames before) and nk[i] how many pixels changed over that
+    1/30 s by MOTION['live_delta'] or more. Index 0 is the first frame fed (`first`)."""
+
+    def __init__(self, fps, live_delta=MOTION['live_delta']):
+        self.fps = fps
+        self.step = max(1, int(round(fps / 30.0)))
+        self.q = deque(maxlen=self.step + 1)
+        self.first = None
+        self.live = live_delta
+        self.d1, self.dk, self.nk = [], [], []
+
+    def feed(self, f, y):
+        if self.first is None:
+            self.first = f
+        self.q.append(y)
+        self.d1.append(float(np.abs(y - self.q[-2]).mean()) if len(self.q) >= 2 else math.nan)
+        if len(self.q) == self.step + 1:
+            d = np.abs(y - self.q[0])
+            self.dk.append(float(d.mean()))
+            self.nk.append(int(np.count_nonzero(d >= self.live)))
+        else:
+            self.dk.append(math.nan)
+            self.nk.append(0)
+
+
+def motion_curves(frames, fps):
+    """MotionCurves of a sequence of frames (RGB or luma arrays, any size)."""
+    mc = MotionCurves(fps)
+    for f, img in enumerate(frames):
+        mc.feed(f, motion_luma(img))
+    return mc
+
+
+def motion_measures(d1, dk, fps, cuts=(), snaps_ok=(), carried=(), freezes=(), end_from=None, declared=True, nk=None, P=MOTION):
+    """The motion measures on MotionCurves arrays. Every frame argument counts from index 0 of the curves:
+    cuts, designed cut frames; snaps_ok, [(from, to)) or [(from, to, device)) declared snap ranges (stepped
+    ranges, flashes, snap-zoom seams; ranges that share a device key are one device); carried, frames of declared whips and velocity cuts; freezes, [(a, b)] declared held stops
+    (inclusive); end_from, the end lock's first frame; declared, the film declares itself (without
+    declarations its densest snap run and up to `frozen_s` of still are its one allowance). Frames in the
+    result are source frames from index 0."""
+    step = max(1, int(round(fps / 30.0)))
+    r = fps / step
+    k30 = r / 30.0
+    x1 = np.nan_to_num(np.asarray(d1, dtype=np.float64), nan=0.0)
+    a = np.nan_to_num(np.asarray(dk, dtype=np.float64), nan=0.0)[::step].copy()
+    n_src, n = len(x1), len(a)
+    if n:
+        a[0] = 0.0
+
+    def smp(f):
+        return int(math.ceil(f / step - 1e-9))
+
+    end = n if end_from is None else max(1, min(n, smp(end_from)))
+    ok = [(smp(x[0]), max(smp(x[0]) + 1, smp(x[1])), x[2] if len(x) > 2 else None) for x in snaps_ok]
+
+    def ok_key(i):  # the device of the declared snap range sample i falls in, else False
+        for s, e, key in ok:
+            if s - 1 <= i < e + 1:
+                return key if key is not None else ('range', s)
+        return False
+
+    def in_ok(i):
+        return ok_key(i) is not False
+
+    cutset = {smp(c) for c in cuts if 0 < smp(c) < n}
+    for i in range(1 if not declared else n, n):  # a declared film names its cuts: any other jump is a snap
+        nb = max(a[i - 1], a[i + 1] if i + 1 < n else 0.0)
+        if a[i] >= P['cut_min'] and a[i] >= P['cut_ratio'] * nb and not in_ok(i):
+            cutset.add(i)
+    cutl = sorted(cutset)
+
+    def near_cut(i, pad=1):
+        return any(abs(i - c) <= pad for c in cutl)
+
+    def groups(idx):
+        out = []
+        for i in idx:
+            if out and i - out[-1][-1] <= P['episode_s'] * r:
+                out[-1].append(i)
+            else:
+                out.append([i])
+        return out
+
+    def devices(idx):  # declared snaps: one device per declaration key, or per run of snaps closer than episode_s
+        out = []
+        for i in idx:
+            key = ok_key(i)
+            g = next((g for g in out if key not in (False, None) and key in g['keys']), None)
+            if g is None and out and i - out[-1]['last'] <= P['episode_s'] * r:
+                g = out[-1]
+            if g is None:
+                g = dict(keys=set(), last=i)
+                out.append(g)
+            if key not in (False, None):
+                g['keys'].add(key)
+            g['last'] = max(g['last'], i)
+        return out
+
+    # 1. snaps: one-sample changes that are not cuts
+    snaps = [i for i in range(1, end) if a[i] >= P['snap_min'] and not near_cut(i) and a[i - 1] <= P['snap_side'] * a[i]
+             and (i + 1 >= n or a[i + 1] <= P['snap_side'] * a[i])]
+    dec = [i for i in snaps if in_ok(i)]
+    und = [i for i in snaps if not in_ok(i)]
+    allowance = []
+    if not declared and und:
+        allowance = max(groups(und), key=len)
+        und = [i for i in und if i not in allowance]
+        dec = sorted(dec + allowance)
+    body_s = max(1.0 / r, (end - 1) / r)
+
+    # 2. frozen runs (the opening may start still; declared held stops are craft)
+    still = a[:end] < P['floor']
+    if nk is not None:  # a slow drift keeps a sparse frame alive: its edges move, though the mean barely does
+        still &= np.asarray(nk, dtype=np.int64)[::step][:end] < P['live_px']
+    if len(still):
+        still[0] = False
+    st = int(round(P['open_s'] * r))
+    need = max(1, int(math.ceil(P['run'] * k30 - 1e-9)))
+    fz = [(smp(s), smp(e)) for s, e in freezes]
+    frozen = []
+    for s, e in runs(still):
+        s = max(s, st)
+        if e - s + 1 >= need and not any(s >= x - 1 and e <= y + 1 for x, y in fz):
+            frozen.append((s, e))
+
+    # 3. motion events (a move that starts and lands) and how long each takes to settle
+    events = []
+    for p in range(1, end):
+        v = a[p]
+        if v < P['peak_min'] or p in cutset or v < a[p - 1] or (p + 1 < n and v <= a[p + 1]):
+            continue
+        lo, lo_l = p, v
+        while lo > 1 and a[lo - 1] <= v and (lo - 1) not in cutset:
+            lo -= 1
+            lo_l = min(lo_l, a[lo])
+        if lo <= 1 or (lo - 1) in cutset:
+            lo_l = 0.0
+        hi, lo_r = p, v
+        while hi + 1 < n and a[hi + 1] <= v and (hi + 1) not in cutset:
+            hi += 1
+            lo_r = min(lo_r, a[hi])
+        if hi + 1 >= n or (hi + 1) in cutset:
+            lo_r = 0.0
+        if max(lo_l, lo_r) > P['key'] * v:
+            continue
+        span, why = n - p, 'end'
+        for j in range(p + 1, n):
+            if j in cutset:
+                span, why = j - p, 'cut'
+                break
+            if a[j] <= P['key'] * v:
+                span, why = j - p, 'land'
+                break
+        events.append(dict(frame=p * step, peak=round(float(v), 3), decay=round(span / k30, 2), ends=why))
+    decays = [e['decay'] for e in events if e['ends'] == 'land' or e['decay'] >= P['decay_min']]
+    top = float(np.percentile([e['peak'] for e in events], 90)) if events else 0.0
+    primary = [e for e in events if e['peak'] >= P['primary'] * top]
+
+    # 4. landings at the film's own rate: a move that stops dead, a cut into a braking move
+    cut_src = {int(c) for c in cuts if 0 < c < n_src}
+    for i in cutl:
+        lo_f, hi_f = max(1, (i - 1) * step + 1), min(n_src, i * step + 1)
+        if hi_f > lo_f and not any(lo_f <= c < hi_f for c in cut_src):
+            cut_src.add(lo_f + int(np.argmax(x1[lo_f:hi_f])))
+    cut_src = sorted(cut_src)
+
+    def near_src(f, pad):
+        return any(c - pad <= f <= c + pad for c in cut_src)
+
+    hold = 2 * step
+    end_src = min(n_src, end * step)
+    stops = []
+    for f in range(2, end_src - hold):
+        if x1[f] < max(P['floor'], 4 * P['floor']) or not (x1[f + 1:f + 1 + hold] < P['floor']).all() or near_src(f + 1, step + 1):
+            continue
+        lo, peak, pf = f, x1[f], f
+        while lo > 1 and x1[lo - 1] >= P['floor'] and not near_src(lo - 1, 0) and f - lo < 2 * fps:
+            lo -= 1
+            if x1[lo] > peak:
+                peak, pf = x1[lo], lo
+        if peak * step >= P['peak_min'] and pf < f and x1[f] > P['stop'] * peak:
+            stops.append(dict(frame=f + 1, speed=round(float(x1[f] / peak), 3), peak=round(float(peak), 3)))
+    braking = []
+    for c in cut_src:
+        if c < 4 or c >= end_src or x1[c] < max(P['snap_min'], 2 * x1[c - 1]):
+            continue  # not a visible cut: the motion runs on across it
+        s1, s2 = x1[c - 1], x1[c - 2]
+        lo, peak, pf = c - 1, s1, c - 1
+        while lo > 1 and not near_src(lo - 1, 0) and c - lo < 2 * fps and x1[lo - 1] >= P['floor']:
+            lo -= 1
+            if x1[lo] > peak:
+                peak, pf = x1[lo], lo
+        if peak * step < P['peak_min'] or pf >= c - step:
+            continue
+        if s1 > P['brake'] * peak and s1 < s2 and not any(abs(c - w) <= step + 1 for w in carried):
+            braking.append(dict(frame=c, speed=round(float(s1 / peak), 3), peak=round(float(peak), 3)))
+
+    return dict(
+        fps=fps, step=step, body_s=round(body_s, 3), cuts=[i * step for i in cutl],
+        snaps=[i * step for i in snaps], snaps_declared=[i * step for i in dec], snaps_undeclared=[i * step for i in und],
+        snap_allowance=[i * step for i in allowance], snap_runs=len(devices(dec)),
+        snaps_per3=round(len(und) / body_s * 3, 3),
+        frozen=[[s * step, e * step] for s, e in frozen], frozen_frames30=round(sum(e - s + 1 for s, e in frozen) / k30, 2),
+        events=events, events_per3=round(len(events) / body_s * 3, 3),
+        primary_per3=round(len(primary) / body_s * 3, 3),
+        decay_median=round(float(np.median(decays)), 2) if len(decays) >= P['decay_events'] else None,
+        stops=stops, braking=braking, braking_per3=round(len(braking) / body_s * 3, 3), declared=declared,
+    )
+
+
+def motion_failures(m, P=MOTION):
+    """The gates on motion_measures(): [{check, severity, frame, note}] (frames as in the measures)."""
+    out = []
+
+    def add(check, severity, frame, note):
+        out.append(dict(check=check, severity=severity, frame=frame, note=note))
+
+    und = m['snaps_undeclared']
+    if m['snaps_per3'] > P['snaps_per3']:
+        add('motion-snap', 'fail', und[0], f"{len(und)} one-frame snaps outside a declared snap ({m['snaps_per3']:.2f} per 3 s, at most "
+            f"{P['snaps_per3']:g}): a state change glides over 16 f@60 on E.glideOut with a shutter smear (fx/GlideStep, lib/continuity "
+            'glideValue), it never jumps in one frame')
+    if m['snap_runs'] > P['snap_devices']:
+        first = m['snaps_declared'][0] if m['snaps_declared'] else 0
+        add('motion-snap', 'fail', first, f"{m['snap_runs']} declared snap devices (stepped lists, snap zooms, flashes): a film keeps "
+            f"{P['snap_devices']}; glide the others (fx/GlideStep, lib/continuity glideValue: 16 f@60 on E.glideOut)")
+    if m['frozen']:
+        k30 = m['fps'] / m['step'] / 30.0
+        total = m['frozen_frames30']
+        if m['declared'] or total > P['frozen_s'] * 30:
+            for s, e in m['frozen']:
+                add('motion-frozen', 'fail', f'{s}-{e + m["step"] - 1}', f'{(e - s) / m["step"] / k30 + 1:.0f} f@30 frozen (luma change under '
+                    f"{P['floor']:g}, under {P['live_px']} px changing by {P['live_delta']:g}+): every hold keeps a drift of 0.3-1 px/f (lib/continuity "
+                    'holdDrift); the end lock (END) is the one held stop' + ('' if m['declared'] else f' (this film holds still {total:.0f} f@30 in all; one held stop of up to '
+                                      f"{P['frozen_s'] * 30:.0f} f is the allowance)"))
+    if m['decay_median'] is not None and m['decay_median'] < P['decay_min']:
+        add('motion-decay', 'fail', m['events'][0]['frame'], f"moves fall from their peak to 20 % of it in a median {m['decay_median']:.1f} "
+            f"f@30 (at least {P['decay_min']:g}): land every move on an arrive curve over 16 f@60 or more, with a 4-6 f@30 tail")
+    if m['primary_per3'] > P['primary_per3']:
+        add('motion-density', 'fail', m['events'][0]['frame'], f"{m['primary_per3']:.2f} primary moves per 3 s (at most {P['primary_per3']:g}): "
+            'build each 3 s around one long carrying move (48 f@60 or more) and overlap the secondaries by 30-50 % instead of queueing them')
+    for s in m['stops']:
+        add('motion-stop', 'fail', s['frame'], f"a move stops dead from {s['speed'] * 100:.0f} % of its peak speed in one frame: land it under 10 % "
+            'of its peak before it stops or its layer unmounts (lib/continuity landBeforeCut)')
+    for b in m['braking']:
+        add('motion-cut', 'warn', b['frame'], f"a cut while a braking move is still at {b['speed'] * 100:.0f} % of its peak speed: cut once it has "
+            'landed under 10 % (landBeforeCut), or carry it across as a declared whip or velocity seam')
+    if m['braking_per3'] > P['braking_per3']:
+        add('motion-cut', 'fail', m['braking'][0]['frame'], f"{len(m['braking'])} cuts into braking moves ({m['braking_per3']:.2f} per 3 s, at most "
+            f"{P['braking_per3']:g}): a move lands before its cut, unless it is a whip into the cut")
+    return out
+
+
+def device_key(x, kind):
+    """The snap device a declaration belongs to: its id without a trailing index (a list's 'tick-0' ...
+    'tick-10' are one device); a declaration without an id is its own device."""
+    i = x.get('id')
+    return (kind, re.sub(r'[-_ ]?\d+$', '', str(i))) if i not in (None, '') else None
+
+
+def motion_gates(mc, fps, extra, vf, cuts, freezes, acts, hold_end, declared, add, sev, ignored):
+    """The motion gates on a film's MotionCurves, from its declarations; flags go through `add`."""
+    f0 = mc.first
+    rel = lambda f: int(f) - f0  # noqa: E731
+    seams = extra.get('seams', [])
+    cut_f = [rel(vf(a)) for a, _ in acts.values() if a > 0] + [rel(vf(s['at'])) for s in seams if s.get('kind') in MOTION_CUT_SEAMS]
+    cut_f += [rel(a) for a, _ in cuts]
+    ok = [(rel(vf(x['from'])), rel(vf(x['to'])), device_key(x, 'stepped')) for x in extra.get('stepped', [])]
+    ok += [(rel(vf(x['f'])), rel(vf(x['f']) + int(x.get('frames', 1))), device_key(x, 'flash')) for x in extra.get('flashes', [])]
+    ok += [(rel(vf(s['at'])), rel(vf(s['at'])) + 1, device_key(s, 'seam')) for s in seams if s.get('kind') in MOTION_SNAP_SEAMS]
+    carried = [rel(vf(s['at'])) for s in seams if s.get('kind') in MOTION_CARRY_SEAMS]
+    carried += [rel(vf(x['to'])) for x in extra.get('camera_blur', [])]
+    fz = [(rel(a), rel(b)) for a, b in freezes]
+    m = motion_measures(mc.d1, mc.dk, fps, cuts=cut_f, snaps_ok=ok, carried=carried, freezes=fz,
+                        end_from=rel(hold_end[0]) if hold_end else None, declared=declared, nk=mc.nk)
+    for x in motion_failures(m):
+        fr = x['frame']
+        frame = f'{int(fr.split("-")[0]) + f0}-{int(fr.split("-")[1]) + f0}' if isinstance(fr, str) else int(fr) + f0
+        if ignored(int(str(frame).split('-')[0])):
+            continue
+        add(x['check'], sev(x['severity']), frame, x['note'])
+    shift = lambda xs: [x + f0 for x in xs]  # noqa: E731
+    m['first'] = f0
+    for k in ('cuts', 'snaps', 'snaps_declared', 'snaps_undeclared', 'snap_allowance'):
+        m[k] = shift(m[k])
+    m['frozen'] = [[a + f0, b + f0] for a, b in m['frozen']]
+    for k in ('events', 'stops', 'braking'):
+        for x in m[k]:
+            x['frame'] += f0
+    m['events'] = m['events'][:200]
+    m['thresholds'] = dict(MOTION)
+    return m
 
 
 # ------------------------------------------------------------------------------------------
@@ -1633,6 +2009,119 @@ def warp(img, dx=0.0, dy=0.0, k=1.0):
     h, w = img.shape[:2]
     m = np.float32([[k, 0, (1 - k) * w / 2 + dx], [0, k, (1 - k) * h / 2 + dy]])
     return cv2.warpAffine(img, m, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+
+
+def ui_list(w, h, pitch=24, seed=5):
+    """A deterministic product list (rows of dark bars with an accent tick on a light ground), RGB."""
+    img = np.full((h, w, 3), 236, np.uint8)
+    rng = np.random.default_rng(seed)
+    for i in range(h // pitch):
+        y = pitch // 2 + i * pitch
+        cv2.rectangle(img, (w // 8, y), (w // 8 + int(rng.integers(w // 4, int(w * 0.7))), y + pitch // 3), (60, 60, 60), -1)
+        cv2.rectangle(img, (w // 12, y), (w // 12 + pitch // 3, y + pitch // 3), (31, 134, 205), -1)
+    return img
+
+
+def ease_bz(x1, y1, x2, y2):
+    """A cubic-bezier easing curve t -> progress (the house tokens of lib/anim.ts are these)."""
+    def f(t):
+        if t <= 0:
+            return 0.0
+        if t >= 1:
+            return 1.0
+        lo, hi = 0.0, 1.0
+        for _ in range(40):
+            u = (lo + hi) / 2
+            x = 3 * (1 - u) ** 2 * u * x1 + 3 * (1 - u) * u * u * x2 + u ** 3
+            lo, hi = (u, hi) if x < t else (lo, u)
+        u = (lo + hi) / 2
+        return 3 * (1 - u) ** 2 * u * y1 + 3 * (1 - u) * u * u * y2 + u ** 3
+    return f
+
+
+def motion_self_test(check):
+    """The motion gates on synthetic films measured in memory (no encode): each gate fires on the generated
+    pattern and stays quiet on its fix (fx/GlideStep, lib/continuity). Returns the number of failures."""
+    fps, w, h, n = 60, 480, 270, 240
+    bad = [0]
+    L = ui_list(w, h * 3)
+    glide_out = ease_bz(0.172, 0.687, 0.393, 0.943)  # E.glideOut, the house arrival
+    e_out = ease_bz(0.16, 1, 0.3, 1)  # E.out
+    drift = 0.12  # px per frame at 480 wide: 0.5 px/f at 1080p (holdDrift's house speed)
+
+    def frame(img, y=0.0, x=0.0):
+        return cv2.warpAffine(img, np.float32([[1, 0, x], [0, 1, -y]]), (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+
+    def film(pos, img=L, smear=False):  # smear: a 180-degree shutter (6 samples across half a frame)
+        if not smear:
+            return [frame(img, *pos(f)) for f in range(n)]
+        return [np.mean([frame(img, *pos(f + 0.5 * ((k + 0.5) / 6 - 0.5))) for k in range(6)], axis=0).astype(np.uint8) for f in range(n)]
+
+    def gates(frames, **kw):
+        mc = motion_curves(frames, fps)
+        m = motion_measures(mc.d1, mc.dk, fps, nk=mc.nk, **kw)
+        return m, {x['check'] for x in motion_failures(m) if x['severity'] == 'fail'}
+
+    def ok(cond, what, detail=''):
+        check(cond, 'motion: ' + what, detail)
+        bad[0] += 0 if cond else 1
+
+    steps = [30, 70, 110, 150, 190]
+
+    def jumps(f):
+        return 24.0 * sum(1 for a in steps if f >= a), 0.0
+
+    m, fl = gates(film(jumps))
+    ok('motion-snap' in fl, 'a list that jumps a row in one frame fails motion-snap', f"{len(m['snaps_undeclared'])} undeclared snaps")
+    one = [(a, a + 1, ('stepped', 'list')) for a in steps]
+    m, fl = gates(film(jumps), snaps_ok=one)
+    ok('motion-snap' not in fl, 'declared as one stepped device, its jumps pass motion-snap', f"{m['snap_runs']} device(s)")
+    ok('motion-frozen' in fl, '... but its dead holds between the jumps fail motion-frozen', f"{m['frozen_frames30']} f@30 frozen")
+    m, fl = gates(film(lambda f: (jumps(f)[0], drift * f)), snaps_ok=one)
+    ok('motion-frozen' not in fl, 'the same holds drifting 0.5 px/f (holdDrift) are alive', f"{m['frozen_frames30']} f@30 frozen")
+    two = [(a, a + 1, ('stepped', f'tick{a}')) for a in steps[:2]] + [(a, a + 1, ('flash', f'f{a}')) for a in steps[2:]]
+    m, fl = gates(film(jumps), snaps_ok=two)
+    ok('motion-snap' in fl, 'two or more declared snap devices fail motion-snap (a film keeps one)', f"{m['snap_runs']} devices")
+    line = np.full((h * 3, w, 3), 236, np.uint8)
+    cv2.rectangle(line, (150, 250), (330, 270), (40, 40, 40), -1)  # one line of type on a clean field
+    m, fl = gates(film(lambda f: (0.0, 0.075 * f), img=line))
+    ok('motion-frozen' not in fl, 'a sparse frame drifting 0.3 px/f is not frozen', f"{m['frozen_frames30']} f@30 frozen")
+    m, fl = gates(film(lambda f: (0.0, 0.0), img=line))
+    ok('motion-frozen' in fl, 'the same frame locked off is frozen', f"{m['frozen_frames30']} f@30 frozen")
+
+    def glide(f):
+        return sum(24.0 * glide_out((f - a) / 16) for a in steps), drift * f
+
+    m, fl = gates(film(glide, smear=True))
+    ok(not m['snaps'] and not m['frozen'] and m['decay_median'] is not None and m['decay_median'] >= MOTION['decay_min'],
+       'a list gliding 16 f@60 on E.glideOut with a shutter smear: no snap, no freeze, settles in 3.5 f@30 or more',
+       f"decay {m['decay_median']}, snaps {len(m['snaps'])}, frozen {m['frozen_frames30']}")
+
+    def short(f):
+        return sum(24.0 * e_out((f - a) / 16) for a in steps), drift * f
+
+    m, fl = gates(film(short, smear=True))
+    ok('motion-decay' in fl, 'the same glide on E.out settles too fast (under 3.5 f@30) and fails motion-decay', f"decay {m['decay_median']}")
+
+    def move(f):
+        return 200.0 * glide_out((f - 40) / 48), drift * f
+
+    m, fl = gates(film(move, smear=True))
+    ok(not fl, 'one carrying move of 48 f@60 that lands, then a drifting hold, passes every gate', ', '.join(sorted(fl)) or 'clean')
+
+    def cut(f):
+        return 200.0 * glide_out((min(f, 52) - 40) / 48), 0.0
+
+    m, fl = gates(film(cut))
+    ok('motion-stop' in fl, 'the same move stopped dead mid-ease fails motion-stop', str([(x['frame'], x['speed']) for x in m['stops']]))
+    crowd = [20 + 30 * i for i in range(7)]
+
+    def many(f):
+        return sum(10.0 * glide_out((f - a) / 24) for a in crowd), 0.0
+
+    m, fl = gates(film(many))
+    ok('motion-density' in fl, 'seven moves queued in 4 s fail motion-density', f"{m['primary_per3']} primary per 3 s")
+    return bad[0]
 
 
 def write_clip(path, frames, fps, crf=12):
@@ -1660,11 +2149,11 @@ def self_test():
     bad = 0
     count = [0]
 
-    def cues(n, seams=(), stepped=(), end=None, look=True):
+    def cues(n, seams=(), stepped=(), end=None, look=True, flashes=()):
         c = dict(fps=fps, total=n, acts=dict(a={'from': 0, 'dur': n}), cue={}, events=[], copy=[])
         if look:
             c['look'] = dict(blur='crisp', texture='clean', filmType='launch', oneTake=False, whiteWorld=False)
-            c['declared'] = dict(seams=list(seams), stepped=list(stepped), flashes=[], cameraBlur=[], end=end or {'from': 0, 'to': 0})
+            c['declared'] = dict(seams=list(seams), stepped=list(stepped), flashes=list(flashes), cameraBlur=[], end=end or {'from': 0, 'to': 0})
         count[0] += 1
         path = os.path.join(tmp, f'cues{count[0]}.json')
         json.dump(c, open(path, 'w'))
@@ -1745,6 +2234,18 @@ def self_test():
     steps = [warp(A, dx=6 * (i // 3)) for i in range(n)]
     rep = run('stepped', steps, cues(n, stepped=[{'from': 0, 'to': n, 'fps': 10, 'id': 'steps'}]))
     check(not flags(rep, 'stall', 'fail') and not flags(rep, 'spike', 'fail'), 'held frames inside a declared stepped range are craft', f"{len(flags(rep, 'declared'))} declared note(s)")
+    # the motion gates through the CLI: a list that jumps a row in one frame fails motion-snap and its dead holds motion-frozen
+    L = ui_list(w, h * 2)
+    hard = [warp(L, dy=-12.0 * sum(1 for a in (12, 27, 42, 57, 72) if i >= a)) for i in range(n)]
+    rep = run('hardlist', hard, cues(n))
+    check(bool(flags(rep, 'motion-snap', 'fail')) and bool(flags(rep, 'motion-frozen', 'fail')), 'a list that jumps rows in one frame fails motion-snap and motion-frozen',
+          f"{len(flags(rep, 'motion-snap'))} snap, {len(flags(rep, 'motion-frozen'))} frozen")
+    # a declared flash is designed: no ghost, no pop (it declares itself through the cues, no --cuts)
+    flash = [warp(A, dx=0.25 * i) for i in range(45)] + [np.full_like(A, 250)] + [warp(A, dx=0.25 * (46 + i)) for i in range(44)]
+    rep = run('flash', flash, cues(n, flashes=[{'f': 45, 'frames': 1, 'id': 'flash'}]))
+    check(not flags(rep, 'ghost', 'fail') and not flags(rep, 'spike', 'fail'), 'a declared flash frame is neither a ghost nor a pop',
+          f"{len(flags(rep, 'ghost'))} ghost, {len(flags(rep, 'spike'))} spike")
+    bad += motion_self_test(check)
     shutil.rmtree(tmp, ignore_errors=True)
     print('forensics self-test: ' + ('all pass' if not bad else f'{bad} failed'))
     return 1 if bad else 0
@@ -1765,13 +2266,14 @@ def grammar_only(args, info, decl):
     probe_m = MotionProbe(fps, pw, ph, pair_frames=pf, tiles=False, force={x for c in cuts_v for x in (c - 1, c + kk)})
     dis_n = max(2, int(round(4 * fps / 60)))
     disq = deque(maxlen=dis_n + 2)
-    M = dict(idx=[], dissolve=[], probe=probe_m)
+    M = dict(idx=[], dissolve=[], probe=probe_m, motion=MotionCurves(fps))
     start = max(0, args.from_frame or 0)
     count = max(1, args.to_frame - start + 1) if args.to_frame is not None else None
     for f, rgb in decode(args.video, info, start, count, size=(pw, ph)):
         g8 = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
         M['idx'].append(f)
         probe_m.feed(f, g8)
+        M['motion'].feed(f, motion_luma(rgb))
         disq.append((f, g8.astype(np.float32)))
         if len(disq) == disq.maxlen:
             hit = blend_test([x[1] for x in disq])
