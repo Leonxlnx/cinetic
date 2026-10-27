@@ -42,7 +42,7 @@
      define differently, a direction id in two decks, a missing or thin picture brief).
  15. Text first, imagery opt-in: an imagery-led direction fits only with --have photos or footage (never dealt
      without, dealt with); type-led directions weigh x4 and graphic ones x1.5, so a plain brief meets a
-     type-led direction in about half the deals or more; the sheet asks for a script (6-9 short sentences, one clean line at a time, each
+     type-led direction in about half the deals or more; the sheet asks for a script (5-8 plain sentences, what the product is first, one clean line at a time, each
      with its own text animation), its skeleton gives each copy beat one sentence, and an update sheet one short
      sentence per change.
 
@@ -711,7 +711,7 @@ result(r.returncode == 0 and '**The words are a script:**' in r.stdout and 'one 
        and '`TypeLine` from `fx/TypePresets.tsx`' in r.stdout,
        'the sheet asks for a script, gives each copy beat one sentence and draws one text animation per line (TypeLine)', (r.stderr or '')[-160:])
 r = run('--brief', 'a notes app, version 2.4 is out', '--format', 'update', '--direction', 'statement', '--out', os.path.join(TMP, 'script-u'), '--no-history')
-result(r.returncode == 0 and 'One short sentence per change (3-6 words)' in r.stdout and '1-3 words a fragment' not in r.stdout,
+result(r.returncode == 0 and 'One plain sentence per change (2-6 words)' in r.stdout and '1-3 words a fragment' not in r.stdout,
        'an update sheet asks for one short sentence per change', (r.stderr or '')[-160:])
 
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')

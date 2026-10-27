@@ -35,8 +35,8 @@ Usage:
   --have      what really exists (comma-separated): ui (the product has an interface to show, built in
               code from the real product), input (it is used by typing or pointing: a text field, a prompt,
               a command line, a pointer; pick.py deals typing and cursor devices only then), photos
-              (high-quality pictures that carry the idea: the product's own photography or screens, or a set
-              worth building a film on; it opens the imagery-led directions), footage (real video supplied;
+              (high-quality pictures that carry the idea: the product's own photography or screens, or pictures
+              the user supplies; it opens the imagery-led directions), footage (real video supplied;
               it opens them too), audio (a real recorded clip the product makes or handles: a voice, a call, a
               sound), number (one honest number the product owns and can back), name (the product's name is
               a real word whose meaning the film can use). Leave it out when there is none. Directions built
@@ -1357,7 +1357,7 @@ def _cmd(inp, seed, extra):
 
 def _fit_line(d):
     f, m = d['fit'], d['music']
-    need = [HAVE_TEXT[k] for k in needs_of(d)] + (['pictures worth building on or footage (--have photos)'] if is_imagery(d) else [])
+    need = [HAVE_TEXT[k] for k in needs_of(d)] + (["the product's own or supplied pictures, or footage (--have photos)"] if is_imagery(d) else [])
     subj = ' · only when the brief names its subject' if f.get('keywords_required') else ''
     upd = (f' (an update film {d["update"]["seconds"][0]}-{d["update"]["seconds"][1]} s)'
            if isinstance(d.get('update'), dict) else '')
@@ -1527,11 +1527,13 @@ def render_sheet(sh, data, library):
             f'- **Line system:** {" and ".join(ty["modes"])} chains; re-centre `{ty["recentre"]}`; cadence `{ty["cadence"]}`; '
             f'roles {", ".join(ty["roles"])}.', f'- **Scale contrast:** {ty["scale_contrast"]}',
             f'- **Behaviour:** {ty["behaviour"]}',
-            '- **The words are a script:** 6-9 short real sentences for a launch film (3-8 words each: a claim, a turn '
-            'or a payoff; together hook, problem, turn, product, proof, payoff), written before any build. One clean '
-            'line on screen at a time, each with its own text animation (pick.py draws one per line; `TypeLine` '
-            'from `fx/TypePresets.tsx` plays the presets), with this direction\'s camera and graphic effects around '
-            'it. Never a pile of keywords.', '',
+            '- **The words are a script:** plain words a stranger understands within 5 s, written before any build: '
+            'line 1 (or 2) says what the product is by 3 s ("[Name] is a [plain category] for [who]." or "[Name] '
+            'turns [input] into [output]."), then 3-5 lines that each say one concrete thing it does while the UI '
+            'shows it, then the name and what to do; 2-7 words a line, one claim each, no metaphor, slogan or fancy '
+            'word (`python3 scripts/copy-check.py TREATMENT.md`). One clean line on screen at a time, each with its '
+            'own text animation (pick.py draws one per line; `TypeLine` from `fx/TypePresets.tsx` plays the presets), '
+            'with this direction\'s camera and graphic effects around it. Never a pile of keywords.', '',
             f'## 5. The story shape: {st["shape"]}', '', st['line'], '',
             f'## 6. The signature shot: {sig["name"]}' + (' (the alternative)' if sh['signature_variant'] != 'main' else ''), '',
             sig['shot'], '', f'**How to build it in Chromium:** {sig["build"]}', '',
@@ -1548,39 +1550,49 @@ def render_sheet(sh, data, library):
             'name and tagline over a radial plate.', '']
     if sh.get('changes'):
         out += [f'## 8. Beat skeleton: an update film ({sh["changes"]} changes, {sh["seconds"]:g} s)', '',
-                'A hook on the version or the mark, then each change as a product moment (the product doing the new thing '
-                'in this direction\'s device, never a list, a changelog row or a bullet), one payoff, and the end card with '
-                'the version. One short sentence per change (3-6 words) that says what the picture just did, one line at '
-                'a time, at 72 px or more.', '']
+                'The name and the version first ("[Name] [version]" by 3 s), then each change as a product moment (the '
+                'product doing the new thing in this direction\'s device, never a list, a changelog row or a bullet), one '
+                'payoff, and the end card with the version. One plain sentence per change (2-6 words) that says the result '
+                'the picture just showed, one line at a time, at 72 px or more.', '']
     else:
         out += [f'## 8. Beat skeleton ({sh["seconds"]:g} s)', '']
     out += ['| # | beat | time | picture | line |', '|---|---|---|---|---|']
     words = 0
+    first = True  # the first line says what the product is (an update film: the name and the version)
     for i, b in enumerate(sh['skeleton'], 1):
         c = b['copy']
         name = bool(c) and c['words'][1] <= 2 and bool(re.search(r'\b(name|version|wordmark)\b', c['what'], re.I))  # not a sentence
-        cs = (f'{c["what"]} (not a sentence)' if name else f'one sentence: {c["what"]}') if c else '(picture only)'
+        what = c['what'] if c else ''
+        if c and not name and first:
+            what = ('the name and the version ("[Name] [version]"), by 3 s' if sh.get('changes')
+                    else f'what it is, by 3 s ("[Name] is a [plain category] for [who]."), over {what}')
+            first = False
+        elif name and b is sh['skeleton'][-1]:
+            what = f'{what}, and what to do (a URL, "Out now")'
+        cs = (f'{what} (not a sentence)' if name else f'one sentence: {what}') if c else '(picture only)'
         words += 1 if c and not name else 0
         out.append(f'| {i}{" *" if b["signature"] else ""} | {b["beat"]} | {b["from_s"]:.1f}-{b["to_s"]:.1f} s '
                    f'(f{b["from_f"]}-f{b["to_f"]} @60) | {b["picture"]} | {cs} |')
     hand = next((b.get('handoff') for b in sh['skeleton'] if b.get('change')), None)
     if hand:
         out += ['', f'From one change to the next: {hand}.']
-    out += ['', f'{words} beats carry a line here. Write the script first (6-9 sentences for a launch film, 4-6 for an '
-                'update film; a beat may carry two lines one after the other), then give each beat its sentence. Retell '
+    out += ['', f'{words} beats carry a line here. Write the script first (5-8 plain sentences for a launch film: what it '
+                'is, 3-5 things it does, the close; 4-6 for an update film; a beat may carry two lines one after the other), '
+                'run copy-check.py on it, then give each beat its sentence. Retell '
                 'every beat in the product\'s own objects; the beats are the shape, not the content.', '',
             '## 9. The picture never rests', '',
             f'- **Life inside a shot:** {cam["in_shot"]}',
             f'- **The floor against a flat film** (checked on renders): the camera or the ground moves on at least '
-            f'{int(floor.get("moving_body_frames", .9) * 100)} % of body frames; at least two depth planes move at different '
+            f'{int(floor.get("moving_body_frames", .7) * 100)} % of body frames; at least two depth planes move at different '
             f'rates in at least {int(floor.get("depth_planes_shot_share", .5) * 100)} % of shots; at least '
             f'{int(floor.get("carried_seams_min", .4) * 100)} % of seams are carried; a signature device at least every '
             f'{floor.get("signature_device_every_s", 3)} s; {floor.get("light_events_per_act", 1)} light event per act; a '
             f'clear scale change on at least {int(floor.get("scale_contrast_cut_share", .3) * 100)} % of cuts.', '',
             '## 10. Music', '',
             f'- A licensed track (every film has one): {mus["bpm"][0]}-{mus["bpm"][1]} BPM, {mus["feel"]}; a `{mus["ending"]}` ending.']
-    if sh['music_tracks']:
-        out.append('- On the shortlist in this tempo range: ' + '; '.join(f'{t["title"]} ({t["bpm"]} BPM: {t["mood"]})' for t in sh['music_tracks']) + '.')
+    out.append(f"- Find this film's own track: `node scripts/music.mjs search --mood \"<the brief's mood words>\" "
+               f'--bpm {mus["bpm"][0]}-{mus["bpm"][1]} --length <film s>`, `sheet --measure`, `get #n --to audio/music` '
+               "(`references/music.md`); the finder holds back the last film's track and the example films' tracks.")
     out += ['', '## 11. Library and primitives', '',
             f'- **Primitives:** {_prims(d["primitives"], cat)}. "planned" ones are not in the starter yet: build the move in '
             'the act from the house curves until they land.',
@@ -1601,8 +1613,9 @@ def render_sheet(sh, data, library):
                 + ('--direction out/direction.json ' if has_dir else '') + '--json out/qa/picks.json')
     out += ['', '## Next', '',
             '1. Write the idea sentence and the competitor test into TREATMENT.md, under the direction\'s name and seed.',
-            '2. Write the script (TREATMENT.md, Script): 6-9 short real sentences, 3-8 words each, read in order they '
-            'tell the story; one clean line on screen at a time.',
+            '2. Write the script (TREATMENT.md, Script) in plain words: what the product is by 3 s, 3-5 things it does, '
+            'the name and what to do; 2-7 words a line, one clean line on screen at a time. `python3 scripts/copy-check.py '
+            'TREATMENT.md` passes before any picture work.',
             f'3. Draw the techniques (the picture plan, and one text animation per line): `{pick_cmd} --lines <n>`.' + ('' if has_dir else
                ' Retell every pick in this direction\'s world and camera; a pick that fights the direction counts as '
                'fighting the concept (reroll it with `--category <cat> --exclude <id>`, at most twice).'),
