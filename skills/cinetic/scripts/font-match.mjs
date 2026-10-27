@@ -245,21 +245,22 @@ async function inPage(P) {
     crop = c;
     T.imageH = im.naturalHeight;
   } else if (P.target.kind === 'like') {
-    await loadFace(P.target.face.name, P.target.face.data);
-    T = measure(P.target.face.name, P.target.weight, M, P.target.track, P.text);
+    await loadFace('target', P.target.face.data);
+    T = measure('target', P.target.weight, M, P.target.track, P.text);
     if (!T) return { error: 'the --like face rendered no ink' };
   } else T = { ...P.target.m };
   const nGaps = Math.max(1, [...P.text].length - 1); // letter-spacing after every character; the ink spans n-1 of them
 
   // every face: the weight whose stems match, the size whose x-height matches, the tracking that closes the width
   const rows = [];
-  for (const f of P.faces) {
-    try { await loadFace(f.name, f.data); } catch (e) { rows.push({ name: f.name, error: `the face did not load: ${String(e).slice(0, 80)}` }); continue; }
+  for (const [fi, f] of P.faces.entries()) {
+    const fam = `cand${fi}`; // every face loads under its own family, so two files of one family never mix
+    try { await loadFace(fam, f.data); } catch (e) { rows.push({ name: f.name, error: `the face did not load: ${String(e).slice(0, 80)}` }); continue; }
     const mid = P.weights.includes(500) ? 500 : P.weights[Math.floor(P.weights.length / 2)];
-    const m0 = measure(f.name, mid, M, 0, P.text);
+    const m0 = measure(fam, mid, M, 0, P.text);
     if (!m0) { rows.push({ name: f.name, error: 'no ink rendered' }); continue; }
     const s1 = (M * T.xh) / m0.xh; // the size its x-height matches at, first guess
-    const per = P.weights.map((w) => ({ w, m: measure(f.name, w, s1, 0, P.text) })).filter((r) => r.m);
+    const per = P.weights.map((w) => ({ w, m: measure(fam, w, s1, 0, P.text) })).filter((r) => r.m);
     if (!per.length) { rows.push({ name: f.name, error: 'no ink rendered' }); continue; }
     let weight = per[0].w;
     let stemErr = null;
@@ -275,18 +276,18 @@ async function inPage(P) {
         weight = Math.round((per[best].w + k * (per[nb].w - per[best].w)) / 10) * 10;
       }
     } else if (P.weights.length > 1) weight = mid;
-    const m = measure(f.name, weight, s1, 0, P.text);
+    const m = measure(fam, weight, s1, 0, P.text);
     if (!m) { rows.push({ name: f.name, error: 'no ink rendered' }); continue; }
     if (tStem && m.stem) stemErr = m.stem / m.xh / tStem - 1;
     const size = (s1 * T.xh) / m.xh; // px in the target's pixels
     const natural = (m.width * size) / s1;
     const natErr = natural / T.width - 1;
     const track = (T.width - natural) / (nGaps * size);
-    const v = measure(f.name, weight, size, track, P.text); // the fitted line, measured again at its size
+    const v = measure(fam, weight, size, track, P.text); // the fitted line, measured again at its size
     const residue = v ? v.width / T.width - 1 : null;
     const ascErr = T.asc && m.asc ? m.asc / m.xh / (T.asc / T.xh) - 1 : null;
     const score = Math.abs(natErr) + 0.5 * Math.abs(ascErr ?? 0) + 0.25 * Math.abs(stemErr ?? 0) + 2 * Math.max(0, Math.abs(track) - 0.08);
-    rows.push({ name: f.name, axes: f.axes, weight, size, natErr, track, residue, ascErr, stemErr, xhPerEm: m.xh / s1, ascPerEm: m.asc / s1, score,
+    rows.push({ name: f.name, fam, axes: f.axes, weight, size, natErr, track, residue, ascErr, stemErr, xhPerEm: m.xh / s1, ascPerEm: m.asc / s1, score,
       fit: Math.abs(natErr) <= 0.03 ? 'as is' : Math.abs(natErr) <= 0.1 && Math.abs(track) <= 0.08 ? 'with tracking' : 'far' });
   }
   const ok = rows.filter((r) => !r.error).sort((a, b) => a.score - b.score);
@@ -314,7 +315,7 @@ async function inPage(P) {
       const top = (i + 1) * rowH + 22;
       g.save();
       g.beginPath(); g.rect(0, top - 4, c.width, rowH - 22); g.clip();
-      g.drawImage(render(r.name, r.weight, r.size, r.track, P.text, '#111'), 20 + left - r.size * 0.6, top + base - r.size * 1.25);
+      g.drawImage(render(r.fam, r.weight, r.size, r.track, P.text, '#111'), 20 + left - r.size * 0.6, top + base - r.size * 1.25);
       g.restore();
       label(`${i + 1}. ${r.name}${r.axes ? ' (opsz)' : ''}  weight ${r.weight}  natural ${(r.natErr * 100).toFixed(1)} %  track ${r.track >= 0 ? '+' : ''}${r.track.toFixed(3)} em`, i + 1);
     });
