@@ -1,0 +1,128 @@
+// Continuous motion: no state change happens in one frame, no hold freezes, no move is cut while it is still fast.
+// These are the fixes forensics.py's motion gates ask for (motion-snap, motion-frozen, motion-decay, motion-stop,
+// motion-cut) and the helpers lint-film's snap-step, hold-drift and unmount-moving rules point at:
+//   glideValue    a value that glides between states (16 f at 60 fps on E.glideOut) instead of jumping
+//   glideList     a list or ticker that steps a whole row per glide and drifts between steps (fx/GlideStep draws it)
+//   holdDrift     the slow drift under every hold: 0.3-1 px per 60 fps frame at 1080p (house 0.5 = 30 px/s)
+//   landedAt      the frame from which a move stays under 10 % of its peak speed
+//   landBeforeCut the guard for a cut or an unmount: throws when the move is still fast there (a whip is declared)
+// Pure functions of the frame; node-safe (src/sync.ts and the timeline may import them).
+import { clamp, E, type Ease, prog } from './anim';
+import { type FilmCtx, f60x, fpsOf, uOf } from './film';
+
+/**
+ * House numbers (frames at 60 fps, px at 1080p): a glide's length, the share of peak speed under which a move has
+ * landed, the hold drift and its band. A 16 f glide on E.glideOut settles from its peak to 20 % of its speed in
+ * about 4 f at 30 fps (forensics motion-decay asks 3.5 or more); the 1.1 E.out over the same 16 f settles in 3.
+ */
+export const GLIDE = { frames60: 16, landShare: 0.1, driftPx60: 0.5, driftBand: [0.3, 1] as const } as const;
+
+/** One state of a gliding value: from frame `at` on it heads for `value` (the first frame of motion is `at`). */
+export type GlideAt<T> = { at: number; value: T };
+
+/** Options of a glide: its length in 60 fps frames (house 16) and its curve (house E.glideOut, an arrival). */
+export type GlideOpts = { frames?: number; ease?: Ease };
+
+const glideDur = (o: GlideOpts | undefined, film?: Partial<FilmCtx>) => Math.max(1, f60x(o?.frames ?? GLIDE.frames60, fpsOf(film)));
+
+/**
+ * A number that glides between states: each step moves from wherever the value is at its start to its own value
+ * over `frames` 60 fps frames on `ease`, so a list offset, a counter's roll or a field's width never jumps in one
+ * frame. A step that starts before the previous one has landed blends out of it (no restart, no jump). Steps sorted
+ * by `at`; `initial` before the first. The continuous form of fx/HardStep stepValue().
+ */
+export const glideValue = (f: number, steps: GlideAt<number>[], initial: number, o: GlideOpts = {}, film?: Partial<FilmCtx>): number => {
+  const dur = glideDur(o, film);
+  const ease = o.ease ?? E.glideOut;
+  let v = initial;
+  for (const s of steps) {
+    if (f < s.at) break;
+    v += (s.value - v) * prog(f, s.at - 1, s.at - 1 + dur, ease);
+  }
+  return v;
+};
+
+/** A gliding list: up by `jump` px per step at `start + i * every` (`count` steps) or at explicit frames `at`. */
+export type GlideListProps = GlideOpts & { start?: number; every?: number; count?: number; jump: number; at?: number[]; drift?: number };
+
+/** The frames a gliding list starts its steps on (fx/HardStep hardStepFrames, same props). */
+export const glideFrames = (p: GlideListProps): number[] =>
+  p.at ?? Array.from({ length: Math.max(0, p.count ?? 0) }, (_, i) => Math.round((p.start ?? 0) + i * (p.every ?? 1)));
+
+/**
+ * Where a gliding list is at frame f: `y` px moved (the glides plus the hold drift, `drift` px per 60 fps frame at
+ * 1080p, house GLIDE.driftPx60, 0 to leave the drift to a camera), `v` its speed in film px per film frame (for
+ * fx/Defocus DirBlur, divided by u), and `index`, the steps started.
+ */
+export const glideList = (f: number, p: GlideListProps, film?: Partial<FilmCtx>): { y: number; v: number; index: number } => {
+  const fr = glideFrames(p);
+  const fps = fpsOf(film);
+  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const d = p.drift ?? GLIDE.driftPx60;
+  const from = fr.length ? fr[0] - 1 : 0;
+  const at = (g: number) => glideValue(g, fr.map((a, i) => ({ at: a, value: (i + 1) * p.jump })), 0, p, film) + (d * u * Math.max(0, g - from) * 60) / fps;
+  return { y: at(f), v: at(f) - at(f - 1), index: fr.filter((a) => f >= a).length };
+};
+
+/**
+ * Hold life: the offset of a layer drifting `px` per 60 fps frame at 1080p (house 0.5 = 30 px/s; clamped into the
+ * 0.3-1 band, 18-60 px/s, the speed that keeps even a sparse frame alive at 30 fps) along `angle` degrees (0 right,
+ * 90 down) from frame `from`, scaled with the frame; `to` ends the drift (the offset stays). Linear, so the first frame
+ * of the hold already moves and a landing's tail runs into it. { x, y } in film px.
+ */
+export const holdDrift = (f: number, from: number, o: { px?: number; angle?: number; to?: number } = {}, film?: Partial<FilmCtx>): { x: number; y: number } => {
+  const fps = fpsOf(film);
+  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const px = clamp(o.px ?? GLIDE.driftPx60, GLIDE.driftBand[0], GLIDE.driftBand[1]);
+  const t = Math.max(0, Math.min(f, o.to ?? Infinity) - from);
+  const dist = (px * u * t * 60) / fps;
+  const a = ((o.angle ?? 0) * Math.PI) / 180;
+  return { x: dist * Math.cos(a), y: dist * Math.sin(a) };
+};
+
+/** A move: from frame `from`, `dur` frames on `ease` (any 0..1 curve). */
+export type Move = { from: number; dur: number; ease: Ease; id?: string };
+
+const SAMPLES = 400;
+/** The speed profile of a curve (|d progress| per 1/SAMPLES of its length) and its peak. */
+const profile = (ease: Ease) => {
+  const v = Array.from({ length: SAMPLES }, (_, i) => Math.abs(ease((i + 1) / SAMPLES) - ease(i / SAMPLES)));
+  return { v, peak: Math.max(...v, 1e-12) };
+};
+
+/**
+ * The frame from which a move stays under `share` of its peak speed (house 0.1) to its end: where it has landed. A
+ * curve that ends at speed (a leave curve, E.buildIn, E.launchIn) never lands inside its span: its end frame, with
+ * `atSpeed` true.
+ */
+export const landedAt = (m: Move, share: number = GLIDE.landShare): { frame: number; atSpeed: boolean } => {
+  const { v, peak } = profile(m.ease);
+  let i = SAMPLES;
+  while (i > 0 && v[i - 1] <= share * peak) i--;
+  if (i === SAMPLES) return { frame: m.from + m.dur, atSpeed: true };
+  return { frame: Math.ceil(m.from + (i / SAMPLES) * m.dur - 1e-9), atSpeed: false };
+};
+
+/**
+ * The guard for a cut or an unmount at frame `cut`: returns `cut` when the move has landed by then (under 10 % of its
+ * peak speed from that frame on) or has not started; throws when it would be cut mid-ease, with the frame it lands
+ * on. `whip: true` lets a move run into the cut at speed: a declared whip or velocity seam carries it across. Call it
+ * where the cut frame is computed (timeline.ts, an act's constants) so a retime that cuts a move fails at import, not
+ * on the render: `const exitAt = landBeforeCut({ from: CUE.slide, dur: f60(34), ease: E.glideOut }, ACT.next.from)`.
+ */
+export const landBeforeCut = (m: Move, cut: number, o: { share?: number; whip?: boolean } = {}): number => {
+  if (o.whip || cut <= m.from) return cut;
+  const l = landedAt(m, o.share ?? GLIDE.landShare);
+  if (l.atSpeed && cut >= m.from + m.dur)
+    throw new Error(`landBeforeCut: ${m.id ?? 'a move'} ends at speed on f${m.from + m.dur}: land it on an arrive curve, or declare the cut a whip or velocity seam ({ whip: true })`);
+  if (cut < l.frame)
+    throw new Error(`landBeforeCut: ${m.id ?? 'a move'} (f${m.from}-${m.from + m.dur}) is still above ${Math.round((o.share ?? GLIDE.landShare) * 100)} % of its peak speed on f${cut}: cut or unmount from f${l.frame}, start it ${l.frame - cut} f earlier, or declare a whip`);
+  return cut;
+};
+
+/**
+ * The latest start for a move of `dur` frames on `ease` that lands (under 10 % of its peak speed) by frame `cut`; a
+ * curve that ends at speed has to finish first (cut - dur), or run into a declared whip.
+ */
+export const latestStart = (cut: number, dur: number, ease: Ease, share: number = GLIDE.landShare): number =>
+  Math.floor(cut - landedAt({ from: 0, dur, ease }, share).frame);
