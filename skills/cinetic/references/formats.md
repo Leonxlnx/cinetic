@@ -46,7 +46,7 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 
 **Purpose.** Make a viewer feel a problem, see the product answer it, and remember the name.
 
-**Length.** 15–45 s, on the track's bars (about 100 BPM, a 2.4 s bar, for a calm film; 120 for a crisp one), with 6–8 story beats per 30 s (8–10 in crisp). Write it as a script of 6–9 short sentences (3–8 words each, about 25–50 words in all), one clean line on screen at a time, each with its own text animation (`references/copy-and-type.md` §1–2b).
+**Length.** 15–45 s, on the track's bars (about 100 BPM, a 2.4 s bar, for a calm film; 120 for a crisp one), with 6–8 story beats per 30 s (8–10 in crisp). Write it as a plain script (`references/copy-and-type.md` §1–2b): what the product is by 3 s, 3–5 lines that each say one thing it does while the UI shows it, then the name and what to do; 2–7 words a line, one clean line on screen at a time, each with its own text animation; `copy-check.py` passes it.
 
 **Act template** (30 s + tail = 15 bars + 60 f at 120 BPM; Tessel's shape, see `references/worked-example.md`). At the calm 100 BPM the same beats fill about 12–13 bars: keep each beat's share of the runtime and let each copy beat carry one sentence of the script.
 
@@ -65,7 +65,7 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
   - The final frame is the poster by default, so it must carry the brand: the mark plus the name, or the mark plus the URL.
   - When the brief gives one practical fact (a date such as "next week", "out now", a URL), it goes on the end card at the secondary size under the lockup, readable for at least 1.7 s. It is the only line besides the name; a film that leaves it out has dropped the brief's call to action.
   - A frame of the device alone is elegant, but it is weak for recall on a paused player. If you end on it anyway, export the poster from the lockup and say so in the README.
-- **Teaser (15–20 s).** Keep the hook, the turn and the lockup, and cut proof down to a single glimpse, or cut it entirely. Budget 6–10 words. The rule "open inside the problem" still applies: never open on the logo.
+- **Teaser (15–20 s).** Keep the hook, the turn and the lockup, and cut proof down to a single glimpse, or cut it entirely. Budget 6–10 words. The first line still says what the product is by 3 s, over the picture of the problem; never open on the logo alone.
 
 **Format gates**
 - There are 6–8 beat rows per 30 s in `TREATMENT.md` (8–10 in crisp), and the device appears in every row.
@@ -221,7 +221,7 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 
 **Purpose.** Teach a flow: the viewer can repeat it afterwards. It is calmer than a launch film but never static.
 
-**Length.** 20–90 s at 90–100 BPM, with one chapter per 2–4 bars and one line of 3–8 words per step, one line at a time.
+**Length.** 20–90 s at 90–100 BPM, with one chapter per 2–4 bars and, after a first line that says what the product is, one plain line of 2–7 words per step, one line at a time.
 
 **Chapter template** (repeat per feature; chapter changes land on downbeats):
 

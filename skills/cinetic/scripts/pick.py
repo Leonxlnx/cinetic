@@ -21,7 +21,7 @@ The script's lines: a film is a short script of real sentences, one clean line o
 every line gets its own text animation. A whole-film plan therefore draws two parts: the picture plan
 (one device per beat from many families: VFX, camera, seams, the product, the end card) and the line
 track, one text animation per sentence (--lines N; default from the format and the length: a launch
-film 6-9, an update film 4-6), all different, from the type arrivals and the lines, layout and swaps
+film 5-8, an update film 4-6), all different, from the type arrivals and the lines, layout and swaps
 families, plus type exits for about half the lines (the others leave by a cut or turn into the next line
 by a swap). The line track is outside the family cap; the picture plan then draws no type device of its
 own. --lines 0 turns the line track off.
@@ -202,7 +202,7 @@ _IMAGERY = re.compile(r'\b(photo\w*|footage)\b', re.I)
 LINE_ARRIVAL_FAMILIES = {'Type arrivals', 'Lines, layout and swaps'}
 LINE_EXIT_FAMILIES = {'Type exits'}
 LINE_CATEGORIES = {'typography_motion', 'opening_hook', 'color_and_light'}
-LINES = {'launch': (6, 9), 'update': (4, 6), 'feature': (3, 6), 'vertical': (4, 7), 'loop': (1, 2), 'sting': (1, 1),
+LINES = {'launch': (5, 8), 'update': (4, 6), 'feature': (3, 6), 'vertical': (4, 7), 'loop': (1, 2), 'sting': (1, 1),
          'walkthrough': (5, 12)}  # sentences per film: (fewest, most); about one per 3.5 s in between
 SECONDS_PER_LINE = 3.5
 UI_FAMILIES = {'UI choreography', 'Micro-interactions', 'Cursor', 'Loaders and progress'}

@@ -484,22 +484,22 @@ result(not shipped_bad, 'the shipped library: plans for every format never deal 
 
 # 9. The script's lines ---------------------------------------------------------------------------
 TYPE_FAMS = {'Type arrivals', 'Lines, layout and swaps', 'Type exits'}
-result([mod.line_count('launch', s_) for s_ in (15, 20, 30, 45)] == [6, 6, 9, 9] and mod.line_count('update', 14) == 4
+result([mod.line_count('launch', s_) for s_ in (15, 20, 30, 45)] == [5, 6, 8, 8] and mod.line_count('update', 14) == 4
        and mod.line_count('sting', 6) == 1 and mod.line_count('loop', 10) == 2,
-       'a script holds 6-9 sentences in a launch film, 4 in a 14 s update, 1 in a sting, 2 in a loop')
+       'a script holds 5-8 sentences in a launch film, 4 in a 14 s update, 1 in a sting, 2 in a loop')
 bad_l, mixed, short = [], [], []
 for s_ in range(12):
     r, d = draw_json('--format', 'launch', '--seconds', '30', '--seed', str(s_), '--direction', 'none', library=SHIPPED)
     lines, exits, pic = d.get('lines', []), d.get('exits', []), d['picks']
     lids = [x['id'] for x in lines]
-    if len(lines) != 9 or len(set(lids)) != 9 or [x['line'] for x in lines] != list(range(1, 10)):
+    if len(lines) != 8 or len(set(lids)) != 8 or [x['line'] for x in lines] != list(range(1, 9)):
         short.append(f'{s_}: {len(lines)} lines')
     bad_l += [x['id'] for x in lines if x['family'] not in {'Type arrivals', 'Lines, layout and swaps'}]
     bad_l += [x['id'] for x in exits if x['family'] != 'Type exits']
     if len(exits) != 4 or set(lids) & {x['id'] for x in pic} or set(lids) & {x['id'] for x in exits}:
         short.append(f'{s_}: {len(exits)} exits, or a line also drawn elsewhere')
     mixed += [x['id'] for x in pic if x['family'] in TYPE_FAMS or x['category'] == 'typography_motion']
-result(not short and not bad_l, 'a 30 s launch plan draws 9 different text animations (one per line) and 4 exits from the type families',
+result(not short and not bad_l, 'a 30 s launch plan draws 8 different text animations (one per line) and 4 exits from the type families',
        '; '.join(short[:3]) + ' ' + ', '.join(bad_l[:3]))
 result(not mixed, 'with a line track the picture plan draws no type device of its own', ', '.join(sorted(set(mixed))[:4]))
 r, d = draw_json('--format', 'launch', '--seconds', '30', '--seed', '3', '--lines', '7', '--direction', 'none', library=SHIPPED)

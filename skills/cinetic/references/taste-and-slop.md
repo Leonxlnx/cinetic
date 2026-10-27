@@ -30,7 +30,7 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 
 ## A. Concept and story
 - **A1 Feature tour.** Feature, feature, feature, logo; the viewer has nothing to remember. **Fix:** problem → turn → promise; run the deletion test both ways (`references/concept-and-story.md` §4).
-- **A2 Wrong first frame.** Opening on "Introducing…", a question, the logo or a blank frame. **Fix:** open inside the problem; felt by 1 s, stated by 2 s.
+- **A2 Wrong first frame.** Opening on "Introducing…", a question, the logo or a blank frame. **Fix:** the picture opens inside the problem (felt by 1 s) while the first line says what the product is, in plain words, by 3 s (`copy-check.py`).
 - **A3 Borrowed props.** A rocket, lightbulb, globe with arcs, up-and-right chart, floating phone, sparkle for AI (HB10), shield for security. **Fix:** the ownership test; build every image from the product's own objects.
 - **A4 A style posing as an idea.** "Bold, kinetic, minimal, 3D." **Fix:** write Idea / Device / Grammar first; the style follows from them.
 - **A5 Demo without a cause, or a rushed result.** UI moves because the timeline says so, or the result is on screen 11 f before a whip. **Fix:** cause → action → result, with the result held for its reading hold (max(60, 42 + 8 f per word) in calm, 36 f + 6 f per word in crisp).

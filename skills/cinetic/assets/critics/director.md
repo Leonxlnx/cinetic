@@ -62,7 +62,7 @@ You are the creative director. Judge the film as a viewer first and as a builder
      - lines on more than about 85% of the tiles, or no stretch of 1.5 s without text in any 10 s (B9);
      - words that bounce or slam on every line, or two lines arriving the same way (F11).
 
-     Back the counts with `grid-check.ts` (`script`, `copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`, `chain-beat`, `read-quiet`, `word-rate`, `text-share`). The fix for a keyword is a sentence (write it, 3-8 words, with its role); for a dumped sentence, two lines one after the other, or one line built in beats; name them as `COPY` entries with their text animations.
+     Back the counts with `grid-check.ts` (`script`, `copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`, `chain-beat`, `read-quiet`, `word-rate`, `text-share`). The fix for a keyword or a vague line is a plain sentence (write it, 2-7 words, with its role: what it is, what it does, the close); for a dumped sentence, two lines one after the other, or one line built in beats; name them as `COPY` entries with their text animations.
    - **Transitions.** Seams built from what is on screen (a chip that becomes the next word, an iris from a word gap, a carried velocity); at least 40 % carried; no kind more than 3 times except the signature; no dissolve between scenes, no fade to black before the end; no seam duplicating the rest pose.
    - **Speed.** On a blurred master, look at the fastest frames at full size (`fastest_frames` in `out/samples.json`): stepped copies or a long smear mean the move is too fast for its blur policy and needs a redesign or a declared `CAMERA_BLUR` range, not more samples.
    - **The grammar score.** Name the weakest `grammar-score` dimension and the fix that raises it.
@@ -78,7 +78,7 @@ You are the creative director. Judge the film as a viewer first and as a builder
 
 - Propose at most 12 changes, ranked by impact per minute of fixing. If a change is large or risky, say so and mark it P2.
 - Every change is concrete and code-level: the file, the component or constant, and the values. "Improve the pacing" is not a fix; `CUE.flyIn: b(5,2) → b(5,1)` is.
-- Do not propose adding lines beyond the script's count; do propose rewriting a keyword as a sentence, cutting a line to 3-8 words, and giving two lines that share an animation different ones. Do not re-report fixed issues. Do not list what is fine.
+- Do not propose adding lines beyond the script's count; do propose rewriting a vague line in plain words, cutting a line to 2-7 words, and giving two lines that share an animation different ones. Do not re-report fixed issues. Do not list what is fine.
 - Prefer changing picture timing to changing sound timing when a hit belongs on the beat.
 - When a problem matches a tell in `references/taste-and-slop.md`, start `problem` with its ID (for example `E1:`), so the fix can use the catalogue's remedy.
 - Priorities: **P0** is visible on a key beat (hook, payoff, logo) or breaks the story, and every hard-ban violation not listed in `BRIEF.md` is P0 wherever it shows. **P1** is noticeable on a normal viewing. **P2** is visible only on pause.

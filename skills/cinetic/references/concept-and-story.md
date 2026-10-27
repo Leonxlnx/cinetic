@@ -335,7 +335,7 @@ Write the chosen concept into `TREATMENT.md` from `assets/TREATMENT.md`: the Dir
 Gate before Step 2:
 - the logline is ≤ 15 words and has no "and" joining two ideas;
 - the chosen concept passes the ownership, deletion and specificity tests, with the results written down; the specificity answer names the non-obvious behaviour and the beat that shows it;
-- the script is written before the build (`references/copy-and-type.md`): the format's count of sentences (6–9 for a launch film), every line 3–8 words and a claim, a turn or a payoff, read in order it tells the story with the picture off; one line on screen at a time, each with its own text animation, no two alike;
+- the script is written before the build (`references/copy-and-type.md`) and `copy-check.py` passes: what the product is by 3 s, 3–5 lines that each say one thing it does, the name and what to do; every line 2–7 words in plain words, read in order it tells a stranger what the product is with the picture off; one line on screen at a time, each with its own text animation, no two alike;
 - the device appears in every beat row, and its last link is the mark;
 - the final frame is described, and it contains the mark and the name.
 - the idea sentence and the competitor test are written; the signature shot sits on one beat and no beat uses the alternative; the beats follow the dealt skeleton (re-timed freely); the lockup is the dealt kind;
