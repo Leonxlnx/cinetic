@@ -217,13 +217,11 @@ export const COPY: Copy[] = [
   { id: 'close', text: RUN.lines.close, in: CUE.closeLine, resolved: CUE.closeLine + f60(12), out: TOTAL, reveal: 'focus' },
 ];
 
-// A line must stay readable for its hold before it leaves: a longer line or a faster track that cuts a read short
-// fails here, so the timeline is retimed, not the read.
+// A cue placed in beats never shortens a read: at a faster track the beats shrink, so a line leaves on its read instead
+// of its cue (the acts take each line's exit from COPY). Where an act line comes first, the cut takes the line.
 for (const c of COPY) {
   if (c.kind || c.out >= TOTAL) continue;
-  const need = f60(holdFor(wordCount(c.text), pace));
-  if (c.out - c.resolved < need)
-    throw new Error(`timeline: "${c.id}" holds ${c.out - c.resolved} f after it resolves; it needs about ${need} f: move its exit cue a beat later or shorten the line`);
+  c.out = Math.min(TOTAL, Math.max(c.out, c.resolved + f60(holdFor(wordCount(c.text), pace))));
 }
 if (RUN.steps.length > STEPS.length) throw new Error('timeline: one STEPS cue per step (add cues for a fifth step)');
 

@@ -4,7 +4,7 @@ import { U } from '../brand/tokens';
 import { Defocus } from '../fx/Defocus';
 import { settleLeft, Words } from '../fx/Words';
 import { E, prog } from '../lib/anim';
-import { ACT, copy, CUE, f60x, H, W } from '../timeline';
+import { ACT, copy, f60x, H, W } from '../timeline';
 import { PAGE, sentenceSize, sentenceStyle, useAbs } from './stage';
 
 // PAIN - the problem as one beat: the whole line on screen in one frame, coming into focus in 10 f while it drifts
@@ -20,7 +20,8 @@ export const Pain: React.FC = () => {
   const n = c.text.trim().split(/\s+/).length;
   const cut = ACT.promise.from;
   // in: the drift's last 70 px, entering from the left so it carries the last line's rightward speed
-  const x = -BEAT_MOVE.drift * U * settleLeft(F - c.in, f60x(30)) + BEAT_MOVE.exit * U * E.launchIn(prog(F, CUE.exitPain, cut, E.linear));
+  const out = Math.min(c.out, cut - f60x(12)); // the exit starts on the line's read (COPY), never later than the cut allows
+  const x = -BEAT_MOVE.drift * U * settleLeft(F - c.in, f60x(30)) + BEAT_MOVE.exit * U * E.launchIn(prog(F, out, cut, E.linear));
   return (
     <AbsoluteFill style={{ background: PAGE.ground, overflow: 'hidden' }}>
       {F >= c.in && F < cut && (

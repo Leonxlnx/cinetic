@@ -84,8 +84,8 @@ export const Open: React.FC = () => {
               dur={f60x(4)}
               rise={0}
               arriveX={0.35}
-              out={what.out}
-              outDur={cut - what.out}
+              out={Math.min(what.out, cut - f60x(8))}
+              outDur={Math.max(f60x(8), cut - what.out)}
               exit="launch"
               exitDir="right"
               exitAt={cut - 1}

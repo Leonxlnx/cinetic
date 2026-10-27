@@ -99,6 +99,8 @@ export const CUE: Record<string, number> = {
   stream: bt(13),
   zoomOut: bt(16),
   push3d: bt(16.5),
+  settle3d: bt(17.75),
+  drift3d: bt(18.75),
   whipOut: bt(19.5),
   // cards: a card lands by shrinking, two more fan out from behind it, they collapse and leave up
   cards: bt(20),
@@ -180,7 +182,7 @@ export const STRUCTURAL: string[] = [];
 export const SALIENCE: Record<string, Salience> = {
   rise: 'cut', what: 'copy', sweep: 'life', type: 'life', whipL: 'move', whipR: 'move',
   slide: 'cut', pull: 'move', push: 'life', fly: 'hit',
-  window: 'cut', build: 'copy', stream: 'life', zoomOut: 'move', push3d: 'move', whipOut: 'move',
+  window: 'cut', build: 'copy', stream: 'life', zoomOut: 'move', push3d: 'move', settle3d: 'life', drift3d: 'life', whipOut: 'move',
   cards: 'cut', connect: 'copy', fan: 'move', collapse: 'move', cardsOut: 'move',
   page: 'cut', sib1: 'hit', sib2: 'hit', dim: 'move', toast: 'hit', blackout: 'move',
   stage1: 'cut', stage2: 'hit', stage3: 'hit',
@@ -212,7 +214,7 @@ const popped = (id: string, text: string, inF: number, out: number): Copy => ({ 
 export const COPY: Copy[] = [
   said('what', TEASER.lines.what, CUE.what, CUE.whipL),
   { id: 'request', text: TEASER.request.text, kind: 'ui', in: CUE.type, resolved: CUE.whipR, out: ACT.window.from },
-  said('build', TEASER.lines.build, CUE.build, CUE.whipOut),
+  said('build', TEASER.lines.build, CUE.build, Math.round(CUE.whipOut - (CUE.whipOut - CUE.drift3d) / 3)), // it leaves a little before the whip, so it is gone when the next line arrives
   { id: 'status', text: TEASER.window.status, kind: 'ui', in: CUE.window + f60(20), resolved: CUE.window + f60(30), out: ACT.cards.from },
   popped('connect', TEASER.lines.connect, CUE.connect, CUE.cardsOut),
   ...TEASER.cards.map((c, i): Copy => ({ id: `card${i + 1}`, text: `${c.app} ${c.event}`, kind: 'ui', in: i === 0 ? CUE.cards : CUE.fan, resolved: (i === 0 ? CUE.cards : CUE.fan) + f60(16), out: ACT.page.from })),
@@ -223,13 +225,11 @@ export const COPY: Copy[] = [
   { id: 'close', text: TEASER.lines.close, in: CUE.close, resolved: CUE.close + f60(12), out: TOTAL, reveal: 'focus' },
 ];
 
-// A line must stay readable for its hold before it leaves: a longer line or a faster track that cuts a read short
-// fails here, so the timeline is retimed, not the read.
+// A cue placed in beats never shortens a read: at a faster track the beats shrink, so a line leaves on its read instead
+// of its cue (the acts take each line's exit from COPY). Where an act line comes first, the cut takes the line.
 for (const c of COPY) {
   if (c.kind || c.out >= TOTAL) continue;
-  const need = f60(holdFor(wordCount(c.text), pace));
-  if (c.out - c.resolved < need)
-    throw new Error(`timeline: "${c.id}" holds ${c.out - c.resolved} f after it resolves; it needs about ${need} f: move its exit cue a beat later or shorten the line`);
+  c.out = Math.min(TOTAL, Math.max(c.out, c.resolved + f60(holdFor(wordCount(c.text), pace))));
 }
 
 /** When each COPY entry is being read: [from, to) frame ranges by id (src/lib/pace.ts readingWindows()). */

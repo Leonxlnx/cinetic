@@ -113,6 +113,7 @@ export const CUE: Record<string, number> = {
   // taglines: the hero picture pulling back, two taglines, a push into the cut
   taglines: bt(24),
   tag1: bt(24.25),
+  tagOut: bt(27),
   tagGone: bt(27.75),
   tag2: bt(28.5),
   push: bt(31),
@@ -180,7 +181,7 @@ export const SALIENCE: Record<string, Salience> = {
   brand: 'cut', mark: 'hit', rise: 'move',
   wall: 'cut', find: 'copy', wallOut: 'move',
   rivers: 'cut', plan: 'copy', swap: 'copy', rushOut: 'move',
-  taglines: 'cut', tag1: 'copy', tagGone: 'life', tag2: 'copy', push: 'move',
+  taglines: 'cut', tag1: 'copy', tagOut: 'move', tagGone: 'life', tag2: 'copy', push: 'move',
   end: 'cut', endMark: 'hit', close: 'copy', lockup: 'hit', last: 'cut',
 };
 
@@ -213,19 +214,17 @@ export const COPY: Copy[] = [
   popped('find', AD.lines.find, CUE.find, CUE.wallOut),
   popped('plan', AD.lines.plan[0], CUE.plan, CUE.swap),
   { id: 'swap', text: AD.lines.plan[1], in: CUE.swap, resolved: CUE.swap + f60(10), out: CUE.rushOut + f60(12), swap: 'plan', reveal: 'focus' },
-  popped('tag.1', AD.lines.taglines[0], CUE.tag1, CUE.tag2 - tagLeave, { chain: 'tag', mode: 'replace' }),
+  popped('tag.1', AD.lines.taglines[0], CUE.tag1, Math.min(CUE.tagOut, CUE.tag2 - tagLeave), { chain: 'tag', mode: 'replace' }),
   popped('tag.2', AD.lines.taglines[1], CUE.tag2, ACT.end.from, { chain: 'tag', mode: 'replace' }), // cut on the push, still read
   { id: 'wordmark', text: AD.name, kind: 'name', in: CUE.endMark + f60(30), resolved: CUE.endMark + f60(42), out: TOTAL },
   { id: 'close', text: AD.lines.close, in: CUE.close, resolved: CUE.close + f60(10), out: TOTAL, reveal: 'focus' },
 ];
 
-// A line must stay readable for its hold before it leaves: a longer line or a faster track that cuts a read short
-// fails here, so the timeline is retimed, not the read.
+// A cue placed in beats never shortens a read: at a faster track the beats shrink, so a line leaves on its read instead
+// of its cue (the acts take each line's exit from COPY). Where an act line comes first, the cut takes the line.
 for (const c of COPY) {
   if (c.kind || c.out >= TOTAL) continue;
-  const need = f60(holdFor(wordCount(c.text), pace));
-  if (c.out - c.resolved < need)
-    throw new Error(`timeline: "${c.id}" holds ${c.out - c.resolved} f after it resolves; it needs about ${need} f: move its exit cue a beat later or shorten the line`);
+  c.out = Math.min(TOTAL, Math.max(c.out, c.resolved + f60(holdFor(wordCount(c.text), pace))));
 }
 
 /** When each COPY entry is being read: [from, to) frame ranges by id (src/lib/pace.ts readingWindows()). */

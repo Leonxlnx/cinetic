@@ -22,6 +22,8 @@ export const windowMoves = (): CamMove[] => [
   { at: ACT.window.from, frames: CUE.zoomOut - ACT.window.from, zoom: 1.03, ease: E.linear },
   { at: CUE.zoomOut, frames: f60(20), zoom: 0.52, ease: E.strongInOut },
   { at: CUE.push3d, frames: f60(80), zoom: 1.6, yaw: -12, ease: E.glideOut },
+  { at: CUE.settle3d, frames: CUE.drift3d - CUE.settle3d, zoom: 1.03, yaw: 3, ease: E.stdInOut }, // the push settles into a slow turn back
+  { at: CUE.drift3d, frames: CUE.whipOut - CUE.drift3d, look: { y: -24 * U }, ease: E.softIn }, // and starts to drift up into the whip
   { at: CUE.whipOut, frames: ACT.cards.from - CUE.whipOut, pan: { y: -1100 * U }, ease: E.launchIn },
 ];
 

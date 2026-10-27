@@ -44,8 +44,9 @@ export const System: React.FC = () => {
   const slide = 80 * U * settleLeft(F - c.in, f60x(26));
   const pop = prog(F, c.in, c.in + f60x(10), E.snapOut);
   const k = hubPush(F);
-  const float = prog(F, CUE.floatOff, CUE.floatOff + f60x(14), E.buildIn);
-  const gone = prog(F, CUE.floatOff + f60x(6), CUE.floatOff + f60x(14), E.linear);
+  const off = Math.max(CUE.floatOff, c.out); // the words float off on their read (COPY), the mark stays
+  const float = prog(F, off, off + f60x(14), E.buildIn);
+  const gone = prog(F, off + f60x(6), off + f60x(14), E.linear);
   const page = (
     <AbsoluteFill style={{ background: PAGE.ground, overflow: 'hidden' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${H / 2}px`, transform: `scale(${k.toFixed(5)})` }}>

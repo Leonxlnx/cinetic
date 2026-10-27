@@ -239,7 +239,7 @@ const halves = (id: string, text: readonly [string, string], inA: number, inB: n
 
 // Every on-screen word of the film. The module labels are the product's own strings (UI).
 export const COPY: Copy[] = [
-  { id: 'name', text: EXPLAIN.name, kind: 'name', in: CUE.giant, resolved: CUE.giant + f60(12), out: CUE.what },
+  { id: 'name', text: EXPLAIN.name, kind: 'name', in: CUE.giant, resolved: CUE.giant + f60(8), out: CUE.what },
   said('what', EXPLAIN.lines.what, CUE.what, CUE.exitWhat),
   { id: 'pain', text: EXPLAIN.lines.pain, in: CUE.pain, resolved: CUE.pain + f60(10), out: CUE.exitPain, reveal: 'focus' },
   halves('promise', EXPLAIN.lines.promise, CUE.promise, CUE.promise2, CUE.grow),
@@ -250,13 +250,11 @@ export const COPY: Copy[] = [
   { id: 'close', text: EXPLAIN.lines.close, in: CUE.close, resolved: CUE.close + f60(18), out: TOTAL, reveal: 'focus' },
 ];
 
-// A line must stay readable for its hold before it leaves: the cues above are set for the template's 2-7 word lines at
-// 90 BPM; a longer line or a faster track that cuts a read short fails here, so the timeline is retimed, not the read.
+// A cue placed in beats never shortens a read: at a faster track the beats shrink, so a line leaves on its read instead
+// of its cue (the acts take each line's exit from COPY). Where an act line comes first, the cut takes the line.
 for (const c of COPY) {
   if (c.kind || c.out >= TOTAL) continue;
-  const need = f60(holdFor(wordCount(c.text), pace));
-  if (c.out - c.resolved < need)
-    throw new Error(`timeline: "${c.id}" holds ${c.out - c.resolved} f after it resolves; it needs about ${need} f: move its exit cue a beat later or shorten the line`);
+  c.out = Math.min(TOTAL, Math.max(c.out, c.resolved + f60(holdFor(wordCount(c.text), pace))));
 }
 
 /** When each COPY entry is being read: [from, to) frame ranges by id (src/lib/pace.ts readingWindows()). */
