@@ -17,13 +17,18 @@
  *   script         the film's words are a script of short real sentences, one clean line on screen at a
  *                  time. A line is a COPY entry, a build chain (its fragments joined) or one fragment of a
  *                  replace chain; ui strings, `kind: 'name'` entries and the end card (an entry that holds
- *                  to the end of the body or resolves inside END) are not lines. Every line holds 3-8
- *                  words (over 8: an error, say it in two sentences; 1-2: a warning, and a single word is
- *                  a keyword, not a line); more than half the lines under 3 words is a keyword pile
- *                  (warning); two lines on screen at once (one arrives before the other starts to leave,
- *                  after its read) is an error unless the later one declares `swap: '<id>'` (or true):
- *                  a deliberate swap that takes the old line's place in one move. A film whose lines are
- *                  mostly sentences (60 % or more of 3-8 words) is held to the script's reading budget:
+ *                  to the end of the body or resolves inside END) are not lines. Every line holds 2-7
+ *                  words (over 7: an error, say it in two sentences; a single word: a warning, a keyword,
+ *                  not a line); more than half the lines a single word is a keyword pile (warning); two
+ *                  lines on screen at once (one arrives before the other starts to leave, after its read)
+ *                  is an error unless the later one declares `swap: '<id>'` (or true): a deliberate swap
+ *                  that takes the old line's place in one move. Then the wording, by copy-check.py (beside
+ *                  this script; Python 3 from $PYTHON, python3, python or py -3): every COPY entry is read
+ *                  as a stranger reads it, and its errors are script errors: vague or fancy words, metaphors,
+ *                  slogan shapes, a line with no verb or more than one claim, no name, no line that says
+ *                  what the product is by 3 s (an update film: the name and the version by 3 s, from
+ *                  LOOK.filmType). --no-copy skips the wording (timing-only fixtures). A film whose lines
+ *                  are mostly sentences (60 % or more of 2-7 words) is held to the script's reading budget:
  *                  50 words, 2.4 words a second in any 5 s, 1.6 over the body, text on 85 % of it
  *   fragment       words per chain fragment: a warning above maxNewWords (calm 4, crisp 5), an error
  *                  above maxNewWords + 2 when calm or above 10 when crisp; a line that is not a chain is
@@ -157,26 +162,27 @@
  *   Without a path: src/timeline.ts, else timeline.js. Node 22.18+ runs it without tsx too, when
  *   the timeline has no extensionless imports (a HyperFrames timeline.js):
  *   node scripts/grid-check.ts timeline.js
- *   --strict  warnings fail too.   --json  machine-readable report on stdout.
+ *   --strict  warnings fail too.   --json  machine-readable report on stdout.   --no-copy  skip copy-check.py.
  *   --onsets  extra sound onsets: a JSON array of film frames, or {"frames": [...]} or
  *             {"seconds": [...]} (an analysed effects or voice track).
  *   --lead    the picture-lead window in film frames, as `min,max` of (picture - sound): -3,1.
  * Exit codes: 0 pass, 1 a check failed (or a warning with --strict), 2 bad arguments / import error.
  */
+import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createContext, runInContext } from 'node:vm';
 
 type Act = { from: number; dur: number };
 type Copy = { id: string; text: string; in: number; resolved: number; out?: number | null; kind?: string; chain?: string; mode?: string; reveal?: string; swap?: string | boolean };
 /**
- * The script (house numbers): a line is one short sentence of 3-8 words, one clean line on screen at a time.
+ * The script (house numbers): a line is one short sentence of 2-7 words, one clean line on screen at a time.
  * A film whose lines are mostly sentences (modeShare) reads at the script's budget: total words, words a second
  * in any 5 s and over the body, and the share of the body with a line on screen.
  */
-const SCRIPT = { minWords: 3, maxWords: 8, modeShare: 0.6, words: 50, wordsPerSec: 2.4, avgWordsPerSec: 1.6, textShare: 0.85 };
+const SCRIPT = { minWords: 2, maxWords: 7, modeShare: 0.6, words: 50, wordsPerSec: 2.4, avgWordsPerSec: 1.6, textShare: 0.85 };
 type Finding = { check: string; severity: 'error' | 'warn'; message: string };
 type Span = { from: number; to: number; label?: string };
 type Music = {
@@ -600,7 +606,7 @@ async function main() {
     else if (hold < holdNeed(n)) err('text-hold', `COPY ${id} "${c.text}" holds ${hold} f resolved; ${n} word(s) need >= ${holdNeed(n)} f`);
     if (ui) continue; // UI strings keep the product's own layout
     if (!c.chain) {
-      // a line that is not a chain: the script rule holds it to 3-8 words
+      // a line that is not a chain: the script rule holds it to 2-7 words
     } else if (n > fragErr) err('fragment', `COPY ${id} "${c.text}" shows ${n} words at once; a thought longer than ${P.maxNewWords} words arrives as a chain of fragments (timeline.ts chain())`);
     else if (n > P.maxNewWords) warn('fragment', `COPY ${id} "${c.text}" has ${n} words; a fragment holds 1-${P.maxNewWords} (split it into a chain)`);
     const lines = String(c.text).split('\n');
@@ -608,16 +614,16 @@ async function main() {
     const rate = (c.resolved - c.in) / Math.max(1, n - 1);
     if (n >= 3 && rate < 8 * s && c.reveal !== 'focus') warn('reveal-rate', `COPY ${id} "${c.text}" reveals ${n} words in ${c.resolved - c.in} f (${rate.toFixed(1)} f per word < ${8 * s}): a block, not a read; stagger the words or split the line`);
   }
-  // --- script: every line one short sentence (3-8 words); one clean line on screen at a time
+  // --- script: every line one short sentence (2-7 words); one clean line on screen at a time
   for (const l of lines) {
     if (l.n > SCRIPT.maxWords) err('script', `line ${l.id} "${l.text}" has ${l.n} words; a line holds ${SCRIPT.minWords}-${SCRIPT.maxWords}: say it in two sentences, each its own line`);
-    else if (l.n === 1) warn('script', `line ${l.id} "${l.text}" is a single keyword: write a sentence that says something (${SCRIPT.minWords}-${SCRIPT.maxWords} words: a claim, a turn or a payoff)`);
+    else if (l.n === 1) warn('script', `line ${l.id} "${l.text}" is a single keyword: write a sentence that says what the product does (${SCRIPT.minWords}-${SCRIPT.maxWords} words, with a verb)`);
     else if (l.n < SCRIPT.minWords) warn('script', `line ${l.id} "${l.text}" has ${l.n} words: a label, not a sentence; a line holds ${SCRIPT.minWords}-${SCRIPT.maxWords} words that say something`);
     if (l.ids.length === 1 && /\n/.test(l.text)) warn('script', `line ${l.id} "${l.text.replace(/\n/g, ' / ')}" is set on ${l.text.split('\n').length} lines: one clean line, sized to fit (copy-and-type.md, the script)`);
   }
   const shortLines = lines.filter((l) => l.n < SCRIPT.minWords);
   if (lines.length >= 3 && shortLines.length > lines.length / 2)
-    warn('script', `${shortLines.length} of ${lines.length} lines are under ${SCRIPT.minWords} words: a pile of keywords, not a script. Write short sentences that tell the story in order (hook, problem, turn, product, proof, payoff), one line at a time`);
+    warn('script', `${shortLines.length} of ${lines.length} lines are under ${SCRIPT.minWords} words: a pile of keywords, not a script. Write short sentences: what the product is, then one thing it does a line, then the name and what to do`);
   const lineOrder = [...lines].sort((a, b) => a.in - b.in);
   for (let i = 0; i < lineOrder.length; i++)
     for (let j = i + 1; j < lineOrder.length; j++) {
@@ -628,6 +634,26 @@ async function main() {
       if (b.swap === true || (typeof b.swap === 'string' && (b.swap === a.id || a.ids.includes(b.swap)))) continue;
       err('script', `lines ${a.id} "${a.text}" and ${b.id} "${b.text}" are on screen together (f${b.in}-f${Math.min(a.out, b.out)}): one clean line at a time. Let ${a.id} leave before ${b.id} arrives, or mark ${b.id} swap: '${a.id}' when it takes ${a.id}'s place in one move (an erode, a redaction, a wheel, a make-room)`);
     }
+  // --- the wording: copy-check.py reads every entry the way a stranger does (vague words, metaphors, slogans, no
+  // verb, two claims, no name, nothing that says what the product is by 3 s); its errors are script errors
+  if (!has('--no-copy') && COPY.length) {
+    const doc = { fps: FPS, total: bodyEnd, ...(Number.isFinite(endFrom) ? { end: endFrom } : {}), copy: COPY, ...((T.LOOK as { filmType?: string } | undefined)?.filmType === 'update' ? { format: 'update' } : {}) };
+    const script = fileURLToPath(new URL('./copy-check.py', import.meta.url));
+    const win = process.platform === 'win32';
+    const cands = process.env.PYTHON ? [[process.env.PYTHON]] : [['python3'], ['python'], ...(win ? [['py', '-3']] : [])];
+    let rep: { findings?: { rule: string; severity: string; line?: number | null; text?: string | null; message: string }[] } | null = null;
+    for (const [exe, ...pre] of existsSync(script) ? cands : []) {
+      const r = spawnSync(exe, [...pre, script, '--stdin', '--json'], { input: JSON.stringify(doc), encoding: 'utf8', env: { ...process.env, PYTHONUTF8: '1' } });
+      if (r.error || !(r.status === 0 || r.status === 1)) continue;
+      try { rep = JSON.parse(r.stdout); break; } catch { continue; }
+    }
+    if (!rep) warn('script', 'copy-check.py did not run (no Python 3 found: set PYTHON), so the wording was not checked');
+    // grid-check measures length, keywords and lines on screen together itself, on its own frames
+    for (const f of rep?.findings ?? []) {
+      if (['long', 'keyword', 'together'].includes(f.rule)) continue;
+      (f.severity === 'error' ? err : warn)('script', `copy-check ${f.rule}${f.text ? ` "${f.text}"` : ''}: ${f.message}`);
+    }
+  }
   if (words > maxWords) err('word-total', `${words} on-screen words; the budget is ${maxWords} (--max-words). Typed commands, code, URLs and app labels belong in COPY with kind: 'ui' and are not budgeted`);
 
   // --- reading windows: the timeline's READ, else the cues.json copy block's `read`, else the same rule here

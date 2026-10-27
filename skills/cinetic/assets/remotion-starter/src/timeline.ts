@@ -79,17 +79,17 @@ export const TOTAL = b(7) + TAIL;
 // carries a trailing `// offgrid: <reason>` comment, which grid-check accepts.
 // Picture code reads these; src/sync.ts turns them into sound events.
 export const CUE = {
-  fragA: b(1), // "It lands" rises into a frame that is already moving (creep, a light pool crossing the paper)
-  drop: b(1, 3), // once "It lands" has been read: the accent dot is born above the line and falls...
+  fragA: b(1), // "plinth cuts" rises into a frame that is already moving (creep, a light pool crossing the paper)
+  drop: b(1, 3), // once "plinth cuts" has been read: the accent dot is born above the line and falls...
   land: b(2), // ...and lands where the line will end, on the downbeat: the camera punches in on the contact
-  fragB: b(2, 0, 2), // "on cue." answers on the off-beat; the line jumps to make room, the dot is its period
+  fragB: b(2, 0, 2), // "to music." answers on the off-beat; the line jumps to make room, the dot is its period
   exit: b(3, 0, 2), // the read is over: the line (dot and all) accelerates out to the left...
   cut: b(3, 1), // ...cut on its fastest frame: the plate (the film's real imagery) arrives already moving left
   band: b(3, 2), // a band of light crosses the plate, mid-frame on the beat
   plateCut: b(3, 3), // a hard cut on the beat to a closer frame of the same set, still drifting left
   band2: b(4), // the light crosses the closer frame too, mid-frame on the downbeat
   morph: b(4, 1), // the plate contracts into the gap of the next line: the picture becomes a word
-  fragC: b(4, 1), // "Nothing stands" and "still" rise on either side of it as it contracts (a 3-word line needs the bar)
+  fragC: b(4, 1), // "Every cut" and "lands." rise on either side of it as it contracts (a 3-word line needs the bar)
   swapA: b(4, 2), // the picture in the gap cuts to the next frame of the set...
   swapB: b(4, 2, 2), // ...and the next (designed steps)
   exit2: b(5, 1, 1), // the read is over: the line and its picture drop out of the frame, accelerating...
@@ -155,7 +155,7 @@ export const SEAMS: Seam[] = [
   { at: ACT.plate.from, kind: 'velocity', carry: 'x', dir: -1, id: 'statement' },
   // a cut inside the plate, on the beat: a closer frame of the same set, the drift keeping its direction
   { at: CUE.plateCut, kind: 'hard', id: 'plate-closer' },
-  // the full-frame plate contracts into the gap of "Nothing stands [ ] still"
+  // the full-frame plate contracts into the gap of "Every cut [ ] lands."
   { at: ACT.frame.from, kind: 'morph', carry: 'scale', id: 'plate-into-line' },
   // the line drops out and the relief opens on the same downward speed
   { at: ACT.mark.from, kind: 'velocity', carry: 'y', dir: 1, id: 'line-drops' },
@@ -230,7 +230,7 @@ export const line = (id: string, text: string, inF: number, out?: number, o: { i
 
 /**
  * One line built in beats, one COPY entry per fragment (`<id>.1`, `<id>.2`, ...), rendered by fx/Chain:
- * the script's sentence (3-8 words in all) arrives in two or three parts with a picture beat between
+ * the script's sentence (2-7 words in all) arrives in two or three parts with a picture beat between
  * them (the product does what the first part set up). It is still one line: grid-check's script rule
  * reads a build chain as one sentence. Give each fragment its first frame; `resolved` follows from the pace.
  *   build    fragments append to one held line, which re-centres; the line clears as a whole, at
@@ -258,11 +258,13 @@ export const chain = (id: string, mode: 'build' | 'replace', fragments: [text: s
 // Every on-screen word: the word budget (kind: 'ui' entries are counted apart), the hold check,
 // and the text-flow checks (fragments, words on screen at once, copy rate, text share) read this.
 export const COPY: Copy[] = [
-  // The script, one clean line at a time. "It lands" (read alone) -> the dot falls and lands where the line
-  // will end -> "on cue." The dot is the period, and the line says what the picture just did.
-  ...chain('statement', 'build', [['It lands', CUE.fragA], ['on cue.', CUE.fragB]], { out: CUE.exit }),
-  // The picture takes its turn (the plate, no words), then holds the line open: "Nothing stands [picture] still".
-  line('frame', 'Nothing stands still', CUE.fragC, CUE.exit2),
+  // The script, one clean line at a time, plain words (copy-check.py): line 1 says what the product does, by name.
+  // "plinth cuts" (read alone) -> the dot falls and lands where the line will end -> "to music." The dot is the
+  // period, and the line says what the picture just did. For the real product, write
+  // "[Name] is a [plain category] for [who]." or "[Name] turns [input] into [output]."
+  ...chain('statement', 'build', [['plinth cuts', CUE.fragA], ['to music.', CUE.fragB]], { out: CUE.exit }),
+  // The picture takes its turn (the plate, no words), then holds the line open: "Every cut [picture] lands."
+  line('frame', 'Every cut lands.', CUE.fragC, CUE.exit2),
   // cinetic:placeholder - the demo's invented name: use the product's, then delete this line.
   { id: 'wordmark', text: 'plinth', kind: 'name', in: CUE.lockCut, resolved: CUE.lockup, out: TOTAL },
 ];

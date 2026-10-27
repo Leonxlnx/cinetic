@@ -86,7 +86,8 @@ for (const f of readdirSync(FIX).filter((x) => x.endsWith('.ts')).sort()) {
   // extra arguments from an `// args: --cues x.json` line; file names resolve next to the fixture
   const extra = (lines.find((l) => /\bargs:/.test(l)) ?? '').replace(/^.*\bargs:\s*/, '').split(/\s+/).filter(Boolean)
     .map((a) => (!a.startsWith('-') && existsSync(join(FIX, a)) ? join(FIX, a) : a));
-  const r = run(process.execPath, [...strip, '--no-warnings', GRID, join(FIX, f), '--json', ...extra]);
+  // timing fixtures skip the wording (copy-check.py) unless their args line asks for it with --copy
+  const r = run(process.execPath, [...strip, '--no-warnings', GRID, join(FIX, f), '--json', ...(extra.includes('--copy') ? [] : ['--no-copy']), ...extra]);
   const got = count(r.findings ?? []);
   const keys = new Set([...Object.keys(expect), ...Object.keys(got)]);
   const diffs = [...keys].filter((k) => (expect[k] ?? 0) !== (got[k] ?? 0)).map((k) => `${k}: want ${expect[k] ?? 0}, got ${got[k] ?? 0}`);
@@ -184,8 +185,8 @@ if (!calm || /another platform/.test(calm.error ?? '')) {
   if (existsSync(join(STARTER, 'src', 'music.ts'))) copyFileSync(join(STARTER, 'src', 'music.ts'), join(rep, 'music.ts')); // timeline.ts imports ./music
   const tl = readFileSync(join(STARTER, 'src', 'timeline.ts'), 'utf8');
   writeFileSync(join(rep, 'timeline.ts'), tl.replace("chain('statement', 'build',", "chain('statement', 'replace',"));
-  const r = run('npx', ['tsx', GRID, join(rep, 'timeline.ts'), '--json'], STARTER);
-  const timing = { ...r, findings: (r.findings ?? []).filter((x) => x.check !== 'script') }; // its fragments become lines of 2-3 words
+  const r = run('npx', ['tsx', GRID, join(rep, 'timeline.ts'), '--json', '--no-copy'], STARTER); // timing only: its fragments become lines of two words
+  const timing = { ...r, findings: (r.findings ?? []).filter((x) => x.check !== 'script') };
   result(!tl.includes("chain('statement', 'build',") ? false : clean(timing, 'calm'),
     'the starter statement as a replace chain passes as calm (each exit ends before the next fragment)', why(timing));
 

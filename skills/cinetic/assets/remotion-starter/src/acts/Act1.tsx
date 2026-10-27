@@ -11,9 +11,9 @@ import { ACT, CUE, chainOf, f60x, H, W } from '../timeline';
 import { Paper } from './ground';
 
 // ACT 1 - the statement builds in two fragments around a picture beat: fragment, picture, fragment.
-// "It lands" rises into a frame that is already moving (a slow creep, two pools of light crossing the paper)
+// "plinth cuts" rises into a frame that is already moving (a slow creep, two pools of light crossing the paper)
 // and is read in the quiet. Then the picture takes its turn: the accent dot is born above the line, falls,
-// and lands where the finished line will end; the camera punches in on the contact. "on cue." rises on the
+// and lands where the finished line will end; the camera punches in on the contact. "to music." rises on the
 // off-beat as the line jumps to make room (the calm pace's re-centre), the dot seated as its period. After
 // the read the whole line, dot and all, accelerates out to the left (fx/Chain exit 'launch') and the film
 // cuts on its fastest frame: Act2's plate opens already moving at 0.7 of that speed. Under it all runs the beat's

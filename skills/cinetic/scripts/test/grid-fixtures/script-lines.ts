@@ -2,7 +2,7 @@
 // A script of short sentences, one line at a time, with three faults the script rule finds or forgives:
 // the second line arrives after the first has been read but while it is still on screen (an error: two
 // lines at once); the third takes the second's place in one move and says so (swap: 'b', passes); the
-// fourth is set on two lines (a warning: one clean line). The name is not a line. The lines are 3-8 word
+// fourth is set on two lines (a warning: one clean line). The name is not a line. The lines are 2-7 word
 // sentences, so the film reads at the script's budget: text on about 77 % of the body passes (a calm film
 // of fragments fails over 75 %).
 export const FPS = 60;

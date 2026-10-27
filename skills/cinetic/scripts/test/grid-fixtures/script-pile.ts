@@ -1,7 +1,9 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: script:warn=6
+// Fixture for scripts/test/grid-check.test.mjs. expect: script=6 script:warn=2
+// args: --copy
 // A keyword pile: five lines of one or two words ("Speed." "Less noise." ...), each held and read, the
-// picture taking its turns between them. Every line is a label, not a sentence (five warnings), and more
-// than half the lines under 3 words is a pile of keywords, not a script (one more).
+// picture taking its turns between them. The two single words are keywords (two warnings); copy-check.py
+// reads the rest as a stranger would: three lines with no verb ("Total control.": an abstract noun alone says
+// nothing), one fancy word ("Effortless."), no name and no line that says what the product is (six errors).
 export const FPS = 60;
 export const BPM = 100;
 export const PACE_NAME = 'calm';
