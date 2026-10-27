@@ -92,6 +92,8 @@ const small = Cm.cam3dCheck(base, [{ at: 0, frames: 108, yaw: 10 }], f60);
 const big = Cm.cam3dCheck(base, [{ at: 0, frames: 108, yaw: 40 }], f60);
 const both = Cm.cam3dCheck(base, [{ at: 0, frames: 108, yaw: 20, pitch: 14 }], f60);
 const short = Cm.cam3dCheck(base, [{ at: 0, frames: 30, yaw: 20 }], f60);
+const whip = Cm.swing3d({ at: 0, frames: 20, film: f60 }); // a 20 f turn built the documented way, its creep included
+const shortSwing = Cm.cam3dCheck({ ...base, ...whip.start }, whip.moves, f60);
 const rolled = Cm.cam3dCheck(base, [{ at: 0, frames: 108, pitch: 20, roll: 14 }], f60);
 const c3 = Cm.camera3d({ ...base, k: 1.5, yaw: 12 });
 const pl = Cm.place(10.5, 20.25, -100, 'rotateY(4deg)');
@@ -140,7 +142,7 @@ console.log(JSON.stringify({
   },
   cam: {
     sw: { start: sw.start, moves: sw.moves.length, at29: swAt(29).yaw, landed: swAt(30 + 108).yaw, later: swAt(30 + 108 + 300).yaw, mid: swAt(30 + 54).yaw },
-    chk, small, big, both, short, rolled, c3, pl, wz,
+    chk, small, big, both, short, shortSwing, rolled, c3, pl, wz,
     house: Cm.CAM3D,
   },
   grounds: {
@@ -262,6 +264,7 @@ const none = (d) => !d.stepped.length && !d.flashes.length && !d.cameraBlur.leng
   result(C.chk.ok && C.chk.axis === 'yaw' && C.chk.deg >= 15 && C.chk.deg <= 30, 'cam3dCheck: the house turn passes (one axis, 15-30 degrees)', `${C.chk.deg.toFixed(2)} deg ${C.chk.issues.join('; ')}`);
   result(!C.small.ok && !C.big.ok && !C.both.ok && !C.short.ok && !C.rolled.ok, 'cam3dCheck: 10 or 40 degrees, two axes, a 30 f turn and a roll of 14 all fail',
     [C.small, C.big, C.both, C.short, C.rolled].map((c) => c.issues[0] ?? 'ok').join(' | '));
+  result(!C.shortSwing.ok && C.shortSwing.issues.some((x) => /lasts 20 f/.test(x)), 'cam3dCheck: a 20 f swing3d fails on its turn, not saved by its 600 f creep', C.shortSwing.issues.join(' | ') || 'ok');
   result(C.c3.transformStyle === 'preserve-3d' && C.c3.transform.includes('scale3d(1.5, 1.5, 1.5)') && C.c3.transform.includes('rotateY(12deg)') && C.c3.left === 0 && C.c3.top === 0, 'camera3d: preserve-3d, scale on all three axes, left/top 0', C.c3.transform);
   result(C.pl.left === 0 && C.pl.top === 0 && C.pl.transform === 'translate3d(10.500px, 20.250px, -100.000px) rotateY(4deg)', 'place: transforms only (translate3d, then the rest)', C.pl.transform);
   const [w0, w1, wh] = C.wz;

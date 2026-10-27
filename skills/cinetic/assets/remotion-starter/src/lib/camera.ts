@@ -262,13 +262,14 @@ export const cam3dCheck = (base: Shot, moves: readonly CamMove[], film?: Partial
   const axis: 'yaw' | 'pitch' = yaw >= pitch ? 'yaw' : 'pitch';
   const deg = Math.max(yaw, pitch);
   const other = Math.min(yaw, pitch);
-  const turning = moves.filter((m) => Math.abs(m[axis] ?? 0) >= 1).map((m) => m.frames);
+  // the turn's length is the move that turns most on the axis: swing3d's long, small creep is not the turn
+  const turn = moves.reduce<CamMove | null>((best, m) => (Math.abs(m[axis] ?? 0) >= 1 && (!best || Math.abs(m[axis] ?? 0) > Math.abs(best[axis] ?? 0)) ? m : best), null);
   const issues: string[] = [];
   if (deg < CAM3D.deg[0]) issues.push(`the turn is ${deg.toFixed(1)} deg: a 3D move turns ${CAM3D.deg[0]}-${CAM3D.deg[1]}`);
   if (deg > CAM3D.deg[1]) issues.push(`the turn is ${deg.toFixed(1)} deg: more than ${CAM3D.deg[1]} reads as a spin, not a move through the layout`);
   if (other > CAM3D.otherMax) issues.push(`both axes turn (${yaw.toFixed(1)} yaw, ${pitch.toFixed(1)} pitch): one axis per move, the other within ${CAM3D.otherMax}`);
   if (roll > CAM3D.rollMax) issues.push(`roll ${roll.toFixed(1)} deg: keep it within ${CAM3D.rollMax}`);
-  if (turning.length && Math.max(...turning) < f60x(CAM3D.minAxis60, fps)) issues.push(`the turn lasts ${Math.max(...turning).toFixed(0)} f: at least ${CAM3D.minAxis60} f at 60 fps`);
+  if (turn && turn.frames < f60x(CAM3D.minAxis60, fps)) issues.push(`the turn lasts ${turn.frames.toFixed(0)} f: at least ${CAM3D.minAxis60} f at 60 fps`);
   return { axis, deg, yaw, pitch, roll, issues, ok: issues.length === 0 };
 };
 
