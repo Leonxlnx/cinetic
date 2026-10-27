@@ -19,7 +19,8 @@
 # edge; a claim flush left on the accent (data-audit-claim) keeps a 2.5 % left margin; with --speed, a box
 # moving faster than the read limit outside its reading window is listed apart (`moving`), not failed. The audit stills
 # (boxes drawn, safe zone dashed) are kept, and the tweens the audited frames evaluate (lib/registry.ts)
-# are collected for scripts/grammar-score.mjs.
+# are collected for scripts/grammar-score.mjs. Each audited frame also records where the official marks are
+# drawn (the kit's <Img data-logo>), which look-audit.py --layout leaves out of its palette checks.
 #
 # Usage (from the project root):
 #   bash scripts/layout-audit.sh <Comp> [--frames 120,240 | --cues | --copy | --every 6] [--props '{"k":1}']
@@ -312,7 +313,7 @@ const report = {
   speed: maxV > 0 ? { max: maxV, read: maxR, pairs: pairs.length, fastest, fastestRead } : null,
   words: audited.reduce((m, d) => (d.words !== undefined && (!m || d.words > m.max) ? { max: d.words, frame: d.frame, ui: d.uiWords ?? 0 } : m), null),
   zone: audited[0]?.zone, safe: audited[0]?.safe,
-  boxes: audited.map((d) => ({ frame: d.frame, width: d.width, height: d.height, safe: d.safe, boxes: d.boxes })),
+  boxes: audited.map((d) => ({ frame: d.frame, width: d.width, height: d.height, safe: d.safe, boxes: d.boxes, ...(d.logos?.length ? { logos: d.logos } : {}) })),
 };
 fs.writeFileSync(jsonPath, JSON.stringify(report, null, 1) + '\n');
 for (const x of issues) console.log(`  f${x.frame}  ${x.kind}  ${x.id}  ${x.detail}`);

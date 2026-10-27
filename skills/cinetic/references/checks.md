@@ -181,7 +181,8 @@ drift), or measure the seam on a textured region.
 
 Rendered look checks: `hue-count` (2 hue groups warn, 3 fail, outside declared devices and imagery; the hues of the
 brand-supplied colours count as one family), `banned-hue`
-(supplied colours pass), `accent-share`, the wash ceiling (a film is not one colour wash), `tinted-ink`,
+(supplied colours pass; both leave out the official marks: the pixels of a mark with a record in
+`public/logos/logos.json`, where the layout JSON's mark boxes or `--mark-track` say it is drawn on that frame), `accent-share`, the wash ceiling (a film is not one colour wash), `tinted-ink`,
 `negative-space`, `living-ground`, `camera-lock` (the camera never stops, or never on a read: lock 0.5-1 s on each read), `clean-finish`, `type-size` (with the layout JSON), `luminance-flip`,
 `blur-policy`, `word-first-frame`, `fade-detect`, `arrival-front-load`, `image-develop` (a hint), and with the
 layout JSON and the cues the type gate: `type-read` (fails when the largest copy line is under 6.7 % of the frame
@@ -190,6 +191,7 @@ fails on a busy ground) and `type-beat` (warns when no line of 6.7 % or more, at
 second or more). Flags:
 `--imagery x,y,w,h` (boxes holding photographs: natural colour there is not designed colour), `--colour-event
 FROM,TO` (a declared colour event pauses the wash and accent ceilings; the timeline's `COLOUR` ranges are read from the cues), `--second '#…'` (a declared support hue),
+`--logos` (the record, default `public/logos/logos.json`), `--mark-track` (JSON `[{name, from, to, box, toBox?}]`),
 `--tokens`, `--brand`, `--picture-only` (the picture floor alone, fast), `--no-picture`, `--no-floor`.
 
 **The floor against a flat film (motion)** fails the film when any of these is missed:

@@ -51,8 +51,11 @@ mark, the model's own spark, never a generic envelope or a star standing in. It 
   trademark owner; it goes into the delivery notes. Nothing is credited on screen. `logos.mjs check` passes before
   delivery (every owner named: an owner the tool does not know is confirmed on the brand's own site and passed with
   `--owner`).
-- **Their colours are imagery, not the palette.** The accent rule counts the film's own colours: declare a wall's or
-  ring's box to `look-audit.py --imagery x,y,w,h`. Marks stay marks (a ring, a wall, a ticker, a chip, a word in a
+- **Their colours are imagery, not the palette.** The accent rule counts the film's own colours: `look-audit.py` leaves
+  out the pixels of every mark with a record in `public/logos/logos.json`, where the film draws it on each frame. The
+  kit tags each mark `data-logo`, and the layout audit logs where it is, so pass `--layout` from
+  `layout-audit.sh --every 6` (a mark moving from a ring into a sentence is followed); a mark drawn outside the kit
+  gets a declared track (`--mark-track`). Never `--brand` for a mark's colours: that flag is the film's own brand. Marks stay marks (a ring, a wall, a ticker, a chip, a word in a
   line), never a ground or a flood.
 - **Real marks by default where they belong.** When the product has integrations the brief asks for them (Step 0), and
   the templates' rings, walls, tickers and chips show their marks (`kit/logos.tsx`); the text pill is the fallback

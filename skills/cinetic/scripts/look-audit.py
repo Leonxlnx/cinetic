@@ -21,6 +21,12 @@ Look checks (warn unless marked fail):
                   (tokens lines marked cinetic:brand-supplied, or --brand). Brand colours are checked
                   only for contrast (here: none) and the one-accent rule: hue-count counts the hues of
                   every brand-supplied colour together as one family (a mark of three hues is one brand)
+  official marks  hue-count, banned-hue and the colour reads leave out the pixels of the official marks the film
+                  shows in their own colours (Claude's orange, Gemini's gradient): the marks with a record in
+                  public/logos/logos.json (scripts/logos.mjs; --logos another path), where they are drawn on each
+                  frame: the layout audit's mark boxes (--layout; the kit tags each mark data-logo and
+                  layout-audit.sh --every 6 follows a moving one) or a declared track (--mark-track). Every
+                  other pixel keeps the one-accent rule
   accent-share    the accent's hue family (within 20 degrees) covers more than 25 % of the frame outside a
                   declared colour event and outside one designed flood (a run <= 2 s)
   second-hue      a second hue (>= 1 % of the frame, 40 degrees or more from the accent) shows in more than
@@ -453,6 +459,67 @@ def imagery_boxes(args, info, W):
     return out
 
 
+def logos_record(args):
+    """The official marks the film shows: the names in public/logos/logos.json (scripts/logos.mjs writes it; the kit
+    tags each drawn mark data-logo with that name), from --logos, the working folder or beside the cues' folder."""
+    cands = [args.logos] if getattr(args, 'logos', None) else \
+        ['public/logos/logos.json'] + ([os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(args.cues))), 'public', 'logos', 'logos.json')] if args.cues else [])
+    for path in cands:
+        if os.path.isfile(path):
+            try:
+                logos = json.load(open(path, encoding='utf-8')).get('logos') or {}
+            except (OSError, ValueError) as e:
+                die(f'cannot read the logo record {path}: {e}')
+            names = set()
+            for key, e in logos.items():
+                names |= {key.lower(), key.replace('-', ' ').lower(), str((e or {}).get('name') or '').lower()}
+            return path, names - {''}
+    if getattr(args, 'logos', None):
+        die(f'no logo record at {args.logos}')
+    return None, set()
+
+
+def mark_boxes(args, layout, names, W, comp_w, k_, fps):
+    """Where the official marks are drawn (analysis px), as a function of the video frame: the layout audit's mark
+    boxes (layout-audit.sh logs every data-logo on each audited frame: the frames within half the audit's step count)
+    and a declared track (--mark-track JSON [{name, from, to, box: [x, y, w, h], toBox?}], composition frames and px,
+    toBox moving the box in a straight line). Only marks with a record count; each box grows 4 % for its edge and blur."""
+    rows, track = [], []
+    if layout and names:
+        for fr in layout.get('boxes', []):
+            sx = W / (fr.get('width') or layout.get('width') or comp_w)
+            rows.append((fr['frame'] * k_, [(b['x'] * sx, b['y'] * sx, b['w'] * sx, b['h'] * sx) for b in fr.get('logos') or []
+                                            if str(b.get('name', '')).lower() in names]))
+    if getattr(args, 'mark_track', None) and names:
+        try:
+            raw = json.load(open(args.mark_track, encoding='utf-8'))
+        except (OSError, ValueError) as e:
+            die(f'cannot read --mark-track {args.mark_track}: {e}')
+        sx = W / comp_w
+        for r in raw if isinstance(raw, list) else raw.get('marks') or []:
+            if str(r.get('name', '')).lower() in names and len(r.get('box') or []) == 4:
+                track.append((r['from'] * k_, r['to'] * k_, [v * sx for v in r['box']], [v * sx for v in (r.get('toBox') or r['box'])]))
+    if not any(bx for _, bx in rows) and not track:
+        return None
+    frames = sorted({r[0] for r in rows})
+    gaps = sorted(b - a for a, b in zip(frames, frames[1:]) if b - a > 1.5 * k_)  # the f+1 speed pairs left out
+    tol = min(fps / 2, max(3 * k_, gaps[len(gaps) // 2] / 2 if gaps else 3 * k_))
+
+    def grow(x, y, w, h):  # clipped to the frame's top left (a slice past it would wrap round)
+        g = max(2.0, 0.04 * max(w, h))
+        x0, y0, x1, y1 = max(0, int(x - g)), max(0, int(y - g)), int(x + w + g) + 1, int(y + h + g) + 1
+        return (x0, y0, x1 - x0, y1 - y0)
+
+    def at(f):
+        out = [grow(*b) for fr, bx in rows if abs(fr - f) <= tol for b in bx]
+        for a, z, b0, b1 in track:
+            if a <= f <= z:
+                t = 0.0 if z <= a else (f - a) / (z - a)
+                out.append(grow(*[u + (v - u) * t for u, v in zip(b0, b1)]))
+        return [b for b in out if b[2] > 0 and b[3] > 0]
+    return at
+
+
 def colour_events(raw_cues, args, k_=1.0):
     """Declared colour events in film frames: cues `declared.colour` (and inside `declared.fx`), --colour-event."""
     out = []
@@ -501,7 +568,10 @@ def measure_picture(args, info, F):
             _, nong = nonground(rgb)
             if boxes and keep is None:
                 keep = imagery_mask(L.shape, boxes)
-            pic_sample(P, f, rgb, gray, np.hypot(A, B), nong, e, (np.degrees(np.arctan2(B, A)) + 360) % 360, keep)
+            mk = args.mark_at(f) if getattr(args, 'mark_at', None) else []  # the official marks drawn on this frame
+            P.setdefault('marks', []).append(len(mk))
+            pic_sample(P, f, rgb, gray, np.hypot(A, B), nong, e, (np.degrees(np.arctan2(B, A)) + 360) % 360,
+                       imagery_mask(L.shape, boxes + mk) if mk else keep)
     return P, (W, H)
 
 
@@ -903,7 +973,8 @@ def measure(args, info, F, accent, brand, layout, cues):
             C = np.hypot(A, B)
             Hh = (np.degrees(np.arctan2(B, A)) + 360) % 360
             keep = np.ones(L.shape, bool)
-            for (x, y, w, h) in imagery:
+            mk = args.mark_at(f) if getattr(args, 'mark_at', None) else []  # the official marks drawn on this frame
+            for (x, y, w, h) in imagery + mk:
                 keep[max(0, y):y + h, max(0, x):x + w] = False
             if brand_lab:
                 for bl in brand_lab:
@@ -921,8 +992,8 @@ def measure(args, info, F, accent, brand, layout, cues):
             # element scale: the median height of the non-ground blobs
             n_lab, _, st, _ = cv2.connectedComponentsWithStats(nong.astype(np.uint8), connectivity=8)
             hs = [st[i, cv2.CC_STAT_HEIGHT] for i in range(1, n_lab) if st[i, cv2.CC_STAT_AREA] >= 6]
-            pic_sample(S['pic'], f, rgb, gray, C, nong, edges_px, Hh, imagery_mask(L.shape, imagery) if imagery else None)
-            S['samples'].append(dict(
+            pic_sample(S['pic'], f, rgb, gray, C, nong, edges_px, Hh, imagery_mask(L.shape, imagery + mk) if imagery or mk else None)
+            S['samples'].append(dict(marks=len(mk),
                 f=f, groups=groups, banned=round(float(ban.mean()), 4), ground=[int(v) for v in gcol], ground_share=round(gshare, 3),
                 ground_L=round(float(gL[0]), 4), ground_C=round(float(math.hypot(ga[0], gb[0])), 4), nonground=round(float(nong.mean()), 4),
                 pure_black=pure_black, ink_L=round(float(np.percentile(L[nong], 2)), 4) if nong.sum() > 50 else None,
@@ -1238,18 +1309,21 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
         # the declared support hue, short of a second accent, is not a second accent family
         film_groups = [g for g in film_groups if hue_dist(g['h'], sec_read['h']) > 30] or film_groups
     brand_h = [lch[2] for lch in (lch_of_hex(b) for b in brand) if lch[1] >= 0.06]
+    rec = getattr(args, 'mark_record', None)
+    marks_hint = ('' if not rec else f"; the official marks ({rec}) are left out where the film says they are drawn"
+                  + ('' if getattr(args, 'mark_at', None) else ': pass --layout from layout-audit.sh --every 6, or --mark-track, so they are'))
     own = [g for g in film_groups if any(hue_dist(g['h'], bh) <= 20 for bh in brand_h)]
     if len(own) >= 2:
         # the brand-supplied hues are one family: the brand chose them together
         keep = max(own, key=lambda g: g['samples'])
         film_groups = [g for g in film_groups if g is keep or g not in own]
     if len(film_groups) >= 3:
-        add('hue-count', 'fail', 0, f"{len(film_groups)} hue groups across the film ({', '.join(str(g['h']) for g in film_groups)} deg): one accent family; several hues live only inside imagery (--imagery)")
+        add('hue-count', 'fail', 0, f"{len(film_groups)} hue groups across the film ({', '.join(str(g['h']) for g in film_groups)} deg): one accent family; several hues live only inside imagery (--imagery){marks_hint}")
     elif len(film_groups) == 2:
         add('hue-count', 'warn', 0, f"2 hue groups more than 30 degrees apart ({film_groups[0]['h']} and {film_groups[1]['h']} deg): one accent family, plus a support hue declared in the tokens (C.second, or --second)")
     banned = [s for s in samples if s['banned'] >= 0.005]
     if len(banned) >= 3:
-        add('banned-hue', 'fail', banned[0]['f'], f"a banned colour region (orange/amber, beige/cream, purple/violet or neon) covers >= 0.5 % of {len(banned)} samples; a brand-supplied colour is declared in the tokens (cinetic:brand-supplied) or with --brand")
+        add('banned-hue', 'fail', banned[0]['f'], f"a banned colour region (orange/amber, beige/cream, purple/violet or neon) covers >= 0.5 % of {len(banned)} samples; a brand-supplied colour is declared in the tokens (cinetic:brand-supplied) or with --brand{marks_hint}")
     # the accent's share outside declared colour events (a declared flood is the one colour moment, not the film's colour)
     ev_ = getattr(args, 'events', None) or []
     accs = [s for s in samples if s['accent'] is not None and not any(a <= s['f'] < b for a, b in ev_)] or [s for s in samples if s['accent'] is not None]
@@ -1697,6 +1771,43 @@ def self_test(F, part='all'):
         check(bool(has(rep, 'banned-hue', 'fail')), 'an orange accent fails banned-hue')
         rep = run('orange-brand', orange, extra=('--brand', '#F0821E'))
         check(not has(rep, 'banned-hue'), 'the same orange supplied by the brand passes')
+        # official marks in their own colours (an orange, green and red mark moving past a blue accent): left out
+        # where the layout audit or a declared track says they are drawn, when logos.json has a record of them
+        def marked(stray=False):
+            out = []
+            for i in range(60):
+                img = card(paper, 300, 160, 120, (30, 120, 200))
+                x = 40 + 4 * i
+                img[100:130, x:x + 30] = (240, 130, 30)
+                img[100:130, x + 30:x + 60] = (30, 160, 80)
+                img[130:160, x:x + 60] = (220, 40, 50)
+                if stray:
+                    img[20:60, 380:440] = (240, 130, 30)  # an orange panel that is not a mark
+                out.append(img)
+            return out
+
+        def jfile(name, obj):
+            path = os.path.join(tmp, name)
+            json.dump(obj, open(path, 'w'))
+            return path
+        lay = jfile('fixture-marks-layout.json', dict(width=w, height=h, boxes=[dict(frame=f, width=w, height=h, boxes=[],
+                                                                                 logos=[dict(name='Gemini', x=40 + 4 * f, y=100, w=60, h=60)]) for f in range(0, 60, 3)]))
+        rec = jfile('fixture-logos.json', dict(logos={'google-gemini': dict(name='Gemini')}))
+        other = jfile('fixture-logos-other.json', dict(logos={'claude': dict(name='Claude')}))
+        track = jfile('fixture-marks-track.json', [dict(name='Gemini', **{'from': 0, 'to': 59}, box=[40, 100, 60, 60], toBox=[276, 100, 60, 60])])
+        marks = marked()
+        rep = run('marks-none', marks, extra=('--layout', lay))
+        check(bool(has(rep, 'hue-count', 'fail')) and bool(has(rep, 'banned-hue', 'fail')), 'a mark in its own colours with no logo record fails hue-count and banned-hue')
+        rep = run('marks-layout', marks, extra=('--layout', lay, '--logos', rec))
+        check(not has(rep, 'hue-count') and not has(rep, 'banned-hue') and rep.get('marks', {}).get('samples') == rep.get('marks', {}).get('of'),
+              "the official mark's pixels, followed through the layout audit's boxes, are left out", json.dumps(has(rep, 'hue-count') + has(rep, 'banned-hue'))[:200])
+        rep = run('marks-track', marks, extra=('--mark-track', track, '--logos', rec))
+        check(not has(rep, 'hue-count') and not has(rep, 'banned-hue'), 'a declared mark track follows the moving mark too')
+        rep = run('marks-norecord', marks, extra=('--layout', lay, '--logos', other))
+        check(bool(has(rep, 'banned-hue', 'fail')), 'a tagged mark with no record in logos.json keeps every colour check')
+        rep = run('marks-stray', marked(stray=True), extra=('--layout', lay, '--logos', rec))
+        check(bool(has(rep, 'banned-hue', 'fail')) and not has(rep, 'hue-count', 'fail'), 'an orange panel beside the official mark still fails banned-hue (one accent for everything else)',
+              json.dumps(rep.get('marks')))
         # pure black ink on pure white
         bw = [card(np.full((h, w, 3), 255, np.uint8), 60 + i, 100, 120, (0, 0, 0)) for i in range(60)]
         rep = run('bw', bw)
@@ -2120,6 +2231,8 @@ def main():
     ap.add_argument('--tokens', help='brand tokens (default src/brand/tokens.ts when present): the accent and brand-supplied colours')
     ap.add_argument('--accent', help='the accent colour (#RRGGBB), if not from the tokens')
     ap.add_argument('--brand', help='brand-supplied colours, comma separated #RRGGBB')
+    ap.add_argument('--logos', help='the logo record (default public/logos/logos.json): the official marks, whose own colours the palette checks leave out')
+    ap.add_argument('--mark-track', help='where the official marks are drawn when no layout audit logs them: JSON [{name, from, to, box: [x, y, w, h], toBox?}]')
     ap.add_argument('--imagery', action='append', help='x,y,w,h of a region that holds imagery (excluded from the colour checks; repeatable)')
     ap.add_argument('--colour-event', action='append', help='FROM,TO frames of a declared colour event (the wash and accent ceilings pause; repeatable)')
     ap.add_argument('--second', help='the declared second hue (#RRGGBB), if not from the tokens (C.second)')
@@ -2171,6 +2284,10 @@ def main():
     args.tokens_path = tokens
     k_c = info['fps'] / (cues.get('fps') or info['fps']) if cues else 1.0
     args.events = colour_events(raw_cues, args, k_c)
+    layout = load_layout(args.layout)
+    args.mark_record, mark_names = logos_record(args)
+    args.mark_at = mark_boxes(args, layout, mark_names, min(args.width, info['w']) // 2 * 2,
+                              (layout or {}).get('width') or args.comp_width or info['w'], k_c, info['fps'])
     if args.picture_only:
         P, size = measure_picture(args, info, F)
         fps = info['fps']
@@ -2191,6 +2308,7 @@ def main():
         colour_flags(pf, add)
         fails = sum(1 for x in flags if x['severity'] == 'fail') if not args.no_floor else 0
         res = dict(tool='look-audit', mode='picture-only', file=args.video, fps=fps, size=[info['w'], info['h']], analysis=list(size), pass_=fails == 0, fails=fails,
+                   marks=dict(record=args.mark_record, samples=sum(1 for m in P.get('marks', []) if m), of=len(P.get('marks', []))),
                    warnings=sum(1 for x in flags if x['severity'] == 'warn'), flags=flags, picture=pf, framing=framing, samples=P['samples'], frames=dict(f=P['f'], top=P['fall_top'], low=P['fall_low']))
         res['pass'] = res.pop('pass_')
         if args.json:
@@ -2206,7 +2324,6 @@ def main():
         cues['music'] = raw_cues.get('music')
     accent, brand = brand_colours(tokens, args.brand)
     accent = args.accent or accent
-    layout = load_layout(args.layout)
     probe_m, S, size = measure(args, info, F, accent, brand, layout, cues)
     flags, floor, measures = evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand)
     if args.series:
@@ -2217,7 +2334,8 @@ def main():
     fails = sum(1 for x in flags if x['severity'] == 'fail')
     res = dict(tool='look-audit', file=args.video, fps=info['fps'], size=[info['w'], info['h']], analysis=list(size), pass_=fails == 0,
                fails=fails, warnings=sum(1 for x in flags if x['severity'] == 'warn'), accent=accent, brand=brand,
-               look=(extra or {}).get('look'), flags=flags, floor=floor, measures=measures)
+               look=(extra or {}).get('look'), flags=flags, floor=floor, measures=measures,
+               marks=dict(record=args.mark_record, samples=sum(1 for x in S['samples'] if x['marks']), of=len(S['samples'])))
     res['pass'] = res.pop('pass_')
     if args.json:
         os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
