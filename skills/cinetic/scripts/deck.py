@@ -1696,7 +1696,7 @@ def main():
     ap.add_argument('--brief', default='', help='the product and the film in one line')
     ap.add_argument('--format', choices=FORMATS, help='the film format (the same names as pick.py)')
     ap.add_argument('--pace', choices=PACES, help='calm (the default) or crisp')
-    ap.add_argument('--have', default='', help='what really exists: ui, input, footage, audio, number, name (comma-separated)')
+    ap.add_argument('--have', default='', help='what really exists: ui, input, photos, footage, audio, number, name (comma-separated)')
     ap.add_argument('--seconds', type=float, help='the film length in seconds')
     ap.add_argument('--seed', type=int, help='reproduce a deal (default: derived from the brief)')
     ap.add_argument('--options', type=int, metavar='N', help='deal N directions to choose from (2-5; 3 is the house number)')

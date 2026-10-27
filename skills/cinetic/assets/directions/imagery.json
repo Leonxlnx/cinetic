@@ -1,6 +1,6 @@
 {
  "version": 2,
- "about": "Imagery-led film directions for scripts/deck.py, in the same schema as directions.json (deck.py merges the two decks and their catalogues). In these directions real photographs, footage, textures or archive images are the world, found under licences that need no credit (scripts/assets.mjs), graded into one natural look (each picture keeps its own colour; the accent stays free for live data) and moved by the motion system; code-drawn UI and type sit on them as support. Each direction adds an `assets` block: what to list from the subject before searching, the queries built from that list, how many pictures, the grade, and what to refuse.",
+ "about": "Imagery-led film directions for scripts/deck.py, in the same schema as directions.json (deck.py merges the two decks and their catalogues). In these directions real photographs, footage, textures or archive images are the world: the product's own or the user's (dealt only with --have photos or footage), with found ones only under licences that need no credit (scripts/assets.mjs), graded into one natural look (each picture keeps its own colour; the accent stays free for live data) and moved by the motion system; code-drawn UI and type sit on them as support. Each direction adds an `assets` block: what to list from the subject before searching, the queries built from that list, how many pictures, the grade, and what to refuse.",
  "primitives": {
   "Photo": {
    "file": "fx/Photo.tsx",
