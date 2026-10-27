@@ -118,10 +118,21 @@ class TrackError(Exception):
         self.code = code
 
 
+def finite(o):
+    """o with every NaN or infinity as None: JSON has no NaN (a track with too few clear attacks has no drift)."""
+    if isinstance(o, float):
+        return o if math.isfinite(o) else None
+    if isinstance(o, dict):
+        return {k: finite(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [finite(v) for v in o]
+    return o
+
+
 def write_json(path, obj):
     os.makedirs(os.path.dirname(os.path.abspath(path)) or '.', exist_ok=True)
     with open(path, 'w', encoding='utf-8', newline='\n') as fh:
-        fh.write(json.dumps(obj, indent=1, ensure_ascii=False) + '\n')
+        fh.write(json.dumps(finite(obj), indent=1, ensure_ascii=False, allow_nan=False) + '\n')
 
 
 def read_json(path, what):

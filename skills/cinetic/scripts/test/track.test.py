@@ -19,6 +19,7 @@ last 0.42 s stop dead, peak 15-22, outro 23-24) and one final thump on bar 25. C
   - a bed that ends on a hit and a 2.5 s ring over level bars (the ring's tail a near-silent last bar):
     the ending is a ring on that hit, not a fade, and edit --end ring accepts it
   - add: an NC licence and a record without licence_seen are refused; a CC BY record needs its credit
+  - a .track.json is strict JSON: a drift that could not be measured (NaN) is written as null
 
 Usage: python3 skills/cinetic/scripts/test/track.test.py [--keep DIR]
 (needs numpy, scipy, soundfile, librosa and ffmpeg). Exit 0 when every check passes, 1 otherwise.
@@ -392,6 +393,25 @@ def add_records(d):
           + ('' if p.returncode == 0 else f": {p.stdout[-300:]}") + ')')
 
 
+def strict_json(d):
+    import importlib.util
+    sys.path.insert(0, os.path.dirname(TRACK))
+    spec = importlib.util.spec_from_file_location('track_mod', TRACK)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    out = os.path.join(d, 'nan.track.json')
+    m.write_json(out, dict(tempo=dict(drift_rms_ms=round(float('nan'), 2), drift_max_ms=float('inf'), bpm=120.0), bars=[dict(t=float('nan'))]))
+    def no_constant(c):
+        raise ValueError(c)
+    try:
+        doc = json.load(open(out, encoding='utf-8'), parse_constant=no_constant)
+        ok = doc['tempo']['drift_rms_ms'] is None and doc['tempo']['drift_max_ms'] is None and doc['bars'][0]['t'] is None             and doc['tempo']['bpm'] == 120.0
+    except ValueError as e:
+        ok = False
+        print(f'      {e}')
+    check(ok, 'a drift that could not be measured is written as null: the .track.json stays strict JSON')
+
+
 def main():
     keep = sys.argv[sys.argv.index('--keep') + 1] if '--keep' in sys.argv else None
     d = keep or tempfile.mkdtemp(prefix='track-test-')
@@ -403,6 +423,7 @@ def main():
         low_confidence(d)
         ring_ending(d)
         add_records(d)
+        strict_json(d)
     finally:
         if not keep:
             shutil.rmtree(d, ignore_errors=True)
