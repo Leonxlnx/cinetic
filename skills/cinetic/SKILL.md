@@ -74,7 +74,7 @@ Every step writes a file, and every gate is a check you run. Work inline; subage
 
 ### Step 0: Brief → `BRIEF.md`
 - If the brief states the product, the message, the format and the length, infer the rest and write the assumptions down; otherwise ask at most 3 questions (the product in one line, the format and length, where it will be shown).
-- **Inventory what is supplied:** a brand kit (logo, colours, fonts, screenshots, product photos), a clip to feel like, real footage or pictures worth building on, a sonic logo, a voice. Each has a route: `brand.py` (Step 2), `like.py` (Step 2), pictures (Step 4, optional), the kit (Step 8).
+- **Inventory what is supplied:** a brand kit (logo, colours, fonts, screenshots, product photos), a clip to feel like, real footage or pictures worth building on, a sonic logo, a voice. Each has a route: `brand.py` (Step 2), `like.py` (Step 2), pictures (Step 4, optional), the kit (Step 8). When the product has integrations (the products it works with, imports from, runs on or names: sources, models, platforms), ask for them: they appear as their real marks (Step 6).
 - Choose the engine (Remotion by default; HyperFrames for an HTML project or `--batch` renders) and the pace (calm unless the brief asks for energy).
 - Copy the hard bans into `BRIEF.md`, plus brand-supplied exceptions: critics are prompted with it word for word.
 - Scaffold: `bash <skill>/scripts/new-film.sh films/<name> --fps 60 --size 1920x1080 [--format update | --template ui-walkthrough|capability-reel|prompt-run|camera-teaser|social-ad|type-explainer] [--brand <kit>] [--like <clip>] [--music <file> + licence flags] [--pace crisp] [--engine hyperframes] [--link-modules <dir>/node_modules]`. A template lays a whole film's structure over the starter (timeline, acts, choreography, sound plan, a content file of slots): a product's flow in steps, a launch close from breadth to the name, a request worked through in steps, a dark teaser the camera tells, a 15 s ad cut on pictures, or an explainer told in type one sentence at a time; `references/templates.md` says which fits.
@@ -134,6 +134,7 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
 - **One camera for the film.** The ground breathes; the camera may stop: it moves on about 83–95 % of the body and locks for 0.5–1 s on each type read (life continues in the type build, the light, a counter), creeps or drifts through the other holds, cuts on the fastest frame with speed carried across (`launch`, `carry`, `handoffShot`), three depth planes, the soft foreground.
 - **Light:** one key light (`KeyLight`, `ReliefScene`) and living light (`LightField`), one light event per act.
 - **The product** as real components at film size (`src/kit`, every web size ×1.9, nothing under 36 px in focus), data from one `data.ts` with asserts that hold on every frame.
+- **Real marks** for the products it works with: `node scripts/logos.mjs get <name> --film .` fetches the official colour files from open collections (the record of source, licence and owner in `public/logos/logos.json`, never on screen); `AppIcon`, `LogoChip`, `InlineLogo`, `LogoWall` and `LogoRing` (`kit/logos.tsx`) set them in tiles, chips, lines, walls and rings, colours and proportions as published. Only for what the product really touches, never implying endorsement; generic glyphs only for generic actions (`references/brand-and-color.md` §1b).
 - Words reach the screen through `COPY` only (`TypeLine`, `Chain`, `Words`); never a string literal in an act. One line at a time; a deliberate swap declares `swap: '<id>'` on the incoming line. A progressive reveal never spells another word partway.
 - List each primitive instance's `declares()` in `src/sync.ts`; export every frame the sound needs.
 - Iterate each act: stills at cue −2, 0, +2; `python3 scripts/sheet.py --comp Act2 --every 2 --out out/qa/act2.png`; `bash scripts/layout-audit.sh Act2 --cues`.
@@ -371,6 +372,7 @@ Read each file when its step comes up; never all at once.
 | a supplied brand kit: tokens, logo parts, fonts, screenshots | `scripts/brand.py` (`--check`) |
 | a clip's grammar; the recreation guard | `scripts/like.py measure <clip>`, `like.py guard` |
 | photos, footage, textures and art with no-credit licences: search, sheet, get, grade, check | `scripts/assets.mjs` |
+| official marks of the products it works with (integrations, sources, models, platforms): search, get, list, check; the record of source, licence and owner | `scripts/logos.mjs` |
 | a font family vendored without `npm install` | `scripts/add-font.mjs` (or `new-film.sh --font`) |
 | the free face closest to a reference frame or a brand face, by measured width and x-height; its weight, size and tracking | `scripts/font-match.mjs` (`--crop`, `--like`, `--sheet`, `--fetch`) |
 | a palette from a recipe and one accent; token, ramp and coverage checks | `scripts/palette.py` (`--recipe`, `--check-tokens`, `--ramp`, `--cover`) |
@@ -397,4 +399,4 @@ Read each file when its step comes up; never all at once.
 | brand kit export; outlined lettering | `scripts/brand-kit.sh`; `scripts/outline-text.py` |
 | the HyperFrames finish | `scripts/hf-finish.sh` |
 | the Python every script runs (`$PYTHON`, else the first of `python3`, `python` or `py -3` that runs a version check) | `scripts/py.mjs` (`--which`) |
-| the scripts' own tests (not a film's) | `scripts/test/` (`copy-check`, `lint-film`, `grid-check`, `tokens`, `mirror`, `scripts-docs`, `add-font`, `provenance`, `pick`, `deck`, `brand`, `like`, `track`, `score`, `cast`, `library`, `assets`, `music`, `primitives`, `type-presets`, `handoff`, `moment`, `wordmark`, `encode-tags`, `bash32`) |
+| the scripts' own tests (not a film's) | `scripts/test/` (`copy-check`, `lint-film`, `grid-check`, `tokens`, `mirror`, `scripts-docs`, `add-font`, `provenance`, `pick`, `deck`, `brand`, `like`, `track`, `score`, `cast`, `library`, `assets`, `logos`, `logo-kit`, `music`, `primitives`, `type-presets`, `handoff`, `moment`, `wordmark`, `encode-tags`, `bash32`) |

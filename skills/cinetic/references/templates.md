@@ -42,7 +42,8 @@ swell makes the same card the output, which then builds its three steps), `proof
 bursts, the hand rising onto the button, results developing, a pull-back about the upper third), `feed` (a hard flick
 smeared by `DirBlur` while a count accelerates into its total, landing on the item that matters), `insight` (the item
 collapses into a pill), `pick` (a zoom onto the chosen row, which collapses into a progress pill while the output
-builds), `page` (the output flies up and flattens), `end`. Slots: `src/walk.ts`.
+builds), `page` (the output flies up and flattens), `end`. Slots: `src/walk.ts`; `input.source` names the real mark of
+the product the input lives on (the card's tile and the field's lead; `scripts/logos.mjs`).
 
 ## capability-reel
 
@@ -53,7 +54,9 @@ grid is the card's own and two accent cells hop on the kicks), `statement` (a ha
 squashes round its line, `Resize` carry, and counter-creeps into a zoom-out), `ticker` (`MaskList` and an icon tile,
 a hard step every 10 f), `claim` (the film's one colour event: two fragments, the first pushing up and dimming as the
 second rises, the full stop its own square), `rings` (square rings born from that stop, `Radiate` with `bornAt`, then
-the flood), `end` (the name pops, the rest types, the tagline takes its place). Slots: `src/reel.ts`.
+the flood), `end` (the name pops, the rest types, the tagline takes its place). Slots: `src/reel.ts`; each source
+names its real mark (`logo`, fetched with `scripts/logos.mjs`): with every mark in, the ring is app-icon tiles, and a
+capability that is another product shows its mark on the ticker's tile.
 
 ## camera-teaser
 
@@ -125,5 +128,8 @@ designed rather than assembled:
 - **One object, many states.** Continuity comes from the container (the card that becomes the output, the disc that
   becomes the record, the row that becomes the pill, the full stop that becomes the first ring), never from a dissolve.
 - **UI arrives front-loaded** (`E.snapOut`); one springy landing at most, never on type.
+- **Real marks by default.** When the film declares integrations, sources or models, the rings, walls, tickers and
+  chips show their real marks (`kit/logos.tsx`, `scripts/logos.mjs`, `references/brand-and-color.md` §1b); the text
+  pill is the fallback until a mark is fetched; generic glyphs only for generic actions.
 - **Slots stay slots until the product's own words and data replace them:** the content file's marker fails lint
   until then, and every string the picture shows comes from that one file.

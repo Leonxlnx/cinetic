@@ -32,6 +32,34 @@ The brand wins. Everything below is for what you have to invent, plus the method
 - **Wordmark only.** Take the device from a letter feature: the dot of an i, a crossbar, a terminal. A letter you redraw inside the word must share the typeface's stroke weight, terminals (flat or round) and curve tension; a hand-built letter next to stock ones reads as a patch. Trace the font's own glyph (`outline-text.py` gives its path) and change only the feature that carries the idea.
 - **Brand guidelines that conflict with a rule here** (a gradient in the logo, a second accent): follow the guidelines, and use the rule to limit the damage. Show the gradient only in the logo, and let the second colour appear only in UI.
 
+## 1b. Other products' marks
+
+A product that works with other products shows them as their owners publish them: the mail app's own four-colour
+mark, the model's own spark, never a generic envelope or a star standing in. It reads as a real product at once.
+
+- **Only what the product really touches.** A real mark appears only for what the product works with, imports from,
+  runs on or names: its integrations, sources, models and platforms. Never to imply an endorsement, a partnership or a
+  customer it does not have; never a mark in a slot that would read as "used by".
+- **Fetched, never redrawn.** `node scripts/logos.mjs search <name>`, then `get <name> --film .`: the official colour
+  files from open collections whose terms allow use (the mark, its dark-ground version, the wordmark, one-colour
+  files), cleaned and trimmed to the art. Colours and proportions stay as published: no recolouring into the palette,
+  no squeeze, no outline or effect on the mark itself. The tile, the chip and the shadow round it are the film's.
+- **Clear space kept.** The kit sets a mark at its optical size with room round it (`AppIcon` 54 % of the tile,
+  `LogoChip` half the pill's height, `InlineLogo` 1.0 cap height); a brand's own guidelines (minimum size, clear space,
+  grounds; `guidelines` in the record) win over these numbers.
+- **The record, not a credit.** `public/logos/logos.json` keeps each file's source, its licence as read and the
+  trademark owner; it goes into the delivery notes. Nothing is credited on screen. `logos.mjs check` passes before
+  delivery (every owner named: an owner the tool does not know is confirmed on the brand's own site and passed with
+  `--owner`).
+- **Their colours are imagery, not the palette.** The accent rule counts the film's own colours: declare a wall's or
+  ring's box to `look-audit.py --imagery x,y,w,h`. Marks stay marks (a ring, a wall, a ticker, a chip, a word in a
+  line), never a ground or a flood.
+- **Real marks by default where they belong.** When the product has integrations the brief asks for them (Step 0), and
+  the templates' rings, walls, tickers and chips show their marks (`kit/logos.tsx`); the text pill is the fallback
+  until a mark is fetched. Generic icons (`kit/icons.ts`) are for generic actions only (send, search, a lock).
+- **Use the parts.** `AppIcon`, `LogoChip`, `InlineLogo`, `LogoWall`, `LogoRing`, `BrandLogo`
+  (`references/product-ui.md` §5); check them on `npx remotion still KitLogos` and `KitLogoWall` at half size.
+
 ## 2. Personality → choices
 
 Every invented brand starts from three adjectives, written in `TREATMENT.md` before any colour or face is picked. The adjectives decide the choices below; taste then refines them. Without this step every film drifts to the same cool, light, geometric-sans minimalism, which is this skill's own house style and reads as a template the second time a viewer sees it.
