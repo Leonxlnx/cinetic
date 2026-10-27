@@ -466,9 +466,9 @@ export const ReportCover: React.FC<Base & { data?: typeof BUDGETS; growAt?: numb
 // ------------------------------------------------------------------------------------------ fallback
 /**
  * Real product UI for a box that was given none: picked by the box's shape (a large landscape box: a dense product
- * screen from the sample world of `seed`, kit/dense.tsx; wide: the budget card; tall: the comment feed; square and
- * large: the project panel; square and small: a live figure). It is the floor, not the goal: give a card the brand's
- * own UI or picture.
+ * screen, kit/dense.tsx, from a sample world seeded by the film's copy and `seed`, so two films differ; wide: the
+ * budget card; tall: the comment feed; square and large: the project panel; square and small: a live figure). It is
+ * the floor, not the goal: give a card the brand's own UI or picture.
  */
 export const KitFallback: React.FC<{ frame: number; w: number; h: number; seed?: number; theme?: KitTheme }> = ({ frame, w, h, seed = 0, theme }) => {
   const t = theme ?? kitTheme();
@@ -481,7 +481,7 @@ export const KitFallback: React.FC<{ frame: number; w: number; h: number; seed?:
   const k = Math.min(w / design[0], h / design[1]);
   const node =
     pick === 'screen' ? (
-      <DenseScreen frame={frame} theme={t} seed={'fallback:' + seed} lift={0} view={k} />
+      <DenseScreen frame={frame} theme={t} seed={`${film.copy.map((c) => c.text).join(' ').slice(0, 80)}:${seed}`} lift={0} view={k} />
     ) : pick === 'budget' ? (
       <BudgetCard frame={frame} theme={t} lift={0} />
     ) : pick === 'feed' ? (
