@@ -278,7 +278,7 @@ export type GroundState = {
 export const groundState = (frame: number, g: GroundSpec, film?: Partial<FilmCtx>, cam?: { shot: Shot; base: Shot }): GroundState => {
   const fps = fpsOf(film);
   const { width: W, height: H } = sizeOf(film);
-  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const u = uOf(film); // like fpsOf: the timeline's frame when no film is given
   const t = frame / fps;
   const key = g.key ?? FILM_LIGHT;
   const [kx, ky] = keyDir(key);

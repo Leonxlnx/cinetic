@@ -101,7 +101,7 @@ export const rimLine = (tilt: Tilt, w: number, h: number, light: Pick<FilmLight,
 /** The panel's pose and light at frame f. Pure. */
 export const litState = (frame: number, p: LitProps, film?: Partial<FilmCtx>): LitState => {
   const fps = fpsOf(film);
-  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const u = uOf(film); // like fpsOf: the timeline's frame when no film is given
   const light = p.light ?? FILM_LIGHT;
   const rest = { x: p.tilt?.x ?? LIT.tilt.x, y: p.tilt?.y ?? LIT.tilt.y, z: p.tilt?.z ?? 0 };
   let q = 1;

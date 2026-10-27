@@ -57,7 +57,7 @@ export const glideFrames = (p: GlideListProps): number[] =>
 export const glideList = (f: number, p: GlideListProps, film?: Partial<FilmCtx>): { y: number; v: number; index: number } => {
   const fr = glideFrames(p);
   const fps = fpsOf(film);
-  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const u = uOf(film); // like fpsOf: the timeline's frame when no film is given
   const d = p.drift ?? GLIDE.driftPx60;
   const from = fr.length ? fr[0] - 1 : 0;
   const at = (g: number) => glideValue(g, fr.map((a, i) => ({ at: a, value: (i + 1) * p.jump })), 0, p, film) + (d * u * Math.max(0, g - from) * 60) / fps;
@@ -72,7 +72,7 @@ export const glideList = (f: number, p: GlideListProps, film?: Partial<FilmCtx>)
  */
 export const holdDrift = (f: number, from: number, o: { px?: number; angle?: number; to?: number } = {}, film?: Partial<FilmCtx>): { x: number; y: number } => {
   const fps = fpsOf(film);
-  const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
+  const u = uOf(film); // like fpsOf: the timeline's frame when no film is given
   const px = clamp(o.px ?? GLIDE.driftPx60, GLIDE.driftBand[0], GLIDE.driftBand[1]);
   const t = Math.max(0, Math.min(f, o.to ?? Infinity) - from);
   const dist = (px * u * t * 60) / fps;
