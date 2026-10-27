@@ -12,6 +12,8 @@
  *   node scripts/music.mjs search --mood "<words>" [--bpm 118-128] [--length 30] [--kind music|sfx]
  *        [--source all|mixkit|commons|ccmixter|openverse[,...]] [--limit 8] [--pages 4] [--out out/music/search.json]
  *        [--json] [--no-history]
+ *   node scripts/music.mjs pick --mood "<words>" [--length 30] [--bpm 100-120] [--library PATH] [--limit 8]
+ *        [--out out/music/search.json] [--json] [--no-history]
  *   node scripts/music.mjs sheet [results.json] [--pick 1,2,3] [--measure] [--json]
  *   node scripts/music.mjs get <#n|<source>:<id>> --to <film>/audio/music [--from results.json] [--name stem]
  *        [--film <dir>] [--no-history]
@@ -23,14 +25,27 @@
  *           length (never shorter than the film; at least 1.5 times it, so the best bars and a natural
  *           ending both fit), tempo (--bpm; Mixkit states none: a tempo measured before, else the genre's usual
  *           range, marked "estimated"), and the energy curve (a break followed by an entry for the reveal,
- *           contrast; a flat track loses). The last film's track is held back, tracks of the five films
- *           before lose ground, so do the tracks of assets/music/shortlist.json (the example films used them), and the first track offered is never the one offered first by the previous
- *           search (~/.cinetic/music-history.json, or $CINETIC_HOME). Writes the results (out/music/).
+ *           contrast; a flat track loses). A track any earlier film used is held back (never offered
+ *           again), the tracks of assets/music/shortlist.json lose ground (the example films used them), and
+ *           the first track offered is never the one offered first by the previous search
+ *           (~/.cinetic/music-history.json, or $CINETIC_HOME). Writes the results (out/music/).
  *           --kind sfx searches Mixkit's free sound effects the same way (by category words: whoosh, paper,
  *           click, camera, lock, thud ...), for an action the earshot bank sounds weakly (references/sound.md).
  *           --source picks the catalogs (default all that serve the kind: music from Mixkit, Wikimedia
  *           Commons and ccMixter; effects from Mixkit and Openverse); a catalog that cannot be used answers
  *           with its reason and is never requested.
+ * pick      ranks a music library instead of the catalogs: tracks chosen as launch-fit beforehand, analysed
+ *           (track.py: tempo, a clear downbeat grid, sections, the lift for the reveal, cut points) and
+ *           listened to (earshot: modern for the mood, no voice, no lo-fi hiss), each with its no-credit
+ *           licence. Library moods: calm, cinematic, dark, driving, elegant, energetic, playful, uplifting (a
+ *           brief's words name them: "precise" is driving, "premium" elegant, "bright" uplifting ...). Ranked by
+ *           mood (its own mood first, a second mood next), length (never shorter than the film plus its ending),
+ *           tempo (--bpm; double or half time counts), the lift for the reveal and the library's quality mark;
+ *           a track any earlier film used is held back, the previous first offer is never first again. Writes
+ *           the results where search does (each with its cut points: the reveal's bar and time, the body, the
+ *           ending, the key, a --phase to analyse with), so sheet and get read them. The library: --library
+ *           PATH, $CINETIC_MUSIC_LIBRARY, else $CINETIC_HOME/music-library.json (a library or {"link": path});
+ *           with none, pick says so and search is the route.
  * sheet     the candidates as a list: mood, tempo, length, the energy curve (a strip of levels over the
  *           track), the intro, breaks with their entries, the ending, the contrast. --measure downloads the
  *           picked ones (default the first three) into a temporary folder, measures a quick tempo (and, for a
@@ -38,7 +53,7 @@
  *           tempo (~/.cinetic/music-tempo.json) and deletes the file.
  *           The full analysis is still `track.py analyze` on the track you keep.
  * get       downloads the full file (never a preview, except an Openverse effect whose origin serves only
- *           one: noted) into the film's audio/music/ (audio/sfx/ for an effect), reads the item's licence
+ *           one: noted; a library track: the library's copy while its sha256 still matches) into the film's audio/music/ (audio/sfx/ for an effect), reads the item's licence
  *           again (Mixkit's licence page; for a CC0 item its own page or record) and refuses when it changed,
  *           and writes <name>.licence.json: file, sha256, bytes, title, artist, source, page, file_url, the
  *           licence and its quote as read now (licence_seen), credit (none required), limits. The track
@@ -667,7 +682,8 @@ export const readHistory = (env = process.env) => {
   const h = readJson(histPath(env), null);
   return h && h.history === 1 ? { searches: [], used: [], ...h } : { history: 1, searches: [], used: [] };
 };
-export const writeHistory = (h, env = process.env) => writeJson(histPath(env), { ...h, searches: h.searches.slice(-50), used: h.used.slice(-50) });
+// every track a film used stays in the history (a track is never used twice); searches keep the last 50
+export const writeHistory = (h, env = process.env) => writeJson(histPath(env), { ...h, searches: h.searches.slice(-50), used: h.used.slice(-5000) });
 
 /** The Mixkit refs of assets/music/shortlist.json (tracks the example films used). */
 export function shortlistRefs() {
@@ -687,19 +703,23 @@ export function tempoCache(env = process.env) {
 }
 
 /**
- * The history's rules on a ranked list: the last film's track is held back (never reused), the tracks of the
- * five films before lose 2 points, and the first offer never repeats the previous search's first offer.
+ * The history's rules on a ranked list: a track any earlier film used is held back (never reused: the last
+ * film's, and every one before it), and the first offer never repeats the previous search's first offer.
  * Returns {items, held}.
  */
 export function applyHistory(items, hist) {
   const used = (hist?.used || []).filter((u) => u.kind !== 'sfx');
   const last = used.at(-1)?.ref;
-  const recent = new Set(used.slice(-6, -1).map((u) => u.ref));
+  const earlier = new Map(used.map((u) => [u.ref, u]));
   const held = [];
   let list = [];
   for (const it of items) {
-    if (it.kind === 'music' && it.ref === last) { held.push({ ...it, why: [...(it.why || []), "your last film's track: held back"] }); continue; }
-    if (it.kind === 'music' && recent.has(it.ref)) { it.score -= 2; it.why = [...(it.why || []), 'used by one of your recent films']; }
+    if (it.kind === 'music' && earlier.has(it.ref)) {
+      const u = earlier.get(it.ref);
+      const film = u.film ? ` (${path.basename(String(u.film))}${u.date ? `, ${u.date}` : ''})` : u.date ? ` (${u.date})` : '';
+      held.push({ ...it, why: [...(it.why || []), it.ref === last ? `your last film's track${film}: held back` : `used by an earlier film${film}: held back`] });
+      continue;
+    }
     list.push(it);
   }
   list = list.sort((a, b) => b.score - a.score || String(a.ref).localeCompare(String(b.ref)));
@@ -709,6 +729,140 @@ export function applyHistory(items, hist) {
     a.why = [...(a.why || []), 'offered first last time: second now'];
   }
   return { items: list, held };
+}
+
+// ------------------------------------------------------------------------------------------------ the library
+/*
+ * A music library: tracks already chosen as launch-fit, analysed (track.py: tempo, a clear downbeat grid,
+ * sections, the lift for the name reveal, best cut points) and listened to (earshot: modern for its mood, no
+ * voice, no lo-fi hiss), each with its catalog licence (no credit). `pick` ranks it for a film by mood, length
+ * and tempo, never offering a track an earlier film used; `get` then takes the copy the library holds (same
+ * sha256) or downloads the file, and reads its licence again either way.
+ * A library is a JSON file: {library: 1, root?, tracks: [{ref, source, id, title, artist, seconds, file?,
+ * sha256?, file_url, page, licence, tags, mood, moods, mood_fit?, bpm, key?, contrast_db?, energy: {curve,
+ * intro_s, ending}, cuts: {reveal: {kind, bar, t}, body_bar, phase?, ending, edit?}, quality}]}.
+ * Where it is, first that applies: --library PATH, $CINETIC_MUSIC_LIBRARY, $CINETIC_HOME/music-library.json
+ * (~/.cinetic/music-library.json): a library itself, or {"link": "<path to library.json>"}.
+ */
+export const LIB_MOODS = ['calm', 'cinematic', 'dark', 'driving', 'elegant', 'energetic', 'playful', 'uplifting'];
+/** The words of a brief that name each library mood (the mood's own name counts more). */
+export const MOOD_WORDS = {
+  calm: ['relaxed', 'soft', 'gentle', 'quiet', 'mellow', 'peaceful', 'serene', 'chill', 'chillout', 'ambient', 'downtempo', 'slow', 'meditative', 'dreamy', 'airy', 'reflective', 'tender'],
+  cinematic: ['epic', 'dramatic', 'grand', 'trailer', 'majestic', 'heroic', 'emotional', 'orchestral', 'score', 'film', 'anthemic', 'sweeping'],
+  dark: ['tense', 'tension', 'mysterious', 'moody', 'night', 'ominous', 'suspense', 'suspenseful', 'serious', 'brooding', 'noir', 'stealth', 'gritty'],
+  driving: ['mechanical', 'precise', 'steady', 'hypnotic', 'focused', 'minimal', 'pulse', 'pulsing', 'propulsive', 'insistent', 'techno', 'engineered', 'machine', 'determined'],
+  elegant: ['smooth', 'premium', 'luxury', 'sleek', 'refined', 'polished', 'sophisticated', 'stylish', 'cool', 'lounge', 'sensual', 'soulful', 'fashion', 'classy', 'warm'],
+  energetic: ['fast', 'punchy', 'bold', 'aggressive', 'hype', 'intense', 'powerful', 'loud', 'edm', 'rush', 'exciting', 'dynamic', 'hard'],
+  playful: ['fun', 'quirky', 'bouncy', 'funky', 'funk', 'cheeky', 'groovy', 'groove', 'whimsical', 'lively', 'disco', 'friendly', 'witty'],
+  uplifting: ['bright', 'hopeful', 'positive', 'optimistic', 'happy', 'joyful', 'inspiring', 'confident', 'sunny', 'upbeat', 'fresh', 'motivating', 'euphoric'],
+};
+/** The brief's words as library moods, {mood: weight}: a mood's name counts 1.5, one of its words 1. */
+export function moodsOfWords(ws) {
+  const out = {};
+  for (const w of ws || []) {
+    for (const [m, list] of Object.entries(MOOD_WORDS)) if (w === m || list.includes(w)) out[m] = (out[m] || 0) + (w === m ? 1.5 : 1);
+  }
+  return out;
+}
+
+/** The library file to read (--library, $CINETIC_MUSIC_LIBRARY, $CINETIC_HOME/music-library.json; a {"link"} followed), or null. */
+export function libraryPath(args = {}, env = process.env) {
+  const named = [args.library, env.CINETIC_MUSIC_LIBRARY].filter(Boolean);
+  for (const p of [...named, path.join(homeDir(env), 'music-library.json')]) {
+    const j = readJson(p, null);
+    if (!j) { if (named.includes(p)) throw new Error(`no music library at ${p}`); continue; }
+    if (j.link && !j.tracks) {
+      const q = path.resolve(path.dirname(p), String(j.link));
+      if (!readJson(q, null)) throw new Error(`${p} links ${q}: no library there`);
+      return q;
+    }
+    return p;
+  }
+  return null;
+}
+
+/** The library's tracks with a licence the finder knows; each one's local copy resolved (its root, else beside the file). */
+export function readLibrary(p) {
+  const j = readJson(p, null);
+  if (!j || j.library !== 1 || !Array.isArray(j.tracks)) throw new Error(`${p} is not a music library ({"library": 1, "tracks": [...]})`);
+  const root = path.resolve(path.dirname(p), j.root || '.');
+  return j.tracks.filter((t) => t && t.ref && t.file_url && LICENCES[t.licence] && (t.kind || 'music') === 'music' && !t.vocals)
+    .map((t) => ({ ...t, kind: 'music', local: t.file ? path.resolve(root, t.file) : null }));
+}
+
+/**
+ * {score, why[]} of a library track for a film: its mood against the brief's (its own mood 4, a second mood 2.5,
+ * a mood it fits a little 1, none of the brief's -2), the words its tags carry (a genre such as "tech house"),
+ * the length (never shorter than the film plus its ending; 1.5 times it so the best bars and an ending fit), the
+ * tempo (--bpm, double or half time counts; near it +1, outside -3), the lift for the reveal (a drop counts most)
+ * and the library's quality mark (x 0.5); the example films' tracks lose 1.5.
+ */
+export function scoreLibraryTrack(t, want = {}) {
+  const why = []; let s = 0;
+  const L = want.length;
+  if (L && t.seconds != null && t.seconds < L + 4) return { score: -Infinity, why: [`${Math.round(t.seconds)} s: shorter than the film plus its ending`] };
+  const wm = want.moods || {};
+  if (Object.keys(wm).length) {
+    let ms = 0; const hits = [];
+    for (const [m, w] of Object.entries(wm)) {
+      const v = t.mood === m ? 4 : (t.moods || []).includes(m) ? 2.5 : (t.mood_fit?.[m] || 0) >= 0.3 ? 1 : 0;
+      if (v) { ms += v * w; hits.push(t.mood === m ? `${m} (its own mood)` : (t.moods || []).includes(m) ? `${m} (a second mood)` : `${m} (a little)`); }
+    }
+    if (hits.length) { s += Math.min(7, ms); why.push(`mood ${hits.join(', ')}`); } else { s -= 2; why.push(`its mood is ${t.mood}, not the brief's`); }
+  }
+  const tagset = new Set([...(t.tags?.genre || []), ...(t.tags?.mood || []), ...(t.tags?.instrument || []), ...(t.tags?.tag || []), t.genre].filter(Boolean));
+  const moodWords = new Set(Object.entries(MOOD_WORDS).flatMap(([m, l]) => [m, ...l]));
+  const ws = (want.words || []).filter((w) => !moodWords.has(w));
+  const tagHits = ws.filter((w) => tagset.has(w) || (SYNONYMS[w] || []).some((x) => tagset.has(x)));
+  for (let i = 0; i + 1 < (want.words || []).length; i++) { const pair = `${want.words[i]}-${want.words[i + 1]}`; if (tagset.has(pair)) tagHits.push(pair); }
+  if (tagHits.length) { s += 1.5 * tagHits.length; why.push(`matches ${[...new Set(tagHits)].join(', ')}`); }
+  if (L && t.seconds != null && t.seconds / L >= 1.5) { s += 1; why.push('long enough for the best bars and an ending'); }
+  if (want.bpm && t.bpm != null) {
+    const [a, b] = want.bpm;
+    const reads = [t.bpm, t.bpm * 2, t.bpm / 2];
+    if (reads.some((v) => v >= a - 0.5 && v <= b + 0.5)) { s += 3; why.push(`${Math.round(t.bpm)} BPM fits`); }
+    else if (reads.some((v) => v >= a - 4 && v <= b + 4)) { s += 1; why.push(`${Math.round(t.bpm)} BPM near the brief`); }
+    else { s -= 3; why.push(`${Math.round(t.bpm)} BPM outside the brief`); }
+  }
+  const rv = t.cuts?.reveal;
+  if (rv) { s += rv.kind === 'drop' ? 1 : 0.5; why.push(`${/^[aeiou]/.test(rv.kind) ? 'an' : 'a'} ${rv.kind} at ${mmss(rv.t)} for the reveal`); }
+  if (Number.isFinite(t.quality)) s += 0.5 * t.quality;
+  if (want.shortlist?.has(t.ref)) { s -= 1.5; why.push('a shortlist track the example films used'); }
+  return { score: Math.round(s * 100) / 100, why };
+}
+
+/** One line of cut points from the library's analysis: the reveal, the body, the ending, the key, a phase to set. */
+export function planText(t) {
+  const c = t.cuts || {};
+  const rv = c.reveal;
+  return [rv ? `reveal on the ${rv.kind} at ${mmss(rv.t)} (bar ${rv.bar})` : null, c.body_bar ? `body from bar ${c.body_bar}` : null,
+    c.ending?.kind ? `ends ${c.ending.kind}` : null, t.key ? `key ${t.key}` : null,
+    c.phase != null ? `analyse with --phase ${c.phase}` : null].filter(Boolean).join('; ');
+}
+
+/** A library track as a result row (the shape search writes, so sheet and get read it). */
+export function libraryItem(t, r = scoreLibraryTrack(t)) {
+  return {
+    ref: t.ref, source: t.source || 'mixkit', id: String(t.id ?? t.ref.split(':').slice(1).join(':')), kind: 'music', title: t.title, artist: t.artist || null,
+    seconds: t.seconds, file_url: t.file_url, preview_url: t.file_url, page: t.page, licence: t.licence, notice: t.notice || null,
+    published: t.published || null, tags: t.tags || {}, found: [t.mood, ...(t.moods || [])].filter(Boolean), genre: t.genre || null,
+    tempo: t.bpm != null ? { value: t.bpm, kind: 'measured' } : null,
+    energy: t.energy ? { seconds: t.seconds, curve: t.energy.curve || [], intro_s: t.energy.intro_s ?? 0, breaks: [], ending: t.energy.ending || 'unknown',
+      range_db: t.contrast_db ?? null } : null,
+    notes: [], score: r.score, why: r.why,
+    library: { file: t.local || null, sha256: t.sha256 || null, mood: t.mood || null, moods: t.moods || [], key: t.key || null, quality: t.quality ?? null, cuts: t.cuts || null },
+    plan: { text: planText(t) },
+  };
+}
+
+/** The library ranked for a film: scored, too-short tracks dropped, then the history's rules (applyHistory). {items, held}. */
+export function rankLibrary(tracks, want = {}, hist = {}) {
+  const list = [];
+  for (const t of tracks) {
+    const r = scoreLibraryTrack(t, want);
+    if (r.score > -Infinity) list.push(libraryItem(t, r));
+  }
+  return applyHistory(list, hist);
 }
 
 /** The catalog's name as the record gives it ("Openverse (freesound)" for an Openverse item: where the file lives). */
@@ -812,7 +966,7 @@ async function download(url, dest, minBytes, referer = null) {
 // ------------------------------------------------------------------------------------------------ commands
 export class Usage extends Error {}
 export function parseArgs(argv) {
-  const VALUED = new Set(['mood', 'query', 'bpm', 'length', 'kind', 'limit', 'pages', 'out', 'pick', 'to', 'from', 'name', 'film', 'source']);
+  const VALUED = new Set(['mood', 'query', 'bpm', 'length', 'kind', 'limit', 'pages', 'out', 'pick', 'to', 'from', 'name', 'film', 'source', 'library']);
   const FLAGS = new Set(['json', 'measure', 'no-history', 'help']);
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
@@ -928,7 +1082,7 @@ function row(it, k) {
   const tempo = t.value != null ? `${t.value} BPM ${t.kind}` : t.range ? `~${t.range[0]}-${t.range[1]} BPM (${t.from}, ${t.kind === 'tagged' ? 'tagged' : 'estimated'})` : it.kind === 'music' ? 'tempo ?' : '';
   const moods = [...(it.tags?.genre || []), ...(it.tags?.mood || []), ...(it.tags?.category || [])].slice(0, 5).join(', ');
   const e = it.energy;
-  const shape = e ? `${strip(e.curve)}  intro ${e.intro_s} s${e.breaks.length ? `; break ${e.breaks.map((b) => `${mmss(b.from)}-${mmss(b.to)}${b.entry_s != null ? ` entry ${mmss(b.entry_s)}` : ''}`).join(', ')}` : '; no break'}; ends ${e.ending}; contrast ${e.range_db} dB` : '';
+  const shape = e ? `${strip(e.curve)}  intro ${e.intro_s} s${e.breaks.length ? `; break ${e.breaks.map((b) => `${mmss(b.from)}-${mmss(b.to)}${b.entry_s != null ? ` entry ${mmss(b.entry_s)}` : ''}`).join(', ')}` : it.plan ? '' : '; no break'}; ends ${e.ending}; contrast ${e.range_db} dB` : '';
   const lic = it.licence === 'cc0' ? '  CC0' : '';
   return [`#${k + 1}  ${it.ref}  "${it.title}"${it.artist ? ` by ${it.artist}` : ''}  ${mmss(it.seconds)}  ${moods}${lic}`,
     `     ${[tempo, it.score != null ? `score ${it.score}` : ''].filter(Boolean).join('  ')}${(it.why || []).length ? `  (${it.why.join('; ')})` : ''}`,
@@ -971,7 +1125,7 @@ async function cmdSheet(args, env = process.env) {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-music-'));
     try {
       for (const [k, it] of chosen.slice(0, args.pick ? chosen.length : 3)) {
-        if (it.kind !== 'music') continue;
+        if (it.kind !== 'music' || it.library) continue; // a library track is measured already (track.py)
         const f = path.join(tmp, `${slug(it.ref)}.${audioExt(it.file_url) || 'mp3'}`);
         try {
           await download(it.file_url, f, 100000, refererOf(it));
@@ -1040,6 +1194,46 @@ export async function verifyLicence(it) {
   return { ok: false, why: `no licence check for the catalog ${src}` };
 }
 
+/** The library's copy of a library track when it is still the file the library analysed (same sha256), else null. */
+export function libraryCopy(it) {
+  const f = it?.library?.file, sha = it?.library?.sha256;
+  if (!f || !sha || !fs.existsSync(f)) return null;
+  return crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex') === sha ? f : null;
+}
+
+async function cmdPick(args, env = process.env) {
+  const p = libraryPath(args, env);
+  if (!p) {
+    console.log('pick: no music library (--library PATH, $CINETIC_MUSIC_LIBRARY or ~/.cinetic/music-library.json); search the catalogs instead: node scripts/music.mjs search --mood "<words>"');
+    return 1;
+  }
+  const tracks = readLibrary(p);
+  const q = args.mood || args.query || args._.join(' ');
+  if (!q.trim()) throw new Usage('pick needs --mood "<words>" (with --length <film s> and --bpm <lo-hi>)');
+  const ws = words(q);
+  const want = { words: ws, moods: moodsOfWords(ws), bpm: bpmRange(args.bpm), length: num(args.length, null, 1, 3600, 'length'), shortlist: shortlistRefs() };
+  const limit = num(args.limit, 8, 1, 40, 'limit');
+  const hist = readHistory(env);
+  const { items, held } = rankLibrary(tracks, want, args['no-history'] ? {} : hist);
+  const out = items.slice(0, limit);
+  const notes = Object.keys(want.moods).length ? [] : [`no library mood in "${q}": the library's moods are ${LIB_MOODS.join(', ')} (and their words)`];
+  const r = { query: { mood: q, kind: 'music', bpm: want.bpm, length: want.length, moods: want.moods }, library: p, sources: ['library'], items: out, held, notes };
+  if (!args['no-history'] && out.length) {
+    hist.searches.push({ date: new Date().toISOString().slice(0, 10), kind: 'music', query: { mood: q, bpm: args.bpm || null, length: want.length, sources: ['library'] }, first: out[0].ref, offered: out.slice(0, 5).map((x) => x.ref) });
+    writeHistory(hist, env);
+  }
+  const file = args.out || path.join('out', 'music', 'search.json');
+  if (out.length) writeJson(file, r);
+  if (args.json) { console.log(JSON.stringify(r, null, 1)); return out.length ? 0 : 1; }
+  for (const n of notes) console.log(`note: ${n}`);
+  if (!out.length) { console.log(`pick: nothing in the library fits${want.length ? ` a ${want.length} s film` : ''} that an earlier film has not used (${held.length} held back); search the catalogs: node scripts/music.mjs search --mood "${q}"`); return 1; }
+  console.log(`pick: ${out.length} of ${tracks.length} library tracks for "${q}"${want.bpm ? ` at ${want.bpm.join('-')} BPM` : ''}${want.length ? `, film ${want.length} s` : ''} (${file})`);
+  out.forEach((it, k) => console.log(row(it, k)));
+  if (held.length) console.log(`held back (an earlier film used them): ${held.length}${held.length <= 4 ? `: ${held.map((h) => `${h.ref} "${h.title}"`).join(', ')}` : ''}`);
+  console.log(`next: listen to the first three, then node scripts/music.mjs get '#n' --to <film>/audio/music (the library's copy when it holds one; the licence read again), then track.py analyze (with the --phase the cut line names)`);
+  return 0;
+}
+
 async function cmdGet(args, env = process.env) {
   const ref = args._[0];
   if (!ref) throw new Usage('get needs a ref (#n from the last search, or <source>:<id>)');
@@ -1055,9 +1249,16 @@ async function cmdGet(args, env = process.env) {
   if (!v.ok) { console.error(`music.mjs: ${it.ref}: ${v.why}: nothing downloaded`); return 1; }
   const src = it.source || 'mixkit';
   const stem = slug(args.name || `${it.title}_${src}`).replace(/-/g, '_') || `${src}_${it.id}`;
-  const ext = `.${audioExt(it.file_url) || (it.kind === 'music' ? 'mp3' : 'wav')}`;
+  const local = libraryCopy(it); // a library track: its copy, when it is the file the library analysed (sha256)
+  const ext = `.${(local && path.extname(local).slice(1).toLowerCase()) || audioExt(it.file_url) || (it.kind === 'music' ? 'mp3' : 'wav')}`;
   const dest = path.join(args.to, stem + ext);
-  const d = await download(it.file_url, dest, it.kind === 'music' ? 100000 : 2000, refererOf(it));
+  let d;
+  if (local) {
+    const buf = fs.readFileSync(local);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, buf);
+    d = { bytes: buf.length, sha256: it.library.sha256 };
+  } else d = await download(it.file_url, dest, it.kind === 'music' ? 100000 : 2000, refererOf(it));
   const date = new Date().toISOString().slice(0, 10);
   const rec = licenceRecord(it, { file: path.basename(dest), sha256: d.sha256, bytes: d.bytes, date, seenQuote: v.quote, seenUrl: v.url, query: results?.query?.mood || null });
   const recPath = path.join(args.to, `${stem}.licence.json`);
@@ -1067,7 +1268,8 @@ async function cmdGet(args, env = process.env) {
     h.used.push({ date, ref: it.ref, title: it.title, kind: it.kind, film: path.resolve(args.film || path.join(args.to, '..', '..')) });
     writeHistory(h, env);
   }
-  console.log(`get: ${dest} (${(d.bytes / 1e6).toFixed(1)} MB) and ${recPath} (${L.name}, no credit needed; its licence read again now at ${v.url})`);
+  console.log(`get: ${dest} (${(d.bytes / 1e6).toFixed(1)} MB${local ? ', the library\'s copy' : ''}) and ${recPath} (${L.name}, no credit needed; its licence read again now at ${v.url})`);
+  if (it.plan?.text) console.log(`  cut points (the library's analysis): ${it.plan.text}`);
   if (it.kind === 'music') {
     console.log(`  next: python3 scripts/audio/track.py analyze ${dest} --profile <calm|crisp|punchy>`);
     console.log(`        python3 scripts/audio/listen.py --track ${dest}   (possible vocals, tempo against track.py's)`);
@@ -1104,13 +1306,17 @@ const USAGE = `music.mjs: the film's track (and a real effect where the bank is 
   search   --mood "<words>" [--bpm 118-128] [--length <film s>] [--kind music|sfx]
            [--source all|mixkit|commons|ccmixter|openverse[,...]] [--limit 8] [--pages 4]
            [--out out/music/search.json] [--json] [--no-history]
+  pick     --mood "<words>" [--length <film s>] [--bpm 100-120] [--library PATH] [--limit 8]
+           [--out out/music/search.json] [--json] [--no-history]      (rank a curated music library)
   sheet    [results.json] [--pick 1,2,3] [--measure] [--json]     (mood, tempo, length, energy curve)
   get      <#n|<source>:<id>> --to <film>/audio/music [--from results.json] [--name stem] [--film dir] [--no-history]
   history  [--json]        licences   (the licences, the catalogs, and why the others are not used)
 
 Choose by the film's mood and pace (references/sound.md §5.5a gives the brief), audition three (sheet --measure,
 then listen), keep one, never the last film's track: search holds it back, and never offers the same track first
-twice in a row (~/.cinetic/music-history.json, or $CINETIC_HOME). get reads the item's licence again and writes
+twice in a row (~/.cinetic/music-history.json, or $CINETIC_HOME); a track an earlier film used is never
+offered again. pick ranks a music library of analysed, listened tracks (--library, $CINETIC_MUSIC_LIBRARY or
+~/.cinetic/music-library.json) by mood, length and tempo, with each track's cut points. get reads the item's licence again and writes
 the licence record; then track.py analyze / edit / grid (references/music.md).
 Catalogs: Mixkit, Wikimedia Commons (CC0 files), ccMixter (CC0 uploads); for effects Mixkit, Commons and
 Openverse (CC0; made using Openverse, not endorsed or certified by Openverse). Pixabay Music and Chosic answer
@@ -1127,11 +1333,12 @@ export async function main(argv) {
   try {
     switch (cmd) {
       case 'search': return await cmdSearch(args);
+      case 'pick': return await cmdPick(args);
       case 'sheet': return await cmdSheet(args);
       case 'get': return await cmdGet(args);
       case 'history': return cmdHistory(args);
       case 'licences': case 'licenses': return cmdLicences();
-      default: throw new Usage(`unknown command ${cmd}: search, sheet, get, history, licences`);
+      default: throw new Usage(`unknown command ${cmd}: search, pick, sheet, get, history, licences`);
     }
   } catch (e) {
     if (e instanceof Usage) { console.error(`${e.message}\n\n${USAGE}`); return 2; }

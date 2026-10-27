@@ -12,8 +12,8 @@
  *   4. Tempo: --bpm ranges, a measured tempo before a genre's range, the quick tempo of a click track.
  *   5. Ranking: shorter than the film refused, the words, tempo inside or outside the brief, a break and an
  *      entry, the shortlist's tracks lose ground.
- *   6. The history: the last film's track held back, the previous first offer never first again, recent films'
- *      tracks lose ground; read and write under $CINETIC_HOME.
+ *   6. The history: every earlier film's track held back (the last film's and those before), the previous first
+ *      offer never first again; read and write under $CINETIC_HOME.
  *   7. The licence record: every field of the starter's licence.template.json; credits.py accepts it (with a
  *      Python 3 on the PATH).
  *   8. The CLI contract: --help, usage errors (exit 2), Pixabay named as unreachable without a request.
@@ -22,6 +22,12 @@
  *      pack refused), a stated tempo, a whole search across catalogs on a stand-in network (one entry per
  *      recording, a refused catalog never requested), the licence read again before a download, the CC0 record
  *      (credits.py accepts it), the energy curve from samples.
+ *  10. The music library (music-fixtures/music-library.json, every value invented): where it is (--library,
+ *      $CINETIC_MUSIC_LIBRARY, a link under $CINETIC_HOME, none), what is read (no unknown licence, no voice,
+ *      the local copy under its root), the brief's words as moods, the ranking (its own mood over a second mood
+ *      over another, too short refused, tempo with double and half time, a drop over an entry), every earlier
+ *      film's track held back, the cut points line, pick on the CLI (results get reads, the history), and get
+ *      taking the library's copy (sha256) with the licence page read again on a stand-in answer.
  *   No test touches the network (fetch and the large-header transport are replaced by functions that fail the run).
  *
  * Usage (from the skill root):  node scripts/test/music.test.mjs [--verbose]
@@ -157,11 +163,13 @@ function waveform(levels, px = 0.2, sr = 44100) {
 // 6. history
 {
   const mk = (ref, score) => ({ ref, kind: 'music', score, why: [] });
-  const hist = { used: [{ ref: 'mixkit:2' }, { ref: 'mixkit:1' }], searches: [{ first: 'mixkit:3' }] };
+  const hist = { used: [{ ref: 'mixkit:2', film: '/films/first', date: '2026-10-01' }, { ref: 'mixkit:1' }], searches: [{ first: 'mixkit:3' }] };
   const r = M.applyHistory([mk('mixkit:1', 9), mk('mixkit:3', 8), mk('mixkit:4', 7), mk('mixkit:2', 6.5)], hist);
-  check(r.held.length === 1 && r.held[0].ref === 'mixkit:1', "the last film's track is held back", r.held.map((x) => x.ref).join(','));
+  check(r.held.length === 2 && r.held[0].ref === 'mixkit:1' && /last film/.test(r.held[0].why.at(-1)), "the last film's track is held back", r.held.map((x) => x.ref).join(','));
+  check(r.held[1].ref === 'mixkit:2' && /earlier film \(first, 2026-10-01\)/.test(r.held[1].why.at(-1)), 'every earlier film\'s track is held back too, with the film named', r.held[1]?.why.at(-1));
   check(r.items[0].ref === 'mixkit:4' && r.items[1].ref === 'mixkit:3', 'the previous first offer is never first again', r.items.map((x) => x.ref).join(','));
-  check(r.items.find((x) => x.ref === 'mixkit:2').score === 4.5, 'a recent film\'s track loses two points');
+  const fx = M.applyHistory([mk('mixkit:8', 2)], { used: [{ ref: 'mixkit:8', kind: 'sfx' }] });
+  check(fx.items.length === 1 && !fx.held.length, 'an effect a film used does not hold a track back');
   const again = M.applyHistory([mk('mixkit:5', 3)], { used: [], searches: [{ first: 'mixkit:5' }] });
   check(again.items[0].ref === 'mixkit:5', 'a single result stays first');
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-music-home-'));
@@ -373,6 +381,99 @@ const ov = M.parseOpenverse(fixJson('openverse-search.json'), 'sfx');
   } finally { console.log = ol; console.error = oe; }
   check(fmaCode === 1 && logs.some((l) => /Free Music Archive: not used/.test(l)), 'CLI: --source fma names its reason, exit 1, no request', logs.join(' | '));
   check(badCode === 2 && errs.some((l) => /unknown --source soundcloud/.test(l)), 'CLI: an unknown --source is a usage error (exit 2)');
+}
+// 10. the music library
+{
+  const LIBF = path.join(FIX, 'music-library.json');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-music-lib-'));
+  const saved = { home: process.env.CINETIC_HOME, lib: process.env.CINETIC_MUSIC_LIBRARY, fetch: globalThis.fetch };
+  const quiet = async (argv) => {
+    const logs = [], errs = []; const ol = console.log, oe = console.error;
+    console.log = (...a) => logs.push(a.join(' ')); console.error = (...a) => errs.push(a.join(' '));
+    try { return { code: await M.main(argv), logs, errs }; } finally { console.log = ol; console.error = oe; }
+  };
+  try {
+    const env0 = { CINETIC_HOME: home };
+    check(M.libraryPath({}, env0) === null, 'library: none found is null (pick then points at search)');
+    check(M.libraryPath({ library: LIBF }, env0) === LIBF, 'library: --library names it');
+    check(M.libraryPath({}, { ...env0, CINETIC_MUSIC_LIBRARY: LIBF }) === LIBF, 'library: $CINETIC_MUSIC_LIBRARY names it');
+    fs.writeFileSync(path.join(home, 'music-library.json'), JSON.stringify({ link: LIBF }));
+    check(path.resolve(M.libraryPath({}, env0)) === path.resolve(LIBF), 'library: a link under $CINETIC_HOME is followed');
+    fs.rmSync(path.join(home, 'music-library.json'));
+    let threw = false;
+    try { M.libraryPath({ library: path.join(home, 'none.json') }, env0); } catch { threw = true; }
+    check(threw, 'library: a named library that is not there is an error');
+    threw = false;
+    try { fs.writeFileSync(path.join(home, 'bad.json'), '{"tracks": 3}'); M.readLibrary(path.join(home, 'bad.json')); } catch { threw = true; }
+    check(threw, 'library: a file without library 1 and a track list is refused');
+
+    const tracks = M.readLibrary(LIBF);
+    check(tracks.length === 5 && !tracks.some((t) => t.ref === 'pixabay:1' || t.ref === 'mixkit:9105'), 'library: an unknown licence and a voice are not read', tracks.map((t) => t.ref).join(','));
+    check(tracks[0].local === path.join(FIX, 'lib', 'glass_pulse.mp3') && tracks[1].local === null, "library: a track's copy resolved under the library's root", String(tracks[0].local));
+    check(eq(M.moodsOfWords(M.words('precise premium driving')), { driving: 2.5, elegant: 1 }), 'library: brief words as moods (a name 1.5, a word 1)', JSON.stringify(M.moodsOfWords(M.words('precise premium driving'))));
+    check(eq(M.moodsOfWords(M.words('calm soft keys')), { calm: 2.5 }), 'library: other words name no mood');
+
+    const want = { words: ['driving'], moods: M.moodsOfWords(['driving']), bpm: [118, 128], length: 30 };
+    const s = Object.fromEntries(tracks.map((t) => [t.ref, M.scoreLibraryTrack(t, want)]));
+    check(s['mixkit:9103'].score === -Infinity, 'library: shorter than the film plus its ending is refused');
+    check(s['mixkit:9101'].score > s['commons:99990001'].score && s['commons:99990001'].score > s['mixkit:9104'].score && s['mixkit:9104'].score > s['mixkit:9102'].score,
+      'library: its own mood over a second mood over another mood; tempo outside the brief last', ['mixkit:9101', 'commons:99990001', 'mixkit:9104', 'mixkit:9102'].map((r) => s[r].score).join(' > '));
+    check(s['commons:99990001'].why.some((w) => /61 BPM fits/.test(w)), 'library: half time counts as the tempo (61 for 118-128)');
+    const asEntry = M.scoreLibraryTrack({ ...tracks[0], cuts: { ...tracks[0].cuts, reveal: { ...tracks[0].cuts.reveal, kind: 'entry' } } }, want).score;
+    check(Math.abs(s['mixkit:9101'].score - asEntry - 0.5) < 1e-9, 'library: a drop for the reveal counts over an entry', `${s['mixkit:9101'].score} vs ${asEntry}`);
+    check(Math.abs(s['mixkit:9101'].score - M.scoreLibraryTrack(tracks[0], { ...want, shortlist: new Set(['mixkit:9101']) }).score - 1.5) < 1e-9, 'library: a shortlist track loses ground');
+
+    const rk = M.rankLibrary(tracks, want, { used: [{ ref: 'mixkit:9101', film: '/f/one' }, { ref: 'commons:99990001' }], searches: [{ kind: 'music', first: 'mixkit:9104' }] });
+    check(eq(rk.held.map((x) => x.ref).sort(), ['commons:99990001', 'mixkit:9101']), 'library: every earlier film\'s track is held back, not only the last', rk.held.map((x) => x.ref).join(','));
+    check(eq(rk.items.map((x) => x.ref), ['mixkit:9102', 'mixkit:9104']), 'library: the previous first offer is not first again', rk.items.map((x) => x.ref).join(','));
+    check(M.planText(tracks[1]) === 'reveal on the entry at 1:03 (bar 25); body from bar 5; ends fade; key F major; analyse with --phase 2', 'library: the cut points line', M.planText(tracks[1]));
+
+    // pick on the CLI, under a temporary home
+    process.env.CINETIC_HOME = home; delete process.env.CINETIC_MUSIC_LIBRARY;
+    const none = await quiet(['pick', '--mood', 'driving']);
+    check(none.code === 1 && none.logs.some((l) => /no music library/.test(l)), 'pick: no library says so and points at search (exit 1)', none.logs.join(' | '));
+    const out = path.join(home, 'out', 'search.json');
+    const p1 = await quiet(['pick', '--mood', 'driving', '--length', '30', '--bpm', '118-128', '--library', LIBF, '--out', out]);
+    const res = JSON.parse(fs.readFileSync(out, 'utf8'));
+    check(p1.code === 0 && res.items[0].ref === 'mixkit:9101' && res.items[0].plan.text.startsWith('reveal on the drop at 1:02 (bar 33)') && res.items[0].tempo.kind === 'measured',
+      'pick: results with cut points where search writes them', `${p1.code} ${res.items[0]?.ref} ${res.items[0]?.plan?.text}`);
+    check(M.readHistory().searches.at(-1)?.first === 'mixkit:9101', 'pick: the offer is in the history');
+    const h = M.readHistory(); h.used.push({ ref: 'mixkit:9101', kind: 'music', date: '2026-10-27', film: '/f/two' }); M.writeHistory(h);
+    const p2 = await quiet(['pick', '--mood', 'driving', '--length', '30', '--bpm', '118-128', '--library', LIBF, '--out', out, '--json']);
+    const res2 = JSON.parse(p2.logs.join('\n'));
+    check(p2.code === 0 && res2.items[0].ref !== 'mixkit:9101' && res2.held.some((x) => x.ref === 'mixkit:9101'), 'pick: the track an earlier film used is never offered again', res2.items.map((x) => x.ref).join(','));
+    const bad = await quiet(['pick', '--library', LIBF]);
+    check(bad.code === 2, 'pick: without words is a usage error (exit 2)');
+
+    // get takes the library's copy, the licence page read again (a stand-in answer)
+    const libdir = path.join(home, 'lib'); fs.mkdirSync(libdir, { recursive: true });
+    const buf = Buffer.from('ID3 a stand-in for the library copy');
+    fs.writeFileSync(path.join(libdir, 'glass_pulse.mp3'), buf);
+    const sha = crypto.createHash('sha256').update(buf).digest('hex');
+    const item = M.libraryItem({ ...tracks[0], local: path.join(libdir, 'glass_pulse.mp3'), sha256: sha });
+    check(M.libraryCopy(item) === item.library.file && M.libraryCopy({ ...item, library: { ...item.library, sha256: '0'.repeat(64) } }) === null, 'get: the copy is used only while its sha256 matches');
+    const from = path.join(home, 'out', 'lib-search.json');
+    fs.writeFileSync(from, JSON.stringify({ query: { mood: 'driving' }, items: [item] }));
+    const seenUrl = M.LICENCES['mixkit-music'].seen.url;
+    globalThis.fetch = async (u) => {
+      if (String(u) === seenUrl) return { status: 200, ok: true, headers: { get: () => 'text/html' }, text: async () => `<p>${M.LICENCES['mixkit-music'].seen.quote}</p>` };
+      fetched++; throw new Error(`network used in an offline test: ${String(u).slice(0, 60)}`);
+    };
+    const to = path.join(home, 'film', 'audio', 'music');
+    const g = await quiet(['get', '#1', '--from', from, '--to', to, '--film', path.join(home, 'film')]);
+    globalThis.fetch = saved.fetch;
+    const recf = path.join(to, 'glass_pulse_mixkit.licence.json');
+    const rec = fs.existsSync(recf) ? JSON.parse(fs.readFileSync(recf, 'utf8')) : {};
+    check(g.code === 0 && fs.readFileSync(path.join(to, 'glass_pulse_mixkit.mp3')).equals(buf) && rec.sha256 === sha && rec.licence_seen?.url === seenUrl,
+      "get: the library's copy, its record with the licence read again now", `${g.code} ${g.errs.join(' ')} ${rec.sha256 === sha}`);
+    check(g.logs.some((l) => /the library's copy/.test(l)) && g.logs.some((l) => /cut points .*reveal on the drop/.test(l)), 'get: says it used the copy and prints the cut points');
+    check(M.readHistory().used.at(-1)?.ref === 'mixkit:9101', 'get: the track becomes the film\'s in the history');
+  } finally {
+    globalThis.fetch = saved.fetch;
+    if (saved.home === undefined) delete process.env.CINETIC_HOME; else process.env.CINETIC_HOME = saved.home;
+    if (saved.lib === undefined) delete process.env.CINETIC_MUSIC_LIBRARY; else process.env.CINETIC_MUSIC_LIBRARY = saved.lib;
+    fs.rmSync(home, { recursive: true, force: true });
+  }
 }
 check(fetched === 0, 'no network used', `${fetched} request(s)`);
 

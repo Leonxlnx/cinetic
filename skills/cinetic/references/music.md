@@ -23,6 +23,7 @@ At Step 3, before a single act is timed: find the track, record its licence, ana
 
 ```bash
 node scripts/music.mjs search --mood "mechanical driving minimal" --bpm 118-128 --length 30   # -> out/music/search.json
+#   (with a music library: node scripts/music.mjs pick --mood "precise driving" --bpm 118-128 --length 30)
 node scripts/music.mjs sheet --measure              # the first three: mood, tempo, length, energy curve (audition them)
 node scripts/music.mjs get '#2' --to audio/music     # -> audio/music/<name>.mp3 + <name>.licence.json
 python3 scripts/audio/listen.py --track audio/music/<name>.mp3                       # possible vocals, tempo
@@ -91,7 +92,9 @@ A CC BY record carries `credit` in the composer's template form; the credits nam
 - **length:** never shorter than the film plus its ending; at least 1.5 times the film, so the best bars and a natural ending both fit;
 - **tempo:** a tempo measured before (`sheet --measure`, the shortlist), else the genre's usual range, marked estimated; half or double time counts; `track.py analyze` measures the one you keep;
 - **energy curve,** read from the catalog's own waveform data without downloading: a break followed by an entry (a place for the reveal) and contrast win, a flat track loses; `sheet` shows the curve as a strip of levels with the intro, the breaks and their entries, and the ending (fade, button or ring);
-- **the history** (`~/.cinetic/music-history.json`, or `$CINETIC_HOME`): the last film's track is held back, the tracks of the five films before lose ground, the shortlist's tracks too, and the first track offered is never the one the previous search offered first. `get` records the film's choice; `history` shows it.
+- **the history** (`~/.cinetic/music-history.json`, or `$CINETIC_HOME`): a track any earlier film used is held back (never offered again), the shortlist's tracks lose ground, and the first track offered is never the one the previous search offered first. `get` records the film's choice; `history` shows it.
+
+**A music library, when you keep one.** `music.mjs pick --mood "<words>" --length <film s> --bpm <lo-hi>` ranks a curated library instead of the catalogs: tracks already chosen as launch-fit, analysed with `track.py` (a clear downbeat grid, sections, a drop or lift for the reveal, cut points) and listened to with earshot (modern for the mood, no voice, no lo-fi hiss), each with its no-credit licence. Its moods are calm, cinematic, dark, driving, elegant, energetic, playful and uplifting; the brief's words name them ("precise" is driving, "premium" elegant, "bright" uplifting). It ranks by mood (the track's own mood first, a second mood next), length, tempo (half or double time counts), the lift for the reveal and the library's quality mark, holds back every track an earlier film used, and writes the results where `search` does, each with a cut line (the reveal's bar and time, the body, the ending, the key, a `--phase` to analyse with); `sheet` and `get` read them, and `get` takes the library's copy while its sha256 matches, reading the licence again. The library is found at `--library`, `$CINETIC_MUSIC_LIBRARY` or `~/.cinetic/music-library.json` (the file, or `{"link": "<path>"}`); without one, `search` is the route.
 
 Choose among the first three by the film's mood and pace, after listening:
 
@@ -165,5 +168,5 @@ It exits 1 when a record is missing, the licence is unknown or forbidden, `licen
 | a loudness step at a join | the jump lands in a quieter or louder part | the edit penalises steps of 3 LU or more; set `--arc` to keep the body level |
 | a Content ID claim on the upload | the track is registered, or a false claim | dispute with the record (page, licence, download date; the certificate for a registered track) |
 | credits missing or refused at delivery | no record, no `licence_seen`, no CC BY credit line | `music.mjs get` (or `track.py add`) again after reading the page; `npm run credits` |
-| every film sounds alike | the same few tracks, the last film's track | `music.mjs search` with the film's own mood words and tempo; the history holds the last film's track back |
+| every film sounds alike | the same few tracks, the last film's track | `music.mjs search` (or `pick`) with the film's own mood words and tempo; the history holds back every track an earlier film used |
 | `get` refuses: the licence page changed | the sentence read on 2026-10-26 is no longer there | read the page; record the track by hand (`track.py add`) only if it still allows a film |
