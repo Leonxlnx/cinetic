@@ -101,6 +101,51 @@ lines[1] = 'It moves meetings like magic.'
 code, rep = run([script(lines), '--allow', 'magic'])
 result(code == 0, '--allow keeps a word the brand voice owns', ', '.join(rules(rep)))
 
+# 2b. a short list of the real marks the film shows is one claim (public/logos/logos.json, --marks, cues `marks`)
+film = os.path.join(TMP, 'marks-film')
+os.makedirs(os.path.join(film, 'public', 'logos'), exist_ok=True)
+open(os.path.join(film, 'public', 'logos', 'logos.json'), 'w', encoding='utf-8').write(json.dumps({'logos': {
+    'chatgpt': {'name': 'ChatGPT'}, 'claude': {'name': 'Claude'}, 'google-gemini': {'name': 'Gemini'},
+    'mistral-ai': {'name': 'Mistral AI'}, 'meta': {'name': 'Meta'}}}))
+PLURAL = ['Plural asks three AI models at once.', 'Ask ChatGPT, Claude and Gemini.', 'Get three answers side by side.',
+          'See where all three agree.', 'Try it free at plural.chat.']
+
+
+def marks_case(line, args=(), where=None):
+    lines = list(PLURAL)
+    lines[1] = line
+    p = os.path.join(where or TMP, 'marks.txt')
+    open(p, 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
+    code, rep = run([p, '--name', 'Plural', *args])
+    return code, [f for f in rep.get('findings', []) if f.get('line') == 2]
+
+
+code, got = marks_case('Ask ChatGPT, Claude and Gemini.')
+result(code == 1 and [f['rule'] for f in got] == ['claims'], 'marks: without a declared mark, three names in a line are a list', json.dumps(got)[:200])
+code, got = marks_case('Ask ChatGPT, Claude and Gemini.', where=film)
+result(code == 0 and not got, 'marks: the names in public/logos/logos.json listed in one line are one claim', json.dumps(got)[:200])
+code, got = marks_case('Ask ChatGPT, Claude and Gemini.', ['--marks', 'ChatGPT,Claude,Gemini'])
+result(code == 0 and not got, 'marks: --marks declares them', json.dumps(got)[:200])
+code, got = marks_case('Use ChatGPT, Claude, Mistral AI and Meta.', where=film)
+result(code == 0 and not got, 'marks: four marks (a two-word name too) pass', json.dumps(got)[:200])
+for line, why in [('Ask ChatGPT, Claude, Gemini, Meta and Mistral AI.', 'five marks are a list'),
+                  ('ChatGPT, Claude and Gemini.', 'marks alone, no verb, are a keyword pile'),
+                  ('Ask ChatGPT, Claude and your team.', 'a name that is not a mark is a list'),
+                  ('Ask ChatGPT, Claude and Gemini, then compare.', 'a second claim beside the marks'),
+                  ('Ask ChatGPT, Claude and Gemini. Compare them.', 'two sentences')]:
+    code, got = marks_case(line, where=film)
+    result(code == 1 and 'claims' in [f['rule'] for f in got],
+           f'marks: {why} still fails ("{line}")', json.dumps(got)[:200])
+md2 = os.path.join(TMP, 'MARKS.md')
+open(md2, 'w', encoding='utf-8').write('**Spec:** `format: launch`\n**Name:** Plural\n**Marks:** ChatGPT, Claude, Gemini\n\n## Script\n| # | Line |\n|---|---|\n'
+                                       + ''.join(f'| {i + 1} | {l} |\n' for i, l in enumerate(PLURAL)) + '\n## Next\n')
+code, rep = run([md2])
+result(code == 0, 'marks: a **Marks:** line in TREATMENT.md declares them', ', '.join(rules(rep)))
+pc = {'fps': 60, 'total': 1500, 'name': 'Plural', 'marks': ['ChatGPT', 'Claude', 'Gemini'],
+      'copy': [{'id': f'l{i}', 'text': l, 'in': i * 300, 'resolved': i * 300 + 40, 'out': i * 300 + 280} for i, l in enumerate(PLURAL)]}
+code, rep = run(['--stdin'], json.dumps(pc))
+result(code == 0 and not rules(rep, 'error'), 'marks: `marks` in the cues (stdin) declares them', ', '.join(rules(rep)))
+
 # 3. update films
 code, rep = run([script(['Plumb 2.4 is out.', 'Approvals take one tap.', 'Replies land in the thread.', 'Counts update while you watch.']), '--format', 'update'])
 result(code == 0 and not rep.get('findings'), 'update: "[Name] [version]" first, one result a line, passes', ', '.join(rules(rep)))

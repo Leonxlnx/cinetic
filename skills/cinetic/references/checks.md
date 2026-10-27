@@ -42,7 +42,7 @@ Run it on `TREATMENT.md` at Step 1b, before any picture work, and again on `out/
 | `vague` | fancy or vague words a customer would not say (unleash, reimagine, seamless, effortless, elevate, supercharge, next-level, the future of, magic, journey, unlock, empower, revolutionize, beyond, redefine, game-changing, built different, ...) | error |
 | `metaphor` | a figure of speech instead of the thing (a superpower, a second brain, rocket fuel, on autopilot, a copilot) | error |
 | `slogan` | "Meet X", "X, reimagined", "Less X. More Y.", "X meets Y", "made simple", "your way", a question, an exclamation | error |
-| `claims` | two sentences, a list, or two clauses joined by and/but in one line | error |
+| `claims` | two sentences, a list, or two clauses joined by and/but in one line; a short list (2-4) of the real marks the film shows is one claim ("Ask ChatGPT, Claude and Gemini.": the names in `public/logos/logos.json`, `marks` in the cues, a `**Marks:**` line in `TREATMENT.md` or `--marks`), when the rest of the line has a verb | error |
 | `verb` | no verb (an abstract noun alone: "Total control.") | error |
 | `together` | two lines on screen at once outside a declared swap | error |
 | `close` | the end lacks the name or what to do (a URL, "Out now") | warning |

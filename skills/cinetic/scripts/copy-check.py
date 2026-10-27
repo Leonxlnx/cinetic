@@ -27,7 +27,10 @@ Checks (error unless marked):
   metaphor    a figure of speech instead of the thing: superpower, second brain, rocket fuel, on autopilot...
   slogan      slogan shapes: "Meet X", "X, reimagined", "Less X. More Y.", "X meets Y", "made simple",
               "your way", "like never before", a question, an exclamation, "Plan. Track. Win."
-  claims      more than one claim in a line: two sentences, a list, two clauses joined by and/but
+  claims      more than one claim in a line: two sentences, a list, two clauses joined by and/but. A short
+              list (2-4) of the real marks the film shows is one claim ("Ask ChatGPT, Claude and Gemini."):
+              the names in public/logos/logos.json (scripts/logos.mjs), `marks` in the cues, a **Marks:**
+              line in TREATMENT.md or --marks; the rest of the line still needs a verb and one claim
   verb        a line with no verb (an abstract noun alone says nothing: "Total control.")
   together    two lines on screen at once (a line declared `swap` excepted)
   name        no line names the product
@@ -41,6 +44,7 @@ Usage:
   python3 scripts/copy-check.py script.txt --format update --name Plumb
   options: --name N (the product's name)  --format launch|update|feature|loop|sting|walkthrough
            --fps N (cues without fps)  --allow word,word (the brand's own voice, recorded in BRIEF.md)
+           --marks Name,Name (real marks the film shows, beside public/logos/logos.json)
            --json (machine-readable)  --strict (warnings fail too)  --stdin (JSON on stdin)
 Exit codes: 0 pass, 1 a check failed (or a warning with --strict), 2 bad arguments or an unreadable script.
 """
@@ -235,6 +239,8 @@ def from_markdown(text):
         if '<' not in m.group(1):
             name = m.group(1).strip().strip('`')
             break
+    m = re.search(r'^\*\*Marks:\*\*\s*(.+)$', text, re.M)
+    marks = [x.strip().strip('`') for x in m.group(1).split(',') if x.strip() and '<' not in x] if m else []
     lines, in_script, header = [], False, None
     for raw in text.splitlines():
         if re.match(r'^#{1,6}\s', raw):
@@ -263,7 +269,7 @@ def from_markdown(text):
         at = next((parse_time(v) for k, v in row.items() if k in ('at', 'at (s)', 'time', 'in', 'when')), None)
         role = next((v for k, v in row.items() if k.startswith('role')), '')
         lines.append({'text': line, 'at': at, 'role': role.lower()})
-    return lines, fmt, name
+    return lines, fmt, name, marks
 
 
 def from_text(text):
@@ -320,6 +326,45 @@ def estimate_times(lines):
         t += (32 + 12 * (n - 1) + max(60, 42 + 8 * n) + 17) / 60
 
 
+def film_marks(path=None):
+    """The real marks the film shows: the names in public/logos/logos.json (scripts/logos.mjs writes it), found beside
+    the script, up to three folders above it, or in the working folder (grid-check runs from the film)."""
+    dirs = []
+    if path:
+        d = os.path.dirname(os.path.abspath(path))
+        for _ in range(4):
+            dirs.append(d)
+            d = os.path.dirname(d)
+    dirs.append(os.getcwd())
+    for d in dict.fromkeys(dirs):
+        rec = os.path.join(d, 'public', 'logos', 'logos.json')
+        if os.path.isfile(rec):
+            try:
+                logos = json.load(open(rec, encoding='utf-8')).get('logos') or {}
+            except (OSError, ValueError):
+                return []
+            out = []
+            for key, e in logos.items():
+                out += [e.get('name') or '', key.replace('-', ' ')]
+            return [x for x in dict.fromkeys(out) if x.strip()]
+    return []
+
+
+def mark_list(text, marks):
+    """A short list of the film's real marks in a line ("ChatGPT, Claude and Gemini"): the line with the list said as
+    one word ("them"), or None when there is none, it is longer than 4, or nothing outside it does anything."""
+    if not marks:
+        return None
+    item = '(?:' + '|'.join(re.escape(m) for m in sorted(marks, key=len, reverse=True)) + ')'
+    m = re.search(r'(?<![\w-])' + item + r'(?:,\s+' + item + r')*,?\s+(?:and|or|&)\s+' + item + r'(?![\w-])', text, re.I)
+    if not m or not 2 <= len(re.findall(r'(?<![\w-])' + item + r'(?![\w-])', m.group(0), re.I)) <= 4:
+        return None
+    rest = text[:m.start()] + text[m.end():]
+    if not verbs_in(rest):
+        return None  # a pile of names: no line says what happens with them
+    return text[:m.start()] + 'them' + text[m.end():]
+
+
 # ---------------------------------------------------------------------------------------------- checking
 def guess_name(lines, names):
     for n in names:
@@ -365,7 +410,7 @@ def what_kind(text, name):
     return None
 
 
-def check(lines, names=(), ui=(), name=None, fmt=None, allow=()):
+def check(lines, names=(), ui=(), name=None, fmt=None, allow=(), marks=()):
     findings = []
     allow = {a.strip().lower() for a in allow if a.strip()}
 
@@ -403,6 +448,7 @@ def check(lines, names=(), ui=(), name=None, fmt=None, allow=()):
             add('slogan', 'a question or an exclamation: say it as a plain statement', i)
         # more than one claim: two sentences, a dash, a list, two clauses joined by and/but
         body = URL.sub('URL', t)
+        body = mark_list(body, marks) or body  # the film's real marks listed: one claim ("the products it works with")
         sentences = [s for s in re.split(r'(?<=[.;!?])\s+|\s+[—–-]\s+', body.strip()) if words_of(s)]
         plain_close = is_close and all(URL.search(x) or CTA.search(x) or (name and x.strip().rstrip('.').lower() == name.lower()) or VERSION.search(x) for x in sentences)
         if len(sentences) > 1 and not plain_close:
@@ -416,6 +462,7 @@ def check(lines, names=(), ui=(), name=None, fmt=None, allow=()):
             if len(parts) > 1 and verbs_in(parts[0], name_tokens):
                 for p in parts[1:]:
                     pw = words_of(p)
+                    pw = pw[1:] if pw and norm_word(pw[0]) in ('then', 'also') else pw  # ", then compare": a second claim
                     lead = pw[1:2] if pw and norm_word(pw[0]) in SUBJECTS | set(name_tokens) else pw[:1]
                     after = pw[pw.index(lead[0]) + 1:pw.index(lead[0]) + 2] if lead else []
                     noun = bool(after) and norm_word(after[0]) in PREPOSITIONS
@@ -489,13 +536,13 @@ def main(argv):
     if not argv or argv[0] in ('-h', '--help'):
         print(__doc__.strip())
         return 0 if argv else 2
-    a = {'name': None, 'format': None, 'fps': None, 'allow': '', 'json': False, 'strict': False, 'stdin': False, 'path': None}
+    a = {'name': None, 'format': None, 'fps': None, 'allow': '', 'marks': '', 'json': False, 'strict': False, 'stdin': False, 'path': None}
     i = 0
     while i < len(argv):
         k = argv[i]
         if k in ('--json', '--strict', '--stdin'):
             a[k[2:]] = True
-        elif k in ('--name', '--format', '--fps', '--allow'):
+        elif k in ('--name', '--format', '--fps', '--allow', '--marks'):
             if i + 1 >= len(argv):
                 print(f'copy-check: {k} needs a value', file=sys.stderr)
                 return 2
@@ -507,7 +554,7 @@ def main(argv):
         else:
             a['path'] = k
         i += 1
-    names, ui, fmt, name = [], [], a['format'], a['name']
+    names, ui, fmt, name, marks = [], [], a['format'], a['name'], []
     try:
         if a['stdin'] or (a['path'] and a['path'].endswith('.json')):
             doc = json.loads(sys.stdin.read() if a['stdin'] else open(a['path'], encoding='utf-8').read())
@@ -516,11 +563,12 @@ def main(argv):
             lines, names, ui = from_copy(doc, float(a['fps']) if a['fps'] else None)
             name = name or doc.get('name')
             fmt = fmt or doc.get('format')
+            marks = [str(x) for x in doc.get('marks') or []]
             source = 'stdin' if a['stdin'] else a['path']
         elif a['path']:
             text = open(a['path'], encoding='utf-8').read()
             if a['path'].lower().endswith('.md'):
-                lines, f2, n2 = from_markdown(text)
+                lines, f2, n2, marks = from_markdown(text)
                 fmt, name = fmt or f2, name or n2
             else:
                 lines = from_text(text)
@@ -539,7 +587,8 @@ def main(argv):
     if not timed:
         estimate_times(lines)
     allow = a['allow'].split(',') if a['allow'] else []
-    findings, name, stranger = check(lines, names, ui, name, fmt, allow)
+    marks = [x.strip() for x in a['marks'].split(',') if x.strip()] + marks + film_marks(None if a['stdin'] else a['path'])
+    findings, name, stranger = check(lines, names, ui, name, fmt, allow, marks)
     errors = [f for f in findings if f['severity'] == 'error']
     warns = [f for f in findings if f['severity'] == 'warn']
     ok = not errors and not (a['strict'] and warns)
