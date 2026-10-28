@@ -21,12 +21,12 @@ signature replace the template's), then cut it to the track: `track.py grid` mov
 | Template | Length | Use it when | Shape |
 |---|---|---|---|
 | none (the starter) | 15-45 s | a launch film whose idea is its own device: most films | the dealt direction's skeleton |
-| `update` | 15-23 s | "vX is out": 2-4 changes to show | the version as the set, one product moment per change, the payoff, the end card with the version |
+| `update` | 15-23 s | "vX is out": 2-4 changes to show | the version as the set, one lit product moment per change on one camera strip with the film's one 3D turn, the version whole at the payoff, the end card with the version; each slot deals one of two devices |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | the product's breadth is the story (sources, formats, integrations), or a launch film needs its close | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
 | `camera-teaser` | 20-25 s | a dark, fast teaser of a product's screens where the motion is the camera's: whips, pushes, one 3D turn over one layout per shot | the request box arriving tilted in the light, a whip into its close-up and the send button, the window streaming code under the one 3D turn, the proof in depth with the real marks of what it works with, the page with a modal toast, the stages, the mark; each act deals one of two or three devices |
 | `prompt-run` | 18-20 s | the product does work from a request (an agent, an assistant, a generator): what goes in is a sentence, what comes out is done work | a pill among the real marks of the tools it connects, the label swapping on the kick, the request box out of the pill, the request typed, a punch-in and the send, the steps it runs under one 3D turn, the result, the lockup; each act deals one of two or three devices |
-| `social-ad` | 17-22 s | a short ad for a feed: everything the product holds, fast (things people save, make, buy, plan), shown as the product's own content built in code (never stock; its own pictures only when the brief supplies them), the motion is the energy | the opener in one confident move spreading onto a stack of what it holds, the mark, the claim inside a field of that content on its accent pill, a label that rolls its last word over moving content, two imperatives, the lockup; each act deals one of two or three devices |
+| `social-ad` | 17-22 s | a short ad for a feed: everything the product holds, fast (things people save, make, buy, plan), shown as the product's own content built in code, or as real photographs where that content is pictures (never drawn), the motion is the energy | the opener in one confident move spreading onto a stack of what it holds, the mark, the claim inside a field of that content on its accent pill, a label that rolls its last word over moving content, two imperatives, the lockup; each act deals one of two or three devices |
 | `type-explainer` | 20-30 s | the idea is simple to say and the words carry it: an explainer on a clean lit page, quiet in its small, airy type and crisp in its word pace, the product's own screen built in code as its one picture | the name with its mark as the next word, what it is in a confident line move, the problem, the promise with the product standing in it and becoming the shot, one wipe, the mark between the words becoming the hub of the product's parts, the close; each act deals one of two or three devices |
 
 The test: say the film in one sentence. "You give it X and get Y" is a walkthrough; "It works with everything and
@@ -35,6 +35,22 @@ in words is an explainer; "Here is everything it is for, fast" over the product'
 walkthrough when the user does the steps); the same story as a dark, fast tease where the camera does the moving is a
 camera teaser. When none fits, start from the starter. A launch
 film may end on the reel's close (rebuild its acts after your own) or open on the walkthrough's first three acts.
+
+## update
+
+"vX is out", told by the product itself. One camera carries the whole film along one strip, so every act line is a
+velocity seam. Acts on whole bars at 120 BPM (2-4 changes: 14-22 s plus a 1 s tail): `hook` (the name over the version
+as giant numerals cropped by the frame: the last numeral rolls from the old value, or the new version rises out of a
+mask once the name is read), one `change` per change (the camera whips onto the product's surface, lit and tilted in
+the film's light, `Lit`; the product does the new thing on its contact frame; one plain sentence of 2-6 words on its
+dealt move and exit, `acts/type.tsx`, with the real mark inside it where the change names another product: `"[]"`,
+`logo`, `logoName`), `payoff` (the camera pulls back over every change as the version swings in, or the last change
+recedes out of focus as the version rises in front of it; the version fitted and centred so it reads whole), `end`
+(the version steps back to the upper right over the mark and the name, or settles after the name as one lockup). The
+film makes one 3D camera move (a yaw into the second change or a pitch over the payoff); the ground is the key wash
+alone. Each slot deals one of two devices per film from the name (`src/deal.ts`, template.json "slots"). Slots:
+`src/update.ts` (the version, the one before it, the changes and their moments: approve, chat, count, budget or a
+dense table).
 
 ## ui-walkthrough
 
@@ -101,7 +117,9 @@ dense screen; the result as a morph or the claim on the accent), one colour even
 ## social-ad
 
 A short ad, every seam inside a motion, the product's own content built in code carrying the colour: its items as
-content tiles, its dense screen, the real marks of what it works with; never stock. Six acts on whole bars at 150 BPM,
+content tiles, its dense screen, the real marks of what it works with; where what people keep in it is pictures (a
+recipe, an outfit, a room, a trip), the cards are real photographs (`ad.ts` `pictures`: the product's own, the user's,
+or free ones that need no credit, `scripts/assets.mjs`), never drawn. Six acts on whole bars at 150 BPM,
 9 in the house plan; every exit cue waits for its line's read and an act grows a bar only where a read needs it
 (`ACT_BARS`; 17-22 s at 104-150 BPM): `open` (the opener as one confident `TypeLine` move, land or build, spreading
 apart into the cut; "Save" and its last word carry on outward either side of a hero tile while the items are dealt
@@ -154,8 +172,9 @@ designed rather than assembled:
   for `Words`): words rise and sharpen while they resolve, never appear in place; an end card never fades in letter
   by letter.
 - **The promise line holds its object** (`kit/inline.tsx` `ObjectLine`): the product's mark, a glyph, a chip or a small
-  UI piece at cap height inside the sentence, swapping in 6 f; **the claim sits on the accent** (`fx/TypeClaim`): cap
-  16 % of the frame or more, flush left at 3 %, −0.04 em, semibold.
+  UI piece at cap height inside the sentence; with several, they roll one slot up as one strip over 16 f on
+  `E.glideOut`, every 48 f (60 fps frames); **the claim sits on the accent** (`fx/TypeClaim`): cap 16 % of the frame or
+  more, flush left at 3 %, −0.04 em, semibold.
 - **Nothing holds still.** Every hold creeps or counter-creeps and accelerates into its exit (`creep`, `counterCreep`,
   `intoCut`).
 - **Cadence accelerates into payoffs:** notices arriving faster, a count that grows then jumps (`growthSteps`), a
