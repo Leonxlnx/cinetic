@@ -149,8 +149,11 @@ export const AVATAR_MONOGRAM_MAX = 40;
  * `kind="halftone"`, a monogram tile only on a 24-40 px chip (`auto` picks it at AVATAR_MONOGRAM_MAX and under).
  * Never a grey silhouette, never a circle of initials. `seed` is the person (default: their initials and index), so
  * the same person has the same face in every shot; `ring` draws the rim that separates it from what it overlaps.
+ * `src` shows a real portrait photograph instead (staticFile of a photo from scripts/assets.mjs --people, or the
+ * user's), cropped round its `focus` (0..1, default the upper middle where a face sits): a person who matters in the
+ * shot (a channel's owner, a quote card, a team) is a real photo; the drawn portrait is for a crowd of small faces.
  */
-export const Avatar: React.FC<{ theme: KitTheme; i: number; initials: string; size: number; ring?: string; x?: number; y?: number; seed?: string | number; kind?: AvatarKind; scale?: number }> = ({
+export const Avatar: React.FC<{ theme: KitTheme; i: number; initials: string; size: number; ring?: string; x?: number; y?: number; seed?: string | number; kind?: AvatarKind; scale?: number; src?: string; focus?: [number, number] }> = ({
   theme: t,
   i,
   initials,
@@ -161,10 +164,12 @@ export const Avatar: React.FC<{ theme: KitTheme; i: number; initials: string; si
   seed,
   kind = 'auto',
   scale,
+  src,
+  focus = [0.5, 0.32],
 }) => {
   const u = useKitScale(scale);
   const who = seed ?? `${initials}:${i}`;
-  const k: AvatarKind = kind === 'auto' ? (size <= AVATAR_MONOGRAM_MAX * u ? 'monogram' : 'portrait') : kind;
+  const k: AvatarKind = src ? 'portrait' : kind === 'auto' ? (size <= AVATAR_MONOGRAM_MAX * u ? 'monogram' : 'portrait') : kind;
   const rim = ring ? Math.max(1.5 * u, size * 0.055) : 0;
   return (
     <div
@@ -180,7 +185,9 @@ export const Avatar: React.FC<{ theme: KitTheme; i: number; initials: string; si
         flex: 'none',
       }}
     >
-      {k === 'monogram' ? (
+      {src ? (
+        <Img src={src} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', objectPosition: `${(focus[0] * 100).toFixed(1)}% ${(focus[1] * 100).toFixed(1)}%`, display: 'block' }} />
+      ) : k === 'monogram' ? (
         <MonogramTile theme={t} seed={who} initials={initials} size={size} font={(px, w, c) => face(px, w, c, 0)} />
       ) : k === 'halftone' ? (
         <HalftonePortrait theme={t} seed={who} size={size} />
@@ -195,7 +202,7 @@ export const Avatar: React.FC<{ theme: KitTheme; i: number; initials: string; si
  * Overlapping avatars (the people on a project): each one rimmed in `ring` (the surface it sits on) so the overlap
  * reads as depth, the first on top; `more` adds a count tile ("+12") after the last face.
  */
-export const AvatarStack: React.FC<{ theme: KitTheme; people: { initials: string; seed?: string }[]; size: number; ring: string; n?: number; overlap?: number; more?: number; kind?: AvatarKind }> = ({
+export const AvatarStack: React.FC<{ theme: KitTheme; people: { initials: string; seed?: string; src?: string; focus?: [number, number] }[]; size: number; ring: string; n?: number; overlap?: number; more?: number; kind?: AvatarKind }> = ({
   theme: t,
   people,
   size,
@@ -210,7 +217,7 @@ export const AvatarStack: React.FC<{ theme: KitTheme; people: { initials: string
     <div data-ui style={{ display: 'flex', alignItems: 'center' }}>
       {shown.map((p, k) => (
         <div key={k} style={{ marginLeft: k ? -size * overlap : 0, position: 'relative', zIndex: shown.length - k }}>
-          <Avatar theme={t} i={k} initials={p.initials} seed={p.seed} size={size} ring={ring} kind={kind} />
+          <Avatar theme={t} i={k} initials={p.initials} seed={p.seed} size={size} ring={ring} kind={kind} src={p.src} focus={p.focus} />
         </div>
       ))}
       {more !== undefined && more > 0 && (
