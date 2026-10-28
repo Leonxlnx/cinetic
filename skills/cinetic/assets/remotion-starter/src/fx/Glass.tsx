@@ -54,6 +54,8 @@ export type GlassProps = {
   caustic?: string; // refract: caustic colour (the accent)
   fill?: string; // refract: the opaque body colour
   stripe?: number; // flute: reed width, px at 1080p
+  squeeze?: number; // flute: how much each reed's copy narrows at level 1 (default 0.55); over type lower it (and shift) until no letter reads twice
+  shift?: number; // flute: each copy's sideways shift at level 1, a share of the reed (default 0.4)
   tint?: string; // frost veil colour
 };
 
@@ -81,11 +83,11 @@ export const glassState = (f: number, p: Pick<GlassProps, 'mode' | 'at' | 'dur60
 };
 
 /** Reed i of a flute run at `level`: its strip box (px from the shape's left) and the copy's squeeze and shift. Pure. */
-export const fluteStrip = (i: number, level: number, stripe: number) => ({
+export const fluteStrip = (i: number, level: number, stripe: number, squeeze: number = GLASS.flute.squeeze, shift: number = GLASS.flute.shift) => ({
   x0: i * stripe,
   x1: (i + 1) * stripe,
-  scaleX: 1 - GLASS.flute.squeeze * level,
-  shift: (i % 2 ? -1 : 1) * GLASS.flute.shift * stripe * level * (0.6 + 0.4 * hash01(i, 3, 11)),
+  scaleX: 1 - squeeze * level,
+  shift: (i % 2 ? -1 : 1) * shift * stripe * level * (0.6 + 0.4 * hash01(i, 3, 11)),
 });
 
 /** Thin-film interference colour (gamma sRGB 0..1) for a film `d` nm thick, index 1.33, seen near normal. Pure. */
@@ -201,7 +203,7 @@ export const Glass: React.FC<GlassProps & { frame: number; backdrop: React.React
       8,
     );
     const strips = Array.from({ length: n }, (_, i) => {
-      const fs = fluteStrip(i, s.level, st);
+      const fs = fluteStrip(i, s.level, st, p.squeeze, p.shift);
       const sx = p.x + fs.x0;
       const right = Math.max(0, W - Math.min(p.x + p.w, p.x + fs.x1));
       return (

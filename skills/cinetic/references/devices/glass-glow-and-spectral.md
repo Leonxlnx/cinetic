@@ -66,7 +66,7 @@ The logo or a word sits behind reeded glass: it is broken into vertical bands, e
 - **Anatomy:** Stripes 40-60 px; per stripe a sawtooth displacement of up to 15-25 px with a lens ramp inside each stripe; edges softened about 4 px; strength 1 -> 0 over 28 f.
 - **Timing:** 28 f.
 - **Sound:** A whoosh on the logo's move.
-- **Build:** `<Glass mode="flute" x y w h stripe={46} at dur60={28} backdrop={word}>` (fx/Glass): one strip per reed, each a copy squeezed about its own centre and shifted sideways, under a baked shading plate per reed; the level clears 1 -> 0 on E.settleOut and the strips meet exactly at 0, so the word lands sharp with no seam (`reverse` slices it in). Only transforms move; fluteStrip() is pure.
+- **Build:** `<Glass mode="flute" x y w h stripe={46} at dur60={28} backdrop={word}>` (fx/Glass): one strip per reed, each a copy squeezed about its own centre and shifted sideways, under a baked shading plate per reed; the level clears 1 -> 0 on E.settleOut and the strips meet exactly at 0, so the word lands sharp with no seam (`reverse` slices it in). Only transforms move; fluteStrip() is pure. `squeeze` and `shift` (0.55 and 0.4) set how far each reed's copy narrows and slides: over type, lower both until no letter reads twice in a still.
 
 ### Radial lens chromatic aberration on light lines
 
