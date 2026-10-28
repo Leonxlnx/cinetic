@@ -40,7 +40,10 @@ Checks (error unless marked):
               text here", a generic label alone ("Button", "Caption") or a generic noun and a number ("Item 1");
               the lists are scripts/placeholders.json, which lint-film.mjs reads too
   slot        (--ui) a UI string still holding a template's bracketed slot ("[Product]", "[N] items")
-Then it prints what a stranger reads: what it is, what it does, what to do.
+Then it prints what a stranger reads: what it is, what it does, what to do, and each line's key words: the words
+between asterisks in the line ("Brook is a *water bottle*.": the marks leave the text before any check), else a
+suggestion (a number or a [slot], else the last word that is not a small word or the product's name). The film's
+TypeLine sets its emphasis device on them (fx/TypeEmphasis); a template names them in its script's `keys`.
 
 UI strings (--ui): every string the product's UI shows is real words too. --ui src reads the on-screen strings of the
 film's source (JSX text, text/label/title/caption/meta/value/... props and keys, lists of rows, steps and options; fx/
@@ -513,6 +516,35 @@ def mark_list(text, marks):
 
 
 # ---------------------------------------------------------------------------------------------- checking
+KEY_SKIP = set('a an the of for to in on at by with and or but so your our my its it it\'s is are be was were this that these '
+               'those you we they i me us them from into as all any every more most just now then than out up'.split())
+
+
+def key_marks(text):
+    """A line's *marks*: the clean text and the marked key words (None when the line marks none)."""
+    if '*' not in text:
+        return text, None
+    parts = text.split('*')
+    clean = re.sub(r'\s+', ' ', ''.join(parts)).strip()
+    key = parts[1].strip() if len(parts) >= 3 else ''
+    return clean, (key or None)
+
+
+def suggest_key(text, name=None):
+    """The words a line's emphasis lands on when it marks none: a number or a [slot], else the last word that is not a
+    small word or the product's name."""
+    bare = [re.sub(r"^[^\w\[]+|[^\w\]%]+$", '', w) for w in words_of(text)]
+    bare = [w for w in bare if w]
+    for w in bare:
+        if re.search(r'\d', w) or w.startswith('['):
+            return w
+    nm = norm_word(name or '')
+    for w in reversed(bare):
+        if w.lower() not in KEY_SKIP and norm_word(w) != nm:
+            return w
+    return bare[-1] if bare else ''
+
+
 def guess_name(lines, names):
     for n in names:
         t = n['text'].strip().rstrip('.')
@@ -766,7 +798,12 @@ def main(argv):
         estimate_times(lines)
     allow = a['allow'].split(',') if a['allow'] else []
     marks = [x.strip() for x in a['marks'].split(',') if x.strip()] + marks + film_marks(None if a['stdin'] else a['path'])
+    marked = []
+    for l in lines:  # *marks* name the key words; the checks read the clean line
+        l['text'], key = key_marks(l['text'])
+        marked.append(key)
     findings, name, stranger = check(lines, names, ui, name, fmt, allow, marks)
+    keys = [{'line': i + 1, 'key': k or suggest_key(l['text'], name), 'marked': k is not None} for i, (l, k) in enumerate(zip(lines, marked))]
     findings += check_ui(ui_strings)
     errors = [f for f in findings if f['severity'] == 'error']
     warns = [f for f in findings if f['severity'] == 'warn']
@@ -777,7 +814,7 @@ def main(argv):
                           'lines': [{'line': i + 1, 'text': l['text'], 'words': len(words_of(l['text'])), 'at': round(l['at'], 2),
                                      'estimated': bool(l.get('estimated')), 'end': bool(l.get('end')), 'role': l.get('role') or None}
                                     for i, l in enumerate(lines)],
-                          'findings': findings, 'stranger': {**stranger, 'reads': reads},
+                          'findings': findings, 'stranger': {**stranger, 'reads': reads}, 'keys': keys,
                           **({'ui': {'source': ui_source, 'strings': len(ui_strings)}} if ui_source else {}),
                           'summary': {'errors': len(errors), 'warnings': len(warns)}}, indent=1, ensure_ascii=False))
         return 0 if ok else 1
@@ -791,6 +828,8 @@ def main(argv):
     for f in findings:
         where = f' line {f["line"]} "{f["text"]}"' if f['line'] else ''
         print(f'{f["severity"]:>5}  {f["rule"]}{where}: {f["message"]}')
+    print('key words (the emphasis lands on them; ~ suggested: mark the line\'s own with *asterisks*): ' + ' · '.join(
+        f'{k["line"]} {"" if k["marked"] else "~"}"{k["key"]}"' for k in keys))
     print(f'a stranger reads: {reads}')
     print(f'  what it is:   {stranger["is"] or "(not said)"}')
     print(f'  what it does: {" · ".join(stranger["does"]) or "(not said)"}')

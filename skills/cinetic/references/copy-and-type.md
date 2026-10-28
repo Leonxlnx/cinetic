@@ -674,6 +674,15 @@ the strongest version: the focus snap is the hit (`OVERSIZE_FIRST`: x2.67, 6 px 
 
 ## 9. Type devices
 
+**Every hero line takes an emphasis on its key words** ([type emphasis and dimension](devices/type-emphasis.md)): a line
+in one size, one weight and one colour reads flat however it arrives. `<TypeLine>` gives a hero line `weight` (the
+family's emphasis weight in the accent, its width held) unless it names a device (`spec.emph`: weight, accent, scale,
+swell, marker, box, under, outline, sweep; `false` for a body line, a name or a piece of a line set in parts); the
+templates deal one per line, never the same device twice in a row, on the key words their script names (`keys`), and
+open on a two-line statement (`StatementLine`: the words before the key words small over them big). Mark a line's key
+words with asterisks ("Brook is a *water bottle*."): `copy-check.py` reads the marks and suggests a key word for a line
+without one. Stacks, planes in depth and type behind the subject: `fx/TypeStack`, `fx/TypeDepth`, `fx/TypeBehind`.
+
 Primitives that do one decisive thing to type each: `LineSnap`, `FocusWord`, `HueSweep`, `Letters`, `MaskRise`,
 `Scramble`, `TypeOn`, plus `TypeFx`, `TypeFill`, `TypeMask`, `Knockout`, `Echoes`, `Streak`, `PenStroke` and
 `Brackets` (the device book's [type arrivals](devices/type-arrivals.md), [lines, layout and swaps](devices/lines-layout-and-swaps.md)

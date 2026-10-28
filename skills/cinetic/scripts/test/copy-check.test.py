@@ -15,6 +15,8 @@
   6. Placeholders: a script line that says "Placeholder" and a COPY ui string in lorem ipsum fail; --ui src reads
      the on-screen strings of a film's source (not comments, not fx/) and fails placeholder text and unfilled
      slots; --ui layout.json reads the UI boxes the layout audit measured; real UI words pass.
+  7. Key words: *marks* name a line's key words and leave the text before any check; a line without marks gets a
+     suggestion (a number or a [slot], else the last word that is not a small word or the product's name).
 
 Usage (from the skill root):  python3 scripts/test/copy-check.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -259,6 +261,13 @@ for rel, fmt in EXAMPLES:
         errs = [f'{x["rule"]}: {x.get("text") or ""}' for x in rep.get('findings', []) if x['severity'] == 'error']
         result((code == 1) if bad else (code == 0), f'{rel}: {"a bad" if bad else "the"} script under "{label[:60]}" {"fails" if bad else "passes"}', '; '.join(errs)[:300])
 result(seen >= 5, f'the example scripts were found ({seen})')
+
+# 7. key words
+code, rep = run([script(['0 | Brook is a *water bottle*.', '2.5 | Its cap counts every sip.', '5 | It logs 2 litres a day.', '8 | Get Brook at brook.com.'], 'keys.txt'), '--name', 'Brook'])
+keys = {k['line']: (k['key'], k['marked']) for k in rep.get('keys', [])}
+texts = [l.get('text') for l in rep.get('lines', [])]
+result(code == 0 and keys.get(1) == ('water bottle', True) and keys.get(2) == ('sip', False) and keys.get(3) == ('2', False) and not any('*' in (t or '') for t in texts),
+       'key words: *marks* name them and leave the text; an unmarked line gets a suggestion (a number first, else its last content word)', json.dumps(keys))
 
 print(f'copy-check tests: {failed} failed' if failed else 'copy-check tests: all pass')
 sys.exit(1 if failed else 0)
