@@ -141,10 +141,16 @@ export const Develop: React.FC<
   );
 };
 
-/** What a Develop instance declares: a stepped range when it develops on a lower cadence, else nothing. */
+/**
+ * What a Develop instance declares: its blend as a `light` seam in the middle of the develop (the colour comes up in
+ * the same picture, so forensics' dissolve check accepts it there), and a stepped range when it develops on a lower
+ * cadence. Declare the instance with the column's `index` the picture uses.
+ */
 export const declares = (p?: Partial<DevelopProps> & { id?: string }, film?: Partial<FilmCtx>): Declares => {
-  if (!p || p.start === undefined || !p.steps) return { stepped: [], flashes: [], cameraBlur: [], seams: [] };
+  if (!p || p.start === undefined) return { stepped: [], flashes: [], cameraBlur: [], seams: [] };
   const fr = developFrames(p as DevelopProps, film);
-  const stepped: SteppedRange[] = [{ from: Math.floor(fr.start), to: Math.ceil(fr.end) + 1, fps: p.steps.animFps, id: p.id ?? 'develop' }];
-  return { stepped, flashes: [], cameraBlur: [], seams: [] };
+  const id = p.id ?? 'develop';
+  const seams = [{ at: Math.round((fr.start + fr.end) / 2), kind: 'light' as const, id }];
+  const stepped: SteppedRange[] = p.steps ? [{ from: Math.floor(fr.start), to: Math.ceil(fr.end) + 1, fps: p.steps.animFps, id }] : [];
+  return { stepped, flashes: [], cameraBlur: [], seams };
 };

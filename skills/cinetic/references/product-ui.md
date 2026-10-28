@@ -460,7 +460,7 @@ the same grammar as built UI.
 | Bubbles | one `stepped` frame per bubble cutting on |
 | Cursor | one `stepped` frame per shape switch |
 | Scroll | its fast frames as one `cameraBlur` range |
-| Develop | a `stepped` range when `steps` is set |
+| Develop | a `light` seam mid-develop (its cross-fade, which forensics then accepts), and a `stepped` range when `steps` is set |
 | HardStep | one `stepped` frame per jump |
 | Roll | a `stepped` range for a hard counter on a 12/16/20/30 fps cadence |
 | TypeOn | a `stepped` range for a 1.2 typing run and/or for its `erase` |

@@ -41,6 +41,8 @@
  *  20. rims: fx/BorderBleed spinRim() (a closed conic turning 3 deg a 60 fps frame from its cue, the same turn at 30 fps).
  *  21. fx/Pixel mosaicIrisState(): done (no cells, the outgoing scene gone) on the frame the ring passes the far
  *      corner, with the eased radius and with explicit radii.
+ *  22. fx/Develop declares(): its blend as a light seam mid-develop (forensics accepts the cross-fade there), a stepped
+ *      range only with steps; lib/anim lmix(): linear when an end is 0, never NaN.
  *  18. fx/Words arriveX: each word lands beside its slot and settles home on an expo-out (half of it in 8 f at 60 fps,
  *      home by arriveDur), one value per word when given a list.
  *
@@ -104,6 +106,7 @@ import * as Cmv from '${url('lib/camera-moves.ts')}';
 import * as Ov from '${url('fx/Oversize.tsx')}';
 import * as Bb from '${url('fx/BorderBleed.tsx')}';
 import * as Px from '${url('fx/Pixel.tsx')}';
+import * as Dv from '${url('fx/Develop.tsx')}';
 const camBase = { ax: 960, ay: 540, sx: 960, sy: 540, k: 1 };
 const camMoves = [{ at: 0, frames: 20, zoom: 0.5, ease: A.E.glideOut }, { at: 15, frames: 20, pan: { x: -400 }, ease: A.E.launchIn }];
 const panOnly = [{ at: 0, frames: 10, pan: { x: 100 }, ease: A.E.linear }];
@@ -169,6 +172,8 @@ console.log(JSON.stringify({
   first: Ov.OVERSIZE_FIRST,
   mosaic: [17, 18, 19, 40].map((f) => { const m = Px.mosaicIrisState(f, { at: 0, origin: [400, 300] }, film60); return { done: m.done, active: m.active, cells: m.cells.length }; }),
   mosaicRadii: Px.mosaicIrisState(3, { at: 0, origin: [960, 540], radii: [100, 600, Math.hypot(960, 540) + 195] }, film60).done,
+  develop: [Dv.declares({ start: 100, id: 'dv' }, film60), Dv.declares({ start: 100, index: 2, steps: { animFps: 16 } }, film60), Dv.declares(undefined, film60)],
+  lmix: [A.lmix(0, 1, 1), A.lmix(0, 0, 0.5), A.lmix(1, 4, 0.5), A.lmix(2, 0, 0)],
   rim: [Bb.spinRim(5, 10, ['red', 'blue']), Bb.spinRim(30, 10, ['red', 'blue'], {}, film60), Bb.spinRim(20, 10, ['red', 'blue'], {}, film30)],
   launchCap: (() => { const big = Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1); const last = (1 - A.E.launchIn(13 / 14)) * big * 120; return { big, last, small: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 30, 1), fade: Wo.exitDistanceEm('launchFade', A.E.buildIn, 14, 120, 1), given: Wo.exitDistanceEm('launch', A.E.launchIn, 14, 120, 1, 2) }; })(),
   trackFit: Me.solveTracking([{ w0: 100, n: 5, size: 80, target: 124 }, { w0: 200, n: 6, size: 80, target: 228.8 }]),
@@ -380,6 +385,15 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   const m = P.mosaic;
   result(!m[0].done && m[0].cells > 0 && m[1].done && !m[1].active && m[1].cells === 0 && m[3].done && P.mosaicRadii,
     'mosaicIrisState: done on the frame the ring passes the far corner (18 f at 60 fps), and with explicit radii', JSON.stringify(m));
+}
+// 22. Develop declares its blend (a light seam mid-develop, where forensics accepts the cross-fade), and lmix never NaN
+{
+  const [d0, d1, d2] = P.develop;
+  result(d0.seams.length === 1 && d0.seams[0].kind === 'light' && d0.seams[0].at === 112 && !d0.stepped.length
+    && d1.seams[0].at === 120 && d1.stepped.length === 1 && !d2.seams.length,
+    'Develop declares: a light seam in the middle of the develop (24 f from start + index x 4 f), a stepped range only on steps', JSON.stringify(P.develop));
+  result(P.lmix.every((v) => Number.isFinite(v)) && Math.abs(P.lmix[2] - 2) < 1e-9 && P.lmix[0] === 1 && P.lmix[3] === 2,
+    'lmix: log-space between positives, linear when an end is 0 (never NaN)', JSON.stringify(P.lmix));
 }
 // 14. a launch keeps readable type under the audit's 20 px/f
 {

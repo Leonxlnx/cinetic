@@ -373,8 +373,9 @@ export const tw = (frame: number, from: number, to: number, a: number, b: number
 export const prog = (frame: number, from: number, to: number, ease: Ease = E.out) => tw(frame, from, to, 0, 1, ease);
 
 export const mix = (a: number, b: number, t: number) => a + (b - a) * t;
-/** Log-space mix for scale and zoom: equal ratios per frame, so a zoom never seems to accelerate. */
-export const lmix = (a: number, b: number, t: number) => Math.exp(mix(Math.log(a), Math.log(b), t));
+/** Log-space mix for scale and zoom: equal ratios per frame, so a zoom never seems to accelerate. An end at 0 or below
+ * has no log: the mix is linear then (never NaN). */
+export const lmix = (a: number, b: number, t: number) => (a > 0 && b > 0 ? Math.exp(mix(Math.log(a), Math.log(b), t)) : mix(a, b, t));
 export const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 
 /** Spring started at `start` (frames), at `fps` (default the film's). Same maths as src/lib/sync.ts uses to find its hit frame. */

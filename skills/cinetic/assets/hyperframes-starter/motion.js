@@ -282,8 +282,8 @@
 
   const clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
   const mix = (a, z, t) => a + (z - a) * t;
-  /** Log-space mix for scale and zoom: equal ratios per frame, so a zoom never seems to rush. */
-  const lmix = (a, z, t) => Math.exp(mix(Math.log(a), Math.log(z), t));
+  /** Log-space mix for scale and zoom: equal ratios per frame, so a zoom never seems to rush (linear when an end is 0). */
+  const lmix = (a, z, t) => (a > 0 && z > 0 ? Math.exp(mix(Math.log(a), Math.log(z), t)) : mix(a, z, t));
   /** Clamped eased value between two frames (for values you compute yourself, e.g. in onUpdate). */
   const tw = (f, from, to, a, z, ease = E.out) => mix(a, z, ease(clamp((f - from) / (to - from))));
   const prog = (f, from, to, ease = E.out) => tw(f, from, to, 0, 1, ease);
