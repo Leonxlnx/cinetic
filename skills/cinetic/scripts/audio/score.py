@@ -1354,7 +1354,8 @@ def render_music(song, events, cues, kit, bed, edit, stems_dir=None, draft=False
     tuned = [dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), note=note_name(p['midi']), in_key=fits(song, p))
              for p in placed if p.get('midi') is not None]
     gates = music_gates(song, plan, bed, bed_played, sfx, auto, edit, base_dir, placed)
-    masked = []
+    masked, read = [], 0
+    lock_f = (cues.get('cue') or {}).get('lockup')
     for p in placed:
         if p['kind'] in ('key', 'drop') or 'start' not in p:
             continue
@@ -1363,11 +1364,18 @@ def render_music(song, events, cues, kit, bed, edit, stems_dir=None, draft=False
         i0, i1 = max(0, int(p['start'] * SR)), min(n_out, int(p['start'] * SR) + len(x))
         if i1 - i0 < 256:
             continue
+        read += 1
         r = band_snr(x[:i1 - i0], bed_played[i0:i1])
         if r is not None and r[1] < thr:
-            masked.append(dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), band_hz=r[0], snr_db=round(r[1], 1), margin_db=thr))
-    return y, info, dict(placed=placed, skipped=skipped, missing=missing, masked=masked, tuned=tuned, typing=None,
-                         sfx_levels={}, plan=plan, gates=gates)
+            # a hero sound: the payoff, the lockup or a structural event (an act change, the reveal, the ending)
+            e = events[p['i']] if isinstance(p.get('i'), int) and 0 <= p['i'] < len(events) else {}
+            hero = ('the payoff' if song.payoff is not None and abs(p['t'] - song.payoff) <= 3 / song.fps else
+                    'the lockup' if lock_f is not None and abs(p['f'] - lock_f) <= 3 else
+                    'a structural event' if e.get('structural') else None)
+            masked.append(dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), band_hz=r[0], snr_db=round(r[1], 1), margin_db=thr,
+                               role=p.get('role'), hero=hero))
+    return y, info, dict(placed=placed, skipped=skipped, missing=missing, masked=masked, masked_read=read, tuned=tuned,
+                         typing=None, sfx_levels={}, plan=plan, gates=gates)
 
 
 def effect_levels(bed_played, p, n):
@@ -1864,6 +1872,21 @@ def main(argv=None):
         rep['restraint'], rep['repeats'], rep['cast'] = plan.get('restraint'), plan.get('repeats'), plan.get('cast')
         song.warnings.extend(plan['warnings'] + g['warnings'])
         fails += g['fails']
+        # masking: a hero sound the music covers in every band (under 0 dB in its best band) fails, whatever the
+        # over-bed range says (audibility wins for these); short of that it is listed with its margin. A film with
+        # more than 30 % of its effects masked warns
+        for m in ev['masked']:
+            if m.get('hero') and m['snr_db'] < 0:
+                fails.append(f"{m['hero']}'s {m['kind']} {m['id']} at f={m['f']:g} is buried: {-m['snr_db']:.1f} dB under the music in its "
+                             f"best band ({m['band_hz']} Hz), want +{m['margin_db']:g}: raise role {m.get('role')}'s bed_db (audibility "
+                             "wins over the over-bed range here) or cast another sound (kit.py cast --avoid)")
+        if ev.get('masked_read') and len(ev['masked']) > 0.3 * ev['masked_read']:
+            song.warnings.append(f"{len(ev['masked'])} of {ev['masked_read']} effects are masked by the music (over 30 %): the kit's "
+                                 'sounds sit where the track is busy; cast again against this track (kit.py cast --avoid)')
+        if song.mix['music'] != 1.0 or song.mix['sfx'] != 1.0:
+            song.warnings.append(f"mix.music {song.mix['music']:g} / mix.sfx {song.mix['sfx']:g} trim the buses after plan.py levelled every "
+                                 "effect against the bed, so the over-bed and masking reads no longer describe the master: with a "
+                                 "track set each role's bed_db in audio/kit.json (music.gain_db for headroom) and leave mix at 1")
         rep['lockup'] = lockup_after_stop(song, plan, y, rep)
         if not rec:
             song.warnings.append('score.json music names no licence record: credits.py and deliver.sh refuse the film until it does')
@@ -1921,7 +1944,8 @@ def main(argv=None):
         for w in song.warnings:
             print('  warning:', w)
         for m in ev['masked']:
-            print(f"  masked: {m['kind']} {m['id']} at f={m['f']}: {m['snr_db']} dB over the music in its best band ({m['band_hz']} Hz)")
+            print(f"  masked: {m['kind']} {m['id']} at f={m['f']}: {m['snr_db']} dB over the music in its best band ({m['band_hz']} Hz), "
+                  f"want {m['margin_db']:g}" + (f" ({m['hero']})" if m.get('hero') else ''))
         for f_ in fails:
             print('  FAIL:', f_)
     return 0 if not fails else 1

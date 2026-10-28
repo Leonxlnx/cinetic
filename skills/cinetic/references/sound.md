@@ -277,7 +277,7 @@ and `track.py grid` write it):
 | `progress` | — | `{match, kind?, start?, tonic?, resolve?, gain?}`: the progress climb (§5.5b) |
 | `typing` | `"auto"` | how `key` events sound: `auto`, `soft`, `mechanical`, `pitched`, `muted`, `word` or `off` (§5.5c) |
 | `keyup` | `false` | `true` adds a key-release click on slow typing |
-| `mix` | `{music: 1, sfx: 1, reverb: 1}` | bus trims. The music never ducks: there is no duck, sidechain or suck to set |
+| `mix` | `{music: 1, sfx: 1, reverb: 1}` | bus trims for a film without a track. With a track every effect is levelled against the bed as played: the balance is each role's `bed_db` and the headroom `music.gain_db`, and a trim other than 1 warns (the over-bed and masking reads would no longer describe the master). The music never ducks: there is no duck, sidechain or suck to set |
 | `master` | as shown | target `lufs` (default −14 with a track, −16 for a sting of 8 s or less with a track, −18 effects-only, §9), limiter ceiling (linear), the end fade (s) |
 
 Older fields still parse, with a warning naming the replacement: `sections`, `signature.motif` and `motifs` are ignored (cinetic makes no music); `drops` becomes a stop-down (`stopdowns.add` with `"depth": "stop"` for its silence; the suck is gone); `mix.sidechain`, `mix.duck_db` and `mix.typing_duck_db` are ignored; a bare `"music": "<file>"` or `"bed"` plays the whole file from frame 0 with no edit and no licence record, which `credits.py` and `deliver.sh` then refuse.
@@ -430,7 +430,7 @@ Targets: the film's LUFS ±0.5; true peak ≤ −1.5 dBTP on the WAV and ≤ −
 You cannot listen, so measure what a listener hears:
 
 - **Sync:** `av-audit.py` matches onsets to intended times (`cues_sounded.json`) within ±2 f; `check-sync.py` cross-correlates the muxed audio with the WAV.
-- **Levels:** the report's `over_bed` (each effect over the bed it was levelled against, per role) and `masked` (each effect over the bed in its best band: 3 dB for roles 4 dB or less over the bed, 6 dB for the rest).
+- **Levels:** the report's `over_bed` (each effect over the bed it was levelled against, per role) and `masked` (each effect over the bed in its best band: 3 dB for roles 4 dB or less over the bed, 6 dB for the rest). The payoff, the lockup or a structural sound that reads under the music in its best band fails, whatever the over-bed range says (audibility wins: raise its role's `bed_db` or cast another sound); more than 30 % of the effects masked warns.
 - **Arc:** the momentary-loudness curve (`master.blocks()`): the intro under the body, the payoff highest, the dip, the ending.
 - **Timbre:** `kit.py audition` (and `--over-bed`), `kit.py check`, and `listen.py`'s sound sheet.
 

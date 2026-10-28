@@ -818,13 +818,36 @@ def stop_payoff(d):
     p, r = run(d, 'stoprev', cues, music_score(block, payoff='@reveal'), NO_EARSHOT)
     lk = (r or {}).get('lockup') or {}
     check(r is not None and not any("is the stop ending's element" in x for x in r['warnings'])
-          and lk.get('under_payoff_lu') is not None,
-          f"a payoff on the reveal: the element is measured under it ({lk.get('under_payoff_lu')} LU)")
+          and lk.get('under_payoff_lu') is not None and not any('is buried' in x for x in r['fails']),
+          f"a payoff on the reveal: the element is measured under it ({lk.get('under_payoff_lu')} LU), the hit at its bed_db is not buried")
     # no cue named reveal: "@reveal" reads the timeline's REVEAL (export-cues declared.reveal), as the starter's payoff
     decl = dict(cues_with(ev, total=840, cue={'lockup': 756}), declared={'reveal': 300})
     p, r = run(d, 'stopdecl', decl, music_score(block, payoff='@reveal'), NO_EARSHOT)
     check(r is not None and abs(((r.get('payoff') or {}).get('t') or 0) - 300 / FPS) < 1e-3,
           f"\"@reveal\" with no reveal cue reads the declared REVEAL ({(r or {}).get('payoff') or p.stderr.strip()[-200:]})")
+
+
+def masked_hero(d):
+    """A hero sound the music buries fails: a tick levelled 0.3 dB over the bed reads under the music in every band;
+    on the payoff it fails and names its role's bed_db, the same tick elsewhere is only listed, and a hit at its
+    bed_db over the bed is not failed; a mix trim with a track warns."""
+    kit = launch_kit(d)
+    add_role(kit, 'tick', 'pro_hover_tick/ping', [(f'{j}.wav', wide_take(100 + 2 * j), dict(onset_s=0.01, peak_s=0.011, end_s=0.06), None)
+                                                  for j in range(2)], mix={'bed_db': 0.3, 'offset_ms': 0, 'min_gap_ms': 66, 'width': 0.1})
+    block = music_project(d, test_bed(), [(1, 6)])
+    ev = [dict(f=90, kind='pop', id='a:p1'), dict(f=300, kind='tick', id='a:reveal'), dict(f=480, kind='tick', id='a:t2'),
+          dict(f=560, kind='pop', id='a:p2')]
+    p, r = run(d, 'masked', cues_with(ev, total=720, cue={'reveal': 300}), music_score(block, payoff='@reveal', mix={'music': 0.8}),
+               NO_EARSHOT)
+    if not r:
+        check(False, f'the masking film renders: {p.stderr.strip()[-300:]}')
+        return
+    m = {x['id']: x for x in r['events']['masked']}
+    hero = [f for f in r['fails'] if 'is buried' in f]
+    check('a:reveal' in m and m['a:reveal'].get('hero') == 'the payoff' and len(hero) == 1 and 'a:reveal' in hero[0]
+          and "tick's bed_db" in hero[0] and ('a:t2' not in m or not m['a:t2'].get('hero')),
+          f"a masked payoff fails and names its role's bed_db; a masked tick elsewhere is listed only ({hero}, {sorted(m)})")
+    check(any(w.startswith('mix.music 0.8') for w in r['warnings']), 'a mix trim with a track warns that the reads no longer describe the master')
 
 
 def width_and_bed_levels(d):
@@ -1172,7 +1195,7 @@ def main():
     tests = [('effects_only_baseline', lambda d: effects_only_baseline(d, baseline))] + [(fn.__name__, fn) for fn in (
         kit_engine, kit_only, vendored, tuned_budget, stack_guard, music_none, music_synth_refused, typing_word_kit,
         progress_kit, text_chord_kit, typing_bright_kit, land_light_and_levels, kit_tools, bed_edit, stopdown,
-        stop_payoff, width_and_bed_levels, on_beat_over_bed, carried_by_track, mixkeys_parity, credits_gate, av_audit, real_earshot)]
+        stop_payoff, masked_hero, width_and_bed_levels, on_beat_over_bed, carried_by_track, mixkeys_parity, credits_gate, av_audit, real_earshot)]
     for name, fn in tests:
         if only and name not in only:
             continue
