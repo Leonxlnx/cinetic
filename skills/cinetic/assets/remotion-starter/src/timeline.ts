@@ -89,7 +89,7 @@ export const CUE = {
   fragA: b(1, 1), // "plinth cuts" rises on the second beat into a frame that is already moving (the rule drawing, the creep, the key on the paper)
   drop: b(2), // once "plinth cuts" stands: the accent dot is born above the line and falls...
   land: b(2, 1), // ...and lands where the line will end, off the downbeat: the camera punches in on the contact
-  fragB: b(2, 2, 2), // "to music." answers on the off-beat; the line jumps to make room, the dot is its period
+  fragB: b(2, 2, 2), // "to music" answers on the off-beat; the line jumps to make room, the dot is its period
   exit: b(3, 3, 2), // the read is over: the line (dot and all) accelerates out to the left...
   cut: b(4), // ...cut on its fastest frame, on the downbeat: the plate (the film's real imagery) arrives already moving left
   band: b(4, 1), // a band of light crosses the plate, mid-frame on the beat
@@ -266,10 +266,10 @@ export const chain = (id: string, mode: 'build' | 'replace', fragments: [text: s
 // and the text-flow checks (fragments, words on screen at once, copy rate, text share) read this.
 export const COPY: Copy[] = [
   // The script, one clean line at a time, plain words (copy-check.py): line 1 says what the product does, by name.
-  // "plinth cuts" (read alone) -> the dot falls and lands where the line will end -> "to music." The dot is the
-  // period, and the line says what the picture just did. For the real product, write
+  // "plinth cuts" (read alone) -> the dot falls and lands where the line will end -> "to music". The dot is the
+  // period (Act1 draws it, so the text carries none), and the line says what the picture just did. For the real product, write
   // "[Name] is a [plain category] for [who]." or "[Name] turns [input] into [output]."
-  ...chain('statement', 'build', [['plinth cuts', CUE.fragA], ['to music.', CUE.fragB]], { out: CUE.exit }),
+  ...chain('statement', 'build', [['plinth cuts', CUE.fragA], ['to music', CUE.fragB]], { out: CUE.exit }),
   // The picture takes its turn (the plate, no words), then holds the line open: "Cuts [picture] land." Two words
   // read in the one-bar act at the calm pace (a third word needs more than a bar).
   line('frame', 'Cuts land.', CUE.fragC, CUE.exit2),
