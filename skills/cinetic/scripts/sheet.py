@@ -214,9 +214,12 @@ def main():
     ap.add_argument('--cues', help='out/cues.json, to label acts and cues')
     ap.add_argument('--out', required=True, help='PNG path (chunked sheets get _k_fa-b suffixes)')
     ap.add_argument('--json', help='write a manifest of the sheets here')
-    args, extra = ap.parse_known_args()
-    if extra and extra[0] == '--':
-        extra = extra[1:]
+    # everything after a bare -- goes to remotion render as it is (argparse would take its first word as the video)
+    argv = sys.argv[1:]
+    passthru = argv[argv.index('--') + 1:] if '--' in argv else []
+    argv = argv[:argv.index('--')] if '--' in argv else argv
+    args, extra = ap.parse_known_args(argv)
+    extra += passthru
     if extra and not args.comp:
         die(f'unknown arguments: {" ".join(extra)}')
     args.extra = extra
