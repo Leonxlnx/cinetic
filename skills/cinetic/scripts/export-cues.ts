@@ -14,7 +14,7 @@
  *     copy: [{ id, text, in, resolved, out, words, kind, chain?, mode?, read: [[from, to], ...] }],
  *     events: [{ f, kind, weight, pan, pitch?, apexFrac?, dur?, variant?, id?,
  *                structural?, force?, offset_ms?, salience? }],
- *     look?:     { blur, texture, filmType, oneTake, whiteWorld },
+ *     look?:     { blur, texture, filmType, oneTake, whiteWorld, palette? }  (palette 'mono': look-audit's colour-mass floor asks for the accent on its beats),
  *     declared?: { seams, stepped, flashes, cameraBlur, colour, end, reveal, springClass, structural,
  *                  fx: [{ id, seams, stepped, flashes, cameraBlur, colour }] },
  *     salience?: { cueName: 'copy' | 'hit' | 'cut' | 'move' | 'life' },
@@ -308,7 +308,7 @@ async function main() {
     else {
       const L = LOOK as Record<string, unknown>;
       if (L.blur !== undefined && L.blur !== 'crisp' && L.blur !== 'camera') derr.push(`LOOK.blur must be 'crisp' or 'camera', got ${L.blur}`);
-      extra.look = { blur: L.blur ?? 'crisp', texture: L.texture ?? 'clean', filmType: L.filmType ?? 'launch', oneTake: !!L.oneTake, whiteWorld: !!L.whiteWorld };
+      extra.look = { blur: L.blur ?? 'crisp', texture: L.texture ?? 'clean', filmType: L.filmType ?? 'launch', oneTake: !!L.oneTake, whiteWorld: !!L.whiteWorld, ...(L.palette === 'mono' ? { palette: 'mono' } : {}) };
     }
   }
   const fxRaw: unknown = typeof mod.declares === 'function' ? await mod.declares() : mod.declares;

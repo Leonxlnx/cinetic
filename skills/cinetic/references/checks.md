@@ -216,7 +216,7 @@ A one-take film is judged on 2 s segments and has no seam or cut items.
 |---|---|---|
 | flat ground: blocks with almost no variation | mean ≥ 25 % and ≥ 5 % of frames over 60 % flat (a clean field somewhere); mean ≤ 90 % (an empty film) | mean 43-85 %, ≥ 18 % of frames over 60 % flat |
 | edges: busy-ness (texture, footage, small type) | ≤ 12 % of the frame; ≥ 0.6 % (an empty film) | ≤ 5.9 % |
-| saturated pixels (OKLCH C ≥ 0.06): colour mass | ≥ 2.2 % of the frame; the wash ceiling ≤ 60 % and ≤ 65 % of frames over half | 4.5-32 %, ≤ 25 % of frames over half |
+| saturated pixels (OKLCH C ≥ 0.06): colour mass | ≥ 2.2 % of the frame (a mono film, `--palette mono` or `LOOK.palette: 'mono'`: a monochrome or night film, a neutral brand: the accent on ≥ 0.2 % of the frame in ≥ 20 % of the samples instead); the wash ceiling ≤ 60 % and ≤ 65 % of frames over half | 4.5-32 %, ≤ 25 % of frames over half |
 | a support hue (40° or more from the accent) | (target only) | in ≥ 9 % of the samples (house 10-30 %) |
 | bleed: the subject framed past two edges at 1.2× the frame or more | in at least a quarter of the acts | in every act |
 | skeleton bars: glyphless grey bars in focus on a flat card or ground (not inside declared imagery or a mark) | no more than 3 in a frame (2 samples or more fail) | none |

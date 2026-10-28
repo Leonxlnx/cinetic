@@ -89,7 +89,9 @@ flat grounds; texture is an accent, not the ground of every shot:
                    (an empty film)
   picture-edges    busy-ness: Canny edge pixels <= 12 % of the frame on average (texture and footage
                    everywhere), and >= 0.6 % (an empty film)
-  picture-saturated colour mass: pixels at OKLCH C >= 0.06 >= 2.2 % of the frame on average
+  picture-saturated colour mass: pixels at OKLCH C >= 0.06 >= 2.2 % of the frame on average; a mono film (--palette
+                   mono, or LOOK.palette 'mono' in the cues: a monochrome or night film, a neutral brand) instead
+                   shows its accent on >= 0.2 % of the frame in >= 20 % of the samples
   picture-wash     the ceiling: saturated pixels over 60 % of the frame on average, or more than 65 % of the
                    frames over half saturated (frames inside a declared colour event are left out): one hue
                    over the whole picture hides the accent it was meant to show
@@ -276,6 +278,7 @@ PIC = dict(
     flat_over=0.60, flat_frames=0.05,  # and at least 5 % of frames over 60 % flat (a clean field somewhere)
     edges_min=0.006, edges_max=0.12,  # mean edge-pixel share (Canny 60/140 at 480 wide): not empty, not busy everywhere
     saturated_min=0.022,  # mean share of saturated pixels (OKLCH C >= 0.06)
+    mono_accent=0.002, mono_share=0.2,  # a mono film (--palette mono, LOOK.palette 'mono'): the accent on >= 0.2 % of the frame in >= 20 % of samples
     sat_c=0.06,
     bleed_share=0.25,  # acts in which the subject bleeds off two edges at scale (a quarter; the target: every act)
     bleed_extent=0.60,  # a subject touching two frame edges, visible over >= 60 % of the frame's width or height
@@ -831,13 +834,13 @@ def colour_reads(P, fps, events=None, accent_h=None, second_h=None):
     neutral = float(np.mean([s.get('neu', 0.0) for s in (out_ or smp)])) if smp else 0.0
     rows_out = [r for r in rows if not r['event']] or rows
     acc_mean = float(np.mean([r['acc'] for r in rows_out])) if rows_out else 0.0
-    return dict(neutral=round(neutral, 4), saturated=round(sat_out, 4), wash_share=round(wash, 3), events=[list(e) for e in events],
+    return dict(neutral=round(neutral, 4), saturated=round(sat_out, 4), wash_share=round(wash, 3), events=[list(e) for e in events], rows=rows,
                 accent=dict(h=None if accent_h is None else round(accent_h, 1), source=source, mean=round(acc_mean, 4),
                             p95=round(float(np.percentile([r['acc'] for r in rows_out], 95)), 4) if rows_out else 0.0, runs=run_rows, flood_ok=flood_ok),
                 second=dict(h=sec_hue, frames=round(sec_frames, 3), share_when=round(sec_when, 4), support=support, second_accent=second_accent, declared=declared))
 
 
-def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, second_h=None):
+def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, second_h=None, mono=False):
     """The picture floor from the reads: flat ground, edges, saturated, bleed, skeleton bars (fail), the
     house target on the same reads plus focus falloff (warn), and the framing read (centred subjects).
     Frames inside the end lock are left out of flat, edges, falloff and bleed (an end card may sit on a
@@ -904,6 +907,16 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
         # a support hue beside the accent (target only): one accent on grey with nothing beside it reads as timid colour
         second=dict(frames=col['second']['frames'], h=col['second']['h'], target=T['second_frames'], ok=True, target_ok=col['second']['frames'] >= T['second_frames']),
     )
+    if mono:
+        # a monochrome or night film, or a neutral brand: no colour mass to commit to; the floor is the accent marking
+        # its beats instead (on >= 0.2 % of the frame in >= 20 % of the samples), and one accent needs no support hue
+        rows_ = col.get('rows') or []
+        marked = sum(1 for r in rows_ if r['acc'] >= PIC['mono_accent']) / max(1, len(rows_))
+        pf['saturated'].update(mono=dict(accent_samples=round(marked, 3), need=PIC['mono_share']), ok=marked >= PIC['mono_share'],
+                               target_ok=marked >= PIC['mono_share'])
+        pf['second']['target_ok'] = True
+        pf['accent']['target_ok'] = True
+    col.pop('rows', None)
     pf['colour'] = col
     pf['ok'] = all(v['ok'] for v in pf.values() if isinstance(v, dict) and 'ok' in v)
     misses = [k for k, v in pf.items() if isinstance(v, dict) and 'target_ok' in v and not v['target_ok']]
@@ -936,7 +949,10 @@ def picture_flags(pf, framing, add, fps):
         'edges': (f"edge pixels {pf['edges']['mean'] * 100:.1f} % of the frame (ceiling {PIC['edges_max'] * 100:.0f} %, house <= 5.9 %): busy everywhere. "
                   f"Flatten, dim or defocus the texture and footage behind the type and give the eye a clean field") if pf['edges']['mean'] > PIC['edges_max'] else
                  f"edge pixels {pf['edges']['mean'] * 100:.1f} % of the frame (floor {PIC['edges_min'] * 100:.1f} %): the frame is near empty (no words, numbers, UI or imagery at film size)",
-        'saturated': f"saturated pixels {pf['saturated']['mean'] * 100:.1f} % of the frame (floor {PIC['saturated_min'] * 100:.1f} %): colour mass, not a 1 % accent dot (the accent on what matters, a support hue, the product's UI and graphic fields in colour, pictures in their own colour, a declared colour moment)",
+        'saturated': (f"a mono film whose accent shows on {pf['saturated']['mono']['accent_samples'] * 100:.0f} % of the samples (floor {PIC['mono_share'] * 100:.0f} % at "
+                      f">= {PIC['mono_accent'] * 100:.1f} % of the frame): with no colour mass, the accent marks the beats (the product's state, the line's key word, the mark)")
+                     if pf['saturated'].get('mono') else
+                     f"saturated pixels {pf['saturated']['mean'] * 100:.1f} % of the frame (floor {PIC['saturated_min'] * 100:.1f} %): colour mass, not a 1 % accent dot (the accent on what matters, a support hue, the product's UI and graphic fields in colour, pictures in their own colour, a declared colour moment; a monochrome or night film, or a neutral brand: --palette mono)",
         'bleed': f"the subject bleeds off two edges at scale in {pf['bleed']['share'] * 100:.0f} % of the acts (floor {PIC['bleed_share'] * 100:.0f} %; missing: {missing}): "
                  f"frame the hero at 1.2x the frame or more, off-centre, cropped by it",
         'skeleton': f"{pf['skeleton']['samples']} sample(s) show more than {PIC['skeleton_max']} glyphless bars in focus (max {pf['skeleton']['max_bars']}): placeholder lines are not content; "
@@ -1485,7 +1501,7 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     acc_h = lch_of_hex(accent)[2] if accent else None
     sec_hex = getattr(args, 'second', None) or second_colour(getattr(args, 'tokens_path', None))
     pf, framing = picture_floor(S['pic'], fps, n, list(acts.items()) if acts else None, end_rng, getattr(args, 'events', None), acc_h,
-                                lch_of_hex(sec_hex)[2] if sec_hex else None)
+                                lch_of_hex(sec_hex)[2] if sec_hex else None, getattr(args, 'mono', False))
     floor['picture'] = pf
     if args.no_picture:
         pf['reported_only'] = True
@@ -2111,6 +2127,17 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         check(bool(has(rep_f, 'picture-flat', 'fail')) and not pf.get('flat', {}).get('ok', True), 'a small card on paper fails picture-flat (an empty film)', f"flat {pf.get('flat', {}).get('mean')}")
         check(bool(has(rep_f, 'picture-edges', 'fail')), 'a near-empty frame fails picture-edges', f"edges {pf.get('edges', {}).get('mean')}")
         check(bool(has(rep_f, 'picture-saturated', 'fail')), 'grey on paper fails picture-saturated', f"saturated {pf.get('saturated', {}).get('mean')}")
+        # a mono film (--palette mono): no colour mass asked; the accent marking its beats meets the floor, grey alone does not
+        mono = []
+        for i in range(60):
+            img = card(paper, 180 + i * 0.3, 110, 70, (30, 32, 36))
+            cv2.rectangle(img, (300, 120), (324, 134), (40, 90, 220), -1)
+            mono.append(img)
+        rep_m = run_pic('pmono', mono, ('--palette', 'mono'))
+        rep_g = run_pic('pmono-grey', empty, ('--palette', 'mono'))
+        check(not has(rep_m, 'picture-saturated') and bool(has(rep_g, 'picture-saturated', 'fail')),
+              'a mono film passes picture-saturated on its accent, and grey alone still fails',
+              f"accent samples {rep_m.get('picture', {}).get('saturated', {}).get('mono')} / {rep_g.get('picture', {}).get('saturated', {}).get('mono')}")
         check(bool(has(rep_f, 'picture-bleed', 'fail')), 'a subject inside the frame fails picture-bleed')
         check(pf.get('falloff', {}).get('target_ok') is False, 'one sharp plane misses the falloff target', f"falloff {pf.get('falloff', {}).get('share')}")
         PB = photo(7, w + 200, h + 60, sat=False)
@@ -2513,6 +2540,8 @@ def main():
                     'frames and px (toBox moves the box in a straight line)')
     ap.add_argument('--colour-event', action='append', help='FROM,TO frames of a declared colour event (the wash and accent ceilings pause; repeatable)')
     ap.add_argument('--second', help='the declared second hue (#RRGGBB), if not from the tokens (C.second)')
+    ap.add_argument('--palette', choices=['colour', 'mono'], default='colour', help='mono: a monochrome or night film, or a neutral brand '
+                    "(the colour-mass floor becomes the accent on its beats; also LOOK.palette 'mono' in the cues)")
     ap.add_argument('--width', type=int, default=480, help='analysis width (960 for finer reads)')
     ap.add_argument('--comp-width', type=int, help='composition width of the layout boxes (default the video width)')
     ap.add_argument('--comp-height', type=int, help='composition height of the layout boxes (default 1080)')
@@ -2557,6 +2586,7 @@ def main():
     cues = F.load_cues(args.cues) if args.cues else None
     raw_cues = json.load(open(args.cues)) if args.cues else None
     extra = F.declared_of(cues) if cues else {}
+    args.mono = args.palette == 'mono' or ((extra or {}).get('look') or {}).get('palette') == 'mono'
     tokens = args.tokens or ('src/brand/tokens.ts' if os.path.exists('src/brand/tokens.ts') else None)
     args.tokens_path = tokens
     k_c = info['fps'] / (cues.get('fps') or info['fps']) if cues else 1.0
@@ -2577,7 +2607,8 @@ def main():
         end_rng = (int(round(end['from'] * k_)), int(round(end['to'] * k_))) if end else None
         acc_hex = args.accent or (brand_colours(tokens, args.brand)[0] if tokens else None)
         sec_hex = args.second or second_colour(tokens)
-        pf, framing = picture_floor(P, fps, n, acts, end_rng, args.events, lch_of_hex(acc_hex)[2] if acc_hex else None, lch_of_hex(sec_hex)[2] if sec_hex else None)
+        pf, framing = picture_floor(P, fps, n, acts, end_rng, args.events, lch_of_hex(acc_hex)[2] if acc_hex else None, lch_of_hex(sec_hex)[2] if sec_hex else None,
+                                    args.mono)
         flags = []
 
         def add(check, severity, frame, note):

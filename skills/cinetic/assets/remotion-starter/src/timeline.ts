@@ -122,7 +122,7 @@ export type BlurPolicy = 'crisp' | 'camera';
 export type FilmType = 'launch' | 'update' | 'explainer' | 'reel' | 'social';
 /** One surface material per film, or none. */
 export type Texture = 'clean' | 'paper' | 'grid' | 'halftone' | 'dither';
-export type Look = { blur: BlurPolicy; texture: Texture; filmType: FilmType; oneTake: boolean; whiteWorld: boolean };
+export type Look = { blur: BlurPolicy; texture: Texture; filmType: FilmType; oneTake: boolean; whiteWorld: boolean; palette?: 'colour' | 'mono' };
 /** How one shot hands over to the next. `hard` is a designed cut; `fadeEnd` only closes a film. */
 export type SeamKind =
   | 'velocity' | 'morph' | 'hard' | 'mask' | 'whip' | 'defocus' | 'light' | 'snapZoom' | 'breath'
