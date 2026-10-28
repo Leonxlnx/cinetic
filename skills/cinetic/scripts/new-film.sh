@@ -160,9 +160,12 @@ if [[ -n "$TEMPLATE" ]]; then
     die "no template '$TEMPLATE' (assets/templates has: ${AVAIL% })"
   fi
   [[ "$ENGINE" == remotion ]] || die "--template $TEMPLATE is a Remotion template (use --engine remotion)"
-  TPACE=$(sed -nE 's/^[[:space:]]*"pace":[[:space:]]*"([a-z]+)".*/\1/p' "$TPL/template.json" | head -n 1)
+  # the template's own defaults, read as JSON (a template.json on one line, or with its keys anywhere, reads the same)
+  TPL="$TPL" node -e 'JSON.parse(require("fs").readFileSync(require("path").join(process.env.TPL, "template.json"), "utf8"))' 2>/dev/null || die "$TEMPLATE/template.json does not parse as JSON"
+  tpl_key() { TPL="$TPL" K="$1" node -e 'const m = JSON.parse(require("fs").readFileSync(require("path").join(process.env.TPL, "template.json"), "utf8")); const v = m[process.env.K]; process.stdout.write(typeof v === "string" ? v : "");'; }
+  TPACE=$(tpl_key pace)
   [[ -n "$PACE" ]] || PACE="${TPACE:-crisp}"
-  TFAM=$(sed -nE 's/^[[:space:]]*"type_family":[[:space:]]*"([a-z]+)".*/\1/p' "$TPL/template.json" | head -n 1)
+  TFAM=$(tpl_key type_family)
   [[ -z "$TFAM" || "$TFAM" == calm || "$TFAM" == bold ]] || die "$TEMPLATE/template.json: type_family must be calm or bold (got $TFAM)"
   [[ -n "$TYPEFAM" ]] || TYPEFAM="$TFAM"
 fi
@@ -425,15 +428,17 @@ fi
 
 BEAT=$(node -e "console.log(60*$FPS/$BPM)")
 echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat${PACE:+, $PACE pace}${TYPEFAM:+, $TYPEFAM type}${TEMPLATE:+, the $TEMPLATE template})"
-if [[ -n "$TPL" && "$TEMPLATE" != update ]]; then
+if [[ -n "$TPL" ]]; then
   # the template's own first steps (template.json "next"); the music slot every film fills is printed below
-  TPL="$TPL" node -e 'const m = JSON.parse(require("fs").readFileSync(require("path").join(process.env.TPL, "template.json"), "utf8")); for (const l of m.next || []) console.log(l);'
-fi
-if [[ "$TEMPLATE" == update ]]; then
-  cat <<EOF
+  NEXT=$(TPL="$TPL" node -e 'const m = JSON.parse(require("fs").readFileSync(require("path").join(process.env.TPL, "template.json"), "utf8")); for (const l of m.next || []) console.log(l);')
+  if [[ -n "$NEXT" ]]; then
+    printf '%s\n' "$NEXT"
+  elif [[ "$TEMPLATE" == update ]]; then
+    cat <<EOF
 update film: write the version and 2-4 changes (one plain sentence each, 2-6 words, a result the user sees, each with its product moment) in src/update.ts,
   then deal its direction: $PYS scripts/deck.py --brief "<one line>" --format update --changes N --options 3
 EOF
+  fi
 fi
 if [[ "$ENGINE" == remotion ]]; then
   cat <<EOF
