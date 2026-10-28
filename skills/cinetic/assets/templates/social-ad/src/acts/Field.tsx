@@ -3,15 +3,14 @@ import { AbsoluteFill } from 'remotion';
 import { U } from '../brand/tokens';
 import { DepthStack, type DepthItem, depthPush } from '../fx/DepthStack';
 import { TypeLine } from '../fx/TypePresets';
-import { settleLeft } from '../fx/Words';
 import { ContentRing, ContentWall } from '../kit';
 import { E, mix, prog } from '../lib/anim';
 import { DEAL } from '../deal';
 import { ACT, copy, CUE, f60x, H, HERO_END, W } from '../timeline';
-import { ActGround, capOf, Item, lineSize, lineWidth, NODES, PAGE, useAbs } from './stage';
+import { ActGround, capOf, carryOffset, Item, launchOffset, lineSize, lineWidth, NODES, PAGE, SEAM, useAbs } from './stage';
 
 // FIELD - the claim inside the product's own content. It enters carrying the brand's upward speed (the field rises
-// into place on a decaying curve) and leaves up together on an ease-in into the cut. The claim rises out of a mask
+// into place on a decaying curve, its tiles already there) and launches up together into the cut. The claim rises out of a mask
 // word by word (fx/TypePresets mask: no fade, no blur, the mask does the reveal); its last word stands on the accent
 // pill, which grows from 62 % to full round the word in 10 f (E.snapOut: a glide, never a one-frame pop) as the
 // word starts to rise. The field slot's device (src/deal.ts):
@@ -81,8 +80,8 @@ export const Field: React.FC = () => {
   const F = useAbs('field');
   const c = copy('find');
   const size = lineSize(c.text, 0.6);
-  const enter = 0.32 * H * settleLeft(F - ACT.field.from, f60x(30)); // the brand's rise, carried and decaying
-  const leave = -0.7 * H * prog(F, CUE.fieldOut, ACT.label.from, E.launchIn);
+  const enter = carryOffset(F, ACT.field.from, -SEAM.v * U); // the brand's rise, carried and decaying
+  const leave = launchOffset(F, ACT.label.from - 1, -SEAM.v * U); // the field launches up into the cut
   const y = enter + leave;
   // the type push: once the claim is read the camera leans into its pill (x1.14 on E.stdInOut over 40 f), carried into the exit
   const lean = 1 + 0.14 * prog(F, CUE.fieldPush, CUE.fieldPush + f60x(40), E.stdInOut);
@@ -91,9 +90,9 @@ export const Field: React.FC = () => {
   const fill = NODES.slice(10);
   const field =
     DEAL.field === 'ring' ? (
-      <ContentRing nodes={nodes} fill={fill} frame={F} start={ACT.field.from} tile={190 * U} rx={720 * U} ry={360 * U} orbit={5} theme={PAGE} seed="field" />
+      <ContentRing nodes={nodes} fill={fill} frame={F} start={ACT.field.from - f60x(60)} tile={190 * U} rx={720 * U} ry={360 * U} orbit={5} theme={PAGE} seed="field" />
     ) : DEAL.field === 'wall' ? (
-      <ContentWall nodes={nodes} fill={fill} frame={F} start={ACT.field.from} tile={220 * U} clear={{ w: Math.min(W * 0.78, lineWidth(c.text, size) + 2.2 * size), h: size * 2.6 }} theme={PAGE} seed="field" />
+      <ContentWall nodes={nodes} fill={fill} frame={F} start={ACT.field.from - f60x(60)} tile={220 * U} clear={{ w: Math.min(W * 0.78, lineWidth(c.text, size) + 2.2 * size), h: size * 2.6 }} theme={PAGE} seed="field" />
     ) : null;
   return (
     <AbsoluteFill style={{ background: PAGE.ground, overflow: 'hidden' }}>

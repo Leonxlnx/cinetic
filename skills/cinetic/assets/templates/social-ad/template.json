@@ -1,6 +1,6 @@
 {
  "name": "social-ad",
- "about": "A short social ad (about 17-22 s) on a lit page, every seam hidden inside a motion, the product's own content built in code (its items as content tiles, its screen, the real marks of what it works with; never stock): the opener said in one confident move and spreading apart into a stack of what the product holds, the mark, the claim inside a field of that content with its last word on the accent pill, a label that rolls its last word over moving content, two imperatives, the lockup. Each slot plays one of two or three devices dealt per film from the name (src/deal.ts), so no two ads run one fixed sequence. new-film.sh --template social-ad lays these files over the Remotion starter.",
+ "about": "A short social ad (about 17-22 s) on a lit page, every seam hidden inside a motion, the product's own content built in code (its items as content tiles, its screen, the real marks of what it works with) or, where that content is pictures, real photographs (never drawn): the opener said in one confident move and spreading apart into a stack of what the product holds, the mark, the claim inside a field of that content with its last word on the accent pill, a label that rolls its last word over moving content, two imperatives, the lockup. Each slot plays one of two or three devices dealt per film from the name (src/deal.ts), so no two ads run one fixed sequence. new-film.sh --template social-ad lays these files over the Remotion starter.",
  "engine": "remotion",
  "pace": "crisp",
  "type_family": "bold",

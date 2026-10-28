@@ -1,34 +1,37 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { U } from '../brand/tokens';
-import { conveyorState, type ConveyorProps } from '../fx/Conveyor';
+import { C, U } from '../brand/tokens';
+import { CONVEYOR, conveyorState, type ConveyorProps } from '../fx/Conveyor';
 import { DirBlur } from '../fx/Defocus';
 import { TypeLine } from '../fx/TypePresets';
-import { settleLeft } from '../fx/Words';
 import { ContentTicker, DenseScreen, shadeRgba } from '../kit';
 import { clamp, E, lmix, mix, prog, rand } from '../lib/anim';
 import { useFilm } from '../lib/film';
 import { AD } from '../ad';
 import { DEAL } from '../deal';
 import { ACT, copy, CUE, f60x, H, SWAP, W } from '../timeline';
-import { ActGround, Item, lineSize, lineStyle, lineWidth, NODES, PAGE, useAbs, WORLD } from './stage';
+import { ActGround, carryOffset, Item, launchOffset, lineSize, lineStyle, lineWidth, NODES, PAGE, SEAM, useAbs, WORLD } from './stage';
 
 // LABEL - a label stands over moving content and swaps its last word once. It is a chip on the page's surface: its
 // words rise and sharpen in on the crisp entry (fx/TypePresets crisp), it recedes slightly the whole time, and on the swap its last word
 // rolls up out of the chip while the new one rolls in from below (16 f, E.snapOut, clipped to the chip) as the chip
 // glides to the new width: a roll, never a pop. On the last beats the content rushes out to the right, accelerating
 // (the next shot carries that speed), and the chip goes with it. The label slot's device (src/deal.ts):
-//   rivers  two diagonal streams of content tiles running opposite ways (fx/Conveyor: in fast, an exponential settle
-//           to a cruise), upright in a staircase, sizes varied by depth, smeared only along their own travel; the
-//           rush takes both streams right together
-//   ticker  rows of content tiles flowing past on two depths, curved toward the camera (kit ContentTicker)
+//   rivers  two diagonal streams of content tiles running opposite ways (fx/Conveyor), already at their cruise on the
+//           cut (a fast entry would spike the field's carried rise), upright in a staircase, sizes varied by depth,
+//           smeared only along their own travel; the rush takes both streams right together
+//   ticker  rows of content tiles flowing past on two depths, curved toward the camera (kit ContentTicker), already
+//           flowing on the cut
 //   screen  the product's own dense screen filling the frame (kit DenseScreen), its lens gliding to a new row on the
 //           swap (the screen's one readable line), the chip over its top
+
+/** Frames (60 fps) the accent takes to wipe across the label's last frames before the claim taglines. */
+export const WIPE = 20;
 
 /** The streams: their angle (deg), the tile's base width (px at 1080p), the staircase overlap and the depth range. */
 export const RIVER = { angle: -37, card: 250, stair: 0.82, sizes: [0.82, 1.24], n: 12, gap: 0.27 } as const;
 
-const stream = (start: number, outAt: number | undefined, angle: number, phase: number): ConveyorProps => ({ start, n: RIVER.n, pitch: RIVER.card * U * RIVER.stair, angle, outAt, phase, id: `river-${angle}` });
+const stream = (start: number, outAt: number | undefined, angle: number, phase: number): ConveyorProps => ({ start, n: RIVER.n, pitch: RIVER.card * U * RIVER.stair, angle, outAt, phase, speed: { in: CONVEYOR.cruise }, id: `river-${angle}` });
 
 const River: React.FC<{ F: number; p: ConveyorProps; cy: number; seed: number }> = ({ F, p, cy, seed }) => {
   const s = conveyorState(F, p, useFilm());
@@ -96,20 +99,20 @@ const Chip: React.FC<{ F: number; cx: number; cy: number }> = ({ F, cx, cy }) =>
 export const Label: React.FC = () => {
   const F = useAbs('label');
   const cut = ACT.taglines.from;
-  const rush = prog(F, CUE.rushOut, cut, E.launchIn);
-  const enter = 0.21 * H * settleLeft(F - ACT.label.from, f60x(28)); // the field's upward speed, carried and decaying
+  const rush = launchOffset(F, cut - 1, SEAM.rush * U); // the content rushes right into the cut, the chip with it
+  const enter = carryOffset(F, ACT.label.from, -SEAM.v * U); // the field's upward speed, carried and decaying
   const recede = lmix(1, 0.88, prog(F, copy('plan').in, cut, E.linear));
   const content =
     DEAL.label === 'ticker' ? (
-      <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(1.4 * W * rush).toFixed(2)}px, ${enter.toFixed(2)}px, 0)` }}>
-        <ContentTicker nodes={NODES.slice(0, 8)} fill={NODES.slice(8)} frame={F} start={ACT.label.from} tile={250 * U} speed={150 * U} rows={2} theme={PAGE} seed="label" />
+      <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${rush.toFixed(2)}px, ${enter.toFixed(2)}px, 0)` }}>
+        <ContentTicker nodes={NODES.slice(0, 8)} fill={NODES.slice(8)} frame={F} start={ACT.label.from - f60x(60)} tile={250 * U} speed={150 * U} rows={2} theme={PAGE} seed="label" />
       </div>
     ) : DEAL.label === 'screen' ? (
-      <div style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', transform: `translate3d(${(1.3 * W * rush).toFixed(2)}px, ${enter.toFixed(2)}px, 0) scale(${lmix(1.06, 1.12, prog(F, ACT.label.from, cut, E.linear)).toFixed(5)})` }}>
+      <div style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', transform: `translate3d(${rush.toFixed(2)}px, ${enter.toFixed(2)}px, 0) scale(${lmix(1.06, 1.12, prog(F, ACT.label.from, cut, E.linear)).toFixed(5)})` }}>
         <DenseScreen frame={F} theme={PAGE} world={WORLD} layout="board" w={W * 0.94} h={H * 0.9} x={W * 0.03} y={H * 0.08} focus={[{ at: ACT.label.from, row: 3 }, { at: CUE.swap, row: 6 }]} drawAt={ACT.label.from} />
       </div>
     ) : (
-      <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(1.3 * W * rush).toFixed(2)}px, ${enter.toFixed(2)}px, 0)` }}>
+      <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${rush.toFixed(2)}px, ${enter.toFixed(2)}px, 0)` }}>
         <River F={F} p={stream(ACT.label.from, undefined, RIVER.angle, 0)} cy={H / 2 - RIVER.gap * H} seed={1} />
         <River F={F} p={stream(ACT.label.from, undefined, RIVER.angle + 180, RIVER.card * U * 0.4)} cy={H / 2 + RIVER.gap * H} seed={2} />
       </div>
@@ -119,9 +122,13 @@ export const Label: React.FC = () => {
     <AbsoluteFill style={{ background: PAGE.ground, overflow: 'hidden' }}>
       <ActGround F={F} act="label" />
       {content}
-      <div style={{ position: 'absolute', inset: 0, transformOrigin: `50% ${((chipY / H) * 100).toFixed(1)}%`, transform: `translate3d(${(0.9 * W * rush).toFixed(2)}px, ${(enter * 0.5).toFixed(2)}px, 0) scale(${recede.toFixed(5)})` }}>
+      <div style={{ position: 'absolute', inset: 0, transformOrigin: `50% ${((chipY / H) * 100).toFixed(1)}%`, transform: `translate3d(${rush.toFixed(2)}px, ${enter.toFixed(2)}px, 0) scale(${recede.toFixed(5)})` }}>
         {F >= copy('plan').in - 1 && <Chip F={F} cx={W / 2} cy={chipY} />}
       </div>
+      {/* the claim taglines: the accent wipes in from the left on the rush, covering the frame on the cut (one colour event) */}
+      {DEAL.taglines === 'claim' && F >= cut - f60x(WIPE) && (
+        <div style={{ position: 'absolute', inset: 0, background: C.accent, transform: `translate3d(${(-W * (1 - prog(F, cut - f60x(WIPE), cut - 1, E.launchIn))).toFixed(2)}px, 0, 0)` }} />
+      )}
     </AbsoluteFill>
   );
 };

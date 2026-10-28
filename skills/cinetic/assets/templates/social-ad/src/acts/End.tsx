@@ -52,7 +52,7 @@ export const End: React.FC = () => {
   const close = copy('close');
   const cy = H / 2 - 50 * U;
   const size = lineSize(close.text, 0.5) * 0.72; // the close reads under the name, smaller than the ad's line, never under 72 px
-  const k = lmix(1.04, 1, prog(F, ACT.end.from, ACT.end.from + f60x(30), E.glideOut)) * creep(F, ACT.end.from, { pctPerSec: 0.025 }, FPS);
+  const k = lmix(1.04, 1, prog(F, ACT.end.from, ACT.end.from + f60x(30), E.glideOut)) * creep(F, ACT.end.from, { pctPerSec: 0.03 }, FPS);
   return (
     <AbsoluteFill style={{ background: PAGE.ground, overflow: 'hidden' }}>
       <ActGround F={F} act="end" />

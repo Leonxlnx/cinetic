@@ -1,5 +1,5 @@
 // The ad's facts: the script's lines, the product's own items (what people keep in it), the products it works with,
-// and any pictures the product itself supplies. The timeline, the acts, the deal and the sound read this file;
+// and the photographs its cards may be. The timeline, the acts, the deal and the sound read this file;
 // nothing else holds the film's content.
 //
 // cinetic:placeholder - slots, not copy: write the script in plain words (the opener says what the product is with
@@ -41,9 +41,11 @@ export const AD = {
    */
   integrations: [] as string[],
   /**
-   * Pictures only when the product's own content is pictures the brief supplies (files in public/, e.g. 'ad/01.jpg'):
-   * they take the tiles' places in turn. Empty (the default): every card is the product's own content built in code;
-   * never stock.
+   * Photographs, when what people keep in the product is pictures, people, places or things (a recipe, an outfit, a
+   * room, a trip): files in public/ (e.g. 'ad/01.jpg') that take the cards' places in turn, as rounded cards under the
+   * stack's tilt, depth and blur. Real photographs only, never drawn: the product's own, the user's, or free ones whose
+   * licence needs no credit (node scripts/assets.mjs search "<subject>" --fit 4:5 --clean, then get and grade them to
+   * one look). Empty (the default): every card is the product's own content built in code.
    */
   pictures: [] as string[],
   /** Re-deal the devices (src/deal.ts): any number. Undefined: the deal is seeded by the name. */

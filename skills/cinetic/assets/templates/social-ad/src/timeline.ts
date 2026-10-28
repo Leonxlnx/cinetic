@@ -188,7 +188,8 @@ const build = (plan: Plan) => {
   C.taglines = at('taglines', 0);
   C.tag1 = at('taglines', 0.25);
   C.tagOut = onGridUp(readEnd(tagPreset, L.taglines[0], C.tag1));
-  C.tag2 = onGridUp(Math.max(C.tagOut + f60(20), Math.min(at('taglines', 2 * plan.taglines), C.tagOut + f60(44)))); // the first one's 14 f drop is over first
+  // panel: the first one's 14 f drop is over first; claim: the second arrives as the first leaves (an empty accent field freezes)
+  C.tag2 = DEAL.taglines === 'claim' ? onGridUp(C.tagOut + f60(20)) : onGridUp(Math.max(C.tagOut + f60(20), Math.min(at('taglines', 2 * plan.taglines), C.tagOut + f60(44))));
   C.push = onGrid(Math.max(C.tag2 + f60(20), cut('taglines') - Math.min(f60(46), Math.max(f60(30), BEAT))));
   // end: the mark and the name, the close under them; the lockup holds about a beat with a creep, then the tail
   C.end = at('end', 0);
@@ -276,11 +277,12 @@ export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'launch', oneTake: false, whiteWorld: false };
 /** Every seam is hidden inside a motion: the spread carried through the cut, the stack carried into the mark, the rise, the rush. */
 export const SEAMS: Seam[] = [
-  { at: CUE.pile, kind: 'velocity', carry: 'scale', dir: 1, id: 'spread-carries-across' },
+  { at: CUE.pile, kind: 'morph', carry: 'scale', dir: 1, id: 'the-spread-carries-into-the-stack' },
   DEAL.brand === 'tile' ? { at: ACT.brand.from, kind: 'morph', carry: 'shape', id: 'the-tile-becomes-the-mark' } : { at: ACT.brand.from, kind: 'morph', carry: 'scale', id: 'the-stack-recedes-behind-the-mark' },
   { at: ACT.field.from, kind: 'velocity', carry: 'y', dir: -1, id: 'rise-into-the-field' },
   { at: ACT.label.from, kind: 'velocity', carry: 'y', dir: -1, id: 'field-leaves-up' },
-  { at: ACT.taglines.from, kind: 'velocity', carry: 'x', dir: 1, signature: true, id: 'the-rush' },
+  // the rush carried into the panel; on the claim the accent wipes in on it and covers the frame on the cut
+  DEAL.taglines === 'claim' ? { at: ACT.taglines.from, kind: 'wipe', carry: 'x', dir: 1, signature: true, id: 'the-accent-wipes-in-on-the-rush' } : { at: ACT.taglines.from, kind: 'velocity', carry: 'x', dir: 1, signature: true, id: 'the-rush' },
   { at: ACT.end.from, kind: 'hard', id: 'push-into-the-lockup' },
 ];
 /** No designed one-frame steps: every change glides (lib/continuity). */
@@ -288,7 +290,7 @@ export const STEPPED: SteppedRange[] = [];
 export const FLASHES: Flash[] = [];
 export const CAMERA_BLUR: CameraBlurRange[] = [];
 /** Colour events: the taglines' claim floods the frame with the accent; otherwise the accent stays on words, pills and the mark. */
-export const COLOUR: ColourRange[] = DEAL.taglines === 'claim' ? [{ from: ACT.taglines.from, to: ACT.end.from, id: 'claim-on-the-accent' }] : [];
+export const COLOUR: ColourRange[] = DEAL.taglines === 'claim' ? [{ from: ACT.taglines.from - f60(20), to: ACT.end.from, id: 'claim-on-the-accent' }] : [];
 /** The one lock: the mark, the name and the close hold to the end. */
 export const END: EndLock = { from: CUE.lockup, to: TOTAL };
 /** The biggest reveal: the lockup. */

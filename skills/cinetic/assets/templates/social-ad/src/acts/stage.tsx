@@ -15,6 +15,7 @@ import { dealGrounds, type GroundSpec, LitGround } from '../fx/Grounds';
 import { shadowTone } from '../fx/KeyLight';
 import { ContentTile, kitTheme, logoName, Photo, sampleWorld, shadeRgba, type TileNode, worldNodes } from '../kit';
 import { clamp, E, prog } from '../lib/anim';
+import { carry, launch } from '../lib/handoff';
 import { mixColor } from '../lib/color';
 import { FILM_LIGHT, keyDir } from '../lib/light';
 import { fitSize, measureTracked } from '../lib/measure';
@@ -47,7 +48,7 @@ export const nodeAt = (i: number) => NODES[((i % NODES.length) + NODES.length) %
 
 /**
  * One piece of the product's content at w x h: its content tile (kit ContentTile: its mark or glyph, its label, a
- * preview of what it holds), or, when the brief supplies the product's own pictures (ad.ts pictures), that picture.
+ * preview of what it holds), or, when its content is pictures (ad.ts pictures: real photographs), that photograph.
  */
 export const Item: React.FC<{ i: number; w: number; h?: number; lift?: number; theme?: typeof PAGE }> = ({ i, w, h, lift = 16, theme = PAGE }) => {
   const pics = AD.pictures as readonly string[];
@@ -130,6 +131,24 @@ export const ActGround: React.FC<{ F: number; act: ActName; spec?: GroundSpec }>
       <LightEvent F={F} act={act} dark={g.base === SHOT.ground} />
     </>
   );
+};
+
+/**
+ * The speed every carried seam hands across (px per 60 fps frame at 1080p) and the share the next shot opens with:
+ * the outgoing shot launches into its last frame (lib/handoff launch: the house build, its fastest step on the cut),
+ * the incoming one opens at SEAM.ratio of it and decays to rest (lib/handoff carry), so the cut carries one speed in
+ * one direction.
+ */
+export const SEAM = { v: 24, rush: 40, ratio: 0.8 } as const;
+/** A move launched into a cut: its offset from rest at frame F, growing to its whole travel on its last frame (the act's last). */
+export const launchOffset = (F: number, last: number, vCut: number) => {
+  const total = -launch(last - f60x(150), last, { vCut }).x;
+  return launch(Math.min(F, last), last, { vCut }).x + total;
+};
+/** A move carried in from a cut: its offset from rest at frame F, from the act's first frame on, decaying to 0. */
+export const carryOffset = (F: number, first: number, vCut: number, ratio: number = SEAM.ratio) => {
+  const o = { vCut, ratio, residual: 0 };
+  return carry(Math.max(F, first), first, o).x - carry(first + f60x(600), first, o).x;
 };
 
 /** The cubic-out and circ-out the ad's measured moves use, and a quad-in. */
