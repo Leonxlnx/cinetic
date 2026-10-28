@@ -71,12 +71,17 @@
  *   openverse Openverse: its audio index, CC0 only (anonymous API, 20 requests a minute; Openverse does not
  *             verify licences, so get reads the item's own page again). Made using Openverse, not endorsed or
  *             certified by Openverse.
- * Not used, with the reason each answers (`licences` lists them): Pixabay Music and Chosic (a bot check),
- * Free Music Archive (its download needs a login), YouTube Audio Library (a login), Uppbeat's free plan (a
- * credit, and a paid plan for commercial work), freepd.com (closed), the Internet Archive (its terms grant
- * access for scholarship and research), CC BY catalogs (a credit). Download such a track from its page
- * yourself where its licence allows it and record it with `track.py add`. A track whose listing names
- * another licence, or a vocal, is refused.
+ *   coverr    Coverr: its free stock music (the Coverr License: commercial use, no credit; its public catalog
+ *             JSON, 263 tracks), produced tracks with real endings; the free download is the full-length MP3
+ *             (128 kbps; the WAV master needs an account and is never fetched). Premium items are refused.
+ * Not used, with the reason each answers (`licences` lists them): Pixabay Music (a bot check), Chosic (an
+ * aggregator: its no-credit tracks are the CC0 albums Commons serves, the rest need a credit), Free Music
+ * Archive (its download needs a login), YouTube Audio Library (a login), Uppbeat's free plan (a credit, and a
+ * paid plan for commercial work), Videvo music (now Freepik: a security filter, and a credit on the free
+ * licence), StreamBeats (its licence covers streams and creators' videos, not advertising), freepd.com
+ * (closed), the Internet Archive (its terms grant access for scholarship and research), CC BY catalogs (a
+ * credit). Download such a track from its page yourself where its licence allows it and record it with
+ * `track.py add`. A track whose listing names another licence, or a vocal, is refused.
  *
  * Needs Node 18+ (built-in fetch); ffmpeg for sheet --measure. No API keys.
  * Exit codes: 0 done, 1 nothing usable, a refused licence or a failed download, 2 bad arguments.
@@ -117,6 +122,14 @@ export const LICENCES = {
       url: 'https://creativecommons.org/publicdomain/zero/1.0/', date: '2026-10-27' },
     notice: /publicdomain\/zero|\bcc0\b|cc-zero|creative commons (?:zero|0)\b/i,
   },
+  coverr: {
+    name: 'Coverr License', url: 'https://coverr.co/license', credit: false, kind: 'music',
+    limits: 'free for commercial and non-commercial films, no credit; never compile Coverr items into a similar or competing service, never use them to train AI, and trademarks that appear in an item need their owner\'s permission',
+    seen: { quote: 'All videos and music tracks published on Coverr.co are available for free for both commercial and non-commercial purposes.',
+      also: 'You are not required to seek permission from or provide credit to the content creator or Coverr.co',
+      url: 'https://coverr.co/license', date: '2026-10-28' },
+    notice: /Coverr License/i,
+  },
 };
 /**
  * Catalogs: what the finder reads (kinds, the licence ids it takes from each) and the ones it cannot, each
@@ -128,11 +141,18 @@ export const SOURCES = {
   ccmixter: { name: 'ccMixter', kinds: ['music'], licences: ['cc0'], reachable: true },
   openverse: { name: 'Openverse', kinds: ['sfx', 'music'], licences: ['cc0'], reachable: true, defaultFor: ['sfx'],
     note: 'made using Openverse, not endorsed or certified by Openverse' },
+  coverr: { name: 'Coverr', kinds: ['music'], licences: ['coverr'], reachable: true,
+    note: 'the free download is the full-length 128 kbps MP3; Coverr names no composer' },
   pixabay: { name: 'Pixabay Music', kinds: ['music'], reachable: false,
     why: 'pixabay.com answers scripts with a bot check (HTTP 403, "Just a moment...") and the Pixabay API serves images and video, not music; download from the track\'s page yourself and record it with track.py add (Pixabay Content License, no credit)' },
   fma: { name: 'Free Music Archive', kinds: ['music'], reachable: false,
     why: 'its download link answers with a login page (HTTP 302 to /login); CC0 albums it hosted are often on Wikimedia Commons too (--source commons)' },
-  chosic: { name: 'Chosic', kinds: ['music'], reachable: false, why: 'chosic.com answers scripts with a bot check (HTTP 403, "Just a moment...")' },
+  chosic: { name: 'Chosic', kinds: ['music'], reachable: false,
+    why: 'an aggregator, never the authority for a licence: most of its tracks need a credit (CC BY) and its no-credit ones are the CC0 albums Wikimedia Commons serves (--source commons); it also answered scripts with a bot check (HTTP 403) on 2026-10-27' },
+  videvo: { name: 'Videvo music', kinds: ['music'], reachable: false,
+    why: 'videvo.net music now redirects to Freepik audio, which answers scripts with a security filter (HTTP 403), and its free licence needs a credit' },
+  streambeats: { name: 'StreamBeats', kinds: ['music'], reachable: false,
+    why: 'its Sync License covers videos on Twitch, YouTube, podcasts and similar platforms, not advertising or client work, and its downloads go through Bandcamp' },
   uppbeat: { name: 'Uppbeat', kinds: ['music'], reachable: false,
     why: 'the free plan needs an account and a credit in the description, and company, client or advertising work needs a paid plan' },
   youtube: { name: 'YouTube Audio Library', kinds: ['music'], reachable: false, why: 'it sits inside YouTube Studio behind a Google login' },
@@ -443,6 +463,40 @@ export function parseOpenverse(json, kind = 'sfx') {
   });
 }
 
+// ------------------------------------------------------------------------------------------------ Coverr
+export const COVERR_API = 'https://coverr.co/papi/audios';
+/** A page of Coverr's public music catalog (JSON, no key), or one item by id. */
+export const coverrUrl = (page = 0, size = 50) => `${COVERR_API}?${new URLSearchParams({ page: String(page), page_size: String(size) })}`;
+export const coverrItemUrl = (id) => `${COVERR_API}/${encodeURIComponent(id)}`;
+/** Coverr's waveform (an array of peaks 0..1 over the whole track) as the catalog waveform energyOf reads. */
+export function coverrWave(peaks, seconds) {
+  if (!Array.isArray(peaks) || peaks.length < 8 || !(seconds > 0)) return null;
+  const data = [];
+  for (const p of peaks) { const v = Math.round(Math.max(0, Math.min(1, Number(p) || 0)) * 127); data.push(-v, v); }
+  return { sample_rate: 1000, samples_per_pixel: (seconds * 1000) / peaks.length, bits: 8, channels: 1, length: peaks.length, data };
+}
+/** Coverr catalog hits ({hits: [...]}, or one item) as result items (licence 'coverr' for a published, non-premium item). */
+export function parseCoverr(json) {
+  const hits = Array.isArray(json?.hits) ? json.hits : json?.id ? [json] : [];
+  return hits.map((h) => {
+    const free = h.status === 'published' && h.is_premium === false;
+    const tags = { genre: (h.genres || []).map(slug), mood: (h.moods || []).map(slug), instrument: (h.instruments || []).map(slug), tag: (h.video_themes || []).map(slug), category: [] };
+    const urls = h.urls || {};
+    const seconds = Number.isFinite(h.duration) ? Math.round(h.duration * 10) / 10 : null;
+    const it = { ref: `coverr:${h.id}`, source: 'coverr', id: String(h.id), kind: 'music', title: h.title || h.name || String(h.id), artist: null,
+      genre: tags.genre[0] || null, tags, seconds, file_url: urls.preview_download || urls.preview || null, preview_url: urls.preview || null,
+      page: 'https://coverr.co/free-stock-music', licence: free ? 'coverr' : 'unknown', notice: free ? 'Coverr License' : null,
+      published: (h.published_at || h.created_at || '').slice(0, 10) || null, created: (h.created_at || '').slice(0, 10) || null,
+      energy: energyOf(coverrWave(h.waveform, seconds)), notes: ['Coverr\'s free download: the full-length MP3 (128 kbps); the WAV master needs an account'] };
+    if (!free) it.notes.push(h.is_premium ? 'a premium item (Coverr+ only): refused' : `status ${h.status || 'unknown'}: refused`);
+    if (VOCAL.test([it.title, ...tags.instrument, ...tags.genre].join(' '))) { it.vocals = true; it.notes.push('vocals among its instruments: refused (no voice under on-screen text)'); }
+    if (/\bai[- ]generated|\bgenerated by ai\b|\blyria\b|\bsuno\b|\budio\b/i.test([h.description, h.meta && JSON.stringify(h.meta)].filter(Boolean).join(' '))) {
+      it.unfit = true; it.notes.push('marked as AI-generated: refused');
+    }
+    return it;
+  });
+}
+
 // ------------------------------------------------------------------------------------------------ energy
 /**
  * A catalog waveform file ({sample_rate, samples_per_pixel, bits, length, channels, data: [min, max, ...]}) to the
@@ -669,6 +723,8 @@ export function scoreItem(it, want = {}) {
     const entry = (e.breaks || []).find((x) => x.entry_s != null && x.entry_s > 0.15 * e.seconds && x.entry_s < 0.8 * e.seconds);
     if (entry) { s += 1.5; why.push(`a break and an entry at ${mmss(entry.entry_s)} (a reveal)`); }
     if (e.range_db >= 5) { s += 1; why.push(`contrast ${e.range_db} dB`); } else if (e.range_db < 2.5) { s -= 1; why.push('flat energy'); }
+    if (e.ending === 'button' || e.ending === 'ring') { s += 1; why.push(`a real ending (${e.ending}, from the waveform)`); }
+    else if (e.ending === 'fade') { s -= 1; why.push('ends on a fade (from the waveform): the film would fade it out under the end card'); }
   }
   return { score: Math.round(s * 100) / 100, why };
 }
@@ -798,8 +854,10 @@ export function readLibrary(p) {
  * {score, why[]} of a library track for a film: its mood against the brief's (its own mood 4, a second mood 2.5,
  * a mood it fits a little 1, none of the brief's -2), the words its tags carry (a genre such as "tech house"),
  * the length (never shorter than the film plus its ending; 1.5 times it so the best bars and an ending fit), the
- * tempo (--bpm, double or half time counts; near it +1, outside -3), the lift for the reveal (a drop counts most)
- * and the library's quality mark (x 0.5); the example films' tracks lose 1.5.
+ * tempo (--bpm, double or half time counts; near it +1, outside -3), the lift for the reveal (a drop counts most),
+ * the launch profile (profile.ref_z: how close earshot hears it to the house launch sound, x 1.2
+ * within -2..+2.5), a real ending (cuts.ending: the track's own final hit that rings out +2; a fade or a loop -2.5,
+ * the film would have to fade it) and the library's quality mark (x 0.5); the example films' tracks lose 1.5.
  */
 export function scoreLibraryTrack(t, want = {}) {
   const why = []; let s = 0;
@@ -830,6 +888,16 @@ export function scoreLibraryTrack(t, want = {}) {
   }
   const rv = t.cuts?.reveal;
   if (rv) { s += rv.kind === 'drop' ? 1 : 0.5; why.push(`${/^[aeiou]/.test(rv.kind) ? 'an' : 'a'} ${rv.kind} at ${mmss(rv.t)} for the reveal`); }
+  const z = t.profile?.ref_z;
+  if (Number.isFinite(z)) {
+    s += 1.2 * Math.max(-2, Math.min(2.5, z));
+    if (z >= 0.5) why.push(`close to the music of launch films (earshot z ${z >= 0 ? '+' : ''}${z.toFixed(1)})`);
+    else if (z <= -0.5) why.push(`far from the music of launch films (earshot z ${z.toFixed(1)})`);
+  }
+  const en = t.cuts?.ending;
+  if (en?.kind === 'button' || en?.kind === 'ring') {
+    s += 2; why.push(`a real ending: its final hit${en.final_bar ? ` (bar ${en.final_bar})` : ''} rings ${Number(en.ring_s ?? en.ring_out_s ?? 0).toFixed(1)} s`);
+  } else if (en?.kind === 'fade' || en?.kind === 'loop') { s -= 2.5; why.push(`no ending of its own (${en.kind}): the film would fade it out under the end card`); }
   if (Number.isFinite(t.quality)) s += 0.5 * t.quality;
   if (want.shortlist?.has(t.ref)) { s -= 1.5; why.push('a shortlist track the example films used'); }
   return { score: Math.round(s * 100) / 100, why };
@@ -839,8 +907,12 @@ export function scoreLibraryTrack(t, want = {}) {
 export function planText(t) {
   const c = t.cuts || {};
   const rv = c.reveal;
+  const en = c.ending || {};
+  const endText = !en.kind ? null : (en.kind === 'button' || en.kind === 'ring')
+    ? `ends on its own final hit${en.final_bar ? ` at bar ${en.final_bar}` : ''}${en.ring_s ?? en.ring_out_s ? ` (rings ${Number(en.ring_s ?? en.ring_out_s).toFixed(1)} s)` : ''}: track.py edit --end own`
+    : `ends on a ${en.kind}: track.py edit --end fade`;
   return [rv ? `reveal on the ${rv.kind} at ${mmss(rv.t)} (bar ${rv.bar})` : null, c.body_bar ? `body from bar ${c.body_bar}` : null,
-    c.ending?.kind ? `ends ${c.ending.kind}` : null, t.key ? `key ${t.key}` : null,
+    endText, t.key ? `key ${t.key}` : null,
     c.phase != null ? `analyse with --phase ${c.phase}` : null].filter(Boolean).join('; ');
 }
 
@@ -1051,6 +1123,16 @@ async function fetchSource(id, q, kind, pagesN) {
     }
   } else if (id === 'openverse') {
     try { items.push(...parseOpenverse(await get(openverseUrl(q, kind)), kind)); } catch (e) { notes.push(`Openverse: ${e.message}`); }
+  } else if (id === 'coverr') {
+    // the whole catalog is a few pages of JSON: read it all (gently) and let the ranking match the words to its tags
+    for (let p = 0; p < 8; p++) {
+      if (p) await sleep(300);
+      let got;
+      try { got = await get(coverrUrl(p, 50)); } catch (e) { notes.push(`Coverr: ${e.message}`); break; }
+      const hits = parseCoverr(got || {});
+      items.push(...hits);
+      if (hits.length < 50) break;
+    }
   }
   return { items, urls, notes };
 }
@@ -1208,6 +1290,16 @@ export async function verifyLicence(it) {
       const m = String(await http(now.page, { ms: 30000 }) || '').match(/creativecommons\.org\/publicdomain\/zero\/1\.0\/?/i);
       if (!m) return { ok: false, why: `its own page (${now.page}) does not link the CC0 dedication` };
       return { ok: true, quote: `CC0: its page links the dedication (${m[0]})`, url: now.page };
+    }
+    if (src === 'coverr') {
+      const now = parseCoverr(await http(coverrItemUrl(it.id), { json: true }) || {})[0];
+      if (!now || now.licence !== 'coverr') return { ok: false, why: `Coverr no longer lists it as a free published track (${(now?.notes || []).slice(1).join('; ') || 'the item is gone'})` };
+      if (now.vocals || now.unfit) return { ok: false, why: now.notes.slice(1).join('; ') };
+      const page = text(await http(L.seen.url, { ms: 40000 }) || '');
+      for (const q of [L.seen.quote, L.seen.also]) {
+        if (!page.includes(q)) return { ok: false, why: `the licence page ${L.seen.url} no longer says "${q}": read it, and record the track by hand (track.py add) if it still allows a film` };
+      }
+      return { ok: true, quote: `${L.seen.quote} ${L.seen.also}.`, url: L.seen.url };
     }
   } catch (e) { return { ok: false, why: `could not read its licence again (${e.message})` }; }
   return { ok: false, why: `no licence check for the catalog ${src}` };

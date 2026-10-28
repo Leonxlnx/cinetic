@@ -28,6 +28,9 @@
  *      over another, too short refused, tempo with double and half time, a drop over an entry), every earlier
  *      film's track held back, the cut points line, pick on the CLI (results get reads, the history), and get
  *      taking the library's copy (sha256) with the licence page read again on a stand-in answer.
+ *  11. Coverr (music-fixtures/coverr-audios.json, every value invented): the free track with its Coverr License and
+ *      full-length download, the energy from its waveform, vocals and premium items refused, the URLs, the record.
+ *  12. The library ranks by the launch profile (earshot z) and by a real ending over a fade; the cut line names it.
  *   No test touches the network (fetch and the large-header transport are replaced by functions that fail the run).
  *
  * Usage (from the skill root):  node scripts/test/music.test.mjs [--verbose]
@@ -237,7 +240,7 @@ function waveform(levels, px = 0.2, sr = 44100) {
 // 9. the CC0 catalogs
 const fixJson = (f) => JSON.parse(fs.readFileSync(path.join(FIX, f), 'utf8'));
 {
-  check(eq(M.sourcesFor('all', 'music').use, ['mixkit', 'commons', 'ccmixter']) && eq(M.sourcesFor(undefined, 'sfx').use, ['mixkit', 'commons', 'openverse']),
+  check(eq(M.sourcesFor('all', 'music').use, ['mixkit', 'commons', 'ccmixter', 'coverr']) && eq(M.sourcesFor(undefined, 'sfx').use, ['mixkit', 'commons', 'openverse']),
     'the default catalogs per kind', `${M.sourcesFor('all', 'music').use} / ${M.sourcesFor('all', 'sfx').use}`);
   const fma = M.sourcesFor('mixkit,fma', 'music');
   check(eq(fma.use, ['mixkit']) && fma.refused[0]?.id === 'fma' && /login/.test(fma.refused[0].why), 'a catalog that needs a login is refused with its reason');
@@ -430,7 +433,7 @@ const ov = M.parseOpenverse(fixJson('openverse-search.json'), 'sfx');
     check(eq(sr.items.map((x) => x.score), [s['mixkit:9101'].score, s['mixkit:9101'].score - 1, s['mixkit:9101'].score - 2]), 'library: each higher offer by the same artist costs 1', sr.items.map((x) => x.score).join(','));
     const ra = M.rankLibrary([tracks[0]], want, { used: [{ ref: 'mixkit:1', artist: 'Ada Example' }] });
     check(ra.items[0].score === s['mixkit:9101'].score - 1, 'library: an artist a recent film used costs 1');
-    check(M.planText(tracks[1]) === 'reveal on the entry at 1:03 (bar 25); body from bar 5; ends fade; key F major; analyse with --phase 2', 'library: the cut points line', M.planText(tracks[1]));
+    check(M.planText(tracks[1]) === 'reveal on the entry at 1:03 (bar 25); body from bar 5; ends on a fade: track.py edit --end fade; key F major; analyse with --phase 2', 'library: the cut points line', M.planText(tracks[1]));
 
     // pick on the CLI, under a temporary home
     process.env.CINETIC_HOME = home; delete process.env.CINETIC_MUSIC_LIBRARY;
@@ -478,6 +481,34 @@ const ov = M.parseOpenverse(fixJson('openverse-search.json'), 'sfx');
     if (saved.lib === undefined) delete process.env.CINETIC_MUSIC_LIBRARY; else process.env.CINETIC_MUSIC_LIBRARY = saved.lib;
     fs.rmSync(home, { recursive: true, force: true });
   }
+}
+// 11. Coverr (music-fixtures/coverr-audios.json: hand-written in the catalog's shape, every value invented)
+{
+  const cv = M.parseCoverr(fixJson('coverr-audios.json'));
+  const [a, b, c] = cv;
+  check(cv.length === 3 && a.ref === 'coverr:T3st1AbCd' && a.licence === 'coverr' && a.source === 'coverr' && a.kind === 'music'
+    && a.file_url.endsWith('preview.mp3?download=true') && a.tags.genre.includes('electronic') && a.tags.mood.includes('confident') && a.seconds === 124.5,
+    'coverr: a free published track parses with the Coverr License and its full-length download', JSON.stringify(a).slice(0, 160));
+  check(a.energy && a.energy.curve.length === 24 && a.notes.some((n) => /128 kbps/.test(n)), 'coverr: the energy curve from its waveform, the 128 kbps note');
+  check(b.vocals === true && M.scoreItem(b).score === -Infinity, 'coverr: backing vocals refused');
+  check(c.licence === 'unknown' && c.notes.some((n) => /premium/.test(n)), 'coverr: a premium item refused');
+  check(M.coverrUrl(2, 50) === 'https://coverr.co/papi/audios?page=2&page_size=50' && M.coverrItemUrl('T3st1AbCd') === 'https://coverr.co/papi/audios/T3st1AbCd', 'coverr: the catalog and item URLs');
+  const rec = M.licenceRecord(a, { file: 'glass_avenue_coverr.mp3', sha256: '0'.repeat(64), bytes: 2e6, date: '2026-10-28', seenQuote: M.LICENCES.coverr.seen.quote, seenUrl: M.LICENCES.coverr.seen.url });
+  check(rec.licence === 'Coverr License' && rec.credit_required === false && /Coverr/.test(rec.credit) && rec.licence_seen.url === 'https://coverr.co/license', 'coverr: the licence record, no credit needed');
+}
+// 12. The library ranks by the launch profile and by a real ending
+{
+  const base = { ref: 'mixkit:1', title: 'T', artist: 'A', seconds: 150, file_url: 'x', licence: 'mixkit-music', mood: 'driving', moods: [], bpm: 120,
+    cuts: { reveal: { kind: 'drop', bar: 9, t: 20 }, ending: { kind: 'ring', final_bar: 60, ring_s: 2.1 } }, quality: 5 };
+  const want = { moods: { driving: 1.5 }, words: ['driving'], length: 30, bpm: [118, 124] };
+  const own = M.scoreLibraryTrack(base, want);
+  const fade = M.scoreLibraryTrack({ ...base, cuts: { ...base.cuts, ending: { kind: 'fade' } } }, want);
+  check(Math.abs(own.score - fade.score - 4.5) < 1e-9 && own.why.some((w) => /a real ending: its final hit \(bar 60\) rings 2\.1 s/.test(w))
+    && fade.why.some((w) => /no ending of its own \(fade\)/.test(w)), 'library: a real ending outranks a fade', `${own.score} ${fade.score}`);
+  const near = M.scoreLibraryTrack({ ...base, profile: { ref_z: 1.5 } }, want), far = M.scoreLibraryTrack({ ...base, profile: { ref_z: -1 } }, want);
+  check(Math.abs(near.score - far.score - 3) < 1e-9 && near.why.some((w) => /close to the music of launch films/.test(w)), 'library: closer to the launch films ranks higher', `${near.score} ${far.score}`);
+  check(/ends on its own final hit at bar 60 \(rings 2\.1 s\): track\.py edit --end own/.test(M.planText(base)) && /track\.py edit --end fade/.test(M.planText({ ...base, cuts: { ending: { kind: 'fade' } } })),
+    'library: the cut line names the ending and its edit', M.planText(base));
 }
 check(fetched === 0, 'no network used', `${fetched} request(s)`);
 
