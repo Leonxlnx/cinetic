@@ -1,11 +1,11 @@
 import React from 'react';
-import { AbsoluteFill } from 'remotion';
+import { AbsoluteFill, Img, staticFile } from 'remotion';
 import { FONT, U } from '../brand/tokens';
 import { DEAL } from '../deal';
 import { DirBlur } from '../fx/Defocus';
 import { Lit } from '../fx/Lit';
 import { StepList } from '../fx/Loaders';
-import { AppIcon, Chip, ContentTile, face, hasLogo, KIT_TYPE, PortraitMark, sampleWorld, Surface, worldNodes } from '../kit';
+import { AppIcon, Avatar, Chip, ContentTile, face, hasLogo, KIT_TYPE, MonogramTile, sampleWorld, Surface, worldNodes } from '../kit';
 import { clamp, E, lmix, mix, prog } from '../lib/anim';
 import { intoCut } from '../lib/handoff';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
@@ -29,7 +29,10 @@ const pad = 64 * U;
 const PREVIEW = { w: 380 * U, aspect: 0.86 } as const;
 const OUT_NODE = { glyph: 'doc' as const, label: WALK.output.title, sub: WALK.output.sub, preview: 'doc' as const, value: WALK.output.steps[2], seed: `${WALK.name}:output` };
 /** Two people of the input's world (kit/data.ts), drawn as crafted portraits beside the card. */
-const PEOPLE = sampleWorld(`${WALK.name}:input`).people.slice(1, 3);
+/** The input's people beside the card: the first two real portraits of the feed (walk.ts photos.people); none without photos. */
+const PEOPLE = (WALK.photos.people as readonly string[]).slice(0, 2).map((src, i) => ({ src: staticFile(src), initials: WALK.feed.rows[i]?.initials ?? '', seed: WALK.feed.rows[i]?.who ?? String(i) }));
+/** The input's initials, its own avatar fallback when its source has no mark and no picture. */
+const INPUT_INITIALS = WALK.input.title.replace(/[[\]]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'A';
 
 /** The transformation's progress 0..1 (44 f on E.strongInOut from CUE.swap). */
 export const turnAt = (F: number) => prog(F, CUE.swap, CUE.swap + f60x(44), E.strongInOut);
@@ -45,7 +48,13 @@ export const InputFace: React.FC<{ w: number; h: number }> = ({ w, h }) => {
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h }}>
       <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${pad}px, ${pad}px, 0)` }}>
-        {hasLogo(WALK.input.source) ? <AppIcon logo={WALK.input.source} size={150 * U} theme={t} lift={16} /> : <PortraitMark theme={t} seed={WALK.input.title} size={150 * U} shape="tile" />}
+        {hasLogo(WALK.input.source) ? (
+          <AppIcon logo={WALK.input.source} size={150 * U} theme={t} lift={16} />
+        ) : WALK.photos.input ? (
+          <Img src={staticFile(WALK.photos.input)} style={{ width: 150 * U, height: 150 * U, borderRadius: 36 * U, objectFit: 'cover', display: 'block' }} />
+        ) : (
+          <MonogramTile theme={t} seed={WALK.input.title} initials={INPUT_INITIALS} size={150 * U} font={(px, w, c) => face(px, w, c, 0)} />
+        )}
       </div>
       <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${pad + 180 * U}px, ${pad + 22 * U}px, 0)`, display: 'flex', flexDirection: 'column', gap: 8 * U }}>
         <span data-text="card-title-in" style={face(KIT_TYPE.head * U, 650, t.text, -0.03)}>
@@ -183,7 +192,7 @@ export const Card: React.FC = () => {
               const y = (i ? cy - CARD.h * 0.4 : cy + CARD.h * 0.34) + out * 60 * U;
               return (
                 <div key={i} style={{ position: 'absolute', left: 0, top: 0, opacity: 1 - out, transform: `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) translate(-50%, -50%)` }}>
-                  <PortraitMark theme={t} seed={p.seed} size={(i ? 120 : 150) * U} />
+                  <Avatar theme={t} i={i} initials={p.initials} seed={p.seed} src={p.src} size={(i ? 120 : 150) * U} ring={t.surface} />
                 </div>
               );
             })}

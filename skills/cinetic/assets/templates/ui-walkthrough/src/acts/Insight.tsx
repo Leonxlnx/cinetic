@@ -6,7 +6,7 @@ import { Avatar, face, KIT_TYPE, surfaceShadow } from '../kit';
 import { E, lmix, prog } from '../lib/anim';
 import { ACT, CUE, f60x, H, W } from '../timeline';
 import { WALK } from '../walk';
-import { PILL_BOX, PillContent } from './Feed';
+import { facePhoto, PILL_BOX, PillContent } from './Feed';
 import { drift, Ground, launchOut, ScriptLine, themeOf, useAbs } from './stage';
 
 // INSIGHT - what the product found, as one pill: the people who asked (crafted portraits), the insight, a count chip
@@ -25,7 +25,7 @@ const Quote: React.FC<{ i: number }> = ({ i }) => {
   const r = WALK.feed.rows[(WALK.feed.key + i + 1) % WALK.feed.rows.length];
   return (
     <div data-ui style={{ width: QUOTE.w, height: QUOTE.h, borderRadius: 28 * U, background: t.surface, boxShadow: surfaceShadow(t, 22, U), display: 'flex', alignItems: 'center', gap: 24 * U, padding: `0 ${30 * U}px`, boxSizing: 'border-box' }}>
-      <Avatar theme={t} i={i + 3} initials={r.initials} seed={r.who} size={88 * U} kind="portrait" />
+      <Avatar theme={t} i={i + 3} initials={r.initials} seed={r.who} size={88 * U} src={facePhoto(r)} kind={facePhoto(r) ? 'portrait' : 'monogram'} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 * U, minWidth: 0 }}>
         <span data-text={`quote-who-${i}`} style={face(KIT_TYPE.label * U, 600, t.mute)}>
           {r.who}

@@ -35,7 +35,7 @@ export const RUN = {
   request: '[Plan the launch with @team for next week]',
   /** The model chip in the request box. */
   chip: '[Model]',
-  /** The people the work is for (2-4 initials, crafted portraits in the run: kit AvatarStack): the @mention's team. */
+  /** The people the work is for (2-4 initials; their faces are photos.people, else these initials): the @mention's team. */
   people: ['[AK]', '[JM]', '[RS]'],
   /** The status line while it works. */
   status: '[Working]',
@@ -50,6 +50,14 @@ export const RUN = {
   world: { kind: 'pipeline' as WorldKind },
   /** The result card: what it made. */
   result: { title: '[Launch plan]', body: '[4 tasks, 3 owners, 1 review]', meta: '[now]', glyph: 'check' as GlyphName },
+  /**
+   * Real photographs, public/ paths (node scripts/assets.mjs search "<subject>" --kind photo [--people] [--fit 1:1], get
+   * '#n' --to public/assets, grade): `people` are the faces of the people the work is for, in order (one real portrait
+   * each); `result` the picture the product made when its result is a picture (an edited photo, a generated image, a
+   * product shot), shown on the result card. Empty, the people show as their initials and the result card as the
+   * product's own glyph: never a drawn face.
+   */
+  photos: { people: [] as string[], result: '' as string },
 };
 
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;

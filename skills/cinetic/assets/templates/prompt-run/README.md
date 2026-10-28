@@ -35,11 +35,17 @@ device by hand once the direction asks for it. The timeline's seams, cuts and co
   any tool without one), the request as the user types it (one plain sentence, 72 characters at most), the model chip,
   the people it is for (2-4 initials), the status, 3-5 steps (a verb and its object), the product's records for the
   split run (`world`, kit/data.ts shape) and the result card. Delete its placeholder lines.
+- The faces and the result's picture: `photos.people` are real portraits of the people the work is for, in order
+  (`node scripts/assets.mjs search "<person> portrait" --kind photo --people --fit 1:1`, `get`, `grade`); without
+  them the stack shows their initials. `photos.result` is the picture the product made when its result is a picture
+  (an edited photo, a generated image), shown on the result card. Never a drawn face (lint-film and the layout audit
+  fail one).
 - The product's own screens: `acts/Ask.tsx` and `acts/Run.tsx` draw the kit's `Composer`, `Bubble`, `AvatarStack`,
   `DenseScreen` and `Notice` as the floor; rebuild the product's real request box and run view at film size (every web
   size x1.9).
 - The brand: `--brand <kit>` writes the tokens, the logo's parts and the name; ask for the logo file, never draw one.
 - The direction: deal it and retell this floor in its world: its grounds, light and type replace `acts/stage.tsx`.
+  The request box stands on the film's one colour ground, the tilted tint (`fx/Grounds` `tint`), the click on the same.
 
 **Timing.** `src/timeline.ts` places every act on a bar line and every state change as a CUE on the 16th grid; each
 label is read whole before the next (`what` from the first frame, the kick on beat 4.5); `TYPING` holds the request's

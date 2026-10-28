@@ -39,7 +39,8 @@ template.json `deal`), so no two films from this template run one fixed sequence
 - The direction: deal it and retell this floor in its world: its ground and type replace `acts/stage.tsx`.
 
 **Look.** The page is clean: two paper tones, each flat or a very subtle wash lit from the film's one key, dealt so no
-ground holds more than two shots; once per act the light on the page changes (a cloud crossing the window, a shade
+ground holds more than two shots, and one colour ground where the product's parts gather round the mark (the grid on
+the tilted tint, `fx/Grounds` `tint`: the accent's colour along one edge of the page); once per act the light on the page changes (a cloud crossing the window, a shade
 across the whole frame, a second after the cut). No beams, pools, haze or floating plates; every depth item says what
 it carries. Hero lines take confident presets (`fx/TypePresets`: every word solid within a few frames and moving while
 it lands), never a soft, half-faded run.

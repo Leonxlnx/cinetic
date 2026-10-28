@@ -3,6 +3,7 @@
 // under TEXT_MIN), lit by the kit's key, coloured only by the theme (the brand's accent on what matters). Every
 // string comes from the caller: pass the product's own words and data, never the slots' stand-ins in a finished film.
 import React from 'react';
+import { Img } from 'remotion';
 import { TEXT_MIN } from '../brand/tokens';
 import { clamp, mix } from '../lib/anim';
 import { mixColor } from '../lib/color';
@@ -159,11 +160,11 @@ export const DataRow: React.FC<{ theme: KitTheme; w: number; h: number; label: s
 };
 
 /** A system notice: the app's glyph tile, a title, one line of body and a time on the right (the proof stack's toast). */
-export const Notice: React.FC<{ theme: KitTheme; w: number; h: number; glyph?: GlyphName; title: string; body?: string; meta?: string; id?: string; scale?: number }> = ({ theme: t, w, h, glyph = 'bolt', title, body, meta, id = 'kit-notice', scale }) => {
+export const Notice: React.FC<{ theme: KitTheme; w: number; h: number; glyph?: GlyphName; title: string; body?: string; meta?: string; id?: string; scale?: number; photo?: string }> = ({ theme: t, w, h, glyph = 'bolt', title, body, meta, id = 'kit-notice', scale, photo }) => {
   const u = useKitScale(scale);
   return (
     <div data-ui style={{ position: 'relative', width: w, height: h, borderRadius: h * 0.28, background: t.dark ? t.raised : t.surface, boxShadow: surfaceShadow(t, 36, u), display: 'flex', alignItems: 'center', gap: h * 0.18, padding: `0 ${h * 0.24}px 0 ${h * 0.2}px`, boxSizing: 'border-box' }}>
-      <GlyphTile theme={t} name={glyph} size={h * 0.56} solid />
+      {photo ? <Img src={photo} style={{ width: h * 0.64, height: h * 0.64, borderRadius: h * 0.16, objectFit: 'cover', display: 'block', flex: 'none' }} /> : <GlyphTile theme={t} name={glyph} size={h * 0.56} solid />}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: h * 0.04 }}>
         <span data-text={`${id}-title`} style={face(fit(h * 0.25, u), 600, t.text)}>
           {title}

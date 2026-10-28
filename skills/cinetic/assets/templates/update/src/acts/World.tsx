@@ -9,7 +9,7 @@
 // Retell it in the dealt direction's world (out/DIRECTION.md): its space, light and signature replace this floor.
 // The product surfaces come from src/kit until the product's own UI is rebuilt for film.
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, staticFile, useCurrentFrame } from 'remotion';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
 import { C, TYPE, typeStyle, U } from '../brand/tokens';
@@ -171,7 +171,7 @@ const Surface: React.FC<{ c: Change; i: number; F: number }> = ({ c, i, F }) => 
   const k = SURFACE[c.moment].k * U;
   const body =
     c.moment === 'approve' ? (
-      <ProjectPanel frame={F} theme={T} scale={k} x={0} y={0} doneAt={hit} />
+      <ProjectPanel frame={F} theme={T} scale={k} x={0} y={0} doneAt={hit} photos={(c.photos ?? []).map((p) => staticFile(p))} />
     ) : c.moment === 'chat' ? (
       <ChatCard frame={F} theme={T} scale={k} x={0} y={0} at={[hit - f60(70), hit - f60(34), hit]} />
     ) : c.moment === 'count' ? (

@@ -23,7 +23,7 @@ import { face, GlyphTile, keyFace, Sparkline, surfaceShadow, useKitScale } from 
 import type { GlyphName } from './sample';
 import { type KitTheme, kitTheme } from './theme';
 
-export type TilePreview = 'doc' | 'chart' | 'bars' | 'list' | 'person' | 'table' | 'code';
+export type TilePreview = 'doc' | 'chart' | 'bars' | 'list' | 'person' | 'table' | 'code' | 'photo'; // photo: node.photo fills the preview (a real picture of what the item holds); without one it is a doc
 /** A tile's content: a real mark or a glyph, a label, a sub line, a preview of what it holds. */
 export type TileNode = { logo?: LogoRef; glyph?: GlyphName; label: string; sub?: string; preview?: TilePreview; value?: string; seed?: string; photo?: string; focus?: [number, number] }; // photo: a person's real portrait (staticFile URL) for the 'person' preview
 
@@ -39,7 +39,9 @@ const T: React.FC<{ id: string; px: number; u: number; weight?: number; color: s
 );
 
 const Preview: React.FC<{ t: KitTheme; node: TileNode; w: number; h: number; u: number }> = ({ t, node, w, h, u }) => {
-  const kind = node.preview ?? 'doc';
+  const kind = node.preview === 'photo' && !node.photo ? 'doc' : node.preview ?? 'doc';
+  if (kind === 'photo')
+    return <Img src={node.photo as string} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${((node.focus?.[0] ?? 0.5) * 100).toFixed(1)}% ${((node.focus?.[1] ?? 0.5) * 100).toFixed(1)}%`, display: 'block' }} />;
   const s = node.seed ?? node.label;
   const px = Math.max(8 * u, Math.min(h * 0.11, 15 * u));
   const ink = t.text;

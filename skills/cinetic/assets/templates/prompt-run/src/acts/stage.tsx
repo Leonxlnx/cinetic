@@ -36,7 +36,9 @@ const ORDER: ActName[] = ['pill', 'ask', 'click', 'run', 'done', 'end'];
 const KINDS: GroundKind[] = ['wash', 'flat'];
 export const GROUNDS: Record<ActName, GroundSpec> = (() => {
   const g = dealGrounds(ORDER.length, { bases: [PAGE.ground, mixColor(PAGE.ground, PAGE.well, 0.55)], kinds: KINDS, seed: DEAL_SEED % 100000 });
-  // the click is a punch into the ask's own box: the same place across that cut
+  // the request box stands on the film's one colour ground, the tilted tint (fx/Grounds 'tint'); the click is a punch
+  // into the ask's own box: the same place across that cut
+  g[1] = { ...g[1], kind: 'tint' };
   g[2] = g[1];
   return Object.fromEntries(g.map((x, i) => [ORDER[i], x])) as Record<ActName, GroundSpec>;
 })();

@@ -1,8 +1,8 @@
 import React from 'react';
-import { AbsoluteFill } from 'remotion';
+import { AbsoluteFill, staticFile } from 'remotion';
 import { U } from '../brand/tokens';
 import { stepValue } from '../fx/HardStep';
-import { Chip, DataRow, face, KIT_TYPE, Meter, Photo } from '../kit';
+import { Chip, DataRow, face, FileThumb, KIT_TYPE, Meter, Photo } from '../kit';
 import { E, mix, prog, track } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { creep } from '../lib/handoff';
@@ -69,7 +69,7 @@ export const RecordCard: React.FC = () => {
         <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: b.w, height: b.h, borderRadius: b.r, overflow: 'hidden', background: fill, transform: `translate3d(${b.x.toFixed(2)}px, ${b.y.toFixed(2)}px, 0)` }}>
           {/* the picture, the accent rising through it */}
           <div style={{ position: 'absolute', left: 0, top: 0, width: CARD.media, height: CARD.h, opacity: prog(F, ACT.record.from + f60x(6), ACT.record.from + f60x(16), E.snapOut) }}>
-            <Photo theme={t} w={CARD.media} h={CARD.h} seed={41} />
+            {REEL.record.photo ? <Photo theme={t} w={CARD.media} h={CARD.h} src={staticFile(REEL.record.photo)} push={prog(F, ACT.record.from, ACT.record.from + ACT.record.dur, E.linear) * 0.5} /> : <FileThumb theme={t} w={CARD.media} h={CARD.h} seed={41} />}
             <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(0deg, ${t.accent} 0%, transparent ${mix(0, 110, grad).toFixed(1)}%)`, opacity: 0.55 }} />
           </div>
           {/* the record: its fields one by one, its tags, its measure */}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill } from 'remotion';
+import { AbsoluteFill, staticFile } from 'remotion';
 import { U } from '../brand/tokens';
 import { DepthStack, type DepthItem, depthPush } from '../fx/DepthStack';
 import { Lit } from '../fx/Lit';
@@ -15,8 +15,8 @@ import { RUN } from '../run';
 import { Ground, GROUNDS, PAGE, useAbs } from './stage';
 
 // RUN - the product working, under the film's one 3D turn. The whip is carried in: everything arrives still rising
-// (106 px over 12 f on an expo-out). The request is the user's bubble with the people it is for (crafted portraits:
-// kit AvatarStack); a status line with dots that breathe; the steps check in on an accelerating cadence, each row
+// (106 px over 12 f on an expo-out). The request is the user's bubble with the people it is for (their real portraits,
+// run.ts photos.people, else their initials: kit AvatarStack); a status line with dots that breathe; the steps check in on an accelerating cadence, each row
 // gliding up into place solid (16 f at 60 fps on E.glideOut: no half-faded rows), its spinner turning to a check a
 // beat later, the last still running when the act cuts. The deal's device:
 //   list   the run in one lit panel (fx/Lit, tilted in the film's light) that the camera swings round to face
@@ -27,6 +27,8 @@ import { Ground, GROUNDS, PAGE, useAbs } from './stage';
 //          time, the lens moving to the row each step touches), the camera swinging round the hinge between them
 
 /** The run's layout at 1080p (every web size x1.9): the panel, the bubble, the status, the rows. */
+/** The people the work is for: a real portrait each (run.ts photos.people), else their initials (the product's own fallback). */
+const FACES = RUN.people.map((p, i) => ({ initials: p.replace(/[[\]]/g, ''), seed: `${RUN.name}:${p}`, src: (RUN.photos.people as readonly string[])[i] ? staticFile((RUN.photos.people as readonly string[])[i]) : undefined }));
 export const RUN_LAYOUT = { panel: { w: 1300, h: 800 }, pad: 70, bubbleType: 46, status: 230, list: 330, type: 52, rowH: 96, rise: 24, glide60: 16, avatar: 52 } as const;
 
 /** When step i checks (the next step's onset plus 10 f), or null for the last (still running when the act cuts). */
@@ -79,7 +81,7 @@ const Head: React.FC<{ F: number; w: number }> = ({ F, w }) => {
       <div style={{ position: 'absolute', left: 0, top: 0, width: w, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 16 * U }}>
         <Bubble theme={PAGE} text={RUN.request} size={Math.min(RUN_LAYOUT.bubbleType * U, (w * 0.9) / (RUN.request.length * 0.52))} maxW={w * 0.92} id="request" />
         <div style={{ opacity: people, transform: `translate3d(0, ${((1 - people) * 14 * U).toFixed(2)}px, 0)` }}>
-          <AvatarStack theme={PAGE} people={RUN.people.map((p) => ({ initials: p.replace(/[[\]]/g, ''), seed: `${RUN.name}:${p}` }))} size={av} ring={PAGE.surface} />
+          <AvatarStack theme={PAGE} people={FACES} size={av} ring={PAGE.surface} kind="monogram" />
         </div>
       </div>
       {F >= CUE.status && (
@@ -191,7 +193,7 @@ const StackShot: React.FC<{ F: number }> = ({ F }) => {
         {F >= CUE.status && <ThinkingDots frame={F} start={CUE.status} size={ui * 0.2} color={PAGE.accent} />}
       </div>
       <div style={{ position: 'absolute', left: 0, top: 0, opacity: prog(F, CUE.bubble + f60x(10), CUE.bubble + f60x(30), E.glideOut), transform: `translate3d(${(W / 2 + 360 * U).toFixed(2)}px, ${(244 * U).toFixed(2)}px, 0)` }}>
-        <AvatarStack theme={PAGE} people={RUN.people.map((p) => ({ initials: p.replace(/[[\]]/g, ''), seed: `${RUN.name}:${p}` }))} size={64 * U} ring={PAGE.surface} />
+        <AvatarStack theme={PAGE} people={FACES} size={64 * U} ring={PAGE.surface} kind="monogram" />
       </div>
     </div>
   );

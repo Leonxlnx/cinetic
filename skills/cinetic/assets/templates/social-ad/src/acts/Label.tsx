@@ -3,6 +3,7 @@ import { AbsoluteFill } from 'remotion';
 import { C, U } from '../brand/tokens';
 import { CONVEYOR, conveyorState, type ConveyorProps } from '../fx/Conveyor';
 import { DirBlur } from '../fx/Defocus';
+import { ARC_PATHS, ArcRiver, mirrorPath } from '../fx/Pictures';
 import { TypeLine } from '../fx/TypePresets';
 import { ContentTicker, DenseScreen, shadeRgba } from '../kit';
 import { clamp, E, lmix, mix, prog, rand } from '../lib/anim';
@@ -10,7 +11,7 @@ import { useFilm } from '../lib/film';
 import { AD } from '../ad';
 import { DEAL } from '../deal';
 import { ACT, copy, CUE, f60x, H, SWAP, W } from '../timeline';
-import { ActGround, carryOffset, Item, launchOffset, lineSize, lineStyle, lineWidth, NODES, PAGE, SEAM, useAbs, WORLD } from './stage';
+import { ActGround, carryOffset, Item, launchOffset, lineSize, lineStyle, lineWidth, NODES, PAGE, PICS, SEAM, useAbs, WORLD } from './stage';
 
 // LABEL - a label stands over moving content and swaps its last word once. It is a chip on the page's surface: its
 // words rise and sharpen in on the crisp entry (fx/TypePresets crisp), it recedes slightly the whole time, and on the swap its last word
@@ -19,7 +20,9 @@ import { ActGround, carryOffset, Item, launchOffset, lineSize, lineStyle, lineWi
 // (the next shot carries that speed), and the chip goes with it. The label slot's device (src/deal.ts):
 //   rivers  two diagonal streams of content tiles running opposite ways (fx/Conveyor), already at their cruise on the
 //           cut (a fast entry would spike the field's carried rise), upright in a staircase, sizes varied by depth,
-//           smeared only along their own travel; the rush takes both streams right together
+//           smeared only along their own travel; the rush takes both streams right together. With photographs (ad.ts
+//           pictures) the streams run on two curves that pass the chip like the arms of an S (fx/Pictures ArcRiver:
+//           spaced along the curve, sharp near the chip and softer away from it, smeared along the tangent)
 //   ticker  rows of content tiles flowing past on two depths, curved toward the camera (kit ContentTicker), already
 //           flowing on the cut
 //   screen  the product's own dense screen filling the frame (kit DenseScreen), its lens gliding to a new row on the
@@ -110,6 +113,11 @@ export const Label: React.FC = () => {
     ) : DEAL.label === 'screen' ? (
       <div style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', transform: `translate3d(${rush.toFixed(2)}px, ${enter.toFixed(2)}px, 0) scale(${lmix(1.06, 1.12, prog(F, ACT.label.from, cut, E.linear)).toFixed(5)})` }}>
         <DenseScreen frame={F} theme={PAGE} world={WORLD} layout="board" w={W * 0.94} h={H * 0.9} x={W * 0.03} y={H * 0.08} focus={[{ at: ACT.label.from, row: 3 }, { at: CUE.swap, row: 6 }]} drawAt={ACT.label.from} />
+      </div>
+    ) : PICS.length ? (
+      <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${rush.toFixed(2)}px, ${enter.toFixed(2)}px, 0)` }}>
+        <ArcRiver frame={F} photos={PICS} points={ARC_PATHS.rise} start={ACT.label.from - f60x(60)} focus={[W / 2, H / 2]} seed={1} />
+        <ArcRiver frame={F} photos={PICS} points={mirrorPath(ARC_PATHS.rise)} start={ACT.label.from - f60x(60)} focus={[W / 2, H / 2]} seed={2} />
       </div>
     ) : (
       <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${rush.toFixed(2)}px, ${enter.toFixed(2)}px, 0)` }}>

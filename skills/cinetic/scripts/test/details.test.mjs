@@ -5,7 +5,8 @@
  *
  *   1. dofSigma() (lib/defocus): sharp within 230 px of the focus, 7.5 px at 850 px and beyond, monotone between.
  *   2. Wash 'tilted' (fx/Washes): paper over the first third, 4 % / 24 % / 81 % of the tint at 34 / 52 / 84 % of the
- *      run, the tint at the edge; a linear field at angle 82; the tint the accent a fifth of the way to paper.
+ *      run, the tint at the edge; a linear field at angle 82; the tint the accent a fifth of the way to paper. The
+ *      'tint' ground (fx/Grounds) draws it on the ground's base, carries no plates and is never dealt unasked.
  *   3. widenState(), CARD_TILT, cardTiltCss() (fx/Cards): the width share 1 % -> 10 % -> 31 % -> 93 % -> 100 % over
  *      40 f at 60 fps (20 at 30), opened about the centre, the content only in the last third; the lean-back plane is
  *      27 degrees about the top edge at perspective 1000, its top edge 70-85 % of the bottom; a Card with `reveal`
@@ -64,6 +65,7 @@ import * as Dp from '${url('fx/DrawPath.tsx')}';
 import * as R from '${url('fx/Rim.tsx')}';
 import * as B from '${url('fx/Barrel.tsx')}';
 import * as Cu from '${url('fx/Cursor.tsx')}';
+import * as Gr from '${url('fx/Grounds.tsx')}';
 import { C } from '${url('brand/tokens.ts')}';
 import { mixColor } from '${url('lib/color.ts')}';
 const h = React.createElement;
@@ -77,6 +79,8 @@ out.tilted = W.washStops('tilted', '#FFFFFF', '#000000');
 out.tiltedField = W.washField('tilted', { paper: '#FFFFFF' });
 out.tiltTint = mixColor(C.accent, C.paper, 0.2);
 out.tiltedDefault = W.washField('tilted');
+out.grounds = { kinds: Gr.GROUND_KINDS, clean: Gr.CLEAN_KINDS, tintKinds: Gr.TINT_KINDS, gain: Gr.KIND_GAIN.tint, shapes: Gr.groundShapes({ kind: 'tint', base: '#F5F6F7', seed: 1 }).length, dealt: Gr.dealGrounds(12, { bases: ['#F5F6F7', '#E9EBEE'], seed: 3 }).map((g: any) => g.kind) };
+out.tintGround = mk(h(Gr.LitGround, { frame: 30, spec: { kind: 'tint', base: '#F5F6F7' } } as any));
 out.widen60 = [0, 10, 20, 30, 40, 50].map((d) => Cd.widenState(100 + d, { at: 100 }, film60));
 out.widen30 = Cd.widenState(110, { at: 100 }, film30);
 out.widenBefore = Cd.widenState(99, { at: 100 }, film60);
@@ -135,6 +139,11 @@ try {
   result(P.tiltedField.mode === 'linear' && P.tiltedField.angle === 82, 'tilted wash: a linear field 8 degrees off vertical (angle 82)', `${P.tiltedField.mode} ${P.tiltedField.angle}`);
   const lastStop = P.tiltedDefault.stops[P.tiltedDefault.stops.length - 1];
   result((lastStop.color ?? lastStop).toLowerCase() === P.tiltTint.toLowerCase(), "tilted wash: the default tint is the accent a fifth of the way to paper", `${JSON.stringify(lastStop)} vs ${P.tiltTint}`);
+
+  const G = P.grounds;
+  result(G.kinds.includes('tint') && G.tintKinds.join() === 'tint' && !G.clean.includes('tint') && G.gain === 0 && G.shapes === 0, "Grounds 'tint': a kind with no plates, outside the clean kinds", JSON.stringify(G));
+  result(!G.dealt.includes('tint'), "dealGrounds never deals the tint unless a film asks for it by name (one colour ground, never the whole film)", G.dealt.join(','));
+  result(/<canvas/.test(P.tintGround) && /background:#F5F6F7/i.test(P.tintGround), "LitGround 'tint': the base under a tilted wash field", P.tintGround.slice(0, 160));
 
   // 3. widen, tilt
   const w = P.widen60.map((s) => s.width);

@@ -33,7 +33,8 @@ export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;
  * The page's grounds, one per act, dealt from the film's seed (fx/Grounds dealGrounds, the clean kinds): two paper
  * tones, each a flat field or a very subtle wash lit from the film's one key (you feel the key, you never see a glow),
  * never the same ground on more than two consecutive shots. No beams, no pools, no haze: the ground stays clean behind
- * the words. The product's act sits on the mid slate, washed the same way: its own place.
+ * the words. The product's act sits on the mid slate, washed the same way: its own place. The grid of the product's
+ * parts stands on the tilted tint (fx/Grounds 'tint'), the film's one colour ground.
  */
 const PAPERS = [PAGE.ground, mixColor(PAGE.ground, PAGE.well, 0.6)];
 export const GROUNDS: Record<ActName, GroundSpec> = (() => {
@@ -41,6 +42,8 @@ export const GROUNDS: Record<ActName, GroundSpec> = (() => {
   const acts: ActName[] = ['open', 'pain', 'promise', 'picture', 'system', 'grid', 'end'];
   const out = Object.fromEntries(acts.map((a, i) => [a, list[i]])) as Record<ActName, GroundSpec>;
   out.picture = { kind: 'wash', base: SHOT.ground, light: C.white, lift: 0.08, seed: SEED % 997 };
+  // the parts round the mark stand on the film's one colour ground: the accent's tint along one tilted edge (fx/Grounds 'tint')
+  out.grid = { ...out.grid, kind: 'tint' };
   return out;
 })();
 

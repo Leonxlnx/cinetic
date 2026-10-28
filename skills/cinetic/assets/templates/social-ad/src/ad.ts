@@ -42,8 +42,10 @@ export const AD = {
   integrations: [] as string[],
   /**
    * Photographs, when what people keep in the product is pictures, people, places or things (a recipe, an outfit, a
-   * room, a trip): files in public/ (e.g. 'ad/01.jpg') that take the cards' places in turn, as rounded cards under the
-   * stack's tilt, depth and blur. Real photographs only, never drawn: the product's own, the user's, or free ones whose
+   * room, a trip): files in public/ (e.g. 'ad/01.jpg') that take the cards' places in turn, as rounded photo cards
+   * (fx/Pictures PhotoCard: radius, rim, contact shadow) under the stack's tilt, depth and blur; the label's 'rivers'
+   * then run them along two curved streams round the chip, sharp near it and soft away from it, smeared along their
+   * travel (fx/Pictures ArcRiver). Real photographs only, never drawn: the product's own, the user's, or free ones whose
    * licence needs no credit (node scripts/assets.mjs search "<subject>" --fit 4:5 --clean, then get and grade them to
    * one look). Empty (the default): every card is the product's own content built in code.
    */

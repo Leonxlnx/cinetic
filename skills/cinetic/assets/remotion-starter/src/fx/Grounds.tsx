@@ -3,12 +3,13 @@ import { Img } from 'remotion';
 import { C } from '../brand/tokens';
 import { clamp } from '../lib/anim';
 import { camera, type Shot, toScreen, weighShot } from '../lib/camera';
-import { toOklch } from '../lib/color';
+import { mixColor, toOklch } from '../lib/color';
 import { type FilmCtx, fpsOf, sizeOf, uOf, useFilm } from '../lib/film';
 import { FILM_LIGHT, type FilmLight, keyDir } from '../lib/light';
 import type { Declares } from '../timeline';
 import { shadowTone } from './KeyLight';
 import { bakePixels, bakePlate } from './Gradients';
+import { Wash, WASH } from './Washes';
 import { hash01 } from './plates';
 
 /**
@@ -31,6 +32,10 @@ import { hash01 } from './plates';
  *   bars     the wash plus 3-5 tall soft bars (asked)                   a lit room behind the product, out of focus
  *   floor    a glow rising from the bottom edge, bars in it (asked)     light from below, a stage
  *   window   2-4 beams slanting along the key (asked)                   sun through a window
+ *   tint     the base with the colour gathering along one tilted edge   a lit page with a direction (asked)
+ *            (fx/Washes tilted: paper over the first third, an S-shaped
+ *            ramp to the tint; the tint `light`, else the accent a fifth
+ *            of the way to the base), drifting slowly
  *
  * Numbers (GRAMMAR.hold): a lightness swing of 0.02-0.10 across the frame (house 0.06: you feel the key, you never see
  * a glow); the light drifts 6-30 px/s at 1080p (house 12) on loops of 9-16 s, so a hold over a ground never freezes;
@@ -62,9 +67,11 @@ export const GROUND = {
   crop: 0.12, // share of an element's own width or height past a frame edge for it to count as cropped
 } as const;
 
-export type GroundKind = 'flat' | 'wash' | 'pools' | 'bars' | 'floor' | 'window';
+export type GroundKind = 'flat' | 'wash' | 'pools' | 'bars' | 'floor' | 'window' | 'tint';
 /** Every kind. */
-export const GROUND_KINDS: readonly GroundKind[] = ['flat', 'wash', 'pools', 'bars', 'floor', 'window'];
+export const GROUND_KINDS: readonly GroundKind[] = ['flat', 'wash', 'pools', 'bars', 'floor', 'window', 'tint'];
+/** The colour grounds: a tilted tint on one or two acts where the structure has a lit page (asked by name; never the whole film). */
+export const TINT_KINDS: readonly GroundKind[] = ['tint'];
 /** The clean kinds a film gets unless it asks for more: no shape on the ground at all. */
 export const CLEAN_KINDS: readonly GroundKind[] = ['flat', 'wash'];
 /** The kinds that put plates on the ground: only for a film that asks, because its place has that light. */
@@ -119,7 +126,7 @@ export const washAlphas = (base: string, lift: number = GROUND.lift) => {
 };
 
 /** How bright each kind's shapes are against the lift (their peak lightness change over lift): light sources read brighter. */
-export const KIND_GAIN: Record<GroundKind, number> = { flat: 0, wash: 0, pools: 0.9, bars: 1.1, floor: 1.6, window: 1.0 };
+export const KIND_GAIN: Record<GroundKind, number> = { flat: 0, wash: 0, pools: 0.9, bars: 1.1, floor: 1.6, window: 1.0, tint: 0 };
 
 /** True when the ground puts no shape on its base (flat or wash): the clean ground every film starts from. */
 export const isClean = (g: Pick<GroundSpec, 'kind'>) => CLEAN_KINDS.includes(g.kind);
@@ -334,6 +341,12 @@ export const LitGround: React.FC<{ frame: number; spec: GroundSpec; cam?: { shot
   const { width: W, height: H } = sizeOf(film);
   const abs0: React.CSSProperties = { position: 'absolute', left: 0, top: 0 };
   if (spec.kind === 'flat') return <div style={{ ...abs0, width: W, height: H, background: spec.base, ...style }} />;
+  if (spec.kind === 'tint')
+    return (
+      <div style={{ ...abs0, width: W, height: H, overflow: 'hidden', background: spec.base, ...style }}>
+        <Wash frame={frame} kind="tilted" paper={spec.base} tint={spec.light ?? mixColor(C.accent, spec.base, WASH.tilted.tintMix)} drift={(spec.drift ?? GROUND.driftPxS) / 4000} />
+      </div>
+    );
   const s = groundState(frame, spec, film, cam);
   const ink = groundInks(spec);
   const b = GROUND.bake;

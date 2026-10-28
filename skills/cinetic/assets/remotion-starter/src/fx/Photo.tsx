@@ -197,7 +197,7 @@ const Layer: React.FC<{ photo: PhotoSrc; L: PhotoLayer; clip?: [number, number][
   const roll = L.roll ? `translate(${A[0]}px, ${A[1]}px) rotate(${L.roll.toFixed(4)}deg) translate(${-A[0]}px, ${-A[1]}px) ` : '';
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: photo.w, height: photo.h, transformOrigin: '0 0', transform: roll + place, clipPath: clip ? polygon(clip) : undefined }}>
-      <Img src={photo.src} style={{ width: photo.w, height: photo.h, display: 'block' }} />
+      <Img src={photo.src} style={{ width: photo.w, height: photo.h, display: 'block', objectFit: 'cover', objectPosition: `${((photo.focus?.[0] ?? 0.5) * 100).toFixed(1)}% ${((photo.focus?.[1] ?? 0.5) * 100).toFixed(1)}%` }} />
     </div>
   );
 };

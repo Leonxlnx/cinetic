@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill } from 'remotion';
+import { AbsoluteFill, staticFile } from 'remotion';
 import { U } from '../brand/tokens';
 import { DEAL } from '../deal';
 import { Defocus, DirBlur } from '../fx/Defocus';
@@ -28,10 +28,10 @@ export const PILL_BOX = { w: 1240 * U, h: 164 * U, cx: W / 2, cy: 640 * U } as c
 /** The pill's own content (the people who asked, the insight): drawn by the feed as the morph lands and by the insight after it. */
 export const PillContent: React.FC<{ chip?: number; opacity?: number }> = ({ chip = 0, opacity = 1 }) => {
   const t = themeOf('insight');
-  const people = WALK.feed.rows.slice(0, 3).map((r) => ({ initials: r.initials, seed: r.who }));
+  const people = WALK.feed.rows.slice(0, 3).map((r) => ({ initials: r.initials, seed: r.who, src: facePhoto(r) })); // a real portrait, else the initials
   return (
     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', gap: 30 * U, padding: `0 ${36 * U}px`, boxSizing: 'border-box', opacity }}>
-      <AvatarStack theme={t} people={people} size={96 * U} ring={t.surface} kind="portrait" />
+      <AvatarStack theme={t} people={people} size={96 * U} ring={t.surface} kind="monogram" />
       <span data-text="insight-text" style={{ ...face(KIT_TYPE.body * U * 1.3, 620, t.text, -0.02), flex: 1 }}>
         {WALK.insight.text}
       </span>
@@ -50,12 +50,17 @@ export const COUNT = growthSteps(CUE.count, WALK.feed.total, { within: CUE.land 
 const countAt = (F: number) => COUNT.filter((s) => fd(F) >= s.at).pop()?.value ?? 0;
 /** The feed row shown at list index i (the key row lands on index landRow). */
 const rowOf = (i: number) => WALK.feed.rows[(((i - FEED.landRow + WALK.feed.key) % WALK.feed.rows.length) + WALK.feed.rows.length) % WALK.feed.rows.length];
+/** A feed row's real portrait (walk.ts photos.people, in row order) as a staticFile URL, or undefined: the row then shows its initials. */
+export const facePhoto = (row: (typeof WALK.feed.rows)[number]): string | undefined => {
+  const ph = (WALK.photos.people as readonly string[])[WALK.feed.rows.indexOf(row)];
+  return ph ? staticFile(ph) : undefined;
+};
 
 /** The product's screen of what it reads: a support-desk world (kit/data.ts) whose rows are the feed's people and words. */
 export const readWorld = (): SampleWorld => {
   const w = sampleWorld(`${WALK.name}:read`, { kind: 'support', rows: Math.max(12, WALK.feed.rows.length + 3) });
   const n = Math.min(WALK.feed.rows.length, w.people.length);
-  const people = w.people.map((p, i) => (i < n ? { ...p, name: WALK.feed.rows[i].who, first: WALK.feed.rows[i].who.split(' ')[0], initials: WALK.feed.rows[i].initials } : p));
+  const people = w.people.map((p, i) => (i < n ? { ...p, name: WALK.feed.rows[i].who, first: WALK.feed.rows[i].who.split(' ')[0], initials: WALK.feed.rows[i].initials, photo: facePhoto(WALK.feed.rows[i]) } : p));
   const records = w.records.map((r, i) => (i < WALK.feed.rows.length ? { ...r, title: WALK.feed.rows[i].text, who: i % people.length } : r));
   return { ...w, people, records, focus: WALK.feed.key };
 };
@@ -79,7 +84,7 @@ const Item: React.FC<{ i: number; on: number; row?: (typeof WALK.feed.rows)[numb
   const r = row ?? rowOf(i);
   return (
     <div data-ui style={{ position: 'relative', width: FEED.w, height: FEED.h, borderRadius: 30 * U, background: t.surface, boxShadow: `${surfaceShadow(t, mix(10, 30, on), U)}, inset 0 0 0 ${(3 * U * on).toFixed(2)}px ${t.accent}`, display: 'flex', alignItems: 'center', gap: 28 * U, padding: `0 ${36 * U}px`, boxSizing: 'border-box' }}>
-      <Avatar theme={t} i={i} initials={r.initials} seed={r.who} size={92 * U} kind="portrait" />
+      <Avatar theme={t} i={i} initials={r.initials} seed={r.who} size={92 * U} src={facePhoto(r)} kind={facePhoto(r) ? 'portrait' : 'monogram'} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 * U }}>
         <span data-text={`feed-who-${i}`} style={face(KIT_TYPE.label * U, 600, t.mute)}>
           {r.who}
@@ -117,7 +122,7 @@ export const Feed: React.FC = () => {
       // the cut: the whip lands on content
       <div style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', transform: `translate3d(0, ${(80 * U).toFixed(2)}px, 0) scale(1.08)` }}>
         <ContentTicker
-          nodes={WALK.feed.rows.map((r, i): TileNode => ({ glyph: 'chat', label: r.who, sub: r.text, preview: 'person', seed: `${r.who}:${i}` }))}
+          nodes={WALK.feed.rows.map((r, i): TileNode => ({ glyph: 'chat', label: r.who, sub: r.text, preview: facePhoto(r) ? 'person' : 'doc', photo: facePhoto(r), seed: `${r.who}:${i}` }))}
           frame={F}
           start={ACT.feed.from - Math.round(f60x(150))}
           tile={390 * U}

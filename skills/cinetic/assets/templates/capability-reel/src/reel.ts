@@ -35,8 +35,14 @@ export const REEL = {
     { label: '[Source nine]', logo: '[source-nine]', glyph: 'braces' },
     { label: '[Source ten]', logo: '[source-ten]', glyph: 'search' },
   ] as { label: string; logo?: string; glyph: GlyphName }[],
-  /** One real record the product returns: a picture, its fields, three tags and one measure. */
+  /**
+   * One real record the product returns: a picture, its fields, three tags and one measure. `photo` is the record's
+   * real picture, a public/ path (the product's own, or node scripts/assets.mjs search "<the record's subject>" --kind
+   * photo --no-people [--fit 4:5], get '#n' --to public/assets, grade): a person, a place or a product is a photograph,
+   * never drawn. Empty, the picture slot shows the file it is (kit FileThumb) until the photo is in.
+   */
   record: {
+    photo: '' as string,
     rows: [
       { label: '[Field]', value: '[Value]' },
       { label: '[Field]', value: '[Value]' },

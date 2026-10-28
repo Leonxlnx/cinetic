@@ -56,8 +56,9 @@
  "next": [
   "prompt run: fill src/run.ts (the script in plain words: line 1 says what the product is, 2-7 words a line, and the product's own",
   "  request, model, people, status, steps and result in every [slot]); the tools it really connects as real marks:",
-  "  node scripts/logos.mjs get <name> --film . for each, their slugs in run.ts tools; rebuild the product's real request box",
-  "  and run view where the kit stands in, then deal its direction:",
+  "  node scripts/logos.mjs get <name> --film . for each, their slugs in run.ts tools;",
+  "  real portraits of the people the work is for (run.ts photos.people) and the result's picture when it is one (photos.result): node scripts/assets.mjs search \"<subject>\" --kind photo --people --fit 1:1, sheet, get '#n' --to public/assets, grade; never a drawn face;",
+  "  rebuild the product's real request box and run view where the kit stands in, then deal its direction:",
   "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3"
  ],
  "copy": [

@@ -49,6 +49,7 @@
   "update film: fill src/update.ts (the version, the one before it, 2-4 changes: one plain sentence each, 2-6 words, the result the user sees; \"[]\" where a product it works with sits, its logo slug and logoName),",
   "  fetch the real mark of each product a change names: node scripts/logos.mjs get <name> --film .,",
   "  see the devices this film was dealt: npx tsx -e \"import { DEAL, LINES } from './src/deal'; console.log(DEAL, LINES)\" (src/deal.ts: PIN a slot, or SEED to re-deal),",
+  "  an approve change's four real pictures (update.ts changes[].photos) when the review is of pictures: node scripts/assets.mjs search \"<subject>\" --kind photo --fit 1:1, get '#n' --to public/assets, grade,",
   "  rebuild the product's own screens for each change where the kit stands in, then deal its direction: python3 scripts/deck.py --brief \"<one line>\" --format update --changes N"
  ],
  "deal": {

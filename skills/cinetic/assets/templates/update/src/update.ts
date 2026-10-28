@@ -20,7 +20,8 @@ export type Moment = 'approve' | 'chat' | 'count' | 'budget' | 'table';
  * <name> --film .), `logoName` how the product's name is written (read in the mark's place; shown as a chip with the
  * name until the mark is fetched).
  */
-export type Change = { id: string; words: string; moment: Moment; logo?: string; logoName?: string };
+/** photos: the real pictures the moment shows (public/ paths): the four selects an 'approve' review approves. Empty, they show as the files they are. */
+export type Change = { id: string; words: string; moment: Moment; logo?: string; logoName?: string; photos?: string[] };
 
 export const UPDATE: { name: string; from: string; version: string; changes: Change[] } = {
   name: IDENTITY.name,

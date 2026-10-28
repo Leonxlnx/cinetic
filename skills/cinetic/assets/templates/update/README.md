@@ -20,7 +20,8 @@ settling after the name as one lockup); every line is dealt a move and an exit.
 - `src/update.ts`: the version, the version before it and the changes (`words`: one plain sentence, 2-6
   words, a result the user sees; `moment`: how it is shown; a change that works with another product puts "[]" where
   its real mark sits in the sentence, with `logo`, the mark's slug from `node scripts/logos.mjs get <name> --film .`,
-  and `logoName`). Delete its placeholder lines.
+  and `logoName`; an `approve` change's `photos` are the four real pictures its review approves, public/ paths from
+  `node scripts/assets.mjs get`, else they show as the files they are). Delete its placeholder lines.
 - The product moments: `src/kit` is the floor (a review approved, a reply landing, a figure climbing, a
   budget entry, a dense table whose readable row travels to the row that changed). Rebuild the product's own screens for film (every size x1.9, nothing under 36 px) and
   give each change its real state change on its hit frame.

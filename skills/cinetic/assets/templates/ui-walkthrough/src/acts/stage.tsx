@@ -39,6 +39,8 @@ export const themeOf = (a: ActName): KitTheme => (toneOf(a) === 'light' ? LIGHT 
  * One clean ground per act, dealt from the film's seed: the flat base or the subtle key gradient (fx/Grounds CLEAN_KINDS)
  * on one of two bases of the act's stage, so the place changes across the cut and no ground (kind and base) holds more
  * than two consecutive acts. The feed and the insight share theirs: one place across the morph. No plates, no pools.
+ * One act (the first of proof, pick or field on paper; on a dark stage the proof) stands on the tilted tint instead:
+ * the accent's colour gathering along one edge of the page, the one colour ground of the film.
  */
 export const GROUNDS: Record<ActName, GroundSpec> = (() => {
   const rnd = seeded((DEAL_SEED % 1e6) * 7919 + 17);
@@ -61,6 +63,11 @@ export const GROUNDS: Record<ActName, GroundSpec> = (() => {
     out[a] = { ...pick, lift: tone === 'light' ? 0.04 : 0.06, seed: Math.floor(rnd() * 1e6), drift: 12 };
     keys.push(groundKey(out[a]));
   }
+  // one colour ground where the structure is a page of parts: the first light act of proof, pick or field (on a dark
+  // stage, the proof) takes the tilted tint (fx/Grounds 'tint': the base over a third, the accent's tint gathering
+  // along one tilted edge)
+  const lit = (['proof', 'pick', 'field'] as ActName[]).find((a) => toneOf(a) === 'light') ?? 'proof';
+  out[lit] = { kind: 'tint', base: out[lit].base, seed: out[lit].seed, drift: 12 };
   return out;
 })();
 

@@ -83,6 +83,15 @@ export const WALK = {
   build: { label: '[Building your output]' },
   /** The output, live: the page the product made. */
   page: { headline: '[Your page headline]', sub: '[The promise in one line]', cta: '[Get it]', rows: ['[Section one]', '[Section two]', '[Section three]'] },
+  /**
+   * Real photographs, public/ paths (node scripts/assets.mjs search "<subject>" --kind photo [--people | --no-people]
+   * [--fit 1:1], then get '#n' --to public/assets and grade): `people` are the feed's faces in row order (one real
+   * portrait per person, --people --fit 1:1; the first two also stand beside the card), `results` the found items'
+   * pictures when they are pictures (a clip's frame, a product, a place: --no-people), `input` the input's own picture
+   * when its source has no mark. Empty, the people show as the product's initials, the results as its own tiles and the
+   * input as its initials: never a drawn face or thing (lint-film and the layout audit fail one).
+   */
+  photos: { people: [] as string[], results: [] as string[], input: '' as string },
 } as const;
 
 /** A line as it is read: its object slot "[]" read as the word it stands for (`object`; none: the slot is a picture). */

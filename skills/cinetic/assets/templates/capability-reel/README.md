@@ -28,7 +28,10 @@ sentence's full stop, the end card. State changes are hard steps; only the camer
   the product really reads from or works with; a capability that is another product takes its mark in the ticker too.
   Look at `npx remotion still KitLogos` at half size first.
 - The record: `acts/Record.tsx` draws kit parts (`DataRow`, `Chip`, `Meter`, a `Photo`) as the floor; rebuild the
-  product's real output at film size (every web size x1.9, nothing under 36 px).
+  product's real output at film size (every web size x1.9, nothing under 36 px). Its picture is `record.photo`, a real
+  photograph of the record's subject (the product's own, or `node scripts/assets.mjs search "<subject>" --kind photo
+  --no-people --fit 4:5`, `get`, `grade`); until it is in, the slot shows the file it is, never a drawn object. The
+  statement's page carries the tilted tint (`fx/Washes` `tilted`): the accent's colour along one edge.
 - The brand: `--brand <kit>` writes the tokens, the logo's parts and the name. The claim sits on the brand's accent
   (declared in `COLOUR`); every other ground is neutral.
 - The direction: deal it (`python3 scripts/deck.py --brief "..." --format launch --have ui --options 3`) and retell

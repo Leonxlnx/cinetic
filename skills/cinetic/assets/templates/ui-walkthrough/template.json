@@ -20,6 +20,7 @@
  "next": [
   "ui walkthrough: fill src/walk.ts (the script in plain words: line 1 says what the product is, with [] where the input's source mark sits; 2-7 words a line; the product's own strings and numbers in every [slot]),",
   "  fetch the input's source mark: node scripts/logos.mjs get <name> --film . (its slug in walk.ts input.source, its name in input.sourceName),",
+  "  real portraits of the feed's people (walk.ts photos.people, row order) and pictures of the found items when they are pictures (photos.results): node scripts/assets.mjs search \"<subject>\" --kind photo --people --fit 1:1, sheet, get '#n' --to public/assets, grade; never a drawn face,",
   "  see the devices this film was dealt: npx tsx -e \"import { DEAL } from './src/deal'; console.log(DEAL)\" (src/deal.ts: PIN a slot, or SEED to re-deal),",
   "  rebuild the product's real screens in src/acts where the kit stands in, then deal its direction:",
   "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3 (references/templates.md)"

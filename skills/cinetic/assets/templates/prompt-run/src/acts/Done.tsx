@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill } from 'remotion';
+import { AbsoluteFill, staticFile } from 'remotion';
 import { U } from '../brand/tokens';
 import { AccentClaim, inkOn } from '../fx/TypeClaim';
 import { Notice, surfaceShadow } from '../kit';
@@ -33,7 +33,7 @@ const lastRow = () => {
 
 const Result: React.FC<{ w: number; h: number; o?: number; dy?: number }> = ({ w, h, o = 1, dy = 0 }) => (
   <div style={{ position: 'absolute', inset: 0, opacity: o, transform: `translate3d(0, ${dy.toFixed(2)}px, 0)` }}>
-    <Notice theme={PAGE} w={w} h={h} glyph={RUN.result.glyph} title={RUN.result.title} body={RUN.result.body} meta={RUN.result.meta} id="result" />
+    <Notice theme={PAGE} w={w} h={h} glyph={RUN.result.glyph} title={RUN.result.title} body={RUN.result.body} meta={RUN.result.meta} id="result" photo={RUN.photos.result ? staticFile(RUN.photos.result) : undefined} />
   </div>
 );
 

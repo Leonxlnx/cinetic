@@ -13,7 +13,8 @@ import { LOGO } from '../brand/logo';
 import { bakePlate } from '../fx/Gradients';
 import { dealGrounds, type GroundSpec, LitGround } from '../fx/Grounds';
 import { shadowTone } from '../fx/KeyLight';
-import { ContentTile, kitTheme, logoName, Photo, sampleWorld, shadeRgba, type TileNode, worldNodes } from '../kit';
+import { type Pic, PhotoCard } from '../fx/Pictures';
+import { ContentTile, kitTheme, logoName, sampleWorld, type TileNode, worldNodes } from '../kit';
 import { clamp, E, prog } from '../lib/anim';
 import { carry, launch } from '../lib/handoff';
 import { mixColor } from '../lib/color';
@@ -50,13 +51,14 @@ export const nodeAt = (i: number) => NODES[((i % NODES.length) + NODES.length) %
  * One piece of the product's content at w x h: its content tile (kit ContentTile: its mark or glyph, its label, a
  * preview of what it holds), or, when its content is pictures (ad.ts pictures: real photographs), that photograph.
  */
+/** The ad's photographs (ad.ts pictures) as fx/Pictures sources: a nominal 4:5 size, cover-fitted to each card. */
+export const PICS: Pic[] = (AD.pictures as readonly string[]).map((p) => ({ src: staticFile(p), w: 1000, h: 1250 }));
 export const Item: React.FC<{ i: number; w: number; h?: number; lift?: number; theme?: typeof PAGE }> = ({ i, w, h, lift = 16, theme = PAGE }) => {
-  const pics = AD.pictures as readonly string[];
   const hh = h ?? w;
-  if (pics.length)
+  if (PICS.length)
     return (
-      <div data-ui style={{ width: w, height: hh, borderRadius: Math.min(w, hh) * 0.06, overflow: 'hidden', boxShadow: `0 ${(10 * U).toFixed(1)}px ${(30 * U).toFixed(1)}px ${shadeRgba(theme, 0.16)}` }}>
-        <Photo theme={theme} w={w} h={hh} seed={i * 7 + 3} src={staticFile(pics[i % pics.length])} />
+      <div style={{ position: 'relative', width: w, height: hh }}>
+        <PhotoCard photo={PICS[((i % PICS.length) + PICS.length) % PICS.length]} frame={0} x={w / 2} y={hh / 2} w={w} h={hh} shadow={Math.min(1, lift / 16)} />
       </div>
     );
   return <ContentTile node={nodeAt(i)} theme={theme} w={w} aspect={w / hh} lift={lift} />;

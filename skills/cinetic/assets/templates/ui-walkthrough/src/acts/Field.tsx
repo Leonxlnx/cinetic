@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill } from 'remotion';
+import { AbsoluteFill, staticFile } from 'remotion';
 import { U } from '../brand/tokens';
 import { Cursor, cursorRise, pressAt } from '../fx/Cursor';
 import { DirBlur } from '../fx/Defocus';
@@ -71,7 +71,9 @@ export const Field: React.FC = () => {
   const flash = F >= CUE.press ? hitPulse(F - CUE.press, 2, 8, FPS) : 0;
   const erased = F >= CUE.typeIn - 1;
   const tile = (fieldW - (GRID.cols - 1) * GRID.gap) / GRID.cols;
-  const nodes: TileNode[] = WALK.results.map((r, i) => ({ glyph: (['play', 'doc', 'chart', 'list', 'image', 'table'] as const)[i % 6], label: r.title, sub: r.meta, value: r.badge, preview: (['chart', 'doc', 'list', 'table', 'bars', 'person'] as const)[i % 6], seed: `${WALK.name}:result:${i}` }));
+  // a found item that is a picture shows its real photo (walk.ts photos.results); the rest show the product's own previews
+  const shots = WALK.photos.results as readonly string[];
+  const nodes: TileNode[] = WALK.results.map((r, i) => ({ glyph: (['play', 'doc', 'chart', 'list', 'image', 'table'] as const)[i % 6], label: r.title, sub: r.meta, value: r.badge, preview: shots[i] ? 'photo' : (['chart', 'doc', 'list', 'table', 'bars', 'code'] as const)[i % 6], ...(shots[i] ? { photo: staticFile(shots[i]) } : {}), seed: `${WALK.name}:result:${i}` }));
   return (
     <AbsoluteFill style={{ background: GROUNDS.field.base, overflow: 'hidden' }}>
       <DirBlur v={whipV} axis="y" id="field-whip">

@@ -9,7 +9,7 @@ the field leaving, a rush.
 **The shape.** What it is, everything it holds, the mark, what you find in it, what you use it for, two imperatives, the
 lockup. The picture is the product's own content built in code: its items as content tiles (kit `ContentTile`: a
 glyph or the real mark of a product it works with, a label, a sub line, a preview of what it holds), its own dense
-screen, the real marks of what it touches. Where that content is pictures (a recipe, an outfit, a room, a trip), the cards are real photographs (`ad.ts` `pictures`: the product's own, the user's, or free ones that need no credit, `scripts/assets.mjs`), never drawn.
+screen, the real marks of what it touches. Where that content is pictures (a recipe, an outfit, a room, a trip), the cards are real photographs (`ad.ts` `pictures`: the product's own, the user's, or free ones that need no credit, `scripts/assets.mjs`), never drawn: rounded photo cards with a rim and a contact shadow (`fx/Pictures` `PhotoCard`), and the label's rivers run them on two curves round the chip, sharp near it and soft away from it (`ArcRiver`).
 
 **The devices.** Each slot tells its beat one of two or three ways, dealt per film from the name (`src/deal.ts`,
 template.json `deal`), so no two ads from this template run one fixed sequence. `ad.ts` `seed` re-deals, `devices`

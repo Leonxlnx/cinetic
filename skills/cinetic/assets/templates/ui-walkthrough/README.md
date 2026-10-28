@@ -36,8 +36,13 @@ speed on a dealt exit (slide, spread, collapse, push or drop); `MOVE_PIN` and `E
 - The input's source: `input.source` is the slug of the real mark of the product the input lives on; fetch it with
   `node scripts/logos.mjs get <name> --film .` (a chip with `input.sourceName` stands in until then). Only a product
   the input really comes from.
-- The product: the acts draw kit parts (dense screens, notices, rows, content tiles, crafted portraits) as the floor;
-  rebuild the product's real screens at film size where they differ. No stock pictures: the UI is built in code.
+- The product: the acts draw kit parts (dense screens, notices, rows, content tiles) as the floor; rebuild the
+  product's real screens at film size where they differ. The UI is built in code, with the product's real words.
+- The people and pictures: `photos.people` are real portraits of the feed's people in row order (`node scripts/assets.mjs
+  search "<person> portrait" --people --fit 1:1`, `get`, `grade`); the first two also stand beside the card.
+  `photos.results` are the found items' pictures when they are pictures (a clip's frame, a product, a place), and
+  `photos.input` the input's own picture when its source has no mark. Empty, people show as the product's initials
+  and results as the product's own tiles: never a drawn face (lint-film and the layout audit fail one).
 - The brand: `--brand <kit>` writes the tokens, the logo's parts and the name; without a kit, replace the
   placeholders by hand.
 - The direction: deal it (`python3 scripts/deck.py --brief "..." --format launch --have ui --options 3`) and retell

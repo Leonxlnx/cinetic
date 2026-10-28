@@ -2,6 +2,7 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { TYPE, typeStyle, U } from '../brand/tokens';
 import { resizeState } from '../fx/Resize';
+import { Wash } from '../fx/Washes';
 import { Words } from '../fx/Words';
 import { surfaceShadow } from '../kit';
 import { lmix } from '../lib/anim';
@@ -12,8 +13,8 @@ import { ACT, copy, CUE, f60x, FPS, H, W } from '../timeline';
 import { cardBox } from './Record';
 import { LIGHT, lineSize, useAbs } from './stage';
 
-// STATEMENT - the cut lands on a kick: a light card opens at the record's size and squashes round one line of type
-// in a few frames (fx/Resize carry: front-loaded from the cut), its words popping in a word gap apart. The hold
+// STATEMENT - the cut lands on a kick: on a page whose tint gathers along one tilted edge, a light card opens at the
+// record's size and squashes round one line of type in a few frames (fx/Resize carry: front-loaded from the cut), its words popping in a word gap apart. The hold
 // counter-creeps (the line in, the card and its grid out), then everything zooms out, accelerating into the cut;
 // the ticker opens still zooming out.
 
@@ -35,6 +36,8 @@ export const Statement: React.FC = () => {
   const starts = Array.from({ length: n }, (_, i) => c.in + Math.floor(f60x(8) * i));
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
+      {/* the paper has a direction: the accent's tint gathers along one tilted edge (fx/Washes tilted), the light card stands clear on it */}
+      <Wash frame={F} kind="tilted" paper={t.ground} drift={0.003} />
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: '50% 50%', transform: `scale(${(cc.ground * out).toFixed(5)})` }}>
         {/* the paper's grid follows the card, on the record's pitch */}
         <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0 }} aria-hidden>
