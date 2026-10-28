@@ -1121,7 +1121,7 @@ async function vetGroups(groups, report, o, cache) {
     const have = files.map((f, i) => (f ? i : -1)).filter((i) => i >= 0);
     const res = vetFiles(have.map((i) => files[i]));
     if (res) { reads = new Array(all.length).fill(null); have.forEach((i, k) => { reads[i] = res[k]; }); }
-    else note = 'thumbnails not read: the project\'s Python needs numpy and opencv-python (docs/setup.md); people and text are judged from the records\' words';
+    else note = 'thumbnails not read: the project\'s Python needs numpy and opencv-python (pip install -r scripts/requirements.txt, then node scripts/py.mjs --check); people and text are judged from the records\' words';
     if (res && !res.some((r) => r && r.faces !== null)) note = 'faces: this OpenCV has no face model, so people are judged from the records\' words; look at the sheet';
   }
   const at = new Map(all.map((it, i) => [it, reads?.[i] ?? null]));
@@ -1213,7 +1213,7 @@ async function cmdSheet(args) {
     const cache = `${args._[0].replace(/\.json$/i, '')}.thumbs`; fs.mkdirSync(cache, { recursive: true });
     const files = await mapLimit(items, 6, (it) => fetchThumb(it, cache));
     const scan = Math.round(num(args, 'scan', 1, 1, 8));
-    const label = (it) => `#${it.n} ${it.source} ${it.width ? `${it.width}x${it.height}` : ''} ${it.kind === 'video' ? `video ${it.duration ? `${Math.round(it.duration)}s` : ''}` : ''} ${it.licence}${it.people ? ' P' : ''}${it.textLines ? ' T' : ''}${it.soft ? ' soft' : ''}`;
+    const label = (it) => `#${it.n} ${it.source} ${it.width ? `${it.width}x${it.height}` : ''} ${it.kind === 'video' ? `video ${it.duration ? `${Math.round(it.duration)}s` : ''}` : ''} ${it.licence}${it.people ? ' P' : ''}${it.textLines ? ' T' : ''}${it.soft ? ' soft' : ''}${it.title ? ` ${it.title}` : ''}`; // the title last: the cell clips it
     // --scan N on a video search: N frames read straight from each clip's preview stream (nothing is downloaded whole)
     const scanned = scan > 1 ? await mapLimit(items, 2, async (it, k) => {
       const url = it.kind === 'video' ? it.preview || it.image : null;
