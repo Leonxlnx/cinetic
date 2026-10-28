@@ -110,7 +110,7 @@ Read `references/brand-and-color.md` (and `references/brand-kits.md` with a kit,
 Read `references/music.md` now. The track is chosen before the timeline; the picture is cut to it.
 - **Find it for this film:** a licensed, human-made, instrumental track chosen by the film's mood and pace, under a licence that needs no credit. The personality row (`references/sound.md` §5.5a) gives the brief (mood words, a tempo range, an entry for the reveal, a break, an ending); `node scripts/music.mjs search --mood "<the brief's words>" --bpm <range> --length <s>` searches the free catalogs and ranks by mood, tempo, length and energy curve.
 - **Audition three, keep one:** `node scripts/music.mjs sheet --measure` lists the first three with mood, tempo, length and energy curve (intro, break and entry, ending); listen to them, choose by the brief, name the runner-up in the delivery note. Never a track an earlier film used: the finder holds them back and never offers the same track first twice in a row (`~/.cinetic/music-history.json`). With a curated music library (`--library` or `~/.cinetic/music-library.json`), `node scripts/music.mjs pick --mood "<words>" --bpm <range> --length <s>` ranks its analysed, listened tracks instead, each with its cut points (`references/music.md` §4).
-- **Download it with its record:** `node scripts/music.mjs get #n --to audio/music` writes `<name>.licence.json` (the licence page read again now); a track found elsewhere is recorded as you download it with `python3 scripts/audio/track.py add <file> --title … --artist … --source … --page … --licence … --seen-quote "<as read on the item's page now>" --seen-url …` (`new-film.sh --music` does this and sets up the launch kit).
+- **Download it with its record:** `node scripts/music.mjs get #n --to audio/music` writes `<name>.licence.json` (the licence page read again now); a track found elsewhere is recorded as you download it with `python3 scripts/audio/track.py add <file> --title … --artist … --source … --page … --licence … --seen-quote "<as read on the item's page now>" --seen-url … --ai-generated no --vocals no` (those two as the page says: the gate refuses them unchecked; `new-film.sh --music` does this and sets up the launch kit).
 - **Analyse, edit, grid:** `track.py analyze <file>`, `track.py edit --bars N --reveal-bar K --end stop|button|ring` (K: the biggest reveal, about 75–90% in), `track.py grid` (writes `src/music.ts`; `npm run music` repeats them).
 - **Gate:** `track.py check` passes (licence record, joins, nothing from the track in git); the downbeat is confident, confirmed by the biggest low-band entrance, or its phase set by hand; the reveal bar holds an entry.
 
@@ -232,6 +232,7 @@ The full catalogue of tells, each with its fix, is `references/taste-and-slop.md
 
 ```ts
 import { bar, MUSIC } from './music';                 // written by track.py grid
+const GRID_BPM = 120;                                  // the film's own grid until a track is in (new-film.sh --bpm)
 export const BPM = MUSIC?.bpm ?? GRID_BPM;             // the track's tempo once it is in
 export const BEAT = (60 / BPM) * FPS;                  // fractional with a track; b() rounds
 export const b = (n: number, beat = 0, sub = 0) =>     // whole frames within 0.5 f of the music
