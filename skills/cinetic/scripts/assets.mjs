@@ -9,6 +9,7 @@
  *
  *   node scripts/assets.mjs search "<query>" [--kind photo|video|texture|art] [--source all|<list>]
  *        [--orientation landscape|portrait|square] [--min-width 1600] [--colour blue|teal|mono|#2f6f8f]
+ *        [--people | --no-people] [--clean] [--fit 4:5] [--no-vet]
  *        [--limit 8] [--allow-credit] [--out out/assets/<name>.json] [--json] [--no-check]
  *   node scripts/assets.mjs sheet <results.json | image files | folders> [--pick 1,4,7] [--scan 6] [--cols 4] [--cell 400] [--out x.png]
  *   node scripts/assets.mjs get <ref|#n>[,<ref|#n>...] --to <film>/public/assets [--from results.json] [--name stem]
@@ -19,12 +20,23 @@
  *   node scripts/assets.mjs probe <files...> [--json]
  *   node scripts/assets.mjs looks | licences [--to <film>/public/assets]
  *
- * Sources without keys: Openverse (cc0 and public-domain marks only: StockSnap, the WordPress photo directory,
- * rawpixel, Flickr, museums), Wikimedia Commons (public domain and CC0 only, stills and video), NASA's image and
- * video library (public domain), the Art Institute of Chicago and The Metropolitan Museum of Art open access
- * (CC0), Mixkit stock video (its free licence; items under its restricted licence are refused). With a key in
- * the environment: PEXELS_API_KEY (photos and video), UNSPLASH_ACCESS_KEY (photos), PIXABAY_API_KEY (photos and
- * video). Keys are read from the environment only and never printed or written anywhere.
+ * Sources without keys: Burst (Shopify's free stock photos: people, products, lifestyle, places; its licence
+ * needs no credit, read on each photo's page), ISO Republic (CC0 photos, read on each photo's page), Coverr (free
+ * stock video of people, places and work; Coverr+ and AI-generated clips are refused), Mixkit stock video (its free
+ * licence; items under its restricted licence are refused), Openverse (cc0 and public-domain marks only: StockSnap,
+ * the WordPress photo directory, rawpixel, Flickr, museums), Wikimedia Commons (public domain and CC0 only, stills
+ * and video), NASA's image and video library (public domain), the Art Institute of Chicago and The Metropolitan
+ * Museum of Art open access (CC0). With a key in the environment: PEXELS_API_KEY (photos and video),
+ * UNSPLASH_ACCESS_KEY (photos), PIXABAY_API_KEY (photos and video). Keys are read from the environment only and
+ * never printed or written anywhere. Checked and dropped (2026-10-28): StockSnap's own API and Kaboompics answer a
+ * script with a bot check, and Pexels, Pixabay and Unsplash pages without a key do too; Openverse still indexes
+ * StockSnap. Nothing here solves or works round a login, key or bot check.
+ *
+ * Vet. After the size check, search reads each candidate's thumbnail (the sheet reuses them): people (the record's
+ * own words, and frontal faces where the Python's OpenCV has a face model), readable text or a watermark (like.py's
+ * text reader) and detail (soft or noisy thumbnails sink). --people keeps pictures with people, --no-people drops
+ * them, --clean drops pictures with text, signs, logos or a watermark, --fit 4:5 keeps pictures that still hold
+ * --min-width px after a crop to that shape. --no-vet skips the thumbnail reads (words only).
  *
  * Licences. The default takes only licences that need no credit: cc0, public domain, the Pexels, Unsplash and
  * Pixabay licences and Mixkit's free video licence, so a film never has to show credits. --allow-credit adds
@@ -41,7 +53,8 @@
  * toward the look (0 = the picture as it is, 1 = the look); --chroma scales the colour after it.
  * After grading, the set is measured (`check` runs the same on any set): the share of neutral pixels (OKLCH
  * C < .03) must be at least 30 %, and no picture may show a banned colour region (orange/amber, beige/cream,
- * purple/violet, neon: the film's banned-hue test) on 0.5 % of a frame, or grade exits 3 with what to change;
+ * purple/violet, neon: the film's banned-hue test) on 0.5 % of a frame, or grade exits 3 with what to change
+ * (natural tones, skin of every shade, hair, wood, sand, never count: they are the world's colour, not designed);
  * frames more than half saturated, the pictures' own share of the accent's hue, a set under the film's
  * saturated floor (4.5 %), pictures that do not match the set and readable text or logos in the pictures
  * are reported as notes.
@@ -59,6 +72,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 export const UA = 'cinetic-assets/1.2 (film imagery search; +https://github.com/Leonxlnx/cinetic)';
 const AIC_HEADERS = { 'AIC-User-Agent': UA };
 const CHECKED = '2026-10-24';
+const CHECKED_NEW = '2026-10-28'; // Burst, Coverr and ISO Republic: licence pages read on this day
 
 // ------------------------------------------------------------------------------------------------ licences
 /**
@@ -79,6 +93,13 @@ export const LICENCES = {
   pixabay: { name: 'Pixabay Content License', url: 'https://pixabay.com/service/license-summary/', credit: false,
     limits: 'no standalone resale; recognisable people, logos and brands need their own clearance',
     seen: { quote: 'Use Content without having to attribute the author (although giving credit is always appreciated by our community!)', url: 'https://pixabay.com/service/license-summary/' } },
+  burst: { name: 'Burst Some Rights Reserved', url: 'https://www.shopify.com/stock-photos/licenses/shopify-some-rights-reserved', credit: false,
+    limits: 'never sell the photo as a file; never compile the photos into a similar or competing service; recognisable people and brands need their own clearance',
+    seen: { quote: 'You are free to adapt and use this Licensed Photo for free for commercial and noncommercial purposes ... You do not need to provide attribution to the photographer, Shopify or Burst', url: 'https://www.shopify.com/stock-photos/licenses/shopify-some-rights-reserved', date: CHECKED_NEW } },
+  coverr: { name: 'Coverr License (free clips)', url: 'https://coverr.co/license', credit: false,
+    limits: 'free clips only; never compile the clips into a similar service; never use them to train AI; people, brands and landmarks in a clip need their own clearance',
+    seen: { quote: "You may use Coverr.co's videos and music for both commercial and non-commercial purposes at no cost ... You are not required to add an attribution credit to the original creator or to Coverr.co", url: 'https://coverr.co/license', date: CHECKED_NEW } },
+  'coverr-plus': { name: 'Coverr+ (subscription)', credit: false, refuse: 'a Coverr+ clip: subscribers only' },
   'mixkit-video': { name: 'Mixkit Stock Video Free License', url: 'https://mixkit.co/license/#videoFree', credit: false,
     limits: 'no standalone redistribution of the clip; the limits in Mixkit\'s user terms apply',
     seen: { quote: 'Items under the Mixkit Stock Video Free License can be used in your commercial and non-commercial projects, for free ... Attribution is not required', url: 'https://mixkit.co/license/modal/videoFree/' } },
@@ -93,11 +114,12 @@ export const LICENCES = {
 };
 /** A source whose own page states the public-domain terms (read once; kept in the record instead of the generic mark). */
 export const SOURCE_SEEN = {
-  nasa: { quote: 'NASA content - images, audio, video, and media files ... generally are not subject to copyright in the United States.', url: 'https://www.nasa.gov/nasa-brand-center/images-and-media/',
+  isorepublic: { licence: 'cc0', quote: 'All photo and video downloads on ISORepublic.com are free for both personal and commercial use and come with a CC0 license.', url: 'https://isorepublic.com/license/', date: CHECKED_NEW },
+  nasa: { licence: 'pd', quote: 'NASA content - images, audio, video, and media files ... generally are not subject to copyright in the United States.', url: 'https://www.nasa.gov/nasa-brand-center/images-and-media/',
     limits: 'no NASA insignia or logos, nothing that implies NASA endorses the product, identifiable people need their own clearance' },
 };
 /** The licences a film may use without showing a credit (the default). */
-export const NO_CREDIT = ['cc0', 'pd', 'pexels', 'unsplash', 'pixabay', 'mixkit-video'];
+export const NO_CREDIT = ['cc0', 'pd', 'pexels', 'unsplash', 'pixabay', 'mixkit-video', 'burst', 'coverr'];
 
 /** May this licence go into the film? { ok, why } with --allow-credit adding CC BY. */
 export function licenceAllowed(id, { allowCredit = false } = {}) {
@@ -157,7 +179,7 @@ export function text(v) {
   if (v === undefined || v === null) return '';
   return String(v).replace(/<(style|script)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"')
     .replace(/&#0?39;|&apos;|&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+    .replace(/&amp;/g, '&').replace(/[​-‍﻿]/g, '').replace(/\s+/g, ' ').trim();
 }
 export function slug(s, words = 7) {
   return String(s || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
@@ -173,12 +195,15 @@ async function mapLimit(items, n, fn) {
 }
 const QWORDS_SKIP = new Set(['the', 'a', 'an', 'of', 'in', 'on', 'at', 'and', 'or', 'for', 'with', 'from', 'to', 'by']);
 export const queryWords = (q) => String(q).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w && !QWORDS_SKIP.has(w));
+/** How many of the query's words a record's own text carries (a plural also matches its singular). */
+export function wordHits(words, about) {
+  const hay = String(about).toLowerCase();
+  return words.filter((w) => hay.includes(w) || (w.length > 4 && hay.includes(w.replace(/(es|s)$/, '')))).length;
+}
 /** Does a record's own text carry the query (all words, or all but one of three or more)? */
 export function onSubject(words, about) {
   if (!words.length) return true;
-  const hay = String(about).toLowerCase();
-  const hits = words.filter((w) => hay.includes(w) || (w.length > 4 && hay.includes(w.replace(/(es|s)$/, '')))).length;
-  return hits >= (words.length >= 3 ? words.length - 1 : words.length);
+  return wordHits(words, about) >= (words.length >= 3 ? words.length - 1 : words.length);
 }
 
 /** Never let a key reach a message: strip key-like query parameters and Authorization values. */
@@ -277,6 +302,9 @@ export function item(source, id, fields = {}) {
     thumb: null, image: null, width: null, height: null, bytes: null, duration: null, fps: null, licence: 'unknown', licenceVersion: null, notes: [], tags: [], ...fields };
 }
 export const SOURCES = {
+  burst: { name: 'Burst', kinds: ['photo', 'texture'], keyless: true },
+  isorepublic: { name: 'ISO Republic', kinds: ['photo', 'texture'], keyless: true },
+  coverr: { name: 'Coverr', kinds: ['video'], keyless: true },
   openverse: { name: 'Openverse', kinds: ['photo', 'texture', 'art'], keyless: true },
   commons: { name: 'Wikimedia Commons', kinds: ['photo', 'texture', 'video'], keyless: true },
   nasa: { name: 'NASA Image and Video Library', kinds: ['photo', 'texture', 'video'], keyless: true },
@@ -549,6 +577,150 @@ async function searchMixkit(q, o) {
   return items;
 }
 
+// ---------- Burst (Shopify's free stock photos, read from its public pages: no API, no key)
+export const burstUrl = (q) => `https://burst.shopify.com/photos/search?${new URLSearchParams({ q })}`;
+/** A Burst CDN address at a width (the site's own download link serves the same file at its full size). */
+export const burstImage = (slug, width) => `https://burst.shopifycdn.com/photos/${slug}.jpg?width=${Math.round(width)}&format=pjpg&exif=0&iptc=0`;
+const attr = (tag, name) => { const m = tag.match(new RegExp(`\\s${name}="([^"]*)"`)); return m ? text(m[1]) : ''; };
+/** Burst's search grid to items (slug, title, preview); the licence is read from each photo's own page. */
+export function parseBurstList(html, o = {}) {
+  const out = []; const seen = new Set();
+  for (const tag of String(html).match(/<img\b[^>]*data-photo-id="[^"]*"[^>]*>/g) || []) {
+    const src = attr(tag, 'src') || attr(tag, 'data-src');
+    const slug = (src.match(/burst\.shopifycdn\.com\/photos\/([a-z0-9-]+)\.jpe?g/i) || [])[1];
+    if (!slug || seen.has(slug)) continue; seen.add(slug);
+    const alt = attr(tag, 'alt');
+    out.push(item('burst', slug, { kind: o.kind || 'photo', title: attr(tag, 'data-photo-title') || alt || slug.replace(/-/g, ' '), page: `https://burst.shopify.com/photos/${slug}`,
+      thumb: burstImage(slug, 500), image: burstImage(slug, o.width || 2400), licence: 'unknown', notes: ['licence not read yet'], tags: alt ? [alt] : [], burstId: attr(tag, 'data-photo-id') || null }));
+  }
+  return out;
+}
+/** A Burst photo page: its licence (the link the page names), photographer and title. */
+export function parseBurstItem(html) {
+  const h = String(html);
+  const lic = (h.match(/rel="[^"]*license[^"]*"\s+href="[^"]*\/licenses\/([a-z0-9-]+)"/i) || h.match(/href="[^"]*\/licenses\/([a-z0-9-]+)"/i) || [])[1] || '';
+  let licence = 'unknown';
+  if (lic === 'shopify-some-rights-reserved') licence = 'burst';
+  else if (/cc0|creative-commons-zero|public-domain/.test(lic)) licence = 'cc0';
+  const author = text((h.match(/Photo by\s*(?:<[^>]+>\s*)*<a[^>]*>([^<]+)<\/a>/i) || h.match(/href="\/stock-photos\/@[^"]+">([^<]+)<\/a>/) || [])[1] || '');
+  const title = text((h.match(/<h1[^>]*>([\s\S]*?)<\/h1>/) || [])[1] || '').replace(/\s+Photo$/i, '');
+  return { licence, licenceSlug: lic || null, author, title };
+}
+async function searchBurst(q, o) {
+  const items = parseBurstList(await getText(burstUrl(q), { ms: 30000 }), o).slice(0, o.limit + 4);
+  await mapLimit(items, 2, async (it, k) => {
+    await sleep(250 * (k % 2)); // gentle on a site without an API
+    const html = await getText(it.page, { ms: 20000 }).catch(() => null);
+    if (!html) return;
+    const r = parseBurstItem(html);
+    Object.assign(it, { licence: r.licence, author: r.author || it.author, title: r.title || it.title, notes: r.licence === 'unknown' ? [`licence "${r.licenceSlug || 'none named'}" is not one the tool knows`] : [] });
+  });
+  return items;
+}
+
+// ---------- ISO Republic (CC0 photos, read from its public pages: no API, no key)
+export const isoUrl = (q) => `https://isorepublic.com/?${new URLSearchParams({ s: q })}`;
+/** A WordPress rendition address (name-WxH.jpg) to the original upload's. */
+export const isoOriginal = (u) => String(u).replace(/-\d+x\d+(\.(?:jpe?g|png|webp))$/i, '$1');
+/** ISO Republic's search grid to photo items (page, title, thumbnail); videos are left out. */
+export function parseIsoList(html, o = {}) {
+  const out = []; const seen = new Set();
+  const re = /<a href="(https:\/\/isorepublic\.com\/photo\/([a-z0-9-]+)\/)"[^>]*class="photo-grid-item"[\s\S]*?<\/a>/g;
+  let m;
+  while ((m = re.exec(String(html)))) {
+    const [block, page, slug] = m;
+    if (seen.has(slug)) continue; seen.add(slug);
+    const thumb = (block.match(/data-src="([^"]+)"/) || block.match(/<img src="(https:[^"]+)"/) || [])[1] || null;
+    const tw = Number((block.match(/data-eio-rwidth="(\d+)"/) || block.match(/\swidth="(\d+)"/) || [])[1]) || null;
+    const th = Number((block.match(/data-eio-rheight="(\d+)"/) || block.match(/\sheight="(\d+)"/) || [])[1]) || null;
+    const title = text((block.match(/itemprop="name">([^<]*)</) || [])[1] || (block.match(/title="([^"]*)"/) || [])[1] || slug.replace(/-/g, ' '));
+    out.push(item('isorepublic', slug, { kind: o.kind || 'photo', title, page, thumb, image: thumb ? isoOriginal(thumb) : null, aspect: tw && th ? tw / th : null, licence: 'unknown', notes: ['licence not read yet'] }));
+  }
+  return out;
+}
+/** An ISO Republic photo page: the licence statement, the download link and the renditions (largest within `width`). */
+export function parseIsoItem(html, width = 2400) {
+  const h = String(html);
+  const cc0 = /isorepublic\.com\/license\/[^>]*>\s*CC0/i.test(h) || /CC0 Creative Commons/i.test(h);
+  const download = (h.match(/<a href="(https:\/\/isorepublic\.com\/wp-content\/uploads\/[^"]+)"[^>]*btn-download/) || [])[1] || null;
+  const rends = [...new Set(h.match(/https:\/\/isorepublic\.com\/wp-content\/uploads\/[^"' )]+?-\d+x\d+\.jpe?g/g) || [])]
+    .filter((u) => !download || isoOriginal(u) === download)
+    .map((u) => { const [, w, hh] = u.match(/-(\d+)x(\d+)\.jpe?g$/); return { url: u, w: Number(w), h: Number(hh) }; });
+  const fit = rends.filter((r) => Math.max(r.w, r.h) <= width).sort((a, b) => b.w - a.w)[0] || null;
+  const title = text((h.match(/<h1[^>]*>([\s\S]*?)<\/h1>/) || [])[1] || '').replace(/\s+(free\s+)?(stock\s+)?(photo|image|picture)$/i, '');
+  return { licence: cc0 ? 'cc0' : 'unknown', download, rendition: fit, renditions: rends, title };
+}
+/**
+ * The file to take from a parsed ISO Republic page: the largest rendition whose long side is within the width, when
+ * that side is at least 1600 px (or the width); else the original upload (often 4000-6000 px and 5-10 MB).
+ */
+export const isoPick = (r, width = 2400) => {
+  const pick = r.rendition && Math.max(r.rendition.w, r.rendition.h) >= Math.min(1600, width) ? r.rendition : null;
+  return { image: pick?.url || r.download || null, width: pick?.w ?? null, height: pick?.h ?? null };
+};
+async function searchIso(q, o) {
+  const items = parseIsoList(await getText(isoUrl(q), { ms: 30000 }), o).slice(0, o.limit + 4);
+  await mapLimit(items, 2, async (it, k) => {
+    await sleep(250 * (k % 2));
+    const html = await getText(it.page, { ms: 20000 }).catch(() => null);
+    if (!html) return;
+    const r = parseIsoItem(html, o.width);
+    const p = isoPick(r, o.width);
+    Object.assign(it, { licence: r.licence, title: r.title || it.title, image: p.image || it.image, width: p.width, height: p.height, original: r.download, notes: r.licence === 'cc0' ? [] : ['the page does not state CC0'] });
+  });
+  return items;
+}
+
+// ---------- Coverr (free stock video; its pages carry the clip records as JSON: no API key used)
+export const coverrUrl = (q) => `https://coverr.co/s?${new URLSearchParams({ q })}`;
+/**
+ * The clip records in a Coverr page's embedded state (objects with a baseFilename and urls). search: only the
+ * search's own hits (the state also carries the site's promoted and AI-app clips), else every record (a clip page).
+ */
+export function coverrRecords(html, { search = false } = {}) {
+  const m = String(html).match(/<script id="ng-state" type="application\/json">([\s\S]*?)<\/script>/);
+  if (!m) return [];
+  let j; try { j = JSON.parse(m[1]); } catch { return []; }
+  if (search) j = j?.search_coverr_videos?.hits || Object.values(j || {}).filter((v) => /\/videos(\?|$)/.test(String(v?.u || '')));
+  const out = []; const seen = new Set();
+  const walk = (v, depth = 0) => {
+    if (!v || typeof v !== 'object' || depth > 14) return;
+    if (Array.isArray(v)) { for (const x of v) walk(x, depth + 1); return; }
+    if (typeof v.baseFilename === 'string' && v.urls && typeof v.id === 'string') { if (!seen.has(v.id)) { seen.add(v.id); out.push(v); } return; }
+    for (const k of Object.keys(v)) walk(v[k], depth + 1);
+  };
+  walk(j);
+  return out;
+}
+/** A Coverr clip record to an item: free clips only (Coverr+ is refused), AI-generated clips flagged (search drops them). */
+export function parseCoverrRecord(r, o = {}) {
+  const [aw, ah] = String(r.aspectRatio || '16:9').split(':').map(Number);
+  const ratio = aw > 0 && ah > 0 ? aw / ah : 16 / 9;
+  const variants = (r.defaultVariant?.renditions || []).filter((x) => x?.url && /\.mp4/.test(x.url));
+  let renditions = variants.filter((x) => !x.isPlus && x.type !== 'original').map((x) => ({ url: noQuery(x.url), type: 'video/mp4', w: Number(x.width) || null, h: Number(x.height) || null, bytes: Number(x.size) || null }));
+  if (!renditions.length && r.urls?.mp4) {
+    const tall = Boolean(r.isVertical) || ratio < 1;
+    const one = (url, side) => ({ url: noQuery(url), type: 'video/mp4', w: tall ? side : Math.round(side * ratio), h: tall ? Math.round(side / ratio) : side });
+    renditions = [one(r.urls.mp4, 1080), ...(r.urls.mp4Preview ? [one(r.urls.mp4Preview, 360)] : [])];
+  }
+  const pick = pickRendition(renditions, o.res || 1080);
+  if (!pick) return null;
+  const ai = Boolean(r.isAiGenerated);
+  return item('coverr', r.id, {
+    kind: 'video', title: text(r.title) || String(r.baseFilename).replace(/^coverr-/, '').replace(/-\d+$/, '').replace(/-/g, ' '), page: r.slug ? `https://coverr.co/videos/${r.slug}` : null,
+    thumb: r.thumbnail || r.poster || null, preview: r.urls?.mp4Preview ? noQuery(r.urls.mp4Preview) : null, image: pick.url, renditions, width: pick.w, height: pick.h, bytes: pick.bytes || null,
+    duration: Number(r.duration) || null, fps: Number(r.fps) || null, licence: r.isPremium ? 'coverr-plus' : 'coverr', ai, tags: (r.searchKeywords || r.tags || []).slice(0, 12).map(String),
+    description: text(r.description), notes: ai ? ['AI-generated, not real footage: refused'] : [],
+  });
+}
+async function searchCoverr(q, o) {
+  // Coverr's search is loose (a "pottery wheel" search returns steering wheels and yoga): keep hits whose own words
+  // carry the query, the closest first
+  const words = queryWords(q);
+  return coverrRecords(await getText(coverrUrl(q), { ms: 45000 }), { search: true }).map((r) => parseCoverrRecord(r, o)).filter(Boolean)
+    .map((it) => ({ it, n: wordHits(words, [it.title, it.description, ...it.tags].join(' ')) })).filter((x) => x.n > 0).sort((a, b) => b.n - a.n).map((x) => x.it);
+}
+
 // ---------- keyed sources (only with their key in the environment)
 export const pexelsUrl = (q, o) => (o.kind === 'video'
   ? `https://api.pexels.com/videos/search?${new URLSearchParams({ query: q, per_page: String(Math.min(40, o.limit * 2)), ...(o.orientation ? { orientation: o.orientation } : {}), size: 'large' })}`
@@ -599,7 +771,7 @@ export function parsePixabay(j, o = {}) {
 }
 async function searchPixabay(q, o) { return parsePixabay(await getJson(pixabayUrl(q, o, key('pixabay'))), o); }
 
-const RUNNERS = { openverse: searchOpenverse, commons: searchCommons, nasa: searchNasa, aic: searchAic, met: searchMet, mixkit: searchMixkit, pexels: searchPexels, unsplash: searchUnsplash, pixabay: searchPixabay };
+const RUNNERS = { burst: searchBurst, isorepublic: searchIso, coverr: searchCoverr, openverse: searchOpenverse, commons: searchCommons, nasa: searchNasa, aic: searchAic, met: searchMet, mixkit: searchMixkit, pexels: searchPexels, unsplash: searchUnsplash, pixabay: searchPixabay };
 
 // ------------------------------------------------------------------------------------------------ colour
 const HUES = { red: 25, yellow: 100, green: 145, teal: 190, cyan: 200, blue: 250, pink: 355 };
@@ -655,8 +827,8 @@ export const rgbHex = (rgb) => `#${rgb.map((v) => Math.round(v * 255).toString(1
 // ------------------------------------------------------------------------------------------------ search
 export function parseArgs(argv) {
   const VALUED = new Set(['kind', 'source', 'orientation', 'min-width', 'colour', 'color', 'limit', 'out', 'pick', 'cols', 'cell', 'to', 'from', 'name', 'width', 'res', 'trim', 'max-mb',
-    'record', 'look', 'accent', 'split-hue', 'focus', 'aspect', 'grain', 'speed', 'fps', 'suffix', 'strength', 'chroma', 'scan']);
-  const FLAGS = new Set(['allow-credit', 'json', 'no-check', 'dry-run', 'help', 'force', 'keep', 'scrub', 'brand-supplied', 'no-text']);
+    'record', 'look', 'accent', 'split-hue', 'focus', 'aspect', 'grain', 'speed', 'fps', 'suffix', 'strength', 'chroma', 'scan', 'fit']);
+  const FLAGS = new Set(['allow-credit', 'json', 'no-check', 'dry-run', 'help', 'force', 'keep', 'scrub', 'brand-supplied', 'no-text', 'people', 'no-people', 'clean', 'no-vet']);
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -703,21 +875,46 @@ export function searchOptions(args, env = process.env) {
   }
   return { kind, sources, skipped, orientation, minWidth: num(args, 'min-width', kind === 'video' ? 1280 : 1600, 0, 20000), limit: Math.round(num(args, 'limit', 8, 1, 30)),
     width: Math.round(num(args, 'width', 2400, 400, 4000)), res: Math.round(num(args, 'res', 1080, 240, 2160)), allowCredit: Boolean(args['allow-credit']),
-    colour: colourOf(args.colour), check: !args['no-check'] };
+    colour: colourOf(args.colour), check: !args['no-check'], ...vetOptions(args) };
 }
+/**
+ * The vet's options from the arguments: people (true keep only pictures with people, false drop them, null either),
+ * clean (drop text, signs, logos, watermarks), fit (a w/h a crop must keep at --min-width px), vet (read thumbnails).
+ */
+export function vetOptions(args) {
+  if (args.people && args['no-people']) throw new Usage('--people and --no-people: choose one');
+  let fit = null;
+  if (args.fit !== undefined) {
+    const [a, b] = String(args.fit).split(/[:/x]/).map(Number);
+    if (!(a > 0 && b > 0)) throw new Usage('--fit is w:h (4:5, 16:9, 1:1): the shape the picture is cropped to');
+    fit = a / b;
+  }
+  return { people: args.people ? true : args['no-people'] ? false : null, clean: Boolean(args.clean), fit, vet: !args['no-vet'] };
+}
+/** Words in a record that say people are in the picture (its title, description and tags). */
+export const PEOPLE_WORDS = /\b(person|people|persons|man|men|woman|women|girl|girls|boy|boys|child|children|kid|kids|baby|portrait|selfie|face|faces|model|couple|family|friends|team|crowd|businessman|businesswoman|student|students|worker|workers|chef|barista|athlete|dancer|doctor|nurse|teacher|hands?|smiling|smile|lady|guy|teen|teenager|mother|father)\b/i;
+/** Words that say a picture carries text, a sign, a logo or a watermark. */
+export const TEXT_WORDS = /\b(text|sign|signs|signage|logo|logos|watermark|typography|lettering|letters|quote|poster|billboard|label|menu|neon sign|headline|newspaper|screen ?shot)\b/i;
+const recordWords = (it) => [it.title, it.description, ...(it.tags || [])].filter(Boolean).join(' ');
+export const peopleWords = (it) => PEOPLE_WORDS.test(recordWords(it));
+export const textWords = (it) => TEXT_WORDS.test(recordWords(it));
+/** The width a picture keeps after a crop to the shape `fit` (w/h). Pure. */
+export const fitWidth = (w, h, fit) => Math.min(w, h * fit);
 /** A texture search asks for the surface itself. */
 export const searchQuery = (q, kind) => (kind === 'texture' && !/\b(texture|macro|surface|pattern|close[- ]?up|detail)\b/i.test(q) ? `${q} texture` : q);
 
 /** Keep what a film may use: licence, size, shape; one picture per near-duplicate title. Returns { keep, skipped }. */
 export function filterItems(items, o) {
-  const skipped = { licence: 0, small: 0, shape: 0, alike: 0, reasons: {} };
+  const skipped = { licence: 0, small: 0, shape: 0, alike: 0, ai: 0, fit: 0, reasons: {} };
   const titles = new Map(); const seen = new Set();
   const keep = items.filter((it) => {
     const lic = licenceAllowed(it.licence, o);
     if (!lic.ok) { skipped.licence++; const r = `${LICENCES[it.licence]?.name || it.licence}: ${lic.why}`; skipped.reasons[r] = (skipped.reasons[r] || 0) + 1; return false; }
     const k = String(it.image || it.ref).toLowerCase().split('?')[0];
     if (seen.has(k)) return false; seen.add(k);
+    if (it.ai) { skipped.ai++; return false; } // generated, not photographed or filmed
     if (it.width && it.width < o.minWidth) { skipped.small++; return false; }
+    if (o.fit && it.width && it.height && fitWidth(it.width, it.height, o.fit) < o.minWidth) { skipped.fit++; return false; }
     if (o.orientation && it.width && it.height && shapeOf(it.width, it.height) !== o.orientation) { skipped.shape++; return false; }
     const t = String(it.title).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 32);
     const n = (titles.get(t) || 0) + 1; titles.set(t, n);
@@ -764,6 +961,9 @@ async function cmdSearch(args) {
       else if (it.width && it.width < o.minWidth) { report[it.source].skipped.small++; g.splice(i, 1); }
     }
   }
+  const out = path.resolve(args.out || path.join('out', 'assets', `${slug(query, 5) || 'search'}-${o.kind}.json`));
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  const vetNote = await vetGroups(groups, report, o, `${out.replace(/\.json$/i, '')}.thumbs`);
   if (o.colour && ffmpegOk()) {
     items = groups.flat();
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-assets-'));
@@ -772,16 +972,15 @@ async function cmdSearch(args) {
     for (const g of groups) g.sort((a, b) => (b.colourScore ?? 0) - (a.colourScore ?? 0));
   }
   items = interleave(groups, o.limit);
-  const out = path.resolve(args.out || path.join('out', 'assets', `${slug(query, 5) || 'search'}-${o.kind}.json`));
-  fs.mkdirSync(path.dirname(out), { recursive: true });
-  const doc = { query, searched: q, kind: o.kind, created: new Date().toISOString(), options: { sources: o.sources, orientation: o.orientation, minWidth: o.minWidth, limit: o.limit, allowCredit: o.allowCredit, colour: o.colour?.name || null }, report, items };
+  const doc = { query, searched: q, kind: o.kind, created: new Date().toISOString(), options: { sources: o.sources, orientation: o.orientation, minWidth: o.minWidth, limit: o.limit, allowCredit: o.allowCredit, colour: o.colour?.name || null, people: o.people, clean: o.clean, fit: o.fit, vet: o.vet }, report, items };
   fs.writeFileSync(out, JSON.stringify(doc, null, 1));
   try { fs.writeFileSync(path.join(path.dirname(out), '.last'), out); } catch { /* optional */ }
   if (args.json) { console.log(JSON.stringify(doc, null, 1)); return items.length ? 0 : 1; }
-  console.log(`ASSETS · ${o.kind} · "${q}" · ${o.allowCredit ? 'no-credit licences + CC BY' : 'licences that need no credit'} · at least ${o.minWidth}px${o.orientation ? ` · ${o.orientation}` : ''}${o.colour ? ` · colour ${o.colour.name}` : ''}`);
+  console.log(`ASSETS · ${o.kind} · "${q}" · ${o.allowCredit ? 'no-credit licences + CC BY' : 'licences that need no credit'} · at least ${o.minWidth}px${o.orientation ? ` · ${o.orientation}` : ''}${o.fit ? ` · fits ${args.fit}` : ''}${o.colour ? ` · colour ${o.colour.name}` : ''}${o.people === true ? ' · people' : o.people === false ? ' · no people' : ''}${o.clean ? ' · clean' : ''}`);
+  if (vetNote) console.log(`  (${vetNote})`);
   for (const s of o.sources) {
     const r = report[s]; const sk = r.skipped;
-    const dropped = [sk.licence && `${sk.licence} licence`, sk.small && `${sk.small} too small`, sk.shape && `${sk.shape} other shape`, sk.alike && `${sk.alike} alike`, sk.dead && `${sk.dead} did not load`].filter(Boolean);
+    const dropped = [sk.licence && `${sk.licence} licence`, sk.ai && `${sk.ai} AI-generated`, sk.small && `${sk.small} too small`, sk.fit && `${sk.fit} too small at the --fit shape`, sk.shape && `${sk.shape} other shape`, sk.alike && `${sk.alike} alike`, sk.dead && `${sk.dead} did not load`, sk.people && `${sk.people} ${o.people ? 'without' : 'with'} people`, sk.text && `${sk.text} with text or a logo`].filter(Boolean);
     console.log(`  ${SOURCES[s].name.padEnd(32)} ${r.error ? `could not search (${r.error})` : `${items.filter((it) => it.source === s).length} shown of ${r.found}${dropped.length ? ` (dropped: ${dropped.join(', ')})` : ''}`}`);
   }
   const keyed = Object.keys(SOURCES).filter((s) => SOURCES[s].env && SOURCES[s].kinds.includes(o.kind) && !hasKey(s));
@@ -792,8 +991,9 @@ async function cmdSearch(args) {
   for (const it of items) {
     const px = it.width && it.height ? `${it.width}x${it.height}` : 'size ?';
     const extra = it.kind === 'video' ? ` ${it.duration ? `${Math.round(it.duration)}s` : ''}` : '';
-    console.log(`#${String(it.n).padEnd(3)} ${it.ref.padEnd(Math.min(48, Math.max(...items.map((x) => x.ref.length))))} ${px.padEnd(10)}${extra.padEnd(5)} ${(it.licence).padEnd(13)} ${short(it.title, 60)}${it.colourScore !== undefined ? `  [colour ${it.colourScore}]` : ''}`);
-    if (it.author && ['pexels', 'unsplash', 'pixabay'].includes(it.source)) console.log(`     by ${short(it.author, 50)} on ${SOURCES[it.source].name}`);
+    const flags = [it.people && (it.faces ? `${it.faces} face${it.faces > 1 ? 's' : ''}` : 'people'), it.textLines && 'text?', it.soft && 'soft'].filter(Boolean).join(', ');
+    console.log(`#${String(it.n).padEnd(3)} ${it.ref.padEnd(Math.min(48, Math.max(...items.map((x) => x.ref.length))))} ${px.padEnd(10)}${extra.padEnd(5)} ${(it.licence).padEnd(13)} ${short(it.title, 60)}${it.colourScore !== undefined ? `  [colour ${it.colourScore}]` : ''}${flags ? `  [${flags}]` : ''}`);
+    if (it.author && ['pexels', 'unsplash', 'pixabay', 'burst'].includes(it.source)) console.log(`     by ${short(it.author, 50)} on ${SOURCES[it.source].name}`);
     for (const n of it.notes || []) if (!shared.includes(n)) console.log(`     note: ${n}`);
   }
   for (const n of shared) console.log(`note (${noteCount[n]} items): ${n}`);
@@ -803,6 +1003,95 @@ async function cmdSearch(args) {
   console.log(`Next. Look before you choose:  node scripts/assets.mjs sheet ${path.relative(process.cwd(), out) || out}`);
   console.log('Then: node scripts/assets.mjs get #3,#7 --to public/assets   (the private licence record goes to assets/licences.json)');
   return 0;
+}
+
+// ------------------------------------------------------------------------------------------------ vet
+/** The project's Python as a command list (py.mjs --which: PYTHON, then python3, python, py -3), or null. */
+export function pythonCmd() {
+  const pyjs = path.join(path.dirname(fileURLToPath(import.meta.url)), 'py.mjs');
+  if (!fs.existsSync(pyjs)) return null;
+  const py = spawnSync(process.execPath, [pyjs, '--which'], { encoding: 'utf8' });
+  const which = (py.stdout || '').trim();
+  if (py.status !== 0 || !which) return null;
+  return fs.existsSync(which) ? [which] : which.split(/\s+/).filter(Boolean); // a path with spaces, or "py -3"
+}
+/** The thumbnail reader: per file { faces, face, lines, lap } (frontal faces where OpenCV has a face model, like.py's text lines, Laplacian variance at 480 px). */
+const VET_PY = [
+  'import sys, json, os, importlib.util',
+  'import cv2',
+  "spec = importlib.util.spec_from_file_location('like_mod', sys.argv[1]); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m); m.need()",
+  "casc = None",
+  "d = getattr(getattr(cv2, 'data', None), 'haarcascades', '') or ''",
+  "p = os.path.join(d, 'haarcascade_frontalface_default.xml')",
+  "if d and os.path.exists(p): casc = cv2.CascadeClassifier(p)",
+  'out = []',
+  'for f in sys.argv[2:]:',
+  '    im = cv2.imread(f)',
+  '    if im is None:',
+  '        out.append(None); continue',
+  '    h, w = im.shape[:2]; s = 480.0 / max(1, w)',
+  '    im = cv2.resize(im, (480, max(2, int(round(h * s)))), interpolation=cv2.INTER_AREA)',
+  '    g = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)',
+  '    faces = None; face = 0.0',
+  '    if casc is not None:',
+  '        r = casc.detectMultiScale(g, 1.1, 5, minSize=(22, 22))',
+  '        faces = int(len(r)); face = float(max([a[2] * a[3] for a in r] or [0])) / float(g.shape[0] * g.shape[1])',
+  "    out.append({'faces': faces, 'face': round(face, 4), 'lines': m.text_regions(g), 'lap': round(float(cv2.Laplacian(g, cv2.CV_64F).var()), 1)})",
+  'print(json.dumps(out))',
+].join('\n');
+/** Read thumbnails with the Python reader: [{ faces, face, lines, lap } | null] in order, or null when it cannot run. */
+export function vetFiles(files) {
+  const like = path.join(path.dirname(fileURLToPath(import.meta.url)), 'like.py');
+  const cmd = pythonCmd();
+  if (!cmd || !fs.existsSync(like) || !files.length) return null;
+  const r = spawnSync(cmd[0], [...cmd.slice(1), '-c', VET_PY, like, ...files], { encoding: 'utf8', maxBuffer: 16 << 20 });
+  if (r.status !== 0) return null;
+  try { return JSON.parse(r.stdout.trim().split('\n').pop()); } catch { return null; }
+}
+/** Under this Laplacian variance (480 px thumbnail) a picture reads soft: shown last and marked on the sheet. */
+export const VET = { soft: 45 };
+/**
+ * One item's vet from its record and its thumbnail read (or null): people (words, or a frontal face), faces,
+ * textLines (steady text-like lines, or text words in the record), soft. Pure.
+ */
+export function vetItem(it, read) {
+  const lines = read ? steadyText([read.lines || []]).length : 0;
+  return { people: peopleWords(it) || Boolean(read?.faces), faces: read?.faces ?? null, textLines: lines + (textWords(it) ? 1 : 0), soft: read ? read.lap < VET.soft : false, detail: read?.lap ?? null };
+}
+/** Keep an item under the vet options? (people true/false/null, clean). Pure. */
+export const vetKeeps = (v, o) => !((o.people === true && !v.people) || (o.people === false && v.people) || (o.clean && v.textLines > 0));
+/**
+ * The vet stage of a search: thumbnails into `cache` (the sheet reuses them), the Python reader when it can run,
+ * the people / clean filters, soft pictures last in each source. Returns a note for the summary line, or ''.
+ */
+async function vetGroups(groups, report, o, cache) {
+  const want = o.vet || o.people !== null || o.clean;
+  if (!want) return '';
+  const all = groups.flat();
+  let reads = null; let note = '';
+  if (o.vet && all.length) {
+    fs.mkdirSync(cache, { recursive: true });
+    const files = await mapLimit(all, 6, (it) => fetchThumb(it, cache));
+    const have = files.map((f, i) => (f ? i : -1)).filter((i) => i >= 0);
+    const res = vetFiles(have.map((i) => files[i]));
+    if (res) { reads = new Array(all.length).fill(null); have.forEach((i, k) => { reads[i] = res[k]; }); }
+    else note = 'thumbnails not read: the project\'s Python needs numpy and opencv-python (docs/setup.md); people and text are judged from the records\' words';
+    if (res && !res.some((r) => r && r.faces !== null)) note = 'faces: this OpenCV has no face model, so people are judged from the records\' words; look at the sheet';
+  }
+  const at = new Map(all.map((it, i) => [it, reads?.[i] ?? null]));
+  for (const g of groups) {
+    for (let i = g.length - 1; i >= 0; i--) {
+      const it = g[i]; const v = vetItem(it, at.get(it));
+      Object.assign(it, v);
+      if (!vetKeeps(v, o)) {
+        const sk = report[it.source].skipped;
+        if (o.clean && v.textLines > 0) sk.text = (sk.text || 0) + 1; else sk.people = (sk.people || 0) + 1;
+        g.splice(i, 1);
+      }
+    }
+    g.sort((a, b) => Number(a.soft) - Number(b.soft)); // stable: soft pictures sink, the order is otherwise the source's
+  }
+  return note;
 }
 
 // ------------------------------------------------------------------------------------------------ sheet
@@ -878,7 +1167,7 @@ async function cmdSheet(args) {
     const cache = `${args._[0].replace(/\.json$/i, '')}.thumbs`; fs.mkdirSync(cache, { recursive: true });
     const files = await mapLimit(items, 6, (it) => fetchThumb(it, cache));
     const scan = Math.round(num(args, 'scan', 1, 1, 8));
-    const label = (it) => `#${it.n} ${it.source} ${it.width ? `${it.width}x${it.height}` : ''} ${it.kind === 'video' ? `video ${it.duration ? `${Math.round(it.duration)}s` : ''}` : ''} ${it.licence}`;
+    const label = (it) => `#${it.n} ${it.source} ${it.width ? `${it.width}x${it.height}` : ''} ${it.kind === 'video' ? `video ${it.duration ? `${Math.round(it.duration)}s` : ''}` : ''} ${it.licence}${it.people ? ' P' : ''}${it.textLines ? ' T' : ''}${it.soft ? ' soft' : ''}`;
     // --scan N on a video search: N frames read straight from each clip's preview stream (nothing is downloaded whole)
     const scanned = scan > 1 ? await mapLimit(items, 2, async (it, k) => {
       const url = it.kind === 'video' ? it.preview || it.image : null;
@@ -923,7 +1212,7 @@ async function cmdSheet(args) {
   }
   ff([...inputs, '-filter_complex', chains.join(';'), '-map', `[${last}]`, '-frames:v', '1', out], 'sheet');
   console.log(`Sheet ${out} · ${cells.length} cells (${cells.filter((c) => !c.file).length} missing) · ${L.cols} x ${L.rows}${font ? '' : ' · no label font found: cells run left to right, top to bottom'}`);
-  console.log('Look at it. Choose for light, depth and one idea, not for the subject alone; refuse stock gestures.');
+  console.log('Look at it. Choose for light, depth and one idea, not for the subject alone; refuse stock gestures. Labels: P people, T text or a logo, soft.');
   return 0;
 }
 
@@ -947,14 +1236,14 @@ export function readRecord(file) {
 /** One record entry (the shape scripts/audio/track.py keeps for music, for imagery). */
 export function recordEntry(it, f) {
   const L = LICENCES[it.licence] || LICENCES.unknown;
-  const seen = SOURCE_SEEN[it.source] && it.licence === 'pd' ? SOURCE_SEEN[it.source] : L.seen;
+  const seen = SOURCE_SEEN[it.source]?.licence === it.licence ? SOURCE_SEEN[it.source] : L.seen;
   const credit = L.credit ? `${it.kind === 'video' ? 'Footage' : 'Photo'}: "${short(it.title, 80)}"${it.author ? ` by ${short(it.author, 60)}` : ''}, ${L.name}${it.licenceVersion ? ` ${it.licenceVersion}` : ''}, via ${it.provider}` : null;
   return {
     file: f.file, sha256: f.sha256, bytes: f.bytes, kind: it.kind, width: f.width ?? it.width ?? null, height: f.height ?? it.height ?? null,
     ...(it.kind === 'video' ? { duration: f.duration ?? it.duration ?? null, fps: f.fps ?? it.fps ?? null } : {}),
     title: it.title, author: it.author || null, source: SOURCES[it.source]?.name || it.source, provider: it.provider, ref: it.ref, page: it.page, file_url: it.image,
     licence: L.name, licence_id: it.licence, licence_url: L.url || null, credit_required: Boolean(L.credit), credit,
-    licence_seen: seen ? { quote: seen.quote, url: seen.url, date: CHECKED } : null,
+    licence_seen: seen ? { quote: seen.quote, url: seen.url, date: seen.date || CHECKED } : null,
     limits: (it.source === 'nasa' ? SOURCE_SEEN.nasa.limits : L.limits) || null, notes: it.notes || [], checked: new Date().toISOString().slice(0, 10),
     modifications: f.modifications || null, shown_on_screen: false,
   };
@@ -998,7 +1287,8 @@ async function lookup(ref, o, hint) {
   if (!m || !SOURCES[m[1]]) throw new Error(`a ref looks like <source>:<id> (${Object.keys(SOURCES).join(', ')}), as search prints it`);
   const [, src, id] = m;
   if (SOURCES[src].env && !hasKey(src)) throw new Error(`${SOURCES[src].name} needs ${SOURCES[src].env} in the environment`);
-  const kind = hint?.kind || o.kind || 'photo';
+  let kind = hint?.kind || o.kind || 'photo';
+  if (!SOURCES[src].kinds.includes(kind)) kind = SOURCES[src].kinds[0]; // the last search was another kind: a stills site serves stills
   if (src === 'openverse') { const it = parseOpenverse({ results: [await getJson(`https://api.openverse.org/v1/images/${encodeURIComponent(id)}/`, { ms: 40000 })] }, { kind })[0]; await commonsSizes(it && /upload\.wikimedia/.test(it.image) ? [it] : [], o.width); return it; }
   if (src === 'commons') {
     const j = await getJson(commonsApi({ ...commonsRefParam(id), prop: 'imageinfo|videoinfo', iiprop: 'url|size|mime|extmetadata', iiurlwidth: String(o.width), iiextmetadatafilter: COMMONS_META, iiextmetadatalanguage: 'en', viprop: 'derivatives' }));
@@ -1022,6 +1312,27 @@ async function lookup(ref, o, hint) {
     return it;
   }
   if (src === 'met') return parseMetObject(await getJson(metObjectUrl(id)), {});
+  if (src === 'burst') {
+    const sl = decodeURIComponent(id);
+    if (!/^[a-z0-9-]+$/i.test(sl)) throw new Error('a Burst ref is burst:<photo slug>, as search prints it');
+    const page = hint?.page || `https://burst.shopify.com/photos/${sl}`;
+    const r = parseBurstItem(await getText(page));
+    return item('burst', sl, { kind, title: r.title || hint?.title || sl.replace(/-/g, ' '), author: r.author, page, thumb: burstImage(sl, 500), image: burstImage(sl, o.width), licence: r.licence,
+      notes: r.licence === 'unknown' ? [`licence "${r.licenceSlug || 'none named'}" is not one the tool knows`] : [] });
+  }
+  if (src === 'isorepublic') {
+    const sl = decodeURIComponent(id);
+    if (!/^[a-z0-9-]+$/i.test(sl)) throw new Error('an ISO Republic ref is isorepublic:<photo slug>, as search prints it');
+    const page = hint?.page || `https://isorepublic.com/photo/${sl}/`;
+    const r = parseIsoItem(await getText(page), o.width); const p = isoPick(r, o.width);
+    return item('isorepublic', sl, { kind, title: r.title || hint?.title || sl.replace(/-/g, ' '), page, image: p.image, width: p.width, height: p.height, licence: r.licence });
+  }
+  if (src === 'coverr') {
+    // a Coverr page address needs the clip's name, which only a search records; the record is read again there
+    if (!hint?.page) throw new Error(`no saved search holds ${ref}: pass --from <the results.json that found it> (Coverr pages need their name, and the licence is read there)`);
+    const rec = coverrRecords(await getText(hint.page, { ms: 45000 })).find((x) => x.id === id);
+    return rec ? parseCoverrRecord(rec, { res: o.res }) : null;
+  }
   if (src === 'mixkit') {
     // a Mixkit page address needs the clip's name, which only a search records (an id alone lands on a search page)
     if (!hint?.page) throw new Error(`no saved search holds ${ref}: pass --from <the results.json that found it> (Mixkit pages need their name, and the licence is read there)`);
@@ -1072,6 +1383,10 @@ export function probeFile(file) {
     fps: isStill ? null : Number(rate(v.avg_frame_rate || v.r_frame_rate).toFixed(3)) || null, frames: Number(v.nb_frames) || null, bitrate: Number(j.format?.bit_rate) || null, bytes: Number(j.format?.size) || null,
     colour: [v.color_primaries, v.color_transfer, v.color_space].filter(Boolean).join('/') || null, audio: (j.streams || []).some((s) => s.codec_type === 'audio') };
 }
+/** The source line of a downloaded file for the kit (fx/Pictures PhotoCard, ArcRiver, FootageWindow; fx/Photo, fx/Footage). Pure. */
+export const srcLine = (pub, f, media = 'image') => (media === 'video'
+  ? `{ src: staticFile('${pub}'), w: ${f.width}, h: ${f.height}${f.fps ? `, fps: ${f.fps}` : ''}${f.duration ? `, dur: ${Number(f.duration.toFixed(2))}` : ''} }`
+  : `{ src: staticFile('${pub}'), w: ${f.width}, h: ${f.height} }   // add focus: [x, y] (0..1) on the subject`);
 /** A saved image narrower than the record promised (within the asked width) by more than 10 %: what to say, or null. Pure. */
 export function shortfall(saved, promised, asked) {
   const want = promised ? Math.min(promised, asked || promised) : null;
@@ -1098,6 +1413,7 @@ async function cmdGet(args) {
       if (!it || !it.image) throw new Error('no usable file on the record (removed, or no rendition)');
       const lic = licenceAllowed(it.licence, o);
       if (!lic.ok) throw new Error(`refused: ${LICENCES[it.licence]?.name || it.licence}: ${lic.why}`);
+      if (it.ai) throw new Error('refused: an AI-generated clip, not real footage');
       if (it.source === 'unsplash' && it.downloadLocation) await getJson(it.downloadLocation, { headers: { Authorization: `Client-ID ${key('unsplash')}` } }).catch(() => null); // the API's download event
       const stem = slug(args.name && list.length === 1 ? args.name : it.title, 6) || slug(ref.replace(':', '-'), 6);
       const part = path.join(to, `.${stem}.part`);
@@ -1127,6 +1443,7 @@ async function cmdGet(args) {
       if (short) console.error(`WARNING  ${ref}: ${short}`);
       console.log(`Saved ${path.relative(process.cwd(), file)} · ${f.width ? `${f.width}x${f.height}` : ''}${f.duration ? ` · ${f.duration.toFixed(1)} s @ ${f.fps} fps` : ''} · ${size(f.bytes)} · ${LICENCES[it.licence].name}${LICENCES[it.licence].credit ? ' (credit line in the record)' : ', no credit needed'}`);
       console.log(`  use      ${publicPath(file) ? `staticFile('${publicPath(file)}')` : path.relative(process.cwd(), file)}`);
+      if (publicPath(file) && f.width) console.log(`  src      ${srcLine(publicPath(file), f, kind.media)}`);
       if (small) console.log('  note     under 1920 px wide: use it small, as a texture, or behind a defocus; never full frame sharp');
       if (kind.media === 'video' && !trim && f.duration > 12) console.log('  note     a long clip: keep only the seconds you use (--trim start,seconds) to keep the project lean');
       for (const n of it.notes || []) console.log(`  note     ${n}`);
@@ -1176,23 +1493,34 @@ export function bannedRegion(L, C, h) {
 }
 const hueGap = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
 /**
+ * Natural tones of a photograph: skin of every shade, hair, wood, sand, linen, paper (OKLCH hue 20-85, chroma
+ * .015-.13, L .18-.95), and the deep blue-violet of navy cloth, denim and night shadow (hue 265-300, L <= .45,
+ * C <= .12). In a picture they are the world's colour, not designed colour, so the picture check never counts them as
+ * a banned region (look-audit leaves declared imagery out the same way); a saturated orange or amber object
+ * (C > .13), a cream-yellow field (hue >= 85), a lit violet or purple and neon still count. Pure.
+ */
+export function naturalTone(L, C, h) {
+  return (h >= 20 && h <= 85 && C >= 0.015 && C <= 0.13 && L >= 0.18 && L <= 0.95) || (h >= 265 && h <= 300 && C <= 0.12 && L <= 0.45);
+}
+/**
  * Shares of neutral, saturated, accent-hued and banned-region pixels in an rgb24 buffer (accent = a #hex or
  * null), with the median OKLCH lightness and the mean chroma (for the set's match). Pure.
  */
 export function colourShares(buf, accent = null) {
   const ah = accent ? hexToOklch(accent)[2] : null;
-  let n = 0; let neutral = 0; let saturated = 0; let acc = 0; let banned = 0; let csum = 0;
+  let n = 0; let neutral = 0; let saturated = 0; let acc = 0; let banned = 0; let natural = 0; let csum = 0;
   const Ls = [];
   for (let i = 0; i + 2 < buf.length; i += 3) {
     const [L, C, h] = rgbToOklch(buf[i], buf[i + 1], buf[i + 2]);
     n++; csum += C; Ls.push(L);
     if (C < PICTURE.neutralC) neutral++;
     if (C >= PICTURE.saturatedC) { saturated++; if (ah !== null && hueGap(h, ah) <= PICTURE.accentDeg) acc++; }
-    if (bannedRegion(L, C, h)) banned++;
+    if (naturalTone(L, C, h)) natural++;
+    else if (bannedRegion(L, C, h)) banned++;
   }
-  if (!n) return { neutral: 0, saturated: 0, accent: 0, banned: 0, L: 0, C: 0 };
+  if (!n) return { neutral: 0, saturated: 0, accent: 0, banned: 0, natural: 0, L: 0, C: 0 };
   Ls.sort((a, b) => a - b);
-  return { neutral: neutral / n, saturated: saturated / n, accent: acc / n, banned: banned / n, L: Ls[n >> 1], C: csum / n };
+  return { neutral: neutral / n, saturated: saturated / n, accent: acc / n, banned: banned / n, natural: natural / n, L: Ls[n >> 1], C: csum / n };
 }
 /**
  * The verdict on a graded set from per-frame shares ([{ neutral, saturated, accent }], every still once, every
@@ -1557,7 +1885,11 @@ export const USAGE = `assets.mjs: photographs, footage, textures and art a film 
 
   search "<query>" [--kind photo|video|texture|art] [--source all|${Object.keys(SOURCES).join(',')}]
          [--orientation landscape|portrait|square] [--min-width 1600] [--colour mono|blue|teal|#hex]
+         [--people | --no-people] [--clean] [--fit 4:5] [--no-vet]
          [--limit 8] [--allow-credit] [--out out/assets/<name>.json] [--json] [--no-check]
+         (the vet reads every thumbnail: people, text or a watermark, soft pictures; --people keeps pictures with
+         people, --no-people drops them, --clean drops text, signs and logos, --fit keeps pictures that hold
+         --min-width px after a crop to that shape; the sheet marks P people, T text, soft)
   sheet  <results.json> [--pick 1,4,7] | <files or folders> [--scan 6] [--cols 4] [--cell 400] [--out sheet.png]
   get    <ref|#n>[,...] --to <film>/public/assets [--from results.json] [--name stem] [--width 2400]
          [--res 1080] [--trim start,seconds] [--max-mb 150] [--allow-credit] [--record path]
@@ -1573,13 +1905,14 @@ export const USAGE = `assets.mjs: photographs, footage, textures and art a film 
   probe  <files> [--json]          looks          licences [--to <film>/public/assets]
 
 Refs: #n from the last search, or <source>:<id> as search prints it (a ref is looked up in the saved searches
-under out/assets/; a Mixkit ref needs one, or --from); a known work by name or number also works:
-commons:File:<file name>, met:<object id>, aic:<artwork id>, nasa:<nasa id>.
+under out/assets/; a Mixkit or Coverr ref needs one, or --from); a known work by name or number also works:
+commons:File:<file name>, met:<object id>, aic:<artwork id>, nasa:<nasa id>, burst:<slug>, isorepublic:<slug>.
 
-Keyless: Openverse (cc0 / public domain), Wikimedia Commons (public domain / CC0), NASA, the Art Institute of
-Chicago and the Met (CC0), Mixkit video (free licence only). With a key in the environment: PEXELS_API_KEY,
-UNSPLASH_ACCESS_KEY, PIXABAY_API_KEY. Default licences need no credit; --allow-credit adds CC BY. Refused:
-share-alike, non-commercial, no-derivatives, Mixkit restricted, unknown.
+Keyless: Burst and ISO Republic (stock photos: people, products, places), Coverr and Mixkit (stock video, free
+clips only), Openverse (cc0 / public domain), Wikimedia Commons (public domain / CC0), NASA, the Art Institute of
+Chicago and the Met (CC0). With a key in the environment: PEXELS_API_KEY, UNSPLASH_ACCESS_KEY, PIXABAY_API_KEY.
+Default licences need no credit; --allow-credit adds CC BY. Refused: share-alike, non-commercial, no-derivatives,
+Mixkit restricted, Coverr+, AI-generated clips, unknown.
 
   --help, -h   print this help`;
 

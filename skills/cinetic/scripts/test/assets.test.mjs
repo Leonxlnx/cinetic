@@ -6,7 +6,10 @@
  *      the default takes only licences that need no credit; --allow-credit adds CC BY; share-alike,
  *      non-commercial, no-derivatives, Mixkit's restricted licence and unknown licences are always refused.
  *   2. Every source's parser on hand-written responses (assets-fixtures/: JSON only, no images, no recorded data;
- *      each follows its source's response shape): fields, renditions, licences, refusals.
+ *      each follows its source's response shape): fields, renditions, licences, refusals. Burst, ISO Republic and
+ *      Coverr from their pages' shapes (Coverr+ and AI-generated clips refused).
+ *   2b. The vet: people and text from a record's words and a thumbnail read, --people / --no-people / --clean /
+ *      --fit, soft pictures; natural tones (skin, wood) are never a banned region in a picture; the src line.
  *   3. Filtering (licence, size, shape, near-duplicates), interleaving, search options (keyed sources only with
  *      their key), the colour filter's scoring.
  *   4. The private licence record: where it lives (outside public/), what an entry holds, replacement.
@@ -139,6 +142,39 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   ok(tall.renditions.length === 2 && tall.renditions.every((r) => r.h > r.w) && tall.renditions[1].h === 1920, 'Mixkit item: a portrait clip read from its download resolution', JSON.stringify(tall.renditions.map((r) => [r.w, r.h])));
 }
 {
+  const list = A.parseBurstList(fx('burst-list.json').html, { width: 2400 });
+  eq(list.map((it) => it.ref), ['burst:example-barista-pours-milk', 'burst:example-desk-by-a-window'], 'Burst grid: one item per photo (a repeat and an img without a photo id are left out), the slug is the ref');
+  ok(list.every((it) => it.licence === 'unknown' && /^https:\/\/burst\.shopify\.com\/photos\//.test(it.page) && /width=2400&/.test(it.image) && /width=500&/.test(it.thumb)), 'Burst grid: page, the asked width from the CDN, a 500 px preview; licence unread until the photo page');
+  eq(list[1].title, 'example desk by a window', 'Burst grid: the alt text stands in for a missing title');
+  const it = A.parseBurstItem(fx('burst-item.json').html);
+  ok(it.licence === 'burst' && it.author === 'Example Person' && it.title === 'Example Barista Pours Milk' && A.licenceAllowed('burst').ok, 'Burst photo page: Burst Some Rights Reserved (no credit), photographer, title', JSON.stringify(it));
+  const other = A.parseBurstItem(fx('burst-item-other.json').html);
+  ok(other.licence === 'unknown' && other.licenceSlug === 'editorial-only' && !A.licenceAllowed(other.licence).ok, 'Burst photo page naming another licence: unknown, refused');
+}
+{
+  const list = A.parseIsoList(fx('iso-list.json').html);
+  eq(list.map((it) => it.ref), ['isorepublic:example-woman-reading', 'isorepublic:example-harbour-fog'], 'ISO Republic grid: photos only, one each');
+  ok(list[0].image === 'https://isorepublic.com/wp-content/uploads/2024/01/example-woman-reading.jpg' && Math.abs(list[0].aspect - 2 / 3) < 1e-9 && list[0].title === 'Example Woman Reading', 'ISO Republic grid: the original upload from the thumbnail, the thumbnail\'s shape, the title');
+  const p = A.parseIsoItem(fx('iso-item.json').html, 2400);
+  ok(p.licence === 'cc0' && p.download === 'https://isorepublic.com/wp-content/uploads/2024/01/example-woman-reading.jpg' && p.rendition.w === 1365 && p.renditions.length === 3, 'ISO Republic page: CC0 stated, the download link, its own renditions only, the largest within the width', JSON.stringify(p.rendition));
+  eq(A.isoPick({ ...p, rendition: { url: 'u-2048x1365.jpg', w: 2048, h: 1365 } }, 2400), { image: 'u-2048x1365.jpg', width: 2048, height: 1365 }, 'ISO Republic: a rendition of at least 1600 px within the width is taken');
+  ok(A.isoPick({ ...p, rendition: { url: 'x-1024x683.jpg', w: 1024, h: 683 } }, 2400).image === p.download, 'ISO Republic: under 1600 px the original upload is taken');
+  ok(A.parseIsoItem('<h1>x</h1>').licence === 'unknown', 'ISO Republic page without the CC0 line: unknown');
+}
+{
+  const recs = A.coverrRecords(fx('coverr-page.json').html, { search: true });
+  eq(recs.map((r) => r.id), ['AbcFree01', 'AbcPlus02', 'AbcGen003'], 'Coverr search: only the search hits, once each, nested ones too, never the promoted clips beside them');
+  eq(A.coverrRecords(fx('coverr-page.json').html).map((r) => r.id).sort(), ['AbcFree01', 'AbcGen003', 'AbcPlus02', 'AbcPromo4'], 'Coverr clip page: every record (the lookup finds its clip by id)');
+  const [free, plus, gen] = recs.map((r) => A.parseCoverrRecord(r, { res: 1080 }));
+  ok(free.licence === 'coverr' && free.width === 1920 && /1080p\.mp4$/.test(free.image) && !free.renditions.some((r) => /2160p|original/.test(r.url)) && free.duration === 8.5 && free.fps === 25 && /360p\.mp4$/.test(free.preview), 'Coverr free clip: 1080p, never the Coverr+ 4K or the original, its length, fps and preview stream', JSON.stringify(free.renditions.map((r) => r.w)));
+  ok(free.page === 'https://coverr.co/videos/example-hands-pouring-tea-abcfree01', 'Coverr clip page from its slug');
+  ok(plus.licence === 'coverr-plus' && !A.licenceAllowed(plus.licence, { allowCredit: true }).ok, 'a Coverr+ clip is refused');
+  ok(gen.ai === true && /AI-generated/.test(gen.notes.join(' ')), 'an AI-generated clip is flagged');
+  const { keep, skipped } = A.filterItems([free, plus, gen], opts({ kind: 'video' }));
+  ok(keep.length === 1 && keep[0] === free && skipped.licence === 1 && skipped.ai === 1, 'filter: the free clip stays; Coverr+ refused by licence, the generated clip dropped', JSON.stringify(skipped));
+  eq(A.coverrRecords('<html>no state</html>'), [], 'a page without the state script: no records');
+}
+{
   const page = { pageid: 7, index: 1, title: 'File:Example.jpg', imageinfo: [{ url: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Example.jpg', descriptionurl: 'https://commons.wikimedia.org/wiki/File:Example.jpg', width: 4000, height: 3000, mime: 'image/jpeg', extmetadata: { ObjectName: { value: 'Tide pools at dawn title QS:P1476,en:"Tide pools at dawn"' }, LicenseShortName: { value: 'CC0' }, License: { value: 'cc0' } } }] };
   eq(A.parseCommons({ query: { pages: [page] } })[0]?.title, 'Tide pools at dawn', 'Commons: the structured-data tail is cut from the title');
 }
@@ -171,10 +207,15 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
 }
 {
   const none = A.searchOptions({ kind: 'photo' }, {});
-  eq(none.sources, ['openverse', 'commons', 'nasa'], 'photo search without keys: the keyless photo sources');
+  eq(none.sources, ['burst', 'isorepublic', 'openverse', 'commons', 'nasa'], 'photo search without keys: the keyless photo sources (the stock photo sites first)');
   const keyed = A.searchOptions({ kind: 'photo' }, { PEXELS_API_KEY: 'k', UNSPLASH_ACCESS_KEY: 'k' });
   ok(keyed.sources.includes('pexels') && keyed.sources.includes('unsplash') && !keyed.sources.includes('pixabay'), 'keyed sources join when their key is in the environment');
-  eq(A.searchOptions({ kind: 'video' }, {}).sources, ['commons', 'nasa', 'mixkit'], 'video search without keys: Commons, NASA, Mixkit');
+  eq(A.searchOptions({ kind: 'video' }, {}).sources, ['coverr', 'commons', 'nasa', 'mixkit'], 'video search without keys: Coverr, Commons, NASA, Mixkit');
+  const v = A.searchOptions({ kind: 'photo', people: true, clean: true, fit: '4:5' }, {});
+  ok(v.people === true && v.clean && Math.abs(v.fit - 0.8) < 1e-9 && v.vet, 'vet options: --people, --clean, --fit 4:5, the thumbnail read on by default');
+  ok(A.searchOptions({ kind: 'photo', 'no-people': true, 'no-vet': true }, {}).people === false && !A.searchOptions({ kind: 'photo', 'no-vet': true }, {}).vet && A.searchOptions({ kind: 'photo' }, {}).people === null, 'vet options: --no-people, --no-vet, people unasked = either');
+  throws(() => A.searchOptions({ kind: 'photo', people: true, 'no-people': true }, {}), /choose one/, '--people with --no-people is a usage error');
+  throws(() => A.searchOptions({ kind: 'photo', fit: 'tall' }, {}), /--fit/, 'a bad --fit is a usage error');
   eq(A.searchOptions({ kind: 'art' }, {}).sources, ['openverse', 'aic', 'met'], 'art search: Openverse, the two museums');
   throws(() => A.searchOptions({ kind: 'photo', source: 'pexels' }, {}), /PEXELS_API_KEY/, 'asking for a keyed source without its key is a usage error');
   throws(() => A.searchOptions({ kind: 'photo', source: 'mixkit' }, {}), /no photo search/, 'Mixkit has no photo search');
@@ -334,6 +375,29 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   const banF = [{ neutral: 0.6, saturated: 0.1, accent: 0, banned: 0.012, file: 'bus.jpg' }, { neutral: 0.6, saturated: 0.1, accent: 0, banned: 0 }];
   const banV = A.pictureVerdict(banF);
   ok(!banV.ok && banV.banned === 1 && /bus\.jpg/.test(banV.notes.join(' ')) && A.pictureVerdict(banF, { allowBanned: true }).ok, 'a banned colour on 0.5 % of a frame fails the check (the film\'s banned-hue test); --brand-supplied lets the brand\'s own pass', banV.notes[0]?.slice(0, 80));
+  // natural tones: skin, hair and wood are the world's colour in a picture, never a banned region; a saturated orange object still is
+  ok(A.naturalTone(...px1([224, 172, 138])) && A.naturalTone(...px1([107, 68, 48])) && A.naturalTone(...px1([180, 138, 94])), 'natural tones: light skin, dark skin, tan wood');
+  ok(A.naturalTone(...px1([38, 40, 92])) && !A.naturalTone(...px1([160, 110, 220])), 'natural tones: a navy shadow is natural, a lit violet is not');
+  ok(!A.naturalTone(...px1([232, 112, 26])) && !A.naturalTone(...px1([150, 70, 200])) && !A.naturalTone(...px1([225, 215, 150])) && !A.naturalTone(...px1([40, 150, 165])), 'not natural: a saturated orange, a violet, a cream-yellow, a teal');
+  const skin = A.colourShares(Buffer.concat([px([128, 128, 128], 60), px([224, 172, 138], 30), px([107, 68, 48], 10)]));
+  ok(skin.banned === 0 && Math.abs(skin.natural - 0.4) < 1e-9 && A.pictureVerdict([{ ...skin, file: 'portrait.jpg' }]).banned === 0, 'a portrait\'s skin is natural colour: no banned frame', JSON.stringify(skin));
+  const bus = A.colourShares(Buffer.concat([px([128, 128, 128], 95), px([232, 112, 26], 5)]));
+  ok(Math.abs(bus.banned - 0.05) < 1e-9 && bus.natural === 0, 'a saturated orange object still counts as a banned region', JSON.stringify(bus));
+  // the vet
+  const rec = (o) => ({ ref: 'x:1', source: 'burst', title: '', tags: [], ...o });
+  ok(A.peopleWords(rec({ title: 'Woman reading by a window' })) && A.peopleWords(rec({ tags: ['hands', 'clay'] })) && !A.peopleWords(rec({ title: 'Harbour in fog' })), 'people from the record\'s words (title, tags)');
+  ok(A.textWords(rec({ title: 'Neon sign on a wall' })) && !A.textWords(rec({ title: 'Quiet street at dawn' })), 'text from the record\'s words');
+  const read = (o) => ({ faces: null, face: 0, lines: [], lap: 300, ...o });
+  ok(A.vetItem(rec({ title: 'Harbour' }), read({ faces: 2 })).people && A.vetItem(rec({ title: 'Harbour' }), read({ faces: 2 })).faces === 2, 'a detected face marks people even when the words do not');
+  ok(A.vetItem(rec({ title: 'Harbour' }), read({ lines: [[10, 10, 200, 20]] })).textLines === 1 && A.vetItem(rec({ title: 'Harbour' }), read({ lines: [[10, 10, 20, 20]] })).textLines === 0, 'a steady text line (wide, or lines on one baseline) marks text; a lone square is not text');
+  ok(A.vetItem(rec({}), read({ lap: 20 })).soft && !A.vetItem(rec({}), read({ lap: 400 })).soft && !A.vetItem(rec({}), null).soft, 'soft under the Laplacian floor; nothing read is not soft');
+  const P = A.vetItem(rec({ title: 'Barista smiling' }), null); const N = A.vetItem(rec({ title: 'Kiln at night' }), null); const T = A.vetItem(rec({ title: 'Shop sign' }), null);
+  ok(A.vetKeeps(P, { people: true }) && !A.vetKeeps(N, { people: true }) && !A.vetKeeps(P, { people: false }) && A.vetKeeps(N, { people: false }) && A.vetKeeps(N, { people: null }), '--people keeps people, --no-people drops them, unasked keeps both');
+  ok(!A.vetKeeps(T, { people: null, clean: true }) && A.vetKeeps(T, { people: null, clean: false }), '--clean drops text, signs and logos');
+  eq([A.fitWidth(3000, 2000, 0.8), A.fitWidth(1200, 3000, 0.8)], [1600, 1200], 'fitWidth: the width kept after a crop to 4:5');
+  const fitK = A.filterItems([{ ref: 'a:1', title: 'wide', image: 'a', width: 3000, height: 1800, licence: 'cc0' }, { ref: 'a:2', title: 'tall', image: 'b', width: 2000, height: 3000, licence: 'cc0' }], opts({ minWidth: 1600, fit: 0.8 }));
+  ok(fitK.keep.length === 1 && fitK.keep[0].ref === 'a:2' && fitK.skipped.fit === 1, 'filter --fit 4:5 at 1600 px: a 3000x1800 crops to 1440 wide and is dropped, a 2000x3000 stays', JSON.stringify(fitK.skipped));
+  ok(/^\{ src: staticFile\('assets\/a\.jpg'\), w: 2400, h: 1600 \}/.test(A.srcLine('assets/a.jpg', { width: 2400, height: 1600 })) && A.srcLine('assets/c.mp4', { width: 1920, height: 1080, fps: 25, duration: 6.004 }, 'video') === "{ src: staticFile('assets/c.mp4'), w: 1920, h: 1080, fps: 25, dur: 6 }", 'get prints the source line the kit takes');
   const greySet = A.pictureVerdict([{ neutral: 0.9, saturated: 0.01, accent: 0 }, { neutral: 0.8, saturated: 0.02, accent: 0 }]);
   ok(greySet.ok && greySet.notes.length === 1 && /saturated floor/.test(greySet.notes[0]), 'a grey set passes with a note: under the film\'s saturated floor (4.5 %)', greySet.notes[0]?.slice(0, 60));
   const outl = A.setOutliers([{ file: 'a', L: 0.5, C: 0.05 }, { file: 'b', L: 0.55, C: 0.06 }, { file: 'c', L: 0.52, C: 0.05 }, { file: 'night.jpg', L: 0.15, C: 0.05 }, { file: 'neon.jpg', L: 0.5, C: 0.2 }]);
