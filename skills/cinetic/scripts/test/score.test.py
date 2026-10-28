@@ -827,6 +827,19 @@ def stop_payoff(d):
           f"\"@reveal\" with no reveal cue reads the declared REVEAL ({(r or {}).get('payoff') or p.stderr.strip()[-200:]})")
 
 
+def light_swell(d):
+    """A stop-down goes before a swell of weight 1, never before a light one (weight 0.5) that is not structural."""
+    kit = launch_kit(d)
+    add_role(kit, 'swell', 'whoosh_big/swell', [('1.wav', whoosh_take(peak=0.5, dur=1.0), dict(onset_s=0.3, peak_s=0.5, end_s=0.8), None)],
+             align='peak', mix={'bed_db': 6.0, 'offset_ms': 0})
+    block = music_project(d, test_bed(), [(1, 6)])
+    ev = [dict(f=90, kind='pop', id='a:p'), dict(f=300, kind='swell', id='a:soft', weight=0.5), dict(f=540, kind='swell', id='a:full', weight=1.0)]
+    p, r = run(d, 'swells', cues_with(ev, total=720), music_score(block), NO_EARSHOT)
+    fors = [s['for'] for s in (r or {}).get('stop_downs') or []]
+    check(r is not None and any(f.endswith('a:full') for f in fors) and not any(f.endswith('a:soft') for f in fors),
+          f"a stop-down before the weight-1 swell only ({fors or (p.stderr.strip()[-200:])})")
+
+
 def masked_hero(d):
     """A hero sound the music buries fails: a tick levelled 0.3 dB over the bed reads under the music in every band;
     on the payoff it fails and names its role's bed_db, the same tick elsewhere is only listed, and a hit at its
@@ -1204,7 +1217,7 @@ def main():
     tests = [('effects_only_baseline', lambda d: effects_only_baseline(d, baseline))] + [(fn.__name__, fn) for fn in (
         kit_engine, kit_only, vendored, tuned_budget, stack_guard, music_none, music_synth_refused, typing_word_kit,
         progress_kit, text_chord_kit, typing_bright_kit, land_light_and_levels, kit_tools, bed_edit, stopdown,
-        stop_payoff, masked_hero, width_and_bed_levels, on_beat_over_bed, carried_by_track, mixkeys_parity, credits_gate, av_audit, real_earshot)]
+        stop_payoff, masked_hero, light_swell, width_and_bed_levels, on_beat_over_bed, carried_by_track, mixkeys_parity, credits_gate, av_audit, real_earshot)]
     for name, fn in tests:
         if only and name not in only:
             continue

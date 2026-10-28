@@ -34,7 +34,8 @@ Step by step:
   tuned      tuned effects never become a melody: at most 2 pitched effects in any 4 s (so never 3 within
              2 s); the extra ones are thinned (heavy and structural ones keep priority); no tonal effect
              rings longer than 1.5 s (score.py fades it there)
-  stop-downs with a track, the music steps down before a hit, a drop or a swell (the arrangement first: a
+  stop-downs with a track, the music steps down before a hit, a drop or a swell of weight 1 or more (a lighter
+             swell only when it is the payoff, the lockup or structural; the arrangement first: a
              dip or stop the track already has there counts, and only the missing depth is added): the length
              nearest 0.4 s among 1 beat, 3/16 and 1/8 of a bar (0.3-0.5 s), depth 6 + 4 (weight - 0.5) dB
              within the kit lock's mix.stop_down range, at most 3 in any 10 s and 2 s apart, back on the hit
@@ -483,8 +484,11 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
         targets = []
         for row in rows:
             if row.get('status') in ('placed', 'carried') and row.get('for') in sd['before']:
+                spec = special(row['cue_s']) or bool(events[row['i']].get('structural'))
+                if row['for'] == 'swell' and row['weight'] < 1.0 and not spec:
+                    continue  # a light swell blooms over the bed: no stop-down before it
                 targets.append(dict(t=row['sync_s'], w=row['weight'], id=f"{row['kind']}:{row['id'] or row['i']}",
-                                    row=row, special=special(row['cue_s']) or bool(events[row['i']].get('structural'))))
+                                    row=row, special=spec))
         for a in song.stopdowns.get('add', []):
             targets.append(dict(t=song.T(a['at'] if isinstance(a, dict) else a), w=float((a or {}).get('weight', 1.0))
                                 if isinstance(a, dict) else 1.0, id=f'add:{a}', row=None, special=True,

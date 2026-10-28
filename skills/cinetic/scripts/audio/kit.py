@@ -104,7 +104,8 @@ SOURCE = 'kit.source.json'  # written by render: which kit.json (by digest) the 
 PRESETS = ('calm', 'crisp', 'minimal', 'launch')
 LAUNCH_MIN = (0, 4)  # the earshot version the launch preset and the mix keys need
 INSTALL_HINT = ('install earshot 0.4+ in its own virtualenv (https://github.com/Leonxlnx/earshot, README "Install") and '
-                'point EARSHOT_PYTHON at that interpreter (cinetic docs/setup.md, "Sound from earshot")')
+                'point EARSHOT_PYTHON at that interpreter (cinetic docs/setup.md, "Sound from earshot"); an interpreter that runs '
+                'earshot from a source checkout it was not installed from also needs PYTHONPATH=<that checkout>')
 # a role the kit does not name borrows the nearest one of its family; with none, score.py's synth voice plays
 FAMILY = {'tick.crisp': ['tick'], 'land.light': ['land'], 'whoosh.short': ['whoosh.long', 'whoosh'],
           'whoosh.long': ['whoosh.short', 'whoosh'], 'click.confirm': ['click'], 'key.space': ['key'],
@@ -320,7 +321,7 @@ def find_earshot(python=None, score_python=None):
             ok = False
         if ok:
             return Earshot('PATH', [exe], None, None), tried
-        tried.append(f'PATH: {exe} has no `earshot kit` (earshot 0.3+ needed)')
+        tried.append(f'PATH: {exe} has no `earshot kit` (earshot {".".join(map(str, LAUNCH_MIN))}+ needed)')
     elif not off:
         tried.append('PATH: no `earshot` command')
     return None, tried
