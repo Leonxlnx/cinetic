@@ -182,7 +182,7 @@ drift), or measure the seam on a textured region.
 
 Rendered look checks: `hue-count` (2 hue groups warn, 3 fail, outside declared devices and imagery; the hues of the
 brand-supplied colours count as one family), `banned-hue`
-(supplied colours pass; both leave out the official marks: the pixels of a mark with a record in
+(supplied colours pass, lit, shaded or blended over a grey too; both leave out the official marks: the pixels of a mark with a record in
 `public/logos/logos.json`, where the layout JSON's mark boxes or `--mark-track` say it is drawn on that frame), `accent-share`, the wash ceiling (a film is not one colour wash), `tinted-ink`,
 `negative-space`, `living-ground`, `camera-lock` (the camera never stops, or never on a read: lock 0.5-1 s on each read), `clean-finish`, `type-size` (with the layout JSON), `luminance-flip`,
 `blur-policy`, `word-first-frame`, `fade-detect`, `arrival-front-load`, `image-develop` (a hint), and with the
@@ -190,7 +190,9 @@ layout JSON and the cues the type gate: `type-read` (fails when the largest copy
 height, 72 px at 1080p, or a line of 48 px or more reads under 3:1 against its local ground; under 4.5:1 warns, and
 fails on a busy ground) and `type-beat` (warns when no line of 6.7 % or more, at 4.5:1, sits on a clean field for a
 second or more). Flags:
-`--imagery x,y,w,h` (boxes holding photographs: natural colour there is not designed colour), `--colour-event
+`--imagery x,y,w,h` (boxes holding photographs or screenshots: natural colour there is not designed colour, and their
+bands are not skeleton bars; `x,y,w,h@from-to` for those video frames only), `--imagery-track` (JSON `[{from, to, box,
+toBox?}]` in composition frames and px: imagery on a moving camera), `--colour-event
 FROM,TO` (a declared colour event pauses the wash and accent ceilings; the timeline's `COLOUR` ranges are read from the cues), `--second '#…'` (a declared support hue),
 `--logos` (the record, default `public/logos/logos.json`), `--mark-track` (JSON `[{name, from, to, box, toBox?}]`),
 `--tokens`, `--brand`, `--picture-only` (the picture floor alone, fast), `--no-picture`, `--no-floor`.
@@ -217,7 +219,7 @@ A one-take film is judged on 2 s segments and has no seam or cut items.
 | saturated pixels (OKLCH C ≥ 0.06): colour mass | ≥ 2.2 % of the frame; the wash ceiling ≤ 60 % and ≤ 65 % of frames over half | 4.5-32 %, ≤ 25 % of frames over half |
 | a support hue (40° or more from the accent) | (target only) | in ≥ 9 % of the samples (house 10-30 %) |
 | bleed: the subject framed past two edges at 1.2× the frame or more | in at least a quarter of the acts | in every act |
-| skeleton bars: glyphless grey bars in focus | no more than 3 in a frame (2 samples or more fail) | none |
+| skeleton bars: glyphless grey bars in focus on a flat card or ground (not inside declared imagery or a mark) | no more than 3 in a frame (2 samples or more fail) | none |
 | `filler-shape`: faint shapes on the ground (0.015-0.07 L off it, ≥ 1.2 % of the frame, floating, flat, edged) that carry no text, icon or mark | on fewer than 3 samples or under 10 % of them (2 samples warn) | none |
 | `ground-haze`: the ground's light rising to a dome inside the frame over its brightest edge (a pool, a white haze, a fog vignette) | over 0.025 L on fewer than 3 samples or under 20 % of the measured ones (2 samples warn) | none; a key gradient from one side reads 0 |
 | focus falloff: a crisp plane and a defocused one in the same frame | (target only) | ≥ 35 % of frames |

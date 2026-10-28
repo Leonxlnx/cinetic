@@ -14,11 +14,12 @@ how, where the cuts fall and what they carry. Speeds are px/s at a 1080-high fra
 Look checks (warn unless marked fail):
   hue-count       saturated pixels (OKLab C >= 0.06, >= 0.2 % of the frame on >= 3 samples) grouped by
                   hue across the film: 2 groups more than 30 degrees apart warn, 3 or more fail. One
-                  accent family; imagery is excluded with --imagery. A support hue declared in the tokens
+                  accent family; imagery is excluded with --imagery (or --imagery-track). A support hue declared in the tokens
                   (C.second, or --second) that is not a second accent (see second-hue) does not count as a group
   banned-hue      fail: saturated colour in a banned region (orange/amber, beige/cream, purple/violet,
                   neon) on >= 0.5 % of the frame for >= 3 samples, unless it is a brand-supplied colour
-                  (tokens lines marked cinetic:brand-supplied, or --brand). Brand colours are checked
+                  (tokens lines marked cinetic:brand-supplied, or --brand) at any lightness or blended over a
+                  grey (within 8 levels of the plane through the colour and the grey axis). Brand colours are checked
                   only for contrast (here: none) and the one-accent rule: hue-count counts the hues of
                   every brand-supplied colour together as one family (a mark of three hues is one brand)
   official marks  hue-count, banned-hue and the colour reads leave out the pixels of the official marks the film
@@ -95,7 +96,8 @@ flat grounds; texture is an accent, not the ground of every shot:
   picture-bleed    the subject (the largest region of structure) touches two frame edges and spans >= 60 %
                    of the frame one way in at least a quarter of the acts (no cues: 8 s parts)
   skeleton-bars    more than 3 glyphless bars in focus (solid, uniform, grey, text-line high, 3-60x as long,
-                   sharp-edged) on 2 or more samples: placeholder lines, not content
+                   sharp-edged, on a flat card or ground; not inside declared imagery or a mark) on 2 or more
+                   samples: placeholder lines, not content
   filler-shape     every element in frame has a job: faint shapes on the ground that carry no text, icon or mark
                    (0.015-0.07 L off the ground's own light, >= 1.2 % of the frame each, filling their box,
                    floating, flat inside, with an edge, not an object's shadow or halo) on >= 3 samples and >= 10 %
@@ -377,10 +379,12 @@ def subject_of(rgb, gray, nong, edges=None):
     return best
 
 
-def glyphless_bars(gray, C):
+def glyphless_bars(gray, C, keep=None):
     """Placeholder bars in focus: solid, uniform, grey rounded bars the height of a text line (0.4-3.5 % of
-    the frame height) and 3-60x as long, sharp at their edges. Real words break into letters, real charts
-    and meters are coloured; a skeleton line is none of those."""
+    the frame height) and 3-60x as long, sharp at their edges, on a flat card or ground (70 % of the ring a
+    bar's height around it within 6 levels of its median). Real words break into letters, real charts and
+    meters are coloured, footage keeps texture around its bands; a skeleton line is none of those. keep:
+    False on declared imagery and official marks (a bar mostly inside them is theirs)."""
     h, w = gray.shape
     g = gray.astype(np.float32)
     bg = cv2.medianBlur(gray, 31).astype(np.float32)
@@ -399,8 +403,18 @@ def glyphless_bars(gray, C):
             continue
         contrast = float(np.abs(diff[y:y + bh, x:x + bw][comp]).mean())
         edge = float(gy[max(0, y - 1):min(h, y + bh + 1), x:x + bw].max())
-        if contrast > 0 and edge >= 0.35 * contrast:
-            out.append([x, y, bw, bh])
+        if not (contrast > 0 and edge >= 0.35 * contrast):
+            continue
+        if keep is not None and keep[y:y + bh, x:x + bw].mean() < 0.5:
+            continue
+        pad = max(2, bh)
+        y0, y1, x0, x1 = max(0, y - pad), min(h, y + bh + pad), max(0, x - pad), min(w, x + bw + pad)
+        around = np.ones((y1 - y0, x1 - x0), bool)
+        around[y - y0:y - y0 + bh, x - x0:x - x0 + bw] = False
+        ring = g[y0:y1, x0:x1][around]
+        if ring.size and (np.abs(ring - np.median(ring)) <= 6).mean() < 0.7:
+            continue  # textured around: a band in footage (foam, a wave, rain), not a line on a card
+        out.append([x, y, bw, bh])
     return out
 
 
@@ -565,7 +579,7 @@ def pic_sample(P, f, rgb, gray, C, nong, edges, H=None, keep=None, L=None):
     imagery), the subject's framing, placeholder bars, filler shapes and haze over the ground."""
     hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
     sub = subject_of(rgb, gray, nong, edges)
-    bars = glyphless_bars(gray, C)
+    bars = glyphless_bars(gray, C, keep)
     if H is None or L is None:
         L_, A_, B_ = oklab(rgb)
         H = (np.degrees(np.arctan2(B_, A_)) + 360) % 360 if H is None else H
@@ -585,13 +599,61 @@ def imagery_mask(shape, boxes):
     return keep
 
 
-def imagery_boxes(args, info, W):
+def imagery_of(args, info, W, comp_w, k_):
+    """The declared imagery as a function of the video frame (analysis px): --imagery x,y,w,h (video px) for the
+    whole film, or x,y,w,h@a-b for video frames a-b; --imagery-track JSON [{from, to, box: [x, y, w, h], toBox?}]
+    in composition frames and px, toBox moving the box in a straight line (a screenshot on a moving camera)."""
     k = W / info['w']
-    out = []
+    fixed = []
     for spec in getattr(args, 'imagery', None) or []:
-        x, y, w, h = [float(v) for v in spec.split(',')]
-        out.append((int(x * k), int(y * k), int(w * k), int(h * k)))
-    return out
+        box, _, rng = spec.partition('@')
+        try:
+            x, y, w, h = [float(v) for v in box.split(',')]
+            a, b = [float(v) for v in rng.split('-')] if rng else (-math.inf, math.inf)
+        except ValueError:
+            die(f'bad --imagery {spec}: expected x,y,w,h or x,y,w,h@from-to')
+        fixed.append(((max(0, int(x * k)), max(0, int(y * k)), int(w * k), int(h * k)), a, b))
+    track = []
+    if getattr(args, 'imagery_track', None):
+        try:
+            raw = json.load(open(args.imagery_track, encoding='utf-8'))
+        except (OSError, ValueError) as e:
+            die(f'cannot read --imagery-track {args.imagery_track}: {e}')
+        sx = W / comp_w
+        for r in raw if isinstance(raw, list) else raw.get('imagery') or []:
+            if len(r.get('box') or []) == 4:
+                track.append((r['from'] * k_, r['to'] * k_, [v * sx for v in r['box']], [v * sx for v in (r.get('toBox') or r['box'])]))
+
+    def at(f):
+        out = [bx for bx, a, b in fixed if a <= f <= b]
+        for a, z, b0, b1 in track:
+            if a <= f <= z:
+                t = 0.0 if z <= a else (f - a) / (z - a)
+                x, y, w, h = [u + (v - u) * t for u, v in zip(b0, b1)]
+                out.append((max(0, int(x)), max(0, int(y)), int(w) + 1, int(h) + 1))
+        return out
+    return at
+
+
+def brand_plane(rgb, brand_rgb, tol=8.0):
+    """True where a pixel is a brand colour lit, shaded or blended over a grey: within tol (sRGB levels) of the
+    plane alpha * brand + beta * (1, 1, 1) with alpha > 0.05, so cream under a key light and a translucent blue
+    over the film's greys stay the brand's (their OKLab hue may drift into a banned band) while another hue
+    does not."""
+    p = rgb.reshape(-1, 3).astype(np.float32)
+    out = np.zeros(len(p), bool)
+    u = np.ones(3, np.float32) / np.sqrt(3.0)
+    q = p - np.outer(p @ u, u)  # each pixel's chroma part, orthogonal to the grey axis
+    for b in brand_rgb:
+        b = np.asarray(b, np.float32)
+        bp = b - u * float(b @ u)  # the brand colour's chroma part
+        n2 = float(bp @ bp)
+        if n2 < 1e-3:
+            continue  # a grey brand colour: the neutral reads handle it
+        alpha = (q @ bp) / n2
+        res = np.linalg.norm(q - np.outer(alpha, bp), axis=1)
+        out |= (alpha > 0.05) & (res <= tol)
+    return out.reshape(rgb.shape[:2])
 
 
 def logos_record(args):
@@ -690,8 +752,7 @@ def measure_picture(args, info, F):
     cstep = max(1, int(round(fps / 2)))
     P = new_pic()
     every = max(1, args.every)
-    keep = None
-    boxes = imagery_boxes(args, info, W)
+    imagery_at = getattr(args, 'imagery_at', None) or (lambda f: [])
     for f, rgb in F.decode(args.video, info, 0, None, size=(W, H)):
         frame, sample = f % every == 0, f % cstep == 0
         if not (frame or sample):
@@ -701,12 +762,11 @@ def measure_picture(args, info, F):
         if sample:
             L, A, B = oklab(rgb)
             _, nong = nonground(rgb)
-            if boxes and keep is None:
-                keep = imagery_mask(L.shape, boxes)
             mk = args.mark_at(f) if getattr(args, 'mark_at', None) else []  # the official marks drawn on this frame
+            boxes = imagery_at(f) + mk
             P.setdefault('marks', []).append(len(mk))
             pic_sample(P, f, rgb, gray, np.hypot(A, B), nong, e, (np.degrees(np.arctan2(B, A)) + 360) % 360,
-                       imagery_mask(L.shape, boxes + mk) if mk else keep, L)
+                       imagery_mask(L.shape, boxes) if boxes else None, L)
     return P, (W, H)
 
 
@@ -1049,12 +1109,8 @@ def measure(args, info, F, accent, brand, layout, cues):
     if accent:
         L0, a0, b0 = oklab(np.array([hex_rgb(accent)], np.uint8))
         acc_lab = np.array([L0[0], a0[0], b0[0]], np.float32)
-    brand_lab = [np.array([v[0] for v in oklab(np.array([hex_rgb(b)], np.uint8))], np.float32) for b in brand]
-    imagery = []
-    for spec in args.imagery or []:
-        x, y, w, h = [float(v) for v in spec.split(',')]
-        k = W / info['w']
-        imagery.append((int(x * k), int(y * k), int(w * k), int(h * k)))
+    brand_rgb = [hex_rgb(b) for b in brand]
+    imagery_at = getattr(args, 'imagery_at', None) or (lambda f: [])
     # text regions (layout boxes at each COPY entry's resolved frame), for the word checks
     rois, boxes, fr_h = {}, {}, {}
     if layout and cues:
@@ -1133,13 +1189,15 @@ def measure(args, info, F, accent, brand, layout, cues):
             Hh = (np.degrees(np.arctan2(B, A)) + 360) % 360
             keep = np.ones(L.shape, bool)
             mk = args.mark_at(f) if getattr(args, 'mark_at', None) else []  # the official marks drawn on this frame
-            for (x, y, w, h) in imagery + mk:
+            im = imagery_at(f) + mk
+            for (x, y, w, h) in im:
                 keep[max(0, y):y + h, max(0, x):x + w] = False
-            if brand_lab:
-                for bl in brand_lab:
-                    keep &= np.sqrt((L - bl[0]) ** 2 + (A - bl[1]) ** 2 + (B - bl[2]) ** 2) > 0.06
+            # the brand's hues stay in the groups (hue-count counts them as one family); the banned regions leave out a
+            # brand colour at any lightness or blended over a grey
             groups = hue_groups(L[keep] if not keep.all() else L, C[keep] if not keep.all() else C, Hh[keep] if not keep.all() else Hh)
             ban = banned_mask(L, C, Hh) & keep & (C >= 0.03)
+            if brand_rgb:
+                ban &= ~brand_plane(rgb, brand_rgb)
             gcol, gshare = ground_of(rgb)
             gL, ga, gb = oklab(np.array([gcol], np.uint8))
             nong = np.abs(rgb.astype(np.int16) - gcol.astype(np.int16)[None, None, :]).max(axis=2) > 16
@@ -1151,7 +1209,7 @@ def measure(args, info, F, accent, brand, layout, cues):
             # element scale: the median height of the non-ground blobs
             n_lab, _, st, _ = cv2.connectedComponentsWithStats(nong.astype(np.uint8), connectivity=8)
             hs = [st[i, cv2.CC_STAT_HEIGHT] for i in range(1, n_lab) if st[i, cv2.CC_STAT_AREA] >= 6]
-            pic_sample(S['pic'], f, rgb, gray, C, nong, edges_px, Hh, imagery_mask(L.shape, imagery + mk) if imagery or mk else None, L)
+            pic_sample(S['pic'], f, rgb, gray, C, nong, edges_px, Hh, imagery_mask(L.shape, im) if im else None, L)
             S['samples'].append(dict(marks=len(mk),
                 f=f, groups=groups, banned=round(float(ban.mean()), 4), ground=[int(v) for v in gcol], ground_share=round(gshare, 3),
                 ground_L=round(float(gL[0]), 4), ground_C=round(float(math.hypot(ga[0], gb[0])), 4), nonground=round(float(nong.mean()), 4),
@@ -1931,6 +1989,13 @@ def self_test(F, part='all'):
         check(bool(has(rep, 'banned-hue', 'fail')), 'an orange accent fails banned-hue')
         rep = run('orange-brand', orange, extra=('--brand', '#F0821E'))
         check(not has(rep, 'banned-hue'), 'the same orange supplied by the brand passes')
+        # a brand blue laid over the paper at 25 % reads past 270 deg in OKLab (the purple band): still the brand's
+        tint = tuple(int(round(0.25 * c + 0.75 * q)) for c, q in zip((60, 80, 220), (236, 238, 241)))
+        tinted = [card(paper, 60 + i * 2, 80, 160, tint) for i in range(60)]
+        rep = run('tint', tinted)
+        check(bool(has(rep, 'banned-hue', 'fail')), 'a translucent blue whose blend reads purple fails banned-hue')
+        rep = run('tint-brand', tinted, extra=('--brand', '#3C50DC'))
+        check(not has(rep, 'banned-hue'), 'the same blend of a brand-supplied blue over the paper passes')
         # official marks in their own colours (an orange, green and red mark moving past a blue accent): left out
         # where the layout audit or a declared track says they are drawn, when logos.json has a record of them
         def marked(stray=False):
@@ -2101,6 +2166,18 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         check(bool(has(rep, 'skeleton-bars', 'fail')), 'grey skeleton lines on cards fail skeleton-bars', f"max {rep.get('picture', {}).get('skeleton', {}).get('max_bars')}")
         rep = run_pic('real', real)
         check(not has(rep, 'skeleton-bars'), 'the same cards with real strings pass skeleton-bars', f"max {rep.get('picture', {}).get('skeleton', {}).get('max_bars')}")
+        rep = run_pic('skel-img', skel, ('--imagery', f'0,0,{w},{h}@0-60'))
+        check(not has(rep, 'skeleton-bars'), 'the grey lines inside declared imagery for those frames (a screenshot) pass skeleton-bars',
+              f"max {rep.get('picture', {}).get('skeleton', {}).get('max_bars')}")
+        rgb = skel[0]
+        on_card = len(glyphless_bars(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY), np.zeros(rgb.shape[:2], np.float32)))
+        tex = F.texture(3, w, h, scale=10, mean=110, amp=18)
+        for c in range(3):
+            for k, ww in enumerate((96, 70, 84)):
+                cv2.rectangle(tex, (42 + c * 150, 120 + k * 22), (42 + c * 150 + ww, 128 + k * 22), (206, 210, 216), -1)
+        on_tex = len(glyphless_bars(cv2.cvtColor(tex, cv2.COLOR_RGB2GRAY), np.zeros(tex.shape[:2], np.float32)))
+        check(on_card >= 4 and on_tex == 0, 'the same bars over a textured plate (bands in footage) are not skeleton lines',
+              f'{on_card} on cards, {on_tex} on the plate')
         # falloff (a target): crisp product UI alone misses it; the same UI with its far half defocused meets it
         def ui_frame(i):
             img = np.full((h, w, 3), (20, 90, 110), np.uint8)
@@ -2430,7 +2507,10 @@ def main():
     ap.add_argument('--brand', help='brand-supplied colours, comma separated #RRGGBB')
     ap.add_argument('--logos', help='the logo record (default public/logos/logos.json): the official marks, whose own colours the palette checks leave out')
     ap.add_argument('--mark-track', help='where the official marks are drawn when no layout audit logs them: JSON [{name, from, to, box: [x, y, w, h], toBox?}]')
-    ap.add_argument('--imagery', action='append', help='x,y,w,h of a region that holds imagery (excluded from the colour checks; repeatable)')
+    ap.add_argument('--imagery', action='append', help='x,y,w,h of a region that holds imagery, or x,y,w,h@from-to for those video frames '
+                    '(excluded from the colour checks and skeleton-bars; repeatable)')
+    ap.add_argument('--imagery-track', help='imagery on a moving camera: JSON [{from, to, box: [x, y, w, h], toBox?}] in composition '
+                    'frames and px (toBox moves the box in a straight line)')
     ap.add_argument('--colour-event', action='append', help='FROM,TO frames of a declared colour event (the wash and accent ceilings pause; repeatable)')
     ap.add_argument('--second', help='the declared second hue (#RRGGBB), if not from the tokens (C.second)')
     ap.add_argument('--width', type=int, default=480, help='analysis width (960 for finer reads)')
@@ -2485,6 +2565,8 @@ def main():
     args.mark_record, mark_names = logos_record(args)
     args.mark_at = mark_boxes(args, layout, mark_names, min(args.width, info['w']) // 2 * 2,
                               (layout or {}).get('width') or args.comp_width or info['w'], k_c, info['fps'])
+    args.imagery_at = imagery_of(args, info, min(args.width, info['w']) // 2 * 2,
+                                 (layout or {}).get('width') or args.comp_width or info['w'], k_c)
     if args.picture_only:
         P, size = measure_picture(args, info, F)
         fps = info['fps']
