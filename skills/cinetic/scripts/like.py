@@ -16,9 +16,9 @@ as the film's targets, with the rules that keep the film its own:
 The outputs name the clip by its hash and length, never its path or file name: the clip stays private.
 
 The rules: borrow grammar (pace, rhythm, curve families, density, camera habits, proportions), never content.
-Never copy a layout frame for frame, any text, a logo, another company's colours (like.json records ground
-tones and proportions, never the clip's hues), its footage or its music. The film keeps its own idea sentence
-and its own direction from the deck. `like.py guard` checks the finished film: contact sheets of the film and
+Never copy the clip's shots one by one, a layout frame for frame, any text, a logo, another company's colours
+(like.json records ground tones and proportions, never the clip's hues), its footage or its music. The film keeps
+its own idea sentence, its own direction from the deck and its own devices. `like.py guard` checks the finished film: contact sheets of the film and
 the clip at the same density must not read as a recreation.
 
 Usage (from the film project root):
@@ -35,12 +35,14 @@ of each picture what it shows: picture, ui, type or graphic); the music's tempo 
 strokes) grouped into lines along a baseline, each line with a confidence; only confident lines count, so a night
 street of lights, streaks and lit windows reads as no text. assets.mjs's vet and check use the same reader.
 
-guard: frames at the same density from both (one a second by default). Each film frame is matched to the
-clip frame whose layout is closest: layout overlap is the correlation of their structure maps (edges and
-non-ground area on a 48 x 27 grid), colour-layout distance the mean OKLab distance of their 8 x 6 colour
-grids. A pair reads as a recreation when its layout overlap is >= 0.80 with a colour-layout distance <= 0.10
-(the same frame, regraded or moved a little), or when its layout overlap is >= 0.90 (the same layout in other
-colours). The film fails when 15 % or more of its frames, or 3 in a row, read as recreations.
+guard: frames at the same density from both (one a second by default). Each film frame is held against every
+clip frame: layout overlap is the correlation of their structure maps (edges and non-ground area on a 48 x 27
+grid), colour-layout distance the mean OKLab distance of their 8 x 6 colour grids. A pair reads as a recreation
+when its layout overlap is >= 0.80 with a colour-layout distance <= 0.10 (the same frame, regraded or moved a
+little), or when its layout overlap is >= 0.90 (the same layout in other colours: a shot retold with new words and
+colours). A frame is matched to a clip frame it recreates when there is one, else to the closest layout (colour only
+breaks a tie), so a shot copied in other colours is never hidden behind another shot that shares its grade. The film
+fails when 15 % or more of its frames, or 3 in a row, read as recreations.
 
 Exit codes: measure 0 written; guard 0 its own film, 1 it reads as a recreation; 2 bad input or a missing
 tool (ffmpeg, numpy, opencv-python). Heavy on long clips: one clip at a time.
@@ -586,8 +588,9 @@ def like_md(t, clip):
         '- Borrow grammar: shot lengths and cut rhythm, how often a cut lands on a sound, camera habits, the curve',
         '  families of the main moves, how shots hand over, type scale and how much of the film carries text, motion',
         '  density, the proportions of ground, ink and accent, the blur policy, the tempo.',
-        '- Never content: no layout copied frame for frame, no text, no logo, no other company\'s colours (this file',
-        '  records ground tones and proportions, never the clip\'s hues), no footage, no music from the clip.',
+        '- Never content: no shot retold one by one, no layout copied frame for frame, no text, no logo, no other',
+        '  company\'s colours (this file records ground tones and proportions, never the clip\'s hues), no footage, no',
+        '  music from the clip.',
         '- The film keeps its own idea sentence and its own direction (python3 scripts/deck.py): the clip shapes the',
         '  timing and the habits inside it, not the concept.',
         '- Check the finished film: `python3 scripts/like.py guard --film out/film.mp4 --clip <clip>` must pass (the',
@@ -667,11 +670,13 @@ def guard_pairs(film, clip):
         for b in clip:
             ov = overlap(a['struct'], b['struct'])
             cd = colour_distance(a['col'], b['col'])
-            score = ov - cd  # the closest layout, colour as the tie-break
-            if best is None or score > best[0]:
-                best = (score, ov, cd, b)
-        _, ov, cd, b = best
-        rec = (ov >= GUARD['layout'] and cd <= GUARD['colour']) or ov >= GUARD['layout_only']
+            rec = (ov >= GUARD['layout'] and cd <= GUARD['colour']) or ov >= GUARD['layout_only']
+            # a pair that reads as a recreation first, then the closest layout, colour only as the tie-break: a frame
+            # whose own shot is in the clip in other colours is matched to that shot, never to a closer grade elsewhere
+            key = (rec, ov, -cd)
+            if best is None or key > best[0]:
+                best = (key, ov, cd, b)
+        (rec, _, _), ov, cd, b = best
         rows.append({'film_t': a['t'], 'clip_t': b['t'], 'layout_overlap': round(ov, 3), 'colour_distance': round(cd, 3), 'recreation': bool(rec), '_a': a, '_b': b})
     return rows
 

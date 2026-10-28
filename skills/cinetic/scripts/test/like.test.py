@@ -7,11 +7,15 @@ The clips are made here in code (numpy frames piped to ffmpeg, a WAV of clicks m
   own       the same timing and the same habits, its own layouts, colours and words: a film that borrows grammar
   regraded  the clip with its colours shifted and its picture moved and scaled a little: a recreation
   inverted  the clip in inverted colours: the same layouts in other colours, a recreation
+  retold    the clip's shots one by one (their geometry, paths and timing) in other words and other colours: a retelling
+            with new content, a recreation
 
   1. measure writes out/like.json (grammar-score.mjs --target format) and out/LIKE.md: the shot band around the
      clip's median, the cuts it found, cut-on-sound, front-loaded moves, text share, hard hand-overs; no hues.
   2. grammar-score.mjs reads like.json as its target (the shot band is the clip's for every format).
-  3. guard: the borrowing film passes; the regraded and the inverted clip and the clip itself fail, with a sheet.
+  3. guard: the borrowing film passes; the regraded and the inverted clip and the clip itself fail, with a sheet; the
+     retelling fails in nearly every frame (each film frame is held against every clip frame, so a shot copied in
+     other colours is never hidden behind another shot that only shares its grade).
   4. LIKE.md carries the rules (borrow grammar, never content) in house wording; no output names the clip's path or
      file name (its hash and length stand for it); what each picture shows is counted.
   5. The text reader: drawn words read as a confident line; a night street made here (bokeh discs, light streaks,
@@ -52,6 +56,7 @@ W, H, FPS = 480, 270, 30
 CUTS = [0, 1.2, 2.0, 3.6, 4.4, 6.0, 8.0]  # shots 1.2, 0.8, 1.6, 0.8, 1.6, 2.0 s: median 1.4
 GROUNDS = [(28, 44, 58), (196, 204, 210), (40, 60, 52), (210, 214, 200), (52, 40, 60), (205, 210, 216)]  # light and dark in turn
 WORDS = ['FAST SYNC', 'NEW', 'SHARED FOLDERS', 'OFFLINE', 'ONE TAP', 'VERSION 2']
+TOLD = ['PLAN TRIPS', 'MAPS', 'GROUP CHAT', 'BOOK NOW', 'SPLIT COSTS', 'ROUTES']  # the retelling's own words
 
 
 def result(ok, name, detail=''):
@@ -74,12 +79,13 @@ def ease_out(t):
 
 
 def frame(k, variant):
-    """Frame k of a clip variant: 'clip', 'own', 'regraded' or 'inverted'."""
+    """Frame k of a clip variant: 'clip', 'own', 'regraded', 'inverted' or 'retold'."""
     t = k / FPS
     s = max(i for i in range(len(CUTS) - 1) if CUTS[i] <= t)
     u = (t - CUTS[s]) / (CUTS[s + 1] - CUTS[s])
     own = variant == 'own'
-    g = GROUNDS[(s + 3) % 6] if own else GROUNDS[s]
+    told = variant == 'retold'
+    g = GROUNDS[(s + 3) % 6] if own or told else GROUNDS[s]
     img = np.zeros((H, W, 3), np.uint8)
     img[:] = g
     dark = sum(g) < 380
@@ -94,10 +100,10 @@ def frame(k, variant):
         bw, bh = 200, 90
         x0, y0 = int(-bw + p * (bw + 60 + 40 * s)), 150
         tx, ty = 40, 110
-    acc = (60, 170, 120) if own else (40, 120, 220)
+    acc = (60, 170, 120) if own or told else (40, 120, 220)
     cv2.rectangle(img, (x0, y0), (x0 + bw, y0 + bh), acc, -1)
     cv2.rectangle(img, (x0 + 14, y0 + 16), (x0 + bw - 30, y0 + 30), ink, -1)
-    word = WORDS[(s + 2) % 6] if own else WORDS[s]
+    word = WORDS[(s + 2) % 6] if own else TOLD[s] if told else WORDS[s]
     cv2.putText(img, word, (tx, ty), cv2.FONT_HERSHEY_SIMPLEX, 1.1 if not own else 0.9, ink, 3, cv2.LINE_AA)
     if variant == 'regraded':
         img = cv2.warpAffine(img, np.float32([[1.03, 0, -6], [0, 1.03, -4]]), (W, H), borderMode=cv2.BORDER_REPLICATE)
@@ -136,9 +142,9 @@ def write_clip(path, variant):
     return p.returncode == 0 and os.path.isfile(path)
 
 
-clips = {v: os.path.join(TMP, f'{v}.mp4') for v in ('clip', 'own', 'regraded', 'inverted')}
+clips = {v: os.path.join(TMP, f'{v}.mp4') for v in ('clip', 'own', 'regraded', 'inverted', 'retold')}
 made = all(write_clip(p, v) for v, p in clips.items())
-result(made, 'the four code-made clips are written')
+result(made, 'the five code-made clips are written')
 
 # 1. measure ---------------------------------------------------------------------------------------------
 out = os.path.join(TMP, 'out')
@@ -187,7 +193,7 @@ result(shots.get('score') == 100, 'the clip scores 100 on its own shot grammar',
 
 # 3. guard -----------------------------------------------------------------------------------------------
 rows = {}
-for v in ('own', 'regraded', 'inverted', 'clip'):
+for v in ('own', 'regraded', 'inverted', 'clip', 'retold'):
     jp = os.path.join(TMP, f'guard-{v}.json')
     r = run('guard', '--film', clips[v], '--clip', clips['clip'], '--json', jp, '--sheet', os.path.join(TMP, f'guard-{v}.png'))
     rows[v] = (r.returncode, json.load(open(jp, encoding='utf-8')) if os.path.isfile(jp) else {})
@@ -199,6 +205,10 @@ result(rows['regraded'][0] == 1 and not rows['regraded'][1].get('pass'), 'the cl
 result(rows['inverted'][0] == 1 and not rows['inverted'][1].get('pass'), 'the same layouts in other colours read as a recreation',
        f"share {rows['inverted'][1].get('share')}")
 result(rows['clip'][0] == 1 and rows['clip'][1].get('share') == 1.0, 'the clip against itself is a recreation in every frame')
+t = rows['retold'][1]
+result(rows['retold'][0] == 1 and (t.get('share') or 0) >= 0.75,
+       "the clip's shots retold one by one in new words and colours read as a recreation in nearly every frame",
+       f"share {t.get('share')}, longest run {t.get('longest_run')}")
 result(os.path.isfile(os.path.join(TMP, 'guard-regraded.png')), 'the guard writes a paired contact sheet')
 
 # 4. LIKE.md ---------------------------------------------------------------------------------------------

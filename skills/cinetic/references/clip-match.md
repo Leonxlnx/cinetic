@@ -1,9 +1,14 @@
 # Clip match: "make it feel like this clip"
 
-When the user supplies a clip and says "make it feel like this", the film borrows the clip's **grammar** (its pace,
-cut rhythm, curve families, density, camera habits and proportions) and nothing else. The film keeps its own idea, its
-own direction, its own words, its own colours and its own pictures. The tool is `scripts/like.py`; the score is
-`grammar-score.mjs` against the clip's targets; the guard proves the film is not a recreation.
+When the user supplies a clip and says "make it like this" or "make it feel like this", the film borrows the clip's
+**grammar** (its pace, cut rhythm, curve families, density, camera habits and proportions) and nothing else. The film
+keeps its own idea, its own direction, its own devices, its own words, its own colours and its own pictures. The tool
+is `scripts/like.py`; the score is `grammar-score.mjs` against the clip's targets; the guard proves the film is not a
+recreation.
+
+The clip is used the way cinetic uses everything it carries (its templates, the device book, the type presets, the
+house numbers): as a template for structure, grammar, craft and detail level, never as a film to copy. No film is
+remade one to one, its shots, layouts or content.
 
 Contents: 1. The rules · 2. Measure · 3. Build inside the direction · 4. Score · 5. The guard · 6. When the user asks
 for a copy
@@ -12,8 +17,9 @@ for a copy
 
 - **Borrow grammar, never content.** Pace, rhythm, curve families, density, camera habits, ground / ink / accent
   proportions and the blur policy may follow the clip.
-- **Never copy** a layout frame for frame, any text, a logo, another company's colours (`like.json` records ground
-  tones and proportions, never the clip's hues), footage, characters, illustrations or music from the clip.
+- **Never copy** the clip's shots one by one (its shots retold in new words and colours are still its shots), a layout
+  frame for frame, any text, a logo, another company's colours (`like.json` records ground tones and proportions, never
+  the clip's hues), footage, characters, illustrations or music from the clip.
 - **The film keeps its own idea sentence and its own direction** from the deck. The clip shapes the timing and the
   habits inside that direction, never the concept.
 - **The guard passes before delivery** (section 5).
@@ -72,14 +78,17 @@ Each render is scored against the clip's grammar instead of the house grammar; t
 python3 scripts/like.py guard --film out/film.mp4 --clip <clip> --sheet out/qa/like-guard.png [--json out/qa/like-guard.json]
 ```
 
-It compares frames at the same density (one a second by default, `--every`): a film frame whose closest clip frame
-shares its layout (structure overlap ≥ 0.80 with a colour-layout distance ≤ 0.10, or ≥ 0.90 in any colours) reads as
-a recreation. 15 % of the film's frames, or 3 frames in a row, fail it. The sheet pairs each film frame with its
-closest clip frame (red: a recreation). A failing film changes its layouts (the composition, the framing, the scale
-of the subject), not its timing.
+It compares frames at the same density (one a second by default, `--every`), each film frame against every clip
+frame: a film frame that shares a clip frame's layout (structure overlap ≥ 0.80 with a colour-layout distance ≤ 0.10,
+or ≥ 0.90 in any colours) reads as a recreation, so a shot retold in new words and colours fails like a regraded copy.
+15 % of the film's frames, or 3 frames in a row, fail it. A film that borrows the grammar in its own layouts sits far
+below these numbers. The sheet pairs each film frame with the clip frame it recreates, else its closest layout (red: a
+recreation). A failing film changes its layouts (the composition, the framing, the scale of the subject), not its
+timing.
 
 ## 6. When the user asks for a copy
 
 If the user asks to recreate the clip itself (its layouts, its text, its look shot for shot), say that cinetic borrows
-a clip's grammar but does not recreate another film, and offer the grammar route above. A user's own earlier film is
-the exception: its layouts, colours and pictures are theirs, and the guard is then only advisory.
+a clip's grammar but does not recreate another film, and offer the grammar route above: the same pace, rhythm,
+hand-overs and level of craft, told in the film's own devices, layouts and words. A user's own earlier film is the
+exception: its layouts, colours and pictures are theirs, and the guard is then only advisory.
