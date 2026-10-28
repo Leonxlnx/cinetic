@@ -10,6 +10,7 @@
 //   worldNodes     tile nodes from a sample world (kit/data.ts): its records and its people
 // Labels are texture (data-texture) unless a tile is large enough to read (>= TEXT_MIN): then data-text.
 import React from 'react';
+import { Img } from 'remotion';
 import { FONT, TEXT_MIN } from '../brand/tokens';
 import { Defocus } from '../fx/Defocus';
 import { clamp, mix, rand } from '../lib/anim';
@@ -24,7 +25,7 @@ import { type KitTheme, kitTheme } from './theme';
 
 export type TilePreview = 'doc' | 'chart' | 'bars' | 'list' | 'person' | 'table' | 'code';
 /** A tile's content: a real mark or a glyph, a label, a sub line, a preview of what it holds. */
-export type TileNode = { logo?: LogoRef; glyph?: GlyphName; label: string; sub?: string; preview?: TilePreview; value?: string; seed?: string };
+export type TileNode = { logo?: LogoRef; glyph?: GlyphName; label: string; sub?: string; preview?: TilePreview; value?: string; seed?: string; photo?: string; focus?: [number, number] }; // photo: a person's real portrait (staticFile URL) for the 'person' preview
 
 const DOC_LINES = ['Launch moves to the 12th', 'Pricing page, second pass', 'Owners for every open item', 'Numbers from the Q3 close', 'Notes from the Friday review', 'Migrate the old exports', 'Hiring plan for the spring', 'Copy for the welcome email', 'Retro: what slowed us down', 'Support macros, updated', 'Roadmap for the next six weeks', 'Contracts waiting on legal'];
 const CODE_LINES: [string, string][] = [['const', 'total = rows.reduce(sum)'], ['await', 'queue.flush({ batch: 50 })'], ['export', 'function sign(payload)'], ['return', 'cache.get(key) ?? load()'], ['if', '(retry > 3) throw err'], ['import', '{ send } from "./mail"']];
@@ -47,7 +48,11 @@ const Preview: React.FC<{ t: KitTheme; node: TileNode; w: number; h: number; u: 
   if (kind === 'person')
     return (
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', gap: w * 0.07, padding: `0 ${w * 0.07}px` }}>
-        <PortraitMark theme={t} seed={s} size={Math.min(h * 0.78, w * 0.42)} />
+        {node.photo ? (
+          <Img src={node.photo} style={{ width: Math.min(h * 0.78, w * 0.42), height: Math.min(h * 0.78, w * 0.42), borderRadius: '50%', objectFit: 'cover', objectPosition: `${((node.focus?.[0] ?? 0.5) * 100).toFixed(1)}% ${((node.focus?.[1] ?? 0.32) * 100).toFixed(1)}%`, flex: 'none', display: 'block' }} />
+        ) : (
+          <PortraitMark theme={t} seed={s} size={Math.min(h * 0.78, w * 0.42)} />
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: px * 0.3, minWidth: 0 }}>
           <T id="kit-tile-person" px={px * 1.05} u={u} weight={600} color={ink}>{node.value ?? node.label}</T>
           <T id="kit-tile-role" px={px * 0.9} u={u} color={mute}>{node.sub ?? 'Online'}</T>
@@ -160,13 +165,18 @@ export const ContentTile: React.FC<{ node: TileNode; theme?: KitTheme; w: number
 const KIND_GLYPH: Record<SampleWorld['kind'], GlyphName> = { billing: 'doc', deploys: 'terminal', support: 'chat', orders: 'cart', pipeline: 'chart', hiring: 'user' };
 const PREVIEWS: TilePreview[] = ['doc', 'chart', 'list', 'person', 'table', 'bars', 'code'];
 
-/** Tile nodes from a sample world: its records (glyph, title, id and value, a preview) and its people, interleaved. */
+/**
+ * Tile nodes from a sample world: its records (glyph, title, id and value, a preview) and, when the world's people
+ * have real portraits (sampleWorld `photos`), its people, interleaved. Without photos every tile is a record: a person
+ * is never drawn large in place of a photo.
+ */
 export const worldNodes = (w: SampleWorld, n = 24): TileNode[] => {
   const out: TileNode[] = [];
+  const faces = w.people.filter((p) => p.photo);
   for (let i = 0; out.length < n && i < n * 2; i++) {
-    if (i % 4 === 3) {
-      const p = w.people[(i >> 2) % w.people.length];
-      out.push({ glyph: 'user', label: p.name, sub: p.role, preview: 'person', value: p.first, seed: p.seed });
+    if (i % 4 === 3 && faces.length) {
+      const p = faces[(i >> 2) % faces.length];
+      out.push({ glyph: 'user', label: p.name, sub: p.role, preview: 'person', value: p.first, seed: p.seed, photo: p.photo, focus: p.focus });
     } else {
       const r = w.records[i % w.records.length];
       const prev = PREVIEWS[(i + w.seed.length) % PREVIEWS.length];

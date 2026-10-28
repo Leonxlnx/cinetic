@@ -21,6 +21,12 @@
 # (boxes drawn, safe zone dashed) are kept, and the tweens the audited frames evaluate (lib/registry.ts)
 # are collected for scripts/grammar-score.mjs. Each audited frame also records where the official marks are
 # drawn (the kit's <Img data-logo>), which look-audit.py --layout leaves out of its palette checks.
+# Placeholders fail on every visible element, tagged or not (src/lib/placeholder.ts, the lists of
+# scripts/placeholders.json): `placeholder` (lorem ipsum, "Placeholder", "Label text", a generic label alone,
+# "Item 1", a template slot left in brackets), `bar-text` (two or more grey bars standing in for lines of text
+# in a container with no text; a product's own loading skeleton shown on purpose sits in [data-audit-skeleton])
+# and `drawn-figure` (a figure the kit draws, data-drawn, larger than a small UI avatar: a portrait over 72 px,
+# the still life over 48 px at 1080p; a real photo belongs there).
 #
 # Usage (from the project root):
 #   bash scripts/layout-audit.sh <Comp> [--frames 120,240 | --cues | --copy | --every 6] [--props '{"k":1}']

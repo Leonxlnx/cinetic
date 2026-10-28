@@ -10,7 +10,8 @@ import type { IconName } from './icons';
 export type WorldKind = 'billing' | 'deploys' | 'support' | 'orders' | 'pipeline' | 'hiring';
 /** How a status draws: the accent (the state the story is about), done, waiting, quiet (draft, queued), alert. */
 export type StatusTone = 'accent' | 'done' | 'wait' | 'quiet' | 'alert';
-export type WorldPerson = { name: string; first: string; initials: string; role: string; seed: string };
+/** A person of the world; `photo` is a real portrait (a staticFile() URL, sampleWorld's `photos`), shown wherever the person is large enough to read as a face. */
+export type WorldPerson = { name: string; first: string; initials: string; role: string; seed: string; photo?: string; focus?: [number, number] };
 export type WorldStatus = { label: string; tone: StatusTone; count: number };
 export type WorldRecord = {
   /** the record's id as the product prints it: INV-0412, a3f9c21, #4821, #10482 */
@@ -156,7 +157,7 @@ const ROLES_OPEN = ['Senior iOS engineer', 'Product designer', 'Data analyst', '
  * (billing, deploys, support, orders, pipeline, hiring; default: dealt by the seed), `rows` the visible records
  * (default 14), `currency` the money sign. Pure; the statuses, counts, totals and chart all agree.
  */
-export const sampleWorld = (seed: string | number = 'cinetic', o: { kind?: WorldKind; rows?: number; currency?: string } = {}): SampleWorld => {
+export const sampleWorld = (seed: string | number = 'cinetic', o: { kind?: WorldKind; rows?: number; currency?: string; photos?: (string | { src: string; focus?: [number, number] })[] } = {}): SampleWorld => {
   const S = String(seed);
   const kind = o.kind ?? pick(KINDS, `${S}:kind`);
   const spec = SPEC[kind];
@@ -172,7 +173,9 @@ export const sampleWorld = (seed: string | number = 'cinetic', o: { kind?: World
   const people: WorldPerson[] = Array.from({ length: 9 }, (_, i) => {
     const first = firsts[i];
     const last = lasts[i];
-    return { first, name: `${first} ${last}`, initials: `${first[0]}${last[0]}`.toUpperCase(), role: roles[i % roles.length], seed: `${S}:p:${first}${last}` };
+    const ph = o.photos?.[i];
+    const photo = typeof ph === 'string' ? { src: ph } : ph;
+    return { first, name: `${first} ${last}`, initials: `${first[0]}${last[0]}`.toUpperCase(), role: roles[i % roles.length], seed: `${S}:p:${first}${last}`, ...(photo ? { photo: photo.src, ...(photo.focus ? { focus: photo.focus } : {}) } : {}) };
   });
   const companies = shuffle(PRE, `${S}:pre`).map((p, i) => `${p} ${shuffle(SUF, `${S}:suf`)[i % SUF.length]}`);
   const workspace = companies[companies.length - 1];

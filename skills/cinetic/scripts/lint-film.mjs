@@ -120,6 +120,26 @@
  *                     (staticFile), or ground plates (kind/kinds pools, bars, floor, window) in a file that
  *                     names no light for them (`cinetic:light <what it is>`)
  *
+ * Placeholders (errors: a final film shows the product's own words and real pictures, never stand-ins). The word
+ * lists live in scripts/placeholders.json (copy-check.py reads the same file; the layout audit checks the render):
+ *   placeholder-copy  text that marks itself unfinished in an on-screen place (JSX text, a {'string'} child, a
+ *                     text/label/title/caption/line/headline/sub/body/meta/value/placeholder/cta/badge/name prop
+ *                     or object key, a line() or chain() string): lorem ipsum, "Placeholder", "Label text", "Your
+ *                     text here", a whole string that is only a generic label ("Button", "Caption") or a generic
+ *                     noun and a number ("Item 1", "Card 3"). Write the product's real words
+ *   bar-text          grey bars or blocks standing in for text: a Skeleton, TextBars, GhostLines, FakeText,
+ *                     PlaceholderLines or Bars component, or a map / Array.from callback that draws only rounded,
+ *                     filled boxes under 30 px tall at varying widths with no text in them (the "lines of a
+ *                     paragraph" stand-in). Set the real strings at film size (kit Text, the product's data);
+ *                     a product's own loading skeleton shown on purpose takes // lint-ok: loading state
+ *   drawn-figure      a person, place or product drawn in code where a real photo belongs, outside fx/, lib/ and
+ *                     kit/: the kit's drawn portraits (PortraitMark, HalftonePortrait, an Avatar or AvatarStack
+ *                     with kind portrait or halftone and no src) above 72 px, the kit's drawn still life (a kit
+ *                     <Photo theme> with no src), or a component named for a figure (Person, Face, Portrait,
+ *                     Figure, Character, Landscape, Mountain, Forest, Tree, Skyline, Building, Bottle, Vase,
+ *                     Plant, Flower, Food, Shoe...) that draws SVG shapes. Use a real photo or clip
+ *                     (scripts/assets.mjs, fx/Pictures; kit Avatar src) or the product's own UI
+ *
  * Hard bans (SKILL.md "Hard bans"): errors whenever you invent the look.
  *   banned-color      any colour (tokens, :root palette, literals, CSS names) in a banned OKLCH region:
  *                       orange/amber  31 <= h < 96, C >= 0.05 (orange, amber, gold, brass, brown, coral)
@@ -867,6 +887,30 @@ const isOneish = (x) => /^\s*(1(\.0+)?|0?\.[5-9]\d*)\s*$/.test(x ?? '');
 const issues = [];
 let suppressed = 0;
 let brandSupplied = 0;
+// ---------------------------------------------------------------------------------- placeholders (scripts/placeholders.json)
+const PLACEHOLDERS = (() => {
+  const fallback = { words: ['lorem', 'ipsum', 'dolor sit', 'placeholder', 'label text', 'sample text', 'dummy text', 'text here', 'title here'], labels: ['label', 'text', 'heading', 'subtitle', 'caption', 'button', 'placeholder', 'lorem'], numbered: ['item', 'label', 'text', 'title', 'card'] };
+  try {
+    const j = JSON.parse(readFileSync(new URL('./placeholders.json', import.meta.url), 'utf8'));
+    return { words: j.words ?? fallback.words, labels: j.labels ?? fallback.labels, numbered: j.numbered ?? fallback.numbered };
+  } catch {
+    return fallback;
+  }
+})();
+const escRe = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+const PH_WORDS = new RegExp(`(?<![\\w-])(${PLACEHOLDERS.words.map(escRe).join('|')})(?![\\w-])`, 'i');
+const PH_LABEL = new RegExp(`^\\s*(${PLACEHOLDERS.labels.map(escRe).join('|')})\\s*[.:]?\\s*$`, 'i');
+const PH_NUMBERED = new RegExp(`^\\s*(${PLACEHOLDERS.numbered.map(escRe).join('|')})\\s*#?\\d{1,3}\\s*$`, 'i');
+/** The placeholder a string shows, or null: a placeholder word anywhere, or the whole string a generic label or a generic noun and a number. */
+const placeholderIn = (s) => {
+  const t = String(s ?? '').trim();
+  if (!t) return null;
+  const w = PH_WORDS.exec(t);
+  if (w) return w[1];
+  if (PH_LABEL.test(t) || PH_NUMBERED.test(t)) return t;
+  return null;
+};
+
 const BRAND_RE = /cinetic:brand-supplied\b/;
 const BRAND_REASON_RE = /cinetic:brand-supplied\b[\s:,.;–—-]*[\w"'#(]/;
 // house palette rules a supplied brand also overrides (its colours are checked only for contrast and the one-accent rule)
@@ -1869,6 +1913,87 @@ for (const file of files) {
             break;
           }
       }
+    }
+
+    // placeholder-copy: on-screen text that marks itself unfinished (scripts/placeholders.json)
+    if (isScript) {
+      const ON_SCREEN = 'text|label|title|caption|line|headline|subtitle|sub|body|meta|value|placeholder|cta|badge|name|heading|description|hint|who';
+      const flag = (i, s) => {
+        const hit = placeholderIn(s);
+        if (hit) report(i, 'placeholder-copy', 'error', `"${String(s).trim().slice(0, 48)}" is placeholder text ("${hit}"): a final film shows the product's real words (its own UI strings, names and numbers), never lorem ipsum, "Placeholder", "Label text" or a generic label`);
+      };
+      if (/\.(t|j)sx$/.test(file)) {
+        each(/(?<![=\-])>([^<>{}();=|&]*)</g, (m, i) => flag(i + 1, m[1]));
+        each(/>\s*\{\s*(['"`])((?:(?!\1)[^\n$])*)\1\s*\}/g, (m, i) => flag(i + 1, m[2]));
+      }
+      each(new RegExp(`(?<![\\w-])(?:${ON_SCREEN})\\s*=\\s*(?:\\{\\s*)?(['"\`])((?:(?!\\1)[^\\n$])*)\\1`, 'g'), (m, i) => flag(i, m[2]));
+      each(new RegExp(`(?<![\\w$.-])(?:${ON_SCREEN})\\s*:\\s*(['"\`])((?:(?!\\1)[^\\n$])*)\\1`, 'g'), (m, i) => flag(i, m[2]));
+      each(/\b(?:line|chain)\s*\(\s*(['"`])[^'"`\n]*\1\s*,\s*(['"`])((?:(?!\2)[^\n$])*)\2/g, (m, i) => flag(i, m[3]));
+    }
+
+    // bar-text: grey bars or blocks standing in for text
+    if (isScript && !house && !/(^|\/)kit\//.test(norm)) {
+      const barMsg = 'grey bars standing in for text: a final film shows the real strings at film size (kit Text, the product\'s own data), never rounded grey blocks for lines of copy; a product\'s own loading skeleton shown on purpose takes // lint-ok: loading state';
+      each(/<(Skeleton\w*|TextBars?|LineBars?|Gr[ae]yBars?|GhostLines?|FakeText|PlaceholderLines?|Bars)\b/g, (m, i) => report(i, 'bar-text', 'error', `<${m[1]}>: ${barMsg}`));
+      const TEXTY = /data-text\b|\bcopy\s*\(|<(Img|img|svg|path|Words|Chain|MaskRise|TypeOn|Scramble|Roll|Photo|Footage|Video|OffthreadVideo|TypeLine|Text)\b|\{\s*children\s*\}|>\s*[^<>{}\s][^<>{}]*<\/|\{\s*[\w.]*(text|label|title|name|value)\w*\s*\}/i;
+      each(/\bArray\.from\s*\(\s*\{\s*length\s*:|\.map\s*\(/g, (m, i) => {
+        const open = code.indexOf('(', i + (m[0].startsWith('.') ? 0 : 'Array.from'.length));
+        if (open < 0) return;
+        const body = parenGroup(code, open);
+        if (body.length > 3000 || !/=>/.test(body) || TEXTY.test(body) || /data-(chart|meter)|progress|meter|chart|spark|track|slider|scrub|loader|wave/i.test(body)) return;
+        const tags = [...body.matchAll(/<([a-z][\w.]*)\b/g)].map((t) => tagAt(body, t.index)).filter(Boolean);
+        const bar = tags.find((t) => {
+          if (!/\/\s*>$/.test(t.text) || !/\b(background|backgroundColor)\s*:/.test(t.text) || !/\bborderRadius\s*:/.test(t.text)) return false;
+          const hm = /\bheight\s*:\s*([\d.]+)\b/.exec(t.text);
+          if (!hm || Number(hm[1]) <= 0 || Number(hm[1]) >= 30) return false;
+          const wm = /\bwidth\s*:\s*([^,}]+)/.exec(t.text);
+          return !!wm && /%|rand|\[|\bi\b|\bk\b|\bj\b|\*/.test(wm[1]);
+        });
+        if (bar) report(i, 'bar-text', 'error', `a callback that draws only rounded filled boxes under 30 px tall at varying widths: ${barMsg}`);
+      });
+    }
+
+    // drawn-figure: a person, place or product drawn in code where a real photo belongs
+    if (isScript && !house && !/(^|\/)kit\//.test(norm)) {
+      const figMsg = 'a real photo or clip belongs here (scripts/assets.mjs search --people / --no-people, fx/Pictures PhotoCard, kit Avatar src), or the product\'s own UI: never a person, place or product drawn in code';
+      const sizeOf = (tag) => {
+        const m = /\bsize\s*=\s*\{([^}]*)\}|\bsize\s*=\s*['"]?(\d+)/.exec(tag);
+        if (!m) return null;
+        const nums = [...(m[1] ?? m[2] ?? '').matchAll(/(?<![\w.])(\d+(?:\.\d+)?)/g)].map((x) => Number(x[1])).filter((v) => v >= 8);
+        return nums.length ? Math.max(...nums) : null;
+      };
+      const big = (tag, i, what) => {
+        const px = sizeOf(tag);
+        if (px === null) report(i, 'drawn-figure', 'warn', `${what} drawn in code at a size lint cannot read: above 72 px a drawn face is a drawn person; ${figMsg}`);
+        else if (px > 72) report(i, 'drawn-figure', 'error', `${what} drawn in code at ${px} px: ${figMsg}`);
+      };
+      each(/<(PortraitMark|HalftonePortrait)\b/g, (m, i) => {
+        const tag = tagAt(code, i);
+        if (tag) big(tag.text, i, `a ${m[1] === 'PortraitMark' ? 'portrait' : 'halftone portrait'}`);
+      });
+      each(/<(Avatar|AvatarStack)\b/g, (m, i) => {
+        const tag = tagAt(code, i);
+        if (!tag || /\bsrc\s*=/.test(tag.text) || /\{\s*\.\.\./.test(tag.text)) return;
+        const kind = /\bkind\s*=\s*(?:\{\s*)?['"](\w+)['"]/.exec(tag.text)?.[1];
+        if (m[1] === 'AvatarStack') {
+          if ((kind === 'portrait' || kind === 'halftone') && !/\bsrc\b/.test(tag.text)) big(tag.text, i, 'a stack of portraits');
+          return;
+        }
+        if (kind === 'monogram') return;
+        if (kind === 'portrait' || kind === 'halftone' || (sizeOf(tag.text) ?? 0) > 72) big(tag.text, i, 'an avatar portrait');
+      });
+      each(/<Photo\b/g, (m, i) => {
+        const tag = tagAt(code, i);
+        if (!tag || !/\btheme\s*=/.test(tag.text) || /\bsrc\s*=/.test(tag.text) || /\{\s*\.\.\./.test(tag.text)) return;
+        report(i, 'drawn-figure', 'error', `the kit's drawn still life (a kit <Photo> with no src): ${figMsg}`);
+      });
+      const starts = [...code.matchAll(/\n(?:export\s+)?(?:const|function)\s+([A-Z][\w$]*)/g)];
+      starts.forEach((m, k) => {
+        if (!/^(Person|People|Face|Portrait|Figure|Character|Human|Silhouette|Landscape|Mountains?|Hills?|Ridges?|Forest|Trees?|Skyline|Cityscape|Buildings?|Bottle|Vase|Plant|Flower|Food|Dish|Shoe|Sneaker|Car)(?![a-z])/.test(m[1])) return;
+        const body = code.slice(m.index, starts[k + 1]?.index ?? code.length);
+        if ((body.match(/<(path|ellipse|circle|polygon)\b/g) ?? []).length >= 2 || /<svg\b/.test(body))
+          report(m.index + 1, 'drawn-figure', 'error', `${m[1]} draws SVG shapes: ${figMsg}`);
+      });
     }
 
     // card-content: a card or a bento tile shows built UI, a picture, or nothing on purpose (blank): never an empty slab

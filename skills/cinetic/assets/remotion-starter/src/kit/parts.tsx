@@ -405,6 +405,27 @@ export const Ring: React.FC<{ theme: KitTheme; size: number; p: number; draw?: n
   );
 };
 
+// ------------------------------------------------------------------------------------------ a file, not a picture
+const FILE_STEMS = ['IMG_2041', 'IMG_2077', 'DSC_0418', 'DSC_0533', 'shoot-day-2', 'final-select', 'cover-v3', 'hero-crop'];
+/**
+ * A picture slot with no picture yet, shown as what the product itself shows for a file: an image glyph on its tile,
+ * the file's name and size. Product UI, never a drawn stand-in for the photo: give the slot a real photo (`src`) and it
+ * shows the photo instead. Seeded, so a row of four reads as four files.
+ */
+export const FileThumb: React.FC<{ theme: KitTheme; w: number; h: number; seed?: number; radius?: number; scale?: number }> = ({ theme: t, w, h, seed = 1, radius = 0, scale }) => {
+  const u = useKitScale(scale);
+  const name = `${FILE_STEMS[Math.floor(rand(seed * 3 + 1) * FILE_STEMS.length)]}.jpg`;
+  const mb = (1.8 + 4.6 * rand(seed * 5 + 2)).toFixed(1);
+  const px = Math.max(TEXT_MIN * u, Math.min(KIT_TYPE.label * u, w * 0.13));
+  return (
+    <div data-ui style={{ position: 'relative', width: w, height: h, borderRadius: radius, overflow: 'hidden', background: t.well, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: px * 0.5 }}>
+      <GlyphTile theme={t} name="image" size={Math.min(w, h) * 0.34} />
+      <span data-texture="" style={{ ...face(px * 0.8, 600, t.text, -0.01, 1.1), maxWidth: w * 0.86, overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
+      <span data-texture="" style={face(px * 0.7, 500, t.mute, -0.01, 1.1)}>{`${mb} MB`}</span>
+    </div>
+  );
+};
+
 // ------------------------------------------------------------------------------------------ the still life
 export type Vessel = 'vase' | 'jar' | 'bowl' | 'bottle' | 'cup';
 /** Radius profile of a vessel, bottom (t 0) to lip (t 1), as [t, r] control points (r 1 = its widest). */
@@ -425,10 +446,10 @@ const smooth = (pts: [number, number][], t: number) => {
 };
 
 /**
- * A product photograph made in code: matte vessels on a seamless backdrop under the house key, with
- * contact and cast shadows (or a supplied picture: `src`). Seeded, so a thumbnail grid shows a varied
- * set. The colours come from the theme's still-life palette, one hue: the imagery carries colour mass
- * without adding a second accent. `push` (0..1) is a slow move in on the set.
+ * A picture inside product UI: `src`, a real photograph (the product's own, the user's, or one from scripts/assets.mjs),
+ * cropped round `focus` with a slow `push` (0..1). Without `src` it draws the kit's stand-in, matte vessels on a
+ * seamless backdrop, marked data-drawn="product": lint-film (drawn-figure) and the layout audit fail it in a film, so
+ * it never ships; give every picture slot a real photo, or show the product's own UI there instead.
  */
 export const Photo: React.FC<{ theme: KitTheme; w: number; h: number; seed?: number; vessels?: Vessel[]; src?: string; radius?: number; push?: number; focus?: { x: number; y: number } }> = ({
   theme: t,
@@ -480,7 +501,7 @@ export const Photo: React.FC<{ theme: KitTheme; w: number; h: number; seed?: num
     return `M${right.join(' L')} L${left.join(' L')} Z`;
   };
   return (
-    <div style={{ position: 'relative', width: w, height: h, borderRadius: radius, overflow: 'hidden' }}>
+    <div data-drawn="product" style={{ position: 'relative', width: w, height: h, borderRadius: radius, overflow: 'hidden' }}>
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: 'block', transform: `scale(${k.toFixed(5)})`, transformOrigin: `${focus.x * 100}% ${focus.y * 100}%` }}>
         <defs>
           <linearGradient id={`${uid}bg`} x1="0" y1="0" x2="0" y2="1">

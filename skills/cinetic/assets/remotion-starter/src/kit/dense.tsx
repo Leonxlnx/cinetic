@@ -146,7 +146,7 @@ export const AppWindow: React.FC<{ theme: KitTheme; world: SampleWorld; w: numbe
         </div>
         <div style={{ position: 'absolute', right: 18 * u, top: 0, height: bar, display: 'flex', alignItems: 'center', gap: 14 * u }}>
           <Glyph name="bell" size={16 * u} color={mute} />
-          <Avatar theme={t} i={W.me} initials={W.people[W.me].initials} seed={W.people[W.me].seed} size={26 * u} kind="portrait" />
+          <Avatar theme={t} i={W.me} initials={W.people[W.me].initials} seed={W.people[W.me].seed} src={W.people[W.me].photo} focus={W.people[W.me].focus} size={26 * u} kind="portrait" />
         </div>
       </div>
       {/* sidebar */}
@@ -182,13 +182,13 @@ export const AppWindow: React.FC<{ theme: KitTheme; world: SampleWorld; w: numbe
         </div>
         {W.people.slice(1, 6).map((p, i) => (
           <div key={p.name} style={{ position: 'absolute', left: 18 * u, top: (150 + W.nav.length * 36 + i * 34) * u, display: 'flex', alignItems: 'center', gap: 10 * u }}>
-            <Avatar theme={t} i={i} initials={p.initials} seed={p.seed} size={24 * u} />
+            <Avatar theme={t} i={i} initials={p.initials} seed={p.seed} src={p.photo} focus={p.focus} size={24 * u} />
             <Micro px={13 * u} color={ink}>{p.name}</Micro>
             {i < 2 && <div style={{ width: 7 * u, height: 7 * u, borderRadius: '50%', background: t.accent, opacity: i === 0 ? live : 1 }} />}
           </div>
         ))}
         <div style={{ position: 'absolute', left: 14 * u, bottom: 14 * u, width: side - 28 * u, display: 'flex', alignItems: 'center', gap: 10 * u }}>
-          <Avatar theme={t} i={W.me} initials={W.people[W.me].initials} seed={W.people[W.me].seed} size={32 * u} kind="portrait" />
+          <Avatar theme={t} i={W.me} initials={W.people[W.me].initials} seed={W.people[W.me].seed} src={W.people[W.me].photo} focus={W.people[W.me].focus} size={32 * u} kind="portrait" />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <Micro px={13 * u} weight={600} color={ink}>{W.people[W.me].name}</Micro>
             <Micro px={11.5 * u} color={mute}>{W.people[W.me].role}</Micro>
@@ -270,7 +270,7 @@ const LensLine: React.FC<{ t: KitTheme; W: SampleWorld; row: number; px: number;
   const lead = mode === 'still' || (mode === 'in' ? k >= 0.4 : k < 0.4);
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, display: 'flex', alignItems: 'center', gap: px * 0.42, padding: `0 ${px * 0.55}px`, boxSizing: 'border-box', opacity: op, transform: `translateY(${dy.toFixed(2)}px)` }}>
-      <Avatar theme={t} i={r.who} initials={W.people[r.who].initials} seed={W.people[r.who].seed} size={px * 1.1} kind="portrait" />
+      <Avatar theme={t} i={r.who} initials={W.people[r.who].initials} seed={W.people[r.who].seed} src={W.people[r.who].photo} focus={W.people[r.who].focus} size={px * 1.1} kind="portrait" />
       <div data-text={lead ? 'kit-dense-focus' : undefined} style={{ display: 'flex', alignItems: 'baseline', gap: px * 0.4, flex: 1, minWidth: 0 }}>
         <span style={{ ...face(px, 600, t.text, -0.02, 1.1), flex: 'none' }}>{r.title}</span>
         <span style={{ ...face(px * 0.62, 500, t.mute, -0.01, 1.1), flex: 'none' }}>{r.value}</span>
@@ -386,7 +386,7 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
               <StatusPill theme={t} label={st.label} tone={st.tone} px={12.5 * u} />
             </div>
             <div style={{ position: 'absolute', left: cx[6] + 8 * u, top: rowH / 2 - 13 * u, display: 'flex', alignItems: 'center', gap: 6 * u }}>
-              <Avatar theme={t} i={r.who} initials={who.initials} seed={who.seed} size={26 * u} kind="portrait" />
+              <Avatar theme={t} i={r.who} initials={who.initials} seed={who.seed} src={who.photo} focus={who.focus} size={26 * u} kind="portrait" />
               <Micro px={11.5 * u} color={mute}>{r.tag}</Micro>
             </div>
           </div>
@@ -402,7 +402,7 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
             const p = W.people[a.who];
             return (
               <div key={i} style={{ position: 'absolute', left: 16 * u, top: (46 + i * 50) * u, width: insW - 32 * u, display: 'flex', gap: 10 * u }}>
-                <Avatar theme={t} i={a.who} initials={p.initials} seed={p.seed} size={28 * u} kind="portrait" />
+                <Avatar theme={t} i={a.who} initials={p.initials} seed={p.seed} src={p.photo} focus={p.focus} size={28 * u} kind="portrait" />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 * u, minWidth: 0 }}>
                   <span style={{ display: 'flex', gap: 5 * u, whiteSpace: 'nowrap' }}>
                     <Micro px={12.5 * u} weight={600} color={ink}>{p.first}</Micro>
@@ -489,7 +489,7 @@ const Board: React.FC<Inner> = ({ t, W, m, u, f, H, view, focus, veil, blur }) =
         <div style={{ display: 'flex' }}>
           {W.people.slice(0, 5).map((p, i) => (
             <div key={p.name} style={{ marginLeft: i ? -8 * u : 0, zIndex: 5 - i }}>
-              <Avatar theme={t} i={i} initials={p.initials} seed={p.seed} size={30 * u} ring={t.surface} kind="portrait" />
+              <Avatar theme={t} i={i} initials={p.initials} seed={p.seed} src={p.photo} focus={p.focus} size={30 * u} ring={t.surface} kind="portrait" />
             </div>
           ))}
         </div>
@@ -522,7 +522,7 @@ const Board: React.FC<Inner> = ({ t, W, m, u, f, H, view, focus, veil, blur }) =
             </div>
             <div style={{ position: 'absolute', left: 14 * u, bottom: 12 * u, right: 14 * u, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 * u }}>
-                <Avatar theme={t} i={r.who} initials={who.initials} seed={who.seed} size={22 * u} />
+                <Avatar theme={t} i={r.who} initials={who.initials} seed={who.seed} src={who.photo} focus={who.focus} size={22 * u} />
                 <Micro px={11.5 * u} color={mute}>{r.tag}</Micro>
               </span>
               <Micro px={13.5 * u} weight={600} color={ink}>{r.value}</Micro>

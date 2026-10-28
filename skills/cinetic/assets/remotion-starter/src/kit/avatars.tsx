@@ -7,6 +7,9 @@
 //                     under the same key: for a large portrait, a profile, a quote card
 //   MonogramTile      initials on a soft rounded tile, for a 24-40 px chip only
 // Pure functions of their props: the same person draws the same face on every frame. Colours come from the theme.
+// A drawn portrait is for a small avatar inside product UI (72 px and under at 1080p): it carries data-drawn="person",
+// and the layout audit fails one drawn larger (drawn-figure). A person who matters in the shot is a real photo (Avatar
+// src, fx/Pictures PhotoCard).
 import React, { useId } from 'react';
 import { clamp, rand } from '../lib/anim';
 import { mixColor, oklch as fromLch, toOklch } from '../lib/color';
@@ -118,7 +121,7 @@ export const PortraitMark: React.FC<{ theme: KitTheme; seed: string | number; si
   const hy = 43;
   const clip = shape === 'disc' ? <circle cx={50} cy={50} r={50} /> : <rect x={0} y={0} width={100} height={100} rx={24} />;
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block', flex: 'none', ...style }} aria-hidden>
+    <svg data-drawn="person" width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block', flex: 'none', ...style }} aria-hidden>
       <defs>
         <clipPath id={`${id}c`}>{clip}</clipPath>
         <linearGradient id={`${id}bg`} x1="0" y1="0" x2="1" y2="1">
@@ -311,7 +314,7 @@ export const HalftonePortrait: React.FC<{ theme: KitTheme; seed: string | number
   const paper = inverse ? t.accent : mixColor(t.accentSoft, t.dark ? t.text : C.white, 0.35);
   const ink = inverse ? mixColor(t.accent, C.white, 0.85) : t.accentDeep;
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block', flex: 'none', ...style }} aria-hidden>
+    <svg data-drawn="person" width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block', flex: 'none', ...style }} aria-hidden>
       <defs>
         <clipPath id={`${id}c`}>{shape === 'disc' ? <circle cx={50} cy={50} r={50} /> : <rect x={0} y={0} width={100} height={100} rx={shape === 'tile' ? 18 : 0} />}</clipPath>
         <linearGradient id={`${id}p`} x1="0" y1="0" x2="1" y2="1">

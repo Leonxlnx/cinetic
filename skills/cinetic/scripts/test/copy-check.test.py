@@ -12,6 +12,9 @@
      the findings and the stranger's read.
   5. Every example script the skill ships passes: the Script tables in assets/TREATMENT.md, the good scripts in
      references/copy-and-type.md, references/update-films.md and references/worked-example.md; the bad ones fail.
+  6. Placeholders: a script line that says "Placeholder" and a COPY ui string in lorem ipsum fail; --ui src reads
+     the on-screen strings of a film's source (not comments, not fx/) and fails placeholder text and unfilled
+     slots; --ui layout.json reads the UI boxes the layout audit measured; real UI words pass.
 
 Usage (from the skill root):  python3 scripts/test/copy-check.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -206,6 +209,37 @@ def tables(path):
         if s.startswith('#') or s.startswith('**'):
             label = s
     return out
+
+# 6. placeholders: a script line, COPY ui strings, and the product's UI strings (--ui src | layout.json)
+code, rep = run([script(['Tessel is a calendar for busy teams.', 'Placeholder line', 'It finds one free hour for everyone.', 'Tessel is out now at tessel.app.'], 'ph.txt')])
+result(code == 1 and 'placeholder' in rules(rep, 'error'), 'placeholder: a script line that says "Placeholder" fails', ', '.join(rules(rep)))
+doc = {'fps': 60, 'total': 600, 'name': 'Tessel', 'copy': [
+    {'id': 'a', 'text': 'Tessel is a calendar for busy teams.', 'in': 0, 'resolved': 30, 'out': 200},
+    {'id': 'b', 'text': 'It moves a meeting when plans change.', 'in': 200, 'resolved': 230, 'out': 400},
+    {'id': 'c', 'text': 'Tessel is out now at tessel.app.', 'in': 400, 'resolved': 430, 'out': 600},
+    {'id': 'u', 'text': 'Lorem ipsum dolor', 'in': 250, 'resolved': 250, 'out': 300, 'kind': 'ui'}]}
+code, rep = run(['--stdin'], stdin=json.dumps(doc))
+result(code == 1 and any(f['rule'] == 'placeholder' and 'Lorem' in (f.get('text') or '') for f in rep.get('findings', [])), 'placeholder: a COPY ui string in lorem ipsum fails', ', '.join(rules(rep)))
+ui = os.path.join(TMP, 'ui', 'src')
+os.makedirs(os.path.join(ui, 'acts'), exist_ok=True)
+os.makedirs(os.path.join(ui, 'fx'), exist_ok=True)
+open(os.path.join(ui, 'content.ts'), 'w', encoding='utf-8').write("export const C = { title: '[Your output]', rows: ['Invoices sent', 'Item 2'], who: 'Ana Ruiz' };\n")
+open(os.path.join(ui, 'acts', 'Feed.tsx'), 'w', encoding='utf-8').write("export const F = () => <div><span>Label text</span><Pill label=\"Paid\" /><span>Due Friday</span></div>; // <b>Lorem ipsum</b> in a comment\n")
+open(os.path.join(ui, 'fx', 'House.tsx'), 'w', encoding='utf-8').write("export const kind = { text: 'Placeholder' };\n")
+code, rep = run(['--ui', ui])
+got = sorted((f['rule'], f['text']) for f in rep.get('findings', []))
+result(code == 1 and got == [('placeholder', 'Item 2'), ('placeholder', 'Label text'), ('slot', '[Your output]')],
+       '--ui src: placeholder text and an unfilled slot fail; real words, comments and house code (fx/) do not', str(got))
+result(rep.get('ui', {}).get('strings', 0) >= 6, '--ui src: the UI strings are counted', str(rep.get('ui')))
+lay = os.path.join(TMP, 'layout.json')
+json.dump({'boxes': [{'frame': 120, 'boxes': [{'id': 'kit-row', 'text': 'Invoice #4821', 'ui': True}, {'id': 'kit-title', 'text': 'Untitled text', 'ui': True}, {'id': 'line', 'text': 'Placeholder', 'ui': False}]}]}, open(lay, 'w', encoding='utf-8'))
+code, rep = run(['--ui', lay])
+got = [f['text'] for f in rep.get('findings', [])]
+result(code == 1 and got == ['Untitled text'], '--ui layout.json: the UI boxes the audit measured (a film line belongs to the script, not the UI)', str(got))
+open(os.path.join(ui, 'content.ts'), 'w', encoding='utf-8').write("export const C = { title: 'Weekly report', rows: ['Invoices sent', 'Paid this week'], who: 'Ana Ruiz' };\n")
+open(os.path.join(ui, 'acts', 'Feed.tsx'), 'w', encoding='utf-8').write("export const F = () => <div><Field placeholder=\"Search invoices\" /><span>Due Friday</span></div>;\n")
+code, rep = run(['--ui', ui])
+result(code == 0 and not rep.get('findings'), '--ui src: real UI words pass (a field hint included)', str(rep.get('findings'))[:200])
 
 EXAMPLES = [('assets/TREATMENT.md', None), ('references/copy-and-type.md', None), ('references/update-films.md', 'update'),
             ('references/worked-example.md', None)]

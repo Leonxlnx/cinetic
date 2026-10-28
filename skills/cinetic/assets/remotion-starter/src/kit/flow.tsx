@@ -6,7 +6,7 @@ import React from 'react';
 import { TEXT_MIN } from '../brand/tokens';
 import { clamp, mix } from '../lib/anim';
 import { mixColor } from '../lib/color';
-import { Button, Check, face, Glyph, GlyphTile, KIT_TYPE, Photo, surfaceShadow, useKitScale } from './parts';
+import { Button, Check, face, FileThumb, Glyph, GlyphTile, KIT_TYPE, Photo, surfaceShadow, useKitScale } from './parts';
 import type { GlyphName } from './sample';
 import { type KitTheme, lit } from './theme';
 
@@ -46,14 +46,14 @@ export const Field: React.FC<{
   );
 };
 
-/** A result: a picture (the kit's still life, or `src`), a title of up to two lines and a meta line. */
+/** A result: a picture (`src`, a real photograph; without it the file it is, FileThumb), a title of up to two lines and a meta line. */
 export const Tile: React.FC<{ theme: KitTheme; w: number; seed?: number; src?: string; title: string; meta?: string; badge?: string; id?: string; scale?: number }> = ({ theme: t, w, seed = 1, src, title, meta, badge, id = 'kit-tile', scale }) => {
   const u = useKitScale(scale);
   const ph = w * 0.5625;
   return (
     <div data-ui style={{ position: 'relative', width: w, display: 'flex', flexDirection: 'column', gap: 14 * u }}>
       <div style={{ position: 'relative', width: w, height: ph, borderRadius: 18 * u, overflow: 'hidden', boxShadow: surfaceShadow(t, 18, u) }}>
-        <Photo theme={t} w={w} h={ph} seed={seed} src={src} />
+        {src ? <Photo theme={t} w={w} h={ph} src={src} /> : <FileThumb theme={t} w={w} h={ph} seed={seed} scale={scale} />}
         {badge && (
           <div style={{ position: 'absolute', right: 12 * u, bottom: 12 * u, padding: `${4 * u}px ${12 * u}px`, borderRadius: 10 * u, background: mixColor(t.ground, t.text, t.dark ? 0.05 : 0.9) }}>
             <span data-text={`${id}-badge`} style={face(KIT_TYPE.label * u, 600, t.dark ? t.text : t.ground)}>

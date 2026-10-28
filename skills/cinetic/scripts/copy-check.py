@@ -36,7 +36,16 @@ Checks (error unless marked):
   name        no line names the product
   what-it-is  no line says what the product is by 3 s (launch), or no "[Name] [version]" by 3 s (update)
   close       (warning) the film does not end on the name and what to do (a URL, "Out now")
+  placeholder a line or a UI string that marks itself unfinished: lorem ipsum, "Placeholder", "Label text", "Your
+              text here", a generic label alone ("Button", "Caption") or a generic noun and a number ("Item 1");
+              the lists are scripts/placeholders.json, which lint-film.mjs reads too
+  slot        (--ui) a UI string still holding a template's bracketed slot ("[Product]", "[N] items")
 Then it prints what a stranger reads: what it is, what it does, what to do.
+
+UI strings (--ui): every string the product's UI shows is real words too. --ui src reads the on-screen strings of the
+film's source (JSX text, text/label/title/caption/meta/value/... props and keys, lists of rows, steps and options; fx/
+and lib/ are house code and skipped); --ui out/qa/layout-Film.json reads the UI boxes the layout audit measured on the
+render. Given alone (no script), only the UI strings are checked.
 
 Usage:
   python3 scripts/copy-check.py TREATMENT.md
@@ -46,6 +55,7 @@ Usage:
            --fps N (cues without fps)  --allow word,word (the brand's own voice, recorded in BRIEF.md)
            --marks Name,Name (real marks the film shows, beside public/logos/logos.json)
            --json (machine-readable)  --strict (warnings fail too)  --stdin (JSON on stdin)
+           --ui src|layout.json (the product's UI strings: placeholders and unfilled slots fail)
 Exit codes: 0 pass, 1 a check failed (or a warning with --strict), 2 bad arguments or an unreadable script.
 """
 import json
@@ -181,6 +191,143 @@ def words_of(text):
 
 def norm_word(w):
     return re.sub(r"^[^\w\[’']+|[^\w\]’']+$", '', w.lower()).replace('’', "'")
+
+
+# ------------------------------------------------------------------------------------- placeholders (scripts/placeholders.json)
+def _placeholder_lists():
+    fallback = {'words': ['lorem', 'ipsum', 'dolor sit', 'placeholder', 'label text', 'sample text', 'dummy text', 'text here', 'title here'],
+                'labels': ['label', 'text', 'heading', 'subtitle', 'caption', 'button', 'placeholder', 'lorem'],
+                'numbered': ['item', 'label', 'text', 'title', 'card']}
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'placeholders.json'), encoding='utf-8') as fh:
+            j = json.load(fh)
+        return {k: j.get(k) or fallback[k] for k in fallback}
+    except (OSError, ValueError):
+        return fallback
+
+
+_PH = _placeholder_lists()
+_esc = lambda w: r'\s+'.join(re.escape(x) for x in w.split())
+PH_WORDS = re.compile(r'(?<![\w-])(' + '|'.join(_esc(w) for w in _PH['words']) + r')(?![\w-])', re.I)
+PH_LABEL = re.compile(r'^\s*(' + '|'.join(_esc(w) for w in _PH['labels']) + r')\s*[.:]?\s*$', re.I)
+PH_NUMBERED = re.compile(r'^\s*(' + '|'.join(_esc(w) for w in _PH['numbered']) + r')\s*#?\d{1,3}\s*$', re.I)
+SLOT = re.compile(r'\[[A-Za-z][^\]\n]{0,40}\]')
+
+
+def placeholder_in(text, slots=False):
+    """The placeholder a string shows (the word, or the whole string), or None; brackets count with slots."""
+    t = (text or '').strip()
+    if not t:
+        return None
+    m = PH_WORDS.search(t)
+    if m:
+        return m.group(1)
+    if PH_LABEL.match(t) or PH_NUMBERED.match(t):
+        return t
+    if slots:
+        b = SLOT.search(t)
+        if b:
+            return b.group(0)
+    return None
+
+
+ON_SCREEN = r'text|label|title|caption|line|headline|subtitle|sub|body|meta|value|placeholder|cta|badge|name|heading|description|hint|who|handle|unit|busy|action|insight|count'
+LISTS = r'stats|steps|rows|items|options|tags|labels|lines|words|columns|nav|tabs|people|names|results|chips'
+
+
+def _strip_comments(src):
+    src = re.sub(r'/\*[\s\S]*?\*/', lambda m: re.sub(r'[^\n]', ' ', m.group(0)), src)
+    out = []
+    for line in src.split('\n'):
+        q, i, cut = None, 0, None
+        while i < len(line):
+            c = line[i]
+            if q:
+                if c == '\\':
+                    i += 1
+                elif c == q:
+                    q = None
+            elif c in '\'"`':
+                q = c
+            elif line.startswith('//', i):
+                cut = i
+                break
+            i += 1
+        out.append(line if cut is None else line[:cut])
+    return '\n'.join(out)
+
+
+def ui_strings_from_src(root):
+    """On-screen strings in a film's source: (text, 'file:line') pairs. fx/, lib/, node_modules and tests are skipped."""
+    found = []
+    skip = {'node_modules', 'fx', 'lib', 'out', 'test', 'tests', '__pycache__', 'scripts'}
+    pats = [
+        (re.compile(r'(?<![=\-])>([^<>{}();=|&\n]*)<'), 1, ('.tsx', '.jsx')),
+        (re.compile(r'>\s*\{\s*([\'"`])((?:(?!\1)[^\n$])*)\1\s*\}'), 2, ('.tsx', '.jsx')),
+        (re.compile(r'(?<![\w-])(?:' + ON_SCREEN + r')\s*=\s*(?:\{\s*)?([\'"`])((?:(?!\1)[^\n$])*)\1'), 2, None),
+        (re.compile(r'(?<![\w$.-])(?:' + ON_SCREEN + r')\s*:\s*([\'"`])((?:(?!\1)[^\n$])*)\1'), 2, None),
+    ]
+    lists = re.compile(r'(?<![\w$.-])(?:' + LISTS + r')\s*:\s*\[([^\]]*)\]')
+    strs = re.compile(r'([\'"`])((?:(?!\1)[^\n$])*)\1')
+    for d, dirs, files in os.walk(root):
+        dirs[:] = [x for x in dirs if x not in skip]
+        for f in files:
+            if not f.endswith(('.ts', '.tsx', '.js', '.jsx')) or f.endswith('.d.ts'):
+                continue
+            path = os.path.join(d, f)
+            try:
+                code = _strip_comments(open(path, encoding='utf-8').read())
+            except OSError:
+                continue
+            try:
+                rel = os.path.relpath(path)
+            except ValueError:  # another drive (Windows)
+                rel = path
+            where = lambda i: f'{rel}:{code.count(chr(10), 0, i) + 1}'
+            for pat, g, exts in pats:
+                if exts and not f.endswith(exts):
+                    continue
+                for m in pat.finditer(code):
+                    t = m.group(g).strip()
+                    if re.search(r'[A-Za-z]', t):
+                        found.append((t, where(m.start())))
+            for m in lists.finditer(code):
+                for x in strs.finditer(m.group(1)):
+                    t = x.group(2).strip()
+                    if re.search(r'[A-Za-z]', t):
+                        found.append((t, where(m.start())))
+    seen, out = set(), []
+    for t, w in found:
+        if (t, w) not in seen:
+            seen.add((t, w))
+            out.append((t, w))
+    return out
+
+
+def ui_strings_from_layout(doc):
+    """The UI boxes a layout audit measured (data-ui), with their frames."""
+    out = []
+    for fr in doc.get('boxes') or []:
+        for b in fr.get('boxes') or []:
+            if b.get('ui') and b.get('text'):
+                out.append((b['text'], f'f{fr.get("frame")} {b.get("id")}'))
+    return list(dict.fromkeys(out))
+
+
+def check_ui(strings):
+    """Placeholder and slot findings over UI strings."""
+    findings = []
+    for t, where in strings:
+        hit = placeholder_in(t)
+        if hit:
+            findings.append({'rule': 'placeholder', 'severity': 'error', 'line': None, 'text': t, 'where': where,
+                             'message': f'UI string "{t[:48]}" ({where}) is placeholder text ("{hit}"): the product\'s real words, names and numbers'})
+            continue
+        b = SLOT.search(t)
+        if b:
+            findings.append({'rule': 'slot', 'severity': 'error', 'line': None, 'text': t, 'where': where,
+                             'message': f'UI string "{t[:48]}" ({where}) still holds the slot {b.group(0)}: fill it with the product\'s own word or number'})
+    return findings
 
 
 def has_phrase(text, pats):
@@ -433,6 +580,9 @@ def check(lines, names=(), ui=(), name=None, fmt=None, allow=(), marks=()):
             add('long', f'{n} words; a line holds {MIN_WORDS}-{MAX_WORDS}: cut it, or say it as two lines, each its own beat', i)
         if n == 1 and not (is_name or is_close or is_version or l.get('end')):
             add('keyword', 'one word is a label, not a line: say what it does in a short sentence', i)
+        ph = placeholder_in(t)
+        if ph:
+            add('placeholder', f'"{ph}" is placeholder text: write the real line, in the words a customer would use', i)
         before = len(findings)
         hits = list(dict.fromkeys(h for h in has_phrase(t, VAGUE) if h not in allow))
         if hits:
@@ -522,6 +672,11 @@ def check(lines, names=(), ui=(), name=None, fmt=None, allow=(), marks=()):
     if structural and fmt in ('launch', 'feature', 'product', 'walkthrough') and not (todo and ends_named):
         add('close', 'the end does not say ' + ' and '.join(w for w, ok in (('the name', ends_named), ('what to do (a URL or "Out now")', bool(todo))) if not ok)
             + ': close on the name and where to get it', sev='warn')
+    for u in ui:
+        ph = placeholder_in(u['text'])
+        if ph:
+            findings.append({'rule': 'placeholder', 'severity': 'error', 'line': None, 'text': u['text'],
+                             'message': f'UI string "{u["text"][:48]}" is placeholder text ("{ph}"): the product\'s real words'})
     does = [lines[i]['text'] for i in script if lines[i]['text'] != what and not (URL.search(lines[i]['text']) or CTA.search(lines[i]['text']))]
     stranger = {'is': what, 'does': does, 'todo': todo}
     return findings, name, stranger
@@ -536,13 +691,13 @@ def main(argv):
     if not argv or argv[0] in ('-h', '--help'):
         print(__doc__.strip())
         return 0 if argv else 2
-    a = {'name': None, 'format': None, 'fps': None, 'allow': '', 'marks': '', 'json': False, 'strict': False, 'stdin': False, 'path': None}
+    a = {'name': None, 'format': None, 'fps': None, 'allow': '', 'marks': '', 'ui': None, 'json': False, 'strict': False, 'stdin': False, 'path': None}
     i = 0
     while i < len(argv):
         k = argv[i]
         if k in ('--json', '--strict', '--stdin'):
             a[k[2:]] = True
-        elif k in ('--name', '--format', '--fps', '--allow', '--marks'):
+        elif k in ('--name', '--format', '--fps', '--allow', '--marks', '--ui'):
             if i + 1 >= len(argv):
                 print(f'copy-check: {k} needs a value', file=sys.stderr)
                 return 2
@@ -554,6 +709,29 @@ def main(argv):
         else:
             a['path'] = k
         i += 1
+    ui_strings, ui_source = [], None
+    if a['ui']:
+        try:
+            if os.path.isdir(a['ui']):
+                ui_strings = ui_strings_from_src(a['ui'])
+            else:
+                ui_strings = ui_strings_from_layout(json.load(open(a['ui'], encoding='utf-8')))
+            ui_source = a['ui']
+        except (OSError, ValueError) as e:
+            print(f'copy-check: cannot read the UI strings in {a["ui"]}: {e}', file=sys.stderr)
+            return 2
+        if not a['path'] and not a['stdin']:
+            found = check_ui(ui_strings)
+            ok = not found
+            if a['json']:
+                print(json.dumps({'ok': ok, 'ui': {'source': ui_source, 'strings': len(ui_strings)}, 'findings': found,
+                                  'summary': {'errors': len(found), 'warnings': 0}}, indent=1, ensure_ascii=False))
+                return 0 if ok else 1
+            print(f'copy-check: UI strings, {len(ui_strings)} read from {ui_source}')
+            for f in found:
+                print(f'error  {f["rule"]}: {f["message"]}')
+            print(f'copy-check: {len(found)} error{"s" * (len(found) != 1)}' + ('' if ok else ': write the product\'s real words in its UI'))
+            return 0 if ok else 1
     names, ui, fmt, name, marks = [], [], a['format'], a['name'], []
     try:
         if a['stdin'] or (a['path'] and a['path'].endswith('.json')):
@@ -589,6 +767,7 @@ def main(argv):
     allow = a['allow'].split(',') if a['allow'] else []
     marks = [x.strip() for x in a['marks'].split(',') if x.strip()] + marks + film_marks(None if a['stdin'] else a['path'])
     findings, name, stranger = check(lines, names, ui, name, fmt, allow, marks)
+    findings += check_ui(ui_strings)
     errors = [f for f in findings if f['severity'] == 'error']
     warns = [f for f in findings if f['severity'] == 'warn']
     ok = not errors and not (a['strict'] and warns)
@@ -599,6 +778,7 @@ def main(argv):
                                      'estimated': bool(l.get('estimated')), 'end': bool(l.get('end')), 'role': l.get('role') or None}
                                     for i, l in enumerate(lines)],
                           'findings': findings, 'stranger': {**stranger, 'reads': reads},
+                          **({'ui': {'source': ui_source, 'strings': len(ui_strings)}} if ui_source else {}),
                           'summary': {'errors': len(errors), 'warnings': len(warns)}}, indent=1, ensure_ascii=False))
         return 0 if ok else 1
     print(f'copy-check: {source} ({fmt or "format unknown"}, name {json.dumps(name) if name else "unknown"}, {len(lines)} lines, '
@@ -606,6 +786,8 @@ def main(argv):
     for i, l in enumerate(lines):
         tag = '  [what it is]' if l.get('role') == 'what it is' else ('  [end card]' if l.get('end') else '')
         print(f'  {i + 1:>2}  {"~" if l.get("estimated") else " "}{l["at"]:5.1f} s  {l["text"]}  ({len(words_of(l["text"]))}){tag}')
+    if ui_source:
+        print(f'  UI strings: {len(ui_strings)} read from {ui_source}')
     for f in findings:
         where = f' line {f["line"]} "{f["text"]}"' if f['line'] else ''
         print(f'{f["severity"]:>5}  {f["rule"]}{where}: {f["message"]}')

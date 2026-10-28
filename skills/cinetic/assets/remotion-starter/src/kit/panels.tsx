@@ -24,6 +24,7 @@ import {
   KIT_TYPE,
   Meter,
   Pending,
+  FileThumb,
   Photo,
   Ring,
   Sparkline,
@@ -31,7 +32,6 @@ import {
   Text,
   Toast,
   useKitScale,
-  type Vessel,
 } from './parts';
 import { DenseScreen } from './dense';
 import { BUDGETS, budgetTotals, money, REVIEW } from './sample';
@@ -44,7 +44,8 @@ type Base = { frame: number; theme?: KitTheme; w?: number; h?: number; x?: numbe
  * A project under review: its title and deadline, the status, the team, four selects with their
  * approvals, the count and the bar, the primary action. `doneAt`: the frame the last approvals land (the
  * badge, the count, the last tick and the button switch in that one frame: hard UI). `buttonQ` is the
- * press amount (fx/Cards press().q) so the click and the product's answer stay on one curve.
+ * press amount (fx/Cards press().q) so the click and the product's answer stay on one curve. `photos`: the selects as
+ * real photographs (staticFile paths); without them each select shows as the file it is (FileThumb), never drawn.
  */
 export const ProjectPanel: React.FC<Base & { data?: typeof REVIEW; doneAt?: number; buttonQ?: number; hover?: boolean; photos?: (string | undefined)[] }> = ({
   frame: f,
@@ -94,7 +95,7 @@ export const ProjectPanel: React.FC<Base & { data?: typeof REVIEW; doneAt?: numb
       </div>
       {[0, 1, 2, 3].map((i) => (
         <div key={i} style={{ position: 'absolute', left: 60 * u + i * (thumb + 22 * u), top: 324 * u, width: thumb, height: thumb, borderRadius: 30 * u, overflow: 'hidden' }}>
-          <Photo theme={t} w={thumb} h={thumb} seed={11 + i * 5} src={photos[i]} vessels={([['vase'], ['jar', 'cup'], ['bowl', 'bottle'], ['bottle', 'vase', 'cup']] as Vessel[][])[i]} />
+          {photos[i] ? <Photo theme={t} w={thumb} h={thumb} src={photos[i]} /> : <FileThumb theme={t} w={thumb} h={thumb} seed={11 + i * 5} scale={u} />}
           <div style={{ position: 'absolute', right: 14 * u, top: 14 * u }}>
             {i < 3 || done ? <Check size={48 * u} fill={t.accent} tick={t.accentInk} /> : <Pending size={48 * u} stroke={t.mute} fill={t.well} />}
           </div>

@@ -3,6 +3,7 @@ import { AbsoluteFill, useCurrentFrame, useCurrentScale, useVideoConfig } from '
 import { C } from '../brand/tokens';
 import { useFilm } from './film';
 import { auditing, drain, setAuditing } from './registry';
+import { BAR, DRAWN_MAX, drawnTooLarge, isTextBar, placeholderIn } from './placeholder';
 import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 
 // Layout audit, mounted only when a composition gets the prop {audit: true}
@@ -47,6 +48,12 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 // under its colour copy, a smear): it is measured once, at its most opaque copy, never as text overlapping itself.
 // The rows of a list scrolling through the frame ([data-audit-scroll], a feed) cross the frame's edges and pass under
 // the UI that floats over the list: they are not held to the safe zone or to overlap with what is outside the list.
+// Placeholders fail too (lib/placeholder.ts, the lists of scripts/placeholders.json), on every visible element, tagged
+// or not: `placeholder`, text that marks itself unfinished (lorem ipsum, "Placeholder", "Label text", a generic label
+// alone, "Item 1", a template slot left in brackets); `bar-text`, two or more grey bars standing in for lines of text in
+// a container with no text of its own (a product's own loading skeleton shown on purpose sits in [data-audit-skeleton];
+// charts and meters in [data-chart] / [data-meter]); `drawn-figure`, a figure the kit draws (data-drawn: a portrait, the
+// still life) larger than a small UI avatar (person 72 px, product or place 48 px at 1080p): a real photo belongs there.
 
 export const AUDIT_TAG = 'CINETIC_AUDIT';
 export const TWEENS_TAG = 'CINETIC_TWEENS';
@@ -77,7 +84,7 @@ export const TYPE_WIDTH = { line: 0.61, sentence: 0.75, sentenceCap: 6.5, displa
 export const CLAIM_MARGIN = 0.025;
 
 type Box = { id: string; text: string; words: number; ui: boolean; smear?: boolean; scroll?: boolean; push?: 'moving' | 'bleed'; claim?: boolean; crosses?: boolean; x: number; y: number; w: number; h: number; px: number; opacity: number; role?: string; cap?: number };
-type Issue = { kind: 'safe-area' | 'overlap' | 'small-text' | 'covered' | 'words'; id: string; detail: string };
+type Issue = { kind: 'safe-area' | 'overlap' | 'small-text' | 'covered' | 'words' | 'placeholder' | 'bar-text' | 'drawn-figure'; id: string; detail: string };
 type Warning = { kind: 'type-size'; id: string; detail: string };
 
 const round = (v: number) => Math.round(v * 10) / 10;
@@ -229,6 +236,53 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         const iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) - 2;
         if (ix > 0 && iy > 0) issues.push({ kind: 'overlap', id: `${a.id}+${b.id}`, detail: `${round(ix)}x${round(iy)}px` });
       }
+    // Placeholders on the frame, tagged or not: unfinished text, grey bars for text, figures drawn where a photo belongs.
+    const seenText = new Set<string>();
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const el = n.parentElement;
+      const txt = (n.textContent || '').trim();
+      if (!el || !txt || host.contains(el) || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(el.tagName) || el.closest('[data-audit-copy]')) continue;
+      const hit = placeholderIn(txt, { slots: true });
+      if (!hit || !visibleRect(el) || opacityOf(el) < 0.1) continue;
+      const id = el.closest('[data-text]')?.getAttribute('data-text') || txt.slice(0, 24);
+      if (seenText.has(`${id}|${hit}`)) continue;
+      seenText.add(`${id}|${hit}`);
+      issues.push({ kind: 'placeholder', id, detail: `"${txt.slice(0, 40)}" is placeholder text ("${hit}"): show the product's real words` });
+    }
+    const bars = new Map<Element, number>();
+    for (const el of Array.from(document.body.querySelectorAll<HTMLElement>('div, span'))) {
+      if (el.childElementCount || (el.textContent || '').trim() || host.contains(el)) continue;
+      const cs = getComputedStyle(el);
+      const m = /rgba?\(([^)]+)\)/.exec(cs.backgroundColor);
+      if (!m || cs.backgroundImage !== 'none') continue;
+      const v = m[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+      const r = el.getBoundingClientRect();
+      const w = r.width / zoom;
+      const h = r.height / zoom;
+      const rad = cs.borderTopLeftRadius.trim().endsWith('%') ? (parseFloat(cs.borderTopLeftRadius) / 100) * Math.min(w, h) : parseFloat(cs.borderTopLeftRadius) || 0;
+      if (!isTextBar({ w, h, radius: rad, rgb: [v[0], v[1], v[2]], alpha: v.length > 3 ? v[3] : 1 }, U)) continue;
+      if (el.closest('[data-chart],[data-meter],[data-audit-skeleton],[data-audit-copy]') || !visibleRect(el) || opacityOf(el) < 0.1) continue;
+      const parent = el.parentElement;
+      if (parent) bars.set(parent, (bars.get(parent) ?? 0) + 1);
+    }
+    for (const [parent, n] of bars)
+      if (n >= BAR.cluster && !(parent.textContent || '').trim()) {
+        const id = parent.closest('[data-text],[data-ui],[data-mover]')?.getAttribute('data-text') ?? parent.closest('[data-mover]')?.getAttribute('data-mover') ?? 'bars';
+        issues.push({ kind: 'bar-text', id, detail: `${n} grey bars standing in for lines of text: set the real strings at film size (a loading skeleton shown on purpose goes in [data-audit-skeleton])` });
+      }
+    const drawn = new Map<string, { n: number; max: number }>();
+    for (const el of Array.from(document.querySelectorAll('[data-drawn]'))) {
+      if (el.closest('[data-audit-copy]')) continue;
+      const r = visibleRect(el);
+      if (!r || opacityOf(el) < 0.1) continue;
+      const kind = el.getAttribute('data-drawn') || 'product';
+      if (!drawnTooLarge(kind, r.width / zoom, r.height / zoom, U)) continue;
+      const d = drawn.get(kind) ?? { n: 0, max: 0 };
+      drawn.set(kind, { n: d.n + 1, max: Math.max(d.max, Math.max(r.width, r.height) / zoom / U) });
+    }
+    for (const [kind, d] of drawn)
+      issues.push({ kind: 'drawn-figure', id: kind, detail: `${d.n} ${kind === 'person' ? 'portrait' : kind}${d.n === 1 ? '' : 's'} drawn in code, up to ${Math.round(d.max)} px (over ${DRAWN_MAX[kind as keyof typeof DRAWN_MAX] ?? DRAWN_MAX.product} at 1080p): a real photo belongs here (scripts/assets.mjs, fx/Pictures, kit Avatar src), or the product's own UI` });
     // Words to read on this frame: readable boxes only, each counted once (not again inside an outer tagged box).
     const readable = boxes.filter((b) => b.opacity >= 0.5 && b.px >= minPx);
     const outer = readable.filter((b) => !readable.some((a) => a !== b && a.el.contains(b.el)));
