@@ -21,7 +21,7 @@ import { ActGround, capOf, carryOffset, Item, launchOffset, lineSize, lineWidth,
 //          crossing the frame's edges; the camera pushes through them
 
 /** The pill round the last word: its padding (em) and its growth. */
-const PILL = { padX: 0.3, padY: 0.16, from: 0.62, grow60: 10 } as const;
+const PILL = { padX: 0.3, padY: 0.16, from: 0.62, grow60: 10, fade60: 20 } as const; // fade60: never a solid shape in one frame (a third on its first)
 
 // few, large and legible: a far wall of three tiles big enough to read as the product's records, two mid tiles beside
 // the claim, one near tile crossing the corner (a far tile that reads as a blank card is filler)
@@ -63,13 +63,14 @@ const Claim: React.FC<{ F: number; cx: number; cy: number }> = ({ F, cx, cy }) =
   const x0 = cx - total / 2;
   const lastAt = c.in - 1 + f60x(8 * (words.length - 1));
   const g = prog(F, lastAt, lastAt + f60x(PILL.grow60), E.snapOut);
+  const show = prog(F, lastAt, lastAt + f60x(PILL.fade60), E.snapOut); // the pill fades up as it grows: at full opacity on its first frame it pops
   const pillH = capOf(size) + 2 * PILL.padY * size + size * 0.18;
   const colors = { ink: PAGE.text, accent: PAGE.accent, mute: PAGE.mute };
   return (
     <>
       {head && <TypeLine spec={{ preset: 'mask', text: head, at: c.in - 1, colors, id: 'find' }} frame={F} size={size} x={x0 + wHead / 2} y={cy} />}
       {F >= lastAt && (
-        <div style={{ position: 'absolute', left: 0, top: 0, width: pillW, height: pillH, borderRadius: pillH / 2, background: PAGE.accent, transformOrigin: '50% 50%', transform: `translate3d(${(x0 + total - pillW).toFixed(2)}px, ${(cy - pillH / 2 + size * 0.02).toFixed(2)}px, 0) scale(${mix(PILL.from, 1, g).toFixed(4)})` }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, width: pillW, height: pillH, borderRadius: pillH / 2, background: PAGE.accent, transformOrigin: '50% 50%', transform: `translate3d(${(x0 + total - pillW).toFixed(2)}px, ${(cy - pillH / 2 + size * 0.02).toFixed(2)}px, 0) scale(${mix(PILL.from, 1, g).toFixed(4)})`, opacity: show }} />
       )}
       <TypeLine spec={{ preset: 'mask', text: last, at: lastAt, colors: { ink: PAGE.accentInk, mute: PAGE.accentSoft ?? PAGE.accentInk, accent: PAGE.accentInk }, id: 'find' }} frame={F} size={size} x={x0 + total - pillW / 2} y={cy} />
     </>

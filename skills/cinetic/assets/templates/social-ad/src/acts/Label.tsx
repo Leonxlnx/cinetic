@@ -6,7 +6,7 @@ import { DirBlur } from '../fx/Defocus';
 import { ARC_PATHS, ArcRiver, mirrorPath } from '../fx/Pictures';
 import { TypeLine } from '../fx/TypePresets';
 import { ContentTicker, DenseScreen, shadeRgba } from '../kit';
-import { clamp, E, lmix, mix, prog, rand } from '../lib/anim';
+import { E, lmix, mix, prog, rand } from '../lib/anim';
 import { useFilm } from '../lib/film';
 import { AD } from '../ad';
 import { DEAL } from '../deal';
@@ -73,6 +73,7 @@ const Chip: React.FC<{ F: number; cx: number; cy: number }> = ({ F, cx, cy }) =>
   const chipW = wHead + space + wLast + 2 * padX;
   const chipH = size * 1.62;
   const open = prog(F, a.in - 1, a.in - 1 + f60x(14), E.snapOut);
+  const show = prog(F, a.in - 1, a.in - 1 + f60x(20), E.snapOut); // a third on its first frame: a solid chip at full opacity in one frame pops
   const x0 = cx - chipW / 2 + padX;
   const lastX = x0 + wHead + space;
   const pitch = size * 1.1;
@@ -80,7 +81,7 @@ const Chip: React.FC<{ F: number; cx: number; cy: number }> = ({ F, cx, cy }) =>
   const lastAt = a.in - 1 + f60x(7 * (words0.length - 1));
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
-      <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: chipW, height: chipH, borderRadius: chipH / 2, background: PAGE.surface, boxShadow: `0 ${(14 * U).toFixed(1)}px ${(36 * U).toFixed(1)}px ${shadeRgba(PAGE, 0.18)}, inset 0 0 0 ${(1.5 * U).toFixed(1)}px ${PAGE.line}`, transformOrigin: '50% 50%', transform: `translate3d(${(cx - chipW / 2).toFixed(2)}px, ${(cy - chipH / 2).toFixed(2)}px, 0) scale(${mix(0.86, 1, open).toFixed(4)})`, opacity: clamp(open * 3) }} />
+      <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: chipW, height: chipH, borderRadius: chipH / 2, background: PAGE.surface, boxShadow: `0 ${(14 * U).toFixed(1)}px ${(36 * U).toFixed(1)}px ${shadeRgba(PAGE, 0.18)}, inset 0 0 0 ${(1.5 * U).toFixed(1)}px ${PAGE.line}`, transformOrigin: '50% 50%', transform: `translate3d(${(cx - chipW / 2).toFixed(2)}px, ${(cy - chipH / 2).toFixed(2)}px, 0) scale(${mix(0.86, 1, open).toFixed(4)})`, opacity: show }} />
       <TypeLine spec={{ preset: 'crisp', text: head, at: a.in - 1, colors, id: 'plan' }} frame={F} size={size} x={x0 + wHead / 2} y={cy} />
       {/* the last word: its own slot, clipped to the chip, rolling once */}
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, clipPath: `inset(${(cy - chipH / 2).toFixed(2)}px 0 ${(H - cy - chipH / 2).toFixed(2)}px 0)` }}>
