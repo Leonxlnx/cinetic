@@ -174,7 +174,7 @@ After the mux, `scripts/check-sync.py` gates lag ≤ 48 samples and ≤ −1 dBT
 | `snap` | a lock-in: a line closing, a piece seating, a snap zoom | the contact frame |
 | `land` | an in-shot landing | the contact frame |
 | `hit` | a slam, a cut on impact, the reveal | the contact / cut frame |
-| `drop` | the one sub hit on the wordmark after a stop ending | the frame the wordmark becomes readable |
+| `drop` | the one sub hit on the wordmark at a hit ending (it rings 1.5 s or more through the hall) | the frame the wordmark becomes readable |
 | `whoosh` | a camera-scale move, a flight, a whip | the velocity peak |
 | `riser` | tension into a section change | the arrival |
 | `swell` | a reveal that blooms | its peak |
@@ -236,7 +236,7 @@ The role's offset is applied by `plan.py`, never folded into the cue frame: the 
 - **One gesture at a time.** A cut that lands on a strong accent of the track is carried by it: a `hit` or `drop` there gets no take (`plan.py` marks it `carried`; `force: true` overrides). Designed hits go where the music has nothing, after a stop-down; UI sounds go on discrete state changes.
 - **Move the picture, not the sound.** When a hit belongs on the beat, start the spring at `beat − delayTo(cfg, 1)`. Audio that leads its picture by more than ~45 ms reads as "sound first", except a role's designed lead.
 - **Text: one sound per fragment.** A `text` event on the frame each fragment resolves (§5.7), never one per word.
-- **The lockup is a stop-down and ONE clean element.** Nothing sounds in the 0.2–0.7 s before it (no whoosh into it, no riser), and nothing else lands with it. With a track the bed stops on the bar line before it (`track.py edit --end stop`), or the track's own final hit carries it (`--end button`).
+- **The lockup is ONE clean element, and the music never cuts out under it.** Nothing else lands with it (no whoosh into it, no riser). With a track the track's own final hit carries it and rings out (`track.py edit --end own`, the default when the track has an ending), or the bed fades over 2–3 s under the end card (`--end fade`), or the bed is released under one kit hit that rings 1.5 s or more (`--end hit`). Never a bed stopped dead into silence (`references/music.md` §6).
 - **Effects are dry and centred**, within ±0.15 of the centre; the roles with a `width` (ticks, bells) keep the stereo earshot rendered them with, and whooshes, risers and swells travel along the cue's `pan`.
 - **Typing:** one `key` per character from the same `CHAR_AT` array the picture types with, at its fractional frame; mark word starts `word`, spaces `space` and a final `return` (§5.5c).
 - **Check the file.** Open `out/cues.json` and read it against the contact sheet, then `out/qa/sfx_plan.json`: every event has a picture, every sounded class is complete, nothing continuous is sounded.
@@ -255,7 +255,7 @@ and `track.py grid` write it):
              "licence": "audio/music/deep_urban.licence.json", "gain_db": 0 },
   "sfx": { "engine": "auto", "kit": "audio/kit.json", "python": null },
   "stopdowns": { "auto": "kit", "add": [], "skip": [], "quiet_db": -7 },
-  "ending": { "mode": "stop", "at": "@lockup" },
+  "ending": { "mode": "own", "at": "@lockup" },
   "payoff": "@reveal",
   "master": { "lufs": -14, "ceiling": 0.77, "fade": 1.3 }
 }
@@ -271,9 +271,9 @@ and `track.py grid` write it):
 | `sfx` | `{"engine": "auto", "kit": "audio/kit.json"}` | `engine` `auto` (render when stale, else the takes as they are) or `earshot` (render or fail); `kit` the kit file (its takes in the folder of the same name, or `takes`); `python` the interpreter that has earshot; `restraint` the effects any 10 s may hold before whole actions go quiet (default 10 with a track; `"off"`). `"synth"` is a `--draft` build only |
 | `chords` | — | optional, one entry per bar: it steers which tones a text chain steps through. Without it the tuned roles follow the key's scale and triad |
 | `stopdowns` | `{"auto": "kit"}` | `auto`: a stop-down before every hit, drop and swell the kit lock names (a swell of weight 1 or more, or a structural one; `"off"` for none); `add`: extra targets (`{at, weight?, depth?: "stop"}`); `skip`: event ids or cue names to leave alone; `quiet_db`: where an effect plays with no bed under it (default −7, §7) |
-| `ending` | — | informational (`{mode, at}`): the edit decides the ending (`stop`, `button`, `ring`) |
+| `ending` | — | informational (`{mode, at}`): the edit decides the ending (`own`: the track's `button` or `ring`; `fade`; `hit`) |
 | `silences` | `[]` | `{from, to, depth?}`: true silence for a designed freeze; mutes everything, effects included; the picture freeze sits exactly on it (≤ 15 f) |
-| `payoff` | — | the moment that must be loudest: the biggest reveal on the track's entry, about 75–90% into the film (`references/formats.md` §2; in a sting, its hit); the report checks it. `"@reveal"` reads the timeline's `REVEAL` when no cue has that name (the starter's payoff: the name locking on the track's entry, before its stop ending). When a `stop` ending's one element is the lockup, the payoff is the reveal, never that element (it sits 2 LU or more under the payoff). On a `ring` ending whose last hit is the reveal (a sting), that hit is the payoff: add no drop on it (it doubles the track's accent) and keep at most a swell into it |
+| `payoff` | — | the moment that must be loudest: the biggest reveal on the track's entry, about 75–90% into the film (`references/formats.md` §2; in a sting, its hit); the report checks it. `"@reveal"` reads the timeline's `REVEAL` when no cue has that name (the starter's payoff: the name locking on the track's entry, before its ending). When a hit ending's element is the lockup, the payoff is still the reveal before it. On a `ring` ending whose last hit is the reveal (a sting), that hit is the payoff: add no drop on it (it doubles the track's accent) and keep at most a swell into it |
 | `progress` | — | `{match, kind?, start?, tonic?, resolve?, gain?}`: the progress climb (§5.5b) |
 | `typing` | `"auto"` | how `key` events sound: `auto`, `soft`, `mechanical`, `pitched`, `muted`, `word` or `off` (§5.5c) |
 | `keyup` | `false` | `true` adds a key-release click on slow typing |
@@ -288,14 +288,14 @@ Older fields still parse, with a warning naming the replacement: `sections`, `si
 
 ### 5.3 Shaping the arc
 
-With a track the arc comes from the edit, not from automation (`references/music.md` §6): the opening inside the track's intro (5–12 LU under the body for 2–3 s, the first sound by 0.15–0.45 s), the reveal on the track's entry after its break or stop, a mid-film dip from the track's own break (about 5 LU down at 40–80% of the runtime), the ending on a stop, the track's final hit or its ring.
+With a track the arc comes from the edit, not from automation (`references/music.md` §6): the opening inside the track's intro (5–12 LU under the body for 2–3 s, the first sound by 0.15–0.45 s), the reveal on the track's entry after its break or stop, a mid-film dip from the track's own break (about 5 LU down at 40–80% of the runtime), the ending on the track's own final hit ringing out, a 2–3 s fade under the end card, or a hit that rings: never a cut.
 
 - **The payoff is the loudest moment, clearly:** 2–3 LU or more over the median momentary loudness. If a later section of the track is louder, the edit is wrong: `track.py edit` penalises it and `score.py` warns.
 - **The biggest reveal comes after a dip:** 0.2–0.5 s of break, stop or stop-down, then the entry on the reveal.
-- **The lockup is the most resolved moment, not the loudest.** A `stop` ending: the bed ends on the bar line before the lockup, 0.2–0.7 s of near-silence, then ONE kit element on the wordmark (`drop`, a kick-led sub hit tuned to the root, or `hit`), then a tail to below −60 dBFS. Its peak sits at −9 to −6 dBFS in the master and at least 2 LU under the payoff (`score.py` warns and names the `quiet_db` to try). A `button` ending lets the track's final hit carry the lockup; a `ring` ending lets its last chord ring 8–20 dB under the peak.
+- **The lockup is the most resolved moment, not the loudest, and the music ends on a decay.** Launch music ends on the track's own last hit with its natural ring-out (about 2.5 s from the hit to silence, dead air under 0.1 s), on a short natural button, or on a fade under the end card; a film whose music stops dead reads as cut off. So: a `button` or `ring` ending (`--end own`) lets the track's final hit carry the lockup and ring for 1.5–2.5 s; a `fade` ending fades the bed out over 2–3 s under the end card (a track that fades or loops); a `hit` ending releases the bed over 0.5 s under ONE kit element on the bar line (`drop`, a kick-led sub hit tuned to the root, or `hit`), which `score.py` sends through the hall so it rings 1.5 s or more. The tail holds `MUSIC.end.hold`. `score.py` and `av-audit.py` fail an ending that falls 20 dB inside 150 ms with no decay after it, and warn on more than 1 s of silence after the music.
 - **Effects-only:** the stop-down before the lockup is the 0.2–0.7 s with no effect before the hit, and the accents stand alone in silence.
 - **Contrast is the arc.** A film with music of 20 s or more wants an LRA of 5–8 LU; choose the bars that give it.
-- The last 60 f are a tail: the music and the effects fade over `master.fade` seconds and the WAV reaches digital zero on the last frame. An effect that starts inside the fade is mostly lost, and `score.py` names it.
+- The tail holds the music's ending (`MUSIC.end.hold`, at least 60 f): the ring or the fade completes, the music and the effects fade over the last `master.fade` seconds and the WAV reaches digital zero on the last frame. An effect that starts inside the fade is mostly lost, and `score.py` names it.
 
 ### 5.4 Stems
 
@@ -308,7 +308,7 @@ The sound's energy must match the brand's three adjectives (`references/brand-an
 | Personality | Effects | Music brief (every film has a track) | Lockup |
 |---|---|---|---|
 | Calm, literary, unhurried | soft touches, one tuned voice, gentle air (`launch` with the `calm` kit's `text` and `hit` swapped in) | a soft pulse, 95–110 BPM, a long intro, a `ring` ending | one struck note with a long tail |
-| Fast, exact, confident | tight clicks, pops in runs, a short sub (`launch`, crisp roles) | a clear four-on-the-floor, 120–128 BPM, an entry after a break, a `stop` ending | a stop, then one sub hit |
+| Fast, exact, confident | tight clicks, pops in runs, a short sub (`launch`, crisp roles) | a clear four-on-the-floor, 120–128 BPM, an entry after a break, the track's own final hit (`own`) | a breath, then one sub hit that rings |
 | Bright, friendly | pops and taps, a bell | a bouncy groove, a clear entry | the track's final hit (`button`) |
 | Precise, expensive | sparse touches, low swells (`launch` with `minimal` roles) | minimal electronic with space | one low element after a stop |
 | Raw, mechanical | ticks, detents, metallic hits | a dry, stepped groove | a hard latch |
@@ -368,7 +368,7 @@ The kit's `key`, `key.space` and `key.return` takes set the timbre (one take per
 Every effect is placed and levelled by `plan.py`, with the helpers of `scripts/audio/mixkeys.py` (the level model of earshot 0.4's kit lock, number for number):
 
 - **Level over the bed.** A role's `bed_db` is where the mix's loudest 50 ms at the effect sits over the bed: over the median 50 ms K-weighted level of the music in the second before the effect's sync point (as it plays: with its stop-downs, silences and end fade). The take alone goes to bed + 10·log10(10^(bed_db/10) − 1) − its `l50_lufs`, never past a −1 dBFS peak (a clamped take is named in the report). A stop-down target reads the bed before its own stop-down, so the breath never makes the hit quieter. The weight adds 20·log10(w) within −12..+6 dB.
-- **No bed under it.** Before the track starts, inside a stop or a silence, after a stop ending: the film's reference bed (the median bed level over its cues) plus `quiet_db` (default −7: an element in silence reads louder than the same element over a bed; the lockup after a stop then peaks near −7.5 dBFS in a −14 LUFS master).
+- **No bed under it.** Before the track starts, inside a stop or a silence, after a hit ending's release: the film's reference bed (the median bed level over its cues) plus `quiet_db` (default −7: an element in silence reads louder than the same element over a bed; the lockup after a stop then peaks near −7.5 dBFS in a −14 LUFS master).
 - **Effects-only:** the role's `level_db` × weight, each take trimmed toward its role's median loudness.
 
 | Role | dB over the bed (`bed_db`) | Offset (`offset_ms`) | Run gap (`min_gap_ms`) | Width |
@@ -401,7 +401,7 @@ Taps, knocks, clicks and bell notes lead the cut by a few milliseconds; pop-in t
 | Effects | the takes at the plan's gains, dry, a 30 Hz high-pass | the takes at `level_db`, landings and moves through a 0.7 s room, keys and clicks dry | the launch members carry their own short space, and the pop-in thumps and sub hits keep their low end |
 | Silences | everything mutes, effects included | the same | true silence for a designed freeze |
 | Master | 28 Hz high-pass → mono below 120 Hz → 2:1 bus compressor above −14 dBFS → no glue (the track is already mastered) → loudness passes with the true-peak limiter | the same with soft saturation and an air shelf | §9 |
-| End | the bed and the effects fade over `master.fade` (1.3 s) to zero 30 ms before the end; last 480 samples zero | the same | the delivered audio ends in digital silence |
+| End | the music's own ending (its ring, a 2–3 s fade, a hit that rings) inside the tail; the bed and the effects fade over `master.fade` (1.3 s) to zero 30 ms before the end; last 480 samples zero | the same | the delivered audio ends on a decay into digital silence, never a cut |
 
 ### 8.1 The stop-down
 
@@ -411,7 +411,7 @@ The music never ducks under the effects. The one move is the stop-down: before a
 - **Length:** the musical length nearest 0.4 s within 0.3–0.5 s, out of 1 beat, 3/16 and 1/8 of a bar (at 124 BPM, 0.363 s).
 - **Depth:** 6 + 4·(weight − 0.5) dB, within the kit lock's `mix.stop_down` range (6–12 dB): 6 at weight 0.5, 8 at weight 1, 12 at weight 1.5 and over.
 - **Shape:** a raised-cosine step down over 40 ms, a hold, back to 0 dB over 5 ms ending on the hit's sync time.
-- **Few and spaced:** at most 3 in any 10 s, 2 s apart; the payoff, the lockup and structural events first, then by weight. A target inside a silence gets none; in a `stop` ending the lockup's stop-down is the stop itself.
+- **Few and spaced:** at most 3 in any 10 s, 2 s apart; the payoff, the lockup and structural events first, then by weight. A target inside a silence gets none; in a `hit` ending the bed's release under the hit is its stop-down.
 - **Measured:** `score.py` reads every stop-down on the `bed` stem: a dip of 6 dB or more in the 0.5 s before the target and the bed back within 3 dB in the 250 ms after (a failure at the payoff, a warning elsewhere).
 
 ## 9. Master and verification
@@ -447,7 +447,7 @@ You cannot listen, so measure what a listener hears:
 
 ## 10. Reading the report
 
-`score.py --json out/qa/score.json` writes `lufs`, `target_lufs`, `true_peak_db`, `lra`, `plr`, `momentary_max` and its time, `limiter_max_gr_db`, `limiter_hot`, `payoff`, `hook`, `tail_50ms_db`, `sfx` (the kit, its source, each role with its cues and takes, `off`, `missing`, `draft_voices`), `stacks`, `events.skipped` (with the reason: off, thinned, tuned budget, carried, no kit take), `events.masked`, `events.tuned`, `progress`, `typing`, `draft`, `warnings`, `fails`, `pass`. With a track also: `music` (the record, segments, joins, ending), `over_bed` (every effect, per-role median and IQR), `stop_downs` (each with its length, depth, the track's own dip, the depth added and the measured dip), `no_duck`, `density`, `one_gesture`, `runs`, `lockup` (the element after a stop: peak, momentary maximum, distance under the payoff, the `quiet_db` to try). `out/qa/sfx_plan.json` holds the plan behind it; `out/qa/cues_sounded.json` the intended times.
+`score.py --json out/qa/score.json` writes `lufs`, `target_lufs`, `true_peak_db`, `lra`, `plr`, `momentary_max` and its time, `limiter_max_gr_db`, `limiter_hot`, `payoff`, `hook`, `tail_50ms_db`, `sfx` (the kit, its source, each role with its cues and takes, `off`, `missing`, `draft_voices`), `stacks`, `events.skipped` (with the reason: off, thinned, tuned budget, carried, no kit take), `events.masked`, `events.tuned`, `progress`, `typing`, `draft`, `warnings`, `fails`, `pass`. With a track also: `music` (the record, segments, joins, ending), `over_bed` (every effect, per-role median and IQR), `stop_downs` (each with its length, depth, the track's own dip, the depth added and the measured dip), `no_duck`, `density`, `one_gesture`, `runs`, `ending` (how the master ends: the last loud moment, the time to fall 20 dB, the decay after it, `abrupt`, the silence after the music), `lockup` (an old edit's stop ending only: the element's peak and distance under the payoff). `out/qa/sfx_plan.json` holds the plan behind it; `out/qa/cues_sounded.json` the intended times.
 
 | Warning or failure | Fix |
 |---|---|
@@ -487,7 +487,7 @@ You cannot listen, so measure what a listener hears:
 | Effects sound pasted on | levels at `level_db` in a film with a track | the launch kit (`bed_db` per role) |
 | A melody of effects | tuned roles in a run | the tuned budget thins them; use untuned roles for runs |
 | The join clicks or chops | a cut mid-note or off the attack | `track.py check` names it; re-edit on other bars |
-| Ending clicks or cuts off | no tail, or an event inside the end fade | `TAIL` ≥ 60 f; move late events before the fade |
+| Ending clicks or cuts off, or the music stops dead | no tail, an event inside the end fade, a bed stopped on a bar line, a tail shorter than the ending | `track.py edit --end own` (or `fade`, `hit`); the tail holds `MUSIC.end.hold`; move late events before the fade |
 | Peaks over −1 dBTP after encode | ceiling raised, or effects added after the master | keep ceiling 0.77; re-run `score.py` after every change |
 | A kit sound starts before its move | a whoosh take with a long build on a short move | `score.py` fades the lead-in to start at most 2 f before the move |
 | Sound late after mux | Remotion's AAC priming | render `--muted`, mux with ffmpeg (`render.sh` does) |
@@ -502,7 +502,7 @@ The habits that make a launch film sound cheap, and what to do instead. Most are
 |---|---|
 | A generated bed: a synth pad, a drone, a band made in code | a licensed, human-made track (`references/music.md`) |
 | Ducking under the effects; a pumping bed | effects ride the bed by timing and spectrum; one stop-down before the big hit |
-| A track cut mid-phrase, a click at the join, a fade-out ending | whole bars, joins on the incoming attack, an ending on a stop, the track's final hit or its ring |
+| A track cut mid-phrase, a click at the join, an ending that stops dead | whole bars, joins on the incoming attack, an ending on the track's own final hit ringing out, a 2–3 s fade under the end card or a hit that rings |
 | A hit on top of the track's own kick | one gesture: the track carries it |
 | A whoosh on every cut, a slam on every cut, a riser before every reveal | most hard cuts get no sound of their own; about 2 whooshes a film on camera-scale moves; risers and swells about one a film at a section change |
 | A boom on every logo and landing; the logo slammed as the loudest moment | about 2 hits a film; the lockup after a stop, one element at −9 to −6 dBFS peak, 8–20 dB under the film's peak |
