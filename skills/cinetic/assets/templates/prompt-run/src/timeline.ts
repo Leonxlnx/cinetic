@@ -53,13 +53,11 @@ export const bt = (x: number) => {
 };
 
 /**
- * After the last bar the lockup holds while the track's last hit rings out: 1.6 s, the name and the close read, then
- * out. With a stop ending (src/music.ts end.mode 'stop', track.py edit --end stop) the bed stops on the bar line that
- * ends the body and the ending's one element sounds on MUSIC.end.f, 0.2-0.7 s later: the tail holds that gap and 1 s
- * after it, when that is longer.
+ * After the last bar the lockup holds while the music ends, never on a cut: 1.6 s for the name and the close to read,
+ * or MUSIC.end.hold (track.py grid) when the ending needs longer: the track's own final hit ringing out (1.5-2.5 s), a
+ * hit that rings, or a 2-3 s fade under the end card.
  */
-const STOP_GAP = MUSIC && MUSIC.end.mode === 'stop' ? Math.max(0, Math.ceil(MUSIC.end.f) - b(MUSIC.bars + 1)) : 0;
-export const TAIL = Math.max(Math.round(1.6 * FPS), STOP_GAP + FPS);
+export const TAIL = Math.max(Math.round(1.6 * FPS), MUSIC ? Math.ceil(MUSIC.end.hold ?? 0) : 0);
 
 /**
  * Where each act starts, in beats (9 bars at 120 BPM: 19 s with the tail). Every act line sits on a bar line, so with a

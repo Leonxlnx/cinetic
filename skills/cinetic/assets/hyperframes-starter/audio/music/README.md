@@ -23,7 +23,7 @@ here, `npm run audio` stops with "not found". To add one (or let `new-film.sh --
 3. Point `audio/score.json` `music.track` and `music.licence` at the file and its record, and set `key` from the
    analysis; `python3 scripts/audio/kit.py tune` puts the kit's tonal roles in that key. `audio/kit.json` is
    already the earshot `launch` kit, whose effects sit at their level over the music.
-4. `track.py edit --bars N --reveal-bar K --end stop`, then `track.py grid`: `music.js` gets the track's bars and
+4. `track.py edit --bars N --reveal-bar K` (the music ends on the track's own final hit, or fades out under the end card), then `track.py grid`: `music.js` gets the track's bars and
    every cue in `timeline.js` follows them.
 
 The demo is two bars and a hold: the mark assembles in bar 1, its contact on the downbeat of bar 2 is the payoff

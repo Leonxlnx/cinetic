@@ -51,12 +51,11 @@ export const bt = (x: number) => {
 };
 
 /**
- * After the last bar the picture holds while the audio decays to digital silence: 1 s. With a stop ending (src/music.ts
- * end.mode 'stop', track.py edit --end stop) the bed stops on the bar line that ends the body and the ending's one
- * element sounds on MUSIC.end.f, 0.2-0.7 s later: the tail is that gap, then the 1 s.
+ * After the last bar the picture holds while the music ends, never on a cut: MUSIC.end.hold (track.py grid) is how long
+ * the ending needs after the bar line that ends the body: the track's own final hit ringing out (1.5-2.5 s), a hit that
+ * rings, or a 2-3 s fade under the end card. The tail is that, and at least 1 s.
  */
-const STOP_GAP = MUSIC && MUSIC.end.mode === 'stop' ? Math.max(0, Math.ceil(MUSIC.end.f) - b(MUSIC.bars + 1)) : 0;
-export const TAIL = STOP_GAP + FPS;
+export const TAIL = Math.max(FPS, MUSIC ? Math.ceil(MUSIC.end.hold ?? 0) : 0);
 
 /**
  * Where each act starts, in beats (17 bars at 120 BPM: 35 s with the tail). Every act line sits on a bar line, so with

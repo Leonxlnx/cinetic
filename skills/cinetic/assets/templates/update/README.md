@@ -35,11 +35,11 @@ track, never effects only (`template.json` → `music`, references/music.md). Fi
 film: `node scripts/music.mjs search --mood "<the film's mood words>" --bpm 116-128 --length <s>` (116-128
 BPM suits two bars a change), `sheet --measure`, then `get '#n' --to audio/music` (its licence record
 beside it; never the last film's track). Bring it in with `--music <file> --record <licence.json>` (a track
-found elsewhere: its licence flags, or later `python3 scripts/audio/track.py add`), then `track.py edit --bars N --reveal-bar K --end stop|button|ring`,
+found elsewhere: its licence flags, or later `python3 scripts/audio/track.py add`), then `track.py edit --bars N --reveal-bar K` (its own ending, else a fade),
 `track.py grid` and `track.py check`: `src/music.ts` then carries the track and `b()` follows its bars.
 
 **Timing.** Two bars per change at the template's 120 BPM (crisp), every act line on a bar line (with the
-track, on a downbeat): 2 changes 14 s, 3 changes 18 s, 4 changes 22 s, each plus a 1 s tail (a stop ending adds its gap); with the track, its own bars. Sound: `src/sync.ts` places the
+track, on a downbeat): 2 changes 14 s, 3 changes 18 s, 4 changes 22 s, each plus a 1 s tail (the music's ending can ask for more: MUSIC.end.hold); with the track, its own bars. Sound: `src/sync.ts` places the
 effects from the picture's own frames (the numeral locking, each product moment's contact frame, one
 text sound per fragment, the moves between acts, the version landing, the lockup); the track carries
 the film.

@@ -764,8 +764,15 @@ def bed_edit(d):
     b, _ = sf.read(os.path.join(d, 'edit.stems', 'bed.wav'))
     s, _ = sf.read(os.path.join(d, 'edit.stems', 'sfx.wav'))
     check(st == ['bed.wav', 'sfx.wav'], f'music stems: bed and sfx only ({st})')
-    check(len(b) == len(s) and r['music']['joins'] and not [x for x in r['fails'] if 'join' in x] and r['pass'],
-          f"the joins are measured in the score report and the film passes ({r['fails']})")
+    check(len(b) == len(s) and r['music']['joins'] and not [x for x in r['fails'] if 'join' in x]
+          and [x for x in r['fails'] if 'ends abruptly' in x] and r['ending']['abrupt'],
+          f"the joins are measured in the score report; a bed at full level into a 0.4 s end fade is an abrupt ending ({r['fails']})")
+    # the same film with the track faded out over 2.5 s under the end card (track.py edit --end fade): it passes
+    block = music_project(d, test_bed(), [(1, 2), (5, 3)],
+                          ending=dict(mode='fade', fade_from_film_s=10.25, fade_s=2.5, end_s=10.25, hold_s=2.5))
+    p, r = run(d, 'editfade', cues, music_score(block), NO_EARSHOT)
+    check(r is not None and r['pass'] and not r['ending']['abrupt'] and r['ending']['drop20_s'] > 0.15,
+          f"faded out under the end card, the film ends on a decay and passes ({(r or {}).get('fails')}, {(r or {}).get('ending')})")
     check(os.path.isfile(os.path.join(d, 'sfx_plan.json')) and os.path.isfile(os.path.join(d, 'cues_sounded.json')),
           'the render writes the plan and cues_sounded.json next to the report')
 

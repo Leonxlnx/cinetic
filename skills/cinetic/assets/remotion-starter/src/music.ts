@@ -29,7 +29,10 @@ export type Music = {
   entries: readonly number[]; // where the track enters or re-enters after a break or a stop
   breaks?: readonly MusicSpan[];
   stops: readonly MusicSpan[]; // the arrangement's own stops (preferred over gain stop-downs)
-  end: { mode: 'stop' | 'button' | 'ring'; f: number }; // how and where the music ends
+  // how and where the music ends: f is the final hit (button, ring), the hit on the bar line after the body (hit)
+  // or that bar line where the fade starts (fade); hold is how many frames the picture holds after the bar line
+  // after the body so the ending completes (its ring 1.5-2.5 s, the hit's ring, the fade): the tail is at least that
+  end: { mode: 'button' | 'ring' | 'hit' | 'fade' | 'stop'; f: number; hold?: number }; // 'stop', no hold: a grid written before the endings
 };
 
 export const MUSIC: Music | null = null;

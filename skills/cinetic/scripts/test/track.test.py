@@ -244,7 +244,8 @@ def edit_grid_check(d, a):
     music = os.path.join(d, 'audio', 'music')
     p = run(['edit', '--bars', '8', '--reveal-bar', '4', '--end', 'stop', '--film-t0', '0.25'], d)
     ej = os.path.join(music, 'edit.json')
-    check(p.returncode == 0 and os.path.isfile(ej), 'edit --end stop runs' + ('' if p.returncode == 0 else f': {p.stderr[-400:]}'))
+    check(p.returncode == 0 and os.path.isfile(ej), 'edit --end stop runs (the old name of hit)' + ('' if p.returncode == 0 else f': {p.stderr[-400:]}'))
+    check('--end stop is now --end hit' in p.stderr, f'--end stop says it is now a hit ending ({p.stderr.strip()[-160:]})')
     if not os.path.isfile(ej):
         return
     e = json.load(open(ej))
@@ -256,8 +257,28 @@ def edit_grid_check(d, a):
     check(e['cost']['splices'] <= 1, f"at most one splice per 8 film bars ({e['cost']['splices']})")
     fd = e['film']['downbeats']
     check(len(fd) == 9 and abs(fd[0] - 0.25) < 1e-3, f'film bar 1 at 0.25 s, 9 bar lines ({fd[:2]}...)')
-    check(e['ending']['mode'] == 'stop' and abs(e['ending']['bed_stops_film_s'] - fd[-1]) < 1e-3
-          and abs(e['ending']['end_s'] - fd[-1] - 0.4) < 1e-3, f"the bed stops on the bar line after the body ({e['ending']})")
+    check(e['ending']['mode'] == 'hit' and abs(e['ending']['bed_stops_film_s'] - fd[-1]) < 1e-3
+          and abs(e['ending']['end_s'] - fd[-1]) < 1e-3 and abs(e['ending']['hold_s'] - 1.8) < 1e-3 and e['args']['end'] == 'hit',
+          f"a hit ending: the bed is released on the bar line after the body, the hit there, the picture holds 1.8 s ({e['ending']})")
+    sys.path.insert(0, os.path.dirname(TRACK))
+    import track as TR
+    import dsp as DS
+    bed, _ = TR.build_bed(e, d)
+    i = int(round(fd[-1] * SR))
+    lv = lambda a, b: 20 * np.log10(np.sqrt(np.mean(bed[int(a * SR):int(b * SR)] ** 2)) + 1e-12)  # noqa: E731
+    check(lv(fd[-1] + 0.1, fd[-1] + 0.2) > lv(fd[-1] - 0.3, fd[-1]) - 12 and lv(fd[-1] + 0.6, fd[-1] + 0.7) < -60
+          and lv(fd[-1] + 0.3, fd[-1] + 0.4) < lv(fd[-1] + 0.1, fd[-1] + 0.2) - 3,
+          f"the hit ending releases the bed over 0.5 s from the bar line, never a cut ({lv(fd[-1] - 0.3, fd[-1]):.1f} -> "
+          f"{lv(fd[-1] + 0.1, fd[-1] + 0.2):.1f} -> {lv(fd[-1] + 0.3, fd[-1] + 0.4):.1f} -> {lv(fd[-1] + 0.6, fd[-1] + 0.7):.1f} dB)")
+    # what the old stop ending did to a sustained track (pads, bass): stopped dead on a bar line. A fade or a ring decays
+    r = np.random.default_rng(3)
+    pad = signal.sosfilt(signal.butter(2, [150, 4000], 'band', fs=SR, output='sos'), r.normal(0, 1, 6 * SR))
+    pad = pad / np.abs(pad).max() * 0.7
+    u = np.clip((np.arange(len(pad)) / SR - 3.5) / 2.5, 0, 1)
+    ring = pad * np.exp(-np.clip(np.arange(len(pad)) / SR - 3.5, 0, None) * 3.0)
+    shapes = [DS.ending_shape(pad[:int(3.5 * SR)]), DS.ending_shape(pad * (1 - u) ** 3), DS.ending_shape(ring)]
+    check(shapes[0]['abrupt'] and not shapes[1]['abrupt'] and not shapes[2]['abrupt'],
+          f"ending_shape: a sustained bed stopped dead is abrupt; a 2.5 s fade and a ring decay ({[(x['drop20_s'], x['tail_s']) for x in shapes]})")
     check(abs(e['reveal']['film_s'] - fd[3]) < 1e-3 and any(abs(x - fd[3]) < 0.01 for x in e['film']['entries']),
           'the reveal is an entry of the film grid')
     # grid: TypeScript and HyperFrames
@@ -265,7 +286,7 @@ def edit_grid_check(d, a):
     open(os.path.join(d, 'src', 'timeline.ts'), 'w').write('export const FPS = 60;\n')
     sj = os.path.join(d, 'audio', 'score.json')
     placeholder = {'music': {'track': 'audio/music/track.mp3', 'edit': 'audio/music/edit.json',
-                             'licence': 'audio/music/track.licence.json'}, 'key': 'G major', 'bpm': 120, 'ending': 'stop'}
+                             'licence': 'audio/music/track.licence.json'}, 'key': 'G major', 'bpm': 120, 'ending': 'hit'}
     json.dump(placeholder, open(sj, 'w'))
     p = run(['grid'], d)
     ts = os.path.join(d, 'src', 'music.ts')
@@ -273,13 +294,14 @@ def edit_grid_check(d, a):
           + ('' if p.returncode == 0 else f': {p.stderr[-300:]}'))
     sc = json.load(open(sj))
     check(sc['music']['track'] == e['track'] and sc['music']['licence'] == e['licence'] and sc.get('key') == e['key']
-          and 'bpm' not in sc and sc.get('ending') == 'stop',
+          and 'bpm' not in sc and sc.get('ending') == 'hit',
           f"grid points audio/score.json at the edit's track, licence and key ({sc.get('music')}, {sc.get('key')})")
     if os.path.isfile(ts):
         txt = open(ts, encoding='utf-8').read()
         m = re.search(r'\bt0: ([0-9.]+)', txt)
         check('export const MUSIC: Music | null = {' in txt and m and abs(float(m.group(1)) - 15.0) < 1e-6
-              and 'export const bar = ' in txt and 'export const accentNear = ' in txt and 'mode: "stop"' in txt,
+              and 'export const bar = ' in txt and 'export const accentNear = ' in txt and 'mode: "hit"' in txt
+              and re.search(r'hold: 108\b', txt) is not None,
               f"music.ts carries the grid in film frames (t0 {m.group(1) if m else None})")
         node = shutil.which('node')
         if node:
@@ -290,7 +312,7 @@ def edit_grid_check(d, a):
                                capture_output=True, text=True, cwd=d)
             if q.returncode == 0 and q.stdout.strip():
                 v = json.loads(q.stdout.strip().splitlines()[-1])
-                check(v['n'] == 9 and abs(v['b4'] - fd[3] * 60) < 0.02 and v['end']['mode'] == 'stop' and v['acc'] > 0,
+                check(v['n'] == 9 and abs(v['b4'] - fd[3] * 60) < 0.02 and v['end']['mode'] == 'hit' and v['end']['hold'] == 108 and v['acc'] > 0,
                       f"music.ts loads in node: bar(4) = {v['b4']} f, {v['n']} downbeats, {v['acc']} accents")
             else:
                 print('skip loading music.ts in node (no type stripping here): ' + (q.stderr.strip()[-160:] or 'no output'))
@@ -360,6 +382,71 @@ def ring_ending(d):
     check(not any('ends on a fade' in x for x in a['notes']), f"no fade note for a ring ending ({a['notes']})")
     p = run(['edit', '--bars', '4', '--reveal-bar', '2', '--entry', '5', '--end', 'ring'], d2)
     check(p.returncode == 0, 'edit --end ring accepts it' + ('' if p.returncode == 0 else f': {p.stderr[-300:]}'))
+    p = run(['edit', '--bars', '4', '--reveal-bar', '2', '--entry', '5'], d2)
+    ej = os.path.join(d2, 'audio', 'music', 'edit.json')
+    e = json.load(open(ej)) if p.returncode == 0 and os.path.isfile(ej) else {}
+    en = e.get('ending') or {}
+    lead = (en.get('last_hit_film_s') or 0) - ((e.get('film') or {}).get('downbeats') or [0])[-1]
+    want = max(0.0, lead) + float(np.clip(en.get('ring_out_s') or 0, 1.5, 2.5))
+    check(en.get('mode') == 'ring' and abs(en.get('hold_s', 0) - want) < 0.01 and e['args']['end'] == 'auto',
+          f"--end auto (the default) takes the track's own ending, its ring held 1.5-2.5 s ({en}; {p.stderr.strip()[-120:]})")
+    sys.path.insert(0, os.path.dirname(TRACK))
+    import track as TR
+    if e:
+        bed, _ = TR.build_bed(e, d2)
+        rep_ = TR.ending_report(bed, e)
+        check(not rep_['problems'] and not rep_['abrupt'],
+              f"the own ending decays as the film plays it (drop20 {rep_.get('drop20_s')} s, tail {rep_.get('tail_s')} s; {rep_['problems']})")
+
+
+def fade_ending(d):
+    """A track that ends on a fade: auto fades the bed out over 2.5 s under the end card (no cut), and --end own
+    refuses it with the way out."""
+    d2 = os.path.join(d, 'fade')
+    os.makedirs(os.path.join(d2, 'audio', 'music'))
+    y = bed(seed=11)
+    n = len(y)
+    g = np.ones(n)
+    fs_ = int((T0 + (BARS - 6) * BAR) * SR)
+    g[fs_:] = np.linspace(1.0, 0.0, n - fs_) ** 2  # the last six bars fade out
+    sf.write(os.path.join(d2, 'audio', 'music', 'fader.wav'), (y * g[:, None]).astype(np.float32), SR, subtype='FLOAT')
+    p = run(['analyze', 'audio/music/fader.wav', '--quiet', '--phase', '0'], d2)
+    tj = os.path.join(d2, 'audio', 'music', 'fader.track.json')
+    if p.returncode != 0 or not os.path.isfile(tj):
+        check(False, f'the fading bed analyses: {(p.stderr or p.stdout)[-300:]}')
+        return
+    kind = json.load(open(tj))['ending']['kind']
+    sys.path.insert(0, os.path.dirname(TRACK))
+    import track as TR
+    try:
+        TR.resolve_end({'ending': {'kind': 'fade'}}, 'own')
+        refused = ''
+    except TR.TrackError as ex:
+        refused = str(ex)
+    check('--end fade' in refused and TR.resolve_end({'ending': {'kind': 'loop'}}, 'auto')[0] == 'fade'
+          and TR.resolve_end({'ending': {'kind': 'button'}}, 'auto')[0] == 'button' and TR.resolve_end({}, 'stop')[0] == 'hit',
+          f"own refuses a fade, auto fades a loop and keeps a button, stop is hit ({refused[:90]}; this bed ends {kind})")
+    p = run(['edit', '--bars', '6', '--reveal-bar', '4', '--entry', '15', '--end', 'fade', '--fade', '2.5'], d2)
+    ej = os.path.join(d2, 'audio', 'music', 'edit.json')
+    if p.returncode != 0 or not os.path.isfile(ej):
+        check(False, f'edit --end fade runs: {(p.stderr or p.stdout)[-300:]}')
+        return
+    e = json.load(open(ej))
+    en, fd = e['ending'], e['film']['downbeats']
+    check(en['mode'] == 'fade' and abs(en['fade_s'] - 2.5) < 1e-3 and abs(en['hold_s'] - 2.5) < 1e-3 and abs(en['end_s'] - fd[-1]) < 1e-3,
+          f"a fade ending starts on the bar line after the body and lasts 2.5 s ({en})")
+    sys.path.insert(0, os.path.dirname(TRACK))
+    import track as TR
+    b, _ = TR.build_bed(e, d2)
+    lv = lambda a, z: 20 * np.log10(np.sqrt(np.mean(b[int(a * SR):int(z * SR)] ** 2)) + 1e-12)  # noqa: E731
+    t = fd[-1]
+    steps = [lv(t + k * 0.5, t + k * 0.5 + 0.2) for k in range(5)]
+    check(all(x > y_ for x, y_ in zip(steps, steps[1:])) and steps[0] > steps[-1] + 12 and lv(t + 2.6, t + 2.8) < -80,
+          f"the bed fades out smoothly to silence over 2.5 s ({[round(x, 1) for x in steps]})")
+    r = TR.ending_report(b, e)
+    check(not r['problems'], f"track check finds the fade ending clean ({r['problems']})")
+    p = run(['edit', '--bars', '6', '--reveal-bar', '4', '--entry', '15', '--end', 'fade', '--fade', '4'], d2)
+    check(p.returncode != 0 and '2-3 s' in p.stderr, f'--fade outside 2-3 s is refused ({p.stderr.strip()[-100:]})')
 
 
 KICK_BARS, KICK_ENTRY = 16, 9
@@ -462,7 +549,7 @@ def opening_fade(d):
     y = signal.sosfilt(signal.butter(2, [200, 3000], 'band', fs=SR, output='sos'), r.normal(0, 1, 8 * SR))
     y = (y / np.abs(y).max() * 0.8).astype(np.float32)  # a sustained pad, peaks at -2 dBFS
     sf.write(path, np.stack([y, y], 1), SR, subtype='FLOAT')
-    edit = dict(track=path, film_t0=0.25, segments=[dict(film_s=0.25, src_from=3.0, src_to=6.0)], ending=dict(mode='stop', end_s=3.4))
+    edit = dict(track=path, film_t0=0.25, segments=[dict(film_s=0.25, src_from=3.0, src_to=6.0)], ending=dict(mode='hit', end_s=3.25))
     bed, _ = TR.build_bed(edit, d)
     head = 20 * np.log10(np.abs(bed[:int(0.005 * SR)]).max() + 1e-12)
     full = 20 * np.log10(np.abs(bed[int(0.25 * SR):int(0.30 * SR)]).max() + 1e-12)
@@ -579,7 +666,7 @@ def soft_entry(d):
     check(ents == [] and f'entries: none (the largest step: bar {step_bar}' in p.stdout,
           f'a 3 dB step is no entry, and analyze names it as the largest step ({ents}; '
           + (re.search(r'entries: [^\n]*', p.stdout).group(0) if re.search(r'entries: [^\n]*', p.stdout) else (p.stderr or p.stdout)[-200:]) + ')')
-    p = run(['edit', '--bars', '8', '--reveal-bar', '6', '--end', 'stop'], d2)
+    p = run(['edit', '--bars', '8', '--reveal-bar', '6', '--end', 'hit'], d2)
     check(p.returncode == 0 and 'the analysis found no entry' in p.stdout and f'source bar {step_bar}' in p.stdout,
           'edit takes the largest step for the reveal and warns that the track has no entry'
           + ('' if p.returncode == 0 else f': {(p.stderr or p.stdout)[-200:]}'))
@@ -597,6 +684,7 @@ def main():
         kick_entry(d)
         soft_entry(d)
         ring_ending(d)
+        fade_ending(d)
         opening_fade(d)
         join_kinds(d)
         add_records(d)

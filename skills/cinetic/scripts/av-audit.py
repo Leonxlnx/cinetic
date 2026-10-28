@@ -64,6 +64,12 @@ Checks (defaults are proven starting points, not dogma):
              from the kit starts that fast; kit.py check audits the takes for clicks)      warn
   tail       last 50 ms RMS <= -45 dBFS and last 10 ms peak <= -60 dBFS                      fail
              and the last half second quieter than the one before it                         warn
+  ending     the music ends on a decay, never a cut (audio/dsp.py ending_shape, as score.py and track.py
+             check judge it): the last moment within 12 dB of the playing level that falls 20 dB inside
+             150 ms with under 0.3 s of decay after it, nothing coming back, fails (a bed stopped dead, a
+             60 ms fade over full-level music, the film ending mid-bar); the track's own final hit ringing
+             out, a hit that rings 1.5 s or more or a 2-3 s fade under the end card pass         fail
+             more than 1 s of silence after the last sound (the picture holds on nothing)     warn
   head       first 5 ms peak <= -40 dBFS: above it the film clicks on sample 0 or cuts in
              mid-sound (skipped on an excerpt, and on a track edit that puts bar 1 on frame 0) warn
   masking    (--stems) each sfx over the music in its best band (60 ms) by its role's margin: 3 dB for roles
@@ -888,6 +894,23 @@ def main():
             f'{tail["peak10_dbfs"]} dBFS): fade to digital zero and leave >= 60 f of tail')
     elif tail['last_half_vs_previous_db'] > 0 and r1 > 1e-4:
         add('tail', 'warn', None, 'the last half second is louder than the one before: the ending is cut, not decayed')
+    # the ending: a decay, never a cut (the same measure as score.py's and track.py check's)
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'audio'))
+        import dsp as _D  # noqa: E402
+        ending = _D.ending_shape(mono, sr)
+        ending_msg = _D.ending_problem(ending)
+        dead_max = _D.END_DEAD_AIR_S
+    except Exception as e:  # noqa: BLE001
+        ending, ending_msg, dead_max = dict(note=f'not measured ({type(e).__name__}: {e})'), None, None
+    if excerpt:
+        pass
+    elif ending_msg:
+        add('ending', 'fail', int(round(float(ending['last_loud_s']) * fps)),
+            ending_msg + ': track.py edit --end own|fade|hit (references/music.md), and a tail that holds MUSIC.end.hold')
+    elif dead_max is not None and (ending.get('dead_air_s') or 0) > dead_max:
+        add('ending', 'warn', None, f"{ending['dead_air_s']:.1f} s of silence after the last sound: the picture holds on nothing; "
+            "end the film where the music's ring or fade ends (the tail = MUSIC.end.hold)")
     # the head: sample 0 starts from silence (master.py fades in over 3 ms); a sound already at level
     # in the first 5 ms is a click on the first frame, or a sound cut in mid-action
     h5 = np.abs(x[:max(1, int(sr * 0.005))])
@@ -964,7 +987,7 @@ def main():
                warnings=len(flags) - fails, notes=notes, flags=flags, sync=sync,
                apex=dict(checked=len(apex_rows), off=[r for r in apex_rows if not r['ok']], rows=apex_rows),
                visual=visual, loudness=loud, clipping_samples=clip, clicks=clicks[:40], tail=tail, head=head, masking=masking,
-               music_sync=msync, intended=sp)
+               music_sync=msync, intended=sp, ending=ending)
     res['pass'] = res.pop('pass_')
     if args.json:
         os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
@@ -983,6 +1006,9 @@ def main():
         print(f'  loudness: I {loud["integrated_lufs"]} LUFS (target {" or ".join(f"{t:g}" for t in loud["accepted"])}), '
               f'LRA {loud["lra_lu"]} LU, TP {loud["true_peak_dbtp"]} dBTP, '
               f'max momentary {loud.get("momentary_max_lufs")} at {loud.get("momentary_max_t")} s')
+    if ending.get('drop20_s') is not None:
+        print(f"  ending: {'ABRUPT' if ending.get('abrupt') else 'decays'} (the last loud moment {ending.get('last_loud_s')} s falls 20 dB in "
+              f"{ending.get('drop20_s')} s, then {ending.get('tail_s')} s of decay; {ending.get('dead_air_s')} s of silence after)")
     print(f'  head: first 5 ms peak {head["peak5_dbfs"]} dBFS; tail: last 50 ms {tail["rms50_dbfs"]} dBFS, '
           f'last 10 ms peak {tail["peak10_dbfs"]} dBFS; '
           f'clicks {len(bad_clicks)} (+{len(clicks) - len(bad_clicks)} attacks); clipped samples {clip}')

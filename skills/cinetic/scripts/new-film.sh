@@ -494,7 +494,7 @@ EOF
 EOF
   fi
   cat <<EOF
-  $PYS scripts/audio/track.py edit --bars N --reveal-bar K --end stop|button|ring   # the film's bars on the track
+  $PYS scripts/audio/track.py edit --bars N --reveal-bar K [--end auto|own|fade|hit]   # the film's bars on the track; the music ends on a decay
   $PYS scripts/audio/track.py grid       # src/music.ts (or music.js): write the timeline on MUSIC bars
   $PYS scripts/audio/track.py check      # joins, licence, nothing from the track in git
 EOF

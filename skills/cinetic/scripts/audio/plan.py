@@ -39,12 +39,12 @@ Step by step:
              dip or stop the track already has there counts, and only the missing depth is added): the length
              nearest 0.4 s among 1 beat, 3/16 and 1/8 of a bar (0.3-0.5 s), depth 6 + 4 (weight - 0.5) dB
              within the kit lock's mix.stop_down range, at most 3 in any 10 s and 2 s apart, back on the hit
-             (a 40 ms step down, a hold, 5 ms back up ending on the hit's sync time); a stop ending is its
-             own stop-down; nothing ever ducks under an effect
+             (a 40 ms step down, a hold, 5 ms back up ending on the hit's sync time); a hit ending is its
+             own stop-down (the bed is released under the hit); nothing ever ducks under an effect
   gains      with a track: bed_db over the bed as played (the median 50 ms K-weighted level of the second
              before the sync point; a stop-down target reads the bed before its own stop-down), plus
              20 log10(weight) within -12..+6 dB, never past a -1 dBFS sample peak; with no bed under a cue
-             (before the track, inside a stop or a silence, after a stop ending) the film's reference bed
+             (before the track, inside a stop or a silence, after a hit ending's release) the film's reference bed
              (the median bed level over its cues) plus quiet_db (score.json stopdowns.quiet_db, default -7:
              an element in silence reads louder than over a bed; the lockup after a stop then peaks near -7.5
              dBFS in a -14 LUFS master);
@@ -317,7 +317,9 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
     accents = film.get('accents') or []
     stop_spans = [(s['from'], s['to']) for s in (film.get('stops') or [])]
     ending = (edit or {}).get('ending') or {}
-    if ending.get('mode') == 'stop':
+    if ending.get('mode') == 'hit':  # the bed is gone once its release under the hit is over
+        stop_spans.append((ending['bed_stops_film_s'] + 0.06 + float(ending.get('release_s', 0.5)), song.dur + 10))
+    elif ending.get('mode') == 'stop':  # an old edit's stop: its element sounds after the bar line, on the bed's release tail
         stop_spans.append((ending['bed_stops_film_s'], song.dur + 10))
     beat_s = float((edit or {}).get('beat_s') or song.beat)
     sd = stop_down_cfg(kit)
@@ -503,8 +505,8 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
         for x in targets:
             t = x['t']
             rec = dict(**{'for': x['id']}, t=r4(t))
-            if ending.get('mode') == 'stop' and t >= ending['bed_stops_film_s'] - 0.05:
-                rec.update(status='ending', why='the stop ending is the stop-down (the bed ends; it is not dipped)')
+            if ending.get('mode') in ('hit', 'stop') and t >= ending['bed_stops_film_s'] - 0.05:
+                rec.update(status='ending', why='the hit ending is the stop-down (the bed is released under the hit; it is not dipped)')
                 stops.append(rec)
                 continue
             if any(a - 1e-9 <= t < b for a, b, _, sc in song.silences):

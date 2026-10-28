@@ -127,7 +127,8 @@ SFX_PAN = 0.15  # |pan| of every other effect; the cue's pan (+-0.8 at the scree
 # alone; the take alone against over_bed(bed_db) is judged, within this many dB)
 OVER_BED_TOL = 2.0
 STOP_MIN_DIP_DB, STOP_RETURN_DB = 6.0, 3.0
-LOCKUP_PEAK = (-9.0, -6.0)  # dBFS: the one element after a stop ending
+LOCKUP_PEAK = (-9.0, -6.0)  # dBFS: the one element after an old edit's stop ending
+HIT_RING_SEND = 0.55        # a hit ending's element: its hall send (2.8 s), so it rings 1.5 s or more under the end card
 LOCKUP_UNDER_PAYOFF = 2.0   # LU
 REVEAL_BAND = (0.75, 0.90)  # share of the runtime: the biggest reveal, the payoff (SKILL.md energy, formats.md §2)
 
@@ -1283,6 +1284,28 @@ def load_music(song, base_dir, n):
     return bed, edit
 
 
+def ring_hit(song, edit, placed, sfx):
+    """A hit ending (track.py edit --end hit): the element on the bar line where the bed is released rings through
+    the hall (2.8 s), so the film ends on a decay of 1.5 s or more, never on the bed stopping. Without an
+    element there, a warning names the frame."""
+    end = (edit or {}).get('ending') or {}
+    if end.get('mode') not in ('hit', 'stop'):
+        return None
+    t = float(end.get('hit_film_s', end.get('end_s', 0.0)))
+    near = [p for p in placed if 'x' in p and abs(p['sync_s'] - t) <= max(0.1, 3 / song.fps)]
+    if not near:
+        song.warnings.append(f'the hit ending has no element on its bar line ({t:.2f} s, f={t * song.fps:.0f}): cue one hit or drop '
+                             'there (the lockup), or end on the track\'s own ending (track.py edit --end own) or a fade (--end fade)')
+        return None
+    p = max(near, key=lambda q: q['g'])
+    x = p['x'].mean(axis=1) if p['x'].ndim == 2 else p['x']
+    x = np.concatenate([x, np.zeros(int(3.0 * SR))])  # room for the hall's tail (reverb keeps the input's length)
+    wet = D.filt(D.reverb(x * p['g'] * HIT_RING_SEND, 'hall'), D.hp(250, 2))
+    D.place(sfx, wet, p['start'], 1.0, 0.0, tail=0.05)
+    p['ring'] = dict(send=HIT_RING_SEND, room='hall')
+    return p
+
+
 def plan_voice(kit, p, song):
     """(samples, start s) of one planned take, as score.py places it: mono unless the role keeps its width or
     the kind travels; the whoosh lead-in faded so it starts no earlier than its move; a tuned take ends by 1.5 s"""
@@ -1339,6 +1362,7 @@ def render_music(song, events, cues, kit, bed, edit, stems_dir=None, draft=False
         Bd, pd, _, _ = build_sfx(song, n, sub, tp, th, None, True, cues)
         sfx += sum(Bd[k] for k in ('fx', 'ui', 'keys', 'clicks', 'crisp')) * 1.25
         placed += pd
+    ring_hit(song, edit, placed, sfx)
     sfx = D.filt(sfx, D.hp(30, 2)) * (PL.hold_envelope(song, n) * PL.end_fade(song, n))[:, None] * song.mix['sfx']
     fade_warnings(song, placed)
     mix = (bed_played + sfx)[:n_out]
@@ -1842,6 +1866,15 @@ def main(argv=None):
                                  'in) and point "payoff" there; end on a stop, the track\'s final hit or its ring')
     if rep.get('tail_50ms_db') is not None and rep['tail_50ms_db'] > -45:
         song.warnings.append(f'the ending is not silent: the last 50 ms measure {rep["tail_50ms_db"]} dB (want under -45)')
+    # the ending as av-audit judges the film: a decay (the track's own ending, a hit that rings, a fade), never a cut
+    shape = D.ending_shape(y)
+    rep['ending'] = shape
+    pr = D.ending_problem(shape)
+    if pr and song.has_music:
+        rep.setdefault('_fails_extra', []).append(pr + ': track.py edit --end own|fade|hit, and a tail that holds MUSIC.end.hold')
+    if shape.get('dead_air_s') is not None and shape['dead_air_s'] > D.END_DEAD_AIR_S and song.has_music:
+        song.warnings.append(f"{shape['dead_air_s']:.1f} s of silence after the music ends: the picture holds on nothing; end the film "
+                             'where the ending\'s ring or fade does (the tail = MUSIC.end.hold)')
     if song.dur >= 20 and rep.get('lra') is not None and rep['lra'] < 5 and song.has_music:
         song.warnings.append(f'LRA {rep["lra"]} LU is flat for a {song.dur:.0f}s film (want 5-8): the arc comes from the edit '
                              '(an intro, a break, the entry on the reveal), not from automation')
@@ -1851,7 +1884,7 @@ def main(argv=None):
     by = {}
     for e in events:
         by[e['kind']] = by.get(e['kind'], 0) + 1
-    fails = M.gate(rep, song.lufs, a.tol, a.max_tp)
+    fails = M.gate(rep, song.lufs, a.tol, a.max_tp) + rep.pop('_fails_extra', [])
     # 4. no generated music; 5. every effect from the earshot kit
     rep['music'] = dict(source='none')
     if song.has_music:

@@ -25,7 +25,7 @@
   "add": "bash scripts/new-film.sh <dir> --template social-ad --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
   "then": [
    "npx tsx -e \"const t = require('./src/timeline.ts'); console.log(t.BARS, t.DEAL)\"   (the bars at the track's tempo, and the dealt devices)",
-   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end stop|button|ring",
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end auto  (its own ending, else a fade: never a cut)",
    "python3 scripts/audio/track.py grid",
    "python3 scripts/audio/track.py check"
   ]

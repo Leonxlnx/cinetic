@@ -12,7 +12,7 @@
   "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 104-136 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); a clear kick suits the swap on the kick",
   "add": "bash scripts/new-film.sh <dir> --template prompt-run --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
   "then": [
-   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end stop|button|ring",
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end auto  (its own ending, else a fade: never a cut)",
    "python3 scripts/audio/track.py grid",
    "python3 scripts/audio/track.py check"
   ]

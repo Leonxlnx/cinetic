@@ -64,11 +64,11 @@ export const f60x = (frames: number, fps: number = FPS) => (frames * fps) / 60;
 /** The body: whole bars, ending on the bar line after the last one (with a track, the downbeat after MUSIC.bars). */
 const BODY = b(8);
 /**
- * After the last bar the picture holds while the audio decays to digital silence: 1 s. With a stop ending
- * (src/music.ts end.mode 'stop', track.py edit --end stop) the bed stops on that bar line and the ending's one
- * element sounds after its near-silence, on MUSIC.end.f (0.2-0.7 s later): the tail is that gap, then the 1 s.
+ * After the last bar the picture holds while the music ends, never on a cut: MUSIC.end.hold (track.py grid) is how long
+ * the ending needs after that bar line: the track's own final hit ringing out (1.5-2.5 s), a hit that rings, or a 2-3 s
+ * fade under the end card. The tail is that, and at least 1 s.
  */
-export const TAIL = MUSIC && MUSIC.end.mode === 'stop' ? Math.max(0, Math.ceil(MUSIC.end.f) - BODY) + FPS : FPS;
+export const TAIL = Math.max(FPS, MUSIC ? Math.ceil(MUSIC.end.hold ?? 0) : 0);
 
 // Acts: contiguous, [from, from + dur), each starting on a bar line (with a track, a downbeat: grid-check
 // structural-on-music). Each act is its own composition in Root.tsx. Six shots in four acts (a cut inside an act

@@ -320,6 +320,69 @@ class Bus:
         place_at_peak(self.x, x, frac, t_peak, gain, pan)
 
 
+
+# ------------------------------------------------------------------------------------------
+# the ending, measured (track.py check, score.py and av-audit judge it the same way)
+# ------------------------------------------------------------------------------------------
+END_DROP_DB, END_DROP_S = 20.0, 0.15   # an ending that falls 20 dB inside 150 ms ...
+END_TAIL_S = 0.3                       # ... and then has no decay (under 0.3 s more to its floor) is cut, not ended
+END_DEAD_AIR_S = 1.0                   # silence after the music this long reads as the film stalling
+
+
+def ending_shape(x, sr=SR):
+    """How a soundtrack (mono or stereo, any rate) ends, in 10 ms frames: the body level (80th percentile of the
+    audible frames in the first 85 %), the last frame within 12 dB of it, the time from there to 20 dB under it
+    (drop20_s), to its floor (50 dB under it, or -80 dBFS: fall_s), the decay after the first 20 dB (tail_s) and
+    the silence after the last sound (dead_air_s). The end of the file counts as silence. `abrupt`: the last
+    loud moment falls END_DROP_DB inside END_DROP_S with under END_TAIL_S of decay after it, and nothing comes
+    back within 24 dB (a gap the music returns from is a stop-down, not the end) (a cut, a 60 ms
+    master fade over full-level music, a bed stopped dead); a hit that rings, the track's own button with its
+    room, a 2-3 s fade under the end card all decay."""
+    y = np.asarray(x, np.float64)
+    if y.ndim == 2:
+        y = y.mean(axis=1)
+    w = max(1, int(round(0.01 * sr)))
+    k = len(y) // w
+    if k < 20:
+        return dict(abrupt=False, note='too short to judge')
+    env = 20 * np.log10(np.sqrt((y[:k * w].reshape(k, w) ** 2).mean(axis=1)) + 1e-12)
+    env = np.concatenate([env, np.full(80, -150.0)])  # the file's end is silence
+    aud = env[:int(k * 0.85)]
+    aud = aud[aud > -70]
+    if not len(aud):
+        return dict(abrupt=False, note='no sound')
+    body = float(np.percentile(aud, 80))  # the playing level: a sparse bed's gaps do not drag it down
+    loud = np.flatnonzero(env[:k] >= body - 12)
+    if not len(loud):
+        return dict(abrupt=False, body_db=round(body, 1), note='nothing near the body level')
+    i = int(loud[-1])
+    start = float(env[i])
+    after = env[i:]
+    j20 = int(np.argmax(after <= start - END_DROP_DB))
+    floor = max(start - 50.0, -80.0)
+    j50 = int(np.argmax(after <= floor))
+    sounding = np.flatnonzero(env[:k] > body - 40)
+    last_sound = (int(sounding[-1]) + 1) if len(sounding) else 0
+    drop20, fall = j20 * 0.01, j50 * 0.01
+    tail = max(0.0, fall - drop20)
+    # a stop-down inside the ending (a gap the music comes back from) is arrangement, not the end: only a fall
+    # nothing returns from (within 24 dB of where it fell from) can be a cut
+    back = bool(len(after) > j50 + 1 and float(np.max(after[j50:])) > start - 24.0)
+    abrupt = bool(drop20 <= END_DROP_S + 1e-9 and tail < END_TAIL_S and not back)
+    return dict(abrupt=abrupt, body_db=round(body, 1), last_loud_s=round(i * w / sr, 3), drop20_s=round(drop20, 3),
+                fall_s=round(fall, 3), tail_s=round(tail, 3), dead_air_s=round(max(0.0, (k - last_sound) * w / sr), 3),
+                ends_at_level=bool(i >= k - 2))
+
+
+def ending_problem(shape):
+    """The ending's problem in words (None when it decays): what av-audit fails and score.py and track.py check refuse."""
+    if not shape or not shape.get('abrupt'):
+        return None
+    where = f"at {shape['last_loud_s']:.2f} s" if not shape.get('ends_at_level') else 'on the last frame, still at level'
+    return (f"the music ends abruptly {where}: it falls {END_DROP_DB:g} dB in {shape['drop20_s'] * 1000:.0f} ms with "
+            f"{shape['tail_s']:.2f} s of decay after it (want a decay: the track's own ending ringing out, a hit that "
+            "rings 1.5 s or more, or a 2-3 s fade under the end card; never a cut)")
+
 if __name__ == '__main__':  # a library module: --help prints what it holds
     import argparse
     argparse.ArgumentParser(description=__doc__.strip().split('\n')[0], epilog=__doc__,

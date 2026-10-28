@@ -18,8 +18,8 @@ Usage (from the project root):
          librosa when every option given matches it (one not given keeps the analysis's own: a phase set by hand
          stays set); another --phase re-grids from the measurements the first analysis cached in out/cache/music/
          (no second analysis); --force analyses again
-  python3 scripts/audio/track.py edit [TRACK.json] --bars N --reveal-bar K --end button|stop|ring
-          [--start-bar S] [--entry B] [--arc "-14,-12,..."] [--film-t0 0.25] [--gap 0.4] [--out audio/music/edit.json]
+  python3 scripts/audio/track.py edit [TRACK.json] --bars N --reveal-bar K [--end auto|own|button|ring|hit|fade]
+          [--start-bar S] [--entry B] [--arc "-14,-12,..."] [--film-t0 0.25] [--fade 2.5] [--out audio/music/edit.json]
           [--map "1:2x10,11:59x2"]
       -> audio/music/edit.json (source bars -> film bars, joins, the film-time grid, ending); --map gives the
          film's bars by hand (film bar:source bar x bars, in order) instead of the planner's choice
@@ -56,18 +56,26 @@ Analysis (numpy, scipy, librosa, ffmpeg; no models, no network):
   accents    attacks whose loudest 50 ms rise >= 6 dB over the median 50 ms level of the second before, with
              their band (low = kick or sub, mid = snare, clap or stab, high = hats) and bar:beat position
   ending     button (a final hit, then a decay with no new onset), ring (a long decay on a chord), fade (the
-             level falls over 4+ bars, already falling before the bar of a last hit: the edit must end on a
-             stop instead; a hit on level bars whose ring dies into a quiet last bar is a ring) or loop (no
-             ending)
+             level falls over 4+ bars, already falling before the bar of a last hit: the edit fades it out under
+             the end card instead; a hit on level bars whose ring dies into a quiet last bar is a ring) or loop (no
+             ending); with the final hit's bar (final_bar) and its ring-out (ring_out_s: to 40 dB under its peak)
   key      Krumhansl on the mean chroma, and per section (splices join parts in one key only)
 
 The edit is a dynamic programme over the film's bars: an energy arc (intro -14, body -6, break -10, peak 0,
 resolve; dB re the track's loud bars), a jump cost (how unlike the bar that would naturally follow the target
 sounds), a phrase penalty, no key change across a jump, at least 2 bars per segment and at most one splice
 per 8 film bars. Anchors: the reveal's film bar holds the chosen entry (default: the biggest drop entry); the
-ending is `button` (the track's final hit lands in the tail, end.f on it), `stop` (the bed stops on the bar
-line after the body, --gap s of near-silence, then ONE kit element: end.f) or `ring` (the last chord rings
-under the end card). A track whose own ending is a fade must end on `stop`.
+ending never cuts the music to silence:
+  own      (`auto`'s first choice) the track's own ending: its final bars close the body, so its final hit lands on
+           the bar line after the body (`button`, end.f on it) or its last chord rings (`ring`), and the tail holds
+           its natural ring-out for 1.5-2.5 s (end.hold)
+  fade     the bed plays on past the body and fades out over --fade 2-3 s under the end card (a track that ends on a
+           fade, or loops: `auto`'s choice for it)
+  hit      the bed's downbeat on the bar line after the body is the last thing it plays, released over 0.5 s under
+           ONE kit element (drop or hit) that rings 1.5 s or more through the hall (score.py); `stop`, the old name,
+           now means this: the 0.2-0.7 s gap of silence before the element is gone
+end.hold (frames) is how long the picture holds after the bar line after the body so the ending completes: the
+templates' tail is at least that.
 The opening: bar 1's downbeat at --film-t0; the bars before it play from frame 0, faded in from silence over 80 ms
 (so the film does not cut into a note: av-audit head), or --film-t0 0 opens on bar 1's attack.
 Joins: the incoming segment starts 8 ms before its downbeat's attack with an 8 ms fade-in, so the downbeat's
@@ -114,7 +122,12 @@ PRE_MS, TAIL_MS, TAIL_SUSTAIN_MS = 8.0, 60.0, 150.0
 OPEN_FADE_S = 0.08            # an opening inside the track (bars before film bar 1) fades in from silence this long: the
                               # film's first 5 ms stay under -40 dBFS (av-audit head) and the pickup still sounds
 JOIN_ATTACK_MS = 2.0          # check: the incoming attack within this of the film downbeat
-STOP_FADE_S, STOP_GUARD_S = 0.025, 0.003
+STOP_FADE_S, STOP_GUARD_S = 0.025, 0.003   # (unused since the stop ending became a hit: kept for old imports)
+END_MODES = ('auto', 'own', 'button', 'ring', 'hit', 'fade', 'stop')
+HIT_LET_S, HIT_RELEASE_S = 0.06, 0.5    # hit ending: the bed's downbeat attack sounds whole, then a cos^2 release under the hit
+HIT_RING_S = 1.8                        # hit ending: the ring the tail holds (the element through the hall: score.py)
+RING_MIN_S, RING_MAX_S = 1.5, 2.5       # own ending: the tail holds the final hit's natural ring-out for this long
+FADE_MIN_S, FADE_MAX_S = 2.0, 3.0       # fade ending: the fade under the end card
 LEVEL_FLOOR = -90.0           # LUFS / dB: digital silence reads as this, so depths and novelty stay finite
 AUDIO_EXT = ('.wav', '.mp3', '.flac', '.ogg', '.m4a', '.aac', '.aif', '.aiff', '.opus')
 KK_MAJ = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
@@ -798,7 +811,10 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
                      '(the first note, section entrances, chord changes) and rerun analyze with --phase N (either phase '
                      'is set from the measurements of this analysis, without a second one)')
     if kind == 'fade':
-        notes.append('the track ends on a fade: end the film on a stop (track.py edit --end stop)')
+        notes.append('the track ends on a fade: it has no ending of its own; the edit fades it out under the end card '
+                     '(track.py edit --end fade, or --end hit)')
+    elif kind == 'loop':
+        notes.append('the track has no ending (it loops): the edit fades it out under the end card (--end fade) or ends on a hit')
     fade_in = bool(nb > 3 and lufs[1] - lufs[0] > 6 and lufs[2] - lufs[1] > 3)
     if fade_in:
         notes.append('the track fades in over more than a bar: start the edit later (--start-bar)')
@@ -818,7 +834,9 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
                           beats_per_bar=BPB),
                 bars=bars, phrases=dict(len=plen, offset=poff, starts=pstarts),
                 sections=sections, entries=entries, breaks=breaks, stops=stops, accents=accents,
-                ending=dict(kind=kind, last_hit_t=r3(last_hit), ring_out_s=ring_out),
+                ending=dict(kind=kind, last_hit_t=r3(last_hit), ring_out_s=ring_out,
+                            final_bar=int(np.searchsorted(downs[:nb], last_hit + 0.05)),
+                            tail_s=r3(dur - last_hit)),
                 key=dict(name=key, r=round(rk, 3), per_section=per),
                 intro_bars=(first_entry - 1) if first_entry else None, fade_in=fade_in,
                 levels=dict(centres=[round(float(c), 2) for c in centres]), notes=notes,
@@ -875,8 +893,8 @@ def print_analysis(a, out=print):
 # ------------------------------------------------------------------------------------------
 def default_arc(n, reveal, end='button'):
     """target dB per film bar (re the track's loud bars): intro -14 rising to the body (-6), a dip (-10)
-    before the reveal, the peak (0) from the reveal, then a resolve toward -8 / -14. With a stop ending the
-    stop itself resolves, so the body holds (-4) to the last bar instead of reaching for quieter bars."""
+    before the reveal, the peak (0) from the reveal, then a resolve toward -8 / -14. With a hit or fade ending the
+    hit or the fade itself resolves, so the body holds (-4) to the last bar instead of reaching for quieter bars."""
     arc = []
     peak_until = reveal + max(2, int(round((n - reveal + 1) * 0.6)))
     for k in range(1, n + 1):
@@ -887,7 +905,7 @@ def default_arc(n, reveal, end='button'):
                 v = -10.0
         elif k < peak_until:
             v = 0.0
-        elif end == 'stop':
+        elif end in ('hit', 'fade', 'stop'):
             v = -4.0
         else:
             v = -8.0 - 6.0 * (k - peak_until) / max(1, n - peak_until)
@@ -913,9 +931,28 @@ def end_bar(a, end):
     hb = int(np.searchsorted(d, hit + 0.05) - 1)  # the bar whose downbeat carries (or precedes) the final hit
     if abs(hit - d[min(max(hb, 0), nb - 1)]) < 0.1:
         hb -= 1                                  # a button on a downbeat: the body ends on the bar before it
-    if ending['kind'] == 'fade':
-        raise TrackError('the track ends on a fade: use --end stop (a fade-out is never an ending)')
+    if ending['kind'] in ('fade', 'loop'):
+        raise TrackError(f"the track ends on a {ending['kind']}, not an ending of its own: use --end fade (the bed fades "
+                         'out over 2-3 s under the end card) or --end hit (one kit hit that rings)')
     return int(np.clip(hb, 0, nb - 1))
+
+
+def resolve_end(a, end):
+    """(mode, note): the ending mode an edit uses. auto: the track's own ending when it has one (button or ring),
+    else a fade under the end card; own: the track's own ending or a refusal; stop: the old name of hit."""
+    kind = (a.get('ending') or {}).get('kind')
+    if end in (None, 'auto'):
+        if kind in ('button', 'ring'):
+            return kind, f"the track's own ending ({kind}): its final hit closes the film and rings out"
+        return 'fade', f"the track ends on a {kind or 'unknown ending'}: the bed fades out under the end card"
+    if end == 'own':
+        if kind not in ('button', 'ring'):
+            raise TrackError(f"--end own: the track ends on a {kind}, not an ending of its own: use --end fade or --end hit")
+        return kind, None
+    if end == 'stop':
+        return 'hit', ('--end stop is now --end hit: the bed is released under one kit element that rings, '
+                       'never stopped dead into a gap of silence')
+    return end, None
 
 
 def map_edit(a, spec, bars, reveal, end):
@@ -1082,7 +1119,7 @@ def sustains(m48, t, before=0.05):
     return 20 * np.log10(a / b) > -6 and 20 * np.log10(a) > -45
 
 
-def film_map(a, segs, film_t0, bars, end, gap, m48=None):
+def film_map(a, segs, film_t0, bars, end, gap=None, m48=None, fade=2.5):
     """Film-time layout of an edit: per segment its film start and source span; the film downbeats of bars
     1..bars+1; joins; the ending. Every number in seconds."""
     d, bar_len = bar_times(a)
@@ -1104,13 +1141,21 @@ def film_map(a, segs, film_t0, bars, end, gap, m48=None):
     film_down.append(t)  # the bar line after the body
     ending = dict(mode=end)
     last = out[-1]
-    if end == 'stop':
-        ending.update(bed_stops_film_s=r3(t), gap_s=r3(gap), end_s=r3(t + gap))
+    if end in ('hit', 'stop'):
+        ending.update(mode='hit', bed_stops_film_s=r3(t), hit_film_s=r3(t), end_s=r3(t), release_s=HIT_RELEASE_S,
+                      ring_s=HIT_RING_S, hold_s=HIT_RING_S)
+    elif end == 'fade':
+        room = a['seconds'] - last['src_to']
+        if room < fade - 0.05:
+            raise TrackError(f"--end fade: the track ends {room:.2f} s after the body's last bar, too soon to fade over "
+                             f"{fade:g} s: end the body earlier in the track (--start-bar, --map) or use --end hit")
+        ending.update(fade_from_film_s=r3(t), fade_s=r3(fade), end_s=r3(t), hold_s=r3(fade))
     else:
         hit = a['ending']['last_hit_t']
         f_hit = last['film_s'] + (hit - last['src_from'])
+        ring = a['ending'].get('ring_out_s') or 0.0
         ending.update(last_hit_film_s=r3(f_hit), end_s=r3(f_hit), ring_out_s=a['ending']['ring_out_s'],
-                      src_end_s=a['seconds'])
+                      src_end_s=a['seconds'], hold_s=r3(max(0.0, f_hit - t) + float(np.clip(ring, RING_MIN_S, RING_MAX_S))))
     return out, joins, [r3(x) for x in film_down], ending
 
 
@@ -1124,8 +1169,10 @@ def to_film(a, segs, src_t, slack=0.0):
 
 def film_grid(a, segs, ending, film_down):
     """the analysed events mapped into film time (s): accents, entries, breaks, stops, phrases, sections."""
-    if ending['mode'] != 'stop':  # the last segment plays on into the tail: its button or ring is in the film
+    if ending['mode'] in ('button', 'ring'):  # the last segment plays on into the tail: its button or ring is in the film
         segs = segs[:-1] + [dict(segs[-1], src_to=a['seconds'])]
+    elif ending['mode'] == 'fade':  # it plays on under the fade
+        segs = segs[:-1] + [dict(segs[-1], src_to=segs[-1]['src_to'] + ending['fade_s'])]
     acc = []
     for x in a['accents']:
         f = to_film(a, segs, x['t'])
@@ -1183,8 +1230,12 @@ def cmd_edit(a_):
               f"--phase {g['phase']} confirms this grid); edit refuses until the phase is set", file=sys.stderr)
         return 2
     arc = [float(v) for v in a_.arc.split(',')] if a_.arc else None
-    if a_.end == 'stop' and not 0.2 <= a_.gap <= 0.7:
-        raise TrackError('--gap is the near-silence after a stop: 0.2-0.7 s')
+    asked = a_.end or 'auto'
+    a_.end, end_note = resolve_end(a, asked)
+    if end_note:
+        print(f'track.py: ending: {end_note}', file=sys.stderr)
+    if a_.end == 'fade' and not FADE_MIN_S <= a_.fade <= FADE_MAX_S:
+        raise TrackError(f'--fade is the fade under the end card: {FADE_MIN_S:g}-{FADE_MAX_S:g} s')
     if not 0.0 <= a_.film_t0 <= 0.45:
         raise TrackError('--film-t0 (the film time of bar 1\'s downbeat) is 0-0.45 s: the first sound arrives early')
     if a_.map:
@@ -1198,7 +1249,7 @@ def cmd_edit(a_):
     if os.path.isfile(trk):
         x, _ = decode(trk, a_.cache, a.get('sha256'))
         m48 = x.mean(axis=1).astype(np.float64)
-    segs, joins, film_down, ending = film_map(a, segs, a_.film_t0, a_.bars, a_.end, a_.gap, m48)
+    segs, joins, film_down, ending = film_map(a, segs, a_.film_t0, a_.bars, a_.end, None, m48, a_.fade)
     fg = film_grid(a, segs, ending, film_down)
     dips = [dict(film_s=s['from'], depth_db=s['depth_db']) for s in fg['stops'] if s.get('depth_db')] + \
            [dict(film_s=b['from'], depth_db=None, kind='break') for b in fg['breaks']]
@@ -1207,8 +1258,8 @@ def cmd_edit(a_):
            'analysis': os.path.relpath(tj).replace(os.sep, '/'), 'licence': rec, 'sha256': a.get('sha256'),
            'bpm': a['tempo']['bpm'], 'beat_s': a['tempo']['beat_s'], 'beats_per_bar': BPB,
            'film_t0': r3(a_.film_t0), 'film_bars': a_.bars, 'phrase_len': a['phrases']['len'],
-           'args': dict(bars=a_.bars, reveal_bar=a_.reveal_bar, end=a_.end, start_bar=a_.start_bar, entry=a_.entry,
-                        film_t0=a_.film_t0, gap=a_.gap, arc=a_.arc, map=a_.map),
+           'args': dict(bars=a_.bars, reveal_bar=a_.reveal_bar, end='hit' if asked == 'stop' else asked,
+                        start_bar=a_.start_bar, entry=a_.entry, film_t0=a_.film_t0, fade=a_.fade, arc=a_.arc, map=a_.map),
            'reveal': dict(film_bar=a_.reveal_bar, src_bar=info['entry_bar'], film_s=film_down[a_.reveal_bar - 1]),
            'segments': segs, 'joins': joins, 'ending': ending, 'track_dips': dips,
            'film': dict(downbeats=film_down, **fg), 'key': a['key']['name'], 'key_r': a['key']['r'],
@@ -1220,7 +1271,7 @@ def cmd_edit(a_):
     write_json(a_.out, doc)
     print(f"edit: {a_.bars} film bars from {len(segs)} segment(s) ({info['splices']} splice(s)); the reveal (film bar "
           f"{a_.reveal_bar}, {doc['reveal']['film_s']:.3f} s) holds source bar {info['entry_bar']}; ending {a_.end} at "
-          f"{ending['end_s']:.3f} s; wrote {a_.out}")
+          f"{ending['end_s']:.3f} s, the picture holds {ending['hold_s']:.2f} s after the body's last bar line; wrote {a_.out}")
     print('  map (film bar -> source bar): ' + ' '.join(f'{k + 1}:{j + 1}' for k, j in enumerate(path)))
     if info.get('soft_entry'):
         se = info['soft_entry']
@@ -1242,8 +1293,10 @@ def build_bed(edit, base_dir='.', n=None, cache_dir=None):
     their downbeats' attacks; an incoming segment starts PRE_MS before its attack with a raised-cosine fade-in
     that ends on it, the outgoing one runs TAIL_MS (150 ms when it sustains) past the join with a cos^2 tail.
     The first segment opens on the bars before film bar 1 (a pickup) when the track has them, faded in from
-    silence over OPEN_FADE_S (80 ms, or up to bar 1's attack when that comes sooner); a stop ending
-    cuts the bed STOP_FADE_S before the bar line after the body."""
+    silence over OPEN_FADE_S (80 ms, or up to bar 1's attack when that comes sooner). The ending never cuts:
+    a hit ending (or an old edit's stop) lets the bar line's attack sound HIT_LET_S, then releases the bed over
+    HIT_RELEASE_S (cos^2) under the hit; a fade ending plays on past the body and fades over its fade_s ((1 - u)^3);
+    a button or ring ending plays to the track's own end."""
     trk = locate(edit['track'], base_dir)
     x, sha = decode(trk, cache_dir)
     if edit.get('sha256') and sha != edit['sha256']:
@@ -1263,9 +1316,12 @@ def build_bed(edit, base_dir='.', n=None, cache_dir=None):
         if not last:
             tail = segs[k + 1].get('join', {}).get('tail_ms', TAIL_MS) / 1000.0
             b_src = sb + tail
-        elif end['mode'] == 'stop':
+        elif end['mode'] in ('hit', 'stop'):
             tail = 0.0
-            b_src = sb - STOP_GUARD_S
+            b_src = sb + HIT_LET_S + float(end.get('release_s', HIT_RELEASE_S))
+        elif end['mode'] == 'fade':
+            tail = 0.0
+            b_src = sb + float(end['fade_s'])
         else:
             tail = 0.0
             b_src = len(x) / SR
@@ -1280,10 +1336,16 @@ def build_bed(edit, base_dir='.', n=None, cache_dir=None):
             m = int(round(tail * SR))
             if m > 1 and m < len(seg):
                 seg[-m:] *= (np.cos(np.linspace(0, np.pi / 2, m)) ** 2)[:, None]
-        if last and end['mode'] == 'stop':
-            m = int(round(STOP_FADE_S * SR))
-            if m < len(seg):
-                seg[-m:] *= (np.cos(np.linspace(0, np.pi / 2, m)) ** 2)[:, None]
+        if last and end['mode'] in ('hit', 'stop', 'fade'):
+            # the release (hit) or the fade starts where the body ends (+ the bar line's attack for a hit) and
+            # reaches zero where this segment's copy ends: a decay, never a cut. The fade is (1 - u)^3, near even
+            # in dB (-9 dB half way, -30 dB at 0.7), so its last bars do not fall off a cliff; the release under a
+            # hit is cos^2 (the hit's ring carries the end)
+            m = int(round((float(end.get('release_s', HIT_RELEASE_S)) if end['mode'] != 'fade' else float(end['fade_s'])) * SR))
+            m = min(m, len(seg))
+            if m > 1:
+                u = np.linspace(0, 1, m)
+                seg[-m:] *= (((1 - u) ** 3) if end['mode'] == 'fade' else np.cos(u * np.pi / 2) ** 2)[:, None]
         at = int(round((f0 - pre) * SR))
         j0 = max(0, at)
         seg = seg[j0 - at:]
@@ -1336,7 +1398,8 @@ def music_obj(edit, fps):
              entries=[frames(v, fps) for v in f['entries']],
              breaks=[dict(**{'from': frames(s['from'], fps)}, to=frames(s['to'], fps)) for s in f['breaks']],
              stops=[dict(**{'from': frames(s['from'], fps)}, to=frames(s['to'], fps)) for s in f['stops']],
-             end=dict(mode=edit['ending']['mode'], f=frames(edit['ending']['end_s'], fps)))
+             end=dict(mode='hit' if edit['ending']['mode'] == 'stop' else edit['ending']['mode'],
+                      f=frames(edit['ending']['end_s'], fps), hold=frames(edit['ending'].get('hold_s', 1.0), fps)))
     return m
 
 
@@ -1424,7 +1487,10 @@ export type Music = {
   entries: readonly number[]; // where the track enters or re-enters after a break or a stop
   breaks?: readonly MusicSpan[];
   stops: readonly MusicSpan[]; // the arrangement's own stops (preferred over gain stop-downs)
-  end: { mode: 'stop' | 'button' | 'ring'; f: number }; // how and where the music ends
+  // how and where the music ends: f is the final hit (button, ring), the hit on the bar line after the body (hit)
+  // or that bar line where the fade starts (fade); hold is how many frames the picture holds after the bar line
+  // after the body so the ending completes (its ring 1.5-3 s, the hit's ring, the fade): the tail is at least that
+  end: { mode: 'button' | 'ring' | 'hit' | 'fade' | 'stop'; f: number; hold?: number }; // 'stop', no hold: a grid written before the endings
 };
 '''
 
@@ -1553,7 +1619,7 @@ def join_report(bed, edit, src=None):
         # before it) and the resolve into the last bars of a button or ring ending may step down
         kind = ('entry' if is_entry else
                 'dip' if reveal_s is not None and t < reveal_s - 0.02 and reveal_s - t <= 2 * bar_s + 0.02 else
-                'ending' if end_mode in ('button', 'ring') and last_s is not None and abs(t - last_s) < 0.02 else 'body')
+                'ending' if end_mode in ('button', 'ring', 'hit', 'fade') and last_s is not None and abs(t - last_s) < 0.02 else 'body')
         out_tail = j.get('tail_ms', TAIL_MS)
         # chop: the outgoing source still sounds near its last 50 ms level and over what enters, with a short tail
         x_out = 20 * np.log10(np.sqrt(np.mean(m[max(0, i - int(0.06 * SR)):i - int(0.01 * SR)] ** 2)) + 1e-9)
@@ -1581,6 +1647,33 @@ def join_report(bed, edit, src=None):
         row['problems'] = prob
         rows.append(row)
     return rows
+
+
+def ending_report(bed, edit):
+    """The edited bed's ending as the film plays it (to the end of the hold, under score.py's 1.3 s end fade),
+    measured as av-audit measures the film: a cut, a bed stopped dead or a track whose own last hit is dry is a
+    problem. A hit ending's decay is the kit hit ringing over the bed's release: score.py and av-audit judge it."""
+    import dsp as D
+    end = edit.get('ending') or {}
+    mode = 'hit' if end.get('mode') == 'stop' else end.get('mode')
+    bar_line = ((edit.get('film') or {}).get('downbeats') or [end.get('end_s', 0.0)])[-1]
+    hold = float(end.get('hold_s', 1.0))
+    n_end = int(round((bar_line + max(hold, 1.0)) * SR))
+    y = bed[:n_end].copy()
+    if len(y) < n_end:
+        y = np.concatenate([y, np.zeros((n_end - len(y), 2))])
+    t = np.arange(len(y)) / SR
+    y *= (np.clip((len(y) / SR - 0.03 - t) / 1.3, 0, 1) ** 2)[:, None]
+    sh = D.ending_shape(y)
+    probs = []
+    # a hit ending's bed alone ends in its 0.5 s release: the decay is the kit hit ringing over it (score.py, av-audit)
+    pr = D.ending_problem(sh) if mode != 'hit' else None
+    if pr:
+        probs.append(pr + (": this track's own final hit is dry; use --end fade or --end hit" if mode == 'button' else ''))
+    if mode in ('button', 'ring') and (end.get('ring_out_s') or 0) < 0.3:
+        probs.append(f"the track's final hit rings only {end.get('ring_out_s')} s: use --end fade (2-3 s under the end card) or --end hit")
+    return dict(mode=mode, hold_s=round(hold, 3), problems=probs,
+                **{k: sh.get(k) for k in ('last_loud_s', 'drop20_s', 'fall_s', 'tail_s', 'abrupt')})
 
 
 def git_ok(root, edit):
@@ -1636,12 +1729,18 @@ def cmd_check(a_):
         rep['joins'] = join_report(bed, edit, src.mean(axis=1).astype(np.float64))
         for j in rep['joins']:
             rep['problems'] += [f"join at {j['film_s']:.3f} s: {p}" for p in j['problems']]
+        rep['ending'] = ending_report(bed, edit)
+        rep['problems'] += [f'ending: {p}' for p in rep['ending']['problems']]
     else:
         rep['problems'].append(f'the track {trk} is not here: the joins cannot be measured')
     rep['ok'] = not rep['problems']
     if a_.json:
         write_json(a_.json, rep)
     print(f"track check: {'ok' if rep['ok'] else 'PROBLEMS'}  {a_.edit}: {len(rep['joins'])} join(s) measured")
+    if rep.get('ending'):
+        en = rep['ending']
+        print(f"  ending {en['mode']}: the bed's last loud moment {en.get('last_loud_s')} s, 20 dB down in {en.get('drop20_s')} s, "
+              f"then {en.get('tail_s')} s of decay; the picture holds {en['hold_s']} s after the body")
     for j in rep['joins']:
         print(f"  join {j['film_s']:.3f} s: attack {j['attack_off_ms']:+.1f} ms (rise {j['attack_rise_db']} dB), click "
               f"{j['click_db']} dB, step {j['loudness_step_lu']:+.1f} LU{' (entry)' if j['entry'] else ''}")
@@ -1762,7 +1861,7 @@ def cmd_music(a_):
     """analyze -> edit -> grid again, with the settings audio/music/edit.json and its analysis hold"""
     if not os.path.isfile(a_.edit):
         raise TrackError(f'no {a_.edit} yet: run track.py analyze <track>, then track.py edit --bars N --reveal-bar K '
-                         '--end stop|button|ring (references/music.md); npm run music repeats them afterwards')
+                         '[--end auto|own|fade|hit] (references/music.md); npm run music repeats them afterwards')
     e = read_json(a_.edit, 'edit')
     tj = e.get('analysis')
     an = read_json(tj, 'track analysis') if tj and os.path.isfile(tj) else {}
@@ -1779,8 +1878,8 @@ def cmd_music(a_):
     if code:
         return code
     g = e.get('args') or {}
-    ev = ['edit', av[3], '--bars', str(g['bars']), '--reveal-bar', str(g['reveal_bar']), '--end', g['end'], '--out', a_.edit]
-    for k, flag in (('start_bar', '--start-bar'), ('entry', '--entry'), ('film_t0', '--film-t0'), ('gap', '--gap'), ('arc', '--arc'),
+    ev = ['edit', av[3], '--bars', str(g['bars']), '--reveal-bar', str(g['reveal_bar']), '--end', g.get('end') or 'auto', '--out', a_.edit]
+    for k, flag in (('start_bar', '--start-bar'), ('entry', '--entry'), ('film_t0', '--film-t0'), ('fade', '--fade'), ('arc', '--arc'),
                     ('map', '--map')):
         if g.get(k) is not None:
             ev += [flag, str(g[k])]
@@ -1825,12 +1924,16 @@ def main(argv=None):
     p.add_argument('track', nargs='?', help='the .track.json (default: the one in audio/music/)')
     p.add_argument('--bars', type=int, required=True, help='film bars in the body (before the tail)')
     p.add_argument('--reveal-bar', type=int, required=True, help='the film bar of the biggest reveal (about 75-90%% in)')
-    p.add_argument('--end', required=True, choices=('button', 'stop', 'ring'))
+    p.add_argument('--end', default='auto', choices=END_MODES,
+                   help="how the music ends (never a cut): auto (default: the track's own ending when it has one, else "
+                        "fade), own (its final hit rings out: button or ring), fade (2-3 s under the end card), hit (one "
+                        "kit element that rings; stop is its old name)")
     p.add_argument('--start-bar', type=int)
     p.add_argument('--entry', type=int, help='the source entry bar to land on the reveal (default: the biggest drop)')
     p.add_argument('--arc', help='target dB per film bar, comma list (default: intro, body, dip, peak, resolve)')
     p.add_argument('--film-t0', type=float, default=0.25, help='film time of bar 1\'s downbeat, 0-0.45 s (default 0.25)')
-    p.add_argument('--gap', type=float, default=0.4, help='stop ending: near-silence before the one element (0.2-0.7)')
+    p.add_argument('--gap', type=float, default=None, help=argparse.SUPPRESS)  # the old stop ending's gap: no longer used
+    p.add_argument('--fade', type=float, default=2.5, help=f'fade ending: its length under the end card ({FADE_MIN_S:g}-{FADE_MAX_S:g} s)')
     p.add_argument('--map', help='the film bars by hand: film bar:source bar x bars in film order, e.g. 1:2x10,11:59x2 '
                    '(the planner is skipped; joins, ending and grid are written as usual)')
     p.add_argument('--out', default='audio/music/edit.json')
