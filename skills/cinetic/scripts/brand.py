@@ -689,7 +689,9 @@ def build(args):
         logo['wordmark'] = {'file': os.path.basename(word), 'split': split, 'parts': names, 'leaves': leaves}
     if raster and not mark:
         logo['raster'] = {'file': os.path.basename(raster)}
-        notes.append('the logo is a raster image: it is placed whole (one part); an SVG logo builds part by part')
+        notes.append('the logo is a raster image: it is placed whole (one part); an SVG logo builds part by part. Ask for the '
+                     f'vector file; a flat logo can be traced: trace-logo.py {os.path.basename(raster)} --out logo-mark.svg --sheet '
+                     'out/qa/trace.png (IoU >= 0.97), then run brand.py with the SVG')
     if not (mark or raster):
         warns.append('no logo found (an SVG named logo, mark, symbol or icon): the lockup falls back to the film\'s own mark')
     name = args.name or (os.path.splitext(os.path.basename(mark or word or raster))[0].split('-')[0].split('_')[0].title() if (mark or word or raster) else '')

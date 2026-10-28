@@ -68,7 +68,12 @@ A supplied serif or italic is the brand's identity and passes the type bans (`ci
 ## 4. Logo
 
 SVG preferred (parsed into parts for `LogoMark`, `AssembledMark` and the lockup), PNG accepted (placed whole, moved
-by the camera and masks only). A logo with live text gets a note to outline it (`scripts/outline-text.py`). The
+by the camera and masks only). Ask for the vector file first. When the brand has only a PNG of a flat logo (solid
+colours, no gradient or texture), trace it into parts: `python3 scripts/trace-logo.py <kit>/logo.png --out
+<kit>/logo-mark.svg --sheet out/qa/trace.png` writes one `<path id="part-N">` per shape of one colour (holes kept,
+circles as arcs, corners sharp), prints the IoU against the source (it fails under 0.97) and puts the source over the
+trace at 16, 64 and 256 px high in the sheet. Look at the sheet; then `brand.py` takes the SVG like a supplied one (an
+SVG in the kit wins over the PNG). Record in `BRIEF.md` that the mark is a trace. A logo with live text gets a note to outline it (`scripts/outline-text.py`). The
 originals stay in `brand/logo/`. A supplied logo retires the starter mark's stand-in notice; the sample mark stays as
 `LogoMark`'s fallback.
 

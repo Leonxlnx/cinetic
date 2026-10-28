@@ -239,6 +239,9 @@ jobs:
       - name: Brand kit intake tests (brand.py)
         run: python3 "skills/$SKILL/scripts/test/brand.test.py"
 
+      - name: Raster logo trace tests (trace-logo.py)
+        run: python3 "skills/$SKILL/scripts/test/trace-logo.test.py"
+
       - name: Clip match tests (like.py)
         run: python3 "skills/$SKILL/scripts/test/like.test.py"
 
