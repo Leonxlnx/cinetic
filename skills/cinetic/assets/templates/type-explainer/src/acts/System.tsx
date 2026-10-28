@@ -23,8 +23,8 @@ import { ActGround, capOf, MarkWord, PAGE, sentenceSize, sentenceStyle, sentence
 // The line is already moving under it: the first half slides 80 px into place on the crisp entry (with the seam's
 // travel) with the mark standing after it as a word, centred on the frame; the second half is appended, each word
 // rising into place. Once it is whole the camera pushes in on the mark (x1.2 on E.stdInOut, landing 40 f into the
-// grid); the words float up 140 px on an ease-in and are gone in 16 f, fading only on their fastest frames. The mark
-// never moves: the next act builds the product's parts round it.
+// grid); then the words fold into the mark, shrinking toward it on one curve that lands on the cut. The mark never
+// moves: the next act builds the product's parts round it.
 
 /** The mark's height as a share of the sentence's cap height, the gaps either side of it, the push on it and how much it grows as the hub. */
 export const HUB = { mark: 1.3, gap: 0.42, push: 0.2, grow: 1.9 } as const;
@@ -71,15 +71,17 @@ export const System: React.FC = () => {
   const slide = dir * 80 * U * settleLeft(F - c.in, f60x(26));
   const pop = prog(F, c.in, c.in + f60x(14), E.snapOut);
   const k = systemK(F);
-  const off = Math.max(CUE.floatOff, c.out); // the words float off on their read (COPY), the mark stays
-  const float = prog(F, off, off + f60x(16), E.buildIn);
-  const gone = prog(F, off + f60x(8), off + f60x(16), E.linear); // they leave at speed; only their fastest frames fade
+  // once read, the words fold into the mark: they shrink toward it on one curve that lands on the cut (so nothing
+  // stops at speed and the mark is never left alone), fading only once they are small
+  const off = Math.min(Math.max(CUE.floatOff, c.out), ACT.grid.from - f60x(12));
+  const fold = prog(F, off, ACT.grid.from, E.stdInOut);
+  const gone = prog(fold, 0.55, 1, E.linear);
   const page = (
     <AbsoluteFill style={{ background: PAGE.ground, overflow: 'hidden' }}>
       <ActGround F={F} act="system" />
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${H / 2}px`, transform: `scale(${k.toFixed(5)})` }}>
         {F >= c.in && <MarkWord x={W / 2 + slide} y={H / 2 - cap * 0.08} size={markH} s={mix(0.7, 1, pop)} />}
-        <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, opacity: 1 - gone, transform: `translate3d(0, ${(-140 * U * float).toFixed(2)}px, 0)` }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, opacity: 1 - gone, transformOrigin: `${(W / 2).toFixed(1)}px ${(H / 2).toFixed(1)}px`, transform: `scale(${(1 - 0.85 * fold).toFixed(5)})` }}>
           <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${(W / 2 - markH / 2 - gap - wA + slide).toFixed(2)}px, ${lineTop.toFixed(2)}px, 0)` }}>
             <Words id="system" text={ta} frame={F} start={c.in - 1} {...crisp} starts={h.first.map((f) => f - 1)} arriveX={0.25 * dir} size={size} style={sentenceStyle(size)} />
           </div>

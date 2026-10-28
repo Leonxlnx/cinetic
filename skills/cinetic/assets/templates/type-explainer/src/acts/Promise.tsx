@@ -37,9 +37,12 @@ const OBJS: Obj[] =
 /** The frames the slot rolls on: they fill the slot's time, the pill rolling in last just before the second half arrives (sync reads them). */
 export const ROLLS = OBJS.slice(1).map((_, i) => CUE.pill + Math.max(f60x(ROLL.every), (CUE.promise2 - CUE.pill - f60x(10)) / Math.max(1, OBJS.length - 1)) * (i + 1));
 
-/** The product moment drawn to cover a w x h box with corner radius r (the scene is the full frame, scaled). */
-export const ProductIn: React.FC<{ F: number; w: number; h: number; r: number }> = ({ F, w, h, r }) => {
-  const s = Math.max(w / W, h / H);
+/** The product moment drawn to cover a w x h box with corner radius r (the scene is the full frame, scaled; looking into it while the box is small). */
+export const ProductIn: React.FC<{ F: number; w: number; h: number; r: number; look?: number }> = ({ F, w, h, r, look }) => {
+  // small, the pill looks into the screen (x1.7, so it reads as the product's own light UI, not a dark box); as it
+  // grows to the frame the view pulls back to the whole shot, exactly the next shot's first frame at full size
+  const fill = Math.max(w / W, h / H);
+  const s = fill * (look ?? lmix(1.7, 1, Math.sqrt(clamp(fill))));
   return (
     <div data-ui style={{ position: 'relative', width: w, height: h, borderRadius: r, overflow: 'hidden', boxShadow: `0 ${(8 * U).toFixed(1)}px ${(22 * U).toFixed(1)}px ${shadeRgba(PAGE, 0.2)}` }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: '0 0', transform: `translate(${((w - W * s) / 2).toFixed(2)}px, ${((h - H * s) / 2).toFixed(2)}px) scale(${s.toFixed(5)})` }}>
@@ -127,7 +130,7 @@ export const PromiseLine: React.FC = () => {
         {/* lens: the pill lives in the line's world, and the camera goes through it */}
         {pillOn && DEAL.promise === 'lens' && (
           <div style={{ position: 'absolute', left: 0, top: 0, opacity: clamp(open * 3), transformOrigin: '50% 50%', transform: `translate3d(${(slotC.x - pw / 2).toFixed(2)}px, ${(slotC.y - ph / 2).toFixed(2)}px, 0) scale(${pillScale.toFixed(4)})` }}>
-            <ProductIn F={F} w={pw} h={ph} r={PILL.r * cap * (1 - lensP) ** 2} />
+            <ProductIn F={F} w={pw} h={ph} r={PILL.r * cap * (1 - lensP) ** 2} look={lmix(1.7, 1, lensP)} />
           </div>
         )}
       </div>

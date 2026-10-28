@@ -28,8 +28,7 @@ import { ActGround, Cam, capOf, MarkWord, PAGE, sentenceSize, sentenceStyle, use
 //   mask   each word rises out of a mask on its baseline and stops dead, mute to ink as it rises (TypeLine mask)
 //   build  built word by word on the beat (14, 10, 10 f apart, a breath before the last word), each word cut on
 //          solid in a tint of the accent, walking to the accent and darkening to ink while the line re-centres
-// The camera eases in once it is whole; it leaves right at full ink, accelerating into the cut (the said words
-// launching from the last to the first, the set lines as one).
+// The camera eases in once it is whole; it leaves right as one at full ink, accelerating into the cut.
 
 /** The giant name's size: the giant role's look at up to 500 px, fitted to 78 % of the width (whole in the safe area). */
 const giantSize = (text: string) => Math.min(500 * U, fitSize(text, W * 0.78, 500 * U, TYPE.giant.weight, TYPE.giant.track));
@@ -142,15 +141,16 @@ export const Open: React.FC = () => {
   const drift = 55 * U * settleLeft(F - what.in, build + f60x(28)) - (0.5 * U * Math.max(0, F - what.resolved) * 60) / FPS;
   // the what shot opens out of the name shot's move: the push carried on and settling (push), or still gliding left (band, focus)
   const carry = DEAL.open === 'push' ? lmix(1, 1.08, prog(F, what.in - 1, what.in + f60x(30), E.glideOut)) : 1;
-  const slide = DEAL.open === 'push' ? 0 : 70 * U * settleLeft(F - what.in, f60x(20));
+  // still gliding left out of the band and the focus (a set line, whose words rise in place, carries more of it)
+  const slide = DEAL.open === 'push' ? 0 : (DEAL.voice === 'said' ? 70 : 150) * U * settleLeft(F - what.in, f60x(20));
   const k = carry * creep(F, CUE.what, { pctPerSec: 0.012 }, FPS) * (1 + 0.2 * prog(F, CUE.whatPush, CUE.exitWhat + f60x(20), E.stdInOut));
   const Name = DEAL.open === 'push' ? Push : DEAL.open === 'focus' ? Focus : Band;
+  // the line leaves as one at full ink, whatever its voice: the container accelerates right into the cut (E.launchIn),
+  // its fastest frame on the cut, never a fade (word by word, a said line's last words would leave the cut slow)
+  const od = Math.max(f60x(16), cut - what.out);
+  const dist = exitDistanceEm('launch', E.launchIn, od, size, U) * size;
+  const away = dist * prog(F, cut - od, cut, E.launchIn);
   if (DEAL.voice !== 'said') {
-    // a set line (mask, build) leaves as one at full ink: the container accelerates right into the cut (E.launchIn),
-    // its fastest frame on the cut, never a fade
-    const od = Math.max(f60x(16), cut - what.out);
-    const dist = exitDistanceEm('launch', E.launchIn, od, size, U) * size;
-    const away = dist * prog(F, cut - od, cut, E.launchIn);
     return (
       <AbsoluteFill style={{ background: PAGE.ground, overflow: 'hidden' }}>
         <ActGround F={F} act="open" />
@@ -171,24 +171,8 @@ export const Open: React.FC = () => {
       {F < CUE.what && <Name F={F} />}
       {F >= what.in - 1 && (
         <Cam k={k}>
-          <div style={{ position: 'absolute', left: 0, top: H / 2 - (size * 1.2) / 2, width: W, display: 'flex', justifyContent: 'center', transform: `translate3d(${(drift + slide).toFixed(2)}px, 0, 0)` }}>
-            <Words
-              id="what"
-              text={what.text}
-              frame={F}
-              start={what.in - 1}
-              {...crisp}
-              starts={starts}
-              size={size}
-              arriveX={0.3}
-              out={Math.min(what.out, cut - f60x(16))}
-              outDur={Math.max(f60x(16), cut - what.out)}
-              exit="launch"
-              exitDir="right"
-              exitAt={cut - 1}
-              exitOrder="rtl"
-              style={sentenceStyle(size)}
-            />
+          <div style={{ position: 'absolute', left: 0, top: H / 2 - (size * 1.2) / 2, width: W, display: 'flex', justifyContent: 'center', transform: `translate3d(${(drift + slide + away).toFixed(2)}px, 0, 0)` }}>
+            <Words id="what" text={what.text} frame={F} start={what.in - 1} {...crisp} starts={starts} size={size} arriveX={0.3} style={sentenceStyle(size)} />
           </div>
         </Cam>
       )}

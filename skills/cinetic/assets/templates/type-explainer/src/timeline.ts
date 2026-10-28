@@ -227,7 +227,7 @@ const build = (plan: Plan) => {
     C.lockup = onGridUp(C.name + f60(READ_AT));
   } else {
     C.name = at('end', 0.5);
-    C.close = onGrid(Math.min(cut('end') - TAIL - f60(60), Math.max(at('end', 2.25), onGridUp(C.name + f60(READ_AT) + hold(1)))));
+    C.close = onGrid(Math.min(cut('end') - TAIL - f60(60), onGridUp(C.name + f60(READ_AT) + hold(1)))); // once the name is read
     C.lockup = onGridUp(C.close + f60(HERO_END.mask(w(L.close)))); // the close is whole
   }
   // the end holds about 1.5 s before the tail: a lockup that would come earlier moves later, its lines with it (at most 48 f)
