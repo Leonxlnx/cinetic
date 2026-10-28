@@ -7,7 +7,7 @@
 // marks replace the kit's.
 import React from 'react';
 import { Img, staticFile, useCurrentFrame } from 'remotion';
-import { C, FONT, SAFE, TYPE, U } from '../brand/tokens';
+import { C, FONT, SAFE, TYPE, TYPE_FAMILY, U } from '../brand/tokens';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
 import { bakePlate } from '../fx/Gradients';
@@ -19,6 +19,8 @@ import { clamp, E, prog } from '../lib/anim';
 import { carry, launch } from '../lib/handoff';
 import { mixColor } from '../lib/color';
 import { FILM_LIGHT, keyDir } from '../lib/light';
+import { dealLineEmphasis, keysOf } from '../fx/TypeEmphasis';
+import { EMPHASIS_LOOK } from '../lib/look';
 import { fitSize, measureTracked } from '../lib/measure';
 import { AD } from '../ad';
 import { SEED } from '../deal';
@@ -81,6 +83,18 @@ export const lineStyle = (size: number, color: string = PAGE.text): React.CSSPro
   color,
 });
 export const lineWidth = (text: string, size: number) => measureTracked(text, size, TYPE.line.weight, TYPE.line.track, FONT.text, { trailing: false });
+/**
+ * Every line sets its key words apart (fx/TypeEmphasis): one device per line dealt from the film's seed, never the same
+ * twice in a row, on the words ad.ts `keys` names (else the line's last word). The claim's last word already stands on
+ * the accent pill (its own marker: its pieces take none) and the label's last word swaps in a chip measured round it,
+ * as the close sits under the lockup: those take a device that holds the width.
+ */
+export const EMPH = dealLineEmphasis(['what', 'tag.1', 'tag.2', 'swap', 'close'], SEED, { fixed: ['swap', 'close'] });
+/** A line's key words from ad.ts `keys`, found in its text. */
+export const keysFor = (id: string, text: string) => keysOf(text, (AD.keys as Record<string, string | undefined>)[id]) ?? undefined;
+/** The emphasis weight of the family, for a word set as a plain span (the stack's second word). */
+export const EMPH_WEIGHT = EMPHASIS_LOOK.weight[TYPE_FAMILY];
+
 /** The cap height of the line at a size (Inter and its kin: about 0.727 em). */
 export const capOf = (size: number) => size * 0.727;
 

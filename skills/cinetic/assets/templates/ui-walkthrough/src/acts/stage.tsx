@@ -18,6 +18,7 @@ import { mixColor } from '../lib/color';
 import { type Shot } from '../lib/camera';
 import { holdDrift } from '../lib/continuity';
 import { carry, launch } from '../lib/handoff';
+import { TYPE_LOOK } from '../lib/look';
 import { fitSize } from '../lib/measure';
 import { LINES } from '../deal';
 import { ACT, ACT_ORDER, type ActName, copy, f60x, FPS, H, moveOf, TONE, W } from '../timeline';
@@ -88,11 +89,14 @@ export const lineSize = (text: string, role: 'line' | 'display' = 'line', share 
 
 /**
  * A line of the script (a COPY entry) on one line, centred on the frame at `top` (px, the line's top), on the move and
- * the exit the film dealt it (src/deal.ts LINES, acts/type.tsx HeroLine): it leaves at its `out` frame at speed.
+ * the exit the film dealt it (src/deal.ts LINES, acts/type.tsx HeroLine): it leaves at its `out` frame at speed. A line
+ * set over the product (its top in the frame's top 15 %) holds the calm line's size whatever the family, so it clears
+ * the window under it; its emphasis still sets its key words apart.
  */
 export const ScriptLine: React.FC<{ id: string; F: number; top: number; color: string; role?: 'line' | 'display'; size?: number; x?: number; accent?: string; mute?: string }> = ({ id, F, top, color, role = 'line', size, x = W / 2, accent, mute }) => {
   const c = copy(id);
-  const px = size ?? lineSize(c.text, role);
+  const over = top < H * 0.15 ? TYPE_LOOK.calm.line.size * U : Infinity;
+  const px = size ?? Math.min(over, lineSize(c.text, role));
   return <HeroLine id={id} text={c.text} at={c.in} frame={F} move={moveOf(id)} out={c.out} exit={LINES.exit[id]} x={x} y={top + (px * TYPE[role].lead) / 2} role={role} size={px} color={color} accent={accent ?? C.accent} mute={mute} />;
 };
 

@@ -2,7 +2,7 @@
 
 An 18-20 s demo of a product that does work from a request (an agent, an assistant, a generator), laid over the
 Remotion starter by `bash scripts/new-film.sh <dir> --template prompt-run` (template.json lists the files it copies and
-the starter acts it removes). Crisp pace, calm type, 120 BPM until the track's grid is in; 9 bars and a 1.6 s tail as
+the starter acts it removes). Crisp pace, bold type (a launch film; calm only when the direction is), 120 BPM until the track's grid is in; 9 bars and a 1.6 s tail as
 written.
 
 **The shape.** One object through many states: what it is among the tools it really connects, the request, the send,

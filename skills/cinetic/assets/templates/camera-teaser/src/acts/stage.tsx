@@ -12,7 +12,8 @@ import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
 import { DirBlur } from '../fx/Defocus';
 import { dealGrounds, type GroundKind, type GroundSpec, LitGround } from '../fx/Grounds';
-import { type TypeLineSpec, TypeLine } from '../fx/TypePresets';
+import { dealLineEmphasis, keysOf } from '../fx/TypeEmphasis';
+import { emphasisFitSize, type TypeLineSpec, TypeLine } from '../fx/TypePresets';
 import { kitTheme, shadeRgba } from '../kit';
 import { camera, camera3d, type CamMove, camPath, camVel, type Shot } from '../lib/camera';
 import { useFilm } from '../lib/film';
@@ -20,6 +21,7 @@ import { expoTail } from '../lib/handoff';
 import { fitSize } from '../lib/measure';
 import { DEAL_SEED, VOICE_EXIT } from '../deal';
 import { ACT, type ActName, copy, DEAL, H, TOTAL, W } from '../timeline';
+import { TEASER } from '../teaser';
 
 /** The stage: a tinted near-black (never #000) and its glass, one accent. */
 export const INK = kitTheme('inkStage', C.accent);
@@ -89,9 +91,16 @@ export const World: React.FC<{ F: number; act: ActName; moves: readonly CamMove[
 };
 
 /** A script line's preset spec on the film's voice (DEAL.voice), leaving at speed on the voice's exit at its COPY out. */
+/**
+ * Every script line sets its key words apart (fx/TypeEmphasis): one device per line dealt from the film's seed, never the
+ * same twice in a row, on the words teaser.ts `keys` names (else the line's last word). The close under the end mark is
+ * placed by a measured width; the connect line is an ObjectLine (its own entry).
+ */
+export const EMPH = dealLineEmphasis(Object.keys(TEASER.lines).filter((id) => id !== 'connect'), DEAL_SEED, { fixed: ['close'] });
+
 export const voiceSpec = (id: string, colors?: TypeLineSpec['colors']): TypeLineSpec => {
   const c = copy(id);
-  return { preset: DEAL.voice, text: c.text, at: c.in, ...(c.out < TOTAL ? { out: c.out, exit: VOICE_EXIT[DEAL.voice] } : {}), ...(DEAL.voice === 'land' ? { scaleFrom: 1.35 } : {}), colors: { ink: INK.text, mute: INK.mute, accent: INK.accent, ...colors }, id };
+  return { preset: DEAL.voice, text: c.text, at: c.in, ...(c.out < TOTAL ? { out: c.out, exit: VOICE_EXIT[DEAL.voice] } : {}), ...(DEAL.voice === 'land' ? { scaleFrom: 1.35 } : {}), colors: { ink: INK.text, mute: INK.mute, accent: INK.accent, ...colors }, id, emph: EMPH[id], keys: keysOf(c.text, (TEASER.keys as Record<string, string | undefined>)[id]) ?? undefined };
 };
 
 /** A script line's size: the line role at the film's frame (the bold family's 120 px), set smaller only to fit 70 % of the safe width, never under 72 px. */
@@ -101,8 +110,10 @@ export const lineSize = (text: string, share = 0.7) => Math.max(72 * U, Math.min
 export const Caption: React.FC<{ id: string; F: number; y: number }> = ({ id, F, y }) => {
   const c = copy(id);
   if (F < c.in - 1 || F >= c.out + 60) return null;
-  const size = lineSize(c.text);
-  return <TypeLine spec={voiceSpec(id)} frame={F} x={W / 2} y={y} size={size} weight={TYPE.line.weight} track={TYPE.line.track} />;
+  const spec = voiceSpec(id);
+  // a size device refits the line so it is no wider than the plain line at its size
+  const size = emphasisFitSize(spec, lineSize(c.text), TYPE.line.weight, TYPE.line.track, FONT.text);
+  return <TypeLine spec={spec} frame={F} x={W / 2} y={y} size={size} weight={TYPE.line.weight} track={TYPE.line.track} />;
 };
 
 /** The mark at `size` px, centred on (x, y), turned `rot` deg and scaled `s`. */

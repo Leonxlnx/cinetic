@@ -20,6 +20,12 @@ export const RUN = {
     close: 'Try it at [product.com].', // under the lockup: what to do
   },
   /**
+   * Each line's key words, as they read in the line: the line's emphasis device lands on them (acts/stage.tsx EMPH). Name
+   * the words that carry the claim (the result, the task, the tools), never the product's name; copy-check.py names one
+   * for a line that has none. A key that is not in its line falls back to the line's last word.
+   */
+  keys: { what: 'your tools', ask: '[task]', tell: 'what you need', done: '[result]', close: '[product.com]' } as Record<string, string>,
+  /**
    * The tools it really connects (4-7): `logo` is the slug of a real mark fetched with node scripts/logos.mjs get <name>
    * --film . (its app-icon tile), `glyph` the generic glyph drawn when there is no mark. Only what the product really
    * reads from or writes to.

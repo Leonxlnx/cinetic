@@ -1,9 +1,9 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { U } from '../brand/tokens';
+import { FONT, TYPE, U } from '../brand/tokens';
 import { DirBlur } from '../fx/Defocus';
 import { fanState, pileState } from '../fx/Stack';
-import { TypeLine } from '../fx/TypePresets';
+import { emphasisFitSize, TypeLine } from '../fx/TypePresets';
 import { E, lmix, prog } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { useFilm } from '../lib/film';
@@ -11,7 +11,7 @@ import { creep } from '../lib/handoff';
 import { AD } from '../ad';
 import { DEAL } from '../deal';
 import { copy, CUE, DEALS, f60x, FPS, H, OPEN_LEAD, SPREAD, W } from '../timeline';
-import { ActGround, circOut, Item, lineSize, lineStyle, lineWidth, PAGE, useAbs } from './stage';
+import { ActGround, circOut, EMPH, EMPH_WEIGHT, Item, keysFor, lineSize, lineStyle, lineWidth, PAGE, useAbs } from './stage';
 
 // OPEN - two shots. The opener is the open slot's device (src/deal.ts), a confident line move (fx/TypePresets):
 //   land  the name cuts in oversized (x1.7) and lands in 34 f, crisp as it lands; each next word is appended 12 f
@@ -113,7 +113,8 @@ export const SaveWords: React.FC<{ F: number }> = ({ F }) => {
   return (
     <div style={{ position: 'absolute', left: 0, top: H / 2 - (size * 1.05) / 2, width: W, height: size * 1.1 }}>
       <span data-text="save" style={{ ...lineStyle(size, ink), position: 'absolute', left: 0, top: 0, transform: `translate3d(${(W / 2 - cardW / 2 - gap - carry - away - lineWidth(left, size)).toFixed(2)}px, 0, 0)` }}>{left}</span>
-      <span data-text="save" style={{ ...lineStyle(size, ink), position: 'absolute', left: 0, top: 0, transform: `translate3d(${(W / 2 + cardW / 2 + gap + carry + away).toFixed(2)}px, 0, 0)` }}>{right}</span>
+      {/* the stack's second word carries the line's emphasis: the family's emphasis weight in the accent (it is placed from its left edge) */}
+      <span data-text="save" style={{ ...lineStyle(size, mixColor(PAGE.mute, PAGE.accent, prog(F, CUE.pile, CUE.pile + f60x(12), E.softOut))), fontWeight: EMPH_WEIGHT, position: 'absolute', left: 0, top: 0, transform: `translate3d(${(W / 2 + cardW / 2 + gap + carry + away).toFixed(2)}px, 0, 0)` }}>{right}</span>
     </div>
   );
 };
@@ -121,7 +122,9 @@ export const SaveWords: React.FC<{ F: number }> = ({ F }) => {
 export const Open: React.FC = () => {
   const F = useAbs('open');
   const what = copy('what');
-  const size = lineSize(what.text, 0.66);
+  const whatSpec = { emph: EMPH.what, keys: keysFor('what', what.text) };
+  // a size device refits the opener so it is no wider than the plain line
+  const size = emphasisFitSize({ preset: DEAL.open, text: what.text, at: 0, ...whatSpec }, lineSize(what.text, 0.66), TYPE.line.weight, TYPE.line.track, FONT.text);
   const k = creep(F, what.in, { pctPerSec: 0.02 }, FPS);
   // shot 2: the stack and its two words
   const push = stackPush(F);
@@ -131,7 +134,7 @@ export const Open: React.FC = () => {
       {F < CUE.pile && F >= what.in - 1 && (
         <div style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', transform: `scale(${k.toFixed(5)})` }}>
           <TypeLine
-            spec={{ preset: DEAL.open, text: what.text, at: what.in - 1, lead: OPEN_LEAD, out: CUE.pile - f60x(SPREAD), exit: 'spread', colors: { ink: PAGE.text, accent: PAGE.accent, mute: PAGE.mute }, id: 'what' }}
+            spec={{ preset: DEAL.open, text: what.text, at: what.in - 1, lead: OPEN_LEAD, out: CUE.pile - f60x(SPREAD), exit: 'spread', colors: { ink: PAGE.text, accent: PAGE.accent, mute: PAGE.mute }, id: 'what', ...whatSpec }}
             frame={F}
             size={size}
             y={H / 2}

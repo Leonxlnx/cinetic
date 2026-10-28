@@ -8,7 +8,7 @@ import { creep } from '../lib/handoff';
 import { DEAL } from '../deal';
 import { ACT, copy, CUE, f60x, FPS, H } from '../timeline';
 import { lockupGeometry, SpunLockup } from './Brand';
-import { ActGround, lineSize, MarkAt, PAGE, useAbs } from './stage';
+import { ActGround, EMPH, keysFor, lineSize, MarkAt, PAGE, useAbs } from './stage';
 
 // END - the lockup on the page. It opens still carrying the push into the cut (x1.04 relaxing to 1 over 30 f) and
 // creeps on: the end lock never freezes. The end slot's device (src/deal.ts):
@@ -58,7 +58,7 @@ export const End: React.FC = () => {
       <ActGround F={F} act="end" />
       <div style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', transform: `scale(${k.toFixed(5)})` }}>
         {DEAL.end === 'spin' ? <SpunLockup F={F} at={CUE.endMark} name={nm.text} id="wordmark" cy={cy} color={PAGE.text} /> : <RisenLockup F={F} at={CUE.endMark} name={nm.text} id="wordmark" cy={cy} />}
-        {F >= close.in - 1 && <TypeLine spec={{ preset: 'glide', text: close.text, at: close.in - 1, colors: { ink: PAGE.mute, mute: mixColor(PAGE.mute, PAGE.ground, 0.55) }, id: 'close' }} frame={F} size={Math.max(72 * U, size)} y={cy + 170 * U} />}
+        {F >= close.in - 1 && <TypeLine spec={{ preset: 'glide', text: close.text, at: close.in - 1, colors: { ink: PAGE.mute, mute: mixColor(PAGE.mute, PAGE.ground, 0.55), accent: PAGE.accent }, id: 'close', emph: EMPH.close, keys: keysFor('close', close.text) }} frame={F} size={Math.max(72 * U, size)} y={cy + 170 * U} />}
       </div>
     </AbsoluteFill>
   );

@@ -24,6 +24,12 @@ export const WALK = {
     payoff: 'Try it free at [product.com].', // the close, beside the name: what to do
   },
   /**
+   * Each line's key words, as they read in the line: the line's emphasis device lands on them (acts/type.tsx EMPH). Name
+   * the words that carry the claim (the output, the number, the result), never the product's name; copy-check.py names
+   * one for a line that has none. A key that is not in its line falls back to the line's last word.
+   */
+  keys: { promise: '[outputs]', claim: '[N] minutes', step1: '[your input]', insight: '[people]', pick: '[output]', payoff: '[product.com]' } as Record<string, string>,
+  /**
    * The user's input as one object (a channel, a store, a repository, a document): it becomes the output in place.
    * `source` is the slug of the real mark of the product it lives on (node scripts/logos.mjs get <name> --film .): the
    * card shows it on an app-icon tile, the field leads with it and the promise holds it in its line; until it is fetched,

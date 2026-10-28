@@ -1,6 +1,10 @@
 // The film's lines of type: one clean line at a time, each on a confident move dealt per film (src/deal.ts LINE_MOVE:
 // fx/TypePresets mask, land, fall, glide, fly or open, every word solid ink within a few frames and moving while it
 // lands), leaving at speed on a dealt exit (slide, spread, collapse, push or drop: none fades a statement out).
+// Every line sets its key words apart (fx/TypeEmphasis): one device per line dealt from the film's seed (EMPH below:
+// weight, scale, swell, marker, box, under, outline or sweep, never the same twice in a row), on the words written
+// named in src/walk.ts `keys` ("[outputs]" in "[Product] turns [] [inputs] into [outputs]."), else on its last word.
+// A line with a size device refits so it is no wider than the plain line (emphasisFitSize); the name takes none.
 //   HeroLine  one sentence on its move (fx/TypePresets TypeLine), centred on (x, y)
 //   MarkLine  the same with an object inside the sentence at 1.0 cap height ("[]" marks the place): a real mark
 //             (scripts/logos.mjs), a glyph or a chip (kit/inline InlineObject). The slot is a word of the line (figure
@@ -8,11 +12,22 @@
 //             whatever the move; the objects roll in turn once it has landed.
 import React, { useMemo } from 'react';
 import { FONT, TYPE, U } from '../brand/tokens';
-import { measureLine, TypeLine, typeLineState, type TypeExit, type TypeLineSpec, type TypePresetName, wordMap } from '../fx/TypePresets';
+import { DEAL_SEED, LINE_IDS } from '../deal';
+import { dealLineEmphasis, type EmphasisName, type EmphasisSpec, keysOf } from '../fx/TypeEmphasis';
+import { emphasisFitSize, measureLine, TypeLine, typeLineSpec, typeLineState, type TypeExit, type TypeLineSpec, type TypePresetName, wordMap } from '../fx/TypePresets';
 import { capHeight, type KitTheme } from '../kit';
 import { InlineObject, inlineWidth, type InlineRef } from '../kit/inline';
 import { useFilm } from '../lib/film';
+import { WALK } from '../walk';
 import { measureTracked } from '../lib/measure';
+
+/** Pin a line's emphasis by id (a device name, or false for none); the rest are dealt. */
+export const EMPH_PIN: Partial<Record<string, EmphasisName | false>> = {};
+/**
+ * One emphasis device per line of the script, dealt from the film's seed: the payoff is placed by its measured width
+ * (no size device); the name on the end card never takes one.
+ */
+export const EMPH = dealLineEmphasis([...LINE_IDS, 'wordmark'], DEAL_SEED, { fixed: ['payoff'], none: ['wordmark'], pin: EMPH_PIN });
 
 /** A figure space: the slot's filler glyph (a word of the line, never a break). */
 const FIG = ' ';
@@ -32,6 +47,8 @@ export type LineProps = {
   color: string;
   accent?: string; // the moves that land in the accent (land, fly, fall, open) cool from it to `color`
   mute?: string; // the mask's rising words darken from it
+  emph?: EmphasisSpec; // the line's emphasis (default: the device EMPH dealt its id)
+  keys?: [number, number]; // its key words (default: walk.ts keys[id] found in the line, else the last word)
 };
 
 const specOf = (p: LineProps, text: string): TypeLineSpec => ({
@@ -42,6 +59,8 @@ const specOf = (p: LineProps, text: string): TypeLineSpec => ({
   exit: p.exit ?? 'cut',
   id: p.id,
   colors: { ink: p.color, accent: p.accent ?? p.color, mute: p.mute ?? p.color },
+  emph: p.emph ?? EMPH[p.id],
+  keys: p.keys ?? keysOf(text, WALK.keys[p.id]) ?? undefined,
 });
 
 /** One line of the script on its dealt move. */
@@ -49,8 +68,10 @@ export const HeroLine: React.FC<LineProps> = (p) => {
   const film = useFilm();
   if (p.frame < p.at) return null;
   const role = TYPE[p.role ?? 'line'];
-  const size = p.size ?? (role.size * Math.min(film.width, film.height)) / 1080;
-  return <TypeLine spec={specOf(p, p.text)} frame={p.frame} x={p.x} y={p.y} role={p.role ?? 'line'} size={size} />;
+  const spec = specOf(p, p.text);
+  // a size device refits the line so it is no wider than the plain line at its size
+  const size = emphasisFitSize(spec, p.size ?? (role.size * Math.min(film.width, film.height)) / 1080, role.weight, role.track, FONT.text, p.role ?? 'line');
+  return <TypeLine spec={spec} frame={p.frame} x={p.x} y={p.y} role={p.role ?? 'line'} size={size} />;
 };
 
 /** The text a MarkLine lays out: the slot as figure spaces at least `slotW` px wide. Browser (it measures the face). */
@@ -69,7 +90,19 @@ export const MarkLine: React.FC<LineProps & { objects: InlineRef[]; ground?: 'li
   const cap = capHeight(size, role.weight);
   const objW = Math.max(cap, ...p.objects.map((o) => inlineWidth(o, cap, p.ground, (t, px) => measureTracked(t, px, 600, -0.01, FONT.text))));
   const text = slotText(p.text, objW + 0.08 * size, size, role.weight, role.track);
-  const spec = useMemo(() => specOf(p, text), [p.move, text, p.at, p.out, p.exit, p.id, p.color, p.accent, p.mute]); // eslint-disable-line react-hooks/exhaustive-deps
+  // the key words are the marked ones, else the last word that is not the slot (the object is never emphasised)
+  const spec = useMemo(() => {
+    // the object rides the line's landed layout, so a device that re-flows the line as it plays lands static instead
+    const still: Record<string, EmphasisName> = { swell: 'scale', marker: 'weight', box: 'weight' };
+    const s0 = typeLineSpec(specOf(p, text));
+    const dev = typeof s0.emph === 'string' ? s0.emph : s0.emph ? s0.emph.device : undefined;
+    const s = dev && still[dev] ? { ...s0, emph: typeof s0.emph === 'object' && s0.emph ? { ...s0.emph, device: still[dev] } : still[dev] } : s0;
+    if (s.keys) return s;
+    const words = wordMap(s.text).words;
+    let k = words.length - 1;
+    while (k > 0 && words[k].includes(FIG)) k--;
+    return { ...s, keys: [k, k] as [number, number] };
+  }, [p.move, text, p.at, p.out, p.exit, p.id, p.color, p.accent, p.mute, p.emph]); // eslint-disable-line react-hooks/exhaustive-deps
   const m = useMemo(() => measureLine(spec, size, role.weight, role.track, FONT.text), [spec, size, role.weight, role.track]);
   if (p.frame < p.at) return null;
   const st = typeLineState(p.frame, spec, m, film);

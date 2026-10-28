@@ -20,6 +20,12 @@ export const TEASER = {
     close: 'Try it at [product.com].', // under the end mark: what to do
   },
   /**
+   * Each line's key words, as they read in the line: the line's emphasis device lands on them (acts/stage.tsx EMPH). Name
+   * the words that carry the claim, never the product's name; copy-check.py names one for a line that has none. A key
+   * that is not in its line falls back to the line's last word.
+   */
+  keys: { what: 'a sentence', build: 'the code', close: '[product.com]' } as Record<string, string>,
+  /**
    * The products it really works with, as the slugs of their real marks (node scripts/logos.mjs get <name> --film .):
    * they roll in the connect line's slot, sit on the proof cards and fill the tiles round them. Only what the product
    * really sends to or reads from; leave it empty and the slot rolls the cards' glyphs.

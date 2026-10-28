@@ -21,6 +21,13 @@ export const AD = {
     close: 'Get it at [product.com].', // under the lockup: what to do
   },
   /**
+   * Each line's key words, as they read in the line: the line's emphasis device lands on them (acts/stage.tsx EMPH). Name
+   * the words that carry the claim (what it saves, what you make), never the product's name; copy-check.py names one for
+   * a line that has none. A key that is not in its line falls back to the line's last word. The claim's last word stands
+   * on the accent pill and the label's last word swaps: those need no key.
+   */
+  keys: { what: '[ideas]', 'tag.1': '[the idea]', 'tag.2': '[the thing]', close: '[product.com]' } as Record<string, string>,
+  /**
    * What people keep in the product, as content tiles (kit ContentTile): a label, a sub line, a glyph and a preview of
    * what it holds (doc, chart, bars, list, person, table, code); `logo` when the item IS another product's (the slug of
    * its real mark). The stack, the field and the streams draw from these first, then from the sample world below.

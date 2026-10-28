@@ -10,7 +10,8 @@ import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
 import { Defocus } from '../fx/Defocus';
 import { dealGrounds, type GroundKind, groundKey, type GroundSpec, LitGround } from '../fx/Grounds';
-import { type TypeLineSpec, TypeLine } from '../fx/TypePresets';
+import { dealLineEmphasis, keysOf } from '../fx/TypeEmphasis';
+import { emphasisFitSize, type TypeLineSpec, TypeLine } from '../fx/TypePresets';
 import { AppIcon, hasLogo, kitTheme } from '../kit';
 import type { InlineRef } from '../kit/inline';
 import { E, prog } from '../lib/anim';
@@ -64,16 +65,25 @@ export const lineSize = (text: string, share = 0.66) => Math.max(64 * U, Math.mi
 export const lineWidth = (text: string, size: number, weight: number = TYPE.line.weight) => measureTracked(text, size, weight, TYPE.line.track, FONT.text, { trailing: false });
 
 /** A script line's preset spec on the film's voice (DEAL.voice), leaving at speed on the voice's exit at its COPY out. */
+/**
+ * Every script line sets its key words apart (fx/TypeEmphasis): one device per line dealt from the film's seed, never the
+ * same twice in a row, on the words run.ts `keys` names (else the line's last word). The pill's two labels and the close
+ * are placed by a measured width, so they take a device that holds it.
+ */
+export const EMPH = dealLineEmphasis(Object.keys(RUN.lines), DEAL_SEED, { fixed: ['what', 'ask', 'close'] });
+
 export const voiceSpec = (id: string, colors?: TypeLineSpec['colors']): TypeLineSpec => {
   const c = copy(id);
-  return { preset: DEAL.voice, text: c.text, at: c.in, ...(c.out < TOTAL ? { out: c.out, exit: VOICE_EXIT[DEAL.voice] } : {}), ...(DEAL.voice === 'land' ? { scaleFrom: 1.35 } : {}), colors: { ink: PAGE.text, mute: PAGE.mute, accent: PAGE.accent, ...colors }, id };
+  return { preset: DEAL.voice, text: c.text, at: c.in, ...(c.out < TOTAL ? { out: c.out, exit: VOICE_EXIT[DEAL.voice] } : {}), ...(DEAL.voice === 'land' ? { scaleFrom: 1.35 } : {}), colors: { ink: PAGE.text, mute: PAGE.mute, accent: PAGE.accent, ...colors }, id, emph: EMPH[id], keys: keysOf(c.text, (RUN.keys as Record<string, string | undefined>)[id]) ?? undefined };
 };
 
 /** A script line on the film's voice, its box centred on (x, y). */
 export const Line: React.FC<{ id: string; F: number; x?: number; y: number; size?: number; weight?: number; colors?: TypeLineSpec['colors'] }> = ({ id, F, x = W / 2, y, size, weight = TYPE.line.weight, colors }) => {
   const c = copy(id);
   if (F < c.in - 1) return null;
-  return <TypeLine spec={voiceSpec(id, colors)} frame={F} x={x} y={y} size={size ?? lineSize(c.text)} weight={weight} track={TYPE.line.track} />;
+  const spec = voiceSpec(id, colors);
+  // a size device refits the line so it is no wider than the plain line at its size
+  return <TypeLine spec={spec} frame={F} x={x} y={y} size={emphasisFitSize(spec, size ?? lineSize(c.text), weight, TYPE.line.track, FONT.text)} weight={weight} track={TYPE.line.track} />;
 };
 
 /** The tools as inline objects (their real marks, else their glyphs): what the dock and the slots show. */

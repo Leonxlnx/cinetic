@@ -13,7 +13,7 @@ import { creep } from '../lib/handoff';
 import { measureTracked } from '../lib/measure';
 import { DEAL } from '../deal';
 import { ACT, chainOf, CUE, f60x, FPS, H, W } from '../timeline';
-import { carryOffset, LightEvent, lineSize, lineWidth, PAGE, quadIn, SEAM, SHOT, SLATE, useAbs, WORLD } from './stage';
+import { carryOffset, EMPH, keysFor, LightEvent, lineSize, PAGE, quadIn, SEAM, SHOT, SLATE, useAbs, WORLD } from './stage';
 
 // TAGLINES - two short imperatives taking turns, then a push into the cut. The shot opens on the label's rightward
 // rush, carried and decaying. The taglines slot's device (src/deal.ts):
@@ -88,10 +88,10 @@ export const Taglines: React.FC = () => {
           return (
             <TypeLine
               key={c.id}
-              spec={{ preset: 'fall', text: c.text, at: c.in - 1, out: i === 0 ? c.out : undefined, exit: 'drop', colors: { ink: SHOT.text, accent: PAGE.accent, mute: SHOT.mute }, id: c.id }}
+              spec={{ preset: 'fall', text: c.text, at: c.in - 1, out: i === 0 ? c.out : undefined, exit: 'drop', colors: { ink: SHOT.text, accent: PAGE.accent, mute: SHOT.mute, ground: SHOT.ground }, id: c.id, emph: EMPH[c.id], keys: keysFor(c.id, c.text), align: 'left' }}
               frame={F}
               size={size}
-              x={SAFE.x + lineWidth(c.text, size) / 2 + carry * 0.6}
+              x={SAFE.x + carry * 0.6}
               y={H / 2}
             />
           );
