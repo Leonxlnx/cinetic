@@ -14,6 +14,7 @@ import { DirBlur } from '../fx/Defocus';
 import { dealGrounds, type GroundKind, type GroundSpec, LitGround } from '../fx/Grounds';
 import { dealLineEmphasis, keysOf } from '../fx/TypeEmphasis';
 import { emphasisFitSize, type TypeLineSpec, TypeLine } from '../fx/TypePresets';
+import { StatementLine } from '../fx/TypeStack';
 import { kitTheme, shadeRgba } from '../kit';
 import { camera, camera3d, type CamMove, camPath, camVel, type Shot } from '../lib/camera';
 import { useFilm } from '../lib/film';
@@ -112,6 +113,8 @@ export const Caption: React.FC<{ id: string; F: number; y: number }> = ({ id, F,
   if (F < c.in - 1 || F >= c.out + 60) return null;
   const spec = voiceSpec(id);
   // a size device refits the line so it is no wider than the plain line at its size
+  // the opening line is the film's first statement: two lines, the words before the key words small over them big
+  if (id === 'what') return <StatementLine spec={spec} frame={F} x={W / 2} y={y} size={TYPE.line.size * U} weight={TYPE.line.weight} />;
   const size = emphasisFitSize(spec, lineSize(c.text), TYPE.line.weight, TYPE.line.track, FONT.text);
   return <TypeLine spec={spec} frame={F} x={W / 2} y={y} size={size} weight={TYPE.line.weight} track={TYPE.line.track} />;
 };

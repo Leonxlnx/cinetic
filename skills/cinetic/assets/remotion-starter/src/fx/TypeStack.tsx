@@ -18,7 +18,7 @@
  * exit works inside a stack. Each line is tagged for the layout audit as `<id>-<n>`.
  */
 import React, { useMemo } from 'react';
-import { FONT, TYPE, U } from '../brand/tokens';
+import { FONT, TYPE, TYPE_FAMILY, U } from '../brand/tokens';
 import { f60x, type FilmCtx, fpsOf, useFilm } from '../lib/film';
 import { STACK_LOOK } from '../lib/look';
 import { baselineOf } from '../lib/measure';
@@ -183,4 +183,61 @@ export const declares = (p?: Partial<TypeStackProps>, film?: Partial<FilmCtx>): 
     out.seams!.push(...(d.seams ?? []));
   });
   return out;
+};
+
+/**
+ * A statement set as two lines (StatementLine): the words before the key words small (lead x the size), the key words
+ * and what follows them big (key x the size, the family's: calm x1.7, bold x1.45), the big line fitted under maxWidth of
+ * the frame. A line under minWords words, or one whose key words open it, stays one line. Measured on the studio
+ * two-line statements: the small line 0.55-0.7 of the big one, baseline to baseline 1.02-1.08.
+ */
+export const STATEMENT = { lead: 0.62, key: { calm: 1.7, bold: 1.45 } as Record<'calm' | 'bold', number>, minWords: 4, maxWidth: 0.78 } as const;
+
+/** The two lines of a statement: the words before the key words and the rest, or null when it stays one line. Pure. */
+export const splitStatement = (text: string, keys?: [number, number] | null): [string, string] | null => {
+  const words = text.split(' ').filter(Boolean);
+  const k0 = keys ? keys[0] : words.length - 1;
+  if (words.length < STATEMENT.minWords || k0 < 1 || k0 >= words.length) return null;
+  return [words.slice(0, k0).join(' '), words.slice(k0).join(' ')];
+};
+
+/**
+ * <StatementLine spec frame size>: a hero statement on its preset, as a two-line stack when it splits (the lead small
+ * over the key words big, their emphasis on the key words: the family's emphasis weight in the accent unless the spec
+ * names a device), else as one TypeLine with its emphasis. `size` is the statement's line size (px); `layout` centres the
+ * stack on (x, y) or sets it flush left at x.
+ */
+export const StatementLine: React.FC<{ spec: TypeLineSpec; frame: number; size: number; x?: number; y?: number; layout?: 'centre' | 'left'; weight?: number; maxWidth?: number; family?: 'calm' | 'bold' }> = (p) => {
+  const film = useFilm();
+  const s = typeLineSpec(p.spec);
+  const split = splitStatement(s.text, s.keys ?? (s.key !== undefined ? [s.key, s.key] : null));
+  const role = TYPE.line;
+  const weight = p.weight ?? role.weight;
+  const fam = p.family ?? TYPE_FAMILY;
+  const bigBase = p.size * STATEMENT.key[fam];
+  const big = useMemo(() => {
+    if (!split) return bigBase;
+    const w = measureLine({ ...s, text: split[1], emph: false }, bigBase, weight + 100, role.track - 0.01, FONT.text).width;
+    return Math.min(bigBase, (bigBase * (p.maxWidth ?? STATEMENT.maxWidth) * film.width) / Math.max(1, w));
+  }, [split?.[1], bigBase, weight, film.width]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!split) return <TypeLine spec={s} frame={p.frame} x={p.x} y={p.y} size={p.size} weight={weight} />;
+  const nKey = s.keys ? s.keys[1] - s.keys[0] : 0;
+  const emph = s.emph !== undefined && s.emph !== false ? (typeof s.emph === 'string' ? { device: s.emph, words: [0, nKey] as [number, number] } : { ...s.emph, words: [0, nKey] as [number, number] }) : { device: 'weight' as const, words: [0, nKey] as [number, number] };
+  return (
+    <TypeStack
+      id={s.id ?? 'statement'}
+      frame={p.frame}
+      at={s.at}
+      out={s.out}
+      exit={s.exit}
+      layout={p.layout ?? 'centre'}
+      x={p.x ?? (p.layout === 'left' ? undefined : film.width / 2)}
+      y={p.y}
+      colors={s.colors}
+      lines={[
+        { text: split[0], size: Math.max(TYPE.caption.size * (Math.min(film.width, film.height) / 1080), p.size * STATEMENT.lead), weight, preset: s.preset, emph: false },
+        { text: split[1], size: big, weight: weight + 100, track: role.track - 0.01, preset: s.preset, emph },
+      ]}
+    />
+  );
 };

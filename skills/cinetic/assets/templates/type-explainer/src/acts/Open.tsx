@@ -2,7 +2,7 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { TYPE, typeStyle, U } from '../brand/tokens';
 import { bandFill, clipText } from '../fx/HueSweep';
-import { TypeLine } from '../fx/TypePresets';
+import { StatementLine } from '../fx/TypeStack';
 import { exitDistanceEm, settleLeft, Words } from '../fx/Words';
 import { clamp, E, lmix, mix, prog } from '../lib/anim';
 import { camera } from '../lib/camera';
@@ -158,7 +158,7 @@ export const Open: React.FC = () => {
         {F >= what.in - 1 && (
           <Cam k={k}>
             <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(drift + slide + away).toFixed(2)}px, 0, 0)` }}>
-              <TypeLine spec={{ preset: DEAL.voice, text: what.text, at: what.in - 1, colors: { ink: PAGE.text, accent: PAGE.accent, mute: PAGE.mute }, id: 'what', emph: EMPH.what, keys: keysFor('what', what.text) }} frame={F} size={size} y={H / 2} />
+              <StatementLine spec={{ preset: DEAL.voice, text: what.text, at: what.in - 1, colors: { ink: PAGE.text, accent: PAGE.accent, mute: PAGE.mute }, id: 'what', emph: EMPH.what, keys: keysFor('what', what.text) }} frame={F} size={size} y={H / 2} />
             </div>
           </Cam>
         )}

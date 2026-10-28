@@ -1,9 +1,9 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { FONT, TYPE, U } from '../brand/tokens';
+import { TYPE, U } from '../brand/tokens';
 import { DirBlur } from '../fx/Defocus';
 import { fanState, pileState } from '../fx/Stack';
-import { emphasisFitSize, TypeLine } from '../fx/TypePresets';
+import { StatementLine } from '../fx/TypeStack';
 import { E, lmix, prog } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { useFilm } from '../lib/film';
@@ -123,8 +123,9 @@ export const Open: React.FC = () => {
   const F = useAbs('open');
   const what = copy('what');
   const whatSpec = { emph: EMPH.what, keys: keysFor('what', what.text) };
-  // a size device refits the opener so it is no wider than the plain line
-  const size = emphasisFitSize({ preset: DEAL.open, text: what.text, at: 0, ...whatSpec }, lineSize(what.text, 0.66), TYPE.line.weight, TYPE.line.track, FONT.text);
+  // the opener is the film's first statement: set as two lines (fx/TypeStack StatementLine), its words before the key
+  // words small over the key words big, at the line role's size (a short opener stays one line, fitted as before)
+  const size = Math.max(lineSize(what.text, 0.66), TYPE.line.size * U);
   const k = creep(F, what.in, { pctPerSec: 0.02 }, FPS);
   // shot 2: the stack and its two words
   const push = stackPush(F);
@@ -133,7 +134,7 @@ export const Open: React.FC = () => {
       <ActGround F={F} act="open" />
       {F < CUE.pile && F >= what.in - 1 && (
         <div style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', transform: `scale(${k.toFixed(5)})` }}>
-          <TypeLine
+          <StatementLine
             spec={{ preset: DEAL.open, text: what.text, at: what.in - 1, lead: OPEN_LEAD, out: CUE.pile - f60x(SPREAD), exit: 'spread', colors: { ink: PAGE.text, accent: PAGE.accent, mute: PAGE.mute }, id: 'what', ...whatSpec }}
             frame={F}
             size={size}

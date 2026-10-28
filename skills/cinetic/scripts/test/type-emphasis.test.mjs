@@ -125,6 +125,7 @@ const plNear = D.typePlaneState(120, 1, planes, film(60));
 const plNear2 = D.typePlaneState(110, 1, planes, film(60));
 const camAfter = [D.depthCamZ(120, planes, film(60)), D.depthCamZ(180, planes, film(60))];
 const mt = B.matteToBox({ points: [[0, 0], [100, 50]], w: 200, h: 100 }, { x: 0, y: 0, w: 400, h: 400 });
+const sp2 = [S.splitStatement('Brook is a water bottle.', [3, 4]), S.splitStatement('Drink more.', [1, 1]), S.splitStatement('Sync it with Google Fit.', [0, 1]), S.splitStatement('Your phone shows your day.')];
 const decl = S.declares({ lines: [{ text: 'A snap line here', preset: 'snap' }, { text: 'and more' }], at: 0 }, film(60));
 
 console.log(JSON.stringify({
@@ -133,7 +134,7 @@ console.log(JSON.stringify({
   crKey, crOther, accent: '#2E86DE', clean: clean.text, cleanKeys: clean.keys, cleanKey: clean.key, noMarkKeys: noMark.emph ?? null,
   ef60, ef30, mkP, mBaseW: mBase.width, mSwW: mSw.width, swP, def, bxC, bxL, slotEm, finite,
   lay, stair, cen, s0: { emph: s0.emph, at: s0.at, out: s0.out, align: s0.align, id: s0.id }, s1: { emph: s1.emph, at: s1.at, out: s1.out },
-  pl0, pl1, plNear, plNear2, camAfter, mt, decl: decl.stepped?.length ?? 0, ink: C.ink,
+  pl0, pl1, plNear, plNear2, camAfter, mt, sp2, decl: decl.stepped?.length ?? 0, ink: C.ink,
 }));
 `;
 const TMP = mkdtempSync(join(tmpdir(), 'cinetic-typeemph-'));
@@ -185,6 +186,7 @@ result(near(P.pl0.s, 1400 / 2600) && near(P.pl1.s, 1400 / 1400) && P.pl1.sigma =
 result(P.plNear.opacity > 0 && P.plNear.opacity < 1 && P.plNear.opacity < P.plNear2.opacity, 'planes: a plane near the lens fades as it passes', JSON.stringify([P.plNear2.opacity, P.plNear.opacity]));
 result(P.camAfter[1] > P.camAfter[0], 'planes: the camera keeps creeping after its move', JSON.stringify(P.camAfter));
 result(near(P.mt[0][0], -200) && near(P.mt[0][1], 0) && near(P.mt[1][0], 200) && near(P.mt[1][1], 200), 'behind: the matte maps onto the cover-fitted picture', JSON.stringify(P.mt));
+result(P.sp2[0].join('|') === 'Brook is a|water bottle.' && P.sp2[1] === null && P.sp2[2] === null && P.sp2[3].join('|') === 'Your phone shows your|day.', 'statement: four words or more split before the key words; a short line or one led by its key words stays one line', JSON.stringify(P.sp2));
 result(P.decl === 1, 'stack declares: its lines\' stepped runs (the snap\'s jump frame)', String(P.decl));
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
