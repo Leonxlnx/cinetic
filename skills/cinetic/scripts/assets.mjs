@@ -607,11 +607,11 @@ export function parseBurstItem(html) {
   return { licence, licenceSlug: lic || null, author, title };
 }
 async function searchBurst(q, o) {
-  const items = parseBurstList(await getText(burstUrl(q), { ms: 30000 }), o).slice(0, o.limit + 4);
-  await mapLimit(items, 2, async (it, k) => {
-    await sleep(250 * (k % 2)); // gentle on a site without an API
+  const items = parseBurstList(await getText(burstUrl(q), { ms: 30000 }), o).slice(0, o.limit + 2);
+  await mapLimit(items, 1, async (it, k) => {
+    if (k) await sleep(400); // one page at a time: the site answers a quick run of reads with HTTP 429
     const html = await getText(it.page, { ms: 20000 }).catch(() => null);
-    if (!html) return;
+    if (!html) { it.notes = ['the photo page did not load, so its licence was not read: search again in a minute']; return; }
     const r = parseBurstItem(html);
     Object.assign(it, { licence: r.licence, author: r.author || it.author, title: r.title || it.title, notes: r.licence === 'unknown' ? [`licence "${r.licenceSlug || 'none named'}" is not one the tool knows`] : [] });
   });
