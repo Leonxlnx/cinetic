@@ -474,6 +474,9 @@ with tempfile.TemporaryDirectory() as tmp:
     r1 = pick('--family', 'Shared', '--n', '1', '--seed', '1', '--energy', 'any', library=blib)
     r2 = pick('--family', 'Fam', '--n', '1', '--seed', '1', library=blib)
     result(r1.returncode == 0 and 'Shared seams' in r1.stdout and r2.returncode == 2 and 'starts' in r2.stderr, '--family takes the start of a name, and says when it is not unique')
+# --family --n 3: the family cap (two a film) does not cut a draw from one named family short
+r3, d3 = draw_json('--family', 'Camera', '--n', '3', '--seed', '1', '--energy', 'any', '--direction', 'none', '--no-history', library=SHIPPED)
+result(r3.returncode == 0 and len(ids(d3)) == 3, '--family Camera --n 3 draws three (the family cap of a plan does not apply)', str(ids(d3)))
 # the shipped library: no plan for any format deals an entry that breaks a hard ban
 shipped_bad = set()
 for fmt in mod.FORMATS:

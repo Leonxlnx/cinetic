@@ -45,7 +45,7 @@ one signature move: the direction's own (its signature techniques; no other sign
 
 Variety: every entry belongs to a family (type arrivals, camera transitions, glass, glow and
 spectral, loaders...). A film draws across many families: never more than two entries from one
-family per film by default (--max-per-family; 0 turns the cap off). Entries your last three films
+family per film by default (--max-per-family; 0 turns the cap off; a --family draw is not capped). Entries your last three films
 drew are down-weighted to a fifth, so successive films do not lean on the same devices: each plan
 written with --json is recorded in ~/.cinetic/pick-history.json (CINETIC_PICK_HISTORY names another
 file, "off" or --no-history turns it off), and the plan's header prints the --recent list it used,
@@ -842,7 +842,8 @@ def main():
     single = (a.category or family) and not a.plan
     if single:
         cat_pool = [e for e in pool if not a.category or e['category'] == a.category]
-        picks, _ = draw(cat_pool, a.n, rng, a.energy, taken, 1 if direc else a.n, families, cap, rec, lean, imagery_ok)
+        # a draw from one named family asks for that family: its cap would cut --n short
+        picks, _ = draw(cat_pool, a.n, rng, a.energy, taken, 1 if direc else a.n, families, 0 if family else cap, rec, lean, imagery_ok)
     else:
         fmt = a.format or 'launch'
         seconds = a.seconds if a.seconds else DEFAULT_SECONDS[fmt]
