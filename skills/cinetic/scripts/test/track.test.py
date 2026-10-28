@@ -509,6 +509,41 @@ def strict_json(d):
     check(ok, 'a drift that could not be measured is written as null: the .track.json stays strict JSON')
 
 
+def soft_entry(d):
+    """A bed that only steps up 3 dB at bar 9 (under the entry thresholds): analyze names that step as the largest,
+    edit takes it for the reveal and warns that the track has no entry."""
+    d2 = os.path.join(d, 'soft')
+    os.makedirs(os.path.join(d2, 'audio', 'music'))
+    bars, step_bar = 16, 9
+    n = int((T0 + (bars + 1) * BAR + 1.0) * SR)
+    y = np.zeros(n)
+    r = np.random.default_rng(11)
+    t1 = np.arange(int(0.05 * SR)) / SR
+    click = signal.sosfilt(signal.butter(2, [800, 4000], 'band', fs=SR, output='sos'), r.standard_normal(len(t1)))
+    click *= np.exp(-t1 / 0.008) * np.minimum(1, t1 / 0.001)
+    t2 = np.arange(int(0.3 * SR)) / SR
+    kick = signal.sosfilt(signal.butter(2, 120, 'low', fs=SR, output='sos'), r.standard_normal(len(t2)))
+    kick *= 8 * np.exp(-t2 / 0.09) * np.minimum(1, t2 / 0.0015)
+    for k in range(bars * 4):
+        i = int(round((T0 + k * BEAT) * SR))
+        g = 10 ** (3 / 20) if k >= (step_bar - 1) * 4 else 1.0
+        y[i:i + len(click)] += click[:n - i] * (1.0 if k % 4 == 0 else 0.5) * g
+        if k % 4 == 0:
+            y[i:i + len(kick)] += kick[:n - i] * 0.4 * g
+    y = y / (np.abs(y).max() + 1e-9) * 0.9
+    sf.write(os.path.join(d2, 'audio', 'music', 'soft.wav'), np.stack([y, y], 1).astype(np.float32), SR, subtype='FLOAT')
+    p = run(['analyze', 'audio/music/soft.wav', '--phase', '0'], d2)
+    tj = os.path.join(d2, 'audio', 'music', 'soft.track.json')
+    ents = json.load(open(tj))['entries'] if os.path.isfile(tj) else None
+    check(ents == [] and f'entries: none (the largest step: bar {step_bar}' in p.stdout,
+          f'a 3 dB step is no entry, and analyze names it as the largest step ({ents}; '
+          + (re.search(r'entries: [^\n]*', p.stdout).group(0) if re.search(r'entries: [^\n]*', p.stdout) else (p.stderr or p.stdout)[-200:]) + ')')
+    p = run(['edit', '--bars', '8', '--reveal-bar', '6', '--end', 'stop'], d2)
+    check(p.returncode == 0 and 'the analysis found no entry' in p.stdout and f'source bar {step_bar}' in p.stdout,
+          'edit takes the largest step for the reveal and warns that the track has no entry'
+          + ('' if p.returncode == 0 else f': {(p.stderr or p.stdout)[-200:]}'))
+
+
 def main():
     keep = sys.argv[sys.argv.index('--keep') + 1] if '--keep' in sys.argv else None
     d = keep or tempfile.mkdtemp(prefix='track-test-')
@@ -519,6 +554,7 @@ def main():
             edit_grid_check(d, a)
         low_confidence(d)
         kick_entry(d)
+        soft_entry(d)
         ring_ending(d)
         join_kinds(d)
         add_records(d)

@@ -778,8 +778,11 @@ def print_analysis(a, out=print):
         f"{a['phrases']['len']}, key {a['key']['name']} (r {a['key']['r']}), {a['lufs']} LUFS, TP {a['true_peak_dbtp']} dBTP, "
         f"LRA {a['lra']} LU, ending {a['ending']['kind']}")
     out('  sections: ' + ', '.join(f"{s['label']} {s['from']}-{s['to']} ({s['lufs']:.1f})" for s in a['sections']))
+    steps = np.diff([b['lufs'] for b in a['bars']]) if len(a['bars']) > 1 else np.zeros(0)
+    soft = (f"none (the largest step: bar {int(np.argmax(steps)) + 2}, {float(steps.max()):+.1f} dB, which edit takes for the reveal)"
+            if len(steps) else 'none')
     out('  entries: ' + (', '.join(f"bar {e['bar']} at {e['t']} s (+{e['jump_db']} dB{', drop' if e['drop'] else ''})"
-                                   for e in a['entries']) or 'none'))
+                                   for e in a['entries']) or soft))
     out('  breaks: ' + (', '.join(f"bar {b['bar']} ({b['drop_db']} dB)" for b in a['breaks']) or 'none'))
     out('  stops: ' + (', '.join(f"{s['t']} s ({s['len_s']} s, -{s['depth_db']} dB)" for s in a['stops']) or 'none'))
     out(f"  accents: {len(a['accents'])} (>= {ACCENT_DB:g} dB over the bed)")
@@ -891,6 +894,8 @@ def plan_edit(a, bars, reveal, end, start=None, entry=None, arc=None, max_splice
         E = max(drops, key=lambda e: e['jump_db'])['bar'] - 1
     else:
         E = int(np.argmax(np.r_[0, np.diff(lufs)])) if nb > 1 else 0
+    # no entry at the thresholds: the reveal takes the largest loudness step, a soft entrance the edit names
+    soft = None if entry is not None or ents or nb < 2 else dict(bar=E + 1, step_db=round(float(lufs[E] - lufs[E - 1]) if E else 0.0, 1))
     S0 = int(start) - 1 if start else None
     if S0 is not None and not 0 <= S0 < nb:
         raise TrackError(f'--start-bar {start} is outside the source bars 1..{nb}')
@@ -976,8 +981,8 @@ def plan_edit(a, bars, reveal, end, start=None, entry=None, arc=None, max_splice
         path.append(int(j_p))
         s, r, j = s_p, r_p, j_p
     path = path[::-1]
-    info =dict(entry_bar=E + 1, end_bar=(endbar + 1) if endbar is not None else None, total=float(fin.min()),
-                arc=[float(v) for v in arc], splices=sum(1 for p, q in zip(path[:-1], path[1:]) if q != p + 1))
+    info = dict(entry_bar=E + 1, end_bar=(endbar + 1) if endbar is not None else None, total=float(fin.min()),
+                arc=[float(v) for v in arc], splices=sum(1 for p, q in zip(path[:-1], path[1:]) if q != p + 1), soft_entry=soft)
     return path, info
 
 
@@ -1142,6 +1147,11 @@ def cmd_edit(a_):
           f"{a_.reveal_bar}, {doc['reveal']['film_s']:.3f} s) holds source bar {info['entry_bar']}; ending {a_.end} at "
           f"{ending['end_s']:.3f} s; wrote {a_.out}")
     print('  map (film bar -> source bar): ' + ' '.join(f'{k + 1}:{j + 1}' for k, j in enumerate(path)))
+    if info.get('soft_entry'):
+        se = info['soft_entry']
+        print(f"  warning: the analysis found no entry (+{ENTRY_DB:g} dB with +{ENTRY_LOW_DB:g} dB in the lows): the reveal holds source bar "
+              f"{se['bar']}, the track's largest step ({se['step_db']:+.1f} dB). Listen to it there; choose another with --entry N, or "
+              'give the reveal a stop before it (score.json stopdowns.add [{"at": "@reveal", "depth": "stop"}])')
     for s in segs:
         print(f"  film bar {s['film_bar']:>2} at {s['film_s']:7.3f} s <- source bars {s['src_bar']}-{s['src_bar'] + s['bars'] - 1} "
               f"({s['src_from']:.3f}-{s['src_to']:.3f} s)" + (f", join tail {s['join']['tail_ms']:g} ms" if 'join' in s else ''))
