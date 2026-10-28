@@ -238,10 +238,11 @@ def transitions(cuts, luma, grids, seams, fps):
 def _glyphs(gray):
     """Glyph candidates: strokes brighter or darker than their surroundings (a top-hat / black-hat 6 % of the frame
     high, wider than a heavy stroke, cut at half the frame's strongest stroke contrast so anti-aliasing does not
-    thicken them), each component kept when it is letter-sized (1.2-20 % of the frame high, at most 4x as wide), open
+    thicken them), each component kept when it is letter-sized (1.2-20 % of the frame high, at most 4x as wide, not cut
+    by the frame edge), open
     (12-80 % of its box: a lit window, a lamp or a solid bar fills it) and made of strokes (its widest stroke under
     TEXT['stroke'] of its height: a light, a bokeh disc or a blob is solid)."""
-    h = gray.shape[0]
+    h, w = gray.shape
     k = max(5, int(0.06 * h)) | 1
     se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
     out = []
@@ -250,8 +251,8 @@ def _glyphs(gray):
         n, lab, st, _ = cv2.connectedComponentsWithStats((img >= thr).astype(np.uint8), connectivity=8)
         for i in range(1, n):
             x, y, cw, ch, area = (int(v) for v in st[i])
-            if ch < max(6, 0.012 * h) or ch > 0.2 * h or cw > 4.0 * ch or cw < 0.06 * ch:
-                continue
+            if ch < max(6, 0.012 * h) or ch > 0.2 * h or cw > 4.0 * ch or cw < 0.06 * ch or x == 0 or y == 0 or x + cw == w or y + ch == h:
+                continue  # not letter-sized, or cut by the frame edge
             fill = area / float(cw * ch)
             if not 0.12 <= fill <= 0.8:
                 continue
@@ -267,8 +268,8 @@ def text_lines(gray):
     """Text lines in a frame without OCR: glyph candidates (_glyphs) of one polarity grouped along a line (each next
     to the one before by under 1.3 of their height, heights within a factor 2.2, overlapping vertically), kept at 3
     glyphs or more. conf (0-1) grows with the glyph count and falls when the heights scatter, the baseline wanders,
-    the stroke widths disagree, the glyphs stand far apart or the shapes repeat (a row of lamps, windows or rails is
-    one shape over and over; letters differ). A line read in both polarities (the letters, and the ground in their
+    the stroke widths disagree, the glyphs stand far apart, the shapes repeat or they stand at even steps (a row of
+    lamps, windows, rails or a grid of tiles is one shape at one pitch; letters differ in both). A line read in both polarities (the letters, and the ground in their
     counters) is kept once. Returns [{box: (x, y, w, h), glyphs, conf}], the surest first."""
     gl = _glyphs(gray)
     lines = []
@@ -304,20 +305,22 @@ def text_lines(gray):
             hmed = float(np.median(hs))
             xs = sorted(m, key=lambda q: q['x'])
             gaps = [max(0, b['x'] - (a['x'] + a['w'])) for a, b in zip(xs, xs[1:])]
+            steps = np.diff([q['x'] + q['w'] / 2.0 for q in xs])
             conf = (min(1.0, (len(m) - 2) / 4.0) ** 0.5                                                  # glyphs
                     * float(np.clip(1 - max(0.0, hs.std() / hs.mean() - 0.18) / 0.35, 0, 1))              # heights
                     * float(np.clip(1 - (np.median(np.abs(bots - np.median(bots))) / hmed) / 0.25, 0, 1))  # baseline
                     * float(np.clip(1 - max(0.0, sws.std() / max(1e-6, sws.mean()) - 0.3) / 0.5, 0, 1))   # strokes
-                    * float(np.clip((ws.std() / ws.mean() + 2 * fills.std()) / 0.18, 0, 1))              # shapes differ
+                    * float(np.clip((ws.std() / ws.mean() + 2 * fills.std()) / 0.25, 0, 1))              # shapes differ
+                    * float(np.clip((steps.std() / max(1e-6, steps.mean()) - 0.03) / 0.07, 0, 1))         # letters are not a grid
                     * float(np.clip(1 - (np.median(gaps) / hmed - 0.5) / 0.5, 0, 1)))                    # spacing
             x0, y0 = min(q['x'] for q in m), min(q['y'] for q in m)
             x1, y1 = max(q['x'] + q['w'] for q in m), max(q['y'] + q['h'] for q in m)
             lines.append(dict(box=(int(x0), int(y0), int(x1 - x0), int(y1 - y0)), glyphs=len(m), conf=round(conf, 2)))
     out = []
-    for d in sorted(lines, key=lambda d: -d['conf']):
+    for d in sorted(lines, key=lambda d: (-d['conf'], -d['glyphs'])):
         x, y, w, h = d['box']
-        if not any(min(x + w, o['box'][0] + o['box'][2]) - max(x, o['box'][0]) > 0.5 * w
-                   and min(y + h, o['box'][1] + o['box'][3]) - max(y, o['box'][1]) > 0.5 * h for o in out):
+        if not any(max(0, min(x + w, o['box'][0] + o['box'][2]) - max(x, o['box'][0])) * max(0, min(y + h, o['box'][1] + o['box'][3]) - max(y, o['box'][1]))
+                   >= 0.5 * min(w * h, o['box'][2] * o['box'][3]) for o in out):
             out.append(d)
     return out
 

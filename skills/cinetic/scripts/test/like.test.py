@@ -15,7 +15,7 @@ The clips are made here in code (numpy frames piped to ffmpeg, a WAV of clicks m
   4. LIKE.md carries the rules (borrow grammar, never content) in house wording; no output names the clip's path or
      file name (its hash and length stand for it); what each picture shows is counted.
   5. The text reader: drawn words read as a confident line; a night street made here (bokeh discs, light streaks,
-     a lit facade, a row of lamps) reads as no text.
+     a lit facade, a row of lamps) and shapes at one even pitch read as no text.
 
 Usage (from the skill root):  python3 scripts/test/like.test.py [--verbose] [--keep]
 Exit codes: 0 all pass, 1 a test failed, 2 a missing tool (ffmpeg, numpy, opencv-python).
@@ -245,6 +245,11 @@ night = cv2.GaussianBlur(night, (0, 0), 1.0)
 ng = cv2.cvtColor(night, cv2.COLOR_RGB2GRAY)
 result(LM.text_regions(ng) == [], 'a night street of lights, streaks, windows and lamps reads as no text', json.dumps(LM.text_lines(ng)[:3]))
 result(LM.moment_kind(ng, LM.text_lines(ng)) in ('graphic', 'picture') and LM.moment_kind(words, got) == 'type', 'one frame says what a picture shows (type on a flat ground)')
+rings = np.full((270, 480), 30, np.uint8)
+for y in (60, 140, 220):  # rings of two sizes at one pitch: portholes, lamps, a grid of tiles
+    for k, x in enumerate(range(20, 460, 22)):
+        cv2.circle(rings, (x, y), 7 if k % 2 else 9, 220, 2, cv2.LINE_AA)
+result(LM.text_regions(rings) == [], 'shapes at one even pitch read as no text (letters stand at uneven steps)', json.dumps(LM.text_lines(rings)[:2]))
 
 if '--keep' not in sys.argv:
     shutil.rmtree(TMP, ignore_errors=True)
