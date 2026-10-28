@@ -24,6 +24,8 @@ The numbers here are proven defaults from building and shipping films, not dogma
 - **Launch films and walkthroughs** get at least 2 rounds. **Stings and loops** need 1 round if every script passes.
 - Stop after 5 rounds, or as soon as the ship gate in §10 is met. Past that point, scores flatten and fixes start to fight each other.
 - Round 1 runs four lenses: director, forensics, sound-sync and art-copy-ui. Later rounds drop art-copy-ui unless copy, type, colour or UI changed.
+- **Every round runs the detail pass** (§2 step 3, the detail lens in §5): matching frames side by side at 2x, every
+  difference listed and fixed or answered. A film is not done while a difference a viewer could see stays open.
 - **A dev round can render every 4th frame.** The `FilmEvery` composition is the film sampled (`step` 4 by default,
   `offset` 0; the next round `--props='{"step":4,"offset":2}'`): a whole-film check at half size in about a quarter of
   the time, with a paired sheet that still shows every move. Judge timing and spacing on it, motion on a preview.
@@ -81,6 +83,24 @@ out/qa/round-2/
    no brief and ask, per pair, which one was made by the film and what gave it away. If it picks the film in more than
    7 of 10 pairs, its list of giveaways (held frames, texture everywhere, small or skewed type, timid colour, stand-in
    UI, a camera that never locks, busy edges) is the brief of the next round, ahead of the lens issues.
+   **The detail pass** (every round). A rough look passes what a detail look fails: photos on a straight row where the
+   bar fans them along a curve with the far ones softer, a flat ground where its colour gathers along one edge, an
+   upright card where it leans back, an edge with no rim, a grey bar where it shows words, a drawn face where it shows
+   a photo, a wrong appear effect. Choose the frames the film answers to (the clip the user named as the bar, a
+   template's own render, the brand's frames, the last round's approved frames) and pair one film frame with one of
+   theirs per role: the opener, each type beat, the signature shot, each product moment, each picture beat, the lockup.
+   Then put them side by side, whole and at 2x on the regions that matter (the type, a card's edge, the ground's far
+   side, a picture, a cursor):
+   ```bash
+   python3 scripts/detail-pair.py --film out/preview.mp4 --ref <the frames> --pairs 120:88,240:201 --crops "x,y,w,h;..." --out $R/detail
+   ```
+   It writes one sheet per pair and `detail.json` with the measured differences (softer or crisper, a smear along a
+   direction, a tilt, a gradient ground against a flat one, a glow, a busier or emptier region, the colour). Then the
+   detail lens (`assets/critics/detail.md`) reads every sheet and lists **every** difference it sees, measured or not:
+   type face and weight, spacing, tilt, blur along paths, gradients, glows, rims and edges, pictures, marks, cursors,
+   and the appear effects on a run of frames each side (`bash scripts/grab.sh`). Fix each one or write why the film's
+   version is better, re-render the pair and run the pass again until nothing a viewer could see stays open. With no
+   frames to answer to, run the lens on the film's own frames at 2x against the same checklist.
 4. **Read the flags yourself first** (§4), for five minutes, after the feed-size strips. Declare what is designed (§3) and re-run, so the lenses see only real candidates.
 5. **Run the lenses** (§5) as parallel subagents with the filled templates. If the harness has no subagents, or usage is tight, run them one after another in your own context (at the least the director and art lenses; the scripts cover forensics and sync), and open each lens's sheets *before* reading any code: the code tells you what you meant, the sheets show what you made.
 6. **Verify** every P0 and P1 (§6).
@@ -153,6 +173,7 @@ The templates are in `assets/critics/`. Each ends with the same return schema:
 | Forensics | `forensics.md` | `forensics.json`, flagged frames at full size, banding sheet | finish, motion |
 | Sound and sync | `sound-sync.md` | `av.json`, `score.json`, `sync-*.json`, `audio/score.json` | sound |
 | Art, copy, UI (round 1, or when these changed) | `art-copy-ui.md` | legibility sheet, grabs of every `COPY` line, layout-audit JSON | copy, color, composition, product |
+| Detail (every round) | `detail.md` | the `detail-pair.py` sheets at 2x and `detail.json`, frame runs each side | picture, composition, finish |
 | Verifier (§6) | `verifier.md` | one to five P0/P1 issues, their frames and their code | none |
 
 **Filling a template.** Replace every `{{FIELD}}`:
@@ -171,6 +192,7 @@ The templates are in `assets/critics/`. Each ends with the same return schema:
 | `BUDGET` | the fixing time left |
 | `BRIEF` | `BRIEF.md`, word for word |
 | `ISSUES` | verifier only: the P0/P1 issues as JSON |
+| `REFERENCE`, `PAIRS` | detail only: the frames the film answers to and why, and the film:reference frame pairs |
 
 **Prompt rules that pay off.**
 
@@ -264,7 +286,8 @@ Formats without some dimensions score them against the format's own recipe in `r
 
 - every rubric dimension is at least 3, Picture at least 4, Finish and Sound and sync are 5, and the mean is at least 4.2;
 - there is no open verified P0;
-- every script passes: `probe.py`, `check-sync.py`, `forensics.py` (0 fails; every warning explained in `fixes.md`), `av-audit.py --stems` (0 fails), `lint-film.mjs --strict`, `grid-check.ts` and `layout-audit.sh`;
+- every script passes: `probe.py`, `check-sync.py`, `forensics.py` (0 fails; every warning explained in `fixes.md`), `av-audit.py --stems` (0 fails), `lint-film.mjs --strict`, `grid-check.ts`, `layout-audit.sh` (its placeholder checks included: no stand-in words, grey text bars or drawn figures in the render) and `copy-check.py --ui src` (the product's UI strings are real words);
+- the detail pass has no open difference a viewer could see (every one fixed, or answered in `fixes.md`);
 - `look-audit.py` passes with both floors (motion and picture);
 - `grammar-score.mjs`: mean ≥ 90, no dimension under 70;
 - the sound gates (`references/sound.md` §2: a licensed track with a valid record, every effect from the kit, over-bed levels, stop-downs, no ducking, clean joins, one element at the lockup, loudness) and `credits.py`;
@@ -292,6 +315,7 @@ Look for these first; 10 to 13 are the ones scripts catch least well.
 | 12 | An empty picture, or everything on texture | the picture floor fails or misses its target; one plane; no light event; grey cards; type on relief, footage or grain with no clean field | the product's UI, graphic effects or a lit world, three planes, living light, a device per beat; type beats on a clean field or a dimmed, defocused plate (`references/imagery.md`, `references/lighting.md`) | `references/checks.md` §6 |
 | 13 | A sampler, or one device everywhere | a new device every half second, or the same device on every beat | one device per beat, from many families; one signature shot | `references/devices/INDEX.md` |
 | 14 | A monochrome accent wash | saturated pixels at the accent's hue on most frames; neutral share low | neutral grounds, the accent at its share, the pictures' own colour | `references/brand-and-color.md` |
+| 15 | Rough detail: stand-ins and missing finish | grey bars or "Placeholder" for words, a drawn face or object for a photo, a straight row where the bar curves, a flat ground where it has a gradient, no tilt, no rim, the wrong appear effect | real words and real photos (`scripts/assets.mjs`), then the detail pass and its primitives (`fx/Pictures`, `fx/Washes`, `fx/Cards`, `fx/Rim`, `fx/DrawPath`, `fx/Cursor`) | §2 step 3, `assets/critics/detail.md` |
 
 ## 12. Thresholds
 

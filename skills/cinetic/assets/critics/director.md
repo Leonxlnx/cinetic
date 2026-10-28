@@ -31,6 +31,7 @@ You are the creative director. Judge the film as a viewer first and as a builder
    - [ ] **HB9–HB10 decoration:** no emoji or stock icons, no sparkles for "AI", no particles, confetti, lens flares or code rain.
    - [ ] **HB11 motion:** overshoot only on the film's one spring class (`SPRING_CLASS`); nothing else bounces; copy never springs past its place, and letters move one by one only as a line's own text animation.
    - [ ] **Sound and credits:** music is a licensed track (never generated, never absent); no music or imagery credit appears in the picture.
+   - [ ] **Stand-ins:** no grey bars or blocks where words belong, no "Placeholder", "Label text" or lorem, no person, place or product drawn in code where a real photo belongs (`lint-film` placeholder-copy, bar-text, drawn-figure; the layout audit's placeholder checks). Any one is a **P0**. Look at the hero frames at 2x for them, and leave the full side-by-side list to the detail lens (`detail.md`).
 
    For a borderline colour, measure it rather than judging by eye: `python3 scripts/palette.py --accent '<hex>'` refuses one in a banned region. Read `node scripts/lint-film.mjs src` too, but trust the frames: the lint cannot see a rendered glow or a filler caption.
 3. Then answer, with frames:
