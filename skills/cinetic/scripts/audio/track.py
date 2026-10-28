@@ -16,7 +16,8 @@ Usage (from the project root):
       -> audio/music/<name>.track.json (tempo, grid, bars, phrases, sections, entries, breaks, stops, accents,
          ending, key, loudness); an analysis already there of the same file (sha256) is kept without loading
          librosa when every option given matches it (one not given keeps the analysis's own: a phase set by hand
-         stays set); --force analyses again
+         stays set); another --phase re-grids from the measurements the first analysis cached in out/cache/music/
+         (no second analysis); --force analyses again
   python3 scripts/audio/track.py edit [TRACK.json] --bars N --reveal-bar K --end button|stop|ring
           [--start-bar S] [--entry B] [--arc "-14,-12,..."] [--film-t0 0.25] [--gap 0.4] [--out audio/music/edit.json]
           [--map "1:2x10,11:59x2"]
@@ -41,7 +42,7 @@ Analysis (numpy, scipy, librosa, ffmpeg; no models, no network):
   downbeat   each of the 4 beat phases scored by low-band onsets, harmonic change, the level change across
              the beat and the timbre change across it; confidence = the gap to the runner-up (under 0.5
              both grids are printed, edit refuses: rerun with --phase N, which confirms the current phase in
-             place; unless the biggest low-band entrance, a kick or bass coming in 12 dB or more, lands on
+             place or re-grids from the cached measurements; unless the biggest low-band entrance, a kick or bass coming in 12 dB or more, lands on
              the chosen downbeat: then the grid stands with a warning); 8-bar windows where another phase
              wins are listed
   bars       every bar's downbeat on its own attack (a played track breathes); loudness (K-weighted), low
@@ -337,26 +338,54 @@ def kmeans1(v, k=3, it=30):
 # ------------------------------------------------------------------------------------------
 # analyze
 # ------------------------------------------------------------------------------------------
-def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=None):
+MEASURED = ('grid', 'zs', 'chroma', 'mf', 'cen', 'pl', 'oenv')   # the arrays of a cached measurement
+
+
+def measure_path(cache_dir, sha, profile, bpm):
+    """The cached measurement of a track: by its hash, the tempo settings and the analysis code (this file,
+    master.py, mixkeys.py), so a measurement made by other code is never read back."""
+    if not cache_dir:
+        return None
+    import hashlib
+    h = hashlib.sha256()
+    for f in ('track.py', 'master.py', 'mixkeys.py'):
+        with open(os.path.join(HERE, f), 'rb') as fh:
+            h.update(fh.read())
+    tempo = f'bpm{float(bpm):g}' if bpm else f'p{PRIOR.get(profile, 120.0):g}'
+    return os.path.join(cache_dir, f'{sha[:12]}-{tempo}-v{ANALYSIS_VERSION}-{h.hexdigest()[:8]}.measure.npz')
+
+
+def load_measure(cp):
+    if not cp or not os.path.isfile(cp):
+        return None
+    try:
+        with np.load(cp, allow_pickle=False) as z:
+            m = json.loads(str(z['meta']))
+            m.update({k: z[k] for k in MEASURED})
+        return m
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def save_measure(cp, m):
+    if not cp:
+        return
+    try:
+        os.makedirs(os.path.dirname(cp), exist_ok=True)
+        tmp = cp[:-len('.npz')] + '.tmp.npz'
+        np.savez_compressed(tmp, meta=np.array(json.dumps({k: v for k, v in m.items() if k not in MEASURED})),
+                            **{k: m[k] for k in MEASURED})
+        os.replace(tmp, cp)
+    except OSError:
+        pass
+
+
+def _measure(path, x, m48, e1, kp, bt, bl, audible, dur, profile, bpm, say):
+    """Everything the downbeat phase does not change: the tempo, the four phases' scores, the frame features
+    the bars are measured from, the accents and the loudness (librosa runs here only)."""
     import librosa
-    sys.path.insert(0, HERE)
     import master as M
-    say = log or (lambda s: None)
-    x, sha = decode(path, cache_dir)
-    dur = len(x) / SR
-    if dur < 8:
-        raise TrackError(f'{path} is {dur:.1f} s: too short for a film bed')
-    m48 = x.mean(axis=1).astype(np.float64)
     y = librosa.resample(m48.astype(np.float32), orig_sr=SR, target_sr=AR)
-    say(f'decoded {dur:.1f} s')
-    e1 = energy_ms(m48)
-    kp = MK.kpower(x.astype(np.float64))
-    # the music's own span: 50 ms K-weighted blocks over LEVEL_FLOOR (bars after the last audible block, the
-    # file's trailing silence, are not bars of the track; rises before the first do not vote for a downbeat)
-    bt, bl = MK.block_levels(x.astype(np.float64))
-    bl = np.maximum(bl, LEVEL_FLOOR)
-    audible = np.flatnonzero(bl > -70)
-    t_last = (bt[audible[-1]] + MK.L_WIN / SR) if len(audible) else dur
     fl, ftt = flux(y)
 
     # ---- tempo: librosa beats for the first period, then a comb fold of the fine flux over the whole
@@ -461,8 +490,6 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
     order = np.argsort(ph_score)[::-1]
     auto_phase = int(order[0])
     conf = float(ph_score[order[0]] - ph_score[order[1]])
-    use_phase = auto_phase if phase is None else int(phase) % BPB
-    alt_phase = int(order[1]) if use_phase == auto_phase else auto_phase
     # the biggest low-band entrance (a kick or bass coming in ENTRY_CONFIRM_DB or more, clear of the best rise
     # in every other phase by ENTRY_CONFIRM_GAP_DB) lands on a downbeat: a hi-hat or a pad never decides it.
     # One beat after against the two before, so the beat before the entrance (whose two-beat window already
@@ -474,6 +501,96 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
         other = max([float(lo_step[q::BPB].max()) for q in range(BPB) if q != il % BPB and len(lo_step[q::BPB])] or [0.0])
         if lo_step[il] >= ENTRY_CONFIRM_DB and lo_step[il] - other >= ENTRY_CONFIRM_GAP_DB:
             low_entry = dict(t=r3(grid[il]), low_db=round(float(lo_step[il]), 1), downbeat_in_phase=int(il % BPB))
+
+    # ---- accents: attacks >= 6 dB over the local bed, with their band (the bar:beat position is the grid's)
+    on = librosa.onset.onset_detect(onset_envelope=oenv, sr=AR, hop_length=hop, units='time', backtrack=False)
+    from scipy import signal
+    bands = {'low': signal.butter(2, 150, 'low', fs=SR, output='sos'),
+             'mid': signal.butter(2, [150, 4000], 'band', fs=SR, output='sos'),
+             'high': signal.butter(2, 4000, 'high', fs=SR, output='sos')}
+    accents = []
+    cs = np.concatenate([[0.0], np.cumsum(kp)])
+    for t in on:
+        ta, rdb = attack_near(e1, float(t), 0.03)
+        i0 = int(ta * SR)
+        if i0 - SR // 20 < 0 or i0 + int(0.13 * SR) > len(kp):
+            continue
+        w = MK.L_WIN
+        win = (cs[i0 + w:i0 + int(0.08 * SR) + w] - cs[i0:i0 + int(0.08 * SR)]) / w
+        top = -0.691 + 10 * np.log10(win.max() + 1e-24)
+        pre = kp[max(0, i0 - SR):i0]
+        k = len(pre) // w
+        if k < 4:
+            continue
+        bed = -0.691 + 10 * np.log10(np.median(pre[:k * w].reshape(k, w).mean(1)) + 1e-24)
+        db = top - bed
+        if db < ACCENT_DB:
+            continue
+        seg = m48[max(0, i0 - int(0.12 * SR)):i0 + int(0.06 * SR)]
+        ri = int(0.12 * SR) if i0 >= int(0.12 * SR) else i0
+        best_b, best_r = 'mid', -1e9
+        for name, sos in bands.items():
+            z = signal.sosfilt(sos, seg) ** 2
+            rr = 10 * np.log10((z[ri:ri + int(0.05 * SR)].mean() + 1e-14) / (z[:max(1, ri - int(0.02 * SR))].mean() + 1e-14))
+            if rr > best_r:
+                best_b, best_r = name, rr
+        accents.append(dict(t=round(float(ta), 4), db=round(float(db), 1), band=best_b))
+    accents.sort(key=lambda a: a['t'])
+    ded = []
+    for a in accents:
+        if ded and a['t'] - ded[-1]['t'] < 0.06:
+            if a['db'] > ded[-1]['db']:
+                ded[-1] = a
+            continue
+        ded.append(a)
+    return dict(T=float(T), first=float(first), shift=float(shift), bpm_m=float(bpm_m), prior=prior,
+                drift_rms=drift_rms, drift_max=drift_max, inl_frac=inl_frac, alt=[float(alt[0]), float(alt[1])],
+                clarity=float(clarity), half_beat_flip=half_beat_flip, ph_score=ph_score,
+                order=[int(o_) for o_ in order], auto_phase=auto_phase, conf=conf, vote_share=vote_share,
+                big_rises=big_rises, low_entry=low_entry, accents=ded, hop=hop,
+                lufs=float(M.integrated(x.astype(np.float64))), true_peak=float(M.true_peak_db(x)), lra=float(M.lra(x)),
+                grid=grid, zs=zs, chroma=chroma, mf=mf, cen=cen, pl=low, oenv=oenv)
+
+
+def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=None, fresh=False, info=None):
+    """The track's analysis (the .track.json). The measurements the phase does not change are cached in
+    cache_dir (MEASURED, by the file's hash and the tempo settings), so another --phase re-grids without a
+    second analysis; fresh measures again. info (a dict) gets cached=True when the cache was used."""
+    sys.path.insert(0, HERE)
+    say = log or (lambda s: None)
+    x, sha = decode(path, cache_dir)
+    dur = len(x) / SR
+    if dur < 8:
+        raise TrackError(f'{path} is {dur:.1f} s: too short for a film bed')
+    m48 = x.mean(axis=1).astype(np.float64)
+    say(f'decoded {dur:.1f} s')
+    e1 = energy_ms(m48)
+    kp = MK.kpower(x.astype(np.float64))
+    # the music's own span: 50 ms K-weighted blocks over LEVEL_FLOOR (bars after the last audible block, the
+    # file's trailing silence, are not bars of the track; rises before the first do not vote for a downbeat)
+    bt, bl = MK.block_levels(x.astype(np.float64))
+    bl = np.maximum(bl, LEVEL_FLOOR)
+    audible = np.flatnonzero(bl > -70)
+    t_last = (bt[audible[-1]] + MK.L_WIN / SR) if len(audible) else dur
+    cp = measure_path(cache_dir, sha, profile, bpm)
+    m = None if fresh else load_measure(cp)
+    if info is not None:
+        info['cached'] = m is not None
+    if m is None:
+        m = _measure(path, x, m48, e1, kp, bt, bl, audible, dur, profile, bpm, say)
+        save_measure(cp, m)
+    else:
+        say(f'tempo {m["bpm_m"]:.3f} BPM, drift {m["drift_rms"]:.1f} ms RMS (measured before: {os.path.basename(cp)})')
+    T, first, shift, bpm_m, prior = m['T'], m['first'], m['shift'], m['bpm_m'], m['prior']
+    drift_rms, drift_max, inl_frac, alt, clarity = m['drift_rms'], m['drift_max'], m['inl_frac'], m['alt'], m['clarity']
+    half_beat_flip, ph_score, order, auto_phase, conf = (m['half_beat_flip'], m['ph_score'], m['order'], m['auto_phase'],
+                                                         m['conf'])
+    vote_share, big_rises, low_entry, accents, hop = m['vote_share'], m['big_rises'], m['low_entry'], m['accents'], m['hop']
+    grid, zs, chroma, mf, cen, pl, oenv = (m[k] for k in MEASURED)
+    nfrm = chroma.shape[1]
+    fr = lambda t: int(min(max(0, t * AR / 512), nfrm - 1))  # noqa: E731
+    use_phase = auto_phase if phase is None else int(phase) % BPB
+    alt_phase = int(order[1]) if use_phase == auto_phase else auto_phase
     entry_confirms = bool(conf < CONF_MIN and low_entry and low_entry['downbeat_in_phase'] == use_phase)
     local = []
     W = 8 * BPB
@@ -505,7 +622,6 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
     ends = np.array([downs[i + 1] if i + 1 < len(downs) else downs[i] + bar_len for i in range(nb)])
     bars = []
     feats, lufs, lowdb = [], [], []
-    pl = P[freqs < 150].sum(axis=0)
     for i in range(nb):
         a, b = downs[i], ends[i]
         s0, s1 = int(a * SR), int(b * SR)
@@ -603,54 +719,10 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
         e['drop'] = any(0 < e['bar'] - b['bar'] <= 2 for b in breaks) or any(
             0 <= e['t'] - (s['t'] + s['len_s']) <= bar_len for s in stops)
 
-    # ---- accents: attacks >= 6 dB over the local bed, with their band
-    on = librosa.onset.onset_detect(onset_envelope=oenv, sr=AR, hop_length=hop, units='time', backtrack=False)
-    from scipy import signal
-    bands = {'low': signal.butter(2, 150, 'low', fs=SR, output='sos'),
-             'mid': signal.butter(2, [150, 4000], 'band', fs=SR, output='sos'),
-             'high': signal.butter(2, 4000, 'high', fs=SR, output='sos')}
-    accents = []
-    cs = np.concatenate([[0.0], np.cumsum(kp)])
-    for t in on:
-        ta, rdb = attack_near(e1, float(t), 0.03)
-        i0 = int(ta * SR)
-        if i0 - SR // 20 < 0 or i0 + int(0.13 * SR) > len(kp):
-            continue
-        w = MK.L_WIN
-        win = (cs[i0 + w:i0 + int(0.08 * SR) + w] - cs[i0:i0 + int(0.08 * SR)]) / w
-        top = -0.691 + 10 * np.log10(win.max() + 1e-24)
-        pre = kp[max(0, i0 - SR):i0]
-        k = len(pre) // w
-        if k < 4:
-            continue
-        bed = -0.691 + 10 * np.log10(np.median(pre[:k * w].reshape(k, w).mean(1)) + 1e-24)
-        db = top - bed
-        if db < ACCENT_DB:
-            continue
-        seg = m48[max(0, i0 - int(0.12 * SR)):i0 + int(0.06 * SR)]
-        ri = int(0.12 * SR) if i0 >= int(0.12 * SR) else i0
-        best_b, best_r = 'mid', -1e9
-        for name, sos in bands.items():
-            z = signal.sosfilt(sos, seg) ** 2
-            rr = 10 * np.log10((z[ri:ri + int(0.05 * SR)].mean() + 1e-14) / (z[:max(1, ri - int(0.02 * SR))].mean() + 1e-14))
-            if rr > best_r:
-                best_b, best_r = name, rr
-        bi = int(np.searchsorted(downs[:nb], ta + 1e-4) - 1)
-        if 0 <= bi < nb:
-            beat = (ta - downs[bi]) / T
-            pos = f'{bi + 1}:{round(beat * 4) / 4:g}'
-        else:
-            pos = None
-        accents.append(dict(t=round(ta, 4), db=round(float(db), 1), band=best_b, beat_pos=pos))
-    accents.sort(key=lambda a: a['t'])
-    ded = []
+    # ---- accents (measured): their bar:beat position on this grid
     for a in accents:
-        if ded and a['t'] - ded[-1]['t'] < 0.06:
-            if a['db'] > ded[-1]['db']:
-                ded[-1] = a
-            continue
-        ded.append(a)
-    accents = ded
+        bi = int(np.searchsorted(downs[:nb], a['t'] + 1e-4) - 1)
+        a['beat_pos'] = f'{bi + 1}:{round((a["t"] - downs[bi]) / T * 4) / 4:g}' if 0 <= bi < nb else None
 
     # ---- ending
     last8 = max(0, nb - 8)
@@ -701,7 +773,6 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
     first_entry = entries[0]['bar'] if entries else None
     for s_, nm in zip(sections, label_sections(sections, first_entry, nb)):
         s_['label'] = nm
-    integ = M.integrated(x.astype(np.float64))
     notes = []
     if drift_rms > DRIFT_WARN_MS:
         notes.append(f'the track wanders ({drift_rms:.1f} ms RMS off a straight grid): cut to its accents, not its bars')
@@ -720,15 +791,15 @@ def analyze(path, profile='crisp', bpm=None, phase=None, cache_dir=None, log=Non
             hint = (f'; the biggest entrance ({r0["t"]} s) lands on a downbeat with --phase {r0["downbeat_in_phase"]}')
         notes.append(f'downbeat confidence {conf:.2f} is LOW: bars start at {grid[use_phase]:.3f} s (phase {use_phase}) or at '
                      f'{grid[alt_phase]:.3f} + {bar_len:.4f}*n s (--phase {alt_phase}){hint}; decide from the bar table '
-                     '(the first note, section entrances, chord changes) and rerun analyze with --phase N (the current '
-                     'phase is confirmed in place, without a second analysis)')
+                     '(the first note, section entrances, chord changes) and rerun analyze with --phase N (either phase '
+                     'is set from the measurements of this analysis, without a second one)')
     if kind == 'fade':
         notes.append('the track ends on a fade: end the film on a stop (track.py edit --end stop)')
     fade_in = bool(nb > 3 and lufs[1] - lufs[0] > 6 and lufs[2] - lufs[1] > 3)
     if fade_in:
         notes.append('the track fades in over more than a bar: start the edit later (--start-bar)')
     res_ = dict(track=1, file=os.path.basename(path), sha256=sha, seconds=r3(dur),
-                lufs=round(integ, 2), true_peak_dbtp=round(M.true_peak_db(x), 2), lra=round(M.lra(x), 2),
+                lufs=round(m['lufs'], 2), true_peak_dbtp=round(m['true_peak'], 2), lra=round(m['lra'], 2),
                 tempo=dict(bpm=round(bpm_m, 3), beat_s=round(T, 5), drift_rms_ms=round(drift_rms, 2),
                            drift_max_ms=round(drift_max, 2), alt_bpm=round(alt[0], 3), alt_clarity=round(alt[1], 2),
                            clarity=round(clarity, 2), inliers=round(inl_frac, 3), prior=prior,
@@ -1104,8 +1175,8 @@ def cmd_edit(a_):
         print(f"track.py: downbeat confidence {g['downbeat_confidence']} is under {CONF_MIN}: the bars may start at "
               f"{g['t0']} s (phase {g['phase']}) or at {g['alt']['t0']} s (phase {g['alt']['phase']}). Decide from the "
               "music (the first note, section entrances, chord changes in the bar table) and rerun "
-              f"`track.py analyze {a['file']} --phase N` (--phase {g['phase']} confirms this grid without a second "
-              "analysis); edit refuses until the phase is set", file=sys.stderr)
+              f"`track.py analyze {a['file']} --phase N` (either phase is set without a second analysis: "
+              f"--phase {g['phase']} confirms this grid); edit refuses until the phase is set", file=sys.stderr)
         return 2
     arc = [float(v) for v in a_.arc.split(',')] if a_.arc else None
     if a_.end == 'stop' and not 0.2 <= a_.gap <= 0.7:
@@ -1663,11 +1734,13 @@ def cmd_analyze(a_):
         print_analysis(res, print if not a_.quiet else (lambda s: None))
         print(f'analyze: {out} is current (the same file and settings): kept (--force analyses again)')
     else:
+        info = {}
         res = analyze(a_.file, a_.profile or 'crisp', a_.bpm, a_.phase, a_.cache,
-                      log=None if a_.quiet else (lambda s: print('  ' + s)))
+                      log=None if a_.quiet else (lambda s: print('  ' + s)), fresh=a_.force, info=info)
         write_json(out, res)
         print_analysis(res, print if not a_.quiet else (lambda s: None))
-        print(f'analyze: wrote {out}')
+        print(f'analyze: wrote {out}' + (f' (phase {res["grid"]["phase"]}, re-gridded from the measurements cached in '
+                                          f'{a_.cache}: no second analysis)' if info.get('cached') else ''))
     g = res['grid']
     if g['downbeat_confidence'] < CONF_MIN and not g['phase_set'] and g.get('entry_confirms'):
         print(f"  low downbeat confidence, confirmed by the biggest low-band entrance ({g['low_entry']['t']} s): grid A from "
@@ -1675,7 +1748,7 @@ def cmd_analyze(a_):
     elif g['downbeat_confidence'] < CONF_MIN and not g['phase_set']:
         print(f"  LOW downbeat confidence: grid A from {g['t0']} s (phase {g['phase']}), grid B from "
               f"{g['alt']['t0']} s (phase {g['alt']['phase']}); rerun with --phase N (--phase {g['phase']} confirms grid A "
-              "in place)")
+              f"in place, --phase {g['alt']['phase']} re-grids to B from the cached measurements)")
         return 2
     return 0
 
@@ -1739,8 +1812,9 @@ def main(argv=None):
     p.add_argument('--bpm', type=float, help='the stated tempo, when the composer gives one (the phase is still fitted)')
     p.add_argument('--phase', type=int, help='the downbeat phase 0-3 (after a low-confidence analysis)')
     p.add_argument('--json', help='output (default audio/music/<name>.track.json next to the file)')
-    p.add_argument('--cache', default='out/cache/music', help='decode cache (git-ignored)')
-    p.add_argument('--force', action='store_true', help='analyse again even when the .track.json is current')
+    p.add_argument('--cache', default='out/cache/music', help='decode and measurement cache (git-ignored)')
+    p.add_argument('--force', action='store_true', help='analyse again from the audio, even when the .track.json or the '
+                   'cached measurements are current')
     p.add_argument('--quiet', action='store_true')
     p = sub.add_parser('edit', help='source bars -> film bars')
     p.add_argument('track', nargs='?', help='the .track.json (default: the one in audio/music/)')

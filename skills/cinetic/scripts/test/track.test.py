@@ -16,7 +16,8 @@ last 0.42 s stop dead, peak 15-22, outro 23-24) and one final thump on bar 25. C
   - check: every join measured on the edited bed (attack on the film downbeat, no click); a step down into the
     break before the reveal or into a ring ending's last bars passes, the same step in the body does not
   - a bed with no bar accent (identical clicks): analyze exits 2 (downbeat unresolved), edit refuses,
-    and --phase N resolves it (the phase it already has: confirmed in place, no second analysis)
+    and --phase N resolves it (the phase it already has: confirmed in place; another phase: re-gridded from the
+    cached measurements, the same analysis --force makes from the audio)
   - a bed whose clicks leave the downbeat unsettled but whose kick comes in on a downbeat: the low-band
     entrance confirms the grid, analyze exits 0 and edit runs with a warning
   - a bed that ends on a hit and a 2.5 s ring over level bars (the ring's tail a near-silent last bar):
@@ -34,6 +35,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 import numpy as np
 import soundfile as sf
@@ -429,6 +431,23 @@ def low_confidence(d):
           f'a run without --phase keeps the analysis whose phase was set by hand (exit {p.returncode})')
     p = run(['edit', '--bars', '4', '--reveal-bar', '2', '--end', 'stop'], d2)
     check(p.returncode == 0, 'edit runs on the set phase' + ('' if p.returncode == 0 else f': {p.stderr[-200:]}'))
+    # the other phase: re-gridded from the measurements the first analysis cached, the same as analysing again
+    alt = (ph + 1) % 4
+    t_ = time.time()
+    p = run(['analyze', 'audio/music/flat.wav', '--quiet', '--phase', str(alt)], d2)
+    s_cached = time.time() - t_
+    a1 = json.load(open(tj)) if os.path.isfile(tj) else {}
+    check(p.returncode == 0 and 'no second analysis' in p.stdout and a1['grid']['phase'] == alt and a1['grid']['phase_set'],
+          f'--phase {alt} (another phase) re-grids from the cached measurements ({s_cached:.1f} s)'
+          + ('' if p.returncode == 0 else f': {p.stderr[-200:]}'))
+    fresh = os.path.join(d2, 'audio', 'music', 'flat.fresh.track.json')
+    t_ = time.time()
+    p = run(['analyze', 'audio/music/flat.wav', '--quiet', '--phase', str(alt), '--force', '--json', fresh], d2)
+    s_fresh = time.time() - t_
+    a2 = json.load(open(fresh)) if os.path.isfile(fresh) else {}
+    check(p.returncode == 0 and 'no second analysis' not in p.stdout and a1 == a2,
+          f'and gives the analysis --force makes from the audio ({s_fresh:.1f} s)'
+          + ('' if a1 == a2 else f': {sorted(k for k in set(a1) | set(a2) if a1.get(k) != a2.get(k))} differ'))
 
 
 def join_kinds(d):
