@@ -1,6 +1,6 @@
 import React from 'react';
 import { C } from '../brand/tokens';
-import { mixColor } from '../lib/color';
+import { mixColor, mixRgb } from '../lib/color';
 import type { FilmCtx } from '../lib/film';
 import type { Declares } from '../timeline';
 import { GradientField, type GradientFieldProps } from './Gradients';
@@ -21,12 +21,17 @@ import type { Stop } from './plates';
  *   corner   a broad glow from one corner (radial, 1.05 of the diagonal), falling to paper by two thirds of the frame
  *   halo     a soft light behind the subject (radial from 0.5, 0.6; 0.55 of the diagonal): a product card or a
  *            photo stands in its own light
+ *   tilted   a lit page whose colour pools along one tilted edge: paper over the first third, then a long S-shaped
+ *            ramp to the tint at the far edge (knots: 4 % of the tint at 34 % of the run, 24 % at 52 %, 81 % at 84 %,
+ *            all of it at the edge), the run 8 degrees off vertical (angle 82: down and a little right), the tint the
+ *            accent only a fifth of the way to paper. Behind nodes, pills and a diagram on a light film: the colour
+ *            gathers under them and the frame still reads as a clean page
  *
  * Tint: the accent lifted (house mixColor(accent, paper, 0.45)), or the brand's second colour. Deep (sky): the
  * film's ink lifted toward the tint's hue. washStops() and washField() are pure; <Wash> paints the field (half size,
  * dithered) and drifts it slowly when `drift` is set (ramp lengths a second, mirrored: never a seam).
  */
-export type WashKind = 'rise' | 'fall' | 'side' | 'sky' | 'corner' | 'halo';
+export type WashKind = 'rise' | 'fall' | 'side' | 'sky' | 'corner' | 'halo' | 'tilted';
 
 /** House numbers: where each ramp starts (share of the run), its curve exponent, the radial centres and radii. */
 export const WASH = {
@@ -36,6 +41,7 @@ export const WASH = {
   sky: { from: 0, gamma: 1.25 },
   corner: { from: 0, gamma: 0.75, centre: [1, 1] as [number, number], radius: 1.05 },
   halo: { from: 0, gamma: 0.9, centre: [0.5, 0.6] as [number, number], radius: 0.55 },
+  tilted: { from: 0, gamma: 1, angle: 82, tintMix: 0.2, knots: [[0, 0], [0.34, 0.04], [0.52, 0.24], [0.84, 0.81], [1, 1]] as [number, number][] },
   tintMix: 0.45, // the default tint: the accent this far toward paper
   knots: 7,
 } as const;
@@ -47,6 +53,7 @@ export const WASH = {
 export const washStops = (kind: WashKind, paper: string, tint: string, deep?: string): Stop[] => {
   const H = WASH[kind];
   const n = WASH.knots;
+  if (kind === 'tilted') return WASH.tilted.knots.map(([at, k]) => ({ at, color: mixRgb(paper, tint, k) })); // knots read in gamma sRGB
   if (kind === 'sky') {
     const top = deep ?? mixColor(C.ink, tint, 0.35);
     return Array.from({ length: n }, (_, k) => ({ at: k / (n - 1), color: mixColor(top, tint, (k / (n - 1)) ** H.gamma) }));
@@ -66,13 +73,13 @@ export const washStops = (kind: WashKind, paper: string, tint: string, deep?: st
 /** The GradientField of a wash (angle: linear kinds, degrees; centre: radial kinds, shares of the frame). Pure. */
 export const washField = (kind: WashKind, o: { paper?: string; tint?: string; deep?: string; angle?: number; centre?: [number, number]; radius?: number; drift?: number; grain?: number } = {}): GradientFieldProps => {
   const paper = o.paper ?? C.paper;
-  const tint = o.tint ?? mixColor(C.accent, paper, WASH.tintMix);
+  const tint = o.tint ?? mixColor(C.accent, paper, kind === 'tilted' ? WASH.tilted.tintMix : WASH.tintMix);
   const stops = washStops(kind, paper, tint, o.deep);
   if (kind === 'corner' || kind === 'halo') {
     const H = WASH[kind];
     return { mode: 'radial', stops, centre: o.centre ?? H.centre, radius: o.radius ?? H.radius, grain: o.grain ?? 0.6, ...(o.drift ? { orbit: [o.drift, o.drift * 0.6], period: 14 } : {}) };
   }
-  const angle = o.angle ?? (kind === 'rise' ? 90 : kind === 'fall' ? -90 : kind === 'sky' ? 90 : 0);
+  const angle = o.angle ?? (kind === 'rise' ? 90 : kind === 'fall' ? -90 : kind === 'sky' ? 90 : kind === 'tilted' ? WASH.tilted.angle : 0);
   return { mode: 'linear', stops, angle, grain: o.grain ?? 0.6, ...(o.drift ? { drift: o.drift } : {}) };
 };
 

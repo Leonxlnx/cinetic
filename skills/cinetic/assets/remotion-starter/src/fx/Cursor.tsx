@@ -1,14 +1,18 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { C } from '../brand/tokens';
 import { clamp, DUR, E, type Ease, expOut, fd, hitPulse, mix } from '../lib/anim';
+import { mixColor } from '../lib/color';
 import { type FilmCtx, f60x, fpsOf, uOf } from '../lib/film';
 import type { Declares, SteppedRange } from '../timeline';
 
 type Pt = { x: number; y: number };
 
-/** Cursor shapes: the arrow (hotspot at its tip), the text I-beam (hotspot at its centre), the link hand (hotspot at the fingertip) and the
- *  pointer (a filled, rounded location arrow drawn large in the brand colour with a pale rim: a product-film cursor, hotspot at its tip). */
-export type CursorShape = 'arrow' | 'ibeam' | 'hand' | 'pointer';
+/** Cursor shapes: the arrow (hotspot at its tip), the text I-beam (hotspot at its centre), the link hand (hotspot at the fingertip), the
+ *  pointer (a filled, rounded location arrow drawn large in the brand colour with a pale rim: a product-film cursor, hotspot at its tip),
+ *  the plane (a glossy paper plane: a white-to-grey body creased along its fold, a rim in the accent's lightness ramp showing under its
+ *  long edge, a soft cast shadow: the crafted cursor of a launch film, hotspot at its nose) and the glass triangle (a rounded triangle,
+ *  ink at 55 % with a thick white outline: a pointer floating over a photograph, readable on light and dark). */
+export type CursorShape = 'arrow' | 'ibeam' | 'hand' | 'pointer' | 'plane' | 'glassTri';
 
 const ARROW = 'M3 2 L3 33 L10.2 26.4 L15 38 L20.2 35.8 L15.4 24.4 L25 24.4 Z';
 // an I-beam with soft serifs, 24 x 46 at scale 1, centred on (12, 23)
@@ -19,12 +23,24 @@ const HAND =
   'M10.5 1.2 C9.1 1.2 8 2.3 8 3.7 L8 17.2 L6.6 15.8 C5.6 14.8 4 14.8 3 15.8 C2.1 16.7 2 18.1 2.8 19.1 L8.4 27 C9.9 29.3 12.4 30.8 15.2 30.8 L18.2 30.8 C22.1 30.8 25.2 27.7 25.2 23.8 L25.2 15.6 C25.2 14.3 24.2 13.3 22.9 13.3 C21.6 13.3 20.6 14.3 20.6 15.6 L20.6 14.2 C20.6 12.9 19.6 11.9 18.3 11.9 C17 11.9 16 12.9 16 14.2 L16 13.1 C16 11.8 15 10.8 13.7 10.8 C13.4 10.8 13.2 10.8 13 10.9 L13 3.7 C13 2.3 11.9 1.2 10.5 1.2 Z';
 // the filled pointer: a rounded arrowhead pointing up-left, 40 x 40 at scale 1, the tip at (4, 4)
 const POINTER = 'M6.2 4.6 L35.8 16.1 C38.1 17 38 20.3 35.6 21 L23.7 24.4 C22.9 24.6 22.3 25.2 22.1 26 L18.6 37.6 C17.9 39.9 14.6 40 13.8 37.7 L4.6 6.2 C4.1 4.9 5 4.1 6.2 4.6 Z';
+// the paper plane, 44 x 44 at scale 1, nose at (3.5, 3.5); the crease runs from the nose to the notch (22.6, 22.6)
+const PLANE = 'M4.6 3.9 L40.2 16.6 C41.4 17 41.4 18.6 40.2 19 L24 23.2 C23.6 23.3 23.3 23.6 23.2 24 L19 40.2 C18.6 41.4 17 41.4 16.6 40.2 L3.9 4.6 C3.7 4 4 3.7 4.6 3.9 Z';
+const PLANE_NEAR = 'M4.6 3.9 L40.2 16.6 C41.4 17 41.4 18.6 40.2 19 L24 23.2 C23.6 23.3 23.3 23.6 23.2 24 Z'; // the half nearer the light
+// the glass triangle, 40 x 40 at scale 1, tip at (5, 5)
+const GLASS_TRI = 'M5 5 L35 16.5 L16.5 35 Z';
 const SHAPES: Record<CursorShape, { d: string; w: number; h: number; hot: Pt; stroke: number }> = {
   arrow: { d: ARROW, w: 30, h: 42, hot: { x: 3, y: 2 }, stroke: 2.4 },
   ibeam: { d: IBEAM, w: 24, h: 46, hot: { x: 12, y: 23 }, stroke: 2.2 }, // hotspot at the glyph's centre (it is symmetric)
   hand: { d: HAND, w: 28, h: 33, hot: { x: 10.5, y: 1.4 }, stroke: 2.2 },
   pointer: { d: POINTER, w: 40, h: 40, hot: { x: 4.6, y: 4.6 }, stroke: 4.5 },
+  plane: { d: PLANE, w: 44, h: 44, hot: { x: 3.9, y: 3.9 }, stroke: 0 },
+  glassTri: { d: GLASS_TRI, w: 40, h: 40, hot: { x: 5, y: 5 }, stroke: 3.6 },
 };
+
+/** House numbers of the crafted cursors: the plane's rim offset under its long edge (shape units), its body ramp and the rim's
+ *  lightness ramp (accent lifted 35 %, the accent, the accent deepened 30 % toward ink), the cast shadow (offset 9/15, blur 9 px at
+ *  scale 1, ink at .26); the glass triangle's fill (ink at .55) and outline (white, 3.6 units: 9 px at scale 2.5). */
+export const CURSOR_CRAFT = { plane: { rim: [1.1, 1.9] as [number, number], body: [0, 0.1, 0.16], rimRamp: [0.35, 0, 0.3], cast: [9, 15, 9, 0.26] }, glassTri: { fill: 0.55, stroke: 3.6 } } as const;
 
 /**
  * System-style pointer, placed ONLY by transform (hotspot at x, y). A fractional left/top next to a
@@ -50,7 +66,9 @@ export const Cursor: React.FC<{
   fill?: string;
   outline?: string;
   pressDepth?: number; // how far a full press squashes it (house 0.12; a large pointer clicks at 0.2)
-}> = ({ x, y, scale = 1, press = 0, opacity = 1, angle, shape, shadow, ring, fill = C.ink, outline = C.white, pressDepth = 0.12 }) => {
+  rim?: string; // the plane's rim colour (default the accent)
+}> = ({ x, y, scale = 1, press = 0, opacity = 1, angle, shape, shadow, ring, fill = C.ink, outline = C.white, pressDepth = 0.12, rim = C.accent }) => {
+  const uid = `cur${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   if (angle === undefined && shape === undefined && shadow === undefined && ring === undefined && pressDepth === 0.12) {
     // the 1.1 drawing, unchanged
     return (
@@ -78,7 +96,34 @@ export const Cursor: React.FC<{
       <path d={sh.d} fill={paint} stroke={line} strokeWidth={line ? sh.stroke : 0} strokeLinejoin="round" />
     </svg>
   );
-  const mode = shadow ?? 'drop';
+  const craft = shape === 'plane' || shape === 'glassTri';
+  const mode = shadow ?? (shape === 'plane' ? 'cast' : 'drop');
+  const P = CURSOR_CRAFT.plane;
+  const drawn =
+    shape === 'plane' ? (
+      <svg key="shape" width={sh.w} height={sh.h} viewBox={`0 0 ${sh.w} ${sh.h}`} style={{ position: 'absolute', left: -sh.hot.x, top: -sh.hot.y, overflow: 'visible' }}>
+        <defs>
+          <linearGradient id={`${uid}r`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor={mixColor(rim, C.white, P.rimRamp[0])} />
+            <stop offset="0.5" stopColor={rim} />
+            <stop offset="1" stopColor={mixColor(rim, C.ink, P.rimRamp[2])} />
+          </linearGradient>
+          <linearGradient id={`${uid}b`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor={mixColor(C.white, C.ink, P.body[0])} />
+            <stop offset="1" stopColor={mixColor(C.white, C.ink, P.body[2])} />
+          </linearGradient>
+        </defs>
+        <path d={PLANE} transform={`translate(${P.rim[0]} ${P.rim[1]})`} fill={`url(#${uid}r)`} />
+        <path d={PLANE} fill={`url(#${uid}b)`} />
+        <path d={PLANE_NEAR} fill={C.white} fillOpacity={0.85} />
+        <path d="M5.2 5.2 L22.4 22.4" stroke={mixColor(C.white, C.ink, P.body[1])} strokeWidth={0.9} strokeLinecap="round" />
+      </svg>
+    ) : shape === 'glassTri' ? (
+      <svg key="shape" width={sh.w} height={sh.h} viewBox={`0 0 ${sh.w} ${sh.h}`} style={{ position: 'absolute', left: -sh.hot.x, top: -sh.hot.y, overflow: 'visible' }}>
+        <path d={GLASS_TRI} fill={C.ink} fillOpacity={CURSOR_CRAFT.glassTri.fill} stroke={outline} strokeWidth={CURSOR_CRAFT.glassTri.stroke} strokeLinejoin="round" />
+      </svg>
+    ) : null;
+  const [cx, cy, cb, ca] = P.cast;
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, opacity }}>
       {ring && ring.opacity > 0.001 && (
@@ -106,8 +151,8 @@ export const Cursor: React.FC<{
           filter: mode === 'drop' ? 'drop-shadow(0 3px 5px rgba(0,0,0,0.28))' : undefined,
         }}
       >
-        {mode === 'cast' && glyph('rgba(0, 0, 0, 0.26)', undefined, 'cast', { transform: `translate(${9}px, ${15}px)`, filter: 'blur(3px)' })}
-        {glyph(shape === 'ibeam' ? outline : fill, shape === 'ibeam' ? fill : outline, 'shape')}
+        {mode === 'cast' && glyph('rgba(0, 0, 0, 0.26)', undefined, 'cast', craft ? { transform: `translate(${cx}px, ${cy}px)`, filter: `blur(${cb / 2}px)`, opacity: ca / 0.26 } : { transform: `translate(${9}px, ${15}px)`, filter: 'blur(3px)' })}
+        {drawn ?? glyph(shape === 'ibeam' ? outline : fill, shape === 'ibeam' ? fill : outline, 'shape')}
       </div>
     </div>
   );

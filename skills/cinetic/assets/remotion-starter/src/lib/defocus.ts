@@ -42,6 +42,20 @@ export const defocusMix = (sigma: number, levels: readonly number[] = DEFOCUS_LE
   ];
 };
 
+/**
+ * Depth of field by distance: the defocus sigma (px at 1080p) of a layer `d` px (at 1080p) from the focal point or
+ * plane. Sharp within `focus` px, rising on a smoothstep to `max` at `range` px, held there beyond (house: sharp within
+ * 230 px, 7.5 px at 850 px: cards streaming past a centred word, the near and far planes of a set). Feed it the
+ * distance on screen for a flat stream, or |z - zFocus| for planes in depth; draw the result with defocusMix. Pure.
+ */
+export const DOF = { focus: 230, range: 850, max: 7.5 } as const;
+export const dofSigma = (d: number, o: { focus?: number; range?: number; max?: number } = {}): number => {
+  const a = o.focus ?? DOF.focus;
+  const b = Math.max(a + 1e-6, o.range ?? DOF.range);
+  const t = Math.min(1, Math.max(0, (Math.abs(d) - a) / (b - a)));
+  return (o.max ?? DOF.max) * t * t * (3 - 2 * t);
+};
+
 /** The nearest ladder level to `sigma` (0 under DEFOCUS_SHARP): for a held defocus drawn as one copy. */
 export const defocusLevel = (sigma: number, levels: readonly number[] = DEFOCUS_LEVELS): number => {
   if (sigma < DEFOCUS_SHARP) return 0;

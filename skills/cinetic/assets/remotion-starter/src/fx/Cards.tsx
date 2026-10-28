@@ -1,7 +1,7 @@
 import React from 'react';
 import { Img } from 'remotion';
 import { C } from '../brand/tokens';
-import { clamp, DUR, E, type Ease, expOut, M, mix, PRESS, SPR, type Spr, spr } from '../lib/anim';
+import { clamp, curveOf, DUR, E, type Ease, expOut, M, mix, PRESS, SPR, type Spr, spr } from '../lib/anim';
 import { KitFallback } from '../kit/panels';
 import { kitTheme } from '../kit/theme';
 import { morphBox, type MorphBox } from '../lib/box';
@@ -22,6 +22,10 @@ import type { Declares } from '../timeline';
 //   press        squeeze, hold, release: the grammar of a click
 //   bento        tiles unfold from one layout to another on one shared ease, with per-tile delays
 //   springBox    the film's one spring: a container popping open past its size and back
+//   widenState   a card or a capsule opening from a sliver at its centre to its full width (width 1 % -> 10 % ->
+//                31 % -> 93 % -> 100 % over 40 f, the content fading in over the last third), never a fade or a scale
+//   CARD_TILT    planes a card leans on for a close-up: leanBack (27 deg back about its top edge, perspective 1000:
+//                the top edge about 80 % of the bottom, the foot nearer the lens), aside (turned 22 deg), floor
 //   <Card>       draws any of them, with built UI or a supplied image (screenshot, product shot) as content
 //   <Bento>      draws a bento unfold, each tile built or an image cropped to its moving box
 //
@@ -92,6 +96,36 @@ export const enterState = (f: number, o: EnterProps, film?: Partial<FilmCtx>): E
     sigma,
     phase: f < o.start ? 'before' : t >= 1 ? 'done' : 'moving',
   };
+};
+
+// ------------------------------------------------------------------------------------------ widen
+/** A reveal that opens a card or a capsule from its centre: knots of the width share at t = 0, 1/4 ... 1 (40 f at 60 fps). */
+export const WIDEN = { dur60: 40, knots: [0.01, 0.1, 0.31, 0.93, 1], content: 0.66 } as const;
+export type WidenProps = { at: number; dur60?: number; content?: number }; // content: the share of the reveal after which the content fades in
+export type WidenState = { width: number; inset: number; content: number; done: boolean };
+const widenEase = curveOf(WIDEN.knots);
+/** The width share (of the card's own width, opened about its centre), the inset per side and the content's opacity at frame f. Pure. */
+export const widenState = (f: number, o: WidenProps, film?: Partial<FilmCtx>): WidenState => {
+  const dur = Math.max(1, f60x(o.dur60 ?? WIDEN.dur60, fpsOf(film)));
+  const t = clamp((f - o.at) / dur);
+  if (f < o.at) return { width: 0, inset: 0.5, content: 0, done: false };
+  const width = mix(WIDEN.knots[0], 1, widenEase(t));
+  const c0 = o.content ?? WIDEN.content;
+  return { width, inset: (1 - width) / 2, content: E.softOut(clamp((t - c0) / (1 - c0))), done: t >= 1 };
+};
+
+// ------------------------------------------------------------------------------------------ tilt
+/** A fixed plane for a card: degrees (rx > 0 leans the top away), the transform origin inside the card, perspective px at 1080p. */
+export type CardTiltSpec = { rx?: number; ry?: number; rz?: number; origin?: Pt; perspective?: number };
+export const CARD_TILT = {
+  leanBack: { rx: 27, ry: 0, origin: { x: 0.5, y: 0 }, perspective: 1000 }, // the close-up before a snap: the card lies back, its foot toward the lens
+  aside: { rx: 6, ry: -22, origin: { x: 0.5, y: 0.5 }, perspective: 1400 }, // a card turned toward the line beside it
+  floor: { rx: 58, ry: 0, origin: { x: 0.5, y: 1 }, perspective: 1200 }, // a sheet lying on the floor of the set, seen from above
+} as const satisfies Record<string, CardTiltSpec>;
+/** The CSS of a fixed plane (perspective first). Pure. */
+export const cardTiltCss = (t: CardTiltSpec | undefined, film?: Partial<FilmCtx>): string => {
+  if (!t || (!t.rx && !t.ry && !t.rz)) return '';
+  return `perspective(${((t.perspective ?? 1400) * uIf(film)).toFixed(1)}px) rotateX(${(t.rx ?? 0).toFixed(3)}deg) rotateY(${(t.ry ?? 0).toFixed(3)}deg) rotateZ(${(t.rz ?? 0).toFixed(3)}deg)`;
 };
 
 // ------------------------------------------------------------------------------------- card arrival
@@ -276,7 +310,9 @@ export type CardProps = {
   press?: { at: number } & PressOpts;
   spring?: { start: number; from: MorphBox; preset?: Spr }; // the box pops from `from` to `box`
   perspective?: number; // px, for the lean plane (default 1800 at 1080p)
-  origin?: Pt; // transform origin inside the box, 0..1 (default the centre)
+  origin?: Pt; // transform origin inside the box, 0..1 (default the centre, or the tilt's origin)
+  tilt?: CardTiltSpec; // a fixed plane the card leans on (CARD_TILT.leanBack for the close-up before a snap)
+  reveal?: WidenProps; // the card opens from a sliver at its centre (widenState), its content fading in last
   style?: React.CSSProperties;
   seed?: number; // which kit panel a content-less card falls back to (default 0)
 } & CardContent; // image: a supplied picture (drawn under the children); children: built UI, laid out in a box.w x box.h box
@@ -304,10 +340,14 @@ export const Card: React.FC<CardProps> = (props) => {
   const k = (en?.scale ?? 1) * (ar?.scale ?? 1) * (de?.scale ?? 1) * (pr?.scale ?? 1);
   const rot = ar?.rot ?? 0;
   const opacity = (en?.opacity ?? 1) * (de?.opacity ?? 1);
-  const o = props.origin ?? { x: 0.5, y: 0.5 };
+  const o = props.origin ?? props.tilt?.origin ?? { x: 0.5, y: 0.5 };
   const persp = (props.perspective ?? 1800) * u;
+  const wd = props.reveal ? widenState(f, props.reveal, film) : null;
+  const plane = cardTiltCss(props.tilt, film);
   const lean = en && Math.abs(en.lean) > 1e-4 ? (en.axis === 'x' ? `perspective(${persp.toFixed(1)}px) rotateX(${en.lean.toFixed(4)}deg)` : `perspective(${persp.toFixed(1)}px) rotateY(${en.lean.toFixed(4)}deg)`) : '';
-  const transform = `translate3d(${(rest.x + tx).toFixed(3)}px, ${(rest.y + ty).toFixed(3)}px, 0) ${lean} rotate(${rot.toFixed(4)}deg) scale(${k.toFixed(5)})`;
+  const transform = `translate3d(${(rest.x + tx).toFixed(3)}px, ${(rest.y + ty).toFixed(3)}px, 0) ${plane} ${lean} rotate(${rot.toFixed(4)}deg) scale(${k.toFixed(5)})`.replace(/\s+/g, ' ');
+  const clip = wd && !wd.done ? `inset(0 ${(wd.inset * 100).toFixed(3)}% 0 ${(wd.inset * 100).toFixed(3)}% round ${rest.r.toFixed(2)}px)` : undefined;
+  const inner = wd ? wd.content : 1;
   const face = (key: number, level: number, op: number) => (
     <div
       key={key}
@@ -325,8 +365,8 @@ export const Card: React.FC<CardProps> = (props) => {
         filter: level > 0 ? `blur(${level}px)` : undefined,
       }}
     >
-      {props.image && <CardPicture image={props.image} frame={f} />}
-      {props.children !== undefined && <div style={{ position: 'absolute', left: 0, top: 0, width: props.box.w, height: props.box.h }}>{props.children}</div>}
+      {props.image && <div style={{ position: 'absolute', inset: 0, opacity: inner }}><CardPicture image={props.image} frame={f} /></div>}
+      {props.children !== undefined && <div style={{ position: 'absolute', left: 0, top: 0, width: props.box.w, height: props.box.h, opacity: inner }}>{props.children}</div>}
       {props.children === undefined && !props.image && !props.blank && <KitFallback frame={f} w={props.box.w} h={props.box.h} seed={props.seed} theme={fallbackTheme(rest.fill)} />}
       {rest.strokeW > 0.01 && <div style={{ position: 'absolute', inset: 0, borderRadius: rest.r, boxShadow: `inset 0 0 0 ${rest.strokeW.toFixed(2)}px ${rest.stroke}` }} />}
     </div>
@@ -340,9 +380,10 @@ export const Card: React.FC<CardProps> = (props) => {
         top: 0,
         width: rest.w,
         height: rest.h,
-        opacity,
+        opacity: wd && f < (props.reveal?.at ?? 0) ? 0 : opacity,
         transformOrigin: `${(o.x * 100).toFixed(2)}% ${(o.y * 100).toFixed(2)}%`,
         transform,
+        clipPath: clip,
         ...props.style,
       }}
     >
