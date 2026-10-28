@@ -226,6 +226,12 @@ A one-take film is judged on 2 s segments and has no seam or cut items.
 
 Type reads large and frontal on clean grounds, so a film with every frame on relief, footage or grain fails
 `picture-flat` and usually `picture-edges` too. Give each type beat a clean field, or dim and defocus the plate behind the type.
+Graded real photos and footage are welcome on the floor: they count toward edges and colour mass, and declared as
+imagery their natural colour (skin, wood, sky) is not designed colour, their soft and defocused edges are not
+`filler-shape` or `ground-haze`, and their bands are not skeleton bars. Moving pictures (an `ArcRiver`, a `PhotoWall`,
+a card that travels) are declared with `--imagery-track`, written from the film's own state by `fx/Pictures`
+`pictureTrack()` (`references/imagery.md` §10). A drawing standing in for a photo is a review failure
+(`references/taste-and-slop.md` D18).
 A white world is judged without the flat and colour readings; a grid film without bleed. Framing warnings:
 `framing-centred` (the subject dead centre and inside the frame in more than half of the framed samples),
 `framing-hold` (one framing over 0.8 s with no depth plane moving; 1 s inside a read), `small-text`.

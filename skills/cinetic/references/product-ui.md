@@ -322,6 +322,12 @@ sample.
 - Real pictures lead where the product has them: `Photo src=` and `ProjectPanel photos=[...]` take supplied or
   licensed photographs (`references/imagery.md`); rewrite the sample's copy for the pictures you show, so every string
   states a fact about what is on screen.
+- **A person, a place or a product inside the UI is a real photo.** A channel's owner, a creator's thumbnails, a
+  listing's product shot, a team that matters in the shot: `Avatar src=` / `AvatarStack people=[{ src }]` and
+  `Photo src=` take photographs found with `scripts/assets.mjs search ... --people` (or the user's), cropped on their
+  focus. The drawn portraits (`PortraitMark`, `HalftonePortrait`) are for a crowd of small faces in a list; nothing
+  drawn in SVG stands in for a photo the shot is about. Outside the UI, photos and footage get the studio finish of
+  `fx/Pictures` (`PhotoCard`, `ArcRiver`, `PhotoWall`, `InlinePhoto`, `FootageWindow`; `references/imagery.md` §4).
 
 ## 6. Cards, bento and the one spring
 

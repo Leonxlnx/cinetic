@@ -37,7 +37,7 @@ When you invent the look, none of these appear. `lint-film.mjs` checks the code;
 - **Type:** serif typefaces, italic or oblique styles (or a skew that fakes one). One clean sans, plus a mono for code or numbers if the product needs it.
 - **Colour:** orange, amber, beige, cream, tan or sand as an accent, a paper or a glow; neon; purple, violet or indigo; a monochrome accent wash over the whole film; glassmorphism as a UI style.
 - **Decoration:** emoji and stock icons; sparkles for "AI", confetti, lens flares, code rain; bounce on anything that isn't landing; a springy overshoot on copy; letters that move one by one outside a line's own text animation.
-- **Pictures:** stock as the base of a film (people at laptops, handshakes, generic city time-lapses), low-resolution or mixed-grade pictures. A picture appears only when it is the product's own or carries the idea.
+- **Pictures:** a person, place, landscape or product drawn in SVG where a photo belongs; coloured squares or grey cards standing in for pictures; stock gestures (handshakes, pointing at screens, generic city time-lapses), low-resolution or mixed-grade pictures, a flat unfinished rectangle of a photo. A beat that shows people, places, products or proof holds a real photo or clip with a studio finish (`references/imagery.md`).
 - **Sound:** generated music (a synth bed, a tuned melody of effects, an AI track); a film with no music; ducking the music under effects; copyrighted audio in any repository (the track, the soundtrack, stems and decode caches stay git-ignored).
 - **Credits on screen:** no music or imagery credit ever appears in the picture; licence records stay private with the project.
 
@@ -114,11 +114,12 @@ Read `references/music.md` now. The track is chosen before the timeline; the pic
 - **Analyse, edit, grid:** `track.py analyze <file>`, `track.py edit --bars N --reveal-bar K --end stop|button|ring` (K: the biggest reveal, about 75–90% in), `track.py grid` (writes `src/music.ts`; `npm run music` repeats them).
 - **Gate:** `track.py check` passes (licence record, joins, nothing from the track in git); the downbeat is confident, confirmed by the biggest low-band entrance, or its phase set by hand; the reveal bar holds an entry.
 
-### Step 4 (optional): Pictures → `public/assets/graded/`
-Read `references/imagery.md` only when the film has pictures worth showing: the product's own screens or photography, or a high-quality picture that carries the idea. Pictures are an accent, never the base of the film; sloppy stock is worse than none, so most films skip this step.
-- From the product or the brand kit first; found pictures only when one carries the idea: `node scripts/assets.mjs search "<noun + viewpoint>" --kind photo|video|texture|art`, `sheet` (look before choosing), `get #n --to public/assets`, `grade public/assets --accent '#…' --out public/assets/graded` (one look; `natural` by default), `check`.
-- Only no-credit licences (CC0, public domain, Pexels, Unsplash, Pixabay, Mixkit); the private record `assets/licences.json` is never shown or published.
-- **Gate:** each picture earns its beat (it says something a graphic could not), real resolution, one grade, `assets.mjs check` passes; refuse anything that reads as stock.
+### Step 4: Pictures → `public/assets/graded/`
+Read `references/imagery.md` whenever a beat shows a person, a place, an object or product, a moment of use or proof of many (users, creations, a community). Those beats are real photos or clips (the brand's, the user's, or free pictures whose licence needs no credit), never drawn in SVG; beats that are ideas, flows or the product's UI stay type, graphics and UI built in code. A film of 6-8 lines typically shows real pictures on 2-4 beats.
+- The brand's own first; then `node scripts/assets.mjs search "<noun + viewpoint>" --kind photo|video [--people | --no-people] [--clean] [--fit 4:5]` (Burst, ISO Republic, Coverr, Mixkit, Openverse, Commons and the museums without keys; the vet marks people, text and soft pictures), `sheet` (look before choosing), `get #n --to public/assets` (it prints the `{ src, w, h }` the kit takes: add the subject's `focus`), `grade public/assets --accent '#…' --out public/assets/graded` (one look; `natural` by default), `check`.
+- Finish them like a studio (`src/fx/Pictures.tsx`, `src/fx/Washes.tsx`): `PhotoCard` (rounded, rim, contact shadow, mat, lean in 3D, appear), `ArcRiver` (cards along a curve, depth blur off the focus, smear along the travel), `PhotoWall`, `InlinePhoto` (a photo inside a line), `FootageWindow`, and a `Wash` ground with a direction.
+- Only no-credit licences (CC0, public domain, Burst, Coverr, Pexels, Unsplash, Pixabay, Mixkit); the private record `assets/licences.json` is never shown or published.
+- **Gate:** every beat that shows people, places, products or proof holds a real picture; real resolution, one grade, one card language, `assets.mjs check` passes; nothing reads as stock and nothing drawn stands in for a photo.
 
 ### Step 5: Beat sheet and timeline → `TREATMENT.md`, `src/timeline.ts`
 Read `references/copy-and-type.md` and `references/timing-grid.md` now.
@@ -345,7 +346,7 @@ Read each file when its step comes up; never all at once.
 | Step 2, a clip | `references/clip-match.md` | borrow a clip's grammar, never its content; measure, score, guard |
 | Step 3 | `references/music.md` | licences, the record, analysis, the edit, cutting picture to the music, credits |
 | Step 1b and 5 | `references/copy-and-type.md` | the script (the launch and update formulas, plain words, good and bad scripts), one line at a time, sizes, the text animations, type roles at film size |
-| Step 4 (optional) | `references/imagery.md` | pictures as an accent: when they earn a beat, no-credit sources, search, sheet, grade, premium or stock |
+| Step 4 | `references/imagery.md` | real pictures where a beat shows people, places, products or proof: no-credit sources, search, vet, sheet, grade, the studio treatments (fx/Pictures), chosen or stock |
 | Step 5 | `references/timing-grid.md` | the music grid, `timeline.ts`, declarations, sync helpers, holds and density |
 | Step 5, after the draw | `references/technique-library.md` | every drawable entry in the library (generated by `pick.py`; search it, don't read it whole) |
 | Steps 5–6 | `references/devices/INDEX.md` and its families | the device book: pick by job, materials and VFX, every device with timing, sound and build |
@@ -374,7 +375,7 @@ Read each file when its step comes up; never all at once.
 | a weighted draw of devices and techniques, and one text animation per line; one entry in full; a family | `scripts/pick.py` (`--format`, `--energy`, `--lines`, `--have`, `--family`, `--category`, `--show <id>`, `--list`, `--markdown`) |
 | a supplied brand kit: tokens, logo parts, fonts, screenshots | `scripts/brand.py` (`--check`) |
 | a clip's grammar; the recreation guard | `scripts/like.py measure <clip>`, `like.py guard` |
-| photos, footage, textures and art with no-credit licences: search, sheet, get, grade, check | `scripts/assets.mjs` |
+| photos, footage, textures and art with no-credit licences: search (with the people, text and detail vet), sheet, get, grade, check | `scripts/assets.mjs` |
 | official marks of the products it works with (integrations, sources, models, platforms): search, get, list, check; the record of source, licence and owner | `scripts/logos.mjs` |
 | a font family vendored without `npm install` | `scripts/add-font.mjs` (or `new-film.sh --font`) |
 | the free face closest to a reference frame or a brand face, by measured width and x-height; its weight, size and tracking | `scripts/font-match.mjs` (`--crop`, `--like`, `--sheet`, `--fetch`) |

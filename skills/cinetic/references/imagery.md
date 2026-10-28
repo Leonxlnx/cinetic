@@ -1,208 +1,225 @@
-# Imagery: pictures as an accent
+# Imagery: real pictures, treated like a studio treats them
 
-A cinetic film is made of type in motion, graphic effects (dithered gradients, glass, spectral colour, morphs, grids,
-loaders) and the product's own UI. A picture joins them only when it earns its beat: the product's own screens or
-photography, or a high-quality picture that carries the idea. Sloppy stock (people at laptops, handshakes, generic
-city time-lapses, low resolution, mixed grades) is worse than none, so most films use no found picture at all, and no
-film uses pictures as its base. This page is the route for a film that does have pictures worth showing: when one
-earns a beat, where it comes from, how to choose, grade and move it. The tool is `scripts/assets.mjs` (Node 22, no
-dependencies, no keys needed for the keyless sources).
+A cinetic film is made of type in motion, graphic effects and the product's own UI built in code. When a shot needs
+a person, a place, an object, a product or a moment of use, it shows a **real photograph or clip**: the brand's
+own, the user's, or a free picture whose licence needs no credit. **Nothing drawn in SVG ever stands in for a
+photo**: an egg-shaped head, a grey silhouette, a landscape of flat bands, a product as two rectangles, a card of
+coloured squares where portraits should be. Those read as a placeholder the moment they appear. A real picture,
+chosen with taste and finished well (cropped on its subject, on a rounded card with a rim and a shadow, leaning in
+depth, sharp where the eye goes and soft away from it, smeared along its travel, graded into the film), is what
+makes a launch film read as made. The tool is `scripts/assets.mjs` (Node 22, no dependencies, no keys needed for
+the keyless sources); the treatments are `src/fx/Pictures.tsx` and `src/fx/Washes.tsx`.
 
-Contents: 0. When a picture earns a beat · 1. The licence rule · 2. Where it sits in the workflow · 3. The route ·
-4. The imagery primitives · 5. Premium or stock · 6. Footage · 7. Works and archives as the world · 8. The imagery
-directions · 9. Checks
+Contents: 0. When a shot needs a real picture · 1. The licence rule and the sources · 2. Where it sits in the
+workflow · 3. The route · 4. The studio treatments · 5. The imagery primitives · 6. Chosen or stock · 7. Footage ·
+8. Works and archives as the world · 9. The imagery directions · 10. Checks
 
-## 0. When a picture earns a beat
+## 0. When a shot needs a real picture
 
-- **It is the product's own:** its screens, its hardware, its photography, the brand kit's pictures (`brand.py`).
-  These come first, and a screenshot is rebuilt as live UI where it can be (`references/product-ui.md`).
-- **It shows what the line names and a graphic cannot:** the coast for a tide app, the cloth for a fabric brand, the
-  archive print for a heritage brand. One picture, on one beat, with the line it answers.
-- **It is sharp at full frame and grades into the film's look:** 2400 px stills, 1080p footage, one light, one grade.
-- Otherwise the beat is a graphic effect: a dithered gradient field, glass over the product's UI, a hairline grid, a
-  morph, the product's UI built in code (`references/devices/INDEX.md`, materials and VFX). Never fill a beat with a stock picture because
-  the beat felt empty.
+| The shot shows | It is | Never |
+|---|---|---|
+| **People**: who the product is for, a face, hands at work, a crowd | real photos or clips of people (`--people`), several when the line is about many | a drawn figure, an avatar circle with initials where a face should be, a silhouette |
+| **Places**: where the product is used, a city, a coast, an office, a field | a real photo or clip of that place | flat bands for hills, a gradient pretending to be a sky behind nothing |
+| **Objects and products**: the thing itself, its materials, its packaging | the brand's product photos first (`brand.py`), else a real photo of the object | a product drawn as rectangles; an icon blown up to fill the frame |
+| **Lifestyle**: the moment of use, the mood of the audience | real photos or footage, chosen for light and one idea | stock gestures (section 6) |
+| **Proof**: many users, many creations, a community, a gallery of results | many real photos at once: a river of cards, a masonry wall, a pile | grey or coloured squares standing in for the content |
+| **The product's UI** | built in code from the kit (`references/product-ui.md`), real words and numbers | a screenshot zoomed soft; grey bars |
+| **An idea a graphic says better** (a flow, a number, a change of state) | a graphic: type, a diagram, a dithered gradient, the product's UI | a stock photo filling the beat because it felt empty |
 
-## 1. The licence rule
+A picture is used where the shot needs it, not everywhere: a film of 6-8 lines typically shows real pictures on
+2-4 beats (an opening world, proof of people, the product in use) and builds the rest in type and UI. A shot that
+needs a person and has none is a hole the viewer sees; a shot that needs a diagram and gets a stock photo is filler.
 
-`assets.mjs` only takes licences that need no credit: CC0, public domain (Wikimedia Commons files marked CC0 or
-public domain, NASA's library, museum open access at the Met and the Art Institute of Chicago), and the Pexels,
-Unsplash, Pixabay and Mixkit free licences. Nothing in the film has to say where a picture came from, so **nothing
-on screen credits a picture**. `get` writes a private record, `<film>/assets/licences.json` (source, licence as read
-on its page, author, page URL, file hash, what was changed), outside `public/` and never shown on screen; the record
-stays with the project and is never published with the film. `--allow-credit` adds CC BY for a film that wants it,
-and then the record carries the credit line for the post text (still never on screen). Share-alike, non-commercial,
-no-derivatives, Mixkit's restricted licence, "no known copyright restrictions" and anything unknown are refused.
-Pictures with recognisable people, logos or brands still need care in an advertisement whatever the licence (the
-record notes it); NASA pictures never carry NASA insignia or suggest endorsement.
+## 1. The licence rule and the sources
 
-Keyless sources: Openverse (CC0 and public domain), Wikimedia Commons, NASA images and video, the Art Institute of
-Chicago, the Met, Mixkit video. With a key in the environment: `PEXELS_API_KEY`, `UNSPLASH_ACCESS_KEY`,
-`PIXABAY_API_KEY` (keys are never printed).
+`assets.mjs` takes only licences that need no credit, so **nothing on screen credits a picture**. `get` writes a
+private record, `<film>/assets/licences.json` (source, licence as read on its page, the date it was read, author,
+page URL, file hash, what was changed), outside `public/`, never shown on screen and never published with the
+film. `--allow-credit` adds CC BY and keeps the credit line for the post text (still never on screen). Share-alike,
+non-commercial, no-derivatives, Mixkit's restricted licence, Coverr+, AI-generated clips, "no known copyright
+restrictions" and anything unknown are refused. Recognisable people, logos, brands and landmarks still need care in
+an advertisement whatever the licence (the record notes the limits); someone else's brand never appears in a film.
+
+| Source (keyless) | What it is good for | Licence (read on its own page) |
+|---|---|---|
+| Burst (Shopify) | people, products, lifestyle, small business, places; up to ~4000 px | Burst Some Rights Reserved: commercial use, no attribution, read per photo |
+| ISO Republic | people, places, textures; renditions up to 2048 px, originals 4000-6000 px | CC0, read per photo |
+| Coverr | stock video of people, work, cities, nature; 1080p, 6-30 s | Coverr licence for free clips (Coverr+ and AI-generated clips refused) |
+| Mixkit | stock video; 720p and 1080p | Mixkit free video licence (restricted items refused) |
+| Openverse | an index of CC0 and public-domain photos (StockSnap, rawpixel, the WordPress photo directory, Flickr, museums) | CC0 / public domain marks |
+| Wikimedia Commons, NASA | places, science, history, archive photos and video | public domain / CC0 only |
+| The Met, Art Institute of Chicago | paintings, prints, maps, objects at 3000-6000 px | CC0 open access |
+| Pexels, Unsplash, Pixabay | the largest stock sets, people and lifestyle above all | their own licences; only with a key in the environment (`PEXELS_API_KEY`, `UNSPLASH_ACCESS_KEY`, `PIXABAY_API_KEY`; never printed) |
+
+Left out on purpose: sites that answer a script with a bot check or a login (the tool never works round one).
+The user's own photos and footage always come first; drop them in `public/assets/` and record them by hand.
 
 ## 2. Where it sits in the workflow
 
-- **Step 0 (brief).** Name what exists: the product's own pictures, a brand kit's photography, footage the user
-  supplied. Only these pass `--have photos` (or `footage`) to `deck.py`; one found picture that carries one line
-  is an accent inside a graphic direction, never a reason for an imagery-led one.
-- **Step 1 (concept).** The direction decides whether and how pictures are used (a word cut out of the world, a
-  montage on the music, UI drawn into a real place, a collage, a loupe over a collection). Imagery-led directions are
-  dealt only with `--have photos` or `footage` (section 8); without them the film is type, graphics and UI.
-- **Step 4 (optional: pictures).** Search, sheet, choose and grade beside the palette: the grade and the palette are
-  one decision. A supplied brand's product photos come in through `brand.py` (`references/brand-kits.md`) and are
-  graded with the rest.
-- **Step 6 (build).** Move the pictures with the imagery primitives (section 4) inside the film's one camera, each on
-  the beat of the line it answers.
+- **Step 0 (brief).** Name what exists: the product's photos, a brand kit's photography, footage the user supplied.
+  `--have photos` (or `footage`) tells `deck.py` the film is picture-led.
+- **Step 1 (concept).** For each beat of the script, write what the shot shows (section 0). Beats that show people,
+  places, products, lifestyle or proof get a real picture; list them before searching.
+- **Step 4 (pictures).** Search, sheet, choose, download and grade beside the palette: the grade and the palette are
+  one decision. A supplied brand's product photos come in through `brand.py` (`references/brand-kits.md`).
+- **Step 6 (build).** Treat and move the pictures with the primitives (sections 4-5) inside the film's camera, each
+  on the beat of the line it answers.
 - The asset folders live in the film project (`public/assets/`, `public/assets/graded/`, the record in
   `assets/licences.json`), never in the skill.
 
-## 3. The route: inventory, queries, sheet, choose, grade, move
+## 3. The route: inventory, queries, vet, sheet, choose, grade, treat
 
-1. **Inventory.** Before searching, list the subject's world in its own words: the place the product is used in,
-   the weather and season, the materials its users touch, the movement that place has (water, crowds, traffic,
-   wind), the tools, the archive of its trade. A forecast app lists coastlines, surf, tide pools, fog, boats; a
-   ceramics shop lists clay, kilns, glaze, hands, shelves. Six to twelve nouns.
-2. **Queries.** Each noun with a viewpoint or a medium: `"<place> aerial"`, `"<place> from above"`,
-   `"<material> macro"`, `"<movement> top view"`, `"<place> old photograph"`, `"<place> map"`. Name the thing,
-   not the feeling: "basalt cliff fog", never "inspiring nature". The imagery directions carry query templates.
+1. **Inventory.** List the subject's world in its own words: who uses it (their age, trade, place), where, the
+   objects they touch, the moment of use, the weather and light. Six to twelve nouns.
+2. **Queries.** Name the thing and a viewpoint, not the feeling: `"barista pouring milk close up"`, `"woman reading
+   on train"`, `"ceramic mugs on shelf"`, `"city street from above"`. Fewer words find more on the stock sites.
    ```
-   node scripts/assets.mjs search "rocky coast aerial" --kind video --limit 10
-   node scripts/assets.mjs search "basalt" --kind texture --min-width 2400
-   node scripts/assets.mjs search "harbour" --kind art          (museum prints and maps)
+   node scripts/assets.mjs search "woman portrait window light" --people --fit 4:5 --limit 10
+   node scripts/assets.mjs search "hands typing laptop" --kind video --limit 8
+   node scripts/assets.mjs search "harbour morning" --no-people --clean --orientation landscape
    ```
-3. **Sheet.** Always look before choosing: `sheet` builds a contact sheet of the candidates (numbered, with source,
-   size, length and licence), and you read the PNG.
+3. **Vet.** Every search reads each candidate's thumbnail (on by default, `--no-vet` skips it): people (the
+   record's own words, and frontal faces where the Python's OpenCV has a face model), steady text lines or a
+   watermark (like.py's text reader), and detail (soft thumbnails sink to the end). `--people` keeps pictures with
+   people, `--no-people` drops them, `--clean` drops text, signs, logos and watermarks, `--fit 4:5` keeps pictures
+   that still hold `--min-width` px after a crop to that shape (a card's shape), `--min-width` and `--orientation`
+   hold resolution and shape. A Coverr or NASA search keeps only hits whose own words carry the query's words.
+4. **Sheet.** Always look before choosing: `sheet` builds a contact sheet of the candidates (numbered, source,
+   size, length, licence, and P for people, T for text or a logo, soft), and you read the PNG.
    ```
-   node scripts/assets.mjs sheet out/assets/rocky-coast-aerial-video.json
+   node scripts/assets.mjs sheet out/assets/woman-portrait-window-light-photo.json
+   node scripts/assets.mjs sheet out/assets/hands-typing-laptop-video.json --scan 4     (four frames of each clip)
    ```
-   For footage, look at more than the poster: `sheet <video results> --scan 4` reads four frames from each clip's
-   preview stream before anything is downloaded, and after `get`, `sheet public/assets/sea.mp4 --scan 6` spreads six
-   frames across the file so you choose the seconds before trimming.
-4. **Choose.** For light, depth and one idea, not for the subject alone (section 5). Three to eight pictures for a
-   15 s film. Download only those, trimmed to the seconds you use:
+5. **Choose.** For light, one idea and a face or subject the eye goes to (section 6). For a river or a wall, 12-24
+   pictures of one kind (portraits, or creations, or places) that read as one set; for a single card, the best one.
    ```
-   node scripts/assets.mjs get #2,#7 --to public/assets --res 1080 --trim 3.5,6
+   node scripts/assets.mjs get #2,#5,#7 --to public/assets --width 2400
+   node scripts/assets.mjs get #3 --to public/assets --res 1080 --trim 2,4     (a clip: keep only the seconds used)
    ```
-5. **Grade.** One look for the whole set, so pictures from four sources read as one shoot. `grade` brings
-   black level and contrast toward the set's first (never stretching a picture's range past ×1.3), then applies
-   the look, crops to 16:9 around a focus point and adds a fine grain. `--strength` is how far toward
-   the look (0 = the picture as it is, 1 = the look); `--chroma` scales the colour after it:
+   `get` prints the line the kit takes, `{ src: staticFile('assets/x.jpg'), w: 2400, h: 1600 }`: add
+   `focus: [x, y]` (0..1) on the subject's eyes or the product, so every crop keeps it.
+6. **Grade.** One look for the set, so pictures from four sources read as one shoot:
    ```
-   node scripts/assets.mjs looks
-   node scripts/assets.mjs grade public/assets --accent "#2e8c9e" --focus 0.5,0.45 --out public/assets/graded
-   node scripts/assets.mjs sheet public/assets/graded            (check the set reads as one)
+   node scripts/assets.mjs grade public/assets --accent "#2e8c9e" --out public/assets/graded --aspect none
    node scripts/assets.mjs check public/assets/graded --accent "#2e8c9e"
    ```
-   Looks: `natural` (the default: each picture keeps its own colour and range, a bright still stays bright and a
-   night one dark; only a very vivid picture's colour comes down a little, never under ×0.8; a faint cool shadow),
-   `matte` (lifted blacks, colour at 55 %, shadows a step toward the split hue: `--split-hue`, cool by default),
-   `silver` (neutral black and white: archives, a quiet film, the pieces of a collage), `night` (low key: the
-   median luma to about 0.18, so a daylight picture reads as night and a dark one is not crushed; reds and yellows
-   drained, so an orange sky or tan wood does not survive as a banned colour). Three more are **device looks for
-   one shot**, not a film's grade: `tint` (30 % of the
-   picture's own colour under a one-hue wash at the accent hue), `duotone` (deep accent-hued shadows to a pale tinted
-   white) and `deep` (the picture becomes a colour field). A whole film in a one-hue wash turns into a monochrome
-   accent bath; the film's colour should come from the pictures' own colour over neutral grounds, with the accent
-   kept for what it means. `check` (which `grade` also runs) runs the film's own colour tests on the set before
-   anything is built: it fails a set under 30 % neutral pixels and any picture with a banned colour region
-   (orange/amber, beige/cream, purple/violet, neon) on 0.5 % of a frame (the film's banned-hue test; a brand's own
-   colour passes with `--brand-supplied`), and notes frames over half saturated (ceiling 35 %), the accent hue on
-   more than 10 % of the picture, a set under the film's saturated floor (4.5 %), a picture much lighter, darker or
-   more colourful than the rest (not one shoot: regrade it on its own or replace it; the grade does not match white
-   balance, so choose pictures shot in one light), and readable text or logos in the pictures (like.py's reader:
-   someone else's brand never appears in a film). Keep stills at 2400 px so a push stays sharp; keep footage at its
-   own size (`--aspect none`).
-6. **Move.** The motion system moves pictures exactly as it moves type: closed-form state, the house curves,
-   carried speed across cuts, a camera that never parks.
+   `natural` (the default) keeps each picture's own colour and range and moves black level and contrast a quarter of
+   the way toward the set; `matte` lifts blacks and holds colour at 55 %; `silver` is a neutral black and white (an
+   archive, a quiet film, the pieces of a collage); `night` puts the median luma near 0.18 and drains warm colours.
+   `tint`, `duotone` and `deep` are device looks for one shot, never a film's grade. `check` (which `grade` also
+   runs) fails a set under 30 % neutral pixels and a banned colour region (a saturated orange or amber object,
+   cream-yellow, a lit violet, neon) on 0.5 % of a frame, and notes frames over half saturated, the accent's hue in
+   the pictures, a picture that does not match the set and readable text or logos. Natural tones (skin of every
+   shade, hair, wood, sand, navy shadow) are the world's colour and never count as a banned region. Keep stills at
+   2400 px on their long side so a push stays sharp; keep footage at its own size.
+7. **Treat and move.** Section 4: the card, the lean, the depth, the smear, the appear; section 5 for full-frame
+   pictures and footage.
 
-## 4. The imagery primitives
+## 4. The studio treatments (`src/fx/Pictures.tsx`, `src/fx/Washes.tsx`)
+
+Pure functions of the frame (`appearState`, `cardFinish`, `arcRiverState`, `wallLayout`, `washField`); house numbers
+are px at 1080p and 60 fps frames (`PICTURES`, `WASH`).
+
+| Treatment | What it does | House numbers |
+|---|---|---|
+| `PhotoCard` | one photo on a card: cover-fit on its focus point, rounded, a 1 px inner rim, a contact and a lift shadow, an optional mat, a lean in 3D, a push inside the card, a grade, an appear, a defocus and a smear | radius 8.5 % of the short side; shadows 0 2 5 / .14 and 0 14 36 / .16 scaled with the card; mat 10 px paper gap and a 2.5 px hairline in the accent mixed 30 % toward paper, shadow .2 with a mat; lean `tilt={{ rx: 18-28 }}` at perspective 1800 |
+| `ArcRiver` | a stream of cards along a curve; two on `mirrorPath` arms pass each other like an S around a word | cards 280 x 345 at a pitch of 300 measured along the curve (they part on the straight and close up on the bend), sizes x0.85-1.18, 40 px across and 30 px along of jitter, cards upright, the lower card on top; travel 65 in, 18 cruise, 110 out px per 60 fps frame (fx/Conveyor), the smear at a 300-degree shutter (sigma 0.24 x px a frame), defocus up to 9 px from 30 % to 95 % of the half-diagonal away from the focus |
+| `PhotoWall` + `wallLayout` | a masonry wall of photos scrolling up into place, every tile on its own settle (fx/Scroll masonryState), smeared by its own speed | 4 columns, 28 px gaps, odd columns staggered 0.42 of a tile, heights from the photos' shapes held to 0.66-1.5, depth 0.8-1.25, lag by column |
+| `InlinePhoto` | a photo card inside a line of type ("Brings [photo] millions of"), the words beside it | card 8 x 7.5 em of the type, words 0.55 em from it at 0.62 of the card's height; a settle on the card; an accent pill under it pops 62 % -> 100 % in 2 f |
+| `PhotoFill` | a photo filling any box: a chip growing in a gap (fx/InlineGap items), a phone or laptop screen | cover on the focus point, the push of fx/Photo |
+| `FootageWindow` | a muted clip in a rounded window with the card's finish (fx/Footage: the film's clock, speed, freezes, loops) | as PhotoCard; a lean of ry 6-12 and rx 4-8 reads as a screen in space |
+| `Wash` | a colour ground with a direction (dithered, never bands): `rise` (paper over the upper third, the tint gathering at the bottom edge on t^1.7 from 32 %), `fall`, `side`, `sky` (deep to a lifted horizon), `corner`, `halo` (a soft light behind the subject) | tint = the accent mixed 45 % toward paper, or the brand's second colour; motivated light, one direction, no pools inside the frame |
+
+Appear (`appear={{ at, kind }}`): `settle` x1.16 -> 1 with a 6 px defocus over 24 f on M.oversize (a hero card after
+a cut); `rise` 6 % of the card's height and a 6 px defocus over 30 f on E.glideOut; `clip` uncovered from its
+bottom edge over 26 f on E.softOut while the photo settles x1.12 -> 1 inside (a reveal that feels like a print
+being pulled); `flip` edge-on to face over 22 f; `pop` 62 % -> 100 % in 2 f (a pill, a sticker); `fade` 12 f.
+Cards of a set arrive 6 f apart (fx/Stack pile for a pile that builds on itself).
+
+How a studio finishes a picture, and what the primitives do for you:
+
+- **Crop on the subject.** Every picture has a focus point; cards, walls and windows crop around it. A face sits in
+  the upper third of a portrait card; a product sits where the line points.
+- **One card language per film.** One radius, one rim, one shadow, one mat or none. A matted card sits flat on
+  paper; an unmatted card lifts off with its shadow.
+- **Depth.** The picture the line is about is sharp; pictures away from it soften (ArcRiver `focus`, PhotoWall
+  `focus`, PhotoCard `blur`). Nothing in a stream of fast cards is crisp at speed: the smear follows the travel.
+- **Lean.** A card or a window that leans back 18-28 degrees (or turns 6-12) reads as an object in space; a flat
+  rectangle reads as a slide. One lean per shot, eased in, never wobbling.
+- **Ground.** On a light film, paper with a `Wash` from one edge (a rise behind a diagram, a halo behind a hero
+  card); on a dark film, ink with a halo or a sky. The ground's colour comes from the brand, the pictures keep theirs.
+- **Grade.** The set through one look (`assets.mjs grade`), and in code `grade={photoGrade('natural')}`
+  (kit/theme.ts) on every card so a supplied picture and a found one sit together.
+
+## 5. The imagery primitives (full frame)
 
 | Primitive | What it does | House numbers (60 fps, 1080p) |
 |---|---|---|
-| `fx/Photo` | A photo framed on its focus point, a push or drift (room for the move is built into the cover fit), depth slices from hand-drawn polygons that part as the camera moves, a static grade; `photoPoint` pins marks to the picture | push 4-8 % a shot, drift 20-40 px/s, slice depth gain 0.6, nearest slice ≤ 3 % extra travel |
-| `fx/TypeMask` | Giant letters cut out of a plate with the picture moving behind them; the push through one stroke until the picture is the world | letters 80-95 % of the frame width, weight 750-800; push ×36 in 40-56 f on `launchIn`, the fill only to 1.2×; plate drops at ×18-22 |
+| `fx/Photo` | A photo framed on its focus point, a push or drift (room for the move is built into the cover fit), depth slices from hand-drawn polygons that part as the camera moves, a static grade; `photoPoint` pins marks to the picture | push 4-8 % a shot, drift 20-40 px/s, slice depth gain 0.6, nearest slice ≤ 3 % extra travel; a pull-back x1.18 -> 1 on a long circ-out under taglines |
+| `fx/TypeMask` | Giant letters cut out of a plate with the picture moving behind them; the push through one stroke until the picture is the world | letters 80-95 % of the frame width, weight 750-800; push ×36 in 40-56 f on `launchIn` |
 | `fx/Footage` | A clip on the film's clock: speed (constant or keyed), freezes, loops whose span is a number of beats, framed and graded like a photo | real time for water and people, 0.5 for slow texture; a 24/30 fps clip in a 60 fps film is declared stepped |
-| `fx/Montage` | Shots cut on the film's accents with one carried travel through them (launch into each cut, carry out at 0.7 of the cut speed) | shots 0.5-1.0 s, cut speed 9-12 px/f, residual drift 45 px/s, 3 % push per shot |
-| `fx/Cutout` | Cut-outs along hand-drawn mattes, settling like printed paper with a shadow from one key and a contact shadow | settle 34 f on `settleOut` from z 120-140 px, 6-8° of turn, blurs fixed at 3 and 14 px |
-| `fx/Lens` | A loupe: a round window that magnifies the same picture about its own centre, glides between details and can come to rest as a counter or a dot of the name, still live | 300 px across, 2.2×, 40 f per move on `strongInOut`, a beat's hold at each stop, 0.75 s home |
-| `fx/GradientMap`, `fx/Textures`, `fx/Develop` | A picture mapped onto the film's inks, a photo that develops through a dither, an image developing from a tint to full colour | see the device book: [photos and footage](devices/photos-and-footage.md), [colour and light](devices/colour-and-light.md) |
+| `fx/Montage` | Shots cut on the film's accents with one carried travel through them | shots 0.5-1.0 s, cut speed 9-12 px/f, 3 % push per shot |
+| `fx/Cutout` | Cut-outs along hand-drawn mattes, settling like printed paper with a shadow from one key | settle 34 f on `settleOut` from z 120-140 px |
+| `fx/Lens` | A loupe that magnifies the same picture about its own centre and glides between details | 300 px across, 2.2×, 40 f per move on `strongInOut` |
+| `fx/GradientMap`, `fx/Textures`, `fx/Develop` | A picture mapped onto the film's inks, a photo that develops through a dither, an image developing from a tint to full colour | see the device book: [photos and footage](devices/photos-and-footage.md) |
 
-They compose with everything else: a `Photo` or `Footage` sits inside the anchor camera (`lib/camera.ts`), under a
-`Wipe` or `Iris`, behind a line of the script (dimmed and defocused under it); `photoPoint` gives the frame position of any image point on any
-frame, so a line, a number or a pinned product state stays glued to a place in the picture as it moves. The device
-book's [photos and footage](devices/photos-and-footage.md) and [collage and composition](devices/collage-and-composition.md)
-families hold the devices built on these.
+A full-frame photo behind a line is the line's world (a meadow under "The future of AI agents", a misty forest
+office under a product name): the line sits in the picture's quiet third, the photo drifts or pulls back, and the
+type takes the picture's light (white on a dusk sky, ink on a pale wall).
 
-## 5. Premium or stock
+## 6. Chosen or stock
 
 What makes a picture read as chosen:
 
-- **One idea per picture.** A single subject, a strong line (horizon, waterline, wake, street), a quiet third for
-  type. A top-down view of texture (surf, a field, a street from above) works behind type better than a horizon.
-- **One light.** Pictures in a film share a time of day, or are ordered by it on purpose. Overcast and blue-hour
-  light grade cleanly; noon glare and sunsets fight a grade.
-- **One grade.** Every picture through the same look. A set graded together is a shoot; a set left as downloaded is
-  a mood board.
-- **Scale and travel.** Full frame and past the edges, pushing or drifting, cut on the music. A photo that sits still
-  in a box is a slide.
-- **The subject's own things.** The product's place, materials and tools, not generic business imagery. A coast app
-  shows coasts; it does not show people looking at phones.
-- **Real resolution.** 2400 px stills, 1080p footage; a 1024 px picture is a texture or a defocused plane, never a
-  sharp full frame.
+- **One idea per picture.** A single subject, a strong line, a quiet third for type. A face looking into the frame,
+  hands doing the one thing the product helps with.
+- **One light.** Pictures in a set share a time of day and a colour of light, or are ordered by it on purpose.
+- **One grade, one card language.** A set graded together is a shoot; a set left as downloaded is a mood board.
+- **Variety inside the set.** A river or a wall mixes close-ups and wider frames, ages, places and colours of
+  clothing, so it reads as many people, not one shoot repeated; never the same picture twice in view.
+- **Real resolution.** 2400 px stills for a full frame, 1200 px is plenty for a card; 1080p footage.
 
-What makes it stock, and is refused: handshakes, laptops with coffee, people pointing at screens or smiling into the
-lens, glowing brains and circuit boards, generic city timelapses (unless the day itself is the idea), sunsets as
-decoration, a picture whose subject sits in one corner with nothing to say, mixed grades, and anything with a readable
-brand or sign.
+What makes it stock, and is refused: handshakes, people pointing at screens or smiling into the lens with nothing
+to do, glowing brains and circuit boards, generic city timelapses, sunsets as decoration, a subject stranded in one
+corner, mixed grades, and anything with a readable brand or sign.
 
-## 6. Footage
+## 7. Footage
 
-- Mixkit's free clips are 24-30 fps, 720p and 1080p, 10-45 s; `get --trim` keeps only the seconds used. Prefer
-  50/60 fps footage for slow motion; at 60 fps a 24 fps clip holds each frame 2-3 output frames (declared stepped,
-  so forensics and the blur sampler treat it as craft).
-- Footage is drawn with `<Freeze>` around `<OffthreadVideo>` from a closed-form source frame: any frame renders the
-  same in any order, and the cut points are exact (`references/remotion-engine.md`).
-- Keep the camera alive on top of footage (a push or drift), and carry speed across cuts; a still clip under a locked
-  frame reads as a paused video.
+- Coverr and Mixkit clips are 24-30 fps, 1080p, 6-45 s; `get --trim` keeps only the seconds used. Prefer 50/60 fps
+  footage for slow motion; at 60 fps a 24 fps clip holds each frame 2-3 output frames (declared stepped).
+- Footage is drawn with `<Sequence>` around `<OffthreadVideo>` from a closed-form source frame: any frame renders
+  the same in any order (`references/remotion-engine.md`). Always muted; the film's sound is the soundtrack.
+- In a window (`FootageWindow`) a clip is an object in the frame; full frame (`fx/Footage`) it is the world. Keep
+  the camera alive on top of footage (a push or drift), and carry speed across cuts.
 - A speed ramp or a freeze on the music's accent belongs to `fx/FootageRamp` (`references/camera.md`).
 
-## 7. Works and archives as the world
+## 8. Works and archives as the world
 
 Open-access collections are the richest no-credit material there is: paintings, prints, maps and old photographs at
 3000-6000 px, with real surface (brush, paper grain, halftone) that no code draws. Search them with `--kind art`
-(the Met, the Art Institute of Chicago) and on Wikimedia Commons for archive photographs (public domain by age or by
-government authorship). Four moves turn a collection into a film rather than a slideshow:
+(the Met, the Art Institute of Chicago) and on Wikimedia Commons for archive photographs. The world is the
+collection (one family of works graded together); the name as a window (`TypeMask` with a `Montage` fill); the loupe
+(`Lens`); shaped windows that open on archive photographs on the beat. A recognisable modern brand or sign in an
+archive photograph is cropped out.
 
-- **The world is the collection.** One family of works (one period, one medium, one palette) graded together, so the
-  film has a place, not a gallery wall. Pick works for one light and one scale of mark.
-- **The name as a window.** The name cut out of a dark wall (`TypeMask`), the works sliding inside the letters
-  (`Montage` as the fill), then a push through one stroke into a painting.
-- **The loupe.** `Lens` opens on a detail the full frame cannot hold (a face in a crowd, the foam on a painted wave),
-  glides to a second detail, and flies home into the name, where it stays a live window.
-- **Shaped windows.** Rounded or pill windows that open on archive photographs and close on the beat; a dot grid or
-  mosaic that resolves into the picture. The shape is the device; the picture is the content.
+## 9. The imagery directions
 
-Museum pictures of artworks are fine; pictures of people need the same care as any photograph of people in an
-advertisement, and a recognisable modern brand or sign in an archive photograph is cropped out.
+`assets/directions/imagery.json` holds nine imagery-led directions in the deck's schema, dealt with `--have photos`
+or `footage`: the campaign (a word cut out of the world), cut to the score, the product in its place, the material,
+the collage, two worlds, then and now, one long photograph, and the collection. Each carries an `assets` block (what
+to list from the subject, the queries, how many pictures, the grade, what to refuse). Even in an imagery-led film
+the script leads: one clean line at a time, each with its own text animation, the pictures under and between them.
 
-## 8. The imagery directions
+## 10. Checks
 
-`assets/directions/imagery.json` holds nine imagery-led directions in the deck's schema, dealt only with `--have
-photos` or `footage`: the campaign (a word cut out
-of the world), cut to the score (a footage montage on the music), the product in its place (UI drawn into real
-photographs), the material (macro textures as the set), the collage (cut-out photographs with shadows), two worlds (a
-split the product drags), then and now (archive and today on one line), one long photograph, and the collection
-(works seen through a loupe, the name as a window onto them). Each carries an `assets` block (what to list from the
-subject, the queries, how many pictures, the grade, what to refuse) and an update skeleton. With pictures in hand, deal
-with `--have photos` (or `footage`): a deal of three then holds one imagery-led direction beside built worlds. Choose
-by the idea as usual, and copy the chosen direction's world, light, camera, signature and lockup into `TREATMENT.md`'s
-Direction block. Even in an imagery-led film the script leads: one clean line at a time, each with its own text
-animation, the pictures under and between the lines.
-
-## 9. Checks
-
-- `assets.mjs check` on the graded set (neutral share, saturated frames, accent share).
-- `look-audit.py --imagery x,y,w,h` declares the boxes that hold photographs, so natural colour inside a picture
-  (sand, rock, skin) is not read as designed colour; it never loosens the checks for the film's own colour.
+- `assets.mjs check` on the graded set (neutral share, banned colour regions outside natural tones, saturated
+  frames, accent share, the set's match, readable text and logos).
+- **Declare the pictures to the look audit.** `look-audit.py --imagery x,y,w,h` (a fixed box) or `--imagery-track
+  out/imagery.json` (boxes that move) tells it where photographs are, so their natural colour is not read as designed
+  colour and their soft, defocused edges are not read as haze or filler shapes. `pictureTrack(from, to, boxesAt)`
+  writes the track from the same state the film draws (`riverBoxes` for an ArcRiver, the masonry boxes for a wall,
+  a card's own box), e.g. in a one-off `npx tsx -e` that prints `JSON.stringify(pictureTrack(...))` to
+  `out/imagery.json`.
 - The picture floor (`references/checks.md`) counts real imagery toward edges and colour mass, and graphic effects
-  just as well; a film of grey cards over a flat ground passes neither way.
+  just as well; grey cards and glyphless bars where content should be fail it (skeleton bars), and a drawn figure,
+  landscape or product where a photo belongs fails the review (`references/taste-and-slop.md` D18).
