@@ -22,7 +22,8 @@
      leaves the brand's slots alone.
   7. Redraws need a reason, are recorded, change the slot, and stop after two per slot.
   8. The history down-weights recent directions and can be switched off.
-  9. House wording: the deck, deck.py and a dealt sheet carry no provenance phrasing.
+  9. House wording: the deck, deck.py and a dealt sheet carry no provenance phrasing; run from the skill folder,
+     deck.py refuses to write its sheet into it.
  10. Update films: the directions that make them carry an update skeleton (a hook on the version or the
      mark, 2-4 change beats, a payoff, the end card with the version; 1-3 words a fragment); --format update
      deals only them and times --changes N change beats; the version counts as the film's number.
@@ -718,6 +719,17 @@ result(r.returncode == 0 and '**The words are a script:**' in r.stdout and 'one 
 r = run('--brief', 'a notes app, version 2.4 is out', '--format', 'update', '--direction', 'statement', '--out', os.path.join(TMP, 'script-u'), '--no-history')
 result(r.returncode == 0 and 'One plain sentence per change (2-7 words)' in r.stdout and '1-3 words a fragment' not in r.stdout,
        'an update sheet asks for one short sentence per change', (r.stderr or '')[-160:])
+# the sheet belongs to the film project: run from the skill folder with the default --out, deck.py refuses to write there
+sheet_in_skill = os.path.join(SKILL, 'out', 'direction.json')
+had = os.path.exists(sheet_in_skill)
+r = run('--brief', 'x', '--format', 'launch', '--direction', 'fold', '--no-history', cwd=SKILL)
+made = not had and os.path.exists(sheet_in_skill)
+if made:  # never leave a sheet in the skill
+    for f in ('direction.json', 'DIRECTION.md'):
+        if os.path.exists(os.path.join(SKILL, 'out', f)):
+            os.remove(os.path.join(SKILL, 'out', f))
+result(r.returncode == 2 and 'inside the skill folder' in r.stderr and not made,
+       'deck.py run from the skill folder refuses to write out/ there', (r.stderr or r.stdout)[-160:])
 
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')
 sys.exit(1 if failed else 0)

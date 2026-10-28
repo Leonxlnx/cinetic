@@ -1707,7 +1707,20 @@ def render_entry(d, data, library, ready=None):
     return '\n'.join(out) + '\n'
 
 
+def guard_out(outdir):
+    """The sheet belongs to the film project: an out/ inside the skill's own folder (deck.py run from there with the
+    default --out) is refused. A project's own copy of the scripts has no SKILL.md beside it and writes freely."""
+    skill = os.path.dirname(HERE)
+    if not os.path.isfile(os.path.join(skill, 'SKILL.md')):
+        return
+    o, k = os.path.normcase(os.path.realpath(outdir)), os.path.normcase(os.path.realpath(skill))
+    if o == k or o.startswith(k.rstrip(os.sep) + os.sep):
+        fail(f'--out {outdir} is inside the skill folder ({skill}): run deck.py from the film project (its out/), '
+             'or pass --out <film>/out')
+
+
 def write_sheet(sh, outdir, data, library):
+    guard_out(outdir)
     os.makedirs(outdir, exist_ok=True)
     with open(os.path.join(outdir, 'direction.json'), 'w', encoding='utf-8', newline='\n') as fh:
         json.dump(sh, fh, indent=1, ensure_ascii=False)
@@ -1751,7 +1764,7 @@ def main():
     ap.add_argument('--validate', action='store_true', help='check the deck and exit')
     ap.add_argument('--strict', action='store_true', help='with --validate: the library, the starter source and lib/look.ts must all be found')
     ap.add_argument('--allow-planned', action='store_true', help='also deal directions whose signature waits for a planned primitive')
-    ap.add_argument('--out', default='out', help='where the sheet is written (default out/)')
+    ap.add_argument('--out', default='out', help='where the sheet is written (default out/; never inside the skill folder)')
     ap.add_argument('--no-imagery', action='store_true', help='deal no imagery-led direction (the brief rules out found pictures)')
     ap.add_argument('--deck', default=DEFAULT_DECK, help='a deck file, or a folder whose decks are merged (default: every deck in assets/directions/)')
     ap.add_argument('--library', default=DEFAULT_LIBRARY, help='the technique library (default assets/library/techniques.json)')
