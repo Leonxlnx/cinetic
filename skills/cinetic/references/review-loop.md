@@ -135,7 +135,7 @@ bash scripts/grab.sh out/preview.mp4 1739 1740 --out $R/frames       # exact fra
 
 **`forensics.json`** contains `flags` (fails first), `checks` (every candidate with its measurements), `stats` (energy per second and per act, seam table, spike classes) and `declared`.
 
-- Its spike classes: `pop`, `seam-pop`, `jump`, `jump-hit`, `hit`, `region-hit`, `motion`, `burst`, `busy`, `cut`. `pop`, `seam-pop` and `jump` fail, `hit` and `jump-hit` warn. The rest are information: fast designed moves that the flow test, the run length or a cue explains.
+- Its spike classes: `pop`, `seam-pop`, `jump`, `jump-hit`, `pop-in`, `hit`, `region-hit`, `motion`, `burst`, `busy`, `cut`. `pop`, `seam-pop` and `jump` fail, `hit`, `jump-hit` and `pop-in` warn. The rest are information: fast designed moves that the flow test, the run length or a cue explains.
 - `crossings` counts fast elements that jump with no overlap between frames. On a master with blur this is normal. On a sharp render it lists where blur is needed (see `references/finishing.md`).
 - `stats.energy_per_second` is the pacing curve. A value near 0.1 reads as a stall, and a long flat run reads as flat energy. Give it to the director lens.
 
@@ -331,6 +331,7 @@ Every script threshold in one place. Most can be changed with the flag named in 
 | Motion | optical-flow residual < 0.5 of the change | info | `--flow-explained` |
 | Busy | region spike while the whole-frame change is > 0.15 × it | info | `--region-busy` |
 | Seam pop | 1-2 frame, unexplained, within 1 f of an act start | **fail** | declare with `--cuts` |
+| Pop-in | a region hit ≥ 6 × the frames around it (≥ 3.0): a chip, pill or card that arrives whole in one frame on its cue | warn | `--popin-ratio`, `--popin-min` |
 | Hit | 1-2 frame, unexplained, within 2 f of a cue or event (whole frame) | warn | |
 | Pop | 1-2 frame, unexplained, no cue | **fail** | |
 | Stall | d < 0.05 between d > 0.8 on both sides | **fail** | `--stall-max`, `--stall-moving` |

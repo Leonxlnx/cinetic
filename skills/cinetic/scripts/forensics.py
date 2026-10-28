@@ -23,6 +23,8 @@ Frames are 0-based and absolute (frame = t * fps). Defaults (every number is a f
                  seam pop: 1-2 frame change on an act boundary, not motion            fail
                  hit: 1-2 frame change within 2 f of a cue or sound event             warn
                       (inside a region: info)
+                 pop-in: a region hit >= 6x its neighbours (>= 3.0): a chip, pill or card
+                      that arrives whole in one frame on its cue                       warn
                  busy: a region spike while the whole frame changes > 0.15x as much   info
                  pop: any other 1-2 frame change that motion does not explain         fail
   stall        d < 0.05 while d[f-1] > 0.8 and d[f+1] > 0.8 (a repeated frame)         fail
@@ -1246,6 +1248,10 @@ def evaluate(args, info, M, decl):
                 it['class'] = 'busy'  # the whole frame is changing a lot: part of a larger move
             elif seam is not None:
                 it['class'] = 'seam-pop'
+            elif on_cue is not None and rg is not None and x[ev['k']] >= args.popin_min and ratio >= args.popin_ratio:
+                # a shape that arrives whole in one frame on its cue (a chip, a pill, a card at full opacity): a hit
+                # by its timing, a pop to the eye; it fades or grows over 6 f or more
+                it['class'] = 'pop-in'
             elif on_cue is not None:
                 it['class'] = 'hit' if rg is None else 'region-hit'
             else:
@@ -1269,6 +1275,10 @@ def evaluate(args, info, M, decl):
                 'switched in one frame (a sway or drift turned off, a keyframe that restarts, a reflow); fade or ease it '
                 '(fx/Lit swayFade, lib/continuity glideValue)' + (f' (on the cue at f{on_cue}: warn)' if on_cue is not None else ''),
                 mad=it['mad'], cls=it['class'], region=it.get('region'))
+        elif it['class'] == 'pop-in':
+            add('spike', 'warn', fk, f'{what} on the cue at f{on_cue} {size}: something arrives whole in one frame (a chip, '
+                'a pill or a card at full opacity, {:.0f}x the frames around it); fade or grow it over 6 f or more, a third '
+                'visible on its first frame'.format(it['mad'] / max(ev['base'], 0.1)), mad=it['mad'], cls=it['class'], region=it.get('region'))
         elif it['class'] == 'hit':
             add('spike', 'warn', fk, f'{what} on the cue at f{on_cue} {size}: fine if it is a designed hit; a '
                 'fade or reveal that finishes in 1-2 frames reads as a pop', mad=it['mad'], cls=it['class'],
@@ -1632,7 +1642,7 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
     stepped = [(vf(r['from']), vf(r['to'])) for r in extra.get('stepped', [])]
     declared_hits = []
     for it in spikes:
-        if it['class'] in ('pop', 'seam-pop', 'hit', 'region-hit', 'jump', 'jump-hit') and any(g in disc for g in range(it['frames'][0] - 1, it['frames'][1] + 2)):
+        if it['class'] in ('pop', 'seam-pop', 'hit', 'region-hit', 'jump', 'jump-hit', 'pop-in') and any(g in disc for g in range(it['frames'][0] - 1, it['frames'][1] + 2)):
             declared_hits.append(it['frame'])
             it['class'] = 'declared'
     for st in stalls:
@@ -2431,6 +2441,22 @@ def self_test():
           str([(x['frame'], x.get('cls')) for x in flags(rep, 'spike')]))
     rep = run('jump-seam', jumpy, cues(n, seams=[dict(at=45, kind='hard', id='cut')]))
     check(not flags(rep, 'spike', 'fail'), 'the same step on a declared hard seam is a cut, not a jump', str([(x['frame'], x.get('cls')) for x in flags(rep, 'spike')]))
+    # a pop-in: on a slow drift a solid chip appears whole on its cue (warn); the same chip fading in over 10 f does not
+    def chip(img, a):
+        out = img.astype(np.float32)
+        y0, y1, x0, x1 = 205, 229, 370, 410  # a small chip: a region spike, under the whole-frame floor (a whole-frame hit warns already)
+        out[y0:y1, x0:x1] = (1 - a) * out[y0:y1, x0:x1] + a * np.array([20, 60, 150], np.float32)  # a dark accent chip (the read is on luma)
+        return out.astype(np.uint8)
+    soft = texture(3, w, h, scale=48, amp=24)  # a quiet ground (a page, a lit wall): the chip is the only event
+    drift_ = [warp(soft, dx=0.15 * i) for i in range(n)]
+    cue_path = cues(n)
+    cj = json.load(open(cue_path))
+    cj['cue'] = {'chip': 45}
+    json.dump(cj, open(cue_path, 'w'))
+    rep = run('popin', [chip(f, 1.0 if i >= 45 else 0.0) for i, f in enumerate(drift_)], cue_path)
+    check(any(x.get('cls') == 'pop-in' for x in flags(rep, 'spike', 'warn')), 'a chip that arrives whole on its cue warns (pop-in)', str([(x['frame'], x.get('cls')) for x in flags(rep, 'spike')]))
+    rep = run('fadein', [chip(f, min(1.0, max(0.0, (i - 44) / 10))) for i, f in enumerate(drift_)], cue_path)
+    check(not any(x.get('cls') == 'pop-in' for x in flags(rep, 'spike')), 'the same chip fading in over 10 f does not', str([(x['frame'], x.get('cls')) for x in flags(rep, 'spike')]))
     race = list(steps)
     race[46] = np.full_like(A, 250)  # mid-pose: a pose held 3 frames never makes a one-frame image
     rep = run('stepghost', race, cues(n, stepped=[{'from': 0, 'to': n, 'fps': 10, 'id': 'steps'}]))
@@ -2553,6 +2579,8 @@ def main():
     g.add_argument('--flow-explained', type=float, default=0.5, help='flow residual below this = motion')
     g.add_argument('--jump-ratio', type=float, default=8.0, help='a flow-explained spike this many times its neighbours = a jump')
     g.add_argument('--jump-min', type=float, default=3.0, help='... and at least this large (mean abs change, 0-255)')
+    g.add_argument('--popin-ratio', type=float, default=6.0, help='an unexplained region change on a cue this many times its neighbours = a pop-in')
+    g.add_argument('--popin-min', type=float, default=3.0, help='... and at least this large in its region (mean abs change, 0-255)')
     g.add_argument('--stall-max', type=float, default=0.05)
     g.add_argument('--stall-moving', type=float, default=0.8)
     g.add_argument('--hold-mad', type=float, default=0.1)
