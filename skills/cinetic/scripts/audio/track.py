@@ -68,6 +68,8 @@ per 8 film bars. Anchors: the reveal's film bar holds the chosen entry (default:
 ending is `button` (the track's final hit lands in the tail, end.f on it), `stop` (the bed stops on the bar
 line after the body, --gap s of near-silence, then ONE kit element: end.f) or `ring` (the last chord rings
 under the end card). A track whose own ending is a fade must end on `stop`.
+The opening: bar 1's downbeat at --film-t0; the bars before it play from frame 0, faded in from silence over 80 ms
+(so the film does not cut into a note: av-audit head), or --film-t0 0 opens on bar 1's attack.
 Joins: the incoming segment starts 8 ms before its downbeat's attack with an 8 ms fade-in, so the downbeat's
 transient comes whole from the incoming bar; the outgoing segment runs on 60 ms with a tail fade (150 ms
 when it sustains). `check` measures each join on the edited bed: no click, the attack within +-2 ms of the
@@ -109,6 +111,8 @@ STOP_DB, STOP_MIN_S, STOP_MAX_S = 12.0, 0.15, 1.0
 ACCENT_DB = 6.0
 FADE_INTO_HIT_DB = 2.0        # ending: a fade with a hit in its last bars has fallen this much over the 2 bars before it
 PRE_MS, TAIL_MS, TAIL_SUSTAIN_MS = 8.0, 60.0, 150.0
+OPEN_FADE_S = 0.08            # an opening inside the track (bars before film bar 1) fades in from silence this long: the
+                              # film's first 5 ms stay under -40 dBFS (av-audit head) and the pickup still sounds
 JOIN_ATTACK_MS = 2.0          # check: the incoming attack within this of the film downbeat
 STOP_FADE_S, STOP_GUARD_S = 0.025, 0.003
 LEVEL_FLOOR = -90.0           # LUFS / dB: digital silence reads as this, so depths and novelty stay finite
@@ -1237,7 +1241,8 @@ def build_bed(edit, base_dir='.', n=None, cache_dir=None):
     """The edited track as it plays in the film: (stereo float64 (n, 2) at 48 kHz, info). Segments are cut at
     their downbeats' attacks; an incoming segment starts PRE_MS before its attack with a raised-cosine fade-in
     that ends on it, the outgoing one runs TAIL_MS (150 ms when it sustains) past the join with a cos^2 tail.
-    The first segment opens on the bars before film bar 1 (a pickup) when the track has them; a stop ending
+    The first segment opens on the bars before film bar 1 (a pickup) when the track has them, faded in from
+    silence over OPEN_FADE_S (80 ms, or up to bar 1's attack when that comes sooner); a stop ending
     cuts the bed STOP_FADE_S before the bar line after the body."""
     trk = locate(edit['track'], base_dir)
     x, sha = decode(trk, cache_dir)
@@ -1268,8 +1273,8 @@ def build_bed(edit, base_dir='.', n=None, cache_dir=None):
         seg = x[max(0, i0):i1].copy()
         if i0 < 0:
             seg = np.concatenate([np.zeros((-i0, 2)), seg])
-        m = int(round(pre * SR)) if k > 0 else (int(0.01 * SR) if a_src > 0 else 0)
-        if m > 1:  # a join's fade-in ends on the incoming attack; an opening mid-track fades in over 10 ms
+        m = int(round(pre * SR)) if k > 0 else (int(round(min(OPEN_FADE_S, pre) * SR)) if a_src > 0 else 0)
+        if m > 1:  # a join's fade-in ends on the incoming attack; an opening mid-track fades in over OPEN_FADE_S
             seg[:m] *= (0.5 - 0.5 * np.cos(np.pi * np.arange(m) / m))[:, None]
         if not last and tail > 0:
             m = int(round(tail * SR))

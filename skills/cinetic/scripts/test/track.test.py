@@ -22,6 +22,8 @@ last 0.42 s stop dead, peak 15-22, outro 23-24) and one final thump on bar 25. C
     entrance confirms the grid, analyze exits 0 and edit runs with a warning
   - a bed that ends on a hit and a 2.5 s ring over level bars (the ring's tail a near-silent last bar):
     the ending is a ring on that hit, not a fade, and edit --end ring accepts it
+  - an edit that opens inside the track fades in from silence (the first 5 ms under -40 dBFS); --film-t0 0 opens
+    on bar 1 itself
   - add: an NC licence and a record without licence_seen are refused; a CC BY record needs its credit
   - a .track.json is strict JSON: a drift that could not be measured (NaN) is written as null
 
@@ -450,6 +452,26 @@ def low_confidence(d):
           + ('' if a1 == a2 else f': {sorted(k for k in set(a1) | set(a2) if a1.get(k) != a2.get(k))} differ'))
 
 
+def opening_fade(d):
+    """An edit that opens inside the track (bars before film bar 1) fades in from silence: the film's first 5 ms stay
+    under -40 dBFS (av-audit head) on a sustained bed, and the bed is at full level by bar 1."""
+    sys.path.insert(0, os.path.dirname(TRACK))
+    import track as TR
+    path = os.path.join(d, 'sustain.wav')
+    r = np.random.default_rng(5)
+    y = signal.sosfilt(signal.butter(2, [200, 3000], 'band', fs=SR, output='sos'), r.normal(0, 1, 8 * SR))
+    y = (y / np.abs(y).max() * 0.8).astype(np.float32)  # a sustained pad, peaks at -2 dBFS
+    sf.write(path, np.stack([y, y], 1), SR, subtype='FLOAT')
+    edit = dict(track=path, film_t0=0.25, segments=[dict(film_s=0.25, src_from=3.0, src_to=6.0)], ending=dict(mode='stop', end_s=3.4))
+    bed, _ = TR.build_bed(edit, d)
+    head = 20 * np.log10(np.abs(bed[:int(0.005 * SR)]).max() + 1e-12)
+    full = 20 * np.log10(np.abs(bed[int(0.25 * SR):int(0.30 * SR)]).max() + 1e-12)
+    check(head <= -40 and full > -10, f'an opening inside the track fades in from silence (first 5 ms {head:.1f} dBFS, bar 1 {full:.1f} dBFS)')
+    edit0 = dict(edit, film_t0=0.0, segments=[dict(film_s=0.0, src_from=3.0, src_to=6.0)])
+    bed0, _ = TR.build_bed(edit0, d)
+    check(20 * np.log10(np.abs(bed0[:int(0.005 * SR)]).max() + 1e-12) > -10, '--film-t0 0 opens on bar 1 itself, at full level')
+
+
 def join_kinds(d):
     """join_report on a bed made here: a step down into the bars before the reveal is a break and passes, the same
     step in the body fails, a step down into the last bars of a ring ending passes, a step up there fails."""
@@ -575,6 +597,7 @@ def main():
         kick_entry(d)
         soft_entry(d)
         ring_ending(d)
+        opening_fade(d)
         join_kinds(d)
         add_records(d)
         strict_json(d)
