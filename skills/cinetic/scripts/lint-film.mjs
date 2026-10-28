@@ -139,6 +139,10 @@
  *                     Figure, Character, Landscape, Mountain, Forest, Tree, Skyline, Building, Bottle, Vase,
  *                     Plant, Flower, Food, Shoe...) that draws SVG shapes. Use a real photo or clip
  *                     (scripts/assets.mjs, fx/Pictures; kit Avatar src) or the product's own UI
+ *   logo-chip         a chip, pill, badge or tag whose label is a well-known product's name written as text alone
+ *                     ("ChatGPT", "Slack", "Notion", "GitHub", ...), outside fx/, lib/ and kit/: a named integration shows
+ *                     its real mark (node scripts/logos.mjs get <name> --film ., then kit LogoChip / InlineLogo /
+ *                     AppIcon); a chip that falls back to text until the mark is fetched reads the name from data
  *
  * Hard bans (SKILL.md "Hard bans"): errors whenever you invent the look.
  *   banned-color      any colour (tokens, :root palette, literals, CSS names) in a banned OKLCH region:
@@ -1950,6 +1954,17 @@ for (const file of files) {
           return !!wm && /%|rand|\[|\bi\b|\bk\b|\bj\b|\*/.test(wm[1]);
         });
         if (bar) report(i, 'bar-text', 'error', `a callback that draws only rounded filled boxes under 30 px tall at varying widths: ${barMsg}`);
+      });
+    }
+
+    // logo-chip: a named product in a chip is its real mark, never its name alone
+    if (isScript && !house && !/(^|\/)kit\//.test(norm)) {
+      const BRANDS = new Set(['ChatGPT', 'OpenAI', 'Claude', 'Anthropic', 'Gemini', 'Google Drive', 'Google Docs', 'Google Sheets', 'Gmail', 'YouTube', 'Slack', 'Notion', 'Figma', 'GitHub', 'GitLab', 'Stripe', 'Shopify', 'Jira', 'Trello', 'Asana', 'Salesforce', 'HubSpot', 'Zapier', 'Dropbox', 'Discord', 'Instagram', 'TikTok', 'WhatsApp', 'LinkedIn', 'Spotify', 'Vercel', 'Supabase', 'Webflow', 'Canva', 'Airtable', 'Intercom', 'Zendesk', 'Mailchimp', 'Perplexity', 'Midjourney', 'Photoshop', 'PayPal', 'Twilio', 'Cloudflare', 'MongoDB', 'Hugging Face', 'Microsoft Teams', 'Google Calendar', 'Outlook', 'Excel']);
+      each(/<(Chip|Pill|Badge|Tag)\b/g, (m, i) => {
+        const tag = tagAt(code, i);
+        const label = tag && /\blabel\s*=\s*(?:\{\s*)?(['"`])([^'"`\n]+)\1/.exec(tag.text)?.[2]?.trim();
+        if (label && BRANDS.has(label))
+          report(i, 'logo-chip', 'error', `a <${m[1]}> that names ${label} in text alone: a product the film names shows its real mark (node scripts/logos.mjs get ${label.toLowerCase().replace(/\s+/g, '-')} --film ., then kit LogoChip / InlineLogo / AppIcon), its colours as published`);
       });
     }
 

@@ -122,7 +122,9 @@ widths with no text: a product's own loading skeleton shown on purpose takes `//
 `drawn-figure` (outside `fx/`, `lib/` and `kit/`: the kit's drawn portraits, `PortraitMark`, `HalftonePortrait`, an
 `Avatar` or `AvatarStack` with kind portrait or halftone and no `src`, above 72 px; the kit's drawn still life, a kit
 `<Photo theme>` with no `src`; a component named for a figure, a person, face, landscape, mountain, tree, building,
-bottle, plant, food, that draws SVG shapes; a size lint cannot read warns).
+bottle, plant, food, that draws SVG shapes; a size lint cannot read warns), `logo-chip` (a `Chip`, `Pill`, `Badge` or
+`Tag` whose label is a well-known product's name in text alone, "ChatGPT", "Slack", "GitHub": its real mark belongs
+there, `scripts/logos.mjs` and kit `LogoChip` / `InlineLogo` / `AppIcon`).
 
 **Motion grammar:** `ease-family` (error: `enter()`/`leave()`/`move()`, a word's `ease` or an `exitEase` given a curve
 of another role; warn: a move under 1 s starting and stopping on `E.linear`), `token-drift` (a house token retuned out
