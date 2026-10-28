@@ -71,21 +71,34 @@ Use 60 fps whenever UI, text or the camera moves (a GIF exports at 25 fps from t
 
 ## 3. Workflow
 
-Every step writes a file, and every gate is a check you run. Work inline; subagents are for critique (§8).
+Every step writes a file, and every gate is a check you run. Work inline; subagents are for critique (§8). The steps run in the order their commands need each other.
+
+### The first hour
+From nothing to a first still you can judge, in command order; the steps below hold each gate.
+1. **Set up** once: Node 22+, ffmpeg 6+, Python 3.11+ with `pip install -r scripts/requirements.txt` (`node scripts/py.mjs --which` names the interpreter every script uses).
+2. **Brief** (Step 0): the spec line in `BRIEF.md`; when the story is a flow, a breadth, a request worked through, an update, an ad, a teaser or an explainer, `references/templates.md` names the template.
+3. **Scaffold** (Step 0): `bash scripts/new-film.sh films/<name> [--template <name> | --format update] [--brand <kit>] [--like <clip>]`. A supplied kit and clip are taken in here, because the deal reads them.
+4. **Deal** (Step 1): `python3 scripts/deck.py --brief "<one line>" --format <fmt> --options 3 [--brand brand/brand.json]`; choose by the idea, then `--direction <id>`.
+5. **Script** (Step 1b): the lines in `TREATMENT.md`, and `python3 scripts/copy-check.py TREATMENT.md` passes.
+6. **Look** (Step 2): the kit's tokens, or `python3 scripts/palette.py --recipe <dealt recipe> --accent '#…'`; `node scripts/lint-film.mjs src` shows no placeholder of yours.
+7. **Track** (Step 3): `node scripts/music.mjs search …`, `sheet --measure`, `get #n --to audio/music`; then `track.py analyze`, `edit`, `grid`.
+8. **Timeline** (Step 5): the `pick.py` line the deck printed, the acts on the track's bars, `npx tsx scripts/grid-check.ts src/timeline.ts` clean.
+9. **One still**: `npx remotion still Film out/stills/first.png --frame <a CUE frame> --scale 0.5`, judged against §4 before every act is built.
+Pictures (Step 4) join where a beat shows people, places or products; the sound (Step 8), the blurred master and the review rounds come once the acts are built.
 
 ### Step 0: Brief → `BRIEF.md`
 - If the brief states the product, the message, the format and the length, infer the rest and write the assumptions down; otherwise ask at most 3 questions (the product in one line, the format and length, where it will be shown).
-- **Inventory what is supplied:** a brand kit (logo, colours, fonts, screenshots, product photos), a clip to feel like, real footage or pictures worth building on, a sonic logo, a voice. Each has a route: `brand.py` (Step 2), `like.py` (Step 2), pictures (Step 4, optional), the kit (Step 8). When the product has integrations (the products it works with, imports from, runs on or names: sources, models, platforms), ask for them: they appear as their real marks (Step 6).
+- **Inventory what is supplied:** a brand kit (logo, colours, fonts, screenshots, product photos), a clip to feel like, real footage or pictures worth building on, a sonic logo, a voice. Each has a route: a kit through `new-film.sh --brand` (or `brand.py`) and a clip through `--like` (or `like.py measure`), both now, before the deal (Step 1) reads them; pictures (Step 4, optional), the kit (Step 8). When the product has integrations (the products it works with, imports from, runs on or names: sources, models, platforms), ask for them: they appear as their real marks (Step 6).
 - Choose the engine (Remotion by default; HyperFrames for an HTML project or `--batch` renders) and the pace (calm unless the brief asks for energy).
 - Copy the hard bans into `BRIEF.md`, plus brand-supplied exceptions: critics are prompted with it word for word.
 - Scaffold: `bash <skill>/scripts/new-film.sh films/<name> --fps 60 --size 1920x1080 [--format update | --template ui-walkthrough|capability-reel|prompt-run|camera-teaser|social-ad|type-explainer] [--brand <kit>] [--like <clip>] [--music <file> + licence flags] [--pace crisp] [--engine hyperframes] [--link-modules <dir>/node_modules]`. A template lays a whole film's structure over the starter (timeline, acts, choreography, sound plan, a content file of slots): a product's flow in steps, a launch close from breadth to the name, a request worked through in steps, a dark teaser the camera tells, a 15 s ad cut on pictures, or an explainer told in type one sentence at a time; `references/templates.md` says which fits.
 - Python: the commands below say `python3`; on Windows that name is often the Microsoft Store alias. Set `PYTHON` to the interpreter of an environment with the packages (`node scripts/py.mjs --which` prints the one the npm scripts, the shell scripts and the checks use) and run the scripts with it.
-- **Gate:** a spec line, e.g. `1920x1080@60, 30s, pace: calm, format: launch, audio: licensed track + launch kit, stop ending`.
+- **Gate:** a spec line, e.g. `1920x1080@60, 30s, pace: calm, format: launch, audio: licensed track + launch kit, stop ending`; a supplied kit is in `brand/brand.json` and a clip in `out/like.json`.
 
 ### Step 1: Direction → `out/direction.json`, `TREATMENT.md`
 Read `references/concept-and-story.md` now.
 - **Inventory first:** what the name means, the non-obvious behaviour ("unlike the obvious version, it…"), the product's own objects, its one honest number, the pain scene, the category's clichés.
-- **Deal the direction; don't invent the look.** `python3 scripts/deck.py --brief "<one line>" --format <launch|update|…> --pace <calm|crisp> [--have ui,input,photos,footage,audio,number,name] [--seconds N] [--changes N] [--brand brand/brand.json] --options 3` deals three complete art directions (world and light, palette recipes, camera, cuts, type, story shape, one signature shot, the lockup, beat and update skeletons). The deal favours type-led directions (the line is the shot) and graphic ones; imagery-led directions are dealt only with `--have photos` (the product's own pictures, or a set worth building on) or `footage`.
+- **Deal the direction; don't invent the look.** `python3 scripts/deck.py --brief "<one line>" --format <launch|update|…> --pace <calm|crisp> [--have ui,input,photos,footage,audio,number,name] [--seconds N] [--changes N] [--brand brand/brand.json] --options 3` (`--brand`, the kit taken in at Step 0: the dealt roles land on the brand's own colours and type) deals three complete art directions (world and light, palette recipes, camera, cuts, type, story shape, one signature shot, the lockup, beat and update skeletons). The deal favours type-led directions (the line is the shot) and graphic ones; imagery-led directions are dealt only with `--have photos` (the product's own pictures, or a set worth building on) or `footage`.
 - **Choose by the idea**, write the idea sentence and run the competitor test; then deal the sheet: `deck.py … --direction <id>` (writes `out/direction.json`, `out/DIRECTION.md`, and prints the matching `pick.py` line). Adopt it; redraw a slot (`--redraw palette|type|signature|direction --reason "…"`) only when it contradicts the brand, needs an asset that does not exist, or cannot carry the idea.
 - Run the three concept lenses inside the direction (the verb made literal, the pain made visible, a formal device); the direction supplies the grammar.
 - **Gate:** the Direction block in `TREATMENT.md` (seed, id, idea sentence, competitor test, story shape, signature shot and its beat, lockup kind, redraws); the logline ≤ 15 words; the specificity test answered.
@@ -99,10 +112,10 @@ Read `references/copy-and-type.md` §1–2b now. The script is written before an
 - **Never vague.** "Unleash your team's potential." and "Speed. Less noise." say nothing; "Tessel moves meetings when plans change." says what it does.
 - **Gate:** `python3 scripts/copy-check.py TREATMENT.md` passes before any picture work (vague and fancy words, metaphors, slogans, no verb, two claims, lines over 7 words, no name, nothing that says what the product is by 3 s), and the "a stranger reads" summary it prints says what the product is, what it does and what to do.
 
-### Step 2: Brand, clip and look → `src/brand/`
+### Step 2: Look: the brand on screen → `src/brand/`
 Read `references/brand-and-color.md` (and `references/brand-kits.md` with a kit, `references/clip-match.md` with a clip).
-- **A supplied kit:** `python3 scripts/brand.py <kit> --name "Product"` writes `brand/brand.json`, the tokens (the kit's own greys as grounds, the brand accent), the logo's parts (`src/brand/logo.ts`), fonts and screenshots. `brand.py --check` after edits.
-- **A clip to feel like:** `python3 scripts/like.py measure <clip>` writes `out/like.json` and `out/LIKE.md`. Borrow its grammar (pace, rhythm, curve families, density, camera habits, proportions), never its content (no layout, text, logo, colours, footage or music). The film keeps its own idea and direction.
+- **A supplied kit** (taken in at Step 0: `new-film.sh --brand`, or `python3 scripts/brand.py <kit> --name "Product"`) gave `brand/brand.json`, the tokens (the kit's own greys as grounds, the brand accent), the logo's parts (`src/brand/logo.ts`), fonts and screenshots. `brand.py --check` after edits.
+- **A clip to feel like** (measured at Step 0: `--like`, or `python3 scripts/like.py measure <clip>`) gave `out/like.json` and `out/LIKE.md`. Borrow its grammar (pace, rhythm, curve families, density, camera habits, proportions), never its content (no layout, text, logo, colours, footage or music). The film keeps its own idea and direction.
 - **Inventing a brand:** three adjectives → the face set's look and face (`node scripts/add-font.mjs <name>`), stage, accent; `python3 scripts/palette.py --recipe <dealt recipe> --accent '#…'` writes the tokens from the house colour system; a mark sheet of 6–10 directions with the misread test; a lockup set like a typographer. The starter's `// cinetic:placeholder` markers fail lint until replaced.
 - Render 2–4 style stills (the mark at 16 px and full size, one line of the script in its text animation, one product frame) and look at them.
 - **Gate:** stills pass §4; `node scripts/lint-film.mjs src` reports no placeholder and no off-token colour or font; a kit passes `brand.py --check`.
@@ -158,9 +171,9 @@ Before you write motion, read `references/motion-tokens.md`, `references/camera.
 The full pick-by-job table, the materials and VFX notes (gradients and dither, type built from gradients, spectral and iridescent, glass, glow anatomy, glyph textures, grades as transitions, coloured shadows) and one line per device are in [`references/devices/INDEX.md`](references/devices/INDEX.md).
 
 ### Step 7: Checks → `out/qa/`
-Read `references/checks.md`. After each build step, on a preview (`--no-audio` until Step 8 has written the soundtrack):
+Read `references/checks.md`. After each build step, on a preview: silent (`--no-audio`) until Step 8 has written the soundtrack, then with `--audio public/audio/soundtrack.wav` in its place.
 ```
-npm run cues && bash scripts/render.sh Film out/preview.mp4 --preview --audio public/audio/soundtrack.wav
+npm run cues && bash scripts/render.sh Film out/preview.mp4 --preview --no-audio
 bash scripts/layout-audit.sh Film --every 6 --json out/qa/layout-Film.json
 python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --json out/qa/forensics.json
 python3 scripts/look-audit.py out/preview.mp4 --cues out/cues.json --layout out/qa/layout-Film.json --json out/qa/look.json
