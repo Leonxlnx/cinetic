@@ -97,6 +97,9 @@
  *   hold-drift        an act with 2+ tweens and nothing continuous (no E.linear creep, drift, holdDrift,
  *                     breath, camera path, gliding list, flick, light field, photo or footage move, no
  *                     frame-linear term): its holds freeze between the tweens
+ *   drift-toggle      a living drift (fx/Lit sway, a float, a breath) switched on a condition (`sway={c ? false :
+ *                     undefined}`, `sway={c && {...}}`): its offset is not zero on that frame, so the layer jumps; fade
+ *                     its amount (fx/Lit swayFade) instead
  *   unmount-moving    a layer unmounted (`F < X &&`, `F >= A && F < X &&`, a <Sequence> end) while a tween
  *                     inside it, timed off the same frame, still runs above 10 % of its peak speed (lib/continuity
  *                     landBeforeCut; the curve's speed is read from lib/anim.ts)
@@ -1847,6 +1850,22 @@ for (const file of files) {
       const sps = callsIn(code, ['spr', 'spring']);
       if (tws.length + sps.length >= 2 && !CONTINUOUS_RE.test(code))
         report((tws[0] ?? sps[0]).index, 'hold-drift', 'warn', `nothing in this act keeps moving between its ${tws.length + sps.length} tweens (no creep, drift, carried camera or light): every hold keeps a drift of 0.3-1 px/f (lib/continuity holdDrift, a camera creep on E.linear, a light crossing), or the picture freezes between the moves (forensics motion-frozen)`);
+    }
+
+    // drift-toggle: a living drift (fx/Lit sway, a float, a breath) switched off or on by a condition: its offset is
+    // not zero on that frame, so the layer jumps there in one frame (forensics: a jump); fade its amount instead
+    if (isScript && !house) {
+      each(/\b(sway|drift|float|breath|wobble)\s*=\s*\{(?![{])/g, (m, i) => {
+        let depth = 1;
+        let j = i + m[0].length;
+        for (; j < code.length && depth; j++) depth += code[j] === '{' ? 1 : code[j] === '}' ? -1 : 0;
+        const expr = code.slice(i + m[0].length, j - 1);
+        const e = expr.replace(/\s+/g, ' ').trim();
+        const ternaryOff = /\?/.test(e) && /[?:]\s*(false|null)\b/.test(e);
+        const andOff = /&&/.test(e) && !/\?/.test(e);
+        if (ternaryOff || andOff)
+          report(i, 'drift-toggle', 'warn', `${m[1]}={${e.slice(0, 60)}} switches a living drift on a condition: on that frame its offset is not zero (fx/Lit's float sits up to 26 px off centre, its tilt 1.4 degrees), so the layer jumps in one frame (forensics jump); fade it instead (fx/Lit sway={{ amount: swayFade(F, from, to) }}, over 24 f or more)`);
+      });
     }
 
     // unmount-moving: a layer leaves (a guard or a Sequence end) while a tween inside it still runs

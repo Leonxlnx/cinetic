@@ -135,7 +135,7 @@ bash scripts/grab.sh out/preview.mp4 1739 1740 --out $R/frames       # exact fra
 
 **`forensics.json`** contains `flags` (fails first), `checks` (every candidate with its measurements), `stats` (energy per second and per act, seam table, spike classes) and `declared`.
 
-- Its spike classes: `pop`, `seam-pop`, `hit`, `region-hit`, `motion`, `burst`, `busy`, `cut`. Only `pop` and `seam-pop` fail, and `hit` warns. The rest are information: fast designed moves that the flow test, the run length or a cue explains.
+- Its spike classes: `pop`, `seam-pop`, `jump`, `jump-hit`, `hit`, `region-hit`, `motion`, `burst`, `busy`, `cut`. `pop`, `seam-pop` and `jump` fail, `hit` and `jump-hit` warn. The rest are information: fast designed moves that the flow test, the run length or a cue explains.
 - `crossings` counts fast elements that jump with no overlap between frames. On a master with blur this is normal. On a sharp render it lists where blur is needed (see `references/finishing.md`).
 - `stats.energy_per_second` is the pacing curve. A value near 0.1 reads as a stall, and a long flat run reads as flat energy. Give it to the director lens.
 
@@ -327,6 +327,7 @@ Every script threshold in one place. Most can be changed with the flag named in 
 |---|---|---|---|
 | Spike candidate | d > 1.0 and d > 2.5 × median(d over ±4 f, excluding f) + 0.3; inside a 3×3 region the floor is 1.5 | classified below | `--spike-min`, `--region-spike-min`, `--spike-ratio`, `--spike-add` |
 | Burst | the change is spread over ≥ 3 frames | info | `--burst-frames` |
+| Jump | the flow explains a 1-2 frame change, but it is ≥ 8 × the frames around it (≥ 3.0) and no seam is there: the picture moved in one step (a sway or drift switched off, a keyframe restarting, a reflow) | **fail** (on a cue: warn) | `--jump-ratio`, `--jump-min` |
 | Motion | optical-flow residual < 0.5 of the change | info | `--flow-explained` |
 | Busy | region spike while the whole-frame change is > 0.15 × it | info | `--region-busy` |
 | Seam pop | 1-2 frame, unexplained, within 1 f of an act start | **fail** | declare with `--cuts` |

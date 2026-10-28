@@ -197,7 +197,7 @@ rim, its shadow, the ground's lit side and the beams of a window ground all foll
 | spill | the ground colour at 0.14 from the far side to 55 % across | 0.08-0.22 |
 | shadow | on a backing plane parallel to the panel, thrown lift x in-plane light / facing light (at most 3 x lift), penumbra 2 + 0.34 x throw between two fixed levels (6 and 20 px), alpha 0.55, the ground 0.26 darker | |
 | contact | the footprint grown 6 px, a fixed 14 px blur, 0.38 | |
-| life | a 1.4 degree sway on X and Y a quarter-turn apart (7 s) and an 18 px/s float on a 1:2 loop (9 s): 0.3-1.1 px a frame at 30 fps, never at rest | |
+| life | a 1.4 degree sway on X and Y a quarter-turn apart (7 s) and an 18 px/s float on a 1:2 loop (9 s): 0.3-1.1 px a frame at 30 fps, never at rest; to still it, fade `sway={{ amount: swayFade(F, from, to) }}` over 24 f or more, never `sway={cond ? false : ...}` (the float sits up to 26 px off centre and the panel jumps there in one frame: lint drift-toggle, forensics jump) | |
 | entry | from tilt 24 / -18, 90 px low, lift 0, on E.settleOut over 48 f | |
 
 ```tsx

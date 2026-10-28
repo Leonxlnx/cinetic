@@ -16,6 +16,9 @@ Frames are 0-based and absolute (frame = t * fps). Defaults (every number is a f
                same rule with a 1.5 floor inside one of 9 regions (small pops), then classified:
                  cut: overlaps a declared cut                                           info
                  burst: the change is spread over >= 3 frames (whip, flood, landing)   info
+                 jump: optical flow explains it, but it is >= 8x the frames around it
+                       (>= 3.0) and no seam is there: the picture moved in one step     fail
+                       (within 2 f of a cue: warn)
                  motion: optical flow explains the change (residual < 0.5)            info
                  seam pop: 1-2 frame change on an act boundary, not motion            fail
                  hit: 1-2 frame change within 2 f of a cue or sound event             warn
@@ -1232,7 +1235,12 @@ def evaluate(args, info, M, decl):
             it['out_and_back'] = bool(rg is None and L == 2 and 0 <= j < len(M['d2'])
                                       and M['d2'][j] < 0.5 * (dd[ev['a']] + dd[ev['z']]))
             busy = rg is not None and rolling_median_excl(dd, ev['k']) > args.region_busy * x[ev['k']]
-            if res < args.flow_explained:
+            ratio = float(x[ev['k']]) / max(float(ev['base']), 0.1)
+            if res < args.flow_explained and seam is None and x[ev['k']] >= args.jump_min and ratio >= args.jump_ratio:
+                # motion explains the change, but the frames around it barely move: the picture moved in one step
+                # (a sway or drift switched off, a keyframe restarting, a layout reflow, a part rendered apart)
+                it['class'] = 'jump-hit' if on_cue is not None else 'jump'
+            elif res < args.flow_explained:
                 it['class'] = 'motion'
             elif busy:
                 it['class'] = 'busy'  # the whole frame is changing a lot: part of a larger move
@@ -1255,6 +1263,12 @@ def evaluate(args, info, M, decl):
             add('spike', 'fail', fk, f'{what} {size} that motion does not explain and no cue marks: a pop, a '
                 'fade collapsing into 1-2 frames, or an undeclared cut', mad=it['mad'], cls=it['class'],
                 region=it.get('region'))
+        elif it['class'] in ('jump', 'jump-hit'):
+            add('spike', 'fail' if it['class'] == 'jump' else 'warn', fk, f'{what} {size}: the picture moves in one step '
+                f'({it["mad"] / max(ev["base"], 0.1):.0f}x the frames around it) while nothing around it moves: a property '
+                'switched in one frame (a sway or drift turned off, a keyframe that restarts, a reflow); fade or ease it '
+                '(fx/Lit swayFade, lib/continuity glideValue)' + (f' (on the cue at f{on_cue}: warn)' if on_cue is not None else ''),
+                mad=it['mad'], cls=it['class'], region=it.get('region'))
         elif it['class'] == 'hit':
             add('spike', 'warn', fk, f'{what} on the cue at f{on_cue} {size}: fine if it is a designed hit; a '
                 'fade or reveal that finishes in 1-2 frames reads as a pop', mad=it['mad'], cls=it['class'],
@@ -1618,7 +1632,7 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
     stepped = [(vf(r['from']), vf(r['to'])) for r in extra.get('stepped', [])]
     declared_hits = []
     for it in spikes:
-        if it['class'] in ('pop', 'seam-pop', 'hit', 'region-hit') and any(g in disc for g in range(it['frames'][0] - 1, it['frames'][1] + 2)):
+        if it['class'] in ('pop', 'seam-pop', 'hit', 'region-hit', 'jump', 'jump-hit') and any(g in disc for g in range(it['frames'][0] - 1, it['frames'][1] + 2)):
             declared_hits.append(it['frame'])
             it['class'] = 'declared'
     for st in stalls:
@@ -2409,6 +2423,14 @@ def self_test():
     steps = [warp(A, dx=6 * (i // 3)) for i in range(n)]
     rep = run('stepped', steps, cues(n, stepped=[{'from': 0, 'to': n, 'fps': 10, 'id': 'steps'}]))
     check(not flags(rep, 'stall', 'fail') and not flags(rep, 'spike', 'fail'), 'held frames inside a declared stepped range are craft', f"{len(flags(rep, 'declared'))} declared note(s)")
+    # a jump: a slow drift whose layer steps 24 px (at 1080p) in one frame, as a sway switched off does: motion explains
+    # the change, but nothing around it moves, so it fails; the same step on a declared hard seam is a cut
+    jumpy = [warp(A, dx=0.15 * i + (6.0 if i >= 45 else 0.0)) for i in range(n)]
+    rep = run('jump', jumpy, cues(n))
+    check(any(x.get('cls') == 'jump' for x in flags(rep, 'spike', 'fail')), 'a slow drift that steps 24 px in one frame fails spike (a jump)',
+          str([(x['frame'], x.get('cls')) for x in flags(rep, 'spike')]))
+    rep = run('jump-seam', jumpy, cues(n, seams=[dict(at=45, kind='hard', id='cut')]))
+    check(not flags(rep, 'spike', 'fail'), 'the same step on a declared hard seam is a cut, not a jump', str([(x['frame'], x.get('cls')) for x in flags(rep, 'spike')]))
     race = list(steps)
     race[46] = np.full_like(A, 250)  # mid-pose: a pose held 3 frames never makes a one-frame image
     rep = run('stepghost', race, cues(n, stepped=[{'from': 0, 'to': n, 'fps': 10, 'id': 'steps'}]))
@@ -2529,6 +2551,8 @@ def main():
                    help='a region spike is part of a larger move when the whole-frame change exceeds this share')
     g.add_argument('--burst-frames', type=int, default=3, help='a change spread over this many frames is a burst')
     g.add_argument('--flow-explained', type=float, default=0.5, help='flow residual below this = motion')
+    g.add_argument('--jump-ratio', type=float, default=8.0, help='a flow-explained spike this many times its neighbours = a jump')
+    g.add_argument('--jump-min', type=float, default=3.0, help='... and at least this large (mean abs change, 0-255)')
     g.add_argument('--stall-max', type=float, default=0.05)
     g.add_argument('--stall-moving', type=float, default=0.8)
     g.add_argument('--hold-mad', type=float, default=0.1)

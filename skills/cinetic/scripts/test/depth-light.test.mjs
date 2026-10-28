@@ -5,7 +5,7 @@
  *   1. lib/light: the film's one light (FILM_LIGHT, from the upper left, 34 degrees up), the key vector and its
  *      screen direction, a turned panel's normal (CSS rotateZ rotateX rotateY), the light it catches, the key in its
  *      own axes, a point's shadow on the layout plane.
- *   2. fx/Lit litState(): rest tilt 10 / -12 inside 8-14, the rim's key end on the key side and sliding as the panel
+ *   2. fx/Lit litState(): sway.amount fades the drift without a jump (swayFade); rest tilt 10 / -12 inside 8-14, the rim's key end on the key side and sliding as the panel
  *      turns, the shadow thrown away from the key (longer and softer with the lift), no haze on the face (the light
  *      side lifts 5 % at most, the sheen 3 %), the sway never at rest (0.3-1.5 px a frame at 30 fps on a 1160 px
  *      panel), the entry home at 48 f at 60 fps (the same time at 30 fps).
@@ -126,6 +126,13 @@ console.log(JSON.stringify({
   lit: { rest: { tilt: rest.tilt, rim: rest.rim, shadow: rest.shadow, tone: rest.tone, sheen: rest.sheen, spill: rest.spill }, flipped: { rim: flipped.rim, shadow: flipped.shadow, tone: flipped.tone }, high: high.shadow, range: Lt.LIT.tiltRange, declares: Lt.declares(), frames: Lt.litFrames({ ...panel, enter: { at: 10 } }, f60),
     raking: Lt.litState(0, { ...panel, sway: false, tilt: { x: 14, y: -14 }, light: { ...Li.FILM_LIGHT, elevation: 12 } }, f60).tone, house: { liftMax: Lt.LIT.liftMax, sheen: Lt.LIT.sheen, reach: Lt.LIT.sheenReach } },
   sway: { min: Math.min(...sway), max: Math.max(...sway), mean: sway.reduce((a, b) => a + b, 0) / sway.length },
+  swayAmount: (() => {
+    const at = (F: number, sw: any) => Lt.litState(F, { ...panel, sway: sw }, f60);
+    const on = at(1146, undefined), off = at(1146, false), zero = at(1146, { amount: 0 }), one = at(1146, { amount: 1 });
+    let step = 0;
+    for (let F = 1131; F <= 1190; F++) { const a = at(F - 1, { amount: Lt.swayFade(F - 1, 1145, 1185) }), b = at(F, { amount: Lt.swayFade(F, 1145, 1185) }); step = Math.max(step, Math.hypot(b.x - a.x, b.y - a.y)); }
+    return { toggle: Math.hypot(on.x - off.x, on.y - off.y), zero: zero.x === off.x && zero.y === off.y && zero.tilt.x === off.tilt.x && zero.tilt.y === off.tilt.y, one: one.x === on.x && one.y === on.y && one.tilt.x === on.tilt.x, step };
+  })(),
   enter: { start: Lt.litState(10, { ...panel, sway: false, enter: { at: 10 } }, f60).opacity, home60: enter(60, 0.8), home30: enter(30, 0.8), half60: enter(60, 0.4).tilt, half30: enter(30, 0.4).tilt },
   depth: {
     house: Ds.DEPTH,
@@ -229,6 +236,8 @@ const none = (d) => !d.stepped.length && !d.flashes.length && !d.cameraBlur.leng
     'litState: no haze on the face: the light side lifts 5 % at most (even turned into a raking key), the sheen 3 % along the key edge', `rest ${L.rest.tone.alpha.toFixed(3)}, raking ${L.raking.alpha.toFixed(3)}, sheen ${L.rest.sheen.alpha.toFixed(3)}`);
   const sw = P.sway;
   result(sw.min >= 0.3 && sw.max <= 1.5, 'litState: the sway never rests: the corner moves 0.3-1.5 px every frame at 30 fps', `min ${sw.min.toFixed(3)} max ${sw.max.toFixed(3)} mean ${sw.mean.toFixed(3)}`);
+  const A = P.swayAmount;
+  result(A.toggle > 10 && A.zero && A.one && A.step < 2, 'litState: sway.amount fades the drift (0 = sway false, 1 = the house drift); swayFade over 40 f moves under 2 px a frame where switching it off jumps', `toggle ${A.toggle.toFixed(1)} px, fade step ${A.step.toFixed(2)} px`);
   const E = P.enter;
   result(E.start === 0 && E.home60.tilt.x === 10 && E.home30.tilt.x === 10 && E.home60.opacity === 1, 'litState: the entry starts unseen and is home at 48 f at 60 fps (24 at 30)', `${E.start} ${JSON.stringify(E.home60.tilt)}`);
   result(close(E.half60.x, E.half30.x, 1e-9) && close(E.half60.y, E.half30.y, 1e-9), 'litState: the entry is the same at the same time at 30 and 60 fps', `${E.half60.x.toFixed(3)} / ${E.half30.x.toFixed(3)}`);

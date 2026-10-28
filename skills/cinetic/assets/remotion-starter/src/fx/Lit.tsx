@@ -25,6 +25,10 @@ import { shadowTone } from './KeyLight';
  * It never stops: a sway of 1.4 degrees on X and Y a quarter-turn apart (7 s loop) and a float of 18 px/s on a 1:2
  * loop (9 s) keep the panel moving 0.3-1 px a frame at 30 fps through every hold, and an optional entry settles the panel from a steeper tilt on
  * E.settleOut over 48 f at 60 fps. All placement is transform (translate3d), never left/top.
+ * To still the sway (the camera closes in, the panel flattens for a read), fade it: `sway={{ amount }}` scales the
+ * tilt and the float together, 1 = the house drift, 0 = at rest (swayFade() gives an eased 0..1 over 24 f or more).
+ * Never switch it off on a condition (`sway={cond ? false : undefined}`): the float sits up to 26 px off its centre and
+ * the tilt up to 1.4 degrees, and the panel jumps there in one frame (lint-film drift-toggle; forensics jump).
  *
  * Draw the panel at (0, 0) in its own w x h box as the children (a kit Surface with lift 0-6: Lit draws the shadow).
  * litState() is pure: any frame, any order, any fps.
@@ -58,7 +62,7 @@ export type LitProps = {
   r?: number; // corner radius, px (house 12 % of the short side)
   tilt?: Tilt; // degrees at rest (house x 10, y -12; keep |x|, |y| in 8-14)
   lift?: number; // px off the backing plane (house 36)
-  sway?: { deg?: number; period?: number; float?: number; phase?: number } | false; // the living drift (house 1.4 deg over 7 s, an 18 px/s float)
+  sway?: { deg?: number; period?: number; float?: number; phase?: number; amount?: number } | false; // the living drift (house 1.4 deg over 7 s, an 18 px/s float); amount 0..1 fades it (never toggle it mid-shot)
   enter?: LitEnter; // settle in from a steeper tilt (house from y +90 px, lift 0, tilt 24 / -18 over 48 f at 60 fps)
   ground: string; // the ground colour behind the panel: the shadow's hue and the spill's colour
   light?: FilmLight; // the film's light (house FILM_LIGHT)
@@ -98,6 +102,15 @@ export const rimLine = (tilt: Tilt, w: number, h: number, light: Pick<FilmLight,
   return { x1: w / 2 + (dx * w) / 2, y1: h / 2 + (dy * h) / 2, x2: w / 2 - (dx * w) / 2, y2: h / 2 - (dy * h) / 2, alpha: peak * clamp(0.45 + 0.66 * m) };
 };
 
+/**
+ * The sway's amount for a fade between two frames: 1 before `from`, 0 after `to` (or the reverse with `rise`), eased on
+ * E.stdInOut, so `sway={{ amount: swayFade(F, a, b) }}` brings the panel to rest without a jump. House: 24 f or more.
+ */
+export const swayFade = (frame: number, from: number, to: number, o: { rise?: boolean; ease?: Ease } = {}) => {
+  const q = (o.ease ?? E.stdInOut)(clamp((frame - from) / Math.max(1, to - from)));
+  return o.rise ? q : 1 - q;
+};
+
 /** The panel's pose and light at frame f. Pure. */
 export const litState = (frame: number, p: LitProps, film?: Partial<FilmCtx>): LitState => {
   const fps = fpsOf(film);
@@ -121,13 +134,14 @@ export const litState = (frame: number, p: LitProps, film?: Partial<FilmCtx>): L
   }
   if (p.sway !== false) {
     const sw = p.sway || {};
-    const a = sw.deg ?? LIT.sway.deg;
+    const k = clamp(sw.amount ?? 1); // a fade of the whole drift: tilt and float scale together, so it eases to rest
+    const a = (sw.deg ?? LIT.sway.deg) * k;
     const ph = 2 * Math.PI * (frame / (fps * (sw.period ?? LIT.sway.period)) + (sw.phase ?? 0));
     tilt.x += a * Math.sin(ph);
     tilt.y += a * Math.cos(ph);
     // the float: a 1:2 loop whose speed never reaches 0 (0.7-1.6 x its mean), so a hold keeps 0.3-1 px a frame at 30 fps
     const T = LIT.sway.floatPeriod;
-    const R = ((sw.float ?? LIT.sway.float) * u * T) / (2 * Math.PI);
+    const R = ((sw.float ?? LIT.sway.float) * u * T * k) / (2 * Math.PI);
     const fp = 2 * Math.PI * (frame / (fps * T) + (sw.phase ?? 0));
     x += R * Math.sin(fp);
     y += R * 0.6 * Math.sin(2 * fp);
