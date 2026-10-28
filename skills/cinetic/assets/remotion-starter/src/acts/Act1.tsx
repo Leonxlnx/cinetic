@@ -28,7 +28,7 @@ const LINE = FRAGS.map((c) => c.text).join(' ');
 const DOT = { d: 0.2, gap: 0.06 }; // the period, in em: a little heavier than the font's own
 /** The dot's fall (absolute frames): born above the line, it lands on the baseline ON CUE.land, accelerating into the contact. */
 export const DOT_FALL = { from: CUE.drop, to: CUE.land, em: 1.1, ease: E.buildIn };
-const CREEP = 1.065; // the camera's push through the act, linear from frame 0 (about 1.4 %/s: a creep the eye reads)
+const CREEP = 1.065; // the camera's push through the act, linear from frame 0 (about 1 %/s over its three bars: a creep the eye reads)
 /** The rule the line stands on (frames relative to the act; it starts drawing before frame 0, so the first frame moves). */
 export const RULE = { from: -12, dur: f60x(44), px: 2.5, reach: 0.25 };
 /** The camera's slow rise through the act (screen px, linear): with the creep, the frame never stands still. */

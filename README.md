@@ -337,7 +337,7 @@ Light, glow, glass, spectral and iridescent colour and multi-hue gradients are a
 | `.github/workflows/` | `ci.yml` (checks) and `release.yml` (packages `cinetic.skill` for each version tag, with notes from the changelog) |
 | [`CHANGELOG.md`](CHANGELOG.md) | What each version changed |
 
-The Remotion starter's demo is a 13-second film built to be replaced: "plinth cuts" and "to music." build around an accent dot that lands as the line's full stop, the line launches left into a picture slot (a stand-in drawn in code until the film's own picture goes in, or the shot is rebuilt without one), the picture contracts into the gap of "Every cut lands.", and the mark lands as a relief under a turning key before the name slides out. Its `audio/score.json` plays the track you add (`audio/music/README.md`).
+The Remotion starter's demo is a 15-second film in seven bars, every act opening on a bar line, built to be replaced: "plinth cuts" and "to music." build around an accent dot that lands as the line's full stop, the line launches left into a picture slot (a stand-in drawn in code until the film's own picture goes in, or the shot is rebuilt without one), the picture contracts into the gap of "Cuts land.", and the mark lands as a relief under a turning key before the name rises whole through its slot. Its `audio/score.json` plays the track you add (`audio/music/README.md`).
 
 ## Evaluation
 

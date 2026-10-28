@@ -18,7 +18,9 @@
  *      and when it runs in a vm (motion.js, music.js, timeline.js, as the browser loads them).
  *   3. The Remotion starter (needs its tsx: npm install in assets/remotion-starter):
  *      - it passes as calm with no finding; --pace crisp overrides its PACE_NAME and holds it to
- *        the crisp gap limit (48 f), which only its 54 f flight stretches exceed;
+ *        the crisp numbers, where at most its gaps are flagged (event-gap, chain-gap);
+ *      - with a track in (124, 104 and 128 BPM, the first downbeat 0.25 s in, a stop ending 0.4 s after the last bar
+ *        line) every act starts on a downbeat with no error, and its TAIL holds the stop's gap before the 1 s tail;
  *      - its statement rewritten as a replace chain passes too (chain() times each exit to end
  *        before the next fragment rises);
  *      - each fragment's `text` sound (src/sync.ts) lands within 1 f of the frame its last word
@@ -176,7 +178,7 @@ if (!calm || /another platform/.test(calm.error ?? '')) {
   result(clean(calm, 'calm'), 'the Remotion starter passes as calm with no finding', why(calm));
   const crisp = run('npx', ['tsx', GRID, 'src/timeline.ts', '--json', '--pace', 'crisp'], STARTER);
   const checks = new Set((crisp.findings ?? []).map((x) => x.check));
-  result(crisp.summary?.pace === 'crisp' && [...checks].every((c) => c === 'event-gap'), '--pace crisp overrides PACE_NAME (the summary reads crisp; at most the crisp 48 f gap limit fails)',
+  result(crisp.summary?.pace === 'crisp' && [...checks].every((c) => c === 'event-gap' || c === 'chain-gap'), '--pace crisp overrides PACE_NAME (the summary reads crisp; at most its gaps are flagged)',
     crisp.error ?? `pace ${crisp.summary?.pace}, ${[...checks].join(', ')}`);
 
   // the statement as a replace chain: chain() must time each exit to end before the next fragment rises
@@ -190,6 +192,35 @@ if (!calm || /another platform/.test(calm.error ?? '')) {
   const timing = { ...r, findings: (r.findings ?? []).filter((x) => x.check !== 'script') };
   result(!tl.includes("chain('statement', 'build',") ? false : clean(timing, 'calm'),
     'the starter statement as a replace chain passes as calm (each exit ends before the next fragment)', why(timing));
+
+  // the starter with a track in: a steady bed whose first downbeat is 0.25 s in, accented on every beat, ending on a
+  // stop 0.4 s after the bar line where the bed ends. Every act starts on a downbeat (structural-on-music), the
+  // statement's picture beat holds (chain-gap), and the tail makes room for the stop: TOTAL is the stop's element
+  // plus 1 s (no error, at the planned 124 BPM and at 104 and 128)
+  {
+    const sw = join(TMP, 'starter-music');
+    mkdirSync(join(sw, 'lib'), { recursive: true });
+    copyFileSync(join(STARTER, 'src', 'lib', 'pace.ts'), join(sw, 'lib', 'pace.ts'));
+    copyFileSync(join(STARTER, 'src', 'timeline.ts'), join(sw, 'timeline.ts'));
+    const stub = readFileSync(join(STARTER, 'src', 'music.ts'), 'utf8');
+    const bars = 7;
+    for (const bpm of [124, 104, 128]) {
+      const beatF = (60 / bpm) * 60;
+      const t0 = 0.25 * 60;
+      const D = Array.from({ length: bars + 1 }, (_, k) => +(t0 + k * 4 * beatF).toFixed(3));
+      const accents = Array.from({ length: bars * 4 }, (_, k) => ({ f: +(t0 + k * beatF).toFixed(3), db: k % 4 ? 6 : 9, band: 'low' }));
+      const endF = +(D[bars] + 0.4 * 60).toFixed(3);
+      const M = `export const MUSIC: Music | null = { bpm: ${bpm}, beatS: ${60 / bpm}, fps: 60, t0: ${t0}, bars: ${bars}, phraseLen: 4, downbeats: ${JSON.stringify(D)}, accents: ${JSON.stringify(accents)}, phrases: [${t0}], entries: [], breaks: [], stops: [], end: { mode: 'stop', f: ${endF} } };`;
+      if (!stub.includes('export const MUSIC: Music | null = null;')) throw new Error('src/music.ts no longer carries the stub line');
+      writeFileSync(join(sw, 'music.ts'), stub.replace('export const MUSIC: Music | null = null;', M));
+      const g = run('npx', ['tsx', GRID, join(sw, 'timeline.ts'), '--json'], STARTER);
+      const errs = (g.findings ?? []).filter((x) => x.severity === 'error');
+      const total = Math.ceil(endF) + 60;
+      result(!g.error && !errs.length && g.summary?.bpm === bpm && g.summary?.total === total,
+        `the starter with a ${bpm} BPM track and a stop ending: acts on downbeats, no error, the tail holds the stop (TOTAL ${total})`,
+        g.error ?? (errs.map((x) => `${x.check}: ${x.message.slice(0, 90)}`).join('; ') || `bpm ${g.summary?.bpm}, total ${g.summary?.total}`));
+    }
+  }
 
   // each fragment's text sound meets the frame its last word visibly stops
   const probe = join(TMP, 'probe.mts'); // .mts: an ES module (top-level await) wherever it sits

@@ -137,7 +137,7 @@ Every film is cut to its own licensed, human-made, instrumental track, and every
 
 ### Starters, evals and tests
 
-- The starter demo runs 13 s in four acts: "plinth cuts" and "to music." build around an accent dot that lands as the line's full stop, the line launches left into a picture slot, the picture contracts into the gap of "Every cut lands.", and the mark lands as a relief under a turning key before the name slides out. Its `audio/score.json` plays the track the user adds.
+- The starter demo runs 15 s in four acts that each open on a bar line (seven bars, and a tail that holds a stop ending): "plinth cuts" and "to music." build around an accent dot that lands as the line's full stop, the line launches left into a picture slot, the picture contracts into the gap of "Cuts land.", and the mark lands as a relief under a turning key before the name rises whole through its slot. Its `audio/score.json` plays the track the user adds.
 - The HyperFrames starter uses the 1.2 easing names, loads `music.js` before `timeline.js` and plays a licensed track.
 - `SKILL.md` follows the 1.2 workflow from the brief, the dealt direction and the script to the ship gate (Steps 0–11). The critics judge the script as a stranger would, ask for a different text animation on every line and a picture that never rests.
 - Evals: Lattice, a 25 s launch film cut to music, and Ferry, a 15 s v2 update video in a supplied brand. Both check the licence record, no credit on screen, cuts at bar lines and effects at their levels over the bed.

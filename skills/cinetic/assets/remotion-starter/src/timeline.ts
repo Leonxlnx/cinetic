@@ -17,7 +17,7 @@ export const FPS = 60;
 /**
  * This film's own grid tempo, used while src/music.ts carries no track. new-film.sh --bpm rewrites
  * the `const BPM = ...;` line inside, so keep that line as it is. The demo is planned for a 124 BPM
- * bed (a bar is 1.94 s, its six bars 11.6 s): until the track is in audio/music/, the grid runs at
+ * bed (a bar is 1.94 s, its seven bars 13.5 s): until the track is in audio/music/, the grid runs at
  * 120 BPM, the nearest tempo with whole-frame beats at 60 fps. `track.py grid` then writes
  * src/music.ts and every b() below follows the track's own bars: the cue plan moves with the music.
  */
@@ -61,45 +61,52 @@ export const b = (n: number, beat = 0, sub = 0) =>
 export const f60 = (frames: number, fps: number = FPS) => Math.round((frames * fps) / 60);
 export const f60x = (frames: number, fps: number = FPS) => (frames * fps) / 60;
 
-/** After the last bar the picture holds while the audio decays to digital silence. */
-export const TAIL = FPS;
+/** The body: whole bars, ending on the bar line after the last one (with a track, the downbeat after MUSIC.bars). */
+const BODY = b(8);
+/**
+ * After the last bar the picture holds while the audio decays to digital silence: 1 s. With a stop ending
+ * (src/music.ts end.mode 'stop', track.py edit --end stop) the bed stops on that bar line and the ending's one
+ * element sounds after its near-silence, on MUSIC.end.f (0.2-0.7 s later): the tail is that gap, then the 1 s.
+ */
+export const TAIL = MUSIC && MUSIC.end.mode === 'stop' ? Math.max(0, Math.ceil(MUSIC.end.f) - BODY) + FPS : FPS;
 
-// Acts: contiguous, [from, from + dur), on the grid. Each act is its own composition in Root.tsx.
-// Six shots in four acts (a cut inside an act is a declared seam): every hand-over carries something.
+// Acts: contiguous, [from, from + dur), each starting on a bar line (with a track, a downbeat: grid-check
+// structural-on-music). Each act is its own composition in Root.tsx. Six shots in four acts (a cut inside an act
+// is a declared seam): every hand-over carries something, and each act's cut lands on its bar line.
 export const ACT = {
-  line: { from: 0, dur: b(3, 1) }, // the statement builds round the dot's landing, then launches left (frame 0 on: with a track, b(1) is its first downbeat)
-  plate: { from: b(3, 1), dur: b(4, 1) - b(3, 1) }, // offgrid: the cut lands where the launch peaks, a beat into the bar
-  frame: { from: b(4, 1), dur: b(5, 1, 2) - b(4, 1) }, // offgrid: the plate shrinks into the line a bar after it arrived
-  mark: { from: b(5, 1, 2), dur: b(7) + TAIL - b(5, 1, 2) }, // offgrid: the line drops into the relief a 16th before the beat the dome lands on
+  line: { from: 0, dur: b(4) }, // the statement builds round the dot's landing, then launches left (frame 0 on: with a track, b(1) is its first downbeat)
+  plate: { from: b(4), dur: b(5) - b(4) }, // the cut lands on the downbeat, on the launch's fastest frame
+  frame: { from: b(5), dur: b(6) - b(5) }, // the plate shrinks into the line on the next downbeat
+  mark: { from: b(6), dur: BODY + TAIL - b(6) }, // the line drops into the relief on the downbeat; the dome lands an 8th later
 };
 
-export const TOTAL = b(7) + TAIL;
+export const TOTAL = BODY + TAIL;
 
 // Named sync points (absolute frames), all on the 16th grid. A cue that must sit off the grid
 // carries a trailing `// offgrid: <reason>` comment, which grid-check accepts.
 // Picture code reads these; src/sync.ts turns them into sound events.
 export const CUE = {
-  fragA: b(1), // "plinth cuts" rises into a frame that is already moving (creep, a light pool crossing the paper)
-  drop: b(1, 3), // once "plinth cuts" has been read: the accent dot is born above the line and falls...
-  land: b(2), // ...and lands where the line will end, on the downbeat: the camera punches in on the contact
-  fragB: b(2, 0, 2), // "to music." answers on the off-beat; the line jumps to make room, the dot is its period
-  exit: b(3, 0, 2), // the read is over: the line (dot and all) accelerates out to the left...
-  cut: b(3, 1), // ...cut on its fastest frame: the plate (the film's real imagery) arrives already moving left
-  band: b(3, 2), // a band of light crosses the plate, mid-frame on the beat
-  plateCut: b(3, 3), // a hard cut on the beat to a closer frame of the same set, still drifting left
-  band2: b(4), // the light crosses the closer frame too, mid-frame on the downbeat
-  morph: b(4, 1), // the plate contracts into the gap of the next line: the picture becomes a word
-  fragC: b(4, 1), // "Every cut" and "lands." rise on either side of it as it contracts (a 3-word line needs the bar)
-  swapA: b(4, 2), // the picture in the gap cuts to the next frame of the set...
-  swapB: b(4, 2, 2), // ...and the next (designed steps)
-  exit2: b(5, 1, 1), // the read is over: the line and its picture drop out of the frame, accelerating...
-  drop2: b(5, 1, 2), // ...into the relief: the plinth under a low key, carried in on the same speed
-  pieceA: b(5, 2), // the dome lands on the plinth (contact frame)
-  pieceB: b(5, 3), // the block lands (contact frame)
-  catch: b(6), // the mark is whole: on the downbeat the key rises, and every shadow shortens
-  lockCut: b(6, 1), // cut to the lockup as the key climbs: shadows shorten, the name starts to slide out of the mark
-  lockup: b(6, 2), // the name is home: the payoff, then the hold lives on the key and a slow dolly
-  end: b(7), // last bar line; TAIL follows
+  fragA: b(1, 1), // "plinth cuts" rises on the second beat into a frame that is already moving (the rule drawing, the creep, the key on the paper)
+  drop: b(2), // once "plinth cuts" stands: the accent dot is born above the line and falls...
+  land: b(2, 1), // ...and lands where the line will end, off the downbeat: the camera punches in on the contact
+  fragB: b(2, 2, 2), // "to music." answers on the off-beat; the line jumps to make room, the dot is its period
+  exit: b(3, 3, 2), // the read is over: the line (dot and all) accelerates out to the left...
+  cut: b(4), // ...cut on its fastest frame, on the downbeat: the plate (the film's real imagery) arrives already moving left
+  band: b(4, 1), // a band of light crosses the plate, mid-frame on the beat
+  plateCut: b(4, 2), // a hard cut on the beat to a closer frame of the same set, still drifting left
+  band2: b(4, 3), // the light crosses the closer frame too, mid-frame on the beat
+  morph: b(5), // the plate contracts into the gap of the next line on the downbeat: the picture becomes a word
+  fragC: b(5), // "Cuts" and "land." rise on either side of it as it contracts (a one-bar act reads two words)
+  swapA: b(5, 1), // the picture in the gap cuts to the next frame of the set...
+  swapB: b(5, 1, 2), // ...and the next (designed steps)
+  exit2: b(5, 3, 3), // the read is over: the line and its picture drop out of the frame, accelerating...
+  drop2: b(6), // ...into the relief on the downbeat: the plinth under a low key, carried in on the same speed
+  pieceA: b(6, 0, 2), // the dome lands on the plinth (contact frame)
+  pieceB: b(6, 1, 2), // the block lands (contact frame)
+  catch: b(6, 2), // the mark is whole: the key rises, and every shadow shortens
+  lockCut: b(6, 3), // cut to the lockup as the key climbs: shadows shorten, the name rises in its slot
+  lockup: b(7), // the name is home on the downbeat: the payoff, then the hold lives on the key and a slow dolly
+  end: BODY, // last bar line; TAIL follows
 };
 
 // ---- Declarations: what the picture does on purpose -------------------------------------------
@@ -155,7 +162,7 @@ export const SEAMS: Seam[] = [
   { at: ACT.plate.from, kind: 'velocity', carry: 'x', dir: -1, id: 'statement' },
   // a cut inside the plate, on the beat: a closer frame of the same set, the drift keeping its direction
   { at: CUE.plateCut, kind: 'hard', id: 'plate-closer' },
-  // the full-frame plate contracts into the gap of "Every cut [ ] lands."
+  // the full-frame plate contracts into the gap of "Cuts [ ] land."
   { at: ACT.frame.from, kind: 'morph', carry: 'scale', id: 'plate-into-line' },
   // the line drops out and the relief opens on the same downward speed
   { at: ACT.mark.from, kind: 'velocity', carry: 'y', dir: 1, id: 'line-drops' },
@@ -179,8 +186,8 @@ export const REVEAL = CUE.lockup;
 export const SPRING_CLASS = 'mark-piece';
 /**
  * CUE names that must land on a music event (a downbeat attack, an entry, a stop's end, the ending). None
- * without a track; with the 124 BPM bed the plan is pieceA on an accent, lockup on the stop's end and end on
- * the ending (track.py edit --reveal-bar 6).
+ * without a track; with the 124 BPM bed the plan is pieceA on an accent, lockup on the track's entry at bar 7
+ * and end on the bar line where the bed stops (track.py edit --bars 7 --reveal-bar 7 --end stop).
  */
 export const STRUCTURAL: (keyof typeof CUE)[] = [];
 /** Each CUE's salience (missing = 'hit'). */
@@ -263,8 +270,9 @@ export const COPY: Copy[] = [
   // period, and the line says what the picture just did. For the real product, write
   // "[Name] is a [plain category] for [who]." or "[Name] turns [input] into [output]."
   ...chain('statement', 'build', [['plinth cuts', CUE.fragA], ['to music.', CUE.fragB]], { out: CUE.exit }),
-  // The picture takes its turn (the plate, no words), then holds the line open: "Every cut [picture] lands."
-  line('frame', 'Every cut lands.', CUE.fragC, CUE.exit2),
+  // The picture takes its turn (the plate, no words), then holds the line open: "Cuts [picture] land." Two words
+  // read in the one-bar act at the calm pace (a third word needs more than a bar).
+  line('frame', 'Cuts land.', CUE.fragC, CUE.exit2),
   // cinetic:placeholder - the demo's invented name: use the product's, then delete this line.
   { id: 'wordmark', text: 'plinth', kind: 'name', in: CUE.lockCut, resolved: CUE.lockup, out: TOTAL },
 ];

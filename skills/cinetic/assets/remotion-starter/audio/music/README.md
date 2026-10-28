@@ -22,8 +22,9 @@ here, `npm run audio` stops with "not found". To add one (or let `new-film.sh --
 3. Point `audio/score.json` `music.track` and `music.licence` at the file and its record, and set `key` from the
    analysis; `python3 scripts/audio/kit.py tune` puts the kit's tonal roles in that key. `audio/kit.json` is
    already the earshot `launch` kit, whose effects sit at their level over the music.
-4. `track.py edit --bars 6 --reveal-bar 6 --end stop`, then `track.py grid`: `src/music.ts` gets the track's bars
+4. `track.py edit --bars 7 --reveal-bar 7 --end stop`, then `track.py grid`: `src/music.ts` gets the track's bars
    and every cue in `src/timeline.ts` follows them.
 
-The demo is planned for a 124 BPM bed: six bars, the dome and the block landing on accents, the name locking as a
-stop ends. Until the track's grid is written, the timeline runs on its own 120 BPM grid.
+The demo is planned for a 124 BPM bed: seven bars, every act opening on a downbeat, the dome and the block landing on accents,
+the name locking on the track's entry at bar 7, and the bed stopping on the bar line after the hold (the tail holds the stop's
+near-silence). Until the track's grid is written, the timeline runs on its own 120 BPM grid.

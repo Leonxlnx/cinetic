@@ -59,6 +59,7 @@ Beat frames = `60 / BPM × fps`. These tempos give whole-frame beats at 60 fps:
 | UI walkthrough | 90–100 | 20–90 s | 60 s ≈ 25 bars at 100 | one chapter per 2–4 bars, chapter changes on downbeats |
 
 - Every film except a loop ends with a **tail of at least 60 f** after the last event, so the audio decays to digital zero on the last frame (see `references/sound.md`).
+- A **stop ending** (`track.py edit --end stop`) puts its near-silence and its one element in the tail: the bed stops on the bar line that ends the body, the element sounds on `MUSIC.end.f` (0.2–0.7 s later), then 60 f follow. Compute the tail from the music, so `TOTAL − TAIL` stays the bar line grid-check expects: `const BODY = b(8); export const TAIL = MUSIC && MUSIC.end.mode === 'stop' ? Math.max(0, Math.ceil(MUSIC.end.f) - BODY) + FPS : FPS;` (the starter's `src/timeline.ts`). A fixed `TAIL = FPS` ends the film 0.6 s after a 0.4 s stop's element, before it has decayed.
 - A loop's length is a whole number of bars and has no tail: frame `TOTAL − 1` must flow into frame 0 (see `references/formats.md`).
 
 ## 4. The `timeline.ts` pattern

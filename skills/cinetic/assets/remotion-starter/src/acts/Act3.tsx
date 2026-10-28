@@ -15,7 +15,7 @@ import { Paper } from './ground';
 import { OPEN, PLATE_MOVE, PLATE_PARALLAX, PLATE_SLICES, plateRoom, plateShift, SET_FRAMES } from './plate';
 
 // ACT 3 - the picture becomes a word. On the cut the full-frame plate contracts into a window in the middle of
-// the frame (still drifting: one continuous picture), and the line forms round it: "Every cut" and "lands." rise on
+// the frame (still drifting: one continuous picture), and the line forms round it: "Cuts" and "land." rise on
 // either side on the beat's rule, drawn in again, the window as the gap between them (fx/InlineGap's anatomy:
 // margins, radius, hard-cut swaps).
 // The window cuts through two more frames of the set on the 8ths, then holds for the read. The line and its
@@ -23,7 +23,7 @@ import { OPEN, PLATE_MOVE, PLATE_PARALLAX, PLATE_SLICES, plateRoom, plateShift, 
 
 const L = (abs: number) => abs - ACT.frame.from; // absolute cue -> act-local frame
 const LINE = copy('frame');
-// the window opens before the line's last word: "Every cut [picture] lands."
+// the window opens before the line's last word: "Cuts [picture] land."
 const LEFT = LINE.text.slice(0, LINE.text.lastIndexOf(' '));
 const RIGHT = LINE.text.slice(LINE.text.lastIndexOf(' ') + 1);
 

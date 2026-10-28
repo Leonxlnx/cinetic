@@ -325,7 +325,7 @@ The config also sets the ANGLE GL backend (WebGL works headless), JPEG q95 inter
 
 ## 4. A first test render
 
-This renders the starter's 13-second placeholder demo end to end: scaffold, gates, cues, the starter's placeholder soundtrack (effects only, until the film's track replaces it), a preview and a motion-blurred master. It proves the machine is ready before an agent spends an hour on a film. After `npm install`, the gates, cues, soundtrack and preview take a little over a minute, and the blurred master about four and a half more. The timings in the comments were measured on a 4-CPU Linux machine.
+This renders the starter's 15-second placeholder demo end to end: scaffold, gates, cues, the starter's placeholder soundtrack (effects only, until the film's track replaces it), a preview and a motion-blurred master. It proves the machine is ready before an agent spends an hour on a film. After `npm install`, the gates, cues, soundtrack and preview take a little over a minute, and the blurred master about four and a half more. The timings in the comments were measured on a 4-CPU Linux machine.
 
 Set `SKILL` to the folder that holds the installed `SKILL.md`. Use an absolute path, because the steps below change directory:
 
