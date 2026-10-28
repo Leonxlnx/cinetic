@@ -61,7 +61,8 @@ Usage:
   python3 scripts/palette.py --accent '#1F86CD' --ramp '#EEF3F9,#D3E2F2,#A9C7E8' # a one-hue light field
 
 --temp: neutral (default) tints the greys with the accent's hue at a chroma too low to read as
-warm; cool uses hue 250. warm (hue 75) makes a beige paper, so it needs --brand-supplied.
+a colour (C .004-.012, the house); grey leaves them untinted (C 0: a true charcoal, a true white); cool
+uses hue 250. warm (hue 75) makes a beige paper, so it needs --brand-supplied.
 --stage-hue H [--stage-chroma C]: give the stage and the dark neutrals a hue from the brand's world
 (pine-black 160, a green-black 145, a deep teal 200, an ink-navy with body 235) at chroma C
 (default 0.014 on a dark stage, 0.008 on a light one); type and light panels stay near-neutral.
@@ -201,7 +202,10 @@ RECIPES = {
                        accent_L=(0.43, 0.67), accent_C=(0.11, 0.25)),
     'stoneMid': dict(stage='light', tokens=dict(paper=(0.75, 0.012), mist=(0.80, 0.010), line=(0.66, 0.010), mute=(0.34, 0.010), ink2=(0.20, 0.010), ink=(0.14, 0.010)),
                      accent_L=(0.38, 0.46), accent_C=(0.08, 0.25)),
-    'slateMid': dict(stage='dark', tokens=dict(ink=(0.35, 0.008), ink2=(0.40, 0.008), line=(0.48, 0.010), mute=(0.82, 0.008), mist=(0.92, 0.006), paper=(0.975, 0.006)),
+    # the starter's names: the mid slate is `slate` (ink stays the darkest type, marks and shadows in fx/), type is
+    # paper, and the accent on the slate is accentLift (written with the same value as accent)
+    'slateMid': dict(stage='dark', stage_key='slate', tokens=dict(slate=(0.35, 0.008), slateRaised=(0.40, 0.008), line=(0.48, 0.010), mute=(0.82, 0.008),
+                                                                 mist=(0.92, 0.006), paper=(0.975, 0.006), ink2=(0.20, 0.010), ink=(0.15, 0.010)),
                      accent_L=(0.74, 0.84), accent_C=(0.07, 0.18), yellow_L=(0.86, 0.90)),
     'deepField': dict(stage='dark', tokens=dict(ink=(0.38, 0.10), ink2=(0.43, 0.10), line=(0.50, 0.08), mute=(0.85, 0.02), mist=(0.93, 0.01), paper=(0.97, 0.006)),
                       accent_L=(0.78, 0.86), accent_C=(0.05, 0.16), hues=(150, 265)),
@@ -325,8 +329,9 @@ def main():
     ap.add_argument('--check-tokens', metavar='FILE', help="check a film's tokens file (or an HTML :root palette) instead of building one")
     ap.add_argument('--ramp', help='comma-separated stops of a light field or sweep: one-hue check against --accent')
     ap.add_argument('--stage', choices=['light', 'dark'], help="the ground most shots sit on (default light, or the recipe's own)")
-    ap.add_argument('--temp', choices=['neutral', 'cool', 'warm'], default='neutral',
-                    help='tint of the neutrals (warm makes a beige paper: needs --brand-supplied)')
+    ap.add_argument('--temp', choices=['neutral', 'grey', 'cool', 'warm'], default='neutral',
+                    help="tint of the neutrals: neutral toward the accent's hue, grey none (a true charcoal), cool hue 250 "
+                         '(warm makes a beige paper: needs --brand-supplied)')
     ap.add_argument('--stage-hue', type=float, help="the stage's own hue from the brand's world (OKLCH h, e.g. 160 for pine-black)")
     ap.add_argument('--stage-chroma', type=float, help='chroma for --stage-hue (default 0.014 dark, 0.008 light)')
     ap.add_argument('--paper', help="use this paper instead of the generated one (hex or oklch), and check it")
@@ -410,7 +415,7 @@ def main():
         print(f'accent {acc_hex} covers {pct:.2f}% of {a.cover} ({"ok" if ok else "over 8%: fine only on the one designed flood"})')
         return 0 if ok else 1
 
-    hue = {'neutral': ah, 'cool': 250.0, 'warm': 75.0}[a.temp]
+    hue = {'neutral': ah, 'grey': ah, 'cool': 250.0, 'warm': 75.0}[a.temp]
     tint = 2.2 if a.temp == 'warm' else 1.0  # warm papers carry a little more chroma
     stage_hue = None
     if a.stage_hue is not None:
@@ -421,7 +426,7 @@ def main():
             return 1
         if 31 <= stage_hue < 118:
             print(f'palette.py: note: --stage-hue {stage_hue:.0f} is warm; a tinted stage there reads as brown or '
-                  'beige. Prefer --temp neutral (a true charcoal or a neutral paper).', file=sys.stderr)
+                  'beige. Prefer --temp grey (a true charcoal or a neutral paper).', file=sys.stderr)
     stage_C = a.stage_chroma if a.stage_chroma is not None else (0.014 if a.stage == 'dark' else 0.008)
     # Toward a warm hue (a red or a yellow accent) the neutrals stay neutral: C <= 0.004, and <= 0.003
     # for light ones, so they never read as warm and 8-bit rounding can never push the paper or a
@@ -441,6 +446,10 @@ def main():
     if recipe:
         # the recipe's lightness and chroma at the accent hue (neutral where its chroma is 0)
         jobs = {n: j for n, _, _, j in spec}
+        if recipe.get('stage_key') == 'slate':
+            jobs = dict(jobs, slate='the stage (a mid slate)', slateRaised='raised surfaces on the slate', ink='the darkest type, marks and shadows',
+                        ink2='raised dark surfaces', paper='type and marks on the slate')
+            stage_key = 'slate'
         spec = [(n, L, C, jobs.get(n, '')) for n, (L, C) in recipe['tokens'].items()]
         band = recipe.get('yellow_L', recipe['accent_L']) if YELLOW[0] <= ah < YELLOW[1] and 'yellow_L' in recipe else recipe['accent_L']
         c_band = recipe['accent_C']
@@ -455,9 +464,11 @@ def main():
         h_use = hue
         if stage_hue is not None:
             # the stage and its surfaces carry the world's hue; type and light panels stay near-neutral
-            carries = name in (('ink', 'ink2', 'line') if a.stage == 'dark' else ('paper', 'mist', 'line'))
+            carries = name in ((('slate', 'slateRaised', 'line') if stage_key == 'slate' else ('ink', 'ink2', 'line')) if a.stage == 'dark' else ('paper', 'mist', 'line'))
             h_use = stage_hue
             C = stage_C * (1.0 if name == stage_key else 0.8) if carries else min(C, 0.006)
+        elif a.temp == 'grey' and not (recipe and a.recipe == 'deepField'):
+            C = 0.0  # untinted: a true grey
         elif warm_hue and not (recipe and a.recipe == 'deepField'):
             C = min(C, 0.003 if L >= 0.7 else 0.004)
         hx, c_used = oklch_hex(L, C, h_use)
@@ -466,14 +477,16 @@ def main():
         hx, c_used = oklch_hex(*paper_in)
         tokens['paper'] = dict(hex=hx, oklch=[round(paper_in[0], 3), round(c_used, 4), round(paper_in[2], 1)], job=tokens['paper']['job'] + ' (given)')
     if a.stage == 'dark' and not a.brand_supplied:
-        sL, sC, sh = tokens['ink']['oklch']
-        if 235 <= sh <= 270 and 0.004 <= sC < 0.02:
-            print(f"palette.py: note: the stage {tokens['ink']['hex']} (OKLCH {sL} {sC} {sh:.0f}) is the stock dev-tool "
+        sL, sC, sh = tokens[stage_key]['oklch']
+        if sL < 0.26 and 235 <= sh <= 270 and 0.004 <= sC < 0.02:  # a near-black blue-grey, not the mid slate
+            print(f"palette.py: note: the stage {tokens[stage_key]['hex']} (OKLCH {sL} {sC} {sh:.0f}) is the stock dev-tool "
                   'dark theme (the GitHub / editor blue-grey). It reads as "a screenshot of a tool" before anything moves. '
-                  'Take the stage from the brand\'s world instead: --temp neutral for a true charcoal, or --stage-hue '
+                  'Take the stage from the brand\'s world instead: --temp grey for a true charcoal, or --stage-hue '
                   '(pine-black 160, deep teal 200, an ink-navy with body: 235 with --stage-chroma 0.03). '
                   'references/brand-and-color.md §9.', file=sys.stderr)
     tokens['accent'] = dict(hex=acc_hex, oklch=[round(aL, 3), round(aC, 4), round(ah, 1)], job=f'MEANING: "{a.meaning}"')
+    if stage_key == 'slate':
+        tokens['accentLift'] = dict(tokens['accent'], job='the accent on the slate (the same colour: the slate is the stage)')
     stage = tokens[stage_key]['hex']
 
     checks = []
@@ -488,7 +501,7 @@ def main():
     check('secondary text', r_mute >= 4.5, f'mute on {stage_key} {r_mute:.1f}:1 (>= 4.5)')
     check('accent graphics', r_acc >= 3, f'accent on {stage_key} {r_acc:.1f}:1 (>= 3)')
     check('accent chroma', aC >= 0.08, f'C {aC:.3f} (>= 0.08, or it reads as a grey)')
-    for k in ('ink', 'ink2', 'paper', 'mist', 'line', 'mute', 'accent'):
+    for k in tokens:
         h_ = parse_colour(tokens[k]['hex'])
         why = banned(*h_)
         if why and not a.brand_supplied:
@@ -498,6 +511,8 @@ def main():
     if not in_band:
         L2 = min(max(aL, band[0]), band[1])
         fix = f'; try {oklch_hex(L2, aC, ah)[0]} (L {L2:.2f})'
+        if a.stage == 'dark' and aL < band[0] and (ah < 31 or ah >= 340):
+            fix += '; lifted, a deep red turns salmon: keep a deep red on a light stage (tintedPaper, stoneMid)'
     check('accent lightness', in_band, f'L {aL:.2f} for a {a.stage} stage{f" ({a.recipe})" if recipe else ""} ({band[0]}-{band[1]}){fix}'
           + (' (brand-supplied: contrast only)' if a.brand_supplied else ''))
     if not a.brand_supplied and not c_band[0] <= aC <= c_band[1] and not YELLOW[0] <= ah < YELLOW[1]:
@@ -515,7 +530,12 @@ def main():
     sh_arg = f' --stage-hue {a.stage_hue:g}' if a.stage_hue is not None else ''
     print(f'// palette.py --accent {a.accent} --stage {a.stage} --temp {a.temp}{sh_arg}' + (f' --recipe {a.recipe}' if recipe else ''))
     print('export const C = {')
-    for k in ['ink', 'ink2', 'paper', 'mist', 'line', 'mute', 'accent']:
+    if stage_key == 'slate':
+        print('  // stage: slate (the film stands on the slate: type is paper, the accent on it accentLift; --check-tokens reads this line)')
+    order = ['ink', 'ink2', 'paper', 'mist', 'line', 'mute', 'accent']
+    if stage_key == 'slate':
+        order = ['slate', 'slateRaised', 'paper', 'mist', 'line', 'mute', 'ink', 'ink2', 'accent', 'accentLift']
+    for k in order:
         v = tokens[k]
         L, C, h = v['oklch']
         r = f', {v["contrast_on_stage"]:.1f}:1 on {stage_key}' if v['contrast_on_stage'] else ''

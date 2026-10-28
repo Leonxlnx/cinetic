@@ -390,7 +390,7 @@ The edges were set so the reds stay: Tessel's `#EC2A3A` sits at h 24 and sRGB re
 | Teal (175–225) | Weft | covered | 0.58 0.10 190 | `#018D87` | paper | 3.8:1 |
 | Blue (225–270) | Loam | water | 0.60 0.14 245 | `#1F86CD` | paper | 3.7:1 |
 
-**Build and audit the palette with `scripts/palette.py`.** `--recipe <name>` writes the tokens of a house colour system (§9) at the accent's hue; `--list-recipes` prints them; `--check-tokens src/brand/tokens.ts` checks a film's tokens (bans and bands on what the brand did not supply, contrast, the one-accent rule); `--ramp 'c1,c2,…'` checks a light field's stops. Given the accent (hex or `oklch(L C h)`), the stage (`--stage light|dark`) the temperature (`--temp neutral|cool`) and optionally the stage's own hue from the brand's world (`--stage-hue H`, with `--stage-chroma C`), it prints a `C` block for `tokens.ts` with neutrals tinted toward the accent (kept neutral when the accent is a red or a yellow), every contrast against the stage, and the checks above (statements ≥ 7:1, secondary ≥ 4.5:1, accent ≥ 3:1, chroma, the lightness band), with a nearby fix when one fails. It refuses (exit 1) an accent or a `--paper` in a banned region unless you pass `--brand-supplied`. `--cover IMG` measures the accent's share of a still's pixels (within OKLab 0.08); on Tessel's frames it reads under 0.2% during the acts and 98% on the opening flood frame, the one designed exception.
+**Build and audit the palette with `scripts/palette.py`.** `--recipe <name>` writes the tokens of a house colour system (§9) at the accent's hue; `--list-recipes` prints them; `--check-tokens src/brand/tokens.ts` checks a film's tokens (bans and bands on what the brand did not supply, contrast, the one-accent rule); `--ramp 'c1,c2,…'` checks a light field's stops. Given the accent (hex or `oklch(L C h)`), the stage (`--stage light|dark`) the temperature (`--temp neutral|grey|cool`: toward the accent, untinted, or cool) and optionally the stage's own hue from the brand's world (`--stage-hue H`, with `--stage-chroma C`), it prints a `C` block for `tokens.ts` with neutrals tinted toward the accent (kept neutral when the accent is a red or a yellow), every contrast against the stage, and the checks above (statements ≥ 7:1, secondary ≥ 4.5:1, accent ≥ 3:1, chroma, the lightness band), with a nearby fix when one fails. It refuses (exit 1) an accent or a `--paper` in a banned region unless you pass `--brand-supplied`. `--cover IMG` measures the accent's share of a still's pixels (within OKLab 0.08); on Tessel's frames it reads under 0.2% during the acts and 98% on the opening flood frame, the one designed exception.
 
 ## 9. Neutrals, the recipes and the stage
 
@@ -412,6 +412,11 @@ hides the accent it was meant to show.
 | `paperEditorial` | neutral L .945 | ink L .24 | | neutral paper with one material (a paper texture) used everywhere |
 | `whiteWorld` | pure white (this system only) | ink L .13 | a one-hue lightness ramp | colour sweeps and a late arrival of full colour |
 
+`palette.py --recipe slateMid` writes the starter's names, so the block pastes over `C` without turning a role over:
+the stage is `slate` (with `slateRaised`), type is `paper`, `ink` stays the darkest type, mark and shadow that `fx/`
+draws with, and the accent is written as `accent` and `accentLift`, under a `// stage: slate` line that `--check-tokens`
+reads.
+
 `STAGE` names the default per kind of ground: light `tintedPaper`, **dark `slateMid`**, mid `stoneMid`, colour
 `deepField` (a declared event). The dark default is the mid slate, not near-black ink: a near-black void flattens
 every shadow and lit face and reads as a screenshot of a dark-mode tool. The deck deals at least one mid or colour
@@ -432,7 +437,7 @@ ground when it can; plan a light/dark sequence and flip it on carried transition
 | World | Stage | Neutrals | Accent (allowed family) |
 |---|---|---|---|
 | hillside, fjord, forest (calm, outdoors) | pale green-grey paper, or pine-black | moss-grey, slate | a deep pine or a clear lake teal |
-| foundry, forge, workshop (heat, physical) | a true charcoal, no blue in it (`--temp neutral`) | soot greys | a deep red used as heat and light: a lit edge, the glow of the material |
+| foundry, forge, workshop (heat, physical) | a true charcoal, no blue in it (`--temp grey`) | soot greys | a deep red used as heat and light: a lit edge, the glow of the material |
 | night, focus, security | an ink-navy with body (`--stage-hue 235 --stage-chroma 0.03`) | blue slates | a cold cyan-teal |
 | paper, ledger, archive (exact) | a cool white | graphite hairlines | a single ink blue with some depth, not framework blue |
 | signal, traffic, energy (bold) | near-black | steel | a safety yellow on dark only |

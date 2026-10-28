@@ -23,6 +23,8 @@
      --bg names the ground and --border the line; an orange brand's lifted accent is marked brand-supplied (or
      is the accent itself when it holds 3:1 on the slate); a warm-grey kit with a dark neutral keeps its slate
      off brown and mauve.
+  9. palette.py --recipe slateMid writes the starter's names (slate the stage, ink the darkest, accentLift the
+     accent) and passes --check-tokens on the slate; --temp grey writes untinted greys.
 
 Usage (from the skill root):  python3 scripts/test/brand.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -323,6 +325,24 @@ bare = os.path.join(TMP, 'not-a-film-2')
 os.makedirs(bare)
 r = run(k8, '--project', bare)
 result(r.returncode == 2 and '--out' in r.stderr and not os.listdir(bare), 'a folder that is not a film project is refused before anything is copied into it', str(os.listdir(bare)))
+
+# 9. palette.py writes the starter's names: a slateMid block pastes over C without turning a role over (the mid slate is
+# `slate`, ink stays the darkest), passes --check-tokens on the slate, and --temp grey leaves the greys untinted
+PALETTE = os.path.join(SKILL, 'scripts', 'palette.py')
+r = run('--accent', '#54B3FD', '--recipe', 'slateMid', script=PALETTE)
+blk = dict(re.findall(r"^\s+(\w+): '(#[0-9A-F]{6})'", r.stdout, re.M))
+result(r.returncode == 0 and set(blk) == set(skeys) - {'white'} and '// stage: slate' in r.stdout
+       and PAL.parse_colour(blk['slate'])[0] > 0.3 and PAL.parse_colour(blk['ink'])[0] < 0.2 and blk.get('accentLift') == blk.get('accent'),
+       "palette.py --recipe slateMid writes the starter's names (slate the stage, ink the darkest, accentLift the accent)", json.dumps(blk))
+pt = os.path.join(TMP, 'slate-tokens.ts')
+open(pt, 'w', encoding='utf-8').write(r.stdout)
+chk = run('--check-tokens', pt, script=PALETTE)
+result(chk.returncode == 0 and 'the stage named in the tokens: slate' in chk.stdout + chk.stderr, 'the slateMid block passes --check-tokens, judged on the slate',
+       (chk.stdout + chk.stderr)[-200:])
+r = run('--accent', '#54B3FD', '--stage', 'dark', '--temp', 'grey', script=PALETTE)
+greys = [PAL.parse_colour(h) for k, h in re.findall(r"^\s+(\w+): '(#[0-9A-F]{6})'", r.stdout, re.M) if k != 'accent']
+result(r.returncode == 0 and len(greys) == 6 and all(c[1] < 0.002 for c in greys) and 'dev-tool' not in r.stderr,
+       '--temp grey writes untinted greys (a true charcoal), with no dev-tool note', r.stderr[-160:])
 
 shutil.rmtree(TMP, ignore_errors=True)
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')
