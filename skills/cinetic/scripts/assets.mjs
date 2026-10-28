@@ -544,35 +544,66 @@ export function parseMixkitList(html) {
     const [, id, thumb, alt, preview, href] = m;
     if (seen.has(id)) continue; seen.add(id);
     out.push(item('mixkit', id, { kind: 'video', title: text(alt).replace(/\.$/, ''), page: `https://mixkit.co${href}`, thumb: thumb.replace('-thumb-360-0', '-thumb-720-0'),
-      preview, image: `https://assets.mixkit.co/videos/${id}/${id}-720.mp4`, licence: 'unknown', notes: ['licence not read yet'] }));
+      preview, image: preview.replace(/-360\.mp4$/, '-720.mp4'), licence: 'unknown', notes: ['licence not read yet'] }));
   }
   return out;
 }
-/** A Mixkit item page: its licence (free or restricted), length and renditions. */
-export function parseMixkitItem(html, id) {
-  const notice = (html.match(/"copyrightNotice":"([^"]*)"/) || [])[1] || '';
-  const link = (html.match(/href="\/license\/#(video[A-Za-z]+)"/) || [])[1] || '';
+/**
+ * A Mixkit item page: its licence (free or restricted) with the page's own licence line, its length and its
+ * renditions. The files are named as the page names its 720p file (the contentUrl): newer clips live under
+ * active_storage/video_items/<id>/<stamp>/<id>-video-<p>.mp4, older ones under videos/<id>/<id>-<p>.mp4, so an address
+ * built from the id alone is refused (HTTP 403). `known`: another file of the clip (the grid's preview) when the page
+ * names none; with neither there is no rendition. `page`: the item page's address, kept with the licence line.
+ */
+export function parseMixkitItem(html, id, { known = null, page = null } = {}) {
+  const h = String(html);
+  const notice = (h.match(/"copyrightNotice":"([^"]*)"/) || [])[1] || '';
+  const link = (h.match(/href="\/license\/#(video[A-Za-z]+)"/) || [])[1] || '';
   let licence = 'unknown';
   if (/restricted/i.test(notice) || link === 'videoRestricted') licence = 'mixkit-restricted';
-  else if (/^free$/i.test(notice) || link === 'videoFree' || /Mixkit Stock Video Free License/.test(html)) licence = 'mixkit-video';
-  const dur = (html.match(/"duration":"PT(\d+)M(\d+)S"/) || []);
-  const res = [...html.matchAll(/download-resolution">\s*(\d+)\s*x\s*(\d+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
-  const big = res.sort((a, b) => b[0] * b[1] - a[0] * a[1])[0] || [1920, 1080];
+  else if (/^free$/i.test(notice) || link === 'videoFree' || /Mixkit Stock Video Free License/.test(h)) licence = 'mixkit-video';
+  const dur = (h.match(/"duration":"PT(\d+)M(\d+)S"/) || []);
+  const res = [...h.matchAll(/download-resolution">\s*(\d+)\s*x\s*(\d+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+  const big = [...res].sort((x, y) => y[0] * y[1] - x[0] * x[1])[0] || [1920, 1080];
   const portrait = big[1] > big[0];
-  const has1080 = /type=1080p/.test(html) || res.some(([a, b]) => Math.max(a, b) >= 1920);
-  const renditions = [{ url: `https://assets.mixkit.co/videos/${id}/${id}-720.mp4`, type: 'video/mp4', w: portrait ? 720 : 1280, h: portrait ? 1280 : 720 }];
-  if (has1080) renditions.push({ url: `https://assets.mixkit.co/videos/${id}/${id}-1080.mp4`, type: 'video/mp4', w: portrait ? 1080 : 1920, h: portrait ? 1920 : 1080 });
-  return { licence, duration: dur.length ? Number(dur[1]) * 60 + Number(dur[2]) : null, renditions, title: text((html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/) || [])[1] || '') };
+  const longest = Math.max(0, ...res.map(([x, y]) => Math.max(x, y)));
+  const sizes = [...new Set([720, ...[...h.matchAll(/type=(\d{3,4})p/g)].map((m) => Number(m[1])), ...(longest >= 1920 ? [1080] : []), ...(longest >= 3840 ? [2160] : [])])]
+    .filter((p) => p >= 360 && p <= 2160).sort((x, y) => x - y);
+  const base = (h.match(new RegExp(`"contentUrl":"(https://assets\\.mixkit\\.co/[^"]*?/${id}(?:-video)?-)\\d{3,4}\\.mp4"`)) || [])[1]
+    || (String(known || '').match(new RegExp(`^(https://assets\\.mixkit\\.co/[^"?#\\s]*?/${id}(?:-video)?-)\\d{3,4}\\.mp4$`)) || [])[1] || null;
+  // the long side the page lists for a size (its 4K is 4096 wide), else 16:9 (it labels the 720p file 1080x720)
+  const long = (p) => Math.max(...(res.find(([x, y]) => Math.min(x, y) === p && Math.max(x, y) >= Math.round((p * 16) / 9)) || [Math.round((p * 16) / 9)]));
+  const renditions = base ? sizes.map((p) => ({ url: `${base}${p}.mp4`, type: 'video/mp4', w: portrait ? p : long(p), h: portrait ? long(p) : p })) : [];
+  // the sentence beside the download button (its link's attributes hold a '>', so tags are read with their quotes)
+  const line = text(((h.match(/<p[^>]*download-copy[^>]*>([\s\S]*?)<\/p>/) || [])[1] || '').replace(/<(?:[^>"']|"[^"]*"|'[^']*')*>/g, '')).replace(/^Free Download\s*/i, '');
+  const seen = licence === 'unknown' ? null : { quote: short(line, 220) || [notice && `copyrightNotice "${notice}"`, link && `licence link /license/#${link}`].filter(Boolean).join(', '),
+    url: page, date: new Date().toISOString().slice(0, 10) };
+  return { licence, seen, duration: dur.length ? Number(dur[1]) * 60 + Number(dur[2]) : null, renditions, title: text((h.match(/<h1[^>]*>([\s\S]*?)<\/h1>/) || [])[1] || '') };
+}
+/** A phrase Mixkit's search holds no page for finds nothing: its words one at a time (at most three), ranked by how
+ * many of the words a clip's title carries. */
+export async function mixkitWords(q, fetchList) {
+  const words = queryWords(q); const seen = new Set(); const out = []; let err = null;
+  for (const [k, w] of words.slice(0, 3).entries()) {
+    if (k) await sleep(400); // gentle on a site without an API
+    try { for (const it of await fetchList(w)) if (!seen.has(it.ref)) { seen.add(it.ref); out.push(it); } } catch (e) { err = e; }
+  }
+  if (!out.length && err) throw err;
+  return out.map((it, k) => [wordHits(words, it.title), k, it]).sort((x, y) => y[0] - x[0] || x[1] - y[1]).map((x) => x[2]);
 }
 async function searchMixkit(q, o) {
-  const items = parseMixkitList(await getText(mixkitUrl(q))).slice(0, o.limit + 4);
+  const list = async (w) => parseMixkitList(await getText(mixkitUrl(w)));
+  let items = await list(q);
+  if (!items.length && queryWords(q).length > 1) items = await mixkitWords(q, list);
+  items = items.slice(0, o.limit + 4);
   await mapLimit(items, 2, async (it, k) => {
     await sleep(300 * (k % 2)); // gentle on a site without an API
     const html = await getText(it.page, { ms: 20000 }).catch(() => null);
     if (!html) return;
-    const r = parseMixkitItem(html, it.ref.split(':')[1]);
+    const r = parseMixkitItem(html, it.ref.split(':')[1], { known: it.preview, page: it.page });
     const pick = pickRendition(r.renditions, o.res || 1080);
-    Object.assign(it, { licence: r.licence, duration: r.duration, renditions: r.renditions, image: pick.url, width: pick.w, height: pick.h, notes: [] });
+    Object.assign(it, { licence: r.licence, seen: r.seen, duration: r.duration, renditions: r.renditions, image: pick?.url || null, width: pick?.w || null, height: pick?.h || null,
+      notes: pick ? [] : ['the page names no file of this clip'] });
   });
   return items;
 }
@@ -930,6 +961,21 @@ export function interleave(groups, limit) {
   return out.map((it, k) => ({ n: k + 1, ...it }));
 }
 
+/** What to do when a search shows nothing, from what happened: no source answered, everything found was dropped, or
+ * nothing matched. */
+export function emptyHint(o, report) {
+  const rs = o.sources.map((s) => [s, report[s] || { found: 0, skipped: {} }]);
+  const errs = rs.filter(([, r]) => r.error).map(([s, r]) => `${SOURCES[s]?.name || s}: ${r.error}`);
+  if (errs.length && errs.length === rs.length) return `Nothing usable: no source answered (${errs.join('; ')}). Wait a minute and search again, or name another --source.`;
+  if (rs.some(([, r]) => r.found)) {
+    const sk = {}; for (const [, r] of rs) for (const [k, v] of Object.entries(r.skipped || {})) if (typeof v === 'number') sk[k] = (sk[k] || 0) + v;
+    const tips = [(sk.small || sk.fit) && 'a smaller --min-width', sk.fit && 'another --fit', sk.shape && 'no --orientation',
+      (sk.people || sk.text) && 'no --people, --no-people or --clean', sk.dead && 'searching again later (files did not load)',
+      (sk.licence || sk.alike || sk.ai) && 'another --source or other words'].filter(Boolean);
+    return `Nothing usable: everything found was dropped (the counts above say why). Try ${tips.join(', ') || 'other words'}.`;
+  }
+  return `Nothing found${errs.length ? ` (${errs.join('; ')})` : ''}. Name the subject's own things ("basalt", "tide pool", "kiln"), use fewer words, or another --kind.`;
+}
 async function cmdSearch(args) {
   const query = args._.join(' ').trim();
   if (!query) throw new Usage('search needs a query, e.g. search "basalt cliff"');
@@ -999,9 +1045,9 @@ async function cmdSearch(args) {
   for (const n of shared) console.log(`note (${noteCount[n]} items): ${n}`);
   console.log('');
   console.log(`Saved ${path.relative(process.cwd(), out) || out}`);
-  if (!items.length) { console.log('Nothing usable. Name the subject\'s own things ("basalt", "tide pool", "kiln"), use fewer words, a smaller --min-width, or another --kind.'); return 1; }
+  if (!items.length) { console.log(emptyHint(o, report)); return 1; }
   console.log(`Next. Look before you choose:  node scripts/assets.mjs sheet ${path.relative(process.cwd(), out) || out}`);
-  console.log('Then: node scripts/assets.mjs get #3,#7 --to public/assets   (the private licence record goes to assets/licences.json)');
+  console.log(`Then: node scripts/assets.mjs get ${items.slice(0, 2).map((it) => `#${it.n}`).join(',')} --to public/assets   (the numbers you chose; the private licence record goes to assets/licences.json)`);
   return 0;
 }
 
@@ -1236,7 +1282,8 @@ export function readRecord(file) {
 /** One record entry (the shape scripts/audio/track.py keeps for music, for imagery). */
 export function recordEntry(it, f) {
   const L = LICENCES[it.licence] || LICENCES.unknown;
-  const seen = SOURCE_SEEN[it.source]?.licence === it.licence ? SOURCE_SEEN[it.source] : L.seen;
+  // the licence line the item's own page gave when it was read (Mixkit), else the licence page's own words
+  const seen = it.seen?.quote ? it.seen : SOURCE_SEEN[it.source]?.licence === it.licence ? SOURCE_SEEN[it.source] : L.seen;
   const credit = L.credit ? `${it.kind === 'video' ? 'Footage' : 'Photo'}: "${short(it.title, 80)}"${it.author ? ` by ${short(it.author, 60)}` : ''}, ${L.name}${it.licenceVersion ? ` ${it.licenceVersion}` : ''}, via ${it.provider}` : null;
   return {
     file: f.file, sha256: f.sha256, bytes: f.bytes, kind: it.kind, width: f.width ?? it.width ?? null, height: f.height ?? it.height ?? null,
@@ -1338,8 +1385,8 @@ async function lookup(ref, o, hint) {
     if (!hint?.page) throw new Error(`no saved search holds ${ref}: pass --from <the results.json that found it> (Mixkit pages need their name, and the licence is read there)`);
     const { page } = hint;
     const html = await getText(page);
-    const r = parseMixkitItem(html, id); const pick = pickRendition(r.renditions, o.res);
-    return item('mixkit', id, { kind: 'video', title: r.title || hint?.title || `mixkit ${id}`, page, image: pick.url, width: pick.w, height: pick.h, duration: r.duration, licence: r.licence });
+    const r = parseMixkitItem(html, id, { known: hint.preview || hint.image, page }); const pick = pickRendition(r.renditions, o.res);
+    return item('mixkit', id, { kind: 'video', title: r.title || hint?.title || `mixkit ${id}`, page, image: pick?.url || null, width: pick?.w || null, height: pick?.h || null, duration: r.duration, licence: r.licence, seen: r.seen });
   }
   if (src === 'pexels') {
     const video = kind === 'video';
@@ -1405,7 +1452,7 @@ async function cmdGet(args) {
   const cap = num(args, 'max-mb', 150, 1, 2000) * 1048576; const trim = parseTrim(args.trim);
   const to = path.resolve(args.to); const rec = recordPath(to, args.record);
   fs.mkdirSync(to, { recursive: true });
-  let failed = 0;
+  let failed = 0; let written = 0;
   for (const { ref, hint: known } of resolveRefs(list, doc)) {
     try {
       const hint = known || findSaved(ref);
@@ -1437,7 +1484,7 @@ async function cmdGet(args) {
         }
       }
       f.file = path.relative(path.dirname(rec), file).split(path.sep).join('/');
-      writeRecord(rec, recordEntry(it, f));
+      writeRecord(rec, recordEntry(it, f)); written++;
       const small = kind.media === 'image' && f.width && f.width < 1920;
       const short = kind.media === 'image' ? shortfall(f.width, it.width, o.width) : null;
       if (short) console.error(`WARNING  ${ref}: ${short}`);
@@ -1449,7 +1496,7 @@ async function cmdGet(args) {
       for (const n of it.notes || []) console.log(`  note     ${n}`);
     } catch (e) { failed++; console.error(`Could not get ${ref}: ${redact(e.message)}`); }
   }
-  console.log(`Licence record: ${path.relative(process.cwd(), rec)} (private; nothing here is shown on screen)`);
+  if (written) console.log(`Licence record: ${path.relative(process.cwd(), rec)} (private; nothing here is shown on screen)`);
   return failed ? 1 : 0;
 }
 

@@ -138,8 +138,32 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   ok(free.licence === 'mixkit-video' && free.duration === 30 && free.renditions.some((r) => r.h === 1080), 'Mixkit item: the free licence, its length and a 1080p rendition');
   const res = A.parseMixkitItem(fx('mixkit-item-restricted.json').html, '48525');
   ok(res.licence === 'mixkit-restricted' && !A.licenceAllowed(res.licence, { allowCredit: true }).ok, 'Mixkit item under the restricted licence is refused');
-  const tall = A.parseMixkitItem('<a href="/license/#videoFree">l</a><span class="download-resolution">1080 x 1920</span>', '1');
+  const tall = A.parseMixkitItem('<a href="/license/#videoFree">l</a><span class="download-resolution">1080 x 1920</span>', '1', { known: 'https://assets.mixkit.co/videos/1/1-360.mp4' });
   ok(tall.renditions.length === 2 && tall.renditions.every((r) => r.h > r.w) && tall.renditions[1].h === 1920, 'Mixkit item: a portrait clip read from its download resolution', JSON.stringify(tall.renditions.map((r) => [r.w, r.h])));
+  // the files as the page names them: a newer clip lives under active_storage/, and an address built from the id 403s
+  eq(free.renditions.map((r) => r.url), ['720', '1080'].map((p) => `https://assets.mixkit.co/active_storage/video_items/44370/1700000000/44370-video-${p}.mp4`), "Mixkit item: renditions named after the page's own 720p file, never videos/<id>/<id>-<p>.mp4");
+  eq(list.map((it) => it.image), list.map((it) => it.preview.replace('-360.mp4', '-720.mp4')), "Mixkit grid: the 720p file is named after the grid's own preview");
+  eq(A.parseMixkitItem('<a href="/license/#videoFree">l</a><span class="download-resolution">1920 x 1080</span>', '7').renditions, [], 'Mixkit item: no file named on the page and none known: no rendition (never a guessed address)');
+  const k4 = A.parseMixkitItem('"contentUrl":"https://assets.mixkit.co/videos/9/9-720.mp4" <i class="download-resolution">1080x720</i><i class="download-resolution">1920x1080</i><i class="download-resolution">4096x2160</i> type=2160p', '9');
+  eq(k4.renditions.map((r) => [r.w, r.h]), [[1280, 720], [1920, 1080], [4096, 2160]], 'Mixkit item: the sizes the page offers (its 4K at the width it lists, its 720p at 16:9)');
+  ok(free.seen && free.seen.quote === 'Example licence line, under the example free licence.' && /^\d{4}-\d{2}-\d{2}$/.test(free.seen.date) && free.seen.date === new Date().toISOString().slice(0, 10),
+    'Mixkit item: the licence line beside the download, read today (a link whose attributes hold ">" too)', JSON.stringify(free.seen));
+  const rec = A.recordEntry(A.item('mixkit', '44370', { kind: 'video', title: 'Waves', licence: free.licence, seen: { ...free.seen, url: 'https://mixkit.co/free-stock-video/example-44370/' } }), { file: 'v.mp4', sha256: 'd'.repeat(64), bytes: 1 });
+  ok(rec.licence_seen.quote === free.seen.quote && rec.licence_seen.url.endsWith('-44370/') && rec.licence_seen.date === free.seen.date, "the record keeps the item page's licence line and the day it was read", JSON.stringify(rec.licence_seen));
+}
+{
+  // a phrase Mixkit holds no page for: its words one at a time, ranked by the words a title carries; all failing throws
+  const pages = { tide: [{ ref: 'mixkit:2', title: 'Tide pool with rocks' }, { ref: 'mixkit:3', title: 'Tide rising' }], pool: [{ ref: 'mixkit:1', title: 'Swimming pool' }, { ref: 'mixkit:2', title: 'Tide pool with rocks' }] };
+  const got = await A.mixkitWords('tide pool rocks', async (w) => { if (!pages[w]) throw new Error('HTTP 404'); return pages[w]; });
+  eq(got.map((it) => it.ref), ['mixkit:2', 'mixkit:3', 'mixkit:1'], 'Mixkit: a phrase with no page is searched word by word, the title with most words first');
+  let why = '';
+  try { await A.mixkitWords('tide pool', async () => { throw new Error('rate limited (HTTP 429)'); }); } catch (e) { why = e.message; }
+  ok(/429/.test(why), 'Mixkit: when every word fails the search reports why (not "nothing usable")', why);
+  const two = { sources: ['mixkit', 'coverr'] };
+  ok(/no source answered.*429.*Wait a minute/.test(A.emptyHint(two, { mixkit: { found: 0, error: 'rate limited (HTTP 429)', skipped: {} }, coverr: { found: 0, error: 'HTTP 503', skipped: {} } })), 'an empty search where no source answered says so, not "use fewer words"');
+  const dropped = A.emptyHint(two, { mixkit: { found: 6, skipped: { small: 4, licence: 2, reasons: {} } }, coverr: { found: 0, skipped: {} } });
+  ok(/dropped/.test(dropped) && /--min-width/.test(dropped) && !/fewer words/.test(dropped), 'an empty search where everything was dropped names the drop, not the words', dropped);
+  ok(/fewer words/.test(A.emptyHint(two, { mixkit: { found: 0, skipped: {} }, coverr: { found: 0, skipped: {} } })), "an empty search that found nothing asks for the subject's own words");
 }
 {
   const list = A.parseBurstList(fx('burst-list.json').html, { width: 2400 });

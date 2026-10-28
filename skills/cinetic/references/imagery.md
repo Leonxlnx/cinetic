@@ -45,7 +45,7 @@ an advertisement whatever the licence (the record notes the limits); someone els
 | Burst (Shopify) | people, products, lifestyle, small business, places; up to ~4000 px | Burst Some Rights Reserved: commercial use, no attribution, read per photo |
 | ISO Republic | people, places, textures; renditions up to 2048 px, originals 4000-6000 px | CC0, read per photo |
 | Coverr | stock video of people, work, cities, nature; 1080p, 6-30 s | Coverr licence for free clips (Coverr+ and AI-generated clips refused) |
-| Mixkit | stock video; 720p and 1080p | Mixkit free video licence (restricted items refused) |
+| Mixkit | stock video; 720p, 1080p and 4K where the item page offers it (the files as that page names them) | Mixkit free video licence, read per clip with the page's own licence line (restricted items refused) |
 | Openverse | an index of CC0 and public-domain photos (StockSnap, rawpixel, the WordPress photo directory, Flickr, museums) | CC0 / public domain marks |
 | Wikimedia Commons, NASA | places, science, history, archive photos and video | public domain / CC0 only |
 | The Met, Art Institute of Chicago | paintings, prints, maps, objects at 3000-6000 px | CC0 open access |
