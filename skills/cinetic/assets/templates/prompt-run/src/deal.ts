@@ -82,6 +82,25 @@ export const dealDevices = (seed: number, pin: Partial<Deal> = {}): Deal => {
   throw new Error(`deal.ts: the pinned devices break ${broken.join(', ')}; pin another device (template.json "deal")`);
 };
 
+/** The template's own deal: what its scaffold plays before the product's name is in (the placeholder name). */
+const FLOOR_SEED = hashSeed('[Product]');
+export const FLOOR: Deal = dealDevices(FLOOR_SEED);
+/**
+ * A film is never the template replayed: of the slots it deals (pins aside), at least half play another device than
+ * the floor's, or it re-deals from the next seed (the first seed that differs keeps its deal). The unnamed scaffold
+ * keeps the floor.
+ */
+export const dealApart = (seed: number, pin: Partial<Deal> = {}): Deal => {
+  const free = (Object.keys(SLOTS) as SlotName[]).filter((s) => pin[s] === undefined);
+  for (let k = 0; seed !== FLOOR_SEED && k < 64; k++) {
+    const d = dealDevices(k ? (seed + k * 104729) >>> 0 : seed, pin);
+    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length) return d;
+  }
+  return dealDevices(seed, pin);
+};
+/** The deal a product of this name gets, unpinned: the same name, the same deal, never the floor's. */
+export const dealOf = (name: string): Deal => dealApart(hashSeed(name));
+
 /** This film's seed and deal. */
 export const DEAL_SEED = SEED ?? hashSeed(IDENTITY.name);
-export const DEAL: Deal = dealDevices(DEAL_SEED, PIN);
+export const DEAL: Deal = dealApart(DEAL_SEED, PIN);

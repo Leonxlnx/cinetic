@@ -61,9 +61,28 @@ export const dealDevices = (seed: number, pin: Partial<Deal> = {}): Deal => {
   return out as Deal;
 };
 
+/** The template's own deal: what its scaffold plays before the product's name is in (its invented name, Quorum). */
+const FLOOR_SEED = hashSeed('Quorum');
+export const FLOOR: Deal = dealDevices(FLOOR_SEED);
+/**
+ * A film is never the template replayed: of the slots it deals (pins aside), at least half play another device than
+ * the floor's, or it re-deals from the next seed (the first seed that differs keeps its deal). The unnamed scaffold
+ * keeps the floor.
+ */
+export const dealApart = (seed: number, pin: Partial<Deal> = {}): Deal => {
+  const free = (Object.keys(SLOTS) as SlotName[]).filter((s) => pin[s] === undefined);
+  for (let k = 0; seed !== FLOOR_SEED && k < 64; k++) {
+    const d = dealDevices(k ? (seed + k * 104729) >>> 0 : seed, pin);
+    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length) return d;
+  }
+  return dealDevices(seed, pin);
+};
+/** The deal a product of this name gets, unpinned: the same name, the same deal, never the floor's. */
+export const dealOf = (name: string): Deal => dealApart(hashSeed(name));
+
 /** This film's seed and deal. */
 export const DEAL_SEED = SEED ?? hashSeed(IDENTITY.name);
-export const DEAL: Deal = dealDevices(DEAL_SEED, PIN);
+export const DEAL: Deal = dealApart(DEAL_SEED, PIN);
 
 // ---- The lines' moves: each line of the script arrives on one confident move and leaves on one exit, dealt per line
 // from the same seed, never the same move (or exit) on two lines in a row. Node-safe: the timeline reads how long each

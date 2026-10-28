@@ -25,6 +25,7 @@ The target is a film people watch twice and ask "how was that made?": one idea t
 - **Detail decides.** Every frame holds up at 2x beside the frames it answers to: the real words (never grey bars or "Placeholder"), the face and weight, the spacing, the tilt, blur along paths, the gradient ground, the rim on an edge, the appear effect. The detail pass lists every difference before a film is called done.
 - **One signature shot per film**, dealt with the direction: the one moment built to be remembered.
 - **Its own look.** Every film gets a direction from the deck and a palette from its brand, never the starter's look or your last film's.
+- **Templates, never copies.** Everything this skill carries (the templates, the device book, the type presets, the house numbers) and a clip's measured grammar is used like a template: structure, grammar, craft and detail level. No film is a one-to-one copy of another film's shots, layout or content; "make it like this clip" borrows its grammar, never its content. A film made from a template differs from it in devices, layout and content (`references/templates.md`).
 - **Ultra clean and smooth.** Every move eased by role, weighted, deterministic at 60 fps: no jitter, no pops, no effects standing in for ideas.
 - **Written and shown.** The script tells the story line by line; the picture proves each line as it lands; the idea reads with the sound off.
 - **Music in every film.** A licensed, human-made track cut to the picture, with effects caused by something visible.
@@ -115,7 +116,7 @@ Read `references/copy-and-type.md` §1–2b now. The script is written before an
 ### Step 2: Look: the brand on screen → `src/brand/`
 Read `references/brand-and-color.md` (and `references/brand-kits.md` with a kit, `references/clip-match.md` with a clip).
 - **A supplied kit** (taken in at Step 0: `new-film.sh --brand`, or `python3 scripts/brand.py <kit> --name "Product"`) gave `brand/brand.json`, the tokens (the kit's own greys as grounds, the brand accent), the logo's parts (`src/brand/logo.ts`), fonts and screenshots. `brand.py --check` after edits.
-- **A clip to feel like** (measured at Step 0: `--like`, or `python3 scripts/like.py measure <clip>`) gave `out/like.json` and `out/LIKE.md`. Borrow its grammar (pace, rhythm, curve families, density, camera habits, proportions), never its content (no layout, text, logo, colours, footage or music). The film keeps its own idea and direction.
+- **A clip to feel like** (measured at Step 0: `--like`, or `python3 scripts/like.py measure <clip>`) gave `out/like.json` and `out/LIKE.md`. Borrow its grammar (pace, rhythm, curve families, density, camera habits, proportions), never its content (no shot retold one by one, no layout, text, logo, colours, footage or music). The film keeps its own idea, direction and devices.
 - **Inventing a brand:** three adjectives → the face set's look and face (`node scripts/add-font.mjs <name>`), stage, accent; `python3 scripts/palette.py --recipe <dealt recipe> --accent '#…'` writes the tokens from the house colour system; a mark sheet of 6–10 directions with the misread test; a lockup set like a typographer. The starter's `// cinetic:placeholder` markers fail lint until replaced.
 - Render 2–4 style stills (the mark at 16 px and full size, one line of the script in its text animation, one product frame) and look at them.
 - **Gate:** stills pass §4; `node scripts/lint-film.mjs src` reports no placeholder and no off-token colour or font; a kit passes `brand.py --check`.
@@ -204,7 +205,7 @@ Run §8 on previews: launch and update films get at least 2 rounds; a sting or l
 
 ### Step 11: Deliver → `out/deliver/`
 - `bash scripts/deliver.sh out/film.mp4` with the format's flags (`--loop --gif --webm`, `--alpha StingAlpha,StingAlphaClear`, `--variants Film9x16,Film1x1`). It runs `credits.py` (the licence gate; credits go into `CREDITS.md` and the post text, never the picture), writes the poster and a manifest in `qa/`, and never delivers a stem or the decoded track. `bash scripts/brand-kit.sh` exports an invented brand's mark and lockups.
-- With a clip to match: `python3 scripts/like.py guard --film out/film.mp4 --clip <clip> --sheet out/qa/like-guard.png` must pass.
+- With a clip to match: `python3 scripts/like.py guard --film out/film.mp4 --clip <clip> --sheet out/qa/like-guard.png` must pass. A film made from a template passes the same guard against the template's floor, its scaffold rendered as it comes (`references/templates.md`).
 - Write a short `README.md` (the idea, the direction, the device, the grid, how to render, the file list).
 - **Gate:** every deliverable in the §1 row exists and passes `probe.py` at its own spec.
 
@@ -344,7 +345,7 @@ Critic prompts say what changed, "Do not re-report fixed issues", "Don't propose
 
 **Ship gate**
 - The 12-dimension rubric: every dimension ≥ 3, Picture ≥ 4, Finish and Sound and sync = 5, mean ≥ 4.2; no open P0.
-- Every script passes (`copy-check` and `copy-check --ui src`, `probe`, `check-sync`, `forensics`, `av-audit --stems`, `lint-film --strict`, `grid-check`, `layout-audit` with its placeholder floor); `look-audit` passes both floors; the detail pass has no open difference a viewer could see; `grammar-score` mean ≥ 90 with no dimension under 70; the sound gates and `credits.py`; with a clip, `like.py guard`.
+- Every script passes (`copy-check` and `copy-check --ui src`, `probe`, `check-sync`, `forensics`, `av-audit --stems`, `lint-film --strict`, `grid-check`, `layout-audit` with its placeholder floor); `look-audit` passes both floors; the detail pass has no open difference a viewer could see; `grammar-score` mean ≥ 90 with no dimension under 70; the sound gates and `credits.py`; with a clip, `like.py guard` against it, and with a template, against its floor.
 - Stop after 5 rounds, or sooner once the gate is met; then say plainly what you would still change.
 
 ## 9. File index
@@ -354,7 +355,7 @@ Read each file when its step comes up; never all at once.
 | When | File | What it gives you |
 |---|---|---|
 | Step 0, a format | `references/formats.md` | a recipe per format, shot bands and sound per format, social re-layouts |
-| Step 0, a template | `references/templates.md` | which film template fits (update, ui-walkthrough, capability-reel, prompt-run, camera-teaser, social-ad, type-explainer), what each lays down, the grammar to keep |
+| Step 0, a template | `references/templates.md` | which film template fits (update, ui-walkthrough, capability-reel, prompt-run, camera-teaser, social-ad, type-explainer), what each lays down, the grammar to keep, how a film made from one differs from it |
 | Before the first film | `references/worked-example.md` | Tessel from idea to master, with its mistakes and fixes |
 | Step 1 | `references/concept-and-story.md` | inventory, lenses, the direction deck, the idea sentence, the signature shot, arcs, end cards |
 | Step 1 | `assets/TREATMENT.md` | the treatment template with the Direction and Script blocks |
@@ -393,7 +394,7 @@ Read each file when its step comes up; never all at once.
 | three dealt art directions; the sheet; a redraw | `scripts/deck.py` (`--options 3`, `--direction <id>`, `--have`, `--show`, `--redraw`, `--brand`, `--changes`, `--validate`) |
 | a weighted draw of devices and techniques, and one text animation per line; one entry in full; a family | `scripts/pick.py` (`--format`, `--energy`, `--lines`, `--have`, `--family`, `--category`, `--show <id>`, `--list`, `--markdown`) |
 | a supplied brand kit: tokens, logo parts, fonts, screenshots | `scripts/brand.py` (`--check`) |
-| a clip's grammar; the recreation guard | `scripts/like.py measure <clip>`, `like.py guard` |
+| a clip's grammar; the recreation guard (against a clip, or a template's floor) | `scripts/like.py measure <clip>`, `like.py guard` |
 | photos, footage, textures and art with no-credit licences: search (with the people, text and detail vet), sheet, get, grade, check | `scripts/assets.mjs` |
 | official marks of the products it works with (integrations, sources, models, platforms): search, get, list, check; the record of source, licence and owner | `scripts/logos.mjs` |
 | a font family vendored without `npm install` | `scripts/add-font.mjs` (or `new-film.sh --font`) |

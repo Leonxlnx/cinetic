@@ -30,8 +30,10 @@
  *        assets/templates one with no error and no script warning, which with a track in (104 and 136 BPM, the
  *        first downbeat 0.25 s in, a stop ending 0.4 s after the last bar line) still has every act line on a
  *        downbeat, no error and a tail that holds the stop's element and 1 s after it; each template's end card
- *        holds 1.2-1.8 s from the frame it is whole (a stop ending's gap more at most) (needs bash; on Windows,
- *        Git for Windows' bash).
+ *        holds 1.2-1.8 s from the frame it is whole (a stop ending's gap more at most); and a template that deals
+ *        its devices never replays its own deal (its floor, what the unnamed scaffold plays): for 24 product names
+ *        every deal differs from the floor in at least half its slots, the names deal many sequences, and the
+ *        scaffold keeps the floor (needs bash; on Windows, Git for Windows' bash).
  *
  * grid-check.ts runs under Node's TypeScript type stripping (Node 22.18+, or older 22.x with
  * --experimental-strip-types), so the fixtures are self-contained timelines with no imports. The
@@ -344,6 +346,45 @@ console.log(JSON.stringify(out));
       H = JSON.parse(hp.stdout.trim().split('\n').pop());
     } catch {
       /* reported below */
+    }
+    // the deal: a film made from a template never replays the template's own deal (src/deal.ts FLOOR, what the unnamed
+    // scaffold plays): for 24 product names every deal differs from the floor in at least half its slots and the names
+    // deal many different sequences; the scaffold itself, still unnamed, keeps the floor
+    const dealProbe = join(TMP, 'deal.mts');
+    writeFileSync(dealProbe, `import { existsSync, readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+const NAMES = ['Tessel', 'Plinth', 'Northwind', 'Loomly', 'Quarry', 'Brightdesk', 'Halyard', 'Orbitly', 'Fernway', 'Glint', 'Parcel', 'Corvid',
+  'Lumen', 'Basalt', 'Driftwood', 'Keel', 'Marlow', 'Sable', 'Verity', 'Waypoint', 'Zephyr', 'Ledgerly', 'Cobalt Notes', 'Pine & Post'];
+const out: Record<string, unknown> = {};
+for (const [key, dir] of JSON.parse(readFileSync(process.argv[2], 'utf8')) as [string, string][]) {
+  if (!existsSync(dir + '/src/deal.ts')) { out[key] = null; continue; }
+  const D = await import(pathToFileURL(dir + '/src/deal.ts').href);
+  const slots = Object.keys(D.FLOOR);
+  const deals = NAMES.map((n) => D.dealOf(n));
+  out[key] = { slots: slots.length, floorKept: JSON.stringify(D.DEAL) === JSON.stringify(D.FLOOR),
+    minApart: Math.min(...deals.map((d: Record<string, string>) => slots.filter((s) => d[s] !== D.FLOOR[s]).length)),
+    distinct: new Set(deals.map((d: unknown) => JSON.stringify(d))).size };
+}
+console.log(JSON.stringify(out));
+`);
+    const dealDirs = join(TMP, 'deal-dirs.json');
+    writeFileSync(dealDirs, JSON.stringify(holds.map((h) => [h.name, h.dir])));
+    const dp = spawnSync('npx', ['tsx', dealProbe, dealDirs], { encoding: 'utf8', cwd: STARTER, shell: process.platform === 'win32' });
+    let DL = null;
+    try {
+      DL = JSON.parse(dp.stdout.trim().split('\n').pop());
+    } catch {
+      /* reported below */
+    }
+    for (const h of holds) {
+      const d = DL?.[h.name];
+      if (DL && d === null) {
+        console.log(`skip  --template ${h.name} deals no devices (one sequence: its film is told apart from the floor by its direction and the guard)`);
+        continue;
+      }
+      result(!!d && d.floorKept && 2 * d.minApart >= d.slots && d.distinct >= 6,
+        `--template ${h.name}: no product's deal replays the template's own (at least half its slots differ from the floor; many sequences)`,
+        d ? `${d.slots} slots, at least ${d.minApart} apart, ${d.distinct} deals of 24 names, scaffold keeps the floor: ${d.floorKept}` : (dp.stderr || dp.stdout).trim().slice(0, 300));
     }
     for (const h of holds) {
       const a = H?.[h.name];

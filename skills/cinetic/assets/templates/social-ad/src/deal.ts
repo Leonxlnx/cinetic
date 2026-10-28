@@ -79,7 +79,26 @@ export const deal = (seed: number, pinned: Partial<Record<string, string>> = {})
   return out as Dealt;
 };
 
+/** The template's own deal: what its scaffold plays before the product's name is in (the placeholder name). */
+const FLOOR_SEED = seedOf('[Product]');
+export const FLOOR: Dealt = deal(FLOOR_SEED);
+/**
+ * A film is never the template replayed: of the slots it deals (pins aside), at least half play another device than
+ * the floor's, or it re-deals from the next seed (the first seed that differs keeps its deal). The unnamed scaffold
+ * keeps the floor.
+ */
+export const dealApart = (seed: number, pinned: Partial<Record<string, string>> = {}): Dealt => {
+  const free = SLOTS.filter((s) => pinned[s] === undefined);
+  for (let k = 0; seed !== FLOOR_SEED && k < 64; k++) {
+    const d = deal(k ? (seed + k * 104729) >>> 0 : seed, pinned);
+    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length) return d;
+  }
+  return deal(seed, pinned);
+};
+/** The deal a product of this name gets, unpinned: the same name, the same deal, never the floor's. */
+export const dealOf = (name: string): Dealt => dealApart(seedOf(name));
+
 /** The film's seed: ad.ts `seed`, else its name's. */
 export const SEED: number = AD.seed ?? seedOf(AD.name);
 /** The devices this film plays, slot by slot. */
-export const DEAL: Dealt = deal(SEED, AD.devices);
+export const DEAL: Dealt = dealApart(SEED, AD.devices);

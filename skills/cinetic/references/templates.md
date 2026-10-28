@@ -11,13 +11,25 @@ capability-reel, camera-teaser and social-ad are bold.
 A scaffold passes `tsc`, `grid-check` and `lint-film` with only the `cinetic:placeholder` markers left: the brand's
 and the content file's.
 
-A template is the floor, never the film. It carries structure, shot types, timing, transitions and choreography;
-the product, the words, the brand and the direction are yours. Fill the slots, rebuild the product's own screens
-where the kit stands in, deal the direction and retell the floor in its world (its grounds, light, type and
-signature replace the template's), then cut it to the track: `track.py grid` moves every `b()` onto the music.
-Every template's end card is whole about 1.2-1.8 s before the last frame and creeps while it holds; its `TAIL` reads
-the track's ending, so a stop ending (`track.py edit --end stop`) adds the gap to its one element and 1 s rings out
-after it.
+A template is the floor, never the film. It carries structure, shot types, timing, transitions, choreography, grammar
+and the level of craft and detail; the product, the words, the brand, the direction, the devices and the layouts are
+the film's own. Fill the slots, rebuild the product's own screens where the kit stands in, deal the direction and
+retell the floor in its world (its grounds, light, type and signature replace the template's), then cut it to the
+track: `track.py grid` moves every `b()` onto the music. Every template's end card is whole about 1.2-1.8 s before the
+last frame and creeps while it holds; its `TAIL` reads the track's ending, so a stop ending (`track.py edit --end
+stop`) adds the gap to its one element and 1 s rings out after it.
+
+**A film made from a template differs from it in devices, layout and content; it never copies its shots.**
+- Devices: `src/deal.ts` deals each act's device from the product's name and never replays the template's own deal: at
+  least half the slots it deals differ from `FLOOR`, what the unnamed scaffold plays (pins aside). The capability reel
+  plays one sequence, so its direction alone sets its acts apart.
+- Content: every word and number comes from the product through the content file's slots; lint and `copy-check.py --ui
+  src` fail a slot left as it came.
+- Layout: the direction retells every act in its world, and before delivery the film passes `like.py guard` against
+  the floor as it would against a clip: scaffold the template again as it comes beside the film (`bash
+  scripts/new-film.sh ../floor --template <name> --link-modules "$PWD/node_modules"`), render it there (`npx remotion
+  render Film out/floor.mp4 --muted --scale 0.5`), then `python3 scripts/like.py guard --film out/film.mp4 --clip
+  ../floor/out/floor.mp4` (`references/clip-match.md` §5). A frame that keeps the floor's layout fails it.
 
 ## Which one
 
