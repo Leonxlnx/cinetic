@@ -335,10 +335,15 @@ class Song:
         s = str(x).strip()
         m = re.match(r'^@([A-Za-z_]\w*)\s*([+-]\s*\d+(\.\d+)?)?$', s)
         if m:
-            if m.group(1) not in self.cues['cue']:
+            at = self.cues['cue'].get(m.group(1))
+            rv = (self.cues.get('declared') or {}).get('reveal')
+            if at is None and m.group(1) == 'reveal' and isinstance(rv, (int, float)):
+                at = rv  # no cue named reveal: the timeline's REVEAL (export-cues declared.reveal)
+            if at is None:
                 raise ScoreError(f'score.json refers to cue "{m.group(1)}", not in cues.json '
-                                 f'({", ".join(sorted(self.cues["cue"]))})')
-            return (self.cues['cue'][m.group(1)] + float((m.group(2) or '0').replace(' ', ''))) / self.fps
+                                 f'({", ".join(sorted(self.cues["cue"]))})'
+                                 + ('; "@reveal" also reads the timeline\'s REVEAL, which it does not declare' if m.group(1) == 'reveal' else ''))
+            return (at + float((m.group(2) or '0').replace(' ', ''))) / self.fps
         m = re.match(r'^(\d+)(?::(\d+(?:\.\d+)?))?(?::(\d+(?:\.\d+)?))?$', s)
         if m:
             return self.bar_t(int(m.group(1)), float(m.group(2) or 0), float(m.group(3) or 0))

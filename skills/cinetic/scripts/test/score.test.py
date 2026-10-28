@@ -820,6 +820,11 @@ def stop_payoff(d):
     check(r is not None and not any("is the stop ending's element" in x for x in r['warnings'])
           and lk.get('under_payoff_lu') is not None,
           f"a payoff on the reveal: the element is measured under it ({lk.get('under_payoff_lu')} LU)")
+    # no cue named reveal: "@reveal" reads the timeline's REVEAL (export-cues declared.reveal), as the starter's payoff
+    decl = dict(cues_with(ev, total=840, cue={'lockup': 756}), declared={'reveal': 300})
+    p, r = run(d, 'stopdecl', decl, music_score(block, payoff='@reveal'), NO_EARSHOT)
+    check(r is not None and abs(((r.get('payoff') or {}).get('t') or 0) - 300 / FPS) < 1e-3,
+          f"\"@reveal\" with no reveal cue reads the declared REVEAL ({(r or {}).get('payoff') or p.stderr.strip()[-200:]})")
 
 
 def width_and_bed_levels(d):

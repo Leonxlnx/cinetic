@@ -8,9 +8,9 @@
   },
   "sfx": { "engine": "auto", "kit": "audio/kit.json", "python": null },
   "stopdowns": { "auto": "kit", "add": [], "skip": [], "quiet_db": -7 },
-  "ending": { "mode": "stop", "at": "@lockup" },
+  "ending": { "mode": "stop", "at": "@end" },
   "typing": "auto",
-  "payoff": "@lockup",
+  "payoff": "@reveal",
   "mix": { "music": 1.0, "sfx": 1.0 },
   "master": { "lufs": -14, "ceiling": 0.77, "fade": 1.3 }
 }
