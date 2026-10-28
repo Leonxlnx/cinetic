@@ -21,16 +21,17 @@ export type Moment = 'approve' | 'chat' | 'count' | 'budget' | 'table';
  * name until the mark is fetched).
  */
 /** photos: the real pictures the moment shows (public/ paths): the four selects an 'approve' review approves. Empty, they show as the files they are. */
-export type Change = { id: string; words: string; moment: Moment; logo?: string; logoName?: string; photos?: string[] };
+/** key: the change's key words as they read in it (the line's emphasis lands on them; else its last word). */
+export type Change = { id: string; words: string; moment: Moment; logo?: string; logoName?: string; photos?: string[]; key?: string };
 
 export const UPDATE: { name: string; from: string; version: string; changes: Change[] } = {
   name: IDENTITY.name,
   from: '2.3', // the version the film starts on: its last numeral rolls to the new one (hook device 'roll')
   version: '2.4',
   changes: [
-    { id: 'approve', words: 'Approvals take one tap', moment: 'approve' },
-    { id: 'threads', words: 'Replies land in []', moment: 'chat', logo: '[source-slug]', logoName: '[Source]' },
-    { id: 'live', words: 'View counts run live', moment: 'table' },
+    { id: 'approve', words: 'Approvals take one tap', moment: 'approve', key: 'one tap' },
+    { id: 'threads', words: 'Replies land in []', moment: 'chat', logo: '[source-slug]', logoName: '[Source]', key: 'Replies' },
+    { id: 'live', words: 'View counts run live', moment: 'table', key: 'live' },
   ],
 };
 

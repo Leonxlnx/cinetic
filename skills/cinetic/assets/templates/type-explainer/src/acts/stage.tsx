@@ -12,6 +12,7 @@ import { LOGO } from '../brand/logo';
 import { bakePlate } from '../fx/Gradients';
 import { dealGrounds, type GroundSpec, LitGround as Ground } from '../fx/Grounds';
 import { shadowTone } from '../fx/KeyLight';
+import { dealLineEmphasis, keysOf } from '../fx/TypeEmphasis';
 import { crispWords } from '../fx/TypePresets';
 import { kitTheme } from '../kit';
 import { clamp, E, prog } from '../lib/anim';
@@ -20,6 +21,16 @@ import { useFilm } from '../lib/film';
 import { FILM_LIGHT, keyDir } from '../lib/light';
 import { fitSize, measureTracked } from '../lib/measure';
 import { SEED } from '../deal';
+import { EXPLAIN } from '../explain';
+
+/**
+ * Every line set on a TypeLine sets its key words apart (fx/TypeEmphasis): one device per line dealt from the film's seed,
+ * never the same twice in a row, on the words explain.ts `keys` names (else the line's last word); the close beside the
+ * name is placed by its width, so it takes a device that holds it.
+ */
+export const EMPH = dealLineEmphasis(['what', 'pain', 'close'], SEED, { fixed: ['close'] });
+/** A line's key words from explain.ts `keys`, found in its text. */
+export const keysFor = (id: string, text: string) => keysOf(text, (EXPLAIN.keys as Record<string, string | undefined>)[id]) ?? undefined;
 import { ACT, type ActName, CUE, f60x, H, W } from '../timeline';
 
 /** The page: a tinted white, ink type, the one accent. The product's own stage is the mid slate (white type reads on it). */

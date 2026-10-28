@@ -20,6 +20,12 @@ export const EXPLAIN = {
     close: 'Try it at [product.com].', // the close beside the name: what to do
   },
   /**
+   * Each line's key words, as they read in the line: the line's emphasis device lands on them (acts/stage.tsx EMPH). Name
+   * the words that carry the claim, never the product's name; copy-check.py names one for a line that has none. A key
+   * that is not in its line falls back to the line's last word.
+   */
+  keys: { what: '[work]', pain: '[N] apps', close: '[product.com]' } as Record<string, string>,
+  /**
    * The product moment the promise opens onto. 'ui' (the default): the product's own screen built in code (kit
    * DenseScreen: a dense, real-feeling screen from a sample world of `world`, seeded by the name; rebuild it from the
    * product's real screens before shipping). 'photo': a supplied picture of the product in use in public/ (`src`),

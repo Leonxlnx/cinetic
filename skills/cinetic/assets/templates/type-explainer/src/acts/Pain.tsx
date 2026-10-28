@@ -11,7 +11,7 @@ import { EXPLAIN } from '../explain';
 import { DEAL } from '../deal';
 import { ACT, copy, CUE, f60x, FPS, H, speechStarts, W } from '../timeline';
 import { WORLD } from './product';
-import { ActGround, PAGE, sentenceSize, sentenceStyle, sentenceWidth, useAbs, useCrisp } from './stage';
+import { ActGround, EMPH, keysFor, PAGE, sentenceSize, sentenceStyle, sentenceWidth, useAbs, useCrisp } from './stage';
 
 // PAIN - the problem as one line, the turn of the story; it enters carrying the last line's rightward speed and
 // leaves the same way, accelerating into a cut at speed. The dealt device (src/deal.ts):
@@ -118,7 +118,7 @@ export const Pain: React.FC = () => {
       <ActGround F={F} act="pain" />
       {F >= c.in - 1 && F < cut && (
         <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${x.toFixed(2)}px, 0, 0)` }}>
-          <TypeLine spec={{ preset: 'land', text: c.text, at: c.in - 1, colors: { ink: PAGE.text, accent: PAGE.accent, mute: PAGE.mute }, id: 'pain' }} frame={F} size={size} y={H / 2} />
+          <TypeLine spec={{ preset: 'land', text: c.text, at: c.in - 1, colors: { ink: PAGE.text, accent: PAGE.accent, mute: PAGE.mute }, id: 'pain', emph: EMPH.pain, keys: keysFor('pain', c.text) }} frame={F} size={size} y={H / 2} />
         </div>
       )}
     </AbsoluteFill>

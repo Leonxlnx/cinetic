@@ -10,7 +10,7 @@ import { mixColor } from '../lib/color';
 import { measureTracked } from '../lib/measure';
 import { DEAL } from '../deal';
 import { ACT, copy, f60x, FPS, H, W } from '../timeline';
-import { ActGround, capOf, MarkWord, PAGE, sentenceSize, useAbs, useCrisp } from './stage';
+import { ActGround, capOf, EMPH, keysFor, MarkWord, PAGE, sentenceSize, useAbs, useCrisp } from './stage';
 import { hubOnScreen } from './Grid';
 
 // END - the close. The dealt device (src/deal.ts):
@@ -82,7 +82,7 @@ export const End: React.FC = () => {
           </div>
         )}
         {F >= close.in - 1 && (
-          <TypeLine spec={{ preset: 'mask', text: close.text, at: close.in - 1, colors: { ink: PAGE.mute, mute: mixColor(PAGE.mute, PAGE.ground, 0.55) }, id: 'close' }} frame={F} size={cs} y={yLock + LOCK.below * U} />
+          <TypeLine spec={{ preset: 'mask', text: close.text, at: close.in - 1, colors: { ink: PAGE.mute, mute: mixColor(PAGE.mute, PAGE.ground, 0.55), accent: PAGE.accent }, id: 'close', emph: EMPH.close, keys: keysFor('close', close.text) }} frame={F} size={cs} y={yLock + LOCK.below * U} />
         )}
       </div>
     </AbsoluteFill>

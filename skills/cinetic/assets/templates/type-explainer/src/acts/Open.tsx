@@ -10,7 +10,7 @@ import { creep } from '../lib/handoff';
 import { fitSize, measureTracked } from '../lib/measure';
 import { DEAL } from '../deal';
 import { ACT, copy, CUE, f60x, FPS, H, speechStarts, W } from '../timeline';
-import { ActGround, Cam, capOf, MarkWord, PAGE, sentenceSize, sentenceStyle, useAbs, useCrisp } from './stage';
+import { ActGround, Cam, capOf, EMPH, keysFor, MarkWord, PAGE, sentenceSize, sentenceStyle, useAbs, useCrisp } from './stage';
 
 // OPEN - two shots: the name, then what the product is. The name shot is the dealt device (src/deal.ts):
 //   band   the name drops in as one giant word (whole inside the safe area: up to 500 px, a 50 px drop) while a band
@@ -158,7 +158,7 @@ export const Open: React.FC = () => {
         {F >= what.in - 1 && (
           <Cam k={k}>
             <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(drift + slide + away).toFixed(2)}px, 0, 0)` }}>
-              <TypeLine spec={{ preset: DEAL.voice, text: what.text, at: what.in - 1, colors: { ink: PAGE.text, accent: PAGE.accent, mute: PAGE.mute }, id: 'what' }} frame={F} size={size} y={H / 2} />
+              <TypeLine spec={{ preset: DEAL.voice, text: what.text, at: what.in - 1, colors: { ink: PAGE.text, accent: PAGE.accent, mute: PAGE.mute }, id: 'what', emph: EMPH.what, keys: keysFor('what', what.text) }} frame={F} size={size} y={H / 2} />
             </div>
           </Cam>
         )}
