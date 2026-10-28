@@ -50,8 +50,13 @@ export const bt = (x: number) => {
   return b(1 + Math.floor(n / 4), n % 4, q % 4);
 };
 
-/** After the last bar the picture holds while the audio decays to digital silence. */
-export const TAIL = FPS;
+/**
+ * After the last bar the picture holds while the audio decays to digital silence: 1 s. With a stop ending (src/music.ts
+ * end.mode 'stop', track.py edit --end stop) the bed stops on the bar line that ends the body and the ending's one
+ * element sounds on MUSIC.end.f, 0.2-0.7 s later: the tail is that gap, then the 1 s.
+ */
+const STOP_GAP = MUSIC && MUSIC.end.mode === 'stop' ? Math.max(0, Math.ceil(MUSIC.end.f) - b(MUSIC.bars + 1)) : 0;
+export const TAIL = STOP_GAP + FPS;
 
 /**
  * Where each act starts, in beats (17 bars at 120 BPM: 35 s with the tail). Every act line sits on a bar line, so with
@@ -146,6 +151,7 @@ export const CUE: Record<string, number> = {
   insight: bt(44),
   say4: bt(44.5),
   chip: bt(47), // the count chip glides in once the line is in: its proof
+  pillGlint: bt(49.5), // the pill's ring catches the light before the whip: the held pill keeps living at a slow track
   exitInsight: bt(50.5),
   whipLeft: bt(51.25),
   // pick (step three): the options arrive, one is chosen, it becomes the build's head and the output builds
@@ -253,7 +259,7 @@ export const SALIENCE: Record<string, Salience> = {
   claim: 'copy', claimPush: 'move', pushOut: 'move', exitClaim: 'move',
   field: 'cut', step1: 'copy', erase: 'hit', typeIn: 'hit', cursor: 'move', press: 'hit', busy: 'hit', develop: 'hit', pullBack: 'move', rows2: 'life', whipUp: 'move',
   feed: 'cut', count: 'life', flick: 'move', rows: 'life', peak: 'move', brake: 'life', land: 'hit', lift: 'move', morph: 'move',
-  insight: 'cut', say4: 'copy', chip: 'hit', exitInsight: 'copy', whipLeft: 'move',
+  insight: 'cut', say4: 'copy', chip: 'hit', pillGlint: 'life', exitInsight: 'copy', whipLeft: 'move',
   pick: 'cut', options: 'hit', say5: 'copy', select: 'move', chosen: 'hit', toPill: 'move', build: 'hit', pct: 'life', built: 'hit',
   page: 'cut', pageLand: 'hit', art: 'hit', scroll: 'move', recede: 'move',
   end: 'cut', mark: 'hit', lockup: 'hit', payoff: 'copy', rest: 'life', last: 'cut',

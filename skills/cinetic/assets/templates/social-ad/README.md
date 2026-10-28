@@ -23,7 +23,7 @@ pins a slot (`{ field: 'ring' }`); the mark spins once a film at most. See the d
 | 3 | `field` | wall, ring, depth | the rise carried up | the claim inside the product's content (a wall settling round a clear box, a ring orbiting it, or three planes with the camera pushing through), its words rising out of a mask, its last word on the accent pill growing round it in 10 f; once read, a type push into the pill; the field leaves up |
 | 4 | `label` | rivers, ticker, screen | the field leaving up | a chip whose last word rolls once (out of the chip upward, the new word in from below, 16 f) over two diagonal streams of tiles, rows of tiles flowing past, or the product's own screen with its lens gliding to a new row; the content rushes out right |
 | 5 | `taglines` | panel, claim | the rush carried | two imperatives taking turns: beside the product's screen as a lit tilted panel on the film's one 3D turn (falling into place, the first dropping off), or as the claim on the accent swept in from the left; a push into the cut |
-| 6 | `end` | spin, rise | a designed hard cut | the mark spins in (when the brand did not spin) or rises out of a mask with the name; the close rises under them; the lockup holds about a beat, then the tail |
+| 6 | `end` | spin, rise | a designed hard cut | the mark spins in (when the brand did not spin) or rises out of a mask with the name; the close rises under them; the lockup holds about a second and a half with a creep, the tail included |
 
 **What to write.**
 - `src/ad.ts`: the script (the opener 3-4 words with the name first: what it is; one word either side of the stack; the

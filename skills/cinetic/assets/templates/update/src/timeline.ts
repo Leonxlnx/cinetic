@@ -44,8 +44,13 @@ export const f60 = (frames: number, fps: number = FPS) => Math.round((frames * f
 /** The fractional twin of f60, for durations inside a move. */
 export const f60x = (frames: number, fps: number = FPS) => (frames * fps) / 60;
 
-/** After the last bar the picture holds while the audio decays to digital silence. */
-export const TAIL = FPS;
+/**
+ * After the last bar the picture holds while the audio decays to digital silence: 1 s. With a stop ending (src/music.ts
+ * end.mode 'stop', track.py edit --end stop) the bed stops on the bar line that ends the body and the ending's one
+ * element sounds on MUSIC.end.f, 0.2-0.7 s later: the tail is that gap, then the 1 s.
+ */
+const STOP_GAP = MUSIC && MUSIC.end.mode === 'stop' ? Math.max(0, Math.ceil(MUSIC.end.f) - b(MUSIC.bars + 1)) : 0;
+export const TAIL = STOP_GAP + FPS;
 
 /** How many changes the film shows (2-4, from src/update.ts). */
 export const N = UPDATE.changes.length;
@@ -118,8 +123,9 @@ export const CUE: Record<string, number> = {
   gather: beat(BEATS.payoff), // the pull back begins: every change at once, the version swinging back in front
   swing: beat(BEATS.payoff, 2), // 'rise': the version starts out of its mask as the strip softens
   land: beat(BEATS.payoff + 1, 1), // the version lands as the subject ('pull': its swing is centred on the act line, landing here)
-  lockup: beat(BEATS.end + 2), // the mark and the name are set: the payoff of the end card (it holds about a second and a half with the tail)
-  glint: beat(BEATS.end + 2, 3), // the mark's last part catches the light
+  markIn: beat(BEATS.end + 1, 1), // the version has stepped back: the mark's parts rise into the lockup
+  lockup: beat(BEATS.end + 2, 3), // the name lands beside the mark: the payoff of the end card (it holds about a second and a half with the tail, creeping)
+  glint: beat(BEATS.end + 3, 1), // the mark's last part catches the light
   rest: beat(BEATS.end + 3, 2), // the slow push reaches the name: the lock keeps living
   end: beat(BEATS.last), // last bar line; TAIL follows
 };
@@ -172,7 +178,7 @@ export const SALIENCE: Record<string, Salience> = {
   roll: 'hit',
   rise: 'hit',
   ...Object.fromEntries(UPDATE.changes.flatMap((_c, i) => [[`c${i}`, 'cut' as Salience], [`hit${i}`, 'hit' as Salience], [`say${i}`, 'copy' as Salience], [`push${i}`, 'move' as Salience]])),
-  gather: 'move', swing: 'move', land: 'hit', lockup: 'hit', glint: 'life', rest: 'life', end: 'cut',
+  gather: 'move', swing: 'move', land: 'hit', markIn: 'hit', lockup: 'hit', glint: 'life', rest: 'life', end: 'cut',
 };
 
 export type Copy = {

@@ -49,8 +49,13 @@ export const bt = (x: number) => {
   return b(1 + Math.floor(n / 4), n % 4, q % 4);
 };
 
-/** After the last bar the picture holds while the audio decays to digital silence. */
-export const TAIL = FPS;
+/**
+ * After the last bar the picture holds while the audio decays to digital silence: 1 s. With a stop ending (src/music.ts
+ * end.mode 'stop', track.py edit --end stop) the bed stops on the bar line that ends the body and the ending's one
+ * element sounds on MUSIC.end.f, 0.2-0.7 s later: the tail is that gap, then the 1 s.
+ */
+const STOP_GAP = MUSIC && MUSIC.end.mode === 'stop' ? Math.max(0, Math.ceil(MUSIC.end.f) - b(MUSIC.bars + 1)) : 0;
+export const TAIL = STOP_GAP + FPS;
 
 /**
  * Where each act starts, in beats (10 bars at 120 BPM: 21 s with the tail). Every act line sits on a bar line, so with a
@@ -86,10 +91,11 @@ export const beatAfter = (f: number, from: number) => {
   while (bt(q / 4) < f && q < 4096) q++;
   return q / 4;
 };
-/** The end card: the title at beat 32.25; the tagline takes its place once the title is read (beat 35.5 at 120 BPM,
- *  later at a faster track, so the read never shrinks with the beats). */
+/** The end card: the title at beat 32.25; the tagline takes its place once the title is read, at beat 38.25 (later if a
+ *  track is fast enough that the read needs it, so the read never shrinks with the beats): the lockup on it then holds
+ *  about a second and a half with the tail, creeping. */
 const TITLE_AT = 32.25;
-const TAGLINE_AT = beatAfter(bt(TITLE_AT) + f60(TITLE_LEAD + TITLE_TYPE + holdFor(wordCount(REEL.lines.title), PACE[PACE_NAME])), 35.5);
+const TAGLINE_AT = beatAfter(bt(TITLE_AT) + f60(TITLE_LEAD + TITLE_TYPE + holdFor(wordCount(REEL.lines.title), PACE[PACE_NAME])), 38.25);
 
 // Named sync points (absolute frames), all on the 16th grid. Picture code reads these; src/sync.ts turns them into
 // sound events. Salience below says what each asks of the eye.
@@ -143,11 +149,12 @@ export const CUE: Record<string, number> = {
   born4: bt(29.75),
   born5: bt(30.25),
   flood: bt(31),
-  // end: the title's name pops and the rest types, the mark rises beside it; the tagline takes its place
+  // end: the title's name pops and the rest types, the mark rises beside it once the title is typed, the key passes;
+  // the tagline takes the title's place
   end: bt(32),
   title: bt(TITLE_AT),
-  mark: bt(32.5),
-  key: bt(34),
+  mark: bt(34.75),
+  key: bt(36),
   tagline: bt(TAGLINE_AT),
   lockup: bt(TAGLINE_AT + 0.5),
   rest: bt(Math.max(37, TAGLINE_AT + 1.25)),

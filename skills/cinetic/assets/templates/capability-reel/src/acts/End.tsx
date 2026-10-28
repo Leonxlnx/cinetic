@@ -13,9 +13,9 @@ import { ACT, copy, CUE, f60, f60x, FPS, H, TITLE_LEAD, TITLE_TYPE, W } from '..
 import { INK, lineSize, useAbs } from './stage';
 
 // END - on the ink the flood left: the title's name (its first word, or every word of a longer name) pops, the rest
-// types on as the title rises a little; the mark's parts rise beside it a beat later. The key passes once across the
-// set. The title shrinks out and the tagline takes its place, settling from 108 % as it comes into focus; the mark and
-// the tagline hold.
+// types on as the title rises a little; the mark's parts rise beside it once the title is typed. The key passes once
+// across the set. The title shrinks out and the tagline takes its place, settling from 108 % as it comes into focus;
+// the mark and the tagline hold about a second and a half, creeping.
 
 export const End: React.FC = () => {
   const F = useAbs('end');

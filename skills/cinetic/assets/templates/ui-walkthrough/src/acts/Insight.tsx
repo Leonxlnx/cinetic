@@ -3,16 +3,17 @@ import { AbsoluteFill } from 'remotion';
 import { U } from '../brand/tokens';
 import { DirBlur } from '../fx/Defocus';
 import { Avatar, face, KIT_TYPE, surfaceShadow } from '../kit';
-import { E, lmix, prog } from '../lib/anim';
-import { ACT, CUE, f60x, H, W } from '../timeline';
+import { E, hitPulse, lmix, prog } from '../lib/anim';
+import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { facePhoto, PILL_BOX, PillContent } from './Feed';
 import { drift, Ground, launchOut, ScriptLine, themeOf, useAbs } from './stage';
 
 // INSIGHT - what the product found, as one pill: the people who asked (crafted portraits), the insight, a count chip
-// that glides in on its beat; the line above says it in a sentence on its dealt move. Under the pill the words people
-// wrote rise as three quote cards, the outer two cropped by the frame's edges, riding a slower plane than the pill
-// while the camera pushes slowly in. Then the whole frame whips left into the choice, its last frame the fastest.
+// that glides in on its beat and a ring that catches the light once; the line above says it in a sentence on its dealt
+// move. Under the pill the words people wrote rise as three quote cards, the outer two cropped by the frame's edges,
+// riding a slower plane than the pill while the camera pushes slowly in. Then the whole frame whips left into the
+// choice, its last frame the fastest.
 
 /** The whip into the choice: px per frame on the cut, leftward. */
 export const WHIP_LEFT = { vCut: -96 * U };
@@ -46,6 +47,7 @@ export const Insight: React.FC = () => {
   const whipV = (dx - launchOut('insight', F - 1, WHIP_LEFT.vCut)) / U;
   const k = lmix(1, 1.06, prog(F, ACT.insight.from, ACT.pick.from, E.linear));
   const d = drift('insight', F, 90, 0.35);
+  const glint = hitPulse(F - CUE.pillGlint, 3, 10, FPS); // the pill's ring catches the light once before the whip
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
       <DirBlur v={whipV} axis="x" id="insight-whip">
@@ -67,7 +69,7 @@ export const Insight: React.FC = () => {
           </div>
           <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${H / 2}px`, transform: `scale(${k.toFixed(5)})` }}>
             <ScriptLine id="insight" F={F} top={300 * U} color={t.text} accent={t.accent} mute={t.mute} />
-            <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: PILL_BOX.w, height: PILL_BOX.h, borderRadius: PILL_BOX.h / 2, background: t.surface, boxShadow: `${surfaceShadow(t, 34, U)}, inset 0 0 0 ${(3 * U).toFixed(2)}px ${t.accent}`, transform: `translate3d(${(PILL_BOX.cx - PILL_BOX.w / 2).toFixed(2)}px, ${(PILL_BOX.cy - PILL_BOX.h / 2).toFixed(2)}px, 0)` }}>
+            <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: PILL_BOX.w, height: PILL_BOX.h, borderRadius: PILL_BOX.h / 2, background: t.surface, boxShadow: `${surfaceShadow(t, 34, U)}, inset 0 0 0 ${((3 + 2 * glint) * U).toFixed(2)}px ${t.accent}`, transform: `translate3d(${(PILL_BOX.cx - PILL_BOX.w / 2).toFixed(2)}px, ${(PILL_BOX.cy - PILL_BOX.h / 2).toFixed(2)}px, 0) scale(${(1 + 0.025 * glint).toFixed(4)})` }}>
               <PillContent chip={chip} />
             </div>
           </div>

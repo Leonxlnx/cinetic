@@ -268,7 +268,7 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
         </div>
       )}
       {cur >= 0 && <ChangeWords i={cur} F={F} />}
-      {F >= name.in - f60(14) && (
+      {F >= Math.min(CUE.markIn, name.in) && ( // the mark rises first; a long name at a fast track may start just before it
         <div style={{ position: 'absolute', inset: 0, transformOrigin: beside ? '50% 50%' : `${(lockRow.x + (markSize + 40 * U + nameW) / 2).toFixed(1)}px ${lockRow.y.toFixed(1)}px`, transform: `scale(${lockK.toFixed(5)})` }}>
           <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${lockRow.x.toFixed(2)}px, ${(lockRow.y - markSize / 2).toFixed(2)}px, 0)` }}>
             <LogoMark
@@ -276,7 +276,7 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
               size={markSize}
               fill={(part) => (T.dark && part.items.some((it) => it.fill?.toLowerCase() === C.ink.toLowerCase()) ? T.text : undefined)} // the mark's ink parts read on the slate
               poses={(_, j) => {
-                const t = prog(F, name.in - f60(14) + j * f60(5), name.in + f60(18) + j * f60(5), E.glideOut);
+                const t = prog(F, CUE.markIn + j * f60(5), CUE.markIn + f60(32) + j * f60(5), E.glideOut); // the parts rise first, the name lands after them
                 const glint = j === LOGO.parts.length - 1 ? 0.08 * hitPulse(F - CUE.glint, 2, 9) : 0; // the last part catches the light
                 return { y: (1 - t) * 40, o: Math.min(1, t * 2), s: 1 + glint };
               }}

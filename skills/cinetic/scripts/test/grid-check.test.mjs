@@ -28,7 +28,9 @@
  *      - new-film.sh --pace crisp scaffolds a film that passes grid-check, and new-film.sh --format update
  *        one whose changes are short sentences with no error or script warning, and every film template in
  *        assets/templates one with no error and no script warning, which with a track in (104 and 136 BPM, the
- *        first downbeat 0.25 s in) still has every act line on a downbeat and no error (needs bash; on Windows,
+ *        first downbeat 0.25 s in, a stop ending 0.4 s after the last bar line) still has every act line on a
+ *        downbeat, no error and a tail that holds the stop's element and 1 s after it; each template's end card
+ *        holds 1.2-1.8 s from the frame it is whole (a stop ending's gap more at most) (needs bash; on Windows,
  *        Git for Windows' bash).
  *
  * grid-check.ts runs under Node's TypeScript type stripping (Node 22.18+, or older 22.x with
@@ -40,7 +42,7 @@
  * Exit codes: 0 all pass, 1 a test failed.
  */
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -269,9 +271,11 @@ console.log(JSON.stringify({ text, rest }));
     result(gu.code === 0 && !gu.error && !bad.length, 'new-film.sh --format update scaffolds an update film whose changes are sentences (no error, no script warning)',
       gu.error ?? bad.map((x) => `${x.check}: ${x.message.slice(0, 90)}`).join('; '));
     // new-film.sh --template <name>: every film template scaffolds a film whose script passes as it comes, and with a
-    // track in (a steady fake one whose first downbeat is 0.25 s in, at a slow and a fast tempo) every act line still
-    // lands on a downbeat, the first act starts on frame 0 and no line loses its read (no error)
+    // track in (a steady fake one whose first downbeat is 0.25 s in, at a slow and a fast tempo, ending on a stop whose
+    // element sounds 0.4 s after the bar line where the bed stops) every act line still lands on a downbeat, the first
+    // act starts on frame 0, no line loses its read (no error) and the tail holds the stop: its element and 1 s after it
     const templates = readdirSync(join(SKILL, 'assets', 'templates')).filter((n) => existsSync(join(SKILL, 'assets', 'templates', n, 'template.json'))).sort();
+    const holds = [];
     for (const name of templates) {
       const dir = join(TMP, `tpl-${name}`).split('\\').join('/');
       const nt = spawnSync(bash, [join(SKILL, 'scripts', 'new-film.sh').split('\\').join('/'), dir, '--template', name, '--no-install'], { encoding: 'utf8' });
@@ -284,18 +288,71 @@ console.log(JSON.stringify({ text, rest }));
       const musicTs = join(dir, 'src', 'music.ts');
       const stub = readFileSync(musicTs, 'utf8');
       const bars = Math.round((sm.total - sm.fps) / sm.bar);
-      for (const bpm of [104, 136]) {
+      const t0 = 0.25 * sm.fps;
+      const stopTrack = (bpm, n = bars) => {
         const beatF = (60 / bpm) * sm.fps;
-        const t0 = 0.25 * sm.fps;
-        const D = Array.from({ length: bars + 1 }, (_, k) => +(t0 + k * 4 * beatF).toFixed(3));
-        const M = `export const MUSIC: Music | null = { bpm: ${bpm}, beatS: ${60 / bpm}, fps: ${sm.fps}, t0: ${t0}, bars: ${bars}, phraseLen: 4, downbeats: ${JSON.stringify(D)}, accents: [], phrases: [${t0}], entries: [], breaks: [], stops: [], end: { mode: 'stop', f: ${D[bars]} } };`;
-        writeFileSync(musicTs, stub.replace('export const MUSIC: Music | null = null;', M));
-        const gm = run('npx', ['tsx', GRID, join(dir, 'src', 'timeline.ts'), '--json'], STARTER);
+        const D = Array.from({ length: n + 1 }, (_, k) => +(t0 + k * 4 * beatF).toFixed(3));
+        const endF = +(D[n] + 0.4 * sm.fps).toFixed(3);
+        const M = `export const MUSIC: Music | null = { bpm: ${bpm}, beatS: ${60 / bpm}, fps: ${sm.fps}, t0: ${t0}, bars: ${n}, phraseLen: 4, downbeats: ${JSON.stringify(D)}, accents: [], phrases: [${t0}], entries: [], breaks: [], stops: [], end: { mode: 'stop', f: ${endF} } };`;
+        return { endF, music: stub.replace('export const MUSIC: Music | null = null;', M) };
+      };
+      for (const bpm of [104, 136]) {
+        let { endF, music } = stopTrack(bpm);
+        writeFileSync(musicTs, music);
+        let gm = run('npx', ['tsx', GRID, join(dir, 'src', 'timeline.ts'), '--json'], STARTER);
+        // a template whose acts grow a bar where a read needs it (src/timeline.ts BARS) has its own bar count at this
+        // tempo: the edit is cut to it (track.py edit --bars BARS), so the fake track is too
+        const body = (gm.findings ?? []).map((x) => x.check === 'music-grid' && /TOTAL - TAIL = (\d+) f/.exec(x.message)).find(Boolean);
+        if (body) {
+          ({ endF, music } = stopTrack(bpm, Math.round((Number(body[1]) - t0) / ((240 / bpm) * sm.fps))));
+          writeFileSync(musicTs, music);
+          gm = run('npx', ['tsx', GRID, join(dir, 'src', 'timeline.ts'), '--json'], STARTER);
+        }
         const errs = (gm.findings ?? []).filter((x) => x.severity === 'error');
-        result(!gm.error && !errs.length && gm.summary?.bpm === bpm, `--template ${name} with a ${bpm} BPM track (first downbeat 0.25 s in): acts on downbeats, no error`,
-          gm.error ?? errs.map((x) => `${x.check}: ${x.message.slice(0, 90)}`).join('; '));
+        const room = gm.summary ? gm.summary.total - Math.ceil(endF) : NaN;
+        result(!gm.error && !errs.length && gm.summary?.bpm === bpm && room >= sm.fps,
+          `--template ${name} with a ${bpm} BPM track (first downbeat 0.25 s in) and a stop ending: acts on downbeats, no error, the tail holds the stop's element and 1 s after it`,
+          gm.error ?? (errs.map((x) => `${x.check}: ${x.message.slice(0, 90)}`).join('; ') || `total ${gm.summary?.total}, ${room} f after the stop's element`));
       }
       writeFileSync(musicTs, stub);
+      // the end hold, read below in one process: the scaffold as it comes, and a copy with the stop-ending track at its own tempo
+      const stopDir = `${dir}-stop`;
+      cpSync(join(dir, 'src'), join(stopDir, 'src'), { recursive: true });
+      const own = stopTrack(sm.bpm);
+      writeFileSync(join(stopDir, 'src', 'music.ts'), own.music);
+      holds.push({ name, dir, stopDir, endF: own.endF });
+    }
+    // the end hold: from the frame the end card is whole (the lock begins and every line that stays to the end is
+    // resolved) to the last frame, about 1.2-1.8 s, creeping (the acts keep the hold alive); a stop ending adds its gap
+    const holdProbe = join(TMP, 'hold.mts');
+    writeFileSync(holdProbe, `import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+const out: Record<string, unknown> = {};
+for (const [key, dir] of JSON.parse(readFileSync(process.argv[2], 'utf8')) as [string, string][]) {
+  const T = await import(pathToFileURL(dir + '/src/timeline.ts').href);
+  const body = T.TOTAL - T.TAIL;
+  const whole = Math.max(T.END.from, ...T.COPY.filter((c: any) => (c.out ?? T.TOTAL) >= body).map((c: any) => c.resolved));
+  out[key] = { fps: T.FPS, total: T.TOTAL, body, whole };
+}
+console.log(JSON.stringify(out));
+`);
+    const dirs = join(TMP, 'hold-dirs.json');
+    writeFileSync(dirs, JSON.stringify(holds.flatMap((h) => [[h.name, h.dir], [`${h.name}-stop`, h.stopDir]])));
+    const hp = spawnSync('npx', ['tsx', holdProbe, dirs], { encoding: 'utf8', cwd: STARTER, shell: process.platform === 'win32' });
+    let H = null;
+    try {
+      H = JSON.parse(hp.stdout.trim().split('\n').pop());
+    } catch {
+      /* reported below */
+    }
+    for (const h of holds) {
+      const a = H?.[h.name];
+      const z = H?.[`${h.name}-stop`];
+      const s = (x) => (x.total - x.whole) / x.fps;
+      const gap = z ? (Math.ceil(h.endF) - z.body) / z.fps : NaN;
+      const ok = !!a && !!z && s(a) >= 1.2 - 1e-9 && s(a) <= 1.8 + 1e-9 && s(z) >= 1.2 - 1e-9 && s(z) <= 1.8 + gap + 1e-9 && z.total - Math.ceil(h.endF) >= z.fps;
+      result(ok, `--template ${h.name}: the end card holds 1.2-1.8 s (a stop ending's gap more at most), the stop's element 1 s or more before the end`,
+        a && z ? `${s(a).toFixed(2)} s; with the stop ${s(z).toFixed(2)} s (gap ${gap.toFixed(2)} s, ${z.total - Math.ceil(h.endF)} f after the element)` : (hp.stderr || hp.stdout).trim().slice(0, 300));
     }
   }
 }

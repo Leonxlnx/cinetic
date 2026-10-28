@@ -71,8 +71,13 @@ export const onGridUp = (f: number) => {
   return bt(x / 4);
 };
 
-/** After the last bar the picture holds while the audio decays to digital silence. */
-export const TAIL = FPS;
+/**
+ * After the last bar the picture holds while the audio decays to digital silence: 1 s. With a stop ending (src/music.ts
+ * end.mode 'stop', track.py edit --end stop) the bed stops on the bar line that ends the body and the ending's one
+ * element sounds on MUSIC.end.f, 0.2-0.7 s later: the tail is that gap, then the 1 s.
+ */
+const STOP_GAP = MUSIC && MUSIC.end.mode === 'stop' ? Math.max(0, Math.ceil(MUSIC.end.f) - b(MUSIC.bars + 1)) : 0;
+export const TAIL = STOP_GAP + FPS;
 
 const order = ['open', 'brand', 'field', 'label', 'taglines', 'end'] as const;
 export type ActName = (typeof order)[number];
@@ -191,12 +196,16 @@ const build = (plan: Plan) => {
   // panel: the first one's 14 f drop is over first; claim: the second arrives as the first leaves (an empty accent field freezes)
   C.tag2 = DEAL.taglines === 'claim' ? onGridUp(C.tagOut + f60(20)) : onGridUp(Math.max(C.tagOut + f60(20), Math.min(at('taglines', 2 * plan.taglines), C.tagOut + f60(44))));
   C.push = onGrid(Math.max(C.tag2 + f60(20), cut('taglines') - Math.min(f60(46), Math.max(f60(30), BEAT))));
-  // end: the mark and the name, the close under them; the lockup holds about a beat with a creep, then the tail
+  // end: the mark and the name, the close under them; the lockup holds about a second and a half with a creep, the
+  // tail included: the close waits for the name's read and, where the act has room, comes up to a second later, so the
+  // lockup is whole about half a second before the last bar line (an act grown a bar does not hold it for three)
   C.end = at('end', 0);
   C.endMark = C.end;
   const nameIn = DEAL.end === 'spin' ? C.endMark + f60(30) : C.endMark + f60(8);
-  C.close = onGridUp(Math.max(at('end', 1.5), nameIn + f60(16) + hold(1)));
-  C.lockup = onGridUp(C.close + f60(HERO_END.glide(w(L.close))));
+  const closeGlide = f60(HERO_END.glide(w(L.close)));
+  const closeFirst = Math.max(at('end', 1.5), nameIn + f60(16) + hold(1));
+  C.close = onGridUp(Math.max(closeFirst, Math.min(onGrid(cut('end') - TAIL - f60(30) - closeGlide), closeFirst + f60(60))));
+  C.lockup = onGridUp(C.close + closeGlide);
   C.last = bt(BEATS.last);
   const nameAt = C.mark + (DEAL.brand === 'tile' ? f60(40) : f60(30));
   const COPY: Copy[] = [

@@ -15,6 +15,9 @@ A template is the floor, never the film. It carries structure, shot types, timin
 the product, the words, the brand and the direction are yours. Fill the slots, rebuild the product's own screens
 where the kit stands in, deal the direction and retell the floor in its world (its grounds, light, type and
 signature replace the template's), then cut it to the track: `track.py grid` moves every `b()` onto the music.
+Every template's end card is whole about 1.2-1.8 s before the last frame and creeps while it holds; its `TAIL` reads
+the track's ending, so a stop ending (`track.py edit --end stop`) adds the gap to its one element and 1 s rings out
+after it.
 
 ## Which one
 
