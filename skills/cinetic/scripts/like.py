@@ -10,8 +10,10 @@ as the film's targets, with the rules that keep the film its own:
   out/like.json   the clip's grammar in grammar-score.mjs --target format (shot band and spread, the curve
                   role mix, front-loaded entrances, moves into cuts, density, seams, cut sync, the picture
                   target), plus a "like" block with what the score does not read (camera activity, transition
-                  kinds, type scale and text share, palette proportions and ground tones, blur policy, tempo)
+                  kinds, type scale and text share, what each picture shows, palette proportions and ground
+                  tones, blur policy, tempo)
   out/LIKE.md     the rules, and the measured grammar in plain words
+The outputs name the clip by its hash and length, never its path or file name: the clip stays private.
 
 The rules: borrow grammar (pace, rhythm, curve families, density, camera habits, proportions), never content.
 Never copy a layout frame for frame, any text, a logo, another company's colours (like.json records ground
@@ -27,8 +29,11 @@ Usage (from the film project root):
 
 measure: look-audit.py measures the clip's motion (cuts, starts, camera, seams, cut sync, the picture floor);
 like.py adds a light pass over every frame at 320 px (curve families of the main moves, transition kinds,
-blur on fast moves) and samples at 2 a second (type scale and text share, palette proportions); the music's
-tempo comes from scripts/audio/track.py (librosa), or an onset estimate without it.
+blur on fast moves) and samples at 2 a second (type scale and text share, palette proportions, and from the middle
+of each picture what it shows: picture, ui, type or graphic); the music's tempo comes from scripts/audio/track.py
+(librosa), or an onset estimate without it. Text is read without OCR: glyphs (letter-sized, open shapes made of
+strokes) grouped into lines along a baseline, each line with a confidence; only confident lines count, so a night
+street of lights, streaks and lit windows reads as no text. assets.mjs's vet and check use the same reader.
 
 guard: frames at the same density from both (one a second by default). Each film frame is matched to the
 clip frame whose layout is closest: layout overlap is the correlation of their structure maps (edges and
@@ -54,6 +59,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 FORMAT_KEYS = ('launch', 'update', 'explainer', 'reel', 'social')
 SCENE_JUMP = 0.06  # mean change of the 16 x 9 colour layout over 0.2 s (0-1) that counts as a new picture
 GUARD = {'layout': 0.80, 'colour': 0.10, 'layout_only': 0.90, 'share': 0.15, 'run': 3}
+TEXT = {'conf': 0.5, 'stroke': 0.42, 'flat': 0.85}  # a text line counts from this confidence; a glyph's widest stroke / its height; a drawn ground's flat share
 
 
 def die(msg, code=2):
@@ -229,26 +235,117 @@ def transitions(cuts, luma, grids, seams, fps):
     return kinds
 
 
-def text_regions(gray):
-    """Text-like lines in a frame: bright-on-dark and dark-on-bright strokes closed along the line, kept when
-    they are wider than tall, between 1.5 % and 40 % of the frame high and dense in edges."""
-    h, w = gray.shape
-    k = max(3, int(h * 0.012)) | 1
-    grad = cv2.morphologyEx(gray, cv2.MORPH_GRADIENT, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
-    _, bw = cv2.threshold(grad, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    closed = cv2.morphologyEx(bw, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (k * 3, max(1, k // 3))))
-    n, _, st, _ = cv2.connectedComponentsWithStats(closed, connectivity=8)
-    edges = cv2.Canny(gray, 60, 160)
+def _glyphs(gray):
+    """Glyph candidates: strokes brighter or darker than their surroundings (a top-hat / black-hat 6 % of the frame
+    high, wider than a heavy stroke, cut at half the frame's strongest stroke contrast so anti-aliasing does not
+    thicken them), each component kept when it is letter-sized (1.2-20 % of the frame high, at most 4x as wide), open
+    (12-80 % of its box: a lit window, a lamp or a solid bar fills it) and made of strokes (its widest stroke under
+    TEXT['stroke'] of its height: a light, a bokeh disc or a blob is solid)."""
+    h = gray.shape[0]
+    k = max(5, int(0.06 * h)) | 1
+    se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
     out = []
-    for i in range(1, n):
-        x, y, ww, hh, area = st[i]
-        if hh < 0.015 * h or hh > 0.4 * h or ww < 1.6 * hh or ww > 0.98 * w:
-            continue
-        fill = area / float(ww * hh)
-        dens = float((edges[y:y + hh, x:x + ww] > 0).mean())
-        if 0.25 <= fill <= 0.95 and dens >= 0.08:
-            out.append((int(x), int(y), int(ww), int(hh)))
+    for pol, img in (('light', cv2.morphologyEx(gray, cv2.MORPH_TOPHAT, se)), ('dark', cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, se))):
+        thr = max(40.0, 0.5 * float(np.percentile(img, 99.7)))
+        n, lab, st, _ = cv2.connectedComponentsWithStats((img >= thr).astype(np.uint8), connectivity=8)
+        for i in range(1, n):
+            x, y, cw, ch, area = (int(v) for v in st[i])
+            if ch < max(6, 0.012 * h) or ch > 0.2 * h or cw > 4.0 * ch or cw < 0.06 * ch:
+                continue
+            fill = area / float(cw * ch)
+            if not 0.12 <= fill <= 0.8:
+                continue
+            dt = cv2.distanceTransform(np.pad((lab[y:y + ch, x:x + cw] == i).astype(np.uint8), 1), cv2.DIST_L2, 3)
+            sw = 2.0 * float(dt.max())
+            if sw > max(TEXT['stroke'] * ch, 3.0):
+                continue
+            out.append(dict(x=x, y=y, w=cw, h=ch, fill=fill, sw=sw, pol=pol))
     return out
+
+
+def text_lines(gray):
+    """Text lines in a frame without OCR: glyph candidates (_glyphs) of one polarity grouped along a line (each next
+    to the one before by under 1.3 of their height, heights within a factor 2.2, overlapping vertically), kept at 3
+    glyphs or more. conf (0-1) grows with the glyph count and falls when the heights scatter, the baseline wanders,
+    the stroke widths disagree, the glyphs stand far apart or the shapes repeat (a row of lamps, windows or rails is
+    one shape over and over; letters differ). A line read in both polarities (the letters, and the ground in their
+    counters) is kept once. Returns [{box: (x, y, w, h), glyphs, conf}], the surest first."""
+    gl = _glyphs(gray)
+    lines = []
+    for pol in ('light', 'dark'):
+        g = sorted((q for q in gl if q['pol'] == pol), key=lambda q: q['x'])
+        parent = list(range(len(g)))
+
+        def find(i):
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+        for i, a in enumerate(g):
+            for j in range(i + 1, len(g)):
+                b = g[j]
+                hm = max(a['h'], b['h'])
+                gap = b['x'] - (a['x'] + a['w'])
+                if gap > 1.3 * hm:
+                    break
+                if gap < -0.3 * hm or min(a['h'], b['h']) / hm < 1 / 2.2:
+                    continue
+                if min(a['y'] + a['h'], b['y'] + b['h']) - max(a['y'], b['y']) >= 0.5 * min(a['h'], b['h']):
+                    parent[find(j)] = find(i)
+        groups = {}
+        for i in range(len(g)):
+            groups.setdefault(find(i), []).append(g[i])
+        for m in groups.values():
+            if len(m) < 3:
+                continue
+            hs, ws = np.array([q['h'] for q in m], float), np.array([q['w'] for q in m], float)
+            bots = np.array([q['y'] + q['h'] for q in m], float)
+            sws, fills = np.array([q['sw'] for q in m], float), np.array([q['fill'] for q in m], float)
+            hmed = float(np.median(hs))
+            xs = sorted(m, key=lambda q: q['x'])
+            gaps = [max(0, b['x'] - (a['x'] + a['w'])) for a, b in zip(xs, xs[1:])]
+            conf = (min(1.0, (len(m) - 2) / 4.0) ** 0.5                                                  # glyphs
+                    * float(np.clip(1 - max(0.0, hs.std() / hs.mean() - 0.18) / 0.35, 0, 1))              # heights
+                    * float(np.clip(1 - (np.median(np.abs(bots - np.median(bots))) / hmed) / 0.25, 0, 1))  # baseline
+                    * float(np.clip(1 - max(0.0, sws.std() / max(1e-6, sws.mean()) - 0.3) / 0.5, 0, 1))   # strokes
+                    * float(np.clip((ws.std() / ws.mean() + 2 * fills.std()) / 0.18, 0, 1))              # shapes differ
+                    * float(np.clip(1 - (np.median(gaps) / hmed - 0.5) / 0.5, 0, 1)))                    # spacing
+            x0, y0 = min(q['x'] for q in m), min(q['y'] for q in m)
+            x1, y1 = max(q['x'] + q['w'] for q in m), max(q['y'] + q['h'] for q in m)
+            lines.append(dict(box=(int(x0), int(y0), int(x1 - x0), int(y1 - y0)), glyphs=len(m), conf=round(conf, 2)))
+    out = []
+    for d in sorted(lines, key=lambda d: -d['conf']):
+        x, y, w, h = d['box']
+        if not any(min(x + w, o['box'][0] + o['box'][2]) - max(x, o['box'][0]) > 0.5 * w
+                   and min(y + h, o['box'][1] + o['box'][3]) - max(y, o['box'][1]) > 0.5 * h for o in out):
+            out.append(d)
+    return out
+
+
+def text_regions(gray, conf=None):
+    """The text lines read with at least TEXT['conf'] confidence (text_lines), as (x, y, w, h)."""
+    return [d['box'] for d in text_lines(gray) if d['conf'] >= (TEXT['conf'] if conf is None else conf)]
+
+
+def flat_share(gray):
+    """Share of the frame (clipped black and white left out) whose 3 x 3 neighbourhood spans 3 levels or less: a
+    drawn ground is flat, footage and photographs keep grain and texture almost everywhere."""
+    k = np.ones((3, 3), np.uint8)
+    span = cv2.dilate(gray, k).astype(np.int16) - cv2.erode(gray, k).astype(np.int16)
+    ok = (gray > 12) & (gray < 245)
+    return float(((span <= 3) & ok).sum() / max(1, ok.sum()))
+
+
+def moment_kind(gray, lines):
+    """What a shot shows, from one frame of it (an estimate): picture (footage or a photograph: not flat), ui (three
+    or more confident small text lines on a flat ground), type (a line or two of text on a flat ground) or graphic
+    (a flat ground without text)."""
+    if flat_share(gray) < TEXT['flat']:
+        return 'picture'
+    sure = [d for d in lines if d['conf'] >= TEXT['conf']]
+    if len(sure) >= 3 and float(np.median([d['box'][3] for d in sure])) < 0.04 * gray.shape[0]:
+        return 'ui'
+    return 'type' if sure else 'graphic'
 
 
 def samples(clip, info, F, every_s=0.5, width=480):
@@ -326,15 +423,27 @@ def tempo_of(clip, cuts, fps, quiet=True):
     return out
 
 
+def clip_id(path, seconds=None):
+    """The clip as the outputs name it: its hash (and length), never its path or file name (the clip stays private)."""
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, 'rb') as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b''):
+            h.update(chunk)
+    return f"sha256 {h.hexdigest()[:12]}" + (f', {seconds:g} s' if seconds else '')
+
+
 def measure(args):
     need()
     F = module('forensics_mod', 'forensics.py')
     clip = os.path.abspath(args.clip)
     info = F.probe(clip)
     fps = info['fps']
+    ident = clip_id(clip, r(info['frames'] / fps, 2))
     with tempfile.TemporaryDirectory() as tmp:
         look, series = look_audit(clip, args.width, tmp)
     os.makedirs(args.out, exist_ok=True)
+    look['file'] = f'the clip ({ident})'
     with open(os.path.join(args.out, 'like-look.json'), 'w', encoding='utf-8') as fh:  # the clip's own look report
         json.dump(look, fh, indent=1)
     M = look['measures']
@@ -345,13 +454,26 @@ def measure(args):
     kinds = transitions(cuts, luma, grids, seams, fps)
     changes = scenes(grids, cuts, fps)
     samp = samples(clip, info, F)
-    # type: the largest text-like line per sample, as a share of the frame height
-    th, has = [], 0
-    for _, rgb in samp:
-        reg = text_regions(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY))
-        if reg:
+    # type: the largest confident text line per sample, as a share of the frame height; and what each picture shows
+    th, has, unsure, confs, read = [], 0, 0, [], {}
+    for f, rgb in samp:
+        gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+        tl = text_lines(gray)
+        sure = [d for d in tl if d['conf'] >= TEXT['conf']]
+        read[f] = moment_kind(gray, tl)
+        if sure:
             has += 1
-            th.append(max(hh for (_, _, _, hh) in reg) / rgb.shape[0])
+            th.append(max(d['box'][3] for d in sure) / rgb.shape[0])
+            confs += [d['conf'] for d in sure]
+        elif tl:
+            unsure += 1
+    # one frame from the middle of each picture (between picture changes) says what it shows
+    bounds = [0] + changes + [info['frames']]
+    kinds_seq = []
+    for a_, b_ in zip(bounds, bounds[1:]):
+        if b_ > a_ and read:
+            kinds_seq.append(read[min(read, key=lambda f: abs(f - (a_ + b_) / 2))])
+    moment = {k: kinds_seq.count(k) for k in ('type', 'ui', 'picture', 'graphic')}
     pal = [palette_of(rgb) for _, rgb in samp]
     tones = {t: r(sum(1 for p in pal if p['tone'] == t) / max(1, len(pal))) for t in ('light', 'mid', 'dark', 'field')}
     # blur on fast moves: sharpness of fast frames against still ones in the same film
@@ -374,7 +496,7 @@ def measure(args):
     shares = {'arrive': fam['front'] / nm, 'reposition': fam['symmetric'] / nm, 'leave': fam['back'] / nm, 'linear': fam['linear'] / nm}
     ent = [m for m in mv if m['after_cut']]
     into = [m for m in mv if m['into_cut']]
-    target = {'source': f'like.py: the grammar of {os.path.basename(clip)}'}
+    target = {'source': f'like.py: the grammar of the clip ({ident})'}
     if med and not one_take and len(lens) >= 3:
         band = [r(max(0.2, med * 0.85), 2), r(med * 1.15 if med * 0.3 >= 0.15 else med + 0.15, 2)]
         sp = M.get('shot_spread') or 2.0
@@ -405,7 +527,7 @@ def measure(args):
         target['picture'] = {'target': {'flatMax': r(min(0.75, (pm.get('flat') or 0.55) * 1.1), 3), 'edgesMin': r(max(0.018, (pm.get('edges') or 0.03) * 0.9), 4),
                                         'saturatedMin': r(max(0.022, (pm.get('saturated') or 0.06) * 0.9), 4)}}
     target['like'] = {
-        'clip': os.path.basename(clip), 'seconds': r(info['frames'] / fps, 2), 'fps': r(fps, 3), 'size': [info['w'], info['h']],
+        'clip': ident, 'seconds': r(info['frames'] / fps, 2), 'fps': r(fps, 3), 'size': [info['w'], info['h']],
         'shots': {'count': len(lens), 'median_s': r(med, 3), 'q25_s': r(q(lens, 0.25)), 'q75_s': r(q(lens, 0.75)), 'longest_s': r(max(lens) if lens else None),
                   'cuts_per_s': r(len(cuts) / max(0.1, info['frames'] / fps)), 'one_take': one_take},
         'changes': (lambda ls: {'count': len(changes), 'median_s': r(q(ls, 0.5)), 'per_s': r(len(changes) / max(0.1, info['frames'] / fps)),
@@ -417,7 +539,10 @@ def measure(args):
         'moves': {'count': len(mv), 'families': {k: r(v / nm) for k, v in fam.items()}, 'mean_pxs_median': r(q([m['mean_pxs'] for m in mv], 0.5), 1)},
         'transitions': kinds,
         'type': {'text_share': r(has / max(1, len(samp))), 'line_height_median': r(q(th, 0.5)), 'line_height_largest': r(q(th, 0.9)),
-                 'note': 'estimates from text-like regions; heights are a share of the frame height'},
+                 'confidence': r(q(confs, 0.5), 2), 'unsure_share': r(unsure / max(1, len(samp))),
+                 'note': 'estimates from glyph lines read without OCR (confident lines only); heights are a share of the frame height'},
+        'moments': {'kinds': moment, 'sequence': kinds_seq[:60],
+                    'note': 'what each picture shows, read from one frame of it: picture (footage or a photograph), ui, type, graphic'},
         'density': {'starts_per_s': M.get('starts_per_s'), 'concurrency': M.get('concurrency'), 'idle_share': M.get('idle_share'), 'living_holds': M.get('living_holds')},
         'palette': {'ground': r(sum(p['ground'] for p in pal) / max(1, len(pal))), 'ink': r(sum(p['ink'] for p in pal) / max(1, len(pal))),
                     'accent': r(sum(p['accent'] for p in pal) / max(1, len(pal))), 'tones': tones, 'hues': 'not recorded: the film keeps its own colours'},
@@ -430,11 +555,7 @@ def measure(args):
         json.dump(target, fh, indent=1)
         fh.write('\n')
     with open(mp, 'w', encoding='utf-8', newline='\n') as fh:
-        try:
-            shown = os.path.relpath(clip)
-        except ValueError:  # another drive
-            shown = clip
-        fh.write(like_md(target, shown.replace(os.sep, '/')))
+        fh.write(like_md(target, ident))
     if not args.quiet:
         L = target['like']
         print(f"like.py: {L['clip']}: {L['seconds']} s, {L['shots']['count']} shots (median {L['shots']['median_s']} s), "
@@ -453,9 +574,10 @@ def like_md(t, clip):
     sh, cam, mv, ty, pal, bl, te = L['shots'], L['camera'], L['moves'], L['type'], L['palette'], L['blur'], L['tempo']
     fam = mv['families']
     tr = L['transitions']
+    unsure = f' (lines too unsure to count in {pct(ty["unsure_share"])} of the film)' if ty.get('unsure_share') else ''
     lines = [
         '# Like this clip: the grammar to borrow', '',
-        f'Measured from `{clip}` by scripts/like.py. These are targets for pace, rhythm, motion and proportion; the film',
+        f'Measured from the clip ({clip}) by scripts/like.py. These are targets for pace, rhythm, motion and proportion; the film',
         'keeps its own idea sentence, its own direction from the deck, its own copy, colours and pictures.', '',
         '## The rules', '',
         '- Borrow grammar: shot lengths and cut rhythm, how often a cut lands on a sound, camera habits, the curve',
@@ -481,7 +603,10 @@ def like_md(t, clip):
         f'- **Main moves:** {mv["count"]} moves; front-loaded {pct(fam.get("front"))}, symmetric {pct(fam.get("symmetric"))}, '
         f'accelerating {pct(fam.get("back"))}, constant {pct(fam.get("linear"))}.',
         f'- **Hand-overs:** {tr["hard"]} hard cuts, {tr["carried"]} carried, {tr["flash"]} flashes, {tr["dip"]} dips, {tr["soft"]} soft (no cut).',
-        f'- **Type:** text in {pct(ty["text_share"])} of the film; the typical line {pct(ty["line_height_median"])} of the frame height, the largest {pct(ty["line_height_largest"])}.',
+        (f'- **Type:** text in {pct(ty["text_share"])} of the film; the typical line {pct(ty["line_height_median"])} of the frame height, the largest {pct(ty["line_height_largest"])}.'
+         if ty['text_share'] else f'- **Type:** no text read with confidence{unsure}: set the type from the direction, not from the clip.'),
+        (f'- **What the pictures show:** ' + ', '.join(f'{k} {v}' for k, v in L['moments']['kinds'].items() if v) + ' (one frame of each picture; an estimate).'
+         if L.get('moments') and any(L['moments']['kinds'].values()) else '- **What the pictures show:** not measured.'),
         f'- **Density:** {L["density"]["starts_per_s"]} starts a second, {L["density"]["concurrency"]} running at once, idle {pct(L["density"]["idle_share"])}.',
         f'- **Proportions:** ground {pct(pal["ground"])}, ink {pct(pal["ink"])}, accent {pct(pal["accent"])} of the frame; grounds '
         + ', '.join(f'{k} {pct(v)}' for k, v in pal['tones'].items() if v) + '.',
@@ -590,7 +715,7 @@ def guard(args):
         die('no frames could be read')
     rows = guard_pairs(film, clip)
     v = verdict(rows)
-    res = {'tool': 'like.py guard', 'film': args.film, 'clip': args.clip, 'every_s': args.every, 'thresholds': GUARD, **v,
+    res = {'tool': 'like.py guard', 'film': args.film, 'clip': clip_id(args.clip), 'every_s': args.every, 'thresholds': GUARD, **v,
            'pairs': [{k: x[k] for k in ('film_t', 'clip_t', 'layout_overlap', 'colour_distance', 'recreation')} for x in rows]}
     if args.json:
         os.makedirs(os.path.dirname(os.path.abspath(args.json)) or '.', exist_ok=True)

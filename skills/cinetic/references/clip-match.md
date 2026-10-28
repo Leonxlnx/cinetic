@@ -35,8 +35,12 @@ picture target) and `out/LIKE.md`, the grammar in plain words:
 - camera activity; the curve families of the main moves (front-loaded or symmetric);
 - hard, carried, flash, dip and soft hand-overs, and the **picture changes**: the hard cuts plus every new layout made
   without one (a clip that carries its hand-overs changes its picture far more often than it cuts);
-- type scale and text share; density;
+- type scale and text share (text read without OCR, confident lines only: a clip of night lights reads as no text,
+  and LIKE.md then says to set the type from the direction); density;
+- what each picture shows (picture, ui, type or graphic, read from one frame of it: an estimate);
 - ground / ink / accent proportions and ground tones; the blur policy.
+
+The outputs name the clip by its hash and length, never its path or file name.
 
 Read `LIKE.md` before the treatment. Write its three or four strongest habits into `TREATMENT.md` under the
 direction ("cuts on most downbeats, shots about 0.9 s, every hand-over carried, type at hero size on a third of the

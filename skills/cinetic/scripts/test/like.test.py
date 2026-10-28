@@ -12,7 +12,10 @@ The clips are made here in code (numpy frames piped to ffmpeg, a WAV of clicks m
      clip's median, the cuts it found, cut-on-sound, front-loaded moves, text share, hard hand-overs; no hues.
   2. grammar-score.mjs reads like.json as its target (the shot band is the clip's for every format).
   3. guard: the borrowing film passes; the regraded and the inverted clip and the clip itself fail, with a sheet.
-  4. LIKE.md carries the rules (borrow grammar, never content) in house wording.
+  4. LIKE.md carries the rules (borrow grammar, never content) in house wording; no output names the clip's path or
+     file name (its hash and length stand for it); what each picture shows is counted.
+  5. The text reader: drawn words read as a confident line; a night street made here (bokeh discs, light streaks,
+     a lit facade, a row of lamps) reads as no text.
 
 Usage (from the skill root):  python3 scripts/test/like.test.py [--verbose] [--keep]
 Exit codes: 0 all pass, 1 a test failed, 2 a missing tool (ffmpeg, numpy, opencv-python).
@@ -166,6 +169,9 @@ pal = L.get('palette') or {}
 result(pal.get('hues', '').startswith('not recorded') and not re.search(r'#[0-9A-Fa-f]{6}', json.dumps(like)),
        'like.json records proportions and ground tones, never the clip\'s colours')
 
+mo = (L.get('moments') or {}).get('kinds') or {}
+result(mo.get('type', 0) + mo.get('graphic', 0) >= 5 and not mo.get('picture'), 'what each picture shows is counted (flat grounds with type)', json.dumps(mo))
+
 # 2. grammar-score reads it ------------------------------------------------------------------------------
 gs = subprocess.run(['node', GS, '--target', os.path.join(out, 'like.json'), '--look', os.path.join(out, 'like-look.json'), '--format', 'update',
                      '--json', os.path.join(TMP, 'gs.json'), '--quiet'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=SKILL)
@@ -202,6 +208,43 @@ result('Never content' in md and 'own idea sentence' in md and 'like.py guard' i
 pats = [r'reference[ ](films?|clips?|videos?)', r'\bT[0-9]{2}\b', r'\blearned[ ]from\b', r'\bwe[ ](analy[sz]ed|measured)\b', r'\bstud(y|ied)\b']
 leaks = [m.group(0) for t in (md, open(LIKE, encoding='utf-8').read()) for p in pats for m in [re.search(p, t, re.I)] if m]
 result(not leaks, 'like.py and LIKE.md carry no provenance phrasing', ', '.join(leaks))
+
+written = ''.join(open(os.path.join(out, f), encoding='utf-8').read() for f in ('like.json', 'LIKE.md', 'like-look.json') if os.path.isfile(os.path.join(out, f)))
+written += json.dumps(rows['own'][1].get('clip'))
+result('clip.mp4' not in written and os.path.basename(TMP) not in written and 'sha256 ' in md,
+       "no output names the clip's path or file name: its hash and length stand for it")
+
+# 5. the text reader ---------------------------------------------------------------------------------------
+sys.path.insert(0, os.path.dirname(LIKE))
+import importlib.util  # noqa: E402
+spec = importlib.util.spec_from_file_location('like_mod', LIKE)
+LM = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(LM)
+LM.need()
+words = np.full((270, 480), 210, np.uint8)
+cv2.putText(words, 'SHARED FOLDERS', (30, 120), cv2.FONT_HERSHEY_SIMPLEX, 1.1, 24, 3, cv2.LINE_AA)
+cv2.putText(words, 'offline first', (30, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.9, 24, 2, cv2.LINE_AA)
+got = LM.text_lines(words)
+sure = [d for d in got if d['conf'] >= LM.TEXT['conf']]
+result(len(sure) == 2 and all(d['glyphs'] >= 5 for d in sure), 'drawn words read as two confident text lines', json.dumps(got))
+rng = np.random.default_rng(7)
+night = np.full((270, 480, 3), (16, 18, 26), np.uint8)
+for _ in range(70):  # headlights and bokeh discs
+    c = tuple(int(v) for v in rng.integers(120, 255, 3))
+    cv2.circle(night, (int(rng.integers(0, 480)), int(rng.integers(60, 240))), int(rng.integers(2, 14)), c, -1, cv2.LINE_AA)
+for _ in range(16):  # tail-light streaks
+    x, y = int(rng.integers(0, 400)), int(rng.integers(130, 265))
+    cv2.line(night, (x, y), (x + int(rng.integers(30, 170)), y + int(rng.integers(-5, 6))), (230, 210, 200), int(rng.integers(1, 5)), cv2.LINE_AA)
+for yy in range(20, 120, 20):  # a lit facade
+    for xx in range(300, 470, 16):
+        if rng.random() < 0.7:
+            cv2.rectangle(night, (xx, yy), (xx + 8, yy + 11), (200, 190, 150), -1)
+for xx in range(20, 280, 26):  # a row of lamps
+    cv2.circle(night, (xx, 40), 6, (250, 240, 220), -1, cv2.LINE_AA)
+night = cv2.GaussianBlur(night, (0, 0), 1.0)
+ng = cv2.cvtColor(night, cv2.COLOR_RGB2GRAY)
+result(LM.text_regions(ng) == [], 'a night street of lights, streaks, windows and lamps reads as no text', json.dumps(LM.text_lines(ng)[:3]))
+result(LM.moment_kind(ng, LM.text_lines(ng)) in ('graphic', 'picture') and LM.moment_kind(words, got) == 'type', 'one frame says what a picture shows (type on a flat ground)')
 
 if '--keep' not in sys.argv:
     shutil.rmtree(TMP, ignore_errors=True)
