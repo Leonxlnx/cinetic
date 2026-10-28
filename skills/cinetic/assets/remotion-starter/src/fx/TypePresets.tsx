@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
 import { C, FONT, TYPE } from '../brand/tokens';
 import { clamp, E, type Ease, expOut, fd, lmix, mix, perFrame, prog, rand } from '../lib/anim';
-import { mixColor } from '../lib/color';
+import { mixColor, toOklch } from '../lib/color';
 import { type FilmCtx, f60x, fpsOf, uOf, useFilm } from '../lib/film';
+import { EMPHASIS_LOOK } from '../lib/look';
+import { baselineOf } from '../lib/measure';
 import { PACE } from '../lib/pace';
 import type { Declares, Seam, SteppedRange } from '../timeline';
 import { ECHO_COPIES, echoCopiesState } from './Echoes';
@@ -12,6 +14,7 @@ import { maskProgress } from './MaskRise';
 import { decodeState, mosaicCells } from './Scramble';
 import { slicesState } from './Slices';
 import { erodeRiseState, fontCycleState, type FontState } from './TypeFx';
+import { EMPHASIS_DEFAULT, EMPHASIS_DOES, type EmphasisResolved, type EmphasisSpec, emphasisAt, emphasisProgress, emphasisRun, holdTracking, parseKeyed, resolveEmphasis } from './TypeEmphasis';
 import { typeFillState } from './TypeFill';
 import { wordFrames, type WordsSpec, wordState } from './Words';
 
@@ -118,6 +121,17 @@ import { wordFrames, type WordsSpec, wordState } from './Words';
  *   blur (soft: defocus to 0.35 em and fade, 18 f, for a small secondary line only). `dot` adds a square full stop in
  *   the accent that lands 5 f after the line and grows from 82 % in 13 f.
  *
+ * Emphasis (`emph`, fx/TypeEmphasis, the numbers in lib/look.ts EMPHASIS_LOOK): every preset can set its key words
+ * apart: weight (the family's emphasis weight in the accent, width held), accent, scale and swell (one step up the type
+ * scale on the baseline; swell grows in after the landing while the line re-flows round it), marker and box (a bar or
+ * the inverted box wiping on behind them, the words knocked out to the ground), under (a rule drawn under them),
+ * outline (an outline that fills once landed) and sweep (the accent crossing them and staying). The key words are
+ * written between asterisks in `text` ("Brook is a *water bottle*.") or given as `keys`; <TypeLine> gives a hero line
+ * (a HERO_PRESETS move in the line, display or hero role) that names no device the `weight` device, and `emph: false`
+ * turns it off (a body line, a piece of a line set in parts). The colour follows the preset's own path and lands in
+ * the device's colour (the preset run again with that colour as its ink). `align` sets the line flush left or right
+ * of its anchor (a stack, an editorial layout): the re-centring moves then hold the aligned edge.
+ *
  * Offsets, blurs and sizes in the state are em of the type size; positions come from `LineMetrics`
  * (the renderer measures the real font; tests pass monoMetrics()). Pure and Node-safe except
  * <TypeLine> and measureLine() (call those under <FontGate>). declares(): the font cycle, the redaction
@@ -221,9 +235,15 @@ export type TypeLineSpec = {
   anchorAt?: [number, number]; // dive: the point inside that glyph, as a share of its advance and em from the line's centre (down +); aim at ink (a stem, a crossbar) so the zoom lands on solid colour (default [0.32, 0.08])
   lead?: number; // land: how many words land oversized together (default all); the others append after the landing
   scaleFrom?: number; // land: the scale the line cuts in at (default the house x1.7); fly: the scale each word starts at (default x5)
+  keys?: [number, number]; // the key words (first and last word index; *marks* in `text` set them): the emphasis lands on them, the first is the keyword
+  emph?: EmphasisSpec; // the emphasis device on the key words (fx/TypeEmphasis); false: none. <TypeLine> gives a hero line 'weight' by default
+  align?: 'centre' | 'left' | 'right'; // the line's anchor: its centre (default) or its left or right edge; re-centring moves hold that edge
   seed?: string | number;
   id?: string;
 };
+
+/** A glyph set in the emphasis style: its size against the line's (k), its weight and tracking (em). */
+export type GlyphStyle = { k: number; weight: number; track: number };
 
 /** Measured layout of a line (px): each glyph's left edge and advance, the line width, the size, a space. */
 export type LineMetrics = {
@@ -233,7 +253,49 @@ export type LineMetrics = {
   width: number;
   space: number;
   alt?: { text: string; xs: number[]; ws: number[]; width: number }[]; // the preset's other strings (typeLineAlts)
+  style?: (GlyphStyle | undefined)[]; // the key words' glyphs in the emphasis style (undefined: the line's own)
+  base?: { xs: number[]; ws: number[]; width: number }; // the layout without the emphasis's size and weight (a swell grows from it)
+  baseline?: number; // em from the top of the glyph's 1 em box down to the baseline (default 0.8)
+  weight?: number; // the line's own weight (a swell's weight grows from it)
 };
+
+/** A line's text with its *marks* taken out and its key words, emphasis and keyword filled in from them. Pure. */
+export const typeLineSpec = (s: TypeLineSpec): TypeLineSpec => {
+  if (!s.text.includes('*')) return s;
+  const k = parseKeyed(s.text);
+  const keys = s.keys ?? k.words ?? undefined;
+  return { ...s, text: k.text, keys, key: s.key ?? keys?.[0] };
+};
+
+/** The roles a hero line is set in: a line in one of them on a confident preset takes the default emphasis. */
+export const EMPHASIS_ROLES = ['line', 'display', 'hero'] as const;
+
+/**
+ * The emphasis a line takes in <TypeLine>: its own `emph`, else the house default (`weight`) when it is a hero line (a
+ * HERO_PRESETS move set in the line, display or hero role), else none. Pure.
+ */
+export const defaultEmphasis = (s: TypeLineSpec, role: string = 'line'): TypeLineSpec => {
+  if (s.emph !== undefined) return s;
+  if (!HERO_PRESETS.includes(s.preset) || !(EMPHASIS_ROLES as readonly string[]).includes(role)) return s;
+  return { ...s, emph: EMPHASIS_DEFAULT };
+};
+
+/** The resolved emphasis of a (normalised) line spec, or null. Pure. */
+export const lineEmphasis = (s: TypeLineSpec): EmphasisResolved | null => {
+  const W = wordMap(s.text);
+  const c = colorsOf(s);
+  // the slot presets draw the keyword as their own items: it takes the colour devices only, never a size or weight
+  const slotKey = s.preset === 'wheel' || s.preset === 'erode' || s.preset === 'cycle';
+  const r = resolveEmphasis(s.emph, W.n, keyOf(s, W.n), { marked: s.keys ?? null, accent: c.accent, ink: c.ink });
+  if (!r) return null;
+  return slotKey ? { ...r, scale: 1, weight: undefined, hold: false } : r;
+};
+
+/** The first and last glyph of a word range. */
+const glyphRange = (W: ReturnType<typeof wordMap>, words: [number, number]): [number, number] => [W.starts[words[0]] ?? 0, W.ends[words[1]] ?? Math.max(0, W.chars.length - 1)];
+
+/** Emphasis state at a frame: the device, its key words and glyphs, its progress (0..1) and the frame it started. */
+export type EmphasisState = EmphasisResolved & { glyphs: [number, number]; p: number; from: number };
 
 export type GlyphState = {
   ch: string;
@@ -281,6 +343,7 @@ export type TypeLineState = {
   layers: TypeLayer[];
   visible: boolean;
   phase: TypeLinePhase;
+  emph?: EmphasisState; // the emphasis device on the key words (fx/TypeEmphasis)
 };
 
 // ------------------------------------------------------------------------------------------------ helpers
@@ -310,19 +373,30 @@ export const wordMap = (text: string) => {
   return { chars, wordOf, starts, ends, n: starts.length, words: starts.map((s, k) => chars.slice(s, ends[k] + 1).join('')) };
 };
 
-/** Synthetic metrics with a fixed advance (em): tests, and a layout before the font is measured. Pure. */
-export const monoMetrics = (text: string, size = 100, adv = 0.56, alts: string[] = []): LineMetrics => {
+/**
+ * Synthetic metrics with a fixed advance (em): tests, and a layout before the font is measured. Given `emph` (a resolved
+ * emphasis with a size), the key words' advances grow by its scale (a mono face has no weight to measure). Pure.
+ */
+export const monoMetrics = (text: string, size = 100, adv = 0.56, alts: string[] = [], emph?: Pick<EmphasisResolved, 'words' | 'scale' | 'weight'> | null): LineMetrics => {
   const one = (t: string) => {
     const n = [...t].length;
     const xs = Array.from({ length: n }, (_, i) => i * adv * size);
     return { text: t, xs, ws: xs.map(() => adv * size), width: n * adv * size };
   };
   const m = one(text);
-  return { size, xs: m.xs, ws: m.ws, width: m.width, space: adv * size, alt: alts.map(one) };
+  const out: LineMetrics = { size, xs: m.xs, ws: m.ws, width: m.width, space: adv * size, alt: alts.map(one), baseline: 0.8 };
+  if (!emph || emph.scale === 1) return out;
+  const W = wordMap(text);
+  const [g0, g1] = glyphRange(W, emph.words);
+  const ws = m.ws.map((w, i) => (i >= g0 && i <= g1 ? w * emph.scale : w));
+  const xs: number[] = [];
+  ws.reduce((x, w, i) => ((xs[i] = x), x + w), 0);
+  return { ...out, xs, ws, width: ws.reduce((a, b) => a + b, 0), style: ws.map((_, i) => (i >= g0 && i <= g1 ? { k: emph.scale, weight: emph.weight ?? 500, track: 0 } : undefined)), base: { xs: m.xs, ws: m.ws, width: m.width } };
 };
 
 /** The strings a preset lays out besides its own text (wheel values, the old word or line, cycle styles). Pure. */
-export const typeLineAlts = (s: TypeLineSpec): { text: string; vary?: Vary }[] => {
+export const typeLineAlts = (spec: TypeLineSpec): { text: string; vary?: Vary }[] => {
+  const s = typeLineSpec(spec);
   const W = wordMap(s.text);
   const key = keyOf(s, W.n);
   if (s.preset === 'wheel') return [...(s.words ?? []), W.words[key] ?? ''].map((text) => ({ text }));
@@ -376,8 +450,12 @@ const blank = (c: Ctx, color: string, opacity = 1): TypeLineState => ({
   phase: 'in',
 });
 
-/** Centre shift (em) that keeps the visible part of a growing line centred: the words up to `w` showing. */
-const centreShift = (c: Ctx, w: number) => (c.m.width - right(c.m, c.W.ends[w])) / 2 / c.m.size;
+/**
+ * Centre shift (em) that keeps the visible part of a growing line centred: the words up to `w` showing. A line set
+ * flush left holds its left edge (no shift), one set flush right its right edge.
+ */
+const ALIGN_SHIFT = { centre: 0.5, left: 0, right: 1 } as const;
+const centreShift = (c: Ctx, w: number) => ((c.m.width - right(c.m, c.W.ends[w])) * ALIGN_SHIFT[c.s.align ?? 'centre']) / c.m.size;
 
 /** A re-centring line: the shift follows each new word on `ease` over `dur` frames from its onset. */
 const recentre = (c: Ctx, onsets: number[], dur: number, ease: Ease) => {
@@ -1237,7 +1315,8 @@ const PRESETS: Record<TypePresetName, (c: Ctx) => TypeLineState> = { crisp: entr
 // ------------------------------------------------------------------------------------------------ frames
 
 /** Key frames of a line: when it is readable, the landing ticks for sound, the exit's last frame. Pure. */
-export const typeLineFrames = (s: TypeLineSpec, m: LineMetrics, film?: Partial<FilmCtx>) => {
+export const typeLineFrames = (spec: TypeLineSpec, m: LineMetrics, film?: Partial<FilmCtx>) => {
+  const s = typeLineSpec(spec);
   const fps = fpsOf(film);
   const T = (v: number) => f60x(v * (s.pace ?? 1), fps);
   const P = TYPE_PRESETS;
@@ -1570,7 +1649,8 @@ const applyExit = (st: TypeLineState, c: Ctx) => {
  * whole line's transform, in em of the type size. `m` is the line's layout (measureLine() in the
  * browser, monoMetrics() in tests); give `film` its fps (and pace for decode).
  */
-export const typeLineState = (f: number, s: TypeLineSpec, m: LineMetrics, film?: Partial<FilmCtx>): TypeLineState => {
+export const typeLineState = (f: number, spec: TypeLineSpec, m: LineMetrics, film?: Partial<FilmCtx>): TypeLineState => {
+  const s = typeLineSpec(spec);
   const fps = fpsOf(film);
   const W = wordMap(s.text);
   const c: Ctx = { f, s, m, fps, film: { ...film, fps }, W, col: colorsOf(s), key: keyOf(s, W.n), seed: s.seed ?? 0, T: (v) => f60x(v * (s.pace ?? 1), fps) };
@@ -1583,6 +1663,18 @@ export const typeLineState = (f: number, s: TypeLineSpec, m: LineMetrics, film?:
   const st = PRESETS[s.preset](c);
   const fr = typeLineFrames(s, m, film);
   st.phase = f < fr.resolved ? 'in' : 'hold';
+  const r = lineEmphasis(s);
+  if (r) {
+    const [g0, g1] = glyphRange(W, r.words);
+    if (r.color && EMPHASIS_DOES[r.device].color) {
+      // the key words walk the preset's own colour path and land in the device's colour: the preset again, inked in it
+      const alt = PRESETS[s.preset]({ ...c, col: { ...c.col, ink: r.color } });
+      for (let i = g0; i <= g1; i++) if (st.glyphs[i] && alt.glyphs[i]) st.glyphs[i].color = alt.glyphs[i].color;
+      if (st.slot && alt.slot && st.slot.word >= r.words[0] && st.slot.word <= r.words[1]) st.slot.items.forEach((it, k) => (it.color = alt.slot?.items[k]?.color ?? it.color));
+    }
+    const from = emphasisAt(r, emphasisLanded(fr, W.n, r.words[1], c), fps, s.pace ?? 1);
+    st.emph = { ...r, glyphs: [g0, g1], p: emphasisProgress(f, r.device, from, fps, s.pace ?? 1), from };
+  }
   if (s.dot && fr.dot !== undefined && f >= fr.dot) {
     const D = TYPE_PRESETS.dot;
     const last = W.ends[W.n - 1];
@@ -1592,12 +1684,30 @@ export const typeLineState = (f: number, s: TypeLineSpec, m: LineMetrics, film?:
   return applyExit(st, c);
 };
 
+/** The frame the last key word is solid: its onset tick plus 14 f (60 fps), never after the line resolves. */
+const emphasisLanded = (fr: { ticks: number[]; resolved: number }, n: number, last: number, c: Pick<Ctx, 'T'>) =>
+  fr.ticks.length === n && fr.ticks[last] !== undefined ? Math.min(fr.resolved, fr.ticks[last] + c.T(14)) : fr.resolved;
+
+/** When a line's emphasis device runs (frames): its start and its end (equal for a static device). Pure. */
+export const emphasisFrames = (spec: TypeLineSpec, film?: Partial<FilmCtx>): { from: number; to: number } | null => {
+  const s = typeLineSpec(spec);
+  const r = lineEmphasis(s);
+  if (!r) return null;
+  const fps = fpsOf(film);
+  const T = (v: number) => f60x(v * (s.pace ?? 1), fps);
+  const W = wordMap(s.text);
+  const fr = typeLineFrames(s, monoMetrics(s.text, 100, 0.56, typeLineAlts(s).map((a) => a.text)), film);
+  const from = emphasisAt(r, emphasisLanded(fr, W.n, r.words[1], { T }), fps, s.pace ?? 1);
+  return { from, to: from + T(emphasisRun(r.device).len60) };
+};
+
 // ------------------------------------------------------------------------------------------------ declares
 
 /** What a line does on purpose: stepped runs (font cycle, redaction hops, swarm on twos, decode blocks, the snap's and the make-room's jump frames) and a dive's seam. */
-export const declares = (s?: TypeLineSpec, film?: Partial<FilmCtx>): Declares => {
+export const declares = (spec?: TypeLineSpec, film?: Partial<FilmCtx>): Declares => {
   const none: Declares = { stepped: [], flashes: [], cameraBlur: [], seams: [] };
-  if (!s) return none;
+  if (!spec) return none;
+  const s = typeLineSpec(spec);
   const fps = fpsOf(film);
   const T = (v: number) => f60x(v * (s.pace ?? 1), fps);
   const id = s.id ?? `type-${s.preset}`;
@@ -1641,18 +1751,63 @@ export const measureVar = (text: string, size: number, weight: number, track: nu
   return w;
 };
 
-/** A line's metrics from the real font (prefix widths keep the kerning) and its preset's other strings. Browser only. */
-export const measureLine = (s: TypeLineSpec, size: number, weight: number, track: number, family: string, vary?: Vary): LineMetrics => {
-  const one = (t: string, v?: Vary) => {
+/**
+ * A line's metrics from the real font (prefix widths keep the kerning) and its preset's other strings. With an emphasis
+ * that sets a size or a weight, the key words are measured in their own style (prefix widths inside the run) and the
+ * words after them move by what the run adds; a width-holding device tightens the run's tracking so it adds nothing.
+ * Browser only.
+ */
+export const measureLine = (spec: TypeLineSpec, size: number, weight: number, track: number, family: string, vary?: Vary): LineMetrics => {
+  const s = typeLineSpec(spec);
+  const one = (t: string, v?: Vary, sz = size, wt = weight, tr = track) => {
     const ch = [...t];
-    const xs = ch.map((_, i) => measureVar(ch.slice(0, i).join(''), size, weight, track, family, v ?? vary));
-    const width = measureVar(t, size, weight, track, family, v ?? vary);
+    const xs = ch.map((_, i) => measureVar(ch.slice(0, i).join(''), sz, wt, tr, family, v ?? vary));
+    const width = measureVar(t, sz, wt, tr, family, v ?? vary);
     return { text: t, xs, ws: xs.map((x, i) => (i + 1 < xs.length ? xs[i + 1] : width) - x), width };
   };
   const m = one(s.text);
   const space = measureVar('a a', size, weight, track, family, vary) - measureVar('aa', size, weight, track, family, vary);
-  return { size, xs: m.xs, ws: m.ws, width: m.width, space, alt: typeLineAlts(s).map((a) => one(a.text, a.vary)) };
+  const out: LineMetrics = { size, xs: m.xs, ws: m.ws, width: m.width, space, alt: typeLineAlts(s).map((a) => one(a.text, a.vary)), baseline: baselineOf(size, weight, 1, family) / size, weight };
+  const r = lineEmphasis(s);
+  const mark = r ? EMPHASIS_DOES[r.device].mark : undefined;
+  // a bar or a box opens room round the key words (its side pad), so it never touches the words beside it
+  const room = mark === 'bar' ? EMPHASIS_LOOK.marker.pad * size : mark === 'box' ? EMPHASIS_LOOK.box.pad * size : 0;
+  if (!r || (r.scale === 1 && (r.weight === undefined || r.weight === weight) && !room)) return out;
+  const W = wordMap(s.text);
+  const [g0, g1] = glyphRange(W, r.words);
+  const chars = [...s.text];
+  const run = chars.slice(g0, g1 + 1).join('');
+  const w1 = r.weight ?? weight;
+  const k = r.scale;
+  const styled = k !== 1 || w1 !== weight;
+  // the run at the emphasis weight; a width-holding device fits its tracking to the run's width at the line's weight
+  const t1 = r.hold && styled ? holdTracking(track, measureVar(run, size, weight, track, family, vary), measureVar(run, size, w1, track, family, vary), [...run].length, size) : track;
+  const key = styled ? one(run, undefined, size * k, w1, t1) : { xs: m.xs.slice(g0, g1 + 1).map((x) => x - m.xs[g0]), ws: m.ws.slice(g0, g1 + 1), width: m.xs[g1] + m.ws[g1] - m.xs[g0] };
+  const pre = m.xs[g0] ?? 0;
+  const add = key.width - (m.xs[g1] + m.ws[g1] - pre) + 2 * room;
+  const xs = m.xs.map((x, i) => (i < g0 ? x : i <= g1 ? pre + room + key.xs[i - g0] : x + add));
+  const ws = m.ws.map((w, i) => (i >= g0 && i <= g1 ? key.ws[i - g0] : w));
+  const style = styled ? chars.map((_, i) => (i >= g0 && i <= g1 ? { k, weight: w1, track: t1 } : undefined)) : undefined;
+  return { ...out, xs, ws, width: m.width + add, style, base: { xs: m.xs, ws: m.ws, width: m.width } };
 };
+
+/**
+ * The size (px) a line is set at so that, with its emphasis landed, it is no wider than the plain line at `size`: a
+ * size device (scale, swell) grows the key words and a bar or a box opens room round them, and the line refits (the
+ * other words come down a little, the contrast stays). Other devices hold the width: `size` itself. Browser only.
+ */
+export const emphasisFitSize = (spec: TypeLineSpec, size: number, weight: number, track: number, family: string, role: string = 'line'): number => {
+  const s = defaultEmphasis(typeLineSpec(spec), role);
+  const r = lineEmphasis(s);
+  if (!r || (r.scale === 1 && !EMPHASIS_DOES[r.device].mark)) return size;
+  const plain = measureLine({ ...s, emph: false }, size, weight, track, family).width;
+  const grown = measureLine(s, size, weight, track, family).width;
+  return grown > plain ? (size * plain) / grown : size;
+};
+
+/** The width (px) a line takes once its emphasis has landed (measureLine's width): for a layout that sets pieces side by side. Browser only. */
+export const typeLineWidth = (spec: TypeLineSpec, size: number, weight: number, track: number, family: string, role: string = 'line'): number =>
+  measureLine(defaultEmphasis(typeLineSpec(spec), role), size, weight, track, family).width;
 
 const px = (v: number) => `${Number(v.toFixed(2))}px`;
 const fvsOf = (v: Vary | undefined, weight: number, base?: Vary) => {
@@ -1681,69 +1836,180 @@ export type TypeLineProps = {
  */
 export const TypeLine: React.FC<TypeLineProps> = (p) => {
   const film = useFilm();
-  const role = TYPE[p.role ?? 'line'];
+  const roleName = p.role ?? 'line';
+  const role = TYPE[roleName];
   const weight = p.weight ?? role.weight;
   const family = p.family ?? FONT.text;
   const track = p.track ?? role.track;
   const size = p.size ?? (role.size * Math.min(film.width, film.height)) / 1080;
-  const m = useMemo(() => p.metrics ?? measureLine(p.spec, size, weight, track, family, p.vary), [p.metrics, p.spec, size, weight, track, family, p.vary]);
-  const st = typeLineState(p.frame, p.spec, m, film);
+  // the line as drawn: its *marks* read, and a hero line that names no emphasis given the house default
+  const spec = useMemo(() => defaultEmphasis(typeLineSpec(p.spec), roleName), [p.spec, roleName]);
+  const m = useMemo(() => p.metrics ?? measureLine(spec, size, weight, track, family, p.vary), [p.metrics, spec, size, weight, track, family, p.vary]);
+  const st = typeLineState(p.frame, spec, m, film);
   if (!st.visible) return null;
-  const W = wordMap(p.spec.text);
+  const W = wordMap(spec.text);
+  const col = colorsOf(spec);
   const cx = p.x ?? film.width / 2;
   const cy = p.y ?? film.height / 2;
   const padX = size * 1.2;
   const boxW = m.width + 2 * padX;
   const boxH = size * 1.6;
   const top = size * 0.3; // the glyph box (1 em) inside the line box
+  const align = spec.align ?? 'centre';
+  const em = st.emph;
+  const does = em ? EMPHASIS_DOES[em.device] : undefined;
+  // a swell grows the key words from the line's own layout to the emphasised one, a bar or a box opens its room as it
+  // wipes on: the other words slide apart and the line re-centres (kinetic reflow)
+  const grow = em && (does?.grows || does?.mark === 'bar' || does?.mark === 'box') ? em.p : 1;
+  const lay = m.base && grow < 1 ? { xs: m.xs.map((x, i) => mix(m.base!.xs[i], x, grow)), ws: m.ws.map((w, i) => mix(m.base!.ws[i], w, grow)), width: mix(m.base.width, m.width, grow) } : m;
   const slotShift = st.slot ? st.slot.width - (right(m, W.ends[st.slot.word]) - m.xs[W.starts[st.slot.word]]) : 0;
-  const lineShift = -slotShift / 2;
+  const lineShift = -slotShift * ALIGN_SHIFT[align] + (m.width - lay.width) * ALIGN_SHIFT[align];
   const font: React.CSSProperties = { position: 'absolute', top, fontFamily: family, fontSize: size, fontWeight: weight, letterSpacing: `${track}em`, lineHeight: 1, whiteSpace: 'pre', fontVariationSettings: fvsOf(undefined, weight, p.vary) };
   const fill = st.fill ? `linear-gradient(90deg, ${st.fill.stops.map((s) => `${s.c} ${px(s.x * size)}`).join(', ')})` : undefined;
-  const xOf = (i: number) => padX + m.xs[i] + (st.slot && W.wordOf[i] > st.slot.word ? slotShift : 0) + lineShift;
+  const xOf = (i: number) => padX + lay.xs[i] + (st.slot && W.wordOf[i] > st.slot.word ? slotShift : 0) + lineShift;
+  const bl = m.baseline ?? 0.8;
+  // a key glyph in the emphasis style: its size (on the line's baseline), weight and tracking, grown in by a swell
+  const kOf = (i: number) => {
+    const gs = m.style?.[i];
+    return gs ? mix(1, gs.k, grow) : 1;
+  };
+  const styleOf = (i: number, g: GlyphState): React.CSSProperties => {
+    const gs = m.style?.[i];
+    if (!gs) return {};
+    const k = kOf(i);
+    const wt = mix(m.weight ?? weight, gs.weight, grow);
+    return {
+      fontSize: size * k,
+      fontWeight: wt,
+      letterSpacing: `${mix(track, gs.track, grow).toFixed(4)}em`,
+      top: top - bl * (k - 1) * size,
+      fontVariationSettings: g.vary ? fvsOf(g.vary, wt) : p.vary ? fvsOf({ ...p.vary, wght: wt }, wt) : undefined,
+    };
+  };
+  // the key run's box at this frame (box px): its left and right ink edges and its size
+  const run = em
+    ? (() => {
+        const [g0, g1] = em.glyphs;
+        const k = kOf(g0);
+        const S = size * k;
+        const tr = m.style?.[g1]?.track ?? track;
+        return { g0, g1, x0: xOf(g0), x1: xOf(g1) + lay.ws[g1] - tr * S, S, base: top + bl * size };
+      })()
+    : null;
+  const L = EMPHASIS_LOOK;
+  // what a key glyph shows: a mark's knock-out, an outline that fills, a sweep into the accent (a masked copy over it)
+  const markBox = run && does?.mark && does.mark !== 'under' ? (does.mark === 'box' ? L.box : L.marker) : null;
+  const markColor = em?.markColor ?? col.accent;
+  const knock = (() => {
+    const pick = (c: string) => Math.abs(toOklch(c)[0] - toOklch(markColor)[0]);
+    // the line's ground when it stands off the mark, else paper (a light knock-out reads as cut from the bar), else ink
+    if (spec.colors?.ground && pick(spec.colors.ground) > 0.35) return spec.colors.ground;
+    return pick(C.paper) >= 0.3 ? C.paper : C.ink;
+  })();
+  const front = (() => {
+    if (!run || !em) return null;
+    if (markBox) {
+      const x0 = run.x0 - markBox.pad * run.S;
+      return { at: x0 + em.p * (run.x1 - run.x0 + 2 * markBox.pad * run.S), feather: 0.5, color: knock };
+    }
+    if (does?.front) {
+      const F = (does.front === 'sweep' ? L.sweep.feather : L.outline.feather) * run.S;
+      return { at: run.x0 - F / 2 + em.p * (run.x1 - run.x0 + F), feather: F, color: does.front === 'sweep' ? (em.color ?? col.accent) : undefined };
+    }
+    return null;
+  })();
+  const inRun = (i: number) => !!run && i >= run.g0 && i <= run.g1;
 
-  const glyphSpan = (g: GlyphState, i: number, key: string, extra: React.CSSProperties = {}, dx = 0, dy = 0) => (
-    <span
-      key={key}
-      style={{
-        ...font,
-        left: xOf(i),
-        color: fill ? 'transparent' : g.color,
-        opacity: g.opacity,
-        transform: `translate(${px((g.dx + dx) * size)}, ${px((g.dy + dy) * size)}) rotate(${g.rot.toFixed(2)}deg) scale(${g.sx.toFixed(4)}, ${g.sy.toFixed(4)})`,
-        transformOrigin: '50% 78%',
-        filter: g.blur > 0.002 ? `blur(${px(g.blur * size)})` : undefined,
-        // a mask edge fixed in the line (the glyph's box is 1 em tall; its local edge moves up as the glyph moves down)
-        clipPath: g.clip !== undefined && !fill ? `inset(-60% -40% ${((1 - g.clip + g.dy + dy) * 100).toFixed(2)}% -40%)` : undefined,
-        fontVariationSettings: fvsOf(g.vary, weight, p.vary),
-        // a filled glyph is clipped to its box: padded so its descender survives, the margin and the origin taken back (line-height 1)
-        ...(fill ? { backgroundImage: fill, backgroundSize: `${px(m.width)} 100%`, backgroundPosition: `${px(-m.xs[i])} 0`, backgroundRepeat: 'no-repeat', WebkitBackgroundClip: 'text', backgroundClip: 'text', padding: '0.18em 0 0.32em', marginTop: '-0.18em', transformOrigin: '50% 64%' } : {}),
-        ...extra,
-      }}
-    >
-      {g.ch}
-    </span>
-  );
+  const glyphSpan = (g: GlyphState, i: number, key: string, extra: React.CSSProperties = {}, dx = 0, dy = 0) => {
+    const k = kOf(i);
+    return (
+      <span
+        key={key}
+        style={{
+          ...font,
+          left: xOf(i),
+          color: fill ? 'transparent' : g.color,
+          opacity: g.opacity,
+          transform: `translate(${px((g.dx + dx) * size)}, ${px((g.dy + dy) * size)}) rotate(${g.rot.toFixed(2)}deg) scale(${g.sx.toFixed(4)}, ${g.sy.toFixed(4)})`,
+          transformOrigin: '50% 78%',
+          filter: g.blur > 0.002 ? `blur(${px(g.blur * size)})` : undefined,
+          // a mask edge fixed in the line (the glyph's box is k em tall, its baseline on the line's; its local edge moves up as the glyph moves down)
+          clipPath: g.clip !== undefined && !fill ? `inset(-60% -40% ${(((k - g.clip - bl * (k - 1) + g.dy + dy) / k) * 100).toFixed(2)}% -40%)` : undefined,
+          fontVariationSettings: fvsOf(g.vary, weight, p.vary),
+          // a filled glyph is clipped to its box: padded so its descender survives, the margin and the origin taken back (line-height 1)
+          ...(fill ? { backgroundImage: fill, backgroundSize: `${px(m.width)} 100%`, backgroundPosition: `${px(-m.xs[i])} 0`, backgroundRepeat: 'no-repeat', WebkitBackgroundClip: 'text', backgroundClip: 'text', padding: '0.18em 0 0.32em', marginTop: '-0.18em', transformOrigin: '50% 64%' } : {}),
+          ...styleOf(i, g),
+          ...extra,
+        }}
+      >
+        {g.ch}
+      </span>
+    );
+  };
+
+  /** A copy of a key glyph shown left of the front (box px), in `color`: the knock-out, the fill, the sweep. */
+  const frontCopy = (g: GlyphState, i: number, key: string, color: string) => {
+    if (!front) return null;
+    const pad = size * 0.4; // the copy's box widened so overhanging ink stays inside its mask
+    const local = front.at + (st.glyphs[run!.g0].dx - g.dx) * size - xOf(i) + pad;
+    const a = local - front.feather / 2;
+    const b = local + front.feather / 2;
+    const mask = `linear-gradient(90deg, #000 ${px(a)}, transparent ${px(Math.max(b, a + 0.5))})`;
+    return glyphSpan({ ...g, color }, i, key, { paddingLeft: pad, paddingRight: pad, marginLeft: -pad, WebkitMaskImage: mask, maskImage: mask, WebkitTextStroke: undefined });
+  };
 
   const glyphs = (prefix: string) =>
     st.glyphs.map((g, i) => {
       if (g.ch === ' ' || (st.slot && W.wordOf[i] === st.slot.word)) return null;
       const out: React.ReactNode[] = [];
       if (g.mosaic !== undefined) {
-        const cells = mosaicCells(i, g.mosaic, 5, p.spec.seed ?? 0);
+        const cells = mosaicCells(i, g.mosaic, 5, spec.seed ?? 0);
         const cw = m.ws[i] / 5;
         const ch = (size * 0.72) / 5;
         cells.forEach((cc, k) =>
-          out.push(<div key={`${prefix}m${i}-${k}`} style={{ position: 'absolute', left: xOf(i) + cc.x * cw, top: top + size * 0.06 + cc.y * ch, width: cw * 0.86, height: ch * 0.86, background: colorsOf(p.spec).accent }} />),
+          out.push(<div key={`${prefix}m${i}-${k}`} style={{ position: 'absolute', left: xOf(i) + cc.x * cw, top: top + size * 0.06 + cc.y * ch, width: cw * 0.86, height: ch * 0.86, background: col.accent }} />),
         );
       }
       if (g.opacity <= 0.001) return out.length ? out : null;
       const sm = Math.hypot(g.smear[0], g.smear[1]);
       if (sm > 0.01)
         [0.45, 0.28, 0.14].forEach((o, k) => out.push(glyphSpan({ ...g, opacity: g.opacity * o }, i, `${prefix}s${i}-${k}`, {}, (g.smear[0] * (k + 1)) / 3, (g.smear[1] * (k + 1)) / 3)));
+      if (em && inRun(i) && !fill) {
+        const done = em.p >= 1;
+        if (does?.front === 'outline') {
+          // the outline until its fill front has crossed the glyph, the filled copy left of the front
+          out.push(done ? glyphSpan(g, i, `${prefix}g${i}`) : glyphSpan(g, i, `${prefix}g${i}`, { color: 'transparent', WebkitTextStroke: `${px(L.outline.stroke * size * kOf(i))} ${g.color}` }));
+          if (!done && em.p > 0) out.push(frontCopy(g, i, `${prefix}f${i}`, g.color));
+          return out;
+        }
+        if (front?.color) {
+          out.push(glyphSpan(done ? { ...g, color: front.color } : g, i, `${prefix}g${i}`));
+          if (!done && em.p > 0) out.push(frontCopy(g, i, `${prefix}f${i}`, front.color));
+          return out;
+        }
+      }
       out.push(glyphSpan(g, i, `${prefix}g${i}`));
       return out;
     });
+
+  // the mark behind (marker, box) or under (under) the key words, wiping on from the left; it rides the first key glyph
+  const mark = (() => {
+    if (!run || !em || !does?.mark || em.p <= 0) return null;
+    const g0 = st.glyphs[run.g0];
+    const seen = Math.max(...st.glyphs.slice(run.g0, run.g1 + 1).map((g) => g.opacity));
+    if (seen <= 0.001) return null;
+    const shift = `translate(${px(g0.dx * size)}, ${px(g0.dy * size)})`;
+    if (does.mark === 'under') {
+      const U2 = L.under;
+      const w = run.x1 - run.x0 + 2 * U2.pad * run.S;
+      return <div key="emark" style={{ position: 'absolute', left: run.x0 - U2.pad * run.S, top: run.base + U2.drop * run.S, width: w, height: Math.max(2, U2.thick * run.S), background: markColor, opacity: seen, transform: shift, clipPath: `inset(0 ${((1 - em.p) * 100).toFixed(3)}% 0 0)` }} />;
+    }
+    const B = markBox!;
+    const h = B.h * run.S;
+    const w = run.x1 - run.x0 + 2 * B.pad * run.S;
+    const r = B.radius * h;
+    return <div key="emark" style={{ position: 'absolute', left: run.x0 - B.pad * run.S, top: run.base - B.lift * run.S - h / 2, width: w, height: h, background: markColor, opacity: seen, transform: shift, clipPath: `inset(0 ${((1 - em.p) * 100).toFixed(3)}% 0 0 round ${px(r)})` }} />;
+  })();
 
   const slotLeft = st.slot ? padX + m.xs[W.starts[st.slot.word]] + lineShift : 0;
   const slot = st.slot
@@ -1775,7 +2041,6 @@ export const TypeLine: React.FC<TypeLineProps> = (p) => {
     : null;
 
   const glow = Math.max(0, ...st.glyphs.map((g) => g.glow ?? 0));
-  const col = colorsOf(p.spec);
   const layers = st.layers;
   const strips = layers.find((l) => l.kind === 'strips') as Extract<TypeLayer, { kind: 'strips' }> | undefined;
   const echoL = layers.find((l) => l.kind === 'echo') as Extract<TypeLayer, { kind: 'echo' }> | undefined;
@@ -1812,6 +2077,7 @@ export const TypeLine: React.FC<TypeLineProps> = (p) => {
             );
           })()
         : null}
+      {mark}
       {glyphs(key)}
       {slot}
       {layers.map((l, k) => {
@@ -1838,7 +2104,7 @@ export const TypeLine: React.FC<TypeLineProps> = (p) => {
 
   const group: React.CSSProperties = {
     position: 'absolute',
-    left: cx - boxW / 2,
+    left: align === 'left' ? cx - padX : align === 'right' ? cx - boxW + padX : cx - boxW / 2,
     top: cy - boxH / 2,
     width: boxW,
     height: boxH,
@@ -1853,11 +2119,11 @@ export const TypeLine: React.FC<TypeLineProps> = (p) => {
   const seen = Math.max(0, ...st.glyphs.map((g) => g.opacity), ...(st.slot?.items.map((it) => it.opacity) ?? []));
   const probe = (
     <span
-      data-text={p.spec.id ?? `type-${p.spec.preset}`}
+      data-text={spec.id ?? `type-${spec.preset}`}
       aria-hidden
       style={{ ...font, left: padX + lineShift, width: m.width + slotShift, height: size, color: 'transparent', opacity: Math.min(1, seen), overflow: 'hidden' }}
     >
-      {p.spec.text}
+      {spec.text}
     </span>
   );
 
@@ -1873,7 +2139,7 @@ export const TypeLine: React.FC<TypeLineProps> = (p) => {
         {echoL
           ? echoL.copies.map((cp, k) => (
               <div key={`echo${k}`} style={{ position: 'absolute', left: padX - echoL.pad * size, top: top - echoL.pad * size, width: m.width + 2 * echoL.pad * size, height: size * (1 + 2 * echoL.pad), background: echoL.ground, transform: `translate(${px(cp.dx * size)}, ${px(cp.dy * size)})` }}>
-                <span style={{ ...font, top: echoL.pad * size, left: echoL.pad * size, color: echoL.color }}>{p.spec.text}</span>
+                <span style={{ ...font, top: echoL.pad * size, left: echoL.pad * size, color: echoL.color }}>{spec.text}</span>
               </div>
             ))
           : null}

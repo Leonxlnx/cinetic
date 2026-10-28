@@ -216,6 +216,55 @@ export const TYPE_LOOK = {
 } as const;
 export type TypeFamily = keyof typeof TYPE_LOOK;
 
+/**
+ * Emphasis: a hero line is never one size, one weight and one colour from end to end (fx/TypeEmphasis). Most hero
+ * statement lines set their key word apart in one of these ways:
+ *   weight    the key word about 200 weight units over the line at the same size (regular 400-450 against semibold
+ *             600-700), usually in the accent too: calm 450 -> 650, bold 600 -> 800. Bold type is tracked tighter,
+ *             and the device holds the word's width by tightening its tracking (at most 0.06 em), so a layout
+ *             measured at the line's weight still holds
+ *   scale     the key word one step up the type scale on the line's baseline: calm x1.5 (an 84 px line's word at
+ *             126, the bold line), bold x1.35 (120 -> 162, a display word); `swell` grows it in after the line has
+ *             landed (22 f on E.glideOut) while the other words slide apart and the line re-centres (kinetic reflow)
+ *   marker    a solid accent bar behind the key word, 1.12 em of its size tall (measured 1.1-1.2 em), its centre
+ *             0.36 em over the baseline, 0.14 em of side pad inside a line (a word alone takes more), corners 0.12 of its height; it wipes on from the left
+ *             in 10 f (E.snapOut) and knocks the word out to the ground as its front passes
+ *   box       the inverted box: the line's ink behind the word, 1.42 em tall, 0.4 em of side pad, square corners
+ *             (measured 1.57 em and 0.72 em on a giant word)
+ *   under     a rule under the key word: 0.075 em thick, 0.13 em under the baseline, drawn left to right in 12 f,
+ *             the word at the emphasis weight
+ *   outline   the key word arrives as an outline (0.022 em stroke) and fills left to right after it lands (16 f, a
+ *             0.06 em edge), resting at the emphasis weight in the accent
+ *   sweep     the accent crosses the key word left to right after the line lands (22 f, a 0.5 em soft front) and
+ *             stays: the word ends in the accent, the rest of the line in ink
+ * Times are 60 fps frames; every device starts `after60` once the key word has landed (or at its own `at`).
+ */
+export const EMPHASIS_LOOK = {
+  weight: { calm: 650, bold: 800 } as Record<'calm' | 'bold', number>,
+  scale: { calm: 1.5, bold: 1.35 } as Record<'calm' | 'bold', number>,
+  holdTrack: 0.06, // the most the width hold tightens the key word's tracking (em)
+  after60: 4,
+  swell60: 22,
+  mark60: 10,
+  under60: 12,
+  outline60: 16,
+  sweep60: 22,
+  marker: { h: 1.12, lift: 0.36, pad: 0.14, radius: 0.12 },
+  box: { h: 1.42, lift: 0.34, pad: 0.4, radius: 0 },
+  under: { thick: 0.075, drop: 0.13, pad: 0.02 },
+  outline: { stroke: 0.022, feather: 0.06 },
+  sweep: { feather: 0.5 },
+} as const;
+
+/**
+ * Stacked and editorial layouts (fx/TypeStack), measured: a stack of 2-3 lines flush left at 3-5 % of the frame width
+ * (2.9 and 4.6 % measured), baseline to baseline 1.0-1.08 of the size (1.02 and 1.04 measured), the last line or its key
+ * word carrying the emphasis (semibold and the accent at the same size); a stair indents each line by about a third of
+ * the line above; giant plus small: one or two words at display or hero size with a short caption hung beside them,
+ * its first cap line on the giant's cap line, a third of an em of the giant to its right. Lines start 14 f apart.
+ */
+export const STACK_LOOK = { margin: 0.04, lead: 1.04, stair: 0.34, asideGap: 0.35, step60: 14 } as const;
+
 /** The grammar bands the checks read (seconds unless noted). */
 export const GRAMMAR = {
   shot: {
