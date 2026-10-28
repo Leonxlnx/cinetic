@@ -114,7 +114,7 @@ const standInPixels = () => {
 export const plateSrc = (): string => bakePixels('cinetic-plate-stand-in', PW, PH, standInPixels);
 
 /** The plate as the film uses it: its pixel size and the focus point the cover keeps on the anchor. */
-export const PLATE = (): PhotoSrc => ({ src: plateSrc(), w: PW, h: PH, focus: [0.46, 0.56] });
+export const PLATE = (): PhotoSrc => ({ src: plateSrc(), w: PW, h: PH, focus: [0.46, 0.56], drawn: 'place' }); // drawn: the layout audit fails the stand-in until a real photo replaces it (drop the field then)
 
 /**
  * Depth slices along the three nearest crests (image px): they part as the plate moves, so it reads as a space.

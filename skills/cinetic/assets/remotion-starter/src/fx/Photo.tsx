@@ -29,7 +29,8 @@ import type { Declares } from '../timeline';
  * `color` blend at `tintMix`), or a duotone (an SVG colour matrix, static): nothing animates a filter.
  * Bake the heavy grade into the files with scripts/assets.mjs grade; this one keeps a set consistent.
  */
-export type PhotoSrc = { src: string; w: number; h: number; focus?: [number, number] };
+/** drawn: a stand-in made in code (the starter's plate), marked data-drawn so the layout audit fails it until a real photo replaces it. */
+export type PhotoSrc = { src: string; w: number; h: number; focus?: [number, number]; drawn?: 'place' | 'person' | 'product' };
 export type PhotoMove = {
   from?: number; // the move's first frame (default the shot's start)
   to?: number; // its last frame (default from + 3 s)
@@ -213,7 +214,7 @@ export const Photo: React.FC<PhotoProps> = (p) => {
   // clipped at the frame grown by the room: a wrapper carrying the whole Photo within the room shows no edge
   const clip: React.CSSProperties = rx || ry ? { overflow: 'visible', clipPath: `inset(${-ry}px ${-rx}px)` } : { overflow: 'hidden' };
   return (
-    <div style={{ position: 'absolute', inset: 0, ...clip, background: C.ink, ...p.style }}>
+    <div data-drawn={p.photo.drawn} style={{ position: 'absolute', inset: 0, ...clip, background: C.ink, ...p.style }}>
       {p.grade?.duotone && <DuotoneDefs id={duoId} duotone={p.grade.duotone} />}
       <div style={{ position: 'absolute', inset: 0, filter: gradeFilter(p.grade, duoId) }}>
         {s.layers.map((L, i) => (

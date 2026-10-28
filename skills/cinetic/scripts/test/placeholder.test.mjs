@@ -11,7 +11,8 @@
  *   4. The kit marks what it draws: PortraitMark and HalftonePortrait carry data-drawn="person", a kit <Photo> with no
  *      src data-drawn="product" (with src: a photograph, unmarked); a picture slot with no photo in ProjectPanel or a
  *      result Tile shows the file it is (FileThumb: the file's name and size), never the drawn still life; a sample
- *      world without photos deals no person tiles, one with photos deals them with the photo, and the tile shows it.
+ *      world without photos deals no person tiles, one with photos deals them with the photo, and the tile shows it;
+ *      the starter's drawn plate is marked a place stand-in.
  *   5. lib/Audit.tsx fails placeholder, bar-text and drawn-figure from those helpers.
  *
  * It runs src through the starter's own tsx and react-dom/server (npm install in assets/remotion-starter first); the
@@ -126,6 +127,10 @@ try {
   result(P.nodes1.length >= 4 && P.nodes1.every((x) => ['ana.jpg', 'ben.jpg', 'cy.jpg'].includes(x)), 'worldNodes: a world with photos deals person tiles carrying the photo', P.nodes1.join(','));
   const tiles = readFileSync(join(SRC, 'kit', 'tiles.tsx'), 'utf8');
   result(/\{node\.photo \? \(\s*<Img src=\{node\.photo\}/.test(tiles), 'a person tile with a photo shows the photograph (an Img), not a drawn portrait');
+
+  const photoFx = readFileSync(join(SRC, 'fx', 'Photo.tsx'), 'utf8');
+  const plate = readFileSync(join(SRC, 'acts', 'plate.tsx'), 'utf8');
+  result(/data-drawn=\{p\.photo\.drawn\}/.test(photoFx) && /drawn: 'place'/.test(plate), "the starter's drawn plate is marked a place stand-in (fx/Photo data-drawn): the audit fails it until a real photo replaces it");
 
   // 5. the audit
   const A = readFileSync(join(SRC, 'lib', 'Audit.tsx'), 'utf8');
