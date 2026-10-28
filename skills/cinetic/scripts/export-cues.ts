@@ -115,7 +115,9 @@ const NOTE = /^[A-Ga-g][#b]{0,2}-?\d$/;
 // well formed; whether they make sense in the film (inside acts, lengths, coverage) is grid-check's.
 type Range = { from: number; to: number; id: string };
 type Decl = {
-  seams: { at: number; kind: string; carry?: string; dir?: number; signature?: boolean; id?: string }[];
+  // v / ratio: a velocity seam's speed in the code (px per frame at 1080p on the cut frame, carriedCut's vCut) and the
+  // incoming first step over it (house 0.7); forensics.py carried-cut prints them beside the speed it reads in pixels
+  seams: { at: number; kind: string; carry?: string; dir?: number; signature?: boolean; id?: string; v?: number; ratio?: number }[];
   stepped: (Range & { fps?: number; on?: number })[];
   flashes: { f: number; frames: number; id: string }[];
   cameraBlur: Range[];
@@ -140,6 +142,11 @@ const normDecl = (src: Record<string, unknown>, where: string, errors: string[],
     if (s.dir !== undefined) o.dir = Number(s.dir);
     if (s.signature) o.signature = true;
     if (s.id !== undefined) o.id = String(s.id);
+    for (const k of ['v', 'ratio'] as const) {
+      if (s[k] === undefined) continue;
+      if (typeof s[k] !== 'number' || !Number.isFinite(s[k]) || (s[k] as number) <= 0) errors.push(`${at}: ${k} must be a positive number (px per frame at 1080p for v)`);
+      else o[k] = s[k] as number;
+    }
     return [o];
   });
   const range = (k: 'stepped' | 'cameraBlur' | 'colour') => list(k).flatMap((r, i) => {

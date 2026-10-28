@@ -158,7 +158,8 @@ cues file that carries the declarations:
 | static-share | more than 15 % of the body stands still | warn |
 | still-cut | more than 30 % of the cuts go from a still frame to a still frame | warn |
 | hold-into-exit | fewer than half of the continuity cuts accelerate into the cut | warn |
-| carried-cut | a declared velocity seam: direction cosine ≥ 0.7, incoming speed 0.4-1.4× the outgoing, then decaying | fail |
+| carried-cut | a declared velocity seam: direction cosine ≥ 0.7, incoming speed 0.4-1.4× the outgoing (widened by the read's own spread), then decaying | fail |
+| carried-cut | the same, but the picture repeats along the move (stripes, tiles, a list) or its moving pixels disagree on the direction: the read is not trusted | warn |
 | dissolve-detect | ≥ 4 f@60 that are a rising mix of two different images, or a fade to black before the last 2 s, unless declared (`dissolveUi`, `light`, `fadeEnd`) | fail |
 | end-card | with `END` declared: nothing assembles in the 1.5 s before the lock, or the card fades in | warn |
 | motion-snap | more than 0.6 one-frame changes per 3 s outside a declared snap (a change of 2+ values with both neighbours under 35 % of it, not a declared cut), or more than one declared snap device | fail |
@@ -176,7 +177,12 @@ snap. The report lists every snap, frozen run, move with its settle length, stop
 `carried-cut` measures the outgoing vector with optical flow, which cannot see motion along a texture of parallel bands
 (water ripples, stripes, scan lines: the aperture problem): there it reads only the motion across the bands, and a
 carry declared in the other direction fails on its cosine. Carry the direction the flow sees there (the crop's measured
-drift), or measure the seam on a textured region.
+drift), or measure the seam on a textured region. The read around each velocity seam masks confident text lines out of
+the flow (type sliding over the shot is not the shot), records how far the moving pixels agree (`coherence`, `spread`:
+the ratio band widens by the spread) and the picture's period along the move (a repeating picture's step is known only
+modulo it: then a failing read is a warning, to check by eye). Declare `v` on the seam (the cut frame's speed in px per
+frame at 1080p, carriedCut's `vCut`) and `ratio` (the incoming first step over it, house 0.7), and the flag prints
+"code 30 px/f out, 21 in; pixels 28.4 out, 19.6 in".
 
 ## 6. look-audit and the floors (`scripts/look-audit.py`)
 

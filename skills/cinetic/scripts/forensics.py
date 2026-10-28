@@ -76,7 +76,11 @@ over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), 
   hold-into-exit  fewer than half of the continuity cuts accelerate into the cut (the last two
                frames run x1.15 faster than the two before them, or end at 3x the hold)     warn
   carried-cut  a declared velocity seam: direction cosine >= 0.7, incoming first-frame speed
-               0.4-1.4x the outgoing, then decaying every frame                             fail
+               0.4-1.4x the outgoing (the band widened by the read's own spread), then decaying
+               every frame; read on the flow with confident text lines masked out, and printed
+               against the code's speed when the seam declares v (px/f at 1080p) and ratio  fail
+               the same, on a picture that repeats along the move (stripes, tiles, a list: the
+               step is only known modulo its period) or whose moving pixels disagree       warn
   dissolve-detect  >= 4 f@60 explained as a rising mix of two different images (SSIM < 0.5), or a
                fade to black before the last 2 s, unless a seam declares it (dissolveUi,
                light, fadeEnd)                                                              fail
@@ -629,11 +633,51 @@ LIVE_PCT = 1.0      # %/s of scale creep
 GROUND_CPS = 18.0   # a flat ground tile changing faster than this (codes per second) is living light
 ONSET_PXS = 30.0    # a region starting to move faster than this is an animation start
 CHANGE_LIVE = 0.002  # share of the frame whose content changes over a window (typing, counters): a hold that lives
+# carried-cut: the house band, a direction read needs this coherence, a repeat reaching this autocorrelation makes the
+# step ambiguous, and the read's spread widens the ratio band by at most this much
+CARRY = dict(cos=0.7, ratio=(0.4, 1.4), coherence=0.5, period_ac=0.5, spread_max=0.5)
 
 
 def flow_fb(a, b):
     """Dense optical flow a -> b (Farneback; the parameters every probe uses)."""
     return cv2.calcOpticalFlowFarneback(a, b, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+
+
+def periods(gray, floor=None):
+    """The picture's repeat along x and along y (px, or None): the first autocorrelation peak of its structure at a
+    lag of 3 px or more that reaches `floor` (stripes, tiles, a list or a grid of cards repeat; footage and noise do
+    not). Optical flow reads a step on a repeating picture only modulo its period."""
+    floor = CARRY['period_ac'] if floor is None else floor
+    g = gray.astype(np.float32)
+    g = g - cv2.GaussianBlur(g, (0, 0), 6)  # the structure, not the light
+    ac = np.fft.irfft2(np.abs(np.fft.rfft2(g)) ** 2, s=g.shape)
+    if ac[0, 0] <= 0:
+        return [None, None]
+    ac = ac / ac[0, 0]
+    out = []
+    for prof in (ac[0, :g.shape[1] // 2], ac[:g.shape[0] // 2, 0]):
+        out.append(next((lag for lag in range(3, len(prof) - 1)
+                         if prof[lag] >= floor and prof[lag] >= prof[lag - 1] and prof[lag] >= prof[lag + 1]), None))
+    return out
+
+
+_LIKE = []
+
+
+def text_boxes(gray):
+    """Confident text lines in a frame, as (x, y, w, h): like.py's reader (glyphs grouped along a baseline); [] when
+    it cannot load."""
+    if not _LIKE:
+        try:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location('like_text', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'like.py'))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            mod.np, mod.cv2 = np, cv2
+            _LIKE.append(mod)
+        except Exception:  # noqa: BLE001 (the reader is optional here)
+            _LIKE.append(None)
+    return _LIKE[0].text_regions(gray) if _LIKE[0] else []
 
 
 def textured(gray, thr=6):
@@ -697,9 +741,14 @@ class MotionProbe:
            speed              its speed (px/s), and the camera fit of the pair
            tiles              which 64 px tiles move faster than ONSET_PXS (for starts and concurrency)
            cut                most pixels change and the flow cannot explain it
+      and on `seam_frames` (around declared velocity seams), what carried-cut needs beside vec:
+           vec_t, text        vec with confident text lines masked out, and the share of moving pixels they held
+           coh, spread        how far the moving pixels agree: the length of their mean unit vector (1 = one
+                              direction) and the median deviation of their speeds over the median
+           period             the picture's repeat along x and y (px at 1080p, or None): periods()
     """
 
-    def __init__(self, fps, w, h, window_s=0.4, wstride=None, pair_frames=None, tiles=True, force=(), pair_scale=0.5):
+    def __init__(self, fps, w, h, window_s=0.4, wstride=None, pair_frames=None, tiles=True, force=(), pair_scale=0.5, seam_frames=()):
         self.fps, self.w, self.h = fps, w, h
         # the frame-to-frame pairs run at a smaller size (cuts, speeds, tiles); the slow windows at full analysis size
         self.ps = pair_scale if min(w, h) * pair_scale >= 96 else 1.0
@@ -709,6 +758,7 @@ class MotionProbe:
         self.wstride = wstride or max(1, int(round(fps / 10)))
         self.pair_frames = pair_frames  # None: every frame
         self.force = set(force)  # frames that always get a window measurement (both sides of a cut)
+        self.seam_frames = set(seam_frames)  # frames whose pair also gets the carried-cut reads
         self.u = 1080.0 / h  # analysis px -> px at 1080p
         self.tile = max(8, int(round(64 * h / 1080)))
         self.ptile = max(4, int(round(64 * self.ph / 1080)))
@@ -720,13 +770,13 @@ class MotionProbe:
     def feed(self, f, gray):
         self.buf.append((f, gray))
         small = gray if self.ps == 1.0 else cv2.resize(gray, (self.pw, self.ph), interpolation=cv2.INTER_AREA)
-        if self.prev_small is not None and (self.pair_frames is None or f in self.pair_frames):
-            self.pair[f] = self._pair(self.prev_small, small)
+        if self.prev_small is not None and (self.pair_frames is None or f in self.pair_frames or f in self.seam_frames):
+            self.pair[f] = self._pair(self.prev_small, small, self.buf[-2][1] if f in self.seam_frames and len(self.buf) >= 2 else None)
         self.prev_small = small
         if len(self.buf) == self.k + 1 and (f % self.wstride == 0 or f in self.force):
             self.win[f] = self._win(self.buf[0][1], gray)
 
-    def _pair(self, a, b):
+    def _pair(self, a, b, full_a=None):
         diff = cv2.absdiff(a, b)
         frac = float((diff > 24).mean())
         mad = float(diff.mean())
@@ -747,6 +797,8 @@ class MotionProbe:
             out['speed'] = round(float(np.percentile(mag[moving], 90)) * self.up * self.fps, 1)
         else:
             out['vec'], out['speed'] = [0.0, 0.0], 0.0
+        if full_a is not None and moving.sum() >= 30:
+            out.update(self._carry_read(a, fl, mag, moving, full_a))
         fit = fit_similarity(fl, tex, max_pts=1500, residual=False)
         if fit:
             out['cam'] = [round(fit[0] * self.up, 3), round(fit[1] * self.up, 3), round(fit[2], 5)]
@@ -756,6 +808,24 @@ class MotionProbe:
             m = mag[:th * t, :tw * t].reshape(th, t, tw, t).mean(axis=(1, 3))
             tx = tex[:th * t, :tw * t].reshape(th, t, tw, t).mean(axis=(1, 3))
             out['tiles'] = ((m * self.up * self.fps >= ONSET_PXS) & (tx > 0.05)).astype(np.uint8)
+        return out
+
+    def _carry_read(self, a, fl, mag, moving, full_a):
+        """vec_t, text, coh, spread and period of one pair (see the class note); full_a: frame a at the analysis size."""
+        u, v, m = fl[..., 0][moving], fl[..., 1][moving], mag[moving]
+        mm = np.maximum(m, 1e-6)
+        out = dict(coh=round(float(math.hypot(float((u / mm).mean()), float((v / mm).mean()))), 3),
+                   spread=round(float(np.median(np.abs(m - np.median(m))) / max(1e-6, float(np.median(m)))), 3),
+                   period=[None if q is None else round(q * self.up, 1) for q in periods(a)])
+        boxes = text_boxes(full_a)
+        if boxes:
+            k = a.shape[0] / float(full_a.shape[0])
+            keep = moving.copy()
+            for x, y, bw, bh in boxes:
+                keep[int(y * k):int(math.ceil((y + bh) * k)) + 1, int(x * k):int(math.ceil((x + bw) * k)) + 1] = False
+            out['text'] = round(1 - float(keep.sum()) / max(1, int(moving.sum())), 3)
+            if keep.sum() >= 30:
+                out['vec_t'] = [round(float(np.median(fl[..., 0][keep])) * self.up, 3), round(float(np.median(fl[..., 1][keep])) * self.up, 3)]
         return out
 
     def _win(self, a, b):
@@ -1504,6 +1574,11 @@ def grammar_on(args, extra):
     return bool(getattr(args, 'grammar', False) or extra.get('look') or extra.get('seams') or extra.get('end'))
 
 
+def velocity_frames(extra, k_):
+    """The pair frames carried-cut reads around each declared velocity seam (video frames)."""
+    return {int(round(s['at'] * k_)) + d for s in extra.get('seams', []) if s.get('kind') == 'velocity' for d in range(-1, 6)}
+
+
 def cut_frames(extra, acts, cuts, k_):
     """Every designed cut in video frames: act boundaries, declared seams and declared hard cuts."""
     out = {int(round(a * k_)) for a, _ in acts.values() if a > 0}
@@ -1629,20 +1704,45 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
             if s.get('kind') != 'velocity':
                 continue
             at = vf(s['at'])
-            vs = [probe_m.pair.get(g, {}).get('vec') for g in [at - 1] + list(range(at + 1, at + 6))]
-            if any(v is None for v in vs):
+            rd = [probe_m.pair.get(g, {}) for g in [at - 1] + list(range(at + 1, at + 6))]
+            if any(r.get('vec') is None for r in rd):
                 continue
+            vs = [r.get('vec_t') or r['vec'] for r in rd]  # confident text lines masked out where the reader found any
             sp = [math.hypot(*v) for v in vs]
             o, i = sp[0], sp[1]
             cos = (vs[0][0] * vs[1][0] + vs[0][1] * vs[1][1]) / max(1e-6, o * i)
             ratio = i / max(1e-6, o)
+            # the read's own spread: the moving pixels' disagreement widens the ratio band; a picture that repeats along
+            # the move (its period on the axis the step runs) or pixels that disagree on the direction leave it unread
+            u = min(CARRY['spread_max'], math.hypot(float(rd[0].get('spread') or 0.0), float(rd[1].get('spread') or 0.0)))
+            lo, hi = CARRY['ratio'][0] * (1 - u), CARRY['ratio'][1] * (1 + u)
+            coh = min(float(rd[0].get('coh', 1.0)), float(rd[1].get('coh', 1.0)))
+            rep_p = [p for r, v in zip(rd[:2], vs[:2]) for p, comp in zip(r.get('period') or [None, None], v)
+                     if p and abs(comp) >= 0.3 * max(abs(v[0]), abs(v[1]), 1e-6)]
             decays = all(sp[j + 1] <= sp[j] * decay + 0.5 for j in range(1, len(sp) - 1))
-            ok = o >= 2 and cos >= 0.7 and 0.4 <= ratio <= 1.4 and decays
-            car.append(dict(frame=at, out=round(o, 2), into=round(i, 2), ratio=round(ratio, 3), cos=round(cos, 3), after=[round(x, 2) for x in sp[2:]], ok=ok))
-            if not ok:
-                why = ('the outgoing shot is not moving at the cut' if o < 2 else f'direction turns (cos {cos:.2f} < 0.7)' if cos < 0.7
-                       else f'incoming speed {ratio:.2f}x the outgoing (0.4-1.4x)' if not 0.4 <= ratio <= 1.4 else 'the incoming shot does not decay')
-                add('carried-cut', sev('fail'), at, f'declared velocity seam f{at}: {why}; carry the speed in the same direction and let it '
+            code = None
+            if isinstance(s.get('v'), (int, float)) and s['v'] > 0:
+                code = dict(out=float(s['v']), into=round(float(s['v']) * float(s.get('ratio') or 0.7), 2))
+            speeds = (f"code {code['out']:g} px/f out, {code['into']:g} in; pixels {o:.1f} out, {i:.1f} in" if code
+                      else f'pixels {o:.1f} px/f out, {i:.1f} in (declare v on the seam to compare with the code)')
+            why = ('the outgoing shot is not moving at the cut' if o < 2 else f'direction turns (cos {cos:.2f} < {CARRY["cos"]:g})' if cos < CARRY['cos']
+                   else f'incoming speed {ratio:.2f}x the outgoing ({lo:.2f}-{hi:.2f}x with the read\'s spread {u:.2f})' if not lo <= ratio <= hi
+                   else 'the incoming shot does not decay' if not decays else None)
+            unsure = None
+            if why and o >= 2:
+                if rep_p:
+                    unsure = f'the picture repeats every {min(rep_p):g} px along the move, so the step is only known modulo it'
+                elif coh < CARRY['coherence'] and why.startswith('direction'):
+                    unsure = f'the moving pixels disagree on the direction (coherence {coh:.2f})'
+            ok = why is None
+            car.append(dict(frame=at, out=round(o, 2), into=round(i, 2), ratio=round(ratio, 3), cos=round(cos, 3), after=[round(x, 2) for x in sp[2:]],
+                            band=[round(lo, 2), round(hi, 2)], spread=round(u, 3), coherence=round(coh, 3), period=min(rep_p) if rep_p else None,
+                            text=max(float(r.get('text') or 0.0) for r in rd[:2]), code=code, ok=ok, unsure=bool(unsure)))
+            if why and unsure:
+                add('carried-cut', sev('warn'), at, f'declared velocity seam f{at}: not read with confidence ({why}, but {unsure}); {speeds}: '
+                    'check the seam by eye on a contact sheet of its frames')
+            elif why:
+                add('carried-cut', sev('fail'), at, f'declared velocity seam f{at}: {why}; {speeds}; carry the speed in the same direction and let it '
                     'decay x0.78-0.93 a frame (lib/handoff.ts carriedCut)')
         out['carried'] = car
 
@@ -2267,6 +2367,30 @@ def self_test():
     turn = push[:45] + [warp(B, dx=sum(30 * 0.7 * 0.85 ** j for j in range(i)) / 4) for i in range(45)]
     rep = run('turned', turn, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry')]))
     check(bool(flags(rep, 'carried-cut', 'fail')), 'a velocity seam whose next shot turns around fails', json.dumps(gram(rep).get('carried', [])[:1]))
+    rep = run('turned-code', turn, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry', v=30, ratio=0.7)]))
+    note = (flags(rep, 'carried-cut', 'fail') or [{}])[0].get('note', '')
+    check('code 30 px/f out, 21 in; pixels' in note, 'a seam that declares v prints the speed in the code beside the pixels', note[:160])
+    # an incoming picture that repeats (stripes crossed by lines every 12 px): the flow reads its step only modulo the
+    # period (here a sideways step, cos 0), so the seam warns and is never failed on that read
+    xs = np.arange(w * 2)
+    stripes = np.repeat(np.repeat((128 + 90 * np.sign(np.sin(2 * math.pi * xs / 12))).astype(np.uint8)[None, :], h, 0)[..., None], 3, 2)
+    stripes[::12] = 60
+    tiles = push[:45] + [warp(stripes, dx=-sum(30 * 0.7 * 0.85 ** j for j in range(i)) / 4) for i in range(45)]
+    rep = run('tiles', tiles, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry')]))
+    car = gram(rep).get('carried', [])
+    check(not flags(rep, 'carried-cut', 'fail') and bool(flags(rep, 'carried-cut', 'warn')) and bool(car) and car[0]['unsure'] and car[0]['period'],
+          'a velocity seam read on a repeating picture warns (the step is known only modulo its period), never fails', json.dumps(car[:1]))
+    # type that slides the other way over the incoming shot: its lines are masked out of the flow
+    def typed(img, dx):
+        out = img.copy()
+        cv2.rectangle(out, (0, 20), (w - 1, 250), (232, 232, 232), -1)
+        for row, word in enumerate(('CARRY THE SPEED', 'ACROSS THE CUT', 'AND LET IT DECAY', 'ONE FRAME AT A', 'TIME')):
+            cv2.putText(out, word, (int(16 + dx), 58 + 44 * row), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (20, 20, 20), 3, cv2.LINE_AA)
+        return out
+    over = push[:45] + [typed(warp(B, dx=-sum(30 * 0.7 * 0.85 ** j for j in range(i)) / 4), 3.0 * i) for i in range(45)]
+    rep = run('typed', over, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry')]))
+    car = gram(rep).get('carried', [])
+    check(bool(car) and car[0]['text'] > 0.3 and not flags(rep, 'carried-cut', 'fail'), 'type sliding the other way over the incoming shot is masked out of the flow', json.dumps(car[:1]))
     rep = run('stillcut', [A] * 45 + [B] * 45, cues(90, seams=[dict(at=45, kind='hard', id='cut')]))
     check(bool(flags(rep, 'still-cut', 'warn')), 'a cut from a still frame to a still frame warns')
     # end-card: with END declared, a lock that arrives after 1.5 s of nothing warns; one that assembles into the lock does not
@@ -2331,7 +2455,8 @@ def grammar_only(args, info, decl):
     kk = max(2, int(round(0.4 * fps)))
     pf = {g for c in cuts_v for g in range(c - 2 * n_ - 1, c + 7)}
     pw, ph = probe_size(info)
-    probe_m = MotionProbe(fps, pw, ph, pair_frames=pf, tiles=False, force={x for c in cuts_v for x in (c - 1, c + kk)})
+    probe_m = MotionProbe(fps, pw, ph, pair_frames=pf, tiles=False, force={x for c in cuts_v for x in (c - 1, c + kk)},
+                          seam_frames=velocity_frames(extra, k_))
     dis_n = max(2, int(round(4 * fps / 60)))
     disq = deque(maxlen=dis_n + 2)
     M = dict(idx=[], dissolve=[], probe=probe_m, motion=MotionCurves(fps))
@@ -2448,7 +2573,8 @@ def main():
         n_ = max(4, int(round(20 * info['fps'] / 60)))
         kk = max(2, int(round(0.4 * info['fps'])))
         pf = {g for c in cuts_v for g in range(c - 2 * n_ - 1, c + 7)}
-        args._probe = MotionProbe(info['fps'], *probe_size(info), pair_frames=pf, tiles=False, force={x for c in cuts_v for x in (c - 1, c + kk)})
+        args._probe = MotionProbe(info['fps'], *probe_size(info), pair_frames=pf, tiles=False, force={x for c in cuts_v for x in (c - 1, c + kk)},
+                                  seam_frames=velocity_frames(extra, k_))
     if args.grammar_only:
         res = grammar_only(args, info, decl)
         if args.json:
