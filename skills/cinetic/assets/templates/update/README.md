@@ -4,18 +4,25 @@ A 15-23 s update film ("vX is out"; 2-4 changes at 120 BPM, shorter on a faster 
 `bash scripts/new-film.sh <dir> --format update` (template.json lists the files it copies and the starter
 acts it removes).
 
-**The shape.** The name and the version first (the name over giant numerals cropped by the frame, the last
-numeral rolling from the old value to the new: "[Name] [version]" by 3 s), one act per change (2-4), each a product moment: the camera arrives on the
-product's surface, the product does the new thing on its beat, and one plain sentence of 2-6 words says the result
-the user sees. Then the payoff (the camera pulls back over every change as the version swings back in
-front) and the end card (the version recedes into the set; the mark's parts and the name are set before
-it). One camera carries the whole film along one strip, so every act line is a velocity seam.
+**The shape.** The name and the version first (the name over giant numerals cropped by the frame: "[Name] [version]"
+by 3 s), one act per change (2-4), each a product moment: the camera arrives on the product's surface, lit and tilted in
+the film's one light (`fx/Lit`), the product does the new thing on its beat, and one plain sentence of 2-6 words says
+the result the user sees, on its own confident move (`acts/type.tsx`). Then the payoff, with the version whole, and the
+end card with the version, the mark and the name. One camera carries the whole film along one strip, so every act line
+is a velocity seam; the film makes one 3D camera move. Each slot deals one of two devices per film from the name
+(`src/deal.ts`, template.json "slots"): the stage (slate or paper), the hook (the last numeral rolling from the old
+value, or the new version rising out of a mask once the name is read), the turn (a yaw into the second change, or a
+pitch over the payoff), the payoff (a pull back over every change as the version swings in, or the last change
+receding as the version rises in front) and the end (the version stepping back to the upper right over the lockup, or
+settling after the name as one lockup); every line is dealt a move and an exit.
 
 **What to write.**
 - `src/update.ts`: the version, the version before it and the changes (`words`: one plain sentence, 2-6
-  words, a result the user sees; `moment`: how it is shown). Delete its placeholder lines.
+  words, a result the user sees; `moment`: how it is shown; a change that works with another product puts "[]" where
+  its real mark sits in the sentence, with `logo`, the mark's slug from `node scripts/logos.mjs get <name> --film .`,
+  and `logoName`). Delete its placeholder lines.
 - The product moments: `src/kit` is the floor (a review approved, a reply landing, a figure climbing, a
-  budget entry). Rebuild the product's own screens for film (every size x1.9, nothing under 36 px) and
+  budget entry, a dense table whose readable row travels to the row that changed). Rebuild the product's own screens for film (every size x1.9, nothing under 36 px) and
   give each change its real state change on its hit frame.
 - The brand: `--brand <kit>` writes the tokens, the logo's parts (`src/brand/logo.ts`) and the name
   (`src/brand/identity.ts`); without a kit, replace the placeholders by hand.

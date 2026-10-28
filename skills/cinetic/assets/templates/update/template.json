@@ -1,6 +1,6 @@
 {
  "name": "update",
- "about": "A 15-23 s update film (\"vX is out\"): a hook on the version, 2-4 changes each shown as a product moment, one payoff, the end card with the version. new-film.sh --format update lays these files over the Remotion starter.",
+ "about": "A 15-23 s update film (\"vX is out\"): a hook on the version, 2-4 changes each shown as a lit product moment on one camera strip with the film's one 3D turn, one payoff, the end card with the version. Every slot deals one of two devices per film (src/deal.ts) and every line one confident move. new-film.sh --format update lays these files over the Remotion starter.",
  "engine": "remotion",
  "pace": "crisp",
  "type_family": "bold",
@@ -19,11 +19,13 @@
  },
  "copy": [
   "src/update.ts",
+  "src/deal.ts",
   "src/timeline.ts",
   "src/Film.tsx",
   "src/Root.tsx",
   "src/sync.ts",
   "src/acts/World.tsx",
+  "src/acts/type.tsx",
   "src/acts/Hook.tsx",
   "src/acts/Change.tsx",
   "src/acts/Payoff.tsx",
@@ -42,5 +44,41 @@
   "src/acts/Act4.tsx",
   "src/acts/ground.tsx",
   "src/acts/plate.tsx"
- ]
+ ],
+ "next": [
+  "update film: fill src/update.ts (the version, the one before it, 2-4 changes: one plain sentence each, 2-6 words, the result the user sees; \"[]\" where a product it works with sits, its logo slug and logoName),",
+  "  fetch the real mark of each product a change names: node scripts/logos.mjs get <name> --film .,",
+  "  see the devices this film was dealt: npx tsx -e \"import { DEAL, LINES } from './src/deal'; console.log(DEAL, LINES)\" (src/deal.ts: PIN a slot, or SEED to re-deal),",
+  "  rebuild the product's own screens for each change where the kit stands in, then deal its direction: python3 scripts/deck.py --brief \"<one line>\" --format update --changes N"
+ ],
+ "deal": {
+  "file": "src/deal.ts",
+  "seed": "the product's name (IDENTITY.name), or SEED in src/deal.ts; PIN chooses a slot by hand, MOVE_PIN and EXIT_PIN a line's move and exit",
+  "print": "npx tsx -e \"import { DEAL, LINES } from './src/deal'; console.log(DEAL, LINES)\""
+ },
+ "slots": {
+  "stage": {
+   "slate": "the strip on the mid slate",
+   "paper": "the strip on the tinted paper"
+  },
+  "hook": {
+   "roll": "the name over giant numerals cropped by the frame; the old version's last numeral rolls to the new one",
+   "mask": "the name, then, once it is read, the new version rises whole out of a mask on its baseline, giant and cropped"
+  },
+  "turn": {
+   "yaw": "the strip yaws 18 degrees round as the camera travels into the second change, easing most of the way back",
+   "pitch": "the camera tips 20 degrees down over the strip as the payoff gathers it"
+  },
+  "payoff": {
+   "pull": "the camera pulls back over every change, softened into a far plane, as the version swings in from the right",
+   "rise": "the last change recedes out of focus and the version rises out of a mask in front of it"
+  },
+  "end": {
+   "set": "the version steps back, smaller and quieter, to the upper right; the mark and the name are set lower left",
+   "beside": "the version settles at the name's size after it: mark, name and version as one centred lockup (the name rises in place out of its mask)"
+  },
+  "lines": {
+   "moves": "each line (the name, each change) arrives on mask, land, fall or glide (fx/TypePresets), never the same move twice in a row, and leaves on slide, spread, collapse, push or drop"
+  }
+ }
 }

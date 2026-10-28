@@ -47,6 +47,7 @@ const HIT_KIND: Record<string, { kind: Kind; variant?: string }> = {
   chat: { kind: 'pop' },
   count: { kind: 'tick', variant: 'crisp' },
   budget: { kind: 'click' },
+  table: { kind: 'tick', variant: 'crisp' },
 };
 
 export default function cues(): SoundEvent[] {

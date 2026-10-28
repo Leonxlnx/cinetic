@@ -3,9 +3,10 @@
 // sound (src/sync.ts -> out/cues.json) and QA (scripts/grid-check.ts) all import this file. The facts
 // live in src/update.ts; this file only places them on the grid. Think in bars and beats, never in
 // seconds. Keep it free of React and CSS imports: Node scripts load it directly.
-import { holdFor, PACE, readingWindows, revealFor, wordCount, type PaceName } from './lib/pace';
+import { DEAL, EXIT60, LINES, type Move, NAME_MOVE, RESOLVE60 } from './deal';
+import { holdFor, PACE, readingWindows, wordCount, type PaceName } from './lib/pace';
 import { bar, MUSIC } from './music';
-import { UPDATE } from './update';
+import { spokenChange, UPDATE } from './update';
 
 export { PACE } from './lib/pace'; // grid-check checks COPY against the film's own pace numbers
 /**
@@ -73,17 +74,25 @@ export const TOTAL = beat(BEATS.last) + TAIL;
 /** The act of change i (0-based). */
 export const changeAct = (i: number) => ACT[`change${i + 1}`];
 
+/** Frames from a move's start until a line of `n` words is read (src/deal.ts RESOLVE60, at this film's fps). */
+export const resolveSpan = (move: Move, n: number): number => Math.ceil(f60x(RESOLVE60[move][Math.min(8, Math.max(1, n)) - 1])) + 1;
+/** The move this film dealt a line (src/deal.ts LINES). */
+export const moveOf = (id: string): Move => LINES.move[id] ?? 'crisp';
+/** Frames (60 fps) the line `id` takes to leave on its dealt exit. */
+export const lineExit = (id: string, text: string): number => (LINES.exit[id] ? EXIT60(LINES.exit[id], wordCount(text)) : 24);
+
 /** How long the version's last numeral takes to roll (60 fps frames). */
 export const ROLL = 17;
 /** Frames before the next act line at which a change's words leave (they launch into the camera move). */
 export const SAY_OUT = 16;
 /**
- * The roll (a 16th-grid frame): once the name, which pops on with the set, is read, and early enough that the new
- * version is read before the camera takes it; at a fast track the version's read wins and the roll comes sooner.
+ * The roll or the rise (a 16th-grid frame): once the name, on screen from frame 0 with the set, is read, and early
+ * enough that the new version is read before the camera takes it; at a fast track the version's read wins and it
+ * comes sooner.
  */
 const ROLL_AT = (() => {
   const read1 = f60(holdFor(1, PACE[PACE_NAME])); // a one-word read
-  const nameRead = 1 + read1; // the name pops on frame 0 (ink 'pop'): read one word's hold later
+  const nameRead = 1 + read1; // the name is on screen from frame 0 with the set: read one word's hold later
   const latest = beat(BEATS.change(0)) - f60(SAY_OUT) - f60(ROLL) - read1;
   const at16 = (q: number) => beat(Math.floor(q / 4), q % 4);
   let q = 0;
@@ -96,7 +105,8 @@ const ROLL_AT = (() => {
 // doing the new thing (its contact frame), say<i> the sentence that says it rising in, push<i> the camera
 // pushing in on the surface under the read (the change's second picture beat: its words hold most of two bars).
 export const CUE: Record<string, number> = {
-  roll: ROLL_AT, // the version's last numeral rolls from the old value to the new one, once the name is read
+  roll: ROLL_AT, // 'roll': the version's last numeral rolls from the old value to the new one, once the name is read
+  rise: ROLL_AT, // 'mask': once the name is read, the new version rises out of its mask under it (the two take turns)
   ...Object.fromEntries(
     UPDATE.changes.flatMap((_c, i) => [
       [`c${i}`, beat(BEATS.change(i))],
@@ -106,11 +116,10 @@ export const CUE: Record<string, number> = {
     ]),
   ),
   gather: beat(BEATS.payoff), // the pull back begins: every change at once, the version swinging back in front
-  swing: beat(BEATS.payoff + 1), // the version swings into the frame as the strip finishes softening
-  land: beat(BEATS.payoff + 2), // the version lands as the subject, on the beat
-  lockup: beat(BEATS.end + 1), // the mark and the name are set: the payoff of the end card
-  light: beat(BEATS.end + 2), // the key passes across the version behind the name (the end card's light event)
-  glint: beat(BEATS.end + 2, 3), // the mark's last part catches the key
+  swing: beat(BEATS.payoff, 2), // 'rise': the version starts out of its mask as the strip softens
+  land: beat(BEATS.payoff + 1, 1), // the version lands as the subject ('pull': its swing is centred on the act line, landing here)
+  lockup: beat(BEATS.end + 2), // the mark and the name are set: the payoff of the end card (it holds about a second and a half with the tail)
+  glint: beat(BEATS.end + 2, 3), // the mark's last part catches the light
   rest: beat(BEATS.end + 3, 2), // the slow push reaches the name: the lock keeps living
   end: beat(BEATS.last), // last bar line; TAIL follows
 };
@@ -141,9 +150,9 @@ export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'update', oneTake: true, whiteWorld: false };
 /** Every seam: the camera is at its fastest on each act line, so speed carries across every one. */
 export const SEAMS: Seam[] = [
-  ...UPDATE.changes.map((c, i): Seam => ({ at: beat(BEATS.change(i)), kind: i ? 'whip' : 'velocity', carry: 'x', dir: 1, id: `to-${c.id}` })),
-  { at: beat(BEATS.payoff), kind: 'velocity', carry: 'scale', dir: -1, id: 'pull-back' },
-  { at: beat(BEATS.end), kind: 'velocity', carry: 'x', dir: 1, id: 'make-room' },
+  ...UPDATE.changes.map((c, i): Seam => ({ at: beat(BEATS.change(i)), kind: 'whip', carry: 'x', dir: 1, id: `to-${c.id}` })),
+  DEAL.payoff === 'pull' ? { at: beat(BEATS.payoff), kind: 'velocity', carry: 'scale', dir: -1, id: 'pull-back' } : { at: beat(BEATS.payoff), kind: 'defocus', id: 'recede' },
+  { at: beat(BEATS.end), kind: 'morph', carry: 'shape', id: 'version-to-lockup' }, // the version reshapes into its place beside or above the lockup
 ];
 export const STEPPED: SteppedRange[] = [];
 export const FLASHES: Flash[] = [];
@@ -161,8 +170,9 @@ export const STRUCTURAL: string[] = [];
 /** Each CUE's salience (missing = 'hit'). */
 export const SALIENCE: Record<string, Salience> = {
   roll: 'hit',
+  rise: 'hit',
   ...Object.fromEntries(UPDATE.changes.flatMap((_c, i) => [[`c${i}`, 'cut' as Salience], [`hit${i}`, 'hit' as Salience], [`say${i}`, 'copy' as Salience], [`push${i}`, 'move' as Salience]])),
-  gather: 'move', swing: 'move', land: 'hit', lockup: 'hit', light: 'life', glint: 'life', rest: 'life', end: 'cut',
+  gather: 'move', swing: 'move', land: 'hit', lockup: 'hit', glint: 'life', rest: 'life', end: 'cut',
 };
 
 export type Copy = {
@@ -180,35 +190,29 @@ export type Copy = {
 
 const pace = PACE[PACE_NAME];
 
-/** How the words of a line or fragment arrive, as fx/Chain draws them with the same `ink`. */
-export type Ink = 'reveal' | 'pop' | 'partial';
-/**
- * Frames from a fragment's first frame to every word in: the pace's reveal, or for a line cut on ('pop')
- * the frame after its last word's start, or part-inked ('partial') that start plus the 10 f ink, so a
- * caption the act cuts on is not held as long as a calm reveal.
- */
-const revealSpan = (n: number, ink: Ink = 'reveal'): number => {
-  const last = (Math.max(0, n - 1) * pace.stagger * FPS) / 60;
-  return ink === 'pop' ? Math.floor(last) + 1 : ink === 'partial' ? Math.ceil(last + (10 * FPS) / 60) : f60(revealFor(n, pace));
+/** One line of copy on its dealt move; `out` defaults to the pace's hold, and never cuts that hold short. */
+export const line = (id: string, text: string, inF: number, out?: number, o: { move?: Move } = {}): Copy => {
+  const n = wordCount(text);
+  const resolved = inF + resolveSpan(o.move ?? moveOf(id), n);
+  const read = resolved + f60(holdFor(n, pace));
+  return { id, text, in: inF, resolved, out: Math.max(out ?? read, read) };
 };
 
-/** One line of copy revealed word by word with this film's pace; `out` defaults to the pace's hold. */
-export const line = (id: string, text: string, inF: number, out?: number, o: { ink?: Ink } = {}): Copy => {
-  const n = wordCount(text);
-  const resolved = inF + revealSpan(n, o.ink);
-  return { id, text, in: inF, resolved, out: out ?? resolved + f60(holdFor(n, pace)) };
-};
+/** When change i's words leave: early enough that their exit is gone before the next act line (the camera's move). */
+export const changeOut = (i: number) => beat(BEATS.change(i + 1)) - f60(lineExit(`change${i + 1}`, spokenChange(UPDATE.changes[i]))) - f60(2);
 
 // Every on-screen word. The name and the version open the film ("[Name] [version]": a stranger knows which product
 // by 3 s), the version is the set (giant numerals), each change one short sentence (2-6 words) that says the result
 // the picture just showed, one line at a time, then the version again and the name.
 export const COPY: Copy[] = [
-  { ...line('product', UPDATE.name, 0, beat(BEATS.change(0)) - f60(SAY_OUT), { ink: 'pop' }), kind: 'name' }, // pops on with the set
-  { id: 'from', text: UPDATE.from, kind: 'ui', in: 0, resolved: 0, out: CUE.roll },
-  { id: 'version', text: UPDATE.version, kind: 'name', in: CUE.roll, resolved: CUE.roll + f60(ROLL), out: beat(BEATS.change(0)) - f60(SAY_OUT) },
-  ...UPDATE.changes.map((c, i) => line(`change${i + 1}`, c.words, CUE[`say${i}`], beat(BEATS.change(i + 1)) - f60(SAY_OUT))),
-  { id: 'release', text: UPDATE.version, in: CUE.gather + f60(6), resolved: CUE.land, out: TOTAL },
-  { id: 'wordmark', text: UPDATE.name, in: CUE.lockup - f60(30), resolved: CUE.lockup, out: TOTAL },
+  { id: 'product', text: UPDATE.name, kind: 'name', in: 0, resolved: 1, out: beat(BEATS.change(0)) - f60(SAY_OUT) }, // on screen from frame 0 with the set: read while the version arrives
+  ...(DEAL.hook === 'roll' ? [{ id: 'from', text: UPDATE.from, kind: 'ui' as const, in: 0, resolved: 0, out: CUE.roll }] : []),
+  DEAL.hook === 'roll'
+    ? { id: 'version', text: UPDATE.version, kind: 'name', in: CUE.roll, resolved: CUE.roll + f60(ROLL), out: beat(BEATS.change(0)) - f60(SAY_OUT) }
+    : { id: 'version', text: UPDATE.version, kind: 'name', in: CUE.rise, resolved: CUE.rise + resolveSpan('mask', 1), out: beat(BEATS.change(0)) - f60(SAY_OUT) },
+  ...UPDATE.changes.map((c, i) => line(`change${i + 1}`, spokenChange(c), CUE[`say${i}`], changeOut(i))),
+  { id: 'release', text: UPDATE.version, in: CUE.gather + f60(DEAL.payoff === 'pull' ? 14 : 6), resolved: CUE.land, out: TOTAL },
+  { id: 'wordmark', text: UPDATE.name, kind: 'name', in: CUE.lockup - resolveSpan(NAME_MOVE, wordCount(UPDATE.name)), resolved: CUE.lockup, out: TOTAL },
 ];
 
 /** When each COPY entry is being read: [from, to) frame ranges by id (src/lib/pace.ts readingWindows()). */
