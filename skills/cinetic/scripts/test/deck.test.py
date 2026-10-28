@@ -205,7 +205,7 @@ cases = [
     ('a banned colour in the world', lambda x: x['directions'][3]['world'].__setitem__('light', 'a soft ' + 'amb' + 'er pool'), 'house ban'),
     ('a banned look in the signature', lambda x: x['directions'][4]['signature'].__setitem__('build', 'a ' + 'gl' + 'ow behind the plate'), 'house ban'),
     ('a shared signature family', lambda x: x['directions'][5]['signature'].__setitem__('family', x['directions'][6]['signature']['family']), 'signature family'),
-    ('a copy slot of 6 words', lambda x: x['directions'][7]['skeleton'][0].__setitem__('copy', {'words': [2, 6], 'what': 'too much'}), '1-4 words'),
+    ('a copy slot of 8 words', lambda x: x['directions'][7]['skeleton'][0].__setitem__('copy', {'words': [2, 8], 'what': 'too much'}), '1-7 words'),
     ('a ban-unsafe technique', lambda x: x['directions'][8]['techniques'].append('tr-band-wipe'), 'banned look'),
     ('a provenance phrase', lambda x: x['directions'][9].__setitem__('idea', 'As ' + 'learned' + ' from the best, a fold.'), 'house craft'),
     ('a technique-style id', lambda x: x['directions'][10]['signature'].__setitem__('shot', 'As in ' + 'T' + '17, a dive.'), 'house craft'),
@@ -716,7 +716,7 @@ result(r.returncode == 0 and '**The words are a script:**' in r.stdout and 'one 
        and '`TypeLine` from `fx/TypePresets.tsx`' in r.stdout,
        'the sheet asks for a script, gives each copy beat one sentence and draws one text animation per line (TypeLine)', (r.stderr or '')[-160:])
 r = run('--brief', 'a notes app, version 2.4 is out', '--format', 'update', '--direction', 'statement', '--out', os.path.join(TMP, 'script-u'), '--no-history')
-result(r.returncode == 0 and 'One plain sentence per change (2-6 words)' in r.stdout and '1-3 words a fragment' not in r.stdout,
+result(r.returncode == 0 and 'One plain sentence per change (2-7 words)' in r.stdout and '1-3 words a fragment' not in r.stdout,
        'an update sheet asks for one short sentence per change', (r.stderr or '')[-160:])
 
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')

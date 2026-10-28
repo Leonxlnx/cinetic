@@ -119,6 +119,7 @@ HAVE_TEXT = {'ui': 'product UI', 'input': 'a field, prompt or pointer the produc
 KEEP = ['palette', 'type']
 SLOTS = ['palette', 'type', 'signature', 'direction']
 MAX_REDRAWS = 2
+SCRIPT_LINE, SCRIPT_WORDS = (2, 7), 50  # the script's numbers (grid-check.ts SCRIPT): words a line, words a film
 DEFAULT_SECONDS = {'launch': 20, 'feature': 15, 'loop': 10, 'sting': 6, 'walkthrough': 30, 'vertical': 15, 'update': 14}
 UPDATE_SECONDS = (8, 20)  # an update film ("vX is out"): a hook, 2-4 changes, a payoff, the end card
 CHANGES = (2, 4)  # the changes an update film shows, each as one product moment
@@ -640,8 +641,9 @@ def validate(data, library=None, src=None, strict=False):
                 if c is None:
                     free += 1
                 elif not (isinstance(c, dict) and isinstance(c.get('words'), list) and len(c['words']) == 2 and c.get('what')
-                          and 1 <= c['words'][0] <= c['words'][1] <= 4):
-                    e(f'skeleton {b["beat"]}: a copy slot is {{"words": [min, max], "what": ...}} with 1-4 words (calm fragments)')
+                          and 1 <= c['words'][0] <= c['words'][1] <= SCRIPT_LINE[1]):
+                    e(f'skeleton {b["beat"]}: a copy slot is {{"words": [min, max], "what": ...}} with 1-{SCRIPT_LINE[1]} words '
+                      f'(a name, or a script line of {SCRIPT_LINE[0]}-{SCRIPT_LINE[1]})')
                 else:
                     words += c['words'][1]
             if abs(total - 1.0) > 0.02:
@@ -650,8 +652,8 @@ def validate(data, library=None, src=None, strict=False):
                 e(f'skeleton: exactly one beat carries the signature shot ({sigs} do)')
             if free < 1:
                 e('skeleton: at least one beat without copy (the picture gets its own stretch)')
-            if words > 30:
-                e(f'skeleton: copy slots allow {words} words; the most a film carries is 30')
+            if words > SCRIPT_WORDS:
+                e(f'skeleton: copy slots allow {words} words; the most a script carries is {SCRIPT_WORDS}')
             if sk[0].get('share', 1) > 0.2 or 'frame 0' not in str(sk[0].get('picture', '')).lower():
                 e('skeleton: the first beat is at most 20 % and says what moves on frame 0')
             main_n = re.sub(r'^the\s+', '', str(sig['name']).lower())
@@ -1587,7 +1589,7 @@ def render_sheet(sh, data, library):
         out += [f'## 8. Beat skeleton: an update film ({sh["changes"]} changes, {sh["seconds"]:g} s)', '',
                 'The name and the version first ("[Name] [version]" by 3 s), then each change as a product moment (the '
                 'product doing the new thing in this direction\'s device, never a list, a changelog row or a bullet), one '
-                'payoff, and the end card with the version. One plain sentence per change (2-6 words) that says the result '
+                f'payoff, and the end card with the version. One plain sentence per change ({SCRIPT_LINE[0]}-{SCRIPT_LINE[1]} words) that says the result '
                 'the picture just showed, one line at a time, at 72 px or more.', '']
     else:
         out += [f'## 8. Beat skeleton ({sh["seconds"]:g} s)', '']
@@ -1620,8 +1622,8 @@ def render_sheet(sh, data, library):
             f'- **The floor against a flat film** (checked on renders): the camera or the ground moves on at least '
             f'{int(floor.get("moving_body_frames", .7) * 100)} % of body frames; at least two depth planes move at different '
             f'rates in at least {int(floor.get("depth_planes_shot_share", .5) * 100)} % of shots; at least '
-            f'{int(floor.get("carried_seams_min", .4) * 100)} % of seams are carried; a signature device at least every '
-            f'{floor.get("signature_device_every_s", 3)} s; {floor.get("light_events_per_act", 1)} light event per act; a '
+            f'{int(floor.get("carried_seams_min", .4) * 100)} % of seams are carried; one of this direction\'s devices at work at '
+            f'least every {floor.get("signature_device_every_s", 3)} s (the signature shot itself happens once); {floor.get("light_events_per_act", 1)} light event per act; a '
             f'clear scale change on at least {int(floor.get("scale_contrast_cut_share", .3) * 100)} % of cuts.', '',
             '## 10. Music', '',
             f'- A licensed track (every film has one): {mus["bpm"][0]}-{mus["bpm"][1]} BPM, {mus["feel"]}; a `{mus["ending"]}` ending.']
