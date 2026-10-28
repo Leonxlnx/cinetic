@@ -5,17 +5,22 @@
  * The npm scripts call it instead of a bare `python3`, which is missing on a plain Windows install (or is
  * the Microsoft Store alias, which exits 49 or 9009 without running anything) and never names a Windows
  * virtualenv (its interpreter is python.exe). It runs $PYTHON when that is set (else $CINETIC_PYTHON), else
- * the first of python3, python and (on Windows) `py -3` that runs Python 3.10 or newer and imports numpy
- * (if none imports it, the first that runs 3.10+, with a warning), with the arguments as given and stdin,
- * stdout and stderr passed through; the exit code is the script's own. A name is used only after it has
- * run a version check. The scripts and tests that shell out to Python find it here too (`findPython`).
+ * the first of python3, python and (on Windows) `py -3` that runs Python 3.10 or newer and imports numpy,
+ * scipy and cv2 (else numpy alone; if none imports numpy, the first that runs 3.10+, with a warning), with the
+ * arguments as given and stdin, stdout and stderr passed through; the exit code is the script's own. A name is
+ * used only after it has run a version check. The scripts and tests that shell out to Python find it here too
+ * (`findPython`). --check imports every package in scripts/requirements.txt with that interpreter and prints
+ * the ones it misses with the pip line that installs them.
  *
  * Usage (from the project root):  node scripts/py.mjs <script.py> [args ...]
  *                                 node scripts/py.mjs --which     (print the interpreter it would use)
- * Exit codes: the script's own, 2 no arguments, 127 no Python 3.10+ found.
+ *                                 node scripts/py.mjs --check     (the packages it misses, and the pip line)
+ * Exit codes: the script's own, 2 no arguments, 127 no Python 3.10+ found; --check: 0 every package
+ * imports, 1 some are missing.
  */
 import { spawnSync } from 'node:child_process';
-import { readFileSync, realpathSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const win = process.platform === 'win32';
@@ -23,7 +28,8 @@ const found = new Map();
 
 /** The command that runs Python 3.10+ ([exe, ...args], e.g. ['py', '-3']), or null when none runs. $PYTHON or
  *  $CINETIC_PYTHON is taken as given; otherwise each of python3, python and (on Windows) py -3 must pass a version
- *  check, and with `numpy` (the default) one that imports numpy comes first. `quiet` keeps the warning off stderr. */
+ *  check, and with `numpy` (the default) one that imports numpy, scipy and cv2 comes first, then one that imports
+ *  numpy. `quiet` keeps the warning off stderr. */
 export function findPython({ numpy = true, quiet = false } = {}) {
   const key = `${numpy}`;
   if (found.has(key)) return found.get(key);
@@ -31,13 +37,22 @@ export function findPython({ numpy = true, quiet = false } = {}) {
   const cands = env ? [[env]] : [['python3'], ['python'], ...(win ? [['py', '-3']] : [])];
   const runs = ([exe, ...pre], imports) =>
     spawnSync(exe, [...pre, '-c', `import sys${imports}; sys.exit(0 if sys.version_info >= (3, 10) else 1)`], { stdio: 'ignore' }).status === 0;
-  let use = env ? cands[0] : numpy ? cands.find((c) => runs(c, ', numpy')) : null;
+  let use = env ? cands[0] : numpy ? cands.find((c) => runs(c, ', numpy, scipy, cv2')) ?? cands.find((c) => runs(c, ', numpy')) : null;
   if (!use) {
     use = cands.find((c) => runs(c, '')) ?? null;
-    if (use && numpy && !quiet) console.error(`py.mjs: none of ${cands.map((c) => c.join(' ')).join(', ')} imports numpy; using ${use.join(' ')}: install the packages in docs/setup.md into it, or set PYTHON to the interpreter of an environment that has them`);
+    if (use && numpy && !quiet) console.error(`py.mjs: none of ${cands.map((c) => c.join(' ')).join(', ')} imports numpy; using ${use.join(' ')}: install scripts/requirements.txt into it (${use.join(' ')} -m pip install -r scripts/requirements.txt), or set PYTHON to the interpreter of an environment that has them`);
   }
   found.set(key, use);
   return use;
+}
+
+/** The packages in requirements.txt (beside this file) as [pip name, import name]. */
+const REQ = join(dirname(fileURLToPath(import.meta.url)), 'requirements.txt');
+const IMPORT_AS = { 'opencv-python': 'cv2', 'opencv-python-headless': 'cv2', pillow: 'PIL', fonttools: 'fontTools' };
+export function requirements() {
+  if (!existsSync(REQ)) return [];
+  return readFileSync(REQ, 'utf8').split(/\r?\n/).map((l) => l.replace(/(^|\s)#.*$/, '').trim()).filter(Boolean)
+    .map((l) => l.split(/[\s<>=!~;[]/)[0]).map((n) => [n, IMPORT_AS[n.toLowerCase()] ?? n.replace(/-/g, '_')]);
 }
 
 const self = (() => {
@@ -52,12 +67,49 @@ if (self) {
   }
   const use = findPython();
   if (!use) {
-    console.error(`py.mjs: no Python 3.10+ found (tried python3, python${win ? ', py -3' : ''}): install it with the packages in docs/setup.md, or set PYTHON to the interpreter of that environment`);
+    console.error(`py.mjs: no Python 3.10+ found (tried python3, python${win ? ', py -3' : ''}): install Python 3.11 or newer with the packages in scripts/requirements.txt, or set PYTHON to the interpreter of that environment`);
     process.exit(127);
   }
   if (args[0] === '--which') {
     console.log(use.join(' '));
     process.exit(0);
+  }
+  if (args[0] === '--check') {
+    const req = requirements();
+    if (!req.length) {
+      console.error(`py.mjs: no ${REQ}`);
+      process.exit(2);
+    }
+    const [exe, ...pre] = use;
+    // the import names go in as arguments, never inside the -c string
+    const code = [
+      'import importlib, sys',
+      'miss = []',
+      'for m in sys.argv[1:]:',
+      '    try:',
+      '        importlib.import_module(m)',
+      '    except Exception:',
+      '        miss.append(m)',
+      'print(sys.version.split()[0])',
+      'print(" ".join(miss))',
+    ].join('\n');
+    const r = spawnSync(exe, [...pre, '-c', code, ...req.map(([, m]) => m)], { encoding: 'utf8' });
+    if (r.status !== 0) {
+      console.error(`py.mjs: ${use.join(' ')} did not run the check: ${(r.stderr || r.error?.message || '').trim().slice(0, 300)}`);
+      process.exit(1);
+    }
+    const [ver = '?', missing = ''] = (r.stdout || '').split(/\r?\n/);
+    const miss = new Set(missing.split(' ').filter(Boolean));
+    const need = req.filter(([, m]) => miss.has(m)).map(([n]) => n);
+    if (!need.length) {
+      console.log(`py.mjs: ${use.join(' ')} (Python ${ver}) imports every package in scripts/requirements.txt`);
+      process.exit(0);
+    }
+    console.log(`py.mjs: ${use.join(' ')} (Python ${ver}) is missing ${need.join(', ')}. Install them with`);
+    const q = (s) => (/\s/.test(s) ? `"${s}"` : s);
+    console.log(`  ${use.map(q).join(' ')} -m pip install -r ${q(REQ.split('\\').join('/'))}`);
+    console.log('or set PYTHON to the interpreter of an environment that has them.');
+    process.exit(1);
   }
   const [exe, ...pre] = use;
   const r = spawnSync(exe, [...pre, ...args], { stdio: 'inherit' });

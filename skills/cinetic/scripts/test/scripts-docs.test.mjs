@@ -13,6 +13,8 @@
  *      python3 is often the Microsoft Store alias, which runs nothing), $PYTHON and then $CINETIC_PYTHON
  *      are taken as given, no Python on the PATH exits 127, and no script or test spawns a bare python3
  *      or reads those variables itself (shell scripts honour $PYTHON, then ask py.mjs --which).
+ *   6. scripts/requirements.txt lists every third-party package a script in scripts/ or scripts/audio/ imports
+ *      (earshot, in its own environment, aside), and py.mjs --check answers with exit 0, or exit 1 and the pip line.
  *   README.md and docs/ are checked only in a clone of the repository.
  *
  * Usage (from the skill root):  node scripts/test/scripts-docs.test.mjs [--verbose]
@@ -22,7 +24,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL = resolve(HERE, '..', '..');
@@ -145,6 +147,44 @@ if (existsSync(setup)) {
       || /process\.env\.(CINETIC_)?PYTHON\b/.test(src);
   });
   result(!offenders.length, 'every script and test finds Python through py.mjs (no bare python3, no own $PYTHON lookup)', offenders.join(', '));
+}
+
+// 6. scripts/requirements.txt lists every package a script imports, and py.mjs --check reads it
+{
+  const PYMJS = join(SCRIPTS, 'py.mjs');
+  const { findPython, requirements } = await import(pathToFileURL(PYMJS).href);
+  const req = requirements();
+  const names = new Set(req.map(([, m]) => m));
+  result(names.has('numpy') && names.has('cv2') && names.has('PIL') && names.has('fontTools'),
+    'requirements() reads scripts/requirements.txt as import names (opencv-python is cv2, pillow PIL, fonttools fontTools)', [...names].join(' '));
+  const py = findPython({ numpy: false, quiet: true });
+  if (!py) console.log('skip  requirements.txt against the imports: no Python 3.10+ here');
+  else {
+    const std = spawnSync(py[0], [...py.slice(1), '-c', 'import sys; print(" ".join(sorted(sys.stdlib_module_names)))'], { encoding: 'utf8' });
+    const stdlib = new Set(std.stdout.trim().split(/\s+/));
+    const local = new Set();
+    const imports = new Map();
+    for (const sub of ['', 'audio']) {
+      for (const f of readdirSync(join(SCRIPTS, sub))) {
+        if (!f.endsWith('.py')) continue;
+        local.add(f.replace(/\.py$/, '').replace(/-/g, '_'));
+        // a statement, not prose in a docstring: `from x[.y] import ...`, or `import x[.y]` then a comma, `as`, a comment or the line's end
+        const re = /^\s*(?:from\s+([A-Za-z_]\w*)[\w.]*\s+import\s|import\s+([A-Za-z_]\w*)[\w.]*[ \t]*(?:,|\bas\b|#|$))/gm;
+        for (const m of read(join(SCRIPTS, sub, f)).matchAll(re)) {
+          const name = m[1] ?? m[2];
+          imports.set(name, [...(imports.get(name) ?? []), f]);
+        }
+      }
+    }
+    const optional = new Set(['earshot']); // the sound kit's renderer: its own environment (EARSHOT_PYTHON)
+    const missing = [...imports.keys()].filter((m) => std.status === 0 && !stdlib.has(m) && !local.has(m) && !optional.has(m) && !names.has(m) && m !== '__future__');
+    result(std.status === 0 && !missing.length, 'scripts/requirements.txt lists every package the scripts import',
+      missing.map((m) => `${m} (${[...new Set(imports.get(m))].join(', ')})`).join('; ') || (std.status ? std.stderr.trim().slice(0, 200) : ''));
+    const c = spawnSync(process.execPath, [PYMJS, '--check'], { encoding: 'utf8' });
+    const said = (c.stdout || '') + (c.stderr || '');
+    result((c.status === 0 && /imports every package in scripts\/requirements\.txt/.test(said)) || (c.status === 1 && /-m pip install -r .*requirements\.txt/.test(said)),
+      'py.mjs --check: exit 0 with every package, or exit 1 with the pip line for the missing ones', `exit ${c.status}: ${said.trim().split('\n')[0].slice(0, 160)}`);
+  }
 }
 
 process.exit(failed ? 1 : 0);

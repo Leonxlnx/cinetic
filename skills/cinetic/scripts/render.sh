@@ -204,7 +204,7 @@ PYMODS=numpy
 [[ $NOCHECK -eq 0 && $NOAUDIO -eq 0 || $BUILD_AUDIO -eq 1 ]] && PYMODS="$PYMODS, scipy, soundfile"
 [[ $MODE == blur ]] && PYMODS="$PYMODS, cv2"
 python3 -c "import $PYMODS" >/dev/null 2>&1 \
-  || die "Python (${PYCMD[*]}) cannot import $PYMODS: set PYTHON to the interpreter of an environment that has them (docs/setup.md)"
+  || die "Python (${PYCMD[*]}) cannot import $PYMODS: install scripts/requirements.txt into it (node scripts/py.mjs --check prints the pip line), or set PYTHON to the interpreter of an environment that has them"
 mkdir -p "$(dirname "$OUT")" out/qa
 OUT_ABS=$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")
 NAME=$(basename "${OUT%.*}")

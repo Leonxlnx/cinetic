@@ -89,7 +89,7 @@ const main = async () => {
   const L = (tokens as { LOCKUP?: { ratio?: number; gap?: number; weight?: number; track?: number } }).LOCKUP ?? {};
   const weight = L.weight ?? TYPE.display.weight;
   const track = L.track ?? TYPE.display.track;
-  const [py, ...pre] = findPython() ?? die('no Python 3.10+ found for outline-text.py: set PYTHON to the interpreter of an environment with fonttools (docs/setup.md)');
+  const [py, ...pre] = findPython() ?? die('no Python 3.10+ found for outline-text.py: set PYTHON to the interpreter of an environment with scripts/requirements.txt installed (node scripts/py.mjs --check)');
   const text = JSON.parse(
     execFileSync(py, [...pre, join(here, 'outline-text.py'), '--font', font, '--text', name, '--size', String(size), '--weight', String(weight), '--track', String(track)], { encoding: 'utf8' }),
   );

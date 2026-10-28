@@ -529,6 +529,68 @@ jobs:
       - name: Encode tags test (Homebrew ffmpeg)
         run: python "skills/$SKILL/scripts/test/encode-tags.test.py"
 
+  windows:
+    # Windows through Git Bash, the route docs/setup.md gives: no python3 on the PATH (the runner's Python is
+    # python.exe), so every step finds it through scripts/py.mjs; the packages come from scripts/requirements.txt;
+    # new-film.sh scaffolds a project, and the Remotion starter's timeline runs through grid-check with its tsx
+    # (npx through a shell, paths as Windows sees them).
+    name: Windows (Git Bash, py.mjs, requirements.txt)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install the Python packages (scripts/requirements.txt)
+        run: python -m pip install --quiet -r "skills/$SKILL/scripts/requirements.txt"
+
+      - name: py.mjs finds that Python, and it imports every package
+        run: |
+          node "skills/$SKILL/scripts/py.mjs" --which
+          node "skills/$SKILL/scripts/py.mjs" --check
+
+      - name: Script --help contract and docs tests (py.mjs, requirements.txt)
+        run: node "skills/$SKILL/scripts/test/scripts-docs.test.mjs"
+
+      - name: Scaffold a film under Git Bash (new-film.sh) and check its Python
+        run: |
+          film="$(cygpath -u "$RUNNER_TEMP")/film"
+          bash "skills/$SKILL/scripts/new-film.sh" "$film" --no-install
+          [ -f "$film/scripts/requirements.txt" ] || { echo "::error::new-film.sh did not copy scripts/requirements.txt"; exit 1; }
+          (cd "$film" && node scripts/py.mjs --check)
+
+      - name: Deck, pick and copy-check tests
+        run: |
+          python "skills/$SKILL/scripts/test/pick.test.py"
+          python "skills/$SKILL/scripts/test/deck.test.py"
+          python "skills/$SKILL/scripts/test/copy-check.test.py"
+
+      - name: Install the Remotion starter
+        run: cd "skills/$SKILL/assets/remotion-starter" && npm install --no-audit --no-fund --loglevel=error
+
+      - name: Grid-check regression tests (fixtures, both starters, new-film.sh on Windows)
+        run: |
+          node "skills/$SKILL/scripts/test/grid-check.test.mjs" | tee "$RUNNER_TEMP/grid.log"
+          if grep -q '^skip  the Remotion starter' "$RUNNER_TEMP/grid.log"; then
+            echo "::error::the Remotion starter cases were skipped (its npm install did not take)"
+            exit 1
+          fi
+
   encode-tags:
     # ffmpeg 7.1 and newer take a file's colour tags from the frames (#2). The test's static part
     # checks every BT.709-tagged encode for setparams; its encodes run on the runner's ffmpeg.

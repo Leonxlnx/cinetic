@@ -215,6 +215,8 @@ pip install numpy scipy soundfile pyloudnorm opencv-python librosa fonttools bro
 python3 -c "import numpy, scipy, soundfile, pyloudnorm, cv2, librosa, fontTools, brotli, uharfbuzz, PIL; print('ok')"
 ```
 
+The same list ships as `scripts/requirements.txt`, in the skill and in every project `new-film.sh` makes, so `pip install -r scripts/requirements.txt` installs it too. From a project, `node scripts/py.mjs --check` imports each package with the interpreter the scripts will use and prints the ones it misses with the pip line for that interpreter.
+
 | Packages | Needed by |
 |---|---|
 | `numpy`, `scipy`, `soundfile`, `pyloudnorm` | the score, mix and master (`scripts/audio/`), `check-sync.py`, `av-audit.py` |
@@ -223,7 +225,7 @@ python3 -c "import numpy, scipy, soundfile, pyloudnorm, cv2, librosa, fontTools,
 | `fonttools`, `brotli`, `uharfbuzz` | outlined lettering: `outline-text.py`, the SVG lockups in `brand-kit.sh`, and the fonts of a supplied brand kit (`brand.py`) |
 | `pillow` | `dither-gradient.py` (banding-free gradient PNGs), a PNG logo in a brand kit (`brand.py`) |
 
-Every script finds Python one way, through `scripts/py.mjs`: `$PYTHON` when it is set (else `$CINETIC_PYTHON`), else the first of `python3`, `python` and (on Windows) `py -3` that runs Python 3.10 or newer and imports numpy (if none imports it, the first that runs 3.10 or newer, with a warning), so the Microsoft Store alias is never run (`node scripts/py.mjs --which` prints it; scripts and tests that shell out to Python import its `findPython`). Many agents open a fresh shell for each command, so either set `PYTHON` to the environment's interpreter, activate the environment in the terminal before you start the agent, or put it first on your `PATH` in your shell profile:
+Every script finds Python one way, through `scripts/py.mjs`: `$PYTHON` when it is set (else `$CINETIC_PYTHON`), else the first of `python3`, `python` and (on Windows) `py -3` that runs Python 3.10 or newer and imports numpy, scipy and cv2 (else numpy alone; if none imports numpy, the first that runs 3.10 or newer, with a warning), so the Microsoft Store alias is never run (`node scripts/py.mjs --which` prints it; scripts and tests that shell out to Python import its `findPython`). Many agents open a fresh shell for each command, so either set `PYTHON` to the environment's interpreter, activate the environment in the terminal before you start the agent, or put it first on your `PATH` in your shell profile:
 
 ```bash
 echo 'export PATH="$HOME/.venvs/cinetic/bin:$PATH"' >> ~/.zshrc    # or ~/.bashrc
