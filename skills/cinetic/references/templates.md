@@ -50,7 +50,7 @@ recedes out of focus as the version rises in front of it; the version fitted and
 film makes one 3D camera move (a yaw into the second change or a pitch over the payoff); the ground is the key wash
 alone. Each slot deals one of two devices per film from the name (`src/deal.ts`, template.json "slots"). Slots:
 `src/update.ts` (the version, the one before it, the changes and their moments: approve, chat, count, budget or a
-dense table).
+dense table; an approve change's `photos`, the real pictures its review approves, else they show as files).
 
 ## ui-walkthrough
 
@@ -63,7 +63,10 @@ bursts, the hand rising onto the button, results developing, a pull-back about t
 smeared by `DirBlur` while a count accelerates into its total, landing on the item that matters), `insight` (the item
 collapses into a pill), `pick` (a zoom onto the chosen row, which collapses into a progress pill while the output
 builds), `page` (the output flies up and flattens), `end`. Slots: `src/walk.ts`; `input.source` names the real mark of
-the product the input lives on (the card's tile and the field's lead; `scripts/logos.mjs`).
+the product the input lives on (the card's tile and the field's lead; `scripts/logos.mjs`); `photos.people` are real
+portraits of the feed's people (the rows, the pill, the quotes, the two beside the card), `photos.results` the found
+items' pictures, `photos.input` the input's own picture when its source has no mark: empty, people show as initials.
+The first of proof, pick or field stands on the tilted tint (`fx/Grounds` `tint`).
 
 ## capability-reel
 
@@ -76,7 +79,8 @@ a hard step every 10 f), `claim` (the film's one colour event: two fragments, th
 second rises, the full stop its own square), `rings` (square rings born from that stop, `Radiate` with `bornAt`, then
 the flood), `end` (the name pops, the rest types, the tagline takes its place). Slots: `src/reel.ts`; each source
 names its real mark (`logo`, fetched with `scripts/logos.mjs`): with every mark in, the ring is app-icon tiles, and a
-capability that is another product shows its mark on the ticker's tile.
+capability that is another product shows its mark on the ticker's tile; `record.photo` is the record's real picture
+(else the file it is). The statement's page carries the tilted wash.
 
 ## camera-teaser
 
@@ -112,7 +116,8 @@ still running), `done` (the result), `end` (the lockup, about 1.6 s). Every scri
 from a seed (`src/deal.ts`, template.json "deal": e.g. the tools ringing, docking inside the pill or on a far wall; the
 iris onto the accent or the pill stretching into the box; the run in a lit panel, a depth stack or beside the product's
 dense screen; the result as a morph or the claim on the accent), one colour event per film. Slots: `src/run.ts` (with
-`tools`, the slugs of the real marks).
+`tools`, the slugs of the real marks; `photos.people`, real portraits of the people the work is for, else their
+initials; `photos.result`, the result's picture when it is one). The request box stands on the tilted tint.
 
 ## social-ad
 
@@ -154,7 +159,7 @@ three read one a second, nearest the hub), `end` (the lockup with the close on `
 `AccentClaim`; about 1.5 s of hold with a creep and a drift). The sentence role is the calm family's line: small and
 airy by size, weight and white space at the face's own letter fit, never tracked wide: 3-5 words a line. Each act deals
 one of two or three devices per film from the name (`src/deal.ts`, template.json "deal"). Slots: `src/explain.ts` (with
-`integrations`, the slugs of the real marks).
+`integrations`, the slugs of the real marks). The grid of parts stands on the tilted tint.
 
 ## The grammar every template keeps
 
@@ -186,4 +191,10 @@ designed rather than assembled:
   chips show their real marks (`kit/logos.tsx`, `scripts/logos.mjs`, `references/brand-and-color.md` §1b); the text
   pill is the fallback until a mark is fetched; generic glyphs only for generic actions.
 - **Slots stay slots until the product's own words and data replace them:** the content file's marker fails lint
-  until then, and every string the picture shows comes from that one file.
+  until then, and every string the picture shows comes from that one file (`copy-check.py --ui src` fails a slot left
+  in brackets or a placeholder word).
+- **Real pictures, never drawn.** Where the structure shows people, places or things, the content file has a picture
+  slot; real photos fill it with the studio finish (`fx/Pictures`), and an empty slot falls back to the product's own
+  UI (initials, files, its tiles), never a drawn face or object (`lint-film` and the layout audit fail one).
+- **One colour ground.** Where the structure is a lit page of parts, one act stands on the tilted tint (`fx/Grounds`
+  `tint`, `fx/Washes` `tilted`): the accent's colour gathering along one edge; the other grounds stay clean.

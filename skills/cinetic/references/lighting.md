@@ -211,6 +211,9 @@ Draw the panel at (0, 0) in its own box (a kit surface with `lift` 0-6: Lit draw
 The light is the rim and the shadow; the product's own colours and type stay as designed (no bloom, no haze).
 Under a coloured key (a floor glow in the accent's lift) pass `rim={{ color }}`: the rim, the sheen and the lift take
 the light's colour. `RimEdge` and `rimLine()` give any other turned box the same rim (fx/DepthStack uses them).
+A glass card, a pill or a prompt box that stands frontal still has a side: `fx/Rim` `KeyRim` draws its border brightest
+toward the key (`light`, degrees: 0 from the right, -90 from above; house -35) and thinning to 12 % on the far side,
+with a soft spill just past the lit edge (18 px at 0.18). One key per film, so every rim in it faces the same way.
 `litFrames()` gives the entry and its landing for the sound; Lit declares nothing.
 
 **Grounds (`fx/Grounds`).** The place behind the product, built in code and clean: the flat base, or a very subtle
@@ -226,6 +229,7 @@ once as a dithered half-size sprite and moved by transform (no animated blur, no
 | `bars` (asked) | the wash and 3-5 tall bars defocused by about their own width, tapering at both ends | a lit room behind the product, out of focus |
 | `floor` (asked) | a rise of light from the bottom edge and bars standing in it, brighter at their foot | a stage lit from below |
 | `window` (asked) | 2-3 beams slanting along the key, brighter at the key end | sun through a window |
+| `tint` (asked) | the base, then the accent's tint gathering along one tilted edge (`fx/Washes` `tilted`) | a lit page with a direction: the film's one colour ground, under nodes, pills or a diagram |
 
 - **Strength:** a lightness swing of 0.06 across the frame (0.02-0.10: the key is felt, never seen); a kind the film
   asked for keeps its plates within its gain x the swing (pools 0.9, bars 1.1, window 1.0, floor 1.6). Name the light

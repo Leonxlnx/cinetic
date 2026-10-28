@@ -5,9 +5,9 @@ each one applies, the levels (error / warn / info) and the flags that matter. Th
 check reads a declaration from `timeline.ts` (`LOOK`, `SEAMS`, `STEPPED`, `FLASHES`, `CAMERA_BLUR`, `END`, `REVEAL`,
 `SPRING_CLASS`, `STRUCTURAL`, `SALIENCE`), the declaration turns a designed artifact into craft instead of a fault.
 
-Contents: 1. The order · 1b. copy-check · 2. grid-check · 3. lint-film · 4. layout-audit · 5. forensics · 6. look-audit and the
-floors · 7. grammar-score · 8. measure-speed and the render wrappers · 9. palette · 10. Sound checks ·
-11. The test suites
+Contents: 1. The order · 1b. copy-check · 2. grid-check · 3. lint-film · 4. layout-audit · 4b. detail-pair ·
+5. forensics · 6. look-audit and the floors · 7. grammar-score · 8. measure-speed and the render wrappers · 9. palette ·
+10. Sound checks · 11. The test suites
 
 ## 1. The order
 
@@ -22,10 +22,13 @@ python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --json out/qa/
 python3 scripts/look-audit.py out/preview.mp4 --cues out/cues.json --layout out/qa/layout-Film.json --json out/qa/look.json
 node scripts/grammar-score.mjs --cues out/cues.json --layout out/qa/layout-Film.json --look out/qa/look.json --forensics out/qa/forensics.json
 python3 scripts/av-audit.py out/preview.mp4 --cues out/cues.json --stems out/stems --json out/qa/av.json
+python3 scripts/copy-check.py --ui src                        # the product's UI strings: real words, no unfilled slots
+python3 scripts/detail-pair.py --film out/preview.mp4 --ref <frames> --pairs F:R,...   # the detail pass, every round
 ```
 
 After each round write the weakest grammar-score dimension and the weakest floor reading into the review note, and
-fix that first. A ship needs, on the final render: copy-check, lint `--strict` and grid-check clean; forensics passing;
+fix that first. A ship needs, on the final render: copy-check (the script and `--ui src`), lint `--strict` and
+grid-check clean; layout-audit passing with its placeholder floor; the detail pass with no open difference; forensics passing;
 look-audit passing with both floors; grammar-score mean ≥ 90, no dimension under 70; the sound gates
 (`references/sound.md`); probe and check-sync (`references/finishing.md`); the rubric (`references/review-loop.md`).
 
@@ -46,9 +49,15 @@ Run it on `TREATMENT.md` at Step 1b, before any picture work, and again on `out/
 | `verb` | no verb (an abstract noun alone: "Total control.") | error |
 | `together` | two lines on screen at once outside a declared swap | error |
 | `close` | the end lacks the name or what to do (a URL, "Out now") | warning |
+| `placeholder` | a line, a COPY `ui` string or (with `--ui`) a UI string that marks itself unfinished: lorem ipsum, "Placeholder", "Label text", "Your text here", a generic label alone ("Button", "Caption"), a generic noun and a number ("Item 1"); the words are `scripts/placeholders.json`, which `lint-film.mjs` reads too | error |
+| `slot` | (`--ui`) a UI string still holding a template's bracketed slot ("[Product]", "[N] items") | error |
 
 It prints every line with its second, the findings, and "a stranger reads": what it is, what it does, what to do,
 and a verdict. `--allow <word>` keeps a word the brand's own voice owns (record it in `BRIEF.md`); `--json` for tools.
+`--ui src` reads every string the product's UI shows in the film's source (JSX text; `text`, `label`, `title`,
+`caption`, `meta`, `value` and the other on-screen props and keys; lists of rows, steps and options; `fx/` and `lib/`
+are house code and skipped), `--ui out/qa/layout-Film.json` the UI boxes the layout audit measured in the render; given
+alone it checks only those strings.
 
 ## 2. grid-check (`scripts/grid-check.ts`)
 
@@ -104,6 +113,17 @@ non-UI roles), `small-text` (under 36 px at 1080p),
 `giant-watermark` (a giant word at opacity ≤ 0.29), `giant-once` (giant words in more than one act),
 `card-content` (error: a `<Card>` or bento tile with no content, image or `blank`).
 
+**Placeholders** (errors: a final film shows the product's own words and real pictures, never stand-ins):
+`placeholder-copy` (an on-screen string that marks itself unfinished, from `scripts/placeholders.json`: JSX text, a
+string child, a `text`/`label`/`title`/`caption`/`line`/`headline`/`sub`/`body`/`meta`/`value`/`name` prop or key, a
+`line()` or `chain()` string), `bar-text` (a `Skeleton`, `TextBars`, `GhostLines`, `FakeText`, `PlaceholderLines` or
+`Bars` component, or a map / `Array.from` callback that draws only rounded filled boxes under 30 px tall at varying
+widths with no text: a product's own loading skeleton shown on purpose takes `// lint-ok: loading state`),
+`drawn-figure` (outside `fx/`, `lib/` and `kit/`: the kit's drawn portraits, `PortraitMark`, `HalftonePortrait`, an
+`Avatar` or `AvatarStack` with kind portrait or halftone and no `src`, above 72 px; the kit's drawn still life, a kit
+`<Photo theme>` with no `src`; a component named for a figure, a person, face, landscape, mountain, tree, building,
+bottle, plant, food, that draws SVG shapes; a size lint cannot read warns).
+
 **Motion grammar:** `ease-family` (error: `enter()`/`leave()`/`move()`, a word's `ease` or an `exitEase` given a curve
 of another role; warn: a move under 1 s starting and stopping on `E.linear`), `token-drift` (a house token retuned out
 of its band: give a retuned curve a new name), `whip-shape` (error: a whip that peaks before t = .5),
@@ -140,6 +160,24 @@ evaluate (what `grammar-score.mjs` reads for curve roles, durations, staggers an
   with `--speed`, a box past the zone while moving faster than the read limit outside its read is listed apart
   (`moving`), not failed.
 - `--cues` adds the cue frames; `--safe feed9x16` the feed presets.
+- **The placeholder floor** (fails, on every visible element, tagged or not; `lib/placeholder.ts` carries the lists of
+  `scripts/placeholders.json`): `placeholder` (text that marks itself unfinished, or a template slot left in
+  brackets), `bar-text` (two or more grey bars, 4-40 px tall, at least 2.5 times as wide as tall, rounded, near-neutral,
+  in a container with no text of its own; a product's own loading skeleton shown on purpose sits in
+  `[data-audit-skeleton]`, a chart or a meter in `[data-chart]` / `[data-meter]`), `drawn-figure` (a figure the kit draws,
+  `data-drawn`, larger than a small UI avatar: a portrait over 72 px, the still life over 48 px at 1080p).
+
+## 4b. detail-pair (`scripts/detail-pair.py`): the detail pass
+
+Matching frames of the film and of the frames it answers to (the clip named as the bar, a template's render, the
+brand's frames, the last round), side by side, whole and at `--zoom` 2 on `--crops` regions and the `--auto` grid cells
+where they differ most. It measures, per region: `sharpness` (film over reference under 0.6 or over 1.67), `smear`
+(the gradient energy across x and y, one ratio 1.6 times the other's on the softer side), `tilt` (the dominant angle of
+long edges, 4 degrees apart), `ground` (the outer band's lightness span, one over 0.06 and the other under half; or
+hues 25 degrees apart), `glow` (a soft bright ring round near-white areas on one side only), `edges` (density outside
+0.6-1.67) and `colour` (OKLab mean over 0.06 or the 8 x 6 grid over 0.10). Findings are things to look at, not
+failures (exit 0); the detail lens (`assets/critics/detail.md`) lists every difference it sees on the sheets, and the
+ship gate wants none a viewer could see left open (`references/review-loop.md` §2).
 
 ## 5. forensics (`scripts/forensics.py`)
 
@@ -318,4 +356,6 @@ drift and land-before-cut helpers against the motion gates), `grid-check.test.mj
 `mirror.test.mjs` (the HyperFrames mirror equals the Remotion tokens), `scripts-docs.test.mjs` (every script answers
 `--help`; the docs name the internal helpers), `provenance.test.mjs` (public text speaks as house craft; no audio,
 stray images or videos with sound in git), and the Python tests (`pick`, `deck`, `brand`, `like`, `track`, `score`,
-`encode-tags`, `bash32`) and `assets.test.mjs`. `new-film.sh` copies scripts into a project without `scripts/test/`.
+`encode-tags`, `bash32`, `detail-pair`), `assets.test.mjs`, `details.test.mjs` (the detail primitives against their
+house numbers) and `placeholder.test.mjs` (the audit's placeholder lists equal `scripts/placeholders.json`; the kit
+marks what it draws). `new-film.sh` copies scripts into a project without `scripts/test/`.

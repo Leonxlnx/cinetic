@@ -16,7 +16,7 @@ Text animation is the main event of a cinetic film: the script's lines (2-7 word
 
 - **The presets** (`fx/TypePresets`, `<TypeLine spec={{ preset, text, at, out, exit }}>`): sixteen one-line animations from one spec and one renderer that measures the real font. `develop` (colour fronts run through the line), `build` (word by word on the beat), `typeFocus` (typed out of focus, the focus pulling in), `arc` (letters swing into their slots), `assemble` (letters gather from above and below the baseline), `decode` (the line opens from its centre behind accent blocks), `wheel` (the keyword rolls like a picker drum), `erode` (an old word erodes, the new one rises in its slot), `cycle` (the keyword shuffles weight and width), `punch` (a short line set big, a focus snap and a camera punch), `echo` (copies ring out on knockout boxes), `open` (words cut on touching, then the spaces open), `highlight` (an accent block walks to the keyword and parks), `slice` (strips snap together), `redact` (a box hops over the words as they change), `swarm` (words grow out of depth). Exits: cut, blur, drop, drift, push, split, swarm, dive. What each is for: `references/copy-and-type.md` §8.
 - **The type families** hold the rest: [type arrivals](type-arrivals.md), [lines, layout and swaps](lines-layout-and-swaps.md), [type exits](type-exits.md), and [marks, markers and annotations](marks-markers-and-annotations.md) for the keyword.
-- **Around the line:** the graphic effects of the materials section below (dithered gradients, glass, spectral colour, glyph textures, grades as transitions), a morph from the last shot, a grid, a loader, the product's UI. Pictures only as an accent, when the film has ones worth showing ([photos and footage](photos-and-footage.md)).
+- **Around the line:** the graphic effects of the materials section below (dithered gradients, glass, spectral colour, glyph textures, grades as transitions), a morph from the last shot, a grid, a loader, the product's UI. Real photos where the shot shows people, places or products, finished like a studio, never drawn ([photos and footage](photos-and-footage.md), `references/imagery.md`).
 
 ## Pick by job
 
@@ -45,6 +45,7 @@ How the materials are built: the stops, the layers and the numbers behind gradie
 - **Mesh grounds are two inks.** Saturated pools of the accent (blurred 25-35 % of the frame width) in a pale tinted base, near-white highlights along one S-shaped ribbon, drifting about 0.5 % a frame and continuous across cuts.
 - **Stepped is a choice.** Hard vertical bars of flat colour make a glow read as a staircase (an audio meter); hard stops never band, so a stepped ramp needs no dither.
 - **Floor light is a horizon.** A near-white core at the very bottom edge, then the accent, a deeper hue and black; an ellipse about 140 % of the frame wide centred just below the frame.
+- **A tilted tint is a lit page.** Paper over the first third, then an S-shaped ramp to the tint along one edge 8 degrees off vertical (4 / 24 / 81 % of the tint at 34 / 52 / 84 % of the run, the tint the accent a fifth of the way to paper): `fx/Washes` `tilted`, or the `tint` ground of `fx/Grounds` for one act. Nodes, pills and a diagram stand clear on it; it is the film's one colour ground, never every act's.
 
 Devices: [Ground gradient swaps or floods](colour-and-light.md#ground-gradient-swaps-or-floods) · [Soft blobs drift behind the copy](colour-and-light.md#soft-blobs-drift-behind-the-copy) · [Floor glow under the stage, brightening into reveals](colour-and-light.md#floor-glow-under-the-stage-brightening-into-reveals) · [Ground made of vertical bars](texture-grids-and-finish.md#ground-made-of-vertical-bars) · [Full-frame satin folds of colour that roll through hues](colour-and-light.md#full-frame-satin-folds-of-colour-that-roll-through-hues) · [A photo turned into a two- or three-ink gradient map](colour-and-light.md#a-photo-turned-into-a-two-or-three-ink-gradient-map) · [Grey problem pills, then blue benefit pills](collage-and-composition.md#grey-problem-pills-then-blue-benefit-pills) · [Pill marquee; selected pills fill](micro-interactions.md#pill-marquee-selected-pills-fill) · [Outgoing scene melts by defocus under the next](morphs-and-object-handoffs.md#outgoing-scene-melts-by-defocus-under-the-next)
 
@@ -85,6 +86,8 @@ Devices: [Frosted panel over a living plate](glass-glow-and-spectral.md#frosted-
 
 ### Glow anatomy
 
+- **A lit edge has a side.** A glass card's or a pill's border is brightest where it faces the key and thins round to the far side (peak 0.9, far 0.12, the bright arc 110 degrees, the width read at 35 % away from the light), with a soft spill just past the edge toward the key: `fx/Rim` `KeyRim`. A uniform 1 px outline reads as a wireframe.
+
 - **Core, body, falloff.** A light is three stops: a near-white core (about 60 px), a body in the accent (about 220 px), a falloff to transparent. The core sits off-centre, on the edge nearest what the light spills onto.
 - **Light is motivated.** It comes from something: a key under a tile, a passing dot, the cursor heating an object, an emissive object tinting the grid lines near it (spill radius 150-250 px).
 - **Emissive heat.** Brightness 1 to 1.5 and saturation 1.4 over about 40 f, a 30 px glow on the rims, a soft pool on the ground under it.
@@ -123,6 +126,17 @@ Devices: [Ground darkens or drains as an exit](colour-and-light.md#ground-darken
 - **Shadow rings.** A glass halo round a dot turns into a dark shadow ring as the dot becomes a solid object.
 
 Devices: [Shadows and rims tinted with the accent](depth-and-3d.md#shadows-and-rims-tinted-with-the-accent) · [Soft window-blind shadows across the set](colour-and-light.md#soft-window-blind-shadows-across-the-set) · [The copy and the work continue on real surfaces](photos-and-footage.md#the-copy-and-the-work-continue-on-real-surfaces) · [A ring draws around the subject, then ripples](marks-markers-and-annotations.md#a-ring-draws-around-the-subject-then-ripples) · [Frosted panel over a living plate](glass-glow-and-spectral.md#frosted-panel-over-a-living-plate)
+
+### Detail primitives
+
+The small finishes a rough build leaves out, each a pure state function with a thin component (`scripts/test/details.test.mjs` holds them to their numbers):
+
+- `fx/DrawPath`: a connector or route drawing on along its length, solid or dashed (the dashes shown through a revealing mask, so the pattern never slides), from the start, the end or both ends; `elbowPath` (one rounded corner) for tree links, `curvePath` for routes between pictures; 36 f on `E.strongInOut`, width 2.5, dash 12 / 10.
+- `fx/Cards` `reveal`: a card or a capsule opening from a sliver at its centre (width 1 % -> 10 % -> 31 % -> 93 % -> 100 % over 40 f), its content fading in over the last third; `CARD_TILT.leanBack` (27 degrees back about the top edge at perspective 1000) for the close-up before a snap, `aside`, `floor`.
+- `fx/Barrel`: one word repeated in clipped rows round a drum, side fragments of the word wider on the middle row, closing into the line in 26 f.
+- `fx/Cursor` `plane` (a glossy paper plane, a rim in the accent's lightness ramp under its long edge, a soft cast shadow) and `glassTri` (a rounded triangle, ink at 55 % with a thick white outline).
+- `lib/defocus` `dofSigma`: blur by distance from the focus (sharp within 230 px, 7.5 px at 850 px), drawn with `defocusMix`.
+- `fx/Pictures` (`PhotoCard`, `ArcRiver`, `PhotoWall`, `InlinePhoto`, `FootageWindow`) and `fx/Washes`: the studio finish of real photos and the colour grounds (`references/imagery.md` §4).
 
 ## Families
 

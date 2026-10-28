@@ -128,7 +128,7 @@ are px at 1080p and 60 fps frames (`PICTURES`, `WASH`).
 | `InlinePhoto` | a photo card inside a line of type ("Brings [photo] millions of"), the words beside it | card 8 x 7.5 em of the type, words 0.55 em from it at 0.62 of the card's height; a settle on the card; an accent pill under it pops 62 % -> 100 % in 2 f |
 | `PhotoFill` | a photo filling any box: a chip growing in a gap (fx/InlineGap items), a phone or laptop screen | cover on the focus point, the push of fx/Photo |
 | `FootageWindow` | a muted clip in a rounded window with the card's finish (fx/Footage: the film's clock, speed, freezes, loops) | as PhotoCard; a lean of ry 6-12 and rx 4-8 reads as a screen in space |
-| `Wash` | a colour ground with a direction (dithered, never bands): `rise` (paper over the upper third, the tint gathering at the bottom edge on t^1.7 from 32 %), `fall`, `side`, `sky` (deep to a lifted horizon), `corner`, `halo` (a soft light behind the subject) | tint = the accent mixed 45 % toward paper, or the brand's second colour; motivated light, one direction, no pools inside the frame |
+| `Wash` | a colour ground with a direction (dithered, never bands): `rise` (paper over the upper third, the tint gathering at the bottom edge on t^1.7 from 32 %), `fall`, `side`, `sky` (deep to a lifted horizon), `corner`, `halo` (a soft light behind the subject), `tilted` (paper over the first third, then an S-shaped ramp to the tint along an edge 8 degrees off vertical; the `tint` ground of fx/Grounds) | tint = the accent mixed 45 % toward paper (`tilted`: 20 %), or the brand's second colour; `tilted` knots 4 / 24 / 81 % of the tint at 34 / 52 / 84 % of the run; motivated light, one direction, no pools inside the frame |
 
 Appear (`appear={{ at, kind }}`): `settle` x1.16 -> 1 with a 6 px defocus over 24 f on M.oversize (a hero card after
 a cut); `rise` 6 % of the card's height and a 6 px defocus over 30 f on E.glideOut; `clip` uncovered from its
@@ -150,6 +150,18 @@ How a studio finishes a picture, and what the primitives do for you:
   card); on a dark film, ink with a halo or a sky. The ground's colour comes from the brand, the pictures keep theirs.
 - **Grade.** The set through one look (`assets.mjs grade`), and in code `grade={photoGrade('natural')}`
   (kit/theme.ts) on every card so a supplied picture and a found one sit together.
+- **Inside the product's UI.** A person in a feed, a creator's thumbnail, a result that is a picture: `Avatar src=`,
+  `AvatarStack people=[{ src }]`, `sampleWorld(seed, { photos })` (the world's people with real portraits, shown by the
+  dense screens and the person tiles), `ContentTile` preview `'photo'`, kit `Notice photo=`, `ProjectPanel photos=`.
+  Without a photo the UI shows what a product shows: initials for a person, the file for a picture (`FileThumb`).
+
+**The templates' picture slots.** Each template names where its structure shows people or pictures, in its content
+file: `ui-walkthrough` `walk.ts` `photos` (the feed's people in row order, the found items' pictures, the input's own
+picture), `prompt-run` `run.ts` `photos` (the faces of the people the work is for, the result's picture),
+`capability-reel` `reel.ts` `record.photo`, `social-ad` `ad.ts` `pictures` (photo cards, and two `ArcRiver` streams on
+curves in the label's rivers), `update` `changes[].photos` (an approve review's selects), `type-explainer` `picture`
+(`kind: 'photo'`). Fill them with real photos found and graded as above; empty, they fall back to the product's own UI
+(initials, files, its tiles), never to a drawing.
 
 ## 5. The imagery primitives (full frame)
 
@@ -223,3 +235,8 @@ the script leads: one clean line at a time, each with its own text animation, th
 - The picture floor (`references/checks.md`) counts real imagery toward edges and colour mass, and graphic effects
   just as well; grey cards and glyphless bars where content should be fail it (skeleton bars), and a drawn figure,
   landscape or product where a photo belongs fails the review (`references/taste-and-slop.md` D18).
+- **The stand-ins fail by script too.** `lint-film.mjs` `drawn-figure` (the kit's drawn portraits above 72 px, its drawn
+  still life, a component named for a figure that draws SVG) and the layout audit's `drawn-figure` (every figure the
+  kit draws, `data-drawn`, larger than a small UI avatar, in the render). The detail pass (`scripts/detail-pair.py`,
+  `references/review-loop.md` §2) then sets each picture beat beside its reference at 2x: crop, card language, depth
+  blur, smear, lean, grade.

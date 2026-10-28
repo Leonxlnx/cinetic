@@ -62,7 +62,7 @@ A small pointer shape (a paper plane, a triangle) first rotates to aim at its ta
 - **Anatomy:** Rotate 30-90 deg over 16-20 f ease-out, then rise or glide; drift 2-4 px/f.
 - **Timing:** 30-50 f.
 - **Sound:** None needed.
-- **Build:** Cursor custom shape with cursorTilt then cursorMove.
+- **Build:** `<Cursor shape="plane">` (a glossy paper plane, a rim in the accent's lightness ramp under its long edge, a soft cast shadow) or `shape="glassTri"` (a rounded triangle, ink at 55 % with a thick white outline, readable over a photograph), with cursorTilt then cursorMove.
 - **Materials and numbers:** Letter tiles in the pointer's path flip in 3D: a tile goes edge-on (a 4-6 px parallelogram) in about 4 f, starting 2-4 f before the pointer reaches it, a flipped tile shows its letter mirrored; the cut lands before the flip completes.
 
 ### Hover states fire along the cursor's path

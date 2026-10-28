@@ -47,7 +47,7 @@ takes the film context or reads it inside a component.
 - **Imagery develops.** Pictures arrive as a tint in the film's own colours and come into full colour column by
   column, on a static filter plus an opacity fade.
 - **Real content, film sizes.** A believable product with its own name, data that adds up, drawn icons, people as
-  crafted portraits, real states (hover, pressed, typing, approved). Every web size ×1.9 (`uiFilm()`), nothing under
+  real portraits (or the product's own initials), real states (hover, pressed, typing, approved). Every web size ×1.9 (`uiFilm()`), nothing under
   36 px in focus; product numbers and labels at `caption` and up (`references/copy-and-type.md` §7).
 - **A screen is dense; one line reads.** A product screen shows the product in use: 25 or more real strings (names,
   ids, amounts, dates, statuses that agree), most of them at 12-16 px (6-8 px on a half-size still) as texture, and
@@ -258,14 +258,16 @@ sample.
 - `kitTheme(recipe, accent)`: every colour of the kit computed from one recipe at the accent's hue (no hex in the kit;
   surfaces are neutral; portraits take the accent's hue at the theme's lightnesses in the backdrop and the garment, faces
   near neutral, never a rainbow).
-- Parts: `Surface` (a lit face with a contact shadow and a cast shadow away from the key), `Avatar` (a person, crafted:
-  a lit gradient portrait dealt from their seed, a halftone portrait with `kind="halftone"`, a monogram tile only on a
-  24-40 px chip; never a grey silhouette, never a circle of initials), `AvatarStack` (faces rimmed in the surface they
+- Parts: `Surface` (a lit face with a contact shadow and a cast shadow away from the key), `Avatar` (a person: a real
+  portrait with `src`; without one, a monogram tile with their initials, the way a product shows a person with no
+  photo, or a small drawn portrait inside dense UI, 72 px and under, which the kit marks `data-drawn` and the layout
+  audit fails any larger; never a grey silhouette), `AvatarStack` (faces rimmed in the surface they
   overlap, the first on top, `more` adds a +N tile), `Badge`, `Check`, `Pending`, `Glyph` / `GlyphTile` (generic
   glyphs from Phosphor Icons, MIT, shipped in `kit/icons.ts`: a regular or bold line by `weight`, `variant` fill or
   duotone; a tile is duotone on its soft face and filled on the solid one), `Meter`, `Button` (press amount from `fx/Cards press().q`), `Toast`, `Sparkline`,
-  `BarChart` (bars rise out of the baseline in turn), `Ring`, `Photo` (a product photograph made in code, or a
-  supplied `src`).
+  `BarChart` (bars rise out of the baseline in turn), `Ring`, `Photo` (a real photograph, `src`; without one the
+  kit's stand-in, marked `data-drawn="product"`, which lint and the layout audit fail), `FileThumb` (a picture slot with
+  no picture yet shown as the file it is: an image glyph, the file's name and size).
 - Flow parts (`kit/flow.tsx`), the pieces of a product flow: `Field` (a well, a glyph, the value as children, an action
   button with press and flash), `Tile` (a result: picture, two-line title, meta, a corner badge), `Row` (a choice whose
   `selected` rings it in the accent with a dark halo), `Pill` (a spinner or a check, a label, a live value), `Chip`,
@@ -325,8 +327,14 @@ sample.
 - **A person, a place or a product inside the UI is a real photo.** A channel's owner, a creator's thumbnails, a
   listing's product shot, a team that matters in the shot: `Avatar src=` / `AvatarStack people=[{ src }]` and
   `Photo src=` take photographs found with `scripts/assets.mjs search ... --people` (or the user's), cropped on their
-  focus. The drawn portraits (`PortraitMark`, `HalftonePortrait`) are for a crowd of small faces in a list; nothing
-  drawn in SVG stands in for a photo the shot is about. Outside the UI, photos and footage get the studio finish of
+  focus; `sampleWorld(seed, { photos })` gives a world's people real portraits, which the dense screens and the
+  person tiles show (`ContentTile` `photo`, preview `'person'` or `'photo'`; without photos `worldNodes` deals no
+  person tiles). The drawn portraits (`PortraitMark`, `HalftonePortrait`) are only for small faces inside dense UI
+  (72 px and under); a larger one fails the layout audit (`drawn-figure`), and nothing drawn in SVG stands in for a
+  photo the shot is about.
+- **Every string is a real word.** Labels, names, counts and file names are the product's own; grey bars or blocks
+  standing in for lines of text, "Placeholder", "Label text", lorem or "Item 1" fail `lint-film` (`placeholder-copy`,
+  `bar-text`), the layout audit and `copy-check.py --ui src`. Outside the UI, photos and footage get the studio finish of
   `fx/Pictures` (`PhotoCard`, `ArcRiver`, `PhotoWall`, `InlinePhoto`, `FootageWindow`; `references/imagery.md` §4).
 
 ## 6. Cards, bento and the one spring
