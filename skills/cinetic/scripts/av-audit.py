@@ -65,7 +65,7 @@ Checks (defaults are proven starting points, not dogma):
   tail       last 50 ms RMS <= -45 dBFS and last 10 ms peak <= -60 dBFS                      fail
              and the last half second quieter than the one before it                         warn
   head       first 5 ms peak <= -40 dBFS: above it the film clicks on sample 0 or cuts in
-             mid-sound (skipped on an excerpt)                                               warn
+             mid-sound (skipped on an excerpt, and on a track edit that puts bar 1 on frame 0) warn
   masking    (--stems) each sfx over the music in its best band (60 ms) by its role's margin: 3 dB for roles
              that sit 4 dB or less over the bed (ticks, taps, text, snap), 6 dB for the rest; < 0 dB warns
              (typing and crisp ticks sit just over the music by design: score.py's report judges them);
@@ -892,11 +892,17 @@ def main():
     # in the first 5 ms is a click on the first frame, or a sound cut in mid-action
     h5 = np.abs(x[:max(1, int(sr * 0.005))])
     head = dict(peak5_dbfs=round(20 * np.log10(h5.max() + 1e-12), 1), sample0_dbfs=round(20 * np.log10(h5[0].max() + 1e-12), 1))
-    if not excerpt and head['peak5_dbfs'] > args.head_peak:
+    # with a track whose edit puts bar 1's attack on frame 0 (track.py edit --film-t0 0) the film opens on a downbeat, by design
+    seg0 = (((srep or {}).get('music') or {}).get('segments') or [None])[0]
+    t0m = float(seg0['film_s']) if isinstance(seg0, dict) and isinstance(seg0.get('film_s'), (int, float)) else None
+    head['track_film_t0'] = t0m
+    if not excerpt and head['peak5_dbfs'] > args.head_peak and not (t0m is not None and t0m < 0.005):
         add('head', 'warn', 0, f'the audio starts at level: first 5 ms peak {head["peak5_dbfs"]} dBFS (> {args.head_peak:g}), '
             f'sample 0 at {head["sample0_dbfs"]} dBFS: '
             + ('a click on the first frame; re-master through scripts/audio/master.py, which fades in from zero over 3 ms'
                if head['sample0_dbfs'] > -45 else  # a faded head decodes from AAC at about -60
+               f"the track's edit opens {t0m:.2f} s before bar 1, inside what plays there: start the film on bar 1's attack "
+               '(track.py edit --film-t0 0) or on bars where the track begins quietly (--start-bar)' if t0m is not None else
                'a sound already in progress at frame 0 (a riser, pad or reverb begun before the film) cuts in '
                'mid-action; start from silence, or on the attack of a hit designed for frame 0'))
     if vinfo:

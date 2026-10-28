@@ -1132,6 +1132,15 @@ def av_audit(d):
     p, r = av_run(d, 'whoosh', ev, sig)
     check(r is not None and r['sync'].get('stray_sfx_onsets_f') == [] and r['sync'].get('onsets_inside_long_effects', 0) >= 1,
           f"av-audit does not call onsets inside a whoosh's span strays ({r and r['sync'].get('stray_sfx_onsets_f')})")
+    # the head: a bed already playing at frame 0 warns, naming --film-t0, unless the edit puts bar 1's attack on frame 0
+    u = np.arange(n) / SR
+    bed = np.sin(2 * np.pi * 220 * u) * 0.3 * np.minimum(1, u / 0.003)
+    heads = {}
+    for name, t0 in (('head25', 0.25), ('head0', 0.0)):
+        p, r = av_run(d, name, [dict(f=60, kind='click', id='a:c')], bed, {'events': {'skipped': []}, 'music': {'segments': [{'film_s': t0}]}})
+        heads[name] = [f['note'] for f in (r or {}).get('flags', []) if f['check'] == 'head']
+    check(len(heads['head25']) == 1 and '--film-t0 0' in heads['head25'][0] and not heads['head0'],
+          f"a bed in progress at frame 0 warns and names --film-t0 0; bar 1 on frame 0 does not ({heads})")
     # 4. intended times: a click whose role leads the cut by 11 ms (cues_sounded.json) is judged at its intended
     # time, and a cue the plan left silent (carried by the track) is not expected
     sig = np.zeros(n)
