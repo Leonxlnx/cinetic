@@ -76,7 +76,8 @@
 #                  Then deal the direction with: node scripts/py.mjs scripts/deck.py ... --brand brand/brand.json
 #   --like         a clip the user supplies to borrow grammar from (never content): scripts/like.py measures it
 #                  into out/like.json (grammar-score.mjs --target) and out/LIKE.md (the rules); the finished
-#                  film is checked with: node scripts/py.mjs scripts/like.py guard --film out/film.mp4 --clip <clip>
+#                  film is checked with: node scripts/py.mjs scripts/like.py guard --film out/film.mp4 --clip <clip>.
+#                  A clip it cannot measure ends the run with exit 1 (the project is made; measure it again).
 #   --music        a film cut to a licensed, human-made, instrumental track (references/music.md): the file is
 #                  copied into <dir>/audio/music/ (git-ignored; never committed), its licence record written
 #                  (scripts/audio/track.py add with the flags above: the licence as read on the item's own page
@@ -381,8 +382,10 @@ fi
 # A clip to borrow grammar from: its measured grammar and the rules (scripts/like.py).
 if [[ -n "$LIKE" ]]; then
   CLIP="$(cd "$(dirname "$LIKE")" && pwd)/$(basename "$LIKE")"
-  (cd "$DIR" && py scripts/like.py measure "$CLIP" --out out) || \
-    echo "new-film: warning: like.py could not measure $LIKE (needs ffmpeg, numpy, opencv-python): run $PYS scripts/like.py measure <clip> later" >&2
+  if ! (cd "$DIR" && py scripts/like.py measure "$CLIP" --out out); then
+    LIKE_FAILED=1  # the project is made; the exit says the clip was not measured
+    echo "new-film: error: like.py could not measure $LIKE (needs ffmpeg, numpy, opencv-python): run $PYS scripts/like.py measure <clip> --out out in $DIR" >&2
+  fi
 fi
 
 if [[ -n "$MUSIC" ]]; then
@@ -450,7 +453,8 @@ next:
                             # (palette, typeface, mark and name: cinetic:placeholder in src/brand and
                             # COPY) is replaced; see brand-and-color.md
   npm run stills            # style frames in out/stills/ - look at them
-  npm run studio            # iterate act by act (Acts folder)
+  $PYS scripts/sheet.py --comp Act1 --every 4 --out out/qa/act1.png   # iterate act by act on contact sheets
+                            # (npm run studio is for a person at the screen: an agent never starts it)
   npm run cues && npm run kit && npm run audio && npm run render:preview
   npm run listen            # earshot's ears on the soundtrack: out/qa/listen.json + sound_sheet.png
 EOF
@@ -498,4 +502,8 @@ fi
 # the effects come from earshot's kit (audio/kit.json): say now whether this machine can render it
 if [[ -f "$DIR/audio/kit.json" ]] && py -c "" >/dev/null 2>&1; then
   (cd "$DIR" && py scripts/audio/kit.py where 2>/dev/null | tail -n 1 | sed 's/^kit:/sound:/') || true
+fi
+if [[ ${LIKE_FAILED:-0} -eq 1 ]]; then
+  echo "new-film: $DIR is made, but --like did not measure $LIKE (see above)" >&2
+  exit 1
 fi
