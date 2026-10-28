@@ -447,7 +447,9 @@ def load_declarations(args):
 
 
 CARRIED = ('velocity', 'morph', 'breath', 'zoomThrough', 'whip', 'snapZoom', 'mask', 'wipe', 'defocus')
-PUNCH = ('hard', 'colour', 'light', 'stepped')
+# seams that cut on purpose without carrying motion: their spike or one-frame image is craft, and no continuity cut;
+# a breath is a hard cut through one empty frame (it still counts as a carried seam in the mix)
+PUNCH = ('hard', 'colour', 'light', 'stepped', 'breath')
 
 
 def declared_of(c):
@@ -2391,6 +2393,10 @@ def self_test():
     rep = run('typed', over, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry')]))
     car = gram(rep).get('carried', [])
     check(bool(car) and car[0]['text'] > 0.3 and not flags(rep, 'carried-cut', 'fail'), 'type sliding the other way over the incoming shot is masked out of the flow', json.dumps(car[:1]))
+    rep = run('breath', push[:45] + [np.zeros_like(A)] + [warp(B, dx=-sum(30 * 0.7 * 0.85 ** j for j in range(i)) / 4) for i in range(44)],
+              cues(90, seams=[dict(at=45, kind='breath', id='breath')]))
+    check(not flags(rep, 'spike', 'fail') and not flags(rep, 'ghost') and not flags(rep, 'hold-into-exit'),
+          'a declared breath (a hard cut through one empty frame) is craft: no pop, no ghost, no continuity cut', str([x['check'] for x in rep['flags']]))
     rep = run('stillcut', [A] * 45 + [B] * 45, cues(90, seams=[dict(at=45, kind='hard', id='cut')]))
     check(bool(flags(rep, 'still-cut', 'warn')), 'a cut from a still frame to a still frame warns')
     # end-card: with END declared, a lock that arrives after 1.5 s of nothing warns; one that assembles into the lock does not
