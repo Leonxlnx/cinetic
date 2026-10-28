@@ -264,28 +264,29 @@ const exitAt = landBeforeCut({ from: CUE.slide, dur: f60(34), ease: E.glideOut }
 
 ## 9. The pace knob
 
-`PACE` in `lib/pace.ts` (`motion.js` in HyperFrames) holds every text default, in 60 fps frames. A film picks one with
+`PACE` in `lib/pace.ts` (`motion.js` in HyperFrames) holds every text default, in 60 fps frames (1.2: about 12 % quicker
+than 1.1 in every duration, never under the reading floor `READ_WPS`, 3 words a second). A film picks one with
 `PACE_NAME` in `timeline.ts` (calm unless the brief asks for energy); components read it from the film context, and
 `grid-check.ts` checks `COPY` against the same numbers (`scripts/gen-pace.mjs` copies the check numbers after an edit;
 `mirror.test.mjs` fails while they differ).
 
 | Field | Calm (default) | Crisp | Meaning |
 |---|---|---|---|
-| `wordDur`, `ease` | 32, `snapOut` | 26, `snapOut` | a word's fade-in |
-| `rise`, `riseDur` | 0.33 line box, 25 f on `M.rise` | 0.33, 22 f | a word's rise |
-| `stagger`, `cadence` | 12, reading | 8, reading | mean gap between word starts; each gap from the previous word's length |
+| `wordDur`, `ease` | 28, `snapOut` | 23, `snapOut` | a word's fade-in |
+| `rise`, `riseDur` | 0.33 line box, 22 f on `M.rise` | 0.33, 19 f | a word's rise |
+| `stagger`, `cadence` | 11, reading | 8, reading | mean gap between word starts; each gap from the previous word's length |
 | `blur` | 0 | 0 | no entry blur on type by default (a focus-in word is a device: `FocusWord`) |
-| `exit`, `exitDur`, `exitFade` | auto, 17, 10 | auto, 14, 8 | exits accelerate: full opacity into a cut or a mask, otherwise a short fade in the move's last half |
-| `holdBase`, `holdPerWord`, `holdMin` | 42, 8, 60 | 36, 6, 42 | reading hold = max(holdMin, holdBase + holdPerWord·words) |
+| `exit`, `exitDur`, `exitFade` | auto, 15, 9 | auto, 12, 7 | exits accelerate: full opacity into a cut or a mask, otherwise a short fade in the move's last half |
+| `holdBase`, `holdPerWord`, `holdMin` | 36, 7, 52 | 28, 6, 36 | reading hold = max(holdMin, holdBase + holdPerWord·words); with the reveal never under 3 words a second (`READ_WPS`) |
 | `readMax` | 150 | 120 | a reading window counts as alive for at most this long |
-| `gapMin`, `gapMax` | 30, 90 | 18, 90 | picture beat between two fragments of a chain |
+| `gapMin`, `gapMax` | 26, 90 | 16, 90 | picture beat between two fragments of a chain |
 | `maxNewWords`, `maxVisibleBuild`, `maxVisibleReplace` | 4, 8, 5 | 5, 10, 10 | words per fragment; words visible at once |
-| `maxWordsPerSec`, `avgWordsPerSec`, `maxWords` | 1.2, 0.9, 30 | 2.0, 1.2, 35 | copy rate and total |
+| `maxWordsPerSec`, `avgWordsPerSec`, `maxWords` | 1.35, 1.0, 30 | 2.25, 1.35, 35 | copy rate and total |
 | `textShare`, `freeRun`, `maxGap` | 0.65, 90, 72 | 0.8, 60, 48 | share of frames with copy; the text-free run each 10 s; frames without an event |
-| `accentHold`, `accentCool` | 18, 13 | 7, 13 | the newest fragment holds the accent, then cools to ink linearly |
-| `recentre`, `recentreDur`, `recentreLead` | jump, 22, 0 | jump, 16, 0 | a build line re-centres with a jump on `E.jump` |
-| `move` | 0.5 s + 1.6 ms/px, camera 0.9-3.0 s | 0.35 s + 1.35 ms/px, 0.6-2.4 s | `durFor()` |
-| `fx` | MaskRise 10 f a unit, 10 apart, a linear head that stops, the last word 2.8× longer; TypeOn 2 f a character (30 cps); Scramble a lock every 3 f from the centre at 10 Hz; Roll 90 / 18; Morph 52; Iris 18 f in rate mode (×1.28 a frame) | the same, faster where it matters | component defaults |
+| `accentHold`, `accentCool` | 16, 12 | 6, 12 | the newest fragment holds the accent, then cools to ink linearly |
+| `recentre`, `recentreDur`, `recentreLead` | jump, 19, 0 | jump, 14, 0 | a build line re-centres with a jump on `E.jump` |
+| `move` | 0.44 s + 1.4 ms/px, camera 0.8-2.65 s | 0.31 s + 1.2 ms/px, 0.53-2.1 s | `durFor()` |
+| `fx` | MaskRise 9 f a unit, 9 apart, a linear head that stops, the last word 2.8× longer; TypeOn 2 f a character (30 cps); Scramble a lock every 3 f from the centre at 10 Hz; Roll 80 / 16; Morph 46; Iris 16 f in rate mode (×1.28 a frame) | the same, faster where it matters (MaskRise 9 f, 7 apart; Roll 53 / 12; Morph 35) | component defaults |
 
 A passage can run at the other tempo with a `pace={PACE.crisp}` prop. Both profiles build copy from fragments
 (`references/copy-and-type.md`).

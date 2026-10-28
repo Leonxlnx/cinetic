@@ -84,8 +84,8 @@ const FIELDS = new Set(['f', 'kind', 'weight', 'pan', 'pitch', 'apexFrac', 'dur'
 type ReadPace = { holdBase: number; holdPerWord: number; holdMin: number; readMax: number };
 // <gen-pace>
 const READ_PACE: Record<string, ReadPace> = {
-  calm: { holdBase: 42, holdPerWord: 8, holdMin: 60, readMax: 150 },
-  crisp: { holdBase: 36, holdPerWord: 6, holdMin: 42, readMax: 120 },
+  calm: { holdBase: 36, holdPerWord: 7, holdMin: 52, readMax: 150 },
+  crisp: { holdBase: 28, holdPerWord: 6, holdMin: 36, readMax: 120 },
 };
 // </gen-pace>
 type Windows = Record<string, [number, number][]>;

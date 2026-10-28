@@ -188,7 +188,7 @@ const houseTarget = () => {
       leave: iqr(DUR.exit) && [Math.min(DUR.typeExit?.[1] ?? 99, DUR.exit[1]), DUR.exit[3]],
     },
     staggers: { gap: [STAG.letter?.[1] ?? 3, STAG.ui?.[3] ?? 17.5], cvMin: 0.15 },
-    shot: { band: G.shot?.band ?? { launch: [1.3, 2.2] }, spread: G.shot?.spread ?? [1.9, 3.1], r70: 1.75 },
+    shot: { band: G.shot?.band ?? { launch: [1.15, 1.95] }, spread: G.shot?.spread ?? [1.9, 3.1], r70: 1.75 },
     density: { startsPerSec: [G.density?.startsPerSec?.[0] ?? 1.9, G.density?.startsPerSec?.[2] ?? 2.8], concurrent: [G.density?.concurrent?.[0] ?? 1.6, G.density?.concurrent?.[2] ?? 2.5], idleMax: G.density?.idleMax ?? 0.15 },
     holds: { livingMin: 0.95 },
     seams: {
@@ -428,7 +428,7 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
 
   // shot lengths: measured cuts when a render was measured, else the declared acts and seams
   {
-    const band = T.shot.band[format] ?? T.shot.band.launch ?? [1.3, 2.2];
+    const band = T.shot.band[format] ?? T.shot.band.launch ?? [1.15, 1.95];
     let lens = M?.shot_lengths ?? null;
     let source = 'measured';
     if (!lens && cues) {

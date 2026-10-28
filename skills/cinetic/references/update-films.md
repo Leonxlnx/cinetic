@@ -146,7 +146,7 @@ At 120 BPM (a 2 s bar), two bars a change, every act line on a bar line (with th
 | 3 | 18 s | 19 s |
 | 4 | 22 s | 23 s |
 
-With a track, its own bars decide; the shot band for the format is 0.8-1.6 s median (`GRAMMAR.shot.band.update`),
+With a track, its own bars decide; the shot band for the format is 0.7-1.4 s median (`GRAMMAR.shot.band.update`),
 shorter than a launch film's.
 
 ## 7. Gates and traps

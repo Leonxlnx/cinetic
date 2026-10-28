@@ -172,7 +172,7 @@ plainly what the product does. The full treatment is in `assets/TREATMENT.md`.
   72 px is too long: cut words.
 - **A line may build in beats.** A sentence can arrive in two or three parts with the picture working between them
   (`chain()` in build mode: "It lands" → the dot falls and lands → "on cue."). It is still one line: grid-check reads
-  a build chain as one sentence, and its parts follow the chain rules (each read before the next, 30-90 f of picture
+  a build chain as one sentence, and its parts follow the chain rules (each read before the next, 26-90 f of picture
   between them with a cue in it). A replace chain makes each part its own line, so each part must be a sentence; a run
   of single words in one place ("queued" → "built" → "shipped") is a keyword pile.
 - **The line says what the picture is doing; the picture proves it.** Write the line around the demo: the line lands,
@@ -202,13 +202,13 @@ reveal; a preset (§8) brings its own frames. With a licensed track the bar is t
 
 | Step | Frames | Seconds |
 |---|---|---|
-| A word's entry (fade 32 f on `E.snapOut`, rise a third of the line box over 25 f on `M.rise`) | 32 f | a third visible on its first frame, 90 % by about 0.25 s |
-| Word gap inside a line | 12 f on the reading cadence (a longer word earns a longer gap) | 0.2 s |
-| A line of n words resolves | 32 + 12·(n − 1): 44, 56, 68, 80, 92, 104 f for 2-7 words | 0.7-1.7 s |
-| Reading hold after it resolves | max(60, 42 + 8 f per word): 60, 66, 74, 82, 90, 98 f for 2-7 words | 1.0-1.6 s |
+| A word's entry (fade 28 f on `E.snapOut`, rise a third of the line box over 22 f on `M.rise`) | 28 f | a third visible on its first frame, 90 % by about 0.22 s |
+| Word gap inside a line | 11 f on the reading cadence (a longer word earns a longer gap) | 0.18 s |
+| A line of n words resolves | 28 + 11·(n − 1): 39, 50, 61, 72, 83, 94 f for 2-7 words | 0.65-1.6 s |
+| Reading hold after it resolves | max(52, 36 + 7 f per word): 52, 57, 64, 71, 78, 85 f for 2-7 words (a line on screen never under 3 words a second, `READ_WPS`) | 0.9-1.4 s |
 | A preset line resolves | its own frames (`TYPE_PRESETS`, stretched with `pace`; `typeLineFrames()` gives `resolved`) | |
-| Between two lines | the old line's exit (17 f at speed) is over before the next arrives, unless the next declares a swap | 0.28 s |
-| The keyword's accent | holds 18 f, cools 13 f linearly | 0.5 s |
+| Between two lines | the old line's exit (15 f at speed) is over before the next arrives, unless the next declares a swap | 0.25 s |
+| The keyword's accent | holds 16 f, cools 12 f linearly | 0.47 s |
 | Copy rate (a script) | at most 12 words resolving in any 5 s; at most 1.6 words a second over the body | |
 
 **Before and after.**
@@ -247,7 +247,7 @@ line of a callback still passes the line test (§2).
 Rules:
 - The payoff reuses at least one content word from the setup, or the viewer won't hear the echo.
 - The payoff lands on the payoff beat, which is also the loudest sound in the film.
-- The setup holds long enough to be remembered: at least its reading hold, max(60, 42 + 8 f per word), after it resolves.
+- The setup holds long enough to be remembered: at least its reading hold, max(52, 36 + 7 f per word), after it resolves.
 - Never explain the callback on screen.
 - Use one main callback per film, plus at most one echo. More than that becomes a gimmick.
 
@@ -297,7 +297,7 @@ Run this before every review round. Proofing bugs read as "fake" faster than any
 grep -rnP "\w'\w|\b1 [a-z]+s\b|lorem|ipsum|TODO|FIXME|Acme|John Doe|example\.com" src/
 ```
 
-**Reading time** is owned by `references/timing-grid.md` §9: hold a line max(60, 42 + 8 f per word) after it resolves (3 words → 66 f, 5 → 82 f, 8 → 106 f; a line built in beats counts its full word count), leave 30–90 f of picture between the parts of a line built in beats, keep a script's copy rate at or under 12 words in any 5 s, hold the lockup 1.5–2 s, and keep a URL readable ≥ 1.7 s. A crisp film holds 36 f + 6 f per word. `scripts/grid-check.ts` enforces these from `COPY`.
+**Reading time** is owned by `references/timing-grid.md` §9: hold a line max(52, 36 + 7 f per word) after it resolves (3 words → 57 f, 5 → 71 f, 8 → 92 f; a line built in beats counts its full word count), leave 26–90 f of picture between the parts of a line built in beats, keep a script's copy rate at or under 12 words in any 5 s, hold the lockup 1.5–2 s, and keep a URL readable ≥ 1.7 s. A crisp film holds max(36, 28 + 6 f per word). `scripts/grid-check.ts` enforces these from `COPY`.
 
 ## 6. One family from the face set
 
@@ -484,7 +484,7 @@ in place: its words move while they resolve.
 | Entry | What each word does | Use it for |
 |---|---|---|
 | `crisp` | starts 7 f after the last (6-8 f at 60 fps), fades, rises 0.32 em and sharpens from an 8 px blur (at 1080p) on `E.out` over 26 f: the rise runs on after the word reads | hero lines: the hook, the claim, the promise, a statement |
-| `calm` | the calm pace's canonical reveal (32 f on `E.snapOut`, a third of the line box of rise over 25 f on `M.rise`, 12 f apart on the reading cadence, no blur), in a crisp film too | body lines: what it is, how it works, a caption read at speaking pace |
+| `calm` | the calm pace's canonical reveal (28 f on `E.snapOut`, a third of the line box of rise over 22 f on `M.rise`, 11 f apart on the reading cadence, no blur), in a crisp film too | body lines: what it is, how it works, a caption read at speaking pace |
 
 Both are `TypeLine` presets (`preset: 'crisp'`, `'calm'`) and `<Words>` props (`{...crispWords(film)}`,
 `{...calmWords(film)}`), so a `Chain` or `Words` line takes the same entry. They are defaults, not devices: they may
@@ -603,7 +603,7 @@ tween: a third of it visible on its first frame, 90 % by about 0.25 s, home by 0
 
 | Knob | House | Normal range | Prop |
 |---|---|---|---|
-| fade | 32 f on `E.snapOut` | 26-36 f | `dur`, `durs[]`, `ease`, `eases[]` |
+| fade | 28 f on `E.snapOut` | 23-32 f | `dur`, `durs[]`, `ease`, `eases[]` |
 | rise | 0.33 of the line box | 0.2-0.8 em; bigger reads as a throw | `rise`, `riseUnit: 'line' \| 'em'` |
 | rise timing | 25 f on `M.rise` | the fade's own curve for a word that lands as one object | `riseDur`, `riseEase` |
 | stagger | 12 f, reading cadence | 8-14 f (crisp 8) | `stagger`, `cadence` |

@@ -1,16 +1,19 @@
 // The film's pace: how fast text arrives, how long it holds, how much of it is on screen at once,
 // and the default durations of every text component. Two profiles, both in 60 fps frames (convert
-// with f60() at the point of use):
-// - calm (the house default): fragments of 1-4 words. Each word fades in over 32 f on E.snapOut
-//   while it rises a third of the line box over 25 f on M.rise, 12 f apart on the reading cadence
-//   (a longer word earns a longer gap), no blur. A fragment holds at least 1 s (house range for a
-//   fragment's hold: 0.6-1.2 s; calm sits at the slow end, about 1.0-1.5 s) and takes turns with
-//   the picture. A build line re-centres with a jump (22 f on E.jump, no lead); exits accelerate
+// with f60() at the point of use). 1.2 runs both about 12 % faster than 1.1 (entries, staggers, holds,
+// exits, accents, moves and the fx defaults), never under the reading floor (READ_WPS below: 3 words
+// a second from a line's first word to its exit); the check bounds (readMax, gapMax, maxGap, freeRun)
+// stay where 1.1 put them, and the word rates allow the denser film that results:
+// - calm (the house default): fragments of 1-4 words. Each word fades in over 28 f on E.snapOut
+//   while it rises a third of the line box over 22 f on M.rise, 11 f apart on the reading cadence
+//   (a longer word earns a longer gap), no blur. A fragment holds at least 52 f (house range for a
+//   fragment's hold: 0.6-1.2 s; calm sits at the slow end, about 0.9-1.4 s) and takes turns with
+//   the picture. A build line re-centres with a jump (19 f on E.jump, no lead); exits accelerate
 //   (into a cut or a mask at full opacity, otherwise with a short fade in the move's last half);
-//   the newest fragment holds the accent 18 f, then cools to ink linearly over 13 f in OKLab (its hue held:
+//   the newest fragment holds the accent 16 f, then cools to ink linearly over 12 f in OKLab (its hue held:
 //   an sRGB mix drifts it on the way to ink).
-// - crisp: the denser launch tempo (26 f entrances, 8 f apart, faster exits) for briefs that ask
-//   for energy: teasers, drops, dev-tool launches.
+// - crisp: the denser launch tempo (23 f entrances, 8 f apart, faster exits, a hold of
+//   max(36, 28 + 6 f a word)) for briefs that ask for energy: teasers, drops, dev-tool launches.
 // src/timeline.ts picks one with PACE_NAME; the components read their defaults from the film
 // context (src/lib/film.ts), and scripts/grid-check.ts checks COPY against the same numbers.
 // scripts/gen-pace.mjs copies the check numbers into grid-check.ts and export-cues.ts and the whole
@@ -77,54 +80,8 @@ export type Pace = {
 
 export const PACE: Record<PaceName, Pace> = {
   calm: {
-    wordDur: 32,
-    stagger: 12,
-    rise: 0.33,
-    riseUnit: 'line',
-    riseDur: 25,
-    blur: 0,
-    ease: 'snapOut',
-    cadence: 'reading',
-    exit: 'auto',
-    exitDur: 17,
-    exitFade: 10,
-    exitLift: 0.12,
-    holdBase: 42,
-    holdPerWord: 8,
-    holdMin: 60,
-    readMax: 150,
-    gapMin: 30,
-    gapMax: 90,
-    maxNewWords: 4,
-    maxVisibleBuild: 8,
-    maxVisibleReplace: 5,
-    maxWordsPerSec: 1.2,
-    avgWordsPerSec: 0.9,
-    maxWords: 30,
-    textShare: 0.65,
-    freeRun: 90,
-    maxGap: 72,
-    accentDur: 31,
-    accentHold: 18,
-    accentCool: 13,
-    accentSpace: 'oklab',
-    recentre: 'jump',
-    recentreDur: 22,
-    recentreLead: 0,
-    move: { base: 0.5, perPx: 0.0016, camMin: 0.9, camMax: 3.0 },
-    fx: {
-      mask: { stagger: 10, dur: 10, exitDur: 22, head: 'linearStop', lastScale: 2.8 },
-      typeFPerChar: 2,
-      scramble: { stagger: 3, rate: 1.0, fadeIn: 16, order: 'centre', rateHz: 10 },
-      roll: { dur: 90, roll: 18 },
-      morph: 52,
-      iris: 18,
-      irisMode: { mode: 'rate', ratio: 1.28 },
-    },
-  },
-  crisp: {
-    wordDur: 26,
-    stagger: 8,
+    wordDur: 28,
+    stagger: 11,
     rise: 0.33,
     riseUnit: 'line',
     riseDur: 22,
@@ -132,43 +89,98 @@ export const PACE: Record<PaceName, Pace> = {
     ease: 'snapOut',
     cadence: 'reading',
     exit: 'auto',
-    exitDur: 14,
-    exitFade: 8,
-    exitLift: 0.19,
+    exitDur: 15,
+    exitFade: 9,
+    exitLift: 0.12,
     holdBase: 36,
+    holdPerWord: 7,
+    holdMin: 52,
+    readMax: 150,
+    gapMin: 26,
+    gapMax: 90,
+    maxNewWords: 4,
+    maxVisibleBuild: 8,
+    maxVisibleReplace: 5,
+    maxWordsPerSec: 1.35,
+    avgWordsPerSec: 1.0,
+    maxWords: 30,
+    textShare: 0.65,
+    freeRun: 90,
+    maxGap: 72,
+    accentDur: 28,
+    accentHold: 16,
+    accentCool: 12,
+    accentSpace: 'oklab',
+    recentre: 'jump',
+    recentreDur: 19,
+    recentreLead: 0,
+    move: { base: 0.44, perPx: 0.0014, camMin: 0.8, camMax: 2.65 },
+    fx: {
+      mask: { stagger: 9, dur: 9, exitDur: 19, head: 'linearStop', lastScale: 2.8 },
+      typeFPerChar: 2,
+      scramble: { stagger: 3, rate: 1.0, fadeIn: 14, order: 'centre', rateHz: 10 },
+      roll: { dur: 80, roll: 16 },
+      morph: 46,
+      iris: 16,
+      irisMode: { mode: 'rate', ratio: 1.28 },
+    },
+  },
+  crisp: {
+    wordDur: 23,
+    stagger: 8,
+    rise: 0.33,
+    riseUnit: 'line',
+    riseDur: 19,
+    blur: 0,
+    ease: 'snapOut',
+    cadence: 'reading',
+    exit: 'auto',
+    exitDur: 12,
+    exitFade: 7,
+    exitLift: 0.19,
+    holdBase: 28,
     holdPerWord: 6,
-    holdMin: 42,
+    holdMin: 36,
     readMax: 120,
-    gapMin: 18,
+    gapMin: 16,
     gapMax: 90,
     maxNewWords: 5,
     maxVisibleBuild: 10,
     maxVisibleReplace: 10,
-    maxWordsPerSec: 2.0,
-    avgWordsPerSec: 1.2,
+    maxWordsPerSec: 2.25,
+    avgWordsPerSec: 1.35,
     maxWords: 35,
     textShare: 0.8,
     freeRun: 60,
     maxGap: 48,
-    accentDur: 20,
-    accentHold: 7,
-    accentCool: 13,
+    accentDur: 18,
+    accentHold: 6,
+    accentCool: 12,
     accentSpace: 'oklab',
     recentre: 'jump',
-    recentreDur: 16,
+    recentreDur: 14,
     recentreLead: 0,
-    move: { base: 0.35, perPx: 0.00135, camMin: 0.6, camMax: 2.4 },
+    move: { base: 0.31, perPx: 0.0012, camMin: 0.53, camMax: 2.1 },
     fx: {
-      mask: { stagger: 8, dur: 10, exitDur: 16, head: 'linearStop', lastScale: 2.8 },
+      mask: { stagger: 7, dur: 9, exitDur: 14, head: 'linearStop', lastScale: 2.8 },
       typeFPerChar: 2,
-      scramble: { stagger: 3, rate: 1.5, fadeIn: 10, order: 'centre', rateHz: 10 },
-      roll: { dur: 60, roll: 14 },
-      morph: 40,
-      iris: 18,
+      scramble: { stagger: 3, rate: 1.5, fadeIn: 9, order: 'centre', rateHz: 10 },
+      roll: { dur: 53, roll: 12 },
+      morph: 35,
+      iris: 16,
       irisMode: { mode: 'rate', ratio: 1.28 },
     },
   },
 };
+
+/**
+ * The reading floor every pace keeps: a viewer who does not know the product reads about 3 words a second while
+ * the picture moves (references/copy-and-type.md), so a line of n words is on screen, from its first word to the
+ * start of its exit, for at least n / READ_WPS seconds: revealFor(n) + holdFor(n) >= n * 60 / READ_WPS frames at
+ * 60 fps, for every line length the script allows (2-7 words). The house pace runs about 12 % under 1.1's numbers and
+ * stays above this floor; scripts/test/tokens.test.mjs holds it there.
+ */
+export const READ_WPS = 3;
 
 /** Words in a string, as every check counts them (whitespace-separated). */
 export const wordCount = (text: string) => text.split(/\s+/).filter(Boolean).length;

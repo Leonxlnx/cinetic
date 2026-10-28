@@ -12,7 +12,7 @@
  *                  trailing `// offgrid: <reason>` comment (or an entry in an exported OFFGRID map)
  *   copy           every COPY entry has in <= resolved <= out inside the film
  *   text-hold      resolved text holds >= max(holdMin, holdBase + holdPerWord * words) before it
- *                  leaves (calm: 60 f, or 42 f + 8 f/word; crisp: 36 f + 6 f/word); a build chain's
+ *                  leaves (calm: 52 f, or 36 f + 7 f/word; crisp: 36 f, or 28 f + 6 f/word); a build chain's
  *                  line holds that long for all its words after its last fragment resolves
  *   script         the film's words are a script of short real sentences, one clean line on screen at a
  *                  time. A line is a COPY entry, a build chain (its fragments joined) or one fragment of a
@@ -46,17 +46,17 @@
  *                  whole line coming into focus at once, fx/FocusWord) is read by its hold instead
  *   chain-gap      inside a chain (COPY entries sharing `chain`): each fragment arrives only after
  *                  the previous one has resolved and held its read (error), with a picture beat of
- *                  gapMin..gapMax frames (calm 30-90 f) after that read (shorter: an error when
+ *                  gapMin..gapMax frames (calm 26-90 f) after that read (shorter: an error when
  *                  calm, a warning when crisp; longer: a warning); in replace mode the previous
- *                  fragment's exit (the pace's exitDur: calm 17 f, crisp 14 f) is over >= 6 f before the next
+ *                  fragment's exit (the pace's exitDur: calm 15 f, crisp 12 f) is over >= 6 f before the next
  *                  arrives (error); a chain keeps one mode and a build chain clears at one `out`
  *   chain-beat     the picture beat between two fragments really happens: at least one CUE (or,
  *                  with --cues, a sound event other than a `text` sound) in [read, next.in) (an
  *                  error when calm, a warning when crisp)
  *   read-quiet     calm: no CUE starts inside a reading window (READ) other than a text's own
  *                  frames: what was just said is read in the quiet (warning)
- *   word-rate      film words resolving in any 5 s window <= 5 * maxWordsPerSec (calm 6), and the
- *                  body's average <= avgWordsPerSec (calm 0.9 w/s) (warnings); a script's budget is wider
+ *   word-rate      film words resolving in any 5 s window <= 5 * maxWordsPerSec (calm 6.75), and the
+ *                  body's average <= avgWordsPerSec (calm 1.0 w/s) (warnings); a script's budget is wider
  *                  (see script)
  *   text-share     film copy on screen on <= textShare of the body's frames (calm 65%; a warning,
  *                  an error when calm and more than 10 points over), and every 10 s of body (all
@@ -209,7 +209,7 @@ const CONTINUITY = new Set([...CARRIED, 'defocus', 'wipe', 'dissolveUi', 'fadeEn
 const TEXTURES = ['clean', 'paper', 'grid', 'halftone', 'dither'];
 const FILM_TYPES = ['launch', 'update', 'explainer', 'reel', 'social'];
 /** House shot-length bands in seconds (median shot), by film type. */
-const SHOT_BAND: Record<string, [number, number]> = { launch: [1.3, 2.2], update: [0.8, 1.6], explainer: [2.0, 3.0], reel: [0.5, 1.0], social: [0.5, 1.0] };
+const SHOT_BAND: Record<string, [number, number]> = { launch: [1.15, 1.95], update: [0.7, 1.4], explainer: [1.75, 2.65], reel: [0.45, 0.9], social: [0.45, 0.9] }; // = lib/look.ts GRAMMAR.shot.band
 const median = (a: number[]) => {
   const s = [...a].sort((x, y) => x - y);
   const m = s.length >> 1;
@@ -237,8 +237,8 @@ type Windows = Record<string, [number, number][]>;
 // The check numbers of src/lib/pace.ts (60 fps frames), for timelines that do not export PACE.
 // <gen-pace>
 const BUILTIN: Record<'calm' | 'crisp', Pace> = {
-  calm: { holdBase: 42, holdPerWord: 8, holdMin: 60, readMax: 150, gapMin: 30, gapMax: 90, maxNewWords: 4, maxVisibleBuild: 8, maxVisibleReplace: 5, maxWordsPerSec: 1.2, avgWordsPerSec: 0.9, maxWords: 30, textShare: 0.65, freeRun: 90, maxGap: 72, exitDur: 17 },
-  crisp: { holdBase: 36, holdPerWord: 6, holdMin: 42, readMax: 120, gapMin: 18, gapMax: 90, maxNewWords: 5, maxVisibleBuild: 10, maxVisibleReplace: 10, maxWordsPerSec: 2, avgWordsPerSec: 1.2, maxWords: 35, textShare: 0.8, freeRun: 60, maxGap: 48, exitDur: 14 },
+  calm: { holdBase: 36, holdPerWord: 7, holdMin: 52, readMax: 150, gapMin: 26, gapMax: 90, maxNewWords: 4, maxVisibleBuild: 8, maxVisibleReplace: 5, maxWordsPerSec: 1.35, avgWordsPerSec: 1, maxWords: 30, textShare: 0.65, freeRun: 90, maxGap: 72, exitDur: 15 },
+  crisp: { holdBase: 28, holdPerWord: 6, holdMin: 36, readMax: 120, gapMin: 16, gapMax: 90, maxNewWords: 5, maxVisibleBuild: 10, maxVisibleReplace: 10, maxWordsPerSec: 2.25, avgWordsPerSec: 1.35, maxWords: 35, textShare: 0.8, freeRun: 60, maxGap: 48, exitDur: 12 },
 };
 // </gen-pace>
 

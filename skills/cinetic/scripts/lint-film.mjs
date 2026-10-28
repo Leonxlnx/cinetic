@@ -1454,9 +1454,9 @@ for (const file of files) {
           const v = tag.text.match(new RegExp(`\\b${prop}\\s*=\\s*\\{\\s*(?:f60\\(\\s*)?([\\d.]+)`));
           return v ? Number(v[1]) : null;
         };
-        // a 1.2 pace: calm words 12 f apart, rising over 32 f, leaving over 17 f (crisp 8 / 26 / 14)
+        // a 1.2 pace: calm words 11 f apart, rising over 28 f, leaving over 15 f (crisp 8 / 23 / 12)
         const hurried = (pace12
-          ? [['stagger', 10, 'words land about 12 f apart'], ['dur', 29, 'a word rises over about 32 f'], ['outDur', 16, 'a fragment leaves over about 17 f']]
+          ? [['stagger', 10, 'words land about 11 f apart'], ['dur', 26, 'a word rises over about 28 f'], ['outDur', 14, 'a fragment leaves over about 15 f']]
           : [['stagger', 8, 'words land 10-12 f apart'], ['dur', 24, 'a word rises over 34-40 f'], ['outDur', 18, 'a fragment leaves over 22-24 f']])
           .map(([prop, min, why]) => [prop, num(prop), min, why])
           .filter(([, v, min]) => v !== null && v < min);

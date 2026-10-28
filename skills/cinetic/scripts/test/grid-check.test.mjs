@@ -40,7 +40,8 @@
  * Remotion starter's timeline imports src/lib/pace.ts without an extension, which plain Node cannot
  * resolve: that part runs only when the starter has tsx installed (npm install in the starter).
  *
- * Usage (from the skill root):  node scripts/test/grid-check.test.mjs [--verbose]
+ * Usage (from the skill root):  node scripts/test/grid-check.test.mjs [--verbose] [--part fixtures|hf|starter|films|templates] [--template NAME]
+ * (--part runs one section, so a shared machine's job limit holds each run; --template narrows the templates part.)
  * Exit codes: 0 all pass, 1 a test failed.
  */
 import { spawnSync } from 'node:child_process';
@@ -56,6 +57,11 @@ const GRID = join(SKILL, 'scripts', 'grid-check.ts');
 const STARTER = join(SKILL, 'assets', 'remotion-starter');
 const HF = join(SKILL, 'assets', 'hyperframes-starter');
 const verbose = process.argv.includes('--verbose');
+const argAt = (flag) => (process.argv.includes(flag) ? process.argv[process.argv.indexOf(flag) + 1] : null);
+const part = argAt('--part') ?? 'all';
+const onlyTemplate = argAt('--template');
+if (!['all', 'fixtures', 'hf', 'starter', 'films', 'templates'].includes(part)) throw new Error(`--part ${part}: fixtures, hf, starter, films or templates`);
+const runs = (k) => part === 'all' || part === k;
 const strip = process.features?.typescript ? [] : ['--experimental-strip-types'];
 const TMP = mkdtempSync(join(tmpdir(), 'cinetic-grid-'));
 
@@ -85,7 +91,7 @@ const why = (r) => r.error ?? (r.findings ?? []).map((x) => `${x.check}: ${x.mes
 
 // 1. fixtures
 const FIX = join(HERE, 'grid-fixtures');
-for (const f of readdirSync(FIX).filter((x) => x.endsWith('.ts')).sort()) {
+for (const f of runs('fixtures') ? readdirSync(FIX).filter((x) => x.endsWith('.ts')).sort() : []) {
   const lines = readFileSync(join(FIX, f), 'utf8').split('\n').slice(0, 3);
   const head = lines.filter((l) => !/\bargs:/.test(l)).join(' ');
   const expect = {};
@@ -127,6 +133,7 @@ const hfAt = (bpm, o = {}) => {
   for (const f of ['motion.js', ...(o.music ? ['music.js'] : []), 'timeline.js']) runInContext(readFileSync(join(dir, f), 'utf8'), ctx, { filename: f });
   return { dir, FILM: ctx.FILM, MOTION: ctx.MOTION };
 };
+if (runs('hf')) {
 for (const bpm of [120, 100]) {
   const { dir, FILM } = hfAt(bpm);
   const r = run(process.execPath, [...strip, '--no-warnings', GRID, join(dir, 'timeline.js'), '--json']);
@@ -172,13 +179,17 @@ for (const bpm of [120, 100]) {
   const want = 200 - Math.round(((MOTION.pace.exitDur + 6) * MOTION.FPS) / 60);
   result(a.out === want && b.in - a.out >= MOTION.pace.exitDur, "the HyperFrames chain() lets a replace fragment's exit end before the next rises", `out ${a.out}, want ${want}`);
 }
+}
 
 // 3. the Remotion starter (needs its tsx: npm install in assets/remotion-starter)
-const calm = existsSync(join(STARTER, 'node_modules', '.bin')) ? run('npx', ['tsx', GRID, 'src/timeline.ts', '--json'], STARTER) : null;
-if (!calm || /another platform/.test(calm.error ?? '')) {
+const calm = !(runs('starter') || runs('films') || runs('templates')) ? { error: 'skipped' } : existsSync(join(STARTER, 'node_modules', '.bin')) ? (runs('starter') ? run('npx', ['tsx', GRID, 'src/timeline.ts', '--json'], STARTER) : {}) : null;
+if (calm?.error === 'skipped') {
+  // another part was asked for
+} else if (!calm || /another platform/.test(calm.error ?? '')) {
   // no install, or one made for another OS (a Windows node_modules seen from WSL): nothing to run it with
   console.log('skip  the Remotion starter (run npm install in assets/remotion-starter, on this OS, to include it)');
 } else {
+  if (runs('starter')) {
   result(clean(calm, 'calm'), 'the Remotion starter passes as calm with no finding', why(calm));
   const crisp = run('npx', ['tsx', GRID, 'src/timeline.ts', '--json', '--pace', 'crisp'], STARTER);
   const checks = new Set((crisp.findings ?? []).map((x) => x.check));
@@ -256,11 +267,13 @@ console.log(JSON.stringify({ text, rest }));
   result(!!got && got.text.length === got.rest.length && got.text.every((f, i) => Math.abs(f - got.rest[i]) <= 1),
     "each fragment's text sound lands within 1 f of its last word's visible stop", got ? `sounds ${got.text.join(', ')}, at rest ${got.rest.join(', ')}` : (pr.stderr || pr.stdout).trim().slice(0, 300));
 
+  }
   // new-film.sh --pace crisp: the scaffold passes grid-check as it comes
   const gitBash = 'C:\\Program Files\\Git\\bin\\bash.exe';
   const bash = process.platform === 'win32' ? (existsSync(gitBash) ? gitBash : null) : 'bash';
   if (!bash) console.log('skip  new-film.sh --pace crisp (no bash: install Git for Windows)');
-  else {
+  else if (runs('films') || runs('templates')) {
+    if (runs('films')) {
     const film = join(TMP, 'crisp-film').split('\\').join('/');
     const nf = spawnSync(bash, [join(SKILL, 'scripts', 'new-film.sh').split('\\').join('/'), film, '--pace', 'crisp', '--no-install'], { encoding: 'utf8' });
     const g = nf.status === 0 ? run('npx', ['tsx', GRID, join(film, 'src', 'timeline.ts'), '--json'], STARTER) : { error: (nf.stderr || nf.stdout).trim().slice(0, 300) };
@@ -272,11 +285,12 @@ console.log(JSON.stringify({ text, rest }));
     const bad = (gu.findings ?? []).filter((x) => x.severity === 'error' || x.check === 'script');
     result(gu.code === 0 && !gu.error && !bad.length, 'new-film.sh --format update scaffolds an update film whose changes are sentences (no error, no script warning)',
       gu.error ?? bad.map((x) => `${x.check}: ${x.message.slice(0, 90)}`).join('; '));
+    }
     // new-film.sh --template <name>: every film template scaffolds a film whose script passes as it comes, and with a
     // track in (a steady fake one whose first downbeat is 0.25 s in, at a slow and a fast tempo, ending on a stop whose
     // element sounds 0.4 s after the bar line where the bed stops) every act line still lands on a downbeat, the first
     // act starts on frame 0, no line loses its read (no error) and the tail holds the stop: its element and 1 s after it
-    const templates = readdirSync(join(SKILL, 'assets', 'templates')).filter((n) => existsSync(join(SKILL, 'assets', 'templates', n, 'template.json'))).sort();
+    const templates = !runs('templates') ? [] : readdirSync(join(SKILL, 'assets', 'templates')).filter((n) => existsSync(join(SKILL, 'assets', 'templates', n, 'template.json')) && (!onlyTemplate || n === onlyTemplate)).sort();
     const holds = [];
     for (const name of templates) {
       const dir = join(TMP, `tpl-${name}`).split('\\').join('/');

@@ -147,9 +147,9 @@ export const copy = (id: string): Copy => {
 ```
 
 **`line(id, text, in, out?, { ink? })`** is one standalone fragment; `out` defaults to `resolved` plus its reading hold. `ink` says how the act draws it (as `<Chain ink>`): `'pop'` (cut on) resolves the frame after its last word starts and `'partial'` once that word has inked, instead of after the calm reveal. **`chain(id, mode, [[text, inFrame], …], { out?, ink? })`** turns one thought into one `Copy` entry per fragment, with ids `<id>.1`, `<id>.2`, … and `chain: id` and `mode` on each; `chainOf(id)` returns them in order:
-- `resolved` comes from the pace, `in + revealFor(words)` = `in + stagger · (words − 1) + wordDur` (calm 12 f and 32 f; crisp 8 f and 26 f), so it matches what `Words` and `Chain` render.
+- `resolved` comes from the pace, `in + revealFor(words)` = `in + stagger · (words − 1) + wordDur` (calm 11 f and 28 f; crisp 8 f and 23 f), so it matches what `Words` and `Chain` render.
 - `out` comes from the mode. **build:** every fragment stays until the whole line clears, at `out` (by default the last fragment's `resolved` plus the hold for the line's full word count), and they leave together at speed over `exitDur` (17 f when calm). **replace:** a fragment leaves whole over `exitDur` and has gone 6 f before the next one rises in its place (`out = next.in − exitDur − 6`), and the last one leaves at `out` (by default after its own reading hold). Pass `{ out }` to hold the line to a cue, as the starter does for its exit.
-- You choose only where each fragment starts. Put every `in` on the grid at `b(n, beat) − 1` (the first visible change on the beat), and leave a picture beat of 30–90 f between the moment one fragment has been read (`resolved` + its hold) and the next fragment's `in`. In that gap the picture does what the words set up, and a cue marks it: `grid-check.ts` measures the gap as `chain-gap` and wants a cue inside it (`chain-beat`); nothing new starts during the read itself (`read-quiet`).
+- You choose only where each fragment starts. Put every `in` on the grid at `b(n, beat) − 1` (the first visible change on the beat), and leave a picture beat of 26–90 f between the moment one fragment has been read (`resolved` + its hold) and the next fragment's `in`. In that gap the picture does what the words set up, and a cue marks it: `grid-check.ts` measures the gap as `chain-gap` and wants a cue inside it (`chain-beat`); nothing new starts during the read itself (`read-quiet`).
 - Render the chain with `<Chain chain="problem" frame={f} from={ACT.hook.from} />` (`src/fx/Chain.tsx`), which reads the entries by chain id, so picture, sound and checks see the same frames. `export-cues.ts` writes every `COPY` entry into the `copy` block of `out/cues.json` as `{id, text, in, resolved, out, words, kind, chain?, mode?, read}` (`read`: its reading windows from `READ`), and `src/sync.ts` gives each fragment one soft `text` event on the frame it visibly lands (`chainResolves(id, { size })`, at the size the act sets the chain at), never one per word.
 
 Rules the pattern encodes:
@@ -349,13 +349,13 @@ export const RAIN_AT = Array.from({ length: N }, (_, k) =>
 
 | Rule | Calm (default) | Crisp | Why |
 |---|---|---|---|
-| Line hold after it resolves | max(60, 42 + 8 f per word): 3 words 66 f, 5 → 82 f, 8 → 106 f | 36 f + 6 f per word | about 0.7 s to find the line, then a word every 8 f, read while watching motion |
-| A line built in beats, after its last part | 42 + 8 f per word of the whole line (90 f at 6 words, 106 f at 8) | 36 f + 6 f per word of the line | the finished line is read once more as a whole |
-| Picture beat between fragments of a chain | 30–90 f, from the earlier fragment being read to the next one's `in`, with a cue in it | 18–90 f | the picture acts; past 90 f the viewer loses the start of the thought |
+| Line hold after it resolves | max(52, 36 + 7 f per word): 3 words 57 f, 5 → 71 f, 8 → 92 f | max(36, 28 + 6 f per word) | about 0.6 s to find the line, then a word every 7 f, read while watching motion; with the reveal a line is on screen for 3 words a second or longer (`READ_WPS`) |
+| A line built in beats, after its last part | 36 + 7 f per word of the whole line (78 f at 6 words, 92 f at 8) | 28 f + 6 f per word of the line | the finished line is read once more as a whole |
+| Picture beat between fragments of a chain | 26–90 f, from the earlier fragment being read to the next one's `in`, with a cue in it | 16–90 f | the picture acts; past 90 f the viewer loses the start of the thought |
 | Reading windows (`READ`) | from `resolved` for at most 150 f; an earlier fragment of a chain only for its own hold; a build line once more after its last fragment | at most 120 f | one rule for every check: a read counts as alive in the event-gap check, nothing new starts inside one, and the frame stays near still |
 | Words a line | 2–7, one line on screen at a time (a part of a line built in beats ≤ 4) | 2–7 (a part ≤ 5) | a plain sentence that says what the product is or does, read in one or two glances |
 | Words visible at once | ≤ 8 | ≤ 10 | one line per thought |
-| Copy rate | a script: ≤ 12 words resolving in any 5 s (2.4 words/s), ≤ 1.6 words/s over the film, ≤ 50 words (fragments: 1.2, 0.9, 30) | a script: the same (fragments: 2, 1.2, 35) | a viewer reads about 3 words a second while watching |
+| Copy rate | a script: ≤ 12 words resolving in any 5 s (2.4 words/s), ≤ 1.6 words/s over the film, ≤ 50 words (fragments: 1.35, 1.0, 30) | a script: the same (fragments: 2.25, 1.35, 35) | a viewer reads about 3 words a second while watching |
 | Text share | a script: a line on screen on ≤ about 85% of the body frames, a text-free run of ≥ 90 f in every 10 s (fragments: 65%) | ≤ 85% (fragments: 80%); a text-free run of ≥ 60 f in every 10 s | the product needs stretches of its own |
 | Unresolved text | never exits | never exits | a line that leaves mid-reveal reads as a mistake |
 | Life in a hold | a reading hold with a 0.3–1 px/f drift or a 1–3% creep is alive; anywhere else, ≤ 72 f without a visible event | ≤ 48 f without a visible event | past that, a muted feed reads a frozen frame as a stalled player; slow life is not a stall |
@@ -370,7 +370,7 @@ Check a hold while writing `COPY` (`grid-check.ts` runs the full set, build line
 ```ts
 import { COPY } from '../timeline';
 const words = (t: string) => t.split(/\s+/).filter(Boolean).length;
-const holdFor = (n: number) => Math.max(60, 42 + 8 * n); // calm; crisp: 36 + 6 * n
+const holdFor = (n: number) => Math.max(52, 36 + 7 * n); // calm; crisp: Math.max(36, 28 + 6 * n)
 for (const l of COPY)
   if (l.out - l.resolved < holdFor(words(l.text)))
     throw new Error(`${l.id}: hold ${l.out - l.resolved} f < ${holdFor(words(l.text))} f`);
@@ -384,7 +384,7 @@ for (const l of COPY)
 | Motion peaks | one hero move per bar (2.4 s), with slow life cruising between | one per bar, with 30–70 f of calm between peaks |
 | Visible change | about every 1 s, with continuous slow life between | about every 0.5 s (every beat at 120 BPM) |
 | First 6 s | frame 0 moving; when the film opens on words, the first fragment readable by about 1 s | about 2× as dense as the middle |
-| Shot length | the format's band (`GRAMMAR.shot.band`): launch median 1.3-2.2 s, update 0.8-1.6 s, explainer 2-3 s, reel 0.5-1 s; spread q75/q25 1.5-2.7 | the same bands, toward their short end |
+| Shot length | the format's band (`GRAMMAR.shot.band`): launch median 1.15-1.95 s, update 0.7-1.4 s, explainer 1.75-2.65 s, reel 0.45-0.9 s; spread q75/q25 1.5-2.7 | the same bands, toward their short end |
 | Starts and concurrency | about 1.6-2.8 starts a second, 1.4-2.5 things moving at once, idle frames ≤ 15 % | the same |
 | Shortest shot; continuous takes | 24 f, only without text; a take of 300–560 f with an in-shot beat at least every 72 f | the same |
 | Fast moves | ordinary moves ≤ 25 px/f; at most 2 fast moves per film, at most 1 of them a whip; none while text is being read | whips of 60–70 px/f beside real stillness |

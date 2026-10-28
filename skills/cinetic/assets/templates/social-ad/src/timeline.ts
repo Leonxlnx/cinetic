@@ -231,7 +231,7 @@ const build = (plan: Plan) => {
 
   if (C.rushOut > cut('label') - f60(20)) late.push('label');
   if (C.push < C.tag2) late.push('taglines');
-  if (C.lockup > cut('end') - TAIL) late.push('end');
+  if (C.lockup > cut('end') - TAIL - f60(12)) late.push('end'); // whole 0.2 s before the bar ends at least: the lock holds 1.2 s with the tail
   return { BEATS, ACT, TOTAL, C, COPY, late, lead };
 };
 

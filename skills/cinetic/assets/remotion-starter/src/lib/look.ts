@@ -265,11 +265,14 @@ export const EMPHASIS_LOOK = {
  */
 export const STACK_LOOK = { margin: 0.04, lead: 1.04, stair: 0.34, asideGap: 0.35, step60: 14 } as const;
 
-/** The grammar bands the checks read (seconds unless noted). */
+/**
+ * The grammar bands the checks read (seconds unless noted). 1.2 cuts about 12 % shorter than 1.1 (house shot 1.6 -> 1.4 s,
+ * every format band x0.88); a line still holds its read (lib/pace.ts READ_WPS).
+ */
 export const GRAMMAR = {
   shot: {
-    house: 1.6, usual: [0.93, 2.5] as const, short: 0.5, long: 3.7, spread: [1.9, 3.1] as const, // spread = q75 / q25 of the shot lengths (under 1.9 reads as a metronome)
-    band: { launch: [1.3, 2.2] as const, update: [0.8, 1.6] as const, explainer: [2.0, 3.0] as const, reel: [0.5, 1.0] as const, social: [0.5, 1.0] as const },
+    house: 1.4, usual: [0.82, 2.2] as const, short: 0.5, long: 3.3, spread: [1.9, 3.1] as const, // spread = q75 / q25 of the shot lengths (under 1.9 reads as a metronome)
+    band: { launch: [1.15, 1.95] as const, update: [0.7, 1.4] as const, explainer: [1.75, 2.65] as const, reel: [0.45, 0.9] as const, social: [0.45, 0.9] as const },
   },
   // changeMaxS: a layout or type change at least this often outside the end lock (a creep alone reads as a held frame);
   // openerChanges: picture changes in the first 2.5 s; longTake: a take over longTake.s changes at least perTenS times every 10 s

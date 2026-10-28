@@ -262,7 +262,7 @@ payoff, best an echo of the hook.
 **Cause → action → result**, for every product action on screen:
 - **Cause.** Something visible makes the action necessary: a typed intent, an arriving event, an accumulated mess, a threshold crossed. A UI block that moves because the timeline said so reads as a screensaver.
 - **Action.** The product's real behaviour, shown in its own UI (see `references/product-ui.md`). No sparkle standing in for "magic".
-- **Result.** A changed state that is still true when paused: a counter that counted during the action, a list that is now in order, a line now highlighted. Hold it at least for the reading hold of any label (max(60, 42 + 8 f per word)) before the camera moves on.
+- **Result.** A changed state that is still true when paused: a counter that counted during the action, a list that is now in order, a line now highlighted. Hold it at least for the reading hold of any label (max(52, 36 + 7 f per word)) before the camera moves on.
 
 ## 8. Arcs by format
 

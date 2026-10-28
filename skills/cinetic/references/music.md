@@ -140,7 +140,7 @@ Read it before editing: is bar 1 where the music starts (a pickup is fine), does
 3. **The picture may lead its sound by 1–3 f.** A sound never leads its picture by more than 45 ms, except a role's designed offset.
 4. **The biggest reveal comes after a dip:** 0.2–0.5 s of break, stop or stop-down, then the entry on the reveal.
 5. **One gesture at a time.** A cut on a strong track accent is carried by the track; designed hits go where the music has nothing, after a stop-down; UI sounds go on discrete state changes.
-6. **Energy sets the cut rate.** Calm shots under calm bars, the cut rate rising with the energy: shots around 1.6 s (0.9–2.5 s), fast runs 0.25–1 s, text-led passages 2–3 s.
+6. **Energy sets the cut rate.** Calm shots under calm bars, the cut rate rising with the energy: shots around 1.4 s (0.8–2.2 s), fast runs 0.25–0.9 s, text-led passages 1.75–2.65 s.
 7. **Big moves peak on an accent:** solve a move's start with `peak()` so its velocity peak lands on one.
 
 ## 8. Credits and delivery

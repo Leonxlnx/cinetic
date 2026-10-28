@@ -9,7 +9,7 @@ import { MaskRise, Words } from './Words';
 export const A: React.FC<{ f: number }> = ({ f }) => (
   <>
     <Words text={LINE} frame={f} start={0} stagger={6} />
-    <MaskRise text={LINE} frame={f} start={0} dur={f60(20)} outDur={14} />
+    <MaskRise text={LINE} frame={f} start={0} dur={f60(20)} outDur={12} />
     <Words text={LINE} frame={f} start={0} stagger={11} dur={36} />
     <Words text={LINE} frame={f} start={0} stagger={6} pace={PACE.crisp} />
     <Words text={LINE} frame={f} start={0} />

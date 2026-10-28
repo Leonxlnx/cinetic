@@ -465,12 +465,12 @@ def from_copy(doc, fps_flag=None):
 
 
 def estimate_times(lines):
-    """No times given: the house calm pace (a line resolves 32 + 12 f a word, reads max(60, 42 + 8 f a word), leaves in 17 f)."""
+    """No times given: the house calm pace (a line resolves 28 + 11 f a word, reads max(52, 36 + 7 f a word), leaves in 15 f)."""
     t = 0.0
     for l in lines:
         n = max(1, len(words_of(l['text'])))
         l['at'], l['estimated'] = t, True
-        t += (32 + 12 * (n - 1) + max(60, 42 + 8 * n) + 17) / 60
+        t += (28 + 11 * (n - 1) + max(52, 36 + 7 * n) + 15) / 60
 
 
 def film_marks(path=None):

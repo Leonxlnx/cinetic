@@ -102,6 +102,7 @@ import * as C from '${url('lib/cadence.ts')}';
 import * as D from '${url('lib/defocus.ts')}';
 import * as K from '${url('lib/color.ts')}';
 import * as L from '${url('lib/look.ts')}';
+import * as PC from '${url('lib/pace.ts')}';
 import * as T from '${url('brand/tokens.ts')}';
 import { Easing } from '${pathToFileURL(REMOTION).href}';
 const mode = process.argv[2];
@@ -141,7 +142,7 @@ if (mode === 'strict') {
     E: tok(A.E), M: tok(A.M), E_DEPRECATED: A.E_DEPRECATED, legacyRef,
     SPR: A.SPR, SPR_META: A.SPR_META, SPR_DEPRECATED: A.SPR_DEPRECATED, springs,
     DUR: A.DUR, PRESS: A.PRESS, TAU: A.TAU, STAG: A.STAG, ACCEL: A.ACCEL, CPS: A.CPS, SPEED: A.SPEED, CARRY: A.CARRY, BREATH: A.BREATH, OVERSIZE: A.OVERSIZE,
-    PACE: A.PACE, TYPE: T.TYPE, TYPE_FAMILY: T.TYPE_FAMILY, TYPE_LOOK: L.TYPE_LOOK, LIGHT: L.LIGHT, RECIPE_GROUND: L.RECIPE.tintedPaper.ground,
+    PACE: A.PACE, READ_WPS: PC.READ_WPS, holds: Object.fromEntries(Object.entries(A.PACE).map(([k, p]) => [k, [2, 3, 4, 5, 6, 7].map((n) => [A.revealFor(n, p), A.holdFor(n, p)])])), TYPE: T.TYPE, TYPE_FAMILY: T.TYPE_FAMILY, TYPE_LOOK: L.TYPE_LOOK, LIGHT: L.LIGHT, RECIPE_GROUND: L.RECIPE.tintedPaper.ground,
     perFrame: A.perFrame(0.89, 60, 30), expIn: grid(A.expIn(2.66), 10), expOut: grid(A.expOut(6), 10),
     hitPulse30: A.hitPulse(4, 2, 5, 30), hitPulse60: A.hitPulse(8, 2, 5, 60),
     series, launchSteps, launchFrac, launchGeo, launchExp, carryX, carryFrac, carry30,
@@ -287,14 +288,25 @@ result(P.CARRY.ratio[1] === 0.7 && P.CARRY.decay60[1] === 0.89 && P.SPEED.residu
 {
   const c = P.PACE.calm;
   const k = P.PACE.crisp;
-  const okCalm = c.wordDur === 32 && c.ease === 'snapOut' && c.rise === 0.33 && c.riseUnit === 'line' && c.riseDur === 25 && c.blur === 0 && c.stagger === 12 && c.cadence === 'reading'
-    && c.exit === 'auto' && c.exitDur === 17 && c.exitFade === 10 && c.recentre === 'jump' && c.recentreDur === 22 && c.recentreLead === 0
-    && c.accentHold === 18 && c.accentCool === 13 && c.accentSpace === 'oklab' && c.fx.typeFPerChar === 2 && c.fx.iris === 18 && c.fx.irisMode.ratio === 1.28;
-  const okCrisp = k.wordDur === 26 && k.riseDur === 22 && k.stagger === 8 && k.blur === 0 && k.exitDur === 14 && k.exitFade === 8 && k.recentreDur === 16 && k.accentHold === 7 && k.accentCool === 13 && k.fx.mask.stagger === 8;
-  const holds = c.holdBase === 42 && c.holdPerWord === 8 && c.holdMin === 60 && c.readMax === 150 && k.holdBase === 36 && k.holdMin === 42 && k.readMax === 120;
-  result(okCalm, 'pace calm: 32 f on snapOut, rise a third of the line over 25 f, 12 f apart on the reading cadence, exit 17 f, jump 22 f, accent 18 + 13 f');
-  result(okCrisp, 'pace crisp: 26 f, 22 f rise, 8 f apart, no blur, exit 14 f, jump 16 f, accent 7 + 13 f');
-  result(holds, 'pace holds unchanged (calm copy)');
+  const okCalm = c.wordDur === 28 && c.ease === 'snapOut' && c.rise === 0.33 && c.riseUnit === 'line' && c.riseDur === 22 && c.blur === 0 && c.stagger === 11 && c.cadence === 'reading'
+    && c.exit === 'auto' && c.exitDur === 15 && c.exitFade === 9 && c.recentre === 'jump' && c.recentreDur === 19 && c.recentreLead === 0
+    && c.accentHold === 16 && c.accentCool === 12 && c.accentSpace === 'oklab' && c.fx.typeFPerChar === 2 && c.fx.iris === 16 && c.fx.irisMode.ratio === 1.28;
+  const okCrisp = k.wordDur === 23 && k.riseDur === 19 && k.stagger === 8 && k.blur === 0 && k.exitDur === 12 && k.exitFade === 7 && k.recentreDur === 14 && k.accentHold === 6 && k.accentCool === 12 && k.fx.mask.stagger === 7;
+  const holds = c.holdBase === 36 && c.holdPerWord === 7 && c.holdMin === 52 && c.readMax === 132 && k.holdBase === 28 && k.holdPerWord === 6 && k.holdMin === 36 && k.readMax === 106;
+  result(okCalm, 'pace calm: 28 f on snapOut, rise a third of the line over 22 f, 11 f apart on the reading cadence, exit 15 f, jump 19 f, accent 16 + 12 f');
+  result(okCrisp, 'pace crisp: 23 f, 19 f rise, 8 f apart, no blur, exit 12 f, jump 14 f, accent 6 + 12 f');
+  result(holds, 'pace holds about 12 % under 1.1 (calm max(52, 36 + 7 f a word), crisp max(36, 28 + 6 f a word))');
+  // the reading floor: a line of n words (2-7) is on screen from its first word to its exit for n / READ_WPS seconds or more
+  const short = [];
+  for (const [name, rows] of Object.entries(P.holds)) rows.forEach(([reveal, hold], i) => {
+    const n = i + 2;
+    if (reveal + hold < (n * 60) / P.READ_WPS) short.push(`${name} ${n} words: ${reveal + hold} f`);
+  });
+  result(P.READ_WPS === 3 && short.length === 0, 'every pace keeps the reading floor: reveal + hold >= n words at 3 a second, for 2-7 words', short.join('; '));
+  // faster than 1.1, by about 10-15 % on a typical line (4 words), and the stagger never under reveal-rate's 8 f a word
+  const v11 = { calm: 32 + 36 + 74, crisp: 26 + 24 + 60 };
+  const gain = Object.fromEntries(Object.entries(P.holds).map(([name, rows]) => [name, +(1 - (rows[2][0] + rows[2][1]) / v11[name]).toFixed(3)]));
+  result(Object.values(gain).every((g) => g >= 0.08 && g <= 0.16) && Object.values(P.PACE).every((p) => p.stagger >= 8), 'a 4-word line is 8-16 % quicker than 1.1, staggers >= 8 f', JSON.stringify(gain));
 }
 {
   const t = P.TYPE;

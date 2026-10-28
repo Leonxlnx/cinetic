@@ -53,12 +53,12 @@ Choose a row first. Launch films and update films are the two first-class format
 
 | Format | Length | Shot band (median) | Script: lines · words a line (one line on screen) | Sound | Deliverables |
 |---|---|---|---|---|---|
-| Launch film / teaser | 15–45 s | 1.3–2.2 s | 5–8 (what it is, 3–5 it does, the close) · 2–7 | licensed track + launch kit, −14 LUFS | 16:9 master, 9:16 and 1:1 re-layouts, poster, brand kit if invented |
-| Update film ("vX is out") | 8–20 s | 0.8–1.6 s | 4–6 (name and version, one per change, the close) · 2–6 | licensed track + launch kit | master, poster, 9:16 |
-| Product / feature video | 8–30 s | 1.3–2.2 s | 3–6 · 2–7 | licensed track + launch kit | master, poster |
+| Launch film / teaser | 15–45 s | 1.15–1.95 s | 5–8 (what it is, 3–5 it does, the close) · 2–7 | licensed track + launch kit, −14 LUFS | 16:9 master, 9:16 and 1:1 re-layouts, poster, brand kit if invented |
+| Update film ("vX is out") | 8–20 s | 0.7–1.4 s | 4–6 (name and version, one per change, the close) · 2–6 | licensed track + launch kit | master, poster, 9:16 |
+| Product / feature video | 8–30 s | 1.15–1.95 s | 3–6 · 2–7 | licensed track + launch kit | master, poster |
 | Feature loop | 4–15 s, whole bars | 0.5–1.0 s | 1–2, reads muted · 2–6 | muted, or a track folded at the seam | MP4, WebM, GIF, seamless seam |
 | Logo sting | 3–8 s | one take | the name + at most 1 · 2–5 | a short licensed cue + one kit element, −16 LUFS | MP4, ProRes 4444 alphas, poster |
-| UI walkthrough | 20–90 s | 2–3 s | what it is, one per step · 2–7 | licensed calm track + UI effects | master, SRT captions |
+| UI walkthrough | 20–90 s | 1.75–2.65 s | what it is, one per step · 2–7 | licensed calm track + UI effects | master, SRT captions |
 
 Use 60 fps whenever UI, text or the camera moves (a GIF exports at 25 fps from the 60 fps master).
 
@@ -259,18 +259,18 @@ export const b = (n: number, beat = 0, sub = 0) =>     // whole frames within 0.
 ```
 
 - **The music grid.** Acts, the reveal and the ending land on the track's events within 1 f (`STRUCTURAL`); graphic cuts on its accents (`MUSIC.accentNear`, `snapToAccent`), the picture leading by up to 3 f; at most 60 % of ordinary cuts on downbeats; a 0.2–0.5 s stop or dip before the biggest reveal.
-- **Pace** (`PACE` in `lib/pace.ts`; `PACE_NAME` picks it):
+- **Pace** (`PACE` in `lib/pace.ts`; `PACE_NAME` picks it; 1.2 runs about 12 % quicker than 1.1, never under the reading floor of 3 words a second, `READ_WPS`):
 
   | Knob (60 fps) | calm (default) | crisp |
   |---|---|---|
-  | Word fade, rise | 32 f on `snapOut`; a third of the line box over 25 f on `M.rise` | 26 f; 22 f |
-  | Word gap | 12 f on the reading cadence | 8 f |
-  | Re-centre | jump, 22 f on `E.jump` | jump, 16 f |
-  | Exit | 17 f at speed (launch into a cut, launchFade otherwise) | 14 f |
-  | Accent | hold 18 f, cool 13 f | hold 7 f, cool 13 f |
-  | Reading hold | max(60, 42 + 8 f per word) | 36 + 6 f per word |
+  | Word fade, rise | 28 f on `snapOut`; a third of the line box over 22 f on `M.rise` | 23 f; 19 f |
+  | Word gap | 11 f on the reading cadence | 8 f |
+  | Re-centre | jump, 19 f on `E.jump` | jump, 14 f |
+  | Exit | 15 f at speed (launch into a cut, launchFade otherwise) | 12 f |
+  | Accent | hold 16 f, cool 12 f | hold 6 f, cool 12 f |
+  | Reading hold | max(52, 36 + 7 f per word) | max(36, 28 + 6 f per word) |
   | A line | 2–7 words, one line on screen (a chain fragment ≤ 4) | 2–7 words, one line (a fragment ≤ 5) |
-  | Copy rate, text share | a script: ≤ 2.4 words/s in any 5 s, ≤ 85 % (fragments: 1.2, 65 %) | a script: 2.4, 85 % (fragments: 2, 80 %) |
+  | Copy rate, text share | a script: ≤ 2.4 words/s in any 5 s, ≤ 85 % (fragments: 1.35, 65 %) | a script: 2.4, 85 % (fragments: 2.25, 80 %) |
 
 - **Density.** About 1.9–2.8 starts per second, 1.6–2.5 things moving at once (two independent movers per shot: chips, labels, counters in staggers), idle frames ≤ 15 %; a layout or type change at least every 2.5 s outside the end lock (a creep alone reads as a held frame); shot bands per format (§1), shot lengths varying (q75/q25 1.9–3.1), a take over 15 s changing at least twice every 10 s, one change in seven without a hard cut; no stretch past 72 f without an event (48 f crisp); nothing frozen for more than 0.8 s outside the end lock (1 s for a camera lock on a read).
 - **Energy.** An early peak, a designed lull of 1–4 s at 55–85 % inside the track's break, the biggest peak at 75–90 % on its entry; the last third keeps moving.

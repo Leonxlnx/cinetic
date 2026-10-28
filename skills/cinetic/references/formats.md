@@ -34,9 +34,9 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 
 | Format | Length | Shot band (median) | Sound |
 |---|---|---|---|
-| Launch film | 15-45 s | 1.3-2.2 s | a licensed track + the launch kit, −14 LUFS |
+| Launch film | 15-45 s | 1.15-1.95 s | a licensed track + the launch kit, −14 LUFS |
 | Update film | 8-20 s | 0.8-1.6 s | a licensed track + the launch kit, −14 LUFS (−16 at 8 s or less) |
-| Product / feature video | 8-30 s | 1.3-2.2 s (explainer pacing 2-3 s) | a licensed track + the launch kit |
+| Product / feature video | 8-30 s | 1.15-1.95 s (explainer pacing 1.75-2.65 s) | a licensed track + the launch kit |
 | Feature loop | 4-15 s, whole bars | 0.5-1.0 s for a reel-style loop | muted, or a track folded at the seam |
 | Logo sting | 3-8 s | one take | a short licensed cue or the track's button + one kit element, −16 LUFS |
 | UI walkthrough | 20-90 s | 2-3 s | a licensed track + UI effects |
@@ -88,7 +88,7 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 | 1–2 | Inside the product, in the "before" state, with the pain visible. The device or accent marks the thing that is wrong. |
 | 3 | The cause: one human input (a click, a typed line, an incoming event). This is the only cursor moment. |
 | 4–6 | The product acts. State changes animate as FLIP inserts over 18–24 f, and counters count on each event. The camera anchors on the region doing the work (`references/camera.md`). |
-| 7 | The result holds for at least its reading hold (max(60, 42 + 8 f per word)), together with the one fragment or short chain that names the value. It uses the viewer's words, not the feature's name, and it arrives after the product has acted, not during. |
+| 7 | The result holds for at least its reading hold (max(52, 36 + 7 f per word)), together with the one fragment or short chain that names the value. It uses the viewer's words, not the feature's name, and it arrives after the product has acted, not during. |
 | 8 + tail | A small lockup: the mark, the name and the feature name if the brief needs it. |
 
 - **Show the product for real.** Use real components and one `data.ts` with asserts. The data should survive a pause: correct weekdays, sums that add up, plurals that agree. Details are in `references/product-ui.md`.
@@ -101,7 +101,7 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 **Format gates**
 - One capability.
 - The feature's name appears once, and a paused frame shows enough app chrome to read as software.
-- A result hold of at least the reading hold (max(60, 42 + 8 f per word)) before any camera move.
+- A result hold of at least the reading hold (max(52, 36 + 7 f per word)) before any camera move.
 - Every counter changes on a visible event (a manual check on the act sheet).
 
 ## 4. Feature loop
@@ -230,7 +230,7 @@ Fold the mastered WAV that `score.py` wrote, and don't run `master.py` again on 
 | Establish | ½–1 | Wide on the product. The camera anchor is the whole window, and the chapter's line enters at the eye line beside the product, never as a lower-third subtitle. |
 | Push | ½ | The camera moves to the feature's anchor on `cam` (duration grows with distance: 0.35 s + 1.35 ms per px). |
 | Cause | ½–1 | The cursor travels a bezier arc over 36–48 f, presses (0.88 over 4 f) and makes one click; or the user types at about 20 characters/s, then the line holds at least 72 f. |
-| Action → result | 1–2 | The product responds, and the result holds for at least the caption's reading hold (max(60, 42 + 8 f per word)) while the caption is readable. |
+| Action → result | 1–2 | The product responds, and the result holds for at least the caption's reading hold (max(52, 36 + 7 f per word)) while the caption is readable. |
 | Hand-off | ¼–½ | A whip or pull-back to the next anchor. The last chapter hands off to the lockup. |
 
 - **Camera.** Use one anchor camera for the whole walkthrough (`references/camera.md`), and chain the anchors so every move starts where the previous one ended. During holds, the UI drifts 0.5–1.5 px/f so the shot is never locked off.

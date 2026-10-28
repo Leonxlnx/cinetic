@@ -86,7 +86,7 @@ export const TOTAL = BODY + TAIL;
 // carries a trailing `// offgrid: <reason>` comment, which grid-check accepts.
 // Picture code reads these; src/sync.ts turns them into sound events.
 export const CUE = {
-  fragA: b(1, 1), // "plinth cuts" rises on the second beat into a frame that is already moving (the rule drawing, the creep, the key on the paper)
+  fragA: b(1, 1, 2), // "plinth cuts" rises on the off-beat after the second beat into a frame that is already moving (the rule drawing, the creep, the key on the paper)
   drop: b(2), // once "plinth cuts" stands: the accent dot is born above the line and falls...
   land: b(2, 1), // ...and lands where the line will end, off the downbeat: the camera punches in on the contact
   fragB: b(2, 2, 2), // "to music" answers on the off-beat; the line jumps to make room, the dot is its period
