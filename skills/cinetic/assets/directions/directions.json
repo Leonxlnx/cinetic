@@ -755,6 +755,34 @@
    "file": "fx/Photo.tsx",
    "status": "built"
   },
+  "PhotoCard": {
+   "file": "fx/Pictures.tsx",
+   "status": "built"
+  },
+  "PhotoFill": {
+   "file": "fx/Pictures.tsx",
+   "status": "built"
+  },
+  "ArcRiver": {
+   "file": "fx/Pictures.tsx",
+   "status": "built"
+  },
+  "PhotoWall": {
+   "file": "fx/Pictures.tsx",
+   "status": "built"
+  },
+  "InlinePhoto": {
+   "file": "fx/Pictures.tsx",
+   "status": "built"
+  },
+  "FootageWindow": {
+   "file": "fx/Pictures.tsx",
+   "status": "built"
+  },
+  "Wash": {
+   "file": "fx/Washes.tsx",
+   "status": "built"
+  },
   "FocusBand": {
    "file": "fx/Reels.tsx",
    "status": "built"
