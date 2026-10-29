@@ -39,7 +39,7 @@ found elsewhere: its licence flags, or later `python3 scripts/audio/track.py add
 `track.py grid` and `track.py check`: `src/music.ts` then carries the track and `b()` follows its bars.
 
 **Timing.** Two bars per change at the template's 120 BPM (crisp), every act line on a bar line (with the
-track, on a downbeat): 2 changes 14 s, 3 changes 18 s, 4 changes 22 s, each plus a 1 s tail (the music's ending can ask for more: MUSIC.end.hold); with the track, its own bars. Sound: `src/sync.ts` places the
+track, on a downbeat): 2 changes 14 s, 3 changes 18 s, 4 changes 22 s, each plus a 1.5 s tail (the music's ending can ask for more: MUSIC.end.hold); with the track, its own bars. The name lands on the last bar line (with a track, its downbeat or the track's own final hit, where av-audit holds a lockup) and the tail is the end card's hold. Sound: `src/sync.ts` places the
 effects from the picture's own frames (the numeral locking, each product moment's contact frame, one
 text sound per fragment, the moves between acts, the version landing, the lockup); the track carries
 the film.

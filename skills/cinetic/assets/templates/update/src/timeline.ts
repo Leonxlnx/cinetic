@@ -47,9 +47,10 @@ export const f60x = (frames: number, fps: number = FPS) => (frames * fps) / 60;
 /**
  * After the last bar the picture holds while the music ends, never on a cut: MUSIC.end.hold (track.py grid) is how long
  * the ending needs after the bar line that ends the body: the track's own final hit ringing out (1.5-2.5 s), a hit that
- * rings, or a 2-3 s fade under the end card. The tail is that, and at least 1 s.
+ * rings, or a 2-3 s fade under the end card. The name lands on that bar line (CUE.lockup), so the tail is also the end
+ * card's hold: that, and at least 1.5 s.
  */
-export const TAIL = Math.max(FPS, MUSIC ? Math.ceil(MUSIC.end.hold ?? 0) : 0);
+export const TAIL = Math.max(Math.round(1.5 * FPS), MUSIC ? Math.ceil(MUSIC.end.hold ?? 0) : 0);
 
 /** How many changes the film shows (2-4, from src/update.ts). */
 export const N = UPDATE.changes.length;
@@ -123,9 +124,11 @@ export const CUE: Record<string, number> = {
   swing: beat(BEATS.payoff, 2), // 'rise': the version starts out of its mask as the strip softens
   land: beat(BEATS.payoff + 1, 1), // the version lands as the subject ('pull': its swing is centred on the act line, landing here)
   markIn: beat(BEATS.end + 1, 1), // the version has stepped back: the mark's parts rise into the lockup
-  lockup: beat(BEATS.end + 2, 3), // the name lands beside the mark: the payoff of the end card (it holds about a second and a half with the tail, creeping)
-  glint: beat(BEATS.end + 3, 1), // the mark's last part catches the light
-  rest: beat(BEATS.end + 3, 2), // the slow push reaches the name: the lock keeps living
+  // the name lands beside the mark on the last bar line: with a track, its downbeat or the track's own final hit, where
+  // av-audit holds a lockup (a downbeat, an entry or the ending, within 1 f); the tail holds it 1.5 s or more, creeping
+  lockup: beat(BEATS.last),
+  glint: beat(BEATS.end + 2, 2), // the mark's last part catches the light as it lands, before the name arrives
+  rest: beat(BEATS.last + 1), // the slow push reaches the name: the lock keeps living
   end: beat(BEATS.last), // last bar line; TAIL follows
 };
 
@@ -170,7 +173,7 @@ export const END: EndLock = { from: CUE.lockup, to: TOTAL };
 export const REVEAL = CUE.lockup;
 /** The one element class allowed an underdamped spring: the version landing in front. */
 export const SPRING_CLASS = 'version-land';
-/** CUE names that must land on a music event. None without a track; with one, add 'gather' and 'lockup'. */
+/** CUE names that must land on a music event. None without a track; with one, add 'gather' and 'lockup' (both on bar lines). */
 export const STRUCTURAL: string[] = [];
 /** Each CUE's salience (missing = 'hit'). */
 export const SALIENCE: Record<string, Salience> = {

@@ -16,7 +16,7 @@ Contents: 1. The shape · 2. The tools · 3. Writing the changes · 4. Picture �
 | Name and version | the product's name and the version on frame 0, already moving: the name over giant numerals cropped by the frame, the last numeral rolling from the old value to the new, or the mark in its world; the first line says both ("Plumb 2.4 is out.") by 3 s | about 1 bar (2 s) |
 | Change × 2-4 | each change is **one sentence and its moment**: the camera arrives on the product's surface, the product does the new thing on its beat (a review approved, a reply landing, a figure starting to climb), and one short sentence of 2-6 words says the result the user sees | two bars each (every act line on a downbeat) |
 | Payoff | the one change that matters most, or all of them seen together (the camera pulls back over every change while the version swings back in front) | about 1 bar |
-| End card | the mark and the name, with the version as the one practical fact; built from the film's device, then the one still hold | to a whole bar, plus a 1 s tail |
+| End card | the mark and the name, with the version as the one practical fact; built from the film's device, then the one still hold | to a whole bar, the name on its last bar line, plus a 1.5 s tail |
 
 - **Never a changelog.** A change is never a list row, a bullet or a line of text describing a feature. It is the
   product's real state change on its hit frame, at film size.
@@ -142,9 +142,9 @@ At 120 BPM (a 2 s bar), two bars a change, every act line on a bar line (with th
 
 | Changes | Body | With the tail |
 |---|---|---|
-| 2 | 14 s | 15 s |
-| 3 | 18 s | 19 s |
-| 4 | 22 s | 23 s |
+| 2 | 14 s | 15.5 s |
+| 3 | 18 s | 19.5 s |
+| 4 | 22 s | 23.5 s |
 
 With a track, its own bars decide; the shot band for the format is 0.7-1.4 s median (`GRAMMAR.shot.band.update`),
 shorter than a launch film's.

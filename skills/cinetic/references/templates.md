@@ -54,7 +54,7 @@ film may end on the reel's close (rebuild its acts after your own) or open on th
 ## update
 
 "vX is out", told by the product itself. One camera carries the whole film along one strip, so every act line is a
-velocity seam. Acts on whole bars at 120 BPM (2-4 changes: 14-22 s plus a 1 s tail): `hook` (the name over the version
+velocity seam. Acts on whole bars at 120 BPM (2-4 changes: 14-22 s plus a 1.5 s tail; the name lands on the last bar line and the tail holds it): `hook` (the name over the version
 as giant numerals cropped by the frame: the last numeral rolls from the old value, or the new version rises out of a
 mask once the name is read), one `change` per change (the camera whips onto the product's surface, lit and tilted in
 the film's light, `Lit`; the product does the new thing on its contact frame; one plain sentence of 2-6 words on its
