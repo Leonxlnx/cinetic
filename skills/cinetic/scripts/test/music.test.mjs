@@ -506,7 +506,7 @@ const ov = M.parseOpenverse(fixJson('openverse-search.json'), 'sfx');
   check(Math.abs(own.score - fade.score - 4.5) < 1e-9 && own.why.some((w) => /a real ending: its final hit \(bar 60\) rings 2\.1 s/.test(w))
     && fade.why.some((w) => /no ending of its own \(fade\)/.test(w)), 'library: a real ending outranks a fade', `${own.score} ${fade.score}`);
   const near = M.scoreLibraryTrack({ ...base, profile: { ref_z: 1.5 } }, want), far = M.scoreLibraryTrack({ ...base, profile: { ref_z: -1 } }, want);
-  check(Math.abs(near.score - far.score - 3) < 1e-9 && near.why.some((w) => /close to the music of launch films/.test(w)), 'library: closer to the launch films ranks higher', `${near.score} ${far.score}`);
+  check(Math.abs(near.score - far.score - 3) < 1e-9 && near.why.some((w) => /close to the launch sound/.test(w)), 'library: closer to the launch films ranks higher', `${near.score} ${far.score}`);
   check(/ends on its own final hit at bar 60 \(rings 2\.1 s\): track\.py edit --end own/.test(M.planText(base)) && /track\.py edit --end fade/.test(M.planText({ ...base, cuts: { ending: { kind: 'fade' } } })),
     'library: the cut line names the ending and its edit', M.planText(base));
 }

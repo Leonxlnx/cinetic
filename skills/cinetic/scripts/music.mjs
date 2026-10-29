@@ -891,8 +891,8 @@ export function scoreLibraryTrack(t, want = {}) {
   const z = t.profile?.ref_z;
   if (Number.isFinite(z)) {
     s += 1.2 * Math.max(-2, Math.min(2.5, z));
-    if (z >= 0.5) why.push(`close to the music of launch films (earshot z ${z >= 0 ? '+' : ''}${z.toFixed(1)})`);
-    else if (z <= -0.5) why.push(`far from the music of launch films (earshot z ${z.toFixed(1)})`);
+    if (z >= 0.5) why.push(`close to the launch sound (earshot z ${z >= 0 ? '+' : ''}${z.toFixed(1)})`);
+    else if (z <= -0.5) why.push(`far from the launch sound (earshot z ${z.toFixed(1)})`);
   }
   const en = t.cuts?.ending;
   if (en?.kind === 'button' || en?.kind === 'ring') {
