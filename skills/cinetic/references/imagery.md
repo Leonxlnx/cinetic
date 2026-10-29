@@ -224,9 +224,13 @@ the script leads: one clean line at a time, each with its own text animation, th
 
 ## 10. Checks
 
-- `assets.mjs check` on the graded set (neutral share, banned colour regions outside natural tones, saturated
-  frames, accent share, the set's match, readable text and logos).
-- **Declare the pictures to the look audit.** `look-audit.py --imagery x,y,w,h` (a fixed box) or `--imagery-track
+- `assets.mjs check` on the graded set (neutral share, banned colour regions outside natural tones: skin, hair,
+  wood, straw, grass and foliage, pale cool cloth, navy and a dusk sky; saturated frames, accent share, the set's
+  match, readable text and logos). A set that tells a day from morning to night takes `--arc`: each picture is
+  matched with the pictures of its own light, not with the whole set's lightness.
+- **The pictures leave the look audit's palette checks on their own.** The kit's photos and footage carry
+  `data-imagery`, `layout-audit.sh` logs their boxes on every audited frame, and `look-audit.py --layout` leaves those
+  pixels out, as it does the marks. For a picture drawn without the kit: `look-audit.py --imagery x,y,w,h` (a fixed box) or `--imagery-track
   out/imagery.json` (boxes that move) tells it where photographs are, so their natural colour is not read as designed
   colour and their soft, defocused edges are not read as haze or filler shapes. `pictureTrack(from, to, boxesAt)`
   writes the track from the same state the film draws (`riverBoxes` for an ArcRiver, the masonry boxes for a wall,

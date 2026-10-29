@@ -859,7 +859,7 @@ export const rgbHex = (rgb) => `#${rgb.map((v) => Math.round(v * 255).toString(1
 export function parseArgs(argv) {
   const VALUED = new Set(['kind', 'source', 'orientation', 'min-width', 'colour', 'color', 'limit', 'out', 'pick', 'cols', 'cell', 'to', 'from', 'name', 'width', 'res', 'trim', 'max-mb',
     'record', 'look', 'accent', 'split-hue', 'focus', 'aspect', 'grain', 'speed', 'fps', 'suffix', 'strength', 'chroma', 'scan', 'fit']);
-  const FLAGS = new Set(['allow-credit', 'json', 'no-check', 'dry-run', 'help', 'force', 'keep', 'scrub', 'brand-supplied', 'no-text', 'people', 'no-people', 'clean', 'no-vet']);
+  const FLAGS = new Set(['allow-credit', 'json', 'no-check', 'dry-run', 'help', 'force', 'keep', 'scrub', 'brand-supplied', 'arc', 'no-text', 'people', 'no-people', 'clean', 'no-vet']);
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -1541,13 +1541,21 @@ export function bannedRegion(L, C, h) {
 const hueGap = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
 /**
  * Natural tones of a photograph: skin of every shade, hair, wood, sand, linen, paper (OKLCH hue 20-85, chroma
- * .015-.13, L .18-.95), and the deep blue-violet of navy cloth, denim and night shadow (hue 265-300, L <= .45,
- * C <= .12). In a picture they are the world's colour, not designed colour, so the picture check never counts them as
- * a banned region (look-audit leaves declared imagery out the same way); a saturated orange or amber object
- * (C > .13), a cream-yellow field (hue >= 85), a lit violet or purple and neon still count. Pure.
+ * .015-.13, L .18-.95); light wood, straw and the highlights of grass and skin (hue 85-118, C <= .075); olive and
+ * sunlit yellow-green foliage (hue 85-100, C <= .13, L <= .8); pale cool cloth, a lavender or lilac-grey shirt (hue
+ * 265-310, C <= .05); and the deep blue-violet of navy cloth, denim, night shadow and a dusk sky (hue 265-310,
+ * C <= .12, L <= .6). In a picture they are the world's colour, not designed colour, so the picture check never
+ * counts them as a banned region (look-audit leaves the pictures the layout audit logs out the same way); a
+ * saturated orange or amber object (C > .13), a cream-yellow field (hue >= 85, C > .075, L > .8), a lit violet or
+ * purple and neon still count. Pure.
  */
 export function naturalTone(L, C, h) {
-  return (h >= 20 && h <= 85 && C >= 0.015 && C <= 0.13 && L >= 0.18 && L <= 0.95) || (h >= 265 && h <= 300 && C <= 0.12 && L <= 0.45);
+  return (h >= 20 && h <= 85 && C >= 0.015 && C <= 0.13 && L >= 0.18 && L <= 0.95)
+    || (h > 85 && h <= 118 && C >= 0.015 && C <= 0.075 && L >= 0.18 && L <= 0.95)
+    || (h > 85 && h <= 100 && C >= 0.015 && C <= 0.13 && L >= 0.18 && L <= 0.8)
+    || (h >= 265 && h <= 310 && C >= 0.015 && C <= 0.05)
+    || (h >= 265 && h <= 300 && C <= 0.12 && L <= 0.45)
+    || (h >= 265 && h <= 310 && C >= 0.015 && C <= 0.12 && L <= 0.6);
 }
 /**
  * Shares of neutral, saturated, accent-hued and banned-region pixels in an rgb24 buffer (accent = a #hex or
@@ -1593,7 +1601,10 @@ export function pictureVerdict(frames, o = {}) {
 /**
  * Pictures that do not read as one shoot: per file the median OKLCH lightness and the mean chroma (of its
  * frames) against the set's medians; a file more than `lumaGap` lighter or darker, or with more than `chromaX`
- * times (or under 1 / chromaX of) the set's colour strength, is an outlier. rows = [{ file, L, C }]. Pure.
+ * times (or under 1 / chromaX of) the set's colour strength, is an outlier. o.arc: the set tells a day (morning to
+ * night, a light that changes on purpose): lightness is the story, not a mismatch, so each file's colour strength
+ * is held against the files of its own light (within `lumaGap` of its L, 3 or more of them) and lightness is not
+ * judged. rows = [{ file, L, C }]. Pure.
  */
 export function setOutliers(rows, o = {}) {
   const P = { ...PICTURE, ...o };
@@ -1603,8 +1614,11 @@ export function setOutliers(rows, o = {}) {
   const out = [];
   for (const r of rows) {
     const why = [];
-    if (Math.abs(r.L - mL) > P.lumaGap) why.push(`${r.L > mL ? 'lighter' : 'darker'} (median L ${r.L.toFixed(2)} vs ${mL.toFixed(2)})`);
-    if (mC > 0.02 && (r.C > mC * P.chromaX || r.C < mC / P.chromaX)) why.push(`${r.C > mC ? 'more' : 'less'} colour (C ${r.C.toFixed(3)} vs ${mC.toFixed(3)})`);
+    const peers = P.arc ? rows.filter((q) => Math.abs(q.L - r.L) <= P.lumaGap) : rows;
+    if (P.arc && peers.length < 3) continue;
+    const pC = P.arc ? med(peers.map((q) => q.C)) : mC;
+    if (!P.arc && Math.abs(r.L - mL) > P.lumaGap) why.push(`${r.L > mL ? 'lighter' : 'darker'} (median L ${r.L.toFixed(2)} vs ${mL.toFixed(2)})`);
+    if (pC > 0.02 && (r.C > pC * P.chromaX || r.C < pC / P.chromaX)) why.push(`${r.C > pC ? 'more' : 'less'} colour (C ${r.C.toFixed(3)} vs ${pC.toFixed(3)}${P.arc ? ' in its light' : ''})`);
     if (why.length) out.push({ file: r.file, why: why.join(', ') });
   }
   return out;
@@ -1815,7 +1829,7 @@ async function cmdGrade(args) {
   if (args['dry-run'] || !graded.length) return 0;
   console.log(`Check the set as one shoot: node scripts/assets.mjs sheet ${path.relative(process.cwd(), outDir) || outDir}`);
   if (args['no-check']) return 0;
-  return pictureCheck(graded, args.accent ? accent : null, { allowBanned: Boolean(args['brand-supplied']) });
+  return pictureCheck(graded, args.accent ? accent : null, { allowBanned: Boolean(args['brand-supplied']), arc: Boolean(args.arc) });
 }
 /** Pixels of one frame (a still, or a clip at t seconds) as a small rgb24 grid at 16:9. */
 export function frameGrid(file, t = null, w = 96, h = 54) {
@@ -1872,7 +1886,7 @@ export function pictureCheck(graded, accent = null, o = {}) {
     console.log(`  ${path.basename(g.file).padEnd(46)} neutral ${m('neutral')} %  saturated ${m('saturated')} %${accent ? `  accent ${m('accent')} %` : ''}${ban >= PICTURE.banned ? `  BANNED ${(ban * 100).toFixed(1)} %` : ''}`);
   }
   const v = pictureVerdict(frames, { allowBanned: Boolean(o.allowBanned) });
-  for (const x of setOutliers(perFile)) v.notes.push(`${x.file} does not read as the same shoot: ${x.why}; regrade it on its own (--strength, --chroma) or replace it`);
+  for (const x of setOutliers(perFile, { arc: Boolean(o.arc) })) v.notes.push(`${x.file} does not read as the same shoot${o.arc ? ' as the pictures of its light' : ''}: ${x.why}; regrade it on its own (--strength, --chroma) or replace it${o.arc ? '' : ' (a set that tells a day, morning to night, on purpose: --arc)'}`);
   if (o.text !== false) {
     const read = readText(graded);
     if (!read) v.notes.push('text and logos: not read (the project\'s Python needs numpy and opencv-python for like.py\'s reader); look at the sheet for signs, adverts and labels');
@@ -1898,7 +1912,7 @@ function cmdCheck(args) {
   if (!files.length) throw new Usage('check needs graded image or video files (or folders)');
   if (!ffmpegOk()) throw new Error('check needs ffmpeg and ffprobe on the PATH');
   const graded = files.map((f) => ({ file: f, video: /\.(mp4|webm|mov)$/i.test(f) }));
-  return pictureCheck(graded, args.accent || null, { allowBanned: Boolean(args['brand-supplied']), text: !args['no-text'] });
+  return pictureCheck(graded, args.accent || null, { allowBanned: Boolean(args['brand-supplied']), text: !args['no-text'], arc: Boolean(args.arc) });
 }
 function cmdProbe(args) {
   const files = listLocal(args._); if (!files.length) throw new Usage('probe needs files');
@@ -1942,13 +1956,14 @@ export const USAGE = `assets.mjs: photographs, footage, textures and art a film 
          [--res 1080] [--trim start,seconds] [--max-mb 150] [--allow-credit] [--record path]
   grade  <files or folders> [--look ${Object.keys(LOOKS).join('|')}] [--strength 0..1.5] [--chroma 0.2..1.5]
          [--accent #hex] [--split-hue deg|#hex] [--focus x,y] [--aspect 16:9|none] [--width 2400] [--grain 0..1]
-         [--out dir] [--trim start,seconds] [--speed 1] [--scrub] [--dry-run] [--no-check] [--brand-supplied]
+         [--out dir] [--trim start,seconds] [--speed 1] [--scrub] [--dry-run] [--no-check] [--brand-supplied] [--arc]
          (natural is the default and keeps the pictures' colour; --strength: how far toward the look, 0 = the
          picture as it is; --chroma: the colour after it; a graded set keeps >= 30 % neutral pixels and no banned
          colour region; --split-hue: the shadows' hue in natural, matte and night, cool by default and apart from
          --accent; --scrub: every frame a key frame, for a clip the film's clock drives)
-  check  <files or folders> [--accent #hex] [--brand-supplied] [--no-text]   (the picture check grade runs, on
-         any set: neutral floor, banned colours, saturated floor, the set's match, readable text and logos)
+  check  <files or folders> [--accent #hex] [--brand-supplied] [--arc] [--no-text]   (the picture check grade runs,
+         on any set: neutral floor, banned colours, saturated floor, the set's match, readable text and logos;
+         --arc: the set tells a day, morning to night, so each picture is matched with the pictures of its light)
   probe  <files> [--json]          looks          licences [--to <film>/public/assets]
 
 Refs: #n from the last search, or <source>:<id> as search prints it (a ref is looked up in the saved searches

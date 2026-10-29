@@ -403,6 +403,9 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   ok(A.naturalTone(...px1([224, 172, 138])) && A.naturalTone(...px1([107, 68, 48])) && A.naturalTone(...px1([180, 138, 94])), 'natural tones: light skin, dark skin, tan wood');
   ok(A.naturalTone(...px1([38, 40, 92])) && !A.naturalTone(...px1([160, 110, 220])), 'natural tones: a navy shadow is natural, a lit violet is not');
   ok(!A.naturalTone(...px1([232, 112, 26])) && !A.naturalTone(...px1([150, 70, 200])) && !A.naturalTone(...px1([225, 215, 150])) && !A.naturalTone(...px1([40, 150, 165])), 'not natural: a saturated orange, a violet, a cream-yellow, a teal');
+  ok(A.naturalTone(...px1([205, 195, 150])) && A.naturalTone(...px1([240, 214, 180])) && A.naturalTone(0.62, 0.11, 92) && A.naturalTone(...px1([200, 190, 215])) && A.naturalTone(...px1([120, 100, 150])),
+    'natural tones: light wood (hue 97), a skin highlight, sunlit olive foliage (hue 92, C .11), a pale lavender shirt and a dusk sky');
+  ok(!A.naturalTone(...px1([230, 200, 40])) && !A.naturalTone(0.86, 0.09, 100) && !A.naturalTone(0.64, 0.165, 303), 'not natural: a saturated yellow, a cream-yellow field (L .86, C .09) and a lit violet still count');
   const skin = A.colourShares(Buffer.concat([px([128, 128, 128], 60), px([224, 172, 138], 30), px([107, 68, 48], 10)]));
   ok(skin.banned === 0 && Math.abs(skin.natural - 0.4) < 1e-9 && A.pictureVerdict([{ ...skin, file: 'portrait.jpg' }]).banned === 0, 'a portrait\'s skin is natural colour: no banned frame', JSON.stringify(skin));
   const bus = A.colourShares(Buffer.concat([px([128, 128, 128], 95), px([232, 112, 26], 5)]));
@@ -427,6 +430,12 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   const outl = A.setOutliers([{ file: 'a', L: 0.5, C: 0.05 }, { file: 'b', L: 0.55, C: 0.06 }, { file: 'c', L: 0.52, C: 0.05 }, { file: 'night.jpg', L: 0.15, C: 0.05 }, { file: 'neon.jpg', L: 0.5, C: 0.2 }]);
   ok(outl.length === 2 && outl[0].file === 'night.jpg' && /darker/.test(outl[0].why) && /more colour/.test(outl[1].why), 'set match: a much darker picture and a much more colourful one are outliers', JSON.stringify(outl));
   ok(A.setOutliers([{ file: 'a', L: 0.1, C: 0.1 }, { file: 'b', L: 0.9, C: 0.01 }]).length === 0, 'set match: two pictures are no set to measure');
+  const dayArc = [0.91, 0.88, 0.86, 0.55, 0.5, 0.52, 0.2, 0.19, 0.17].map((L, i) => ({ file: `t${i}`, L, C: 0.05 }));
+  const dayOut = A.setOutliers(dayArc);
+  const arcOut = A.setOutliers(dayArc, { arc: true });
+  const arcNeon = A.setOutliers([...dayArc, { file: 'neon-night.jpg', L: 0.18, C: 0.2 }], { arc: true });
+  ok(dayOut.length >= 3 && arcOut.length === 0 && arcNeon.length === 1 && arcNeon[0].file === 'neon-night.jpg' && /in its light/.test(arcNeon[0].why),
+    'set match --arc: a day from morning to night is one shoot; a night picture far more colourful than the other night pictures is not', `${dayOut.length} / ${arcOut.length} / ${JSON.stringify(arcNeon)}`);
   const sign = [[[40, 50, 200, 30]], [[42, 51, 198, 29]], [[300, 200, 80, 30]]];
   ok(A.steadyText(sign).length === 2 && A.steadyText([[[10, 10, 60, 30]], [[200, 120, 60, 30]], [[400, 220, 60, 30]]]).length === 0, 'steady text: a line in the same place in two frames of a clip counts; one that moves does not');
   ok(A.steadyText([[[10, 100, 90, 20], [120, 102, 60, 19]]]).length === 2 && A.steadyText([[[10, 100, 30, 20]]]).length === 0 && A.steadyText([[[10, 100, 120, 20]]]).length === 1, 'steady text in a still: two lines on one baseline, or one at least 4 x as wide as tall');
