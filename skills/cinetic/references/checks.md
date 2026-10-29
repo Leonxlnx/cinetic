@@ -29,7 +29,7 @@ python3 scripts/detail-pair.py --film out/preview.mp4 --ref <frames> --pairs F:R
 After each round write the weakest grammar-score dimension and the weakest floor reading into the review note, and
 fix that first. A ship needs, on the final render: copy-check (the script and `--ui src`), lint `--strict` and
 grid-check clean; layout-audit passing with its placeholder floor; the detail pass with no open difference; forensics passing;
-look-audit passing with both floors; grammar-score mean ≥ 90, no dimension under 70; the sound gates
+look-audit passing with both floors; grammar-score mean ≥ 80, no dimension under 70; the sound gates
 (`references/sound.md`); probe and check-sync (`references/finishing.md`); the rubric (`references/review-loop.md`).
 
 ## 1b. copy-check (`scripts/copy-check.py`): is the script clear
@@ -293,27 +293,33 @@ How close the film's grammar sits to the house grammar (or a clip's: `--target o
 dimension, appended to `out/grammar-score.json` so a loop shows its progress. Measured values win over values read
 from the timeline. `--format update` reads the update band; `--print-target` prints the house target.
 
-| Dimension | Statistic | Pass band |
-|---|---|---|
-| role-mix | distance of the arrive / reposition / leave / linear / spring shares from 55 / 16 / 19 / 8 / 2 % | ≤ 0.17 |
-| front-loaded | entrances on arrive curves | ≥ 71 % |
-| into-cuts | moves ending at a cut on leave curves | ≥ 71 % |
-| durations | per role, the median inside the house range | ≥ 80 % of roles |
-| staggers | staggered groups irregular (gap variation ≥ 0.15) with gaps in the house range | all |
-| shots | median in the format's band, q75/q25 spread 1.9-3.1 | both |
-| density | starts per second 1.9-2.8, concurrency 1.6-2.5, idle frames ≤ 15 % | all |
-| holds | hold frames that live (drift ≥ 6 px/s, creep ≥ 1 %/s, or light on the ground) | ≥ 95 % |
-| seams | carried share ≥ 40 %, no kind more than 3 times (the signature excepted), mix distance ≤ 0.35 | all |
-| cut-sync | hard cuts within 1 f of a sound (the picture may lead by up to 3 f) / within 100 ms | ≥ 50 % / ≥ 80 % |
-| velocity-seams | declared velocity seams that carry speed and direction | 100 % |
-| colour | one accent hue group, accent share in band, neutral grounds, ink and ground in band | all |
-| type | texts off the type bands both families share (the layout audit's boxes re-measured: under the ui size, over the giant band, past their width, 3+ sizes at once), one fault per text however many frames; an older audit is re-scored on today's bands | none (−10 per text) |
-| overlap | secondaries start before the primary reaches 90 %; the foreground lands 10-30 f@60 before the background; the next element enters 0-1 f before the previous leaves | ≥ 70 % / 50 % / 70 % |
-| picture | the picture readings | 100 at the target, 70 at the floor |
+| Dimension | Statistic | 100 at | 70 at (the floor) |
+|---|---|---|---|
+| role-mix | distance of the arrive / reposition / leave / linear / spring shares from 55 / 16 / 19 / 8 / 2 % (drifts and creeps left out) | ≤ 0.25 | 0.6 |
+| front-loaded | an element's entrances on arrive curves (exits, linear values and the camera's moves are not entrances) | ≥ 71 % | 40 % |
+| into-cuts | moves ending at a hard cut on leave or linear curves (a carried seam is crossed, not cut into; from 3 moves) | ≥ 71 % | 40 % |
+| durations | per role, the median against the house range, by ratio; the mean of the roles | inside | 2× past an edge |
+| staggers | runs of 3+ starts with gaps in the house range; a run of 6+ irregular (CV ≥ 0.15); starts within 1.5 f@60 are one start, a run on the beat grid is the track's | 80 % of runs | 50 % |
+| shots | median in the format's band; q75/q25 spread 1.9-3.1 | inside | 2× / 2.6× past an edge |
+| density | starts per second; regions moving at once; idle frames | 1.9-2.8; 1.6-2.5; ≤ 15 % | 1.3-3.2; 1.05-4.4; 45 % |
+| holds | hold frames that live (drift ≥ 6 px/s, creep ≥ 1 %/s, or light on the ground) | ≥ 95 % | 82 % |
+| seams | carried share; no kind more than 3 times (the signature excepted; a refrain scores 50); the mix distance is reported | ≥ 40 % | 30 % |
+| cut-sync | hard cuts within 1 f of a sound (the picture may lead by up to 3 f) / within 100 ms; from 3 hard cuts | ≥ 50 % / ≥ 80 % | 14 % / 28 % |
+| velocity-seams | declared velocity seams that carry speed and direction | 100 % | 50 % |
+| colour | hue groups; accent p95 of a frame; ground and ink in the house bands (off them: 85); ground chroma; neutral, saturated and wash-frame shares; the accent's share; a second accent (80) | ≤ 2; ≤ 25 %; in; ≤ 0.025; ≥ 40 %, ≤ 30 %, ≤ 33 %; 2-17 % | 8; 60 %; -; 0.035; 15 %, 55 %, 60 %; 0-42 % |
+| type | texts off the type bands both families share (the layout audit's boxes re-measured: under the ui size, over the giant band, past their width, 3+ sizes in one scene), one fault per text, counted when it misses on 2 audited frames or more (5 % under the ui size and 2 % past a width are rounding); an older audit is re-scored on today's bands | none | 3 texts (−10 each) |
+| overlap | hand-overs: the next element enters between 3 f@60 after and 6 f@60 before the previous one has left (scored); secondaries before the primary's 90 % and the foreground leading the background (reported) | ≥ 70 % | 35 % |
+| picture | the picture readings (flat ground, structure, colour mass, bleed, falloff, skeleton bars) | the target | the floor (0 % saturated for a mono film; 4 skeleton samples) |
 
-A dimension scores 100 inside its band and falls to 0 at twice the band's width outside it; shot lengths and their
-spread score 70 at 1.75× beyond the band's edge. A one-take film scores neither shots nor cut sync. **Ship: mean ≥ 90,
-no dimension under 70, both floors passing.** Read `density` (and look-audit's concurrency and moving share) on a
+Each dimension scores 100 at its target and 70 at its floor, linear between, and falls to 0 at twice the
+target-floor gap past the floor. The floors of the render dimensions are the edges of the house ranges, the
+range of the films the house holds up as its bar (each of them scores 70 or more on every render dimension); the
+declared dimensions read elements, not the camera or the creeps: a drift or creep (linear, 1.5 s or longer) is
+the holds' measure, a reposition of 2 s or more is the camera's move, and a carried seam is crossed, not cut into.
+A one-take film scores neither shots nor cut sync. **Ship: mean ≥ 80, no dimension under 70, both floors passing**
+(`target.ship`; 80 is the lowest mean those films reach). Films made from the templates that look right score
+81-94 on it; the ones under the bar fail on a dimension a director sees (moves that settle on the hard cut, a
+sentence 87 % of the frame wide, velocity seams that carry nothing, the accent filling the frame past one flood). Read `density` (and look-audit's concurrency and moving share) on a
 full-size render at the master's quality: on a half-size dev render, x264 noise on a grain or a textured ground reads
 as optical flow (one film measured concurrency 3.97 there and 1.50 on its 1920x1080 master).
 

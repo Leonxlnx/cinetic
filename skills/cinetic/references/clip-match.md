@@ -70,7 +70,7 @@ node scripts/grammar-score.mjs --target out/like.json --cues out/cues.json --lay
 ```
 
 Each render is scored against the clip's grammar instead of the house grammar; the ship gate's bar is the same
-(mean ≥ 90, no dimension under 70, the floors passing). `--print-target` prints the house target for comparison.
+(mean ≥ 80, no dimension under 70, the floors passing). `--print-target` prints the house target for comparison.
 
 ## 5. The guard
 

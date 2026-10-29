@@ -289,7 +289,7 @@ Formats without some dimensions score them against the format's own recipe in `r
 - every script passes: `probe.py`, `check-sync.py`, `forensics.py` (0 fails; every warning explained in `fixes.md`), `av-audit.py --stems` (0 fails), `lint-film.mjs --strict`, `grid-check.ts`, `layout-audit.sh` (its placeholder checks included: no stand-in words, grey text bars or drawn figures in the render) and `copy-check.py --ui src` (the product's UI strings are real words);
 - the detail pass has no open difference a viewer could see (every one fixed, or answered in `fixes.md`);
 - `look-audit.py` passes with both floors (motion and picture);
-- `grammar-score.mjs`: mean ≥ 90, no dimension under 70;
+- `grammar-score.mjs`: mean ≥ 80, no dimension under 70;
 - the sound gates (`references/sound.md` §2: a licensed track with a valid record, every effect from the kit, over-bed levels, stop-downs, no ducking, clean joins, one element at the lockup, loudness) and `credits.py`;
 - with a clip to match: `like.py guard` passes (`references/clip-match.md`).
 

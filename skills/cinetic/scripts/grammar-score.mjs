@@ -10,34 +10,50 @@
  * prints the house target to start from. Shot bands come from GRAMMAR.shot.band, so a new format band
  * needs no change here.
  *
- * Each dimension scores 100 inside its pass band and falls linearly to 0 at twice the band's width
- * outside its edge; shot lengths and their spread are ratios, so they fall with the log of the ratio
- * to the band's edge (70 at 1.75 times beyond it, `shot.r70` in the target). Each is tagged
- * `measured` (read off the rendered frames: look-audit.py, forensics.py) or `declared` (read off the
- * timeline: cues.json, the tween registry of an audited render); the score
- * uses the measured value wherever a render was measured. Ship: a mean of >= 90 over the measured and
- * declared dimensions, none under 70, and the floor against a flat film (look-audit.py) passing.
+ * Each dimension scores 100 inside the house target and 70 at its floor, linear between; past the floor it
+ * falls to 0 at twice the target-floor gap. The floors of the measured dimensions are the edges of what the
+ * house ranges reach (the films the house holds up as its bar, read by look-audit.py, each score 70 or more on every
+ * render dimension, and a mean of 80 or more); the declared ones are set on the demo films the house made, so a
+ * film a director passes passes them and the faults they name are the ones a director sees. Shot lengths and their
+ * spread are ratios, so they fall with the log of the ratio to the band's edge (70 at `shot.r70` times beyond it,
+ * 2; the spread at `shot.spreadR70`, 2.6). Each is tagged `measured` (read off the rendered frames:
+ * look-audit.py, forensics.py) or `declared` (read off the timeline: cues.json, the tween registry of an audited
+ * render); the score uses the measured value wherever a render was measured. Ship (target.ship): a mean of >= 80
+ * over the measured and declared dimensions, none under 70, and the floor against a flat film (look-audit.py)
+ * passing. 80 is the lowest mean those films reach (80.8); a dimension under 70 is outside all of them.
+ * references/checks.md (grammar-score) has the bar and what each dimension reads.
  *
+ * The tween registry holds every eased value an audited frame evaluated; drifts and creeps (linear, 1.5 s or
+ * longer) are the living holds' own measure and stay out of the declared motion dimensions, and a camera's move
+ * (a reposition of 2 s or more) is never an element's entrance or a secondary's primary.
  * Dimensions: role-mix (total-variation distance of arrive / reposition / leave / linear / spring
- * shares, <= 0.17), front-loaded (entrances on arrive curves, >= 71 %), into-cuts (moves ending at a
- * cut on leave curves, >= 71 %), durations (per role, medians in the house range), staggers (groups
- * irregular, gaps in the house range), shots (median in the format's band, q75/q25 spread 1.9-3.1;
- * not scored on a one-take film), density (starts per second, concurrency, idle frames), holds
- * (living share >= 95 %), seams (carried >= 40 %, no kind more than 3 times except the signature,
- * mix distance <= 0.35), cut-sync (hard cuts within 1 f of a sound, the picture leading by up to 3 f,
- * >= 50 %; within 100 ms >= 80 %; not scored on a one-take film), velocity-seams (every declared one
- * carries speed), colour (one hue group, neutral grounds, ink and ground in band, and from the picture reads:
- * neutral pixels >= 40 %, no colour wash, the accent's hue family 6-15 % of the frame, no second accent;
- * lib/look.ts NEUTRAL, COLOUR, PICTURE; frames inside a declared colour event are left out of the accent's
+ * shares, <= 0.25; floor 0.6), front-loaded (entrances on arrive curves, >= 71 %; floor 40 %), into-cuts (moves
+ * ending at a hard cut on leave curves, >= 71 %, from 3 such moves; a carried seam is crossed, not cut into),
+ * durations (per role, medians in the house range, by ratio, the mean of the roles), staggers (runs of 3 or more
+ * starts in the house gap range; a run of 6 or more irregular, CV >= 0.15; starts within 1.5 f@60 are one start and
+ * a run on the beat grid is the track's; scored by share, 80 % for 100, 50 % for 70), shots (median in the
+ * format's band, q75/q25 spread 1.9-3.1; not scored on a one-take film), density (starts per second 1.9-2.8,
+ * floor 1.3-3.2; regions moving at once 1.6-2.5, floor 1.05-4.4; idle frames <= 15 %, floor 45 %), holds (living
+ * share >= 95 %, floor 82 %), seams (carried >= 40 %, floor 30 %; no kind more than 3 times except the signature;
+ * the distance of the seam-kind mix from the house's is reported, not scored), cut-sync (hard cuts within 1 f of a
+ * sound, the picture leading by up to 3 f, >= 50 %, floor 14 %; within 100 ms >= 80 %, floor 28 %; from 3 hard cuts;
+ * not scored on a one-take film), velocity-seams (every declared one carries speed; half of them is the floor),
+ * colour (hue groups <= 2, floor 8; neutral grounds and ink in band (a ground off the house bands, or pure black,
+ * scores 85); and from the picture reads: neutral pixels >= 40 %, floor 15 %; saturated pixels <= 30 %, floor 55 %;
+ * colour-wash frames <= 33 %, floor 60 %; the accent's hue family 2-17 % of the frame, floor 0-42 %; a second accent
+ * scores 80; lib/look.ts NEUTRAL, COLOUR, PICTURE; frames inside a declared colour event are left out of the accent's
  * share, its p95 and the neutral share, so one declared flood is never scored as the film's colour), type (the
  * layout audit's boxes re-measured against the type bands both families share, lib/Audit.tsx TYPE_BANDS and
- * TYPE_WIDTH: text under the ui role, a cap over the giant band or between two bands, a line past its width (a calm
+ * TYPE_WIDTH: text under the ui role (5 % under it is rounding, not a fault), a cap over the giant band or between two bands, a line past its width (a calm
  * sentence 75 %, a line 61 %, display and hero 84 %), more than 2 non-UI sizes at once; a push in flight is the
  * camera's, a landed push and a claim may bleed; counted per text, not per audited frame, so an old audit is
  * re-scored on today's bands; without boxes, layout-audit.sh's type-size warnings; `--print-target` shows where each
  * role of the calm and the bold family, lib/look.ts TYPE_LOOK, lands in the bands),
- * overlap (secondaries start before the primary reaches 90 %, the foreground lands about 20 f@60 before the
- * background, the next element enters 0-1 f before the previous leaves).
+ * overlap (secondaries start before an element's primary move (up to 2 s) reaches 90 %, the foreground lands
+ * 10-30 f@60 before a background arrival (40-150 f@60), the next element enters between 3 f@60 after and 6 f@60
+ * before the previous one has left; each share scores 70 at half its target), picture (look-audit.py's picture floor:
+ * flat ground, structure, colour mass (a mono film's grey is its own: 0 saturated is the floor), bleed, focus
+ * falloff, and skeleton bars: 2-4 samples score 70 down to 0 at 10).
  *
  * Usage (from the project root):
  *   node scripts/grammar-score.mjs [--cues out/cues.json] [--layout out/qa/layout-Film.json]
@@ -179,37 +195,59 @@ const houseTarget = () => {
     source: src ? 'house (lib/look.ts GRAMMAR, lib/anim.ts DUR and STAG)' : 'house (built-in)',
     // the type bands both families share (lib/Audit.tsx) and where each TYPE_LOOK role lands in them
     type: typeTarget(audit, literal(look, 'TYPE_LOOK') ?? {}),
-    roleMix: { shares: { arrive: 0.55, reposition: 0.16, leave: 0.19, linear: 0.08, spring: 0.02 }, tvdMax: 0.17 },
+    roleMix: { shares: { arrive: 0.55, reposition: 0.16, leave: 0.19, linear: 0.08, spring: 0.02 }, tvdMax: 0.25, tvdFloor: 0.6 },
     frontLoaded: 0.71,
+    frontLoadedFloor: 0.4,
     intoCuts: 0.71,
+    intoCutsFloor: 0.4,
+    // drifts and creeps (linear, frames@60 or longer) and camera moves (a reposition this long) in the tween registry
+    driftF60: 90,
+    cameraF60: 120,
     durations: {
       arrive: iqr(DUR.word) && [Math.min(DUR.word[1], DUR.ui?.[1] ?? 99), Math.max(DUR.ui?.[3] ?? 0, DUR.word[3])],
       reposition: iqr(DUR.push) && [DUR.push[1], DUR.pan?.[3] ?? DUR.push[3]],
       leave: iqr(DUR.exit) && [Math.min(DUR.typeExit?.[1] ?? 99, DUR.exit[1]), DUR.exit[3]],
     },
-    staggers: { gap: [STAG.letter?.[1] ?? 3, STAG.ui?.[3] ?? 17.5], cvMin: 0.15 },
-    shot: { band: G.shot?.band ?? { launch: [1.15, 1.95] }, spread: G.shot?.spread ?? [1.9, 3.1], r70: 1.75 },
-    density: { startsPerSec: [G.density?.startsPerSec?.[0] ?? 1.9, G.density?.startsPerSec?.[2] ?? 2.8], concurrent: [G.density?.concurrent?.[0] ?? 1.6, G.density?.concurrent?.[2] ?? 2.5], idleMax: G.density?.idleMax ?? 0.15 },
-    holds: { livingMin: 0.95 },
+    staggers: { gap: [STAG.letter?.[1] ?? 3, STAG.ui?.[3] ?? 17.5], cvMin: 0.15, cvRun: 6, together60: 1.5, share: [0.8, 0.5] },
+    shot: { band: G.shot?.band ?? { launch: [1.15, 1.95] }, spread: G.shot?.spread ?? [1.9, 3.1], r70: 2, spreadR70: 2.6 },
+    // floors: the edges of the house ranges (starts 1.33-2.35 a second, 1.09-4.29 regions moving at once, idle up to 44 %)
+    density: {
+      startsPerSec: [G.density?.startsPerSec?.[0] ?? 1.9, G.density?.startsPerSec?.[2] ?? 2.8],
+      concurrent: [G.density?.concurrent?.[0] ?? 1.6, G.density?.concurrent?.[2] ?? 2.5],
+      idleMax: G.density?.idleMax ?? 0.15,
+      floor: { startsPerSec: [1.3, 3.2], concurrent: [1.05, 4.4], idleMax: 0.45 },
+    },
+    holds: { livingMin: 0.95, floor: 0.82 },
     seams: {
       carriedMin: 0.4,
+      carriedFloor: 0.3,
       maxUses: 3,
       mix: { velocity: 0.25, morph: 0.125, hard: 0.15, mask: 0.08, whip: 0.08, defocus: 0.07, light: 0.06, snapZoom: 0.06, breath: 0.04, zoomThrough: 0.04, stepped: 0.03, colour: 0.02 },
       mixTvdMax: 0.35,
     },
-    cutSync: { within1f: G.cut?.within1f ?? 0.5, within100ms: G.cut?.within100ms ?? 0.8, width100: 0.4 },
+    cutSync: { within1f: G.cut?.within1f ?? 0.5, within100ms: G.cut?.within100ms ?? 0.8, floor1f: 0.14, floor100ms: 0.28, minCuts: 3 },
+    velocitySeams: { floor: 0.5 },
     // grounds: paper, the mid stone, the mid slate or a deep field, ink (lib/look.ts RECIPE); ink on a light or mid-light ground
     // and the colour of the picture (look-audit's picture reads): floor 70, house target 100, like the picture dimension
+    // floors: the edges of the house ranges (up to 8 hue groups, 19 % neutral, 54 % saturated, 60 % wash frames, the accent
+    // on 0-40 % of the frame, ink up to L 0.40, grounds up to C 0.028); the targets are the house's
     colour: {
-      hueGroups: 1,
+      hueGroups: 2,
+      hueGroupsFloor: 8,
       accentMax: CO.accent?.frameMax ?? 0.25, // p95 of the accent's share of a frame (one designed flood aside)
+      accentMaxFloor: 0.6,
       groundL: [[0.93, 0.99], [0.7, 0.8], [0.3, 0.42], [0.06, 0.23]],
+      groundOff: 85,
       inkL: [0.12, 0.25],
+      inkLFloor: [0.08, 0.41],
       groundCMax: N.maxC ?? 0.025,
+      groundCFloor: 0.035,
       neutral: { floor: 0.15, target: P.target?.neutralMin ?? CO.neutralTarget ?? 0.4 },
-      saturatedMax: { floor: P.saturatedMax ?? 0.45, target: P.target?.saturatedMax ?? 0.3 },
-      washShare: { floor: P.washFrame?.maxShare ?? 0.45, target: P.target?.washShare ?? 0.33 },
-      accent: P.target?.accent ?? CO.accent?.share ?? [0.06, 0.15],
+      saturatedMax: { floor: 0.55, target: P.target?.saturatedMax ?? 0.3 },
+      washShare: { floor: 0.6, target: P.target?.washShare ?? 0.33 },
+      accent: [0.02, 0.17], // the middle of the house range (the house's PICTURE.target.accent, 6-15 %, is look-audit's aim)
+      accentFloor: [0, 0.42],
+      secondAccent: 80,
     },
     // the picture: the floor (look-audit fails under it) scores 70, the house target 100 (lib/look.ts PICTURE)
     // flat ground has a floor (texture everywhere fails) and an empty-film cap; edges a ceiling (busy everywhere) and an empty-film floor
@@ -220,9 +258,10 @@ const houseTarget = () => {
         flatShare: P.flatFrame?.minShare ?? 0.05,
         edgesMin: P.edgesMin ?? 0.006,
         edgesMax: P.edgesMax ?? 0.12,
-        saturatedMin: P.saturatedMin ?? 0.022,
+        saturatedMin: 0, // a mono film's grey is its own (the house range goes down to 0 % saturated)
         bleedShare: P.bleed?.share ?? 0.25,
         falloffShare: 0,
+        skeleton: 4, // skeleton-bar samples: 2-4 score 70 (look-audit.py and the layout audit fail placeholders on their own)
       },
       target: {
         flatMin: P.target?.flatMin ?? 0.43,
@@ -234,7 +273,10 @@ const houseTarget = () => {
         falloffShare: P.target?.falloffShare ?? 0.35,
       },
     },
-    overlap: { secondaryBefore90: 0.7, foregroundLead60: [10, 30], foregroundShare: 0.5, enterBeforeLeave: [0, 1], handoverShare: 0.7 },
+    // the ship bar: 80 is the lowest mean over the render dimensions that the films the house holds up reach (80.8), and
+    // each dimension's floor (70) is the edge of the house range
+    ship: { mean: 80, min: 70 },
+    overlap: { secondaryBefore90: 0.7, primaryMax60: 120, foregroundLead60: [10, 30], background60: [40, 150], foregroundShare: 0.5, enterBeforeLeave: [-3, 6], handoverShare: 0.7 },
   };
 };
 const merge = (a, b) => {
@@ -269,6 +311,19 @@ const ratioScore = (v, lo, hi, r70 = 1.75) => {
   return Math.max(0, Math.round(100 * (1 - (0.3 * Math.log(r)) / Math.log(Math.max(1.01, r70)))));
 };
 const atMost = (v, max) => (v === null || v === undefined ? null : v <= max ? 100 : Math.max(0, Math.round(100 * (1 - (v - max) / (2 * Math.max(max, 1e-6))))));
+/** 100 inside the target [lo, hi], 70 at the floor [lo, hi], linear between; past the floor it falls to 0 at twice the
+ * target-floor gap beyond it. A side with no floor (the floor equal to the target) is a cliff to 70 at once. */
+const tierBand = (v, target, floor) => {
+  if (v === null || v === undefined || Number.isNaN(v)) return null;
+  const [tlo, thi] = target;
+  const [flo, fhi] = floor;
+  if (v >= tlo && v <= thi) return 100;
+  const below = v < tlo;
+  const gap = Math.max(1e-9, below ? tlo - flo : fhi - thi);
+  const d = below ? tlo - v : v - thi;
+  if (d <= gap) return Math.round(100 - (30 * d) / gap);
+  return Math.max(0, Math.round(70 - (70 * (d - gap)) / (2 * gap)));
+};
 const median = (xs) => {
   const s = [...xs].sort((p, q) => p - q);
   return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null;
@@ -296,10 +351,12 @@ const read = (p) => {
  * minimum size) under the ui role, a cap over the giant band or in a gap between two, a line past its width (a calm
  * sentence, cap under sentenceCap, 75 % of the frame; a line 61 %; display and hero 84 %; a landed push or a claim may
  * bleed), more than 2 non-UI sizes at once (within 8 % is one size). A box in a push in flight is the camera's. One
- * fault per text (an entry's parts, "what.0" and "what.1", are one text), however many audited frames it misses on.
- * null when the JSON carries no boxes.
+ * fault per text (an entry's parts, "what.0" and "what.1", are one text), however many audited frames it misses on,
+ * and only when it misses on 2 audited frames or more (one is a size passing through a zoom or a push); 5 % under the
+ * ui size and 2 % past a width are rounding. null when the JSON carries no boxes.
  */
-const typeFaults = (layout, TT) => {
+const typeFaults = (layout, TT, acts = {}) => {
+  const actOf = (f) => Object.entries(acts).find(([, a]) => f >= a.from && f < a.from + (a.dur ?? Infinity))?.[0] ?? 'the film';
   const frames = Array.isArray(layout?.boxes) ? layout.boxes.filter((f) => f && Array.isArray(f.boxes)) : [];
   if (!frames.length) return null;
   const bands = Array.isArray(layout.typeBands) && layout.typeBands.length ? layout.typeBands : TT.bands;
@@ -321,20 +378,22 @@ const typeFaults = (layout, TT) => {
       if (b.push === 'moving') continue;
       const cap = capOf(b.px, height);
       const role = b.ui ? 'ui' : bandOf(cap, bands);
-      if (b.px < TT.uiPx * U) add(root(b.id), fr.frame, `${b.px} px is under the ui role (${Math.round(TT.uiPx * U)} px)`);
+      if (b.px < 0.95 * TT.uiPx * U) add(root(b.id), fr.frame, `${b.px} px is under the ui role (${Math.round(TT.uiPx * U)} px)`);
       if (role === 'over') add(root(b.id), fr.frame, `cap ${cap} % is over the giant band (<= ${bands[bands.length - 1][2]} %)`);
       if (role === 'between') add(root(b.id), fr.frame, `cap ${cap} % falls between two bands`);
       const sentence = role === 'line' && cap < W.sentenceCap;
       const wide = b.push === 'bleed' || b.claim ? null : role === 'line' ? (sentence ? W.sentence : W.line) : role === 'display' || role === 'hero' ? W[role] : null;
-      if (wide !== null && b.w > wide * width) add(root(b.id), fr.frame, `${role === 'line' ? (sentence ? 'a sentence' : 'a line') : `a ${role} line`} ${Math.round((b.w / width) * 1000) / 10} % of the frame wide (<= ${Math.round(wide * 100)} %; cap ${cap} %)`);
+      if (wide !== null && b.w > 1.02 * wide * width) add(root(b.id), fr.frame, `${role === 'line' ? (sentence ? 'a sentence' : 'a line') : `a ${role} line`} ${Math.round((b.w / width) * 1000) / 10} % of the frame wide (<= ${Math.round(wide * 100)} %; cap ${cap} %)`);
       if (!b.ui) {
         ids.add(root(b.id));
         if (!sizes.some((s) => Math.abs(s - b.px) <= 0.08 * s)) sizes.push(b.px);
       }
     }
-    if (sizes.length > 2) add([...ids].sort().join('+'), fr.frame, `${sizes.length} non-UI sizes at once`);
+    // one fault per scene (act), not per set of texts: a scrolling list showing new rows is the same scene
+    if (sizes.length > 2) add(`sizes in ${actOf(fr.frame)}`, fr.frame, `${sizes.length} non-UI sizes at once (${[...ids].sort().slice(0, 4).join(', ')}${ids.size > 4 ? ', ...' : ''})`);
   }
-  return { faults: [...faults.values()], frames: frames.length };
+  // a size seen on one audited frame only (a text passing through a zoom or a push, under 2 audit steps) is not held to be read
+  return { faults: [...faults.values()].filter((f) => f.frames >= 2 || frames.length < 4), frames: frames.length };
 };
 
 // ---------------------------------------------------------------------------------- the score
@@ -344,71 +403,98 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
   const f60 = (n) => (n * fps) / 60;
   const dims = [];
   const dim = (name, value, s, source, detail) => dims.push({ name, value, score: s, source, detail });
-  const tweens = (layout?.tweens ?? []).filter((t) => Number.isFinite(t.from) && Number.isFinite(t.to) && t.to > t.from);
+  const all = (layout?.tweens ?? []).filter((t) => Number.isFinite(t.from) && Number.isFinite(t.to) && t.to > t.from);
   const fam = (t) => t.family || 'untagged';
+  const len60 = (t) => ((t.to - t.from) * 60) / fps;
+  // drifts and creeps (long linear values) are the living holds' measure; a long reposition is the camera's move
+  const isDrift = (t) => fam(t) === 'linear' && len60(t) >= (T.driftF60 ?? 90);
+  const isCamera = (t) => fam(t) === 'reposition' && len60(t) >= (T.cameraF60 ?? 120);
+  const tweens = all.filter((t) => !isDrift(t));
   const acts = cues ? Object.values(cues.acts ?? {}).map((a) => a.from).filter((a) => a > 0) : [];
   const seams = cues?.declared?.seams ?? [];
   const cuts = [...new Set([...acts, ...seams.map((s) => s.at)])].sort((p, q) => p - q);
+  // hard cuts: act lines no seam carries, and the seams that cut (a carried seam is crossed by its move, not cut into)
+  const punch = new Set(['hard', 'colour', 'light', 'stepped']);
+  const carriedAt = new Set(seams.filter((s) => !punch.has(s.kind)).map((s) => s.at));
+  const hardCuts = [...new Set([...acts.filter((a) => !carriedAt.has(a)), ...seams.filter((s) => punch.has(s.kind)).map((s) => s.at)])].sort((p, q) => p - q);
   const M = look?.measures ?? null;
+  const drifts = all.length - tweens.length;
 
-  // role mix
+  // role mix (drifts and creeps left out)
   if (tweens.length >= 4) {
     const n = tweens.length;
     const shares = { arrive: 0, reposition: 0, leave: 0, linear: 0, spring: 0 };
     for (const t of tweens) if (fam(t) in shares) shares[fam(t)] += 1 / n;
     const d = tvd(shares, T.roleMix.shares);
-    dim('role-mix', Math.round(d * 1000) / 1000, atMost(d, T.roleMix.tvdMax), 'declared', Object.fromEntries(Object.entries(shares).map(([k, v]) => [k, Math.round(v * 100) / 100])));
+    dim('role-mix', Math.round(d * 1000) / 1000, tierBand(d, [0, T.roleMix.tvdMax], [0, T.roleMix.tvdFloor ?? 0.6]), 'declared',
+      { ...Object.fromEntries(Object.entries(shares).map(([k, v]) => [k, Math.round(v * 100) / 100])), driftsLeftOut: drifts });
   } else dim('role-mix', null, null, 'unmeasured', 'needs the tween registry (layout-audit.sh --every 6)');
 
-  // front-loaded arrivals: tweens starting on an arrival (a copy entry, an act start, a seam)
+  // front-loaded arrivals: an element's move starting on an arrival (a copy entry, an act start, a seam); an exit or a
+  // linear value starting there, and the camera's move, are not entrances
   const arrivals = [...(cues?.copy ?? []).map((c) => c.in), ...acts, ...seams.map((s) => s.at)];
-  const ent = tweens.filter((t) => arrivals.some((a) => Math.abs(t.from - a) <= f60(3)));
+  const ent = tweens.filter((t) => !['leave', 'linear'].includes(fam(t)) && !isCamera(t) && arrivals.some((a) => Math.abs(t.from - a) <= f60(3)));
   if (ent.length >= 2) {
-    const share = ent.filter((t) => fam(t) === 'arrive').length / ent.length;
-    dim('front-loaded', Math.round(share * 100) / 100, atLeast(share, T.frontLoaded), 'declared', `${ent.length} entrances`);
+    const share = ent.filter((t) => fam(t) === 'arrive' || fam(t) === 'spring').length / ent.length;
+    dim('front-loaded', Math.round(share * 100) / 100, tierBand(share, [T.frontLoaded, 1], [T.frontLoadedFloor ?? 0.4, 1]), 'declared', `${ent.length} entrances`);
   } else dim('front-loaded', null, null, 'unmeasured', 'no entrance tweens recorded');
 
-  // into cuts
-  const into = tweens.filter((t) => cuts.some((c) => Math.abs(t.to - c) <= f60(2)));
-  if (into.length >= 1) {
+  // into cuts: moves that end on a hard cut accelerate into it (leave or linear)
+  const into = tweens.filter((t) => hardCuts.some((c) => Math.abs(t.to - c) <= f60(2)));
+  if (into.length >= 3) {
     const share = into.filter((t) => fam(t) === 'leave' || fam(t) === 'linear').length / into.length;
-    dim('into-cuts', Math.round(share * 100) / 100, atLeast(share, T.intoCuts), 'declared', `${into.length} moves end at a cut`);
-  } else dim('into-cuts', null, null, 'unmeasured', 'no move ends at a cut');
+    dim('into-cuts', Math.round(share * 100) / 100, tierBand(share, [T.intoCuts, 1], [T.intoCutsFloor ?? 0.4, 1]), 'declared', `${into.length} moves end at a hard cut`);
+  } else dim('into-cuts', null, null, 'unmeasured', `${into.length} move(s) end at a hard cut (a carried seam is crossed, not cut into; scored from 3)`);
 
-  // durations by role
+  // durations by role: each role's median against its house range, by ratio (70 at twice past an edge); the mean of the roles
   {
     const rows = [];
     for (const [role, band] of Object.entries(T.durations)) {
       if (!band) continue;
-      const ds = tweens.filter((t) => fam(t) === role).map((t) => ((t.to - t.from) * 60) / fps);
+      const ds = tweens.filter((t) => fam(t) === role).map(len60);
       if (ds.length < 3) continue;
       const m = median(ds);
-      rows.push({ role, median: Math.round(m * 10) / 10, band, ok: m >= band[0] && m <= band[1] });
+      rows.push({ role, median: Math.round(m * 10) / 10, band, score: ratioScore(m, band[0], band[1], 2) });
     }
     if (rows.length) {
-      const share = rows.filter((r) => r.ok).length / rows.length;
-      dim('durations', Math.round(share * 100) / 100, atLeast(share, 0.8), 'declared', rows);
+      const sc = Math.round(rows.reduce((a, r) => a + r.score, 0) / rows.length);
+      dim('durations', rows.filter((r) => r.score === 100).length / rows.length, sc, 'declared', rows);
     } else dim('durations', null, null, 'unmeasured', 'fewer than 3 tweens per role');
   }
 
-  // staggers: runs of the same curve and length starting one after another
+  // staggers: runs of the same curve and length starting one after another. Starts within 1.5 f@60 are one start (a
+  // group moving together); a run whose gaps sit on the track's beat grid (half beats) is the track's, not a stagger;
+  // a run of up to 5 reads as one gesture, so only a run of 6 or more must be irregular (CV >= 0.15)
   {
+    const S = T.staggers;
+    const beatF = cues?.music?.beatS ? cues.music.beatS * fps : cues?.bpm ? (60 / cues.bpm) * fps : null;
+    const onGrid = (gaps60) => beatF !== null && gaps60.every((g) => {
+      const f = (g * fps) / 60;
+      const k = Math.round(f / (beatF / 2));
+      return k >= 1 && Math.abs(f - (k * beatF) / 2) <= 1;
+    });
     const groups = new Map();
     for (const t of tweens) {
-      const key = `${t.token}|${Math.round(((t.to - t.from) * 60) / fps)}`;
+      const key = `${t.token}|${Math.round(len60(t))}`;
       groups.set(key, [...(groups.get(key) ?? []), t.from]);
     }
     const rows = [];
+    let grid = 0;
     for (const starts of groups.values()) {
-      const s = [...new Set(starts.map((x) => Math.round(x * 10) / 10))].sort((p, q) => p - q);
+      const s0 = [...new Set(starts.map((x) => Math.round(x * 10) / 10))].sort((p, q) => p - q);
+      const s = s0.filter((x, i) => i === 0 || ((x - s0[i - 1]) * 60) / fps > (S.together60 ?? 1.5)); // together = one start
       let run = [s[0]];
       const flush = () => {
         if (run.length >= 3) {
           const gaps = run.slice(1).map((x, i) => ((x - run[i]) * 60) / fps);
+          if (onGrid(gaps)) {
+            grid++;
+            return;
+          }
           const m = median(gaps);
           const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
           const cv = Math.sqrt(gaps.reduce((a, g) => a + (g - mean) ** 2, 0) / gaps.length) / Math.max(mean, 1e-6);
-          rows.push({ n: run.length, gap: Math.round(m * 10) / 10, cv: Math.round(cv * 100) / 100, ok: m >= T.staggers.gap[0] && m <= T.staggers.gap[1] && (run.length <= 3 || cv >= T.staggers.cvMin) });
+          rows.push({ n: run.length, gap: Math.round(m * 10) / 10, cv: Math.round(cv * 100) / 100, ok: m >= S.gap[0] && m <= S.gap[1] && (run.length < (S.cvRun ?? 6) || cv >= S.cvMin) });
         }
       };
       for (const x of s.slice(1)) {
@@ -422,8 +508,9 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
     }
     if (rows.length) {
       const share = rows.filter((r) => r.ok).length / rows.length;
-      dim('staggers', Math.round(share * 100) / 100, atLeast(share, 1), 'declared', rows.slice(0, 8));
-    } else dim('staggers', null, null, 'unmeasured', 'no staggered group of 3 or more');
+      const [sTop, sFloor] = S.share ?? [0.8, 0.5];
+      dim('staggers', Math.round(share * 100) / 100, tierBand(share, [sTop, 1], [sFloor, 1]), 'declared', { runs: rows.length, onTheBeat: grid, failing: rows.filter((r) => !r.ok).slice(0, 6) });
+    } else dim('staggers', null, null, 'unmeasured', grid ? `${grid} run(s), all on the beat grid` : 'no staggered group of 3 or more');
   }
 
   // shot lengths: measured cuts when a render was measured, else the declared acts and seams
@@ -440,14 +527,17 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
     if (lens && lens.length >= 3 && !(M?.one_take || cues?.look?.oneTake) && !continuous) {
       const m = median(lens);
       const spread = quant(lens, 0.75) / Math.max(1e-6, quant(lens, 0.25));
-      const s = Math.min(ratioScore(m, band[0], band[1], T.shot.r70), ratioScore(spread, T.shot.spread[0], T.shot.spread[1], T.shot.r70));
+      const s = Math.min(ratioScore(m, band[0], band[1], T.shot.r70), ratioScore(spread, T.shot.spread[0], T.shot.spread[1], T.shot.spreadR70 ?? T.shot.r70));
       dim('shots', { median: Math.round(m * 100) / 100, spread: Math.round(spread * 100) / 100, format, band }, s, source, `${lens.length} shots`);
     } else dim('shots', null, null, 'unmeasured', M?.one_take || cues?.look?.oneTake ? 'one-take film' : continuous ? 'continuous film: its seams are not hard cuts (declare them in the timeline)' : 'fewer than 3 shots');
   }
 
   // density
+  const D = T.density;
+  const Df = D.floor ?? { startsPerSec: D.startsPerSec, concurrent: D.concurrent, idleMax: D.idleMax };
   if (M && M.starts_per_s !== null && M.starts_per_s !== undefined) {
-    const s = Math.min(bandScore(M.starts_per_s, ...T.density.startsPerSec), M.concurrency === null ? 100 : bandScore(M.concurrency, ...T.density.concurrent), M.idle_share === null ? 100 : atMost(M.idle_share, T.density.idleMax));
+    const s = Math.min(tierBand(M.starts_per_s, D.startsPerSec, Df.startsPerSec), M.concurrency === null || M.concurrency === undefined ? 100 : tierBand(M.concurrency, D.concurrent, Df.concurrent),
+      M.idle_share === null || M.idle_share === undefined ? 100 : tierBand(M.idle_share, [0, D.idleMax], [0, Df.idleMax]));
     dim('density', { startsPerSec: M.starts_per_s, concurrency: M.concurrency, idle: M.idle_share }, s, 'measured');
   } else if (tweens.length && cues) {
     const total = cues.total;
@@ -459,14 +549,14 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
       conc += k;
       if (!k) busy++;
     }
-    const s = Math.min(bandScore(sps, ...T.density.startsPerSec), atMost(busy / total, T.density.idleMax));
+    const s = Math.min(tierBand(sps, D.startsPerSec, Df.startsPerSec), tierBand(busy / total, [0, D.idleMax], [0, Df.idleMax]));
     dim('density', { startsPerSec: Math.round(sps * 100) / 100, concurrency: Math.round((conc / total) * 100) / 100, idle: Math.round((busy / total) * 100) / 100 }, s, 'declared');
   } else dim('density', null, null, 'unmeasured', 'needs look-audit.py or the tween registry');
 
   // living holds
   {
     const v = M?.living_holds ?? forensics?.checks?.grammar?.holds?.live_share ?? null;
-    if (v !== null) dim('holds', v, atLeast(v, T.holds.livingMin), 'measured');
+    if (v !== null) dim('holds', v, tierBand(v, [T.holds.livingMin, 1], [T.holds.floor ?? T.holds.livingMin, 1]), 'measured');
     else dim('holds', null, null, 'unmeasured', 'needs look-audit.py or forensics.py');
   }
 
@@ -480,8 +570,8 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
     const over = Object.entries(kinds).filter(([k, n]) => n > T.seams.maxUses && !seams.some((s) => s.kind === k && s.signature));
     const mix = seams.length ? Object.fromEntries(Object.entries(kinds).map(([k, n]) => [k, n / seams.length])) : null;
     const d = mix ? tvd(mix, T.seams.mix) : null;
-    const parts = [atLeast(carried, T.seams.carriedMin), over.length ? 50 : 100];
-    if (d !== null && seams.length >= 5) parts.push(atMost(d, T.seams.mixTvdMax));
+    // the mix distance is reported, not scored: a dealt direction plays its own seams, and 'overused' catches a refrain
+    const parts = [tierBand(carried, [T.seams.carriedMin, 1], [T.seams.carriedFloor ?? T.seams.carriedMin, 1]), over.length ? 50 : 100];
     dim('seams', { carried: carried === null ? null : Math.round(carried * 100) / 100, overused: over.map(([k]) => k), mixDistance: d === null ? null : Math.round(d * 100) / 100 }, Math.min(...parts.filter((x) => x !== null)), M?.carried_share !== undefined && M?.carried_share !== null ? 'measured' : 'declared');
   } else dim('seams', null, null, 'unmeasured', 'no seams declared or measured');
 
@@ -490,9 +580,6 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
     let v = M?.cut_sync ?? null;
     let source = 'measured';
     // hard cuts land on a sound; continuity seams (velocity, morph, whip, ...) may float
-    const punch = new Set(['hard', 'colour', 'light', 'stepped']);
-    const carriedAt = new Set(seams.filter((s) => !punch.has(s.kind)).map((s) => s.at));
-    const hardCuts = [...new Set([...acts.filter((a) => !carriedAt.has(a)), ...seams.filter((s) => punch.has(s.kind)).map((s) => s.at)])];
     if (!v && cues && hardCuts.length) {
       const ev = (cues.events ?? []).map((e) => e.f);
       if (ev.length) {
@@ -501,8 +588,11 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
         source = 'declared';
       }
     }
+    const C = T.cutSync;
+    const nCuts = source === 'measured' && Array.isArray(M?.shot_lengths) ? M.shot_lengths.length - 1 : hardCuts.length;
     if (M?.one_take || cues?.look?.oneTake) dim('cut-sync', null, null, 'unmeasured', 'one-take film: no hard cut to sync');
-    else if (v) dim('cut-sync', v, Math.min(atLeast(v.within_1f, T.cutSync.within1f), atLeast(v.within_100ms, T.cutSync.within100ms, T.cutSync.within100ms + (T.cutSync.width100 ?? 0.2))), source);
+    else if (v && nCuts < (C.minCuts ?? 3)) dim('cut-sync', v, null, 'unmeasured', `${nCuts} hard cut(s): too few to read a sync (scored from ${C.minCuts ?? 3})`);
+    else if (v) dim('cut-sync', v, Math.min(tierBand(v.within_1f, [C.within1f, 1], [C.floor1f ?? C.within1f, 1]), tierBand(v.within_100ms, [C.within100ms, 1], [C.floor100ms ?? C.within100ms, 1])), source);
     else dim('cut-sync', null, null, 'unmeasured', 'no hard cuts or no sound events');
   }
 
@@ -511,7 +601,7 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
     const rows = forensics?.checks?.grammar?.carried ?? null;
     if (rows && rows.length) {
       const share = rows.filter((r) => r.ok).length / rows.length;
-      dim('velocity-seams', share, share === 1 ? 100 : Math.round(share * 100 * 0.7), 'measured');
+      dim('velocity-seams', share, tierBand(share, [1, 1], [T.velocitySeams?.floor ?? 0.5, 1]), 'measured');
     } else if (seams.some((s) => s.kind === 'velocity')) dim('velocity-seams', null, null, 'unmeasured', 'run forensics.py on the render');
   }
 
@@ -528,18 +618,18 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
   // colour: one hue family, neutral grounds in band, and the picture's colour (neutral share, no wash, the accent band, no second accent)
   if (M && M.hue_groups !== undefined) {
     const Tc = T.colour;
-    const parts = [M.hue_groups <= Tc.hueGroups ? 100 : M.hue_groups === 2 ? 60 : 0];
-    if (M.accent_p95 !== null && M.accent_p95 !== undefined) parts.push(atMost(M.accent_p95, Tc.accentMax));
-    if (M.ground_L !== null && M.ground_L !== undefined) parts.push(Tc.groundL.some(([lo, hi]) => M.ground_L >= lo && M.ground_L <= hi) ? 100 : 60);
-    if (M.ground_C !== null && M.ground_C !== undefined && Tc.groundCMax !== undefined) parts.push(M.ground_C <= Tc.groundCMax + 1e-9 ? 100 : 60);
-    if (M.ink_L !== null && M.ink_L !== undefined && M.ground_L > 0.5) parts.push(bandScore(M.ink_L, ...Tc.inkL));
+    const parts = [tierBand(M.hue_groups, [0, Tc.hueGroups], [0, Tc.hueGroupsFloor ?? Tc.hueGroups])];
+    if (M.accent_p95 !== null && M.accent_p95 !== undefined) parts.push(tierBand(M.accent_p95, [0, Tc.accentMax], [0, Tc.accentMaxFloor ?? 2 * Tc.accentMax]));
+    if (M.ground_L !== null && M.ground_L !== undefined) parts.push(Tc.groundL.some(([lo, hi]) => M.ground_L >= lo && M.ground_L <= hi) ? 100 : Tc.groundOff ?? 85);
+    if (M.ground_C !== null && M.ground_C !== undefined && Tc.groundCMax !== undefined) parts.push(tierBand(M.ground_C, [0, Tc.groundCMax + 1e-9], [0, Tc.groundCFloor ?? Tc.groundCMax + 0.01]));
+    if (M.ink_L !== null && M.ink_L !== undefined && M.ground_L > 0.5) parts.push(tierBand(M.ink_L, Tc.inkL, Tc.inkLFloor ?? [Tc.inkL[0] - 0.04, Tc.inkL[1] + 0.08]));
     const Pm = M.picture ?? {};
     const acc = Pm.accent;
     if (Tc.neutral) parts.push(tier(Pm.neutral, Tc.neutral.floor, Tc.neutral.target));
     if (Tc.saturatedMax) parts.push(tier(Pm.saturated_out, Tc.saturatedMax.floor, Tc.saturatedMax.target));
     if (Tc.washShare) parts.push(tier(Pm.wash_share, Tc.washShare.floor, Tc.washShare.target));
-    if (acc !== undefined && acc !== null && Tc.accent) parts.push(acc > Tc.accent[1] ? tier(acc, Tc.accentMax, Tc.accent[1]) : acc < Tc.accent[0] ? tier(acc, Tc.accent[0] / 3, Tc.accent[0]) : 100);
-    if (Pm.second_accent === true) parts.push(60);
+    if (acc !== undefined && acc !== null && Tc.accent) parts.push(tierBand(acc, Tc.accent, Tc.accentFloor ?? [Tc.accent[0] / 3, Tc.accentMax]));
+    if (Pm.second_accent === true) parts.push(Tc.secondAccent ?? 80);
     const got = parts.filter((x) => x !== null && x !== undefined);
     dim('colour', { hueGroups: M.hue_groups, accent: M.accent_p95, groundL: M.ground_L, groundC: M.ground_C ?? null, inkL: M.ink_L, neutral: Pm.neutral ?? null, saturated: Pm.saturated_out ?? null,
       washShare: Pm.wash_share ?? null, accentShare: acc ?? null, secondAccent: Pm.second_accent ?? null }, Math.min(...got), 'measured');
@@ -555,16 +645,16 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
       Pm.flat > (Tg.flatMax ?? 0.85) ? tier(Pm.flat, Fl.flatMax ?? 0.9, Tg.flatMax ?? 0.85) : tier(Pm.flat, Fl.flatMin ?? 0.25, Tg.flatMin ?? 0.43),
       tier(Pm.flat_frames_over, Fl.flatShare ?? 0.05, Tg.flatShare ?? 0.18),
       Pm.edges < (Fl.edgesMin ?? 0.006) ? 60 : tier(Pm.edges, Fl.edgesMax ?? 0.12, Tg.edgesMax ?? 0.059), // under the edge floor: an empty film
-      tier(Pm.saturated, Fl.saturatedMin ?? 0.022, Tg.saturatedMin ?? 0.06),
+      tier(Pm.saturated, Fl.saturatedMin ?? 0, Tg.saturatedMin ?? 0.06),
       tier(bleed, Fl.bleedShare ?? 0.5, Tg.bleedShare ?? 1),
       tier(Pm.falloff, Fl.falloffShare ?? 0, Tg.falloffShare ?? 0.35),
-      (Pm.skeleton_samples ?? 0) >= 2 ? 0 : 100,
+      tierBand(Pm.skeleton_samples ?? 0, [0, 1], [0, Fl.skeleton ?? 4]),
     ].filter((x) => x !== null);
     dim('picture', { flat: Pm.flat, edges: Pm.edges, falloff: Pm.falloff, saturated: Pm.saturated, bleed: Math.round(bleed * 100) / 100, skeleton: Pm.skeleton_samples ?? 0 }, Math.min(...parts), 'measured');
   } else dim('picture', null, null, 'unmeasured', 'needs look-audit.py (the picture floor)');
 
   // type: the layout boxes re-measured on the bands both families share; without boxes, the audit's own warnings
-  const tf = layout ? typeFaults(layout, T.type ?? typeTarget()) : null;
+  const tf = layout ? typeFaults(layout, T.type ?? typeTarget(), cues?.acts ?? {}) : null;
   if (tf) {
     const n = tf.faults.length;
     const shown = tf.faults.slice(0, 3).map((f) => `${f.id}: ${f.detail} (${f.frames} f)`);
@@ -580,32 +670,41 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
   // overlap: secondaries start before the primary reaches 90 %; the foreground lands ~20 f@60 before
   // the background; the next element enters 0-1 f before the previous leaves
   if (tweens.length >= 3) {
+    const O = T.overlap;
     const t90 = { arrive: 0.5, reposition: 0.75, leave: 0.95, linear: 0.9 };
     const parts = [];
     const sec = [];
+    // a primary is an element's move (not linear, not the camera's, up to primaryMax60)
+    const primaries = tweens.filter((t) => fam(t) !== 'linear' && !isCamera(t) && len60(t) <= (O.primaryMax60 ?? 120));
+    // a primary is clearly the longer move (a quarter longer at least): words of one staggered line are not each other's
     for (const b of tweens)
-      for (const a of tweens)
-        if (a !== b && a.to - a.from > b.to - b.from && a.from < b.from && b.from < a.to) {
+      for (const a of primaries)
+        if (a !== b && a.to - a.from >= 1.25 * (b.to - b.from) && a.from < b.from && b.from < a.to) {
           sec.push(b.from <= a.from + (t90[fam(a)] ?? 0.9) * (a.to - a.from));
           break;
         }
-    if (sec.length) parts.push(['secondary-before-90', sec.filter(Boolean).length / sec.length, T.overlap.secondaryBefore90]);
+    if (sec.length) parts.push(['secondary-before-90', sec.filter(Boolean).length / sec.length, O.secondaryBefore90]);
     const fg = [];
-    for (const bg of tweens.filter((t) => ((t.to - t.from) * 60) / fps >= 40))
-      for (const f of tweens.filter((t) => fam(t) === 'arrive' && t !== bg && t.from >= bg.from && t.to <= bg.to + f60(5) && ((t.to - t.from) * 60) / fps < 40)) {
+    const [bgLo, bgHi] = O.background60 ?? [40, Infinity];
+    for (const bg of tweens.filter((t) => fam(t) !== 'linear' && !isCamera(t) && len60(t) >= bgLo && len60(t) <= bgHi))
+      for (const f of tweens.filter((t) => fam(t) === 'arrive' && t !== bg && t.from >= bg.from && t.to <= bg.to + f60(5) && len60(t) < 40)) {
         const lead = ((bg.to - f.to) * 60) / fps;
-        fg.push(lead >= T.overlap.foregroundLead60[0] && lead <= T.overlap.foregroundLead60[1]);
+        fg.push(lead >= O.foregroundLead60[0] && lead <= O.foregroundLead60[1]);
       }
-    if (fg.length) parts.push(['foreground-lead', fg.filter(Boolean).length / fg.length, T.overlap.foregroundShare]);
+    if (fg.length) parts.push(['foreground-lead', fg.filter(Boolean).length / fg.length, O.foregroundShare]);
     const hand = [];
     for (const lv of tweens.filter((t) => fam(t) === 'leave'))
       for (const ar of tweens.filter((t) => fam(t) === 'arrive' && Math.abs(t.from - lv.to) <= f60(6))) {
-        const d = lv.to - ar.from; // frames the next element is in before the previous has left
-        hand.push(d >= T.overlap.enterBeforeLeave[0] - 1e-6 && d <= T.overlap.enterBeforeLeave[1] + 1e-6);
+        const d = ((lv.to - ar.from) * 60) / fps; // frames@60 the next element is in before the previous has left (negative: after)
+        hand.push(d >= O.enterBeforeLeave[0] - 1e-6 && d <= O.enterBeforeLeave[1] + 1e-6);
       }
-    if (hand.length) parts.push(['enter-before-leave', hand.filter(Boolean).length / hand.length, T.overlap.handoverShare]);
-    if (parts.length) {
-      const s = Math.min(...parts.map(([, v, min]) => atLeast(v, min)));
+    if (hand.length) parts.push(['enter-before-leave', hand.filter(Boolean).length / hand.length, O.handoverShare]);
+    // scored: the hand-overs (an exit and the next arrival), which the registry reads whole; which tween is an element's
+    // primary and which is the foreground the registry does not record (a line's rise and its words' fades, a camera's
+    // settle and the card it frames), so those two shares are reported, not scored
+    const scoredParts = parts.filter(([k]) => k === 'enter-before-leave');
+    if (scoredParts.length) {
+      const s = Math.min(...scoredParts.map(([, v, min]) => tierBand(v, [min, 1], [min / 2, 1])));
       dim('overlap', Object.fromEntries(parts.map(([k, v]) => [k, Math.round(v * 100) / 100])), s, 'declared');
     } else dim('overlap', null, null, 'unmeasured', 'no overlapping tweens recorded');
   } else dim('overlap', null, null, 'unmeasured', 'needs the tween registry');
@@ -614,7 +713,8 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
   const mean = scored.length ? Math.round((scored.reduce((n, d) => n + d.score, 0) / scored.length) * 10) / 10 : null;
   const weakest = [...scored].sort((p, q) => p.score - q.score).slice(0, 3).map((d) => d.name);
   const floor = look?.floor ? !!look.floor.pass : null;
-  const ship = mean !== null && mean >= 90 && scored.every((d) => d.score >= 70) && floor === true;
+  const bar = T.ship ?? { mean: 80, min: 70 };
+  const ship = mean !== null && mean >= bar.mean && scored.every((d) => d.score >= bar.min) && floor === true;
   return { mean, ship, floor, weakest, dims, measured: scored.filter((d) => d.source === 'measured').length, declared: scored.filter((d) => d.source === 'declared').length };
 };
 
@@ -644,7 +744,7 @@ const selfTest = () => {
     tw.push({ from: c - 26, to: c, token: 'launchIn', family: 'leave' });
     at = c;
   }
-  const cuesA = { fps: 60, total: 640, acts: Object.fromEntries([0, ...cuts].map((f, i, a) => [`a${i}`, { from: f, dur: (a[i + 1] ?? 640) - f }])), declared: { seams: cuts.map((f, i) => ({ at: f, kind: ['velocity', 'morph', 'hard', 'whip'][i] })) }, copy: [0, ...cuts].map((f) => ({ in: f })), events: cuts.map((f) => ({ f })) };
+  const cuesA = { fps: 60, total: 640, acts: Object.fromEntries([0, ...cuts].map((f, i, a) => [`a${i}`, { from: f, dur: (a[i + 1] ?? 640) - f }])), declared: { seams: cuts.map((f, i) => ({ at: f, kind: ['hard', 'morph', 'hard', 'hard'][i] })) }, copy: [0, ...cuts].map((f) => ({ in: f })), events: cuts.map((f) => ({ f })) };
   const lookA = { floor: { pass: true }, measures: { shot_lengths: [2, 2.33, 2.33, 2, 2], starts_per_s: 2.2, concurrency: 1.8, idle_share: 0.04, living_holds: 0.97, carried_share: 0.75, seams: 4, cut_sync: { within_1f: 0.75, within_100ms: 1 }, hue_groups: 1, accent_p95: 0.05, ground_L: 0.95, ink_L: 0.22 } };
   const rA = score({ cues: cuesA, layout: { tweens: tw, warnings: [] }, look: lookA, target: T, format: 'launch' });
   check(rA.dims.find((d) => d.name === 'front-loaded').score === 100 && rA.dims.find((d) => d.name === 'into-cuts').score === 100, 'arrivals on arrive curves and exits on leave curves into the cuts score 100');
@@ -655,9 +755,9 @@ const selfTest = () => {
   const rB = score({ cues: cuesA, layout: { tweens: tw2, warnings: [{ kind: 'type-size' }, { kind: 'type-size' }] }, look: { floor: { pass: false }, measures: { ...lookA.measures, hue_groups: 3, living_holds: 0.6 } }, target: T, format: 'launch' });
   check(rB.dims.find((d) => d.name === 'role-mix').score < 50 && !rB.ship, 'one symmetric curve for everything fails the role mix and the ship bar', `role-mix ${rB.dims.find((d) => d.name === 'role-mix').score}`);
   check(rB.dims.find((d) => d.name === 'staggers').score < 100, 'a metronome stagger (CV 0) is caught');
-  // overlap: a hand-over 0-1 f before the exit ends passes; a 10 f gap fails
-  const ov = score({ cues: cuesA, layout: { tweens: [{ from: 0, to: 30, token: 'buildIn', family: 'leave' }, { from: 29, to: 61, token: 'snapOut', family: 'arrive' }, { from: 100, to: 130, token: 'buildIn', family: 'leave' }, { from: 128, to: 160, token: 'snapOut', family: 'arrive' }, { from: 140, to: 200, token: 'strongInOut', family: 'reposition' }] }, target: T, format: 'launch' });
-  check(ov.dims.find((d) => d.name === 'overlap').value?.['enter-before-leave'] === 0.5, 'the next element entering 0-1 f before the exit ends is measured (one of two)', JSON.stringify(ov.dims.find((d) => d.name === 'overlap').value));
+  // overlap: the next element entering up to 6 f before the exit ends (or 3 f after it) passes; a 5 f gap fails
+  const ov = score({ cues: cuesA, layout: { tweens: [{ from: 0, to: 30, token: 'buildIn', family: 'leave' }, { from: 26, to: 58, token: 'snapOut', family: 'arrive' }, { from: 100, to: 130, token: 'buildIn', family: 'leave' }, { from: 135, to: 167, token: 'snapOut', family: 'arrive' }, { from: 140, to: 200, token: 'strongInOut', family: 'reposition' }] }, target: T, format: 'launch' });
+  check(ov.dims.find((d) => d.name === 'overlap').value?.['enter-before-leave'] === 0.5, 'the next element entering 4 f before the exit ends passes, one entering 5 f after it does not (one of two)', JSON.stringify(ov.dims.find((d) => d.name === 'overlap').value));
   check(score({ cues: cuesA, layout: { tweens: tw }, look: { ...lookA, floor: { pass: false } }, target: T, format: 'launch' }).ship === false, 'a failing floor blocks the ship bar whatever the mean');
   // shot lengths fall off as ratios; a one-take film has no cut to sync
   const shotsAt = (len) => score({ cues: { fps: 60, total: 600, acts: {}, declared: { seams: [{ at: 100, kind: 'hard' }] }, copy: [] }, look: { floor: { pass: true }, measures: { shot_lengths: [0.6, 0.8, 1.2, 1.5, 2, 2.4].map((x) => (x * len) / 1.35) } }, target: T, format: 'launch' }).dims.find((d) => d.name === 'shots').score;
@@ -693,10 +793,10 @@ const selfTest = () => {
   pair(
     'velocity-seams',
     score({ cues: cuesA, forensics: { checks: { grammar: { carried: [{ ok: true }, { ok: true }] } } }, target: T, format: 'launch' }),
-    score({ cues: cuesA, forensics: { checks: { grammar: { carried: [{ ok: true }, { ok: false }] } } }, target: T, format: 'launch' }),
-    'velocity-seams: every declared velocity seam carrying speed scores 100; one that does not fails',
+    score({ cues: cuesA, forensics: { checks: { grammar: { carried: [{ ok: true }, { ok: false }, { ok: false }] } } }, target: T, format: 'launch' }),
+    'velocity-seams: every declared velocity seam carrying speed scores 100; two of three that do not fail',
   );
-  pair('colour', withM({ hue_groups: 1, accent_p95: 0.05, ground_L: 0.95, ink_L: 0.22 }), withM({ hue_groups: 3, accent_p95: 0.2 }), 'colour: one hue on paper scores 100; three hue groups and a 20 % accent do not');
+  pair('colour', withM({ hue_groups: 1, accent_p95: 0.05, ground_L: 0.95, ink_L: 0.22 }), withM({ hue_groups: 9, accent_p95: 0.7 }), 'colour: one hue on paper scores 100; nine hue groups (past the house range) and the accent on 70 % of the frame do not');
   check(dimOf(withM({ hue_groups: 1, accent_p95: 0.05, ground_L: 0.35, ink_L: 0.2 }), 'colour').score === 100 && dimOf(withM({ hue_groups: 1, accent_p95: 0.05, ground_L: 0.74, ink_L: 0.14 }), 'colour').score === 100,
     'colour: the mid slate and the mid stone are house grounds (100)');
   pair(
@@ -709,7 +809,7 @@ const selfTest = () => {
     const C = T.colour;
     const atFloor = dimOf(withM({ ground_C: 0.008, picture: { neutral: C.neutral.floor, saturated_out: C.saturatedMax.floor, wash_share: C.washShare.floor, accent: 0.1 } }), 'colour').score;
     check(atFloor >= 70 && atFloor <= 72, 'colour: a picture exactly at the wash ceiling and the neutral floor scores 70', `${atFloor}`);
-    check(dimOf(withM({ ground_C: 0.04 }), 'colour').score === 60, 'colour: a ground at the accent chroma (C .04) is not a house ground (60)');
+    check(dimOf(withM({ ground_C: 0.04 }), 'colour').score < 70, 'colour: a ground at the accent chroma (C .04) is not a house ground (under 70)');
   }
   pair('type', score({ layout: { warnings: [] }, look: lookA, target: T, format: 'launch' }), score({ layout: { warnings: Array.from({ length: 4 }, () => ({ kind: 'type-size' })) }, look: lookA, target: T, format: 'launch' }), 'type: no role warnings score 100; four do not');
   {
@@ -755,6 +855,36 @@ const selfTest = () => {
     check(fS.score === 60 && fS.value === 4, 'type: a line past 61 %, a sentence past 75 %, three sizes at once and text under the ui role are four faults, one per text however many frames (60)', `${fS.score} ${fS.detail}`);
     const gaps = dimOf(score({ layout: { ...calm, typeBands: [['caption', 2.3, 4], ['statement', 5, 9], ['hero', 11, 23], ['giant', 40, 90]] }, look: lookA, target: T, format: 'launch' }), 'type');
     check(gaps.value >= 1, 'type: the bands an audit wrote into its JSON are the ones it is scored on (a name at 34.7 % falls between bands that do not meet)', `${gaps.value} ${gaps.detail}`);
+  }
+  // the declared dimensions read elements, not the camera or the creeps: a film carried by one camera with creeping
+  // holds, on-beat ticks and words moving together does not fail role-mix, staggers or overlap for them
+  {
+    const tw3 = [];
+    for (let k = 0; k < 6; k++) {
+      const at = k * 100;
+      tw3.push({ from: at, to: at + 400, token: 'linear', family: 'linear' }); // a creep under every hold
+      tw3.push({ from: at, to: at + 150, token: 'stdInOut', family: 'reposition' }); // the camera's move
+      for (let w = 0; w < 4; w++) tw3.push({ from: at + 4 + w * 7, to: at + 36 + w * 7, token: 'snapOut', family: 'arrive' }); // 4 words, even 7 f
+      tw3.push({ from: at + 70, to: at + 92, token: 'launchIn', family: 'leave' });
+      tw3.push({ from: at + 88, to: at + 120, token: 'glideOut', family: 'arrive' });
+    }
+    for (let j = 0; j < 5; j++) tw3.push({ from: 30 + j * 30, to: 42 + j * 30, token: 'hitPulse', family: 'arrive' }); // ticks on the beat (120 BPM)
+    for (let j = 0; j < 6; j++) tw3.push({ from: 500 + j, to: 530 + j, token: 'softOut', family: 'arrive' }); // six panels turning together
+    const r3 = score({ cues: { ...cuesA, bpm: 120 }, layout: { tweens: tw3 }, target: T, format: 'launch' });
+    const st = dimOf(r3, 'staggers');
+    check((st.score ?? 100) >= 70 && dimOf(r3, 'role-mix').score >= 70 && dimOf(r3, 'overlap').score >= 70,
+      'creeps, the camera, even 4-word staggers, beat-locked ticks and panels moving together do not fail role-mix, staggers or overlap',
+      `role-mix ${dimOf(r3, 'role-mix').score}, staggers ${st.score} ${JSON.stringify(st.value)}, overlap ${dimOf(r3, 'overlap').score} ${JSON.stringify(dimOf(r3, 'overlap').value)}`);
+    const metro = [];
+    for (let k = 0; k < 4; k++) for (let w = 0; w < 8; w++) metro.push({ from: k * 200 + w * 6, to: k * 200 + w * 6 + 30, token: 'snapOut', family: 'arrive' });
+    check(dimOf(score({ cues: cuesA, layout: { tweens: metro } , target: T, format: 'launch' }), 'staggers').score < 70, 'runs of 8 starts at an even 6 f (a metronome) still fail staggers');
+  }
+  // the measured dimensions are calibrated on the house ranges: a film at their edges scores 70 or more
+  {
+    const edge = withM({ starts_per_s: 1.33, concurrency: 4.29, idle_share: 0.44, living_holds: 0.83, cut_sync: { within_1f: 0.143, within_100ms: 0.286 }, shot_lengths: [0.8, 1, 1.2, 1.34, 4, 7, 8, 9.5].map((x) => x),
+      hue_groups: 8, ground_L: 0.13, ground_C: 0.0275, ink_L: 0.40, picture: { neutral: 0.19, saturated_out: 0.54, wash_share: 0.6, accent: 0.40, second_accent: true, flat: 0.28, flat_frames_over: 0.07, edges: 0.108, falloff: 0.01, saturated: 0, bleed_share: 0.25, skeleton_samples: 4 } });
+    const low = edge.dims.filter((d) => d.score !== null && d.score < 70 && ['density', 'holds', 'cut-sync', 'colour', 'picture'].includes(d.name)).map((d) => `${d.name} ${d.score}`);
+    check(low.length === 0, 'a film at the edges of the house ranges scores 70 or more on density, holds, cut-sync, colour and picture', low.join(', '));
   }
   pair(
     'picture',

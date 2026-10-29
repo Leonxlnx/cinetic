@@ -183,7 +183,7 @@ node scripts/grammar-score.mjs --cues out/cues.json --layout out/qa/layout-Film.
 - **The placeholder floor** (layout-audit, fails the film): no stand-in words, no grey bars standing in for text, no figure the kit draws larger than a small UI avatar, on any audited frame, tagged or not.
 - **The floor against a flat film** (look-audit, fails the film): the camera or ground moves on ≥ 70 % of the body (a read lock of up to 1 s counts as alive); two depth planes at different rates in ≥ 50 % of shots; ≥ 40 % of seams carried; a designed moment at least every 3 s; a light event in every act; a clear scale change on ≥ 30 % of cuts. **The picture floor:** some clean flat ground (not everything on texture), edges under a ceiling (not busy everywhere), colour mass, bleed and skeleton bars (target: 43-85 % flat ground with type beats on clean fields, edges ≤ 5.9 %, real colour mass, bleed in every act, focus falloff).
 - **Continuous motion** (forensics motion gates, fail the film): at most 0.6 one-frame snaps per 3 s outside a declared snap and one declared snap device per film; no run of 6 f@30 where nothing moves (every hold drifts 0.3–1 px/f, `holdDrift`); moves settle from peak to 20 % of their speed in a median ≥ 3.5 f@30 (`E.glideOut` over 16 f@60 or longer); at most 2 primary moves per 3 s; no move stops dead or is cut mid-ease (`landBeforeCut`). lint-film warns on the same in the source (`snap-step`, `hold-drift`, `unmount-moving`, `move-queue`). Fixes: `references/motion-tokens.md` §6 "Continuous motion".
-- **grammar-score:** mean ≥ 90, no dimension under 70 (or against `out/like.json` with a clip). Write the weakest dimension into the notes and fix it first.
+- **grammar-score:** mean ≥ 80, no dimension under 70 (or against `out/like.json` with a clip). Write the weakest dimension into the notes and fix it first.
 
 ### Step 8: Sound → `public/audio/soundtrack.wav`
 Read `references/sound.md` now.
@@ -345,7 +345,7 @@ Critic prompts say what changed, "Do not re-report fixed issues", "Don't propose
 
 **Ship gate**
 - The 12-dimension rubric: every dimension ≥ 3, Picture ≥ 4, Finish and Sound and sync = 5, mean ≥ 4.2; no open P0.
-- Every script passes (`copy-check` and `copy-check --ui src`, `probe`, `check-sync`, `forensics`, `av-audit --stems`, `lint-film --strict`, `grid-check`, `layout-audit` with its placeholder floor); `look-audit` passes both floors; the detail pass has no open difference a viewer could see; `grammar-score` mean ≥ 90 with no dimension under 70; the sound gates and `credits.py`; with a clip, `like.py guard` against it, and with a template, against its floor.
+- Every script passes (`copy-check` and `copy-check --ui src`, `probe`, `check-sync`, `forensics`, `av-audit --stems`, `lint-film --strict`, `grid-check`, `layout-audit` with its placeholder floor); `look-audit` passes both floors; the detail pass has no open difference a viewer could see; `grammar-score` mean ≥ 80 with no dimension under 70; the sound gates and `credits.py`; with a clip, `like.py guard` against it, and with a template, against its floor.
 - Stop after 5 rounds, or sooner once the gate is met; then say plainly what you would still change.
 
 ## 9. File index
