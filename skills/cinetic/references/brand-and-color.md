@@ -429,7 +429,10 @@ ground when it can; plan a light/dark sequence and flip it on carried transition
   `LOOK.whiteWorld`).
 - **Steps between them:** a raised surface (+0.01–0.08 L, or the ground with a dip shadow), a lit face (up to +0.10 L),
   hairlines, mute text (≥ 4.5:1). Contrast: statements ≥ 7:1, secondary lines ≥ 3:1 at caption size and up, anything
-  smaller ≥ 4.5:1, graphics and the accent ≥ 3:1.
+  smaller ≥ 4.5:1, graphics and the accent ≥ 3:1. A word set in the accent (a swapped word, a key word) over a busy
+  picture or on a light chip is text, not a graphic: it takes the kit theme's `accentText` (the accent moved in
+  lightness until it reads 4.5:1 on the theme's surface and raised faces, `textOn()` in lib/color.ts), while fills,
+  bars and marks keep `accent`.
 - **Ink stays ink.** A white radial wash laid over ink cards turns them into grey buttons.
 
 **Palettes with character, inside the bans.** The bans leave a big space. The risk inside it is "default": framework blue on flat grey, which a viewer reads as a template before any motion plays. Derive the palette from the world the name and the product live in, then let `palette.py` check it. Some starting worlds:

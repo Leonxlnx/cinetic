@@ -64,6 +64,35 @@ export const oklch = (L: number, C: number, h: number) => {
   return `rgb(${R}, ${G}, ${B})`;
 };
 
+/** Relative luminance (WCAG 2) of a colour. */
+const lumOf = (c: string) => {
+  const [r, g, b] = hexToRgb(c).map(lin);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+/** WCAG 2 contrast ratio of two colours, 1..21. */
+export const contrastRatio = (a: string, b: string) => {
+  const [x, y] = [lumOf(a), lumOf(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+};
+/**
+ * A colour as words on a surface: the same hue and chroma moved in lightness away from the surface (darker on a light
+ * one, lighter on a dark one) until it reads at `min`:1 on it (4.5, body-size type over a busy picture), or the colour
+ * itself when it already does. For an accent word on a light chip or page, where the accent's own lightness (set for
+ * fills and bars) reads about 3-4:1.
+ */
+export const textOn = (color: string, surface: string, min = 4.5): string => {
+  if (contrastRatio(color, surface) >= min) return color;
+  const [L, Cc, h] = toOklch(color);
+  const down = lumOf(surface) > 0.18;
+  for (let i = 1; i <= 80; i++) {
+    const L2 = down ? L - 0.01 * i : L + 0.01 * i;
+    if (L2 <= 0.02 || L2 >= 0.99) break;
+    const c = oklch(L2, Cc, h);
+    if (contrastRatio(c, surface) >= min) return c;
+  }
+  return down ? oklch(0.2, Cc * 0.5, h) : oklch(0.97, Cc * 0.3, h);
+};
+
 /**
  * The transient accent's progress at frame f: 0 (accent) until `hold` 60 fps frames after it landed
  * on `land`, then linear to 1 (ink) over `cool` 60 fps frames. House 18 + 13 (calm), 7 + 13 (crisp).

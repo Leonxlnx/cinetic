@@ -6,7 +6,7 @@
 // recipe re-colours the whole kit at once.
 import { C } from '../brand/tokens';
 import type { PhotoGrade } from '../fx/Photo';
-import { mixColor, oklch as fromLch, toOklch } from '../lib/color';
+import { mixColor, oklch as fromLch, textOn, toOklch } from '../lib/color';
 import { NEUTRAL, STAGE } from '../lib/look';
 
 export type KitRecipe = 'slateMid' | 'deepField' | 'stoneMid' | 'tintedPaper' | 'inkStage';
@@ -24,6 +24,7 @@ export type KitTheme = {
   line: string; // hairlines and dividers
   accent: string; // the one accent, at the lightness the ground needs
   accentInk: string; // text and glyphs drawn on the accent
+  accentText: string; // the accent as words on this theme's surface and raised faces (a swapped word, a key word): moved in lightness until it reads 4.5:1 on both; `accent` stays for fills, bars and marks
   accentSoft: string; // a quiet tint of the accent, under the saturated line (chips, the other bars, the selected row)
   accentDeep: string; // the accent at depth (the duotone shadow, a pressed button)
   second?: string; // the support hue beside the accent (lib/look.ts COLOUR.second): 10-30 % of the film, at the lightness the ground needs
@@ -55,6 +56,11 @@ const tokenSecond = (): string | undefined => (C as Record<string, string | unde
  * cards stay neutral.
  */
 export const kitTheme = (recipe: KitRecipe = STAGE.dark, accent: string = C.accent, opts: KitOptions = {}): KitTheme => {
+  const t = kitThemeBase(recipe, accent, opts);
+  return { ...t, accentText: textOn(textOn(t.accent, t.surface, 4.5), t.raised, 4.5) }; // readable on the card and on a lifted face
+};
+
+const kitThemeBase = (recipe: KitRecipe, accent: string, opts: KitOptions): Omit<KitTheme, 'accentText'> => {
   const [aL, aC, h] = toOklch(accent);
   const [, gC, gh] = toOklch(opts.greys ?? C.mute);
   const greyC = Math.min(NEUTRAL.houseC[1], gC);
