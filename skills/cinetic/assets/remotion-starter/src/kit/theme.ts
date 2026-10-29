@@ -16,7 +16,7 @@ export type KitTheme = {
   dark: boolean; // light type on a dark or mid-dark ground
   hue: number; // the accent's hue (degrees)
   ground: string; // the stage behind the product (neutral; the accent's hue at depth only for deepField, a colour event)
-  surface: string; // a card on the ground
+  surface: string; // a card on the ground (on a dark theme 8 L* or more over it: look-audit card-separation)
   raised: string; // a face lifted toward the key (a header, a selected row)
   well: string; // inset areas: a bar's track, an input
   text: string;
@@ -80,8 +80,8 @@ const kitThemeBase = (recipe: KitRecipe, accent: string, opts: KitOptions): Omit
     case 'deepField':
       return {
         recipe, dark: true, hue: h,
-        ground: at(0.38, 0.1), surface: n(0.42, 0.01), raised: n(0.47, 0.01), well: n(0.33, 0.01),
-        text: n(0.97, 0.005), mute: n(0.84, 0.008), line: n(0.54, 0.01),
+        ground: at(0.38, 0.1), surface: n(0.455, 0.01), raised: n(0.5, 0.01), well: n(0.33, 0.01),
+        text: n(0.97, 0.005), mute: n(0.85, 0.008), line: n(0.56, 0.01),
         accent: at(0.84, c(0.1)), accentInk: at(0.26, 0.06), accentSoft: soft(0.56), accentDeep: at(0.3, 0.09), second: secondAt(0.8),
         shade: rgbOf(n(0.14, 0.006)), shadeA: 0.34,
         tones: tones([0.62, 0.7, 0.56, 0.76, 0.66, 0.52]),
@@ -110,7 +110,7 @@ const kitThemeBase = (recipe: KitRecipe, accent: string, opts: KitOptions): Omit
     case 'inkStage':
       return {
         recipe, dark: true, hue: h,
-        ground: n(0.15, 0.008), surface: n(0.2, 0.008), raised: n(0.25, 0.008), well: n(0.12, 0.008),
+        ground: n(0.15, 0.008), surface: n(0.225, 0.008), raised: n(0.27, 0.008), well: n(0.12, 0.008),
         text: n(0.955, 0.006), mute: n(0.75, 0.008), line: n(0.3, 0.008),
         accent: at(0.74, c(0.13)), accentInk: n(0.18, 0.008), accentSoft: soft(0.34), accentDeep: at(0.28, 0.07), second: secondAt(0.74),
         shade: rgbOf(n(0.06, 0.006)), shadeA: 0.42,
@@ -121,7 +121,7 @@ const kitThemeBase = (recipe: KitRecipe, accent: string, opts: KitOptions): Omit
     default:
       return {
         recipe: 'slateMid', dark: true, hue: h,
-        ground: n(0.34, 0.008), surface: n(0.4, 0.008), raised: n(0.45, 0.008), well: n(0.3, 0.008),
+        ground: n(0.34, 0.008), surface: n(0.415, 0.008), raised: n(0.46, 0.008), well: n(0.3, 0.008),
         text: n(0.97, 0.005), mute: n(0.8, 0.008), line: n(0.5, 0.01),
         accent: at(0.8, c(0.12)), accentInk: n(0.2, 0.008), accentSoft: soft(0.5), accentDeep: at(0.32, 0.07), second: secondAt(0.78),
         shade: rgbOf(n(0.12, 0.006)), shadeA: 0.32,

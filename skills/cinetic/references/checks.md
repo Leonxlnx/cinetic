@@ -273,6 +273,8 @@ A one-take film is judged on 2 s segments and has no seam or cut items.
 | skeleton bars: glyphless grey bars in focus on a flat card or ground (not inside declared imagery or a mark) | no more than 3 in a frame (2 samples or more fail) | none |
 | `filler-shape`: faint shapes on the ground (0.015-0.07 L off it, ≥ 1.2 % of the frame, floating, flat, edged) that carry no text, icon or mark | on fewer than 3 samples or under 10 % of them (2 samples warn) | none |
 | `ground-haze`: the ground's light rising to a dome inside the frame over its brightest edge (a pool, a white haze, a fog vignette) | over 0.025 L on fewer than 3 samples or under 20 % of the measured ones (2 samples warn) | none; a key gradient from one side reads 0 |
+| `ground-plate`: a flat field (≥ 25 % of the frame, outside imagery) at L* 12-88, chroma under 0.12 and an L* range under 12: a flat grey or charcoal ground | on fewer than 3 body samples or under 10 % of them (2 samples and 3 % warn) | none: every product shot on the key's lit gradient or a blurred plate of the film's own picture; a flat neutral field is a clean page (L* 88+) or a black void (under 12) |
+| `card-separation`: on a dark ground (L* < 50), a flat panel floating inside the frame 1.5-8 L* off the ground | on fewer than 3 samples or under 20 % of the dark-ground samples (10 % warns) | none: dark cards 8 L* or more over the ground, a key-side rim and an inner top highlight (kit `Surface`) |
 | focus falloff: a crisp plane and a defocused one in the same frame | (target only) | ≥ 35 % of frames |
 
 Type reads large and frontal on clean grounds, so a film with every frame on relief, footage or grain fails

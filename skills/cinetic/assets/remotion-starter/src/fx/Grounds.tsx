@@ -3,7 +3,7 @@ import { Img } from 'remotion';
 import { C } from '../brand/tokens';
 import { clamp } from '../lib/anim';
 import { camera, type Shot, toScreen, weighShot } from '../lib/camera';
-import { mixColor, toOklch } from '../lib/color';
+import { mixColor, oklch, toOklch } from '../lib/color';
 import { type FilmCtx, fpsOf, sizeOf, uOf, useFilm } from '../lib/film';
 import { FILM_LIGHT, type FilmLight, keyDir } from '../lib/light';
 import type { Declares } from '../timeline';
@@ -37,12 +37,24 @@ import { hash01 } from './plates';
  *            (fx/Washes tilted: paper over the first third, an S-shaped
  *            ramp to the tint; the tint `light`, else the accent a fifth
  *            of the way to the base), drifting slowly
+ *   key      a lit gradient with a stated key: the key side lifted, the     a lit stage, a lit sweep of paper:
+ *            far side falling deep (KEY_GROUND: 12 L* or more across the    the place a product shot stands on
+ *            frame; on a dark base the far side near black), drifting on    when the film has no picture of
+ *            the wash's loop                                                its own for it
+ *   plate    a picture of the film's own (a photo, a still of its footage:  the film's own world behind the
+ *            `src`) blurred 24-40 px, veiled toward the base, lit by the    product, out of focus
+ *            key's gradient over it, breathing in and out slowly (no src:
+ *            the key)
  *
  * Numbers (GRAMMAR.hold): a lightness swing of 0.02-0.10 across the frame (house 0.06: you feel the key, you never see
  * a glow); the light drifts 6-30 px/s at 1080p (house 12) on loops of 9-16 s, so a hold over a ground never freezes;
  * the ground rides the camera at the background weight 0.25 (Planes: fg 1.0, mid 0.6, bg 0.25). look-audit.py's
  * ground-haze read fails a pool of light inside the frame above its threshold, and filler-shape fails faint shapes
  * that carry no text, icon or mark.
+ *
+ * A product shot never stands on a flat grey or charcoal field: a flat neutral ground is a clean page (L* 88 or more)
+ * or a black void (under 8), never the middle; every UI shot stands on a place (placeGrounds: the key, or a plate of the
+ * film's own picture). look-audit.py ground-plate fails a film whose frames sit on a flat grey or charcoal field.
  *
  * Variety: never the same ground on more than 2 consecutive shots (GROUND.run). groundKey() names a ground (its kind
  * and base), groundRuns() lists the runs that break the rule, dealGrounds() deals a film's grounds from a seed with
@@ -68,9 +80,28 @@ export const GROUND = {
   crop: 0.12, // share of an element's own width or height past a frame edge for it to count as cropped
 } as const;
 
-export type GroundKind = 'flat' | 'wash' | 'pools' | 'bars' | 'floor' | 'window' | 'tint';
+/**
+ * The key and the plate (house numbers): on a dark base the key side rises `dark.lit` (OKLCH L) and the far side falls
+ * `dark.deep`, never under `floorL` (no pure black); on paper the key side rises `light.lit` toward white and the far side
+ * falls `light.deep` into the paper's own shade. `stops`: the key side, the base, the far side along the key (shares of
+ * the plate's diagonal). The frame holds `range` L* or more across it (look-audit ground-plate reads a field under 12 L*
+ * as flat). A plate's picture is blurred `plate.blur` px at 1080p (24-40), veiled toward the base by `plate.veil`, and
+ * breathes between x`plate.push[0]` and x`plate.push[1]` over 2 x `plate.pushS` s (never a stop).
+ */
+export const KEY_GROUND = {
+  dark: { lit: 0.05, deep: 0.15 },
+  light: { lit: 0.04, deep: 0.12 },
+  floorL: 0.13,
+  stops: [0, 0.42, 1] as const,
+  range: 12,
+  plate: { blur: 32, blurRange: [24, 40] as const, veil: 0.42, push: [1.06, 1.1] as const, pushS: 14 },
+} as const;
+
+export type GroundKind = 'flat' | 'wash' | 'pools' | 'bars' | 'floor' | 'window' | 'tint' | 'key' | 'plate';
 /** Every kind. */
-export const GROUND_KINDS: readonly GroundKind[] = ['flat', 'wash', 'pools', 'bars', 'floor', 'window', 'tint'];
+export const GROUND_KINDS: readonly GroundKind[] = ['flat', 'wash', 'pools', 'bars', 'floor', 'window', 'tint', 'key', 'plate'];
+/** The places a product shot stands on: the key's lit gradient, or a plate of the film's own picture (placeGrounds). */
+export const PLACE_KINDS: readonly GroundKind[] = ['key', 'plate'];
 /** The colour grounds: a tilted tint on one or two acts where the structure has a lit page (asked by name; never the whole film). */
 export const TINT_KINDS: readonly GroundKind[] = ['tint'];
 /** The clean kinds a film gets unless it asks for more: no shape on the ground at all. */
@@ -86,6 +117,9 @@ export type GroundSpec = {
   key?: Pick<FilmLight, 'azimuth' | 'elevation'>; // house FILM_LIGHT
   drift?: number; // px/s at 1080p (house 12)
   seed?: number;
+  src?: string; // plate: the film's own picture (staticFile URL of a photo or a still of its footage)
+  blur?: number; // plate: px at 1080p (house 32, 24-40)
+  veil?: number; // plate: the share of the base over the picture (house 0.42)
 };
 
 export type GroundShape = {
@@ -127,7 +161,40 @@ export const washAlphas = (base: string, lift: number = GROUND.lift) => {
 };
 
 /** How bright each kind's shapes are against the lift (their peak lightness change over lift): light sources read brighter. */
-export const KIND_GAIN: Record<GroundKind, number> = { flat: 0, wash: 0, pools: 0.9, bars: 1.1, floor: 1.6, window: 1.0, tint: 0 };
+export const KIND_GAIN: Record<GroundKind, number> = { flat: 0, wash: 0, pools: 0.9, bars: 1.1, floor: 1.6, window: 1.0, tint: 0, key: 0, plate: 0 };
+
+/**
+ * The key's colours on a base: [key side, base, far side] (KEY_GROUND). On a dark base the key side lifts and the far
+ * side falls toward black (never under floorL); on paper the key side whitens a little and the far side falls into
+ * the paper's shade, so the frame holds 12 L* or more across it either way. Pure.
+ */
+export const keyTones = (base: string): [string, string, string] => {
+  const [L, Cc, h] = toOklch(base);
+  const dark = L < GROUND.darkL;
+  const k = dark ? KEY_GROUND.dark : KEY_GROUND.light;
+  const lit = oklch(clamp(L + k.lit, 0, 0.995), Cc * (dark ? 0.9 : 0.6), h);
+  const deep = oklch(Math.max(dark ? KEY_GROUND.floorL : 0.5, L - k.deep), Math.min(0.13, Cc * 1.1), h);
+  return [lit, base, deep];
+};
+
+/**
+ * Every product shot on a place: the grounds a stage dealt, with the shots `ui` names turned into the key (or, given
+ * the film's own picture `src`, a plate of it), the base kept (a tint stays a tint). A run of one place past GROUND.run
+ * shots takes the next base of `bases` (when given), so the no-repeat rule holds. Use it in a template's stage after
+ * dealGrounds. Pure.
+ */
+export const placeGrounds = (list: readonly GroundSpec[], ui: readonly boolean[], o: { src?: string; bases?: readonly string[]; blur?: number; veil?: number } = {}): GroundSpec[] => {
+  const out: GroundSpec[] = list.map((g, i) =>
+    ui[i] && g.kind !== 'tint' ? { ...g, kind: o.src ? ('plate' as const) : ('key' as const), ...(o.src ? { src: o.src, blur: o.blur, veil: o.veil } : {}) } : { ...g },
+  );
+  if (o.bases && o.bases.length > 1) {
+    for (let i = GROUND.run; i < out.length; i++) {
+      const run = out.slice(i - GROUND.run, i + 1).every((g) => groundKey(g) === groundKey(out[i]));
+      if (run) out[i] = { ...out[i], base: o.bases[(Math.max(0, o.bases.indexOf(out[i].base)) + 1) % o.bases.length] };
+    }
+  }
+  return out;
+};
 
 /** True when the ground puts no shape on its base (flat or wash): the clean ground every film starts from. */
 export const isClean = (g: Pick<GroundSpec, 'kind'>) => CLEAN_KINDS.includes(g.kind);
@@ -350,6 +417,7 @@ const GroundPlate: React.FC<{ frame: number; spec: GroundSpec; cam?: { shot: Sho
   const { width: W, height: H } = sizeOf(film);
   const abs0: React.CSSProperties = { position: 'absolute', left: 0, top: 0 };
   if (spec.kind === 'flat') return <div style={{ ...abs0, width: W, height: H, background: spec.base, ...style }} />;
+  if (spec.kind === 'key' || spec.kind === 'plate') return <PlaceGround frame={frame} spec={spec} cam={cam} style={style} />;
   if (spec.kind === 'tint')
     return (
       <div style={{ ...abs0, width: W, height: H, overflow: 'hidden', background: spec.base, ...style }}>
@@ -383,6 +451,42 @@ const GroundPlate: React.FC<{ frame: number; spec: GroundSpec; cam?: { shot: Sho
         if (!src) return null;
         return <Img key={i} src={src} style={{ ...abs, width: st.w, height: st.h, opacity: st.opacity, transformOrigin: '50% 50%', transform: `translate(${(st.x - st.w / 2).toFixed(2)}px, ${(st.y - st.h / 2).toFixed(2)}px) rotate(${st.rot.toFixed(3)}deg) scale(${st.scale.toFixed(5)})` }} />;
       })}
+    </div>
+  );
+};
+
+/**
+ * The key and the plate: the key's gradient baked as one dithered plate in full colour (keyTones: key side, base, far
+ * side), drifting on the wash's loop; a plate draws the film's picture under it, blurred, breathing and veiled toward
+ * the base, with the key's gradient laid over at half strength so the picture sits in the film's light.
+ */
+const PlaceGround: React.FC<{ frame: number; spec: GroundSpec; cam?: { shot: Shot; base: Shot }; style?: React.CSSProperties }> = ({ frame, spec, cam, style }) => {
+  const film = useFilm();
+  const { width: W, height: H } = sizeOf(film);
+  const u = uOf(film);
+  const abs: React.CSSProperties = { position: 'absolute', left: 0, top: 0 };
+  const s = groundState(frame, spec, film, cam);
+  const [lit, base, deep] = keyTones(spec.base);
+  const plate = spec.kind === 'plate' && !!spec.src;
+  const [a, m, b] = KEY_GROUND.stops;
+  const stops = plate
+    ? [{ at: a, color: lit, alpha: 0.5 }, { at: m, color: base, alpha: 0 }, { at: b, color: deep, alpha: 0.55 }]
+    : [{ at: a, color: lit }, { at: m, color: base }, { at: (m + b) / 2, color: mixColor(base, deep, 0.62) }, { at: b, color: deep }];
+  const size = Math.round(s.wash.size * GROUND.bake);
+  const key = bakePlate('linear', stops, size, size, { seed: spec.seed ?? 1 });
+  const P = KEY_GROUND.plate;
+  const t = frame / fpsOf(film);
+  const push = P.push[0] + (P.push[1] - P.push[0]) * 0.5 * (1 - Math.cos((2 * Math.PI * t) / (2 * P.pushS)));
+  const blur = clamp(spec.blur ?? P.blur, P.blurRange[0], P.blurRange[1]) * u;
+  return (
+    <div style={{ ...abs, width: W, height: H, overflow: 'hidden', background: plate ? spec.base : deep, ...style }}>
+      {plate && (
+        <>
+          <Img data-imagery="" src={spec.src as string} style={{ ...abs, width: W, height: H, objectFit: 'cover', filter: `blur(${blur.toFixed(1)}px)`, transformOrigin: '50% 50%', transform: `scale(${push.toFixed(5)})` }} />
+          <div style={{ ...abs, width: W, height: H, background: spec.base, opacity: clamp(spec.veil ?? P.veil) }} />
+        </>
+      )}
+      {key && <Img src={key} style={{ ...abs, width: s.wash.size, height: s.wash.size, transformOrigin: '50% 50%', transform: `translate(${s.wash.x.toFixed(2)}px, ${s.wash.y.toFixed(2)}px) rotate(${s.wash.angle.toFixed(3)}deg)` }} />}
     </div>
   );
 };

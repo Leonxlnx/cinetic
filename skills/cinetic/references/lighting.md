@@ -12,6 +12,16 @@ line unless it is a real part of the product's UI. **Every element in frame has 
 floats on the ground unless it carries text, an icon, a mark or the product's real state. `look-audit.py` fails a
 pool or haze over the ground (`ground-haze`) and faint shapes that carry nothing (`filler-shape`).
 
+**Every product shot stands on a place, never a flat grey field.** A flat neutral ground is a clean page (L* 88 or
+more) or a black void (under 12); the grey and charcoal between them reads as a field with no place. A UI shot stands
+on the key's lit gradient (`fx/Grounds` `key`: the key side lifted, the far side falling deep, 12 L* or more across the
+frame) or on a plate of the film's own picture (`plate`: a photo or a still of its footage, blurred 24-40 px, veiled
+toward the base, the key's gradient over it, breathing slowly). A template's stage turns its product shots into
+places with `placeGrounds(grounds, ui, { src })` and names the film's picture in `PLATE_SRC`. A dark card is lit too:
+8 L* or more over its ground (the kit's dark themes hold it), a rim on its key-side edges and an inner top highlight
+(kit `Surface`, `CARD_LIGHT`). `look-audit.py` fails a film on flat grey or charcoal grounds (`ground-plate`) and dark
+cards one step off their ground (`card-separation`).
+
 Every primitive here is a pure state function of the frame (`xxxState(frame, props, film)`, closed form, any order,
 any fps) plus a thin component drawn with transforms, opacity, clip paths and SVG polygons. Blur radii are fixed props
 (one shadow group, two ladder copies at most), never animated. Every fx exports `declares(props, film)`. Numbers are

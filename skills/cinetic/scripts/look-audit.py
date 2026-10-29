@@ -109,6 +109,18 @@ flat grounds; texture is an accent, not the ground of every shot:
                    edge, fitted smooth) rises to a dome inside the frame more than 0.025 L over its brightest edge
                    on >= 3 samples and >= 20 % of the measured ones: a pool of light or a white haze behind the
                    content, a vignette that reads as fog. A key gradient from one side reads 0 (warn from 2)
+  ground-plate     a product shot stands on a place: a flat field of a frame (16 px blocks at 480 wide with std < 1.5,
+                   connected, outside imagery and marks) covering >= 25 % of it at L* 12-88 with chroma
+                   (max - min of its RGB) under 0.12 and an L* range under 12 is a flat grey or charcoal field (a flat
+                   neutral ground is a clean page at L* 88 or more or a black void under 12; a lit gradient spans 12 L*
+                   or more; a colour flood is saturated). Fail on >= 3 body samples and >= 10 % of them (warn from 2
+                   samples and 3 %): stand the shot on the key's lit gradient or a blurred plate of the film's own
+                   picture (fx/Grounds 'key', 'plate', placeGrounds)
+  card-separation  a dark card reads off its ground: on a dark ground (L* < 50) a flat panel floating inside the frame
+                   (8 px blocks, std < 2.5, >= 2 % of the frame, filling >= 60 % of its box) 1.5-8 L* off the ground is
+                   a card one step off its own grey. Fail on >= 3 samples and >= 20 % of the dark-ground samples (warn
+                   from 10 %): 8 L* or more between card and ground, with a rim light and an inner top highlight
+                   (kit Surface)
   picture-target   (warn) the floor is cleared but the house target is not:
                    flat 0.43-0.85 and >= 18 % of frames over 60 % flat (every type beat on a clean field, or on
                    a plate dimmed and defocused behind it), edges <= 5.9 %, saturated >= 6 %, bleed in every
@@ -439,6 +451,113 @@ HAZE = dict(
     samples=3, share=0.20,  # fail: haze on this many samples and this share of the measured ones; warn from 2 samples
     cells=(16, 9), cover=0.3, tol=0.15, min_cells=24,  # ground cells, the ground share a cell needs, L off the ground, cells to fit
 )
+# a product shot stands on a place: a flat neutral ground is a clean page (L* >= 88) or a black void (< 12), never the middle
+GPLATE = dict(
+    block=16, flat_std=1.5,  # flat 16 px blocks at 480 wide (the picture-flat read)
+    field=0.25,  # a connected flat field covering this share of the frame or more is a ground
+    lo=12.0, hi=88.0,  # L* band of a grey or charcoal field (outside it: a black void, a clean page)
+    chroma=0.12,  # max - min of the field's RGB / 255 under this: grey (a colour flood is saturated)
+    range=12.0,  # L* range (p95 - p5) across the field under this: flat (a lit gradient spans more)
+    samples=3, share=0.10, warn_share=0.03,  # fail: this many body samples and this share; warn from 2 samples and 3 %
+)
+# a dark card reads off its ground: 8 L* or more between them
+CARD = dict(
+    block=8, flat_std=2.5, join=1.2,  # 8 px blocks at 480 wide; neighbours within 1.2 L* are one region
+    dark=50.0,  # a ground under this L* is dark
+    area=0.02, fill=0.6,  # a panel: >= 2 % of the frame, filling >= 60 % of its box, touching no frame edge
+    lo=1.5, hi=8.0,  # L* off the ground: under lo it is the ground itself, from hi it reads as a card
+    samples=3, share=0.20, warn_share=0.10,
+)
+
+
+def lstar(rgb):
+    """CIE L* of sRGB (any shape ending in 3), 0..100."""
+    x = rgb.astype(np.float32) / 255.0
+    lin = np.where(x <= 0.04045, x / 12.92, ((x + 0.055) / 1.055) ** 2.4)
+    Y = 0.2126 * lin[..., 0] + 0.7152 * lin[..., 1] + 0.0722 * lin[..., 2]
+    return np.where(Y > 0.008856, 116 * np.cbrt(Y) - 16, 903.3 * Y)
+
+
+def _blocks(rgb, b, keep=None):
+    """Block means (RGB) and luma std of b x b blocks; blocks mostly inside imagery or marks are never flat."""
+    h, w = rgb.shape[:2]
+    hb, wb = h // b, w // b
+    blk = rgb[: hb * b, : wb * b].reshape(hb, b, wb, b, 3).astype(np.float32)
+    mean = blk.mean(axis=(1, 3))
+    std = blk.mean(-1).std(axis=(1, 3))
+    if keep is not None:
+        kb = keep[: hb * b, : wb * b].reshape(hb, b, wb, b).mean(axis=(1, 3))
+        std = np.where(kb >= 0.5, std, 99.0)
+    return mean, std
+
+
+def ground_place(rgb, keep=None):
+    """ground-plate: the connected flat fields of the frame covering GPLATE field or more (a ground, a page, a flood),
+    and whether one of them is a flat grey or charcoal field (GPLATE); returns that one, else the largest."""
+    s = rgb.shape[1] / 480.0
+    mean, std = _blocks(rgb, max(4, int(round(GPLATE['block'] * s))), keep)
+    flat = std < GPLATE['flat_std']
+    if flat.sum() < 4:
+        return dict(field=0.0, dead=False)
+    n, lab, st, _ = cv2.connectedComponentsWithStats(flat.astype(np.uint8), connectivity=4)
+    if n <= 1:
+        return dict(field=0.0, dead=False)
+    Ls, chs = lstar(mean), (mean.max(-1) - mean.min(-1)) / 255.0
+    order = sorted(range(1, n), key=lambda c: -st[c, cv2.CC_STAT_AREA])
+    best = None
+    for c in order:
+        sel = lab == c
+        field = float(sel.mean())
+        if best is not None and field < GPLATE['field']:
+            break
+        L, ch = Ls[sel], chs[sel]
+        Lm, cm = float(np.median(L)), float(np.median(ch))
+        rng = float(np.percentile(L, 95) - np.percentile(L, 5))
+        dead = field >= GPLATE['field'] and GPLATE['lo'] < Lm < GPLATE['hi'] and cm < GPLATE['chroma'] and rng < GPLATE['range']
+        row = dict(field=round(field, 3), L=round(Lm, 1), chroma=round(cm, 3), range=round(rng, 2), dead=bool(dead))
+        if dead:
+            return row
+        best = best or row
+    return best
+
+
+def card_steps(rgb, keep=None):
+    """card-separation: on a dark ground, the L* step of each flat panel floating inside the frame (CARD)."""
+    s = rgb.shape[1] / 480.0
+    mean, std = _blocks(rgb, max(3, int(round(CARD['block'] * s))), keep)
+    flat = std < CARD['flat_std']
+    L = lstar(mean)
+    hb, wb = flat.shape
+    seen = np.zeros_like(flat)
+    regs = []
+    for y in range(hb):
+        for x in range(wb):
+            if not flat[y, x] or seen[y, x]:
+                continue
+            stack, pts = [(y, x)], []
+            seen[y, x] = True
+            while stack:
+                cy, cx = stack.pop()
+                pts.append((cy, cx))
+                for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    ny, nx = cy + dy, cx + dx
+                    if 0 <= ny < hb and 0 <= nx < wb and flat[ny, nx] and not seen[ny, nx] and abs(L[ny, nx] - L[cy, cx]) < CARD['join']:
+                        seen[ny, nx] = True
+                        stack.append((ny, nx))
+            ys, xs = [q[0] for q in pts], [q[1] for q in pts]
+            y0, y1, x0, x1 = min(ys), max(ys), min(xs), max(xs)
+            regs.append(dict(n=len(pts), touch=int(y0 == 0) + int(x0 == 0) + int(y1 == hb - 1) + int(x1 == wb - 1),
+                             fill=len(pts) / ((y1 - y0 + 1) * (x1 - x0 + 1)), L=float(np.median([L[q] for q in pts])), box=[x0, y0, x1, y1]))
+    grounds = [r for r in regs if r['touch'] >= 2]
+    if not grounds:
+        return dict(dark=False, weak=[])
+    g = max(grounds, key=lambda r: r['n'])
+    if g['L'] >= CARD['dark']:
+        return dict(dark=False, weak=[], ground=round(g['L'], 1))
+    tot = hb * wb
+    panels = [r for r in regs if r is not g and r['touch'] == 0 and r['n'] >= CARD['area'] * tot and r['fill'] >= CARD['fill']]
+    weak = [round(r['L'] - g['L'], 1) for r in panels if CARD['lo'] <= abs(r['L'] - g['L']) < CARD['hi']]
+    return dict(dark=True, ground=round(g['L'], 1), panels=len(panels), weak=weak)
 
 
 def _odd(n, s):
@@ -589,7 +708,7 @@ def pic_sample(P, f, rgb, gray, C, nong, edges, H=None, keep=None, L=None):
         H = (np.degrees(np.arctan2(B_, A_)) + 360) % 360 if H is None else H
         L = L_ if L is None else L
     filler, haze = filler_and_haze(rgb, L, edges, keep)
-    P['samples'].append(dict(f=f, filler=len(filler), filler_boxes=filler[:8], haze=haze, sat=round(float((C >= PIC['sat_c']).mean()), 4),
+    P['samples'].append(dict(f=f, filler=len(filler), filler_boxes=filler[:8], haze=haze, place=ground_place(rgb, keep), cards=card_steps(rgb, keep), sat=round(float((C >= PIC['sat_c']).mean()), 4),
                              sat_hsv=round(float(((hsv[..., 1] > 89) & (hsv[..., 2] > 64)).mean()), 4),
                              neu=round(float((C < PIC['neutral_c']).mean()), 4), hues=hue_hist(C, H, keep),
                              subject={k: (round(v, 3) if isinstance(v, float) else v) for k, v in sub.items()}, bars=len(bars), bar_boxes=bars[:12]))
@@ -900,6 +1019,13 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
     n_smp = max(1, len(P['samples']))
     filler_ok = not (len(fill_f) >= FILL['samples'] and len(fill_f) / n_smp >= FILL['share'])
     haze_ok = not (len(haze_f) >= HAZE['samples'] and len(haze_f) / max(1, len(hz)) >= HAZE['share'])
+    # ground-plate over the body samples (an end card may sit on a plain ground); card-separation over the dark-ground samples
+    placed = [s for s in smp if s.get('place')]
+    dead = [s for s in placed if s['place'].get('dead')]
+    plate_ok = not (len(dead) >= GPLATE['samples'] and len(dead) / max(1, len(placed)) >= GPLATE['share'])
+    darks = [s for s in P['samples'] if (s.get('cards') or {}).get('dark')]
+    weak = [s for s in darks if s['cards'].get('weak')]
+    cards_ok = not (len(weak) >= CARD['samples'] and len(weak) / max(1, len(darks)) >= CARD['share'])
     framed = [s for s in smp if s['subject'].get('found')]
     centred = [s['f'] for s in framed if s['subject'].get('centred')]
     T = PIC['target']
@@ -922,6 +1048,12 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
         haze=dict(frames=haze_f[:20], samples=len(haze_f), measured=len(hz), share=round(len(haze_f) / max(1, len(hz)), 3),
                   max=max([s['haze'] for s in hz] or [0.0]), median=round(float(np.median([s['haze'] for s in hz])), 4) if hz else None,
                   need=dict(lift=HAZE['lift'], samples=HAZE['samples'], share=HAZE['share']), ok=haze_ok, target_ok=haze_ok),
+        plate=dict(frames=[s['f'] for s in dead][:20], samples=len(dead), measured=len(placed), share=round(len(dead) / max(1, len(placed)), 3),
+                   fields=[{k: s['place'][k] for k in ('L', 'chroma', 'range', 'field')} for s in dead[:3]],
+                   need=dict(samples=GPLATE['samples'], share=GPLATE['share']), ok=plate_ok, target_ok=plate_ok),
+        cards=dict(frames=[s['f'] for s in weak][:20], samples=len(weak), dark=len(darks), share=round(len(weak) / max(1, len(darks)), 3),
+                   steps=[s['cards']['weak'][:3] for s in weak[:3]], grounds=[s['cards'].get('ground') for s in weak[:3]],
+                   need=dict(samples=CARD['samples'], share=CARD['share'], step=CARD['hi']), ok=cards_ok, target_ok=cards_ok),
         # depth of field is a target only: the motion floor (floor-depth) already asks for two planes at different rates
         falloff=dict(share=round(fall_share, 3), raw=round(float(np.mean([P['falloff_raw'][i] for i in body])) if body else 0.0, 3), target=T['falloff_share'], ok=True,
                      target_ok=fall_share >= T['falloff_share']),
@@ -962,6 +1094,7 @@ def picture_line(video, pf, framing, ok):
             f"saturated {pf['saturated']['mean'] * 100:.1f} % ({pf['wash']['frames_over'] * 100:.0f} % of frames over half), neutral {pf['neutral']['mean'] * 100:.0f} %, "
             f"accent {pf['accent']['mean'] * 100:.1f} %, bleed {pf['bleed']['share'] * 100:.0f} % of acts, glyphless bars max {pf['skeleton']['max_bars']}, "
             f"filler {pf['filler']['samples']} sample(s), haze max {pf['haze']['max']:.3f}, "
+            f"grey field {pf['plate']['samples']} sample(s), weak cards {pf['cards']['samples']} of {pf['cards']['dark']} dark, "
             f"centred {framing['centred_share']}; target {tgt}")
 
 
@@ -991,16 +1124,28 @@ def picture_flags(pf, framing, add, fps):
         'haze': f"the ground's light rises to a pool inside the frame on {pf['haze']['samples']} of {pf['haze']['measured']} samples (max {pf['haze']['max']:.3f} L over the brightest edge, "
                 f"limit {HAZE['lift']}): a haze, a light pool or a fog vignette behind the content. Light is motivated and subtle: a flat ground or a key gradient from one side "
                 f"(fx/Grounds wash, a swing of 0.02-0.10), no radial glow behind a line or a lockup",
+        'plate': f"{pf['plate']['samples']} of {pf['plate']['measured']} body samples ({pf['plate']['share'] * 100:.0f} %) stand on a flat grey or charcoal field "
+                 f"(first {pf['plate']['fields'][:1]}: L*, chroma, L* range, share of the frame): a product shot stands on a place. Give it the key's lit gradient "
+                 f"(fx/Grounds 'key': 12 L* or more across the frame, the far side deep) or a blurred, graded plate of the film's own picture ('plate', placeGrounds); "
+                 f"a flat neutral field is a clean page (L* 88+) or a black void (under 12), never the grey between",
+        'cards': f"{pf['cards']['samples']} of {pf['cards']['dark']} dark-ground samples ({pf['cards']['share'] * 100:.0f} %) hold a card one step off its own ground "
+                 f"(L* steps {pf['cards']['steps'][:1]} on grounds at L* {pf['cards']['grounds'][:1]}; under {CARD['hi']:.0f} reads as one grey): give dark cards "
+                 f"8 L* or more over the ground, a rim light on the key side and an inner top highlight (kit Surface, kit theme)",
         'wash': f"one colour washes the picture: saturated pixels {pf['wash']['saturated'] * 100:.0f} % of the frame (ceiling {PIC['saturated_max'] * 100:.0f} %), "
                 f"{pf['wash']['frames_over'] * 100:.0f} % of frames over half saturated (ceiling {PIC['wash_share'] * 100:.0f} %): grounds and UI neutral (C <= .025), "
                 f"the accent on what matters, imagery graded natural; declare a deliberate colour moment (cues declared.colour)",
     }
-    names = {'skeleton': 'skeleton-bars', 'filler': 'filler-shape', 'haze': 'ground-haze'}
+    names = {'skeleton': 'skeleton-bars', 'filler': 'filler-shape', 'haze': 'ground-haze', 'plate': 'ground-plate', 'cards': 'card-separation'}
+    hint = {'plate': GPLATE['warn_share'], 'cards': CARD['warn_share']}
     for key, msg in msgs.items():
+        if key not in pf:
+            continue
         if not pf[key]['ok']:
             at = pf[key]['frames'][0] if key in names and pf[key].get('frames') else 0
             add(names.get(key, f'picture-{key}'), 'fail', at, msg)
         elif key in ('filler', 'haze') and pf[key]['samples'] >= 2:  # under the floor: a review hint
+            add(names[key], 'warn', pf[key]['frames'][0], msg)
+        elif key in hint and pf[key]['samples'] >= 2 and pf[key]['share'] >= hint[key]:
             add(names[key], 'warn', pf[key]['frames'][0], msg)
     if pf['ok'] and not pf['target']['ok']:
         why = {
@@ -1013,6 +1158,8 @@ def picture_flags(pf, framing, add, fps):
             'skeleton': 'glyphless bars',
             'filler': 'filler shapes',
             'haze': 'haze over the ground',
+            'plate': 'a flat grey or charcoal ground',
+            'cards': 'dark cards one step off their ground',
             'wash': f"saturated {pf['wash']['saturated'] * 100:.0f} % (target <= {T['saturated_max'] * 100:.0f} %), {pf['wash']['frames_over'] * 100:.0f} % of frames over half saturated (target <= {T['wash_share'] * 100:.0f} %)",
             'neutral': f"neutral pixels {pf['neutral']['mean'] * 100:.0f} % (target >= {T['neutral_min'] * 100:.0f} %: grounds and surfaces neutral)",
             'accent': f"the accent's hue family {pf['accent']['mean'] * 100:.1f} % of the frame (target {T['accent'][0] * 100:.0f}-{T['accent'][1] * 100:.0f} %, on what matters)",
@@ -2351,6 +2498,28 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         key = (1.0 - (xx / w + yy / h) / 2.0) * 12.0  # lighter toward the upper left, the key's side
         rep = run_pic('key-gradient', [line_on(lifted(void, key), i) for i in range(60)])
         check(not has(rep, 'ground-haze'), 'a key gradient from one side passes ground-haze', json.dumps({k: rep.get('picture', {}).get('haze', {}).get(k) for k in ('max', 'samples')}))
+        # --- ground-plate: product UI on a flat charcoal field fails; the same UI on the key's lit gradient (about 26 L*
+        # across) passes, and so do a black void and a clean page
+        rep = run_pic('grey-field', [ui_on(slate, i) for i in range(60)])
+        check(bool(has(rep, 'ground-plate', 'fail')), 'product UI on a flat charcoal field fails ground-plate', json.dumps(rep.get('picture', {}).get('plate')))
+        sweep = (1.0 - (xx / w + yy / h) / 2.0)[..., None]
+        keyed = np.clip(np.array((22, 24, 27), np.float32) + sweep * np.array((58, 61, 63), np.float32), 0, 255).astype(np.uint8)
+        rep = run_pic('key-field', [ui_on(keyed, i) for i in range(60)])
+        check(not has(rep, 'ground-plate'), 'the same UI on the key\'s lit gradient passes ground-plate', json.dumps(rep.get('picture', {}).get('plate')))
+        rep = run_pic('void-page', [ui_on((14, 15, 17), i) for i in range(30)] + [ui_on((236, 238, 241), i) for i in range(30)])
+        check(not has(rep, 'ground-plate'), 'a black void and a clean page pass ground-plate', json.dumps(rep.get('picture', {}).get('plate')))
+        # --- card-separation: a dark card 4 L* off its dark ground fails; 14 L* off with the same content passes
+
+        def dark_card(card_col, i):
+            img = np.full((h, w, 3), (30, 33, 36), np.uint8)
+            x0 = int(150 + i * 0.3)
+            cv2.rectangle(img, (x0, 60), (x0 + 210, 210), card_col, -1)
+            text_rows(img, x0 + 16, 90, ['Coast series'], 0.5, (236, 238, 241))
+            return img
+        rep = run_pic('card-weak', [dark_card((40, 43, 47), i) for i in range(60)])
+        check(bool(has(rep, 'card-separation', 'fail')), 'a dark card 4 L* off its dark ground fails card-separation', json.dumps(rep.get('picture', {}).get('cards')))
+        rep = run_pic('card-strong', [dark_card((66, 70, 75), i) for i in range(60)])
+        check(not has(rep, 'card-separation'), 'the same card 14 L* off its ground passes card-separation', json.dumps(rep.get('picture', {}).get('cards')))
 
     if part in ('all', 'b'):
         # --- framing-hold and floor-device: a still frame held for 5 s; the rich film moves through both

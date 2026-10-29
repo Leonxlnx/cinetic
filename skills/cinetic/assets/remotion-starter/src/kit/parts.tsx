@@ -84,15 +84,29 @@ export const castShadow = (h: number, key: { azimuth: number; elevation: number 
 export const keyAngle = (azimuth: number = KIT_KEY.azimuth) => (((azimuth + 180) % 360) + 360) % 360;
 
 /**
+ * A dark card's material (house numbers): the rim light on its key-side edges (white at `rim`), an inner top
+ * highlight (`top`: a 1 px line along the top edge and a soft glow `glow` px deep fading down at `glowA`), and the far
+ * edges falling into shade (`far`). The theme keeps the card 8 L* or more over its ground (kit/theme.ts): a dark card
+ * reads off its ground by light, never as one grey a step off another (look-audit card-separation).
+ */
+export const CARD_LIGHT = { rim: 0.16, top: 0.1, glow: 22, glowA: 0.055, far: 0.22 } as const;
+
+/**
  * The shadows of a surface `lift` px above its ground under the key: a tight contact shadow and a cast
- * shadow thrown away from the light, plus a hairline on the lit edge. One box-shadow value.
+ * shadow thrown away from the light, plus a hairline on the lit edge; on a dark theme the card's material too
+ * (CARD_LIGHT: the key-side rim, the inner top highlight, the far edges in shade). One box-shadow value.
  */
 export const surfaceShadow = (t: KitTheme, lift: number, u = 1) => {
   const c = castShadow(lift * u);
   const contact = `0 ${(2 * u).toFixed(2)}px ${(KIT_KEY.contact.blur * u).toFixed(2)}px ${shadeRgba(t, KIT_KEY.contact.alpha * (t.shadeA / 0.32))}`;
   const cast = `${c.dx.toFixed(2)}px ${c.dy.toFixed(2)}px ${c.blur.toFixed(2)}px ${shadeRgba(t, c.alpha * (t.shadeA / 0.24))}`;
-  const edge = `inset ${(1.5 * u).toFixed(2)}px ${(1.5 * u).toFixed(2)}px 0 rgba(255, 255, 255, ${t.dark ? 0.08 : 0.5})`;
-  return `${edge}, ${contact}, ${cast}`;
+  if (!t.dark) return `inset ${(1.5 * u).toFixed(2)}px ${(1.5 * u).toFixed(2)}px 0 rgba(255, 255, 255, 0.5), ${contact}, ${cast}`;
+  const L = CARD_LIGHT;
+  const rim = `inset ${(1.2 * u).toFixed(2)}px ${(1.2 * u).toFixed(2)}px 0 rgba(255, 255, 255, ${L.rim})`;
+  const top = `inset 0 ${(1 * u).toFixed(2)}px 0 rgba(255, 255, 255, ${L.top})`;
+  const glow = `inset 0 ${(L.glow * u).toFixed(2)}px ${(L.glow * 1.4 * u).toFixed(2)}px ${(-L.glow * 0.8 * u).toFixed(2)}px rgba(255, 255, 255, ${L.glowA})`;
+  const far = `inset ${(-1 * u).toFixed(2)}px ${(-1 * u).toFixed(2)}px 0 ${shadeRgba(t, L.far)}`;
+  return `${rim}, ${top}, ${glow}, ${far}, ${contact}, ${cast}`;
 };
 
 /** A face lit by the key: the fill lifted on the light's side, its own colour mid-way, a touch of shade on the far side. */
