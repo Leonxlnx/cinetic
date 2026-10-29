@@ -13,17 +13,26 @@ export type RollStep = { at: number; value: number };
 /**
  * Steps of a count from a to b over [start, start + dur] on `ease`: one step on every whole frame
  * where the shown integer changes, so a fast stretch ticks every frame and the tail slows down.
+ * The last value lands on the end frame (the cue the count resolves on) when the slow tail would flip it
+ * alone a few frames before (`holdGap` frames or more after the step before it, 3 f at 60 fps): the
+ * count holds the value before it until then, because a lone low digit changing in a still frame just
+ * before the hit reads as a glitch no cue explains.
  * The step frames are integers: put ticks on them (thin them first if they come every frame:
  * thinSteps).
  */
-export const countSteps = (a: number, b: number, start: number, dur: number, ease: Ease = E.out): RollStep[] => {
-  const out: RollStep[] = [];
+export const countSteps = (a: number, b: number, start: number, dur: number, ease: Ease = E.out, holdGap: number = Math.max(2, Math.round((3 * fpsOf()) / 60))): RollStep[] => {
+  const raw: RollStep[] = [];
   let last = Math.round(a);
-  for (let F = Math.ceil(start); F <= Math.ceil(start + dur); F++) {
+  const end = Math.ceil(start + dur);
+  for (let F = Math.ceil(start); F <= end; F++) {
     const v = Math.round(mix(a, b, prog(F, start, start + dur, ease)));
-    if (v !== last) out.push({ at: F, value: (last = v) });
+    if (v !== last) raw.push({ at: F, value: (last = v) });
   }
-  return out;
+  // the slow tail only: the last gap at least holdGap and wider than the one before it (a linear count keeps its pace)
+  const n = raw.length;
+  const gap = (i: number) => raw[i].at - raw[i - 1].at;
+  if (n >= 2 && raw[n - 1].at < end && gap(n - 1) >= holdGap && (n < 3 || gap(n - 1) > gap(n - 2))) raw[n - 1] = { at: end, value: raw[n - 1].value };
+  return raw;
 };
 
 /** House numbers of a count that grows as it is read: 60 fps frames a step, the growth a step, the share of the total where it jumps. */

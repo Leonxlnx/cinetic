@@ -15,7 +15,8 @@
  *   7. fx/Reels maskListState(): hard one-row steps every 10 f, the mask's alphas, the selected row at 1.
  *   8. fx/Resize carry: no creep, front-loaded from the cut frame, home by 20 f.
  *   9. fx/Grids radiateState(): bornAt, per-ring speeds and the flood.
- *  10. lib/handoff counterCreep(), fx/Roll growthSteps() (house cadence, and `within`: a one-bar window).
+ *  10. lib/handoff counterCreep(), fx/Roll growthSteps() (house cadence, and `within`: a one-bar window), countSteps() (an
+ *      eased count lands its last value on the end frame instead of flipping it alone in the slow tail; a linear one keeps its steps).
  *  11. fx/DitherBands ditherBandsState(): the switched share follows E.stdInOut over 16 f at 60 fps (8 at 30),
  *      cells only ever switch on, the runs hold exactly the switched cells, declares() a stepped run and a seam.
  *  12. lib/camera camPath(), camVel(): moves add and chain without a hold, zoom in log space, the velocity of the
@@ -138,6 +139,7 @@ console.log(JSON.stringify({
   floodOff: [Gr.radiateState(300, { start: 100, births: [100], flood: { at: 100 }, x: 300, y: 540 }, film60).flood, Gr.radiateState(300, { start: 100, births: [100], flood: { at: 100 } }, film60).flood],
   creep: Ho.counterCreep(160, 100, {}, 60),
   growth: Ro.growthSteps(0, 3412, {}, 60),
+  count: [Ro.countSteps(0, 100, 0, 60, A.E.out, 3), Ro.countSteps(0, 20, 0, 60, A.E.linear, 3)],
   growthBar: [Ro.growthSteps(100, 12840, { within: 100 }, 60), Ro.growthSteps(100, 12840, { within: 100 }, 30), Ro.growthSteps(100, 40, { within: 100 }, 60)],
   bands: range(38, 58).map((f) => { const s = Db.ditherBandsState(f, { at: 40 }, film60); return { f, share: s.share, count: s.count, n: s.cells, cols: s.cols, rows: s.rows, done: s.done, cellsInRuns: s.runs.reduce((a, r) => a + Math.round(r.w / s.cell), 0), want: A.E.stdInOut(Math.min(1, Math.max(0, (f - 40) / 16))) }; }),
   bands30: [Db.ditherBandsFrames({ at: 20 }, film30), Db.ditherBandsState(28, { at: 20 }, film30).done, Db.ditherBandsState(27, { at: 20 }, film30).done],
@@ -277,6 +279,9 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   result(vals[0] === 0 && vals.every((v, i) => i === 0 || v > vals[i - 1]) && vals[vals.length - 1] === 3412, 'growthSteps: 0, rising every step, ending on the total', vals.join(','));
   result(g.every((s, i) => i === 0 || s.at - g[i - 1].at === 6) && g[g.length - 1].at <= 90, 'growthSteps: a step every 6 f at 60 fps, 3,412 inside 1.5 s', `last at ${g[g.length - 1].at}`);
   const fits = P.growthBar.map((x) => ({ last: x[x.length - 1], rising: x.every((s, i) => i === 0 || s.value > x[i - 1].value) }));
+  const [eased, lin] = P.count;
+  result(eased[eased.length - 1].at === 60 && eased[eased.length - 1].value === 100 && eased[eased.length - 2].at < 50 && lin.every((s, i) => i === 0 || s.at - lin[i - 1].at === 3),
+    'countSteps: an eased count holds 99 through its tail and lands 100 on the end frame; a linear count keeps a step every 3 f', `${eased.slice(-3).map((s) => `${s.value}@${s.at}`).join(' ')} | linear ${lin.length} steps`);
   result(fits.every((x, i) => x.rising && x.last.value === [12840, 12840, 40][i] && x.last.at <= 200), 'growthSteps within: 12,840 in a one-bar window at 60 and 30 fps, a small total too, rising to the total inside it', fits.map((x) => `${x.last.value}@${x.last.at}`).join(', '));
 }
 // 11. dither bands
