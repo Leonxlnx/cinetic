@@ -30,6 +30,13 @@ A picture is used where the shot needs it, not everywhere: a film of 6-8 lines t
 2-4 beats (an opening world, proof of people, the product in use) and builds the rest in type and UI. A shot that
 needs a person and has none is a hole the viewer sees; a shot that needs a diagram and gets a stock photo is filler.
 
+**Show the product when a line claims something about it.** "Its cap counts every sip" over a stock bottle with an
+ordinary cap is a claim the picture does not prove, and a viewer feels the gap. A line about what the product's part
+does gets the product doing it: the brand's own photos or footage of that part (`brand.py`, the user's files), else a
+built render or a close cut of the moment of use followed by the result in the UI (the sip, then the ring ticks up in
+the app on the same beat). A stock object stands in for the world round the product, never for the product itself;
+when there is no picture of the product, say what the app shows instead and show that.
+
 ## 1. The licence rule and the sources
 
 `assets.mjs` takes only licences that need no credit, so **nothing on screen credits a picture**. `get` writes a
@@ -189,6 +196,14 @@ What makes a picture read as chosen:
 - **One grade, one card language.** A set graded together is a shoot; a set left as downloaded is a mood board.
 - **Variety inside the set.** A river or a wall mixes close-ups and wider frames, ages, places and colours of
   clothing, so it reads as many people, not one shoot repeated; never the same picture twice in view.
+- **A cast that varies across beats.** One muted shoot of one couple in every beat reads as a single stock series.
+  Find 2-3 shoots with their own people, places and light, styled with intent (saturated where the film allows), and
+  mix photo, the product's UI and footage in a stream. `castPlan(beats, pictures)` (`src/kit/real.ts`) deals each beat
+  its own pictures: no shoot or person in more than 2 beats, never the shoot of the beat before. Name a shoot's files
+  `<shoot>-<moment>` (`assets.mjs get --name`) and declare who is in them in `public/cast.json`
+  (`{"maya-*": {"shoot": "cafe", "people": ["maya"]}}`, `"hero": true` for a film's one protagonist): `data-check.mjs`
+  fails the same photograph, or a declared shoot or person, in more than half the beats (2 at least; `--max-beats`),
+  and warns on a shoot it reads from the file names.
 - **Real resolution.** 2400 px stills for a full frame, 1200 px is plenty for a card; 1080p footage.
 
 What makes it stock, and is refused: handshakes, people pointing at screens or smiling into the lens with nothing
@@ -204,6 +219,11 @@ corner, mixed grades, and anything with a readable brand or sign.
 - In a window (`FootageWindow`) a clip is an object in the frame; full frame (`fx/Footage`) it is the world. Keep
   the camera alive on top of footage (a push or drift), and carry speed across cuts.
 - A speed ramp or a freeze on the music's accent belongs to `fx/FootageRamp` (`references/camera.md`).
+- **Thumbnails, filmstrips and reels show distinct moments.** A strip of six frames from one locked-off shot is the same
+  still six times at thumbnail size. Sample the film's own footage across its shots and clips: `thumbsFrom(clips, n)`
+  deals frames round the clips (neighbours never from one clip), `stripMoments(dur, n, { cuts })` spreads one clip's
+  frames over its shots; extract each at its time (`ffmpeg -ss <t>`) or draw it live from the clip. `data-check.mjs`
+  fails three numbered frames in a row that are one picture.
 
 ## 8. Works and archives as the world
 
@@ -236,6 +256,10 @@ the script leads: one clean line at a time, each with its own text animation, th
   writes the track from the same state the film draws (`riverBoxes` for an ArcRiver, the masonry boxes for a wall,
   a card's own box), e.g. in a one-off `npx tsx -e` that prints `JSON.stringify(pictureTrack(...))` to
   `out/imagery.json`.
+- **The material holds up when paused.** `node scripts/data-check.mjs src` fails a strip of one picture
+  (`thumb-repeat`), one photograph in more than half the beats (`photo-repeat`), a shoot or person declared in
+  `public/cast.json` in more than half the beats (`cast-repeat`), and the product data a still reveals: weekdays that are not the calendar's, counts that
+  are not their lists, a waveform built from the bar index (`references/product-ui.md` §2.1).
 - The picture floor (`references/checks.md`) counts real imagery toward edges and colour mass, and graphic effects
   just as well; grey cards and glyphless bars where content should be fail it (skeleton bars), and a drawn figure,
   landscape or product where a photo belongs fails the review (`references/taste-and-slop.md` D18).

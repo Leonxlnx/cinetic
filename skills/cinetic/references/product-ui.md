@@ -12,7 +12,7 @@ takes the film context or reads it inside a component.
 
 **Contents**
 1. [The grammar in one screen](#1-the-grammar-in-one-screen)
-2. [The data module](#2-the-data-module)
+2. [The data module](#2-the-data-module) (2.1 [Material realism](#21-material-realism-what-a-paused-frame-is-checked-against))
 3. [Layout from data](#3-layout-from-data)
 4. [State transitions](#4-state-transitions)
 5. [The product kit](#5-the-product-kit)
@@ -75,7 +75,7 @@ export type YMD = [number, number, number];
 export type Invoice = { id: string; client: string; cents: number; due: YMD; paid: boolean };
 export type Reminder = { invoice: string; status: 'queued' | 'sent' };
 
-export const TODAY: YMD = [2026, 9, 14];
+export const TODAY: YMD = [2026, 9, 14]; // the film's own day (kit/real.ts FILM_DATE): every date below sits round it
 export const INVOICES: Invoice[] = [
   { id: 'inv-0141', client: 'Marlow & Reyes', cents: 184_000, due: [2026, 9, 15], paid: false },
   { id: 'inv-0142', client: 'Alder Dental', cents: 42_500, due: [2026, 9, 16], paid: false },
@@ -130,6 +130,35 @@ What the story asserts catch, each a defect that is easy to ship and obvious to 
 - **Before and after share ids.** When the product changes things, write the states as lists (`BEFORE`, `AFTER`, `FINAL`) whose items share ids, so an item can travel between layouts and keep its label. Assert what the after state promises: no overlaps, everything inside the visible window, counts that match the copy.
 - **The product only changes the future.** Assert that nothing before "now" moved: replanning the past is a UI-truth defect.
 - **One meaning per colour.** If the accent means "now" or "new", it never also marks an error or a success. A red ring meaning both "clash" and "done" was flagged.
+
+### 2.1 Material realism: what a paused frame is checked against
+
+A viewer reads a paused frame like a screenshot, and four details give a made-up product away in a second. `src/kit/real.ts`
+computes each of them right; `scripts/data-check.mjs` fails the hand-typed ones in the source and the pictures.
+
+- **Dates come from the film's own day.** `FILM_DATE` (in `kit/real.ts`) is the release day; set it when the film starts.
+  Every date on screen is computed from it, never typed: `day(FILM_DATE, -1)` is yesterday, `fmtDay(d, 'dmy')` prints
+  "Thu 29 Oct" with the calendar's weekday, `weekOf()` gives this week Monday to Sunday ("Oct 26 – Nov 1"), `relDay()`
+  says Today / Yesterday / the weekday. A typed "Tue 28 Oct" in a year where the 28th is a Wednesday, "Oct 20 – 26" as
+  "this week" when it ran Tuesday to Monday last week, or a September date in a film released in October are the tells.
+  `sampleWorld()` is seen on `FILM_DATE` too.
+- **A count is its list.** "14 today" sits over 14 entries, and a dense screen shows at least 8 of them (`LIST.minRows`);
+  the rest run past the fold or sit behind a quiet "+6 earlier" row. Build the log with `dayLog(seed, { count, total,
+  labels })` (irregular times through the day so far, amounts that sum to the total to the unit), show it with
+  `listView(log)` (the newest 8, the count and the sum are the whole log's) and print the header with `countLabel()`.
+  A count over two rows, or a count smaller than the rows under it, fails `data-check` (`count-list`).
+- **A waveform is the track's.** `node scripts/data-check.mjs peaks public/audio/<track> --bars 160 --out src/kit/peaks.json`
+  writes the music's own loudness; draw `waveBars(n, { peaks })`. Without the track yet, `waveBars(n, { seed })` is
+  noise that never repeats (phrase swells, a mid layer and a per-bar grain at unrelated rates, `accents` where the
+  cut lands). A height built from the bar index (`i % 8` for a tall bar every eighth, sines of `i`) is a pattern the
+  eye finds at once and fails (`wave-periodic`).
+- **Thumbnails are distinct moments.** A filmstrip, a contact row or a reel's frames come from different moments and
+  clips of the film's own footage: `thumbsFrom(clips, n)` deals them round the clips (two neighbours never from one
+  clip) and `stripMoments(dur, n, { cuts })` spreads one clip's frames across its shots. Six frames of a locked-off
+  shot are one still repeated at thumbnail size; `data-check` measures numbered frame sets (`name-0.jpg` ...) at 8x5 px
+  and fails a run of three that are the same picture (`thumb-repeat`).
+- **The cast varies across beats** (`references/imagery.md` §6): `castPlan(beats, pictures)` gives each beat its own
+  shoot and people.
 
 ## 3. Layout from data
 
@@ -306,8 +335,13 @@ sample.
 - Sample worlds (`kit/data.ts`): `sampleWorld('<film>')` deals a workspace from the film's name, so two films never
   share data: six kinds (billing, deploys, support, orders, pipeline, hiring), people, fourteen records, statuses that
   agree with the dates, tab counts and totals that are the rows' own, a chart whose points sum to the total, every
-  status with rows, and the story's record (`focus`). `checkWorld()` asserts it. Replace it with the product's real
-  data in the same shape before the film ships.
+  status with rows, and the story's record (`focus`), seen on the film's own day (`FILM_DATE`, or `today`). `checkWorld()`
+  asserts it. Replace it with the product's real data in the same shape before the film ships.
+- Material realism (`kit/real.ts`, §2.1): `FILM_DATE`, `day`, `fmtDay`, `weekOf`, `relDay`, `clockOf` (dates and times
+  from the calendar), `dayLog`, `listView`, `countLabel`, `checkList` (a log whose count is its rows, 8+ shown),
+  `waveBars`, `peaksBars` (the track's peaks or noise that never repeats), `stripMoments`, `thumbsFrom` (thumbnails from
+  distinct moments), `castPlan`, `checkCast` (a cast that varies across beats). `scripts/data-check.mjs` fails what they
+  prevent.
 - Content tiles (`kit/tiles.tsx`): `ContentTile` (the real mark or a glyph, a label, a sub line and a tiny preview: a
   document with a marked line, a chart, bars, a checklist, a person, a table, code), placed by `ContentWall`,
   `ContentRing` and `ContentTicker`: they arrive tumbling 20-60 degrees, settle on depth bands (smaller and softer
@@ -523,8 +557,11 @@ visible work, output) starts from `--template ui-walkthrough` (`references/templ
 
 Pause on any frame and check it as a screenshot. Run this on the act contact sheets and at every cue (`scripts/sheet.py`, `npx remotion still`).
 
-- Dates and weekdays agree (asserted in `data.ts`); times sit where their labels say.
-- Every count matches what is visible, and counts change while the events happen.
+- Dates and weekdays agree (asserted in `data.ts`); times sit where their labels say; every date sits round the film's
+  own day (`FILM_DATE`): today, this week, the weeks ahead, never last month.
+- Every count matches what is visible, and counts change while the events happen; a dense screen shows 8+ rows.
+- A filmstrip or contact row shows distinct moments; a waveform is the track's, never a pattern; the same photo or
+  person does not return in beat after beat (§2.1). `node scripts/data-check.mjs src` passes.
 - The frame agrees with the story: who acted, what is owed or done, totals and stated ratios; no number appears twice in one frame (§2).
 - Plurals, casing and brand names are right; no placeholder strings.
 - Every number uses tabular figures; nothing jitters in width.
