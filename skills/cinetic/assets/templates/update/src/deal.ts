@@ -119,19 +119,40 @@ export const QUICK: readonly Move[] = ['land', 'fall', 'glide'];
 
 /** One move and one exit per line id, in film order, from `seed`: no move or exit twice in a row; ids in `quick` take a QUICK move. Pure. */
 export const dealLines = (seed: number, ids: readonly string[], pin: { move?: Partial<Record<string, Move>>; exit?: Partial<Record<string, Exit>> } = {}, quick: readonly string[] = []) => {
+  // The unpinned deal first, drawing for every line, so a pin never shifts the draws of the lines after it.
   const r = rng((seed ^ 0x5bd1e995) >>> 0);
-  const move: Record<string, Move> = {};
-  const exit: Record<string, Exit> = {};
-  let pm: string | null = null;
-  let pe: string | null = null;
-  for (const id of ids) {
+  const draws = ids.map(() => [r(), r()] as const);
+  const dealtMove: Record<string, Move> = {};
+  const dealtExit: Record<string, Exit> = {};
+  ids.forEach((id, i) => {
+    const pm = i ? dealtMove[ids[i - 1]] : null;
+    const pe = i ? dealtExit[ids[i - 1]] : null;
     const ms = MOVES.filter((m) => m !== pm && (!quick.includes(id) || QUICK.includes(m)));
     const es = EXITS.filter((e) => e !== pe);
-    move[id] = pin.move?.[id] ?? ms[Math.floor(r() * ms.length)];
-    exit[id] = pin.exit?.[id] ?? es[Math.floor(r() * es.length)];
-    pm = move[id];
-    pe = exit[id];
-  }
+    dealtMove[id] = ms[Math.floor(draws[i][0] * ms.length)];
+    dealtExit[id] = es[Math.floor(draws[i][1] * es.length)];
+  });
+  // Then the pins: a pinned line plays its pin; a dealt line keeps its deal unless a pin beside it now repeats it,
+  // and only then is it re-dealt from its own draw among the moves (exits) that differ from both neighbours, so the
+  // change never runs on down the script.
+  const move: Record<string, Move> = {};
+  const exit: Record<string, Exit> = {};
+  ids.forEach((id, i) => {
+    const prev = i ? ids[i - 1] : null;
+    const next = i + 1 < ids.length ? ids[i + 1] : null;
+    const pinM = pin.move?.[id];
+    if (pinM !== undefined) move[id] = pinM;
+    else {
+      const ms = MOVES.filter((m) => (prev === null || m !== move[prev]) && (next === null || m !== (pin.move?.[next] ?? dealtMove[next])) && (!quick.includes(id) || QUICK.includes(m)));
+      move[id] = ms.includes(dealtMove[id] as (typeof MOVES)[number]) || !ms.length ? dealtMove[id] : ms[Math.floor(draws[i][0] * ms.length)];
+    }
+    const pinE = pin.exit?.[id];
+    if (pinE !== undefined) exit[id] = pinE;
+    else {
+      const es = EXITS.filter((e) => (prev === null || e !== exit[prev]) && (next === null || e !== (pin.exit?.[next] ?? dealtExit[next])));
+      exit[id] = es.includes(dealtExit[id]) || !es.length ? dealtExit[id] : es[Math.floor(draws[i][1] * es.length)];
+    }
+  });
   return { move, exit };
 };
 
