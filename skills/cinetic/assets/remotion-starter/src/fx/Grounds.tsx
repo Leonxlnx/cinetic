@@ -8,6 +8,7 @@ import { type FilmCtx, fpsOf, sizeOf, uOf, useFilm } from '../lib/film';
 import { FILM_LIGHT, type FilmLight, keyDir } from '../lib/light';
 import type { Declares } from '../timeline';
 import { shadowTone } from './KeyLight';
+import { Depth } from './Depth';
 import { bakePixels, bakePlate } from './Gradients';
 import { Wash, WASH } from './Washes';
 import { hash01 } from './plates';
@@ -334,9 +335,17 @@ export const spriteSize = (sh: GroundShape, s: number = GROUND.bake) => {
 
 /**
  * A lit ground: the base colour and the key gradient (wash), and for a kind the film asked for, the floor glow and the
- * shapes, under the camera at their depths. A flat ground is the base colour alone.
+ * shapes, under the camera at their depths. A flat ground is the base colour alone. Under the film's camera float
+ * (fx/Float) the ground holds still on screen while the act drifts over it (Depth z 0): the planes part, and the edge
+ * the act drifts away from shows the same ground ActStage holds behind it.
  */
-export const LitGround: React.FC<{ frame: number; spec: GroundSpec; cam?: { shot: Shot; base: Shot }; style?: React.CSSProperties }> = ({ frame, spec, cam, style }) => {
+export const LitGround: React.FC<{ frame: number; spec: GroundSpec; cam?: { shot: Shot; base: Shot }; style?: React.CSSProperties }> = (p) => (
+  <Depth z={0}>
+    <GroundPlate {...p} />
+  </Depth>
+);
+
+const GroundPlate: React.FC<{ frame: number; spec: GroundSpec; cam?: { shot: Shot; base: Shot }; style?: React.CSSProperties }> = ({ frame, spec, cam, style }) => {
   const film = useFilm();
   const { width: W, height: H } = sizeOf(film);
   const abs0: React.CSSProperties = { position: 'absolute', left: 0, top: 0 };

@@ -230,6 +230,7 @@ change at 160x90, one sample per 1/30 s) and `lint-film.mjs` catches the source 
 | No hold freezes | every hold drifts 0.3-1 px a 60 fps frame at 1080p (house 0.5 = 30 px/s): a line, a card, the camera or the ground; at 0.3 px/f even one line on a clean field moves its edges enough to read as alive. When the camera locks for a read, the type build, the light or the drift of one layer keeps the frame moving | `holdDrift(f, from, { px, angle })`, `creep`, `drift`, a light that crosses | `motion-frozen`: 6 f@30 in a row where the mean change is under 0.05 and fewer than 8 px change by 4 values fails (the opening 0.5 s, the end lock and declared freezes aside); lint `hold-drift` |
 | Moves land with a tail | arrivals settle from their peak to 20 % of their speed over 4-6 f@30: `E.glideOut` over 16 f@60 or more, `E.settleOut` for UI cards. The 1.1 `E.out` over 16 f settles in 3 f@30 and the film's median drops under the gate | arrive tokens (§2) | `motion-decay`: a median under 3.5 f@30 fails |
 | One carrying move per 3 s | at most 2 primary moves per 3 s, each 48 f@60 or longer; secondaries overlap the primary by 30-50 % instead of queueing after it | `overlapAt`, `leadBy`, `camPath` | `motion-density`: more than 2 primary moves per 3 s fails; lint `move-queue` |
+| Every shot moves | the picture never sits while one small thing moves: every act sits on one continuous camera float (sideways up to 31 px/s at 1080p, a push of up to 3 % carrying the turns, about 1.025 of bleed so no edge shows), seeded by the film and eased to rest for one read where it drifts fastest, never beside a turn (`withLocks`); under it the planes part (`Depth z`: a back layer 0.6, a near plane 1.35, the ground held at 0), a held list creeps on (`scrollBy`, 12-40 px/s), a landing drifts on along its arrival (`tail`, 36 px/s decaying over 0.45 s) and the light breathes over the ground (`BreathLight`, `breathe`) | `ActStage` / `Float` (`fx/Float`), `Depth`, `floatAt`, `withLocks`, `lockOn`, `settleAmp`, `dipAmp`, `scrollBy`, `tail`, `breathe` (`lib/drift.ts`) | `motion-energy`: under 30 % of the picture's structure moving 15 px/s or more for over 1.5 s warns, over 2 s fails, on over a quarter of the body warns (the house band) |
 | Land before the cut | a cut or an unmount waits until the move is under 10 % of its peak speed, unless a declared whip or velocity seam carries it across | `landBeforeCut(move, cut)` (throws at import with the frame it lands on), `latestStart(cut, dur, ease)`, `landedAt(move)` | `motion-stop`: a move going still in one frame from above 15 % of its peak fails; `motion-cut`: a cut into a braking move warns; lint `unmount-moving` |
 
 ```ts
@@ -237,6 +238,10 @@ const rows = <GlideStep frame={F} jump={ROW} at={[CUE.a, CUE.b, CUE.c]} width={W
 const box = glideBox(F, [{ at: CUE.pick, value: picked }], resting);          // a selection box glides to its row
 const d = holdDrift(F, CUE.settle, { px: 0.5, angle: -90 });                  // the card keeps rising 30 px/s
 const exitAt = landBeforeCut({ from: CUE.slide, dur: f60(34), ease: E.glideOut }, ACT.next.from); // fails at import if early
+<ActStage from={ACT.feed.from} o={FLOAT}><Feed /></ActStage>                      // Film.tsx: the act on the film's float
+const y = scrollBy(F, CUE.feed, { pxS: 24 }).y;                              // the held feed creeps up 24 px/s
+const t = tail(F, CUE.land, { angle: 0 });                                   // the card drifts on 16 px after it lands
+<Depth z={DRIFT.depth.back}>{backCards}</Depth>                              // the back layer lags the float: parallax
 ```
 
 ## 7. Scale: log space, oversized landings, breath

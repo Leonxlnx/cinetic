@@ -83,7 +83,7 @@ export const TYPE_WIDTH = { line: 0.61, sentence: 0.75, sentenceCap: 6.5, displa
 /** A claim flush left on the accent keeps this share of the frame width on its left (fx/TypeClaim: 3 %). */
 export const CLAIM_MARGIN = 0.025;
 
-type Box = { id: string; text: string; words: number; ui: boolean; smear?: boolean; scroll?: boolean; push?: 'moving' | 'bleed'; claim?: boolean; crosses?: boolean; x: number; y: number; w: number; h: number; px: number; opacity: number; role?: string; cap?: number };
+type Box = { id: string; text: string; words: number; ui: boolean; smear?: boolean; scroll?: boolean; push?: 'moving' | 'bleed'; claim?: boolean; crosses?: boolean; x: number; y: number; w: number; h: number; px: number; opacity: number; role?: string; cap?: number; float?: [number, number, number] };
 type Issue = { kind: 'safe-area' | 'overlap' | 'small-text' | 'covered' | 'words' | 'placeholder' | 'bar-text' | 'drawn-figure'; id: string; detail: string };
 type Warning = { kind: 'type-size'; id: string; detail: string };
 
@@ -183,6 +183,14 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
       const k = el.offsetWidth > 0 ? full.width / zoom / el.offsetWidth : 1; // transform scale on the text
       const push = el.closest('[data-audit-push]')?.getAttribute('data-audit-push');
       const fl = (full.left - origin.left) / zoom, ft = (full.top - origin.top) / zoom;
+      // the film's camera float (fx/Float) is a breath of the camera round the layout: boxes are judged where the
+      // layout puts them and at the size it sets, with the float taken out (data-float on the act's float: x, y, k about
+      // the frame's centre); `float` keeps it, so a reader of the pixels (look-audit.py) finds the box on screen
+      const fa = el.closest('[data-float]')?.getAttribute('data-float')?.split(',').map(Number);
+      const [fx, fy, fk] = fa && fa.length === 3 && fa.every(Number.isFinite) && fa[2] > 0 ? fa : [0, 0, 1];
+      const floated = fx !== 0 || fy !== 0 || fk !== 1;
+      const ux = (x: number) => width / 2 + (x - width / 2 - fx) / fk;
+      const uy = (y: number) => height / 2 + (y - height / 2 - fy) / fk;
       boxes.push({
         el,
         id: el.dataset.text || '?',
@@ -194,12 +202,13 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         push: push === 'moving' || push === 'bleed' ? push : undefined, // inside a type push (fx/TypePush): in flight, or landed as a declared bleed
         claim: el.closest('[data-audit-claim]') !== null || undefined, // a claim flush left on the accent (fx/TypeClaim)
         crosses: fl < -1 || ft < -1 || fl + full.width / zoom > width + 1 || ft + full.height / zoom > height + 1 || undefined, // the unclipped box runs past the frame's edge
-        x: round((r.left - origin.left) / zoom),
-        y: round((r.top - origin.top) / zoom),
-        w: round(r.width / zoom),
-        h: round(r.height / zoom),
-        px: round(fontPxOf(el) * k),
+        x: round(ux((r.left - origin.left) / zoom)),
+        y: round(uy((r.top - origin.top) / zoom)),
+        w: round(r.width / zoom / fk),
+        h: round(r.height / zoom / fk),
+        px: round((fontPxOf(el) * k) / fk),
         opacity: Math.round(opacity * 100) / 100,
+        ...(floated ? { float: [round(fx), round(fy), Math.round(fk * 10000) / 10000] as [number, number, number] } : {}),
       });
     }
     // one text drawn twice (a ghost under its colour copy, a blur level, a smear copy): measured once, its most opaque copy

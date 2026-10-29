@@ -595,6 +595,16 @@ def pic_sample(P, f, rgb, gray, C, nong, edges, H=None, keep=None, L=None):
                              subject={k: (round(v, 3) if isinstance(v, float) else v) for k, v in sub.items()}, bars=len(bars), bar_boxes=bars[:12]))
 
 
+def screen_box(b, cw, ch):
+    """A layout box where it shows: the layout audit logs text boxes with the film's camera float taken out (lib/Audit.tsx
+    `float`: x, y, k about the frame's centre); the pixels carry it. Comp px (x, y, w, h)."""
+    fl = b.get('float')
+    if not fl or len(fl) != 3 or not fl[2]:
+        return b['x'], b['y'], b['w'], b['h']
+    fx, fy, fk = fl
+    return cw / 2 + (b['x'] - cw / 2) * fk + fx, ch / 2 + (b['y'] - ch / 2) * fk + fy, b['w'] * fk, b['h'] * fk
+
+
 def imagery_mask(shape, boxes):
     """True outside the declared imagery boxes (analysis pixels)."""
     keep = np.ones(shape, bool)
@@ -1163,7 +1173,8 @@ def measure(args, info, F, accent, brand, layout, cues):
             first = text.split()[0] if text else ''
             share = max(0.15, len(first) / max(1, len(text))) if ' ' in text else 1.0
             sx = W / (layout.get('width') or args.comp_width or info['w'])
-            rois[cid] = dict(box=(int(b['x'] * sx), int(b['y'] * sx), max(2, int(b['w'] * sx * share)), max(2, int(b['h'] * sx))),
+            bx_, by_, bw_, bh_ = screen_box(b, layout.get('width') or args.comp_width or info['w'], layout.get('height') or args.comp_height or info['h'])
+            rois[cid] = dict(box=(int(bx_ * sx), int(by_ * sx), max(2, int(bw_ * sx * share)), max(2, int(bh_ * sx))),
                              at=c['in'], resolved=c['resolved'], out=c.get('out'), role_px=b.get('px'), words=len(text.split()))
     # type reads: every film copy line's full box at three frames of its read (contrast, the ground around it)
     reads, want_read = {}, {}
@@ -1182,7 +1193,8 @@ def measure(args, info, F, accent, brand, layout, cues):
             hgt = fr_h.get(fr) or layout.get('height') or args.comp_height or 1080
             sx = W / (layout.get('width') or args.comp_width or info['w'])
             at = sorted({int(round(min(r1 - 1, r0 + 0.3 * cfps) * k_)), int(round((r0 + r1) / 2 * k_)), int(round(max(r0, r1 - 0.2 * cfps) * k_))})
-            reads[cid] = dict(box=(int(b['x'] * sx), int(b['y'] * sx), max(2, int(b['w'] * sx)), max(2, int(b['h'] * sx))), px=round(b['px'] * 1080.0 / hgt, 1),
+            bx_, by_, bw_, bh_ = screen_box(b, layout.get('width') or args.comp_width or info['w'], hgt)
+            reads[cid] = dict(box=(int(bx_ * sx), int(by_ * sx), max(2, int(bw_ * sx)), max(2, int(bh_ * sx))), px=round(b['px'] * 1080.0 / hgt, 1),
                               hold_s=round((r1 - r0) / cfps, 2), frames=at, text=(c.get('text') or '')[:40])
             for f in at:
                 want_read.setdefault(f, []).append(cid)
