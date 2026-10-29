@@ -1,11 +1,13 @@
 // Sample worlds for dense product screens: a believable workspace (people, records, statuses, dates, amounts) dealt
-// from a seed, so two films never show the same data. Everything adds up: the statuses agree with the dates (a bill
-// past its due date and unpaid is overdue), the tab counts are the rows' counts, the totals are the rows' sums, the
-// chart's points sum to the total, the activity names real rows. Pure: the same seed gives the same world on every
-// frame and every machine. It is the floor for a screen the brand has not supplied yet: seed it with the film's own
-// name (`sampleWorld('<film>')`), then replace it with the product's real strings before the film ships.
+// from a seed, so two films never show the same data, seen on the film's own day (kit/real.ts FILM_DATE: today, the
+// due dates and their weekdays are the calendar's, never last month). Everything adds up: the statuses agree with the
+// dates (a bill past its due date and unpaid is overdue), the tab counts are the rows' counts, the totals are the rows'
+// sums, the chart's points sum to the total, the activity names real rows. Pure: the same seed gives the same world on
+// every frame and every machine. It is the floor for a screen the brand has not supplied yet: seed it with the film's
+// own name (`sampleWorld('<film>')`), then replace it with the product's real strings before the film ships.
 import { rand } from '../lib/anim';
 import type { IconName } from './icons';
+import { day, FILM_DATE } from './real';
 
 export type WorldKind = 'billing' | 'deploys' | 'support' | 'orders' | 'pipeline' | 'hiring';
 /** How a status draws: the accent (the state the story is about), done, waiting, quiet (draft, queued), alert. */
@@ -155,16 +157,19 @@ const ROLES_OPEN = ['Senior iOS engineer', 'Product designer', 'Data analyst', '
 /**
  * A believable workspace for a dense screen, dealt from `seed` (use the film's name). `kind` picks the product type
  * (billing, deploys, support, orders, pipeline, hiring; default: dealt by the seed), `rows` the visible records
- * (default 14), `currency` the money sign. Pure; the statuses, counts, totals and chart all agree.
+ * (default 14; a dense screen shows at least kit/real.ts LIST.minRows), `currency` the money sign, `today` the day the
+ * world is seen on (ISO; default the film's own day, kit/real.ts FILM_DATE, so every date sits round it). Pure; the
+ * statuses, counts, totals and chart all agree.
  */
-export const sampleWorld = (seed: string | number = 'cinetic', o: { kind?: WorldKind; rows?: number; currency?: string; photos?: (string | { src: string; focus?: [number, number] })[] } = {}): SampleWorld => {
+export const sampleWorld = (seed: string | number = 'cinetic', o: { kind?: WorldKind; rows?: number; currency?: string; today?: string; photos?:(string | { src: string; focus?: [number, number] })[] } = {}): SampleWorld => {
   const S = String(seed);
   const kind = o.kind ?? pick(KINDS, `${S}:kind`);
   const spec = SPEC[kind];
   const n = Math.max(4, Math.min(40, o.rows ?? 14));
   const cur = o.currency ?? pick(['$', '$', '€', '£'], `${S}:cur`);
-  // today: a weekday in 2026, so dates and weekdays agree
-  const t0 = shift(2026, int(1, 12, `${S}:m`), int(1, 28, `${S}:d`), 0);
+  // today: the film's own day (kit/real.ts FILM_DATE, or o.today), so every date sits round it and its weekday is the calendar's
+  const td = day(o.today ?? FILM_DATE);
+  const t0 = shift(td.y, td.m, td.d, 0);
   const today = { y: t0.y, m: t0.m, d: t0.d, weekday: DAYS[t0.wd], label: `${DAYS[t0.wd]}, ${dayLabel(t0.m, t0.d)}` };
   // people: unique first names and surnames
   const firsts = shuffle(FIRST, `${S}:first`);
