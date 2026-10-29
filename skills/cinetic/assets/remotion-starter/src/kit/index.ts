@@ -5,6 +5,7 @@
 // Real marks of the products it works with (logos.tsx) come from scripts/logos.mjs; generic glyphs from icons.ts.
 // A product screen is dense (dense.tsx: 25+ small real strings, one line lifted and readable) and fed by a seeded sample
 // world (data.ts); people are crafted portraits (avatars.tsx); ring, wall and ticker nodes are content tiles (tiles.tsx).
+// A phone or a laptop is a lit object (device.tsx: body, rim, glass and glare, contact shadow, reflection), never an outline.
 // The data a paused frame is checked against (real.ts): dates from the film's own day, counts that are their rows,
 // waveforms from the track, thumbnails from distinct moments, a cast that varies across beats (scripts/data-check.mjs).
 export * from './avatars';
@@ -20,3 +21,4 @@ export * from './real';
 export * from './sample';
 export * from './theme';
 export * from './tiles';
+export * from './device';

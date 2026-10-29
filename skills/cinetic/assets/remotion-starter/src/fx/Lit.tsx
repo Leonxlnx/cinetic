@@ -4,6 +4,7 @@ import { clamp, E, type Ease, mix } from '../lib/anim';
 import { type FilmCtx, f60x, fpsOf, sizeOf, uOf, useFilm } from '../lib/film';
 import { FILM_LIGHT, type FilmLight, faceLight, faceShift, keyLocal, type Tilt } from '../lib/light';
 import type { Declares } from '../timeline';
+import { useFloat } from './Depth';
 import { shadowTone } from './KeyLight';
 
 /**
@@ -22,6 +23,11 @@ import { shadowTone } from './KeyLight';
  *     growing with that throw (two fixed blur levels cross-faded, never an animated radius); and a soft contact
  *     shadow straight behind it. Both in the ground's own hue (KeyLight shadowTone), both seen through the same
  *     perspective as the panel.
+ * It is a lit object, never a drawing of a screen (an outline bezel): over the face lies a glass layer (glass, on by
+ * default), a 1 px edge highlight along its top and key-side edges and a soft glare band crossing it diagonally, which
+ * slides with the camera float (fx/Float: the glare travels `glass.travel` of the face per frame width of drift) and
+ * with the panel's own turn, as a reflection does; behind the face a body `glass.depth` px deep (a slab in the same
+ * perspective, its key-side edge lit), so a turned panel shows its thickness instead of a paper edge.
  * It never stops: a sway of 1.4 degrees on X and Y a quarter-turn apart (7 s loop) and a float of 18 px/s on a 1:2
  * loop (9 s) keep the panel moving 0.3-1 px a frame at 30 fps through every hold, and an optional entry settles the panel from a steeper tilt on
  * E.settleOut over 48 f at 60 fps. All placement is transform (translate3d), never left/top.
@@ -48,6 +54,10 @@ export const LIT = {
   shadeMax: 0.22, // the most the far side may shade it
   rimWidth: 1, // px at 1080p
   shadow: { dL: 0.26, alpha: 0.55, soft: 0.34, maxThrow: 3, levels: [6, 20] as [number, number], contact: { grow: 6, blur: 14, alpha: 0.38 } },
+  // the glass and the body: the edge highlight's alpha and width (px at 1080p), the glare's peak alpha, its half width
+  // (share of the face's diagonal), where it rests (share along the diagonal, key side 0), how far it travels per frame
+  // width of camera float and per degree of yaw; the body's depth (px at 1080p) and how much darker than the ground it is
+  glass: { edge: 0.34, edgeWidth: 1, glare: 0.09, glareWidth: 0.2, glareAt: 0.3, travel: 0.9, yawTravel: 0.012, depth: 12, bodyDL: 0.1 },
   enter60: 48,
   enterFrom: { y: 90, lift: 0, tilt: { x: 24, y: -18 } },
 } as const;
@@ -70,6 +80,7 @@ export type LitProps = {
   shadow?: { alpha?: number; dL?: number }; // the cast shadow's opacity and how much darker than the ground it is
   perspective?: number; // px (house 2200)
   vanish?: [number, number]; // perspective origin on screen (house the frame centre)
+  glass?: { glare?: number; edge?: number; depth?: number; body?: string } | false; // the glass layer and the body (house LIT.glass); false: a flat panel (a sheet of paper, a card)
 };
 
 export type LitState = {
@@ -221,12 +232,20 @@ export const RimEdge: React.FC<{ w: number; h: number; r: number; line: ReturnTy
   );
 };
 
-/** A panel in the film's light: tilt, rim, sheen, spill, cast and contact shadow. Children: the panel at (0, 0), w x h. */
+/**
+ * The glare's place along the face's diagonal (0 the key-side corner, 1 the far one) at camera float x (px) and yaw
+ * (degrees): it slides against the drift and with the turn, as a reflection of the room does. Pure.
+ */
+export const glareAt = (floatX: number, yaw: number, width: number, g: Partial<typeof LIT.glass> = {}) =>
+  (g.glareAt ?? LIT.glass.glareAt) - ((g.travel ?? LIT.glass.travel) * floatX) / Math.max(1, width) + (g.yawTravel ?? LIT.glass.yawTravel) * yaw;
+
+/** A panel in the film's light: tilt, rim, sheen, spill, glass, body, cast and contact shadow. Children: the panel at (0, 0), w x h. */
 export const Lit: React.FC<LitProps & { frame: number; children: React.ReactNode; id?: string; style?: React.CSSProperties }> = (props) => {
   const film = useFilm();
   const { width: W, height: H } = sizeOf(film);
   const u = uOf(film);
   const s = litState(props.frame, props, film);
+  const float = useFloat();
   const uid = `${props.id ?? 'lit'}${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const { w, h } = props;
   const r = props.r ?? Math.min(w, h) * 0.12;
@@ -239,6 +258,13 @@ export const Lit: React.FC<LitProps & { frame: number; children: React.ReactNode
   const pose = `translate3d(${(s.x - w / 2).toFixed(2)}px, ${(s.y - h / 2).toFixed(2)}px, ${s.lift.toFixed(2)}px) rotateZ(${t.z.toFixed(3)}deg) rotateX(${t.x.toFixed(3)}deg) rotateY(${t.y.toFixed(3)}deg)`;
   const box: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: w, height: h, transformOrigin: '50% 50%' };
   const pad = (LIT.shadow.levels[1] * 3 + LIT.shadow.maxThrow * (props.lift ?? LIT.lift)) * u; // room for the widest throw and blur (props only)
+  const G = LIT.glass;
+  const gl = props.glass === false ? null : { glare: props.glass?.glare ?? G.glare, edge: props.glass?.edge ?? G.edge, depth: (props.glass?.depth ?? G.depth) * u, body: props.glass?.body ?? shadowTone(props.ground, G.bodyDL) };
+  const gp = gl ? glareAt(float ? float.s.x : 0, t.y, W) : 0;
+  const gw = G.glareWidth;
+  const glareCss = gl
+    ? `linear-gradient(${(s.sheen.angle - 20).toFixed(2)}deg, ${rgbaOf(rimColor, 0)} ${((gp - gw) * 100).toFixed(1)}%, ${rgbaOf(rimColor, gl.glare * 0.45)} ${((gp - gw * 0.35) * 100).toFixed(1)}%, ${rgbaOf(rimColor, gl.glare)} ${(gp * 100).toFixed(1)}%, ${rgbaOf(rimColor, gl.glare * 0.3)} ${((gp + gw * 0.45) * 100).toFixed(1)}%, ${rgbaOf(rimColor, 0)} ${((gp + gw) * 100).toFixed(1)}%)`
+    : '';
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, perspective: `${props.perspective ?? LIT.perspective}px`, perspectiveOrigin: `${v[0]}px ${v[1]}px`, ...props.style }}>
       <div style={{ ...box, transform: `${pose} translate3d(0px, 0px, ${(-s.lift).toFixed(2)}px)` }}>
@@ -261,11 +287,15 @@ export const Lit: React.FC<LitProps & { frame: number; children: React.ReactNode
           </g>
         </svg>
       </div>
+      {gl && gl.depth > 0.1 && (
+        <div style={{ ...box, borderRadius: r, opacity: s.opacity, background: gl.body, boxShadow: `inset ${(1.2 * u).toFixed(2)}px ${(1.2 * u).toFixed(2)}px 0 ${rgbaOf(rimColor, s.rim.alpha * 0.5)}`, transform: `${pose} translate3d(0px, 0px, ${(-gl.depth).toFixed(2)}px)` }} />
+      )}
       <div data-ui style={{ ...box, borderRadius: r, overflow: 'hidden', opacity: s.opacity, transform: pose }}>
         {props.children}
         <div style={{ position: 'absolute', inset: 0, background: s.tone.light ? rgbaOf(rimColor, s.tone.alpha) : rgbaOf(tone, s.tone.alpha) }} />
         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(${s.sheen.angle.toFixed(2)}deg, ${rgbaOf(rimColor, s.sheen.alpha)} 0%, ${rgbaOf(rimColor, 0)} ${(LIT.sheenReach * 100).toFixed(0)}%)` }} />
         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(${s.spill.angle.toFixed(2)}deg, ${rgbaOf(props.ground, s.spill.alpha)} 0%, ${rgbaOf(props.ground, 0)} 55%)` }} />
+        {gl && <div className="cinetic-glass" style={{ position: 'absolute', inset: 0, background: glareCss, boxShadow: `inset 0 ${(G.edgeWidth * u).toFixed(2)}px 0 ${rgbaOf(rimColor, gl.edge)}`, pointerEvents: 'none' }} />}
         <RimEdge w={w} h={h} r={r} line={s.rim} color={rimColor} id={uid} />
       </div>
     </div>

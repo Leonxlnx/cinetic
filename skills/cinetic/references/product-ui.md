@@ -485,6 +485,17 @@ repeat delay, then a character a frame), last character first, the caret solid w
 the new value in bursts. Keep the typed field alive: a slow push on the bar and a parallax drift behind it. A
 headline is never typed.
 
+### 5.1 Devices are lit objects
+
+A phone, a laptop or a screen in frame is an object in the film's light, never a drawing of one (an outline bezel on a
+flat field reads as a mock at once). A bare product screen stands as `fx/Lit`: a tilted plane with a glass layer (a
+1 px edge highlight along its top and key-side edges, a soft glare band that slides with the camera float and the
+panel's turn) over the face and a body 12 px deep behind it, with its rim, cast and contact shadow. A device is kit
+`Phone` or `Laptop` (`kit/device.tsx`): a graphite or silver body lit from the key with its rim and thickness, the black
+glass border, the island, the screen (children, at (0, 0) in `screenBox()`) under the same glass, a contact shadow
+where it meets the ground and a faint reflection of the body below. Pass the product's own screen as children, or a
+real capture through `Photo`.
+
 ## 10. Supplied screenshots and product shots
 
 A launch or update film often has the real product: screenshots, stills of recordings, product photos. They move with
