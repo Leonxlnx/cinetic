@@ -16,14 +16,16 @@
  *
  * The key words: a line written with them between asterisks ("Brook is a *water bottle*.") marks them (parseKeyed;
  * copy-check.py reads the same marks and names a key word for a line that has none); else `keys` or `key` on the
- * spec; else the last word. A film deals one device per line (dealEmphasis: never the same device twice in a row);
+ * spec; else the last word. A film deals one device per line through the headline systems (dealEmphasis,
+ * dealLineHeadlines, fx/TypeSystem: never the same system twice in a row, none on more than two lines);
  * <TypeLine> gives a hero line that names none the `weight` device (defaultEmphasis). Node-safe, no DOM.
  */
 import { TYPE_FAMILY } from '../brand/tokens';
-import { clamp, E, type Ease, prog, rand } from '../lib/anim';
+import { clamp, E, type Ease, prog } from '../lib/anim';
 import { f60x } from '../lib/film';
 import { EMPHASIS_LOOK, type TypeFamily } from '../lib/look';
 import type { Declares } from '../timeline';
+import { checkSystems, declaredHeadlines, DEVICE_SYSTEMS, deviceOfSystem, dealSystems, type HeadlineSystem, systemOfDevice, SYSTEM_DEVICES } from './TypeSystem';
 
 export type EmphasisName = 'weight' | 'accent' | 'scale' | 'swell' | 'marker' | 'box' | 'under' | 'outline' | 'sweep';
 export const EMPHASIS_NAMES: EmphasisName[] = ['weight', 'accent', 'scale', 'swell', 'marker', 'box', 'under', 'outline', 'sweep'];
@@ -186,22 +188,21 @@ export const emphasisProgress = (f: number, device: EmphasisName, at: number, fp
 export const emphasisAt = (r: Pick<EmphasisResolved, 'at'>, landed: number, fps: number, pace = 1) => r.at ?? landed + f60x(EMPHASIS_LOOK.after60 * pace, fps);
 
 /**
- * One device per line for a film's `n` lines, dealt from `seed` (the film's): never the same device twice in a row,
- * nor three lines apart when the pool allows it; `pool` defaults to the family's (EMPHASIS_DEAL). The first hero line
- * takes the house default when `firstDefault` (the film's first statement reads in its plainest contrast). Pure.
+ * One device per line for a film's `n` lines, dealt from `seed` (the film's) through the headline systems
+ * (fx/TypeSystem: plain, front, marker, rule, swell): never the same system, so never the same device, on two lines in
+ * a row, and no system on more than two lines of a film when the pool can hold it; `pool` defaults to the family's
+ * (EMPHASIS_DEAL). The first hero line takes the house default when `firstDefault` (the film's first statement reads in
+ * its plainest contrast). Pure.
  */
 export const dealEmphasis = (n: number, seed: string | number, family: TypeFamily = TYPE_FAMILY, pool: EmphasisName[] = EMPHASIS_DEAL[family], firstDefault = false): EmphasisName[] => {
+  const ids = Array.from({ length: n }, (_, i) => String(i));
+  const sysPool = DEVICE_SYSTEMS.filter((s) => SYSTEM_DEVICES[s].some((d) => pool.includes(d)));
+  const sys = dealSystems(ids, seed, { pool: sysPool, first: firstDefault && pool.includes(EMPHASIS_DEFAULT) });
   const out: EmphasisName[] = [];
-  for (let i = 0; i < n; i++) {
-    if (i === 0 && firstDefault && pool.includes(EMPHASIS_DEFAULT)) {
-      out.push(EMPHASIS_DEFAULT);
-      continue;
-    }
-    let options = pool.filter((d) => d !== out[i - 1] && d !== out[i - 2]);
-    if (!options.length) options = pool.filter((d) => d !== out[i - 1]);
-    if (!options.length) options = pool;
-    out.push(options[Math.floor(rand(`${seed}:emph:${i}`) * options.length) % options.length]);
-  }
+  ids.forEach((id, i) => {
+    if (i === 0 && firstDefault && pool.includes(EMPHASIS_DEFAULT) && sys[id] === 'plain') out.push(EMPHASIS_DEFAULT);
+    else out.push(deviceOfSystem(sys[id], pool, `${seed}:emph:${i}`, out[i - 1]));
+  });
   return out;
 };
 
@@ -224,31 +225,131 @@ export const SIZE_DEVICES: EmphasisName[] = ['scale', 'swell'];
 /** The devices that change the line's width: the size devices and the marks that open room round their words. */
 export const WIDTH_DEVICES: EmphasisName[] = ['scale', 'swell', 'marker', 'box'];
 
+export type LineDealOpts = {
+  family?: TypeFamily;
+  fixed?: readonly string[]; // lines placed by a measured width (a label in a pill, a line beside a mark): no device that changes it
+  none?: readonly string[]; // lines that take no emphasis (a name, a piece of a line set in parts)
+  first?: boolean; // the first line takes the house default (default true)
+  pin?: Partial<Record<string, EmphasisName | false>>; // a device pinned by hand (its system counts)
+  systems?: Partial<Record<string, HeadlineSystem>>; // lines the act or the line file sets one way (a stack, an object inside the line, a push); else what the template's deal declared for `seed` (fx/TypeSystem declareHeadlines)
+  pool?: readonly HeadlineSystem[]; // the systems the template's line file can set (default the device systems)
+};
+/** A line's headline system and the emphasis device on its key words. */
+export type LineHeadline = { system: HeadlineSystem | null; emph: EmphasisName | false };
+
 /**
- * One device per line id for a template's script (dealEmphasis over the ids in film order): `fixed` ids are placed by a
- * measured width (a label in a pill, a line beside a mark) and never take a device that changes it (WIDTH_DEVICES);
- * `none` ids take no emphasis (a name, a piece of a line set in parts);
- * `first` gives the first line the house default. Pure.
+ * One headline system and one device per line id for a template's script, in film order (fx/TypeSystem dealSystems):
+ * no system on two lines in a row, none on more than two lines; `systems` are the lines the act sets one way (they
+ * count); `fixed` ids are placed by a measured width and only take a system that keeps it (plain, front, rule: never
+ * a device in WIDTH_DEVICES); `none` ids take no emphasis and no system; `first` gives the first line the house
+ * default; a pinned device wins (and its system counts). Pure.
  */
-export const dealLineEmphasis = (
-  ids: readonly string[],
-  seed: string | number,
-  o: { family?: TypeFamily; fixed?: readonly string[]; none?: readonly string[]; first?: boolean; pin?: Partial<Record<string, EmphasisName | false>> } = {},
-): Record<string, EmphasisName | false> => {
+export const dealLineHeadlines = (ids: readonly string[], seed: string | number, o: LineDealOpts = {}): Record<string, LineHeadline> => {
   const family = o.family ?? TYPE_FAMILY;
   const pool = EMPHASIS_DEAL[family];
-  const live = ids.filter((id) => !(o.none ?? []).includes(id));
-  const dealt = dealEmphasis(live.length, seed, family, pool, o.first ?? true);
-  const out: Record<string, EmphasisName | false> = {};
-  let prev: EmphasisName | undefined;
+  const none = (id: string) => (o.none ?? []).includes(id) || o.pin?.[id] === false;
+  const live = ids.filter((id) => !none(id));
+  const sysPool = (o.pool ?? DEVICE_SYSTEMS).filter((s) => !DEVICE_SYSTEMS.includes(s) || SYSTEM_DEVICES[s].some((d) => pool.includes(d)));
+  const given: Partial<Record<string, HeadlineSystem>> = {};
+  const declared = declaredHeadlines(seed);
+  for (const id of live) {
+    const pinned = o.pin?.[id];
+    const sys = o.systems?.[id] ?? declared[id] ?? (pinned ? systemOfDevice(pinned) : null);
+    if (sys) given[id] = sys;
+  }
+  const first = o.first ?? true;
+  const sys = dealSystems(live, seed, { pool: sysPool, given, fixed: o.fixed, first });
+  const out: Record<string, LineHeadline> = {};
+  let prev: EmphasisName | false | undefined;
   live.forEach((id, i) => {
-    let d = dealt[i];
-    if ((o.fixed ?? []).includes(id) && WIDTH_DEVICES.includes(d)) d = pool.find((x) => !WIDTH_DEVICES.includes(x) && x !== prev && x !== dealt[i + 1]) ?? EMPHASIS_DEFAULT;
-    out[id] = o.pin?.[id] ?? d;
+    const pinned = o.pin?.[id];
+    let d: EmphasisName;
+    if (pinned) d = pinned;
+    else if (i === 0 && first && sys[id] === 'plain' && pool.includes(EMPHASIS_DEFAULT)) d = EMPHASIS_DEFAULT;
+    else {
+      d = deviceOfSystem(sys[id], pool, `${seed}:emph:${i}`, prev);
+      if ((o.fixed ?? []).includes(id) && WIDTH_DEVICES.includes(d)) d = SYSTEM_DEVICES[sys[id]].find((x) => !WIDTH_DEVICES.includes(x) && x !== prev) ?? EMPHASIS_DEFAULT;
+    }
+    out[id] = { system: sys[id], emph: d };
     prev = d;
   });
-  (o.none ?? []).forEach((id) => (out[id] = o.pin?.[id] ?? false));
+  ids.filter(none).forEach((id) => (out[id] = { system: null, emph: o.pin?.[id] ?? false }));
   return out;
+};
+
+/** One device per line id (dealLineHeadlines' devices): what <TypeLine> sets on each line's key words. Pure. */
+export const dealLineEmphasis = (ids: readonly string[], seed: string | number, o: LineDealOpts = {}): Record<string, EmphasisName | false> => {
+  const h = dealLineHeadlines(ids, seed, o);
+  const out: Record<string, EmphasisName | false> = {};
+  for (const id of ids) out[id] = h[id].emph;
+  return out;
+};
+
+/** The headline systems a deal plays, in film order, checked (fx/TypeSystem checkSystems): repeats and overuse. Pure. */
+export const checkLineHeadlines = (ids: readonly string[], deal: Record<string, LineHeadline>) => checkSystems(ids.map((id) => deal[id]?.system ?? null));
+
+// ---- Type craft: a rule under words skips their descenders; a bar behind them holds them whole.
+
+/**
+ * Glyphs whose ink crosses the baseline downward, with the share of their advance the descender takes (a grotesque's
+ * shapes: the tail of y and g, the stems of p and q, the hook of j, a comma's tail, a bracket's foot).
+ */
+export const DESCENDERS: Record<string, [number, number]> = {
+  g: [0.1, 0.9], j: [0.0, 0.72], p: [0.08, 0.34], q: [0.64, 0.92], y: [0.04, 0.74], Q: [0.42, 0.96], ',': [0.12, 0.62], ';': [0.12, 0.62],
+  '\u00e7': [0.3, 0.76], '\u015f': [0.3, 0.76], '\u0163': [0.3, 0.76], '\u0119': [0.5, 0.9], '\u0105': [0.55, 0.95], '\u00fd': [0.04, 0.74],
+  '\u00ff': [0.04, 0.74], '\u011f': [0.1, 0.9], '\u0135': [0.0, 0.72], '\u0192': [0.0, 0.62], '\u00fe': [0.08, 0.34], '\u00b5': [0.08, 0.3],
+  '(': [0.15, 0.85], ')': [0.15, 0.85], '[': [0.15, 0.85], ']': [0.15, 0.85], '{': [0.15, 0.85], '}': [0.15, 0.85], '|': [0.2, 0.8], '/': [0.0, 0.5], '@': [0.1, 0.9],
+};
+/**
+ * A rule that skips descenders, in em of the key words' size: the gap left round a descender's ink, the share of the
+ * rule that must remain (else the whole rule sits under the descender line instead), the drop that clears the
+ * descender line; and how far below the baseline a bar behind the words reaches when they carry a descender.
+ */
+export const INK_SKIP = { gap: 0.07, keep: 0.6, below: 0.31, barBelow: 0.3 } as const;
+
+/** Whether any glyph of `text` reaches below the baseline. Pure. */
+export const hasDescender = (text: string) => [...text].some((ch) => DESCENDERS[ch] !== undefined);
+
+/**
+ * A rule under the key words, skip-ink: `glyphs` are the key run's characters with their left edge and advance (px,
+ * the rule's own coordinates), `x0..x1` the rule's span, `S` the key words' size (px), `drop` the house drop (em).
+ * Returns the rule's visible runs (px) and its drop: the house drop with a gap round every descender's ink, or, when
+ * the gaps would leave under INK_SKIP.keep of the rule, one whole rule under the descender line (INK_SKIP.below). Pure.
+ */
+export const skipInk = (glyphs: readonly { ch: string; x: number; w: number }[], x0: number, x1: number, S: number, drop: number): { runs: [number, number][]; drop: number } => {
+  const len = Math.max(0, x1 - x0);
+  const gaps: [number, number][] = [];
+  for (const g of glyphs) {
+    const d = DESCENDERS[g.ch];
+    if (!d) continue;
+    const a = g.x + d[0] * g.w - INK_SKIP.gap * S;
+    const b = g.x + d[1] * g.w + INK_SKIP.gap * S;
+    if (b <= x0 || a >= x1) continue;
+    const last = gaps[gaps.length - 1];
+    if (last && a <= last[1]) last[1] = Math.min(x1, Math.max(last[1], b));
+    else gaps.push([Math.max(x0, a), Math.min(x1, b)]);
+  }
+  if (!gaps.length) return { runs: len > 0 ? [[x0, x1]] : [], drop };
+  const gone = gaps.reduce((s, [a, b]) => s + (b - a), 0);
+  if (len <= 0 || gone > (1 - INK_SKIP.keep) * len) return { runs: len > 0 ? [[x0, x1]] : [], drop: Math.max(drop, INK_SKIP.below) };
+  const runs: [number, number][] = [];
+  let at = x0;
+  for (const [a, b] of gaps) {
+    if (a > at) runs.push([at, a]);
+    at = Math.max(at, b);
+  }
+  if (at < x1) runs.push([at, x1]);
+  return { runs, drop };
+};
+
+/**
+ * How far below the baseline a bar behind the key words reaches (em of their size): its own bottom (from `h` and
+ * `lift` as EMPHASIS_LOOK sets them), or past the descender line when the words carry a descender, so its knock-out
+ * never cuts a tail in two. Pure.
+ */
+export const barBottom = (text: string, h: number, lift: number) => {
+  const own = h / 2 - lift;
+  return hasDescender(text) ? Math.max(own, INK_SKIP.barBelow) : own;
 };
 
 /**

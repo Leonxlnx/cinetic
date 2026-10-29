@@ -14,7 +14,7 @@ import { maskProgress } from './MaskRise';
 import { decodeState, mosaicCells } from './Scramble';
 import { slicesState } from './Slices';
 import { erodeRiseState, fontCycleState, type FontState } from './TypeFx';
-import { EMPHASIS_DEFAULT, EMPHASIS_DOES, type EmphasisResolved, type EmphasisSpec, emphasisAt, emphasisProgress, emphasisRun, holdTracking, parseKeyed, resolveEmphasis } from './TypeEmphasis';
+import { barBottom, EMPHASIS_DEFAULT, EMPHASIS_DOES, type EmphasisResolved, type EmphasisSpec, emphasisAt, emphasisProgress, emphasisRun, holdTracking, parseKeyed, resolveEmphasis, skipInk } from './TypeEmphasis';
 import { typeFillState } from './TypeFill';
 import { wordFrames, type WordsSpec, wordState } from './Words';
 
@@ -1672,7 +1672,7 @@ export const typeLineState = (f: number, spec: TypeLineSpec, m: LineMetrics, fil
       for (let i = g0; i <= g1; i++) if (st.glyphs[i] && alt.glyphs[i]) st.glyphs[i].color = alt.glyphs[i].color;
       if (st.slot && alt.slot && st.slot.word >= r.words[0] && st.slot.word <= r.words[1]) st.slot.items.forEach((it, k) => (it.color = alt.slot?.items[k]?.color ?? it.color));
     }
-    const from = emphasisAt(r, emphasisLanded(fr, W.n, r.words[1], c), fps, s.pace ?? 1);
+    const from = emphasisAt(r, emphasisRun(r.device).len60 > 0 ? emphasisLanded(fr, W.n, r.words[1], c) : emphasisSolid(fr, W.n, r.words[1], c), fps, s.pace ?? 1);
     st.emph = { ...r, glyphs: [g0, g1], p: emphasisProgress(f, r.device, from, fps, s.pace ?? 1), from };
   }
   if (s.dot && fr.dot !== undefined && f >= fr.dot) {
@@ -1684,9 +1684,62 @@ export const typeLineState = (f: number, spec: TypeLineSpec, m: LineMetrics, fil
   return applyExit(st, c);
 };
 
-/** The frame the last key word is solid: its onset tick plus 14 f (60 fps), never after the line resolves. */
-const emphasisLanded = (fr: { ticks: number[]; resolved: number }, n: number, last: number, c: Pick<Ctx, 'T'>) =>
+/**
+ * Rest, for the words an emphasis waits on (em; per 60 fps frame for the line's slide): no offset, trail, scale, turn,
+ * blur or fade left on any glyph, the line no longer re-centring, for two 60 fps steps running. `max60`: the longest an
+ * emphasis waits past the line's resolve for a word that never quite stops (a preset's own drift).
+ */
+export const EMPHASIS_REST = { d: 0.006, s: 0.006, rot: 0.3, blur: 0.003, opacity: 0.98, slide60: 0.002, max60: 30 } as const;
+const restCache = new Map<string, number>();
+const atRest = (g: GlyphState) => {
+  const R = EMPHASIS_REST;
+  return Math.abs(g.dx) < R.d && Math.abs(g.dy) < R.d && Math.abs(g.sx - 1) < R.s && Math.abs(g.sy - 1) < R.s && Math.abs(g.rot) < R.rot && g.blur < R.blur && g.opacity >= R.opacity && Math.hypot(g.smear[0], g.smear[1]) < R.d;
+};
+/**
+ * The first frame from `from` on (scanned in 60 fps steps, at most to `to`) at which every word up to `last` is at rest
+ * (EMPHASIS_REST): an emphasis never lands on a word while it, or a word before it, is still moving in. Read on the
+ * mono metrics, so the render, the timeline and the sound agree. Memoised per line. Pure.
+ */
+const restFrame = (c: Ctx, last: number, from: number, to: number): number => {
+  const s = c.s;
+  const key = JSON.stringify([{ ...s, colors: undefined, out: undefined, exit: undefined, emph: undefined, id: undefined, keys: undefined }, c.fps, last, from, to]);
+  const hit = restCache.get(key);
+  if (hit !== undefined) return hit;
+  const m = monoMetrics(s.text, 100, 0.56, typeLineAlts(s).map((a) => a.text));
+  const g1 = c.W.ends[last] ?? c.W.chars.length - 1;
+  const step = c.fps / 60;
+  let run = 0;
+  let prevX: number | null = null;
+  let found = to;
+  for (let k = 0; from + k * step <= to + 1e-9; k++) {
+    const f = from + k * step;
+    const st = PRESETS[s.preset]({ ...c, f, m });
+    const slide = prevX === null ? 0 : Math.abs(st.x - prevX);
+    prevX = st.x;
+    let ok = slide < EMPHASIS_REST.slide60 && st.blur < EMPHASIS_REST.blur;
+    for (let i = 0; ok && i <= g1; i++) if (c.W.wordOf[i] >= 0 && st.glyphs[i]) ok = atRest(st.glyphs[i]);
+    run = ok ? run + 1 : 0;
+    if (run >= 2) {
+      found = f - step;
+      break;
+    }
+  }
+  if (restCache.size > 4000) restCache.clear();
+  restCache.set(key, found);
+  return found;
+};
+
+/** The frame the last key word is solid: its onset tick plus 14 f (60 fps), never after the line resolves (a static device starts here). */
+const emphasisSolid = (fr: { ticks: number[]; resolved: number }, n: number, last: number, c: Pick<Ctx, 'T'>) =>
   fr.ticks.length === n && fr.ticks[last] !== undefined ? Math.min(fr.resolved, fr.ticks[last] + c.T(14)) : fr.resolved;
+/**
+ * The frame an animated emphasis may start from: the last key word solid and every word up to it at rest (restFrame),
+ * so a pill, a rule or a bar never lands while the word before it is still rising.
+ */
+const emphasisLanded = (fr: { ticks: number[]; resolved: number }, n: number, last: number, c: Ctx) => {
+  const solid = emphasisSolid(fr, n, last, c);
+  return Math.max(solid, restFrame(c, last, solid, Math.max(solid, fr.resolved) + c.T(EMPHASIS_REST.max60)));
+};
 
 /** When a line's emphasis device runs (frames): its start and its end (equal for a static device). Pure. */
 export const emphasisFrames = (spec: TypeLineSpec, film?: Partial<FilmCtx>): { from: number; to: number } | null => {
@@ -1696,8 +1749,10 @@ export const emphasisFrames = (spec: TypeLineSpec, film?: Partial<FilmCtx>): { f
   const fps = fpsOf(film);
   const T = (v: number) => f60x(v * (s.pace ?? 1), fps);
   const W = wordMap(s.text);
-  const fr = typeLineFrames(s, monoMetrics(s.text, 100, 0.56, typeLineAlts(s).map((a) => a.text)), film);
-  const from = emphasisAt(r, emphasisLanded(fr, W.n, r.words[1], { T }), fps, s.pace ?? 1);
+  const m = monoMetrics(s.text, 100, 0.56, typeLineAlts(s).map((a) => a.text));
+  const fr = typeLineFrames(s, m, film);
+  const c: Ctx = { f: s.at, s, m, fps, film: { ...film, fps }, W, col: colorsOf(s), key: keyOf(s, W.n), seed: s.seed ?? 0, T };
+  const from = emphasisAt(r, emphasisRun(r.device).len60 > 0 ? emphasisLanded(fr, W.n, r.words[1], c) : emphasisSolid(fr, W.n, r.words[1], c), fps, s.pace ?? 1);
   return { from, to: from + T(emphasisRun(r.device).len60) };
 };
 
@@ -1999,16 +2054,29 @@ export const TypeLine: React.FC<TypeLineProps> = (p) => {
     const seen = Math.max(...st.glyphs.slice(run.g0, run.g1 + 1).map((g) => g.opacity));
     if (seen <= 0.001) return null;
     const shift = `translate(${px(g0.dx * size)}, ${px(g0.dy * size)})`;
+    const keyText = W.chars.slice(run.g0, run.g1 + 1).join('');
     if (does.mark === 'under') {
+      // skip-ink: the rule breaks round every descender's ink, or sits whole under the descender line (TypeEmphasis skipInk)
       const U2 = L.under;
+      const left = run.x0 - U2.pad * run.S;
       const w = run.x1 - run.x0 + 2 * U2.pad * run.S;
-      return <div key="emark" style={{ position: 'absolute', left: run.x0 - U2.pad * run.S, top: run.base + U2.drop * run.S, width: w, height: Math.max(2, U2.thick * run.S), background: markColor, opacity: seen, transform: shift, clipPath: `inset(0 ${((1 - em.p) * 100).toFixed(3)}% 0 0)` }} />;
+      const ink = skipInk(
+        st.glyphs.slice(run.g0, run.g1 + 1).map((g, k) => ({ ch: g.ch, x: xOf(run.g0 + k) - left, w: lay.ws[run.g0 + k] })),
+        0,
+        w,
+        run.S,
+        U2.drop,
+      );
+      const stops = ink.runs.length === 1 && ink.runs[0][0] <= 0 && ink.runs[0][1] >= w ? undefined : `linear-gradient(90deg, ${['transparent 0px', ...ink.runs.flatMap(([a, b]) => [`transparent ${px(a)}`, `#000 ${px(a)}`, `#000 ${px(b)}`, `transparent ${px(b)}`])].join(', ')})`;
+      return <div key="emark" style={{ position: 'absolute', left, top: run.base + ink.drop * run.S, width: w, height: Math.max(2, U2.thick * run.S), background: markColor, opacity: seen, transform: shift, clipPath: `inset(0 ${((1 - em.p) * 100).toFixed(3)}% 0 0)`, ...(stops ? { WebkitMaskImage: stops, maskImage: stops } : {}) }} />;
     }
+    // a bar holds the key words whole: past the descender line when they carry one, so the knock-out never cuts a tail
     const B = markBox!;
-    const h = B.h * run.S;
+    const topEm = B.lift + B.h / 2;
+    const h = (topEm + barBottom(keyText, B.h, B.lift)) * run.S;
     const w = run.x1 - run.x0 + 2 * B.pad * run.S;
-    const r = B.radius * h;
-    return <div key="emark" style={{ position: 'absolute', left: run.x0 - B.pad * run.S, top: run.base - B.lift * run.S - h / 2, width: w, height: h, background: markColor, opacity: seen, transform: shift, clipPath: `inset(0 ${((1 - em.p) * 100).toFixed(3)}% 0 0 round ${px(r)})` }} />;
+    const r = B.radius * B.h * run.S;
+    return <div key="emark" style={{ position: 'absolute', left: run.x0 - B.pad * run.S, top: run.base - topEm * run.S, width: w, height: h, background: markColor, opacity: seen, transform: shift, clipPath: `inset(0 ${((1 - em.p) * 100).toFixed(3)}% 0 0 round ${px(r)})` }} />;
   })();
 
   const slotLeft = st.slot ? padX + m.xs[W.starts[st.slot.word]] + lineShift : 0;
