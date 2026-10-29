@@ -301,6 +301,20 @@ def previous_films(h, film):
     return [x for x in reversed(h.get('films') or []) if x.get('film') != film]
 
 
+def flagged_of(h):
+    """{sound: [audit codes]}: sounds earshot rendered with a take-breaking flag (truncated, clipped) in an earlier
+    film, so a cast skips them before a render fails kit.py check"""
+    return dict((h or {}).get('flagged') or {})
+
+
+def with_flags(h, flags):
+    """h with these sounds' flags recorded (a sound flagged again keeps its codes merged)"""
+    f = flagged_of(h)
+    for s, codes in (flags or {}).items():
+        f[s] = sorted(set(f.get(s) or []) | set(codes))
+    return dict(h, flagged=f) if f else dict(h)
+
+
 def record(h, film, report, date=None):
     """h with this film's cast as its newest entry (an earlier entry of the same film replaced)"""
     sounds = {a: r['sound'] for a, r in report['actions'].items()}
@@ -439,7 +453,7 @@ def music_cost(feat, action, music, tuned=False, bed_db=None, bands=None):
 
 
 def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None, role_for=None, avoid=(),
-         library=None, music=None, feats=None):
+         library=None, music=None, feats=None, flagged=None):
     """(kit dict with the film's actions cast, report). events: out/cues.json events; kit: audio/kit.json (a kit cast
     before is restored to its own roles first); knobs: {bank id: knobs} from earshot (candidates outside it are
     skipped; None trusts the table); role_for(kind, variant, weight, dur_s) -> the generic role (kit.role_for); avoid:
@@ -476,6 +490,10 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
     prev = previous_films(history or {}, film)
     last = prev[0] if prev else None
     older = {s for x in prev[1:4] for s in (x.get('sounds') or {}).values()}
+    # the signatures of the four films before the previous one: several films are made at once, so "the previous
+    # film" alone let one film's signature come straight back in the next but one
+    recent_sig = {s for x in prev[1:5] for s in (x.get('signature') or [])}
+    flags = dict(flagged or {})
     count = {a: sum(len(v) for v in gs.values()) for a, gs in groups.items()}
     bed_of = {a: (roles.get(max(gs, key=lambda g: len(gs[g]))) or {}).get('bed_db') for a, gs in groups.items()}
     here_of = {a: local_bands(music, times[a]) for a in groups}  # the music where the action's events land
@@ -495,9 +513,15 @@ def cast(events, kit, fps=60.0, cue=None, history=None, film='film', knobs=None,
         if s in avoid:
             c += 40
             why.append('avoided for this film')
+        if s in flags:
+            c += 60
+            why.append(f"earshot renders it {', '.join(flags[s])}")
         if s in sig:
             c += 50
             why.append("the previous film's signature")
+        elif s in recent_sig:
+            c += 30
+            why.append("a recent film's signature")
         elif s in used:
             c += 4
             why.append('used by the previous film')

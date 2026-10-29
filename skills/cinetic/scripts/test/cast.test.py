@@ -153,6 +153,15 @@ def cast_rules(home):
     check(repv['actions']['appear']['sound'] != acts['appear']['sound'] and av['cast']['avoid'] == [acts['appear']['sound']]
           and again2['roles']['pop']['sound'] == av['roles']['pop']['sound'],
           'an avoided sound gives way to the next member, and casting again remembers it')
+    top_detent = acts['detent']['sound']
+    fl, repf = AC.cast(EVENTS, kit, 60.0, {'lockup': 900}, {'films': []}, 'film-a', BANK, K.role_for, flagged={top_detent: ['truncated']})
+    check(repf['actions']['detent']['sound'] != top_detent and top_detent in repf['actions']['detent']['avoided'],
+          f"a sound earshot renders truncated gives way at the cast ({repf['actions']['detent']})")
+    h5 = {'history': 1, 'films': [{'film': f'film-{k}', 'signature': [acts['text']['sound']] if k == 'x' else [], 'sounds': {}} for k in ('x', 'y')]}
+    _, rep5 = AC.cast(EVENTS, kit, 60.0, {'lockup': 900}, h5, 'film-z', BANK, K.role_for)
+    check(rep5['actions']['text']['sound'] != acts['text']['sound'], 'a signature two films back is avoided too (several films are made at once)')
+    hf = AC.with_flags(AC.with_flags({'history': 1, 'films': []}, {'a/b': ['truncated']}), {'a/b': ['clipped']})
+    check(AC.flagged_of(hf) == {'a/b': ['clipped', 'truncated']}, 'the history keeps the flags it learns, merged')
     lim = {s: {} for s in BANK if s != AC.ACTIONS['reveal']['sounds'][0]}
     _, repc = AC.cast(EVENTS, kit, 60.0, {}, {'films': []}, 'film-c', lim, K.role_for)
     check(repc['actions']['reveal']['sound'] != AC.ACTIONS['reveal']['sounds'][0], 'a sound outside the bank is never cast')

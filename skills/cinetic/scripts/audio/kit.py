@@ -51,7 +51,8 @@ Cast (after npm run cues, before npm run kit): every event has an action (action
 toggle, typing, a swipe, a logo lock, a transition through a shape ...; its "action" field, else the words of
 its id, else its kind's default). Each action of the film gets one bank sound from its own list: the same
 action always the same sound, different actions different sounds, and the previous film's signature
-sounds avoided (~/.cinetic/sound-history.json). The action that plays a kind most often re-voices that
+sounds avoided (~/.cinetic/sound-history.json; the four films before it weigh too), and sounds whose takes earshot
+renders truncated or clipped skipped (the known ones, the history's, this film's last render). The action that plays a kind most often re-voices that
 kind's role (its bed_db, offset_ms and min_gap_ms stay); another action on the same kind gets a role of its
 own, "<role>.<action>" (land.card_land). kit.json keeps a "cast" block (the roles' own specs, to cast again);
 the history records the film's sounds. Then tune and render. --avoid names sounds this film's listening or plan
@@ -1254,6 +1255,16 @@ def place_library(kit_path, takes, kit, lib, music=None, log=print):
     return placed
 
 
+# sounds earshot 0.4 renders with a take-breaking audit flag whatever the knobs (kit.py check fails right after a cast
+# that picks one); the history adds every sound a film's render flagged since
+KNOWN_FLAGGED = {'hover_tick/detent': ['truncated']}
+
+
+def take_breaking(codes):
+    """the audit codes that break a take (cut off, clipped), not a matter of taste"""
+    return sorted(c for c in codes if 'truncat' in c or 'clip' in c)
+
+
 def cmd_cast(a, score_python):
     """each action of the film its own sound, from earshot's bank and the sound library (actions.py), written into
     kit.json, the library's picks placed as takes, the history updated, then tuned; --dry-run prints the cast only"""
@@ -1292,8 +1303,24 @@ def cmd_cast(a, score_python):
     lib_ids = {LB.lib_id(s) for s in (lib or {}).get('sounds') or []}
     unknown = [x for x in avoid if x not in knobs and x not in lib_ids]
     if unknown:
-        print(f"kit.py: --avoid: not bank or library sounds: {', '.join(unknown)}", file=sys.stderr)
+        hint = [f'lib:{x}' for x in unknown if f'lib:{x}' in lib_ids]
+        print(f"kit.py: --avoid: not bank or library sounds: {', '.join(unknown)}"
+              + (f" (a library sound is named with its prefix: {', '.join(hint)})" if hint else ' (library sounds take the lib: prefix, as cast prints them)'),
+              file=sys.stderr)
         return 1
+    # sounds whose takes earshot flags as cut off or clipped: the known ones, the history's, and this film's last render
+    flags = dict(KNOWN_FLAGGED)
+    flags.update(AC.flagged_of(hist))
+    learned = {}
+    st0 = kit_state(a.kit, a.takes)
+    if st0.get('lock'):
+        for _role, sound, codes in Kit(st0['lock'], a.takes, st0['status'], cast=kit.get('cast')).warnings():
+            bad = take_breaking(codes)
+            if bad and sound:
+                flags[sound] = bad
+                learned[sound] = bad
+    if flags:
+        print('kit cast: skipping sounds earshot renders flagged: ' + ', '.join(f"{s} ({', '.join(c)})" for s, c in sorted(flags.items())))
     music = music_of(a.kit, a.score)
     if music:
         print(f"kit cast: matched to the track: {music.get('bpm') or '?'} BPM, centroid {music.get('centroid') or '?'} Hz, "
@@ -1301,7 +1328,7 @@ def cmd_cast(a, score_python):
     ids = sorted({s for x in AC.ACTIONS.values() for s in x['sounds'] if s in knobs})
     feats = bank_feats(es, ids) if music else {}
     new, rep = AC.cast(doc.get('events', []), kit, float(doc.get('fps', 60)), doc.get('cue') or {}, hist, film, knobs,
-                       role_for, avoid, library=lib, music=music, feats=feats)
+                       role_for, avoid, library=lib, music=music, feats=feats, flagged=flags)
     print(f"kit cast: {len(rep['actions'])} action(s) for {film}"
           + (f" (the previous film: {rep['previous']})" if rep['previous'] else ' (no previous film in the history)'))
     for act, r in sorted(rep['actions'].items(), key=lambda x: -x[1]['events']):
@@ -1327,7 +1354,7 @@ def cmd_cast(a, score_python):
     except KitError as e:
         print(f'kit.py: {e}', file=sys.stderr)
         return 1
-    AC.write_history(AC.record(hist, film, rep))
+    AC.write_history(AC.with_flags(AC.record(hist, film, rep), learned))
     print(f'kit cast: wrote {a.kit} and {AC.history_path()}; next: npm run kit (render), kit.py listen (judge), npm run plan')
     return 0
 
