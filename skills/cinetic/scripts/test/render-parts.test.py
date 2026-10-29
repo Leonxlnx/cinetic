@@ -8,9 +8,15 @@ render that encodes a test pattern with ffmpeg), so the parts route runs end to 
   3. --clean removes them; --clean refuses a folder that holds no render parts.
   4. --keep marks them: deliver.sh, passing, leaves them; a later run without --keep clears the mark and
      deliver.sh, passing, removes them.
+  5. The key covers what the composition imports: an edit to src/sync.ts (only FilmSub reads it) keeps the bundle,
+     the cached composition list and every part; an edit to an act re-bundles, names the file and drops the parts.
+  6. --redo A-B keeps the parts outside A..B and re-renders the others, checked against the old ones outside A..B;
+     a change outside them stops the run and the kept parts re-render on the next one.
+  7. --join-only joins the parts there without Remotion; a missing part stops it with its --part K.
 Needs bash (Git for Windows' on Windows), node, ffmpeg and ffprobe, and this Python with numpy (render.sh checks it); no network.
 
-Usage (from the skill root):  python3 scripts/test/render-parts.test.py [--verbose]
+Usage (from the skill root):  python3 scripts/test/render-parts.test.py [--verbose] [--part keep|key]
+(--part runs 1-4 or 5-7 alone, so a shared machine's job limit holds each run.)
 Exit codes: 0 all pass, 1 a test failed.
 """
 import os
@@ -24,6 +30,7 @@ SKILL = os.path.abspath(os.path.join(HERE, '..', '..'))
 RENDER = os.path.join(SKILL, 'scripts', 'render.sh')
 DELIVER = os.path.join(SKILL, 'scripts', 'deliver.sh')
 VERBOSE = '--verbose' in sys.argv
+PART = sys.argv[sys.argv.index('--part') + 1] if '--part' in sys.argv else 'all'
 failed = 0
 
 STUB = r'''#!/usr/bin/env bash
@@ -38,7 +45,9 @@ case "$cmd" in
   render) out=$3; shift 3; fr=""
           for a in "$@"; do case "$a" in --frames=*) fr=${a#--frames=} ;; esac; done
           n=$(( ${fr#*-} - ${fr%-*} + 1 ))
-          ffmpeg -v error -y -f lavfi -i "testsrc=size=64x36:rate=30" -frames:v "$n" -c:v libx264 -pix_fmt yuv420p "$out" ;;
+          # the picture of film frame k is the k-th frame of the pattern ($STUB_PATTERN, testsrc by default)
+          ffmpeg -v error -y -f lavfi -i "${STUB_PATTERN:-testsrc}=size=64x36:rate=30" -vf "trim=start_frame=${fr%-*}:end_frame=$(( ${fr#*-} + 1 )),setpts=PTS-STARTPTS" \
+            -frames:v "$n" -c:v libx264 -pix_fmt yuv420p "$out" ;;
   *) exit 1 ;;
 esac
 '''
@@ -73,7 +82,20 @@ def main():
         proj, stub = os.path.join(tmp, 'film'), os.path.join(tmp, 'bin')
         for d in (os.path.join(proj, 'src'), os.path.join(proj, 'public'), stub):
             os.makedirs(d)
-        open(os.path.join(proj, 'src', 'index.ts'), 'w').write('// the stand-in renders no source\n')
+        # a project shaped like the starter: the Film reads an act; FilmSub (another composition) reads the sound plan
+        files = {
+            'index.ts': "import { registerRoot } from 'remotion';\nimport { RemotionRoot } from './Root';\nregisterRoot(RemotionRoot);\n",
+            'Root.tsx': ("import { Composition } from 'remotion';\nimport { Film } from './Film';\nimport { FilmSub, subMetadata } from './FilmSub';\n"
+                         "export const RemotionRoot = () => (<>\n  <Composition id=\"Film\" component={Film} durationInFrames={20} fps={30} width={64} height={36} />\n"
+                         "  <Composition id=\"FilmSub\" component={FilmSub} durationInFrames={20} fps={30} width={64} height={36} calculateMetadata={subMetadata} />\n</>);\n"),
+            'Film.tsx': "import { Act } from './acts/Act';\nexport const Film = () => <Act />;\n",
+            'FilmSub.tsx': "import * as SYNC from './sync';\nexport const FilmSub = () => null;\nexport const subMetadata = () => ({ props: SYNC });\n",
+            'sync.ts': 'export const EVENTS = [1, 2, 3];\n',
+            os.path.join('acts', 'Act.tsx'): 'export const Act = () => null; // v1\n',
+        }
+        os.makedirs(os.path.join(proj, 'src', 'acts'))
+        for name, body in files.items():
+            open(os.path.join(proj, 'src', name), 'w', newline='\n').write(body)
         open(os.path.join(stub, 'npx'), 'w', newline='\n').write(STUB)
         os.chmod(os.path.join(stub, 'npx'), 0o755)
         log = os.path.join(tmp, 'npx.log')
@@ -92,28 +114,71 @@ def main():
             return sorted(os.listdir(parts)) if os.path.isdir(parts) else []
 
         master = ['Film', 'out/film.mp4', '--no-audio', '--no-check', '--chunk-frames', '10']
-        code, err = sh(RENDER, *master)
-        have = listing()
-        result(code == 0 and os.path.isfile(os.path.join(proj, 'out', 'film.mp4')) and renders() == 2, 'a master renders in two parts and joins', err[-400:])
-        result({'bundle', 'bundle.key', 'part-000000-000009.mp4', 'part-000010-000019.mp4'} <= set(have) and 'until every gate has passed' in err,
-               'the bundle and the parts stay after a passing render, and it says until when', ' '.join(have))
-        code, err = sh(RENDER, *master)
-        result(code == 0 and renders() == 2, 'a rerun with src/ unchanged joins the kept parts and renders nothing again', f'{renders()} renders; {err[-300:]}')
-        code, err = sh(RENDER, 'Film', 'out/film.mp4', '--clean')
-        result(code == 0 and not os.path.exists(parts), '--clean removes the bundle and the parts', err[-200:])
-        other = os.path.join(proj, 'out', 'notes')
-        os.makedirs(other)
-        open(os.path.join(other, 'keep-me.txt'), 'w').write('x')
-        code, err = sh(RENDER, 'Film', 'out/film.mp4', '--clean', '--parts', 'out/notes')
-        result(code == 1 and os.path.isfile(os.path.join(other, 'keep-me.txt')), '--clean refuses a folder that holds no render parts', err[-200:])
-        code, err = sh(RENDER, *master, '--keep')
-        result(code == 0 and '.keep' in listing(), '--keep marks the parts', ' '.join(listing()))
-        code, err = sh(DELIVER, 'out/film.mp4')
-        result(code == 0 and os.path.isfile(os.path.join(parts, 'part-000000-000009.mp4')), 'deliver.sh, passing, leaves parts marked --keep', err[-300:])
-        code, err = sh(RENDER, *master)
-        result(code == 0 and '.keep' not in listing() and renders() == 4, 'a run without --keep clears the mark (and reuses the parts)', ' '.join(listing()))
-        code, err = sh(DELIVER, 'out/film.mp4')
-        result(code == 0 and not os.path.exists(parts) and 'removed the render parts' in err, 'deliver.sh, passing, removes the parts', err[-300:])
+        if PART in ('all', 'keep'):
+            code, err = sh(RENDER, *master)
+            have = listing()
+            result(code == 0 and os.path.isfile(os.path.join(proj, 'out', 'film.mp4')) and renders() == 2, 'a master renders in two parts and joins', err[-400:])
+            result({'bundle', 'bundle.key', 'part-000000-000009.mp4', 'part-000010-000019.mp4'} <= set(have) and 'until every gate has passed' in err,
+                   'the bundle and the parts stay after a passing render, and it says until when', ' '.join(have))
+            code, err = sh(RENDER, *master)
+            result(code == 0 and renders() == 2, 'a rerun with src/ unchanged joins the kept parts and renders nothing again', f'{renders()} renders; {err[-300:]}')
+            code, err = sh(RENDER, 'Film', 'out/film.mp4', '--clean')
+            result(code == 0 and not os.path.exists(parts), '--clean removes the bundle and the parts', err[-200:])
+            other = os.path.join(proj, 'out', 'notes')
+            os.makedirs(other)
+            open(os.path.join(other, 'keep-me.txt'), 'w').write('x')
+            code, err = sh(RENDER, 'Film', 'out/film.mp4', '--clean', '--parts', 'out/notes')
+            result(code == 1 and os.path.isfile(os.path.join(other, 'keep-me.txt')), '--clean refuses a folder that holds no render parts', err[-200:])
+            code, err = sh(RENDER, *master, '--keep')
+            result(code == 0 and '.keep' in listing(), '--keep marks the parts', ' '.join(listing()))
+            code, err = sh(DELIVER, 'out/film.mp4')
+            result(code == 0 and os.path.isfile(os.path.join(parts, 'part-000000-000009.mp4')), 'deliver.sh, passing, leaves parts marked --keep', err[-300:])
+            code, err = sh(RENDER, *master)
+            result(code == 0 and '.keep' not in listing() and renders() == 4, 'a run without --keep clears the mark (and reuses the parts)', ' '.join(listing()))
+            code, err = sh(DELIVER, 'out/film.mp4')
+            result(code == 0 and not os.path.exists(parts) and 'removed the render parts' in err, 'deliver.sh, passing, removes the parts', err[-300:])
+
+        if PART in ('all', 'key'):
+            def calls(what):
+                return sum(1 for l in open(log) if l.startswith(f'remotion {what}')) if os.path.exists(log) else 0
+
+            def edit(name, text):
+                with open(os.path.join(proj, 'src', name), 'a', newline='\n') as fh:
+                    fh.write(text)
+
+            code, err = sh(RENDER, *master)
+            r0, b0, c0 = renders(), calls('bundle'), calls('compositions')
+            edit('sync.ts', 'export const MORE = 4;\n')
+            code, err = sh(RENDER, *master)
+            result(code == 0 and renders() == r0 and calls('bundle') == b0 and calls('compositions') == c0,
+                   'an edit to src/sync.ts (the composition never imports it) keeps the bundle, the composition list and every part',
+                   f'{renders() - r0} renders, {calls("bundle") - b0} bundles, {calls("compositions") - c0} listings; {err[-300:]}')
+            edit(os.path.join('acts', 'Act.tsx'), '// v2\n')
+            code, err = sh(RENDER, *master)
+            result(code == 0 and renders() == r0 + 2 and 'src/acts/Act.tsx' in err and '--redo' in err,
+                   'an edit to an act re-bundles, names the file, drops the parts and says --redo keeps the others', f'{renders() - r0} renders; {err[-400:]}')
+            r1 = renders()
+            edit(os.path.join('acts', 'Act.tsx'), '// v3\n')
+            code, err = sh(RENDER, *master, '--redo', '12-19')
+            result(code == 0 and renders() == r1 + 1 and 'kept 1 part' in err and 'match the part rendered before the edit' in err
+                   and not any(n.endswith('.old.mp4') for n in listing()),
+                   '--redo 12-19 keeps part 0, re-renders part 1 and checks its frames 10-11 against the old part', f'{renders() - r1} renders; {err[-400:]}')
+            r2 = renders()
+            edit(os.path.join('acts', 'Act.tsx'), '// v4\n')
+            env['STUB_PATTERN'] = 'rgbtestsrc'  # the edit changes every frame, not only 12-19
+            code, err = sh(RENDER, *master, '--redo', '12-19')
+            result(code == 1 and renders() == r2 + 1 and 'reaches past --redo' in err, '--redo stops when a re-rendered part changed outside the frames named', err[-400:])
+            code, err = sh(RENDER, *master)
+            result(code == 0 and renders() == r2 + 2, 'after that stop the kept part re-renders on the next run (the --redo part stays)', f'{renders() - r2} renders; {err[-300:]}')
+            del env['STUB_PATTERN']
+            os.remove(os.path.join(proj, 'out', 'film.mp4'))
+            r3, b3, c3 = renders(), calls('bundle'), calls('compositions')
+            code, err = sh(RENDER, *master, '--join-only')
+            result(code == 0 and os.path.isfile(os.path.join(proj, 'out', 'film.mp4')) and (renders(), calls('bundle'), calls('compositions')) == (r3, b3, c3),
+                   '--join-only joins the parts there with no bundle and no Remotion call', f'{err[-300:]}')
+            os.remove(os.path.join(parts, 'part-000010-000019.mp4'))
+            code, err = sh(RENDER, *master, '--join-only')
+            result(code == 1 and '--part 1 (frames 10-19)' in err and renders() == r3, '--join-only names a missing part and renders nothing', err[-300:])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print('render-parts tests: ' + ('all pass' if not failed else f'{failed} failed'))

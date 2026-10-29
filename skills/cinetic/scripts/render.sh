@@ -36,9 +36,19 @@
 # bundle built once into out/render/<name>/ (or --bundle DIR, one you built with `npx remotion bundle`),
 # one Remotion render at a time; each finished part is kept there, so a run stopped by a job limit
 # (a shared machine's 10-minute cap) or a crash resumes where it stopped: rerun the same command. The
-# bundle is rebuilt, and the parts dropped, when src/ or public/ changed since it was built. --max-min M
+# bundle is rebuilt when the source of <Comp> changed since it was built: what scripts/render-key.cjs follows
+# from the entry (the composition's component and its imports, Root.tsx, remotion.config.ts) and public/; an
+# edit to src/sync.ts, a still or anything else the composition never imports keeps the bundle and every part.
+# When it did change, render.sh names the files that changed and drops the parts, unless --redo A-B says the
+# edit changes only frames A..B (one act's file, say): then the parts outside A..B are kept, the ones that
+# overlap it re-render, and each re-rendered part is compared with the one it replaces outside A..B (8x8 blocks
+# of a 480-wide luma decode, a mean difference over 4 levels is a change); a change there stops the run and the
+# kept parts re-render next time. --max-min M
 # stops starting parts once the next one would pass M minutes (from its measured pace) and exits 75 with
 # the parts left; --part K renders part K alone and exits (a scheduler runs each part as its own job).
+# The composition list is cached beside the bundle, so a rerun on a kept bundle starts its first part without
+# `remotion compositions`. --join-only joins the parts already there (no bundle, no Remotion: a CPU-only job
+# while another job holds the GPU), then muxes and gates as below; a missing part stops it with its --part K.
 # When every part is there, ffmpeg joins them with the concat demuxer (stream copy, no re-encode) and
 # writes the BT.709 colour tags into the stream and the container, then the mux and the gates below run.
 # The parts stay after the join until every gate has passed, render.sh's own and then the film's (forensics,
@@ -77,6 +87,10 @@
 #   --chunk-frames N    frames per part (default 300; --preview and the master); 0 or --single: one call
 #   --max-min M         stop starting parts once the next would pass M minutes; exit 75 with parts left
 #   --part K            render part K (0-based) alone and exit 0 (no join, no mux)
+#   --redo A-B          (repeatable) the source changed only frames A..B: keep the parts outside them, re-render
+#                       the ones that overlap, check the re-rendered parts match the old ones outside A..B
+#   --join-only         join the parts in the parts folder (every one must be there), mux and gate; no bundle and
+#                       no Remotion call (size and fps from the cached composition list or the parts themselves)
 #   --parts DIR         where the bundle and the parts live (default out/render/<out name>)
 #   --bundle DIR        render from this pre-built bundle (npx remotion bundle src/index.ts --out-dir DIR)
 #   --single            the whole range in one Remotion render (no parts)
@@ -131,7 +145,7 @@ step() { echo "[render $(( $(date +%s) - T0 ))s] $*" >&2; }
 COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0; POLICY=auto
 ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
 SPEC=""; NOCHECK=0; KEEP=0; CLEAN=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0; ACCEPT_FAST=""; ACCEPT_CUT=""
-CHUNK=300; MAXMIN=0; ONLY_PART=""; PARTS=""; PREBUILT=""; SINGLE=0
+CHUNK=300; MAXMIN=0; ONLY_PART=""; PARTS=""; PREBUILT=""; SINGLE=0; REDO=""; JOIN_ONLY=0
 POS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -153,6 +167,8 @@ while [[ $# -gt 0 ]]; do
     --chunk-frames) CHUNK=${2:?--chunk-frames needs a number}; shift ;;
     --max-min) MAXMIN=${2:?--max-min needs minutes}; shift ;;
     --part) ONLY_PART=${2:?--part needs an index}; shift ;;
+    --redo) [[ "${2:-}" =~ ^[0-9]+-[0-9]+$ ]] || die "--redo wants A-B, the film frames the edit changes"; REDO="$REDO $2"; shift ;;
+    --join-only) JOIN_ONLY=1 ;;
     --parts) PARTS=${2:?--parts needs a folder}; shift ;;
     --bundle) PREBUILT=${2:?--bundle needs a folder}; shift ;;
     --single) SINGLE=1 ;;
@@ -182,6 +198,7 @@ COMP=${POS[0]}; OUT=${POS[1]}
 [[ "$MAXMIN" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "--max-min wants minutes"
 [[ -z "$ONLY_PART" || "$ONLY_PART" =~ ^[0-9]+$ ]] || die "--part wants a 0-based index"
 [[ "$CHUNK" -eq 0 ]] && SINGLE=1
+[[ $JOIN_ONLY -eq 0 || ( $MODE != blur && $SINGLE -eq 0 && -z "$ONLY_PART" ) ]] || die "--join-only joins the parts of a preview or a master (not --blur, --single or --part)"
 
 # project root: the current folder if it has the entry, else the folder above this script
 if [[ ! -f "$ENTRY" ]]; then
@@ -256,22 +273,70 @@ touch "$WORK/.bundled"
 # the parts route keeps its bundle and parts in a folder of the project, so a stopped run resumes
 CHUNKED=0; [[ $MODE != blur && $SINGLE -eq 0 ]] && CHUNKED=1
 PARTS=${PARTS:-out/render/$NAME}
-if [[ -n "$PREBUILT" ]]; then
+[[ $CHUNKED -eq 1 ]] && mkdir -p "$PARTS"
+# parts.keys: one line per part, "<file> <the source key of the bundle it was rendered from>"; redo.kept: the parts a
+# --redo run kept from before the edit, until every re-rendered part has matched its old one outside the frames named
+SRC_KEY=""; KEYS="$PARTS/parts.keys"; KEPT_LIST="$PARTS/redo.kept"
+part_key() { if [[ -f "$KEYS" ]]; then awk -v f="$(basename "$1")" '$1 == f { print $2; exit }' "$KEYS"; fi; return 0; }
+set_part_key() {
+  local f; f=$(basename "$1")
+  if [[ -f "$KEYS" ]]; then awk -v f="$f" '$1 != f' "$KEYS" > "$KEYS.tmp"; else : > "$KEYS.tmp"; fi
+  if [[ -n "$2" ]]; then echo "$f $2" >> "$KEYS.tmp"; fi
+  mv -f "$KEYS.tmp" "$KEYS"
+}
+# a part is current when it was rendered from this source (a pre-built --bundle or --join-only trusts the folder)
+part_current() { if [[ -z "$SRC_KEY" ]]; then return 0; fi; [[ "$(part_key "$1")" == "$SRC_KEY" ]]; }
+in_redo() { local r; for r in $REDO; do if (( $1 <= ${r#*-} && $2 >= ${r%-*} )); then return 0; fi; done; return 1; }
+old_parts() { find "$PARTS" -maxdepth 1 -name 'part-*.mp4' ! -name '*.tmp.mp4' ! -name '*.old.mp4' 2>/dev/null | sort; }
+if [[ $JOIN_ONLY -eq 1 ]]; then
+  [[ -d "$PARTS" ]] || die "--join-only: no parts folder $PARTS (render.sh writes it; --parts DIR names another)"
+  B=""
+  if [[ -f "$PARTS/bundle.key" ]]; then
+    now=$(node "$SCRIPT_DIR/render-key.cjs" --entry "$ENTRY" --comp "$COMP" public 2>/dev/null || true)
+    [[ -z "$now" || "$now" == "$(cat "$PARTS/bundle.key")" ]] || echo "render.sh: warning: the source of $COMP changed since these parts' bundle was built; the joined film shows it as it was" >&2
+  fi
+  step "--join-only: joining the parts in $PARTS (no bundle, no Remotion)"
+elif [[ -n "$PREBUILT" ]]; then
   [[ -f "$PREBUILT/index.html" ]] || die "--bundle $PREBUILT is not a Remotion bundle (no index.html)"
   B=$(cd "$PREBUILT" && pwd)
   step "pre-built bundle: $B"
 elif [[ $CHUNKED -eq 1 ]]; then
-  mkdir -p "$PARTS"
-  # the source's fingerprint: every file under src/ (path, size, content) and public/ (path, size)
-  SRC_KEY=$(node "$SCRIPT_DIR/render-key.cjs" src public) || die "could not fingerprint src/"
+  # the source's fingerprint: what the composition can depend on (scripts/render-key.cjs) and public/ (path, size)
+  SRC_KEY=$(node "$SCRIPT_DIR/render-key.cjs" --entry "$ENTRY" --comp "$COMP" --manifest "$PARTS/manifest.new.json" public) || die "could not fingerprint the source of $COMP"
   if [[ -f "$PARTS/bundle/index.html" && "$(cat "$PARTS/bundle.key" 2>/dev/null)" == "$SRC_KEY" ]]; then
-    step "reusing the bundle in $PARTS (src/ and public/ unchanged since it was built)"
+    step "reusing the bundle in $PARTS (the source of $COMP and public/ unchanged since it was built)"
+    [[ -z "$REDO" ]] || step "--redo$REDO has nothing to do: the source is the one the bundle was built from"
+    mv -f "$PARTS/manifest.new.json" "$PARTS/manifest.json"
+    if [[ ! -f "$KEYS" ]]; then for p in $(old_parts); do set_part_key "$p" "$SRC_KEY"; done; fi  # a folder from before the record
   else
-    [[ -d "$PARTS/bundle" ]] && step "src/ or public/ changed since the last bundle: rebuilding it and dropping its parts"
-    rm -rf "$PARTS/bundle" "$PARTS"/part-*.mp4 "$PARTS/bundle.key"
+    OLD=$(old_parts)
+    if [[ -d "$PARTS/bundle" || -n "$OLD" ]]; then
+      CHANGED=$(node -e '
+const fs = require("fs"); const [a, b] = process.argv.slice(1).map((p) => JSON.parse(fs.readFileSync(p, "utf8")));
+const A = a.files || {}, B = b.files || {};
+const ch = [...new Set([...Object.keys(A), ...Object.keys(B)])].filter((k) => A[k] !== B[k]).sort();
+console.log(ch.length ? ch.slice(0, 8).map((k) => k + (A[k] === undefined ? " (new)" : B[k] === undefined ? " (gone)" : "")).join(", ") + (ch.length > 8 ? `, and ${ch.length - 8} more` : "") : `the reach of the key changed (${a.mode} -> ${b.mode})`);' "$PARTS/manifest.json" "$PARTS/manifest.new.json" 2>/dev/null || echo "(no manifest of the last bundle to compare)")
+      step "the source of $COMP changed since the last bundle: $CHANGED"
+    fi
+    if [[ -n "$REDO" && -n "$OLD" ]]; then
+      : > "$KEPT_LIST"
+      kept=0
+      for p in $OLD; do
+        nm=$(basename "$p"); [[ "$nm" =~ ^part-([0-9]+)-([0-9]+)\.mp4$ ]] || continue
+        if in_redo "$((10#${BASH_REMATCH[1]}))" "$((10#${BASH_REMATCH[2]}))"; then mv -f "$p" "${p%.mp4}.old.mp4"; set_part_key "$p" ""
+        else set_part_key "$p" "$SRC_KEY"; echo "$nm" >> "$KEPT_LIST"; kept=$((kept + 1)); fi
+      done
+      step "--redo$REDO: kept $kept part(s) outside those frames; the ones that overlap them re-render and are checked against the old ones outside them"
+    else
+      [[ -n "$OLD" ]] && step "dropping the parts (when the edit changes only some frames, rerun with --redo A-B to keep the others)"
+      rm -f "$PARTS"/part-*.mp4 "$KEYS" "$KEPT_LIST"
+    fi
+    rm -rf "$PARTS/bundle" "$PARTS/bundle.key" "$PARTS/compositions.txt"
+    [[ -f "$KEYS" ]] || : > "$KEYS"
     step "bundling $ENTRY into $PARTS/bundle"
     npx remotion bundle "$ENTRY" --out-dir "$PARTS/bundle" --log=error >/dev/null || die "bundle failed"
     echo "$SRC_KEY" > "$PARTS/bundle.key"
+    mv -f "$PARTS/manifest.new.json" "$PARTS/manifest.json"
   fi
   B=$(cd "$PARTS/bundle" && pwd)
 else
@@ -279,10 +344,33 @@ else
   npx remotion bundle "$ENTRY" --out-dir "$WORK/bundle" --log=error >/dev/null || die "bundle failed"
   B="$WORK/bundle"
 fi
-step "frozen bundle: $B (every pass renders from it; edits to src/ from now on are not in this render)"
-LIST=$(npx remotion compositions "$B" 2>/dev/null) || die "could not list compositions"
+# the composition list: cached beside the parts per bundle, so a rerun on a kept bundle skips `remotion compositions`
+CACHE=""; [[ $CHUNKED -eq 1 ]] && CACHE="$PARTS/compositions.txt"
+if [[ $JOIN_ONLY -eq 1 ]]; then
+  LIST=""; [[ -f "$CACHE" ]] && LIST=$(tail -n +2 "$CACHE")
+else
+  step "frozen bundle: $B (every pass renders from it; edits to src/ from now on are not in this render)"
+  CKEY="bundle $(node -e 'const s = require("fs").statSync(process.argv[1]); console.log(`${s.size}:${Math.round(s.mtimeMs)}`)' "$B/index.html")"
+  if [[ -n "$CACHE" && -f "$CACHE" && "$(head -1 "$CACHE")" == "$CKEY" ]]; then
+    LIST=$(tail -n +2 "$CACHE")
+  else
+    LIST=$(npx remotion compositions "$B" 2>/dev/null) || die "could not list compositions"
+    if [[ -n "$CACHE" ]]; then { echo "$CKEY"; echo "$LIST"; } > "$CACHE"; fi
+  fi
+fi
 meta() { awk -v id="$1" '$1 == id && $2 ~ /^[0-9.]+$/ && $3 ~ /^[0-9]+x[0-9]+$/ { print $2, $3, $4; exit }' <<< "$LIST"; }
 read -r FPS SIZE TOTAL <<< "$(meta "$COMP")" || true
+FIRST_PART=""
+if [[ $JOIN_ONLY -eq 1 ]]; then
+  FIRST_PART=$(old_parts | head -1)
+  [[ -n "$FIRST_PART" ]] || die "--join-only: no parts in $PARTS"
+  if [[ -z "${FPS:-}" ]]; then  # no cached list (parts rendered by hand): the parts' own size and rate, the film's length from out/cues.json
+    FPS=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of csv=p=0 "$FIRST_PART" | node -e 'const [n, d] = require("fs").readFileSync(0, "utf8").trim().split("/").map(Number); console.log(+(n / (d || 1)).toFixed(3))')
+    SIZE=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$FIRST_PART")
+    TOTAL=$(node -e 'try { console.log(JSON.parse(require("fs").readFileSync("out/cues.json", "utf8")).total || "") } catch { console.log("") }')
+    if [[ -z "$TOTAL" ]]; then [[ -n "$FRAMES" ]] && TOTAL=$(( ${FRAMES#*-} + 1 )) || die "--join-only: no cached composition list and no out/cues.json total; pass --frames A-B"; fi
+  fi
+fi
 if [[ -z "${FPS:-}" ]]; then
   ids=$(awk '$2 ~ /^[0-9.]+$/ && $3 ~ /x/ {printf "%s ", $1}' <<< "$LIST")
   die "no video composition '$COMP' (stills render with 'npx remotion still'). Available: $ids"
@@ -303,6 +391,8 @@ if (!(s > 0)) process.exit(1);
 const side = (d) => { while (Math.round(d * s) % 2) d--; return Math.round(d * s); };
 console.log(`${side(w)}x${side(h)}`);' "$SIZE" "$SCALE") || die "--scale wants a positive number (got $SCALE)"
 fi
+# --join-only: the probe expects the size the parts were rendered at, whatever --scale rendered them
+[[ $JOIN_ONLY -eq 1 ]] && OUTSIZE=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$FIRST_PART")
 
 FROM=0; TO=$((TOTAL - 1)); RANGE=()
 if [[ -n "$FRAMES" ]]; then
@@ -333,6 +423,50 @@ RARGS+=(${EXTRA[@]+"${EXTRA[@]}"})
 PIC="$WORK/picture.mp4"
 step "$COMP: ${SIZE}@${FPS}$([[ "$OUTSIZE" != "$SIZE" ]] && echo " (written at $OUTSIZE, --scale $SCALE)"), frames $FROM-$TO ($N f, ${DUR}s), mode $MODE"
 
+# redo_check NEW OLD A: a part re-rendered after a --redo edit against the part it replaces, frame by frame outside
+# the --redo frames (A = the part's first film frame): exit 0 they match, 1 a frame changed, 2 nothing to compare.
+# Both are decoded to 480-wide luma; an 8x8 block whose mean difference passes 4 levels is a change (two encodes of
+# the same frames differ by about 1). A function, because bash 3.2 cannot parse a heredoc inside $( ).
+redo_check() {
+  python3 - "$1" "$2" "$3" "$REDO" <<'PY'
+import subprocess, sys
+import numpy as np
+new, old, a0 = sys.argv[1], sys.argv[2], int(sys.argv[3])
+rng = [tuple(int(v) for v in r.split('-')) for r in sys.argv[4].split()]
+W, H = (int(v) for v in subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height',
+                                        '-of', 'csv=p=0', new], capture_output=True, text=True).stdout.strip().split(','))
+w = min(480, W) // 2 * 2
+h = max(2, int(round(H * w / W / 2)) * 2)
+def frames(p):
+    pr = subprocess.Popen(['ffmpeg', '-v', 'error', '-i', p, '-vf', f'scale={w}:{h}:flags=area', '-f', 'rawvideo', '-pix_fmt', 'gray', '-'],
+                          stdout=subprocess.PIPE)
+    while True:
+        buf = pr.stdout.read(w * h)
+        if len(buf) < w * h:
+            break
+        yield np.frombuffer(buf, np.uint8).reshape(h, w).astype(np.int16)
+    pr.stdout.close()
+    pr.wait()
+hh, ww = h // 8 * 8, w // 8 * 8
+bad, seen = [], 0
+for i, (x, y) in enumerate(zip(frames(new), frames(old))):
+    f = a0 + i
+    if any(lo <= f <= hi for lo, hi in rng):
+        continue
+    seen += 1
+    d = float(np.abs(x - y)[:hh, :ww].reshape(hh // 8, 8, ww // 8, 8).mean(axis=(1, 3)).max())
+    if d > 4:
+        bad.append((f, d))
+if not seen:
+    print('no frame of it lies outside --redo, nothing to compare')
+    sys.exit(2)
+if bad:
+    print(f'{len(bad)} of its {seen} frame(s) outside --redo changed (f{bad[0][0]}..f{bad[-1][0]}, an 8x8 block up to {max(d for _, d in bad):.0f} levels apart)')
+    sys.exit(1)
+print(f'its {seen} frame(s) outside --redo match the part rendered before the edit')
+PY
+}
+
 # subframe_span SAMPLES A B: the first and last sub-frame of film frames A-B. A function, because
 # bash 3.2 (macOS) cannot parse a heredoc inside $( ).
 subframe_span() {
@@ -359,13 +493,14 @@ case "$MODE" in
       NP=$(( (N + CHUNK - 1) / CHUNK ))
       [[ -z "$ONLY_PART" || "$ONLY_PART" -lt "$NP" ]] || die "--part $ONLY_PART: this range has $NP part(s), 0-$((NP - 1))"
       part_file() { local a=$((FROM + $1 * CHUNK)); local b=$((a + CHUNK - 1)); (( b > TO )) && b=$TO; echo "$PARTS/part-$(printf %06d "$a")-$(printf %06d "$b").mp4"; }
-      LAST_S=0; left=0
+      LAST_S=0; left=0; MISSING=""
       step "$N frames in $NP part(s) of <= $CHUNK in $PARTS$([[ "$MAXMIN" != 0 ]] && echo ", stopping before ${MAXMIN} min")"
       for ((k = 0; k < NP; k++)); do
         [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue
         a=$((FROM + k * CHUNK)); b=$((a + CHUNK - 1)); (( b > TO )) && b=$TO
         f=$(part_file "$k")
-        if [[ -f "$f" && "$(frames_of "$f")" -eq $((b - a + 1)) ]]; then continue; fi
+        if [[ -f "$f" && "$(frames_of "$f")" -eq $((b - a + 1)) ]] && part_current "$f"; then continue; fi
+        if [[ $JOIN_ONLY -eq 1 ]]; then MISSING="$MISSING --part $k (frames $a-$b);"; continue; fi
         # under a time limit: start a part only if it fits, judged by the last part's pace
         if [[ "$MAXMIN" != 0 ]] && node -e "const [e,l,m]=process.argv.slice(1).map(Number);process.exit(e + 1.15 * l > m * 60 ? 0 : 1)" "$(( $(date +%s) - T0 ))" "$LAST_S" "$MAXMIN"; then
           left=$((left + 1)); continue
@@ -376,8 +511,21 @@ case "$MODE" in
         npx remotion render "$B" "$COMP" "$f.tmp.mp4" --frames="$a-$b" ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
           || die "remotion render failed on part $((k + 1)) (frames $a-$b); the finished parts are kept in $PARTS: rerun to resume"
         mv -f "$f.tmp.mp4" "$f"
+        [[ -n "$SRC_KEY" ]] && set_part_key "$f" "$SRC_KEY"
+        if [[ -f "${f%.mp4}.old.mp4" ]]; then  # a --redo part: outside the frames named it must match the part it replaces
+          rc=0; msg=$(redo_check "$f" "${f%.mp4}.old.mp4" "$a") || rc=$?
+          if [[ $rc -eq 1 ]]; then
+            if [[ -f "$KEPT_LIST" ]]; then while read -r kp; do [[ -n "$kp" ]] && set_part_key "$kp" ""; done < "$KEPT_LIST"; rm -f "$KEPT_LIST"; fi
+            rm -f "${f%.mp4}.old.mp4"  # the re-rendered part is the new source's: it stays
+            die "part $((k + 1)) (frames $a-$b): $msg. The edit reaches past --redo$REDO, so the parts kept from before it re-render on the next run (rerun the same command, without --redo)"
+          fi
+          step "part $((k + 1)): $msg"
+          rm -f "${f%.mp4}.old.mp4"
+        fi
         LAST_S=$(( $(date +%s) - t1 ))
       done
+      [[ -z "$MISSING" ]] || die "--join-only: missing or out-of-date part(s) in $PARTS:$MISSING render each with the same command and --part K (or rerun without --join-only)"
+      if [[ -f "$KEPT_LIST" && -z "$(find "$PARTS" -maxdepth 1 -name '*.old.mp4' 2>/dev/null | head -1)" ]]; then rm -f "$KEPT_LIST"; fi
       if [[ -n "$ONLY_PART" ]]; then step "part $ONLY_PART done: $(part_file "$ONLY_PART")"; exit 0; fi
       if [[ $left -gt 0 ]]; then
         step "stopped before the ${MAXMIN}-minute limit: $left of $NP part(s) left in $PARTS; rerun the same command to continue"
