@@ -18,6 +18,15 @@
  *      whose own colour is black keeps the collections' order.
  *   6. Stops: a 403, repeated 429s and a challenge page end the run with what to do (never worked around).
  *   7. The CLI contract: --help, usage errors, exit codes; the starter's src/logos.ts is the empty index.
+ *   8. Fingerprints: one drawing written two ways (a rect and a path, a group transform, a CSS class, a clip path)
+ *      reads alike; a recoloured or redrawn mark does not; a flat mark against its gradient redraw; a one-colour file
+ *      by its shape alone; proportions keep a wordmark from matching a mark.
+ *   9. The brand table (a fixture table through CINETIC_LOGO_BRANDS): the collection that carries the current mark is
+ *      taken first; a file that draws a retired mark is skipped with a note (a retired colour too) and kept only with
+ *      --allow-outdated; only retired files stop the run and name the brand page; --file takes the brand's own file;
+ *      the version is printed and recorded; check <film> flags a retired mark in the record and one placed by hand.
+ *  10. The shipped table (logo-brands.json): every row has its mark (what, a fingerprint or a stated gap), owner and
+ *      brand page, every preferred file names a collection, every retired mark its dates and fingerprint.
  * No test touches the network: fetch is replaced by a map of collection URLs to fixture files that fails the run
  * on any other request.
  *
@@ -75,6 +84,7 @@ globalThis.fetch = async (u) => {
 };
 const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-logos-home-'));
 process.env.CINETIC_HOME = home;
+process.env.CINETIC_LOGO_BRANDS = path.join(home, 'no-table.json'); // sections 1-7: no brand table (the made-up brands are in none)
 const L = await import(pathToFileURL(path.join(SKILL, 'scripts', 'logos.mjs')).href);
 
 /** Run the CLI in-process with console captured: { code, out, err }. */
@@ -151,8 +161,8 @@ try {
     ]);
     result(groups.length === 2 && groups[0].members.length === 3 && groups[0].name === 'Tidepool', 'groupBrands: one brand across collections (name without the parent\'s word, same host); the plain name shown', JSON.stringify(groups.map((g) => [g.name, g.members.length])));
     const r = L.gilbarbaraRoles('acme', ['acme.svg', 'acme-icon.svg', 'acme-icon-2020.svg', 'acme-dark.svg', 'acme-icon-dark.svg', 'acme-monochrome-icon.svg', 'acme-2021.svg']);
-    result(r.mark[0] === 'acme-icon-2020.svg' && r.mark.length === 2 && r.markDark[0] === 'acme-icon-dark.svg' && r.base[0] === 'acme-2021.svg' && r.baseDark[0] === 'acme-dark.svg',
-      'gilbarbara roles: marks newest first, dark versions apart, monochrome left out', JSON.stringify(r));
+    result(r.mark[0] === 'acme-icon.svg' && r.mark[1] === 'acme-icon-2020.svg' && r.markDark[0] === 'acme-icon-dark.svg' && r.base[0] === 'acme.svg' && r.base[1] === 'acme-2021.svg' && r.baseDark[0] === 'acme-dark.svg',
+      'gilbarbara roles: the plain name (the current drawing) first, then the dated ones it replaced; dark versions apart, monochrome left out', JSON.stringify(r));
     result(L.licenceOk('CC0-1.0').ok && L.licenceOk('MIT').ok && /notice/.test(L.licenceOk('MIT').why), 'licence: CC0 passes, MIT passes with its notice kept');
     result(!L.licenceOk('CC-BY-4.0').ok && L.licenceOk('CC-BY-4.0', { allowCredit: true }).ok && !L.licenceOk('CC-BY-SA-4.0', { allowCredit: true }).ok && !L.licenceOk(undefined).ok,
       'licence: CC BY only with --allow-credit; share-alike and unknown refused');
@@ -256,6 +266,107 @@ try {
     const starter = path.join(SKILL, 'assets', 'remotion-starter', 'src', 'logos.ts');
     if (fs.existsSync(starter)) result(fs.readFileSync(starter, 'utf8') === L.indexSource({ logos: {} }), 'the starter\'s src/logos.ts is logos.mjs\'s empty index');
     else console.log('skip  the starter has no src/logos.ts');
+  }
+
+  // 8. fingerprints
+  {
+    const svgOf = (body, vb = '0 0 100 100') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${body}</svg>`;
+    const a = L.fingerprint(svgOf('<rect x="10" y="20" width="80" height="60" fill="#1A73E8"/><circle cx="50" cy="50" r="15" fill="#ffffff"/>'));
+    const b = L.fingerprint(svgOf('<style>.k{fill:#1a73e8}</style><g transform="translate(5 10)"><path class="k" d="M5 10h80v60H5z"/></g><circle cx="50" cy="50" r="15" fill="#fff"/>'));
+    const c = L.fingerprint(svgOf('<defs><clipPath id="c"><rect x="10" y="20" width="80" height="60"/></clipPath></defs><rect width="100" height="100" fill="#1A73E8" clip-path="url(#c)"/><circle cx="50" cy="50" r="15" fill="#ffffff"/>'));
+    result(/^fp1 a1\.3\d? p/.test(a) && L.parseFp(a)?.cov.length === 64, 'fingerprint: proportions, palette, 64 cells of coverage and colour', a.slice(0, 40));
+    result(L.similarity(a, b) >= 0.9 && L.similarity(a, c) >= 0.9, 'fingerprint: one drawing written as a rect or a path in a moved group with a CSS class, or clipped, reads alike', `${L.similarity(a, b)} ${L.similarity(a, c)}`);
+    const red = L.fingerprint(svgOf('<rect x="10" y="20" width="80" height="60" fill="#E8341A"/><circle cx="50" cy="50" r="15" fill="#ffffff"/>'));
+    const tri = L.fingerprint(svgOf('<path d="M10 80L50 20l40 60z" fill="#1A73E8"/>', '0 0 100 100'));
+    result(L.similarity(a, red) < 0.7 && L.similarity(a, tri) < 0.7, 'fingerprint: the same shape recoloured, or another shape, does not', `${L.similarity(a, red)} ${L.similarity(a, tri)}`);
+    const flat = L.fingerprint(svgOf('<rect width="50" height="100" fill="#1A73E8"/><rect x="50" width="50" height="100" fill="#E8341A"/>'));
+    const grad = L.fingerprint(svgOf('<defs><linearGradient id="g"><stop offset="0" stop-color="#1A73E8"/><stop offset="1" stop-color="#E8341A"/></linearGradient></defs><rect width="50" height="100" fill="url(#g)"/><rect x="50" width="50" height="100" fill="url(#g)"/>'));
+    result(L.parseFp(grad).grad > 0.8 && L.parseFp(flat).grad === 0 && L.similarity(flat, grad) < 0.7, 'fingerprint: a flat mark against its multi-hue gradient redraw', `${L.similarity(flat, grad)}`);
+    const glyph = L.fingerprint(L.sanitizeSvg(fx('si-glowbox.svg')));
+    const ring = L.fingerprint(L.sanitizeSvg(fx('glowbox-icon.svg')));
+    result(L.monoFp(L.parseFp(glyph)) && L.similarity(glyph, ring) >= 0.72, 'fingerprint: a one-colour file is compared by its shape alone', String(L.similarity(glyph, ring)));
+    const wide = L.fingerprint(svgOf('<rect x="0" y="40" width="100" height="20" fill="#1A73E8"/>'));
+    result(L.similarity(a, wide) === 0, 'fingerprint: a wordmark never matches a mark (proportions)');
+    result(L.fingerprint(svgOf('')) === null && L.similarity(null, a) === 0, 'fingerprint: nothing drawn is null, and alike nothing');
+  }
+
+  // 9. the brand table
+  {
+    const fpOf = (file) => L.fingerprint(L.sanitizeSvg(fx(file)));
+    const table = path.join(home, 'brands.json');
+    fs.writeFileSync(table, JSON.stringify({ checked: '2026-10-29', threshold: { same: 0.72, margin: 0.04 }, brands: {
+      glowbox: { name: 'Glowbox', owner: 'Glowbox Inc.', page: 'https://glowbox.example/brand', mark: { since: '2026-03', what: 'the white ring on the warm tile', fp: fpOf('svgl-glowbox.svg') },
+        prefer: ['svgl:11'], outdated: [{ since: '2019', until: '2026-03', what: 'the black ring', fp: fpOf('glowbox-icon.svg') }], members: { gilbarbara: ['glowbox'], svgl: ['11'], 'simple-icons': 'glowbox' } },
+      tidepool: { name: 'Tidepool', owner: 'Tidepool Inc.', page: 'https://tidepool.example/brand', mark: { since: '2025-01', what: 'the blue disc', fp: fpOf('svgl-tidepool.svg') },
+        outdated: [{ since: '2018', until: '2025-01', what: 'the disc and the green bar', fp: fpOf('tidepool-icon.svg') }], members: { gilbarbara: ['tidepool'], svgl: ['7'], 'simple-icons': 'tidepool' } },
+      slatework: { name: 'Slatework', owner: 'Slatework Ltd.', page: 'https://slatework.example/brand', mark: { since: '2024-06', what: 'the three coloured slabs', fp: fpOf('svgl-slatework.svg') },
+        prefer: ['svgl:12'], members: { gilbarbara: ['slatework'], svgl: ['12'], 'simple-icons': 'slatework' } },
+      sharecrop: { name: 'Sharecrop', owner: 'Sharecrop Co.', page: 'https://sharecrop.example/press', mark: { since: '2026-01', what: 'the triangle in blue', fp: null },
+        retired: ['#00aa55'], retiredWhat: 'the green of the 2020-2026 triangle', members: { svgl: ['9'], 'simple-icons': 'sharecrop' } },
+    } }));
+    process.env.CINETIC_LOGO_BRANDS = table;
+    const film4 = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-logos-film-'));
+    fs.mkdirSync(path.join(film4, 'public'));
+    const rec4 = () => JSON.parse(fs.readFileSync(path.join(film4, 'public', 'logos', 'logos.json'), 'utf8')).logos;
+    result(L.brandFor('glowbox')?.slug === 'glowbox' && L.brandFor('Tidepool')?.slug === 'tidepool' && L.brandFor('nope') === null, 'brand table: a row by its name');
+    const tp = await cli(['get', 'tidepool', '--film', film4]);
+    result(tp.code === 0 && rec4().tidepool.files.mark.from === 'svgl' && /gilbarbara tidepool-icon\.svg: the disc and the green bar \(2018 to 2025-01\), a retired mark: skipped/.test(tp.out),
+      'get with a brand row: a file that draws a retired mark is skipped with a note; the current one is taken', tp.out.split('\n').filter((l) => /retired|mark:/.test(l)).join(' | '));
+    result(/mark: the current mark: the blue disc, since 2025-01 \(checked 2026-10-29\); brand page https:\/\/tidepool\.example\/brand/.test(tp.out), 'get: the version printed with the brand page', tp.out.split('\n').find((l) => l.startsWith('mark:')));
+    result(rec4().tidepool.version?.status === 'current' && rec4().tidepool.version.since === '2025-01' && rec4().tidepool.version.page === 'https://tidepool.example/brand', 'record: the version, its date and the brand page', JSON.stringify(rec4().tidepool.version));
+    const sw4 = await cli(['get', 'slatework', '--film', film4]);
+    result(sw4.code === 0 && rec4().slatework.files.mark.from === 'svgl', "get: the row's preferred collection first (svgl's colour slabs over the collections' order)", rec4().slatework?.files?.mark?.from);
+    const gs = await cli(['get', 'glowbox', '--film', film4, '--source', 'gilbarbara']);
+    result(gs.code === 1 && /only retired marks of Glowbox/.test(gs.err) && /gilbarbara glowbox-icon\.svg: the black ring/.test(gs.err),
+      'get --source: a collection that holds only a retired mark is not taken from', gs.err.split('\n')[0].slice(0, 160));
+    const ga = await cli(['get', 'glowbox', '--film', film4, '--source', 'gilbarbara', '--allow-outdated', '--as', 'glowbox-old']);
+    result(ga.code === 0 && rec4()['glowbox-old'].files.mark.from === 'gilbarbara' && /a retired mark: the black ring/.test(ga.out), '--allow-outdated keeps the retired mark knowingly (and says so)', ga.out.split('\n').find((l) => l.startsWith('mark:')));
+    const sc = await cli(['get', 'sharecrop', '--film', film4]);
+    result(sc.code === 1 && /only retired marks of Sharecrop/.test(sc.err) && /the green of the 2020-2026 triangle/.test(sc.err) && /https:\/\/sharecrop\.example\/press/.test(sc.err) && /--file/.test(sc.err),
+      'get: only retired files (a retired colour) stop the run and name the brand page, --file and --allow-outdated', sc.err.split('\n')[0].slice(0, 160));
+    const own = path.join(home, 'sharecrop-own.svg');
+    fs.writeFileSync(own, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M10 90L50 10l40 80z" fill="#2255DD"/></svg>');
+    const sf = await cli(['get', 'sharecrop', '--film', film4, '--file', own]);
+    result(sf.code === 0 && rec4().sharecrop.files.mark.from === 'file' && rec4().sharecrop.sources.file.licence === 'owner-supplied', "--file: the brand's own file is the mark, recorded as the owner's file", JSON.stringify(rec4().sharecrop?.sources?.file));
+    const c0 = await cli(['check', film4]);
+    result(c0.code === 1 && /OUTDATED\s+logos\/glowbox-old\.svg\s+Glowbox: a retired mark: the black ring/.test(c0.out) && /current\s+tidepool/.test(c0.out), 'check <film>: the retired mark kept with --allow-outdated is flagged; the current ones pass', c0.out.split('\n').find((l) => /OUTDATED/.test(l)));
+    await cli(['get', 'glowbox', '--film', film4, '--as', 'glowbox-old']);
+    fs.copyFileSync(path.join(FIX, 'glowbox-icon.svg'), path.join(film4, 'public', 'hand-placed.svg'));
+    fs.writeFileSync(path.join(film4, 'public', 'hand-placed.svg'), fx('glowbox-icon.svg').replace('#111111', '#C23C8F'));
+    const c1 = await cli(['check', film4]);
+    const c1Old = c1.out.split('\n').filter((l) => /^OUTDATED/.test(l));
+    result(c1Old.length === 0 && /0 outdated/.test(c1.out), 'check: a mark fetched again passes; a recoloured ring placed by hand is not taken for the brand\'s retired black one', c1Old.join(' | ') || c1.out.split('\n').pop());
+    fs.mkdirSync(path.join(film4, 'public', 'img'));
+    fs.copyFileSync(path.join(FIX, 'tidepool-icon.svg'), path.join(film4, 'public', 'img', 'old-tidepool.svg'));
+    const c2 = await cli(['check', film4, '--json']);
+    const j2 = JSON.parse(c2.out);
+    result(c2.code === 1 && j2.marks.some((m) => m.file === 'img/old-tidepool.svg' && m.status === 'outdated' && m.brand === 'Tidepool'), 'check: an .svg placed by hand under public/ that draws a retired mark is flagged (--json)', JSON.stringify(j2.marks.filter((m) => m.status === 'outdated').map((m) => m.file)));
+    const v = L.versionOf(L.brandFor('glowbox'), L.sanitizeSvg(fx('glowbox-icon.svg')));
+    result(v.status === 'outdated' && v.since === '2019' && v.until === '2026-03' && v.by === 'drawing', 'versionOf: the retired drawing with its dates', JSON.stringify(v));
+    fs.rmSync(film4, { recursive: true, force: true });
+    process.env.CINETIC_LOGO_BRANDS = path.join(home, 'no-table.json');
+  }
+
+  // 10. the shipped table
+  {
+    const T = JSON.parse(fs.readFileSync(path.join(SKILL, 'scripts', 'logo-brands.json'), 'utf8'));
+    const rows = Object.entries(T.brands);
+    const bad = [];
+    for (const [slug, b] of rows) {
+      if (!b.name || !b.owner || !/^https:\/\//.test(b.page || '')) bad.push(`${slug}: name, owner or page`);
+      if (!b.mark?.what || (b.mark.fp !== null && !L.parseFp(b.mark.fp))) bad.push(`${slug}: mark`);
+      if (b.mark.since !== null && !/^\d{4}(-\d{2})?$/.test(b.mark.since)) bad.push(`${slug}: since`);
+      if (!b.mark.fp && !(b.prefer || []).length && !(b.retired || []).length) bad.push(`${slug}: no current mark, no preferred file and no retired colour`);
+      for (const r of b.prefer || []) if (!/^(gilbarbara|svgl|simple-icons|commons):./.test(r)) bad.push(`${slug}: prefer ${r}`);
+      for (const o of b.outdated || []) if (!o.what || !o.until || !L.parseFp(o.fp)) bad.push(`${slug}: outdated ${o.what}`);
+      for (const c of [...(b.retired || []), ...(b.hex || [])]) if (!L.rgbOf(c)) bad.push(`${slug}: colour ${c}`);
+    }
+    result(rows.length >= 70 && T.checked && T.threshold?.same > 0 && bad.length === 0, `the shipped table: ${rows.length} brands, each with its mark, owner, page and versions`, bad.slice(0, 6).join('; '));
+    const named = ['gmail', 'google', 'microsoft-teams', 'microsoft-word', 'slack', 'x', 'youtube', 'zoom', 'figma', 'notion', 'github', 'stripe', 'chatgpt', 'claude', 'gemini'].filter((k) => !T.brands[k]);
+    result(named.length === 0, 'the shipped table: the brands a launch film shows most', named.join(', '));
+    process.env.CINETIC_LOGO_BRANDS = path.join(SKILL, 'scripts', 'logo-brands.json');
+    result(L.brandFor('Google Gmail')?.slug === 'gmail' && L.brandFor('Twitter')?.slug === 'x' && L.brandFor('Outlook')?.slug === 'microsoft-outlook', 'the shipped table: a brand by another name it goes by');
+    process.env.CINETIC_LOGO_BRANDS = path.join(home, 'no-table.json');
   }
 } finally {
   fs.rmSync(home, { recursive: true, force: true });

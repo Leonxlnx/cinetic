@@ -12,9 +12,20 @@
  *   node scripts/logos.mjs search <name> [--source all|gilbarbara,svgl,simple-icons,commons] [--limit 8] [--json]
  *   node scripts/logos.mjs get <name|#n|collection:id> [--variant all|mark|wordmark|mono] [--film .]
  *        [--source <collection>] [--as <slug>] [--name "Shown name"] [--owner "Trademark owner"]
- *        [--tile own|none] [--allow-credit] [--refresh]
+ *        [--tile own|none] [--allow-credit] [--refresh] [--file <brand's own svg>] [--allow-outdated]
  *   node scripts/logos.mjs list [--film .] [--json] [--write]
- *   node scripts/logos.mjs check [--film .]
+ *   node scripts/logos.mjs check [<film>] [--json]
+ *
+ * The newest mark, never a retired one: brands redraw their marks (the 2026 Workspace icons, the 2025 Microsoft 365
+ * icons, the gradient G, the X for the bird) and the collections lag or keep the old file under the brand's name.
+ * The brand table (logo-brands.json, beside this script) holds, for the 100 or so brands a launch film shows most,
+ * the current mark (the month it changed, what it looks like, the brand page it was checked against) with its
+ * fingerprint, the collections that carry it in the order to take it from, and the marks and colours the brand
+ * retired. get takes the current file first, never takes a retired one (said in a note), prints the mark's version
+ * and records it; when no open collection draws the current mark it stops and names the brand page: pass the file
+ * downloaded there with --file (the brand's own file, used nominatively like every mark) or keep the old one
+ * knowingly with --allow-outdated. check flags every retired mark in a film: the files of its record and any other
+ * .svg under public/. A brand the table does not list is taken as before, unchecked.
  *
  * Collections (each checked on its own page, 2026-10-27):
  *   gilbarbara  gilbarbara/logos, the SVG Logos set: full-colour marks and wordmarks, CC0 1.0 (LICENSE.txt).
@@ -48,7 +59,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { commonsLicence } from './assets.mjs';
 
 export const UA = 'cinetic-logos/1.2 (official marks for films; +https://github.com/Leonxlnx/cinetic)';
@@ -84,6 +95,8 @@ export const COLLECTIONS = {
     licenceUrl: 'https://commons.wikimedia.org/wiki/Commons:Licensing',
   },
 };
+/** A mark passed with --file: the brand's own file from its brand or press page, used nominatively like every mark. */
+export const OWN_FILE = { name: "the brand's own file (from its brand or press page)", page: null, licence: 'owner-supplied', licenceUrl: null };
 /** The order a full-colour mark is taken in (CC0 sets first); one-colour marks come from Simple Icons. */
 export const COLOUR_ORDER = ['gilbarbara', 'svgl', 'commons', 'simple-icons'];
 
@@ -459,7 +472,20 @@ const shoelace = (pts) => { let a = 0; for (let k = 0; k < pts.length; k++) { co
 function shapePoints(name, tag) {
   const f = (k) => parseFloat(attr(tag, k)) || 0;
   switch (name) {
-    case 'rect': { const x = f('x'), y = f('y'), w = f('width'), h = f('height'); return w > 0 && h > 0 ? [[[x, y], [x + w, y], [x + w, y + h], [x, y + h]]] : []; }
+    case 'rect': {
+      const x = f('x'), y = f('y'), w = f('width'), h = f('height');
+      if (!(w > 0 && h > 0)) return [];
+      let rx = parseFloat(attr(tag, 'rx')), ry = parseFloat(attr(tag, 'ry'));
+      if (!(rx > 0)) rx = ry > 0 ? ry : 0;
+      if (!(ry > 0)) ry = rx;
+      rx = Math.min(rx, w / 2); ry = Math.min(ry, h / 2);
+      if (!rx) return [[[x, y], [x + w, y], [x + w, y + h], [x, y + h]]];
+      const pts = [];
+      for (const [cx, cy, a0] of [[x + w - rx, y + ry, -0.5], [x + w - rx, y + h - ry, 0], [x + rx, y + h - ry, 0.5], [x + rx, y + ry, 1]]) {
+        for (let k = 0; k <= 6; k++) { const a = (a0 + k / 12) * Math.PI; pts.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]); }
+      }
+      return [pts];
+    }
     case 'circle': { const cx = f('cx'), cy = f('cy'), r = f('r'); return r > 0 ? [Array.from({ length: 24 }, (_, k) => [cx + r * Math.cos((k * Math.PI) / 12), cy + r * Math.sin((k * Math.PI) / 12)])] : []; }
     case 'ellipse': { const cx = f('cx'), cy = f('cy'), rx = f('rx'), ry = f('ry'); return rx > 0 && ry > 0 ? [Array.from({ length: 24 }, (_, k) => [cx + rx * Math.cos((k * Math.PI) / 12), cy + ry * Math.sin((k * Math.PI) / 12)])] : []; }
     case 'line': return [[[f('x1'), f('y1')], [f('x2'), f('y2')]]];
@@ -615,6 +641,305 @@ export function oneColour(svg, colour) {
   return out;
 }
 
+// ------------------------------------------------------------------------------------------------ fingerprints
+// A mark's fingerprint is what it looks like at a glance: the SVG drawn at 128 px (paths, shapes, strokes, groups,
+// transforms, <use>, clip paths, masks, CSS classes; a gradient paints the mean of its stops), cropped to the art and
+// read as an 8 x 8 grid of coverage and colour class, with its proportions, its palette and how much of it is painted
+// in multi-hue gradients. Two files of one drawing in different collections score 0.75-1; a redrawn mark (the flat G
+// and the gradient G, the envelope and the M) scores under 0.7. The brand table (logo-brands.json) keeps the
+// fingerprint of each brand's current mark and of the marks it retired.
+//   fp1 a<aspect> p<class><share>.… g<0-9> c<64 coverage digits 0-f> h<64 colour classes> [f<flags>]
+// Colour classes: k g w (dark, mid, light neutrals), A-L (OKLCH hue in 30 degree steps from 0), . (empty cell).
+
+/** An SVG as a tree of elements ({ name, tag, kids, parent, text }); text is kept only inside <style>. */
+export function svgTree(svg) {
+  const root = { name: '#root', tag: '', kids: [], parent: null };
+  let cur = root, last = 0, m;
+  const re = /<(\/?)([a-zA-Z][\w:-]*)((?:[^>"']|"[^"]*"|'[^']*')*?)(\/?)>/g;
+  while ((m = re.exec(svg))) {
+    const [whole, close, rawName, , self] = m;
+    const name = rawName.toLowerCase();
+    if (cur.name === 'style' && !close) continue;
+    if (close) {
+      if (cur.name === 'style') cur.text = (cur.text || '') + svg.slice(last, m.index);
+      let n = cur;
+      while (n && n.name !== name && n.parent) n = n.parent;
+      if (n && n.parent) cur = n.parent;
+    } else {
+      const el = { name, tag: whole, kids: [], parent: cur };
+      cur.kids.push(el);
+      if (!self) cur = el;
+    }
+    last = re.lastIndex;
+  }
+  return root;
+}
+const walkTree = (n, fn) => { fn(n); for (const k of n.kids) walkTree(k, fn); };
+/** The simple CSS rules of an SVG's <style> blocks (tag, .class, #id and their compounds), lowest specificity first. */
+function cssRules(root) {
+  const rules = [];
+  walkTree(root, (n) => {
+    if (n.name !== 'style' || !n.text) return;
+    const t = n.text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!\[CDATA\[|\]\]>/g, '');
+    for (const [, sels, body] of t.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      const decl = {};
+      for (const d of body.split(';')) { const i = d.indexOf(':'); if (i > 0) decl[d.slice(0, i).trim().toLowerCase()] = d.slice(i + 1).replace(/!important/i, '').trim(); }
+      for (const s of sels.split(',')) {
+        const sel = s.trim();
+        if (!sel || !/^[a-zA-Z]*(?:[.#][\w-]+)*$/.test(sel)) continue;
+        rules.push({ sel, spec: (sel.match(/#/g) || []).length * 100 + (sel.match(/\./g) || []).length * 10 + (/^[a-zA-Z]/.test(sel) ? 1 : 0), decl });
+      }
+    }
+  });
+  return rules.sort((a, b) => a.spec - b.spec);
+}
+const selMatch = (sel, n) => {
+  const tag = (sel.match(/^[a-zA-Z]+/) || [''])[0];
+  if (tag && tag.toLowerCase() !== n.name) return false;
+  const cls = ` ${(attr(n.tag, 'class') || '').trim().split(/\s+/).join(' ')} `;
+  for (const [, k, v] of sel.matchAll(/([.#])([\w-]+)/g)) if (k === '.' ? !cls.includes(` ${v} `) : attr(n.tag, 'id') !== v) return false;
+  return true;
+};
+const PAINT_PROPS = ['fill', 'stroke', 'stroke-width', 'opacity', 'fill-opacity', 'stroke-opacity', 'fill-rule', 'display', 'visibility', 'clip-path', 'mask', 'stop-color', 'stop-opacity', 'color'];
+const INHERITED = ['fill', 'stroke', 'stroke-width', 'fill-opacity', 'stroke-opacity', 'fill-rule', 'visibility', 'color'];
+/** An element's own paint properties: attributes, then CSS rules, then its style attribute. */
+function ownStyle(n, rules) {
+  if (n.style) return n.style;
+  const s = {};
+  for (const p of PAINT_PROPS) { const v = attr(n.tag, p); if (v != null) s[p] = v.trim(); }
+  for (const r of rules) if (selMatch(r.sel, n)) for (const p of PAINT_PROPS) if (r.decl[p] != null) s[p] = r.decl[p];
+  for (const d of String(attr(n.tag, 'style') || '').split(';')) { const i = d.indexOf(':'); const k = d.slice(0, i).trim().toLowerCase(); if (i > 0 && PAINT_PROPS.includes(k)) s[k] = d.slice(i + 1).trim(); }
+  n.style = s;
+  return s;
+}
+/** Polygons filled at pixel centres (nonzero or even-odd): a W x H coverage of 0 and 1. */
+function fillPolys(polys, W, H, evenodd = false) {
+  const rows = Array.from({ length: H }, () => []);
+  for (const P of polys) {
+    for (let i = 0; i < P.length && P.length > 1; i++) {
+      const [x0, y0] = P[i], [x1, y1] = P[(i + 1) % P.length];
+      if (y0 === y1) continue;
+      const r0 = Math.max(0, Math.ceil(Math.min(y0, y1) - 0.5)), r1 = Math.min(H - 1, Math.ceil(Math.max(y0, y1) - 0.5) - 1);
+      for (let r = r0; r <= r1; r++) rows[r].push([x0 + ((r + 0.5 - y0) / (y1 - y0)) * (x1 - x0), y1 > y0 ? 1 : -1]);
+    }
+  }
+  const cov = new Float32Array(W * H);
+  for (let r = 0; r < H; r++) {
+    const xs = rows[r].sort((a, b) => a[0] - b[0]);
+    let wind = 0;
+    for (let i = 0; i < xs.length - 1; i++) {
+      wind += xs[i][1];
+      if (evenodd ? i % 2 === 1 : wind === 0) continue;
+      for (let c = Math.max(0, Math.ceil(xs[i][0] - 0.5)); c <= Math.min(W - 1, Math.ceil(xs[i + 1][0] - 0.5) - 1); c++) cov[r * W + c] = 1;
+    }
+  }
+  return cov;
+}
+/** Polylines stroked `hw` either side (square ends): a W x H coverage. */
+function strokePolys(polys, hw, W, H) {
+  const cov = new Float32Array(W * H);
+  for (const P of polys) for (let i = 0; i + 1 < P.length; i++) {
+    const [x0, y0] = P[i], [x1, y1] = P[i + 1];
+    const L = Math.hypot(x1 - x0, y1 - y0) || 1e-9, nx = (-(y1 - y0) / L) * hw, ny = ((x1 - x0) / L) * hw, ex = ((x1 - x0) / L) * hw * 0.5, ey = ((y1 - y0) / L) * hw * 0.5;
+    const q = [[x0 + nx - ex, y0 + ny - ey], [x1 + nx + ex, y1 + ny + ey], [x1 - nx + ex, y1 - ny + ey], [x0 - nx - ex, y0 - ny - ey]];
+    const c = fillPolys([q], W, H);
+    const yLo = Math.max(0, Math.floor(Math.min(...q.map((p) => p[1])))), yHi = Math.min(H - 1, Math.ceil(Math.max(...q.map((p) => p[1]))));
+    for (let k = yLo * W; k < (yHi + 1) * W; k++) if (c[k]) cov[k] = 1;
+  }
+  return cov;
+}
+/** The colour class of an [r, g, b]: k g w neutrals, A-L the OKLCH hue in 30 degree steps. */
+export function colourClass(rgb) {
+  const { L, C } = lc(rgb);
+  if (C < 0.045) return L < 0.4 ? 'k' : L < 0.8 ? 'g' : 'w';
+  const [R, G, B] = rgb.map((c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+  const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B), m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B), s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+  const h = ((Math.atan2(0.0259040371 * l + 0.7827717662 * m - 0.808688894 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s) * 180) / Math.PI + 360) % 360;
+  return 'ABCDEFGHIJKL'[Math.floor(h / 30) % 12];
+}
+
+/** An SVG drawn into W x H premultiplied RGBA buffers over its viewBox (`size` px on the long side); null when it has no size. */
+export function rasterize(svg, size = 128) {
+  const root = svgTree(svg);
+  const top = root.kids.find((k) => k.name === 'svg');
+  if (!top) return null;
+  let vb = nums(attr(top.tag, 'viewBox'));
+  if (!(vb.length === 4 && vb[2] > 0 && vb[3] > 0)) { const w = parseFloat(attr(top.tag, 'width')), h = parseFloat(attr(top.tag, 'height')); if (!(w > 0 && h > 0)) return null; vb = [0, 0, w, h]; }
+  const k = size / Math.max(vb[2], vb[3]);
+  const W = Math.max(1, Math.round(vb[2] * k)), H = Math.max(1, Math.round(vb[3] * k));
+  const ids = new Map();
+  walkTree(root, (n) => { const id = attr(n.tag, 'id'); if (id && !ids.has(id)) ids.set(id, n); });
+  const rules = cssRules(root), flags = new Set();
+  const buffer = (q) => ({ r: new Float32Array(W * H), g: new Float32Array(W * H), b: new Float32Array(W * H), a: new Float32Array(W * H), ...(q ? { q: new Float32Array(W * H) } : {}) });
+  const NONRENDER = new Set(['defs', 'clippath', 'mask', 'symbol', 'lineargradient', 'radialgradient', 'pattern', 'marker', 'filter', 'style', 'title', 'desc', 'metadata']);
+  const stopsOf = (id, depth = 0) => {
+    const g = ids.get(id);
+    if (!g || depth > 4) return [];
+    const own = g.kids.filter((x) => x.name === 'stop').map((x) => { const st = ownStyle(x, rules); const op = parseFloat(st['stop-opacity'] ?? '1'); return { rgb: rgbOf(st['stop-color'] ?? 'black') || [0, 0, 0], a: Number.isFinite(op) ? op : 1 }; });
+    const href = (attr(g.tag, 'xlink:href') || attr(g.tag, 'href') || '').replace(/^#/, '');
+    return own.length || !href ? own : stopsOf(href, depth + 1);
+  };
+  const paint = (v, colour) => {
+    const s = String(v ?? '').trim();
+    if (!s || s === 'none' || s === 'transparent') return null;
+    if (/^currentcolor$/i.test(s)) return paint(colour || 'black');
+    const u = s.match(/url\(\s*['"]?#([^'")\s]+)['"]?\s*\)/i);
+    if (u) {
+      const stops = stopsOf(u[1]);
+      if (!stops.length) { const fb = s.replace(/url\([^)]*\)/i, '').trim(); return fb ? paint(fb) : { rgb: [128, 128, 128], a: 1 }; }
+      const w = stops.reduce((t, x) => t + x.a, 0);
+      if (!(w > 0)) return null;
+      const rgb = [0, 1, 2].map((i) => stops.reduce((t, x) => t + x.rgb[i] * x.a, 0) / w);
+      return { rgb, a: w / stops.length, grad: new Set(stops.filter((x) => x.a > 0.2).map((x) => colourClass(x.rgb))).size > 1 };
+    }
+    const rgb = rgbOf(s);
+    if (!rgb) return null;
+    const am = s.match(/^rgba\([^)]*,\s*([\d.]+)\s*\)$/i), h8 = s.match(/^#([0-9a-f]{8})$/i);
+    return { rgb, a: am ? Number(am[1]) : h8 ? parseInt(h8[1].slice(6), 16) / 255 : 1 };
+  };
+  const comp = (dst, cov, p, alpha, clip) => {
+    const a0 = p.a * alpha;
+    if (!(a0 > 0)) return;
+    for (let i = 0; i < cov.length; i++) {
+      if (!cov[i]) continue;
+      const a = a0 * cov[i] * (clip ? clip[i] : 1);
+      if (a <= 0) continue;
+      if (dst.q) dst.q[i] = (p.grad ? a : 0) + dst.q[i] * (1 - a);
+      dst.r[i] = p.rgb[0] * a + dst.r[i] * (1 - a); dst.g[i] = p.rgb[1] * a + dst.g[i] * (1 - a); dst.b[i] = p.rgb[2] * a + dst.b[i] * (1 - a); dst.a[i] = a + dst.a[i] * (1 - a);
+    }
+  };
+  const maskOf = (ref, m, depth) => {
+    const node = ids.get((String(ref).match(/url\(\s*['"]?#([^'")\s]+)/i) || [])[1]);
+    if (!node || (node.name !== 'mask' && node.name !== 'clippath')) return null;
+    const tmp = buffer(false), clipMode = node.name === 'clippath';
+    const inh = {};
+    if (!clipMode) { const ms = ownStyle(node, rules); for (const p of INHERITED) if (ms[p] != null) inh[p] = ms[p]; }
+    const mt = mul(m, parseTransform(attr(node.tag, 'transform')));
+    for (const kid of node.kids) draw(kid, mt, inh, tmp, null, depth + 1, clipMode);
+    const out = new Float32Array(W * H);
+    for (let i = 0; i < out.length; i++) out[i] = clipMode ? tmp.a[i] : (0.2126 * tmp.r[i] + 0.7152 * tmp.g[i] + 0.0722 * tmp.b[i]) / 255;
+    return out;
+  };
+  const draw = (n, m, inh, dst, clip, depth, clipMode = false) => {
+    if (depth > 24 || NONRENDER.has(n.name)) return;
+    const own = ownStyle(n, rules);
+    if (own.display === 'none') return;
+    const st = {};
+    for (const p of INHERITED) if (inh[p] != null) st[p] = inh[p];
+    Object.assign(st, own);
+    const op = parseFloat(own.opacity ?? '1');
+    const alpha = (inh.alpha ?? 1) * (Number.isFinite(op) ? op : 1);
+    st.alpha = alpha;
+    let mt = mul(m, parseTransform(attr(n.tag, 'transform')));
+    let cl = clip;
+    for (const key of ['clip-path', 'mask']) {
+      if (!own[key] || own[key] === 'none') continue;
+      const c = maskOf(own[key], mt, depth);
+      if (c) cl = cl ? cl.map((v, i) => v * c[i]) : c;
+    }
+    const kids = (mm) => { for (const kid of n.kids) draw(kid, mm, st, dst, cl, depth + 1, clipMode); };
+    if (n.name === 'g' || n.name === 'a' || n.name === 'switch') return kids(mt);
+    if (n.name === 'svg') {
+      const x = parseFloat(attr(n.tag, 'x')) || 0, y = parseFloat(attr(n.tag, 'y')) || 0, v = nums(attr(n.tag, 'viewBox')), w = parseFloat(attr(n.tag, 'width')), h = parseFloat(attr(n.tag, 'height'));
+      if (v.length === 4 && w > 0 && h > 0) { const s = Math.min(w / v[2], h / v[3]); return kids(mul(mt, [s, 0, 0, s, x - v[0] * s + (w - v[2] * s) / 2, y - v[1] * s + (h - v[3] * s) / 2])); }
+      return kids(mul(mt, [1, 0, 0, 1, x, y]));
+    }
+    if (n.name === 'use') {
+      const ref = ids.get((attr(n.tag, 'xlink:href') || attr(n.tag, 'href') || '').replace(/^#/, ''));
+      if (!ref || ref === n) return;
+      const um = mul(mt, [1, 0, 0, 1, parseFloat(attr(n.tag, 'x')) || 0, parseFloat(attr(n.tag, 'y')) || 0]);
+      if (ref.name === 'symbol') for (const kid of ref.kids) draw(kid, um, st, dst, cl, depth + 1, clipMode);
+      else draw(ref, um, st, dst, cl, depth + 1, clipMode);
+      return;
+    }
+    if (n.name === 'text') { flags.add('text'); return; }
+    let subs = null;
+    try { subs = shapePoints(n.name, n.tag); } catch { flags.add('unread'); return; }
+    if (!subs) return;
+    if (n.name === 'image') flags.add('raster');
+    const polys = subs.map((sp) => sp.map(([px, py]) => apply(mt, px, py)));
+    const fill = clipMode ? { rgb: [0, 0, 0], a: 1 } : n.name === 'image' ? { rgb: [128, 128, 128], a: 1 } : paint(st.fill ?? 'black', st.color);
+    if (fill && n.name !== 'line') {
+      const fo = clipMode ? 1 : parseFloat(st['fill-opacity'] ?? '1');
+      comp(dst, fillPolys(polys, W, H, String(st['fill-rule'] || attr(n.tag, 'clip-rule') || '').trim() === 'evenodd'), fill, alpha * (Number.isFinite(fo) ? fo : 1), cl);
+    }
+    const stroke = clipMode || n.name === 'image' ? null : paint(st.stroke, st.color);
+    if (stroke) {
+      const sw = parseFloat(st['stroke-width'] ?? '1'), so = parseFloat(st['stroke-opacity'] ?? '1');
+      const hw = ((Number.isFinite(sw) ? sw : 1) * Math.sqrt(Math.abs(mt[0] * mt[3] - mt[1] * mt[2]))) / 2;
+      const closed = n.name !== 'line' && n.name !== 'polyline';
+      if (hw > 0.05) comp(dst, strokePolys(polys.map((P) => (closed && P.length > 2 ? [...P, P[0]] : P)), Math.max(hw, 0.5), W, H), stroke, alpha * (Number.isFinite(so) ? so : 1), cl);
+    }
+  };
+  const buf = buffer(true);
+  const rs = ownStyle(top, rules), rootInh = {};
+  for (const p of INHERITED) if (rs[p] != null) rootInh[p] = rs[p];
+  for (const kid of top.kids) draw(kid, [k, 0, 0, k, -vb[0] * k, -vb[1] * k], rootInh, buf, null, 0);
+  return { W, H, buf, flags: [...flags], viewBox: vb };
+}
+
+/** A mark's fingerprint (see above); null when nothing is drawn. */
+export function fingerprint(svg) {
+  const R = rasterize(svg, 128);
+  if (!R) return null;
+  const { W, H, buf } = R, G = 8;
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (buf.a[y * W + x] > 0.25) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  if (x1 < 0) return null;
+  const bw = x1 - x0 + 1, bh = y1 - y0 + 1, cov = [], cls = [], hist = {};
+  let total = 0, qa = 0, qs = 0;
+  for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) {
+    let a = 0, r = 0, g = 0, b = 0, n = 0;
+    const ya = Math.floor(y0 + (j * bh) / G), yb = Math.max(ya + 1, Math.ceil(y0 + ((j + 1) * bh) / G)), xa = Math.floor(x0 + (i * bw) / G), xb = Math.max(xa + 1, Math.ceil(x0 + ((i + 1) * bw) / G));
+    for (let y = ya; y < yb; y++) for (let x = xa; x < xb; x++) { const p = Math.min(H - 1, y) * W + Math.min(W - 1, x); a += buf.a[p]; r += buf.r[p]; g += buf.g[p]; b += buf.b[p]; n++; }
+    const ca = a / n;
+    cov.push(Math.round(Math.min(1, ca) * 15).toString(16));
+    if (ca < 0.12) { cls.push('.'); continue; }
+    const c = colourClass([r / a, g / a, b / a]);
+    cls.push(c);
+    hist[c] = (hist[c] || 0) + ca; total += ca;
+  }
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { qa += buf.a[y * W + x]; qs += buf.q[y * W + x]; }
+  const pal = Object.entries(hist).sort((p, q) => q[1] - p[1]).filter(([, v]) => v / total >= 0.04).slice(0, 4).map(([c, v]) => `${c}${Math.round((v / total) * 100)}`);
+  return `fp1 a${Math.round((bw / bh) * 100) / 100} p${pal.join('.')} g${qa > 0 ? Math.min(9, Math.round((qs / qa) * 10)) : 0} c${cov.join('')} h${cls.join('')}${R.flags.length ? ` f${R.flags.join('.')}` : ''}`;
+}
+/** A fingerprint string read back: { aspect, pal: [[class, share]], grad, cov: [0..1 x 64], cls: [64] }; null when it is not one. */
+export function parseFp(s) {
+  const m = String(s ?? '').match(/^fp1 a([\d.]+) p(\S*) g(\d) c([0-9a-f]{64}) h(\S{64})/);
+  if (!m) return null;
+  return { aspect: Number(m[1]), pal: m[2] ? m[2].split('.').map((x) => [x[0], Number(x.slice(1))]) : [], grad: Number(m[3]) / 10, cov: [...m[4]].map((x) => parseInt(x, 16) / 15), cls: [...m[5]] };
+}
+const HUE_CLASSES = 'ABCDEFGHIJKL';
+const classNear = (a, b) => {
+  if (a === b) return 1;
+  const i = HUE_CLASSES.indexOf(a), j = HUE_CLASSES.indexOf(b);
+  if (i >= 0 && j >= 0) return Math.min((i - j + 12) % 12, (j - i + 12) % 12) === 1 ? 0.7 : 0;
+  return i < 0 && j < 0 ? 0.5 : 0;
+};
+/** Is a fingerprint one colour (a glyph in one hex, white or black)? */
+export const monoFp = (f) => !!f && f.grad < 0.2 && (f.pal.length <= 1 || f.pal[0][1] >= 90);
+/**
+ * How alike two marks look, 0..1: their proportions (a wordmark is never a mark), the drawn area cell by cell and,
+ * when both are in colour, each cell's colour class, less when one is flat and the other a multi-hue gradient. A one-colour
+ * file is compared by its shape alone.
+ */
+export function similarity(fa, fb) {
+  const a = typeof fa === 'string' ? parseFp(fa) : fa, b = typeof fb === 'string' ? parseFp(fb) : fb;
+  if (!a || !b) return 0;
+  const ar = Math.abs(Math.log(a.aspect / b.aspect));
+  if (ar > 0.4) return 0;
+  let mn = 0, mx = 0;
+  for (let i = 0; i < 64; i++) { mn += Math.min(a.cov[i], b.cov[i]); mx += Math.max(a.cov[i], b.cov[i]); }
+  const shape = mx > 0 ? mn / mx : 0;
+  let sim = shape;
+  if (!monoFp(a) && !monoFp(b)) {
+    let s = 0, n = 0;
+    for (let i = 0; i < 64; i++) if (a.cls[i] !== '.' && b.cls[i] !== '.') { s += classNear(a.cls[i], b.cls[i]); n++; }
+    sim = (0.5 * shape + 0.5 * (n ? s / n : 0)) * (1 - (0.4 * Math.max(0, Math.abs(a.grad - b.grad) - 0.2)) / 0.8);
+  }
+  return Math.round(sim * Math.exp(-ar * 1.2) * 1000) / 1000;
+}
+
 const paleOrNone = (c) => {
   if (/^(none|transparent)$/i.test(String(c).trim())) return true;
   const rgb = rgbOf(c);
@@ -646,11 +971,87 @@ export function prepare(raw, { tile } = {}) {
   return { svg, viewBox: vb, aspect: r(vb[2] / vb[3]), trimmed, tile: isTile };
 }
 
+// ------------------------------------------------------------------------------------------------ the brand table
+/**
+ * logo-brands.json (beside this script): for the brands a film shows most, the brand's current mark (the month it
+ * changed, what it looks like, its fingerprint, the brand page it was checked against), the collections that carry
+ * it in the order to take it from, the marks it retired (dates and fingerprints) and retired colours. A file that
+ * draws a retired mark is never taken; `check` flags one already in a film. CINETIC_LOGO_BRANDS points at another
+ * table (tests).
+ */
+export const BRANDS_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'logo-brands.json');
+const brandTables = new Map();
+export function loadBrands(file = process.env.CINETIC_LOGO_BRANDS || BRANDS_FILE) {
+  if (brandTables.has(file)) return brandTables.get(file);
+  let t = { checked: null, same: 0.72, margin: 0.04, brands: {} };
+  try {
+    const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+    t = { checked: j.checked || null, same: j.threshold?.same ?? 0.72, margin: j.threshold?.margin ?? 0.04, brands: j.brands || {} };
+    for (const [slug, b] of Object.entries(t.brands)) b.slug = slug;
+  } catch { /* no table: no version checks */ }
+  brandTables.set(file, t);
+  return t;
+}
+const brandKeys = (b) => [b.slug, b.name, ...(b.aka || [])].flatMap((x) => [norm(x), bare(x)]);
+/** The brand table's row for a name (its slug, name or another name it goes by), or null. */
+export function brandFor(name, table = loadBrands()) {
+  const q = norm(name), qb = bare(name);
+  if (!q) return null;
+  return Object.values(table.brands).find((b) => brandKeys(b).some((k) => k === q || k === qb)) || null;
+}
+/** The row for a search group: by its name, its members' names, or a member the row lists. */
+export function brandOfGroup(group, table = loadBrands()) {
+  const byName = brandFor(group.name, table);
+  if (byName) return byName;
+  for (const m of group.members || []) {
+    const b = Object.values(table.brands).find((x) => {
+      const ms = x.members?.[m.collection];
+      return ms && [].concat(ms).map(String).includes(String(m.id));
+    }) || brandFor(m.name, table);
+    if (b) return b;
+  }
+  return null;
+}
+const hexOf = (c) => { const rgb = rgbOf(c); return rgb ? `#${rgb.map((v) => hex2(v)).join('')}` : null; };
+const range = (v) => `${v.since || '?'} to ${v.until || '?'}`;
+/**
+ * Which of a brand's marks a file draws: { status: 'current' | 'outdated' | 'unknown', since, until, what, sim, by }.
+ * Outdated: it looks like a retired mark (at least `same` alike, and `margin` more alike than the current one), or
+ * it paints with a retired colour of the brand and none of its current colours. Current: it looks like the current
+ * mark. Unknown: neither (a wordmark against a mark, a drawing the table does not know).
+ */
+export function versionOf(brand, svg, table = loadBrands()) {
+  const f = parseFp(fingerprint(svg));
+  if (!f) return { status: 'unknown', sim: 0, by: 'unread' };
+  const cur = brand.mark?.fp ? similarity(f, brand.mark.fp) : 0;
+  let old = null;
+  for (const o of brand.outdated || []) { const s = similarity(f, o.fp); if (!old || s > old.sim) old = { ...o, sim: s }; }
+  if (old && old.sim >= table.same && old.sim > cur + table.margin) return { status: 'outdated', since: old.since, until: old.until, what: old.what, sim: old.sim, by: 'drawing' };
+  const cols = new Set(coloursOf(svg).map(hexOf).filter(Boolean));
+  const retired = (brand.retired || []).map(hexOf).filter((c) => cols.has(c));
+  if (retired.length && !(brand.hex || []).map(hexOf).some((c) => cols.has(c))) {
+    return { status: 'outdated', since: null, until: brand.mark?.since || null, what: brand.retiredWhat || `a retired colour (${retired.join(', ')})`, sim: cur, by: 'colour', colours: retired };
+  }
+  if (cur >= table.same) return { status: 'current', since: brand.mark.since, what: brand.mark.what, sim: cur, by: 'drawing' };
+  return { status: 'unknown', sim: cur, by: 'drawing' };
+}
+/** One line about a mark's version, for get and check. */
+export function versionLine(brand, v, checked) {
+  if (!brand) return 'no row in the brand table: its version is not checked';
+  if (v.status === 'current') return `the current mark: ${v.what}${v.since ? `, since ${v.since}` : ''}${checked ? ` (checked ${checked})` : ''}`;
+  if (v.status === 'outdated') return `a retired mark: ${v.what}${v.by === 'drawing' ? ` (${range(v)})` : ''}; the current one${brand.mark?.since ? ` (since ${brand.mark.since})` : ''}: ${brand.mark?.what || 'see the brand page'}`;
+  return `not a drawing the brand table knows (its current mark: ${brand.mark?.what || '?'}${brand.mark?.since ? `, since ${brand.mark.since}` : ''})`;
+}
+
 // ------------------------------------------------------------------------------------------------ plan a brand
-/** gilbarbara files sorted into roles by their names: { mark, markDark, word, wordDark } lists, newest version first. */
+/**
+ * gilbarbara files sorted into roles by their names: { mark, markDark, word, wordDark } lists, newest version first.
+ * The set keeps a brand's current drawing under the plain name and files the drawing it replaced under the year it
+ * began (google-gmail.svg is the 2026 icon, google-gmail-2020.svg the 2020 one): the plain name leads, then years down.
+ */
 export function gilbarbaraRoles(shortname, files) {
   const roles = { mark: [], markDark: [], base: [], baseDark: [] };
-  const year = (f) => Number((f.match(/-(\d{4})(?:-|\.svg$)/) || [])[1] || 0);
+  const year = (f) => Number((f.match(/-(\d{4})(?:-|\.svg$)/) || [])[1] || 9999);
   for (const f of files) {
     const rest = f.replace(/\.svg$/i, '').slice(shortname.length);
     if (/monochrome|-alt|-classic|-pirate|-octocat|-tomster|-vertical/.test(rest)) continue;
@@ -735,34 +1136,119 @@ function writeRecord(film, record) {
   if (fs.existsSync(src)) fs.writeFileSync(path.join(src, 'logos.ts'), indexSource(record));
 }
 
+/** A Commons file by its title: { url, page, licence, notes } from its own page's metadata, or null. */
+export async function commonsFile(title, { refresh = false } = {}) {
+  const t = String(title).startsWith('File:') ? String(title) : `File:${title}`;
+  const file = path.join(cacheDir(), 'commons', `${t.replace(/[^\w.-]+/g, '_')}.json`);
+  let j = !refresh && readCache(file, WEEK);
+  if (j) { try { j = JSON.parse(j); } catch { j = null; } }
+  if (!j) {
+    j = await http(`https://commons.wikimedia.org/w/api.php?${new URLSearchParams({ action: 'query', format: 'json', formatversion: '2', origin: '*', titles: t, prop: 'imageinfo', iiprop: 'url|size|mime|extmetadata', iiextmetadatafilter: 'License|LicenseShortName|Restrictions|UsageTerms' })}`, { as: 'json' });
+    if (j) writeCache(file, JSON.stringify(j));
+  }
+  const ii = (j?.query?.pages?.[0]?.imageinfo || [])[0];
+  if (!ii || !/svg/.test(ii.mime || '')) return null;
+  const meta = Object.fromEntries(Object.entries(ii.extmetadata || {}).map(([k, v]) => [k, v?.value]));
+  const { id: lic, notes } = commonsLicence(meta);
+  return { url: ii.url, page: ii.descriptionurl, licence: lic === 'cc0' ? 'CC0-1.0' : lic === 'pd' ? 'PD' : lic, notes };
+}
+
+/** The candidates a brand row prefers, in its order (the collections that carry its current mark), each marked `preferred`. */
+export async function preferredCands(brand, o = {}, notes = []) {
+  const out = [];
+  for (const ref of brand.prefer || []) {
+    const i = ref.indexOf(':');
+    const col = ref.slice(0, i), id = ref.slice(i + 1);
+    try {
+      if (col === 'gilbarbara') {
+        const short = [].concat(brand.members?.gilbarbara || []).filter((s) => id.startsWith(`${s}-`) || id === `${s}.svg`).sort((a, b) => b.length - a.length)[0] || id.replace(/(-icon)?(-\d{4})?(-dark)?\.svg$/i, '');
+        const r = gilbarbaraRoles(short, [id]);
+        const role = r.mark.length ? 'mark' : r.markDark.length ? 'markDark' : r.baseDark.length ? 'baseDark' : 'base';
+        out.push(pick(role, col, COLLECTIONS.gilbarbara.file(id), { file: id, licence: 'CC0-1.0', preferred: true }));
+      } else if (col === 'svgl') {
+        const [sid, theme] = id.split(':');
+        const e = (await index('svgl', o)).find((x) => String(x.id) === sid);
+        const url = e && themed(e.route, theme === 'dark' ? 'dark' : 'light');
+        if (url) out.push(pick(theme === 'dark' ? 'baseDark' : 'base', col, url, { licence: 'MIT', guidelines: e.brandUrl || null, preferred: true }));
+      } else if (col === 'simple-icons') {
+        const list = await index('simple-icons', o);
+        const e = (Array.isArray(list) ? list : list?.icons || []).find((x) => x.slug === id);
+        const ok = e && licenceOk(e.license?.type || 'CC0-1.0', o);
+        if (ok?.ok) out.push(pick('mono', col, COLLECTIONS['simple-icons'].file(id), { licence: e.license?.type || 'CC0-1.0', licenceUrl: e.license?.url || null, hex: e.hex ? `#${String(e.hex).toUpperCase()}` : null, guidelines: e.guidelines || null, source: e.source || '', preferred: true }));
+        else if (e) notes.push(`simple-icons ${id}: ${ok.why}`);
+      } else if (col === 'commons') {
+        const f = await commonsFile(id, o);
+        const ok = f && licenceOk(f.licence, o);
+        if (ok?.ok) out.push(pick('base', col, f.url, { licence: f.licence, page: f.page, notes: f.notes, preferred: true }));
+        else if (f) notes.push(`commons ${id}: ${ok.why}`);
+      }
+    } catch (e) { if (e instanceof Blocked) throw e; notes.push(`${ref}: ${e.message}`); }
+  }
+  return out;
+}
+/** A search group cut to the members a brand row lists (a name or host match can pull in another brand's files). */
+export function brandMembers(group, brand) {
+  if (!brand?.members) return group;
+  const keep = group.members.filter((m) => [].concat(brand.members[m.collection] || []).map(String).includes(String(m.id)));
+  return { ...group, members: keep };
+}
+
 /** Fetch, clean and write one brand's files; returns the record entry. */
 export async function getBrand(group, film, o = {}) {
   const variants = new Set(o.variant === 'all' || !o.variant ? ['mark', 'wordmark', 'mono'] : String(o.variant).split(','));
-  const { cands, notes } = planBrand(group, o);
-  const slug = o.as ? slugOf(o.as) : slugOf(group.name);
+  const table = loadBrands();
+  const brand = o.brand !== undefined ? o.brand : brandOfGroup(group, table);
+  const { cands, notes } = planBrand(o.source ? group : brandMembers(group, brand), o);
+  if (brand && !o.source) {
+    const pref = await preferredCands(brand, o, notes);
+    const seen = new Set(pref.map((c) => c.url));
+    cands.splice(0, cands.length, ...pref, ...cands.filter((c) => !seen.has(c.url)));
+  }
+  const slug = o.as ? slugOf(o.as) : brand ? brand.slug : slugOf(group.name);
   const dir = path.join(film, 'public', 'logos');
   const got = {};
   const loaded = new Map();
+  const retired = [];
   const load = async (c) => {
     if (loaded.has(c.url)) return loaded.get(c.url) && { ...c, ...loaded.get(c.url) };
     let p = null;
     try {
       const raw = await svgAt(c.url, { refresh: o.refresh });
       if (!raw) notes.push(`${c.collection}: ${c.url} is gone`);
-      else p = prepare(raw, { tile: o.tile });
+      else { p = prepare(raw, { tile: o.tile }); if (brand) p.version = versionOf(brand, c.role === 'mono' && c.hex ? oneColour(p.svg, c.hex) : p.svg, table); }
     } catch (e) { if (e instanceof Blocked) throw e; notes.push(`${c.collection}: ${c.url}: ${e.message}`); }
     loaded.set(c.url, p);
     return p && { ...c, ...p };
   };
+  // a file that draws a retired mark is never taken (unless --allow-outdated): said once per file
+  const refused = new Set();
+  const isRetired = (p) => {
+    if (p?.version?.status !== 'outdated' || o.allowOutdated) return false;
+    if (!refused.has(p.url)) {
+      refused.add(p.url);
+      retired.push(p);
+      notes.push(`${p.collection} ${p.file || p.url.split('/').pop()}: ${p.version.what}${p.version.by === 'drawing' ? ` (${range(p.version)})` : ''}, a retired mark: skipped`);
+    }
+    return true;
+  };
+  // the brand's own file, passed with --file (downloaded from its brand or press page)
+  if (o.file) {
+    const raw = fs.readFileSync(o.file, 'utf8');
+    const p = { ...prepare(raw, { tile: o.tile }), collection: 'file', url: `file:${path.basename(o.file)}`, file: path.basename(o.file), licence: 'owner-supplied', page: brand?.page || null };
+    if (brand) p.version = versionOf(brand, p.svg, table);
+    if (isRetired(p)) throw new Error(`${o.file} draws ${brand.name}'s retired mark (${p.version.what}); the current one${brand.mark?.since ? ` (since ${brand.mark.since})` : ''}: ${brand.mark?.what}${brand.page ? ` on ${brand.page}` : ''}`);
+    got[p.aspect > 1.6 ? 'wordmark' : 'mark'] = p;
+  }
   // The mark first: the brand's official full-colour mark or app tile wins over a one-colour glyph or an older
   // drawing (one collection draws a brand as a black glyph, another as its colour app tile). When the brand's own
   // colour (Simple Icons' hex) is a colour, or not known, the first candidate in colour is the mark; a brand whose
-  // colour is black or white keeps the collections' order. --source keeps that collection's file.
+  // colour is black or white keeps the collections' order. --source keeps that collection's file. A brand row puts
+  // the collections that carry its current mark first.
   const siHex = by(group, 'simple-icons')?.hex;
-  if (!o.source && (!rgbOf(siHex) || lc(rgbOf(siHex)).C >= 0.04)) {
+  if (!got.mark && !o.source && (!rgbOf(siHex) || lc(rgbOf(siHex)).C >= 0.04)) {
     for (const c of cands.filter((x) => x.role === 'mark' || (x.role === 'base' && !x.wordOnly))) {
       const p = await load(c);
-      if (p && p.aspect <= 1.6 && toneOf(p.svg) === 'colour') { got.mark = p; break; }
+      if (p && !isRetired(p) && p.aspect <= 1.6 && toneOf(p.svg) === 'colour') { got.mark = p; break; }
     }
   }
   // The full-colour mark (always) and the wordmark (when asked): named roles first, then base files by their
@@ -774,19 +1260,31 @@ export async function getBrand(group, film, o = {}) {
     const fits = (r) => open(r) && (!r.endsWith('Dark') || got[r.slice(0, -4)].collection === c.collection);
     if (!roles.some(fits)) continue;
     const p = await load(c);
-    if (!p) continue;
+    if (!p || isRetired(p)) continue;
     const r = roles.length === 1 ? roles[0] : roles[p.aspect > 1.6 ? 1 : 0];
     if (r.startsWith('word') && p.aspect <= 1.2) continue; // a stacked lockup is neither a mark nor a wordmark
     if (fits(r)) got[r] = p;
   }
   const mono = cands.find((x) => x.role === 'mono');
   let monoFile = null;
-  if (mono && (variants.has('mono') || !got.mark)) monoFile = await load(mono);
-  if (!got.mark && monoFile) {
+  if (mono && (variants.has('mono') || !got.mark)) {
+    monoFile = await load(mono);
+    if (monoFile?.version?.status === 'outdated' && !o.allowOutdated) {
+      if (monoFile.version.by === 'drawing') { isRetired(monoFile); monoFile = null; }
+      else { monoFile.retiredHex = true; notes.push(`simple-icons ${mono.url.split('/').pop()}: its hex ${monoFile.hex} is ${monoFile.version.what}: no one-colour file in it (white and black only)`); }
+    }
+  }
+  if (!got.mark && monoFile && !monoFile.retiredHex) {
     got.mark = { ...monoFile, svg: oneColour(monoFile.svg, monoFile.hex || '#111111'), derived: 'the one-colour mark in the brand\'s official hex (no full-colour file in the open collections)' };
     notes.push('no full-colour mark in the open collections: the mark is the one-colour one in the brand\'s official hex');
   }
-  if (!got.mark && !got.wordmark) throw new Error(`no usable file for ${group.name}${notes.length ? `:\n  ${notes.join('\n  ')}` : ''}`);
+  if (!got.mark && !got.wordmark) {
+    if (retired.length && brand) {
+      throw new Error(`only retired marks of ${brand.name} in the open collections (${[...new Set(retired.map((p) => `${p.collection} ${p.file || p.url.split('/').pop()}: ${p.version.what}`))].join('; ')}). `
+        + `The current mark${brand.mark?.since ? ` (since ${brand.mark.since})` : ''}: ${brand.mark?.what || 'see the brand page'}. Download it from ${brand.page || 'the brand\'s press page'} and pass --file <svg>, or pass --allow-outdated to keep the old one knowingly`);
+    }
+    throw new Error(`no usable file for ${group.name}${notes.length ? `:\n  ${notes.join('\n  ')}` : ''}`);
+  }
   // dark-ground versions: the collection's own, else the neutrals reversed
   for (const [light, dark] of [['mark', 'markDark'], ['wordmark', 'wordmarkDark']]) {
     const L = got[light];
@@ -804,7 +1302,7 @@ export async function getBrand(group, film, o = {}) {
     const base = same || (monoFile && !got.mark) ? monoFile : silhouette;
     if (!base && got.mark?.tile) notes.push(`${group.name}'s mark is its own tile and no one-colour glyph was found: no one-colour files`);
     if (base) {
-      if (monoFile?.hex) got.mono = { ...base, svg: oneColour(base.svg, monoFile.hex) };
+      if (monoFile?.hex && !monoFile.retiredHex) got.mono = { ...base, svg: oneColour(base.svg, monoFile.hex) };
       got.white = { ...base, svg: oneColour(base.svg, '#ffffff') };
       got.black = { ...base, svg: oneColour(base.svg, '#111111') };
     }
@@ -818,32 +1316,34 @@ export async function getBrand(group, film, o = {}) {
   }
   const used = [...new Set(Object.values(got).map((f) => f.collection))];
   const site = group.site || '';
-  const owner = o.owner || group.owner || ownerOf(site);
+  const owner = o.owner || brand?.owner || group.owner || ownerOf(site);
   if (!owner) notes.push(`trademark owner unknown: confirm it on the brand's own site and pass --owner "<owner>"`);
   const si = monoFile || by(group, 'simple-icons');
+  const v = got.mark?.version || got.wordmark?.version || null;
   const entry = {
-    name: o.name || group.name, owner: owner || null, site: site || null,
+    name: o.name || brand?.name || group.name, owner: owner || null, site: site || null,
     hex: si?.hex || null,
-    guidelines: Object.values(got).map((f) => f.guidelines).find(Boolean) || si?.guidelines || null,
+    guidelines: Object.values(got).map((f) => f.guidelines).find(Boolean) || si?.guidelines || brand?.page || null,
     tone: got.mark ? toneOf(got.mark.svg) : 'colour', tile: got.mark?.tile ? 'own' : 'none',
     files,
     sources: Object.fromEntries(used.map((c) => {
       const f = Object.values(got).find((x) => x.collection === c);
-      const C = COLLECTIONS[c];
+      const C = COLLECTIONS[c] || OWN_FILE;
       return [c, { collection: C.name, page: f.page || C.page, licence: f.licence || C.licence, licenceUrl: f.licenceUrl || C.licenceUrl, ...(C.seen ? { seen: C.seen } : {}), ...(C.terms ? { terms: C.terms } : {}), ...(f.notes?.length ? { notes: f.notes } : {}) }];
     })),
-    trademark: `${o.name || group.name} is a trademark of ${owner || 'its owner'}. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.`,
+    ...(brand ? { version: v ? { status: v.status, ...(v.status === 'current' ? { since: brand.mark?.since || null, what: brand.mark?.what || null } : { what: v.what, ...(v.since ? { since: v.since } : {}), ...(v.until ? { until: v.until } : {}) }), checked: table.checked, page: brand.page || null } : null } : {}),
+    trademark: `${o.name || brand?.name || group.name} is a trademark of ${owner || 'its owner'}. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.`,
     fetched: new Date().toISOString().slice(0, 10),
   };
-  return { slug, entry, notes };
+  return { slug, entry, notes, brand, version: v };
 }
 const by = (group, c) => group.members.find((m) => m.collection === c);
 
 // ------------------------------------------------------------------------------------------------ CLI
 export class Usage extends Error {}
 export function parseArgs(argv) {
-  const VALUED = new Set(['source', 'limit', 'variant', 'film', 'as', 'name', 'owner', 'tile']);
-  const FLAGS = new Set(['json', 'help', 'allow-credit', 'refresh', 'write']);
+  const VALUED = new Set(['source', 'limit', 'variant', 'film', 'as', 'name', 'owner', 'tile', 'file']);
+  const FLAGS = new Set(['json', 'help', 'allow-credit', 'refresh', 'write', 'allow-outdated']);
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -898,7 +1398,26 @@ async function cmdSearch(args) {
   return 0;
 }
 
+/** A search group built from a brand row's members (no name guessing across collections). */
+export async function groupForBrand(brand, { refresh = false } = {}) {
+  const members = [];
+  const M = brand.members || {};
+  for (const c of ['gilbarbara', 'svgl', 'simple-icons']) {
+    const ids = [].concat(M[c] || []).map(String);
+    if (!ids.length) continue;
+    let list;
+    try { list = await index(c, { refresh }); } catch (e) { if (e instanceof Blocked) throw e; continue; }
+    if (c === 'gilbarbara') for (const x of list) { if (ids.includes(x.shortname)) members.push(...searchGilbarbara([x], x.name).map((m) => ({ ...m, score: 100 }))); }
+    if (c === 'svgl') for (const x of list) { if (ids.includes(String(x.id))) members.push(...searchSvgl([x], x.title).map((m) => ({ ...m, score: 100 }))); }
+    if (c === 'simple-icons') { const arr = Array.isArray(list) ? list : list?.icons || []; for (const x of arr) if (ids.includes(x.slug)) members.push(...searchSimpleIcons([x], x.title).map((m) => ({ ...m, score: 100 }))); }
+  }
+  const site = (members.find((m) => m.collection === 'svgl') || members.find((m) => m.collection === 'gilbarbara') || {}).site || '';
+  return { name: brand.name, site, owner: brand.owner || ownerOf(site), score: 100, members, brand };
+}
+
 async function resolveGroup(ref, args) {
+  const row = !/^#\d+$/.test(ref) && !/^(gilbarbara|svgl|simple-icons|commons):/.test(ref) && !args.source ? brandFor(ref) : null;
+  if (row) return groupForBrand(row, { refresh: args.refresh });
   if (/^#\d+$/.test(ref)) {
     let j = null;
     try { j = JSON.parse(fs.readFileSync(lastSearch(), 'utf8')); } catch { /* none */ }
@@ -941,11 +1460,13 @@ async function cmdGet(args) {
   if (!fs.existsSync(path.join(film, 'public'))) throw new Usage(`${film} has no public/ folder: run inside a film project or pass --film <film>`);
   const group = await resolveGroup(ref, args);
   const src = args.source && args.source !== 'all' ? args.source : null;
-  const { slug, entry, notes } = await getBrand(group, film, { variant: args.variant, source: src, as: args.as, name: args.name, owner: args.owner, tile: args.tile, allowCredit: args['allow-credit'], refresh: args.refresh });
+  if (args.file && !fs.existsSync(args.file)) throw new Usage(`--file ${args.file}: no such file`);
+  const { slug, entry, notes, brand, version } = await getBrand(group, film, { variant: args.variant, source: src, as: args.as, name: args.name, owner: args.owner, tile: args.tile, allowCredit: args['allow-credit'], refresh: args.refresh, file: args.file, allowOutdated: args['allow-outdated'] });
   const record = readRecord(film);
   record.logos[slug] = entry;
   writeRecord(film, record);
   console.log(`${entry.name} -> public/logos/ (${Object.keys(entry.files).join(', ')}); ${entry.owner ? `owner ${entry.owner}` : 'owner unknown'}; ${Object.entries(entry.sources).map(([k, s]) => `${k} ${s.licence}`).join(', ')}`);
+  if (brand) console.log(`mark: ${versionLine(brand, version || { status: 'unknown' }, loadBrands().checked)}${brand.page ? `; brand page ${brand.page}` : ''}`);
   for (const n of notes) console.log(`note: ${n}`);
   console.log(`use it: <AppIcon logo="${slug}" />, <LogoChip logo="${slug}" />, <InlineLogo logos={['${slug}', ...]} /> (src/kit/logos.tsx); the record: public/logos/logos.json`);
   return 0;
@@ -974,11 +1495,82 @@ function cmdList(args) {
   for (const p of problems) console.log(`note: ${p}`);
   return 0;
 }
+/** Every .svg under a folder (node_modules, out and dot folders left out). */
+function svgFiles(dir, out = [], depth = 0) {
+  let list = [];
+  try { list = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
+  for (const d of list) {
+    if (d.name.startsWith('.') || d.name === 'node_modules' || d.name === 'out') continue;
+    const p = path.join(dir, d.name);
+    if (d.isDirectory() && depth < 6) svgFiles(p, out, depth + 1);
+    else if (d.isFile() && /\.svg$/i.test(d.name)) out.push(p);
+  }
+  return out;
+}
+/**
+ * The marks a film shows, each against the brand table: the files of its record (by the brand of the entry) and any
+ * other .svg under public/ (a mark placed by hand, matched against every brand's retired marks in colour). Rows:
+ * { file, brand, status: 'current' | 'outdated' | 'unknown' | 'unchecked', line }.
+ */
+export function checkMarks(film, table = loadBrands()) {
+  const rec = readRecord(film);
+  const pub = path.join(film, 'public');
+  const rows = [];
+  const seen = new Set();
+  for (const [slug, e] of Object.entries(rec.logos)) {
+    const brand = brandFor(slug, table) || brandFor(e.name, table);
+    for (const [kind, fl] of Object.entries(e.files || {})) {
+      const p = path.join(pub, fl.path);
+      seen.add(path.resolve(p));
+      if (!fs.existsSync(p)) continue;
+      if (!brand) { rows.push({ file: fl.path, kind, brand: e.name, status: 'unchecked', line: versionLine(null) }); continue; }
+      let v;
+      try { v = versionOf(brand, sanitizeSvg(fs.readFileSync(p, 'utf8')), table); } catch (err) { v = { status: 'unknown', by: err.message }; }
+      rows.push({ file: fl.path, kind, brand: brand.name, slug: brand.slug, status: v.status, version: v, line: versionLine(brand, v, table.checked) });
+    }
+  }
+  const brands = Object.values(table.brands);
+  for (const p of svgFiles(pub)) {
+    if (seen.has(path.resolve(p))) continue;
+    let f = null, svg = null;
+    try { svg = sanitizeSvg(fs.readFileSync(p, 'utf8')); f = parseFp(fingerprint(svg)); } catch { continue; }
+    if (!f || monoFp(f)) continue; // a one-colour shape is too plain to name a brand by
+    let best = null;
+    for (const b of brands) {
+      for (const o of b.outdated || []) { const sim = similarity(f, o.fp); if (sim >= 0.82 && (!best || sim > best.sim)) best = { b, sim }; }
+      if (b.mark?.fp) { const sim = similarity(f, b.mark.fp); if (sim >= 0.82 && (!best || sim > best.sim)) best = { b, sim }; }
+    }
+    if (!best) continue;
+    const v = versionOf(best.b, svg, table);
+    if (v.status === 'unknown') continue;
+    rows.push({ file: path.relative(pub, p).split(path.sep).join('/'), kind: 'file', brand: best.b.name, slug: best.b.slug, status: v.status, version: v, line: versionLine(best.b, v, table.checked) });
+  }
+  return rows;
+}
+
 function cmdCheck(args) {
-  const { record, problems } = checkRecord(path.resolve(args.film || '.'));
-  for (const p of problems) console.log(`FAIL  ${p}`);
-  console.log(`${Object.keys(record.logos).length} marks, ${problems.length} problem${problems.length === 1 ? '' : 's'}`);
-  return problems.length ? 1 : 0;
+  const film = path.resolve(args._[0] || args.film || '.');
+  if (!fs.existsSync(path.join(film, 'public'))) throw new Usage(`${film} has no public/ folder: name a film project (check <film>)`);
+  const { record, problems } = checkRecord(film);
+  const rows = checkMarks(film);
+  const old = rows.filter((r) => r.status === 'outdated');
+  if (args.json) { console.log(JSON.stringify({ film, marks: rows, problems }, null, 1)); return problems.length || old.length ? 1 : 0; }
+  // one line per mark of the record when its files agree; a retired file always on its own line
+  const groups = new Map();
+  for (const r of rows) groups.set(r.slug && r.kind !== 'file' ? `rec:${r.slug}` : `file:${r.file}`, [...(groups.get(r.slug && r.kind !== 'file' ? `rec:${r.slug}` : `file:${r.file}`) || []), r]);
+  for (const list of groups.values()) {
+    const bad = list.filter((r) => r.status === 'outdated');
+    for (const r of bad) console.log(`OUTDATED  ${r.file}  ${r.brand}: ${r.line}${r.slug ? `. Fix: node scripts/logos.mjs get ${r.slug} --refresh --film <film>` : ''}`);
+    const ok = list.filter((r) => r.status !== 'outdated');
+    if (!ok.length) continue;
+    const marks = ok.filter((r) => !/^wordmark/.test(r.kind));
+    const lead = marks.find((r) => r.status === 'current') || marks[0] || ok[0];
+    const words = ok.length - marks.length;
+    console.log(`${lead.status.padEnd(9)} ${ok.length > 1 ? `${lead.slug || lead.file} (${ok.length} files)` : lead.file}  ${lead.brand}: ${lead.line}${words ? `; ${words} wordmark file${words === 1 ? '' : 's'} not fingerprinted` : ''}`);
+  }
+  for (const p of problems) console.log(`FAIL      ${p}`);
+  console.log(`${Object.keys(record.logos).length} marks in the record, ${rows.length} files checked against the brand table (${loadBrands().checked || 'no table'}): ${old.length} outdated, ${problems.length} record problem${problems.length === 1 ? '' : 's'}`);
+  return problems.length || old.length ? 1 : 0;
 }
 
 export const USAGE = `logos.mjs: real company and product marks in their official colours, from open collections.
@@ -989,12 +1581,17 @@ export const USAGE = `logos.mjs: real company and product marks in their officia
          writes <film>/public/logos/<slug>[.dark|.wordmark|.wordmark.dark|.mono|.white|.black].svg, the record
          <film>/public/logos/logos.json (source, licence, owner) and the kit's index <film>/src/logos.ts
   list   [--film .] [--json] [--write]      the film's marks (--write rewrites src/logos.ts from the record)
-  check  [--film .]                         every file present, every source with its licence, every owner named
+  check  [<film>] [--json]                  every file present, every source with its licence, every owner named,
+                                            and no retired mark (record files and any .svg under public/): exit 1 if one
+  --file <svg>       get: the brand's own file from its brand page (when no open collection draws the current mark)
+  --allow-outdated   get: keep a retired mark knowingly (check still flags it)
 
 Collections: gilbarbara (SVG Logos, CC0), svgl (MIT; light, dark and wordmark files), simple-icons (CC0 unless an
 icon names its own licence; one colour plus the brand's hex), commons (public domain and CC0 only; the fallback).
 A mark is shown only for what the product works with, imports from, runs on or names: never an endorsement or a
-partnership; colours and proportions as published; nothing is credited on screen. Never works around a bot check,
+partnership; colours and proportions as published; nothing is credited on screen. The brand table
+(logo-brands.json) names each listed brand's current mark and the marks it retired: get takes the current one and
+prints its version, never a retired one. Never works around a bot check,
 a login or a rate limit. Cache: $CINETIC_HOME/logos (~/.cinetic/logos).
 
   --help, -h   print this help`;

@@ -45,6 +45,15 @@ mark, the model's own spark, never a generic envelope or a star standing in. It 
   files), cleaned and trimmed to the art. The brand's official full-colour mark or app tile is taken before another
   collection's one-colour glyph or older drawing (`--source <collection>` forces one). Colours and proportions stay as published: no recolouring into the palette,
   no squeeze, no outline or effect on the mark itself. The tile, the chip and the shadow round it are the film's.
+- **The newest mark, never a retired one.** Brands redraw their marks (the 2026 Google Workspace icons, the 2025
+  Microsoft 365 icons, the gradient G, the X for the bird, YouTube's 2024 red) and a collection often still holds the
+  old file under the brand's name. `scripts/logo-brands.json` lists, for the brands a launch film shows most, the
+  current mark (the month it changed, what it looks like, the brand page it was checked against) with its
+  fingerprint, the collections that carry it, and the marks and colours the brand retired. `get` takes the current
+  file first, skips a retired one with a note and prints the version (`mark: the current mark: …, since 2026-05`);
+  when no open collection draws the current mark it stops and names the brand page: download the file there and pass
+  it with `--file` (or keep the old one knowingly with `--allow-outdated`). `logos.mjs check <film>` flags every
+  retired mark in a film, in the record or placed by hand under `public/`.
 - **Clear space kept.** The kit sets a mark at its optical size with room round it (`AppIcon` 54 % of the tile,
   `LogoChip` half the pill's height, `InlineLogo` 1.0 cap height); a brand's own guidelines (minimum size, clear space,
   grounds; `guidelines` in the record) win over these numbers.
