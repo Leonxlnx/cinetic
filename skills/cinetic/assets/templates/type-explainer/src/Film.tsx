@@ -6,7 +6,8 @@ import { Open } from './acts/Open';
 import { Pain } from './acts/Pain';
 import { PictureAct } from './acts/Picture';
 import { PromiseLine } from './acts/Promise';
-import { PAGE } from './acts/stage';
+import { FLOAT, PAGE } from './acts/stage';
+import { ActStage } from './fx/Float';
 import { System } from './acts/System';
 import { Audit } from './lib/Audit';
 import { FontGate } from './lib/FontGate';
@@ -33,7 +34,9 @@ export const Film: React.FC<FilmProps> = ({ audit = false, safe }) => {
           const Act = actComponent(name);
           return (
             <Sequence key={name} from={a.from} durationInFrames={a.dur} name={`${k + 1} ${name}`}>
-              <Act />
+              <ActStage from={a.from} o={FLOAT}>
+                <Act />
+              </ActStage>
             </Sequence>
           );
         })}

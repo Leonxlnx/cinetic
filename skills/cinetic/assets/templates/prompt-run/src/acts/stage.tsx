@@ -19,7 +19,8 @@ import { mixColor } from '../lib/color';
 import type { Shot } from '../lib/camera';
 import { fitSize, measureTracked } from '../lib/measure';
 import { DEAL_SEED, VOICE_EXIT } from '../deal';
-import { ACT, type ActName, copy, DEAL, f60x, H, TOTAL, W } from '../timeline';
+import { type FloatOpts, withLocks } from '../lib/drift';
+import { ACT, type ActName, copy, DEAL, f60x, FPS, H, TOTAL, W } from '../timeline';
 import { RUN } from '../run';
 
 /** The page: a cool tinted white (the stage the product's UI sits on). */
@@ -27,6 +28,15 @@ export const PAGE = kitTheme('tintedPaper', C.accent);
 
 /** The absolute film frame inside an act (acts are Sequences: their own frame starts at 0). */
 export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;
+
+/**
+ * The camera float every act sits on (Film.tsx ActStage; lib/drift, fx/Float): one continuous drift through the whole
+ * film (sideways up to 31 px/s, a push of up to 3 % carrying the turns), seeded by the film, so no shot sits still
+ * while one small thing moves (forensics.py motion-energy). It eases to rest once, on the read of the line that tells
+ * what it does (withLocks: where the drift runs fastest inside the read, never beside a turn). The grounds hold still
+ * under it (LitGround), the content moves over them.
+ */
+export const FLOAT: FloatOpts = withLocks({ seed: DEAL_SEED }, [copy('tell')], { fps: FPS });
 
 /**
  * The grounds, one per act: clean lit pages (fx/Grounds: the base, or the key's subtle gradient at the house lift),

@@ -8,7 +8,7 @@
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { C, SAFE, TYPE, U } from '../brand/tokens';
-import { DEAL_SEED } from '../deal';
+import { DEAL, DEAL_SEED } from '../deal';
 import { type GroundKind, groundKey, type GroundSpec, LitGround, seeded } from '../fx/Grounds';
 import { LIT, type LitProps, litState } from '../fx/Lit';
 import { panelMatrix } from '../lib/light';
@@ -17,6 +17,8 @@ import { clamp, E, prog } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { type Shot } from '../lib/camera';
 import { holdDrift } from '../lib/continuity';
+import { type FloatOpts, withLocks } from '../lib/drift';
+import { dipAmp, type StageSpec } from '../fx/Float';
 import { carry, launch } from '../lib/handoff';
 import { TYPE_LOOK } from '../lib/look';
 import { fitSize } from '../lib/measure';
@@ -71,6 +73,17 @@ export const GROUNDS: Record<ActName, GroundSpec> = (() => {
   out[lit] = { kind: 'tint', base: out[lit].base, seed: out[lit].seed, drift: 12 };
   return out;
 })();
+
+/**
+ * The camera float every act sits on (Film.tsx ActStage; lib/drift, fx/Float): one continuous drift through the whole
+ * walkthrough (sideways up to 31 px/s, a push of up to 3 % carrying the turns), seeded by the film, so no shot sits
+ * still while one small thing moves: a playhead, a counter, a toggle (forensics.py motion-energy). It eases to rest
+ * once, on the promise's read (withLocks: where the drift runs fastest inside the read, never beside a turn). The
+ * grounds hold still under it (LitGround), the content moves over them.
+ */
+export const FLOAT: FloatOpts = withLocks({ seed: DEAL_SEED }, [copy('promise')], { fps: FPS });
+/** How an act stands on the stage beside the float (fx/Float StageSpec): the claim set flush to the accent's edge floats at 0.4 between its seams. */
+export const STAGE: Partial<Record<ActName, StageSpec>> = DEAL.claim === 'accent' ? { claim: { amp: dipAmp(ACT.claim.from, ACT.claim.from + ACT.claim.dur, 0.4, f60x(24)) } } : {};
 
 /** The absolute film frame inside an act (acts are Sequences: their own frame starts at 0). */
 export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;

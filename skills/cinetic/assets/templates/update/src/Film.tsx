@@ -4,7 +4,8 @@ import { Change } from './acts/Change';
 import { EndCard } from './acts/EndCard';
 import { Hook } from './acts/Hook';
 import { Payoff } from './acts/Payoff';
-import { THEME } from './acts/World';
+import { FLOAT, THEME } from './acts/World';
+import { ActStage } from './fx/Float';
 import { Audit } from './lib/Audit';
 import { FontGate } from './lib/FontGate';
 import type { SafeSpec } from './lib/safe';
@@ -36,7 +37,9 @@ export const Film: React.FC<FilmProps> = ({ audit = false, safe }) => {
           const Act = actComponent(name);
           return (
             <Sequence key={name} from={a.from} durationInFrames={a.dur} name={`${k + 1} ${name}`}>
-              <Act />
+              <ActStage from={a.from} o={FLOAT}>
+                <Act />
+              </ActStage>
             </Sequence>
           );
         })}

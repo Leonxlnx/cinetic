@@ -5,7 +5,8 @@ import { End } from './acts/End';
 import { Input } from './acts/Input';
 import { Launch } from './acts/Launch';
 import { Page } from './acts/Page';
-import { INK } from './acts/stage';
+import { FLOAT, INK } from './acts/stage';
+import { ActStage } from './fx/Float';
 import { Stages } from './acts/Stages';
 import { Window } from './acts/Window';
 import { Audit } from './lib/Audit';
@@ -33,7 +34,9 @@ export const Film: React.FC<FilmProps> = ({ audit = false, safe }) => {
           const Act = actComponent(name);
           return (
             <Sequence key={name} from={a.from} durationInFrames={a.dur} name={`${k + 1} ${name}`}>
-              <Act />
+              <ActStage from={a.from} o={FLOAT}>
+                <Act />
+              </ActStage>
             </Sequence>
           );
         })}

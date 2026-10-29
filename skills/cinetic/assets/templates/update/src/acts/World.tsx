@@ -13,7 +13,7 @@ import { AbsoluteFill, staticFile, useCurrentFrame } from 'remotion';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
 import { C, TYPE, typeStyle, U } from '../brand/tokens';
-import { DEAL, LINES, NAME_MOVE } from '../deal';
+import { DEAL, DEAL_SEED, LINES, NAME_MOVE } from '../deal';
 import { LitGround } from '../fx/Grounds';
 import { Lit } from '../fx/Lit';
 import { RackFocus } from '../fx/RackFocus';
@@ -24,9 +24,19 @@ import { creep as creepK } from '../lib/handoff';
 import { camera, lc, type Shot } from '../lib/camera';
 import { mixColor } from '../lib/color';
 import { measureTracked } from '../lib/measure';
+import { type FloatOpts, withLocks } from '../lib/drift';
 import { ACT, beat, BEATS, changeOut, copy, CUE, f60, f60x, FPS, H, moveOf, N, ROLL, TOTAL, W } from '../timeline';
 import { type Change, spokenChange, UPDATE } from '../update';
 import { HeroLine, MarkLine } from './type';
+
+/**
+ * The camera float every act sits on (Film.tsx ActStage; lib/drift, fx/Float): one continuous drift through the whole
+ * film (sideways up to 31 px/s, a push of up to 3 % carrying the turns), seeded by the film, so no shot sits still
+ * while one small thing moves (forensics.py motion-energy). It eases to rest once, on the name's read (withLocks:
+ * where the drift runs fastest inside the read, never beside a turn). The grounds hold still under it (LitGround), the
+ * content moves over them.
+ */
+export const FLOAT: FloatOpts = withLocks({ seed: DEAL_SEED }, [copy('product')], { fps: FPS });
 
 /** The film's kit colours: the mid slate or the tinted paper (the dealt stage), the accent the brand's. */
 export const THEME = DEAL.stage === 'paper' ? kitTheme('tintedPaper', C.accent) : kitTheme('slateMid', C.accent);

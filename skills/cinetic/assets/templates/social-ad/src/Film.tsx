@@ -5,8 +5,9 @@ import { End } from './acts/End';
 import { Field } from './acts/Field';
 import { Label } from './acts/Label';
 import { Open } from './acts/Open';
-import { PAGE } from './acts/stage';
+import { FLOAT, PAGE, STAGE } from './acts/stage';
 import { Taglines } from './acts/Taglines';
+import { ActStage } from './fx/Float';
 import { Audit } from './lib/Audit';
 import { FontGate } from './lib/FontGate';
 import type { SafeSpec } from './lib/safe';
@@ -22,7 +23,8 @@ export type FilmProps = { audit?: boolean; safe?: SafeSpec };
 export const ACTS: Record<ActName, React.FC> = { open: Open, brand: Brand, field: Field, label: Label, taglines: Taglines, end: End };
 export const actComponent = (name: string): React.FC => ACTS[name as ActName];
 
-// The film: one Sequence per act, handing off on exact frames (every act line hidden inside a motion).
+// The film: one Sequence per act, handing off on exact frames (every act line hidden inside a motion), each act on the
+// film's camera float over its ground (acts/stage.tsx FLOAT).
 export const Film: React.FC<FilmProps> = ({ audit = false, safe }) => {
   const hasScore = getStaticFiles().some((s) => s.name === SOUNDTRACK);
   return (
@@ -32,7 +34,9 @@ export const Film: React.FC<FilmProps> = ({ audit = false, safe }) => {
           const Act = actComponent(name);
           return (
             <Sequence key={name} from={a.from} durationInFrames={a.dur} name={`${k + 1} ${name}`}>
-              <Act />
+              <ActStage from={a.from} o={FLOAT} {...STAGE[name as ActName]}>
+                <Act />
+              </ActStage>
             </Sequence>
           );
         })}

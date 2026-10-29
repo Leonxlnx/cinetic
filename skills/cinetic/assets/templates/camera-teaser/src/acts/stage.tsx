@@ -21,6 +21,7 @@ import { useFilm } from '../lib/film';
 import { expoTail } from '../lib/handoff';
 import { fitSize } from '../lib/measure';
 import { DEAL_SEED, VOICE_EXIT } from '../deal';
+import { type FloatOpts } from '../lib/drift';
 import { ACT, type ActName, copy, DEAL, H, TOTAL, W } from '../timeline';
 import { TEASER } from '../teaser';
 
@@ -29,6 +30,14 @@ export const INK = kitTheme('inkStage', C.accent);
 
 /** The absolute film frame inside an act (acts are Sequences: their own frame starts at 0). */
 export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;
+
+/**
+ * The camera float every act sits on (Film.tsx ActStage; lib/drift, fx/Float): one continuous drift through the whole
+ * film (sideways up to 31 px/s, a push of up to 3 % carrying the turns), seeded by the film, so no shot sits still
+ * while one small thing moves (forensics.py motion-energy). The camera's own whips and pushes carry the reads; the
+ * float runs under them. The grounds hold still under it (LitGround), the content moves over them.
+ */
+export const FLOAT: FloatOpts = { seed: DEAL_SEED };
 
 /** The resting shot: the world's centre framed at the screen's centre at x1. Every act's camera starts from it. */
 export const BASE: Shot = { ax: W / 2, ay: H / 2, sx: W / 2, sy: H / 2, k: 1 };

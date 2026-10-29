@@ -10,6 +10,7 @@ import { Img, staticFile, useCurrentFrame } from 'remotion';
 import { C, FONT, SAFE, TYPE, TYPE_FAMILY, U } from '../brand/tokens';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
+import { dipAmp, type StageSpec } from '../fx/Float';
 import { bakePlate } from '../fx/Gradients';
 import { dealGrounds, type GroundSpec, LitGround } from '../fx/Grounds';
 import { shadowTone } from '../fx/KeyLight';
@@ -23,8 +24,9 @@ import { dealLineEmphasis, keysOf } from '../fx/TypeEmphasis';
 import { EMPHASIS_LOOK } from '../lib/look';
 import { fitSize, measureTracked } from '../lib/measure';
 import { AD } from '../ad';
-import { SEED } from '../deal';
-import { ACT, type ActName, CUE, f60x, H, W } from '../timeline';
+import { DEAL, SEED } from '../deal';
+import { type FloatOpts, withLocks } from '../lib/drift';
+import { ACT, type ActName, copy, CUE, f60x, FPS, H, W } from '../timeline';
 
 /** The page (a tinted white), and the product's stage (the mid slate: white type reads on it). */
 export const PAGE = kitTheme('tintedPaper', C.accent);
@@ -137,6 +139,17 @@ export const LightEvent: React.FC<{ F: number; act: ActName; dark?: boolean; amo
   if (!src) return null;
   return <Img src={src} style={{ position: 'absolute', left: 0, top: 0, width: size, height: size, opacity: amount * clamp(p), transformOrigin: '50% 50%', transform: `translate(${((W - size) / 2).toFixed(2)}px, ${((H - size) / 2).toFixed(2)}px) rotate(${angle.toFixed(3)}deg)`, pointerEvents: 'none' }} />;
 };
+
+/**
+ * The camera float every act sits on (Film.tsx ActStage; lib/drift, fx/Float): one continuous drift through the whole
+ * ad (sideways up to 31 px/s, a push of up to 3 % carrying the turns), seeded by the film, so no shot sits still while
+ * one small thing moves (forensics.py motion-energy). It eases to rest once, on the opener's read (withLocks: where
+ * the drift runs fastest inside the read, never beside a turn). The grounds hold still under it (LitGround), the
+ * content moves over them.
+ */
+export const FLOAT: FloatOpts = withLocks({ seed: SEED }, [copy('what')], { fps: FPS });
+/** How an act stands on the stage beside the float (fx/Float StageSpec): the claim set flush to the accent's edge floats at 0.4 between its seams. */
+export const STAGE: Partial<Record<ActName, StageSpec>> = DEAL.taglines === 'claim' ? { taglines: { amp: dipAmp(ACT.taglines.from, ACT.end.from, 0.4, f60x(24)) } } : {};
 
 /** The act's ground and its light event. */
 export const ActGround: React.FC<{ F: number; act: ActName; spec?: GroundSpec }> = ({ F, act, spec }) => {
