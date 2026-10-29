@@ -273,7 +273,7 @@ export const Footage: React.FC<FootageProps> = (p) => {
             return (
               <div key={d.n} style={{ position: 'absolute', left: 0, top: 0, width: p.w, height: p.h, opacity: d.o, transformOrigin: '0 0', transform: M ? `matrix(${M.map((v) => v.toFixed(6)).join(', ')})` : undefined }}>
                 <Sequence from={cur - at(d.n)} layout="none">
-                  <OffthreadVideo src={p.src} muted style={{ width: p.w, height: p.h, display: 'block' }} />
+                  <OffthreadVideo data-imagery="" src={p.src} muted style={{ width: p.w, height: p.h, display: 'block' }} />
                 </Sequence>
               </div>
             );

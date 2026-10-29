@@ -164,7 +164,7 @@ export const Notice: React.FC<{ theme: KitTheme; w: number; h: number; glyph?: G
   const u = useKitScale(scale);
   return (
     <div data-ui style={{ position: 'relative', width: w, height: h, borderRadius: h * 0.28, background: t.dark ? t.raised : t.surface, boxShadow: surfaceShadow(t, 36, u), display: 'flex', alignItems: 'center', gap: h * 0.18, padding: `0 ${h * 0.24}px 0 ${h * 0.2}px`, boxSizing: 'border-box' }}>
-      {photo ? <Img src={photo} style={{ width: h * 0.64, height: h * 0.64, borderRadius: h * 0.16, objectFit: 'cover', display: 'block', flex: 'none' }} /> : <GlyphTile theme={t} name={glyph} size={h * 0.56} solid />}
+      {photo ? <Img data-imagery="" src={photo} style={{ width: h * 0.64, height: h * 0.64, borderRadius: h * 0.16, objectFit: 'cover', display: 'block', flex: 'none' }} /> : <GlyphTile theme={t} name={glyph} size={h * 0.56} solid />}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: h * 0.04 }}>
         <span data-text={`${id}-title`} style={face(fit(h * 0.25, u), 600, t.text)}>
           {title}

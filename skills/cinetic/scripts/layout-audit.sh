@@ -20,7 +20,8 @@
 # moving faster than the read limit outside its reading window is listed apart (`moving`), not failed. The audit stills
 # (boxes drawn, safe zone dashed) are kept, and the tweens the audited frames evaluate (lib/registry.ts)
 # are collected for scripts/grammar-score.mjs. Each audited frame also records where the official marks are
-# drawn (the kit's <Img data-logo>), which look-audit.py --layout leaves out of its palette checks.
+# drawn (the kit's <Img data-logo>) and where the real pictures show (photos and footage, [data-imagery]), both of
+# which look-audit.py --layout leaves out of its palette checks.
 # Placeholders fail on every visible element, tagged or not (src/lib/placeholder.ts, the lists of
 # scripts/placeholders.json): `placeholder` (lorem ipsum, "Placeholder", "Label text", a generic label alone,
 # "Item 1", a template slot left in brackets), `bar-text` (two or more grey bars standing in for lines of text
@@ -319,7 +320,7 @@ const report = {
   speed: maxV > 0 ? { max: maxV, read: maxR, pairs: pairs.length, fastest, fastestRead } : null,
   words: audited.reduce((m, d) => (d.words !== undefined && (!m || d.words > m.max) ? { max: d.words, frame: d.frame, ui: d.uiWords ?? 0 } : m), null),
   zone: audited[0]?.zone, safe: audited[0]?.safe,
-  boxes: audited.map((d) => ({ frame: d.frame, width: d.width, height: d.height, safe: d.safe, boxes: d.boxes, ...(d.logos?.length ? { logos: d.logos } : {}) })),
+  boxes: audited.map((d) => ({ frame: d.frame, width: d.width, height: d.height, safe: d.safe, boxes: d.boxes, ...(d.logos?.length ? { logos: d.logos } : {}), ...(d.imagery?.length ? { imagery: d.imagery } : {}) })),
 };
 fs.writeFileSync(jsonPath, JSON.stringify(report, null, 1) + '\n');
 for (const x of issues) console.log(`  f${x.frame}  ${x.kind}  ${x.id}  ${x.detail}`);

@@ -272,7 +272,7 @@ export const CardPicture: React.FC<{ image: CardImage; frame?: number; radius?: 
   const z = imageZoom(frame, image, fps);
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: radius, background: image.background }}>
-      <Img
+      <Img data-imagery=""
         src={image.src}
         style={{
           position: 'absolute',

@@ -113,10 +113,10 @@ export const Montage: React.FC<MontageProps> = (p) => {
     // a Sequence shifted so the video's own clock stands on the source frame (Freeze does not reach it)
     inner = (
       <Sequence from={cur - mediaFrame(t.shown, sf, film.fps)} layout="none">
-        <OffthreadVideo src={shot.src} muted style={{ width: shot.w, height: shot.h, display: 'block' }} />
+        <OffthreadVideo data-imagery="" src={shot.src} muted style={{ width: shot.w, height: shot.h, display: 'block' }} />
       </Sequence>
     );
-  } else inner = <Img src={shot.src} style={{ width: shot.w, height: shot.h, display: 'block' }} />;
+  } else inner = <Img data-imagery="" src={shot.src} style={{ width: shot.w, height: shot.h, display: 'block' }} />;
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: C.ink, ...p.style }}>
       {grade?.duotone && <DuotoneDefs id={duoId} duotone={grade.duotone} />}

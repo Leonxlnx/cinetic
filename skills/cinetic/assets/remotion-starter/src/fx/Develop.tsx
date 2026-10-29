@@ -109,7 +109,7 @@ export const Develop: React.FC<
   const fx = clamp(image?.focus?.x ?? 0.5) * 100;
   const fy = clamp(image?.focus?.y ?? 0.5) * 100;
   const pic = (src: string, filter?: string, opacity = 1) => (
-    <Img
+    <Img data-imagery=""
       src={src}
       style={{
         position: 'absolute',

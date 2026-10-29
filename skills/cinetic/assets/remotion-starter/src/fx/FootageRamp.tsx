@@ -114,7 +114,7 @@ export const FootageRamp: React.FC<FootageRampProps & { frame: number }> = (prop
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', ...props.style }}>
       <Freeze frame={freezeAt}>
-        <OffthreadVideo src={c.src} muted style={{ width: '100%', height: '100%', objectFit: props.fit ?? 'cover' }} />
+        <OffthreadVideo data-imagery="" src={c.src} muted style={{ width: '100%', height: '100%', objectFit: props.fit ?? 'cover' }} />
       </Freeze>
     </div>
   );

@@ -41,7 +41,7 @@ const T: React.FC<{ id: string; px: number; u: number; weight?: number; color: s
 const Preview: React.FC<{ t: KitTheme; node: TileNode; w: number; h: number; u: number }> = ({ t, node, w, h, u }) => {
   const kind = node.preview === 'photo' && !node.photo ? 'doc' : node.preview ?? 'doc';
   if (kind === 'photo')
-    return <Img src={node.photo as string} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${((node.focus?.[0] ?? 0.5) * 100).toFixed(1)}% ${((node.focus?.[1] ?? 0.5) * 100).toFixed(1)}%`, display: 'block' }} />;
+    return <Img data-imagery="" src={node.photo as string} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${((node.focus?.[0] ?? 0.5) * 100).toFixed(1)}% ${((node.focus?.[1] ?? 0.5) * 100).toFixed(1)}%`, display: 'block' }} />;
   const s = node.seed ?? node.label;
   const px = Math.max(8 * u, Math.min(h * 0.11, 15 * u));
   const ink = t.text;
@@ -51,7 +51,7 @@ const Preview: React.FC<{ t: KitTheme; node: TileNode; w: number; h: number; u: 
     return (
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', gap: w * 0.07, padding: `0 ${w * 0.07}px` }}>
         {node.photo ? (
-          <Img src={node.photo} style={{ width: Math.min(h * 0.78, w * 0.42), height: Math.min(h * 0.78, w * 0.42), borderRadius: '50%', objectFit: 'cover', objectPosition: `${((node.focus?.[0] ?? 0.5) * 100).toFixed(1)}% ${((node.focus?.[1] ?? 0.32) * 100).toFixed(1)}%`, flex: 'none', display: 'block' }} />
+          <Img data-imagery="" src={node.photo} style={{ width: Math.min(h * 0.78, w * 0.42), height: Math.min(h * 0.78, w * 0.42), borderRadius: '50%', objectFit: 'cover', objectPosition: `${((node.focus?.[0] ?? 0.5) * 100).toFixed(1)}% ${((node.focus?.[1] ?? 0.32) * 100).toFixed(1)}%`, flex: 'none', display: 'block' }} />
         ) : (
           <PortraitMark theme={t} seed={s} size={Math.min(h * 0.78, w * 0.42)} />
         )}

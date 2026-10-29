@@ -186,7 +186,7 @@ export const Avatar: React.FC<{ theme: KitTheme; i: number; initials: string; si
       }}
     >
       {src ? (
-        <Img src={src} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', objectPosition: `${(focus[0] * 100).toFixed(1)}% ${(focus[1] * 100).toFixed(1)}%`, display: 'block' }} />
+        <Img data-imagery="" src={src} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', objectPosition: `${(focus[0] * 100).toFixed(1)}% ${(focus[1] * 100).toFixed(1)}%`, display: 'block' }} />
       ) : k === 'monogram' ? (
         <MonogramTile theme={t} seed={who} initials={initials} size={size} font={(px, w, c) => face(px, w, c, 0)} />
       ) : k === 'halftone' ? (
@@ -467,7 +467,7 @@ export const Photo: React.FC<{ theme: KitTheme; w: number; h: number; seed?: num
   if (src)
     return (
       <div style={{ position: 'relative', width: w, height: h, borderRadius: radius, overflow: 'hidden' }}>
-        <Img src={src} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${focus.x * 100}% ${focus.y * 100}%`, transform: `scale(${k.toFixed(5)})`, transformOrigin: `${focus.x * 100}% ${focus.y * 100}%` }} />
+        <Img data-imagery="" src={src} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${focus.x * 100}% ${focus.y * 100}%`, transform: `scale(${k.toFixed(5)})`, transformOrigin: `${focus.x * 100}% ${focus.y * 100}%` }} />
       </div>
     );
   const r = rand(seed);

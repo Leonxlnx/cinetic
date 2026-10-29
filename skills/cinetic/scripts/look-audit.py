@@ -14,7 +14,8 @@ how, where the cuts fall and what they carry. Speeds are px/s at a 1080-high fra
 Look checks (warn unless marked fail):
   hue-count       saturated pixels (OKLab C >= 0.06, >= 0.2 % of the frame on >= 3 samples) grouped by
                   hue across the film: 2 groups more than 30 degrees apart warn, 3 or more fail. One
-                  accent family; imagery is excluded with --imagery (or --imagery-track). A support hue declared in the tokens
+                  accent family; imagery is excluded: the real pictures the layout audit logs (--layout: the kit's photos
+                  and footage carry data-imagery), --imagery boxes or an --imagery-track. A support hue declared in the tokens
                   (C.second, or --second) that is not a second accent (see second-hue) does not count as a group
   banned-hue      fail: saturated colour in a banned region (orange/amber, beige/cream, purple/violet,
                   neon) on >= 0.5 % of the frame for >= 3 samples, unless it is a brand-supplied colour
@@ -602,11 +603,22 @@ def imagery_mask(shape, boxes):
     return keep
 
 
-def imagery_of(args, info, W, comp_w, k_):
+def imagery_of(args, info, W, comp_w, k_, layout=None):
     """The declared imagery as a function of the video frame (analysis px): --imagery x,y,w,h (video px) for the
     whole film, or x,y,w,h@a-b for video frames a-b; --imagery-track JSON [{from, to, box: [x, y, w, h], toBox?}]
-    in composition frames and px, toBox moving the box in a straight line (a screenshot on a moving camera)."""
+    in composition frames and px, toBox moving the box in a straight line (a screenshot on a moving camera); and the
+    pictures the layout audit logged (--layout: every [data-imagery] the kit's photos and footage carry, on each
+    audited frame, held for the frames within half the audit's step)."""
     k = W / info['w']
+    rows = []
+    for fr in (layout or {}).get('boxes', []):
+        bx = fr.get('imagery') or []
+        if bx:
+            sx = W / (fr.get('width') or (layout or {}).get('width') or comp_w)
+            rows.append((fr['frame'] * k_, [(b['x'] * sx, b['y'] * sx, b['w'] * sx, b['h'] * sx) for b in bx]))
+    audited = sorted({fr['frame'] * k_ for fr in (layout or {}).get('boxes', [])})
+    steps = sorted(b - a for a, b in zip(audited, audited[1:]) if b - a > 1.5 * k_)  # the f+1 speed pairs left out
+    tol = min(info.get('fps', 30) / 2, max(3 * k_, steps[len(steps) // 2] / 2 if steps else 3 * k_))
     fixed = []
     for spec in getattr(args, 'imagery', None) or []:
         box, _, rng = spec.partition('@')
@@ -629,6 +641,12 @@ def imagery_of(args, info, W, comp_w, k_):
 
     def at(f):
         out = [bx for bx, a, b in fixed if a <= f <= b]
+        near = [(abs(fr - f), bx) for fr, bx in rows if abs(fr - f) <= tol]
+        if near:  # the nearest audited frame's pictures, grown 1 % (a pixel at least) for their soft edge and chroma bleed
+            for x, y, w, h in min(near, key=lambda r: r[0])[1]:
+                g = max(1.0, 0.01 * max(w, h))
+                if w >= 1 and h >= 1:
+                    out.append((max(0, int(x - g)), max(0, int(y - g)), int(w + 2 * g) + 1, int(h + 2 * g) + 1))
         for a, z, b0, b1 in track:
             if a <= f <= z:
                 t = 0.0 if z <= a else (f - a) / (z - a)
@@ -2049,6 +2067,14 @@ def self_test(F, part='all'):
         rep = run('marks-stray', marked(stray=True), extra=('--layout', lay, '--logos', rec))
         check(bool(has(rep, 'banned-hue', 'fail')) and not has(rep, 'hue-count', 'fail'), 'an orange panel beside the official mark still fails banned-hue (one accent for everything else)',
               json.dumps(rep.get('marks')))
+        # real pictures (a photo's skin and foliage) where the layout audit logged them (data-imagery): left out the same way
+        lay_im = jfile('fixture-imagery-layout.json', dict(width=w, height=h, boxes=[dict(frame=f, width=w, height=h, boxes=[],
+                                                                                    imagery=[dict(x=40 + 4 * f, y=100, w=60, h=60)]) for f in range(0, 60, 3)]))
+        rep = run('imagery-layout', marks, extra=('--layout', lay_im))
+        check(not has(rep, 'hue-count') and not has(rep, 'banned-hue'), "a picture's own colours, followed through the layout audit's imagery boxes, are left out",
+              json.dumps(has(rep, 'hue-count') + has(rep, 'banned-hue'))[:200])
+        rep = run('imagery-stray', marked(stray=True), extra=('--layout', lay_im))
+        check(bool(has(rep, 'banned-hue', 'fail')), 'an orange panel beside the logged picture still fails banned-hue')
         # pure black ink on pure white
         bw = [card(np.full((h, w, 3), 255, np.uint8), 60 + i, 100, 120, (0, 0, 0)) for i in range(60)]
         rep = run('bw', bw)
@@ -2596,7 +2622,7 @@ def main():
     args.mark_at = mark_boxes(args, layout, mark_names, min(args.width, info['w']) // 2 * 2,
                               (layout or {}).get('width') or args.comp_width or info['w'], k_c, info['fps'])
     args.imagery_at = imagery_of(args, info, min(args.width, info['w']) // 2 * 2,
-                                 (layout or {}).get('width') or args.comp_width or info['w'], k_c)
+                                 (layout or {}).get('width') or args.comp_width or info['w'], k_c, layout)
     if args.picture_only:
         P, size = measure_picture(args, info, F)
         fps = info['fps']

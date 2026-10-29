@@ -162,7 +162,7 @@ export const Cutouts: React.FC<CutoutsProps> = (p) => {
               </svg>
             )}
             <div style={{ position: 'absolute', left: 0, top: 0, width: pc.w, height: pc.h, transformOrigin: '0 0', transform: place(), clipPath: polyCss(matte) }}>
-              <Img src={pc.src} style={{ width: pc.w, height: pc.h, display: 'block' }} />
+              <Img data-imagery="" src={pc.src} style={{ width: pc.w, height: pc.h, display: 'block' }} />
             </div>
           </React.Fragment>
         );

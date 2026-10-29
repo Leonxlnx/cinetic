@@ -232,7 +232,7 @@ export const Cascade: React.FC<CascadeProps & { frame: number; src: string; x: n
   if (s.phase === 'image' || s.phase === 'load')
     return (
       <div style={box}>
-        <Img src={props.src} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: s.blur > 0 ? `blur(${s.blur * (film.height / 1080)}px)` : undefined, transform: s.blur > 0 ? 'scale(1.08)' : undefined }} />
+        <Img data-imagery="" src={props.src} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: s.blur > 0 ? `blur(${s.blur * (film.height / 1080)}px)` : undefined, transform: s.blur > 0 ? 'scale(1.08)' : undefined }} />
       </div>
     );
   if (s.phase === 'blank') return <div style={{ ...box, background: props.blank ?? props.unlit }} />;
