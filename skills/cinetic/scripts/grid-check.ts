@@ -455,7 +455,7 @@ async function main() {
       const s = String(x).trim();
       let m = s.match(/^@([A-Za-z_]\w*)\s*([+-]\s*\d+(?:\.\d+)?)?$/);
       if (m) {
-        const c = CUE?.[m[1]];
+        const c = CUE?.[m[1]] ?? (m[1] === 'reveal' && isNum(T.REVEAL) ? T.REVEAL : undefined); // "@reveal" reads the timeline's REVEAL
         const f = Array.isArray(c) ? c[0] : c;
         return isNum(f) ? f + Number((m[2] ?? '0').replace(/\s/g, '')) : undefined;
       }
@@ -590,13 +590,27 @@ async function main() {
   let uiWords = 0;
   const holdNeed = (n: number) => Math.round(Math.max(P.holdMin, P.holdBase + P.holdPerWord * n) * s);
   const fragErr = paceName === 'calm' ? P.maxNewWords + 2 : 10;
-  const valid: (Copy & { out: number; n: number; ui: boolean })[] = [];
+  const valid: (Copy & { out: number; n: number; nNew: number; ui: boolean })[] = [];
+  // a declared swap that keeps the line's start brings only its changed words: "for students" -> "for staff" is one
+  // new word (the line it takes the place of: swap: '<id>', or the latest film line before it for swap: true)
+  const swapNew = (c: Copy, n: number) => {
+    if (!c.swap) return n;
+    const film0 = COPY.filter((x) => x.kind !== 'ui' && x !== c);
+    const prev = typeof c.swap === 'string' ? film0.find((x) => x.id === c.swap || x.chain === c.swap) : film0.filter((x) => x.in <= c.in).sort((a, b) => b.in - a.in)[0];
+    if (!prev) return n;
+    const a = String(prev.text).toLowerCase().split(/\s+/).filter(Boolean);
+    const b = String(c.text).toLowerCase().split(/\s+/).filter(Boolean);
+    let k = 0;
+    while (k < a.length && k < b.length && a[k] === b[k]) k++;
+    return Math.max(1, n - k);
+  };
   for (const c of COPY) {
     const id = c.id ?? '?';
     const n = wordsOf(c.text);
+    const nNew = swapNew(c, n);
     const ui = c.kind === 'ui'; // product strings: a typed command, code, a URL, an app label
     if (ui) uiWords += n;
-    else words += n;
+    else words += nNew;
     const o = c.out ?? TOTAL;
     if (![c.in, c.resolved, o].every(Number.isFinite)) {
       err('copy', `COPY ${id}: in/resolved/out must be frames`);
@@ -604,7 +618,7 @@ async function main() {
     }
     if (!(c.in <= c.resolved && c.resolved <= o)) err('copy', `COPY ${id}: needs in <= resolved <= out (got ${c.in}, ${c.resolved}, ${o}); unresolved text never exits`);
     if (c.in < 0 || o > TOTAL) err('copy', `COPY ${id}: [${c.in}, ${o}] is outside the film [0, ${TOTAL}]`);
-    valid.push({ ...c, out: o, n, ui });
+    valid.push({ ...c, out: o, n, nNew, ui });
     const hold = o - c.resolved;
     if (hold < holdNeed(n) && ui) warn('text-hold', `COPY ${id} (ui) "${c.text}" holds ${hold} f resolved; ${n} word(s) want >= ${holdNeed(n)} f if it must be read`);
     else if (hold < holdNeed(n)) err('text-hold', `COPY ${id} "${c.text}" holds ${hold} f resolved; ${n} word(s) need >= ${holdNeed(n)} f`);
@@ -615,8 +629,8 @@ async function main() {
     else if (n > P.maxNewWords) warn('fragment', `COPY ${id} "${c.text}" has ${n} words; a fragment holds 1-${P.maxNewWords} (split it into a chain)`);
     const lines = String(c.text).split('\n');
     if (lines.length > 2) warn('copy-lines', `COPY ${id}: ${lines.length} lines on screen at once (keep <= 2)`);
-    const rate = (c.resolved - c.in) / Math.max(1, n - 1);
-    if (n >= 3 && rate < 8 * s && c.reveal !== 'focus') warn('reveal-rate', `COPY ${id} "${c.text}" reveals ${n} words in ${c.resolved - c.in} f (${rate.toFixed(1)} f per word < ${8 * s}): a block, not a read; stagger the words or split the line`);
+    const rate = (c.resolved - c.in) / Math.max(1, nNew - 1);
+    if (nNew >= 3 && rate < 8 * s && c.reveal !== 'focus') warn('reveal-rate', `COPY ${id} "${c.text}" reveals ${nNew} ${nNew < n ? 'new ' : ''}words in ${c.resolved - c.in} f (${rate.toFixed(1)} f per word < ${8 * s}): a block, not a read; stagger the words or split the line`);
   }
   // --- script: every line one short sentence (2-7 words); one clean line on screen at a time
   for (const l of lines) {
@@ -745,7 +759,7 @@ async function main() {
 
   // --- copy rate and text share
   const win5 = Math.round(5 * FPS);
-  const resolves = film.map((c) => ({ f: c.resolved, n: c.n })).sort((a, b) => a.f - b.f);
+  const resolves = film.map((c) => ({ f: c.resolved, n: c.nNew })).sort((a, b) => a.f - b.f); // a swap counts its new words
   let peak = { n: 0, f: 0 };
   for (const r of resolves) {
     const n = resolves.filter((x) => x.f >= r.f && x.f < r.f + win5).reduce((m, x) => m + x.n, 0);
