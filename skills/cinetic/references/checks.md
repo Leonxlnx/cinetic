@@ -196,6 +196,9 @@ cues file that carries the declarations:
 | hold-drift | a run over 0.8 s outside `END` where nothing drifts 6 px/s or creeps 1 %/s and the ground does not change | fail |
 | | while text is read: faster than 90 px/s or 15 %/s | warn |
 | static-share | more than 15 % of the body stands still | warn |
+| motion-energy | a stretch outside `END` where under 30 % of the picture's structure moves 15 px/s or more (one small thing moving in a still frame) lasts over 1.5 s (a cut ends it); the house holds that at most 1.5 s (a slow explainer 1.8 s) | warn |
+| | the same stretch over 2.0 s | fail |
+| | under 30 % on more than a quarter of the body | warn |
 | still-cut | more than 30 % of the cuts go from a still frame to a still frame | warn |
 | hold-into-exit | fewer than half of the continuity cuts accelerate into the cut | warn |
 | carried-cut | a declared velocity seam: direction cosine ≥ 0.7, incoming speed 0.4-1.4× the outgoing (widened by the read's own spread), then decaying | fail |
@@ -208,6 +211,8 @@ cues file that carries the declarations:
 | motion-density | more than 2 primary moves (peaks at 25 % of the film's 90th-percentile move or more) per 3 s | fail |
 | motion-stop | a move goes still in one frame from above 15 % of its peak speed | fail |
 | motion-cut | a visible cut while a braking move is above 10 % of its peak, unless a whip, velocity or zoomThrough seam or a camera-blur range carries it (fail over 0.25 per 3 s) | warn |
+
+Motion energy is read on the same 0.4 s windows as `hold-drift` (optical flow at 480 wide, speeds at 1080p): the share of the textured pixels moving 15 px/s or more. A 6 px/s creep keeps a hold alive; it does not make a shot move. The fix is the stage: every act on the film's camera float (`fx/Float` `ActStage`, on by default in every template), planes that part under it (`Depth`), lists that scroll (`scrollBy`), landings that settle on a tail (`tail`) and light that breathes (`BreathLight`); `lib/drift.ts` holds the numbers. The summary line under the verdict prints the film's median, its low share and its longest low stretch.
 
 The motion gates read mean luma change at 160x90, one sample per 1/30 s (landings also at the film's own rate), so a
 60 fps film and a 24 fps one are judged alike. In a declared film every jump that is not a declared cut counts as a

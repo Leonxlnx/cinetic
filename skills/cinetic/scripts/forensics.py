@@ -77,6 +77,11 @@ over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), 
                does not change and no content changes (typing, a counter: 0.2 % of the frame)  fail
                inside a reading window: faster than 90 px/s or 15 %/s                       warn
   static-share more than 15 % of the body stands still (camera, layers and ground)          warn
+  motion-energy  a stretch outside the end lock where under 30 % of the picture's structure moves 15 px/s or more
+               (the camera drift, the planes, the content): one small thing moving in a still frame. The house
+               holds that at most 1.5 s (a cut ends the stretch)                                     warn
+               longer than 2.0 s                                                            fail
+               under 30 % on more than a quarter of the body                                warn
   still-cut    more than 30 % of the cuts go from a still frame to a still frame            warn
   hold-into-exit  fewer than half of the continuity cuts accelerate into the cut (the last two
                frames run x1.15 faster than the two before them, or end at 3x the hold)     warn
@@ -640,6 +645,11 @@ LIVE_PCT = 1.0      # %/s of scale creep
 GROUND_CPS = 18.0   # a flat ground tile changing faster than this (codes per second) is living light
 ONSET_PXS = 30.0    # a region starting to move faster than this is an animation start
 CHANGE_LIVE = 0.002  # share of the frame whose content changes over a window (typing, counters): a hold that lives
+# motion energy: the share of the picture's structure moving `px` px/s or more over a window. The house band, measured
+# (0.4 s windows at 480 wide): the median runs 0.65-0.98; a stretch under `low` lasts at most 1.5 s in three quarters
+# of the band and 1.8 s in all but a slow explainer; under `low` on more than a quarter of the body is beyond all
+# but two. A 6 px/s drift keeps a hold from freezing (hold-drift); it does not make a shot move.
+ENERGY = dict(px=15.0, low=0.3, warn_s=1.5, fail_s=2.0, share=0.25)
 # carried-cut: the house band, a direction read needs this coherence, a repeat reaching this autocorrelation makes the
 # step ambiguous, and the read's spread widens the ratio band by at most this much
 CARRY = dict(cos=0.7, ratio=(0.4, 1.4), coherence=0.5, period_ac=0.5, spread_max=0.5)
@@ -844,6 +854,7 @@ class MotionProbe:
         if tex.sum() >= 60:
             out['layer_pxs'] = round(float(np.percentile(mag[tex], 90)) * self.u / dt, 2)
             out['moving_share'] = round(float((mag[tex] * self.u / dt >= LIVE_PXS).mean()), 3)  # how much of the structure moves
+            out['energy'] = round(float((mag[tex] * self.u / dt >= ENERGY['px']).mean()), 3)  # ... and how much of it visibly
             fit = fit_similarity(fl, tex)
             if fit:
                 tx, ty, sa, rb, inl, res = fit
@@ -953,6 +964,38 @@ def window_at(win, f, wstride):
         if g in win:
             return win[g]
     return None
+
+
+def energy_runs(frames, state, breaks, fps, P=ENERGY):
+    """Motion energy over the body frames (state: frame -> its window): the median share of the structure moving
+    P['px'] px/s or more, the share of measured frames under P['low'], and the runs under it (a cut, an unmeasured
+    frame or a gap in the frames ends a run), longest first: {from, to, s, energy}."""
+    vals, runs_, cur = [], [], []
+
+    def close():
+        if cur:
+            e = [state[f]['energy'] for f in cur]
+            runs_.append(dict(**{'from': cur[0]}, to=cur[-1], s=round((cur[-1] - cur[0] + 1) / fps, 2), energy=round(float(np.mean(e)), 3)))
+
+    for f in frames:
+        w = state.get(f)
+        e = None if w is None else w.get('energy')
+        if e is None or f in breaks or (cur and f != cur[-1] + 1):
+            close()
+            cur = []
+        if e is None:
+            continue
+        vals.append(e)
+        if e < P['low']:
+            cur.append(f)
+        else:
+            close()
+            cur = []
+    close()
+    runs_.sort(key=lambda r: -r['s'])
+    low = sum(1 for v in vals if v < P['low'])
+    return dict(measured=len(vals), median=round(float(np.median(vals)), 3) if vals else None, low_share=round(low / max(1, len(vals)), 3),
+                longest_s=runs_[0]['s'] if runs_ else 0.0, runs=runs_[:12])
 
 
 def rolling_median_excl(d, i, r=4):
@@ -1724,6 +1767,19 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
             if up / len(cont) < 0.5:
                 add('hold-into-exit', sev('warn'), cont[0]['frame'], f'only {up} of {len(cont)} cuts accelerate into the cut: the last 12-20 f@60 '
                     'of a hold turn into the exit (speed growing about x1.11-1.16 a frame), and the cut falls on the fastest frame')
+        breaks = set(cuts_all) | {f for f, p in probe_m.pair.items() if p.get('cut')}
+        out['energy'] = en = energy_runs(body, state, breaks, fps)
+        for r in en['runs']:
+            if r['s'] > ENERGY['warn_s']:
+                add('motion-energy', sev('fail' if r['s'] > ENERGY['fail_s'] else 'warn'), f"{r['from']}-{r['to']}",
+                    f"{r['s']:.1f} s where only {r['energy'] * 100:.0f} % of the picture moves {ENERGY['px']:g} px/s or more (under "
+                    f"{ENERGY['low'] * 100:.0f} %: the house holds that at most {ENERGY['warn_s']:g} s, {ENERGY['fail_s']:g} s fails): one small "
+                    'thing moving is a still shot. Keep the act on the camera float (fx/Float ActStage), part the planes (Depth), '
+                    'scroll what lists, let what lands settle on a tail (lib/drift)')
+        if en['measured'] and en['low_share'] > ENERGY['share']:
+            add('motion-energy', sev('warn'), f'{f0}-{last}', f"under {ENERGY['low'] * 100:.0f} % of the picture moves on "
+                f"{en['low_share'] * 100:.0f} % of the body (the house: at most {ENERGY['share'] * 100:.0f} %): drift the camera through "
+                'every shot and give the background its own life')
         car = []
         decay = 0.97 ** (60 / fps)
         for s in extra.get('seams', []):
@@ -2363,6 +2419,20 @@ def self_test():
     check(not flags(rep, 'static-share'), 'a creeping film does not warn static-share', f"static share {gram(rep).get('holds', {}).get('static_share')}")
     rep = run('drift', [warp(A, dx=12 * i / fps / 4) for i in range(n)], cues(n))
     check(not flags(rep, 'hold-drift', 'fail'), 'a 12 px/s drift (at 1080p) keeps the hold alive', f"live share {gram(rep).get('holds', {}).get('live_share')}")
+    check(bool(flags(rep, 'motion-energy', 'fail')), 'the same 12 px/s drift for 3 s is a still shot (motion-energy fails)', json.dumps(gram(rep).get('energy', {}).get('runs', [])[:1]))
+    rep = run('float', [warp(A, dx=24 * i / fps / 4, dy=-10 * i / fps / 4) for i in range(n)], cues(n))
+    check(not flags(rep, 'motion-energy'), 'a 26 px/s camera drift keeps the shot moving (no motion-energy)', f"median {gram(rep).get('energy', {}).get('median')}")
+
+    def blob(i):  # a still card with one small chip sliding across it: one small thing moves
+        out = A.copy()
+        x = int(40 + 3 * i)
+        cv2.rectangle(out, (x, 120), (x + 24, 140), (250, 250, 250), -1)
+        return out
+    rep = run('onething', [blob(i) for i in range(n)], cues(n))
+    check(bool(flags(rep, 'motion-energy', 'fail')) and not flags(rep, 'hold-drift', 'fail'),
+          'one small chip moving on a still frame for 3 s fails motion-energy (and is not a frozen hold)', json.dumps(gram(rep).get('energy', {}).get('runs', [])[:1]))
+    rep = run('shortstill', [blob(i) for i in range(30)] + [warp(A, dx=40 * i / fps / 4) for i in range(120)], cues(150))
+    check(not flags(rep, 'motion-energy'), 'a 1 s still stretch before a drift is inside the band', json.dumps(gram(rep).get('energy', {}).get('runs', [])[:1]))
     rep = run('frozen11', [A] * n, cues(n, look=False))
     check(not flags(rep, 'hold-drift', 'fail') and not flags(rep, 'hold-drift', 'warn'), 'without 1.2 declarations hold-drift is info only')
     # an undeclared film checked with --grammar: its last 2 s are the end lock (a closing card may lock off)
@@ -2540,6 +2610,15 @@ def grammar_only(args, info, decl):
                 warnings=sum(1 for x in flags if x['severity'] == 'warn'), flags=flags, checks=dict(grammar=grammar)) | {'pass': fails == 0}
 
 
+def energy_line(res):
+    """The motion energy summary under the verdict line (the grammar's energy measure, when it ran)."""
+    g = res.get('checks', {}).get('grammar') or res.get('grammar') or {}
+    en = g.get('energy')
+    if en and en.get('measured'):
+        print(f"  motion energy: median {en['median']:.2f} of the structure moving {ENERGY['px']:g} px/s+, under {ENERGY['low']:g} on "
+              f"{en['low_share'] * 100:.0f} % of the body, longest {en['longest_s']:g} s (band: {ENERGY['warn_s']:g} s, {ENERGY['share'] * 100:.0f} %)")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0],
                                  formatter_class=argparse.RawDescriptionHelpFormatter, epilog=__doc__)
@@ -2640,6 +2719,7 @@ def main():
             with open(args.json, 'w') as fh:
                 json.dump(res, fh, indent=1, default=lambda o: o.item() if hasattr(o, 'item') else str(o))
         print(f'forensics (grammar only): {args.video}  {res["frames"]} frames  {"PASS" if res["pass"] else "FAIL"}  ({res["fails"]} fail, {res["warnings"]} warn)')
+        energy_line(res)
         for x in res['flags'][:30]:
             print(f'  {x["severity"]:4s} {x["check"]:9s} f{x["frame"]}: {x["note"]}')
         sys.exit(0 if res['pass'] else 1)
@@ -2661,6 +2741,7 @@ def main():
 
     print(f'forensics: {args.video}  {res["frames"]} frames @ {res["fps"]} fps  '
           f'{"PASS" if res["pass"] else "FAIL"}  ({res["fails"]} fail, {res["warnings"]} warn)')
+    energy_line(res)
     for x in res['flags'][:30]:
         act = f' [{x["act"]}]' if x.get('act') else ''
         print(f'  {x["severity"]:4s} {x["check"]:9s} f{x["frame"]}{act}: {x["note"]}')
