@@ -34,7 +34,7 @@ export const REVIEW = {
       { text: 'Cover is perfect.', side: 'in' },
       { text: 'Send all 48 to print.', side: 'out' },
       { text: '', side: 'in', kind: 'typing' },
-      { text: 'Booked for Thursday.', side: 'in' },
+      { text: 'Booked for Friday, 4 pm.', side: 'in' }, // the project's own print slot (meta): a chat agrees with the screen beside it
     ] as ChatLine[],
   },
   feed: {
