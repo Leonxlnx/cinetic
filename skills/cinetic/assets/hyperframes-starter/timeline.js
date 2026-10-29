@@ -29,7 +29,9 @@
   const f60 = (f, fps = FPS) => Math.round((f * fps) / 60);
   const f60x = (f, fps = FPS) => (f * fps) / 60;
 
-  const TAIL = FPS; // 1 s after the last event: room for reverb tails and the poster hold
+  // 1 s after the last event (room for reverb tails and the poster hold), or longer when the track's ending needs it:
+  // MUSIC.end.hold, its own final hit ringing out or a 2-3 s fade under the poster (never a cut)
+  const TAIL = Math.max(FPS, MUSIC && MUSIC.end && MUSIC.end.hold ? Math.ceil(MUSIC.end.hold) : 0);
 
   // Acts are contiguous and bar-aligned.
   const ACT = {
