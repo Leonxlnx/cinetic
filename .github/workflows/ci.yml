@@ -257,6 +257,11 @@ jobs:
       - name: Copy check tests (copy-check.py)
         run: python3 "skills/$SKILL/scripts/test/copy-check.test.py"
 
+      - name: Cast and detail-pair tests (audio/kit.py cast, detail-pair.py)
+        run: |
+          python3 "skills/$SKILL/scripts/test/cast.test.py"
+          python3 "skills/$SKILL/scripts/test/detail-pair.test.py"
+
       - name: Real marks and music finder tests (logos.mjs, music.mjs; offline fixtures, no network)
         run: |
           node "skills/$SKILL/scripts/test/logos.test.mjs"
@@ -285,10 +290,10 @@ jobs:
             exit 1
           fi
 
-      - name: Starter primitive tests (continuity, depth and light, kit, type, transitions; through the starter's tsx)
+      - name: Starter primitive tests (continuity, depth and light, kit, type, transitions, drift, data; through the starter's tsx)
         run: |
           fail=0
-          for t in continuity depth-light kit-dense type-moves type-presets transitions handoff primitives moment wordmark logo-kit; do
+          for t in continuity depth-light kit-dense type-moves type-presets type-systems type-emphasis transitions handoff primitives moment wordmark logo-kit drift details kit-real pictures placeholder data-check; do
             echo "::group::$t.test.mjs"
             node "skills/$SKILL/scripts/test/$t.test.mjs" || { echo "::error::$t.test.mjs failed"; fail=1; }
             echo "::endgroup::"

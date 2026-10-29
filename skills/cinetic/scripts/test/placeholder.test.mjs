@@ -116,7 +116,7 @@ try {
   // 4. the kit
   result(/data-drawn="person"/.test(P.portrait) && /data-drawn="person"/.test(P.halftone), 'PortraitMark and HalftonePortrait carry data-drawn="person"');
   const parts = readFileSync(join(SRC, 'kit', 'parts.tsx'), 'utf8');
-  const photoSrc = /if \(src\)\s*return \(\s*<div style=\{\{ position: 'relative'[^\n]*\n\s*<Img src=\{src\}/.test(parts);
+  const photoSrc = /if \(src\)\s*return \(\s*<div style=\{\{ position: 'relative'[^\n]*\n\s*<Img (?:data-imagery="" )?src=\{src\}/.test(parts);
   result(/data-drawn="product"/.test(P.still) && photoSrc, 'a kit Photo with no src is marked data-drawn="product"; with src it is the photograph (an Img), unmarked');
   const files = (P.project.match(/\.jpg</g) ?? []).length;
   result(!/data-drawn="product"/.test(P.project) && files === 4 && / MB</.test(P.project), 'ProjectPanel with no photos: each select shows as the file it is (name and size), nothing drawn', `${files} files`);
@@ -126,7 +126,7 @@ try {
   result(P.nodes0 === 0, 'worldNodes: a world without photos deals no person tiles', String(P.nodes0));
   result(P.nodes1.length >= 4 && P.nodes1.every((x) => ['ana.jpg', 'ben.jpg', 'cy.jpg'].includes(x)), 'worldNodes: a world with photos deals person tiles carrying the photo', P.nodes1.join(','));
   const tiles = readFileSync(join(SRC, 'kit', 'tiles.tsx'), 'utf8');
-  result(/\{node\.photo \? \(\s*<Img src=\{node\.photo\}/.test(tiles), 'a person tile with a photo shows the photograph (an Img), not a drawn portrait');
+  result(/\{node\.photo \? \(\s*<Img (?:data-imagery="" )?src=\{node\.photo\}/.test(tiles), 'a person tile with a photo shows the photograph (an Img), not a drawn portrait');
 
   const photoFx = readFileSync(join(SRC, 'fx', 'Photo.tsx'), 'utf8');
   const plate = readFileSync(join(SRC, 'acts', 'plate.tsx'), 'utf8');
