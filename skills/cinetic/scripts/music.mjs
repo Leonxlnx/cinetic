@@ -483,7 +483,7 @@ export function parseCoverr(json) {
     const tags = { genre: (h.genres || []).map(slug), mood: (h.moods || []).map(slug), instrument: (h.instruments || []).map(slug), tag: (h.video_themes || []).map(slug), category: [] };
     const urls = h.urls || {};
     const seconds = Number.isFinite(h.duration) ? Math.round(h.duration * 10) / 10 : null;
-    const it = { ref: `coverr:${h.id}`, source: 'coverr', id: String(h.id), kind: 'music', title: h.title || h.name || String(h.id), artist: null,
+    const it = { ref: `coverr:${h.id}`, source: 'coverr', id: String(h.id), kind: 'music', title: h.title || h.name || String(h.id), artist: 'Coverr',
       genre: tags.genre[0] || null, tags, seconds, file_url: urls.preview_download || urls.preview || null, preview_url: urls.preview || null,
       page: 'https://coverr.co/free-stock-music', licence: free ? 'coverr' : 'unknown', notice: free ? 'Coverr License' : null,
       published: (h.published_at || h.created_at || '').slice(0, 10) || null, created: (h.created_at || '').slice(0, 10) || null,
@@ -945,9 +945,10 @@ export function rankLibrary(tracks, want = {}, hist = {}) {
   const key = (a) => String(a || '').trim().toLowerCase();
   const recent = new Set((hist?.used || []).filter((u) => (u.kind || 'music') === 'music').slice(-5).map((u) => key(u.artist)).filter(Boolean));
   const seen = {};
+  const catalogs = new Set(Object.values(SOURCES).map((x) => key(x.name)));  // a catalog named as the artist (Coverr) is no one artist
   for (const it of list.sort((a, b) => b.score - a.score || String(a.ref).localeCompare(String(b.ref)))) {
     const a = key(it.artist);
-    if (!a) continue;
+    if (!a || catalogs.has(a)) continue;
     const n = seen[a] || 0;
     if (n) { it.score = Math.round((it.score - n) * 100) / 100; it.why = [...it.why, `${n} higher offer${n > 1 ? 's' : ''} by the same artist`]; }
     if (recent.has(a)) { it.score = Math.round((it.score - 1) * 100) / 100; it.why = [...it.why, 'an artist one of your recent films used']; }
@@ -976,9 +977,9 @@ export function licenceRecord(it, { file, sha256, bytes, date, seenQuote, seenUr
   const cc0 = it.licence === 'cc0';
   if (cc0 && !(seenQuote && seenUrl)) throw new Error(`${it.ref}: a CC0 item's record needs its own page's licence as read now (seenQuote, seenUrl)`);
   const rec = {
-    record: 1, kind: music ? 'music' : 'sfx', file, sha256, bytes, title: it.title, artist: it.artist || (music ? null : src), source: src,
+    record: 1, kind: music ? 'music' : 'sfx', file, sha256, bytes, title: it.title, artist: it.artist || (it.source === 'coverr' ? 'Coverr' : music ? null : src), source: src,
     page: it.page, file_url: it.file_url, licence: L.name, licence_id: it.licence, licence_url: L.url, credit_required: false,
-    credit: music ? `Music: "${it.title}" by ${it.artist || 'unknown'} (${src}${cc0 ? ', CC0' : ''})` : null,
+    credit: music ? (it.artist ? `Music: "${it.title}" by ${it.artist} (${src}${cc0 ? ', CC0' : ''})` : `Music: "${it.title}" (${src}${cc0 ? ', CC0' : ''})`) : null,
     content_id: 'unknown', ai_generated: false, vocals: false, checked: date, certificate: null,
     licence_seen: { quote: seenQuote || L.seen.quote, url: seenUrl || L.seen.url, date },
     limits: L.limits, modifications: music ? 'edited at bar lines for the film; levels adjusted' : 'trimmed and levelled for the film',

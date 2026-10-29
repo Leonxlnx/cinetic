@@ -1081,12 +1081,18 @@ def plan_edit(a, bars, reveal, end, start=None, entry=None, arc=None, max_splice
         cost = new
         back.append(bk)
     fin = cost[:, 1, :] if bars > 1 else cost[:, 0, :]
+    r = 1 if bars > 1 else 0
+    if endbar is not None and bars > 2:
+        # the track's own ending may be reached through ONE turnaround bar (the bar before its final hit) after the
+        # reveal's bars: a late reveal still ends on the track's own final hit, never on a cut
+        fin0 = cost[:, 0, :] + 0.5
+        if fin0.min() < fin.min():
+            fin, r = fin0, 0
     if not np.isfinite(fin).any() or fin.min() >= INF / 2:
         raise TrackError('no edit fits these anchors (the reveal entry, the ending, the start bar, at most '
                          f'{smax} splice(s), 2+ bars per segment, one key per join): change --bars, --reveal-bar, '
-                         '--entry or --start-bar')
+                         '--entry or --start-bar, or end on a fade (--end fade)')
     s, j = np.unravel_index(int(np.argmin(fin)), fin.shape)
-    r = 1 if bars > 1 else 0
     path = [int(j)]
     for k in range(bars - 1, 0, -1):
         s_p, r_p, j_p = back[k - 1][s, r, j]

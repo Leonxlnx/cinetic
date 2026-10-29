@@ -1820,6 +1820,17 @@ def main(argv=None):
     tm, mom = M.blocks(y, 0.4, 0.1)
     end_ = ((edit or {}).get('ending') or {}) if song.has_music else {}
     stop_s = end_.get('bed_stops_film_s') if end_.get('mode') == 'stop' else None
+    # the track's own final hit (a button or ring ending) is the film's last big moment, the way launch music ends
+    # (a final moment about 2 LU over the integrated loudness): the arc's peak is read without its first second
+    arc_max, arc_t = rep.get('momentary_max'), rep.get('momentary_max_t')
+    hit_s = end_.get('last_hit_film_s') if end_.get('mode') in ('button', 'ring') else None
+    if hit_s is not None and len(mom):
+        fw = (tm >= hit_s - 0.15) & (tm <= hit_s + 1.2)
+        if fw.any() and (~fw).any():
+            rep['final_hit'] = dict(t=round(float(hit_s), 3), momentary_max=round(float(mom[fw].max()), 2))
+            k = int(np.argmax(np.where(fw, -np.inf, mom)))
+            arc_max, arc_t = round(float(mom[k]), 2), round(float(tm[k]), 3)
+            rep['arc_max'], rep['arc_max_t'] = arc_max, arc_t
     if song.payoff is not None:
         win = (tm >= song.payoff - 0.2) & (tm <= song.payoff + 1.0)
         i0, i1 = int(song.payoff * SR), int((song.payoff + 1.0) * SR)
@@ -1833,9 +1844,9 @@ def main(argv=None):
             song.warnings.append(f'"payoff" ({song.payoff:.2f}s) is the stop ending\'s element (the bed stops at {stop_s:.2f}s), '
                                  'which sits 2 LU or more under the payoff: point "payoff" at the reveal before the stop, or '
                                  'end on "button" or "ring" when the reveal is the lockup')
-        elif win.any() and mom[win].max() < rep['momentary_max'] - 0.5:
+        elif win.any() and mom[win].max() < arc_max - 0.5:
             song.warnings.append(f'the payoff ({song.payoff:.2f}s) is not the loudest moment: '
-                                 f'{mom[win].max():.1f} vs {rep["momentary_max"]} LUFS-M at {rep["momentary_max_t"]}s'
+                                 f'{mom[win].max():.1f} vs {arc_max} LUFS-M at {arc_t}s'
                                  + (': a later section of the track is louder; edit the track so the entry on the reveal '
                                     'is the peak (track.py edit)' if song.has_music else ''))
         if rep['payoff']['limiter_gr_db'] and rep['payoff']['limiter_gr_db'] > 1.5:
@@ -1857,11 +1868,11 @@ def main(argv=None):
             song.warnings.append(f'soft hook: the first 0.5 s sits {med - opening:.0f} dB under the median momentary loudness '
                                  f'({opening:.1f} vs {med:.1f} LUFS-M; an intro runs 5-12 LU under the body): start the edit '
                                  'on the track\'s intro with intent (track.py edit --film-t0 0-0.45)')
-    if song.dur > 8 and rep.get('momentary_max_t') is not None:
-        frac = rep['momentary_max_t'] / song.dur
+    if song.dur > 8 and arc_t is not None:
+        frac = arc_t / song.dur
         rep['loudest_frac'] = round(frac, 2)
         if frac > REVEAL_BAND[1]:
-            song.warnings.append(f'the loudest moment is at {frac * 100:.0f}% of the film ({rep["momentary_max_t"]}s): the ending '
+            song.warnings.append(f'the loudest moment is at {frac * 100:.0f}% of the film ({arc_t}s): the ending '
                                  f'should subtract, not slam. Peak on the biggest reveal ({REVEAL_BAND[0]:.0%}-{REVEAL_BAND[1]:.0%} '
                                  'in) and point "payoff" there; end on a stop, the track\'s final hit or its ring')
     if rep.get('tail_50ms_db') is not None and rep['tail_50ms_db'] > -45:

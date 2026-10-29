@@ -22,7 +22,7 @@ Usage (from the project root):
 
 Licences (the classifier):
   allowed    cc0, pd (public domain mark), cc-by-3.0, cc-by-4.0, mixkit-music (Mixkit Stock Music Free
-             License), pixabay (Pixabay Content License); for a sound effect ("kind": "sfx") also mixkit-sfx
+             License), coverr (Coverr License), pixabay (Pixabay Content License); for a sound effect ("kind": "sfx") also mixkit-sfx
              (Mixkit Sound Effects Free License), which never covers a music track
   forbidden  NonCommercial, NoDerivatives (syncing to picture is an adaptation), ShareAlike, personal,
              editorial or custom licences, all rights reserved
@@ -50,6 +50,7 @@ ALLOWED = {
     'cc-by-4.0': ('CC BY 4.0', CC + 'licenses/by/4.0/', True),
     'mixkit-music': ('Mixkit Stock Music Free License', 'https://mixkit.co/license/#musicFree', False),
     'pixabay': ('Pixabay Content License', 'https://pixabay.com/service/license-summary/', False),
+    'coverr': ('Coverr License', 'https://coverr.co/license', False),
     'mixkit-sfx': ('Mixkit Sound Effects Free License', 'https://mixkit.co/license/#sfxFree', False),
 }
 SFX_ONLY = ('mixkit-sfx',)  # licences that cover a sound effect, never a music track
@@ -97,6 +98,8 @@ def classify(text):
                         reason='a Mixkit licence other than the Stock Music or Sound Effects Free License: name it')
     elif 'pixabay' in s:
         key = 'pixabay'
+    elif 'coverr' in s:
+        key = 'coverr'
     else:
         m = re.search(r'(?:\bby\b|attribution)[^0-9]{0,24}([1-4])(?:\.0)?', s)
         if m and m.group(1) in ('3', '4'):

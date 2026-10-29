@@ -390,6 +390,12 @@ def ring_ending(d):
     want = max(0.0, lead) + float(np.clip(en.get('ring_out_s') or 0, 1.5, 2.5))
     check(en.get('mode') == 'ring' and abs(en.get('hold_s', 0) - want) < 0.01 and e['args']['end'] == 'auto',
           f"--end auto (the default) takes the track's own ending, its ring held 1.5-2.5 s ({en}; {p.stderr.strip()[-120:]})")
+    p = run(['edit', '--bars', '4', '--reveal-bar', '3', '--entry', '5', '--end', 'own', '--out', 'audio/music/late.json'], d2)
+    lj = os.path.join(d2, 'audio', 'music', 'late.json')
+    le = json.load(open(lj)) if p.returncode == 0 and os.path.isfile(lj) else {}
+    segs = [(x['src_bar'], x['bars']) for x in le.get('segments', [])]
+    check(bool(segs) and segs[-1][1] == 1 and le['reveal']['src_bar'] == 5 and le['ending']['mode'] == 'ring',
+          f"a late reveal still ends on the track's own final hit through one turnaround bar ({segs}; {p.stderr.strip()[-160:]})")
     sys.path.insert(0, os.path.dirname(TRACK))
     import track as TR
     if e:

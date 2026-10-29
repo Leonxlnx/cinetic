@@ -30,7 +30,7 @@ Step by step:
              (space_run), the accent at its end checked against the kit's mix.runs.accent_at_end
   carried    with a track, a hit or drop with a strong low or mid accent of the track (>= 6 dB over its bed)
              within one frame, where the bed plays, is carried by the track: no take ("force": true keeps
-             one); a button ending carries the lockup hit
+             one); the track's own ending (button or ring) carries the lockup hit on its final hit
   tuned      tuned effects never become a melody: at most 2 pitched effects in any 4 s (so never 3 within
              2 s); the extra ones are thinned (heavy and structural ones keep priority); no tonal effect
              rings longer than 1.5 s (score.py fades it there)
@@ -368,9 +368,9 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
                                                   f"{acc[0]['t']:.3f} s carries it", spec=spec)
                 rows.append(row)
                 continue
-            if ending.get('mode') == 'button' and lockup_t is not None and abs(t - lockup_t) <= 3 / fps \
+            if ending.get('mode') in ('button', 'ring') and lockup_t is not None and abs(t - lockup_t) <= 3 / fps \
                     and abs(ending.get('last_hit_film_s', -9) - t) <= 0.1:
-                row.update(status='carried', why="the track's final hit carries the lockup (button ending)", spec=spec)
+                row.update(status='carried', why=f"the track's own final hit carries the lockup ({ending.get('mode')} ending)", spec=spec)
                 rows.append(row)
                 continue
         # the take: tonal roles aim at the note score.py's chord logic gives (an explicit pitch must exist)
