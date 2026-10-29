@@ -23,8 +23,10 @@ the clip at the same density must not read as a recreation.
 
 Usage (from the film project root):
   python3 scripts/like.py measure <clip> [--out out] [--width 480] [--no-music] [--quiet]
-  python3 scripts/like.py guard --film out/film.mp4 --clip <clip> [--every 1.0] [--json out/qa/like-guard.json]
-          [--sheet out/qa/like-guard.png]
+  python3 scripts/like.py guard --film out/film.mp4 [--clip <clip>]... [--scaffold <render>]... [--every 1.0]
+          [--json out/qa/like-guard.json] [--sheet out/qa/like-guard.png] [--layout-sheet out/qa/like-layout.png]
+          [--cache out/like-cache] [--no-layout]
+  python3 scripts/like.py layout --film out/film.mp4 [--clip <clip>]... [--scaffold <render>]... [--json ...]
   node scripts/grammar-score.mjs --target out/like.json [--format launch] ...   # closeness to the clip's grammar
 
 measure: look-audit.py measures the clip's motion (cuts, starts, camera, seams, cut sync, the picture floor);
@@ -35,17 +37,32 @@ of each picture what it shows: picture, ui, type or graphic); the music's tempo 
 strokes) grouped into lines along a baseline, each line with a confidence; only confident lines count, so a night
 street of lights, streaks and lit windows reads as no text. assets.mjs's vet and check use the same reader.
 
-guard: frames at the same density from both (one a second by default). Each film frame is held against every
-clip frame: layout overlap is the correlation of their structure maps (edges and non-ground area on a 48 x 27
-grid), colour-layout distance the mean OKLab distance of their 8 x 6 colour grids. A pair reads as a recreation
-when its layout overlap is >= 0.80 with a colour-layout distance <= 0.10 (the same frame, regraded or moved a
-little), or when its layout overlap is >= 0.90 (the same layout in other colours: a shot retold with new words and
-colours). A frame is matched to a clip frame it recreates when there is one, else to the closest layout (colour only
-breaks a tie), so a shot copied in other colours is never hidden behind another shot that shares its grade. The film
-fails when 15 % or more of its frames, or 3 in a row, read as recreations.
+guard: the film against every reference it is given: the clips the user supplied (--clip, as many as there are)
+and the template's own scaffold (--scaffold: a render of the template before anything was changed, e.g.
+out/scaffold.mp4; a film made from a template is never its scaffold retold). A reference is a video or a folder of
+stills (each still one sample). Two checks run:
+  frames  frames at the same density from both (one a second by default). Each film frame is held against every
+          reference frame: layout overlap is the correlation of their structure maps (edges and non-ground area on a
+          48 x 27 grid), colour-layout distance the mean OKLab distance of their 8 x 6 colour grids. A pair reads as a
+          recreation when its layout overlap is >= 0.80 with a colour-layout distance <= 0.10 (the same frame,
+          regraded or moved a little), or when its layout overlap is >= 0.90 (the same layout in other colours: a shot
+          retold with new words and colours). A frame is matched to a reference frame it recreates when there is one,
+          else to the closest layout (colour only breaks a tie). The film fails when 15 % or more of its frames, or 3
+          in a row, read as recreations.
+  layout  the composition, whatever fills it: two frames a second, each reduced to where its text lines sit (the
+          text reader below), where its objects sit (pictures, cards, pills: whatever stands off the ground, a gradient
+          ground included) and how big each is, on a 32 x 18 grid. Layout overlap is the soft intersection over union
+          of those maps (objects 0.65, text 0.35, at two blur radii, so a layout moved a little or re-filled
+          still matches). Only a specific frame counts: three elements or more, objects on 3-60 % of the frame (a full
+          bleed picture, a lone centred line or an empty ground is everyone's grammar). A film frame copies a layout
+          when its overlap with some reference frame is >= 0.60; the film fails when it holds one reference's layout
+          for a run (3 samples, 1.5 s, in a row) or copies on 25 % or more of its specific frames: the same
+          composition re-skinned (a photo river with a small label, a sentence round a photo with a pill under it, a
+          counter beside a list) in its own words, pictures and colours is still a copy.
+--cache keeps each reference's samples (keyed by its hash and the settings), so a long reference is read once.
 
-Exit codes: measure 0 written; guard 0 its own film, 1 it reads as a recreation; 2 bad input or a missing
-tool (ffmpeg, numpy, opencv-python). Heavy on long clips: one clip at a time.
+Exit codes: measure 0 written; guard and layout 0 its own film, 1 it reads as a recreation or copies a layout; 2 bad
+input or a missing tool (ffmpeg, numpy, opencv-python). Heavy on long clips: one clip at a time.
 """
 import argparse
 import importlib.util
@@ -61,6 +78,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 FORMAT_KEYS = ('launch', 'update', 'explainer', 'reel', 'social')
 SCENE_JUMP = 0.06  # mean change of the 16 x 9 colour layout over 0.2 s (0-1) that counts as a new picture
 GUARD = {'layout': 0.80, 'colour': 0.10, 'layout_only': 0.90, 'share': 0.15, 'run': 3}
+LAYOUT = {'every': 0.5, 'width': 480, 'cells': (32, 18), 'overlap': 0.60, 'run': 3, 'share': 0.25, 'cover': (0.03, 0.60), 'elements': 3, 'text_conf': 0.35, 'blur': (1.0, 2.5), 'text_weight': 0.35}
+STILLS = ('.png', '.jpg', '.jpeg', '.webp', '.bmp')
 TEXT = {'conf': 0.5, 'stroke': 0.42, 'flat': 0.85}  # a text line counts from this confidence; a glyph's widest stroke / its height; a drawn ground's flat share
 
 
@@ -621,7 +640,8 @@ def like_md(t, clip):
         '1. Deal the direction as usual; read this grammar into it (shot lengths, the cut rhythm, the camera habits).',
         '2. Write the timeline to the shot band and the cut placement above; set LOOK.blur to the blur policy.',
         '3. Score each render against the clip: `node scripts/grammar-score.mjs --target out/like.json` (with look-audit.py\'s report).',
-        '4. Before delivery: `python3 scripts/like.py guard --film out/film.mp4 --clip <clip>`.', '']
+        '4. Before delivery: `python3 scripts/like.py guard --film out/film.mp4 --clip <clip>` (with `--scaffold out/scaffold.mp4` when the',
+        '   film was made from a template): no frame retold, no composition re-skinned.', '']
     return '\n'.join(lines)
 
 
@@ -650,16 +670,50 @@ def colour_distance(a, b):
     return float(np.sqrt(((a - b) ** 2).sum(axis=1)).mean())
 
 
+def stills(path):
+    """The stills of a reference folder, in name order."""
+    return [os.path.join(path, f) for f in sorted(os.listdir(path)) if f.lower().endswith(STILLS)]
+
+
+def read_still(path, w):
+    img = cv2.imread(path, cv2.IMREAD_COLOR)
+    if img is None:
+        return None
+    rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    h = max(2, int(round(rgb.shape[0] * w / rgb.shape[1])) // 2 * 2)
+    return cv2.resize(rgb, (w, h), interpolation=cv2.INTER_AREA)
+
+
+def source_id(path):
+    """A reference as the outputs name it: a video's hash, or a folder's (its stills' names and sizes), never a path."""
+    if not os.path.isdir(path):
+        return clip_id(path)
+    import hashlib
+    h = hashlib.sha256()
+    files = stills(path)
+    for f in files:
+        h.update(os.path.basename(f).encode('utf-8'))
+        h.update(str(os.path.getsize(f)).encode())
+    return f"sha256 {h.hexdigest()[:12]}, {len(files)} stills"
+
+
 def sample_maps(path, F, every):
+    out = []
+    if os.path.isdir(path):
+        for k, f in enumerate(stills(path)):
+            rgb = read_still(f, 320)
+            if rgb is not None:
+                s_, c_ = layout_maps(rgb)
+                out.append({'f': k, 't': round(k * every, 2), 'struct': s_, 'col': c_, 'thumb': cv2.resize(rgb, (160, 90), interpolation=cv2.INTER_AREA)})
+        return out
     info = F.probe(path)
     w = 320
     h = max(2, int(round(info['h'] * w / info['w'])) // 2 * 2)
     step = max(1, int(round(every * info['fps'])))
-    out = []
     for f, rgb in F.decode(path, info, 0, None, size=(w, h)):
         if f % step == step // 2:
-            s, c = layout_maps(rgb)
-            out.append({'f': f, 't': round(f / info['fps'], 2), 'struct': s, 'col': c, 'thumb': cv2.resize(rgb, (160, 90), interpolation=cv2.INTER_AREA)})
+            s_, c_ = layout_maps(rgb)
+            out.append({'f': f, 't': round(f / info['fps'], 2), 'struct': s_, 'col': c_, 'thumb': cv2.resize(rgb, (160, 90), interpolation=cv2.INTER_AREA)})
     return out
 
 
@@ -677,7 +731,8 @@ def guard_pairs(film, clip):
             if best is None or key > best[0]:
                 best = (key, ov, cd, b)
         (rec, _, _), ov, cd, b = best
-        rows.append({'film_t': a['t'], 'clip_t': b['t'], 'layout_overlap': round(ov, 3), 'colour_distance': round(cd, 3), 'recreation': bool(rec), '_a': a, '_b': b})
+        rows.append({'film_t': a['t'], 'clip_t': b['t'], 'source': b.get('src', 'clip'), 'layout_overlap': round(ov, 3), 'colour_distance': round(cd, 3),
+                     'recreation': bool(rec), '_a': a, '_b': b})
     return rows
 
 
@@ -693,16 +748,16 @@ def verdict(rows):
             'layout_overlap_median': r(q([x['layout_overlap'] for x in rows], 0.5)), 'colour_distance_median': r(q([x['colour_distance'] for x in rows], 0.5))}
 
 
-def sheet(rows, path):
+def sheet(rows, path, flag='recreation'):
     tiles = []
     for x in rows:
-        a, b = x['_a']['thumb'], x['_b']['thumb']
+        a = x['_a']['thumb']
+        b = x['_b']['thumb'] if x.get('_b') is not None else np.zeros_like(a)
         pair = np.concatenate([a, np.full((90, 6, 3), 255, np.uint8), b], axis=1)
-        if x['recreation']:
-            pair = cv2.copyMakeBorder(pair, 4, 4, 4, 4, cv2.BORDER_CONSTANT, value=(220, 40, 40))
-        else:
-            pair = cv2.copyMakeBorder(pair, 4, 4, 4, 4, cv2.BORDER_CONSTANT, value=(30, 30, 30))
+        pair = cv2.copyMakeBorder(pair, 4, 4, 4, 4, cv2.BORDER_CONSTANT, value=(220, 40, 40) if x.get(flag) else (30, 30, 30))
         tiles.append(pair)
+    if not tiles:
+        return
     cols = 4
     while len(tiles) % cols:
         tiles.append(np.zeros_like(tiles[0]))
@@ -711,33 +766,247 @@ def sheet(rows, path):
     cv2.imwrite(path, cv2.cvtColor(grid, cv2.COLOR_RGB2BGR))
 
 
+# ----------------------------------------------------------------------------------------- layout overlap
+def _smooth(x, a, b):
+    t = np.clip((x - a) / (b - a), 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def layout_sig(rgb):
+    """A frame's composition on a 32 x 18 grid: where its confident text lines sit, where its objects sit (anything
+    that stands off the ground: the ground is the flat region that reaches the frame edge, kept with the pixels close
+    to its smooth estimate, so a gradient ground stays ground) and which of those objects are pictures (textured).
+    Returns the maps (text, object, picture), whether the frame is specific enough to be anyone's copy (three elements
+    or more, objects on 3-60 % of the frame) and its object cover."""
+    H, W = rgb.shape[:2]
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    text = np.zeros((H, W), np.float32)
+    for d in text_lines(gray):
+        if d['conf'] >= LAYOUT['text_conf']:
+            x, y, w, h = d['box']
+            text[y:y + h, x:x + w] = 1
+    lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+    L = lab[..., 0]
+    mu = cv2.blur(L, (5, 5))
+    sd = np.sqrt(np.maximum(cv2.blur(L * L, (5, 5)) - mu * mu, 0))
+    cmu = cv2.blur(lab, (5, 5))
+    csd = np.sqrt(np.maximum(cv2.blur(lab * lab, (5, 5)) - cmu * cmu, 0)).max(axis=2)
+    flat = ((sd < 2.0) & (csd < 2.5)).astype(np.uint8)
+    n, cc, st, _ = cv2.connectedComponentsWithStats(flat, connectivity=4)
+    ground = np.zeros((H, W), bool)
+    for i in range(1, n):
+        x, y, w, h, a = (int(v) for v in st[i])
+        if a >= 0.06 * H * W and (x == 0 or y == 0 or x + w == W or y + h == H):
+            ground |= cc == i
+    if ground.any():
+        gm = cv2.GaussianBlur(np.where(ground[..., None], lab, 0), (0, 0), 25)
+        wt = cv2.GaussianBlur(ground.astype(np.float32), (0, 0), 25)[..., None]
+        est = gm / np.maximum(wt, 1e-3)
+        ground |= (np.abs(lab - est).max(axis=2) < 7) & (wt[..., 0] > 0.15)
+    tdil = cv2.dilate(text, np.ones((5, 5), np.uint8)) > 0
+    obj = (~ground) & (~tdil)
+    cw, ch = LAYOUT['cells']
+    cell = lambda m: cv2.resize(m.astype(np.float32), (cw, ch), interpolation=cv2.INTER_AREA)
+    o, t = cell(obj), cell(obj & (sd > 3.0))
+    maps = np.stack([np.clip(cell(text), 0, 1), o, o * _smooth(t / np.maximum(o, 1e-6), 0.25, 0.55)]).astype(np.float32)
+    elements = 0
+    for c, least in ((0, 1), (1, 2)):
+        k, _, cst, _ = cv2.connectedComponentsWithStats((maps[c] > 0.35).astype(np.uint8), connectivity=8)
+        elements += sum(1 for i in range(1, k) if cst[i][4] >= least)
+    cover = float(o.mean())
+    lo, hi = LAYOUT['cover']
+    return {'maps': maps, 'specific': bool(elements >= LAYOUT['elements'] and lo <= cover <= hi), 'cover': round(cover, 3), 'elements': elements}
+
+
+def _blurred(maps):
+    """The text and object maps at each blur radius, flattened: (radii, 2, cells)."""
+    return np.stack([np.stack([cv2.GaussianBlur(maps[c], (0, 0), sg).ravel() for c in (0, 1)]) for sg in LAYOUT['blur']]).astype(np.float32)
+
+
+def layout_overlaps(a, B):
+    """Layout overlap of one frame's blurred maps `a` (radii, 2, cells) with many (N, radii, 2, cells): the soft IoU of
+    the text maps and of the object maps, the text at LAYOUT['text_weight'] (a text reader without OCR misses a line
+    now and then; the objects hold the composition), objects alone when neither frame holds text, averaged over the
+    blur radii. Returns N values in 0..1."""
+    mn = np.minimum(a[None], B).sum(axis=3)
+    mx = np.maximum(a[None], B).sum(axis=3)
+    iou = np.where(mx > 1e-6, mn / np.maximum(mx, 1e-6), 0.0)  # (N, radii, 2)
+    has_text = mx[:, :, 0] >= 1.0
+    tw = LAYOUT['text_weight']
+    v = np.where(has_text, tw * iou[:, :, 0] + (1 - tw) * iou[:, :, 1], iou[:, :, 1])
+    return v.mean(axis=1)
+
+
+def layout_frames(path, F, every, width):
+    """(t, rgb) samples of a video (every `every` s, by ffmpeg) or of a folder of stills (each one sample)."""
+    if os.path.isdir(path):
+        for k, f in enumerate(stills(path)):
+            rgb = read_still(f, width)
+            if rgb is not None:
+                yield round(k * every, 2), rgb
+        return
+    info = F.probe(path)
+    h = max(2, int(round(info['h'] * width / info['w'])) // 2 * 2)
+    cmd = ['ffmpeg', '-v', 'error', '-nostdin', '-i', path, '-map', '0:v:0', '-vf', f'fps={1.0 / every:.6f},scale={width}:{h}:flags=area',
+           '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    nb, k = width * h * 3, 0
+    try:
+        while True:
+            buf = p.stdout.read(nb)
+            if len(buf) < nb:
+                break
+            yield round(k * every, 2), np.frombuffer(buf, np.uint8).reshape(h, width, 3)
+            k += 1
+    finally:
+        p.stdout.close()
+        p.kill()
+        p.wait()
+
+
+def layout_samples(path, F, every, cache=None):
+    """Every sample's layout (layout_sig) and a thumbnail; read from `cache` when this source was read before."""
+    key = None
+    if cache:
+        import hashlib
+        key = hashlib.sha256(json.dumps([source_id(path), every, LAYOUT['width'], LAYOUT['cells'], LAYOUT['text_conf'], 2]).encode()).hexdigest()[:16]
+        cf = os.path.join(cache, f'layout-{key}.npz')
+        if os.path.isfile(cf):
+            z = np.load(cf)
+            return [{'t': float(t), 'maps': m, 'specific': bool(sp), 'cover': float(cv), 'elements': int(el), 'thumb': th}
+                    for t, m, sp, cv, el, th in zip(z['t'], z['maps'], z['specific'], z['cover'], z['elements'], z['thumb'])]
+    out = []
+    for t, rgb in layout_frames(path, F, every, LAYOUT['width']):
+        sig = layout_sig(rgb)
+        sig['t'] = t
+        sig['thumb'] = cv2.resize(rgb, (160, 90), interpolation=cv2.INTER_AREA)
+        out.append(sig)
+    if cache and out:
+        os.makedirs(cache, exist_ok=True)
+        np.savez_compressed(os.path.join(cache, f'layout-{key}.npz'), t=np.array([x['t'] for x in out]), maps=np.stack([x['maps'] for x in out]),
+                            specific=np.array([x['specific'] for x in out]), cover=np.array([x['cover'] for x in out]),
+                            elements=np.array([x['elements'] for x in out]), thumb=np.stack([x['thumb'] for x in out]))
+    return out
+
+
+def layout_check(film_path, refs, F, cache=None):
+    """The layout-overlap check: each specific film sample against every specific sample of every reference; the
+    verdict reads runs of copies of one reference and the share of copies."""
+    fs = layout_samples(film_path, F, LAYOUT['every'])
+    rs = []
+    for label, p in refs:
+        for x in layout_samples(p, F, LAYOUT['every'], cache):
+            x['src'] = label
+            rs.append(x)
+    ref_ok = [x for x in rs if x['specific']]
+    B = np.stack([_blurred(x['maps']) for x in ref_ok]) if ref_ok else None
+    rows = []
+    for a in fs:
+        row = {'film_t': a['t'], 'specific': a['specific'], 'elements': a['elements'], 'cover': a['cover'], 'layout_overlap': None, 'source': None, 'ref_t': None, 'copy': False, '_a': a, '_b': None}
+        if a['specific'] and B is not None:
+            v = layout_overlaps(_blurred(a['maps']), B)
+            j = int(np.argmax(v))
+            row.update(layout_overlap=round(float(v[j]), 3), source=ref_ok[j]['src'], ref_t=ref_ok[j]['t'], copy=bool(v[j] >= LAYOUT['overlap']), _b=ref_ok[j])
+        rows.append(row)
+    spec = [x for x in rows if x['specific']]
+    copies = sum(1 for x in spec if x['copy'])
+    run = best = 0
+    best_src = None
+    prev = None
+    for x in rows:
+        if x['copy'] and (prev is None or x['source'] == prev):
+            run += 1
+        elif x['copy']:
+            run = 1
+        else:
+            run = 0
+        prev = x['source'] if x['copy'] else None
+        if run > best:
+            best, best_src = run, x['source']
+    share = copies / max(1, len(spec))
+    fail = bool(spec) and (best >= LAYOUT['run'] or share >= LAYOUT['share'])
+    return {'samples': len(rows), 'specific': len(spec), 'copies': copies, 'share': round(share, 3), 'longest_run': best, 'run_source': best_src,
+            'overlap_median': r(q([x['layout_overlap'] for x in spec], 0.5)), 'overlap_max': r(max([x['layout_overlap'] or 0 for x in spec], default=None)),
+            'pass': not fail, 'rows': rows}
+
+
+def references(args):
+    """The references a check runs against: the clips the user supplied and the template's scaffold, each labelled by
+    its kind and hash."""
+    refs = []
+    for kind, paths in (('clip', args.clip or []), ('scaffold', args.scaffold or [])):
+        for p in paths:
+            if not (os.path.isfile(p) or os.path.isdir(p)):
+                die(f'{p} not found')
+            if os.path.isdir(p) and not stills(p):
+                die(f'{p} holds no stills ({", ".join(STILLS)})')
+            refs.append((f'{kind} {source_id(p)}', p))
+    if not refs:
+        die('give at least one reference: --clip <clip> (as many as the user supplied) and/or --scaffold <the template\'s scaffold render>')
+    return refs
+
+
+def print_layout(lv):
+    print(f"like.py layout: {lv['samples']} samples ({lv['specific']} specific), {lv['copies']} copy a reference's layout ({pct(lv['share'])}, longest run "
+          f"{lv['longest_run']}{' of ' + lv['run_source'] if lv['run_source'] else ''}); overlap median {lv['overlap_median']}, max {lv['overlap_max']} -> "
+          f"{'PASS: its compositions are its own' if lv['pass'] else 'FAIL: it re-skins a reference composition'}")
+    if not lv['pass']:
+        for x in lv['rows']:
+            if x['copy']:
+                print(f"  film {x['film_t']} s ~ {x['source']} at {x['ref_t']} s: layout overlap {x['layout_overlap']}")
+
+
+def layout_json(lv):
+    return {k: v for k, v in lv.items() if k != 'rows'} | {
+        'pairs': [{k: x[k] for k in ('film_t', 'specific', 'elements', 'cover', 'layout_overlap', 'source', 'ref_t', 'copy')} for x in lv['rows']]}
+
+
 def guard(args):
     need()
     F = module('forensics_mod', 'forensics.py')
-    for p in (args.film, args.clip):
-        if not os.path.isfile(p):
-            die(f'{p} not found')
-    film = sample_maps(args.film, F, args.every)
-    clip = sample_maps(args.clip, F, args.every)
-    if not film or not clip:
-        die('no frames could be read')
-    rows = guard_pairs(film, clip)
-    v = verdict(rows)
-    res = {'tool': 'like.py guard', 'film': args.film, 'clip': clip_id(args.clip), 'every_s': args.every, 'thresholds': GUARD, **v,
-           'pairs': [{k: x[k] for k in ('film_t', 'clip_t', 'layout_overlap', 'colour_distance', 'recreation')} for x in rows]}
+    if not os.path.isfile(args.film):
+        die(f'{args.film} not found')
+    refs = references(args)
+    v = None
+    if args.cmd == 'guard':
+        film = sample_maps(args.film, F, args.every)
+        clip = []
+        for label, p in refs:
+            for m in sample_maps(p, F, args.every):
+                m['src'] = label
+                clip.append(m)
+        if not film or not clip:
+            die('no frames could be read')
+        rows = guard_pairs(film, clip)
+        v = verdict(rows)
+    lv = None if getattr(args, 'no_layout', False) else layout_check(args.film, refs, F, args.cache)
+    ok = (v is None or v['pass']) and (lv is None or lv['pass'])
+    res = {'tool': f'like.py {args.cmd}', 'film': args.film, 'references': [label for label, _ in refs], 'pass': ok}
+    if v is not None:
+        res['frames'] = {'every_s': args.every, 'thresholds': GUARD, **v,
+                         'pairs': [{k: x[k] for k in ('film_t', 'clip_t', 'source', 'layout_overlap', 'colour_distance', 'recreation')} for x in rows]}
+        res.update({k: res['frames'][k] for k in ('samples', 'recreations', 'share', 'longest_run', 'layout_overlap_median', 'colour_distance_median')})
+        res['clip'] = refs[0][0]
+    if lv is not None:
+        res['layout'] = {'every_s': LAYOUT['every'], 'thresholds': {k: LAYOUT[k] for k in ('overlap', 'run', 'share', 'cover', 'elements')}, **layout_json(lv)}
     if args.json:
         os.makedirs(os.path.dirname(os.path.abspath(args.json)) or '.', exist_ok=True)
         json.dump(res, open(args.json, 'w', encoding='utf-8'), indent=1)
-    if args.sheet:
+    if v is not None and args.sheet:
         sheet(rows, args.sheet)
-    print(f"like.py guard: {v['samples']} frames, {v['recreations']} read as a recreation ({pct(v['share'])}, longest run {v['longest_run']}); "
-          f"layout overlap median {v['layout_overlap_median']}, colour-layout distance median {v['colour_distance_median']} -> "
-          f"{'PASS: the film is its own' if v['pass'] else 'FAIL: it reads as a recreation of the clip'}")
-    if not v['pass']:
-        for x in rows:
-            if x['recreation']:
-                print(f"  film {x['film_t']} s ~ clip {x['clip_t']} s: layout overlap {x['layout_overlap']}, colour-layout distance {x['colour_distance']}")
-    return 0 if v['pass'] else 1
+    if lv is not None and getattr(args, 'layout_sheet', None):
+        sheet([x for x in lv['rows'] if x['specific']], args.layout_sheet, flag='copy')
+    if v is not None:
+        print(f"like.py guard: {v['samples']} frames against {len(refs)} reference(s), {v['recreations']} read as a recreation ({pct(v['share'])}, longest run "
+              f"{v['longest_run']}); layout overlap median {v['layout_overlap_median']}, colour-layout distance median {v['colour_distance_median']} -> "
+              f"{'PASS: the film is its own' if v['pass'] else 'FAIL: it reads as a recreation of a reference'}")
+        if not v['pass']:
+            for x in rows:
+                if x['recreation']:
+                    print(f"  film {x['film_t']} s ~ {x['source']} at {x['clip_t']} s: layout overlap {x['layout_overlap']}, colour-layout distance {x['colour_distance']}")
+    if lv is not None:
+        print_layout(lv)
+    return 0 if ok else 1
 
 
 def main():
@@ -750,18 +1019,24 @@ def main():
     m.add_argument('--width', type=int, default=480, help='analysis width for the motion pass (default 480)')
     m.add_argument('--no-music', action='store_true', help='skip the tempo')
     m.add_argument('--quiet', action='store_true')
-    g = sub.add_parser('guard', help='the film must not read as a recreation of the clip')
-    g.add_argument('--film', required=True)
-    g.add_argument('--clip', required=True)
+    g = sub.add_parser('guard', help='the film must not read as a recreation of a reference, nor re-skin its compositions')
+    lo = sub.add_parser('layout', help='the layout-overlap check alone: the film must not re-skin a reference composition')
+    for x in (g, lo):
+        x.add_argument('--film', required=True)
+        x.add_argument('--clip', action='append', help='a clip the user supplied (a video or a folder of stills); repeat for each')
+        x.add_argument('--scaffold', action='append', help="the template's scaffold, rendered before anything was changed (a video or a folder of stills)")
+        x.add_argument('--json', help='write the pairs and the verdict here')
+        x.add_argument('--layout-sheet', help='write a paired contact sheet of the layout check (film frame | its closest reference layout; red: a copy)')
+        x.add_argument('--cache', help="keep each reference's layout samples here (read once)")
     g.add_argument('--every', type=float, default=1.0, help='seconds between compared frames, the same for both (default 1)')
-    g.add_argument('--json', help='write the pairs and the verdict here')
-    g.add_argument('--sheet', help='write a paired contact sheet here (film frame | its closest clip frame; red: a recreation)')
+    g.add_argument('--sheet', help='write a paired contact sheet here (film frame | its closest reference frame; red: a recreation)')
+    g.add_argument('--no-layout', action='store_true', help='the frame check alone')
     a = ap.parse_args()
     if a.cmd == 'measure':
         if not os.path.isfile(a.clip):
             die(f'{a.clip} not found')
         return measure(a)
-    if a.cmd == 'guard':
+    if a.cmd in ('guard', 'layout'):
         return guard(a)
     ap.print_help()
     return 2

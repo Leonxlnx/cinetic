@@ -16,6 +16,10 @@ The clips are made here in code (numpy frames piped to ffmpeg, a WAV of clicks m
   3. guard: the borrowing film passes; the regraded and the inverted clip and the clip itself fail, with a sheet; the
      retelling fails in nearly every frame (each film frame is held against every clip frame, so a shot copied in
      other colours is never hidden behind another shot that only shares its grade).
+     layout: a composition (a photo in the middle, a word either side of it, a pill under it, small photos in the
+     corners) re-skinned with other photos, words, colours and a small shift fails the layout check, against a clip
+     and against a scaffold given as a folder of stills; the same content in its own composition passes; references
+     are named by kind and hash.
   4. LIKE.md carries the rules (borrow grammar, never content) in house wording; no output names the clip's path or
      file name (its hash and length stand for it); what each picture shows is counted.
   5. The text reader: drawn words read as a confident line; a night street made here (bokeh discs, light streaks,
@@ -210,6 +214,89 @@ result(rows['retold'][0] == 1 and (t.get('share') or 0) >= 0.75,
        "the clip's shots retold one by one in new words and colours read as a recreation in nearly every frame",
        f"share {t.get('share')}, longest run {t.get('longest_run')}")
 result(os.path.isfile(os.path.join(TMP, 'guard-regraded.png')), 'the guard writes a paired contact sheet')
+
+# 3b. layout: a composition re-skinned is a copy -----------------------------------------------------------
+def photo(w, h, seed):
+    """A code-made photograph: soft colour fields, a few shapes and grain (a textured picture, not a flat card)."""
+    g = np.random.default_rng(seed)
+    img = np.zeros((h, w, 3), np.float32)
+    yy, xx = np.mgrid[0:h, 0:w]
+    for _ in range(5):
+        c = g.uniform(30, 230, 3)
+        cx, cy, r = g.uniform(0, w), g.uniform(0, h), g.uniform(0.3, 0.8) * max(w, h)
+        img += c * np.exp(-((xx - cx) ** 2 + (yy - cy) ** 2) / (2 * r * r))[..., None] * 0.6
+    for _ in range(6):
+        cv2.circle(img, (int(g.uniform(0, w)), int(g.uniform(0, h))), int(g.uniform(4, w / 4)), tuple(float(v) for v in g.uniform(20, 240, 3)), -1)
+    img = cv2.GaussianBlur(img, (0, 0), 1.2) + g.normal(0, 9, img.shape)
+    return np.clip(img, 0, 255).astype(np.uint8)
+
+
+def comp_frame(k, variant):
+    """A composition shot: 'comp-clip' (a photo in the middle, a word either side, a pill under it, four small photos in
+    the corners), 'comp-copy' (the same composition re-skinned: other photos, words, ground, accent, moved a little)
+    or 'comp-own' (the same kind of content in its own composition: a big photo on the left, two lines on the right)."""
+    drift = k * 0.1  # a slow drift (12 px over the shot)
+    if variant == 'comp-own':
+        img = np.full((H, W, 3), (232, 234, 236), np.uint8)
+        ph = photo(200, 210, 5)
+        x0 = int(24 + drift)
+        img[30:240, x0:x0 + 200] = ph
+        cv2.putText(img, 'Your reel', (262, 118), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (24, 28, 32), 2, cv2.LINE_AA)
+        cv2.putText(img, 'every Sunday', (262, 162), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (40, 120, 220), 2, cv2.LINE_AA)
+        return img
+    copy = variant == 'comp-copy'
+    img = np.full((H, W, 3), (214, 220, 226) if copy else (246, 246, 246), np.uint8)
+    dx, dy = (4, -3) if copy else (0, 0)
+    dx += int(drift)
+    seeds = (21, 22, 23, 24, 25) if copy else (1, 2, 3, 4, 6)
+    cx, cy = W // 2 + dx, 112 + dy
+    img[cy - 62:cy + 62, cx - 52:cx + 52] = photo(104, 124, seeds[0])
+    for (x, y), sd in zip(((24, 14), (W - 100, 14), (24, H - 74), (W - 100, H - 74)), seeds[1:]):
+        img[y + dy:y + dy + 60, x + dx:x + dx + 60] = photo(60, 60, sd)
+    ink = (30, 34, 40)
+    cv2.putText(img, 'Sends' if copy else 'Brings', (cx - 160, cy + 8), cv2.FONT_HERSHEY_SIMPLEX, 0.8, ink, 2, cv2.LINE_AA)
+    cv2.putText(img, 'the best of' if copy else 'millions of', (cx + 66, cy + 8), cv2.FONT_HERSHEY_SIMPLEX, 0.8, ink, 2, cv2.LINE_AA)
+    acc = (40, 140, 90) if copy else (220, 30, 40)
+    cv2.rectangle(img, (cx - 50, cy + 74), (cx + 50, cy + 102), acc, -1)
+    cv2.putText(img, 'moments' if copy else 'ideas', (cx - 40 if copy else cx - 28, cy + 96), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (250, 250, 250), 2, cv2.LINE_AA)
+    return img
+
+
+def write_frames(path, variant, n=4 * FPS):
+    cmd = ['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-',
+           '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '16', '-pix_fmt', 'yuv420p', path]
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    for k in range(n):
+        p.stdin.write(comp_frame(k, variant).tobytes())
+    p.stdin.close()
+    p.wait()
+    return p.returncode == 0
+
+
+comps = {v: os.path.join(TMP, f'{v}.mp4') for v in ('comp-clip', 'comp-copy', 'comp-own')}
+made = all(write_frames(p, v) for v, p in comps.items())
+stills_dir = os.path.join(TMP, 'scaffold-stills')
+os.makedirs(stills_dir, exist_ok=True)
+for i, k in enumerate(range(0, 4 * FPS, 15)):
+    cv2.imwrite(os.path.join(stills_dir, f's{i:03d}.png'), cv2.cvtColor(comp_frame(k, 'comp-clip'), cv2.COLOR_RGB2BGR))
+lay = {}
+for name, args in (('copy', ['layout', '--film', comps['comp-copy'], '--clip', comps['comp-clip']]),
+                   ('own', ['layout', '--film', comps['comp-own'], '--clip', comps['comp-clip']]),
+                   ('scaffold', ['guard', '--film', comps['comp-copy'], '--scaffold', stills_dir, '--layout-sheet', os.path.join(TMP, 'layout.png')])):
+    jp = os.path.join(TMP, f'layout-{name}.json')
+    r = run(*args, '--json', jp)
+    lay[name] = (r.returncode, json.load(open(jp, encoding='utf-8')) if os.path.isfile(jp) else {})
+lc, lo, ls = (lay[k][1].get('layout', {}) for k in ('copy', 'own', 'scaffold'))
+result(made and lay['copy'][0] == 1 and not lc.get('pass') and (lc.get('longest_run') or 0) >= 3,
+       'layout: a composition re-skinned (other photos, words, ground and accent, moved a little) copies the clip\'s layout',
+       f"{lc.get('copies')} of {lc.get('specific')} copies, run {lc.get('longest_run')}, overlap max {lc.get('overlap_max')}")
+result(lay['own'][0] == 0 and lo.get('pass') and lo.get('copies') == 0, 'layout: the same kind of content in its own composition passes',
+       f"overlap median {lo.get('overlap_median')}, max {lo.get('overlap_max')}")
+refs = lay['scaffold'][1].get('references') or []
+result(lay['scaffold'][0] == 1 and not ls.get('pass') and refs and refs[0].startswith('scaffold sha256 ') and 'stills' in refs[0] and os.path.isfile(os.path.join(TMP, 'layout.png')),
+       "guard: against the template's scaffold (a folder of stills) the re-skinned composition fails; references are named by kind and hash", json.dumps(refs))
+result(rows['own'][1].get('layout', {}).get('pass') is True and 'layout' in rows['own'][1], 'guard runs the layout check beside the frame check (the borrowing film passes both)',
+       json.dumps({k: rows['own'][1].get('layout', {}).get(k) for k in ('specific', 'copies', 'pass')}))
 
 # 4. LIKE.md ---------------------------------------------------------------------------------------------
 md = open(os.path.join(out, 'LIKE.md'), encoding='utf-8').read() if os.path.isfile(os.path.join(out, 'LIKE.md')) else ''
