@@ -32,7 +32,7 @@
 # The source is bundled once at the start and every pass renders from that frozen bundle, so edits
 # to src/ during a render are not in it; render.sh warns at the end if src/ changed meanwhile.
 #
-# Parts (the master and the preview): the frames render in parts of --chunk-frames (default 300) from a
+# Parts (the master and the preview): the frames render in parts of up to --chunk-frames (default 240) from a
 # bundle built once into out/render/<name>/ (or --bundle DIR, one you built with `npx remotion bundle`),
 # one Remotion render at a time; each finished part is kept there, so a run stopped by a job limit
 # (a shared machine's 10-minute cap) or a crash resumes where it stopped: rerun the same command. The
@@ -49,7 +49,10 @@
 # The composition list is cached beside the bundle, so a rerun on a kept bundle starts its first part without
 # `remotion compositions`. --join-only joins the parts already there (no bundle, no Remotion: a CPU-only job
 # while another job holds the GPU), then muxes and gates as below; a missing part stops it with its --part K.
-# When every part is there, ffmpeg joins them with the concat demuxer (stream copy, no re-encode) and
+# Each part starts on an I-frame, whose quality step shows as a one-frame pop in a still hold, so every boundary moves
+# back onto the latest cut in its part's last half (an act line or a declared seam in out/cues.json), and a part of
+# 240 f or fewer holds no other I-frame (x264's keyframe interval is 250); a folder that already holds parts keeps
+# their grid. When every part is there, ffmpeg joins them with the concat demuxer (stream copy, no re-encode) and
 # writes the BT.709 colour tags into the stream and the container, then the mux and the gates below run.
 # The parts stay after the join until every gate has passed, render.sh's own and then the film's (forensics,
 # look-audit and the rest), so a gate failing after the join costs no re-render while src/ and public/ are
@@ -84,7 +87,7 @@
 #   --entry FILE        Remotion entry point (default src/index.ts)
 #   --sub ID            sub-frame composition for --blur (default <Comp>Sub)
 #   --frames A-B        render only film frames A..B (inclusive); audio is taken from the same range
-#   --chunk-frames N    frames per part (default 300; --preview and the master); 0 or --single: one call
+#   --chunk-frames N    frames per part at most (default 240, under x264's keyframe interval; boundaries on cuts); 0 or --single: one call
 #   --max-min M         stop starting parts once the next would pass M minutes; exit 75 with parts left
 #   --part K            render part K (0-based) alone and exit 0 (no join, no mux)
 #   --redo A-B          (repeatable) the source changed only frames A..B: keep the parts outside them, re-render
@@ -145,7 +148,7 @@ step() { echo "[render $(( $(date +%s) - T0 ))s] $*" >&2; }
 COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0; POLICY=auto
 ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
 SPEC=""; NOCHECK=0; KEEP=0; CLEAN=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0; ACCEPT_FAST=""; ACCEPT_CUT=""
-CHUNK=300; MAXMIN=0; ONLY_PART=""; PARTS=""; PREBUILT=""; SINGLE=0; REDO=""; JOIN_ONLY=0
+CHUNK=240; MAXMIN=0; ONLY_PART=""; PARTS=""; PREBUILT=""; SINGLE=0; REDO=""; JOIN_ONLY=0
 POS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -490,14 +493,39 @@ case "$MODE" in
     else
       # parts of CHUNK frames, one Remotion render at a time; a finished part (its frame count checked) is kept
       frames_of() { ffprobe -v error -count_packets -select_streams v:0 -show_entries stream=nb_read_packets -of csv=p=0 "$1" 2>/dev/null || echo 0; }
-      NP=$(( (N + CHUNK - 1) / CHUNK ))
+      # the parts' first frames: the grid of the parts already in the folder (a resumed run), then every CHUNK frames, each
+      # boundary moved back onto the latest cut in the part's last half (act lines and seams, out/cues.json)
+      read -r -a STARTS <<< "$(node -e '
+const fs = require("fs");
+const [from, to, chunk, dir] = [...process.argv.slice(1, 4).map(Number), process.argv[4]];
+let cuts = [];
+try {
+  const c = JSON.parse(fs.readFileSync("out/cues.json", "utf8"));
+  cuts = [...Object.values(c.acts || {}).map((a) => a.from), ...((c.declared || {}).seams || []).map((s) => s.at)].map(Math.round);
+} catch {}
+cuts = [...new Set(cuts)].filter((f) => f > from && f <= to).sort((p, q) => p - q);
+let have = [];
+try { have = fs.readdirSync(dir).map((n) => /^part-(\d+)-(\d+)\.mp4$/.exec(n)).filter(Boolean).map((m) => [+m[1], +m[2]]); } catch {}
+const out = [from];
+let a = from;
+for (;;) {
+  const kept = have.find(([x, y]) => x === a && y < to);
+  if (kept) { a = kept[1] + 1; out.push(a); continue; }
+  if (a + chunk > to) break;
+  const c = cuts.filter((f) => f >= a + Math.ceil(chunk / 2) && f <= a + chunk).pop();
+  a = c ?? a + chunk;
+  out.push(a);
+}
+console.log(out.join(" "));' "$FROM" "$TO" "$CHUNK" "$PARTS")" || die "could not lay out the parts"
+      NP=${#STARTS[@]}
       [[ -z "$ONLY_PART" || "$ONLY_PART" -lt "$NP" ]] || die "--part $ONLY_PART: this range has $NP part(s), 0-$((NP - 1))"
-      part_file() { local a=$((FROM + $1 * CHUNK)); local b=$((a + CHUNK - 1)); (( b > TO )) && b=$TO; echo "$PARTS/part-$(printf %06d "$a")-$(printf %06d "$b").mp4"; }
+      part_end() { if (( $1 + 1 < NP )); then echo $(( STARTS[$1 + 1] - 1 )); else echo "$TO"; fi; }
+      part_file() { echo "$PARTS/part-$(printf %06d "${STARTS[$1]}")-$(printf %06d "$(part_end "$1")").mp4"; }
       LAST_S=0; left=0; MISSING=""
       step "$N frames in $NP part(s) of <= $CHUNK in $PARTS$([[ "$MAXMIN" != 0 ]] && echo ", stopping before ${MAXMIN} min")"
       for ((k = 0; k < NP; k++)); do
         [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue
-        a=$((FROM + k * CHUNK)); b=$((a + CHUNK - 1)); (( b > TO )) && b=$TO
+        a=${STARTS[$k]}; b=$(part_end "$k")
         f=$(part_file "$k")
         if [[ -f "$f" && "$(frames_of "$f")" -eq $((b - a + 1)) ]] && part_current "$f"; then continue; fi
         if [[ $JOIN_ONLY -eq 1 ]]; then MISSING="$MISSING --part $k (frames $a-$b);"; continue; fi

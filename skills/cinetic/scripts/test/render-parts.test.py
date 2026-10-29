@@ -13,12 +13,15 @@ render that encodes a test pattern with ffmpeg), so the parts route runs end to 
   6. --redo A-B keeps the parts outside A..B and re-renders the others, checked against the old ones outside A..B;
      a change outside them stops the run and the kept parts re-render on the next one.
   7. --join-only joins the parts there without Remotion; a missing part stops it with its --part K.
+  8. Part boundaries move back onto the latest cut in their part's last half (out/cues.json act lines), so a part's
+     first frame, an I-frame, lands on a cut.
 Needs bash (Git for Windows' on Windows), node, ffmpeg and ffprobe, and this Python with numpy (render.sh checks it); no network.
 
 Usage (from the skill root):  python3 scripts/test/render-parts.test.py [--verbose] [--part keep|key]
 (--part runs 1-4 or 5-7 alone, so a shared machine's job limit holds each run.)
 Exit codes: 0 all pass, 1 a test failed.
 """
+import json
 import os
 import shutil
 import subprocess
@@ -179,6 +182,12 @@ def main():
             os.remove(os.path.join(parts, 'part-000010-000019.mp4'))
             code, err = sh(RENDER, *master, '--join-only')
             result(code == 1 and '--part 1 (frames 10-19)' in err and renders() == r3, '--join-only names a missing part and renders nothing', err[-300:])
+            json.dump({'fps': 30, 'total': 20, 'acts': {'a': {'from': 0, 'dur': 7}, 'b': {'from': 7, 'dur': 7}, 'c': {'from': 14, 'dur': 6}}, 'declared': {'seams': []}},
+                      open(os.path.join(proj, 'out', 'cues.json'), 'w'))
+            code, err = sh(RENDER, 'Film', 'out/cut.mp4', '--no-audio', '--no-check', '--chunk-frames', '10')
+            cut_parts = sorted(n for n in os.listdir(os.path.join(proj, 'out', 'render', 'cut')) if n.startswith('part-'))
+            result(code == 0 and cut_parts == ['part-000000-000006.mp4', 'part-000007-000013.mp4', 'part-000014-000019.mp4'],
+                   'part boundaries land on the act lines in the last half of their parts (7 and 14 for parts of up to 10)', ' '.join(cut_parts))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print('render-parts tests: ' + ('all pass' if not failed else f'{failed} failed'))
