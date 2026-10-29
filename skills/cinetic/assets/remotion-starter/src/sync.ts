@@ -39,6 +39,7 @@ export type SoundEvent = {
   apexFrac?: number; // whoosh / suck: where in its length the loudest point sits (lands on f)
   dur?: number; // frames: whoosh, riser, swell and suck length
   variant?: string; // key: 'word' | 'space' | 'return' | 'back'; tick: 'crisp'; click: 'confirm'; land: 'light'; bell: 'motif'; pop: 'down'
+  action?: string; // what the picture does (scripts/audio/actions.py: 'card-land', 'click', 'toggle' ...): kit.py cast voices each action with its own sound
   id?: string; // a name for QA reports
   structural?: true; // an act or section change, the reveal or the ending: it must land on a music event (av-audit music_sync, grid-check)
   force?: true; // sound it even when a track accent already carries the moment

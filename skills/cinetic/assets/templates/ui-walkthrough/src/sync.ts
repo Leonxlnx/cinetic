@@ -24,6 +24,7 @@ export type SoundEvent = {
   apexFrac?: number;
   dur?: number;
   variant?: string;
+  action?: string; // what the picture does (scripts/audio/actions.py: 'card-land', 'click', 'toggle' ...): kit.py cast voices each action with its own sound
   id?: string;
   structural?: true;
   force?: true;

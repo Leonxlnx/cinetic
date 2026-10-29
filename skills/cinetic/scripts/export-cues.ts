@@ -12,7 +12,7 @@
  * Output schema:
  *   { fps, bpm, total, pace?, acts: {name: {from, dur}}, cue: {name: frame},
  *     copy: [{ id, text, in, resolved, out, words, kind, chain?, mode?, read: [[from, to], ...] }],
- *     events: [{ f, kind, weight, pan, pitch?, apexFrac?, dur?, variant?, id?,
+ *     events: [{ f, kind, weight, pan, pitch?, apexFrac?, dur?, variant?, action?, id?,
  *                structural?, force?, offset_ms?, salience? }],
  *     look?:     { blur, texture, filmType, oneTake, whiteWorld, palette? }  (palette 'mono': look-audit's colour-mass floor asks for the accent on its beats),
  *     declared?: { seams, stepped, flashes, cameraBlur, colour, end, reveal, springClass, structural,
@@ -23,7 +23,8 @@
  * f is the absolute frame the sound belongs on (fractional allowed), weight 0..2 (1 = normal),
  * pan -1..1, pitch a MIDI number or a note name such as "Eb6", apexFrac (whoosh, suck) the point
  * of the sound that lands on f (0..1; 0 or 1 is clamped for a whoosh or suck, kept for a riser or swell),
- * dur a length in frames. See references/sound.md. Kind `text` is
+ * dur a length in frames; action what the picture does (scripts/audio/actions.py: card-land, click, toggle,
+ * a logo lock ...), which kit.py cast voices with the action's own sound (else the words of the id). See references/sound.md. Kind `text` is
  * the one soft sound of a copy fragment landing (fx/Chain chainResolves()), never one per word.
  * structural: true marks an act or section change, the reveal or the ending, which must land on a
  * music event; force: true sounds the event even when a track accent carries the moment;
@@ -64,6 +65,7 @@ export type SoundEvent = {
   apexFrac?: number;
   dur?: number;
   variant?: string;
+  action?: string;
   id?: string;
   structural?: true;
   force?: true;
@@ -78,7 +80,7 @@ export const SEAM_KINDS = [
   'zoomThrough', 'stepped', 'colour', 'dissolveUi', 'fadeEnd', 'wipe',
 ] as const;
 
-const FIELDS = new Set(['f', 'kind', 'weight', 'pan', 'pitch', 'apexFrac', 'dur', 'variant', 'id', 'structural', 'force', 'offset_ms', 'salience']);
+const FIELDS = new Set(['f', 'kind', 'weight', 'pan', 'pitch', 'apexFrac', 'dur', 'variant', 'action', 'id', 'structural', 'force', 'offset_ms', 'salience']);
 
 // The hold and read numbers of src/lib/pace.ts, for a timeline that exports neither READ nor PACE.
 type ReadPace = { holdBase: number; holdPerWord: number; holdMin: number; readMax: number };
@@ -256,6 +258,7 @@ async function main() {
     if (e.force !== undefined && typeof e.force !== 'boolean') errors.push(`${where}: force must be true (or left out)`);
     if (e.offset_ms !== undefined && !(Number.isFinite(e.offset_ms) && e.offset_ms >= -500 && e.offset_ms <= 500))
       errors.push(`${where}: offset_ms must be in -500..500, got ${e.offset_ms}`);
+    if (e.action !== undefined && (typeof e.action !== 'string' || !e.action.trim())) errors.push(`${where}: action must be a name (actions.py), got ${e.action}`);
     if (e.salience !== undefined && !SALIENCES.includes(e.salience as Salience))
       errors.push(`${where}: salience must be one of ${SALIENCES.join(', ')}, got ${e.salience}`);
     if (e.structural && !MUSIC) warnings.push(`${where}: structural without a track (src/music.ts MUSIC is null): nothing to land on yet`);
@@ -265,6 +268,7 @@ async function main() {
       out.apexFrac = +(apexFrac ?? (e.kind === 'suck' ? 0.85 : 0.5)).toFixed(3);
     if (e.dur !== undefined) out.dur = e.dur;
     if (e.variant !== undefined) out.variant = String(e.variant);
+    if (e.action !== undefined) out.action = String(e.action).trim();
     if (e.id !== undefined) out.id = String(e.id);
     if (e.structural) out.structural = true;
     if (e.force) out.force = true;
