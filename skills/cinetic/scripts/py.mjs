@@ -5,7 +5,8 @@
  * The npm scripts call it instead of a bare `python3`, which is missing on a plain Windows install (or is
  * the Microsoft Store alias, which exits 49 or 9009 without running anything) and never names a Windows
  * virtualenv (its interpreter is python.exe). It runs $PYTHON when that is set (else $CINETIC_PYTHON), else
- * the first of python3, python and (on Windows) `py -3` that runs Python 3.10 or newer and imports numpy,
+ * the first of the active virtualenv ($VIRTUAL_ENV), a .venv or venv folder in the working folder, python3,
+ * python and (on Windows) `py -3` that runs Python 3.10 or newer and imports numpy,
  * scipy and cv2 (else numpy alone; if none imports numpy, the first that runs 3.10+, with a warning), with the
  * arguments as given and stdin, stdout and stderr passed through; the exit code is the script's own. A name is
  * used only after it has run a version check. The scripts and tests that shell out to Python find it here too
@@ -34,7 +35,13 @@ export function findPython({ numpy = true, quiet = false } = {}) {
   const key = `${numpy}`;
   if (found.has(key)) return found.get(key);
   const env = process.env.PYTHON || process.env.CINETIC_PYTHON;
-  const cands = env ? [[env]] : [['python3'], ['python'], ...(win ? [['py', '-3']] : [])];
+  // a project's own environment first: the active virtualenv, then a .venv or venv folder here
+  const venvs = [process.env.VIRTUAL_ENV, join(process.cwd(), '.venv'), join(process.cwd(), 'venv')]
+    .filter(Boolean)
+    .map((d) => join(d, win ? 'Scripts' : 'bin', win ? 'python.exe' : 'python'))
+    .filter((p) => existsSync(p))
+    .map((p) => [p]);
+  const cands = env ? [[env]] : [...venvs, ['python3'], ['python'], ...(win ? [['py', '-3']] : [])];
   const runs = ([exe, ...pre], imports) =>
     spawnSync(exe, [...pre, '-c', `import sys${imports}; sys.exit(0 if sys.version_info >= (3, 10) else 1)`], { stdio: 'ignore' }).status === 0;
   let use = env ? cands[0] : numpy ? cands.find((c) => runs(c, ', numpy, scipy, cv2')) ?? cands.find((c) => runs(c, ', numpy')) : null;

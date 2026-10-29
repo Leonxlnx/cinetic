@@ -1554,7 +1554,10 @@ def music_gates(song, plan, bed, bed_played, sfx, auto, edit, base_dir, placed):
         sd_rows.append(row)
         at_payoff = payoff is not None and abs(t - payoff) <= 3 / song.fps
         if not ok:
-            msg = f"the stop-down before {s['for']} at {t:.2f} s measures {dip:.1f} dB (want >= {STOP_MIN_DIP_DB:g})"
+            msg = (f"the stop-down before {s['for']} at {t:.2f} s measures {dip:.1f} dB (want >= {STOP_MIN_DIP_DB:g}): its depth is "
+                   "6 + 4 x (weight - 0.5) dB within the kit's mix.stop_down depth_db, so raise the event's weight in src/sync.ts "
+                   f"(or skip it, stopdowns.skip [\"{s.get('id', '')}\"], and add {{\"at\": {t:.2f}, \"weight\": 1.5}} to stopdowns.add); "
+                   "stopdowns.quiet_db is the level of an effect with no bed under it, not a depth")
             (out['fails'] if at_payoff else out['warnings']).append(msg)
         if not returned:
             out['warnings'].append(f"the bed is {back:.1f} dB down 250 ms after {s['for']} at {t:.2f} s (want back within "
