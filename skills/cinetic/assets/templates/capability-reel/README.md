@@ -44,7 +44,7 @@ CUE on the 16th grid (the tagline waits for the title's read at a faster track);
 no overshoot on type, holds that counter-creep into an exit, speed and zoom carried across every act line, the
 transition born from something already on screen (the full stop), one colour event.
 
-**Music and sound.** Cut to a licensed, human-made, instrumental track (`template.json` -> `music`): 115-130 BPM with
+**Music and sound.** Cut to a licensed, human-made, instrumental track (`template.json` -> `music`): 118-134 BPM with
 a punchy kick; then `track.py edit`, `grid` and `check`, and move the cuts onto its onsets (`snapToAccent`).
 `src/sync.ts` places the effects from the picture's own frames: a few of the sources popping, the disc becoming the
 card, the fields, the cut on the kick, the ticker's first and last steps, the claim's two beats and its full stop,

@@ -54,7 +54,7 @@ faster tempo (`line()` keeps the hold; the import fails if a line would still be
 one-frame step anywhere: lists, zooms and swaps glide (16 f@60 or more), every hold drifts, moves land before the cut
 or are carried across it at speed (`SEAMS`). A step that needs more time gets it in whole bars.
 
-**Music and sound.** Cut to a licensed, human-made, instrumental track (`template.json` -> `music`): 110-128 BPM with
+**Music and sound.** Cut to a licensed, human-made, instrumental track (`template.json` -> `music`): 116-132 BPM with
 a clear kick; then `track.py edit`, `grid` and `check`. `src/sync.ts` places the effects from the picture's own
 frames: the card landing, the transformation, each check, each notice, the keys, the press, the count locking, the
 choice, the page landing, the moves across act lines, one text sound per line, ONE element at the lockup.

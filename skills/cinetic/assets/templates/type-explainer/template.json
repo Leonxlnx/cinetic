@@ -22,7 +22,7 @@
   "required": true,
   "slot": "audio/music/",
   "about": "Every explainer is cut to a licensed, human-made, instrumental track (references/music.md): a calm, even bed whose downbeats carry the act lines; earshot effects mark the story's own moments (the name, each line when it is whole, the product opening and becoming the shot, the parts, the lockup), never the cuts; never effects only.",
-  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 85-105 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); 85-105 BPM, light and steady, suits one sentence a bar (a faster track grows the acts whose lines need it: src/timeline.ts BARS)",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 88-110 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); 88-110 BPM, light and steady, suits one sentence a bar (a faster track grows the acts whose lines need it: src/timeline.ts BARS)",
   "add": "bash scripts/new-film.sh <dir> --template type-explainer --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
   "then": [
    "npx tsx -e \"const t = require('./src/timeline.ts'); console.log(t.BARS, t.DEAL)\"   (the bars at the track's tempo, and the dealt devices)",

@@ -52,7 +52,7 @@ when a preset's line is whole. An act whose line cannot be read inside its bars 
 retime: one sentence on screen at a time, cuts at speed, the product and the mark carry the seams, the one wipe, holds
 that keep moving.
 
-**Music and sound.** Cut to a licensed, human-made, instrumental track (`template.json` -> `music`): calm and even, 85-105
+**Music and sound.** Cut to a licensed, human-made, instrumental track (`template.json` -> `music`): calm and even, 88-110
 BPM; then `track.py edit --bars <BARS>`, `grid` and `check`. `src/sync.ts` places the effects from the picture's own
 frames, each device its own: the name, the mark arriving, each line once it is whole, the product opening and becoming
 the shot, the name over it, the seam off the product, one sound for the parts' wave, the three parts read, the gather,

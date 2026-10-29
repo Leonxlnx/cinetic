@@ -128,7 +128,7 @@ performance gain, a fix), show its consequence: the waiting that no longer happe
 
 Like every cinetic film, an update film is cut to a licensed, human-made, instrumental track
 (`references/music.md`). Find it first, for this film: `node scripts/music.mjs search --mood "<the film's mood
-words>" --bpm 116-128 --length <s>` (116-128 BPM suits two bars a change), `sheet --measure`, then `get '#n' --to
+words>" --bpm 118-132 --length <s>` (118-132 BPM suits two bars a change), `sheet --measure`, then `get '#n' --to
 audio/music` (its licence record beside it; never the last film's track). Bring it in with `new-film.sh --music
 <file> --record <licence.json>` (or a track found elsewhere with `python3 scripts/audio/track.py add`), then `track.py edit --bars N --reveal-bar K --end
 stop|button|ring`, `track.py grid` and `track.py check`: `src/music.ts` then carries the track and `b()` follows its

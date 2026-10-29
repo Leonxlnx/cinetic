@@ -32,7 +32,7 @@ settling after the name as one lockup); every line is dealt a move and an exit.
 
 **Music (the slot every film fills).** An update film is cut to a licensed, human-made, instrumental
 track, never effects only (`template.json` → `music`, references/music.md). Find it first, for this
-film: `node scripts/music.mjs search --mood "<the film's mood words>" --bpm 116-128 --length <s>` (116-128
+film: `node scripts/music.mjs search --mood "<the film's mood words>" --bpm 118-132 --length <s>` (118-132
 BPM suits two bars a change), `sheet --measure`, then `get '#n' --to audio/music` (its licence record
 beside it; never the last film's track). Bring it in with `--music <file> --record <licence.json>` (a track
 found elsewhere: its licence flags, or later `python3 scripts/audio/track.py add`), then `track.py edit --bars N --reveal-bar K` (its own ending, else a fade),
