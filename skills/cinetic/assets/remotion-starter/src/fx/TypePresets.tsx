@@ -4,6 +4,7 @@ import { clamp, E, type Ease, expOut, fd, lmix, mix, perFrame, prog, rand } from
 import { mixColor, toOklch } from '../lib/color';
 import { type FilmCtx, f60x, fpsOf, uOf, useFilm } from '../lib/film';
 import { EMPHASIS_LOOK } from '../lib/look';
+import { phrase, type PhraseShape, phraseShape } from '../lib/cadence';
 import { baselineOf } from '../lib/measure';
 import { PACE } from '../lib/pace';
 import type { Declares, Seam, SteppedRange } from '../timeline';
@@ -464,13 +465,23 @@ const recentre = (c: Ctx, onsets: number[], dur: number, ease: Ease) => {
   return x;
 };
 
-/** Words that pop on in turn (`gap` frames apart), rising `rise` em on E.snapOut over `dur`. */
+/**
+ * The phrased onsets of a line's n words, `gap` frames apart on average (lib/cadence phrase: the span of an even
+ * stagger, so every preset's end frame stays put; fractional frames, as the presets' own numbers are). `shape` names
+ * the phrase; without one the line's text deals it (settle twice as often as group or rush). A preset whose last word
+ * is the accent (it lands slower, or in the accent) passes 'settle', so the held beat falls before that word.
+ */
+export const wordOnsets = (s: Pick<TypeLineSpec, 'at' | 'text'>, n: number, gap: number, shape?: PhraseShape): number[] =>
+  phrase(n, gap, { shape: shape ?? phraseShape(s.text), seed: s.text, whole: false }).onsets.map((v) => s.at + v);
+
+/** Words that pop on in turn (phrased, `gap` frames apart on average), rising `rise` em on E.snapOut over `dur`. */
 const wordsRise = (c: Ctx, st: TypeLineState, gap: number, dur: number, rise: number, color: string, at = c.s.at) => {
+  const on = wordOnsets({ at, text: c.s.text }, c.W.n, gap);
   st.glyphs.forEach((g, i) => {
     const w = c.W.wordOf[i];
     if (w < 0) return;
-    const p = prog(c.f, at + gap * w, at + gap * w + dur, E.snapOut);
-    g.opacity = c.f >= at + gap * w ? clamp(p * 1.6) : 0;
+    const p = prog(c.f, on[w], on[w] + dur, E.snapOut);
+    g.opacity = c.f >= on[w] ? clamp(p * 1.6) : 0;
     g.dy = rise * (1 - p);
     g.color = color;
   });
@@ -501,7 +512,7 @@ export const crispWords = (film?: Partial<FilmCtx>, stretch = 1): Partial<WordsS
   const X = TYPE_PRESETS.crisp;
   const fps = fpsOf(film);
   const T = (v: number) => f60x(v * stretch, fps);
-  return { dur: T(X.dur60), ease: E.out, rise: X.riseEm, riseUnit: 'em', riseDur: T(X.dur60), riseEase: E.out, blur: X.blurPx * uOf(film), stagger: T(X.gap60), cadence: 'even', subpixel: true };
+  return { dur: T(X.dur60), ease: E.out, rise: X.riseEm, riseUnit: 'em', riseDur: T(X.dur60), riseEase: E.out, blur: X.blurPx * uOf(film), stagger: T(X.gap60), cadence: 'phrase', subpixel: true };
 };
 
 /** The calm entry as <Words> props: PACE.calm's canonical reveal whatever the film's pace (a body line in a crisp film). */
@@ -1065,7 +1076,7 @@ export const maskFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
   const K = TYPE_PRESETS.mask;
   const T = T60(s, film);
   const n = wordMap(s.text).n;
-  const on = Array.from({ length: n }, (_, w) => s.at + T(K.stagger60) * w);
+  const on = wordOnsets(s, n, T(K.stagger60), 'settle');
   const heads = on.map((_, w) => T(K.head60) * (w === n - 1 && n > 1 ? K.last : 1));
   return { on, heads, end: n ? on[n - 1] + heads[n - 1] : s.at };
 };
@@ -1095,7 +1106,8 @@ export const landFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
   const n = wordMap(s.text).n;
   const lead = clamp(Math.round(s.lead ?? n), 1, Math.max(1, n));
   const landed = s.at + T(L.settle60);
-  const on = Array.from({ length: n }, (_, w) => (w < lead ? s.at : landed + T(L.gap60) * (w - lead)));
+  const tail = n - lead > 1 ? wordOnsets({ at: landed, text: s.text }, n - lead, T(L.gap60)) : [landed];
+  const on = Array.from({ length: n }, (_, w) => (w < lead ? s.at : tail[w - lead]));
   return { lead, on, landed, end: n > lead ? Math.max(landed, on[n - 1] + T(L.recentre60)) : landed };
 };
 
@@ -1133,7 +1145,7 @@ export const flyFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
   const Y = TYPE_PRESETS.fly;
   const T = T60(s, film);
   const n = wordMap(s.text).n;
-  const on = Array.from({ length: n }, (_, w) => s.at + T(Y.gap60) * w);
+  const on = wordOnsets(s, n, T(Y.gap60));
   const landed = on.map((o) => o + T(Y.land60));
   const open = (landed[n - 1] ?? s.at) + T(Y.openLate60);
   return { on, landed, open, end: open + T(Y.open60) };
@@ -1176,7 +1188,7 @@ export const snapFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
   const fps = fpsOf(film);
   const T = T60(s, film);
   const n = wordMap(s.text).n;
-  const on = Array.from({ length: n }, (_, w) => s.at + T(S.gap60) * w);
+  const on = n > 2 ? [...wordOnsets(s, n - 1, T(S.gap60)), 0] : Array.from({ length: n }, (_, w) => s.at + T(S.gap60) * w);
   const at = n > 1 ? Math.ceil(on[n - 2] + T(S.hold60) - 1e-6) : Math.ceil(s.at - 1e-6);
   if (n) on[n - 1] = at;
   return { on, at, end: at + Math.ceil(Math.max(H.sigmaS, H.settleS, H.wordFadeS) * fps) };
@@ -1217,7 +1229,7 @@ export const roomFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
   const R = TYPE_PRESETS.room;
   const T = T60(s, film);
   const n = wordMap(s.text).n;
-  const on = Array.from({ length: n }, (_, w) => s.at + T(R.gap60) * w);
+  const on = n > 2 ? [...wordOnsets(s, n - 1, T(R.gap60)), 0] : Array.from({ length: n }, (_, w) => s.at + T(R.gap60) * w);
   const jump = n > 1 ? Math.ceil(on[n - 2] + T(R.hold60) - 1e-6) : Math.ceil(s.at - 1e-6);
   if (n) on[n - 1] = jump;
   const probe = makeRoomState(0, { start: 0, distance: 1000 }, film);
@@ -1251,7 +1263,7 @@ export const glideFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
   const G = TYPE_PRESETS.glide;
   const T = T60(s, film);
   const n = wordMap(s.text).n;
-  const on = Array.from({ length: n }, (_, w) => s.at + T(G.step60) * w);
+  const on = wordOnsets(s, n, T(G.step60), 'settle');
   const durs = on.map((_, w) => T(G.resolve60) * (w === n - 1 && n > 1 ? G.last : 1));
   return { on, durs, end: n ? on[n - 1] + durs[n - 1] : s.at };
 };
@@ -1283,7 +1295,7 @@ export const fallFrames = (s: TypeLineSpec, film?: Partial<FilmCtx>) => {
   const F = TYPE_PRESETS.fall;
   const T = T60(s, film);
   const n = wordMap(s.text).n;
-  const on = Array.from({ length: n }, (_, w) => s.at + T(F.gap60) * w);
+  const on = wordOnsets(s, n, T(F.gap60), 'settle');
   return { on, end: (on[n - 1] ?? s.at) + T(F.drop60) };
 };
 

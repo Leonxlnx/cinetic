@@ -6,6 +6,7 @@
 // name, ONE element at the lockup.
 import { BIRTHS } from './acts/Rings';
 import { E } from './lib/anim';
+import { phraseOnsets } from './lib/cadence';
 import { peak, settleOf } from './lib/sync';
 import { ACT, chainOf, copy, CUE, type Declares, f60, type Salience, TICKS, TOTAL } from './timeline';
 import { REEL } from './reel';
@@ -48,8 +49,9 @@ export default function cues(): SoundEvent[] {
   const sources = copy('sources');
   // sources: the line comes to rest; every other source pops (the music carries the rest)
   ev.push({ f: settleOf(sources.in, sources.resolved, E.snapOut), kind: 'text', weight: 0.8, pan: 0, id: 'sources-said' });
+  const chipAt = phraseOnsets(CUE.chips, REEL.sources.length, f60(6), { shape: 'group', seed: 'sources' }); // acts/Sources CHIP_AT
   REEL.sources.forEach((_, i) => {
-    if (i % 3 === 0) ev.push({ f: CUE.chips + f60(6 * i) + f60(3), kind: 'pop', weight: 0.5, pan: Math.cos((i / REEL.sources.length) * Math.PI * 2) * 0.15, id: `source-${i}` });
+    if (i % 3 === 0) ev.push({ f: chipAt[i] + f60(3), kind: 'pop', weight: 0.5, pan: Math.cos((i / REEL.sources.length) * Math.PI * 2) * 0.15, id: `source-${i}` });
   });
   // record: the disc becomes the card, its fields land, the cut on the kick
   ev.push({ f: ACT.record.from + f60(10), kind: 'swell', weight: 0.7, pan: 0, dur: f60(24), id: 'disc-to-card' });

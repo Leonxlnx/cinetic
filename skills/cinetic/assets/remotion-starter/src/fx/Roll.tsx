@@ -202,9 +202,29 @@ const stepValueOf = (frame: number, values: number[], seq: RollStep[]) => {
   return v;
 };
 
+// ---- a count to a value ------------------------------------------------------------------------------
+/**
+ * A count to a value eases out and settles: `from` -> `to` over [start, start + dur] on `ease` (house E.out: fast,
+ * then slowing into its value), its last value landing on the end frame and holding there (countSteps), never a
+ * linear tick, which reads as a machine counting (lint-film linear-count). `decimals` counts in tenths or hundredths
+ * (1.86 L). The value shown at frame f (whole frames: every motion-blur sub-sample of a frame agrees). Pure.
+ */
+export const countTo = (f: number, o: { from: number; to: number; start: number; dur: number; ease?: Ease; decimals?: number }): number => {
+  const k = 10 ** Math.max(0, Math.round(o.decimals ?? 0));
+  const steps = countSteps(o.from * k, o.to * k, o.start, o.dur, o.ease ?? E.out);
+  const F = fd(f);
+  let v = Math.round(o.from * k);
+  for (const s of steps) {
+    if (F < s.at) break;
+    v = s.value;
+  }
+  return v / k;
+};
+
 // ---- linear counters --------------------------------------------------------------------------------
 /**
- * A counter that runs LINEAR: `from` plus `perSec` units per second since `start`, shown rounded down
+ * A live rate, never a count to a value (that is countTo): a counter that runs LINEAR: `from` plus `perSec` units per
+ * second since `start`, shown rounded down
  * (or to nearest) on every frame, still counting when the shot cuts. Different counters in one frame run
  * at different rates (14 : 5 : 1 reads as live data). `animFps` puts it on a lower source cadence (a 25 fps
  * screen recording inside a 30 fps film holds every sixth frame); `phase` places that grid (film frames).

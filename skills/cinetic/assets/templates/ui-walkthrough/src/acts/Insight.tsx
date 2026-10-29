@@ -4,6 +4,7 @@ import { U } from '../brand/tokens';
 import { DirBlur } from '../fx/Defocus';
 import { Avatar, face, KIT_TYPE, surfaceShadow } from '../kit';
 import { E, hitPulse, lmix, prog } from '../lib/anim';
+import { phrase } from '../lib/cadence';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { facePhoto, PILL_BOX, PillContent } from './Feed';
@@ -19,6 +20,8 @@ import { drift, Ground, launchOut, ScriptLine, themeOf, useAbs } from './stage';
 export const WHIP_LEFT = { vCut: -96 * U };
 
 const QUOTE = { w: 700 * U, h: 190 * U, gap: 40 * U, y: 760 * U } as const;
+/** The three quotes' onsets: phrased into the last (lib/cadence), the span of an 8 f stagger. */
+const QUOTE_ON = phrase(3, f60x(8), { shape: 'settle', seed: 'insight-quotes' }).onsets;
 
 /** One of the words people wrote: a portrait, the name, the message. */
 const Quote: React.FC<{ i: number }> = ({ i }) => {
@@ -56,7 +59,7 @@ export const Insight: React.FC = () => {
           {/* the words people wrote: a slower plane (0.6 of the push), the outer cards cropped by the frame */}
           <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${H / 2}px`, transform: `scale(${lmix(1, k, 0.6).toFixed(5)})` }}>
             {[-1, 0, 1].map((j, i) => {
-              const at = CUE.say4 + f60x(18 + 8 * i);
+              const at = CUE.say4 + f60x(18) + QUOTE_ON[i]; // phrased (lib/cadence), never 8 f apart on a metronome
               const p = prog(F, at, at + f60x(40), E.glideOut);
               if (p <= 0) return null;
               const x = W / 2 + j * (QUOTE.w + QUOTE.gap) - QUOTE.w / 2;

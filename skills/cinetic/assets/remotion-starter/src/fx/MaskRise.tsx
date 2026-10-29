@@ -1,6 +1,7 @@
 import React from 'react';
 import { FONT, TYPE, typeStyle } from '../brand/tokens';
 import { arrive, arriveK, blurIn, clamp, depart, E, Ease, type Pace, prog } from '../lib/anim';
+import { phrase } from '../lib/cadence';
 import { mixRgb } from '../lib/color';
 import { blurFilter } from './Oversize';
 import { f60, f60x, type FilmCtx, fpsOf, paceOf, uOf, useFilm } from '../lib/film';
@@ -51,7 +52,7 @@ export type MaskRiseOpts = {
   by?: 'word' | 'line';
   pace?: Pace;
   stagger?: number;
-  starts?: number[]; // per unit, its 0 frame (reading order; overrides start + stagger)
+  starts?: number[]; // per unit, its 0 frame (reading order; overrides the phrased onsets from start, `stagger` apart on average)
   dur?: number;
   durs?: number[]; // per unit, film frames
   ease?: Ease; // given: the 1.1 eased head (unless head says otherwise)
@@ -95,8 +96,9 @@ export const maskRiseState = (f: number, o: MaskRiseOpts, film?: Partial<FilmCtx
   const lead = TYPE[o.role ?? 'display'].lead;
   const travel = o.travel ?? lead + 0.12 + (o.clipBelow ?? 0.26);
   const ease = o.ease ?? E.out;
+  const phrased = phrase(n, stagger, { shape: 'settle', seed: o.text, whole: false }).onsets; // lib/cadence: the span of an even stagger, the last unit after a held beat
   return units.map((_, k): MaskUnitState => {
-    const s = o.starts?.[k] ?? o.start + k * stagger;
+    const s = o.starts?.[k] ?? o.start + phrased[k];
     const d = o.durs?.[k] ?? (k === n - 1 && n > 1 ? dur * lastScale : dur);
     const ka = head === 'ease' && o.size ? arriveK(travel * o.size, d, ease) : 0.94;
     const p = maskProgress(f, { start: s, dur: d }, head, ease, ka, fps, o.stop);

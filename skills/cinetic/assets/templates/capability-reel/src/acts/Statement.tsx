@@ -6,6 +6,7 @@ import { Wash } from '../fx/Washes';
 import { Words } from '../fx/Words';
 import { surfaceShadow } from '../kit';
 import { lmix } from '../lib/anim';
+import { phraseOnsets } from '../lib/cadence';
 import { mixColor } from '../lib/color';
 import { counterCreep, intoCut } from '../lib/handoff';
 import { measureTracked } from '../lib/measure';
@@ -33,7 +34,7 @@ export const Statement: React.FC = () => {
   const pitch = 150 * U;
   const lineCol = mixColor(t.ground, t.line, 0.7);
   const n = c.text.trim().split(/\s+/).length;
-  const starts = Array.from({ length: n }, (_, i) => c.in + Math.floor(f60x(8) * i));
+  const starts = phraseOnsets(c.in, n, f60x(8), { shape: 'settle', seed: c.text }); // lib/cadence: phrased into the last word
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
       {/* the paper has a direction: the accent's tint gathers along one tilted edge (fx/Washes tilted), the light card stands clear on it */}

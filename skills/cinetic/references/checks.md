@@ -143,6 +143,12 @@ them: no creep, drift, `holdDrift`, camera path, light field or footage move), `
 `F < X &&` or a `<Sequence>` end while a tween inside it, timed off the same frame, still runs above 10 % of its peak
 speed: `landBeforeCut`), `move-queue` (three moves timed off the same frame queued one after another inside 3 s).
 
+**Timing phrasing** (warnings, outside `fx/` and `lib/`): `even-stagger` (a reveal timed `start + i * gap` in an act:
+items or words on a metronome; phrase them with `lib/cadence` `phraseOnsets(start, n, gap, { shape })`: grouped,
+settling into the accent or a lead and a rush, the same span) and `linear-count` (a count to a value on `E.linear`, a
+`countLinear` capped at a value, a hand-rolled `Math.round(mix(a, b, prog(f, s, e)))` with no ease: a count eases out
+and settles, `fx/Roll` `countTo`; `countLinear` stays for a live rate).
+
 ## 4. layout-audit (`scripts/layout-audit.sh`, `lib/Audit.tsx`)
 
 Renders audit frames and reads every text box: safe area, overlaps, words on screen (product strings carry `data-ui`

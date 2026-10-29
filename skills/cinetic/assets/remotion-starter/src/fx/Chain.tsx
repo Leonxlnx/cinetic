@@ -40,10 +40,10 @@ export type FragmentFrames = { id: string; text: string; words: number; in: numb
  * pace keeps the even 1.1 spans; a 1.2 pace uses its cadence (the reading cadence keeps the even total
  * span, so the last word still ends on COPY's resolved).
  */
-export const fragmentSpans = (text: string, inF: number, p: Pace, fps: number, cadence?: 'even' | 'reading' | 'accelerate' | number[]): [number, number][] => {
+export const fragmentSpans = (text: string, inF: number, p: Pace, fps: number, cadence?: 'phrase' | 'even' | 'reading' | 'accelerate' | number[]): [number, number][] => {
   const words = split(text);
   if (!isNew(p) && cadence === undefined) return words.map((_, i) => [inF + f60(i * p.stagger, fps), inF + f60(i * p.stagger + p.wordDur, fps)]);
-  const cad = cadenceOffsets(words, cadence ?? p.cadence ?? 'even', f60x(p.stagger, fps), fps);
+  const cad = cadenceOffsets(words, cadence ?? p.cadence ?? 'phrase', f60x(p.stagger, fps), fps);
   const d = f60x(p.wordDur, fps);
   return words.map((_, i) => [inF + cad.onsets[i], inF + cad.onsets[i] + d * ((cadence ?? p.cadence) === 'accelerate' ? cad.durScale[i] : 1)]);
 };
@@ -55,7 +55,7 @@ export const fragmentSpans = (text: string, inF: number, p: Pace, fps: number, c
 export type ChainTiming = Partial<FilmCtx> & {
   size?: number; // px the chain is set at (default: the line role at the film's frame size, TYPE.line.size * U)
   role?: Role; // its role (the line box of a 1.2 rise; default 'line')
-  cadence?: 'even' | 'reading' | 'accelerate' | number[];
+  cadence?: 'phrase' | 'even' | 'reading' | 'accelerate' | number[];
   subpixel?: boolean; // the words on composited layers (a 1.2 pace's default: true)
   ink?: 'reveal' | 'pop' | 'partial'; // how the words arrive (see ChainSpec)
   inkDur?: number; // film frames of a partial ink (default 10 f@60)

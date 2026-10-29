@@ -103,6 +103,11 @@
  *   unmount-moving    a layer unmounted (`F < X &&`, `F >= A && F < X &&`, a <Sequence> end) while a tween
  *                     inside it, timed off the same frame, still runs above 10 % of its peak speed (lib/continuity
  *                     landBeforeCut; the curve's speed is read from lib/anim.ts)
+ *   even-stagger      a reveal timed `start + i * gap` (or `i * f60x(n)` added to a cue) in an act: items or words on a
+ *                     metronome; phrase them (lib/cadence phraseOnsets: grouped, settling or rushing, the same span)
+ *   linear-count      a count to a value that runs linear: countSteps or <Roll> on E.linear, countLinear capped at a
+ *                     value (Math.min, `to:`), or a hand-rolled Math.round(mix(a, b, prog(f, s, e))) with no ease:
+ *                     a count eases out and settles (fx/Roll countTo); countLinear stays for a live rate
  *   move-queue        three or more moves (arrive, reposition or leave tweens of 8 f@60 or more driving a
  *                     transform, a position or the camera) timed off the same frame, queued one after another
  *                     (overlapping less than 30 %) within 3 s: one carrying move, secondaries overlapping
@@ -1548,6 +1553,32 @@ for (const file of files) {
           report(i, 'per-letter', 'warn', 'letters animated one by one: animate words or whole fragments (a per-letter rise slows the read and reads as a trick); the one hero word may keep it with // lint-ok: hero word');
       });
     }
+  }
+
+  // --- timing phrasing (warnings): staggers on a metronome, counts that run linear. Film files only: the primitives in
+  // fx/ and lib/ phrase their own onsets (lib/cadence) and keep linear counters for live rates.
+  if (isScript && !/(^|\/)(fx|lib)\//.test(norm)) {
+    const actLike = /(^|\/)acts\//.test(norm) || /^(act|scene|shot)(\d|[-_.])/i.test(basename(file));
+    const GAP = String.raw`(?:f60x?\(\s*[\d.]+\s*\)|\d+(?:\.\d+)?)`;
+    const IDX = String.raw`(?:i|j|k|idx|index)`;
+    const stag = new RegExp(String.raw`\+\s*(?:Math\.(?:floor|round)\(\s*)?(?:${GAP}\s*\*\s*${IDX}\b|${IDX}\s*\*\s*${GAP})`, 'g');
+    if (actLike)
+      each(stag, (m, i) => {
+        const { line } = pos(i);
+        const here = (lines[line - 1] ?? '').replace(/\/\/.*$/, ''); // the code, not its comment
+        if (/\b(W|H|U|px|width|height|pitch|deg|rad|gap\s*\*\s*U|Math\.PI|angle|left|top|x0|y0|dx|dy|noise1?|seed)\b/.test(here.replace(/f60x?\([^)]*\)/g, ''))) return; // a layout, not a time
+        if (!/\b(CUE|ACT|BEAT|beat|bt)\b|\bF\s*>=|prog\(|\b(at|on|start|starts|onset|onsets|from|in)\s*[=:,)]|\bconst\s+(at|on|start|onset)\b/.test(here)) return;
+        report(i, 'even-stagger', 'warn', 'a reveal on a metronome (start + i x gap): equal spacing reads machine-timed; phrase it with lib/cadence phraseOnsets(start, n, gap, { shape }) (grouped, settling into its accent, or a lead and a rush; the same span)');
+      });
+    each(/\bcountSteps\s*\([^;]*?\bE\.linear\b/g, (m, i) => report(i, 'linear-count', 'warn', 'a count on E.linear ticks like a machine: count on E.out (fx/Roll countTo, countSteps default), so it slows into its value and settles'));
+    each(/<Roll\b[^>]*\bease\s*=\s*\{\s*E\.linear\s*\}/g, (m, i) => report(i, 'linear-count', 'warn', '<Roll ease={E.linear}> ticks like a machine: drop the ease (E.out) so the count slows into its value and settles'));
+    each(/\bcountLinear\s*\(/g, (m, i) => {
+      const { line } = pos(i);
+      const here = lines[line - 1] ?? '';
+      if (/Math\.min\s*\(|\bto\s*:/.test(here)) report(i, 'linear-count', 'warn', 'countLinear capped at a value is a count to a value running linear: use fx/Roll countTo (eases out, lands its last value on the end frame and holds); countLinear is for a live rate');
+    });
+    each(/Math\.(?:round|floor)\(\s*l?mix\(\s*[^,()]+,\s*[^,()]+,\s*prog\(\s*[^,()]+,\s*[^,()]+,\s*[^,()]+\)\s*\)\s*\)/g, (m, i) =>
+      report(i, 'linear-count', 'warn', 'a hand-rolled count on a linear prog(): give it an ease-out (fx/Roll countTo), so it slows into its value and settles'));
   }
 
   // --- grammar: curve roles, springs, exits, look, type roles, GPU cost (1.2)

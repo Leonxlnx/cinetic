@@ -90,7 +90,7 @@ export const textOn = (color: string, surface: string, min = 4.5): string => {
     const c = oklch(L2, Cc, h);
     if (contrastRatio(c, surface) >= min) return c;
   }
-  return down ? oklch(0.2, Cc * 0.5, h) : oklch(0.97, Cc * 0.3, h);
+  return down ? oklch(0.2, Cc * 0.5, h) : oklch(0.97, Cc * 0.3, h); // lint-ok: computed in OKLCH from the colour itself, not a literal
 };
 
 /**

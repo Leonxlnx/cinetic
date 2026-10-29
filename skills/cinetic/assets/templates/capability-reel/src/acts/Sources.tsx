@@ -4,11 +4,15 @@ import { TYPE, typeStyle, U } from '../brand/tokens';
 import { Words } from '../fx/Words';
 import { AppIcon, Chip, hasLogo, LogoChip } from '../kit';
 import { clamp, E, mix, prog, track } from '../lib/anim';
+import { phraseOnsets } from '../lib/cadence';
 import { mixColor } from '../lib/color';
 import { creep } from '../lib/handoff';
 import { ACT, copy, CUE, f60x, FPS, H, W } from '../timeline';
 import { REEL } from '../reel';
 import { INK, LIGHT, lineSize, useAbs } from './stage';
+
+/** The sources' chips pop on in groups with a breath between them (lib/cadence; sync.ts sounds the same onsets), the span of a 6 f stagger. */
+export const CHIP_AT = phraseOnsets(CUE.chips, REEL.sources.length, f60x(6), { shape: 'group', seed: 'sources' });
 
 // SOURCES - one line in the middle of a ring of sources: the line arrives word by word, the sources pop in round it
 // on a stagger and orbit slowly. Then the page darkens fast (most of the way in a few frames), the sources shrink
@@ -54,11 +58,11 @@ export const Sources: React.FC = () => {
           <ellipse cx={W / 2} cy={H / 2} rx={mix(RING.inner.rx, RING.disc, close)} ry={mix(RING.inner.ry, RING.disc, close)} fill={INK.raised} fillOpacity={close} stroke={ringColour} strokeWidth={2 * U} />
         </svg>
         {REEL.sources.map((s, i) => {
-          const at = CUE.chips + f60x(6) * i;
+          const at = CHIP_AT[i];
           if (F < at) return null;
           const a = angleOf(i, n) + orbit;
           const pop = prog(F, at, at + f60x(10), E.snapOut);
-          const out0 = CUE.darken + f60x(2) * i; // each shrinks out on its own frame
+          const out0 = CUE.darken + f60x(2) * i; // each shrinks out on its own frame (lint-ok: a 2 f sweep of exits, not a reveal)
           const shrink = track(F, [[out0, 1], [out0 + f60x(2), 0.95], [out0 + f60x(4), 0.88], [out0 + f60x(6), 0.74], [out0 + f60x(8), 0.45], [out0 + f60x(9), 0]]);
           if (shrink <= 0) return null;
           const x = W / 2 + Math.cos(a) * RING.rx;

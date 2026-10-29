@@ -5,6 +5,7 @@ import { stepValue } from '../fx/HardStep';
 import { Chip, DataRow, face, FileThumb, KIT_TYPE, Meter, Photo } from '../kit';
 import { E, mix, prog, track } from '../lib/anim';
 import { mixColor } from '../lib/color';
+import { phraseOnsets } from '../lib/cadence';
 import { creep } from '../lib/handoff';
 import { ACT, CUE, f60x, FPS, H, HOPS, W } from '../timeline';
 import { REEL } from '../reel';
@@ -20,6 +21,8 @@ import { INK, useAbs } from './stage';
 /** The card: its picture part (the disc grows into it) and the whole card once the pan has opened it (px at 1080p). */
 export const CARD = { media: 600 * U, full: 1700 * U, h: 640 * U, r: 38 * U, panFrom: 0, panTo: -550 * U } as const;
 const pitch = CARD.media / 4;
+/** The record's fields arrive phrased (lib/cadence: in groups with a breath between them), never on a metronome. */
+const ROW_AT = phraseOnsets(CUE.rows, REEL.record.rows.length, f60x(2.5), { shape: 'group', seed: 'record-rows' });
 
 /** The card's box on screen at absolute frame F (its left edge, top, width, height, corner radius). */
 export const cardBox = (F: number) => {
@@ -76,7 +79,7 @@ export const RecordCard: React.FC = () => {
           {F >= CUE.pan && (
             <div style={{ position: 'absolute', left: CARD.media + 64 * U, top: 56 * U, width: CARD.full - CARD.media - 128 * U, opacity: opened }}>
               {REEL.record.rows.map((r, i) => {
-                const on = F >= CUE.rows + f60x(2.5) * i;
+                const on = F >= ROW_AT[i];
                 return (
                   <div key={i} style={{ opacity: on ? 1 : 0 }}>
                     <DataRow theme={t} w={CARD.full - CARD.media - 128 * U} h={70 * U} label={r.label} value={r.value} accent={i === 0} id={`record-${i}`} />

@@ -86,3 +86,107 @@ export const irregular = (seed: number | string, n: number, mean: number, min: n
   return g;
 };
 
+
+/**
+ * Phrased staggers: n onsets whose gaps phrase instead of ticking. Equal spacing reads metronomic, the tell of a
+ * machine-timed reveal; a phrased run keeps the spread of its gaps (std / mean) at PHRASE.cv or more, the way word and
+ * item onsets fall when a person times them: a run decelerating into its accent, a lead that lands and then the rest
+ * rushing in, or items arriving in groups with a breath between the groups. Every shape keeps the run's span
+ * ((n - 1) x gap), so a line's resolved frame and a list's last onset stay where an even stagger put them.
+ *   settle  gaps grow from the first to `settle.ratio` times it, and the gap before the accent (the last item) is
+ *           `settle.accent` times longer still: the last word lands after a held beat (house for a line of type)
+ *   rush    the lead item lands, holds `rush.lead` times the first quick gap, then the rest come in faster and faster
+ *           (to `rush.ratio` of the first quick gap): the accent is the lead
+ *   group   items in groups of 2-3 (dealt from the seed, never a group of one past the first), `group.inner` apart
+ *           inside a group and `group.between` between groups: the accent is the first of the last group
+ * `accent` is the item a caller sets apart (a scale step, the accent colour, a sound): the one after the longest hold.
+ */
+export const PHRASE = {
+  cv: 0.3, // the least spread of a phrased run's gaps (std / mean); an even stagger is 0
+  settle: { ratio: 2.2, accent: 1.35 },
+  rush: { lead: 2, ratio: 0.42 },
+  group: { inner: 0.36, between: 1.65 },
+  minGap: 1, // film frames between two onsets at least (whole-frame runs)
+} as const;
+export type PhraseShape = 'settle' | 'rush' | 'group';
+export type Phrase = { onsets: number[]; gaps: number[]; accent: number; groups: number[]; shape: PhraseShape };
+
+/** The spread of a run's gaps (std / mean): 0 for an even stagger; a phrased run keeps PHRASE.cv or more. Pure. */
+export const gapSpread = (onsets: readonly number[]): number => {
+  const g = onsets.slice(1).map((v, i) => v - onsets[i]);
+  if (g.length < 2) return 0;
+  const m = g.reduce((a, b) => a + b, 0) / g.length;
+  if (m <= 0) return 0;
+  return Math.sqrt(g.reduce((a, b) => a + (b - m) ** 2, 0) / g.length) / m;
+};
+
+/** Group sizes for n items from a seed: 2s and 3s (the first may be a lone lead when n is 3). Pure. */
+export const phraseGroups = (n: number, seed: number | string = 0): number[] => {
+  if (n <= 2) return [n];
+  if (n === 3) return [1, 2]; // a lead, then a pair (a group of one only ever leads)
+  const out: number[] = [];
+  let left = n;
+  let k = 0;
+  while (left > 0) {
+    if (left <= 3) {
+      out.push(left);
+      break;
+    }
+    const take = left === 4 ? 2 : rand(`${seed}:g${k++}`) < 0.5 ? 2 : 3;
+    out.push(take);
+    left -= take;
+  }
+  return out;
+};
+
+/** A shape for a run from its seed (a line's text, a list's id): settle twice as often as the others. Pure. */
+export const phraseShape = (seed: number | string, allowed: readonly PhraseShape[] = ['settle', 'settle', 'group', 'rush']): PhraseShape =>
+  allowed[Math.floor(rand(`${seed}:phrase`) * allowed.length) % allowed.length];
+
+/**
+ * The phrased onsets of n items `gap` frames apart on average (offsets from the first, onsets[0] = 0, the last at
+ * (n - 1) x gap exactly). `whole` (default true) rounds to whole frames, keeping each gap at least PHRASE.minGap and the
+ * span exact; false keeps the fractional onsets (a primitive that already works in fractional frames). Pure.
+ */
+export const phrase = (n: number, gap: number, o: { shape?: PhraseShape; seed?: number | string; groups?: number[]; whole?: boolean } = {}): Phrase => {
+  const shape = o.shape ?? 'settle';
+  if (n <= 1) return { onsets: [0], gaps: [], accent: 0, groups: [n], shape };
+  if (n === 2) return { onsets: [0, o.whole === false ? gap : Math.round(gap)], gaps: [gap], accent: 1, groups: [2], shape };
+  const P = PHRASE;
+  let w: number[] = [];
+  let accent = n - 1;
+  let groups = [n];
+  if (shape === 'settle') {
+    w = Array.from({ length: n - 1 }, (_, i) => P.settle.ratio ** (n > 2 ? i / (n - 2) : 0));
+    w[n - 2] *= P.settle.accent;
+  } else if (shape === 'rush') {
+    w = Array.from({ length: n - 1 }, (_, i) => (i === 0 ? P.rush.lead : P.rush.ratio ** (n > 3 ? (i - 1) / (n - 3) : 0)));
+    accent = 0;
+  } else {
+    groups = o.groups && o.groups.reduce((a, b) => a + b, 0) === n ? o.groups : phraseGroups(n, o.seed ?? 0);
+    for (let gi = 0; gi < groups.length; gi++) {
+      for (let k = 0; k < groups[gi]; k++) if (gi > 0 || k > 0) w.push(k === 0 ? P.group.between : P.group.inner);
+    }
+    accent = n - groups[groups.length - 1];
+  }
+  const span = (n - 1) * gap;
+  const sum = w.reduce((a, b) => a + b, 0);
+  const frac = [0];
+  for (const x of w) frac.push(frac[frac.length - 1] + (x / sum) * span);
+  if (o.whole === false) return { onsets: frac, gaps: w.map((x) => (x / sum) * span), accent, groups, shape };
+  const end = Math.round(span);
+  const min = P.minGap;
+  if (end < (n - 1) * min) {
+    const even = Array.from({ length: n }, (_, i) => Math.round((i * end) / (n - 1)));
+    return { onsets: even, gaps: even.slice(1).map((v, i) => v - even[i]), accent, groups, shape };
+  }
+  const on = frac.map((v) => Math.round(v));
+  on[n - 1] = end;
+  for (let i = 1; i < n; i++) on[i] = Math.max(on[i], on[i - 1] + min); // each gap at least min, forward
+  for (let i = n - 2; i >= 1; i--) on[i] = Math.min(on[i], on[i + 1] - min); // and the span held, backward
+  return { onsets: on, gaps: on.slice(1).map((v, i) => v - on[i]), accent, groups, shape };
+};
+
+/** Absolute phrased onsets: start + phrase(n, gap, o).onsets (a list's rows, a line's words). Pure. */
+export const phraseOnsets = (start: number, n: number, gap: number, o: Parameters<typeof phrase>[2] = {}): number[] =>
+  phrase(n, gap, o).onsets.map((v) => start + v);

@@ -9,7 +9,8 @@
  *      at the same rate; push dims to 36 % on its first frame; the square full stop lands 5 f after the line.
  *   3. Properties: every preset with every exit is finite and repeatable, continuous presets give the same
  *      picture at the same second at 30 and 60 fps, and declares() marks the stepped runs and the dive seam.
- *   4. The entries: crisp (words 7 f apart, each rising 0.32 em and sharpening from 8 px on E.out over 26 f, moving
+ *   (Word onsets phrase, lib/cadence phrase: the span of the house stagger, the gaps' spread >= 0.3: timing.test.mjs.)
+ *   4. The entries: crisp (words 7 f apart on average, phrased, each rising 0.32 em and sharpening from 8 px on E.out over 26 f, moving
  *      while it resolves; crispWords() for <Words>), calm (PACE.calm's reveal in any film), and no letter-by-letter
  *      preset on an end card.
  *   5. The confident moves: mask (8 f linear-stop head, last word 2.5x), land (x1.7 over 34 f, defocus riding the
@@ -132,7 +133,7 @@ console.log(JSON.stringify({
   end: T.END_CARD_PRESETS, endArc: T.endCardPreset('arc'), endOpen: T.endCardPreset('open'),
   mask: { gaps: diffs(mkF.on), heads: mkF.heads, f0: g0(mk, 0), f4: g0(mk, 4), f8: g0(mk, 8), f12: g0(mk, 12), f20: g0(mk, 20), dy8: 1.05 * (1 - 0.85) },
   land: { landed: ldF.landed, on: ldF.on, s0: st(0, ld).scale, s17: st(17, ld).scale, s34: st(34, ld).scale, b0: st(0, ld).blur * st(0, ld).scale, b34: st(34, ld).blur, w2before: g0(ld, ldF.on[2] - 1, 9).opacity, w2at: g0(ld, ldF.on[2], 9).opacity, w2solid: g0(ld, ldF.on[2] + 6, 9).opacity, k: T.TYPE_PRESETS.land },
-  fly: { on: flF.on, s0: g0(fl, 0).sx, s7: g0(fl, 7).sx, s14: g0(fl, 14).sx, s0w1: g0(fl, 10, 5).sx, b14: g0(fl, 14).blur, open: flF.open, end: flF.end, dxShut: g0(fl, flF.open - 1, 10).dx, dxOpen: g0(fl, flF.end + 1, 10).dx },
+  fly: { on: flF.on, s0: g0(fl, 0).sx, s7: g0(fl, 7).sx, s14: g0(fl, 14).sx, s0w1: g0(fl, Math.ceil(flF.on[1]), 5).sx, b14: g0(fl, 14).blur, open: flF.open, end: flF.end, dxShut: g0(fl, flF.open - 1, 10).dx, dxOpen: g0(fl, flF.end + 1, 10).dx },
   snap: { at: snF.at, before: st(snF.at - 1, sn).scale, at1: st(snF.at, sn).scale, last0: g0(sn, snF.at - 1, 8).opacity, lastAt: g0(sn, snF.at, 8).opacity, decl: T.declares(sn, film(60)).stepped },
   room: { jump: rmF.jump, xs: [rmF.jump - 3, rmF.jump - 2, rmF.jump - 1, rmF.jump, rmF.jump + 1, rmF.jump + 20].map((f) => st(f, rm).x), lastBefore: g0(rm, rmF.jump - 1, 8).opacity, lastAt: g0(rm, rmF.jump, 8).opacity, decl: T.declares(rm, film(60)).stepped },
   glide: { ons: diffs(T.glideFrames(gl, film(60)).on), x0: st(0, gl).x, x96: st(96, gl).x, w0: g0(gl, 1), w0end: g0(gl, 9) },
@@ -187,7 +188,10 @@ result(P.decl.cycle === 1 && P.decl.redact === 1 && P.decl.swarm === 2 && P.decl
 
 // 4. the entries
 const C = P.crisp;
-result(C.ticks.join() === '7,7,7' && C.resolved > 121 && C.resolved <= 147, 'crisp: words 7 f apart (60 fps), the line landed within 26 f of its last word', `${C.ticks.join('/')} resolved ${C.resolved}`);
+// phrased onsets (lib/cadence phrase): the house stagger's span, gaps that spread (std / mean >= 0.3)
+const spreadOf = (g) => { const m = g.reduce((a, b) => a + b, 0) / g.length; return Math.sqrt(g.reduce((a, b) => a + (b - m) ** 2, 0) / g.length) / m; };
+const phrased = (gaps, mean) => near(gaps.reduce((a, b) => a + b, 0), mean * gaps.length, 1e-6) && (gaps.length < 2 || spreadOf(gaps) >= 0.3 - 1e-9);
+result(phrased(C.ticks, 7) && C.resolved > 121 && C.resolved <= 147, 'crisp: words 7 f apart on average, phrased (60 fps), the line landed within 26 f of its last word', `${C.ticks.join('/')} resolved ${C.resolved}`);
 result(C.f1.opacity > 0.15 && C.f1.dy > 0.15 && near(C.f1.blur, 0.08 * Math.max(0, 1 - C.f1.opacity / 0.6), 1e-6) && C.f1.blur > 0 && C.f8.dy > 0.005 && C.f8.dy < C.f1.dy && C.f8.opacity > 0.85 && C.f20.dy > 0 && C.f126.dy === 0 && C.f126.blur === 0 && C.f126.opacity === 1,
   'crisp: a word shows on its first frame soft and low, rises 0.32 em on E.out and still moves once it reads (an 8 px blur at 1080p), home by 26 f', JSON.stringify({ f1: [C.f1.opacity, C.f1.dy, C.f1.blur].map((v) => +v.toFixed(3)), f8: +C.f8.dy.toFixed(4), f20: +C.f20.dy.toFixed(5) }));
 result(C.w3before === 0 && C.w3at > 0, 'crisp: the last word waits for its own onset, 21 f after the first', `${C.w3before} -> ${C.w3at}`);
@@ -197,14 +201,14 @@ result(!['arc', 'assemble', 'decode', 'typeFocus', 'erode'].some((p) => P.end.in
 
 // 5. the confident moves (the house numbers in the header of src/fx/TypePresets.tsx)
 const K = P.mask;
-result(K.gaps.every((d) => near(d, 8)) && near(K.heads.at(-1), 20) && K.heads.slice(0, -1).every((h) => near(h, 8)), 'mask: words 8 f apart, an 8 f head, the last word 2.5x as long', `${K.gaps.join('/')} | ${K.heads.join('/')}`);
+result(phrased(K.gaps, 8) && K.gaps.at(-1) === Math.max(...K.gaps) && near(K.heads.at(-1), 20) && K.heads.slice(0, -1).every((h) => near(h, 8)), 'mask: words 8 f apart on average, phrased into the last (the longest gap before it), an 8 f head, the last word 2.5x as long', `${K.gaps.join('/')} | ${K.heads.join('/')}`);
 result(K.f0.opacity === 0 && near(K.f0.clip, 1.02) && near(K.f0.dy, 1.05) && near(K.f8.dy, K.dy8, 1e-6) && K.f4.dy > 0.55 && K.f4.dy < 0.75 && K.f12.dy < 0.08 && K.f20.dy < 0.025,
   'mask: under the mask on its first frame, a near-linear head (85 % of 1.05 em in 8 f) that stops dead', JSON.stringify({ f4: +K.f4.dy.toFixed(3), f8: +K.f8.dy.toFixed(4), f12: +K.f12.dy.toFixed(4) }));
 const L = P.land;
 result(near(L.s0, 1.7) && near(L.s34, 1) && L.s17 > 1.03 && L.s17 < 1.2 && near(L.b0, 0.05 * 0.7, 1e-9) && L.b34 === 0, 'land: cuts in at x1.7, lands on E.glideOut in 34 f, a slight defocus riding the scale (sharp as it lands)', JSON.stringify({ s17: +L.s17.toFixed(3), b0: +L.b0.toFixed(3) }));
 result(L.on[2] === L.landed && near(L.on[3] - L.on[2], 12) && L.w2before === 0 && near(L.w2at, 0.45) && near(L.w2solid, 1), 'land: with a lead, the other words append 12 f apart once it has landed, cut on at 45 % and solid in 6 f', JSON.stringify(L.on));
 const Y = P.fly;
-result(Y.on.join() === '0,10,20' && near(Y.s0, 5) && near(Y.s14, 1) && Y.s7 > 1 && Y.s7 < 1.3 && near(Y.s0w1, 5) && Y.b14 === 0, 'fly: every word flies in from x5 and lands in 14 f (log scale on E.snapOut), 10 f after the last', JSON.stringify({ s7: +Y.s7.toFixed(3) }));
+result(Y.on[0] === 0 && near(Y.on.at(-1), 20, 1e-6) && !near(Y.on[1], 10, 0.5) && near(Y.s0, 5) && near(Y.s14, 1) && Y.s7 > 1 && Y.s7 < 1.3 && Y.s0w1 > 2.5 && Y.s0w1 <= 5 && Y.b14 === 0, 'fly: every word flies in from x5 and lands in 14 f (log scale on E.snapOut), 10 f after the last', JSON.stringify({ s7: +Y.s7.toFixed(3), on: Y.on, s0w1: Y.s0w1, s0: Y.s0, s14: Y.s14, b14: Y.b14 }));
 result(near(Y.open, 42) && near(Y.dxShut, -0.56, 1e-6) && Math.abs(Y.dxOpen) < 1e-9, 'fly: the words land touching; 8 f after the last lands the spaces open in 10 f', JSON.stringify({ shut: Y.dxShut, open: Y.dxOpen }));
 const S = P.snap;
 result(S.at === 20 && near(S.before, 1 / 2.2, 1e-9) && S.at1 === 1 && S.last0 === 0 && near(S.lastAt, 0.16) && S.decl.some((r) => r.from === 20 && r.to === 21),
@@ -214,10 +218,10 @@ const D = R.xs[0] > 0 ? 2.24 : NaN; // 'You are' centred in a 15-letter mono lin
 result(R.jump === 44 && near((R.xs[2] - R.xs[3]) / D, 0.675, 0.01) && R.xs[0] > R.xs[2] && Math.abs(R.xs[5]) < 0.01 && R.lastBefore === 0 && R.lastAt === 1 && R.decl.some((r) => r.from === 44 && r.to === 45),
   'room: the held words creep, cover 67.5 % in ONE declared frame and settle; the last word cuts on in the room', R.xs.map((x) => x.toFixed(3)).join('/'));
 const G = P.glide;
-result(G.ons.every((d) => near(d, 3.5)) && near(G.x0, 2.4) && Math.abs(G.x96) < 1e-9 && G.w0.opacity > 0.2 && G.w0.opacity < 1 && G.w0.blur > 0 && near(G.w0end.opacity, 1) && G.w0end.blur === 0,
-  'glide: the set line slides in 2.4 em and slows into a drift; words resolve left to right 3.5 f apart, solid in 8 f', JSON.stringify({ w0: [+G.w0.opacity.toFixed(3), +G.w0.blur.toFixed(4)] }));
+result(phrased(G.ons, 3.5) && near(G.x0, 2.4) && Math.abs(G.x96) < 1e-9 && G.w0.opacity > 0.2 && G.w0.opacity < 1 && G.w0.blur > 0 && near(G.w0end.opacity, 1) && G.w0end.blur === 0,
+  'glide: the set line slides in 2.4 em and slows into a drift; words resolve left to right 3.5 f apart on average (phrased), solid in 8 f', JSON.stringify({ w0: [+G.w0.opacity.toFixed(3), +G.w0.blur.toFixed(4)] }));
 const F = P.fall;
-result(F.f1.dy < 0 && F.f1.smear[1] < 0 && F.f1.opacity >= 0.4 && F.f1.opacity < 1 && F.f12.dy === 0 && F.f12.opacity === 1 && near(F.gap, 9), 'fall: each word drops into place from above in 12 f, trailing a short smear, 9 f apart', JSON.stringify({ dy1: +F.f1.dy.toFixed(3) }));
+result(F.f1.dy < 0 && F.f1.smear[1] < 0 && F.f1.opacity >= 0.4 && F.f1.opacity < 1 && F.f12.dy === 0 && F.f12.opacity === 1 && F.gap < 9, 'fall: each word drops into place from above in 12 f, trailing a short smear, 9 f apart on average (phrased: the first gap the quickest)', JSON.stringify({ dy1: +F.f1.dy.toFixed(3) }));
 const O = P.open;
 result(O.on.join() === '0,12,19' && near(O.f0.blur, 0.05) && near(O.f2.blur, 0.05 * 0.41, 1e-9) && O.f0.color === O.f6.color && O.f30.color !== O.f0.color && O.smear > 0,
   'open: a new word cuts on soft (falling to 0.41 a 30 fps frame) and in the accent, holds 6 f and cools; the re-centre trails', JSON.stringify({ blur2: O.f2.blur, smear: +O.smear.toFixed(4) }));

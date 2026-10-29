@@ -3,6 +3,7 @@ import { AbsoluteFill } from 'remotion';
 import { C, TYPE, U } from '../brand/tokens';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
+import { phrase } from '../lib/cadence';
 import { DEAL, NAME_MOVE } from '../deal';
 import { Lit } from '../fx/Lit';
 import { E, hitPulse, lmix, prog } from '../lib/anim';
@@ -11,6 +12,9 @@ import { ACT, copy, CUE, f60x, FPS, H, moveOf, W } from '../timeline';
 import { PageFace } from './Page';
 import { drift, Ground, GROUNDS, lineSize, themeOf, useAbs } from './stage';
 import { HeroLine } from './type';
+
+/** The mark's parts land phrased, the last after a held beat (it carries the glint): lib/cadence, the span of a 6 f stagger. */
+const PART_ON = phrase(LOGO.parts.length, f60x(6), { shape: 'settle', seed: 'mark-parts', whole: false }).onsets;
 
 // END - the lockup, built from the mark's own parts: they arrive in turn, the name is set beside them on a confident
 // move (never letter by letter) and the payoff line arrives under it on its dealt move. By the dealt device: 'side'
@@ -53,7 +57,7 @@ export const End: React.FC = () => {
             size={markSize}
             fill={(part) => (t.dark && part.items.some((it) => it.fill?.toLowerCase() === C.ink.toLowerCase()) ? t.text : undefined)} // the mark's ink parts read on a dark ground
             poses={(_, j) => {
-              const p = prog(F, CUE.mark + j * f60x(6), CUE.mark + f60x(30) + j * f60x(6), E.glideOut);
+              const p = prog(F, CUE.mark + PART_ON[j], CUE.mark + f60x(30) + PART_ON[j], E.glideOut);
               const glint = j === LOGO.parts.length - 1 ? 0.05 * hitPulse(F - CUE.rest, 4, 14, FPS) : 0;
               return { y: (1 - p) * 46, o: Math.min(1, p * 2), s: 1 + glint };
             }}

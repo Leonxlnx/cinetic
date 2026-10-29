@@ -1,7 +1,7 @@
 import React from 'react';
 import { C, TYPE } from '../brand/tokens';
 import { arrive, arriveK, blurIn, blurOut, clamp, depart, E, type Ease, easeOf, M, type Pace, prog } from '../lib/anim';
-import { accel, reading } from '../lib/cadence';
+import { accel, phrase, reading } from '../lib/cadence';
 import { accentFade, accentT, mixColor, mixRgb } from '../lib/color';
 import { defocusLevel } from '../lib/defocus';
 import { f60, f60x, type FilmCtx, fpsOf, paceOf, uOf, useFilm } from '../lib/film';
@@ -27,9 +27,11 @@ import { edgeMask } from './Wipe';
  * smooth to its last frame. A 1.1 pace (no riseUnit) keeps the 1.1 reveal exactly: the rise rides the
  * fade's curve and stops through arrive() (vertical text snaps to whole pixels without a layer).
  *
- * Cadence: 'even', 'reading', 'accelerate' (gaps shrinking from the stagger to half of it, each word
- * quicker too: a payoff) or a list of gaps in 60 fps frames (ACCEL.rows, ACCEL.montage ...). `starts`
- * still wins when given; `durs` gives each word its own fade.
+ * Cadence: 'phrase' (the house when nothing is named: lib/cadence phrase, the gaps growing into the last
+ * word, which lands after a held beat; the span of an even stagger, so `resolved` is unchanged), 'even'
+ * (a metronome: only when the device needs it), 'reading', 'accelerate' (gaps shrinking from the stagger
+ * to half of it, each word quicker too: a payoff) or a list of gaps in 60 fps frames (ACCEL.rows,
+ * ACCEL.montage ...). `starts` still wins when given; `durs` gives each word its own fade.
  *
  * Exits (`exit`, default the pace's):
  *   together    1.1: the fragment fades on E.smooth while it lifts `pace.exitLift` em on E.exit.
@@ -61,7 +63,7 @@ export type WordsSpec = {
   starts?: number[];
   pace?: Pace;
   stagger?: number; // film frames between word starts (the mean gap on the reading cadence)
-  cadence?: 'even' | 'reading' | 'accelerate' | number[]; // number[]: gaps in 60 fps frames
+  cadence?: 'phrase' | 'even' | 'reading' | 'accelerate' | number[]; // number[]: gaps in 60 fps frames
   accelTo?: number; // 'accelerate': the last gap as a share of the first (default 0.5)
   dur?: number; // film frames of one word's fade
   durs?: number[]; // film frames, per word
@@ -200,7 +202,7 @@ const splitWords = (text: string) => text.split(' ');
  */
 export const cadenceOffsets = (
   words: string[],
-  cadence: 'even' | 'reading' | 'accelerate' | number[],
+  cadence: 'phrase' | 'even' | 'reading' | 'accelerate' | number[],
   stagger: number,
   fps: number,
   accelTo: number = WORDS_HOUSE.accelTo,
@@ -223,6 +225,7 @@ export const cadenceOffsets = (
     const a = accel(n, stagger, stagger * accelTo, 'geometric');
     return { onsets: a.onsets, durScale: a.durScale };
   }
+  if (cadence === 'phrase') return { onsets: phrase(n, stagger, { shape: 'settle', seed: words.join(' ') }).onsets, durScale: ones };
   return { onsets: words.map((_, i) => Math.round(i * stagger)), durScale: ones };
 };
 
@@ -237,7 +240,7 @@ const knobs = (o: WordsSpec, film?: Partial<FilmCtx>) => {
   const words = splitWords(o.text);
   const n = words.length;
   const st = o.stagger ?? f60(pace.stagger, fps);
-  const cadence = o.cadence ?? pace.cadence ?? 'even';
+  const cadence = o.cadence ?? pace.cadence ?? 'phrase';
   const cad = cadenceOffsets(words, cadence, cadence === 'reading' ? (o.stagger ?? f60x(pace.stagger, fps)) : st, fps, o.accelTo);
   const d = o.dur ?? f60x(pace.wordDur, fps);
   const e = o.ease ?? easeOf(pace);

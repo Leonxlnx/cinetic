@@ -2,15 +2,16 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { U } from '../brand/tokens';
 import { DEAL } from '../deal';
+import { phraseOnsets } from '../lib/cadence';
 import { DirBlur } from '../fx/Defocus';
 import { Lit } from '../fx/Lit';
 import { Spinner } from '../fx/Loaders';
-import { countLinear } from '../fx/Roll';
+import { countTo } from '../fx/Roll';
 import { TypeOn } from '../fx/TypeOn';
 import { Check, ContentTile, DataRow, face, KIT_TYPE, Row, Surface, surfaceShadow } from '../kit';
 import { clamp, E, lmix, mix, prog } from '../lib/anim';
 import { mixColor } from '../lib/color';
-import { CUE, f60x, FPS, H, W } from '../timeline';
+import { CUE, f60x, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { WHIP_LEFT } from './Insight';
 import { carryIn, drift, Ground, GROUNDS, ScriptLine, themeOf, useAbs } from './stage';
@@ -30,8 +31,10 @@ const TILTED: React.CSSProperties = { position: 'absolute', inset: 0, transformO
 const BUILD = { w: 1240 * U, h: 700 * U, cy: 790 * U } as const; // its foot runs off the frame
 /** The camera onto the chosen row: x1.22, a 40 f settle. */
 const zoomAt = (F: number) => lmix(1, 1.22, prog(F, CUE.select, CUE.select + f60x(40), E.settleOut));
-/** The build's progress 0..99 (it never shows 100 before the page takes over). */
-const pctAt = (F: number) => Math.min(99, Math.floor(countLinear(F, { from: 0, perSec: 38, start: CUE.build }, { fps: FPS }).value));
+/** The options' onsets: phrased (lib/cadence), the first most of the way in on the cut. */
+const OPTION_AT = phraseOnsets(CUE.options - f60x(14), WALK.options.length, f60x(5), { shape: 'rush', seed: `${WALK.name}:options` });
+/** The build's progress 0..99 (it never shows 100 before the page takes over): a count that eases out and settles (countTo), never a linear tick. */
+const pctAt = (F: number) => countTo(F, { from: 0, to: 99, start: CUE.build, dur: f60x(150) });
 
 /** The output being built: a lit panel whose preview develops and whose sections arrive by the dealt device. */
 const Build: React.FC<{ F: number }> = ({ F }) => {
@@ -40,7 +43,8 @@ const Build: React.FC<{ F: number }> = ({ F }) => {
   const pad = 36 * U;
   const enter = prog(F, CUE.build - f60x(6), CUE.build + f60x(40), E.settleOut);
   const node = { glyph: 'doc' as const, label: WALK.page.headline, sub: WALK.page.sub, preview: 'doc' as const, seed: `${WALK.name}:build` };
-  const rowAt = (i: number) => CUE.build + f60x(16) + i * f60x(DEAL.build === 'assemble' ? 14 : 10);
+  const rows = phraseOnsets(CUE.build + f60x(16), WALK.page.rows.length, f60x(DEAL.build === 'assemble' ? 14 : 10), { shape: 'settle', seed: `${WALK.name}:build` }); // lib/cadence: phrased into the last section, never a metronome
+  const rowAt = (i: number) => rows[Math.min(i, rows.length - 1)];
   return (
     <Lit frame={F} x={W / 2} y={BUILD.cy} w={BUILD.w} h={BUILD.h} r={34 * U} tilt={{ x: 11, y: 9 }} ground={GROUNDS.pick.base} enter={{ at: CUE.build - f60x(6), dur60: 46 }} id="build">
       <Surface theme={t} w={BUILD.w} h={BUILD.h} lift={4} r={34 * U}>
@@ -107,7 +111,7 @@ export const Pick: React.FC = () => {
           </div>
           <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${oy}px`, transform: `scale(${zoom.toFixed(5)})` }}>
             {WALK.options.map((o, i) => {
-              const at = CUE.options - f60x(14) + i * f60x(5); // the first row is most of the way in on the cut: the whip lands on content
+              const at = OPTION_AT[i]; // the first row is most of the way in on the cut: the whip lands on content
               const p = prog(F, at, at + f60x(30), E.glideOut);
               const chosen = i === pick;
               if (F < at || (chosen && headOn) || (!chosen && gone >= 1)) return null;

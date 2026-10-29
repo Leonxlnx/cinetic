@@ -3,6 +3,7 @@ import { AbsoluteFill } from 'remotion';
 import { C, TYPE, typeStyle, U } from '../brand/tokens';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
+import { phrase } from '../lib/cadence';
 import { Defocus } from '../fx/Defocus';
 import { TypeOn } from '../fx/TypeOn';
 import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
@@ -11,6 +12,9 @@ import { measureTracked } from '../lib/measure';
 import { REEL } from '../reel';
 import { ACT, copy, CUE, f60, f60x, FPS, H, TITLE_LEAD, TITLE_TYPE, W } from '../timeline';
 import { INK, lineSize, useAbs } from './stage';
+
+/** The mark's parts land phrased, the last after a held beat (it carries the glint): lib/cadence, the span of a 4 f stagger. */
+const PART_ON = phrase(LOGO.parts.length, f60x(4), { shape: 'settle', seed: 'mark-parts', whole: false }).onsets;
 
 // END - on the ink the flood left: the title's name (its first word, or every word of a longer name) pops, the rest
 // types on as the title rises a little; the mark's parts rise beside it once the title is typed. The key passes once
@@ -44,7 +48,7 @@ export const End: React.FC = () => {
             size={markSize}
             fill={(part) => (part.items.some((it) => it.fill?.toLowerCase() === C.ink.toLowerCase()) ? t.text : undefined)} // the mark's ink parts read on the dark ground
             poses={(_, j) => {
-              const p = prog(F, CUE.mark + j * f60x(4), CUE.mark + f60x(22) + j * f60x(4), E.snapOut);
+              const p = prog(F, CUE.mark + PART_ON[j], CUE.mark + f60x(22) + PART_ON[j], E.snapOut);
               const glint = j === LOGO.parts.length - 1 ? 0.1 * hitPulse(F - CUE.rest, 2, 9, FPS) : 0;
               return { y: (1 - p) * 40, o: p, s: 1 + glint };
             }}
