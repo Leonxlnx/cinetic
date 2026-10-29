@@ -6,6 +6,7 @@
 // import it (the declarations follow the deal: the flash frame only with the flash cut, the colour event only with
 // the claim). Pin a device in src/teaser.ts `deal.devices` once the direction asks for it.
 import { TEASER } from './teaser';
+import { compositionApart, declareHeadlines } from './fx/TypeSystem';
 
 /** The slots and their devices, in act order. The first device of each slot is the template's own. */
 export const SLOTS = {
@@ -29,6 +30,19 @@ export const SLOTS = {
   /** the end mark: two comets meeting, or the mark assembling from its parts */
   end: ['comets', 'assemble'],
 } as const;
+
+/**
+ * What each device does to the frame, for the slots whose devices change the composition (where the type sits, where
+ * the picture sits, which leads): a film's deal must move the frame, not only rename the devices (dealApart). The
+ * voice, the input, the cut and the launch (one line, one box, one close-up in the middle) and the end (the mark in the
+ * middle) change none.
+ */
+export const COMPOSITION: { [S in keyof typeof SLOTS]?: Record<string, string> } = {
+  window: { yaw: 'one window turning in 3D', pitch: 'one window turning in 3D', split: 'code beside the live app, two panes' },
+  cards: { stack: 'notices stacked in depth in the middle', wall: 'notices landing on a wall of tiles', ring: 'notices riding a ring of tiles' },
+  page: { cascade: 'cards climbing a page', panel: 'one lit panel front on' },
+  stages: { brackets: 'the stages in corner brackets', push: 'the stages in a row the camera pushes through', claim: 'type at poster size on the accent' },
+};
 
 export type Slot = keyof typeof SLOTS;
 export type Device<S extends Slot> = (typeof SLOTS)[S][number];
@@ -91,15 +105,18 @@ const FLOOR_SEED = hashSeed('[Product]');
 export const FLOOR: Deal = dealDevices('[Product]');
 /**
  * A film is never the template replayed: of the slots it deals (pins aside), at least half play another device than
- * the floor's, or it re-deals from the next seed (the first seed that differs keeps its deal). The unnamed scaffold
- * keeps the floor.
+ * the floor's, and at least half of those that carry a composition (COMPOSITION) play another composition, so the
+ * frame moves (where the type and the picture sit, which leads), not only the devices' names; else it re-deals from
+ * the next seed (the first seed that differs keeps its deal). The unnamed scaffold keeps the floor. On the pixels:
+ * render the untouched template once (out/scaffold.mp4) and run `python3 scripts/like.py guard --film out/film.mp4
+ * --scaffold out/scaffold.mp4` before delivery: no frame retold, no composition re-skinned.
  */
 export const dealApart = (seed: string | number, pin: Partial<Deal> = {}): Deal => {
   const s0 = hashSeed(seed);
   const free = (Object.keys(SLOTS) as Slot[]).filter((s) => pin[s] === undefined);
   for (let k = 0; s0 !== FLOOR_SEED && k < 64; k++) {
     const d = dealDevices(k ? (s0 + k * 104729) >>> 0 : seed, pin);
-    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length) return d;
+    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length && compositionApart(d, FLOOR, COMPOSITION, free).ok) return d;
   }
   return dealDevices(seed, pin);
 };
@@ -115,3 +132,10 @@ export const DEAL: Deal = dealApart(TEASER.deal.seed ?? TEASER.name, TEASER.deal
 for (const [k, v] of Object.entries(DEAL)) {
   if (!(SLOTS[k as Slot] as readonly string[]).includes(v)) throw new Error(`deal.ts: "${v}" is not a device of slot "${k}" (${SLOTS[k as Slot].join(', ')})`);
 }
+
+/**
+ * The lines this teaser's acts set in one headline system whatever the line deal plays (fx/TypeSystem): what it is as
+ * a stack when it has four words or more (acts/stage StatementLine). acts/stage.tsx deals the other lines' devices
+ * round it (fx/TypeEmphasis dealLineEmphasis reads this for the film's seed).
+ */
+export const HEADLINES_SET = declareHeadlines(DEAL_SEED, { what: TEASER.lines.what.split(' ').filter(Boolean).length >= 4 ? 'stack' : undefined });

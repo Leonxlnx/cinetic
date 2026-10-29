@@ -4,6 +4,7 @@
 // "slots" says what each device does. Print the deal: npx tsx -e "import { DEAL, LINES } from './src/deal'; console.log(DEAL, LINES)"
 // Node-safe: the timeline and the sound read it.
 import { IDENTITY } from './brand/identity';
+import { compositionApart } from './fx/TypeSystem';
 
 /** Each slot and the devices it can take (the first is no more the default than the others). */
 export const SLOTS = {
@@ -18,6 +19,17 @@ export const SLOTS = {
   /** the end card: the version recedes into the set and the lockup is set before it; or the version settles beside the name as one lockup */
   end: ['set', 'beside'],
 } as const;
+
+/**
+ * What each device does to the frame, for the slots whose devices change the composition (where the type sits, where
+ * the picture sits, which leads): a film's deal must move the frame, not only rename the devices (dealApart). The stage
+ * (a palette) and the hook (one line in the middle) change none.
+ */
+export const COMPOSITION: { [S in keyof typeof SLOTS]?: Record<string, string> } = {
+  turn: { yaw: 'the strip seen from the side as the camera travels', pitch: 'the strip seen from above' },
+  payoff: { pull: 'every change in view, the version in front', rise: 'one change out of focus, the version rising in front' },
+  end: { set: 'the version receding, the lockup before it', beside: 'the version beside the name, one lockup' },
+};
 
 export type SlotName = keyof typeof SLOTS;
 export type DeviceOf<S extends SlotName> = (typeof SLOTS)[S][number];
@@ -66,14 +78,17 @@ const FLOOR_SEED = hashSeed('Quorum');
 export const FLOOR: Deal = dealDevices(FLOOR_SEED);
 /**
  * A film is never the template replayed: of the slots it deals (pins aside), at least half play another device than
- * the floor's, or it re-deals from the next seed (the first seed that differs keeps its deal). The unnamed scaffold
- * keeps the floor.
+ * the floor's, and at least half of those that carry a composition (COMPOSITION) play another composition, so the
+ * frame moves (where the type and the picture sit, which leads), not only the devices' names; else it re-deals from
+ * the next seed (the first seed that differs keeps its deal). The unnamed scaffold keeps the floor. On the pixels:
+ * render the untouched template once (out/scaffold.mp4) and run `python3 scripts/like.py guard --film out/film.mp4
+ * --scaffold out/scaffold.mp4` before delivery: no frame retold, no composition re-skinned.
  */
 export const dealApart = (seed: number, pin: Partial<Deal> = {}): Deal => {
   const free = (Object.keys(SLOTS) as SlotName[]).filter((s) => pin[s] === undefined);
   for (let k = 0; seed !== FLOOR_SEED && k < 64; k++) {
     const d = dealDevices(k ? (seed + k * 104729) >>> 0 : seed, pin);
-    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length) return d;
+    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length && compositionApart(d, FLOOR, COMPOSITION, free).ok) return d;
   }
   return dealDevices(seed, pin);
 };

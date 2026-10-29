@@ -4,6 +4,7 @@
 // template.json "slots" says what each device does. Print the deal: npx tsx -e "import { DEAL } from './src/deal'; console.log(DEAL)"
 // Node-safe: the timeline and the sound read it.
 import { IDENTITY } from './brand/identity';
+import { compositionApart } from './fx/TypeSystem';
 
 /** Each slot and the devices it can take (the first is no more the default than the others). */
 export const SLOTS = {
@@ -26,6 +27,20 @@ export const SLOTS = {
   /** the end card: the lockup beside the output, live, lit and cropped by the edge; the lockup alone in the middle of a clean ground */
   end: ['side', 'centre'],
 } as const;
+
+/**
+ * What each device does to the frame, for the slots whose devices change the composition (where the type sits, where
+ * the picture sits, which leads): a film's deal must move the frame, not only rename the devices (dealApart). The
+ * stage (a palette), the turn and the build (one card or panel in the middle whatever plays) change none.
+ */
+export const COMPOSITION: { [S in keyof typeof SLOTS]?: Record<string, string> } = {
+  open: { line: 'type centre, the mark inside the line, type leads', push: 'type centre, the mark inside the line, the mark leads', card: 'type high, the card below, the card leads' },
+  proof: { stack: 'a stack of notices in the middle', river: 'a column of notices through depth', wall: 'tiles fill the frame' },
+  claim: { accent: 'type flush left at poster size, no picture', push: 'type centre pushed into, no picture', object: 'type centre, an object inside the line' },
+  read: { lens: 'one dense screen fills the frame', flick: 'one column in the middle', ticker: 'rows across the frame in depth' },
+  page: { lit: 'one page in the middle', stack: 'the page between its siblings in depth' },
+  end: { side: 'type left, the output cropped by the right edge', centre: 'type centre on a clean ground' },
+};
 
 export type SlotName = keyof typeof SLOTS;
 export type DeviceOf<S extends SlotName> = (typeof SLOTS)[S][number];
@@ -56,14 +71,19 @@ const rng = (seed: number) => {
   };
 };
 
-/** One device per slot from `seed` (pins win). Pure. */
+/**
+ * One device per slot from `seed` (pins win). The promise always sets the input's mark inside its line (acts/Open
+ * MarkLine), so the claim right after it never deals the object inside the line too (two lines in a row in one
+ * headline system, fx/TypeSystem); a film may still pin it. Pure.
+ */
 export const dealDevices = (seed: number, pin: Partial<Deal> = {}): Deal => {
   const r = rng(seed);
   const out: Record<string, string> = {};
-  for (const [slot, devices] of Object.entries(SLOTS) as [string, readonly string[]][]) {
+  for (const [slot, all] of Object.entries(SLOTS) as [string, readonly string[]][]) {
+    const devices = slot === 'claim' ? all.filter((d) => d !== 'object') : all;
     const dealt = devices[Math.floor(r() * devices.length)];
     const p = (pin as Record<string, string | undefined>)[slot];
-    if (p !== undefined && !devices.includes(p)) throw new Error(`deal.ts: PIN.${slot} is "${p}"; the slot takes ${devices.join(', ')}`);
+    if (p !== undefined && !all.includes(p)) throw new Error(`deal.ts: PIN.${slot} is "${p}"; the slot takes ${all.join(', ')}`);
     out[slot] = p ?? dealt;
   }
   return out as Deal;
@@ -74,14 +94,17 @@ const FLOOR_SEED = hashSeed('[Product]');
 export const FLOOR: Deal = dealDevices(FLOOR_SEED);
 /**
  * A film is never the template replayed: of the slots it deals (pins aside), at least half play another device than
- * the floor's, or it re-deals from the next seed (the first seed that differs keeps its deal). The unnamed scaffold
- * keeps the floor.
+ * the floor's, and at least half of those that carry a composition (COMPOSITION) play another composition, so the
+ * frame moves (where the type and the picture sit, which leads), not only the devices' names; else it re-deals from
+ * the next seed (the first seed that differs keeps its deal). The unnamed scaffold keeps the floor. On the pixels:
+ * render the untouched template once (out/scaffold.mp4) and run `python3 scripts/like.py guard --film out/film.mp4
+ * --scaffold out/scaffold.mp4` before delivery: no frame retold, no composition re-skinned.
  */
 export const dealApart = (seed: number, pin: Partial<Deal> = {}): Deal => {
   const free = (Object.keys(SLOTS) as SlotName[]).filter((s) => pin[s] === undefined);
   for (let k = 0; seed !== FLOOR_SEED && k < 64; k++) {
     const d = dealDevices(k ? (seed + k * 104729) >>> 0 : seed, pin);
-    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length) return d;
+    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length && compositionApart(d, FLOOR, COMPOSITION, free).ok) return d;
   }
   return dealDevices(seed, pin);
 };

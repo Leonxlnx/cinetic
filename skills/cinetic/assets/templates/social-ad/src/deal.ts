@@ -25,6 +25,7 @@
 //   end       spin      the mark spins in, steps aside, the name slides out; the close rises under them
 //             rise      the mark and the name rise out of a mask on their baseline; the close rises under them
 import { AD } from './ad';
+import { compositionApart, declareHeadlines } from './fx/TypeSystem';
 
 export const DEVICES = {
   open: ['land', 'build'],
@@ -35,6 +36,18 @@ export const DEVICES = {
   taglines: ['panel', 'claim'],
   end: ['spin', 'rise'],
 } as const;
+
+/**
+ * What each device does to the frame, for the slots whose devices change the composition (where the type sits, where
+ * the picture sits, which leads): a film's deal must move the frame, not only rename the devices (dealApart). The open
+ * (one line in the middle either way), the brand and the end (the mark in the middle) change none.
+ */
+export const COMPOSITION: { [S in keyof typeof DEVICES]?: Record<string, string> } = {
+  stack: { pile: 'the items dealt onto one hero tile in the middle', fan: 'the hero tile aside, the items fanned across in 3D' },
+  field: { wall: 'the claim inside a wall of tiles', ring: 'the claim inside a ring of tiles in orbit', depth: 'the claim on the middle of three planes in depth' },
+  label: { rivers: 'the label over two diagonal streams of tiles', ticker: 'the label over rows of tiles across in depth', screen: 'the label as a chip over one dense screen' },
+  taglines: { panel: 'type beside a tilted screen panel', claim: 'type at poster size on the accent, no picture' },
+};
 
 export type Slot = keyof typeof DEVICES;
 export type Dealt = { [S in Slot]: (typeof DEVICES)[S][number] };
@@ -84,14 +97,17 @@ const FLOOR_SEED = seedOf('[Product]');
 export const FLOOR: Dealt = deal(FLOOR_SEED);
 /**
  * A film is never the template replayed: of the slots it deals (pins aside), at least half play another device than
- * the floor's, or it re-deals from the next seed (the first seed that differs keeps its deal). The unnamed scaffold
- * keeps the floor.
+ * the floor's, and at least half of those that carry a composition (COMPOSITION) play another composition, so the
+ * frame moves (where the type and the picture sit, which leads), not only the devices' names; else it re-deals from
+ * the next seed (the first seed that differs keeps its deal). The unnamed scaffold keeps the floor. On the pixels:
+ * render the untouched template once (out/scaffold.mp4) and run `python3 scripts/like.py guard --film out/film.mp4
+ * --scaffold out/scaffold.mp4` before delivery: no frame retold, no composition re-skinned.
  */
 export const dealApart = (seed: number, pinned: Partial<Record<string, string>> = {}): Dealt => {
   const free = SLOTS.filter((s) => pinned[s] === undefined);
   for (let k = 0; seed !== FLOOR_SEED && k < 64; k++) {
     const d = deal(k ? (seed + k * 104729) >>> 0 : seed, pinned);
-    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length) return d;
+    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length && compositionApart(d, FLOOR, COMPOSITION, free).ok) return d;
   }
   return deal(seed, pinned);
 };
@@ -102,3 +118,16 @@ export const dealOf = (name: string): Dealt => dealApart(seedOf(name));
 export const SEED: number = AD.seed ?? seedOf(AD.name);
 /** The devices this film plays, slot by slot. */
 export const DEAL: Dealt = dealApart(SEED, AD.devices);
+
+/**
+ * The lines this ad's acts set in one headline system whatever the line deal plays (fx/TypeSystem): the opener as a
+ * stack when it has four words or more (acts/Open StatementLine), the taglines at poster size on the accent when the
+ * claim plays them (acts/Taglines AccentClaim), the label's swapped word (acts/Label). acts/stage.tsx deals the other
+ * lines' devices round them (fx/TypeEmphasis dealLineEmphasis reads this for the film's seed).
+ */
+export const HEADLINES_SET = declareHeadlines(SEED, {
+  what: AD.lines.what.split(' ').filter(Boolean).length >= 4 ? 'stack' : undefined,
+  'tag.1': DEAL.taglines === 'claim' ? 'giant' : undefined,
+  'tag.2': DEAL.taglines === 'claim' ? 'giant' : undefined,
+  swap: 'swap',
+});

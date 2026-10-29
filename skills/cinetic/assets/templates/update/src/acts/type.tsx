@@ -9,7 +9,8 @@
 import React, { useMemo } from 'react';
 import { FONT, TYPE, U } from '../brand/tokens';
 import { DEAL_SEED, LINE_IDS } from '../deal';
-import { dealLineEmphasis, type EmphasisName, type EmphasisSpec, keysOf } from '../fx/TypeEmphasis';
+import { checkLineHeadlines, dealLineHeadlines, type EmphasisName, type EmphasisSpec, keysOf } from '../fx/TypeEmphasis';
+import type { HeadlineSystem } from '../fx/TypeSystem';
 import { emphasisFitSize, measureLine, TypeLine, typeLineSpec, typeLineState, type TypeExit, type TypeLineSpec, type TypePresetName, wordMap } from '../fx/TypePresets';
 import { capHeight, type KitTheme } from '../kit';
 import { InlineObject, inlineWidth, type InlineRef } from '../kit/inline';
@@ -19,12 +20,21 @@ import { UPDATE } from '../update';
 
 /** Pin a line's emphasis by id (a device name, or false for none); the rest are dealt. */
 export const EMPH_PIN: Partial<Record<string, EmphasisName | false>> = {};
+/** The change lines the acts set in one system: a change written with "[]" carries its object inside the line (acts/World MarkLine). */
+export const GIVEN: Partial<Record<string, HeadlineSystem>> = Object.fromEntries(
+  UPDATE.changes.map((ch, i) => [`change${i + 1}`, ch.words.includes('[]') ? ('inline' as const) : undefined]).filter(([, s]) => s),
+);
 /**
- * Every change line sets its key words apart (fx/TypeEmphasis): one device per line dealt from the film's seed, never the
- * same twice in a row, on the words update.ts names as the change's `key` (else its last word); the name and the version
- * on the end card take none.
+ * Every change line is set in a headline system dealt per film round the given ones (fx/TypeSystem: plain, front,
+ * marker, rule, swell; never one system on two lines in a row, none on more than two), its device (fx/TypeEmphasis)
+ * on the words update.ts names as the change's `key` (else its last word); the name and the version on the end card
+ * take none.
  */
-export const EMPH = dealLineEmphasis([...LINE_IDS, 'wordmark', 'version'], DEAL_SEED, { none: ['wordmark', 'version'], pin: EMPH_PIN });
+export const HEADLINES = dealLineHeadlines([...LINE_IDS, 'wordmark', 'version'], DEAL_SEED, { none: ['wordmark', 'version'], pin: EMPH_PIN, systems: GIVEN });
+/** Each line's emphasis device (its system's). */
+export const EMPH: Record<string, EmphasisName | false> = Object.fromEntries(Object.entries(HEADLINES).map(([id, h]) => [id, h.emph]));
+/** The film's systems in order, checked (fx/TypeSystem checkSystems); two changes written with "[]" in a row repeat one system. */
+export const HEADLINE_CHECK = checkLineHeadlines(LINE_IDS, HEADLINES);
 /** A change line's key words: change<n> is the n-th change. */
 const keyWords = (id: string, text: string) => {
   const n = /^change(\d+)$/.exec(id);

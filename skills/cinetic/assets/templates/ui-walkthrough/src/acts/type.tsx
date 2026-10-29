@@ -1,9 +1,12 @@
 // The film's lines of type: one clean line at a time, each on a confident move dealt per film (src/deal.ts LINE_MOVE:
 // fx/TypePresets mask, land, fall, glide, fly or open, every word solid ink within a few frames and moving while it
 // lands), leaving at speed on a dealt exit (slide, spread, collapse, push or drop: none fades a statement out).
-// Every line sets its key words apart (fx/TypeEmphasis): one device per line dealt from the film's seed (EMPH below:
-// weight, scale, swell, marker, box, under, outline or sweep, never the same twice in a row), on the words written
-// named in src/walk.ts `keys` ("[outputs]" in "[Product] turns [] [inputs] into [outputs]."), else on its last word.
+// Every line is set in a headline system dealt per film (fx/TypeSystem, HEADLINES below): the acts set the promise with
+// the input's mark inside it and the claim as a poster, a push or a line with its object inside; the other lines are
+// dealt round them from the systems one line plays by its device (plain, front, marker, rule, swell), never one system
+// on two lines in a row, none on more than two. Each line's device (EMPH: weight, scale, swell, marker, box, under,
+// outline or sweep) comes from its system and lands on the words named in src/walk.ts `keys` ("[outputs]" in
+// "[Product] turns [] [inputs] into [outputs]."), else on its last word.
 // A line with a size device refits so it is no wider than the plain line (emphasisFitSize); the name takes none.
 //   HeroLine  one sentence on its move (fx/TypePresets TypeLine), centred on (x, y)
 //   MarkLine  the same with an object inside the sentence at 1.0 cap height ("[]" marks the place): a real mark
@@ -12,8 +15,9 @@
 //             whatever the move; the objects roll in turn once it has landed.
 import React, { useMemo } from 'react';
 import { FONT, TYPE, U } from '../brand/tokens';
-import { DEAL_SEED, LINE_IDS } from '../deal';
-import { dealLineEmphasis, type EmphasisName, type EmphasisSpec, keysOf } from '../fx/TypeEmphasis';
+import { DEAL, DEAL_SEED, LINE_IDS } from '../deal';
+import { checkLineHeadlines, dealLineHeadlines, type EmphasisName, type EmphasisSpec, keysOf } from '../fx/TypeEmphasis';
+import type { HeadlineSystem } from '../fx/TypeSystem';
 import { emphasisFitSize, measureLine, TypeLine, typeLineSpec, typeLineState, type TypeExit, type TypeLineSpec, type TypePresetName, wordMap } from '../fx/TypePresets';
 import { capHeight, type KitTheme } from '../kit';
 import { InlineObject, inlineWidth, type InlineRef } from '../kit/inline';
@@ -24,10 +28,21 @@ import { measureTracked } from '../lib/measure';
 /** Pin a line's emphasis by id (a device name, or false for none); the rest are dealt. */
 export const EMPH_PIN: Partial<Record<string, EmphasisName | false>> = {};
 /**
- * One emphasis device per line of the script, dealt from the film's seed: the payoff is placed by its measured width
- * (no size device); the name on the end card never takes one.
+ * The lines the acts set in one system whatever is dealt: the promise carries the input's mark inside it (acts/Open
+ * MarkLine); the claim is a poster on the accent (fx/TypeClaim), a push through the line, or carries its object inside
+ * it (acts/Claim). The deal never plays the object right after the promise (src/deal.ts dealDevices).
  */
-export const EMPH = dealLineEmphasis([...LINE_IDS, 'wordmark'], DEAL_SEED, { fixed: ['payoff'], none: ['wordmark'], pin: EMPH_PIN });
+export const GIVEN: Partial<Record<string, HeadlineSystem>> = { promise: 'inline', claim: ({ accent: 'giant', push: 'push', object: 'inline' } as const)[DEAL.claim] };
+/**
+ * One headline system and one device per line of the script, dealt from the film's seed round the given lines: the
+ * payoff is placed by its measured width (a system that keeps it: plain, front or rule); the name on the end card
+ * takes none.
+ */
+export const HEADLINES = dealLineHeadlines([...LINE_IDS, 'wordmark'], DEAL_SEED, { fixed: ['payoff'], none: ['wordmark'], pin: EMPH_PIN, systems: GIVEN });
+/** Each line's emphasis device (its system's). */
+export const EMPH: Record<string, EmphasisName | false> = Object.fromEntries(Object.entries(HEADLINES).map(([id, h]) => [id, h.emph]));
+/** The film's systems in order, checked: no system twice in a row, none on more than two lines (fx/TypeSystem checkSystems). */
+export const HEADLINE_CHECK = checkLineHeadlines(LINE_IDS, HEADLINES);
 
 /** A figure space: the slot's filler glyph (a word of the line, never a break). */
 const FIG = ' ';

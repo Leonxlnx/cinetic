@@ -31,6 +31,7 @@
 //   end      lockup     the mark steps into the lockup, the name beside it; the close rises under them out of a mask
 //            claim      the accent floods from the mark; the close is set as the claim, the lockup small
 import { EXPLAIN } from './explain';
+import { compositionApart, declareHeadlines } from './fx/TypeSystem';
 
 export const DEVICES = {
   open: ['band', 'push', 'focus'],
@@ -42,6 +43,20 @@ export const DEVICES = {
   grid: ['hive', 'ring', 'stack'],
   end: ['lockup', 'claim'],
 } as const;
+
+/**
+ * What each device does to the frame, for the slots whose devices change the composition (where the type sits, where
+ * the picture sits, which leads): a film's deal must move the frame, not only rename the devices (dealApart). The voice
+ * (one line in the middle however it arrives) and the system (a wipe between pictures) change none.
+ */
+export const COMPOSITION: { [S in keyof typeof DEVICES]?: Record<string, string> } = {
+  open: { band: 'the name as one giant word across the frame', push: 'the name and its mark as one line, the mark leads', focus: 'the name oversized in the middle, the mark beside it' },
+  pain: { land: 'one line in the middle', push: 'one line pushed into until its last word leads', crowd: 'the line in front of planes of tools' },
+  promise: { pill: 'a pill opening between the halves', roll: 'objects rolling inside the line', lens: 'the camera through the line into the pill' },
+  picture: { turn: 'one lit tilted screen', stack: 'the screen between cards in three planes' },
+  grid: { hive: 'tiles round the mark', ring: 'tiles round the mark', stack: 'tiles on three planes the camera passes' },
+  end: { lockup: 'the lockup in the middle, the close under it', claim: 'type at poster size on the accent, the lockup small' },
+};
 
 export type Slot = keyof typeof DEVICES;
 export type Dealt = { [S in Slot]: (typeof DEVICES)[S][number] };
@@ -91,14 +106,17 @@ const FLOOR_SEED = seedOf('[Product]');
 export const FLOOR: Dealt = deal(FLOOR_SEED);
 /**
  * A film is never the template replayed: of the slots it deals (pins aside), at least half play another device than
- * the floor's, or it re-deals from the next seed (the first seed that differs keeps its deal). The unnamed scaffold
- * keeps the floor.
+ * the floor's, and at least half of those that carry a composition (COMPOSITION) play another composition, so the
+ * frame moves (where the type and the picture sit, which leads), not only the devices' names; else it re-deals from
+ * the next seed (the first seed that differs keeps its deal). The unnamed scaffold keeps the floor. On the pixels:
+ * render the untouched template once (out/scaffold.mp4) and run `python3 scripts/like.py guard --film out/film.mp4
+ * --scaffold out/scaffold.mp4` before delivery: no frame retold, no composition re-skinned.
  */
 export const dealApart = (seed: number, pinned: Partial<Record<string, string>> = {}): Dealt => {
   const free = SLOTS.filter((s) => pinned[s] === undefined);
   for (let k = 0; seed !== FLOOR_SEED && k < 64; k++) {
     const d = deal(k ? (seed + k * 104729) >>> 0 : seed, pinned);
-    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length) return d;
+    if (2 * free.filter((s) => d[s] !== FLOOR[s]).length >= free.length && compositionApart(d, FLOOR, COMPOSITION, free).ok) return d;
   }
   return deal(seed, pinned);
 };
@@ -109,3 +127,15 @@ export const dealOf = (name: string): Dealt => dealApart(seedOf(name));
 export const SEED: number = EXPLAIN.seed ?? seedOf(EXPLAIN.name);
 /** The devices this film plays, slot by slot. */
 export const DEAL: Dealt = dealApart(SEED, EXPLAIN.devices);
+
+/**
+ * The lines this film's acts set in one headline system whatever the line deal plays (fx/TypeSystem): what it is as a
+ * stack (acts/Open StatementLine, four words or more, unless it is said word by word), the pain pushed into (acts/Pain
+ * TypePush), the close at poster size on the accent (acts/End AccentClaim). acts/stage.tsx deals the other lines'
+ * devices round them (fx/TypeEmphasis dealLineEmphasis reads this for the film's seed).
+ */
+export const HEADLINES_SET = declareHeadlines(SEED, {
+  what: DEAL.voice !== 'said' && EXPLAIN.lines.what.split(' ').filter(Boolean).length >= 4 ? 'stack' : undefined,
+  pain: DEAL.pain === 'push' ? 'push' : undefined,
+  close: DEAL.end === 'claim' ? 'giant' : undefined,
+});
