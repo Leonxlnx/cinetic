@@ -1,5 +1,5 @@
 {
- "about": "The brands a film most often shows: each brand's current official mark (the month it changed, what it looks like, the brand page it was checked against on 2026-10-29, its fingerprint), the files of the open collections that draw it (prefer: the order logos.mjs takes them in), the status of every file the collections hold for the brand (sources), and the marks and colours the brand retired, which logos.mjs never takes and logos.mjs check flags in a film. Built from the brands' own pages and the collections' files; a mark the table does not list is taken as before, unchecked.",
+ "about": "The brands a film most often shows: each brand's current official mark (the month it changed, what it looks like, the brand page it was checked against on 2026-10-29, its fingerprint), the files of the open collections that draw it (prefer: the order logos.mjs takes them in), the status of every file the collections hold for the brand (sources), and the marks and colours the brand retired, which logos.mjs never takes and logos.mjs check flags in a film. A row's verified date (else checked) is when its mark was compared with the brand page; logos.mjs check fails a film showing a brand never verified there (verified: null) or verified over 12 months ago. Built from the brands' own pages and the collections' files; a mark the table does not list is taken as before, unchecked.",
  "checked": "2026-10-29",
  "threshold": {
   "same": 0.72,
@@ -2149,7 +2149,9 @@
   "zoom": {
    "name": "Zoom",
    "owner": "Zoom Communications, Inc.",
-   "page": "https://brand.zoom.us/media-library/",
+   "page": "https://brand.zoom.com/media-library/",
+   "verified": null,
+   "verifyNote": "the media library draws its files in script and the public brand guidelines name only the wordmark in Zoom blue; the app icon's current glyph is not confirmed there",
    "mark": {
     "since": "2022-11",
     "what": "the blue disc mark in #0B5CFF",

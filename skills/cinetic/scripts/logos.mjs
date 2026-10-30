@@ -25,7 +25,9 @@
  * and records it; when no open collection draws the current mark it stops and names the brand page: pass the file
  * downloaded there with --file (the brand's own file, used nominatively like every mark) or keep the old one
  * knowingly with --allow-outdated. check flags every retired mark in a film: the files of its record and any other
- * .svg under public/. A brand the table does not list is taken as before, unchecked.
+ * .svg under public/; and it fails a brand whose row has no brand page, was never verified on it ("verified": null)
+ * or was verified over 12 months ago (the row's "verified", else the table's "checked"). A brand the table does not
+ * list is taken as before, unchecked.
  *
  * Collections (each checked on its own page, 2026-10-27):
  *   gilbarbara  gilbarbara/logos, the SVG Logos set: full-colour marks and wordmarks, CC0 1.0 (LICENSE.txt).
@@ -1054,6 +1056,22 @@ export function versionOf(brand, svg, table = loadBrands()) {
   if (cur >= table.same) return { status: 'current', since: brand.mark.since, what: brand.mark.what, sim: cur, by: 'drawing' };
   return { status: 'unknown', sim: cur, by: 'drawing' };
 }
+/**
+ * How fresh a brand row is: it names the brand's own page (page) and the date the mark was compared with it
+ * (verified; the table's checked date when the row has none). No page, "verified": null (a mark nobody could confirm on
+ * the brand's page) or a check over 12 months old is not current: check fails a film that shows the brand until the
+ * row is checked again. CINETIC_TODAY (YYYY-MM-DD) pins today for tests.
+ */
+export function verification(brand, table = loadBrands(), now = process.env.CINETIC_TODAY ? Date.parse(process.env.CINETIC_TODAY) : Date.now()) {
+  const page = brand?.page || null;
+  const verified = brand && Object.prototype.hasOwnProperty.call(brand, 'verified') ? brand.verified : table.checked;
+  if (!page) return { ok: false, page, verified: verified || null, why: 'no brand page in the table to check the mark against' };
+  if (!verified) return { ok: false, page, verified: null, why: `not verified against ${page}${brand.verifyNote ? ` (${brand.verifyNote})` : ''}: compare the mark with the brand's page, then set "verified" (YYYY-MM-DD) in scripts/logo-brands.json` };
+  const age = (now - Date.parse(verified)) / 86400000;
+  if (!(age <= 366)) return { ok: false, page, verified, why: `checked ${verified}, over 12 months ago: compare the mark with ${page} again and update "verified"` };
+  return { ok: true, page, verified };
+}
+
 /** One line about a mark's version, for get and check. */
 export function versionLine(brand, v, checked) {
   if (!brand) return 'no row in the brand table: its version is not checked';
@@ -1573,7 +1591,9 @@ function cmdCheck(args) {
   const { record, problems } = checkRecord(film);
   const rows = checkMarks(film);
   const old = rows.filter((r) => r.status === 'outdated');
-  if (args.json) { console.log(JSON.stringify({ film, marks: rows, problems }, null, 1)); return problems.length || old.length ? 1 : 0; }
+  const table = loadBrands();
+  const stale = [...new Set(rows.map((r) => r.slug).filter(Boolean))].map((slug) => ({ slug, brand: table.brands[slug]?.name || slug, ...verification(table.brands[slug], table) })).filter((v) => !v.ok);
+  if (args.json) { console.log(JSON.stringify({ film, marks: rows, problems, stale }, null, 1)); return problems.length || old.length || stale.length ? 1 : 0; }
   // one line per mark of the record when its files agree; a retired file always on its own line
   const groups = new Map();
   for (const r of rows) groups.set(r.slug && r.kind !== 'file' ? `rec:${r.slug}` : `file:${r.file}`, [...(groups.get(r.slug && r.kind !== 'file' ? `rec:${r.slug}` : `file:${r.file}`) || []), r]);
@@ -1587,9 +1607,10 @@ function cmdCheck(args) {
     const words = ok.length - marks.length;
     console.log(`${lead.status.padEnd(9)} ${ok.length > 1 ? `${lead.slug || lead.file} (${ok.length} files)` : lead.file}  ${lead.brand}: ${lead.line}${words ? `; ${words} wordmark file${words === 1 ? '' : 's'} not fingerprinted` : ''}`);
   }
+  for (const v of stale) console.log(`STALE     ${v.brand}: ${v.why}`);
   for (const p of problems) console.log(`FAIL      ${p}`);
-  console.log(`${Object.keys(record.logos).length} marks in the record, ${rows.length} files checked against the brand table (${loadBrands().checked || 'no table'}): ${old.length} outdated, ${problems.length} record problem${problems.length === 1 ? '' : 's'}`);
-  return problems.length || old.length ? 1 : 0;
+  console.log(`${Object.keys(record.logos).length} marks in the record, ${rows.length} files checked against the brand table (${loadBrands().checked || 'no table'}): ${old.length} outdated, ${stale.length} unverified, ${problems.length} record problem${problems.length === 1 ? '' : 's'}`);
+  return problems.length || old.length || stale.length ? 1 : 0;
 }
 
 export const USAGE = `logos.mjs: real company and product marks in their official colours, from open collections.
@@ -1601,7 +1622,8 @@ export const USAGE = `logos.mjs: real company and product marks in their officia
          <film>/public/logos/logos.json (source, licence, owner) and the kit's index <film>/src/logos.ts
   list   [--film .] [--json] [--write]      the film's marks (--write rewrites src/logos.ts from the record)
   check  [<film>] [--json]                  every file present, every source with its licence, every owner named,
-                                            and no retired mark (record files and any .svg under public/): exit 1 if one
+                                            no retired mark (record files and any .svg under public/), and every brand
+                                            shown verified on its own page within 12 months: exit 1 if one fails
   --file <svg>       get: the brand's own file from its brand page (when no open collection draws the current mark)
   --allow-outdated   get: keep a retired mark knowingly (check still flags it)
 

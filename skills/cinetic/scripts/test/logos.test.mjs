@@ -292,6 +292,7 @@ try {
 
   // 9. the brand table
   {
+    process.env.CINETIC_TODAY = '2026-10-30'; // the fixture table was checked the day before
     const fpOf = (file) => L.fingerprint(L.sanitizeSvg(fx(file)));
     const table = path.join(home, 'brands.json');
     fs.writeFileSync(table, JSON.stringify({ checked: '2026-10-29', threshold: { same: 0.72, margin: 0.04 }, brands: {
@@ -347,6 +348,27 @@ try {
     result(c2.code === 1 && j2.marks.some((m) => m.file === 'img/old-tidepool.svg' && m.status === 'outdated' && m.brand === 'Tidepool'), 'check: an .svg placed by hand under public/ that draws a retired mark is flagged (--json)', JSON.stringify(j2.marks.filter((m) => m.status === 'outdated').map((m) => m.file)));
     const v = L.versionOf(L.brandFor('glowbox'), L.sanitizeSvg(fx('glowbox-icon.svg')));
     result(v.status === 'outdated' && v.since === '2019' && v.until === '2026-03' && v.by === 'drawing', 'versionOf: the retired drawing with its dates', JSON.stringify(v));
+    // verified on the brand's own page within 12 months, else check fails the brand
+    const T9 = L.loadBrands();
+    const day = (d) => Date.parse(d);
+    const vFresh = L.verification(T9.brands.tidepool, T9, day('2027-06-01'));
+    const vOld = L.verification(T9.brands.tidepool, T9, day('2027-11-15'));
+    const vOwn = L.verification({ ...T9.brands.tidepool, verified: '2027-10-01' }, T9, day('2027-11-15'));
+    const vNever = L.verification({ ...T9.brands.tidepool, verified: null, verifyNote: 'the page draws its files in script' }, T9, day('2026-11-01'));
+    const vNoPage = L.verification({ ...T9.brands.tidepool, page: '' }, T9, day('2026-11-01'));
+    result(vFresh.ok && !vOld.ok && /over 12 months/.test(vOld.why) && vOwn.ok && !vNever.ok && /not verified against https:\/\/tidepool\.example\/brand \(the page draws/.test(vNever.why) && !vNoPage.ok,
+      "verification: the table's date within 12 months passes, older fails, a row's own verified date wins, verified null and no brand page fail", [vFresh, vOld, vOwn, vNever, vNoPage].map((x) => x.ok).join());
+    const tb = JSON.parse(fs.readFileSync(table, 'utf8'));
+    tb.brands.tidepool.verified = null;
+    fs.writeFileSync(table, JSON.stringify(tb));
+    const table2 = path.join(home, 'brands-2.json');
+    fs.writeFileSync(table2, JSON.stringify(tb));
+    process.env.CINETIC_LOGO_BRANDS = table2;
+    const c3 = await cli(['check', film4, '--json']);
+    const j3 = JSON.parse(c3.out);
+    result(c3.code === 1 && j3.stale.some((x) => x.slug === 'tidepool' && !x.ok) && !j3.stale.some((x) => x.slug === 'slatework'),
+      'check: a brand never verified on its page fails the film that shows it (--json stale), the verified ones pass', JSON.stringify(j3.stale));
+    process.env.CINETIC_LOGO_BRANDS = table;
     fs.rmSync(film4, { recursive: true, force: true });
     process.env.CINETIC_LOGO_BRANDS = path.join(home, 'no-table.json');
   }
@@ -370,6 +392,9 @@ try {
     result(named.length === 0, 'the shipped table: the brands a launch film shows most', named.join(', '));
     const nums = rows.flatMap(([slug, b]) => [...[].concat(b.members?.svgl || []), ...[...(b.prefer || []), b.mark?.from || '', ...(b.outdated || []).map((o) => o.from || '')].filter((r) => r.startsWith('svgl:')).map((r) => r.split(':')[1])].filter((r) => /^\d+$/.test(String(r))).map((r) => `${slug}: svgl ${r}`));
     result(nums.length === 0, 'the shipped table: svgl entries by file name, never by number (svgl renumbers its list as it grows)', nums.slice(0, 6).join('; '));
+    const vbad = rows.filter(([, b]) => 'verified' in b && b.verified !== null && !/^\d{4}-\d{2}-\d{2}$/.test(b.verified)).map(([k]) => k);
+    const unverified = rows.filter(([, b]) => b.verified === null && !b.verifyNote).map(([k]) => k);
+    result(/^\d{4}-\d{2}-\d{2}$/.test(T.checked) && !vbad.length && !unverified.length, "the shipped table: a checked date, every row's own verified date a day, and a row never verified says why (verifyNote)", [...vbad, ...unverified].join(', '));
     process.env.CINETIC_LOGO_BRANDS = path.join(SKILL, 'scripts', 'logo-brands.json');
     result(L.brandFor('Google Gmail')?.slug === 'gmail' && L.brandFor('Twitter')?.slug === 'x' && L.brandFor('Outlook')?.slug === 'microsoft-outlook', 'the shipped table: a brand by another name it goes by');
     process.env.CINETIC_LOGO_BRANDS = path.join(home, 'no-table.json');
