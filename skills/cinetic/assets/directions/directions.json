@@ -1345,6 +1345,78 @@
   "ContentTicker": {
    "file": "kit/tiles.tsx",
    "status": "built"
+  },
+  "Barrel": {
+   "file": "fx/Barrel.tsx",
+   "status": "built"
+  },
+  "Depth": {
+   "file": "fx/Depth.tsx",
+   "status": "built"
+  },
+  "FloatCtx": {
+   "file": "fx/Depth.tsx",
+   "status": "built"
+  },
+  "DrawPath": {
+   "file": "fx/DrawPath.tsx",
+   "status": "built"
+  },
+  "Float": {
+   "file": "fx/Float.tsx",
+   "status": "built"
+  },
+  "ActStage": {
+   "file": "fx/Float.tsx",
+   "status": "built"
+  },
+  "BreathLight": {
+   "file": "fx/Float.tsx",
+   "status": "built"
+  },
+  "ReadBack": {
+   "file": "fx/ReadBack.tsx",
+   "status": "built"
+  },
+  "KeyRim": {
+   "file": "fx/Rim.tsx",
+   "status": "built"
+  },
+  "Seam": {
+   "file": "fx/Seam.tsx",
+   "status": "built"
+  },
+  "TypeBehind": {
+   "file": "fx/TypeBehind.tsx",
+   "status": "built"
+  },
+  "TypePlanes": {
+   "file": "fx/TypeDepth.tsx",
+   "status": "built"
+  },
+  "TypeStack": {
+   "file": "fx/TypeStack.tsx",
+   "status": "built"
+  },
+  "StatementLine": {
+   "file": "fx/TypeStack.tsx",
+   "status": "built"
+  },
+  "Phone": {
+   "file": "kit/device.tsx",
+   "status": "built"
+  },
+  "Laptop": {
+   "file": "kit/device.tsx",
+   "status": "built"
+  },
+  "KitEmpty": {
+   "file": "kit/gate.tsx",
+   "status": "built"
+  },
+  "FileThumb": {
+   "file": "kit/parts.tsx",
+   "status": "built"
   }
  },
  "directions": [
