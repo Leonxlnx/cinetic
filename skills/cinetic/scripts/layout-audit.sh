@@ -379,7 +379,7 @@ const placement = (() => {
     const spans = new Map();
     for (const b of d.boxes) {
       const id = idOf(b);
-      if (!id || b.ui || b.opacity < 0.5 || b.px < (d.minPx ?? 0) || b.push === 'moving') continue;
+      if (!id || b.ui || b.opacity < 0.5 || b.px < (d.minPx ?? 0) || b.push) continue; // a type push (in flight or landed as a bleed) is a camera move through a line read centred
       const s = spans.get(id) ?? { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
       spans.set(id, { x0: Math.min(s.x0, b.x), y0: Math.min(s.y0, b.y), x1: Math.max(s.x1, b.x + b.w), y1: Math.max(s.y1, b.y + b.h) });
     }
