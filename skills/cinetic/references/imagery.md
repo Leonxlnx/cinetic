@@ -10,7 +10,7 @@ depth, sharp where the eye goes and soft away from it, smeared along its travel,
 makes a launch film read as made. The tool is `scripts/assets.mjs` (Node 22, no dependencies, no keys needed for
 the keyless sources); the treatments are `src/fx/Pictures.tsx` and `src/fx/Washes.tsx`.
 
-Contents: 0. When a shot needs a real picture · 1. The licence rule and the sources · 2. Where it sits in the
+Contents: 0. When a shot needs a real picture · Show the core action · 1. The licence rule and the sources · 2. Where it sits in the
 workflow · 3. The route · 4. The studio treatments · 5. The imagery primitives · 6. Chosen or stock · 7. Footage ·
 8. Works and archives as the world · 9. The imagery directions · 10. Checks
 
@@ -36,6 +36,43 @@ does gets the product doing it: the brand's own photos or footage of that part (
 built render or a close cut of the moment of use followed by the result in the UI (the sip, then the ring ticks up in
 the app on the same beat). A stock object stands in for the world round the product, never for the product itself;
 when there is no picture of the product, say what the app shows instead and show that.
+
+## Show the core action (the first picture beat)
+
+The first picture beat shows what the product does, literally: the input, then what it becomes. With the sound off,
+a viewer names the product from that beat alone. A voice memo app opens on someone speaking into a phone and the words
+landing as a note; a waveform alone, the UI alone or an abstract shape says nothing about who speaks or why. Where the
+input is human (a voice, a hand writing, a payment, a run, a parcel at the door), it is a real person in real footage,
+a photo when no clip fits.
+
+**Find it.** `node scripts/assets.mjs recipe "<the product in your words>"` matches one of 40 inputs (speaking into
+a phone, typing on a laptop, a meeting, paying at a counter, a doctor's visit, studying, a train ride ...) and prints the
+shot, its framing, the screen that takes the plate and the picks already checked (licences that need no credit),
+saved as a results file. `sheet <results> --cell 240`, then `get #n --to public/assets --trim start,seconds`. No
+input fits: `search` with the person, the action and the device ("woman speaking into phone").
+
+**Pick the input shot.** The action reads in under a second: lips moving at the phone, fingers on the keys, the card on
+the reader. One person, one action, from the side or over the shoulder (hands and profiles beat a face to the lens).
+Refuse staged smiles at the camera, white seamless studios, watermarks and readable brands. Use 1.5-3 s of it, graded
+with the film's look (`grade`) so the cut to the UI does not jump.
+
+**Bring the output in: pin or cut.** Each pick says which (`screen: pin | cut`).
+- *Pin*, when the screen faces the lens and the camera is slow. The product's screen, the same kit component the film
+  uses later, drawn at its native size in a div with `transformOrigin: '0 0'` and
+  `transform: quadMatrix(w, h, [tl, tr, br, bl])` (`src/fx/KeyLight.tsx`). Read the four corners off stills of the
+  trimmed clip (`ffmpeg -ss <t> -i clip.mp4 -frames:v 1`) at its first and last frame, every 0.5 s if the hand moves,
+  and interpolate them by frame. Finish it like glass: clip it to the device's corner radius, keep its whites a touch
+  under the clip's brightest white, blur it 0.5 px, lay the clip's grain and a faint diagonal reflection over it. A
+  thumb across the screen breaks it: choose a shot where nothing crosses, or cut. The plate receives the input in
+  sync (the words appear as the lips move, the total lands as the card taps).
+- *Cut*, when the screen faces away, moves fast or there is no device (a meeting, a doctor's visit, a parcel). Cut on
+  the action to the kit `Phone` or `Laptop` (`src/kit/device.tsx`, the screen as children at `screenBox` size) at the
+  same angle and on the same side of the light, the UI already showing what the input became. Or hold the clip in a
+  `FootageWindow` beside the device and let one element travel from one to the other. One cut between input and
+  output, never a montage.
+
+The line over it names the result, not the gesture ("Say it. It's written."), and the beat holds until the output
+has landed.
 
 ## 1. The licence rule and the sources
 
