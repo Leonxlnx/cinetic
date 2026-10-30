@@ -68,7 +68,9 @@ const BODY = b(8);
  * the ending needs after that bar line: the track's own final hit ringing out (1.5-2.5 s), a hit that rings, or a 2-3 s
  * fade under the end card. The tail is that, and at least 1 s.
  */
-export const TAIL = Math.max(FPS, MUSIC ? Math.ceil(MUSIC.end.hold ?? 0) : 0);
+/** A grid written before the endings (end.mode 'stop', no hold) names only the stop's element: hold it and 1 s after it. */
+const STOP_GAP = MUSIC && MUSIC.end.hold === undefined && MUSIC.end.mode === 'stop' ? Math.max(0, Math.ceil(MUSIC.end.f) - BODY) : 0;
+export const TAIL = Math.max(FPS, MUSIC ? Math.ceil(MUSIC.end.hold ?? 0) : 0, STOP_GAP ? STOP_GAP + FPS : 0);
 
 // Acts: contiguous, [from, from + dur), each starting on a bar line (with a track, a downbeat: grid-check
 // structural-on-music). Each act is its own composition in Root.tsx. Six shots in four acts (a cut inside an act

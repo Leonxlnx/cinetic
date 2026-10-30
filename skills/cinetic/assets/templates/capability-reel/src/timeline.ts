@@ -54,7 +54,9 @@ export const bt = (x: number) => {
  * the ending needs after the bar line that ends the body: the track's own final hit ringing out (1.5-2.5 s), a hit that
  * rings, or a 2-3 s fade under the end card. The tail is that, and at least 1 s.
  */
-export const TAIL = Math.max(FPS, MUSIC ? Math.ceil(MUSIC.end.hold ?? 0) : 0);
+/** A grid written before the endings (end.mode 'stop', no hold) names only the stop's element: hold it and 1 s after it. */
+const STOP_GAP = MUSIC && MUSIC.end.hold === undefined && MUSIC.end.mode === 'stop' ? Math.max(0, Math.ceil(MUSIC.end.f) - b(MUSIC.bars + 1)) : 0;
+export const TAIL = Math.max(FPS, MUSIC ? Math.ceil(MUSIC.end.hold ?? 0) : 0, STOP_GAP ? STOP_GAP + FPS : 0);
 
 /**
  * Where each act starts, in beats (10 bars at 120 BPM: 21 s with the tail). Every act line sits on a bar line, so with a
