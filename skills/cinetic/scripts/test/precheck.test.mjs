@@ -5,7 +5,8 @@
  *   1. The starter as shipped: every module imports, no error.
  *   2. Kit parts with no content of the film's own fail (kit-empty): a DenseScreen without world, a ProjectPanel
  *      without data, a StatCard without label, KitFallback; the retired sampleWorld() and a sample() call fail
- *      (kit-sample); a DenseScreen given a world, a kit part with spread props and fx/Photo (a picture plate) pass.
+ *      (kit-sample); a DenseScreen given a world, a kit part with spread props and fx/Photo (a picture plate) pass; the
+ *      same through a namespace import (K.sample(), <K.ProjectPanel>), and a sample() call at load (reported at runtime).
  *   3. Timing: a landBeforeCut that cuts a move mid-ease at module load is a warning in dev and the act still imports;
  *      under --ship (CINETIC_GATE=ship) the act throws at import and it is an error; a bare `throw` in a timing assert
  *      is an error either way (it crashes every render).
@@ -99,8 +100,26 @@ export const Faulty: React.FC = () => (
   mid: 'This status line is a little too long for one card column',
 };
 `);
+  // the same parts through a namespace import: K.sample() at load, <K.ProjectPanel> without data, <K.DenseScreen> with a world
+  const NS = path.join(film, 'src', 'acts', 'Spaced.tsx');
+  fs.writeFileSync(NS, `import React from 'react';
+import * as K from '../kit';
+
+const R = K.sample().review;
+export const Spaced: React.FC = () => (
+  <div>
+    <K.ProjectPanel frame={0} />
+    <K.DenseScreen frame={0} world={K.filmWorld({ records: [{ title: 'Pay the rent' }] })} />
+    <span>{R.product}</span>
+  </div>
+);
+`);
   const dev = run();
+  fs.rmSync(NS);
   const kitWhere = (n) => new RegExp(`Faulty\\.tsx:${n}\\b`);
+  const nsWhere = (n) => new RegExp(`Spaced\\.tsx:${n}\\b`);
+  result(has(dev.rep, 'kit-sample', 'error', nsWhere(4)) && has(dev.rep, 'kit-empty', 'error', nsWhere(7)) && !has(dev.rep, 'kit-empty', null, nsWhere(8)) && has(dev.rep, 'kit-sample', 'error', /sample\(\)/),
+    'namespace import (import * as K from "../kit"): K.sample() fails (kit-sample, in the source and at load), <K.ProjectPanel> without data fails, <K.DenseScreen> with a world passes', JSON.stringify(dev.rep.findings.filter((f) => /Spaced|sample\(\)/.test(`${f.where} ${f.message}`)).map((f) => `${f.rule} ${f.where}`)));
   result(dev.code === 1 && has(dev.rep, 'kit-empty', 'error', kitWhere(14)) && has(dev.rep, 'kit-empty', 'error', kitWhere(17)) && has(dev.rep, 'kit-empty', 'error', kitWhere(18)) && has(dev.rep, 'kit-empty', 'error', kitWhere(19)),
     'kit-empty: DenseScreen without world, ProjectPanel without data, StatCard without label, KitFallback fail with their line', JSON.stringify(dev.rep.findings.filter((f) => f.rule === 'kit-empty').map((f) => f.where)));
   result(!has(dev.rep, 'kit-empty', null, kitWhere(15)) && !has(dev.rep, 'kit-empty', null, kitWhere(16)) && !has(dev.rep, 'kit-empty', null, kitWhere(20)),

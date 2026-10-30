@@ -12,8 +12,9 @@
  *   3. kit       kit parts with no content of the film's own (they draw an empty state, data-kit-empty): a kit part
  *                used without its content prop (DenseScreen without world, a panel without data, a StatCard without
  *                label and value, a FileThumb without name, a kit Photo without src, KitFallback), the retired
- *                sampleWorld() and any sample() call in the film's source (kit-sample), and the parts that reported
- *                kit-empty while the modules loaded
+ *                sampleWorld() and any sample() call in the film's source (kit-sample), through a named or a namespace
+ *                import (import * as K from '../kit': K.sample(), <K.ProjectPanel>), and the parts that reported
+ *                kit-empty (or a sample() call, kit-sample) while the modules loaded
  *   4. fit       every on-screen string measured with the film's own font (its woff2's advance widths, tracking and
  *                weight): each COPY line at its type role (line, display for the name, ui) against the safe width (in a
  *                film whose acts size lines to the width with fitSize: the size it gets, a warning under 75 % of its
@@ -161,18 +162,22 @@ for (const file of filmFiles) {
       if (a) local.set((b ?? a).trim(), a.trim());
     }
   }
+  // a namespace import (import * as K from '../kit'): K.sample(), K.sampleWorld(), <K.DenseScreen /> are the same parts
+  for (const m of code.matchAll(/import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s*['"]((?:\.\.?\/)+(?:src\/)?kit(?:\/[\w-]+)?)['"]/g))
+    for (const kit of ['sample', 'sampleWorld', 'REVIEW', 'BUDGETS', 'SAMPLE', ...Object.keys(KIT_NEEDS)]) local.set(`${m[1]}.${kit}`, kit);
   if (!local.size) continue;
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   for (const [name, kit] of local) {
     if (kit === 'sampleWorld')
-      for (const m of code.matchAll(new RegExp(`\\b${name}\\s*\\(`, 'g')))
+      for (const m of code.matchAll(new RegExp(`\\b${esc(name)}\\s*\\(`, 'g')))
         add('kit-sample', 'error', `${name}() is retired: it returns an empty world (every part fed by it draws its empty state). Build the film's own world with filmWorld({ records, people, statuses }) from the product's strings`, `${rel(file)}:${lineOf(code, m.index)}`);
     if (kit === 'sample')
-      for (const m of code.matchAll(new RegExp(`\\b${name}\\s*\\(`, 'g')))
+      for (const m of code.matchAll(new RegExp(`\\b${esc(name)}\\s*\\(`, 'g')))
         add('kit-sample', 'error', "sample() is the kit's gallery and tests only: a film shows its own content", `${rel(file)}:${lineOf(code, m.index)}`);
-    if (['REVIEW', 'BUDGETS', 'SAMPLE'].includes(kit)) add('kit-sample', 'error', `${kit} is sample content (no longer exported): pass the product's own data`, rel(file));
+    if (['REVIEW', 'BUDGETS', 'SAMPLE'].includes(kit) && (!name.includes('.') || new RegExp(`\\b${esc(name)}\\b`).test(code))) add('kit-sample', 'error', `${kit} is sample content (no longer exported): pass the product's own data`, rel(file));
     const needs = KIT_NEEDS[kit];
     if (!needs || !file.endsWith('.tsx')) continue;
-    for (const m of code.matchAll(new RegExp(`<${name}(?=[\\s/>])`, 'g'))) {
+    for (const m of code.matchAll(new RegExp(`<${esc(name)}(?=[\\s/>])`, 'g'))) {
       const attrs = attrsAt(code, m.index + name.length + 1);
       const where = `${rel(file)}:${lineOf(code, m.index)}`;
       if (kit === 'KitFallback') {
@@ -274,13 +279,13 @@ process.stdout.write('\\n@@PRECHECK@@' + JSON.stringify(out) + '\\n');
 const TIMING = /landBeforeCut|timingFail|after its act's cut|f to clear|act's cut|is read until|lands on f|cut or unmount|start it \d+ f earlier/i;
 if (probe) {
   for (const im of probe.imports.filter((x) => !x.ok)) {
-    if (/kit-empty:/.test(im.error)) add('kit-empty', 'error', `${im.file} throws under the ship gate: ${im.error}`, im.file);
+    if (/kit-(empty|sample):/.test(im.error)) add(/kit-sample:/.test(im.error) ? 'kit-sample' : 'kit-empty', 'error', `${im.file} throws under the ship gate: ${im.error}`, im.file);
     else if (TIMING.test(im.error))
       add('timing', 'error', `${im.file} throws at import (a timing assert): ${im.error}. ${SHIP ? 'The ship gate fails it.' : 'A bare throw crashes every render: route it through timingFail (lib/continuity.ts), which warns in dev and fails only under the ship gate.'}`, im.file);
     else add('imports', 'error', `${im.file} does not import: ${im.error}`, im.file);
   }
   for (const x of probe.issues) add('timing', SHIP ? 'error' : 'warn', x.message, x.rule);
-  for (const x of probe.empties) add('kit-empty', 'error', x.message, x.part);
+  for (const x of probe.empties) add(/^kit-sample:/.test(x.message) ? 'kit-sample' : 'kit-empty', 'error', x.message, x.part);
 }
 
 // ------------------------------------------------------------------------------------------------ 4. fit
