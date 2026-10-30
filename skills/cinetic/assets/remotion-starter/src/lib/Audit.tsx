@@ -35,7 +35,9 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 // f+1 by id to measure how fast readable text travels, and leaves out a box drawn inside an active smear
 // ([data-audit-smear], fx/Defocus DirBlur): it is blurred along its motion, not a double image.
 // It logs the official marks on the frame too (the kit draws each as an <Img data-logo="<name>">): "logos":
-// [{"name","x","y","w","h"}], so look-audit.py --layout can leave a mark's own colours out of the palette checks.
+// [{"name","x","y","w","h"}], so look-audit.py --layout can leave a mark's own colours out of the palette checks,
+// and the real pictures (photos and footage: the kit and fx/Pictures, Photo, Footage, Montage, Develop, Cards tag each
+// [data-imagery]): "imagery": [{"x","y","w","h"}], so a photo's skin, foliage and wood stay out of them the same way.
 // It also logs the frame's tweens from the registry (lib/registry.ts), which audit mode switches on:
 //   CINETIC_TWEENS {"comp":"Film","frame":120,"tweens":[{"from":96,"to":128,"token":"snapOut","family":"arrive"},...]}
 // with spans in absolute frames (scripts/grammar-score.mjs reads them).
@@ -329,7 +331,12 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         ? [{ name: el.dataset.logo || '?', x: round((r.left - origin.left) / zoom), y: round((r.top - origin.top) / zoom), w: round(r.width / zoom), h: round(r.height / zoom) }]
         : [];
     });
-    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, logos, issues, warnings, bands: TYPE_BANDS, widths: TYPE_WIDTH })}`);
+    // the real pictures on screen (photos and footage in their own colours), where they show this frame
+    const imagery = [...document.querySelectorAll<HTMLElement>('[data-imagery]')].flatMap((el) => {
+      const r = visibleRect(el);
+      return r && opacityOf(el) >= 0.05 ? [{ x: round((r.left - origin.left) / zoom), y: round((r.top - origin.top) / zoom), w: round(r.width / zoom), h: round(r.height / zoom) }] : [];
+    });
+    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, logos, imagery, issues, warnings, bands: TYPE_BANDS, widths: TYPE_WIDTH })}`);
     // the tweens evaluated for this frame, their spans moved into absolute frames (a caller's frame argument is its own clock)
     const tweens = drain().map((r) => ({ from: r.from + (frame - r.frame), to: r.to + (frame - r.frame), token: r.token, family: r.family }));
     console.log(`${TWEENS_TAG} ${JSON.stringify({ comp, frame, tweens })}`);
