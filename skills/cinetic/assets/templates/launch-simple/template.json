@@ -48,6 +48,7 @@
   "src/launch.ts",
   "src/product.tsx",
   "src/deal.ts",
+  "src/recent.ts",
   "src/timeline.ts",
   "src/Film.tsx",
   "src/Root.tsx",

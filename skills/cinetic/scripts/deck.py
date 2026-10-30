@@ -20,6 +20,7 @@ Where it sits: after the brief (Step 0) and the inventory, before the script, th
 (Step 1).
 
 Usage:
+  python3 scripts/deck.py --brief "<one line>" --format launch [--have ui,input]   # one direction dealt: the sheet
   python3 scripts/deck.py --brief "<one line>" --format launch --pace calm [--have ui,input] --options 3
   python3 scripts/deck.py --brief "<one line>" --format launch --have ui,photos --options 3  # pictures worth showing
   python3 scripts/deck.py --brief "<one line>" --format launch --pace calm --direction <id>  # the sheet
@@ -66,6 +67,13 @@ Usage:
               one grade, what to refuse) for scripts/assets.mjs.
   --deck      a deck file (only that file), or a folder whose *.json decks are merged (default: the
               skill's assets/directions/, or scripts/directions/ in a film project).
+
+Without --options or --direction, one direction is dealt from the brief and the history (the first of the
+three options that repeats no signature and no lockup of the last three films you made) and its sheet written:
+the three-option deal is there when you want to choose. A direction that repeats the signature family or the
+lockup kind of one of the last three films you made (the film history film-diff.mjs --record writes,
+~/.cinetic/film-history.json or CINETIC_FILM_HISTORY) is refused unless --repeat signature,end says the brief
+asks for it; the ground family is never one of theirs while another fits.
 
 The deal is weighted toward directions whose keywords appear in the brief and that use an asset the film
 really has, away from the directions of your last films (a small history in ~/.cinetic/deck-history.json,
@@ -1141,6 +1149,43 @@ def write_history(enabled, entry):
         pass
 
 
+def film_history(enabled):
+    """The last three films you made (film-diff.mjs --record writes ~/.cinetic/film-history.json, or
+    CINETIC_FILM_HISTORY): what each was dealt and declared, newest first."""
+    if not enabled:
+        return []
+    path = os.environ.get('CINETIC_FILM_HISTORY') or os.path.join(os.path.expanduser('~'), '.cinetic', 'film-history.json')
+    try:
+        with open(path, encoding='utf-8') as fh:
+            h = json.load(fh)
+    except (OSError, ValueError):
+        return []
+    return [x for x in h if isinstance(x, dict) and isinstance(x.get('devices'), dict)][:3] if isinstance(h, list) else []
+
+
+def recent_grounds(history_on):
+    """Ground families of the last three films (the film history first, then the deal history)."""
+    seen = []
+    for g in [f['devices'].get('ground') for f in film_history(history_on)] + [h.get('ground') for h in read_history(history_on)]:
+        if g and g not in seen:
+            seen.append(g)
+    return seen[:3]
+
+
+def repeats(d, history_on, allowed):
+    """What this direction would repeat from the last three films you made: its signature family and its lockup kind
+    (an end-card build), unless --repeat names the slot."""
+    out = []
+    for f in film_history(history_on):
+        deck = f['devices'].get('deck') or {}
+        name = f.get('name') or 'a recent film'
+        if 'signature' not in allowed and deck.get('signature') and deck['signature'] == d['signature']['family']:
+            out.append(f"its signature ({d['signature']['family']}) was {name}'s")
+        if 'end' not in allowed and deck.get('lockup') and deck['lockup'] == d['lockup']['kind']:
+            out.append(f"its lockup ({d['lockup']['kind']}) was {name}'s")
+    return out
+
+
 # ---------------------------------------------------------------------------------------------- the sheet
 def skeleton_times(d, seconds, fps=60, fmt=None, changes=DEFAULT_CHANGES):
     beats = update_beats(d, changes) if fmt == 'update' and isinstance(d.get('update'), dict) else d['skeleton']
@@ -1335,7 +1380,7 @@ def make_sheet(d, inp, seed, options, keep, history_on, data, redraws=None, vari
     sig = d['signature'] if variant == 'main' else dict(d['signature_alt'], family=d['signature']['family'], cost=d['signature']['cost'],
                                                         elements=d['signature']['elements'])
     used = sorted({r['recipe'] for r in ([palette] if palette else d['palettes'])})
-    family = deal_family(data, palette, seed, d['id'], [h.get('ground') for h in read_history(history_on) if h.get('ground')][:3])
+    family = deal_family(data, palette, seed, d['id'], recent_grounds(history_on))
     brand = brand_mapping(d, palette, recipes, read_brand(inp['brand'])) if inp.get('brand') else None
     fg = d['world'].get('foreground')
     foreground = None if d['world']['space'] != 'layered' or str(fg or '').lower().startswith('off') else (
@@ -1811,6 +1856,7 @@ def main():
     ap.add_argument('--deck', default=DEFAULT_DECK, help='a deck file, or a folder whose decks are merged (default: every deck in assets/directions/)')
     ap.add_argument('--library', default=DEFAULT_LIBRARY, help='the technique library (default assets/library/techniques.json)')
     ap.add_argument('--no-history', action='store_true', help='neither read nor write the deal history')
+    ap.add_argument('--repeat', default='', help='signature,end: repeats of the last three films the brief asks for (else refused)')
     a = ap.parse_args()
 
     data, deck_problems = load_deck(a.deck)
@@ -1968,11 +2014,20 @@ def main():
         print(render_options(opts, inp, seed, [r for r in recent if r in weights], len(pool), derived, data, keep), end='')
         return 0
 
+    allowed = {x.strip() for x in a.repeat.split(',') if x.strip()}
     if not a.direction:
-        fail('say what to do: --options 3 to deal directions, --direction <id> for the sheet, --list, --show or --validate')
+        # one direction dealt from the brief and the history: the first option that repeats nothing of the last films
+        if not opts:
+            fail('no direction fits these filters (try another --format, --pace or --seconds, or say what --have)', 1)
+        pick = next((o for o in opts if not repeats(by_id[o['id']], history_on, allowed)), opts[0])
+        a.direction = pick['id']
+        print(f"deck: dealt {pick['id']} from the brief and the last films (--options 3 deals three to choose from)", file=sys.stderr)
     if a.direction not in by_id:
         fail(f'no direction {a.direction!r} (run --list)', 1)
     d = by_id[a.direction]
+    rep_ = repeats(d, history_on, allowed)
+    if rep_:
+        fail(f"{a.direction} repeats the last films: {'; '.join(rep_)}. Deal another (--options 3), or --repeat signature,end when the brief asks for it", 1)
     ok, why = fits(d, a.format, inp['pace'], have, a.seconds, a.brief, gate, not a.no_imagery)
     if not ok:
         hint = ' (or pass --allow-planned and build them inside the film)' if why.startswith('waits for') else ''
@@ -1981,7 +2036,8 @@ def main():
     waits = [p for p in d.get('requires', []) if p not in ready]
     sh = make_sheet(d, inp, seed, options, set(keep), history_on, data, waits=waits)
     md = write_sheet(sh, a.out, data, library)
-    write_history(history_on, {'direction': d['id'], 'format': a.format, **({'ground': sh['ground_family']['id']} if sh.get('ground_family') else {})})
+    write_history(history_on, {'direction': d['id'], 'format': a.format, 'signature': d['signature']['family'], 'lockup': d['lockup']['kind'],
+                               **({'ground': sh['ground_family']['id']} if sh.get('ground_family') else {})})
     print(md, end='')
     return 0
 

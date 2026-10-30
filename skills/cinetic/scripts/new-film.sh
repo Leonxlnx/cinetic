@@ -251,6 +251,35 @@ console.log(`new-film: ${m.name} template: ${m.copy.length} files over the start
 ' || die "could not lay the $TEMPLATE template over the starter"
 fi
 
+# film.json: the devices this film declares (the plan fills them from references/catalogue.md) and the last three films'
+# devices to stay away from (the film history, ~/.cinetic/film-history.json or $CINETIC_FILM_HISTORY, written by
+# film-diff.mjs --record after each ship gate). A template with src/recent.ts gets those films' dealt choices, so its
+# deal leaves them out while another choice is free.
+DIR="$DIR" TEMPLATE="$TEMPLATE" node -e '
+const fs = require("fs"), path = require("path"), os = require("os");
+const dir = process.env.DIR, tpl = process.env.TEMPLATE || null;
+const file = process.env.CINETIC_FILM_HISTORY || path.join(os.homedir(), ".cinetic", "film-history.json");
+let hist = [];
+try { hist = JSON.parse(fs.readFileSync(file, "utf8")).filter((h) => h && h.devices).slice(0, 3); } catch {}
+const fj = path.join(dir, "film.json");
+if (!fs.existsSync(fj)) {
+  const devices = { ground: "", voice: "", emphasis: "colour", signature: "", moves: [], seams: [], end: "", logo: "" };
+  const recent = hist.map((h) => ({ name: h.name || null, template: h.template || null, devices: h.devices }));
+  fs.writeFileSync(fj, JSON.stringify({ template: tpl, started: new Date().toISOString(), devices, allow: [], recent }, null, 1) + "\n");
+}
+const rt = path.join(dir, "src", "recent.ts");
+if (fs.existsSync(rt) && hist.length) {
+  const R = {};
+  for (const h of hist) {
+    const pick = Object.assign({}, h.devices, h.deal || {});
+    for (const k of ["voice", "ground", "seamTA", "seamAT", "end", "camera"]) if (typeof pick[k] === "string" && pick[k]) (R[k] = R[k] || []).push(pick[k]);
+  }
+  const src = fs.readFileSync(rt, "utf8").replace(/= \{\};\s*$/, "= " + JSON.stringify(R) + ";\n");
+  fs.writeFileSync(rt, src);
+}
+if (hist.length) console.log(`new-film: the last ${hist.length} film(s) in the history: ${hist.map((h) => h.name || "?").join(", ")} (film.json recent; their ground, voice, signature and end card are taken)`);
+' || die "could not write film.json"
+
 # Substitute a `const NAME = value;` line; fail loudly if the starter no longer has it.
 set_const() { # file name value: the FIRST `const NAME = ...;` line only (timeline.ts derives
   # `export const BPM = MUSIC?.bpm ?? GRID_BPM;` from the grid line below it, which must stay as it is)
@@ -461,8 +490,11 @@ next:
   npm run check             # tsc, lint-film, grid-check: fails on purpose until the placeholder brand
                             # (palette, typeface, mark and name: cinetic:placeholder in src/brand and
                             # COPY) is replaced; see brand-and-color.md
-  npm run stills            # style frames in out/stills/ - look at them
-  $PYS scripts/sheet.py --comp Act1 --every 4 --out out/qa/act1.png   # iterate act by act on contact sheets
+  node scripts/film-diff.mjs   # film.json: the ground, voice, signature, moves and seams you picked from
+                            # references/catalogue.md, apart from the last three films (film.json recent)
+  node scripts/precheck.mjs # seconds: every act imports, timing asserts, empty kit parts, text that does not fit
+  node scripts/frames.mjs still <a CUE frame>   # one half-size still in out/stills/ - look at it
+  node scripts/frames.mjs sheet --frames <act range> --every 4   # iterate act by act on contact sheets
                             # (npm run studio is for a person at the screen: an agent never starts it)
   npm run cues && npm run kit && npm run audio && npm run render:preview
   npm run listen            # earshot's ears on the soundtrack: out/qa/listen.json + sound_sheet.png

@@ -26,6 +26,7 @@
 //                           (the camera only travels; the closer frame is a cut)
 // The seams alternate between the two dealt kinds and their next choice, so no kind passes 45 % of the scene changes.
 import { LAUNCH } from './launch';
+import { RECENT } from './recent';
 
 export const DEVICES = {
   voice: ['build', 'blur', 'ink'],
@@ -56,12 +57,26 @@ const rng = (seed: number) => {
   };
 };
 
+/**
+ * A slot's choices without the last three films' (src/recent.ts, written by new-film.sh from the film history): never
+ * a repeat while another choice is free; when the last films used every choice, the least recent one.
+ */
+const fresh = (s: Slot): readonly string[] => {
+  const all = DEVICES[s] as readonly string[];
+  const used = ((RECENT as Partial<Record<string, readonly string[]>>)[s] ?? []).filter((c) => all.includes(c)); // newest first
+  const left = all.filter((c) => !used.includes(c));
+  return left.length ? left : [used[used.length - 1]];
+};
+
 /** The deal for a name: one choice per slot from the seed, re-drawn (deterministically) until at least half the slots differ from the floor. */
 export const dealOf = (name: string): Deal => {
   const slots = Object.keys(DEVICES) as Slot[];
   for (let salt = 0; salt < 64; salt++) {
     const r = rng(hash(`${name.trim().toLowerCase()}#${salt}`));
-    const d = Object.fromEntries(slots.map((s) => [s, DEVICES[s][Math.floor(r() * DEVICES[s].length)]])) as Deal;
+    const d = Object.fromEntries(slots.map((s) => {
+      const opts = fresh(s);
+      return [s, opts[Math.floor(r() * opts.length)]];
+    })) as Deal;
     if (2 * slots.filter((s) => d[s] !== FLOOR[s]).length >= slots.length) return d;
   }
   return { ...FLOOR, voice: 'blur', ground: 'deepPool', seamTA: 'velocityCut' };
