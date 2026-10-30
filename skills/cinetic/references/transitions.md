@@ -434,9 +434,11 @@ travel along the move, and a travelling hard edge a ramp 0.3 of its step. Two wa
 
 - `forensics.py` (seams, on every render; `--seams` runs them alone on a small decode): `carried-cut` counts the
   device each hard cut carries (ground kept, blur at the seam, anchor held, motion carried) and fails when more than
-  10 % are bare (one bare cut in a short film warns); a declared velocity seam whose exit does not build x1.15-1.35 a
-  frame or whose next shot stops inside 8 f warns, and one that turns or does not decay fails; `ground-flip` fails a
-  third light <-> dark flip; `seam-mix` fails when one seam kind takes more than 45 % of the scene changes (5 or more),
+  10 % are bare (one bare cut warns; so does a film that declares no seams, since only the plan names a matched
+  shape); a declared seam that does not carry what its recipe promises warns (a velocity seam with no motion across);
+  a declared velocity seam whose exit does not build x1.15-1.35 a frame or whose next shot stops inside 8 f warns, and
+  one that turns or does not decay fails; `ground-flip` fails a third flip of a neutral ground (paper, grey, slate,
+  black) between light and dark (a colour field moving between its deep and light state is one family); `seam-mix` fails when one seam kind takes more than 45 % of the scene changes (5 or more),
   and warns when a film of 4+ lines has no exit-then-enter, text-swap or match-cut. Also `dissolve-detect`,
   `still-cut`, `hold-into-exit`; spikes at undeclared cuts usually mean a property flipped or a pose repeated.
 - `grid-check.ts`: `seam-plan` (fade only at the end, UI dissolves short and inside acts, kinds <= 3, carried >= 40 %,
