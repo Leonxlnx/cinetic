@@ -32,6 +32,12 @@
 # The source is bundled once at the start and every pass renders from that frozen bundle, so edits
 # to src/ during a render are not in it; render.sh warns at the end if src/ changed meanwhile.
 #
+# Fast by default: the bundle (and its composition list) is a copy of the one scripts/frames.mjs keeps per state of
+# the source in out/.bundle/, which the stills and sheets of the session built already; the project's Remotion CLI runs
+# through node (no npm start per call); the GL backend is the one `node scripts/frames.mjs gl` measured fastest among
+# those that draw the same pixels as software GL here (probed once per machine; CINETIC_GL=X or -- --gl=X overrides),
+# and a render that fails on the GPU path runs once more on swangle (software GL), which the rest of the run keeps.
+#
 # Parts (the master and the preview): the frames render in parts of up to --chunk-frames (default 240) from a
 # bundle built once into out/render/<name>/ (or --bundle DIR, one you built with `npx remotion bundle`),
 # one Remotion render at a time; each finished part is kept there, so a run stopped by a job limit
@@ -208,6 +214,19 @@ if [[ ! -f "$ENTRY" ]]; then
   if [[ -f "$SCRIPT_DIR/../$ENTRY" ]]; then cd "$SCRIPT_DIR/.."; else die "no $ENTRY here; run from the project root or pass --entry"; fi
 fi
 ROOT=$(pwd)
+# The project's Remotion CLI, run by node itself: `npx remotion` starts npm first, 5-20 s on every call (18 s measured
+# on a busy laptop, against 4 s for node on the CLI file), and a master runs one call per part. npx when unresolvable.
+REMOTION_JS=$(node -e 'try { const p = require.resolve("@remotion/cli/package.json", { paths: [process.cwd()] }); const b = require(p).bin;
+const js = require("path").join(require("path").dirname(p), typeof b === "string" ? b : b.remotion); if (require("fs").existsSync(js)) console.log(js) } catch {}' 2>/dev/null || true)
+remotion() { if [[ -n "$REMOTION_JS" ]]; then node "$REMOTION_JS" "$@"; else npx remotion "$@"; fi; }
+# The bundle: scripts/frames.mjs keeps one per state of the source in out/.bundle/ (the stills and sheets of the session
+# built it already, most of the time); render.sh renders from its own frozen copy of it. It bundles here itself when
+# frames.mjs is missing (an older project), the project's own CLI cannot be resolved, or frames.mjs fails.
+FASTPATH=0; [[ -n "$REMOTION_JS" && -f "$SCRIPT_DIR/frames.mjs" ]] && FASTPATH=1
+bundle_to() {
+  if [[ $FASTPATH -eq 1 ]] && node "$SCRIPT_DIR/frames.mjs" bundle --entry "$ENTRY" --copy-to "$1" --quiet >/dev/null; then return 0; fi
+  remotion bundle "$ENTRY" --out-dir "$1" --log=error >/dev/null
+}
 if [[ $CLEAN -eq 1 ]]; then  # every gate has passed: the kept bundle and parts go
   P=${PARTS:-out/render/$(basename "${OUT%.*}")}
   [[ -d "$P" ]] || { echo "render.sh: no parts at $P" >&2; exit 0; }
@@ -337,14 +356,14 @@ console.log(ch.length ? ch.slice(0, 8).map((k) => k + (A[k] === undefined ? " (n
     rm -rf "$PARTS/bundle" "$PARTS/bundle.key" "$PARTS/compositions.txt"
     [[ -f "$KEYS" ]] || : > "$KEYS"
     step "bundling $ENTRY into $PARTS/bundle"
-    npx remotion bundle "$ENTRY" --out-dir "$PARTS/bundle" --log=error >/dev/null || die "bundle failed"
+    bundle_to "$PARTS/bundle" || die "bundle failed"
     echo "$SRC_KEY" > "$PARTS/bundle.key"
     mv -f "$PARTS/manifest.new.json" "$PARTS/manifest.json"
   fi
   B=$(cd "$PARTS/bundle" && pwd)
 else
   step "bundling $ENTRY"
-  npx remotion bundle "$ENTRY" --out-dir "$WORK/bundle" --log=error >/dev/null || die "bundle failed"
+  bundle_to "$WORK/bundle" || die "bundle failed"
   B="$WORK/bundle"
 fi
 # the composition list: cached beside the parts per bundle, so a rerun on a kept bundle skips `remotion compositions`
@@ -356,8 +375,11 @@ else
   CKEY="bundle $(node -e 'const s = require("fs").statSync(process.argv[1]); console.log(`${s.size}:${Math.round(s.mtimeMs)}`)' "$B/index.html")"
   if [[ -n "$CACHE" && -f "$CACHE" && "$(head -1 "$CACHE")" == "$CKEY" ]]; then
     LIST=$(tail -n +2 "$CACHE")
+  elif [[ -s "$B/.compositions.txt" ]]; then  # listed by scripts/frames.mjs when it built this bundle (a sheet or the gl probe)
+    LIST=$(cat "$B/.compositions.txt")
+    if [[ -n "$CACHE" ]]; then { echo "$CKEY"; echo "$LIST"; } > "$CACHE"; fi
   else
-    LIST=$(npx remotion compositions "$B" 2>/dev/null) || die "could not list compositions"
+    LIST=$(remotion compositions "$B" 2>/dev/null) || die "could not list compositions"
     if [[ -n "$CACHE" ]]; then { echo "$CKEY"; echo "$LIST"; } > "$CACHE"; fi
   fi
 fi
@@ -423,6 +445,30 @@ RARGS=(--muted --log=error)
 [[ -n "$CONC" ]] && clamp_conc render.sh && RARGS+=(--concurrency="$CONC")
 [[ $LOOP == 1 ]] && RARGS+=(--image-format=png)
 RARGS+=(${EXTRA[@]+"${EXTRA[@]}"})
+# The GL backend: a --gl passed after -- wins, then CINETIC_GL, then the one scripts/frames.mjs measured fastest among
+# the backends that draw the same pixels as software GL here (probed once per machine, cached in out/.bundle/gl.json)
+GL=""; GL_AUTO=0
+if [[ $JOIN_ONLY -eq 0 && $FASTPATH -eq 1 && " ${EXTRA[*]-} " != *" --gl"* ]]; then
+  GL=${CINETIC_GL:-$(node "$SCRIPT_DIR/frames.mjs" gl --bundle "$B" --comp "$COMP" --quiet 2>/dev/null || true)}
+  if [[ -n "$GL" ]]; then RARGS+=(--gl="$GL"); GL_AUTO=1; step "GL backend: $GL (scripts/frames.mjs gl; CINETIC_GL or -- --gl=X overrides)"; fi
+fi
+# rrender ARGS: `remotion render ARGS`; when the picked backend fails on the GPU path (the browser or its GPU process
+# died, a lost GL context, a hung frame), the call runs once more on swangle (software GL, slower, always draws) and
+# the rest of the run stays on it. An error in the film's own code fails the same way on every backend: no retry.
+rrender() {
+  local err="$WORK/remotion-err.txt" rc=0 x a=() r=()
+  remotion render "$@" 2>"$err" || rc=$?
+  cat "$err" >&2
+  if [[ $rc -ne 0 && $GL_AUTO -eq 1 && "$GL" != swangle ]] \
+    && grep -Eiq 'WebGL|GPU|EGL|ANGLE|context lost|Target closed|Session closed|crash|Browser (closed|disconnected|has disconnected)|Protocol error|timed out|Timeout' "$err"; then
+    step "the render failed on --gl=$GL (above); once more on --gl=swangle (software GL), kept for the rest of this run"
+    for x in "$@"; do [[ "$x" == --gl=* ]] && x=--gl=swangle; a+=("$x"); done
+    for x in "${RARGS[@]}"; do [[ "$x" == --gl=* ]] && x=--gl=swangle; r+=("$x"); done
+    RARGS=("${r[@]}"); GL=swangle; rc=0
+    remotion render "${a[@]}" || rc=$?
+  fi
+  return $rc
+}
 PIC="$WORK/picture.mp4"
 step "$COMP: ${SIZE}@${FPS}$([[ "$OUTSIZE" != "$SIZE" ]] && echo " (written at $OUTSIZE, --scale $SCALE)"), frames $FROM-$TO ($N f, ${DUR}s), mode $MODE"
 
@@ -488,7 +534,7 @@ case "$MODE" in
     if [[ $MODE == preview ]]; then Q=(--crf="${CRF:-20}" --x264-preset=veryfast); else Q=(--crf="${CRF:-14}" --x264-preset=slow); fi
     if [[ $CHUNKED -eq 0 ]]; then
       step "rendering $COMP ($MODE)"
-      npx remotion render "$B" "$COMP" "$PIC" ${RANGE[@]+"${RANGE[@]}"} ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
+      rrender "$B" "$COMP" "$PIC" ${RANGE[@]+"${RANGE[@]}"} ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
         || die "remotion render failed"
     else
       # parts of CHUNK frames, one Remotion render at a time; a finished part (its frame count checked) is kept
@@ -536,7 +582,7 @@ console.log(out.join(" "));' "$FROM" "$TO" "$CHUNK" "$PARTS")" || die "could not
         t1=$(date +%s)
         step "part $((k + 1))/$NP: frames $a-$b"
         rm -f "$f.tmp.mp4"
-        npx remotion render "$B" "$COMP" "$f.tmp.mp4" --frames="$a-$b" ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
+        rrender "$B" "$COMP" "$f.tmp.mp4" --frames="$a-$b" ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
           || die "remotion render failed on part $((k + 1)) (frames $a-$b); the finished parts are kept in $PARTS: rerun to resume"
         mv -f "$f.tmp.mp4" "$f"
         [[ -n "$SRC_KEY" ]] && set_part_key "$f" "$SRC_KEY"
@@ -585,7 +631,7 @@ console.log(out.join(" "));' "$FROM" "$TO" "$CHUNK" "$PARTS")" || die "could not
       # intermediates keep Chromium's native full-range JPEG colour (--color-space=default): no
       # matrix conversion before accumulate.py, which decodes with the file's own tags
       TS=$(python3 -c 'import time; print(time.time())')
-      npx remotion render "$B" "$COMP" "$WORK/sharp.mp4" ${RANGE[@]+"${RANGE[@]}"} --crf=12 --x264-preset=veryfast --color-space=default ${RARGS[@]+"${RARGS[@]}"} \
+      rrender "$B" "$COMP" "$WORK/sharp.mp4" ${RANGE[@]+"${RANGE[@]}"} --crf=12 --x264-preset=veryfast --color-space=default ${RARGS[@]+"${RARGS[@]}"} \
         || die "sharp render failed"
       SPF=$(python3 -c "import time; print(round((time.time() - $TS) / $N, 4))")
       step "measuring on-screen speed -> $SAMPLES (policy $POLICY)"
@@ -605,7 +651,7 @@ PY
     if [[ $((SB - SA + 1)) -eq $N ]]; then
       # crisp, or nothing fast: every frame renders from one sample, so the master is a sharp render
       step "no frame in $FROM-$TO needs blur samples ($(python3 -c "import json, sys;print(json.load(open(sys.argv[1])).get('policy','camera'))" "$SAMPLES") policy): rendering the sharp master"
-      npx remotion render "$B" "$COMP" "$PIC" ${RANGE[@]+"${RANGE[@]}"} --crf="${CRF:-14}" --x264-preset=slow --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
+      rrender "$B" "$COMP" "$PIC" ${RANGE[@]+"${RANGE[@]}"} --crf="${CRF:-14}" --x264-preset=slow --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
         || die "remotion render failed"
       SKIP_SUB=1
     fi
@@ -647,7 +693,7 @@ PY
     [[ $FASTRC -eq 3 ]] && die "stopped before the sub-frame pass: moves too fast for clean blur (see above)"
     [[ $FASTRC -eq 4 ]] && die "stopped before the sub-frame pass: a possible cut inside an act (see above)"
     step "rendering $SUB sub-frames $SA-$SB ($((SB - SA + 1)) sub-frames for $N frames)"
-    npx remotion render "$B" "$SUB" "$WORK/sub.mp4" --props="$(cd "$(dirname "$SAMPLES")" && pwd)/$(basename "$SAMPLES")" \
+    rrender "$B" "$SUB" "$WORK/sub.mp4" --props="$(cd "$(dirname "$SAMPLES")" && pwd)/$(basename "$SAMPLES")" \
       --frames="$SA-$SB" --crf=6 --x264-preset=veryfast --pixel-format=yuv444p --color-space=default ${RARGS[@]+"${RARGS[@]}"} \
       || die "sub-frame render failed"
     step "accumulating in float -> BT.709 CRF ${CRF:-14}$([[ $TENBIT -eq 1 ]] && echo ', 10-bit')"

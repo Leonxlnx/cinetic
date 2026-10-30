@@ -84,10 +84,20 @@ def npx():
     return found
 
 
+def remotion_cmd():
+    """The project's Remotion CLI run by node itself (`npx remotion` spends 5-20 s starting npm on every call),
+    else npx."""
+    r = subprocess.run(['node', '-e', 'try { const p = require.resolve("@remotion/cli/package.json", { paths: [process.cwd()] }); '
+                        'const b = require(p).bin; console.log(require("path").join(require("path").dirname(p), typeof b === "string" ? b : b.remotion)) } catch {}'],
+                       capture_output=True, text=True)
+    js = r.stdout.strip()
+    return ['node', js] if js and os.path.isfile(js) else [npx(), 'remotion']
+
+
 def comp_meta(comp, entry):
     """(fps, durationInFrames) from `npx remotion compositions`."""
     try:
-        out = subprocess.run([npx(), 'remotion', 'compositions', entry], capture_output=True, text=True, timeout=600)
+        out = subprocess.run([*remotion_cmd(), 'compositions', entry], capture_output=True, text=True, timeout=600)
     except (OSError, subprocess.TimeoutExpired) as e:
         die(f'npx remotion compositions failed: {e}')
     for line in out.stdout.splitlines():
@@ -104,10 +114,19 @@ def bundle_once(args):
         if not os.path.isfile(os.path.join(args.bundle, 'index.html')):
             die(f'--bundle {args.bundle}: no index.html there (build one with npx remotion bundle {args.entry} --out-dir DIR)')
         return args.bundle, None
+    # the bundle frames.mjs keeps per state of the source (out/.bundle/): reused by every still, sheet and render of
+    # the session, so an unchanged source costs no bundle here
+    fm = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frames.mjs')
+    if os.path.isfile(fm):
+        r = subprocess.run(['node', fm, 'bundle', '--entry', args.entry, '--quiet'], capture_output=True, text=True)
+        out = (r.stdout.strip().splitlines() or [''])[-1]
+        if r.returncode == 0 and os.path.isfile(os.path.join(out, 'index.html')):
+            return out, None
+        print(f'sheet: frames.mjs bundle failed ({(r.stderr or "").strip()[-300:]}); bundling here', file=sys.stderr)
     tmp = tempfile.mkdtemp(prefix='sheet_bundle_')
     out = os.path.join(tmp, 'bundle')
     print(f'sheet: bundling {args.entry} once', file=sys.stderr)
-    r = subprocess.run([npx(), 'remotion', 'bundle', args.entry, '--out-dir', out, '--log=error'], stdout=subprocess.DEVNULL)
+    r = subprocess.run([*remotion_cmd(), 'bundle', args.entry, '--out-dir', out, '--log=error'], stdout=subprocess.DEVNULL)
     if r.returncode != 0 or not os.path.isfile(os.path.join(out, 'index.html')):
         shutil.rmtree(tmp, ignore_errors=True)
         die(f'npx remotion bundle failed (exit {r.returncode})', 1)
@@ -128,7 +147,7 @@ def runs_of(frames):
 def render_comp(args, a, b, every):
     """Render frames a..b every N of a composition; returns {frame: bgr image}."""
     tmp = tempfile.mkdtemp(prefix='sheet_')
-    cmd = [npx(), 'remotion', 'render', args.entry, args.comp, tmp, '--sequence', f'--frames={a}-{b}',
+    cmd = [*remotion_cmd(), 'render', args.entry, args.comp, tmp, '--sequence', f'--frames={a}-{b}',
            '--image-format=jpeg', '--jpeg-quality=90', '--log=error']
     if every > 1:
         cmd.append(f'--every-nth-frame={every}')
