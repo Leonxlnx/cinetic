@@ -424,6 +424,7 @@ const placement = (() => {
   };
   const ids = [...count.keys()];
   const leftTB = ids.filter((id) => {
+    if (byId.get(id).kind === 'ui') return false; // the product's own strings sit where its UI puts them
     const xs = samples.filter((y) => y.id === id);
     return xs.filter((x) => x.h === 'left' && x.v !== 'middle').length * 2 >= xs.length;
   });
