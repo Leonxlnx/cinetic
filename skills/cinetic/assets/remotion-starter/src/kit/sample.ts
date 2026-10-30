@@ -341,6 +341,7 @@ const dealWorld = (seed: string | number = 'cinetic', o: DealOpts = {}): SampleW
     chart: `Last 12 weeks · ${total.value}`,
     search: 'Search',
     team: 'Team',
+    all: 'All',
   };
   return {
     seed: S, kind, origin: 'sample', workspace, screen: spec.screen, noun: spec.noun, today, people, me: 0, columns: spec.columns, statuses, records, total, nav, activity, focus,

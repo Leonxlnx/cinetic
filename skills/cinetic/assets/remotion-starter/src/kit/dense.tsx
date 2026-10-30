@@ -138,7 +138,7 @@ export const AppWindow: React.FC<{ theme: KitTheme; world: SampleWorld; w: numbe
   const live = 0.55 + 0.45 * Math.cos((frame / fps) * Math.PI * 1.1) ** 2; // the live dot breathes
   const chrome = W.chrome ?? {};
   const me = W.people[W.me];
-  const plan = chrome.plan ?? (W.people.length ? `${W.people.length} members` : '');
+  const plan = chrome.plan ?? ''; // the film's own words or nothing: the kit never writes "N members"
   const empty = !W.workspace && isEmptyWorld(W);
   if (empty) kitEmpty('AppWindow', "world: filmWorld({ workspace, people, nav }) with the product's own chrome");
   return (
@@ -347,7 +347,7 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
       </div>
       {/* tabs with the rows' own counts */}
       {W.statuses.length > 0 && <div style={{ position: 'absolute', left: pad, top: tabsY, width: tw, height: 36 * u, display: 'flex', alignItems: 'center', gap: 22 * u, boxShadow: `inset 0 -${(1 * u).toFixed(2)}px 0 ${t.line}` }}>
-        {[{ label: 'All', count: W.total.count }, ...W.statuses.map((s) => ({ label: s.label, count: s.count }))].map((tab, i) => (
+        {[...(chrome.all ? [{ label: chrome.all, count: W.total.count }] : []), ...W.statuses.map((s) => ({ label: s.label, count: s.count }))].map((tab, i) => (
           <span key={tab.label} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6 * u, height: 36 * u }}>
             <Micro px={13.5 * u} weight={i === 0 ? 650 : 500} color={i === 0 ? ink : mute}>{tab.label}</Micro>
             <span style={{ padding: `${1 * u}px ${6 * u}px`, borderRadius: 6 * u, background: mixColor(t.surface, t.text, 0.07) }}>

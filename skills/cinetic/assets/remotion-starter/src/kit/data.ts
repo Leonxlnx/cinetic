@@ -36,7 +36,7 @@ export type WorldRecord = {
   tag: string;
 };
 /** The screen's chrome strings: each is drawn only when the world gives it (a film's own words, never the kit's). */
-export type WorldChrome = { url?: string; plan?: string; range?: string; action?: string; activity?: string; chart?: string; search?: string; team?: string };
+export type WorldChrome = { url?: string; plan?: string; range?: string; action?: string; activity?: string; chart?: string; search?: string; team?: string; all?: string };
 export type SampleWorld = {
   seed: string;
   kind: WorldKind;
