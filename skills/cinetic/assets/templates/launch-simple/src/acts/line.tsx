@@ -1,31 +1,74 @@
 // The line: one sentence, centred in the middle band, in the film's one voice (deal.ts voice), the key word in the
-// accent ink. Its text sits on its own composited layer while it is sharp (layer.tsx usePromote), so the camera float
-// and the line's slow creep move it sub-pixel; the blur voice's soft start goes through layer.tsx Soft (fixed levels).
+// accent ink. Set with care: a statement's cap is 7.4 % of the frame height (the claim, the film's last line, 8.6 %),
+// its tracking tightens as it grows, a long line keeps one row at a sentence cap (6-6.4 %) or breaks into two balanced
+// rows, never shrinks under a 6 % cap. Its text sits on its own composited layer while it is sharp (layer.tsx
+// usePromote), so the camera float and the line's slow creep move it sub-pixel; the blur voice's soft start goes
+// through layer.tsx Soft (fixed levels). Two rows part while they are read (the first drifting one way, the second the
+// other, slower): two planes of type under one camera.
 import React from 'react';
 import { FONT, TYPE, U } from '../brand/tokens';
 import type { FamilyInks } from '../fx/Grounds';
 import { arrive, clamp, E, mix } from '../lib/anim';
 import { mixColor } from '../lib/color';
-import { fitSize, measureTracked } from '../lib/measure';
+import { measureTracked } from '../lib/measure';
 import { DEAL } from '../deal';
+import { LAUNCH } from '../launch';
 import { copy, FPS, H, keyWords, VOICE, W } from '../timeline';
 import { Soft, usePromote } from './layer';
 
-/** A statement's size (px): a cap of about 7 % of the frame height, one line at most 58.5 % of the width (84 % for a long one; the read's creep
- * grows it a few percent, under the 61 % line), never a cap under 5 %. */
-export const LINE_TYPE = { weight: TYPE.display.weight, track: TYPE.display.track, cap: 0.727 } as const;
-export const lineSize = (text: string) => {
-  const max = (0.07 * H) / LINE_TYPE.cap;
-  const min = (0.052 * H) / LINE_TYPE.cap;
-  const fit = fitSize(text, W * 0.585, max, LINE_TYPE.weight, LINE_TYPE.track);
-  if (fit >= min) return fit;
-  return Math.min(min, fitSize(text, W * 0.84, max, LINE_TYPE.weight, LINE_TYPE.track));
+/**
+ * Statement type (shares of the frame): the cap target, the claim's (the last line), the sentence band a long line may
+ * drop to on one row, the widths (one row at the target up to `width`, a sentence row up to `sentence.width`: under
+ * look-audit's 61 % and 75 % lines once the read's creep has grown it), the leading of two rows and the floor.
+ */
+export const LINE_TYPE = { weight: TYPE.line.weight, cap: 0.727, target: 0.074, claim: 0.086, sentence: { lo: 0.06, hi: 0.064, width: 0.72 }, width: 0.585, lead: 1.06, floor: 0.06 } as const;
+/** Tracking for a display size (px): -0.01 em at 60 px tightening to -0.03 em at 130 px and over (letters kept apart). */
+export const trackFor = (size: number) => -0.01 - 0.02 * clamp((size - 60) / 70);
+
+/** The film's claim: its last line, set larger. */
+export const isClaim = (id: string) => id === `line${LAUNCH.pairs.length}`;
+
+const capPx = (cap: number) => (cap * H) / LINE_TYPE.cap;
+const widthOf = (s: string, size: number) => measureTracked(s, size, LINE_TYPE.weight, trackFor(size), FONT.text, { trailing: false });
+
+/** The two rows of a line broken where they balance best (the longer row as short as it can be). */
+const balance = (words: string[], size: number): [string[], string[]] => {
+  let best: [string[], string[]] = [words, []];
+  let bw = Infinity;
+  for (let i = 1; i < words.length; i++) {
+    const w = Math.max(widthOf(words.slice(0, i).join(' '), size), widthOf(words.slice(i).join(' '), size));
+    if (w < bw) [bw, best] = [w, [words.slice(0, i), words.slice(i)]];
+  }
+  return best;
 };
 
+/** How a line is set: its size (px) and its rows (word counts per row). Browser only (it measures with the film's face). */
+export const lineLayout = (text: string, claim = false): { size: number; rows: number[] } => {
+  const words = text.split(/\s+/).filter(Boolean);
+  const target = capPx(claim ? LINE_TYPE.claim : LINE_TYPE.target);
+  // one row at the target
+  if (widthOf(text, target) <= W * LINE_TYPE.width) return { size: target, rows: [words.length] };
+  // one row at a sentence cap (a statement, never the claim, which takes two rows before it gets smaller)
+  if (!claim) {
+    const s = Math.min(capPx(LINE_TYPE.sentence.hi), (W * LINE_TYPE.sentence.width * 100) / widthOf(text, 100));
+    if (s >= capPx(LINE_TYPE.sentence.lo)) return { size: s, rows: [words.length] };
+  }
+  if (words.length < 2) return { size: Math.max(capPx(LINE_TYPE.floor), (W * LINE_TYPE.sentence.width * 100) / widthOf(text, 100)), rows: [1] };
+  // two balanced rows at the target, shrinking only as far as they must
+  const [a, b] = balance(words, target);
+  const wide = Math.max(widthOf(a.join(' '), 100), widthOf(b.join(' '), 100));
+  const size = Math.max(capPx(LINE_TYPE.floor), Math.min(target, (W * LINE_TYPE.width * 100) / wide));
+  return { size, rows: [a.length, b.length] };
+};
+/** A statement's size (px), for code that only needs the size. */
+export const lineSize = (text: string, claim = false) => lineLayout(text, claim).size;
+
 /** The life of a line while it is read: a slow push (scale per second about its centre) and a sideways drift (px at
- * 1080p per second, centred on the read so the line stays centred; odd lines drift right, even ones left). */
+ * 1080p per second, centred on the read so the line stays centred; odd lines drift right, even ones left; of two rows
+ * the second drifts against the first at PART of its speed). */
 export const LINE_CREEP = 0.015;
 export const LINE_DRIFT = 18;
+export const LINE_PART = 0.6;
 
 /** Text set on its own composited layer while its layer is sharp (sub-pixel moves, no whole-pixel ticks). */
 export const Text: React.FC<{ id?: string; x: number; y: number; style: React.CSSProperties; children: React.ReactNode; width?: number }> = ({ id, x, y, style, children, width }) => {
@@ -44,47 +87,58 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
   const c = copy(id);
   const words = keyWords(raw);
   const text = words.map((w) => w.word).join(' ');
-  const size = lineSize(text);
-  const m = (s: string) => measureTracked(s, size, LINE_TYPE.weight, LINE_TYPE.track, FONT.text, { trailing: false });
-  // the words' widths drive only the re-centre; the line itself is laid out by the browser, centred, in one flow
-  const ends = words.map((_, i) => m(words.slice(0, i + 1).map((w) => w.word).join(' ')));
+  const { size, rows } = lineLayout(text, isClaim(id));
+  const track = trackFor(size);
+  const m = (s: string) => measureTracked(s, size, LINE_TYPE.weight, track, FONT.text, { trailing: false });
   const t = F - c.in;
   const k = FPS / 60;
   const voice = DEAL.voice;
-  let offset = 0;
-  if (voice === 'build') {
-    // re-centre: each new word pushes the line half its width left, settling on a glide (24 f)
-    for (let i = 1; i < words.length; i++) offset += ((ends[i] - ends[i - 1]) / 2) * (1 - E.glideOut(clamp((t - i * VOICE.build.stagger * k) / (VOICE.build.recentre * k))));
-  }
   // the blur voice: the whole line out of a 12 px blur, gone by 60 % of its settle (still moving), settling from 104 %
-  // the blur voice settles on a glide (its blur gone early, while it still moves)
+  // on a glide
   const whole = voice === 'blur' ? E.glideOut(clamp(t / (VOICE.blur.dur * k))) : 1;
   const sigma = voice === 'blur' ? VOICE.blur.blur * clamp(1 - whole / 0.6) : 0;
   const push = (voice === 'blur' ? mix(VOICE.blur.from, 1, whole) : 1) * (1 + LINE_CREEP * Math.max(0, t) / FPS);
-  const top = cy - size * 0.56;
   const odd = Number(id.replace(/\D/g, '')) % 2 === 1;
-  const drift = (odd ? 1 : -1) * LINE_DRIFT * U * ((F - (c.in + c.out) / 2) / FPS);
+  const read = (F - (c.in + c.out) / 2) / FPS; // seconds from the middle of the read
+  const lineH = size * LINE_TYPE.lead;
+  const top = cy - (rows.length * lineH) / 2;
+  let first = 0;
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, opacity: voice === 'blur' ? clamp(whole / 0.35) : 1, transformOrigin: `${W / 2}px ${cy}px`, transform: `scale(${push.toFixed(5)})` }}>
       <Soft sigma={sigma}>
-        <Text id={id} x={offset + drift} y={top} width={W} style={{ textAlign: 'center', fontFamily: FONT.text, fontSize: size, fontWeight: LINE_TYPE.weight, letterSpacing: `${LINE_TYPE.track}em`, lineHeight: 1.12 }}>
-          {words.map((w, i) => {
-            const s = i * (voice === 'build' ? VOICE.build.stagger : VOICE.ink.stagger) * k;
-            const p = clamp((t - s) / ((voice === 'build' ? VOICE.build.fade : VOICE.ink.fade) * k));
-            const a = voice === 'blur' ? 1 : E.snapOut(p);
-            const inked = voice === 'ink' ? E.softOut(clamp((t - s) / (VOICE.ink.ink * k))) : 1;
-            const col = w.key ? inks.accent : inks.type;
-            const color = voice === 'ink' ? mixColor(mixColor(inks.type, inks.ground, 0.72), col, inked) : col;
-            // the build's rise (and the ink voice's small one) ends while the word still travels (arrive): no settling tail
-            const rise = voice === 'build' ? (1 - arrive(E.glideOut(p))) * 0.12 * size : voice === 'ink' ? (1 - arrive(E.glideOut(clamp((t - s) / (26 * k))))) * 0.06 * size : 0;
-            return (
-              <React.Fragment key={i}>
-                {i > 0 ? ' ' : ''}
-                <span style={{ display: 'inline-block', color, opacity: a, transform: `translate3d(0px, ${rise.toFixed(3)}px, 0)` }}>{w.word}</span>
-              </React.Fragment>
-            );
-          })}
-        </Text>
+        {rows.map((n, r) => {
+          const row = words.slice(first, first + n);
+          const i0 = first;
+          first += n;
+          // re-centre (build): each new word of the row pushes it half its width left, settling on a glide (24 f)
+          const ends = row.map((_, i) => m(row.slice(0, i + 1).map((w) => w.word).join(' ')));
+          let offset = 0;
+          if (voice === 'build') for (let i = 1; i < row.length; i++) offset += ((ends[i] - ends[i - 1]) / 2) * (1 - E.glideOut(clamp((t - (i0 + i) * VOICE.build.stagger * k) / (VOICE.build.recentre * k))));
+          // the read's drift: one row drifts with the line's side; a second row drifts against it, slower (the rows part)
+          const dir = (odd ? 1 : -1) * (r === 0 ? 1 : -LINE_PART);
+          const drift = dir * LINE_DRIFT * U * read;
+          return (
+            <Text key={r} id={id} x={offset + drift} y={top + r * lineH} width={W} style={{ textAlign: 'center', fontFamily: FONT.text, fontSize: size, fontWeight: LINE_TYPE.weight, letterSpacing: `${track}em`, lineHeight: LINE_TYPE.lead, fontKerning: 'normal' }}>
+              {row.map((w, j) => {
+                const i = i0 + j;
+                const s = i * (voice === 'build' ? VOICE.build.stagger : VOICE.ink.stagger) * k;
+                const p = clamp((t - s) / ((voice === 'build' ? VOICE.build.fade : VOICE.ink.fade) * k));
+                const a = voice === 'blur' ? 1 : E.snapOut(p);
+                const inked = voice === 'ink' ? E.softOut(clamp((t - s) / (VOICE.ink.ink * k))) : 1;
+                const col = w.key ? inks.accent : inks.type;
+                const color = voice === 'ink' ? mixColor(mixColor(inks.type, inks.ground, 0.72), col, inked) : col;
+                // the build's rise (and the ink voice's small one) ends while the word still travels (arrive): no settling tail
+                const rise = voice === 'build' ? (1 - arrive(E.glideOut(p))) * 0.12 * size : voice === 'ink' ? (1 - arrive(E.glideOut(clamp((t - s) / (26 * k))))) * 0.06 * size : 0;
+                return (
+                  <React.Fragment key={j}>
+                    {j > 0 ? ' ' : ''}
+                    <span style={{ display: 'inline-block', color, opacity: a, transform: `translate3d(0px, ${rise.toFixed(3)}px, 0)` }}>{w.word}</span>
+                  </React.Fragment>
+                );
+              })}
+            </Text>
+          );
+        })}
       </Soft>
     </div>
   );
