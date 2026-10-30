@@ -26,10 +26,15 @@
 // The GL backend. remotion.config.ts asks for 'angle' (the GPU through ANGLE). `gl` renders the same frames with
 // each backend this platform offers (angle and swangle everywhere; angle-egl and egl on Linux), keeps the ones that
 // finish and match the software reference (swangle, PSNR >= 32 dB, so a GPU path that draws black or garbage is
-// refused), and picks the fastest; out/.bundle/gl.json caches the answer per machine and Remotion version
+// refused), and picks the fastest from the first frame written to the last (the start-up every call pays alike is
+// left out: on a busy laptop it is 10-30 s and decided the race by noise), keeping angle unless another backend is
+// 1.25x faster; software GL beating a GPU path that draws correctly means the GPU was busy, so swangle then gets an
+// hour's fallback and the GPU path stays the answer. out/.bundle/gl.json caches it per machine and Remotion version
 // (CINETIC_GL=<backend> overrides it, --force probes again). still and sheet use the cached pick when there is one,
 // else the config's backend, and when a render fails with it they retry once with swangle (software, always works)
-// and record that. render.sh runs `gl` before a final render.
+// and keep swangle for an hour (gl.json 'fallback'), then try the measured pick again: a GPU path that failed once
+// under load is not taken as broken for good (swangle renders a 1080p frame 5-8x slower). render.sh runs `gl` before
+// a final render.
 //
 // Options (still, sheet):
 //   --comp ID          composition (default Film)
@@ -40,7 +45,8 @@
 //   --out PATH         still: a folder (default out/stills); sheet: the PNG (default out/qa/sheet.png)
 //   --format F         png (still default) or jpeg (sheet tiles, default)
 //   --props JSON|FILE  input props for the composition
-//   --concurrency N    parallel tabs (default: the frame count, at most Remotion's default of half the cores, max 8)
+//   --concurrency N    parallel tabs (default: the frame count, at most Remotion's default of half the cores, max 8;
+//                      never above the cores Remotion sees, which OMP_NUM_THREADS lowers through nproc)
 //   --gl X             this backend for this call (angle, swangle, angle-egl, egl, vulkan)
 //   --entry FILE       entry point (default src/index.ts)
 //   --fresh            rebuild the bundle even when one matches
@@ -195,10 +201,14 @@ function machineKey() {
 }
 function readGl() { try { const g = JSON.parse(fs.readFileSync(GLJSON, 'utf8')); return g.key === machineKey() ? g : null; } catch { return null; } }
 function writeGl(g) { fs.mkdirSync(CACHE, { recursive: true }); fs.writeFileSync(GLJSON, `${JSON.stringify({ key: machineKey(), at: new Date().toISOString(), ...g }, null, 1)}\n`); }
+// a swangle fallback after a GPU-path failure holds for an hour; after that the probe's pick (or the config's) again
+const FALLBACK_MS = 3600e3;
+const fallbackOf = (g) => (g?.fallback && Date.now() - Date.parse(g.fallback.at) < FALLBACK_MS ? g.fallback : null);
+const glOf = (g) => fallbackOf(g)?.gl ?? g?.gl ?? null; // null: the config's backend
 function glForCall() {
   if (opt.gl) return opt.gl;
   if (process.env.CINETIC_GL) return process.env.CINETIC_GL;
-  return readGl()?.gl ?? null; // null: the config's backend
+  return glOf(readGl());
 }
 
 // ---------- frame selections ----------
@@ -233,12 +243,29 @@ function compositions(bundle) {
   return comps;
 }
 
+// The cores Remotion lets a render use: the lower of the machine's and `nproc`'s, and nproc honours OMP_NUM_THREADS and
+// OMP_THREAD_LIMIT (set in many ML, CI and shared-machine shells). Remotion refuses a --concurrency above it outright
+// ("concurrency is set higher than the amount of CPU cores available"), so every count here stays at or under it.
+function cpuCount() {
+  const n = [typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length];
+  for (const v of [process.env.OMP_NUM_THREADS, process.env.OMP_THREAD_LIMIT]) { const k = parseInt(v || '', 10); if (k > 0) n.push(k); }
+  return Math.max(1, Math.min(...n));
+}
+function concurrencyFor(n) {
+  const cores = cpuCount();
+  if (!opt.concurrency) return String(Math.max(1, Math.min(n, 8, Math.round(cores / 2))));
+  if (/^\d+$/.test(opt.concurrency) && +opt.concurrency > cores) {
+    say(`--concurrency ${opt.concurrency} is above the ${cores} core(s) Remotion sees here; using ${cores}`);
+    return String(cores);
+  }
+  return opt.concurrency;
+}
+
 // Render a frame selection to images in a fresh folder. Returns [{frame, file}] in frame order.
 function renderFrames(bundle, comp, { frames, every = 1, scale, format, outDir, gl }) {
   fs.mkdirSync(outDir, { recursive: true });
   const n = frames.reduce((s, [a, b]) => s + Math.floor((b - a) / every) + 1, 0);
-  const cores = typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length;
-  const conc = opt.concurrency || String(Math.max(1, Math.min(n, 8, Math.round(cores / 2))));
+  const conc = concurrencyFor(n);
   const sel = every > 1 ? `${frames[0][0]}-${frames[0][1]}` : frames.map(([a, b]) => (a === b ? `${a}` : `${a}-${b}`)).join(',');
   const args = ['remotion', 'render', bundle, comp, outDir, '--sequence', `--frames=${sel}`, `--image-format=${format}`,
     `--scale=${scale}`, `--concurrency=${conc}`, '--image-sequence-pattern=[frame].[ext]', '--log=error'];
@@ -253,7 +280,12 @@ function renderFrames(bundle, comp, { frames, every = 1, scale, format, outDir, 
   if (r.code !== 0 && gl !== 'swangle' && !opt.gl && !/--gl[= ]/.test(PASS.join(' ')) && gpuish.test(errText(r, 4000))) {
     say(`the render failed with ${gl || "the config's backend"}; retrying once with swangle (software GL)`);
     const r2 = run('swangle');
-    if (r2.code === 0) { writeGl({ gl: 'swangle', why: `${gl || 'config backend'} failed: ${errText(r, 200)}` }); r = r2; }
+    if (r2.code === 0) {
+      const { key, at, fallback, ...kept } = readGl() || {}; // the probe's pick stays; the fallback rides on it for an hour
+      writeGl({ ...kept, fallback: { gl: 'swangle', at: new Date().toISOString(), why: `${gl || 'config backend'} failed: ${errText(r, 200)}` } });
+      say('swangle kept for this machine for an hour (out/.bundle/gl.json), then the GPU path is tried again');
+      r = r2;
+    }
   }
   if (r.code !== 0) die(`remotion render failed:\n${errText(r)}`);
   const files = fs.readdirSync(outDir).map((f) => [/^(?:element-)?(\d+)\.(png|jpe?g)$/i.exec(f), f]).filter(([m]) => m)
@@ -378,7 +410,13 @@ function cmdGl() {
   const env = process.env.CINETIC_GL;
   if (env) { console.log(env); return; }
   const have = readGl();
-  if (have && !opt.force) { if (!opt.quiet) say(`gl ${have.gl} (cached ${have.at}${have.why ? `: ${have.why}` : ''}; --force probes again)`); console.log(have.gl); return; }
+  const fb = fallbackOf(have);
+  if (have && (have.gl || fb) && !opt.force) {
+    if (!opt.quiet) say(fb ? `gl swangle until an hour after ${fb.at} (${fb.why}); then ${have.gl || "the config's backend"} again`
+      : `gl ${have.gl} (cached ${have.at}; --force probes again)`);
+    console.log(glOf(have) ?? 'angle');
+    return;
+  }
   const bundle = opt.bundle ? path.resolve(opt.bundle) : ensureBundle();
   const comp = opt.comp || 'Film';
   const meta = compositions(bundle)[comp];
@@ -394,9 +432,16 @@ function cmdGl() {
     fs.mkdirSync(dir, { recursive: true });
     const t = Date.now();
     const r = npx(['remotion', 'render', bundle, comp, dir, '--sequence', `--frames=${frames.map(([a]) => a).join(',')}`, '--image-format=png',
-      '--scale=0.5', '--concurrency=2', '--image-sequence-pattern=[frame].[ext]', `--gl=${g}`, '--log=error']);
-    res[g] = { ok: r.code === 0, s: +((Date.now() - t) / 1000).toFixed(1), dir };
-    say(`probe ${g}: ${r.code === 0 ? `${res[g].s} s for ${n} frames` : `failed (${errText(r, 160)})`}`);
+      '--scale=0.5', `--concurrency=${Math.min(2, cpuCount())}`, '--image-sequence-pattern=[frame].[ext]', `--gl=${g}`, '--log=error']);
+    // the steady state: from the first frame written to the last (file times), without the 10-30 s of node, browser
+    // and bundle start-up that every call pays alike and that, under load, swamps the difference between backends
+    let run = null;
+    try {
+      const ts = fs.readdirSync(dir).map((x) => fs.statSync(path.join(dir, x)).mtimeMs).sort((a, b) => a - b);
+      if (ts.length >= 2 && ts[ts.length - 1] > ts[0]) run = +((ts[ts.length - 1] - ts[0]) / 1000).toFixed(2);
+    } catch { /* no files */ }
+    res[g] = { ok: r.code === 0, s: +((Date.now() - t) / 1000).toFixed(1), run, dir };
+    say(`probe ${g}: ${r.code === 0 ? `${res[g].s} s for ${n} frames (${run ?? '?'} s from the first to the last)` : `failed (${errText(r, 160)})`}`);
   }
   const ref = res.swangle?.ok ? 'swangle' : null;
   for (const [g, v] of Object.entries(res)) {
@@ -411,13 +456,30 @@ function cmdGl() {
     v.psnr = worst === Infinity ? 'identical' : +worst.toFixed(1);
     if (worst < 32) { v.ok = false; say(`probe ${g}: refused, its frames differ from the software reference (PSNR ${v.psnr} dB)`); }
   }
-  const ok = Object.entries(res).filter(([, v]) => v.ok).sort((a, b) => a[1].s - b[1].s);
+  // ranked on the steady state when every backend that drew has one (else on the whole call); the config's backend
+  // (angle) stays unless another is clearly faster (1.25x), so a tie decided by noise never moves the film off the GPU
+  const ok = Object.entries(res).filter(([, v]) => v.ok);
   fs.rmSync(tmpDir(`gl-tmp-${process.pid}`), { recursive: true, force: true });
   if (!ok.length) die('no GL backend rendered the probe frames (see above)');
-  const pick = ok[0][0];
-  writeGl({ gl: pick, probe: Object.fromEntries(Object.entries(res).map(([g, v]) => [g, { ok: v.ok, s: v.s, psnr: v.psnr }])) });
-  say(`gl ${pick} (${ok.map(([g, v]) => `${g} ${v.s} s`).join(', ')}); cached in out/.bundle/gl.json`);
-  console.log(pick);
+  const steady = ok.every(([, v]) => v.run > 0);
+  const cost = (v) => (steady ? v.run : v.s);
+  ok.sort((a, b) => cost(a[1]) - cost(b[1]));
+  let pick = ok[0][0];
+  if (pick !== 'angle' && res.angle?.ok && cost(res.angle) < 1.25 * cost(res[pick])) pick = 'angle';
+  const probe = Object.fromEntries(Object.entries(res).map(([g, v]) => [g, { ok: v.ok, s: v.s, run: v.run, psnr: v.psnr }]));
+  const listing = ok.map(([g, v]) => `${g} ${cost(v)} s`).join(', ');
+  // software GL beating a GPU backend that draws correctly means the GPU was busy at that moment: it gets the hour of a
+  // fallback, and the GPU backend stays the machine's answer (swangle renders a quiet 1080p frame 5-8x slower)
+  const gpu = ok.find(([g]) => g !== 'swangle');
+  if (pick === 'swangle' && gpu) {
+    const at = new Date().toISOString();
+    writeGl({ gl: gpu[0], probe, fallback: { gl: 'swangle', at, why: `faster than ${gpu[0]} at the probe (${listing}): the GPU was busy` } });
+    say(`gl swangle for an hour (${listing}; the GPU looked busy), then ${gpu[0]}; cached in out/.bundle/gl.json`);
+  } else {
+    writeGl({ gl: pick, probe });
+    say(`gl ${pick} (${listing}${steady ? ', first to last frame' : ', whole calls'}); cached in out/.bundle/gl.json`);
+  }
+  console.log(glOf(readGl()) ?? pick);
 }
 
 if (CMD === 'bundle') cmdBundle();
