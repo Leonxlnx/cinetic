@@ -46,6 +46,17 @@ result(!alignFrame(frame(1, [row('head', 600, 200, { ui: false, px: 96, h: 110 }
 result(!alignFrame(frame(1, card(6), { imagery: [{ x: 590, y: 340, w: 400, h: 200 }] })).length, 'a row on a photo and a row off it are two places');
 result(!alignFrame(frame(1, [row('title', 600, 300), row('when', 606, 350, { speed: 9 })])).length, 'a row in flight (layout-audit --speed) is not read');
 result(!alignFrame(frame(1, [row('a', 600, 300), row('b', 606, 520)])).length, 'rows far apart are not one stack');
+// a card tilted 1.3 deg (camera roll or a 3D turn): its rows' left edges drift 2.2 px a row down one slanted line
+const tilted = [0, 1, 2, 3].map((i) => row(`r${i}`, 600 + i * 2.2, 300 + i * 96, { h: 48 }));
+result(!uiLayout([frame(10, tilted), frame(20, tilted)]).issues.length, 'a tilted card: rows whose left edges lie on one slanted line are one column, not a near miss');
+const odd = [row('r0', 600, 300, { h: 48 }), row('r1', 600, 396, { h: 48 }), row('r2', 606, 492, { h: 48 })];
+r = uiLayout([frame(10, odd), frame(20, odd)]);
+result(r.issues.length === 1 && r.issues[0].id === 'r1+r2', 'two rows on one edge and a third 6 px off still fail (the odd row out)', JSON.stringify(r.issues.map((x) => x.id)));
+const step = [0, 1, 2].map((i) => row(`s${i}`, 600 + i * 12, 300 + i * 56));
+result(uiLayout([frame(10, step), frame(20, step)]).issues.length === 2, 'a staircase steeper than 5 deg is not a tilt: each step fails');
+const flying = (f, dx) => frame(f, [row('title', 600 + dx, 300 + dx, { px: 40, h: 48 }), row('when', 606 + dx * 0.9, 356 + dx)]);
+r = uiLayout([flying(100, 0), flying(106, 30), flying(112, 60)]);
+result(!r.issues.length && !r.warnings.length, 'a card flying in (5 px/f between audited frames, no --speed) is not a resting near miss', JSON.stringify([...r.issues, ...r.warnings].map((x) => [x.id, x.frames])));
 const k4 = (b) => ({ ...b, x: b.x * 2, y: b.y * 2, w: b.w * 2, h: b.h * 2, px: b.px * 2 });
 r = alignFrame({ frame: 1, width: 3840, height: 2160, boxes: [k4(row('a', 600, 300)), k4(row('b', 603, 350))] });
 result(r.length === 1 && r[0].d === 3, 'a 4K frame is read at 1080 (6 px at 2160 = 3 px)', JSON.stringify(r.map((x) => x.d)));

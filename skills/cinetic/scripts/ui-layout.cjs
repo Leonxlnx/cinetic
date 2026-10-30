@@ -6,7 +6,9 @@
  *   ui-align       text rows stacked in one card or panel share their left edge: two readable rows, one right under the
  *                  other (the gap under 1.2 line heights, their spans overlapping), whose left edges miss each other by
  *                  more than 2 px and at most 12 px at 1080 (a near miss: a deliberate indent, an icon-led row or a
- *                  second column sits further in) and that are not centred on each other or set flush right together.
+ *                  second column sits further in) and that are not centred on each other or set flush right together. A
+ *                  card the camera or a 3D turn tilts draws its one left edge slanted: three stacked rows whose left edges
+ *                  lie on one straight line (within 1 px, at most 5 deg off vertical) are one column, not a near miss.
  *   text-on-asset  text never cuts into a picture or a mark it does not sit on by design: a readable text box that crosses
  *                  the edge of an official mark ([data-logo]) or a real picture ([data-imagery]) by more than 2 px each
  *                  way, where it shows (the camera float put back on the text). A caption set inside a photo, a mark or
@@ -15,8 +17,8 @@
  *                  hidden behind a plate from one in view, so here it is a warning: look-audit.py --layout reads the
  *                  pixels beside each crossing and fails the ones in view (on 2 or more audited frames).
  *
- * Readable: effective opacity >= 0.5, not inside a type push in flight or an active smear, and (with layout-audit
- * --speed) moving at most 3 px/f. Each finding is grouped by its pair of ids: ui-align on 2 or more audited frames fails
+ * Readable: effective opacity >= 0.5, not inside a type push in flight or an active smear, and moving at most 3 px/f
+ * (layout-audit --speed, else measured here between audited frames up to 12 frames apart). Each finding is grouped by its pair of ids: ui-align on 2 or more audited frames fails
  * (a resting state), on one it warns (a frame caught mid-move). Px are at 1080 (a 4K or 9:16 frame is scaled).
  *
  * Usage:
@@ -27,7 +29,7 @@
 'use strict';
 
 const UI_LAYOUT = {
-  align: { tol: 2, near: 12, gap: 1.2, size: 1.6 }, // px at 1080; gap in line heights; type sizes within this ratio (one card's rows)
+  align: { tol: 2, near: 12, gap: 1.2, size: 1.6, tilt: 0.09, line: 1 }, // px at 1080; gap in line heights; type sizes within this ratio (one card's rows); a tilted card's column: slope up to 0.09 (5 deg), its left edges on one line within 1 px
   asset: { cross: 2 }, // px at 1080 each way
   read: { opacity: 0.5, speed: 3 }, // effective opacity; px/f at 1080 (layout-audit --max-read-speed)
   persist: 2, // audited frames on which a finding fails
@@ -38,15 +40,17 @@ const readable = (b) => b.opacity >= UI_LAYOUT.read.opacity && b.push !== 'movin
 const inside = (a, b, tol) => a.x >= b.x - tol && a.y >= b.y - tol && a.x + a.w <= b.x + b.w + tol && a.y + a.h <= b.y + b.h + tol;
 const cross = (a, b) => [Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)];
 
-/** Near-miss left edges among the stacked rows of one frame: [{ a, b, d }] (d in px at 1080). */
+/** Near-miss left edges among the stacked rows of one frame: [{ a, b, d }] (d in px at 1080). A card tilted by the camera
+ * or a 3D turn draws its one left edge as a slanted line: three stacked rows whose left edges sit on one straight line (within
+ * 1 px, at most 5 deg off vertical) are one column on a tilted card, not a near miss. */
 function alignFrame(d) {
   const k = 1080 / (d.height || 1080);
   const P = UI_LAYOUT.align;
   const rows = (d.boxes || []).filter(readable);
   const pics = d.imagery || [];
-  const out = [];
+  // the row right above b in one stack: its span overlaps b's, it ends above b's middle, nearest first; same kind and size
+  const up = new Map();
   for (const b of rows) {
-    // the row right above b: its span overlaps b's, it ends above b's middle, nearest first
     let a = null;
     for (const c of rows) {
       if (c === b || c.y + c.h > b.y + b.h / 2 || c.y >= b.y) continue;
@@ -59,10 +63,23 @@ function alignFrame(d) {
     const gap = b.y - (a.y + a.h);
     if (gap > P.gap * Math.max(a.h, b.h)) continue; // not one stack
     if (pics.some((p) => inside(a, p, 2) !== inside(b, p, 2))) continue; // one on a picture, one off it: two places
+    up.set(b, a);
+  }
+  // three rows (p over q over r) whose left edges lie on one slanted line: one column on a tilted card
+  const slant = (p, q, r) => {
+    if (!p || !r) return false;
+    const s1 = (q.x - p.x) / (q.y - p.y), s2 = (r.x - q.x) / (r.y - q.y);
+    return Math.abs(s1) <= P.tilt && Math.abs(s2) <= P.tilt && Math.abs(s1 * (r.y - q.y) - (r.x - q.x)) * k <= P.line && Math.sign(s1) === Math.sign(s2);
+  };
+  const out = [];
+  for (const [b, a] of up) {
     const dl = Math.abs(a.x - b.x) * k;
     const dc = Math.abs(a.x + a.w / 2 - (b.x + b.w / 2)) * k;
     const dr = Math.abs(a.x + a.w - (b.x + b.w)) * k;
-    if (dl > P.tol && dl <= P.near && dc > P.tol && dr > P.tol) out.push({ a, b, d: r1(dl) });
+    if (!(dl > P.tol && dl <= P.near && dc > P.tol && dr > P.tol)) continue;
+    const below = [...up].find(([, x]) => x === b)?.[0];
+    if (slant(up.get(a), a, b) || slant(a, b, below)) continue;
+    out.push({ a, b, d: r1(dl) });
   }
   return out;
 }
@@ -99,6 +116,29 @@ function assetFrame(d) {
   return out;
 }
 
+/** Each box's speed (px/f at 1080, its centre) from the audited frames on either side when the audit did not measure it
+ * (layout-audit without --speed): the slower of the two moves, neighbours up to 12 frames away. A card still flying in
+ * or settling is not a resting state, even on 2 audited frames. */
+function withSpeed(frames) {
+  const list = [...(frames || [])].sort((p, q) => p.frame - q.frame);
+  const at = list.map((d) => new Map((d.boxes || []).map((b) => [b.id, b])));
+  const mid = (b) => [b.x + b.w / 2, b.y + b.h / 2];
+  return list.map((d, i) => {
+    const k = 1080 / (d.height || 1080);
+    const v = (b, j) => {
+      const e = j >= 0 && j < list.length && Math.abs(list[j].frame - d.frame) <= 12 ? at[j].get(b.id) : null;
+      if (!e) return null;
+      const [x0, y0] = mid(b), [x1, y1] = mid(e);
+      return (Math.hypot(x1 - x0, y1 - y0) * k) / Math.abs(list[j].frame - d.frame);
+    };
+    return { ...d, boxes: (d.boxes || []).map((b) => {
+      if (b.speed !== undefined || b.id === undefined) return b;
+      const s = [v(b, i - 1), v(b, i + 1)].filter((x) => x !== null);
+      return s.length ? { ...b, speed: r1(Math.min(...s)) } : b;
+    }) };
+  });
+}
+
 /** Both reads over the audited frames ([{ frame, width, height, boxes, logos?, imagery? }]): { issues, warnings }. */
 function uiLayout(frames) {
   const groups = new Map();
@@ -107,7 +147,7 @@ function uiLayout(frames) {
     if (!g.frames.includes(frame)) g.frames.push(frame);
     groups.set(key, g);
   };
-  for (const d of frames || []) {
+  for (const d of withSpeed(frames)) {
     for (const x of alignFrame(d)) add(`ui-align|${x.a.id}|${x.b.id}`, d.frame, { kind: 'ui-align', frame: d.frame, ...x });
     for (const x of assetFrame(d)) add(`text-on-asset|${x.t.id}|${x.asset.name ?? x.kind}`, d.frame, { kind: 'text-on-asset', frame: d.frame, ...x });
   }
