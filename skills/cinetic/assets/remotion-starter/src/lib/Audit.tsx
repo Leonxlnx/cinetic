@@ -45,10 +45,11 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 // an AppIcon without a fetched mark, whose mark is in "logos" already): [{"name","x","y","w","h","opacity","visible","over"}],
 // where they show (like the marks), a glyph by its drawn ink rather than its padded square. `visible` is the share of 9
 // points over the icon where nothing opaque is painted above it (text aside); an icon under a card or a plate reads 0 and
-// carries "covered". `over` lists the tagged texts whose words are painted ABOVE the icon (hit-tested inside each word's
-// own box, so the gap a line leaves for an inline glyph, a card behind the icon's card and text the icon covers are not
-// over it). scripts/ui-layout.cjs fails a text over an icon in view under the ship gate on 2 audited frames (a warning in
-// dev); an icon beside its label (the kit's chips, rows and buttons) is a pair, never a crossing.
+// carries "covered". `over` lists the tagged texts whose words and the icon are drawn on each other: a word painted above
+// the icon, or the icon set right on a word with nothing opaque between them (hit-tested inside each word's own box, so
+// the gap a line leaves for an inline glyph and a card behind the icon's card are not over it). scripts/ui-layout.cjs
+// fails a text over an icon in view, or an icon on a text, under the ship gate on 2 audited frames (a warning in dev); an
+// icon beside its label (the kit's chips, rows and buttons) is a pair, never a crossing.
 // It also logs the frame's tweens from the registry (lib/registry.ts), which audit mode switches on:
 //   CINETIC_TWEENS {"comp":"Film","frame":120,"tweens":[{"from":96,"to":128,"token":"snapOut","family":"arrive"},...]}
 // with spans in absolute frames (scripts/grammar-score.mjs reads them).
@@ -242,8 +243,9 @@ const wordBoxes = (el: Element) => {
   return out;
 };
 
-/** Whether a tagged text's words are painted above an icon: at points inside each word's box that lie over the icon, the
- *  text is hit before the icon and before anything opaque between them (a card the icon sits on hides a text behind it). */
+/** Whether a tagged text's words and an icon are drawn on each other: at points inside each word's box that lie over the
+ *  icon, the text is hit above the icon, or under the icon itself with nothing opaque between them (a glyph set on a word
+ *  hides it as surely as a word on a glyph); a card the icon sits on hides a text behind it (a depth stack). */
 const textOverIcon = (text: Element, icon: Element, r: { left: number; top: number; width: number; height: number }, host: Element) => {
   for (const w of wordBoxes(text)) {
     const l = Math.max(w.left, r.left), t = Math.max(w.top, r.top), rt = Math.min(w.right, r.left + r.width), b = Math.min(w.bottom, r.top + r.height);
@@ -251,9 +253,10 @@ const textOverIcon = (text: Element, icon: Element, r: { left: number; top: numb
     for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.3], [0.75, 0.3], [0.25, 0.7], [0.75, 0.7]]) {
       for (const e of document.elementsFromPoint(l + (rt - l) * fx, t + (b - t) * fy)) {
         if (host.contains(e)) continue;
-        if (e === icon || icon.contains(e)) break; // the icon is drawn above the word here
-        if (text === e || text.contains(e)) return true; // the word is on top here
-        if (e.contains(icon)) break; // the icon's holder (its card) above the word: the word is behind it
+        if (e === icon || icon.contains(e)) continue; // the icon drawn on the word here: is the word right under it?
+        if (text === e || text.contains(e)) return true; // the word above the icon, or the icon set right on it
+        if (e.contains(icon) && paints(e)) break; // the icon's own card above the word: the word is behind it
+        if (e.contains(icon)) continue; // a transparent holder of the icon (a row, a wrapper)
         if (e.closest('[data-audit-copy]') || e.closest('[data-text]')) continue; // another text: neither covers
         if (paints(e)) break; // something opaque between them
       }

@@ -19,9 +19,9 @@
  *                  The kit's icons too (the audit's `icons`: Glyph, GlyphTile, Check, Pending, a spinner, an AppIcon
  *                  without its mark; a glyph by its drawn ink): a readable text box over an icon in view (the audit's
  *                  `visible`, the share of the icon nothing opaque covers, at least 0.5) by more than a quarter of the
- *                  icon's size each way, whose words the audit found drawn above the icon (`over`, hit-tested in each
- *                  word's box: the gap a line leaves for an inline glyph and a card behind the icon's card are not
- *                  over it). An icon beside its label or above it (they touch: a quarter or less on one axis), an icon
+ *                  icon's size each way, whose words the audit found drawn on the icon or under it with nothing opaque
+ *                  between (`over`, hit-tested in each word's box: the gap a line leaves for an inline glyph and a card
+ *                  behind the icon's card are not over it). An icon beside its label or above it (they touch: a quarter or less on one axis), an icon
  *                  inside its own tagged text and text wholly on a tile are by design. The audit sees whether the icon is in view, so under the ship
  *                  gate (CINETIC_GATE=ship, or --ship) a crossing on 2 or more audited frames fails; in dev it warns.
  *
@@ -104,8 +104,8 @@ const onScreen = (b, cw, ch) => {
  * the line: an inline mark, a word knocked out of a photo). */
 const byDesign = (t, s, tol) =>
   inside(t, s, tol) || inside(s, t, tol) || (cross(t, s)[0] >= 0.8 * s.w && s.y + s.h / 2 >= t.y && s.y + s.h / 2 <= t.y + t.h);
-/** An icon and a text by design: the audit found none of the text's words drawn above the icon (`over`: an inline glyph
- * in the gap its line leaves, a card behind the icon's card, a word the icon covers), the icon is part of the line (inside
+/** An icon and a text by design: the audit found none of the text's words drawn on the icon or right under it (`over`: an
+ * inline glyph in the gap its line leaves, a card behind the icon's card), the icon is part of the line (inside
  * its tagged text), the text sits wholly on the icon's tile, or they only touch (beside its label, or above it: one axis
  * overlaps by a quarter of the icon or less). */
 const iconByDesign = (t, s, ix, iy, tol) =>
@@ -184,7 +184,7 @@ function uiLayout(frames, opts = {}) {
           detail: `"${x.a.text ?? x.a.id}" and "${x.b.text ?? x.b.id}" stack in one card but their left edges miss by ${x.d} px${on}: rows of a card share one left edge (within 2 px), or sit centred on purpose; an indent is a step of 16 px or more` }
       : x.kind === 'icon'
         ? { frame: x.frame, kind: 'text-on-asset', id: `${x.t.id}+icon:${x.asset.name ?? 'icon'}`, asset: 'icon', cross: [x.ix, x.iy], frames: g.frames,
-            detail: `"${x.t.text ?? x.t.id}" runs ${x.ix}x${x.iy} px over the ${x.asset.name ?? ''} icon in view${on}: an icon sits beside its label with clear space, or in the line as a word (kit/inline.tsx), never under text${ship ? '' : ' (the ship gate fails it on 2 audited frames)'}` }
+            detail: `"${x.t.text ?? x.t.id}" runs ${x.ix}x${x.iy} px over the ${x.asset.name ?? ''} icon in view${on}: an icon sits beside its label with clear space, or in the line as a word (kit/inline.tsx), never under or on text${ship ? '' : ' (the ship gate fails it on 2 audited frames)'}` }
         : { frame: x.frame, kind: 'text-on-asset', id: `${x.t.id}+${x.asset.name ?? x.kind}`, cross: [x.ix, x.iy], frames: g.frames,
             detail: `"${x.t.text ?? x.t.id}" cuts ${x.ix}x${x.iy} px into ${x.kind === 'mark' ? `the ${x.asset.name ?? ''} mark` : 'a picture'}${on}: text sits beside a mark or a picture with clear space, or wholly on a photo as its caption, never across its edge (look-audit.py --layout fails it when the asset is in view there)` };
     const fails = n >= UI_LAYOUT.persist && (x.kind === 'ui-align' || (x.kind === 'icon' && ship)); // x.kind: ui-align, or the asset's kind
