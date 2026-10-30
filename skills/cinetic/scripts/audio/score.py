@@ -39,7 +39,14 @@ the report "draft": true (never delivered: deliver.sh, credits.py and av-audit.p
 Usage (from the project root):
   python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json \
       --out public/audio/soundtrack.wav [--stems out/stems] [--json out/qa/score.json]
-      [--plan out/qa/sfx_plan.json] [--lufs -14] [--ceiling 0.77] [--draft] [--quiet]
+      [--plan out/qa/sfx_plan.json] [--lufs -14] [--ceiling 0.77] [--draft] [--bed-only] [--quiet]
+
+--bed-only (a film with a track whose effects are not made yet): the edited track alone, exactly as the film
+plays it (track.py build_bed: bar 1 at the edit's film_t0, the joins, the ending, the stop-downs score.json adds),
+staged and mastered like the full mix; no kit is read and no effect plays (the report says "bed_only": true).
+Never cut the track by hand for the picture: a hand cut that drops film_t0 or carries an encoder's priming pad
+puts every downbeat early or late against the cuts the timeline made on it (check-sync.py measures the music
+against the edit and fails it).
 
 Targets (master.lufs overrides): -14 LUFS with music (-16 for a film of 8 s or less), -18 effects-only;
 true peak <= -1.5 dBTP; last 480 samples zero. The report holds loudness, true peak, LRA, PLR, the loudest
@@ -1165,6 +1172,26 @@ OCTAVES = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
 A_WEIGHT_DB = [-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1]
 
 
+class BedOnlyKit:
+    """--bed-only: a kit with no roles, so the plan places no effect and the edited bed plays alone"""
+    lock, roles, cast, source = {}, {}, None, 'none'
+
+    def lookup(self, role):
+        return 'missing', role, None
+
+    def notes(self, name):
+        return []
+
+    def covers(self, name, target):
+        return False
+
+    def pick(self, *args, **kw):
+        return None
+
+    def warnings(self, roles=None):
+        return []
+
+
 def render_effects(song, events, stems_dir=None, kit=None, draft=False, cues=None):
     """The effects-only soundtrack: every event through build_sfx, the short rooms, the end fade, the master
     at the film's target (glue on). Returns (master, info, report parts)."""
@@ -1762,6 +1789,8 @@ def main(argv=None):
     ap.add_argument('--tol', type=float, default=0.5, help='gate: LUFS tolerance (default 0.5)')
     ap.add_argument('--draft', action='store_true', help='play placeholder voices for cues the kit cannot sound; the '
                     'report says "draft": true and the build is never delivered')
+    ap.add_argument('--bed-only', action='store_true', help="a film with a track: render the edited track alone (as the "
+                    "film plays it, bar 1 at the edit's film_t0), staged and mastered, with no effects; never a hand cut")
     ap.add_argument('--quiet', action='store_true')
     a = ap.parse_args(argv)
     try:
@@ -1774,23 +1803,37 @@ def main(argv=None):
             song.ceiling = a.ceiling
         events = sorted(cues.get('events', []), key=lambda e: e['f'])
         base_dir = os.path.dirname(os.path.abspath(a.score))
-        if song.engine == 'synth' and not a.draft:
+        if a.bed_only:
+            if not song.has_music:
+                raise ScoreError('--bed-only renders the edited track alone: audio/score.json names no music track')
+            if a.draft:
+                raise ScoreError('--bed-only and --draft: choose one (the bed alone, or placeholder voices over it)')
+            kit, kinfo = BedOnlyKit(), dict(engine='none', source='none: --bed-only (the edited track alone, no effects)',
+                                            kit=song.kit_path, takes='', notes=[], warnings=[])
+            events, cues = [], dict(cues, events=[])
+            song.warnings.append('--bed-only: the edited track alone, no effects (the actions stay silent until the kit is '
+                                 'rendered: npm run kit, then npm run audio)')
+        elif song.engine == 'synth' and not a.draft:
             raise ScoreError('sfx.engine "synth" plays placeholder voices: that is a --draft build only (never delivered). '
                              'Render the earshot kit (npm run kit) and use "engine": "auto"')
-        kit, kinfo = (None, dict(engine='synth', source='draft voices (sfx.engine synth)', kit=song.kit_path,
-                                 takes=song.kit_takes or '', notes=[], warnings=[])) if song.engine == 'synth' else \
-            K.resolve(song.engine, locate(song.kit_path, base_dir), locate(song.kit_takes, base_dir) if song.kit_takes else None,
-                      song.earshot_python, log=None if a.quiet else (lambda s: print(s, file=sys.stderr)))
+        if not a.bed_only:
+            kit, kinfo = (None, dict(engine='synth', source='draft voices (sfx.engine synth)', kit=song.kit_path,
+                                     takes=song.kit_takes or '', notes=[], warnings=[])) if song.engine == 'synth' else \
+                K.resolve(song.engine, locate(song.kit_path, base_dir), locate(song.kit_takes, base_dir) if song.kit_takes else None,
+                          song.earshot_python, log=None if a.quiet else (lambda s: print(s, file=sys.stderr)))
         song.warnings.extend(w for w in kinfo['warnings'] if 'blind synthesis fallback' not in w)
         if kit is None and not a.draft:
             raise ScoreError('no earshot kit can be played (' + '; '.join(kinfo['warnings']) .replace('blind synthesis fallback: ', '')
                              + '). Every effect comes from the kit: render it (npm run kit), or vendor its takes; '
-                             '--draft plays placeholder voices for a timing check (never delivered)')
+                             '--draft plays placeholder voices for a timing check (never delivered)'
+                             + ('; --bed-only renders the edited track alone (no effects). Never cut the track by hand: '
+                                "bar 1 sits at the edit's film_t0" if song.has_music else ''))
         progress = apply_progress(song, events, kit) if song.progress else None
         bed, edit = load_music(song, base_dir, int(round(song.dur * SR)) + 4 * SR)
         if song.has_music:
             if kit is None:
-                raise ScoreError('a film cut to a track needs the earshot kit for its effects (npm run kit)')
+                raise ScoreError('a film cut to a track needs the earshot kit for its effects (npm run kit), or --bed-only for '
+                                 'the edited track alone; never a hand cut of the track')
             plan_path = a.plan or (os.path.join(os.path.dirname(os.path.abspath(a.json)), 'sfx_plan.json') if a.json else None)
             y, info, ev = render_music(song, events, cues, kit, bed, edit, a.stems, a.draft, plan_path, base_dir)
         else:
@@ -1917,7 +1960,8 @@ def main(argv=None):
         rep['one_gesture'] = plan['one_gesture']
         rep['runs'] = plan['runs']
         rep['restraint'], rep['repeats'], rep['cast'] = plan.get('restraint'), plan.get('repeats'), plan.get('cast')
-        song.warnings.extend(plan['warnings'] + g['warnings'])
+        song.warnings.extend(w for w in plan['warnings'] + g['warnings']
+                             if not (a.bed_only and ('kit lock has no mix.stop_down' in w or 'not cast for this film' in w)))
         fails += g['fails']
         # masking: a hero sound the music covers in every band (under 0 dB in its best band) fails, whatever the
         # over-bed range says (audibility wins for these); short of that it is listed with its margin. A film with
@@ -1945,6 +1989,7 @@ def main(argv=None):
         else:
             fails.append(msg)
     rep.update(out=a.out, bpm=song.bpm, key=f'{S_note(song.tonic)} {song.mode}', bars=song.nbars, draft=bool(a.draft),
+               bed_only=bool(a.bed_only),
                events=dict(count=len(events), by_kind=by, skipped=ev['skipped'], masked=ev['masked'], tuned=ev['tuned']),
                chords=[dict(t=round(a_, 3), chord=c.name if c else 'N.C.') for a_, _, c in song.segs if a_ < song.dur],
                warnings=song.warnings, fails=fails)
