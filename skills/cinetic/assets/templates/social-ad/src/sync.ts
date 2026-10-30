@@ -62,10 +62,10 @@ export default function cues(): SoundEvent[] {
   ev.push({ f: copy('plan').in, kind: 'tick', weight: 0.5, pan: 0, id: 'label' });
   ev.push({ f: CUE.swap + f60(4), kind: 'snap', weight: 0.75, pan: 0, id: 'swap' });
   ev.push({ f: CUE.rushOut + f60(6), kind: 'riser', weight: 0.65, pan: 0, dur: ACT.taglines.from - CUE.rushOut - f60(6), apexFrac: 0.95, id: 'rush-out' });
-  // taglines: the accent sweeping in (claim), each tagline whole
+  // taglines: the accent sweeping in (claim: its one tagline), each tagline whole
   if (DEAL.taglines === 'claim') ev.push({ f: ACT.taglines.from + f60(2), kind: 'swell', weight: 0.6, pan: -0.3, dur: f60(30), id: 'the-accent' });
   ev.push({ f: copy('tag.1').resolved, kind: 'text', weight: 0.7, pan: -0.1, id: 'tagline-1' });
-  ev.push({ f: copy('tag.2').resolved, kind: 'text', weight: 0.7, pan: 0.1, id: 'tagline-2' });
+  if (DEAL.taglines !== 'claim') ev.push({ f: copy('tag.2').resolved, kind: 'text', weight: 0.7, pan: 0.1, id: 'tagline-2' }); // the claim plays one
   // end: the mark (spun or risen), the lockup as ONE clean element
   ev.push(DEAL.end === 'spin' ? { f: CUE.endMark + f60(6), kind: 'whoosh', weight: 0.55, pan: 0, dur: f60(40), apexFrac: 0.2, id: 'end-spin' } : { f: CUE.endMark + f60(8), kind: 'tock', weight: 0.55, pan: -0.1, id: 'end-rise' });
   ev.push({ f: CUE.lockup, kind: 'hit', weight: 1, pan: 0, id: 'lockup' });

@@ -2,12 +2,12 @@
 
 A short ad for a feed (about 17-22 s), laid over the Remotion starter by `bash scripts/new-film.sh <dir> --template
 social-ad` (template.json lists the files it copies and the starter acts it removes). Crisp pace, the bold type family,
-150 BPM until the track's grid is in; 9 bars in the house plan, grown where a line's read needs it (at 150 BPM the
+150 BPM until the track's grid is in; 9 bars in the house plan (8 when the claim plays the taglines), grown where a line's read needs it (at 150 BPM the
 field and the lockup take two). Every seam is hidden inside a motion: a spread, the stack carried into the mark, a rise,
 the field leaving, a rush.
 
-**The shape.** What it is, everything it holds, the mark, what you find in it, what you use it for, two imperatives, the
-lockup. The picture is the product's own content built in code: its items as content tiles (kit `ContentTile`: a
+**The shape.** What it is, everything it holds, the mark, what you find in it, what you use it for, one or two imperatives,
+the lockup. The picture is the product's own content built in code: its items as content tiles (kit `ContentTile`: a
 glyph or the real mark of a product it works with, a label, a sub line, a preview of what it holds), its own dense
 screen, the real marks of what it touches. Where that content is pictures (a recipe, an outfit, a room, a trip), the cards are real photographs (`ad.ts` `pictures`: the product's own, the user's, or free ones that need no credit, `scripts/assets.mjs`), never drawn: rounded photo cards with a rim and a contact shadow (`fx/Pictures` `PhotoCard`), and the label's rivers run them on two curves round the chip, sharp near it and soft away from it (`ArcRiver`).
 
@@ -22,7 +22,7 @@ pins a slot (`{ field: 'ring' }`); the mark spins once a film at most. See the d
 | 2 | `brand` | spin, tile | the stack carried | the mark spins in over the stack receding into the far plane, or the hero tile grows into the app's own tile holding the mark; the name slides out from behind it; the lockup rises into the cut |
 | 3 | `field` | wall, ring, depth | the rise carried up | the claim inside the product's content (a wall settling round a clear box, a ring orbiting it, or three planes with the camera pushing through), its words rising out of a mask, its last word on the accent pill growing round it in 10 f; once read, a type push into the pill; the field leaves up |
 | 4 | `label` | rivers, ticker, screen | the field leaving up | a chip whose last word rolls once (out of the chip upward, the new word in from below, 16 f) over two diagonal streams of tiles, rows of tiles flowing past, or the product's own screen with its lens gliding to a new row; the content rushes out right |
-| 5 | `taglines` | panel, claim | the rush carried | two imperatives taking turns: beside the product's screen as a lit tilted panel on the film's one 3D turn (falling into place, the first dropping off), or as the claim on the accent swept in from the left; a push into the cut |
+| 5 | `taglines` | panel, claim | the rush carried | two imperatives taking turns beside the product's screen as a lit tilted panel on the film's one 3D turn (falling into place, the first dropping off), or the first one alone as the claim on the accent swept in from the left (one poster line, never two in a row); a push into the cut |
 | 6 | `end` | spin, rise | a designed hard cut | the mark spins in (when the brand did not spin) or rises out of a mask with the name; the close rises under them; the lockup holds about a second and a half with a creep, the tail included |
 
 **What to write.**

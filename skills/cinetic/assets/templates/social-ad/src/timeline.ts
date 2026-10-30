@@ -129,12 +129,12 @@ const hold = (n: number) => f60(holdFor(n, pace));
 
 type Plan = Record<ActName, number>;
 /**
- * The house plan: 9 bars (a 2-bar open, a 1-bar mark, a 1-bar field, the 2-bar label, the 2-bar taglines, the 1-bar
- * lockup). Every exit cue waits for its line's read, so a longer line or a faster track grows the act that needs it by
+ * The house plan: 9 bars (a 2-bar open, a 1-bar mark, a 1-bar field, the 2-bar label, the 2-bar taglines (1 bar for the
+ * claim's one line), the 1-bar lockup). Every exit cue waits for its line's read, so a longer line or a faster track grows the act that needs it by
  * a bar: at 150 BPM the field and the lockup take 2 (17 s with the tail; a 3-word opener keeps the open at 2), at
  * 104-120 BPM the house holds (18-21 s). Inside an act the beats spread to fill it, so nothing waits dead.
  */
-const HOUSE: Plan = { open: 2, brand: 1, field: 1, label: 2, taglines: 2, end: 1 };
+const HOUSE: Plan = { open: 2, brand: 1, field: 1, label: 2, taglines: DEAL.taglines === 'claim' ? 1 : 2, end: 1 }; // the claim's one line takes a bar
 
 /** Places the acts on a bar plan and every cue and line inside them; `late` lists acts whose line would be cut before its read. */
 const build = (plan: Plan) => {
@@ -190,13 +190,18 @@ const build = (plan: Plan) => {
   const planRead = readEnd('crisp', L.plan[0], C.plan);
   C.swap = onGridUp(Math.max(planRead, Math.min(at('label', 2 * plan.label), planRead + f60(40)))); // toward the act's middle, once read
   C.rushOut = onGridUp(Math.max(cut('label') - Math.max(f60(30), BEAT), C.swap + f60(SWAP) + hold(w(L.plan[1]))));
-  // taglines: two imperatives taking turns; a push into the cut
+  // taglines: panel: two imperatives taking turns in front of the screen; claim: the first one alone at poster size on
+  // the accent, held to the cut (one line at a time: never two poster lines in a row); a push into the cut
   C.taglines = at('taglines', 0);
   C.tag1 = at('taglines', 0.25);
-  C.tagOut = onGridUp(readEnd(tagPreset, L.taglines[0], C.tag1));
-  // panel: the first one's 14 f drop is over first; claim: the second arrives as the first leaves (an empty accent field freezes)
-  C.tag2 = DEAL.taglines === 'claim' ? onGridUp(C.tagOut + f60(20)) : onGridUp(Math.max(C.tagOut + f60(20), Math.min(at('taglines', 2 * plan.taglines), C.tagOut + f60(44))));
-  C.push = onGrid(Math.max(C.tag2 + f60(20), cut('taglines') - Math.min(f60(46), Math.max(f60(30), BEAT))));
+  const oneTag = DEAL.taglines === 'claim';
+  if (!oneTag) {
+    C.tagOut = onGridUp(readEnd(tagPreset, L.taglines[0], C.tag1));
+    // the first one's 14 f drop is over first
+    C.tag2 = onGridUp(Math.max(C.tagOut + f60(20), Math.min(at('taglines', 2 * plan.taglines), C.tagOut + f60(44))));
+  }
+  // (the claim's push is a camera move under its one line, inside the act: it never waits for the read)
+  C.push = onGrid(Math.max((oneTag ? C.tag1 : C.tag2) + f60(20), cut('taglines') - Math.min(f60(46), Math.max(f60(30), BEAT))));
   // end: the mark and the name, the close under them; the lockup holds about a second and a half with a creep, the
   // tail included: the close waits for the name's read and, where the act has room, comes up to a second later, so the
   // lockup is whole about half a second before the last bar line (an act grown a bar does not hold it for three)
@@ -216,8 +221,8 @@ const build = (plan: Plan) => {
     set('find', 'crisp', L.find, C.find, C.fieldOut),
     set('plan', 'crisp', L.plan[0], C.plan, C.swap),
     { id: 'swap', text: L.plan[1], in: C.swap, resolved: C.swap + f60(SWAP), out: C.rushOut + f60(12), swap: 'plan' },
-    set('tag.1', tagPreset, L.taglines[0], C.tag1, C.tagOut, { chain: 'tag', mode: 'replace' }),
-    set('tag.2', tagPreset, L.taglines[1], C.tag2, cut('taglines'), { chain: 'tag', mode: 'replace' }), // cut on the push, still read
+    set('tag.1', tagPreset, L.taglines[0], C.tag1, oneTag ? cut('taglines') : C.tagOut, { chain: 'tag', mode: 'replace' }),
+    ...(oneTag ? [] : [set('tag.2', tagPreset, L.taglines[1], C.tag2, cut('taglines'), { chain: 'tag', mode: 'replace' })]), // cut on the push, still read
     { id: 'wordmark', text: AD.name, kind: 'name', in: nameIn, resolved: nameIn + f60(16), out: TOTAL },
     set('close', 'crisp', L.close, C.close, TOTAL),
   ];
@@ -231,7 +236,7 @@ const build = (plan: Plan) => {
   if (saveRead > cut('open')) late.push('open');
 
   if (C.rushOut > cut('label') - f60(20)) late.push('label');
-  if (C.push < C.tag2) late.push('taglines');
+  if (!oneTag && C.push < C.tag2) late.push('taglines');
   if (C.lockup > cut('end') - TAIL - f60(12)) late.push('end'); // whole 0.2 s before the bar ends at least: the lock holds 1.2 s with the tail
   return { BEATS, ACT, TOTAL, C, COPY, late, lead };
 };
@@ -315,7 +320,7 @@ export const SALIENCE: Record<string, Salience> = {
   brand: 'cut', mark: 'hit', rise: 'move',
   field: 'cut', find: 'copy', fieldPush: 'move', fieldOut: 'move',
   label: 'cut', plan: 'copy', swap: 'copy', rushOut: 'move',
-  taglines: 'cut', tag1: 'copy', tagOut: 'move', tag2: 'copy', push: 'move',
+  taglines: 'cut', tag1: 'copy', ...(DEAL.taglines === 'claim' ? {} : { tagOut: 'move' as const, tag2: 'copy' as const }), push: 'move',
   end: 'cut', endMark: 'hit', close: 'copy', lockup: 'hit', last: 'cut',
 };
 

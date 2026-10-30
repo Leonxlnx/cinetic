@@ -17,7 +17,7 @@ export const AD = {
     save: ['Save', '[everything].'] as const, // one word either side of the stack of what it holds
     find: 'Find your next [idea].', // the claim in the field (3-5 words); its last word stands on the accent pill
     plan: ['Plan your [meals].', 'Plan your [trips].'] as const, // the label: only its last word swaps
-    taglines: ['Save [the idea].', 'Make [the thing].'] as const, // two short imperatives (2-4 words, the verb first)
+    taglines: ['Save [the idea].', 'Make [the thing].'] as const, // two short imperatives (2-4 words, the verb first); the claim device sets the first alone
     close: 'Get it at [product.com].', // under the lockup: what to do
   },
   /**

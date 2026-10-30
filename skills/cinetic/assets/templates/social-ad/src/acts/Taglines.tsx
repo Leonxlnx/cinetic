@@ -1,17 +1,15 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { C, FONT, U } from '../brand/tokens';
+import { C, U } from '../brand/tokens';
 import { LitGround } from '../fx/Grounds';
 import { Lit } from '../fx/Lit';
 import { ReadBack } from '../fx/ReadBack';
-import { AccentClaim, claimLayout, inkOn } from '../fx/TypeClaim';
+import { AccentClaim, inkOn } from '../fx/TypeClaim';
 import { TypeLine } from '../fx/TypePresets';
 import { DenseScreen } from '../kit';
 import { E, mix, prog } from '../lib/anim';
 import { CAM3D } from '../lib/camera';
-import { useFilm } from '../lib/film';
 import { creep } from '../lib/handoff';
-import { measureTracked } from '../lib/measure';
 import { DEAL } from '../deal';
 import { ACT, chainOf, CUE, f60x, FPS, H, W } from '../timeline';
 import { carryOffset, EMPH, keysFor, LightEvent, lineSize, PAGE, quadIn, SEAM, SHOT, SLATE, useAbs, WORLD } from './stage';
@@ -24,13 +22,10 @@ import { carryOffset, EMPH, keysFor, LightEvent, lineSize, PAGE, quadIn, SEAM, S
 //          steps back behind them (fx/ReadBack): the first arrives on the film's voice (the crisp entry, word by word)
 //          and leaves dropping off right to left; the second arrives the same way and is cut on the push
 //   claim  the accent wipes in from the left on the rush over the label's last 20 f (E.launchIn, the film's one colour
-//          event), so the shot opens on the full accent, and the
-//          imperatives are set as the claim on it (fx/TypeClaim: cap 16 % of the frame or more, centred, -0.04 em,
-//          semibold, word by word on the crisp entry); the first flicks up out of the frame, slowing as it
-//          clears, and the second arrives as it goes (the accent field never stands empty)
+//          event), so the shot opens on the full accent, and the first imperative alone is set as the claim on it
+//          (fx/TypeClaim: cap 16 % of the frame or more, centred, -0.04 em, semibold, word by word on the crisp entry),
+//          creeping and rising slowly under the push into the cut: one poster line, never two in a row
 
-/** The share of its exit at which the claim's first imperative clears the frame (E.glideOut reaches 97 % at about 0.8). */
-const TAG_CLEAR = 0.8;
 /** The turn (60 fps frames) and the panel at rest (px at 1080p). */
 export const TURN = { frames: 108, from: -8 - CAM3D.house, to: -8 } as const;
 const PANEL = { w: 1100, h: 660, x: 960, y: 560 } as const;
@@ -42,25 +37,16 @@ export const Taglines: React.FC = () => {
   // a creep all act long (the holds never freeze), then a push into the cut
   const push = creep(F, ACT.taglines.from, { pctPerSec: 0.015 }, FPS) * (1 + 0.05 * prog(F, CUE.push, cut, quadIn));
   const carry = carryOffset(F, ACT.taglines.from, SEAM.rush * U); // the rush, carried and decaying (moving right, from the left of its rest)
-  const film = useFilm();
   if (DEAL.taglines === 'claim') {
     const ink = inkOn(C.accent);
     return (
       <AbsoluteFill style={{ background: C.accent, overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', transform: `translate3d(0, ${((-18 * U * Math.max(0, F - ACT.taglines.from)) / FPS).toFixed(2)}px, 0) scale(${push.toFixed(5)})` }}>
-          {tags.map((c, i) => {
-            // the first flicks up out of the frame on E.glideOut: fast off its read, its last edge clearing the top at 97 %
-            // of the travel (under a tenth of its speed) about 4 f before the second arrives, so on the flat accent field
-            // nothing stops dead and nothing stands empty
-            const lay = i === 0 ? claimLayout({ text: c.text }, film, (t, px, wt, tr) => measureTracked(t, px, wt, tr, FONT.text, { trailing: false })) : null; // as AccentClaim lays it out
-            const last = lay?.lines[lay.lines.length - 1];
-            const clear = (lay && last ? last.top + lay.size * lay.lead : 0.62 * H) + 0.04 * H;
-            const next = tags[1]?.in ?? c.out + f60x(40);
-            const exitD = Math.max(f60x(16), (next - c.out - f60x(4)) / TAG_CLEAR);
-            const leave = i === 0 ? prog(F, c.out, c.out + exitD, E.glideOut) : 0;
-            if (F < c.in - 1 || leave >= 1) return null;
+          {tags.slice(0, 1).map((c) => {
+            if (F < c.in - 1) return null;
+            // one line, held to the cut: it carries the rush in (decaying) and rises with the push, so it never stands still
             return (
-              <div key={c.id} style={{ position: 'absolute', inset: 0, transform: `translate3d(${(i === 0 ? carry * 0.4 : 0).toFixed(2)}px, ${((-clear / 0.97) * leave).toFixed(2)}px, 0)` }}>
+              <div key={c.id} style={{ position: 'absolute', inset: 0, transform: `translate3d(${(carry * 0.4).toFixed(2)}px, 0, 0)` }}>
                 <AccentClaim text={c.text} at={c.in - 1} frame={F} flood={false} ground={C.accent} color={ink} id={c.id} creep={0.02} />
               </div>
             );
