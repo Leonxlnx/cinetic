@@ -38,6 +38,9 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 // [{"name","x","y","w","h"}], so look-audit.py --layout can leave a mark's own colours out of the palette checks,
 // and the real pictures (photos and footage: the kit and fx/Pictures, Photo, Footage, Montage, Develop, Cards tag each
 // [data-imagery]): "imagery": [{"x","y","w","h"}], so a photo's skin, foliage and wood stay out of them the same way.
+// And the pictures ("pictures": the outermost [data-ui], [data-imagery] and [data-picture] elements of at least 2 % of
+// the frame, float taken out): layout-audit.sh's placement gate tells from them whether a line stands alone, over a picture,
+// beside it, or above or below it.
 // It also logs the frame's tweens from the registry (lib/registry.ts), which audit mode switches on:
 //   CINETIC_TWEENS {"comp":"Film","frame":120,"tweens":[{"from":96,"to":128,"token":"snapOut","family":"arrive"},...]}
 // with spans in absolute frames (scripts/grammar-score.mjs reads them).
@@ -84,6 +87,8 @@ export const TYPE_BANDS: [role: string, lo: number, hi: number][] = [
 export const TYPE_WIDTH = { line: 0.61, sentence: 0.75, sentenceCap: 6.5, display: 0.84, hero: 0.84 } as const;
 /** A claim flush left on the accent keeps this share of the frame width on its left (fx/TypeClaim: 3 %). */
 export const CLAIM_MARGIN = 0.025;
+/** The smallest picture the audit logs, as a share of the frame's area (a chip or an icon is not a picture beside a line). */
+export const PICTURE_MIN = 0.02;
 
 type Box = { id: string; text: string; words: number; ui: boolean; smear?: boolean; scroll?: boolean; push?: 'moving' | 'bleed'; claim?: boolean; crosses?: boolean; x: number; y: number; w: number; h: number; px: number; opacity: number; role?: string; cap?: number; float?: [number, number, number] };
 type Issue = { kind: 'safe-area' | 'overlap' | 'small-text' | 'covered' | 'words' | 'placeholder' | 'bar-text' | 'drawn-figure'; id: string; detail: string };
@@ -336,7 +341,27 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
       const r = visibleRect(el);
       return r && opacityOf(el) >= 0.05 ? [{ x: round((r.left - origin.left) / zoom), y: round((r.top - origin.top) / zoom), w: round(r.width / zoom), h: round(r.height / zoom) }] : [];
     });
-    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, logos, imagery, issues, warnings, bands: TYPE_BANDS, widths: TYPE_WIDTH })}`);
+    // the pictures on screen: the product's surfaces, cards and screens ([data-ui]), photos and footage ([data-imagery])
+    // and anything else drawn as a picture ([data-picture]); the outermost of each, at least PICTURE_MIN of the frame,
+    // where it shows, the camera float taken out like the boxes'. A mark or chip set inside a line of type is part of the
+    // line. layout-audit.sh's placement gate reads them: a line alone, over a picture, beside it, above or below it.
+    const PIC = '[data-ui],[data-imagery],[data-picture]';
+    const pictures = [...document.querySelectorAll<HTMLElement>(PIC)].flatMap((el) => {
+      if (el.parentElement?.closest(PIC) || el.closest('[data-text],[data-audit-copy]') || host.contains(el)) return [];
+      const r = visibleRect(el);
+      let o = 1;
+      for (let e: Element | null = el; e && e !== document.body; e = e.parentElement) o *= parseFloat(getComputedStyle(e).opacity || '1');
+      if (!r || o < 0.25) return [];
+      const fa = el.closest('[data-float]')?.getAttribute('data-float')?.split(',').map(Number);
+      const [fx, fy, fk] = fa && fa.length === 3 && fa.every(Number.isFinite) && fa[2] > 0 ? fa : [0, 0, 1];
+      const w = r.width / zoom / fk;
+      const h = r.height / zoom / fk;
+      if (w * h < PICTURE_MIN * width * height) return [];
+      const x = width / 2 + ((r.left - origin.left) / zoom - width / 2 - fx) / fk;
+      const y = height / 2 + ((r.top - origin.top) / zoom - height / 2 - fy) / fk;
+      return [{ x: round(x), y: round(y), w: round(w), h: round(h), opacity: Math.round(o * 100) / 100 }];
+    });
+    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, logos, imagery, pictures, issues, warnings, bands: TYPE_BANDS, widths: TYPE_WIDTH })}`);
     // the tweens evaluated for this frame, their spans moved into absolute frames (a caller's frame argument is its own clock)
     const tweens = drain().map((r) => ({ from: r.from + (frame - r.frame), to: r.to + (frame - r.frame), token: r.token, family: r.family }));
     console.log(`${TWEENS_TAG} ${JSON.stringify({ comp, frame, tweens })}`);

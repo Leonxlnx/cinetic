@@ -28,7 +28,7 @@ python3 scripts/detail-pair.py --film out/preview.mp4 --ref <frames> --pairs F:R
 
 After each round write the weakest grammar-score dimension and the weakest floor reading into the review note, and
 fix that first. A ship needs, on the final render: copy-check (the script and `--ui src`), lint `--strict` and
-grid-check clean; layout-audit passing with its placeholder floor; the detail pass with no open difference; forensics passing;
+grid-check clean; layout-audit passing with its placeholder floor and its placement gate; the detail pass with no open difference; forensics passing;
 look-audit passing with both floors; grammar-score mean ≥ 80, no dimension under 70; the sound gates
 (`references/sound.md`); probe and check-sync (`references/finishing.md`); the rubric (`references/review-loop.md`).
 
@@ -160,6 +160,15 @@ evaluate (what `grammar-score.mjs` reads for curve roles, durations, staggers an
 
 - Readable text moves at most about 3 px/f while it is read; a re-centre jump is a decisive move, held to the travel
   limit (20 px/f), not the reading limit, and listed as a jump.
+- **Placement** (on whenever `src/timeline.ts` gives the COPY; `placement` in the JSON): every statement (a COPY entry
+  that is not `ui` or `name`; boxes merged by id, a build chain's fragments as one line) is centred when its centre is
+  within 10 % of the width of the middle, in the middle band when its centre sits at 35-65 % of the height. Over the
+  statement time: centred >= 80 % and in the middle band >= 85 %, or fail; a statement or a name flush left at the top
+  or the bottom fails; against the pictures `lib/Audit.tsx` logs (the outermost `[data-ui]`, `[data-imagery]` and
+  `[data-picture]` elements of 2 % of the frame or more): one statement in the top band over a picture below it warns,
+  two fail; split layouts (a line beside, above or below a picture) past one per 30 s warn (`--strict` fails). When the
+  product shares the frame with a line, it plays before or after the line or steps back behind it (`fx/ReadBack`).
+  `--scale 0.5` audits at half size; `--log` re-reads an earlier run's console lines without rendering.
 - Product UI is simple and aligned (`scripts/ui-layout.cjs` on the same boxes; `references/product-ui.md` §3.1):
   `ui-align` fails two rows stacked in one card whose left edges miss by more than 2 px and at most 12 px at 1080 on 2
   audited frames (one frame warns; centred rows, rows flush right together, indents of 16 px or more, a headline over a
@@ -173,7 +182,7 @@ evaluate (what `grammar-score.mjs` reads for curve roles, durations, staggers an
   faults per text, not per audited frame.
 - The safe zone holds resting states: a line inside a type push in flight (`data-audit-push="moving"`, `fx/TypePush`)
   is a camera move (no safe-area, speed or role check); a push landed as a declared bleed must cross the frame's edge,
-  never rest half in the margin; a claim on the accent (`data-audit-claim`, `fx/TypeClaim`) keeps a 2.5 % left margin;
+  never rest half in the margin; a claim set flush left on the accent (`data-audit-claim`, `fx/TypeClaim` `justify: 'left'`) keeps a 2.5 % left margin;
   with `--speed`, a box past the zone while moving faster than the read limit outside its read is listed apart
   (`moving`), not failed.
 - `--cues` adds the cue frames; `--safe feed9x16` the feed presets.
@@ -305,7 +314,8 @@ a card that travels) are declared with `--imagery-track`, written from the film'
 `pictureTrack()` (`references/imagery.md` §10). A drawing standing in for a photo is a review failure
 (`references/taste-and-slop.md` D18).
 A white world is judged without the flat and colour readings; a grid film without bleed. Framing warnings:
-`framing-centred` (the subject dead centre and inside the frame in more than half of the framed samples),
+`framing-centred` (the picture subject dead centre and inside the frame in more than half of the framed samples; a
+region shaped like lines of type is never the subject: statements stay centred),
 `framing-hold` (one framing over 0.8 s with no depth plane moving; 1 s inside a read), `small-text`.
 
 **The one-hue gate:** `look-audit.py clip.mp4 --trajectory --roi x,y,w,h --accent '#RRGGBB' [--target t.json]` reads

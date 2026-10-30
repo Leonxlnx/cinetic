@@ -27,6 +27,14 @@
 # rows centred on each other or set flush right together are fine); `text-on-asset` lists text crossing the edge of a mark
 # or a picture (not a caption wholly on a photo, not an asset set in the line) as a ui warning, which look-audit.py
 # --layout confirms on the pixels and fails when the asset is in view there.
+# Placement (on whenever src/timeline.ts gives the COPY): every statement (a COPY entry that is not 'ui' or 'name') is
+# measured where it stands, its boxes merged by id: horizontally centred when its centre is within 10 % of the frame's
+# width of the middle (a line parted round a picture counts by its whole span), in the middle band when its centre sits
+# at 35-65 % of the height. Over the statement time (each entry's span shared among its audited frames) at least 80 %
+# centred and 85 % in the middle band, or fail; a statement or a name flush left at the top or the bottom (left of
+# centre and outside the middle band for most of its time) fails; against the pictures the audit logs (lib/Audit.tsx
+# "pictures"): one statement in the top band over a picture below it warns, two fail; split layouts (a line beside a
+# picture, above or below it, in any band) past one per 30 s warn (fail with --strict). --no-placement turns it off.
 # Placeholders fail on every visible element, tagged or not (src/lib/placeholder.ts, the lists of
 # scripts/placeholders.json): `placeholder` (lorem ipsum, "Placeholder", "Label text", a generic label alone,
 # "Item 1", a template slot left in brackets), `bar-text` (two or more grey bars standing in for lines of text
@@ -40,6 +48,7 @@
 #                                [--safe feed9x16 | --safe 270,120,420,64 | --safe 96,64]
 #                                [--entry src/index.ts] [--json out/qa/layout-<Comp>.json]
 #                                [--out out/qa/layout-<Comp>] [--concurrency 2] [--strict]
+#                                [--scale 0.5] [--no-placement] [--log render.log]
 #   frames   --copy (default): each COPY entry's resolved frame, mid-hold and last frame before it leaves
 #            --cues: every CUE frame plus each COPY resolved frame
 #            --frames: an explicit comma list
@@ -64,6 +73,10 @@
 #            wide16x9, title), insets top,right,bottom,left in px, the older symmetric x,y, or a
 #            JSON object. Default: the composition's own `safe` prop, else the preset for its
 #            aspect (9:16 -> feed9x16). The audit also fails text painted under a data-mover.
+#   scale    renders the stills at this share of the frame (0.25-1; the boxes stay in the composition's px):
+#            a quick placement or layout pass at half size.
+#   log      no render: read the CINETIC_AUDIT lines from this file (a log another renderer kept of the
+#            page's console for the same frames, e.g. renderStill's onBrowserLog with props {"audit":true}).
 # Exit codes: 0 no issues, 1 issues found or the audit did not run, 2 bad arguments.
 set -euo pipefail
 
@@ -73,6 +86,7 @@ HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && { pwd -W 2>/dev/null || pwd; })
 die() { echo "layout-audit: $*" >&2; exit 2; }
 
 COMP=""; MODE=copy; FRAMES=""; PROPS="{}"; SAFE=""; ENTRY=src/index.ts; JSON=""; OUTDIR=""; CONC="${CONCURRENCY:-2}"; EVERY=0; STRICT=0
+SCALE=1; PLACE=1; LOGIN=""
 SPEED=""; MAXV=20; MAXR=3
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -82,6 +96,9 @@ while [[ $# -gt 0 ]]; do
     --copy) MODE=copy; shift ;;
     --every) MODE=every; EVERY="${2:?--every needs a frame step}"; shift 2 ;;
     --strict) STRICT=1; shift ;;
+    --scale) SCALE="${2:?--scale needs a share of the frame}"; shift 2 ;;
+    --no-placement) PLACE=0; shift ;;
+    --log) LOGIN="${2:?--log needs a file}"; shift 2 ;;
     --speed) SPEED=1; shift ;;
     --no-speed) SPEED=0; shift ;;
     --max-text-speed) MAXV="${2:?--max-text-speed needs px/f}"; SPEED="${SPEED:-1}"; shift 2 ;;
@@ -99,6 +116,7 @@ done
 [[ -n "$COMP" ]] || { usage; die "missing <Comp>"; }
 node -e "process.exit(Number(process.argv[1]) > 0 ? 0 : 1)" "$MAXV" || die "--max-text-speed must be a positive number of px/f"
 node -e "process.exit(Number(process.argv[1]) > 0 ? 0 : 1)" "$MAXR" || die "--max-read-speed must be a positive number of px/f"
+node -e "const v=Number(process.argv[1]);process.exit(v>=0.25&&v<=1?0:1)" "$SCALE" || die "--scale must be 0.25-1"
 [[ -n "$SPEED" ]] || { [[ "$MODE" == cues ]] && SPEED=1 || SPEED=0; }
 
 # Run from the project root: the current directory if it holds the entry, else this script's parent.
@@ -112,8 +130,8 @@ trap 'rm -rf "$TMP"' EXIT
 
 # Frame list and the composition's length from the timeline (tsx loads src/timeline.ts directly).
 [[ "$MODE" != every ]] || node -e "process.exit(Number.isInteger(Number(process.argv[1])) && Number(process.argv[1]) > 0 ? 0 : 1)" "$EVERY" || die "--every needs a whole number of frames"
-if [[ "$MODE" != frames || "$SPEED" == 1 ]]; then
-  TL="$(dirname "$ENTRY")/timeline.ts"
+TL="$(dirname "$ENTRY")/timeline.ts"
+if [[ "$MODE" != frames || "$SPEED" == 1 || ( "$PLACE" == 1 && -f "$TL" ) ]]; then
   [[ -f "$TL" ]] || die "$TL not found; pass --frames (and --no-speed: --speed reads the composition's length from it)"
   cat > "$TMP/frames.ts" <<EOF
 import * as T from '$(cd "$(dirname "$TL")" && { pwd -W 2>/dev/null || pwd; })/timeline.ts';
@@ -182,11 +200,16 @@ console.log([...new Set(frames)].join(','));
 console.log(hi - lo);
 console.log(JSON.stringify(windows));
 console.log(JSON.stringify(jumps));
+// the film's words for the placement gate: each COPY entry's kind and span (composition frames)
+console.log(JSON.stringify(copy.map((c) => ({ id: c.id, chain: c.chain, kind: (c as { kind?: string }).kind ?? 'copy', in: c.in - lo, out: Math.min(c.out ?? T.TOTAL, T.TOTAL) - lo }))));
+console.log(T.FPS);
 EOF
   LIST=$(npx tsx "$TMP/frames.ts") || die "could not read frames from $TL"
   LEN=$(sed -n 2p <<< "$LIST")
   WINDOWS=$(sed -n 3p <<< "$LIST")
   JUMPS=$(sed -n 4p <<< "$LIST")
+  WORDS=$(sed -n 5p <<< "$LIST")
+  FPSV=$(sed -n 6p <<< "$LIST")
   if [[ "$MODE" != frames ]]; then
     FRAMES=$(head -n 1 <<< "$LIST")
     [[ -n "$FRAMES" ]] || die "no COPY/CUE frames fall inside $COMP; pass --frames"
@@ -207,7 +230,8 @@ if [[ -n "$SAFE" ]]; then
 fi
 
 # --speed: render f+1 beside each audited frame f (none past the composition's last frame).
-RENDER="$FRAMES"; SPEEDMAX=0; WINDOWS="${WINDOWS:-}"; JUMPS="${JUMPS:-}"
+RENDER="$FRAMES"; SPEEDMAX=0; WINDOWS="${WINDOWS:-}"; JUMPS="${JUMPS:-}"; WORDS="${WORDS:-}"; FPSV="${FPSV:-60}"
+[[ "$PLACE" == 1 ]] || WORDS=""
 if [[ "$SPEED" == 1 ]]; then
   RENDER=$(node -e "const n=Number(process.argv[2]);console.log([...new Set(process.argv[1].split(',').map(Number).flatMap((f)=>f+1<n?[f,f+1]:[f]))].sort((a,b)=>a-b).join(','))" "$FRAMES" "$LEN")
   SPEEDMAX="$MAXV"
@@ -226,16 +250,20 @@ clamp_conc() {
 }
 clamp_conc layout-audit
 echo "layout-audit: $COMP frames $FRAMES$([[ "$SPEED" == 1 ]] && echo " (+ f+1 of each for text speed, max $MAXV px/f, $MAXR while read)")"
-rm -rf "$OUTDIR"; mkdir -p "$OUTDIR"
-if ! FORCE_COLOR=0 NO_COLOR=1 npx remotion render "$ENTRY" "$COMP" "$OUTDIR" --sequence --frames="$RENDER" --props="$ALLPROPS" \
-     --image-format=jpeg --concurrency="$CONC" --log=verbose > "$TMP/render.log" 2>&1; then
+if [[ -n "$LOGIN" ]]; then
+  [[ -f "$LOGIN" ]] || die "--log $LOGIN not found"
+  cp "$LOGIN" "$TMP/render.log"
+elif ! { rm -rf "$OUTDIR"; mkdir -p "$OUTDIR"; } || ! FORCE_COLOR=0 NO_COLOR=1 npx remotion render "$ENTRY" "$COMP" "$OUTDIR" --sequence --frames="$RENDER" --props="$ALLPROPS" \
+     --image-format=jpeg --concurrency="$CONC" --scale="$SCALE" --log=verbose > "$TMP/render.log" 2>&1; then
   grep -m1 -E "safe: (unknown preset|[a-z]+ must be)" "$TMP/render.log" >&2 || tail -30 "$TMP/render.log" >&2
   echo "layout-audit: render failed" >&2; exit 1
 fi
 
-node - "$TMP/render.log" "$JSON" "$COMP" "$FRAMES" "$OUTDIR" "$SPEEDMAX" "${LEN:-0}" "$MAXR" "$WINDOWS" "$JUMPS" "$STRICT" "$HERE" <<'EOF'
+printf '%s' "$WORDS" > "$TMP/words.json"
+node - "$TMP/render.log" "$JSON" "$COMP" "$FRAMES" "$OUTDIR" "$SPEEDMAX" "${LEN:-0}" "$MAXR" "$WINDOWS" "$JUMPS" "$STRICT" "$HERE" "$TMP/words.json" "$FPSV" <<'EOF'
 const fs = require('fs');
-const [log, jsonPath, comp, framesArg, outDir, maxArg, lenArg, readArg, windowsArg, jumpsArg, strictArg, here] = process.argv.slice(2);
+const [log, jsonPath, comp, framesArg, outDir, maxArg, lenArg, readArg, windowsArg, jumpsArg, strictArg, here, wordsPath, fpsArg] = process.argv.slice(2);
+const filmWords = (() => { try { const t = fs.readFileSync(wordsPath, 'utf8').trim(); return t ? JSON.parse(t) : null; } catch { return null; } })();
 const jumps = JSON.parse(jumpsArg || '{}'); // COPY id -> [[from, to), ...] declared re-centre jumps (composition frames)
 const strict = strictArg === '1';
 const jumpingAt = (id, f) => {
@@ -322,18 +350,118 @@ if (pairs.length)
     const box = byFrame.get(x.frame)?.boxes.find((b) => b.id === x.id && b.speed !== undefined);
     if (box && box.speed > maxR && !readingAt(x.id, x.frame)) moving.push({ ...issues.splice(i, 1)[0], speed: box.speed });
   }
+// Placement: where each statement stands over its time (see the header). Statements are the COPY entries that are not
+// 'ui' or 'name'; a name is held to the flush-left rule only. Boxes merge by COPY id (exact, else with their part
+// suffixes taken off), and the fragments of one build chain merge into their line (a line built in parts is measured whole).
+const placement = (() => {
+  if (!filmWords || !audited.length) return null;
+  const byId = new Map();
+  for (const c of filmWords) {
+    const k = c.chain || c.id;
+    const had = byId.get(k);
+    byId.set(k, had ? { ...had, in: Math.min(had.in, c.in), out: Math.max(had.out, c.out) } : { id: k, kind: c.kind, in: c.in, out: c.out });
+  }
+  const keyOf = new Map(filmWords.map((c) => [c.id, c.chain || c.id]));
+  // a box's COPY id: its own, else with its part suffixes taken off one by one (a stack line "what-1", a claim line "tag.1.0")
+  const idOf = (b) => {
+    for (let id = String(b.id); id; ) {
+      if (keyOf.has(id)) return keyOf.get(id);
+      if (byId.has(id)) return id;
+      const cut = id.replace(/[.-][^.-]*$/, '');
+      if (cut === id) break;
+      id = cut;
+    }
+    return null;
+  };
+  const samples = []; // { id, frame, h, v, layout }
+  for (const d of audited) {
+    const W = d.width, H = d.height;
+    const spans = new Map();
+    for (const b of d.boxes) {
+      const id = idOf(b);
+      if (!id || b.ui || b.opacity < 0.5 || b.px < (d.minPx ?? 0) || b.push === 'moving') continue;
+      const s = spans.get(id) ?? { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+      spans.set(id, { x0: Math.min(s.x0, b.x), y0: Math.min(s.y0, b.y), x1: Math.max(s.x1, b.x + b.w), y1: Math.max(s.y1, b.y + b.h) });
+    }
+    const pics = Array.isArray(d.pictures) ? d.pictures : null;
+    for (const [id, s] of spans) {
+      const cx = (s.x0 + s.x1) / 2 / W, cy = (s.y0 + s.y1) / 2 / H;
+      const h = Math.abs(cx - 0.5) <= 0.1 ? 'centre' : cx < 0.5 ? 'left' : 'right';
+      const v = cy < 0.35 ? 'top' : cy > 0.65 ? 'bottom' : 'middle';
+      let layout = pics ? 'alone' : null;
+      if (pics && pics.length) {
+        const sa = Math.max(1, (s.x1 - s.x0) * (s.y1 - s.y0));
+        const ov = (p) => Math.max(0, Math.min(s.x1, p.x + p.w) - Math.max(s.x0, p.x)) * Math.max(0, Math.min(s.y1, p.y + p.h) - Math.max(s.y0, p.y));
+        const inFrame = (p) => Math.max(0, Math.min(W, p.x + p.w) - Math.max(0, p.x)) * Math.max(0, Math.min(H, p.y + p.h) - Math.max(0, p.y));
+        if (pics.some((p) => ov(p) > 0.5 * sa || inFrame(p) >= 0.7 * W * H)) layout = 'over';
+        else {
+          const big = pics.filter((p) => inFrame(p) >= 0.04 * W * H).sort((a, b) => inFrame(b) - inFrame(a))[0];
+          if (big) {
+            const hx = Math.min(s.x1, big.x + big.w) - Math.max(s.x0, big.x) > 0;
+            const vy = Math.min(s.y1, big.y + big.h) - Math.max(s.y0, big.y) > 0;
+            const mid = (s.y0 + s.y1) / 2;
+            if (!hx && vy) layout = 'beside';
+            else if (hx && big.y >= mid) layout = v === 'top' ? 'text-top/picture-below' : 'above-picture';
+            else if (hx && big.y + big.h <= mid) layout = v === 'bottom' ? 'text-bottom/picture-above' : 'below-picture';
+            else layout = 'near';
+          }
+        }
+      }
+      samples.push({ id, frame: d.frame, h, v, layout });
+    }
+  }
+  const count = new Map();
+  for (const x of samples) count.set(x.id, (count.get(x.id) ?? 0) + 1);
+  const weight = (x) => Math.max(1, byId.get(x.id).out - byId.get(x.id).in) / count.get(x.id);
+  const isStatement = (id) => !['ui', 'name'].includes(byId.get(id).kind);
+  const stm = samples.filter((x) => isStatement(x.id));
+  const tot = stm.reduce((a, x) => a + weight(x), 0);
+  const share = (f) => (tot ? Math.round((1000 * stm.filter(f).reduce((a, x) => a + weight(x), 0)) / tot) / 10 : null);
+  const major = (id, key) => {
+    const m = new Map();
+    for (const x of samples) if (x.id === id) m.set(x[key], (m.get(x[key]) ?? 0) + 1);
+    return [...m.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  };
+  const ids = [...count.keys()];
+  const leftTB = ids.filter((id) => {
+    const xs = samples.filter((y) => y.id === id);
+    return xs.filter((x) => x.h === 'left' && x.v !== 'middle').length * 2 >= xs.length;
+  });
+  const stmIds = ids.filter(isStatement);
+  const layouts = Object.fromEntries(stmIds.map((id) => [id, major(id, 'layout')]));
+  const textTop = stmIds.filter((id) => layouts[id] === 'text-top/picture-below');
+  const split = stmIds.filter((id) => ['text-top/picture-below', 'text-bottom/picture-above', 'above-picture', 'below-picture', 'beside'].includes(layouts[id]));
+  const durS = Number(lenArg) > 0 ? Number(lenArg) / (Number(fpsArg) || 60) : 0;
+  const splitMax = Math.max(1, Math.ceil(durS / 30));
+  const out = {
+    statements: stmIds.length, samples: stm.length, centred: share((x) => x.h === 'centre'), middle: share((x) => x.v === 'middle'),
+    centreMiddle: share((x) => x.h === 'centre' && x.v === 'middle'),
+    leftTopBottom: leftTB, textTopPictureBelow: textTop, split, splitMax, layouts,
+    where: Object.fromEntries(ids.map((id) => [id, `${major(id, 'h')}-${major(id, 'v')}`])),
+    limits: { centred: 80, middle: 85, leftTopBottom: 0, textTopPictureBelow: 1, splitPer30s: 1 },
+  };
+  if (stm.length) {
+    if (out.centred < 80) issues.push({ frame: -1, kind: 'placement', id: 'film', detail: `statements centred ${out.centred} % of their time < 80 %: centre the line (a picture beside it moves before or after the line)` });
+    if (out.middle < 85) issues.push({ frame: -1, kind: 'placement', id: 'film', detail: `statements in the middle band ${out.middle} % of their time < 85 %: set the line at 35-65 % of the height (centred top or bottom only over a full-bleed picture)` });
+  }
+  for (const id of leftTB) issues.push({ frame: -1, kind: 'placement', id, detail: `flush left at the ${major(id, 'v')} of the frame: never; centre it` });
+  if (textTop.length >= 2) issues.push({ frame: -1, kind: 'placement', id: textTop.join('+'), detail: `${textTop.length} statements in the top band over a picture below them (at most 1 a film): give the line its own beat, centred, and the picture the next` });
+  else if (textTop.length === 1) warnings.push({ frame: -1, kind: 'placement', id: textTop[0], detail: "a statement in the top band over a picture below it: the film's one (a second fails)" });
+  if (split.length > splitMax) (strict ? issues : warnings).push({ frame: -1, kind: 'placement', id: split.join('+'), detail: `${split.length} split layouts (a line beside, above or below a picture) > ${splitMax} (1 per 30 s)` });
+  return out;
+})();
 issues.sort((p, q) => p.frame - q.frame);
 const report = {
   tool: 'layout-audit', comp, frames: want, audited: audited.length, missing, stills: outDir,
   width: audited[0]?.width, height: audited[0]?.height,
   pass: issues.length === 0 && missing.length === 0 && audited.length > 0 && !(strict && warnings.length),
-  issues, warnings, uiWarnings: ui.warnings, jumps: jumped, moving: moving.sort((p, q) => p.frame - q.frame),
+  issues, warnings, uiWarnings: ui.warnings, jumps: jumped, moving: moving.sort((p, q) => p.frame - q.frame), placement,
   typeBands: audited[0]?.bands, typeWidths: audited[0]?.widths,
   tweens: [...tweens.values()].sort((p, q) => p.from - q.from),
   speed: maxV > 0 ? { max: maxV, read: maxR, pairs: pairs.length, fastest, fastestRead } : null,
   words: audited.reduce((m, d) => (d.words !== undefined && (!m || d.words > m.max) ? { max: d.words, frame: d.frame, ui: d.uiWords ?? 0 } : m), null),
   zone: audited[0]?.zone, safe: audited[0]?.safe,
-  boxes: audited.map((d) => ({ frame: d.frame, width: d.width, height: d.height, safe: d.safe, boxes: d.boxes, ...(d.logos?.length ? { logos: d.logos } : {}), ...(d.imagery?.length ? { imagery: d.imagery } : {}) })),
+  boxes: audited.map((d) => ({ frame: d.frame, width: d.width, height: d.height, safe: d.safe, boxes: d.boxes, ...(d.logos?.length ? { logos: d.logos } : {}), ...(d.imagery?.length ? { imagery: d.imagery } : {}), ...(d.pictures?.length ? { pictures: d.pictures } : {}) })),
 };
 fs.writeFileSync(jsonPath, JSON.stringify(report, null, 1) + '\n');
 for (const x of issues) console.log(`  f${x.frame}  ${x.kind}  ${x.id}  ${x.detail}`);
@@ -343,6 +471,10 @@ if (moving.length) console.log(`  ${moving.length} box(es) past the safe zone wh
 if (jumped.length) console.log(`  ${jumped.length} declared re-centre jump frame(s) moved read text faster than ${maxR} px/f (held to ${maxV}): fastest ${Math.max(...jumped.map((j) => j.speed))} px/f`);
 if (!byFrame.size) console.log(`  no CINETIC_AUDIT output: does ${comp} accept the audit prop and render <Audit/> inside <FontGate>?`);
 else if (missing.length) console.log(`  no audit line for frames ${missing.join(',')}`);
+if (placement && placement.samples) {
+  const p = placement;
+  console.log(`  placement: centred ${p.centred} % of statement time (>= 80), middle band ${p.middle} % (>= 85), flush left top/bottom ${p.leftTopBottom.length}, text top/picture below ${p.textTopPictureBelow.length} (<= 1), split ${p.split.length} (<= ${p.splitMax}); ${p.statements} statements`);
+}
 const n = audited.reduce((s, d) => s + d.boxes.length, 0);
 const z = report.safe ? ` in ${report.zone} (top ${report.safe.top}, right ${report.safe.right}, bottom ${report.safe.bottom}, left ${report.safe.left})` : '';
 const v = maxV > 0 ? `, fastest readable text ${fastest ? `${fastest.speed} px/f (${fastest.id} f${fastest.frame})` : 'not measured'}` +
