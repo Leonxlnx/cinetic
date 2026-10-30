@@ -163,6 +163,20 @@ export const CUE: Record<string, number> = {
 };
 
 /**
+ * A timing assert at import (a line read past its act's cut at this tempo): a warning in dev, recorded where
+ * scripts/precheck.mjs lists it, an error only under the ship gate (CINETIC_GATE=ship, or REMOTION_CINETIC_GATE=ship for a
+ * render). lib/continuity timingFail's twin, inline: this file stays free of React and remotion imports.
+ */
+const timingFail = (rule: string, message: string): void => {
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+  if (env?.CINETIC_GATE === 'ship' || env?.REMOTION_CINETIC_GATE === 'ship') throw new Error(message);
+  const g = globalThis as unknown as Record<string, { rule: string; message: string }[] | undefined>;
+  const list = (g.__cineticGateIssues ??= []);
+  if (list.some((x) => x.rule === rule && x.message === message)) return;
+  list.push({ rule, message });
+  console.warn(`warn ${message} (dev: a warning; the ship gate fails it, CINETIC_GATE=ship)`);
+};
+/**
  * The ticker's step frames (whole frames): one fewer than the capabilities, TICK_GAP apart from tick0, or closer
  * (whole 60 fps frames, never under 6) so the last step lands 2 f before the claim: the act shrinks with the tempo.
  */
@@ -170,8 +184,8 @@ const TICK_EVERY = (() => {
   const gaps = REEL.capabilities.length - 2;
   const room = ((ACT.claim.from - CUE.tick0) * 60) / FPS - 2;
   const g = gaps > 0 ? Math.min(TICK_GAP, Math.floor(room / gaps)) : TICK_GAP;
-  if (g < 6) throw new Error(`timeline: ${REEL.capabilities.length} capabilities need a step every ${g} f at 60 fps to fit the ticker act; cut the list or choose a slower track`);
-  return g;
+  if (g < 6) timingFail('tick-room', `timeline: ${REEL.capabilities.length} capabilities need a step every ${g} f at 60 fps to fit the ticker act; cut the list or choose a slower track`);
+  return Math.max(1, g);
 })();
 export const TICKS = Array.from({ length: REEL.capabilities.length - 1 }, (_, k) => CUE.tick0 + f60(TICK_EVERY * k));
 /** The record grid's hops (the accent cells change place on the kicks). */

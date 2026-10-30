@@ -28,7 +28,7 @@ const NOTICE = { w: 1180 * U, h: 200 * U } as const;
 const N: React.FC<{ i: number }> = ({ i }) => {
   const t = themeOf('proof');
   const p = WALK.proof[i % WALK.proof.length];
-  return <Notice theme={t} w={NOTICE.w} h={NOTICE.h} glyph="bolt" title={p.title} body={p.body} meta={p.meta} id={`proof-${i}`} />;
+  return <Notice theme={t} w={NOTICE.w} h={NOTICE.h} glyph={p.glyph} title={p.title} body={p.body} meta={p.meta} id={`proof-${i}`} />;
 };
 
 /** The river: notices on three depths flowing up at constant speeds (closed form in the frame). */

@@ -2,7 +2,7 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { U } from '../brand/tokens';
 import { DirBlur } from '../fx/Defocus';
-import { Avatar, face, KIT_TYPE, surfaceShadow } from '../kit';
+import { Avatar, face, fitTitle, KIT_TYPE, surfaceShadow } from '../kit';
 import { E, hitPulse, lmix, prog } from '../lib/anim';
 import { phrase } from '../lib/cadence';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
@@ -29,6 +29,8 @@ const QUOTE_ON = phrase(3, f60x(8), { shape: 'settle', seed: 'insight-quotes' })
 const Quote: React.FC<{ i: number }> = ({ i }) => {
   const t = themeOf('insight');
   const r = WALK.feed.rows[(WALK.feed.key + i + 1) % WALK.feed.rows.length];
+  // the message fits its column whole: a little smaller, else on two lines; never cut with "..."
+  const fit = fitTitle(r.text, KIT_TYPE.body * U, 540, QUOTE.w - 60 * U - 88 * U - 24 * U);
   return (
     <div data-ui style={{ width: QUOTE.w, height: QUOTE.h, borderRadius: 28 * U, background: t.surface, boxShadow: surfaceShadow(t, 22, U), display: 'flex', alignItems: 'center', gap: 24 * U, padding: `0 ${30 * U}px`, boxSizing: 'border-box' }}>
       <Avatar theme={t} i={i + 3} initials={r.initials} seed={r.who} size={88 * U} src={facePhoto(r)} kind={facePhoto(r) ? 'portrait' : 'monogram'} />
@@ -36,7 +38,7 @@ const Quote: React.FC<{ i: number }> = ({ i }) => {
         <span data-text={`quote-who-${i}`} style={face(KIT_TYPE.label * U, 600, t.mute)}>
           {r.who}
         </span>
-        <span data-text={`quote-text-${i}`} style={{ ...face(KIT_TYPE.body * U, 540, t.text), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span data-text={`quote-text-${i}`} style={{ ...face(fit.px, 540, t.text), whiteSpace: fit.wrap ? 'normal' : 'nowrap', lineHeight: 1.18 }}>
           {r.text}
         </span>
       </div>

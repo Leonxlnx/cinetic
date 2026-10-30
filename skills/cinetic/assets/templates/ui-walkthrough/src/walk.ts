@@ -5,6 +5,7 @@
 // line one thing it does, 2-7 words, scripts/copy-check.py) and the product's own strings and numbers in place of
 // every [bracket], rebuild the product's real screens where the kit stands in, then delete these four lines.
 import { IDENTITY } from './brand/identity';
+import type { IconName } from './kit/icons';
 
 /** The story the UI tells: the input goes in, the product reads it, finds what matters, the user picks, it builds the output. */
 export const WALK = {
@@ -40,14 +41,14 @@ export const WALK = {
   claimObject: 'clock',
   /** The output the product makes from it, and the three steps it shows while it works. */
   output: { title: '[Your output]', sub: '[What it does for you]', steps: ['[Reading the input]', '[Finding the pattern]', '[Building the result]'] },
-  /** Proof: results arriving as notices, faster and faster. */
+  /** Proof: results arriving as notices, faster and faster. `glyph` (optional, a kit icon name) only when it is the item's own sign. */
   proof: [
     { title: '[New result]', body: '[Detail] [amount]', meta: '[now]' },
     { title: '[New result]', body: '[Detail] [amount]', meta: '[now]' },
     { title: '[New result]', body: '[Detail] [amount]', meta: '[now]' },
     { title: '[New result]', body: '[Detail] [amount]', meta: '[now]' },
     { title: '[New result]', body: '[Detail] [amount]', meta: '[now]' },
-  ],
+  ] as { title: string; body: string; meta: string; glyph?: IconName }[],
   /** Step one: the field's placeholder (erased), the value typed in, the action and its busy label. */
   field: { placeholder: '[Paste a link here]', value: '[your-input.link]', action: '[Go]', busy: '[Reading]' },
   /** What the product found for the input: six results that develop in. */
@@ -59,11 +60,14 @@ export const WALK = {
     { title: '[Fifth result title]', meta: '[meta]', badge: '[0:37]' },
     { title: '[Sixth result title]', meta: '[meta]', badge: '[1:26]' },
   ],
-  /** Step two: what the product reads (a count of it beside), landing on the item that matters. Each row is a real person and what they wrote. */
+  /**
+   * Step two: what the product reads (a count of it beside), landing on the item that matters. Each row is a real person and
+   * what they wrote. `total` is the product's own count, written as it reads ("3,412"): the counter climbs to it.
+   */
   feed: {
     label: '[Reading]',
     unit: '[items]',
-    total: 3412,
+    total: '[3,412]',
     key: 6, // the row the read lands on: the insight
     rows: [
       { who: '[Name]', initials: '[AB]', text: '[A reply, a review, a request]' },
@@ -79,12 +83,12 @@ export const WALK = {
   },
   /** The insight pill: what the product found and how often. */
   insight: { text: '[The insight]', count: '[N]x' },
-  /** Step three: what the product can make from it; the user picks one. */
+  /** Step three: what the product can make from it; the user picks one. `glyph` (optional) only when it is the option's own sign. */
   options: [
     { title: '[Option one]', meta: '[what it is]', value: '[price]' },
     { title: '[Option two]', meta: '[what it is]', value: '[price]' },
     { title: '[Option three]', meta: '[what it is]', value: '[price]' },
-  ],
+  ] as { title: string; meta: string; value: string; glyph?: IconName }[],
   pick: 1,
   build: { label: '[Building your output]' },
   /** The output, live: the page the product made. */

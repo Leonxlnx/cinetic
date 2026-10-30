@@ -328,12 +328,27 @@ export const chainOf = (id: string): Copy[] => {
   return list;
 };
 
+/**
+ * A timing assert at import (a line read past its act's cut at this tempo): a warning in dev, recorded where
+ * scripts/precheck.mjs lists it, an error only under the ship gate (CINETIC_GATE=ship, or REMOTION_CINETIC_GATE=ship for a
+ * render). lib/continuity timingFail's twin, inline: this file stays free of React and remotion imports.
+ */
+const timingFail = (rule: string, message: string): void => {
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+  if (env?.CINETIC_GATE === 'ship' || env?.REMOTION_CINETIC_GATE === 'ship') throw new Error(message);
+  const g = globalThis as unknown as Record<string, { rule: string; message: string }[] | undefined>;
+  const list = (g.__cineticGateIssues ??= []);
+  if (list.some((x) => x.rule === rule && x.message === message)) return;
+  list.push({ rule, message });
+  console.warn(`warn ${message} (dev: a warning; the ship gate fails it, CINETIC_GATE=ship)`);
+};
 // A line is read inside its own act: at a faster track the act's bars shrink while the read does not, so a line that
-// would still be on screen at its act's cut fails here, at import, with the fix (a slower track, a shorter line, a bar more).
+// would still be on screen at its act's cut is reported here, at import, with the fix (a slower track, a shorter line, a
+// bar more): a warning in dev, an error under the ship gate (lib/continuity timingFail; scripts/precheck.mjs lists it).
 const ACT_OF: Record<string, ActName> = { promise: 'open', claim: 'claim', step1: 'field', insight: 'insight', pick: 'pick' };
 for (const [id, act] of Object.entries(ACT_OF)) {
   const c = copy(id);
   const end = actEnd(act);
   if (c.out + f60(lineExit(id, c.text)) > end)
-    throw new Error(`timeline: the ${id} line ("${c.text}") is read until f${c.out} and leaves by f${c.out + f60(lineExit(id, c.text))}, after its act's cut (f${end}) at ${BPM} BPM: shorten the line, give the act a bar more, or cut to a slower track`);
+    timingFail('line-cut', `timeline: the ${id} line ("${c.text}") is read until f${c.out} and leaves by f${c.out + f60(lineExit(id, c.text))}, after its act's cut (f${end}) at ${BPM} BPM: shorten the line, give the act a bar more, or cut to a slower track`);
 }

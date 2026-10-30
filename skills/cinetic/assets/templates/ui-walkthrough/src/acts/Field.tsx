@@ -8,7 +8,7 @@ import { ERASE_HOUSE, eraseSchedule, TypeOn, typeSchedule } from '../fx/TypeOn';
 import { AppIcon, AppWindow, ContentTile, Field as FieldPart, filmWorld, hasLogo, Micro, type TileNode } from '../kit';
 import { mixColor } from '../lib/color';
 import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
-import { landBeforeCut } from '../lib/continuity';
+import { landBeforeCut, timingFail } from '../lib/continuity';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { CLAIM_EXIT } from './Claim';
@@ -36,7 +36,7 @@ export const ERASE = (() => {
   const room = CUE.typeIn - 1 - CUE.erase;
   const need = Math.max(1, ...eraseSchedule(n, { start: 0 }, { fps: FPS }));
   const k = Math.min(1, room / need);
-  if (k < 0.5) throw new Error(`Field: the placeholder's ${n} characters need ${need} f to clear and the erase has ${room} f (CUE.erase to CUE.typeIn): shorten the placeholder or move CUE.erase earlier`);
+  if (k < 0.5) timingFail('erase-room', `Field: the placeholder's ${n} characters need ${need} f to clear and the erase has ${room} f (CUE.erase to CUE.typeIn): shorten the placeholder or move CUE.erase earlier`);
   return { start: CUE.erase, gaps: ERASE_HOUSE.gaps60.map((g) => g * k) };
 })();
 /** The frames the typed value's keys land (for the sound). */

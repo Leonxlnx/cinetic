@@ -128,7 +128,7 @@ export const Pick: React.FC = () => {
                   {/* the container carries its own surface and the choice's ring through the morph, so the box reads on any ground */}
                   <div style={{ width: w, height: h, borderRadius: mix(ROWS.h * 0.26, hh / 2, lift), overflow: 'hidden', position: 'relative', background: chosen ? t.surface : undefined, boxShadow: chosen ? `${surfaceShadow(t, mix(14, 30, lift), U)}, inset 0 0 0 ${(3 * U * Math.max(ring, lift)).toFixed(2)}px ${t.accent}` : undefined }}>
                     <div style={{ opacity: 1 - clamp(lift / 0.4), transform: `translate3d(0, ${(-26 * U * lift).toFixed(2)}px, 0)` }}>
-                      <Row theme={t} w={ROWS.w} h={ROWS.h} glyph={(['grid', 'doc', 'star'] as const)[i % 3]} title={o.title} meta={o.meta} value={o.value} selected={0} id={`option-${i}`} />
+                      <Row theme={t} w={ROWS.w} h={ROWS.h} glyph={o.glyph} title={o.title} meta={o.meta} value={o.value} selected={0} id={`option-${i}`} />
                     </div>
                   </div>
                 </div>

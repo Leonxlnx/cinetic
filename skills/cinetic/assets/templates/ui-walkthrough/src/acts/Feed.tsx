@@ -45,8 +45,10 @@ export const PillContent: React.FC<{ chip?: number; opacity?: number }> = ({ chi
 };
 
 const flick = flickFeed(ACT.feed.from, { fps: FPS, width: W, height: H }, { brake: { fast: 0.922, share: 0.6, slow: 0.96 }, distance: FEED.landRow * FEED.pitch });
+/** The product's count as a number (walk.ts writes it as it reads: "3,412"). */
+const TOTAL = Number(String(WALK.feed.total).replace(/[^0-9.]/g, '')) || 0;
 /** The counter's steps (whole frames): it grows as the feed is read and lands on the total just before the item does. */
-export const COUNT = growthSteps(CUE.count, WALK.feed.total, { within: CUE.land - CUE.count - f60x(6) }, FPS);
+export const COUNT = growthSteps(CUE.count, TOTAL, { within: CUE.land - CUE.count - f60x(6) }, FPS);
 const countAt = (F: number) => COUNT.filter((s) => fd(F) >= s.at).pop()?.value ?? 0;
 /** The feed row shown at list index i (the key row lands on index landRow). */
 const rowOf = (i: number) => WALK.feed.rows[(((i - FEED.landRow + WALK.feed.key) % WALK.feed.rows.length) + WALK.feed.rows.length) % WALK.feed.rows.length];
@@ -177,7 +179,7 @@ export const Feed: React.FC = () => {
       )}
       {/* the count of what has been read: a quiet chip, never the hero of the shot */}
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, display: 'flex', justifyContent: 'center', opacity: (1 - clamp(m * 2)) * prog(F, CUE.count, CUE.count + f60x(20), E.glideOut), transform: `translate3d(0, ${(56 * U).toFixed(2)}px, 0)` }}>
-        <Pill theme={t} h={(DEAL.read === 'flick' ? 96 : 76) * U} label={`${WALK.feed.label} ${count.toLocaleString('en-US')} ${WALK.feed.unit}`} spin={(F - ACT.feed.from) * 9} done={count >= WALK.feed.total} id="feed-count" />
+        <Pill theme={t} h={(DEAL.read === 'flick' ? 96 : 76) * U} label={`${WALK.feed.label} ${count.toLocaleString('en-US')} ${WALK.feed.unit}`} spin={(F - ACT.feed.from) * 9} done={count >= TOTAL} id="feed-count" />
       </div>
     </AbsoluteFill>
   );
