@@ -81,6 +81,8 @@ over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), 
                (the camera drift, the planes, the content): one small thing moving in a still frame. The house
                holds that at most 1.5 s (a cut ends the stretch)                                     warn
                longer than 2.0 s                                                            fail
+               a stretch that opens on a landing (the frame before it moves) counts 0.25 s less: the rest
+               after a landing is a held beat, a stretch that opens dead (on a cut, from a still) counts whole
                under 30 % on more than a quarter of the body                                warn
   still-cut    more than 30 % of the cuts go from a still frame to a still frame            warn
   hold-into-exit  fewer than half of the continuity cuts accelerate into the cut (the last two
@@ -91,6 +93,26 @@ over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), 
                against the code's speed when the seam declares v (px/f at 1080p) and ratio  fail
                the same, on a picture that repeats along the move (stripes, tiles, a list: the
                step is only known modulo its period) or whose moving pixels disagree       warn
+               every hard cut (a run of at most 3 cut frames: most pixels change and the flow cannot
+               explain it) carries a device: the ground kept (border colour moves < 30), a blur at
+               the seam (sharpness dips > 0.4 log units below both sides), an anchor held (< 35 % of
+               the frame changes, a text line or shape centre within 10 px at 1080p, or the main
+               line or shape centred on both sides: the centre slot) or motion carried (cos > 0.7,
+               > 3 px per 1/30 s at 1080p out, > 2 in). Bare cuts over 10 % of the hard cuts      fail
+               (a single bare cut over 10 %, or a film without declared seams: warn; the pixels
+               cannot see a matched shape that the seam plan names)
+               a declared seam whose recipe promises a device it does not carry (velocity: motion,
+               match-cut: anchor, blur-through: blur, exit-then-enter: ground or blur ...)        warn
+               a declared velocity cut whose exit builds slower than x1.1 a frame (house x1.15-1.35
+               over the last 8-12 f@60) or whose next shot decays in under 8 f@60 (house 12-24) warn
+  ground-flip  a neutral ground (border chroma < 0.04: paper, grey, slate, black) held light (luma
+               >= 150) or dark (<= 80) for 0.5 s flips more than twice (flips within 1 s are one
+               colour event; a colour field between its deep and light state is one family)  fail
+               (a film without declared seams: warn)
+  seam-mix     the most-used seam (declared seams by recipe, fx/Seam ids first; undeclared act
+               lines are hard cuts) takes more than 45 % of 5 or more scene changes         fail
+               4+ copy lines and no exit-then-enter, text-swap or match-cut                warn
+               --seams runs only these three on a 480-wide decode (fast; implies --grammar)
   dissolve-detect  >= 4 f@60 explained as a rising mix of two different images (SSIM < 0.5), or a
                fade to black before the last 2 s, unless a seam declares it (dissolveUi,
                light, fadeEnd)                                                              fail
@@ -100,6 +122,9 @@ at 160x90, one sample per 1/30 s (landings also at the film's own rate), outside
   motion-snap  one-sample changes (>= 2 code values, both neighbours under 35 % of it) that are not cuts:
                more than 0.6 per 3 s outside a declared snap (stepped ranges, flashes, snapZoom seams), or
                more than 1 declared snap device (declarations named alike, 'tick-0' ... 'tick-9', are one) fail
+  motion-rest  (info) a deliberate rest: a still run of up to 16 f@60 starting within 0.5 s of a move's landing passes
+               motion-frozen (a real rest after a landing, 8-15 f); reported with the film's longest rest (mean change under
+               0.3), its rests of 8 f@60 or more per 10 s and its dynamic range (p90 / p25 of the change curve)
   motion-frozen  6 f@30 or more in a row where the mean change is under 0.05 and fewer than 8 px change by
                4 values or more (a 0.3 px/f drift keeps even a sparse frame alive), after the first 0.5 s
                and outside declared freezes; without declarations 1 s of still in all is allowed       fail
@@ -453,6 +478,7 @@ def load_declarations(args):
         cues_fps = c['fps']
         extra.update(declared_of(c))
         extra['events'] = c['events']
+        extra['copy_n'] = sum(1 for x in c['copy'] if x.get('kind', 'copy') == 'copy')
     return sorted(set(cuts)), sorted(set(freezes)), sorted(set(ignore)), acts, moments, reading, cues_fps, extra
 
 
@@ -649,7 +675,7 @@ CHANGE_LIVE = 0.002  # share of the frame whose content changes over a window (t
 # (0.4 s windows at 480 wide): the median runs 0.65-0.98; a stretch under `low` lasts at most 1.5 s in three quarters
 # of the band and 1.8 s in all but a slow explainer; under `low` on more than a quarter of the body is beyond all
 # but two. A 6 px/s drift keeps a hold from freezing (hold-drift); it does not make a shot move.
-ENERGY = dict(px=15.0, low=0.3, warn_s=1.5, fail_s=2.0, share=0.25)
+ENERGY = dict(px=15.0, low=0.3, warn_s=1.5, fail_s=2.0, share=0.25, rest_s=0.25)  # rest_s: a stretch opening on a landing counts this much less
 # carried-cut: the house band, a direction read needs this coherence, a repeat reaching this autocorrelation makes the
 # step ambiguous, and the read's spread widens the ratio band by at most this much
 CARRY = dict(cos=0.7, ratio=(0.4, 1.4), coherence=0.5, period_ac=0.5, spread_max=0.5)
@@ -975,7 +1001,13 @@ def energy_runs(frames, state, breaks, fps, P=ENERGY):
     def close():
         if cur:
             e = [state[f]['energy'] for f in cur]
-            runs_.append(dict(**{'from': cur[0]}, to=cur[-1], s=round((cur[-1] - cur[0] + 1) / fps, 2), energy=round(float(np.mean(e)), 3)))
+            # a stretch that opens on a landing (the frame before it is measured, in the body, moving and not a cut) holds
+            # the landing's rest: it counts P['rest_s'] less; one that opens dead (a cut, a still) counts whole
+            prev = state.get(cur[0] - 1)
+            landed = prev is not None and prev.get('energy') is not None and prev['energy'] >= P['low'] and cur[0] not in breaks
+            s_ = (cur[-1] - cur[0] + 1) / fps
+            runs_.append(dict(**{'from': cur[0]}, to=cur[-1], s=round(max(0.0, s_ - (P.get('rest_s', 0.0) if landed else 0.0)), 2), raw_s=round(s_, 2),
+                              landed=bool(landed), energy=round(float(np.mean(e)), 3)))
 
     for f in frames:
         w = state.get(f)
@@ -1063,10 +1095,14 @@ def analyse(args, info):
     M['dissolve'] = []
     mc = None if getattr(args, 'no_grammar', False) else MotionCurves(fps)  # the motion gates' luma curves
     M['motion'] = mc
+    sc = None if getattr(args, 'no_grammar', False) else SeamScan(fps, W, H)  # the seam checks' reads
+    M['seams'] = sc
     for f, rgb in decode(args.video, info, start, count):
         small = cv2.resize(rgb, (SW, SH), interpolation=cv2.INTER_AREA).astype(np.int16)
         if mc is not None:
             mc.feed(f, motion_luma(small.astype(np.uint8)))
+        if sc is not None:
+            sc.feed(f, small.astype(np.uint8))
         if probe_m is not None or getattr(args, '_dissolve', False):
             g8 = cv2.cvtColor(small.astype(np.uint8), cv2.COLOR_RGB2GRAY) if probe_m is None or (probe_m.w, probe_m.h) == (SW, SH) else \
                 cv2.resize(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY), (probe_m.w, probe_m.h), interpolation=cv2.INTER_AREA)
@@ -1865,6 +1901,12 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
     mc = M.get('motion')
     if mc is not None and mc.first is not None:
         out['motion'] = motion_gates(mc, fps, extra, vf, cuts, freezes, acts, hold_end, not undeclared, add, sev, ignored)
+
+    # seams: every hard cut carries a device, the ground flips at most twice, no seam kind takes over the plan
+    sc = M.get('seams')
+    if sc is not None and sc.f:
+        sc.close()
+        out['seams'] = seam_check(sc, extra, k_, acts, add, sev, ignored, extra.get('copy_n', 0))
     return out
 
 
@@ -1899,6 +1941,10 @@ MOTION = dict(
     frozen_s=1.0,  # without declarations: still this long in total is the film's one held stop
     episode_s=0.5,  # snaps closer than this are one device (a ticker)
     open_s=0.5,  # the opening may start from a still
+    rest_max60=16,  # a still run up to this long (f@60) ...
+    rest_after_s=0.5,  # ... starting within this of a move's landing is a rest, not a freeze
+    rest_d=0.3,  # the rests reported: runs of mean change under this (the picture near still) ...
+    rest_min60=8,  # ... this long or more (f@60)
 )
 MOTION_CUT_SEAMS = ('hard', 'velocity', 'whip', 'zoomThrough', 'colour', 'light', 'defocus', 'mask', 'wipe')
 MOTION_SNAP_SEAMS = ('snapZoom', 'stepped')
@@ -2076,6 +2122,26 @@ def motion_measures(d1, dk, fps, cuts=(), snaps_ok=(), carried=(), freezes=(), e
                 break
         events.append(dict(frame=p * step, peak=round(float(v), 3), decay=round(span / k30, 2), ends=why))
     decays = [e['decay'] for e in events if e['ends'] == 'land' or e['decay'] >= P['decay_min']]
+    # a rest after a landing: a still run of up to rest_max60 f@60 starting within rest_after_s of a move's landing is a
+    # held beat (8-15 f), not a freeze; a dead stretch (no landing before it, or longer) stays frozen
+    lands = [e['frame'] // step + int(round(e['decay'] * k30)) for e in events if e['ends'] == 'land']
+    rest_runs, kept = [], []
+    for s_, e_ in frozen:
+        long60 = (e_ - s_ + 1) / k30 * 2
+        if long60 <= P['rest_max60'] and any(0 <= s_ - L <= P['rest_after_s'] * r for L in lands):
+            rest_runs.append((s_, e_))
+        else:
+            kept.append((s_, e_))
+    frozen = kept
+    # the rests the picture holds (mean change under rest_d, the frame near still), its dynamic range (p90 / p25)
+    quiet = a[:end] < P['rest_d']
+    for c in cutl:
+        if c < len(quiet):
+            quiet[c] = False
+    rr = [(s_, e_) for s_, e_ in runs(quiet) if s_ >= st]
+    rest60 = [round((e_ - s_ + 1) / k30 * 2, 1) for s_, e_ in rr]
+    body_a = np.array([a[i] for i in range(st, end) if i not in cutset]) if end > st else np.array([0.0])
+    p25, p90 = (float(np.percentile(body_a, 25)), float(np.percentile(body_a, 90))) if len(body_a) else (0.0, 0.0)
     top = float(np.percentile([e['peak'] for e in events], 90)) if events else 0.0
     primary = [e for e in events if e['peak'] >= P['primary'] * top]
 
@@ -2124,6 +2190,8 @@ def motion_measures(d1, dk, fps, cuts=(), snaps_ok=(), carried=(), freezes=(), e
         snap_allowance=[i * step for i in allowance], snap_runs=len(devices(dec)),
         snaps_per3=round(len(und) / body_s * 3, 3),
         frozen=[[s * step, e * step] for s, e in frozen], frozen_frames30=round(sum(e - s + 1 for s, e in frozen) / k30, 2),
+        rests_after_landing=[[s * step, e * step] for s, e in rest_runs], longest_rest60=max(rest60) if rest60 else 0.0,
+        rests_per10s=round(sum(1 for x in rest60 if x >= P['rest_min60']) / body_s * 10, 2), dynamic=round(p90 / max(p25, 0.02), 2),
         events=events, events_per3=round(len(events) / body_s * 3, 3),
         primary_per3=round(len(primary) / body_s * 3, 3),
         decay_median=round(float(np.median(decays)), 2) if len(decays) >= P['decay_events'] else None,
@@ -2207,12 +2275,341 @@ def motion_gates(mc, fps, extra, vf, cuts, freezes, acts, hold_end, declared, ad
     for k in ('cuts', 'snaps', 'snaps_declared', 'snaps_undeclared', 'snap_allowance'):
         m[k] = shift(m[k])
     m['frozen'] = [[a + f0, b + f0] for a, b in m['frozen']]
+    m['rests_after_landing'] = [[a + f0, b + f0] for a, b in m.get('rests_after_landing', [])]
     for k in ('events', 'stops', 'braking'):
         for x in m[k]:
             x['frame'] += f0
     m['events'] = m['events'][:200]
     m['thresholds'] = dict(MOTION)
     return m
+
+
+# ------------------------------------------------------------------------------------------
+# seams: what each hard cut carries across (carried-cut), how often the ground flips (ground-flip) and how varied
+# the seam plan is (seam-mix). Reads at SEAM['w'] wide: a few floats a frame plus a short ring of frames for the cuts.
+# ------------------------------------------------------------------------------------------
+# A hard cut flows when it carries a device across: the ground kept (the border's median colour moves under
+# `ground` code values), a blur at the seam (sharpness, log10 of the Laplacian variance, dips `blur` under its base),
+# an anchor kept (under `area` of the frame changes, a word line or shape centre within `anchor_px` px at 1080p, or the
+# main text line or shape centred on both sides, within `slot` of the frame's width and height: the centre slot)
+# or motion carried (the same direction, cos >= `cos`, at least `v_out` px per 1/30 s at 1080p out and `v_in` in).
+# A cut with none of them is bare. The house: bare cuts at most `bare` of a film's hard cuts (fails from `bare_n` bare
+# cuts, warns at one); a hard cut is a run of at most `run` cut frames (cut frames `merge` apart are one); a ground flip
+# (a neutral light ground, border luma >= `light` and chroma < `neutral`, cut to a neutral dark one, <= `dark`, or back,
+# each side held `hold_s`; flips closer than `flip_merge_s` are one colour event) at most `flips` a film; the most-used
+# seam kind at most `mix` of a film's big changes (counted from `mix_min` changes). A velocity cut builds x`build` a frame over its last `build_f60` frames
+# and the next shot decays over `decay_f60` (f@60).
+SEAM = dict(w=320, aw=480, frac=0.35, mad=25.0, resid=(0.5, 0.6), merge=2, run=3, ground=30.0, blur=0.4, area=0.35,
+            anchor_px=10.0, slot=(0.05, 0.10), cos=0.7, v_out=3.0, v_in=2.0, bare=0.10, bare_n=2, light=150.0, dark=80.0, neutral=0.04,
+            hold_s=0.5, flip_merge_s=1.0, flips=2, mix=0.45, mix_min=5, build=(1.15, 1.35), build_f60=(8, 12), decay_f60=(12, 24))
+# a declared seam's recipe: from its id prefix ('exitEnter:line-2', what fx/Seam declares), else from its kind
+SEAM_RECIPES = {'exitEnter': 'exit-then-enter', 'textSwap': 'text-swap', 'matchCut': 'match-cut', 'velocityCut': 'velocity-cut',
+                'blurThrough': 'blur-through', 'zoomThrough': 'zoom-through', 'sharedElement': 'shared-element'}
+SEAM_OF_KIND = dict(velocity='velocity-cut', morph='morph', hard='hard-cut', mask='mask-reveal', whip='whip', defocus='blur-through',
+                    light='light-wipe', breath='exit-then-enter', zoomThrough='zoom-through', colour='colour-flip', wipe='push-slide')
+SEAM_WITHIN = ('snapZoom', 'stepped', 'fadeEnd', 'dissolveUi')  # not a change of scene: left out of the mix
+SEAM_THOUGHT = ('exit-then-enter', 'text-swap', 'match-cut')  # a type film moves from line to line with one of these
+
+
+def seam_recipe(s):
+    """The recipe a declared seam names: its id prefix (exitEnter:..., textSwap:..., fx/Seam) or its kind."""
+    pre = str(s.get('id') or '').split(':', 1)[0]
+    return SEAM_RECIPES.get(pre) or SEAM_OF_KIND.get(s.get('kind'), str(s.get('kind')))
+
+
+def oklab_chroma(rgb):
+    """OKLab chroma of one sRGB colour (0-255 per channel): under about 0.04 a colour reads neutral (paper, grey, slate)."""
+    c = np.asarray(rgb, np.float64) / 255.0
+    c = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    lms = np.cbrt(np.array([[0.4122214708, 0.5363325363, 0.0514459929], [0.2119034982, 0.6806995451, 0.1073969566],
+                            [0.0883024619, 0.2817188376, 0.6299787005]]) @ c)
+    a = 1.9779984951 * lms[0] - 2.4285922050 * lms[1] + 0.4505937099 * lms[2]
+    b = 0.0259040371 * lms[0] + 0.7827717662 * lms[1] - 0.8086757660 * lms[2]
+    return float(math.hypot(a, b))
+
+
+def _ring_px(rgb):
+    """The outer two rows and columns of a frame, as an (n, 3) array."""
+    return np.concatenate([rgb[:2].reshape(-1, 3), rgb[-2:].reshape(-1, 3), rgb[:, :2].reshape(-1, 3), rgb[:, -2:].reshape(-1, 3)], 0)
+
+
+class SeamScan:
+    """Per-frame reads for the seam checks: sharpness, the border's median colour and luma, and whether the pair is a
+    hard cut (most pixels change and the flow cannot explain it), at SEAM['w'] wide; at each cut, from a ring of
+    frames around it, the changed area, the anchors either side (text lines and shapes off the ground, read at
+    SEAM['aw'] wide) and the dominant motion of the moving structure (px per 1/30 s at 1080p) before and after it.
+    Optical flow runs only on candidate cuts and around cuts. A run of more than SEAM['run'] cut frames is a fast
+    continuous change (a zoom, a whip, a dissolve of pixels), not a hard cut. Feed RGB frames of any size; call
+    close() after the last one."""
+
+    def __init__(self, fps, w, h):
+        self.fps = fps
+        self.sw = min(SEAM['w'], w) // 2 * 2
+        self.sh = max(2, int(round(h * self.sw / w)) // 2 * 2)
+        self.aw = min(SEAM['aw'], w) // 2 * 2
+        self.ah = max(2, int(round(h * self.aw / w)) // 2 * 2)
+        self.up = 1080.0 / self.sh
+        self.k60 = 60.0 / fps  # f@60 per video frame
+        self.pre_n = max(4, int(round(14 / self.k60)))  # frames read before a cut (the build: the last 8-12 f@60)
+        self.post_n = max(4, int(round(36 / self.k60)))  # ... and after it (the decay: 12-24 f@60)
+        self.f, self.sharp, self.bord, self.luma, self.chroma, self.cut = [], [], [], [], [], []
+        self.vec = {}  # frame -> motion of the pair (frame - 1 -> frame), read around cuts
+        self.ring = deque(maxlen=self.pre_n + self.post_n + 16)
+        self.groups = []  # [first cut frame, last cut frame, read]
+        self.cutset = set()
+        self.reads = {}  # first cut frame -> image reads at the cut
+
+    def feed(self, f, rgb):
+        if rgb.dtype != np.uint8:
+            rgb = np.clip(rgb, 0, 255).astype(np.uint8)
+        if (rgb.shape[1], rgb.shape[0]) != (self.aw, self.ah):
+            rgb = cv2.resize(rgb, (self.aw, self.ah), interpolation=cv2.INTER_AREA)
+        small = rgb if (self.aw, self.ah) == (self.sw, self.sh) else cv2.resize(rgb, (self.sw, self.sh), interpolation=cv2.INTER_AREA)
+        g = cv2.cvtColor(small, cv2.COLOR_RGB2GRAY)
+        self.f.append(f)
+        self.sharp.append(float(np.log10(cv2.Laplacian(g, cv2.CV_64F).var() + 1e-6)))
+        med = np.median(_ring_px(small), 0).astype(np.float32)
+        self.bord.append(med)
+        self.luma.append(float(0.2126 * med[0] + 0.7152 * med[1] + 0.0722 * med[2]))
+        self.chroma.append(oklab_chroma(med))
+        cut = False
+        if self.ring:
+            a = self.ring[-1][2]
+            diff = cv2.absdiff(a, g)
+            frac, mad = float((diff > 24).mean()), float(diff.mean())
+            if frac > 0.2 or mad > 12:
+                fl = flow_fb(a, g)
+                hh, ww = a.shape
+                gx, gy = np.meshgrid(np.arange(ww, dtype=np.float32), np.arange(hh, dtype=np.float32))
+                warped = cv2.remap(g, gx + fl[..., 0], gy + fl[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+                resid = float(cv2.absdiff(a, warped).mean()) / max(mad, 1e-6)
+                cut = (frac > SEAM['frac'] and resid > SEAM['resid'][0]) or (mad > SEAM['mad'] and resid > SEAM['resid'][1])
+                if not cut:
+                    self.vec[f] = self._vec(a, fl)
+        self.cut.append(cut)
+        self.ring.append((f, rgb, g))
+        if cut:
+            self.cutset.add(f)
+            if self.groups and not self.groups[-1][2] and f - self.groups[-1][1] <= SEAM['merge']:
+                self.groups[-1][1] = f
+            else:
+                self.groups.append([f, f, False])
+        for gr in self.groups[-4:]:
+            if not gr[2] and f - gr[1] >= self.post_n + 1:
+                self._read(gr)
+
+    def close(self):
+        for gr in self.groups:
+            if not gr[2]:
+                self._read(gr)
+
+    def hard(self):
+        """The hard cuts: cut runs of at most SEAM['run'] frames (a flash or a breath is one cut)."""
+        return [(a, b) for a, b, _ in self.groups if b - a + 1 <= SEAM['run']]
+
+    def _vec(self, a, fl):
+        mov = textured(a) & (np.hypot(fl[..., 0], fl[..., 1]) > 0.15)
+        k = self.up * self.fps / 30.0
+        return (float(np.median(fl[..., 0][mov])) * k, float(np.median(fl[..., 1][mov])) * k) if mov.sum() >= 30 else (0.0, 0.0)
+
+    def _anchors(self, rgb):
+        """The anchors of a frame, the largest first: its text lines (like.py's reader) and the shapes or word lines
+        standing off its ground, as (cx, cy, area) in px at the anchor size."""
+        out = [(x + w / 2.0, y + h / 2.0, float(w * h)) for x, y, w, h in text_boxes(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY))]
+        med = np.median(_ring_px(rgb), 0)
+        m = (np.abs(rgb.astype(np.int16) - med.astype(np.int16)).max(2) > 40).astype(np.uint8)
+        m = cv2.dilate(m, np.ones((3, 9), np.uint8))  # glyphs into words, words into a line
+        n, _, st, cen = cv2.connectedComponentsWithStats(m, connectivity=8)
+        tot = float(self.aw * self.ah)
+        out += [(float(cen[i][0]), float(cen[i][1]), float(st[i, cv2.CC_STAT_AREA])) for i in range(1, n)
+                if st[i, cv2.CC_STAT_AREA] >= 0.002 * tot and st[i, cv2.CC_STAT_WIDTH] <= 0.9 * self.aw and st[i, cv2.CC_STAT_HEIGHT] <= 0.9 * self.ah]
+        return sorted(out, key=lambda a: -a[2])[:6]
+
+    def _slot(self, anchors):
+        """The frame's main anchor (the largest) sits in the centre slot, and is not the whole picture."""
+        if not anchors:
+            return False
+        cx, cy, ar = anchors[0]
+        return (abs(cx - self.aw / 2) <= SEAM['slot'][0] * self.aw and abs(cy - self.ah / 2) <= SEAM['slot'][1] * self.ah
+                and ar <= 0.4 * self.aw * self.ah)
+
+    def _read(self, gr):
+        gr[2] = True
+        a, b = gr[0], gr[1]
+        if b - a + 1 > SEAM['run']:
+            return
+        imgs = {x[0]: x for x in self.ring}
+        # the motion of every pair in the windows either side that is not itself a cut
+        for f in list(range(a - self.pre_n, a)) + list(range(b + 1, b + 1 + self.post_n)):
+            if f in self.vec or f in self.cutset or f not in imgs or f - 1 not in imgs:
+                continue
+            fa, fb = imgs[f - 1][2], imgs[f][2]
+            self.vec[f] = self._vec(fa, flow_fb(fa, fb))
+        pre, post = imgs.get(a - 1), imgs.get(b)
+        if pre is None or post is None:
+            return
+        area = float((np.abs(pre[1].astype(np.int16) - post[1].astype(np.int16)).max(2) > 40).mean())
+        bp, bq = self._anchors(pre[1]), self._anchors(post[1])
+        d = min((math.hypot(p[0] - q[0], p[1] - q[1]) for p in bp for q in bq), default=None)
+        self.reads[a] = dict(area=round(area, 3), anchor_px=None if d is None else round(d * 1080.0 / self.ah, 1),
+                             slot=bool(self._slot(bp) and self._slot(bq)))
+
+
+def seam_measures(scan):
+    """Every hard cut of a SeamScan with the devices it carries, and the film's ground flips (video frames)."""
+    n = len(scan.f)
+    if not n:
+        return dict(cuts=[], flips=[])
+    f0 = scan.f[0]
+    sharp = np.array(scan.sharp)
+    vec = scan.vec
+    sp = lambda f: None if vec.get(f) is None else math.hypot(*vec[f])  # noqa: E731
+    k60 = scan.k60
+    out = []
+    for a, b in scan.hard():
+        ia, ib = a - f0, b - f0
+        pre, post = ia - 1, ib
+        if pre < 0 or post >= n:
+            continue
+        r = scan.reads.get(a) or {}
+        bg = float(np.abs(scan.bord[pre] - scan.bord[post]).max())
+        # below both sides: the sharper of two different shots is no blur
+        base = min(float(np.median(sharp[max(0, pre - 6):pre + 1])), float(np.median(sharp[post:post + 7])))
+        dip = base - float(sharp[max(0, ia - 2):min(n, ib + 4)].min())
+        vo = [vec[f] for f in range(a - 3, a) if vec.get(f) is not None]
+        vi = [vec[f] for f in range(b + 1, b + 4) if vec.get(f) is not None]
+        o = np.mean(vo, 0) if vo else np.zeros(2)
+        i_ = np.mean(vi, 0) if vi else np.zeros(2)
+        no, ni = float(np.hypot(*o)), float(np.hypot(*i_))
+        cos = float(o @ i_ / (no * ni)) if no > 0.5 and ni > 0.5 else 0.0
+        dev = []
+        if bg < SEAM['ground']:
+            dev.append('ground')
+        if dip > SEAM['blur']:
+            dev.append('blur')
+        held = None
+        if r.get('area') is not None:
+            held = ('frame' if r['area'] < SEAM['area'] else 'match' if r['anchor_px'] is not None and r['anchor_px'] <= SEAM['anchor_px']
+                    else 'slot' if r.get('slot') else None)
+        if held:
+            dev.append('anchor')
+        if cos > SEAM['cos'] and no > SEAM['v_out'] and ni > SEAM['v_in']:
+            dev.append('motion')
+        row = dict(frame=a, to=b, ground_shift=round(bg, 1), blur_dip=round(dip, 2), area=r.get('area'), anchor_px=r.get('anchor_px'),
+                   anchor=held, carry=dict(out=round(no, 1), into=round(ni, 1), cos=round(cos, 2)),
+                   luma=[round(scan.luma[pre], 1), round(scan.luma[post], 1)], devices=dev, bare=not dev)
+        if 'motion' in dev:
+            # the build into the cut (the step's growth a frame at 60 fps over the last 10 f@60) and the decay after it
+            nb = max(2, int(round(10 / k60)))
+            s0, s1 = sp(a - 1 - nb), sp(a - 1)
+            build = (s1 / s0) ** (1.0 / (nb * k60)) if s0 and s1 and s0 > 0.5 else None
+            first = sp(b + 1)
+            j = b + 1
+            while first and sp(j) is not None and sp(j) > 0.2 * first and (j - b) * k60 < 36:
+                j += 1
+            row['carry'].update(build60=None if build is None else round(build, 3), decay60=round((j - b - 1) * k60, 1) if first else None)
+        out.append(row)
+    # ground flips: a neutral ground (paper, grey, slate, black: border chroma under `neutral`) held light or dark for
+    # hold_s; a change between them is a flip, and flips closer than flip_merge_s are one colour event (three flips 10 f
+    # apart are one). A colour field moving between its deep and its light state is one ground family, not a flip.
+    hold = max(1, int(round(SEAM['hold_s'] * scan.fps)))
+    state = [None if C >= SEAM['neutral'] else 'light' if L >= SEAM['light'] else 'dark' if L <= SEAM['dark'] else None
+             for L, C in zip(scan.luma, scan.chroma)]
+    held, i = [], 0
+    while i < n:
+        j = i
+        while j + 1 < n and state[j + 1] == state[i]:
+            j += 1
+        if state[i] and j - i + 1 >= hold:
+            held.append((state[i], i, j))
+        i = j + 1
+    flips = []
+    for (s0, _, e0), (s1, b1, _) in zip(held, held[1:]):
+        if s0 == s1:
+            continue
+        at = scan.f[b1]
+        if flips and at - flips[-1]['last'] < SEAM['flip_merge_s'] * scan.fps:
+            flips[-1].update(last=at, to=s1)
+            continue
+        flips.append(dict(frame=scan.f[min(n - 1, e0 + 1)], last=at, frm=s0, to=s1))
+    return dict(cuts=out, flips=[x for x in flips if x['frm'] != x['to']])
+
+
+SEAM_PROMISE = {'velocity-cut': ('motion',), 'whip': ('motion', 'blur'), 'blur-through': ('blur',), 'match-cut': ('anchor',),
+                'shared-element': ('anchor',), 'morph': ('anchor', 'blur'), 'exit-then-enter': ('ground', 'blur'), 'text-swap': ('ground', 'anchor'),
+                'zoom-through': ('anchor', 'motion', 'blur'), 'colour-flip': ('anchor',)}  # what each recipe carries across a hard cut
+
+
+def seam_check(scan, extra, k_, acts, add, sev, ignored, copy_n=0):
+    """The seam gates on a film's SeamScan and its declared seams; flags go through `add`. Returns the report. A film
+    with a seam plan (declared seams) fails carried-cut and ground-flip; one without warns: the pixels cannot see a
+    matched shape that a plan would name."""
+    m = seam_measures(scan)
+    planned = bool(extra.get('seams'))
+    gate = (lambda s_: sev(s_)) if planned else (lambda s_: sev('warn') if s_ == 'fail' else sev(s_))
+    vf = lambda x: int(round(x * k_))  # noqa: E731
+    # one seam per frame (a primitive's declaration repeats the timeline's: the one naming a recipe wins)
+    seams = sorted({vf(s['at']): s for s in sorted(extra.get('seams', []), key=lambda s: ':' in str(s.get('id') or ''))}.items())
+    stepped = [(vf(r['from']), vf(r['to'])) for r in extra.get('stepped', [])]
+    cuts = [c for c in m['cuts'] if not ignored(c['frame']) and not any(x <= c['frame'] < y for x, y in stepped)]
+    for c in cuts:
+        near = [s for f, s in seams if abs(f - c['frame']) <= 2]
+        c['seam'] = seam_recipe(near[0]) if near else None
+    bare = [c for c in cuts if c['bare']]
+    rep = dict(hard_cuts=len(cuts), bare=len(bare), bare_share=round(len(bare) / len(cuts), 3) if cuts else 0.0, cuts=cuts,
+               flips=m['flips'], planned=planned, thresholds=dict(SEAM))
+    if cuts and len(bare) / len(cuts) > SEAM['bare']:
+        add('carried-cut', gate('fail' if len(bare) >= SEAM['bare_n'] else 'warn'), bare[0]['frame'], f"{len(bare)} of {len(cuts)} hard cuts carry nothing "
+            f"across (the house: at most {SEAM['bare'] * 100:.0f} %; at f{', f'.join(str(c['frame']) for c in bare[:6])}): keep the ground, put "
+            'the cut inside a blur, hold an anchor (the word slot or the shape centre within 10 px) or carry the motion '
+            '(fx/Seam: exitEnter, textSwap, matchCut, velocityCut)', frames=[c['frame'] for c in bare])
+    if len(m['flips']) > SEAM['flips']:
+        add('ground-flip', gate('fail'), m['flips'][0]['frame'], f"the ground flips light <-> dark {len(m['flips'])} times (at f"
+            f"{', f'.join(str(x['frame']) for x in m['flips'][:6])}; the house: at most {SEAM['flips']} a film, each a declared colour "
+            'event): keep one ground family through the film and let the cuts keep it', frames=[x['frame'] for x in m['flips']])
+    for c in cuts:
+        want = SEAM_PROMISE.get(c['seam'] or '')
+        if want and not c['bare'] and not any(d in c['devices'] for d in want):
+            add('carried-cut', sev('warn'), c['frame'], f"seam f{c['frame']} is declared {c['seam']} but carries no {' or '.join(want)} across the "
+                f"cut (it carries {', '.join(c['devices'])}): build the recipe (references/transitions.md section 2)")
+    lo, hi = SEAM['build']
+    for c in cuts:
+        cr = c['carry']
+        if c['seam'] != 'velocity-cut' or 'motion' not in c['devices'] or cr.get('build60') is None:
+            continue
+        slow = cr['build60'] < lo - 0.05
+        dec = cr.get('decay60')
+        short = dec is not None and dec < SEAM['decay_f60'][0] - 4
+        if slow or short:
+            why = ([f"the exit builds x{cr['build60']:.2f} a frame (house x{lo:g}-{hi:g} over the last {SEAM['build_f60'][0]}-"
+                    f"{SEAM['build_f60'][1]} f@60)"] if slow else []) + \
+                  ([f"the next shot decays in {dec:g} f@60 (house {SEAM['decay_f60'][0]}-{SEAM['decay_f60'][1]})"] if short else [])
+            add('carried-cut', sev('warn'), c['frame'], f"velocity cut f{c['frame']}: " + ', '.join(why))
+    # the seam plan: declared seams and undeclared act boundaries (plain cuts), scene changes only
+    plan = [seam_recipe(s) for f, s in seams if s.get('kind') not in SEAM_WITHIN]
+    sf = [f for f, _ in seams]
+    plan += ['hard-cut' for a, _ in acts.values() if a > 0 and not any(abs(vf(a) - f) <= 2 for f in sf)]
+    if plan:
+        top = max(sorted(set(plan)), key=plan.count)
+        share = plan.count(top) / len(plan)
+        rep['plan'] = dict(changes=len(plan), top=top, top_share=round(share, 3), kinds=sorted(set(plan)))
+        if len(plan) >= SEAM['mix_min'] and share > SEAM['mix']:
+            add('seam-mix', sev('fail'), 0, f"{plan.count(top)} of {len(plan)} scene changes are {top} (the house: the most-used seam at most "
+                f"{SEAM['mix'] * 100:.0f} % of a film's changes): plan 3-4 kinds (references/transitions.md, the recipes)")
+        if copy_n >= 4 and not any(p in SEAM_THOUGHT for p in plan):
+            add('seam-mix', sev('warn'), 0, f'{copy_n} lines and no exit-then-enter, text-swap or match-cut: move from line to line on a kept '
+                'ground (fx/Seam exitEnter, textSwap, matchCut)')
+    return rep
+
+
+def seam_line(rep):
+    """One summary line of the seam report."""
+    if not rep:
+        return
+    p = rep.get('plan') or {}
+    print(f"  seams: {rep['hard_cuts']} hard cut(s), {rep['bare']} bare ({rep['bare_share'] * 100:.0f} %; house <= {SEAM['bare'] * 100:.0f} %), "
+          f"{len(rep['flips'])} ground flip(s) (house <= {SEAM['flips']})"
+          + (f", plan: {p['top']} {p['top_share'] * 100:.0f} % of {p['changes']} changes (house <= {SEAM['mix'] * 100:.0f} %)" if p else ''))
 
 
 # ------------------------------------------------------------------------------------------
@@ -2316,6 +2713,22 @@ def motion_self_test(check):
     m, fl = gates(film(lambda f: (0.0, 0.0), img=line))
     ok('motion-frozen' in fl, 'the same frame locked off is frozen', f"{m['frozen_frames30']} f@30 frozen")
 
+    # a real rest: a move lands on E.glideOut, the picture holds still 16 f, then drifts on: a held beat, not a freeze;
+    # the same landing followed by a 40 f still is a dead stretch (frozen)
+    def landed(hold):
+        def pos(f):
+            y = 60.0 * glide_out((f - 30) / 24)
+            return y + (drift * (f - 54 - hold) if f > 54 + hold else 0.0), 0.0
+        return pos
+
+    m, fl = gates(film(landed(16), smear=True))
+    ok('motion-frozen' not in fl and m['rests_after_landing'] and m['longest_rest60'] >= 8,
+       'a move that lands and rests 16 f@60 before drifting on is a rest after a landing (motion-rest), not motion-frozen',
+       f"rests {m['rests_after_landing']}, longest {m['longest_rest60']} f@60, frozen {m['frozen']}")
+    m, fl = gates(film(landed(40), smear=True))
+    ok('motion-frozen' in fl and not m['rests_after_landing'], 'the same landing followed by a 40 f still is a dead stretch (fails motion-frozen)',
+       f"frozen {m['frozen']}, rests {m['rests_after_landing']}")
+
     def glide(f):
         return sum(24.0 * glide_out((f - a) / 16) for a in steps), drift * f
 
@@ -2348,6 +2761,140 @@ def motion_self_test(check):
 
     m, fl = gates(film(many))
     ok('motion-density' in fl, 'seven moves queued in 4 s fail motion-density', f"{m['primary_per3']} primary per 3 s")
+    return bad[0]
+
+
+def seam_self_test(check):
+    """The seam checks on synthetic films measured in memory (no encode): what each hard cut carries, the ground flips
+    and the seam plan. Returns the number of failures."""
+    fps, w, h = 30, 480, 270
+    bad = [0]
+
+    def ok(cond, what, detail=''):
+        bad[0] += 0 if cond else 1
+        check(cond, what, detail)
+
+    def ground(v):
+        return np.full((h, w, 3), v, np.uint8)
+
+    def card(v, seed):
+        img = ground(v)
+        img[27:243, 48:432] = texture(seed, 384, 216, scale=4)
+        return img
+
+    def rect(v, c, x0, y0, x1, y1):
+        img = ground(v)
+        img[y0:y1, x0:x1] = c
+        return img
+
+    def disc(v, c, cx, cy, r):
+        img = ground(v)
+        cv2.circle(img, (cx, cy), r, (c, c, c), -1)
+        return img
+
+    def scan_of(frames):
+        sc = SeamScan(fps, w, h)
+        for i, fr in enumerate(frames):
+            sc.feed(i, fr)
+        sc.close()
+        return sc
+
+    def gate(frames, seams=(), acts=None, copy_n=0, plan=True):
+        flags = []
+        add = lambda check_, severity, frame, note, **kw: flags.append(dict(check=check_, severity=severity, frame=frame, note=note))  # noqa: E731
+        ss = list(seams) or ([dict(at=0, kind='hard', id='plan')] if plan else [])  # a film with a seam plan
+        rep = seam_check(scan_of(frames), dict(seams=ss, stepped=[]), 1.0, acts or {}, add, lambda s: s, lambda f: False, copy_n)
+        return rep, flags
+
+    # a light ground with a card, the same ground with another card (ground kept), a dark ground with a disc on the
+    # other side (bare, and a flip), the light ground with a bar (bare, a flip back)
+    film = [card(236, 1)] * 30 + [card(236, 2)] * 30 + [disc(30, 220, 380, 135, 40)] * 30 + [rect(236, 40, 40, 110, 140, 150)] * 30
+    rep, fl = gate(film)
+    cuts = rep['cuts']
+    ok(len(cuts) == 3 and 'ground' in cuts[0]['devices'] and cuts[1]['bare'] and cuts[2]['bare'],
+       'seams: a card swap on a kept ground carries the ground; a cut to another ground and another place carries nothing (bare)',
+       json.dumps([(c['frame'], c['devices'], c['ground_shift'], c['area'], c['anchor_px']) for c in cuts]))
+    ok(any(x['check'] == 'carried-cut' and x['severity'] == 'fail' for x in fl), 'seams: 2 bare cuts of 3 fail carried-cut (house: at most 10 %)',
+       str([x['check'] for x in fl]))
+    ok(len(rep['flips']) == 2 and not any(x['check'] == 'ground-flip' for x in fl), 'seams: two ground flips are inside the house (at most 2)',
+       json.dumps(rep['flips']))
+    rep, fl = gate(film, plan=False)
+    ok(any(x['check'] == 'carried-cut' and x['severity'] == 'warn' for x in fl) and not any(x['severity'] == 'fail' for x in fl),
+       'seams: the same film without a seam plan warns, never fails (a matched shape the plan would name is invisible to the pixels)',
+       str([(x['check'], x['severity']) for x in fl]))
+
+    # the same cut to a dark ground with the bar held in its slot: the anchor carries it
+    film = [rect(236, 40, 140, 115, 340, 155)] * 30 + [rect(30, 220, 150, 115, 330, 155)] * 30
+    rep, fl = gate(film)
+    ok(len(rep['cuts']) == 1 and 'anchor' in rep['cuts'][0]['devices'] and not rep['cuts'][0]['bare'],
+       'seams: a cut that flips the ground but holds the line in its slot carries an anchor', json.dumps(rep['cuts']))
+
+    # the centre slot: a centred line on paper cut to a picture with a centred line (another size, a few px lower) is
+    # carried; the same cut with the incoming line set at the left edge is not
+    photo = texture(5, w, h, scale=3, amp=20, tint=(0.55, 0.7, 0.9))
+
+    def lined(img, x0, x1, y0, y1, c):
+        out = img.copy()
+        out[y0:y1, x0:x1] = c
+        return out
+    film = [rect(236, 40, 150, 120, 330, 150)] * 30 + [lined(photo, 120, 360, 124, 156, 250)] * 30
+    rep, _ = gate(film)
+    ok(len(rep['cuts']) == 1 and rep['cuts'][0]['anchor'] == 'slot', 'seams: a centred line cut to a picture with its line centred keeps the centre slot',
+       json.dumps(rep['cuts']))
+    film = [rect(236, 40, 150, 120, 330, 150)] * 30 + [lined(photo, 16, 200, 200, 232, 250)] * 30
+    rep, _ = gate(film)
+    ok(len(rep['cuts']) == 1 and rep['cuts'][0]['bare'], 'seams: the same cut with the incoming line low at the left edge carries nothing',
+       json.dumps(rep['cuts']))
+
+    # a cut inside a blur: the outgoing shot softens into it, the incoming one resolves out of it
+    A, B = texture(3, w, h, scale=2), texture(4, w, h, scale=2, tint=(0.5, 0.6, 0.9))
+    soft = lambda img, s: img if s < 0.3 else cv2.GaussianBlur(img, (0, 0), s)  # noqa: E731
+    film = [A] * 20 + [soft(A, 0.6 * i) for i in range(1, 9)] + [soft(B, 0.6 * (9 - i)) for i in range(1, 9)] + [B] * 20
+    rep, _ = gate(film)
+    ok(len(rep['cuts']) == 1 and 'blur' in rep['cuts'][0]['devices'], 'seams: a cut at the peak of a blur carries the blur',
+       json.dumps([(c['frame'], c['blur_dip'], c['devices']) for c in rep['cuts']]))
+
+    # a velocity cut: the exit builds x1.2 a 30 fps frame into the cut, the next shot enters the same way and decays
+    xs, x = [], 0.0
+    for k in range(30):
+        x += 30.0 * 0.83 ** (29 - k)
+        xs.append(x)
+    film = [warp(A, dx=-v / 2.25) for v in xs]
+    x = 0.0
+    for j in range(30):
+        x += 0.7 * 30.0 * 0.86 ** j
+        film.append(warp(B, dx=-x / 2.25))
+    rep, _ = gate(film, seams=[dict(at=30, kind='velocity', id='velocityCut:push')])
+    c = (rep['cuts'] or [{}])[0]
+    cr = c.get('carry', {})
+    ok(bool(rep['cuts']) and 'motion' in c['devices'] and c['seam'] == 'velocity-cut' and cr.get('build60') and 1.05 <= cr['build60'] <= 1.45
+       and cr.get('decay60') and 8 <= cr['decay60'] <= 36,
+       'seams: a velocity cut carries the motion; its build (a frame at 60 fps) and decay are measured', json.dumps(c.get('carry')))
+
+    # the ground flips four times (fails), a colour flip of three steps 5 frames apart is one event
+    film = [ground(236)] * 30 + [ground(28)] * 30 + [ground(236)] * 30 + [ground(28)] * 30 + [ground(236)] * 30
+    rep, fl = gate(film)
+    ok(len(rep['flips']) == 4 and any(x['check'] == 'ground-flip' and x['severity'] == 'fail' for x in fl),
+       'seams: a ground that flips light <-> dark four times fails ground-flip', json.dumps(rep['flips']))
+    film = [ground(236)] * 30 + [ground(28)] * 5 + [ground(236)] * 5 + [ground(28)] * 35
+    rep, _ = gate(film)
+    ok(len(rep['flips']) == 1, 'seams: three flips 5 frames apart that end dark are one colour event', json.dumps(rep['flips']))
+    lav, navy = np.full((h, w, 3), (189, 187, 241), np.uint8), np.full((h, w, 3), (15, 16, 45), np.uint8)
+    rep, _ = gate([lav] * 30 + [navy] * 30 + [lav] * 30 + [navy] * 30 + [lav] * 30)
+    ok(not rep['flips'], 'seams: a colour field moving between its light and its deep state is one ground family, not a flip', json.dumps(rep['flips']))
+
+    # the seam plan: five scene changes of one kind fail seam-mix; named recipes from fx/Seam count as theirs
+    still = [card(236, 1)] * 20
+    one = [dict(at=10 * (i + 1), kind='zoomThrough', id=f'z{i}') for i in range(5)]
+    rep, fl = gate(still, seams=one, copy_n=5)
+    ok(rep['plan']['top'] == 'zoom-through' and any(x['check'] == 'seam-mix' and x['severity'] == 'fail' for x in fl)
+       and any(x['check'] == 'seam-mix' and x['severity'] == 'warn' for x in fl),
+       'seams: five zoom-throughs in five changes fail seam-mix; 5 lines with no exit-then-enter, text-swap or match-cut warn', json.dumps(rep['plan']))
+    mixed = [dict(at=10, kind='breath', id='exitEnter:a'), dict(at=20, kind='defocus', id='textSwap:b'), dict(at=30, kind='morph', id='matchCut:c'),
+             dict(at=40, kind='zoomThrough', id='z'), dict(at=50, kind='velocity', id='v')]
+    rep, fl = gate(still, seams=mixed, copy_n=5)
+    ok(not any(x['check'] == 'seam-mix' for x in fl) and 'exit-then-enter' in rep['plan']['kinds'] and 'text-swap' in rep['plan']['kinds'],
+       'seams: a mixed plan with an exit-then-enter and a text-swap passes seam-mix', json.dumps(rep['plan']))
     return bad[0]
 
 
@@ -2562,6 +3109,7 @@ def self_test():
     check(bool(flags(rep, 'border', 'warn')) and not flags(rep, 'border', 'fail'), 'a flat band on a held picture warns, never fails',
           f"{[x['severity'] for x in flags(rep, 'border')]}")
     bad += motion_self_test(check)
+    bad += seam_self_test(check)
     shutil.rmtree(tmp, ignore_errors=True)
     print('forensics self-test: ' + ('all pass' if not bad else f'{bad} failed'))
     return 1 if bad else 0
@@ -2583,7 +3131,7 @@ def grammar_only(args, info, decl):
                           seam_frames=velocity_frames(extra, k_))
     dis_n = max(2, int(round(4 * fps / 60)))
     disq = deque(maxlen=dis_n + 2)
-    M = dict(idx=[], dissolve=[], probe=probe_m, motion=MotionCurves(fps))
+    M = dict(idx=[], dissolve=[], probe=probe_m, motion=MotionCurves(fps), seams=SeamScan(fps, info['w'], info['h']))
     start = max(0, args.from_frame or 0)
     count = max(1, args.to_frame - start + 1) if args.to_frame is not None else None
     for f, rgb in decode(args.video, info, start, count, size=(pw, ph)):
@@ -2591,6 +3139,7 @@ def grammar_only(args, info, decl):
         M['idx'].append(f)
         probe_m.feed(f, g8)
         M['motion'].feed(f, motion_luma(rgb))
+        M['seams'].feed(f, rgb)
         disq.append((f, g8.astype(np.float32)))
         if len(disq) == disq.maxlen:
             hit = blend_test([x[1] for x in disq])
@@ -2610,13 +3159,44 @@ def grammar_only(args, info, decl):
                 warnings=sum(1 for x in flags if x['severity'] == 'warn'), flags=flags, checks=dict(grammar=grammar)) | {'pass': fails == 0}
 
 
+def seams_only(args, info, decl):
+    """Only the seam checks (the device each hard cut carries, the ground flips, the seam plan), on a small decode."""
+    args.grammar = True
+    fps = info['fps']
+    cuts, freezes, ignore, acts, moments, reading, cues_fps, extra = decl
+    k_ = fps / cues_fps if cues_fps else 1.0
+    sc = SeamScan(fps, info['w'], info['h'])
+    start = max(0, args.from_frame or 0)
+    count = max(1, args.to_frame - start + 1) if args.to_frame is not None else None
+    for f, rgb in decode(args.video, info, start, count, size=(sc.aw, sc.ah)):
+        sc.feed(f, rgb)
+    if not sc.f:
+        die('decoded 0 frames')
+    sc.close()
+    flags = []
+
+    def add(check, severity, frame, note, **kw):
+        first = frame if isinstance(frame, int) else int(str(frame).split('-')[0])
+        flags.append(dict(check=check, severity=severity, frame=frame, t=round(first / fps, 3), note=note, **kw))
+
+    rep = seam_check(sc, extra, k_, acts, add, lambda s: s, lambda f: in_ranges(f, ignore), extra.get('copy_n', 0))
+    fails = sum(1 for x in flags if x['severity'] == 'fail')
+    return dict(file=args.video, fps=round(fps, 3), frames=len(sc.f), seams_only=True, fails=fails,
+                warnings=sum(1 for x in flags if x['severity'] == 'warn'), flags=flags, checks=dict(grammar=dict(seams=rep))) | {'pass': fails == 0}
+
+
 def energy_line(res):
     """The motion energy summary under the verdict line (the grammar's energy measure, when it ran)."""
     g = res.get('checks', {}).get('grammar') or res.get('grammar') or {}
     en = g.get('energy')
+    seam_line(g.get('seams'))
     if en and en.get('measured'):
         print(f"  motion energy: median {en['median']:.2f} of the structure moving {ENERGY['px']:g} px/s+, under {ENERGY['low']:g} on "
               f"{en['low_share'] * 100:.0f} % of the body, longest {en['longest_s']:g} s (band: {ENERGY['warn_s']:g} s, {ENERGY['share'] * 100:.0f} %)")
+    m = g.get('motion') or {}
+    if 'longest_rest60' in m:
+        print(f"  motion rests: longest {m['longest_rest60']:g} f@60 near still, {m['rests_per10s']:g} rests of {MOTION['rest_min60']} f+ per 10 s, "
+              f"dynamic range {m['dynamic']:g} (p90 / p25), {len(m.get('rests_after_landing', []))} held rest(s) after a landing")
 
 
 def main():
@@ -2647,6 +3227,8 @@ def main():
     ap.add_argument('--grammar', action='store_true', help='run the grammar checks as fails even without 1.2 declarations in the cues')
     ap.add_argument('--no-grammar', action='store_true', help='skip the grammar checks (hold drift, cuts at speed, dissolves, end card)')
     ap.add_argument('--grammar-only', action='store_true', help='run only the grammar checks, on a small decode (fast; implies --grammar)')
+    ap.add_argument('--seams', action='store_true', help='run only the seam checks (carried-cut devices, ground-flip, seam-mix) on a 320-wide '
+                    'decode (fast; implies --grammar)')
     g = ap.add_argument_group('thresholds (defaults are proven starting points; see references/review-loop.md)')
     g.add_argument('--spike-min', type=float, default=1.0)
     g.add_argument('--spike-ratio', type=float, default=2.5)
@@ -2704,6 +3286,17 @@ def main():
             setattr(args, k, v)
     extra = decl[7]
     args._dissolve = not args.no_grammar
+    if args.seams:
+        res = seams_only(args, info, decl)
+        if args.json:
+            os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
+            with open(args.json, 'w') as fh:
+                json.dump(res, fh, indent=1, default=lambda o: o.item() if hasattr(o, 'item') else str(o))
+        print(f'forensics (seams): {args.video}  {res["frames"]} frames  {"PASS" if res["pass"] else "FAIL"}  ({res["fails"]} fail, {res["warnings"]} warn)')
+        seam_line(res['checks']['grammar']['seams'])
+        for x in res['flags'][:30]:
+            print(f'  {x["severity"]:4s} {x["check"]:9s} f{x["frame"]}: {x["note"]}')
+        sys.exit(0 if res['pass'] else 1)
     if grammar_on(args, extra):
         k_ = info['fps'] / decl[6] if decl[6] else 1.0
         cuts_v = cut_frames(extra, decl[3], decl[0], k_)
