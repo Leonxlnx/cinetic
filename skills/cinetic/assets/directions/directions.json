@@ -134,6 +134,101 @@
    "notes": "a colour world: the ground is the accent's own hue at depth, L .34-.42 and C .07-.13 (a blue, teal or green world); type near-white L .96-.98; the accent is the same hue lifted to L .78-.86, so it signals by lightness; shade plates at L .26 in the same hue"
   }
  },
+ "ground_families": {
+  "about": "One field and its light for the whole film (references/brand-and-color.md §9b; fx/Grounds FamilyGround draws it, palette.py --family writes its tokens). deck.py deals one per sheet, weighted toward the dealt palette's tone and never the family of the last three films; the ground never cuts and its one colour event is declared. The bans stay.",
+  "families": [
+   {
+    "id": "nearWhite",
+    "name": "near-white with pictures",
+    "tones": [
+     "light"
+    ],
+    "recipe": "tintedPaper",
+    "what": "98 % light: a clean near-white page (L .97-.99) under real pictures and product UI; the pictures carry the colour",
+    "type": "ink",
+    "field": "none",
+    "event": "none"
+   },
+   {
+    "id": "blackField",
+    "name": "black field and light",
+    "tones": [
+     "dark"
+    ],
+    "recipe": "inkStage",
+    "what": "a near-black field (L .11-.14, never pure black), white type, a soft light sliding along the rims",
+    "type": "white",
+    "field": "none",
+    "event": "none"
+   },
+   {
+    "id": "whiteBand",
+    "name": "white and one brand band",
+    "tones": [
+     "light",
+     "field"
+    ],
+    "recipe": "whiteWorld",
+    "what": "white with one band of the brand colour across the top, about a quarter of the height, fading down",
+    "type": "ink (white on the flood)",
+    "field": "the band",
+    "event": "the band floods the frame for one line, which sits on it"
+   },
+   {
+    "id": "deepPool",
+    "name": "deep field and a light pool",
+    "tones": [
+     "dark",
+     "field"
+    ],
+    "recipe": "inkStage",
+    "what": "a deep field at the accent's hue (L .17-.22, C .03-.06) with a pool of light drifting slowly behind the subject",
+    "type": "white",
+    "field": "the whole field",
+    "event": "none: the field is the colour"
+   },
+   {
+    "id": "softSky",
+    "name": "soft sky world",
+    "tones": [
+     "light",
+     "field"
+    ],
+    "recipe": "tintedPaper",
+    "what": "a pale sky (L .965 at the top to .915 below, at a cool hue), drifting; tiles and product cards stand in it",
+    "type": "ink",
+    "field": "the pale field",
+    "event": "none"
+   },
+   {
+    "id": "lightDark",
+    "name": "light act, then dark act",
+    "tones": [
+     "light",
+     "dark"
+    ],
+    "recipe": "tintedPaper",
+    "what": "the problem on a light page, then the product on a dark stage with its light",
+    "type": "ink, then white",
+    "field": "none",
+    "event": "the turn to dark, once, on a seam"
+   },
+   {
+    "id": "gradientField",
+    "name": "one tinted field",
+    "tones": [
+     "light",
+     "field",
+     "mid"
+    ],
+    "recipe": "tintedPaper",
+    "what": "one pale tinted field that deepens across the frame (L .965 to .90 at the accent's hue, C .02-.05), drifting along its axis",
+    "type": "ink",
+    "field": "the pale field",
+    "event": "none"
+   }
+  ]
+ },
  "methods": {
   "relief": "Extruded solids on a floor under one key, drawn as one SVG per frame (no CSS 3D, no filters on the blocks). Each block is a footprint polygon and a height h in px at 1080p. Project its corners every frame with one perspective function written once for the film (camera position, pitch and focal length as functions of the frame), then frame the result with the shot (toScreen or camera()): the top face is the footprint lifted by h; draw only the side faces whose outward normal faces the camera (at most two for a box). Paint back to front, sorted by the depth of each footprint's centre. Face fills come from the face-shade method. Cast shadows: for a key at elevation e and azimuth a, a block's shadow is the convex hull of its footprint and the footprint moved h x cot(e) along a; all shadows go into ONE path inside a group at opacity 0.14-0.24, so overlapping shadows never darken twice; shadows are drawn after the floor and before the blocks. A constant 1.5 px blur on that one group gives a penumbra (never an animated blur radius). Budget: 400 blocks of three polygons plus the shadow path is about 1,200 SVG nodes, fine at 1080p60.",
   "face-shade": "Matte faces lit by one fixed key. For each face, n.l is the cosine between its current normal and the key direction; its shade overlay (a div or SVG polygon in ink over the face) has opacity k x (1 - (a + (1 - a) x max(0, n.l))) with ambient a 0.55-0.70 and k 0.5-0.8, so a face turned fully away sits 0.12-0.22 L below one facing the key. Matte only: no specular band, no moving highlight. Solids have real faces (backface-visibility hidden on a preserve-3d box of true thickness), never a stack of thin layers faking an edge.",
@@ -1136,6 +1231,10 @@
    "status": "built"
   },
   "LitGround": {
+   "file": "fx/Grounds.tsx",
+   "status": "built"
+  },
+  "FamilyGround": {
    "file": "fx/Grounds.tsx",
    "status": "built"
   },

@@ -36,6 +36,20 @@ chroma at the accent's hue, written out as the same seven tokens:
 Grounds are neutral (lib/look.ts NEUTRAL): every recipe but deepField keeps its grounds and surfaces at
 C <= .025 (house .004-.012), so the accent is the colour in the frame.
 
+Ground families (--family NAME; --list-families prints them): the one field and its light a whole film stands on
+(references/brand-and-color.md §9b, fx/Grounds FamilyGround). --family builds the palette from the family's base recipe,
+prints a `// family: NAME` line and the family's field tokens (field, fieldFar) at the field hue (the accent's own
+for a blue, teal or green, else a cool 230), with the type's contrast on the field:
+  nearWhite      tintedPaper                   a clean near-white page under pictures and UI
+  blackField     inkStage at L .13             a near-black field, white type, a soft rim light
+  whiteBand      whiteWorld + the accent band  white with one band of the brand colour; the band floods once
+  deepPool       a deep field L .19 C .045     the accent's hue at depth, a light pool drifting; white type
+  softSky        a pale sky L .965 C .018      a cool sky gradient (to L .915), ink type
+  lightDark      tintedPaper, then a dark stage  the problem on light, the product on dark: one declared turn
+  gradientField  a pale tinted field           L .965 C .022 to L .90 C .05 at the field hue, ink type
+--check-tokens honours a `// family: NAME` line: the family's own ground chroma (deepPool .07, softSky .04,
+gradientField .06) replaces the neutral cap for the grounds it tints; the bans stay.
+
 Token check (--check-tokens src/brand/tokens.ts, or an HTML file whose :root holds the palette): the
 bans and bands on every colour that is not brand-supplied (a line or the leading comment marked
 cinetic:brand-supplied), and on every colour the contrast (statements >= 7:1, mute >= 4.5:1, accent >=
@@ -212,6 +226,31 @@ RECIPES = {
 }
 
 
+# Ground families: the base recipe, the stage tokens they replace ((L, C, hue) with hue 'field' = the field hue, None =
+# the palette's own hue, or a number), the field stops (field: the colour field a line may sit on; fieldFar: its far
+# end), the ground chroma the family allows on the grounds it tints, and those tokens.
+FAMILIES = {
+    'nearWhite': dict(recipe='tintedPaper', about='a clean near-white page under real pictures and UI'),
+    'blackField': dict(recipe='inkStage', stage={'ink': (0.13, 0.004, None), 'ink2': (0.18, 0.006, None)},
+                       about='a near-black field, white type, a soft light along the rims'),
+    'whiteBand': dict(recipe='whiteWorld', field={'field': 'accent'}, about='white with one band of the brand colour; it floods the frame once'),
+    'deepPool': dict(recipe='inkStage', stage={'ink': (0.19, 0.045, 'field'), 'ink2': (0.24, 0.05, 'field'), 'line': (0.32, 0.04, 'field')},
+                     field={'field': (0.19, 0.045, 'field'), 'fieldFar': (0.15, 0.04, 'field')}, ground_c=0.07, tints=('ink', 'ink2', 'line'),
+                     about='a deep field at the accent hue with a light pool drifting behind the subject'),
+    'softSky': dict(recipe='tintedPaper', stage={'paper': (0.965, 0.018, 232.0), 'mist': (0.985, 0.008, 232.0)},
+                    field={'field': (0.94, 0.026, 232.0), 'fieldFar': (0.915, 0.034, 232.0)}, ground_c=0.04, tints=('paper', 'mist'),
+                    about='a pale sky gradient, ink type'),
+    'lightDark': dict(recipe='tintedPaper', field={'darkStage': (0.17, 0.008, None)}, about='the problem on light, the product on dark: one declared turn'),
+    'gradientField': dict(recipe='tintedPaper', stage={'paper': (0.965, 0.022, 'field')}, field={'field': (0.93, 0.036, 'field'), 'fieldFar': (0.90, 0.05, 'field')},
+                          ground_c=0.06, tints=('paper',), about='one pale tinted gradient field, drifting'),
+}
+
+
+def field_hue(ah):
+    """A family's field hue: the accent's own for a blue, teal or green, else a cool 230 (never a pink or cream field)."""
+    return ah if 150 <= ah <= 265 else 230.0
+
+
 GROUNDS = ('paper', 'mist', 'line', 'slate', 'slateRaised', 'ink', 'ink2', 'ground', 'bg', 'stage', 'surface')
 NEUTRAL_C = 0.025  # lib/look.ts NEUTRAL.maxC
 NEUTRAL_HOUSE = 0.012  # lib/look.ts NEUTRAL.houseC[1]
@@ -239,7 +278,17 @@ def check_tokens(path):
         return 2
     by = {t['name']: t for t in toks}
     fails, notes = [], []
+    fam_m = re.search(r'//\s*family:\s*(\w+)', src)
+    fam = FAMILIES.get(fam_m.group(1)) if fam_m else None
+    if fam_m and not fam:
+        fails.append(f"// family: {fam_m.group(1)} is not a ground family ({', '.join(FAMILIES)})")
+    fam_c = (fam or {}).get('ground_c', NEUTRAL_C)
+    tinted = set((fam or {}).get('tints', ()))
+    if fam:
+        notes.append(f"ground family {fam_m.group(1)}: {fam['about']}" + (f" (its grounds {', '.join(sorted(tinted))} may carry C <= {fam_c})" if tinted else ''))
     for t in toks:
+        if t['name'] in tinted and not t['brand'] and not t['skip'] and t['lch'][1] <= fam_c + 1e-9:
+            continue
         if t['name'] in GROUNDS and not t['brand'] and not t['skip'] and t['lch'][1] > NEUTRAL_C + 1e-9:
             fails.append(f"{t['name']} {t['hex']} is a ground at chroma {t['lch'][1]:.3f}: grounds and surfaces stay neutral (C <= {NEUTRAL_C}); "
                          'the accent is the colour, a field at its hue is a declared colour event')
@@ -275,7 +324,7 @@ def check_tokens(path):
         L, C, h = stage['lch']
         if not stage['brand'] and L >= 0.5 and not (0.93 <= L <= 0.99 or L >= 0.999) and L > 0.85:
             notes.append(f"note: the light ground {stage['hex']} sits at L {L:.3f} (house band 0.93-0.99)")
-        if not stage['brand'] and L >= 0.93 and C > 0.015:
+        if not stage['brand'] and L >= 0.93 and C > (fam_c if stage['name'] in tinted else 0.015):
             fails.append(f"the ground {stage['hex']} carries chroma {C:.3f} (<= 0.015, toward a cool accent)")
         if text and not text['brand'] and text['lch'][0] < 0.5 and not 0.12 <= text['lch'][0] <= 0.25:
             notes.append(f"note: ink {text['hex']} at L {text['lch'][0]:.3f} (house band 0.15-0.25)")
@@ -326,6 +375,8 @@ def main():
     ap.add_argument('--accent', help="the one accent: '#RRGGBB' or 'oklch(L C h)'")
     ap.add_argument('--recipe', choices=sorted(RECIPES), help='build the palette from a house colour system')
     ap.add_argument('--list-recipes', action='store_true', help='print the recipes and exit')
+    ap.add_argument('--family', choices=sorted(FAMILIES), help="build the palette for a ground family (its recipe, its stage and its field tokens)")
+    ap.add_argument('--list-families', action='store_true', help='print the ground families and exit')
     ap.add_argument('--check-tokens', metavar='FILE', help="check a film's tokens file (or an HTML :root palette) instead of building one")
     ap.add_argument('--ramp', help='comma-separated stops of a light field or sweep: one-hue check against --accent')
     ap.add_argument('--stage', choices=['light', 'dark'], help="the ground most shots sit on (default light, or the recipe's own)")
@@ -346,8 +397,18 @@ def main():
             print(f"{k:15s} {v['stage']:5s} " + ' '.join(f'{t} L{lc[0]:.3f} C{lc[1]:.3f}' for t, lc in v['tokens'].items())
                   + f"  accent L {v['accent_L'][0]}-{v['accent_L'][1]}")
         return 0
+    if a.list_families:
+        for k, v in FAMILIES.items():
+            print(f"{k:14s} {v['recipe']:12s} {v['about']}")
+        return 0
     if a.check_tokens:
         return check_tokens(a.check_tokens)
+    if a.family:
+        fam = FAMILIES[a.family]
+        if a.recipe and a.recipe != fam['recipe']:
+            print(f"palette.py: --family {a.family} builds on {fam['recipe']}, not {a.recipe}", file=sys.stderr)
+            return 2
+        a.recipe = fam['recipe']
     if not a.accent:
         ap.error('--accent is required (or --check-tokens / --list-recipes)')
     if a.ramp:
@@ -473,6 +534,12 @@ def main():
             C = min(C, 0.003 if L >= 0.7 else 0.004)
         hx, c_used = oklch_hex(L, C, h_use)
         tokens[name] = dict(hex=hx, oklch=[round(L, 3), round(c_used, 4), round(h_use, 1)], job=job)
+    if a.family:
+        fh = field_hue(ah)
+        for name, (L_, C_, h_) in (FAMILIES[a.family].get('stage') or {}).items():
+            hh = fh if h_ == 'field' else (hue if h_ is None else h_)
+            hx, c_used = oklch_hex(L_, C_, hh)
+            tokens[name] = dict(hex=hx, oklch=[round(L_, 3), round(c_used, 4), round(hh, 1)], job=(tokens.get(name) or {}).get('job', '') + f' ({a.family})')
     if paper_in:
         hx, c_used = oklch_hex(*paper_in)
         tokens['paper'] = dict(hex=hx, oklch=[round(paper_in[0], 3), round(c_used, 4), round(paper_in[2], 1)], job=tokens['paper']['job'] + ' (given)')
@@ -541,6 +608,21 @@ def main():
         r = f', {v["contrast_on_stage"]:.1f}:1 on {stage_key}' if v['contrast_on_stage'] else ''
         print(f"  {k}: '{v['hex']}',{' ' * (width - len(k))} // {v['job']} (OKLCH {L} {C} {h:.0f}{r})")
     print('};')
+    if a.family:
+        fh = field_hue(ah)
+        print(f'// family: {a.family} ({FAMILIES[a.family]["about"]}); fx/Grounds <FamilyGround family="{a.family}"> draws it')
+        print('export const FIELD = {')
+        for name, spec in (FAMILIES[a.family].get('field') or {}).items():
+            if spec == 'accent':
+                hx, L_, C_, h_ = acc_hex, aL, aC, ah
+            else:
+                L_, C_, h_ = spec
+                h_ = fh if h_ == 'field' else (hue if h_ is None else h_)
+                hx, C_ = oklch_hex(L_, C_, h_)
+            on = tokens['paper']['hex'] if L_ < 0.66 else tokens['ink']['hex']
+            what = 'colour field' if name == 'field' else name
+            print(f"  {name}: '{hx}', // the family's {what} (OKLCH {L_:.3f} {C_:.3f} {h_:.0f}); type on it {on}, {contrast(on, hx):.1f}:1")
+        print('};')
     for c in checks:
         print(f"  {'ok  ' if c['pass_'] else 'FAIL'} {c['check']}: {c['detail']}", file=sys.stderr)
     if a.json:

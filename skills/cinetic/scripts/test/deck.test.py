@@ -583,7 +583,8 @@ r1 = run('--brief', 'x', '--format', 'launch', '--direction', lay['id'], '--out'
 r2 = run('--brief', 'x', '--format', 'launch', '--direction', flat['id'], '--out', os.path.join(TMP, 'fg2'), '--no-history')
 result('Foreground layer (on by default' in r1.stdout and 'Foreground layer' not in r2.stdout and 'pre-softened' in DATA['defaults']['foreground'],
        f'a layered space carries a pre-softened foreground layer by default ({lay["id"]}), a flat one does not ({flat["id"]})')
-result('never a centred mark' in r1.stdout and 'LogoMark' in r1.stdout, 'the lockup section asks for the film\'s own device and the supplied logo\'s parts')
+result('centred and built from' in r1.stdout and 'LogoMark' in r1.stdout, 'the lockup section asks for the film\'s own device, centred and built from the last element, and the supplied logo\'s parts')
+result('Ground family (dealt)' in r1.stdout and 'FamilyGround' in r1.stdout, 'the sheet deals one ground family for the whole film')
 
 # 13. imagery decks -------------------------------------------------------------------------------------
 IMG = [d for d in DIRS if deck.is_imagery(d)]

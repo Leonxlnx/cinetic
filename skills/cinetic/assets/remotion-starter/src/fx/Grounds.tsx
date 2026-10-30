@@ -590,5 +590,136 @@ export const Planes: React.FC<{ base: Shot; shot: Shot; bg?: React.ReactNode; mi
   );
 };
 
+// ------------------------------------------------------------------------------------------------ families
+
+/**
+ * Ground families: the whole film stands on one of these, dealt per film (scripts/deck.py, a template's deal), so two
+ * films never share the same paper and slate. A family is one field and its light for the whole film, never cut, with
+ * at most one colour event (the band flooding the frame for one line, the turn to dark); the bans stay (no orange, no
+ * purple, no neon). Fields take the accent's hue only when it is a blue, teal or green (else a cool 230).
+ *
+ *   family         what it is                                                    tone   colour field
+ *   nearWhite      98 % light, a clean near-white page under real pictures and UI  light  no
+ *   blackField     a near-black field (L .13), white type, a soft light along rims  dark   no
+ *   whiteBand      white with one band of the brand colour across the top; once a   light  the band (one line on it)
+ *                  film the band floods the frame for one line
+ *   deepPool       a deep field at the accent's hue (L .19) with a light pool        dark   yes (the whole field)
+ *                  drifting slowly behind the subject
+ *   softSky        a pale sky gradient (L .965 to .915 at a cool hue), type in ink  light  yes (pale)
+ *   lightDark      the problem on a light page, then the product on a dark stage:   turn   no
+ *                  one turn, declared, on a seam
+ *   gradientField  one pale tinted gradient field (L .965 to .90 at the hue), drifting light  yes (pale)
+ */
+export type GroundFamily = 'nearWhite' | 'blackField' | 'whiteBand' | 'deepPool' | 'softSky' | 'lightDark' | 'gradientField';
+export const GROUND_FAMILIES: Record<GroundFamily, { about: string; tone: 'light' | 'dark' | 'turn'; field: boolean; event: string }> = {
+  nearWhite: { about: 'a clean near-white page under real pictures and UI', tone: 'light', field: false, event: 'none' },
+  blackField: { about: 'a near-black field, white type, a soft light along the rims', tone: 'dark', field: false, event: 'none' },
+  whiteBand: { about: 'white with one band of the brand colour across the top', tone: 'light', field: true, event: 'the band floods the frame for one line' },
+  deepPool: { about: 'a deep field at the accent hue with a light pool drifting behind the subject', tone: 'dark', field: true, event: 'none (the field is the colour)' },
+  softSky: { about: 'a pale sky gradient, type in ink', tone: 'light', field: true, event: 'none' },
+  lightDark: { about: 'the problem on a light page, the product on a dark stage', tone: 'turn', field: false, event: 'the turn to dark, once, on a seam' },
+  gradientField: { about: 'one pale tinted gradient field, drifting', tone: 'light', field: true, event: 'none' },
+};
+export const FAMILY_NAMES = Object.keys(GROUND_FAMILIES) as GroundFamily[];
+
+/** The colours a family stands on and writes with. `dark`: the light-then-dark family after its turn. */
+export type FamilyInks = { ground: string; far: string; type: string; mute: string; accent: string; surface: string; line: string; dark: boolean; field?: string; onField?: string };
+
+/** A field's hue: the accent's own when it is a blue, teal or green, else a cool 230 (a red or yellow never becomes a pink or cream field). */
+export const fieldHue = (accent: string = C.accent) => {
+  const h = toOklch(accent)[2];
+  return h >= 150 && h <= 265 ? h : 230;
+};
+
+/** The family's inks from the film's tokens (paper, ink, accent): grounds, type, the UI surface, the colour field. */
+export const familyInks = (family: GroundFamily, o: { dark?: boolean; paper?: string; ink?: string; accent?: string; white?: string } = {}): FamilyInks => {
+  const paper = o.paper ?? C.paper;
+  const ink = o.ink ?? C.ink;
+  const accent = o.accent ?? C.accent;
+  const white = o.white ?? C.white;
+  const hf = fieldHue(accent);
+  const h = toOklch(ink)[2];
+  const lightSet = (ground: string, far: string, extra: Partial<FamilyInks> = {}): FamilyInks => ({ ground, far, type: ink, mute: mixColor(ink, ground, 0.42), accent, surface: white, line: mixColor(ink, ground, 0.84), dark: false, ...extra });
+  const darkSet = (ground: string, far: string, extra: Partial<FamilyInks> = {}): FamilyInks => ({ ground, far, type: white, mute: mixColor(white, ground, 0.4), accent: mixColor(accent, white, 0.28), surface: mixColor(ground, white, 0.09), line: mixColor(white, ground, 0.8), dark: true, ...extra });
+  // cinetic:device-palette the ground families' fields and their type, derived from the film's tokens at each family's lightness
+  switch (family) {
+    case 'blackField':
+      return darkSet(oklch(0.13, 0.004, h), oklch(0.1, 0.003, h));
+    case 'deepPool':
+      return darkSet(oklch(0.19, 0.045, hf), oklch(0.15, 0.04, hf), { field: oklch(0.19, 0.045, hf), onField: white });
+    case 'whiteBand':
+      return lightSet(mixColor(white, paper, 0.25), paper, { field: accent, onField: contrastOn(accent, white, ink) });
+    case 'softSky':
+      return lightSet(oklch(0.965, 0.018, 232), oklch(0.915, 0.034, 232), { field: oklch(0.94, 0.026, 232), onField: ink });
+    case 'gradientField':
+      return lightSet(oklch(0.965, 0.022, hf), oklch(0.9, 0.05, hf), { field: oklch(0.93, 0.036, hf), onField: ink });
+    case 'lightDark':
+      return o.dark ? darkSet(oklch(0.17, 0.008, h), oklch(0.13, 0.006, h)) : lightSet(paper, mixColor(paper, ink, 0.06));
+    default:
+      return lightSet(paper, mixColor(paper, ink, 0.05));
+  }
+};
+const lum = (c: string) => toOklch(c)[0];
+/** White or ink on a colour field, whichever reads (the field's lightness decides). */
+const contrastOn = (field: string, white: string, ink: string) => (lum(field) < 0.66 ? white : ink);
+
+/**
+ * The family's ground at frame `frame`, full frame and never cut: draw it once under every shot (outside the camera
+ * float, so the content drifts over it). `dark` (lightDark): after the turn. `flood` (whiteBand): 0..1, the band
+ * covering the frame for the film's one colour event. Every plate is baked once, dithered, and moved by transform
+ * only; the light drifts on 9-16 s loops, so a held ground is never dead and never pulses.
+ */
+export const FamilyGround: React.FC<{ family: GroundFamily; frame: number; dark?: boolean; flood?: number; seed?: number; style?: React.CSSProperties }> = ({ family, frame, dark = false, flood = 0, seed = 1, style }) => {
+  const film = useFilm();
+  const { width: W, height: H } = sizeOf(film);
+  const t = frame / fpsOf(film);
+  const k = inksCache(family, dark);
+  const abs: React.CSSProperties = { position: 'absolute', left: 0, top: 0 };
+  const ph = (seed % 97) / 97;
+  const wave = (period: number, phase = 0) => Math.sin(2 * Math.PI * (t / period + ph + phase));
+  const b = GROUND.bake;
+  const Plate: React.FC<{ src: string; x?: number; y?: number; w: number; h: number; rot?: number; o?: number }> = ({ src, x = 0, y = 0, w, h, rot = 0, o = 1 }) =>
+    src ? <Img src={src} style={{ ...abs, width: w, height: h, opacity: o, transformOrigin: '50% 50%', transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${rot.toFixed(3)}deg)` }} /> : null;
+  let body: React.ReactNode = null;
+  if (family === 'nearWhite' || (family === 'lightDark' && !dark)) {
+    return <LitGround frame={frame} spec={{ kind: 'wash', base: k.ground, lift: 0.035, seed }} style={style} />;
+  } else if (family === 'blackField' || (family === 'lightDark' && dark)) {
+    // a soft light along the top rim, sliding slowly: the field is black, the light is felt on its edge
+    const rim = bakePlate('linear', [{ at: 0, color: C.white, alpha: 0.075 }, { at: 0.5, color: C.white, alpha: 0.02 }, { at: 1, color: C.white, alpha: 0 }], W * b * 0.5, H * 0.42 * b * 0.5, { vertical: true, seed: 5 });
+    body = <Plate src={rim} x={W * 0.08 * wave(14)} y={-H * 0.04} w={W * 1.3} h={H * 0.42} />;
+  } else if (family === 'whiteBand') {
+    const bandH = H * (0.24 + 0.015 * wave(12));
+    const f = clamp(flood);
+    const band = bakePlate('linear', [{ at: 0, color: k.accent, alpha: 0.92 }, { at: 0.55, color: k.accent, alpha: 0.42 }, { at: 1, color: k.accent, alpha: 0 }], W * b * 0.25, H * 0.5 * b * 0.5, { vertical: true, seed: 7 });
+    body = (
+      <>
+        <Plate src={band} x={-W * 0.05} y={-bandH * 0.08} w={W * 1.1} h={bandH * 1.6} />
+        {f > 0 && <div style={{ ...abs, width: W, height: H, background: k.accent, clipPath: `inset(0px 0px ${((1 - f) * H).toFixed(2)}px 0px)` }} />}
+      </>
+    );
+  } else if (family === 'deepPool') {
+    const pool = bakePlate('radial', [{ at: 0, color: mixColor(k.ground, C.white, 0.14), alpha: 1 }, { at: 0.5, color: mixColor(k.ground, C.white, 0.06), alpha: 0.6 }, { at: 1, color: k.ground, alpha: 0 }], W * b * 0.4, W * b * 0.4, { seed: 9 });
+    const R = W * 0.95;
+    body = <Plate src={pool} x={W / 2 - R / 2 + W * 0.06 * wave(15)} y={H * 0.58 - R / 2 + H * 0.04 * wave(11, 0.25)} w={R} h={R} />;
+  } else if (family === 'softSky' || family === 'gradientField') {
+    const size = Math.hypot(W, H) * 1.2;
+    const sky = bakePlate('linear', [{ at: 0, color: k.ground }, { at: 0.55, color: mixColor(k.ground, k.far, 0.5) }, { at: 1, color: k.far }], size * b * 0.5, size * b * 0.5, { seed: 11 });
+    const rot = family === 'softSky' ? 90 : 62;
+    body = <Plate src={sky} x={(W - size) / 2 + W * 0.03 * wave(16)} y={(H - size) / 2 + H * 0.03 * wave(13, 0.3)} w={size} h={size} rot={rot} />;
+  }
+  return (
+    <div data-ground={family} style={{ ...abs, width: W, height: H, overflow: 'hidden', background: k.ground, ...style }}>
+      {body}
+    </div>
+  );
+};
+const inkMemo = new Map<string, FamilyInks>();
+const inksCache = (family: GroundFamily, dark: boolean) => {
+  const key = `${family}|${dark}`;
+  let v = inkMemo.get(key);
+  if (!v) inkMemo.set(key, (v = familyInks(family, { dark })));
+  return v;
+};
+
 /** Grounds are continuous light (drift loops, no steps): nothing to declare. */
-export const declares = (_p?: Partial<GroundSpec>, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });
+export const declares =(_p?: Partial<GroundSpec>, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });

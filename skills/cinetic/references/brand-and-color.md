@@ -313,8 +313,8 @@ export const LockupSheet: React.FC = () => (
 );
 ```
 - **Scale in the frame.** At its resolved size the lockup spans about 28–45% of the frame's width (540–860 px at 1920), so it reads as the film's subject rather than a small object in a void. Measure it on the poster frame.
-- **The film's own device.** The lockup is the dealt lockup kind (the device becomes the mark, the light finds the mark, the world writes the name…), lit by the key, off-centre or as a crop of the last plane when the kind allows. A mark, a wordmark and a tagline centred over a radial gradient is the stock end card (`end-card-template`).
-- **Optical centre.** When the lockup is centred, centre its visual mass, not its box, slightly above the frame's geometric centre.
+- **Centred, and built from the film's last element.** The lockup sits centred in the frame, and it comes out of what the film showed last: the last picture's element becomes the mark, the last word becomes the wordmark, the badge spins in from the last frame's light (the ten designs in `references/devices/logo-and-end-card.md`). Held 2–3 s on a creep, the one fact under it, the name once. What makes an end card stock is not the centring but a lockup that arrives from nowhere: a mark, a wordmark and a tagline faded in over a radial gradient (`end-card-template`).
+- **Optical centre.** Centre its visual mass, not its box, slightly above the frame's geometric centre.
 - **Check it small.** Export the final frame, view it 480 px wide, and read the name. If you can't, the lockup is too small or too light.
 - **Exports.** When you invented the brand, deliver it as files too (`bash scripts/brand-kit.sh`, `references/formats.md` §5).
 
@@ -403,11 +403,13 @@ The edges were set so the reds stay: Tessel's `#EC2A3A` sits at h 24 and sRGB re
 
 ## 9. Neutrals, the recipes and the stage
 
-**Grounds are neutral.** Every ground and UI surface (paper, stone, slate, ink, cards, wells, hairlines) is a grey at
-OKLCH C ≤ 0.025 (house 0.004–0.012), at the hue of the brand's own greys, or toward the accent's hue at a chroma too
-low to read as a colour. A pixel under C 0.03 counts as neutral in the checks, one at 0.06 or more as saturated. A
-ground at the accent's own hue and chroma is a colour event (§9b), never the film's stage: a frame washed in one hue
-hides the accent it was meant to show.
+**Grounds are neutral, unless the film's ground family is a field.** Every ground and UI surface (paper, stone, slate,
+ink, cards, wells, hairlines) is a grey at OKLCH C ≤ 0.025 (house 0.004–0.012), at the hue of the brand's own greys, or
+toward the accent's hue at a chroma too low to read as a colour. A pixel under C 0.03 counts as neutral in the checks,
+one at 0.06 or more as saturated. The exception is the film's dealt ground family (§9b): a deep field, a soft sky, a
+pale gradient field or a band of the brand colour follows the family's own numbers, and the UI surfaces on it stay
+neutral. Any other ground at the accent's own hue and chroma is a colour event (§9b): a frame washed in one hue hides
+the accent it was meant to show.
 
 **The recipes** (`RECIPE` in `lib/look.ts`, OKLCH [L, C] at the accent's hue; `palette.py --recipe` writes them):
 
@@ -485,6 +487,34 @@ ground when it can; plan a light/dark sequence and flip it on carried transition
   photograph is not read as designed colour.
 - **Check a frame at thumbnail size:** if no brand colour shows on a key beat, the film has no identity; if everything
   is the accent's colour, it has no accent.
+
+### Ground families: one field and its light for the whole film
+
+A film stands on one ground family, dealt per film (`scripts/deck.py` prints it on the sheet; a template's deal picks it
+from the name; `fx/Grounds` `FamilyGround` draws it and `familyInks()` gives its type, surface and field colours;
+`palette.py --family` writes the tokens). The ground never cuts: the content moves over it, and the film's one colour
+event is declared in `COLOUR`. Two films in a row never share a family.
+
+| Family | What it is | Type | Colour field | The one colour event |
+|---|---|---|---|---|
+| `nearWhite` | 98 % light: a clean near-white page (L .97–.99) under real pictures and product UI | ink | none | none: the pictures carry the colour |
+| `blackField` | a near-black field (L .11–.14, never `#000`), a soft light sliding along the rims | white | none | none |
+| `whiteBand` | white with one band of the brand colour across the top (about a quarter of the height, fading down) | ink | the band | the band floods the frame for one line, which sits on it in white or ink |
+| `deepPool` | a deep field at the accent's hue (L .17–.22, C .03–.06) with a pool of light drifting slowly behind the subject | white | the whole field | none: the field is the colour |
+| `softSky` | a pale sky gradient (L .965 to .915 at a cool hue 225–240, C .015–.035), drifting | ink | the pale field | none |
+| `lightDark` | the problem on a light page, then the product on a dark stage | ink, then white | none | the turn to dark, once, on a seam |
+| `gradientField` | one pale tinted gradient (L .965 to .90 at the accent's hue, C .02–.05), drifting along its axis | ink | the pale field | none |
+
+- **The field's hue** is the accent's own when the accent is a blue, teal or green; with a red or yellow accent the
+  field takes a cool 230, so a red never becomes a pink field and a yellow never a cream one.
+- **A line on the field.** When the family has a colour field, at least one statement sits on it (white or ink type,
+  whichever reads), and the key word may take the film's one accent ink; contrast is 4.5:1 or more once the line has
+  settled. No box, marker or underline: the colour is the emphasis.
+- **The bans stay.** No orange, amber, beige or cream grounds; no purple, violet or indigo; no neon. A family never
+  takes a banned hue, whatever the accent.
+- **Light stays motivated.** A pool, a rim light or a band drifts on a 9–16 s loop and never pulses; under it the
+  ground stays clean behind the words (look-audit's ground-haze read still applies to anything that is not the
+  family's own field).
 
 ## 10. Palettes that read as generated
 

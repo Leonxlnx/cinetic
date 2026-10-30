@@ -442,6 +442,21 @@ def validate(data, library=None, src=None, strict=False):
     if not isinstance(recipes, dict) or not recipes:
         errors.append('the deck has no "recipes" catalogue')
         recipes = {}
+    gfs = data.get('ground_families')
+    if gfs is not None:
+        fl = (gfs or {}).get('families') if isinstance(gfs, dict) else None
+        if not isinstance(fl, list) or len(fl) < 7:
+            errors.append('ground_families: a "families" list of at least 7 (one field and its light for a whole film)')
+        else:
+            seen = set()
+            for f in fl:
+                if not (isinstance(f, dict) and all(isinstance(f.get(k), str) and f.get(k) for k in ('id', 'name', 'what', 'type', 'field', 'event'))
+                        and isinstance(f.get('tones'), list) and f['tones'] and set(f['tones']) <= set(TONES) and f.get('recipe') in recipes):
+                    errors.append(f'ground_families: {f.get("id") if isinstance(f, dict) else f!r} needs id, name, what, type, field, event, tones ({"/".join(TONES)}) and a recipe of the catalogue')
+                elif f['id'] in seen:
+                    errors.append(f'ground_families: {f["id"]} twice')
+                seen.add(f.get('id') if isinstance(f, dict) else None)
+            errors += ban_hits({'ground_families': fl})
     for name, r in recipes.items():
         if not (isinstance(r, dict) and r.get('status') in STATUSES and r.get('tone') in TONES and r.get('notes')
                 and all(_lc(r.get(k)) for k in ('ground', 'ink', 'accent'))):
@@ -672,7 +687,7 @@ def validate(data, library=None, src=None, strict=False):
             for msg in update_problems(d):
                 e(msg)
         if re.search(r'\bradial\b|\btagline\b', f'{lk["shot"]} {lk["build"]}', re.IGNORECASE):
-            e('lockup: the film\'s own device makes the mark; never a centred mark, name and tagline over a radial plate')
+            e('lockup: centred and built from the film\'s last element through its own device; never a lockup faded in from nowhere over a radial plate')
         fg = w.get('foreground')
         if fg is not None and not (isinstance(fg, str) and (not fg.lower().startswith('off') or len(fg.split()) >= 5)):
             e('world.foreground is a sentence, or "off: <the reason>" (a layered space has a pre-softened near plane by default)')
@@ -1067,6 +1082,24 @@ def slot_rng(seed, *parts):
     return random.Random(':'.join([str(seed)] + [str(p) for p in parts]))
 
 
+def deal_family(data, palette, seed, d_id, recent=()):
+    """The film's ground family (directions.json ground_families): weighted toward the dealt palette's tone (x3),
+    never one of the last films' families while another fits. None for a deck without the catalogue."""
+    fams = [f for f in ((data.get('ground_families') or {}).get('families') or []) if isinstance(f, dict) and f.get('id')]
+    if not fams:
+        return None
+    tone = tone_of(palette, data.get('recipes', {})) if palette else None
+    pool = [f for f in fams if f['id'] not in recent] or fams
+    wts = [3.0 if tone and tone in (f.get('tones') or []) else 1.0 for f in pool]
+    rng = slot_rng(seed, d_id, 'ground')
+    x = rng.random() * sum(wts)
+    for f, w in zip(pool, wts):
+        x -= w
+        if x <= 0:
+            return f
+    return pool[-1]
+
+
 def deal_slot(d, slot, seed, exclude=(), k=0):
     if slot == 'palette':
         opts = [p for p in d['palettes'] if p['id'] not in exclude]
@@ -1302,6 +1335,7 @@ def make_sheet(d, inp, seed, options, keep, history_on, data, redraws=None, vari
     sig = d['signature'] if variant == 'main' else dict(d['signature_alt'], family=d['signature']['family'], cost=d['signature']['cost'],
                                                         elements=d['signature']['elements'])
     used = sorted({r['recipe'] for r in ([palette] if palette else d['palettes'])})
+    family = deal_family(data, palette, seed, d['id'], [h.get('ground') for h in read_history(history_on) if h.get('ground')][:3])
     brand = brand_mapping(d, palette, recipes, read_brand(inp['brand'])) if inp.get('brand') else None
     fg = d['world'].get('foreground')
     foreground = None if d['world']['space'] != 'layered' or str(fg or '').lower().startswith('off') else (
@@ -1315,7 +1349,7 @@ def make_sheet(d, inp, seed, options, keep, history_on, data, redraws=None, vari
         'signature': sig, 'signature_variant': variant, 'waits_for': list(waits),
         'seconds': seconds, 'skeleton': skeleton_times(d, seconds, 60, inp['format'], changes),
         'changes': changes if inp['format'] == 'update' else None,
-        'brand': brand, 'foreground': foreground,
+        'brand': brand, 'foreground': foreground, 'ground_family': family,
         'pick': {'format': inp['format'] or 'launch', 'energy': pick_energy(inp['pace'], d), 'seconds': seconds,
                  'lean': d['techniques'], 'signature_ids': sig['techniques'], 'avoid': d['avoid_techniques']},
         'music_find': music_find(d, seconds),
@@ -1553,6 +1587,13 @@ def render_sheet(sh, data, library):
         out += ['- **Type (dealt):**'] + ['  ' + x for x in _type_lines(sh['type'], sh.get('seed'), d['id'])]
     else:
         out += ['- **Type:** the brand fixes it (`--keep type`); set it in the roles of §4.']
+    gf = sh.get('ground_family')
+    if gf:
+        out.append(f'- **Ground family (dealt): `{gf["id"]}`, {gf["name"]}.** {gf["what"]}; type {gf["type"]}; colour field: '
+                   f'{gf["field"]}; the one colour event: {gf["event"]}. One family for the whole film, never cut '
+                   f'(`fx/Grounds` `<FamilyGround family="{gf["id"]}">`, its inks from `familyInks()`; tokens: '
+                   f'`python3 scripts/palette.py --accent <accent> --family {gf["id"]}`). With a colour field, at least one '
+                   'line sits on it. Never the family of the last films (references/brand-and-color.md §9b).')
     out += ['', '## 3. Camera and cuts', '',
             f'- **Main animator:** {cam["animator"]}', f'- **In a shot:** {cam["in_shot"]}',
             f'- **Between shots:** {cam["between"]}',
@@ -1583,8 +1624,9 @@ def render_sheet(sh, data, library):
             f'**Build:** {lk["build"]} Leans on {_prims(lk["primitives"], cat)}'
             + (f' and {_techs(lk["techniques"], library)}' if lk.get('techniques') else '') + '.', '',
             'With a supplied logo (brand/brand.json, src/brand/logo.ts) the mark is the real logo drawn part by part '
-            '(`LogoMark`, `AssembledMark`, `Lockup`), and it arrives through this lockup\'s device: never a centred mark, '
-            'name and tagline over a radial plate.', '']
+            '(`LogoMark`, `AssembledMark`, `Lockup`), and it arrives through this lockup\'s device, centred and built from '
+            'the film\'s last element (the ten end-card designs in references/devices/logo-and-end-card.md); never a '
+            'lockup faded in from nowhere over a radial plate.', '']
     if sh.get('changes'):
         out += [f'## 8. Beat skeleton: an update film ({sh["changes"]} changes, {sh["seconds"]:g} s)', '',
                 'The name and the version first ("[Name] [version]" by 3 s), then each change as a product moment (the '
@@ -1888,7 +1930,7 @@ def main():
             log = sh['redraws'] + [{'slot': 'direction', 'from': d['id'], 'to': new_d['id'], 'reason': a.reason}]
             waits = [p for p in new_d.get('requires', []) if p not in ready]
             sh = make_sheet(new_d, inp, seed, sh['options'], set(sh['keep']), sh['history'], data, log, waits=waits)
-            write_history(sh['history'], {'direction': new_d['id'], 'format': inp['format']})
+            write_history(sh['history'], {'direction': new_d['id'], 'format': inp['format'], **({'ground': sh['ground_family']['id']} if sh.get('ground_family') else {})})
         md = write_sheet(sh, a.out, data, library)
         print(md, end='')
         return 0
@@ -1939,7 +1981,7 @@ def main():
     waits = [p for p in d.get('requires', []) if p not in ready]
     sh = make_sheet(d, inp, seed, options, set(keep), history_on, data, waits=waits)
     md = write_sheet(sh, a.out, data, library)
-    write_history(history_on, {'direction': d['id'], 'format': a.format})
+    write_history(history_on, {'direction': d['id'], 'format': a.format, **({'ground': sh['ground_family']['id']} if sh.get('ground_family') else {})})
     print(md, end='')
     return 0
 
