@@ -115,8 +115,9 @@ art direction for a 6-45 s film:
   budget (at most 1,500 animated nodes) and its library entries, plus an alternative for a redraw;
 - **the lockup:** one of ten kinds (the device becomes the mark, the mark as an object in the world, a pull back, the
   light finds the mark, a dead stop, a held frame, the world writes the name, everything else leaves, the mark as a
-  shadow, the mark resolves), built from primitives that exist; a centred mark, name and tagline over a radial plate is
-  refused;
+  shadow, the mark resolves), built from primitives that exist, centred and built from the film's last element (the ten
+  end-card designs in `references/devices/logo-and-end-card.md`); a lockup that fades in from nowhere over a radial
+  plate is refused;
 - idea-sentence templates, the fit (formats, paces, assets, length), the music character and its tempo range, the
   primitives it leans on and the ones that fight it, a 4-6 beat skeleton whose speaking beats each take one sentence of
   the script, an **update skeleton** (hook, change, payoff, end) and an avoid list;
@@ -284,8 +285,8 @@ Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, pr
 
 ## 9. End cards
 
-1. **The device ideally becomes the mark.** The lockup arrives from the story, not as a new logo animation. It may echo the signature shot (smaller, inside the lockup) but never replays it.
-2. **Assemble, then hold briefly.** The end card runs 1.5–2.5 s: the lockup assembles over 60–80 f, then holds still for 36–80 f (or creeps ≤ 6%); a longer hold must visibly build (a 10–20% dolly). A card that cuts in complete and sits static reads as dead: a static 2.75 s logo hold was flagged in every Tessel review round.
+1. **Centred, built from the last element.** The lockup sits centred in the frame and arrives from the story, not as a new logo animation: the last picture's element becomes the mark, the last word becomes the wordmark, the film's travelling element becomes the mark's accent (the ten designs in `references/devices/logo-and-end-card.md`). It may echo the signature shot (smaller, inside the lockup) but never replays it. The name appears once.
+2. **Build, then hold 2–3 s.** The lockup builds in 0.8–1.6 s, then holds 2–3 s from the frame the name and the fact are read, creeping 2–6 % (a hold past ~1.3 s visibly builds: a 10–20% dolly or the mark's creep). A card that cuts in complete and sits frozen reads as dead.
 3. **URL or call to action.** ≥ 1.7 s fully readable, set at the secondary size (44–56 px at 1080p) and still while it is being read.
 4. **The final frame is the poster.** It must contain the mark and the name. Check it: export the last frame, view it 480 px wide, and ask whether a stranger could say whose film it was.
 5. **Tail.** At least 60 f after the last event, under the resolved lockup, while the audio decays to digital silence. Never fade to black: the poster would be black and the player freezes on it.

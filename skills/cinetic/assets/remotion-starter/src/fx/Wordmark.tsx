@@ -27,10 +27,13 @@ import type { Declares } from '../timeline';
  *             when the brand supplies it (`cinetic:brand-supplied glow` in the film, BRIEF.md), and then
  *             as a baked plate whose opacity follows haloLevel(), never an animated blur.
  *
- * The default end card (LOCKUP_HOUSE): frontal, on a clean flat field (no relief, footage or glow behind
- * it), contrast 4.5:1 or more, mark + name 35-55 % of the frame width with the name 6.7 % of the frame
- * height or more, built in one gesture (16-24 f at 25 fps from the hit to the landed name) and held
- * 0.8-2 s, out with the ring. Never lower-left over footage, never a mark centred over a radial glow.
+ * The default end card (LOCKUP_HOUSE): centred in the frame (its mass a little above the middle) and built from
+ * the film's last element (the last picture's element becomes the mark, the last word the wordmark: the ten
+ * designs in references/devices/logo-and-end-card.md), frontal, on the film's clean ground (no relief, footage
+ * or glow behind it), contrast 4.5:1 or more, mark + name 35-55 % of the frame width with the name 6.7 % of the
+ * frame height or more, built in one gesture (16-24 f at 25 fps from the hit to the landed name) and held 2-3 s
+ * on a creep, the music's ending under it. lockupLayout() and <Lockup centred> place it centred by default. Never
+ * lower-left over footage, never a lockup faded in from nowhere over a radial glow.
  */
 
 const f = Math.round;
@@ -195,7 +198,7 @@ export const lockupFinalScale = (p: Pick<LockupProps, 'shrink' | 'snap' | 'settl
  * share of the frame width; the name's line as a share of the frame height; built from the hit to the
  * landed name in 16-24 f at 25 fps (0.64-0.96 s); held 0.8-2 s, out with the ring.
  */
-export const LOCKUP_HOUSE = { contrast: 4.5, width: [0.35, 0.55], nameMinH: 0.067, build25: [16, 24], hold: [0.8, 2] } as const;
+export const LOCKUP_HOUSE = { contrast: 4.5, width: [0.35, 0.55], nameMinH: 0.067, build25: [16, 24], hold: [2, 3], lift: 0.02 } as const;
 
 export type LockupState = {
   scale: number;
@@ -293,37 +296,45 @@ export const lockupClearFrame = (p: LockupProps & { x: number; markSize: number 
 };
 
 /**
- * A centred frontal lockup (LOCKUP_HOUSE): mark and name land as one unit centred on (cx, cy). Give the
+ * A centred frontal lockup (LOCKUP_HOUSE): mark and name land as one unit centred on (cx, cy), by default the frame's
+ * centre lifted LOCKUP_HOUSE.lift of its height (the optical centre; give `width` and `height`). Give the
  * name's measured width and line height at its font size (lib/measure.ts), the landed mark's height
  * (default the name's line; the brand's LOCKUP.ratio x it when the brand sets one) and the gap (default
  * 0.4 x the mark). Returns <Lockup>'s x, y, markSize and slide.px, the name's top-left (nameAt), the
  * landed mark's box and the unit's width as a share of `width` (aim 0.35-0.55).
  */
-export const lockupLayout = (o: { cx: number; cy: number; nameW: number; nameH: number; markH?: number; gap?: number; width?: number; lockup?: Pick<LockupProps, 'shrink' | 'snap' | 'settle'> }) => {
+export const lockupLayout = (o: { cx?: number; cy?: number; nameW: number; nameH: number; markH?: number; gap?: number; width?: number; height?: number; lockup?: Pick<LockupProps, 'shrink' | 'snap' | 'settle'> }) => {
+  const cx = o.cx ?? (o.width ?? 1920) / 2;
+  const cy = o.cy ?? (o.height ?? 1080) * (0.5 - LOCKUP_HOUSE.lift);
   const markH = o.markH ?? o.nameH;
   const gap = o.gap ?? 0.4 * markH;
   const total = markH + gap + o.nameW;
-  const left = o.cx - total / 2;
+  const left = cx - total / 2;
   const markSize = markH / lockupFinalScale(o.lockup ?? {});
-  const px = o.cx - (left + markH / 2);
+  const px = cx - (left + markH / 2);
   return {
-    x: o.cx,
-    y: o.cy,
+    x: cx,
+    y: cy,
     markSize,
     slide: { px },
-    nameAt: [left + markH + gap, o.cy - o.nameH / 2] as [number, number],
-    box: { x: left, y: o.cy - markH / 2, w: markH, h: markH },
+    nameAt: [left + markH + gap, cy - o.nameH / 2] as [number, number],
+    box: { x: left, y: cy - markH / 2, w: markH, h: markH },
     widthShare: total / (o.width ?? 1920),
   };
 };
 
 /**
  * A lockup: `mark` (any node, drawn at `markSize` px, centred on (x, y) at scale 1) and `name` (its
- * top-left at `nameAt`, right of the landed mark: lockupLayout() gives both). The name rises in whole on
- * the frame the sliding mark clears its place (lockupClearFrame; a given wordmark.at wins). `frame` is local.
+ * top-left at `nameAt`, right of the landed mark: lockupLayout() gives both). Centred by default: give `centred`
+ * (the name's measured width and line height, and the landed mark's height and gap if the brand sets them) in place
+ * of x, y, markSize, slide and nameAt, and the lockup lands as one unit on the frame's optical centre. The name rises
+ * in whole on the frame the sliding mark clears its place (lockupClearFrame; a given wordmark.at wins). `frame` is local.
  */
-export const Lockup: React.FC<LockupProps & { frame: number; x: number; y: number; markSize: number; mark: React.ReactNode; name?: React.ReactNode; nameAt?: [number, number] }> = (props) => {
+export const Lockup: React.FC<LockupProps & { frame: number; x?: number; y?: number; markSize?: number; mark: React.ReactNode; name?: React.ReactNode; nameAt?: [number, number]; centred?: { nameW: number; nameH: number; markH?: number; gap?: number } }> = (p0) => {
   const film = useFilm();
+  const lay = p0.centred ? lockupLayout({ ...p0.centred, width: film.width, height: film.height, lockup: p0 }) : null;
+  if (!lay && (p0.x === undefined || p0.y === undefined || p0.markSize === undefined)) throw new Error('Lockup: give x, y and markSize, or `centred` (the width and line height of the name) for the house centred lockup');
+  const props = { ...p0, x: lay ? lay.x : (p0.x as number), y: lay ? lay.y : (p0.y as number), markSize: lay ? lay.markSize : (p0.markSize as number), slide: lay && p0.slide === undefined ? lay.slide : p0.slide, nameAt: p0.nameAt ?? lay?.nameAt };
   const wm = props.wordmark === false ? false : props.wordmark ?? {};
   const auto = wm !== false && wm.at === undefined && !!props.nameAt && !!props.slide;
   const at = auto ? lockupClearFrame(props, (props.nameAt as [number, number])[0], 0, film) : undefined;
