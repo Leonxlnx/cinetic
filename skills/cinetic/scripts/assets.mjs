@@ -231,7 +231,11 @@ async function http(url, { ms = 25000, headers = {}, json = true } = {}) {
     }
     if ([502, 503, 504].includes(r.status) && attempt < 2) { await sleep(1200); continue; }
     if (r.status === 429) {
-      const wait = Math.min(30, Number(r.headers.get('retry-after')) || 8 * attempt);
+      const asked = Number(r.headers.get('retry-after')) || 0; // seconds; an HTTP date reads as 0
+      // A long Retry-After (Burst asks ~9 min after a run of reads) fails at once with the wait it names, instead of
+      // sleeping into the 60 s search cap and reading as "no complete answer".
+      if (asked > 30) { r.body?.cancel().catch(() => {}); throw new Error(`rate limited (HTTP 429): the site asks for ${Math.ceil(asked / 60)} min; search another --source meanwhile`); }
+      const wait = asked || 8 * attempt;
       if (attempt < 3) { r.body?.cancel().catch(() => {}); await sleep(wait * 1000); continue; }
       throw new Error('rate limited (HTTP 429): wait a minute or search another --source');
     }
@@ -1283,6 +1287,7 @@ async function cmdSheet(args) {
     const draws = cells.map((c, i) => `drawtext=fontfile='${ffEsc(font)}':text='${labelText(c.label, Math.floor(L.cellW / 8.6))}':x=${L.cells[i].x + 2}:y=${L.cells[i].labelY}:fontsize=16:fontcolor=0xd8dade`).join(',');
     chains.push(`[${last}]${draws}[out]`); last = 'out';
   }
+  fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true }); // --out sheets/x.png into a folder not made yet
   ff([...inputs, '-filter_complex', chains.join(';'), '-map', `[${last}]`, '-frames:v', '1', out], 'sheet');
   console.log(`Sheet ${out} · ${cells.length} cells (${cells.filter((c) => !c.file).length} missing) · ${L.cols} x ${L.rows}${font ? '' : ' · no label font found: cells run left to right, top to bottom'}`);
   console.log('Look at it. Choose for light, depth and one idea, not for the subject alone; refuse stock gestures. Labels: P people, T text or a logo, soft.');
@@ -2008,23 +2013,23 @@ export function recipeHint(ref, doc = null) {
 /** Read each pick again at its source: it still loads, its licence still needs no credit. Exit 1 when one does not. */
 async function verifyRecipes(list) {
   const o = { width: 2400, res: 1080, allowCredit: false };
-  let bad = 0; let n = 0;
+  let bad = 0; let n = 0; let unread = 0;
   for (const r of list) {
     for (const p of r.picks || []) {
       n++;
-      const hint = pickItem(p, r); let it = null; let why = '';
-      try { it = await lookup(p.ref, { ...o, kind: hint.kind }, hint); } catch (e) { why = redact(e.message); }
+      const hint = pickItem(p, r); let it = null; let why = ''; let limited = false;
+      try { it = await lookup(p.ref, { ...o, kind: hint.kind }, hint); } catch (e) { why = redact(e.message); limited = /HTTP 429/.test(why); }
       if (!why && (!it || !it.image)) why = 'no usable file on the record (removed, or no rendition)';
       const lic = it ? licenceAllowed(it.licence, o) : { ok: true };
       if (!why && !lic.ok) why = `${LICENCES[it.licence]?.name || it.licence}: ${lic.why}`;
       if (!why && it.ai) why = 'AI-generated, not real footage';
-      if (why) bad++;
-      console.log(`${why ? 'FAIL' : 'ok  '}  ${String(r.id).padEnd(18)} ${p.ref.padEnd(36)} ${(it?.licence || '').padEnd(13)} ${why || short(it.title || p.title, 50)}`);
+      if (limited) unread++; else if (why) bad++; // a rate limit says nothing about the pick: read it again later
+      console.log(`${limited ? 'WAIT' : why ? 'FAIL' : 'ok  '}  ${String(r.id).padEnd(18)} ${p.ref.padEnd(36)} ${(it?.licence || '').padEnd(13)} ${why || short(it.title || p.title, 50)}`);
       await sleep(250); // gentle on the sites without an API
     }
   }
-  console.log(`\n${n - bad} of ${n} picks load with a licence that needs no credit${bad ? `; ${bad} failed: search the recipe again (--run) and replace them` : ''}`);
-  return bad ? 1 : 0;
+  console.log(`\n${n - bad - unread} of ${n} picks load with a licence that needs no credit${bad ? `; ${bad} failed: search the recipe again (--run) and replace them` : ''}${unread ? `; ${unread} not read (the site rate-limited the run): --verify again later` : ''}`);
+  return bad || unread ? 1 : 0;
 }
 async function cmdRecipe(args) {
   const doc = loadRecipes();
@@ -2152,7 +2157,7 @@ export const USAGE = `assets.mjs: photographs, footage, textures and art a film 
          [--res 1080] [--trim start,seconds] [--max-mb 150] [--allow-credit] [--record path]
   recipe [<the product's input in your words>] [--run] [--kind video|photo] [--limit 6] [--out file] [--json] [--verify]
          (the core action shown literally: 40 inputs, from speaking into a phone to a parcel at the door, each with
-         its framing, the screen that takes the UI plate and its searches; 32 also hold clips and photos already
+         its framing, the screen that takes the UI plate and its searches; 34 also hold clips and photos already
          looked at (the rest run their searches at once); saves them as a results file for sheet and get #n;
          --run searches every line again; --verify reads each pick again at its source; no input lists them all;
          recipe all --verify checks every pick)

@@ -2285,15 +2285,29 @@
      "dur": 26
     },
     {
-     "ref": "coverr:V6lyIbp7wY",
+     "ref": "coverr:1sIDYfKteT",
      "kind": "video",
      "licence": "coverr",
-     "title": "Typing on a laptop at the airport",
-     "shows": "close: hands typing on a laptop at an airport table",
+     "title": "Picking up suitcase from carousel",
+     "shows": "a traveller lifts a suitcase off a baggage carousel, the steel belt filling the frame",
      "screen": "cut",
-     "page": "https://coverr.co/videos/typing-on-a-laptop-at-the-airport-v6lyibp7wy",
-     "thumb": "https://cdn.coverr.co/videos/coverr-typing-on-a-laptop-at-the-airport-2673/thumbnail?width=640",
-     "preview": "https://cdn.coverr.co/videos/coverr-typing-on-a-laptop-at-the-airport-2673/360p.mp4",
+     "page": "https://coverr.co/videos/picking-up-suitcase-from-carousel-1sidyfktet",
+     "thumb": "https://cdn.coverr.co/videos/coverr-picking-up-suitcase-from-carousel-871/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-picking-up-suitcase-from-carousel-871/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 16
+    },
+    {
+     "ref": "coverr:gqufqfxmoa",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Man using phone at airport",
+     "shows": "over the shoulder: a traveller scrolls a phone by the baggage hall, the screen toward the lens (a mask strap at the ear)",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/man-using-phone-at-airport-gqufqfxmoa",
+     "thumb": "https://cdn.coverr.co/videos/coverr-man-using-phone-at-airport-2719/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-man-using-phone-at-airport-2719/360p.mp4",
      "w": 1920,
      "h": 1080,
      "dur": 15
@@ -3622,24 +3636,19 @@
    "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
    "queries": [
     {
+     "q": "packaging",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
      "q": "cardboard box",
      "kind": "video",
      "source": "mixkit"
     },
     {
-     "q": "small business",
-     "kind": "video",
-     "source": "mixkit"
-    },
-    {
-     "q": "shipping box",
-     "kind": "video",
-     "source": "coverr"
-    },
-    {
-     "q": "taping box",
-     "kind": "video",
-     "source": "coverr"
+     "q": "packing orders",
+     "kind": "photo",
+     "source": "burst"
     },
     {
      "q": "packing box",
@@ -3664,19 +3673,19 @@
      "dur": 18
     },
     {
-     "ref": "coverr:4NQm6KNCnG",
+     "ref": "mixkit:2812",
      "kind": "video",
-     "licence": "coverr",
-     "title": "Close-Up of a Woman Taping a Present Sign on a Box",
-     "shows": "hands tape a wrapped present onto a box, close (holiday paper: for gifting, not for orders)",
+     "licence": "mixkit-video",
+     "title": "Hands selecting and packaging handmade soaps",
+     "shows": "top-down: a seller's hands choose handmade soaps on a wooden table and pack them (small handmade tags on a few: keep it short or crop them out)",
      "screen": "cut",
-     "page": "https://coverr.co/videos/close-up-of-a-woman-taping-a-present-sign-on-a-box",
-     "thumb": "https://cdn.coverr.co/videos/coverr-close-up-of-a-woman-taping-a-present-sign-on-a-box-7898/thumbnail?width=640",
-     "preview": "https://cdn.coverr.co/videos/coverr-close-up-of-a-woman-taping-a-present-sign-on-a-box-7898/360p.mp4",
-     "image": "https://cdn.coverr.co/videos/coverr-close-up-of-a-woman-taping-a-present-sign-on-a-box-7898/1080p.mp4",
+     "page": "https://mixkit.co/free-stock-video/hands-selecting-and-packaging-handmade-soaps-2812/",
+     "thumb": "https://assets.mixkit.co/videos/2812/2812-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/2812/2812-360.mp4",
+     "image": "https://assets.mixkit.co/videos/2812/2812-1080.mp4",
      "w": 1920,
      "h": 1080,
-     "dur": 10
+     "dur": 20
     },
     {
      "ref": "burst:young-man-fills-a-box-with-packing",
@@ -3735,12 +3744,12 @@
    "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
    "queries": [
     {
-     "q": "doctor",
+     "q": "doctor consultation",
      "kind": "video",
-     "source": "coverr"
+     "source": "mixkit"
     },
     {
-     "q": "nurse",
+     "q": "doctor",
      "kind": "video",
      "source": "coverr"
     },
@@ -3750,12 +3759,7 @@
      "source": "mixkit"
     },
     {
-     "q": "medical",
-     "kind": "video",
-     "source": "mixkit"
-    },
-    {
-     "q": "doctor",
+     "q": "doctor patient",
      "kind": "photo",
      "source": "burst"
     },
@@ -3782,34 +3786,73 @@
      "dur": 13
     },
     {
-     "ref": "coverr:Y3puzpK5d3",
-     "kind": "video",
-     "licence": "coverr",
-     "title": "Doctor wearing mask",
-     "shows": "a doctor in a mask and cap leans over a patient, three-quarter, low key",
+     "ref": "burst:doctor-holds-chart",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Doctor Holds Chart",
+     "shows": "a doctor in a white coat with a stethoscope holds a chart, the patient's shoulder soft in the foreground: the listening three-quarter the input asks for",
      "screen": "cut",
-     "page": "https://coverr.co/videos/doctor-wearing-mask-y3puzpk5d3",
-     "thumb": "https://cdn.coverr.co/videos/coverr-doctor-wearing-mask-2797/thumbnail?width=640",
-     "preview": "https://cdn.coverr.co/videos/coverr-doctor-wearing-mask-2797/360p.mp4",
-     "image": "https://cdn.coverr.co/videos/coverr-doctor-wearing-mask-2797/1080p.mp4",
-     "w": 2048,
-     "h": 1080,
-     "dur": 12
+     "page": "https://burst.shopify.com/photos/doctor-holds-chart",
+     "thumb": "https://burst.shopifycdn.com/photos/doctor-holds-chart.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Shopify Partners"
     },
     {
-     "ref": "coverr:eBIp2m4Kvt",
-     "kind": "video",
-     "licence": "coverr",
-     "title": "Patient donating blood",
-     "shows": "a patient's hand squeezes a grip ball while giving blood, the bag in front, close",
+     "ref": "burst:patient-receives-some-good-news",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Patient Receives Some Good News",
+     "shows": "a patient in a gown listens across from the doctor, the doctor's head soft in the foreground, a clinic room behind",
      "screen": "cut",
-     "page": "https://coverr.co/videos/patient-donating-blood-ebip2m4kvt",
-     "thumb": "https://cdn.coverr.co/videos/coverr-patient-donating-blood-1467/thumbnail?width=640",
-     "preview": "https://cdn.coverr.co/videos/coverr-patient-donating-blood-1467/360p.mp4",
-     "image": "https://cdn.coverr.co/videos/coverr-patient-donating-blood-1467/1080p.mp4",
+     "page": "https://burst.shopify.com/photos/patient-receives-some-good-news",
+     "thumb": "https://burst.shopifycdn.com/photos/patient-receives-some-good-news.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Shopify Partners"
+    },
+    {
+     "ref": "mixkit:4582",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Doctor at home consultation",
+     "shows": "a home visit: a doctor in a mask kneels by an elderly patient under a blanket on a sofa while a relative sits beside them, a wide, window light",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/doctor-at-home-consultation-4582/",
+     "thumb": "https://assets.mixkit.co/videos/4582/4582-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4582/4582-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4582/4582-1080.mp4",
      "w": 1920,
      "h": 1080,
      "dur": 11
+    },
+    {
+     "ref": "mixkit:4833",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Female doctor talking on a video call",
+     "shows": "telehealth: a doctor at a white desk talks into a tablet held in both hands, front (the tablet faces her: cut to the product)",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/female-doctor-talking-on-a-video-call-4833/",
+     "thumb": "https://assets.mixkit.co/videos/4833/4833-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4833/4833-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4833/4833-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "burst:a-doctor-checks-a-chart-as-the-patient-watches-on",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "A Doctor Checks A Chart As The Patient Watches On",
+     "shows": "a hospital bed: a doctor writes on a chart while the patient watches, three-quarter, soft window light",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/a-doctor-checks-a-chart-as-the-patient-watches-on",
+     "thumb": "https://burst.shopifycdn.com/photos/a-doctor-checks-a-chart-as-the-patient-watches-on.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Matthew Henry"
     },
     {
      "ref": "isorepublic:nurse-doctor",
@@ -4152,7 +4195,94 @@
      "source": "isorepublic"
     }
    ],
-   "picks": []
+   "picks": [
+    {
+     "ref": "coverr:zn5vK7SrUV",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Serene Evening with Headphones in a Quiet Park",
+     "shows": "dusk in a park: a young woman in over-ear headphones looks down at her phone, then adjusts a cup, low key",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/serene-evening-music-session",
+     "thumb": "https://cdn.coverr.co/videos/coverr-serene-evening-music-session/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-serene-evening-music-session/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 16
+    },
+    {
+     "ref": "coverr:FPM0KJU1Br",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Man Enjoying Music on Smartphone at Dusk in City",
+     "shows": "a man in headphones scrolls a phone on a city street at dusk, front, the street lights soft behind (the same shoot as a man putting the headphones on)",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/man-enjoying-music-on-smartphone-at-dusk",
+     "thumb": "https://cdn.coverr.co/videos/coverr-man-enjoying-music-on-smartphone-at-dusk/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-man-enjoying-music-on-smartphone-at-dusk/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 22
+    },
+    {
+     "ref": "mixkit:2983",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Woman wearing active wear puts on headphones",
+     "shows": "a woman sits on stone steps in a wood and puts on over-ear headphones, front",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/woman-wearing-active-wear-puts-on-headphones-2983/",
+     "thumb": "https://assets.mixkit.co/videos/2983/2983-thumb-360-1.jpg",
+     "preview": "https://assets.mixkit.co/videos/2983/2983-360.mp4",
+     "image": "https://assets.mixkit.co/videos/2983/2983-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "mixkit:52121",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "A young runner woman puts on her in-ear headphones before her morning run",
+     "shows": "a runner puts in her earbuds before a run, low angle against an office tower, the sky behind",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/a-young-runner-woman-puts-on-her-in-ear-headphones-before-52121/",
+     "thumb": "https://assets.mixkit.co/videos/52121/52121-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/52121/52121-360.mp4",
+     "image": "https://assets.mixkit.co/videos/52121/52121-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 7
+    },
+    {
+     "ref": "mixkit:99904",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "A young man wearing headphones sits in front of his laptop computer at the cafe table then takes a sip of coffee",
+     "shows": "a young man in headphones at a café table with a laptop, sips a coffee, three-quarter",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/a-young-man-wearing-headphones-sits-in-front-of-his-99904/",
+     "thumb": "https://assets.mixkit.co/active_storage/video_items/99904/1717706816/99904-video-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/active_storage/video_items/99904/1717706816/99904-video-360.mp4",
+     "image": "https://assets.mixkit.co/active_storage/video_items/99904/1717706816/99904-video-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 8
+    },
+    {
+     "ref": "burst:relaxing-in-headphones",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Relaxing In Headphones",
+     "shows": "a young woman in headphones smiles at a laptop by a keyboard, chin on her hand, soft daylight (a touch posed: keep it short)",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/relaxing-in-headphones",
+     "thumb": "https://burst.shopifycdn.com/photos/relaxing-in-headphones.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sarah Pflug"
+    }
+   ]
   },
   {
    "id": "podcast-mic",
@@ -4567,17 +4697,12 @@
     "hands on the tablet with the site soft behind (its screen takes the UI plate)",
     "an engineer inspecting a machine, close"
    ],
-   "screen": "tablet: pin the UI plate on the screen where it faces the lens; else cut to the kit Phone or a tablet plate",
+   "screen": "tablet or phone: no free clip of a worker on site with a tablet was found, so show the site (the workers, the plan, a call), then cut to the kit Phone or a tablet plate with the UI logging the report",
    "queries": [
     {
-     "q": "construction worker",
+     "q": "construction",
      "kind": "video",
-     "source": "coverr"
-    },
-    {
-     "q": "engineer tablet",
-     "kind": "video",
-     "source": "coverr"
+     "source": "mixkit"
     },
     {
      "q": "engineer",
@@ -4587,15 +4712,113 @@
     {
      "q": "construction",
      "kind": "photo",
-     "source": "burst"
+     "source": "isorepublic"
     },
     {
-     "q": "construction",
+     "q": "construction worker",
      "kind": "photo",
-     "source": "isorepublic"
+     "source": "burst"
     }
    ],
-   "picks": []
+   "picks": [
+    {
+     "ref": "mixkit:1436",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Two construction workers",
+     "shows": "two builders in hard hats and high-visibility vests talk over something on a brick site, three-quarter",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/two-construction-workers-1436/",
+     "thumb": "https://assets.mixkit.co/videos/1436/1436-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/1436/1436-360.mp4",
+     "image": "https://assets.mixkit.co/videos/1436/1436-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 16
+    },
+    {
+     "ref": "mixkit:600",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Man in hard hat watching drone fly",
+     "shows": "from behind: a worker in a hard hat and a high-visibility vest faces a tower under construction",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/man-in-hard-hat-watching-drone-fly-600/",
+     "thumb": "https://assets.mixkit.co/videos/600/600-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/600/600-360.mp4",
+     "image": "https://assets.mixkit.co/videos/600/600-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 25
+    },
+    {
+     "ref": "mixkit:1443",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Person takes a phone call at a construction site",
+     "shows": "close: a worker in a hard hat takes a call on his phone on site, scaffolding soft behind (the phone faces away: cut to the product)",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/person-takes-a-phone-call-at-a-construction-site-1443/",
+     "thumb": "https://assets.mixkit.co/videos/1443/1443-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/1443/1443-360.mp4",
+     "image": "https://assets.mixkit.co/videos/1443/1443-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 14
+    },
+    {
+     "ref": "mixkit:1439",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Pointing to blueprints",
+     "shows": "close: hands point along a blueprint on a table, the plan in sharp focus",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/pointing-to-blueprints-1439/",
+     "thumb": "https://assets.mixkit.co/videos/1439/1439-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/1439/1439-360.mp4",
+     "image": "https://assets.mixkit.co/videos/1439/1439-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "isorepublic:construction-blueprint",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Construction Blueprint",
+     "shows": "two workers in high-visibility vests lean over blueprints, hands on the plan, top-down",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/construction-blueprint/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2020/09/iso-republic-hands-on-blueprints-450x300.jpg",
+     "w": 2048,
+     "h": 1365
+    },
+    {
+     "ref": "isorepublic:construction-plans",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Construction Plans",
+     "shows": "a worker in a high-visibility vest marks a plan on a clipboard, close",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/construction-plans/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2020/07/iso-republic-construction-site-plans-450x300.jpg",
+     "w": 2048,
+     "h": 1365
+    },
+    {
+     "ref": "burst:construction-worker-in-protective-gear",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Construction Worker In Protective Gear",
+     "shows": "from behind: a worker in a hard hat and a vest among a crowd of workers on site",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/construction-worker-in-protective-gear",
+     "thumb": "https://burst.shopifycdn.com/photos/construction-worker-in-protective-gear.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Shopify Partners"
+    }
+   ]
   },
   {
    "id": "dog-walk",
