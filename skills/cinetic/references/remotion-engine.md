@@ -163,9 +163,12 @@ Encoder defaults you override per render: h264 CRF 18 and x264 preset `medium` (
 | Task | Command |
 |---|---|
 | Studio | `npx remotion studio` (`--no-open` prints the URL; open `/<CompositionId>`) |
-| one still | `npx remotion still src/index.ts Film out/f120.png --frame=120` |
-| several exact frames, one browser | `npx remotion render src/index.ts Film out/frames --sequence --frames=0,45,120,239 --image-format=png` (a comma list; cannot be combined with `--every-nth-frame`) |
-| every Nth frame of a range | `... --sequence --frames=240-479 --every-nth-frame=5` (or `python3 scripts/sheet.py --comp Act2 --every 2`) |
+| stills (one or several frames, one call) | `node scripts/frames.mjs still 120,480,1000` (PNGs in `out/stills/`, half size; `--scale 1` for full size) |
+| contact sheet of the film or a range | `node scripts/frames.mjs sheet` (about 36 labelled tiles), `--every 30`, `--frames 840-1079 --every 4` |
+| the bundle every call reuses | `node scripts/frames.mjs bundle` (out/.bundle/<source hash>/: rebuilt only when src/, public/ or the config changed) |
+| the GL backend for this machine | `node scripts/frames.mjs gl` (fastest backend whose frames match software GL; cached; `CINETIC_GL` overrides) |
+| raw CLI: several exact frames | `npx remotion render <bundle> Film out/frames --sequence --frames=0,45,120,239 --image-format=png` (a comma list; cannot be combined with `--every-nth-frame`; the output folder's path may hold no dot) |
+| raw CLI: every Nth frame of a range | `... --sequence --frames=240-479 --every-nth-frame=5` (files are numbered 0, 1, 2 ... in output order, not by film frame) |
 | props from a file | `--props=out/samples.json` (a JSON string works too) |
 | muted picture for ffmpeg muxing | `--muted --crf=14 --x264-preset=slow` (what `scripts/render.sh` does) |
 | bundle once, render many | `npx remotion bundle` (writes `build/`, or `--out-dir`), then pass the bundle folder instead of `src/index.ts` (`scripts/render-chunks.sh`) |
@@ -176,6 +179,8 @@ Encoder defaults you override per render: h264 CRF 18 and x264 preset `medium` (
 | see browser console output | `--log=verbose` (the layout audit reads `CINETIC_AUDIT` lines this way) |
 
 Keep test renders short on a shared machine: frame lists and ranges, `--concurrency=2`.
+
+**Why not `npx remotion still src/index.ts` per look.** Each such call starts npm (5-20 s), bundles the whole project with webpack (20-25 s with a warm cache, 1.5-8 min cold on a busy laptop), opens a browser and evaluates the composition list, all for one frame. `frames.mjs` hashes the source (well under a second), reuses the bundle, runs the Remotion CLI through node directly and renders every frame asked for in one browser. Measured on an 8-core laptop (AMD 780M iGPU), same scaffold, same frame: one still 15-17 s the old way and 6-8 s with `frames.mjs` when the laptop is quiet, 157-204 s and 18-48 s while other jobs keep its CPU at 100 %; seven stills cost one call (7.5 s); a 35-tile sheet 137 s with `sheet.py --comp`, 30 s with `frames.mjs sheet` (busy). The stills are pixel-identical to `npx remotion still`'s.
 
 ## 6. Traps
 
