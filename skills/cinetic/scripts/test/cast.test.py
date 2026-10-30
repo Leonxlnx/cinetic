@@ -18,6 +18,10 @@ in the repo; the sound history lives under a temporary $CINETIC_HOME) and checks
     heard twice within 3 s is listed; an uncast kit says so
   - kit.py real: a no-credit sound-effect record becomes three measured takes of the action's role (and plays);
     a music record or a missing record is refused; credits.py lists the effect
+  - lead-ins: kit.py reads a take's heard point and transient exactly as check-sync.py does; a recording with 45 ms of
+    room tone before its click is cut to 5 ms before the transient (the transient and its tail sample for sample), a
+    sharp or trimmed take is left alone; kit.py real trims an onset role's takes, a peak role keeps its build; kit.py
+    trim cuts takes placed before, measures them again (lock, sha1) and changes nothing the second time
 
 Usage: python3 skills/cinetic/scripts/test/cast.test.py [--only test,test]
 (needs numpy, scipy, soundfile and pyloudnorm). Exit 0 when every check passes, 1 otherwise.
@@ -319,6 +323,96 @@ def real_effect(d):
           f'credits.py lists the real effect with its licence ({(p.stderr or p.stdout).strip()[-200:]})')
 
 
+def lead_click(lead_s=0.045, seed=3):
+    """a recorded click with a lead-in: lead_s of rumble (heard: within 20 dB of the click's loudest millisecond, yet
+    under a tenth of its peak sample) before a sharp transient"""
+    rng = np.random.default_rng(seed)
+    tp = np.arange(int(lead_s * SR)) / SR
+    pre = 0.15 * np.sin(2 * np.pi * 180 * tp) * (0.7 + 0.3 * np.sin(2 * np.pi * 23 * tp))
+    n = int(0.12 * SR)
+    t = np.arange(n) / SR
+    hit = rng.normal(0, 1, n) * np.exp(-t / 0.004) * 0.9 + 0.5 * np.sin(2 * np.pi * 2400 * t) * np.exp(-t / 0.02)
+    tail = rng.normal(0, 1, int(0.1 * SR)) * 0.01
+    x = np.concatenate([np.zeros(int(0.002 * SR)), pre, hit, tail])
+    return x / float(np.abs(x).max()) * 10 ** (-1 / 20)  # peak-normalised to -1 dBFS, as a placed take
+
+
+def take_lead(path):
+    """seconds a take file is heard before its transient"""
+    heard, onset = K.lead_in(K.read_take(path))
+    return (onset - heard) / SR
+
+
+def lead_trim(d):
+    spec = importlib.util.spec_from_file_location('check_sync', os.path.join(HERE, '..', 'check-sync.py'))
+    CS = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(CS)
+    x = lead_click()
+    heard, onset = K.lead_in(x)
+    pts = CS.take_points(x)
+    check(abs(heard / SR - pts['pre']) < 0.0005 and abs(onset / SR - pts['louder']['onset']) < 0.0005 and (onset - heard) / SR > 0.04,
+          f"lead_in reads a take as check-sync does: heard {1000 * heard / SR:.1f} ms, transient {1000 * onset / SR:.1f} ms "
+          f"(check-sync {1000 * pts['pre']:.1f} / {1000 * pts['louder']['onset']:.1f})")
+    y, cut = K.trim_lead(x)
+    h2, o2 = K.lead_in(y)
+    p2 = CS.take_points(y)
+    check(cut > 0.04 and (o2 - h2) / SR <= K.LEAD_MS / 1000 + 0.001 and p2['louder']['onset'] - p2['pre'] <= K.LEAD_MS / 1000 + 0.001,
+          f"trim_lead cuts the lead-in to {K.LEAD_MS:g} ms before the transient (cut {1000 * cut:.1f} ms, heard "
+          f"{1000 * (o2 - h2) / SR:.1f} ms before it)")
+    k = int(round(K.LEAD_MS * SR / 1000))
+    check(np.array_equal(y[k:k + 2000], x[onset:onset + 2000]) and float(np.abs(y[:k]).max()) <= float(np.abs(x[onset - k:onset]).max()),
+          'the transient and everything after it stay sample for sample; only the 5 ms before it fade in')
+    sharp = np.concatenate([np.zeros(int(0.003 * SR)), x[onset:]])
+    same, c0 = K.trim_lead(sharp)
+    _, c2 = K.trim_lead(y)
+    check(c0 == 0.0 and same is sharp and c2 == 0.0, 'a sharp take and an already trimmed one are left as they are')
+    # kit.py real: an onset role gets the trimmed takes; a whoosh (aligned on its peak) keeps its build
+    kit = cast_kit(d)
+    sfxd = os.path.join(d, 'audio', 'sfx')
+    os.makedirs(sfxd)
+    wav = os.path.join(sfxd, 'mouse_click_mixkit.wav')
+    sf.write(wav, x.astype(np.float32), SR, subtype='PCM_24')
+    sfx_record(os.path.join(sfxd, 'mouse_click_mixkit.licence.json'), wav)
+    takes = os.path.join(d, 'audio', 'kit')
+    p = subprocess.run([sys.executable, os.path.join(AUDIO, 'kit.py'), 'real', wav, '--action', 'card-land', '--kit', kit],
+                       capture_output=True, text=True, cwd=d)
+    tks = ((K.read_real(takes).get('roles') or {}).get('pop.card_land') or {}).get('takes') or []
+    leads = [take_lead(os.path.join(takes, t['file'])) for t in tks]
+    check(p.returncode == 0 and len(tks) == 3 and max(leads) <= K.LEAD_MS / 1000 * 1.04 + 0.001 and all(t['onset_s'] < 0.008 for t in tks),
+          f"kit.py real on an onset role: every take starts {K.LEAD_MS:g} ms before its transient "
+          f"(heard {[round(1000 * v, 1) for v in leads]} ms before it; {p.stderr.strip()[-160:]})")
+    tr = np.arange(int(0.2 * SR)) / SR
+    rise = (tr / tr[-1]) ** 2 * 0.05 * np.sin(2 * np.pi * 300 * tr)  # a quiet tone swelling into the hit: heard, under a tenth of its peak
+    swell = np.concatenate([rise, x[onset:]])
+    _, cs = K.trim_lead(swell)
+    rr = K.real_takes([(swell, False)], takes, 'whoosh.short', variants=1, align='peak')
+    rl = K.real_takes([(swell, False)], takes, 'pop.x', variants=1, align='onset')
+    check(cs > 0 and abs(rr[0]['dur_s'] - len(swell) / SR) < 0.002 and rl[0]['dur_s'] < rr[0]['dur_s'] - 0.05,
+          f"a role aligned on its peak keeps the build its whoosh rises with ({rr[0]['dur_s']} s); an onset role's take is trimmed ({rl[0]['dur_s']} s)")
+    # kit.py trim: takes placed before the trim existed (the lead-in kept) are cut, measured again, and stay cut
+    real = K.read_real(takes)
+    role = real['roles']['pop.card_land']
+    for t in role['takes']:
+        sf.write(os.path.join(takes, t['file']), x.astype(np.float32), SR, subtype='PCM_24')
+        t.update(K.measure_take(x), sha1=K.sha1_file(os.path.join(takes, t['file'])))
+    K.write_json(os.path.join(takes, K.REAL_LOCK), real)
+    before = K.lead_report(takes)
+
+    def run():
+        return subprocess.run([sys.executable, os.path.join(AUDIO, 'kit.py'), 'trim', '--kit', kit], capture_output=True, text=True, cwd=d)
+    p = run()
+    after = K.read_real(takes)['roles']['pop.card_land']['takes']
+    ok_files = all(t['sha1'] == K.sha1_file(os.path.join(takes, t['file'])) and t['key'] == f"real:{t['sha1']}" for t in after)
+    last = p.stdout.strip().splitlines()[-1] if p.stdout.strip() else p.stderr[-160:]
+    check(p.returncode == 0 and len(before) == 3 and not K.lead_report(takes) and all(t['onset_s'] < 0.007 for t in after) and ok_files,
+          f"kit.py trim cuts the lead-in of takes placed before and measures them again ({len(before)} listed before, "
+          f"onsets {[t['onset_s'] for t in after]}; {last})")
+    sums = [t['sha1'] for t in after]
+    p = run()
+    check(p.returncode == 0 and [t['sha1'] for t in K.read_real(takes)['roles']['pop.card_land']['takes']] == sums and '0 of 3' in p.stdout,
+          'kit.py trim again changes nothing')
+
+
 def main():
     only = sys.argv[sys.argv.index('--only') + 1].split(',') if '--only' in sys.argv else None
     os.environ.pop('CINETIC_HOME', None)
@@ -326,7 +420,7 @@ def main():
         if not only or name in only:
             fn()
     for name, fn in [('cast_rules', cast_rules), ('plan_cast', plan_cast), ('plan_repeats', plan_repeats),
-                     ('plan_restraint', plan_restraint), ('real_effect', real_effect)]:
+                     ('plan_restraint', plan_restraint), ('real_effect', real_effect), ('lead_trim', lead_trim)]:
         if only and name not in only:
             continue
         with tempfile.TemporaryDirectory() as d:

@@ -22,6 +22,7 @@ Usage (from the project root):
                                    # give each action of the film (out/cues.json) its own sound (bank or library)
   python3 scripts/audio/kit.py real FILE --action ACTION [--licence RECORD]
                                    # a free real effect (music.mjs get --kind sfx) as the takes of an action
+  python3 scripts/audio/kit.py trim                 # trim the lead-in of recorded takes placed before cast/real did
   python3 scripts/audio/kit.py tune                 # retune the tonal roles to score.json's key
   python3 scripts/audio/kit.py render [--force]     # audio/kit/*.wav + kit.lock.json (cached)
   python3 scripts/audio/kit.py vendor [--from DIR]  # check (or first copy in) the takes score.py plays
@@ -72,6 +73,12 @@ that action instead: measured (onset, peak, end, loudness), peak-normalised, cut
 (audio/kit/real-<role>_1.wav, audio/kit/real.lock.json), with the role's own mix keys. kit.py listen judges it
 with earshot's ears like any role; credits.py lists its record.
 
+Lead-ins: a recording can carry room tone or a quiet press 40-60 ms before its transient. plan.py puts a take's onset
+(its transient: the first sample at 10 % of the peak) on the cue frame, so that lead-in would play before the picture.
+For a role aligned on its onset, cast and real cut every recorded take to 5 ms before its transient (a fade-in over
+those 5 ms) when it is heard more than 12 ms before it; trim does the same to takes placed before (then npm run audio);
+check lists any left. Swells and whooshes (aligned on their peak) keep their build.
+
 Tuning (init, tune): roles with `pitches` or `edits.pitch` move to the film's key in their own
 register: bell to the key's pentatonic, text to the pentatonic too (the tonic triad when it has 3
 notes or fewer; score.py steps a chain through the chord's tones among them), a single pitch to the
@@ -87,7 +94,7 @@ when a launch kit plays an effects-only film.
 
 Exit codes: 0 done (render also when earshot is missing: it says what score.py will play instead, and a
 build never fails only because earshot is missing); 1 a failed check or render, or invalid input; 2 earshot
-not found (init, cast, audition and where; tune, vendor, check, real and listen work without it).
+not found (init, cast, audition and where; tune, vendor, check, real, trim and listen work without it).
 """
 import argparse
 import hashlib
@@ -119,6 +126,8 @@ MIX_KEYS = ('bed_db', 'offset_ms', 'min_gap_ms', 'width')
 REPEAT_S = 3.0          # s: a take (the same rendered sound) never plays twice within this, where its role has others
 REAL_LOCK = 'real.lock.json'
 REAL_MAX_S = 2.5        # s: a real effect is cut to this (a fade over its last 50 ms)
+LEAD_MS = 5.0           # ms: a recorded take of an onset role starts this long before its transient, faded in over it
+LEAD_MAX_MS = 12.0      # ms: a recorded take heard earlier than this before its transient carries a lead-in (trimmed)
 AUDITION_BED_S = 2.0
 # earshot's text may say where its numbers came from; a film's kit.json and reports say it in house wording.
 # Generic rules (no quoted phrases): a sentence that ties a number to measured clips or films, an instrument
@@ -896,6 +905,9 @@ def cmd_check(a, score_python):
             if 'rising_glide' in codes:
                 msg += ' (a rising pitch glide reads as a cheap synth whip: pick another sound)'
             (rep['problems'] if used is None or role in (used or {}) else rep['notes']).append(msg)
+    for role, fn, ms in lead_report(a.takes):
+        rep['problems'].append(f'{role}: the recorded take {fn} is heard {ms:g} ms before its transient (a lead-in that plays '
+                               'before the picture): kit.py trim cuts it, then npm run audio')
     es, tried = find_earshot(a.python, score_python)
     if es and st['status'] != 'no-kit':
         code, res, err = es.run_json(['kit', 'check', a.kit] + (['--out', a.takes] if st['lock'] else []))
@@ -1119,10 +1131,12 @@ def bank_feats(es, ids):
     return {i: have[i] for i in ids if i in have}
 
 
-def real_takes(clips, takes, name, variants=3):
+def real_takes(clips, takes, name, variants=3, align='onset'):
     """takes (files written into the takes folder, measured) of a role from [(audio, tonal[, pitch])]: per clip the
     cut as it is and small variants (speed by 3 % for a toneless sound; for a tonal one the same pitch, a softer top
-    or a shorter tail), interleaved clip by clip; a clip with a pitch (a note name) is one take on that note"""
+    or a shorter tail), interleaved clip by clip; a clip with a pitch (a note name) is one take on that note. A role
+    aligned on its onset gets each take with its lead-in trimmed (trim_lead): its transient lands on the cue frame
+    and nothing of the recording plays more than LEAD_MS before it"""
     import numpy as np
     import soundfile as sf
     from scipy import signal
@@ -1145,6 +1159,8 @@ def real_takes(clips, takes, name, variants=3):
                 f = max(1, int(0.3 * n))
                 ramp = np.linspace(1, 0, f) ** 2
                 y[n - f:] *= ramp if y.ndim == 1 else ramp[:, None]
+            if align == 'onset':
+                y = trim_lead(y)[0]
             vs.append(y / max(1e-9, float(np.abs(y).max())) * 10 ** (-1 / 20))
         per.append(vs)
     out = []
@@ -1241,7 +1257,8 @@ def place_library(kit_path, takes, kit, lib, music=None, log=print):
             spec = (kit.get('roles') or {}).get(name) or {}
             notes = pitched_clips(raw, spec.get('pitches'))  # a pitched role (text, bell): a take on each of its notes
             used = sorted({n[3] for n in notes}) if notes else list(range(len(clips)))
-            tks = real_takes([n[:3] for n in notes] or clips, takes, name, variants=3 if len(clips) == 1 else 2)
+            tks = real_takes([n[:3] for n in notes] or clips, takes, name, variants=3 if len(clips) == 1 else 2,
+                             align=spec.get('align', 'onset'))
             roles[name] = dict(sound='+'.join(sids[i] for i in used),
                                align=spec.get('align', 'onset'), level_db=float(spec.get('level_db') or 0.0),
                                max_s=None, **{k: float(spec[k]) for k in MIX_KEYS if spec.get(k) is not None},
@@ -1378,6 +1395,97 @@ def measure_take(x, sr=48000):
                 lufs_m_max=round(MK.loud_lufs(x, sr, int(0.4 * sr)), 2), l50_lufs=round(MK.loud_lufs(x, sr), 2))
 
 
+def lead_in(x, sr=48000):
+    """(heard, onset) in samples of a take: where a listener first hears it (the mono sum's 1 ms RMS envelope, 48-sample
+    windows every 12 samples, first within 20 dB of its loudest: check-sync's rule) and its transient (measure_take's
+    onset: the first sample at 10 % of the peak of |the larger of the two samples|). A recording's lead-in (room tone, a
+    quiet press before the click) is heard before the transient that plan.py places on the cue."""
+    import numpy as np
+    mono = x.mean(axis=1) if x.ndim == 2 else x
+    loud = np.abs(x.max(axis=1) if x.ndim == 2 else x)
+    pk = float(loud.max()) if len(loud) else 0.0
+    if pk <= 0 or len(mono) < 2:
+        return 0, 0
+    onset = int(np.argmax(loud >= 0.1 * pk))
+    win, hop = max(1, sr // 1000), max(1, sr // 4000)
+    c = np.concatenate([[0.0], np.cumsum(mono * mono)])
+    st = np.arange(0, max(1, len(mono) - win + 1), hop)
+    env = np.sqrt(np.maximum((c[np.minimum(st + win, len(mono))] - c[st]) / win, 0.0))
+    heard = int(st[int(np.argmax(env >= env.max() * 0.1))]) if env.max() > 0 else onset
+    return min(heard, onset), onset
+
+
+def trim_lead(x, sr=48000, lead_ms=LEAD_MS, max_ms=LEAD_MAX_MS):
+    """(take, cut s): a recorded take heard more than max_ms before its transient, cut to lead_ms before it with a
+    raised-cosine fade-in over those lead_ms, so what plays before the cue frame is the transient's own attack, never
+    the recording's lead-in; (x, 0.0) unchanged otherwise (a sharp take, an already trimmed one)"""
+    import numpy as np
+    heard, onset = lead_in(x, sr)
+    lead = int(round(lead_ms * sr / 1000))
+    if onset - heard <= max_ms * sr / 1000 or onset <= lead:
+        return x, 0.0
+    s = onset - lead
+    y = np.array(x[s:], dtype=np.float64, copy=True)
+    ramp = 0.5 - 0.5 * np.cos(np.linspace(0.0, np.pi, lead, endpoint=False))
+    y[:lead] *= ramp if y.ndim == 1 else ramp[:, None]
+    return y, s / sr
+
+
+def lead_report(takes):
+    """[(role, file, heard ms before the transient)] of the recorded takes of onset roles (real.lock.json) whose
+    lead-in plays before the cue frame (more than LEAD_MAX_MS before the transient)"""
+    out = []
+    for role, r in sorted((read_real(takes).get('roles') or {}).items()):
+        if not r or r.get('align', 'onset') != 'onset':
+            continue
+        for tk in r.get('takes') or []:
+            p = os.path.join(takes, tk['file'])
+            if not os.path.isfile(p):
+                continue
+            heard, onset = lead_in(read_take(p))
+            ms = (onset - heard) / 48.0
+            if ms > LEAD_MAX_MS:
+                out.append((role, tk['file'], round(ms, 1)))
+    return out
+
+
+def cmd_trim(a):
+    """the recorded takes already placed (real.lock.json: the cast's library picks, kit.py real) trimmed as cast and real
+    now place them: an onset role's take heard more than LEAD_MAX_MS before its transient starts LEAD_MS before it;
+    the lock is measured again (onset, peak, loudness, sha1), so plan.py and check-sync read the trimmed takes"""
+    import numpy as np
+    import soundfile as sf
+    takes = takes_dir_for(a.kit, a.takes)
+    real = read_real(takes)
+    if not real.get('roles'):
+        print(f'kit trim: no recorded takes in {takes} ({REAL_LOCK}): nothing to trim')
+        return 0
+    n, cut = 0, 0
+    for role, r in sorted(real['roles'].items()):
+        if not r or r.get('align', 'onset') != 'onset':
+            continue
+        for tk in r.get('takes') or []:
+            p = os.path.join(takes, tk['file'])
+            if not os.path.isfile(p):
+                print(f"kit.py: trim: {tk['file']} is missing from {takes} (cast again: kit.py cast)", file=sys.stderr)
+                return 1
+            n += 1
+            y, s = trim_lead(read_take(p))
+            if not s:
+                continue
+            sf.write(p, np.asarray(y, dtype=np.float32), 48000, subtype='PCM_24')
+            h = sha1_file(p)
+            tk.update(measure_take(y), sha1=h, key=f'real:{h}')
+            cut += 1
+            print(f"kit trim: {role}: {tk['file']} started {s * 1000:.0f} ms of lead-in before its transient: cut to "
+                  f"{LEAD_MS:g} ms before it (onset now {tk['onset_s'] * 1000:.1f} ms)")
+    if cut:
+        write_json(os.path.join(takes, REAL_LOCK), real)
+    print(f'kit trim: {cut} of {n} recorded take(s) of onset roles trimmed in {takes}'
+          + ('; next: npm run audio (plan and mix again), then mux' if cut else ''))
+    return 0
+
+
 def cmd_real(a):
     """a free real effect (its licence record beside it) as three takes of the role that plays its action"""
     import numpy as np
@@ -1442,9 +1550,10 @@ def cmd_real(a):
     rel = lambda q: os.path.relpath(os.path.abspath(q), project_of(a.kit)).replace(os.sep, '/')  # noqa: E731
     for name in names:
         spec = (kit.get('roles') or {}).get(name) or {}
+        xr = trim_lead(x)[0] if spec.get('align', 'onset') == 'onset' else x  # an onset role: its transient on the cue
         tks = []
         for k, rate in enumerate((1.0, 0.97, 1.03), 1):  # three takes: the file and two small speed variants
-            y = x if rate == 1.0 else signal.resample_poly(x, 100, int(round(100 * rate)), axis=0)
+            y = xr if rate == 1.0 else signal.resample_poly(xr, 100, int(round(100 * rate)), axis=0)
             y = y / max(1e-9, float(np.abs(y).max())) * 10 ** (-1 / 20)
             fn = f"real-{name.replace('.', '-')}_{k}.wav"
             path = os.path.join(takes, fn)
@@ -1474,10 +1583,10 @@ def cmd_listen(a):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="The film's earshot sound kit: init, cast, real, tune, render, vendor, "
+    ap = argparse.ArgumentParser(description="The film's earshot sound kit: init, cast, real, trim, tune, render, vendor, "
                                              'check, audition, listen, where.')
-    ap.add_argument('cmd', choices=('init', 'cast', 'real', 'tune', 'render', 'vendor', 'check', 'audition', 'listen',
-                                    'where'))
+    ap.add_argument('cmd', choices=('init', 'cast', 'real', 'trim', 'tune', 'render', 'vendor', 'check', 'audition',
+                                    'listen', 'where'))
     ap.add_argument('file', nargs='?', help='real: the effect file (its licence record beside it)')
     ap.add_argument('--kit', default='audio/kit.json')
     ap.add_argument('--takes', help='folder of the rendered takes (default: the kit path without .json)')
@@ -1514,6 +1623,8 @@ def main(argv=None):
             return cmd_cast(a, score_python)
         if a.cmd == 'real':
             return cmd_real(a)
+        if a.cmd == 'trim':
+            return cmd_trim(a)
         if a.cmd == 'tune':
             es = None if a.python is None and score_python is None and not os.environ.get('EARSHOT_PYTHON') else \
                 find_earshot(a.python, score_python)[0]
