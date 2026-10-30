@@ -17,9 +17,9 @@ import { INK, lineSize, useAbs } from './stage';
 const PART_ON = phrase(LOGO.parts.length, f60x(4), { shape: 'settle', seed: 'mark-parts', whole: false }).onsets;
 
 // END - on the ink the flood left: the title's name (its first word, or every word of a longer name) pops, the rest
-// types on as the title rises a little; the mark's parts rise beside it once the title is typed. The key passes once
-// across the set. The title shrinks out and the tagline takes its place, settling from 108 % as it comes into focus;
-// the mark and the tagline hold about a second and a half, creeping.
+// types on in place as the title rises a little; the mark's parts rise above it once the title is typed, the whole
+// lockup centred. The key passes once across the set. The title shrinks out and the tagline takes its place, centred,
+// settling from 108 % as it comes into focus; the mark and the tagline hold about a second and a half, creeping.
 
 export const End: React.FC = () => {
   const F = useAbs('end');
@@ -32,7 +32,11 @@ export const End: React.FC = () => {
   const tagSize = lineSize(tag.text, 'display', 0.74);
   const firstW = measureTracked(first, size, TYPE.display.weight, TYPE.display.track);
   const markSize = 170 * U;
-  const x0 = 200 * U;
+  // the lockup is centred: the title laid out at its final centred place (its letters type on in place), the mark
+  // centred above it, the tagline centred where the title stood
+  const titleW = measureTracked(title.text, size, TYPE.display.weight, TYPE.display.track);
+  const x0 = (W - titleW) / 2;
+  const tagX = 200 * U;
   const yT = H / 2 - (size * TYPE.display.lead) / 2;
   const rise = prog(F, title.in, title.in + f60x(30), E.snapOut);
   const leave = prog(F, tag.in - f60x(10), tag.in + f60x(4), E.buildIn); // the title shrinks out
@@ -41,8 +45,8 @@ export const End: React.FC = () => {
   const band = prog(F, CUE.key, CUE.key + f60x(80), E.stdInOut);
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${x0}px ${H / 2}px`, transform: `scale(${k.toFixed(5)})` }}>
-        <div style={{ position: 'absolute', left: x0, top: yT - markSize - 50 * U }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${H / 2}px`, transform: `scale(${k.toFixed(5)})` }}>
+        <div style={{ position: 'absolute', left: (W - markSize) / 2, top: yT - markSize - 50 * U }}>
           <LogoMark
             logo={LOGO}
             size={markSize}
@@ -55,7 +59,7 @@ export const End: React.FC = () => {
           />
         </div>
         {F >= title.in - 1 && leave < 1 && (
-          <div style={{ position: 'absolute', left: x0, top: yT, opacity: 1 - leave, transformOrigin: '0% 50%', transform: `translate3d(0, ${((1 - rise) * 18 * U).toFixed(2)}px, 0) scale(${mix(1, 0.9, leave).toFixed(4)})` }}>
+          <div style={{ position: 'absolute', left: x0, top: yT, opacity: 1 - leave, transformOrigin: `${(titleW / 2).toFixed(1)}px 50%`, transform: `translate3d(0, ${((1 - rise) * 18 * U).toFixed(2)}px, 0) scale(${mix(1, 0.9, leave).toFixed(4)})` }}>
             <span data-text="title-name" style={{ ...typeStyle('display', size), color: t.text }}>
               {first}
             </span>
@@ -65,9 +69,9 @@ export const End: React.FC = () => {
           </div>
         )}
         {F >= tag.in - 1 && (
-          <div style={{ position: 'absolute', left: x0, top: H / 2 - (tagSize * TYPE.display.lead) / 2, width: W - 2 * x0, height: tagSize * 1.4 }}>
+          <div style={{ position: 'absolute', left: tagX, top: H / 2 - (tagSize * TYPE.display.lead) / 2, width: W - 2 * tagX, height: tagSize * 1.4 }}>
             <Defocus sigma={mix(6, 0, settle)}>
-              <div style={{ position: 'absolute', left: 0, top: 0, transformOrigin: '0% 50%', transform: `scale(${lmix(1.08, 1, settle).toFixed(5)})`, opacity: clamp(settle * 2.5) }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, width: W - 2 * tagX, textAlign: 'center', transformOrigin: '50% 50%', transform: `scale(${lmix(1.08, 1, settle).toFixed(5)})`, opacity: clamp(settle * 2.5) }}>
                 <span data-text="tagline" style={{ ...typeStyle('display', tagSize), color: t.text }}>
                   {tag.text}
                 </span>

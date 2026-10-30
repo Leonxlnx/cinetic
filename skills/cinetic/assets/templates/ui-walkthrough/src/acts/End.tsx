@@ -8,7 +8,8 @@ import { DEAL, NAME_MOVE } from '../deal';
 import { Lit } from '../fx/Lit';
 import { E, hitPulse, lmix, prog } from '../lib/anim';
 import { measureTracked } from '../lib/measure';
-import { ACT, copy, CUE, f60x, FPS, H, moveOf, W } from '../timeline';
+import { ReadBack } from '../fx/ReadBack';
+import { ACT, copy, CUE, f60x, FPS, H, moveOf, TOTAL, W } from '../timeline';
 import { PageFace } from './Page';
 import { drift, Ground, GROUNDS, lineSize, themeOf, useAbs } from './stage';
 import { HeroLine } from './type';
@@ -17,10 +18,10 @@ import { HeroLine } from './type';
 const PART_ON = phrase(LOGO.parts.length, f60x(6), { shape: 'settle', seed: 'mark-parts', whole: false }).onsets;
 
 // END - the lockup, built from the mark's own parts: they arrive in turn, the name is set beside them on a confident
-// move (never letter by letter) and the payoff line arrives under it on its dealt move. By the dealt device: 'side'
-// keeps the output live on the right, lit and tilted, cropped by the frame's edge (the product's result beside its
-// name); 'centre' sets the lockup alone in the middle of a clean ground. A slow push keeps the lock alive; it holds
-// about a second and a half before the tail.
+// move (never letter by letter) and the payoff line arrives under it on its dealt move, the lockup centred. By the
+// dealt device: 'side' keeps the output live behind the lockup, lit and tilted, stepping back (soft, dim, a little
+// smaller) as the name arrives (the end card built from the film's last picture); 'centre' sets the lockup alone in
+// the middle of a clean ground. A slow push keeps the lock alive; it holds about a second and a half before the tail.
 
 export const End: React.FC = () => {
   const F = useAbs('end');
@@ -34,8 +35,8 @@ export const End: React.FC = () => {
   const centre = DEAL.end === 'centre';
   // the lockup's block: the mark and the name on one row, the payoff under it
   const rowW = markSize + 44 * U + nameW;
-  const x0 = centre ? (W - rowW) / 2 : 160 * U;
-  const yRow = centre ? H / 2 - 70 * U : H / 2 - 90 * U;
+  const x0 = (W - rowW) / 2;
+  const yRow = H / 2 - 70 * U;
   const k = lmix(1.04, 1, prog(F, ACT.end.from, ACT.end.from + f60x(50), E.glideOut)) * lmix(1, 1.03, prog(F, ACT.end.from, ACT.end.from + ACT.end.dur, E.linear));
   const d = drift('end', F, 0, 0.3);
   const page = prog(F, ACT.end.from, ACT.end.from + f60x(56), E.glideOut);
@@ -43,12 +44,14 @@ export const End: React.FC = () => {
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
       <Ground act="end" F={F} />
       {!centre && (
-        // the output, live and sharp beside its name: lit and tilted, cropped by the right and bottom edges
-        <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(d.x * 1.6 + (1 - page) * 160 * U).toFixed(2)}px, 0, 0)` }}>
-          <Lit frame={F} x={W * 0.86} y={H * 0.62} w={900 * U} h={1100 * U} r={36 * U} tilt={{ x: 10, y: -13 }} ground={GROUNDS.end.base} id="end-page">
-            <PageFace F={F} w={900 * U} h={1100 * U} seed="end" />
-          </Lit>
-        </div>
+        // the output, live behind its name: lit and tilted, cropped by the bottom edge, stepping back as the name lands
+        <ReadBack F={F} at={name.in} out={TOTAL + 600} dim={0.8} blur={9} scale={0.06}>
+          <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(d.x * 1.6).toFixed(2)}px, ${((1 - page) * 120 * U).toFixed(2)}px, 0)` }}>
+            <Lit frame={F} x={W / 2} y={H * 0.62} w={900 * U} h={1100 * U} r={36 * U} tilt={{ x: 10, y: -6 }} ground={GROUNDS.end.base} id="end-page">
+              <PageFace F={F} w={900 * U} h={1100 * U} seed="end" />
+            </Lit>
+          </div>
+        </ReadBack>
       )}
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${(x0 + rowW / 2).toFixed(1)}px ${H / 2}px`, transform: `translate3d(${d.x.toFixed(3)}px, ${d.y.toFixed(3)}px, 0) scale(${k.toFixed(5)})` }}>
         <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${x0.toFixed(2)}px, ${(yRow - markSize / 2).toFixed(2)}px, 0)` }}>
@@ -64,7 +67,7 @@ export const End: React.FC = () => {
           />
         </div>
         <HeroLine id="wordmark" text={name.text} at={name.in} frame={F} move={NAME_MOVE} role="display" size={nameSize} x={x0 + markSize + 44 * U + nameW / 2} y={yRow} color={t.text} accent={t.accent} mute={t.mute} />
-        <HeroLine id="payoff" text={pay.text} at={pay.in} frame={F} move={moveOf('payoff')} role="line" size={paySize} x={centre ? W / 2 : x0 + measureTracked(pay.text, paySize, TYPE.line.weight, TYPE.line.track) / 2} y={yRow + markSize / 2 + 90 * U} color={t.mute} accent={t.accent} mute={t.mute} />
+        <HeroLine id="payoff" text={pay.text} at={pay.in} frame={F} move={moveOf('payoff')} role="line" size={paySize} x={W / 2} y={yRow + markSize / 2 + 90 * U} color={t.mute} accent={t.accent} mute={t.mute} />
       </div>
     </AbsoluteFill>
   );

@@ -24,7 +24,7 @@ export const SLOTS = {
   build: ['pill', 'assemble', 'stream'],
   /** the output live: one lit page landing and scrolling; the page between its siblings in a depth stack */
   page: ['lit', 'stack'],
-  /** the end card: the lockup beside the output, live, lit and cropped by the edge; the lockup alone in the middle of a clean ground */
+  /** the end card: the lockup centred over the output, live behind it and stepping back; the lockup alone in the middle of a clean ground */
   end: ['side', 'centre'],
 } as const;
 
@@ -39,7 +39,7 @@ export const COMPOSITION: { [S in keyof typeof SLOTS]?: Record<string, string> }
   claim: { accent: 'type flush left at poster size, no picture', push: 'type centre pushed into, no picture', object: 'type centre, an object inside the line' },
   read: { lens: 'one dense screen fills the frame', flick: 'one column in the middle', ticker: 'rows across the frame in depth' },
   page: { lit: 'one page in the middle', stack: 'the page between its siblings in depth' },
-  end: { side: 'type left, the output cropped by the right edge', centre: 'type centre on a clean ground' },
+  end: { side: 'type centre, the output live behind it, stepped back', centre: 'type centre on a clean ground' },
 };
 
 export type SlotName = keyof typeof SLOTS;
