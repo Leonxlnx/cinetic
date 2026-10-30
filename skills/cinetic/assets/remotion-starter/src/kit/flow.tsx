@@ -8,6 +8,7 @@ import { Img } from 'remotion';
 import { TEXT_MIN } from '../brand/tokens';
 import { clamp, mix } from '../lib/anim';
 import { mixColor } from '../lib/color';
+import { KitEmpty } from './gate';
 import { Button, Check, face, FileThumb, Glyph, GlyphTile, KIT_TYPE, Photo, surfaceShadow, useKitScale } from './parts';
 import type { GlyphName } from './sample';
 import { type KitTheme, lit } from './theme';
@@ -239,7 +240,8 @@ const codeColour = (t: KitTheme, k: CodeToken['k']) =>
 /**
  * A code panel that streams: a numbered gutter that is always full, and rows of tokens arriving by line cadence
  * (`rows` shown, fractional: the current row typing through its characters). Product code reads as code in one hue
- * family (keywords in the accent, strings and numbers in its tints, comments muted). Pass the product's own code.
+ * family (keywords in the accent, strings and numbers in its tints, comments muted). Pass the product's own code: a
+ * panel given no lines draws its empty state (kit-empty), never a gutter of line numbers over nothing.
  */
 export const CodePanel: React.FC<{ theme: KitTheme; w: number; lines: CodeToken[][]; rows: number; size?: number; gutter?: number; family?: string; id?: string; scale?: number }> = ({ theme: t, w, lines, rows, size, gutter = 40, family = 'ui-monospace, monospace', id = 'kit-code', scale }) => {
   const u = useKitScale(scale);
@@ -247,6 +249,7 @@ export const CodePanel: React.FC<{ theme: KitTheme; w: number; lines: CodeToken[
   const lh = fs * 1.5;
   const shown = Math.floor(rows);
   const part = rows - shown;
+  if (!Array.isArray(lines) || !lines.some((l) => Array.isArray(l) && l.length)) return <KitEmpty part="CodePanel" need="lines (the product's own code)" theme={t} w={w} h={Math.min(gutter, 12) * lh} r={fs * 0.4} inline />;
   return (
     <div data-ui style={{ position: 'relative', width: w, display: 'flex', gap: fs * 0.9, fontFamily: family, fontSize: fs, lineHeight: `${lh}px`, whiteSpace: 'pre' }}>
       <div style={{ flex: 'none', textAlign: 'right', color: t.mute, opacity: 0.6, minWidth: fs * 1.6 }}>

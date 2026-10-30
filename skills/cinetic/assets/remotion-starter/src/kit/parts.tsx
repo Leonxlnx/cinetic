@@ -325,14 +325,16 @@ export const Button: React.FC<{ theme: KitTheme; label: string; w: number; h: nu
   </div>
 );
 
-/** A notice landing on the product: a glyph, what happened, when. */
-export const Toast: React.FC<{ theme: KitTheme; title: string; sub?: string; w: number; h: number; glyph?: GlyphName; id?: string }> = ({ theme: t, title, sub, w, h, glyph = 'check', id = 'kit-toast' }) => {
+/** A notice landing on the product: what happened, when, and the glyph the film picks for it (none by default). */
+export const Toast: React.FC<{ theme: KitTheme; title: string; sub?: string; w: number; h: number; glyph?: GlyphName; id?: string }> = ({ theme: t, title, sub, w, h, glyph, id = 'kit-toast' }) => {
   const u = useKitScale();
   return (
-    <div style={{ position: 'relative', width: w, height: h, borderRadius: h / 2, background: t.dark ? t.raised : t.text, boxShadow: surfaceShadow(t, 40, u), display: 'flex', alignItems: 'center', gap: h * 0.2, padding: `0 ${h * 0.36}px 0 ${h * 0.2}px`, boxSizing: 'border-box' }}>
-      <div style={{ width: h * 0.62, height: h * 0.62, borderRadius: '50%', background: t.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-        <Glyph name={glyph} size={h * 0.36} color={t.accentInk} weight={2.8} />
-      </div>
+    <div style={{ position: 'relative', width: w, height: h, borderRadius: h / 2, background: t.dark ? t.raised : t.text, boxShadow: surfaceShadow(t, 40, u), display: 'flex', alignItems: 'center', gap: h * 0.2, padding: `0 ${h * 0.36}px 0 ${glyph ? h * 0.2 : h * 0.36}px`, boxSizing: 'border-box' }}>
+      {glyph && (
+        <div style={{ width: h * 0.62, height: h * 0.62, borderRadius: '50%', background: t.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+          <Glyph name={glyph} size={h * 0.36} color={t.accentInk} weight={2.8} />
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: h * 0.02 }}>
         <span data-text={`${id}-title`} style={face(sub ? h * 0.34 : h * 0.38, 600, t.dark ? t.text : t.ground)}>
           {title}

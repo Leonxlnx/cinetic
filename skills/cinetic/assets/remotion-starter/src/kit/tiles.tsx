@@ -2,7 +2,7 @@
 // square. A tile is a small lit card: its real mark (kit/logos.tsx, when the film has fetched it) or the glyph the film
 // gives, a label, a sub line and a tiny preview of what it holds (a document, a chart, a list, a person, a table, code),
 // drawn from the node's own lines, rows, values or code: a preview without its content draws nothing and reports
-// kit-empty, never sample lines. Tiles arrive tumbling in 3D (20-60 degrees, the house tileArrival), settle on depth
+// kit-empty, never sample lines; a tile given no node (an index past the end of an empty list) is the empty state. Tiles arrive tumbling in 3D (20-60 degrees, the house tileArrival), settle on depth
 // bands (smaller and softer further back) and drift with parallax:
 //   ContentTile    one tile at a size (px), any aspect
 //   ContentWall    a wall: the given nodes take the slots nearest the centre, the rest is filled from `fill` (the
@@ -59,8 +59,16 @@ const T: React.FC<{ id: string; px: number; u: number; weight?: number; color: s
   </span>
 );
 
+/** Is this a node with content of the film's own (a label, a mark, a glyph or a preview's content)? undefined is not. */
+export const isNode = (node: TileNode | null | undefined): node is TileNode =>
+  !!node && typeof node === 'object' && !!(node.label || node.logo || node.glyph || node.photo || node.lines?.length || node.rows?.length || node.code?.length || node.values?.length);
+
+/** The film's own nodes of a list (holes from an index past the end dropped). */
+const ownNodes = (list?: readonly (TileNode | null | undefined)[] | null): TileNode[] => (Array.isArray(list) ? list.filter(isNode) : []);
+
 /** The preview kind a node's own content makes (null: no preview). */
 export const previewKind = (node: TileNode): TilePreview | null => {
+  if (!node) return null;
   if (node.preview) return node.preview;
   if (node.photo) return 'photo';
   if (node.code?.length) return 'code';
@@ -194,6 +202,8 @@ export const ContentTile: React.FC<{ node: TileNode; theme?: KitTheme; w: number
   const u = useKitScale(scale);
   const h = w / aspect;
   const r = Math.min(w, h) * 0.13;
+  // no item of the film's own (an index past the end of an empty list, a node with nothing in it): the empty state, never a crash
+  if (!isNode(node)) return <KitEmpty part="ContentTile" need="node (one of the film's own items: a label, a mark or glyph, its content)" theme={t} w={w} h={h} r={r} inline style={style} />;
   const icon = Math.min(w, h) * 0.2;
   const pad = Math.min(w, h) * 0.075;
   const px = Math.max(9 * u, Math.min(w, h) * 0.075);
@@ -225,7 +235,7 @@ export const ContentTile: React.FC<{ node: TileNode; theme?: KitTheme; w: number
  */
 export const worldNodes = (w: SampleWorld, n = 24): TileNode[] => {
   const out: TileNode[] = [];
-  if (!w.records.length) return out;
+  if (!w?.records?.length) return out;
   const faces = w.people.filter((p) => p.photo);
   for (let i = 0; out.length < n && i < n * 2; i++) {
     if (i % 4 === 3 && faces.length) {
@@ -277,7 +287,8 @@ const Placed: React.FC<{ slot: TileSlot; node: TileNode; frame: number; at: numb
 
 /** The other slots' content: the film's `fill`, else its own nodes in turn; null when the film gave nothing. */
 const fillFor = (o: FieldCommon) => {
-  const pool = o.fill?.length ? o.fill : o.nodes;
+  const fill = ownNodes(o.fill);
+  const pool = fill.length ? fill : ownNodes(o.nodes);
   if (!pool.length) return null;
   return (i: number) => pool[i % pool.length];
 };
@@ -290,7 +301,8 @@ const fillFor = (o: FieldCommon) => {
 export const ContentWall: React.FC<FieldCommon & { cols?: number; rows?: number; clear?: { w: number; h: number } }> = (props) => {
   const film = useFilm(); // the composition's size and rate, never the timeline's (a variant cut)
   const u = uOf(film);
-  const { nodes, frame, start = 0, w = film.width, h = film.height, tile = 230 * u, stagger = 2, drift = 14 * u, seed = 'wall' } = props;
+  const { frame, start = 0, w = film.width, h = film.height, tile = 230 * u, stagger = 2, drift = 14 * u, seed = 'wall' } = props;
+  const nodes = ownNodes(props.nodes);
   const fps = film.fps;
   const cell = tile * 1.24;
   const cols = props.cols ?? Math.max(4, Math.round(w / cell) + 1);
@@ -315,7 +327,8 @@ export const ContentWall: React.FC<FieldCommon & { cols?: number; rows?: number;
 export const ContentRing: React.FC<FieldCommon & { count?: number; rx?: number; ry?: number; orbit?: number }> = (props) => {
   const film = useFilm();
   const u = uOf(film);
-  const { nodes, frame, start = 0, w = film.width, h = film.height, tile = 200 * u, stagger = 3, rx = 680 * u, ry = 350 * u, orbit = 4, seed = 'ring' } = props;
+  const { frame, start = 0, w = film.width, h = film.height, tile = 200 * u, stagger = 3, rx = 680 * u, ry = 350 * u, orbit = 4, seed = 'ring' } = props;
+  const nodes = ownNodes(props.nodes);
   const fps = film.fps;
   const n = Math.max(nodes.length, props.count ?? 14);
   const filler = fillFor(props);
@@ -339,7 +352,8 @@ export const ContentRing: React.FC<FieldCommon & { count?: number; rx?: number; 
 export const ContentTicker: React.FC<FieldCommon & { rows?: number; speed?: number; curve?: number; gap?: number }> = (props) => {
   const film = useFilm();
   const u = uOf(film);
-  const { nodes, frame, start = 0, w = film.width, h = film.height, tile = 240 * u, stagger = 2, speed = 90 * u, curve = 16, seed = 'ticker', rows = 2, gap = 34 * u } = props;
+  const { frame, start = 0, w = film.width, h = film.height, tile = 240 * u, stagger = 2, speed = 90 * u, curve = 16, seed = 'ticker', rows = 2, gap = 34 * u } = props;
+  const nodes = ownNodes(props.nodes);
   const fps = film.fps;
   const t = (frame - start) / fps;
   const th = tile / (props.aspect ?? 1);

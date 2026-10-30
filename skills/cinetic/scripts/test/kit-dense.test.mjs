@@ -20,7 +20,9 @@
  *   6. Nothing sample by default: every kit part given no content of the film's own (DenseScreen, the panels,
  *      KitFallback, walls, rings, tickers, a preview without its content, FileThumb, Photo, an unfetched AppIcon) draws
  *      its empty state (data-kit-empty) with no string of the kit's samples in it, and reports it in kitEmpties(); under
- *      the ship gate (CINETIC_GATE=ship) it throws. Field, Row and Notice draw no glyph the film did not pick. The retired
+ *      the ship gate (CINETIC_GATE=ship) it throws. A tile or a field given an undefined node (an index past the end of
+ *      an empty list) draws the empty state instead of crashing; a code panel without lines draws no bare gutter. Field,
+ *      Row, Notice and Toast draw no glyph the film did not pick. The retired
  *      sampleWorld() returns an empty world. filmWorld() adds up from the film's rows alone and its screen shows no
  *      chrome string the film did not give ("Search", "This month", "Pro", "Share").
  *
@@ -127,7 +129,20 @@ const bare: Record<string, string> = {
   FileThumb: film(60, h(K.FileThumb, { theme: t, w: 300, h: 200, seed: 41 })),
   Photo: film(60, h(K.Photo, { theme: t, w: 300, h: 200, seed: 3 })),
   AppIcon: film(60, h(K.AppIcon, { logo: 'no-such-mark', size: 120, theme: t })),
+  CodePanel: film(60, h(K.CodePanel, { theme: t, w: 900, lines: [], rows: 4 })),
 };
+// an index past the end of an empty list (a template's NODES[i % NODES.length] over no nodes): the empty state, never a crash
+const holes: Record<string, string> = {};
+for (const [name, el] of [
+  ['ContentTile', () => h(K.ContentTile, { node: [][0] as any, theme: t, w: 240 })],
+  ['ContentTileBlank', () => h(K.ContentTile, { node: { label: '' } as any, theme: t, w: 240 })],
+  ['ContentWall', () => h(K.ContentWall, { nodes: [undefined, undefined] as any, fill: [undefined] as any, frame: 400, theme: t, blur: false })],
+  ['ContentRing', () => h(K.ContentRing, { nodes: [undefined] as any, frame: 400, theme: t, blur: false })],
+  ['ContentTicker', () => h(K.ContentTicker, { nodes: [undefined] as any, frame: 400, theme: t, blur: false })],
+  ['WallWithHoles', () => h(K.ContentWall, { nodes: [own[0], undefined] as any, fill: [undefined, own[1]] as any, frame: 400, theme: t, seed: 'w', blur: false })],
+] as const) { try { holes[name] = film(60, (el as any)()); } catch (e) { holes[name] = 'THROW ' + String((e as Error).message); } }
+const holeNodes = K.worldNodes(undefined as any, 4).length;
+const toastBare = film(60, h(K.Toast, { theme: t, title: 'Moved to Tuesday', w: 520, h: 124 }));
 const empties = [...new Set(K.kitEmpties().map((x: any) => x.part))];
 const noGlyph = { field: film(60, h(K.Field, { theme: t, w: 900, h: 110 }, 'Walk home, Monday')), row: film(60, h(K.Row, { theme: t, w: 900, h: 110, title: 'Today' })), notice: film(60, h(K.Notice, { theme: t, w: 900, h: 130, title: 'Book the dentist', body: 'Added to Tuesday' })) };
 const retired = K.sampleWorld('film-x', { kind: 'billing' });
@@ -151,7 +166,7 @@ let shipThrow = '';
 try { film(60, h(K.DenseScreen, { frame: 60, theme: t })); } catch (e) { shipThrow = String((e as Error).message); }
 delete env.CINETIC_GATE;
 const sampleStrings = [...S.docLines, ...S.listLines, ...S.fileStems, ...S.codeLines.map((c: any) => c[1]), S.review.product, S.review.project.title, S.review.chat.title, S.review.stats.views.label, S.review.stats.views.since, S.budgets.product, S.budgets.team, 'Weekly spend', ...S.companies.pre.flatMap((p: string) => S.companies.suf.map((s: string) => p + ' ' + s))];
-console.log(JSON.stringify({ worlds, same, differ, screens, glides, fs60, fs30, fixed, av: { big: avatar(96), chip: avatar(32), half: avatar(220, 'halftone') }, cuts, dots: { n: dots.length, rs: dots.map((d: any) => d[2]), maxY: Math.max(...dots.map((d: any) => d[1])), corner: cornerR(dots), invCorner: cornerR(inv) }, stack, tiles, personBare, tileBare, tileLabel, fallbackTile, nodes, wall, ring, ticker, fallback, wallOwn, bare, empties, noGlyph, retired: { records: retired.records.length, people: retired.people.length, origin: retired.origin }, fw: { bad: K.checkWorld(FW), counts: FW.statuses.map((s: any) => s.count), focus: FW.focus, series: FW.series.length }, filmScreen, filmBoard, filmNodes, shipThrow, sampleStrings, wallSlots: K.wallSlots(4, { cols: Math.max(4, Math.round(1920 / (230 * 1.24)) + 1), rows: Math.max(3, Math.round(1080 / (230 * 1.24 * 0.92)) + 1), cell: 230 * 1.24, w: 1920, h: 1080, seed: 'w' }).length }));
+console.log(JSON.stringify({ worlds, same, differ, screens, glides, fs60, fs30, fixed, av: { big: avatar(96), chip: avatar(32), half: avatar(220, 'halftone') }, cuts, dots: { n: dots.length, rs: dots.map((d: any) => d[2]), maxY: Math.max(...dots.map((d: any) => d[1])), corner: cornerR(dots), invCorner: cornerR(inv) }, stack, tiles, personBare, tileBare, holes, holeNodes, toastBare, tileLabel, fallbackTile, nodes, wall, ring, ticker, fallback, wallOwn, bare, empties, noGlyph, retired: { records: retired.records.length, people: retired.people.length, origin: retired.origin }, fw: { bad: K.checkWorld(FW), counts: FW.statuses.map((s: any) => s.count), focus: FW.focus, series: FW.series.length }, filmScreen, filmBoard, filmNodes, shipThrow, sampleStrings, wallSlots: K.wallSlots(4, { cols: Math.max(4, Math.round(1920 / (230 * 1.24)) + 1), rows: Math.max(3, Math.round(1080 / (230 * 1.24 * 0.92)) + 1), cell: 230 * 1.24, w: 1920, h: 1080, seed: 'w' }).length }));
 `;
 
 /** The strings in a markup: data-text elements and data-texture spans, each with its largest font size. */
@@ -266,7 +281,16 @@ try {
     const tag = part === 'DenseScreenRetired' ? 'DenseScreen' : part;
     result(new RegExp(`data-kit-empty="${tag}"`).test(html) && n === 0 && !leak(html).length && !/data-drawn/.test(html), `${part} with no content of the film's own: its empty state (data-kit-empty), no string, nothing drawn`, `${n} strings; leaks ${leak(html).slice(0, 3).join(', ')}`);
   }
-  const wantEmpty = ['sampleWorld', 'DenseScreen', 'ProjectPanel', 'ChatCard', 'FeedCard', 'StatCard', 'ApprovalsCard', 'BudgetCard', 'CategoryRows', 'ChartCard', 'RingCard', 'AmountToast', 'ReportCover', 'KitFallback', 'ContentWall', 'ContentRing', 'ContentTicker', 'FileThumb', 'Photo', 'AppIcon'];
+  for (const part of ['ContentTile', 'ContentTileBlank', 'ContentWall', 'ContentRing', 'ContentTicker']) {
+    const html = P.holes[part];
+    const tag = part === 'ContentTileBlank' ? 'ContentTile' : part;
+    result(!html.startsWith('THROW') && new RegExp(`data-kit-empty="${tag}"`).test(html) && strings(html).length === 0, `${part} given an undefined node (an index past the end of an empty list): its empty state, no crash`, html.slice(0, 90));
+  }
+  const holed = P.holes.WallWithHoles;
+  result(!holed.startsWith('THROW') && !/data-kit-empty/.test(holed) && tileCount(holed) === P.wallSlots && strings(holed).every((s) => s), 'ContentWall with holes in its nodes and fill: the holes dropped, every slot one of the film items', holed.slice(0, 90));
+  result(P.holeNodes === 0, 'worldNodes(undefined): no nodes, no crash');
+  result(!/<svg/.test(P.toastBare) && />Moved to Tuesday</.test(P.toastBare), 'Toast draws no glyph the film did not pick (no default check)');
+  const wantEmpty = ['sampleWorld', 'DenseScreen', 'ProjectPanel', 'ChatCard', 'FeedCard', 'StatCard', 'ApprovalsCard', 'BudgetCard', 'CategoryRows', 'ChartCard', 'RingCard', 'AmountToast', 'ReportCover', 'KitFallback', 'ContentWall', 'ContentRing', 'ContentTicker', 'FileThumb', 'Photo', 'AppIcon', 'CodePanel', 'ContentTile'];
   result(wantEmpty.every((p) => P.empties.includes(p)), 'kitEmpties(): every empty part is reported once (precheck lists them)', wantEmpty.filter((p) => !P.empties.includes(p)).join(', '));
   result(/kit-empty: DenseScreen/.test(P.shipThrow), 'under the ship gate an empty kit part throws (a film never ships one)', P.shipThrow.slice(0, 80));
   result(!/<svg/.test(P.noGlyph.field) && !/<svg/.test(P.noGlyph.row) && !/<svg/.test(P.noGlyph.notice), 'Field, Row and Notice draw no glyph the film did not pick (no default link, grid or bolt)');
