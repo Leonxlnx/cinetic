@@ -26,8 +26,8 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 //   75 %), a display or hero line wider than 84 %.
 // - resting states only: a line inside a type push in flight ([data-audit-push="moving"], fx/TypePush) is a camera
 //   move, held to no safe zone, width or role band; a push landed at a bleed scale ([data-audit-push="bleed"]) is a
-//   declared bleed: past the safe zone it must cross the frame's edge, never rest half in the margin. A claim set flush
-//   left on the accent ([data-audit-claim], fx/TypeClaim) keeps a 2.5 % margin on the left instead of the zone's.
+//   declared bleed: past the safe zone it must cross the frame's edge, never rest half in the margin. A claim on the
+//   accent ([data-audit-claim], fx/TypeClaim) keeps a 2.5 % margin at its sides instead of the zone's.
 // It draws the boxes and the safe zone, and logs one JSON line per frame:
 //   CINETIC_AUDIT {"comp":"Film","frame":120,"safe":{...},"minPx":22,"words":4,"uiWords":0,"boxes":[...],"issues":[...],"warnings":[...]}
 // Each box carries its effective opacity (its own times its ancestors', times its most opaque text inside: a line
@@ -85,7 +85,7 @@ export const TYPE_BANDS: [role: string, lo: number, hi: number][] = [
 ];
 /** Widths as a share of the frame width: a line (a statement) 61 %, a calm sentence (a line under a 6.5 % cap) 75 %, a display or hero line 84 %. */
 export const TYPE_WIDTH = { line: 0.61, sentence: 0.75, sentenceCap: 6.5, display: 0.84, hero: 0.84 } as const;
-/** A claim flush left on the accent keeps this share of the frame width on its left (fx/TypeClaim: 3 %). */
+/** A claim on the accent keeps this share of the frame width at its sides (fx/TypeClaim: 3 %). */
 export const CLAIM_MARGIN = 0.025;
 /** The smallest picture the audit logs, as a share of the frame's area (a chip or an icon is not a picture beside a line). */
 export const PICTURE_MIN = 0.02;
@@ -207,7 +207,7 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         scroll: el.closest('[data-audit-scroll]') !== null || undefined, // a row of a list scrolling through the frame (a feed): it crosses the edges and passes under the UI floating over it
         smear: el.closest('[data-audit-smear]') !== null || undefined, // drawn inside an active smear (fx/Defocus DirBlur): blurred along its motion
         push: push === 'moving' || push === 'bleed' ? push : undefined, // inside a type push (fx/TypePush): in flight, or landed as a declared bleed
-        claim: el.closest('[data-audit-claim]') !== null || undefined, // a claim flush left on the accent (fx/TypeClaim)
+        claim: el.closest('[data-audit-claim]') !== null || undefined, // a claim on the accent (fx/TypeClaim): 2.5 % side margins
         crosses: fl < -1 || ft < -1 || fl + full.width / zoom > width + 1 || ft + full.height / zoom > height + 1 || undefined, // the unclipped box runs past the frame's edge
         x: round(ux((r.left - origin.left) / zoom)),
         y: round(uy((r.top - origin.top) / zoom)),
@@ -229,9 +229,10 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
     const issues: Issue[] = [];
     for (const b of boxes) {
       const left = b.claim ? Math.min(SAFE.left, Math.round(CLAIM_MARGIN * width)) : SAFE.left;
+      const right = b.claim ? Math.min(SAFE.right, Math.round(CLAIM_MARGIN * width)) : SAFE.right;
       const out = [
         b.x < left && `left ${b.x}px < ${left}`,
-        b.x + b.w > width - SAFE.right && `right ${round(b.x + b.w)}px > ${width - SAFE.right}`,
+        b.x + b.w > width - right && `right ${round(b.x + b.w)}px > ${width - right}`,
         b.y < SAFE.top && `top ${b.y}px < ${SAFE.top}`,
         b.y + b.h > height - SAFE.bottom && `bottom ${round(b.y + b.h)}px > ${height - SAFE.bottom}`,
       ].filter(Boolean);

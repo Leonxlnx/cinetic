@@ -114,11 +114,11 @@ result(near(p.word.x, 960 - 1288 / 2 + (504 + 504 + 336) / 2, 1e-6) && near(p.la
 const c = D.claim;
 const capOf = (L) => (L.size * D.capEm) / 1080; // the face's cap in em, as TypeClaim measures it
 result(near(capOf(c), 0.165, 1e-9) && c.track === -0.04 && c.weight === 600 && c.fits, 'claim: cap height 16.5 % of the frame height, -0.04 em, weight 600', JSON.stringify({ size: c.size }));
-result(c.lines.length >= 2 && c.lines.length <= 3 && c.lines.every((l) => near(l.x + l.width / 2, 960, 1e-6) && l.x >= 96 && l.x + l.width <= 1920 - 96) && near(c.lines[1].top - c.lines[0].top, c.size * 0.98, 1e-6) && Math.abs((c.lines[0].top + c.lines[c.lines.length - 1].top + c.size) / 2 - 540) < 1e-6, 'claim: broken into lines that fit, each centred on the frame, lead 0.98, the block centred on the frame height', c.lines.map((l) => l.text).join(' / '));
+result(c.lines.length >= 2 && c.lines.length <= 3 && c.lines.every((l) => near(l.x + l.width / 2, 960, 1e-6) && l.x >= 58 && l.x + l.width <= 1920 - 58) && near(c.lines[1].top - c.lines[0].top, c.size * 0.98, 1e-6) && Math.abs((c.lines[0].top + c.lines[c.lines.length - 1].top + c.size) / 2 - 540) < 1e-6, 'claim: broken into lines that fit, each centred on the frame, lead 0.98, the block centred on the frame height', c.lines.map((l) => l.text).join(' / '));
 const cl = D.claimLeft;
 result(cl.left === 58 && cl.lines.every((l) => l.x === 58 && l.x + l.width <= 1920 - 96), "claim: justify 'left' sets it flush left at 3 % (58 px)", JSON.stringify(cl.lines.map((l) => l.x)));
 result(D.long.cap >= 0.16 - 1e-9 && D.long.cap < 0.165 && D.long.lines.length === 3 && D.long.fits, 'claim: a long claim comes down toward 16 % to hold in three lines, never under', JSON.stringify({ cap: D.long.cap, lines: D.long.lines.length, fits: D.long.fits }));
-result(D.longC.cap >= 0.16 - 1e-9 && D.longC.lines.every((l) => l.x >= 96 - 1e-6 && l.x + l.width <= 1920 - 96 + 1e-6), 'claim: centred, a long claim keeps both safe edges (it says when it no longer fits)', JSON.stringify({ cap: D.longC.cap, lines: D.longC.lines.length, fits: D.longC.fits }));
+result(D.longC.cap >= 0.16 - 1e-9 && D.longC.lines.every((l) => l.x >= 58 - 1e-6 && l.x + l.width <= 1920 - 58 + 1e-6), "claim: centred, a long claim keeps the claim's 3 % margin on both sides (it says when it no longer fits)", JSON.stringify({ cap: D.longC.cap, lines: D.longC.lines.length, fits: D.longC.fits }));
 result(D.heavy.weight === 700, 'claim: the weight stays in 600-700', String(D.heavy.weight));
 result(D.ink.join() === '#0D0E10,#F5F6F7,#0D0E10', 'claim: the type is paper or ink on the accent, whichever reads', D.ink.join());
 {

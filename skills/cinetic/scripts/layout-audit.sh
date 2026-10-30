@@ -16,7 +16,7 @@
 # sizes at once; line, sentence, display and hero widths) are warnings; --strict makes them fail. The safe
 # zone holds resting states: a line inside a type push in flight (data-audit-push="moving", fx/TypePush) is
 # a camera move (no safe-area, speed or role check); a push landed as a declared bleed must cross the frame's
-# edge; a claim flush left on the accent (data-audit-claim) keeps a 2.5 % left margin; with --speed, a box
+# edge; a claim on the accent (data-audit-claim) keeps a 2.5 % margin at its sides; with --speed, a box
 # moving faster than the read limit outside its reading window is listed apart (`moving`), not failed. The audit stills
 # (boxes drawn, safe zone dashed) are kept, and the tweens the audited frames evaluate (lib/registry.ts)
 # are collected for scripts/grammar-score.mjs. Each audited frame also records where the official marks are

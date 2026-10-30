@@ -19,8 +19,9 @@ import { Words } from './Words';
  * toward 3 % (a few tenths of a px a frame at its far edge; the layout leaves room for it): the hold keeps moving and
  * never stops dead.
  *
- * A flush-left block is tagged data-audit-claim: the layout audit holds it to a 2.5 % left margin instead of the zone's
- * (the claim's 3 % sits inside the title-safe 5 % on purpose); its other edges keep the zone. claimLayout() is pure (pass
+ * The block is tagged data-audit-claim: the layout audit holds it to a 2.5 % margin at its sides instead of the zone's
+ * (the claim's 3 % sits inside the title-safe 5 % on purpose, centred on both sides, flush left on the left); its top
+ * and bottom keep the zone. claimLayout() is pure (pass
  * `measure` in Node; the component measures the real font under FontGate).
  */
 
@@ -57,8 +58,8 @@ const breakLines = (words: string[], size: number, weight: number, track: number
 /**
  * The claim's layout in frame px (pure with `measure`): the size from the cap height, each line centred on the frame
  * (flush left at the margin with `justify: 'left'`), each line's top. If a word or the line count does not fit, the size
- * comes down toward capMin (16 %); `fits` says whether it held there. The edges keep the safe inset `right` (default 5 %
- * of the width): both of them when centred, the right one when flush left.
+ * comes down toward capMin (16 %); `fits` says whether it held there. Centred, both sides keep the claim's 3 % margin;
+ * flush left, the right edge keeps the safe inset `right` (default 5 % of the width).
  */
 export const claimLayout = (s: ClaimSpec, film?: Partial<FilmCtx>, measure: Measure = monoMeasure, right?: number): ClaimLayout => {
   const { width, height } = sizeOf(film);
@@ -66,7 +67,7 @@ export const claimLayout = (s: ClaimSpec, film?: Partial<FilmCtx>, measure: Meas
   const left = Math.round(CLAIM.margin * width);
   const r = right ?? Math.round(0.05 * width);
   const centred = (s.justify ?? 'centre') === 'centre';
-  const maxW = (centred ? width - 2 * r : width - left - r) / (1 + CLAIM.creepMax); // room for the hold's creep
+  const maxW = (centred ? width - 2 * left : width - left - r) / (1 + CLAIM.creepMax); // room for the hold's creep
   const maxLines = s.maxLines ?? CLAIM.maxLines;
   const words = s.text.split(/\s+/).filter(Boolean);
   const capOf = (cap: number) => (cap * height) / CLAIM.capEm;
@@ -141,7 +142,7 @@ export const AccentClaim: React.FC<ClaimSpec & { at: number; frame: number; floo
   let n = 0;
   return (
     <div style={{ position: 'absolute', inset: 0, background: flood ? ground : undefined, overflow: 'hidden', ...style }}>
-      <div data-audit-claim={spec.justify === 'left' ? '' : undefined} style={{ position: 'absolute', inset: 0, transformOrigin: spec.justify === 'left' ? `${L.left}px 50%` : '50% 50%', transform: `scale(${(1 + grow).toFixed(5)})` }}>
+      <div data-audit-claim style={{ position: 'absolute', inset: 0, transformOrigin: spec.justify === 'left' ? `${L.left}px 50%` : '50% 50%', transform: `scale(${(1 + grow).toFixed(5)})` }}>
         {L.lines.map((l, i) => {
           const start = at + n * gap;
           n += l.words;

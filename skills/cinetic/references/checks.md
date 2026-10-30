@@ -182,7 +182,7 @@ evaluate (what `grammar-score.mjs` reads for curve roles, durations, staggers an
   faults per text, not per audited frame.
 - The safe zone holds resting states: a line inside a type push in flight (`data-audit-push="moving"`, `fx/TypePush`)
   is a camera move (no safe-area, speed or role check); a push landed as a declared bleed must cross the frame's edge,
-  never rest half in the margin; a claim set flush left on the accent (`data-audit-claim`, `fx/TypeClaim` `justify: 'left'`) keeps a 2.5 % left margin;
+  never rest half in the margin; a claim on the accent (`data-audit-claim`, `fx/TypeClaim`) keeps a 2.5 % margin at its sides;
   with `--speed`, a box past the zone while moving faster than the read limit outside its read is listed apart
   (`moving`), not failed.
 - `--cues` adds the cue frames; `--safe feed9x16` the feed presets.
