@@ -28,7 +28,7 @@ import { HUB, systemK, systemSize } from './System';
 /** A placed tile: its centre, its size, its depth (0 near .. 1 far), its tumble, the frame it arrives. */
 type Cell = { x: number; y: number; size: number; depth: number; tilt: [number, number]; at: number; node: TileNode; module: number; d: number; plane?: 'far' | 'mid' | 'near' };
 
-const MODULES: TileNode[] = EXPLAIN.modules.map((m, i) => ({ label: m.label, glyph: m.glyph, logo: m.logo, preview: (['doc', 'chart', 'list', 'table', 'bars', 'person', 'code'] as const)[i % 7], sub: WORLD.records[i % WORLD.records.length]?.id, seed: `${EXPLAIN.name}:m${i}` }));
+const MODULES: TileNode[] = EXPLAIN.modules.map((m, i) => ({ label: m.label, glyph: m.glyph, logo: m.logo, sub: WORLD.records[i % Math.max(1, WORLD.records.length)]?.title, seed: `${EXPLAIN.name}:m${i}` }));
 const FILL = worldNodes(WORLD, 16);
 const tumble = (k: string): [number, number] => [(rand(`${k}:a`) < 0.5 ? -1 : 1) * (20 + 40 * rand(`${k}:x`)), (rand(`${k}:b`) < 0.5 ? -1 : 1) * (20 + 40 * rand(`${k}:y`))];
 

@@ -6,7 +6,7 @@ import { Defocus, DirBlur } from '../fx/Defocus';
 import { Lit } from '../fx/Lit';
 import { growthSteps } from '../fx/Roll';
 import { flickFeed, flickState } from '../fx/Scroll';
-import { Avatar, AvatarStack, ContentTicker, DenseScreen, face, KIT_TYPE, Pill, sampleWorld, type SampleWorld, surfaceShadow, type TileNode } from '../kit';
+import { Avatar, AvatarStack, ContentTicker, DenseScreen, face, filmWorld, KIT_TYPE, Pill, type SampleWorld, surfaceShadow, type TileNode } from '../kit';
 import { clamp, E, fd, lmix, mix, prog } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
@@ -56,14 +56,15 @@ export const facePhoto = (row: (typeof WALK.feed.rows)[number]): string | undefi
   return ph ? staticFile(ph) : undefined;
 };
 
-/** The product's screen of what it reads: a support-desk world (kit/data.ts) whose rows are the feed's people and words. */
-export const readWorld = (): SampleWorld => {
-  const w = sampleWorld(`${WALK.name}:read`, { kind: 'support', rows: Math.max(12, WALK.feed.rows.length + 3) });
-  const n = Math.min(WALK.feed.rows.length, w.people.length);
-  const people = w.people.map((p, i) => (i < n ? { ...p, name: WALK.feed.rows[i].who, first: WALK.feed.rows[i].who.split(' ')[0], initials: WALK.feed.rows[i].initials, photo: facePhoto(WALK.feed.rows[i]) } : p));
-  const records = w.records.map((r, i) => (i < WALK.feed.rows.length ? { ...r, title: WALK.feed.rows[i].text, who: i % people.length } : r));
-  return { ...w, people, records, focus: WALK.feed.key };
-};
+/** The product's screen of what it reads: the feed's own rows, one person and what they wrote each (kit/data.ts filmWorld). */
+export const readWorld = (): SampleWorld =>
+  filmWorld({
+    workspace: WALK.name,
+    noun: [WALK.feed.unit, WALK.feed.unit],
+    people: WALK.feed.rows.map((r) => ({ name: r.who, initials: r.initials, photo: facePhoto(r) })),
+    records: WALK.feed.rows.map((r, i) => ({ title: r.text, who: i })),
+    focus: WALK.feed.key,
+  });
 /** The lens's schedule: down the rows to the key row, each glide a little sooner than the last (16 f glides that overlap into one travel). */
 export const LENS = (() => {
   const n = WALK.feed.key;

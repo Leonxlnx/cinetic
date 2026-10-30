@@ -1,6 +1,6 @@
 // The product moment: one world drawn at the full frame and shown twice, inside the promise line (scaled into the
 // pill, so the pill's last frame IS the next shot's first) and full bleed in the picture act. By default it is the
-// product's own screen built in code (kit DenseScreen from a sample world seeded by the name: rebuild it from the
+// product's own screen built in code (kit DenseScreen from explain.ts screen: fill it from the
 // product's real screens before shipping), a lit panel on its own lit ground; a supplied photograph only when the
 // brief gives one (explain.ts picture.kind 'photo'). The picture slot's device decides the space:
 //   turn   the screen as a lit, tilted panel (fx/Lit); the film's one 3D turn: the camera swings 22 degrees round it
@@ -13,7 +13,7 @@ import { U } from '../brand/tokens';
 import { DepthStack, type DepthItem, depthPush } from '../fx/DepthStack';
 import { LitGround } from '../fx/Grounds';
 import { Lit } from '../fx/Lit';
-import { ContentTile, DenseScreen, Photo, sampleWorld, worldNodes } from '../kit';
+import { ContentTile, DenseScreen, filmWorld, Photo, worldNodes } from '../kit';
 import { E, mix, prog } from '../lib/anim';
 import { CAM3D } from '../lib/camera';
 import { EXPLAIN } from '../explain';
@@ -21,8 +21,8 @@ import { DEAL } from '../deal';
 import { ACT, f60x, FPS, H, W } from '../timeline';
 import { GROUNDS, LightEvent, PAGE, SHOT } from './stage';
 
-/** The world the screen shows: the film's own, seeded by its name. */
-export const WORLD = sampleWorld(EXPLAIN.name, { kind: EXPLAIN.picture.world });
+/** The world the screen shows: the film's own rows (explain.ts screen). */
+export const WORLD = filmWorld(EXPLAIN.screen);
 /** The panel at rest (px at 1080p): the screen's size and centre. */
 export const PANEL = { w: 1360, h: 782, x: 960, y: 540 } as const;
 

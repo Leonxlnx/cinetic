@@ -43,6 +43,8 @@ export const REEL = {
    */
   record: {
     photo: '' as string,
+    /** Without a photo, the record shows as its file: the file's own name and size as the product lists them. */
+    file: { name: '[record-file.pdf]', size: '[size]' },
     rows: [
       { label: '[Field]', value: '[Value]' },
       { label: '[Field]', value: '[Value]' },

@@ -2,7 +2,7 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { FONT, U } from '../brand/tokens';
 import { Lit } from '../fx/Lit';
-import { CodePanel, DenseScreen, face } from '../kit';
+import { CodePanel, DenseScreen, face, filmWorld } from '../kit';
 import { E, prog, track } from '../lib/anim';
 import { glideValue } from '../lib/continuity';
 import { type CamMove, type Shot, swing3d } from '../lib/camera';
@@ -12,6 +12,9 @@ import { ReadBack } from '../fx/ReadBack';
 import { ACT, copy, CUE, DEAL, f60, f60x, H, W } from '../timeline';
 import { TEASER } from '../teaser';
 import { BASE, Caption, glass, GROUNDS, INK, useAbs, World } from './stage';
+
+/** The split window's live screen: the product's own rows (teaser.ts screen). */
+const WORLD = filmWorld(TEASER.screen);
 
 // WINDOW - the product working, under the film's one 3D turn (lib/camera swing3d: 22 degrees on one axis over 108 f
 // at 60 fps on E.strongInOut, landing nearly front-on and creeping on). The app window arrives on the turn itself (one
@@ -107,7 +110,7 @@ export const Window: React.FC = () => {
             </div>
             {split && (
               <div style={{ position: 'absolute', left: 0, top: 0, width: w * 0.52, height: h - head, overflow: 'hidden', transform: `translate3d(${(w * 0.48).toFixed(2)}px, ${head.toFixed(2)}px, 0)`, boxShadow: `inset ${(1.5 * U).toFixed(2)}px 0 0 ${INK.line}` }}>
-                <DenseScreen frame={F} theme={INK} seed={TEASER.name} kind={TEASER.world.kind} layout="board" w={w * 0.52} h={h - head} scale={0.7} view={0.9} focus={[{ at: CUE.stream, row: 0 }, { at: CUE.stream + f60(60), row: 1 }, { at: CUE.lens, row: 2 }]} drawAt={CUE.stream} lift={0} />
+                <DenseScreen frame={F} theme={INK} world={WORLD} layout="board" w={w * 0.52} h={h - head} scale={0.7} view={0.9} focus={[{ at: CUE.stream, row: 0 }, { at: CUE.stream + f60(60), row: 1 }, { at: CUE.lens, row: 2 }]} drawAt={CUE.stream} lift={0} />
               </div>
             )}
           </div>

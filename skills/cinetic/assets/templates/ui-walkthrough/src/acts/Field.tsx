@@ -5,7 +5,7 @@ import { Cursor, cursorRise, pressAt } from '../fx/Cursor';
 import { DirBlur } from '../fx/Defocus';
 import { type LitProps, Lit } from '../fx/Lit';
 import { ERASE_HOUSE, eraseSchedule, TypeOn, typeSchedule } from '../fx/TypeOn';
-import { AppIcon, AppWindow, ContentTile, Field as FieldPart, hasLogo, Micro, sampleWorld, type TileNode } from '../kit';
+import { AppIcon, AppWindow, ContentTile, Field as FieldPart, filmWorld, hasLogo, Micro, type TileNode } from '../kit';
 import { mixColor } from '../lib/color';
 import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
 import { landBeforeCut } from '../lib/continuity';
@@ -50,7 +50,7 @@ landBeforeCut({ from: CUE.pullBack, dur: f60x(PULL.frames60), ease: E.strongInOu
 export const Field: React.FC = () => {
   const F = useAbs('field');
   const t = themeOf('field');
-  const world = sampleWorld(`${WALK.name}:field`);
+  const world = filmWorld({ workspace: WALK.name, records: WALK.results.map((r) => ({ title: r.title, sub: r.meta })) });
   const lit: LitProps = { x: WIN.cx, y: WIN.cy, w: WIN.w, h: WIN.h, r: 26 * U, tilt: { x: 9, y: -8 }, ground: GROUNDS.field.base };
   // the claim's zoom carried in and settling; the pull-back about the upper third; the whip up into the cut
   const k = lmix(CLAIM_EXIT.k, 1, prog(F, ACT.field.from, ACT.field.from + f60x(40), E.glideOut)) * lmix(1, PULL.k, prog(F, CUE.pullBack, CUE.pullBack + f60x(PULL.frames60), E.strongInOut));

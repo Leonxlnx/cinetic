@@ -6,6 +6,7 @@
 // or a fancy word: scripts/copy-check.py) and the product moment each one uses (rebuild the product's own
 // UI for it, src/kit is the floor), then delete these four lines.
 import { IDENTITY } from './brand/identity';
+import type { BudgetData, ReviewData, WorldSpec } from './kit';
 
 /**
  * How a change is shown: a product surface doing the new thing, on its beat. The five kit moments are the
@@ -33,6 +34,60 @@ export const UPDATE: { name: string; from: string; version: string; changes: Cha
     { id: 'threads', words: 'Replies land in []', moment: 'chat', logo: '[source-slug]', logoName: '[Source]', key: 'Replies' },
     { id: 'live', words: 'View counts run live', moment: 'table', key: 'live' },
   ],
+};
+
+/**
+ * What each product moment shows, in the product's own words (every bracket is a slot): the review a change approves
+ * or replies in ('approve', 'chat'), the figure a 'count' counts, the rows of a 'table' (kit/data.ts filmWorld: the
+ * counts derive from the rows) and the categories of a 'budget'. The kit draws only what is given here; a moment given
+ * nothing draws an empty box and fails precheck. The numbers are stand-ins too: the product's own before the first still.
+ */
+export const MOMENTS: { review: ReviewData; count: { label: string; from: number; perSec: number }; table: WorldSpec; budget: BudgetData } = {
+  review: {
+    team: [{ initials: '[AB]', name: '[Name]' }, { initials: '[CD]', name: '[Name]' }, { initials: '[EF]', name: '[Name]' }],
+    project: {
+      title: '[Project]',
+      meta: '[what it is]',
+      shots: 4,
+      approved: 0,
+      status: { open: '[In review]', done: '[Approved]' },
+      label: '[Selects]',
+      files: [{ name: '[file one]', size: '[size]' }, { name: '[file two]', size: '[size]' }, { name: '[file three]', size: '[size]' }, { name: '[file four]', size: '[size]' }],
+    },
+    actions: { approve: '[Approve]', done: '[Approved]', count: (n: number, of: number) => `${n} / ${of}` },
+    chat: { title: '[Thread]', draft: '[Reply]', lines: [{ text: '[A question]', side: 'in' }, { text: '[The answer]', side: 'out' }, { text: '[A thank-you]', side: 'in' }] },
+    feed: { title: '[Comments]', count: 0, rows: [] },
+    stats: { approved: { label: '[Approved]', value: 0, of: 4 }, saves: { label: '[Saves]', from: 0, perSec: 0 }, views: { label: '[Views]', from: 0, perSec: 0, since: '[since]' } },
+  },
+  count: { label: '[What it counts]', from: 18240, perSec: 140 },
+  table: {
+    workspace: '[Workspace]',
+    screen: '[Screen]',
+    noun: ['[row]', '[rows]'],
+    statuses: [{ label: '[Live]', tone: 'accent' }, { label: '[Updated]', tone: 'done' }, { label: '[Draft]', tone: 'quiet' }],
+    records: [
+      { title: '[Row one]', sub: '[detail]', status: 1 },
+      { title: '[Row two]', sub: '[detail]', status: 1 },
+      { title: '[Row three]', sub: '[detail]', status: 2 },
+      { title: '[Row four]', sub: '[detail]', status: 1 },
+      { title: '[Row five]', sub: '[detail]', status: 2 },
+      { title: '[Row six]', sub: '[detail]', status: 0 },
+      { title: '[Row seven]', sub: '[detail]', status: 1 },
+    ],
+  },
+  budget: {
+    team: '[Team]',
+    period: '[Month]',
+    categories: [
+      { name: '[Category one]', glyph: 'cart', budget: 1200, spent: 640 },
+      { name: '[Category two]', glyph: 'doc', budget: 800, spent: 310 },
+      { name: '[Category three]', glyph: 'team', budget: 500, spent: 420 },
+    ],
+    weeks: [],
+    toast: { amount: 86, category: '[Category one]', when: '[when]' },
+    report: { title: '[Report]', meta: '[period]' },
+    people: [],
+  },
 };
 
 /** A change's sentence as it is read: its mark read as the product's name. */

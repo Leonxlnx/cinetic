@@ -5,7 +5,7 @@
 // cinetic:placeholder - slots, not copy: write the script in plain words (line 1 says what the product is, each next
 // line one thing it does, 2-7 words, scripts/copy-check.py) and the product's own strings and code in place of every
 // [bracket], then delete these four lines.
-import type { CodeToken, GlyphName, WorldKind } from './kit';
+import type { CodeToken, GlyphName, WorldSpec } from './kit';
 import { IDENTITY } from './brand/identity';
 import type { Deal } from './deal';
 
@@ -51,16 +51,32 @@ export const TEASER = {
     [{ k: 'txt', s: '}' }],
     [{ k: 'com', s: '// [deployed to booking.studio]' }],
   ] as CodeToken[][],
-  /** The product's own records behind the app (kit/data.ts): the split window's live screen. Pass its world before shipping. */
-  world: { kind: 'orders' as WorldKind },
+  /**
+   * The product's own records behind the app: the split window's live screen (kit/data.ts filmWorld; the counts derive
+   * from the rows, nothing is invented). Every bracket is a slot for the product's own words.
+   */
+  screen: {
+    workspace: '[Workspace]',
+    screen: '[Screen]',
+    noun: ['[record]', '[records]'],
+    statuses: [{ label: '[Live]', tone: 'accent' }, { label: '[Building]', tone: 'wait' }, { label: '[Queued]', tone: 'quiet' }],
+    records: [
+      { title: '[Record one]', sub: '[detail]', status: 0 },
+      { title: '[Record two]', sub: '[detail]', status: 1 },
+      { title: '[Record three]', sub: '[detail]', status: 2 },
+      { title: '[Record four]', sub: '[detail]', status: 0 },
+      { title: '[Record five]', sub: '[detail]', status: 1 },
+      { title: '[Record six]', sub: '[detail]', status: 2 },
+    ],
+  } as WorldSpec,
   /**
    * The proof: three things it does elsewhere, each a notification. `logo` is the slug of the product it lands in
-   * (its real mark on the card); without one the card shows the glyph.
+   * (its real mark on the card); without one the card shows the glyph. `when` is the time the product prints on it.
    */
   cards: [
-    { logo: undefined as string | undefined, glyph: 'cart' as GlyphName, app: '[Payments]', event: '[New booking paid]' },
-    { logo: undefined as string | undefined, glyph: 'chat' as GlyphName, app: '[Messages]', event: '[Reminder sent]' },
-    { logo: undefined as string | undefined, glyph: 'clock' as GlyphName, app: '[Calendar]', event: '[Session added]' },
+    { logo: undefined as string | undefined, glyph: 'cart' as GlyphName, app: '[Payments]', event: '[New booking paid]', when: '[when]' },
+    { logo: undefined as string | undefined, glyph: 'chat' as GlyphName, app: '[Messages]', event: '[Reminder sent]', when: '[when]' },
+    { logo: undefined as string | undefined, glyph: 'clock' as GlyphName, app: '[Calendar]', event: '[Session added]', when: '[when]' },
   ],
   /** The page it made: a title word and three cards (a name, a value, two rows), then the done toast. */
   page: {

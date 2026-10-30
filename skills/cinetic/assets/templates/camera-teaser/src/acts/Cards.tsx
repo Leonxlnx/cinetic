@@ -46,7 +46,7 @@ export const ProofCard: React.FC<{ i: number; w?: number; h?: number }> = ({ i, 
         <span data-text={`card${i + 1}`} style={face(ui, 600, INK.text)}>{c.app}</span>
         <span data-text={`card${i + 1}-event`} style={face(ui * 0.95, 500, INK.mute)}>{c.event}</span>
       </div>
-      <span data-texture style={face(ui * 0.62, 500, INK.mute)}>now</span>
+      <span data-texture style={face(ui * 0.62, 500, INK.mute)}>{c.when}</span>
     </div>
   );
 };

@@ -5,7 +5,7 @@
 // cinetic:placeholder - slots, not copy: write the script in plain words (the what line says what the product is,
 // each next line one thing about it, 2-7 words, scripts/copy-check.py), the product's own module names, world and
 // marks in place of every [bracket], then delete these four lines.
-import type { GlyphName, WorldKind } from './kit';
+import type { GlyphName, WorldSpec } from './kit';
 import { IDENTITY } from './brand/identity';
 
 /** One short sentence at a time on a lit page: the name, what it is, the problem, the promise, the product, how it fits together, its parts, the close. */
@@ -27,11 +27,31 @@ export const EXPLAIN = {
   keys: { what: '[work]', pain: '[N] apps', close: '[product.com]' } as Record<string, string>,
   /**
    * The product moment the promise opens onto. 'ui' (the default): the product's own screen built in code (kit
-   * DenseScreen: a dense, real-feeling screen from a sample world of `world`, seeded by the name; rebuild it from the
-   * product's real screens before shipping). 'photo': a supplied picture of the product in use in public/ (`src`),
+   * DenseScreen, drawn from `screen` below). 'photo': a supplied picture of the product in use in public/ (`src`),
    * only when the brief supplies one; never stock.
    */
-  picture: { kind: 'ui' as 'ui' | 'photo', src: undefined as string | undefined, world: 'billing' as WorldKind, layout: 'table' as 'table' | 'board' },
+  picture: { kind: 'ui' as 'ui' | 'photo', src: undefined as string | undefined, layout: 'table' as 'table' | 'board' },
+  /**
+   * The product's own screen (kit/data.ts filmWorld): its rows and statuses as the product shows them; the counts and
+   * totals derive from the rows, nothing is invented. The picture, the crowded problem and the grid's fill draw from it.
+   * Every bracket is a slot for the product's own words.
+   */
+  screen: {
+    workspace: '[Workspace]',
+    screen: '[Screen]',
+    noun: ['[record]', '[records]'],
+    statuses: [{ label: '[Done]', tone: 'accent' }, { label: '[Open]', tone: 'wait' }, { label: '[Draft]', tone: 'quiet' }],
+    records: [
+      { title: '[Record one]', sub: '[detail]', status: 0 },
+      { title: '[Record two]', sub: '[detail]', status: 1 },
+      { title: '[Record three]', sub: '[detail]', status: 2 },
+      { title: '[Record four]', sub: '[detail]', status: 1 },
+      { title: '[Record five]', sub: '[detail]', status: 0 },
+      { title: '[Record six]', sub: '[detail]', status: 2 },
+      { title: '[Record seven]', sub: '[detail]', status: 1 },
+      { title: '[Record eight]', sub: '[detail]', status: 0 },
+    ],
+  } as WorldSpec,
   /**
    * The product's parts round its mark (6-10): a label, a line glyph, and `logo` when the part IS another product
    * (the slug of its real mark: node scripts/logos.mjs get <name> --film .). The first three are read, one a beat.

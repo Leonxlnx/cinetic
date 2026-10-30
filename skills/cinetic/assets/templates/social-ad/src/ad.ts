@@ -5,7 +5,7 @@
 // cinetic:placeholder - slots, not copy: write the script in plain words (the opener says what the product is with
 // its name first, each next line one thing about it, 2-7 words, scripts/copy-check.py) and the product's own items in
 // place of every [bracket], then delete these four lines.
-import type { GlyphName, TilePreview, WorldKind } from './kit';
+import type { GlyphName, TilePreview, WorldSpec } from './kit';
 import { IDENTITY } from './brand/identity';
 
 /** A short ad: the opener onto a stack of what it holds, the mark, a field round the claim, a label that swaps, two imperatives, the lockup. */
@@ -30,7 +30,7 @@ export const AD = {
   /**
    * What people keep in the product, as content tiles (kit ContentTile): a label, a sub line, a glyph and a preview of
    * what it holds (doc, chart, bars, list, person, table, code); `logo` when the item IS another product's (the slug of
-   * its real mark). The stack, the field and the streams draw from these first, then from the sample world below.
+   * its real mark). The stack, the field and the streams draw from these first, then from the screen's rows below.
    */
   items: [
     { label: '[Item one]', sub: '[detail]', glyph: 'doc', preview: 'doc' },
@@ -40,8 +40,27 @@ export const AD = {
     { label: '[Item five]', sub: '[detail]', glyph: 'table', preview: 'table' },
     { label: '[Item six]', sub: '[detail]', glyph: 'calendar', preview: 'bars' },
   ] as { label: string; sub?: string; glyph: GlyphName; preview: TilePreview; logo?: string }[],
-  /** The sample world that fills the rest (kit/data.ts: names, dates, amounts that add up), seeded by the name. */
-  world: 'orders' as WorldKind,
+  /**
+   * The product's own screen (kit DenseScreen: the label's board and the taglines' table, and the tiles after the
+   * items): its rows and statuses as the product shows them (kit/data.ts filmWorld; the counts and totals derive from
+   * the rows, nothing is invented). Every bracket is a slot for the product's own words; people are optional.
+   */
+  screen: {
+    workspace: '[Workspace]',
+    screen: '[Screen]',
+    noun: ['[item]', '[items]'],
+    statuses: [{ label: '[Saved]', tone: 'accent' }, { label: '[In progress]', tone: 'wait' }, { label: '[New]', tone: 'quiet' }],
+    records: [
+      { title: '[Record one]', sub: '[detail]', status: 0 },
+      { title: '[Record two]', sub: '[detail]', status: 1 },
+      { title: '[Record three]', sub: '[detail]', status: 2 },
+      { title: '[Record four]', sub: '[detail]', status: 0 },
+      { title: '[Record five]', sub: '[detail]', status: 1 },
+      { title: '[Record six]', sub: '[detail]', status: 0 },
+      { title: '[Record seven]', sub: '[detail]', status: 2 },
+      { title: '[Record eight]', sub: '[detail]', status: 0 },
+    ],
+  } as WorldSpec,
   /**
    * The products it really works with: slugs of their real marks (node scripts/logos.mjs get <name> --film .). With
    * two or more, the field and the streams carry them as app icons among the items. Never a mark for a product it does not touch.

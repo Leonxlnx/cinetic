@@ -5,7 +5,7 @@ import { DepthStack, type DepthItem, depthPush } from '../fx/DepthStack';
 import { Lit } from '../fx/Lit';
 import { Spinner, StepCheck } from '../fx/Loaders';
 import { ThinkingDots } from '../fx/MicroUI';
-import { AvatarStack, Bubble, DenseScreen, face, surfaceShadow } from '../kit';
+import { AvatarStack, Bubble, DenseScreen, face, filmWorld, surfaceShadow } from '../kit';
 import { clamp, E, prog } from '../lib/anim';
 import { camera3d, camPath, type Shot, swing3d } from '../lib/camera';
 import { mixColor } from '../lib/color';
@@ -13,6 +13,9 @@ import { useFilm } from '../lib/film';
 import { ACT, CUE, DEAL, f60, f60x, H, STEPS, W } from '../timeline';
 import { RUN } from '../run';
 import { Ground, GROUNDS, PAGE, useAbs } from './stage';
+
+/** The split run's live screen: the product's own rows (run.ts screen). */
+const WORLD = filmWorld(RUN.screen);
 
 // RUN - the product working, under the film's one 3D turn. The whip is carried in: everything arrives still rising
 // (106 px over 12 f on an expo-out). The request is the user's bubble with the people it is for (their real portraits,
@@ -142,7 +145,7 @@ export const RunShot: React.FC<{ F: number }> = ({ F }) => {
         {split && (
           <Lit frame={F} x={W / 2 + (P.w * 0.62) / 2 + 40 * U} y={P.y + 30 * U} w={P.w * 0.62} h={P.h * 0.9} r={26 * U} tilt={{ x: 9, y: -13 }} ground={GROUNDS.run.base} id="screen" sway={{ phase: 0.4 }}>
             <div style={{ position: 'absolute', inset: 0, borderRadius: 26 * U, overflow: 'hidden', background: PAGE.surface }}>
-              <DenseScreen frame={F} theme={PAGE} seed={RUN.name} kind={RUN.world.kind} layout="table" w={P.w * 0.62} h={P.h * 0.9} scale={0.7} view={0.95} focus={focusRows} drawAt={ACT.run.from} lift={0} />
+              <DenseScreen frame={F} theme={PAGE} world={WORLD} layout="table" w={P.w * 0.62} h={P.h * 0.9} scale={0.7} view={0.95} focus={focusRows} drawAt={ACT.run.from} lift={0} />
             </div>
           </Lit>
         )}

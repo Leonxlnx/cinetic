@@ -17,7 +17,7 @@ import { DEAL, DEAL_SEED, LINES, NAME_MOVE } from '../deal';
 import { LitGround } from '../fx/Grounds';
 import { Lit } from '../fx/Lit';
 import { RackFocus } from '../fx/RackFocus';
-import { BudgetCard, ChatCard, DenseScreen, hasLogo, kitTheme, ProjectPanel, sampleWorld, StatCard } from '../kit';
+import { BudgetCard, ChatCard, DenseScreen, filmWorld, hasLogo, kitTheme, ProjectPanel, StatCard } from '../kit';
 import type { InlineRef } from '../kit/inline';
 import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
 import { phrase } from '../lib/cadence';
@@ -27,7 +27,7 @@ import { mixColor } from '../lib/color';
 import { measureTracked } from '../lib/measure';
 import { type FloatOpts, withLocks } from '../lib/drift';
 import { ACT, beat, BEATS, changeOut, copy, CUE, f60, f60x, FPS, H, moveOf, N, ROLL, TOTAL, W } from '../timeline';
-import { type Change, spokenChange, UPDATE } from '../update';
+import { type Change, MOMENTS, spokenChange, UPDATE } from '../update';
 import { HeroLine, MarkLine } from './type';
 
 /** The mark's parts rise phrased, the last after a held beat (lib/cadence), the span of a 5 f stagger. */
@@ -186,8 +186,8 @@ const Numerals: React.FC<{ F: number; size: number; color: string; shade: string
 /** The mask's rise (fx/TypePresets mask, one word): 20 f that stop dead. */
 const riseAt = (F: number, at: number) => prog(F, at, at + f60(20), E.snapOut);
 
-/** The table moment's world: the product's own rows (kit/data.ts), seeded by the product's name. */
-const TABLE_WORLD = sampleWorld(`${UPDATE.name}:update`);
+/** The table moment's world: the product's own rows (update.ts MOMENTS.table). */
+const TABLE_WORLD = filmWorld(MOMENTS.table);
 
 /** One change's product surface, lit and tilted in the film's light, doing the new thing on its hit frame. */
 const Surface: React.FC<{ c: Change; i: number; F: number }> = ({ c, i, F }) => {
@@ -197,16 +197,16 @@ const Surface: React.FC<{ c: Change; i: number; F: number }> = ({ c, i, F }) => 
   const k = SURFACE[c.moment].k * U;
   const body =
     c.moment === 'approve' ? (
-      <ProjectPanel frame={F} theme={T} scale={k} x={0} y={0} doneAt={hit} photos={(c.photos ?? []).map((p) => staticFile(p))} />
+      <ProjectPanel frame={F} theme={T} scale={k} x={0} y={0} data={MOMENTS.review} doneAt={hit} photos={(c.photos ?? []).map((p) => staticFile(p))} />
     ) : c.moment === 'chat' ? (
-      <ChatCard frame={F} theme={T} scale={k} x={0} y={0} at={[hit - f60(70), hit - f60(34), hit]} />
+      <ChatCard frame={F} theme={T} scale={k} x={0} y={0} data={MOMENTS.review.chat} people={MOMENTS.review.team} at={[hit - f60(70), hit - f60(34), hit]} />
     ) : c.moment === 'count' ? (
-      <StatCard frame={F} theme={T} scale={k} x={0} y={0} count={{ from: 18240, perSec: 140, start: hit }} drawAt={hit - f60(12)} />
+      <StatCard frame={F} theme={T} scale={k} x={0} y={0} label={MOMENTS.count.label} count={{ from: MOMENTS.count.from, perSec: MOMENTS.count.perSec, start: hit }} drawAt={hit - f60(12)} />
     ) : c.moment === 'table' ? (
       // the readable row glides down the table to the row the change touched, landing on the hit
       <DenseScreen frame={F} theme={T} world={TABLE_WORLD} layout="table" w={w} h={h} focus={[{ at: hit - f60(80), row: 1 }, { at: hit - f60(40), row: 3 }, { at: hit, row: 5 }]} lift={0} />
     ) : (
-      <BudgetCard frame={F} theme={T} scale={k} x={0} y={0} add={86} addAt={hit} />
+      <BudgetCard frame={F} theme={T} scale={k} x={0} y={0} data={MOMENTS.budget} add={MOMENTS.budget.toast.amount} addAt={hit} />
     );
   return (
     <Lit frame={F} x={x} y={y} w={w} h={h} r={28 * U} tilt={{ x: 9, y: i % 2 ? 11 : -11 }} ground={T.ground} vanish={[x, y]} id={`surface-${i}`}>

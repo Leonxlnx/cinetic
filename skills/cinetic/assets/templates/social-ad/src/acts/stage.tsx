@@ -2,7 +2,7 @@
 // so no ground holds more than two shots, with one light event per act), the product's stage (the mid slate), the
 // absolute frame, the ad's line (the film's type family's sentence line, the bold family by default: semibold, tight),
 // the product's own content as tiles (ad.ts items first, then the products it works with as their real marks, then
-// its sample world: names, dates and amounts that add up), the mark, and placement helpers. Retell it in the dealt
+// its own screen rows from ad.ts screen: counts and totals that add up), the mark, and placement helpers. Retell it in the dealt
 // direction's world (out/DIRECTION.md): its ground and type replace this floor; the product's own screens, items and
 // marks replace the kit's.
 import React from 'react';
@@ -15,7 +15,7 @@ import { bakePlate } from '../fx/Gradients';
 import { dealGrounds, type GroundSpec, LitGround, placeGrounds } from '../fx/Grounds';
 import { shadowTone } from '../fx/KeyLight';
 import { type Pic, PhotoCard } from '../fx/Pictures';
-import { ContentTile, kitTheme, logoName, sampleWorld, type TileNode, worldNodes } from '../kit';
+import { ContentTile, filmWorld, kitTheme, logoName, type TileNode, worldNodes } from '../kit';
 import { clamp, E, prog } from '../lib/anim';
 import { carry, launch } from '../lib/handoff';
 import { mixColor } from '../lib/color';
@@ -34,13 +34,13 @@ export const SHOT = kitTheme('slateMid', C.accent);
 /** The absolute film frame inside an act (acts are Sequences: their own frame starts at 0). */
 export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;
 
-/** The world the product's screens and the rest of the tiles come from: the film's own, seeded by its name. */
-export const WORLD = sampleWorld(AD.name, { kind: AD.world });
+/** The world the product's screens and the rest of the tiles come from: the film's own rows (ad.ts screen). */
+export const WORLD = filmWorld(AD.screen);
 
 /**
  * The product's content as tile nodes, in the order every field draws them: the ad's own items (what people keep in
  * it), the products it really works with as their real marks (ad.ts integrations, scripts/logos.mjs), then the
- * sample world's records and people. Never a blank card.
+ * screen's rows (ad.ts screen). Never a blank card.
  */
 export const NODES: TileNode[] = [
   ...AD.items.map((it, i): TileNode => ({ label: it.label, sub: it.sub, glyph: it.glyph, preview: it.preview, logo: it.logo, seed: `${AD.name}:item${i}` })),

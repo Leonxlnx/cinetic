@@ -5,7 +5,7 @@ import { DEAL } from '../deal';
 import { DirBlur } from '../fx/Defocus';
 import { Lit } from '../fx/Lit';
 import { StepList } from '../fx/Loaders';
-import { AppIcon, Avatar, Chip, ContentTile, face, hasLogo, KIT_TYPE, MonogramTile, sampleWorld, Surface, worldNodes } from '../kit';
+import { AppIcon, Avatar, Chip, ContentTile, face, hasLogo, KIT_TYPE, MonogramTile, Surface, type TileNode } from '../kit';
 import { clamp, E, lmix, mix, prog } from '../lib/anim';
 import { intoCut } from '../lib/handoff';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
@@ -43,7 +43,7 @@ export const cardK = (F: number) => lmix(1, 1.1, prog(F, CUE.lean, CUE.lean + f6
 /** The input's face of the card (the open's 'card' device shows it rising before the act). */
 export const InputFace: React.FC<{ w: number; h: number }> = ({ w, h }) => {
   const t = themeOf('card');
-  const nodes = worldNodes(sampleWorld(`${WALK.name}:input`), 4).map((n, i) => ({ ...n, label: WALK.results[i]?.title ?? n.label, sub: WALK.results[i]?.meta ?? n.sub }));
+  const nodes: TileNode[] = WALK.results.slice(0, 4).map((r, i) => ({ label: r.title, sub: r.meta, seed: `${WALK.name}:input${i}` }));
   const tile = (w - 2 * pad - 3 * 16 * U) / 4;
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h }}>

@@ -5,7 +5,7 @@
 // cinetic:placeholder - slots, not copy: write the script in plain words (line 1 says what the product is, each next
 // line one thing it does, 2-7 words, scripts/copy-check.py) and the product's own request, steps and result in place
 // of every [bracket], then delete these four lines.
-import type { GlyphName, WorldKind } from './kit';
+import type { GlyphName, WorldSpec } from './kit';
 import { IDENTITY } from './brand/identity';
 
 /** A request goes in, the product works through it in steps, the result comes out. */
@@ -52,8 +52,24 @@ export const RUN = {
     { verb: '[Assign]', detail: '[tasks to the team]' },
     { verb: '[Schedule]', detail: '[the review]' },
   ],
-  /** The product's own records behind the work (kit/data.ts): the split run's live screen. */
-  world: { kind: 'pipeline' as WorldKind },
+  /**
+   * The product's own records behind the work: the split run's live screen, one row per step it runs and more
+   * (kit/data.ts filmWorld; the counts derive from the rows, nothing is invented). Every bracket is a slot.
+   */
+  screen: {
+    workspace: '[Workspace]',
+    screen: '[Screen]',
+    noun: ['[task]', '[tasks]'],
+    statuses: [{ label: '[Done]', tone: 'accent' }, { label: '[Running]', tone: 'wait' }, { label: '[Queued]', tone: 'quiet' }],
+    records: [
+      { title: '[Record one]', sub: '[detail]', status: 0 },
+      { title: '[Record two]', sub: '[detail]', status: 1 },
+      { title: '[Record three]', sub: '[detail]', status: 2 },
+      { title: '[Record four]', sub: '[detail]', status: 0 },
+      { title: '[Record five]', sub: '[detail]', status: 1 },
+      { title: '[Record six]', sub: '[detail]', status: 2 },
+    ],
+  } as WorldSpec,
   /** The result card: what it made. */
   result: { title: '[Launch plan]', body: '[4 tasks, 3 owners, 1 review]', meta: '[now]', glyph: 'check' as GlyphName },
   /**
