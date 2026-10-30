@@ -19,6 +19,17 @@
  *   node scripts/assets.mjs check <graded files...> [--accent #hex]
  *   node scripts/assets.mjs probe <files...> [--json]
  *   node scripts/assets.mjs looks | licences [--to <film>/public/assets]
+ *   node scripts/assets.mjs recipe [<input in your words>] [--run] [--kind video|photo] [--limit 6] [--out file] [--json] [--verify]
+ *
+ * Recipes. The first picture beat of a launch film shows the product's core transformation literally (input ->
+ * output), with a real person where the input is human: a voice memo app opens on someone speaking into a phone, not
+ * on a waveform alone. assets/footage-recipes.json holds 40 such inputs (speaking into a phone, typing on a laptop,
+ * a meeting, paying at a counter, a parcel at the door, a doctor's visit ...), each with its framing, the screen that
+ * takes the product's UI as a plate built in code, its searches (footage first, then photos) and, for most, the clips
+ * and photos already looked at on a contact sheet (an input without them runs its searches at once).
+ * `recipe "voice memo app"` finds the closest input, prints it and saves its picks as a results file (sheet and get #n
+ * work at once; get reads each licence again at its source); --run searches every line again and adds the fresh hits
+ * after the picks; --verify reads every pick again.
  *
  * Sources without keys: Burst (Shopify's free stock photos: people, products, lifestyle, places; its licence
  * needs no credit, read on each photo's page), ISO Republic (CC0 photos, read on each photo's page), Coverr (free
@@ -859,7 +870,7 @@ export const rgbHex = (rgb) => `#${rgb.map((v) => Math.round(v * 255).toString(1
 export function parseArgs(argv) {
   const VALUED = new Set(['kind', 'source', 'orientation', 'min-width', 'colour', 'color', 'limit', 'out', 'pick', 'cols', 'cell', 'to', 'from', 'name', 'width', 'res', 'trim', 'max-mb',
     'record', 'look', 'accent', 'split-hue', 'focus', 'aspect', 'grain', 'speed', 'fps', 'suffix', 'strength', 'chroma', 'scan', 'fit']);
-  const FLAGS = new Set(['allow-credit', 'json', 'no-check', 'dry-run', 'help', 'force', 'keep', 'scrub', 'brand-supplied', 'arc', 'no-text', 'people', 'no-people', 'clean', 'no-vet']);
+  const FLAGS = new Set(['allow-credit', 'json', 'no-check', 'dry-run', 'help', 'force', 'keep', 'scrub', 'brand-supplied', 'arc', 'no-text', 'people', 'no-people', 'clean', 'no-vet', 'run', 'verify']);
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -976,11 +987,12 @@ export function emptyHint(o, report) {
   }
   return `Nothing found${errs.length ? ` (${errs.join('; ')})` : ''}. Name the subject's own things ("basalt", "tide pool", "kiln"), use fewer words, or another --kind.`;
 }
-async function cmdSearch(args) {
-  const query = args._.join(' ').trim();
-  if (!query) throw new Usage('search needs a query, e.g. search "basalt cliff"');
-  const o = searchOptions(args);
-  for (const n of o.skipped) console.error(`note: ${n}; skipped, searching ${o.sources.map((s) => SOURCES[s].name).join(', ')}`);
+/**
+ * One search, gathered: every source of `o` asked at once, each answer filtered (licence, size, shape), the stills'
+ * files checked, the thumbnails vetted into <out>.thumbs and, with a colour, ranked by it. Returns { q, groups, report,
+ * vetNote }: one list per source, in the source's order, and what was dropped and why.
+ */
+async function gatherSearch(query, o, out) {
   const q = searchQuery(query, o.kind);
   const cap = (ms, msg) => new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms).unref());
   const results = await Promise.all(o.sources.map(async (s) => {
@@ -993,9 +1005,8 @@ async function cmdSearch(args) {
     report[r.s] = { found: r.items.length, kept: keep.length, skipped, error: r.error || null };
     groups.push(keep.slice(0, o.limit + 3));
   }
-  let items = groups.flat();
   if (o.check) {
-    await Promise.race([mapLimit(items.filter((it) => it.kind !== 'video' && (!it.width || ['nasa', 'openverse', 'aic'].includes(it.source))), 6, async (it) => {
+    await Promise.race([mapLimit(groups.flat().filter((it) => it.kind !== 'video' && (!it.width || ['nasa', 'openverse', 'aic'].includes(it.source))), 6, async (it) => {
       if (it.source === 'aic') { await aicServe(it, o.width); return; } // the width AIC really serves (it redirects others to 843 px)
       const p = await probeUrl(it.image, 12000); it.checked = p.ok ? 'ok' : p.why;
       if (p.ok && p.w) { it.width = p.w; it.height = p.h; }
@@ -1007,42 +1018,58 @@ async function cmdSearch(args) {
       else if (it.width && it.width < o.minWidth) { report[it.source].skipped.small++; g.splice(i, 1); }
     }
   }
-  const out = path.resolve(args.out || path.join('out', 'assets', `${slug(query, 5) || 'search'}-${o.kind}.json`));
   fs.mkdirSync(path.dirname(out), { recursive: true });
   const vetNote = await vetGroups(groups, report, o, `${out.replace(/\.json$/i, '')}.thumbs`);
   if (o.colour && ffmpegOk()) {
-    items = groups.flat();
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-assets-'));
-    await mapLimit(items.filter((it) => it.thumb), 6, async (it) => { const f = await fetchThumb(it, tmp); if (f) it.colourScore = Number(colourScore(pixelGrid(f, 24), o.colour).toFixed(3)); });
+    await mapLimit(groups.flat().filter((it) => it.thumb), 6, async (it) => { const f = await fetchThumb(it, tmp); if (f) it.colourScore = Number(colourScore(pixelGrid(f, 24), o.colour).toFixed(3)); });
     fs.rmSync(tmp, { recursive: true, force: true });
     for (const g of groups) g.sort((a, b) => (b.colourScore ?? 0) - (a.colourScore ?? 0));
   }
-  items = interleave(groups, o.limit);
-  const doc = { query, searched: q, kind: o.kind, created: new Date().toISOString(), options: { sources: o.sources, orientation: o.orientation, minWidth: o.minWidth, limit: o.limit, allowCredit: o.allowCredit, colour: o.colour?.name || null, people: o.people, clean: o.clean, fit: o.fit, vet: o.vet }, report, items };
-  fs.writeFileSync(out, JSON.stringify(doc, null, 1));
-  try { fs.writeFileSync(path.join(path.dirname(out), '.last'), out); } catch { /* optional */ }
-  if (args.json) { console.log(JSON.stringify(doc, null, 1)); return items.length ? 0 : 1; }
-  console.log(`ASSETS · ${o.kind} · "${q}" · ${o.allowCredit ? 'no-credit licences + CC BY' : 'licences that need no credit'} · at least ${o.minWidth}px${o.orientation ? ` · ${o.orientation}` : ''}${o.fit ? ` · fits ${args.fit}` : ''}${o.colour ? ` · colour ${o.colour.name}` : ''}${o.people === true ? ' · people' : o.people === false ? ' · no people' : ''}${o.clean ? ' · clean' : ''}`);
-  if (vetNote) console.log(`  (${vetNote})`);
+  return { q, groups, report, vetNote };
+}
+/** What each source of a search showed and dropped, one line each. */
+function printReport(o, report, items) {
   for (const s of o.sources) {
     const r = report[s]; const sk = r.skipped;
     const dropped = [sk.licence && `${sk.licence} licence`, sk.ai && `${sk.ai} AI-generated`, sk.small && `${sk.small} too small`, sk.fit && `${sk.fit} too small at the --fit shape`, sk.shape && `${sk.shape} other shape`, sk.alike && `${sk.alike} alike`, sk.dead && `${sk.dead} did not load`, sk.people && `${sk.people} ${o.people ? 'without' : 'with'} people`, sk.text && `${sk.text} with text or a logo`].filter(Boolean);
     console.log(`  ${SOURCES[s].name.padEnd(32)} ${r.error ? `could not search (${r.error})` : `${items.filter((it) => it.source === s).length} shown of ${r.found}${dropped.length ? ` (dropped: ${dropped.join(', ')})` : ''}`}`);
   }
-  const keyed = Object.keys(SOURCES).filter((s) => SOURCES[s].env && SOURCES[s].kinds.includes(o.kind) && !hasKey(s));
-  if (keyed.length) console.log(`  (more with a key: ${keyed.map((s) => SOURCES[s].env).join(', ')})`);
+}
+/** The numbered list of a results file's items (ref, size, length, licence, title, flags, notes). */
+function printItems(items) {
   const noteCount = {}; for (const it of items) for (const n of it.notes || []) noteCount[n] = (noteCount[n] || 0) + 1;
   const shared = Object.keys(noteCount).filter((n) => noteCount[n] > 2);
-  console.log('');
   for (const it of items) {
     const px = it.width && it.height ? `${it.width}x${it.height}` : 'size ?';
     const extra = it.kind === 'video' ? ` ${it.duration ? `${Math.round(it.duration)}s` : ''}` : '';
     const flags = [it.people && (it.faces ? `${it.faces} face${it.faces > 1 ? 's' : ''}` : 'people'), it.textLines && 'text?', it.soft && 'soft'].filter(Boolean).join(', ');
     console.log(`#${String(it.n).padEnd(3)} ${it.ref.padEnd(Math.min(48, Math.max(...items.map((x) => x.ref.length))))} ${px.padEnd(10)}${extra.padEnd(5)} ${(it.licence).padEnd(13)} ${short(it.title, 60)}${it.colourScore !== undefined ? `  [colour ${it.colourScore}]` : ''}${flags ? `  [${flags}]` : ''}`);
     if (it.author && ['pexels', 'unsplash', 'pixabay', 'burst'].includes(it.source)) console.log(`     by ${short(it.author, 50)} on ${SOURCES[it.source].name}`);
+    if (it.shows) console.log(`     shows: ${it.shows}`);
     for (const n of it.notes || []) if (!shared.includes(n)) console.log(`     note: ${n}`);
   }
   for (const n of shared) console.log(`note (${noteCount[n]} items): ${n}`);
+}
+async function cmdSearch(args) {
+  const query = args._.join(' ').trim();
+  if (!query) throw new Usage('search needs a query, e.g. search "basalt cliff"');
+  const o = searchOptions(args);
+  for (const n of o.skipped) console.error(`note: ${n}; skipped, searching ${o.sources.map((s) => SOURCES[s].name).join(', ')}`);
+  const out = path.resolve(args.out || path.join('out', 'assets', `${slug(query, 5) || 'search'}-${o.kind}.json`));
+  const { q, groups, report, vetNote } = await gatherSearch(query, o, out);
+  const items = interleave(groups, o.limit);
+  const doc = { query, searched: q, kind: o.kind, created: new Date().toISOString(), options: { sources: o.sources, orientation: o.orientation, minWidth: o.minWidth, limit: o.limit, allowCredit: o.allowCredit, colour: o.colour?.name || null, people: o.people, clean: o.clean, fit: o.fit, vet: o.vet }, report, items };
+  fs.writeFileSync(out, JSON.stringify(doc, null, 1));
+  try { fs.writeFileSync(path.join(path.dirname(out), '.last'), out); } catch { /* optional */ }
+  if (args.json) { console.log(JSON.stringify(doc, null, 1)); return items.length ? 0 : 1; }
+  console.log(`ASSETS · ${o.kind} · "${q}" · ${o.allowCredit ? 'no-credit licences + CC BY' : 'licences that need no credit'} · at least ${o.minWidth}px${o.orientation ? ` · ${o.orientation}` : ''}${o.fit ? ` · fits ${args.fit}` : ''}${o.colour ? ` · colour ${o.colour.name}` : ''}${o.people === true ? ' · people' : o.people === false ? ' · no people' : ''}${o.clean ? ' · clean' : ''}`);
+  if (vetNote) console.log(`  (${vetNote})`);
+  printReport(o, report, items);
+  const keyed = Object.keys(SOURCES).filter((s) => SOURCES[s].env && SOURCES[s].kinds.includes(o.kind) && !hasKey(s));
+  if (keyed.length) console.log(`  (more with a key: ${keyed.map((s) => SOURCES[s].env).join(', ')})`);
+  console.log('');
+  printItems(items);
   console.log('');
   console.log(`Saved ${path.relative(process.cwd(), out) || out}`);
   if (!items.length) { console.log(emptyHint(o, report)); return 1; }
@@ -1455,7 +1482,7 @@ async function cmdGet(args) {
   let failed = 0; let written = 0;
   for (const { ref, hint: known } of resolveRefs(list, doc)) {
     try {
-      const hint = known || findSaved(ref);
+      const hint = known || findSaved(ref) || recipeHint(ref);
       const it = await lookup(ref, o, hint);
       if (!it || !it.image) throw new Error('no usable file on the record (removed, or no rendition)');
       const lic = licenceAllowed(it.licence, o);
@@ -1905,6 +1932,175 @@ export function pictureCheck(graded, accent = null, o = {}) {
   return v.ok ? 0 : 3;
 }
 
+// ------------------------------------------------------------------------------------------------ recipes
+/**
+ * Footage recipes (assets/footage-recipes.json): the inputs a launch film most often has to show, because the first
+ * picture beat shows the product's core transformation literally, input -> output. Each input carries the shot that
+ * shows it (a person speaking into a phone, hands typing on a laptop, a parcel set down at a door), how to frame it,
+ * which screen takes the product's UI as a plate built in code, the searches that find it (footage first) and the
+ * clips and photos already looked at and kept for it. `recipe <input>` finds the closest input in your words and
+ * saves its picks as a results file, so `sheet` and `get #n` work at once; --run searches every line again.
+ */
+export const RECIPES_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'footage-recipes.json');
+export function loadRecipes(file = RECIPES_FILE) {
+  let j;
+  try { j = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { throw new Error(`could not read the recipes (${path.basename(file)}): ${e.message}`); }
+  if (!Array.isArray(j?.inputs)) throw new Error(`${path.basename(file)} has no inputs list`);
+  return j;
+}
+const RECIPE_SKIP = new Set([...QWORDS_SKIP, 'app', 'apps', 'tool', 'tools', 'product', 'products', 'launch', 'film', 'video', 'my', 'our', 'your', 'new', 'that',
+  'who', 'someone', 'into', 'something', 'is', 'it', 'its', 'their', 'user', 'users', 'shot']);
+/** A word's stem, to match an input in the user's own words: lower case; a plural, then -ing or -ed, then a final e, dropped. Pure. */
+export const recipeStem = (w) => {
+  let s = String(w).toLowerCase();
+  if (s.length > 4 && s.endsWith('ies')) s = `${s.slice(0, -3)}y`;
+  else if (s.length > 4 && /(ss|sh|ch|x|z)es$/.test(s)) s = s.slice(0, -2);
+  else if (s.length > 3 && s.endsWith('s') && !/(ss|us|is)$/.test(s)) s = s.slice(0, -1);
+  if (s.length > 5 && s.endsWith('ing')) s = s.slice(0, -3);
+  else if (s.length > 4 && s.endsWith('ed')) s = s.slice(0, -2);
+  if (s.length > 3 && /([bdgmnprt])\1$/.test(s)) s = s.slice(0, -1); // runn -> run, shopp -> shop
+  if (s.length > 3 && s.endsWith('e')) s = s.slice(0, -1); // hike / hik(ing), type / typ(ing)
+  return s;
+};
+const recipeStems = (t) => String(t).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w && !RECIPE_SKIP.has(w)).map(recipeStem);
+const stemHit = (a, b) => {
+  if (a === b) return true;
+  if (Math.min(a.length, b.length) >= 4 && (a.startsWith(b) || b.startsWith(a))) return true;
+  let k = 0; while (k < a.length && a[k] === b[k]) k++;
+  return k >= 7; // transcrib(e) ~ transcription
+};
+/**
+ * The recipes for an input in the user's words, best first: [{ recipe, score }]. An id or label typed exactly wins;
+ * otherwise each of the words found in a recipe's id or label counts 4, in its aliases 3, in its apps (the products
+ * that show this input) 2. Pure.
+ */
+export function matchRecipes(input, inputs) {
+  const s = String(input || '').trim().toLowerCase();
+  const exact = inputs.find((r) => r.id === s || String(r.label || '').toLowerCase() === s);
+  if (exact) return [{ recipe: exact, score: 99 }];
+  const want = [...new Set(recipeStems(s))];
+  if (!want.length) return [];
+  return inputs.map((r, k) => {
+    const main = recipeStems([String(r.id).replace(/-/g, ' '), r.label].join(' '));
+    const alias = recipeStems((r.aliases || []).join(' '));
+    const apps = recipeStems((r.apps || []).join(' '));
+    let score = 0;
+    for (const w of want) { const hit = (l) => l.some((m) => stemHit(w, m)); score += hit(main) ? 4 : hit(alias) ? 3 : hit(apps) ? 2 : 0; }
+    return { recipe: r, score, k };
+  }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score || a.k - b.k).map(({ recipe, score }) => ({ recipe, score }));
+}
+/** A recipe's pick as a results item (the shape search saves; get reads the licence again at its source). Pure. */
+export function pickItem(p, r = null) {
+  const src = String(p.ref).split(':')[0];
+  return item(src, String(p.ref).slice(src.length + 1), {
+    kind: p.kind || 'photo', title: p.title || '', author: p.author || '', page: p.page || null, thumb: p.thumb || null, image: p.image || null,
+    preview: p.preview || null, width: p.w || null, height: p.h || null, duration: p.dur || null, licence: p.licence || 'unknown', shows: p.shows || '',
+    screen: p.screen || null, recipe: r?.id || null, verified: true,
+  });
+}
+/** The pick any recipe holds for a ref, as a hint for get (a Coverr or Mixkit page needs the clip's name), or null. */
+export function recipeHint(ref, doc = null) {
+  let d = doc;
+  if (!d) { try { d = loadRecipes(); } catch { return null; } }
+  for (const r of d.inputs) for (const p of r.picks || []) if (p.ref === ref) return pickItem(p, r);
+  return null;
+}
+/** Read each pick again at its source: it still loads, its licence still needs no credit. Exit 1 when one does not. */
+async function verifyRecipes(list) {
+  const o = { width: 2400, res: 1080, allowCredit: false };
+  let bad = 0; let n = 0;
+  for (const r of list) {
+    for (const p of r.picks || []) {
+      n++;
+      const hint = pickItem(p, r); let it = null; let why = '';
+      try { it = await lookup(p.ref, { ...o, kind: hint.kind }, hint); } catch (e) { why = redact(e.message); }
+      if (!why && (!it || !it.image)) why = 'no usable file on the record (removed, or no rendition)';
+      const lic = it ? licenceAllowed(it.licence, o) : { ok: true };
+      if (!why && !lic.ok) why = `${LICENCES[it.licence]?.name || it.licence}: ${lic.why}`;
+      if (!why && it.ai) why = 'AI-generated, not real footage';
+      if (why) bad++;
+      console.log(`${why ? 'FAIL' : 'ok  '}  ${String(r.id).padEnd(18)} ${p.ref.padEnd(36)} ${(it?.licence || '').padEnd(13)} ${why || short(it.title || p.title, 50)}`);
+      await sleep(250); // gentle on the sites without an API
+    }
+  }
+  console.log(`\n${n - bad} of ${n} picks load with a licence that needs no credit${bad ? `; ${bad} failed: search the recipe again (--run) and replace them` : ''}`);
+  return bad ? 1 : 0;
+}
+async function cmdRecipe(args) {
+  const doc = loadRecipes();
+  const input = args._.join(' ').trim();
+  const rel = (f) => path.relative(process.cwd(), f) || f;
+  if (!input) {
+    console.log(`RECIPES · ${doc.inputs.length} inputs a launch film shows (assets/footage-recipes.json, picks checked ${doc.checked || '?'})`);
+    for (const r of doc.inputs) {
+      const v = (r.picks || []).filter((p) => p.kind === 'video').length; const ph = (r.picks || []).length - v;
+      console.log(`  ${String(r.id).padEnd(18)} ${short(r.label, 44).padEnd(45)} ${v + ph ? `${v} clip${v === 1 ? '' : 's'}, ${ph} photo${ph === 1 ? '' : 's'}` : 'searches only (recipe runs them)'}`);
+    }
+    console.log('\nnode scripts/assets.mjs recipe "<the input your product takes, in your words>"   e.g. recipe "voice memo app", recipe "receipt scanner"');
+    return 0;
+  }
+  if (input === 'all' && args.verify) return verifyRecipes(doc.inputs);
+  const ranked = matchRecipes(input, doc.inputs);
+  if (!ranked.length) {
+    console.error(`No recipe matches "${input}". The inputs: ${doc.inputs.map((r) => r.id).join(', ')}.`);
+    console.error('Name the person, the action and the device yourself: search "woman speaking into phone" --kind video --source coverr,mixkit');
+    return 1;
+  }
+  const r = ranked[0].recipe;
+  if (args.json) { console.log(JSON.stringify(r, null, 1)); return 0; }
+  if (args.verify) return verifyRecipes([r]);
+  const kind = args.kind ? String(args.kind).toLowerCase() : null;
+  if (kind && !['video', 'photo'].includes(kind)) throw new Usage('recipe --kind is video or photo');
+  const out = path.resolve(args.out || path.join('out', 'assets', `recipe-${r.id}.json`));
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  const picks = (r.picks || []).filter((p) => !kind || p.kind === kind).map((p) => pickItem(p, r));
+  const lines = (r.queries || []).filter((l) => !kind || (l.kind || 'video') === kind);
+  const found = []; const ran = [];
+  const run = Boolean(args.run) || !picks.length; // an input with no picks yet runs its searches at once
+  if (run) {
+    for (const l of lines) {
+      const qa = { _: [], kind: l.kind || 'video', source: l.source || 'all', limit: String(args.limit || 6), ...(l.people ? { people: true } : {}),
+        ...(l.orientation ? { orientation: l.orientation } : {}), ...(args['no-vet'] ? { 'no-vet': true } : {}), ...(args['min-width'] ? { 'min-width': args['min-width'] } : {}) };
+      const o = searchOptions(qa);
+      const g = await gatherSearch(l.q, o, out);
+      const got = interleave(g.groups, o.limit).map(({ n, ...it }) => it);
+      found.push(got);
+      const errs = Object.entries(g.report).filter(([, x]) => x.error).map(([s, x]) => `${SOURCES[s].name}: ${x.error}`);
+      ran.push(`  "${l.q}" · ${o.kind} · ${o.sources.map((s) => SOURCES[s].name).join(', ')}: ${got.length} kept of ${Object.values(g.report).reduce((a, x) => a + x.found, 0)}${errs.length ? ` (${errs.join('; ')})` : ''}`);
+    }
+  }
+  const seen = new Set(picks.map((it) => it.ref));
+  const fresh = interleave(found, 99).map(({ n, ...it }) => it).filter((it) => !seen.has(it.ref) && seen.add(it.ref));
+  const items = [...picks, ...fresh].map((it, k) => ({ n: k + 1, ...it }));
+  const res = { query: `recipe ${r.id}`, recipe: r.id, kind: kind || 'mixed', created: new Date().toISOString(), options: { run, limit: Number(args.limit || 6) }, items };
+  fs.writeFileSync(out, JSON.stringify(res, null, 1));
+  try { fs.writeFileSync(path.join(path.dirname(out), '.last'), out); } catch { /* optional */ }
+  console.log(`RECIPE · ${r.id} · ${r.label}`);
+  if (r.apps?.length) console.log(`  for      ${r.apps.join(', ')}`);
+  console.log(`  shows    ${r.action}`);
+  for (const [k, f] of (r.framing || []).entries()) console.log(`  ${k ? '        ' : 'frame   '} ${f}`);
+  if (r.screen) console.log(`  screen   ${r.screen}`);
+  const close = ranked.slice(1, 4).filter((x) => x.score >= ranked[0].score - 1 && ranked[0].score < 99).map((x) => x.recipe.id);
+  if (close.length) console.log(`  (also close: ${close.join(', ')}: recipe <id>)`);
+  console.log('');
+  if (run && !picks.length && lines.length) console.log('No picks looked at yet for this input: its searches ran now.');
+  if (ran.length) { console.log('Searched again:'); for (const x of ran) console.log(x); console.log(''); }
+  if (picks.length) console.log(`#1-#${picks.length}: the picks, looked at on a contact sheet${doc.checked ? ` on ${doc.checked}` : ''} (licences that need no credit; get reads each one again at its source)`);
+  if (fresh.length) console.log(`#${picks.length + 1}-#${items.length}: fresh hits from the searches, not looked at yet`);
+  printItems(items);
+  console.log('');
+  if (!run && lines.length) {
+    console.log('The searches (footage first; --run runs them all into this results file):');
+    for (const l of lines) console.log(`  node scripts/assets.mjs search "${l.q}" --kind ${l.kind || 'video'}${l.source ? ` --source ${l.source}` : ''}${l.people ? ' --people' : ''}${l.orientation ? ` --orientation ${l.orientation}` : ''}`);
+    console.log('');
+  }
+  console.log(`Saved ${rel(out)}`);
+  if (!items.length) { console.log('Nothing to show: search in other words (the person, the action, the device), or try again in a minute.'); return 1; }
+  console.log(`Next. Look before you choose:  node scripts/assets.mjs sheet ${rel(out)} --cell 240${items.some((it) => it.kind === 'video') ? '   (then a clip you like through its length: --pick <n> --scan 4)' : ''}`);
+  console.log(`Then: node scripts/assets.mjs get ${items.slice(0, 2).map((it) => `#${it.n}`).join(',')} --to public/assets [--trim start,seconds]   (the screen plate and the cut: references/imagery.md, "Show the core action")`);
+  return 0;
+}
+
 // ------------------------------------------------------------------------------------------------ check, probe, looks, licences
 function cmdCheck(args) {
   if (args.accent && !/^#[0-9a-f]{6}$/i.test(args.accent)) throw new Usage('--accent is a #rrggbb colour');
@@ -1954,6 +2150,12 @@ export const USAGE = `assets.mjs: photographs, footage, textures and art a film 
   sheet  <results.json> [--pick 1,4,7] | <files or folders> [--scan 6] [--cols 4] [--cell 400] [--out sheet.png]
   get    <ref|#n>[,...] --to <film>/public/assets [--from results.json] [--name stem] [--width 2400]
          [--res 1080] [--trim start,seconds] [--max-mb 150] [--allow-credit] [--record path]
+  recipe [<the product's input in your words>] [--run] [--kind video|photo] [--limit 6] [--out file] [--json] [--verify]
+         (the core action shown literally: 40 inputs, from speaking into a phone to a parcel at the door, each with
+         its framing, the screen that takes the UI plate and its searches; 32 also hold clips and photos already
+         looked at (the rest run their searches at once); saves them as a results file for sheet and get #n;
+         --run searches every line again; --verify reads each pick again at its source; no input lists them all;
+         recipe all --verify checks every pick)
   grade  <files or folders> [--look ${Object.keys(LOOKS).join('|')}] [--strength 0..1.5] [--chroma 0.2..1.5]
          [--accent #hex] [--split-hue deg|#hex] [--focus x,y] [--aspect 16:9|none] [--width 2400] [--grain 0..1]
          [--out dir] [--trim start,seconds] [--speed 1] [--scrub] [--dry-run] [--no-check] [--brand-supplied] [--arc]
@@ -1993,7 +2195,8 @@ export async function main(argv) {
       case 'check': return cmdCheck(args);
       case 'looks': return cmdLooks();
       case 'licences': case 'licenses': return cmdLicences(args);
-      default: throw new Usage(`unknown command ${cmd}: search, sheet, get, grade, check, probe, looks, licences`);
+      case 'recipe': case 'recipes': return await cmdRecipe(args);
+      default: throw new Usage(`unknown command ${cmd}: search, sheet, get, recipe, grade, check, probe, looks, licences`);
     }
   } catch (e) {
     if (e instanceof Usage) { console.error(`${e.message}\n\n${USAGE}`); return 2; }
