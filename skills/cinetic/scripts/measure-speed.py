@@ -26,7 +26,10 @@ Cuts. A pair of frames where most pixels change (--cut-frac) and the flow cannot
 renders with one sample, so its frame never averages the two shots into a double exposure (at an act
 boundary src/blur.ts also clamps the samples to the act). A whip pan also changes most pixels, but the flow explains it, so it keeps
 its speed. Smaller unexplained changes are listed as suspect_cuts; with --cues, the ones away from
-act boundaries are flagged.
+act boundaries are flagged. Below 60 fps the flow falls behind a longer step, so the share it may leave
+unexplained rises (1 - (1 - bar) ** (60/fps): cuts 0.75, suspects 0.84 at 30 fps), and a cut also needs a
+cut's size: a mean grey change over the suspect bar (--cut-mad x 60/fps), or nearly every pixel changed
+(the same rise on --cut-frac: 75 % at 30 fps); a fast morph that is no cut at 60 fps is none at 30.
 
   n = 1                                           if speed < --still
   n = clamp(ceil(shutter/360 * speed / step), --min, --max)   otherwise
@@ -66,7 +69,11 @@ the numbers are about the design, not the blur.
 These judgments are about speed on screen, so they are read per 1/60 s whatever the frame rate: the pace
 block, the reading windows and their limits are in px/f@60 (px per frame at 60 fps; a 30 fps film's
 per-frame steps count half, px/s = px/f@60 x 60), so the same picture at 30 and at 60 fps gets the same
-verdict. So do the reads of the flow that assume 60 fps steps: a lower rate's longer step changes more grey
+verdict where the picture moves. Near stillness it is the flow's own floor that reads (measured on a
+ui-walkthrough render: 1-3 px a frame at 1080p, by content), and that floor does not shrink with the step:
+a 30 fps film's near-still reads come out up to half its 60 fps twin's (a read median of 2.2 against 3.6
+px/f@60 there, so a read that warns at 60 fps can pass at 30), and a 1-2 frame peak at 60 fps averages
+into one longer step. So do the reads of the flow that assume 60 fps steps: a lower rate's longer step changes more grey
 (--cut-mad, the suspect-cut bar, x 60/fps) and an eased move's speed changes more between its frames
 (--spike, ** 60/fps), so an ordinary move at 30 fps is neither a suspect cut nor a spike. What a frame's own
 blur needs stays per delivered frame (--still, --step, the samples, too_fast: a 180 deg shutter smears half
@@ -302,8 +309,11 @@ def measure(a, log, t0):
     W = min(a.width, src_w) // 2 * 2
     H = int(round(src_h * W / src_w)) // 2 * 2
     scale = src_w / W
+    k60 = (fps or 60.0) / 60.0
+    # the flow residual is measured wherever a suspect could be called (the bar is --cut-mad x 60/fps, lower above
+    # 60 fps): a pair it skips reads resid 1.0, and at 120 fps every pair over 6 grey levels became a suspect cut
     cfg = dict(mask_thr=a.mask_thr, dense_pct=a.dense_pct, dense_min_px=a.dense_min_px, track_pct=a.track_pct,
-               track_support=a.track_support, fb_tol=a.fb_tol, cut_mad=a.cut_mad, cut_frac=a.cut_frac)
+               track_support=a.track_support, fb_tol=a.fb_tol, cut_mad=min(a.cut_mad, a.cut_mad / k60), cut_frac=a.cut_frac)
     res = []  # per pair (i-1 -> i)
     batch = []
     pool = Pool(a.workers, initializer=init_worker, initargs=(cfg,)) if a.workers > 1 else None
@@ -341,14 +351,25 @@ def measure(a, log, t0):
 
     # Cuts: most pixels change and the flow cannot explain it (hard cut, flash, full-frame flip).
     # No speed from them: a blur sample cannot help there, and a raw read of one reached 1,187 px/f.
-    cuts = [i for i in range(1, n_frames) if frac[i] > a.cut_frac and resid[i] > 0.5]
+    # Below 60 fps a frame carries a longer step of every move, and the flow falls behind a fast morph (a row growing
+    # into a page): what a 60 fps step leaves unexplained compounds over the steps the frame spans, so the residual
+    # bars rise to 1 - (1 - bar) ** (60/fps) (cuts 0.75, suspects 0.84 at 30 fps; every cut measured reads 0.9 or
+    # more at either rate), and a cut also needs a cut's size there: the suspect bar's mean change or nearly every
+    # pixel changed (30 fps, measured: a light morph changed 9-10 grey levels in 53-60 % of the pixels, at 60 fps
+    # 13-32 %; every cut of the film 28 or more, or 93 % of the pixels). At 60 fps and above the rules are as they were.
+    lo = min(k60, 1.0)
+    rise = lambda bar: 1.0 - (1.0 - bar) ** (1.0 / lo)  # noqa: E731  (bar at 60 fps -> bar at this rate)
+    frac_all = rise(a.cut_frac)  # 0.5 at 60 fps and above, 0.75 at 30 fps
+
+    def big(i):
+        return lo >= 1 or mad[i] > a.cut_mad / k60 or frac[i] > frac_all
+    cuts = [i for i in range(1, n_frames) if frac[i] > a.cut_frac and resid[i] > rise(0.5) and big(i)]
     v[cuts] = 0.0
     # Smaller changes the flow cannot explain (floods, flashes on part of the frame) keep their
     # speed, but a hard cut inside an act would let sub-frames straddle it, so those are reported.
     # --cut-mad is a 60 fps frame's change: a frame at a lower rate carries a longer step of the same move
     # (a 30 fps frame twice a 60 fps one), so the bar rises with it and an ordinary move is not a suspect.
-    k60 = (fps or 60.0) / 60.0
-    suspects = [i for i in range(1, n_frames) if mad[i] > a.cut_mad / k60 and resid[i] > 0.6 and i not in cuts]
+    suspects = [i for i in range(1, n_frames) if mad[i] > a.cut_mad / k60 and resid[i] > rise(0.6) and i not in cuts]
     # One-frame spikes: real motion is smooth at 60 fps, so a pair more than --spike x faster than
     # both neighbours stands only when both trackers see it (a peaky whip does; an object entering
     # from off-frame, whose edge the dense flow misreads, does not). Otherwise take the larger neighbour.
@@ -502,7 +523,8 @@ def declarations(path, kc=1.0):
 def self_test():
     """A synthetic crisp film: groups stay 1 outside the camera range, the camera range gets samples,
     too_fast lists only camera frames and a sustained fast move trips the speed ceiling. The same pan at 60 and
-    at 30 fps reads one pace and one verdict."""
+    at 30 fps reads one pace and one verdict; a fast morph is no cut at either rate; a card move at 120 fps is no
+    suspect cut."""
     import shutil
     import tempfile
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -579,6 +601,52 @@ def self_test():
           'a 30 fps cut read with the 60 fps cues finds the window at its own frames (cues frames x fps / cues fps)', f'{rd}')
     check(not clips[30].get('suspect_cuts') and not clips[60].get('suspect_cuts'), 'no step of the eased pan is a suspect cut at either rate',
           f"{clips[60].get('suspect_cuts')} / {clips[30].get('suspect_cuts')}")
+    # a textured card growing fast from a row into most of the frame (eased over 0.25 s), at 60 and at 30 fps: the
+    # flow follows it at 60 fps and falls behind the 30 fps steps; it is a move at both rates, never a cut
+    C = F.texture(3, w, h, scale=3, amp=50)
+    m60 = []
+    for i in range(120):
+        p = 0.5 - 0.5 * math.cos(math.pi * min(1.0, max(0.0, (i - 40) / 15.0)))
+        cw, ch = int(w * (0.25 + 0.69 * p)), int(h * (0.08 + 0.84 * p))
+        img = np.full((h, w, 3), 225, np.uint8)
+        img[(h - ch) // 2:(h - ch) // 2 + ch, (w - cw) // 2:(w - cw) // 2 + cw] = C[:ch, :cw]
+        m60.append(img)
+    morph = {}
+    for r in (60, 30):
+        cp_ = os.path.join(tmp, f'morph{r}.mp4')
+        F.write_clip(cp_, m60[::60 // r], r)
+        json.dump(dict(fps=r, total=2 * r, pace='crisp', acts=dict(a={'from': 0, 'dur': 2 * r})), open(os.path.join(tmp, f'mc{r}.json'), 'w'))
+        o_ = os.path.join(tmp, f'morph{r}.json')
+        subprocess.run([sys.executable, os.path.abspath(__file__), cp_, o_, '--cues', os.path.join(tmp, f'mc{r}.json'), '--workers', '1', '--quiet'],
+                       capture_output=True, text=True)
+        try:
+            morph[r] = json.load(open(o_))
+        except (OSError, ValueError):
+            morph[r] = {'cuts': ['?']}
+    check(all(not morph[r].get('cuts') and not morph[r].get('suspect_cuts') for r in (60, 30)),
+          'a fast morph is no cut and no suspect at 60 or at 30 fps (the residual and cut bars rise at the lower rate)',
+          f"cuts {morph[60].get('cuts')} / {morph[30].get('cuts')}, suspects {morph[60].get('suspect_cuts')} / {morph[30].get('suspect_cuts')}")
+    # 120 fps: the suspect bar falls to 6 grey levels, and the flow residual is measured down to it (a pair it skipped
+    # read as unexplained, so an ordinary move was a run of suspect cuts)
+    xs120, x1 = [], 0.0
+    for i in range(120):
+        x1 += 9.0 * math.sin(math.pi * min(1.0, i / 119.0)) ** 2
+        xs120.append(x1)
+    fr120 = []
+    for xx in xs120:  # a textured card a third of the frame, its picture sliding under it, on a flat ground
+        img = np.full((h, w, 3), 225, np.uint8)
+        img[40:230, 40 + int(0.3 * xx):260 + int(0.3 * xx)] = B[40:230, int(xx):int(xx) + 220]
+        fr120.append(img)
+    c120 = os.path.join(tmp, 'pan120.mp4')
+    F.write_clip(c120, fr120, 120)
+    o120 = os.path.join(tmp, 'pan120.json')
+    subprocess.run([sys.executable, os.path.abspath(__file__), c120, o120, '--workers', '1', '--quiet'], capture_output=True, text=True)
+    try:
+        d120 = json.load(open(o120))
+    except (OSError, ValueError):
+        d120 = {'suspect_cuts': ['?']}
+    check(not d120.get('suspect_cuts') and not d120.get('cuts'), 'an eased card move at 120 fps is no suspect cut (25 before)',
+          f"suspects {str(d120.get('suspect_cuts'))[:60]}")
     shutil.rmtree(tmp, ignore_errors=True)
     print('measure-speed self-test: ' + ('all pass' if not bad else f'{bad} failed'))
     return 1 if bad else 0
