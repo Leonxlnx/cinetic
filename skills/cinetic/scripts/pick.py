@@ -17,14 +17,15 @@ main event, so the type families (type arrivals, lines, layout and swaps, type e
 devices (photos and footage, cut-outs, montages, gradient-mapped photographs) weigh x0.2 unless --have
 names photos or footage.
 
-The script's lines: a film is a short script of real sentences, one clean line on screen at a time, and
-every line gets its own text animation. A whole-film plan therefore draws two parts: the picture plan
-(one device per beat from many families: VFX, camera, seams, the product, the end card) and the line
-track, one text animation per sentence (--lines N; default from the format and the length: a launch
-film 5-8, an update film 4-6), all different, from the type arrivals and the lines, layout and swaps
-families, plus type exits for about half the lines (the others leave by a cut or turn into the next line
-by a swap). The line track is outside the family cap; the picture plan then draws no type device of its
-own. --lines 0 turns the line track off.
+The script's lines: a film is a short script of real sentences, one clean line on screen at a time, read
+in ONE text voice. A whole-film plan therefore draws two parts: the picture plan (one device per beat from
+many families: VFX, camera, seams, the product, the end card) and the line track: the film's voice, one
+text animation every line of the script arrives on (--lines N sentences; default from the format and the
+length: a launch film 5-8, an update film 4-6), plus 0-2 accents for the hero line (one per 30 s of film,
+none in a script of 1-2 lines), from the type arrivals and the lines, layout and swaps families, and one
+exit for the lines that leave on their own (the others cut, or turn into the next line by a swap). A new
+animation on every line reads as a template. The line track is outside the family cap; the picture plan
+then draws no type device of its own. --lines 0 turns the line track off.
 Entries whose formats don't include the film's format (or "any") are never drawn. Entries that
 rely on a house-banned look (ban_safe false) are drawn with their ban-safe variant as the recipe,
 unless --brand-supplied names every look in the entry's "bans" list. Entries whose own recipe breaks a
@@ -94,6 +95,7 @@ Exit 0 on success, 1 when nothing fits the filters, 2 on bad input or an invalid
 """
 import argparse
 import json
+import math
 import os
 import random
 import re
@@ -198,13 +200,15 @@ IMAGERY_HAVE = {'photos', 'footage'}
 IMAGERY_FAMILIES = {'Photos and footage'}
 IMAGERY_MODULES = {'fx/Photo', 'fx/Footage', 'fx/FootageRamp', 'fx/Montage', 'fx/Cutout', 'fx/TypeMask', 'fx/Lens', 'fx/GradientMap'}
 _IMAGERY = re.compile(r'\b(photo\w*|footage)\b', re.I)
-# The line track: one text animation per sentence of the script, all different.
+# The line track: the film's one text voice for every sentence, 0-2 accents for the hero line, one exit.
 LINE_ARRIVAL_FAMILIES = {'Type arrivals', 'Lines, layout and swaps'}
 LINE_EXIT_FAMILIES = {'Type exits'}
 LINE_CATEGORIES = {'typography_motion', 'opening_hook', 'color_and_light'}
 LINES = {'launch': (5, 8), 'update': (4, 6), 'feature': (3, 6), 'vertical': (4, 7), 'loop': (1, 2), 'sting': (1, 1),
          'walkthrough': (5, 12)}  # sentences per film: (fewest, most); about one per 3.5 s in between
 SECONDS_PER_LINE = 3.5
+SECONDS_PER_ACCENT = 30  # at most one contrasting text animation (for the hero line) per 30 s of film
+MAX_ACCENTS = 2
 UI_FAMILIES = {'UI choreography', 'Micro-interactions', 'Cursor', 'Loaders and progress'}
 UI_CATEGORIES = {'ui_choreography', 'micro_interaction'}
 _INPUT = re.compile(r'\b(typing|typed|types into|keystroke\w*|caret|cursor\w*|prompt|command line|terminal|search (?:box|field|bar)'
@@ -274,6 +278,13 @@ def line_count(fmt, seconds):
     """How many sentences the film's script holds (one text animation each)."""
     lo, hi = LINES[fmt]
     return max(lo, min(hi, int(round(seconds / SECONDS_PER_LINE))))
+
+
+def accent_count(seconds, lines):
+    """Contrasting text animations beside the voice: one per 30 s of film (rounded up), at most two; none for 1-2 lines."""
+    if lines < 3:
+        return 0
+    return max(1, min(MAX_ACCENTS, math.ceil(seconds / SECONDS_PER_ACCENT)))
 
 
 def line_pools(pool, has_type_families):
@@ -701,7 +712,7 @@ def main():
     ap.add_argument('--energy', choices=ENERGIES + ['any'],
                     help='weights entries toward this energy (default the direction\'s, else calm: calm words, a moving picture; any: no energy weight)')
     ap.add_argument('--have', help=f'what the film really has (comma-separated: {", ".join(HAVE)}); UI devices need ui, typing and cursor devices input, imagery devices photos or footage')
-    ap.add_argument('--lines', type=int, help='sentences in the script: one text animation each, all different (default per format and length; 0 = no line track)')
+    ap.add_argument('--lines', type=int, help='sentences in the script, all read in the film\'s one text voice (default per format and length; 0 = no line track)')
     ap.add_argument('--direction', help='the dealt sheet (deck.py --direction writes out/direction.json, read by default when it exists; "none" ignores it)')
     ap.add_argument('--seconds', type=float, help='the film length: about one technique per 3.5 s calm, 2.5 s otherwise (default per format)')
     ap.add_argument('--category', choices=CATEGORIES, help='draw only from this category')
@@ -862,11 +873,14 @@ def main():
             got, sig = draw([e for e in pic if e['category'] == cat], 1, rng, a.energy, taken, sig, families, cap, rec, lean, imagery_ok)
             picks += got
         if lines_n:
-            # The line track: one text animation per sentence, all different, outside the family cap; exits for
-            # about half the lines (the others leave by a cut or turn into the next line by a swap).
+            # The line track: the film's one voice (every sentence arrives on it) and 0-2 accents for the hero line,
+            # outside the family cap; one exit for the lines that leave on their own (the others cut, or swap).
             arrivals, exits = line_pools(pool, any(is_type(e) for e in entries))
-            line_picks, sig = draw(arrivals, lines_n, rng, a.energy, taken, sig if direc else 0, None, 0, rec, lean, imagery_ok)
-            exit_picks, _ = draw(exits, lines_n // 2, rng, a.energy, taken, 0, None, 0, rec, lean, imagery_ok)
+            # the voice is an entry of the type arrivals (a layout or a swap is an accent), never a signature one
+            voice, _ = draw([e for e in arrivals if e.get('family') == 'Type arrivals'] or arrivals, 1, rng, a.energy, taken, 0, None, 0, rec, lean, imagery_ok)
+            accents, sig = draw(arrivals, accent_count(seconds, lines_n), rng, a.energy, taken, sig if direc else 0, None, 0, rec, lean, imagery_ok)
+            line_picks = voice + accents
+            exit_picks, _ = draw(exits, 1, rng, a.energy, taken, 0, None, 0, rec, lean, imagery_ok)
     if not picks:
         if single:
             what = ' '.join(x for x in (a.category, f'family {family!r}' if family else '') if x)
@@ -910,24 +924,27 @@ def main():
             print(f"- {e['category']}: {e['name']} (`{e['id']}`, {e['role']}{fam})")
         print()
     if lines_n:
-        print(f"## Text animations: one per line ({lines_n} sentences)\n")
-        print('The script is read one clean line at a time, and every sentence arrives its own way: give each line the '
-              'animation that says what it says (the order is free), and write the pairing into the beat sheet. Never '
-              'the same animation on two lines.\n')
-        for k, e in enumerate(line_picks, 1):
-            print(f"{k}. {e['name']} (`{e['id']}`, {e.get('family') or e['category']})")
+        print(f"## Text animations: one voice ({lines_n} sentences)\n")
+        print('The script is read one clean line at a time, centred, in ONE voice: every sentence arrives on the voice '
+              '(build it with love: the word build, 20 f fades, 6 f apart, re-centring on an expo settle). An accent is a '
+              'contrasting entry for the hero line only (one per 30 s at most), chosen for what that line says; write the '
+              'pairing into the beat sheet. A new animation on every line reads as a template.\n')
+        if line_picks:
+            e = line_picks[0]
+            print(f"- Voice, every line: {e['name']} (`{e['id']}`, {e.get('family') or e['category']})")
+        for e in line_picks[1:]:
+            print(f"- Accent, the hero line: {e['name']} (`{e['id']}`, {e.get('family') or e['category']})")
         if exit_picks:
-            print('\nExits, for the lines that leave on their own (the others cut, or turn into the next line by a swap): '
+            print('\nThe exit, for the lines that leave on their own (the others cut, or turn into the next line by a swap): '
                   + '; '.join(f"{e['name']} (`{e['id']}`)" for e in exit_picks) + '.')
         presets = type_presets(starter_src())
-        if len(line_picks) < lines_n:
-            print(f"\nOnly {len(line_picks)} text animations fit this film from the library: build the other "
-                  f"{lines_n - len(line_picks)} from the device book's type families"
-                  + (' or from the presets below' if presets else '') + '.')
+        if not line_picks:
+            print('\nNo text animation fits this film from the library: take the voice from the device book\'s type '
+                  'families' + (' or from the presets below' if presets else '') + '.')
         if presets:
             print(f"\n`src/fx/TypePresets.tsx` builds {len(presets)} one-line animations from one spec "
-                  f"(`<TypeLine spec={{{{ preset, text, at, out, exit }}}}>`): {', '.join(presets)}. A drawn entry and a "
-                  'preset may be the same move: one preset per line, never one for two lines.')
+                  f"(`<TypeLine spec={{{{ preset, text, at, out, exit }}}}>`): {', '.join(presets)}. The voice may be one "
+                  'of them (a template\'s DEAL.voice): every line on it.')
             hero, soft = type_presets(starter_src(), 'HERO_PRESETS'), type_presets(starter_src(), 'SOFT_PRESETS')
             if hero:
                 print(f"A hero line (the hook, the claim, the promise) takes a confident one: {', '.join(hero)}"
@@ -935,8 +952,8 @@ def main():
         print()
     for e in picks:
         print(render(e, allowed))
-    for k, e in enumerate(line_picks, 1):
-        print(render(e, allowed).replace('### ', f'### Line {k}: ', 1))
+    for k, e in enumerate(line_picks):
+        print(render(e, allowed).replace('### ', '### Voice: ' if k == 0 else '### Accent: ', 1))
     for e in exit_picks:
         print(render(e, allowed).replace('### ', '### Exit: ', 1))
     if a.json:
@@ -946,7 +963,8 @@ def main():
                'recent': recent, 'have': have, 'direction': direc['id'] if direc else None,
                'picks': [row(e) for e in picks]}
         if not single:
-            out.update({'line_count': lines_n, 'lines': [dict(row(e), line=k) for k, e in enumerate(line_picks, 1)],
+            out.update({'line_count': lines_n, 'voice': row(line_picks[0]) if line_picks else None, 'accents': [row(e) for e in line_picks[1:]],
+                        'lines': [dict(row(e), line='voice' if k == 0 else 'accent') for k, e in enumerate(line_picks)],
                         'exits': [row(e) for e in exit_picks]})
         with open(a.json, 'w', encoding='utf-8') as fh:
             json.dump(out, fh, indent=1)

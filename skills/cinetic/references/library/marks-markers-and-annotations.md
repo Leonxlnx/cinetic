@@ -6,15 +6,15 @@ Corner markers, labels, brackets, pen strokes and pointers that point at the one
 
 ### Keyword sits in a highlight block or pill
 
-`dv-keyword-highlight` · typography in motion · workhorse · energy calm · any
+`dv-keyword-highlight` · typography in motion · signature · energy calm · any
 
 The keyword rises into a soft rounded highlight block of the accent that then wipes off, turns the accent in 2 frames, pops in a solid accent pill (62 % -> 100 % in 2 frames), or a pale card appears behind the key comment while the scroll settles; a mention is a tinted chip; two small accent ticks point at the selected row.
 
 - **Build:** Words accentOn + a rounded rect behind the word (measured under FontGate) with a Wipe exit; pill pop via Oversize from 0.62 in 2 f. Anatomy: Block with a soft edge (about 25 px feather) sized to the word; rise 6 f, hold 10 f, wipe 12 f; pill pop 2 f linear. Sound: The voice on the keyword; a shutter click.
 - **Primitive:** `fx/Words`
 - **Timing:** 4-40 f.
-- **Use when:** The one word or item that matters in a line or list.
-- **Avoid when:** Highlighting more than one word per line.
+- **Use when:** The one word or item that matters in a film, as its declared signature (one line).
+- **Avoid when:** A block or pill on more than one line of a film; more than one word per line.
 
 ### Connector lines draw from one element to the next
 

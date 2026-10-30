@@ -22,9 +22,9 @@
      --direction (out/direction.json by default) sets the plan's format, honours its --have, weights its
      techniques up, never draws the ones that fight it and holds one signature, its own; --family takes
      the start of a name.
-  9. The script's lines: a whole-film plan carries a line track, one text animation per sentence (--lines,
-     default from the format and length), all different, from the type families, outside the family cap,
-     with exits for about half the lines; the picture plan then draws no type device; --lines 0 turns it
+  9. The script's lines: a whole-film plan carries a line track in one voice: one text animation for every
+     sentence (--lines, default from the format and length) from the type arrivals, 0-2 accents for the hero
+     line (one per 30 s, none for 1-2 lines), one exit, outside the family cap; the picture plan then draws no type device; --lines 0 turns it
      off; type devices weigh x2, imagery devices x0.2 unless --have photos or footage; the JSON and the
      history carry the lines, and the next plan's --recent names them; the plan names the presets of
      src/fx/TypePresets.tsx when the starter has them.
@@ -490,25 +490,29 @@ TYPE_FAMS = {'Type arrivals', 'Lines, layout and swaps', 'Type exits'}
 result([mod.line_count('launch', s_) for s_ in (15, 20, 30, 45)] == [5, 6, 8, 8] and mod.line_count('update', 14) == 4
        and mod.line_count('sting', 6) == 1 and mod.line_count('loop', 10) == 2,
        'a script holds 5-8 sentences in a launch film, 4 in a 14 s update, 1 in a sting, 2 in a loop')
+result([mod.accent_count(s_, n_) for s_, n_ in ((15, 5), (30, 8), (45, 8), (90, 12), (25, 2))] == [1, 1, 2, 2, 0],
+       'accents beside the voice: one per 30 s of film (rounded up), at most two, none for a script of 1-2 lines')
 bad_l, mixed, short = [], [], []
 for s_ in range(12):
     r, d = draw_json('--format', 'launch', '--seconds', '30', '--seed', str(s_), '--direction', 'none', library=SHIPPED)
     lines, exits, pic = d.get('lines', []), d.get('exits', []), d['picks']
     lids = [x['id'] for x in lines]
-    if len(lines) != 8 or len(set(lids)) != 8 or [x['line'] for x in lines] != list(range(1, 9)):
+    if d.get('line_count') != 8 or len(lines) != 2 or len(set(lids)) != 2 or [x['line'] for x in lines] != ['voice', 'accent'] or (d.get('voice') or {}).get('id') != lids[0]:
         short.append(f'{s_}: {len(lines)} lines')
-    bad_l += [x['id'] for x in lines if x['family'] not in {'Type arrivals', 'Lines, layout and swaps'}]
+    bad_l += [x['id'] for x in lines[:1] if x['family'] != 'Type arrivals' or x['role'] == 'signature']
+    bad_l += [x['id'] for x in lines[1:] if x['family'] not in {'Type arrivals', 'Lines, layout and swaps'}]
     bad_l += [x['id'] for x in exits if x['family'] != 'Type exits']
-    if len(exits) != 4 or set(lids) & {x['id'] for x in pic} or set(lids) & {x['id'] for x in exits}:
+    if len(exits) != 1 or set(lids) & {x['id'] for x in pic} or set(lids) & {x['id'] for x in exits}:
         short.append(f'{s_}: {len(exits)} exits, or a line also drawn elsewhere')
     mixed += [x['id'] for x in pic if x['family'] in TYPE_FAMS or x['category'] == 'typography_motion']
-result(not short and not bad_l, 'a 30 s launch plan draws 8 different text animations (one per line) and 4 exits from the type families',
+result(not short and not bad_l and '## Text animations: one voice' in r.stdout and 'Voice, every line' in r.stdout,
+       'a 30 s launch plan reads its 8 sentences in one voice from the type arrivals, one accent for the hero line and one exit',
        '; '.join(short[:3]) + ' ' + ', '.join(bad_l[:3]))
 result(not mixed, 'with a line track the picture plan draws no type device of its own', ', '.join(sorted(set(mixed))[:4]))
 r, d = draw_json('--format', 'launch', '--seconds', '30', '--seed', '3', '--lines', '7', '--direction', 'none', library=SHIPPED)
 head = r.stdout.splitlines()[0] if r.stdout else ''
-result(len(d.get('lines', [])) == 7 and '--lines 7' in head and '## Text animations: one per line (7 sentences)' in r.stdout,
-       '--lines 7: seven text animations, and the header reproduces it', head[:120])
+result(d.get('line_count') == 7 and len(d.get('lines', [])) == 2 and '--lines 7' in head and '## Text animations: one voice (7 sentences)' in r.stdout,
+       '--lines 7: seven sentences in one voice (and an accent), and the header reproduces it', head[:120])
 off = [x for s_ in range(12) for x in draw_json('--format', 'launch', '--seconds', '30', '--seed', str(s_), '--lines', '0', '--direction', 'none', library=SHIPPED)[1]['picks']]
 r0, d0 = draw_json('--format', 'launch', '--seed', '1', '--lines', '0', '--direction', 'none', library=SHIPPED)
 result(not d0.get('lines') and 'Text animations' not in r0.stdout and any(x['category'] == 'typography_motion' for x in off),
