@@ -122,6 +122,7 @@ python3 scripts/audio/kit.py render                  # audio/kit.json -> audio/k
 python3 scripts/audio/plan.py                        # out/qa/sfx_plan.json + out/qa/cues_sounded.json (npm run plan)
 python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json \
     --out public/audio/soundtrack.wav --stems out/stems --json out/qa/score.json   # (npm run audio: plan, then score)
+python3 scripts/audio/score.py ... --bed-only        # a track whose effects are not made yet: the edited track alone
 python3 scripts/audio/listen.py                      # earshot's ears: out/qa/listen.json + sound_sheet.png (npm run listen)
 python3 scripts/audio/kit.py check                   # the kit against the film's cues + earshot's audit of every take
 python3 scripts/audio/master.py --measure public/audio/soundtrack.wav   # loudness, true peak, LRA, PLR of any WAV
@@ -130,13 +131,15 @@ python3 scripts/audio/credits.py                     # Step 8: CREDITS.md + CRED
 
 `plan.py` decides every effect before anything is mixed (role, take, start, gain over the bed, width, runs, the hits the track carries, the stop-downs) and `score.py` renders exactly that plan over the staged, edited track (an effects-only film renders its kit at `level_db`). It writes a 48 kHz, 24-bit stereo WAV exactly `TOTAL / FPS` seconds long, the stems (`bed.wav` as played and `sfx.wav`, which sum to the premix) and the report. `render.sh --audio` muxes it (`references/finishing.md` §6); never let Remotion encode the audio. `render.sh --build-audio` runs cues, kit, plan and score first.
 
+**The track only ever plays through `score.py`.** The timeline cut every act to the edit's film-time grid, and the edit puts bar 1's downbeat at its `film_t0` (0.25 s by default), its joins on their attacks and its ending on the track's own decay. A film whose effects are not made yet renders the edited track alone with `score.py --bed-only` (the same bed, staging and master as the full mix, no kit read). Never cut the track by hand with ffmpeg: a cut from the first segment's `src_from` at 0 s drops `film_t0` and puts every downbeat 250 ms early against the cuts, and an intermediate lossy encode can add its priming pad on top (2048 samples at 44.1 kHz is 46 ms of silence); the mux lag gate passes it anyway, because the WAV and the MP4 agree with each other.
+
 **Gate (Step 8):**
 - loudness: the target ±0.5 LUFS integrated (§9), true peak ≤ −1.5 dBTP on the WAV, last 480 samples digital zero;
 - no generated music (`music.source` is `none` or `track:<record>`) and every effect from the kit (no placeholder voice, nothing missing; a `--draft` render never passes);
 - with a track: every effect within ±2 dB of its role's `bed_db` (warn per role), a measured dip of 6 dB or more before every stop-down target and the bed back within 3 dB on the hit (a failure at the payoff), no ducking anywhere (the bed's gain moves only for stop-downs, silences and the end fade), every join clean (no click, the incoming attack within ±2 ms of its film downbeat, a loudness step under 3 LU unless it is the entry), density 3–13 effects per 10 s (no floor for a sting of 8 s or less: one element), one gesture (no heavy effect on the track's own accent), one element at the lockup;
 - the report clean or every warning answered. `score.py` exits 1 when a gate fails.
 
-After the mux, `scripts/check-sync.py` gates lag ≤ 48 samples and ≤ −1 dBTP on the decoded MP4, and `scripts/av-audit.py --stems out/stems` checks every onset against its intended time (`out/qa/cues_sounded.json`: the cue plus the role's offset), the structural cuts against the music (`music_sync`) and the masking margin per role (`references/review-loop.md`); with earshot, `listen.py` adds a listening pass (§9.1). `deliver.sh` runs `credits.py` for a film with a track and refuses to deliver without a valid licence record or a CC BY credit line (`references/music.md` §8).
+After the mux, `scripts/check-sync.py` gates lag ≤ 48 samples and ≤ −1 dBTP on the decoded MP4, and, whenever `out/cues.json` exists, every sound against its frame on the decoded audio: each placed effect of `out/qa/sfx_plan.json` is found in the mix by cross-correlation with its take as `score.py` plays it (the edited bed taken out first, so a quiet key under the music is still found), and the take's own sync point, the one `plan.py` put on the cue (its onset, or the loudest 5 ms for whooshes, risers and swells, measured on the file under its lock's rule), must sit within ±1 delivered frame of its cue frame (a role's planned offset widens its own side only; `--strict` drops that; a take changed after it was locked, or a recording's pre-roll heard more than 45 ms before its picture, warns); the edited track, rebuilt from `edit.json`, must sit within ±1 frame of where the edit puts it at every act change, structural cue and declared seam, so the track's own hits land on the cuts (`--picture` also measures the picture's cut at every act change). Each effect and each cut is listed with its offset in frames. Then `scripts/av-audit.py --stems out/stems` checks every onset against its intended time (`out/qa/cues_sounded.json`: the cue plus the role's offset), the structural cuts against the music (`music_sync`) and the masking margin per role (`references/review-loop.md`); with earshot, `listen.py` adds a listening pass (§9.1). `deliver.sh` runs `credits.py` for a film with a track and refuses to deliver without a valid licence record or a CC BY credit line (`references/music.md` §8).
 
 ## 3. cues.json and the event kinds
 
@@ -429,7 +432,7 @@ Targets: the film's LUFS ±0.5; true peak ≤ −1.5 dBTP on the WAV and ≤ −
 
 You cannot listen, so measure what a listener hears:
 
-- **Sync:** `av-audit.py` matches onsets to intended times (`cues_sounded.json`) within ±2 f; `check-sync.py` cross-correlates the muxed audio with the WAV.
+- **Sync:** `check-sync.py` cross-correlates the muxed audio with the WAV, then measures every placed effect and the music at every cut on the delivered file against its frame (±1 f); `av-audit.py` matches onsets to intended times (`cues_sounded.json`) within ±2 f.
 - **Levels:** the report's `over_bed` (each effect over the bed it was levelled against, per role) and `masked` (each effect over the bed in its best band: 3 dB for roles 4 dB or less over the bed, 6 dB for the rest). The payoff, the lockup or a structural sound that reads under the music in its best band fails, whatever the over-bed range says (audibility wins: raise its role's `bed_db` or cast another sound); more than 30 % of the effects masked warns.
 - **Arc:** the momentary-loudness curve (`master.blocks()`): the intro under the body, the payoff highest, the dip, the ending.
 - **Timbre:** `kit.py audition` (and `--over-bed`), `kit.py check`, and `listen.py`'s sound sheet.
@@ -491,6 +494,8 @@ You cannot listen, so measure what a listener hears:
 | Peaks over −1 dBTP after encode | ceiling raised, or effects added after the master | keep ceiling 0.77; re-run `score.py` after every change |
 | A kit sound starts before its move | a whoosh take with a long build on a short move | `score.py` fades the lead-in to start at most 2 f before the move |
 | Sound late after mux | Remotion's AAC priming | render `--muted`, mux with ffmpeg (`render.sh` does) |
+| Every music hit 5–8 f early (or late) against the cuts while the mux lag gate passes | the track cut by hand: `film_t0` dropped (bar 1 belongs 0.25 s in), an intermediate encode's priming pad, a hand offset | `score.py` (or `--bed-only` before the kit exists); `check-sync.py` measures the music against the edit at every cut and names the offset |
+| A 30 fps delivery of a 60 fps timeline shows some cuts half a frame late | keeping every second frame: an act change on an odd 60 fps frame first shows on the next even one | the sound stays on the cue's time (within the ±1 f gate); for a 30 fps delivery put act changes on even frames, or render at 30 fps; `check-sync.py --picture` lists each cut's offset |
 
 HyperFrames: it has no master bus, loudness stage or audio-to-picture sync. Export the same `out/cues.json` from the composition's timeline, render the WAV with `score.py`, and mux it with `scripts/hf-finish.sh --audio` (`references/hyperframes-engine.md` §11). A film with a track loads `music.js` before `timeline.js`.
 
@@ -557,4 +562,5 @@ Premium, in one line: restraint, one palette, a licensed track cut on its bars, 
 
 **Sync**
 - The picture may lead its sound by 1–3 f; a sound never leads its picture by more than 45 ms, except a role's designed offset.
+- On the delivered file every effect's sync point sits within ±1 frame of its cue frame (its role's designed offset aside) and the music within ±1 frame of where the edit puts it: `check-sync.py` measures both.
 - Judge sync only against onsets 6 dB or more over the bed.

@@ -1,57 +1,100 @@
 #!/usr/bin/env python3
-"""Sync and true-peak gate for a muxed film: is the delivered audio where the source WAV says it is?
+"""Sync and true-peak gate for a muxed film: is the delivered audio where the source WAV says it is, and does
+every sound land on its frame?
 
-Decodes the audio of the rendered file (after AAC, exactly what a viewer hears), cross-correlates it
-with the source soundtrack at a few points and fails if any lag exceeds the tolerance (48 samples =
-1 ms at 48 kHz). Remotion's own AAC mux leaves ~2048 samples of encoder priming in the stream, so an
-unchecked mux is typically 2-3 frames late; this catches that and any wrong-file or trimmed mux.
-It also measures the true peak of the decoded audio (4x oversampled): AAC encoding raises peaks by
-~0.5-1 dB, so a WAV that passed before encode can clip after.
+Two gates on the decoded audio of the rendered file (after AAC, exactly what a viewer hears):
 
-Sample points: by default 12%, 45% and 85% of the overlap; a point whose reference window is
-silent moves to the nearest window with signal, so fades and silences never produce false fails.
-Both signals are high-passed (500 Hz) and the correlation is normalised by the local energy of
-each candidate window. Without that, a sustained low bass note (one 49 Hz cycle is ~980 samples)
-or a fading tail makes the raw correlation peak a whole bass cycle away from the true lag.
+1. Lag against the source WAV. Cross-correlates the decoded audio with the source soundtrack at a few points
+   and fails if any lag exceeds the tolerance (48 samples = 1 ms at 48 kHz). Remotion's own AAC mux leaves
+   ~2048 samples of encoder priming in the stream, so an unchecked mux is typically 2-3 frames late; this
+   catches that and any wrong-file or trimmed mux. It also measures the true peak of the decoded audio (4x
+   oversampled): AAC encoding raises peaks by ~0.5-1 dB, so a WAV that passed before encode can clip after.
+   Sample points: by default 12%, 45% and 85% of the overlap; a point whose reference window is silent moves
+   to the nearest window with signal. Both signals are high-passed (500 Hz) and the correlation is normalised
+   by the local energy of each candidate window, so a sustained bass note cannot pull the lag a cycle away.
+
+2. Frames: every sound against its cue's frame (on whenever out/cues.json exists; --cues names another,
+   --no-frames skips it). The lag gate only proves the mux matches the WAV; a WAV cut by hand can be early
+   or late everywhere and still pass it. This gate measures the delivered audio against the picture's frames:
+   effects  every placed effect of the plan (out/qa/sfx_plan.json, beside the cues): the take as score.py
+            plays it is found in the decoded audio by normalised cross-correlation, with the edited bed (below)
+            taken out first (its gain fitted per 20 ms block), so a quiet key or tick the music covers is still
+            found. Its sync point is the take file's own point that plan.py placed on the cue, measured on the
+            file under the rule its lock was written with (earshot's: the mono sum's 1 ms envelope within -30 dB,
+            the loudest 5 ms; kit.py measure_take's for real and library takes: the first sample at 10 % of the
+            peak), so a take changed after it was locked shows as its own offset (and warns). That point must
+            sit within +-1 frame of the cue's frame; a role's planned offset (offset_ms: taps lead, pop-in thumps
+            and whoosh peaks land after) widens the window on its side only (--strict: no widening). A take
+            heard (-20 dB) more than 45 ms before its picture, a recording's pre-roll ahead of the onset the plan
+            aligned, warns. An effect the music still covers so that it cannot be found is listed; when most of
+            them cannot be found, the audio is not this film's mix (fail).
+   music    with a track (audio/music/edit.json): the edited bed is rebuilt from the edit (track.py
+            build_bed: bar 1 at the edit's film_t0) and found in the decoded audio at every act change,
+            structural cue and declared seam; the music must sit within +-1 frame of where the edit puts it,
+            so the track's own hits land on the cuts the timeline cut to them. A hand cut that drops film_t0,
+            a pad of encoder priming or a shifted mux fails here.
+   picture  (--picture: it decodes the video around every act change) the picture's own cut, the largest frame
+            difference within +-6 frames, against the cue frame; a clear cut more than 1 frame off warns (a
+            30 fps delivery that keeps every second frame of a 60 fps timeline shows a cut on an odd 60 fps
+            frame one 60 fps frame, half a delivered frame, late).
+   One frame is the delivered video's frame (its frame rate, else the cues' fps).
 
 Usage:
   python3 scripts/check-sync.py out/film.mp4 [public/audio/soundtrack.wav]
   python3 scripts/check-sync.py out/act3.mp4 public/audio/soundtrack.wav --ref-offset 14.0
   python3 scripts/check-sync.py out/film.mp4 --points 4,14,28 --tol 48 --tp-max -1 --json out/qa/sync.json
+  python3 scripts/check-sync.py out/film.mp4 --cues out/cues.json --plan out/qa/sfx_plan.json --edit audio/music/edit.json
 
 Options: --tol samples (48), --points auto|comma-separated seconds, --window s (2.0), --search s
-(0.1), --ref-offset s (video t=0 corresponds to this time in the WAV, for excerpt renders),
+(0.1), --ref-offset s (video t=0 corresponds to this time in the WAV and in the film, for excerpt renders),
 --tp-max dBTP (-1.0), --min-corr (0.5, below this the audio does not match the source),
---highpass Hz (500; 0 = broadband),
---lufs/--lufs-tol (optional loudness gate), --json FILE, --quiet.
+--highpass Hz (500; 0 = broadband), --lufs/--lufs-tol (optional loudness gate), --json FILE, --quiet.
+Frames: --cues FILE (default out/cues.json when it exists), --plan FILE (default <cues dir>/qa/sfx_plan.json),
+--edit FILE (default audio/score.json's music.edit, else audio/music/edit.json), --takes DIR (default the
+kit's takes folder, audio/kit), --frame-tol frames (1.0), --strict (no offset widening), --no-frames,
+--picture. Without the source WAV (the default path missing) the lag gate is skipped and only the
+frames gate runs.
 Prints JSON on stdout, a readable summary on stderr. Exit 0 = pass, 1 = fail.
 """
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
+import types
 
 import numpy as np
 import soundfile as sf
 from scipy import signal
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+SR = 48000
+
 
 def parse_args():
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0], formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('video')
-    ap.add_argument('source', nargs='?', default='public/audio/soundtrack.wav')
+    ap.add_argument('source', nargs='?', default=None, help='the source WAV (default public/audio/soundtrack.wav)')
     ap.add_argument('--tol', type=int, default=48, help='max |lag| in samples (default 48 = 1 ms at 48 kHz)')
     ap.add_argument('--points', default='auto', help="'auto' (12/45/85%%) or seconds, e.g. 4,14,28")
     ap.add_argument('--window', type=float, default=2.0, help='correlation window, seconds')
     ap.add_argument('--search', type=float, default=0.1, help='max lag searched, seconds')
-    ap.add_argument('--ref-offset', type=float, default=0.0, help='WAV time that corresponds to video t=0')
+    ap.add_argument('--ref-offset', type=float, default=0.0, help='WAV (and film) time that corresponds to video t=0')
     ap.add_argument('--tp-max', type=float, default=-1.0, help='true-peak ceiling after decode, dBTP')
     ap.add_argument('--min-corr', type=float, default=0.5, help='min normalised correlation at the best lag')
     ap.add_argument('--highpass', type=float, default=500.0,
                     help='high-pass both signals at this frequency (Hz) before correlating; 0 = broadband (default 500)')
     ap.add_argument('--lufs', type=float, help='optional integrated-loudness gate target')
     ap.add_argument('--lufs-tol', type=float, default=1.0)
+    ap.add_argument('--cues', help='cues.json for the frames gate (default out/cues.json when it exists)')
+    ap.add_argument('--plan', help='the effects plan (default <cues dir>/qa/sfx_plan.json)')
+    ap.add_argument('--edit', help="the music edit (default audio/score.json's music.edit, else audio/music/edit.json)")
+    ap.add_argument('--takes', help='the kit takes folder (default from audio/score.json sfx.kit, else audio/kit)')
+    ap.add_argument('--frame-tol', type=float, default=1.0, help='frames gate tolerance in video frames (default 1)')
+    ap.add_argument('--strict', action='store_true', help="frames gate: a role's planned offset does not widen the window")
+    ap.add_argument('--no-frames', action='store_true', help='skip the frames gate')
+    ap.add_argument('--picture', action='store_true', help='frames gate: also measure the picture cut at every act change')
     ap.add_argument('--json', help='also write the report here')
     ap.add_argument('--quiet', action='store_true')
     return ap.parse_args()
@@ -71,39 +114,36 @@ def ncc(dw, rw):
     return c / (seg * np.linalg.norm(rw) + 1e-12)
 
 
-def main():
-    a = parse_args()
-    report = {'video': a.video, 'source': a.source, 'pass': False}
-
-    def say(msg):
-        if not a.quiet:
-            sys.stderr.write(msg + '\n')
-
-    def done(ok):
-        report['pass'] = bool(ok)
-        out = json.dumps(report, indent=1)
-        print(out)
-        if a.json:
-            os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
-            with open(a.json, 'w') as fh:
-                fh.write(out + '\n')
-        say('check-sync PASS' if ok else 'check-sync FAIL')
-        sys.exit(0 if ok else 1)
-
-    for p in (a.video, a.source):
-        if not os.path.exists(p):
-            report['error'] = f'missing file: {p}'
-            say(report['error'])
-            done(False)
-
-    ref, sr = sf.read(a.source, always_2d=True, dtype='float32')
-    r = subprocess.run(['ffmpeg', '-v', 'error', '-i', a.video, '-map', '0:a:0', '-f', 'f32le', '-ac', '2', '-ar', str(sr), '-'],
-                       capture_output=True)
+def decode_audio(path, sr, ch=2):
+    r = subprocess.run(['ffmpeg', '-v', 'error', '-nostdin', '-i', path, '-map', '0:a:0', '-f', 'f32le', '-ac', str(ch),
+                        '-ar', str(sr), '-'], capture_output=True)
     if r.returncode or not r.stdout:
-        report['error'] = 'no decodable audio stream in the video: ' + r.stderr.decode(errors='replace').strip()[:300]
-        say(report['error'])
-        done(False)
-    dec = np.frombuffer(r.stdout, dtype=np.float32).reshape(-1, 2)
+        return None, r.stderr.decode(errors='replace').strip()[:300]
+    return np.frombuffer(r.stdout, dtype=np.float32).reshape(-1, ch), ''
+
+
+def video_fps(path):
+    """(fps, has video) of a file's first video stream; (None, False) for an audio file."""
+    r = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=r_frame_rate,codec_name',
+                        '-of', 'json', path], capture_output=True, text=True)
+    try:
+        st = json.loads(r.stdout or '{}').get('streams') or []
+    except json.JSONDecodeError:
+        st = []
+    if not st or st[0].get('codec_name') in ('png', 'mjpeg'):  # no video, or a cover picture
+        return None, False
+    num, _, den = (st[0].get('r_frame_rate') or '0/1').partition('/')
+    try:
+        fps = float(num) / float(den or 1)
+    except (ValueError, ZeroDivisionError):
+        fps = 0.0
+    return (fps if fps > 0 else None), fps > 0
+
+
+# ------------------------------------------------------------------------------------------
+# lag against the source WAV
+# ------------------------------------------------------------------------------------------
+def lag_gate(a, report, say, ref, sr, dec):
     ref_m = ref.mean(axis=1) if ref.shape[1] > 1 else ref[:, 0]
     dec_m = dec.mean(axis=1)
     off = int(round(a.ref_offset * sr))
@@ -132,7 +172,7 @@ def main():
     if overlap * sr < n_win + 2 * search:
         report['error'] = f'overlap too short to measure ({overlap:.2f}s)'
         say(report['error'])
-        done(False)
+        return False
 
     lo_t, hi_t = a.search, overlap - win - a.search  # window starts that leave room for the search
     if a.points == 'auto':
@@ -148,7 +188,7 @@ def main():
     if not loud:
         report['error'] = 'reference is silent everywhere in the overlap; nothing to correlate'
         say(report['error'])
-        done(False)
+        return False
     used = set()
     for t in wanted:
         tt = t
@@ -173,6 +213,537 @@ def main():
     if weak:
         say(f'  weak correlation (< {a.min_corr}): the muxed audio does not match {a.source}')
     say(f'sync {"OK" if sync_ok else "FAIL"}: worst {worst} samples (tol {a.tol})')
+    return sync_ok
+
+
+# ------------------------------------------------------------------------------------------
+# frames: every sound against its cue's frame
+# ------------------------------------------------------------------------------------------
+HP_HZ = 150.0          # the frames gate's high-pass: under it the bed's bass owns the correlation
+FOUND_CORR = 0.45      # an effect located at this normalised correlation or more is measured and gated
+FAR_CORR = 0.7         # a lock more than 2 frames off the plan must be this clear, else it may be a neighbour or the music
+LOW_FRAC = 0.5         # a take with this much of its energy under 150 Hz (a thump) is matched with its lows (40 Hz high-pass)
+BED_CORR = 0.5         # a bed window located at this correlation or more is gated
+EFFECT_SEARCH_S = 0.35  # +- search around the planned start (~10 f at 30 fps)
+BED_SEARCH_S = 0.5
+
+
+def read_json(path):
+    with open(path, encoding='utf-8') as fh:
+        return json.load(fh)
+
+
+def project_root(cues_path):
+    """the project folder of a cues file (out/cues.json -> .)"""
+    d = os.path.dirname(os.path.abspath(cues_path))
+    return os.path.dirname(d) if os.path.basename(d) == 'out' else d
+
+
+def _env(m, win, hop):
+    """(RMS of win-sample windows every hop samples, window starts)"""
+    c = np.concatenate([[0.0], np.cumsum(m * m)])
+    st = np.arange(0, max(1, len(m) - win + 1), hop)
+    return np.sqrt(np.maximum((c[np.minimum(st + win, len(m))] - c[st]) / win, 0.0)), st
+
+
+def take_points(x):
+    """a take file's sync points under both rules a kit lock is written with, in seconds:
+    'mono'   earshot's lock (forge bank times()): the mono sum's 1 ms envelope first within -30 dB of its maximum
+             (onset), the centre of the mono sum's loudest 5 ms (peak);
+    'louder' kit.py measure_take (real and library takes), on |the larger of the two samples|: the first sample at 10 % of
+             the peak sample (onset), the centre of the loudest 5 ms (peak).
+    Each peak comes with the span of its plateau within 1.5 dB (a swell's bloom has no single loudest instant:
+    any point of that span is its peak). 'pre' is where the mono sum's 1 ms envelope first reaches -20 dB of its
+    maximum: the earliest a listener hears the take."""
+    out = {}
+    mono = x.mean(axis=1) if x.ndim == 2 else x
+    loud = np.abs(x.max(axis=1) if x.ndim == 2 else x)  # measure_take: |the larger of the two samples|
+    if not len(mono) or not np.any(loud):
+        z = dict(onset=0.0, peak=(0.0, 0.0, 0.0))
+        return dict(mono=z, louder=z, pre=0.0)
+    w5, h1 = SR // 200, SR // 1000
+
+    def peak(m, hop):
+        e5, s5 = _env(m, w5, hop)
+        ip = int(np.argmax(e5))
+        ok = e5 >= e5[ip] * 10 ** (-1.5 / 20)
+        a = ip
+        while a > 0 and ok[a - 1]:
+            a -= 1
+        b = ip
+        while b < len(ok) - 1 and ok[b + 1]:
+            b += 1
+        ctr = lambda i: (s5[i] + w5 / 2) / SR  # noqa: E731
+        return ctr(ip), ctr(a), ctr(b)
+    e1, s1 = _env(mono, SR // 1000, SR // 4000)
+    out['mono'] = dict(onset=s1[int(np.argmax(e1 >= e1.max() * 10 ** (-30 / 20)))] / SR, peak=peak(mono, h1))  # 1 ms hops, as earshot
+    out['louder'] = dict(onset=int(np.argmax(loud >= 0.1 * loud.max())) / SR, peak=peak(loud, 1))  # every sample, as measure_take
+    out['pre'] = s1[int(np.argmax(e1 >= e1.max() * 0.1))] / SR
+    return out
+
+
+def read_locks(takes_dir):
+    """{take file: its lock entry} from every *.lock.json of the takes folder (kit.lock.json, real.lock.json)"""
+    locks = {}
+    try:
+        names = sorted(n for n in os.listdir(takes_dir) if n.endswith('.lock.json'))
+    except OSError:
+        return locks
+    for n in names:
+        try:
+            j = read_json(os.path.join(takes_dir, n))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for r in ((j.get('roles') or {}) if isinstance(j, dict) else {}).values():
+            for tk in ((r or {}).get('takes') or []) if isinstance(r, dict) else []:
+                if isinstance(tk, dict) and tk.get('file'):
+                    locks.setdefault(tk['file'], tk)
+    return locks
+
+
+def sync_point(x, align, lock=None):
+    """(sync point, earliest, latest, rule, pre) in seconds of a take file: the point plan.py placed on the cue
+    (MK.place puts the lock's onset_s or peak_s there), measured on the file itself under the rule its lock was
+    written with (the rule whose point lies nearest the lock's; earshot's without a lock), so the gate measures the
+    point the plan aligned, and a take changed after it was locked shows as its own offset"""
+    pts = take_points(x)
+
+    def at(rule):
+        v = pts[rule][align] if align in ('onset', 'peak') else pts[rule]['onset']
+        return v if isinstance(v, tuple) else (v, v, v)
+    rule = 'mono'
+    if lock is not None and lock.get(f'{align}_s') is not None:
+        ls = float(lock[f'{align}_s'])
+        rule = min(('mono', 'louder'), key=lambda r: abs(at(r)[0] - ls))
+    sp, lo, hi = at(rule)
+    return sp, lo, hi, rule, pts['pre']
+
+
+def locate(hay, h0, tpl, expect, search, near=True):
+    """(start s of tpl in hay, corr) searched within expect +- search; hay starts at time h0 (s). Among the
+    candidates within 0.9 of the best correlation the one nearest the expected time wins (a run of the same take)."""
+    s0 = int(round((expect - search - h0) * SR))
+    s1 = int(round((expect + search - h0) * SR)) + len(tpl)
+    lo = max(0, s0)
+    seg = hay[lo:min(len(hay), s1)]
+    if len(seg) < len(tpl) + 2 or np.linalg.norm(tpl) <= 0:
+        return None, 0.0
+    c = ncc(seg, tpl)
+    best = float(c.max())
+    if near:  # the best lag of each run of lags within 0.9 of the best (runs 4 ms apart are separate candidates)
+        idx = np.nonzero(c >= 0.9 * best)[0]
+        groups = np.split(idx, np.nonzero(np.diff(idx) > int(0.004 * SR))[0] + 1)
+        cand = [int(g[np.argmax(c[g])]) for g in groups if len(g)]
+        k = min(cand, key=lambda k: abs(h0 + (lo + k) / SR - expect))
+    else:
+        k = int(np.argmax(c))
+    return h0 + (lo + k) / SR, float(c[k])
+
+
+def effect_rows(plan, root, takes_dir, dec_hp, dec_lo, fps_v, ref_offset, tol_s, strict, sos, sos_lo):
+    """each placed effect: where its sync point plays in the delivered audio against its cue frame"""
+    sys.path.insert(0, os.path.join(HERE, 'audio'))
+    import kit as K
+    import score as SC
+    p_fps = float(plan['fps'])
+    rows = []
+    cache = {}
+
+    class Shim:  # the kit as plan_voice reads it: the take files of the plan, read as score.py reads them
+        def __init__(self):
+            self.roles = {}
+
+        def audio(self, tk):
+            if tk['file'] not in cache:
+                cache[tk['file']] = K.read_take(os.path.join(takes_dir, tk['file']))
+            return cache[tk['file']]
+
+    shim, song = Shim(), types.SimpleNamespace(fps=p_fps)
+    locks = read_locks(takes_dir)
+    dur_v = len(dec_hp) / SR
+    starts = sorted(float(q['start_s']) for q in plan.get('events') or [])
+    for p in plan.get('events') or []:
+        cue = float(p['f']) / p_fps - ref_offset
+        want = float(p.get('sync_s', p['f'] / p_fps)) - ref_offset
+        row = dict(f=p['f'], kind=p['kind'], role=p['role'], action=p.get('action'), id=p.get('id'), align=p.get('align', 'onset'),
+                   offset_ms=p.get('offset_ms'), take=p['take'], cue_s=round(cue + ref_offset, 4))
+        if cue < -0.05 or cue > dur_v + 0.05:
+            row['status'] = 'outside'
+            rows.append(row)
+            continue
+        if not os.path.isfile(os.path.join(takes_dir, p['take'])):
+            row.update(status='missing', why=f"take {p['take']} not in {takes_dir}")
+            rows.append(row)
+            continue
+        shim.roles = {p['role']: {'takes': [{'file': p['take']}]}}
+        x, start = SC.plan_voice(shim, p, song)
+        # the sync point is the take file's own (the point the plan placed on the cue), moved by what plan_voice cut
+        # from its head; the take as it plays (folded, faded, balanced) is only the template that finds it in the mix
+        cut = start - float(p['start_s'])
+        lock = locks.get(p['take'])
+        sp, sp_lo, sp_hi, rule, pre = sync_point(shim.audio({'file': p['take']}), row['align'], lock)
+        if lock is not None and lock.get(f"{row['align']}_s") is not None:
+            row['lock_vs_file_ms'] = round((float(lock[f"{row['align']}_s"]) - sp) * 1000, 1)
+        row['rule'] = rule
+        sp, sp_lo, sp_hi, pre = sp - cut, sp_lo - cut, sp_hi - cut, pre - cut
+        m = x.mean(axis=1) if x.ndim == 2 else x
+        a0, a1 = (sp - 0.15, sp + 0.10) if row['align'] == 'peak' else (sp - 0.03, sp + 0.20)
+        i0, i1 = max(0, int(a0 * SR)), min(len(m), int(a1 * SR))
+        seg = m[i0:i1]
+        spec = np.abs(np.fft.rfft(seg)) ** 2 if len(seg) > 64 else np.ones(2)
+        low = float(spec[:int(150 * len(seg) / SR) + 1].sum() / (spec.sum() + 1e-20)) if len(seg) > 64 else 0.0
+        thump = low >= LOW_FRAC
+        tpl = signal.sosfiltfilt(sos_lo if thump else sos, m)[i0:i1] if i1 - i0 > 64 else seg
+        expect = start - ref_offset + i0 / SR
+        # search no further than the nearest other effect (a run of keys or ticks would lend its neighbour), at
+        # least 2 frames and at most EFFECT_SEARCH_S
+        gap = min([abs(q - float(p['start_s'])) for q in starts if abs(q - float(p['start_s'])) > 1e-4] or [9.0])
+        search = min(max(EFFECT_SEARCH_S, 4 * tol_s), max(2 * tol_s, gap - 0.01))
+        got, corr = locate(dec_lo if thump else dec_hp, 0.0, tpl, expect, search)
+        row.update(corr=round(corr, 3), search_ms=round(search * 1000, 1), band='lows' if thump else 'over 150 Hz')
+        if got is None or corr < FOUND_CORR:
+            row['status'] = 'not found'
+            row['why'] = f'best correlation {corr:.2f} (< {FOUND_CORR}): the music covers it here, or it is not in this mix'
+            rows.append(row)
+            continue
+        meas = got - i0 / SR + sp  # where the sync point plays, video time
+        d, d_lo, d_hi = meas - cue, meas - cue + (sp_lo - sp), meas - cue + (sp_hi - sp)
+        off = want - cue
+        lo, hi = (-tol_s, tol_s) if strict else (min(0.0, off) - tol_s, max(0.0, off) + tol_s)
+        ok = d_hi >= lo - 1e-4 and d_lo <= hi + 1e-4  # a peak's plateau only has to touch the window
+        row.update(sound_s=round(meas + ref_offset, 4), vs_cue_ms=round(d * 1000, 1), vs_cue_f=round(d * fps_v, 2),
+                   vs_plan_ms=round((meas - want) * 1000, 1), window_ms=[round(lo * 1000, 1), round(hi * 1000, 1)])
+        if sp_hi - sp_lo > 0.002:
+            row['plateau_ms'] = [round(d_lo * 1000, 1), round(d_hi * 1000, 1)]
+        if row['align'] == 'onset' and sp - pre > 0.002:  # a pre-roll the listener hears before the onset the plan aligned
+            row['heard_from_ms'] = round((d - (sp - pre)) * 1000, 1)
+        if not ok and abs(meas - want) > 2 * tol_s and corr < FAR_CORR:
+            row.update(status='ambiguous', why=f'the best match sits {(meas - want) * 1000:+.0f} ms off the plan at correlation '
+                                               f'{corr:.2f} (< {FAR_CORR}): a neighbour or the music, not a measure')
+        else:
+            row['status'] = 'OK' if ok else 'OFF'
+        rows.append(row)
+    return rows
+
+
+def edited_bed(edit, root):
+    """(the edited bed as the film plays it, mono, film time; its end in s): track.py build_bed, bar 1 at film_t0"""
+    sys.path.insert(0, os.path.join(HERE, 'audio'))
+    import track as TR
+    cache = os.path.join(root, 'out', 'cache', 'music')
+    end_s = float((edit.get('ending') or {}).get('end_s') or 0) + 4.0
+    bed, _ = TR.build_bed(edit, os.path.join(root, 'audio'), n=int(end_s * SR), cache_dir=cache if os.path.isdir(cache) else None)
+    return bed.mean(axis=1), end_s
+
+
+def remove_bed(dec_m, bed_m, shift_s, sos):
+    """the decoded audio less the edited bed where it plays (video sample i holds bed sample i + shift), in one band.
+    The bed's gain is fitted per 20 ms block (staging, stop-downs, fades and the master move it); the effects are
+    uncorrelated with the bed, so a block's fit only ever removes bed, never an effect. A quiet key or tick the
+    music covers in the mix stands clear of it here."""
+    n = len(dec_m)
+    idx = np.arange(n) + int(round(shift_s * SR))
+    b = np.zeros(n)
+    ok = (idx >= 0) & (idx < len(bed_m))
+    b[ok] = bed_m[idx[ok]]
+    dh, bh = signal.sosfiltfilt(sos, dec_m), signal.sosfiltfilt(sos, b)
+    blk = SR // 50
+    nb = n // blk
+    if nb < 3:
+        return dh
+    num = (dh[:nb * blk] * bh[:nb * blk]).reshape(nb, blk).sum(axis=1)
+    den = np.square(bh[:nb * blk]).reshape(nb, blk).sum(axis=1)
+    g = signal.medfilt(np.where(den > 1e-9, num / np.maximum(den, 1e-12), 0.0), 5)
+    return dh - np.interp(np.arange(n), (np.arange(nb) + 0.5) * blk, g) * bh
+
+
+def bed_rows(bed_m, end_s, edit, cues, dec_hp, fps_v, ref_offset, tol_s, sos):
+    """the edited bed against the decoded audio at every act change, structural cue and declared seam"""
+    c_fps = float(cues['fps'])
+    bm = signal.sosfiltfilt(sos, bed_m)
+    level = rms_db(bm[bm != 0]) if np.any(bm) else -240.0
+    frames = {}
+    for name, act in (cues.get('acts') or {}).items():
+        if act.get('from', 0) > 0:
+            frames.setdefault(int(round(act['from'])), f'act {name}')
+    for e in cues.get('events') or []:
+        if e.get('structural'):
+            frames.setdefault(int(round(e['f'])), f"structural {e.get('id') or e['kind']}")
+    dec = cues.get('declared') or {}
+    for s in dec.get('seams') or []:
+        frames.setdefault(int(round(s['at'])), f"seam {s.get('id') or s.get('kind')}")
+    if dec.get('reveal') is not None:
+        frames.setdefault(int(round(dec['reveal'])), 'reveal')
+    downs = ((cues.get('music') or {}).get('downbeats') or [])
+    t0 = float(edit.get('film_t0') or 0.0)
+    rows = []
+    dur_v = len(dec_hp) / SR
+    for f, what in sorted(frames.items()):
+        t = f / c_fps
+        tv = t - ref_offset
+        if t < t0 + 0.05 or t > end_s - 4.0 or tv < BED_SEARCH_S or tv > dur_v - BED_SEARCH_S - 0.5:
+            continue
+        i0, i1 = int((t - 0.3) * SR), int((t + 0.5) * SR)
+        tpl = bm[i0:i1]
+        row = dict(f=f, what=what, t=round(t, 4))
+        db = min(downs, key=lambda d: abs(d - f)) if downs else None
+        if db is not None and abs(db - f) <= 3:  # a cut on a downbeat: where that attack plays is the cut's hit
+            row['downbeat_f'] = db
+        if rms_db(tpl) < level - 30:
+            row.update(status='quiet', why='the bed is silent or stopped here')
+            rows.append(row)
+            continue
+        got, corr = locate(dec_hp, 0.0, tpl, tv - 0.3, BED_SEARCH_S, near=False)
+        row['corr'] = round(corr, 3)
+        if got is None or corr < BED_CORR:
+            row.update(status='weak', why=f'best correlation {corr:.2f} (< {BED_CORR})')
+            rows.append(row)
+            continue
+        lag = got - (tv - 0.3)
+        row.update(status='OK' if abs(lag) <= tol_s + 1e-4 else 'OFF', lag_ms=round(lag * 1000, 1), lag_f=round(lag * fps_v, 2))
+        if 'downbeat_f' in row:  # where the track's downbeat attack nearest the cue plays, against the cue frame
+            row['downbeat_vs_cue_f'] = round(((row['downbeat_f'] / c_fps + lag) - t) * fps_v, 2)
+        rows.append(row)
+    return rows
+
+
+def picture_rows(video, cues, fps_v, ref_offset):
+    """the picture's own cut at every act change: the largest frame difference within +-6 frames of the cue"""
+    c_fps = float(cues['fps'])
+    seams = {int(round(s['at'])): s.get('kind') for s in ((cues.get('declared') or {}).get('seams') or [])}
+    rows = []
+    for name, act in sorted((cues.get('acts') or {}).items(), key=lambda kv: kv[1].get('from', 0)):
+        f = act.get('from', 0)
+        if f <= 0:
+            continue
+        tv = f / c_fps - ref_offset
+        n = int(round(tv * fps_v))  # the video frame on which the cue's frame shows
+        n0 = n - 7
+        if n0 < 0:
+            continue
+        w, h = 96, 54
+        # each decoded frame's own timestamp (showinfo, original timestamps kept) names its frame: a seek's first
+        # frame is not trusted
+        r = subprocess.run(['ffmpeg', '-v', 'info', '-nostdin', '-ss', f'{n0 / fps_v:.6f}', '-copyts', '-i', video, '-frames:v', '15',
+                            '-vf', f'scale={w}:{h},showinfo', '-f', 'rawvideo', '-pix_fmt', 'gray', '-'], capture_output=True)
+        fr = np.frombuffer(r.stdout, np.uint8)
+        pts = [float(x) for x in re.findall(rb'Parsed_showinfo.*? n: *\d+ .*?pts_time:([-0-9.]+)', r.stderr)]
+        nf = len(fr) // (w * h)
+        if r.returncode or nf < 4 or len(pts) < nf:
+            continue
+        idx = [int(round(t * fps_v)) for t in pts[:nf]]
+        fr = fr[:nf * w * h].reshape(-1, h, w).astype(np.float32)
+        d = np.abs(np.diff(fr, axis=0)).mean(axis=(1, 2))  # d[k]: frame idx[k] -> idx[k + 1]
+        k = int(np.argmax(d))
+        rest = np.delete(d, k)
+        clear = d[k] >= max(6.0, 5.0 * float(np.median(rest)) if len(rest) else 6.0)  # a cut, not a fast move
+        cut = idx[k + 1]
+        rows.append(dict(act=name, f=f, seam=seams.get(int(round(f))), cue_video_f=round(tv * fps_v, 2), cut_video_f=cut,
+                         clear=bool(clear), diff=round(float(d[k]), 2), off_f=round(cut - tv * fps_v, 2)))
+    return rows
+
+
+def default_paths(a, root):
+    """(plan, edit, takes) for the frames gate: the arguments, else the project's own files"""
+    score = os.path.join(root, 'audio', 'score.json')
+    sc = {}
+    if os.path.isfile(score):
+        try:
+            sc = read_json(score)
+        except (OSError, json.JSONDecodeError):
+            sc = {}
+    plan = a.plan or os.path.join(root, 'out', 'qa', 'sfx_plan.json')
+    edit = a.edit
+    if not edit:
+        m = sc.get('music') if isinstance(sc.get('music'), dict) else {}
+        cand = [os.path.join(root, m['edit'])] if m.get('edit') else []
+        cand.append(os.path.join(root, 'audio', 'music', 'edit.json'))
+        edit = next((c for c in cand if os.path.isfile(c)), None)
+    takes = a.takes
+    if not takes:
+        kit = ((sc.get('sfx') or {}) if isinstance(sc.get('sfx'), dict) else {})
+        takes = os.path.join(root, kit['takes']) if kit.get('takes') else \
+            os.path.splitext(os.path.join(root, kit.get('kit') or 'audio/kit.json'))[0]
+    return plan, edit, takes
+
+
+def frames_gate(a, report, say, dec, fps_v, has_video):
+    cues_path = a.cues or 'out/cues.json'
+    cues = read_json(cues_path)
+    root = project_root(cues_path)
+    plan_path, edit_path, takes = default_paths(a, root)
+    fps = fps_v or float(cues['fps'])
+    tol_s = a.frame_tol / fps
+    sos = signal.butter(4, HP_HZ, btype='highpass', fs=SR, output='sos')
+    sos_lo = signal.butter(4, 40.0, btype='highpass', fs=SR, output='sos')
+    dec_m = dec.mean(axis=1).astype(np.float64)
+    dec_hp = signal.sosfiltfilt(sos, dec_m)
+    fr = dict(cues=cues_path, fps=round(fps, 3), cues_fps=cues['fps'], tol_frames=a.frame_tol, tol_ms=round(tol_s * 1000, 2),
+              strict=bool(a.strict), fails=[], warnings=[])
+    say(f'frames: one frame = {tol_s * 1000:.1f} ms ({fps:g} fps), tolerance +-{a.frame_tol:g} f'
+        + (' (strict)' if a.strict else ", a role's planned offset widens its side"))
+
+    # music (first: the bed it rebuilds is taken out of the audio before the effects are looked for)
+    bed_m, bed_shift, music_say = None, None, []
+    if edit_path and os.path.isfile(edit_path):
+        try:
+            edit = read_json(edit_path)
+            bed_m, end_s = edited_bed(edit, root)
+            rows = bed_rows(bed_m, end_s, edit, cues, dec_hp, fps, a.ref_offset, tol_s, sos)
+        except Exception as e:  # noqa: BLE001 - a missing track file must not hide the other gates
+            rows, bed_m = None, None
+            fr['warnings'].append(f'music not measured: {type(e).__name__}: {e}')
+            music_say.append(f'music: not measured ({type(e).__name__}: {e})')
+        if rows is not None:
+            fr['edit'] = edit_path
+            fr['music'] = rows
+            for r in rows:
+                if r['status'] in ('OK', 'OFF'):
+                    music_say.append(f"  f={r['f']:>5} {r['what'][:34]:<34} music {r['lag_f']:+6.2f} f ({r['lag_ms']:+7.1f} ms) from the edit"
+                                     + (f"; its downbeat {r['downbeat_vs_cue_f']:+.2f} f from the cut" if 'downbeat_vs_cue_f' in r else '')
+                                     + f"  corr {r['corr']:.2f}  {r['status']}")
+            meas = [r for r in rows if r['status'] in ('OK', 'OFF')]
+            off = [r for r in meas if r['status'] == 'OFF']
+            if off:
+                lags = sorted(r['lag_ms'] for r in off)
+                fr['fails'].append(f"the music plays {lags[len(lags) // 2]:+.1f} ms ({lags[len(lags) // 2] / 1000 * fps:+.2f} f) from where "
+                                   f"{edit_path} puts it at {len(off)} of {len(meas)} cuts (f " + ', '.join(str(r['f']) for r in off[:8])
+                                   + "): render the bed with score.py (bar 1 at the edit's film_t0), never cut the track by hand")
+            if rows and not meas:
+                fr['warnings'].append('music: no cut could be measured (the bed is quiet or covered at every cut)')
+            music_say.append(f"music: {len([r for r in meas if r['status'] == 'OK'])}/{len(meas)} cuts within +-{a.frame_tol:g} f of the edit")
+            lags = sorted(r['lag_ms'] for r in meas)
+            bed_shift = a.ref_offset - (lags[len(lags) // 2] / 1000 if lags else 0.0)  # video t holds bed film time t + shift
+    else:
+        music_say.append('music: no edit.json (an effects-only film); music not measured')
+
+    # effects
+    if os.path.isfile(plan_path):
+        plan = read_json(plan_path)
+        if os.path.getmtime(plan_path) + 1 < os.path.getmtime(cues_path):
+            fr['warnings'].append(f'{plan_path} is older than {cues_path}: run the soundtrack again (npm run audio)')
+        if bed_m is not None and bed_shift is not None:  # look for the effects with the music taken out
+            hay_hp, hay_lo = remove_bed(dec_m, bed_m, bed_shift, sos), remove_bed(dec_m, bed_m, bed_shift, sos_lo)
+            fr['bed_removed_db'] = round(rms_db(dec_hp) - rms_db(hay_hp), 1)
+            say(f"effects: looked for with the edited bed taken out of the audio ({fr['bed_removed_db']:.1f} dB less over 150 Hz)")
+        else:
+            hay_hp, hay_lo = dec_hp, signal.sosfiltfilt(sos_lo, dec_m)
+        rows = effect_rows(plan, root, takes, hay_hp, hay_lo, fps, a.ref_offset, tol_s, a.strict, sos, sos_lo)
+        fr['plan'] = plan_path
+        fr['effects'] = rows
+        meas = [r for r in rows if r['status'] in ('OK', 'OFF')]
+        lost = [r for r in rows if r['status'] in ('not found', 'missing', 'ambiguous')]
+        for r in rows:
+            tag = f"  f={r['f']:>7g} {r['kind']:<7} {r['role'][:22]:<22} {r['align']:<5}"
+            if r['status'] in ('OK', 'OFF'):
+                say(f"{tag} {r['vs_cue_f']:+6.2f} f vs its cue ({r['vs_cue_ms']:+7.1f} ms; planned offset {r['offset_ms'] or 0:+g} ms, "
+                    f"{r['vs_plan_ms']:+.1f} ms off the plan)  corr {r['corr']:.2f}  {r['status']}")
+            else:
+                say(f"{tag} {r['status']}" + (f": {r['why']}" if r.get('why') else ''))
+        off = [r for r in meas if r['status'] == 'OFF']
+        for r in off:
+            fr['fails'].append(f"{r['kind']} {r['id'] or ''} (role {r['role']}) at f={r['f']:g} plays {r['vs_cue_f']:+.2f} f "
+                               f"({r['vs_cue_ms']:+.1f} ms) from its cue frame, outside {r['window_ms']} ms")
+        for r in lost:
+            fr['warnings'].append(f"{r['kind']} {r['id'] or ''} at f={r['f']:g}: {r['status']}" + (f" ({r['why']})" if r.get('why') else ''))
+        stale = {}
+        for r in rows:
+            if abs(r.get('lock_vs_file_ms') or 0) > 2.0:
+                stale.setdefault(r['take'], r['lock_vs_file_ms'])
+        for tk, dms in stale.items():
+            fr['warnings'].append(f"take {tk}: its lock puts the sync point {dms:+.1f} ms from where the file has it (the take "
+                                  f"changed after it was locked: render the kit again, npm run kit, then npm run audio)")
+        for r in meas:
+            if r.get('heard_from_ms') is not None and r['heard_from_ms'] < -45.0:
+                fr['warnings'].append(f"{r['kind']} {r['id'] or ''} at f={r['f']:g}: take {r['take']} is heard from {r['heard_from_ms']:+.0f} ms, "
+                                      f"a pre-roll before the onset the plan aligned (a sound leads its picture by at most 45 ms: "
+                                      f"cast another take, or trim its head)")
+        if rows and len(lost) > max(2, len(rows) // 2):
+            fr['fails'].append(f'{len(lost)} of {len(rows)} planned effects cannot be found in the delivered audio: it is not '
+                               f'the mix of {plan_path} (render the soundtrack again, then mux it)')
+        say(f"effects: {len([r for r in meas if r['status'] == 'OK'])}/{len(meas)} within the window"
+            + (f", {len(lost)} not measured" if lost else '') if rows else 'effects: the plan places none')
+    else:
+        fr['plan'] = None
+        say(f'effects: no plan at {plan_path} (a film with effects: npm run audio writes it); effects not measured')
+
+    for line in music_say:
+        say(line)
+
+    # picture
+    if has_video and a.picture:
+        rows = picture_rows(a.video, cues, fps, a.ref_offset)
+        fr['picture'] = rows
+        for r in rows:
+            # a declared seam that is not a hard cut (a zoom through, a morph, a dive) changes most where it moves fastest
+            if r['clear'] and r['seam'] in (None, 'hard') and abs(r['off_f']) > a.frame_tol + 1e-6:
+                fr['warnings'].append(f"picture: the cut into {r['act']} shows on video frame {r['cut_video_f']}, {r['off_f']:+.2f} f "
+                                      f"from its cue (f={r['f']} at {cues['fps']} fps)")
+        clear = [r for r in rows if r['clear']]
+        if clear:
+            say('picture: cuts vs their cue frames ' + ', '.join(f"{r['act']} {r['off_f']:+.1f}" for r in clear) + ' (video frames)')
+    fr['pass'] = not fr['fails']
+    for w in fr['warnings']:
+        say('  warning: ' + w)
+    for f_ in fr['fails']:
+        say('  FAIL: ' + f_)
+    say(f"frames {'OK' if fr['pass'] else 'FAIL'}")
+    report['frames'] = fr
+    return fr['pass']
+
+
+def main():
+    a = parse_args()
+    explicit_source = a.source is not None
+    a.source = a.source or 'public/audio/soundtrack.wav'
+    report = {'video': a.video, 'source': a.source, 'pass': False}
+
+    def say(msg):
+        if not a.quiet:
+            sys.stderr.write(msg + '\n')
+
+    def done(ok):
+        report['pass'] = bool(ok)
+        out = json.dumps(report, indent=1)
+        print(out)
+        if a.json:
+            os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
+            with open(a.json, 'w') as fh:
+                fh.write(out + '\n')
+        say('check-sync PASS' if ok else 'check-sync FAIL')
+        sys.exit(0 if ok else 1)
+
+    frames_on = not a.no_frames and (a.cues is not None or os.path.isfile('out/cues.json'))
+    if a.cues is not None and not os.path.isfile(a.cues):
+        report['error'] = f'missing file: {a.cues}'
+        say(report['error'])
+        done(False)
+    if not os.path.exists(a.video):
+        report['error'] = f'missing file: {a.video}'
+        say(report['error'])
+        done(False)
+    lag_on = os.path.exists(a.source)
+    if not lag_on and (explicit_source or not frames_on):
+        report['error'] = f'missing file: {a.source}'
+        say(report['error'])
+        done(False)
+
+    sr = sf.info(a.source).samplerate if lag_on else SR
+    dec, err = decode_audio(a.video, sr)
+    if dec is None:
+        report['error'] = 'no decodable audio stream in the video: ' + err
+        say(report['error'])
+        done(False)
+
+    if lag_on:
+        ref, sr = sf.read(a.source, always_2d=True, dtype='float32')
+        sync_ok = lag_gate(a, report, say, ref, sr, dec)
+        if report.get('error'):
+            done(False)
+    else:
+        sync_ok = True
+        report['lag'] = f'skipped: no source WAV at {a.source}'
+        say(f'lag: skipped (no source WAV at {a.source})')
 
     tp = float(20 * np.log10(np.max(np.abs(signal.resample_poly(dec, 4, 1, axis=0))) + 1e-12))
     tp_ok = tp <= a.tp_max
@@ -191,7 +762,17 @@ def main():
             say(f'loudness {lufs:.2f} LUFS')
     except ImportError:
         report['lufs'] = None
-    done(sync_ok and tp_ok and lufs_ok)
+
+    frames_ok = True
+    if frames_on:
+        fps_v, has_video = video_fps(a.video)
+        if sr != SR:
+            dec48, err = decode_audio(a.video, SR)
+            dec = dec48 if dec48 is not None else dec
+        frames_ok = frames_gate(a, report, say, dec, fps_v, has_video)
+    else:
+        report['frames'] = 'skipped' + (' (--no-frames)' if a.no_frames else ': no out/cues.json (--cues names one)')
+    done(sync_ok and tp_ok and lufs_ok and frames_ok)
 
 
 if __name__ == '__main__':
