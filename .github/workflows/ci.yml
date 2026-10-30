@@ -230,6 +230,9 @@ jobs:
       - name: Lint-film regression tests (static part)
         run: node "skills/$SKILL/scripts/test/lint-film.test.mjs" --part static
 
+      - name: UI layout tests (ui-layout.cjs on audit boxes made in code)
+        run: node "skills/$SKILL/scripts/test/ui-layout.test.mjs"
+
       - name: Technique library and pick.py tests
         run: python3 "skills/$SKILL/scripts/test/pick.test.py"
 

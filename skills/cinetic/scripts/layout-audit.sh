@@ -22,6 +22,11 @@
 # are collected for scripts/grammar-score.mjs. Each audited frame also records where the official marks are
 # drawn (the kit's <Img data-logo>) and where the real pictures show (photos and footage, [data-imagery]), both of
 # which look-audit.py --layout leaves out of its palette checks.
+# Product UI is simple and aligned (scripts/ui-layout.cjs, on the same boxes): `ui-align` fails two rows stacked in one
+# card whose left edges miss by more than 2 px and at most 12 px at 1080, on 2 or more audited frames (one frame warns;
+# rows centred on each other or set flush right together are fine); `text-on-asset` lists text crossing the edge of a mark
+# or a picture (not a caption wholly on a photo, not an asset set in the line) as a ui warning, which look-audit.py
+# --layout confirms on the pixels and fails when the asset is in view there.
 # Placeholders fail on every visible element, tagged or not (src/lib/placeholder.ts, the lists of
 # scripts/placeholders.json): `placeholder` (lorem ipsum, "Placeholder", "Label text", a generic label alone,
 # "Item 1", a template slot left in brackets), `bar-text` (two or more grey bars standing in for lines of text
@@ -63,6 +68,8 @@
 set -euo pipefail
 
 usage() { sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; }
+# this script's folder, before any cd (ui-layout.cjs sits next to it); a Windows path where node needs one
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && { pwd -W 2>/dev/null || pwd; })
 die() { echo "layout-audit: $*" >&2; exit 2; }
 
 COMP=""; MODE=copy; FRAMES=""; PROPS="{}"; SAFE=""; ENTRY=src/index.ts; JSON=""; OUTDIR=""; CONC="${CONCURRENCY:-2}"; EVERY=0; STRICT=0
@@ -226,9 +233,9 @@ if ! FORCE_COLOR=0 NO_COLOR=1 npx remotion render "$ENTRY" "$COMP" "$OUTDIR" --s
   echo "layout-audit: render failed" >&2; exit 1
 fi
 
-node - "$TMP/render.log" "$JSON" "$COMP" "$FRAMES" "$OUTDIR" "$SPEEDMAX" "${LEN:-0}" "$MAXR" "$WINDOWS" "$JUMPS" "$STRICT" <<'EOF'
+node - "$TMP/render.log" "$JSON" "$COMP" "$FRAMES" "$OUTDIR" "$SPEEDMAX" "${LEN:-0}" "$MAXR" "$WINDOWS" "$JUMPS" "$STRICT" "$HERE" <<'EOF'
 const fs = require('fs');
-const [log, jsonPath, comp, framesArg, outDir, maxArg, lenArg, readArg, windowsArg, jumpsArg, strictArg] = process.argv.slice(2);
+const [log, jsonPath, comp, framesArg, outDir, maxArg, lenArg, readArg, windowsArg, jumpsArg, strictArg, here] = process.argv.slice(2);
 const jumps = JSON.parse(jumpsArg || '{}'); // COPY id -> [[from, to), ...] declared re-centre jumps (composition frames)
 const strict = strictArg === '1';
 const jumpingAt = (id, f) => {
@@ -299,6 +306,12 @@ for (const f of pairs) {
         : `${box.speed} px/f > ${maxV}${at}: slow it under ${maxV} px/f, or fade its text out for the flight and resolve it on landing`, speed: box.speed });
   }
 }
+// Product UI is simple and aligned (scripts/ui-layout.cjs): rows of one card share their left edge (ui-align, a fail when it
+// rests on 2+ audited frames), and text crossing a mark's or a picture's edge is listed for look-audit.py --layout to
+// confirm on the pixels (text-on-asset); these warnings stay apart from the type warnings (--strict does not fail them).
+let ui = { issues: [], warnings: [] };
+try { ui = require(require('path').join(here, 'ui-layout.cjs')).uiLayout(audited); } catch (e) { console.log(`  ui-layout: not run (${e.message})`); }
+issues.push(...ui.issues);
 // The safe zone holds resting states: a box measured moving faster than the read limit on its frame (entering,
 // leaving, travelling) is not at rest, so its excursion past the zone is listed apart, not failed; at rest it is held.
 const moving = [];
@@ -314,7 +327,7 @@ const report = {
   tool: 'layout-audit', comp, frames: want, audited: audited.length, missing, stills: outDir,
   width: audited[0]?.width, height: audited[0]?.height,
   pass: issues.length === 0 && missing.length === 0 && audited.length > 0 && !(strict && warnings.length),
-  issues, warnings, jumps: jumped, moving: moving.sort((p, q) => p.frame - q.frame),
+  issues, warnings, uiWarnings: ui.warnings, jumps: jumped, moving: moving.sort((p, q) => p.frame - q.frame),
   typeBands: audited[0]?.bands, typeWidths: audited[0]?.widths,
   tweens: [...tweens.values()].sort((p, q) => p.from - q.from),
   speed: maxV > 0 ? { max: maxV, read: maxR, pairs: pairs.length, fastest, fastestRead } : null,
@@ -325,6 +338,7 @@ const report = {
 fs.writeFileSync(jsonPath, JSON.stringify(report, null, 1) + '\n');
 for (const x of issues) console.log(`  f${x.frame}  ${x.kind}  ${x.id}  ${x.detail}`);
 for (const x of warnings.slice(0, 20)) console.log(`  f${x.frame}  warn ${x.kind}  ${x.id}  ${x.detail}`);
+for (const x of ui.warnings.slice(0, 20)) console.log(`  f${x.frame}  warn ${x.kind}  ${x.id}  ${x.detail}`);
 if (moving.length) console.log(`  ${moving.length} box(es) past the safe zone while moving faster than ${maxR} px/f (not at rest, listed apart): ${[...new Set(moving.map((x) => x.id))].join(', ')}`);
 if (jumped.length) console.log(`  ${jumped.length} declared re-centre jump frame(s) moved read text faster than ${maxR} px/f (held to ${maxV}): fastest ${Math.max(...jumped.map((j) => j.speed))} px/f`);
 if (!byFrame.size) console.log(`  no CINETIC_AUDIT output: does ${comp} accept the audit prop and render <Audit/> inside <FontGate>?`);
@@ -334,6 +348,6 @@ const z = report.safe ? ` in ${report.zone} (top ${report.safe.top}, right ${rep
 const v = maxV > 0 ? `, fastest readable text ${fastest ? `${fastest.speed} px/f (${fastest.id} f${fastest.frame})` : 'not measured'}` +
   (fastestRead ? `, ${fastestRead.speed} px/f while read (${fastestRead.id} f${fastestRead.frame})` : '') : '';
 const wv = report.words ? `, at most ${report.words.max} film words readable (f${report.words.frame})` : '';
-console.log(`layout-audit: ${audited.length}/${want.length} frames, ${n} text boxes${z}${v}${wv}, ${issues.length} issues, ${warnings.length} type warnings, ${report.tweens.length} tweens -> ${report.pass ? 'pass' : 'FAIL'} (${jsonPath}, stills in ${outDir})`);
+console.log(`layout-audit: ${audited.length}/${want.length} frames, ${n} text boxes${z}${v}${wv}, ${issues.length} issues, ${warnings.length} type warnings, ${ui.warnings.length} ui warnings, ${report.tweens.length} tweens -> ${report.pass ? 'pass' : 'FAIL'} (${jsonPath}, stills in ${outDir})`);
 process.exit(report.pass ? 0 : 1);
 EOF

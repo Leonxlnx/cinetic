@@ -124,6 +124,14 @@
  *   filler-plate      every element in frame has a job: a map or Array.from callback that draws only a
  *                     filled, childless box, defocused or faint (plates floating at depth, faint cards round
  *                     a line), or a depth-stack item ({ id, plane }) with no `carries` (fx/DepthStack)
+ *   ui-accent-bar     error: a vertical accent line or bar on a card's edge: a side border (borderLeft, border-left,
+ *                     borderInlineStart ...) 2 px or wider or in a saturated colour, an inset shadow painting one side
+ *                     (inset 3px 0 0 <colour>), a 1.5-16 px wide bar element 2.5x as tall (or stretched top to bottom)
+ *                     filled with the accent or a saturated colour (warn: a colour set by a variable, a neutral stripe
+ *                     down a card's edge, a neutral side border or inset side 3 px or wider). Corners and
+ *                     frames, hairline dividers in a line token, a chart's or meter's bars (map callbacks), carets, and
+ *                     bar elements in fx/ and lib/ are left out. Product UI is simple and aligned
+ *                     (references/product-ui.md); look-audit.py ui-accent-bar finds the bar in the render
  *   filler-light      light is motivated and subtle: a baked pool, glow, haze, bloom, bokeh or fog asset
  *                     (staticFile), or ground plates (kind/kinds pools, bars, floor, window) in a file that
  *                     names no light for them (`cinetic:light <what it is>`)
@@ -837,6 +845,137 @@ const splitArgs = (s) => {
   if (last) out.push(last);
   return out;
 };
+// ---------------------------------------------------------------------------------- ui-accent-bar
+// Product UI is simple and aligned: a card reads by its fill, its type and its real content, never by a vertical accent
+// line or bar on its edge. Found statically: a side border (borderLeft / border-left / borderInlineStart ...) 2 px or
+// wider, or in a saturated colour; an inset box-shadow that paints one side (inset 3px 0 0 <colour>); a thin bar element
+// (1.5-16 px wide, 2.5x as tall or stretched top to bottom) filled with a colour that is not a neutral line token. Left out:
+// a corner or frame (the side border with a top or bottom one), hairline dividers in a line token, the bars of a chart or
+// meter (drawn in a map callback), carets and cursors, and bar elements inside fx/ and lib/ (house primitives).
+const UI_BAR_MSG = "product UI is simple and aligned: a card reads by its fill, its type and its real content (an icon, the real mark, a photo), never a stripe or a pill down its side; take the bar out (look-audit's ui-accent-bar finds it in the render)";
+/** The innermost {...} group around index i: [open, close] or null. */
+const braceAround = (code, i) => {
+  let depth = 0;
+  let open = -1;
+  for (let j = i; j >= 0; j--) {
+    const c = code[j];
+    if (c === '}') depth++;
+    else if (c === '{' && depth-- === 0) { open = j; break; }
+  }
+  if (open < 0) return null;
+  depth = 0;
+  for (let j = open; j < code.length; j++) {
+    const c = code[j];
+    if (c === '{') depth++;
+    else if (c === '}' && --depth === 0) return [open, j];
+  }
+  return null;
+};
+/** A colour expression: 'neutral' (a line, mute, ink or ground token, a grey literal), 'accent' (the accent, a brand or state
+ * token, a saturated literal) or 'unknown' (a variable). */
+const inkKind = (s) => {
+  const v = String(s);
+  if (/accent|brand|primary|highlight|second\b|signal|success|warn|danger|error|info\b|live|hue|oklch\(|hsl\(/i.test(v)) return 'accent';
+  const hex = v.match(/#([0-9a-f]{6}|[0-9a-f]{3})\b/i);
+  const rgb = v.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  const ch = hex ? (hex[1].length === 3 ? [...hex[1]].map((x) => parseInt(x + x, 16)) : [0, 2, 4].map((k) => parseInt(hex[1].slice(k, k + 2), 16))) : rgb ? rgb.slice(1, 4).map(Number) : null;
+  if (ch) return Math.max(...ch) - Math.min(...ch) >= 24 ? 'accent' : 'neutral';
+  if (/\b(lines?|rules?|divider|border|hair|mute|ink|text|ground|paper|surface|well|raised|gr[ae]y|shade|stroke|transparent|white|black|currentColor)(?![a-z])/i.test(v)) return 'neutral'; // C.line, UI.hair, inkA(0.06)
+  return 'unknown';
+};
+/** The px width a value leads with: '3px solid', `${3}px`, `${(3 * u).toFixed(2)}px`, 4, '4px', 4 * u; null when it is a variable. */
+const leadPx = (s) => {
+  const v = String(s).trim();
+  let m = /^(\d*\.?\d+)(?:\s*\*\s*[\w.]+)?$/.exec(v) ?? /^['"`]\s*(\d*\.?\d+)\s*px/.exec(v) ?? /^`\s*\$\{\s*\(*\s*(\d*\.?\d+)\b/.exec(v) ?? /^-?\s*(\d*\.?\d+)\s*(?:px)?\b/.exec(v);
+  return m ? Number(m[1]) : null;
+};
+const styleEntries = (body) => {
+  const map = new Map();
+  for (const e of splitArgs(body)) {
+    const m = /^\s*['"]?([\w-]+)['"]?\s*:\s*([\s\S]*)$/.exec(e);
+    if (m) map.set(m[1], m[2].trim());
+  }
+  return map;
+};
+function uiAccentBars(code, report, { isScript, house }) {
+  const seen = new Set();
+  const say = (i, sev, what) => {
+    if (seen.has(i)) return;
+    seen.add(i);
+    report(i, 'ui-accent-bar', sev, `${what}: ${UI_BAR_MSG}`);
+  };
+  // 1. a side border (camelCase in scripts, CSS declarations in CSS, HTML and template strings)
+  const sides = isScript
+    ? /(?<![\w$.-])(border(?:Left|Right|InlineStart|InlineEnd))(Width|Color)?\s*:\s*/g
+    : /(?<![\w-])(border-(?:left|right|inline-start|inline-end))(-width|-color)?\s*:\s*/g;
+  const cssSides = /(?<![\w-])(border-(?:left|right|inline-start|inline-end))(-width|-color)?\s*:\s*([^;'"`}{]+)/g;
+  const checkSide = (i, prop, part, value, group) => {
+    if (/(?<![\w-])border(Top|Bottom|Block\w*)?\s*:|(?<![\w-])border(-top|-bottom|-block[\w-]*)?\s*:/.test(group)) return; // a corner or a frame
+    const v = value.replace(/[,;]\s*$/, '');
+    if (/^['"`]?\s*(none|0(px)?\b|hidden)/.test(v)) return;
+    const px = part && /color/i.test(part) ? null : leadPx(v);
+    const ink = inkKind(v);
+    if (part && /color/i.test(part)) return ink === 'accent' && say(i, 'error', `a side border in ${v.slice(0, 40)} (${prop}${part})`);
+    if (ink === 'accent') return say(i, 'error', `a ${px !== null ? `${px} px ` : ''}${prop}${part ?? ''} in the accent or a saturated colour`);
+    if (px !== null && px >= 3) return say(i, ink === 'neutral' ? 'warn' : 'error', `a ${px} px ${prop}${part ?? ''} on a card`);
+    if (px !== null && px >= 2 && ink === 'unknown') return say(i, 'warn', `a ${px} px ${prop}${part ?? ''} in a colour set by a variable`);
+    if (px === null && ink === 'unknown') say(i, 'warn', `a ${prop} of a width set by a variable`);
+  };
+  if (isScript) {
+    for (const m of code.matchAll(sides)) {
+      const g = braceAround(code, m.index);
+      const body = g ? code.slice(g[0] + 1, g[1]) : '';
+      const value = styleEntries(body).get(m[1] + (m[2] ?? '')) ?? code.slice(m.index + m[0].length, m.index + m[0].length + 80);
+      checkSide(m.index, m[1], m[2], value, body);
+    }
+  }
+  for (const m of code.matchAll(cssSides)) {
+    if (isScript && !/[`'"]/.test(code.slice(Math.max(0, code.lastIndexOf('\n', m.index)), m.index))) continue; // scripts: only CSS inside a string
+    const g = braceAround(code, m.index);
+    checkSide(m.index, m[1], m[2], m[3], g ? code.slice(g[0] + 1, g[1]) : '');
+  }
+  // 2. an inset shadow that paints one side: inset 3px 0 0 <colour>, inset -${(4 * u)}px 0 0 ${t.accent}
+  for (const m of code.matchAll(/\binset\s+(-?\s*(?:\$\{[^}]*\}|\d*\.?\d+))(?:px)?\s+0(?:px)?\s+0(?:px)?\s+(?:0(?:px)?\s+)?([^,'"`;)]*(?:\$\{[^}]*\}[^,'"`;)]*)?)/g)) {
+    const px = leadPx(m[1].replace(/^-\s*/, '').replace(/^\$\{\s*/, '`${'));
+    if (px === 0) continue;
+    const ink = inkKind(m[2]);
+    const what = `an inset shadow painting one side of a card${px !== null ? ` (${px} px)` : ''}`;
+    if (ink === 'accent') say(m.index, 'error', what);
+    else if (px !== null && px >= 3) say(m.index, 'warn', `${what} in ${ink === 'neutral' ? 'a neutral' : 'a variable'} colour (a divider is a hairline)`);
+  }
+  // 3. a thin bar element beside a title or down a card's side (not in house primitives, not a chart's or meter's bars)
+  if (!isScript || house) return;
+  const ranges = [];
+  for (const m of code.matchAll(/\.map\s*\(|\bArray\.from\s*\(/g)) {
+    const open = code.indexOf('(', m.index + (m[0].startsWith('.') ? 0 : 10));
+    if (open >= 0) ranges.push([open, open + parenGroup(code, open).length + 1]);
+  }
+  const groups = new Set();
+  for (const m of code.matchAll(/(?<![\w$.-])width\s*:/g)) {
+    const g = braceAround(code, m.index);
+    if (!g || groups.has(g[0]) || g[1] - g[0] > 1200) continue;
+    groups.add(g[0]);
+    if (ranges.some(([a, b]) => g[0] > a && g[0] < b)) continue; // a chart's, meter's or list's repeated marks
+    const body = code.slice(g[0] + 1, g[1]);
+    const e = styleEntries(body);
+    const fill = e.get('background') ?? e.get('backgroundColor') ?? e.get('fill');
+    if (!fill || /caret|cursor|tick|needle|playhead|scrub/i.test(body + code.slice(Math.max(0, g[0] - 160), g[0]))) continue;
+    if (/^['"]50%['"]$/.test(e.get('borderRadius') ?? '')) continue; // a dot
+    const unit = (v) => /^(\d*\.?\d+)\s*\*\s*([\w.]+)$/.exec(String(v ?? '').trim());
+    const wv = e.get('width');
+    const wn = /^\d*\.?\d+$/.test(wv) ? Number(wv) : unit(wv) ? Number(unit(wv)[1]) : /^['"]\d*\.?\d+px['"]$/.test(wv) ? parseFloat(wv.slice(1)) : null;
+    if (wn === null || wn < 1.5 || wn > 16) continue;
+    const hv = e.get('height');
+    const hn = /^\d*\.?\d+$/.test(hv ?? '') ? Number(hv) : unit(hv) && (!unit(wv) || unit(hv)[2] === unit(wv)[2]) ? Number(unit(hv)[1]) : /^['"]\d*\.?\d+px['"]$/.test(hv ?? '') ? parseFloat(hv.slice(1)) : null;
+    const stretched = /^['"]100%['"]$/.test(hv ?? '') || (e.has('top') && e.has('bottom')) || /stretch/.test(e.get('alignSelf') ?? '');
+    if (!stretched && !(hn !== null && hn >= 2.5 * wn)) continue;
+    const ink = inkKind(fill);
+    const edge = stretched && /^0$/.test(e.get('left') ?? e.get('right') ?? '');
+    if (ink === 'neutral' && !(edge && wn >= 4)) continue; // a hairline divider, a scrollbar; a neutral stripe down a card's edge still warns
+    say(g[0], ink === 'accent' ? 'error' : 'warn', `a ${wn} px wide vertical bar${ink === 'accent' ? ' in the accent' : ink === 'neutral' ? " down a card's edge" : ''} (an accent stripe or pill on a card's edge or before a title)`);
+  }
+}
+
 /** Every call of one of `names` in a source string: { name, args, index }. */
 const callsIn = (s, names) =>
   [...s.matchAll(new RegExp(`(?<![\\w$.])(${names.join('|')})\\s*\\(`, 'g'))].map((m) => ({ name: m[1], args: splitArgs(parenGroup(s, m.index + m[0].length - 1)), index: m.index }));
@@ -2092,6 +2231,9 @@ for (const file of files) {
         }
       }
     }
+
+    // ui-accent-bar: product UI is simple and aligned: no vertical accent line or bar on a card's edge
+    if (!isTokens) uiAccentBars(code, report, { isScript, house: /(^|\/)(fx|lib)\//.test(norm) });
 
     // small-text: text held in focus is 36 px or more at 1080p (UI rebuilt for film: x1.8-2, brand/tokens.ts uiFilm)
     if (isScript && !house && !isTokens) {

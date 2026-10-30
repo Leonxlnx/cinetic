@@ -60,6 +60,19 @@ Look checks (warn unless marked fail):
                   arrival puts >= 20 % of its change in the first 10 % of its time
   image-develop   imagery that arrives at full colour in one frame, more often than it develops from a
                   tint (12-52 f@60): a review hint, warn only
+  ui-accent-bar   fail: a thin saturated vertical bar along a card's edge on 2 or more samples (full resolution, two a
+                  second; warn on one): a solid line or narrow pill in one saturated colour, 2.5-18 px wide and 2.5x as
+                  tall at 1080, on flat ground either side, a card's content (text, rows) on its right within 64 px.
+                  A chart's bars, a frame round a picture, a coloured word's letters and footage are left out. Product
+                  UI is simple: a card reads by its fill, its type and its real content, never a stripe down its side.
+                  --ui-only <video | folder of stills | image> runs this read alone
+  text-on-asset   fail (--layout): a text box that cuts into a mark or a picture in view on 2 or more audited frames (warn on
+                  one): the layout audit's text box crosses the edge of a mark ([data-logo]) or a picture ([data-imagery])
+                  by more than 2 px each way at 1080, and the strip of the asset beside the crossing (24 px, outside the text
+                  box) differs from the text's own ground on 40 % of its pixels (6 OKLab units): a mark hidden behind a
+                  plate reads as the ground and is left out. A caption wholly on a photo and an asset set in the line (an
+                  inline mark, a word knocked out of a photo) are by design. scripts/ui-layout.cjs reads the same crossings
+                  from the boxes alone (in layout-audit.sh); --ui-only with --layout runs both reads
 
 The floor against a flat film (fail; the ship gate). Body = outside the end lock (cues `declared.end`;
 without one, all but the last 2 s):
@@ -461,6 +474,270 @@ GPLATE = dict(
     samples=3, share=0.10, warn_share=0.03,  # fail: this many body samples and this share; warn from 2 samples and 3 %
 )
 # a dark card reads off its ground: 8 L* or more between them
+# product UI is simple and aligned: no vertical accent line or bar on a card's edge (references/product-ui.md)
+UIBAR = dict(
+    width=(2.5, 18.0),  # px at 1080: a line or a narrow pill, not a panel
+    min_h=22.0, max_h=480.0, ratio=2.5,  # px at 1080; at least 2.5x as tall as wide
+    fill=0.8, chroma=0.07, hue_spread=14.0, l_spread=0.07,  # a solid bar in one saturated colour (OKLCH)
+    side=6.0, side_std=7.0, gap=1.0,  # the strips either side of it (px at 1080) are flat: it sits on a card or a ground, not in a photo
+    reach=64.0, content=0.3, row_tol=14.0,  # a card's content (text, rows) within reach on its right, on this share of its rows
+    same_hue=0.3,  # the content on its right of the bar's own hue over this share: part of a coloured word or shape
+    same_left=0.02,  # its own hue over this share of the reach on its left: a letter of a coloured word
+    twin=60.0,  # a second bar like it within this reach beside it: a chart, a meter or stripes, not an accent
+    mirror=900.0,  # the same bar level with it within this reach: a frame round a picture or panel
+)
+
+
+def hue_of(A, B):
+    return (np.degrees(np.arctan2(B, A)) + 360) % 360
+
+
+def accent_bars(rgb, keep=None, P=UIBAR):
+    """Thin saturated vertical bars along a card's left edge: solid lines or narrow pills in one saturated colour,
+    2.5-18 px wide and 2.5x as tall at 1080, on flat ground either side, with a card's content (text, rows) on their
+    right within 64 px. A chart's bars, a coloured word's letters and footage are left out. [[x, y, w, h], ...]."""
+    h, w = rgb.shape[:2]
+    s = h / 1080.0
+    r, g, b = cv2.split(np.ascontiguousarray(rgb))
+    mx, mn = cv2.max(cv2.max(r, g), b), cv2.min(cv2.min(r, g), b)
+    rough = (cv2.subtract(mx, mn) >= 28) & (mx >= 55)
+    if keep is not None:
+        rough &= keep
+    n, lab, st, _ = cv2.connectedComponentsWithStats(rough.astype(np.uint8), connectivity=8)
+    wl, wh = P['width'][0] * s, P['width'][1] * s
+    cand, shapes = [], []
+    for i in range(1, n):
+        x, y, bw, bh, area = (int(st[i, k]) for k in (cv2.CC_STAT_LEFT, cv2.CC_STAT_TOP, cv2.CC_STAT_WIDTH, cv2.CC_STAT_HEIGHT, cv2.CC_STAT_AREA))
+        if not (0.7 * wl <= bw <= 1.3 * wh) or bh < max(0.7 * P['min_h'] * s, 1.6 * bw) or bh > 1.3 * P['max_h'] * s or area < 0.6 * bw * bh:
+            continue
+        comp = lab[y:y + bh, x:x + bw] == i
+        L, A, B = oklab(rgb[y:y + bh, x:x + bw])
+        shapes.append((x, y, bw, bh, float(hue_of(A[comp].mean(), B[comp].mean()))))  # every bar-like shape, for the twin and mirror reads
+        if not (wl <= bw <= wh) or bh < max(P['min_h'] * s, P['ratio'] * bw) or bh > P['max_h'] * s or area < P['fill'] * bw * bh:
+            continue
+        core = comp & (np.hypot(A, B) >= P['chroma'])  # its antialiased rim left out
+        if core.sum() < 0.6 * comp.sum() or float(L[core].mean()) < 0.2 or float(L[core].std()) > P['l_spread']:
+            continue
+        hh = np.radians(hue_of(A, B)[core])
+        R = np.hypot(np.sin(hh).mean(), np.cos(hh).mean())
+        if np.degrees(np.sqrt(max(0.0, -2 * np.log(max(1e-6, R))))) > P['hue_spread']:
+            continue
+        cand.append((x, y, bw, bh, float(np.degrees(np.arctan2(np.sin(hh).mean(), np.cos(hh).mean())) % 360)))
+    if not cand:
+        return []
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY).astype(np.float32)
+    out = []
+    sw, gap, reach = max(2, int(round(P['side'] * s))), max(1, int(round(P['gap'] * s))), int(round(P['reach'] * s))
+    for c in cand:
+        x, y, bw, bh, mh = c
+        if x - gap - sw < 0 or x + bw + gap + sw > w:
+            continue
+        if gray[y:y + bh, x - gap - sw:x - gap].std() > P['side_std'] or gray[y:y + bh, x + bw + gap:x + bw + gap + sw].std() > P['side_std']:
+            continue
+        if any(abs(o[2] - bw) <= max(2, 0.5 * bw) and 0 < abs(o[0] - x) <= P['twin'] * s and min(o[1] + o[3], y + bh) - max(o[1], y) > 0.3 * min(bh, o[3]) for o in shapes):
+            continue  # a chart's bars, a meter, stripes
+        if any(abs(o[2] - bw) <= max(2, 0.5 * bw) and abs(o[3] - bh) <= 0.3 * bh and abs((o[4] - mh + 180) % 360 - 180) < 20
+               and 0 < abs(o[0] - x) <= P['mirror'] * s and min(o[1] + o[3], y + bh) - max(o[1], y) > 0.7 * bh for o in shapes):
+            continue  # its mirror on the far side: a frame or border pattern round a picture or panel, not an accent on one edge
+        def same(a, b, ink=None):
+            L, A, B = oklab(rgb[y:y + bh, a:b])
+            m = (np.hypot(A, B) >= P['chroma']) & (np.abs((hue_of(A, B) - mh + 180) % 360 - 180) < 20)
+            return float(m[ink].mean()) if ink is not None and ink.any() else float(m.mean())
+        a0 = max(0, x - gap - reach)
+        if a0 < x - gap and same(a0, x - gap) > P['same_left']:
+            continue  # a letter of a coloured word, a stroke of a coloured shape
+        a, b = x + bw + gap, min(w, x + bw + gap + reach)
+        reg = gray[y:y + bh, a:b]
+        if reg.size == 0:
+            continue
+        ink = np.abs(reg - np.median(reg)) > P['row_tol']
+        if ink.any(axis=1).mean() < P['content'] or same(a, b, ink) > P['same_hue']:
+            continue
+        out.append([x, y, bw, bh])
+    return out
+
+
+def ui_frames(path, info, every_s=0.5, width=1920):
+    """Frames every `every_s` seconds at full resolution (capped at `width`): (frame, rgb)."""
+    W = min(width, info['w']) // 2 * 2
+    H = int(round(info['h'] * W / info['w'])) // 2 * 2
+    step = max(1, int(round(info['fps'] * every_s)))
+    cmd = ['ffmpeg', '-v', 'error', '-nostdin', '-i', path, '-map', '0:v:0', '-vf', f"select='not(mod(n\\,{step}))',scale={W}:{H}:flags=area",
+           '-fps_mode', 'passthrough', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    k = 0
+    try:
+        while True:
+            buf = p.stdout.read(W * H * 3)
+            if len(buf) < W * H * 3:
+                break
+            yield k * step, np.frombuffer(buf, np.uint8).reshape(H, W, 3)
+            k += 1
+    finally:
+        p.stdout.close()
+        p.kill()
+        p.wait()
+
+
+def ui_scan(paths_or_video, info=None):
+    """accent_bars over a film (two samples a second) or over stills: [{f | file, bars}], samples read."""
+    hits, n = [], 0
+    if info is not None:
+        for f, rgb in ui_frames(paths_or_video, info):
+            n += 1
+            b = accent_bars(rgb)
+            if b:
+                hits.append(dict(f=f, bars=b))
+        return hits, n
+    for p in paths_or_video:
+        im = cv2.imread(p)
+        if im is None:
+            continue
+        n += 1
+        b = accent_bars(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
+        if b:
+            hits.append(dict(file=p, bars=b))
+    return hits, n
+
+
+def ui_bar_flags(hits, add, fps):
+    """ui-accent-bar: fail on 2 or more samples with a bar, warn on one."""
+    if not hits:
+        return
+    sev = 'fail' if len(hits) >= 2 else 'warn'
+    f0 = hits[0]['f']
+    x, y, w, h = hits[0]['bars'][0]
+    add('ui-accent-bar', sev, f0, f"a thin saturated vertical bar along a card's edge on {len(hits)} sample(s) (first at {x},{y} {w}x{h} px, {f0 / fps:.1f} s): "
+        'product UI is simple and aligned: a card reads by its fill, its type and its real content (an icon, the real mark, a photo), never a stripe or a pill down its side')
+
+
+# text never cuts into a picture or a mark (the layout audit's boxes, confirmed on the pixels; scripts/ui-layout.cjs reads
+# the same crossings from the boxes alone)
+UITEXT = dict(
+    cross=2.0,  # px at 1080 each way: a text box crossing an asset's edge by more
+    opacity=0.5, speed=3.0,  # readable text: effective opacity, px/f at 1080
+    band=24.0,  # px at 1080: the strip of the asset beside the crossing, outside the text box, read for the asset
+    de=0.06, share=0.4, min_px=40,  # in view: this share of the strip's pixels 6 OKLab units or more off the text's ground
+    persist=2,  # audited frames in view: fail (one: warn)
+)
+
+
+def text_asset_crossings(layout, P=UITEXT):
+    """The layout report's text boxes crossing a mark's or a picture's edge (scripts/ui-layout.cjs geometry: the camera
+    float put back on the text; a caption inside a photo and an asset set in the line are by design):
+    [(frame, text_box, asset, kind, cw, ch)] in comp px."""
+    out = []
+    for fr in (layout or {}).get('boxes', []):
+        cw = fr.get('width') or layout.get('width') or 1920
+        ch = fr.get('height') or layout.get('height') or 1080
+        k = 1080.0 / ch
+        c = P['cross'] / k
+        seen, assets = set(), []
+        for kind, key in (('mark', 'logos'), ('picture', 'imagery')):
+            for s in fr.get(key) or []:
+                if s.get('covered') or s.get('opacity', 1) < P['opacity']:
+                    continue
+                sig = (kind, round(s['x']), round(s['y']), round(s['w']), round(s['h']))
+                if sig not in seen:
+                    seen.add(sig)
+                    assets.append((kind, s))
+        for b in fr.get('boxes') or []:
+            if b.get('opacity', 1) < P['opacity'] or b.get('push') == 'moving' or b.get('smear') or (b.get('speed') or 0) > P['speed']:
+                continue
+            x, y, w, h = screen_box(b, cw, ch)
+            for kind, s in assets:
+                ix = min(x + w, s['x'] + s['w']) - max(x, s['x'])
+                iy = min(y + h, s['y'] + s['h']) - max(y, s['y'])
+                if ix <= c or iy <= c:
+                    continue
+                t_in = x >= s['x'] - c and y >= s['y'] - c and x + w <= s['x'] + s['w'] + c and y + h <= s['y'] + s['h'] + c
+                s_in = s['x'] >= x - c and s['y'] >= y - c and s['x'] + s['w'] <= x + w + c and s['y'] + s['h'] <= y + h + c
+                inline = ix >= 0.8 * s['w'] and y <= s['y'] + s['h'] / 2 <= y + h
+                if t_in or s_in or inline:
+                    continue
+                out.append((fr['frame'], dict(b, x=x, y=y, w=w, h=h), s, kind, cw, ch))
+    return out
+
+
+def frames_at(path, info, frames, width=1920):
+    """The given frames at full resolution (capped at `width`): {frame: rgb}."""
+    W = min(width, info['w']) // 2 * 2
+    H = int(round(info['h'] * W / info['w'])) // 2 * 2
+    want = sorted({int(f) for f in frames if 0 <= f})
+    got = {}
+    for i in range(0, len(want), 48):
+        part = want[i:i + 48]
+        sel = '+'.join(f'eq(n\\,{f})' for f in part)
+        cmd = ['ffmpeg', '-v', 'error', '-nostdin', '-i', path, '-map', '0:v:0', '-vf', f"select='{sel}',scale={W}:{H}:flags=area",
+               '-fps_mode', 'passthrough', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']
+        raw = subprocess.run(cmd, capture_output=True).stdout
+        n = len(raw) // (W * H * 3)
+        for j in range(min(n, len(part))):
+            got[part[j]] = np.frombuffer(raw[j * W * H * 3:(j + 1) * W * H * 3], np.uint8).reshape(H, W, 3)
+    return got
+
+
+def text_on_asset(path, info, layout, k_=1.0, P=UITEXT):
+    """Crossings whose asset is in view beside the crossing: the strip of the asset next to it (outside the text box)
+    differs from the text's own ground. A mark hidden behind a plate, or a picture box larger than the picture shown,
+    reads as the ground there and is left out. [{f, id, asset, kind, cross, share}]."""
+    cands = text_asset_crossings(layout, P)
+    if not cands:
+        return []
+    frames = frames_at(path, info, [int(round(f * k_)) for f, *_ in cands])
+    out = []
+    for f, t, s, kind, cw, ch in cands:
+        rgb = frames.get(int(round(f * k_)))
+        if rgb is None:
+            continue
+        H_, W_ = rgb.shape[:2]
+        sx = W_ / cw
+        k = 1080.0 / ch
+
+        def rect(x, y, w, h):
+            return max(0, int(x * sx)), max(0, int(y * sx)), min(W_, int(np.ceil((x + w) * sx))), min(H_, int(np.ceil((y + h) * sx)))
+        tx0, ty0, tx1, ty1 = rect(t['x'], t['y'], t['w'], t['h'])
+        ax0, ay0, ax1, ay1 = rect(s['x'], s['y'], s['w'], s['h'])
+        ix0, iy0, ix1, iy1 = max(tx0, ax0), max(ty0, ay0), min(tx1, ax1), min(ty1, ay1)
+        if ix1 <= ix0 or iy1 <= iy0 or tx1 <= tx0 or ty1 <= ty0:
+            continue
+        L, A, B = oklab(rgb[ty0:ty1, tx0:tx1])
+        own = np.ones(L.shape, bool)
+        own[iy0 - ty0:iy1 - ty0, ix0 - tx0:ix1 - tx0] = False  # the text's ground away from the asset
+        if own.sum() < P['min_px']:
+            continue
+        g = np.array([np.median(L[own]), np.median(A[own]), np.median(B[own])])
+        bd = int(round(P['band'] / k * sx))
+        bx0, by0, bx1, by1 = max(ax0, ix0 - bd), max(ay0, iy0 - bd), min(ax1, ix1 + bd), min(ay1, iy1 + bd)
+        L2, A2, B2 = oklab(rgb[by0:by1, bx0:bx1])
+        strip = np.ones(L2.shape, bool)
+        strip[max(0, ty0 - by0):max(0, ty1 - by0), max(0, tx0 - bx0):max(0, tx1 - bx0)] = False  # outside the text box
+        if strip.sum() < P['min_px']:
+            continue
+        d = np.sqrt((L2 - g[0]) ** 2 + (A2 - g[1]) ** 2 + (B2 - g[2]) ** 2)[strip]
+        share = float((d >= P['de']).mean())
+        if share >= P['share']:
+            ix = min(t['x'] + t['w'], s['x'] + s['w']) - max(t['x'], s['x'])
+            iy = min(t['y'] + t['h'], s['y'] + s['h']) - max(t['y'], s['y'])
+            out.append(dict(f=int(round(f * k_)), id=t.get('id', '?'), text=(t.get('text') or '')[:40], asset=s.get('name') or kind, kind=kind,
+                            cross=[round(ix * k, 1), round(iy * k, 1)], share=round(share, 2)))
+    return out
+
+
+def text_asset_flags(found, add, fps, P=UITEXT):
+    """text-on-asset: a text box cutting into a mark or picture in view, on 2 or more audited frames fails, on one warns."""
+    groups = {}
+    for x in found:
+        groups.setdefault((x['id'], x['asset']), []).append(x)
+    for (tid, asset), xs in groups.items():
+        x = xs[0]
+        n = len({y['f'] for y in xs})
+        what = f"the {asset} mark" if x['kind'] == 'mark' else 'a picture'
+        add('text-on-asset', 'fail' if n >= P['persist'] else 'warn', x['f'],
+            f"\"{x['text'] or tid}\" cuts {x['cross'][0]}x{x['cross'][1]} px into {what} in view on {n} audited frame(s) (first at {x['f'] / fps:.1f} s): "
+            'text sits beside a mark or a picture with clear space, or wholly on a photo as its caption, never across its edge')
+
+
 CARD = dict(
     block=8, flat_std=2.5, join=1.2,  # 8 px blocks at 480 wide; neighbours within 1.2 L* are one region
     dark=50.0,  # a ground under this L* is dark
@@ -1811,6 +2088,11 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
             add('clean-finish', 'warn', 0, f'the corners sit {float(np.median(vigs)) * 100:.1f} % darker than the centre: no vignette (light comes from a declared light field)')
     else:
         grains, vigs = [], []
+    if not args.no_finish and not args.no_ui:
+        ui_hits, _ = ui_scan(args.video, info)
+        ui_bar_flags(ui_hits, add, fps)
+    if layout and not args.no_ui:
+        text_asset_flags(text_on_asset(args.video, info, layout, fps / (cues.get('fps') or fps) if cues else 1.0), add, fps)
     # luminance flips: the stage turns light <-> dark
     flips = []
     gl = S['ground_L']
@@ -2712,6 +2994,83 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         check(bool(has(rep, 'image-develop', 'warn')), 'imagery arriving at full colour warns image-develop')
         rep = run('img-dev', imagery(True))
         check(not has(rep, 'image-develop'), 'imagery developing from grey over 1 s does not')
+
+        # --- ui-accent-bar (full-resolution stills): a thin saturated bar on a card's edge beside its rows is found; the
+        # same card without it, a bar chart, a coloured word, a frame round a picture and a meter with no rows are not
+        def ui_card(dark=False, bar=None, rows=True, chart=False, word=False, framed=False, meter=False):
+            img = np.full((1080, 1920, 3), (20, 22, 26) if dark else (226, 230, 236), np.uint8)
+            cv2.rectangle(img, (600, 300), (1300, 580), (34, 37, 44) if dark else (255, 255, 255), -1)
+            ink = (232, 234, 238) if dark else (28, 30, 36)
+            col = (40, 180, 110) if dark else (40, 120, 220)
+            if bar == 'line':
+                cv2.rectangle(img, (640, 330), (644, 380), col, -1)
+            elif bar == 'pill':
+                cv2.rectangle(img, (640, 337), (649, 373), col, -1)
+                cv2.circle(img, (644, 337), 4, col, -1)
+                cv2.circle(img, (644, 373), 4, col, -1)
+            if rows:
+                cv2.putText(img, 'Design review', (664, 368), cv2.FONT_HERSHEY_SIMPLEX, 1.2, ink, 2, cv2.LINE_AA)
+                cv2.putText(img, 'Thursday 10:30', (664, 430), cv2.FONT_HERSHEY_SIMPLEX, 0.9, ink, 2, cv2.LINE_AA)
+                cv2.putText(img, 'Four people', (664, 480), cv2.FONT_HERSHEY_SIMPLEX, 0.9, ink, 2, cv2.LINE_AA)
+            if chart:
+                for k, hh in enumerate((60, 120, 90, 160, 140, 200)):
+                    cv2.rectangle(img, (700 + 24 * k, 560 - hh), (713 + 24 * k, 560), col, -1)
+                cv2.putText(img, '+38%', (860, 470), cv2.FONT_HERSHEY_SIMPLEX, 1.2, ink, 2, cv2.LINE_AA)
+            if word:
+                cv2.putText(img, 'lift', (700, 520), cv2.FONT_HERSHEY_SIMPLEX, 3.2, col, 9, cv2.LINE_AA)
+            if framed:
+                pic = F.texture(77, 300, 200, mean=120, amp=60)
+                img[340:540, 700:1000] = pic
+                cv2.rectangle(img, (694, 334), (1005, 545), col, 6)
+            if meter:
+                cv2.rectangle(img, (900, 360), (907, 520), col, -1)
+            return img
+
+        check(bool(accent_bars(ui_card(bar='line'))), 'a 5 px accent line on a light card beside its rows is a ui-accent-bar')
+        check(bool(accent_bars(ui_card(dark=True, bar='pill'))), 'a narrow pill before a dark card\'s title is one too')
+        check(not accent_bars(ui_card()) and not accent_bars(ui_card(dark=True)), 'the same cards without it are clean')
+        check(not accent_bars(ui_card(rows=False, chart=True)), 'a bar chart beside its figure is not an accent bar')
+        check(not accent_bars(ui_card(rows=False, word=True)), 'the stem of a coloured word is not one')
+        check(not accent_bars(ui_card(rows=False, framed=True)), 'a frame round a picture is not one')
+        check(not accent_bars(ui_card(rows=False, meter=True)), 'a meter with no rows beside it is not one')
+        bars_dir = os.path.join(tmp, 'ui-stills')
+        os.makedirs(bars_dir, exist_ok=True)
+        cv2.imwrite(os.path.join(bars_dir, 'a.png'), cv2.cvtColor(ui_card(bar='line'), cv2.COLOR_RGB2BGR))
+        r = subprocess.run([sys.executable, os.path.abspath(__file__), bars_dir, '--ui-only'], capture_output=True, text=True)
+        check(r.returncode == 1 and 'ui-accent-bar' in r.stdout, '--ui-only on a folder of stills fails on the bar', r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr[-200:])
+
+        # --- text-on-asset (--layout): a line crossing a picture's edge fails when the picture is in view there; the same
+        # boxes over a plate that hides the picture do not; a caption wholly on the photo is by design
+        photo = F.texture(91, 120, 120, mean=110, amp=70, tint=(1.0, 0.8, 0.6))
+
+        def asset_clip(name, show):
+            frames_ = []
+            for i in range(20):
+                img = paper.copy()
+                if show:
+                    img[60:180, 300:420] = photo
+                cv2.putText(img, 'Weekly', (232, 124), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (28, 30, 36), 2, cv2.LINE_AA)
+                frames_.append(img)
+            clip = os.path.join(tmp, name + '.mp4')
+            F.write_clip(clip, frames_, fps)
+            return clip
+
+        def asset_layout(text_box):
+            fr = lambda f: dict(frame=f, width=w, height=h, boxes=[dict(id='week', text='Weekly', opacity=1, px=20, **text_box)],
+                                logos=[], imagery=[dict(x=300, y=60, w=120, h=120)])
+            return dict(width=w, height=h, boxes=[fr(5), fr(12)])
+
+        crossing = dict(x=228, y=100, w=110, h=32)
+        for name, show, box, want in (('asset-view', True, crossing, True), ('asset-hidden', False, crossing, False),
+                                      ('asset-caption', True, dict(x=310, y=140, w=100, h=30), False)):
+            clip = asset_clip(name, show)
+            found = text_on_asset(clip, F.probe(clip), asset_layout(box))
+            flags_ = []
+            text_asset_flags(found, lambda c, sev, f, note: flags_.append(sev), fps)
+            what = {'asset-view': 'a line cutting into a picture in view fails text-on-asset',
+                    'asset-hidden': 'the same boxes over a plate hiding the picture do not',
+                    'asset-caption': 'a caption wholly on the photo is by design'}[name]
+            check(('fail' in flags_) == want and (want or not flags_), what, f'{len(found)} in view, {flags_}')
     return 0
 
 
@@ -2756,7 +3115,9 @@ def main():
     ap.add_argument('--no-picture', action='store_true', help='report the picture floor without failing on it (the motion floor still counts)')
     ap.add_argument('--picture-only', action='store_true', help='only the picture floor (no motion probe): a fast pass')
     ap.add_argument('--every', type=int, default=1, help='--picture-only: read every Nth frame (the samples stay at two a second)')
-    ap.add_argument('--no-finish', action='store_true', help='skip the full-resolution grain and vignette samples')
+    ap.add_argument('--no-finish', action='store_true', help='skip the full-resolution grain and vignette samples (and the ui-accent-bar read)')
+    ap.add_argument('--no-ui', action='store_true', help='skip the ui-accent-bar read (full resolution, two samples a second) and text-on-asset')
+    ap.add_argument('--ui-only', action='store_true', help='only the ui-accent-bar read, on the video, a folder of stills or one image (exit 1 on a bar); with --layout also text-on-asset')
     ap.add_argument('--no-audio', action='store_true', help='skip the audio onsets (cut sync)')
     ap.add_argument('--trajectory', action='store_true', help='the one-hue gate on --roi instead of the film checks')
     ap.add_argument('--roi', help='x,y,w,h for --trajectory (video pixels)')
@@ -2781,6 +3142,38 @@ def main():
         sys.exit(self_test(F, args.self_test))
     if not args.video:
         ap.error('a video is required (or --self-test)')
+    if args.ui_only:
+        stills = None
+        if os.path.isdir(args.video):
+            stills = sorted(os.path.join(args.video, x) for x in os.listdir(args.video) if x.lower().endswith(('.png', '.jpg', '.jpeg')))
+        elif args.video.lower().endswith(('.png', '.jpg', '.jpeg')):
+            stills = [args.video]
+        if stills is not None:
+            hits, n = ui_scan(stills)
+            bad = len(hits) > 0
+        else:
+            info = F.probe(args.video)
+            hits, n = ui_scan(args.video, info)
+            bad = len(hits) >= 2
+        crossed = []
+        if stills is None and args.layout:  # text cutting into a mark or picture in view (the layout audit's boxes)
+            cues_ = F.load_cues(args.cues) if args.cues else None
+            crossed = text_on_asset(args.video, info, load_layout(args.layout), info['fps'] / (cues_.get('fps') or info['fps']) if cues_ else 1.0)
+            flags_ = []
+            text_asset_flags(crossed, lambda c, sev, f, note: flags_.append(dict(check=c, severity=sev, frame=f, note=note)), info['fps'])
+            bad = bad or any(x['severity'] == 'fail' for x in flags_)
+            for x in flags_:
+                print(f"  text-on-asset {x['severity']} f{x['frame']}: {x['note'][:160]}")
+        res = dict(tool='look-audit', mode='ui-only', file=args.video, samples=n, hits=hits, text_on_asset=crossed, pass_=not bad)
+        res['pass'] = res.pop('pass_')
+        if args.json:
+            os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
+            json.dump(res, open(args.json, 'w'), indent=1, default=lambda o: o.item() if hasattr(o, 'item') else str(o))
+        for x in hits[:40]:
+            print(f"  ui-accent-bar {x.get('file') or 'f' + str(x['f'])}: {x['bars']}")
+        print(f"look-audit ui: {args.video}  {n} samples, {len(hits)} with a vertical accent bar on a card's edge"
+              + (f", {len(crossed)} text box(es) cutting into an asset in view" if args.layout and stills is None else '') + f" -> {'pass' if res['pass'] else 'FAIL'}")
+        sys.exit(0 if res['pass'] else 1)
     info = F.probe(args.video)
     if args.trajectory:
         res = trajectory(args, info, F)

@@ -111,7 +111,10 @@ looks; `accent-count` still applies.
 `fontSize` that is not a role size of either type family in `lib/look.ts` `TYPE_LOOK`, calm or bold; more than 2
 non-UI roles), `small-text` (under 36 px at 1080p),
 `giant-watermark` (a giant word at opacity ≤ 0.29), `giant-once` (giant words in more than one act),
-`card-content` (error: a `<Card>` or bento tile with no content, image or `blank`).
+`card-content` (error: a `<Card>` or bento tile with no content, image or `blank`), `ui-accent-bar` (error: a vertical
+accent line or bar on a card's edge: a side border 2 px or wider or in a saturated colour, an inset shadow painting one
+side, a 1.5-16 px wide bar element 2.5 times as tall filled with the accent; warns on a colour set by a variable and a
+neutral stripe down a card's edge; corners, hairline dividers, a chart's bars and carets are left out).
 
 **Placeholders** (errors: a final film shows the product's own words and real pictures, never stand-ins):
 `placeholder-copy` (an on-screen string that marks itself unfinished, from `scripts/placeholders.json`: JSX text, a
@@ -157,6 +160,12 @@ evaluate (what `grammar-score.mjs` reads for curve roles, durations, staggers an
 
 - Readable text moves at most about 3 px/f while it is read; a re-centre jump is a decisive move, held to the travel
   limit (20 px/f), not the reading limit, and listed as a jump.
+- Product UI is simple and aligned (`scripts/ui-layout.cjs` on the same boxes; `references/product-ui.md` §3.1):
+  `ui-align` fails two rows stacked in one card whose left edges miss by more than 2 px and at most 12 px at 1080 on 2
+  audited frames (one frame warns; centred rows, rows flush right together, indents of 16 px or more, a headline over a
+  card are fine); `text-on-asset` lists a text box crossing a mark's or a picture's edge (not a caption wholly on a photo,
+  not an asset set in the line) as a ui warning for `look-audit.py --layout` to confirm on the pixels. Run alone on a
+  report: `node scripts/ui-layout.cjs out/qa/layout-Film.json`.
 - Type roles (warnings; `--strict` fails): cap height against bands that hold both type families (caption 2.3-4 %,
   line 4-9 %, display 9-14 %, hero 14-26 %, giant 26-90 % of the frame height; over 90 % warns), readable text under
   the ui size, more than 2 non-UI sizes at once, a line wider than 61 % of the frame (a calm sentence under a 6.5 % cap
@@ -242,7 +251,11 @@ brand-supplied colours count as one family), `banned-hue`
 (supplied colours pass, lit, shaded or blended over a grey too; both leave out the official marks: the pixels of a mark with a record in
 `public/logos/logos.json`, where the layout JSON's mark boxes or `--mark-track` say it is drawn on that frame), `accent-share`, the wash ceiling (a film is not one colour wash), `tinted-ink`,
 `negative-space`, `living-ground`, `camera-lock` (the camera never stops, or never on a read: lock 0.5-1 s on each read), `clean-finish`, `type-size` (with the layout JSON), `luminance-flip`,
-`blur-policy`, `word-first-frame`, `fade-detect`, `arrival-front-load`, `image-develop` (a hint), and with the
+`blur-policy`, `word-first-frame`, `fade-detect`, `arrival-front-load`, `image-develop` (a hint), `ui-accent-bar`
+(fails a thin saturated vertical bar along a card's edge, with the card's rows beside it, on 2 samples read at full
+resolution two a second; a chart's bars, a frame round a picture and a coloured word's letters are left out),
+`text-on-asset` (with the layout JSON: fails a text box cutting into a mark or a picture that is in view beside the
+crossing on 2 audited frames; `--ui-only` runs both reads alone), and with the
 layout JSON and the cues the type gate: `type-read` (fails when the largest copy line is under 6.7 % of the frame
 height, 72 px at 1080p, or a line of 48 px or more reads under 3:1 against its local ground; under 4.5:1 warns, and
 fails on a busy ground) and `type-beat` (warns when no line of 6.7 % or more, at 4.5:1, sits on a clean field for a

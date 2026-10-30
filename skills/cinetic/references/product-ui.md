@@ -13,7 +13,7 @@ takes the film context or reads it inside a component.
 **Contents**
 1. [The grammar in one screen](#1-the-grammar-in-one-screen)
 2. [The data module](#2-the-data-module) (2.1 [Material realism](#21-material-realism-what-a-paused-frame-is-checked-against))
-3. [Layout from data](#3-layout-from-data)
+3. [Layout from data](#3-layout-from-data) (3.1 [Simple and aligned](#31-simple-and-aligned))
 4. [State transitions](#4-state-transitions)
 5. [The product kit](#5-the-product-kit)
 6. [Cards, bento and the one spring](#6-cards-bento-and-the-one-spring)
@@ -64,6 +64,7 @@ takes the film context or reads it inside a component.
   feature's name exactly once, where the product itself would show it, or as the one line of copy or on the end card.
 - **Fill the frame.** Push in until the part doing the work fills most of the frame; frame UI as macro crops and hero
   planes, bleeding past an edge. A small card floating in empty space reads as a slide.
+- **Simple and aligned.** No accent bar on a card, one left edge per card, text never across a picture or a mark (§3.1).
 
 ## 2. The data module
 
@@ -168,6 +169,32 @@ computes each of them right; `scripts/data-check.mjs` fails the hand-typed ones 
 - **Paint in z order.** Sort items by z before rendering (lifted items above grounded ones); stacks overlap left over right; badges on avatars get a 2 px ring in the background colour, so an overlap reads as layering, not as a bite.
 - **Collapse empty regions** until their content arrives. A section header over 120 px of nothing reads as a broken app.
 - **Decide layout thresholds per whole frame.** If a card switches layout at 40 px tall, decide it from `fd(f)` so every motion-blur sub-sample agrees.
+
+### 3.1 Simple and aligned
+
+Simple UI reads as a real product; decoration and near misses read as a template. Three rules, each one checked:
+
+- **No accent bar on a card.** A card reads by its fill, its type and its real content (an icon, the real mark, a photo,
+  the product's own status dot or chip). Never a coloured stripe down its side, a narrow pill before its title, a
+  coloured left border on the selected row, or an inset shadow painting one edge. Selection is a fill, a ring all round
+  (`inset 0 0 0 2px`), a check or the row lifting; a state is the product's own dot or chip where the product puts it. A
+  hairline divider in the line colour between a sidebar and its content is structure, not an accent.
+  Checked: `lint-film.mjs` `ui-accent-bar` (side borders, one-side inset shadows, thin bar elements) and `look-audit.py`
+  `ui-accent-bar` (a thin saturated vertical bar along a card's edge with the card's rows beside it, in the render at
+  full resolution two samples a second; it fails on two samples, and leaves out a chart's bars, a frame round a picture
+  and a coloured word's letters).
+- **One left edge per card.** Rows stacked in one card or panel share their left edge within 2 px at 1080. An indent is
+  a deliberate step of 16 px or more (the icon column, a second level), never a near miss of 3-12 px. Lay a card out
+  from one `pad`: the title, the meta line and the body all start at `pad`; an icon-led card puts every icon at `pad`
+  and every text at `pad + icon + gap`, the title included, or none. Centred rows centre on one axis; numbers set flush
+  right share a right edge. Checked: `layout-audit.sh` `ui-align` (`scripts/ui-layout.cjs` on the audit boxes) fails a
+  near miss that rests on 2 audited frames.
+- **Text never cuts into a picture or a mark.** A label sits beside a mark or a photo with clear space (half its cap
+  height or more), or wholly on the photo as its caption (over a scrim when the photo is busy); a mark inside a sentence
+  is set in the line (kit `InlineLogo`). Never a line running across a photo's edge, a title over an app icon, a name tag
+  half off its tile. Checked: `layout-audit.sh` lists every text box crossing a `data-logo` or `data-imagery` box (a ui
+  warning), and `look-audit.py --layout` fails the crossings where the asset is in view on 2 audited frames (a mark
+  hidden behind a plate reads as the ground there and is left out).
 
 ## 4. State transitions
 
