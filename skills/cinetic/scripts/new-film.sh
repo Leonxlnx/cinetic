@@ -45,14 +45,20 @@
 #   --browser      bake a Chromium/headless-shell path into remotion.config.ts (env REMOTION_BROWSER
 #                  or CHROMIUM_PATH at render time also works, and wins).
 #   --force        allow a non-empty <dir> (starter files overwrite same-named files).
-#   --format       launch (default: the starter's own acts, the main case, 15-45 s) or update: a 15-23 s
+#   --format       launch (default, the main case, 15-45 s): the launch-simple template (a line alone in the
+#                  middle of a clean ground, the product acting, the next line, the product again, the centred
+#                  lockup built from the last picture; the agent writes src/launch.ts and src/product.tsx, the
+#                  timeline fits every beat to the track; --template none keeps the starter's own acts; the
+#                  HyperFrames starter has no template) or update: a 15-23 s
 #                  "vX is out" film laid over the starter from assets/templates/update (src/update.ts holds
 #                  the version and 2-4 changes; a hook on the version, one act per change shown as a product
 #                  moment, the payoff, the end card with the version). update defaults to --pace crisp and
 #                  the template's 120 BPM. Remotion only. The same as --template update.
 #   --template     a film template from assets/templates/<name> laid over the starter: its timeline, acts,
 #                  film and sound (template.json lists the files it copies and the starter files it removes;
-#                  its pace and tempo become the defaults). update (a "vX is out" film), ui-walkthrough (a
+#                  its pace and tempo become the defaults). launch-simple (the default launch: a line, a
+#                  picture, a line, a picture, the lockup), none (the starter's own acts), update (a "vX is out"
+#                  film), ui-walkthrough (a
 #                  product's flow in steps: the promise, the input becoming the output, proof, a claim, then
 #                  input -> the product reads -> insight -> choice -> output, the end card), capability-reel
 #                  (a launch close: a ring of sources, one real record, a statement, a capability ticker, the
@@ -152,6 +158,9 @@ SRC="$SKILL/assets/$ENGINE-starter"
 [[ "$FORMAT" == launch || "$FORMAT" == update ]] || die "--format must be launch or update"
 TPL=""
 [[ "$FORMAT" == update && -z "$TEMPLATE" ]] && TEMPLATE=update
+# a launch is the simple launch unless a template is named (none: the starter's own acts); HyperFrames has no template
+[[ "$FORMAT" == launch && -z "$TEMPLATE" && "$ENGINE" == remotion ]] && TEMPLATE=launch-simple
+[[ "$TEMPLATE" == none ]] && TEMPLATE=""
 [[ "$FORMAT" == update && "$TEMPLATE" != update ]] && die "--format update is the update template: pass --format update or --template $TEMPLATE, not both"
 if [[ -n "$TEMPLATE" ]]; then
   [[ "$TEMPLATE" =~ ^[a-z0-9-]+$ ]] || die "--template takes a template's folder name (letters, digits, dashes)"

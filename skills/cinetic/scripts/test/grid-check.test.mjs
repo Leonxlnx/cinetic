@@ -25,7 +25,7 @@
  *        before the next fragment rises);
  *      - each fragment's `text` sound (src/sync.ts) lands within 1 f of the frame its last word
  *        visibly stops (the drawn rise, through arrive(), at the statement's size);
- *      - new-film.sh --pace crisp scaffolds a film that passes grid-check, and new-film.sh --format update
+ *      - new-film.sh --pace crisp --template none scaffolds a film that passes grid-check, and new-film.sh --format update
  *        one whose changes are short sentences with no error or script warning, and every film template in
  *        assets/templates one with no error and no script warning, which with a track in (104 and 136 BPM, the
  *        first downbeat 0.25 s in, a stop ending 0.4 s after the last bar line) still has every act line on a
@@ -268,14 +268,15 @@ console.log(JSON.stringify({ text, rest }));
     "each fragment's text sound lands within 1 f of its last word's visible stop", got ? `sounds ${got.text.join(', ')}, at rest ${got.rest.join(', ')}` : (pr.stderr || pr.stdout).trim().slice(0, 300));
 
   }
-  // new-film.sh --pace crisp: the scaffold passes grid-check as it comes
+  // new-film.sh --pace crisp: the starter's own acts (--template none; a launch is the simple launch by default, tested
+  // with the templates below) pass grid-check as they come
   const gitBash = 'C:\\Program Files\\Git\\bin\\bash.exe';
   const bash = process.platform === 'win32' ? (existsSync(gitBash) ? gitBash : null) : 'bash';
   if (!bash) console.log('skip  new-film.sh --pace crisp (no bash: install Git for Windows)');
   else if (runs('films') || runs('templates')) {
     if (runs('films')) {
     const film = join(TMP, 'crisp-film').split('\\').join('/');
-    const nf = spawnSync(bash, [join(SKILL, 'scripts', 'new-film.sh').split('\\').join('/'), film, '--pace', 'crisp', '--no-install'], { encoding: 'utf8' });
+    const nf = spawnSync(bash, [join(SKILL, 'scripts', 'new-film.sh').split('\\').join('/'), film, '--pace', 'crisp', '--template', 'none', '--no-install'], { encoding: 'utf8' });
     const g = nf.status === 0 ? run('npx', ['tsx', GRID, join(film, 'src', 'timeline.ts'), '--json'], STARTER) : { error: (nf.stderr || nf.stdout).trim().slice(0, 300) };
     result(clean(g, 'crisp') && g.summary?.bpm === 120, 'new-film.sh --pace crisp scaffolds a film that passes grid-check (120 BPM, crisp)', why(g));
     // new-film.sh --format update: the template's changes are short sentences, one line at a time

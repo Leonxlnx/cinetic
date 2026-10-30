@@ -46,9 +46,37 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 
 **Purpose.** Make a viewer feel a problem, see the product answer it, and remember the name.
 
-**Length.** 15–45 s, on the track's bars (about 100 BPM, a 2.4 s bar, for a calm film; 120 for a crisp one), with 6–8 story beats per 30 s (8–10 in crisp). Write it as a plain script (`references/copy-and-type.md` §1–2b): what the product is by 3 s, 3–5 lines that each say one thing it does while the UI shows it, then the name and what to do; 2–7 words a line, one clean line on screen at a time, each with its own text animation; `copy-check.py` passes it.
+**Length.** 15–45 s, on the track's bars (about 100 BPM, a 2.4 s bar, for a calm film; 120 for a crisp one), with 6–8 story beats per 30 s (8–10 in crisp). Write it as a plain script (`references/copy-and-type.md` §1–2b): what the product is by 3 s, 3–5 lines that each say one thing it does while the picture shows it, then the name and what to do; 2–7 words a line (1–5 typical), one clean line on screen at a time, all in the film's one text voice; `copy-check.py` passes it.
 
-**Act template** (30 s + tail = 15 bars + 60 f at 120 BPM; Tessel's shape, see `references/worked-example.md`). At the calm 100 BPM the same beats fill about 12–13 bars: keep each beat's share of the runtime and let each copy beat carry one sentence of the script.
+**The default shape: a line, a picture, a line, a picture, the lockup.** This is what `new-film.sh` lays down for a launch (`assets/templates/launch-simple`): the agent writes the script (`src/launch.ts`) and the product's scenes (`src/product.tsx`); the timeline fits every beat to the track's beats and every pair to whole bars, at any tempo from 90 to 140 BPM.
+
+| Beat | What is on screen | Length | Rule |
+|---|---|---|---|
+| T | one line alone, centred in the middle band (35–65 % of the height), on a clean ground | 0.5–2.4 s, about 1.3 s | one entry voice for every line of the film; the key word may take the accent ink (no box, marker or underline) |
+| A | the product or the picture acting: the input becoming the output, a click and its result, a count rising | 1–3.5 s | full frame, centred, no statement over it; the first A shows the product's core change literally |
+| T+A | a line over the start of a picture | as T | only where the line names exactly what the picture is doing; at most 40 % of the beats |
+| End | the centred lockup built from the last picture's element, the one fact under it | held 2–3 s | the name once; the mark comes out of the element (turning as it goes, for a badge), the name slides out beside it |
+
+- **Numbers.** Type-only beats (T) are at least 15 % of the shots and at least 2 a film; T+A at most 40 % of the beats; the first line is on screen by 1 s; 0.3–1.5 headline words a second. A 15 s launch holds 3–4 lines and 3–4 pictures, a 30 s one 5–7 lines. `grid-check.ts` (`beats`) checks these from the timeline's `BEAT_PLAN`.
+- **The picture beats carry the motion, the line beats carry one build.** A line beat is calm: the ground, the line building in the film's voice and creeping in (1.5 % a second, never frozen), the camera's float. Everything that moves in a big way moves in the A beats and in the seams between beats.
+- **Seams.** Line to picture: a match cut on the line's slot, a blur-through on the kept ground, or a velocity cut (the line leaves at speed, the picture arrives on it; the picture is whole on its first frame); picture to line: a blur-through or a push through the picture (a line builds from nothing, so no speed carries into it); into the end: the last picture's element carried into the mark, never a cut. A whole picture never fades in or out on its own (that reads as a dissolve). Three or four kinds a film, none over 45 % of the changes (`references/transitions.md`).
+- **One ground family for the whole film** (`references/brand-and-color.md` §9b): it never cuts, and its one colour event (a band flooding the frame for a line, the turn to dark) is declared.
+
+Example timing for a plain 20 s launch:
+
+| t (s) | Beat | Content |
+|---|---|---|
+| 0.0–1.5 | T | "[Name] turns [input] into [output]." centred, in the film's voice |
+| 1.5–4.0 | A | the input becoming the output in the product, full frame, the camera drifting |
+| 4.0–5.3 | T | line 2, the same voice, the picture blurring away into it on the same ground |
+| 5.3–8.0 | A | the product doing it (rows stepping in, typing); a match cut or a velocity cut in, one push-in to a closer frame on the beat |
+| 8.0–9.3 | T | line 3 |
+| 9.3–12.5 | A | proof: a count, a result, a card opening |
+| 12.5–13.8 | T | line 4 |
+| 13.8–16.5 | A | the payoff picture, the film's one signature move |
+| 16.5–20.0 | End | the centred lockup built from the last element, held 2–3 s |
+
+**Act template for a longer launch with a story arc** (30–45 s; the default shape above covers 15–30 s) (30 s + tail = 15 bars + 60 f at 120 BPM; Tessel's shape, see `references/worked-example.md`). At the calm 100 BPM the same beats fill about 12–13 bars: keep each beat's share of the runtime and let each copy beat carry one sentence of the script.
 
 | Bars | Time | Beat type | What happens | Sound |
 |---|---|---|---|---|
@@ -62,12 +90,14 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 - **Two peaks, not five.** Energy needs somewhere to come from. Put the loudest moment on the promise or the payoff, not on a mid-film peak.
 - **One signature shot** (the dealt direction's), once, on its beat; it may echo smaller at the open or inside the lockup. Transitions vary: any kind at most 3 times (`references/transitions.md`).
 - **End card.**
+  - The lockup is centred and built from the film's last element (`references/devices/logo-and-end-card.md`, the ten end-card designs), held 2–3 s.
   - The final frame is the poster by default, so it must carry the brand: the mark plus the name, or the mark plus the URL.
   - When the brief gives one practical fact (a date such as "next week", "out now", a URL), it goes on the end card at the secondary size under the lockup, readable for at least 1.7 s. It is the only line besides the name; a film that leaves it out has dropped the brief's call to action.
   - A frame of the device alone is elegant, but it is weak for recall on a paused player. If you end on it anyway, export the poster from the lockup and say so in the README.
 - **Teaser (15–20 s).** Keep the hook, the turn and the lockup, and cut proof down to a single glimpse, or cut it entirely. Budget 6–10 words. The first line still says what the product is by 3 s, over the picture of the problem; never open on the logo alone.
 
 **Format gates**
+- The beat plan: type-only beats at least 15 % of the shots and at least 2, T+A at most 40 % of the beats, the first line on screen by 1 s (`grid-check.ts` `beats`).
 - There are 6–8 beat rows per 30 s in `TREATMENT.md` (8–10 in crisp), and the device appears in every row.
 - Film copy is on screen for at most about 85% of the runtime, with at least 1.5 s of picture without text in every 10 s (`grid-check.ts` `text-share`).
 - The loudest momentary loudness is on the promise or payoff, with limiter gain reduction under 1.5 dB (`av-audit.py`).

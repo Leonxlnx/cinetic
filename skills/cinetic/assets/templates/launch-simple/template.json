@@ -1,0 +1,74 @@
+{
+ "name": "launch-simple",
+ "about": "The default launch film, 15-30 s: a line alone in the middle of a clean ground, then the product doing what the line said, then the next line, then the product again, then a centred lockup built from the last picture with the one fact under it. One text voice, one ground family, three or four seam kinds, everything fitted to the music's bars and the script's lines. The agent writes the script (src/launch.ts) and the product's scenes (src/product.tsx); the timeline, the seams, the ground, the end card and the sound plan follow. new-film.sh lays these files over the Remotion starter (the default for --format launch).",
+ "engine": "remotion",
+ "pace": "crisp",
+ "type_family": "bold",
+ "bpm": 120,
+ "end_hold": [2, 3],
+ "beats": {
+  "T": "a line alone, centred in the middle band, on a clean ground: 0.5-2.4 s (about 1.3), one entry voice for the film",
+  "A": "the product or the picture acting, full frame, centred, no statement over it: 1-3.5 s, varied (a long one beside a short one)",
+  "TA": "a line over the picture's start, only where it names what the picture is doing: at most 40 % of the beats",
+  "end": "the centred lockup built from the last picture's element, the one fact under it, held 2-3 s"
+ },
+ "deal": {
+  "file": "src/deal.ts",
+  "seed": "the product's name (IDENTITY.name), or launch.ts seed; launch.ts pin fixes a slot by hand",
+  "print": "npx tsx -e \"import { DEAL } from './src/deal'; import { SEAM_PLAN, BEAT_PLAN } from './src/timeline'; console.log(DEAL, SEAM_PLAN.map((s) => s.recipe), BEAT_PLAN.map((b) => b.kind + ' ' + ((b.to - b.from) / 60).toFixed(2)))\"",
+  "slots": {
+   "voice": ["build", "blur", "ink"],
+   "ground": ["nearWhite", "blackField", "whiteBand", "deepPool", "softSky", "lightDark", "gradientField"],
+   "seamTA": ["matchCut", "blurThrough", "velocityCut"],
+   "seamAT": ["blurThrough", "zoomThrough"],
+   "end": ["element", "badge"],
+   "camera": ["drift", "rise"]
+  }
+ },
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every launch is cut to a licensed, human-made, instrumental track (references/music.md): the track carries the film and its cuts, earshot effects mark the picture's own moments (each line whole, the product's clicks and results, the seams that move, one hit on the lockup); never effects only. Any tempo from 90 to 140 BPM fits: the timeline fits each line and picture to the track's beats and each pair to whole bars.",
+  "pick": "node scripts/music.mjs pick --mood \"<the film's mood words>\" --length <s> --bpm 96-136 (the curated library; with none, music.mjs search), then music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track)",
+  "add": "bash scripts/new-film.sh <dir> --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL --ai-generated no --vocals no, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "npx tsx -e \"import { BARS } from './src/timeline'; console.log(BARS)\"   (the film's bars at the track's tempo)",
+   "python3 scripts/audio/track.py edit --bars <BARS> --end auto  (the defaults: the track's best bars, its own ending, else a fade: never a cut)",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "next": [
+  "simple launch: write the script in src/launch.ts (3-4 pairs: a line of 2-7 words and the picture that proves it; line 1 says what the product does by name; the strings each picture shows; the one fact for the end card) and the product's name in src/brand/identity.ts,",
+  "  build each picture in src/product.tsx from the product's real screens (the first one shows its core change literally: input -> output), the last one with its hero element,",
+  "  see what the name deals: npx tsx -e \"import { DEAL } from './src/deal'; console.log(DEAL)\" (launch.ts pin fixes a slot),",
+  "  then the music (below), npm run check, and a contact sheet of out/preview.mp4 against references/checks.md (the placement, beat and seam gates)"
+ ],
+ "copy": [
+  "src/launch.ts",
+  "src/product.tsx",
+  "src/deal.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/stage.tsx",
+  "src/acts/layer.tsx",
+  "src/acts/line.tsx",
+  "src/acts/ui.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ]
+}

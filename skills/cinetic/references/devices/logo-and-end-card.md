@@ -10,7 +10,7 @@ The brand lands as the last move of the story: oversized, assembled, snapped on 
 - **Built from what came last.** The lockup comes out of the film's last element: the last picture's card becomes the mark, the last word becomes the wordmark, the light of the last frame spins the badge in. A lockup that fades in from nowhere is the stock end card, centred or not.
 - **Held 2–3 s** from the frame it is whole (the name and the fact read), on a creep of 2–6 %, never frozen; the music's ending rings under it.
 - **The one fact** (where to get it, when, the price) under the lockup at the caption size, readable for 1.7 s or more; nothing else.
-- **Pick one of the ten designs below** for the film, different from the last films' end cards; `assets/templates/launch-simple` deals the first three by name.
+- **Pick one of the ten designs below** for the film, different from the last films' end cards; `assets/templates/launch-simple` deals the first two by name (the badge there turns as the last picture's element shrinks into the mark).
 
 ### Ten end-card designs (recipes)
 
