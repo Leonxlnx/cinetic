@@ -18,11 +18,10 @@ import { Defocus } from '../fx/Defocus';
 import { clamp, mix, rand } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { f60x, uOf, useFilm } from '../lib/film';
-import { measureTracked } from '../lib/measure';
 import type { SampleWorld } from './data';
 import { kitEmpty, KitEmpty } from './gate';
 import { AppIcon, DEPTH, depthBlur, hasLogo, type LogoRef, ringSlots, type TileSlot, tileArrival, wallSlots } from './logos';
-import { face, GlyphTile, keyFace, Sparkline, surfaceShadow, useKitScale } from './parts';
+import { face, fitTitle, GlyphTile, keyFace, Sparkline, surfaceShadow, useKitScale } from './parts';
 import type { GlyphName } from './sample';
 import { type KitTheme, kitTheme } from './theme';
 
@@ -54,22 +53,9 @@ export type TileNode = {
 };
 
 /**
- * A title's size in a column `maxW` px wide, never cut with "...": the given size when it fits, else smaller down to
- * `min` of it, else that size wrapped onto two lines. Measured with the loaded face in the browser (every act renders
- * under FontGate); on the server (tests) the size is kept.
- */
-export const fitTitle = (text: string, px: number, weight: number, maxW: number, min = 0.78): { px: number; wrap: boolean } => {
-  if (typeof document === 'undefined' || !text || !(maxW > 0)) return { px, wrap: false };
-  const w = measureTracked(text, px, weight, -0.01, FONT.text, { trailing: false });
-  if (w <= maxW) return { px, wrap: false };
-  const k = maxW / w;
-  return k >= min ? { px: px * k * 0.99, wrap: false } : { px: px * min, wrap: true };
-};
-
-/**
  * Text that reads only when it is large enough: data-text at TEXT_MIN and up, texture under it. With `fit` (the
- * column's width, px) a title shrinks or wraps to two lines instead of being cut with "..." (fitTitle); texture
- * (preview lines, cells) still ends on an ellipsis inside its well.
+ * column's width, px) a title shrinks or wraps to two lines instead of being cut with "..." (fitTitle, kit/parts.tsx);
+ * texture (preview lines, cells) runs under its well's edge, clipped: the kit never draws "..." or "…".
  */
 const T: React.FC<{ id: string; px: number; u: number; weight?: number; color: string; mono?: boolean; fit?: number; children: React.ReactNode; style?: React.CSSProperties }> = ({ id, px: px0, u, weight = 500, color, mono, fit, children, style }) => {
   const f = fit !== undefined && typeof children === 'string' ? fitTitle(children, px0, weight, fit) : { px: px0, wrap: false };
@@ -81,7 +67,7 @@ const T: React.FC<{ id: string; px: number; u: number; weight?: number; color: s
         ...face(px, weight, color, -0.01, 1.2),
         ...(mono ? { fontFamily: FONT.mono, letterSpacing: '0em' } : null),
         overflow: 'hidden',
-        textOverflow: mono || fit !== undefined ? 'clip' : 'ellipsis',
+        textOverflow: 'clip',
         display: 'block',
         ...(f.wrap ? { whiteSpace: 'normal', overflowWrap: 'anywhere', maxHeight: px * 1.2 * 2 } : null),
         ...style,

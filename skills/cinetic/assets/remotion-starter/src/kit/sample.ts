@@ -10,6 +10,7 @@
 //   sample().docLines / codeLines / listLines / fileStems   the tile previews' and file thumbs' sample strings
 import { rand } from '../lib/anim';
 import { checkWorld, type SampleKind, type SampleWorld, seriesFor, type StatusTone, type WorldPerson, type WorldRecord, type WorldStatus } from './data';
+import { kitSampleUsed } from './gate';
 import type { IconName } from './icons';
 import { day, FILM_DATE } from './real';
 
@@ -411,7 +412,11 @@ const SAMPLE = {
 
 /**
  * The only door to the kit's sample content, for the kit's own gallery and tests: sample().review, .budgets, .world(seed,
- * { kind, rows, currency, today, photos }), .nodes(world, n), .file(seed). A film never calls it: scripts/precheck.mjs
- * fails a film whose source does, and copy-check.py fails its strings in a film's source or render.
+ * { kind, rows, currency, today, photos }), .nodes(world, n), .file(seed). A film never calls it: each call reports
+ * kit-sample (kit/gate.tsx kitSampleUsed: a warning in dev, an error under the ship gate), scripts/precheck.mjs fails a
+ * film whose source calls it, and copy-check.py fails its strings in a film's source or render.
  */
-export const sample = () => SAMPLE;
+export const sample = () => {
+  kitSampleUsed();
+  return SAMPLE;
+};

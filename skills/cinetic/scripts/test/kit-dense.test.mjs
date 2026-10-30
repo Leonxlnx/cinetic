@@ -23,7 +23,8 @@
  *      the ship gate (CINETIC_GATE=ship) it throws. A tile or a field given an undefined node (an index past the end of
  *      an empty list) draws the empty state instead of crashing; a code panel without lines draws no bare gutter. Field,
  *      Row, Notice and Toast draw no glyph the film did not pick. A tile's title fits its column (shrinks, then wraps),
- *      never cut with "...". The retired
+ *      never cut with "..."; no part draws "..." at all (a result tile's title, a file name, a preview's lines); a code
+ *      panel numbers only the code's own lines; sample() itself reports kit-sample and throws under the ship gate. The retired
  *      sampleWorld() returns an empty world. filmWorld() adds up from the film's rows alone and its screen shows no
  *      chrome string the film did not give ("Search", "This month", "Pro", "Share").
  *
@@ -149,7 +150,21 @@ const g: any = globalThis;
 g.document = { createElement: () => ({ style: {}, textContent: '', getBoundingClientRect() { return { width: String(this.textContent).length * parseFloat(this.style.fontSize) * 0.5 }; } }), body: { appendChild() {}, removeChild() {} } };
 const fits = { short: K.fitTitle('Pay rent', 20, 650, 200), shrink: K.fitTitle('Send the slides', 20, 650, 140), wrap: K.fitTitle('Send Maya the slides for Friday', 20, 650, 140) };
 const tileFit = film(60, h(K.ContentTile, { node: { glyph: 'doc', label: 'Send Maya the slides for Friday', sub: 'Today' }, theme: t, w: 240 }));
+// no part ever draws "...": a result tile's long title, a file thumb's long name, a preview's long lines
+const noDots = {
+  tile: film(60, h(K.Tile, { theme: t, w: 300, file: { name: 'walk-home-monday-voice-memo-final.m4a' }, title: 'Send Maya the slides for Friday and book the dentist for Tuesday morning', meta: 'Today' })),
+  thumb: film(60, h(K.FileThumb, { theme: t, w: 200, h: 140, name: 'walk-home-monday-voice-memo-final.m4a', size: '2.4 MB' })),
+  preview: film(60, h(K.ContentTile, { node: { glyph: 'doc', label: 'Notes', lines: ['Send Maya the slides for Friday and the deck for Monday', 'Book the dentist for Tuesday morning before work', 'Pay the rent'] }, theme: t, w: 240 })),
+};
 delete g.document;
+// a code panel numbers the code's own lines, never a gutter running on past its last line
+const code4 = film(60, h(K.CodePanel, { theme: t, w: 900, lines: [[{ k: 'kw', s: 'const' }, { k: 'txt', s: ' a = 1;' }], [{ k: 'txt', s: 'a++;' }]], rows: 2, gutter: 40 }));
+// sample() itself reports kit-sample (a warning in dev, recorded once) and throws under the ship gate
+const sampleReported = K.kitEmpties().some((x: any) => x.part === 'sample()' && /^kit-sample:/.test(x.message));
+(globalThis as any).process.env.CINETIC_GATE = 'ship';
+let sampleShip = '';
+try { K.sample(); } catch (e) { sampleShip = String((e as Error).message); }
+delete (globalThis as any).process.env.CINETIC_GATE;
 const empties = [...new Set(K.kitEmpties().map((x: any) => x.part))];
 const noGlyph = { field: film(60, h(K.Field, { theme: t, w: 900, h: 110 }, 'Walk home, Monday')), row: film(60, h(K.Row, { theme: t, w: 900, h: 110, title: 'Today' })), notice: film(60, h(K.Notice, { theme: t, w: 900, h: 130, title: 'Book the dentist', body: 'Added to Tuesday' })) };
 const retired = K.sampleWorld('film-x', { kind: 'billing' });
@@ -173,7 +188,7 @@ let shipThrow = '';
 try { film(60, h(K.DenseScreen, { frame: 60, theme: t })); } catch (e) { shipThrow = String((e as Error).message); }
 delete env.CINETIC_GATE;
 const sampleStrings = [...S.docLines, ...S.listLines, ...S.fileStems, ...S.codeLines.map((c: any) => c[1]), S.review.product, S.review.project.title, S.review.chat.title, S.review.stats.views.label, S.review.stats.views.since, S.budgets.product, S.budgets.team, 'Weekly spend', ...S.companies.pre.flatMap((p: string) => S.companies.suf.map((s: string) => p + ' ' + s))];
-console.log(JSON.stringify({ worlds, same, differ, screens, glides, fs60, fs30, fixed, av: { big: avatar(96), chip: avatar(32), half: avatar(220, 'halftone') }, cuts, dots: { n: dots.length, rs: dots.map((d: any) => d[2]), maxY: Math.max(...dots.map((d: any) => d[1])), corner: cornerR(dots), invCorner: cornerR(inv) }, stack, tiles, personBare, tileBare, holes, holeNodes, toastBare, fits, tileFit, tileLabel, fallbackTile, nodes, wall, ring, ticker, fallback, wallOwn, bare, empties, noGlyph, retired: { records: retired.records.length, people: retired.people.length, origin: retired.origin }, fw: { bad: K.checkWorld(FW), counts: FW.statuses.map((s: any) => s.count), focus: FW.focus, series: FW.series.length }, filmScreen, filmBoard, filmNodes, shipThrow, sampleStrings, wallSlots: K.wallSlots(4, { cols: Math.max(4, Math.round(1920 / (230 * 1.24)) + 1), rows: Math.max(3, Math.round(1080 / (230 * 1.24 * 0.92)) + 1), cell: 230 * 1.24, w: 1920, h: 1080, seed: 'w' }).length }));
+console.log(JSON.stringify({ worlds, same, differ, screens, glides, fs60, fs30, fixed, av: { big: avatar(96), chip: avatar(32), half: avatar(220, 'halftone') }, cuts, dots: { n: dots.length, rs: dots.map((d: any) => d[2]), maxY: Math.max(...dots.map((d: any) => d[1])), corner: cornerR(dots), invCorner: cornerR(inv) }, stack, tiles, personBare, tileBare, holes, holeNodes, toastBare, fits, tileFit, noDots, code4, sampleReported, sampleShip, tileLabel, fallbackTile, nodes, wall, ring, ticker, fallback, wallOwn, bare, empties, noGlyph, retired: { records: retired.records.length, people: retired.people.length, origin: retired.origin }, fw: { bad: K.checkWorld(FW), counts: FW.statuses.map((s: any) => s.count), focus: FW.focus, series: FW.series.length }, filmScreen, filmBoard, filmNodes, shipThrow, sampleStrings, wallSlots: K.wallSlots(4, { cols: Math.max(4, Math.round(1920 / (230 * 1.24)) + 1), rows: Math.max(3, Math.round(1080 / (230 * 1.24 * 0.92)) + 1), cell: 230 * 1.24, w: 1920, h: 1080, seed: 'w' }).length }));
 `;
 
 /** The strings in a markup: data-text elements and data-texture spans, each with its largest font size. */
@@ -299,6 +314,11 @@ try {
   result(!/<svg/.test(P.toastBare) && />Moved to Tuesday</.test(P.toastBare), 'Toast draws no glyph the film did not pick (no default check)');
   const F = P.fits;
   result(F.short.px === 20 && !F.short.wrap && F.shrink.px < 20 && F.shrink.px >= 20 * 0.78 && !F.shrink.wrap && F.wrap.wrap && Math.abs(F.wrap.px - 20 * 0.78) < 1e-9, 'fitTitle: a title that fits keeps its size, a little too long shrinks (to 78 %), longer wraps to two lines', JSON.stringify(F));
+  const dots = Object.entries(P.noDots).filter(([, html]) => /ellipsis|line-clamp|…|\.\.\./i.test(html)).map(([k]) => k);
+  result(!dots.length && /Send Maya the slides for Friday and book/.test(P.noDots.tile) && /walk-home-monday/.test(P.noDots.thumb), 'no kit part draws "...": a result tile\'s long title, a file thumb\'s long name and a preview\'s long lines shrink, wrap or run under the edge', dots.join(', '));
+  const gutter = [...P.code4.matchAll(/<div>(\d+)<\/div>/g)].map((m) => Number(m[1]));
+  result(gutter.length === 2 && gutter.join() === '1,2', 'CodePanel numbers the code\'s own lines (2 lines: 1 and 2), never a gutter of 40 numbers over nothing', gutter.join(','));
+  result(P.sampleReported && /^kit-sample:/.test(P.sampleShip), 'sample() reports kit-sample (a warning in dev, listed by kitEmpties for precheck) and throws under the ship gate', P.sampleShip.slice(0, 80));
   result(!/text-overflow:ellipsis[^"]*">Send Maya the slides for Friday/.test(P.tileFit) && /white-space:normal/.test(P.tileFit), 'ContentTile: a long title wraps in its column, never cut with "..."', P.tileFit.slice(0, 80));
   const wantEmpty = ['sampleWorld', 'DenseScreen', 'ProjectPanel', 'ChatCard', 'FeedCard', 'StatCard', 'ApprovalsCard', 'BudgetCard', 'CategoryRows', 'ChartCard', 'RingCard', 'AmountToast', 'ReportCover', 'KitFallback', 'ContentWall', 'ContentRing', 'ContentTicker', 'FileThumb', 'Photo', 'AppIcon', 'CodePanel', 'ContentTile'];
   result(wantEmpty.every((p) => P.empties.includes(p)), 'kitEmpties(): every empty part is reported once (precheck lists them)', wantEmpty.filter((p) => !P.empties.includes(p)).join(', '));

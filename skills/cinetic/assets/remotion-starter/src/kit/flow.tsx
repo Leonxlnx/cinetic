@@ -9,7 +9,7 @@ import { TEXT_MIN } from '../brand/tokens';
 import { clamp, mix } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { KitEmpty } from './gate';
-import { Button, Check, face, FileThumb, Glyph, GlyphTile, KIT_TYPE, Photo, surfaceShadow, useKitScale } from './parts';
+import { Button, Check, face, FileThumb, fitTitle, Glyph, GlyphTile, KIT_TYPE, Photo, surfaceShadow, useKitScale } from './parts';
 import type { GlyphName } from './sample';
 import { type KitTheme, lit } from './theme';
 
@@ -49,10 +49,15 @@ export const Field: React.FC<{
   );
 };
 
-/** A result: a picture (`src`, a real photograph; without it the file it is, FileThumb), a title of up to two lines and a meta line. */
+/**
+ * A result: a picture (`src`, a real photograph; without it the file it is, FileThumb), a title of up to two lines and a
+ * meta line. A title longer than two lines shrinks to fit them (down to 78 %), never cut with "...".
+ */
 export const Tile: React.FC<{ theme: KitTheme; w: number; seed?: number; src?: string; file?: { name: string; size?: string }; title: string; meta?: string; badge?: string; id?: string; scale?: number }> = ({ theme: t, w, src, file, title, meta, badge, id = 'kit-tile', scale }) => {
   const u = useKitScale(scale);
   const ph = w * 0.5625;
+  // two lines' room (a little less than 2 w: a line breaks between words); past it the size gives way, never "..."
+  const tf = fitTitle(title, KIT_TYPE.label * u * 1.05, 600, w * 1.8);
   return (
     <div data-ui style={{ position: 'relative', width: w, display: 'flex', flexDirection: 'column', gap: 14 * u }}>
       <div style={{ position: 'relative', width: w, height: ph, borderRadius: 18 * u, overflow: 'hidden', boxShadow: surfaceShadow(t, 18, u) }}>
@@ -65,7 +70,7 @@ export const Tile: React.FC<{ theme: KitTheme; w: number; seed?: number; src?: s
           </div>
         )}
       </div>
-      <span data-text={`${id}-title`} style={{ ...face(KIT_TYPE.label * u * 1.05, 600, t.text, -0.02, 1.2), whiteSpace: 'normal', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+      <span data-text={`${id}-title`} style={{ ...face(tf.px, 600, t.text, -0.02, 1.2), whiteSpace: 'normal', display: 'block', maxHeight: tf.px * 1.2 * 2, overflow: 'hidden' }}>
         {title}
       </span>
       {meta && (
@@ -238,7 +243,7 @@ const codeColour = (t: KitTheme, k: CodeToken['k']) =>
   k === 'kw' ? t.accent : k === 'str' ? mixColor(t.accent, t.text, 0.45) : k === 'num' ? mixColor(t.accent, t.text, 0.25) : k === 'com' ? t.mute : k === 'fn' ? t.text : mixColor(t.text, t.mute, 0.35);
 
 /**
- * A code panel that streams: a numbered gutter that is always full, and rows of tokens arriving by line cadence
+ * A code panel that streams: a numbered gutter, full from the first frame (up to `gutter` rows, never past the code's own last line: no numbers over nothing), and rows of tokens arriving by line cadence
  * (`rows` shown, fractional: the current row typing through its characters). Product code reads as code in one hue
  * family (keywords in the accent, strings and numbers in its tints, comments muted). Pass the product's own code: a
  * panel given no lines draws its empty state (kit-empty), never a gutter of line numbers over nothing.
@@ -253,7 +258,7 @@ export const CodePanel: React.FC<{ theme: KitTheme; w: number; lines: CodeToken[
   return (
     <div data-ui style={{ position: 'relative', width: w, display: 'flex', gap: fs * 0.9, fontFamily: family, fontSize: fs, lineHeight: `${lh}px`, whiteSpace: 'pre' }}>
       <div style={{ flex: 'none', textAlign: 'right', color: t.mute, opacity: 0.6, minWidth: fs * 1.6 }}>
-        {Array.from({ length: gutter }, (_, i) => (
+        {Array.from({ length: Math.min(gutter, lines.length) }, (_, i) => (
           <div key={i}>{i + 1}</div>
         ))}
       </div>

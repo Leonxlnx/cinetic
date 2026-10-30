@@ -10,6 +10,7 @@ import { C, FONT, TEXT_MIN, TYPE } from '../brand/tokens';
 import { clamp, E, mix, prog, rand } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { uOf, useFilm } from '../lib/film';
+import { measureTracked } from '../lib/measure';
 import { HalftonePortrait, MonogramTile, PortraitMark } from './avatars';
 import { ICON_GRID, ICONS, type IconPaths } from './icons';
 import type { GlyphName } from './sample';
@@ -36,6 +37,19 @@ export const face = (px: number, weight: number, color: string, track = -0.015, 
   whiteSpace: 'pre',
   fontVariantNumeric: 'tabular-nums',
 });
+
+/**
+ * A title's size in a column `maxW` px wide, never cut with "...": the given size when it fits, else smaller down to
+ * `min` of it, else that size wrapped onto two lines. Measured with the loaded face in the browser (every act renders
+ * under FontGate); on the server (tests) the size is kept.
+ */
+export const fitTitle = (text: string, px: number, weight: number, maxW: number, min = 0.78): { px: number; wrap: boolean } => {
+  if (typeof document === 'undefined' || !text || !(maxW > 0)) return { px, wrap: false };
+  const w = measureTracked(text, px, weight, -0.01, FONT.text, { trailing: false });
+  if (w <= maxW) return { px, wrap: false };
+  const k = maxW / w;
+  return k >= min ? { px: px * k * 0.99, wrap: false } : { px: px * min, wrap: true };
+};
 
 /**
  * A line of kit text inside its parent (px): left-aligned at (x, y), or with `width` set, aligned inside
@@ -427,16 +441,18 @@ export const Ring: React.FC<{ theme: KitTheme; size: number; p: number; draw?: n
  * A picture slot with no picture yet, shown as what the product itself shows for a file: an image glyph on its tile,
  * the file's `name` and `size` as the product lists them (the film's own files). Product UI, never a drawn stand-in for
  * the photo: give the slot a real photo (`src` on Photo) and it shows the photo instead. Without a name it draws the
- * image glyph alone and reports kit-empty: the kit never makes up file names.
+ * image glyph alone and reports kit-empty: the kit never makes up file names. A long name shrinks, then wraps onto two
+ * lines (fitTitle), never cut with "...".
  */
 export const FileThumb: React.FC<{ theme: KitTheme; w: number; h: number; name?: string; size?: string; seed?: number; radius?: number; scale?: number }> = ({ theme: t, w, h, name, size, radius = 0, scale }) => {
   const u = useKitScale(scale);
   const px = Math.max(TEXT_MIN * u, Math.min(KIT_TYPE.label * u, w * 0.13));
   if (!name) kitEmpty('FileThumb', "name (the film's own file name) or a real photo");
+  const nf = name ? fitTitle(name, px * 0.8, 600, w * 0.86) : { px: px * 0.8, wrap: false };
   return (
     <div data-ui {...(name ? {} : { 'data-kit-empty': 'FileThumb', 'data-kit-need': 'name' })} style={{ position: 'relative', width: w, height: h, borderRadius: radius, overflow: 'hidden', background: t.well, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: px * 0.5 }}>
       <GlyphTile theme={t} name="image" size={Math.min(w, h) * 0.34} />
-      {name && <span data-texture="" style={{ ...face(px * 0.8, 600, t.text, -0.01, 1.1), maxWidth: w * 0.86, overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>}
+      {name && <span data-texture="" style={{ ...face(nf.px, 600, t.text, -0.01, 1.1), maxWidth: w * 0.86, overflow: 'hidden', textOverflow: 'clip', textAlign: 'center', ...(nf.wrap ? { whiteSpace: 'normal', overflowWrap: 'anywhere', maxHeight: nf.px * 1.1 * 2 } : null) }}>{name}</span>}
       {name && size && <span data-texture="" style={face(px * 0.7, 500, t.mute, -0.01, 1.1)}>{size}</span>}
     </div>
   );

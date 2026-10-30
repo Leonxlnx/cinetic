@@ -35,6 +35,20 @@ export const kitEmpty = (part: string, need: string): void => {
 };
 
 /**
+ * Report a call to sample() (the kit's gallery and tests only): a warning once in dev (recorded in kitEmpties() as part
+ * 'sample()', which scripts/precheck.mjs fails as kit-sample when a film module calls it at load), an error under the
+ * ship gate, so a film that shows the kit's sample products, people, rows or files never ships, however it imports them.
+ */
+export const kitSampleUsed = (): void => {
+  const message = "kit-sample: sample() is the kit's gallery and tests only (its sample products, people, rows and files); a film shows its own content: filmWorld({ ... }), a panel's data, a tile's own lines.";
+  if (gateMode() === 'ship') throw new Error(message);
+  const list = kitEmpties();
+  if (list.some((x) => x.part === 'sample()')) return;
+  list.push({ part: 'sample()', need: "the film's own content", message });
+  console.warn(`warn ${message}`);
+};
+
+/**
  * The empty state of a kit part: its box (w x h, at x, y; `inline` keeps it in the flow) as a quiet surface on a dashed
  * rim, with nothing in it. It calls kitEmpty(part, need) as it draws.
  */
