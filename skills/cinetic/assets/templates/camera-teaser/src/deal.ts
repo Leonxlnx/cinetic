@@ -134,8 +134,8 @@ for (const [k, v] of Object.entries(DEAL)) {
 }
 
 /**
- * The lines this teaser's acts set in one headline system whatever the line deal plays (fx/TypeSystem): what it is as
- * a stack when it has four words or more (acts/stage StatementLine). acts/stage.tsx deals the other lines' devices
- * round it (fx/TypeEmphasis dealLineEmphasis reads this for the film's seed).
+ * The lines this teaser's acts set another way than the film's voice (fx/TypeSystem filmSystems reads this for the
+ * film's seed): none. Every line is one centred line on the voice; a film that wants its one stack declares it here
+ * ({ what: 'stack' }) and passes `stack` to its StatementLine.
  */
-export const HEADLINES_SET = declareHeadlines(DEAL_SEED, { what: TEASER.lines.what.split(' ').filter(Boolean).length >= 4 ? 'stack' : undefined });
+export const HEADLINES_SET = declareHeadlines(DEAL_SEED, {});

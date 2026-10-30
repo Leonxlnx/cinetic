@@ -1,31 +1,33 @@
 /**
- * Emphasis: the devices that set a line's key word apart, so a hero line is never one size, one weight and one colour
- * from end to end (lib/look.ts EMPHASIS_LOOK holds the measured numbers). <TypeLine> draws them on its key words
+ * Emphasis: the devices that set a line's key word apart (lib/look.ts EMPHASIS_LOOK holds the measured numbers). <TypeLine> draws them on its key words
  * (`spec.emph`); this file is the pure part: which words, which device, how far along it is at a frame.
  *
  *   weight    the key words at the family's emphasis weight (calm 650, bold 800) in the accent, their width held
- *             (their tracking tightens by what the weight adds, at most 0.06 em): the default of every hero line
- *   accent    the key words rest in the accent (colour alone: the quietest device)
+ *             (their tracking tightens by what the weight adds, at most 0.06 em)
+ *   accent    the key words rest in the accent (colour alone: the quietest device, the film's default kind)
  *   scale     the key words one step up the type scale (calm x1.5, bold x1.35) at the emphasis weight, on the baseline
  *   swell     scale, grown in after the line lands (22 f, E.glideOut): the other words slide apart, the line re-centres
- *   marker    an accent bar wipes on behind the key words (10 f) and knocks them out to the ground
- *   box       the inverted box: the line's ink behind them, the words in the ground colour
- *   under     a rule draws under them (12 f), the words at the emphasis weight
+ *   marker    an accent bar wipes on behind the key words (10 f) and knocks them out to the ground (signature only)
+ *   box       the inverted box: the line's ink behind them, the words in the ground colour (signature only)
+ *   under     a rule draws under them (12 f), the words at the emphasis weight (signature only)
  *   outline   they arrive as an outline and fill left to right once landed (16 f), resting in the accent
  *   sweep     the accent crosses them left to right once the line lands (22 f, a soft front) and stays
  *
  * The key words: a line written with them between asterisks ("Brook is a *water bottle*.") marks them (parseKeyed;
  * copy-check.py reads the same marks and names a key word for a line that has none); else `keys` or `key` on the
- * spec; else the last word. A film deals one device per line through the headline systems (dealEmphasis,
- * dealLineHeadlines, fx/TypeSystem: never the same system twice in a row, none on more than two lines);
- * <TypeLine> gives a hero line that names none the `weight` device (defaultEmphasis). Node-safe, no DOM.
+ * spec; else the last word.
+ *
+ * A film's emphasis is quiet and one kind: a line takes none unless its film gives it one (<TypeLine> adds nothing on
+ * its own). filmEmphasis gives the film's ONE kind (default `accent`: the key words in the accent colour) to at most 60 %
+ * of its lines, the lines whose key words the script names first, never two kinds in one film. A box, a marker bar, an
+ * underline (and a pill or a knockout drawn round the words: fx/Markers, fx/Knockout) is never a kind: only the film's
+ * declared signature, on one line at most. checkFilmEmphasis measures a deal against that. Node-safe, no DOM.
  */
 import { TYPE_FAMILY } from '../brand/tokens';
 import { clamp, E, type Ease, prog } from '../lib/anim';
 import { f60x } from '../lib/film';
 import { EMPHASIS_LOOK, type TypeFamily } from '../lib/look';
 import type { Declares } from '../timeline';
-import { checkSystems, declaredHeadlines, DEVICE_SYSTEMS, deviceOfSystem, dealSystems, type HeadlineSystem, systemOfDevice, SYSTEM_DEVICES } from './TypeSystem';
 
 export type EmphasisName = 'weight' | 'accent' | 'scale' | 'swell' | 'marker' | 'box' | 'under' | 'outline' | 'sweep';
 export const EMPHASIS_NAMES: EmphasisName[] = ['weight', 'accent', 'scale', 'swell', 'marker', 'box', 'under', 'outline', 'sweep'];
@@ -56,14 +58,12 @@ export const EMPHASIS_DOES: Record<EmphasisName, { size: boolean; weight: boolea
   sweep: { size: false, weight: false, color: false, front: 'sweep', hold: false },
 };
 
-/** The device a hero line takes when it names none. */
-export const EMPHASIS_DEFAULT: EmphasisName = 'weight';
-
-/** The devices a film deals its lines from, by type family (dealEmphasis). */
-export const EMPHASIS_DEAL: Record<TypeFamily, EmphasisName[]> = {
-  calm: ['weight', 'under', 'sweep', 'outline', 'swell', 'marker', 'accent'],
-  bold: ['weight', 'scale', 'marker', 'under', 'sweep', 'swell', 'box', 'outline'],
-};
+/** The kind a film's emphasis takes when it names none: the key words in the accent colour, nothing drawn. */
+export const EMPHASIS_DEFAULT: EmphasisName = 'accent';
+/** At most this share of a film's lines carries an emphasis. */
+export const EMPHASIS_SHARE = 0.6;
+/** Devices that draw round the words (a box, a marker bar, an underline): a film's one signature on one line, never its kind. */
+export const SIGNATURE_DEVICES: EmphasisName[] = ['box', 'marker', 'under'];
 
 /** A device resolved for one line: every default filled in. */
 export type EmphasisResolved = {
@@ -188,25 +188,6 @@ export const emphasisProgress = (f: number, device: EmphasisName, at: number, fp
 export const emphasisAt = (r: Pick<EmphasisResolved, 'at'>, landed: number, fps: number, pace = 1) => r.at ?? landed + f60x(EMPHASIS_LOOK.after60 * pace, fps);
 
 /**
- * One device per line for a film's `n` lines, dealt from `seed` (the film's) through the headline systems
- * (fx/TypeSystem: plain, front, marker, rule, swell): never the same system, so never the same device, on two lines in
- * a row, and no system on more than two lines of a film when the pool can hold it; `pool` defaults to the family's
- * (EMPHASIS_DEAL). The first hero line takes the house default when `firstDefault` (the film's first statement reads in
- * its plainest contrast). Pure.
- */
-export const dealEmphasis = (n: number, seed: string | number, family: TypeFamily = TYPE_FAMILY, pool: EmphasisName[] = EMPHASIS_DEAL[family], firstDefault = false): EmphasisName[] => {
-  const ids = Array.from({ length: n }, (_, i) => String(i));
-  const sysPool = DEVICE_SYSTEMS.filter((s) => SYSTEM_DEVICES[s].some((d) => pool.includes(d)));
-  const sys = dealSystems(ids, seed, { pool: sysPool, first: firstDefault && pool.includes(EMPHASIS_DEFAULT) });
-  const out: EmphasisName[] = [];
-  ids.forEach((id, i) => {
-    if (i === 0 && firstDefault && pool.includes(EMPHASIS_DEFAULT) && sys[id] === 'plain') out.push(EMPHASIS_DEFAULT);
-    else out.push(deviceOfSystem(sys[id], pool, `${seed}:emph:${i}`, out[i - 1]));
-  });
-  return out;
-};
-
-/**
  * The width-holding tracking of the key words at the emphasis weight: the line's tracking `track` tightened by what
  * the weight adds to their width (`w1` at the emphasis weight against `w0` at the line's, both at tracking `track`,
  * over `chars` characters at `size` px), never by more than EMPHASIS_LOOK.holdTrack. Pure.
@@ -225,68 +206,65 @@ export const SIZE_DEVICES: EmphasisName[] = ['scale', 'swell'];
 /** The devices that change the line's width: the size devices and the marks that open room round their words. */
 export const WIDTH_DEVICES: EmphasisName[] = ['scale', 'swell', 'marker', 'box'];
 
-export type LineDealOpts = {
-  family?: TypeFamily;
-  fixed?: readonly string[]; // lines placed by a measured width (a label in a pill, a line beside a mark): no device that changes it
-  none?: readonly string[]; // lines that take no emphasis (a name, a piece of a line set in parts)
-  first?: boolean; // the first line takes the house default (default true)
-  pin?: Partial<Record<string, EmphasisName | false>>; // a device pinned by hand (its system counts)
-  systems?: Partial<Record<string, HeadlineSystem>>; // lines the act or the line file sets one way (a stack, an object inside the line, a push); else what the template's deal declared for `seed` (fx/TypeSystem declareHeadlines)
-  pool?: readonly HeadlineSystem[]; // the systems the template's line file can set (default the device systems)
+export type FilmEmphasisOpts = {
+  kind?: EmphasisName; // the film's one kind (default EMPHASIS_DEFAULT); a signature device is never a kind (it falls back to the default)
+  keyed?: readonly string[]; // the lines whose key words the script names: they take the kind first
+  none?: readonly string[]; // lines that take none and do not count (a name, a version, a piece of a line set in parts)
+  fixed?: readonly string[]; // lines placed by a measured width: a kind that changes the width plays as `accent` on them
+  signature?: { id: string; device: EmphasisName }; // the film's declared signature: this one line takes it (it counts in the share)
+  share?: number; // at most this share of the lines (default EMPHASIS_SHARE)
 };
-/** A line's headline system and the emphasis device on its key words. */
-export type LineHeadline = { system: HeadlineSystem | null; emph: EmphasisName | false };
 
 /**
- * One headline system and one device per line id for a template's script, in film order (fx/TypeSystem dealSystems):
- * no system on two lines in a row, none on more than two lines; `systems` are the lines the act sets one way (they
- * count); `fixed` ids are placed by a measured width and only take a system that keeps it (plain, front, rule: never
- * a device in WIDTH_DEVICES); `none` ids take no emphasis and no system; `first` gives the first line the house
- * default; a pinned device wins (and its system counts). Pure.
+ * The film's emphasis per line id, in film order: its one kind on at most `share` of the counted lines (rounded down),
+ * the keyed lines first, picked from the last line back and every other line, so the payoff carries it and two
+ * emphasised lines rarely touch; a declared signature on its one line (replacing the earliest pick when the share is
+ * full); every other line false. Pure.
  */
-export const dealLineHeadlines = (ids: readonly string[], seed: string | number, o: LineDealOpts = {}): Record<string, LineHeadline> => {
-  const family = o.family ?? TYPE_FAMILY;
-  const pool = EMPHASIS_DEAL[family];
-  const none = (id: string) => (o.none ?? []).includes(id) || o.pin?.[id] === false;
-  const live = ids.filter((id) => !none(id));
-  const sysPool = (o.pool ?? DEVICE_SYSTEMS).filter((s) => !DEVICE_SYSTEMS.includes(s) || SYSTEM_DEVICES[s].some((d) => pool.includes(d)));
-  const given: Partial<Record<string, HeadlineSystem>> = {};
-  const declared = declaredHeadlines(seed);
-  for (const id of live) {
-    const pinned = o.pin?.[id];
-    const sys = o.systems?.[id] ?? declared[id] ?? (pinned ? systemOfDevice(pinned) : null);
-    if (sys) given[id] = sys;
+export const filmEmphasis = (ids: readonly string[], o: FilmEmphasisOpts = {}): Record<string, EmphasisName | false> => {
+  const kind0 = o.kind && !SIGNATURE_DEVICES.includes(o.kind) ? o.kind : EMPHASIS_DEFAULT;
+  const live = ids.filter((id) => !(o.none ?? []).includes(id));
+  const max = Math.floor((o.share ?? EMPHASIS_SHARE) * live.length + 1e-9);
+  const keyed = live.filter((id) => (o.keyed ?? []).includes(id));
+  const first = keyed.length ? keyed : live;
+  const rest = live.filter((id) => !first.includes(id));
+  const order = (list: string[]) => {
+    const a: string[] = [];
+    const b: string[] = [];
+    [...list].reverse().forEach((id, i) => (i % 2 ? b : a).push(id));
+    return [...a, ...b];
+  };
+  const picks = [...order(first), ...order(rest)].slice(0, max);
+  const sig = o.signature && live.includes(o.signature.id) ? o.signature : undefined;
+  if (sig && !picks.includes(sig.id)) {
+    if (picks.length >= max && picks.length) picks.sort((x, y) => live.indexOf(x) - live.indexOf(y)).shift();
+    picks.push(sig.id);
   }
-  const first = o.first ?? true;
-  const sys = dealSystems(live, seed, { pool: sysPool, given, fixed: o.fixed, first });
-  const out: Record<string, LineHeadline> = {};
-  let prev: EmphasisName | false | undefined;
-  live.forEach((id, i) => {
-    const pinned = o.pin?.[id];
-    let d: EmphasisName;
-    if (pinned) d = pinned;
-    else if (i === 0 && first && sys[id] === 'plain' && pool.includes(EMPHASIS_DEFAULT)) d = EMPHASIS_DEFAULT;
-    else {
-      d = deviceOfSystem(sys[id], pool, `${seed}:emph:${i}`, prev);
-      if ((o.fixed ?? []).includes(id) && WIDTH_DEVICES.includes(d)) d = SYSTEM_DEVICES[sys[id]].find((x) => !WIDTH_DEVICES.includes(x) && x !== prev) ?? EMPHASIS_DEFAULT;
-    }
-    out[id] = { system: sys[id], emph: d };
-    prev = d;
-  });
-  ids.filter(none).forEach((id) => (out[id] = { system: null, emph: o.pin?.[id] ?? false }));
-  return out;
-};
-
-/** One device per line id (dealLineHeadlines' devices): what <TypeLine> sets on each line's key words. Pure. */
-export const dealLineEmphasis = (ids: readonly string[], seed: string | number, o: LineDealOpts = {}): Record<string, EmphasisName | false> => {
-  const h = dealLineHeadlines(ids, seed, o);
   const out: Record<string, EmphasisName | false> = {};
-  for (const id of ids) out[id] = h[id].emph;
+  for (const id of ids) {
+    if (!picks.includes(id)) out[id] = false;
+    else if (sig && id === sig.id) out[id] = sig.device;
+    else out[id] = (o.fixed ?? []).includes(id) && WIDTH_DEVICES.includes(kind0) ? 'accent' : kind0;
+  }
   return out;
 };
 
-/** The headline systems a deal plays, in film order, checked (fx/TypeSystem checkSystems): repeats and overuse. Pure. */
-export const checkLineHeadlines = (ids: readonly string[], deal: Record<string, LineHeadline>) => checkSystems(ids.map((id) => deal[id]?.system ?? null));
+export type FilmEmphasisCheck = { ok: boolean; lines: number; emphasised: number; share: number; kinds: EmphasisName[]; signatures: string[] };
+
+/**
+ * A film's emphasis measured (each line's device, false for none; ids in `none` do not count): the share of lines that
+ * carry one (<= EMPHASIS_SHARE), the kinds other than the signature devices (one at most) and the lines that carry a
+ * signature device (one at most). Pure.
+ */
+export const checkFilmEmphasis = (deal: Record<string, EmphasisSpec | undefined>, none: readonly string[] = []): FilmEmphasisCheck => {
+  const ids = Object.keys(deal).filter((id) => !none.includes(id));
+  const dev = (e: EmphasisSpec | undefined): EmphasisName | null => (!e ? null : typeof e === 'string' ? e : e.device);
+  const on = ids.filter((id) => dev(deal[id]));
+  const kinds = [...new Set(on.map((id) => dev(deal[id]) as EmphasisName).filter((d) => !SIGNATURE_DEVICES.includes(d)))];
+  const signatures = on.filter((id) => SIGNATURE_DEVICES.includes(dev(deal[id]) as EmphasisName));
+  const share = ids.length ? on.length / ids.length : 0;
+  return { ok: share <= EMPHASIS_SHARE + 1e-9 && kinds.length <= 1 && signatures.length <= 1, lines: ids.length, emphasised: on.length, share: Math.round(share * 1000) / 1000, kinds, signatures };
+};
 
 // ---- Type craft: a rule under words skips their descenders; a bar behind them holds them whole.
 

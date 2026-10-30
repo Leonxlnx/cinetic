@@ -15,7 +15,7 @@ import { ActGround, EMPH, keysFor, lineSize, MarkAt, PAGE, useAbs } from './stag
 //   spin  the mark spins in, steps aside, the name slides out from behind it (the brand's spin, when the brand did not
 //         spin: the mark spins once a film at most)
 //   rise  the mark rises out of a mask on its baseline and stops dead (8 f), the name rises beside it 6 f later
-// The close then glides in under them, its words resolving left to right as it slows (fx/TypePresets glide), and holds.
+// The close then arrives under them on the film's voice (fx/TypePresets crisp, word by word), and holds.
 
 /** The mask rise: a near-linear head that covers most of its travel and stops dead (60 fps frames, em of its height). */
 const RISE = { head60: 10, travel: 1.05, lag60: 6 } as const;
@@ -58,7 +58,7 @@ export const End: React.FC = () => {
       <ActGround F={F} act="end" />
       <div style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', transform: `scale(${k.toFixed(5)})` }}>
         {DEAL.end === 'spin' ? <SpunLockup F={F} at={CUE.endMark} name={nm.text} id="wordmark" cy={cy} color={PAGE.text} /> : <RisenLockup F={F} at={CUE.endMark} name={nm.text} id="wordmark" cy={cy} />}
-        {F >= close.in - 1 && <TypeLine spec={{ preset: 'glide', text: close.text, at: close.in - 1, colors: { ink: PAGE.mute, mute: mixColor(PAGE.mute, PAGE.ground, 0.55), accent: PAGE.accent }, id: 'close', emph: EMPH.close, keys: keysFor('close', close.text) }} frame={F} size={Math.max(72 * U, size)} y={cy + 170 * U} />}
+        {F >= close.in - 1 && <TypeLine spec={{ preset: 'crisp', text: close.text, at: close.in - 1, colors: { ink: PAGE.mute, mute: mixColor(PAGE.mute, PAGE.ground, 0.55), accent: PAGE.accent }, id: 'close', emph: EMPH.close, keys: keysFor('close', close.text) }} frame={F} size={Math.max(72 * U, size)} y={cy + 170 * U} />}
       </div>
     </AbsoluteFill>
   );

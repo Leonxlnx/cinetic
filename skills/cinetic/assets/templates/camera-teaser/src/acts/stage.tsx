@@ -6,15 +6,14 @@
 // direction's world (out/DIRECTION.md): its grounds, light and type replace this floor; the product's own screens
 // replace the kit parts the acts use.
 import React from 'react';
-import { useCurrentFrame } from 'remotion';
+import { staticFile, useCurrentFrame } from 'remotion';
 import { C, FONT, SAFE, TYPE, U } from '../brand/tokens';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
 import { DirBlur } from '../fx/Defocus';
-import { dealGrounds, type GroundKind, type GroundSpec, LitGround } from '../fx/Grounds';
-import { dealLineEmphasis, keysOf } from '../fx/TypeEmphasis';
+import { dealGrounds, type GroundKind, type GroundSpec, LitGround, placeGrounds } from '../fx/Grounds';
+import { checkFilmEmphasis, type EmphasisName, filmEmphasis, keysOf } from '../fx/TypeEmphasis';
 import { emphasisFitSize, type TypeLineSpec, TypeLine } from '../fx/TypePresets';
-import { StatementLine } from '../fx/TypeStack';
 import { kitTheme, shadeRgba } from '../kit';
 import { camera, camera3d, type CamMove, camPath, camVel, type Shot } from '../lib/camera';
 import { useFilm } from '../lib/film';
@@ -43,11 +42,19 @@ export const FLOAT: FloatOpts = { seed: DEAL_SEED };
 export const BASE: Shot = { ax: W / 2, ay: H / 2, sx: W / 2, sy: H / 2, k: 1 };
 
 /**
- * The grounds, one per act: clean lit places on the near-black (fx/Grounds: the base, or the key's subtle gradient at the
- * house lift), dealt from the film's seed over the stage's two darks so no ground holds more than two consecutive shots
- * and the light comes from the film's one key. No pools, bars or beams: nothing glows behind the words or the product
- * unless the dealt direction's place really has that light (then name its kinds here).
+ * The grounds, one per act: lit places on the near-black, dealt from the film's seed over the stage's two darks so no
+ * ground holds more than two consecutive shots, every shot on a place (placeGrounds): the key's lit gradient (fx/Grounds
+ * 'key': the key side lifted, the far side falling to near black) or a plate of the film's own picture (PLATE_SRC),
+ * never a flat charcoal field. No pools, bars or beams: nothing glows behind the words or the product unless the dealt
+ * direction's place really has that light (then name its kinds here).
  */
+/**
+ * The film's own picture its product shots stand on (fx/Grounds 'plate': blurred 32 px, veiled toward the base, lit by
+ * the key): a photo or a still of the film's footage under public/ (assets.mjs get + grade), as a staticFile path.
+ * Unset, the product shots stand on the key's lit gradient (fx/Grounds 'key'). Never a flat grey field.
+ */
+export const PLATE_SRC: string | undefined = undefined;
+const plateSrc = () => (PLATE_SRC ? staticFile(PLATE_SRC) : undefined);
 const ORDER: ActName[] = ['input', 'launch', 'window', 'cards', 'page', 'stages', 'end'];
 const KINDS: GroundKind[] = ['wash', 'flat'];
 export const GROUNDS: Record<ActName, GroundSpec> = (() => {
@@ -56,7 +63,9 @@ export const GROUNDS: Record<ActName, GroundSpec> = (() => {
   // the stages take a ground of their own after the page, so that place holds two shots, never three
   const [page, stages] = [g[4], g[5]];
   if (stages.kind === page.kind && stages.base === page.base) g[5] = { ...stages, kind: KINDS.find((k) => k !== page.kind) as GroundKind };
-  return Object.fromEntries([...g, g[5]].map((x, i) => [ORDER[i], x])) as Record<ActName, GroundSpec>;
+  const placed = placeGrounds([...g, g[5]], ORDER.map(() => true), { src: plateSrc(), bases: [INK.ground, INK.well] });
+  placed[6] = placed[5];
+  return Object.fromEntries(placed.map((x, i) => [ORDER[i], x])) as Record<ActName, GroundSpec>;
 })();
 
 /** Glass on near-black: a vertical fill between two surface greys, a thin light rim and a dark drop. */
@@ -101,12 +110,18 @@ export const World: React.FC<{ F: number; act: ActName; moves: readonly CamMove[
 };
 
 /** A script line's preset spec on the film's voice (DEAL.voice), leaving at speed on the voice's exit at its COPY out. */
+/** The film's one emphasis kind: accent (colour alone) by default; weight, scale, swell, outline or sweep when the direction asks. */
+export const EMPH_KIND: EmphasisName = 'accent';
+/** The film's signature, if it has one: a box, marker or underline on ONE line ({ id: 'build', device: 'marker' }). */
+export const EMPH_SIGNATURE: { id: string; device: EmphasisName } | undefined = undefined;
+const EMPH_IDS = Object.keys(TEASER.lines).filter((id) => id !== 'connect');
 /**
- * Every script line sets its key words apart (fx/TypeEmphasis): one device per line dealt from the film's seed, never the
- * same twice in a row, on the words teaser.ts `keys` names (else the line's last word). The close under the end mark is
- * placed by a measured width; the connect line is an ObjectLine (its own entry).
+ * The film's emphasis (fx/TypeEmphasis filmEmphasis): its one kind on at most 60 % of the script lines, the lines
+ * teaser.ts names `keys` for first (from the last line back), on those words; every other line plain. The close under
+ * the end mark is placed by a measured width; the connect line is an ObjectLine (its own entry).
  */
-export const EMPH = dealLineEmphasis(Object.keys(TEASER.lines).filter((id) => id !== 'connect'), DEAL_SEED, { fixed: ['close'] });
+export const EMPH = filmEmphasis(EMPH_IDS, { kind: EMPH_KIND, keyed: EMPH_IDS.filter((id) => (TEASER.keys as Record<string, string | undefined>)[id]), fixed: ['close'], signature: EMPH_SIGNATURE });
+export const EMPHASIS_CHECK = checkFilmEmphasis(EMPH);
 
 export const voiceSpec = (id: string, colors?: TypeLineSpec['colors']): TypeLineSpec => {
   const c = copy(id);
@@ -121,9 +136,7 @@ export const Caption: React.FC<{ id: string; F: number; y: number }> = ({ id, F,
   const c = copy(id);
   if (F < c.in - 1 || F >= c.out + 60) return null;
   const spec = voiceSpec(id);
-  // a size device refits the line so it is no wider than the plain line at its size
-  // the opening line is the film's first statement: two lines, the words before the key words small over them big
-  if (id === 'what') return <StatementLine spec={spec} frame={F} x={W / 2} y={y} size={TYPE.line.size * U} weight={TYPE.line.weight} />;
+  // one centred line, fitted to the frame; a size device refits the line so it is no wider than the plain line at its size
   const size = emphasisFitSize(spec, lineSize(c.text), TYPE.line.weight, TYPE.line.track, FONT.text);
   return <TypeLine spec={spec} frame={F} x={W / 2} y={y} size={size} weight={TYPE.line.weight} track={TYPE.line.track} />;
 };

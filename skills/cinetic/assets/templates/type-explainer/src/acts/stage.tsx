@@ -5,14 +5,14 @@
 // direction's world (out/DIRECTION.md): its ground and type replace this floor; the product's own screens and marks
 // replace the kit's.
 import React from 'react';
-import { Img, useCurrentFrame } from 'remotion';
+import { Img, staticFile, useCurrentFrame } from 'remotion';
 import { C, FONT, SAFE, TYPE, U } from '../brand/tokens';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
 import { bakePlate } from '../fx/Gradients';
 import { dealGrounds, type GroundSpec, LitGround as Ground } from '../fx/Grounds';
 import { shadowTone } from '../fx/KeyLight';
-import { dealLineEmphasis, keysOf } from '../fx/TypeEmphasis';
+import { checkFilmEmphasis, type EmphasisName, filmEmphasis, keysOf } from '../fx/TypeEmphasis';
 import { crispWords } from '../fx/TypePresets';
 import { kitTheme } from '../kit';
 import { clamp, E, prog } from '../lib/anim';
@@ -23,12 +23,17 @@ import { fitSize, measureTracked } from '../lib/measure';
 import { SEED } from '../deal';
 import { EXPLAIN } from '../explain';
 
+/** The film's one emphasis kind: accent (colour alone) by default; weight, scale, swell, outline or sweep when the direction asks. */
+export const EMPH_KIND: EmphasisName = 'accent';
+/** The film's signature, if it has one: a box, marker or underline on ONE line ({ id: 'pain', device: 'under' }). */
+export const EMPH_SIGNATURE: { id: string; device: EmphasisName } | undefined = undefined;
 /**
- * Every line set on a TypeLine sets its key words apart (fx/TypeEmphasis): one device per line dealt from the film's seed,
- * never the same twice in a row, on the words explain.ts `keys` names (else the line's last word); the close beside the
- * name is placed by its width, so it takes a device that holds it.
+ * The film's emphasis (fx/TypeEmphasis filmEmphasis): its one kind on at most 60 % of the lines set on a TypeLine, the
+ * lines explain.ts names `keys` for first (from the last line back), on those words; every other line plain. The close
+ * beside the name is placed by its width (a size kind plays as accent on it).
  */
-export const EMPH = dealLineEmphasis(['what', 'pain', 'close'], SEED, { fixed: ['close'] });
+export const EMPH = filmEmphasis(['what', 'pain', 'close'], { kind: EMPH_KIND, keyed: ['what', 'pain', 'close'].filter((id) => (EXPLAIN.keys as Record<string, string | undefined>)[id]), fixed: ['close'], signature: EMPH_SIGNATURE });
+export const EMPHASIS_CHECK = checkFilmEmphasis(EMPH);
 /** A line's key words from explain.ts `keys`, found in its text. */
 export const keysFor = (id: string, text: string) => keysOf(text, (EXPLAIN.keys as Record<string, string | undefined>)[id]) ?? undefined;
 import { type FloatOpts, withLocks } from '../lib/drift';
@@ -54,15 +59,23 @@ export const FLOAT: FloatOpts = withLocks({ seed: SEED }, [copy('what')], { fps:
  * The page's grounds, one per act, dealt from the film's seed (fx/Grounds dealGrounds, the clean kinds): two paper
  * tones, each a flat field or a very subtle wash lit from the film's one key (you feel the key, you never see a glow),
  * never the same ground on more than two consecutive shots. No beams, no pools, no haze: the ground stays clean behind
- * the words. The product's act sits on the mid slate, washed the same way: its own place. The grid of the product's
- * parts stands on the tilted tint (fx/Grounds 'tint'), the film's one colour ground.
+ * the words. The product's act sits on the mid slate's key (fx/Grounds 'key': the key side lifted, the far side falling
+ * deep) or on a plate of the film's own picture (PLATE_SRC): its own place, never a flat grey field. The grid of the
+ * product's parts stands on the tilted tint (fx/Grounds 'tint'), the film's one colour ground.
  */
+/**
+ * The film's own picture its product shots stand on (fx/Grounds 'plate': blurred 32 px, veiled toward the base, lit by
+ * the key): a photo or a still of the film's footage under public/ (assets.mjs get + grade), as a staticFile path.
+ * Unset, the product shots stand on the key's lit gradient (fx/Grounds 'key'). Never a flat grey field.
+ */
+export const PLATE_SRC: string | undefined = undefined;
+const plateSrc = () => (PLATE_SRC ? staticFile(PLATE_SRC) : undefined);
 const PAPERS = [PAGE.ground, mixColor(PAGE.ground, PAGE.well, 0.6)];
 export const GROUNDS: Record<ActName, GroundSpec> = (() => {
   const list = dealGrounds(7, { bases: PAPERS, seed: SEED, lift: 0.06, hold: 0.25 });
   const acts: ActName[] = ['open', 'pain', 'promise', 'picture', 'system', 'grid', 'end'];
   const out = Object.fromEntries(acts.map((a, i) => [a, list[i]])) as Record<ActName, GroundSpec>;
-  out.picture = { kind: 'wash', base: SHOT.ground, light: C.white, lift: 0.08, seed: SEED % 997 };
+  out.picture = { kind: PLATE_SRC ? 'plate' : 'key', src: plateSrc(), base: SHOT.ground, light: C.white, seed: SEED % 997 };
   // the parts round the mark stand on the film's one colour ground: the accent's tint along one tilted edge (fx/Grounds 'tint')
   out.grid = { ...out.grid, kind: 'tint' };
   return out;

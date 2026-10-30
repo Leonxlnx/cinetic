@@ -12,6 +12,9 @@ import { ACT, CUE, DEAL, f60, f60x, H, W } from '../timeline';
 import { TEASER } from '../teaser';
 import { BASE, Caption, GROUNDS, INK, useAbs, World } from './stage';
 
+/** The opening line's centre: centred, in the middle band (39 % of the height), the box arriving under it. */
+const WHAT_Y = 0.39;
+
 // INPUT - the request box on the lit stage, tilted in the film's one light (fx/Lit: rim on the key side, its shadow on
 // the ground). The line over it says what the product is (the crisp hero entry); a rim light glides along the box; the
 // request types and the send button arms (it lights in the accent on a glide, a small swell); the camera creeps the whole time and leaves on a whip right into the close-up (through one near-white
@@ -120,7 +123,7 @@ export const Input: React.FC = () => {
         <InputWorld F={F} />
       </World>
       {DEAL.input === 'track' && <PlaneTiles F={F} base={cam.base} moves={cam.moves} />}
-      <Caption id="what" F={F} y={H / 2 - 200 * U + lift} />
+      <Caption id="what" F={F} y={WHAT_Y * H + lift} />
       {flash && <AbsoluteFill style={{ background: INK.text, opacity: 0.92 }} />}
     </AbsoluteFill>
   );

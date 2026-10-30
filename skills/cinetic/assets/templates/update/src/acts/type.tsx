@@ -1,6 +1,7 @@
-// The film's lines of type: one clean line at a time, each on a confident move dealt per film (src/deal.ts LINE_MOVE:
-// fx/TypePresets mask, land, fall, glide, fly or open, every word solid ink within a few frames and moving while it
-// lands), leaving at speed on a dealt exit (slide, spread, collapse, push or drop: none fades a statement out).
+// The film's lines of type: one clean line at a time, centred, every line on the film's one voice (src/deal.ts LINES:
+// one confident move dealt per film from fx/TypePresets mask, land, fall or glide, every word solid ink within a few
+// frames and moving while it lands), leaving at speed on the film's one exit (slide, spread, collapse, push or drop:
+// none fades a statement out).
 //   HeroLine  one sentence on its move (fx/TypePresets TypeLine), centred on (x, y)
 //   MarkLine  the same with an object inside the sentence at 1.0 cap height ("[]" marks the place): a real mark
 //             (scripts/logos.mjs), a glyph or a chip (kit/inline InlineObject). The slot is a word of the line (figure
@@ -9,8 +10,8 @@
 import React, { useMemo } from 'react';
 import { FONT, TYPE, U } from '../brand/tokens';
 import { DEAL_SEED, LINE_IDS } from '../deal';
-import { checkLineHeadlines, dealLineHeadlines, type EmphasisName, type EmphasisSpec, keysOf } from '../fx/TypeEmphasis';
-import type { HeadlineSystem } from '../fx/TypeSystem';
+import { checkFilmEmphasis, type EmphasisName, type EmphasisSpec, filmEmphasis, keysOf } from '../fx/TypeEmphasis';
+import { checkSystems, filmSystems, type HeadlineSystem } from '../fx/TypeSystem';
 import { emphasisFitSize, measureLine, TypeLine, typeLineSpec, typeLineState, type TypeExit, type TypeLineSpec, type TypePresetName, wordMap } from '../fx/TypePresets';
 import { capHeight, type KitTheme } from '../kit';
 import { InlineObject, inlineWidth, type InlineRef } from '../kit/inline';
@@ -18,23 +19,26 @@ import { useFilm } from '../lib/film';
 import { measureTracked } from '../lib/measure';
 import { UPDATE } from '../update';
 
-/** Pin a line's emphasis by id (a device name, or false for none); the rest are dealt. */
-export const EMPH_PIN: Partial<Record<string, EmphasisName | false>> = {};
-/** The change lines the acts set in one system: a change written with "[]" carries its object inside the line (acts/World MarkLine). */
+/** The film's one emphasis kind: accent (colour alone) by default; weight, scale, swell, outline or sweep when the direction asks. */
+export const EMPH_KIND: EmphasisName = 'accent';
+/** The film's signature, if it has one: a box, marker or underline on ONE line ({ id: 'change2', device: 'under' }). */
+export const EMPH_SIGNATURE: { id: string; device: EmphasisName } | undefined = undefined;
+/** The change lines the acts set another way than the voice: a change written with "[]" carries its object inside the line (acts/World MarkLine). */
 export const GIVEN: Partial<Record<string, HeadlineSystem>> = Object.fromEntries(
   UPDATE.changes.map((ch, i) => [`change${i + 1}`, ch.words.includes('[]') ? ('inline' as const) : undefined]).filter(([, s]) => s),
 );
+/** The change lines this film has (one per change in update.ts). */
+const IDS = LINE_IDS.slice(0, UPDATE.changes.length);
+/** Every change line in the film's voice (one centred line on the dealt move) but the given ones. */
+export const SYSTEMS: Record<string, HeadlineSystem> = filmSystems(IDS, DEAL_SEED, { given: GIVEN });
 /**
- * Every change line is set in a headline system dealt per film round the given ones (fx/TypeSystem: plain, front,
- * marker, rule, swell; never one system on two lines in a row, none on more than two), its device (fx/TypeEmphasis)
- * on the words update.ts names as the change's `key` (else its last word); the name and the version on the end card
- * take none.
+ * The film's emphasis (fx/TypeEmphasis filmEmphasis): its one kind on at most 60 % of the change lines, the changes
+ * update.ts names a `key` for first (from the last change back), on those words; the name and the version take none.
  */
-export const HEADLINES = dealLineHeadlines([...LINE_IDS, 'wordmark', 'version'], DEAL_SEED, { none: ['wordmark', 'version'], pin: EMPH_PIN, systems: GIVEN });
-/** Each line's emphasis device (its system's). */
-export const EMPH: Record<string, EmphasisName | false> = Object.fromEntries(Object.entries(HEADLINES).map(([id, h]) => [id, h.emph]));
-/** The film's systems in order, checked (fx/TypeSystem checkSystems); two changes written with "[]" in a row repeat one system. */
-export const HEADLINE_CHECK = checkLineHeadlines(LINE_IDS, HEADLINES);
+export const EMPH: Record<string, EmphasisName | false> = filmEmphasis([...IDS, 'wordmark', 'version'], { kind: EMPH_KIND, keyed: IDS.filter((_, i) => UPDATE.changes[i]?.key), none: ['wordmark', 'version'], signature: EMPH_SIGNATURE });
+/** The film's systems and emphasis, checked: one voice on half the lines or more; one kind on <= 60 % of the lines. */
+export const HEADLINE_CHECK = checkSystems(IDS.map((id) => SYSTEMS[id]), 'plain');
+export const EMPHASIS_CHECK = checkFilmEmphasis(EMPH, ['wordmark', 'version']);
 /** A change line's key words: change<n> is the n-th change. */
 const keyWords = (id: string, text: string) => {
   const n = /^change(\d+)$/.exec(id);
@@ -59,7 +63,7 @@ export type LineProps = {
   color: string;
   accent?: string; // the moves that land in the accent (land, fly, fall, open) cool from it to `color`
   mute?: string; // the mask's rising words darken from it
-  emph?: EmphasisSpec; // the line's emphasis (default: the device EMPH dealt its id)
+  emph?: EmphasisSpec; // the line's emphasis (default: the film's, EMPH)
   keys?: [number, number]; // its key words (default: the change's key found in the line, else the last word)
 };
 

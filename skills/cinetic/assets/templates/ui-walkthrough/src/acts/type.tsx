@@ -1,13 +1,14 @@
-// The film's lines of type: one clean line at a time, each on a confident move dealt per film (src/deal.ts LINE_MOVE:
-// fx/TypePresets mask, land, fall, glide, fly or open, every word solid ink within a few frames and moving while it
-// lands), leaving at speed on a dealt exit (slide, spread, collapse, push or drop: none fades a statement out).
-// Every line is set in a headline system dealt per film (fx/TypeSystem, HEADLINES below): the acts set the promise with
-// the input's mark inside it and the claim as a poster, a push or a line with its object inside; the other lines are
-// dealt round them from the systems one line plays by its device (plain, front, marker, rule, swell), never one system
-// on two lines in a row, none on more than two. Each line's device (EMPH: weight, scale, swell, marker, box, under,
-// outline or sweep) comes from its system and lands on the words named in src/walk.ts `keys` ("[outputs]" in
-// "[Product] turns [] [inputs] into [outputs]."), else on its last word.
-// A line with a size device refits so it is no wider than the plain line (emphasisFitSize); the name takes none.
+// The film's lines of type: one clean line at a time, centred, every line on the film's one voice (src/deal.ts LINES:
+// one confident move dealt per film from fx/TypePresets mask, land, fall or glide, every word solid ink within a few
+// frames and moving while it lands), leaving at speed on the film's one exit (slide, spread, collapse, push or drop:
+// none fades a statement out).
+// The film speaks in one voice (fx/TypeSystem filmSystems: one centred line, the dealt move for every line); the acts set
+// the promise with the input's mark inside it and the claim as a poster, a push or a line with its object inside. The
+// emphasis is quiet and one kind (fx/TypeEmphasis filmEmphasis, EMPH below): the film's kind (EMPH_KIND, the accent
+// colour by default) on at most 60 % of the lines, on the words named in src/walk.ts `keys` ("[outputs]" in "[Product]
+// turns [] [inputs] into [outputs]."); a box, marker or underline only as the film's one declared signature
+// (EMPH_SIGNATURE, one line). A line with a size device refits so it is no wider than the plain line
+// (emphasisFitSize); the name takes none.
 //   HeroLine  one sentence on its move (fx/TypePresets TypeLine), centred on (x, y)
 //   MarkLine  the same with an object inside the sentence at 1.0 cap height ("[]" marks the place): a real mark
 //             (scripts/logos.mjs), a glyph or a chip (kit/inline InlineObject). The slot is a word of the line (figure
@@ -16,8 +17,8 @@
 import React, { useMemo } from 'react';
 import { FONT, TYPE, U } from '../brand/tokens';
 import { DEAL, DEAL_SEED, LINE_IDS } from '../deal';
-import { checkLineHeadlines, dealLineHeadlines, type EmphasisName, type EmphasisSpec, keysOf } from '../fx/TypeEmphasis';
-import type { HeadlineSystem } from '../fx/TypeSystem';
+import { checkFilmEmphasis, type EmphasisName, type EmphasisSpec, filmEmphasis, keysOf } from '../fx/TypeEmphasis';
+import { checkSystems, filmSystems, type HeadlineSystem } from '../fx/TypeSystem';
 import { emphasisFitSize, measureLine, TypeLine, typeLineSpec, typeLineState, type TypeExit, type TypeLineSpec, type TypePresetName, wordMap } from '../fx/TypePresets';
 import { capHeight, type KitTheme } from '../kit';
 import { InlineObject, inlineWidth, type InlineRef } from '../kit/inline';
@@ -25,24 +26,26 @@ import { useFilm } from '../lib/film';
 import { WALK } from '../walk';
 import { measureTracked } from '../lib/measure';
 
-/** Pin a line's emphasis by id (a device name, or false for none); the rest are dealt. */
-export const EMPH_PIN: Partial<Record<string, EmphasisName | false>> = {};
+/** The film's one emphasis kind: accent (colour alone) by default; weight, scale, swell, outline or sweep when the direction asks. */
+export const EMPH_KIND: EmphasisName = 'accent';
+/** The film's signature, if it has one: a box, marker or underline on ONE line ({ id: 'claim', device: 'marker' }). */
+export const EMPH_SIGNATURE: { id: string; device: EmphasisName } | undefined = undefined;
 /**
- * The lines the acts set in one system whatever is dealt: the promise carries the input's mark inside it (acts/Open
+ * The lines the acts set another way than the voice: the promise carries the input's mark inside it (acts/Open
  * MarkLine); the claim is a poster on the accent (fx/TypeClaim), a push through the line, or carries its object inside
  * it (acts/Claim). The deal never plays the object right after the promise (src/deal.ts dealDevices).
  */
 export const GIVEN: Partial<Record<string, HeadlineSystem>> = { promise: 'inline', claim: ({ accent: 'giant', push: 'push', object: 'inline' } as const)[DEAL.claim] };
+/** Every line in the film's voice (plain) but the given ones. */
+export const SYSTEMS: Record<string, HeadlineSystem> = filmSystems(LINE_IDS, DEAL_SEED, { given: GIVEN });
 /**
- * One headline system and one device per line of the script, dealt from the film's seed round the given lines: the
- * payoff is placed by its measured width (a system that keeps it: plain, front or rule); the name on the end card
- * takes none.
+ * The film's emphasis: its one kind on at most 60 % of the lines, the lines walk.ts names key words for first (from
+ * the payoff back); the payoff is placed by its measured width (a size kind plays as accent on it); the name takes none.
  */
-export const HEADLINES = dealLineHeadlines([...LINE_IDS, 'wordmark'], DEAL_SEED, { fixed: ['payoff'], none: ['wordmark'], pin: EMPH_PIN, systems: GIVEN });
-/** Each line's emphasis device (its system's). */
-export const EMPH: Record<string, EmphasisName | false> = Object.fromEntries(Object.entries(HEADLINES).map(([id, h]) => [id, h.emph]));
-/** The film's systems in order, checked: no system twice in a row, none on more than two lines (fx/TypeSystem checkSystems). */
-export const HEADLINE_CHECK = checkLineHeadlines(LINE_IDS, HEADLINES);
+export const EMPH: Record<string, EmphasisName | false> = filmEmphasis([...LINE_IDS, 'wordmark'], { kind: EMPH_KIND, keyed: LINE_IDS.filter((id) => (WALK.keys as Record<string, string | undefined>)[id]), none: ['wordmark'], fixed: ['payoff'], signature: EMPH_SIGNATURE });
+/** The film's systems and emphasis, checked: one voice on half the lines or more, one stack at most; one kind on <= 60 % of the lines. */
+export const HEADLINE_CHECK = checkSystems(LINE_IDS.map((id) => SYSTEMS[id]), 'plain');
+export const EMPHASIS_CHECK = checkFilmEmphasis(EMPH, ['wordmark']);
 
 /** A figure space: the slot's filler glyph (a word of the line, never a break). */
 const FIG = ' ';
@@ -62,7 +65,7 @@ export type LineProps = {
   color: string;
   accent?: string; // the moves that land in the accent (land, fly, fall, open) cool from it to `color`
   mute?: string; // the mask's rising words darken from it
-  emph?: EmphasisSpec; // the line's emphasis (default: the device EMPH dealt its id)
+  emph?: EmphasisSpec; // the line's emphasis (default: the film's, EMPH)
   keys?: [number, number]; // its key words (default: walk.ts keys[id] found in the line, else the last word)
 };
 

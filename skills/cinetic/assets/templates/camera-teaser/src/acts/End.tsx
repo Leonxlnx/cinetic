@@ -38,7 +38,7 @@ export const End: React.FC = () => {
   const gap = size * LOCK.gap;
   const wName = measureTracked(nm.text, size, TYPE.display.weight, TYPE.display.track, FONT.text, { trailing: false });
   const left = (W - (markH + gap + wName)) / 2;
-  const cy = H / 2 - 40 * U;
+  const cy = H / 2 - 80 * U; // the lockup a little above the middle, so the close under it stays in the middle band
   const comets = DEAL.end === 'comets';
   const turn = prog(F, CUE.mark, CUE.mark + f60x(30), (t) => Math.sqrt(1 - (1 - t) ** 2));
   const rise = prog(F, nm.in, nm.in + f60x(30), E.glideOut);

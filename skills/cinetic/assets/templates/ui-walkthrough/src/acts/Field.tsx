@@ -12,7 +12,7 @@ import { landBeforeCut } from '../lib/continuity';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { CLAIM_EXIT } from './Claim';
-import { At, Cam, drift, Ground, GROUNDS, launchOut, onLit, ScriptLine, themeOf, useAbs } from './stage';
+import { At, Cam, drift, Ground, GROUNDS, launchOut, onLit, ReadBack, ScriptLine, themeOf, useAbs } from './stage';
 
 // FIELD - step one, in the product's own window: a lit app window (fx/Lit, kit AppWindow: the workspace, its nav and
 // its people around the field, dense and real) arrives on the claim's zoom. The field's placeholder is cleared by a held
@@ -20,7 +20,7 @@ import { At, Cam, drift, Ground, GROUNDS, launchOut, onLit, ScriptLine, themeOf,
 // its busy state); the results arrive as content tiles that develop from ghost to colour while the camera pulls back
 // about the upper third (landing before the whip), and the whole frame whips up into the read.
 
-/** The window at film size, centred under the line; its bottom runs off the frame (a cropped element). */
+/** The window at film size, low in the frame; its bottom runs off the frame (a cropped element). It steps back behind the centred line while the line is read. */
 const WIN = { w: 1600 * U, h: 980 * U, cx: W / 2, cy: 650 * U } as const;
 /** The field and the results grid inside the window's main area (px from the main area's top-left). */
 const FIELD = { h: 112 * U, top: 44 * U, button: 210 * U };
@@ -80,7 +80,7 @@ export const Field: React.FC = () => {
         <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${d.x.toFixed(3)}px, ${(up + d.y).toFixed(3)}px, 0)` }}>
           <Ground act="field" F={F} />
           <Cam k={k} oy={PULL.oy}>
-            <ScriptLine id="step1" F={F} top={70 * U} color={t.text} accent={t.accent} mute={t.mute} />
+            <ReadBack id="step1" F={F}>
             <Lit frame={F} {...lit} id="field-window">
               <AppWindow theme={t} world={world} w={WIN.w} h={WIN.h} frame={F}>
                 {(m) => (
@@ -147,10 +147,13 @@ export const Field: React.FC = () => {
                 )}
               </AppWindow>
             </Lit>
+            </ReadBack>
             {F >= CUE.cursor && away < 1 && (
               <Cursor x={hand.x} y={hand.y + mix(0, H * 0.7, away)} opacity={hand.opacity * (1 - away)} shape="hand" press={press} fill={t.text} outline={t.ground} scale={1.6 * U} shadow="drop" />
             )}
           </Cam>
+          {/* the line centred in the middle of the frame while the window steps back behind it (stage ReadBack) */}
+          <ScriptLine id="step1" F={F} color={t.text} accent={t.accent} mute={t.mute} />
         </div>
       </DirBlur>
     </AbsoluteFill>

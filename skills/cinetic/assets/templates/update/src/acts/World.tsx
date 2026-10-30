@@ -20,6 +20,7 @@ import { RackFocus } from '../fx/RackFocus';
 import { BudgetCard, ChatCard, DenseScreen, hasLogo, kitTheme, ProjectPanel, sampleWorld, StatCard } from '../kit';
 import type { InlineRef } from '../kit/inline';
 import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
+import { phrase } from '../lib/cadence';
 import { creep as creepK } from '../lib/handoff';
 import { camera, lc, type Shot } from '../lib/camera';
 import { mixColor } from '../lib/color';
@@ -28,6 +29,9 @@ import { type FloatOpts, withLocks } from '../lib/drift';
 import { ACT, beat, BEATS, changeOut, copy, CUE, f60, f60x, FPS, H, moveOf, N, ROLL, TOTAL, W } from '../timeline';
 import { type Change, spokenChange, UPDATE } from '../update';
 import { HeroLine, MarkLine } from './type';
+
+/** The mark's parts rise phrased, the last after a held beat (lib/cadence), the span of a 5 f stagger. */
+const PART_ON = phrase(LOGO.parts.length, f60(5), { shape: 'settle', seed: 'mark-parts' }).onsets;
 
 /**
  * The camera float every act sits on (Film.tsx ActStage; lib/drift, fx/Float): one continuous drift through the whole
@@ -45,7 +49,7 @@ const T = THEME;
 // ---------------------------------------------------------------------------------------------- layout
 /** The version numerals: giant, cropped by the frame (the set), in the hook and again from the payoff on. */
 export const NUM = { size: 1500 * U, x: 150 * U, lead: 0.92, weight: TYPE.giant.weight, track: TYPE.giant.track } as const;
-/** The product's name over the version in the hook: line size, top left; the numerals drop to make room for it. */
+/** The product's name over the version in the hook: line size, centred at the top over the giant numerals (the set); the numerals drop to make room for it. */
 export const NAME_HOOK = { y: 80 * U, drop: 300 * U } as const;
 /**
  * The version's landing in the payoff: at most `size`, never wider than `fill` of the frame, centred, so it reads whole
@@ -58,7 +62,7 @@ const SET_K = 0.5;
  * of the hook: the strip arrives at the speed the version leaves (the numerals leave 2700 px, the strip 2600 on screen).
  */
 export const STRIP = { x0: 3900 * U, gap: 2300 * U, y: 560 * U, alt: 120 * U } as const;
-/** How each moment's surface is scaled from its kit size: it bleeds past the right edge and leaves the words a clear band. */
+/** How each moment's surface is scaled from its kit size: centred in the frame, it steps back behind its centred words while they are read. */
 const SURFACE: Record<Change['moment'], { k: number; w: number; h: number }> = {
   approve: { k: 1.25, w: 1160, h: 740 },
   chat: { k: 1.7, w: 640, h: 600 },
@@ -70,8 +74,20 @@ const boxOf = (c: Change) => ({ w: SURFACE[c.moment].w * SURFACE[c.moment].k * U
 const centreOf = (i: number) => ({ x: STRIP.x0 + i * STRIP.gap, y: STRIP.y + (i % 2 ? STRIP.alt : -STRIP.alt) });
 
 // ---------------------------------------------------------------------------------------------- camera
-/** Change i framed off-centre: its surface sits right, high on even changes (the words in the band under it) and low on odd ones (the words above). */
-const shotOf = (i: number): Shot => ({ ax: centreOf(i).x, ay: centreOf(i).y, sx: 1320 * U, sy: (i % 2 ? 700 : 340) * U, k: 1 });
+/** Change i framed in the middle of the frame: its surface does the new thing, then steps back behind its words, which read centred (wordsBack). */
+const shotOf = (i: number): Shot => ({ ax: centreOf(i).x, ay: centreOf(i).y, sx: W / 2, sy: H / 2, k: 1 });
+/**
+ * How far the strip steps back behind change i's words (0..1): from just before its sentence rises in until just after
+ * it leaves, so the surface plays its new thing sharp on the hit, then softens and dims while the centred words are read.
+ */
+const wordsBack = (F: number) => {
+  let b = 0;
+  UPDATE.changes.forEach((_, i) => {
+    const c = copy(`change${i + 1}`);
+    b = Math.max(b, prog(F, c.in - f60(4), c.in + f60(16), E.stdInOut) * (1 - prog(F, changeOut(i) - f60(2), changeOut(i) + f60(18), E.stdInOut)));
+  });
+  return b;
+};
 const HOOK: Shot = { ax: 0, ay: H / 2, sx: 0, sy: H / 2, k: 1 };
 const WIDE: Shot = (() => {
   const a = centreOf(0).x - 1000 * U;
@@ -209,7 +225,8 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
   // the strip falls out of focus behind the version: on a 'pull' once the carried pull has crossed the act line (the
   // version swings in on the decay), on a 'rise' as the last change recedes
   const pull = DEAL.payoff === 'pull';
-  const soft = pull ? prog(F, CUE.gather + f60(12), CUE.gather + f60(46), E.stdInOut) : prog(F, CUE.gather - f60(10), CUE.gather + f60(34), E.stdInOut);
+  const stepBack = wordsBack(F); // the strip steps back behind each change's centred words
+  const soft = Math.max(stepBack * 0.75, pull ? prog(F, CUE.gather + f60(12), CUE.gather + f60(46), E.stdInOut) : prog(F, CUE.gather - f60(10), CUE.gather + f60(34), E.stdInOut));
   // the version: in the hook it leaves left ahead of the camera; from the payoff it swings (or rises) back in front
   const leave = prog(F, beat(BEATS.change(0)) - MOVE / 2, beat(BEATS.change(0)) + MOVE / 2, E.strongInOut);
   // 'pull': the version swings in from the right with the pull, already moving on the act line (one carried move);
@@ -236,7 +253,7 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
   // 'set': the version steps back, smaller and quieter, to the upper right, whole and readable, above the lockup
   const setSize = NUM_LAND.size * SET_K;
   const numSize = early ? NUM.size : lmix(landSize, beside ? besideSize : setSize, rest);
-  const restX = beside ? lockX + lockW - measureTracked(UPDATE.version, besideSize, NUM.weight, NUM.track) : W - 110 * U - measureTracked(UPDATE.version, setSize, NUM.weight, NUM.track);
+  const restX = beside ? lockX + lockW - measureTracked(UPDATE.version, besideSize, NUM.weight, NUM.track) : (W - measureTracked(UPDATE.version, setSize, NUM.weight, NUM.track)) / 2;
   const numX = early ? NUM.x - hookDrift - leave * 2700 * U : (rise ? landX : mix(W + 200 * U, landX, back)) + rest * (restX - landX);
   // the 'mask' hook lifts the new version out of its mask; the 'rise' payoff lifts it in front of the receding change
   const numRise = early ? (DEAL.hook === 'mask' ? riseAt(F, CUE.rise) : 1) : rise ? riseAt(F, CUE.swing) : 1;
@@ -247,7 +264,7 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
   // the words of the change on screen now
   const cur = UPDATE.changes.findIndex((_, i) => F >= copy(`change${i + 1}`).in - 1 && F < beat(BEATS.change(i + 1)) + 2);
   const product = copy('product');
-  const lockRow = beside ? { x: lockX, y: H / 2 } : { x: 120 * U, y: 880 * U };
+  const lockRow = beside ? { x: lockX, y: H / 2 } : { x: (W - (markSize + 40 * U + nameW)) / 2, y: 0.66 * H }; // 'set': the lockup centred under the version
   // from the landing on, the version and then the lockup creep in, each about its own centre: the holds never freeze
   const lockK = creepK(F, CUE.land, { pctPerSec: 0.02 }, FPS);
   const strip = (
@@ -257,9 +274,9 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
   );
   return (
     <AbsoluteFill style={{ background: T.ground, overflow: 'hidden' }}>
-      <LitGround frame={F} spec={{ kind: 'wash', base: T.ground, lift: T.dark ? 0.06 : 0.04, seed: 7, drift: 12 }} cam={{ shot: s, base: HOOK }} />
+      <LitGround frame={F} spec={{ kind: 'key', base: T.ground, seed: 7, drift: 12 }} cam={{ shot: s, base: HOOK }} />
       {/* the strip of product moments, sharp until the payoff, then softening into a far plane behind the version */}
-      <div style={{ position: 'absolute', inset: 0, opacity: 1 - (beside ? 0.7 : 0.6) * rest }}>
+      <div style={{ position: 'absolute', inset: 0, opacity: (1 - (beside ? 0.7 : 0.6) * rest) * (1 - 0.5 * stepBack) }}>
         <RackFocus t={soft} blur={10 * U} render={() => strip} />
       </div>
       {showNum && (
@@ -271,7 +288,7 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
       )}
       {/* the name over the version: "[Name] [version]" from frame 0 (the set's subject, read while the version arrives), leaving left with the numerals */}
       {showNum && early && (
-        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${(numX + 16 * U).toFixed(2)}px, ${NAME_HOOK.y.toFixed(2)}px, 0)` }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: W, display: 'flex', justifyContent: 'center', transform: `translate3d(${(-hookDrift - leave * 2700 * U).toFixed(2)}px, ${NAME_HOOK.y.toFixed(2)}px, 0)` }}>
           <span data-text="product" style={{ ...typeStyle('line', TYPE.line.size * U), color: T.text, whiteSpace: 'nowrap' }}>
             {product.text}
           </span>
@@ -286,7 +303,7 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
               size={markSize}
               fill={(part) => (T.dark && part.items.some((it) => it.fill?.toLowerCase() === C.ink.toLowerCase()) ? T.text : undefined)} // the mark's ink parts read on the slate
               poses={(_, j) => {
-                const t = prog(F, CUE.markIn + j * f60(5), CUE.markIn + f60(32) + j * f60(5), E.glideOut); // the parts rise first, the name lands after them
+                const t = prog(F, CUE.markIn + PART_ON[j], CUE.markIn + f60(32) + PART_ON[j], E.glideOut); // the parts rise first (phrased: lib/cadence), the name lands after them
                 const glint = j === LOGO.parts.length - 1 ? 0.08 * hitPulse(F - CUE.glint, 2, 9) : 0; // the last part catches the light
                 return { y: (1 - t) * 40, o: Math.min(1, t * 2), s: 1 + glint };
               }}
@@ -299,15 +316,14 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
   );
 };
 
-/** The sentence that says change i: display size when short, lower left or upper left, leaving on its dealt exit before the move. */
+/** The sentence that says change i: display size when short, centred in the middle of the frame over its softened surface, leaving on the film's exit before the move. */
 const ChangeWords: React.FC<{ i: number; F: number }> = ({ i, F }) => {
   const ch = UPDATE.changes[i];
   const c = copy(`change${i + 1}`);
   const role = c.text.length <= 12 ? 'display' : 'line';
   const size = TYPE[role].size * U;
-  const w = measureTracked(ch.words.replace('[]', 'MMM'), size, TYPE[role].weight, TYPE[role].track);
-  const x = 120 * U + w / 2;
-  const y = (i % 2 ? 80 : 850) * U + (size * TYPE[role].lead) / 2;
+  const x = W / 2;
+  const y = H / 2;
   const p = { id: `change${i + 1}`, at: c.in, frame: F, move: moveOf(`change${i + 1}`), out: changeOut(i), exit: LINES.exit[`change${i + 1}`], role, size, x, y, color: T.text, accent: T.accent, mute: T.mute } as const;
   return ch.words.includes('[]') ? <MarkLine {...p} text={ch.words} objects={[objectOf(ch)]} ground={T.dark ? 'dark' : 'light'} theme={T} /> : <HeroLine {...p} text={c.text} />;
 };

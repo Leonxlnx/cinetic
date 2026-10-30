@@ -1,17 +1,18 @@
 /**
- * TypeStack: a statement set as an editorial layout instead of one centred line of one size (lib/look.ts STACK_LOOK
- * holds the measured numbers). A stack is one sentence broken into 2-3 lines that each carry part of it:
+ * TypeStack: a statement set on 2-3 lines instead of one line of one size (lib/look.ts STACK_LOOK holds the measured
+ * numbers). A film's statements are one centred line as a rule (80 % of them or more); a stack is the exception, at most
+ * one a film (fx/TypeSystem MAX_STACKS). Its lines each carry part of the sentence:
+ *   centre  the lines centred on one axis, the block in the middle of the frame (the default)
  *   left    the lines flush left on one edge (house: 4 % of the frame width in), baseline to baseline 1.04 of the
- *           lower line's size; the last line carries the emphasis (the emphasis weight in the accent, same size)
+ *           lower line's size: only beside a picture that holds the other half of the frame, never at the top or bottom
  *   stair   each line starts about a third of the way along the line above (0.34 of its width): a stair
- *   centre  the lines centred on one axis (a two-line statement)
  *   right   flush right
  * Every line takes its own size (a role, a scale of it, or px), weight, colours, preset and emphasis: giant plus small
  * is a line at display or hero size beside a caption (`aside`: 1-3 short lines in the caption role, hung beside one line
  * with its first cap line on that line's cap line, a third of an em of the line to its right), or a small line over a
  * giant one ("Reelweek turns your week" / "into a reel."). Lines start 14 f apart (60 fps) unless they give their own
  * `at`; they leave together on the stack's exit, the last line first, 2 f apart. Only the key line (default the last)
- * takes an emphasis unless a line names its own: one emphasis per statement.
+ * takes an emphasis (the film's default kind) unless a line names its own: one emphasis per statement.
  *
  * stackLayout() is the pure layout (sizes and widths in, each line's left edge and centre out); <TypeStack> measures the
  * lines with the real font (under FontGate) and draws each with <TypeLine align="left">, so every preset, emphasis and
@@ -22,7 +23,7 @@ import { FONT, TYPE, TYPE_FAMILY, U } from '../brand/tokens';
 import { f60x, type FilmCtx, fpsOf, useFilm } from '../lib/film';
 import { STACK_LOOK } from '../lib/look';
 import { baselineOf } from '../lib/measure';
-import type { EmphasisSpec } from './TypeEmphasis';
+import { EMPHASIS_DEFAULT, type EmphasisSpec } from './TypeEmphasis';
 import type { Declares } from '../timeline';
 import { declares as lineDeclares, defaultEmphasis, measureLine, type TypeColors, type TypeExit, TypeLine, type TypeLineSpec, typeLineSpec, type TypePresetName } from './TypePresets';
 
@@ -47,12 +48,12 @@ export type TypeStackProps = {
   at: number; // the first line's first frame
   out?: number; // the exit's first frame (the last line leaves first)
   exit?: TypeExit;
-  layout?: StackLayout; // default 'left'
+  layout?: StackLayout; // default 'centre'
   x?: number; // the left edge (left, stair), the axis (centre) or the right edge (right); default the margin or the frame's centre
   y?: number; // the block's vertical centre (cap line of the first line to the baseline of the last); default the frame's
   lead?: number; // baseline to baseline as a share of the lower line's size (default STACK_LOOK.lead)
   keyLine?: number; // the line that carries the emphasis (default the last)
-  emph?: EmphasisSpec; // the key line's emphasis when it names none (default: 'weight' over all its words)
+  emph?: EmphasisSpec; // the key line's emphasis when it names none (default: the film's default kind, the accent, over all its words)
   aside?: { text: string[]; line?: number; at?: number; colors?: TypeColors }; // a caption hung beside a line (default the largest)
   colors?: TypeColors;
   id?: string;
@@ -79,7 +80,7 @@ export const stackLayout = (
   for (let i = 1; i < n; i++) bs.push(bs[i - 1] + lead * lines[i].size);
   const top = -cap * lines[0].size;
   const shift = o.y - (top + bs[n - 1]) / 2;
-  const layout = o.layout ?? 'left';
+  const layout = o.layout ?? 'centre';
   const xs: number[] = [];
   lines.forEach((l, i) => {
     const ind = (l.indent ?? 0) * l.size;
@@ -106,7 +107,7 @@ export const stackLineSpec = (p: Pick<TypeStackProps, 'lines' | 'at' | 'out' | '
   const n = p.lines.length;
   const fps = fpsOf(film);
   const key = p.keyLine ?? n - 1;
-  const emph: EmphasisSpec = l.emph !== undefined ? l.emph : i === key ? (p.emph ?? { device: 'weight', words: [0, 99] }) : false;
+  const emph: EmphasisSpec = l.emph !== undefined ? l.emph : i === key ? (p.emph ?? { device: EMPHASIS_DEFAULT, words: [0, 99] }) : false;
   return {
     preset: l.preset ?? 'crisp',
     text: l.text,
@@ -135,7 +136,7 @@ export const TypeStack: React.FC<TypeStackProps> = (p) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const widths = useMemo(() => specs.map((s, i) => measureLine(defaultEmphasis(typeLineSpec(s), 'line'), sized[i].size, sized[i].weight, sized[i].track, FONT.text).width), [key]);
   const bl = useMemo(() => baselineOf(100, 500, 1, FONT.text) / 100, []);
-  const layout = p.layout ?? 'left';
+  const layout = p.layout ?? 'centre';
   const x = p.x ?? (layout === 'centre' ? film.width / 2 : layout === 'right' ? film.width * (1 - STACK_LOOK.margin) : film.width * STACK_LOOK.margin);
   const boxes = stackLayout(
     sized.map((s, i) => ({ size: s.size, width: widths[i], indent: s.indent })),
@@ -186,10 +187,10 @@ export const declares = (p?: Partial<TypeStackProps>, film?: Partial<FilmCtx>): 
 };
 
 /**
- * A statement set as two lines (StatementLine): the words before the key words small (lead x the size), the key words
- * and what follows them big (key x the size, the family's: calm x1.7, bold x1.45), the big line fitted under maxWidth of
- * the frame. A line under minWords words, or one whose key words open it, stays one line. Measured on the studio
- * two-line statements: the small line 0.55-0.7 of the big one, baseline to baseline 1.02-1.08.
+ * A statement set as two lines (StatementLine with `stack`): the words before the key words small (lead x the size), the
+ * key words and what follows them big (key x the size, the family's: calm x1.7, bold x1.45), the big line fitted under
+ * maxWidth of the frame; the small line 0.55-0.7 of the big one, baseline to baseline 1.02-1.08. A line under minWords
+ * words, or one whose key words open it, stays one line. One stack a film at most.
  */
 export const STATEMENT = { lead: 0.62, key: { calm: 1.7, bold: 1.45 } as Record<'calm' | 'bold', number>, minWords: 4, maxWidth: 0.78 } as const;
 
@@ -202,15 +203,15 @@ export const splitStatement = (text: string, keys?: [number, number] | null): [s
 };
 
 /**
- * <StatementLine spec frame size>: a hero statement on its preset, as a two-line stack when it splits (the lead small
- * over the key words big, their emphasis on the key words: the family's emphasis weight in the accent unless the spec
- * names a device), else as one TypeLine with its emphasis. `size` is the statement's line size (px); `layout` centres the
- * stack on (x, y) or sets it flush left at x.
+ * <StatementLine spec frame size>: a hero statement on its preset: one centred TypeLine with the emphasis its film gave
+ * it, or, with `stack` (the film's one stack), a two-line stack when it splits (the lead small over the key words big,
+ * the spec's device on the key words, else the family's emphasis weight). `size` is the statement's line size (px);
+ * `layout` centres the stack on (x, y) (the default) or sets it flush left at x.
  */
-export const StatementLine: React.FC<{ spec: TypeLineSpec; frame: number; size: number; x?: number; y?: number; layout?: 'centre' | 'left'; weight?: number; maxWidth?: number; family?: 'calm' | 'bold' }> = (p) => {
+export const StatementLine: React.FC<{ spec: TypeLineSpec; frame: number; size: number; x?: number; y?: number; layout?: 'centre' | 'left'; weight?: number; maxWidth?: number; family?: 'calm' | 'bold'; stack?: boolean }> = (p) => {
   const film = useFilm();
   const s = typeLineSpec(p.spec);
-  const split = splitStatement(s.text, s.keys ?? (s.key !== undefined ? [s.key, s.key] : null));
+  const split = p.stack ? splitStatement(s.text, s.keys ?? (s.key !== undefined ? [s.key, s.key] : null)) : null;
   const role = TYPE.line;
   const weight = p.weight ?? role.weight;
   const fam = p.family ?? TYPE_FAMILY;
@@ -222,7 +223,7 @@ export const StatementLine: React.FC<{ spec: TypeLineSpec; frame: number; size: 
   }, [split?.[1], bigBase, weight, film.width]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!split) return <TypeLine spec={s} frame={p.frame} x={p.x} y={p.y} size={p.size} weight={weight} />;
   const nKey = s.keys ? s.keys[1] - s.keys[0] : 0;
-  const emph = s.emph !== undefined && s.emph !== false ? (typeof s.emph === 'string' ? { device: s.emph, words: [0, nKey] as [number, number] } : { ...s.emph, words: [0, nKey] as [number, number] }) : { device: 'weight' as const, words: [0, nKey] as [number, number] };
+  const emph = s.emph !== undefined && s.emph !== false ? (typeof s.emph === 'string' ? { device: s.emph, words: [0, nKey] as [number, number] } : { ...s.emph, words: [0, nKey] as [number, number] }) : { device: EMPHASIS_DEFAULT, words: [0, nKey] as [number, number] };
   return (
     <TypeStack
       id={s.id ?? 'statement'}

@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 /**
- * type-systems.test.mjs: a film owns its headline systems and its compositions, and its type is set with care
- * (src/fx/TypeSystem.ts, the deal in fx/TypeEmphasis.ts, the marks and their timing in fx/TypePresets.tsx, every
- * template's src/deal.ts and its line file). Pure state only; nothing renders.
+ * type-systems.test.mjs: a film speaks in one voice, its emphasis is quiet and one kind, its compositions are its own,
+ * and its type is set with care (src/fx/TypeSystem.ts, the emphasis in fx/TypeEmphasis.ts, the marks and their timing in
+ * fx/TypePresets.tsx, every template's src/deal.ts and its line file). Pure state only; nothing renders.
  *
- *   1. Systems: for 400 seeds and 3-9 lines, no system on two lines in a row and none on more than two lines (when the
- *      pool holds the film at two); given lines keep theirs and count; a line placed by its width only takes plain,
- *      front or rule; the same seed deals the same systems; checkSystems names a repeat and an overused system.
- *   2. Devices from systems: every template-style line deal (dealLineEmphasis) plays devices whose systems obey 1; a
- *      template's declared lines (declareHeadlines) count for its seed; the first line keeps the house default.
+ *   1. Systems: every line in the film's voice (plain) but the lines an act sets another way (given, declared for the
+ *      film's seed, pinned); the same seed, the same systems; checkSystems fails two stacks in a film and a voice on
+ *      under half the lines.
+ *   2. Emphasis: for 400 films of 1-9 lines (keyed or not, any kind asked, a signature or none) the film's emphasis is
+ *      on at most 60 % of the lines, in one kind, a box, marker or underline only as the one signature line; a kind
+ *      that is a signature device falls back to the accent; a line placed by its width never takes a size kind.
  *   3. Templates: for 24 product names each template's deal differs from its scaffold (FLOOR) in at least half its
  *      slots AND in at least half the slots that carry a composition (COMPOSITION: where the type and the picture sit,
  *      which leads), so the frame moves, not only the device names; the scaffold keeps the floor; the ui-walkthrough
- *      never deals the claim's object right after the promise's mark; the scaffold's own line deal (its line file or
- *      its declared lines) never repeats a dealt system.
+ *      never deals the claim's object right after the promise's mark; the scaffold's systems pass checkSystems (one
+ *      voice, one stack at most); the templates that deal a move per line (ui-walkthrough, update) deal one voice: every
+ *      line on the same move and exit for every name; every template's line file sets its emphasis with filmEmphasis.
  *   4. Type craft: a rule under words with descenders breaks round their ink (skip-ink) and, when the gaps would eat
  *      it, sits whole under the descender line; a bar behind words with a descender reaches below the descender line;
  *      an emphasis (marker, rule, swell, sweep) starts only once every word up to its key words is at rest, never
@@ -23,7 +25,7 @@
  * Exit codes: 0 all pass, 1 a test failed (or the starter is not installed).
  */
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -70,47 +72,37 @@ import { PACE } from '${url('lib/pace.ts')}';
 const film = (fps: number) => ({ fps, width: 1920, height: 1080, pace: PACE.crisp });
 
 // 1. systems
-const ALL = Y.HEADLINE_SYSTEMS;
-let seqBad = 0, capBad = 0, givenBad = 0, fixedBad = 0, total = 0;
-const caps: number[] = [];
-for (let k = 0; k < 400; k++) {
-  const n = 3 + (k % 7);
-  const ids = Array.from({ length: n }, (_, i) => 'l' + i);
-  const pool = k % 3 === 0 ? Y.DEVICE_SYSTEMS : k % 3 === 1 ? ALL : ['plain', 'front', 'marker', 'rule', 'swell', 'stack', 'typed'];
-  const given = k % 4 === 0 ? { l1: 'inline' as const } : k % 4 === 1 ? { l0: 'stack' as const, l2: 'push' as const } : {};
-  const fixed = k % 5 === 0 ? ['l' + (n - 1)] : [];
-  const d = Y.dealSystems(ids, 'seed' + k, { pool: pool as any, given, fixed, first: k % 2 === 0 });
-  const seq = ids.map((id) => d[id]);
-  total++;
-  const free = ids.filter((id) => !(id in given));
-  // repeats between two dealt lines, or a dealt line beside a given one, never happen
-  if (seq.some((s, i) => i && s === seq[i - 1] && (free.includes(ids[i]) || free.includes(ids[i - 1])))) seqBad++;
-  const roomy = (pool.length) * Y.MAX_PER_FILM >= n;
-  const cnt: Record<string, number> = {};
-  seq.forEach((s) => (cnt[s] = (cnt[s] ?? 0) + 1));
-  if (roomy && Object.values(cnt).some((c) => c > Y.MAX_PER_FILM)) capBad++;
-  caps.push(Math.max(...Object.values(cnt)));
-  if (Object.entries(given).some(([id, s]) => d[id] !== s)) givenBad++;
-  if (fixed.some((id) => !(id in given) && !Y.WIDTH_HELD.includes(d[id]))) fixedBad++;
-}
-const same = JSON.stringify(Y.dealSystems(['a', 'b', 'c', 'd', 'e'], 'Brook')) === JSON.stringify(Y.dealSystems(['a', 'b', 'c', 'd', 'e'], 'Brook'));
-const chk = [Y.checkSystems(['stack', 'stack', 'plain']), Y.checkSystems(['stack', 'plain', 'stack', 'rule', 'stack']), Y.checkSystems(['plain', null, 'rule', 'marker'])];
+const fs1 = Y.filmSystems(['a', 'b', 'c', 'd'], 'seed1', { given: { b: 'inline' }, pin: { d: 'push' } });
+Y.declareHeadlines(424242, { b: 'giant' });
+const fsDecl = Y.filmSystems(['what', 'a', 'b', 'c'], 424242, {});
+const same = JSON.stringify(Y.filmSystems(['a', 'b', 'c'], 'Brook')) === JSON.stringify(Y.filmSystems(['a', 'b', 'c'], 'Brook'));
+const chk = [Y.checkSystems(['stack', 'stack', 'plain', 'plain']), Y.checkSystems(['plain', 'plain', 'inline', 'plain']), Y.checkSystems(['plain', 'giant', 'push', 'typed'], 'plain'), Y.checkSystems(['plain', null, 'stack', 'plain'])];
 
-// 2. devices from systems
-let devBad = 0, firstBad = 0;
-for (let k = 0; k < 300; k++) {
-  const ids = ['what', 'a', 'b', 'c', 'd', 'e', 'close'].slice(0, 3 + (k % 5));
-  const fam = k % 2 ? 'bold' : 'calm';
-  const e = X.dealLineEmphasis(ids, 'f' + k, { family: fam as any, fixed: ['close'] });
-  const sys = ids.map((id) => Y.systemOfDevice(e[id] as any));
-  const c = Y.checkSystems(sys);
-  if (!c.ok || ids.some((id, i) => i && e[id] === e[ids[i - 1]])) devBad++;
-  if (e[ids[0]] !== 'weight') firstBad++;
+// 2. emphasis
+let shareBad = 0, kindBad = 0, sigBad = 0, sigMiss = 0, fixedBad = 0, total = 0;
+const KINDS = ['accent', 'weight', 'scale', 'swell', 'outline', 'sweep', 'box', 'marker', 'under'];
+for (let k = 0; k < 400; k++) {
+  const n = 1 + (k % 9);
+  const ids = Array.from({ length: n }, (_, i) => 'l' + i);
+  const keyed = ids.filter((_, i) => (k >> (i % 5)) % 2 === 0);
+  const kind = KINDS[k % KINDS.length] as any;
+  const sig = k % 3 === 0 && n > 1 ? { id: ids[(k >> 2) % n], device: (['box', 'marker', 'under'] as const)[k % 3 === 0 ? (k >> 4) % 3 : 0] } : undefined;
+  const fixed = k % 4 === 0 ? [ids[n - 1]] : [];
+  const e = X.filmEmphasis(ids, { kind, keyed, signature: sig, fixed });
+  const c = X.checkFilmEmphasis(e);
+  total++;
+  if (c.share > 0.6 + 1e-9) shareBad++;
+  if (c.kinds.length > 1 || c.kinds.some((d) => X.SIGNATURE_DEVICES.includes(d))) kindBad++;
+  if (c.signatures.length > (sig ? 1 : 0)) sigBad++;
+  if (sig && Math.floor(0.6 * n + 1e-9) >= 1 && e[sig.id] !== sig.device) sigMiss++;
+  if (fixed.some((id) => e[id] && e[id] !== sig?.device && ['scale', 'swell'].includes(e[id] as string))) fixedBad++;
 }
-Y.declareHeadlines(424242, { what: 'stack', b: 'giant' });
-const dh = X.dealLineHeadlines(['what', 'a', 'b', 'c'], 424242, {});
-const dhSys = ['what', 'a', 'b', 'c'].map((id) => dh[id].system);
-const dlE = X.dealLineEmphasis(['what', 'a', 'b', 'c'], 424242, {});
+const five = X.filmEmphasis(['a', 'b', 'c', 'd', 'e']);
+const named = X.filmEmphasis(['a', 'b', 'c', 'd', 'e'], { keyed: ['b', 'd'], kind: 'weight' });
+const sigFive = X.filmEmphasis(['a', 'b', 'c', 'd', 'e'], { signature: { id: 'a', device: 'marker' } });
+const boxKind = X.filmEmphasis(['a', 'b', 'c'], { kind: 'box' });
+const none = X.filmEmphasis(['a', 'b', 'name'], { none: ['name'] });
+const chkE = [X.checkFilmEmphasis({ a: 'weight', b: 'accent', c: false, d: false }), X.checkFilmEmphasis({ a: 'marker', b: 'box', c: false, d: false, e: false }), X.checkFilmEmphasis({ a: 'accent', b: 'accent', c: 'accent' }), X.checkFilmEmphasis(five)];
 
 // 4. type craft
 const glyphs = (word: string, x0 = 0, adv = 50) => [...word].map((ch, i) => ({ ch, x: x0 + i * adv, w: adv }));
@@ -143,7 +135,7 @@ for (const preset of ['fall', 'mask', 'land', 'glide', 'crisp']) {
 }
 const weightFrom = T.emphasisFrames({ preset: 'fall', text: 'Its cap counts every *sip*.', at: 0, emph: 'weight' }, film(60));
 
-console.log(JSON.stringify({ total, seqBad, capBad, givenBad, fixedBad, maxCap: Math.max(...caps), same, chk, devBad, firstBad, dhSys, dlE, ink, bars, waits, weightFrom }));
+console.log(JSON.stringify({ fs1, fsDecl, same, chk, total, shareBad, kindBad, sigBad, sigMiss, fixedBad, five, named, sigFive, boxKind, none, chkE, ink, bars, waits, weightFrom }));
 `;
 
 const run = (code, name) => {
@@ -162,13 +154,17 @@ const P = JSON.parse(r.stdout.trim().split('\n').pop());
 // 3. the templates' deals, each in its own process (a deal's declarations live in its process)
 const NAMES = ['Tessel', 'Plinth', 'Northwind', 'Loomly', 'Quarry', 'Brightdesk', 'Halyard', 'Orbitly', 'Fernway', 'Glint', 'Parcel', 'Corvid',
   'Lumen', 'Basalt', 'Driftwood', 'Keel', 'Marlow', 'Sable', 'Verity', 'Waypoint', 'Zephyr', 'Ledgerly', 'Cobalt Notes', 'Pine & Post'];
-// the line deal each template's acts/stage.tsx (or its line file) makes, as written there
-const LINE_DEAL = {
-  'social-ad': `X.dealLineEmphasis(['what', 'tag.1', 'tag.2', 'swap', 'close'], D.SEED, { fixed: ['swap', 'close'] })`,
-  'camera-teaser': `X.dealLineEmphasis(['what', 'build', 'close'], D.DEAL_SEED, { fixed: ['close'] })`,
-  'prompt-run': `X.dealLineEmphasis(['what', 'ask', 'tell', 'done', 'close'], D.DEAL_SEED, { fixed: ['what', 'ask', 'close'] })`,
-  'type-explainer': `X.dealLineEmphasis(['what', 'pain', 'close'], D.SEED, { fixed: ['close'] })`,
+// the script's lines of each template (its line file's ids, in film order)
+const LINE_IDS = {
+  'social-ad': `['what', 'save', 'find', 'tag.1', 'tag.2', 'swap', 'close']`,
+  'camera-teaser': `['what', 'build', 'connect', 'close']`,
+  'prompt-run': `['what', 'ask', 'tell', 'done', 'close']`,
+  'type-explainer': `['what', 'pain', 'promise', 'system', 'close']`,
+  'ui-walkthrough': `[...D.LINE_IDS]`,
+  update: `[...D.LINE_IDS].slice(0, 3)`,
 };
+// where each template sets its emphasis (the line file must use filmEmphasis, never a per-line deal)
+const LINE_FILE = { 'social-ad': 'acts/stage.tsx', 'camera-teaser': 'acts/stage.tsx', 'prompt-run': 'acts/stage.tsx', 'type-explainer': 'acts/stage.tsx', 'ui-walkthrough': 'acts/type.tsx', update: 'acts/type.tsx' };
 const tplOut = {};
 for (const t of TPL) {
   const deal = pathToFileURL(join(tplDirs[t], 'deal.ts')).href;
@@ -181,14 +177,19 @@ const slots = Object.keys(D.FLOOR);
 const deals = NAMES.map((n) => D.dealOf(n));
 const comp = deals.map((d: any) => Y.compositionApart(d, D.FLOOR, D.COMPOSITION, slots as any));
 const declared: Record<string, string> = (D as any).HEADLINES_SET ?? {};
-${LINE_DEAL[t] ? `const e = ${LINE_DEAL[t]}; const ids = Object.keys(e); const sys = ids.map((id) => declared[id] ?? Y.systemOfDevice(e[id] as any));` : 'const ids: string[] = []; const sys: any[] = [];'}
-const dealtRepeat = ids.some((id, i) => i && sys[i] === sys[i - 1] && !(declared[id] && declared[ids[i - 1]]));
+const ids: string[] = ${LINE_IDS[t]};
+const seed = (D as any).DEAL_SEED ?? (D as any).SEED;
+const fsys = Y.filmSystems(ids, seed, {});
+const sysCheck = Y.checkSystems(ids.map((id) => fsys[id]), 'plain');
+const hash = (s: string) => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return h; };
+const voices = typeof (D as any).dealLines === 'function' ? NAMES.map((n) => (D as any).dealLines(hash(n), ids, {}, ${t === 'ui-walkthrough' ? "['payoff']" : '[]'})) : [];
+const oneVoice = voices.every((v: any) => new Set(ids.map((id) => v.move[id])).size === 1 && new Set(ids.map((id) => v.exit[id])).size === 1);
 console.log(JSON.stringify({ slots: slots.length, floorKept: JSON.stringify(D.DEAL) === JSON.stringify(D.FLOOR),
   minApart: Math.min(...deals.map((d: any) => slots.filter((s) => d[s] !== D.FLOOR[s]).length)),
   compOk: comp.every((c) => c.ok), compMin: Math.min(...comp.map((c) => c.moved)), bearing: comp[0].bearing,
   distinct: new Set(deals.map((d) => JSON.stringify(d))).size,
   objectAfterMark: ${t === 'ui-walkthrough' ? `deals.filter((d: any) => d.claim === 'object').length` : '0'},
-  declared, sys, dealtRepeat }));
+  declared, sysCheck, voices: voices.length, oneVoice, moves: voices.slice(0, 3).map((v: any) => v.voice) }));
 `;
   const tr = run(code, `deal-${t}.mts`);
   try {
@@ -200,17 +201,19 @@ console.log(JSON.stringify({ slots: slots.length, floorKept: JSON.stringify(D.DE
 rmSync(TMP, { recursive: true, force: true });
 
 // 1
-result(P.seqBad === 0, 'systems: no system on two lines in a row (a dealt line never repeats its neighbour, given or dealt)', `${P.seqBad} of ${P.total}`);
-result(P.capBad === 0, 'systems: none on more than two lines of a film whenever the pool can hold the film at two', `${P.capBad} of ${P.total}, max ${P.maxCap}`);
-result(P.givenBad === 0 && P.fixedBad === 0, 'systems: given lines keep their system; a line placed by its width takes plain, front or rule only', `${P.givenBad} / ${P.fixedBad}`);
-result(P.same, 'systems: the same seed deals the same systems');
-result(!P.chk[0].ok && P.chk[0].repeats.length === 1 && !P.chk[1].ok && P.chk[1].over[0]?.system === 'stack' && P.chk[1].repeats.length === 0 && P.chk[2].ok,
-  'checkSystems: names a repeat in a row and a system on three lines; a line with none in between is skipped', JSON.stringify(P.chk));
+result(P.fs1.a === 'plain' && P.fs1.b === 'inline' && P.fs1.c === 'plain' && P.fs1.d === 'push', 'systems: every line in the voice (plain) but the given and the pinned lines', JSON.stringify(P.fs1));
+result(P.fsDecl.b === 'giant' && P.fsDecl.what === 'plain' && P.fsDecl.a === 'plain' && P.same, "systems: a template's declared lines keep theirs for its seed; the same seed, the same systems", JSON.stringify(P.fsDecl));
+result(!P.chk[0].ok && P.chk[0].stacks === 2 && P.chk[1].ok && P.chk[1].voice === 'plain' && !P.chk[2].ok && P.chk[2].voiceShare === 0.25 && P.chk[3].ok,
+  'checkSystems: two stacks in a film fail; the voice on half the lines or more passes, on a quarter fails; a line with none is skipped', JSON.stringify(P.chk.map((c) => [c.ok, c.stacks, c.voiceShare])));
 // 2
-result(P.devBad === 0, 'line deal: the devices dealt to a script never repeat a system (or a device) on two lines in a row, none on more than two', String(P.devBad));
-result(P.firstBad === 0, 'line deal: the first line keeps the house default (weight)', String(P.firstBad));
-result(P.dhSys[0] === 'stack' && P.dhSys[2] === 'giant' && !['stack', 'giant'].includes(P.dhSys[1]) && !['stack', 'giant'].includes(P.dhSys[3]) && ['weight', 'accent'].includes(P.dlE.what),
-  'declared lines: a template declares what its acts set (a stack, a poster); the line deal counts them and deals round them', JSON.stringify([P.dhSys, P.dlE]));
+result(P.shareBad === 0 && P.kindBad === 0 && P.sigBad === 0, 'emphasis: on at most 60 % of the lines, one kind, a box/marker/underline only as the one signature line (400 films)', `${P.shareBad} / ${P.kindBad} / ${P.sigBad} of ${P.total}`);
+result(P.sigMiss === 0 && P.fixedBad === 0, 'emphasis: the declared signature lands on its line; a line placed by its width never takes a size kind', `${P.sigMiss} / ${P.fixedBad}`);
+result(P.five.e === 'accent' && P.five.c === 'accent' && P.five.a === 'accent' && P.five.b === false && P.five.d === false, 'emphasis: by default the accent colour on 3 of 5 lines, from the last line back, every other line', JSON.stringify(P.five));
+result(P.named.b === 'weight' && P.named.d === 'weight' && P.named.e === 'weight' && P.named.a === false && P.named.c === false, 'emphasis: the lines whose key words the script names take the kind first; the share fills from the rest', JSON.stringify(P.named));
+result(P.sigFive.a === 'marker' && Object.values(P.sigFive).filter(Boolean).length === 3 && P.boxKind.c === 'accent' && P.none.name === false && [P.none.a, P.none.b].filter(Boolean).length === 1,
+  'emphasis: a signature takes its line inside the share; a box asked as the kind plays the accent; a name takes none and does not count', JSON.stringify([P.sigFive, P.boxKind, P.none]));
+result(!P.chkE[0].ok && P.chkE[0].kinds.length === 2 && !P.chkE[1].ok && P.chkE[1].signatures.length === 2 && !P.chkE[2].ok && P.chkE[2].share === 1 && P.chkE[3].ok,
+  'checkFilmEmphasis: two kinds fail, two signatures fail, every line emphasised fails, the default deal passes', JSON.stringify(P.chkE.map((c) => [c.ok, c.share, c.kinds, c.signatures])));
 // 3
 for (const t of TPL) {
   const d = tplOut[t];
@@ -222,7 +225,10 @@ for (const t of TPL) {
     `--template ${t}: every product's deal moves the frame off the scaffold (half the slots, and half the ${d.bearing} that carry a composition)`,
     `${d.slots} slots, >= ${d.minApart} apart, >= ${d.compMin} of ${d.bearing} compositions moved, ${d.distinct} deals of 24`);
   if (t === 'ui-walkthrough') result(d.objectAfterMark === 0, '--template ui-walkthrough: the claim never deals its object right after the promise\'s mark (one system twice in a row)', String(d.objectAfterMark));
-  if (d.sys.length) result(!d.dealtRepeat, `--template ${t}: the scaffold's line deal never repeats a dealt system beside another line`, JSON.stringify({ sys: d.sys, declared: d.declared }));
+  result(d.sysCheck.ok, `--template ${t}: the scaffold's lines speak in one voice (plain on half or more, one stack at most)`, JSON.stringify({ check: d.sysCheck, declared: d.declared }));
+  if (d.voices) result(d.oneVoice, `--template ${t}: one voice: every line on the same move and the same exit, for every name`, JSON.stringify(d.moves));
+  const src = readFileSync(join(TEMPLATES, t, 'src', LINE_FILE[t]), 'utf8');
+  result(src.includes('filmEmphasis(') && !/dealLine(Emphasis|Headlines)\(/.test(src), `--template ${t}: its line file sets the film's emphasis with filmEmphasis (one kind, <= 60 % of the lines)`);
 }
 // 4
 const I = P.ink;

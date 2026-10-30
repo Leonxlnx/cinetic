@@ -115,9 +115,9 @@ export const dealOf = (name: string): Deal => dealApart(hashSeed(name));
 export const DEAL_SEED = SEED ?? hashSeed(IDENTITY.name);
 export const DEAL: Deal = dealApart(DEAL_SEED, PIN);
 
-// ---- The lines' moves: each line of the script arrives on one confident move and leaves on one exit, dealt per line
-// from the same seed, never the same move (or exit) on two lines in a row. Node-safe: the timeline reads how long each
-// move takes to resolve from RESOLVE60 below (fx/TypePresets typeLineFrames at the house numbers, 60 fps frames).
+// ---- The lines' moves: the film speaks in one voice, every line of the script arriving on the same confident move and
+// leaving on the same exit, dealt once per film from the seed. Node-safe: the timeline reads how long each move takes
+// to resolve from RESOLVE60 below (fx/TypePresets typeLineFrames at the house numbers, 60 fps frames).
 
 /**
  * The moves a line takes (fx/TypePresets HERO_PRESETS: solid ink within a few frames, moving while it lands, every word
@@ -141,53 +141,36 @@ export const RESOLVE60: Record<Move, readonly number[]> = {
 /** Frames (60 fps) an exit takes from its start until the line is gone (drop: 14 f, 4 f more a word). */
 export const EXIT60 = (e: Exit, words: number): number => ({ slide: 22, spread: 26, collapse: 10, push: 28, drop: 10 + 4 * Math.max(1, words) })[e];
 
-/** Pin a line's move or exit by hand ({ promise: 'mask' }); the others are dealt. */
+/** Pin a line's move or exit by hand ({ promise: 'mask' }); the others take the film's voice. */
 export const MOVE_PIN: Partial<Record<string, Move>> = {};
 export const EXIT_PIN: Partial<Record<string, Exit>> = {};
 
 /** The quick moves (a line of up to 6 words read in under 50 f at 60 fps): the end card's line takes one, so the lock still holds. */
 export const QUICK: readonly Move[] = ['land', 'fall', 'glide'];
 
-/** One move and one exit per line id, in film order, from `seed`: no move or exit twice in a row; ids in `quick` take a QUICK move. Pure. */
-export const dealLines = (seed: number, ids: readonly string[], pin: { move?: Partial<Record<string, Move>>; exit?: Partial<Record<string, Exit>> } = {}, quick: readonly string[] = []) => {
-  // The unpinned deal first, drawing for every line, so a pin never shifts the draws of the lines after it.
+/**
+ * The film's voice: ONE move and ONE exit for every line id, from `seed` (a film that reuses one entry reads as one
+ * voice; a new move on every line reads as a template). Ids in `quick` need a QUICK move, so the voice is dealt from
+ * QUICK when there are any. `hero` may name the film's one contrasting line (its own move, any but the voice: at most one
+ * per 30 s of film). Pins win. Pure.
+ */
+export const dealLines = (seed: number, ids: readonly string[], pin: { move?: Partial<Record<string, Move>>; exit?: Partial<Record<string, Exit>> } = {}, quick: readonly string[] = [], hero?: string) => {
   const r = rng((seed ^ 0x5bd1e995) >>> 0);
-  const draws = ids.map(() => [r(), r()] as const);
-  const dealtMove: Record<string, Move> = {};
-  const dealtExit: Record<string, Exit> = {};
-  ids.forEach((id, i) => {
-    const pm = i ? dealtMove[ids[i - 1]] : null;
-    const pe = i ? dealtExit[ids[i - 1]] : null;
-    const ms = MOVES.filter((m) => m !== pm && (!quick.includes(id) || QUICK.includes(m)));
-    const es = EXITS.filter((e) => e !== pe);
-    dealtMove[id] = ms[Math.floor(draws[i][0] * ms.length)];
-    dealtExit[id] = es[Math.floor(draws[i][1] * es.length)];
-  });
-  // Then the pins: a pinned line plays its pin; a dealt line keeps its deal unless a pin beside it now repeats it,
-  // and only then is it re-dealt from its own draw among the moves (exits) that differ from both neighbours, so the
-  // change never runs on down the script.
+  const [dm, de, dh] = [r(), r(), r()];
+  const pool: readonly Move[] = ids.some((id) => quick.includes(id)) ? QUICK : MOVES;
+  const voice = pool[Math.floor(dm * pool.length)];
+  const exitVoice = EXITS[Math.floor(de * EXITS.length)];
+  const others = MOVES.filter((m) => m !== voice);
   const move: Record<string, Move> = {};
   const exit: Record<string, Exit> = {};
-  ids.forEach((id, i) => {
-    const prev = i ? ids[i - 1] : null;
-    const next = i + 1 < ids.length ? ids[i + 1] : null;
-    const pinM = pin.move?.[id];
-    if (pinM !== undefined) move[id] = pinM;
-    else {
-      const ms = MOVES.filter((m) => (prev === null || m !== move[prev]) && (next === null || m !== (pin.move?.[next] ?? dealtMove[next])) && (!quick.includes(id) || QUICK.includes(m)));
-      move[id] = ms.includes(dealtMove[id] as (typeof MOVES)[number]) || !ms.length ? dealtMove[id] : ms[Math.floor(draws[i][0] * ms.length)];
-    }
-    const pinE = pin.exit?.[id];
-    if (pinE !== undefined) exit[id] = pinE;
-    else {
-      const es = EXITS.filter((e) => (prev === null || e !== exit[prev]) && (next === null || e !== (pin.exit?.[next] ?? dealtExit[next])));
-      exit[id] = es.includes(dealtExit[id]) || !es.length ? dealtExit[id] : es[Math.floor(draws[i][1] * es.length)];
-    }
-  });
-  return { move, exit };
+  for (const id of ids) {
+    move[id] = pin.move?.[id] ?? (id === hero && !quick.includes(id) ? others[Math.floor(dh * others.length)] : voice);
+    exit[id] = pin.exit?.[id] ?? exitVoice;
+  }
+  return { move, exit, voice, exitVoice };
 };
 
-/** The script's lines in film order and the moves and exits this film was dealt. */
+/** The script's lines in film order and the voice (move and exit) this film was dealt. */
 export const LINE_IDS = ['promise', 'claim', 'step1', 'insight', 'pick', 'payoff'] as const;
 export const LINES = dealLines(DEAL_SEED, LINE_IDS, { move: MOVE_PIN, exit: EXIT_PIN }, ['payoff']);
 /** The name's move on the end card: a rise out of its mask, or a landing when the payoff took the mask. */

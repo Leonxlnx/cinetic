@@ -14,7 +14,7 @@ import { mixColor } from '../lib/color';
 import { CUE, f60x, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { WHIP_LEFT } from './Insight';
-import { carryIn, drift, Ground, GROUNDS, ScriptLine, themeOf, useAbs } from './stage';
+import { carryIn, drift, Ground, GROUNDS, ReadBack, ScriptLine, themeOf, useAbs } from './stage';
 
 // PICK - step three. The options arrive on the whip's leftward speed, carried and settling; the line says what the
 // product makes from the pick. The camera eases in onto the chosen row (a settle of 40 f, never a jump), the others
@@ -101,7 +101,7 @@ export const Pick: React.FC = () => {
       <DirBlur v={cv} axis="x" id="pick-carry">
         <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(carried + d.x).toFixed(2)}px, ${d.y.toFixed(3)}px, 0)` }}>
           <Ground act="pick" F={F} />
-          <ScriptLine id="pick" F={F} top={70 * U} color={t.text} accent={t.accent} mute={t.mute} />
+          <ReadBack id="pick" F={F}>
           <div style={TILTED}>
           {/* the sheet the options sit on: the product's chooser, lit and tilted with them; it falls back as the build takes over */}
           <div style={{ position: 'absolute', left: 0, top: 0, opacity: (1 - m) * sheetIn, transformOrigin: `${(SHEET.w / 2).toFixed(2)}px ${(oy - SHEET.y).toFixed(2)}px`, transform: `translate3d(${((W - SHEET.w) / 2).toFixed(2)}px, ${SHEET.y.toFixed(2)}px, 0) scale(${(zoom * mix(0.94, 1, sheetIn)).toFixed(5)})` }}>
@@ -155,6 +155,9 @@ export const Pick: React.FC = () => {
             </div>
           )}
           </div>
+          </ReadBack>
+          {/* the line centred in the middle of the frame while the chooser steps back behind it (stage ReadBack) */}
+          <ScriptLine id="pick" F={F} color={t.text} accent={t.accent} mute={t.mute} />
         </div>
       </DirBlur>
     </AbsoluteFill>

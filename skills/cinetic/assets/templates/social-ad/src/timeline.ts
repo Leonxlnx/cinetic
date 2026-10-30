@@ -86,14 +86,14 @@ const w = (s: string) => wordCount(s);
 /**
  * When a line set with a confident preset (fx/TypePresets TypeLine, its house numbers in TYPE_PRESETS) is whole, in
  * 60 fps frames from its first frame: land (the leading words in 34 f, then each next word 12 f apart, solid 6 f after
- * it cuts on), build (14, 10, 10 ... f apart with a 28 f breath before the last, each ink 18 f after it cuts on),
+ * it cuts on), build (the house voice: words 6 f apart, each fading in over 20 f),
  * glide (words resolving 3.5 f apart, the last 2.5x slower, while the line slides in), mask (words
  * 8 f apart, each head 8 f, the last 2.5x slower), fall (words 9 f apart, each dropping in 12 f), crisp (7 f apart,
  * read 16 f after the last starts).
  */
 export const HERO_END = {
   land: (n: number, lead = 1) => (lead >= n ? 34 : 34 + 12 * (n - 1 - lead) + 6),
-  build: (n: number) => (n < 2 ? 0 : n === 2 ? 14 : 14 + 10 * (n - 3) + 28) + 18,
+  build: (n: number) => 6 * Math.max(0, n - 1) + 20,
   glide: (n: number) => 3.5 * (n - 1) + 20,
   mask: (n: number) => 8 * (n - 1) + (n > 1 ? 20 : 8),
   fall: (n: number) => 9 * (n - 1) + 12,
@@ -157,7 +157,7 @@ const build = (plan: Plan) => {
   const C: Record<string, number> = {};
   // every exit cue waits for its line's read (a cue never shortens a read); an act that cannot hold its reads in
   // its bars gets a bar more (late, below)
-  const tagPreset = DEAL.taglines === 'claim' ? 'crisp' : 'fall';
+  const tagPreset = 'crisp'; // the film's voice: the script's lines arrive on the crisp entry (the opener is the one contrast)
   const readEnd = (preset: keyof typeof HERO_END, text: string, inF: number, lead?: number) => inF + f60(HERO_END[preset](w(text), lead)) + hold(w(text));
   // open: the opener in one confident move; its words spread apart into the cut onto the stack, dealt or fanned
   C.what = at('open', 0);
@@ -181,7 +181,7 @@ const build = (plan: Plan) => {
   C.find = at('field', 0.5);
   C.fieldOut = onGrid(cut('field') - f60(14));
   // once the claim is read the camera leans into its pill (a type push), then the field leaves up
-  C.fieldPush = onGrid(Math.max(C.find + f60(30), Math.min(C.fieldOut - f60(30), (readEnd('mask', L.find, C.find) + C.fieldOut) / 2)));
+  C.fieldPush = onGrid(Math.max(C.find + f60(30), Math.min(C.fieldOut - f60(30), (readEnd('crisp', L.find, C.find) + C.fieldOut) / 2)));
   // label: the label over moving content, its last word swapping once; the content rushes out
   C.label = at('label', 0);
   C.plan = at('label', 0.25);
@@ -201,7 +201,7 @@ const build = (plan: Plan) => {
   C.end = at('end', 0);
   C.endMark = C.end;
   const nameIn = DEAL.end === 'spin' ? C.endMark + f60(30) : C.endMark + f60(8);
-  const closeGlide = f60(HERO_END.glide(w(L.close)));
+  const closeGlide = f60(HERO_END.crisp(w(L.close)));
   const closeFirst = Math.max(at('end', 1.5), nameIn + f60(16) + hold(1));
   C.close = onGridUp(Math.max(closeFirst, Math.min(onGrid(cut('end') - TAIL - f60(30) - closeGlide), closeFirst + f60(60))));
   C.lockup = onGridUp(C.close + closeGlide);
@@ -211,13 +211,13 @@ const build = (plan: Plan) => {
     { id: 'what', text: L.what, in: C.what, resolved: C.what + f60(HERO_END[DEAL.open](w(L.what), lead)), out: C.spread },
     { id: 'save', text: L.save.join(' '), in: C.pile, resolved: C.pile + f60(4), out: C.saveOut },
     { id: 'brandName', text: AD.name, kind: 'name', in: nameAt, resolved: nameAt + f60(12), out: cut('brand') },
-    set('find', 'mask', L.find, C.find, C.fieldOut),
+    set('find', 'crisp', L.find, C.find, C.fieldOut),
     set('plan', 'crisp', L.plan[0], C.plan, C.swap),
     { id: 'swap', text: L.plan[1], in: C.swap, resolved: C.swap + f60(SWAP), out: C.rushOut + f60(12), swap: 'plan' },
     set('tag.1', tagPreset, L.taglines[0], C.tag1, C.tagOut, { chain: 'tag', mode: 'replace' }),
     set('tag.2', tagPreset, L.taglines[1], C.tag2, cut('taglines'), { chain: 'tag', mode: 'replace' }), // cut on the push, still read
     { id: 'wordmark', text: AD.name, kind: 'name', in: nameIn, resolved: nameIn + f60(16), out: TOTAL },
-    set('close', 'glide', L.close, C.close, TOTAL),
+    set('close', 'crisp', L.close, C.close, TOTAL),
   ];
   // a cue never shortens a read: a line whose read runs past its exit cue makes its act late (it gets a bar more)
   const late: ActName[] = [];

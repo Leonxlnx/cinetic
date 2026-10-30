@@ -1,6 +1,6 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { TYPE, U } from '../brand/tokens';
+import { U } from '../brand/tokens';
 import { DirBlur } from '../fx/Defocus';
 import { fanState, pileState } from '../fx/Stack';
 import { StatementLine } from '../fx/TypeStack';
@@ -11,7 +11,7 @@ import { creep } from '../lib/handoff';
 import { AD } from '../ad';
 import { DEAL } from '../deal';
 import { copy, CUE, DEALS, f60x, FPS, H, OPEN_LEAD, SPREAD, W } from '../timeline';
-import { ActGround, circOut, EMPH, EMPH_WEIGHT, Item, keysFor, lineSize, lineStyle, lineWidth, PAGE, useAbs } from './stage';
+import { ActGround, circOut, EMPH, Item, keysFor, lineSize, lineStyle, lineWidth, PAGE, useAbs } from './stage';
 
 // OPEN - two shots. The opener is the open slot's device (src/deal.ts), a confident line move (fx/TypePresets):
 //   land  the name cuts in oversized (x1.7) and lands in 34 f, crisp as it lands; each next word is appended 12 f
@@ -113,8 +113,8 @@ export const SaveWords: React.FC<{ F: number }> = ({ F }) => {
   return (
     <div style={{ position: 'absolute', left: 0, top: H / 2 - (size * 1.05) / 2, width: W, height: size * 1.1 }}>
       <span data-text="save" style={{ ...lineStyle(size, ink), position: 'absolute', left: 0, top: 0, transform: `translate3d(${(W / 2 - cardW / 2 - gap - carry - away - lineWidth(left, size)).toFixed(2)}px, 0, 0)` }}>{left}</span>
-      {/* the stack's second word carries the line's emphasis: the family's emphasis weight in the accent (it is placed from its left edge) */}
-      <span data-text="save" style={{ ...lineStyle(size, mixColor(PAGE.mute, PAGE.accent, prog(F, CUE.pile, CUE.pile + f60x(12), E.softOut))), fontWeight: EMPH_WEIGHT, position: 'absolute', left: 0, top: 0, transform: `translate3d(${(W / 2 + cardW / 2 + gap + carry + away).toFixed(2)}px, 0, 0)` }}>{right}</span>
+      {/* the second word takes the film's emphasis when its deal gives the line one (the accent colour), else the first word's ink (it is placed from its left edge) */}
+      <span data-text="save" style={{ ...lineStyle(size, EMPH.save ? mixColor(PAGE.mute, PAGE.accent, prog(F, CUE.pile, CUE.pile + f60x(12), E.softOut)) : ink), position: 'absolute', left: 0, top: 0, transform: `translate3d(${(W / 2 + cardW / 2 + gap + carry + away).toFixed(2)}px, 0, 0)` }}>{right}</span>
     </div>
   );
 };
@@ -123,9 +123,9 @@ export const Open: React.FC = () => {
   const F = useAbs('open');
   const what = copy('what');
   const whatSpec = { emph: EMPH.what, keys: keysFor('what', what.text) };
-  // the opener is the film's first statement: set as two lines (fx/TypeStack StatementLine), its words before the key
-  // words small over the key words big, at the line role's size (a short opener stays one line, fitted as before)
-  const size = Math.max(lineSize(what.text, 0.66), TYPE.line.size * U);
+  // the opener is the film's first statement: one centred line on the film's open (fx/TypeStack StatementLine; a film
+  // that makes it its one stack passes `stack`), at the line role's size
+  const size = lineSize(what.text, 0.66); // one line, fitted to the frame
   const k = creep(F, what.in, { pctPerSec: 0.02 }, FPS);
   // shot 2: the stack and its two words
   const push = stackPush(F);

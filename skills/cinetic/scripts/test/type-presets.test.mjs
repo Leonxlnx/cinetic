@@ -2,7 +2,7 @@
 /**
  * type-presets.test.mjs: the one-line type presets of the Remotion starter (src/fx/TypePresets.tsx).
  *
- *   1. Timing: build's word gaps (14 / 10 / 10 f and a 28 f breath before the last, half that at 30 fps), the
+ *   1. Timing: build's word gaps (the house voice: 6 f apart, half that at 30 fps; each word fading in over 20 f), the
  *      focus pull (blur x0.65 a frame at 30 fps), the wheel's shrinking gaps (16 f to 6 f), the font cycle's
  *      6 f steps, the punch (a 24 % push in 28 f), the redaction's 2 f steps, the swarm on twos.
  *   2. Exits: the dive zooms at a constant log rate (x8.2 in 14 f) into a covering ink, a deeper zoom (diveTo)
@@ -15,7 +15,7 @@
  *      preset on an end card.
  *   5. The confident moves: mask (8 f linear-stop head, last word 2.5x), land (x1.7 over 34 f, defocus riding the
  *      scale, lead + append), fly (x5 in 14 f, landing touching, spaces opening), snap and room (one declared jump
- *      frame), glide, fall, the rebuilt open (soft first frame, transient accent, trail) and build (solid, no blur).
+ *      frame), glide, fall, the rebuilt open (soft first frame, transient accent, trail) and build (20 f fades, no blur).
  *   6. Exits at speed: slide (right-to-left drops), spread, collapse, drift never fading; the hero / soft roles.
  *
  * It runs src/fx through the starter's own tsx (npm install in assets/remotion-starter first; CINETIC_TSX may
@@ -139,7 +139,7 @@ console.log(JSON.stringify({
   glide: { ons: diffs(T.glideFrames(gl, film(60)).on), x0: st(0, gl).x, x96: st(96, gl).x, w0: g0(gl, 1), w0end: g0(gl, 9) },
   fall: { f1: g0(fa, 1), f12: g0(fa, 12), gap: diffs(T.fallFrames(fa, film(60)).on)[0] },
   open: { on: opOn, f0: g0(op, 0), f2: g0(op, 2), f6: g0(op, 6), f30: g0(op, 30), smear: st(opOn[1] + 1, op).glyphs[0].smear[0] },
-  build: { f0: g0(bd, 0), maxBlur: Math.max(...Array.from({ length: 120 }, (_, f) => Math.max(...st(f, bd).glyphs.map((g: any) => g.blur)))) },
+  build: { f0: g0(bd, 0), f20: g0(bd, 20).opacity, maxBlur: Math.max(...Array.from({ length: 120 }, (_, f) => Math.max(...st(f, bd).glyphs.map((g: any) => g.blur)))) },
   developFeather: T.TYPE_PRESETS.develop.feather,
   exits: {
     slide: { len: exF('slide').gone, f10: ex('slide', 10).x, f15: wordOp(ex('slide', 15)), f17: wordOp(ex('slide', 17)), f19: wordOp(ex('slide', 19)), f21: wordOp(ex('slide', 21)), gone: ex('slide', 22).visible },
@@ -165,7 +165,7 @@ const P = JSON.parse(r.stdout.trim().split('\n').pop());
 const near = (a, b, tol = 1e-6) => Math.abs(a - b) <= tol;
 
 // 1. timing
-result(P.build60.join() === '14,10,10,28' && P.build30.join() === '7,5,5,14', 'build: words 14 / 10 / 10 f apart, a 28 f breath before the last (half at 30 fps)', `${P.build60.join('/')} | ${P.build30.join('/')}`);
+result(P.build60.join() === '6,6,6,6' && P.build30.join() === '3,3,3,3', 'build (the house voice): words 6 f apart (half at 30 fps)', `${P.build60.join('/')} | ${P.build30.join('/')}`);
 result(near(P.focus30, 0.65, 1e-9) && near(P.focus60, Math.sqrt(0.65), 1e-9), 'typeFocus: the focus pulls in at x0.65 a frame at 30 fps, the same per second at 60', `${P.focus30.toFixed(4)} / ${P.focus60.toFixed(4)}`);
 result(near(P.wheel[0], 16) && near(P.wheel.at(-1), 6) && P.wheel.every((d, i) => i === 0 || d <= P.wheel[i - 1] + 1e-9), 'wheel: the rolls come faster and faster, 16 f gaps down to 6 f', P.wheel.map((d) => d.toFixed(1)).join('/'));
 const changes = P.cycle.map((v, f) => (f && v !== P.cycle[f - 1] ? f : -1)).filter((f) => f > 0);
@@ -225,7 +225,7 @@ result(F.f1.dy < 0 && F.f1.smear[1] < 0 && F.f1.opacity >= 0.4 && F.f1.opacity <
 const O = P.open;
 result(O.on.join() === '0,12,19' && near(O.f0.blur, 0.05) && near(O.f2.blur, 0.05 * 0.41, 1e-9) && O.f0.color === O.f6.color && O.f30.color !== O.f0.color && O.smear > 0,
   'open: a new word cuts on soft (falling to 0.41 a 30 fps frame) and in the accent, holds 6 f and cools; the re-centre trails', JSON.stringify({ blur2: O.f2.blur, smear: +O.smear.toFixed(4) }));
-result(P.build.f0.opacity === 1 && P.build.maxBlur === 0, 'build: words cut on solid (a tint walking to ink), never half-faded or soft');
+result(P.build.f0.opacity < 0.05 && P.build.f20 > 0.98 && P.build.maxBlur === 0, 'build: each word fades in over 20 f (a tint walking to ink), sharp all the way', JSON.stringify(P.build));
 result(P.developFeather <= 1.2, 'develop: the head reveals the line behind a crisp edge (1.1 em), not a long feather', String(P.developFeather));
 
 // 6. exits leave at speed

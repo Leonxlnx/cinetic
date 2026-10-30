@@ -120,13 +120,11 @@ export const SEED: number = AD.seed ?? seedOf(AD.name);
 export const DEAL: Dealt = dealApart(SEED, AD.devices);
 
 /**
- * The lines this ad's acts set in one headline system whatever the line deal plays (fx/TypeSystem): the opener as a
- * stack when it has four words or more (acts/Open StatementLine), the taglines at poster size on the accent when the
- * claim plays them (acts/Taglines AccentClaim), the label's swapped word (acts/Label). acts/stage.tsx deals the other
- * lines' devices round them (fx/TypeEmphasis dealLineEmphasis reads this for the film's seed).
+ * The lines this ad's acts set another way than the film's voice (fx/TypeSystem filmSystems reads this for the film's
+ * seed): the taglines at poster size on the accent, centred, when the claim plays them (acts/Taglines AccentClaim),
+ * the label's swapped word (acts/Label). The opener is one centred line like the rest.
  */
 export const HEADLINES_SET = declareHeadlines(SEED, {
-  what: AD.lines.what.split(' ').filter(Boolean).length >= 4 ? 'stack' : undefined,
   'tag.1': DEAL.taglines === 'claim' ? 'giant' : undefined,
   'tag.2': DEAL.taglines === 'claim' ? 'giant' : undefined,
   swap: 'swap',

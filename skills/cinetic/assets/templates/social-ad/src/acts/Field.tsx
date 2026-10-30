@@ -10,8 +10,8 @@ import { ACT, copy, CUE, f60x, H, HERO_END, W } from '../timeline';
 import { ActGround, capOf, carryOffset, Item, launchOffset, lineSize, lineWidth, NODES, PAGE, SEAM, useAbs } from './stage';
 
 // FIELD - the claim inside the product's own content. It enters carrying the brand's upward speed (the field rises
-// into place on a decaying curve, its tiles already there) and launches up together into the cut. The claim rises out of a mask
-// word by word (fx/TypePresets mask: no fade, no blur, the mask does the reveal); its last word stands on the accent
+// into place on a decaying curve, its tiles already there) and launches up together into the cut. The claim arrives word
+// by word on the film's voice (fx/TypePresets crisp: each word rising and sharpening); its last word stands on the accent
 // pill, which grows from 62 % to full round the word in 10 f (E.snapOut: a glide, never a one-frame pop) as the
 // word starts to rise. The field slot's device (src/deal.ts):
 //   wall   a wall of content tiles round a box kept clear for the claim (kit ContentWall: the ad's items take the near
@@ -47,7 +47,7 @@ const claimLayout = (cx: number) => {
   return { pillX: cx + total / 2 - pillW / 2 };
 };
 
-/** The claim at absolute frame F, centred on (cx, cy): the words before the last rising out of their mask, the last on its pill. */
+/** The claim at absolute frame F, centred on (cx, cy): the words before the last on the film's voice (the crisp entry), the last on its pill. */
 const Claim: React.FC<{ F: number; cx: number; cy: number }> = ({ F, cx, cy }) => {
   const c = copy('find');
   const words = c.text.trim().split(/\s+/);
@@ -61,18 +61,18 @@ const Claim: React.FC<{ F: number; cx: number; cy: number }> = ({ F, cx, cy }) =
   const pillW = wLast + 2 * padX;
   const total = wHead + space * 1.4 + pillW;
   const x0 = cx - total / 2;
-  const lastAt = c.in - 1 + f60x(8 * (words.length - 1));
+  const lastAt = c.in - 1 + f60x(7 * (words.length - 1)); // the crisp entry's word gap: the last word lands on its pill in turn
   const g = prog(F, lastAt, lastAt + f60x(PILL.grow60), E.snapOut);
   const show = prog(F, lastAt, lastAt + f60x(PILL.fade60), E.snapOut); // the pill fades up as it grows: at full opacity on its first frame it pops
   const pillH = capOf(size) + 2 * PILL.padY * size + size * 0.18;
   const colors = { ink: PAGE.text, accent: PAGE.accent, mute: PAGE.mute };
   return (
     <>
-      {head && <TypeLine spec={{ preset: 'mask', text: head, at: c.in - 1, colors, id: 'find' }} frame={F} size={size} x={x0 + wHead / 2} y={cy} />}
+      {head && <TypeLine spec={{ preset: 'crisp', text: head, at: c.in - 1, colors, id: 'find' }} frame={F} size={size} x={x0 + wHead / 2} y={cy} />}
       {F >= lastAt && (
         <div style={{ position: 'absolute', left: 0, top: 0, width: pillW, height: pillH, borderRadius: pillH / 2, background: PAGE.accent, transformOrigin: '50% 50%', transform: `translate3d(${(x0 + total - pillW).toFixed(2)}px, ${(cy - pillH / 2 + size * 0.02).toFixed(2)}px, 0) scale(${mix(PILL.from, 1, g).toFixed(4)})`, opacity: show }} />
       )}
-      <TypeLine spec={{ preset: 'mask', text: last, at: lastAt, colors: { ink: PAGE.accentInk, mute: PAGE.accentSoft ?? PAGE.accentInk, accent: PAGE.accentInk }, id: 'find' }} frame={F} size={size} x={x0 + total - pillW / 2} y={cy} />
+      <TypeLine spec={{ preset: 'crisp', text: last, at: lastAt, colors: { ink: PAGE.accentInk, mute: PAGE.accentSoft ?? PAGE.accentInk, accent: PAGE.accentInk }, id: 'find' }} frame={F} size={size} x={x0 + total - pillW / 2} y={cy} />
     </>
   );
 };
@@ -119,4 +119,4 @@ export const Field: React.FC = () => {
 };
 
 /** The claim's whole read (the last word's rise and the pill included), for the sound. */
-export const claimLanded = () => copy('find').in + f60x(HERO_END.mask(copy('find').text.trim().split(/\s+/).length));
+export const claimLanded = () => copy('find').in + f60x(HERO_END.crisp(copy('find').text.trim().split(/\s+/).length));

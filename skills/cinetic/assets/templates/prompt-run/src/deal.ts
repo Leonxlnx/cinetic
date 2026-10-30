@@ -122,8 +122,7 @@ export const DEAL_SEED = SEED ?? hashSeed(IDENTITY.name);
 export const DEAL: Deal = dealApart(DEAL_SEED, PIN);
 
 /**
- * The lines this demo's acts set in one headline system whatever the line deal plays (fx/TypeSystem): the result at
- * poster size on the accent when the claim plays it (acts/Done AccentClaim). acts/stage.tsx deals the other lines'
- * devices round it (fx/TypeEmphasis dealLineEmphasis reads this for the film's seed).
+ * The lines this demo's acts set another way than the film's voice (fx/TypeSystem filmSystems reads this for the film's
+ * seed): the result at poster size on the accent, centred, when the claim plays it (acts/Done AccentClaim).
  */
 export const HEADLINES_SET = declareHeadlines(DEAL_SEED, { done: DEAL.done === 'claim' ? 'giant' : undefined });

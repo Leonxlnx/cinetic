@@ -80,6 +80,9 @@ export const ComposerShot: React.FC<{ F: number }> = ({ F }) => {
   );
 };
 
+/** The highest a line's centre sits: the top of the middle band (37 % of the height), never the top band. */
+export const LINE_MID = 0.37;
+
 /** The punch-in's blur on both sides of the cut: a ramp up over the last 6 f, down over the first 10 f (60 fps). */
 export const punchBlur = (F: number) => (F < ACT.click.from ? 4 * prog(F, ACT.click.from - f60x(6), ACT.click.from, E.buildIn) : 3 * (1 - prog(F, ACT.click.from, ACT.click.from + f60x(10), E.glideOut)));
 
@@ -93,7 +96,7 @@ export const Ask: React.FC = () => {
   const b = boxAt(F);
   const size = lineSize(tell.text, 0.6);
   const sigma = punchBlur(F);
-  const lineY = b.cy - b.sh / 2 - 150 * U;
+  const lineY = Math.max(LINE_MID * H, b.cy - b.sh / 2 - 100 * U); // centred, in the middle band over the box
   if (DEAL.ask === 'stretch') {
     return (
       <AbsoluteFill style={{ background: PAGE.ground, overflow: 'hidden' }}>

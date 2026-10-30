@@ -4,13 +4,13 @@
 // mark, and placement helpers. Retell it in the dealt direction's world (out/DIRECTION.md): its ground and type replace
 // this floor; the product's own screens replace the kit parts (Composer, Bubble, Notice, DenseScreen) the acts use.
 import React from 'react';
-import { useCurrentFrame } from 'remotion';
+import { staticFile, useCurrentFrame } from 'remotion';
 import { C, FONT, SAFE, TYPE, U } from '../brand/tokens';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
 import { Defocus } from '../fx/Defocus';
-import { dealGrounds, type GroundKind, groundKey, type GroundSpec, LitGround } from '../fx/Grounds';
-import { dealLineEmphasis, keysOf } from '../fx/TypeEmphasis';
+import { dealGrounds, type GroundKind, groundKey, type GroundSpec, LitGround, placeGrounds } from '../fx/Grounds';
+import { checkFilmEmphasis, type EmphasisName, filmEmphasis, keysOf } from '../fx/TypeEmphasis';
 import { emphasisFitSize, type TypeLineSpec, TypeLine } from '../fx/TypePresets';
 import { AppIcon, hasLogo, kitTheme } from '../kit';
 import type { InlineRef } from '../kit/inline';
@@ -39,10 +39,18 @@ export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;
 export const FLOAT: FloatOpts = withLocks({ seed: DEAL_SEED }, [copy('tell')], { fps: FPS });
 
 /**
- * The grounds, one per act: clean lit pages (fx/Grounds: the base, or the key's subtle gradient at the house lift),
- * dealt from the film's seed over two page tones so no ground holds more than two consecutive shots and the light comes
- * from the film's one key. Nothing glows behind the words or the product.
+ * The grounds, one per act: lit pages dealt from the film's seed over two page tones so no ground holds more than two
+ * consecutive shots and the light comes from the film's one key. The product's shots (the pill, the run, the result)
+ * stand on a place (placeGrounds): the key's lit sweep of the page (fx/Grounds 'key') or a plate of the film's own
+ * picture (PLATE_SRC). Nothing glows behind the words or the product.
  */
+/**
+ * The film's own picture its product shots stand on (fx/Grounds 'plate': blurred 32 px, veiled toward the base, lit by
+ * the key): a photo or a still of the film's footage under public/ (assets.mjs get + grade), as a staticFile path.
+ * Unset, the product shots stand on the key's lit gradient (fx/Grounds 'key'). Never a flat grey field.
+ */
+export const PLATE_SRC: string | undefined = undefined;
+const plateSrc = () => (PLATE_SRC ? staticFile(PLATE_SRC) : undefined);
 const ORDER: ActName[] = ['pill', 'ask', 'click', 'run', 'done', 'end'];
 const KINDS: GroundKind[] = ['wash', 'flat'];
 export const GROUNDS: Record<ActName, GroundSpec> = (() => {
@@ -51,7 +59,8 @@ export const GROUNDS: Record<ActName, GroundSpec> = (() => {
   // into the ask's own box: the same place across that cut
   g[1] = { ...g[1], kind: 'tint' };
   g[2] = g[1];
-  return Object.fromEntries(g.map((x, i) => [ORDER[i], x])) as Record<ActName, GroundSpec>;
+  const placed = placeGrounds(g, ORDER.map((a) => a === 'pill' || a === 'run' || a === 'done'), { src: plateSrc(), bases: [PAGE.ground, mixColor(PAGE.ground, PAGE.well, 0.55)] });
+  return Object.fromEntries(placed.map((x, i) => [ORDER[i], x])) as Record<ActName, GroundSpec>;
 })();
 
 /**
@@ -75,12 +84,17 @@ export const lineSize = (text: string, share = 0.66) => Math.max(64 * U, Math.mi
 export const lineWidth = (text: string, size: number, weight: number = TYPE.line.weight) => measureTracked(text, size, weight, TYPE.line.track, FONT.text, { trailing: false });
 
 /** A script line's preset spec on the film's voice (DEAL.voice), leaving at speed on the voice's exit at its COPY out. */
+/** The film's one emphasis kind: accent (colour alone) by default; weight, scale, swell, outline or sweep when the direction asks. */
+export const EMPH_KIND: EmphasisName = 'accent';
+/** The film's signature, if it has one: a box, marker or underline on ONE line ({ id: 'done', device: 'under' }). */
+export const EMPH_SIGNATURE: { id: string; device: EmphasisName } | undefined = undefined;
 /**
- * Every script line sets its key words apart (fx/TypeEmphasis): one device per line dealt from the film's seed, never the
- * same twice in a row, on the words run.ts `keys` names (else the line's last word). The pill's two labels and the close
- * are placed by a measured width, so they take a device that holds it.
+ * The film's emphasis (fx/TypeEmphasis filmEmphasis): its one kind on at most 60 % of the script lines, the lines run.ts
+ * names `keys` for first (from the last line back), on those words; every other line plain. The pill's two labels and
+ * the close are placed by a measured width (a size kind plays as accent on them).
  */
-export const EMPH = dealLineEmphasis(Object.keys(RUN.lines), DEAL_SEED, { fixed: ['what', 'ask', 'close'] });
+export const EMPH = filmEmphasis(Object.keys(RUN.lines), { kind: EMPH_KIND, keyed: Object.keys(RUN.lines).filter((id) => (RUN.keys as Record<string, string | undefined>)[id]), fixed: ['what', 'ask', 'close'], signature: EMPH_SIGNATURE });
+export const EMPHASIS_CHECK = checkFilmEmphasis(EMPH);
 
 export const voiceSpec = (id: string, colors?: TypeLineSpec['colors']): TypeLineSpec => {
   const c = copy(id);

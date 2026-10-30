@@ -6,6 +6,7 @@ import { Notice, surfaceShadow } from '../kit';
 import { clamp, E, mix, prog } from '../lib/anim';
 import { ACT, copy, CUE, DEAL, f60x, H, W } from '../timeline';
 import { RUN } from '../run';
+import { LINE_MID } from './Ask';
 import { PANEL, RUN_LAYOUT, RunShot } from './Run';
 import { Ground, Line, lineSize, PAGE, SoftCut, useAbs } from './stage';
 
@@ -57,7 +58,7 @@ const Morph: React.FC<{ F: number }> = ({ F }) => {
       <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: box.w, height: box.h, borderRadius: Math.min(box.h * 0.28, 64 * U), background: PAGE.surface, boxShadow: surfaceShadow(PAGE, mix(4, 36, t), U), transform: `translate3d(${box.x.toFixed(2)}px, ${box.y.toFixed(2)}px, 0)` }}>
         <Result w={box.w} h={box.h} o={content} dy={(1 - content) * 14 * U} />
       </div>
-      <Line id="done" F={F} y={to.y - 130 * U} size={lineSize(c.text, 0.6)} />
+      <Line id="done" F={F} y={Math.max(LINE_MID * H, to.y - 130 * U)} size={lineSize(c.text, 0.6)} />
     </SoftCut>
     </div>
   );
@@ -74,9 +75,9 @@ const Claim: React.FC<{ F: number }> = ({ F }) => {
     <>
       {wipe < 1 && <RunShot F={F} />}
       <div style={{ position: 'absolute', inset: 0, clipPath: `inset(${edge.toFixed(2)}px 0 0 0)` }}>
-        <AccentClaim text={c.text} at={c.in} frame={F} ground={PAGE.accent} color={inkOn(PAGE.accent, PAGE.surface, PAGE.text)} maxLines={2} align="top" id="done" />
+        <AccentClaim text={c.text} at={c.in} frame={F} ground={PAGE.accent} color={inkOn(PAGE.accent, PAGE.surface, PAGE.text)} maxLines={2} id="done" />
         {card > 0 && (
-          <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: cw, height: ch, borderRadius: ch * 0.24, background: PAGE.surface, boxShadow: surfaceShadow(PAGE, 30, U), opacity: clamp(card * 2.5), willChange: 'transform', transform: `translate3d(${(0.03 * W).toFixed(2)}px, ${(H - 0.08 * H - ch + (1 - card) * 60 * U).toFixed(2)}px, 0)` }}>
+          <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: cw, height: ch, borderRadius: ch * 0.24, background: PAGE.surface, boxShadow: surfaceShadow(PAGE, 30, U), opacity: clamp(card * 2.5), willChange: 'transform', transform: `translate3d(${((W - cw) / 2).toFixed(2)}px, ${(H - 0.06 * H - ch + (1 - card) * 60 * U).toFixed(2)}px, 0)` }}>
             <Result w={cw} h={ch} />
           </div>
         )}

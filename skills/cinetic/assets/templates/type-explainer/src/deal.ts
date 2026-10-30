@@ -129,13 +129,11 @@ export const SEED: number = EXPLAIN.seed ?? seedOf(EXPLAIN.name);
 export const DEAL: Dealt = dealApart(SEED, EXPLAIN.devices);
 
 /**
- * The lines this film's acts set in one headline system whatever the line deal plays (fx/TypeSystem): what it is as a
- * stack (acts/Open StatementLine, four words or more, unless it is said word by word), the pain pushed into (acts/Pain
- * TypePush), the close at poster size on the accent (acts/End AccentClaim). acts/stage.tsx deals the other lines'
- * devices round them (fx/TypeEmphasis dealLineEmphasis reads this for the film's seed).
+ * The lines this film's acts set another way than the film's voice (fx/TypeSystem filmSystems reads this for the film's
+ * seed): the pain pushed into (acts/Pain TypePush), the close at poster size on the accent, centred (acts/End
+ * AccentClaim). What it is reads as one centred line like the rest.
  */
 export const HEADLINES_SET = declareHeadlines(SEED, {
-  what: DEAL.voice !== 'said' && EXPLAIN.lines.what.split(' ').filter(Boolean).length >= 4 ? 'stack' : undefined,
   pain: DEAL.pain === 'push' ? 'push' : undefined,
   close: DEAL.end === 'claim' ? 'giant' : undefined,
 });

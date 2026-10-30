@@ -7,7 +7,8 @@ import { AppIcon, ContentRing, ContentWall, face, GlyphTile, hasLogo, logoName, 
 import { type InlineRef, ObjectLine } from '../kit/inline';
 import { clamp, E, prog } from '../lib/anim';
 import { useFilm } from '../lib/film';
-import { ACT, CUE, DEAL, f60x, H, W } from '../timeline';
+import { ReadBack } from '../fx/ReadBack';
+import { ACT, copy, CUE, DEAL, f60x, H, W } from '../timeline';
 import { TEASER } from '../teaser';
 import { glass, INK, useAbs, World } from './stage';
 
@@ -115,6 +116,7 @@ export const Cards: React.FC = () => {
   const nodes = tileNodes();
   return (
     <AbsoluteFill style={{ background: INK.ground, overflow: 'hidden' }}>
+      <ReadBack F={F} at={copy('connect').in} out={copy('connect').out} blur={4} dim={0.35}>
       <World F={F} act="cards" moves={moves}>
         {/* the tiles keep the whole centre column clear (the line and the cards are read there): large, few, cropped by the frame edges */}
         {DEAL.cards === 'wall' && <ContentWall nodes={nodes} frame={F} start={CUE.cards} theme={INK} seed={`${TEASER.name}:wall`} tile={300 * U} cols={6} rows={3} clear={{ w: 1200 * U, h: 1400 * U }} />}
@@ -129,7 +131,9 @@ export const Cards: React.FC = () => {
           {DEAL.cards === 'stack' ? <Stack F={F} /> : <Landing F={F} scale={DEAL.cards === 'ring' ? 0.82 : 1} />}
         </div>
       </DirBlur>
-      <ObjectLine id="connect" text={TEASER.lines.connect} objects={slotObjects()} at={CUE.connect} frame={F} y={170 * U + y * 0.6} color={INK.text} ground="dark" theme={INK} />
+      </ReadBack>
+      {/* the line centred in the middle of the frame while the cards step back behind it (fx/ReadBack) */}
+      <ObjectLine id="connect" text={TEASER.lines.connect} objects={slotObjects()} at={CUE.connect} frame={F} y={H / 2 + y * 0.6} color={INK.text} ground="dark" theme={INK} />
     </AbsoluteFill>
   );
 };

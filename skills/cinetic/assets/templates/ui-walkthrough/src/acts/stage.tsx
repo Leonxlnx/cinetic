@@ -6,10 +6,10 @@
 // Retell it in the dealt direction's world (out/DIRECTION.md): its grounds, light and type replace this floor; the
 // product's own screens replace the kit parts the acts use.
 import React from 'react';
-import { useCurrentFrame } from 'remotion';
+import { staticFile, useCurrentFrame } from 'remotion';
 import { C, SAFE, TYPE, U } from '../brand/tokens';
 import { DEAL, DEAL_SEED } from '../deal';
-import { type GroundKind, groundKey, type GroundSpec, LitGround, seeded } from '../fx/Grounds';
+import { type GroundKind, groundKey, type GroundSpec, LitGround, placeGrounds, seeded } from '../fx/Grounds';
 import { LIT, type LitProps, litState } from '../fx/Lit';
 import { panelMatrix } from '../lib/light';
 import { kitTheme, type KitTheme } from '../kit';
@@ -19,8 +19,8 @@ import { type Shot } from '../lib/camera';
 import { holdDrift } from '../lib/continuity';
 import { type FloatOpts, withLocks } from '../lib/drift';
 import { dipAmp, type StageSpec } from '../fx/Float';
+import { ReadBack as PictureBack } from '../fx/ReadBack';
 import { carry, launch } from '../lib/handoff';
-import { TYPE_LOOK } from '../lib/look';
 import { fitSize } from '../lib/measure';
 import { LINES } from '../deal';
 import { ACT, ACT_ORDER, type ActName, copy, f60x, FPS, H, moveOf, TONE, W } from '../timeline';
@@ -43,8 +43,18 @@ export const themeOf = (a: ActName): KitTheme => (toneOf(a) === 'light' ? LIGHT 
  * on one of two bases of the act's stage, so the place changes across the cut and no ground (kind and base) holds more
  * than two consecutive acts. The feed and the insight share theirs: one place across the morph. No plates, no pools.
  * One act (the first of proof, pick or field on paper; on a dark stage the proof) stands on the tilted tint instead:
- * the accent's colour gathering along one edge of the page, the one colour ground of the film.
+ * the accent's colour gathering along one edge of the page, the one colour ground of the film. Every product shot
+ * stands on a place (placeGrounds): the key's lit gradient (fx/Grounds 'key') or a plate of the film's own picture
+ * (PLATE_SRC); on a dark stage every act does, so no shot sits on a flat charcoal field. The claim on paper keeps its
+ * clean page.
  */
+/**
+ * The film's own picture its product shots stand on (fx/Grounds 'plate': blurred 32 px, veiled toward the base, lit by
+ * the key): a photo or a still of the film's footage under public/ (assets.mjs get + grade), as a staticFile path.
+ * Unset, the product shots stand on the key's lit gradient (fx/Grounds 'key'). Never a flat grey field.
+ */
+export const PLATE_SRC: string | undefined = undefined;
+const plateSrc = () => (PLATE_SRC ? staticFile(PLATE_SRC) : undefined);
 export const GROUNDS: Record<ActName, GroundSpec> = (() => {
   const rnd = seeded((DEAL_SEED % 1e6) * 7919 + 17);
   const bases = { light: [LIGHT.ground, mixColor(LIGHT.ground, C.mist, 0.7)], dark: [DARK.ground, mixColor(DARK.ground, C.ink, 0.32)] };
@@ -71,6 +81,10 @@ export const GROUNDS: Record<ActName, GroundSpec> = (() => {
   // along one tilted edge)
   const lit = (['proof', 'pick', 'field'] as ActName[]).find((a) => toneOf(a) === 'light') ?? 'proof';
   out[lit] = { kind: 'tint', base: out[lit].base, seed: out[lit].seed, drift: 12 };
+  const ui = ACT_ORDER.map((a) => toneOf(a) === 'dark' || a !== 'claim');
+  const placed = placeGrounds(ACT_ORDER.map((a) => out[a]), ui, { src: plateSrc() });
+  ACT_ORDER.forEach((a, i) => (out[a] = placed[i]));
+  out.insight = out.feed;
   return out;
 })();
 
@@ -101,17 +115,22 @@ export const lineSize = (text: string, role: 'line' | 'display' = 'line', share 
   Math.min(TYPE[role].size * U, fitSize(text, (W - 2 * SAFE.x) * share, TYPE[role].size * U, TYPE[role].weight, TYPE[role].track));
 
 /**
- * A line of the script (a COPY entry) on one line, centred on the frame at `top` (px, the line's top), on the move and
- * the exit the film dealt it (src/deal.ts LINES, acts/type.tsx HeroLine): it leaves at its `out` frame at speed. A line
- * set over the product (its top in the frame's top 15 %) holds the calm line's size whatever the family, so it clears
- * the window under it; its emphasis still sets its key words apart.
+ * A line of the script (a COPY entry) on one line, centred on the frame at (x, y) (default the frame's centre: the
+ * middle band, never the top or the bottom), on the film's voice (src/deal.ts LINES, acts/type.tsx HeroLine): it leaves
+ * at its `out` frame at speed. Over the product, wrap the product in <ReadBack> so the line reads on a calm ground.
  */
-export const ScriptLine: React.FC<{ id: string; F: number; top: number; color: string; role?: 'line' | 'display'; size?: number; x?: number; accent?: string; mute?: string }> = ({ id, F, top, color, role = 'line', size, x = W / 2, accent, mute }) => {
+export const ScriptLine: React.FC<{ id: string; F: number; y?: number; color: string; role?: 'line' | 'display'; size?: number; x?: number; accent?: string; mute?: string }> = ({ id, F, y = H / 2, color, role = 'line', size, x = W / 2, accent, mute }) => {
   const c = copy(id);
-  const over = top < H * 0.15 ? TYPE_LOOK.calm.line.size * U : Infinity;
-  const px = size ?? Math.min(over, lineSize(c.text, role));
-  return <HeroLine id={id} text={c.text} at={c.in} frame={F} move={moveOf(id)} out={c.out} exit={LINES.exit[id]} x={x} y={top + (px * TYPE[role].lead) / 2} role={role} size={px} color={color} accent={accent ?? C.accent} mute={mute} />;
+  const px = size ?? lineSize(c.text, role);
+  return <HeroLine id={id} text={c.text} at={c.in} frame={F} move={moveOf(id)} out={c.out} exit={LINES.exit[id]} x={x} y={y} role={role} size={px} color={color} accent={accent ?? C.accent} mute={mute} />;
 };
+
+/** The product under a centred line (fx/ReadBack): softened, dimmed and a step back while line `id` is read, sharp again as it leaves. */
+export const ReadBack: React.FC<{ id: string; F: number; children: React.ReactNode }> = ({ id, F, children }) => (
+  <PictureBack F={F} at={copy(id).in} out={copy(id).out}>
+    {children}
+  </PictureBack>
+);
 
 /** A layer scaled by `k` about the screen point (ox, oy) and moved by (dx, dy): an act's camera on its world. */
 export const Cam: React.FC<{ k?: number; ox?: number; oy?: number; dx?: number; dy?: number; children: React.ReactNode }> = ({ k = 1, ox = W / 2, oy = H / 2, dx = 0, dy = 0, children }) => (

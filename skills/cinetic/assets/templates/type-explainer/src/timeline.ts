@@ -104,12 +104,12 @@ export const ENTRY = 26;
 export const READ_AT = 16;
 /**
  * When a line set with a confident preset (fx/TypePresets TypeLine, its house numbers in TYPE_PRESETS) is whole,
- * in 60 fps frames from its first frame: mask (words 8 f apart, each head 8 f, the last 2.5x slower), build (words
- * 14, 10, 10 ... f apart with a 28 f breath before the last, each ink 18 f after it cuts on), land (the whole line in 34 f).
+ * in 60 fps frames from its first frame: mask (words 8 f apart, each head 8 f, the last 2.5x slower), build (the house
+ * voice: words 6 f apart, each fading in over 20 f), land (the whole line in 34 f).
  */
 export const HERO_END = {
   mask: (n: number) => 8 * (n - 1) + (n > 1 ? 20 : 8),
-  build: (n: number) => (n < 2 ? 0 : n === 2 ? 14 : 14 + 10 * (n - 3) + 28) + 18,
+  build: (n: number) => 6 * Math.max(0, n - 1) + 20,
   land: (_n: number) => 34,
 } as const;
 
@@ -232,7 +232,7 @@ const build = (plan: Plan) => {
   } else {
     C.name = at('end', 0.5);
     C.close = onGrid(Math.min(cut('end') - TAIL - f60(60), onGridUp(C.name + f60(READ_AT) + hold(1)))); // once the name is read
-    C.lockup = onGridUp(C.close + f60(HERO_END.mask(w(L.close)))); // the close is whole
+    C.lockup = onGridUp(C.close + f60(READ_AT + 7 * (w(L.close) - 1))); // the close is whole (the crisp entry)
   }
   // the end holds about 1.5 s before the tail: a lockup that would come earlier moves later, its lines with it (at most 48 f)
   const first = Math.min(C.close, C.name); // and the end's first line still comes within 46 f of its cut
@@ -251,7 +251,7 @@ const build = (plan: Plan) => {
     halves('system', L.system, C.system, C.system2, C.floatOff),
     ...EXPLAIN.modules.slice(0, 3).map((m, i): Copy => ({ id: `label${i + 1}`, text: m.label, kind: 'ui', in: LABELS[i], resolved: LABELS[i] + f60(16), out: i < 2 ? LABELS[i + 1] : C.gather })),
     { id: 'wordmark', text: EXPLAIN.name, kind: 'name', in: C.name, resolved: C.name + f60(READ_AT), out: TOTAL },
-    { id: 'close', text: L.close, in: C.close, resolved: C.close + f60(DEAL.end === 'claim' ? READ_AT + 7 * (w(L.close) - 1) : HERO_END.mask(w(L.close))), out: TOTAL },
+    { id: 'close', text: L.close, in: C.close, resolved: C.close + f60(READ_AT + 7 * (w(L.close) - 1)), out: TOTAL }, // the film's voice: the crisp entry, as the halves are said
   ];
   // A cue never shortens a read: a line whose read runs past its exit cue makes its act late.
   const late: ActName[] = [];

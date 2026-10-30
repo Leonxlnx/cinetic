@@ -8,7 +8,8 @@ import { glideValue } from '../lib/continuity';
 import { type CamMove, type Shot, swing3d } from '../lib/camera';
 import { useFilm } from '../lib/film';
 import { measureTracked } from '../lib/measure';
-import { ACT, CUE, DEAL, f60, f60x, H, W } from '../timeline';
+import { ReadBack } from '../fx/ReadBack';
+import { ACT, copy, CUE, DEAL, f60, f60x, H, W } from '../timeline';
 import { TEASER } from '../teaser';
 import { BASE, Caption, glass, GROUNDS, INK, useAbs, World } from './stage';
 
@@ -96,6 +97,7 @@ export const Window: React.FC = () => {
   const hole = `radial-gradient(circle at 50% 50%, transparent ${r.toFixed(1)}px, black ${(r + 1.5).toFixed(1)}px)`;
   return (
     <AbsoluteFill style={{ background: INK.ground, overflow: 'hidden' }}>
+      <ReadBack F={F} at={copy('build').in} out={copy('build').out} blur={4} dim={0.35}>
       <World F={F} act="window" base={cam.base} moves={cam.moves} depth>
         <Lit frame={F} x={W / 2} y={H / 2 + WIN.y * U} w={w} h={h} r={28 * U} tilt={WIN.tilt} ground={GROUNDS.window.base} id="window">
           <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', ...glass(28 * U) }}>
@@ -111,7 +113,9 @@ export const Window: React.FC = () => {
           </div>
         </Lit>
       </World>
-      <Caption id="build" F={F} y={H - 110 * U} />
+      </ReadBack>
+      {/* the line centred in the middle of the frame while the window steps back behind it (fx/ReadBack) */}
+      <Caption id="build" F={F} y={H / 2} />
       {iris < 1 && <AbsoluteFill style={{ background: INK.accent, maskImage: hole, WebkitMaskImage: hole }} />}
     </AbsoluteFill>
   );

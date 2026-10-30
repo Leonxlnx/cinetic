@@ -15,7 +15,7 @@ import { maskProgress } from './MaskRise';
 import { decodeState, mosaicCells } from './Scramble';
 import { slicesState } from './Slices';
 import { erodeRiseState, fontCycleState, type FontState } from './TypeFx';
-import { barBottom, EMPHASIS_DEFAULT, EMPHASIS_DOES, type EmphasisResolved, type EmphasisSpec, emphasisAt, emphasisProgress, emphasisRun, holdTracking, parseKeyed, resolveEmphasis, skipInk } from './TypeEmphasis';
+import { barBottom, EMPHASIS_DOES, type EmphasisResolved, type EmphasisSpec, emphasisAt, emphasisProgress, emphasisRun, holdTracking, parseKeyed, resolveEmphasis, skipInk } from './TypeEmphasis';
 import { typeFillState } from './TypeFill';
 import { wordFrames, type WordsSpec, wordState } from './Words';
 
@@ -67,9 +67,10 @@ import { wordFrames, type WordsSpec, wordState } from './Words';
  *   open       each word cuts on soft and in the accent, touching the last (a 0.05 em defocus that falls to 0.41 of
  *              itself a frame at 30 fps), then the space opens in 7 f and the line re-centres on E.jump with a
  *              motion trail on its fast frames; the accent holds 6 f and cools to ink over 13 f; 12 / 7 / 12 f apart
- *   build      the line builds word by word, 14 / 10 / 10 f apart and a 28 f breath before the last word; each
- *              word cuts on solid in a tint of the accent, walks to the accent (45 % of 18 f) and darkens to the
- *              ink while the line re-centres on E.jump over 22 f
+ *   build      the canonical word build, the house text voice: the line builds word by word, 6 f apart, each word
+ *              fading in over 20 f (E.out) in a tint of the accent that walks to the accent (45 % of 18 f) and darkens
+ *              to the ink, while the line re-centres on an expo settle (E.expo) over 15 f, so it stays centred as it
+ *              grows. A film reads most of its lines on one voice (this, or one other preset)
  *
  * The devices:
  *   develop   colour fronts run through the line: the tint reveals it behind a crisp 1.1 em edge (22 f), then the
@@ -127,9 +128,9 @@ import { wordFrames, type WordsSpec, wordState } from './Words';
  * scale on the baseline; swell grows in after the landing while the line re-flows round it), marker and box (a bar or
  * the inverted box wiping on behind them, the words knocked out to the ground), under (a rule drawn under them),
  * outline (an outline that fills once landed) and sweep (the accent crossing them and staying). The key words are
- * written between asterisks in `text` ("Brook is a *water bottle*.") or given as `keys`; <TypeLine> gives a hero line
- * (a HERO_PRESETS move in the line, display or hero role) that names no device the `weight` device, and `emph: false`
- * turns it off (a body line, a piece of a line set in parts). The colour follows the preset's own path and lands in
+ * written between asterisks in `text` ("Brook is a *water bottle*.") or given as `keys`. A line takes the device its
+ * film gives it (fx/TypeEmphasis filmEmphasis: one kind, on at most 60 % of the lines) and none otherwise: <TypeLine>
+ * adds no house device. The colour follows the preset's own path and lands in
  * the device's colour (the preset run again with that colour as its ink). `align` sets the line flush left or right
  * of its anchor (a stack, an editorial layout): the re-centring moves then hold the aligned edge.
  *
@@ -154,7 +155,7 @@ export const TYPE_PRESETS = {
   glide: { step60: 3.5, resolve60: 8, from: 0.2, blurEm: 0.07, last: 2.5, gapEm: 0.3, slideEm: 2.4, slide60: 96, slideK: 3.3 },
   fall: { gap60: 9, drop60: 12, dropEm: 0.28, from: 0.4, smear: 0.12, linger60: 30 },
   develop: { head60: 22, fronts60: [40, 64, 130], stall: 0.85, feather: 1.1, edge: 0.45 },
-  build: { gaps60: [14, 10, 10], lastGap60: 28, ink60: 18, tintShare: 0.45, recentre60: 22 },
+  build: { gaps60: [6], lastGap60: 6, fade60: 20, ink60: 18, tintShare: 0.45, recentre60: 15 },
   typeFocus: { cps: 30, blurEm: 0.12, decay30: 0.65, focusAt: 0.25, accent60: 10, push: 0.04, push60: 150, blink60: 32 },
   arc: { stagger60: 2, dur60: 10, from: 0.45, angle: 25, blurEm: 0.06 },
   assemble: { delay60: 20, land60: 16, dyEm: [0.45, 1.3] as [number, number], dxEm: 0.12, push: 0.06, push60: 150 },
@@ -237,7 +238,7 @@ export type TypeLineSpec = {
   lead?: number; // land: how many words land oversized together (default all); the others append after the landing
   scaleFrom?: number; // land: the scale the line cuts in at (default the house x1.7); fly: the scale each word starts at (default x5)
   keys?: [number, number]; // the key words (first and last word index; *marks* in `text` set them): the emphasis lands on them, the first is the keyword
-  emph?: EmphasisSpec; // the emphasis device on the key words (fx/TypeEmphasis); false: none. <TypeLine> gives a hero line 'weight' by default
+  emph?: EmphasisSpec; // the emphasis device on the key words (fx/TypeEmphasis filmEmphasis); false or unset: none
   align?: 'centre' | 'left' | 'right'; // the line's anchor: its centre (default) or its left or right edge; re-centring moves hold that edge
   seed?: string | number;
   id?: string;
@@ -268,18 +269,15 @@ export const typeLineSpec = (s: TypeLineSpec): TypeLineSpec => {
   return { ...s, text: k.text, keys, key: s.key ?? keys?.[0] };
 };
 
-/** The roles a hero line is set in: a line in one of them on a confident preset takes the default emphasis. */
+/** The roles a hero line is set in. */
 export const EMPHASIS_ROLES = ['line', 'display', 'hero'] as const;
 
 /**
- * The emphasis a line takes in <TypeLine>: its own `emph`, else the house default (`weight`) when it is a hero line (a
- * HERO_PRESETS move set in the line, display or hero role), else none. Pure.
+ * The emphasis a line takes in <TypeLine>: its own `emph` (the one its film gave it: fx/TypeEmphasis filmEmphasis),
+ * else none. No house device is added: a film's emphasis is one kind on at most 60 % of its lines, never one on every
+ * line. Pure.
  */
-export const defaultEmphasis = (s: TypeLineSpec, role: string = 'line'): TypeLineSpec => {
-  if (s.emph !== undefined) return s;
-  if (!HERO_PRESETS.includes(s.preset) || !(EMPHASIS_ROLES as readonly string[]).includes(role)) return s;
-  return { ...s, emph: EMPHASIS_DEFAULT };
-};
+export const defaultEmphasis = (s: TypeLineSpec, _role: string = 'line'): TypeLineSpec => s;
 
 /** The resolved emphasis of a (normalised) line spec, or null. Pure. */
 export const lineEmphasis = (s: TypeLineSpec): EmphasisResolved | null => {
@@ -491,7 +489,7 @@ const wordWidth = (c: Ctx, w: number) => right(c.m, c.W.ends[w]) - c.m.xs[c.W.st
 
 // ------------------------------------------------------------------------------------------------ presets
 
-/** Onsets of `build`: 14 / 10 / 10 ... f apart, a 28 f breath before the last word (3+ words). */
+/** Onsets of `build`: 6 f apart (gaps60, lastGap60 before the last word of 3+). */
 export const buildOnsets = (s: TypeLineSpec, film?: Partial<FilmCtx>): number[] => {
   const B = TYPE_PRESETS.build;
   const fps = fpsOf(film);
@@ -593,11 +591,11 @@ const build = (c: Ctx): TypeLineState => {
     const w = c.W.wordOf[i];
     if (w < 0) return;
     const o = on[w];
-    g.opacity = c.f >= o ? 1 : 0; // cut on solid: the colour marks the new word, never a half-faded one
+    g.opacity = prog(c.f, o, o + c.T(B.fade60), E.out); // each word fades in over 20 f, its tint walking to the ink
     const k = clamp((c.f - o) / c.T(B.ink60));
     g.color = buildColor(c, k, keepKey && w === c.key ? c.col.accent : c.col.ink);
   });
-  st.x = recentre(c, on, c.T(B.recentre60), E.jump);
+  st.x = recentre(c, on, c.T(B.recentre60), E.expo);
   return st;
 };
 
@@ -1351,7 +1349,7 @@ export const typeLineFrames = (spec: TypeLineSpec, m: LineMetrics, film?: Partia
     case 'build': {
       const on = buildOnsets(s, film);
       ticks = on;
-      resolved = on[on.length - 1] + T(P.build.ink60);
+      resolved = on[on.length - 1] + T(Math.max(P.build.ink60, P.build.fade60));
       break;
     }
     case 'typeFocus': {
@@ -1909,7 +1907,7 @@ export const TypeLine: React.FC<TypeLineProps> = (p) => {
   const family = p.family ?? FONT.text;
   const track = p.track ?? role.track;
   const size = p.size ?? (role.size * Math.min(film.width, film.height)) / 1080;
-  // the line as drawn: its *marks* read, and a hero line that names no emphasis given the house default
+  // the line as drawn: its *marks* read, its emphasis the one its film gave it (none by default)
   const spec = useMemo(() => defaultEmphasis(typeLineSpec(p.spec), roleName), [p.spec, roleName]);
   const m = useMemo(() => p.metrics ?? measureLine(spec, size, weight, track, family, p.vary), [p.metrics, spec, size, weight, track, family, p.vary]);
   const st = typeLineState(p.frame, spec, m, film);

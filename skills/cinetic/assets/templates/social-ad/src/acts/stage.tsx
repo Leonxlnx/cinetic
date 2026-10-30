@@ -7,12 +7,12 @@
 // marks replace the kit's.
 import React from 'react';
 import { Img, staticFile, useCurrentFrame } from 'remotion';
-import { C, FONT, SAFE, TYPE, TYPE_FAMILY, U } from '../brand/tokens';
+import { C, FONT, SAFE, TYPE, U } from '../brand/tokens';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
 import { dipAmp, type StageSpec } from '../fx/Float';
 import { bakePlate } from '../fx/Gradients';
-import { dealGrounds, type GroundSpec, LitGround } from '../fx/Grounds';
+import { dealGrounds, type GroundSpec, LitGround, placeGrounds } from '../fx/Grounds';
 import { shadowTone } from '../fx/KeyLight';
 import { type Pic, PhotoCard } from '../fx/Pictures';
 import { ContentTile, kitTheme, logoName, sampleWorld, type TileNode, worldNodes } from '../kit';
@@ -20,8 +20,7 @@ import { clamp, E, prog } from '../lib/anim';
 import { carry, launch } from '../lib/handoff';
 import { mixColor } from '../lib/color';
 import { FILM_LIGHT, keyDir } from '../lib/light';
-import { dealLineEmphasis, keysOf } from '../fx/TypeEmphasis';
-import { EMPHASIS_LOOK } from '../lib/look';
+import { checkFilmEmphasis, type EmphasisName, filmEmphasis, keysOf } from '../fx/TypeEmphasis';
 import { fitSize, measureTracked } from '../lib/measure';
 import { AD } from '../ad';
 import { DEAL, SEED } from '../deal';
@@ -85,17 +84,21 @@ export const lineStyle = (size: number, color: string = PAGE.text): React.CSSPro
   color,
 });
 export const lineWidth = (text: string, size: number) => measureTracked(text, size, TYPE.line.weight, TYPE.line.track, FONT.text, { trailing: false });
+/** The film's one emphasis kind: accent (colour alone) by default; weight, scale, swell, outline or sweep when the direction asks. */
+export const EMPH_KIND: EmphasisName = 'accent';
 /**
- * Every line sets its key words apart (fx/TypeEmphasis): one device per line dealt from the film's seed, never the same
- * twice in a row, on the words ad.ts `keys` names (else the line's last word). The claim's last word already stands on
- * the accent pill (its own marker: its pieces take none) and the label's last word swaps in a chip measured round it,
- * as the close sits under the lockup: those take a device that holds the width.
+ * The film's emphasis (fx/TypeEmphasis filmEmphasis): its one kind on at most 60 % of the lines, the lines ad.ts names
+ * `keys` for first (from the last line back), on those words; every other line plain. The claim's last word stands on
+ * the accent pill: that pill is the film's one signature (its pieces take no device), so no other line takes a box,
+ * marker or underline. The label's last word swaps in a chip measured round it and the close sits under the lockup:
+ * placed by a measured width (a size kind plays as accent on them).
  */
-export const EMPH = dealLineEmphasis(['what', 'tag.1', 'tag.2', 'swap', 'close'], SEED, { fixed: ['swap', 'close'] });
+const EMPH_IDS = ['what', 'save', 'find', 'tag.1', 'tag.2', 'swap', 'close'];
+export const EMPH = filmEmphasis(EMPH_IDS, { kind: EMPH_KIND, keyed: EMPH_IDS.filter((id) => (AD.keys as Record<string, string | undefined>)[id]), fixed: ['swap', 'close'], signature: { id: 'find', device: 'marker' } });
+/** The pill is drawn by the claim itself (acts/Field): its TypeLine pieces take no device. */
+export const EMPHASIS_CHECK = checkFilmEmphasis(EMPH);
 /** A line's key words from ad.ts `keys`, found in its text. */
 export const keysFor = (id: string, text: string) => keysOf(text, (AD.keys as Record<string, string | undefined>)[id]) ?? undefined;
-/** The emphasis weight of the family, for a word set as a plain span (the stack's second word). */
-export const EMPH_WEIGHT = EMPHASIS_LOOK.weight[TYPE_FAMILY];
 
 /** The cap height of the line at a size (Inter and its kin: about 0.727 em). */
 export const capOf = (size: number) => size * 0.727;
@@ -108,17 +111,26 @@ export const MarkAt: React.FC<{ x: number; y: number; size: number; s?: number; 
 );
 
 /**
- * The grounds, one per act, dealt from the film's seed (fx/Grounds dealGrounds, the clean kinds): two paper tones,
- * each a flat field or a very subtle wash lit from the film's one key, never the same ground on more than two
- * consecutive shots; the taglines' panel stands on the slate. No beams, no pools, no haze.
+ * The grounds, one per act, dealt from the film's seed (fx/Grounds dealGrounds): two paper tones, each a flat field or
+ * a very subtle wash lit from the film's one key, never the same ground on more than two consecutive shots. The
+ * product's shots (the field of its content, the label over it) stand on a place (placeGrounds: the key's lit sweep of
+ * the page, or a plate of the film's own picture, PLATE_SRC); the taglines' panel stands on the slate's key, the far
+ * side falling deep. No beams, no pools, no haze.
  */
+/**
+ * The film's own picture its product shots stand on (fx/Grounds 'plate': blurred 32 px, veiled toward the base, lit by
+ * the key): a photo or a still of the film's footage under public/ (assets.mjs get + grade), as a staticFile path.
+ * Unset, the product shots stand on the key's lit gradient (fx/Grounds 'key'). Never a flat grey field.
+ */
+export const PLATE_SRC: string | undefined = undefined;
+const plateSrc = () => (PLATE_SRC ? staticFile(PLATE_SRC) : undefined);
 const PAPERS = [PAGE.ground, mixColor(PAGE.ground, PAGE.well, 0.6)];
 export const GROUNDS: Record<ActName, GroundSpec> = (() => {
   const acts: ActName[] = ['open', 'brand', 'field', 'label', 'taglines', 'end'];
-  const list = dealGrounds(acts.length, { bases: PAPERS, seed: SEED, lift: 0.06, hold: 0.3 });
+  const list = placeGrounds(dealGrounds(acts.length, { bases: PAPERS, seed: SEED, lift: 0.06, hold: 0.3 }), acts.map((a) => a === 'field' || a === 'label'), { src: plateSrc(), bases: PAPERS });
   return Object.fromEntries(acts.map((a, i) => [a, list[i]])) as Record<ActName, GroundSpec>;
 })();
-export const SLATE: GroundSpec = { kind: 'wash', base: SHOT.ground, light: C.white, lift: 0.08, seed: SEED % 991 };
+export const SLATE: GroundSpec = { kind: PLATE_SRC ? 'plate' : 'key', src: plateSrc(), base: SHOT.ground, light: C.white, seed: SEED % 991 };
 
 /**
  * cinetic:light the page sits by a window (the film's one key, lib/light FILM_LIGHT), and once per act a cloud

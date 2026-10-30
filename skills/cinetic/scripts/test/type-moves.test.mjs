@@ -6,8 +6,8 @@
  *      60 fps (26 at 30), in log space; the first reading point holds still on the first frame, the last lands on its
  *      target; the layout audit reads it as moving in flight and as a declared bleed once landed; it settles (speed
  *      under 10 % of its peak) before its last frame; a creep keeps the hold alive.
- *   2. Claim on accent (src/fx/TypeClaim.tsx): a cap height of 16.5 % of the frame height (16 % at the least), flush
- *      left at 3 %, tracking -0.04 em, weight 600-700, broken into lines that fit, the size coming down to fit a long
+ *   2. Claim on accent (src/fx/TypeClaim.tsx): a cap height of 16.5 % of the frame height (16 % at the least), each
+ *      line centred (flush left at 3 % when asked), tracking -0.04 em, weight 600-700, broken into lines that fit, the size coming down to fit a long
  *      claim but never under 16 %; paper or ink on the accent by contrast.
  *   3. Objects inside a line (src/kit/inline.tsx): a slot rolls to the next object every 30 f in 6 f, re-flowing its
  *      width with `each` or holding the widest with `max`; a chip keeps its label at TEXT_MIN; an object line stands its
@@ -60,9 +60,11 @@ const lnk = Array.from({ length: 60 }, (_, k) => Math.log(s(100 + k).k));
 const steps = lnk.slice(1).map((v, i) => v - lnk[i]);
 const m = monoMetrics('Notes in thirty seconds', 100);
 const claim = K.claimLayout({ text: 'Notes in thirty seconds.' }, film(60));
+const claimLeft = K.claimLayout({ text: 'Notes in thirty seconds.', justify: 'left' }, film(60));
 // 0.52 em a character: two 7-letter words miss the line at 16.5 % (Inter's display cap, 0.727 em) and fit it at 16 %
 const half = (t: string, size: number, _w: number, tr: number) => [...t].length * size * (0.52 + tr);
-const long = K.claimLayout({ text: 'aaaaaaa bbbbbbb ccccccc ddddddd eeeeeee fffffff' }, film(60), half);
+const long = K.claimLayout({ text: 'aaaaaaa bbbbbbb ccccccc ddddddd eeeeeee fffffff', justify: 'left' }, film(60), half);
+const longC = K.claimLayout({ text: 'aaaaaaa bbbbbbb ccccccc ddddddd eeeeeee fffffff' }, film(60), half);
 const heavy = K.claimLayout({ text: 'Ship it', weight: 900 }, film(60));
 const W = [100, 300, 200];
 const slot = (f: number, fit: any) => I.inlineSlotState(f, W, { start: 0, fps: 60, fit });
@@ -76,7 +78,7 @@ console.log(JSON.stringify({
     word: P.wordPoint('Notes in thirty seconds', m, 960, 540, 2), last: P.wordPoint('Notes in thirty seconds', m, 960, 540),
     noBleed: s(160, 60, { ...push, bleed: false }).audit ?? null,
   },
-  claim, long, heavy, capEm: K.CLAIM.capEm, ink: [K.inkOn('#08965A'), K.inkOn('#1F3FBF'), K.inkOn('#E8D24A')],
+  claim, claimLeft, long, longC, heavy, capEm: K.CLAIM.capEm, ink: [K.inkOn('#08965A'), K.inkOn('#1F3FBF'), K.inkOn('#E8D24A')],
   creep: Array.from({ length: 601 }, (_, f) => K.claimCreep(f, 0, 4, film(60))),
   claimDecl: [K.declares({ at: 300, hold: 240 }), K.declares({ at: 300, hold: 240, flood: false })],
   slot: { f0: slot(0, 'each'), f48: slot(48, 'each'), f56: slot(56, 'each'), f64: slot(64, 'each'), max56: slot(56, 'max'), f120: slot(120, 'each'), roll30: Array.from({ length: 9 }, (_, i) => slot(48 + 2 * i, 'each').q) },
@@ -111,9 +113,12 @@ result(near(p.word.x, 960 - 1288 / 2 + (504 + 504 + 336) / 2, 1e-6) && near(p.la
 // 2. claim on accent
 const c = D.claim;
 const capOf = (L) => (L.size * D.capEm) / 1080; // the face's cap in em, as TypeClaim measures it
-result(near(capOf(c), 0.165, 1e-9) && c.left === 58 && c.track === -0.04 && c.weight === 600 && c.fits, 'claim: cap height 16.5 % of the frame height, flush left at 3 % (58 px), -0.04 em, weight 600', JSON.stringify({ size: c.size, left: c.left }));
-result(c.lines.length >= 2 && c.lines.length <= 3 && c.lines.every((l) => l.x === 58 && l.x + l.width <= 1920 - 96) && near(c.lines[1].top - c.lines[0].top, c.size * 0.98, 1e-6) && Math.abs((c.lines[0].top + c.lines[c.lines.length - 1].top + c.size) / 2 - 540) < 1e-6, 'claim: broken into lines that fit, flush left, lead 0.98, centred on the frame height', c.lines.map((l) => l.text).join(' / '));
+result(near(capOf(c), 0.165, 1e-9) && c.track === -0.04 && c.weight === 600 && c.fits, 'claim: cap height 16.5 % of the frame height, -0.04 em, weight 600', JSON.stringify({ size: c.size }));
+result(c.lines.length >= 2 && c.lines.length <= 3 && c.lines.every((l) => near(l.x + l.width / 2, 960, 1e-6) && l.x >= 96 && l.x + l.width <= 1920 - 96) && near(c.lines[1].top - c.lines[0].top, c.size * 0.98, 1e-6) && Math.abs((c.lines[0].top + c.lines[c.lines.length - 1].top + c.size) / 2 - 540) < 1e-6, 'claim: broken into lines that fit, each centred on the frame, lead 0.98, the block centred on the frame height', c.lines.map((l) => l.text).join(' / '));
+const cl = D.claimLeft;
+result(cl.left === 58 && cl.lines.every((l) => l.x === 58 && l.x + l.width <= 1920 - 96), "claim: justify 'left' sets it flush left at 3 % (58 px)", JSON.stringify(cl.lines.map((l) => l.x)));
 result(D.long.cap >= 0.16 - 1e-9 && D.long.cap < 0.165 && D.long.lines.length === 3 && D.long.fits, 'claim: a long claim comes down toward 16 % to hold in three lines, never under', JSON.stringify({ cap: D.long.cap, lines: D.long.lines.length, fits: D.long.fits }));
+result(D.longC.cap >= 0.16 - 1e-9 && D.longC.lines.every((l) => l.x >= 96 - 1e-6 && l.x + l.width <= 1920 - 96 + 1e-6), 'claim: centred, a long claim keeps both safe edges (it says when it no longer fits)', JSON.stringify({ cap: D.longC.cap, lines: D.longC.lines.length, fits: D.longC.fits }));
 result(D.heavy.weight === 700, 'claim: the weight stays in 600-700', String(D.heavy.weight));
 result(D.ink.join() === '#0D0E10,#F5F6F7,#0D0E10', 'claim: the type is paper or ink on the accent, whichever reads', D.ink.join());
 {

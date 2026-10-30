@@ -20,6 +20,8 @@ import { drift, Ground, launchOut, ScriptLine, themeOf, useAbs } from './stage';
 export const WHIP_LEFT = { vCut: -96 * U };
 
 const QUOTE = { w: 700 * U, h: 190 * U, gap: 40 * U, y: 760 * U } as const;
+/** The line's centre: in the middle band (40 % of the height), centred, the pill under it. */
+const LINE_Y = 0.4 * H;
 /** The three quotes' onsets: phrased into the last (lib/cadence), the span of an 8 f stagger. */
 const QUOTE_ON = phrase(3, f60x(8), { shape: 'settle', seed: 'insight-quotes' }).onsets;
 
@@ -71,7 +73,7 @@ export const Insight: React.FC = () => {
             })}
           </div>
           <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${H / 2}px`, transform: `scale(${k.toFixed(5)})` }}>
-            <ScriptLine id="insight" F={F} top={300 * U} color={t.text} accent={t.accent} mute={t.mute} />
+            <ScriptLine id="insight" F={F} y={LINE_Y} color={t.text} accent={t.accent} mute={t.mute} />
             <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: PILL_BOX.w, height: PILL_BOX.h, borderRadius: PILL_BOX.h / 2, background: t.surface, boxShadow: `${surfaceShadow(t, 34, U)}, inset 0 0 0 ${((3 + 2 * glint) * U).toFixed(2)}px ${t.accent}`, transform: `translate3d(${(PILL_BOX.cx - PILL_BOX.w / 2).toFixed(2)}px, ${(PILL_BOX.cy - PILL_BOX.h / 2).toFixed(2)}px, 0) scale(${(1 + 0.025 * glint).toFixed(4)})` }}>
               <PillContent chip={chip} />
             </div>

@@ -9,16 +9,18 @@ import { Words } from './Words';
 
 /**
  * Claim on accent: the big claim of a launch close, set like a poster on the accent. Cap height 16 % of the frame
- * height or more (house 16.5 %: 245 px in Inter at 1080p), flush left at a 3 % margin, tracking -0.04 em, weight 600-700
+ * height or more (house 16.5 %: 245 px in Inter at 1080p), each line centred on the frame (or, with `justify: 'left'`,
+ * flush left at a 3 % margin: an editorial poster, never at the top or the bottom), tracking -0.04 em, weight 600-700
  * (house 600), lead 0.98, one to three lines broken at word boundaries so each line fits the frame, the block centred on
- * the frame's height (or sitting on the bottom or the top margin). The words arrive with the crisp entry, one after
+ * the frame's height (or sitting on the bottom or the top margin over a full-bleed picture). The words arrive with the crisp entry, one after
  * another across the lines (7 f apart), so the claim builds as it is read. The accent fills the frame behind it (a
  * declared colour event: list declares({ at, hold }) in src/sync.ts), the type in paper or ink, whichever reads. Once
- * its last word has landed the block creeps about its left margin from 1.5 % a second, easing toward 3 % (a few
- * tenths of a px a frame at its far edge; the layout leaves room for it): the hold keeps moving and never stops dead.
+ * its last word has landed the block creeps about its centre (flush left: its left margin) from 1.5 % a second, easing
+ * toward 3 % (a few tenths of a px a frame at its far edge; the layout leaves room for it): the hold keeps moving and
+ * never stops dead.
  *
- * The block is tagged data-audit-claim: the layout audit holds it to a 2.5 % left margin instead of the zone's (the
- * claim's 3 % sits inside the title-safe 5 % on purpose); its other edges keep the zone. claimLayout() is pure (pass
+ * A flush-left block is tagged data-audit-claim: the layout audit holds it to a 2.5 % left margin instead of the zone's
+ * (the claim's 3 % sits inside the title-safe 5 % on purpose); its other edges keep the zone. claimLayout() is pure (pass
  * `measure` in Node; the component measures the real font under FontGate).
  */
 
@@ -29,7 +31,8 @@ export type ClaimSpec = {
   text: string;
   cap?: number; // cap height as a share of the frame height (>= 0.16, default 0.165)
   weight?: number; // 600-700 (default 600)
-  align?: 'centre' | 'bottom' | 'top'; // where the block sits on the frame's height (default centre)
+  align?: 'centre' | 'bottom' | 'top'; // where the block sits on the frame's height (default centre; top or bottom only over a full-bleed picture)
+  justify?: 'centre' | 'left'; // each line centred on the frame (default) or flush left at the 3 % margin
   maxLines?: number; // default 3
 };
 
@@ -52,16 +55,18 @@ const breakLines = (words: string[], size: number, weight: number, track: number
 };
 
 /**
- * The claim's layout in frame px (pure with `measure`): the size from the cap height, the lines flush left at the
- * margin, each line's top. If a word or the line count does not fit, the size comes down toward capMin (16 %); `fits`
- * says whether it held there. The right edge keeps the safe inset `right` (default 5 % of the width).
+ * The claim's layout in frame px (pure with `measure`): the size from the cap height, each line centred on the frame
+ * (flush left at the margin with `justify: 'left'`), each line's top. If a word or the line count does not fit, the size
+ * comes down toward capMin (16 %); `fits` says whether it held there. The edges keep the safe inset `right` (default 5 %
+ * of the width): both of them when centred, the right one when flush left.
  */
 export const claimLayout = (s: ClaimSpec, film?: Partial<FilmCtx>, measure: Measure = monoMeasure, right?: number): ClaimLayout => {
   const { width, height } = sizeOf(film);
   const weight = clamp(s.weight ?? CLAIM.weight, CLAIM.weights[0], CLAIM.weights[1]);
   const left = Math.round(CLAIM.margin * width);
   const r = right ?? Math.round(0.05 * width);
-  const maxW = (width - left - r) / (1 + CLAIM.creepMax); // room for the hold's creep
+  const centred = (s.justify ?? 'centre') === 'centre';
+  const maxW = (centred ? width - 2 * r : width - left - r) / (1 + CLAIM.creepMax); // room for the hold's creep
   const maxLines = s.maxLines ?? CLAIM.maxLines;
   const words = s.text.split(/\s+/).filter(Boolean);
   const capOf = (cap: number) => (cap * height) / CLAIM.capEm;
@@ -88,7 +93,10 @@ export const claimLayout = (s: ClaimSpec, film?: Partial<FilmCtx>, measure: Meas
     left,
     right: r,
     fits,
-    lines: lines.map((l, i) => ({ text: l.join(' '), x: left, top: top0 + i * pitch, width: measure(l.join(' '), size, weight, CLAIM.track), words: l.length })),
+    lines: lines.map((l, i) => {
+      const w = measure(l.join(' '), size, weight, CLAIM.track);
+      return { text: l.join(' '), x: centred ? (width - w) / 2 : left, top: top0 + i * pitch, width: w, words: l.length };
+    }),
   };
 };
 
@@ -133,7 +141,7 @@ export const AccentClaim: React.FC<ClaimSpec & { at: number; frame: number; floo
   let n = 0;
   return (
     <div style={{ position: 'absolute', inset: 0, background: flood ? ground : undefined, overflow: 'hidden', ...style }}>
-      <div data-audit-claim style={{ position: 'absolute', inset: 0, transformOrigin: `${L.left}px 50%`, transform: `scale(${(1 + grow).toFixed(5)})` }}>
+      <div data-audit-claim={spec.justify === 'left' ? '' : undefined} style={{ position: 'absolute', inset: 0, transformOrigin: spec.justify === 'left' ? `${L.left}px 50%` : '50% 50%', transform: `scale(${(1 + grow).toFixed(5)})` }}>
         {L.lines.map((l, i) => {
           const start = at + n * gap;
           n += l.words;
