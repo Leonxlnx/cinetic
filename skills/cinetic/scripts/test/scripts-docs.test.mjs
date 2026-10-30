@@ -187,4 +187,50 @@ if (existsSync(setup)) {
   }
 }
 
+// 7. SKILL.md stays short and every link in the docs leads somewhere
+{
+  const skill = read(join(SKILL, 'SKILL.md'));
+  const bytes = Buffer.byteLength(skill, 'utf8');
+  const desc = (skill.match(/^description: (.*)$/m) || [, ''])[1];
+  result(bytes <= 25000 && desc.length > 0 && desc.length <= 1024, 'SKILL.md: at most 25 KB, its description at most 1024 characters', `${bytes} bytes, description ${desc.length}`);
+  // GitHub's heading anchors: lowercase, punctuation out (letters, digits, spaces, hyphens and underscores stay), spaces to hyphens
+  const slug = (h) => h.trim().toLowerCase().replace(/[^\p{L}\p{N} _-]/gu, '').replace(/ /g, '-');
+  const anchors = new Map();
+  const anchorsOf = (f) => {
+    if (!anchors.has(f)) {
+      const seen = new Map();
+      const set = new Set();
+      for (const m of read(f).matchAll(/^#{1,6}\s+(.+?)\s*#*\s*$/gm)) {
+        const base = slug(m[1]);
+        const n = seen.get(base) ?? 0;
+        seen.set(base, n + 1);
+        set.add(n ? `${base}-${n}` : base);
+      }
+      anchors.set(f, set);
+    }
+    return anchors.get(f);
+  };
+  const docs = [join(SKILL, 'SKILL.md'), join(SKILL, 'assets', 'TREATMENT.md')];
+  for (const d of ['references', join('references', 'devices'), join('assets', 'critics')]) {
+    for (const f of readdirSync(join(SKILL, d))) if (f.endsWith('.md')) docs.push(join(SKILL, d, f));
+  }
+  const broken = [];
+  for (const f of docs) {
+    for (const m of read(f).matchAll(/\]\(([^)\s]+)\)/g)) {
+      const [target, hash] = m[1].split('#');
+      if (/^(https?|mailto):/.test(m[1])) continue;
+      const to = target ? resolve(dirname(f), target) : f;
+      const rel = f.slice(SKILL.length + 1).replace(/[\\]/g, '/');
+      if (!existsSync(to)) { broken.push(`${rel} -> ${m[1]}`); continue; }
+      // headings are checked from SKILL.md, the treatment and the top-level references (the device book's generated
+      // anchors keep their own form)
+      if (hash && to.endsWith('.md') && !rel.startsWith('references/devices/') && !anchorsOf(to).has(hash)) broken.push(`${rel} -> ${m[1]} (no such heading)`);
+    }
+  }
+  result(!broken.length, `every relative link in SKILL.md, references/, assets/critics/ and assets/TREATMENT.md leads to a file that exists, and to a heading that exists outside the device book (${docs.length} files)`, broken.slice(0, 8).join('; '));
+  const named = [...skill.matchAll(/`((?:scripts|references|assets)\/[^`\s]+)`/g)].map((m) => m[1].replace(/[),.;:]+$/, ''));
+  const gone = named.filter((p) => !existsSync(join(SKILL, p)));
+  result(named.length > 10 && !gone.length, `every scripts/, references/ and assets/ path SKILL.md names exists (${named.length})`, gone.join(', '));
+}
+
 process.exit(failed ? 1 : 0);
