@@ -5,10 +5,46 @@
 //   glideList     a list or ticker that steps a whole row per glide and drifts between steps (fx/GlideStep draws it)
 //   holdDrift     the slow drift under every hold: 0.3-1 px per 60 fps frame at 1080p (house 0.5 = 30 px/s)
 //   landedAt      the frame from which a move stays under 10 % of its peak speed
-//   landBeforeCut the guard for a cut or an unmount: throws when the move is still fast there (a whip is declared)
+//   landBeforeCut the guard for a cut or an unmount: reports a move still fast there (a whip is declared)
+//   timingFail    how every module-load timing assert reports: a warning in dev (the render goes on, the problem is
+//                 listed by scripts/precheck.mjs), an error only under the ship gate (CINETIC_GATE=ship in Node, or
+//                 REMOTION_CINETIC_GATE=ship for a render), so a compressed retime never crashes a dev render
 // Pure functions of the frame; node-safe (src/sync.ts and the timeline may import them).
 import { clamp, E, type Ease, prog } from './anim';
 import { type FilmCtx, f60x, fpsOf, uOf } from './film';
+
+// ------------------------------------------------------------------------------------------------ the gate
+/** Where a check runs: 'dev' (every day: timing asserts warn) or 'ship' (the ship gate: they throw). */
+export type GateMode = 'dev' | 'ship';
+
+/** The gate this process runs under: CINETIC_GATE=ship (Node: precheck --ship, tests) or REMOTION_CINETIC_GATE=ship (a render). */
+export const gateMode = (): GateMode => {
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+  return env?.CINETIC_GATE === 'ship' || env?.REMOTION_CINETIC_GATE === 'ship' ? 'ship' : 'dev';
+};
+
+/** One problem a check reported in dev (the ship gate throws it instead). */
+export type GateIssue = { rule: string; message: string };
+
+const ISSUES = '__cineticGateIssues';
+/** The problems reported in this process so far, oldest first (scripts/precheck.mjs prints them after importing every act). */
+export const gateIssues = (): GateIssue[] => {
+  const g = globalThis as unknown as Record<string, GateIssue[] | undefined>;
+  return (g[ISSUES] ??= []);
+};
+
+/**
+ * A module-load timing assert failed (a move cut mid-ease, a line read past its act's cut): under the ship gate it
+ * throws `message`; in dev it warns once and records the problem, so a retime never crashes a dev render or a still.
+ * Route every timing assert that runs at import through it, never a bare `throw` (timeline.ts, an act's constants).
+ */
+export const timingFail = (rule: string, message: string): void => {
+  if (gateMode() === 'ship') throw new Error(message);
+  const list = gateIssues();
+  if (list.some((x) => x.rule === rule && x.message === message)) return;
+  list.push({ rule, message });
+  console.warn(`warn ${message} (dev: a warning; the ship gate fails it, CINETIC_GATE=ship)`);
+};
 
 /**
  * House numbers (frames at 60 fps, px at 1080p): a glide's length, the share of peak speed under which a move has
@@ -104,19 +140,20 @@ export const landedAt = (m: Move, share: number = GLIDE.landShare): { frame: num
 };
 
 /**
- * The guard for a cut or an unmount at frame `cut`: returns `cut` when the move has landed by then (under 10 % of its
- * peak speed from that frame on) or has not started; throws when it would be cut mid-ease, with the frame it lands
- * on. `whip: true` lets a move run into the cut at speed: a declared whip or velocity seam carries it across. Call it
- * where the cut frame is computed (timeline.ts, an act's constants) so a retime that cuts a move fails at import, not
- * on the render: `const exitAt = landBeforeCut({ from: CUE.slide, dur: f60(34), ease: E.glideOut }, ACT.next.from)`.
+ * The guard for a cut or an unmount at frame `cut`: returns `cut`. When the move would be cut mid-ease (still above 10 %
+ * of its peak speed there) it reports that with the frame it lands on through timingFail: a warning in dev, an error
+ * under the ship gate. `whip: true` lets a move run into the cut at speed: a declared whip or velocity seam carries it
+ * across. Call it where the cut frame is computed (timeline.ts, an act's constants) so scripts/precheck.mjs lists a
+ * retime that cuts a move in seconds, before any render:
+ * `const exitAt = landBeforeCut({ from: CUE.slide, dur: f60(34), ease: E.glideOut }, ACT.next.from)`.
  */
 export const landBeforeCut = (m: Move, cut: number, o: { share?: number; whip?: boolean } = {}): number => {
   if (o.whip || cut <= m.from) return cut;
   const l = landedAt(m, o.share ?? GLIDE.landShare);
   if (l.atSpeed && cut >= m.from + m.dur)
-    throw new Error(`landBeforeCut: ${m.id ?? 'a move'} ends at speed on f${m.from + m.dur}: land it on an arrive curve, or declare the cut a whip or velocity seam ({ whip: true })`);
-  if (cut < l.frame)
-    throw new Error(`landBeforeCut: ${m.id ?? 'a move'} (f${m.from}-${m.from + m.dur}) is still above ${Math.round((o.share ?? GLIDE.landShare) * 100)} % of its peak speed on f${cut}: cut or unmount from f${l.frame}, start it ${l.frame - cut} f earlier, or declare a whip`);
+    timingFail('landBeforeCut', `landBeforeCut: ${m.id ?? 'a move'} ends at speed on f${m.from + m.dur}: land it on an arrive curve, or declare the cut a whip or velocity seam ({ whip: true })`);
+  else if (cut < l.frame)
+    timingFail('landBeforeCut', `landBeforeCut: ${m.id ?? 'a move'} (f${m.from}-${m.from + m.dur}) is still above ${Math.round((o.share ?? GLIDE.landShare) * 100)} % of its peak speed on f${cut}: cut or unmount from f${l.frame}, start it ${l.frame - cut} f earlier, or declare a whip`);
   return cut;
 };
 

@@ -11,7 +11,9 @@
  *   3. holdDrift(): 0.5 px a 60 fps frame at 1080p by default, clamped into 0.3-1, along its angle, scaled with the
  *      frame, ended by `to`.
  *   4. landedAt() / landBeforeCut() / latestStart(): an arrival lands inside its span, a leave curve ends at speed; a
- *      cut mid-ease throws, a landed cut or a declared whip passes, latestStart() is the edge that passes.
+ *      cut mid-ease throws under the ship gate (CINETIC_GATE=ship or REMOTION_CINETIC_GATE=ship) and only warns in dev
+ *      (the cut is returned, the problem recorded in gateIssues() once), a landed cut or a declared whip passes,
+ *      latestStart() is the edge that passes.
  *   5. glideBox(): a box glides between states and lands on each; GlideStep declares nothing (it is continuous).
  *   6. E.glideOut is the curve forensics.py's self-test glides on (cubic-bezier .172, .687, .393, .943).
  *
@@ -56,6 +58,13 @@ const film30 = { fps: 30, width: 1920, height: 1080 };
 const half60 = { fps: 60, width: 960, height: 540 };
 const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 const throws = (fn: () => unknown) => { try { fn(); return ''; } catch (e) { return String((e as Error).message); } };
+const env = (globalThis as any).process.env;
+const gated = <T,>(mode: string | undefined, fn: () => T, key = 'CINETIC_GATE'): T => {
+  const prev = env[key];
+  if (mode === undefined) delete env[key]; else env[key] = mode;
+  try { return fn(); } finally { if (prev === undefined) delete env[key]; else env[key] = prev; }
+};
+const ship = (fn: () => unknown) => gated('ship', () => throws(fn));
 const steps = [{ at: 100, value: 96 }];
 const list = { at: [100, 140, 180], jump: 96 };
 const bz = (x1: number, y1: number, x2: number, y2: number) => (t: number) => {
@@ -84,12 +93,20 @@ console.log(JSON.stringify({
   },
   land: {
     glide: C.landedAt({ from: 100, dur: 34, ease: A.E.glideOut }), build: C.landedAt({ from: 100, dur: 26, ease: A.E.buildIn }),
-    mid: throws(() => C.landBeforeCut({ from: 100, dur: 34, ease: A.E.glideOut, id: 'slide' }, 110)),
+    mid: ship(() => C.landBeforeCut({ from: 100, dur: 34, ease: A.E.glideOut, id: 'slide' }, 110)),
+    remotionShip: gated('ship', () => throws(() => C.landBeforeCut({ from: 100, dur: 34, ease: A.E.glideOut, id: 'slide' }, 110)), 'REMOTION_CINETIC_GATE'),
+    dev: gated(undefined, () => {
+      const before = C.gateIssues().length;
+      const a = throws(() => C.landBeforeCut({ from: 100, dur: 34, ease: A.E.glideOut, id: 'dev-slide' }, 110));
+      const b = C.landBeforeCut({ from: 100, dur: 34, ease: A.E.glideOut, id: 'dev-slide' }, 110);
+      const issues = C.gateIssues().slice(before);
+      return { threw: a, returned: b, issues, mode: C.gateMode() };
+    }),
     late: C.landBeforeCut({ from: 100, dur: 34, ease: A.E.glideOut }, 140),
     whip: C.landBeforeCut({ from: 100, dur: 26, ease: A.E.buildIn }, 126, { whip: true }),
-    leave: throws(() => C.landBeforeCut({ from: 100, dur: 26, ease: A.E.buildIn }, 126)),
+    leave: ship(() => C.landBeforeCut({ from: 100, dur: 26, ease: A.E.buildIn }, 126)),
     before: C.landBeforeCut({ from: 100, dur: 34, ease: A.E.glideOut }, 90),
-    edge: (() => { const s = C.latestStart(200, 34, A.E.glideOut); return { s, ok: throws(() => C.landBeforeCut({ from: s, dur: 34, ease: A.E.glideOut }, 200)), late: throws(() => C.landBeforeCut({ from: s + 1, dur: 34, ease: A.E.glideOut }, 200)) }; })(),
+    edge: (() => { const s = C.latestStart(200, 34, A.E.glideOut); return { s, ok: ship(() => C.landBeforeCut({ from: s, dur: 34, ease: A.E.glideOut }, 200)), late: ship(() => C.landBeforeCut({ from: s + 1, dur: 34, ease: A.E.glideOut }, 200)) }; })(),
   },
   box: range(98, 200).map((f) => G.glideBox(f, [{ at: 100, value: boxB }, { at: 150, value: boxC }], boxA, {}, film60)),
   decl: G.declares({}, film60),
@@ -152,7 +169,8 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
 {
   const L = P.land;
   result(!L.glide.atSpeed && L.glide.frame > 100 && L.glide.frame < 134 && L.build.atSpeed, 'landedAt: an arrival lands inside its span, a leave curve ends at speed', JSON.stringify([L.glide, L.build]));
-  result(/still above 10 % of its peak speed on f110/.test(L.mid) && L.late === 140 && L.before === 90, 'landBeforeCut: a cut mid-ease throws (with the frame it lands on), a landed or earlier cut passes', L.mid.slice(0, 90));
+  result(/still above 10 % of its peak speed on f110/.test(L.mid) && /still above/.test(L.remotionShip) && L.late === 140 && L.before === 90, 'landBeforeCut: under the ship gate a cut mid-ease throws (with the frame it lands on), a landed or earlier cut passes', L.mid.slice(0, 90));
+  result(L.dev.mode === 'dev' && L.dev.threw === '' && L.dev.returned === 110 && L.dev.issues.length === 1 && L.dev.issues[0].rule === 'landBeforeCut' && /f110/.test(L.dev.issues[0].message), 'landBeforeCut: in dev a cut mid-ease warns once and returns the cut (a module-load assert never crashes a dev render)', JSON.stringify(L.dev).slice(0, 160));
   result(L.whip === 126 && /ends at speed/.test(L.leave), 'landBeforeCut: a leave curve into the cut needs a declared whip', L.leave.slice(0, 80));
   result(L.edge.ok === '' && L.edge.late !== '', 'latestStart: the latest start that lands by the cut passes, a frame later throws', JSON.stringify(L.edge.s));
 }
