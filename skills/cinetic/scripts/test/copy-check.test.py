@@ -311,5 +311,20 @@ result(r.returncode == 1 and json.loads(r.stdout).get('final') is True, 'CINETIC
 code, rep = run([script(['0 | Tern turns voice memos into to-dos.', '3 | Your list is ready in seconds.', '6 | Tide · Spring lookbook is ready.', '9 | Tern is out now.'], 'kit-script.txt'), '--name', 'Tern'])
 result(code == 1 and any(f['rule'] == 'kit-sample' and 'Tide' in f['text'] for f in rep.get('findings', [])), "kit-sample: a script line naming the kit's sample project fails", ', '.join(rules(rep)))
 
+# --ocr on stills under 1600 px wide: a screen's small strings are unreadable there, so it warns (ocr_small, no OCR needed)
+import importlib.util
+_spec = importlib.util.spec_from_file_location('copy_check_mod', CC)
+_cc = importlib.util.module_from_spec(_spec)
+_argv, sys.argv = sys.argv, [CC]
+_spec.loader.exec_module(_cc)
+sys.argv = _argv
+stills = os.path.join(TMP, 'stills')
+os.makedirs(stills, exist_ok=True)
+png = lambda w, h: b'\x89PNG\r\n\x1a\n' + (13).to_bytes(4, 'big') + b'IHDR' + w.to_bytes(4, 'big') + h.to_bytes(4, 'big') + b'\x08\x02\x00\x00\x00'
+open(os.path.join(stills, 'half.png'), 'wb').write(png(960, 540))
+open(os.path.join(stills, 'full.png'), 'wb').write(png(1920, 1080))
+small = _cc.ocr_small(stills)
+result(small == [('half.png', 960)] and _cc.ocr_small(os.path.join(stills, 'full.png')) == [], '--ocr: a still under 1600 px wide is named (a screen\'s small strings are unreadable there: ocr-small warns), a full-size one is not', str(small))
+
 print(f'copy-check tests: {failed} failed' if failed else 'copy-check tests: all pass')
 sys.exit(1 if failed else 0)

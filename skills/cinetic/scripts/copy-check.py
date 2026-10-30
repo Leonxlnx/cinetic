@@ -49,6 +49,8 @@ Checks (error unless marked):
               (--final, or CINETIC_GATE=ship), a warning in dev
   cut-phrase  (--ui, --ocr) a status or UI line that stops mid-phrase (it ends on "to", "the", "and", "on", a comma
               or a dash): an error in a final film, a warning in dev
+  ocr-small   (warning, --ocr) stills under 1600 px wide: a screen's 12-16 px strings are unreadable there, so sample
+              content in them goes unseen; read full-size stills
 Then it prints what a stranger reads: what it is, what it does, what to do, and each line's key words: the words
 between asterisks in the line ("Brook is a *water bottle*.": the marks leave the text before any check), else a
 suggestion (a number or a [slot], else the last word that is not a small word or the product's name). The film's
@@ -538,6 +540,28 @@ def ocr_images(paths):
     raise OSError('no OCR engine: pip install rapidocr_onnxruntime (or pytesseract), or give --ocr a .txt of the strings')
 
 
+def _img_width(path):
+    """An image's width in px (PNG header, else Pillow when installed), or None."""
+    try:
+        with open(path, 'rb') as f:
+            head = f.read(24)
+        if head[:8] == b'\x89PNG\r\n\x1a\n':
+            return int.from_bytes(head[16:20], 'big')
+        import importlib
+        with importlib.import_module('PIL.Image').open(path) as im:
+            return im.size[0]
+    except Exception:
+        return None
+
+
+def ocr_small(path, need=1600):
+    """The --ocr stills narrower than `need` px: a product screen's micro text (12-16 px at 1080p) is unreadable there."""
+    imgs = ('.png', '.jpg', '.jpeg', '.webp', '.bmp')
+    files = (sorted(os.path.join(path, f) for f in os.listdir(path) if f.lower().endswith(imgs)) if os.path.isdir(path)
+             else [path] if path.lower().endswith(imgs) else [])
+    return [(os.path.basename(f), w) for f in files for w in [_img_width(f)] if w and w < need]
+
+
 def ocr_strings(path):
     """The strings a render shows, from --ocr: a .txt, a .json, an image or a folder of images."""
     imgs = ('.png', '.jpg', '.jpeg', '.webp', '.bmp')
@@ -1002,7 +1026,11 @@ def main(argv):
     def ui_findings():
         seen = {t for t, _ in ui_strings}
         src_only = [(t, w) for t, w in raw_src if t not in seen]
-        return (check_ui(ui_strings) + check_samples(ui_strings + src_only + ocr, phrases, names)
+        small = ocr_small(a['ocr']) if a['ocr'] else []
+        res = [{'rule': 'ocr-small', 'severity': 'warn', 'line': None, 'text': '', 'where': small[0][0],
+                'message': f'{len(small)} still(s) read by OCR are {small[0][1]} px wide: a screen\'s small strings (12-16 px at '
+                           '1080p) are unreadable there, so sample content in them goes unseen: give --ocr full-size stills'}] if small else []
+        return (res + check_ui(ui_strings) + check_samples(ui_strings + src_only + ocr, phrases, names)
                 + check_cut([] if raw_src else ui_strings, final) + check_cut(ocr, final, held=held)
                 + check_cut(ui_strings if raw_src else [], final, phrase=False))
 
