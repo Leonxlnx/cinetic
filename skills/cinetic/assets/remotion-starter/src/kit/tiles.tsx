@@ -18,6 +18,7 @@ import { Defocus } from '../fx/Defocus';
 import { clamp, mix, rand } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { f60x, uOf, useFilm } from '../lib/film';
+import { measureTracked } from '../lib/measure';
 import type { SampleWorld } from './data';
 import { kitEmpty, KitEmpty } from './gate';
 import { AppIcon, DEPTH, depthBlur, hasLogo, type LogoRef, ringSlots, type TileSlot, tileArrival, wallSlots } from './logos';
@@ -52,12 +53,44 @@ export type TileNode = {
   status?: string;
 };
 
-/** Text that reads only when it is large enough: data-text at TEXT_MIN and up, texture under it. */
-const T: React.FC<{ id: string; px: number; u: number; weight?: number; color: string; mono?: boolean; children: React.ReactNode; style?: React.CSSProperties }> = ({ id, px, u, weight = 500, color, mono, children, style }) => (
-  <span {...(px >= TEXT_MIN * u ? { 'data-text': id } : { 'data-texture': '' })} style={{ ...face(px, weight, color, -0.01, 1.2), ...(mono ? { fontFamily: FONT.mono, letterSpacing: '0em' } : null), overflow: 'hidden', textOverflow: mono ? 'clip' : 'ellipsis', display: 'block', ...style }}>
-    {children}
-  </span>
-);
+/**
+ * A title's size in a column `maxW` px wide, never cut with "...": the given size when it fits, else smaller down to
+ * `min` of it, else that size wrapped onto two lines. Measured with the loaded face in the browser (every act renders
+ * under FontGate); on the server (tests) the size is kept.
+ */
+export const fitTitle = (text: string, px: number, weight: number, maxW: number, min = 0.78): { px: number; wrap: boolean } => {
+  if (typeof document === 'undefined' || !text || !(maxW > 0)) return { px, wrap: false };
+  const w = measureTracked(text, px, weight, -0.01, FONT.text, { trailing: false });
+  if (w <= maxW) return { px, wrap: false };
+  const k = maxW / w;
+  return k >= min ? { px: px * k * 0.99, wrap: false } : { px: px * min, wrap: true };
+};
+
+/**
+ * Text that reads only when it is large enough: data-text at TEXT_MIN and up, texture under it. With `fit` (the
+ * column's width, px) a title shrinks or wraps to two lines instead of being cut with "..." (fitTitle); texture
+ * (preview lines, cells) still ends on an ellipsis inside its well.
+ */
+const T: React.FC<{ id: string; px: number; u: number; weight?: number; color: string; mono?: boolean; fit?: number; children: React.ReactNode; style?: React.CSSProperties }> = ({ id, px: px0, u, weight = 500, color, mono, fit, children, style }) => {
+  const f = fit !== undefined && typeof children === 'string' ? fitTitle(children, px0, weight, fit) : { px: px0, wrap: false };
+  const px = f.px;
+  return (
+    <span
+      {...(px >= TEXT_MIN * u ? { 'data-text': id } : { 'data-texture': '' })}
+      style={{
+        ...face(px, weight, color, -0.01, 1.2),
+        ...(mono ? { fontFamily: FONT.mono, letterSpacing: '0em' } : null),
+        overflow: 'hidden',
+        textOverflow: mono || fit !== undefined ? 'clip' : 'ellipsis',
+        display: 'block',
+        ...(f.wrap ? { whiteSpace: 'normal', overflowWrap: 'anywhere', maxHeight: px * 1.2 * 2 } : null),
+        ...style,
+      }}
+    >
+      {children}
+    </span>
+  );
+};
 
 /** Is this a node with content of the film's own (a label, a mark, a glyph or a preview's content)? undefined is not. */
 export const isNode = (node: TileNode | null | undefined): node is TileNode =>
@@ -210,13 +243,14 @@ export const ContentTile: React.FC<{ node: TileNode; theme?: KitTheme; w: number
   const hasMark = node.logo && hasLogo(node.logo);
   const previewTop = pad * 2 + icon;
   const kind = previewKind(node);
+  const col = w - 2 * pad - (hasMark || node.glyph ? icon + pad * 0.8 : 0); // the label's column: titles fit it, never "..."
   return (
     <div data-ui style={{ position: 'relative', width: w, height: h, borderRadius: r, background: keyFace(t, t.dark ? t.raised : t.surface, 0.07), boxShadow: `${surfaceShadow(t, lift, u)}, inset 0 0 0 ${(1 * u).toFixed(2)}px ${mixColor(t.line, t.surface, 0.3)}`, overflow: 'hidden', flex: 'none', ...style }}>
       <div style={{ position: 'absolute', left: pad, top: pad, display: 'flex', alignItems: 'center', gap: pad * 0.8, width: w - 2 * pad }}>
         {hasMark ? <AppIcon logo={node.logo} size={icon} theme={t} lift={4} scale={u} /> : node.glyph ? <GlyphTile theme={t} name={node.glyph} size={icon} /> : null}
         <div style={{ display: 'flex', flexDirection: 'column', gap: px * 0.15, minWidth: 0, flex: 1 }}>
-          <T id="kit-tile-label" px={px * 1.12} u={u} weight={650} color={t.text}>{node.label}</T>
-          {node.sub && <T id="kit-tile-sub" px={px * 0.86} u={u} color={t.mute}>{node.sub}</T>}
+          <T id="kit-tile-label" px={px * 1.12} u={u} weight={650} color={t.text} fit={col}>{node.label}</T>
+          {node.sub && <T id="kit-tile-sub" px={px * 0.86} u={u} color={t.mute} fit={col}>{node.sub}</T>}
         </div>
       </div>
       {kind && (
