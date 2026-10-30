@@ -143,7 +143,8 @@ flat grounds; texture is an accent, not the ground of every shot:
                    the accent's hue family 6-15 % of the frame, a support hue in >= 9 % of the samples
                    (lib/look.ts COLOUR)
 Framing and type (warn):
-  framing-centred  the subject sits dead centre (within 8 %) and inside the frame in over half the samples
+  framing-centred  the picture subject sits dead centre (within 8 %) and inside the frame in over half the samples;
+                   type is never held to it (a region shaped like lines of type is not a subject: words stay centred)
   framing-hold     one framing held over 0.8 s with no depth plane moving (camera, second plane and layers still;
                    1 s inside a copy read window)
   small-text       (--layout) a string under 36 px at 1080p held over 6 f@60 (UI strings included)
@@ -324,6 +325,7 @@ PIC = dict(
     second_warn_frames=0.8, second_warn_share=0.15,  # a second accent: longer and larger than this warns
     centred=0.08,  # a subject whose centre sits within 8 % of the frame's centre (both ways) and touches no edge
     centred_share=0.5,  # warn when more than half of the framed samples are centred
+    type_aspect=3.5, type_tall=0.3,  # a region this many times as wide as tall and under this share of the height is type, not a picture subject
     hold_s=0.8,  # a framing held this long with no depth plane moving
     text_min=36, text_hold60=6,  # px at 1080p, frames at 60 fps
 )
@@ -377,9 +379,11 @@ def falloff_of(top, low):
 
 
 def subject_of(rgb, gray, nong, edges=None):
-    """The frame's main subject: the largest region of structure (colour off the ground, or edges, closed
-    over about 3 % of the width) that holds real edges. Returns its edge contacts, its visible extent,
-    its centre and whether it bleeds (two edges, >= 60 % of the frame one way) or sits centred."""
+    """The frame's main picture subject: the largest region of structure (colour off the ground, or edges, closed
+    over about 3 % of the width) that holds real edges and is not shaped like type (a region at least TYPE_ASPECT
+    times as wide as tall and under TYPE_TALL of the frame height is a line of words: statements are centred on
+    purpose, so framing-centred is for pictures only). Returns its edge contacts, its visible extent, its centre and
+    whether it bleeds (two edges, >= 60 % of the frame one way) or sits centred."""
     h, w = gray.shape
     e = edges if edges is not None else cv2.Canny(rgb, 60, 140) > 0
     k = max(3, int(round(0.03 * w)) | 1)
@@ -396,6 +400,8 @@ def subject_of(rgb, gray, nong, edges=None):
         ed = float(e[y:y + bh, x:x + bw][comp].mean())
         if ed < 0.003:
             continue  # a smooth field (a gradient, a plate): not a subject
+        if bw >= PIC['type_aspect'] * bh and bh < PIC['type_tall'] * h:
+            continue  # a line (or two) of type: words are centred on purpose, never a framing fault
         if best is None or area > best['area']:
             touch = int(x <= 1) + int(y <= 1) + int(x + bw >= w - 1) + int(y + bh >= h - 1)
             best = dict(area=area, touch=touch, extent=max(bw / w, bh / h), cx=float(cen[i][0] / w), cy=float(cen[i][1] / h), box=[x, y, bw, bh])
@@ -2697,6 +2703,10 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         off = [card(paper, 40 + i * 0.1, 40, 150, (30, 32, 36)) for i in range(75)]
         rep = run_pic('offcentre', off)
         check(not has(rep, 'framing-centred'), 'the same subject off-centre does not', f"share {rep.get('framing', {}).get('centred_share')}")
+        # a statement centred on a clean ground is type, never a framing fault
+        words = [text_rows(np.full((h, w, 3), paper, np.uint8), 112 + i * 0.05, 140, ['Notes in thirty seconds.'], 0.75, (30, 32, 36), 30, 2) for i in range(75)]
+        rep = run_pic('centred-type', words)
+        check(not has(rep, 'framing-centred'), 'a line of type centred on a clean ground does not warn framing-centred (pictures only)', f"share {rep.get('framing', {}).get('centred_share')}")
         # --- colour: one hue over the frame fails picture-wash; neutral grounds with the accent on one card pass and
         # meet the colour targets; the wash declared as a colour event passes; a support hue sits beside the accent, a second accent warns
         slate, teal, green, blue = (52, 56, 60), (18, 112, 124), (24, 150, 92), (40, 120, 205)
