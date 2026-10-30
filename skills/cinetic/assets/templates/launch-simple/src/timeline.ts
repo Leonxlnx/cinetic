@@ -80,7 +80,7 @@ export const keyWords = (s: string): { word: string; key: boolean }[] => {
 
 // ---- The beat plan: every pair is a line beat (T, or T+A when the line sits over the picture's start) then a picture
 // beat (A), each on the track's 8ths; the pairs together end on a bar line, then the end in whole bars, then the tail.
-// A pair that starts on a downbeat opens an act (acts start on downbeats: grid-check structural-on-music).
+// Two acts: the pairs and the end (an act line re-draws the whole frame, so it never falls on a seam's cut).
 const SEC = (s: number) => s * FPS;
 const LINE = { min: 0.5, max: 2.4 } as const; // a line alone holds 0.5-2.4 s (house: about 1.3)
 const PIC = { min: 1, max: 3.5, house: [2.6, 1.6, 2.2, 3.0] } as const; // a picture beat runs 1-3.5 s; unset, they vary (a long one beside a short one)
@@ -140,19 +140,14 @@ export const PAIRS = P.map((_, i) => ({ k: i + 1, from: i === 0 ? 0 : bt(startH[
 export const TOTAL = bt(lastBeat) + TAIL;
 
 /**
- * The acts: a new act at every pair that starts on a downbeat (the first on frame 0), and the end. A pair that starts
- * between bar lines plays inside the act before it (its seam is declared like any other).
+ * The acts: the pairs, from frame 0, and the end on its downbeat. An act line re-draws the whole frame, so it never
+ * falls on a seam's cut: the pairs play as one act (their seams are declared like any other) and the end's line falls
+ * on the element carried into the mark, which has no cut.
  */
-export const ACT: Record<string, { from: number; dur: number }> = {};
-{
-  const starts = P.map((_, i) => i).filter((i) => i === 0 || startH[i] % 8 === 0);
-  starts.forEach((i, j) => {
-    const from = PAIRS[i].from;
-    const to = j + 1 < starts.length ? PAIRS[starts[j + 1]].from : bt(endBeat);
-    ACT[`p${i + 1}`] = { from, dur: to - from };
-  });
-  ACT.end = { from: bt(endBeat), dur: TOTAL - bt(endBeat) };
-}
+export const ACT: Record<string, { from: number; dur: number }> = {
+  p1: { from: 0, dur: bt(endBeat) },
+  end: { from: bt(endBeat), dur: TOTAL - bt(endBeat) },
+};
 export type ActName = string;
 /** Bars in the body: track.py edit --bars takes this number. */
 export const BARS = lastBeat / 4;

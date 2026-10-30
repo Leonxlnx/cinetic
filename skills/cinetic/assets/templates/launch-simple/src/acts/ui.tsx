@@ -62,10 +62,15 @@ export const Typed: React.FC<{ f: number; at: number; x: number; y: number; text
   const per = 2.3 * k60;
   const fi = Math.round(f); // discrete state from the whole frame (sub-frames never disagree)
   const n = Math.max(0, Math.min(text.length, Math.floor((fi - at) / per)));
+  // the next character fades in over its own interval: typing never pops a glyph whole into a still frame
+  const next = n < text.length && fi >= at ? clamp((fi - at) / per - n) : 0;
   const caret = clamp((fi - (at - 12 * k60)) / (8 * k60));
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, whiteSpace: 'pre', transform: `translate3d(${x.toFixed(3)}px, ${y.toFixed(3)}px, 0)`, willChange: promote ? 'transform' : undefined }}>
-      <span data-text={text} data-ui="" style={{ fontFamily: FONT.text, fontSize: size * U, fontWeight: 450, lineHeight: 1.2, color: inks.type }}>{text.slice(0, n)}</span>
+      <span data-text={text} data-ui="" style={{ fontFamily: FONT.text, fontSize: size * U, fontWeight: 450, lineHeight: 1.2, color: inks.type }}>
+        {text.slice(0, n)}
+        <span style={{ opacity: next }}>{next > 0 ? text[n] : ''}</span>
+      </span>
       <span style={{ display: 'inline-block', width: 3 * U, height: size * U * 1.05, marginLeft: 4 * U, verticalAlign: 'middle', background: inks.accent, opacity: caret }} />
     </div>
   );
