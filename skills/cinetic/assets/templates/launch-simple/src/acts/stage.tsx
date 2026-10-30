@@ -24,7 +24,7 @@ import { LAUNCH } from '../launch';
 import { DEAL, SEED } from '../deal';
 import { SCENES } from '../product';
 import { ACT, BEAT_PLAN, COLOUR, copy, CUE, DARK_FROM, f60x, FPS, H, PAIRS, SEAM_PLAN, TOTAL, W } from '../timeline';
-import { Layer } from './layer';
+import { Layer, PromoteCtx } from './layer';
 import { Line, Text } from './line';
 import { SceneCtx } from './ui';
 
@@ -199,7 +199,9 @@ type Item = { key: string; z: number; node: React.ReactNode };
 const itemsOf = (i: number, F: number, o: { lineOnly?: boolean } = {}): Item[] => {
   const b = BEAT_PLAN[i];
   if (!b) return [];
-  if (b.kind === 'end') return [{ key: 'end', z: 1000, node: <EndCard F={F} /> }];
+  // the lockup only drifts sideways: its text is drawn in place every frame (unpromoted text moves sub-pixel sideways),
+  // never a promoted layer the browser re-draws now and then over a long hold
+  if (b.kind === 'end') return [{ key: 'end', z: 1000, node: <PromoteCtx.Provider value={false}><EndCard F={F} /></PromoteCtx.Provider> }];
   const scene: Item = { key: `scene${b.pair}`, z: b.pair * 10 + 1, node: <Scene pair={b.pair} F={F} /> };
   if (b.kind === 'A') return [scene];
   const inks = inksAt(F);
