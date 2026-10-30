@@ -351,6 +351,9 @@ export const RAIN_AT = Array.from({ length: N }, (_, k) =>
 |---|---|---|---|
 | Line hold after it resolves | max(52, 36 + 7 f per word): 3 words 57 f, 5 → 71 f, 8 → 92 f | max(36, 28 + 6 f per word) | about 0.6 s to find the line, then a word every 7 f, read while watching motion; with the reveal a line is on screen for 3 words a second or longer (`READ_WPS`) |
 | A line built in beats, after its last part | 36 + 7 f per word of the whole line (78 f at 6 words, 92 f at 8) | 28 f + 6 f per word of the line | the finished line is read once more as a whole |
+| Line beat (T: a line alone on a clean ground) | 0.5–2.4 s (about 1.3 s): its build, its read, its exit, rounded up to the track's 8ths | the same | the line is the event; the picture beat after it carries the motion |
+| Picture beat (A: the product acting, no statement over it) | 1–3.5 s, its own moments on the grid, the camera re-framing wherever they leave more than 0.7 s empty | the same | the picture proves the line before it |
+| The beat plan (`BEAT_PLAN`, `grid-check.ts` `beats`) | type-only beats ≥ 15 % of the shots and ≥ 2 a film; T+A ≤ 40 % of the beats; the first line on screen by 1 s | the same | a line alone, then the picture, in turn: the grammar of a simple launch (`references/formats.md` §2) |
 | Picture beat between fragments of a chain | 26–90 f, from the earlier fragment being read to the next one's `in`, with a cue in it | 16–90 f | the picture acts; past 90 f the viewer loses the start of the thought |
 | Reading windows (`READ`) | from `resolved` for at most 150 f; an earlier fragment of a chain only for its own hold; a build line once more after its last fragment | at most 120 f | one rule for every check: a read counts as alive in the event-gap check, nothing new starts inside one, and the frame stays near still |
 | Words a line | 2–7, one line on screen at a time (a part of a line built in beats ≤ 4) | 2–7 (a part ≤ 5) | a plain sentence that says what the product is or does, read in one or two glances |
@@ -360,7 +363,7 @@ export const RAIN_AT = Array.from({ length: N }, (_, k) =>
 | Unresolved text | never exits | never exits | a line that leaves mid-reveal reads as a mistake |
 | Life in a hold | a reading hold with a 0.3–1 px/f drift or a 1–3% creep is alive; anywhere else, ≤ 72 f without a visible event | ≤ 48 f without a visible event | past that, a muted feed reads a frozen frame as a stalled player; slow life is not a stall |
 | Designed freeze | ≤ 15 f, exactly on a silence | the same | stillness is intent only when the sound agrees |
-| End card | 1.5–2.5 s: assembly 60–80 f, then 36–80 f still or creeping ≤ 6% (a 10–20% push if the hold runs past ~1.3 s) | the same | a static lockup longer than about 2.5 s reads as dead air |
+| End card | the centred lockup built from the last element in 0.8–1.6 s, then held 2–3 s from the frame it is whole (the name and the one fact read), creeping ≤ 6% (a 10–20% push if the hold runs past ~1.3 s) | the same | long enough to read the name and the fact once and remember the mark; a frozen lockup reads as dead air, a creeping one does not |
 | URL readable | ≥ 1.7 s | ≥ 1.7 s | long enough to read and remember |
 | Product result before the camera leaves | ≥ 60 f | ≥ 36 f | cause → action → result needs the result to land |
 | Tail after the last event | ≥ 60 f | ≥ 60 f | the audio decays to digital zero |
@@ -421,6 +424,6 @@ Hold lessons:
 
 ## 11. Checks
 
-- `npx tsx scripts/grid-check.ts src/timeline.ts` (against the film's `PACE_NAME`; `--pace calm|crisp` overrides it, and a timeline written before `PACE_NAME` existed is checked as crisp): whole-frame beat, contiguous bar-aligned acts, cues on the 16th grid (or explained), reading holds, no gap without an event or a reading hold over 72 f (48 f crisp), word total within budget, and the text flow: `fragment`, `copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`, `chain-beat`, `read-quiet`, `word-rate`, `text-share` (in a calm film a picture beat that is missing or under 30 f, two lines arriving together and copy on more than 75% of the body fail). A HyperFrames project: `node scripts/grid-check.ts timeline.js`.
+- `npx tsx scripts/grid-check.ts src/timeline.ts` (against the film's `PACE_NAME`; `--pace calm|crisp` overrides it, and a timeline written before `PACE_NAME` existed is checked as crisp): whole-frame beat, contiguous bar-aligned acts, cues on the 16th grid (or explained), reading holds, no gap without an event or a reading hold over 72 f (48 f crisp), word total within budget, and the text flow: `fragment`, `copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`, `chain-beat`, `read-quiet`, `word-rate`, `text-share`, and the beat plan (`beats`: type-only beats, T+A share, the first line by 1 s, each line beat holding its line) when the timeline exports `BEAT_PLAN` (in a calm film a picture beat that is missing or under 30 f, two lines arriving together and copy on more than 75% of the body fail). A HyperFrames project: `node scripts/grid-check.ts timeline.js`.
 - `npx tsx scripts/export-cues.ts`: writes `out/cues.json`; open it and confirm every visible event has an event and vice versa.
 - Stills at every cue −2, 0 and +2 frames (`npx remotion still Film out/qa/f<n>.png --frame=<n>`): the change must be visible on the cue frame, not the one after.

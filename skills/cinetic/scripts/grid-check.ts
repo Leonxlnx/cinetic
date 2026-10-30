@@ -62,6 +62,12 @@
  *                  an error when calm and more than 10 points over), and every 10 s of body (all
  *                  of it, if shorter) holds a text-free run >= freeRun frames (calm 90 f): the
  *                  picture gets its turns (warning)
+ *   beats          with a BEAT_PLAN ([{id, kind: 'T' | 'A' | 'TA' | 'end', from, to}]: a line alone on a clean ground, the
+ *                  picture acting, a line over a picture, the end card): type-only beats >= 15 % of the shots and >= 2
+ *                  a film, T+A <= 40 % of the beats, the first line on screen by 1 s, every line beat holding a line
+ *                  and no picture beat carrying a statement for more than a quarter of it (errors); a line beat
+ *                  outside 0.5-2.4 s or a picture beat outside 1-3.5 s (warnings). A launch without a BEAT_PLAN
+ *                  whose first line comes after 1 s warns
  *   word-total     on-screen words <= --max-words (default: the pace's maxWords, calm 30, crisp 35; a script 50);
  *                  entries with kind: 'ui' (terminal commands, code, URLs, app labels the product
  *                  shows) are counted apart, not budgeted
@@ -894,6 +900,41 @@ async function main() {
   const REVEAL = isNum(T.REVEAL) && T.REVEAL > 0 ? (T.REVEAL as number) : null;
   const actStarts = acts.map(([, a]) => a.from).filter((f) => f > 0);
   const crossesAct = (from: number, to: number) => actStarts.find((x) => x > from && x < to);
+
+  // --- beats: a line alone (T), the picture acting (A), a line over a picture (TA), the end, in turn
+  const firstLine = film.filter((c) => c.kind !== 'name').reduce((m, c) => Math.min(m, c.in), Infinity);
+  const PLAN = T.BEAT_PLAN as { id?: string; kind?: string; from?: number; to?: number }[] | undefined;
+  if (Array.isArray(PLAN) && PLAN.length) {
+    const ok = PLAN.filter((x, i) => {
+      const good = x && ['T', 'A', 'TA', 'end'].includes(String(x.kind)) && isNum(x.from) && isNum(x.to) && x.to > x.from;
+      if (!good) err('beats', `BEAT_PLAN[${i}] must be {kind: 'T' | 'A' | 'TA' | 'end', from, to} with to > from`);
+      return good;
+    }) as { id?: string; kind: string; from: number; to: number }[];
+    const body = ok.filter((x) => x.kind !== 'end');
+    const nT = body.filter((x) => x.kind === 'T').length;
+    const nTA = body.filter((x) => x.kind === 'TA').length;
+    if (body.length) {
+      if (nT < 2) err('beats', `${nT} type-only beat${nT === 1 ? '' : 's'}: a line alone on a clean ground at least twice a film (T in BEAT_PLAN)`);
+      else if (nT < 0.15 * body.length) err('beats', `type-only beats are ${Math.round((100 * nT) / body.length)} % of the shots; keep >= 15 %: a line alone, then the picture`);
+      if (nTA > 0.4 * ok.length) err('beats', `${nTA} of ${ok.length} beats set a line over a picture (${Math.round((100 * nTA) / ok.length)} %); keep <= 40 %: give the line its own beat, then the picture`);
+    }
+    const lineOn = (a: number, z: number) => film.filter((c) => c.kind !== 'name' && c.in < z && (c.out ?? TOTAL) > a);
+    for (const x of body) {
+      const sec = (x.to - x.from) / FPS;
+      const label = `${x.kind} ${x.id ?? ''} f${x.from}-f${x.to}`.replace(/\s+/g, ' ');
+      if (x.kind !== 'A' && !lineOn(x.from, x.to).length) err('beats', `${label} is a line beat with no line on screen`);
+      if (x.kind === 'A') {
+        const over = lineOn(x.from, x.to).reduce((m, c) => m + Math.min(x.to, c.out ?? TOTAL) - Math.max(x.from, c.in), 0);
+        if (over > 0.25 * (x.to - x.from)) err('beats', `${label} is a picture beat with a statement on screen for ${Math.round((100 * over) / (x.to - x.from))} % of it: declare it TA (a line over a picture) or give the line its own beat`);
+      }
+      const beatS = (60 / BPM) * 1;
+      if (x.kind === 'T' && (sec < 0.5 - 1e-9 || sec > 2.4 + beatS / 2 + 1e-9)) warn('beats', `${label} holds its line ${sec.toFixed(2)} s; a line alone holds 0.5-2.4 s (about 1.3)`);
+      if (x.kind === 'A' && (sec < 1 - 1e-9 || sec > 3.5 + beatS / 2 + 1e-9)) warn('beats', `${label} runs ${sec.toFixed(2)} s; a picture beat runs 1-3.5 s`);
+    }
+    if (firstLine > FPS) err('beats', `the first line arrives at ${(firstLine / FPS).toFixed(2)} s; it is on screen by 1 s`);
+  } else if (filmType === 'launch' && firstLine > FPS && firstLine < Infinity)
+    warn('beats', `the first line arrives at ${(firstLine / FPS).toFixed(2)} s; a launch puts it on screen by 1 s (and declares its BEAT_PLAN)`);
+
   if (declared) {
     if (T.LOOK !== undefined) {
       if (!T.LOOK || typeof T.LOOK !== 'object') err('declarations', 'LOOK must be {blur, texture, filmType, oneTake, whiteWorld}');
