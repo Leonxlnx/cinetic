@@ -66,7 +66,7 @@ You are the art director, the copy editor and the product designer. Judge every 
    - Look for muddy washes that turn ink to grey.
    - Look for banding: `banding.png` from the forensics lens shows it.
 6. **Composition.**
-   - Flag "text left, UI card right" and centred floating layouts; the subject should bleed past an edge, off-centre (`framing-centred`).
+   - **Placement (item 1 of the checklist).** Every statement is centred and in the middle band (35-65 % of the height): flag a line flush left at the top or the bottom (a **P1**), "text left, UI card right", a line on top with a big picture below it more than once a film, and a line squeezed beside or above a picture; check `placement` in `layout-*.json`. Pictures may bleed past an edge, off-centre (`framing-centred` is for pictures, never for type).
    - Flag grey placeholder cards or skeleton bars (D17) and empty cards: every card shows real UI, a real picture or is blank on purpose.
    - There is one focal action per shot.
    - Safe margins are at least 96 px at the sides and 64 px top and bottom, with at least 24 px of headroom at maximum punch. Check the `layout-*.json` violations.

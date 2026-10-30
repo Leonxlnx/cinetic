@@ -177,10 +177,14 @@ Four more that have homes but no automated check:
 
 ## 7. Composition and layout
 
-1. **One subject, off-centre and bleeding.** The hero framed at 1.1-1.6× the frame, past an edge, off the centre line;
-   the dead-centre subject inside the frame is a template (`framing-centred`).
-2. **Asymmetry for heroes:** a big word left-aligned with a small line beneath it; captions set into the negative
-   space a tilted product opens.
+1. **Words in the middle.** A statement is centred horizontally and sits in the middle band of the frame (its centre
+   at 35-65 % of the height): at least 80 % of the statement time centred, 85 % in the middle band. Centred top or
+   bottom only over a full-bleed picture; never flush left at the top or the bottom; a line on top with a big picture
+   below it at most once a film; a line beside, above or below a picture at most once per 30 s. When the product is on
+   screen with the line, the product steps back behind it (`fx/ReadBack`) or plays its beat before or after the line
+   (`layout-audit.sh` placement gate).
+2. **Pictures may sit off-centre and bleed:** a product shot framed at 1.1-1.6× the frame, past an edge, is fine (the
+   `framing-centred` check is for pictures only, never for type); the words stay centred over it.
 3. **Symmetry for systems:** mirrored columns, centre-out reveals.
 4. **Negative space is designed:** around a single type hero, 50-90 % of the frame stays empty; product shots fill the
    frame; no region larger than about a quarter of the frame stays empty by accident.

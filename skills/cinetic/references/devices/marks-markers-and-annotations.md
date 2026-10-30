@@ -2,7 +2,7 @@
 
 Part of the device book: [INDEX](INDEX.md) has the pick-by-job table, the materials and VFX notes and one line for every device.
 
-Small marks that point: corner squares, brackets, selection boxes, pen strokes, highlight blocks, rings. They are the cheapest way to make a frame feel designed and alive, and the easiest to overuse: one system per film.
+Small marks that point: corner squares, brackets, selection boxes, pen strokes, highlight blocks, rings. They are the cheapest way to make a frame feel designed and alive, and the easiest to overuse: one system per film. A mark round a word (a box, a marker bar, a pill, an underline, a knockout) is a film's one declared signature, on one line at most; a film's everyday emphasis is the accent colour on at most 60 % of its lines (`fx/TypeEmphasis` `filmEmphasis`), never a decoration on every line.
 
 [Four tiny corner squares that blink and jump](#four-tiny-corner-squares-that-blink-and-jump) · [Markers travel as echo bars and stretch ahead of the cut](#markers-travel-as-echo-bars-and-stretch-ahead-of-the-cut) · [Marker-pen strokes write on, slash and erase](#marker-pen-strokes-write-on-slash-and-erase) · [L-brackets frame a word and shrink-wrap it](#l-brackets-frame-a-word-and-shrink-wrap-it) · [Design-tool selection box snaps to each word](#design-tool-selection-box-snaps-to-each-word) · [Keyword sits in a highlight block or pill](#keyword-sits-in-a-highlight-block-or-pill) · [Connector lines draw from one element to the next](#connector-lines-draw-from-one-element-to-the-next) · [Thin pen lines circle, underline and point](#thin-pen-lines-circle-underline-and-point) · [Corner swatches take their colour from the picture](#corner-swatches-take-their-colour-from-the-picture) · [A ring draws around the subject, then ripples](#a-ring-draws-around-the-subject-then-ripples) · [Tracking squares jump over a crowd every frame](#tracking-squares-jump-over-a-crowd-every-frame) · [Corner dots bracket the line; one pops big on entry](#corner-dots-bracket-the-line-one-pops-big-on-entry) · [Rings ripple out from a click or a pill](#rings-ripple-out-from-a-click-or-a-pill) · [Thin outline shapes frame a caption on a photo](#thin-outline-shapes-frame-a-caption-on-a-photo) · [Arrows shoot outward on a swap](#arrows-shoot-outward-on-a-swap)
 
@@ -64,9 +64,9 @@ A caption sits inside a thin selection rectangle with small square handles at it
 
 ### Keyword sits in a highlight block or pill
 
-`dv-keyword-highlight` · workhorse · energy calm · any · primitive: Words
+`dv-keyword-highlight` · signature · energy calm · any · primitive: Words
 
-The keyword rises into a soft rounded highlight block of the accent that then wipes off, turns the accent in 2 frames, pops in a solid accent pill (62 % -> 100 % in 2 frames), or a pale card appears behind the key comment while the scroll settles; a mention is a tinted chip; two small accent ticks point at the selected row. **When:** The one word or item that matters in a line or list. **Avoid:** Highlighting more than one word per line.
+The keyword rises into a soft rounded highlight block of the accent that then wipes off, turns the accent in 2 frames, pops in a solid accent pill (62 % -> 100 % in 2 frames), or a pale card appears behind the key comment while the scroll settles; a mention is a tinted chip; two small accent ticks point at the selected row. **When:** The one word or item that matters in a film, as its declared signature (one line). **Avoid:** A block or pill on more than one line of a film; more than one word per line.
 
 - **Anatomy:** Block with a soft edge (about 25 px feather) sized to the word; rise 6 f, hold 10 f, wipe 12 f; pill pop 2 f linear.
 - **Timing:** 4-40 f.

@@ -311,7 +311,7 @@ free for commercial use in video, fetched from `@fontsource-variable` by `add-fo
 | Look | Display / text | Alternates | Weights (text · display calm / bold · wordmark) | For |
 |---|---|---|---|---|
 | **neutral** (default) | Inter (opsz) / Inter | Geist, Inter Tight | 450 · 500 / 600 · 600 | launch, product and feature films, walkthroughs: the default |
-| **tight** | Inter Tight / Inter Tight | Public Sans | 450 · 550 / 650 · 650 | big, firm headline systems set tight, flush left or cropped: ads, teasers, reels on the beat |
+| **tight** | Inter Tight / Inter Tight | Public Sans | 450 · 550 / 650 · 650 | big, firm headline systems set tight, centred or cropped by the frame: ads, teasers, reels on the beat |
 | **geometric** | DM Sans (opsz) / DM Sans | Google Sans Flex, Urbanist | 450 · 500 / 600 · 600 | round, open product type: consumer apps, assistants, platforms |
 | **friendly** | Manrope / Manrope | Plus Jakarta Sans, DM Sans | 500 · 600 / 700 · 700 | calm, warm brands: care, learning, community, feed ads |
 | **technical** | Geist / Geist + Geist Mono | JetBrains Mono | 450 · 500 / 600 · 600 | developer tools, APIs, infrastructure, data |
@@ -569,13 +569,15 @@ a bleed scale it is a declared bleed and must cross the frame's edge (`bleed: fa
 state again, held to the zone).
 
 **The claim on accent** (`fx/TypeClaim`, `<AccentClaim text at frame>`): the launch close's claim set like a poster on
-the accent: cap height 16.5 % of the frame height (16 % at the least; Inter 245 px at 1080p), flush left at a 3 %
-margin, tracking −0.04 em, weight 600-700, lead 0.98, one to three lines broken at word boundaries (`claimLayout()`
-brings the size down toward 16 % before it adds a fourth line), centred on the frame's height (`align` bottom or top).
+the accent: cap height 16.5 % of the frame height (16 % at the least; Inter 245 px at 1080p), each line centred on the
+frame (`justify: 'left'` sets it flush left at a 3 % margin, an editorial poster, never at the top or the bottom),
+tracking −0.04 em, weight 600-700, lead 0.98, one to three lines broken at word boundaries (`claimLayout()` brings the
+size down toward 16 % before it adds a fourth line), centred on the frame's height (`align` bottom or top only over a
+full-bleed picture).
 Its words arrive on the crisp entry across the lines; the type is paper or ink on the accent, whichever reads
 (`inkOn()`); once built, the block creeps from 1.5 % a second, easing toward 3 %, through its hold. The accent flood is
-a declared colour event: list its `declares({ at, hold })` in `src/sync.ts`. Never centred, never at a sentence line's size: under-scaled and centred
-is the claim of a slide deck.
+a declared colour event: list its `declares({ at, hold })` in `src/sync.ts`. Never at a sentence line's size: an
+under-scaled claim is the claim of a slide deck.
 
 **Objects inside a line** (`kit/inline.tsx`): the thing a sentence names sits in the sentence, at 1.0 cap height on
 the baseline, so type and product share one shot. `InlineObject` is the slot: a real mark (a slug, `scripts/logos.mjs`),
@@ -674,20 +676,25 @@ the strongest version: the focus snap is the hit (`OVERSIZE_FIRST`: x2.67, 6 px 
 
 ## 9. Type devices
 
-**Every hero line takes an emphasis on its key words** ([type emphasis and dimension](devices/type-emphasis.md)): a line
-in one size, one weight and one colour reads flat however it arrives. `<TypeLine>` gives a hero line `weight` (the
-family's emphasis weight in the accent, its width held) unless it names a device (`spec.emph`: weight, accent, scale,
-swell, marker, box, under, outline, sweep; `false` for a body line, a name or a piece of a line set in parts); the
-templates deal one per line, never the same device twice in a row, on the key words their script names (`keys`), and
-open on a two-line statement (`StatementLine`: the words before the key words small over them big). Mark a line's key
-words with asterisks ("Brook is a *water bottle*."): `copy-check.py` reads the marks and suggests a key word for a line
-without one. Stacks, planes in depth and type behind the subject: `fx/TypeStack`, `fx/TypeDepth`, `fx/TypeBehind`.
+**Emphasis is quiet and one kind** ([type emphasis and dimension](devices/type-emphasis.md)). A film picks ONE
+emphasis kind (by default the key words in the accent colour; else weight, scale, swell, outline or sweep) and puts it
+on at most 60 % of its lines, on the key words the script names (`keys`, or *marks*: "Brook is a *water bottle*.");
+the other lines are plain. `fx/TypeEmphasis` `filmEmphasis` deals it; `<TypeLine>` adds no device of its own. A box, a
+marker bar, a pill, an underline or a knockout is never the film's kind: only its one declared signature, on one line
+at most. Love is in the build and the size, not in a decoration on every line: one line, centred, built word by word
+on the film's one voice (§8), set at 6-9 % cap height. One-line statements are the norm (80 % of a film's statements
+or more); a two-voice stack (a small lead line over big key words, `StatementLine stack`) at most once a film.
+`copy-check.py` reads the marks and suggests a key word for a line without one. Stacks, planes in depth and type behind
+the subject: `fx/TypeStack`, `fx/TypeDepth`, `fx/TypeBehind`.
 
 Primitives that do one decisive thing to type each: `LineSnap`, `FocusWord`, `HueSweep`, `Letters`, `MaskRise`,
 `Scramble`, `TypeOn`, plus `TypeFx`, `TypeFill`, `TypeMask`, `Knockout`, `Echoes`, `Streak`, `PenStroke` and
 `Brackets` (the device book's [type arrivals](devices/type-arrivals.md), [lines, layout and swaps](devices/lines-layout-and-swaps.md)
-and [type exits](devices/type-exits.md) families). **One text animation per line, all different:** a preset (§8) or one
-of these devices, chosen for what the line says. Inside a line, one device: a line wearing three tricks is a sampler.
+and [type exits](devices/type-exits.md) families). **One text voice per film:** one entry (a preset of §8 or one of
+these devices) for most of the film's lines (half of them or more; the word build with a re-centre is the house voice),
+plus at most one contrasting entry per 30 s for the hero line (the last word's snap, a decode, a split round a
+picture, a slot roll), chosen for what that line says. A new animation on every line reads as a template. Inside a
+line, one device: a line wearing three tricks is a sampler.
 
 - **Make room** (`LineSnap mode="room"`, `makeRoomState`): a held line answers a new word by making room in one frame.
   Creep 0.2-0.4 s (house 0.28 s, 17 % of the distance, speed rising), jump 60-75 % of the distance on one frame

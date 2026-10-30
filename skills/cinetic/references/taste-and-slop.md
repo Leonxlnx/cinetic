@@ -87,7 +87,7 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **D14 The stock tech palette.** Cool grey paper, navy ink and a teal or framework-blue accent: correct, and anonymous. **Fix:** tint the stage from the brand's world (pine, slate, ink-navy, a deep red, a clean yellow) and let the accent carry one meaning (`references/brand-and-color.md` §8–10).
 
 ## E. Layout and framing
-- **E1 The SaaS layout.** Text left, UI card right on white, or everything centred and floating. **Fix:** the product full-bleed, type large on its own clean field or on an eye line (never a lower-third subtitle by default), one focal action per shot.
+- **E1 The SaaS layout.** Text left, UI card right on white; a line flush left at the top or the bottom; a line on top with a big picture below it. **Fix:** the line centred in the middle of the frame on its own clean field, the product before or after it (or stepping back behind it, `fx/ReadBack`), full-bleed when it is the shot; never a lower-third subtitle by default; one focal action per shot.
 - **E2 Voids and edge bands.** 20% of the frame empty under the product, a dark window edge 20–130 px wide at the border, a UI header over 120 px of nothing. **Fix:** clamp the camera so the product covers the frame; overscan moving layers 5–8%; collapse a section until its content arrives.
 - **E3 No margins.** Less than 96 px at the sides or 64 px top and bottom, or less than 24 px of headroom at maximum punch. **Fix:** check the safe area on the punch frame with `scripts/layout-audit.sh`.
 - **E4 Crops that slice glyphs.** "aft", ":00", or text cut by a card edge moving across it. **Fix:** crop on column gutters; reveal text only after the edge has passed.

@@ -311,8 +311,10 @@ Six camera ideas in about 9.5 s, one per beat, every cut carried.
 
 - **The product covers the frame** whenever it is the shot: clamp the camera so no window edge or void enters by
   accident (a `cover(shot, w, h)` helper keeps both edges outside the frame).
-- **Bleed and off-centre.** Frame the subject past two edges at 1.2× the frame or more in most acts, off-centre at
-  1.1-1.6×; a subject dead centre and inside the frame in more than half the framed samples warns (`framing-centred`).
+- **Bleed for pictures, centre for words.** Frame a product or picture past two edges at 1.2× the frame or more in
+  most acts, off-centre at 1.1-1.6×; a picture dead centre and inside the frame in more than half the framed samples
+  warns (`framing-centred`, which leaves type out). A statement stays centred in the middle band whatever the camera
+  does (`layout-audit.sh` placement).
 - **Headroom:** at least 24 px between any glyph and the frame edge at maximum `k` (creep and punch included).
 - **Readable text** is at least 36 px on screen after camera scale whenever it is in focus for more than 6 f
   (`TEXT_MIN`): `k ≥ 36 / fontPx` for the smallest text that carries meaning. Smaller text is texture, out of focus or
