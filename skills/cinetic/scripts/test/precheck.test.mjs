@@ -11,7 +11,8 @@
  *      is an error either way (it crashes every render).
  *   4. Fit: a content string with "..." fails (truncated); a string wider than the safe width at the kit's label size
  *      fails (fit), one wider than a card's column warns (fit-long); the starter's own COPY lines fit.
- *   5. --json carries the findings; the run stays under 60 s here (30 s is the budget on a quiet machine).
+ *   5. --json carries the findings; the run stays under 60 s here (30 s is the budget on a quiet machine); an act that
+ *      imports a stylesheet or a picture still imports (stubbed on a second run).
  *
  * It copies the starter's src into a temporary folder with its node_modules linked (npm install in
  * assets/remotion-starter first).
@@ -113,6 +114,28 @@ export const Faulty: React.FC = () => (
   const ship = run(['--ship']);
   result(ship.code === 1 && has(ship.rep, 'timing', 'error', /faulty slide|Faulty/) && ship.rep.imports.find((x) => x.file === 'src/acts/Faulty.tsx')?.ok === false,
     'timing: under --ship the same assert throws at import and fails', JSON.stringify(ship.rep.findings.filter((f) => f.rule === 'timing')).slice(0, 200));
+
+  // COPY lines: set at their role size, a line wider than the safe width fails; in a film whose acts size lines to the
+  // width (fitSize) a line that only fits a little smaller passes, one set under 75 % of its role warns, under half fails
+  const TL = path.join(film, 'src', 'timeline.ts');
+  const tl0 = fs.readFileSync(TL, 'utf8');
+  fs.writeFileSync(TL, `${tl0}\nCOPY.push({ id: 'zzmid', text: 'Your voice memos become one clean list, sorted by day, every morning' } as never, { id: 'zzlong', text: 'Your voice memos become one clean list, sorted by day, every single morning, with every task you said out loud on the walk home' } as never);\n`);
+  fs.writeFileSync(ACT, `export const N = 1;\n`);
+  const plain = run();
+  result(has(plain.rep, 'fit', 'error', /zzmid/) && has(plain.rep, 'fit', 'error', /zzlong/), 'fit: a COPY line set at its role size and wider than the safe width fails', JSON.stringify(plain.rep.findings.filter((f) => /fit/.test(f.rule)).map((f) => `${f.rule} ${f.where} ${f.message.slice(0, 60)}`)));
+  fs.writeFileSync(path.join(film, 'src', 'acts', 'Sized.tsx'), `import { fitSize } from '../lib/measure';\nexport const size = (t: string) => fitSize(t, 1000, 84, 450, 0);\n`);
+  const sized = run();
+  result(has(sized.rep, 'fit-small', 'warn', /zzmid/) && has(sized.rep, 'fit', 'error', /zzlong/) && !has(sized.rep, 'fit', 'error', /zzmid/), 'fit: in a film that sizes lines to the width, a line set under 75 % of its role warns, under half fails', JSON.stringify(sized.rep.findings.filter((f) => /fit/.test(f.rule)).map((f) => `${f.rule} ${f.where} ${f.message.slice(0, 90)}`)));
+  fs.writeFileSync(TL, tl0);
+  fs.rmSync(path.join(film, 'src', 'acts', 'Sized.tsx'));
+
+  // an act that imports a stylesheet and a picture: the plain run fails on them, the stubbed second run imports it
+  fs.writeFileSync(path.join(film, 'src', 'acts', 'look.css'), '.a { color: red; }\n');
+  fs.writeFileSync(path.join(film, 'src', 'acts', 'pic.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  fs.writeFileSync(ACT, `import './look.css';\nimport pic from './pic.png';\nexport const PIC = pic;\n`);
+  fs.rmSync(path.join(film, 'src', 'content.ts'));
+  const media = run();
+  result(media.rep.imports?.find((x) => x.file === 'src/acts/Faulty.tsx')?.ok === true && !has(media.rep, 'imports', 'error'), 'imports: an act importing css and a picture loads (stubbed on a second run)', JSON.stringify(media.rep.findings ?? media.rep.error).slice(0, 200));
 
   fs.writeFileSync(ACT, `export const N = 1;\nif (N > 0) throw new Error("timeline: the claim line is read until f400 and leaves by f420, after its act's cut (f410)");\n`);
   const bare = run();

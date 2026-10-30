@@ -15,7 +15,9 @@
  *                sampleWorld() and any sample() call in the film's source (kit-sample), and the parts that reported
  *                kit-empty while the modules loaded
  *   4. fit       every on-screen string measured with the film's own font (its woff2's advance widths, tracking and
- *                weight): each COPY line at its type role (line, display for the name, ui) against the safe width;
+ *                weight): each COPY line at its type role (line, display for the name, ui) against the safe width (in a
+ *                film whose acts size lines to the width with fitSize: the size it gets, a warning under 75 % of its
+ *                role and an error under half);
  *                each string of the content modules at the kit's label size (TYPE.ui) against half the safe width (a
  *                card's text column; a warning) and the whole safe width (an error); "..." or "…" in a string (a
  *                truncated title) is an error. The measure leaves out kerning and the display optical size, so it
@@ -207,7 +209,10 @@ if (!flag('--no-import') && importList.length) {
   return next(url, ctx);
 }\n`);
       const reg = path.join(TMP, 'register.mjs');
-      fs.writeFileSync(reg, `import { register } from 'node:module';\nregister(${JSON.stringify(pathToFileURL(hooks).href)});\n`);
+      // tsx runs a .tsx act of a package without "type": "module" as CommonJS, where an import is a require that the ESM
+      // load hook never sees: the same extensions get an empty CommonJS module too
+      const STUB = ['.css', '.woff', '.woff2', '.ttf', '.otf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.mp4', '.webm', '.mov', '.wav', '.mp3', '.m4a', '.json5'];
+      fs.writeFileSync(reg, `import Module, { register } from 'node:module';\nregister(${JSON.stringify(pathToFileURL(hooks).href)});\nfor (const ext of ${JSON.stringify(STUB)}) Module._extensions[ext] = (m) => { m.exports = { __esModule: true, default: '' }; };\n`);
       const child = path.join(TMP, 'probe.mts');
       fs.writeFileSync(child, `
 const mods: { path: string; content: boolean }[] = ${JSON.stringify(importList.map((m) => ({ path: pathToFileURL(m.path).href, rel: rel(m.path), content: m.content })))};
@@ -249,10 +254,18 @@ process.stdout.write('\\n@@PRECHECK@@' + JSON.stringify(out) + '\\n');
 `);
       const env = { ...process.env, ...(SHIP ? { CINETIC_GATE: 'ship' } : {}) };
       if (!SHIP) delete env.CINETIC_GATE;
-      const r = spawnSync(process.execPath, [tsx, '--import', pathToFileURL(reg).href, child], { cwd: ROOT, env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 300000 }); // 30 s on a quiet machine; a loaded one may take minutes
-      const at = (r.stdout ?? '').lastIndexOf('@@PRECHECK@@');
-      if (at < 0) add('imports', 'error', `the import probe did not finish: ${((r.stderr || r.stdout || '') + (r.error ? ` ${r.error.message}` : '')).trim().split('\n').slice(-6).join(' | ')}`);
-      else probe = JSON.parse(r.stdout.slice(at + 12).trim().split('\n')[0]);
+      // plain tsx first: a loader hook runs every module through an extra thread (5x slower); only a film whose acts import
+      // css, fonts or media needs the stub hook, and gets a second run with it
+      const once = (hooked) => {
+        const r = spawnSync(process.execPath, [tsx, ...(hooked ? ['--import', pathToFileURL(reg).href] : []), child], { cwd: ROOT, env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 300000 }); // 30 s on a quiet machine; a loaded one may take minutes
+        const at = (r.stdout ?? '').lastIndexOf('@@PRECHECK@@');
+        if (at < 0) return { fail: `the import probe did not finish: ${((r.stderr || r.stdout || '') + (r.error ? ` ${r.error.message}` : '')).trim().split('\n').slice(-6).join(' | ')}` };
+        return { probe: JSON.parse(r.stdout.slice(at + 12).trim().split('\n')[0]) };
+      };
+      let res = once(false);
+      if (res.probe?.imports.some((x) => !x.ok && /Unknown file extension|ERR_UNKNOWN_FILE_EXTENSION|Cannot parse|unexpected token|Unexpected character/i.test(x.error))) res = once(true);
+      if (res.fail) add('imports', 'error', res.fail);
+      else probe = res.probe;
     } finally {
       fs.rmSync(TMP, { recursive: true, force: true });
     }
@@ -430,9 +443,26 @@ if (!flag('--no-fit') && probe) {
         else if (q > 0.97) add('fit-edge', 'warn', `${tag}, at the edge of its box (${Math.round(box)} px, ${kind}): check it in a still`, where);
       }
     };
+    // a film whose acts size their lines to the width (lib/measure fitSize) never sets a long line wider than the frame:
+    // it sets it smaller. There the measure says how small: under 75 % of its role a line reads small (warn), under half
+    // it is no longer a line (error). A film that sets lines at their role size gets the plain width check.
+    const fitted = filmFiles.some((p) => /\bfitSize\s*\(/.test(fs.readFileSync(p, 'utf8')));
     for (const c of probe.copy ?? []) {
       const r = role(c.kind === 'name' ? 'display' : c.kind === 'ui' ? 'ui' : 'line');
-      check(c.text, r, safeW, `COPY ${c.id}`, 'the safe width');
+      if (!fitted || c.kind === 'ui') {
+        check(c.text, r, safeW, `COPY ${c.id}`, 'the safe width');
+        continue;
+      }
+      for (const ln of String(c.text).split('\n')) {
+        if (!ln.trim()) continue;
+        measured++;
+        const px = r.size * u;
+        const k = safeW / width(ln, px, r.weight, r.track ?? 0);
+        if (k >= 0.75) continue;
+        const tag = `"${ln.length > 60 ? `${ln.slice(0, 57)}...` : ln}" fits the safe width only at ${Math.round(px * k)} px (${Math.round(k * 100)} % of its ${Math.round(px)} px role)`;
+        if (k < 0.5) add('fit', 'error', `${tag}: too long to read as one line: shorten it, or split it across two beats`, `COPY ${c.id}`);
+        else add('fit-small', 'warn', `${tag}: the act sets it that small (fitSize); a shorter line reads bigger`, `COPY ${c.id}`);
+      }
     }
     const seen = new Set();
     for (const s of probe.strings ?? []) {
