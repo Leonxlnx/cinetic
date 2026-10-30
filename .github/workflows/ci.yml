@@ -293,10 +293,10 @@ jobs:
             exit 1
           fi
 
-      - name: Starter primitive tests (continuity, depth and light, kit, type, transitions, drift, data; through the starter's tsx)
+      - name: Starter primitive tests (continuity, depth and light, kit, type, transitions, seams, drift, data, precheck, film-diff, frames; through the starter's tsx)
         run: |
           fail=0
-          for t in continuity depth-light kit-dense type-moves type-presets type-systems type-emphasis transitions handoff primitives moment wordmark logo-kit drift details kit-real pictures placeholder data-check timing; do
+          for t in continuity depth-light kit-dense type-moves type-presets type-systems type-emphasis transitions seam handoff primitives moment wordmark logo-kit drift details kit-real pictures placeholder data-check timing precheck film-diff frames; do
             echo "::group::$t.test.mjs"
             node "skills/$SKILL/scripts/test/$t.test.mjs" || { echo "::error::$t.test.mjs failed"; fail=1; }
             echo "::endgroup::"
