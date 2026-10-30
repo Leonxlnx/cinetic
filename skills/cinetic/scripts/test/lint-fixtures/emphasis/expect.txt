@@ -1,0 +1,2 @@
+Fixture for scripts/test/lint-film.test.mjs (a whole film folder, linted as one). expect: emphasis-signature=1 emphasis-share:warn=1
+Every line of the film sets its key words apart (4 of 4: over 70 % warns), and two box-type marks (a marker and a box) decorate two lines: a mark round a word is the film's one signature, on one line (fails on the second).

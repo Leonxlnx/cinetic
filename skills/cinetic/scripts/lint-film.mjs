@@ -119,6 +119,12 @@
  *   giant-watermark   a giant word (TYPE.giant, 400 px and up) at opacity <= 0.29: it is the set, not
  *                     a watermark
  *   giant-once        giant words in more than one act: the set of one moment, once per film
+ *   emphasis-share    more than 70 % of the film's script lines (an act's TypeLine, HeroLine, MarkLine, StatementLine,
+ *                     ScriptLine, Caption or Line element) given a literal emphasis device, or a filmEmphasis `share`
+ *                     over 0.7: a film's emphasis is one kind on at most 60 % of its lines (fx/TypeEmphasis)
+ *   emphasis-signature error: a box, marker or underline device (an `emph` or a signature `device`) named in more than
+ *                     one place, or two of them in one film: a mark round a word is the film's one declared signature,
+ *                     on one line
  *   end-card-template a mark, a wordmark and a tagline centred over a radial gradient: the stock end
  *                     card; build the lockup from the film's own device
  *   filler-plate      every element in frame has a job: a map or Array.from callback that draws only a
@@ -1074,6 +1080,8 @@ const DEVICE_RULES = new Set(['banned-color', 'off-token-color']);
 let devicePalette = 0;
 const springUses = []; // underdamped spring uses across the film, for spring-budget
 const giantUses = []; // act files that set a giant word, for giant-once
+const emphMarks = []; // box-type emphasis devices named in film files, for emphasis-signature
+const emphLines = { lines: 0, literal: 0, shares: [] }; // script line elements and literal emphases in acts, for emphasis-share
 
 for (const file of files) {
   const raw = readFileSync(file, 'utf8');
@@ -2275,6 +2283,18 @@ for (const file of files) {
       if (used >= 0 && isActFile) giantUses.push({ file: rel, ...pos(used), excerpt: (lines[pos(used).line - 1] ?? '').trim().slice(0, 140) });
     }
 
+    // emphasis: a box, marker or underline round a word is the film's one signature; one kind on at most 60 % of the lines
+    if (isScript && !house) {
+      each(/\b(?:emph|device)\s*[:=]\s*\{?\s*['"](box|marker|under)['"]/g, (m, i) => emphMarks.push({ file: rel, ...pos(i), device: m[1], excerpt: (lines[pos(i).line - 1] ?? '').trim().slice(0, 140) }));
+      each(/\bfilmEmphasis\s*\([^;]*?\bshare\s*:\s*([\d.]+)/g, (m, i) => {
+        if (Number(m[1]) > 0.7) emphLines.shares.push({ file: rel, ...pos(i), share: Number(m[1]), excerpt: (lines[pos(i).line - 1] ?? '').trim().slice(0, 140) });
+      });
+      if (isActFile) {
+        emphLines.lines += [...code.matchAll(/<(?:TypeLine|HeroLine|MarkLine|StatementLine|ScriptLine|Caption|Line)\b/g)].length;
+        emphLines.literal += [...code.matchAll(/\bemph\s*[:=]\s*\{?\s*['"](?:weight|accent|scale|swell|marker|box|under|outline|sweep)['"]/g)].length;
+      }
+    }
+
     // end-card-template: mark + wordmark + tagline centred over a radial gradient is the stock ending
     if (isScript && !house) {
       const starts = [0, ...[...code.matchAll(/\n(?:export\s+)?(?:const|function)\s+[A-Z][\w$]*/g)].map((m) => m.index), code.length];
@@ -2381,6 +2401,22 @@ if (!opt.allow.has('giant-once') && giantUses.length > 1) {
         message: `a giant word in ${giantUses.length} acts (${giantUses.map((x) => x.file).join(', ')}): the giant role is the set of one moment, once per film; elsewhere scale changes through the camera`,
         excerpt: u.excerpt,
       });
+}
+
+// ---------------------------------------------------------------------------------- film-wide: emphasis
+// A mark round a word (box, marker, underline) is the film's one signature on one line; a film's emphasis is one kind on
+// at most 60 % of its lines (fx/TypeEmphasis filmEmphasis), so more than 70 % of the lines set by hand warns.
+if (!opt.allow.has('emphasis-signature') && emphMarks.length > 1) {
+  const kinds = [...new Set(emphMarks.map((u) => u.device))];
+  for (const u of emphMarks.slice(1))
+    issues.push({ file: u.file, line: u.line, col: u.col, rule: 'emphasis-signature', severity: 'error',
+      message: `${emphMarks.length} box-type emphasis marks in the film (${kinds.join(', ')}): a box, marker or underline round a word is the film's one declared signature, on one line (filmEmphasis signature); the other lines take the film's kind (the accent colour) or none`, excerpt: u.excerpt });
+}
+if (!opt.allow.has('emphasis-share')) {
+  for (const u of emphLines.shares)
+    issues.push({ file: u.file, line: u.line, col: u.col, rule: 'emphasis-share', severity: 'warn', message: `filmEmphasis share ${u.share} > 0.7: a film's emphasis sits on at most 60 % of its lines (the default)`, excerpt: u.excerpt });
+  if (emphLines.lines >= 3 && emphLines.literal / emphLines.lines > 0.7)
+    issues.push({ file: '.', line: 1, col: 1, rule: 'emphasis-share', severity: 'warn', message: `${emphLines.literal} of ${emphLines.lines} script lines carry an emphasis device (${Math.round((100 * emphLines.literal) / emphLines.lines)} % > 70 %): one kind on at most 60 % of the lines, the others plain (fx/TypeEmphasis filmEmphasis)`, excerpt: '' });
 }
 
 // ---------------------------------------------------------------------------------- film-wide: snap-step (one device)
