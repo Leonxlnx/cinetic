@@ -740,10 +740,18 @@ async function main() {
   let textFrames = 0;
   let maxBoth = 0;
   const free: boolean[] = [];
+  // a line a later swap takes the place of (swap: '<id>' or true) leaves in that one move: it counts until 4 f@60 into
+  // the swap, not to the end of an exit it never plays, and while both show the swap adds only its new words
+  const swapEnd = new Map<string, number>();
+  for (const b of film) {
+    if (!b.swap) continue;
+    const prev = typeof b.swap === 'string' ? film.find((x) => x.id === b.swap || x.chain === b.swap) : film.filter((x) => x !== b && x.in <= b.in).sort((p, q) => q.in - p.in)[0];
+    if (prev) swapEnd.set(prev.id, Math.min(swapEnd.get(prev.id) ?? Infinity, b.in + Math.round(4 * s)));
+  }
   for (let f = 0; f < TOTAL; f++) {
     const on = film.filter((c) => c.in <= f && f < c.out); // on screen until its exit begins (text-share)
-    const seen = film.filter((c) => c.in <= f && f < c.out + exitF); // ... and until its exit is over (concurrency)
-    const n = seen.reduce((m, c) => m + c.n, 0);
+    const seen = film.filter((c) => c.in <= f && f < Math.min(c.out + exitF, swapEnd.get(c.id) ?? Infinity)); // ... and until its exit is over (concurrency)
+    const n = seen.reduce((m, c) => m + (c.swap && seen.some((x) => x !== c && swapEnd.has(x.id)) ? c.nNew : c.n), 0);
     const both = n + valid.filter((c) => c.ui && c.in <= f && f < c.out + exitF).reduce((m, c) => m + c.n, 0);
     const limit = seen.length && seen.every((c) => c.mode === 'replace') ? P.maxVisibleReplace : P.maxVisibleBuild;
     maxVisible = Math.max(maxVisible, n);
