@@ -66,8 +66,8 @@
  *                  picture acting, a line over a picture, the end card): type-only beats >= 15 % of the shots and >= 2
  *                  a film, T+A <= 40 % of the beats, the first line on screen by 1 s, every line beat holding a line
  *                  and no picture beat carrying a statement for more than a quarter of it (errors); a line beat
- *                  outside 0.5-2.4 s or a picture beat outside 1-3.5 s (warnings). A launch without a BEAT_PLAN
- *                  whose first line comes after 1 s warns
+ *                  outside 0.5-2.4 s or a picture beat outside 1-3.5 s (warnings). A timeline without a BEAT_PLAN
+ *                  is not held to these (the simple launch declares one)
  *   word-total     on-screen words <= --max-words (default: the pace's maxWords, calm 30, crisp 35; a script 50);
  *                  entries with kind: 'ui' (terminal commands, code, URLs, app labels the product
  *                  shows) are counted apart, not budgeted
@@ -932,8 +932,7 @@ async function main() {
       if (x.kind === 'A' && (sec < 1 - 1e-9 || sec > 3.5 + beatS / 2 + 1e-9)) warn('beats', `${label} runs ${sec.toFixed(2)} s; a picture beat runs 1-3.5 s`);
     }
     if (firstLine > FPS) err('beats', `the first line arrives at ${(firstLine / FPS).toFixed(2)} s; it is on screen by 1 s`);
-  } else if (filmType === 'launch' && firstLine > FPS && firstLine < Infinity)
-    warn('beats', `the first line arrives at ${(firstLine / FPS).toFixed(2)} s; a launch puts it on screen by 1 s (and declares its BEAT_PLAN)`);
+  }
 
   if (declared) {
     if (T.LOOK !== undefined) {
