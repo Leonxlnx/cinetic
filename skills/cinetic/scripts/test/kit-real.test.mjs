@@ -16,7 +16,7 @@
  *      one per shot when the cuts are known; neighbours from different clips.
  *   5. castPlan() / checkCast(): no shoot or person in more than maxBeats beats, never the shoot of the beat before;
  *      checkCast() fails one couple in every beat.
- *   6. sampleWorld(): seen on the film's day (FILM_DATE) or `today`, its label's weekday the calendar's.
+ *   6. sample().world() and filmWorld(): seen on the film's day (FILM_DATE) or `today`, the label's weekday the calendar's.
  *
  * It runs src through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/kit-real.test.mjs [--verbose]
@@ -52,7 +52,9 @@ if (!existsSync(TSX)) {
 const url = (p) => pathToFileURL(join(SRC, p)).href;
 const PROBE = `
 import * as R from '${url('kit/real.ts')}';
-import { sampleWorld } from '${url('kit/data.ts')}';
+import { filmWorld } from '${url('kit/data.ts')}';
+import { sample } from '${url('kit/sample.ts')}';
+const sampleWorld = sample().world;
 const d = (iso: string, k = 0) => R.day(iso, k);
 const styles = ['wd', 'weekday', 'md', 'dm', 'short', 'dmy', 'mdy', 'long', 'longYear', 'num'] as const;
 const log = R.dayLog('sips', { count: 14, total: 1860, from: 7 * 60 + 5, now: 18 * 60 + 42, labels: ['Desk', 'Walk', 'Lunch', 'Gym', 'Train'] });
@@ -80,7 +82,7 @@ console.log(JSON.stringify({
   thumbs: R.thumbsFrom(clips, 12, 'row'),
   cast: Object.fromEntries(Object.entries(cast.plan).map(([b, ps]: any) => [b, ps.map((p: any) => p.id)])), short: cast.short,
   castBad: R.checkCast(cast.plan, 2), coupleBad: R.checkCast(couple, 2),
-  world: sampleWorld('kit-real').today, worldAt: sampleWorld('kit-real', { today: '2027-01-04' }).today,
+  world: sampleWorld('kit-real').today, worldAt: sampleWorld('kit-real', { today: '2027-01-04' }).today, fwToday: filmWorld({ records: [{ title: 'x' }] }).today, fwAt: filmWorld({ records: [{ title: 'x' }], today: '2027-01-04' }).today,
 }));
 `;
 
@@ -173,6 +175,7 @@ const wd = (o) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(Dat
 result(`${P.world.y}-${String(P.world.m).padStart(2, '0')}-${String(P.world.d).padStart(2, '0')}` === P.film && P.world.weekday === wd(P.world) && P.world.label.startsWith(wd(P.world)),
   'sampleWorld(): seen on the film\'s day, its weekday the calendar\'s', P.world.label);
 result(P.worldAt.y === 2027 && P.worldAt.m === 1 && P.worldAt.d === 4 && P.worldAt.weekday === 'Mon', 'sampleWorld({ today }): another day', P.worldAt.label);
+result(P.fwToday.label === P.world.label && P.fwAt.weekday === 'Mon' && P.fwAt.label === 'Mon, Jan 4', 'filmWorld(): seen on the film\'s day, or on `today`, its weekday the calendar\'s', `${P.fwToday.label} / ${P.fwAt.label}`);
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');
 process.exit(failed ? 1 : 0);

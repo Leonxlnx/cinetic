@@ -8,16 +8,19 @@
 //                line on a raised strip at >= 4 % of the frame height, and glides it from row to row (16 f at 60 fps
 //                on E.glideOut) when `focus` is a schedule
 //   AppWindow    the chrome: title bar, workspace, nav with counts, team, the viewer
-//   DenseScreen  a whole screen from a sample world (kit/data.ts): `layout` 'table' (tabs, KPIs, a records table,
-//                activity and a chart) or 'board' (the records as cards in status columns), with the lens on top
-// Every part is a pure function of its props and `frame`. Pass the product's own world (same shape) before shipping.
+//   DenseScreen  a whole screen from the film's own world (kit/data.ts filmWorld): `layout` 'table' (tabs, figures, a
+//                records table, activity and a chart) or 'board' (the records as cards in status columns), with the
+//                lens on top. A part the world does not give (figures, chart, activity, nav, chrome strings) is not
+//                drawn; no world at all draws the empty state (kit/gate.tsx) and reports kit-empty.
+// Every part is a pure function of its props and `frame`. The kit's sample worlds are sample().world(), for its gallery.
 import React from 'react';
 import { FONT, TEXT_MIN } from '../brand/tokens';
 import { Defocus } from '../fx/Defocus';
 import { clamp, E, mix, prog } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { f60x, fpsOf, useFilm } from '../lib/film';
-import { type SampleWorld, sampleWorld, type StatusTone, type WorldKind } from './data';
+import { isEmptyWorld, type SampleWorld, type StatusTone, type WorldKind } from './data';
+import { kitEmpty, KitEmpty } from './gate';
 import { Avatar, face, Glyph, keyFace, Sparkline, surfaceShadow, useKitScale } from './parts';
 import { type KitTheme, kitTheme } from './theme';
 
@@ -133,38 +136,45 @@ export const AppWindow: React.FC<{ theme: KitTheme; world: SampleWorld; w: numbe
   const mute = t.mute;
   const sideBg = mixColor(t.surface, t.ground, t.dark ? 0.35 : 0.45);
   const live = 0.55 + 0.45 * Math.cos((frame / fps) * Math.PI * 1.1) ** 2; // the live dot breathes
+  const chrome = W.chrome ?? {};
+  const me = W.people[W.me];
+  const plan = chrome.plan ?? (W.people.length ? `${W.people.length} members` : '');
+  const empty = !W.workspace && isEmptyWorld(W);
+  if (empty) kitEmpty('AppWindow', "world: filmWorld({ workspace, people, nav }) with the product's own chrome");
   return (
-    <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: 22 * u, overflow: 'hidden', background: t.surface, boxShadow: `inset 0 0 0 ${(1 * u).toFixed(2)}px ${t.line}` }}>
+    <div data-ui {...(empty ? { 'data-kit-empty': 'AppWindow', 'data-kit-need': 'world' } : {})} style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: 22 * u, overflow: 'hidden', background: t.surface, boxShadow: `inset 0 0 0 ${(1 * u).toFixed(2)}px ${t.line}` }}>
       {/* title bar */}
       <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: bar, background: mixColor(t.surface, t.ground, 0.3), boxShadow: `inset 0 -${(1 * u).toFixed(2)}px 0 ${t.line}` }}>
         {[0, 1, 2].map((i) => (
           <div key={i} style={{ position: 'absolute', left: (20 + i * 20) * u, top: bar / 2 - 6 * u, width: 12 * u, height: 12 * u, borderRadius: '50%', background: mixColor(t.line, t.mute, 0.25 + 0.1 * i) }} />
         ))}
         <div style={{ position: 'absolute', left: w / 2 - 210 * u, top: 9 * u, width: 420 * u, height: bar - 18 * u, borderRadius: 8 * u, background: t.well, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 * u }}>
-          <Glyph name="lock" size={12 * u} color={mute} />
-          <Micro px={12.5 * u} color={mute}>{`app.${W.workspace.toLowerCase().replace(/[^a-z]+/g, '')}.com/${W.screen.toLowerCase()}`}</Micro>
+          {chrome.url && <Glyph name="lock" size={12 * u} color={mute} />}
+          {chrome.url && <Micro px={12.5 * u} color={mute}>{chrome.url}</Micro>}
         </div>
         <div style={{ position: 'absolute', right: 18 * u, top: 0, height: bar, display: 'flex', alignItems: 'center', gap: 14 * u }}>
           <Glyph name="bell" size={16 * u} color={mute} />
-          <Avatar theme={t} i={W.me} initials={W.people[W.me].initials} seed={W.people[W.me].seed} src={W.people[W.me].photo} focus={W.people[W.me].focus} size={26 * u} kind="portrait" />
+          {me && <Avatar theme={t} i={W.me} initials={me.initials} seed={me.seed} src={me.photo} focus={me.focus} size={26 * u} kind="portrait" />}
         </div>
       </div>
       {/* sidebar */}
       <div style={{ position: 'absolute', left: 0, top: bar, width: side, height: h - bar, background: sideBg, boxShadow: `inset -${(1 * u).toFixed(2)}px 0 0 ${t.line}` }}>
-        <div style={{ position: 'absolute', left: 18 * u, top: 18 * u, display: 'flex', alignItems: 'center', gap: 10 * u }}>
-          <div style={{ width: 30 * u, height: 30 * u, borderRadius: 9 * u, background: `linear-gradient(135deg, ${t.accent}, ${t.accentDeep})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Micro px={13 * u} weight={700} color={t.accentInk}>{mono(W.workspace)}</Micro>
+        {W.workspace && (
+          <div style={{ position: 'absolute', left: 18 * u, top: 18 * u, display: 'flex', alignItems: 'center', gap: 10 * u }}>
+            <div style={{ width: 30 * u, height: 30 * u, borderRadius: 9 * u, background: `linear-gradient(135deg, ${t.accent}, ${t.accentDeep})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Micro px={13 * u} weight={700} color={t.accentInk}>{mono(W.workspace)}</Micro>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <Micro px={14.5 * u} weight={650} color={ink}>{W.workspace}</Micro>
+              {plan && <Micro px={11.5 * u} color={mute}>{plan}</Micro>}
+            </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Micro px={14.5 * u} weight={650} color={ink}>{W.workspace}</Micro>
-            <Micro px={11.5 * u} color={mute}>{`${W.people.length} members · Pro`}</Micro>
-          </div>
-        </div>
+        )}
         <div style={{ position: 'absolute', left: 14 * u, top: 66 * u, width: side - 28 * u, height: 32 * u, borderRadius: 8 * u, background: t.well, display: 'flex', alignItems: 'center', gap: 8 * u, padding: `0 ${10 * u}px`, boxSizing: 'border-box' }}>
           <Glyph name="search" size={14 * u} color={mute} />
-          <Micro px={13 * u} color={mute}>Search</Micro>
+          {chrome.search && <Micro px={13 * u} color={mute}>{chrome.search}</Micro>}
           <span style={{ flex: 1 }} />
-          <Micro px={11.5 * u} color={mute} mono>⌘K</Micro>
+          {chrome.search && <Micro px={11.5 * u} color={mute} mono>⌘K</Micro>}
         </div>
         {W.nav.map((n, i) => {
           const on = i === active;
@@ -177,9 +187,11 @@ export const AppWindow: React.FC<{ theme: KitTheme; world: SampleWorld; w: numbe
             </div>
           );
         })}
-        <div style={{ position: 'absolute', left: 20 * u, top: (124 + W.nav.length * 36) * u }}>
-          <Micro px={11 * u} weight={600} color={mute} upper>Team</Micro>
-        </div>
+        {chrome.team && W.people.length > 1 && (
+          <div style={{ position: 'absolute', left: 20 * u, top: (124 + W.nav.length * 36) * u }}>
+            <Micro px={11 * u} weight={600} color={mute} upper>{chrome.team}</Micro>
+          </div>
+        )}
         {W.people.slice(1, 6).map((p, i) => (
           <div key={p.name} style={{ position: 'absolute', left: 18 * u, top: (150 + W.nav.length * 36 + i * 34) * u, display: 'flex', alignItems: 'center', gap: 10 * u }}>
             <Avatar theme={t} i={i} initials={p.initials} seed={p.seed} src={p.photo} focus={p.focus} size={24 * u} />
@@ -187,13 +199,15 @@ export const AppWindow: React.FC<{ theme: KitTheme; world: SampleWorld; w: numbe
             {i < 2 && <div style={{ width: 7 * u, height: 7 * u, borderRadius: '50%', background: t.accent, opacity: i === 0 ? live : 1 }} />}
           </div>
         ))}
-        <div style={{ position: 'absolute', left: 14 * u, bottom: 14 * u, width: side - 28 * u, display: 'flex', alignItems: 'center', gap: 10 * u }}>
-          <Avatar theme={t} i={W.me} initials={W.people[W.me].initials} seed={W.people[W.me].seed} src={W.people[W.me].photo} focus={W.people[W.me].focus} size={32 * u} kind="portrait" />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Micro px={13 * u} weight={600} color={ink}>{W.people[W.me].name}</Micro>
-            <Micro px={11.5 * u} color={mute}>{W.people[W.me].role}</Micro>
+        {me && (
+          <div style={{ position: 'absolute', left: 14 * u, bottom: 14 * u, width: side - 28 * u, display: 'flex', alignItems: 'center', gap: 10 * u }}>
+            <Avatar theme={t} i={W.me} initials={me.initials} seed={me.seed} src={me.photo} focus={me.focus} size={32 * u} kind="portrait" />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <Micro px={13 * u} weight={600} color={ink}>{me.name}</Micro>
+              {me.role && <Micro px={11.5 * u} color={mute}>{me.role}</Micro>}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       {children({ x: side, y: bar, w: w - side, h: h - bar })}
     </div>
@@ -205,9 +219,11 @@ export type DenseLayout = 'table' | 'board';
 export type DenseScreenProps = {
   frame: number;
   theme?: KitTheme;
-  /** the world shown (kit/data.ts); default sampleWorld(seed) */
+  /** the world shown: the film's own (kit/data.ts filmWorld); without one the screen draws its empty state */
   world?: SampleWorld;
+  /** @deprecated ignored: the kit deals no sample world into a film (sample().world is the gallery's) */
   seed?: string | number;
+  /** @deprecated ignored, as `seed` */
   kind?: WorldKind;
   layout?: DenseLayout;
   w?: number;
@@ -232,14 +248,16 @@ export type DenseScreenProps = {
  * counts, four figures, the records table, the activity feed and a chart that sums to the total) or 'board' (the
  * records as cards in their status columns). The lens lifts `focus` (default the world's story record).
  */
-export const DenseScreen: React.FC<DenseScreenProps> = ({ frame: f, theme, world, seed = 'cinetic', kind, layout = 'table', w: w0, h: h0, x = 0, y = 0, scale, view = 1, focus, veil, blur, drawAt = -1e9, lift = 40, style }) => {
+export const DenseScreen: React.FC<DenseScreenProps> = ({ frame: f, theme, world, layout = 'table', w: w0, h: h0, x = 0, y = 0, scale, view = 1, focus, veil, blur, drawAt = -1e9, lift = 40, style }) => {
   const t = theme ?? kitTheme();
   const u = useKitScale(scale);
   const film = useFilm();
-  const W = world ?? sampleWorld(seed, { kind });
   const w = w0 ?? 1600 * u;
   const h = h0 ?? 920 * u;
-  const fx = focus === undefined ? W.focus : focus;
+  if (!world || isEmptyWorld(world) || !world.records.length)
+    return <KitEmpty part="DenseScreen" need="world: filmWorld({ records, people, statuses }) with the product's own rows" theme={t} w={w} h={h} x={x} y={y} r={22 * u} style={style} />;
+  const W = world;
+  const fx = focus === undefined ? W.focus : focus === null ? null : typeof focus === 'number' ? Math.min(focus, W.records.length - 1) : focus.map((s) => ({ ...s, row: Math.min(s.row, W.records.length - 1) }));
   return (
     <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transform: `translate(${x}px, ${y}px)`, borderRadius: 22 * u, boxShadow: surfaceShadow(t, lift, u), ...style }}>
       <AppWindow theme={t} world={W} w={w} h={h} frame={f} scale={u}>
@@ -262,6 +280,7 @@ const LensLine: React.FC<{ t: KitTheme; W: SampleWorld; row: number; px: number;
   const r = W.records[row];
   if (!r) return null;
   const st = W.statuses[r.status];
+  const who = W.people[r.who];
   const q = E.glideOut(k);
   const op = mode === 'in' ? clamp((k - 0.25) / 0.5) : mode === 'out' ? 1 - clamp(k / 0.45) : 1;
   const dy = mode === 'in' ? (1 - q) * px * 0.32 : mode === 'out' ? -q * px * 0.2 : 0;
@@ -270,13 +289,13 @@ const LensLine: React.FC<{ t: KitTheme; W: SampleWorld; row: number; px: number;
   const lead = mode === 'still' || (mode === 'in' ? k >= 0.4 : k < 0.4);
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, display: 'flex', alignItems: 'center', gap: px * 0.42, padding: `0 ${px * 0.55}px`, boxSizing: 'border-box', opacity: op, transform: `translateY(${dy.toFixed(2)}px)` }}>
-      <Avatar theme={t} i={r.who} initials={W.people[r.who].initials} seed={W.people[r.who].seed} src={W.people[r.who].photo} focus={W.people[r.who].focus} size={px * 1.1} kind="portrait" />
+      {who && <Avatar theme={t} i={r.who} initials={who.initials} seed={who.seed} src={who.photo} focus={who.focus} size={px * 1.1} kind="portrait" />}
       <div data-text={lead ? 'kit-dense-focus' : undefined} style={{ display: 'flex', alignItems: 'baseline', gap: px * 0.4, flex: 1, minWidth: 0 }}>
         <span style={{ ...face(px, 600, t.text, -0.02, 1.1), flex: 'none' }}>{r.title}</span>
-        <span style={{ ...face(px * 0.62, 500, t.mute, -0.01, 1.1), flex: 'none' }}>{r.value}</span>
+        {r.value && <span style={{ ...face(px * 0.62, 500, t.mute, -0.01, 1.1), flex: 'none' }}>{r.value}</span>}
       </div>
-      <Micro px={small} color={t.mute} mono>{r.id}</Micro>
-      <StatusPill theme={t} label={st.label} tone={st.tone} px={small} strong />
+      {r.id && <Micro px={small} color={t.mute} mono>{r.id}</Micro>}
+      {st && <StatusPill theme={t} label={st.label} tone={st.tone} px={small} strong />}
     </div>
   );
 };
@@ -287,23 +306,20 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
   const insW = m.w > 1150 * u ? 300 * u : 0; // the inspector column when there is room
   const tw = m.w - 2 * pad - (insW ? insW + pad * 0.8 : 0);
   const head = 64 * u;
+  const chrome = W.chrome ?? {};
+  const kpis = W.kpis ?? [];
   const tabsY = head + 6 * u;
-  const kpiY = tabsY + 50 * u;
+  const kpiY = tabsY + (W.statuses.length ? 50 : 0) * u;
   const kpiH = 78 * u;
-  const tableY = kpiY + kpiH + 20 * u;
+  const tableY = kpis.length ? kpiY + kpiH + 20 * u : kpiY + 6 * u;
   const hdrH = 32 * u;
   const rowH = Math.max(40 * u, Math.min(54 * u, (m.h - tableY - hdrH - 18 * u) / W.records.length));
   const cols = [0.035, 0.12, 0.34, 0.14, 0.12, 0.17, 0.075].map((c) => c * tw); // check, id, title, value, date, status, who
   const cx = cols.map((_, i) => cols.slice(0, i).reduce((sum, c) => sum + c, 0));
   const ink = t.text;
   const mute = t.mute;
-  const overdue = W.records.filter((r) => W.statuses[r.status].tone === 'alert');
-  const kpis: [string, string][] = [
-    [W.total.unit[0].toUpperCase() + W.total.unit.slice(1), W.total.value],
-    [W.statuses[0].label, W.total.doneValue],
-    [W.statuses[2].label, W.kind === 'hiring' || W.kind === 'deploys' || W.kind === 'support' ? String(overdue.length) : W.fmt(overdue.reduce((sum, r) => sum + r.amount, 0))],
-    ['Share', `${Math.round(100 * W.total.share)} %`],
-  ];
+  const headLine = [W.today.label, W.noun[1] ? `${W.total.count} ${W.noun[1]}` : ''].filter(Boolean).join(' · ');
+  const showIns = insW > 0 && (W.activity.length > 0 || W.series.length > 0);
   const fs = focus === null ? null : focusState(f, focus, { fps });
   const fpx = focusPx(H, view);
   const lensH = Math.max(rowH * 1.25, fpx * 1.75);
@@ -312,21 +328,25 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
     <div style={{ position: 'absolute', left: m.x, top: m.y, width: m.w, height: m.h }}>
       {/* the screen's header */}
       <div style={{ position: 'absolute', left: pad, top: 18 * u, display: 'flex', alignItems: 'baseline', gap: 12 * u }}>
-        <Micro px={24 * u} weight={650} color={ink} track={-0.02}>{W.screen}</Micro>
-        <Micro px={13 * u} color={mute}>{`${W.today.label} · ${W.total.count} ${W.noun[1]}`}</Micro>
+        {W.screen && <Micro px={24 * u} weight={650} color={ink} track={-0.02}>{W.screen}</Micro>}
+        <Micro px={13 * u} color={mute}>{headLine}</Micro>
       </div>
       <div style={{ position: 'absolute', right: pad + insW + (insW ? pad * 0.8 : 0), top: 16 * u, display: 'flex', alignItems: 'center', gap: 10 * u }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 * u, height: 32 * u, padding: `0 ${12 * u}px`, borderRadius: 8 * u, boxShadow: `inset 0 0 0 ${(1 * u).toFixed(2)}px ${t.line}` }}>
-          <Glyph name="calendar" size={13 * u} color={mute} />
-          <Micro px={13 * u} color={ink}>This month</Micro>
-        </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 * u, height: 32 * u, padding: `0 ${14 * u}px`, borderRadius: 8 * u, background: t.accent }}>
-          <Glyph name="plus" size={13 * u} color={t.accentInk} weight={2.6} />
-          <Micro px={13 * u} weight={650} color={t.accentInk}>{`New ${W.noun[0]}`}</Micro>
-        </span>
+        {chrome.range && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 * u, height: 32 * u, padding: `0 ${12 * u}px`, borderRadius: 8 * u, boxShadow: `inset 0 0 0 ${(1 * u).toFixed(2)}px ${t.line}` }}>
+            <Glyph name="calendar" size={13 * u} color={mute} />
+            <Micro px={13 * u} color={ink}>{chrome.range}</Micro>
+          </span>
+        )}
+        {chrome.action && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 * u, height: 32 * u, padding: `0 ${14 * u}px`, borderRadius: 8 * u, background: t.accent }}>
+            <Glyph name="plus" size={13 * u} color={t.accentInk} weight={2.6} />
+            <Micro px={13 * u} weight={650} color={t.accentInk}>{chrome.action}</Micro>
+          </span>
+        )}
       </div>
       {/* tabs with the rows' own counts */}
-      <div style={{ position: 'absolute', left: pad, top: tabsY, width: tw, height: 36 * u, display: 'flex', alignItems: 'center', gap: 22 * u, boxShadow: `inset 0 -${(1 * u).toFixed(2)}px 0 ${t.line}` }}>
+      {W.statuses.length > 0 && <div style={{ position: 'absolute', left: pad, top: tabsY, width: tw, height: 36 * u, display: 'flex', alignItems: 'center', gap: 22 * u, boxShadow: `inset 0 -${(1 * u).toFixed(2)}px 0 ${t.line}` }}>
         {[{ label: 'All', count: W.total.count }, ...W.statuses.map((s) => ({ label: s.label, count: s.count }))].map((tab, i) => (
           <span key={tab.label} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6 * u, height: 36 * u }}>
             <Micro px={13.5 * u} weight={i === 0 ? 650 : 500} color={i === 0 ? ink : mute}>{tab.label}</Micro>
@@ -336,7 +356,7 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
             {i === 0 && <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 2 * u, background: ink, borderRadius: u }} />}
           </span>
         ))}
-      </div>
+      </div>}
       {/* four figures */}
       {kpis.map(([label, value], i) => (
         <div key={label} style={{ position: 'absolute', left: pad + i * (tw / 4), top: kpiY, width: tw / 4 - 14 * u, height: kpiH, borderRadius: 12 * u, background: mixColor(t.surface, t.ground, 0.22), boxShadow: `inset 0 0 0 ${(1 * u).toFixed(2)}px ${t.line}` }}>
@@ -346,7 +366,7 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
           <div style={{ position: 'absolute', left: 14 * u, top: 32 * u }}>
             <Micro px={25 * u} weight={650} color={ink} track={-0.03}>{value}</Micro>
           </div>
-          {i === 0 && (
+          {i === 0 && W.series.length > 1 && (
             <div style={{ position: 'absolute', right: 14 * u, top: 18 * u }}>
               <Sparkline values={W.series} w={tw / 4 - 190 * u} h={42 * u} color={t.accent} weight={2.2 * u} draw={prog(f, drawAt, drawAt + 40, E.softOut)} />
             </div>
@@ -367,14 +387,14 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
         const top = tableY + hdrH + i * rowH;
         const sel = fs && i === fs.row;
         return (
-          <div key={r.id} style={{ position: 'absolute', left: pad, top, width: tw, height: rowH, boxShadow: `inset 0 -${(1 * u).toFixed(2)}px 0 ${mixColor(t.line, t.surface, 0.35)}`, background: sel ? mixColor(t.surface, t.accent, 0.06) : 'transparent' }}>
+          <div key={r.id || i} style={{ position: 'absolute', left: pad, top, width: tw, height: rowH, boxShadow: `inset 0 -${(1 * u).toFixed(2)}px 0 ${mixColor(t.line, t.surface, 0.35)}`, background: sel ? mixColor(t.surface, t.accent, 0.06) : 'transparent' }}>
             <div style={{ position: 'absolute', left: cx[0] + 8 * u, top: rowH / 2 - 7 * u, width: 14 * u, height: 14 * u, borderRadius: 4 * u, boxShadow: `inset 0 0 0 ${(1.4 * u).toFixed(2)}px ${t.line}`, background: sel ? t.accent : 'transparent' }} />
             <div style={{ position: 'absolute', left: cx[1] + 8 * u, top: rowH / 2 - 8 * u }}>
               <Micro px={12.5 * u} color={mute} mono>{r.id}</Micro>
             </div>
             <div style={{ position: 'absolute', left: cx[2] + 8 * u, top: rowH / 2 - 17 * u, width: cols[2] - 16 * u, display: 'flex', flexDirection: 'column', gap: 2 * u, overflow: 'hidden' }}>
               <Micro px={14.5 * u} weight={560} color={ink}>{r.title}</Micro>
-              <Micro px={12 * u} color={mute}>{r.sub}</Micro>
+              {r.sub && <Micro px={12 * u} color={mute}>{r.sub}</Micro>}
             </div>
             <div style={{ position: 'absolute', left: cx[3], top: rowH / 2 - 9 * u, width: cols[3] - 12 * u, textAlign: 'right' }}>
               <Micro px={14 * u} weight={560} color={ink}>{r.value}</Micro>
@@ -382,24 +402,29 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
             <div style={{ position: 'absolute', left: cx[4] + 8 * u, top: rowH / 2 - 9 * u }}>
               <Micro px={13 * u} color={mute}>{r.date}</Micro>
             </div>
-            <div style={{ position: 'absolute', left: cx[5] + 8 * u, top: rowH / 2 - 11 * u }}>
-              <StatusPill theme={t} label={st.label} tone={st.tone} px={12.5 * u} />
-            </div>
+            {st && (
+              <div style={{ position: 'absolute', left: cx[5] + 8 * u, top: rowH / 2 - 11 * u }}>
+                <StatusPill theme={t} label={st.label} tone={st.tone} px={12.5 * u} />
+              </div>
+            )}
             <div style={{ position: 'absolute', left: cx[6] + 8 * u, top: rowH / 2 - 13 * u, display: 'flex', alignItems: 'center', gap: 6 * u }}>
-              <Avatar theme={t} i={r.who} initials={who.initials} seed={who.seed} src={who.photo} focus={who.focus} size={26 * u} kind="portrait" />
-              <Micro px={11.5 * u} color={mute}>{r.tag}</Micro>
+              {who && <Avatar theme={t} i={r.who} initials={who.initials} seed={who.seed} src={who.photo} focus={who.focus} size={26 * u} kind="portrait" />}
+              {r.tag && <Micro px={11.5 * u} color={mute}>{r.tag}</Micro>}
             </div>
           </div>
         );
       })}
       {/* the inspector: activity and the chart */}
-      {insW > 0 && (
+      {showIns && (
         <div style={{ position: 'absolute', left: m.w - pad - insW, top: 16 * u, width: insW, height: m.h - 32 * u, borderRadius: 14 * u, background: mixColor(t.surface, t.ground, 0.18), boxShadow: `inset 0 0 0 ${(1 * u).toFixed(2)}px ${t.line}` }}>
-          <div style={{ position: 'absolute', left: 16 * u, top: 14 * u }}>
-            <Micro px={13.5 * u} weight={650} color={ink}>Activity</Micro>
-          </div>
+          {chrome.activity && W.activity.length > 0 && (
+            <div style={{ position: 'absolute', left: 16 * u, top: 14 * u }}>
+              <Micro px={13.5 * u} weight={650} color={ink}>{chrome.activity}</Micro>
+            </div>
+          )}
           {W.activity.map((a, i) => {
             const p = W.people[a.who];
+            if (!p) return null;
             return (
               <div key={i} style={{ position: 'absolute', left: 16 * u, top: (46 + i * 50) * u, width: insW - 32 * u, display: 'flex', gap: 10 * u }}>
                 <Avatar theme={t} i={a.who} initials={p.initials} seed={p.seed} src={p.photo} focus={p.focus} size={28 * u} kind="portrait" />
@@ -413,8 +438,8 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
               </div>
             );
           })}
-          <div style={{ position: 'absolute', left: 16 * u, bottom: 16 * u, width: insW - 32 * u }}>
-            <Micro px={12 * u} weight={600} color={mute}>{`Last 12 weeks · ${W.total.value}`}</Micro>
+          {W.series.length > 0 && <div style={{ position: 'absolute', left: 16 * u, bottom: 16 * u, width: insW - 32 * u }}>
+            {chrome.chart && <Micro px={12 * u} weight={600} color={mute}>{chrome.chart}</Micro>}
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5 * u, height: 90 * u, marginTop: 10 * u }}>
               {W.series.map((v, i) => {
                 const top = Math.max(...W.series);
@@ -422,7 +447,7 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
                 return <div key={i} style={{ flex: 1, height: `${((100 * v) / top) * (drawAt < -1e8 ? 1 : g)}%`, borderRadius: 3 * u, background: i === W.series.length - 1 ? t.accent : mixColor(t.surface, t.text, 0.16) }} />;
               })}
             </div>
-          </div>
+          </div>}
         </div>
       )}
     </div>
@@ -455,7 +480,7 @@ const Table: React.FC<Inner & { drawAt: number }> = ({ t, W, m, u, f, H, view, f
 const Board: React.FC<Inner> = ({ t, W, m, u, f, H, view, focus, veil, blur }) => {
   const { fps } = useFilm(); // the lens glides at the composition's rate (a variant cut at 30 fps)
   const pad = 24 * u;
-  const n = W.statuses.length;
+  const n = Math.max(1, W.statuses.length);
   const gap = 16 * u;
   const colW = (m.w - 2 * pad - gap * (n - 1)) / n;
   const top = 92 * u;
@@ -463,7 +488,7 @@ const Board: React.FC<Inner> = ({ t, W, m, u, f, H, view, focus, veil, blur }) =
   const cardGap = 12 * u;
   const ink = t.text;
   const mute = t.mute;
-  const order = [3, 1, 2, 0].filter((s) => s < n); // quiet, waiting, alert, then the story's column last
+  const order = W.statuses.length ? [3, 1, 2, 0].filter((s) => s < n) : [-1]; // quiet, waiting, alert, then the story's column last (no statuses: one column)
   const placed: { i: number; col: number; k: number }[] = [];
   const storyRow = typeof focus === 'number' ? focus : W.focus;
   order.forEach((s, col) => {
@@ -481,8 +506,8 @@ const Board: React.FC<Inner> = ({ t, W, m, u, f, H, view, focus, veil, blur }) =
   const screen = (
     <div style={{ position: 'absolute', left: m.x, top: m.y, width: m.w, height: m.h }}>
       <div style={{ position: 'absolute', left: pad, top: 18 * u, display: 'flex', alignItems: 'baseline', gap: 12 * u }}>
-        <Micro px={24 * u} weight={650} color={ink} track={-0.02}>{W.screen}</Micro>
-        <Micro px={13 * u} color={mute}>{`${W.total.count} ${W.noun[1]} · ${W.total.value} ${W.total.unit}`}</Micro>
+        {W.screen && <Micro px={24 * u} weight={650} color={ink} track={-0.02}>{W.screen}</Micro>}
+        <Micro px={13 * u} color={mute}>{[W.noun[1] ? `${W.total.count} ${W.noun[1]}` : '', W.total.value ? `${W.total.value} ${W.total.unit}`.trim() : ''].filter(Boolean).join(' · ')}</Micro>
       </div>
       <div style={{ position: 'absolute', right: pad, top: 16 * u }}>
         {/* the team on this board */}
@@ -497,11 +522,13 @@ const Board: React.FC<Inner> = ({ t, W, m, u, f, H, view, focus, veil, blur }) =
       {order.map((s, col) => {
         const st = W.statuses[s];
         return (
-          <div key={st.label} style={{ position: 'absolute', left: pad + col * (colW + gap), top, width: colW, height: m.h - top - pad, borderRadius: 14 * u, background: mixColor(t.surface, t.ground, 0.28) }}>
-            <div style={{ position: 'absolute', left: 12 * u, top: 10 * u, display: 'flex', alignItems: 'center', gap: 8 * u }}>
-              <StatusPill theme={t} label={st.label} tone={st.tone} px={12.5 * u} />
-              <Micro px={12 * u} color={mute}>{String(st.count)}</Micro>
-            </div>
+          <div key={st?.label ?? col} style={{ position: 'absolute', left: pad + col * (colW + gap), top, width: colW, height: m.h - top - pad, borderRadius: 14 * u, background: mixColor(t.surface, t.ground, 0.28) }}>
+            {st && (
+              <div style={{ position: 'absolute', left: 12 * u, top: 10 * u, display: 'flex', alignItems: 'center', gap: 8 * u }}>
+                <StatusPill theme={t} label={st.label} tone={st.tone} px={12.5 * u} />
+                <Micro px={12 * u} color={mute}>{String(st.count)}</Micro>
+              </div>
+            )}
           </div>
         );
       })}
@@ -509,21 +536,23 @@ const Board: React.FC<Inner> = ({ t, W, m, u, f, H, view, focus, veil, blur }) =
         const card = pos(i);
         const who = W.people[r.who];
         return (
-          <div key={r.id} style={{ position: 'absolute', left: card.x - m.x + 8 * u, top: card.y - m.y, width: colW - 16 * u, height: cardH, borderRadius: 12 * u, background: keyFace(t, t.dark ? t.raised : t.surface, 0.05), boxShadow: surfaceShadow(t, 6, u) }}>
+          <div key={r.id || i} style={{ position: 'absolute', left: card.x - m.x + 8 * u, top: card.y - m.y, width: colW - 16 * u, height: cardH, borderRadius: 12 * u, background: keyFace(t, t.dark ? t.raised : t.surface, 0.05), boxShadow: surfaceShadow(t, 6, u) }}>
             <div style={{ position: 'absolute', left: 14 * u, top: 12 * u, right: 14 * u, display: 'flex', justifyContent: 'space-between' }}>
-              <Micro px={12 * u} color={mute} mono>{r.id}</Micro>
-              <Micro px={11.5 * u} color={mute}>{r.date}</Micro>
+              {r.id && <Micro px={12 * u} color={mute} mono>{r.id}</Micro>}
+              {r.date && <Micro px={11.5 * u} color={mute}>{r.date}</Micro>}
             </div>
             <div style={{ position: 'absolute', left: 14 * u, top: 34 * u, right: 14 * u, overflow: 'hidden' }}>
               <Micro px={14.5 * u} weight={600} color={ink}>{r.title}</Micro>
             </div>
-            <div style={{ position: 'absolute', left: 14 * u, top: 56 * u, right: 14 * u, overflow: 'hidden' }}>
-              <Micro px={12 * u} color={mute}>{r.sub}</Micro>
-            </div>
+            {r.sub && (
+              <div style={{ position: 'absolute', left: 14 * u, top: 56 * u, right: 14 * u, overflow: 'hidden' }}>
+                <Micro px={12 * u} color={mute}>{r.sub}</Micro>
+              </div>
+            )}
             <div style={{ position: 'absolute', left: 14 * u, bottom: 12 * u, right: 14 * u, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 * u }}>
-                <Avatar theme={t} i={r.who} initials={who.initials} seed={who.seed} src={who.photo} focus={who.focus} size={22 * u} />
-                <Micro px={11.5 * u} color={mute}>{r.tag}</Micro>
+                {who && <Avatar theme={t} i={r.who} initials={who.initials} seed={who.seed} src={who.photo} focus={who.focus} size={22 * u} />}
+                {r.tag && <Micro px={11.5 * u} color={mute}>{r.tag}</Micro>}
               </span>
               <Micro px={13.5 * u} weight={600} color={ink}>{r.value}</Micro>
             </div>

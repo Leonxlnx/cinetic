@@ -1,7 +1,8 @@
 // The parts a product flow is made of: an input field with its action, a result tile, a list row that can be
 // chosen, a progress pill, a chip, a label/value row and a system notice. Built at film size (px at 1080p, nothing
 // under TEXT_MIN), lit by the kit's key, coloured only by the theme (the brand's accent on what matters). Every
-// string comes from the caller: pass the product's own words and data, never the slots' stand-ins in a finished film.
+// string and every glyph comes from the caller: a part draws no glyph the film did not pick (a link glyph on a voice
+// field, a bolt on a to-do is a mismatched icon), and a result tile without a picture or a file name reports kit-empty.
 import React from 'react';
 import { Img } from 'remotion';
 import { TEXT_MIN } from '../brand/tokens';
@@ -30,12 +31,12 @@ export const Field: React.FC<{
   button?: { label: React.ReactNode; w: number; q?: number; flash?: number };
   scale?: number;
   children?: React.ReactNode;
-}> = ({ theme: t, w, h, glyph = 'link', lead, focus = 0, button, scale, children }) => {
+}> = ({ theme: t, w, h, glyph, lead, focus = 0, button, scale, children }) => {
   const u = useKitScale(scale);
   const pad = h * 0.16;
   return (
     <div data-ui style={{ position: 'relative', width: w, height: h, borderRadius: h / 2, background: t.surface, boxShadow: `${surfaceShadow(t, 30, u)}, inset 0 0 0 ${(2.5 * u).toFixed(2)}px ${mixColor(t.line, t.accent, clamp(focus))}`, display: 'flex', alignItems: 'center', gap: pad, padding: `0 ${pad}px`, boxSizing: 'border-box' }}>
-      {lead ?? <GlyphTile theme={t} name={glyph} size={h - 2 * pad} />}
+      {lead ?? (glyph ? <GlyphTile theme={t} name={glyph} size={h - 2 * pad} /> : null)}
       <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', ...face(fit(h * 0.36, u), 500, t.text, -0.02) }}>{children}</div>
       {button && (
         <div style={{ position: 'relative', flex: 'none', filter: button.flash ? `brightness(${(1 + 0.35 * clamp(button.flash)).toFixed(3)})` : undefined }}>
@@ -48,13 +49,13 @@ export const Field: React.FC<{
 };
 
 /** A result: a picture (`src`, a real photograph; without it the file it is, FileThumb), a title of up to two lines and a meta line. */
-export const Tile: React.FC<{ theme: KitTheme; w: number; seed?: number; src?: string; title: string; meta?: string; badge?: string; id?: string; scale?: number }> = ({ theme: t, w, seed = 1, src, title, meta, badge, id = 'kit-tile', scale }) => {
+export const Tile: React.FC<{ theme: KitTheme; w: number; seed?: number; src?: string; file?: { name: string; size?: string }; title: string; meta?: string; badge?: string; id?: string; scale?: number }> = ({ theme: t, w, src, file, title, meta, badge, id = 'kit-tile', scale }) => {
   const u = useKitScale(scale);
   const ph = w * 0.5625;
   return (
     <div data-ui style={{ position: 'relative', width: w, display: 'flex', flexDirection: 'column', gap: 14 * u }}>
       <div style={{ position: 'relative', width: w, height: ph, borderRadius: 18 * u, overflow: 'hidden', boxShadow: surfaceShadow(t, 18, u) }}>
-        {src ? <Photo theme={t} w={w} h={ph} src={src} /> : <FileThumb theme={t} w={w} h={ph} seed={seed} scale={scale} />}
+        {src ? <Photo theme={t} w={w} h={ph} src={src} /> : <FileThumb theme={t} w={w} h={ph} name={file?.name} size={file?.size} scale={scale} />}
         {badge && (
           <div style={{ position: 'absolute', right: 12 * u, bottom: 12 * u, padding: `${4 * u}px ${12 * u}px`, borderRadius: 10 * u, background: mixColor(t.ground, t.text, t.dark ? 0.05 : 0.9) }}>
             <span data-text={`${id}-badge`} style={face(KIT_TYPE.label * u, 600, t.dark ? t.text : t.ground)}>
@@ -79,12 +80,12 @@ export const Tile: React.FC<{ theme: KitTheme; w: number; seed?: number; src?: s
  * A row to choose: a glyph tile, a title, a meta line and a value on the right. `selected` 0..1 rings it in the
  * accent (a 3 px border and a dark halo), and turns its title to the accent.
  */
-export const Row: React.FC<{ theme: KitTheme; w: number; h: number; glyph?: GlyphName; title: string; meta?: string; value?: string; selected?: number; id?: string; scale?: number }> = ({ theme: t, w, h, glyph = 'grid', title, meta, value, selected = 0, id = 'kit-row', scale }) => {
+export const Row: React.FC<{ theme: KitTheme; w: number; h: number; glyph?: GlyphName; title: string; meta?: string; value?: string; selected?: number; id?: string; scale?: number }> = ({ theme: t, w, h, glyph, title, meta, value, selected = 0, id = 'kit-row', scale }) => {
   const u = useKitScale(scale);
   const s = clamp(selected);
   return (
     <div data-ui style={{ position: 'relative', width: w, height: h, borderRadius: h * 0.26, background: lit(t, t.surface, 0.04 * s), boxShadow: `${surfaceShadow(t, mix(14, 34, s), u)}, inset 0 0 0 ${(3 * u * s).toFixed(2)}px ${t.accent}, 0 0 0 ${(28 * u * s).toFixed(2)}px rgba(${t.shade.join(', ')}, ${(0.28 * s).toFixed(3)})`, display: 'flex', alignItems: 'center', gap: h * 0.2, padding: `0 ${h * 0.24}px 0 ${h * 0.18}px`, boxSizing: 'border-box' }}>
-      <GlyphTile theme={t} name={glyph} size={h * 0.62} solid={s > 0.5} />
+      {glyph && <GlyphTile theme={t} name={glyph} size={h * 0.62} solid={s > 0.5} />}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: h * 0.04 }}>
         <span data-text={`${id}-title`} style={face(fit(h * 0.3, u), 600, mixColor(t.text, t.accent, s))}>
           {title}
@@ -160,11 +161,11 @@ export const DataRow: React.FC<{ theme: KitTheme; w: number; h: number; label: s
 };
 
 /** A system notice: the app's glyph tile, a title, one line of body and a time on the right (the proof stack's toast). */
-export const Notice: React.FC<{ theme: KitTheme; w: number; h: number; glyph?: GlyphName; title: string; body?: string; meta?: string; id?: string; scale?: number; photo?: string }> = ({ theme: t, w, h, glyph = 'bolt', title, body, meta, id = 'kit-notice', scale, photo }) => {
+export const Notice: React.FC<{ theme: KitTheme; w: number; h: number; glyph?: GlyphName; title: string; body?: string; meta?: string; id?: string; scale?: number; photo?: string }> = ({ theme: t, w, h, glyph, title, body, meta, id = 'kit-notice', scale, photo }) => {
   const u = useKitScale(scale);
   return (
     <div data-ui style={{ position: 'relative', width: w, height: h, borderRadius: h * 0.28, background: t.dark ? t.raised : t.surface, boxShadow: surfaceShadow(t, 36, u), display: 'flex', alignItems: 'center', gap: h * 0.18, padding: `0 ${h * 0.24}px 0 ${h * 0.2}px`, boxSizing: 'border-box' }}>
-      {photo ? <Img data-imagery="" src={photo} style={{ width: h * 0.64, height: h * 0.64, borderRadius: h * 0.16, objectFit: 'cover', display: 'block', flex: 'none' }} /> : <GlyphTile theme={t} name={glyph} size={h * 0.56} solid />}
+      {photo ? <Img data-imagery="" src={photo} style={{ width: h * 0.64, height: h * 0.64, borderRadius: h * 0.16, objectFit: 'cover', display: 'block', flex: 'none' }} /> : glyph ? <GlyphTile theme={t} name={glyph} size={h * 0.56} solid /> : null}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: h * 0.04 }}>
         <span data-text={`${id}-title`} style={face(fit(h * 0.25, u), 600, t.text)}>
           {title}
@@ -188,19 +189,20 @@ export const Notice: React.FC<{ theme: KitTheme; w: number; h: number; glyph?: G
  * A prompt composer: a rounded box with the request (children: a TypeOn) at the top, and a row of controls along
  * the bottom: an add button, the model chip (`chip`), and the round send button in the accent, which a click swells
  * (`send.scale`, `send.fill` from fx/MicroUI swellState). `focus` lights the rim in the accent. Pass the product's own
- * placeholder and chip label.
+ * placeholder and chip label (and `chipGlyph` when the chip has one).
  */
 export const Composer: React.FC<{
   theme: KitTheme;
   w: number;
   h: number;
   chip?: string;
+  chipGlyph?: GlyphName;
   focus?: number;
   send?: { scale?: number; fill?: string };
   id?: string;
   scale?: number;
   children?: React.ReactNode;
-}> = ({ theme: t, w, h, chip, focus = 0, send = {}, id = 'kit-composer', scale, children }) => {
+}> = ({ theme: t, w, h, chip, chipGlyph, focus = 0, send = {}, id = 'kit-composer', scale, children }) => {
   const u = useKitScale(scale);
   const pad = Math.min(h * 0.19, 44 * u);
   const ctl = Math.min(h * 0.3, 68 * u);
@@ -214,7 +216,7 @@ export const Composer: React.FC<{
         </div>
         {chip && (
           <div style={{ height: ctl, padding: `0 ${ctl * 0.35}px`, borderRadius: ctl * 0.3, background: t.well, display: 'flex', alignItems: 'center', gap: ctl * 0.18 }}>
-            <Glyph name="bolt" size={ctl * 0.42} color={t.accent} />
+            {chipGlyph && <Glyph name={chipGlyph} size={ctl * 0.42} color={t.accent} />}
             <span data-text={`${id}-chip`} style={face(fit(ctl * 0.36, u), 550, t.text, -0.01)}>
               {chip}
             </span>

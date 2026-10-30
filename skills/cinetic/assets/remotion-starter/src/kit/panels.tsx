@@ -1,14 +1,15 @@
 // The kit's panels: whole product surfaces composed from the parts, with live states (a count that runs,
 // a badge that switches, bars that grow, a chat that lands, a list that flicks) as pure functions of the
 // frame. Each is laid out at film size in its own box (`w` x `h`, px at 1080p times the film's unit) and
-// drawn on a lit Surface. Data defaults to the sample products (kit/sample.ts): pass the brand's own.
+// drawn on a lit Surface, from the film's own `data` (the shapes ReviewData and BudgetData in kit/sample.ts):
+// without it a panel draws its empty state (kit/gate.tsx KitEmpty) and reports kit-empty, never sample content.
 // Frame them as macro crops and hero planes, not as a centred dashboard: the camera does the reading. The
 // exception is the film's one product moment (kit/moment.tsx): the panel in use, full frame on a flat field.
 import React from 'react';
 import { Bubbles, type Message } from '../fx/Bubbles';
 import { countLinear } from '../fx/Roll';
 import { type FlickProps, Scroll } from '../fx/Scroll';
-import { clamp, E, fd, prog } from '../lib/anim';
+import { E, fd, prog } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { useFilm } from '../lib/film';
 import {
@@ -33,8 +34,8 @@ import {
   Toast,
   useKitScale,
 } from './parts';
-import { DenseScreen } from './dense';
-import { BUDGETS, budgetTotals, money, REVIEW } from './sample';
+import { KitEmpty } from './gate';
+import { type BudgetData, budgetTotals, money, type Person, type ReviewData } from './sample';
 import { type KitTheme, kitTheme } from './theme';
 
 type Base = { frame: number; theme?: KitTheme; w?: number; h?: number; x?: number; y?: number; scale?: number; lift?: number; style?: React.CSSProperties };
@@ -47,7 +48,7 @@ type Base = { frame: number; theme?: KitTheme; w?: number; h?: number; x?: numbe
  * press amount (fx/Cards press().q) so the click and the product's answer stay on one curve. `photos`: the selects as
  * real photographs (staticFile paths); without them each select shows as the file it is (FileThumb), never drawn.
  */
-export const ProjectPanel: React.FC<Base & { data?: typeof REVIEW; doneAt?: number; buttonQ?: number; hover?: boolean; photos?: (string | undefined)[] }> = ({
+export const ProjectPanel: React.FC<Base & { data?: ReviewData; doneAt?: number; buttonQ?: number; hover?: boolean; photos?: (string | undefined)[] }> = ({
   frame: f,
   theme,
   w: w0,
@@ -56,7 +57,7 @@ export const ProjectPanel: React.FC<Base & { data?: typeof REVIEW; doneAt?: numb
   y = 0,
   scale,
   lift = 36,
-  data = REVIEW,
+  data,
   doneAt = Infinity,
   buttonQ = 0,
   hover,
@@ -67,6 +68,7 @@ export const ProjectPanel: React.FC<Base & { data?: typeof REVIEW; doneAt?: numb
   const u = useKitScale(scale);
   const w = w0 ?? 1160 * u;
   const h = h0 ?? 740 * u;
+  if (!data) return <KitEmpty part="ProjectPanel" need="data (the product's own project, team and actions: ReviewData)" theme={t} w={w} h={h} x={x} y={y} r={56 * u} style={style} />;
   const done = fd(f) >= doneAt;
   const p = data.project;
   const approved = done ? p.shots : p.approved;
@@ -87,15 +89,17 @@ export const ProjectPanel: React.FC<Base & { data?: typeof REVIEW; doneAt?: numb
       <div style={{ position: 'absolute', right: 56 * u, top: 72 * u }}>
         <Badge theme={t} label={done ? p.status.done : p.status.open} on={done} px={KIT_TYPE.label * u} id="kit-project-status" />
       </div>
-      <Text id="kit-project-selects" x={60 * u} y={252 * u} px={KIT_TYPE.label * u} weight={600} color={t.mute}>
-        Selects
-      </Text>
+      {p.label && (
+        <Text id="kit-project-selects" x={60 * u} y={252 * u} px={KIT_TYPE.label * u} weight={600} color={t.mute}>
+          {p.label}
+        </Text>
+      )}
       <div style={{ position: 'absolute', right: 60 * u, top: 236 * u }}>
         <AvatarStack theme={t} people={data.team} size={64 * u} ring={t.surface} />
       </div>
       {[0, 1, 2, 3].map((i) => (
         <div key={i} style={{ position: 'absolute', left: 60 * u + i * (thumb + 22 * u), top: 324 * u, width: thumb, height: thumb, borderRadius: 30 * u, overflow: 'hidden' }}>
-          {photos[i] ? <Photo theme={t} w={thumb} h={thumb} src={photos[i]} /> : <FileThumb theme={t} w={thumb} h={thumb} seed={11 + i * 5} scale={u} />}
+          {photos[i] ? <Photo theme={t} w={thumb} h={thumb} src={photos[i]} /> : <FileThumb theme={t} w={thumb} h={thumb} name={p.files?.[i]?.name} size={p.files?.[i]?.size} scale={u} />}
           <div style={{ position: 'absolute', right: 14 * u, top: 14 * u }}>
             {i < 3 || done ? <Check size={48 * u} fill={t.accent} tick={t.accentInk} /> : <Pending size={48 * u} stroke={t.mute} fill={t.well} />}
           </div>
@@ -108,7 +112,7 @@ export const ProjectPanel: React.FC<Base & { data?: typeof REVIEW; doneAt?: numb
         <Meter theme={t} w={360 * u} h={12 * u} p={bar + (1 - bar) * fill} />
       </div>
       <div style={{ position: 'absolute', right: 56 * u, top: h - 152 * u }}>
-        <Button theme={t} label={done ? 'Sent to print' : data.actions.approve} w={340 * u} h={100 * u} q={buttonQ} hover={hover} id="kit-project-action" />
+        <Button theme={t} label={done ? data.actions.done : data.actions.approve} w={340 * u} h={100 * u} q={buttonQ} hover={hover} id="kit-project-action" />
       </div>
     </Surface>
   );
@@ -118,12 +122,13 @@ export const ProjectPanel: React.FC<Base & { data?: typeof REVIEW; doneAt?: numb
  * The team's chat: a header, the log (fx/Bubbles: bubbles cut on and slide, the log lifts), the composer
  * typing the next outgoing line at 30 characters a second before it lands. `at`: the frame each line lands.
  */
-export const ChatCard: React.FC<Base & { data?: typeof REVIEW.chat; people?: typeof REVIEW.team; at: number[] }> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 44, data = REVIEW.chat, people = REVIEW.team, at, style }) => {
+export const ChatCard: React.FC<Base & { data?: ReviewData['chat']; people?: Person[]; at: number[] }> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 44, data, people = [], at, style }) => {
   const t = theme ?? kitTheme();
   const u = useKitScale(scale);
   const { fps } = useFilm();
   const w = w0 ?? 640 * u;
   const h = h0 ?? 600 * u;
+  if (!data) return <KitEmpty part="ChatCard" need="data (the product's own chat: title, draft, lines)" theme={t} w={w} h={h} x={x} y={y} r={48 * u} style={style} />;
   const messages: Message[] = data.lines.map((l, i) => ({ text: l.text, side: l.side, kind: l.kind, at: at[i] ?? (at[at.length - 1] ?? 0) + 40 * (i - at.length + 1) }));
   // the next outgoing line types in the composer (30 a second) and lands as its bubble
   const next = messages.findIndex((m) => m.side === 'out' && (m.at ?? 0) > f);
@@ -140,9 +145,11 @@ export const ChatCard: React.FC<Base & { data?: typeof REVIEW.chat; people?: typ
           {data.title}
         </span>
       </div>
-      <div style={{ position: 'absolute', right: 40 * u, top: 40 * u }}>
-        <AvatarStack theme={t} people={people} size={54 * u} ring={t.surface} n={4} />
-      </div>
+      {people.length > 0 && (
+        <div style={{ position: 'absolute', right: 40 * u, top: 40 * u }}>
+          <AvatarStack theme={t} people={people} size={54 * u} ring={t.surface} n={4} />
+        </div>
+      )}
       <div style={{ position: 'absolute', left: 40 * u, top: head - 2 * u, width: w - 80 * u, height: 2 * u, background: t.line }} />
       <div style={{ position: 'absolute', left: 0, top: head, width: w, height: h - head - foot, overflow: 'hidden' }}>
         <Bubbles frame={f} messages={messages} x={36 * u} y={h - head - foot - 14 * u} anchor="bottom" width={w - 72 * u} role="caption" maxBubble={1} outFill={t.accent} inFill={t.raised} ink={t.text} lift={{ share: 0.5 }} />
@@ -164,7 +171,7 @@ export const ChatCard: React.FC<Base & { data?: typeof REVIEW.chat; people?: typ
  * `flick` (fx/Scroll FlickProps, distance in px) for a hand-thrown scroll that lands on the highlight;
  * its fast frames are the flick's declared camera-blur range (fx/Scroll declares()).
  */
-export const FeedCard: React.FC<Base & { data?: typeof REVIEW.feed; people?: typeof REVIEW.team; highlight?: number; flick?: FlickProps; rowH?: number }> = ({
+export const FeedCard: React.FC<Base & { data?: ReviewData['feed']; people?: Person[]; highlight?: number; flick?: FlickProps; rowH?: number }> = ({
   frame: f,
   theme,
   w: w0,
@@ -173,8 +180,8 @@ export const FeedCard: React.FC<Base & { data?: typeof REVIEW.feed; people?: typ
   y = 0,
   scale,
   lift = 32,
-  data = REVIEW.feed,
-  people = REVIEW.team,
+  data,
+  people = [],
   highlight = 8,
   flick,
   rowH,
@@ -184,18 +191,19 @@ export const FeedCard: React.FC<Base & { data?: typeof REVIEW.feed; people?: typ
   const u = useKitScale(scale);
   const w = w0 ?? 980 * u;
   const h = h0 ?? 720 * u;
+  if (!data) return <KitEmpty part="FeedCard" need="data (the product's own feed: title, count, rows)" theme={t} w={w} h={h} x={x} y={y} r={56 * u} style={style} />;
   const row = rowH ?? 172 * u;
   const top = 132 * u;
   const rows = (
     <div>
       {data.rows.map((r, k) => {
         const hi = k === highlight;
-        const who = people[r.who % people.length];
+        const who = people.length ? people[r.who % people.length] : undefined;
         return (
           <div key={k} style={{ position: 'relative', height: row, margin: `0 ${26 * u}px`, borderRadius: 30 * u, background: hi ? mixColor(t.surface, t.accent, 0.16) : 'transparent', boxShadow: hi ? `inset 0 0 0 ${3 * u}px ${t.accent}` : undefined }}>
-            <Avatar theme={t} i={r.who} initials={who.initials} size={96 * u} x={26 * u} y={(row - 96 * u) / 2} />
+            {who && <Avatar theme={t} i={r.who} initials={who.initials} seed={who.seed} src={who.src} focus={who.focus} size={96 * u} x={26 * u} y={(row - 96 * u) / 2} />}
             <Text id={`kit-feed-who-${k}`} x={150 * u} y={row / 2 - 56 * u} px={KIT_TYPE.label * u} color={t.mute}>
-              {`${who.name} · ${r.ref}`}
+              {[who?.name, r.ref].filter(Boolean).join(' · ')}
             </Text>
             <Text id={`kit-feed-text-${k}`} x={150 * u} y={row / 2 - 6 * u} px={54 * u} color={t.text}>
               {r.text}
@@ -235,18 +243,19 @@ export const FeedCard: React.FC<Base & { data?: typeof REVIEW.feed; people?: typ
  */
 export const StatCard: React.FC<
   Base & { label?: string; value?: number; of?: number; count?: { from: number; perSec: number; start: number }; sub?: (v: number) => string; trend?: number[]; drawAt?: number; live?: boolean; tone?: 'surface' | 'accent' }
-> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 32, label = REVIEW.stats.views.label, value, of, count, sub, trend, drawAt = -1e9, live = true, tone = 'accent', style }) => {
+> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 32, label, value, of, count, sub, trend, drawAt = -1e9, live = true, tone = 'accent', style }) => {
   const t = theme ?? kitTheme();
   const u = useKitScale(scale);
   const film = useFilm();
   const w = w0 ?? 640 * u;
   const h = h0 ?? 560 * u;
-  const c = count ?? (value === undefined ? { from: REVIEW.stats.views.from, perSec: REVIEW.stats.views.perSec, start: 0 } : null);
+  if (!label || (value === undefined && !count))
+    return <KitEmpty part="StatCard" need={!label ? "label (what the figure counts, in the product's words)" : 'value or count (the product\'s own figure)'} theme={t} w={w} h={h} x={x} y={y} r={56 * u} style={style} />;
+  const c = count ?? null;
   const v = c ? countLinear(f, c, film).shown : (value ?? 0);
   const onAccent = tone === 'accent';
   const ink = onAccent ? t.accentInk : t.text;
   const mute = onAccent ? mixColor(t.accentInk, t.accent, 0.35) : t.mute;
-  const trendV = trend ?? Array.from({ length: 25 }, (_, i) => (i / 24) ** 1.7 + 0.06 * Math.sin(i * 1.3));
   const fig = Math.min(KIT_TYPE.figure * u, ((w - 104 * u) / Math.max(4, `${v.toLocaleString('en-US')}${of ? ` / ${of}` : ''}`.length)) * 1.75);
   return (
     <Surface theme={t} w={w} h={h} x={x} y={y} r={56 * u} lift={lift} scale={u} tone={onAccent ? 'accent' : 'surface'} style={style}>
@@ -259,25 +268,28 @@ export const StatCard: React.FC<
       <Text id="kit-stat-value" x={48 * u} y={128 * u} px={fig} weight={600} color={ink} track={-0.045}>
         {`${v.toLocaleString('en-US')}${of ? ` / ${of}` : ''}`}
       </Text>
-      {(sub || c) && (
+      {sub && (
         <Text id="kit-stat-sub" x={52 * u} y={128 * u + fig * 1.12} px={44 * u} color={mute}>
-          {sub ? sub(v) : `+${Math.max(0, v - (c?.from ?? 0)).toLocaleString('en-US')} ${REVIEW.stats.views.since}`}
+          {sub(v)}
         </Text>
       )}
-      <div style={{ position: 'absolute', left: 52 * u, top: h - 190 * u }}>
-        <Sparkline values={trendV} w={w - 104 * u} h={150 * u} color={ink} weight={6 * u} draw={prog(f, drawAt, drawAt + 40, E.softOut)} />
-      </div>
+      {trend && trend.length > 1 && (
+        <div style={{ position: 'absolute', left: 52 * u, top: h - 190 * u }}>
+          <Sparkline values={trend} w={w - 104 * u} h={150 * u} color={ink} weight={6 * u} draw={prog(f, drawAt, drawAt + 40, E.softOut)} />
+        </div>
+      )}
     </Surface>
   );
 };
 
 /** Approvals as one figure with the team under it (the review desk's board tile). */
-export const ApprovalsCard: React.FC<Base & { data?: typeof REVIEW }> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 32, data = REVIEW, style }) => {
+export const ApprovalsCard: React.FC<Base & { data?: ReviewData }> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 32, data, style }) => {
   const t = theme ?? kitTheme();
   const u = useKitScale(scale);
   const film = useFilm();
   const w = w0 ?? 640 * u;
   const h = h0 ?? 380 * u;
+  if (!data) return <KitEmpty part="ApprovalsCard" need="data (the product's own figures and team: ReviewData)" theme={t} w={w} h={h} x={x} y={y} r={56 * u} style={style} />;
   const saves = countLinear(f, { from: data.stats.saves.from, perSec: data.stats.saves.perSec, start: 0 }, film).shown;
   return (
     <Surface theme={t} w={w} h={h} x={x} y={y} r={56 * u} lift={lift} scale={u} tone="raised" style={style}>
@@ -304,11 +316,12 @@ export const ApprovalsCard: React.FC<Base & { data?: typeof REVIEW }> = ({ frame
 
 // ------------------------------------------------------------------------------------------ budgets
 /** The quarter at a glance: the total, what is spent, the share, the bar. `add` lands an amount at `addAt` and counts it on. */
-export const BudgetCard: React.FC<Base & { data?: typeof BUDGETS; add?: number; addAt?: number }> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 32, data = BUDGETS, add = 0, addAt = Infinity, style }) => {
+export const BudgetCard: React.FC<Base & { data?: BudgetData; add?: number; addAt?: number }> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 32, data, add = 0, addAt = Infinity, style }) => {
   const t = theme ?? kitTheme();
   const u = useKitScale(scale);
   const w = w0 ?? 900 * u;
   const h = h0 ?? 440 * u;
+  if (!data) return <KitEmpty part="BudgetCard" need="data (the product's own budgets: BudgetData)" theme={t} w={w} h={h} x={x} y={y} r={44 * u} style={style} />;
   const tot = budgetTotals(data.categories);
   const spent = tot.spent + add * prog(f, addAt + 4, addAt + 28, E.linear);
   return (
@@ -333,7 +346,7 @@ export const BudgetCard: React.FC<Base & { data?: typeof BUDGETS; add?: number; 
 };
 
 /** The teams' budgets as rows: glyph, name, spent of budget, the bar, who spends it. */
-export const CategoryRows: React.FC<Base & { data?: typeof BUDGETS; highlight?: number; add?: number; addAt?: number; gap?: number }> = ({
+export const CategoryRows: React.FC<Base & { data?: BudgetData; highlight?: number; add?: number; addAt?: number; gap?: number }> = ({
   frame: f,
   theme,
   w: w0,
@@ -341,7 +354,7 @@ export const CategoryRows: React.FC<Base & { data?: typeof BUDGETS; highlight?: 
   y = 0,
   scale,
   lift = 24,
-  data = BUDGETS,
+  data,
   highlight = 1,
   add = 0,
   addAt = Infinity,
@@ -353,6 +366,7 @@ export const CategoryRows: React.FC<Base & { data?: typeof BUDGETS; highlight?: 
   const w = w0 ?? 980 * u;
   const rh = 150 * u;
   const g = gap ?? 26 * u;
+  if (!data) return <KitEmpty part="CategoryRows" need="data (the product's own categories: BudgetData)" theme={t} w={w} h={3 * rh + 2 * g} x={x} y={y} r={34 * u} style={style} />;
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${x}px, ${y}px)`, ...style }}>
       {data.categories.map((c, i) => {
@@ -382,16 +396,20 @@ export const CategoryRows: React.FC<Base & { data?: typeof BUDGETS; highlight?: 
 };
 
 /** One team's weekly spend: the bars grow in turn from `growAt`; the week that matters in the accent. */
-export const ChartCard: React.FC<Base & { data?: typeof BUDGETS; growAt?: number; highlight?: number; title?: string }> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 32, data = BUDGETS, growAt = -1e9, highlight = 4, title = 'Weekly spend', style }) => {
+export const ChartCard: React.FC<Base & { data?: BudgetData; growAt?: number; highlight?: number; title?: string }> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 32, data, growAt = -1e9, highlight = 4, title, style }) => {
   const t = theme ?? kitTheme();
   const u = useKitScale(scale);
   const w = w0 ?? 820 * u;
   const h = h0 ?? 620 * u;
+  if (!data || !data.weeks.length) return <KitEmpty part="ChartCard" need="data.weeks (the product's own figures: BudgetData)" theme={t} w={w} h={h} x={x} y={y} r={44 * u} style={style} />;
+  const head = title ?? data.chartTitle;
   return (
     <Surface theme={t} w={w} h={h} x={x} y={y} r={44 * u} lift={lift} scale={u} style={style}>
-      <Text id="kit-chart-title" x={48 * u} y={42 * u} px={KIT_TYPE.body * u} weight={600} color={t.text}>
-        {title}
-      </Text>
+      {head && (
+        <Text id="kit-chart-title" x={48 * u} y={42 * u} px={KIT_TYPE.body * u} weight={600} color={t.text}>
+          {head}
+        </Text>
+      )}
       <Text id="kit-chart-total" x={w - 348 * u} y={46 * u} width={300 * u} align="right" px={KIT_TYPE.label * u} color={t.mute}>
         {money(data.weeks.reduce((a, b) => a + b, 0))}
       </Text>
@@ -403,12 +421,13 @@ export const ChartCard: React.FC<Base & { data?: typeof BUDGETS; growAt?: number
 };
 
 /** One team on track: a ring that fills as it arrives, the share, the sentence the product would say. */
-export const RingCard: React.FC<Base & { data?: typeof BUDGETS; category?: number; drawAt?: number }> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 32, data = BUDGETS, category = 0, drawAt = -1e9, style }) => {
+export const RingCard: React.FC<Base & { data?: BudgetData; category?: number; drawAt?: number }> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 32, data, category = 0, drawAt = -1e9, style }) => {
   const t = theme ?? kitTheme();
   const u = useKitScale(scale);
   const w = w0 ?? 560 * u;
   const h = h0 ?? 620 * u;
-  const c = data.categories[category];
+  const c = data?.categories[category];
+  if (!data || !c) return <KitEmpty part="RingCard" need="data.categories (the product's own figures: BudgetData)" theme={t} w={w} h={h} x={x} y={y} r={56 * u} style={style} />;
   const p = c.spent / c.budget;
   const d = prog(f, drawAt, drawAt + 40, E.glideOut);
   const ring = Math.min(w - 120 * u, h * 0.5);
@@ -421,7 +440,7 @@ export const RingCard: React.FC<Base & { data?: typeof BUDGETS; category?: numbe
         </div>
       </div>
       <Text id="kit-ring-line" x={48 * u} y={h - 170 * u} width={w - 96 * u} align="center" px={52 * u} weight={600} color={t.text}>
-        {`${c.name} is on track`}
+        {data.onTrack ? data.onTrack(c.name) : c.name}
       </Text>
       <Text id="kit-ring-of" x={48 * u} y={h - 98 * u} width={w - 96 * u} align="center" px={KIT_TYPE.label * u} color={t.mute}>
         {`${money(c.spent)} of ${money(c.budget)}`}
@@ -431,18 +450,20 @@ export const RingCard: React.FC<Base & { data?: typeof BUDGETS; category?: numbe
 };
 
 /** The money landing: a toast with the amount, the team and when (lands with the film's one spring, drawn by the caller). */
-export const AmountToast: React.FC<{ theme?: KitTheme; data?: typeof BUDGETS; w?: number; h?: number; scale?: number }> = ({ theme, data = BUDGETS, w, h, scale }) => {
+export const AmountToast: React.FC<{ theme?: KitTheme; data?: BudgetData; w?: number; h?: number; scale?: number }> = ({ theme, data, w, h, scale }) => {
   const t = theme ?? kitTheme();
   const u = useKitScale(scale);
+  if (!data) return <KitEmpty part="AmountToast" need="data.toast (the product's own amount: BudgetData)" theme={t} w={w ?? 520 * u} h={h ?? 124 * u} inline />;
   return <Toast theme={t} title={`+ ${money(data.toast.amount)}`} sub={`${data.toast.category} · ${data.toast.when}`} w={w ?? 520 * u} h={h ?? 124 * u} glyph="plus" id="kit-amount" />;
 };
 
 /** The report's cover: the period's figure over its bars, as it would open full-bleed. */
-export const ReportCover: React.FC<Base & { data?: typeof BUDGETS; growAt?: number }> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 40, data = BUDGETS, growAt = -1e9, style }) => {
+export const ReportCover: React.FC<Base & { data?: BudgetData; growAt?: number }> = ({ frame: f, theme, w: w0, h: h0, x = 0, y = 0, scale, lift = 40, data, growAt = -1e9, style }) => {
   const t = theme ?? kitTheme();
   const u = useKitScale(scale);
   const w = w0 ?? 1240 * u;
   const h = h0 ?? 560 * u;
+  if (!data) return <KitEmpty part="ReportCover" need="data (the product's own report: BudgetData)" theme={t} w={w} h={h} x={x} y={y} r={60 * u} style={style} />;
   const tot = budgetTotals(data.categories);
   const spent = tot.spent + data.toast.amount;
   const bars = data.weeks;
@@ -466,37 +487,10 @@ export const ReportCover: React.FC<Base & { data?: typeof BUDGETS; growAt?: numb
 
 // ------------------------------------------------------------------------------------------ fallback
 /**
- * Real product UI for a box that was given none: picked by the box's shape (a large landscape box: a dense product
- * screen, kit/dense.tsx, from a sample world seeded by the film's copy and `seed`, so two films differ; wide: the
- * budget card; tall: the comment feed; square and large: the project panel; square and small: a live figure). It is
- * the floor, not the goal: give a card the brand's own UI or picture.
+ * A card that was given no UI and no picture (fx/Cards without children or image): its empty state, never the kit's
+ * sample products. It reports kit-empty (a warning in dev, an error under the ship gate); give the card the product's
+ * own UI (a kit panel with the film's data, a DenseScreen with filmWorld) or a real picture.
  */
-export const KitFallback: React.FC<{ frame: number; w: number; h: number; seed?: number; theme?: KitTheme }> = ({ frame, w, h, seed = 0, theme }) => {
-  const t = theme ?? kitTheme();
-  const film = useFilm();
-  const unit = Math.min(film.width, film.height) / 1080;
-  const a = w / Math.max(1, h);
-  // lay the panel out at its design size and fit it to the box (UI scales as a whole, never re-wraps)
-  const pick = a >= 1.3 && a <= 2.3 && w * h > 700000 * unit * unit ? 'screen' : a > 1.7 ? 'budget' : a < 0.85 ? 'feed' : w * h > 600000 * unit * unit ? 'project' : seed % 2 ? 'ring' : 'stat';
-  const design = { screen: [1600, 920], budget: [900, 440], feed: [980, 1200], project: [1160, 740], ring: [560, 620], stat: [640, 560] }[pick].map((v) => v * unit);
-  const k = Math.min(w / design[0], h / design[1]);
-  const node =
-    pick === 'screen' ? (
-      <DenseScreen frame={frame} theme={t} seed={`${film.copy.map((c) => c.text).join(' ').slice(0, 80)}:${seed}`} lift={0} view={k} />
-    ) : pick === 'budget' ? (
-      <BudgetCard frame={frame} theme={t} lift={0} />
-    ) : pick === 'feed' ? (
-      <FeedCard frame={frame} theme={t} h={design[1]} lift={0} />
-    ) : pick === 'project' ? (
-      <ProjectPanel frame={frame} theme={t} lift={0} />
-    ) : pick === 'ring' ? (
-      <RingCard frame={frame} theme={t} lift={0} />
-    ) : (
-      <StatCard frame={frame} theme={t} lift={0} count={{ from: REVIEW.stats.views.from, perSec: REVIEW.stats.views.perSec, start: 0 }} />
-    );
-  return (
-    <div data-ui style={{ position: 'absolute', left: (w - design[0] * k) / 2, top: (h - design[1] * k) / 2, width: design[0], height: design[1], transformOrigin: '0 0', transform: `scale(${clamp(k, 0.05, 4).toFixed(5)})` }}>
-      {node}
-    </div>
-  );
-};
+export const KitFallback: React.FC<{ frame: number; w: number; h: number; seed?: number; theme?: KitTheme }> = ({ w, h, theme }) => (
+  <KitEmpty part="KitFallback" need="the card's own UI (children) or a real picture (image)" theme={theme} w={w} h={h} r={Math.min(w, h) * 0.04} />
+);

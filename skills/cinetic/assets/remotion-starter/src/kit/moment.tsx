@@ -1,5 +1,5 @@
 // The film's one full-frame product moment: the product's own UI, fed by its data module (the brand's strings,
-// numbers and pictures, or kit/sample.ts until they exist), filling the frame on a flat field, its parts
+// numbers and pictures; never the kit's samples), filling the frame on a flat field, its parts
 // entering on their beats (about two starts a second) and its real state change landing on the hit frame.
 // Every launch and update film carries one (references/update-films.md): the moment a viewer sees the
 // product used, not a stand-in for it (a tile grid, a thin curve on a photo). The camera locks for it or

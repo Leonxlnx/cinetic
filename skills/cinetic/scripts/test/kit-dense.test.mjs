@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * kit-dense.test.mjs: dense product screens, sample worlds, crafted avatars and content tiles (src/kit/data.ts,
- * dense.tsx, avatars.tsx, tiles.tsx, parts.tsx Avatar / AvatarStack, panels.tsx KitFallback).
+ * kit-dense.test.mjs: dense product screens, worlds, crafted avatars and content tiles (src/kit/data.ts, sample.ts,
+ * gate.tsx, dense.tsx, avatars.tsx, tiles.tsx, parts.tsx Avatar / AvatarStack, panels.tsx KitFallback).
  *
- *   1. sampleWorld(): every kind adds up (status counts are the rows' counts, the total is the rows' sum, the chart's
- *      points sum to the total, ids and names unique, the focus record in the accent state); a billing world's
- *      statuses agree with its dates; the same seed gives the same world, two seeds give different people and rows.
+ *   1. sample().world() (the gallery's): every kind adds up (status counts are the rows' counts, the total is the rows'
+ *      sum, the chart's points sum to the total, ids and names unique, the focus record in the accent state); a billing
+ *      world's statuses agree with its dates; the same seed gives the same world, two seeds give different people and rows.
  *   2. DenseScreen (table and board, light and dark): 25+ product strings, exactly one readable line (data-text) at
  *      4 % of the frame height or more, every other string texture (data-texture, never data-text), most of them at
  *      the micro sizes (12-16 px at 1080p); the readable line keeps 4 % of the frame when the screen is seen smaller.
@@ -17,7 +17,12 @@
  *   5. Tiles: each preview kind carries content; worldNodes() gives labelled nodes from the world; a wall, a ring and
  *      a ticker render a tile with content in every slot (no blank tile, no bare square); an unfetched mark falls
  *      back to a glyph tile with its label.
- *   6. KitFallback: a large landscape box gets a dense screen.
+ *   6. Nothing sample by default: every kit part given no content of the film's own (DenseScreen, the panels,
+ *      KitFallback, walls, rings, tickers, a preview without its content, FileThumb, Photo, an unfetched AppIcon) draws
+ *      its empty state (data-kit-empty) with no string of the kit's samples in it, and reports it in kitEmpties(); under
+ *      the ship gate (CINETIC_GATE=ship) it throws. Field, Row and Notice draw no glyph the film did not pick. The retired
+ *      sampleWorld() returns an empty world. filmWorld() adds up from the film's rows alone and its screen shows no
+ *      chrome string the film did not give ("Search", "This month", "Pro", "Share").
  *
  * (Walls, rings and tickers are rendered with blur: false here: a softened tile is drawn twice, at two fixed blur levels.)
  * It runs src through the starter's own tsx and react-dom/server (npm install in assets/remotion-starter first).
@@ -60,20 +65,21 @@ import * as K from '${url('kit/index.ts')}';
 import { FilmProvider } from '${url('lib/film.ts')}';
 const h = React.createElement;
 const film = (fps: number, el: any, width = 1920, height = 1080) => renderToStaticMarkup(h(FilmProvider, { value: { fps, width, height } }, el));
+const S = K.sample();
 const KINDS = ['billing', 'deploys', 'support', 'orders', 'pipeline', 'hiring'] as const;
 const worlds: any[] = [];
 for (const kind of KINDS) for (const seed of ['alpha', 'beta', 'gamma', 'film-7']) {
-  const w = K.sampleWorld(seed, { kind });
+  const w = S.world(seed, { kind });
   worlds.push({ kind, seed, bad: K.checkWorld(w), statuses: w.statuses.map((s: any) => s.label), today: w.today, records: w.records.map((r: any) => ({ date: r.date, status: r.status })) });
 }
-const same = JSON.stringify(K.sampleWorld('same-seed')) === JSON.stringify(K.sampleWorld('same-seed'));
-const A = K.sampleWorld('film-one'), B = K.sampleWorld('film-two');
-const differ = { people: A.people.filter((p: any) => B.people.some((q: any) => q.name === p.name)).length, titles: A.records.filter((r: any, i: number) => B.records[i] && B.records[i].title === r.title && B.records[i].value === r.value).length, kinds: new Set(['a','b','c','d','e','f','g','h','i','j'].map((s) => K.sampleWorld(s).kind)).size };
+const same = JSON.stringify(S.world('same-seed')) === JSON.stringify(S.world('same-seed'));
+const A = S.world('film-one'), B = S.world('film-two');
+const differ = { people: A.people.filter((p: any) => B.people.some((q: any) => q.name === p.name)).length, titles: A.records.filter((r: any, i: number) => B.records[i] && B.records[i].title === r.title && B.records[i].value === r.value).length, kinds: new Set(['a','b','c','d','e','f','g','h','i','j'].map((s) => S.world(s).kind)).size };
 const screens: Record<string, string> = {};
 for (const [name, layout, recipe, seed, view] of [['table-light', 'table', 'tintedPaper', 'film-a', 1], ['table-dark', 'table', 'inkStage', 'film-b', 1], ['board-dark', 'board', 'slateMid', 'film-c', 1], ['board-light', 'board', 'tintedPaper', 'film-d', 1], ['table-small', 'table', 'tintedPaper', 'film-e', 0.6]] as const)
-  screens[name] = film(60, h(K.DenseScreen, { frame: 120, theme: K.kitTheme(recipe as any), seed, layout, view }));
+  screens[name] = film(60, h(K.DenseScreen, { frame: 120, theme: K.kitTheme(recipe as any), world: S.world(seed), layout, view }));
 // mid-glide (k 5/16, both lines on screen): still exactly one readable line
-const glides = ['table', 'board'].map((layout) => film(60, h(K.DenseScreen, { frame: 105, theme: K.kitTheme('tintedPaper'), seed: 'film-g', layout, focus: [{ at: 0, row: 2 }, { at: 100, row: 6 }] })));
+const glides = ['table', 'board'].map((layout) => film(60, h(K.DenseScreen, { frame: 105, theme: K.kitTheme('tintedPaper'), world: S.world('film-g'), layout, focus: [{ at: 0, row: 2 }, { at: 100, row: 6 }] })));
 const fs60 = [0, 1, 4, 8, 16, 40].map((d) => K.focusState(100 + d, [{ at: 0, row: 2 }, { at: 100, row: 6 }], { fps: 60 }));
 const fs30 = K.focusState(104, [{ at: 0, row: 2 }, { at: 100, row: 6 }], { fps: 30 });
 const fixed = K.focusState(77, 5);
@@ -85,14 +91,67 @@ const inv = K.halftoneDots('someone', 28, true);
 const cornerR = (ds: any[]) => Math.max(0, ...ds.filter((d: any) => d[0] < 9 && d[1] < 9).map((d: any) => d[2]));
 const stack = film(60, h(K.AvatarStack, { theme: t, people: A.people.slice(0, 4), size: 64, ring: t.surface, more: 9 }));
 const tiles: Record<string, string> = {};
-for (const preview of ['doc', 'chart', 'bars', 'list', 'person', 'table', 'code']) tiles[preview] = film(60, h(K.ContentTile, { node: { glyph: 'doc', label: 'Pricing page', sub: 'INV-0412 · $1,840.00', preview, seed: 'x' }, theme: t, w: 240 }));
+for (const preview of ['doc', 'chart', 'bars', 'list', 'table', 'code']) tiles[preview] = film(60, h(K.ContentTile, { node: { glyph: 'doc', label: 'Pricing page', sub: 'INV-0412 · $1,840.00', preview, seed: 'x', ...S.preview(preview as any, 'x') }, theme: t, w: 240 }));
+const personBare = film(60, h(K.ContentTile, { node: { label: 'Maya', sub: 'Design', preview: 'person', status: 'In a call' }, theme: t, w: 240 }));
+const tileBare = Object.fromEntries(['doc', 'chart', 'list', 'table', 'code'].map((preview) => [preview, film(60, h(K.ContentTile, { node: { label: 'Send the slides', preview }, theme: t, w: 240 }))]));
+const tileLabel = film(60, h(K.ContentTile, { node: { label: 'Send the slides', sub: 'Today' }, theme: t, w: 240 }));
 const fallbackTile = film(60, h(K.ContentTile, { node: { logo: 'no-such-mark', glyph: 'chart', label: 'Unfetched', preview: 'chart' }, theme: t, w: 240 }));
-const nodes = K.worldNodes(A, 24);
-const wall = film(60, h(K.ContentWall, { nodes: nodes.slice(0, 4), frame: 400, theme: t, seed: 'w', blur: false }));
-const ring = film(60, h(K.ContentRing, { nodes: nodes.slice(0, 3), frame: 400, theme: t, seed: 'r', count: 14, blur: false }));
-const ticker = film(60, h(K.ContentTicker, { nodes: nodes.slice(0, 3), frame: 400, theme: t, seed: 'k', blur: false }));
+const nodes = S.nodes(A, 24);
+const fill = S.nodes(S.world('w:fill'), 24);
+const wall = film(60, h(K.ContentWall, { nodes: nodes.slice(0, 4), fill, frame: 400, theme: t, seed: 'w', blur: false }));
+const ring = film(60, h(K.ContentRing, { nodes: nodes.slice(0, 3), fill, frame: 400, theme: t, seed: 'r', count: 14, blur: false }));
+const ticker = film(60, h(K.ContentTicker, { nodes: nodes.slice(0, 3), fill, frame: 400, theme: t, seed: 'k', blur: false }));
 const fallback = film(60, h(K.KitFallback, { frame: 60, w: 1500, h: 860, seed: 3, theme: t }));
-console.log(JSON.stringify({ worlds, same, differ, screens, glides, fs60, fs30, fixed, av: { big: avatar(96), chip: avatar(32), half: avatar(220, 'halftone') }, cuts, dots: { n: dots.length, rs: dots.map((d: any) => d[2]), maxY: Math.max(...dots.map((d: any) => d[1])), corner: cornerR(dots), invCorner: cornerR(inv) }, stack, tiles, fallbackTile, nodes, wall, ring, ticker, fallback, wallSlots: K.wallSlots(4, { cols: Math.max(4, Math.round(1920 / (230 * 1.24)) + 1), rows: Math.max(3, Math.round(1080 / (230 * 1.24 * 0.92)) + 1), cell: 230 * 1.24, w: 1920, h: 1080, seed: 'w' }).length }));
+// 6. nothing sample by default
+const own = [{ label: 'Send Maya the slides', sub: 'Today' }, { label: 'Book the dentist', sub: 'Tuesday' }];
+const wallOwn = film(60, h(K.ContentWall, { nodes: own, frame: 400, theme: t, seed: 'w', blur: false }));
+const before = K.kitEmpties().length; // KitFallback (rendered above) is already in
+const bare: Record<string, string> = {
+  DenseScreen: film(60, h(K.DenseScreen, { frame: 60, theme: t, seed: 'film-a', kind: 'support' } as any)),
+  DenseScreenRetired: film(60, h(K.DenseScreen, { frame: 60, theme: t, world: K.sampleWorld('film-a') })),
+  ProjectPanel: film(60, h(K.ProjectPanel, { frame: 60, theme: t })),
+  ChatCard: film(60, h(K.ChatCard, { frame: 60, theme: t, at: [10, 20] })),
+  FeedCard: film(60, h(K.FeedCard, { frame: 60, theme: t })),
+  StatCard: film(60, h(K.StatCard, { frame: 60, theme: t, count: { from: 18240, perSec: 140, start: 0 } })),
+  ApprovalsCard: film(60, h(K.ApprovalsCard, { frame: 60, theme: t })),
+  BudgetCard: film(60, h(K.BudgetCard, { frame: 60, theme: t })),
+  CategoryRows: film(60, h(K.CategoryRows, { frame: 60, theme: t })),
+  ChartCard: film(60, h(K.ChartCard, { frame: 60, theme: t })),
+  RingCard: film(60, h(K.RingCard, { frame: 60, theme: t })),
+  AmountToast: film(60, h(K.AmountToast, { theme: t })),
+  ReportCover: film(60, h(K.ReportCover, { frame: 60, theme: t })),
+  KitFallback: fallback,
+  ContentWall: film(60, h(K.ContentWall, { nodes: [], frame: 60, theme: t })),
+  ContentRing: film(60, h(K.ContentRing, { nodes: [], frame: 60, theme: t })),
+  ContentTicker: film(60, h(K.ContentTicker, { nodes: [], frame: 60, theme: t })),
+  FileThumb: film(60, h(K.FileThumb, { theme: t, w: 300, h: 200, seed: 41 })),
+  Photo: film(60, h(K.Photo, { theme: t, w: 300, h: 200, seed: 3 })),
+  AppIcon: film(60, h(K.AppIcon, { logo: 'no-such-mark', size: 120, theme: t })),
+};
+const empties = [...new Set(K.kitEmpties().map((x: any) => x.part))];
+const noGlyph = { field: film(60, h(K.Field, { theme: t, w: 900, h: 110 }, 'Walk home, Monday')), row: film(60, h(K.Row, { theme: t, w: 900, h: 110, title: 'Today' })), notice: film(60, h(K.Notice, { theme: t, w: 900, h: 130, title: 'Book the dentist', body: 'Added to Tuesday' })) };
+const retired = K.sampleWorld('film-x', { kind: 'billing' });
+const FW = K.filmWorld({
+  workspace: 'Tern', screen: 'This week', noun: ['task', 'tasks'],
+  people: [{ name: 'Leon Lin' }],
+  statuses: [{ label: 'Done', tone: 'accent' }, { label: 'Today', tone: 'wait' }],
+  records: [
+    { title: 'Send Maya the slides', date: 'Today', status: 1, who: 0 },
+    { title: 'Book the dentist', date: 'Tue', status: 0, who: 0 },
+    { title: 'Pay the rent', date: 'Fri', status: 1 },
+    { title: 'Call Mum back', date: 'Sun', status: 1 },
+  ],
+});
+const filmScreen = film(60, h(K.DenseScreen, { frame: 60, theme: t, world: FW, layout: 'table', focus: null }));
+const filmBoard = film(60, h(K.DenseScreen, { frame: 60, theme: t, world: FW, layout: 'board', focus: null }));
+const filmNodes = K.worldNodes(FW, 6);
+const env = (globalThis as any).process.env;
+env.CINETIC_GATE = 'ship';
+let shipThrow = '';
+try { film(60, h(K.DenseScreen, { frame: 60, theme: t })); } catch (e) { shipThrow = String((e as Error).message); }
+delete env.CINETIC_GATE;
+const sampleStrings = [...S.docLines, ...S.listLines, ...S.fileStems, ...S.codeLines.map((c: any) => c[1]), S.review.product, S.review.project.title, S.review.chat.title, S.review.stats.views.label, S.review.stats.views.since, S.budgets.product, S.budgets.team, 'Weekly spend', ...S.companies.pre.flatMap((p: string) => S.companies.suf.map((s: string) => p + ' ' + s))];
+console.log(JSON.stringify({ worlds, same, differ, screens, glides, fs60, fs30, fixed, av: { big: avatar(96), chip: avatar(32), half: avatar(220, 'halftone') }, cuts, dots: { n: dots.length, rs: dots.map((d: any) => d[2]), maxY: Math.max(...dots.map((d: any) => d[1])), corner: cornerR(dots), invCorner: cornerR(inv) }, stack, tiles, personBare, tileBare, tileLabel, fallbackTile, nodes, wall, ring, ticker, fallback, wallOwn, bare, empties, noGlyph, retired: { records: retired.records.length, people: retired.people.length, origin: retired.origin }, fw: { bad: K.checkWorld(FW), counts: FW.statuses.map((s: any) => s.count), focus: FW.focus, series: FW.series.length }, filmScreen, filmBoard, filmNodes, shipThrow, sampleStrings, wallSlots: K.wallSlots(4, { cols: Math.max(4, Math.round(1920 / (230 * 1.24)) + 1), rows: Math.max(3, Math.round(1080 / (230 * 1.24 * 0.92)) + 1), cell: 230 * 1.24, w: 1920, h: 1080, seed: 'w' }).length }));
 `;
 
 /** The strings in a markup: data-text elements and data-texture spans, each with its largest font size. */
@@ -128,7 +187,7 @@ try {
 
   // 1. sample worlds
   const bad = P.worlds.filter((w) => w.bad.length);
-  result(!bad.length, `sampleWorld: ${P.worlds.length} worlds over 6 kinds add up (counts, sums, chart, ids, names, focus)`, bad.map((w) => `${w.kind}/${w.seed}: ${w.bad.join('; ')}`).join(' | '));
+  result(!bad.length, `sample().world: ${P.worlds.length} worlds over 6 kinds add up (counts, sums, chart, ids, names, focus)`, bad.map((w) => `${w.kind}/${w.seed}: ${w.bad.join('; ')}`).join(' | '));
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const dateWrong = [];
   for (const w of P.worlds.filter((x) => x.kind === 'billing')) {
@@ -145,9 +204,9 @@ try {
       if (label === 'Due' && due < today) dateWrong.push(`${w.seed}: due but past ${rec.date}`);
     }
   }
-  result(!dateWrong.length, 'sampleWorld: a bill past its due date and unpaid is overdue, one not yet due is due, a draft has no date', dateWrong.slice(0, 4).join(' | '));
-  result(P.same, 'sampleWorld: the same seed gives the same world');
-  result(P.differ.people <= 2 && P.differ.titles <= 2 && P.differ.kinds >= 4, 'sampleWorld: two films get different people and rows, and the seeds deal the kinds', JSON.stringify(P.differ));
+  result(!dateWrong.length, 'sample().world: a bill past its due date and unpaid is overdue, one not yet due is due, a draft has no date', dateWrong.slice(0, 4).join(' | '));
+  result(P.same, 'sample().world: the same seed gives the same world');
+  result(P.differ.people <= 2 && P.differ.titles <= 2 && P.differ.kinds >= 4, 'sample().world: two seeds get different people and rows, and the seeds deal the kinds', JSON.stringify(P.differ));
 
   // 2. dense screens
   for (const [name, html] of Object.entries(P.screens)) {
@@ -188,14 +247,35 @@ try {
     result(n >= (kind === 'chart' || kind === 'bars' ? 3 : 5), `ContentTile ${kind}: label, sub line and a preview with content`, `${n} strings`);
   }
   result(/Unfetched/.test(P.fallbackTile) && !/data-logo/.test(P.fallbackTile), 'ContentTile: an unfetched mark falls back to a glyph tile with its label');
-  result(P.nodes.length === 24 && P.nodes.every((n) => n.label && n.label.length > 1) && new Set(P.nodes.map((n) => n.preview)).size >= 5, 'worldNodes: 24 labelled nodes from the world, five or more preview kinds');
+  result(P.nodes.length === 24 && P.nodes.every((n) => n.label && n.label.length > 1) && new Set(P.nodes.map((n) => n.preview)).size >= 5, 'sample().nodes: 24 labelled gallery nodes, five or more preview kinds');
+  result(/data-kit-empty="ContentTile"/.test(P.personBare) && !/data-drawn/.test(P.personBare), 'ContentTile person preview without a photo: kit-empty, never a drawn face for a name');
+  for (const [kind, html] of Object.entries(P.tileBare)) {
+    const n = strings(html).length;
+    result(/data-kit-empty="ContentTile"/.test(html) && n === 1, `ContentTile ${kind} preview without its content: an empty preview (kit-empty), no sample lines`, `${n} strings`);
+  }
+  result(!/data-kit-empty/.test(P.tileLabel) && strings(P.tileLabel).length === 2 && !/<svg/.test(P.tileLabel), 'ContentTile with a label and no preview content: label and sub only, no glyph the film did not pick, no preview well');
   const tileCount = (html) => (html.match(/data-ui="true"[^>]*style="position:relative;width:[\d.]+px;height:[\d.]+px;border-radius/g) ?? []).length;
   const wallTiles = tileCount(P.wall);
   result(wallTiles === P.wallSlots && strings(P.wall).length >= wallTiles * 4, 'ContentWall: every slot is a tile with content (no blank tiles)', `${wallTiles} tiles of ${P.wallSlots} slots, ${strings(P.wall).length} strings`);
   result(tileCount(P.ring) === 14 && strings(P.ring).length >= 14 * 4, 'ContentRing: 14 tiles with content');
   result(tileCount(P.ticker) >= 12 && strings(P.ticker).length >= tileCount(P.ticker) * 4, 'ContentTicker: two rows of tiles with content', `${tileCount(P.ticker)} tiles`);
-  const fb = strings(P.fallback);
-  result(fb.length >= 25 && fb.filter((x) => x.kind === 'text').length === 1, 'KitFallback: a large landscape box gets a dense screen with one readable line', `${fb.length} strings`);
+  // 6. nothing sample by default
+  const leak = (html) => P.sampleStrings.filter((s) => s && html.includes(`>${s}<`));
+  for (const [part, html] of Object.entries(P.bare)) {
+    const n = strings(html).length;
+    const tag = part === 'DenseScreenRetired' ? 'DenseScreen' : part;
+    result(new RegExp(`data-kit-empty="${tag}"`).test(html) && n === 0 && !leak(html).length && !/data-drawn/.test(html), `${part} with no content of the film's own: its empty state (data-kit-empty), no string, nothing drawn`, `${n} strings; leaks ${leak(html).slice(0, 3).join(', ')}`);
+  }
+  const wantEmpty = ['sampleWorld', 'DenseScreen', 'ProjectPanel', 'ChatCard', 'FeedCard', 'StatCard', 'ApprovalsCard', 'BudgetCard', 'CategoryRows', 'ChartCard', 'RingCard', 'AmountToast', 'ReportCover', 'KitFallback', 'ContentWall', 'ContentRing', 'ContentTicker', 'FileThumb', 'Photo', 'AppIcon'];
+  result(wantEmpty.every((p) => P.empties.includes(p)), 'kitEmpties(): every empty part is reported once (precheck lists them)', wantEmpty.filter((p) => !P.empties.includes(p)).join(', '));
+  result(/kit-empty: DenseScreen/.test(P.shipThrow), 'under the ship gate an empty kit part throws (a film never ships one)', P.shipThrow.slice(0, 80));
+  result(!/<svg/.test(P.noGlyph.field) && !/<svg/.test(P.noGlyph.row) && !/<svg/.test(P.noGlyph.notice), 'Field, Row and Notice draw no glyph the film did not pick (no default link, grid or bolt)');
+  result(P.retired.records === 0 && P.retired.people === 0 && P.retired.origin === 'empty', 'sampleWorld() is retired: an empty world, never sample rows', JSON.stringify(P.retired));
+  result(!P.fw.bad.length && P.fw.counts.join() === '1,3' && P.fw.focus === 1 && P.fw.series === 0, 'filmWorld: the film\'s rows add up (counts, focus in the accent state), no invented chart', JSON.stringify(P.fw));
+  const chromeLeak = ['Search', 'This month', 'Pro', 'Share', 'Activity', 'Last 12 weeks', 'Team', 'New task'].filter((s) => P.filmScreen.includes(`>${s}<`) || P.filmScreen.includes(` ${s}<`) || P.filmBoard.includes(`>${s}<`));
+  result(/>Send Maya the slides</.test(P.filmScreen) && /data-texture/.test(P.filmScreen) && !chromeLeak.length && !leak(P.filmScreen + P.filmBoard).length && !/data-kit-empty/.test(P.filmScreen), 'DenseScreen from filmWorld: the film\'s rows, no chrome string or sample string it did not give', chromeLeak.join(', '));
+  result(P.filmNodes.length === 6 && P.filmNodes.every((n) => !n.preview && !n.glyph && !n.lines) && P.filmNodes[0].label === 'Send Maya the slides', 'worldNodes(filmWorld): the film\'s records as labels, no invented preview or glyph', JSON.stringify(P.filmNodes[0]));
+  result(tileCount(P.wallOwn) === P.wallSlots && !leak(P.wallOwn).length && strings(P.wallOwn).every((s) => s), 'ContentWall with only the film\'s nodes: its slots repeat the film\'s items, never sample tiles', `${tileCount(P.wallOwn)} tiles`);
 } finally {
   fs.rmSync(TMP, { recursive: true, force: true });
 }

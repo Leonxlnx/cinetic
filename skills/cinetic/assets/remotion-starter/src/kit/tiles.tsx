@@ -1,13 +1,15 @@
-// Content tiles: the nodes of a ring, a wall or a ticker carry content, never a bare pill or a bare accent square.
-// A tile is a small lit card: its real mark (kit/logos.tsx, when the film has fetched it) or a generic glyph, a label,
-// a sub line and a tiny preview of what it holds (a document, a chart, a list, a person, a table, code), all drawn in
-// code from real-looking data. Tiles arrive tumbling in 3D (20-60 degrees, the house tileArrival), settle on depth
+// Content tiles: the nodes of a ring, a wall or a ticker carry the film's content, never a bare pill or a bare accent
+// square. A tile is a small lit card: its real mark (kit/logos.tsx, when the film has fetched it) or the glyph the film
+// gives, a label, a sub line and a tiny preview of what it holds (a document, a chart, a list, a person, a table, code),
+// drawn from the node's own lines, rows, values or code: a preview without its content draws nothing and reports
+// kit-empty, never sample lines. Tiles arrive tumbling in 3D (20-60 degrees, the house tileArrival), settle on depth
 // bands (smaller and softer further back) and drift with parallax:
 //   ContentTile    one tile at a size (px), any aspect
-//   ContentWall    a wall: the given nodes take the slots nearest the centre, the rest is filled from the sample world
+//   ContentWall    a wall: the given nodes take the slots nearest the centre, the rest is filled from `fill` (the
+//                  film's own further items) or by repeating the nodes; no nodes at all: the empty state
 //   ContentRing    a ring round a kept-free centre, orbiting slowly
 //   ContentTicker  rows of tiles flowing past at constant speeds on two depths, curved toward the camera
-//   worldNodes     tile nodes from a sample world (kit/data.ts): its records and its people
+//   worldNodes     tile nodes from the film's world (kit/data.ts filmWorld): its records and its people
 // Labels are texture (data-texture) unless a tile is large enough to read (>= TEXT_MIN): then data-text.
 import React from 'react';
 import { Img } from 'remotion';
@@ -16,20 +18,39 @@ import { Defocus } from '../fx/Defocus';
 import { clamp, mix, rand } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { f60x, uOf, useFilm } from '../lib/film';
-import { PortraitMark } from './avatars';
-import { type SampleWorld, sampleWorld } from './data';
+import type { SampleWorld } from './data';
+import { kitEmpty, KitEmpty } from './gate';
 import { AppIcon, DEPTH, depthBlur, hasLogo, type LogoRef, ringSlots, type TileSlot, tileArrival, wallSlots } from './logos';
 import { face, GlyphTile, keyFace, Sparkline, surfaceShadow, useKitScale } from './parts';
 import type { GlyphName } from './sample';
 import { type KitTheme, kitTheme } from './theme';
 
-export type TilePreview = 'doc' | 'chart' | 'bars' | 'list' | 'person' | 'table' | 'code' | 'photo'; // photo: node.photo fills the preview (a real picture of what the item holds); without one it is a doc
-/** A tile's content: a real mark or a glyph, a label, a sub line, a preview of what it holds. */
-export type TileNode = { logo?: LogoRef; glyph?: GlyphName; label: string; sub?: string; preview?: TilePreview; value?: string; seed?: string; photo?: string; focus?: [number, number] }; // photo: a person's real portrait (staticFile URL) for the 'person' preview
-
-const DOC_LINES = ['Launch moves to the 12th', 'Pricing page, second pass', 'Owners for every open item', 'Numbers from the Q3 close', 'Notes from the Friday review', 'Migrate the old exports', 'Hiring plan for the spring', 'Copy for the welcome email', 'Retro: what slowed us down', 'Support macros, updated', 'Roadmap for the next six weeks', 'Contracts waiting on legal'];
-const CODE_LINES: [string, string][] = [['const', 'total = rows.reduce(sum)'], ['await', 'queue.flush({ batch: 50 })'], ['export', 'function sign(payload)'], ['return', 'cache.get(key) ?? load()'], ['if', '(retry > 3) throw err'], ['import', '{ send } from "./mail"']];
-const LIST_LINES = ['Review the draft', 'Send to finance', 'Book the photo day', 'Approve 12 shots', 'Ship the fix', 'Reply to Alder', 'Close the quarter', 'Merge the branch'];
+export type TilePreview = 'doc' | 'chart' | 'bars' | 'list' | 'person' | 'table' | 'code' | 'photo'; // photo: node.photo fills the preview (a real picture of what the item holds)
+/**
+ * A tile's content, all the film's own: a real mark or the glyph that matches it, a label, a sub line, and the preview's
+ * content: `lines` (doc: a heading then lines; list: the items, `done` ticks them), `rows` (table cells), `code`
+ * ([keyword, rest] per line), `values` (chart or bars, with `value` the figure over them), `photo` (a real picture, or a
+ * person's portrait for 'person'). `preview` picks the kind (default: the kind its content makes); a kind without its
+ * content draws nothing in the preview and reports kit-empty.
+ */
+export type TileNode = {
+  logo?: LogoRef;
+  glyph?: GlyphName;
+  label: string;
+  sub?: string;
+  preview?: TilePreview;
+  value?: string;
+  seed?: string;
+  photo?: string;
+  focus?: [number, number];
+  lines?: readonly string[];
+  done?: readonly boolean[];
+  rows?: readonly (readonly string[])[];
+  code?: readonly (readonly [string, string])[];
+  values?: readonly number[];
+  /** the person preview's status line ("In a call"): the product's own words, drawn only when given */
+  status?: string;
+};
 
 /** Text that reads only when it is large enough: data-text at TEXT_MIN and up, texture under it. */
 const T: React.FC<{ id: string; px: number; u: number; weight?: number; color: string; mono?: boolean; children: React.ReactNode; style?: React.CSSProperties }> = ({ id, px, u, weight = 500, color, mono, children, style }) => (
@@ -38,41 +59,68 @@ const T: React.FC<{ id: string; px: number; u: number; weight?: number; color: s
   </span>
 );
 
-const Preview: React.FC<{ t: KitTheme; node: TileNode; w: number; h: number; u: number }> = ({ t, node, w, h, u }) => {
-  const kind = node.preview === 'photo' && !node.photo ? 'doc' : node.preview ?? 'doc';
+/** The preview kind a node's own content makes (null: no preview). */
+export const previewKind = (node: TileNode): TilePreview | null => {
+  if (node.preview) return node.preview;
+  if (node.photo) return 'photo';
+  if (node.code?.length) return 'code';
+  if (node.rows?.length) return 'table';
+  if (node.values?.length) return 'chart';
+  if (node.lines?.length) return 'doc';
+  return null;
+};
+
+/** What a preview kind needs from the node, and the prop kit-empty names when it is missing. */
+const NEED: Record<TilePreview, [has: (n: TileNode) => boolean, prop: string]> = {
+  photo: [(n) => !!n.photo, 'node.photo'],
+  person: [(n) => !!n.photo, 'node.photo'], // a person is their real portrait: the kit never draws a face for a name
+  chart: [(n) => !!n.values?.length, 'node.values'],
+  bars: [(n) => !!n.values?.length, 'node.values'],
+  list: [(n) => !!n.lines?.length, 'node.lines'],
+  doc: [(n) => !!n.lines?.length, 'node.lines'],
+  table: [(n) => !!n.rows?.length, 'node.rows'],
+  code: [(n) => !!n.code?.length, 'node.code'],
+};
+
+const Preview: React.FC<{ t: KitTheme; node: TileNode; kind: TilePreview; w: number; h: number; u: number }> = ({ t, node, kind, w, h, u }) => {
+  const [has, prop] = NEED[kind];
+  if (!has(node)) {
+    kitEmpty('ContentTile', `${prop} for its '${kind}' preview`);
+    return <div data-kit-empty="ContentTile" data-kit-need={prop} style={{ position: 'absolute', inset: 0 }} />;
+  }
   if (kind === 'photo')
     return <Img data-imagery="" src={node.photo as string} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${((node.focus?.[0] ?? 0.5) * 100).toFixed(1)}% ${((node.focus?.[1] ?? 0.5) * 100).toFixed(1)}%`, display: 'block' }} />;
   const s = node.seed ?? node.label;
   const px = Math.max(8 * u, Math.min(h * 0.11, 15 * u));
   const ink = t.text;
   const mute = t.mute;
-  const line = (i: number) => DOC_LINES[Math.floor(rand(`${s}:d${i}`) * DOC_LINES.length)];
   if (kind === 'person')
     return (
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', gap: w * 0.07, padding: `0 ${w * 0.07}px` }}>
         {node.photo ? (
           <Img data-imagery="" src={node.photo} style={{ width: Math.min(h * 0.78, w * 0.42), height: Math.min(h * 0.78, w * 0.42), borderRadius: '50%', objectFit: 'cover', objectPosition: `${((node.focus?.[0] ?? 0.5) * 100).toFixed(1)}% ${((node.focus?.[1] ?? 0.32) * 100).toFixed(1)}%`, flex: 'none', display: 'block' }} />
-        ) : (
-          <PortraitMark theme={t} seed={s} size={Math.min(h * 0.78, w * 0.42)} />
-        )}
+        ) : null}
         <div style={{ display: 'flex', flexDirection: 'column', gap: px * 0.3, minWidth: 0 }}>
           <T id="kit-tile-person" px={px * 1.05} u={u} weight={600} color={ink}>{node.value ?? node.label}</T>
-          <T id="kit-tile-role" px={px * 0.9} u={u} color={mute}>{node.sub ?? 'Online'}</T>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: px * 0.3 }}>
-            <span style={{ width: px * 0.5, height: px * 0.5, borderRadius: '50%', background: t.accent }} />
-            <T id="kit-tile-status" px={px * 0.85} u={u} color={mute}>active now</T>
-          </span>
+          {node.sub && <T id="kit-tile-role" px={px * 0.9} u={u} color={mute}>{node.sub}</T>}
+          {node.status && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: px * 0.3 }}>
+              <span style={{ width: px * 0.5, height: px * 0.5, borderRadius: '50%', background: t.accent }} />
+              <T id="kit-tile-status" px={px * 0.85} u={u} color={mute}>{node.status}</T>
+            </span>
+          )}
         </div>
       </div>
     );
   if (kind === 'chart' || kind === 'bars') {
-    const vals = Array.from({ length: 10 }, (_, i) => 0.35 + 0.55 * rand(`${s}:v${i}`) + i * 0.04);
+    const vals = [...(node.values ?? [])];
+    const top = Math.max(1e-9, ...vals);
     return (
       <div style={{ position: 'absolute', inset: 0, padding: `${h * 0.12}px ${w * 0.08}px` }}>
-        <T id="kit-tile-figure" px={px * 1.5} u={u} weight={650} color={ink}>{node.value ?? `${Math.round(40 + 50 * rand(`${s}:fig`))} %`}</T>
+        {node.value && <T id="kit-tile-figure" px={px * 1.5} u={u} weight={650} color={ink}>{node.value}</T>}
         <div style={{ position: 'absolute', left: w * 0.08, right: w * 0.08, bottom: h * 0.14, height: h * 0.44, display: 'flex', alignItems: 'flex-end', gap: w * 0.02 }}>
           {kind === 'bars' ? (
-            vals.map((v, i) => <div key={i} style={{ flex: 1, height: `${v * 100}%`, borderRadius: 2 * u, background: i === vals.length - 2 ? t.accent : mixColor(t.well, t.text, 0.18) }} />)
+            vals.map((v, i) => <div key={i} style={{ flex: 1, height: `${(v / top) * 100}%`, borderRadius: 2 * u, background: i === vals.length - 2 ? t.accent : mixColor(t.well, t.text, 0.18) }} />)
           ) : (
             <Sparkline values={vals} w={w * 0.84} h={h * 0.44} color={t.accent} weight={Math.max(1.5 * u, h * 0.03)} />
           )}
@@ -83,53 +131,56 @@ const Preview: React.FC<{ t: KitTheme; node: TileNode; w: number; h: number; u: 
   if (kind === 'list')
     return (
       <div style={{ position: 'absolute', inset: 0, padding: `${h * 0.1}px ${w * 0.07}px`, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
-        {[0, 1, 2].map((i) => {
-          const done = rand(`${s}:l${i}`) < 0.6 || i === 0;
+        {(node.lines ?? []).slice(0, 3).map((item, i) => {
+          const done = !!node.done?.[i];
           return (
             <span key={i} style={{ display: 'flex', alignItems: 'center', gap: px * 0.5 }}>
               <span style={{ width: px * 0.95, height: px * 0.95, borderRadius: '50%', flex: 'none', background: done ? t.accent : 'transparent', boxShadow: done ? undefined : `inset 0 0 0 ${Math.max(1, px * 0.1).toFixed(2)}px ${mute}` }} />
-              <T id={`kit-tile-item-${i}`} px={px} u={u} color={done ? mute : ink} style={{ textDecoration: done ? 'line-through' : undefined, flex: 1 }}>{LIST_LINES[Math.floor(rand(`${s}:li${i}`) * LIST_LINES.length)]}</T>
+              <T id={`kit-tile-item-${i}`} px={px} u={u} color={done ? mute : ink} style={{ textDecoration: done ? 'line-through' : undefined, flex: 1 }}>{item}</T>
             </span>
           );
         })}
       </div>
     );
-  if (kind === 'table')
+  if (kind === 'table') {
+    const rows = (node.rows ?? []).slice(0, 4);
+    const cols = Math.max(1, ...rows.map((r) => r.length));
     return (
-      <div style={{ position: 'absolute', inset: 0, padding: `${h * 0.1}px ${w * 0.07}px`, display: 'grid', gridTemplateColumns: '1.4fr 1fr 0.8fr', rowGap: px * 0.35, columnGap: px * 0.6, alignContent: 'start' }}>
-        {Array.from({ length: 12 }, (_, i) => {
-          const c = i % 3;
-          const r = Math.floor(i / 3);
-          const v = c === 0 ? line(r).split(' ').slice(0, 2).join(' ') : c === 1 ? `${(rand(`${s}:t${i}`) * 9000 + 400).toFixed(0)}` : `${Math.round(rand(`${s}:p${i}`) * 90 + 5)} %`;
-          return <T key={i} id={`kit-tile-cell-${i}`} px={px * 0.9} u={u} weight={r === 0 ? 650 : 500} color={r === 0 ? ink : mute} style={{ textAlign: c ? 'right' : 'left' }}>{v}</T>;
-        })}
+      <div style={{ position: 'absolute', inset: 0, padding: `${h * 0.1}px ${w * 0.07}px`, display: 'grid', gridTemplateColumns: Array.from({ length: cols }, (_, c) => (c === 0 ? '1.4fr' : '1fr')).join(' '), rowGap: px * 0.35, columnGap: px * 0.6, alignContent: 'start' }}>
+        {rows.flatMap((row, r) =>
+          Array.from({ length: cols }, (_, c) => (
+            <T key={`${r}-${c}`} id={`kit-tile-cell-${r * cols + c}`} px={px * 0.9} u={u} weight={r === 0 ? 650 : 500} color={r === 0 ? ink : mute} style={{ textAlign: c ? 'right' : 'left' }}>{row[c] ?? ''}</T>
+          )),
+        )}
       </div>
     );
+  }
   if (kind === 'code')
     return (
       <div style={{ position: 'absolute', inset: 0, padding: `${h * 0.1}px ${w * 0.07}px`, display: 'flex', flexDirection: 'column', gap: px * 0.32 }}>
-        {[0, 1, 2, 3].map((i) => {
-          const [k, rest] = CODE_LINES[Math.floor(rand(`${s}:c${i}`) * CODE_LINES.length)];
-          return (
-            <span key={i} style={{ display: 'flex', gap: px * 0.4, whiteSpace: 'nowrap', overflow: 'hidden' }}>
-              <T id={`kit-tile-ln-${i}`} px={px * 0.85} u={u} color={mute} mono>{String(i + 1)}</T>
-              <T id={`kit-tile-kw-${i}`} px={px * 0.85} u={u} color={t.dark ? t.accent : t.accentDeep} mono>{k}</T>
-              <T id={`kit-tile-code-${i}`} px={px * 0.85} u={u} color={ink} mono>{rest}</T>
-            </span>
-          );
-        })}
+        {(node.code ?? []).slice(0, 4).map(([k, rest], i) => (
+          <span key={i} style={{ display: 'flex', gap: px * 0.4, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+            <T id={`kit-tile-ln-${i}`} px={px * 0.85} u={u} color={mute} mono>{String(i + 1)}</T>
+            <T id={`kit-tile-kw-${i}`} px={px * 0.85} u={u} color={t.dark ? t.accent : t.accentDeep} mono>{k}</T>
+            <T id={`kit-tile-code-${i}`} px={px * 0.85} u={u} color={ink} mono>{rest}</T>
+          </span>
+        ))}
       </div>
     );
-  // doc: a heading, lines of text, one line marked
+  // doc: the first line as its heading, the next lines under it, one marked
+  const lines = node.lines ?? [];
   const marked = 1 + Math.floor(rand(`${s}:mark`) * 2);
   return (
     <div style={{ position: 'absolute', inset: 0, padding: `${h * 0.1}px ${w * 0.07}px`, display: 'flex', flexDirection: 'column', gap: px * 0.28 }}>
-      <T id="kit-tile-doc-head" px={px * 1.08} u={u} weight={650} color={ink}>{line(0)}</T>
-      {[1, 2, 3].map((i) => (
-        <T key={i} id={`kit-tile-doc-${i}`} px={px * 0.86} u={u} color={mute} style={{ background: i === marked ? t.accentSoft : undefined, borderRadius: 2 * u, padding: i === marked ? `0 ${px * 0.2}px` : undefined, transform: i === marked ? `translateX(${(-px * 0.2).toFixed(2)}px)` : undefined, width: i === 3 ? '62%' : undefined, color: i === marked ? (t.dark ? t.text : t.accentDeep) : mute }}>
-          {line(i)}
-        </T>
-      ))}
+      <T id="kit-tile-doc-head" px={px * 1.08} u={u} weight={650} color={ink}>{lines[0]}</T>
+      {lines.slice(1, 4).map((text, k) => {
+        const i = k + 1;
+        return (
+          <T key={i} id={`kit-tile-doc-${i}`} px={px * 0.86} u={u} color={mute} style={{ background: i === marked ? t.accentSoft : undefined, borderRadius: 2 * u, padding: i === marked ? `0 ${px * 0.2}px` : undefined, transform: i === marked ? `translateX(${(-px * 0.2).toFixed(2)}px)` : undefined, width: i === 3 ? '62%' : undefined, color: i === marked ? (t.dark ? t.text : t.accentDeep) : mute }}>
+            {text}
+          </T>
+        );
+      })}
     </div>
   );
 };
@@ -148,41 +199,42 @@ export const ContentTile: React.FC<{ node: TileNode; theme?: KitTheme; w: number
   const px = Math.max(9 * u, Math.min(w, h) * 0.075);
   const hasMark = node.logo && hasLogo(node.logo);
   const previewTop = pad * 2 + icon;
+  const kind = previewKind(node);
   return (
     <div data-ui style={{ position: 'relative', width: w, height: h, borderRadius: r, background: keyFace(t, t.dark ? t.raised : t.surface, 0.07), boxShadow: `${surfaceShadow(t, lift, u)}, inset 0 0 0 ${(1 * u).toFixed(2)}px ${mixColor(t.line, t.surface, 0.3)}`, overflow: 'hidden', flex: 'none', ...style }}>
       <div style={{ position: 'absolute', left: pad, top: pad, display: 'flex', alignItems: 'center', gap: pad * 0.8, width: w - 2 * pad }}>
-        {hasMark ? <AppIcon logo={node.logo} size={icon} theme={t} lift={4} scale={u} /> : <GlyphTile theme={t} name={node.glyph ?? 'doc'} size={icon} />}
+        {hasMark ? <AppIcon logo={node.logo} size={icon} theme={t} lift={4} scale={u} /> : node.glyph ? <GlyphTile theme={t} name={node.glyph} size={icon} /> : null}
         <div style={{ display: 'flex', flexDirection: 'column', gap: px * 0.15, minWidth: 0, flex: 1 }}>
           <T id="kit-tile-label" px={px * 1.12} u={u} weight={650} color={t.text}>{node.label}</T>
           {node.sub && <T id="kit-tile-sub" px={px * 0.86} u={u} color={t.mute}>{node.sub}</T>}
         </div>
       </div>
-      <div style={{ position: 'absolute', left: pad * 0.8, right: pad * 0.8, top: previewTop, bottom: pad * 0.8, borderRadius: r * 0.6, background: mixColor(t.surface, t.ground, t.dark ? 0.4 : 0.5), boxShadow: `inset 0 ${(1 * u).toFixed(2)}px ${(3 * u).toFixed(2)}px ${mixColor(t.line, t.ground, 0.3)}`, overflow: 'hidden' }}>
-        <Preview t={t} node={node} w={w - pad * 1.6} h={h - previewTop - pad * 0.8} u={u} />
-      </div>
+      {kind && (
+        <div style={{ position: 'absolute', left: pad * 0.8, right: pad * 0.8, top: previewTop, bottom: pad * 0.8, borderRadius: r * 0.6, background: mixColor(t.surface, t.ground, t.dark ? 0.4 : 0.5), boxShadow: `inset 0 ${(1 * u).toFixed(2)}px ${(3 * u).toFixed(2)}px ${mixColor(t.line, t.ground, 0.3)}`, overflow: 'hidden' }}>
+          <Preview t={t} node={node} kind={kind} w={w - pad * 1.6} h={h - previewTop - pad * 0.8} u={u} />
+        </div>
+      )}
     </div>
   );
 };
 
-const KIND_GLYPH: Record<SampleWorld['kind'], GlyphName> = { billing: 'doc', deploys: 'terminal', support: 'chat', orders: 'cart', pipeline: 'chart', hiring: 'user' };
-const PREVIEWS: TilePreview[] = ['doc', 'chart', 'list', 'person', 'table', 'bars', 'code'];
-
 /**
- * Tile nodes from a sample world: its records (glyph, title, id and value, a preview) and, when the world's people
- * have real portraits (sampleWorld `photos`), its people, interleaved. Without photos every tile is a record: a person
- * is never drawn large in place of a photo.
+ * Tile nodes from the film's world (kit/data.ts filmWorld): its records (the title, the id and value as the sub line,
+ * no invented preview) and, when the world's people have real portraits, its people, interleaved. Without photos every
+ * tile is a record: a person is never drawn large in place of a photo. An empty world gives no nodes.
  */
 export const worldNodes = (w: SampleWorld, n = 24): TileNode[] => {
   const out: TileNode[] = [];
+  if (!w.records.length) return out;
   const faces = w.people.filter((p) => p.photo);
   for (let i = 0; out.length < n && i < n * 2; i++) {
     if (i % 4 === 3 && faces.length) {
       const p = faces[(i >> 2) % faces.length];
-      out.push({ glyph: 'user', label: p.name, sub: p.role, preview: 'person', value: p.first, seed: p.seed, photo: p.photo, focus: p.focus });
+      out.push({ label: p.name, ...(p.role ? { sub: p.role } : {}), preview: 'person', value: p.first, seed: p.seed, photo: p.photo, focus: p.focus });
     } else {
       const r = w.records[i % w.records.length];
-      const prev = PREVIEWS[(i + w.seed.length) % PREVIEWS.length];
-      out.push({ glyph: prev === 'code' ? 'code' : prev === 'chart' || prev === 'bars' ? 'chart' : KIND_GLYPH[w.kind], label: r.title, sub: `${r.id} · ${r.value}`, preview: prev === 'person' ? 'doc' : prev, value: (prev === 'chart' || prev === 'bars') && /[0-9]/.test(r.value) ? r.value : undefined, seed: `${w.seed}:${r.id}` });
+      const sub = [r.id, r.value].filter(Boolean).join(' · ');
+      out.push({ label: r.title, ...(sub ? { sub } : {}), seed: `${w.seed}:${r.id || i}` });
     }
   }
   return out;
@@ -204,7 +256,7 @@ type FieldCommon = {
   theme?: KitTheme;
   seed?: string | number;
   blur?: boolean;
-  /** where the other slots' content comes from (default: the sample world of `seed`) */
+  /** the film's further items for the other slots (default: the nodes again, in turn) */
   fill?: TileNode[];
 };
 
@@ -223,8 +275,10 @@ const Placed: React.FC<{ slot: TileSlot; node: TileNode; frame: number; at: numb
   );
 };
 
-const fillFor = (o: FieldCommon, n: number) => {
-  const pool = o.fill ?? worldNodes(sampleWorld(`${o.seed ?? 'tiles'}:fill`), Math.max(8, n));
+/** The other slots' content: the film's `fill`, else its own nodes in turn; null when the film gave nothing. */
+const fillFor = (o: FieldCommon) => {
+  const pool = o.fill?.length ? o.fill : o.nodes;
+  if (!pool.length) return null;
   return (i: number) => pool[i % pool.length];
 };
 
@@ -241,8 +295,9 @@ export const ContentWall: React.FC<FieldCommon & { cols?: number; rows?: number;
   const cell = tile * 1.24;
   const cols = props.cols ?? Math.max(4, Math.round(w / cell) + 1);
   const rows = props.rows ?? Math.max(3, Math.round(h / (cell * 0.92)) + 1);
+  const filler = fillFor(props);
+  if (!filler) return <KitEmpty part="ContentWall" need="nodes (the film's own items)" theme={props.theme} w={w} h={h} />;
   const slots = wallSlots(nodes.length, { cols, rows, cell, w, h, seed, clear: props.clear });
-  const filler = fillFor(props, slots.length);
   const t = Math.max(0, frame - start) / fps;
   let k = 0;
   return (
@@ -263,7 +318,8 @@ export const ContentRing: React.FC<FieldCommon & { count?: number; rx?: number; 
   const { nodes, frame, start = 0, w = film.width, h = film.height, tile = 200 * u, stagger = 3, rx = 680 * u, ry = 350 * u, orbit = 4, seed = 'ring' } = props;
   const fps = film.fps;
   const n = Math.max(nodes.length, props.count ?? 14);
-  const filler = fillFor(props, n);
+  const filler = fillFor(props);
+  if (!filler) return <KitEmpty part="ContentRing" need="nodes (the film's own items)" theme={props.theme} w={w} h={h} />;
   const t = Math.max(0, frame - start) / fps;
   const slots = ringSlots(n, { rx, ry, w, h, turn: (orbit * Math.PI * t) / 180, seed });
   return (
@@ -287,7 +343,8 @@ export const ContentTicker: React.FC<FieldCommon & { rows?: number; speed?: numb
   const fps = film.fps;
   const t = (frame - start) / fps;
   const th = tile / (props.aspect ?? 1);
-  const filler = fillFor(props, 24);
+  const filler = fillFor(props);
+  if (!filler) return <KitEmpty part="ContentTicker" need="nodes (the film's own items)" theme={props.theme} w={w} h={h} />;
   const out: React.ReactNode[] = [];
   for (let r = 0; r < rows; r++) {
     const depth = r === 0 ? 0 : DEPTH.bands[Math.min(DEPTH.bands.length - 1, r)];

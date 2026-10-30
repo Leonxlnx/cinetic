@@ -8,11 +8,13 @@
  *      a template slot in brackets only with `slots`; real words pass ("Invoices sent", "Name", "Item details").
  *   3. isTextBar(): a short, wide, rounded, near-neutral box is a text bar; a tall box, a dot, a square corner and an
  *      accent bar are not. drawnTooLarge(): a drawn person over 72 px and a drawn product over 48 px (at 1080p) fail.
- *   4. The kit marks what it draws: PortraitMark and HalftonePortrait carry data-drawn="person", a kit <Photo> with no
- *      src data-drawn="product" (with src: a photograph, unmarked); a picture slot with no photo in ProjectPanel or a
- *      result Tile shows the file it is (FileThumb: the file's name and size), never the drawn still life; a sample
- *      world without photos deals no person tiles, one with photos deals them with the photo, and the tile shows it;
- *      the starter's drawn plate is marked a place stand-in.
+ *   4. The kit marks what it draws: PortraitMark and HalftonePortrait carry data-drawn="person", the kit <Photo>'s
+ *      stand-in (asked for with standIn or vessels) data-drawn="product", a <Photo> with no src and no stand-in its empty
+ *      state (data-kit-empty, nothing drawn), with src a photograph, unmarked; a picture slot with no photo in
+ *      ProjectPanel or a result Tile shows the file it is (FileThumb: the file's own name and size), never the drawn
+ *      still life, and with no file name it shows the image glyph alone (kit-empty, never a made-up name); a world
+ *      without photos deals no person tiles, one with photos deals them with the photo, and the tile shows it; the
+ *      starter's drawn plate is marked a place stand-in.
  *   5. lib/Audit.tsx fails placeholder, bar-text and drawn-figure from those helpers.
  *
  * It runs src through the starter's own tsx and react-dom/server (npm install in assets/remotion-starter first); the
@@ -73,11 +75,13 @@ out.bars = {
 out.drawn = { p72: P.drawnTooLarge('person', 72, 72), p96: P.drawnTooLarge('person', 96, 96), prod40: P.drawnTooLarge('product', 40, 30), prod60: P.drawnTooLarge('product', 60, 40), half: P.drawnTooLarge('person', 48, 48, 0.5) };
 out.portrait = mk(h(K.PortraitMark, { theme: t, seed: 'ana', size: 96 }));
 out.halftone = mk(h(K.HalftonePortrait, { theme: t, seed: 'ana', size: 120 }));
-out.still = mk(h(K.Photo, { theme: t, w: 300, h: 200, seed: 3 }));
-out.project = mk(h(K.ProjectPanel, { frame: 60, theme: t }));
-out.tile = mk(h(K.Tile, { theme: t, w: 420, title: 'Spring menu', meta: '12 dishes' }));
-const W0 = K.sampleWorld('placeholder-test');
-const W1 = K.sampleWorld('placeholder-test', { photos: ['ana.jpg', { src: 'ben.jpg', focus: [0.5, 0.3] }, 'cy.jpg'] });
+out.still = mk(h(K.Photo, { theme: t, w: 300, h: 200, seed: 3, standIn: true }));
+out.photoEmpty = mk(h(K.Photo, { theme: t, w: 300, h: 200, seed: 3 }));
+out.project = mk(h(K.ProjectPanel, { frame: 60, theme: t, data: K.sample().review }));
+out.tile = mk(h(K.Tile, { theme: t, w: 420, title: 'Spring menu', meta: '12 dishes', file: { name: 'spring-menu.jpg', size: '2.4 MB' } }));
+out.tileBare = mk(h(K.Tile, { theme: t, w: 420, title: 'Spring menu', meta: '12 dishes' }));
+const W0 = K.sample().world('placeholder-test');
+const W1 = K.sample().world('placeholder-test', { photos: ['ana.jpg', { src: 'ben.jpg', focus: [0.5, 0.3] }, 'cy.jpg'] });
 out.nodes0 = K.worldNodes(W0, 24).filter((n: any) => n.preview === 'person').length;
 const n1 = K.worldNodes(W1, 24).filter((n: any) => n.preview === 'person');
 out.nodes1 = n1.map((n: any) => n.photo);
@@ -117,12 +121,14 @@ try {
   result(/data-drawn="person"/.test(P.portrait) && /data-drawn="person"/.test(P.halftone), 'PortraitMark and HalftonePortrait carry data-drawn="person"');
   const parts = readFileSync(join(SRC, 'kit', 'parts.tsx'), 'utf8');
   const photoSrc = /if \(src\)\s*return \(\s*<div style=\{\{ position: 'relative'[^\n]*\n\s*<Img (?:data-imagery="" )?src=\{src\}/.test(parts);
-  result(/data-drawn="product"/.test(P.still) && photoSrc, 'a kit Photo with no src is marked data-drawn="product"; with src it is the photograph (an Img), unmarked');
+  result(/data-drawn="product"/.test(P.still) && photoSrc, 'the kit Photo stand-in is marked data-drawn="product"; with src it is the photograph (an Img), unmarked');
+  result(/data-kit-empty="Photo"/.test(P.photoEmpty) && !/data-drawn/.test(P.photoEmpty), 'a kit Photo with no src and no stand-in asked for: its empty state, nothing drawn');
   const files = (P.project.match(/\.jpg</g) ?? []).length;
   result(!/data-drawn="product"/.test(P.project) && files === 4 && / MB</.test(P.project), 'ProjectPanel with no photos: each select shows as the file it is (name and size), nothing drawn', `${files} files`);
   const panels = readFileSync(join(SRC, 'kit', 'panels.tsx'), 'utf8');
   result(/photos\[i\] \? <Photo theme=\{t\} w=\{thumb\} h=\{thumb\} src=\{photos\[i\]\} \/> : <FileThumb/.test(panels), 'ProjectPanel with photos: the selects are the photographs');
-  result(!/data-drawn/.test(P.tile) && /\.jpg</.test(P.tile), 'a result Tile with no src shows the file it is, never the drawn still life');
+  result(!/data-drawn/.test(P.tile) && /spring-menu\.jpg</.test(P.tile), 'a result Tile with no src shows the file it is (its own name), never the drawn still life');
+  result(!/data-drawn/.test(P.tileBare) && /data-kit-empty="FileThumb"/.test(P.tileBare) && !/\.jpg</.test(P.tileBare), 'a result Tile with no src and no file name: the image glyph alone (kit-empty), never a made-up file name');
   result(P.nodes0 === 0, 'worldNodes: a world without photos deals no person tiles', String(P.nodes0));
   result(P.nodes1.length >= 4 && P.nodes1.every((x) => ['ana.jpg', 'ben.jpg', 'cy.jpg'].includes(x)), 'worldNodes: a world with photos deals person tiles carrying the photo', P.nodes1.join(','));
   const tiles = readFileSync(join(SRC, 'kit', 'tiles.tsx'), 'utf8');

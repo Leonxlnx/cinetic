@@ -25,6 +25,7 @@ import { Chip } from './flow';
 import { castShadow, face, Glyph, KIT_KEY, useKitScale } from './parts';
 import type { GlyphName } from './sample';
 import { type KitTheme, kitTheme, shadeRgba } from './theme';
+import { kitEmpty } from './gate';
 
 /** The files logos.mjs writes for a mark: the light-ground default, the dark-ground version, the wordmark and one-colour files. */
 export type LogoVariant = 'mark' | 'markDark' | 'wordmark' | 'wordmarkDark' | 'mono' | 'white' | 'black';
@@ -124,9 +125,11 @@ export type AppIconProps = {
  * An app-icon tile: a squircle face with a top light, an inner rim (a light edge at the top, a hairline round a
  * white tile so it holds on paper), a soft contact shadow and a cast shadow away from the key; the mark centred at
  * its optical size, or filling the face when the brand's mark is its own tile (drawn 10 % over the face, so its own
- * corners fall outside the squircle). Without a mark: a generic glyph, duotone.
+ * corners fall outside the squircle). Without a fetched mark: the `glyph` the film picks, duotone; with neither, the
+ * bare tile, and a named mark that was not fetched reports kit-empty (node scripts/logos.mjs fetches it): the kit never
+ * stands a grid glyph in for a brand.
  */
-export const AppIcon: React.FC<AppIconProps> = ({ logo, size: s, tone = 'light', theme, lift = 18, fill = 0.54, glyph = 'grid', scale, style }) => {
+export const AppIcon: React.FC<AppIconProps> = ({ logo, size: s, tone = 'light', theme, lift = 18, fill = 0.54, glyph, scale, style }) => {
   const u = useKitScale(scale);
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const e = logoOf(logo);
@@ -143,15 +146,17 @@ export const AppIcon: React.FC<AppIconProps> = ({ logo, size: s, tone = 'light',
   const f = e ? logoFile(e, 'mark', tone) : null;
   const m = f ? opticalSize(f.aspect, s * fill) : null;
   const clip = `path('${squirclePath(s)}')`;
+  const unfetched = !!logo && !f && !glyph;
+  if (unfetched) kitEmpty('AppIcon', `the real mark of ${typeof logo === 'string' ? logo : logo.name} (node scripts/logos.mjs) or a glyph`);
   return (
-    <div data-ui style={{ position: 'relative', width: s, height: s, flex: 'none', ...style }}>
+    <div data-ui {...(unfetched ? { 'data-kit-empty': 'AppIcon', 'data-kit-need': 'logo' } : {})} style={{ position: 'relative', width: s, height: s, flex: 'none', ...style }}>
       <div style={{ position: 'absolute', inset: 0, borderRadius: s * 0.235, boxShadow: shadow }} />
       <div style={{ position: 'absolute', inset: 0, clipPath: clip, background: `linear-gradient(180deg, ${F.top} 0%, ${F.bottom} 100%)` }}>
         {own && f && <Img src={staticFile(e.files.mark!.src)} data-logo={e.name} style={{ position: 'absolute', left: 0, top: 0, width: 1.1 * s, height: 1.1 * s, display: 'block', transform: `translate(${(-0.05 * s).toFixed(2)}px, ${(-0.05 * s).toFixed(2)}px)` }} />}
         {!own && f && m && (
           <Img src={staticFile(f.src)} data-logo={e!.name} style={{ position: 'absolute', left: 0, top: 0, width: m.w, height: m.h, display: 'block', transform: `translate(${((s - m.w) / 2).toFixed(2)}px, ${((s - m.h) / 2).toFixed(2)}px)` }} />
         )}
-        {!f && (
+        {!f && glyph && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Glyph name={glyph} size={s * 0.5} color={tone === 'dark' ? kitTheme('inkStage', th.accent).text : th.accentDeep} variant="duotone" />
           </div>

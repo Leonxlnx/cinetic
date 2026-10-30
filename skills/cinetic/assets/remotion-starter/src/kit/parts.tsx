@@ -14,6 +14,7 @@ import { HalftonePortrait, MonogramTile, PortraitMark } from './avatars';
 import { ICON_GRID, ICONS, type IconPaths } from './icons';
 import type { GlyphName } from './sample';
 import { type KitTheme, lit, shadeRgba } from './theme';
+import { kitEmpty, KitEmpty } from './gate';
 
 /** Kit type sizes, px at 1080p: label is the ui role (the smallest size held in focus). */
 export const KIT_TYPE = { label: TYPE.ui.size, body: 48, title: 64, head: 84, figure: 160, hero: 230 } as const;
@@ -420,22 +421,21 @@ export const Ring: React.FC<{ theme: KitTheme; size: number; p: number; draw?: n
 };
 
 // ------------------------------------------------------------------------------------------ a file, not a picture
-const FILE_STEMS = ['IMG_2041', 'IMG_2077', 'DSC_0418', 'DSC_0533', 'shoot-day-2', 'final-select', 'cover-v3', 'hero-crop'];
 /**
  * A picture slot with no picture yet, shown as what the product itself shows for a file: an image glyph on its tile,
- * the file's name and size. Product UI, never a drawn stand-in for the photo: give the slot a real photo (`src`) and it
- * shows the photo instead. Seeded, so a row of four reads as four files.
+ * the file's `name` and `size` as the product lists them (the film's own files). Product UI, never a drawn stand-in for
+ * the photo: give the slot a real photo (`src` on Photo) and it shows the photo instead. Without a name it draws the
+ * image glyph alone and reports kit-empty: the kit never makes up file names.
  */
-export const FileThumb: React.FC<{ theme: KitTheme; w: number; h: number; seed?: number; radius?: number; scale?: number }> = ({ theme: t, w, h, seed = 1, radius = 0, scale }) => {
+export const FileThumb: React.FC<{ theme: KitTheme; w: number; h: number; name?: string; size?: string; seed?: number; radius?: number; scale?: number }> = ({ theme: t, w, h, name, size, radius = 0, scale }) => {
   const u = useKitScale(scale);
-  const name = `${FILE_STEMS[Math.floor(rand(seed * 3 + 1) * FILE_STEMS.length)]}.jpg`;
-  const mb = (1.8 + 4.6 * rand(seed * 5 + 2)).toFixed(1);
   const px = Math.max(TEXT_MIN * u, Math.min(KIT_TYPE.label * u, w * 0.13));
+  if (!name) kitEmpty('FileThumb', "name (the film's own file name) or a real photo");
   return (
-    <div data-ui style={{ position: 'relative', width: w, height: h, borderRadius: radius, overflow: 'hidden', background: t.well, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: px * 0.5 }}>
+    <div data-ui {...(name ? {} : { 'data-kit-empty': 'FileThumb', 'data-kit-need': 'name' })} style={{ position: 'relative', width: w, height: h, borderRadius: radius, overflow: 'hidden', background: t.well, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: px * 0.5 }}>
       <GlyphTile theme={t} name="image" size={Math.min(w, h) * 0.34} />
-      <span data-texture="" style={{ ...face(px * 0.8, 600, t.text, -0.01, 1.1), maxWidth: w * 0.86, overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
-      <span data-texture="" style={face(px * 0.7, 500, t.mute, -0.01, 1.1)}>{`${mb} MB`}</span>
+      {name && <span data-texture="" style={{ ...face(px * 0.8, 600, t.text, -0.01, 1.1), maxWidth: w * 0.86, overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>}
+      {name && size && <span data-texture="" style={face(px * 0.7, 500, t.mute, -0.01, 1.1)}>{size}</span>}
     </div>
   );
 };
@@ -461,16 +461,18 @@ const smooth = (pts: [number, number][], t: number) => {
 
 /**
  * A picture inside product UI: `src`, a real photograph (the product's own, the user's, or one from scripts/assets.mjs),
- * cropped round `focus` with a slow `push` (0..1). Without `src` it draws the kit's stand-in, matte vessels on a
- * seamless backdrop, marked data-drawn="product": lint-film (drawn-figure) and the layout audit fail it in a film, so
- * it never ships; give every picture slot a real photo, or show the product's own UI there instead.
+ * cropped round `focus` with a slow `push` (0..1). Without `src` it draws its empty state and reports kit-empty; the
+ * kit's stand-in (matte vessels on a seamless backdrop, marked data-drawn="product", which lint-film's drawn-figure and
+ * the layout audit fail) draws only when asked for with `vessels` or `standIn` (the kit's gallery). Give every picture
+ * slot a real photo, or show the product's own UI there instead.
  */
-export const Photo: React.FC<{ theme: KitTheme; w: number; h: number; seed?: number; vessels?: Vessel[]; src?: string; radius?: number; push?: number; focus?: { x: number; y: number } }> = ({
+export const Photo: React.FC<{ theme: KitTheme; w: number; h: number; seed?: number; vessels?: Vessel[]; standIn?: boolean; src?: string; radius?: number; push?: number; focus?: { x: number; y: number } }> = ({
   theme: t,
   w,
   h,
   seed = 1,
   vessels,
+  standIn,
   src,
   radius = 0,
   push = 0,
@@ -484,6 +486,7 @@ export const Photo: React.FC<{ theme: KitTheme; w: number; h: number; seed?: num
         <Img data-imagery="" src={src} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${focus.x * 100}% ${focus.y * 100}%`, transform: `scale(${k.toFixed(5)})`, transformOrigin: `${focus.x * 100}% ${focus.y * 100}%` }} />
       </div>
     );
+  if (!vessels && !standIn) return <KitEmpty part="Photo" need="src (a real photograph)" theme={t} w={w} h={h} r={radius} inline />;
   const r = rand(seed);
   const kinds: Vessel[] = vessels ?? (['vase', 'jar', 'bowl', 'bottle', 'cup'] as Vessel[]).filter((_, i) => rand(seed * 7 + i) > 0.45).slice(0, 3);
   const set = kinds.length ? kinds : (['vase'] as Vessel[]);
