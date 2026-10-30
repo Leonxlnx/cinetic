@@ -30,13 +30,15 @@ Frames are 0-based and absolute (frame = t * fps). Defaults (every number is a f
   stall        d < 0.05 while d[f-1] > 0.8 and d[f+1] > 0.8 (a repeated frame)         fail
   hold         d < 0.1 for > 48 f (calm: 72 f): frozen (90% of its frames change < 16 px by > 24)  fail
                                    quiet (only small elements move)                   warn
+               (the run in 60 fps frames: 0.8 s, calm 1.2 s, at any rate)
                a static end tail <= 2 s + 1 f is allowed (the audio decays there); a run inside a
                reading window (the cues copy block: an on-screen string's `read` windows, which leave a
                chain's picture beat out; [resolved, out) in an older cues.json) whose
                mean d >= 0.02 is a read: a line held while it is read, alive with a slow drift  info
   quiet        60-frame mean d < 0.15 (calm: 0.10) outside holds (nearly locked-off)   warn
+               (the window in 60 fps frames: 1 s at any rate)
                (inside a reading window with mean d >= 0.02: a read, info)
-  hook         the first 2 s move less than max(0.5, 0.5x the film's median 2 s window)
+  hook         the first 2 s move less than max(0.5 at 60 fps (x 60/fps), 0.5x the film's median 2 s window)
                (films that start at frame 0, not loops; for films of 6 s or less, the first
                1 s under 0.5x the median 1 s): a muted feed decides in second one      warn
                the first 0.5 s window whose mean d passes max(0.03, 0.3x the median d
@@ -151,6 +153,13 @@ Declare intended cuts, freezes and effects:
   --pace calm|crisp         hold and quiet limits: calm --max-hold 72 --quiet-mad 0.10 (a calm film
                             holds its reads longer), crisp 48 and 0.15 (the default without cues)
 
+Frame rate: the runs a hold or a quiet stretch is held for (--max-hold, --quiet-window) are stated in 60 fps frames
+and scaled to the same seconds at any rate, and the hook's floor on the opening's motion (0.5, a moving picture's
+change) is a 60 fps frame's: a 30 fps frame carries twice the step, so it doubles there. The stillness floors
+(--hold-mad, --quiet-mad, the read floor) stay per frame: near stillness d is the encoder's noise, which does not
+grow with the step (scaled, a frozen 30 fps hold would fail where its 60 fps twin warns). The grammar's speeds are
+px/s already. An explicit flag is taken as given. A pop, a spike and a repeated frame stay per frame.
+
 Writes JSON (--json), a x12 banding stretch sheet and a x25 smear sheet next to it, and a short
 summary on stdout.
 Exit: 0 no failing check (warnings allowed), 1 a failing check, 2 usage or decode error.
@@ -169,9 +178,30 @@ import cv2
 import numpy as np
 
 SW, SH = 480, 270  # MAD analysis size; the thresholds are calibrated at this size
-# Hold and quiet limits per pace: a calm film holds its reads longer (a drifting line is alive).
+# Hold and quiet limits per pace: a calm film holds its reads longer (a drifting line is alive). The runs are in 60 fps
+# frames, scaled to the same seconds at the film's rate (scaled60); the stillness floors are per frame (the noise floor).
 PACE_LIMITS = {'calm': dict(max_hold=72, quiet_mad=0.10), 'crisp': dict(max_hold=48, quiet_mad=0.15)}
+HOLD_MAD = 0.1  # a frame whose mean change is under this holds still (near stillness d is the encoder's noise: per frame)
+QUIET_WINDOW60 = 60  # 60 fps frames the quiet check averages over (1 s)
 READ_MAD = 0.02  # inside a reading window, a run with at least this mean change is a read, not a stall
+HOOK_MIN60 = 0.5  # the opening's 2 s move at least this much per 60 fps frame (or half the film's median)
+
+
+def scaled60(args, fps):
+    """The hold and quiet limits at the film's rate, for those left at their defaults (None): the pace's runs in 60 fps
+    frames to the same seconds (x fps/60), the stillness floors as they are (per frame); an explicit flag stays as given.
+    Returns k60 = fps / 60."""
+    k60 = (fps or 60.0) / 60.0
+    lim = PACE_LIMITS.get(getattr(args, 'pace', None) or 'crisp', PACE_LIMITS['crisp'])
+    if getattr(args, 'max_hold', None) is None:
+        args.max_hold = max(2, int(round(lim['max_hold'] * k60)))
+    if getattr(args, 'quiet_mad', None) is None:
+        args.quiet_mad = lim['quiet_mad']
+    if getattr(args, 'hold_mad', None) is None:
+        args.hold_mad = HOLD_MAD
+    if getattr(args, 'quiet_window', None) is None:
+        args.quiet_window = max(2, int(round(QUIET_WINDOW60 * k60)))
+    return k60
 READ_LOCK_S = 1.0  # hold-drift: a frozen run inside a reading window may last this long (the camera locks on a read)
 APEX_KINDS = ('whoosh', 'sweep', 'suck')  # the loudest point of the sound sits on f
 END_KINDS = ('riser', 'swell')  # the sound builds and ends on f
@@ -1214,10 +1244,12 @@ def evaluate(args, info, M, decl):
     cuts, freezes, ignore, acts, moments, reading, cues_fps, extra = decl
     k_ = fps / cues_fps if cues_fps else 1.0  # cues frames -> video frames
     reading = [(int(round(a * k_)), int(round(b * k_))) for a, b in reading]
+    k60 = scaled60(args, fps)  # the hold and quiet runs at this rate (stated in 60 fps frames)
+    read_mad = READ_MAD
 
     def read_run(fa, fb, mean_mad):
         # a run inside one reading window that still changes a little: a held line being read
-        return mean_mad >= READ_MAD and any(fa >= x and fb < y for x, y in reading)
+        return mean_mad >= read_mad and any(fa >= x and fb < y for x, y in reading)
 
     idx = np.array(M['idx'])
     f0, n, last = int(idx[0]), len(idx), int(idx[-1])
@@ -1435,7 +1467,7 @@ def evaluate(args, info, M, decl):
         typical = float(np.median((cs[hw:] - cs[:-hw]) / hw))
         opening = float(dd[1:hw].mean())
         hook = dict(first_2s=round(opening, 3), typical_2s=round(typical, 3))
-        if opening < max(0.5 if hw > fps * 1.5 else 0.0, 0.5 * typical) and not ignored(0):
+        if opening < max(HOOK_MIN60 / k60 if hw > fps * 1.5 else 0.0, 0.5 * typical) and not ignored(0):
             add('hook', 'warn', f'0-{hw - 1}', f'the first {hw / fps:.0f} s move {opening:.2f} against a typical {hw / fps:.0f} s of {typical:.2f}: '
                 'a still opening loses a muted feed; start inside the action (the device already moving, the first '
                 'change by 0.5 s) and let the first line land over motion')
@@ -3110,6 +3142,30 @@ def self_test():
           f"{[x['severity'] for x in flags(rep, 'border')]}")
     bad += motion_self_test(check)
     bad += seam_self_test(check)
+    # the same picture at 60 and at 30 fps (every second frame): a pan, a 1.5 s hold drifting 0.004 px a 60 fps frame,
+    # a pan; the quiet stretch is found at both rates (its window is 1 s at any rate, not 60 frames)
+    P = texture(1, w + 600, h)
+    xs, x = [], 0.0
+    for i in range(180):
+        x += 6.0 if i < 30 or i >= 120 else 0.004
+        xs.append(x)
+    verdict = {}
+    for r in (60, 30):
+        clip = os.path.join(tmp, f'rate{r}.mp4')
+        write_clip(clip, [warp(P, dx=-v) for v in xs[::60 // r]], r)
+        cp = os.path.join(tmp, f'rate{r}.json')
+        json.dump(dict(fps=r, total=3 * r, acts=dict(a={'from': 0, 'dur': 3 * r}), cue={}, events=[], copy=[], pace='crisp'), open(cp, 'w'))
+        out = os.path.join(tmp, f'rate{r}-rep.json')
+        subprocess.run([sys.executable, os.path.abspath(__file__), clip, '--cues', cp, '--json', out, '--no-banding', '--no-smear', '--no-judder',
+                        '--no-grammar'], capture_output=True, text=True)
+        try:
+            rep = json.load(open(out))
+        except (OSError, ValueError):
+            rep = {'flags': [], 'thresholds': {}}
+        verdict[r] = (sorted({(x['check'], x['severity']) for x in rep['flags'] if x['check'] in ('hold', 'quiet')}), rep.get('thresholds', {}))
+    check(bool(verdict[60][0]) and verdict[60][0] == verdict[30][0] and verdict[30][1].get('quiet_window') == 30 and verdict[30][1].get('max_hold') == 24,
+          'a near-still hold reads the same at 60 and at 30 fps (the quiet window 1 s, the hold run 0.8 s at either rate)',
+          f"{verdict[60][0]} / {verdict[30][0]}; at 30 fps window {verdict[30][1].get('quiet_window')} f, hold {verdict[30][1].get('max_hold')} f")
     shutil.rmtree(tmp, ignore_errors=True)
     print('forensics self-test: ' + ('all pass' if not bad else f'{bad} failed'))
     return 1 if bad else 0
@@ -3244,11 +3300,11 @@ def main():
     g.add_argument('--popin-min', type=float, default=3.0, help='... and at least this large in its region (mean abs change, 0-255)')
     g.add_argument('--stall-max', type=float, default=0.05)
     g.add_argument('--stall-moving', type=float, default=0.8)
-    g.add_argument('--hold-mad', type=float, default=0.1)
-    g.add_argument('--max-hold', type=int, default=None, help='frames (default: the pace\'s, calm 72, crisp 48)')
+    g.add_argument('--hold-mad', type=float, default=None, help='mean change per frame under which a frame holds still (default 0.1)')
+    g.add_argument('--max-hold', type=int, default=None, help='frames (default: the pace\'s, calm 72, crisp 48 at 60 fps: 1.2 s, 0.8 s at any rate)')
     g.add_argument('--frozen-px', type=int, default=16, help='a hold is frozen if fewer px change by >24 levels')
     g.add_argument('--max-end-hold', type=int, default=None, help='frames of static tail allowed at the end (default: 2 s at the film\'s rate, plus 1)')
-    g.add_argument('--quiet-window', type=int, default=60)
+    g.add_argument('--quiet-window', type=int, default=None, help='frames (default 60 at 60 fps: 1 s at any rate)')
     g.add_argument('--quiet-mad', type=float, default=None, help='(default: the pace\'s, calm 0.10, crisp 0.15)')
     g.add_argument('--ghost-delta', type=int, default=80)
     g.add_argument('--ghost-px', type=int, default=2000, help='full-res pixels')
@@ -3281,9 +3337,7 @@ def main():
     decl = load_declarations(args)
     if not args.pace:
         args.pace = (load_cues(args.cues)['pace'] if args.cues else None) or 'crisp'
-    for k, v in PACE_LIMITS[args.pace].items():
-        if getattr(args, k) is None:
-            setattr(args, k, v)
+    # the pace's hold and quiet limits are stated at 60 fps: evaluate() scales those left at None (scaled60)
     extra = decl[7]
     args._dissolve = not args.no_grammar
     if args.seams:
