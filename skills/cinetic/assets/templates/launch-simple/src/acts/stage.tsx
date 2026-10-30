@@ -5,9 +5,10 @@
 // scene, the end card) keeps one layer for its whole life, so nothing is re-drawn in a new place for a frame. The
 // product's scenes live in src/product.tsx, the words in src/launch.ts; this file rarely needs an edit.
 import React from 'react';
-import { Img, useCurrentFrame } from 'remotion';
+import { Img, staticFile, useCurrentFrame } from 'remotion';
 import { C, FONT, TYPE, U } from '../brand/tokens';
 import { LogoMark } from '../brand/Mark';
+import * as BRAND_LOGO from '../brand/logo';
 import { LOGO } from '../brand/logo';
 import { familyInks, FamilyGround, type FamilyInks, type GroundFamily } from '../fx/Grounds';
 import { bakePlate } from '../fx/Gradients';
@@ -19,14 +20,14 @@ import { mixColor } from '../lib/color';
 import { useFilm } from '../lib/film';
 import { holdDrift } from '../lib/continuity';
 import { measureTracked } from '../lib/measure';
-import { type FloatOpts, withLocks } from '../lib/drift';
+import { floatAt, type FloatOpts, withLocks } from '../lib/drift';
 import { LAUNCH } from '../launch';
 import { DEAL, SEED } from '../deal';
 import { SCENES } from '../product';
 import { ACT, BEAT_PLAN, COLOUR, copy, CUE, DARK_FROM, f60x, FPS, H, PAIRS, SEAM_PLAN, TOTAL, W } from '../timeline';
 import { Layer, PromoteCtx } from './layer';
 import { Line, Text } from './line';
-import { SceneCtx } from './ui';
+import { inkOn, litFace, SceneCtx } from './ui';
 
 export const FAMILY = DEAL.ground as GroundFamily;
 /** The family's inks at frame F (the light-then-dark family turns once, on a seam). */
@@ -44,13 +45,17 @@ export const useAbs = (act: string) => useCurrentFrame() + ACT[act].from;
 
 // ------------------------------------------------------------------------------------------------ the scenes
 
-export type SceneProps = { f: number; dur: number; hits: number[]; inks: FamilyInks; pair: number };
+export type SceneProps = { f: number; dur: number; hits: number[]; inks: FamilyInks; pair: number; cut?: number };
 /**
  * A scene: its drawing; `hero`, the box of the element the end card is built from (the last scene) and its `fill`
  * ('accent', a colour, or the card surface by default); `focus`, the point the closer frame pushes in on (default: the
- * hero's centre, else the frame's): put the picture's own moment there.
+ * hero's centre, else the frame's): put the picture's own moment there; `cut`, what happens on the beat's cut CUE:
+ * 'closer' (default) the stage cuts to a closer frame of the same shot, 'scene' the scene cuts itself (the input
+ * footage to the lit device: SceneProps `cut` is its frame) and the stage keeps the camera's scale.
  */
-export type SceneDef = { draw: React.FC<SceneProps>; hero?: { x: number; y: number; w: number; h: number; radius: number; fill?: string }; focus?: { x: number; y: number } };
+type CutMode = 'closer' | 'scene';
+export type SceneDef = { draw: React.FC<SceneProps>; hero?: { x: number; y: number; w: number; h: number; radius: number; fill?: string }; focus?: { x: number; y: number }; cut?: CutMode | (() => CutMode) };
+const cutMode = (def?: SceneDef): CutMode => (typeof def?.cut === 'function' ? def.cut() : def?.cut ?? 'closer');
 /** The closer frame: the picture beat's one punch-in (a cut, x1.45), a crop of the same shot that bleeds past the frame's edges. */
 export const CLOSER = 1.45;
 
@@ -66,7 +71,7 @@ const camOf = (pair: number, F: number) => {
   const dur = pr.to - from;
   const u = (F - from) / Math.max(1, dur);
   const cut = CUE[`a${pair}cut`];
-  const closer = cut !== undefined && F >= cut ? CLOSER : 1;
+  const closer = cut !== undefined && F >= cut && cutMode(def) === 'closer' ? CLOSER : 1;
   // re-frames step back and forth (+1.5 %, -1.5 %, ...), so the frame never wanders off the product
   const steps = Object.keys(CUE).filter((n) => n.startsWith(`a${pair}m`)).reduce((m, n, j) => m + (j % 2 ? -0.75 : 0.75) * E.settleOut(clamp((F - CUE[n]) / f60x(34))), 0);
   const side = pair % 2 ? 1 : -1;
@@ -75,7 +80,7 @@ const camOf = (pair: number, F: number) => {
   const scale = closer;
   const ox = def?.focus?.x ?? (def?.hero ? def.hero.x + def.hero.w / 2 : W / 2);
   const oy = def?.focus?.y ?? (def?.hero ? def.hero.y + def.hero.h / 2 : H / 2);
-  return { from, dur, dx, dy, scale, ox, oy, closer: closer > 1 };
+  return { from, dur, dx, dy, scale, ox, oy, closer: closer > 1, cut: cut === undefined ? undefined : cut - from };
 };
 
 /** A picture beat: the product's scene, full frame, on the dealt camera. The closer frame is a new shot (a cut): the
@@ -89,8 +94,8 @@ const Scene: React.FC<{ pair: number; F: number }> = ({ pair, F }) => {
   const Draw = def.draw;
   return (
     <div key={c.closer ? 'closer' : 'wide'} data-audit-push={c.closer ? 'bleed' : undefined} style={{ position: 'absolute', inset: 0, transformOrigin: `${c.ox.toFixed(1)}px ${c.oy.toFixed(1)}px`, transform: `translate3d(${c.dx.toFixed(3)}px, ${c.dy.toFixed(3)}px, 0) scale(${c.scale.toFixed(5)})` }}>
-      <SceneCtx.Provider value={{ f: F - c.from, dur: c.dur }}>
-        <Draw f={F - c.from} dur={c.dur} hits={hits} inks={inksAt(F)} pair={pair} />
+      <SceneCtx.Provider value={{ f: F - c.from, dur: c.dur, cam: { dx: c.dx, dy: c.dy } }}>
+        <Draw f={F - c.from} dur={c.dur} hits={hits} inks={inksAt(F)} pair={pair} cut={c.cut} />
       </SceneCtx.Provider>
     </div>
   );
@@ -123,9 +128,35 @@ const heroFill = (inks: FamilyInks) => {
   return !f ? inks.surface : f === 'accent' ? inks.accent : f;
 };
 
-/** The end card's life on its hold: a sideways drift of 18 px a second, centred on the end act (the element lands on it).
- * Never a growing scale: the browser re-draws promoted text sharper in one frame now and then under one. */
-export const endSway = (F: number) => holdDrift(F, ACT.end.from, { px: 0.3 }).x - holdDrift((ACT.end.from + TOTAL) / 2, ACT.end.from, { px: 0.3 }).x;
+/** The brand's own mark once scripts/brand.py has written it (src/brand/logo.ts); until then the template's stand-in. */
+const LOGO_STANDIN = (BRAND_LOGO as { LOGO_STANDIN?: boolean }).LOGO_STANDIN === true;
+const LOGO_RASTER = (BRAND_LOGO as { LOGO_RASTER?: string | null }).LOGO_RASTER ?? null;
+
+/**
+ * The stand-in mark: the name's first letter in the film's face on a lit tile in the hero element's colour (the element
+ * lands as this tile), a glass sheen sliding with the hold's drift. Neutral and honest until the brand's SVG replaces it
+ * (logo.ts keeps its placeholder marker, so lint fails until then); never a sparkle, star or AI glyph.
+ */
+const LetterMark: React.FC<{ size: number; inks: FamilyInks; sheen?: number; letter?: number; radius?: string }> = ({ size, inks, sheen = 0, letter = 1, radius }) => {
+  const fill = heroFill(inks);
+  const at = 34 + (sheen / size) * 100;
+  return (
+    <div style={{ position: 'absolute', left: 0, top: 0, width: size, height: size, borderRadius: radius ?? size * 0.24, ...litFace(fill, inks, { accent: true }), overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: size, height: size * 0.98, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.text, fontSize: size * 0.6, fontWeight: TYPE.display.weight, letterSpacing: '-0.02em', lineHeight: 1, color: inkOn(fill, inks), opacity: letter }}>
+        {(copy('wordmark').text.trim()[0] ?? '').toUpperCase()}
+      </div>
+      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(120deg, rgba(255, 255, 255, 0) ${(at - 16).toFixed(2)}%, rgba(255, 255, 255, 0.1) ${at.toFixed(2)}%, rgba(255, 255, 255, 0) ${(at + 18).toFixed(2)}%)` }} />
+    </div>
+  );
+};
+
+/** The end card's life on its hold: the house hold drift sideways (30 px a second), centred on the end act (the element
+ * lands on it). Never slower: the end hold is longer than a render part, so one part boundary (an I-frame) falls in it,
+ * and a hold creeping under ~0.25 px a frame at preview size lets x264's re-sharpened I-frame pop over the frames
+ * around it (forensics spike). Never a growing scale: the browser re-draws promoted text sharper in one frame now and
+ * then under one. */
+export const END_DRIFT = 0.5;
+export const endSway = (F: number) => holdDrift(F, ACT.end.from, { px: END_DRIFT }).x - holdDrift((ACT.end.from + TOTAL) / 2, ACT.end.from, { px: END_DRIFT }).x;
 
 /** The centred lockup: the mark, the name sliding out beside it, the one fact under them, held on a slow drift. */
 const EndCard: React.FC<{ F: number }> = ({ F }) => {
@@ -140,7 +171,13 @@ const EndCard: React.FC<{ F: number }> = ({ F }) => {
   const shiftX = ((1 - n) * (L.gap + L.wName)) / 2; // before the name: the mark alone sits at the centre
   const named = F >= CUE.name ? 1 : 0;
   const factIn = E.snapOut(clamp((F - fact.in) / f60x(22)));
-  const markNode = <LogoMark logo={LOGO} size={L.markH} fill={() => (inks.type === C.white ? C.white : undefined)} />;
+  const markNode = LOGO_STANDIN ? (
+    <LetterMark size={L.markH} inks={inks} sheen={sway * 0.8} />
+  ) : LOGO_RASTER ? (
+    <Img src={staticFile(LOGO_RASTER)} style={{ position: 'absolute', left: 0, top: 0, width: L.markH, height: L.markH, objectFit: 'contain' }} />
+  ) : (
+    <LogoMark logo={LOGO} size={L.markH} fill={() => (inks.type === C.white ? C.white : undefined)} />
+  );
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${(L.cy + LOCK.below * U * 0.4).toFixed(1)}px`, transform: `translate3d(${sway.toFixed(3)}px, 0, 0)` }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: L.markH, height: L.markH, opacity: markOn, transform: `translate3d(${(L.mark.x + shiftX).toFixed(3)}px, ${L.mark.y.toFixed(3)}px, 0)` }}>
@@ -151,7 +188,7 @@ const EndCard: React.FC<{ F: number }> = ({ F }) => {
           {L.name}
         </Text>
       </div>
-      <Text id="close" x={0} y={L.cy + LOCK.below * U - LOCK.fact * U * 0.6 + (1 - factIn) * 18 * U} width={W} style={{ textAlign: 'center', fontFamily: FONT.text, fontSize: LOCK.fact * U, fontWeight: TYPE.caption.weight, letterSpacing: `${TYPE.caption.track}em`, lineHeight: 1.2, color: inks.mute, opacity: factIn }}>
+      <Text id="close" x={0} y={L.cy + LOCK.below * U - LOCK.fact * U * 0.6 + (1 - factIn) * 18 * U} width={W} style={{ textAlign: 'center', fontFamily: FONT.text, fontSize: LOCK.fact * U, fontWeight: TYPE.caption.weight, letterSpacing: `${TYPE.caption.track}em`, lineHeight: 1.2, color: mixColor(inks.type, inks.ground, 0.24), opacity: factIn }}>
         {fact.text}
       </Text>
     </div>
@@ -160,7 +197,7 @@ const EndCard: React.FC<{ F: number }> = ({ F }) => {
 
 /** The element that becomes the mark: the last picture's hero card, its size, radius and colour carried into the mark tile
  * (the badge: turning a little over a full turn as it goes, a spin blur on the fast frames). */
-const Element: React.FC<{ F: number }> = ({ F }) => {
+const Element: React.FC<{ F: number; sx?: number; sy?: number }> = ({ F, sx = 1, sy = 1 }) => {
   const L = lockLayout();
   const inks = inksAt(F);
   const spin = DEAL.end === 'badge' ? spinInState(F, { at: ACT.end.from - Math.round(f60x(12)), room: 0, slide: 0, turns: 1.1 }, { fps: FPS, width: W, height: H }) : null;
@@ -168,8 +205,17 @@ const Element: React.FC<{ F: number }> = ({ F }) => {
   const take = prog(F, ACT.end.from - f60x(12), ACT.end.from - f60x(2), E.stdInOut);
   const t = prog(F, ACT.end.from - f60x(12), ACT.end.from + f60x(18), E.strongInOut);
   const glyph = prog(F, ACT.end.from - f60x(4), ACT.end.from + f60x(16), E.stdInOut);
-  const tile = (
-    <div style={{ position: 'absolute', inset: 0, opacity: take, borderRadius: mix(heroBox().radius, L.markH * 0.24, t), background: mixColor(heroFill(inks), inks.ground, t), boxShadow: inks.dark ? 'none' : `0 ${(18 * (1 - t)).toFixed(1)}px ${(48 * (1 - t)).toFixed(1)}px rgba(0, 0, 0, ${(0.1 * (1 - t)).toFixed(3)})` }}>
+  // the corner as it shows on screen (the hero's radius, then the mark's), drawn through the box's non-uniform scale
+  const R = mix(heroBox().radius, L.markH * 0.24, t);
+  const radius = `${(R / Math.max(1e-3, sx)).toFixed(3)}px / ${(R / Math.max(1e-3, sy)).toFixed(3)}px`;
+  // the stand-in letter mark: the element keeps its colour and light and becomes the tile; its letter inks in once the
+  // tile is nearly square (a letter stretched by the morph never shows)
+  const tile = LOGO_STANDIN ? (
+    <div style={{ position: 'absolute', inset: 0, opacity: take, borderRadius: radius, overflow: 'hidden' }}>
+      <LetterMark size={L.markH} inks={inks} radius={radius} letter={prog(F, ACT.end.from + f60x(2), ACT.end.from + f60x(18), E.stdInOut)} />
+    </div>
+  ) : (
+    <div style={{ position: 'absolute', inset: 0, opacity: take, borderRadius: radius, background: mixColor(heroFill(inks), inks.ground, t), boxShadow: inks.dark ? 'none' : `0 ${(18 * (1 - t)).toFixed(1)}px ${(48 * (1 - t)).toFixed(1)}px rgba(0, 0, 0, ${(0.1 * (1 - t)).toFixed(3)})` }}>
       <div style={{ position: 'absolute', inset: 0, opacity: glyph }}>
         <LogoMark logo={LOGO} size={L.markH} fill={() => (inks.type === C.white ? C.white : undefined)} />
       </div>
@@ -261,7 +307,7 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
       // laid out at its incoming size, placed and scaled by transform (never by left/top: no pixel stairs)
       element = (
         <div key="element" style={{ position: 'absolute', left: 0, top: 0, width: toBox.w, height: toBox.h, zIndex: 1001, transformOrigin: '0 0', transform: `translate3d(${st.box.x.toFixed(3)}px, ${st.box.y.toFixed(3)}px, 0) scale(${(st.box.w / toBox.w).toFixed(5)}, ${(st.box.h / toBox.h).toFixed(5)})` }}>
-          <Element F={F} />
+          <Element F={F} sx={st.box.w / toBox.w} sy={st.box.h / toBox.h} />
         </div>
       );
     }
@@ -281,20 +327,68 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
 };
 
 /**
- * The ground under every act, never cut and never on the float (the content drifts over it), and the end's light
- * event: as the name slides out the light on the ground changes once, over 0.7 s, and stays (a dark ground brightens
- * along the key, a light one lets its far side fall a few percent into shade): a plate across the frame, never a pool.
+ * The key light on the ground (shares of the frame): one soft pool from the key's side (the film light's top left,
+ * lib/light FILM_LIGHT), `r` x the frame's width across, lagging the camera float by `lag` (the wall behind moves less
+ * than what stands before it) and drifting on its own `period` s loop; the far side falls off into the family's far
+ * tone. `core`: how far the pool's centre lifts toward white (dark families) or its opacity (light ones), a swing of
+ * about 0.08 L on a dark field (a light field at a few percent reads as flat and does nothing). Every plate is baked
+ * dithered, so the ground takes no grain of its own: a grain over a held frame (re-seeded or still) turns each part
+ * boundary of the render (an I-frame, x264 re-sharpening the noise) into a one-frame pop that forensics fails.
+ */
+export const KEY_LIGHT = { x: 0.3, y: 0.18, r: 1.45, lag: 0.45, drift: 0.05, period: 13, core: { dark: 0.15, light: 0.65 }, far: { dark: 0.8, light: 0.55 } } as const;
+
+/**
+ * The film's one colour event, for the families whose deal has none of its own (the band's flood and the turn to dark
+ * are theirs): from the claim (the last line) the key light lifts and takes the accent's hue, over 0.7 s, and keeps it
+ * through the lockup. Under the colour ceilings (a light, not a flood), so it holds without a COLOUR range.
+ */
+export const EVENT_FROM = FAMILY === 'whiteBand' || FAMILY === 'lightDark' ? Infinity : PAIRS[PAIRS.length - 1].from;
+export const colourAt = (F: number) => (EVENT_FROM === Infinity ? 0 : prog(F, EVENT_FROM - f60x(8), EVENT_FROM + f60x(36), E.softOut));
+
+const abs: React.CSSProperties = { position: 'absolute', left: 0, top: 0 };
+const at = (x: number, y: number) => `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
+
+/**
+ * The ground under every act, never cut and never on the float (the content drifts over it): the dealt family's field,
+ * its key light and falloff (KEY_LIGHT), the colour event from the claim, and the end's
+ * light event: as the name slides out the light on the ground changes once, over 0.7 s, and stays (a dark ground
+ * brightens along the key, a light one lets its far side fall a few percent into shade): a plate across the frame.
  */
 export const Ground: React.FC<{ F: number }> = ({ F }) => {
   const inks = inksAt(F);
+  const K = KEY_LIGHT;
+  const dark = inks.dark;
   const p = prog(F, CUE.name - f60x(10), CUE.name + f60x(34), E.softOut);
   const size = Math.hypot(W, H) * 1.06;
-  const ink = inks.dark ? C.white : inks.type;
-  const plate = bakePlate('linear', inks.dark ? [{ at: 0, color: ink, alpha: 1 }, { at: 0.75, color: ink, alpha: 0 }] : [{ at: 0, color: ink, alpha: 0 }, { at: 0.5, color: ink, alpha: 0.5 }, { at: 1, color: ink, alpha: 1 }], size * 0.5, size * 0.5, { seed: 7 });
+  const ink = dark ? C.white : inks.type;
+  const plate = bakePlate('linear', dark ? [{ at: 0, color: ink, alpha: 1 }, { at: 0.75, color: ink, alpha: 0 }] : [{ at: 0, color: ink, alpha: 0 }, { at: 0.5, color: ink, alpha: 0.5 }, { at: 1, color: ink, alpha: 1 }], size * 0.5, size * 0.5, { seed: 7 });
+  // the key: a pool lagging the float, on its own slow loop; its tinted twin rises over it for the colour event
+  const t = F / FPS;
+  const ph = (SEED % 89) / 89;
+  const fl = floatAt(F, FLOAT);
+  const R = W * K.r;
+  const kx = W * K.x + K.lag * fl.x + W * K.drift * Math.sin(2 * Math.PI * (t / K.period + ph));
+  const ky = H * K.y + H * K.drift * 0.6 * Math.sin(2 * Math.PI * (t / (K.period * 1.3) + ph + 0.27));
+  const res = Math.round(W * 0.3);
+  const stops = (c: string) => [{ at: 0, color: c, alpha: 1 }, { at: 0.3, color: c, alpha: 0.56 }, { at: 0.62, color: c, alpha: 0.17 }, { at: 1, color: c, alpha: 0 }];
+  const core = dark ? mixColor(inks.ground, C.white, K.core.dark) : C.white;
+  const tint = dark ? mixColor(mixColor(inks.ground, inks.accent, 0.6), C.white, K.core.dark * 0.8) : mixColor(C.white, inks.accent, 0.1);
+  const pool = bakePlate('radial', stops(core), res, res, { seed: 13 });
+  const poolTint = bakePlate('radial', stops(tint), res, res, { seed: 17 });
+  const ev = colourAt(F);
+  // the far side: the family's far tone falling in from the corner away from the key
+  const farTone = dark ? inks.far : mixColor(inks.ground, inks.type, 0.07);
+  const far = bakePlate('radial', [{ at: 0, color: farTone, alpha: 1 }, { at: 0.45, color: farTone, alpha: 0.62 }, { at: 1, color: farTone, alpha: 0 }], res, res, { seed: 19 });
+  const RF = W * 1.5;
+  const fx = W * 0.96 - 0.2 * K.lag * fl.x;
+  const fy = H * 1.08;
   return (
     <>
       <FamilyGround family={FAMILY} frame={F} dark={F >= DARK_FROM} flood={floodAt(F)} seed={SEED} />
-      <Img src={plate} style={{ position: 'absolute', left: 0, top: 0, width: size, height: size, opacity: (inks.dark ? 0.09 : 0.07) * p, transformOrigin: '50% 50%', transform: `translate(${((W - size) / 2).toFixed(2)}px, ${((H - size) / 2).toFixed(2)}px) rotate(-62deg)` }} />
+      <Img src={far} style={{ ...abs, width: RF, height: RF, opacity: dark ? K.far.dark : K.far.light, transform: at(fx - RF / 2, fy - RF / 2) }} />
+      <Img src={pool} style={{ ...abs, width: R, height: R, opacity: dark ? 0.92 : K.core.light, transform: at(kx - R / 2, ky - R / 2) }} />
+      {ev > 0 && <Img src={poolTint} style={{ ...abs, width: R, height: R, opacity: ev * (dark ? 0.95 : 0.6), transform: at(kx - R / 2, ky - R / 2) }} />}
+      <Img src={plate} style={{ position: 'absolute', left: 0, top: 0, width: size, height: size, opacity: (dark ? 0.09 : 0.07) * p, transformOrigin: '50% 50%', transform: `translate(${((W - size) / 2).toFixed(2)}px, ${((H - size) / 2).toFixed(2)}px) rotate(-62deg)` }} />
     </>
   );
 };
