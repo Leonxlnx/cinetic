@@ -14,25 +14,25 @@
     "since": "2025-02",
     "what": "the blossom, redrawn with the 2025 identity",
     "fp": "fp1 a1 pk100 g0 c01879730193752738856a67677655a4884a55677676a65883725739103797810 h..kkkkk..kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk..kkkkk..",
-    "from": "svgl:270"
+    "from": "svgl:openai"
    },
    "members": {
     "gilbarbara": [
      "openai"
     ],
     "svgl": [
-     "270"
+     "openai"
     ]
    },
    "prefer": [
-    "svgl:270",
+    "svgl:openai",
     "gilbarbara:openai-icon.svg",
     "commons:File:OpenAI logo 2025 (symbol).svg",
-    "svgl:270:dark"
+    "svgl:openai:dark"
    ],
    "sources": {
     "gilbarbara": "current: openai-icon.svg; unknown: openai.svg",
-    "svgl": "current: 270; current: 270:dark",
+    "svgl": "current: openai; current: openai:dark",
     "commons": "current: OpenAI logo 2025 (symbol).svg"
    }
   },
@@ -44,7 +44,7 @@
     "since": "2023-05",
     "what": "the OpenAI blossom in black or white (the app icon), no green",
     "fp": "fp1 a1 pk100 g0 c01879730193752738856a67677655a4884a55677676a65883725739103797810 h..kkkkk..kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk..kkkkk..",
-    "from": "svgl:270"
+    "from": "svgl:openai"
    },
    "outdated": [
     {
@@ -57,7 +57,7 @@
    ],
    "members": {},
    "prefer": [
-    "svgl:270",
+    "svgl:openai",
     "commons:File:ChatGPT-Logo.svg"
    ],
    "sources": {
@@ -72,26 +72,26 @@
     "since": null,
     "what": "the A\\ mark",
     "fp": "fp1 a1.45 pk100 g0 c00e94e0003fd0e3008bf2a800c6c66c01f59a2f15fffe0d59a44e499d500b85d h..kkkk...kkk.kk..kkkkkk..kkkkkk..kkkkkk.kkkkk.kkkkkkkkkkkk..kkkk",
-    "from": "svgl:570"
+    "from": "svgl:anthropic_black"
    },
    "members": {
     "gilbarbara": [
      "anthropic"
     ],
     "svgl": [
-     "570"
+     "anthropic_black"
     ],
     "simple-icons": "anthropic"
    },
    "prefer": [
-    "svgl:570",
+    "svgl:anthropic_black",
     "gilbarbara:anthropic-icon.svg",
     "simple-icons:anthropic",
-    "svgl:570:dark"
+    "svgl:anthropic_black:dark"
    ],
    "sources": {
     "gilbarbara": "current: anthropic-icon.svg; unknown: anthropic.svg",
-    "svgl": "current: 570; current: 570:dark",
+    "svgl": "current: anthropic_black; current: anthropic_black:dark",
     "simple-icons": "current: anthropic (one colour)"
    }
   },
@@ -110,18 +110,18 @@
      "claude"
     ],
     "svgl": [
-     "527"
+     "claude-ai-icon"
     ],
     "simple-icons": "claude"
    },
    "prefer": [
     "gilbarbara:claude-icon.svg",
-    "svgl:527",
+    "svgl:claude-ai-icon",
     "simple-icons:claude"
    ],
    "sources": {
     "gilbarbara": "current: claude-icon.svg; unknown: claude.svg",
-    "svgl": "current: 527",
+    "svgl": "current: claude-ai-icon",
     "simple-icons": "current: claude (one colour)"
    }
   },
@@ -147,18 +147,18 @@
      "google-gemini"
     ],
     "svgl": [
-     "565"
+     "gemini"
     ],
     "simple-icons": "googlegemini"
    },
    "prefer": [
     "gilbarbara:google-gemini-icon.svg",
-    "svgl:565",
+    "svgl:gemini",
     "commons:File:Google Gemini icon 2025.svg"
    ],
    "sources": {
     "gilbarbara": "current: google-gemini-icon.svg; unknown: google-gemini.svg",
-    "svgl": "current: 565",
+    "svgl": "current: gemini",
     "simple-icons": "retired colour: googlegemini (one colour)",
     "commons": "current: Google Gemini icon 2025.svg"
    }
@@ -178,7 +178,7 @@
      "perplexity"
     ],
     "svgl": [
-     "393"
+     "perplexity"
     ],
     "simple-icons": "perplexity"
    },
@@ -187,7 +187,7 @@
    ],
    "sources": {
     "gilbarbara": "current: perplexity-icon.svg; unknown: perplexity.svg",
-    "svgl": "unknown: 393",
+    "svgl": "unknown: perplexity",
     "simple-icons": "unknown: perplexity (one colour)"
    }
   },
@@ -209,17 +209,17 @@
      "mistral-ai"
     ],
     "svgl": [
-     "444"
+     "mistral-ai_logo"
     ],
     "simple-icons": "mistralai"
    },
    "prefer": [
     "gilbarbara:mistral-ai-icon.svg",
-    "svgl:444"
+    "svgl:mistral-ai_logo"
    ],
    "sources": {
     "gilbarbara": "current: mistral-ai-icon.svg; unknown: mistral-ai.svg",
-    "svgl": "current: 444",
+    "svgl": "current: mistral-ai_logo",
     "simple-icons": "unknown: mistralai (one colour)"
    }
   },
@@ -238,18 +238,18 @@
      "meta"
     ],
     "svgl": [
-     "414"
+     "meta"
     ],
     "simple-icons": "meta"
    },
    "prefer": [
     "gilbarbara:meta-icon.svg",
-    "svgl:414",
+    "svgl:meta",
     "simple-icons:meta"
    ],
    "sources": {
     "gilbarbara": "current: meta-icon.svg; unknown: meta.svg",
-    "svgl": "current: 414",
+    "svgl": "current: meta",
     "simple-icons": "current: meta (one colour)"
    }
   },
@@ -284,18 +284,18 @@
     "since": null,
     "what": "the folded ribbon in gradient",
     "fp": "fp1 a1.1 pL37.G37.I9.B6 g5 c0bfffb004fffff109ffd4dd9dff83ffffff37ffd9de4cff901effff400afffb0 h.GGGII..GGGGII..GGGGIKKLGGGGLLLLGGGGLLLLGFFBLLLL..BBLLLL..BALLL.",
-    "from": "svgl:146"
+    "from": "svgl:microsoft-copilot"
    },
    "members": {
     "svgl": [
-     "146"
+     "microsoft-copilot"
     ]
    },
    "prefer": [
-    "svgl:146"
+    "svgl:microsoft-copilot"
    ],
    "sources": {
-    "svgl": "current: 146"
+    "svgl": "current: microsoft-copilot"
    }
   },
   "github-copilot": {
@@ -306,26 +306,26 @@
     "since": null,
     "what": "the Copilot head",
     "fp": "fp1 a1.23 pk100 g0 c009ee900052aa250070770704c8667c4e802208ef838828f7911119703999930 h..kkkk...k.kk.k..k.kk.k.kkkkkkkkkk....kkkkkkkkkkkk....kk.kkkkkk.",
-    "from": "svgl:126"
+    "from": "svgl:copilot"
    },
    "members": {
     "gilbarbara": [
      "github-copilot"
     ],
     "svgl": [
-     "126"
+     "copilot"
     ],
     "simple-icons": "githubcopilot"
    },
    "prefer": [
-    "svgl:126",
+    "svgl:copilot",
     "gilbarbara:github-copilot.svg",
     "simple-icons:githubcopilot",
-    "svgl:126:dark"
+    "svgl:copilot:dark"
    ],
    "sources": {
     "gilbarbara": "current: github-copilot.svg",
-    "svgl": "current: 126; current: 126:dark",
+    "svgl": "current: copilot; current: copilot:dark",
     "simple-icons": "current: githubcopilot (one colour)"
    }
   },
@@ -344,18 +344,18 @@
      "hugging-face"
     ],
     "svgl": [
-     "445"
+     "hugging_face"
     ],
     "simple-icons": "huggingface"
    },
    "prefer": [
     "gilbarbara:hugging-face-icon.svg",
-    "svgl:445",
+    "svgl:hugging_face",
     "simple-icons:huggingface"
    ],
    "sources": {
     "gilbarbara": "current: hugging-face-icon.svg; unknown: hugging-face.svg",
-    "svgl": "current: 445",
+    "svgl": "current: hugging_face",
     "simple-icons": "current: huggingface (one colour)"
    }
   },
@@ -367,26 +367,26 @@
     "since": null,
     "what": "the cube",
     "fp": "fp1 a0.88 pk100 g0 c004cc4004cffffc4d6222229ffb4003fffff00cfffff07ff4cff3fc4004c9400 h..kkkk..kkkkkkkkkkkkkkkkkkkk..kkkkkk..kkkkkk.kkkkkkkkkkk..kkkk..",
-    "from": "svgl:613"
+    "from": "svgl:cursor_light"
    },
    "members": {
     "gilbarbara": [
      "cursor"
     ],
     "svgl": [
-     "613"
+     "cursor_light"
     ],
     "simple-icons": "cursor"
    },
    "prefer": [
-    "svgl:613",
+    "svgl:cursor_light",
     "gilbarbara:cursor-icon.svg",
     "simple-icons:cursor",
-    "svgl:613:dark"
+    "svgl:cursor_light:dark"
    ],
    "sources": {
     "gilbarbara": "current: cursor-icon.svg; unknown: cursor.svg",
-    "svgl": "current: 613; current: 613:dark",
+    "svgl": "current: cursor_light; current: cursor_light:dark",
     "simple-icons": "current: cursor (one colour)"
    }
   },
@@ -398,24 +398,24 @@
     "since": null,
     "what": "the slashed ring",
     "fp": "fp1 a1.05 pk100 g0 c0003410301bba773086006f20c0044a40c0210a4095003c0063bac3020023000 h...kk..k..kkkkkk.kk..kkk.k..kkkk.k....kk.kk..kk..kkkkkk.k..kk...",
-    "from": "svgl:133"
+    "from": "svgl:grok-light"
    },
    "members": {
     "gilbarbara": [
      "grok"
     ],
     "svgl": [
-     "133"
+     "grok-light"
     ]
    },
    "prefer": [
-    "svgl:133",
+    "svgl:grok-light",
     "gilbarbara:grok-icon.svg",
-    "svgl:133:dark"
+    "svgl:grok-light:dark"
    ],
    "sources": {
     "gilbarbara": "current: grok-icon.svg; unknown: grok.svg",
-    "svgl": "current: 133; current: 133:dark"
+    "svgl": "current: grok-light; current: grok-light:dark"
    }
   },
   "deepseek": {
@@ -433,18 +433,18 @@
      "deepseek"
     ],
     "svgl": [
-     "554"
+     "deepseek"
     ],
     "simple-icons": "deepseek"
    },
    "prefer": [
     "gilbarbara:deepseek-icon.svg",
-    "svgl:554",
+    "svgl:deepseek",
     "simple-icons:deepseek"
    ],
    "sources": {
     "gilbarbara": "current: deepseek-icon.svg; unknown: deepseek.svg",
-    "svgl": "current: 554",
+    "svgl": "current: deepseek",
     "simple-icons": "current: deepseek (one colour)"
    }
   },
@@ -463,17 +463,17 @@
      "midjourney"
     ],
     "svgl": [
-     "644"
+     "midjourney"
     ]
    },
    "prefer": [
     "gilbarbara:midjourney.svg",
-    "svgl:644",
-    "svgl:644:dark"
+    "svgl:midjourney",
+    "svgl:midjourney:dark"
    ],
    "sources": {
     "gilbarbara": "current: midjourney.svg",
-    "svgl": "current: 644; current: 644:dark"
+    "svgl": "current: midjourney; current: midjourney:dark"
    }
   },
   "google": {
@@ -484,7 +484,7 @@
     "since": "2025-09",
     "what": "the G in a four-colour gradient",
     "fp": "fp1 a0.98 pI19.G15.B14.E13 g7 c02aefb402efaae60af400100eb00abbbeb00bcefaf4002ec2efa9ef402aefc40 h.BBBAAA.CBBBAAA.CCB.....CC..IIIIDD..IIIIDDD...GGDEEEFGGG.EEEFGG.",
-    "from": "svgl:90"
+    "from": "svgl:google"
    },
    "outdated": [
     {
@@ -500,18 +500,18 @@
      "google"
     ],
     "svgl": [
-     "90"
+     "google"
     ],
     "simple-icons": "google"
    },
    "prefer": [
-    "svgl:90",
+    "svgl:google",
     "commons:File:Google Favicon 2025.svg",
     "simple-icons:google"
    ],
    "sources": {
     "gilbarbara": "retired 2015-09 to 2025-09: google-icon.svg; unknown: google.svg",
-    "svgl": "current: 90",
+    "svgl": "current: google",
     "simple-icons": "current: google (one colour)",
     "commons": "current: Google Favicon 2025.svg"
    }
@@ -557,7 +557,7 @@
      "google-gmail"
     ],
     "svgl": [
-     "376"
+     "gmail"
     ],
     "simple-icons": "gmail"
    },
@@ -567,7 +567,7 @@
    ],
    "sources": {
     "gilbarbara": "current: google-gmail.svg; retired 2020-10 to 2026-05: google-gmail-2020.svg",
-    "svgl": "retired 2020-10 to 2026-05: 376",
+    "svgl": "retired 2020-10 to 2026-05: gmail",
     "simple-icons": "retired 2020-10 to 2026-05: gmail (one colour)",
     "commons": "current: Gmail icon (2026).svg"
    }
@@ -596,7 +596,7 @@
      "google-drive"
     ],
     "svgl": [
-     "23"
+     "drive"
     ],
     "simple-icons": "googledrive"
    },
@@ -606,7 +606,7 @@
    ],
    "sources": {
     "gilbarbara": "current: google-drive.svg; retired 2020-10 to 2026-05: google-drive-2020.svg",
-    "svgl": "retired 2020-10 to 2026-05: 23",
+    "svgl": "retired 2020-10 to 2026-05: drive",
     "simple-icons": "retired 2020-10 to 2026-05: googledrive (one colour)",
     "commons": "current: Google Drive icon (2026).svg"
    }
@@ -635,7 +635,7 @@
      "google-calendar"
     ],
     "svgl": [
-     "636"
+     "google-calendar"
     ],
     "simple-icons": "googlecalendar"
    },
@@ -645,7 +645,7 @@
    ],
    "sources": {
     "gilbarbara": "current: google-calendar.svg; retired 2020-10 to 2026-05: google-calendar-2020.svg",
-    "svgl": "retired 2020-10 to 2026-05: 636",
+    "svgl": "retired 2020-10 to 2026-05: google-calendar",
     "simple-icons": "retired 2020-10 to 2026-05: googlecalendar (one colour)",
     "commons": "current: Google Calendar icon (2026).svg"
    }
@@ -674,7 +674,7 @@
      "google-meet"
     ],
     "svgl": [
-     "637"
+     "google-meet"
     ],
     "simple-icons": "googlemeet"
    },
@@ -684,7 +684,7 @@
    ],
    "sources": {
     "gilbarbara": "current: google-meet.svg; retired 2020-10 to 2026-05: google-meet-2020.svg",
-    "svgl": "retired 2020-10 to 2026-05: 637",
+    "svgl": "retired 2020-10 to 2026-05: google-meet",
     "simple-icons": "retired 2020-10 to 2026-05: googlemeet (one colour)",
     "commons": "current: Google Meet icon (2026).svg"
    }
@@ -736,7 +736,7 @@
      "until": "2026-05",
      "what": "the flat green sheet",
      "fp": "fp1 a0.73 pF98 g0 ceffffa10ffffffd4ffffffffffffffffffffffffffffffffffffffffeffffffe hFFFFFF..FFFFFFFFFFFFFFFFFFFFFFFFFFwFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
-     "from": "svgl:638"
+     "from": "svgl:google-sheets"
     }
    ],
    "hex": [
@@ -751,7 +751,7 @@
    "retiredWhat": "the flat green of the 2014-2026 sheet",
    "members": {
     "svgl": [
-     "638"
+     "google-sheets"
     ],
     "simple-icons": "googlesheets"
    },
@@ -760,7 +760,7 @@
     "commons:File:Google Sheets icon (2026).svg"
    ],
    "sources": {
-    "svgl": "retired 2020-10 to 2026-05: 638",
+    "svgl": "retired 2020-10 to 2026-05: google-sheets",
     "simple-icons": "retired 2020-10 to 2026-05: googlesheets (one colour)",
     "commons": "current: Google Sheets icon (August 2026).svg; current: Google Sheets icon (2026).svg"
    }
@@ -781,7 +781,7 @@
      "until": "2026-05",
      "what": "the flat yellow slide",
      "fp": "fp1 a0.73 pC79.D21 g0 ceffffa10ffffffc3ffffffffffffffffffffffffffffffffffffffffeffffffe hCCCCCD..CCCCCDDDCCCCCCCCCCCCCCCCCCDDDDCCCCDCCDCCCCDDDDCCCCCCCCCC",
-     "from": "svgl:639"
+     "from": "svgl:google-slides"
     }
    ],
    "hex": [
@@ -796,7 +796,7 @@
    "retiredWhat": "the flat yellow of the 2014-2026 slide",
    "members": {
     "svgl": [
-     "639"
+     "google-slides"
     ],
     "simple-icons": "googleslides"
    },
@@ -804,7 +804,7 @@
     "commons:File:Google Slides icon (2026).svg"
    ],
    "sources": {
-    "svgl": "retired 2020-10 to 2026-05: 639",
+    "svgl": "retired 2020-10 to 2026-05: google-slides",
     "simple-icons": "retired 2020-10 to 2026-05: googleslides (one colour)",
     "commons": "current: Google Slides icon (2026).svg"
    }
@@ -875,7 +875,7 @@
      "google-maps"
     ],
     "svgl": [
-     "609"
+     "googleMaps"
     ],
     "simple-icons": "googlemaps"
    },
@@ -884,7 +884,7 @@
    ],
    "sources": {
     "gilbarbara": "retired 2020-02 to 2026: google-maps.svg",
-    "svgl": "retired 2020-02 to 2026: 609",
+    "svgl": "retired 2020-02 to 2026: googleMaps",
     "simple-icons": "retired 2020-02 to 2026: googlemaps (one colour)",
     "commons": "current: Google Maps icon (2026).svg"
    }
@@ -952,7 +952,7 @@
      "youtube"
     ],
     "svgl": [
-     "88"
+     "youtube"
     ],
     "simple-icons": "youtube"
    },
@@ -961,7 +961,7 @@
    ],
    "sources": {
     "gilbarbara": "retired colour: youtube-icon.svg; retired colour: youtube.svg",
-    "svgl": "retired colour: 88",
+    "svgl": "retired colour: youtube",
     "simple-icons": "retired colour: youtube (one colour)",
     "commons": "current: YouTube full-color icon (2024).svg"
    }
@@ -993,19 +993,19 @@
      "chrome"
     ],
     "svgl": [
-     "247"
+     "chrome"
     ],
     "simple-icons": "googlechrome"
    },
    "prefer": [
     "gilbarbara:chrome.svg",
-    "svgl:247",
+    "svgl:chrome",
     "commons:File:Google Chrome icon (February 2022).svg",
     "simple-icons:googlechrome"
    ],
    "sources": {
     "gilbarbara": "current: chrome.svg",
-    "svgl": "current: 247",
+    "svgl": "current: chrome",
     "simple-icons": "current: googlechrome (one colour)",
     "commons": "current: Google Chrome icon (February 2022).svg"
    }
@@ -1025,16 +1025,16 @@
      "android"
     ],
     "svgl": [
-     "417"
+     "android-icon"
     ]
    },
    "prefer": [
     "gilbarbara:android-icon.svg",
-    "svgl:417"
+    "svgl:android-icon"
    ],
    "sources": {
     "gilbarbara": "current: android-icon.svg; unknown: android.svg; unknown: android-vertical.svg",
-    "svgl": "current: 417"
+    "svgl": "current: android-icon"
    }
   },
   "google-cloud": {
@@ -1052,18 +1052,18 @@
      "google-cloud"
     ],
     "svgl": [
-     "595"
+     "google-cloud"
     ],
     "simple-icons": "googlecloud"
    },
    "prefer": [
     "gilbarbara:google-cloud.svg",
-    "svgl:595",
+    "svgl:google-cloud",
     "simple-icons:googlecloud"
    ],
    "sources": {
     "gilbarbara": "current: google-cloud.svg",
-    "svgl": "current: 595",
+    "svgl": "current: google-cloud",
     "simple-icons": "current: googlecloud (one colour)"
    }
   },
@@ -1082,18 +1082,18 @@
      "firebase"
     ],
     "svgl": [
-     "518"
+     "firebase"
     ],
     "simple-icons": "firebase"
    },
    "prefer": [
     "gilbarbara:firebase-icon.svg",
-    "svgl:518",
+    "svgl:firebase",
     "commons:File:Firebase Logo (No wordmark) (2024-).svg"
    ],
    "sources": {
     "gilbarbara": "current: firebase-icon.svg; unknown: firebase.svg",
-    "svgl": "current: 518",
+    "svgl": "current: firebase",
     "simple-icons": "unknown: firebase (one colour)",
     "commons": "current: Firebase Logo (No wordmark) (2024-).svg"
    }
@@ -1113,17 +1113,17 @@
      "google-play"
     ],
     "svgl": [
-     "91"
+     "googleplay"
     ],
     "simple-icons": "googleplay"
    },
    "prefer": [
     "gilbarbara:google-play-icon.svg",
-    "svgl:91"
+    "svgl:googleplay"
    ],
    "sources": {
     "gilbarbara": "current: google-play-icon.svg; unknown: google-play.svg",
-    "svgl": "current: 91",
+    "svgl": "current: googleplay",
     "simple-icons": "unknown: googleplay (one colour)"
    }
   },
@@ -1142,16 +1142,16 @@
      "microsoft"
     ],
     "svgl": [
-     "243"
+     "microsoft"
     ]
    },
    "prefer": [
     "gilbarbara:microsoft-icon.svg",
-    "svgl:243"
+    "svgl:microsoft"
    ],
    "sources": {
     "gilbarbara": "current: microsoft-icon.svg; unknown: microsoft.svg",
-    "svgl": "current: 243"
+    "svgl": "current: microsoft"
    }
   },
   "microsoft-teams": {
@@ -1165,7 +1165,7 @@
     "since": "2025-10",
     "what": "the folded 2025 icon",
     "fp": "fp1 a0.95 pJ100 g3 c01ce302003ff68f7006716e50cffe995efffffffffffffffffffffff47effffa h..JJJ....JJJJJJJ..JJ.JJJ.JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ",
-    "from": "svgl:155"
+    "from": "svgl:microsoft-teams"
    },
    "outdated": [
     {
@@ -1188,16 +1188,16 @@
      "microsoft-teams"
     ],
     "svgl": [
-     "155"
+     "microsoft-teams"
     ]
    },
    "prefer": [
-    "svgl:155",
+    "svgl:microsoft-teams",
     "commons:File:Microsoft Office Teams (2025–present).svg"
    ],
    "sources": {
     "gilbarbara": "retired 2019 to 2025-10: microsoft-teams.svg",
-    "svgl": "current: 155",
+    "svgl": "current: microsoft-teams",
     "commons": "current: Microsoft Office Teams (2025–present).svg"
    }
   },
@@ -1212,7 +1212,7 @@
     "since": "2025-10",
     "what": "the folded 2025 icon",
     "fp": "fp1 a1.06 pI85.H15 g3 c002be60006efffa27ffffffe9fffffffefffffffffffffffffffffff6efffffa h..IIII...IIIIII.IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIHHHIIIHHHHHII",
-    "from": "svgl:377"
+    "from": "svgl:microsoft-outlook"
    },
    "outdated": [
     {
@@ -1232,15 +1232,15 @@
    ],
    "members": {
     "svgl": [
-     "377"
+     "microsoft-outlook"
     ]
    },
    "prefer": [
-    "svgl:377",
+    "svgl:microsoft-outlook",
     "commons:File:Microsoft Outlook Icon (2025–present).svg"
    ],
    "sources": {
-    "svgl": "current: 377",
+    "svgl": "current: microsoft-outlook",
     "commons": "current: Microsoft Outlook Icon (2025–present).svg"
    }
   },
@@ -1255,7 +1255,7 @@
     "since": "2025-10",
     "what": "the folded 2025 icon with three bars",
     "fp": "fp1 a0.97 pI98 g0 c07fffffd0cffffff0cffffff2dffffffffffffffffffffffffffffff38fffffd h.IIIIIII.IIIIIII.IIIIIIIIIIIIIIIIIIIIIIIIwIIIIIIIIIIIIIIIIIIIIII",
-    "from": "svgl:156"
+    "from": "svgl:microsoft-word"
    },
    "outdated": [
     {
@@ -1275,15 +1275,15 @@
    ],
    "members": {
     "svgl": [
-     "156"
+     "microsoft-word"
     ]
    },
    "prefer": [
-    "svgl:156",
+    "svgl:microsoft-word",
     "commons:File:Microsoft Office Word (2025–present).svg"
    ],
    "sources": {
-    "svgl": "current: 156",
+    "svgl": "current: microsoft-word",
     "commons": "current: Microsoft Office Word (2025–present).svg"
    }
   },
@@ -1298,7 +1298,7 @@
     "since": "2025-10",
     "what": "the folded 2025 icon",
     "fp": "fp1 a0.97 pE78.F22 g1 c07fffffe0cffffff0cffffff2dffffffffffffffffffffffffffffff38fffffe h.EEEEEEE.EEEEEEE.EEEEEEEFEEEEEEEFFFFEEEEFFFFEEEEFFFFEEEEFFEEEEEE",
-    "from": "svgl:150"
+    "from": "svgl:microsoft-excel"
    },
    "outdated": [
     {
@@ -1311,15 +1311,15 @@
    ],
    "members": {
     "svgl": [
-     "150"
+     "microsoft-excel"
     ]
    },
    "prefer": [
-    "svgl:150",
+    "svgl:microsoft-excel",
     "commons:File:Microsoft Office Excel (2025–present).svg"
    ],
    "sources": {
-    "svgl": "current: 150",
+    "svgl": "current: microsoft-excel",
     "commons": "current: Microsoft Office Excel (2025–present).svg"
    }
   },
@@ -1334,7 +1334,7 @@
     "since": "2025-10",
     "what": "the folded 2025 icon",
     "fp": "fp1 a1.03 pA71.B29 g5 c019efb301cffffe37ffffffaaffffffefffffffefffffffbefffffe2239eeb30 h..ABBBB..AAABBBBAAAABBBBAAAABBBBAAAAAAABAAAAAAAAAAAAAAAAAAAAAAA.",
-    "from": "svgl:153"
+    "from": "svgl:microsoft-powerpoint"
    },
    "outdated": [
     {
@@ -1347,15 +1347,15 @@
    ],
    "members": {
     "svgl": [
-     "153"
+     "microsoft-powerpoint"
     ]
    },
    "prefer": [
-    "svgl:153",
+    "svgl:microsoft-powerpoint",
     "commons:File:Microsoft Office PowerPoint (2025–present).svg"
    ],
    "sources": {
-    "svgl": "current: 153",
+    "svgl": "current: microsoft-powerpoint",
     "commons": "current: Microsoft Office PowerPoint (2025–present).svg"
    }
   },
@@ -1370,7 +1370,7 @@
     "since": "2025-10",
     "what": "the 2025 cloud in gradient",
     "fp": "fp1 a1.62 pH90.I10 g3 c003de60008dfff307fffffb1dffffff8fffffffeefffffff9ffffffb1bffffd3 h..HHHH...IHHHHH.IIHHHHH.IIHHHHHHIHHHHHHHHHHHHHHHHHHHHHHH.HHHHHHH",
-    "from": "svgl:151"
+    "from": "svgl:microsoft-onedrive"
    },
    "outdated": [
     {
@@ -1406,16 +1406,16 @@
      "microsoft-onedrive"
     ],
     "svgl": [
-     "151"
+     "microsoft-onedrive"
     ]
    },
    "prefer": [
-    "svgl:151",
+    "svgl:microsoft-onedrive",
     "commons:File:Microsoft OneDrive Icon (2025 - present).svg"
    ],
    "sources": {
     "gilbarbara": "retired 2019 to 2025-10: microsoft-onedrive.svg",
-    "svgl": "current: 151",
+    "svgl": "current: microsoft-onedrive",
     "commons": "current: Microsoft OneDrive Icon (2025 - present).svg"
    }
   },
@@ -1430,7 +1430,7 @@
     "since": "2025-10",
     "what": "the folded 2025 icon",
     "fp": "fp1 a0.97 pK55.L45 g0 c07fffffd0cffffff0cffffff2dffffffffffffffffffffffffffffff38fffffe h.LLLLLLL.LLLLLLL.LLLLLLKKLLLLLKKKKKKLLKKKKKKKKKKKKKKKKKKKKKKKKKK",
-    "from": "svgl:152"
+    "from": "svgl:microsoft-onenote"
    },
    "outdated": [
     {
@@ -1443,15 +1443,15 @@
    ],
    "members": {
     "svgl": [
-     "152"
+     "microsoft-onenote"
     ]
    },
    "prefer": [
-    "svgl:152",
+    "svgl:microsoft-onenote",
     "commons:File:Microsoft OneNote Icon (2025 - present).svg"
    ],
    "sources": {
-    "svgl": "current: 152",
+    "svgl": "current: microsoft-onenote",
     "commons": "current: Microsoft OneNote Icon (2025 - present).svg"
    }
   },
@@ -1473,16 +1473,16 @@
      "microsoft-azure"
     ],
     "svgl": [
-     "143"
+     "azure"
     ]
    },
    "prefer": [
     "gilbarbara:microsoft-azure.svg",
-    "svgl:143"
+    "svgl:azure"
    ],
    "sources": {
     "gilbarbara": "current: microsoft-azure.svg",
-    "svgl": "current: 143"
+    "svgl": "current: azure"
    }
   },
   "visual-studio-code": {
@@ -1504,16 +1504,16 @@
      "visual-studio-code"
     ],
     "svgl": [
-     "55"
+     "vscode"
     ]
    },
    "prefer": [
     "gilbarbara:visual-studio-code.svg",
-    "svgl:55"
+    "svgl:vscode"
    ],
    "sources": {
     "gilbarbara": "current: visual-studio-code.svg",
-    "svgl": "current: 55"
+    "svgl": "current: vscode"
    }
   },
   "linkedin": {
@@ -1535,16 +1535,16 @@
      "linkedin"
     ],
     "svgl": [
-     "95"
+     "linkedin"
     ]
    },
    "prefer": [
     "gilbarbara:linkedin-icon.svg",
-    "svgl:95"
+    "svgl:linkedin"
    ],
    "sources": {
     "gilbarbara": "current: linkedin-icon.svg; unknown: linkedin.svg",
-    "svgl": "current: 95"
+    "svgl": "current: linkedin"
    }
   },
   "apple": {
@@ -1562,19 +1562,19 @@
      "apple"
     ],
     "svgl": [
-     "213"
+     "apple"
     ],
     "simple-icons": "apple"
    },
    "prefer": [
     "gilbarbara:apple.svg",
-    "svgl:213",
+    "svgl:apple",
     "simple-icons:apple",
-    "svgl:213:dark"
+    "svgl:apple:dark"
    ],
    "sources": {
     "gilbarbara": "current: apple.svg",
-    "svgl": "current: 213; current: 213:dark",
+    "svgl": "current: apple; current: apple:dark",
     "simple-icons": "current: apple (one colour)"
    }
   },
@@ -1586,24 +1586,24 @@
     "since": null,
     "what": "the blue tile with the A of three sticks (iOS 26 draws it in glass; the open collections keep the flat drawing)",
     "fp": "fp1 a1 pI97 g8 c7ffffff7ffffffffffffffffffffffffffffffffffffffffffffffff7ffffff7 hIIIIIIIIIIIIIIIIIIIIIIIIIIIwIIIIIIIIIIIIIIIIIwIIIIIIIIIIIIIIIIII",
-    "from": "svgl:214"
+    "from": "svgl:appstore"
    },
    "members": {
     "gilbarbara": [
      "apple-app-store"
     ],
     "svgl": [
-     "214"
+     "appstore"
     ],
     "simple-icons": "appstore"
    },
    "prefer": [
-    "svgl:214",
+    "svgl:appstore",
     "gilbarbara:apple-app-store.svg"
    ],
    "sources": {
     "gilbarbara": "current: apple-app-store.svg",
-    "svgl": "current: 214",
+    "svgl": "current: appstore",
     "simple-icons": "unknown: appstore (one colour)"
    }
   },
@@ -1615,25 +1615,25 @@
     "since": null,
     "what": "the compass (iOS 26 draws it in glass; the open collections keep the flat drawing)",
     "fp": "fp1 a1 pH87.w5 g8 c03bffb303effffe3bffffffbeffffffeeffffffeaffffffa3effffe303aeea30 h.wHHHHw.wHHHHHHwHHHHIKHHHHHHAIHHHHHwHHHHHHHHHHHHwHHHHHHw.wHHHHw.",
-    "from": "svgl:314"
+    "from": "svgl:safari"
    },
    "members": {
     "gilbarbara": [
      "safari"
     ],
     "svgl": [
-     "314"
+     "safari"
     ],
     "simple-icons": "safari"
    },
    "prefer": [
-    "svgl:314",
+    "svgl:safari",
     "gilbarbara:safari.svg",
     "simple-icons:safari"
    ],
    "sources": {
     "gilbarbara": "current: safari.svg",
-    "svgl": "current: 314",
+    "svgl": "current: safari",
     "simple-icons": "current: safari (one colour)"
    }
   },
@@ -1645,20 +1645,20 @@
     "since": null,
     "what": "the note on red (iOS 26 draws it in glass; the open collections keep the flat drawing)",
     "fp": "fp1 a1 pA98 g0 c6effffe6effffffeffffffffffffffffffffffffffffffffeffffffe6effffe6 hAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-    "from": "svgl:462"
+    "from": "svgl:apple-music-icon"
    },
    "members": {
     "svgl": [
-     "462"
+     "apple-music-icon"
     ],
     "simple-icons": "applemusic"
    },
    "prefer": [
-    "svgl:462",
+    "svgl:apple-music-icon",
     "simple-icons:applemusic"
    ],
    "sources": {
-    "svgl": "current: 462",
+    "svgl": "current: apple-music-icon",
     "simple-icons": "current: applemusic (one colour)"
    }
   },
@@ -1693,17 +1693,17 @@
      "slack"
     ],
     "svgl": [
-     "378"
+     "slack"
     ]
    },
    "prefer": [
     "gilbarbara:slack-icon.svg",
-    "svgl:378",
+    "svgl:slack",
     "commons:File:Slack icon 2019.svg"
    ],
    "sources": {
     "gilbarbara": "current: slack-icon.svg; unknown: slack.svg",
-    "svgl": "current: 378",
+    "svgl": "current: slack",
     "commons": "current: Slack icon 2019.svg"
    }
   },
@@ -1722,17 +1722,17 @@
      "notion"
     ],
     "svgl": [
-     "420"
+     "notion"
     ],
     "simple-icons": "notion"
    },
    "prefer": [
     "gilbarbara:notion-icon.svg",
-    "svgl:420"
+    "svgl:notion"
    ],
    "sources": {
     "gilbarbara": "current: notion-icon.svg; unknown: notion.svg",
-    "svgl": "current: 420",
+    "svgl": "current: notion",
     "simple-icons": "unknown: notion (one colour)"
    }
   },
@@ -1751,17 +1751,17 @@
      "figma"
     ],
     "svgl": [
-     "62"
+     "figma"
     ],
     "simple-icons": "figma"
    },
    "prefer": [
     "gilbarbara:figma.svg",
-    "svgl:62"
+    "svgl:figma"
    ],
    "sources": {
     "gilbarbara": "current: figma.svg",
-    "svgl": "current: 62",
+    "svgl": "current: figma",
     "simple-icons": "unknown: figma (one colour)"
    }
   },
@@ -1780,18 +1780,18 @@
      "linear"
     ],
     "svgl": [
-     "259"
+     "linear"
     ],
     "simple-icons": "linear"
    },
    "prefer": [
     "gilbarbara:linear-icon.svg",
-    "svgl:259",
+    "svgl:linear",
     "simple-icons:linear"
    ],
    "sources": {
     "gilbarbara": "current: linear-icon.svg; unknown: linear.svg",
-    "svgl": "current: 259",
+    "svgl": "current: linear",
     "simple-icons": "current: linear (one colour)"
    }
   },
@@ -1810,18 +1810,18 @@
      "asana"
     ],
     "svgl": [
-     "439"
+     "asana-logo"
     ],
     "simple-icons": "asana"
    },
    "prefer": [
     "gilbarbara:asana-icon.svg",
-    "svgl:439",
+    "svgl:asana-logo",
     "simple-icons:asana"
    ],
    "sources": {
     "gilbarbara": "current: asana-icon.svg; unknown: asana.svg",
-    "svgl": "current: 439",
+    "svgl": "current: asana-logo",
     "simple-icons": "current: asana (one colour)"
    }
   },
@@ -1830,24 +1830,38 @@
    "owner": "Atlassian",
    "page": "https://atlassian.design/foundations/logos",
    "mark": {
-    "since": null,
-    "what": "the blue chevrons of the Atlassian family",
-    "fp": "fp1 a1 pI100 g0 c0002ffff00116cef00efffcf336cdf6fcfffcf1128cf6e10008f3000002c3000 h....IIII....IIII..IIIIIIIIIIIIIIIIIIII..IIIIII....III......II...",
-    "from": "gilbarbara:jira.svg"
+    "since": "2025",
+    "what": "the Jira mark in white on an Atlassian-blue tile (#1868DB) (no open collection draws it yet)",
+    "fp": "fp1 a1 pI88.w12 g0 c5effffe5effffffeffffffffffffffffffffffffffffffffeffffffe5effffe5 hIIIIIIIIIIIIIIIIIIIIIwIIIIIwwIIIIIwwwIIIIIIwIIIIIIIIIIIIIIIIIIII",
+    "from": null
    },
+   "outdated": [
+    {
+     "since": "2017-09",
+     "until": "2025",
+     "what": "the blue gradient chevrons",
+     "fp": "fp1 a1 pI100 g0 c0001ffff00116cef00efffcf336cdf7fcfffcf2128cf6e20008f3000002c3000 h....IIII....IIII..IIIIIIIIIIIIIIIIIIIII.IIIIIII...III......II...",
+     "from": "gilbarbara:gb-jira.svg"
+    }
+   ],
+   "hex": [
+    "#1868db"
+   ],
+   "retired": [
+    "#2684ff",
+    "#0052cc"
+   ],
+   "retiredWhat": "the blue gradient of the 2017-2025 Atlassian marks",
    "members": {
     "gilbarbara": [
      "jira"
     ],
     "simple-icons": "jira"
    },
-   "prefer": [
-    "gilbarbara:jira.svg",
-    "simple-icons:jira"
-   ],
+   "prefer": [],
    "sources": {
-    "gilbarbara": "current: jira.svg",
-    "simple-icons": "current: jira (one colour)"
+    "gilbarbara": "retired 2017-09 to 2025: gb-jira.svg",
+    "simple-icons": "retired 2017-09 to 2025: jira (one colour)"
    }
   },
   "confluence": {
@@ -1855,24 +1869,38 @@
    "owner": "Atlassian",
    "page": "https://atlassian.design/foundations/logos",
    "mark": {
-    "since": null,
-    "what": "the blue crossed waves of the Atlassian family",
-    "fp": "fp1 a1.04 pI100 g0 c1b6006c36ffdaefd5efffff4017cec4005cec7105fffffe5dfe9dff53c5006b0 h.II..IIIIIIIIIIIIIIIIIII..IIIII..IIIII..IIIIIIIIIIIIIIIIIII..II.",
-    "from": "gilbarbara:confluence.svg"
+    "since": "2025",
+    "what": "the Confluence mark in white on an Atlassian-blue tile (#1868DB) (no open collection draws it yet)",
+    "fp": "fp1 a1 pI93.w7 g0 c5effffe5effffffeffffffffffffffffffffffffffffffffeffffffe5effffe5 hIIIIIIIIIIIIIIIIIIIIIIIIIIIwwIIIIIIwwIIIIIIIIIIIIIIIIIIIIIIIIIII",
+    "from": null
    },
+   "outdated": [
+    {
+     "since": "2017-09",
+     "until": "2025",
+     "what": "the blue gradient crossed waves",
+     "fp": "fp1 a1.04 pI100 g0 c1b6006c36ffdaefd5efffff4017cec4005cec7105fffffe5dfe9dff53c5006b0 h.II..IIIIIIIIIIIIIIIIIII..IIIII..IIIII..IIIIIIIIIIIIIIIIIII..II.",
+     "from": "gilbarbara:gb-confluence.svg"
+    }
+   ],
+   "hex": [
+    "#1868db"
+   ],
+   "retired": [
+    "#2684ff",
+    "#0052cc"
+   ],
+   "retiredWhat": "the blue gradient of the 2017-2025 Atlassian marks",
    "members": {
     "gilbarbara": [
      "confluence"
     ],
     "simple-icons": "confluence"
    },
-   "prefer": [
-    "gilbarbara:confluence.svg",
-    "simple-icons:confluence"
-   ],
+   "prefer": [],
    "sources": {
-    "gilbarbara": "current: confluence.svg",
-    "simple-icons": "current: confluence (one colour)"
+    "gilbarbara": "retired 2017-09 to 2025: gb-confluence.svg",
+    "simple-icons": "retired 2017-09 to 2025: confluence (one colour)"
    }
   },
   "trello": {
@@ -1883,25 +1911,25 @@
     "since": null,
     "what": "the blue board tile",
     "fp": "fp1 a1 pI100 g0 ccffffffcfc8cc8cff808807ff808807ff808dbdff808ffffffefffffcffffffc hIIIIIIIIIIIIIIIIII.II.IIII.II.IIII.IIIIIII.IIIIIIIIIIIIIIIIIIIII",
-    "from": "svgl:665"
+    "from": "svgl:trello"
    },
    "members": {
     "gilbarbara": [
      "trello"
     ],
     "svgl": [
-     "665"
+     "trello"
     ],
     "simple-icons": "trello"
    },
    "prefer": [
-    "svgl:665",
+    "svgl:trello",
     "gilbarbara:trello.svg",
     "simple-icons:trello"
    ],
    "sources": {
     "gilbarbara": "current: trello.svg",
-    "svgl": "current: 665",
+    "svgl": "current: trello",
     "simple-icons": "current: trello (one colour)"
    }
   },
@@ -2024,14 +2052,14 @@
      "loom"
     ],
     "svgl": [
-     "235"
+     "loom"
     ],
     "simple-icons": "loom"
    },
    "prefer": [],
    "sources": {
     "gilbarbara": "retired colour: loom-icon.svg; retired colour: loom.svg",
-    "svgl": "retired colour: 235",
+    "svgl": "retired colour: loom",
     "simple-icons": "retired colour: loom (one colour)"
    }
   },
@@ -2043,20 +2071,20 @@
     "since": null,
     "what": "the blue C",
     "fp": "fp1 a1.01 pI100 g0 c03766640367cc85475ffff777bffffe66bffffd675ffff77266bb86402766730 h.IIIIII.IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII.IIIIII.",
-    "from": "svgl:326"
+    "from": "svgl:calendly"
    },
    "members": {
     "svgl": [
-     "326"
+     "calendly"
     ],
     "simple-icons": "calendly"
    },
    "prefer": [
-    "svgl:326",
+    "svgl:calendly",
     "simple-icons:calendly"
    ],
    "sources": {
-    "svgl": "current: 326",
+    "svgl": "current: calendly",
     "simple-icons": "current: calendly (one colour)"
    }
   },
@@ -2079,7 +2107,7 @@
      "dropbox"
     ],
     "svgl": [
-     "556"
+     "dropbox"
     ],
     "simple-icons": "dropbox"
    },
@@ -2089,7 +2117,7 @@
    ],
    "sources": {
     "gilbarbara": "current: dropbox.svg",
-    "svgl": "unknown: 556",
+    "svgl": "unknown: dropbox",
     "simple-icons": "current: dropbox (one colour)"
    }
   },
@@ -2137,17 +2165,17 @@
      "zoom"
     ],
     "svgl": [
-     "441"
+     "zoom"
     ],
     "simple-icons": "zoom"
    },
    "prefer": [
     "gilbarbara:zoom-icon.svg",
-    "svgl:441"
+    "svgl:zoom"
    ],
    "sources": {
     "gilbarbara": "current: zoom-icon.svg; unknown: zoom.svg",
-    "svgl": "current: 441",
+    "svgl": "current: zoom",
     "simple-icons": "unknown: zoom (one colour)"
    }
   },
@@ -2170,18 +2198,18 @@
      "discord"
     ],
     "svgl": [
-     "42"
+     "discord"
     ],
     "simple-icons": "discord"
    },
    "prefer": [
     "gilbarbara:discord-icon.svg",
-    "svgl:42",
+    "svgl:discord",
     "simple-icons:discord"
    ],
    "sources": {
     "gilbarbara": "current: discord-icon.svg; unknown: discord.svg",
-    "svgl": "current: 42",
+    "svgl": "current: discord",
     "simple-icons": "current: discord (one colour)"
    }
   },
@@ -2200,7 +2228,7 @@
      "whatsapp"
     ],
     "svgl": [
-     "98"
+     "whatsapp-icon"
     ],
     "simple-icons": "whatsapp"
    },
@@ -2209,7 +2237,7 @@
    ],
    "sources": {
     "gilbarbara": "current: whatsapp-icon.svg; unknown: whatsapp-monochrome-icon.svg; unknown: whatsapp.svg",
-    "svgl": "unknown: 98",
+    "svgl": "unknown: whatsapp-icon",
     "simple-icons": "unknown: whatsapp (one colour)"
    }
   },
@@ -2228,18 +2256,18 @@
      "telegram"
     ],
     "svgl": [
-     "96"
+     "telegram"
     ],
     "simple-icons": "telegram"
    },
    "prefer": [
     "gilbarbara:telegram.svg",
-    "svgl:96",
+    "svgl:telegram",
     "simple-icons:telegram"
    ],
    "sources": {
     "gilbarbara": "current: telegram.svg",
-    "svgl": "current: 96",
+    "svgl": "current: telegram",
     "simple-icons": "current: telegram (one colour)"
    }
   },
@@ -2251,7 +2279,7 @@
     "since": "2022-05",
     "what": "the camera glyph on the brighter 2022 gradient",
     "fp": "fp1 a1 pL100 g2 c6effffe6effffffeffffffffffffffffffffffffffffffffeffffffe6effffe6 hLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
-    "from": "svgl:272"
+    "from": "svgl:instagram-icon"
    },
    "hex": [
     "#ff005f",
@@ -2269,17 +2297,17 @@
      "instagram"
     ],
     "svgl": [
-     "272"
+     "instagram-icon"
     ],
     "simple-icons": "instagram"
    },
    "prefer": [
-    "svgl:272",
+    "svgl:instagram-icon",
     "commons:File:Instagram logo 2022.svg"
    ],
    "sources": {
     "gilbarbara": "unknown: instagram-icon.svg; unknown: instagram.svg",
-    "svgl": "current: 272",
+    "svgl": "current: instagram-icon",
     "simple-icons": "unknown: instagram (one colour)",
     "commons": "current: Instagram logo 2022.svg"
    }
@@ -2292,7 +2320,7 @@
     "since": "2023-09",
     "what": "the f in the 2023 blue (#0866FF)",
     "fp": "fp1 a1 pI84.w16 g0 c02aeea202effffe2affffffaeffffffeeffffffeaffffffa2effffe202aeea20 h.IIIIII.IIIIIIIIIIIIwIIIIIIwIIIIIIwwwIIIIIIwIIIIIIIwIIII.IIwIII.",
-    "from": "svgl:71"
+    "from": "svgl:facebook-icon"
    },
    "hex": [
     "#0866ff"
@@ -2308,48 +2336,57 @@
      "facebook"
     ],
     "svgl": [
-     "71"
+     "facebook-icon"
     ],
     "simple-icons": "facebook"
    },
    "prefer": [
-    "svgl:71",
+    "svgl:facebook-icon",
     "simple-icons:facebook"
    ],
    "sources": {
     "gilbarbara": "retired colour: facebook.svg",
-    "svgl": "current: 71",
+    "svgl": "current: facebook-icon",
     "simple-icons": "current: facebook (one colour)"
    }
   },
   "messenger": {
    "name": "Messenger",
    "owner": "Meta Platforms, Inc.",
-   "page": "https://about.meta.com/brand/resources/facebook/messenger-icon/",
+   "page": "https://www.meta.com/brand/resources/facebook/messenger-icon/",
    "mark": {
-    "since": null,
-    "what": "the bolt in a bubble",
-    "fp": "fp1 a1 pK92.w8 g9 c03beeb303effffe3bffffffbffffffffeffffffeaffffffa1dffffd109bbb710 h.KKKKKK.KKKKKKKKKKKKKKKKKKKwKwKKKKwKwKKKKKKKKKKK.KKKKKK..KKKKK..",
-    "from": "svgl:239"
+    "since": "2025-02",
+    "what": "the bolt in a bubble in Facebook Blue (#0866FF)",
+    "fp": "fp1 a1 pI94.w6 g0 c03beeb303effffe3bffffffbffffffffeffffffeaffffffa1dffffd109bbb710 h.IIIIII.IIIIIIIIIIIIIIIIIIIwIwIIIIIIwIIIIIIIIIII.IIIIII..IIIII..",
+    "from": "commons:File:Facebook Messenger logo 2025.svg"
    },
+   "hex": [
+    "#0866ff"
+   ],
+   "retired": [
+    "#a033ff",
+    "#ff5280",
+    "#ff7061"
+   ],
+   "retiredWhat": "the 2020-2025 gradient from blue through purple to pink",
    "members": {
     "gilbarbara": [
      "messenger"
     ],
     "svgl": [
-     "239"
+     "messenger"
     ],
     "simple-icons": "messenger"
    },
    "prefer": [
-    "svgl:239",
-    "gilbarbara:messenger.svg",
+    "commons:File:Facebook Messenger logo 2025.svg",
     "simple-icons:messenger"
    ],
    "sources": {
-    "gilbarbara": "current: messenger.svg",
-    "svgl": "current: 239",
-    "simple-icons": "current: messenger (one colour)"
+    "gilbarbara": "retired colour: messenger.svg",
+    "svgl": "retired colour: messenger",
+    "simple-icons": "current: messenger (one colour)",
+    "commons": "current: Facebook Messenger logo 2025.svg"
    }
   },
   "x": {
@@ -2385,19 +2422,19 @@
      "x"
     ],
     "svgl": [
-     "294"
+     "x"
     ],
     "simple-icons": "x"
    },
    "prefer": [
     "gilbarbara:x.svg",
-    "svgl:294",
+    "svgl:x",
     "simple-icons:x",
-    "svgl:294:dark"
+    "svgl:x:dark"
    ],
    "sources": {
     "gilbarbara": "current: x.svg",
-    "svgl": "current: 294; current: 294:dark",
+    "svgl": "current: x; current: x:dark",
     "simple-icons": "current: x (one colour)"
    }
   },
@@ -2416,19 +2453,19 @@
      "threads"
     ],
     "svgl": [
-     "271"
+     "threads"
     ],
     "simple-icons": "threads"
    },
    "prefer": [
     "gilbarbara:threads-icon.svg",
-    "svgl:271",
+    "svgl:threads",
     "simple-icons:threads",
-    "svgl:271:dark"
+    "svgl:threads:dark"
    ],
    "sources": {
     "gilbarbara": "current: threads-icon.svg; unknown: threads.svg",
-    "svgl": "current: 271; current: 271:dark",
+    "svgl": "current: threads; current: threads:dark",
     "simple-icons": "current: threads (one colour)"
    }
   },
@@ -2447,19 +2484,19 @@
      "tiktok"
     ],
     "svgl": [
-     "436"
+     "tiktok-icon-light"
     ],
     "simple-icons": "tiktok"
    },
    "prefer": [
     "gilbarbara:tiktok-icon.svg",
-    "svgl:436",
+    "svgl:tiktok-icon-light",
     "simple-icons:tiktok",
-    "svgl:436:dark"
+    "svgl:tiktok-icon-light:dark"
    ],
    "sources": {
     "gilbarbara": "current: tiktok-icon.svg; unknown: tiktok.svg",
-    "svgl": "current: 436; current: 436:dark",
+    "svgl": "current: tiktok-icon-light; current: tiktok-icon-light:dark",
     "simple-icons": "current: tiktok (one colour)"
    }
   },
@@ -2478,18 +2515,18 @@
      "spotify"
     ],
     "svgl": [
-     "63"
+     "spotify"
     ],
     "simple-icons": "spotify"
    },
    "prefer": [
     "gilbarbara:spotify-icon.svg",
-    "svgl:63",
+    "svgl:spotify",
     "simple-icons:spotify"
    ],
    "sources": {
     "gilbarbara": "current: spotify-icon.svg; unknown: spotify.svg",
-    "svgl": "current: 63",
+    "svgl": "current: spotify",
     "simple-icons": "current: spotify (one colour)"
    }
   },
@@ -2508,17 +2545,17 @@
      "reddit"
     ],
     "svgl": [
-     "363"
+     "reddit"
     ],
     "simple-icons": "reddit"
    },
    "prefer": [
     "gilbarbara:reddit-icon.svg",
-    "svgl:363"
+    "svgl:reddit"
    ],
    "sources": {
     "gilbarbara": "current: reddit-icon.svg; unknown: reddit.svg",
-    "svgl": "current: 363",
+    "svgl": "current: reddit",
     "simple-icons": "unknown: reddit (one colour)"
    }
   },
@@ -2537,7 +2574,7 @@
      "twitch"
     ],
     "svgl": [
-     "129"
+     "twitch"
     ],
     "simple-icons": "twitch"
    },
@@ -2546,7 +2583,7 @@
    ],
    "sources": {
     "gilbarbara": "current: twitch.svg",
-    "svgl": "unknown: 129",
+    "svgl": "unknown: twitch",
     "simple-icons": "unknown: twitch (one colour)"
    }
   },
@@ -2558,19 +2595,19 @@
     "since": null,
     "what": "the ghost",
     "fp": "fp1 a1 pD84.w16 g0 c6effffe6effffffeffffffffffffffffffffffffffffffffeffffffe6effffe6 hDDDDDDDDDDDDDDDDDDDwwDDDDDDwwDDDDDDwwDDDDDwwwwDDDDDDDDDDDDDDDDDD",
-    "from": "svgl:379"
+    "from": "svgl:snapchat"
    },
    "members": {
     "svgl": [
-     "379"
+     "snapchat"
     ],
     "simple-icons": "snapchat"
    },
    "prefer": [
-    "svgl:379"
+    "svgl:snapchat"
    ],
    "sources": {
-    "svgl": "current: 379",
+    "svgl": "current: snapchat",
     "simple-icons": "unknown: snapchat (one colour)"
    }
   },
@@ -2589,19 +2626,19 @@
      "github"
     ],
     "svgl": [
-     "579"
+     "github_light"
     ],
     "simple-icons": "github"
    },
    "prefer": [
     "gilbarbara:github-icon.svg",
-    "svgl:579",
+    "svgl:github_light",
     "simple-icons:github",
-    "svgl:579:dark"
+    "svgl:github_light:dark"
    ],
    "sources": {
     "gilbarbara": "current: github-icon.svg; unknown: github.svg; unknown: github-octocat.svg",
-    "svgl": "current: 579; current: 579:dark",
+    "svgl": "current: github_light; current: github_light:dark",
     "simple-icons": "current: github (one colour)"
    }
   },
@@ -2620,18 +2657,18 @@
      "gitlab"
     ],
     "svgl": [
-     "134"
+     "gitlab"
     ],
     "simple-icons": "gitlab"
    },
    "prefer": [
     "gilbarbara:gitlab-icon.svg",
-    "svgl:134",
+    "svgl:gitlab",
     "simple-icons:gitlab"
    ],
    "sources": {
     "gilbarbara": "current: gitlab-icon.svg; unknown: gitlab.svg",
-    "svgl": "current: 134",
+    "svgl": "current: gitlab",
     "simple-icons": "current: gitlab (one colour)"
    }
   },
@@ -2640,24 +2677,38 @@
    "owner": "Atlassian",
    "page": "https://atlassian.design/foundations/logos",
    "mark": {
-    "since": null,
-    "what": "the blue bucket",
-    "fp": "fp1 a1.11 pI100 g0 ceffffffecffffffcafeaaefa8fd00df86ff11ff63ffbbff41ffffff10effffe0 hIIIIIIIIIIIIIIIIIIIIIIIIIII..IIIIII..IIIIIIIIIII.IIIIII..IIIIII.",
-    "from": "gilbarbara:bitbucket.svg"
+    "since": "2025",
+    "what": "the bucket in white on an Atlassian-blue tile (#1868DB) (no open collection draws it yet)",
+    "fp": "fp1 a1 pI95.w5 g0 c4effffe4effffffeffffffffffffffffffffffffffffffffeffffffe4effffe4 hIIIIIIIIIIIIIIIIIIIIIIIIIIwIIIIIIIIIIIIIIIIwwIIIIIIIIIIIIIIIIIII",
+    "from": null
    },
+   "outdated": [
+    {
+     "since": "2017-09",
+     "until": "2025",
+     "what": "the bucket in the blue gradient",
+     "fp": "fp1 a1.11 pI100 g0 ceffffffecffffffcafeaaefa8fd00df86ff11ff63ffbbff41ffffff10effffe0 hIIIIIIIIIIIIIIIIIIIIIIIIIII..IIIIII..IIIIIIIIIII.IIIIII..IIIIII.",
+     "from": "gilbarbara:bitbucket.svg"
+    }
+   ],
+   "hex": [
+    "#1868db"
+   ],
+   "retired": [
+    "#2684ff",
+    "#0052cc"
+   ],
+   "retiredWhat": "the blue gradient of the 2017-2025 Atlassian marks",
    "members": {
     "gilbarbara": [
      "bitbucket"
     ],
     "simple-icons": "bitbucket"
    },
-   "prefer": [
-    "gilbarbara:bitbucket.svg",
-    "simple-icons:bitbucket"
-   ],
+   "prefer": [],
    "sources": {
-    "gilbarbara": "current: bitbucket.svg",
-    "simple-icons": "current: bitbucket (one colour)"
+    "gilbarbara": "retired 2017-09 to 2025: bitbucket.svg",
+    "simple-icons": "retired 2017-09 to 2025: bitbucket (one colour)"
    }
   },
   "vercel": {
@@ -2675,19 +2726,19 @@
      "vercel"
     ],
     "svgl": [
-     "559"
+     "vercel"
     ],
     "simple-icons": "vercel"
    },
    "prefer": [
     "gilbarbara:vercel-icon.svg",
-    "svgl:559",
+    "svgl:vercel",
     "simple-icons:vercel",
-    "svgl:559:dark"
+    "svgl:vercel:dark"
    ],
    "sources": {
     "gilbarbara": "current: vercel-icon.svg; unknown: vercel.svg",
-    "svgl": "current: 559; current: 559:dark",
+    "svgl": "current: vercel; current: vercel:dark",
     "simple-icons": "current: vercel (one colour)"
    }
   },
@@ -2706,18 +2757,18 @@
      "netlify"
     ],
     "svgl": [
-     "102"
+     "netlify"
     ],
     "simple-icons": "netlify"
    },
    "prefer": [
     "gilbarbara:netlify-icon.svg",
-    "svgl:102",
+    "svgl:netlify",
     "simple-icons:netlify"
    ],
    "sources": {
     "gilbarbara": "current: netlify-icon.svg; unknown: netlify.svg",
-    "svgl": "current: 102",
+    "svgl": "current: netlify",
     "simple-icons": "current: netlify (one colour)"
    }
   },
@@ -2736,18 +2787,18 @@
      "supabase"
     ],
     "svgl": [
-     "450"
+     "supabase"
     ],
     "simple-icons": "supabase"
    },
    "prefer": [
     "gilbarbara:supabase-icon.svg",
-    "svgl:450",
+    "svgl:supabase",
     "simple-icons:supabase"
    ],
    "sources": {
     "gilbarbara": "current: supabase-icon.svg; unknown: supabase.svg",
-    "svgl": "current: 450",
+    "svgl": "current: supabase",
     "simple-icons": "current: supabase (one colour)"
    }
   },
@@ -2769,17 +2820,17 @@
      "postgresql"
     ],
     "svgl": [
-     "184"
+     "postgresql"
     ],
     "simple-icons": "postgresql"
    },
    "prefer": [
     "gilbarbara:postgresql.svg",
-    "svgl:184"
+    "svgl:postgresql"
    ],
    "sources": {
     "gilbarbara": "current: postgresql.svg",
-    "svgl": "current: 184",
+    "svgl": "current: postgresql",
     "simple-icons": "unknown: postgresql (one colour)"
    }
   },
@@ -2798,18 +2849,18 @@
      "cloudflare"
     ],
     "svgl": [
-     "229"
+     "cloudflare"
     ],
     "simple-icons": "cloudflare"
    },
    "prefer": [
     "gilbarbara:cloudflare-icon.svg",
-    "svgl:229",
+    "svgl:cloudflare",
     "simple-icons:cloudflare"
    ],
    "sources": {
     "gilbarbara": "current: cloudflare-icon.svg; unknown: cloudflare.svg",
-    "svgl": "current: 229",
+    "svgl": "current: cloudflare",
     "simple-icons": "current: cloudflare (one colour)"
    }
   },
@@ -2831,17 +2882,17 @@
      "aws"
     ],
     "svgl": [
-     "142"
+     "aws_light"
     ]
    },
    "prefer": [
     "gilbarbara:aws.svg",
-    "svgl:142",
-    "svgl:142:dark"
+    "svgl:aws_light",
+    "svgl:aws_light:dark"
    ],
    "sources": {
     "gilbarbara": "current: aws.svg",
-    "svgl": "current: 142; current: 142:dark"
+    "svgl": "current: aws_light; current: aws_light:dark"
    }
   },
   "docker": {
@@ -2859,18 +2910,18 @@
      "docker"
     ],
     "svgl": [
-     "141"
+     "docker"
     ],
     "simple-icons": "docker"
    },
    "prefer": [
     "gilbarbara:docker-icon.svg",
-    "svgl:141",
+    "svgl:docker",
     "simple-icons:docker"
    ],
    "sources": {
     "gilbarbara": "current: docker-icon.svg; unknown: docker.svg",
-    "svgl": "current: 141",
+    "svgl": "current: docker",
     "simple-icons": "current: docker (one colour)"
    }
   },
@@ -2882,7 +2933,7 @@
     "since": null,
     "what": "the blurple mark",
     "fp": "fp1 a1 pJ100 g0 c000147ad69cffffffffffffffffffffffffffffffffffffffffffc96da741000 h....JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ....",
-    "from": "svgl:653"
+    "from": "svgl:stripe"
    },
    "retired": [
     "#6772e5"
@@ -2893,16 +2944,16 @@
      "stripe"
     ],
     "svgl": [
-     "653"
+     "stripe"
     ],
     "simple-icons": "stripe"
    },
    "prefer": [
-    "svgl:653"
+    "svgl:stripe"
    ],
    "sources": {
     "gilbarbara": "unknown: stripe.svg",
-    "svgl": "current: 653",
+    "svgl": "current: stripe",
     "simple-icons": "unknown: stripe (one colour)"
    }
   },
@@ -2921,18 +2972,18 @@
      "shopify"
     ],
     "svgl": [
-     "371"
+     "shopify"
     ],
     "simple-icons": "shopify"
    },
    "prefer": [
     "gilbarbara:shopify.svg",
-    "svgl:371",
+    "svgl:shopify",
     "simple-icons:shopify"
    ],
    "sources": {
     "gilbarbara": "current: shopify.svg",
-    "svgl": "current: 371",
+    "svgl": "current: shopify",
     "simple-icons": "current: shopify (one colour)"
    }
   },
@@ -2975,16 +3026,16 @@
      "salesforce"
     ],
     "svgl": [
-     "306"
+     "salesforce"
     ]
    },
    "prefer": [
     "gilbarbara:salesforce.svg",
-    "svgl:306"
+    "svgl:salesforce"
    ],
    "sources": {
     "gilbarbara": "current: salesforce.svg",
-    "svgl": "current: 306"
+    "svgl": "current: salesforce"
    }
   },
   "intercom": {
@@ -3045,7 +3096,7 @@
     "since": "2023-01",
     "what": "the 2023 W",
     "fp": "fp1 a1.6 pI100 g0 cff3fa8fdff8fadf8ffdfdff369ffffd06effff80fffbff40ffc8fe00d81cf900 hIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII.IIIIIII.IIIIIII.IIIIII..II.III..",
-    "from": "svgl:372"
+    "from": "svgl:webflow"
    },
    "outdated": [
     {
@@ -3061,17 +3112,17 @@
      "webflow"
     ],
     "svgl": [
-     "372"
+     "webflow"
     ],
     "simple-icons": "webflow"
    },
    "prefer": [
-    "svgl:372",
+    "svgl:webflow",
     "simple-icons:webflow"
    ],
    "sources": {
     "gilbarbara": "retired 2018 to 2023-01: webflow.svg",
-    "svgl": "current: 372",
+    "svgl": "current: webflow",
     "simple-icons": "current: webflow (one colour)"
    }
   },
@@ -3090,19 +3141,19 @@
      "framer"
     ],
     "svgl": [
-     "92"
+     "framer"
     ],
     "simple-icons": "framer"
    },
    "prefer": [
     "gilbarbara:framer.svg",
-    "svgl:92",
+    "svgl:framer",
     "simple-icons:framer",
-    "svgl:92:dark"
+    "svgl:framer:dark"
    ],
    "sources": {
     "gilbarbara": "current: framer.svg",
-    "svgl": "current: 92; current: 92:dark",
+    "svgl": "current: framer; current: framer:dark",
     "simple-icons": "current: framer (one colour)"
    }
   },
@@ -3114,18 +3165,18 @@
     "since": null,
     "what": "the C on a disc",
     "fp": "fp1 a1 pI78.H16.w6 g0 c02aeea202effffe2affffffaeffffffeeffffffeaffffffa2effffe202aeea20 h.IIIIII.IIIHHIIIIIHHIHIIIIwIIIIIIIwIIIIIIIwIIHIIIIIHHIII.IIIIII.",
-    "from": "svgl:297"
+    "from": "svgl:canva"
    },
    "members": {
     "svgl": [
-     "297"
+     "canva"
     ]
    },
    "prefer": [
-    "svgl:297"
+    "svgl:canva"
    ],
    "sources": {
-    "svgl": "current: 297"
+    "svgl": "current: canva"
    }
   },
   "paypal": {
@@ -3143,19 +3194,19 @@
      "paypal"
     ],
     "svgl": [
-     "22"
+     "paypal"
     ],
     "simple-icons": "paypal"
    },
    "prefer": [
     "commons:File:PayPal 2024 (Icon).svg",
-    "svgl:22",
+    "svgl:paypal",
     "gilbarbara:paypal.svg",
     "simple-icons:paypal"
    ],
    "sources": {
     "gilbarbara": "current: paypal.svg",
-    "svgl": "current: 22",
+    "svgl": "current: paypal",
     "simple-icons": "current: paypal (one colour)",
     "commons": "current: PayPal 2024 (Icon).svg"
    }
@@ -3175,19 +3226,19 @@
      "mongodb"
     ],
     "svgl": [
-     "104"
+     "mongodb-icon-light"
     ],
     "simple-icons": "mongodb"
    },
    "prefer": [
     "gilbarbara:mongodb-icon.svg",
-    "svgl:104",
+    "svgl:mongodb-icon-light",
     "simple-icons:mongodb",
-    "svgl:104:dark"
+    "svgl:mongodb-icon-light:dark"
    ],
    "sources": {
     "gilbarbara": "current: mongodb-icon.svg; unknown: mongodb.svg",
-    "svgl": "current: 104; current: 104:dark",
+    "svgl": "current: mongodb-icon-light; current: mongodb-icon-light:dark",
     "simple-icons": "current: mongodb (one colour)"
    }
   },
@@ -3215,7 +3266,7 @@
      "redis"
     ],
     "svgl": [
-     "187"
+     "redis"
     ],
     "simple-icons": "redis"
    },
@@ -3224,7 +3275,7 @@
    ],
    "sources": {
     "gilbarbara": "retired 2013 to 2024: redis.svg",
-    "svgl": "retired 2013 to 2024: 187",
+    "svgl": "retired 2013 to 2024: redis",
     "simple-icons": "current: redis (one colour)"
    }
   },
@@ -3243,7 +3294,7 @@
      "nextjs"
     ],
     "svgl": [
-     "443"
+     "nextjs_icon_dark"
     ],
     "simple-icons": "nextdotjs"
    },
@@ -3253,7 +3304,7 @@
    ],
    "sources": {
     "gilbarbara": "current: nextjs-icon.svg; unknown: nextjs.svg",
-    "svgl": "unknown: 443",
+    "svgl": "unknown: nextjs_icon_dark",
     "simple-icons": "current: nextdotjs (one colour)"
    }
   },
@@ -3265,20 +3316,20 @@
     "since": null,
     "what": "the red rays",
     "fp": "fp1 a0.99 pA100 g0 c0003700000296700026fff70392fff68862fffa3071226300076930000073000 h...AA.....AAAA....AAAAA.AAAAAAAAAAAAAAAA.A.AAAA...AAAA.....AA...",
-    "from": "svgl:383"
+    "from": "svgl:raycast"
    },
    "members": {
     "svgl": [
-     "383"
+     "raycast"
     ],
     "simple-icons": "raycast"
    },
    "prefer": [
-    "svgl:383",
+    "svgl:raycast",
     "simple-icons:raycast"
    ],
    "sources": {
-    "svgl": "current: 383",
+    "svgl": "current: raycast",
     "simple-icons": "current: raycast (one colour)"
    }
   }

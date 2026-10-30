@@ -31,6 +31,8 @@
  *   gilbarbara  gilbarbara/logos, the SVG Logos set: full-colour marks and wordmarks, CC0 1.0 (LICENSE.txt).
  *   svgl        svgl.app: marks, light and dark variants and wordmarks; the repository is MIT; its API asks
  *               for cached responses and for no copy of svgl built from it (the full list is cached a week).
+ *               An svgl entry is named by its file (svgl:messenger), never by its number: svgl numbers its
+ *               list by position, so every logo added moves the numbers after it.
  *   simple-icons  Simple Icons: one-colour marks with the brand's official hex; CC0 1.0 for the project, and
  *               an icon under another licence names it (that licence is read and gated per icon).
  *   commons     Wikimedia Commons, the fallback for marks it hosts: public domain (simple text and shape
@@ -258,10 +260,27 @@ export function searchGilbarbara(list, q) {
   return (Array.isArray(list) ? list : []).map((x) => ({ x, s: nameScore(q, x.name, [x.shortname]) })).filter((r) => r.s >= 30)
     .map(({ x, s }) => ({ collection: 'gilbarbara', id: x.shortname, name: x.name, site: x.url || '', score: s, files: x.files || [] }));
 }
+/**
+ * An svgl entry's name: its file's name (svgl.app/library/<name>.svg). svgl numbers its list by position, so an
+ * entry's number moves whenever a logo is added before it: the brand table, a search result and get name an entry
+ * by its file, never by its number (a number is still read, against the index of the day, for an old command).
+ */
+export const svglKey = (x) => {
+  const r = x && (typeof x.route === 'object' && x.route ? x.route.light || x.route.dark : x.route);
+  return r ? decodeURIComponent(String(r).split('?')[0].split('/').pop()).replace(/\.svg$/i, '') : String(x?.id ?? '');
+};
+/** The svgl entry a reference names: its file's name first, else (all digits) its number in this index. */
+export const svglFind = (list, ref) => {
+  const arr = Array.isArray(list) ? list : [];
+  const id = String(ref);
+  return arr.find((x) => svglKey(x) === id) || (/^\d+$/.test(id) ? arr.find((x) => String(x.id) === id) : undefined);
+};
+/** Whether a member (or a row's reference) is the same svgl entry: by file name, or by the number it was found under. */
+const sameMember = (m, ref) => String(m.id) === String(ref) || (m.num !== undefined && String(m.num) === String(ref));
 /** svgl entries ({id, title, route, wordmark, url, brandUrl}). */
 export function searchSvgl(list, q) {
   return (Array.isArray(list) ? list : []).map((x) => ({ x, s: nameScore(q, x.title) })).filter((r) => r.s >= 30)
-    .map(({ x, s }) => ({ collection: 'svgl', id: String(x.id), name: x.title, site: x.url || '', score: s, route: x.route, wordmark: x.wordmark || null, guidelines: x.brandUrl || null }));
+    .map(({ x, s }) => ({ collection: 'svgl', id: svglKey(x), num: String(x.id), name: x.title, site: x.url || '', score: s, route: x.route, wordmark: x.wordmark || null, guidelines: x.brandUrl || null }));
 }
 /** Simple Icons data ({title, slug, hex, source, guidelines, license, aliases}). */
 export function searchSimpleIcons(data, q) {
@@ -1006,7 +1025,7 @@ export function brandOfGroup(group, table = loadBrands()) {
   for (const m of group.members || []) {
     const b = Object.values(table.brands).find((x) => {
       const ms = x.members?.[m.collection];
-      return ms && [].concat(ms).map(String).includes(String(m.id));
+      return ms && [].concat(ms).some((r) => sameMember(m, r));
     }) || brandFor(m.name, table);
     if (b) return b;
   }
@@ -1167,7 +1186,7 @@ export async function preferredCands(brand, o = {}, notes = []) {
         out.push(pick(role, col, COLLECTIONS.gilbarbara.file(id), { file: id, licence: 'CC0-1.0', preferred: true }));
       } else if (col === 'svgl') {
         const [sid, theme] = id.split(':');
-        const e = (await index('svgl', o)).find((x) => String(x.id) === sid);
+        const e = svglFind(await index('svgl', o), sid);
         const url = e && themed(e.route, theme === 'dark' ? 'dark' : 'light');
         if (url) out.push(pick(theme === 'dark' ? 'baseDark' : 'base', col, url, { licence: 'MIT', guidelines: e.brandUrl || null, preferred: true }));
       } else if (col === 'simple-icons') {
@@ -1189,7 +1208,7 @@ export async function preferredCands(brand, o = {}, notes = []) {
 /** A search group cut to the members a brand row lists (a name or host match can pull in another brand's files). */
 export function brandMembers(group, brand) {
   if (!brand?.members) return group;
-  const keep = group.members.filter((m) => [].concat(brand.members[m.collection] || []).map(String).includes(String(m.id)));
+  const keep = group.members.filter((m) => [].concat(brand.members[m.collection] || []).some((r) => sameMember(m, r)));
   return { ...group, members: keep };
 }
 
@@ -1408,7 +1427,7 @@ export async function groupForBrand(brand, { refresh = false } = {}) {
     let list;
     try { list = await index(c, { refresh }); } catch (e) { if (e instanceof Blocked) throw e; continue; }
     if (c === 'gilbarbara') for (const x of list) { if (ids.includes(x.shortname)) members.push(...searchGilbarbara([x], x.name).map((m) => ({ ...m, score: 100 }))); }
-    if (c === 'svgl') for (const x of list) { if (ids.includes(String(x.id))) members.push(...searchSvgl([x], x.title).map((m) => ({ ...m, score: 100 }))); }
+    if (c === 'svgl') for (const id of ids) { const x = svglFind(list, id); if (x && !members.some((m) => m.collection === 'svgl' && m.id === svglKey(x))) members.push(...searchSvgl([x], x.title).map((m) => ({ ...m, score: 100 }))); }
     if (c === 'simple-icons') { const arr = Array.isArray(list) ? list : list?.icons || []; for (const x of arr) if (ids.includes(x.slug)) members.push(...searchSimpleIcons([x], x.title).map((m) => ({ ...m, score: 100 }))); }
   }
   const site = (members.find((m) => m.collection === 'svgl') || members.find((m) => m.collection === 'gilbarbara') || {}).site || '';
@@ -1433,13 +1452,13 @@ async function resolveGroup(ref, args) {
     if (col !== 'commons') {
       const list = await index(col, { refresh: args.refresh });
       const arr = Array.isArray(list) ? list : list?.icons || [];
-      const hit = arr.find((x) => String(col === 'gilbarbara' ? x.shortname : col === 'svgl' ? x.id : x.slug) === id);
+      const hit = col === 'svgl' ? svglFind(arr, id) : arr.find((x) => String(col === 'gilbarbara' ? x.shortname : x.slug) === id);
       if (!hit) throw new Error(`${ref}: not found in ${col}`);
       name = hit.name || hit.title;
     }
     const sources = col === 'commons' ? ['commons'] : [...new Set([col, ...sourcesOf({})])];
     const { groups } = await search(name, { sources, refresh: args.refresh });
-    const g = groups.find((x) => x.members.some((y) => y.collection === col && (y.id === id || (col === 'commons' && norm(y.id) === norm(id)))));
+    const g = groups.find((x) => x.members.some((y) => y.collection === col && (sameMember(y, id) || (col === 'commons' && norm(y.id) === norm(id)))));
     if (!g) throw new Error(`${ref}: not found in ${col}`);
     args.source = col;
     return g;

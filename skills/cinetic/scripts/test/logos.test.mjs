@@ -177,7 +177,7 @@ try {
   fs.mkdirSync(path.join(film, 'src'), { recursive: true });
   {
     const s = await cli(['search', 'tidepool']);
-    result(s.code === 0 && /#1\s+Tidepool/.test(s.out) && /gilbarbara:tidepool/.test(s.out) && /svgl:7/.test(s.out) && /simple-icons:tidepool/.test(s.out), 'search: one brand, its members in three collections', s.out.split('\n').slice(0, 5).join(' | '));
+    result(s.code === 0 && /#1\s+Tidepool/.test(s.out) && /gilbarbara:tidepool/.test(s.out) && /svgl:tidepool/.test(s.out) && /simple-icons:tidepool/.test(s.out), 'search: one brand, its members in three collections', s.out.split('\n').slice(0, 5).join(' | '));
     const g = await cli(['get', 'tidepool', '--film', film, '--owner', 'Tidepool Inc.']);
     result(g.code === 0, 'get tidepool: exit 0', `${g.out} ${g.err}`.slice(0, 300));
     const pub = (f) => fs.existsSync(path.join(film, 'public', 'logos', f));
@@ -211,7 +211,7 @@ try {
       'get sharecrop: a share-alike icon is refused; the mark comes from the collection that allows it', JSON.stringify(Object.keys(sce?.sources || {})));
     const ref = await cli(['get', 'svgl:7', '--film', film, '--as', 'tidepool-svgl', '--owner', 'Tidepool Inc.']);
     const re = JSON.parse(fs.readFileSync(path.join(film, 'public', 'logos', 'logos.json'), 'utf8')).logos['tidepool-svgl'];
-    result(ref.code === 0 && re.files.mark.from === 'svgl' && re.files.markDark?.from === 'svgl' && re.files.wordmark?.from === 'svgl', 'get svgl:7 --as: that collection\'s mark, its own dark version and wordmark', JSON.stringify(re?.files && Object.fromEntries(Object.entries(re.files).map(([k, v]) => [k, v.from]))));
+    result(ref.code === 0 && re.files.mark.from === 'svgl' && re.files.markDark?.from === 'svgl' && re.files.wordmark?.from === 'svgl', 'get svgl:7 --as: that collection\'s mark, its own dark version and wordmark', ref.err.slice(0, 200) + JSON.stringify(re?.files && Object.fromEntries(Object.entries(re.files).map(([k, v]) => [k, v.from]))));
     const rec2 = () => JSON.parse(fs.readFileSync(path.join(film, 'public', 'logos', 'logos.json'), 'utf8')).logos;
     const gb = await cli(['get', 'glowbox', '--film', film, '--owner', 'Glowbox Inc.']);
     const ge = rec2().glowbox;
@@ -296,15 +296,19 @@ try {
     const table = path.join(home, 'brands.json');
     fs.writeFileSync(table, JSON.stringify({ checked: '2026-10-29', threshold: { same: 0.72, margin: 0.04 }, brands: {
       glowbox: { name: 'Glowbox', owner: 'Glowbox Inc.', page: 'https://glowbox.example/brand', mark: { since: '2026-03', what: 'the white ring on the warm tile', fp: fpOf('svgl-glowbox.svg') },
-        prefer: ['svgl:11'], outdated: [{ since: '2019', until: '2026-03', what: 'the black ring', fp: fpOf('glowbox-icon.svg') }], members: { gilbarbara: ['glowbox'], svgl: ['11'], 'simple-icons': 'glowbox' } },
+        prefer: ['svgl:glowbox'], outdated: [{ since: '2019', until: '2026-03', what: 'the black ring', fp: fpOf('glowbox-icon.svg') }], members: { gilbarbara: ['glowbox'], svgl: ['glowbox'], 'simple-icons': 'glowbox' } },
       tidepool: { name: 'Tidepool', owner: 'Tidepool Inc.', page: 'https://tidepool.example/brand', mark: { since: '2025-01', what: 'the blue disc', fp: fpOf('svgl-tidepool.svg') },
         outdated: [{ since: '2018', until: '2025-01', what: 'the disc and the green bar', fp: fpOf('tidepool-icon.svg') }], members: { gilbarbara: ['tidepool'], svgl: ['7'], 'simple-icons': 'tidepool' } },
       slatework: { name: 'Slatework', owner: 'Slatework Ltd.', page: 'https://slatework.example/brand', mark: { since: '2024-06', what: 'the three coloured slabs', fp: fpOf('svgl-slatework.svg') },
-        prefer: ['svgl:12'], members: { gilbarbara: ['slatework'], svgl: ['12'], 'simple-icons': 'slatework' } },
+        prefer: ['svgl:slatework'], members: { gilbarbara: ['slatework'], svgl: ['slatework'], 'simple-icons': 'slatework' } },
       sharecrop: { name: 'Sharecrop', owner: 'Sharecrop Co.', page: 'https://sharecrop.example/press', mark: { since: '2026-01', what: 'the triangle in blue', fp: null },
         retired: ['#00aa55'], retiredWhat: 'the green of the 2020-2026 triangle', members: { svgl: ['9'], 'simple-icons': 'sharecrop' } },
     } }));
     process.env.CINETIC_LOGO_BRANDS = table;
+    const idx = JSON.parse(fx('svgl-index.json'));
+    const moved = idx.map((x) => ({ ...x, id: x.id + 4 })); // svgl numbers its list by position: a logo added before shifts the rest
+    result(L.svglKey(idx[0]) === 'tidepool' && L.svglFind(idx, 'slatework')?.title === 'Slatework' && L.svglFind(moved, 'slatework')?.title === 'Slatework' && L.svglFind(moved, '12')?.title !== 'Slatework' && L.svglFind(idx, '7')?.title === 'Tidepool',
+      'svgl: an entry named by its file survives the list being renumbered (a number is read against the day\'s index only)');
     const film4 = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-logos-film-'));
     fs.mkdirSync(path.join(film4, 'public'));
     const rec4 = () => JSON.parse(fs.readFileSync(path.join(film4, 'public', 'logos', 'logos.json'), 'utf8')).logos;
@@ -364,6 +368,8 @@ try {
     result(rows.length >= 70 && T.checked && T.threshold?.same > 0 && bad.length === 0, `the shipped table: ${rows.length} brands, each with its mark, owner, page and versions`, bad.slice(0, 6).join('; '));
     const named = ['gmail', 'google', 'microsoft-teams', 'microsoft-word', 'slack', 'x', 'youtube', 'zoom', 'figma', 'notion', 'github', 'stripe', 'chatgpt', 'claude', 'gemini'].filter((k) => !T.brands[k]);
     result(named.length === 0, 'the shipped table: the brands a launch film shows most', named.join(', '));
+    const nums = rows.flatMap(([slug, b]) => [...[].concat(b.members?.svgl || []), ...[...(b.prefer || []), b.mark?.from || '', ...(b.outdated || []).map((o) => o.from || '')].filter((r) => r.startsWith('svgl:')).map((r) => r.split(':')[1])].filter((r) => /^\d+$/.test(String(r))).map((r) => `${slug}: svgl ${r}`));
+    result(nums.length === 0, 'the shipped table: svgl entries by file name, never by number (svgl renumbers its list as it grows)', nums.slice(0, 6).join('; '));
     process.env.CINETIC_LOGO_BRANDS = path.join(SKILL, 'scripts', 'logo-brands.json');
     result(L.brandFor('Google Gmail')?.slug === 'gmail' && L.brandFor('Twitter')?.slug === 'x' && L.brandFor('Outlook')?.slug === 'microsoft-outlook', 'the shipped table: a brand by another name it goes by');
     process.env.CINETIC_LOGO_BRANDS = path.join(home, 'no-table.json');
