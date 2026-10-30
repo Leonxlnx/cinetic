@@ -34,9 +34,9 @@ The numbers are house defaults with normal ranges, not rules. Bar arithmetic and
 
 | Format | Length | Shot band (median) | Sound |
 |---|---|---|---|
-| Launch film | 15-45 s | 1.15-1.95 s | a licensed track + the launch kit, −14 LUFS |
+| Launch film | 15-45 s | 1.15-2.05 s | a licensed track + the launch kit, −14 LUFS |
 | Update film | 8-20 s | 0.8-1.6 s | a licensed track + the launch kit, −14 LUFS (−16 at 8 s or less) |
-| Product / feature video | 8-30 s | 1.15-1.95 s (explainer pacing 1.75-2.65 s) | a licensed track + the launch kit |
+| Product / feature video | 8-30 s | 1.15-2.05 s (explainer pacing 1.75-2.65 s) | a licensed track + the launch kit |
 | Feature loop | 4-15 s, whole bars | 0.5-1.0 s for a reel-style loop | muted, or a track folded at the seam |
 | Logo sting | 3-8 s | one take | a short licensed cue or the track's button + one kit element, −16 LUFS |
 | UI walkthrough | 20-90 s | 2-3 s | a licensed track + UI effects |

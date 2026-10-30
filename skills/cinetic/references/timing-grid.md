@@ -387,7 +387,7 @@ for (const l of COPY)
 | Motion peaks | one hero move per bar (2.4 s), with slow life cruising between | one per bar, with 30–70 f of calm between peaks |
 | Visible change | about every 1 s, with continuous slow life between | about every 0.5 s (every beat at 120 BPM) |
 | First 6 s | frame 0 moving; when the film opens on words, the first fragment readable by about 1 s | about 2× as dense as the middle |
-| Shot length | the format's band (`GRAMMAR.shot.band`): launch median 1.15-1.95 s, update 0.7-1.4 s, explainer 1.75-2.65 s, reel 0.45-0.9 s; spread q75/q25 1.5-2.7 | the same bands, toward their short end |
+| Shot length | the format's band (`GRAMMAR.shot.band`): launch median 1.15-2.05 s, update 0.7-1.4 s, explainer 1.75-2.65 s, reel 0.45-0.9 s; spread q75/q25 1.5-2.7 | the same bands, toward their short end |
 | Starts and concurrency | about 1.6-2.8 starts a second, 1.4-2.5 things moving at once, idle frames ≤ 15 % | the same |
 | Shortest shot; continuous takes | 24 f, only without text; a take of 300–560 f with an in-shot beat at least every 72 f | the same |
 | Fast moves | ordinary moves ≤ 25 px/f; at most 2 fast moves per film, at most 1 of them a whip; none while text is being read | whips of 60–70 px/f beside real stillness |

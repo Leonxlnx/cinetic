@@ -215,7 +215,7 @@ const CONTINUITY = new Set([...CARRIED, 'defocus', 'wipe', 'dissolveUi', 'fadeEn
 const TEXTURES = ['clean', 'paper', 'grid', 'halftone', 'dither'];
 const FILM_TYPES = ['launch', 'update', 'explainer', 'reel', 'social'];
 /** House shot-length bands in seconds (median shot), by film type. */
-const SHOT_BAND: Record<string, [number, number]> = { launch: [1.15, 1.95], update: [0.7, 1.4], explainer: [1.75, 2.65], reel: [0.45, 0.9], social: [0.45, 0.9] }; // = lib/look.ts GRAMMAR.shot.band
+const SHOT_BAND: Record<string, [number, number]> = { launch: [1.15, 2.05], update: [0.7, 1.4], explainer: [1.75, 2.65], reel: [0.45, 0.9], social: [0.45, 0.9] }; // = lib/look.ts GRAMMAR.shot.band
 const median = (a: number[]) => {
   const s = [...a].sort((x, y) => x - y);
   const m = s.length >> 1;

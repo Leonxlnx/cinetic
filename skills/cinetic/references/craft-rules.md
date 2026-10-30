@@ -57,7 +57,7 @@ Four more that have homes but no automated check:
 
 ## 2. Pacing and structure
 
-1. **Two tempos of shot.** Cut-driven films hold a median shot of about 1.0-1.4 s (a launch film's band is 1.15-1.95 s,
+1. **Two tempos of shot.** Cut-driven films hold a median shot of about 1.0-1.4 s (a launch film's band is 1.15-2.05 s,
    an update film's 0.7-1.4 s, an explainer's 1.75-2.65 s, a reel's 0.45-0.9 s); continuous takes run 2.3-2.8 s and carry
    each take with beats inside it (a take over 15 s changes its layout or type at least twice every 10 s). Shot
    lengths vary (q75/q25 1.9-3.1; under 1.9 the cuts read as a metronome): mix long holds with short punches, and let

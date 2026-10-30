@@ -272,7 +272,7 @@ export const STACK_LOOK = { margin: 0.04, lead: 1.04, stair: 0.34, asideGap: 0.3
 export const GRAMMAR = {
   shot: {
     house: 1.4, usual: [0.82, 2.2] as const, short: 0.5, long: 3.3, spread: [1.9, 3.1] as const, // spread = q75 / q25 of the shot lengths (under 1.9 reads as a metronome)
-    band: { launch: [1.15, 1.95] as const, update: [0.7, 1.4] as const, explainer: [1.75, 2.65] as const, reel: [0.45, 0.9] as const, social: [0.45, 0.9] as const },
+    band: { launch: [1.15, 2.05] as const, update: [0.7, 1.4] as const, explainer: [1.75, 2.65] as const, reel: [0.45, 0.9] as const, social: [0.45, 0.9] as const },
   },
   // changeMaxS: a layout or type change at least this often outside the end lock (a creep alone reads as a held frame);
   // openerChanges: picture changes in the first 2.5 s; longTake: a take over longTake.s changes at least perTenS times every 10 s
