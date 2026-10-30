@@ -2195,7 +2195,9 @@
     "boarding",
     "suitcase",
     "travel",
-    "plane"
+    "plane",
+    "boarding pass",
+    "check-in"
    ],
    "apps": [
     "travel booking",
