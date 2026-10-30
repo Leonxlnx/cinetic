@@ -40,6 +40,15 @@ Checks (error unless marked):
               text here", a generic label alone ("Button", "Caption") or a generic noun and a number ("Item 1");
               the lists are scripts/placeholders.json, which lint-film.mjs reads too
   slot        (--ui) a UI string still holding a template's bracketed slot ("[Product]", "[N] items")
+  kit-sample  the kit's sample content in the film: a string of the kit's samples (assets/remotion-starter/src/kit/
+              sample.ts, and the film's own copy of it: its sample products, workspaces such as "Zephyr Legal" or
+              "Yarrow Analytics", rows, comments, tile and file names) in a script line, a UI string, the film's source
+              (--ui src: every string literal outside kit/, lib/, fx/) or the render (--ui layout.json, --ocr)
+  kit-sample-name (warning) a UI string that is one of the kit's sample people ("Mara K.")
+  truncated   (--ui, --ocr) a UI title cut with "..." or "…": write it whole (shorter); an error in a final film
+              (--final, or CINETIC_GATE=ship), a warning in dev
+  cut-phrase  (--ui, --ocr) a status or UI line that stops mid-phrase (it ends on "to", "the", "and", "on", a comma
+              or a dash): an error in a final film, a warning in dev
 Then it prints what a stranger reads: what it is, what it does, what to do, and each line's key words: the words
 between asterisks in the line ("Brook is a *water bottle*.": the marks leave the text before any check), else a
 suggestion (a number or a [slot], else the last word that is not a small word or the product's name). The film's
@@ -48,7 +57,9 @@ TypeLine sets its emphasis device on them (fx/TypeEmphasis); a template names th
 UI strings (--ui): every string the product's UI shows is real words too. --ui src reads the on-screen strings of the
 film's source (JSX text, text/label/title/caption/meta/value/... props and keys, lists of rows, steps and options; fx/
 and lib/ are house code and skipped); --ui out/qa/layout-Film.json reads the UI boxes the layout audit measured on the
-render. Given alone (no script), only the UI strings are checked.
+render. Given alone (no script), only the UI strings are checked. --ocr reads what a render shows: a .txt (one string
+per line, or "frame<TAB>text"), a .json list of strings, or still images (a PNG/JPG or a folder of them), read with
+RapidOCR or Tesseract when installed, else Windows' own OCR; kit-sample, truncated and cut-phrase run on it.
 
 Usage:
   python3 scripts/copy-check.py TREATMENT.md
@@ -59,6 +70,8 @@ Usage:
            --marks Name,Name (real marks the film shows, beside public/logos/logos.json)
            --json (machine-readable)  --strict (warnings fail too)  --stdin (JSON on stdin)
            --ui src|layout.json (the product's UI strings: placeholders and unfilled slots fail)
+           --ocr file.txt|file.json|still.png|stills/ (the strings a render shows)
+           --final (a final film: truncated and cut-phrase fail; also under CINETIC_GATE=ship)
 Exit codes: 0 pass, 1 a check failed (or a warning with --strict), 2 bad arguments or an unreadable script.
 """
 import json
@@ -261,9 +274,9 @@ def _strip_comments(src):
 
 
 def ui_strings_from_src(root):
-    """On-screen strings in a film's source: (text, 'file:line') pairs. fx/, lib/, node_modules and tests are skipped."""
+    """On-screen strings in a film's source: (text, 'file:line') pairs. kit/, fx/, lib/ (house code), node_modules and tests are skipped."""
     found = []
-    skip = {'node_modules', 'fx', 'lib', 'out', 'test', 'tests', '__pycache__', 'scripts'}
+    skip = {'node_modules', 'fx', 'lib', 'kit', 'out', 'test', 'tests', '__pycache__', 'scripts'}
     pats = [
         (re.compile(r'(?<![=\-])>([^<>{}();=|&\n]*)<'), 1, ('.tsx', '.jsx')),
         (re.compile(r'>\s*\{\s*([\'"`])((?:(?!\1)[^\n$])*)\1\s*\}'), 2, ('.tsx', '.jsx')),
@@ -331,6 +344,226 @@ def check_ui(strings):
             findings.append({'rule': 'slot', 'severity': 'error', 'line': None, 'text': t, 'where': where,
                              'message': f'UI string "{t[:48]}" ({where}) still holds the slot {b.group(0)}: fill it with the product\'s own word or number'})
     return findings
+
+
+# ------------------------------------------------------------------------------------- the kit's sample content
+_HERE = os.path.dirname(os.path.abspath(__file__))
+KIT_SAMPLE_TS = os.path.join(_HERE, '..', 'assets', 'remotion-starter', 'src', 'kit', 'sample.ts')
+# strings the kit's parts drew before the content gate, kept so an old film's render still fails on them
+LEGACY_KIT = ['Last 12 weeks ·', 'members · Pro', 'Sent to print', 'Weekly spend']
+_STR = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"")
+
+
+def _array(src, name):
+    m = re.search(r'\b' + name + r'\s*(?::[^=]*)?=\s*\[([\s\S]*?)\];', src)
+    return [a or b for a, b in _STR.findall(m.group(1))] if m else []
+
+
+def kit_samples(extra=()):
+    """The kit's sample strings: (phrases, names), read from the skill's kit/sample.ts and any film copies given."""
+    phrases, names = set(LEGACY_KIT), set()
+    for path in [KIT_SAMPLE_TS, *extra]:
+        try:
+            src = _strip_comments(open(path, encoding='utf-8').read())
+        except OSError:
+            continue
+        for a, b in _STR.findall(src):
+            s = (a or b).replace("\\'", "'").strip()
+            if '${' in s or not re.search(r'[A-Za-z]', s):
+                continue
+            words = s.split()
+            if len(words) >= 3 or len(s) >= 18:
+                phrases.add(s)
+        for m in re.finditer(r"\bproduct:\s*'([^']+)'", src):
+            phrases.add(m.group(1))
+        pre, suf = _array(src, 'COMPANY_PRE') or _array(src, 'PRE'), _array(src, 'COMPANY_SUF') or _array(src, 'SUF')
+        phrases |= {f'{p} {s}' for p in pre for s in suf}
+        names |= {m.group(1) for m in re.finditer(r"\bname:\s*'([A-Z][a-z]+ [A-Z]\.)'", src)}
+    # house words and code that are not on screen (imports, keys) never count
+    phrases = {p for p in phrases if not re.match(r'^(\.\.?/|[\w-]+/[\w./-]*$)', p)}
+    return phrases, names
+
+
+def _norm(s):
+    return re.sub(r'[^0-9a-z]+', '', s.lower().replace('&', 'and'))
+
+
+def sample_hits(text, phrases, names):
+    """The kit sample strings a text shows: (phrase hits, name hits). Compared without case, space or punctuation."""
+    n = _norm(text)
+    if len(n) < 4:
+        return [], []
+    hits = sorted({p for p in phrases if len(_norm(p)) >= 6 and _norm(p) in n}, key=len, reverse=True)
+    who = sorted({p for p in names if _norm(p) == n})
+    return hits, who
+
+
+def raw_strings_from_src(root):
+    """Every string literal of a film's own source (kit/, lib/, fx/ and node_modules skipped): (text, 'file:line')."""
+    out = []
+    skip = {'node_modules', 'fx', 'lib', 'kit', 'out', 'test', 'tests', '__pycache__', 'scripts'}
+    for d, dirs, files in os.walk(root):
+        dirs[:] = [x for x in dirs if x not in skip]
+        for f in files:
+            if not f.endswith(('.ts', '.tsx', '.js', '.jsx')) or f.endswith('.d.ts'):
+                continue
+            path = os.path.join(d, f)
+            try:
+                code = _strip_comments(open(path, encoding='utf-8').read())
+            except OSError:
+                continue
+            try:
+                rel = os.path.relpath(path)
+            except ValueError:
+                rel = path
+            for m in re.finditer(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`((?:[^`\\$]|\\.)*)`|>([^<>{}\n]+)<", code):
+                t = next(g for g in m.groups() if g is not None).strip()
+                if re.search(r'[A-Za-z]', t):
+                    out.append((t, f'{rel}:{code.count(chr(10), 0, m.start()) + 1}'))
+    return out
+
+
+def film_kit_copies(root):
+    """The film's own copy of the kit's sample file (an older kit keeps its samples in data.ts and tiles.tsx too)."""
+    out = []
+    for d in [root, os.path.join(root, 'src')]:
+        for f in ('sample.ts', 'data.ts', 'tiles.tsx', 'parts.tsx', 'panels.tsx'):
+            p = os.path.join(d, 'kit', f)
+            if os.path.isfile(p):
+                out.append(p)
+    return out
+
+
+TRUNC = re.compile(r'(\.\.\.|…)\s*$|\w(\.\.\.|…)\s+\S')
+DANGLING = {'a', 'an', 'the', 'to', 'of', 'and', 'or', 'but', 'for', 'with', 'in', 'on', 'at', 'by', 'from', 'into',
+            'your', 'my', 'our', 'their', 'its', 'is', 'are', 'was', 'be', 'that', 'this', 'as', 'than', 'via'}
+
+
+def check_cut(strings, final, phrase=True, held=None):
+    """Truncated titles ("...", "…") and (with `phrase`) lines cut mid-phrase in UI strings: errors in a final film,
+    warnings in dev. Source strings take `phrase=False`: a JSX text before an {expression} ends mid-phrase by design.
+    OCR strings pass `held`, the number of stills each string was read in: a line cut mid-phrase in one still only is a
+    warning (a line still typing on, or an OCR misread); one held over two or more stills fails a final film."""
+    sev = 'error' if final else 'warn'
+    findings = []
+    for t, where in strings:
+        s = (t or '').strip()
+        if not s:
+            continue
+        if TRUNC.search(s):
+            findings.append({'rule': 'truncated', 'severity': sev, 'line': None, 'text': s, 'where': where,
+                             'message': f'UI string "{s[:60]}" ({where}) is cut with an ellipsis: write the title whole (shorter), never truncated'})
+            continue
+        words = re.findall(r"[\w’']+", s)
+        if phrase and len(words) >= 2 and (re.search(r'[,:;–—-]$', s) or words[-1].lower() in DANGLING) and not re.search(r'[.!?]$', s):
+            once = held is not None and held.get(_norm(s), 0) < 2
+            findings.append({'rule': 'cut-phrase', 'severity': 'warn' if once else sev, 'line': None, 'text': s, 'where': where,
+                             'message': f'UI line "{s[:60]}" ({where}) stops mid-phrase ("{words[-1]}"): show the whole status line, or a shorter one that ends'})
+    return findings
+
+
+def check_samples(strings, phrases, names):
+    """kit-sample findings over strings: the kit's sample content shown by the film."""
+    findings = []
+    for t, where in strings:
+        hits, who = sample_hits(t, phrases, names)
+        if hits:
+            findings.append({'rule': 'kit-sample', 'severity': 'error', 'line': None, 'text': t, 'where': where,
+                             'message': f'"{t[:60]}" ({where}) is the kit\'s sample content ("{hits[0]}"): show the product\'s own strings; '
+                                        'the kit\'s samples are for its gallery and tests (sample())'})
+        elif who:
+            findings.append({'rule': 'kit-sample-name', 'severity': 'warn', 'line': None, 'text': t, 'where': where,
+                             'message': f'"{t[:60]}" ({where}) is a name from the kit\'s sample people ("{who[0]}"): use the product\'s own people'})
+    return findings
+
+
+WIN_OCR = r"""param([string]$List)
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
+Add-Type -AssemblyName System.Runtime.WindowsRuntime
+$null = [Windows.Storage.StorageFile, Windows.Storage, ContentType = WindowsRuntime]
+$null = [Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType = WindowsRuntime]
+$null = [Windows.Graphics.Imaging.BitmapDecoder, Windows.Graphics, ContentType = WindowsRuntime]
+$asTask = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1' })[0]
+function Await($op, [Type]$t) { $task = $asTask.MakeGenericMethod($t).Invoke($null, @($op)); $task.Wait(-1) | Out-Null; $task.Result }
+$engine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromUserProfileLanguages()
+foreach ($p in (Get-Content -LiteralPath $List -Encoding UTF8)) {
+  if (-not $p) { continue }
+  $file = Await ([Windows.Storage.StorageFile]::GetFileFromPathAsync($p)) ([Windows.Storage.StorageFile])
+  $stream = Await ($file.OpenAsync([Windows.Storage.FileAccessMode]::Read)) ([Windows.Storage.Streams.IRandomAccessStream])
+  $decoder = Await ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream)) ([Windows.Graphics.Imaging.BitmapDecoder])
+  $bitmap = Await ($decoder.GetSoftwareBitmapAsync()) ([Windows.Graphics.Imaging.SoftwareBitmap])
+  $result = Await ($engine.RecognizeAsync($bitmap)) ([Windows.Media.Ocr.OcrResult])
+  foreach ($line in $result.Lines) { Write-Output ("{0}`t{1}" -f (Split-Path $p -Leaf), $line.Text) }
+  $stream.Dispose()
+}
+"""
+
+
+def ocr_images(paths):
+    """Text lines in still images: (text, 'image'). RapidOCR or Tesseract when installed, else Windows' own OCR."""
+    import importlib
+    out = []
+    try:  # optional engines, loaded by name: neither is a requirement of the skill
+        eng = importlib.import_module('rapidocr_onnxruntime').RapidOCR()
+        for p in paths:
+            res, _ = eng(p)
+            out += [(r[1], os.path.basename(p)) for r in (res or [])]
+        return out
+    except ImportError:
+        pass
+    try:
+        tess, image = importlib.import_module('pytesseract'), importlib.import_module('PIL.Image')
+        for p in paths:
+            out += [(ln, os.path.basename(p)) for ln in tess.image_to_string(image.open(p)).splitlines() if ln.strip()]
+        return out
+    except ImportError:
+        pass
+    if os.name == 'nt':
+        import subprocess
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix='cinetic-ocr-') as tmp:
+            ps1, lst = os.path.join(tmp, 'ocr.ps1'), os.path.join(tmp, 'list.txt')
+            open(ps1, 'w', encoding='utf-8').write(WIN_OCR)
+            open(lst, 'w', encoding='utf-8').write('\n'.join(os.path.abspath(p) for p in paths))
+            r = subprocess.run(['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ps1, '-List', lst],
+                               capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=900)
+            if r.returncode != 0:
+                raise OSError(f'Windows OCR failed: {(r.stderr or r.stdout).strip()[:200]}')
+            for ln in r.stdout.splitlines():
+                if '\t' in ln:
+                    img, text = ln.split('\t', 1)
+                    out.append((text, img))
+        return out
+    raise OSError('no OCR engine: pip install rapidocr_onnxruntime (or pytesseract), or give --ocr a .txt of the strings')
+
+
+def ocr_strings(path):
+    """The strings a render shows, from --ocr: a .txt, a .json, an image or a folder of images."""
+    imgs = ('.png', '.jpg', '.jpeg', '.webp', '.bmp')
+    if os.path.isdir(path):
+        return ocr_images(sorted(os.path.join(path, f) for f in os.listdir(path) if f.lower().endswith(imgs)))
+    if path.lower().endswith(imgs):
+        return ocr_images([path])
+    text = open(path, encoding='utf-8', errors='replace').read()
+    if path.lower().endswith('.json'):
+        doc = json.loads(text)
+        items = doc if isinstance(doc, list) else doc.get('strings') or doc.get('lines') or []
+        out = []
+        for i, x in enumerate(items):
+            if isinstance(x, str):
+                out.append((x, f'#{i + 1}'))
+            elif isinstance(x, dict):
+                for t in ([x['text']] if 'text' in x else []) + list(x.get('lines') or []):
+                    out.append((t, f'f{x.get("frame", i)}'))
+        return out
+    out = []
+    for i, ln in enumerate(text.splitlines()):
+        if not ln.strip():
+            continue
+        where, t = (ln.split('\t', 1) if '\t' in ln else (f'line {i + 1}', ln))
+        out.append((t.strip(), where.strip()))
+    return out
 
 
 def has_phrase(text, pats):
@@ -723,13 +956,13 @@ def main(argv):
     if not argv or argv[0] in ('-h', '--help'):
         print(__doc__.strip())
         return 0 if argv else 2
-    a = {'name': None, 'format': None, 'fps': None, 'allow': '', 'marks': '', 'ui': None, 'json': False, 'strict': False, 'stdin': False, 'path': None}
+    a = {'name': None, 'format': None, 'fps': None, 'allow': '', 'marks': '', 'ui': None, 'ocr': None, 'json': False, 'strict': False, 'stdin': False, 'final': False, 'path': None}
     i = 0
     while i < len(argv):
         k = argv[i]
-        if k in ('--json', '--strict', '--stdin'):
+        if k in ('--json', '--strict', '--stdin', '--final'):
             a[k[2:]] = True
-        elif k in ('--name', '--format', '--fps', '--allow', '--marks', '--ui'):
+        elif k in ('--name', '--format', '--fps', '--allow', '--marks', '--ui', '--ocr'):
             if i + 1 >= len(argv):
                 print(f'copy-check: {k} needs a value', file=sys.stderr)
                 return 2
@@ -741,29 +974,57 @@ def main(argv):
         else:
             a['path'] = k
         i += 1
-    ui_strings, ui_source = [], None
+    final = a['final'] or os.environ.get('CINETIC_GATE') == 'ship'
+    ui_strings, ui_source, raw_src, ocr, copies = [], None, [], [], []
     if a['ui']:
         try:
             if os.path.isdir(a['ui']):
                 ui_strings = ui_strings_from_src(a['ui'])
+                raw_src = raw_strings_from_src(a['ui'])
+                copies = film_kit_copies(a['ui'])
             else:
                 ui_strings = ui_strings_from_layout(json.load(open(a['ui'], encoding='utf-8')))
             ui_source = a['ui']
         except (OSError, ValueError) as e:
             print(f'copy-check: cannot read the UI strings in {a["ui"]}: {e}', file=sys.stderr)
             return 2
-        if not a['path'] and not a['stdin']:
-            found = check_ui(ui_strings)
-            ok = not found
-            if a['json']:
-                print(json.dumps({'ok': ok, 'ui': {'source': ui_source, 'strings': len(ui_strings)}, 'findings': found,
-                                  'summary': {'errors': len(found), 'warnings': 0}}, indent=1, ensure_ascii=False))
-                return 0 if ok else 1
-            print(f'copy-check: UI strings, {len(ui_strings)} read from {ui_source}')
-            for f in found:
-                print(f'error  {f["rule"]}: {f["message"]}')
-            print(f'copy-check: {len(found)} error{"s" * (len(found) != 1)}' + ('' if ok else ': write the product\'s real words in its UI'))
+    if a['ocr']:
+        try:
+            ocr = ocr_strings(a['ocr'])
+        except (OSError, ValueError) as e:
+            print(f'copy-check: cannot read the render\'s strings in {a["ocr"]}: {e}', file=sys.stderr)
+            return 2
+    phrases, names = kit_samples(copies)
+    held = {}
+    for t, w in dict.fromkeys(ocr):
+        held[_norm(t)] = held.get(_norm(t), 0) + 1
+
+    def ui_findings():
+        seen = {t for t, _ in ui_strings}
+        src_only = [(t, w) for t, w in raw_src if t not in seen]
+        return (check_ui(ui_strings) + check_samples(ui_strings + src_only + ocr, phrases, names)
+                + check_cut([] if raw_src else ui_strings, final) + check_cut(ocr, final, held=held)
+                + check_cut(ui_strings if raw_src else [], final, phrase=False))
+
+    if (a['ui'] or a['ocr']) and not a['path'] and not a['stdin']:
+        found = ui_findings()
+        errs = [f for f in found if f['severity'] == 'error']
+        wrn = [f for f in found if f['severity'] == 'warn']
+        ok = not errs and not (a['strict'] and wrn)
+        srcs = {k: v for k, v in (('ui', {'source': ui_source, 'strings': len(ui_strings)} if ui_source else None),
+                                  ('ocr', {'source': a['ocr'], 'strings': len(ocr)} if a['ocr'] else None)) if v}
+        if a['json']:
+            print(json.dumps({'ok': ok, **srcs, 'final': final, 'findings': found,
+                              'summary': {'errors': len(errs), 'warnings': len(wrn)}}, indent=1, ensure_ascii=False))
             return 0 if ok else 1
+        if ui_source:
+            print(f'copy-check: UI strings, {len(ui_strings)} read from {ui_source}')
+        if a['ocr']:
+            print(f'copy-check: {len(ocr)} strings read from the render ({a["ocr"]})')
+        for f in found:
+            print(f'{f["severity"]:>5}  {f["rule"]}: {f["message"]}')
+        print(f'copy-check: {len(errs)} error{"s" * (len(errs) != 1)}, {len(wrn)} warning{"s" * (len(wrn) != 1)}' + ('' if ok else ': write the product\'s real words in its UI'))
+        return 0 if ok else 1
     names, ui, fmt, name, marks = [], [], a['format'], a['name'], []
     try:
         if a['stdin'] or (a['path'] and a['path'].endswith('.json')):
@@ -804,7 +1065,10 @@ def main(argv):
         marked.append(key)
     findings, name, stranger = check(lines, names, ui, name, fmt, allow, marks)
     keys = [{'line': i + 1, 'key': k or suggest_key(l['text'], name), 'marked': k is not None} for i, (l, k) in enumerate(zip(lines, marked))]
-    findings += check_ui(ui_strings)
+    findings += ui_findings()
+    script_strings = [(l['text'], f'line {i + 1}') for i, l in enumerate(lines)] + [(u['text'], 'COPY ui') for u in ui] + [(n['text'], 'COPY name') for n in names]
+    findings += check_samples(script_strings, phrases, set())
+    findings += check_cut([(u['text'], 'COPY ui') for u in ui], final)
     errors = [f for f in findings if f['severity'] == 'error']
     warns = [f for f in findings if f['severity'] == 'warn']
     ok = not errors and not (a['strict'] and warns)
@@ -816,6 +1080,7 @@ def main(argv):
                                     for i, l in enumerate(lines)],
                           'findings': findings, 'stranger': {**stranger, 'reads': reads}, 'keys': keys,
                           **({'ui': {'source': ui_source, 'strings': len(ui_strings)}} if ui_source else {}),
+                          **({'ocr': {'source': a['ocr'], 'strings': len(ocr)}} if a['ocr'] else {}),
                           'summary': {'errors': len(errors), 'warnings': len(warns)}}, indent=1, ensure_ascii=False))
         return 0 if ok else 1
     print(f'copy-check: {source} ({fmt or "format unknown"}, name {json.dumps(name) if name else "unknown"}, {len(lines)} lines, '

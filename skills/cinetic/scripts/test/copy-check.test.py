@@ -17,6 +17,13 @@
      slots; --ui layout.json reads the UI boxes the layout audit measured; real UI words pass.
   7. Key words: *marks* name a line's key words and leave the text before any check; a line without marks gets a
      suggestion (a number or a [slot], else the last word that is not a small word or the product's name).
+  8. The kit's sample content: its strings (read from the kit's own sample.ts: sample rows, tile lines such as
+     "Pricing page, second pass", the sample products, the sample companies such as "Zephyr Legal") fail in a film's
+     source (--ui src: any string literal outside kit/), a layout audit's UI boxes, an OCR file of the render (--ocr) and
+     a script; the kit's own sample.ts inside the film's src/kit is house code and does not count; a full name of the
+     kit's sample people is a warning; the film's own strings pass. A UI title cut with "..." or "…" and a status line
+     that stops mid-phrase are warnings in dev and errors with --final (or CINETIC_GATE=ship); in OCR a line cut in one
+     still only stays a warning; a whole line passes.
 
 Usage (from the skill root):  python3 scripts/test/copy-check.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -268,6 +275,41 @@ keys = {k['line']: (k['key'], k['marked']) for k in rep.get('keys', [])}
 texts = [l.get('text') for l in rep.get('lines', [])]
 result(code == 0 and keys.get(1) == ('water bottle', True) and keys.get(2) == ('sip', False) and keys.get(3) == ('2', False) and not any('*' in (t or '') for t in texts),
        'key words: *marks* name them and leave the text; an unmarked line gets a suggestion (a number first, else its last content word)', json.dumps(keys))
+
+# 8. the kit's sample content, truncated titles, lines cut mid-phrase
+kitsrc = os.path.join(TMP, 'kitfilm', 'src')
+os.makedirs(os.path.join(kitsrc, 'acts'), exist_ok=True)
+os.makedirs(os.path.join(kitsrc, 'kit'), exist_ok=True)
+open(os.path.join(kitsrc, 'kit', 'sample.ts'), 'w', encoding='utf-8').write(open(os.path.join(SKILL, 'assets', 'remotion-starter', 'src', 'kit', 'sample.ts'), encoding='utf-8').read())
+open(os.path.join(kitsrc, 'walk.ts'), 'w', encoding='utf-8').write("export const WALK = { results: [{ title: 'Send Maya the slides', meta: 'Today' }, { title: 'Book the dentist', meta: 'Tuesday' }] };\n")
+open(os.path.join(kitsrc, 'acts', 'Card.tsx'), 'w', encoding='utf-8').write("export const C = () => <div><span>Send Maya the slides</span></div>;\n")
+code, rep = run(['--ui', kitsrc])
+result(code == 0 and not [f for f in rep.get('findings', []) if f['rule'].startswith('kit-sample')], "kit-sample: the film's own strings pass; the kit's sample.ts in the film's src/kit is house code", str(rep.get('findings'))[:200])
+open(os.path.join(kitsrc, 'acts', 'Card.tsx'), 'w', encoding='utf-8').write("const DOCS = ['Pricing page, second pass', 'Notes from the Friday review'];\nexport const C = () => <div><span>Zephyr Legal</span>{DOCS[0]}</div>;\n")
+code, rep = run(['--ui', kitsrc])
+hits = sorted({f['text'] for f in rep.get('findings', []) if f['rule'] == 'kit-sample'})
+result(code == 1 and {'Pricing page, second pass', 'Notes from the Friday review', 'Zephyr Legal'} <= set(hits), "kit-sample: a kit sample tile line and a sample company in the film's source fail (any string literal outside kit/)", str(hits))
+lay = os.path.join(TMP, 'layout-kit.json')
+json.dump({'boxes': [{'frame': 300, 'boxes': [{'id': 'kit-ws', 'text': 'Yarrow Analytics', 'ui': True}, {'id': 'kit-row', 'text': 'Contracts waiting on legal', 'ui': True}, {'id': 'kit-row2', 'text': 'Send Maya the slides', 'ui': True}, {'id': 'kit-who', 'text': 'Mara K.', 'ui': True}]}]}, open(lay, 'w', encoding='utf-8'))
+code, rep = run(['--ui', lay])
+got = {f['text']: (f['rule'], f['severity']) for f in rep.get('findings', [])}
+result(code == 1 and got.get('Yarrow Analytics', ('',))[0] == 'kit-sample' and got.get('Contracts waiting on legal', ('',))[0] == 'kit-sample' and got.get('Mara K.') == ('kit-sample-name', 'warn') and 'Send Maya the slides' not in got,
+       "kit-sample: the render's UI boxes (layout audit) fail on a sample workspace and row; a sample person's full name warns", str(got))
+ocr = os.path.join(TMP, 'ocr.txt')
+open(ocr, 'w', encoding='utf-8').write('f_02.png\tthe den...\nf_09.png\tand call Mum back on ...\nf_09.png\tAdded to\nf_10.png\tAdded to\nf_09.png\tBook the dentist\nf_11.png\tPricing page, second pass\nf_12.png\tTern is out now.\nf_13.png\tRecord a\n')
+code, rep = run(['--ocr', ocr])
+dev = {(f['rule'], f['severity']) for f in rep.get('findings', [])}
+result(code == 1 and ('kit-sample', 'error') in dev and ('truncated', 'warn') in dev and ('cut-phrase', 'warn') in dev and ('truncated', 'error') not in dev,
+       '--ocr: a sample string in the render fails; a truncated title and a line cut mid-phrase warn in dev', str(sorted(dev)))
+code, rep = run(['--ocr', ocr, '--final'])
+fin = [(f['rule'], f['severity'], f['text']) for f in rep.get('findings', []) if f['rule'] in ('truncated', 'cut-phrase')]
+result(code == 1 and {('truncated', 'error', 'the den...'), ('truncated', 'error', 'and call Mum back on ...'), ('cut-phrase', 'error', 'Added to'), ('cut-phrase', 'warn', 'Record a')} <= set(fin) and not [x for x in fin if x[2] in ('Book the dentist', 'Tern is out now.')],
+       '--ocr --final: a title cut with "..." and a status line held cut mid-phrase over two stills fail a final film; a line cut in one still only warns (still typing, or a misread); whole lines pass', str(fin))
+env_ship = {**os.environ, 'PYTHONUTF8': '1', 'CINETIC_GATE': 'ship'}
+r = subprocess.run([sys.executable, CC, '--ocr', ocr, '--json'], capture_output=True, text=True, encoding='utf-8', env=env_ship)
+result(r.returncode == 1 and json.loads(r.stdout).get('final') is True, 'CINETIC_GATE=ship makes the check final', r.stdout[:120])
+code, rep = run([script(['0 | Tern turns voice memos into to-dos.', '3 | Your list is ready in seconds.', '6 | Tide · Spring lookbook is ready.', '9 | Tern is out now.'], 'kit-script.txt'), '--name', 'Tern'])
+result(code == 1 and any(f['rule'] == 'kit-sample' and 'Tide' in f['text'] for f in rep.get('findings', [])), "kit-sample: a script line naming the kit's sample project fails", ', '.join(rules(rep)))
 
 print(f'copy-check tests: {failed} failed' if failed else 'copy-check tests: all pass')
 sys.exit(1 if failed else 0)
