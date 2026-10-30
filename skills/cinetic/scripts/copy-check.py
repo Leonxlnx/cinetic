@@ -39,7 +39,9 @@ Checks (error unless marked):
   placeholder a line or a UI string that marks itself unfinished: lorem ipsum, "Placeholder", "Label text", "Your
               text here", a generic label alone ("Button", "Caption") or a generic noun and a number ("Item 1");
               the lists are scripts/placeholders.json, which lint-film.mjs reads too
-  slot        (--ui) a UI string still holding a template's bracketed slot ("[Product]", "[N] items")
+  slot        (--ui) a UI string still holding a template's bracketed slot ("[Product]", "[N] items", "[$19]"): with
+              --ui src every object value and list item of the film's source is read, whatever its key (a mark's
+              logoName, a chip, a status, a pair's ui list), never a call's argument or a citation ("[2]")
   kit-sample  the kit's sample content in the film: a string of the kit's samples (assets/remotion-starter/src/kit/
               sample.ts, and the film's own copy of it: its sample products, workspaces such as "Zephyr Legal" or
               "Yarrow Analytics", rows, comments, tile and file names) in a script line, a UI string, the film's source
@@ -229,7 +231,8 @@ _esc = lambda w: r'\s+'.join(re.escape(x) for x in w.split())
 PH_WORDS = re.compile(r'(?<![\w-])(' + '|'.join(_esc(w) for w in _PH['words']) + r')(?![\w-])', re.I)
 PH_LABEL = re.compile(r'^\s*(' + '|'.join(_esc(w) for w in _PH['labels']) + r')\s*[.:]?\s*$', re.I)
 PH_NUMBERED = re.compile(r'^\s*(' + '|'.join(_esc(w) for w in _PH['numbered']) + r')\s*#?\d{1,3}\s*$', re.I)
-SLOT = re.compile(r'\[[A-Za-z][^\]\n]{0,40}\]')
+# a bracketed slot: "[Product]", "[N] items", "[$19]", "[4 tasks, 3 owners]", "[0:42]"; never a bare number (a citation "[2]")
+SLOT = re.compile(r'\[(?!\d{1,3}\])[A-Za-z$€£#@\d][^\]\n]{0,40}\]')
 
 
 def placeholder_in(text, slots=False):
@@ -251,6 +254,8 @@ def placeholder_in(text, slots=False):
 
 ON_SCREEN = r'text|label|title|caption|line|headline|subtitle|sub|body|meta|value|placeholder|cta|badge|name|heading|description|hint|who|handle|unit|busy|action|insight|count'
 LISTS = r'stats|steps|rows|items|options|tags|labels|lines|words|columns|nav|tabs|people|names|results|chips'
+# the sound plan: its `action: 'text'` and `kind` names are cue labels, never on screen
+SOUND_PLANS = {'sync.ts', 'music.ts'}
 
 
 def _strip_comments(src):
@@ -285,12 +290,13 @@ def ui_strings_from_src(root):
         (re.compile(r'(?<![\w-])(?:' + ON_SCREEN + r')\s*=\s*(?:\{\s*)?([\'"`])((?:(?!\1)[^\n$])*)\1'), 2, None),
         (re.compile(r'(?<![\w$.-])(?:' + ON_SCREEN + r')\s*:\s*([\'"`])((?:(?!\1)[^\n$])*)\1'), 2, None),
     ]
-    lists = re.compile(r'(?<![\w$.-])(?:' + LISTS + r')\s*:\s*\[([^\]]*)\]')
+    # the list's body with its quoted items whole, so an item holding a ']' (a slot: '[AK]') never ends the list
+    lists = re.compile(r'(?<![\w$.-])(?:' + LISTS + r')\s*:\s*\[((?:\'(?:[^\'\\\n]|\\.)*\'|"(?:[^"\\\n]|\\.)*"|[^\]\'"])*)\]')
     strs = re.compile(r'([\'"`])((?:(?!\1)[^\n$])*)\1')
     for d, dirs, files in os.walk(root):
         dirs[:] = [x for x in dirs if x not in skip]
         for f in files:
-            if not f.endswith(('.ts', '.tsx', '.js', '.jsx')) or f.endswith('.d.ts'):
+            if not f.endswith(('.ts', '.tsx', '.js', '.jsx')) or f.endswith('.d.ts') or f in SOUND_PLANS:
                 continue
             path = os.path.join(d, f)
             try:
@@ -320,6 +326,44 @@ def ui_strings_from_src(root):
             seen.add((t, w))
             out.append((t, w))
     return out
+
+
+# A string literal in a content position: an object value (`key: '...'`), an array element (`['...', '...']`) or a
+# template literal's text (`${NAME} turns ...`), never a call's argument (hashSeed('[Product]')) or a comparison.
+_CONTENT_STR = re.compile(r"(?:[:\[,]|\?\?)\s*(?:'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`((?:[^`\\\n]|\\.)*)`)")
+# prose with slots: words, numbers and punctuation a line or a label has, never code (=, <, >, {, }, (, ), ;)
+_PROSE = re.compile(r"^[^=<>{}();\n]*$")
+_ATTR_SEL = re.compile(r'^\[(?:data|aria)-[\w-]+(?:[~|^$*]?=[^\]]*)?\]$')
+
+
+def slot_values_from_src(root):
+    """Content values of a film's source that still hold a template's [slot]: (text, 'file:line') pairs. Every
+    object value and array element is read, whatever its key (a change's `words`, a chip's `logoName`, a card's
+    `event`, a launch pair's `ui` list, a source's `logo` slug), so an unfilled slot the key list of
+    ui_strings_from_src does not name still fails. kit/, fx/, lib/ (house code), node_modules and tests are skipped."""
+    out = []
+    skip = {'node_modules', 'fx', 'lib', 'kit', 'out', 'test', 'tests', '__pycache__', 'scripts'}
+    for d, dirs, files in os.walk(root):
+        dirs[:] = [x for x in dirs if x not in skip]
+        for f in files:
+            if not f.endswith(('.ts', '.tsx', '.js', '.jsx')) or f.endswith('.d.ts') or f in SOUND_PLANS:
+                continue
+            path = os.path.join(d, f)
+            try:
+                code = _strip_comments(open(path, encoding='utf-8').read())
+            except OSError:
+                continue
+            try:
+                rel = os.path.relpath(path)
+            except ValueError:
+                rel = path
+            for m in _CONTENT_STR.finditer(code):
+                t = next((g for g in m.groups() if g is not None), '').strip()
+                t = re.sub(r'\$\{[^}]*\}', '', t).strip() if m.group(3) is not None else t
+                if not t or not SLOT.search(t) or not _PROSE.match(t) or _ATTR_SEL.match(t):
+                    continue
+                out.append((t, f'{rel}:{code.count(chr(10), 0, m.start()) + 1}'))
+    return list(dict.fromkeys(out))
 
 
 def ui_strings_from_layout(doc):
@@ -999,12 +1043,13 @@ def main(argv):
             a['path'] = k
         i += 1
     final = a['final'] or os.environ.get('CINETIC_GATE') == 'ship'
-    ui_strings, ui_source, raw_src, ocr, copies = [], None, [], [], []
+    ui_strings, ui_source, raw_src, ocr, copies, slot_src = [], None, [], [], [], []
     if a['ui']:
         try:
             if os.path.isdir(a['ui']):
                 ui_strings = ui_strings_from_src(a['ui'])
                 raw_src = raw_strings_from_src(a['ui'])
+                slot_src = slot_values_from_src(a['ui'])
                 copies = film_kit_copies(a['ui'])
             else:
                 ui_strings = ui_strings_from_layout(json.load(open(a['ui'], encoding='utf-8')))
@@ -1030,7 +1075,9 @@ def main(argv):
         res = [{'rule': 'ocr-small', 'severity': 'warn', 'line': None, 'text': '', 'where': small[0][0],
                 'message': f'{len(small)} still(s) read by OCR are {small[0][1]} px wide: a screen\'s small strings (12-16 px at '
                            '1080p) are unreadable there, so sample content in them goes unseen: give --ocr full-size stills'}] if small else []
-        return (res + check_ui(ui_strings) + check_samples(ui_strings + src_only + ocr, phrases, names)
+        # a [slot] in any content value the key list above does not read (its key is not an on-screen word)
+        slot_only = [(t, w) for t, w in slot_src if t not in seen]
+        return (res + check_ui(ui_strings) + check_ui(slot_only) + check_samples(ui_strings + src_only + ocr, phrases, names)
                 + check_cut([] if raw_src else ui_strings, final) + check_cut(ocr, final, held=held)
                 + check_cut(ui_strings if raw_src else [], final, phrase=False))
 

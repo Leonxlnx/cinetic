@@ -14,7 +14,9 @@
      references/copy-and-type.md, references/update-films.md and references/worked-example.md; the bad ones fail.
   6. Placeholders: a script line that says "Placeholder" and a COPY ui string in lorem ipsum fail; --ui src reads
      the on-screen strings of a film's source (not comments, not fx/) and fails placeholder text and unfilled
-     slots; --ui layout.json reads the UI boxes the layout audit measured; real UI words pass.
+     slots (under any key and in any list item, a slot opening with a number or a price too; never a call's argument, a
+     citation "[2]" or the sound plan's cue words); --ui layout.json reads the UI boxes the layout audit measured; real UI
+     words pass.
   7. Key words: *marks* name a line's key words and leave the text before any check; a line without marks gets a
      suggestion (a number or a [slot], else the last word that is not a small word or the product's name).
   8. The kit's sample content: its strings (read from the kit's own sample.ts: sample rows, tile lines such as
@@ -249,6 +251,19 @@ open(os.path.join(ui, 'content.ts'), 'w', encoding='utf-8').write("export const 
 open(os.path.join(ui, 'acts', 'Feed.tsx'), 'w', encoding='utf-8').write("export const F = () => <div><Field placeholder=\"Search invoices\" /><span>Due Friday</span></div>;\n")
 code, rep = run(['--ui', ui])
 result(code == 0 and not rep.get('findings'), '--ui src: real UI words pass (a field hint included)', str(rep.get('findings'))[:200])
+# a template's slots under any key (a mark's logoName, a pair's ui list, a chip, a status, a list of slot items), slots
+# that open with a number or a price, and the sound plan's cue words (action: 'text') not read as UI
+open(os.path.join(ui, 'content.ts'), 'w', encoding='utf-8').write(
+    "export const C = { logoName: '[Source]', chip: '[Model]', status: '[Building the app]', ui: ['[step one]', 'Paid this week'],\n"
+    "  people: ['[AK]', '[JM]'], value: '[$19]', body: '[4 tasks, 3 owners]', seed: hashSeed('[Product]'), cite: 'Sources [2]' };\n")
+open(os.path.join(ui, 'sync.ts'), 'w', encoding='utf-8').write("export const ev = [{ kind: 'text', action: 'text', id: 'line1' }];\n")
+open(os.path.join(ui, 'acts', 'Feed.tsx'), 'w', encoding='utf-8').write("export const F = () => <div data-x={sel('[data-ui]')}><span>Due Friday</span></div>;\n")
+code, rep = run(['--ui', ui])
+got = sorted(f['text'] for f in rep.get('findings', []) if f['rule'] == 'slot')
+want = sorted(['[Source]', '[Model]', '[Building the app]', '[step one]', '[AK]', '[JM]', '[$19]', '[4 tasks, 3 owners]'])
+other = [(f['rule'], f['text']) for f in rep.get('findings', []) if f['rule'] != 'slot']
+result(code == 1 and got == want and not other, '--ui src: a slot fails under any key and in any list item ([AK]), a slot opening with a number or a price fails; a seed argument, a citation [2] and the sound plan\'s cue words do not', f'{got} {other}')
+os.remove(os.path.join(ui, 'sync.ts'))
 
 EXAMPLES = [('assets/TREATMENT.md', None), ('references/copy-and-type.md', None), ('references/update-films.md', 'update'),
             ('references/worked-example.md', None)]
