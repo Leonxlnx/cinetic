@@ -222,6 +222,7 @@ def lag_gate(a, report, say, ref, sr, dec):
 HP_HZ = 150.0          # the frames gate's high-pass: under it the bed's bass owns the correlation
 FOUND_CORR = 0.45      # an effect located at this normalised correlation or more is measured and gated
 FAR_CORR = 0.7         # a lock more than 2 frames off the plan must be this clear, else it may be a neighbour or the music
+PLAN_CORR_FRAC = 0.75  # ... unless the plan's own position matches under this share of it: then the effect is not there
 LOW_FRAC = 0.5         # a take with this much of its energy under 150 Hz (a thump) is matched with its lows (40 Hz high-pass)
 BED_CORR = 0.5         # a bed window located at this correlation or more is gated
 EFFECT_SEARCH_S = 0.35  # +- search around the planned start (~10 f at 30 fps)
@@ -362,6 +363,20 @@ def effect_rows(plan, root, takes_dir, dec_hp, dec_lo, fps_v, ref_offset, tol_s,
     locks = read_locks(takes_dir)
     dur_v = len(dec_hp) / SR
     starts = sorted(float(q['start_s']) for q in plan.get('events') or [])
+    # every placed effect as score.py plays it (mono, at its gain, in both bands) at its planned start: each effect is
+    # looked for with the others taken out, so a long whoosh's tail over a landing, or a swell over a key, cannot
+    # hide where that effect really plays (a hidden one only warned 'ambiguous', so a 4-frame slip under it passed)
+    played = []
+    for q in plan.get('events') or []:
+        if not os.path.isfile(os.path.join(takes_dir, q['take'])):
+            continue
+        try:
+            shim.roles = {q['role']: {'takes': [{'file': q['take']}]}}
+            xq, sq = SC.plan_voice(shim, q, song)
+            mq = (xq.mean(axis=1) if xq.ndim == 2 else xq) * 10 ** (float(q.get('gain_db') or 0.0) / 20)
+            played.append((q, int(round((sq - ref_offset) * SR)), signal.sosfiltfilt(sos, mq), signal.sosfiltfilt(sos_lo, mq)))
+        except (ValueError, StopIteration, KeyError):  # a take too short to filter, or a role the shim cannot read
+            continue
     for p in plan.get('events') or []:
         cue = float(p['f']) / p_fps - ref_offset
         want = float(p.get('sync_s', p['f'] / p_fps)) - ref_offset
@@ -393,14 +408,42 @@ def effect_rows(plan, root, takes_dir, dec_hp, dec_lo, fps_v, ref_offset, tol_s,
         spec = np.abs(np.fft.rfft(seg)) ** 2 if len(seg) > 64 else np.ones(2)
         low = float(spec[:int(150 * len(seg) / SR) + 1].sum() / (spec.sum() + 1e-20)) if len(seg) > 64 else 0.0
         thump = low >= LOW_FRAC
-        tpl = signal.sosfiltfilt(sos_lo if thump else sos, m)[i0:i1] if i1 - i0 > 64 else seg
         expect = start - ref_offset + i0 / SR
         # search no further than the nearest other effect (a run of keys or ticks would lend its neighbour), at
         # least 2 frames and at most EFFECT_SEARCH_S
         gap = min([abs(q - float(p['start_s'])) for q in starts if abs(q - float(p['start_s'])) > 1e-4] or [9.0])
         search = min(max(EFFECT_SEARCH_S, 4 * tol_s), max(2 * tol_s, gap - 0.01))
-        got, corr = locate(dec_lo if thump else dec_hp, 0.0, tpl, expect, search)
-        row.update(corr=round(corr, 3), search_ms=round(search * 1000, 1), band='lows' if thump else 'over 150 Hz')
+        # a thump is matched in its lows and over 150 Hz, and the clearer band wins (a landing's body sits in the
+        # music's bass; its knock above it is what stands clear); every other take over 150 Hz
+        best = None
+        for band, bsos, hay, lows in ((('lows', sos_lo, dec_lo, True),) if thump else ()) + (('over 150 Hz', sos, dec_hp, False),):
+            tpl = signal.sosfiltfilt(bsos, m)[i0:i1] if i1 - i0 > 64 else seg
+            w0 = max(0, int((expect - search - 0.25) * SR))
+            w1 = min(len(hay), int((expect + search + 0.25) * SR) + len(tpl))
+            local = hay[w0:w1]
+            others = np.zeros(max(0, w1 - w0))
+            for q, qi, qh, ql in played:
+                if q is p:
+                    continue
+                qs = ql if lows else qh
+                u0, u1 = max(w0, qi), min(w1, qi + len(qs))
+                if u1 > u0:
+                    others[u0 - w0:u1 - w0] += qs[u0 - qi:u1 - qi]
+            den = float(np.dot(others, others))
+            removed = False
+            if den > 1e-12:  # the other effects in this stretch, at the gain the master gave them here
+                g_o = float(np.dot(local, others)) / den
+                if g_o > 0:
+                    local, removed = local - g_o * others, True
+            got, corr = locate(local, w0 / SR, tpl, expect, search)
+            k = int(round((expect - w0 / SR) * SR))  # the take where the plan put it
+            at_plan = float(ncc(local[k:k + len(tpl)], tpl)[0]) if 0 <= k and k + len(tpl) <= len(local) and len(tpl) > 64 else 0.0
+            if best is None or corr > best[1]:
+                best = (got, corr, at_plan, band, removed)
+        got, corr, at_plan, band, removed = best
+        row.update(corr=round(corr, 3), corr_at_plan=round(at_plan, 3), search_ms=round(search * 1000, 1), band=band)
+        if removed:
+            row['others_removed'] = True
         if got is None or corr < FOUND_CORR:
             row['status'] = 'not found'
             row['why'] = f'best correlation {corr:.2f} (< {FOUND_CORR}): the music covers it here, or it is not in this mix'
@@ -417,9 +460,12 @@ def effect_rows(plan, root, takes_dir, dec_hp, dec_lo, fps_v, ref_offset, tol_s,
             row['plateau_ms'] = [round(d_lo * 1000, 1), round(d_hi * 1000, 1)]
         if row['align'] == 'onset' and sp - pre > 0.002:  # a pre-roll the listener hears before the onset the plan aligned
             row['heard_from_ms'] = round((d - (sp - pre)) * 1000, 1)
-        if not ok and abs(meas - want) > 2 * tol_s and corr < FAR_CORR:
+        # a far match that is not clear is only a doubt while the take still matches where the plan put it nearly as
+        # well; when it does not, the effect is not there: OFF, however modest the correlation (a whoosh or a thump
+        # under the music rarely correlates over 0.7, so a 4-frame slip of one used to pass as 'ambiguous')
+        if not ok and abs(meas - want) > 2 * tol_s and corr < FAR_CORR and at_plan >= PLAN_CORR_FRAC * corr:
             row.update(status='ambiguous', why=f'the best match sits {(meas - want) * 1000:+.0f} ms off the plan at correlation '
-                                               f'{corr:.2f} (< {FAR_CORR}): a neighbour or the music, not a measure')
+                                               f'{corr:.2f} (< {FAR_CORR}), {at_plan:.2f} where the plan put it: a neighbour or the music, not a measure')
         else:
             row['status'] = 'OK' if ok else 'OFF'
         rows.append(row)
