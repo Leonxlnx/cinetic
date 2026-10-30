@@ -292,10 +292,10 @@ result(P.CARRY.ratio[1] === 0.7 && P.CARRY.decay60[1] === 0.89 && P.SPEED.residu
     && c.exit === 'auto' && c.exitDur === 15 && c.exitFade === 9 && c.recentre === 'jump' && c.recentreDur === 19 && c.recentreLead === 0
     && c.accentHold === 16 && c.accentCool === 12 && c.accentSpace === 'oklab' && c.fx.typeFPerChar === 2 && c.fx.iris === 16 && c.fx.irisMode.ratio === 1.28;
   const okCrisp = k.wordDur === 23 && k.riseDur === 19 && k.stagger === 8 && k.blur === 0 && k.exitDur === 12 && k.exitFade === 7 && k.recentreDur === 14 && k.accentHold === 6 && k.accentCool === 12 && k.fx.mask.stagger === 7;
-  const holds = c.holdBase === 36 && c.holdPerWord === 7 && c.holdMin === 52 && c.readMax === 132 && k.holdBase === 28 && k.holdPerWord === 6 && k.holdMin === 36 && k.readMax === 106;
+  const holds = c.holdBase === 36 && c.holdPerWord === 7 && c.holdMin === 52 && c.readMax === 150 && k.holdBase === 28 && k.holdPerWord === 6 && k.holdMin === 36 && k.readMax === 120;
   result(okCalm, 'pace calm: 28 f on snapOut, rise a third of the line over 22 f, 11 f apart on the reading cadence, exit 15 f, jump 19 f, accent 16 + 12 f');
   result(okCrisp, 'pace crisp: 23 f, 19 f rise, 8 f apart, no blur, exit 12 f, jump 14 f, accent 6 + 12 f');
-  result(holds, 'pace holds about 12 % under 1.1 (calm max(52, 36 + 7 f a word), crisp max(36, 28 + 6 f a word))');
+  result(holds, 'pace holds about 12 % under 1.1 (calm max(52, 36 + 7 f a word), crisp max(36, 28 + 6 f a word)); the check bound readMax stays 150 / 120');
   // the reading floor: a line of n words (2-7) is on screen from its first word to its exit for n / READ_WPS seconds or more
   const short = [];
   for (const [name, rows] of Object.entries(P.holds)) rows.forEach(([reveal, hold], i) => {
