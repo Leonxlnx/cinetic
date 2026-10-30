@@ -8,7 +8,14 @@
  *   2. text-on-asset: a line crossing a picture's edge or a mark is listed (a warning: look-audit.py --layout confirms
  *      it on the pixels); a caption wholly on a photo, an inline mark, a word knocked out of a photo and boxes that only
  *      touch are not; the camera float is put back on the text before it is compared.
- *   3. The CLI on a report: exit 1 on a ui-align failure, 0 when clean, 2 without a readable report; --help.
+ *   3. text over an icon (the audit's `icons`): a line running over an icon in view warns in dev and fails under the ship
+ *      gate (opts.ship, CINETIC_GATE=ship) on 2 audited frames, warns on one; the kit's own pairs never trip it: an icon
+ *      beside its label (apart, or touching by a quarter of the icon), an icon above its label, an icon inside its own
+ *      tagged text (an inline glyph, a button's icon), a line whose words the audit found not drawn over the icon (`over`:
+ *      the glyph in the gap the line leaves, a card behind the icon's card); nor an icon under a card (visible < 0.5,
+ *      covered) or a faint one.
+ *   4. The CLI on a report: exit 1 on a ui-align failure, 0 when clean, 2 without a readable report; --help; --ship (and
+ *      CINETIC_GATE=ship) fails a text over an icon that dev only warns about.
  *
  * Usage (from the skill root):  node scripts/test/ui-layout.test.mjs
  * Exit codes: 0 all pass, 1 a test failed.
@@ -72,7 +79,44 @@ result(!assetFrame(frame(1, [row('photos', 124, 896, { w: 1168, h: 90, px: 90 })
 result(!assetFrame(frame(1, [row('near', 598, 400)], { imagery: [pic] })).length, 'boxes that only touch are apart');
 result(assetFrame(frame(1, [row('floated', 560, 400, { float: [60, 0, 1] })], { imagery: [pic] })).length === 1, 'the camera float is put back on the text (a box that crosses only where it shows)');
 
-// 3. the CLI
+// 3. text over an icon
+const icon = (o = {}) => ({ name: 'bell', x: 700, y: 300, w: 48, h: 48, opacity: 1, visible: 1, ...o });
+const headline = row('headline', 400, 280, { ui: false, w: 800, h: 90, px: 80 });
+const over = (f, ic = icon()) => frame(f, [headline], { icons: [ic] });
+r = uiLayout([over(10), over(20)], { ship: false });
+result(!r.issues.length && r.warnings.length === 1 && /icon/.test(r.warnings[0].detail) && r.warnings[0].asset === 'icon', 'a line running over an icon in view warns in dev', JSON.stringify(r.warnings.map((x) => [x.id, x.cross])));
+r = uiLayout([over(10), over(20)], { ship: true });
+result(r.issues.length === 1 && r.issues[0].kind === 'text-on-asset' && r.issues[0].id === 'headline+icon:bell', 'and fails under the ship gate on 2 audited frames', JSON.stringify(r.issues.map((x) => x.id)));
+r = uiLayout([over(10)], { ship: true });
+result(!r.issues.length && r.warnings.length === 1, 'on one audited frame it warns even under the ship gate (mid-move)');
+const prevGate = process.env.CINETIC_GATE;
+process.env.CINETIC_GATE = 'ship';
+r = uiLayout([over(10), over(20)]);
+if (prevGate === undefined) delete process.env.CINETIC_GATE; else process.env.CINETIC_GATE = prevGate;
+result(r.issues.length === 1, 'CINETIC_GATE=ship is the ship gate (as precheck --ship and the kit gate read it)');
+result(!uiLayout([over(10, icon({ visible: 0.2 })), over(20, icon({ visible: 0.2 }))], { ship: true }).issues.length, 'an icon mostly under a card (visible 0.2) is not text over an icon');
+result(!uiLayout([over(10, icon({ visible: 0, covered: true })), over(20, icon({ visible: 0, covered: true }))], { ship: true }).issues.length, 'nor a covered one');
+result(!uiLayout([over(10, icon({ opacity: 0.3 })), over(20, icon({ opacity: 0.3 }))], { ship: true }).issues.length, 'nor a faint one (opacity 0.3)');
+// the kit's own pairs: a chip (a 25 px glyph, its ink 22 px, a 10.6 px gap, the label), a row's tile and title, a tile over its name
+const chip = (f, dx = 0) => frame(f, [row('kit-chip', 632 + dx, 291, { w: 140, h: 38, px: 19 })], { icons: [icon({ name: 'sparkle', x: 600, y: 299, w: 22, h: 22 })] });
+r = uiLayout([chip(10), chip(20)], { ship: true });
+result(!r.issues.length && !r.warnings.length, 'a glyph beside its label (a chip) is a pair, never a crossing', JSON.stringify(r.warnings.map((x) => x.cross)));
+r = uiLayout([chip(10, -15), chip(20, -15)], { ship: true });
+result(!r.issues.length && !r.warnings.length, 'a label box that touches its glyph by a quarter of it (5 px of 22) still sits beside it', JSON.stringify(r.warnings.map((x) => x.cross)));
+r = uiLayout([chip(10, -24), chip(20, -24)], { ship: true });
+result(r.issues.length === 1, 'a label run halfway over its glyph is text over an icon', JSON.stringify(r.issues.map((x) => x.cross)));
+const tile = (f) => frame(f, [row('app-name', 588, 384, { w: 104, h: 30, px: 22 })], { icons: [icon({ name: 'calendar', x: 600, y: 300, w: 80, h: 80 })] });
+result(!uiLayout([tile(10), tile(20)], { ship: true }).warnings.length, 'a tile over its name (their boxes touching by 4 px) is a pair');
+const btn = (f) => frame(f, [row('kit-button', 600, 300, { w: 240, h: 64, px: 26 })], { icons: [icon({ name: 'send', x: 620, y: 312, w: 40, h: 40, inText: 'kit-button' })] });
+result(!uiLayout([btn(10), btn(20)], { ship: true }).warnings.length, "an icon inside its own tagged text (a button's icon, an inline glyph) is part of the line");
+result(!uiLayout([frame(10, [row('row', 600, 300, { w: 400, h: 40 })], { icons: [icon({ x: 700, y: 360, w: 40, h: 40 })] })], { ship: true }).warnings.length, 'an icon apart from the text is nothing');
+// the audit's `over` (the texts whose words it found drawn above the icon) decides where it is logged
+r = uiLayout([over(10, icon({ over: ['headline'] })), over(20, icon({ over: ['headline'] }))], { ship: true });
+result(r.issues.length === 1, "a text the audit found drawn over the icon fails as before");
+r = uiLayout([over(10, icon({ over: [] })), over(20, icon({ over: [] }))], { ship: true });
+result(!r.issues.length && !r.warnings.length, 'a line whose box spans an icon set in its gap, or a card behind the icon (over: []), is no crossing');
+
+// 4. the CLI
 const tmp = mkdtempSync(join(tmpdir(), 'cinetic-ui-layout-'));
 try {
   const write = (name, frames) => { const p = join(tmp, name); writeFileSync(p, JSON.stringify({ tool: 'layout-audit', boxes: frames })); return p; };
@@ -85,6 +129,13 @@ try {
   result(c.status === 2, 'no readable report: exit 2');
   c = run('--help');
   result(c.status === 0 && /ui-align/.test(c.stdout), '--help prints the doc');
+  const iconRep = write('icon.json', [over(10), over(20)]);
+  c = spawnSync(process.execPath, [CJS, iconRep], { encoding: 'utf8', env: { ...process.env, CINETIC_GATE: '' } });
+  result(c.status === 0 && /warn text-on-asset/.test(c.stdout), 'a text over an icon: dev warns (exit 0)', c.stdout.trim().split('\n').pop());
+  c = run(iconRep, '--ship');
+  result(c.status === 1 && /ship gate/.test(c.stdout), '--ship fails it (exit 1)', c.stdout.trim().split('\n').pop());
+  c = spawnSync(process.execPath, [CJS, iconRep], { encoding: 'utf8', env: { ...process.env, CINETIC_GATE: 'ship' } });
+  result(c.status === 1, 'and so does CINETIC_GATE=ship', c.stdout.trim().split('\n').pop());
 } finally {
   rmSync(tmp, { recursive: true, force: true });
 }

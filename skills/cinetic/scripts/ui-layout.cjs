@@ -16,13 +16,21 @@
  *                  line's span, its middle on the line) and boxes that only touch are by design. The boxes cannot tell a mark
  *                  hidden behind a plate from one in view, so here it is a warning: look-audit.py --layout reads the
  *                  pixels beside each crossing and fails the ones in view (on 2 or more audited frames).
+ *                  The kit's icons too (the audit's `icons`: Glyph, GlyphTile, Check, Pending, a spinner, an AppIcon
+ *                  without its mark; a glyph by its drawn ink): a readable text box over an icon in view (the audit's
+ *                  `visible`, the share of the icon nothing opaque covers, at least 0.5) by more than a quarter of the
+ *                  icon's size each way, whose words the audit found drawn above the icon (`over`, hit-tested in each
+ *                  word's box: the gap a line leaves for an inline glyph and a card behind the icon's card are not
+ *                  over it). An icon beside its label or above it (they touch: a quarter or less on one axis), an icon
+ *                  inside its own tagged text and text wholly on a tile are by design. The audit sees whether the icon is in view, so under the ship
+ *                  gate (CINETIC_GATE=ship, or --ship) a crossing on 2 or more audited frames fails; in dev it warns.
  *
  * Readable: effective opacity >= 0.5, not inside a type push in flight or an active smear, and moving at most 3 px/f
  * (layout-audit --speed, else measured here between audited frames up to 12 frames apart). Each finding is grouped by its pair of ids: ui-align on 2 or more audited frames fails
  * (a resting state), on one it warns (a frame caught mid-move). Px are at 1080 (a 4K or 9:16 frame is scaled).
  *
  * Usage:
- *   node scripts/ui-layout.cjs out/qa/layout-Film.json [--json out/qa/ui-layout.json] [--quiet]
+ *   node scripts/ui-layout.cjs out/qa/layout-Film.json [--json out/qa/ui-layout.json] [--ship] [--quiet]
  *   (layout-audit.sh requires it: const { uiLayout } = require('./ui-layout.cjs'))
  * Exit codes: 0 no failure, 1 a failure, 2 bad arguments.
  */
@@ -31,6 +39,7 @@
 const UI_LAYOUT = {
   align: { tol: 2, near: 12, gap: 1.2, size: 1.6, tilt: 0.09, line: 1 }, // px at 1080; gap in line heights; type sizes within this ratio (one card's rows); a tilted card's column: slope up to 0.09 (5 deg), its left edges on one line within 1 px
   asset: { cross: 2 }, // px at 1080 each way
+  icon: { visible: 0.5, touch: 0.25 }, // an icon in view: this share of it uncovered; text and icon only touch while one axis overlaps by this share of the icon or less
   read: { opacity: 0.5, speed: 3 }, // effective opacity; px/f at 1080 (layout-audit --max-read-speed)
   persist: 2, // audited frames on which a finding fails
 };
@@ -95,21 +104,31 @@ const onScreen = (b, cw, ch) => {
  * the line: an inline mark, a word knocked out of a photo). */
 const byDesign = (t, s, tol) =>
   inside(t, s, tol) || inside(s, t, tol) || (cross(t, s)[0] >= 0.8 * s.w && s.y + s.h / 2 >= t.y && s.y + s.h / 2 <= t.y + t.h);
-/** Text boxes crossing a mark's or a picture's edge on one frame: [{ t, asset, kind, ix, iy }] (px at 1080; t on screen). */
+/** An icon and a text by design: the audit found none of the text's words drawn above the icon (`over`: an inline glyph
+ * in the gap its line leaves, a card behind the icon's card, a word the icon covers), the icon is part of the line (inside
+ * its tagged text), the text sits wholly on the icon's tile, or they only touch (beside its label, or above it: one axis
+ * overlaps by a quarter of the icon or less). */
+const iconByDesign = (t, s, ix, iy, tol) =>
+  (Array.isArray(s.over) && !s.over.includes(t.id)) || (s.inText !== undefined && s.inText === t.id) || inside(t, s, tol) ||
+  ix <= UI_LAYOUT.icon.touch * s.w || iy <= UI_LAYOUT.icon.touch * s.h;
+/** Text boxes crossing a mark's or a picture's edge, or lying over a kit icon, on one frame: [{ t, asset, kind, ix, iy }]
+ * (px at 1080; t on screen). */
 function assetFrame(d) {
   const cw = d.width || 1920, ch = d.height || 1080;
   const k = 1080 / ch;
   const c = UI_LAYOUT.asset.cross;
   const seen = new Set();
-  const assets = [...(d.logos || []).map((x) => ({ ...x, kind: 'mark' })), ...(d.imagery || []).map((x) => ({ ...x, kind: 'picture' }))]
+  const assets = [...(d.logos || []).map((x) => ({ ...x, kind: 'mark' })), ...(d.imagery || []).map((x) => ({ ...x, kind: 'picture' })),
+    ...(d.icons || []).map((x) => ({ ...x, kind: 'icon' }))]
     .filter((s) => !s.covered && !(s.opacity < UI_LAYOUT.read.opacity)) // when the audit says so: hidden or faint
+    .filter((s) => s.kind !== 'icon' || !(s.visible < UI_LAYOUT.icon.visible)) // an icon mostly under a card or a plate
     .filter((s) => { const key = [s.kind, Math.round(s.x), Math.round(s.y), Math.round(s.w), Math.round(s.h)].join(); return !seen.has(key) && seen.add(key); });
   const out = [];
   for (const t of (d.boxes || []).filter(readable).map((b) => onScreen(b, cw, ch))) {
     for (const s of assets) {
       const [ix, iy] = cross(t, s);
       if (ix * k <= c || iy * k <= c) continue; // apart, or touching
-      if (byDesign(t, s, c / k)) continue;
+      if (s.kind === 'icon' ? iconByDesign(t, s, ix, iy, c / k) : byDesign(t, s, c / k)) continue;
       out.push({ t, asset: s, kind: s.kind, ix: r1(ix * k), iy: r1(iy * k) });
     }
   }
@@ -139,8 +158,12 @@ function withSpeed(frames) {
   });
 }
 
-/** Both reads over the audited frames ([{ frame, width, height, boxes, logos?, imagery? }]): { issues, warnings }. */
-function uiLayout(frames) {
+/** Under the ship gate (CINETIC_GATE=ship, as precheck --ship and the kit gate read it) a text over an icon in view fails. */
+const shipGate = () => (process.env.CINETIC_GATE || '').toLowerCase() === 'ship';
+/** Both reads over the audited frames ([{ frame, width, height, boxes, logos?, imagery?, icons? }]): { issues, warnings }.
+ * opts.ship: the ship gate (default: CINETIC_GATE=ship). */
+function uiLayout(frames, opts = {}) {
+  const ship = opts.ship ?? shipGate();
   const groups = new Map();
   const add = (key, frame, x) => {
     const g = groups.get(key) ?? { frames: [], first: x };
@@ -149,7 +172,7 @@ function uiLayout(frames) {
   };
   for (const d of withSpeed(frames)) {
     for (const x of alignFrame(d)) add(`ui-align|${x.a.id}|${x.b.id}`, d.frame, { kind: 'ui-align', frame: d.frame, ...x });
-    for (const x of assetFrame(d)) add(`text-on-asset|${x.t.id}|${x.asset.name ?? x.kind}`, d.frame, { kind: 'text-on-asset', frame: d.frame, ...x });
+    for (const x of assetFrame(d)) add(`text-on-asset|${x.t.id}|${x.kind}|${x.asset.name ?? x.kind}`, d.frame, { kind: 'text-on-asset', frame: d.frame, ...x });
   }
   const issues = [], warnings = [];
   for (const g of groups.values()) {
@@ -159,15 +182,19 @@ function uiLayout(frames) {
     const item = x.kind === 'ui-align'
       ? { frame: x.frame, kind: 'ui-align', id: `${x.a.id}+${x.b.id}`, d: x.d, frames: g.frames,
           detail: `"${x.a.text ?? x.a.id}" and "${x.b.text ?? x.b.id}" stack in one card but their left edges miss by ${x.d} px${on}: rows of a card share one left edge (within 2 px), or sit centred on purpose; an indent is a step of 16 px or more` }
-      : { frame: x.frame, kind: 'text-on-asset', id: `${x.t.id}+${x.asset.name ?? x.kind}`, cross: [x.ix, x.iy], frames: g.frames,
-          detail: `"${x.t.text ?? x.t.id}" cuts ${x.ix}x${x.iy} px into ${x.kind === 'mark' ? `the ${x.asset.name ?? ''} mark` : 'a picture'}${on}: text sits beside a mark or a picture with clear space, or wholly on a photo as its caption, never across its edge (look-audit.py --layout fails it when the asset is in view there)` };
-    (x.kind === 'ui-align' && n >= UI_LAYOUT.persist ? issues : warnings).push(item);
+      : x.kind === 'icon'
+        ? { frame: x.frame, kind: 'text-on-asset', id: `${x.t.id}+icon:${x.asset.name ?? 'icon'}`, asset: 'icon', cross: [x.ix, x.iy], frames: g.frames,
+            detail: `"${x.t.text ?? x.t.id}" runs ${x.ix}x${x.iy} px over the ${x.asset.name ?? ''} icon in view${on}: an icon sits beside its label with clear space, or in the line as a word (kit/inline.tsx), never under text${ship ? '' : ' (the ship gate fails it on 2 audited frames)'}` }
+        : { frame: x.frame, kind: 'text-on-asset', id: `${x.t.id}+${x.asset.name ?? x.kind}`, cross: [x.ix, x.iy], frames: g.frames,
+            detail: `"${x.t.text ?? x.t.id}" cuts ${x.ix}x${x.iy} px into ${x.kind === 'mark' ? `the ${x.asset.name ?? ''} mark` : 'a picture'}${on}: text sits beside a mark or a picture with clear space, or wholly on a photo as its caption, never across its edge (look-audit.py --layout fails it when the asset is in view there)` };
+    const fails = n >= UI_LAYOUT.persist && (x.kind === 'ui-align' || (x.kind === 'icon' && ship)); // x.kind: ui-align, or the asset's kind
+    (fails ? issues : warnings).push(item);
   }
   const by = (p, q) => p.frame - q.frame;
   return { issues: issues.sort(by), warnings: warnings.sort(by) };
 }
 
-module.exports = { UI_LAYOUT, uiLayout, alignFrame, assetFrame };
+module.exports = { UI_LAYOUT, uiLayout, alignFrame, assetFrame, shipGate };
 
 if (require.main === module) {
   const fs = require('fs');
@@ -177,6 +204,7 @@ if (require.main === module) {
     process.exit(argv.length ? 0 : 2);
   }
   const src = argv.find((a) => !a.startsWith('--') && argv[argv.indexOf(a) - 1] !== '--json');
+  const ship = argv.includes('--ship') || shipGate();
   const out = argv.includes('--json') ? argv[argv.indexOf('--json') + 1] : null;
   let rep;
   try {
@@ -185,13 +213,13 @@ if (require.main === module) {
     console.error(`ui-layout: cannot read a layout-audit report at ${src} (${e.message})`);
     process.exit(2);
   }
-  const res = uiLayout(rep.boxes || []);
+  const res = uiLayout(rep.boxes || [], { ship });
   if (!argv.includes('--quiet')) {
     for (const x of res.issues) console.log(`  f${x.frame}  ${x.kind}  ${x.id}  ${x.detail}`);
     for (const x of res.warnings) console.log(`  f${x.frame}  warn ${x.kind}  ${x.id}  ${x.detail}`);
   }
   const pass = res.issues.length === 0;
-  if (out) fs.writeFileSync(out, JSON.stringify({ tool: 'ui-layout', report: src, frames: (rep.boxes || []).length, pass, ...res }, null, 1) + '\n');
-  console.log(`ui-layout: ${(rep.boxes || []).length} audited frames, ${res.issues.length} issues, ${res.warnings.length} warnings -> ${pass ? 'pass' : 'FAIL'}`);
+  if (out) fs.writeFileSync(out, JSON.stringify({ tool: 'ui-layout', report: src, frames: (rep.boxes || []).length, gate: ship ? 'ship' : 'dev', pass, ...res }, null, 1) + '\n');
+  console.log(`ui-layout (${ship ? 'ship gate' : 'dev'}): ${(rep.boxes || []).length} audited frames, ${res.issues.length} issues, ${res.warnings.length} warnings -> ${pass ? 'pass' : 'FAIL'}`);
   process.exit(pass ? 0 : 1);
 }

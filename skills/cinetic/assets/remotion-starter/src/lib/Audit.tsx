@@ -41,6 +41,14 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 // And the pictures ("pictures": the outermost [data-ui], [data-imagery] and [data-picture] elements of at least 2 % of
 // the frame, float taken out): layout-audit.sh's placement gate tells from them whether a line stands alone, over a picture,
 // beside it, or above or below it.
+// And the kit's icons ("icons": the outermost [data-icon] on screen: kit Glyph, GlyphTile, Check, Pending, a Pill's spinner,
+// an AppIcon without a fetched mark, whose mark is in "logos" already): [{"name","x","y","w","h","opacity","visible","over"}],
+// where they show (like the marks), a glyph by its drawn ink rather than its padded square. `visible` is the share of 9
+// points over the icon where nothing opaque is painted above it (text aside); an icon under a card or a plate reads 0 and
+// carries "covered". `over` lists the tagged texts whose words are painted ABOVE the icon (hit-tested inside each word's
+// own box, so the gap a line leaves for an inline glyph, a card behind the icon's card and text the icon covers are not
+// over it). scripts/ui-layout.cjs fails a text over an icon in view under the ship gate on 2 audited frames (a warning in
+// dev); an icon beside its label (the kit's chips, rows and buttons) is a pair, never a crossing.
 // It also logs the frame's tweens from the registry (lib/registry.ts), which audit mode switches on:
 //   CINETIC_TWEENS {"comp":"Film","frame":120,"tweens":[{"from":96,"to":128,"token":"snapOut","family":"arrive"},...]}
 // with spans in absolute frames (scripts/grammar-score.mjs reads them).
@@ -140,6 +148,118 @@ const visibleRect = (el: Element) => {
     if (cy) [t, b] = [Math.max(t, a.top), Math.min(b, a.bottom)];
   }
   return rt - l >= 1 && b - t >= 1 ? { left: l, top: t, width: rt - l, height: b - t } : null;
+};
+
+/** A box cut by every ancestor of el that clips its overflow (null when nothing of it shows). */
+const clipBox = (el: Element, r: { left: number; top: number; width: number; height: number }) => {
+  let [l, t, rt, b] = [r.left, r.top, r.left + r.width, r.top + r.height];
+  for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) {
+    const cs = getComputedStyle(e);
+    const cx = cs.overflowX !== 'visible';
+    const cy = cs.overflowY !== 'visible';
+    if (!cx && !cy) continue;
+    const a = e.getBoundingClientRect();
+    if (cx) [l, rt] = [Math.max(l, a.left), Math.min(rt, a.right)];
+    if (cy) [t, b] = [Math.max(t, a.top), Math.min(b, a.bottom)];
+  }
+  return rt - l >= 1 && b - t >= 1 ? { left: l, top: t, width: rt - l, height: b - t } : null;
+};
+
+/** An icon's drawn box: an <svg> glyph by the ink of its paths (its viewBox mapped onto its box), so the empty padding
+ *  of the glyph's square never counts as the icon; any other icon (a tile, a badge) by its own box. */
+const inkBox = (el: Element) => {
+  const r = el.getBoundingClientRect();
+  if (!(el instanceof SVGSVGElement)) return r;
+  const vb = el.viewBox?.baseVal;
+  if (!vb || !vb.width || !vb.height) return r;
+  let bb: DOMRect;
+  try {
+    bb = el.getBBox();
+  } catch {
+    return r;
+  }
+  if (!bb.width || !bb.height) return r;
+  const sx = r.width / vb.width;
+  const sy = r.height / vb.height;
+  return { left: r.left + (bb.x - vb.x) * sx, top: r.top + (bb.y - vb.y) * sy, width: bb.width * sx, height: bb.height * sy };
+};
+
+/** The element's own opacity times its ancestors' (no text inside to weigh). */
+const chainOpacity = (el: Element | null) => {
+  let o = 1;
+  for (let e = el; e && e !== document.body; e = e.parentElement) o *= parseFloat(getComputedStyle(e).opacity || '1');
+  return o;
+};
+
+/** Whether an element paints something opaque over what lies under it: a fill of 50 % or more, a background image,
+ *  a picture, or a drawn shape, at an effective opacity of 0.5 or more. */
+const paints = (e: Element) => {
+  if (chainOpacity(e) < 0.5) return false;
+  if (/^(IMG|VIDEO|CANVAS)$/.test(e.tagName.toUpperCase())) return true;
+  if (e instanceof SVGGraphicsElement && !(e instanceof SVGSVGElement)) return true;
+  const cs = getComputedStyle(e);
+  if (cs.backgroundImage && cs.backgroundImage !== 'none') return true;
+  const m = /rgba?\(([^)]+)\)/.exec(cs.backgroundColor);
+  const v = m ? m[1].split(/[\s,/]+/).filter(Boolean).map(Number) : [];
+  return v.length >= 3 && (v.length > 3 ? v[3] : 1) >= 0.5;
+};
+
+/** Share of 9 points over an icon's box where it is in view: hit-tested top down, nothing opaque is painted above it
+ *  (text and the audit's own overlay aside). Hit testing runs with pointer events on everywhere for the call (a device
+ *  frame turns them off for its screen). */
+const iconInView = (icon: Element, r: { left: number; top: number; width: number; height: number }, host: Element) => {
+  let seen = 0;
+  for (let i = 0; i < 3; i++)
+    for (let j = 0; j < 3; j++) {
+      let shows = true;
+      for (const e of document.elementsFromPoint(r.left + (r.width * (i + 0.5)) / 3, r.top + (r.height * (j + 0.5)) / 3)) {
+        if (host.contains(e)) continue;
+        if (e === icon || icon.contains(e) || e.contains(icon)) break; // the icon, or what holds it: nothing above
+        if (e.closest('[data-text],[data-audit-copy]')) continue; // text over the icon is the crossing itself
+        if (paints(e)) {
+          shows = false;
+          break;
+        }
+      }
+      if (shows) seen++;
+    }
+  return seen / 9;
+};
+
+/** The boxes of a tagged text's words (runs of non-space characters, each its own Range), where they are drawn. */
+const wordBoxes = (el: Element) => {
+  const out: DOMRect[] = [];
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const txt = n.textContent || '';
+    for (const m of txt.matchAll(/\S+/g)) {
+      const r = document.createRange();
+      r.setStart(n, m.index ?? 0);
+      r.setEnd(n, (m.index ?? 0) + m[0].length);
+      for (const q of Array.from(r.getClientRects())) if (q.width >= 1 && q.height >= 1) out.push(q);
+    }
+  }
+  return out;
+};
+
+/** Whether a tagged text's words are painted above an icon: at points inside each word's box that lie over the icon, the
+ *  text is hit before the icon and before anything opaque between them (a card the icon sits on hides a text behind it). */
+const textOverIcon = (text: Element, icon: Element, r: { left: number; top: number; width: number; height: number }, host: Element) => {
+  for (const w of wordBoxes(text)) {
+    const l = Math.max(w.left, r.left), t = Math.max(w.top, r.top), rt = Math.min(w.right, r.left + r.width), b = Math.min(w.bottom, r.top + r.height);
+    if (rt - l < 2 || b - t < 2) continue;
+    for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.3], [0.75, 0.3], [0.25, 0.7], [0.75, 0.7]]) {
+      for (const e of document.elementsFromPoint(l + (rt - l) * fx, t + (b - t) * fy)) {
+        if (host.contains(e)) continue;
+        if (e === icon || icon.contains(e)) break; // the icon is drawn above the word here
+        if (text === e || text.contains(e)) return true; // the word is on top here
+        if (e.contains(icon)) break; // the icon's holder (its card) above the word: the word is behind it
+        if (e.closest('[data-audit-copy]') || e.closest('[data-text]')) continue; // another text: neither covers
+        if (paints(e)) break; // something opaque between them
+      }
+    }
+  }
+  return false;
 };
 
 /** Share of a 5 x 3 grid of points inside the text where a tagged mover is painted above the text. */
@@ -342,6 +462,29 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
       const r = visibleRect(el);
       return r && opacityOf(el) >= 0.05 ? [{ x: round((r.left - origin.left) / zoom), y: round((r.top - origin.top) / zoom), w: round(r.width / zoom), h: round(r.height / zoom) }] : [];
     });
+    // the kit's icons on screen (outermost [data-icon]; an icon holding a fetched mark is logged with the marks), where they
+    // show, a glyph by its ink, with the share of it in view (nothing opaque painted above it)
+    const pe = document.createElement('style');
+    pe.textContent = '* { pointer-events: auto !important; }';
+    document.head.appendChild(pe);
+    let icons: { name: string; x: number; y: number; w: number; h: number; opacity: number; visible: number; over: string[]; covered?: true }[] = [];
+    try {
+      icons = [...document.querySelectorAll('[data-icon]')].flatMap((el) => {
+        if (el.parentElement?.closest('[data-icon]') || el.closest('[data-audit-copy]') || host.contains(el) || el.querySelector('[data-logo]')) return [];
+        const o = chainOpacity(el);
+        const r = o >= 0.05 ? clipBox(el, inkBox(el)) : null;
+        if (!r) return [];
+        const visible = Math.round(iconInView(el, r, host) * 100) / 100;
+        // the tagged texts whose words are drawn above this icon (each id once)
+        const over = [...new Set(boxes.filter((b) => {
+          const q = b.el.getBoundingClientRect();
+          return q.left < r.left + r.width && r.left < q.right && q.top < r.top + r.height && r.top < q.bottom && textOverIcon(b.el, el, r, host);
+        }).map((b) => b.id))];
+        return [{ name: el.getAttribute('data-icon') || 'icon', x: round((r.left - origin.left) / zoom), y: round((r.top - origin.top) / zoom), w: round(r.width / zoom), h: round(r.height / zoom), opacity: Math.round(o * 100) / 100, visible, over, ...(visible === 0 ? { covered: true as const } : {}) }];
+      });
+    } finally {
+      pe.remove();
+    }
     // the pictures on screen: the product's surfaces, cards and screens ([data-ui]), photos and footage ([data-imagery])
     // and anything else drawn as a picture ([data-picture]); the outermost of each, at least PICTURE_MIN of the frame,
     // where it shows, the camera float taken out like the boxes'. A mark or chip set inside a line of type is part of the
@@ -362,7 +505,7 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
       const y = height / 2 + ((r.top - origin.top) / zoom - height / 2 - fy) / fk;
       return [{ x: round(x), y: round(y), w: round(w), h: round(h), opacity: Math.round(o * 100) / 100 }];
     });
-    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, logos, imagery, pictures, issues, warnings, bands: TYPE_BANDS, widths: TYPE_WIDTH })}`);
+    console.log(`${AUDIT_TAG} ${JSON.stringify({ comp, frame, width, height, zone, safe: SAFE, minPx: round(minPx), words, uiWords, boxes: clean, logos, imagery, icons, pictures, issues, warnings, bands: TYPE_BANDS, widths: TYPE_WIDTH })}`);
     // the tweens evaluated for this frame, their spans moved into absolute frames (a caller's frame argument is its own clock)
     const tweens = drain().map((r) => ({ from: r.from + (frame - r.frame), to: r.to + (frame - r.frame), token: r.token, family: r.family }));
     console.log(`${TWEENS_TAG} ${JSON.stringify({ comp, frame, tweens })}`);

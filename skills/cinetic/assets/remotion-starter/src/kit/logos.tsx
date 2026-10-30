@@ -149,7 +149,7 @@ export const AppIcon: React.FC<AppIconProps> = ({ logo, size: s, tone = 'light',
   const unfetched = !!logo && !f && !glyph;
   if (unfetched) kitEmpty('AppIcon', `the real mark of ${typeof logo === 'string' ? logo : logo.name} (node scripts/logos.mjs) or a glyph`);
   return (
-    <div data-ui {...(unfetched ? { 'data-kit-empty': 'AppIcon', 'data-kit-need': 'logo' } : {})} style={{ position: 'relative', width: s, height: s, flex: 'none', ...style }}>
+    <div data-ui data-icon={e?.name ?? glyph ?? 'app'} {...(unfetched ? { 'data-kit-empty': 'AppIcon', 'data-kit-need': 'logo' } : {})} style={{ position: 'relative', width: s, height: s, flex: 'none', ...style }}>
       <div style={{ position: 'absolute', inset: 0, borderRadius: s * 0.235, boxShadow: shadow }} />
       <div style={{ position: 'absolute', inset: 0, clipPath: clip, background: `linear-gradient(180deg, ${F.top} 0%, ${F.bottom} 100%)` }}>
         {own && f && <Img src={staticFile(e.files.mark!.src)} data-logo={e.name} style={{ position: 'absolute', left: 0, top: 0, width: 1.1 * s, height: 1.1 * s, display: 'block', transform: `translate(${(-0.05 * s).toFixed(2)}px, ${(-0.05 * s).toFixed(2)}px)` }} />}

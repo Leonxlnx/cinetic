@@ -121,7 +121,7 @@ export const Pill: React.FC<{ theme: KitTheme; h: number; label: React.ReactNode
       {done ? (
         <Check size={d} fill={t.accent} tick={t.accentInk} />
       ) : (
-        <svg width={d} height={d} viewBox="0 0 24 24" style={{ display: 'block', transform: `rotate(${spin.toFixed(2)}deg)` }}>
+        <svg data-icon="spinner" width={d} height={d} viewBox="0 0 24 24" style={{ display: 'block', transform: `rotate(${spin.toFixed(2)}deg)` }}>
           <circle cx={12} cy={12} r={9.5} fill="none" stroke={t.well} strokeWidth={3} />
           <path d="M12 2.5a9.5 9.5 0 0 1 9.5 9.5" fill="none" stroke={t.accent} strokeWidth={3} strokeLinecap="round" />
         </svg>

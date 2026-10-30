@@ -262,7 +262,7 @@ export const AvatarStack: React.FC<{ theme: KitTheme; people: { initials: string
 
 /** A round tick: done. */
 export const Check: React.FC<{ size: number; fill: string; tick: string; ring?: string }> = ({ size, fill, tick, ring }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: 'block' }}>
+  <svg data-icon="check" width={size} height={size} viewBox="0 0 24 24" style={{ display: 'block' }}>
     <circle cx={12} cy={12} r={ring ? 10.6 : 11.5} fill={fill} stroke={ring} strokeWidth={ring ? 1.6 : 0} />
     <path d="M7 12.5l3.2 3.2L17 9" stroke={tick} strokeWidth={2.4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
@@ -270,7 +270,7 @@ export const Check: React.FC<{ size: number; fill: string; tick: string; ring?: 
 
 /** A ring with a dot: waiting. */
 export const Pending: React.FC<{ size: number; stroke: string; fill: string }> = ({ size, stroke, fill }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: 'block' }}>
+  <svg data-icon="pending" width={size} height={size} viewBox="0 0 24 24" style={{ display: 'block' }}>
     <circle cx={12} cy={12} r={10.2} fill={fill} stroke={stroke} strokeWidth={1.6} />
     <circle cx={12} cy={12} r={3} fill={stroke} />
   </svg>
@@ -282,12 +282,13 @@ export type GlyphStyle = 'line' | 'fill' | 'duotone';
 /**
  * A generic glyph (kit/icons.ts, Phosphor): `weight` keeps the old stroke scale (2 = the regular line, 2.3 and up the
  * bold one); `variant` fills it or lays the duotone's tone (`tone`, default the line colour at 20 %) under the line.
- * For a product, source or model the film names, use its real mark (kit/logos.tsx) instead.
+ * For a product, source or model the film names, use its real mark (kit/logos.tsx) instead. Tagged data-icon: the layout
+ * audit logs its drawn box, so text crossing it is caught (scripts/ui-layout.cjs); set it beside its label, never under text.
  */
 export const Glyph: React.FC<{ name: GlyphName; size: number; color: string; weight?: number; variant?: GlyphStyle; tone?: string }> = ({ name, size, color, weight = 2, variant = 'line', tone }) => {
   const p: IconPaths = ICONS[name];
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${ICON_GRID} ${ICON_GRID}`} style={{ display: 'block' }}>
+    <svg data-icon={name} width={size} height={size} viewBox={`0 0 ${ICON_GRID} ${ICON_GRID}`} style={{ display: 'block' }}>
       {variant === 'fill' && <path d={p.fill} fill={color} />}
       {variant === 'duotone' && <path d={p.tone} fill={tone ?? color} opacity={tone ? 1 : 0.2} />}
       {variant !== 'fill' && <path d={variant === 'duotone' ? p.duo ?? p.regular : weight >= 2.3 ? p.bold : p.regular} fill={color} />}
@@ -297,7 +298,7 @@ export const Glyph: React.FC<{ name: GlyphName; size: number; color: string; wei
 
 /** A glyph on a soft accent tile (a category, a generic action): duotone on the soft tile, filled on the solid one. */
 export const GlyphTile: React.FC<{ theme: KitTheme; name: GlyphName; size: number; solid?: boolean; variant?: GlyphStyle }> = ({ theme: t, name, size, solid, variant }) => (
-  <div style={{ width: size, height: size, borderRadius: size * 0.28, background: solid ? t.accent : t.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+  <div data-icon={name} style={{ width: size, height: size, borderRadius: size * 0.28, background: solid ? t.accent : t.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
     <Glyph name={name} size={size * 0.56} color={solid ? t.accentInk : t.dark ? t.text : t.accentDeep} weight={2.2} variant={variant ?? (solid ? 'fill' : 'duotone')} />
   </div>
 );
