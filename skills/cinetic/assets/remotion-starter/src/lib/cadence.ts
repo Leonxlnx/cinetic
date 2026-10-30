@@ -190,3 +190,18 @@ export const phrase = (n: number, gap: number, o: { shape?: PhraseShape; seed?: 
 /** Absolute phrased onsets: start + phrase(n, gap, o).onsets (a list's rows, a line's words). Pure. */
 export const phraseOnsets = (start: number, n: number, gap: number, o: Parameters<typeof phrase>[2] = {}): number[] =>
   phrase(n, gap, o).onsets.map((v) => start + v);
+
+/**
+ * A real rest after a landing. A crafted cut alternates real stillness with hard accents; a picture that never rests
+ * reads evenly busy. After a landing the camera float comes to rest on the landing frame and holds `frames60` (8-15
+ * f@60, house 12) before it drifts on: restAfter() is that lock, for the float's locks (lib/drift FloatOpts.locks,
+ * withLocks). Give the landing a short tail (lib/drift tail, tauS 0.15) so the picture is near still through the rest.
+ * forensics.py reads a still run of up to 16 f@60 that starts within 0.5 s of a landing as a rest (motion-rest), not a
+ * freeze; a still stretch that opens dead still fails motion-frozen.
+ */
+export const REST = { frames60: [8, 15] as const, house60: 12, rampS: 0.2 } as const;
+export const restAfter = (landing: number, o: { frames60?: number; rampS?: number } = {}): { at: number; holdS: number; rampS: number } => ({
+  at: Math.round(landing),
+  holdS: clamp(o.frames60 ?? REST.house60, REST.frames60[0], REST.frames60[1]) / 60,
+  rampS: o.rampS ?? REST.rampS,
+});
