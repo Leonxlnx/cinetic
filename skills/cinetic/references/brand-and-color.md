@@ -498,9 +498,9 @@ event is declared in `COLOUR`. Two films in a row never share a family.
 | Family | What it is | Type | Colour field | The one colour event |
 |---|---|---|---|---|
 | `nearWhite` | 98 % light: a clean near-white page (L .97–.99) under real pictures and product UI | ink | none | none: the pictures carry the colour |
-| `blackField` | a near-black field (L .11–.14, never `#000`), a soft light sliding along the rims | white | none | none |
+| `blackField` | a near-black field (L .10–.12, never `#000`) under one soft key light from a top corner, about 12 L* brighter where it falls and drifting slowly (a black void on the far side, never a flat charcoal) | white | none | none |
 | `whiteBand` | white with one band of the brand colour across the top (about a quarter of the height, fading down) | ink | the band | the band floods the frame for one line, which sits on it in white or ink |
-| `deepPool` | a deep field at the accent's hue (L .17–.22, C .03–.06) with a pool of light drifting slowly behind the subject | white | the whole field | none: the field is the colour |
+| `deepPool` | a deep field at the accent's hue (L .22–.27, C .045–.058: enough to read as a colour, never as a charcoal, and under the C .06 line where a whole field reads as a wash) with a soft pool of light drifting slowly behind the subject | white | the whole field | none: the field is the colour |
 | `softSky` | a pale sky gradient (L .965 to .915 at a cool hue 225–240, C .015–.035), drifting | ink | the pale field | none |
 | `lightDark` | the problem on a light page, then the product on a dark stage | ink, then white | none | the turn to dark, once, on a seam |
 | `gradientField` | one pale tinted gradient (L .965 to .90 at the accent's hue, C .02–.05), drifting along its axis | ink | the pale field | none |

@@ -600,11 +600,12 @@ export const Planes: React.FC<{ base: Shot; shot: Shot; bg?: React.ReactNode; mi
  *
  *   family         what it is                                                    tone   colour field
  *   nearWhite      98 % light, a clean near-white page under real pictures and UI  light  no
- *   blackField     a near-black field (L .13), white type, a soft light along rims  dark   no
+ *   blackField     a near-black field (L .11) under one soft key light from a top    dark   no
+ *                  corner (12 L* across the frame), white type
  *   whiteBand      white with one band of the brand colour across the top; once a   light  the band (one line on it)
  *                  film the band floods the frame for one line
- *   deepPool       a deep field at the accent's hue (L .19) with a light pool        dark   yes (the whole field)
- *                  drifting slowly behind the subject
+ *   deepPool       a deep field at the accent's hue (L .25, C .055: a colour, never   dark   yes (the whole field)
+ *                  a charcoal, never a wash) with a soft light pool drifting behind the subject
  *   softSky        a pale sky gradient (L .965 to .915 at a cool hue), type in ink  light  yes (pale)
  *   lightDark      the problem on a light page, then the product on a dark stage:   turn   no
  *                  one turn, declared, on a seam
@@ -640,13 +641,13 @@ export const familyInks = (family: GroundFamily, o: { dark?: boolean; paper?: st
   const hf = fieldHue(accent);
   const h = toOklch(ink)[2];
   const lightSet = (ground: string, far: string, extra: Partial<FamilyInks> = {}): FamilyInks => ({ ground, far, type: ink, mute: mixColor(ink, ground, 0.42), accent, surface: white, line: mixColor(ink, ground, 0.84), dark: false, ...extra });
-  const darkSet = (ground: string, far: string, extra: Partial<FamilyInks> = {}): FamilyInks => ({ ground, far, type: white, mute: mixColor(white, ground, 0.4), accent: mixColor(accent, white, 0.28), surface: mixColor(ground, white, 0.09), line: mixColor(white, ground, 0.8), dark: true, ...extra });
+  const darkSet = (ground: string, far: string, extra: Partial<FamilyInks> = {}): FamilyInks => ({ ground, far, type: white, mute: mixColor(white, ground, 0.4), accent: mixColor(accent, white, 0.28), surface: mixColor(ground, white, 0.15), line: mixColor(white, ground, 0.8), dark: true, ...extra });
   // cinetic:device-palette the ground families' fields and their type, derived from the film's tokens at each family's lightness
   switch (family) {
     case 'blackField':
-      return darkSet(oklch(0.13, 0.004, h), oklch(0.1, 0.003, h));
+      return darkSet(oklch(0.11, 0.004, h), oklch(0.09, 0.003, h));
     case 'deepPool':
-      return darkSet(oklch(0.19, 0.045, hf), oklch(0.15, 0.04, hf), { field: oklch(0.19, 0.045, hf), onField: white });
+      return darkSet(oklch(0.25, 0.055, hf), oklch(0.2, 0.048, hf), { field: oklch(0.25, 0.055, hf), onField: white });
     case 'whiteBand':
       return lightSet(mixColor(white, paper, 0.25), paper, { field: accent, onField: contrastOn(accent, white, ink) });
     case 'softSky':
@@ -654,7 +655,7 @@ export const familyInks = (family: GroundFamily, o: { dark?: boolean; paper?: st
     case 'gradientField':
       return lightSet(oklch(0.965, 0.022, hf), oklch(0.9, 0.05, hf), { field: oklch(0.93, 0.036, hf), onField: ink });
     case 'lightDark':
-      return o.dark ? darkSet(oklch(0.17, 0.008, h), oklch(0.13, 0.006, h)) : lightSet(paper, mixColor(paper, ink, 0.06));
+      return o.dark ? darkSet(oklch(0.11, 0.006, h), oklch(0.09, 0.005, h)) : lightSet(paper, mixColor(paper, ink, 0.06));
     default:
       return lightSet(paper, mixColor(paper, ink, 0.05));
   }
@@ -684,9 +685,11 @@ export const FamilyGround: React.FC<{ family: GroundFamily; frame: number; dark?
   if (family === 'nearWhite' || (family === 'lightDark' && !dark)) {
     return <LitGround frame={frame} spec={{ kind: 'wash', base: k.ground, lift: 0.035, seed }} style={style} />;
   } else if (family === 'blackField' || (family === 'lightDark' && dark)) {
-    // a soft light along the top rim, sliding slowly: the field is black, the light is felt on its edge
-    const rim = bakePlate('linear', [{ at: 0, color: C.white, alpha: 0.075 }, { at: 0.5, color: C.white, alpha: 0.02 }, { at: 1, color: C.white, alpha: 0 }], W * b * 0.5, H * 0.42 * b * 0.5, { vertical: true, seed: 5 });
-    body = <Plate src={rim} x={W * 0.08 * wave(14)} y={-H * 0.04} w={W * 1.3} h={H * 0.42} />;
+    // one soft key light from the top left, drifting slowly: a black void on its far side, about 12 L* brighter where
+    // it falls (never a flat charcoal, never a fade to black on an empty frame); the plate is far larger than the frame
+    const key = bakePlate('radial', [{ at: 0, color: C.white, alpha: 0.105 }, { at: 0.35, color: C.white, alpha: 0.05 }, { at: 0.75, color: C.white, alpha: 0.008 }, { at: 1, color: C.white, alpha: 0 }], W * b * 0.5, W * b * 0.5, { seed: 5 });
+    const R = W * 2.2;
+    body = <Plate src={key} x={W * 0.16 - R / 2 + W * 0.05 * wave(14)} y={-H * 0.22 - R / 2 + H * 0.04 * wave(11, 0.3)} w={R} h={R} />;
   } else if (family === 'whiteBand') {
     const bandH = H * (0.24 + 0.015 * wave(12));
     const f = clamp(flood);
@@ -698,7 +701,7 @@ export const FamilyGround: React.FC<{ family: GroundFamily; frame: number; dark?
       </>
     );
   } else if (family === 'deepPool') {
-    const pool = bakePlate('radial', [{ at: 0, color: mixColor(k.ground, C.white, 0.14), alpha: 1 }, { at: 0.5, color: mixColor(k.ground, C.white, 0.06), alpha: 0.6 }, { at: 1, color: k.ground, alpha: 0 }], W * b * 0.4, W * b * 0.4, { seed: 9 });
+    const pool = bakePlate('radial', [{ at: 0, color: mixColor(k.ground, C.white, 0.07), alpha: 1 }, { at: 0.5, color: mixColor(k.ground, C.white, 0.03), alpha: 0.6 }, { at: 1, color: k.ground, alpha: 0 }], W * b * 0.4, W * b * 0.4, { seed: 9 });
     const R = W * 0.95;
     body = <Plate src={pool} x={W / 2 - R / 2 + W * 0.06 * wave(15)} y={H * 0.58 - R / 2 + H * 0.04 * wave(11, 0.25)} w={R} h={R} />;
   } else if (family === 'softSky' || family === 'gradientField') {

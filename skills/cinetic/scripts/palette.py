@@ -41,9 +41,9 @@ Ground families (--family NAME; --list-families prints them): the one field and 
 prints a `// family: NAME` line and the family's field tokens (field, fieldFar) at the field hue (the accent's own
 for a blue, teal or green, else a cool 230), with the type's contrast on the field:
   nearWhite      tintedPaper                   a clean near-white page under pictures and UI
-  blackField     inkStage at L .13             a near-black field, white type, a soft rim light
+  blackField     inkStage at L .11             a near-black field under one soft key light, white type
   whiteBand      whiteWorld + the accent band  white with one band of the brand colour; the band floods once
-  deepPool       a deep field L .19 C .045     the accent's hue at depth, a light pool drifting; white type
+  deepPool       a deep field L .25 C .055     the accent's hue at depth (a colour, never a charcoal), a light pool; white type
   softSky        a pale sky L .965 C .018      a cool sky gradient (to L .915), ink type
   lightDark      tintedPaper, then a dark stage  the problem on light, the product on dark: one declared turn
   gradientField  a pale tinted field           L .965 C .022 to L .90 C .05 at the field hue, ink type
@@ -231,11 +231,11 @@ RECIPES = {
 # end), the ground chroma the family allows on the grounds it tints, and those tokens.
 FAMILIES = {
     'nearWhite': dict(recipe='tintedPaper', about='a clean near-white page under real pictures and UI'),
-    'blackField': dict(recipe='inkStage', stage={'ink': (0.13, 0.004, None), 'ink2': (0.18, 0.006, None)},
+    'blackField': dict(recipe='inkStage', stage={'ink': (0.11, 0.004, None), 'ink2': (0.17, 0.006, None)},
                        about='a near-black field, white type, a soft light along the rims'),
     'whiteBand': dict(recipe='whiteWorld', field={'field': 'accent'}, about='white with one band of the brand colour; it floods the frame once'),
-    'deepPool': dict(recipe='inkStage', stage={'ink': (0.19, 0.045, 'field'), 'ink2': (0.24, 0.05, 'field'), 'line': (0.32, 0.04, 'field')},
-                     field={'field': (0.19, 0.045, 'field'), 'fieldFar': (0.15, 0.04, 'field')}, ground_c=0.07, tints=('ink', 'ink2', 'line'),
+    'deepPool': dict(recipe='inkStage', stage={'ink': (0.25, 0.055, 'field'), 'ink2': (0.30, 0.055, 'field'), 'line': (0.38, 0.045, 'field')},
+                     field={'field': (0.25, 0.055, 'field'), 'fieldFar': (0.20, 0.048, 'field')}, ground_c=0.07, tints=('ink', 'ink2', 'line'),
                      about='a deep field at the accent hue with a light pool drifting behind the subject'),
     'softSky': dict(recipe='tintedPaper', stage={'paper': (0.965, 0.018, 232.0), 'mist': (0.985, 0.008, 232.0)},
                     field={'field': (0.94, 0.026, 232.0), 'fieldFar': (0.915, 0.034, 232.0)}, ground_c=0.04, tints=('paper', 'mist'),

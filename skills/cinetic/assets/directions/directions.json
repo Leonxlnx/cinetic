@@ -156,7 +156,7 @@
      "dark"
     ],
     "recipe": "inkStage",
-    "what": "a near-black field (L .11-.14, never pure black), white type, a soft light sliding along the rims",
+    "what": "a near-black field (L .10-.12, never pure black) under one soft key light from a top corner (about 12 L* across the frame, drifting slowly), white type",
     "type": "white",
     "field": "none",
     "event": "none"
@@ -182,7 +182,7 @@
      "field"
     ],
     "recipe": "inkStage",
-    "what": "a deep field at the accent's hue (L .17-.22, C .03-.06) with a pool of light drifting slowly behind the subject",
+    "what": "a deep field at the accent's hue (L .22-.27, C .045-.058: a colour, never a charcoal, never a wash) with a soft pool of light drifting slowly behind the subject",
     "type": "white",
     "field": "the whole field",
     "event": "none: the field is the colour"
