@@ -1,13 +1,13 @@
 # Review loop
 
-How to critique a render and decide whether it ships: the round procedure, the critic lenses, the verify pass, the design-off for a weak act, the rubric, severity, the ship gate, recurring problems and every QA threshold. Read it at Step 10, and whenever a script flags something you do not understand.
+How to critique a render and decide whether it ships. The default is §1: one round on a contact sheet, one director pass against the checklist, the fast gates, and a second round only when a gate fails. §2 onwards is the long review (the critic lenses, the verify pass, the detail pass, the design-off, the rubric): optional, for when the user asks for a deeper review or a problem will not yield. Read §1 at the review step, and the rest whenever a script flags something you do not understand.
 
 The numbers here are proven defaults from building and shipping films, not dogma. Tighten or loosen them for a film with a reason, and write the reason down.
 
 ## Contents
 
-1. [Rounds](#1-rounds)
-2. [One round, step by step](#2-one-round-step-by-step)
+1. [The default review](#1-the-default-review)
+2. [The long review, step by step (optional)](#2-the-long-review-step-by-step-optional)
 3. [Declaring intent: cuts, freezes, ignores](#3-declaring-intent-cuts-freezes-ignores)
 4. [Reading the reports](#4-reading-the-reports)
 5. [The critic lenses](#5-the-critic-lenses)
@@ -19,20 +19,47 @@ The numbers here are proven defaults from building and shipping films, not dogma
 11. [Recurring issue classes](#11-recurring-issue-classes)
 12. [Thresholds](#12-thresholds)
 
-## 1. Rounds
+## 1. The default review
+
+One round on a preview, then the master. It fits the film's time budget (90 minutes from scaffold to master, 120 at most).
+
+1. **Render the preview** (`bash scripts/render.sh Film out/preview.mp4 --preview`: muted render, mux, `probe.py` and
+   `check-sync.py`).
+2. **The fast gates**, each seconds to a minute on a 30 s film: `copy-check.py --ui src`, `grid-check.ts`,
+   `lint-film.mjs src`, `layout-audit.sh Film --copy --scale 0.5` (placement, overlaps, kit icons, stand-ins),
+   `forensics.py out/preview.mp4 --cues out/cues.json --grammar-only` (the motion and seam gates on a small decode;
+   `--seams` alone in seconds), `logos.mjs check` when the film shows other products' marks, `film-diff.mjs`
+   (`references/checks.md` §1 lists them in order). A gate that costs more than 5 minutes on a 30 s film is advisory.
+3. **One contact sheet**: `node scripts/frames.mjs sheet` (about 30 labelled tiles over the film).
+4. **The director pass** (`assets/critics/director.md`): the picture beats read with the words ignored first (what
+   does the product do in each?), then the checklist: words in the middle, line then picture, one voice and quiet
+   emphasis, seams that flow, clean UI, current marks and a centred end card built from the last element, its own film
+   against the last three, plain words, less text, the picture telling it, colour, premium rather than merely clean,
+   and the time left. Run it as a subagent with the filled template, or yourself with the sheet open before the code.
+5. **Fix** in order of impact per minute: every P0, then the P1s the time allows. Re-render only the acts you changed.
+6. **A second round only when a gate fails or a P0 was fixed**; otherwise go to the master. Stop after three rounds.
+7. **The master** (`bash scripts/render.sh Film out/film.mp4`, `--blur` when the film's policy asks) gets a check, not
+   a round: full `forensics.py` on it, `probe.py` and `check-sync.py` (render.sh runs both), the sound gates, then
+   `film-diff.mjs --record`.
+
+Advisory, never a ship gate in the default review: `grammar-score.mjs` (it rewards the house grammar, not this film's),
+`look-audit.py` (its floors are a useful read of a flat film), `measure-speed.py`. The blind pair test, the detail pass,
+the four lenses, the verifier and the 12-dimension rubric belong to the long review.
+
+### Rounds in the long review
 
 - **Launch films and walkthroughs** get at least 2 rounds. **Stings and loops** need 1 round if every script passes.
-- Stop after 5 rounds, or as soon as the ship gate in §10 is met. Past that point, scores flatten and fixes start to fight each other.
+- Stop after 5 rounds, or as soon as the long ship gate in §10 is met. Past that point, scores flatten and fixes start to fight each other.
 - Round 1 runs four lenses: director, forensics, sound-sync and art-copy-ui. Later rounds drop art-copy-ui unless copy, type, colour or UI changed.
-- **Every round runs the detail pass** (§2 step 3, the detail lens in §5): matching frames side by side at 2x, every
-  difference listed and fixed or answered. A film is not done while a difference a viewer could see stays open.
+- **Every long round runs the detail pass** (§2 step 3, the detail lens in §5): matching frames side by side at 2x, every
+  difference listed and fixed or answered.
 - **A dev round can render every 4th frame.** The `FilmEvery` composition is the film sampled (`step` 4 by default,
   `offset` 0; the next round `--props='{"step":4,"offset":2}'`): a whole-film check at half size in about a quarter of
   the time, with a paired sheet that still shows every move. Judge timing and spacing on it, motion on a preview.
 - **Every critique round reviews a preview** (`render.sh --preview`), which carries the same BT.709 tags as the master, so colour and banding judgements carry over. Previews are minutes; a blurred master is tens of minutes, and blurring a film that is still changing wastes them.
 - **The blurred master is rendered once, after the last critique round, and gets a check, not a round:** `forensics.py` and `av-audit.py` on the master, the fastest frames at full size (`fastest_frames` in `out/samples.json`, printed by `render.sh`), and a quick director glance at the watch sheets for stamped copies, smears and blur across cuts. If that check finds a problem in one act, re-render that act's range and splice it (§7) rather than re-blurring the film.
 
-## 2. One round, step by step
+## 2. The long review, step by step (optional)
 
 Keep each round in its own folder, so later lenses can be told what changed:
 
@@ -259,12 +286,12 @@ Score each dimension 1 to 5. The anchors are for 1, 3 and 5, and 2 and 4 sit bet
 |---|---|---|---|---|
 | **Idea and device** | a feature tour | a clear idea, but the device drops out, or the film would be just as true of a simpler product | one idea specific to this product that reads muted; the device is an object this product owns, survives every cut and resolves (into the mark, or in a loop or product video into the product's finished state) | watch sheets with the sound off; the specificity answer in `TREATMENT.md` |
 | **Hook (0–2 s)** | a blank or static frame | motion, but the problem lands after 2 s | frame 0 composed and moving; the problem felt by 1 s | first watch sheet; `energy_per_second[0:2]` |
-| **Copy and type** | no line says what the product is by 3 s, vague or fancy words, a keyword pile, labels, bullets, a line over 7 words, two lines at once, mixed fonts | plain lines, but clever before clear, or lines that all arrive the same way | what it is by 3 s, then one concrete thing it does a line while the UI shows it, the name and what to do (2–7 words, at least 8 f per word in a reveal), each with its own text animation, one family on one token set, zero collisions | art lens; `copy-check.py`; `grid-check.ts` script, words, holds and text flow |
+| **Copy and type** | no line says what the product is by 3 s, vague or fancy words, a keyword pile, labels, bullets, a line over 7 words, two lines at once, mixed fonts | plain lines, but clever before clear, or lines that all arrive the same way | what it is by 3 s, then one concrete thing it does a line while the UI shows it, the name and what to do (2–7 words, at least 8 f per word in a reveal), every line on the film's one text voice, quiet emphasis (colour on the key word, at most 60 % of lines), one family on one token set, zero collisions | art lens; `copy-check.py`; `grid-check.ts` script, words, holds and text flow |
 | **Colour and brand** | a monochrome accent wash, neon, decorative gradients or glow, beige defaults; the starter's look | disciplined, but generic: the accent carries no meaning, or the brand has no personality | a look of its own from the brand's personality (or the supplied kit); one dominant accent with one meaning over neutral grounds; spectral, gradient and glow only inside devices; no banding; an ownable mark | art lens; look-audit colour checks; banding sheet; the mark sheet |
-| **Picture** | flat: grey cards on a plain ground, a parked camera, a sampler of devices; or everything on texture, busy to the edges | tidy and moving, but thin: one plane, no light event, generic shapes where the product's UI or world belongs | clean and alive: the product's UI, graphic effects or a lit world, three depth planes, light that moves, type beats on clean fields, one signature shot, a device per beat from many families; both floors pass and the picture target is met | look-audit floors and `picture` readings; watch sheets; `out/direction.json` |
-| **Composition** | centred web layout, voids | correct, but framing errors or crops that slice glyphs | bleeding and off-centre framing, one focal point per shot, headroom kept, type at film size | layout-audit; legibility sheet |
+| **Picture** | flat: grey cards on a plain ground, a parked camera, a sampler of devices; or everything on texture, busy to the edges | tidy and moving, but thin: one plane, no light event, generic shapes where the product's UI or world belongs | clean and alive: the product's UI doing the thing, graphic effects or a lit world, depth planes, light that moves, type beats on clean fields, one signature shot, two or three moves done well; both floors pass and the picture target is met | look-audit floors and `picture` readings; watch sheets; `out/direction.json` |
+| **Composition** | text flush left at the top or bottom, text on top of a big picture, voids | correct, but framing errors or crops that slice glyphs | statements centred in the middle band, pictures bleeding past an edge, one focal point per shot, headroom kept, type at film size | layout-audit placement; legibility sheet |
 | **Motion** | uniform fades and bounces | good eases, with pops or stalls | named curves, weight, zero-slope landings, contact squash | director; forensics spikes and stalls |
-| **Transitions** | crossfades and presets | motivated, but with repeats | built from what is on screen: velocity-matched cuts, morphs, masks from the picture; at least 40 % carried; no kind more than 3 times | director; `SEAMS`; grammar-score `seams` |
+| **Transitions** | crossfades and presets | motivated, but with repeats | built from what is on screen: exit-then-enter and text-swap on a kept ground, match cuts, velocity cuts, shared elements; every hard cut carries a device; no kind over 45 % of the changes; at most two ground flips | director; `SEAMS`; grammar-score `seams` |
 | **Pacing** | frozen holds, cramming, or text racing the picture | even, with flat energy, or text on nearly every frame | text and picture take turns; every read held, with slow life in it; a calm cruise between a few clear peaks; results held long enough to land | energy curve; holds and quiet flags; `text-share` and `word-rate` |
 | **Product truth** | a fake dashboard | real UI, but it shows only the naive version of the feature, or data or states contradict the story | the feature's non-obvious behaviour, shown; data that agrees with itself and with the story (roles, sums, ratios); state changes animate, counters count during the action | art lens; pause test; the story asserts in `data.ts` |
 | **Sound and sync** | stock effects, generated music, no music, or out of lock | a licensed track, but effects masked, ducked or out of key, or cuts on the bar grid | a licensed track cut to the picture with structure on its events, every effect within ±1 f at its level over the bed, stop-downs before the hits, one element at the lockup, on its LUFS target (−14; −16 for a sting of 8 s or less) and −1 dBTP | `av.json` strict; `score.json`; sound lens |
@@ -282,18 +309,26 @@ Formats without some dimensions score them against the format's own recipe in `r
 | **P1** | noticeable on a normal viewing | a one-frame pop in the middle of an act; a 2.7 s dead logo hold; a masked hit; a stall at a seam |
 | **P2** | visible only on pause | a 1 px sliver for 3 frames in a fast move; a label 2 px off its grid |
 
-**Ship gate.** Every condition must hold:
+**Ship gate (the default review).** Every condition must hold:
+
+- the fast gates of §1 pass: `copy-check.py --ui src`, `grid-check.ts`, `lint-film.mjs --strict`, `layout-audit.sh`
+  (placement and its placeholder checks), `forensics.py` on the master (0 fails), `probe.py`, `check-sync.py`,
+  `logos.mjs check` for a film that shows other products' marks, `film-diff.mjs`, the sound gates and `credits.py`;
+- the director pass has no open P0, and every checklist item reads yes (or is answered in `fixes.md`);
+- with a clip to match: `like.py guard` passes (`references/clip-match.md`).
+
+**Ship gate (the long review).** When the user asks for the long review, every condition must hold:
 
 - every rubric dimension is at least 3, Picture at least 4, Finish and Sound and sync are 5, and the mean is at least 4.2;
 - there is no open verified P0;
 - every script passes: `probe.py`, `check-sync.py`, `forensics.py` (0 fails; every warning explained in `fixes.md`), `av-audit.py --stems` (0 fails), `lint-film.mjs --strict`, `grid-check.ts`, `layout-audit.sh` (its placeholder checks included: no stand-in words, grey text bars or drawn figures in the render) and `copy-check.py --ui src` (the product's UI strings are real words);
 - the detail pass has no open difference a viewer could see (every one fixed, or answered in `fixes.md`);
 - `look-audit.py` passes with both floors (motion and picture);
-- `grammar-score.mjs`: mean ≥ 80, no dimension under 70;
+- `grammar-score.mjs`: mean ≥ 80, no dimension under 70 (advisory in the default review);
 - the sound gates (`references/sound.md` §2: a licensed track with a valid record, every effect from the kit, over-bed levels, stop-downs, no ducking, clean joins, one element at the lockup, loudness) and `credits.py`;
 - with a clip to match: `like.py guard` passes (`references/clip-match.md`).
 
-When the gate is met, or the 5 rounds are used up, ship. In the hand-off, say plainly what you would still change.
+When the gate is met, or the rounds are used up (three in the default review, five in the long one), ship. In the hand-off, say plainly what you would still change.
 
 ## 11. Recurring issue classes
 
@@ -309,7 +344,7 @@ Look for these first; 10 to 13 are the ones scripts catch least well.
 | 6 | Envelope shape: half-sines, fades on arrive curves | a pulse peaking late; a fade that pops in 1-2 frames (`hit` or `pop`) | `hitPulse`; exits at speed on a leave curve, a short fade only inside a moving exit | `references/motion-tokens.md` §10 |
 | 7 | UI truth | a wrong weekday, stale labels, a counter that flips at the end, the past replanned | derive every label from the data module, with asserts | `references/product-ui.md` |
 | 8 | Out-of-key or masked effects | `masking` warnings; over-bed outside ±2 dB; a pitched effect off the key | tune to the track's key; the effect at its `bed_db`; a stop-down before the hit (never a duck) | `references/sound.md` |
-| 9 | Templated layouts | text left, card right; centred floating | full-bleed product, type on an eye line | `references/taste-and-slop.md` E |
+| 9 | Templated layouts | text left, phone or card right; text on top of a tilted card; a mark pill on every line | a centred line alone, then the product full frame (line, then picture) | `references/taste-and-slop.md` E |
 | 10 | House-style convergence and oversimplified features | the film looks like the starter or Tessel; the proof would be true of a simpler product | three adjectives → choices, a mark sheet; rebuild the proof on the non-obvious behaviour | `references/brand-and-color.md` §2, `references/concept-and-story.md` §3 |
 | 11 | Moves too fast to blur | stepped copies or long smears on the fastest frames of the master | a crisp blur policy for flat graphics; a declared `CAMERA_BLUR` range; or cut, match or mask instead | `references/camera.md` §12 |
 | 12 | An empty picture, or everything on texture | the picture floor fails or misses its target; one plane; no light event; grey cards; type on relief, footage or grain with no clean field | the product's UI, graphic effects or a lit world, three planes, living light, a device per beat; type beats on a clean field or a dimmed, defocused plate (`references/imagery.md`, `references/lighting.md`) | `references/checks.md` §6 |

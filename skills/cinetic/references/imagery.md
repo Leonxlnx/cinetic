@@ -277,7 +277,7 @@ archive photograph is cropped out.
 or `footage`: the campaign (a word cut out of the world), cut to the score, the product in its place, the material,
 the collage, two worlds, then and now, one long photograph, and the collection. Each carries an `assets` block (what
 to list from the subject, the queries, how many pictures, the grade, what to refuse). Even in an imagery-led film
-the script leads: one clean line at a time, each with its own text animation, the pictures under and between them.
+the script leads: one clean line at a time in the film's one text voice, the pictures between them.
 
 ## 10. Checks
 

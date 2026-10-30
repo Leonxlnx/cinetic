@@ -2,8 +2,8 @@
 
 Launch films and update films are the two first-class formats of cinetic. A launch film tells a product's story in
 15-45 s with one signature shot. An update film says that a new version exists and shows what changed, in 8-20 s,
-with the same craft: a short script told one clean line at a time, each line with its own text animation, graphic
-effects around it, a licensed track, the product doing the new thing. This page is the shape, the tools and the traps
+with the same craft: a short script told one clean line at a time, centred, in the film's one text voice, the
+product's moment before or after it, a licensed track, the product doing the new thing. This page is the shape, the tools and the traps
 of the update film.
 
 Contents: 1. The shape · 2. The tools · 3. Writing the changes · 4. Picture · 5. Sound · 6. Timing table ·
@@ -27,7 +27,7 @@ Contents: 1. The shape · 2. The tools · 3. Writing the changes · 4. Picture �
   reimagined."). `python3 scripts/copy-check.py TREATMENT.md --format update` checks it.
 - **The version is the film's one honest number.** It opens the film or closes it, never both as the same still.
 - **Device variety.** Each change gets its own device from a different family (a press, a make-room, a counter, a
-  morph into the next change) and its line its own text animation, joined by the film's one camera. Repeating one device for every change reads as a
+  morph into the next change), its line in the film's one text voice, joined by the film's one camera. Repeating one device for every change reads as a
   template; the device book's "Update change" row in [the index](devices/INDEX.md) lists the first picks.
 - **One signature shot**, on the hook, the payoff or the end card, as the dealt direction says.
 

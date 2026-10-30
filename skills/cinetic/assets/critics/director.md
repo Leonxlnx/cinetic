@@ -1,17 +1,19 @@
-# Critic lens: Director
+# Critic lens: Director (the one review pass)
 
-Prompt template for one review lens (see `references/review-loop.md`, §5). The lead fills every `{{FIELD}}`, then hands this whole file to a subagent, or follows it in person with the sheets opened before any code.
+The default review of a film is this one pass against the checklist below (`references/review-loop.md` §1). Fill every
+`{{FIELD}}` and hand the file to a subagent, or follow it yourself with the sheet open before any code. The other
+lenses in this folder (forensics, sound-sync, art-copy-ui, detail, verifier) are optional: run them when the user asks
+for a deeper review or a gate keeps failing in their area.
 
 ## Context
 
-- Film: {{FILM}}, {{SPEC}} (for example `1920x1080@60, 30 s, 100 BPM, pace: calm`). The idea in one line: {{LOGLINE}}
-- Project root: {{ROOT}}. Read `BRIEF.md`, `TREATMENT.md`, `out/direction.json` (the dealt direction: space, light, camera, cuts, story shape, the signature shot and its beat, the lockup kind, the idea sentence and the competitor test) and `src/timeline.ts` first: the story, the device path and the music-locked cues. The acts live in `src/acts/`.
-- File under review: {{VIDEO}} ({{KIND}}: preview or master). Frame numbers are 0-based: frame = t × {{FPS}}.
-- QA folder for this round: {{QA}}. It holds `forensics.json`, `av.json`, `probe.json`, `look.json` (the motion and picture floors), the latest line of `out/grammar-score.json`, the 12 fps watch sheets (`watch_*.png`, one per 4 s chunk) and `legibility.png`.
-- Round {{ROUND}}. Changed since the last round, so check these hardest: {{CHANGED}}
-- Already fixed. Do not re-report these: {{FIXED}}
-- Fixing time left before the next render: {{BUDGET}}
-- Work only inside {{WORKDIR}}.
+- Film: {{FILM}}, {{SPEC}} (for example `1920x1080@30, 24 s, 112 BPM`). The product in one line: {{PRODUCT}}
+- Project root: {{ROOT}}. Read `BRIEF.md`, `film.json` (the devices this film declares and the last three films'),
+  the script (`COPY` in `src/timeline.ts`, or `src/launch.ts` in a launch-simple film) after the sheet, not before.
+- File under review: {{VIDEO}} (preview or master). Frame = t x {{FPS}}.
+- The contact sheet: {{SHEET}} (`node scripts/frames.mjs sheet`, about 30 labelled tiles over the film), and the gate
+  reports in {{QA}} (layout-audit placement, forensics seams, grid-check beats, copy-check, film-diff, logos check).
+- Round {{ROUND}}. Changed since the last round: {{CHANGED}}. Already fixed, do not re-report: {{FIXED}}
 
 The brief, word for word:
 
@@ -19,87 +21,83 @@ The brief, word for word:
 {{BRIEF}}
 ```
 
-## Your lens
+## The pass
 
-You are the creative director. Judge the film as a viewer first and as a builder second, and hold it to the bar: a film people watch twice and ask "how was that made?". A script of short real sentences, one clean line at a time, each arriving its own way, is right; a pile of keywords, a flat or sparse picture, or a film led by stock pictures is a failure.
+1. **The picture alone first.** Read the sheet with the words ignored (cover them with a hand, or read only the
+   picture beats). For each picture beat write one line: what the product does in it. A beat that reads "nothing
+   happens" or "a screen sits there" gets the product acting in it (a click, a result appearing, an object
+   transforming) before any word is added. Target: every picture beat reads at least partly, half of them clearly.
+2. **Then the checklist.** Every item is a yes or a no with frames. A no is a P0 on the hook, a picture beat's core
+   action, the end card or a hard ban; a P1 elsewhere.
 
-1. **Watch before you read.** Open the watch sheets in order and imagine real-time playback: each row of a 12 fps sheet is about 0.67 s. Write your first impressions down before you open any code or JSON. First impressions are the audience's; after reading the code you will forgive things the audience will not.
-2. **Run the hard-ban checklist on the sheets** (`SKILL.md` "Hard bans"; HB1–HB11 in `references/taste-and-slop.md`). A hit on any frame is a **P0**, on a key beat or not, unless `BRIEF.md` lists that exact thing as brand-supplied. Start its `problem` with the HB ID.
-   - [ ] **HB1–HB3 words:** no keyword pile (lines of one or two words that say nothing), never two lines readable at once (a declared swap excepted), no line over 7 words, no eyebrow or kicker label, no stacked tagline, no "Introducing…", no filler text (decorative mono captions, fake metrics, labels nobody needs, lorem ipsum).
-   - [ ] **HB4 type:** no serif face, no italic or oblique, no skewed text.
-   - [ ] **HB5–HB8 colour:** no orange, amber, beige, cream, tan or sand anywhere (accent, paper, glow); no neon; no halo or bloom around elements or type as decoration; no purple, violet or indigo; no monochrome accent wash; no glassmorphism as a UI style. Light, glow, spectral accents, dithered gradients and glass are allowed when they are part of a device that does a job, with one dominant accent over neutral grounds (`references/lighting.md` §5).
-   - [ ] **HB9–HB10 decoration:** no emoji or stock icons, no sparkles for "AI", no particles, confetti, lens flares or code rain.
-   - [ ] **HB11 motion:** overshoot only on the film's one spring class (`SPRING_CLASS`); nothing else bounces; copy never springs past its place, and letters move one by one only as a line's own text animation.
-   - [ ] **Sound and credits:** music is a licensed track (never generated, never absent); no music or imagery credit appears in the picture.
-   - [ ] **Stand-ins:** no grey bars or blocks where words belong, no "Placeholder", "Label text" or lorem, no person, place or product drawn in code where a real photo belongs (`lint-film` placeholder-copy, bar-text, drawn-figure; the layout audit's placeholder checks). Any one is a **P0**. Look at the hero frames at 2x for them, and leave the full side-by-side list to the detail lens (`detail.md`).
+### The checklist
 
-   For a borderline colour, measure it rather than judging by eye: `python3 scripts/palette.py --accent '<hex>'` refuses one in a banned region. Read `node scripts/lint-film.mjs src` too, but trust the frames: the lint cannot see a rendered glow or a filler caption.
-3. Then answer, with frames:
-   - **The creative question.** Is the picture doing something a template would not? Name the moment a viewer would ask "how was that made?" (it should be the dealt signature shot). A clean, synced, correct film that could be any product's is a **P1** at least.
-   - **The direction.** Does the film keep its dealt direction (the space, the light, a camera that never parks, the cut grammar, the lockup kind)? Flag drift: a different space or light, a camera that stops, a second signature, a beat that uses the alternative, a lockup of another kind, a signature shot that is missing or repeated (**P1**; P0 when the signature is missing).
-   - **The script, as sentences.** Read the lines in order (`COPY` in `src/timeline.ts`, the Script block in `TREATMENT.md`) as a viewer reads them, one per tile run. Do they tell the story (hook, problem, turn, product, proof, payoff), each line a claim, a turn or a payoff that says something? A keyword pile (more than half the lines one or two words: "Speed." "Less noise."), lines that are labels ("Focus blocks."), or a script that tells nothing with the picture off is a **P0**: it is the film's story. A single keyword line, a line over 7 words, or two lines readable at once outside a declared swap is a P1. Back it with `grid-check.ts` (`script`).
-   - **Text animation as the main event.** Every line arrives its own way (a preset from `fx/TypePresets` or a type device), chosen for what it says, and graphic effects frame it. Two lines with the same animation, or lines that only fade or rise the same way, are a **P1**; the line nobody would ask "how was that made?" about is the weakest one.
-   - **A picture that never rests.** Graphic effects and the product's own UI as the material (dithered gradients, glass, spectral colour, morphs, grids, loaders), or a lit world where the direction deals one; three depth planes; light that moves and one light event per act; the subject bleeding past an edge, off-centre; colour mass from the accent's steps and the effects over neutral grounds. Read `look.json`: a failed motion or picture floor is a **P0**; a missed picture target is a P1. Grey cards on a plain ground or a monochrome accent wash are P1.
-   - **Real pictures, finished.** Where a beat shows people, a place, a product or proof of many, it holds real photos or footage chosen with taste and finished like a studio (a card language, a lean in depth, depth blur off the focus, a smear along fast travel, one grade; `references/imagery.md` §4). A drawing standing in for a photo (an SVG person or landscape, coloured squares where portraits belong; D18) is a **P0** on the hook or the payoff and a **P1** elsewhere. Stock gestures or pictures that say nothing the line needs, low resolution or mixed grades are a **P1**: the fix is a better-chosen picture for a beat that shows the world, and a graphic or the product's UI for a beat that is an idea.
-   - **Device variety.** One device per beat (about 1.5-2.5 s), from many families. A sampler (a new trick every half second) or one device on every beat (unless it is the film's declared identity) is a **P1** (K8, K9).
-   - **The weakest 3 seconds.** Name them and say why.
-   - **Cheap, templated, slow, confusing or dead moments.** Check them against the tells in `references/taste-and-slop.md` (grep it for the symptom).
-   - **Specificity.** Would this film be just as true of a simpler product (an even split instead of an itemised one, a list instead of a ranking)? If yes, the proof shows the naive version: name the non-obvious behaviour from `TREATMENT.md` and the beat that should show it.
-   - **Its own look.** Does it look like the starter's demo, like Tessel (a red dot, a block mark, cool paper and a geometric sans), like the last film, or like a generic minimal template? Is there a brand personality in the type, the stage, the shapes and the motion, matching the three adjectives in `TREATMENT.md`? Is the mark ownable, or could it belong to ten other startups?
-   - **Colour with character.** Is the palette a default: framework blue (the `#3B82F6` / `#2563EB` family) on flat greys, pure black and white (D10)? Is the film colourless: look at a mid-film frame on `legibility.png` (480 px, thumbnail size); if no brand colour shows there and the accent doesn't carry the product's action, the film has no identity (D11). Both are **P1**; P0 when the brief asked for a distinctive brand.
-   - **The mark at a glance.** What does the mark read as at 64 px in half a second? A minus or plus, an emoticon, a menu or "more" icon, a padlock, a play button or ± is a misread (D12) and a **P0**, because the logo is a key beat.
-   - **Does each act's idea land in under 1 s?** Look at each act's first 60 frames.
-   - **Does the story read with the sound off?** Follow the story device across every seam. It should never blink out; in a launch film it ideally becomes the mark at the end, and in a loop or product video it is the unit the product acts on.
-   - **The hook.** Frame 0 should already be composed and moving. The problem should be felt by 1 s, and the first line should say what the product is by 3 s. A soft first second, where only the opening line moves (K6) or the sound fades in from quiet (J9; `score.json` `hook`, a warning when the first 0.5 s sits more than 12 dB under the median), is a **P1**, and a **P0** on a feed, loop or social deliverable.
-   - **Can a stranger name it?** The product should read as an app (real chrome) and the feature should be named once, as a UI label, the one line or the end card (A10). A clever behaviour nobody can name is a **P1** (P0 for a feature video or loop, whose job is the feature).
-   - **The end.** The lockup is the film's own device (the dealt lockup kind, the real logo's parts), never a mark, wordmark and tagline centred over a radial glow; fully resolved for 1.5 to 2.0 s and alive (the one held run of the film), the URL readable for at least 1.7 s, and the final frame works as the poster. When the brief gives a practical fact (a date such as "next week", "out now", a URL), it must be on the end card at the secondary size; a missing one is a **P0** (A11), because it is the brief's call to action.
-   - **Composition in motion.** Nothing moving covers text the viewer is reading (I8; `covered` issues in `layout-*.json`). In a 9:16 deliverable, the height is used: the content's mass sits in the middle of the safe band, with no bare bottom 40% and no strip of 16:9 layout floating in the middle (E8; the mass check in `references/formats.md` §7).
-   - **Pacing.** In a calm film (the default, see the spec line) look for one hero move per bar with life cruising between (creep, drift, moving light), holds that never freeze, cuts on the track's events and accents rather than on every downbeat, a dip before the biggest reveal, and the energy arc: an early peak, a lull, the biggest peak at 75–90% of the runtime. In a crisp film look for one motion peak per bar, 30 to 70 f of calm between peaks, and a first 6 s about twice as dense as the middle. Back pacing claims with `stats.energy_per_second` and `stats.energy_per_act` in `forensics.json`: a second near 0.1 reads as a stall unless it is a reading hold whose text still drifts (the `read` windows of the `copy` block in `out/cues.json`; the beat between the parts of a line built in beats is not a read and must move), and a long flat run reads as flat energy. Calm is not sparse: a film that is slow and frozen fails as surely as one that is busy.
-   - **Text flow** (B8, B9, K7, F11). On the 12 fps watch sheets, read the lines tile by tile (a tile is 5 frames, so a line held 1.5 s spans about 18 tiles). Flag:
-     - any tile with two lines readable at once outside a declared swap, or a line of more than 7 words (B8);
-     - a line set on two lines, or a line too small to read at feed size;
-     - a line fully readable for under 1 s (fewer than about 12 tiles);
-     - text arriving during the hero move, lines back to back with no beat for the picture, or anything fast moving while a line is read (K7);
-     - lines on more than about 85% of the tiles, or no stretch of 1.5 s without text in any 10 s (B9);
-     - words that bounce or slam on every line, or two lines arriving the same way (F11).
+1. **Words in the middle.** Every statement centred, in the middle band of the frame (its centre at 35-65 % of the
+   height) for 85 % of the statement time or more; none flush left at the top or the bottom; at most one "text on top,
+   picture below"; a line beside, above or below a picture at most once per 30 s. (`layout-audit` placement.)
+2. **Line, then picture.** At least two type-only beats (a line alone on the clean ground, 0.5-2.3 s); a line over a
+   picture on at most 40 % of the beats, and only where it names what the picture is doing; the first line on screen
+   by 1 s; each picture beat shows the product doing the thing its line said (input -> output, before -> after).
+3. **One voice, quiet emphasis.** Every line arrives on the film's one text voice (one contrasting hero entry per 30 s
+   at most); emphasis on at most 60 % of the lines, the key word in the accent colour by default; no box, marker,
+   pill or underline unless it is the film's one signature, on one line; one-line statements 80 % or more.
+4. **Seams that flow.** Every hard cut carries something (the ground kept, a blur at the seam, an anchor held, the
+   motion carried); at most two light-dark ground flips, each a declared colour event; at least one exit-then-enter,
+   text-swap or match-cut; no seam kind over 45 % of the scene changes. (`forensics.py --seams`.)
+5. **Clean UI.** No vertical accent line beside a card, the left edges of stacked rows within 4 px, no text touching an
+   asset or a card's edge, inner padding about 2.4 cap heights (never under 0.8), real words in every label (no
+   bracket slot, no stand-in number, no kit sample), no title cut with "...".
+6. **Marks.** Other products' marks current (`logos.mjs check` passes), one presentation a film (a chip in the line,
+   pills round a centred line, or a wall), never a pill on every line. The end card centred, built from the film's last
+   element, held 2-3 s, the name once, the one fact under it. The logo is the brand's own or built from the film's
+   last element: never a sparkle, a star or a generic glyph.
+7. **Its own film.** Ground family, voice, signature and end card differ from the last three films (`film-diff.mjs`
+   passes); nothing reads as the template replayed or as the last film re-skinned.
+8. **Words a stranger reads.** 1-5 words a line typically, 2-7 at most, 0.3-1.5 headline words a second; what the
+   product is by 3 s in plain words; no slogan, metaphor or keyword pile (`copy-check.py`).
+9. **Less text.** No text in 15 % of the frames or more; at most two text blocks on screen at once outside a product-UI
+   beat; no floating chips, counters or captions beside a statement; a statement and a dense UI never hold the frame
+   together for more than one beat.
+10. **The picture tells it.** With the words covered (step 1), every picture beat at least partly says what the product
+    does; the first picture beat shows the core action literally, with a real person giving the input where it is
+    human (real footage or a photo, `scripts/assets.mjs recipe`).
+11. **Colour.** With a colour-field ground family, at least one line sits on the field; the key word in the accent ink,
+    not a box; contrast 4.5:1 once a line has settled.
+12. **Premium, not just clean.** Depth and motivated light on the ground and the product (a key light, a rim, a contact
+    shadow, two planes moving at different rates); hero type at 6-9 % of the frame height (bigger for the claim); the
+    one signature move lands; nothing static for more than about 0.8 s outside the end hold. A flat field with small
+    type and a still card is a P1 even when every gate passes.
+13. **Time.** The run so far against the budget (`film.json` started; 90 minutes is the target, 120 the ceiling): say
+    which fix is worth the time left and which is not.
 
-     Back the counts with `grid-check.ts` (`script`, `copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`, `chain-beat`, `read-quiet`, `word-rate`, `text-share`). The fix for a keyword or a vague line is a plain sentence (write it, 2-7 words, with its role: what it is, what it does, the close); for a dumped sentence, two lines one after the other, or one line built in beats; name them as `COPY` entries with their text animations.
-   - **Transitions.** Seams built from what is on screen (a chip that becomes the next word, an iris from a word gap, a carried velocity); at least 40 % carried; no kind more than 3 times except the signature; no dissolve between scenes, no fade to black before the end; no seam duplicating the rest pose.
-   - **Speed.** On a blurred master, look at the fastest frames at full size (`fastest_frames` in `out/samples.json`): stepped copies or a long smear mean the move is too fast for its blur policy and needs a redesign or a declared `CAMERA_BLUR` range, not more samples.
-   - **The grammar score.** Name the weakest `grammar-score` dimension and the fix that raises it.
-4. Check what changed ({{CHANGED}}) at full frame rate: `python3 scripts/sheet.py {{VIDEO}} --from A --to B --every 1 --width 480 --out {{WORKDIR}}/x.png`.
-
-## Tools
-
-- `python3 scripts/sheet.py {{VIDEO}} --frames 350-370 --diff --width 480 --out {{WORKDIR}}/seam.png` pairs each frame with its change from the previous frame, which is how pops and dead stretches show.
-- `bash scripts/grab.sh {{VIDEO}} 1796 --out {{WORKDIR}}/f` makes exact full-resolution stills.
-- Images are expensive in context, so batch frames into sheets instead of opening single stills.
+Then name **the weakest 3 seconds** and why, and the **hard bans** you saw (`SKILL.md` "Hard bans"; any hit is a P0
+unless `BRIEF.md` lists it as brand-supplied).
 
 ## Rules
 
-- Propose at most 12 changes, ranked by impact per minute of fixing. If a change is large or risky, say so and mark it P2.
-- Every change is concrete and code-level: the file, the component or constant, and the values. "Improve the pacing" is not a fix; `CUE.flyIn: b(5,2) → b(5,1)` is.
-- Do not propose adding lines beyond the script's count; do propose rewriting a vague line in plain words, cutting a line to 2-7 words, and giving two lines that share an animation different ones. Do not re-report fixed issues. Do not list what is fine.
-- Prefer changing picture timing to changing sound timing when a hit belongs on the beat.
-- When a problem matches a tell in `references/taste-and-slop.md`, start `problem` with its ID (for example `E1:`), so the fix can use the catalogue's remedy.
-- Priorities: **P0** is visible on a key beat (hook, payoff, logo) or breaks the story, and every hard-ban violation not listed in `BRIEF.md` is P0 wherever it shows. **P1** is noticeable on a normal viewing. **P2** is visible only on pause.
+- At most 10 changes, ranked by impact per minute of fixing. Every change is concrete: the file, the component or
+  constant, the values. "Improve the pacing" is not a fix; `CUE.flyIn: b(5,2) -> b(5,1)` is.
+- Never propose adding text; do propose cutting a line, rewriting a vague one in plain words, and giving a still picture
+  beat the product's own action.
+- Images are expensive: read the sheet, and crop or grab single frames (`node scripts/frames.mjs still <f>`) only to
+  confirm a finding.
+- Do not list what is fine. Do not re-report fixed issues.
 
 ## Return
 
-Return JSON only, in this shape. `frame` is a frame number or an `"a-b"` range. `score` is 1 to 10 against the bar in `SKILL.md`. End `overall` with one line of rubric scores (1 to 5) for the dimensions this lens owns, for example `rubric: idea=4 hook=3 picture=4 composition=4 motion=4 transitions=3 pacing=3`.
+JSON only. `frame` is a frame number or an `"a-b"` range; `item` is the checklist number (or `ban`, `weakest`).
 
 ```json
 {
+  "pictures": [{ "beat": "a1", "frame": "120-260", "reads": "yes | partly | no", "what": "the memo becomes three tasks" }],
+  "checklist": { "1": "yes", "2": "no: 1 type-only beat", "3": "yes", "4": "yes", "5": "yes", "6": "yes", "7": "yes",
+                 "8": "yes", "9": "yes", "10": "partly", "11": "n/a", "12": "no", "13": "52 min" },
   "issues": [
-    {
-      "id": "short-kebab-id",
-      "priority": "P0",
-      "frame": "1790-1802",
-      "problem": "what is wrong, why it hurts the film, what the viewer sees",
-      "fix": { "file": "src/acts/Act6.tsx", "change": "the concrete edit, with values" }
-    }
+    { "id": "short-kebab-id", "item": "2", "priority": "P1", "frame": "300-420",
+      "problem": "what the viewer sees and why it hurts", "fix": { "file": "src/launch.ts", "change": "the edit, with values" } }
   ],
-  "overall": "3-6 sentences: what is great, what most holds it back.\nrubric: idea=4 hook=3 picture=4 composition=4 motion=4 transitions=3 pacing=3",
+  "weakest": "frames and why",
+  "overall": "3-5 sentences: what is great, what most holds it back",
   "score": 7.5
 }
 ```

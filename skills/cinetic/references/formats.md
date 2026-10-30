@@ -363,7 +363,7 @@ PY
 | Teaser or trailer | §2, teaser variant | hook → turn → lockup, 15–20 s, 6–10 words |
 | Release or update post ("here is the newest …") | §3, update film | 15–25 s, calm, 4–6 short sentences, the hook line handing over to the product's arrival |
 | Intro or outro for other videos | §5 | 3–5 s; the outro reverses the intro's entrance; provide an alpha version |
-| Kinetic type piece | §2 structure, words as the device | a script of short sentences, one line per 1–1.5 bars, each with its own text animation (the presets), graphic effects around them and text-free stretches; recipes in `references/copy-and-type.md` §2b and §8 |
+| Kinetic type piece | §2 structure, words as the device | a script of short sentences, one line per 1–1.5 bars, all in the film's one text voice (a preset), graphic effects around them and text-free stretches; recipes in `references/copy-and-type.md` §2b and §8 |
 | App demo | §3 if one capability, §6 if a flow | real components, a data module with asserts |
 | Promo clip with footage | §3 structure | the footage is the product surface; the brand's footage and grade win; add type and sound on the grid |
 | Social cut-down of a finished film | §7 | re-layout from the same timeline; trim at bar boundaries, never mid-bar |

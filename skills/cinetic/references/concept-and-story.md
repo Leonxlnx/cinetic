@@ -1,6 +1,6 @@
 # Concept and story
 
-Covers how to get from a brief to an idea worth pitching, a story device, a beat structure and an ending. Read it at Step 1 before any pixel exists, and again whenever a critic says "tour", "generic", "oversimplified" or "weak end". Numbers here are house defaults and starting points, not dogma. **A script, and a picture that never rests:** the story is told in short real sentences, one clean line at a time, each arriving with its own text animation; the picture carries a device in every beat, one signature shot, graphic effects and the product's own UI, light that moves.
+Covers how to get from a brief to an idea worth pitching, a story device, a beat structure and an ending. Read it at Step 1 before any pixel exists, and again whenever a critic says "tour", "generic", "oversimplified" or "weak end". Numbers here are house defaults and starting points, not dogma. **A script, and a picture that never rests:** the story is told in short real sentences, one clean line at a time, centred, every line in the film's one text voice; between the lines the picture shows the product doing what the line said, with one signature shot, the product's own UI and light that moves.
 
 **Contents**
 1. [What a concept is](#1-what-a-concept-is)
@@ -336,8 +336,8 @@ Write the chosen concept into `TREATMENT.md` from `assets/TREATMENT.md`: the Dir
 Gate before Step 2:
 - the logline is ≤ 15 words and has no "and" joining two ideas;
 - the chosen concept passes the ownership, deletion and specificity tests, with the results written down; the specificity answer names the non-obvious behaviour and the beat that shows it;
-- the script is written before the build (`references/copy-and-type.md`) and `copy-check.py` passes: what the product is by 3 s, 3–5 lines that each say one thing it does, the name and what to do; every line 2–7 words in plain words, read in order it tells a stranger what the product is with the picture off; one line on screen at a time, each with its own text animation, no two alike;
+- the script is written before the build (`references/copy-and-type.md`) and `copy-check.py` passes: what the product is by 3 s, 3–5 lines that each say one thing it does, the name and what to do; every line 2–7 words in plain words, read in order it tells a stranger what the product is with the picture off; one line on screen at a time, every line in the film's one text voice (one contrasting hero entry per 30 s at most);
 - the device appears in every beat row, and its last link is the mark;
 - the final frame is described, and it contains the mark and the name.
 - the idea sentence and the competitor test are written; the signature shot sits on one beat and no beat uses the alternative; the beats follow the dealt skeleton (re-timed freely); the lockup is the dealt kind;
-- every beat names its device, and no two neighbouring beats use the same family.
+- every picture beat names its move (two or three a film, `references/catalogue.md`) and the visible change that proves the line before it; every line keeps the film's one text voice.

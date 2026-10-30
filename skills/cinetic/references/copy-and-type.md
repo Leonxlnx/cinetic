@@ -5,8 +5,8 @@ phrasing, string audit) and the letters (choosing and loading the family, type r
 the text animations, the line system, the type devices, type as the set, reveals that never misspell, measuring and
 fitting). Read the copy half at Step 1b, when you write the script, and the type half at Step 2 before writing
 `src/brand/tokens.ts`. **A script, one clean line at a time:** the words are short real sentences that tell the
-story; each line stands large and frontal on a clean ground, arrives with its own text animation, and graphic effects
-work around it. Numbers are house defaults at 1920×1080 and 60 fps with normal ranges. A supplied brand voice or
+story; each line stands large, frontal and centred on a clean ground, arrives in the film's one text voice, and the
+product's picture plays before or after it. Numbers are house defaults at 1920×1080 and 60 fps with normal ranges. A supplied brand voice or
 typeface wins over every default here.
 
 **Contents**

@@ -2307,7 +2307,7 @@ for (const file of files) {
         const centred = (/alignItems\s*:\s*['"]center['"]/.test(region) && /(justifyContent\s*:\s*['"]center['"]|flexDirection\s*:\s*['"]column['"])/.test(region)) || /textAlign\s*:\s*['"]center['"]/.test(region) || /translate\(\s*-50%/.test(region);
         const texts = (region.match(/<(Words|Chain|MaskRise|Scramble)\b|\btypeStyle\s*\(|\bfontSize\b|\bdata-text\b|\btxt\s*\(/g) ?? []).length;
         if (mark && centred && texts >= 2)
-          report(i, 'end-card-template', 'warn', 'a mark, a wordmark and a tagline centred over a radial gradient: the stock end card. Build the lockup from the film\'s own device (the deck\'s lockup: the device becomes the mark, printed on the last plane), lit by the key, off-centre or as a crop; no radial glow behind it');
+          report(i, 'end-card-template', 'warn', 'a lockup faded in from nowhere over a radial gradient: the stock end card. Build it from the film\'s last element (the last picture\'s element becomes the mark, or the last word the wordmark: references/devices/logo-and-end-card.md), centred and lit by the key; no radial glow behind it');
       });
     }
 

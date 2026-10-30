@@ -11,26 +11,57 @@ Contents: 1. The order · 1b. copy-check · 2. grid-check · 3. lint-film · 4. 
 
 ## 1. The order
 
+The default path runs the fast gates; each takes seconds to a minute on a 30 s film. A gate that costs more than
+5 minutes on a 30 s film is advisory by default.
+
 ```
-python3 scripts/copy-check.py TREATMENT.md                    # Step 1b, before any picture work
-npx tsx scripts/grid-check.ts src/timeline.ts                 # Step 5, and after every timeline edit
-node scripts/lint-film.mjs src [--strict]                     # Step 2 and every build step
+python3 scripts/copy-check.py TREATMENT.md                    # the script, before any picture work
+node scripts/film-diff.mjs                                    # film.json: the picks differ from the last three films
+npx tsx scripts/grid-check.ts src/timeline.ts                 # after every timeline edit (beats, seams, the grid)
+node scripts/lint-film.mjs src [--strict]                     # every build step
+node scripts/precheck.mjs [--ship]                            # before every still or render: imports, timing, kit, fit
+python3 scripts/copy-check.py --ui src                        # the product's UI strings: real words, no slot, no sample
 npm run cues                                                  # out/cues.json (declarations, copy, events)
-bash scripts/render.sh Film out/preview.mp4 --preview
-bash scripts/layout-audit.sh Film --every 6 --json out/qa/layout-Film.json
-python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --json out/qa/forensics.json
+bash scripts/render.sh Film out/preview.mp4 --preview         # muted render, mux, probe.py and check-sync.py
+bash scripts/layout-audit.sh Film --copy --scale 0.5          # placement, overlaps, kit icons, stand-ins
+python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --grammar-only   # motion and seam gates, small decode
+python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --seams          # the seam checks alone, seconds
+node scripts/logos.mjs check                                  # a film that shows other products' marks
+node scripts/frames.mjs sheet                                 # the contact sheet for the director pass
+python3 scripts/forensics.py out/film.mp4 --cues out/cues.json --json out/qa/forensics.json   # full, on the master only
+node scripts/film-diff.mjs --record                           # after the ship gate: the film joins the history
+```
+
+**What a ship needs (the default review, `references/review-loop.md` §1):** copy-check (the script and `--ui src`,
+`--final` on the master), lint `--strict` and grid-check clean (its `beats` rules: type-only beats at least 15 % of the
+shots and two a film, a line over a picture on at most 40 % of the beats, the first line by 1 s, in a film that
+declares its beat plan); precheck `--ship`; layout-audit passing with its placeholder floor and its placement gate
+(statements centred 80 % of their time, in the middle band 85 %, none flush left at the top or bottom, one text-top
+picture-below at most, one split layout per 30 s); forensics passing on the master (its seam checks: every hard cut
+carries a device, at most two ground flips, no seam kind over 45 % of five or more changes); `logos.mjs check` (current
+marks, every brand verified on its own page within 12 months); `film-diff.mjs` (ground, voice, signature and end card
+apart from the last three films, the move set at most 25 % shared, a template film half its slots off the floor); the
+end card centred, built from the last element and held 2-3 s (grid-check reads the template's `end_hold`); the
+ground family's tokens from `palette.py --family`; the sound gates (`references/sound.md`); probe and check-sync
+(`references/finishing.md`); and the director pass with no open P0.
+
+**Advisory (read them, never a ship gate by default):** `look-audit.py` (the floors against a flat film),
+`grammar-score.mjs` (closeness to the house grammar; it rewards the template, not this film), `measure-speed.py`,
+`av-audit.py` on a preview, `data-check.mjs` (fast: wrong weekdays, counts that contradict their list, one photo in
+more than half the beats; films declare shoots and people in `public/cast.json`). The long review
+(`references/review-loop.md` §2-§10) adds them back with the detail pass (`detail-pair.py`), the four lenses and the rubric:
+
+```
 python3 scripts/look-audit.py out/preview.mp4 --cues out/cues.json --layout out/qa/layout-Film.json --json out/qa/look.json
 node scripts/grammar-score.mjs --cues out/cues.json --layout out/qa/layout-Film.json --look out/qa/look.json --forensics out/qa/forensics.json
 python3 scripts/av-audit.py out/preview.mp4 --cues out/cues.json --stems out/stems --json out/qa/av.json
-python3 scripts/copy-check.py --ui src                        # the product's UI strings: real words, no unfilled slots
-python3 scripts/detail-pair.py --film out/preview.mp4 --ref <frames> --pairs F:R,...   # the detail pass, every round
+python3 scripts/detail-pair.py --film out/preview.mp4 --ref <frames> --pairs F:R,...
+node scripts/data-check.mjs
 ```
 
-After each round write the weakest grammar-score dimension and the weakest floor reading into the review note, and
-fix that first. A ship needs, on the final render: copy-check (the script and `--ui src`), lint `--strict` and
-grid-check clean; layout-audit passing with its placeholder floor and its placement gate; the detail pass with no open difference; forensics passing;
-look-audit passing with both floors; grammar-score mean ≥ 80, no dimension under 70; the sound gates
-(`references/sound.md`); probe and check-sync (`references/finishing.md`); the rubric (`references/review-loop.md`).
+A film made from a template is held apart from its template by `film-diff.mjs` against the template's shipped
+`floor.json` (its unnamed scaffold's deal): no scaffold render. With a clip to match, `like.py guard --film
+out/film.mp4 --clip <clip>` still renders nothing new and passes before delivery.
 
 ## 1b. copy-check (`scripts/copy-check.py`): is the script clear
 

@@ -25,20 +25,20 @@ stop`) adds the gap to its one element and 1 s rings out after it.
   plays one sequence, so its direction alone sets its acts apart.
 - Content: every word and number comes from the product through the content file's slots; lint and `copy-check.py --ui
   src` fail a slot left as it came.
-- Layout: the direction retells every act in its world, and before delivery the film passes `like.py guard` against
-  the floor as it would against a clip: scaffold the template again as it comes beside the film (`bash
-  scripts/new-film.sh ../floor --template <name> --link-modules "$PWD/node_modules"`), render it there (`npx remotion
-  render Film out/floor.mp4 --muted --scale 0.5`), then `python3 scripts/like.py guard --film out/film.mp4 --clip
-  ../floor/out/floor.mp4` (`references/clip-match.md` §5). A frame that keeps the floor's layout fails it.
+- Layout and the last films: the direction retells every act in its world. Every template that deals ships its floor
+  as `floor.json` (the unnamed scaffold's deal, measured once), and `node scripts/film-diff.mjs` holds the film to at
+  least half its slots off that floor and apart from the last three films (ground, voice, signature, end card, and a
+  move set shared at most 25 %): no scaffold render in the film's hour.
 
 ## Which one
 
 | Template | Length | Use it when | Shape |
 |---|---|---|---|
-| none (the starter) | 15-45 s | a launch film whose idea is its own device: most films | the dealt direction's skeleton |
+| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing, line by line | a line alone in the middle of a clean ground, the product doing what it said, the next line, the product again, the centred lockup built from the last picture; the name deals the voice, the ground family, the seams, the end card and the camera, never the last films' (`src/recent.ts`) |
+| none (the starter, `--template none`) | 15-45 s | a launch film whose idea is its own device | the dealt direction's skeleton |
 | `update` | 15-23 s | "vX is out": 2-4 changes to show | the version as the set, one lit product moment per change on one camera strip with the film's one 3D turn, the version whole at the payoff, the end card with the version; each slot deals one of two devices |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
-| `capability-reel` | 15-25 s | the product's breadth is the story (sources, formats, integrations), or a launch film needs its close | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
+| `capability-reel` | 15-25 s | only when the brief asks for a wall of the product's breadth (sources, formats, integrations); never the default | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
 | `camera-teaser` | 20-25 s | a dark, fast teaser of a product's screens where the motion is the camera's: whips, pushes, one 3D turn over one layout per shot | the request box arriving tilted in the light, a whip into its close-up and the send button, the window streaming code under the one 3D turn, the proof in depth with the real marks of what it works with, the page with a modal toast, the stages, the mark; each act deals one of two or three devices |
 | `prompt-run` | 18-20 s | the product does work from a request (an agent, an assistant, a generator): what goes in is a sentence, what comes out is done work | a pill among the real marks of the tools it connects, the label swapping on the kick, the request box out of the pill, the request typed, a punch-in and the send, the steps it runs under one 3D turn, the result, the lockup; each act deals one of two or three devices |
 | `social-ad` | 17-22 s | a short ad for a feed: everything the product holds, fast (things people save, make, buy, plan), shown as the product's own content built in code, or as real photographs where that content is pictures (never drawn), the motion is the energy | the opener in one confident move spreading onto a stack of what it holds, the mark, the claim inside a field of that content on its accent pill, a label that rolls its last word over moving content, two imperatives, the lockup; each act deals one of two or three devices |
@@ -48,7 +48,7 @@ The test: say the film in one sentence. "You give it X and get Y" is a walkthrou
 returns anything" is a reel; "Here is what changed" is an update; "It is X, it fixes Y, and these are its parts" told
 in words is an explainer; "Here is everything it is for, fast" over the product's own content is an ad; "Ask it, it does the steps, here is the result" is a prompt run (a
 walkthrough when the user does the steps); the same story as a dark, fast tease where the camera does the moving is a
-camera teaser. When none fits, start from the starter. A launch
+camera teaser. When none fits, use `launch-simple` (the default launch), or `--template none` for the starter's own acts. A launch
 film may end on the reel's close (rebuild its acts after your own) or open on the walkthrough's first three acts.
 
 ## update

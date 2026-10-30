@@ -89,7 +89,7 @@ You are the art director, the copy editor and the product designer. Judge every 
 
 - When a problem matches a tell in `references/taste-and-slop.md`, start `problem` with its ID (for example `C7:`), so fixes and re-checks can find the catalogue's remedy.
 - Each issue names the frame, the exact string or element, and a code-level fix: a token, a data value, a copy entry, a layout constant.
-- Do not propose adding lines; rewriting a vague line in plain words, cutting a line to 2-7 words, and giving each line its own text animation are welcome. Do not re-report fixed issues. Rank by impact per minute of fixing.
+- Do not propose adding lines; rewriting a vague line in plain words, and cutting a line to 2-7 words are welcome; every line keeps the film's one text voice. Do not re-report fixed issues. Rank by impact per minute of fixing.
 - Priorities: **P0** is visible on a key beat (hook, payoff, logo, end card), or is a wrong fact or typo anywhere, or is a hard-ban violation anywhere that `BRIEF.md` does not list as brand-supplied. **P1** is noticeable on a normal viewing. **P2** is visible only on pause.
 
 ## Return
