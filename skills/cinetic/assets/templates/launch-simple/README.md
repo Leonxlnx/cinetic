@@ -1,32 +1,45 @@
 # launch-simple: the default launch film
 
-A line alone in the middle of a clean ground, then the product doing what the line said, then the next line, then the
-product again, then a centred lockup built from the last picture with the one fact under it. 15-30 s, one text voice,
-one ground family, three or four seam kinds. `new-film.sh` lays it over the Remotion starter for every launch
-(`--template none` keeps the starter's own acts).
+Lines and pictures that meet, never a slideshow: the first line alone in the middle of a lit ground, then the product
+doing what it said; the next lines arrive with their pictures (the picture rising in under the line, then racking into
+focus as the line leaves); the claim alone on its colour field, the film's hero line; then a centred lockup built from
+the last picture with the one fact under it. Every change of picture carries something (a camera move across the cut,
+the picture falling back while the next line builds over it, one object flying from one scene into the next), so the
+frame is never empty between two scenes. 15-30 s, one text voice, one ground family, three or four seam kinds.
+`new-film.sh` lays it over the Remotion starter for every launch (`--template none` keeps the starter's own acts).
 
 ## What you write
 
-1. **The script, `src/launch.ts`.** Three or four pairs; each pair is one line and the picture that proves it.
+1. **The script, `src/launch.ts`.** Three to five pairs; each pair is one line and the picture that proves it.
    - `line`: one short sentence, 2-7 words (1-5 typical), plain words. Line 1 says what the product does, by name.
      Mark one key word with `*stars*` on at most 60 % of the lines: it takes the accent ink.
    - `scene`: the id of the picture beat in `src/product.tsx`; `seconds` (1-3.5; vary them, a long one beside a short one; unset they run 2.6, 1.6, 2.2, 3.0 in turn); `hits` (where its own
      moments land, as shares of the beat); `ui` (every string the picture shows: real words, no sample names).
-   - `over: true` only when the line names exactly what the picture is doing (a line over a picture, at most 40 %).
+   - `beat`: how the line meets its picture. `alone` (T then A: the line alone, building over the last picture as it
+     falls back), `with` (T+A then A: the line arrives with its picture's first motion, the picture rising in under it,
+     soft, then racking into focus as the line lifts away; its `hits` land after the line), `over` (T+A: the line held
+     over its whole picture, which the scene composes round the line's `band`: footage under it, logos round it).
+     Unset: the first line and the claim `alone`, the lines between `with`. Aim for about T 25 % / T+A 30 % / A 37 % of
+     the beats (`BEAT_MIX`): one `over` in a film of four or five lines gets there.
    - `close`: the one fact under the lockup (where, when, the price), 2-6 words.
+   - `input`: the core action in plain words ("a hiker walking a mountain trail"), for the input shot.
    - The name goes in `src/brand/identity.ts`.
-2. **The input shot, `public/assets/input.mp4`.** The core action as real footage: a person giving the input
-   (speaking into the phone, typing, paying). `node scripts/assets.mjs recipe "<the input in your words>"` prints the
-   matching shot and its checked no-credit picks; `sheet`, then `get #n --to public/assets --name input --trim
-   <start>,3`, then set `INPUT` in `src/product.tsx` (its size and rate from `assets.mjs probe`, the framing point).
-   The first scene plays it in a lit window graded into the film (a tint at the ground's hue: a soft stock clip shown
+2. **The input shot, the first step after the scaffold: `node tools/input.mjs`.** The core action as real footage: a
+   person giving the input (speaking into the phone, typing, paying). It reads launch.ts `input`, takes the matching
+   footage recipe's first fitting clip (a search of the free footage sources in the same words when no recipe has
+   one), downloads 3 s of it with its licence record into `public/assets/input.mp4` and writes `src/input.ts` (its size,
+   rate and source), which `INPUT` in `src/product.tsx` reads; `--pick <n>` after a look at the results' sheet
+   (`assets.mjs sheet out/assets/input-*.json`). Until it has run, precheck warns and the ship gate fails; when no
+   footage fits the product, `--none "<why>"` says so and the fallback plays. The first scene plays it in a lit window graded into the film (a tint at the ground's hue: a soft stock clip shown
    smaller reads sharp and belongs to the film), the product's listening pill (light, the accent's live dot and
    waveform) on the window's lower edge; on the cut the window rises away, the lit phone rises in and the pill flies
    into the top of its screen: one element carried across, the words of the input arriving under it as they are said,
    the task rising out of them. No clip fits: delete the file and the scene plays its code-built fallback (the phone
    alone, the pill already in its screen). Declare the clip's span to `look-audit.py` with `--imagery`.
 3. **The product's scenes, `src/product.tsx`.** One component per scene id, drawn full frame and centred in the
-   ground family's inks (`SceneProps`: `f` frames since the beat began, `dur`, `hits`, `inks`, `cut`). The first scene
+   ground family's inks (`SceneProps`: `f` frames since the picture began, under its line for `with` and `over`;
+   `dur`, `hits`, `inks`, `cut`, `band`, `carry`). Give each scene its `focus` box (x, y, w, h: the push closer frames it
+   inside the safe area; a function when it is measured). The first scene
    shows the product's core change literally (input -> output); each picture proves the line before it ("lands on its
    day" shows the tasks dropping into their days: the steps' `ui` lists one item per hit, then the slots they land in).
    The scene before the claim names its `field` (the element the claim's colour field grows out of); the last one
@@ -39,10 +52,15 @@ one ground family, three or four seam kinds. `new-film.sh` lays it over the Remo
    part as the camera travels). Keep what a scene shows mounted for the whole
    beat (show and hide it with opacity), land its arrivals on its `hits`, ease its state changes, and give the picture
    colour where the product has it: a calm picture never pops, and the checks read it frame by frame.
-4. **The signature, `SIGNATURE` in `src/product.tsx`.** One move a film, the shot people remember, picked from
-   `references/catalogue.md` §2 for the payoff, carried through the film; the scaffold's: the camera pushes into the
-   last task chip until it is the frame (the claim's colour field), and the result's progress ring closes into the
-   mark that flies into the lockup.
+4. **The visual idea and the signature.** Draw the product's mechanism as one object carried through the film, never
+   a set of unrelated cards: a scene names where the object sits as it ends (`carry.out`) and the next scene where it
+   lands (`carry.in`); between two pictures the stage flies it from one to the other over the seam (`IDEA` in
+   `src/product.tsx` draws it in flight as it changes form; without one, a lit tile in its fill), and each scene hides
+   its own copy while it flies (`carried(f, carry)`). The scaffold's: the task the phone writes lifts off the screen and
+   lands as the first task on the board; the last task chip is pushed into until it is the frame (the claim's colour
+   field); the result's progress ring closes into the mark that flies into the lockup (`SIGNATURE`, one move a film,
+   picked from `references/catalogue.md` §2 for the payoff). Other ideas: a route that becomes the elevation line,
+   then the mark; a caught error that becomes the patch's removed line, then the passing check.
 5. **The mark.** `scripts/brand.py` with the brand's SVG writes `src/brand/logo.ts`. Until then the lockup shows the
    product's own element as a mark (`HERO_MARK` in `src/product.tsx`: the scaffold's is the result's ring closed into a
    disc with a check cut through it, one colour, its long stroke breaking the edge) or, without one, a letter mark, and
@@ -61,12 +79,17 @@ One dominant thing a frame, and every frame lit and alive:
   claim on a colour field in the accent (`FIELD_ON`, `EVENT_FROM`): the seam into the claim pushes into the scene's
   `field` element until it is the frame, the claim resolves on it in white, the field leaves with it on the next seam
   (one run under 2 s; the band's flood and the turn to dark are their families' own events).
-- **Type.** Statements at a 7.4 % cap height a step under the type family's weight, the claim (the last line) 8.6 % and
-  a step over it, the wordmark heavier and tighter again (`WORDMARK_TYPE`), tracking tightening with size; a long line
-  keeps one row at a sentence cap (6-6.4 %) or breaks into two balanced rows that part as they are read; never under 6 %.
+- **Type.** Three sizes, one hierarchy: a line alone at a 7.4 % cap height a step under the type family's weight, a
+  line over its picture a step smaller (6.6 %), the claim (the last line, the hero) at 11.2 % and a step heavier, its
+  last word taking the film's one contrasting entry (it snaps in, one frame at x2.2, settling in 7 f; the line set in
+  its place from its first word); the wordmark heavier and tighter again (`WORDMARK_TYPE`), tracking tightening with
+  size; a long line keeps one row at a sentence cap (6-6.4 %) or breaks into two balanced rows that part as they are
+  read; never under 6 %.
 - **Depth.** A card's content creeps against its edge, a phone's screen against its body, the pill rides a nearer plane:
   look-audit floor-depth reads two planes in at least half the shots.
-- **Life.** Nothing holds still for more than 0.8 s: the camera travels on every picture, the lines creep and drift,
+- **Life.** Nothing holds still for more than 0.8 s: the camera travels on every picture (a picture over 2.2 s takes
+  one eased push closer, `PUSH`: 24 f@60 on a strong in-out, framing its `focus` box inside the safe area, never a
+  one-frame jump), a finished line is never padded past its read, the lines creep and drift,
   the light keeps moving; the last picture falls back behind the lockup for a second while its element flies in (the
   product stays on screen into the end), and the fact under the lockup drifts slower than the name (two planes).
 
@@ -80,13 +103,26 @@ hits, the seams that move and one hit on the lockup.
 
 | Beat | On screen | Length |
 |---|---|---|
-| T | one line, centred in the middle band, alone on the ground | 0.5-2.4 s |
+| T | one line, centred in the middle band, alone on the ground (`alone`; the last picture falls back under its build) | 0.5-2.4 s |
 | A | the product acting, full frame, centred, no statement over it | 1-3.5 s |
-| T+A | a line over the start of a picture (only when it names what the picture does) | as T |
+| T+A | a line with its picture: the picture rising in under it, soft (`with`), or held round it (`over`) | as T; `over` as its picture |
 | end | the centred lockup built from the last picture's element, the one fact under it | held 2-3 s |
 
 `grid-check.ts` checks the plan (`BEAT_PLAN`): type-only beats >= 15 % of the shots and >= 2, T+A <= 40 %, the first line
-on screen by 1 s, every line beat holding its line, no statement over a picture beat.
+on screen by 1 s, every line beat holding its line, no statement over a picture beat. `BEAT_MIX` prints the mix.
+
+## The seams
+
+Every change of picture carries something (`SEAM_PLAN`, drawn by `acts/stage.tsx`), and no kind passes 45 % of them:
+
+| Change | Recipes | What carries it |
+|---|---|---|
+| line -> picture | matchCut, velocityCut, blurThrough | the word slot held across the cut; the line's speed into the picture's |
+| picture -> line | recede, zoomThrough | the picture falls back while the line builds over it; or the push into it, the line building over the push |
+| picture -> picture | velocityCut, matchCut, blurThrough | one camera move across the cut; the focus point held on the kept ground; the cut inside a blur; and the film's carried object (`carry`) flying between the two scenes |
+| line over picture -> picture | (no cut) | the line lifts away, the picture rises into its place and racks into focus (a declared focus pull, `rack:`) |
+| out of the claim | velocityCut | its colour field sweeps off at speed |
+| into the end | sharedElement | the last picture's element flies into the mark |
 
 ## The deal
 
@@ -94,16 +130,18 @@ on screen by 1 s, every line beat holding its line, no statement over a picture 
 |---|---|
 | voice | build (word by word, re-centring), blur (the whole line out of a blur), ink (each word pale, inking in) |
 | ground | nearWhite, blackField, whiteBand, deepPool, softSky, lightDark, gradientField (`references/brand-and-color.md` §9b) |
-| seamTA | matchCut, blurThrough, velocityCut (line -> picture) |
-| seamAT | blurThrough, zoomThrough (picture -> line: the picture blurs away, or the camera pushes through it; the line builds from nothing, so no speed carries into it) |
+| seamTA | matchCut, velocityCut, blurThrough (line -> picture) |
+| seamAT | recede, zoomThrough (picture -> line: the line builds over the leaving picture, never on an empty ground) |
+| seamAA | velocityCut, matchCut, blurThrough (picture -> picture, into a line that arrives with its picture) |
 | end | element (the last picture's element flies into the lockup and becomes the mark), badge (the element turns into the mark, a spin blur on the fast frames); the name slides out beside it |
-| camera | drift (sideways), rise (on the picture beats; the camera travels, re-frames on the beat where a picture's moments leave a gap, and cuts once to a closer frame) |
+| camera | drift (sideways), rise (on the picture beats; the camera travels, re-frames on the beat where a picture's moments leave a gap, and pushes closer once on a long picture) |
 
-Print it: `npx tsx -e "import { DEAL } from './src/deal'; import { SEAM_PLAN, BEAT_PLAN } from './src/timeline'; console.log(DEAL, SEAM_PLAN.map((s) => s.recipe), BEAT_PLAN.map((b) => b.kind))"`.
+Print it: `npx tsx -e "import { DEAL, DEAL_SOURCE } from './src/deal'; import { SEAM_PLAN, BEAT_PLAN, BEAT_MIX } from './src/timeline'; console.log(DEAL_SOURCE, DEAL, SEAM_PLAN.map((s) => s.recipe), BEAT_PLAN.map((b) => b.kind), BEAT_MIX)"`.
 
 ## Then
 
 The music (`template.json` `music`: `music.mjs pick`, `track.py edit --bars <BARS> --end auto`, `track.py grid`),
 `npm run check`, a preview render, and one review round on a 30-cell contact sheet against the checklist in
-`references/checks.md`: every line centred and alone, every picture showing what the product does, every seam carrying
-something, the end card centred and built from the last element.
+`references/checks.md`: every line centred, the beats mixed (no line-picture-line-picture loop), every picture showing
+what the product does, every seam carrying something and no empty frame between scenes, the carried object readable as
+one idea with the words covered, the end card centred and built from the last element.
