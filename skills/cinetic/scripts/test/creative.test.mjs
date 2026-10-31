@@ -249,7 +249,15 @@ try {
   const M: any = await import(${JSON.stringify(url('fx/creative/meta.ts'))});
   const role = (id: string) => M.metaOf(id).role, fam = (id: string) => M.metaOf(id).family;
   const names = ['Ferry', 'Morrow', 'Tern', 'Quill', 'Harbor', 'Lumen', 'Pocket', 'Atlas', 'Sable', 'Juniper'];
-  out.deals = names.map((n) => D.creativeOf(n).deal);
+  const all = { swap: true, logos: true, count: true, before: true, photos: true };
+  out.deals = names.map((n) => D.creativeOf(n, [], 3, all).deal);
+  // with nothing in the script to feed them, the name never deals a device that needs logos, a figure, alternatives,
+  // the old way or five photos (the template's own placeholder script feeds none)
+  out.fed = names.every((n) => D.creativeOf(n).deal.every((x: string) => M.metaOf(x).needs.length === 0));
+  // a run of films: each deal takes the last ones as recent, and the weighted walk reaches far into the library
+  const run: string[][] = [];
+  for (let i = 0; i < 8; i++) run.unshift(D.creativeOf("walk " + i, run.slice(0, 4), 3, all).deal);
+  out.walk = new Set(run.flat()).size;
   out.shape = out.deals.every((d: string[]) => d.length === 3 && d.some((x) => role(x) === 'line') && d.some((x) => role(x) === 'picture') && new Set(d.map(fam)).size === d.length);
   out.distinct = new Set(out.deals.map((d: string[]) => [...d].sort().join(','))).size;
   out.used = new Set(out.deals.flat()).size;
@@ -263,6 +271,8 @@ try {
   if (!deal.error) {
     result(deal.shape, 'deal: three devices, a line device and a picture device, never two of one family', JSON.stringify(deal.deals));
     result(deal.distinct >= 8 && deal.used >= 11, `deal: ten names deal ${deal.distinct} different sets over ${deal.used} devices (random across the library)`);
+    result(deal.fed, 'deal: the name deals only devices the script can feed (no logos, figure, alternatives, old way or photos in it: none that need them)');
+    result(deal.walk >= 13, `deal: eight deals in a row, each with the last four as recent, play ${deal.walk} devices (the recency-weighted walk)`);
     result(!deal.recent.same && deal.recent.shared <= 1 && deal.det, 'deal: a recent set is never dealt again, at most one device shared with the last film; the same name deals the same set', JSON.stringify(deal.recent));
     result(JSON.stringify(deal.camera) === JSON.stringify(['still', 'land']), 'item 29: the dealt camera is still or a push that lands (no drift, no rise)', JSON.stringify(deal.camera));
   }

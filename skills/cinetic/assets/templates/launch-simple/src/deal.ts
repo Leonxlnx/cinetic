@@ -10,8 +10,9 @@
 //            blur           every line arrives whole out of a 12 px blur, settling from 104 % on a glide (34 f)
 //            ink            every word arrives pale a touch below its place, rises into it and inks to its colour in
 //                           10 f, 6 f apart
-//   ground   (fx/Grounds GROUND_FAMILIES) nearWhite, blackField, whiteBand, deepPool, softSky, lightDark, gradientField:
-//            one family for the whole film, never cut; its one colour event (a band flood, the turn to dark) is declared
+//   ground   (fx/Grounds GROUND_FAMILIES, all eleven) nearWhite, lightStudio, softSky, gradientField, whiteBand,
+//            blackField, studio, deepPool, duskMesh, floorGlow, lightDark: one lit field for the whole film, still, never
+//            cut, in the film's palette (deck.py deals it with the palette's tone); its one colour event is declared
 //   seamTA   matchCut       line -> picture: played as blurThrough (a line and a picture share no shape to hold across a
 //                           one-frame cut: a match cut there is a hard cut from type to a picture)
 //            velocityCut    the line leaves at speed, the picture arrives on the same speed and settles
@@ -47,7 +48,7 @@ import { RECENT } from './recent';
 
 export const DEVICES = {
   voice: ['build', 'blur', 'ink'],
-  ground: ['nearWhite', 'blackField', 'whiteBand', 'deepPool', 'softSky', 'lightDark', 'gradientField'],
+  ground: ['nearWhite', 'lightStudio', 'softSky', 'gradientField', 'whiteBand', 'blackField', 'studio', 'deepPool', 'duskMesh', 'floorGlow', 'lightDark'],
   seamTA: ['matchCut', 'velocityCut', 'blurThrough'],
   seamAT: ['recede', 'zoomThrough'],
   seamAA: ['velocityCut', 'matchCut', 'blurThrough'],
@@ -123,29 +124,50 @@ export const SEED = hash(NAME) % 100000;
 // ---- The creative elements (fx/creative). A film plays two or three, dealt at random from the whole library, so no
 // two films share their devices: at least one that draws a line and one that draws a picture, never two of one family,
 // never the set of a recent film (src/recent.ts creative, newest first) and at most one device shared with the last.
-// scripts/deck.py deals them with the direction (src/dealt.ts creative, from the film's name and the film history);
-// else the name deals them here. The deal keeps a reserve in its order: the timeline draws from it only when a long
-// film needs more creative beats (at least half the beats are creative scenes). launch.ts `creative.swap` trades one
-// for another with a reason; a pair's `creative` pins a device to it.
+// scripts/deck.py deals them with the direction the agent picked (src/dealt.ts creative, from the film's name, the
+// direction and the film history); else the name deals them here, the same way: a recency-weighted shuffle (a device a
+// recent film played is drawn late, RECENT_WEIGHT), at least one device no recent film played, and only devices the
+// script can feed (logos, a real figure, the old way's steps, alternatives for the key word, five photos or more).
+// The deal keeps a reserve in its order: the timeline draws from it only when a long film needs more creative beats (at
+// least half the beats are creative scenes). launch.ts `creative.swap` trades one for another with a reason; a pair's
+// `creative` pins a device to it.
 /** How many creative elements a film is dealt. */
 export const CREATIVE_N = 3;
+/** A device's weight in the shuffle for each recent film that played it, newest first (deck.py CREATIVE_RECENT_WEIGHT). */
+export const RECENT_WEIGHT = [0.12, 0.3, 0.55, 0.8] as const;
+/** The photos a photo device needs at least (photo-arc streams them: fewer read as a sparse row). */
+export const PHOTOS_MIN = 5;
 export type CreativeDeal = { deal: CreativeId[]; reserve: CreativeId[] };
 const META = CREATIVE_META as readonly CreativeMeta[];
 const ALL = META.map((m) => m.id as CreativeId);
 const isId = (x: string): x is CreativeId => META.some((m) => m.id === x);
+/** What the script can feed a device (launch.ts pairs): its needs met somewhere in the film. */
+export const scriptFeeds = (pairs: readonly { alts?: string[]; logos?: string[]; before?: string[]; count?: unknown; photos?: string[] }[] = LAUNCH.pairs) => ({
+  swap: pairs.some((p) => (p.alts?.length ?? 0) >= 2),
+  logos: pairs.some((p) => (p.logos?.length ?? 0) >= 3),
+  count: pairs.some((p) => p.count !== undefined),
+  before: pairs.some((p) => (p.before?.length ?? 0) >= 2),
+  photos: new Set(pairs.flatMap((p) => p.photos ?? [])).size >= PHOTOS_MIN,
+});
 /**
- * The creative elements for a name: a seeded shuffle of the library, its first line device, its first picture device,
- * then the next of another family; re-drawn (deterministically) until it repeats no recent set and shares at most one
- * device with the last film.
+ * The creative elements for a name: a seeded, recency-weighted shuffle of the devices the script can feed (each
+ * device's key u^(1/w), w the product of RECENT_WEIGHT over the recent films that played it), its first line device,
+ * its first picture device, then the next of another family; re-drawn (deterministically) until it repeats no recent
+ * set, shares nothing with the last film (one device at most after half the draws) and, while one is left, holds a
+ * device no recent film played.
  */
-export const creativeOf = (name: string, recent: readonly (readonly string[])[] = [], n = CREATIVE_N): CreativeDeal => {
+export const creativeOf = (name: string, recent: readonly (readonly string[])[] = [], n = CREATIVE_N, feeds = scriptFeeds()): CreativeDeal => {
   const last = recent[0] ?? [];
+  const played = new Set(recent.flat());
+  const ok = META.filter((m) => m.needs.every((x) => (feeds as Record<string, boolean>)[x]));
+  const weight = (id: string) => recent.slice(0, RECENT_WEIGHT.length).reduce((w, set, i) => (set.includes(id) ? w * RECENT_WEIGHT[i] : w), 1);
+  const freshLeft = ok.some((m) => !played.has(m.id));
   for (let salt = 0; salt < 64; salt++) {
     const r = rng(hash(`${name.trim().toLowerCase()}#creative#${salt}`));
-    const order = META.map((m) => ({ m, k: r() })).sort((a, b) => a.k - b.k).map((x) => x.m);
+    const order = ok.map((m) => ({ m, k: r() ** (1 / weight(m.id)) })).sort((a, b) => b.k - a.k).map((x) => x.m);
     const pick: CreativeMeta[] = [];
-    const take = (ok: (m: CreativeMeta) => boolean) => {
-      const m = order.find((x) => !pick.includes(x) && !pick.some((p) => p.family === x.family) && ok(x));
+    const take = (cond: (m: CreativeMeta) => boolean) => {
+      const m = order.find((x) => !pick.includes(x) && !pick.some((p) => p.family === x.family) && cond(x));
       if (m) pick.push(m);
     };
     take((m) => m.role === 'line');
@@ -156,12 +178,12 @@ export const creativeOf = (name: string, recent: readonly (readonly string[])[] 
       if (pick.length === had) break;
     }
     const ids = pick.map((m) => m.id as CreativeId);
-    const same = (s: readonly string[]) => s.length === ids.length && ids.every((x) => s.includes(x));
-    // the first half of the draws shares nothing with the last film; then one device at most
+    const same = (set: readonly string[]) => set.length === ids.length && ids.every((x) => set.includes(x));
     if (recent.some(same) || ids.filter((x) => last.includes(x)).length > (salt < 32 ? 0 : 1)) continue;
-    return { deal: ids, reserve: order.map((m) => m.id as CreativeId).filter((x) => !ids.includes(x)) };
+    if (freshLeft && salt < 48 && ids.every((x) => played.has(x))) continue;
+    return { deal: ids, reserve: [...order.map((m) => m.id as CreativeId).filter((x) => !ids.includes(x)), ...ALL.filter((x) => !ok.some((m) => m.id === x))] };
   }
-  const fall: CreativeId[] = ['split-around', 'shape-morph', 'photo-arc'];
+  const fall: CreativeId[] = ['split-around', 'shape-morph', 'object-turn'];
   return { deal: fall, reserve: ALL.filter((x) => !fall.includes(x)) };
 };
 /** What the unnamed scaffold plays (a named film never replays it whole). */

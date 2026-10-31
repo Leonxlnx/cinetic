@@ -8,11 +8,11 @@
 //
 // Rules these parts keep, so a calm picture never pops: everything a scene shows is mounted for the whole beat (show
 // and hide with opacity, never by mounting), text sits on its own composited layer (usePromote), state changes ease in
-// (a check fills over 16 f, a caret never blinks) and arrivals land on the beat's own hits (CUE a<pair>h<k>). A card is
-// a lit object, never a flat slab: a face lit from the key (brighter at its top-left, falling off across it), a rim
-// where its edges face the key, a contact shadow under it on the ground, one radius for the film. Its content creeps
-// inside it (30 px/s, centred on the beat, easing off before it nears the edge) while its edge moves with the camera,
-// and a Plane sets a part nearer or farther than the stage (z): the planes part as the camera travels.
+// (a check fills over 16 f, a caret never blinks) and arrivals land on the beat's own hits (CUE a<pair>h<k>). Every card
+// is the kit's one card material (kit/card.tsx: an opaque face with a quiet vertical sheen lit from above, a hairline,
+// an inner top highlight catching the key, a tight contact shadow and a broad soft one under it), never a translucent
+// slab, never a diagonal wash; it faces the camera and holds still (no creep, no bob). A Plane sets a part nearer or
+// farther than the stage (z): the planes part as the camera travels.
 import React from 'react';
 import { C, FONT, TEXT_MIN, U } from '../brand/tokens';
 import type { FamilyInks } from '../fx/Grounds';
@@ -22,6 +22,7 @@ import { measureTracked } from '../lib/measure';
 import { FPS } from '../timeline';
 import { usePromote } from './layer';
 import { BrandLogo } from '../kit/logos';
+import { cardInks, cardShadow } from '../kit/card';
 
 /** Card numbers (px at 1080p): one radius for the film, inner padding at least 0.8 of the text's cap. */
 export const CARD = { radius: 30, pad: 48, row: 100, text: 48, small: 40, creep: 0, creepMax: 0, edge: 1.5 } as const;
@@ -60,38 +61,38 @@ export const surfaceInks = (inks: FamilyInks, bg: string): FamilyInks =>
 /** The film's light surface on this ground: white with a breath of the ground's hue in it (never a cream). */
 export const lightSurface = (inks: FamilyInks) => (inks.dark ? mixColor(C.white, inks.ground, 0.035) : C.white);
 
-/** The lit face of a card: its fill lit from the key (brighter toward the top left), its rim and its shadow (CSS). */
+/**
+ * A card's face in the kit's material (kit/card.tsx) as CSS: `bg` the fill (a light surface, a dark one, or a colour:
+ * the accent chip), lit from above with a quiet vertical sheen (1-3 L* top to bottom, never a diagonal wash), the
+ * hairline and the inner top highlight on its edge, a contact shadow and a broad soft one under it on the ground (a
+ * third, wider layer while `lift` holds it up toward the lens). Spread it into a box's style.
+ */
 export const litFace = (bg: string, inks: FamilyInks, o: { lift?: number; accent?: boolean } = {}) => {
-  const e = (CARD.edge * U).toFixed(2);
   const lift = o.lift ?? 0;
-  if (inks.dark && isLight(bg) && !o.accent) {
-    // a light card on a dark ground: the face falling off a few percent away from the key, its thickness as a shaded
-    // lower edge, a tight contact shadow and a wide soft one (an object standing in the room, never a sticker)
-    const face = `linear-gradient(158deg, ${bg} 0%, ${bg} 46%, ${mixColor(bg, inks.ground, 0.07)} 100%)`;
-    const edge = `inset 0 ${(-2.5 * U).toFixed(2)}px 0 ${mixColor(bg, inks.ground, 0.16)}, inset 0 ${e}px 0 ${C.white}`;
-    const shadow = `0 ${(8 * U).toFixed(1)}px ${(18 * U).toFixed(1)}px rgba(0, 0, 0, ${(0.26 + 0.06 * lift).toFixed(3)}), 0 ${(40 * U + lift * 12 * U).toFixed(1)}px ${(96 * U).toFixed(1)}px rgba(0, 0, 0, ${(0.36 + 0.08 * lift).toFixed(3)})`;
-    return { background: face, boxShadow: `${edge}, ${shadow}` };
+  const gL = toOklch(inks.ground)[0];
+  const [L] = toOklch(bg);
+  const coloured = o.accent || (!isLight(bg) && Math.abs(L - gL) > 0.2) || toOklch(bg)[1] > 0.05;
+  if (coloured) {
+    // a coloured face (the accent chip, a brand-coloured card): its own colour lit from above, white edge light
+    const ci = { ...cardInks(L < 0.5 ? 'dark' : 'light', inks.ground), dark: L < 0.62 };
+    const top = mixColor(bg, C.white, 0.07);
+    const bottom = mixColor(bg, C.ink, 0.05);
+    const edge = `inset 0 0 0 ${(1.25 * U).toFixed(2)}px rgba(255, 255, 255, 0.12), inset 0 ${(1.2 * U).toFixed(2)}px 0 rgba(255, 255, 255, 0.28)`;
+    const under = cardShadow(ci, gL, lift, U, { hairline: false }).split(/,\s*(?![^()]*\))/).filter((x) => !x.trim().startsWith('inset')).join(', ');
+    return { background: `linear-gradient(180deg, ${top} 0%, ${bottom} 100%)`, boxShadow: `${edge}, ${under}` };
   }
-  if (inks.dark || o.accent) {
-    // a dark (or brand-coloured) card: the face a touch brighter where the key falls, a rim on the edges facing it,
-    // a deep contact shadow on the ground
-    const face = `linear-gradient(152deg, ${mixColor(bg, C.white, o.accent ? 0.1 : 0.075)} 0%, ${bg} 42%, ${mixColor(bg, C.ink, o.accent ? 0.06 : 0.1)} 100%)`;
-    const rim = `inset 0 ${e}px 0 ${mixColor(bg, C.white, o.accent ? 0.34 : 0.3)}, inset ${e}px 0 0 ${mixColor(bg, C.white, o.accent ? 0.2 : 0.16)}, inset 0 0 0 ${e}px ${mixColor(bg, C.white, 0.06)}`;
-    const shadow = `0 ${(10 * U).toFixed(1)}px ${(22 * U).toFixed(1)}px rgba(0, 0, 0, ${(0.22 + 0.06 * lift).toFixed(3)}), 0 ${(34 * U + lift * 10 * U).toFixed(1)}px ${(80 * U).toFixed(1)}px rgba(0, 0, 0, ${(0.3 + 0.08 * lift).toFixed(3)})`;
-    return { background: face, boxShadow: `${rim}, ${shadow}` };
-  }
-  // a light card on a light ground: a soft shadow and a top highlight, never a hairline as well
-  const face = `linear-gradient(160deg, ${bg} 0%, ${bg} 55%, ${mixColor(bg, inks.type, 0.025)} 100%)`;
-  const shadow = `inset 0 ${e}px 0 ${mixColor(bg, C.white, 0.9)}, 0 ${(3 * U).toFixed(1)}px ${(8 * U).toFixed(1)}px rgba(0, 0, 0, 0.05), 0 ${(26 * U + lift * 8 * U).toFixed(1)}px ${(64 * U).toFixed(1)}px rgba(0, 0, 0, ${(0.1 + 0.04 * lift).toFixed(3)})`;
-  return { background: face, boxShadow: shadow };
+  const tone = isLight(bg) ? 'light' : 'dark';
+  const ci = cardInks(tone, inks.ground);
+  // the face keeps the scene's own fill (a light surface is the film's second value), with the material's sheen
+  const sheen = tone === 'light' ? 0.012 : 0.022;
+  const top = tone === 'light' ? mixColor(bg, C.white, 0.5) : mixColor(bg, C.white, sheen * 2);
+  const bottom = tone === 'light' ? mixColor(bg, inks.ground, 0.035) : mixColor(bg, C.ink, sheen * 2);
+  return { background: `linear-gradient(180deg, ${top} 0%, ${bottom} 100%)`, boxShadow: cardShadow(ci, gL, lift, U) };
 };
 
-/** A glass glare over a lit face: one soft diagonal band that slides against the camera's travel, as a reflection does. */
-export const Glare: React.FC<{ w: number; h: number; r: number; dark: boolean }> = ({ w, h, r, dark }) => {
-  const { cam } = React.useContext(SceneCtx);
-  const at = 30 - (cam.dx / Math.max(1, w)) * 60;
-  return <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: r, pointerEvents: 'none', background: `linear-gradient(118deg, rgba(255, 255, 255, 0) ${(at - 14).toFixed(2)}%, rgba(255, 255, 255, ${dark ? 0.05 : 0.18}) ${at.toFixed(2)}%, rgba(255, 255, 255, 0) ${(at + 16).toFixed(2)}%)` }} />;
-};
+/** Kept for old scenes: the card material carries its own edge light, so a sliding glare draws nothing (no decoration
+ * without a job). */
+export const Glare: React.FC<{ w: number; h: number; r: number; dark: boolean }> = () => null;
 
 /**
  * A card centred on (cx, cy), `w` x `h` px, lit. It is whole from the beat's first frame (the seam brings it in); `at`
@@ -105,10 +106,12 @@ export const Card: React.FC<{ f: number; at?: number; cx: number; cy: number; w:
   const bg = fill ?? inks.surface;
   const raw = ((clock.dur / 2 - clock.f) * CARD.creep) / FPS;
   const dy = creep && CARD.creepMax > 0 ? CARD.creepMax * Math.tanh(raw / Math.max(1e-6, CARD.creepMax)) * U : 0;
+  const face = litFace(bg, inks, { lift, accent: !!fill && !isLight(fill) });
   return (
-    <div data-ui="" style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: CARD.radius * U, ...litFace(bg, inks, { lift, accent: !!fill && !isLight(fill) }), opacity: a, transform: `translate3d(${(cx - w / 2).toFixed(3)}px, ${(cy - h / 2 + (1 - a) * 24 * U - lift * 6 * U).toFixed(3)}px, 0)`, overflow: 'hidden' }}>
+    <div data-ui="" data-card={isLight(bg) ? 'light' : 'dark'} style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: CARD.radius * U, ...face, opacity: a, transform: `translate3d(${(cx - w / 2).toFixed(3)}px, ${(cy - h / 2 + (1 - a) * 24 * U - lift * 6 * U).toFixed(3)}px, 0)`, overflow: 'hidden' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transform: `translate3d(0px, ${dy.toFixed(3)}px, 0)` }}>{children}</div>
-      <Glare w={w} h={h} r={CARD.radius * U} dark={(inks.dark || !!fill) && !isLight(bg)} />
+      {/* the hairline and the top highlight over the content (a photo filling the card still has its edge) */}
+      <div style={{ position: 'absolute', inset: 0, borderRadius: CARD.radius * U, pointerEvents: 'none', boxShadow: String(face.boxShadow).split(/,\s*(?![^()]*\))/).filter((x) => x.trim().startsWith('inset')).join(', ') }} />
     </div>
   );
 };
@@ -271,7 +274,7 @@ export const ListenPill: React.FC<{ f: number; at: number; cx: number; cy: numbe
 
 /**
  * A lit window onto footage or a photograph: the picture inside a rounded frame standing in the room (a rim catching
- * the key, a contact shadow on the ground, a glare sliding against the camera), centred on (cx, cy), `w` x `h` px. The
+ * the key, a contact shadow on the ground), centred on (cx, cy), `w` x `h` px. The
  * picture (`children`) is laid out at the frame's full width and scaled into the window, so a soft source is shown
  * smaller and reads sharp; grade it into the film (a tint at the ground's hue, kit/theme photoGrade).
  */
@@ -284,7 +287,6 @@ export const Window: React.FC<{ cx: number; cy: number; w: number; h: number; in
         <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, height: (1920 * h) / w, transformOrigin: '0 0', transform: `scale(${k.toFixed(5)})` }}>{children}</div>
       </div>
       <div style={{ position: 'absolute', inset: 0, borderRadius: r, pointerEvents: 'none', boxShadow: `inset 0 ${(1.5 * U).toFixed(2)}px 0 rgba(255, 255, 255, 0.32), inset 0 0 0 ${(1.5 * U).toFixed(2)}px rgba(255, 255, 255, 0.1)` }} />
-      <Glare w={w} h={h} r={r} dark />
     </div>
   );
 };

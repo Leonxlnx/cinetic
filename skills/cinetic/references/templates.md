@@ -34,7 +34,7 @@ stop`) adds the gap to its one element and 1 s rings out after it.
 
 | Template | Length | Use it when | Shape |
 |---|---|---|---|
-| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing, line by line | a line alone in the middle of a clean ground, the product doing what it said, the next line, the product again, the centred lockup built from the last picture; the deck's direction sets the voice, the ground family, the seams, the end card and the camera (`deck.py` writes `src/dealt.ts`, the one deal the film plays; with no direction dealt, the name deals them), never the last films' (`src/recent.ts`) |
+| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing, line by line | a line alone in the middle of a clean ground, the product doing what it said, the next line, the product again, the centred lockup built from the last picture; the direction you pick from the deck's three sets the voice, the ground family, the seams, the end card, the camera, the type pairing and the creative elements (`deck.py --direction <id> --why` writes `src/dealt.ts`, the one deal the film plays; with no direction dealt, the name deals them), never the last films' (`src/recent.ts`) |
 | none (the starter, `--template none`) | 15-45 s | a launch film whose idea is its own device | the dealt direction's skeleton |
 | `update` | 15-23 s | "vX is out": 2-4 changes to show | the version as the set, one lit product moment per change on one camera strip with the film's one 3D turn, the version whole at the payoff, the end card with the version; each slot deals one of two devices |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
@@ -56,17 +56,24 @@ film may end on the reel's close (rebuild its acts after your own) or open on th
 The default launch, and simple is never flat: one thing a frame, every frame lit and alive. You write `src/launch.ts`
 (each line, its picture, the strings that picture shows, the one fact under the lockup) and `src/product.tsx` (each
 picture as the product's real screen); the template's `README.md` walks through both. What it carries for you:
-- **One deal.** Run `deck.py` in the project after `new-film.sh`: it maps the dealt direction onto the template's
-  slots (voice, ground, seams, end card, camera) and writes `src/dealt.ts`, which `src/deal.ts` plays; DIRECTION.md
-  section 0 prints the same deal, so the sheet and the film never disagree (`pin` in `src/launch.ts` fixes a slot).
-- **Ground.** The dealt family under a key light (a soft pool from the top left, lagging the camera float, the far side
-  falling off), and the film's one colour event from the claim, where the key light takes the accent's hue.
+- **One deal, picked.** Run `deck.py` in the project after `new-film.sh`: it deals three directions into
+  `out/OPTIONS.md`, each with what the template would play; pick the one that fits the product and deal it with
+  `--direction <id> --why "<one line>"`. It maps the direction onto the template's slots (voice, ground, seams, end
+  card, camera), deals the creative elements and the type pairing, and writes `src/dealt.ts`, which `src/deal.ts` plays;
+  DIRECTION.md opens on your reason and section 0 prints the same deal (`pin` in `src/launch.ts` fixes a slot).
+- **Ground.** The dealt family's lit field (one of all eleven in `fx/Grounds`), still, never cut, nothing laid over it,
+  and the film's one colour event from the claim.
+- **A world and scale.** Each picture framed on its `focus` box from its first frame until the subject stands 62 % of
+  the frame's height (`FRAME`), on a contact shadow (`FLOOR`): never a small card in an empty field (look-audit
+  `small-subject`).
 - **The core action.** The first picture is real footage of the input (`node scripts/assets.mjs recipe "<input>"`, then
   `public/assets/input.mp4` and `INPUT` in `src/product.tsx`), cut on the action to the lit phone with the product's UI
   receiving it; with no clip that fits, a code-built fallback plays.
-- **The product as a lit object.** The kit's `Phone` or `Laptop`, or a lit `Card` (a face lit from the key, a rim, a
-  contact shadow, a glare), its parts moving in two planes under the camera.
-- **Type.** Statements at a 7.4 % cap height, the claim (the last line) at 8.6 %, never under 6 %.
+- **The product as a lit object.** The kit's `Phone` or `Laptop`, or a `Card` in the kit's one material
+  (`kit/card.tsx`: a vertical sheen lit from above, a hairline, a top highlight, two shadows), facing the camera.
+- **Type.** The dealt pairing's weights and tracking; one key word a line set apart in its emphasis weight (the starred
+  one in the accent); statements at a 7.4 % cap height, the claim (the last line) at 11.2 %, never under 6 %; the
+  wordmark in the pairing's wordmark style, its tracking kept clear of touching letters.
 - **One signature** from [catalogue.md](catalogue.md), built in its scene and named in `SIGNATURE` (`src/product.tsx`),
   and the end mark: the brand's SVG (`scripts/brand.py`), or the stand-in the template builds from the film's own element
   until then (lint flags its marker), never a sparkle, a star or an AI glyph.

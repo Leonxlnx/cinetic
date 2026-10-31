@@ -4,7 +4,7 @@
  * src/deal.ts plays it (deck.py writes src/dealt.ts), so the sheet and the template never disagree.
  *
  *   1. Before any deal, src/dealt.ts is null and deal.ts deals from the product's name (DEAL_SOURCE says so).
- *   2. deck.py --direction in a launch-simple project writes src/dealt.ts and section 0 of out/DIRECTION.md; deal.ts's
+ *   2. deck.py --direction (with its --why) in a launch-simple project writes src/dealt.ts and section 0 of out/DIRECTION.md; deal.ts's
  *      DEAL (through tsx) equals the sheet's template deal slot for slot, for several directions, and DEAL_SOURCE names
  *      the direction; at least half the slots differ from the template's floor.
  *   3. A redraw rewrites src/dealt.ts with the sheet: they still agree.
@@ -83,7 +83,7 @@ try {
   const pick = [dirs[0], dirs[Math.floor(dirs.length / 2)], dirs[dirs.length - 1]];
   for (const id of pick) {
     const dir = project(`d-${id}`);
-    const r = deck(dir, '--direction', id, '--allow-planned');
+    const r = deck(dir, '--direction', id, '--allow-planned', '--why', 'the test picks it: its deal must reach the template');
     if (r.status !== 0) {
       result(false, `deck.py --direction ${id} runs in a launch-simple project`, (r.stderr || r.stdout).slice(-300));
       continue;
@@ -100,7 +100,7 @@ try {
 
   // 3. a redraw rewrites both
   const b = project('b');
-  deck(b, '--direction', pick[0], '--allow-planned');
+  deck(b, '--direction', pick[0], '--allow-planned', '--why', 'the test picks it: its deal must reach the template');
   const r3 = deck(b, '--redraw', 'direction', '--reason', 'the brief asks for a calmer world');
   const after = dealOf(b);
   const td3 = sheetDeal(b);

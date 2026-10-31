@@ -15,11 +15,11 @@
  },
  "deal": {
   "file": "src/deal.ts",
-  "seed": "the deck's direction when scripts/deck.py dealt one in this project (it writes src/dealt.ts: one source), else the product's name (IDENTITY.name) or launch.ts seed; launch.ts pin fixes a slot by hand",
+  "seed": "the deck's direction the agent picked (deck.py --direction <id> --why: it writes src/dealt.ts, one source), else the product's name (IDENTITY.name) or launch.ts seed; launch.ts pin fixes a slot by hand",
   "print": "npx tsx -e \"import { DEAL, DEAL_SOURCE } from './src/deal'; console.log(DEAL_SOURCE); import { SEAM_PLAN, BEAT_PLAN, BEAT_MIX } from './src/timeline'; console.log(DEAL, SEAM_PLAN.map((s) => s.recipe), BEAT_PLAN.map((b) => b.kind + ' ' + ((b.to - b.from) / 60).toFixed(2)), BEAT_MIX)\"",
   "slots": {
    "voice": ["build", "blur", "ink"],
-   "ground": ["nearWhite", "blackField", "whiteBand", "deepPool", "softSky", "lightDark", "gradientField"],
+   "ground": ["nearWhite", "lightStudio", "softSky", "gradientField", "whiteBand", "blackField", "studio", "deepPool", "duskMesh", "floorGlow", "lightDark"],
    "seamTA": ["matchCut", "velocityCut", "blurThrough"],
    "seamAT": ["recede", "zoomThrough"],
    "seamAA": ["velocityCut", "matchCut", "blurThrough"],
@@ -44,7 +44,7 @@
   "simple launch: write the script in src/launch.ts (3-5 pairs: a line of 2-7 words and the picture that proves it; line 1 says what the product does by name; how each line meets its picture, `beat` alone, with or over (unset: the first and the last alone, the others with); the strings each picture shows; the one fact for the end card; `input`, the core action in plain words) and the product's name in src/brand/identity.ts,",
   "  fetch the input shot: node tools/input.mjs (the footage recipe for launch.ts input, else a search in its words; it writes src/input.ts; --pick <n> after a look, --none \"<why>\" when no footage fits),",
   "  build each picture in src/product.tsx from the product's real screens (the first one shows its core change literally: input -> output), each with its focus box, one object carried from scene to scene (SceneDef carry, IDEA), the last one with its hero element,",
-  "  see the deal: run deck.py here once (its direction and the film's creative elements become src/dealt.ts, the one deal the film plays; with none, the name deals), then npx tsx -e \"import { DEAL, DEAL_SOURCE, CREATIVE } from './src/deal'; import { CREATIVE_PLAN } from './src/timeline'; console.log(DEAL_SOURCE, DEAL, CREATIVE, CREATIVE_PLAN)\" (launch.ts pin fixes a slot); give each creative element what it needs on its pair (alts, logos, before, count) and each scene its focus box,",
+  "  see the deal: run deck.py here (three directions into out/OPTIONS.md, each with what this template plays), pick the one that fits the product and deal it with --direction <id> --why \"<one line>\" (its deal, creative elements and type pairing become src/dealt.ts and the tokens; with none, the name deals), then npx tsx -e \"import { DEAL, DEAL_SOURCE, CREATIVE } from './src/deal'; import { CREATIVE_PLAN } from './src/timeline'; console.log(DEAL_SOURCE, DEAL, CREATIVE, CREATIVE_PLAN)\" (launch.ts pin fixes a slot); give each creative element what it needs on its pair (alts, logos, before, count) and each scene its focus box,",
   "  then the music (below), npm run check, and a contact sheet of out/preview.mp4 against references/checks.md (the placement, beat and seam gates)"
  ],
  "copy": [

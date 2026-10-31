@@ -147,7 +147,7 @@ export const CREATIVE_MIN = 0.5;
 export type CreativeSlot = { pair: number; id: string; role: 'line' | 'picture' };
 const LAST = P.length - 1;
 const needsMet = (i: number, m: CreativeMeta) =>
-  m.needs.every((n) => (n === 'swap' ? (P[i].alts?.length ?? 0) >= 1 : n === 'logos' ? (P[i].logos?.length ?? 0) >= 3 : n === 'count' ? !!P[i].count : n === 'before' ? (P[i].before?.length ?? 0) >= 2 : n === 'photos' ? (P[i].photos?.length ?? 0) >= 1 : true));
+  m.needs.every((n) => (n === 'swap' ? (P[i].alts?.length ?? 0) >= 1 : n === 'logos' ? (P[i].logos?.length ?? 0) >= 3 : n === 'count' ? !!P[i].count : n === 'before' ? (P[i].before?.length ?? 0) >= 2 : n === 'photos' ? (P[i].photos?.length ?? 0) >= 5 : true));
 /** The creative elements on the film's pairs, and what each draws. */
 export const CREATIVE_PLAN: CreativeSlot[] = [];
 {
@@ -209,7 +209,7 @@ export const CREATIVE_COLOUR = CREATIVE_PLAN.some((c) => metaOf(c.id)?.colour);
 export const CREATIVE_MISSING: string[] = CREATIVE_PLAN.flatMap((c) => {
   const m = metaOf(c.id) as CreativeMeta;
   if (needsMet(c.pair - 1, m)) return [];
-  const what: Record<string, string> = { swap: 'alts: 2-3 alternatives its key word rolls through', logos: 'logos: 3-8 products it works with (scripts/logos.mjs get <name>)', count: "count: a real figure ({ to: 3.2, suffix: 'x' })", before: 'before: 2-4 steps of the old way', photos: 'photos: public/ paths' };
+  const what: Record<string, string> = { swap: 'alts: 2-3 alternatives its key word rolls through', logos: 'logos: 3-8 products it works with (scripts/logos.mjs get <name>)', count: "count: a real figure ({ to: 3.2, suffix: 'x' })", before: 'before: 2-4 steps of the old way', photos: 'photos: 5 or more public/ paths (pictures worth showing; fewer: swap the device)' };
   return [`pair ${c.pair} plays ${c.id}: write ${m.needs.filter((n) => !needsMet(c.pair - 1, { ...m, needs: [n] })).map((n) => what[n]).join('; ')} on it, or swap it in launch.ts creative.swap with the reason`];
 });
 /** When line i (0-based) is whole, f@60 from its first frame: its device's arithmetic, else the voice's. */

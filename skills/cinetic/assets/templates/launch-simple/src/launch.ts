@@ -47,7 +47,7 @@ import { IDENTITY } from './brand/identity';
 //   before   split-compare: 2-4 short steps of the old way, done by hand today
 //   count    data-sculpture: a real figure of the product ({ to: 3.2, suffix: 'x' })
 //   word     colour-flood: the result's one word on the colour ("Booked"); label: dot-button's button label
-//   photos   photo-arc: public/ paths of pictures worth showing (else the product's own moments stream)
+//   photos   photo-arc: public/ paths of five or more pictures worth showing (fewer: it is never dealt)
 //   creative pin a device to this pair (an id from fx/creative/meta.ts)
 // `creative` on the film swaps a dealt device for another, with the reason: { swap: { 'data-sculpture': 'zoom-wall' },
 // reason: 'no real figure yet' } (never to get back to a line-card film: the swap is another creative element).

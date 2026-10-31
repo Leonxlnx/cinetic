@@ -15,8 +15,11 @@ nothing idles up and down, cards face the camera.
 
 A film is never "a line, then a card". Every film plays two or three creative elements: finished devices in the
 starter's `src/fx/creative`, each a whole beat (a line or a picture) with the product's own scene inside it.
-`deck.py` deals them at random from the whole library, seeded by the film's name and the film history and weighted
-away from what the last films played (a run of films walks the whole library instead of circling a favourite few):
+`deck.py` deals them at random from the whole library, seeded by the film's name, the direction you picked and the
+film history, leaning toward the devices that tell that direction's story (a problem-turn: split-compare, bubble-swarm;
+one-to-many: zoom-wall, logo-orbit) and the brief's own words (a tap: cursor-follow, dot-button), and weighted away
+from what the last films played (a run of films walks the whole library instead of circling a favourite few); a device
+gets only what the film can feed it (photo-arc five photos or more, logo-orbit the real marks, data-sculpture a figure):
 never the set of a recent film, at least one device no recent film played, nothing shared with the last one while a
 draw can avoid it, at least one that draws a line and one that draws a picture, never two of one family (`src/dealt.ts` `creative`; the sheet's last section; `deck.py
 --creative` deals them alone). launch-simple maps them onto the beats where each says the most (`CREATIVE_PLAN`), at
@@ -93,7 +96,7 @@ film's one signature, on one line.
 | `punch-in` | a one-frame x1.1-1.3 punch on a landing word or a click, a long settle (declare it: one snap device a film) |
 | `morph` | the outgoing hero's size, radius and colour interpolate into the incoming hero (18-30 f) |
 | `shrink-to-mark` | a big element shrinks on expo-in into the cut and becomes the next shot's mark |
-| `card-river` | a continuous stream of cards, speed in waves of 40-200 px/f (`fx/Pictures` `ArcRiver`): only where the line is about many |
+| `card-river` | a level row of cards (one y, one size) that arrives one way and slows until it lands (`fx/Pictures` `ArcRiver`, its default): only where the line is about many; never cards rising and sinking on a curve |
 | `fan` | cards spread side by side into a three-card row facing the camera, then a settle push x1.08 that lands |
 | `match-hold` | the subject or the line holds while the plate behind it swaps, accelerating (8, 9, 4 ... 2 f apart) |
 | `mask-grow` | a pill or letterbox mask stretches open on expo-out onto the next picture |

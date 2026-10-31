@@ -85,24 +85,33 @@ frame is never empty between two scenes. 15-30 s, one text voice, one ground fam
 ## Premium by default (simple is not flat)
 
 One dominant thing a frame, and every frame lit and alive:
-- **Ground.** The dealt family's field under a key light from above (`acts/stage.tsx` `KEY_LIGHT`): the top edge
-  lifted in a lighter tone of the ground's own hue (never a grey lift, never a pool or glow behind the content: that is
-  haze), falling off by two thirds down, at one level all film (it never brightens under a beat or outshines the
-  subject), holding still (no sway, no float), the bottom corners falling into the family's far tone
-  (dithered plates, no grain: a grain over a held frame pops on every I-frame of the render).
+- **Ground.** The dealt family's lit field (`fx/Grounds` `FamilyGround`, one of all eleven families, dealt by
+  `scripts/deck.py` with the film's palette): its own key, its fall and its far tone baked dithered, still, never cut,
+  no second plate over it (a linear wash on a lit field reads as a cheap two-stop gradient), at one level all film.
+- **A world and scale.** The product is a lit object in a lit place: the stage frames each picture on its scene's
+  `focus` box from its first frame (`FRAME`: the box scaled up until it stands 62 % of the frame's height, centred; a
+  framing, never a move) and stands it on a soft contact shadow under that box (`FLOOR`; `floor: false` for a scene
+  that draws its own). The subject fills the frame: never a small card in an empty field (look-audit `small-subject`
+  fails one); a wide, short row is stacked, made taller or cropped to the moment that matters (a `focus` box round the
+  moment is a macro crop: the stage scales the product up round it). The creative elements take the framed scene.
 - **Colour.** Three values, one accent: the dark ground, light surfaces (white cards, a light phone screen) and the
   claim on a colour field in the accent (`FIELD_ON`, `EVENT_FROM`): the seam into the claim pushes into the scene's
   `field` element (unnamed: a disc of the accent at the scene's focus) until it is the frame, the claim resolves on it in white, the field leaves with it on the next seam
   (one run under 2 s; the band's flood and the turn to dark are their families' own events).
-- **Type.** Three sizes, one hierarchy: a line alone at a 7.4 % cap height a step under the type family's weight, a
-  line over its picture a step smaller (6.6 %), the claim (the last line, the hero) at 11.2 % and a step heavier, its
+- **Type.** The film's dealt pairing (`fx/TypePairs`, set in the tokens by `type-deal.ts`; `acts/line.tsx` `PAIR`
+  reads it back): its weights and its optical tracking. Every line sets one key word apart in the pairing's emphasis
+  weight (the starred word in the accent ink; a line without a star its last content word, in its own ink: `KEY_AUTO`),
+  never every line one size, one weight, plain white. Three sizes, one hierarchy: a line alone at a 7.4 % cap height in
+  the pairing's line weight, a line over its picture a step smaller (6.6 %), the claim (the last line, the hero) at 11.2 % in its hero weight, its
   last word taking the film's one contrasting entry (the words before it centred on their own, gliding over to open
   its slot, then it snaps in from its left edge, one frame at x1.6, settling in 7 f: never a ragged block, never a
-  word over its neighbour); the wordmark heavier and tighter again (`WORDMARK_TYPE`), tracking tightening with
-  size; a long line keeps one row at a sentence cap (6-6.4 %) or breaks into two balanced rows that part as they are
+  word over its neighbour); the wordmark in the pairing's wordmark style (`wordmarkStyle`), its tracking loosened
+  just enough that no two letters touch (`safeTrack`); a long line keeps one row at a sentence cap (6-6.4 %) or breaks into two balanced rows that part as they are
   read; never under 6 %.
-- **Depth.** Lit faces, a contact shadow, a rim; cards face the camera and hold still (no creep, no bob: `CARD.creep`
-  0), a designed turn only as a creative element (object-turn) that lands facing.
+- **Cards.** Every card is the kit's one material (`kit/card.tsx`, through `acts/ui.tsx` `Card` and `litFace`): an
+  opaque face with a quiet vertical sheen lit from above, a hairline and an inner top highlight over its content, a
+  tight contact shadow and a broad soft one; cards face the camera and hold still (no creep, no bob, no resting tilt),
+  a designed turn only as a creative element (object-turn) that lands facing.
 - **Life with a purpose.** The camera moves only to say something: a move that starts, travels and lands, then a hold
   that may be still. No float, no drift, no re-frame back and forth. A picture over 2.2 s takes one eased push closer
   (`PUSH`: 24 f@60 on a strong in-out, framing its `focus` box inside the safe area; never on a picture behind its line,
@@ -122,9 +131,11 @@ picture's hits, the seams that move, a creative line turning into its picture an
 ## The creative elements
 
 The film is never "a line, then a card". It plays two or three creative elements, dealt at random from the starter's
-`src/fx/creative` (fifteen finished devices: `references/catalogue.md` §0), by `scripts/deck.py` into `src/dealt.ts`
-(`creative`, `reserve`) or, with no deck, from the product's name (`src/deal.ts` `CREATIVE`): never a recent film's
-set, at least one that draws a line and one that draws a picture. `src/timeline.ts` maps them onto the beats
+`src/fx/creative` (eighteen finished devices: `references/catalogue.md` §0), by `scripts/deck.py` into `src/dealt.ts`
+(`creative`, `reserve`), leaning toward the devices that tell the picked direction's story and the brief's words, or,
+with no deck, from the product's name (`src/deal.ts` `CREATIVE`, the same recency-weighted shuffle): never a recent
+film's set, at least one device no recent film played, at least one that draws a line and one that draws a picture,
+and only devices the script can feed (`scriptFeeds`: logos, a figure, the old way, alternatives, five photos or more). `src/timeline.ts` maps them onto the beats
 (`CREATIVE_PLAN`): a line device draws a line's beat (never the claim's), a picture device draws a picture's beat with
 the product's scene inside it (`SceneDef.draw` at any frame the device asks for: a wall of it at other moments, held
 on its first frame behind the letters), where each says the most (`prefer`), at least half the body's beats (a long
@@ -136,8 +147,10 @@ the blur.
 
 What you write for them, on the pair they take: `alts` (word-swap: 2-3 alternatives the key word rolls through),
 `logos` (logo-orbit: the products it works with, `scripts/logos.mjs get`), `before` (split-compare: 2-4 steps of
-the old way), `count` (data-sculpture: a real figure), `word` (colour-flood), `label` (dot-button), `photos`
-(photo-arc). precheck names what a device misses (`CREATIVE_MISSING`; the ship gate fails it). A pair's `creative`
+the old way; bubble-swarm: 4-7 pings), `count` (data-sculpture: a real figure), `word` (colour-flood), `label`
+(dot-button), `photos` (photo-arc: five pictures or more). dot-button and cursor-follow press the scene's `button` (a
+box in scene px on its `SceneDef`). A device hands over by what it carries (its last frame is the product's scene at
+rest, or the picture's first), never a card-to-card cross-fade. precheck names what a device misses (`CREATIVE_MISSING`; the ship gate fails it). A pair's `creative`
 pins a device; `creative: { swap: { 'data-sculpture': 'zoom-wall' }, reason: '...' }` trades one, never more, never
 for nothing. Give each scene a `focus` box: the devices frame the product by it. Print the plan:
 `npx tsx -e "import { CREATIVE } from './src/deal'; import { CREATIVE_PLAN, CREATIVE_MISSING } from './src/timeline'; console.log(CREATIVE, CREATIVE_PLAN, CREATIVE_MISSING)"`.
@@ -169,23 +182,33 @@ Every change of picture carries something (`SEAM_PLAN`, drawn by `acts/stage.tsx
 
 ## The deal
 
+`scripts/deck.py` never picks for you here: run without `--direction` it deals three directions into `out/OPTIONS.md`,
+each with what this template would play (the ground family, the type pairing, the creative elements, the end card).
+Pick the one whose picture tells what the product does, with the reason in one line, and deal it:
+`python3 scripts/deck.py ... --direction <id> --why "<why it fits the product>"` (the reason heads `out/DIRECTION.md`;
+the sheet writes `src/dealt.ts` and sets the type pairing). A direction that does not fit the product is never played
+because it came first.
+
 | Slot | Choices |
 |---|---|
 | voice | build (word by word, re-centring), blur (the whole line out of a blur), ink (each word pale, inking in) |
-| ground | nearWhite, blackField, whiteBand, deepPool, softSky, lightDark, gradientField (`references/brand-and-color.md` §9b) |
+| ground | all eleven families: nearWhite, lightStudio, softSky, gradientField, whiteBand, blackField, studio, deepPool, duskMesh, floorGlow, lightDark (`references/brand-and-color.md` §9b) |
 | seamTA | matchCut (plays as blurThrough), velocityCut, blurThrough (line -> picture) |
 | seamAT | recede, zoomThrough (picture -> line: the line builds over the leaving picture, never on an empty ground) |
 | seamAA | velocityCut, matchCut, blurThrough (picture -> picture, into a line that arrives with its picture) |
 | end | element (the last picture's element flies into the lockup and becomes the mark), badge (the element turns into the mark, a spin blur on the fast frames); the name slides out beside it |
 | camera | still (the picture beats hold; a long picture pushes closer once), land (each product picture takes one slow push that lands, then holds) |
-| creative | two or three of the fifteen creative elements (above), at random, never a recent film's set |
+| creative | two or three of the eighteen creative elements (above), at random, never a recent film's set |
+| type | the pairing (scripts/faces.json `pairs`), at random, never the last two films' (deck.py sets it with `type-deal.ts --pair`) |
 
 Print it: `npx tsx -e "import { DEAL, DEAL_SOURCE } from './src/deal'; import { SEAM_PLAN, BEAT_PLAN, BEAT_MIX } from './src/timeline'; console.log(DEAL_SOURCE, DEAL, SEAM_PLAN.map((s) => s.recipe), BEAT_PLAN.map((b) => b.kind), BEAT_MIX)"`.
 
 ## Then
 
-The music (`template.json` `music`: `music.mjs pick`, `track.py edit --bars <BARS> --end auto`, `track.py grid`),
-`npm run check`, a preview render, and one review round on a 30-cell contact sheet against the checklist in
+Look before the soundtrack: the whole film, its end card and lockup included, sampled in one render (about a minute
+at half size): `npx remotion render src/index.ts FilmEvery out/look --sequence --image-format=jpeg --scale=0.5
+--props='{"step":24}'`, tiled into a sheet. Then the music (`template.json` `music`: `music.mjs pick`, `track.py edit
+--bars <BARS> --end auto`, `track.py grid`), `npm run check`, a preview render, and one review round on a 30-cell contact sheet against the checklist in
 `references/checks.md`: every line centred, the beats mixed (no line-picture-line-picture loop), every picture showing
 what the product does, half the beats or more creative scenes with the product inside them, every seam carrying
 something and no empty frame between scenes, the carried object readable as one idea with the words covered, the end

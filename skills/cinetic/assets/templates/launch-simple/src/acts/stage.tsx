@@ -33,7 +33,8 @@ import * as PRODUCT from '../product';
 import { SCENES } from '../product';
 import { ACT, BEAT_PLAN, COLOUR, copy, CREATIVE_COLOUR, CREATIVE_MISSING, CREATIVE_UNPLACED, CUE, DARK_FROM, f60x, FPS, H, keyWords, LINE_DEV, LINE_EXIT, PAIRS, PIC_DEV, PUSH, SEAM_PLAN, TOTAL, W } from '../timeline';
 import { Layer, PromoteCtx } from './layer';
-import { isClaim, Line, lineLayout, LINE_TYPE, Text, trackFor, weightOf } from './line';
+import { FAM, isClaim, Line, lineLayout, LINE_TYPE, PAIR, Text, trackFor, weightOf } from './line';
+import { safeTrack, wordmarkStyle } from '../fx/TypePairs';
 import { CARD, inkOn, litFace, SceneCtx } from './ui';
 import type { SeamLayer } from '../fx/Seam';
 
@@ -107,9 +108,57 @@ export type SceneDef = {
   cut?: CutMode | (() => CutMode);
   field?: () => FieldBox;
   carry?: { in?: () => CarryBox; out?: () => CarryBox };
+  /** the product's button (scene px): the creative elements that press it (dot-button, cursor-follow) aim at it */
+  button?: () => { x: number; y: number; w: number; h: number };
+  /** false: the scene stands without the contact shadow under its focus box (a scene that draws its own floor) */
+  floor?: boolean;
 };
 const cutMode = (def?: SceneDef): CutMode => (typeof def?.cut === 'function' ? def.cut() : def?.cut ?? 'closer');
 const defOf = (pair: number) => SCENES[LAUNCH.pairs[pair - 1]?.scene] as SceneDef | undefined;
+
+/**
+ * The subject fills the frame: a product picture is framed on its focus box from its first frame (a framing, not a
+ * move: it never animates), scaled up about the box so the box stands FRAME.fill of the frame's height (or FRAME.width
+ * of its width, whichever comes first) and centred; a box already that big keeps its place and size. Never a small card
+ * in an empty field (look-audit small-subject fails one): when the box is wide and short (a row of chips), the scene
+ * itself has to change (a macro crop of the moment that matters, the row stacked, the parts at film size).
+ */
+export const FRAME = { fill: 0.62, width: 0.84, max: 2.4 } as const;
+export const frameOf = (def?: SceneDef) => {
+  const f = focusOf(def);
+  if (!f || !f.w || !f.h) return { s: 1, cx: W / 2, cy: H / 2, tx: 0, ty: 0 };
+  const s = Math.min(FRAME.max, Math.max(1, Math.min((FRAME.fill * H) / f.h, (FRAME.width * W) / f.w)));
+  const cx = f.x + f.w / 2;
+  const cy = f.y + f.h / 2;
+  return s > 1.001 ? { s, cx, cy, tx: W / 2 - cx, ty: H / 2 - cy } : { s: 1, cx, cy, tx: 0, ty: 0 };
+};
+/** A scene box on screen under the scene's framing alone (no push, no land). */
+const framed = (def: SceneDef | undefined, b: { x: number; y: number; w: number; h: number }) => {
+  const k = frameOf(def);
+  return { x: k.cx + (b.x - k.cx) * k.s + k.tx, y: k.cy + (b.y - k.cy) * k.s + k.ty, w: b.w * k.s, h: b.h * k.s };
+};
+/** The scene drawn under its framing (the creative elements take the framed scene and the framed focus box). */
+const Framed: React.FC<{ def?: SceneDef; children: React.ReactNode }> = ({ def, children }) => {
+  const k = frameOf(def);
+  if (k.s === 1) return <>{children}</>;
+  return <div style={{ position: 'absolute', inset: 0, transformOrigin: `${k.cx.toFixed(1)}px ${k.cy.toFixed(1)}px`, transform: `translate3d(${k.tx.toFixed(3)}px, ${k.ty.toFixed(3)}px, 0) scale(${k.s.toFixed(5)})` }}>{children}</div>;
+};
+/**
+ * The place the product stands in: a soft contact shadow on the ground under its focus box (the one key light is above:
+ * the shadow falls straight down, a little wider than the object's foot, darkest at its centre), so a card or a device
+ * is an object in a lit room, never a sticker on a tint. Drawn under the scene, inside its camera.
+ */
+export const FLOOR = { width: 0.92, height: 0.075, drop: 0.012, dark: 0.42, light: 0.2 } as const;
+const Floor: React.FC<{ def?: SceneDef; inks: FamilyInks }> = ({ def, inks }) => {
+  const f = focusOf(def);
+  if (def?.floor === false || !f || !f.w || !f.h) return null;
+  const w = f.w * FLOOR.width;
+  const h = Math.max(FLOOR.height * f.h, 26 * U);
+  const cx = f.x + f.w / 2;
+  const y = f.y + f.h - h * 0.5 + FLOOR.drop * f.h;
+  const a = inks.dark ? FLOOR.dark : FLOOR.light;
+  return <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transform: `translate3d(${(cx - w / 2).toFixed(2)}px, ${y.toFixed(2)}px, 0)`, background: `radial-gradient(closest-side, rgba(0, 0, 0, ${a}) 0%, rgba(0, 0, 0, ${(a * 0.45).toFixed(3)}) 45%, rgba(0, 0, 0, 0) 100%)` }} />;
+};
 
 /**
  * The push closer (timeline.ts PUSH, CUE a<pair>cut): the camera moves in on a strong in-out, never in one frame. With
@@ -118,7 +167,9 @@ const defOf = (pair: number) => SCENES[LAUNCH.pairs[pair - 1]?.scene] as SceneDe
  * it pushes PUSH.min about the point.
  */
 const pushOf = (def?: SceneDef) => {
-  const f = focusOf(def);
+  const f0 = focusOf(def);
+  // the push frames the box as the scene's framing already shows it (FRAME)
+  const f = f0 && f0.w && f0.h ? { ...framed(def, { x: f0.x, y: f0.y, w: f0.w, h: f0.h }) } : f0;
   if (f && f.w && f.h) {
     const fit = Math.min(((1 - 2 * PUSH.margin) * W) / f.w, ((1 - 2 * PUSH.margin) * H) / f.h);
     const s = Math.min(PUSH.max, fit);
@@ -151,11 +202,19 @@ const camOf = (pair: number, F: number) => {
   const e = pushing ? E.strongInOut(clamp((F - (cut - 1)) / f60x(PUSH.dur))) : 0;
   // the dealt camera land: one slow push that lands (never under a creative picture, never on top of a push closer)
   const land = DEAL.camera === 'land' && !device && !pushing ? E.strongInOut(clamp(u / LAND.share)) : 0;
-  const dx = P.tx * e;
-  const dy = P.ty * e;
-  const scale = (1 + (P.s - 1) * e) * (1 + (LAND.scale - 1) * land);
+  // the framing (FRAME: the box scaled up about its centre and centred, still), then the push and the land about the
+  // framed box: one transform, scene px to screen px = o + (b - o) * scale + d
+  const k = frameOf(def);
+  const pk = P.s > 1 || k.s > 1 ? 1 : 0;
+  const ps = 1 + (P.s - 1) * e;
+  const ls = 1 + (LAND.scale - 1) * land;
+  const ox = k.s > 1 ? k.cx : P.ox;
+  const oy = k.s > 1 ? k.cy : P.oy;
+  const dx = k.tx + P.tx * e * pk;
+  const dy = k.ty + P.ty * e * pk;
+  const scale = k.s * ps * ls;
   const phase: 'wide' | 'push' | 'closer' = e <= 0 ? 'wide' : e >= 1 ? 'closer' : 'push';
-  return { from, dur, dx, dy, scale, ox: P.ox, oy: P.oy, phase, cut: cut === undefined ? undefined : cut - from };
+  return { from, dur, dx, dy, scale, ox, oy, phase, cut: cut === undefined ? undefined : cut - from };
 };
 
 /**
@@ -227,10 +286,17 @@ const Scene: React.FC<{ pair: number; F: number }> = ({ pair, F }) => {
   if (dev) {
     const p = LAUNCH.pairs[pair - 1];
     const pr = PAIRS[pair - 1];
-    const sceneAt = (f: number) => <Draw f={f} dur={c.dur} hits={hits} beats={beats} inks={inksAt(F)} pair={pair} cut={c.cut} band={band} carry={carry} />;
+    // the device takes the scene as it is framed (the subject at film size) and the product's real button
+    const sceneAt = (f: number) => (
+      <Framed def={def}>
+        <Draw f={f} dur={c.dur} hits={hits} beats={beats} inks={inksAt(F)} pair={pair} cut={c.cut} band={band} carry={carry} />
+      </Framed>
+    );
+    const fb = focusBox(def);
+    const btn = def.button?.();
     return (
       <SceneCtx.Provider value={{ f: F - c.from, dur: c.dur, cam: { dx: 0, dy: 0 } }}>
-        <CreativePicture id={dev.id} f={F - c.from} dur={c.dur} start={pr.mode === 'with' ? pr.ta - c.from : 0} hits={hits} pal={inksAt(F)} seed={SEED + pair} scene={sceneAt} focus={focusBox(def)} radius={CARD.radius} uid={`p${pair}`} data={{ logos: p.logos, before: p.before, count: p.count, photos: p.photos, word: p.word, label: p.label ?? p.ui?.[0] }} />
+        <CreativePicture id={dev.id} f={F - c.from} dur={c.dur} start={pr.mode === 'with' ? pr.ta - c.from : 0} hits={hits} pal={inksAt(F)} seed={SEED + pair} scene={sceneAt} focus={fb ? framed(def, fb) : undefined} radius={CARD.radius} uid={`p${pair}`} data={{ logos: p.logos, before: p.before, count: p.count, photos: p.photos, word: p.word, label: p.label ?? p.ui?.[0], button: btn ? framed(def, btn) : undefined }} />
       </SceneCtx.Provider>
     );
   }
@@ -238,6 +304,7 @@ const Scene: React.FC<{ pair: number; F: number }> = ({ pair, F }) => {
     <div key={c.phase} style={{ position: 'absolute', inset: 0, transformOrigin: `${c.ox.toFixed(1)}px ${c.oy.toFixed(1)}px`, transform: `translate3d(${c.dx.toFixed(3)}px, ${c.dy.toFixed(3)}px, 0) scale(${c.scale.toFixed(5)})` }}>
       <PromoteCtx.Provider value={c.phase !== 'push'}>
         <SceneCtx.Provider value={{ f: F - c.from, dur: c.dur, cam: { dx: c.dx, dy: c.dy } }}>
+          <Floor def={def} inks={inksAt(F)} />
           <Draw f={F - c.from} dur={c.dur} hits={hits} beats={beats} inks={inksAt(F)} pair={pair} cut={c.cut} band={band} carry={carry} />
         </SceneCtx.Provider>
       </PromoteCtx.Provider>
@@ -270,9 +337,10 @@ const DeviceLine: React.FC<{ pair: number; F: number; inks: FamilyInks }> = ({ p
   const cut = CUE[`ta${pair}`] - c.in;
   const hits = Object.keys(CUE).filter((n) => n.startsWith(`a${pair}h`)).map((n) => CUE[n] - pr.pic);
   const Draw = def?.draw;
-  const sceneAt = Draw ? (f: number) => <Draw f={f} dur={pr.to - pr.pic} hits={hits} inks={inks} pair={pair} /> : undefined;
+  const sceneAt = Draw ? (f: number) => <Framed def={def}><Draw f={f} dur={pr.to - pr.pic} hits={hits} inks={inks} pair={pair} /></Framed> : undefined;
+  const fb = focusBox(def);
   return (
-    <CreativeLine cid={dev.id} cut={cut} swap={p.alts} f={F - c.in} dur={cut} words={words} id={`line${pair}`} size={size} weight={wt} track={trackFor(size)} font={FONT.text} pal={inks} resolved={c.resolved - c.in} out={c.out - c.in} seed={SEED + pair} scene={sceneAt} focus={focusBox(def)} radius={CARD.radius} uid={`l${pair}`} />
+    <CreativeLine cid={dev.id} cut={cut} swap={p.alts} f={F - c.in} dur={cut} words={words} id={`line${pair}`} size={size} weight={wt} track={trackFor(size)} font={FONT.text} pal={inks} resolved={c.resolved - c.in} out={c.out - c.in} seed={SEED + pair} scene={sceneAt} focus={fb ? framed(def, fb) : undefined} radius={CARD.radius} uid={`l${pair}`} />
   );
 };
 
@@ -363,18 +431,28 @@ const Carried: React.FC<{ F: number }> = ({ F }) => {
 
 /** The lockup's sizes (px at 1080p): the name's size, the mark's height, the gap, the fact's size below. */
 export const LOCK = { name: 150, mark: 132, gap: 0.36, fact: 50, below: 128 } as const;
-/** The name as a wordmark, not a line: heavier and tighter than the statements (one face, a second weight). */
+/** The name as a wordmark, not a line: without a pairing, heavier and tighter than the statements (one face, a second
+ * weight); with the film's pairing (line.tsx PAIR), its wordmark weight and tracking (fx/TypePairs wordmarkStyle). */
 export const WORDMARK_TYPE = { weight: 700, track: -0.045 } as const;
+/** The wordmark's weight and tracking at `size` px: the pairing's wordmark, loosened just enough that no two letters
+ * touch (safeTrack: the "Morrow3.2" fault), never tighter than the pairing sets it. */
+const wordmarkOf = (name: string, size: number) => {
+  if (!PAIR) return { weight: WORDMARK_TYPE.weight, track: safeTrack(name, `${WORDMARK_TYPE.weight} ${FONT.text}`, size, WORDMARK_TYPE.track) };
+  const st = wordmarkStyle(PAIR, size, FAM);
+  const track = parseFloat(String(st.letterSpacing));
+  return { weight: Number(st.fontWeight), track: safeTrack(name, `${st.fontWeight} ${FONT.text}`, size, track) };
+};
 const lockLayout = () => {
   const name = copy('wordmark').text;
   const size = LOCK.name * U;
   const markH = LOCK.mark * U;
   const gap = markH * LOCK.gap;
-  const wName = measureTracked(name, size, WORDMARK_TYPE.weight, WORDMARK_TYPE.track, FONT.text, { trailing: false });
+  const wm = wordmarkOf(name, size);
+  const wName = measureTracked(name, size, wm.weight, wm.track, FONT.text, { trailing: false });
   const total = markH + gap + wName;
   const left = (W - total) / 2;
   const cy = H / 2 - 30 * U;
-  return { name, size, markH, gap, wName, left, cy, mark: { x: left, y: cy - markH / 2, w: markH, h: markH } };
+  return { name, size, markH, gap, wName, left, cy, wm, mark: { x: left, y: cy - markH / 2, w: markH, h: markH } };
 };
 
 /** The last picture's hero element (product.tsx `hero`), the box the end card is built from. */
@@ -496,7 +574,7 @@ const EndCard: React.FC<{ F: number }> = ({ F }) => {
         {markNode}
       </div>
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, opacity: named, clipPath: `inset(0px 0px 0px ${(L.mark.x + shiftX + L.markH + L.gap * 0.5).toFixed(2)}px)` }}>
-        <Text id="wordmark" x={L.left + L.markH + L.gap + shiftX - (1 - n) * L.wName * 0.5} y={L.cy - L.size * 0.52} style={{ fontFamily: FONT.text, fontSize: L.size, fontWeight: WORDMARK_TYPE.weight, letterSpacing: `${WORDMARK_TYPE.track}em`, lineHeight: 1, color: inks.type, opacity: mix(0.45, 1, n) }}>
+        <Text id="wordmark" x={L.left + L.markH + L.gap + shiftX - (1 - n) * L.wName * 0.5} y={L.cy - L.size * 0.52} style={{ fontFamily: FONT.text, fontSize: L.size, fontWeight: L.wm.weight, letterSpacing: `${L.wm.track}em`, lineHeight: 1, color: inks.type, opacity: mix(0.45, 1, n), fontKerning: 'normal' }}>
           {L.name}
         </Text>
       </div>
@@ -622,12 +700,13 @@ const seamFor = (at: number) => SEAM_PLAN.find((s) => s.at === at);
  * by `scale`, softens to `blur` px and fades over `dur` f@60 from the line's first frame): the frame is never empty, and
  * the outgoing picture's motion carries the change.
  */
-export const RECEDE_IN = { dur: 26, scale: 0.12, blur: 16, drop: 18 } as const;
+export const RECEDE_IN = { dur: 26, scale: 0.12, blur: 16, drop: 18, gone: 0.62 } as const;
 const recedeState = (F: number, at: number): { out: SeamLayer; in: SeamLayer } => {
   const u = clamp((F - at) / f60x(RECEDE_IN.dur));
   const e = E.buildIn(u);
   return {
-    out: { show: F < at || u < 1, x: 0, y: RECEDE_IN.drop * e, scale: 1 - RECEDE_IN.scale * E.stdInOut(u), opacity: 1 - E.stdInOut(u), blur: RECEDE_IN.blur * Math.sqrt(u), smear: 0, ink: 1 },
+    // it is gone by RECEDE_IN.gone of the recede (a soft shadow left fading under the line reads as a ghost card)
+    out: { show: F < at || u < 1, x: 0, y: RECEDE_IN.drop * e, scale: 1 - RECEDE_IN.scale * E.stdInOut(u), opacity: 1 - E.stdInOut(clamp(u / RECEDE_IN.gone)), blur: RECEDE_IN.blur * Math.sqrt(u), smear: 0, ink: 1 },
     in: { show: F >= at, x: 0, y: 0, scale: 1, opacity: 1, blur: 0, smear: 0, ink: 1 },
   };
 };
@@ -775,6 +854,7 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
 };
 
 /**
+ * (Kept for old scenes and the template's test; the stage no longer draws it: the family field carries its own key.)
  * The key light on the ground: a light from above, never a pool behind the content (a radial glow behind a line or a
  * card reads as haze; look-audit ground-haze fails a ground that rises to a pool inside the frame). The top edge is lifted
  * in a lighter tone of the ground's own hue (dark families: toward the accent, a touch of white, never a grey that washes
@@ -787,15 +867,6 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
  * (an I-frame, x264 re-sharpening the noise) into a one-frame pop that forensics fails.
  */
 export const KEY_LIGHT = { angle: -9, sway: 0, lag: 0, drift: 0, period: 13, lift: { dark: 0.06, light: 0.65 }, opacity: { dark: 0.55, light: 0.65 }, far: { dark: 0.85, light: 0.5 }, head: 0.4 } as const;
-/**
- * The key plate's stops (shares of its light, from the top edge of the light down) and the plate's run above that edge
- * (`head`, shares of the frame height, at the top tone): turned by `angle` and `sway`, a plate whose top edge sat at
- * the light's top would swing that edge into the frame's top corner (a hard wedge of bare ground there); the head
- * keeps the edge far outside the frame at every angle, so the light fades in from above with no edge anywhere.
- */
-const KEY_STOPS = [[0, 1], [0.22, 0.62], [0.48, 0.22], [0.7, 0], [1, 0]] as const;
-/** The plate's height (shares of the frame) without its head. */
-const KEY_LEN = 1.5;
 /** Where the key plate's top edge sits at a turn of `deg` degrees, px from the frame's top at the frame's left and
  * right edges (negative: above the frame). Pure: the test reads it for every angle the sway reaches. */
 export const keyPlateTopEdge = (deg: number, ky: number = -H * 0.12) => {
@@ -810,48 +881,17 @@ export const keyPlateTopEdge = (deg: number, ky: number = -H * 0.12) => {
   return { left: at(0), right: at(W) };
 };
 
-const abs: React.CSSProperties = { position: 'absolute', left: 0, top: 0 };
-const at = (x: number, y: number) => `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
 
 /**
- * The ground under every act, never cut and never on the float (the content drifts over it): the dealt family's field,
- * its key light from above and the bottom corners falling off (KEY_LIGHT). The film's colour event is the claim's field
- * (drawn by the stage on the claim's beat), not a change of the light.
+ * The ground under every act, never cut and still: the dealt family's lit field (one of the eleven families of
+ * fx/Grounds, dealt by scripts/deck.py with the film's palette). The film's colour event is the claim's field (drawn by
+ * the stage on the claim's beat), not a change of the light.
  */
-export const Ground: React.FC<{ F: number }> = ({ F }) => {
-  const inks = inksAt(F);
-  const K = KEY_LIGHT;
-  const dark = inks.dark;
-  // the key: a plate from above, lagging the float, swaying on its own slow loop
-  const t = F / FPS;
-  const ph = (SEED % 89) / 89;
-  const fl = { x: 0, y: 0 }; // the stage holds still: the light does not wander with a float
-  const res = Math.round(W * 0.3);
-  const top = dark ? mixColor(mixColor(inks.ground, inks.accent, 0.45), C.white, K.lift.dark) : C.white;
-  // the plate runs `head` above the light's top at the top tone, so its edge never turns into the frame (KEY_STOPS)
-  const span = KEY_LEN + K.head;
-  const key = bakePlate('linear', [{ at: 0, color: top, alpha: 1 }, ...KEY_STOPS.map(([p, a]) => ({ at: (K.head + p * KEY_LEN) / span, color: top, alpha: a }))], res, res, { vertical: true, seed: 13 });
-  const KW = W * 1.5;
-  const KH = H * span;
-  const rot = K.angle + K.sway * Math.sin(2 * Math.PI * (t / K.period + ph));
-  const kx = (W - KW) / 2 + K.lag * fl.x;
-  const ky = -H * (0.12 + K.head) + K.lag * fl.y + H * K.drift * Math.sin(2 * Math.PI * (t / (K.period * 1.3) + ph + 0.27));
-  // the bottom corners: the family's far tone falling in (the right one deeper)
-  const farTone = dark ? inks.far : mixColor(inks.ground, inks.type, 0.07);
-  const far = bakePlate('radial', [{ at: 0, color: farTone, alpha: 1 }, { at: 0.45, color: farTone, alpha: 0.62 }, { at: 1, color: farTone, alpha: 0 }], res, res, { seed: 19 });
-  const RF = W * 1.2;
-  const fx = W * 1.02 - 0.2 * K.lag * fl.x;
-  const fy = H * 1.12;
-  const gx = -W * 0.04 - 0.2 * K.lag * fl.x;
-  return (
-    <>
-      <FamilyGround family={FAMILY} frame={F} dark={F >= DARK_FROM} flood={floodAt(F)} seed={SEED} />
-      <Img src={far} style={{ ...abs, width: RF, height: RF, opacity: dark ? K.far.dark : K.far.light, transform: at(fx - RF / 2, fy - RF / 2) }} />
-      <Img src={far} style={{ ...abs, width: RF * 0.8, height: RF * 0.8, opacity: (dark ? K.far.dark : K.far.light) * 0.7, transform: at(gx - RF * 0.4, fy - RF * 0.4) }} />
-      <Img src={key} style={{ ...abs, width: KW, height: KH, opacity: dark ? K.opacity.dark : K.opacity.light, transformOrigin: `50% ${(K.head * H).toFixed(1)}px`, transform: `${at(kx, ky)} rotate(${rot.toFixed(3)}deg)` }} />
-    </>
-  );
-};
+export const Ground: React.FC<{ F: number }> = ({ F }) => (
+  // the dealt family's lit field (fx/Grounds FamilyGround: its own key, its fall, its far tone, dithered), still, never
+  // cut; no second plate over it (a linear wash on a lit field reads as a cheap two-stop gradient)
+  <FamilyGround family={FAMILY} frame={F} dark={F >= DARK_FROM} flood={floodAt(F)} seed={SEED} />
+);
 
 /** The film's page colour (Film.tsx, Root.tsx). */
 export const PAGE = { ground: familyInks(FAMILY).ground };

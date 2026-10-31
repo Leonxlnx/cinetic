@@ -21,7 +21,13 @@
 //     pictures; IDEA draws it in flight when it changes form): the task the phone writes lifts off the screen and lands
 //     as the first task on the board; the task chip the steps end on is pushed into until it is the frame (the claim's
 //     colour field, stage.tsx); the result's progress ring closes into the mark (SIGNATURE).
-//   - The push closer frames `focus` (a box: x, y, w, h) inside the safe area: give every scene its box.
+//   - The subject fills the frame: the stage frames each picture on its `focus` box (a box: x, y, w, h) from its first
+//     frame, scaled up until the box stands 62 % of the frame's height (stage.tsx FRAME), and stands it on a contact
+//     shadow (FLOOR): give every scene its box, drawn round what matters. Never a small card in an empty field
+//     (look-audit small-subject): a wide, short row is stacked, made taller or cropped to the moment that matters.
+//   - Cards are the kit's material (acts/ui.tsx Card and litFace on kit/card.tsx): an opaque face lit from above, a
+//     hairline, a top highlight, two shadows; cards and devices face the camera (no resting tilt) and hold still.
+//   - `button` (a box in scene px) is the product's button: dot-button and cursor-follow press it.
 //   - UI type at film size: 44 px and up (cap 3 %+), titles 60+.
 // Build the product's real screens here; acts/ui.tsx has a card, a typed field, a row that checks itself, a count, a
 // live waveform, a listening pill and a lit window. Give the picture colour where the product has it.
@@ -221,7 +227,7 @@ const Input: React.FC<SceneProps> = ({ f, dur, hits, inks, pair, cut, carry }) =
         </Window>
       )}
       <div style={{ position: 'absolute', inset: 0, opacity: enterU > 0 ? 1 : 0 }}>
-        <Phone frame={f} x={P.x} y={P.y + phoneDy} w={P.w} theme={theme} ground={inks.ground} finish="silver" tilt={{ x: 3, y: -9 }} sway={false} reflect={false}>
+        <Phone frame={f} x={P.x} y={P.y + phoneDy} w={P.w} theme={theme} ground={inks.ground} finish="silver" sway={false} reflect={false}>
           <InputScreen f={f} sw={P.S.w} sh={P.S.h} inks={inks} saidAt={saidAt} per={per} outAt={outAt} live={live} pair={pair} chipOn={carryOpacity(f, carry)} />
         </Phone>
       </div>
@@ -246,8 +252,10 @@ const stepsOf = (pair: number) => {
   const slots = all.slice(n, n + items.length);
   return { items, slots, board: slots.length === items.length && items.length > 1 };
 };
-/** The board (px at 1080p): a lit light column per slot, the slot's name at its top, the item's chip landing in it. */
-const BOARD = { col: 460, gap: 40, label: 48, chip: { x: 22, y: 112, size: 50, pad: 30 }, foot: 40 } as const;
+/** The board (px at 1080p): a lit light column per slot, the slot's name at its top, the item's chip landing in it,
+ * the column as tall as a day of the planner (`min`: the subject fills the frame, never a strip of chips), its open
+ * slots below the chip drawn as the planner's hairlines. */
+const BOARD = { col: 460, gap: 40, label: 48, chip: { x: 22, y: 112, size: 50, pad: 30 }, foot: 40, min: 640, slot: 92 } as const;
 const boardLayout = (pair: number) => {
   const { items } = stepsOf(pair);
   const n = items.length;
@@ -260,7 +268,7 @@ const boardLayout = (pair: number) => {
     return { lines, h: 2 * BOARD.chip.pad * U + lines.length * BOARD.chip.size * 1.2 * U };
   });
   // a column is as tall as what it holds (its name, the tallest chip, a foot): never an empty slab
-  const ch = BOARD.chip.y * U + Math.max(...sized.map((c) => c.h)) + BOARD.foot * U;
+  const ch = Math.max(BOARD.min * U, BOARD.chip.y * U + Math.max(...sized.map((c) => c.h)) + BOARD.foot * U);
   const y0 = H / 2 - ch / 2;
   const chips = sized.map((c, k) => ({ x: x0 + k * (cw + BOARD.gap * U) + BOARD.chip.x * U, y: y0 + BOARD.chip.y * U, w: chipW, h: c.h, lines: c.lines }));
   return { n, cw, ch, x0, y0, chips };
@@ -305,11 +313,19 @@ const Steps: React.FC<SceneProps> = ({ f, hits, inks, pair, carry }) => {
   const B = boardLayout(pair);
   return (
     <>
-      {st.slots.map((s, k) => (
-        <Card key={k} f={f} cx={B.x0 + k * (B.cw + BOARD.gap * U) + B.cw / 2} cy={H / 2} w={B.cw} h={B.ch} inks={inks} fill={surf}>
-          <Txt x={34 * U} y={30 * U} size={BOARD.label} weight={620} track={-0.02} color={si.mute}>{s}</Txt>
-        </Card>
-      ))}
+      {st.slots.map((s, k) => {
+        // the day's open slots under the chip: hairlines of the planner, one every BOARD.slot px
+        const top = BOARD.chip.y * U + Math.max(...B.chips.map((c) => c.h)) + 34 * U;
+        const rules = Math.max(0, Math.floor((B.ch - top - BOARD.foot * U) / (BOARD.slot * U)));
+        return (
+          <Card key={k} f={f} cx={B.x0 + k * (B.cw + BOARD.gap * U) + B.cw / 2} cy={H / 2} w={B.cw} h={B.ch} inks={inks} fill={surf}>
+            <Txt x={34 * U} y={30 * U} size={BOARD.label} weight={620} track={-0.02} color={si.mute}>{s}</Txt>
+            {Array.from({ length: rules }, (_, j) => (
+              <div key={j} style={{ position: 'absolute', left: 34 * U, top: top + j * BOARD.slot * U, width: B.cw - 68 * U, height: Math.max(1, 1.5 * U), background: si.line }} />
+            ))}
+          </Card>
+        );
+      })}
       {B.chips.map((c, k) => {
         const at = hits[k] ?? 20 * k;
         const p = clamp((f - (at - 10 * k60)) / (24 * k60));
@@ -401,7 +417,19 @@ const pairOf = (scene: string) => LAUNCH.pairs.findIndex((p) => p.scene === scen
 export const SCENES: Record<string, SceneDef> = {
   // with the clip the change is the scene's own (footage -> device); without it the camera pushes closer. `carry.out`:
   // the task it writes leaves the screen for the next picture
-  input: { draw: Input, cut: () => (hasClip() ? 'scene' : 'closer'), focus: () => ({ x: W / 2 - 280 * U, y: phoneBox().top - 30 * U, w: 560 * U, h: phoneBox().h + 60 * U }), carry: { out: () => inputChip(pairOf('input')) } },
+  input: {
+    draw: Input,
+    cut: () => (hasClip() ? 'scene' : 'closer'),
+    focus: () => ({ x: W / 2 - 280 * U, y: phoneBox().top - 30 * U, w: 560 * U, h: phoneBox().h + 60 * U }),
+    carry: { out: () => inputChip(pairOf('input')) },
+    // the record button at the foot of the phone's screen (what dot-button and cursor-follow press)
+    button: () => {
+      const P = phoneBox();
+      const L = screenLayout(P.S.w);
+      const cy = P.top + P.S.y + P.S.h - 118 * L.s;
+      return { x: P.x - L.button.r, y: cy - L.button.r, w: 2 * L.button.r, h: 2 * L.button.r };
+    },
+  },
   // `carry.in`: the task lands as the board's first chip; `field`: the box the claim's colour field grows out of
   // (stage.tsx: the push into it becomes the next frame)
   steps: {

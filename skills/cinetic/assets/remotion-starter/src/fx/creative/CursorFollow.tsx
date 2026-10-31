@@ -5,6 +5,7 @@
 // travel, one pull, never a drift back. The pointer is part of the product's world (it scales with the camera) and
 // leaves as the pull lands. A film's seed picks where the pointer starts (left, right or below its target).
 import React from 'react';
+import { C } from '../../brand/tokens';
 import { clamp, E, lmix, mix } from '../../lib/anim';
 import { mixColor } from '../../lib/color';
 import { type FilmCtx, useFilm } from '../../lib/film';
@@ -67,7 +68,7 @@ export const cursorState = (t: number, from: Pt, to: Pt, click: number, film?: P
 /** The pointer: a plain arrow, its tip at (0, 0), `s` px tall; dark on a light ground, light on a dark one. */
 const Arrow: React.FC<{ s: number; dark: boolean }> = ({ s, dark }) => (
   <svg width={s} height={s} viewBox="0 0 24 24" style={{ position: 'absolute', left: (-5 / 24) * s, top: (-3 / 24) * s, overflow: 'visible', filter: `drop-shadow(0 ${(s * 0.06).toFixed(2)}px ${(s * 0.12).toFixed(2)}px rgba(0, 0, 0, ${dark ? 0.5 : 0.28}))` }}>
-    <path d="M5 3 L5 19.6 L9.3 15.5 L12.2 21.7 L15.1 20.4 L12.2 14.3 L18.2 14.3 Z" fill={dark ? '#FFFFFF' : '#14161A'} stroke={dark ? '#14161A' : '#FFFFFF'} strokeWidth={1.4} strokeLinejoin="round" />
+    <path d="M5 3 L5 19.6 L9.3 15.5 L12.2 21.7 L15.1 20.4 L12.2 14.3 L18.2 14.3 Z" fill={dark ? C.white : C.ink} stroke={dark ? C.ink : C.white} strokeWidth={1.4} strokeLinejoin="round" />
   </svg>
 );
 

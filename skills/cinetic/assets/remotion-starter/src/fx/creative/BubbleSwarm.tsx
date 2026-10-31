@@ -4,7 +4,7 @@
 // another, accelerating as they go, until only the product is left, at rest. Bubbles land and hold still where they
 // pop (no bobbing, no drift), face the camera and are made of the film's card material; they never overlap.
 import React from 'react';
-import { FONT } from '../../brand/tokens';
+import { C, FONT } from '../../brand/tokens';
 import { clamp, E, mix } from '../../lib/anim';
 import { type FilmCtx, useFilm } from '../../lib/film';
 import { type Box, centreOf, face, frameOf, hash01, k60, momentAt, phrased, type PictureProps, type Recipe, type Params } from './core';
@@ -94,7 +94,7 @@ export const BubbleSwarm: React.FC<PictureProps & { before?: string[]; params?: 
   const boxes = swarmLayout(widths, seed, film, P);
   const fb = focus ?? { x: W * 0.3, y: H * 0.25, w: W * 0.4, h: H * 0.5 };
   const c = centreOf(fb);
-  const ink = pal.dark ? '#F4F5F7' : '#16181C';
+  const ink = pal.dark ? C.white : C.ink; // the film's own inks (tokens), never a hex of the device's
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       {st.arrive > 0 && (
