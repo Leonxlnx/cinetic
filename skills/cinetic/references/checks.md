@@ -73,6 +73,8 @@ Run it on `TREATMENT.md` at Step 1b, before any picture work, and again on `out/
 |---|---|---|
 | `what-it-is` | no line says what the product is by 3 s ("[Name] is a [plain category] for [who]." or "[Name] turns [input] into [output]."); an update film: no "[Name] [version]" by 3 s | error |
 | `name` | the product's name never appears on screen | error |
+| `repeats` | (COPY with ids) a line, not the first, whose words are its own picture's strings: two of them, or half its words (line<k> against ui<k>.*); the picture tells it, the line says what the picture cannot, or the pair keeps no line | warn |
+| `quantity` | "every", "each", "all", "always", "automatically" in a line: a claim about many that one example on screen never proves; the picture shows three or more at once or the whole lifecycle | warn |
 | `long`, `keyword` | a line over 7 words; a one-word line (a name, a version or the close excepted) | error |
 | `vague` | fancy or vague words a customer would not say (unleash, reimagine, seamless, effortless, elevate, supercharge, next-level, the future of, magic, journey, unlock, empower, revolutionize, beyond, redefine, game-changing, built different, ...) | error |
 | `metaphor` | a figure of speech instead of the thing (a superpower, a second brain, rocket fuel, on autopilot, a copilot) | error |
@@ -144,7 +146,9 @@ looks; `accent-count` still applies.
 `fontSize` that is not a role size of either type family in `lib/look.ts` `TYPE_LOOK`, calm or bold; more than 2
 non-UI roles), `small-text` (under 36 px at 1080p),
 `giant-watermark` (a giant word at opacity ≤ 0.29), `giant-once` (giant words in more than one act),
-`card-content` (error: a `<Card>` or bento tile with no content, image or `blank`), `ui-accent-bar` (error: a vertical
+`card-content` (error: a `<Card>` or bento tile with no content, image or `blank`), `text-estimate` (error: a text
+width guessed from its letter count, `label.length * size * 0.55`, outside kit/, lib/ and fx/: what stands beside the
+text lands on an edge or under a neighbour; flex with a gap or `measureTracked`), `ui-accent-bar` (error: a vertical
 accent line or bar on a card's edge: a side border 2 px or wider or in a saturated colour, an inset shadow painting one
 side, a 1.5-16 px wide bar element 2.5 times as tall filled with the accent; warns on a colour set by a variable and a
 neutral stripe down a card's edge; corners, hairline dividers, a chart's bars and carets are left out).

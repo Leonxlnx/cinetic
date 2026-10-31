@@ -14,7 +14,7 @@ timeline file, and nothing is finished until it is rendered, measured and review
   0.8.79 (HTML plus a paused GSAP timeline) mirrors the tokens and the timeline contract for HTML projects
   ([hyperframes-engine.md](references/hyperframes-engine.md)).
 - **Paths.** `scripts/render.sh` and the rest work from the skill root and inside a film project (`new-film.sh` copies them in).
-  Every script prints `--help` except the internal helpers `brand-svg.ts` (which `brand-kit.sh` calls) and `hf-preflight.cjs` (which `hf-finish.sh` runs).
+  Every script prints `--help` except the internal helpers `brand-svg.ts` and `hf-preflight.cjs`.
 - **Brand.** A supplied brand (logo, colours, fonts, screenshots, tone) wins over the house taste
   ([brand-kits.md](references/brand-kits.md)); record any banned look it brings in `BRIEF.md`.
 - **Python.** Commands say `python3`; set `PYTHON` to an interpreter with `scripts/requirements.txt` installed
@@ -32,8 +32,9 @@ These are the rules every film is held to, with their numbers. The gates named i
    and a line arriving with the picture it names, mixed, never a line-card-line-card loop; no empty frame between
    scenes. Type-only beats two or more; a line over a picture on at most 40 % of beats; first line by 1 s.
    (`grid-check.ts` beats.)
-3. **The picture tells what the product does.** Each picture beat shows the visible change that proves the line before
-   it (input -> output, before -> after, a count rising); a line no picture proves is cut. The first picture beat shows
+3. **The picture tells what the product does.** Each picture proves its line without repeating its words (input ->
+   output, a count rising; "every" drawn as many at once); a line its picture already says is cut (`copy-check`
+   repeats, quantity). The first picture beat shows
    the core action literally, with a real person giving the input where the input is human (real footage or a photo:
    `node scripts/assets.mjs recipe "<the product in your words>"`). With the words covered, every picture beat still
    reads at least partly. ([imagery.md](references/imagery.md) "Show the core action".)
@@ -43,20 +44,22 @@ These are the rules every film is held to, with their numbers. The gates named i
    (`copy-check.py`, `copy-check.py --ui src`.)
 5. **Text with love: one voice.** Every line arrives in the film's one text voice (word build: each word fades in over
    20 f@60, 6 f apart, the line re-centring on an expo settle over about 15 f; or a blur-in, or an ink-in); at most one
-   contrasting entry per 30 s, for the hero line only (a snap on the last word: one frame at x2.2, settling in 7 f).
+   contrasting entry per 30 s, for the hero line only (its last word snaps into an opened slot from its left edge: one
+   frame at x1.6, settling in 7 f).
    Statements at a cap height of 6-9 % of the frame height (bigger for the claim); one-line statements 80 % or more; a
    small lead line over big key words at most once a film. Emphasis is quiet and of one kind: the key word in the
-   accent colour on at most 60 % of the lines; a box, marker bar, pill, underline or knockout only as the film's one
+   accent colour on at most two lines; a box, marker bar, pill, underline or knockout only as the film's one
    signature, on one line. (`lint-film.mjs` `emphasis-share`, `emphasis-signature`.)
 6. **Scene changes that flow.** Every hard cut carries something: the ground kept, the cut inside a blur, an anchor
-   held within 10 px (the word slot, a shape's centre) or the motion carried; at most 10 % of hard cuts carry nothing.
+   held within 10 px or the motion carried (smeared); a picture-to-picture match cut only under a carried object; at
+   most 10 % of hard cuts carry nothing.
    The ground flips light-dark at most twice a film, each a declared colour event. Two or three seam kinds a film, none
    over 45 % of the scene changes, and one exit-then-enter, text-swap or match-cut in a film of four lines or more.
    Build them with `fx/Seam` ([transitions.md §2](references/transitions.md#2-recipes-at-60-fps)). (`forensics.py --seams`.)
 7. **Clean UI.** The product's real screens built in code at film size, every string the product's own: no bracket
    slot, no stand-in number, no kit sample, no title cut with "...". Left edges of stacked rows within 4 px, inner
-   padding about 2.4 cap heights (never under 0.8), no text touching an asset, no accent bar beside a card.
-   (`precheck.mjs`, `layout-audit.sh`, `copy-check.py --ui src`.)
+   padding about 2.4 cap heights and even (never under 0.8), no text touching an asset, no accent bar beside a card;
+   widths measured, never guessed from a letter count (`lint-film.mjs`, `layout-audit.sh`).
 8. **Logos current, presented well.** Other products' marks come from `scripts/logos.mjs` in their newest official
    form, verified on the brand's own page within 12 months, in one presentation a film (a chip in the line, pills round
    a centred line, or a wall), never a pill on every line (`logos.mjs check`). The end card is centred, built from the
@@ -116,22 +119,22 @@ shapes are in [templates.md](references/templates.md) (`--template none` keeps t
 [--brand brand/brand.json]` deals one direction from the brief and the history and writes `out/DIRECTION.md`
 (`--options 3` deals three to choose from). Copy [assets/TREATMENT.md](assets/TREATMENT.md) to the project and write
 the idea sentence (it fails with a competitor's name in it) and the script: line 1 says what the product is ("[Name]
-turns [input] into [output]."), then one concrete thing it does a line, then the name and what to do. A 15 s launch is
-3-4 lines, a 30 s one 5-7. `python3 scripts/copy-check.py TREATMENT.md` passes before any picture work
+turns [input] into [output]."), then one concrete thing it does a line, then the claim: 3-4 lines at any length, the
+pictures between carry the rest. `python3 scripts/copy-check.py TREATMENT.md` passes before any picture work
 ([copy-and-type.md](references/copy-and-type.md)).
 
 **3. Picks and beat plan (5 min).** From [catalogue.md](references/catalogue.md) pick one text voice, two or three moves,
 the signature, two or three seam kinds, the ground family, the end-card design and, when the film shows other products,
 one presentation of their marks; write them into `film.json` `devices` and run `node scripts/film-diff.mjs`. In
 launch-simple the product's name deals the voice, the ground, the seams, the end card and the camera
-(`src/deal.ts`, never the last films' choices); pin a slot in `src/launch.ts` only for a reason. Then the beat plan in
+(`src/deal.ts`); pin a slot in `src/launch.ts` for a reason. Then the beat plan in
 `TREATMENT.md`: each picture beat names the visible change that proves the line before it.
 
 **4. Music (10 min).** The track is chosen before the timeline and the picture is cut to it
 ([music.md](references/music.md)): `node scripts/music.mjs pick --mood "<words>" --length <s>` (the curated library;
 `music.mjs search` without one), `get '#n' --to audio/music` (its licence record beside it; never the last film's
-track), then `python3 scripts/audio/track.py analyze`, `edit --bars <BARS> --end auto` (the track's own ending, else a
-fade: never a cut), `grid`, `check`. The track plays only through `score.py` (`--bed-only` before the kit exists);
+track), then `python3 scripts/audio/track.py analyze` and, once the script is written, `fit` (the timeline's bars,
+the entry on the lockup, the track's own ending: never a cut), `check`. The track plays only through `score.py` (`--bed-only` before the kit exists);
 never cut it by hand.
 
 **5. The product and the pictures (35 min).** In launch-simple you write two files: `src/launch.ts` (each line, its
@@ -177,20 +180,20 @@ with the format's variants (it runs `credits.py`: credits go into `CREDITS.md`, 
 | Logo sting | 3-8 s | `--template none` | the name and at most one line | MP4, ProRes 4444 alphas, poster |
 
 Recipes per format in [formats.md](references/formats.md); update films in [update-films.md](references/update-films.md).
-Films render at 30 fps by default (keep sharp moves under about 25 px a frame at 1080p; `--fps 60` for fast camera travel);
+Films render at 30 fps by default (a move over 25 px a frame at 1080p is smeared; `--fps 60` for fast camera travel);
 a loop's last frame flows into frame 0 (`forensics.py --loop`, `render.sh --loop`). A sting or loop runs steps 1-3 as
 one page and builds as one act.
 
 ## Craft essentials
 
 **Timing.** `src/timeline.ts` is the only source of timing; picture, cues and checks import it. Acts, the reveal and
-the ending land on the track's events within 1 frame (`b(bar, beat, sub)` on `MUSIC`); graphic cuts on its accents,
+the ending land on the track's events within 1 frame (`b(bar, beat, sub)`); graphic cuts on its accents,
 the picture leading by up to 3 f; a 0.2-0.5 s stop or dip before the biggest reveal; a change meant for a cue starts at
 `cue - 1` ([timing-grid.md](references/timing-grid.md)).
 
 **Motion.** Curves by role from `lib/anim.ts` (`E.glideOut` to arrive, `stdInOut` to reposition, `buildIn` to leave,
 `linear` for colour and drifts); one spring class a film, never an overshoot on type; never scale from zero (start at
-1.28-1.9x and settle); speed carried through cuts (launch into the cut, carry out at about 0.7, decaying); nothing
+1.28-1.9x and settle); speed carried through cuts (out at about 0.7, decaying); nothing
 changes state in one frame (a 16 f@60 glide, `glideValue`), every move lands under 10 % of its peak speed before its
 cut (`landBeforeCut`), every hold drifts (`holdDrift`) ([motion-tokens.md](references/motion-tokens.md),
 [camera.md](references/camera.md)).
@@ -198,8 +201,8 @@ cut (`landBeforeCut`), every hold drifts (`holdDrift`) ([motion-tokens.md](refer
 **Engine.** Everything is a pure function of the frame: no CSS transitions or keyframes, no `Math.random`, `Date.now`
 or `performance.now` (seeded `rand(seed)`); all translation in one `transform`; clamp every value that feeds geometry;
 no `will-change` where a blur animates, defocus at fixed levels, large soft shapes baked into dithered plates; fonts
-loaded before any measurement. Remotion renders muted and ffmpeg muxes; never run `npx remotion still` or `render` in a
-loop (each call bundles again: `frames.mjs` and `render.sh` share one bundle)
+loaded before any measurement. Never run `npx remotion still` or `render` in a loop (each call bundles again;
+`frames.mjs` and `render.sh` share one bundle)
 ([remotion-engine.md](references/remotion-engine.md), [chromium-rendering.md](references/chromium-rendering.md)).
 
 **Sound.** A licensed, human-made instrumental track cut to the picture carries the film; earshot's kit gives each

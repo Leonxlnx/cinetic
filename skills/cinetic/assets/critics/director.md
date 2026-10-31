@@ -37,19 +37,26 @@ The brief, word for word:
    picture below"; a line beside, above or below a picture at most once per 30 s. (`layout-audit` placement.)
 2. **Line, then picture.** At least two type-only beats (a line alone on the clean ground, 0.5-2.3 s); a line over a
    picture on at most 40 % of the beats, and only where it names what the picture is doing; the first line on screen
-   by 1 s; each picture beat shows the product doing the thing its line said (input -> output, before -> after).
+   by 1 s; each picture beat shows the product doing the thing its line said (input -> output, before -> after)
+   without the line repeating the picture's words; a line that says "every" has the many drawn at once; no picture
+   cut off or sitting low under a line (it stands behind it, centred, or after it).
 3. **One voice, quiet emphasis.** Every line arrives on the film's one text voice (one contrasting hero entry per 30 s
-   at most); emphasis on at most 60 % of the lines, the key word in the accent colour by default; no box, marker,
+   at most; its word never touching or covering the word before it, the line centred at every frame of its build);
+   emphasis on at most two lines, the key word in the accent colour by default; no box, marker,
    pill or underline unless it is the film's one signature, on one line; one-line statements 80 % or more.
 4. **Seams that flow.** Every hard cut carries something (the ground kept, a blur at the seam, an anchor held, the
-   motion carried); at most two light-dark ground flips, each a declared colour event; at least one exit-then-enter,
+   motion carried and smeared, an object flying over it); no one-frame swap of one scene for another, no move starting
+   at full speed; at most two light-dark ground flips, each a declared colour event; at least one exit-then-enter,
    text-swap or match-cut; no seam kind over 45 % of the scene changes. (`forensics.py --seams`.)
 5. **Clean UI.** No vertical accent line beside a card, the left edges of stacked rows within 4 px, no text touching an
-   asset or a card's edge, inner padding about 2.4 cap heights (never under 0.8), real words in every label (no
-   bracket slot, no stand-in number, no kit sample), no title cut with "...".
+   asset or a card's edge, inner padding about 2.4 cap heights and even top to bottom (never under 0.8), a status
+   dot with the same air as its label, one control changing its label in place (never two stacked), siblings on one
+   baseline (a diagram's nodes, an icon on its label's centre line, clear of a divider), real words in every label (no
+   bracket slot, no stand-in number, no kit sample), no title cut with "...", nothing flying over readable words.
 6. **Marks.** Other products' marks current (`logos.mjs check` passes), one presentation a film (a chip in the line,
    pills round a centred line, or a wall), never a pill on every line. The end card centred, built from the film's last
-   element, held 2-3 s, the name once, the one fact under it. The logo is the brand's own or built from the film's
+   element, held 2-3 s, the name and the fact on one centre line to the last frame, the name once, the one fact under
+   it; marks bare beside a held line or in it, never a row of app tiles stacked above it. The logo is the brand's own or built from the film's
    last element: never a sparkle, a star or a generic glyph.
 7. **Its own film.** Ground family, voice, signature and end card differ from the last three films (`film-diff.mjs`
    passes); nothing reads as the template replayed or as the last film re-skinned.
@@ -61,8 +68,9 @@ The brief, word for word:
 10. **The picture tells it.** With the words covered (step 1), every picture beat at least partly says what the product
     does; the first picture beat shows the core action literally, with a real person giving the input where it is
     human (real footage or a photo, `scripts/assets.mjs recipe`).
-11. **Colour.** With a colour-field ground family, at least one line sits on the field; the key word in the accent ink,
-    not a box; contrast 4.5:1 once a line has settled.
+11. **Colour.** At least one value change a film (the claim on its colour field, a dark beat on a light ground);
+    with a colour-field ground family, at least one line sits on the field; the key word in the accent ink, not a box;
+    contrast 4.5:1 once a line has settled; no hard edge in the ground's light (a wedge in a corner).
 12. **Premium, not just clean.** Depth and motivated light on the ground and the product (a key light, a rim, a contact
     shadow, two planes moving at different rates); hero type at 6-9 % of the frame height (bigger for the claim); the
     one signature move lands; nothing static for more than about 0.8 s outside the end hold. A flat field with small
