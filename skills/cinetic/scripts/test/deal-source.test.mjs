@@ -62,6 +62,11 @@ const project = (name, withDeal = true) => {
   const dir = path.join(TMP, name);
   fs.mkdirSync(path.join(dir, 'src', 'brand'), { recursive: true });
   for (const f of withDeal ? ['deal.ts', 'dealt.ts', 'recent.ts', 'launch.ts'] : ['launch.ts']) fs.copyFileSync(path.join(TPL, f), path.join(dir, 'src', f));
+  // deal.ts deals the film's creative elements from the starter's library (fx/creative/meta.ts, React-free)
+  if (withDeal) {
+    fs.mkdirSync(path.join(dir, 'src', 'fx', 'creative'), { recursive: true });
+    fs.copyFileSync(path.join(SKILL, 'assets', 'remotion-starter', 'src', 'fx', 'creative', 'meta.ts'), path.join(dir, 'src', 'fx', 'creative', 'meta.ts'));
+  }
   fs.writeFileSync(path.join(dir, 'src', 'brand', 'identity.ts'), "export const IDENTITY = { name: 'Switchyard', supplied: false } as const;\n");
   return dir;
 };
@@ -105,7 +110,7 @@ try {
   // 4. a pin over the deck's deal
   const lp = path.join(b, 'src', 'launch.ts');
   const src = fs.readFileSync(lp, 'utf8');
-  const other = after.deal.camera === 'drift' ? 'rise' : 'drift';
+  const other = after.deal.camera === 'still' ? 'land' : 'still';
   fs.writeFileSync(lp, src.replace(/export const LAUNCH(: [^=]+)? = \{/, (m) => `${m}\n  pin: { camera: '${other}' },`));
   const pinned = dealOf(b);
   result(pinned.deal?.camera === other && /pinned: camera/.test(pinned.source ?? ''), 'launch.ts pin fixes a slot over the deck\'s deal, and the source says so', JSON.stringify(pinned).slice(0, 240));

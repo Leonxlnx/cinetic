@@ -24,7 +24,7 @@ import { usePromote } from './layer';
 import { BrandLogo } from '../kit/logos';
 
 /** Card numbers (px at 1080p): one radius for the film, inner padding at least 0.8 of the text's cap. */
-export const CARD = { radius: 30, pad: 48, row: 100, text: 48, small: 40, creep: 30, creepMax: 40, edge: 1.5 } as const;
+export const CARD = { radius: 30, pad: 48, row: 100, text: 48, small: 40, creep: 0, creepMax: 0, edge: 1.5 } as const;
 const k60 = FPS / 60;
 
 /** The picture beat's clock and camera (stage.tsx Scene provides it): frames since the beat began, its length, and the
@@ -96,15 +96,15 @@ export const Glare: React.FC<{ w: number; h: number; r: number; dark: boolean }>
 /**
  * A card centred on (cx, cy), `w` x `h` px, lit. It is whole from the beat's first frame (the seam brings it in); `at`
  * gives it its own arrival (rise 24 px, fade, 26 f@60) inside a beat. `fill` colours it (the result in the brand
- * colour); `lift` raises it on a moment. Its content creeps upward through the beat (CARD.creep px/s) against its edge:
- * the card and its content read as two planes.
+ * colour); `lift` raises it on a moment. It faces the camera and holds still: nothing in a card moves up and down on
+ * its own (CARD.creep 0; `creep` is kept for old scenes and does nothing at the house numbers).
  */
-export const Card: React.FC<{ f: number; at?: number; cx: number; cy: number; w: number; h: number; inks: FamilyInks; children?: React.ReactNode; lift?: number; fill?: string; creep?: boolean }> = ({ f, at, cx, cy, w, h, inks, children, lift = 0, fill, creep = true }) => {
+export const Card: React.FC<{ f: number; at?: number; cx: number; cy: number; w: number; h: number; inks: FamilyInks; children?: React.ReactNode; lift?: number; fill?: string; creep?: boolean }> = ({ f, at, cx, cy, w, h, inks, children, lift = 0, fill, creep = false }) => {
   const clock = React.useContext(SceneCtx);
   const a = at === undefined ? 1 : E.settleOut(clamp((f - at) / (26 * k60)));
   const bg = fill ?? inks.surface;
   const raw = ((clock.dur / 2 - clock.f) * CARD.creep) / FPS;
-  const dy = creep ? CARD.creepMax * Math.tanh(raw / CARD.creepMax) * U : 0;
+  const dy = creep && CARD.creepMax > 0 ? CARD.creepMax * Math.tanh(raw / Math.max(1e-6, CARD.creepMax)) * U : 0;
   return (
     <div data-ui="" style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: CARD.radius * U, ...litFace(bg, inks, { lift, accent: !!fill && !isLight(fill) }), opacity: a, transform: `translate3d(${(cx - w / 2).toFixed(3)}px, ${(cy - h / 2 + (1 - a) * 24 * U - lift * 6 * U).toFixed(3)}px, 0)`, overflow: 'hidden' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transform: `translate3d(0px, ${dy.toFixed(3)}px, 0)` }}>{children}</div>

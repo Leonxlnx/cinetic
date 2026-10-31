@@ -45,6 +45,12 @@ export default function cues(): SoundEvent[] {
     // the push closer: a soft swell under the camera's move (it lands with the push, PUSH.dur f@60 after the cue)
     if (CUE[`a${k}cut`] !== undefined) ev.push({ f: CUE[`a${k}cut`], kind: 'swell', weight: 0.3, pan: 0, dur: f60(PUSH.dur), apexFrac: 0.8, action: 'shape', id: `pic${k}-closer` });
   });
+  // a creative line that turns into its picture: a swell under the transformation, a suck into the picture as it lands
+  for (const k of Object.keys(CUE).filter((n) => /^dev\d+a$/.test(n))) {
+    const n = k.slice(3, -1);
+    ev.push({ f: CUE[k], kind: 'swell', weight: 0.45, pan: 0, dur: f60(24), apexFrac: 0.7, action: 'shape', id: `line${n}-becomes-its-picture` });
+    if (CUE[`dev${n}b`] !== undefined) ev.push({ f: CUE[`dev${n}b`], kind: 'suck', weight: 0.5, pan: 0, dur: f60(20), apexFrac: 0.85, action: 'shape', id: `line${n}-lands-in-its-picture` });
+  }
   // the claim's arrival (its colour field filling the frame) is the film's second accent: a sub drop the mix takes a
   // stop-down before (score.py: the music dips 0.3-0.5 s and lands back on it), so the track has two dynamic moments
   // (the claim and the lockup), never one flat bed to the end; the seam into it sounds as that drop, once

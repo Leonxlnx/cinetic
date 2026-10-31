@@ -1,6 +1,6 @@
 {
  "name": "launch-simple",
- "about": "The default launch film, 15-30 s: lines and pictures that meet, never a slideshow. The first line alone on a lit ground, then the product doing what it said; the next lines arrive with their pictures (the picture standing far behind the line, centred and soft, coming up into focus as it leaves), and pictures between play alone (a pair with no line: at most four lines a film); the claim alone on its colour field, the hero line; then a centred lockup built from the last picture with the one fact under it. Every change of picture carries something (a camera move across the cut, the picture falling back under the next line, one object flying from one scene into the next): the frame is never empty between two scenes. One text voice, one ground family, three or four seam kinds, everything fitted to the music's bars and the script's lines. The agent writes the script (src/launch.ts), fetches the input shot (tools/input.mjs) and writes the product's scenes (src/product.tsx); the timeline, the seams, the ground, the end card and the sound plan follow. new-film.sh lays these files over the Remotion starter (the default for --format launch).",
+ "about": "The default launch film, 15-30 s: lines and pictures that meet, never a slideshow. The first line alone on a lit ground, then the product doing what it said; the next lines arrive with their pictures (the picture standing far behind the line, centred and soft, coming up into focus as it leaves), and pictures between play alone (a pair with no line: at most four lines a film); the claim alone on its colour field, the hero line; then a centred lockup built from the last picture with the one fact under it. Every change of picture carries something (a camera move across the cut, the picture falling back under the next line, one object flying from one scene into the next): the frame is never empty between two scenes. Two or three dealt creative elements (src/fx/creative) take at least half the beats with the product inside them, so it is never a line, then a card; the camera moves only with a purpose and rests under them. One text voice, one ground family, three or four seam kinds, everything fitted to the music's bars and the script's lines. The agent writes the script (src/launch.ts), fetches the input shot (tools/input.mjs) and writes the product's scenes (src/product.tsx); the timeline, the seams, the ground, the end card and the sound plan follow. new-film.sh lays these files over the Remotion starter (the default for --format launch).",
  "engine": "remotion",
  "pace": "crisp",
  "type_family": "bold",
@@ -24,7 +24,8 @@
    "seamAT": ["recede", "zoomThrough"],
    "seamAA": ["velocityCut", "matchCut", "blurThrough"],
    "end": ["element", "badge"],
-   "camera": ["drift", "rise"]
+   "camera": ["still", "land"],
+   "creative": "two or three of src/fx/creative (deal.ts CREATIVE: scripts/deck.py writes them into src/dealt.ts, else the name deals them), never a recent film's set; timeline.ts CREATIVE_PLAN puts them on at least half the beats"
   }
  },
  "music": {
@@ -43,7 +44,7 @@
   "simple launch: write the script in src/launch.ts (3-5 pairs: a line of 2-7 words and the picture that proves it; line 1 says what the product does by name; how each line meets its picture, `beat` alone, with or over (unset: the first and the last alone, the others with); the strings each picture shows; the one fact for the end card; `input`, the core action in plain words) and the product's name in src/brand/identity.ts,",
   "  fetch the input shot: node tools/input.mjs (the footage recipe for launch.ts input, else a search in its words; it writes src/input.ts; --pick <n> after a look, --none \"<why>\" when no footage fits),",
   "  build each picture in src/product.tsx from the product's real screens (the first one shows its core change literally: input -> output), each with its focus box, one object carried from scene to scene (SceneDef carry, IDEA), the last one with its hero element,",
-  "  see the deal: run deck.py here once (its direction becomes src/dealt.ts, the one deal the film plays; with none, the name deals), then npx tsx -e \"import { DEAL, DEAL_SOURCE } from './src/deal'; console.log(DEAL_SOURCE, DEAL)\" (launch.ts pin fixes a slot),",
+  "  see the deal: run deck.py here once (its direction and the film's creative elements become src/dealt.ts, the one deal the film plays; with none, the name deals), then npx tsx -e \"import { DEAL, DEAL_SOURCE, CREATIVE } from './src/deal'; import { CREATIVE_PLAN } from './src/timeline'; console.log(DEAL_SOURCE, DEAL, CREATIVE, CREATIVE_PLAN)\" (launch.ts pin fixes a slot); give each creative element what it needs on its pair (alts, logos, before, count) and each scene its focus box,",
   "  then the music (below), npm run check, and a contact sheet of out/preview.mp4 against references/checks.md (the placement, beat and seam gates)"
  ],
  "copy": [

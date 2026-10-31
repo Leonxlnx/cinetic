@@ -204,7 +204,7 @@ const Input: React.FC<SceneProps> = ({ f, dur, hits, inks, pair, cut, carry }) =
   // landing on a glide), the pill flies from the window's edge to the phone's screen: one direction, one carried element
   const exitU = clip ? clamp((f - (split - 12 * k60)) / (14 * k60)) : 1;
   const enterU = clip ? clamp((f - (split - 8 * k60)) / (28 * k60)) : 1;
-  const phoneDy = (1 - E.glideOut(enterU)) * 980 * U + 6 * U * Math.sin((2 * Math.PI * f) / (FPS * 4.2));
+  const phoneDy = (1 - E.glideOut(enterU)) * 980 * U; // it rises in and lands: no idle bob
   const winDy = -E.launchIn(exitU) * 1040 * U;
   const fly = clip ? E.strongInOut(clamp((f - (split - 14 * k60)) / (26 * k60))) : 1;
   const onScreen = { cx: P.x, cy: P.top + P.S.y + L.panel.y + L.panel.h / 2 + phoneDy, w: L.panel.w / U, h: L.panel.h / U };

@@ -32,6 +32,12 @@ Usage:
   python3 scripts/deck.py --list [--format vertical --pace crisp --have ui]
   python3 scripts/deck.py --validate [--strict]  # schema, library ids, primitives, distinctness, bans
   python3 scripts/deck.py ... --no-imagery       # leave out the imagery-led directions
+  python3 scripts/deck.py --creative --brief "<one line>" [--have logos,number]  # only the creative elements
+
+Every sheet also deals the film's creative elements (two or three finished devices from the starter's fx/creative,
+each a whole beat with the product inside it), at random: seeded by the film's name and the film history, never the
+set of a recent film, at most one shared with the last. They go into src/dealt.ts (creative, reserve) and the sheet's
+last section; --have logos (the products it works with) and number (a real figure) open the devices that need them.
 
   --have      what really exists (comma-separated): ui (the product has an interface to show, built in
               code from the real product), input (it is used by typing or pointing: a text field, a prompt,
@@ -120,10 +126,11 @@ PICK = os.path.join(HERE, 'pick.py')
 
 FORMATS = ['launch', 'feature', 'loop', 'sting', 'walkthrough', 'vertical', 'update']
 PACES = ['calm', 'crisp']
-HAVE = ['ui', 'input', 'photos', 'footage', 'audio', 'number', 'name']
+HAVE = ['ui', 'input', 'photos', 'footage', 'audio', 'number', 'name', 'logos']
 HAVE_TEXT = {'ui': 'product UI', 'input': 'a field, prompt or pointer the product is used with',
              'photos': 'pictures worth building on', 'footage': 'footage', 'audio': 'a real recorded clip',
-             'number': 'one honest number', 'name': 'a name that means something'}
+             'number': 'one honest number', 'name': 'a name that means something',
+             'logos': 'the products it works with (their official marks)'}
 KEEP = ['palette', 'type']
 SLOTS = ['palette', 'type', 'signature', 'direction']
 MAX_REDRAWS = 2
@@ -1814,6 +1821,134 @@ def guard_out(outdir):
              'or pass --out <film>/out')
 
 
+# ------------------------------------------------------------------------------------------- the creative elements
+# Every film gets two or three creative elements (assets/remotion-starter/src/fx/creative: finished devices that each
+# carry a whole beat, the product's scene inside them), dealt at random from the whole library: seeded by the film's
+# name and the film history, never the set of a recent film, at most one device shared with the last one, at least one
+# that draws a line and one that draws a picture, never two of one family. The library is read from the project's own
+# src/fx/creative/meta.ts (else the skill's starter), so the deck and the film never name different devices. A device
+# that needs something the brief does not have (logos: the products it works with; number: a real figure; photos) is
+# dealt only when --have says so or the brief says it (works with ..., a figure in it).
+CREATIVE_N = 3
+CREATIVE_NEED_HAVE = {'logos': 'logos', 'count': 'number', 'photos': 'photos'}
+CREATIVE_WRITE = {'swap': 'alts (2-3 alternatives its key word rolls through)', 'logos': 'logos (the products it works with: scripts/logos.mjs get <name>)',
+                  'count': "count (a real figure: { to: 3.2, suffix: 'x' })", 'before': 'before (2-4 steps of the old way)', 'photos': 'photos (public/ paths)'}
+_META_LINE = re.compile(r"\{\s*id:\s*'([a-z0-9-]+)',\s*role:\s*'(line|picture)',\s*family:\s*'([a-z0-9-]+)',\s*needs:\s*\[([^\]]*)\],\s*prefer:\s*'([a-z]+)'(.*?)about:\s*'((?:[^'\\]|\\.)*)'\s*\}")
+
+
+def creative_library(root=None):
+    """[{id, role, family, needs, prefer, about}] from <root>/src/fx/creative/meta.ts, else the skill's starter copy."""
+    paths = ([os.path.join(root, 'src', 'fx', 'creative', 'meta.ts')] if root else []) + \
+        [os.path.join(p, 'fx', 'creative', 'meta.ts') for p in STARTER_SRC]
+    for p in paths:
+        if os.path.isfile(p):
+            with open(p, encoding='utf-8') as fh:
+                src = fh.read()
+            out = []
+            for m in _META_LINE.finditer(src):
+                out.append({'id': m.group(1), 'role': m.group(2), 'family': m.group(3), 'needs': re.findall(r"'([a-z]+)'", m.group(4)),
+                            'prefer': m.group(5), 'about': m.group(7).replace("\\'", "'")})
+            if out:
+                return out
+    return []
+
+
+def project_name(root):
+    """The product's name as the project writes it (src/brand/identity.ts), else None (an unnamed scaffold's [..] too)."""
+    p = os.path.join(root, 'src', 'brand', 'identity.ts')
+    if not os.path.isfile(p):
+        return None
+    with open(p, encoding='utf-8') as fh:
+        m = re.search(r"""name:\s*["'`]([^"'`]+)["'`]""", fh.read())
+    name = m.group(1).strip() if m else None
+    return None if not name or (name.startswith('[') and name.endswith(']')) else name
+
+
+def recent_creative(history_on):
+    """The creative sets of the last films, newest first: the film history (each film's deal), then the deal history."""
+    sets = []
+    for f in film_history(history_on):
+        c = (f.get('deal') or {}).get('creative') or (f.get('devices') or {}).get('creative')
+        if isinstance(c, list) and c:
+            sets.append([x for x in c if isinstance(x, str)])
+    for h in read_history(history_on):
+        c = h.get('creative')
+        if isinstance(c, list) and c:
+            sets.append([x for x in c if isinstance(x, str)])
+    seen, out = set(), []
+    for s in sets:
+        k = tuple(sorted(s))
+        if k not in seen:
+            seen.add(k)
+            out.append(s)
+    return out[:4]
+
+
+def creative_haves(have, brief):
+    """What the film can give a device beyond its script: --have, and what the brief says (works with ..., a figure)."""
+    out = set(have or ())
+    b = (brief or '').lower()
+    if re.search(r'\b(works? with|integrat\w*|connects? (to|with)|plugs? into|syncs? with|for (slack|github|notion|figma|gmail|google))\b', b):
+        out.add('logos')
+    if re.search(r'\d', b):
+        out.add('number')
+    return out
+
+
+def deal_creative(lib, name, brief, have, recent=(), n=CREATIVE_N):
+    """{deal, reserve, seed_key, haves} or None without a library. A seeded shuffle of the devices the film can feed, the first line
+    device, the first picture device, then the next of another family; re-dealt until no recent set repeats and at most
+    one device is shared with the last film (none while a draw can avoid it)."""
+    if not lib:
+        return None
+    haves = creative_haves(have, brief)
+    ok = [d for d in lib if all(CREATIVE_NEED_HAVE.get(x) is None or CREATIVE_NEED_HAVE[x] in haves for x in d['needs'])]
+    last = list(recent[0]) if recent else []
+    key = '|'.join([(name or brief or '').strip().lower(), ';'.join(','.join(sorted(s)) for s in recent)])
+    for salt in range(64):
+        rng = random.Random(hashlib.sha256(f'{key}#creative#{salt}'.encode('utf-8')).hexdigest())
+        order = ok[:]
+        rng.shuffle(order)
+        pick = []
+
+        def take(cond):
+            for d in order:
+                if d not in pick and all(p['family'] != d['family'] for p in pick) and cond(d):
+                    pick.append(d)
+                    return
+
+        take(lambda d: d['role'] == 'line')
+        take(lambda d: d['role'] == 'picture')
+        while len(pick) < n:
+            had = len(pick)
+            take(lambda d: True)
+            if len(pick) == had:
+                break
+        ids = [d['id'] for d in pick]
+        # the first half of the draws shares nothing with the last film; then one device at most
+        if any(sorted(ids) == sorted(s) for s in recent) or len(set(ids) & set(last)) > (0 if salt < 32 else 1):
+            continue
+        reserve = [d['id'] for d in order if d['id'] not in ids] + [d['id'] for d in lib if d not in ok]
+        return {'deal': ids, 'reserve': reserve, 'seed_key': key, 'haves': sorted(haves)}
+    return None
+
+
+def creative_lines(c, lib):
+    """The DIRECTION.md section for the dealt creative elements."""
+    if not c:
+        return ''
+    by = {d['id']: d for d in lib}
+    out = ['', '## The creative elements (dealt; at least half the beats)', '',
+           'Each takes a whole beat with the product inside it (references/catalogue.md §0; the template maps them onto the beats:',
+           '`npx tsx -e "import { CREATIVE_PLAN } from \'./src/timeline\'; console.log(CREATIVE_PLAN)"`). Build them; swap one at most,',
+           'with the reason (launch.ts `creative.swap`), and only for another creative element.', '']
+    for i in c['deal']:
+        d = by.get(i, {})
+        need = [CREATIVE_WRITE[x] for x in d.get('needs', []) if x in CREATIVE_WRITE]
+        out.append(f"- `{i}` ({d.get('role', '?')}): {d.get('about', '')}" + (f"; write {', '.join(need)} on its pair" if need else ''))
+    return '\n'.join(out) + '\n'
+
+
 # --------------------------------------------------------------------------------- the template's deal (one source)
 # A template that deals its own devices (launch-simple's src/deal.ts: voice, ground, seamTA, seamAT, seamAA, end, camera) plays
 # the deck's direction instead of a second deal from the product's name: deck.py maps the dealt direction onto the
@@ -1829,7 +1964,7 @@ SEAM_AA = {'velocity': 'velocityCut', 'whip': 'velocityCut', 'wipe': 'velocityCu
            'hard': 'matchCut', 'zoomThrough': 'matchCut', 'snapZoom': 'matchCut', 'defocus': 'blurThrough',
            'breath': 'blurThrough', 'light': 'blurThrough', 'dissolveUi': 'blurThrough'}
 BADGE_LOCKUPS = ('world-object', 'pull-back', 'light-finds', 'resolve')  # the hero object turns as it becomes the mark
-RISE_MOTIONS = ('crane', 'dolly')
+LAND_MOTIONS = ('crane', 'dolly', 'push')  # a camera that travels: each picture takes one push that lands
 
 
 def _ts_lists(src, name):
@@ -1895,7 +2030,7 @@ def template_deal(sh, devices, floor, recent=None):
                    'a push seam: the camera goes through the picture' if push else 'no push seam: the picture falls back under the line'),
         'seamAA': (list(dict.fromkeys(SEAM_AA[x] for x in seams if x in SEAM_AA)), 'seams ' + ', '.join(seams[:4])),
         'end': ((['badge', 'element'] if lk in BADGE_LOCKUPS else ['element', 'badge']), f'lockup {lk}'),
-        'camera': ((['rise', 'drift'] if motion in RISE_MOTIONS else ['drift', 'rise']), f'camera {motion}'),
+        'camera': ((['land', 'still'] if motion in LAND_MOTIONS else ['still', 'land']), f'camera {motion}'),
     }
     recent = recent or {}
     deal, why, order = {}, {}, {}
@@ -1919,23 +2054,72 @@ def template_deal(sh, devices, floor, recent=None):
     return deal, why
 
 
+def dealt_body(direction, deal, creative):
+    """src/dealt.ts: the direction's deal and the film's creative elements (deal.ts reads it first)."""
+    obj = {'direction': direction, 'deal': deal}
+    if creative:
+        obj['creative'] = creative['deal']
+        obj['reserve'] = creative['reserve']
+    return ('// What the deck dealt for this film (scripts/deck.py writes this file with out/DIRECTION.md): src/deal.ts plays it\n'
+            '// instead of a deal of its own, so the sheet and the template never disagree. Re-deal with deck.py (--redraw),\n'
+            '// never by hand; launch.ts `pin` still fixes a slot, launch.ts `creative.swap` trades one creative element (a reason).\n'
+            'export const DEALT: { direction: string; deal: Record<string, string>; creative?: string[]; reserve?: string[] } | null = '
+            + json.dumps(obj, ensure_ascii=False) + ';\n')
+
+
+def deal_film_creative(sh, root):
+    """The film's creative elements for the sheet: sh['creative'] = {deal, reserve, ...} (None without a library)."""
+    inp = sh.get('input') or {}
+    lib = creative_library(root)
+    c = deal_creative(lib, project_name(root), inp.get('brief', ''), inp.get('have', ()), recent_creative(sh.get('history', True)))
+    if c:
+        sh['creative'] = c
+    else:
+        sh.pop('creative', None)
+    return lib
+
+
 def write_template_deal(sh, outdir):
-    """Map the sheet onto a template that deals (src/deal.ts beside out/) and write src/dealt.ts; sh['template_deal']."""
+    """Map the sheet onto a template that deals (src/deal.ts beside out/) and write src/dealt.ts with the film's creative
+    elements; sh['template_deal'], sh['creative']."""
     root = os.path.dirname(os.path.abspath(outdir))
+    deal_film_creative(sh, root)
     devices, floor = template_slots(root)
     if not devices:
         sh.pop('template_deal', None)
         return
     deal, why = template_deal(sh, devices, floor, recent_template(sh.get('history', True)))
     rel = 'src/dealt.ts'
-    body = ('// What the deck dealt for this film (scripts/deck.py writes this file with out/DIRECTION.md): src/deal.ts plays it\n'
-            '// instead of a deal of its own, so the sheet and the template never disagree. Re-deal with deck.py (--redraw),\n'
-            '// never by hand; launch.ts `pin` still fixes a slot.\n'
-            'export const DEALT: { direction: string; deal: Record<string, string> } | null = '
-            + json.dumps({'direction': sh['direction']['id'], 'deal': deal}, ensure_ascii=False) + ';\n')
     with open(os.path.join(root, 'src', 'dealt.ts'), 'w', encoding='utf-8', newline='\n') as fh:
-        fh.write(body)
+        fh.write(dealt_body(sh['direction']['id'], deal, sh.get('creative')))
     sh['template_deal'] = {'file': rel, 'deal': deal, 'why': why}
+
+
+def deal_creative_only(outdir, brief, have, history_on):
+    """--creative: deal only the film's creative elements into src/dealt.ts (a direction already dealt there is kept)."""
+    root = os.path.dirname(os.path.abspath(outdir))
+    lib = creative_library(root)
+    c = deal_creative(lib, project_name(root), brief, have, recent_creative(history_on))
+    if not c:
+        fail('no creative library found (src/fx/creative/meta.ts in the project or the skill\'s starter)', 1)
+    p = os.path.join(root, 'src', 'dealt.ts')
+    direction, deal = '', {}
+    if os.path.isfile(p):
+        with open(p, encoding='utf-8') as fh:
+            m = re.search(r'=\s*(\{.*\})\s*;\s*$', fh.read(), re.S)
+        if m:
+            try:
+                old = json.loads(m.group(1))
+                direction, deal = old.get('direction', ''), old.get('deal', {})
+            except ValueError:
+                pass
+    if os.path.isdir(os.path.join(root, 'src')):
+        with open(p, 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write(dealt_body(direction, deal, c))
+    write_history(history_on, {'direction': direction or '(creative only)', 'creative': c['deal']})
+    print(f"deck: creative elements {', '.join(c['deal'])}" + (f' (written to {os.path.relpath(p)})' if os.path.isdir(os.path.join(root, 'src')) else ''))
+    print(creative_lines(c, lib), end='')
+    return 0
 
 
 def write_sheet(sh, outdir, data, library):
@@ -1945,7 +2129,7 @@ def write_sheet(sh, outdir, data, library):
     with open(os.path.join(outdir, 'direction.json'), 'w', encoding='utf-8', newline='\n') as fh:
         json.dump(sh, fh, indent=1, ensure_ascii=False)
         fh.write('\n')
-    md = render_sheet(sh, data, library)
+    md = render_sheet(sh, data, library) + creative_lines(sh.get('creative'), creative_library(os.path.dirname(os.path.abspath(outdir))))
     with open(os.path.join(outdir, 'DIRECTION.md'), 'w', encoding='utf-8', newline='\n') as fh:
         fh.write(md)
     return md
@@ -1990,6 +2174,7 @@ def main():
     ap.add_argument('--library', default=DEFAULT_LIBRARY, help='the technique library (default assets/library/techniques.json)')
     ap.add_argument('--no-history', action='store_true', help='neither read nor write the deal history')
     ap.add_argument('--repeat', default='', help='signature,end: repeats of the last three films the brief asks for (else refused)')
+    ap.add_argument('--creative', action='store_true', help='deal only the creative elements into src/dealt.ts (keeps a direction already dealt there)')
     a = ap.parse_args()
 
     data, deck_problems = load_deck(a.deck)
@@ -2047,6 +2232,9 @@ def main():
         return 0
 
     have = parse_list(a.have, HAVE, '--have')
+    if a.creative:
+        guard_out(a.out)
+        return deal_creative_only(a.out, a.brief, have, not a.no_history)
     keep = parse_list(a.keep, KEEP, '--keep')
     avoid = [x.strip() for x in a.avoid.split(',') if x.strip()]
     for x in avoid:
@@ -2170,7 +2358,8 @@ def main():
     sh = make_sheet(d, inp, seed, options, set(keep), history_on, data, waits=waits)
     md = write_sheet(sh, a.out, data, library)
     write_history(history_on, {'direction': d['id'], 'format': a.format, 'signature': d['signature']['family'], 'lockup': d['lockup']['kind'],
-                               **({'ground': sh['ground_family']['id']} if sh.get('ground_family') else {})})
+                               **({'ground': sh['ground_family']['id']} if sh.get('ground_family') else {}),
+                               **({'creative': sh['creative']['deal']} if sh.get('creative') else {})})
     print(md, end='')
     return 0
 

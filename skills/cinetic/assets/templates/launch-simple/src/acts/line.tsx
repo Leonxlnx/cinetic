@@ -71,11 +71,10 @@ export const lineLayout = (text: string, claim = false, over = false): { size: n
 /** A statement's size (px), for code that only needs the size. */
 export const lineSize = (text: string, claim = false) => lineLayout(text, claim).size;
 
-/** The life of a line while it is read: a slow push (scale per second about its centre) and a sideways drift (px at
- * 1080p per second, centred on the read so the line stays centred; odd lines drift right, even ones left; of two rows
- * the second drifts against the first at PART of its speed). */
+/** The life of a line while it is read: a slow push (scale per second about its centre). No sideways drift: a line
+ * holds its place (LINE_DRIFT 0; the camera never wanders off and back). */
 export const LINE_CREEP = 0.015;
-export const LINE_DRIFT = 18;
+export const LINE_DRIFT = 0;
 export const LINE_PART = 0.6;
 
 /** Text set on its own composited layer while its layer is sharp (sub-pixel moves, no whole-pixel ticks). */

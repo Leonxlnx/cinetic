@@ -137,8 +137,14 @@ try {
   }
 
   // b: a picture-only pair between two lines; a dealt picture -> picture match cut over an uncarried change
+  // (creative elements that draw lines only, no reserve: a match cut beside a creative picture plays as the blur)
+  const DEALT_TS = path.join(DIR, 'src', 'dealt.ts');
+  const dealtSrc = fs.readFileSync(DEALT_TS, 'utf8');
+  fs.writeFileSync(DEALT_TS, `export const DEALT: { direction: string; deal: Record<string, string>; creative?: string[]; reserve?: string[] } | null = ${JSON.stringify({ direction: '', deal: {}, creative: ['word-swap', 'scale-contrast'], reserve: [] })};
+`);
   writeLaunch([P.input('Tern turns voice notes into *plans*.'), P.result(), P.steps('Each task lands on its day.'), P.result('Your week, planned.')], { seamAA: 'matchCut' });
   const b = probe();
+  fs.writeFileSync(DEALT_TS, dealtSrc);
   result(!b.error, 'a picture-only pair imports', b.error);
   if (!b.error) {
     result(b.modes[1] === 'none' && b.beats.filter((x) => x[0] === 'pic2').length === 1 && !b.beats.some((x) => x[0] === 'line2') && !b.copy.includes('line2') && b.copy.includes('ui2.1') && !b.cues.includes('line2'),

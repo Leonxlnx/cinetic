@@ -38,8 +38,28 @@
 //            tools/input.mjs` fetches the input shot from it (src/input.ts), the first scene's real footage
 import { IDENTITY } from './brand/identity';
 
-export type Pair = { line?: string; scene: string; beat?: 'alone' | 'with' | 'over'; seconds?: number; hits?: number[]; ui?: string[] };
-export type Launch = { name: string; pairs: Pair[]; close: string; input?: string; seed?: string; pin?: Partial<Record<string, string>> };
+//
+// The creative elements (src/deal.ts CREATIVE: two or three dealt at random from fx/creative, never the last films'
+// set) take whole beats: the timeline maps each onto a line or a picture (CREATIVE_PLAN prints where) and the stage
+// draws it with the product's scene inside. What a device needs from the script sits on its pair:
+//   alts     word-swap: 2-3 alternatives the key word rolls through before it lands ("trips", "dinners")
+//   logos    logo-orbit: the products it works with (scripts/logos.mjs ids), 4-8
+//   before   split-compare: 2-4 short steps of the old way, done by hand today
+//   count    data-sculpture: a real figure of the product ({ to: 3.2, suffix: 'x' })
+//   word     colour-flood: the result's one word on the colour ("Booked"); label: dot-button's button label
+//   photos   photo-arc: public/ paths of pictures worth showing (else the product's own moments stream)
+//   creative pin a device to this pair (an id from fx/creative/meta.ts)
+// `creative` on the film swaps a dealt device for another, with the reason: { swap: { 'data-sculpture': 'zoom-wall' },
+// reason: 'no real figure yet' } (never to get back to a line-card film: the swap is another creative element).
+export type Count = { to: number; from?: number; suffix?: string; prefix?: string; decimals?: number };
+export type Pair = {
+  line?: string; scene: string; beat?: 'alone' | 'with' | 'over'; seconds?: number; hits?: number[]; ui?: string[];
+  creative?: string; alts?: string[]; logos?: string[]; before?: string[]; count?: Count; word?: string; label?: string; photos?: string[];
+};
+export type Launch = {
+  name: string; pairs: Pair[]; close: string; input?: string; seed?: string; pin?: Partial<Record<string, string>>;
+  creative?: { swap?: Record<string, string>; reason?: string };
+};
 
 // cinetic:placeholder - the template's stand-in script: write the product's own lines, scenes and strings, then delete this line.
 export const LAUNCH: Launch = {

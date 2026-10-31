@@ -88,7 +88,7 @@ One dominant thing a frame, and every frame lit and alive:
 - **Ground.** The dealt family's field under a key light from above (`acts/stage.tsx` `KEY_LIGHT`): the top edge
   lifted in a lighter tone of the ground's own hue (never a grey lift, never a pool or glow behind the content: that is
   haze), falling off by two thirds down, at one level all film (it never brightens under a beat or outshines the
-  subject), swaying on a 13 s loop and lagging the camera float, the bottom corners falling into the family's far tone
+  subject), holding still (no sway, no float), the bottom corners falling into the family's far tone
   (dithered plates, no grain: a grain over a held frame pops on every I-frame of the render).
 - **Colour.** Three values, one accent: the dark ground, light surfaces (white cards, a light phone screen) and the
   claim on a colour field in the accent (`FIELD_ON`, `EVENT_FROM`): the seam into the claim pushes into the scene's
@@ -101,22 +101,46 @@ One dominant thing a frame, and every frame lit and alive:
   word over its neighbour); the wordmark heavier and tighter again (`WORDMARK_TYPE`), tracking tightening with
   size; a long line keeps one row at a sentence cap (6-6.4 %) or breaks into two balanced rows that part as they are
   read; never under 6 %.
-- **Depth.** A card's content creeps against its edge, a phone's screen against its body, the pill rides a nearer plane:
-  look-audit floor-depth reads two planes in at least half the shots.
-- **Life.** Nothing holds still for more than 0.8 s: the camera travels on every picture (a picture over 2.2 s takes
-  one eased push closer, `PUSH`: 24 f@60 on a strong in-out, framing its `focus` box inside the safe area, never a
-  one-frame jump; never on a picture behind its line, which comes up to the camera already, and never on two pictures
-  in a row), a finished line is never padded past its read, the lines creep and drift,
-  the light keeps moving; the last picture falls back behind the lockup for a second while its element flies in (the
+- **Depth.** Lit faces, a contact shadow, a rim; cards face the camera and hold still (no creep, no bob: `CARD.creep`
+  0), a designed turn only as a creative element (object-turn) that lands facing.
+- **Life with a purpose.** The camera moves only to say something: a move that starts, travels and lands, then a hold
+  that may be still. No float, no drift, no re-frame back and forth. A picture over 2.2 s takes one eased push closer
+  (`PUSH`: 24 f@60 on a strong in-out, framing its `focus` box inside the safe area; never on a picture behind its line,
+  never two pictures in a row, never under a creative picture); the dealt camera `land` gives each product picture one
+  slow push that lands (`LAND`). The creative elements carry the motion (below); a finished line is never padded past
+  its read and holds its place (no drift); the last picture falls back behind the lockup for a second while its element flies in (the
   product stays on screen into the end, its words gone before the element crosses them), and the lockup drifts from
   rest once it is whole, the fact on the name's axis, passing the frame's centre late in the hold and standing at most
   28 px off it (`END_OFF_MAX`).
 
 Everything else is derived: `src/timeline.ts` fits each line beat (its build, its read, its exit) and each picture beat
 to the track's 8ths and each pair to whole bars at any tempo from 90 to 140 BPM, and puts the end on a downbeat with the
-lockup held 2-3 s; `src/deal.ts` deals the text voice, the ground family, the seams, the end card and the camera from
-the name (`launch.ts` `pin` fixes a slot, `seed` re-deals); `src/sync.ts` sounds each line once whole, each picture's
-hits, the seams that move and one hit on the lockup.
+lockup held 2-3 s; `src/deal.ts` deals the text voice, the ground family, the seams, the end card, the camera and the
+creative elements (`launch.ts` `pin` fixes a slot, `seed` re-deals); `src/sync.ts` sounds each line once whole, each
+picture's hits, the seams that move, a creative line turning into its picture and one hit on the lockup.
+
+## The creative elements
+
+The film is never "a line, then a card". It plays two or three creative elements, dealt at random from the starter's
+`src/fx/creative` (fifteen finished devices: `references/catalogue.md` §0), by `scripts/deck.py` into `src/dealt.ts`
+(`creative`, `reserve`) or, with no deck, from the product's name (`src/deal.ts` `CREATIVE`): never a recent film's
+set, at least one that draws a line and one that draws a picture. `src/timeline.ts` maps them onto the beats
+(`CREATIVE_PLAN`): a line device draws a line's beat (never the claim's), a picture device draws a picture's beat with
+the product's scene inside it (`SceneDef.draw` at any frame the device asks for: a wall of it at other moments, held
+on its first frame behind the letters), where each says the most (`prefer`), at least half the body's beats (a long
+film draws more from the reserve). A pair a device takes plays `alone` (line, then picture). A line device that hands
+over (type-window, type-object, split-around) owns its picture's first frame: the seam between them is `handover`
+(nothing drawn) and no picture device takes that picture. colour-flood is the film's colour event (the claim's field
+stays off). The stage camera rests under every creative picture; a picture-to-picture match cut beside one plays as
+the blur.
+
+What you write for them, on the pair they take: `alts` (word-swap: 2-3 alternatives the key word rolls through),
+`logos` (logo-orbit: the products it works with, `scripts/logos.mjs get`), `before` (split-compare: 2-4 steps of
+the old way), `count` (data-sculpture: a real figure), `word` (colour-flood), `label` (dot-button), `photos`
+(photo-arc). precheck names what a device misses (`CREATIVE_MISSING`; the ship gate fails it). A pair's `creative`
+pins a device; `creative: { swap: { 'data-sculpture': 'zoom-wall' }, reason: '...' }` trades one, never more, never
+for nothing. Give each scene a `focus` box: the devices frame the product by it. Print the plan:
+`npx tsx -e "import { CREATIVE } from './src/deal'; import { CREATIVE_PLAN, CREATIVE_MISSING } from './src/timeline'; console.log(CREATIVE, CREATIVE_PLAN, CREATIVE_MISSING)"`.
 
 ## The beats
 
@@ -153,7 +177,8 @@ Every change of picture carries something (`SEAM_PLAN`, drawn by `acts/stage.tsx
 | seamAT | recede, zoomThrough (picture -> line: the line builds over the leaving picture, never on an empty ground) |
 | seamAA | velocityCut, matchCut, blurThrough (picture -> picture, into a line that arrives with its picture) |
 | end | element (the last picture's element flies into the lockup and becomes the mark), badge (the element turns into the mark, a spin blur on the fast frames); the name slides out beside it |
-| camera | drift (sideways), rise (on the picture beats; the camera travels, re-frames on the beat where a picture's moments leave a gap, and pushes closer once on a long picture) |
+| camera | still (the picture beats hold; a long picture pushes closer once), land (each product picture takes one slow push that lands, then holds) |
+| creative | two or three of the fifteen creative elements (above), at random, never a recent film's set |
 
 Print it: `npx tsx -e "import { DEAL, DEAL_SOURCE } from './src/deal'; import { SEAM_PLAN, BEAT_PLAN, BEAT_MIX } from './src/timeline'; console.log(DEAL_SOURCE, DEAL, SEAM_PLAN.map((s) => s.recipe), BEAT_PLAN.map((b) => b.kind), BEAT_MIX)"`.
 
@@ -162,5 +187,6 @@ Print it: `npx tsx -e "import { DEAL, DEAL_SOURCE } from './src/deal'; import { 
 The music (`template.json` `music`: `music.mjs pick`, `track.py edit --bars <BARS> --end auto`, `track.py grid`),
 `npm run check`, a preview render, and one review round on a 30-cell contact sheet against the checklist in
 `references/checks.md`: every line centred, the beats mixed (no line-picture-line-picture loop), every picture showing
-what the product does, every seam carrying something and no empty frame between scenes, the carried object readable as
-one idea with the words covered, the end card centred and built from the last element.
+what the product does, half the beats or more creative scenes with the product inside them, every seam carrying
+something and no empty frame between scenes, the carried object readable as one idea with the words covered, the end
+card centred and built from the last element.

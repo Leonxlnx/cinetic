@@ -6,12 +6,13 @@
 import { holdFor, PACE, readingWindows, wordCount, type PaceName } from './lib/pace';
 import { bar, MUSIC } from './music';
 import { LAUNCH } from './launch';
-import { DEAL } from './deal';
+import { CREATIVE, DEAL } from './deal';
+import { type CreativeMeta, lineResolve, metaOf } from './fx/creative/meta';
 
 export { PACE } from './lib/pace'; // grid-check checks COPY against the film's own pace numbers
 /** The film-time music grid (src/music.ts): null until track.py grid writes the track's; then b() follows its bars. */
 export { MUSIC } from './music';
-export { DEAL } from './deal';
+export { CREATIVE, DEAL } from './deal';
 
 export const FPS = 60;
 /**
@@ -131,8 +132,99 @@ const LINES = P.filter((_, i) => hasLine(i)).length;
 export const KEYED_MAX = Math.max(1, Math.min(2, Math.round(0.4 * LINES)));
 const keyed = P.filter((p) => /\*/.test(p.line ?? '')).length;
 if (keyed > KEYED_MAX) throw new Error(`timeline: ${keyed} of ${LINES} lines mark a key word; at most ${KEYED_MAX} in a film of ${LINES} lines (launch.ts: keep the stars on the line whose word matters most, drop the others)`);
-/** How each line meets its picture: launch.ts `beat`, else the first line and the claim alone, the lines between with. */
-export const MODES: Mode[] = P.map((p, i): Mode => (!hasLine(i) ? 'none' : p.beat ?? (i === 0 || i === P.length - 1 ? 'alone' : 'with')));
+// ---- The creative plan. The film's creative elements (deal.ts CREATIVE: dealt at random from fx/creative) each take a
+// whole beat, so the film is never "a line, then a card": a line device draws a line's beat (never the claim's: the claim
+// keeps its hero entry and its colour field), a picture device draws a picture's beat with the product's scene inside.
+// Each goes where it says the most (its `prefer`), on a pair whose script gives it what it needs (alts, logos, count,
+// before), never a picture device on the last pair unless it ends on the product at rest (the end card is built from
+// that picture's hero), never a picture device after a line device that hands over (its last frame is that picture's
+// first). At least half the body's beats are creative scenes: a long film draws more from the deal's reserve. A pair's
+// `creative` pins a device by hand.
+/** A line device's beat may run longer than a plain line's (it carries its own picture in): at most this, s. */
+export const LINE_DEVICE_MAX = 3.4;
+/** The share of the body's beats that must be creative scenes. */
+export const CREATIVE_MIN = 0.5;
+export type CreativeSlot = { pair: number; id: string; role: 'line' | 'picture' };
+const LAST = P.length - 1;
+const needsMet = (i: number, m: CreativeMeta) =>
+  m.needs.every((n) => (n === 'swap' ? (P[i].alts?.length ?? 0) >= 1 : n === 'logos' ? (P[i].logos?.length ?? 0) >= 3 : n === 'count' ? !!P[i].count : n === 'before' ? (P[i].before?.length ?? 0) >= 2 : n === 'photos' ? (P[i].photos?.length ?? 0) >= 1 : true));
+/** The creative elements on the film's pairs, and what each draws. */
+export const CREATIVE_PLAN: CreativeSlot[] = [];
+{
+  const line = new Map<number, CreativeMeta>();
+  const pic = new Map<number, CreativeMeta>();
+  const lineOk = (i: number, m: CreativeMeta) => hasLine(i) && i !== LAST && !line.has(i) && P[i].beat !== 'over' && P[i].beat !== 'with' && !(m.handover && pic.has(i));
+  const picOk = (i: number, m: CreativeMeta) => !pic.has(i) && P[i].beat !== 'over' && !(i === LAST && m.ends !== 'scene') && !line.get(i)?.handover;
+  const mid = (LAST) / 2;
+  const orderOf = (m: CreativeMeta): number[] => {
+    const all = P.map((_, i) => i);
+    if (m.role === 'line') {
+      const mids = all.filter((i) => i > 0 && i < LAST);
+      return m.prefer === 'middle' ? [...mids, 0] : [0, ...mids];
+    }
+    if (m.prefer === 'first') return all;
+    if (m.prefer === 'proof') return [...all].reverse();
+    if (m.prefer === 'middle') return [...all].sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid));
+    return [1, 0, ...all.slice(2)].filter((i) => i < P.length);
+  };
+  const place = (id: string, at?: number) => {
+    const m = metaOf(id);
+    if (!m) throw new Error(`timeline: "${id}" is not a creative element (fx/creative/meta.ts lists them)`);
+    const ok = m.role === 'line' ? lineOk : picOk;
+    // the pairs it may take, those whose script already gives it what it needs first
+    const cands = (at !== undefined ? [at] : orderOf(m)).filter((i) => ok(i, m));
+    const i = [...cands.filter((x) => needsMet(x, m)), ...cands.filter((x) => !needsMet(x, m))][0];
+    if (i === undefined) {
+      if (at !== undefined) throw new Error(`timeline: pair ${at + 1} pins ${id}, which cannot play there (a line device takes a line that is not the claim, alone; a picture device never sits under an over line, after a line device that hands over, or on the last pair unless it ends on the product)`);
+      return false;
+    }
+    (m.role === 'line' ? line : pic).set(i, m);
+    CREATIVE_PLAN.push({ pair: i + 1, id, role: m.role });
+    return true;
+  };
+  P.forEach((p, i) => p.creative && place(p.creative, i));
+  for (const id of CREATIVE.deal) if (!CREATIVE_PLAN.some((c) => c.id === id)) place(id);
+  // at least half the body's beats creative: a pair with a line plays two beats (one when it is held over its picture),
+  // a pair with no line one; each device makes one of them creative
+  const beats = P.reduce((n, p, i) => n + (!hasLine(i) || p.beat === 'over' ? 1 : 2), 0);
+  for (const id of CREATIVE.reserve) {
+    if (CREATIVE_PLAN.length >= Math.ceil(CREATIVE_MIN * beats)) break;
+    const m = metaOf(id);
+    if (!m || CREATIVE_PLAN.some((c) => metaOf(c.id)?.family === m.family) || m.needs.length) continue;
+    place(id);
+  }
+  CREATIVE_PLAN.sort((a, b) => a.pair - b.pair || (a.role === 'line' ? -1 : 1));
+}
+/** The line device of pair i (0-based), if any. */
+export const LINE_DEV: (CreativeMeta | undefined)[] = P.map((_, i) => metaOf(CREATIVE_PLAN.find((c) => c.pair === i + 1 && c.role === 'line')?.id ?? ''));
+/** The picture device of pair i (0-based), if any. */
+export const PIC_DEV: (CreativeMeta | undefined)[] = P.map((_, i) => metaOf(CREATIVE_PLAN.find((c) => c.pair === i + 1 && c.role === 'picture')?.id ?? ''));
+/** Whether a creative element is the film's colour event (the claim's colour field then stays off). */
+export const CREATIVE_COLOUR = CREATIVE_PLAN.some((c) => metaOf(c.id)?.colour);
+/** The script a device needs and the pair does not give: the agent writes it (or swaps the device, with a reason). */
+export const CREATIVE_MISSING: string[] = CREATIVE_PLAN.flatMap((c) => {
+  const m = metaOf(c.id) as CreativeMeta;
+  if (needsMet(c.pair - 1, m)) return [];
+  const what: Record<string, string> = { swap: 'alts: 2-3 alternatives its key word rolls through', logos: 'logos: 3-8 products it works with (scripts/logos.mjs get <name>)', count: "count: a real figure ({ to: 3.2, suffix: 'x' })", before: 'before: 2-4 steps of the old way', photos: 'photos: public/ paths' };
+  return [`pair ${c.pair} plays ${c.id}: write ${m.needs.filter((n) => !needsMet(c.pair - 1, { ...m, needs: [n] })).map((n) => what[n]).join('; ')} on it, or swap it in launch.ts creative.swap with the reason`];
+});
+/** When line i (0-based) is whole, f@60 from its first frame: its device's arithmetic, else the voice's. */
+export const resolveAt = (i: number): number => {
+  const words = keyWords(P[i].line ?? '');
+  const dev = LINE_DEV[i];
+  if (dev) {
+    const key = words.find((w) => w.key) ?? words[words.length - 1];
+    return lineResolve(dev.id, words.length, key?.word.length ?? 6, P[i].alts?.length ?? 0) ?? resolveLine(words.length, false);
+  }
+  return resolveLine(wordCount(plain(P[i].line ?? '')), i === P.length - 1);
+};
+/** How each line meets its picture: launch.ts `beat`, else the first line, the claim and every pair a creative element
+ * takes alone, the lines between with. */
+export const MODES: Mode[] = P.map((p, i): Mode => (!hasLine(i) ? 'none' : p.beat ?? (i === 0 || i === P.length - 1 || LINE_DEV[i] || PIC_DEV[i] ? 'alone' : 'with')));
+CREATIVE_PLAN.forEach((c) => {
+  if (c.role === 'line' && MODES[c.pair - 1] !== 'alone') throw new Error(`timeline: pair ${c.pair} plays the line device ${c.id}, which draws the line on its own beat: leave its \`beat\` unset (or alone)`);
+  if (c.role === 'picture' && MODES[c.pair - 1] === 'over') throw new Error(`timeline: pair ${c.pair} plays the picture device ${c.id} under a line held over it (beat over): a creative picture takes the frame; set beat alone or with`);
+});
 // lengths in half beats (8ths): a line's beat is its build, its read and its exit, rounded up; a picture's is its seconds
 // (with: the picture alone after the line; over: the line and the picture together, the longer of the two)
 const HALF = BEAT / 2;
@@ -140,15 +232,18 @@ const beatsOf = P.map((p, i) => {
   const mode = MODES[i];
   if (mode === 'none') {
     // a picture-only pair: its picture alone, carried on from the last picture
-    const want = Math.min(PIC.max, Math.max(PIC.min, p.seconds ?? PIC.house[i % PIC.house.length]));
+    const want = Math.min(PIC.max, Math.max(PIC.min, PIC_DEV[i]?.min ?? 0, p.seconds ?? PIC.house[i % PIC.house.length]));
     let a = Math.max(2, Math.round(SEC(want) / HALF));
-    while (a * HALF < SEC(PIC.min)) a++;
+    while (a * HALF < SEC(Math.max(PIC.min, PIC_DEV[i]?.min ?? 0))) a++;
     return { t: 0, a, mode };
   }
   const n = wordCount(plain(p.line ?? ''));
-  const need = f60(LEAD + resolveLine(n, i === P.length - 1)) + f60(holdFor(n, pace)) + f60(mode === 'alone' ? SEAM_OUT : mode === 'over' ? LINE_EXIT + OVER_TAIL : LINE_EXIT);
-  if (need > SEC(LINE.max)) throw new Error(`timeline: "${plain(p.line ?? '')}" needs ${(need / FPS).toFixed(2)} s; a line beat holds at most ${LINE.max} s: shorten it`);
-  const want = Math.min(PIC.max, Math.max(PIC.min, p.seconds ?? PIC.house[i % PIC.house.length]));
+  const dev = LINE_DEV[i];
+  const tail = dev ? (dev.handover ? dev.tail ?? 0 : SEAM_OUT) : mode === 'alone' ? SEAM_OUT : mode === 'over' ? LINE_EXIT + OVER_TAIL : LINE_EXIT;
+  const need = f60(LEAD + resolveAt(i)) + f60(holdFor(n, pace)) + f60(tail);
+  const max = dev ? LINE_DEVICE_MAX : LINE.max;
+  if (need > SEC(max)) throw new Error(`timeline: "${plain(p.line ?? '')}" needs ${(need / FPS).toFixed(2)} s; a line beat holds at most ${max} s${dev ? ` (${dev.id})` : ''}: shorten it`);
+  const want = Math.min(PIC.max, Math.max(PIC.min, PIC_DEV[i]?.min ?? 0, p.seconds ?? PIC.house[i % PIC.house.length]));
   let a = Math.max(2, Math.round(SEC(want) / HALF));
   while (a * HALF < SEC(PIC.min)) a++;
   let t = Math.max(Math.ceil(need / HALF), Math.ceil(SEC(LINE.min) / HALF));
@@ -237,7 +332,7 @@ P.forEach((p, i) => {
   // same scale-up twice; and never two pictures in a row with a push (every picture sharpening, then scaling up 10-20
   // %, is a template's tic): the one between keeps the wide frame and re-frames on its beats
   const pushed = i > 0 && CUE[`a${i}cut`] !== undefined;
-  if (!over && MODES[i] !== 'with' && !pushed && len * BEAT > SEC(2.2)) {
+  if (!over && MODES[i] !== 'with' && !pushed && !PIC_DEV[i] && len * BEAT > SEC(2.2)) {
     // on a beat that sounds (a track accent or a downbeat within 100 ms; any beat before the track is in), the one
     // nearest the middle that keeps 0.6 s each side and is not the picture's own moment; none: no cut, the push goes on
     const lo = SEC(0.6) / BEAT;
@@ -251,8 +346,9 @@ P.forEach((p, i) => {
       CUE[`a${k}cut`] = bt(a0 + c);
     }
   }
-  // the camera re-frames on the beat wherever the picture's own moments leave more than 0.7 s empty (a step of 1.5 % of
-  // the frame along its drift or rise, back and forth, settling in 34 f): the picture changes at least every 0.8 s
+  // the picture's beats wherever its own moments leave more than 0.7 s empty: the scene and a creative element phrase
+  // their steps on them (SceneProps beats); the camera never moves on them (no re-frame back and forth: it moves only
+  // with a purpose)
   const edges = [0, ...hitBeats, ...cuts, len].sort((x, y) => x - y);
   let m = 0;
   for (let j = 0; j + 1 < edges.length; j++) {
@@ -283,6 +379,17 @@ CUE.name = onGridUp(ACT.end.from + f60(END_PRE.name)); // the name slides out fr
 CUE.lockup = onGridUp(CUE.name + f60(END_PRE.slide)); // the lockup is whole and centred: the payoff
 CUE.close = onGridUp(CUE.name + f60(END_PRE.read) + rest); // the one fact rises under it, once the name is read
 CUE.last = bt(lastBeat);
+// a line device that carries its picture in: its words leave and it turns into the picture (dev<k>a), and the move
+// that lands it (dev<k>b): the beats its transformation plays on (sync.ts sounds them)
+P.forEach((_, i) => {
+  const d = LINE_DEV[i];
+  if (!d?.handover) return;
+  const k = i + 1;
+  const out = CUE[`ta${k}`] - f60(d.tail ?? 0);
+  CUE[`dev${k}a`] = onGridUp(out);
+  const mid = onGrid(Math.round((out + CUE[`ta${k}`]) / 2));
+  if (mid > CUE[`dev${k}a`] && mid < CUE[`ta${k}`]) CUE[`dev${k}b`] = mid;
+});
 
 //** The beat plan (grid-check `beats`): what each stretch of the film is, a line alone, a line over a picture, a picture, the end. */
 export const BEAT_PLAN: BeatPlan[] = [];
@@ -319,7 +426,7 @@ export const BEAT_MIX = (() => {
 //   into the end                  the last picture's element carried into the mark
 // A line over its picture (with) leaves on its own and the picture racks into focus: one shot, no seam. The dealt kind
 // and its next choice take turns at each kind of change, and no kind runs over 45 % of them.
-export type SeamRecipe = 'exitEnter' | 'textSwap' | 'matchCut' | 'velocityCut' | 'blurThrough' | 'zoomThrough' | 'sharedElement' | 'recede';
+export type SeamRecipe = 'exitEnter' | 'textSwap' | 'matchCut' | 'velocityCut' | 'blurThrough' | 'zoomThrough' | 'sharedElement' | 'recede' | 'handover';
 export type SeamClass = 'TA' | 'AT' | 'AA' | 'end';
 export type SeamPlan = { recipe: SeamRecipe; at: number; dir?: 'left' | 'right' | 'up' | 'down'; id: string; from: number; to: number; cls: SeamClass };
 type Change = Exclude<SeamClass, 'end'>;
@@ -335,7 +442,7 @@ const ALT: Record<Change, Record<string, SeamRecipe>> = {
   AA: { velocityCut: 'blurThrough', matchCut: 'velocityCut', blurThrough: 'velocityCut' },
 };
 const OPTIONS: Record<Change, SeamRecipe[]> = { TA: ['velocityCut', 'blurThrough'], AT: ['recede', 'zoomThrough'], AA: ['velocityCut', 'blurThrough', ...(DEAL.seamAA === 'matchCut' ? (['matchCut'] as SeamRecipe[]) : [])] };
-const KIND: Record<SeamRecipe, SeamKind> = { exitEnter: 'breath', textSwap: 'defocus', matchCut: 'morph', velocityCut: 'velocity', blurThrough: 'defocus', zoomThrough: 'zoomThrough', sharedElement: 'morph', recede: 'breath' };
+const KIND: Record<SeamRecipe, SeamKind> = { exitEnter: 'breath', textSwap: 'defocus', matchCut: 'morph', velocityCut: 'velocity', blurThrough: 'defocus', zoomThrough: 'zoomThrough', sharedElement: 'morph', recede: 'breath', handover: 'morph' };
 /** Every change of picture and how it is carried: the stage draws each, SEAMS declares them. */
 export const SEAM_PLAN: SeamPlan[] = [];
 {
@@ -352,12 +459,16 @@ export const SEAM_PLAN: SeamPlan[] = [];
     if (i > 0) {
       const into = beat(pr.mode === 'none' ? `pic${k}` : `line${k}`);
       const cls: Change = pr.mode === 'alone' ? 'AT' : 'AA';
-      const r = pick(cls);
+      // a match cut holds a shape across one frame: into or out of a creative picture (which brings its own entrance)
+      // there is no shared shape to hold, so it plays as the blur
+      const r0 = pick(cls);
+      const r = cls === 'AA' && r0 === 'matchCut' && (PIC_DEV[i] || PIC_DEV[i - 1]) ? 'blurThrough' : r0;
       list.push({ recipe: r, at: pr.from, dir: dirOf(r), id: cls === 'AT' ? `pic${i}-line${k}` : `pic${i}-pic${k}`, from: into - 1, to: into, cls });
     }
     if (pr.mode === 'alone') {
       // out of the claim: its colour field sweeps off at speed
-      const r = k === P.length ? 'velocityCut' : pick('TA');
+      // a line device that hands over: its last frame is the picture's first (no seam to draw, one shot)
+      const r: SeamRecipe = k === P.length ? 'velocityCut' : LINE_DEV[i]?.handover ? 'handover' : pick('TA');
       list.push({ recipe: r, at: CUE[`ta${k}`], dir: dirOf(r), id: `line${k}-pic${k}`, from: beat(`line${k}`), to: beat(`pic${k}`), cls: 'TA' });
     }
   });
@@ -374,7 +485,7 @@ export const SEAM_PLAN: SeamPlan[] = [];
     if (c <= cap) break;
     // the latest seam of the top kind that can take another kind
     // the least used kind its class offers (never the top one; a push through never cuts on an act line)
-    const nextOf = (x: SeamPlan) => (x.cls === 'end' || x.id === `line${P.length}-pic${P.length}` ? undefined : OPTIONS[x.cls].filter((r) => KIND[r] !== top && (r !== 'zoomThrough' || !ACT_LINES.has(x.at))).sort((a, b) => (n.get(KIND[a]) ?? 0) - (n.get(KIND[b]) ?? 0))[0]);
+    const nextOf = (x: SeamPlan) => (x.cls === 'end' || x.recipe === 'handover' || x.id === `line${P.length}-pic${P.length}` ? undefined : OPTIONS[x.cls].filter((r) => KIND[r] !== top && (r !== 'zoomThrough' || !ACT_LINES.has(x.at))).sort((a, b) => (n.get(KIND[a]) ?? 0) - (n.get(KIND[b]) ?? 0))[0]);
     const s = [...list].reverse().find((x) => KIND[x.recipe] === top && nextOf(x));
     if (!s) break;
     s.recipe = nextOf(s) as SeamRecipe;
@@ -402,7 +513,7 @@ export const SEAM_LEAD: Record<string, number> = { matchCut: f60(10), exitEnter:
 export const LINE_EARLY: Partial<Record<SeamRecipe, number>> = { zoomThrough: f60(10) };
 const leadOf = (k: number) => SEAM_LEAD[SEAM_PLAN.find((s) => s.id === `line${k}-pic${k}`)?.recipe ?? 'exitEnter'] ?? f60(18);
 /** The frame a line starts to leave: alone, its seam's lead before the cut; with and over, its own exit, as it ends. */
-const lineOut = (i: number) => (PAIRS[i].mode === 'alone' ? CUE[`ta${i + 1}`] - leadOf(i + 1) : PAIRS[i].mode === 'with' ? PAIRS[i].ta - f60(LINE_EXIT) : PAIRS[i].to - f60(LINE_EXIT + OVER_TAIL));
+const lineOut = (i: number) => (LINE_DEV[i]?.handover ? CUE[`ta${i + 1}`] - f60(LINE_DEV[i]?.tail ?? 0) : PAIRS[i].mode === 'alone' ? CUE[`ta${i + 1}`] - leadOf(i + 1) : PAIRS[i].mode === 'with' ? PAIRS[i].ta - f60(LINE_EXIT) : PAIRS[i].to - f60(LINE_EXIT + OVER_TAIL));
 export const COPY: Copy[] = [];
 P.forEach((p, i) => {
   const k = i + 1;
@@ -416,12 +527,26 @@ P.forEach((p, i) => {
   const early = i > 0 && into ? LINE_EARLY[into.recipe] ?? 0 : 0;
   const inF = CUE[`line${k}`] + (i === 0 ? 0 : f60(LEAD)) - early;
   // the blur voice brings a line into focus whole: its hold is read, not a per-word rate
-  COPY.push({ id: `line${k}`, text, in: inF, resolved: inF + f60(resolveLine(wordCount(text), i === P.length - 1)), out: lineOut(i), ...(DEAL.voice === 'blur' ? { reveal: 'focus' as const } : {}) });
+  COPY.push({ id: `line${k}`, text, in: inF, resolved: inF + f60(resolveAt(i)), out: lineOut(i), ...((DEAL.voice === 'blur' && !LINE_DEV[i]) || LINE_DEV[i]?.id === 'scale-contrast' ? { reveal: 'focus' as const } : {}) });
+  // the alternatives a word-swap rolls through are on screen too (counted apart, as the product's own words are)
+  if (LINE_DEV[i]?.id === 'word-swap') (p.alts ?? []).forEach((w, j) => COPY.push({ id: `alt${k}.${j + 1}`, text: w, kind: 'ui', in: inF, resolved: inF + f60(resolveAt(i)) - f60(8), out: inF + f60(resolveAt(i)) }));
   const pr = PAIRS[i];
   // the picture's strings are read once it is sharp: alone, from the cut; with, from the rack (soft under the line, they
   // are not readable); over, once the line is whole
   const read = pr.mode === 'with' ? pr.ta : pr.mode === 'over' ? COPY[COPY.length - 1].resolved : pr.pic;
   (p.ui ?? []).forEach((u, j) => COPY.push({ id: `ui${k}.${j + 1}`, text: u, kind: 'ui', in: read, resolved: read + f60(20), out: pr.to }));
+});
+// the words a creative picture shows (the old way's steps, the figure, the result's word, the button's label)
+P.forEach((p, i) => {
+  const dev = PIC_DEV[i];
+  if (!dev) return;
+  const k = i + 1;
+  const from = PAIRS[i].mode === 'with' ? PAIRS[i].ta : PAIRS[i].pic;
+  const add = (id: string, text: string | undefined, at = from) => text && COPY.push({ id: `${dev.id}${k}.${id}`, text, kind: 'ui', in: at, resolved: at + f60(20), out: PAIRS[i].to });
+  if (dev.id === 'split-compare') (p.before ?? []).slice(0, 4).forEach((b, j) => add(`${j + 1}`, b));
+  if (dev.id === 'data-sculpture' && p.count) add('figure', `${p.count.prefix ?? ''}${p.count.to.toFixed(p.count.decimals ?? (Number.isInteger(p.count.to) ? 0 : 1))}${p.count.suffix ?? ''}`);
+  if (dev.id === 'colour-flood') add('word', p.word, CUE[`a${k}h1`] ?? from);
+  if (dev.id === 'dot-button') add('label', p.label ?? p.ui?.[0]);
 });
 COPY.push({ id: 'wordmark', text: LAUNCH.name, kind: 'name', in: CUE.name, resolved: CUE.name + f60(END_PRE.named), out: TOTAL });
 COPY.push({ id: 'close', text: LAUNCH.close, in: CUE.close, resolved: CUE.close + f60(22), out: TOTAL, reveal: 'focus' });
@@ -454,7 +579,7 @@ export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'launch',
 const RACKS: Seam[] = PAIRS.filter((p) => p.mode === 'with').map((p) => ({ at: p.ta, kind: 'defocus', carry: 'scale', id: `rack:line${p.k}-pic${p.k}` }));
 export const SEAMS: Seam[] = [...RACKS, ...SEAM_PLAN.map((s) => {
   const axis = s.dir === 'left' || s.dir === 'right' ? 'x' : 'y';
-  const carry = ({ matchCut: 'scale', velocityCut: axis, blurThrough: 'scale', zoomThrough: 'scale', sharedElement: 'shape', recede: 'scale' } as Partial<Record<SeamRecipe, Seam['carry']>>)[s.recipe];
+  const carry = ({ matchCut: 'scale', velocityCut: axis, blurThrough: 'scale', zoomThrough: 'scale', sharedElement: 'shape', recede: 'scale', handover: 'shape' } as Partial<Record<SeamRecipe, Seam['carry']>>)[s.recipe];
   const out: Seam = { at: s.at, kind: KIND[s.recipe], id: `${s.recipe}:${s.id}` };
   if (carry) out.carry = carry;
   if (s.recipe === 'velocityCut' || s.recipe === 'exitEnter') out.dir = s.dir === 'left' || s.dir === 'up' ? -1 : 1;
@@ -475,8 +600,9 @@ export const CAMERA_BLUR: CameraBlurRange[] = [];
  */
 const mid = Math.floor(P.length / 2) + 1;
 const claimAlone = MODES[P.length - 1] === 'alone';
-export const COLOUR: ColourRange[] =
-  DEAL.ground === 'whiteBand' ? [claimAlone ? { from: PAIRS[P.length - 1].from, to: PAIRS[P.length - 1].ta, id: 'band-flood' } : { from: PAIRS[mid - 1].from, to: PAIRS[mid - 1].ta, id: 'band-flood' }]
+export const COLOUR: ColourRange[] = CREATIVE_COLOUR
+  ? CREATIVE_PLAN.filter((c) => metaOf(c.id)?.colour).map((c) => ({ from: CUE[`a${c.pair}h1`] ?? PAIRS[c.pair - 1].pic, to: PAIRS[c.pair - 1].to, id: c.id }))
+  : DEAL.ground === 'whiteBand' ? [claimAlone ? { from: PAIRS[P.length - 1].from, to: PAIRS[P.length - 1].ta, id: 'band-flood' } : { from: PAIRS[mid - 1].from, to: PAIRS[mid - 1].ta, id: 'band-flood' }]
   : DEAL.ground === 'lightDark' ? [{ from: PAIRS[mid - 1].from, to: Math.min(TOTAL, PAIRS[mid - 1].from + SEC(2)), id: 'turn-to-dark' }]
   : [];
 /** The frame the light-then-dark family turns dark (never, for the others). */
@@ -488,7 +614,7 @@ export const SPRING_CLASS = '';
 /** CUE names that must land on a music event: none (every act line already does). */
 export const STRUCTURAL: string[] = [];
 export const SALIENCE: Record<string, Salience> = Object.fromEntries(
-  Object.keys(CUE).map((k) => [k, /^line/.test(k) ? 'copy' : /^ta/.test(k) ? (MODES[Number(k.slice(2)) - 1] === 'alone' ? 'cut' : 'move') : /^a\d+cut$/.test(k) ? 'move' : /^a\d+h/.test(k) ? 'hit' : /^a\d+m/.test(k) ? 'move' : k === 'close' ? 'copy' : k === 'end' ? 'cut' : k === 'last' ? 'cut' : 'hit'] as const),
+  Object.keys(CUE).map((k) => [k, /^line/.test(k) ? 'copy' : /^ta/.test(k) ? (MODES[Number(k.slice(2)) - 1] === 'alone' ? 'cut' : 'move') : /^a\d+cut$/.test(k) ? 'move' : /^a\d+h/.test(k) ? 'hit' : /^a\d+m/.test(k) || /^dev\d/.test(k) ? 'move' : k === 'close' ? 'copy' : k === 'end' ? 'cut' : k === 'last' ? 'cut' : 'hit'] as const),
 );
 
 /** When each COPY entry is being read: [from, to) frame ranges by id (src/lib/pace.ts readingWindows()). */
