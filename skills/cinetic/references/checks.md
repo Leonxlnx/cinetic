@@ -33,7 +33,7 @@ node scripts/film-diff.mjs --record                           # after the ship g
 ```
 
 **What a ship needs (the default review, `references/review-loop.md` §1):** copy-check (the script and `--ui src`,
-`--final` on the master), lint `--strict` and grid-check clean (its `beats` rules: type-only beats at least 15 % of the
+`--final` on the master, `--ocr` on full-size held stills: half-size stills hide a screen's small strings), lint `--strict` and grid-check clean (its `beats` rules: type-only beats at least 15 % of the
 shots and two a film, a line over a picture on at most 40 % of the beats, the first line by 1 s, in a film that
 declares its beat plan); precheck `--ship`; layout-audit passing with its placeholder floor and its placement gate
 (statements centred 80 % of their time, in the middle band 85 %, none flush left at the top or bottom, one text-top
