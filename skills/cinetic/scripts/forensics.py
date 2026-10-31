@@ -80,11 +80,13 @@ over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), 
                the camera is still unless a shot declares a move                             fail
   read-move    the camera moves faster than 90 px/s or 15 %/s while text is read           warn
   camera-wander  an aimless camera: inside one shot the camera pans (or pushes) one way and then back
-               (two runs of opposite sign on one axis, each 0.4 s or longer, both slow: under 60 px/s
+               (most of the picture moving together: two runs of opposite sign on one axis, each 0.4 s or
+               longer, both slow: under 60 px/s
                or 4 %/s at their peak, 1 s or less apart): the old float / drift. A designed move
                starts, travels and lands; a reversal device moves fast. Per shot that wanders  warn
                in two shots or more                                                         fail
-               and a camera that never rests: moving on more than 90 % of the body (3 s or longer)  warn
+               and a camera that never rests: faster than a sub-pixel creep (15 px/s, 1.5 %/s) on more
+               than 90 % of the body (3 s or longer)                                         warn
   static-share the share of the body standing still (camera, layers and ground)            info
   motion-energy  the share of the picture's structure moving 15 px/s or more (the old life gate) info
   still-cut    the share of cuts from a still frame to a still frame                        info
@@ -803,9 +805,9 @@ CHANGE_LIVE = 0.002  # share of the frame whose content changes over a window (t
 ENERGY = dict(px=15.0, low=0.3, warn_s=1.5, fail_s=2.0, share=0.25, rest_s=0.25)  # info only now (a still hold passes); rest_s: a stretch opening on a landing counts this much less
 # camera-wander: an aimless camera inside one shot (the old float). A run: the camera's speed on one axis at least
 # `min` (px/s at 1080p; %/s for the push) with one sign for `run_s` or longer; two runs of opposite sign at most
-# `gap_s` apart, both peaking under `slow` (px/s; `slow_pct` %/s), are a wander. A camera that moves on more than
-# `busy` of the body (3 s or longer) never rests.
-WANDER = dict(min=6.0, min_pct=0.5, run_s=0.4, gap_s=1.0, slow=60.0, slow_pct=4.0, busy=0.9, busy_s=3.0)
+# `gap_s` apart, both peaking under `slow` (px/s; `slow_pct` %/s), are a wander. A camera that moves faster than a
+# sub-pixel creep (`busy_px` px/s or `busy_pct` %/s) on more than `busy` of the body (3 s or longer) never rests.
+WANDER = dict(min=6.0, min_pct=0.5, run_s=0.4, gap_s=1.0, slow=60.0, slow_pct=4.0, busy=0.9, busy_s=3.0, busy_px=15.0, busy_pct=1.5, whole=0.7)  # whole: the share of the structure that must move (the camera, not one element)
 # carried-cut: the house band, a direction read needs this coherence, a repeat reaching this autocorrelation makes the
 # step ambiguous, and the read's spread widens the ratio band by at most this much
 CARRY = dict(cos=0.7, ratio=(0.4, 1.4), coherence=0.5, period_ac=0.5, spread_max=0.5)
@@ -1144,10 +1146,11 @@ def camera_wander(frames, state, breaks, fps, P=WANDER):
     for shot in shots:
         for f, w in shot:
             measured += 1
-            moving += int(w.get('cam_pxs', 0) >= P['min'] or abs(w.get('cam_k', 0)) >= P['min_pct'])
-        axes = (('pans', 'x', [w.get('cam_vec', [0, 0])[0] for _, w in shot], P['min'], P['slow'], 'px/s'),
-                ('pans', 'y', [w.get('cam_vec', [0, 0])[1] for _, w in shot], P['min'], P['slow'], 'px/s'),
-                ('pushes', 'push', [w.get('cam_k', 0.0) for _, w in shot], P['min_pct'], P['slow_pct'], '%/s'))
+            moving += int(w.get('cam_pxs', 0) >= P['busy_px'] or abs(w.get('cam_k', 0)) >= P['busy_pct'])
+        cam = [(w.get('cam_vec', [0, 0]), w.get('cam_k', 0.0)) if w.get('moving_share', 0.0) >= P['whole'] else ([0, 0], 0.0) for _, w in shot]
+        axes = (('pans', 'x', [c[0][0] for c in cam], P['min'], P['slow'], 'px/s'),
+                ('pans', 'y', [c[0][1] for c in cam], P['min'], P['slow'], 'px/s'),
+                ('pushes', 'push', [c[1] for c in cam], P['min_pct'], P['slow_pct'], '%/s'))
         hit = None
         for what, axis, v, lo, slow, unit in axes:
             runs_, start = [], None
