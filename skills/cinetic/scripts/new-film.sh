@@ -275,11 +275,15 @@ if (!fs.existsSync(fj)) {
 const rt = path.join(dir, "src", "recent.ts");
 if (fs.existsSync(rt) && hist.length) {
   const R = {};
+  const text = fs.readFileSync(rt, "utf8");
+  // the slots this template remembers: the names its RECENT type declares (Record<"voice" | "ground" | ...>)
+  const typed = /Record<([^,>]+),/.exec(text);
+  const keys = typed ? [...typed[1].matchAll(/["\x27]([A-Za-z]+)["\x27]/g)].map((m) => m[1]) : ["voice", "ground", "seamTA", "seamAT", "end", "camera"];
   for (const h of hist) {
     const pick = Object.assign({}, h.devices, h.deal || {});
-    for (const k of ["voice", "ground", "seamTA", "seamAT", "end", "camera"]) if (typeof pick[k] === "string" && pick[k]) (R[k] = R[k] || []).push(pick[k]);
+    for (const k of keys) if (typeof pick[k] === "string" && pick[k]) (R[k] = R[k] || []).push(pick[k]);
   }
-  const src = fs.readFileSync(rt, "utf8").replace(/= \{\};\s*$/, "= " + JSON.stringify(R) + ";\n");
+  const src = text.replace(/= \{\};\s*$/, "= " + JSON.stringify(R) + ";\n");
   fs.writeFileSync(rt, src);
 }
 if (hist.length) console.log(`new-film: the last ${hist.length} film(s) in the history: ${hist.map((h) => h.name || "?").join(", ")} (film.json recent; their ground, voice, signature and end card are taken)`);
@@ -489,9 +493,19 @@ if [[ -n "$TPL" ]]; then
     printf '%s\n' "$NEXT"
   elif [[ "$TEMPLATE" == update ]]; then
     cat <<EOF
-update film: write the version and 2-4 changes (one plain sentence each, 2-6 words, a result the user sees, each with its product moment) in src/update.ts,
-  then deal its direction: $PYS scripts/deck.py --brief "<one line>" --format update --changes N --options 3
+update film: write the version and 2-4 changes (one plain sentence each, 2-6 words, a result the user sees, each with its product moment) in src/update.ts;
+  its direction is dealt from the product's name (src/deal.ts: one dealer, no deck.py deal on top)
 EOF
+  fi
+  # a template whose deal follows the product's name (template.json deal.scaffold) prints what THIS project plays now,
+  # after --name or --brand wrote the name: the real name's deal, or the floor while the name slot is still a placeholder
+  DEALCMD=$(TPL="$TPL" node -e 'const m = JSON.parse(require("fs").readFileSync(require("path").join(process.env.TPL, "template.json"), "utf8")); process.stdout.write(m.deal && m.deal.scaffold && m.deal.print ? m.deal.print : "")')
+  if [[ -n "$DEALCMD" ]]; then
+    if [[ -d "$DIR/node_modules" ]] && DEALT=$(cd "$DIR" && eval "$DEALCMD" 2>/dev/null) && [[ -n "$DEALT" ]]; then
+      echo "new-film: this film's deal: $DEALT"
+    else
+      echo "new-film: print this film's deal (it follows the name in src/brand/identity.ts): $DEALCMD"
+    fi
   fi
 fi
 if [[ "$ENGINE" == remotion ]]; then
