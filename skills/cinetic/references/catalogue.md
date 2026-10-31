@@ -15,20 +15,27 @@ nothing idles up and down, cards face the camera.
 
 A film is never "a line, then a card". Every film plays two or three creative elements: finished devices in the
 starter's `src/fx/creative`, each a whole beat (a line or a picture) with the product's own scene inside it.
-`deck.py` deals them at random from the whole library, seeded by the film's name and the film history: never the set
-of a recent film, nothing shared with the last one while a draw can avoid it, at least one that draws a line and one
-that draws a picture, never two of one family (`src/dealt.ts` `creative`; the sheet's last section; `deck.py
+`deck.py` deals them at random from the whole library, seeded by the film's name and the film history and weighted
+away from what the last films played (a run of films walks the whole library instead of circling a favourite few):
+never the set of a recent film, at least one device no recent film played, nothing shared with the last one while a
+draw can avoid it, at least one that draws a line and one that draws a picture, never two of one family (`src/dealt.ts` `creative`; the sheet's last section; `deck.py
 --creative` deals them alone). launch-simple maps them onto the beats where each says the most (`CREATIVE_PLAN`), at
 least half the body's beats, drawing more from the deal's reserve for a long film, and plays them: the camera stays
 at rest under them (each brings its own move that starts, travels and lands). Build what it needs, never swap the
 deal away: one swap at most, for another device, with the reason (launch.ts `creative: { swap: { a: 'b' }, reason }`);
 a pair's `creative` pins one. Outside launch-simple: `<CreativePicture id scene={(f) => ...} focus .../>` and
-`<CreativeLine cid words .../>` from `fx/creative`. Each device's recipe and numbers: its `RECIPE` (f@60, px@1080).
+`<CreativeLine cid words .../>` from `fx/creative` (`data.button`: the product's button box; `data.params`: any of the
+device's house numbers). Each device's recipe and numbers: its `RECIPE` (f@60, px@1080). The film's seed varies a
+device within its recipe (the direction a row travels, how a giant word enters, where a pointer starts, which way
+letters swing), so two films dealt the same device still differ. Every device keeps the house rules: its camera move
+starts, travels and lands (never a pan that wanders back), nothing rises and sinks at rest, cards face the camera in the
+film's one card material, a card that opens into the product stays opaque (no ghost card through the product).
 
 | id | draws | what the viewer sees | the pair gives it |
 |---|---|---|---|
 | `word-swap` | line | the line builds with its key word's slot rolling (out upward through a mask, the next in from below) through two or three alternatives on settling beats, the row re-centring; it lands on the real word in the accent | `alts` |
-| `scale-contrast` | line | the key word as large as the frame allows (cap up to 30 %, heavy, tight), its letters rising out of a mask; the rest of the line small above and under it, one centred composition | - |
+| `scale-contrast` | line | the key word as large as the frame allows (cap up to 30 %, heavy, tight), in the accent where it reads, centred on its ink; it enters by the seed: letters rising out of a mask from wholly hidden, or tightening from wide tracking as they ink in; the rest of the line small in ink above and under it, one centred composition | - |
+| `letter-swing` | line | the line builds word by word, then its key word's letters swing up into place one after another on an arc (each about a pivot under its baseline, one small overshoot), landing upright in the accent at exactly zero degrees | - |
 | `type-window` | line | the other words step away, the key word grows to 88 % of the width and its letters become windows onto the product; the camera dives into the thickest stroke of the middle letter while the picture inside settles to rest: word and picture in one shot | - |
 | `type-object` | line | the key word slides to the centre and a lit accent pill grows round it; the pill becomes the product's own frame (size, corner, colour together) and opens into the picture | - |
 | `split-around` | line | once read, the line parts at its key word and a lit window of the product grows in the gap; the words leave outward at speed as the window opens to the frame | - |
@@ -40,12 +47,15 @@ a pair's `creative` pins one. Outside launch-simple: `<CreativePicture id scene=
 | `data-sculpture` | picture | lit columns rise toward the last, tallest one in the accent while the figure above counts up and lands | `count` |
 | `colour-flood` | picture | the accent floods out of the element just pressed until it covers the frame, a check draws on the colour with the result's word, then it drains back (the film's colour event) | `word` (optional) |
 | `zoom-wall` | picture | the product fills the frame, then the camera pulls back and it is one tile of a wall of it at other moments | - |
-| `photo-arc` | picture | upright cards (the film's photos, else the product at other moments) stream along a wide arc and slow; the top one opens to the frame | `photos` (optional) |
+| `photo-arc` | picture | the film's photos stream through in one level row, one way, fast then slowing until the chosen one lands at the centre; it opens to the frame about its own centre (the photo cross-fading to the product) while the others slide out; nothing rises, sinks or pans back | `photos` (5 or more) |
+| `cursor-follow` | picture | close on the product with a pointer resting on it; the pointer glides to the button and the camera follows a few frames behind; it clicks on the hit (a press, a ring) and the camera pulls back to the whole product reacting: one travel, one pull | `button` (optional) |
+| `bubble-swarm` | picture | the old way's pings and questions pop up as message bubbles round an empty centre, faster and faster; the product arrives in the centre and draws them in one after another until it is alone, at rest | `before` (4-7 short ones) |
 | `dot-button` | picture | a dot travels to where the product's button will be, grows into it, is pressed, and the product irises open from it | `label` (optional) |
 
 Devices that end on the product at rest may play the last picture (the end card is built from it); a line device that
 hands over (type-window, type-object, split-around) owns its picture's first frame, so no other device takes that
-picture. `logos` and `count` are real: the products it really works with, the product's own figure.
+picture. `logos` and `count` are real: the products it really works with, the product's own figure; `before` items
+are the product's real old way (the steps it removes, the questions it ends), never filler.
 
 ## 1. Text voice (one a film)
 
