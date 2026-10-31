@@ -364,6 +364,9 @@ for pair in "directions/directions.json:directions" "directions/imagery.json:dir
   srcf="$SKILL/assets/${pair%%:*}"; dstd="$DIR/scripts/${pair##*:}"
   if [[ -f "$srcf" ]]; then mkdir -p "$dstd" && cp "$srcf" "$dstd/"; fi
 done
+# assets.mjs recipe reads the checked footage picks from ../assets beside its own script
+RCP="$SKILL/assets/footage-recipes.json"
+if [[ -f "$RCP" ]]; then mkdir -p "$DIR/assets" && cp "$RCP" "$DIR/assets/"; fi
 
 if [[ -n "$LINK" ]]; then
   [[ -d "$LINK" ]] || die "--link-modules: $LINK is not a directory"
