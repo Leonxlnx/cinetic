@@ -5,7 +5,7 @@
   "ground": "blackField",
   "hook": "rise",
   "arrive": "rise",
-  "order": "after-with-split",
+  "order": "show-show-after",
   "recap": "rise",
   "end": "stack"
  }

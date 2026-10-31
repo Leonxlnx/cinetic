@@ -9,7 +9,7 @@
 //             whatever the move; the objects roll in turn once it has landed.
 import React, { useMemo } from 'react';
 import { FONT, TYPE, U } from '../brand/tokens';
-import { DEAL_SEED, LINE_IDS } from '../deal';
+import { DEAL_SEED, LINE_DEVICE, LINE_IDS } from '../deal';
 import { checkFilmEmphasis, type EmphasisName, type EmphasisSpec, filmEmphasis, keysOf } from '../fx/TypeEmphasis';
 import { checkSystems, filmSystems, type HeadlineSystem } from '../fx/TypeSystem';
 import { emphasisFitSize, measureLine, TypeLine, typeLineSpec, typeLineState, type TypeExit, type TypeLineSpec, type TypePresetName, wordMap } from '../fx/TypePresets';
@@ -32,11 +32,13 @@ const IDS = LINE_IDS.slice(0, UPDATE.changes.length);
 /** Every change line in the film's voice (one centred line on the dealt move) but the given ones. */
 export const SYSTEMS: Record<string, HeadlineSystem> = filmSystems(IDS, DEAL_SEED, { given: GIVEN });
 /**
- * The film's emphasis (fx/TypeEmphasis filmEmphasis): its one kind on at most 60 % of the change lines, the changes
- * update.ts names a `key` for first (from the last change back), on those words; the name and the version take none.
+ * The film's emphasis (fx/TypeEmphasis filmEmphasis): its one kind on up to 70 % of the change lines, the lines in the
+ * voice that name a `key` first, so a line in the voice is never one size, weight and colour throughout. A line a device
+ * of the library draws (src/deal.ts LINE_DEVICE: the field line's scale-contrast, a dealt letter-swing or word-swap)
+ * sets its key word apart itself, whatever it is dealt here; the name and the version take none.
  */
-export const EMPH: Record<string, EmphasisName | false> = filmEmphasis([...IDS, 'wordmark', 'version'], { kind: EMPH_KIND, keyed: IDS.filter((_, i) => UPDATE.changes[i]?.key), none: ['wordmark', 'version'], signature: EMPH_SIGNATURE });
-/** The film's systems and emphasis, checked: one voice on half the lines or more; one kind on <= 60 % of the lines. */
+export const EMPH: Record<string, EmphasisName | false> = filmEmphasis([...IDS, 'wordmark', 'version'], { kind: EMPH_KIND, keyed: IDS.filter((_, i) => UPDATE.changes[i]?.key && !LINE_DEVICE[i]), none: ['wordmark', 'version'], signature: EMPH_SIGNATURE, share: 0.7 });
+/** The film's systems and emphasis, checked: one voice on half the lines or more; one kind on up to 70 % of the lines. */
 export const HEADLINE_CHECK = checkSystems(IDS.map((id) => SYSTEMS[id]), 'plain');
 export const EMPHASIS_CHECK = checkFilmEmphasis(EMPH, ['wordmark', 'version']);
 /** A change line's key words: change<n> is the n-th change. */

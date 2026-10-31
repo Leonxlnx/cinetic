@@ -7,7 +7,7 @@
 import { CHANGE_FRAMES } from './acts/World';
 import { E } from './lib/anim';
 import { settleOf } from './lib/sync';
-import { ACT, ARRIVE_S, BEAT, CLOSE, copy, type Declares, f60, FPS, HOOK, N, ROLL, type Salience, TOTAL } from './timeline';
+import { ACT, BEAT, CLOSE, copy, type Declares, f60, FPS, HOOK, N, ROLL, type Salience, TOTAL } from './timeline';
 import { DEAL } from './deal';
 import { UPDATE } from './update';
 
@@ -48,17 +48,58 @@ export default function cues(): SoundEvent[] {
   CHANGE_FRAMES.forEach((c, i) => {
     const ch = UPDATE.changes[i];
     const s = ch.show;
-    // the card's moves: into its line's gap and out of it (split), else its arrival; after a colour field the field's close carries it
+    const d = c.device;
+    // the card coming in: into its line's gap and out of it (split), its creative device's own beats, the element of the
+    // card before growing into it, or its rise; a colour field closing into it carries its own sound below
     if (c.gap) ev.push(air(c.gap[0], c.gap[1], 0.35, `${c.id}-into-gap`, 'shape'));
-    if (i === 0 && ARRIVE_S && !c.gap) {
-      // a creative library device brings the first card in: its first mark, then the product landing in place
-      ev.push({ f: c.card[0] + f60(8), kind: 'pop', weight: 0.5, pan: 0, action: 'appear', id: `${c.id}-arrive` });
-      ev.push(air(c.card[1] - f60(28), c.card[1], 0.5, `${c.id}-lands`, 'shape'));
-    } else if (c.gap || !(i > 0 && CHANGE_FRAMES[i - 1].field)) ev.push(air(c.card[0], c.card[1], i === 0 ? 0.55 : 0.45, `${c.id}-card`));
+    if (c.shape === 'lead' && c.fold) ev.push(air(c.fold[0], c.fold[1], 0.35, `${c.id}-fold`, 'shape'));
+    if (c.arrival === 'device' && d) {
+      const len = d.to - d.from;
+      const hit0 = d.from + (d.hits?.[0] ?? Math.round(len * 0.6));
+      if (d.id === 'bubble-swarm') {
+        // the pings pop round the empty centre, faster and faster; then the screen draws them in
+        const n = Math.min(7, (ch.before ?? []).length);
+        const span = Math.max(1, (hit0 - d.from - f60(14)) * 0.8);
+        const gaps = Array.from({ length: Math.max(0, n - 1) }, (_, k) => 0.8 ** k);
+        const total = gaps.reduce((a, b) => a + b, 0) || 1;
+        let at = 0;
+        for (let k = 0; k < n; k++) {
+          if (k) at += gaps[k - 1];
+          ev.push({ f: d.from + Math.round((at / total) * span) + f60(3), kind: 'pop', weight: 0.42 + 0.04 * k, pan: k % 2 ? 0.35 : -0.35, action: 'appear', id: `${c.id}-ping${k}` });
+        }
+        ev.push({ f: hit0 + f60(10), kind: 'whoosh', weight: 0.55, pan: 0, dur: f60(24), apexFrac: 0.8, action: 'shape', id: `${c.id}-drawn-in` });
+      } else if (d.id === 'photo-arc') {
+        ev.push(air(d.from, hit0, 0.55, `${c.id}-row`, 'swipe'));
+        ev.push({ f: hit0, kind: 'tick', weight: 0.55, pan: 0, action: 'detent', id: `${c.id}-lands` });
+        ev.push(air(hit0 + f60(8), d.to, 0.4, `${c.id}-opens`, 'shape'));
+      } else if (d.id === 'split-compare') {
+        ev.push(air(d.from + f60(4), d.from + f60(42), 0.45, `${c.id}-divider`, 'swipe'));
+        ev.push(air(hit0, hit0 + f60(26), 0.5, `${c.id}-sweep`, 'swipe'));
+      } else if (d.id === 'logo-orbit') {
+        ev.push({ f: d.from + f60(6), kind: 'pop', weight: 0.5, pan: 0, action: 'appear', id: `${c.id}-burst` });
+        ev.push({ f: hit0 + f60(18), kind: 'whoosh', weight: 0.55, pan: 0, dur: f60(22), apexFrac: 0.8, action: 'shape', id: `${c.id}-collapse` });
+      } else if (d.id === 'pixel-assemble') {
+        for (let k = 0; k < 4; k++) ev.push({ f: d.from + f60(6 + k * 13), kind: 'tick', weight: 0.32 + 0.05 * k, pan: -0.3 + 0.2 * k, action: 'appear', id: `${c.id}-tiles${k}` });
+        ev.push({ f: d.from + f60(70), kind: 'land', weight: 0.55, pan: 0, action: 'card-land', id: `${c.id}-whole` });
+      } else if (d.id === 'shape-morph') {
+        [4, 34, 56, 70].forEach((at, k) => ev.push({ f: d.from + f60(at), kind: 'pop', weight: 0.4 + 0.06 * k, pan: 0, action: 'appear', id: `${c.id}-morph${k}` }));
+        ev.push(air(d.from + f60(90), d.to, 0.45, `${c.id}-opens`, 'shape'));
+      } else {
+        ev.push(air(d.from, d.from + f60(44), 0.5, `${c.id}-turns`, 'shape'));
+      }
+      ev.push({ f: c.card[1] - f60(2), kind: 'land', weight: 0.5, pan: 0, action: 'card-land', id: `${c.id}-arrives` });
+    } else if (c.arrival === 'rise' || c.arrival === 'open' || c.arrival === 'morph') ev.push(air(c.card[0], c.card[1], i === 0 ? 0.55 : 0.45, `${c.id}-card`, c.arrival === 'morph' ? 'shape' : 'swipe'));
+    else if (c.arrival === 'gap') ev.push(air(c.card[0], c.card[1], 0.45, `${c.id}-card`));
+    // cursor-follow: the camera's push onto the pointer, its travel to the button (the click is the tap's own), the pull back
+    if (d && d.kind === 'scene') {
+      ev.push(air(d.from, d.from + f60(26), 0.35, `${c.id}-push`, 'shape'));
+      ev.push(air(c.hit + f60(8), c.hit + f60(50), 0.35, `${c.id}-pull`, 'shape'));
+    }
     if (s.kind === 'tap') {
       ev.push({ f: c.hit - f60(2), kind: 'click', weight: 1, pan: 0.3, action: 'touch', id: `${c.id}-tap` });
       ev.push({ f: c.hit + f60(8), kind: 'click', variant: 'confirm', weight: 0.8, pan: 0.3, action: 'success', id: `${c.id}-done` });
-      if ((s.result ?? []).length) ev.push({ f: c.hit + f60(10) + f60(6) * Math.max(0, (s.result ?? []).length - 1), kind: 'pop', weight: 0.5, pan: 0.15, action: 'appear', id: `${c.id}-result` });
+      const nRes = (s.result ?? []).length + (s.you ? 1 : 0);
+      if (nRes) ev.push({ f: c.hit + f60(10) + f60(6) * Math.max(0, nRes - 1) + (s.you ? f60(8) : 0), kind: 'pop', weight: 0.55, pan: 0.15, action: 'appear', id: `${c.id}-result` });
       ev.push({ f: c.res2, kind: 'tick', weight: 0.45, pan: 0.25, action: 'appear', id: `${c.id}-glow` });
     } else if (s.kind === 'fill') {
       const n = s.items.length;
@@ -75,19 +116,21 @@ export default function cues(): SoundEvent[] {
       ev.push({ f: c.hit, kind: 'click', variant: 'confirm', weight: 0.85, pan: 0.2, action: 'success', id: `${c.id}-lands` });
       ev.push({ f: c.res2, kind: 'tick', weight: 0.4, pan: 0.2, action: 'appear', id: `${c.id}-glow` });
     }
+    // the card folding shut into the bar of light its line rises from (show)
+    if (c.shape === 'show' && c.fold) ev.push(air(c.fold[0], c.fold[1], 0.35, `${c.id}-fold`, 'shape'));
     const line = copy(`change${i + 1}`);
     ev.push({ f: settleOf(line.in, line.resolved, E.snapOut), kind: 'text', weight: 0.7, pan: -0.2, id: `${c.id}-words` });
     // the colour field: the changed element swelling into the frame, then closing into what comes next
     if (c.field) {
       ev.push({ f: c.field.in, kind: 'pop', weight: 0.55, pan: 0.1, action: 'appear', id: `${c.id}-field-turns` }); // the element takes the accent: the cut's sound
-      ev.push({ f: c.field.in + Math.round(0.93 * c.field.grow), kind: 'swell', weight: 0.6, pan: 0, dur: c.field.grow, apexFrac: 0.93, action: 'swell', id: `${c.id}-field` });
+      ev.push({ f: c.field.in + Math.round(0.93 * c.field.grow), kind: 'swell', weight: 0.65, pan: 0, dur: c.field.grow, apexFrac: 0.93, action: 'swell', id: `${c.id}-field` });
       ev.push(air(c.field.close[0], c.field.close[1], 0.5, `${c.id}-field-close`, 'shape'));
     }
   });
-  // the recap: the carried card shrinks into the row, the others land beside it; the fold; the version mark
+  // the recap: the carried card shrinks into the row (or the cards rise into it), the others land beside it; the fold; the version mark
   if (!CHANGE_FRAMES[N - 1].field) ev.push(air(CLOSE.gather, CLOSE.recapIn, 0.5, 'recap', 'swipe')); // else the field's close carries it
   ev.push({ f: CLOSE.recapIn, kind: 'land', weight: 0.6, pan: 0, action: 'card-land', id: 'recap-lands' });
-  ev.push({ f: CLOSE.recapGlint, kind: 'tick', weight: 0.4, pan: -0.2, action: 'appear', id: 'recap-glint' });
+  CLOSE.recapGlints.forEach((f, j) => ev.push({ f, kind: 'tick', weight: 0.4, pan: -0.3 + 0.3 * j, action: 'appear', id: `recap-glint${j}` }));
   ev.push(air(CLOSE.fold, CLOSE.markIn, 0.55, 'fold', 'shape'));
   ev.push({ f: CLOSE.markIn, kind: 'pop', weight: 0.6, pan: 0, action: 'appear', id: 'mark' });
   ev.push({ f: CLOSE.lockup, kind: 'hit', weight: 1, pan: 0, action: 'logo-lock', id: 'lockup' });
