@@ -8,8 +8,8 @@ it removes). Crisp pace, bold type, 120 BPM until the track's grid is in; 10 bar
 `World` in `acts/stage.tsx`) on a clean lit ground of its own (`fx/Grounds` `LitGround`, wash or flat on the stage's two
 darks, dealt so no ground holds more than two shots, keyed to the film's one light: no pools, bars or haze behind the
 words; every element in frame carries the product, a mark or a line). Each shot has one carrying move; its secondaries start while it is still moving,
-never queued after it. Holds drift, moves land before the cut, the camera smears only inside fast moves. The product's
-panels stand tilted in the film's light (`fx/Lit`). The window act has the film's one 3D turn (`swing3d`). Real marks of
+never queued after it. Holds rest (a sub-pixel creep at most), moves land before the cut, the camera smears only
+inside fast moves. The product's panels face the camera in the film's light (`fx/Lit`). The window act has the film's one 3D turn (`swing3d`). Real marks of
 the products it works with ride the proof (`kit/logos.tsx`, `kit/inline.tsx` `ObjectLine`). The script's lines land on
 the film's dealt voice (`fx/TypePresets` `TypeLine`: `mask`, `land` or `fall`, each leaving at speed on its own exit),
 confident hero moves: no line reads half-faded or blurred for long.

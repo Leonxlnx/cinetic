@@ -30,14 +30,14 @@ A fast reframe whose speed builds for most of the move and brakes in the last th
 
 ### Breathing zoom between interactions
 
-`cam-breathing-zoom` · camera · workhorse · energy calm · launch, feature, walkthrough
+`cam-breathing-zoom` · camera · accent · energy calm · launch, feature, walkthrough
 
-After a reveal the camera slowly pulls back, coasts through a stop and turns smoothly into a slow push that lands on the next interaction, so the frame breathes across a whole act.
+In a long act of several interactions in one framing, the camera pulls back after a reveal and lands, then makes one slow push that lands on the next interaction: two declared moves with a still beat between them, never a continuous breath.
 
 - **Build:** Drive only k, from a keyframed zoom rate rather than from poses: rate(i) = interpolate(i, [s0, s0 + 72, s0 + 108, s0 + 168], [-0.0025, 0, 0.0014, 0.0011], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}) with linear interpolation, and k = k0 * Math.exp(sum of rate(i) for i = s0..f), computed in a pure loop every frame with no state kept between renders. Put ax, ay on the element the next interaction touches, so the zoom pivots on it and it holds its screen position. Keyframe the rate so it crosses zero rather than resting there: |rate| may stay under 0.0002 for no more than 12 f. Close the act with a short exhale under the final hold: k x lmix(1, 0.94, prog(f, T, T + 60, E.out)).
 - **Primitive:** `lib/handoff.creep`, `lib/handoff.intoCut`
 - **Timing:** Pull after a reveal: -0.25%/f falling to 0 over 72 f (about -9% total). Push into the next interaction: 0 rising to +0.14%/f over 36 f, about +6% within 60 f of the zero crossing; table and list acts run +0.03 to +0.17%/f (about +6.6% total). Rate keyframes 36-90 f apart, linear. Exhale x0.94 over 60 f on E.out.
-- **Use when:** Dashboard, analytics or table acts of 4-10 s with several interactions in one framing, where cutting would cost orientation.
+- **Use when:** Dashboard, analytics or table acts of 4-10 s with several interactions in one framing, where cutting would cost orientation; each move shows the next thing that changes.
 - **Avoid when:** Shots shorter than about 90 f, acts that already move pose to pose with big pushes, or a scrolling feed (a zoom on a moving list reads as wobble).
 
 ### Camera follows the caret
@@ -159,15 +159,15 @@ One camera move seen by two or three depth planes: the type moves with the camer
 
 ### Living hold creep
 
-`cam-living-hold` · camera · workhorse · energy calm · any
+`cam-living-hold` · camera · accent · energy calm · any
 
-Under every hold the frame keeps a barely visible push, pull or sideways drift, so no shot sits dead while the viewer reads.
+A long hold on one product state or the end card may keep a sub-pixel push or pull, one way, under 12 px/s at the frame's edge; most holds are simply still (the camera moves only with a purpose).
 
 - **Build:** Set the anchor camera's ax, ay on the focal element so the creep pivots there. Multiply k by breath(prog(f, holdStart, holdEnd, E.linear) * (1 - nextMove), amount), where amount = 0.0005 x the hold length in frames and nextMove is the next move's 0..1 progress, so the next move releases the creep with no velocity step. Push on proof and result shots, pull (negative amount) on busy or chaotic boards, and use a tiny creep on the end card. For type or a single card, drift sideways instead: with g = f - holdStart, sx = sx0 - v * (g - 20 * (1 - Math.exp(-g / 20))), which leaves the seam at zero velocity and reaches v after about 60 f. Keep every layer the camera carries static inside the one transform, so nothing stair-steps on the pixel grid during the creep.
 - **Primitive:** `lib/handoff.creep`, `lib/handoff.intoCut`
-- **Timing:** Scale creep 0.04-0.07%/f (+2.4 to +4.2%/s), at most 0.1%/f in a 40-60 f tail after a big push. Pulls about -0.08%/f. End card 0.0125%/f. Lateral drift 0.3-0.5 px/f for UI and cards, 1.5-3 px/f for big display type. E.linear once at speed, with a 20 f exponential ease-in from a seam. Released over the next move's own ease.
-- **Use when:** Any hold longer than about 30 f: reading a caption, watching a counter, a UI state sitting after an action, the end card.
-- **Avoid when:** A designed freeze of at most 15 f on a silence, or a shot where a big camera move or a travelling cursor already supplies the life. Never stack a creep on top of a punch-in drift on the same axis.
+- **Timing:** Scale creep at most 0.02 %/f (about 1.2 %/s at 60 fps), pulls the same; end card 0.0125 %/f. Lateral creep at most 0.2 px/f@60 (12 px/s), one way. E.linear once at speed, with a 20 f exponential ease-in from a seam; released over the next move's own ease. Never a float that turns back.
+- **Use when:** A long hold (2 s or more) on a product state or the end card where a barely visible push helps the read; never as idle life under every hold.
+- **Avoid when:** Most holds: a still hold is fine. Never on a camera that already made its move in the shot, never stacked with another creep, never sideways back and forth.
 
 ### Long exponential camera settle
 

@@ -338,7 +338,7 @@ Look for these first; 10 to 13 are the ones scripts catch least well.
 |---|---|---|---|---|
 | 1 | Seam pops and duplicate frames | `seam-pop` or `stall` at an act start; the device blinks | match every property across the cut; show the rest pose once | `references/transitions.md` §3 |
 | 2 | Sound on the settle, not the pop or contact; whooshes off the velocity peak | av-audit misses and `apex` warnings; picture peak 3-8 f from the sound | cue with `hit(…, 0.5)` for pops, `0.92`–`1.0` for contacts, `peak()` for whooshes | `references/timing-grid.md` §7 |
-| 3 | Dead holds: logo, post-hook, typing, end card | `hold-drift` fails, `quiet` flags | a creep of 2-15 %/s or a drift, light moving on the ground, the hold turning into its exit; or shorten | `references/camera.md` §7 |
+| 3 | Dead stretches and an aimless camera: a hold where nothing changes for 2.5 s; a camera floating one way and back | `dead-stretch` / `motion-frozen` fail, `camera-wander` flags | let the product change in the hold, or shorten it; hold the camera still or give the shot one declared move that lands (never a float to fake life) | `references/camera.md` §7 |
 | 4 | Collisions from overshoot or moving targets | glyphs or pieces touching for a few frames | clamp springs at the rest pose; lock the target before landing on it | `references/motion-tokens.md` §3 |
 | 5 | Chromium artifacts | `ghost`, `judder`, `sharpness`, `banding`, `border` | the matching row of the table | `references/chromium-rendering.md` |
 | 6 | Envelope shape: half-sines, fades on arrive curves | a pulse peaking late; a fade that pops in 1-2 frames (`hit` or `pop`) | `hitPulse`; exits at speed on a leave curve, a short fade only inside a moving exit | `references/motion-tokens.md` §10 |

@@ -33,8 +33,9 @@
  * starts in the house gap range; a run of 6 or more irregular, CV >= 0.15; starts within 1.5 f@60 are one start and
  * a run on the beat grid is the track's; scored by share, 80 % for 100, 50 % for 70), shots (median in the
  * format's band, q75/q25 spread 1.9-3.1; not scored on a one-take film), density (starts per second 1.9-2.8,
- * floor 1.3-3.2; regions moving at once 1.6-2.5, floor 1.05-4.4; idle frames <= 15 %, floor 45 %), holds (living
- * share >= 95 %, floor 82 %), seams (carried >= 40 %, floor 30 %; no kind more than 3 times except the signature;
+ * floor 1.3-3.2; regions moving at once 1.6-2.5, floor 1.05-4.4; idle frames <= 15 %, floor 45 %), holds (no dead
+ * stretch: forensics.py dead-stretch runs, over 2.5 s where nothing changes; a still hold is fine: 0 runs 100, 1 run
+ * 60, more 30), seams (carried >= 40 %, floor 30 %; no kind more than 3 times except the signature;
  * the distance of the seam-kind mix from the house's is reported, not scored), cut-sync (hard cuts within 1 f of a
  * sound, the picture leading by up to 3 f, >= 50 %, floor 14 %; within 100 ms >= 80 %, floor 28 %; from 3 hard cuts;
  * not scored on a one-take film), velocity-seams (every declared one carries speed; half of them is the floor),
@@ -217,7 +218,7 @@ const houseTarget = () => {
       idleMax: G.density?.idleMax ?? 0.15,
       floor: { startsPerSec: [1.3, 3.2], concurrent: [1.05, 4.4], idleMax: 0.45 },
     },
-    holds: { livingMin: 0.95, floor: 0.82 },
+    holds: { deadMax: 0 }, // dead stretches (forensics dead-stretch); a still hold is fine
     seams: {
       carriedMin: 0.4,
       carriedFloor: 0.3,
@@ -553,11 +554,12 @@ export const score = ({ cues, layout, look, forensics, target, format }) => {
     dim('density', { startsPerSec: Math.round(sps * 100) / 100, concurrency: Math.round((conc / total) * 100) / 100, idle: Math.round((busy / total) * 100) / 100 }, s, 'declared');
   } else dim('density', null, null, 'unmeasured', 'needs look-audit.py or the tween registry');
 
-  // living holds
+  // holds: a still hold is fine (the camera moves only with a purpose); a dead stretch is not (forensics.py
+  // dead-stretch: over 2.5 s outside the end lock where nothing changes at all)
   {
-    const v = M?.living_holds ?? forensics?.checks?.grammar?.holds?.live_share ?? null;
-    if (v !== null) dim('holds', v, tierBand(v, [T.holds.livingMin, 1], [T.holds.floor ?? T.holds.livingMin, 1]), 'measured');
-    else dim('holds', null, null, 'unmeasured', 'needs look-audit.py or forensics.py');
+    const dead = forensics?.checks?.grammar?.holds?.frozen_runs;
+    if (Array.isArray(dead)) dim('holds', dead.length, dead.length <= (T.holds.deadMax ?? 0) ? 100 : dead.length === 1 ? 60 : 30, 'measured');
+    else dim('holds', null, null, 'unmeasured', 'needs forensics.py (dead stretches); a still hold is fine');
   }
 
   // seams
@@ -782,7 +784,11 @@ const selfTest = () => {
     'durations: house-length arrivals and exits score 100; 2 s arrivals and 1.5 s exits do not',
   );
   pair('density', withM({ starts_per_s: 2.2, concurrency: 1.8, idle_share: 0.05 }), withM({ starts_per_s: 0.4, concurrency: 1, idle_share: 0.6 }), 'density: 2.2 starts a second scores 100; a sparse film (0.4 a second, idle 60 %) does not');
-  pair('holds', withM({ living_holds: 0.97 }), withM({ living_holds: 0.55 }), 'holds: 97 % living holds score 100; 55 % do not');
+  {
+    const fz = (runs) => score({ forensics: { checks: { grammar: { holds: { frozen_runs: runs } } } }, target: T, format: 'launch' });
+    pair('holds', fz([]), fz([[100, 190], [400, 480]]), 'holds: no dead stretch scores 100 (still holds are fine); two dead stretches do not');
+    check(dimOf(withM({ living_holds: 0.4 }), 'holds')?.score == null, 'holds: a low living share alone is not scored (a still hold is fine)');
+  }
   pair(
     'seams',
     score({ cues: { ...cuesA, declared: { seams: [{ at: 120, kind: 'velocity' }, { at: 260, kind: 'morph' }, { at: 400, kind: 'whip' }] } }, look: { floor: { pass: true }, measures: { carried_share: 0.67, seams: 3 } }, target: T, format: 'launch' }),

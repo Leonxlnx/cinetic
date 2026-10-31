@@ -81,7 +81,7 @@
    "slide": "the input slides out of the card's window as the output slides in, smeared along its travel"
   },
   "proof": {
-   "stack": "notices stacking in front, the newest from behind (fx/Stack), tilted in the light",
+   "stack": "notices stacking in front, the newest from behind (fx/Stack), facing the camera in the light",
    "river": "notices flowing up through three depths at their own speeds",
    "wall": "result tiles tumbling into a content wall the camera pushes through (kit ContentWall)"
   },
@@ -101,11 +101,11 @@
    "stream": "the output types in top-down under a progress rule"
   },
   "page": {
-   "lit": "one lit page rises, settles onto its tilt (fx/Lit) and scrolls",
+   "lit": "one lit page rises, turns to face the camera as it lands (fx/Lit) and scrolls",
    "stack": "the page between its siblings in a depth stack the camera pushes through"
   },
   "end": {
-   "side": "the lockup beside the output, live and sharp, lit and tilted, cropped by the frame's edge",
+   "side": "the lockup beside the output, live and sharp, lit and facing the camera, cropped by the frame's edge",
    "centre": "the lockup alone in the middle of a clean ground, the mark's parts arriving in turn"
   },
   "lines": {

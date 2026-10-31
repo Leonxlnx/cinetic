@@ -35,7 +35,8 @@ You hunt technical artifacts: anything a viewer would read as broken, glitchy or
    | `spike` pop / seam-pop | a 1-2 frame change that motion does not explain | a property flipping at a cut; a fade collapsing into 1-2 frames; expo-out on a fade-out |
    | `spike` hit | the same, on a cue | fine if the hit is designed; a pop if it is a reveal that finishes too fast |
    | `stall` | a repeated frame inside motion | a duplicated rest pose at a seam; two moves easing to rest back to back |
-   | `hold-drift` / `hold` | a run over 0.8 s outside `END` where nothing drifts 6 px/s, creeps 1 %/s or changes on the ground | a dead hold; a locked-off shot. Fix with a creep or drift that turns into the exit, or moving light; a quiet read is alive only when it still moves |
+   | `dead-stretch` / `hold` | a run over 2.5 s outside `END` where nothing changes at all | a dead stretch. Fix with a product change in the hold or a sooner cut; a still hold shorter than that is fine (the camera moves only with a purpose) |
+   | `camera-wander` | inside one shot the camera pans or pushes one way and back at slow speed; or it never rests | the old aimless float. Fix: hold the camera still, or one declared move that starts, travels and lands |
    | `carried-cut` | a declared velocity seam whose direction or speed breaks (cosine under 0.7, incoming outside 0.4-1.4× the outgoing, no decay) | the incoming shot opened from rest or the wrong way; use `carry()` / `handoffShot()` |
    | `dissolve-detect` | a rising mix of two different images, or a fade to black before the last 2 s | a crossfade between scenes; build a carried seam, or declare `dissolveUi` / `fadeEnd` where it belongs |
    | `still-cut`, `static-share`, `hold-into-exit` | cuts from still to still, too much of the body standing still, holds that do not accelerate into their cut | the camera parks; `intoCut()`, `launch()` |

@@ -110,7 +110,7 @@ These mirror `SKILL.md` "Hard bans". When you invent the look, none of them appe
 - **F11 Springs on type.** Words or letters arriving on an overshooting spring, a bounce or a slam on every line, letters rising one by one on copy. **Fix:** the canonical word reveal (`snapOut`, `Words`, `Chain`); emphasis from the transient accent, a hue sweep or an oversized landing; per-letter motion only inside a line's own text animation (`TypeLine`) or the one word that earns it (`lint-film.mjs` `text-spring`, `per-letter`).
 - **F12 Fade-in words.** Words that fade up from nothing on a symmetric curve. **Fix:** a third of the word visible on its first frame, 90 % by about 0.25 s (`word-first-frame`, `arrival-front-load`).
 - **F13 A metronome stagger.** Every gap identical. **Fix:** the reading cadence (gaps by word length), irregular UI staggers (variation ≥ 0.15), accelerating runs into a payoff (`stagger-shape`).
-- **F14 Frozen holds.** A run of more than 0.8 s with nothing moving outside the end lock. **Fix:** a creep or drift on every hold, turning into the exit (`hold-drift`).
+- **F14 Aimless motion.** A camera that floats and pans back and forth for no reason, cards bobbing or breathing while they are held, panels tilted diagonally at rest. **Fix:** the camera is still unless a shot declares a move that starts, travels and lands; held UI holds still; cards face the camera (`camera-wander`, `camera-float`, `idle-bob`, `card-tilt`). A hold may be still; only 2.5 s where nothing changes is dead (`dead-stretch`).
 - **F15 Bounce as polish.** Overshoot on cards, chips and menus that merely arrive. **Fix:** one spring class per film, everything else critically damped (`spring-budget`).
 
 ## G. Transitions

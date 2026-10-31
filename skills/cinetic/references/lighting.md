@@ -198,7 +198,7 @@ rim, its shadow, the ground's lit side and the beams of a window ground all foll
 
 | Number | House | Range |
 |---|---|---|
-| tilt | rotateX 10, rotateY -12 | 8-14 on each axis at rest; one axis may be 0 |
+| tilt | 0 / 0: the panel faces the camera at rest | a declared turn only (an entry from a turned pose, a turn the shot is about, landing face-on): 8-14 on each axis while it turns |
 | perspective | 2200 px | 1800-2600 |
 | lift off its backing | 36 px | 24-60 |
 | rim | 1 px on the edges facing the key, peak alpha 0.8 | the gradient runs to nothing on the far side |
@@ -207,8 +207,8 @@ rim, its shadow, the ground's lit side and the beams of a window ground all foll
 | spill | the ground colour at 0.14 from the far side to 55 % across | 0.08-0.22 |
 | shadow | on a backing plane parallel to the panel, thrown lift x in-plane light / facing light (at most 3 x lift), penumbra 2 + 0.34 x throw between two fixed levels (6 and 20 px), alpha 0.55, the ground 0.26 darker | |
 | contact | the footprint grown 6 px, a fixed 14 px blur, 0.38 | |
-| life | a 1.4 degree sway on X and Y a quarter-turn apart (7 s) and an 18 px/s float on a 1:2 loop (9 s): 0.3-1.1 px a frame at 30 fps, never at rest; to still it, fade `sway={{ amount: swayFade(F, from, to) }}` over 24 f or more, never `sway={cond ? false : ...}` (the float sits up to 26 px off centre and the panel jumps there in one frame: lint drift-toggle, forensics jump) | |
-| entry | from tilt 24 / -18, 90 px low, lift 0, on E.settleOut over 48 f | |
+| life | none at rest: the panel holds still between its moves (no sway, no float, no bob: lint `idle-bob`); it moves when it enters, when its content changes and when it leaves | the old sway only as an object (`sway={{ ... }}`), which lint fails |
+| entry | from tilt 24 / -18, 90 px low, lift 0, on E.settleOut over 48 f, landing face-on | the one place a lit panel is turned |
 
 ```tsx
 <LitGround frame={f} spec={{ kind: 'wash', base: theme.ground }} />
@@ -248,8 +248,9 @@ once as a dithered half-size sprite and moved by transform (no animated blur, no
   On paper light has nowhere to go: the swing comes from the shade and the shapes become soft shadows (bars widen into
   shadow bands, there is no pool). A `floor` in the accent's lift (`light: C.accentLift`) is a coloured light field:
   chroma 0.13 or less, and behind UI keep it low or white.
-- **Life:** the key plate drifts 7-12 px/s on a 14 s loop, every plate on its own 9-16 s loop and a slow breath, so a
-  hold over a ground never freezes; with the camera (`cam: { shot, base }`) the ground rides at the background weight.
+- **Light, not motion:** a ground's key plate may drift slowly (7-12 px/s on a 14 s loop) as light, never as a moving
+  object; a hold over it may be still. With a declared camera move (`cam: { shot, base }`) the ground rides at the
+  background weight.
 - **Variety:** never the same ground on more than 2 consecutive shots. `groundKey()` names a ground (kind and base: a
   re-seeded field of the same kind is the same ground), `groundRuns()` lists the runs that break the rule and
   `dealGrounds(n, { bases, seed })` deals a film's grounds with holds of at most 2 shots (a held ground keeps its seed:

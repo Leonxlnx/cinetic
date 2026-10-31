@@ -20,7 +20,7 @@ play one fixed sequence. Print the deal: `npx tsx -e "import { DEAL, LINES } fro
 | 6 | `feed` | step two: the product reads every item and lands on the one that matters, which collapses into a pill | `lens` (a dense screen, kit DenseScreen), `flick`, `ticker` | `feed` |
 | 7 | `insight` | the pill, the count chip, the line; the words people wrote rise below; a whip left | | `lines.insight`, `insight` |
 | 8 | `pick` | step three: the options arrive, one is chosen and glides into the build's head | `pill`, `assemble`, `stream` | `lines.pick`, `options`, `build` |
-| 9 | `page` | the output, live, lit and tilted | `lit`, `stack` | `page` |
+| 9 | `page` | the output, live, lit and facing the camera | `lit`, `stack` | `page` |
 | 10 | `end` | the mark's parts, the name on a confident move, the payoff line; it holds about a second and a half | `side` (the output live beside the lockup), `centre` | `lines.payoff`, the name |
 
 The stage (`mixed`, `light`, `dark`) says which acts stand on paper and which on the slate, with at most two ground flips
@@ -52,7 +52,7 @@ speed on a dealt exit (slide, spread, collapse, push or drop); `MOVE_PIN` and `E
 **Timing.** `src/timeline.ts` places every act on a bar line (`BEATS`, in whole bars) and every state change as a CUE on
 the 16th grid; with a track in, every act line lands on a downbeat, and a line never leaves before its read at a
 faster tempo (`line()` keeps the hold; the import fails if a line would still be on screen at its act's cut). No
-one-frame step anywhere: lists, zooms and swaps glide (16 f@60 or more), every hold drifts, moves land before the cut
+one-frame step anywhere: lists, zooms and swaps glide (16 f@60 or more), holds rest (no drift), moves land before the cut
 or are carried across it at speed (`SEAMS`). A step that needs more time gets it in whole bars.
 
 **Music and sound.** Cut to a licensed, human-made, instrumental track (`template.json` -> `music`): 116-132 BPM with

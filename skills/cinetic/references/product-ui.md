@@ -357,8 +357,9 @@ sample.
   so the line keeps 4 % of the frame. `FocusLens` is the focus helper over any dense layer (a veil, two fixed blur
   levels, the one line on a raised strip); `Micro` is texture type, tagged `data-texture` (not copy: the layout audit
   leaves it out); `StatusPill` draws a status by its dot's shape, the accent only on the story's state; `focusPx`,
-  `focusState`, `AppWindow`. Set the screen tilted and lit in its place (`references/lighting.md` §7) and let the
-  camera travel along the lens; a flat screen held front-on reads as a slide.
+  `focusState`, `AppWindow`. Set the screen lit in its place, facing the camera (`references/lighting.md` §7), with
+  depth from its light, glass and shadow; a camera move is declared only where it shows the change. A card tilted
+  diagonally at rest reads as cheap.
 - Sample worlds (`kit/data.ts`): `sampleWorld('<film>')` deals a workspace from the film's name, so two films never
   share data: six kinds (billing, deploys, support, orders, pipeline, hiring), people, fourteen records, statuses that
   agree with the dates, tab counts and totals that are the rows' own, a chart whose points sum to the total, every
@@ -409,7 +410,7 @@ sample.
   first frame clearing over 6 f, at fixed ladder levels.
 - **`cardArrive(f, { start, dur, ease, from: { x, y, rot, scale }, creep }, film)`**: position, rotation and scale ride
   one curve, so a tilted card squares up exactly as it lands (house 50 f on `E.snapOut`, a tilt of 8-35° at the
-  start), then `creep` keeps it alive in the hold (6-90 px/s).
+  start), then it rests (a `creep` only under 12 px/s, one way).
 - **`demote(f, { at, dur, ease, to }, film)`**: the card already there scales to 0.82 and moves 87 px up over 20 f on
   `E.whipBuild`, `at` = the frame it is half done. Put `at` on the newcomer's first frame: two moves read as one push.
 - **`press(f, at, { depth, down, hold, up }, film)`** → `{ scale, q, phase }`: house ×0.87 (normal 0.86-0.90; a big
@@ -515,9 +516,9 @@ headline is never typed.
 ### 5.1 Devices are lit objects
 
 A phone, a laptop or a screen in frame is an object in the film's light, never a drawing of one (an outline bezel on a
-flat field reads as a mock at once). A bare product screen stands as `fx/Lit`: a tilted plane with a glass layer (a
-1 px edge highlight along its top and key-side edges, a soft glare band that slides with the camera float and the
-panel's turn) over the face and a body 12 px deep behind it, with its rim, cast and contact shadow. A device is kit
+flat field reads as a mock at once). A bare product screen stands as `fx/Lit`: a plane facing the camera with a glass
+layer (a 1 px edge highlight along its top and key-side edges, a soft glare band that slides with a declared camera
+move and the panel's turn) over the face and a body 12 px deep behind it, with its rim, cast and contact shadow. A device is kit
 `Phone` or `Laptop` (`kit/device.tsx`): a graphite or silver body lit from the key with its rim and thickness, the black
 glass border, the island, the screen (children, at (0, 0) in `screenBox()`) under the same glass, a contact shadow
 where it meets the ground and a faint reflection of the body below. Pass the product's own screen as children, or a

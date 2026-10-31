@@ -26,13 +26,13 @@ brand or a declared device may move it (`references/brand-and-color.md`).
 | # | The mistake | The house fix | Check |
 |---|---|---|---|
 | 1 | **Fades on type and between shots** | words cut on in place (a pop, partial ink at 35-42 %, or opacity and rise as one `snapOut` tween); exits accelerate out or ride the camera; seams are built from content; dissolves only inside UI, at most 8 f | `word-first-frame`, `fade-detect` (look-audit), `fade-exit`, `crossfade` (lint), `dissolve-detect` (forensics) |
-| 2 | **Frozen holds, or a camera that never stops** | a linear creep of 2-15 %/s or a drift of 6-90 px/s on the holds; the camera locks 0.5-1 s on each type read while the type builds or the light moves; the last 12-20 f turn into the exit; only the end card holds longer, for 1-5 s | `hold-drift`, `static-share`, `hold-into-exit` (forensics), `end-lock` (grid-check), `living-ground`, `camera-lock` (look-audit) |
+| 2 | **An aimless camera, bobbing UI, dead stretches** | the camera is still unless a shot declares a move (a push, pull or track that starts, travels and lands); no float, no drift, no idle push; held UI never bobs, breathes or sways; a hold may be completely still while the product changes in it; nothing at all changes for 2.5 s only at the end lock | `camera-wander`, `dead-stretch`, `motion-frozen` (forensics), `camera-float`, `idle-bob` (lint-film), `end-lock` (grid-check) |
 | 3 | **A metronome** | staggers of about 4 / 10 / 7.5 f (letter / word / item), irregular, on the reading cadence; accelerate into the payoff | `stagger-shape` (grid-check), grammar-score `staggers` |
 | 4 | **Editing on the bar grid instead of on sound** | cuts within 1 f of an onset of the track or a designed effect, the picture leading by up to 3 f; a 0.2-0.5 s dip before the biggest reveal; one designed sound per visual event; not every downbeat | `cut-on-sound`, `reveal-dip`, `anti-metronome` (grid-check), grammar-score `cut-sync` |
 | 5 | **One symmetric ease for everything** | the curve by role: arrive, reposition, leave, linear (`references/motion-tokens.md`) | `ease-family`, `token-drift`, `whip-shape` (lint), grammar-score `role-mix` |
 | 6 | **Motion blur as an effect** | blur is a declared policy: crisp flat graphics at any speed, or a 120-180° shutter above about 900-1200 px/s on camera moves and footage only; defocus is a separate tool | `blur-policy` (look-audit), `shutter`, `blur-on-crisp` (lint), `speed-ceiling` (measure-speed) |
 | 7 | **Bounce as polish** | critically damped by default; one spring class per film (ζ 0.59-0.70, 4-10 % over); an oversized landing instead of a scale from zero | `spring-budget`, `spring-range`, `text-spring`, `scale-from-zero` (lint) |
-| 8 | **A camera that parks** | the camera is the main animator: chained S-reframes (60-96 f, near-holds of 4-12 f between them), a roll of 3-8° per move, a scale pulse of +5 % at peak speed, creeps, snap zooms, whips and zoom-throughs over a slow base zoom | `static-share`, `still-cut` (forensics), the motion floor's camera share (look-audit), grammar-score `density` |
+| 8 | **A camera with no idea** | every camera move shows something: the push closes on the control that changes, the track follows what travels, the pull reveals the whole, the whip changes the subject; chained reframes land between moves (near-holds at rest); a tilted card is never a resting pose (cards face the camera; a 3D turn lands face-on) | `camera-wander` (forensics), `card-tilt` (lint-film), grammar-score `density` |
 | 9 | **Exits that mirror entrances** | an exit eases in, runs shorter than the entrance and is cut at peak speed; the next element enters 0-1 f before | `ease-family`, `exit-length` (grid-check), `hold-into-exit` |
 | 10 | **Shots that start from rest** | velocity-matched cuts: decelerate only after a cut, accelerate only into it, carry direction, speed and zoom rate across (`launch`, `carry`) | `still-cut`, `carried-cut` (forensics), `seam-plan` (grid-check) |
 | 11 | **Lines that slide** | the re-centre jump (most of the distance in one frame, 22 f in all), the slot that opens early, word spaces opening over about 8 f | `chainJumps()` in the layout audit (a jump is a decisive move, not a drift) |
@@ -123,8 +123,8 @@ Four more that have homes but no automated check:
 ## 4. Camera and depth
 
 1. **A virtual 2D or 2.5D camera** in scale and translation plus perspective planes; no handheld shake.
-2. **Holds stay alive, slowly:** a drift or a creep of about 2-15 %/s; faster than about 15 %/s reads as a move. The
-   camera crosses zero velocity smoothly instead of parking.
+2. **Holds may be still:** the camera rests between declared moves (a sub-pixel creep at most, under 12 px/s, one
+   way); the product changes in the hold. A move eases from rest and lands at rest; it never pans back the way it went.
 3. **Pushes and pulls:** a push takes 1.5-3× over 30-70 f, peaking around 5 % scale a frame (never over 10 %); a
    pull-back 0.43-0.81× over 44-108 f. Put a foreground object across the frame at the peak to hide the speed.
 4. **Punch-ins are cuts:** an establishing wide of 20-64 f, then an on-axis punch-in of 2-2.3× with the cursor and
@@ -135,7 +135,8 @@ Four more that have homes but no automated check:
 6. **Roll is secondary action:** a push carries a few degrees of roll that swings back to level; never a fixed dutch
    angle.
 7. **Depth without spectacle:** perspective planes, an extruded slab under the key, progressive depth of field on one
-   tilted page, one 3D-tilted object per act. A 2.5D film stays 2.5D.
+   page; cards face the camera, and a 3D turn is one declared object move an act that lands face-on. A 2.5D film stays
+   2.5D.
 8. **Camera and content land together:** UI events start at 55-75 % of a camera move and captions in its last 25 %;
    the camera's own drift accelerates into the next transition.
 9. **Momentum scrolls** peak early and tail off long, never overshooting; whips hide their fastest travel off frame
@@ -150,8 +151,8 @@ Four more that have homes but no automated check:
 3. **One hero per frame:** 1-4 objects; a dense full screen only as a 1-2 s establishing beat before the push.
 4. **Real beats stylised:** the real product with plausible data; skeleton bars, placeholder strings and unrelated
    stock pictures read as generic.
-5. **Every interaction gets a physical answer within 0.4 s:** a tab pill stretching mid-travel, a pressed card tilting
-   and counter-swinging, a button's light envelope.
+5. **Every interaction gets a physical answer within 0.4 s:** a tab pill stretching mid-travel, a pressed card dipping
+   and settling back face-on, a button's light envelope.
 6. **Cause and effect to the frame:** the effect starts 1 f after the interaction lands; counters, checks and labels
    change on the landing frame; a label changes first and its colour follows 10-12 f later.
 7. **Numbers count like software:** linear values cut mid-count, several counters at different rates, tabular
@@ -170,8 +171,8 @@ Four more that have homes but no automated check:
 3. **Colour marks what just changed:** arrivals are tinted and resolve to neutral over 12-50 f.
 4. **Light leads and geometry follows:** ramp luminance linearly under eased geometry; tie luminance to scale; build a
    reveal from light values.
-5. **Ambient life without movement:** the stage breathes in luminance over a few seconds, or a light pool wanders,
-   in one hue family.
+5. **Light without wandering:** a ground lit once from the film's key, in one hue family; light changes on a beat (a
+   colour event, a shade crossing on a cut), never a pool wandering to keep a still frame busy.
 6. **Close the colour story:** the end mark can arrive in the accent and cool to neutral; the stage dims before the
    mark; colour withheld until the mark lands is a device.
 

@@ -1,7 +1,9 @@
 # Camera
 
-The camera is the main animator of a cinetic film. The copy stays calm; the camera never does. One camera carries the
-whole film from shot to shot, every cut keeps the speed it was cut on, and every hold keeps moving. This page covers
+The camera moves with a purpose or not at all. It is still unless a shot declares a move: a push that closes on the
+thing that changes, a track that follows what travels, a pull that reveals the whole, a whip or a carried cut, each one
+starting, travelling and landing on an eased curve. No float, no drift, no idle push: a camera that pans one way and back
+for no reason reads as aimless, and holds may be completely still while the product changes in them. This page covers
 the world transform, the anchor camera (`src/lib/camera.ts`), the moves (`src/lib/camera-moves.ts`), snap zooms and
 defocus (`fx/SnapZoom`, `fx/RackFocus`, `lib/defocus.ts`), footage ramps (`fx/FootageRamp`), holds, depth, 3D limits,
 framing and speed. Read it before building any act where the frame moves, and when a shot feels locked-off, floaty or
@@ -19,7 +21,7 @@ every function takes `fps` or reads the film context.
 4. [Snap zoom and the defocus pulse](#4-snap-zoom-and-the-defocus-pulse)
 5. [Rack focus and defocus levels](#5-rack-focus-and-defocus-levels)
 6. [Footage that breathes](#6-footage-that-breathes)
-7. [Holds stay alive; speed carries through cuts](#7-holds-stay-alive-speed-carries-through-cuts)
+7. [Holds may be still; moves have a purpose; speed carries through cuts](#7-holds-may-be-still-moves-have-a-purpose-speed-carries-through-cuts)
 8. [Depth: three planes, parallax, occlusion](#8-depth-three-planes-parallax-occlusion)
 9. [3D, perspective and axes](#9-3d-perspective-and-axes)
 10. [Choosing a move for a beat](#10-choosing-a-move-for-a-beat)
@@ -91,7 +93,7 @@ export declare const camVel: (f: number, base: Shot, moves: CamMove[], at?: { x:
   the projected point every frame: `toScreen(shot, SEND_BUTTON)`. Under rotation, project with the same maths as the
   transform. A photo's points project with `photoPoint` (`references/imagery.md`).
 - Modifiers multiply into `k` at the end: a payoff punch `1 + 0.012 · hitPulse(f − cue, 3, 7)` (one per payoff), a dip
-  through a whip, a creep through a hold (section 7). `breath()` is the 1.1 hold push; use `creep()`.
+  through a whip, a sub-pixel creep at most through a hold (section 7: a hold may be still).
 
 ## 3. The moves
 
@@ -101,7 +103,7 @@ export declare const camVel: (f: number, base: Shot, moves: CamMove[], at?: { x:
 | `whip` + `whipCurve` | a fast reframe: long build, short brake | 32 f on `E.whipBuild` (peak at 55-60 %) | 17-94 f; peak 1600 px/s house, up to 3700 | `.peak` |
 | `peakFrame` / `swapAt` | the fastest frame of any move; a copy swap on it | new copy 40 % on its first frame, arrives over 32 f on `E.snapOut` | first frame 35-45 % | the peak |
 | `zoomThrough` | exponential dive into a point until a shape fills the frame | ×8 in 24 f, constant ratio a frame (`E.linear` on log scale) | 14-46 f; `E.buildIn` for a dive that accelerates | `.cut` (99 % cover) |
-| `reframeChain` | chained reframes with near-holds, a scale pulse at peak speed, roll | moves 48 f on `E.strongInOut`, holds 8 f drifting 30 px/s, pulse +5 % | moves 27-126 f, holds 4-12 f, pulse 3-6 %, roll 3-8° per move | `.moves` |
+| `reframeChain` | chained reframes with near-holds, a scale pulse at peak speed, roll | moves 48 f on `E.strongInOut`, holds 8 f at rest, pulse +5 % | moves 27-126 f, holds 4-12 f, pulse 3-6 %, roll 3-8° per move | `.moves` |
 | `reversal` | a pull-back that decelerates, turns, and pushes into the cut | pull to 0.85 over 70 f on `E.glideOut`; push +4 % over 24 f on `E.buildIn` | pull 0.80-0.90 over 40-150 f; push 2-6 % over 16-30 f | `.cut` |
 | `punchOut` | a tight crop drifts faster and faster, cut to the wide shot at the same world speed | crop ×3; drift builds on the house launch profile; wide shot opens at 1× world speed | crop ×2.5-3.5; opening ratio 0.9-1.1 | `.cut` |
 | `parallax` | layers of one push at different log-scale rates | type 1, cards behind about 0.5, ground 0 | 0.4-0.75 for the middle plane | - |
@@ -122,7 +124,7 @@ export declare const camVel: (f: number, base: Shot, moves: CamMove[], at?: { x:
   the first frame the box covers `cover` of the frame: cut there into what was inside, and open the next shot still
   zooming (`handoffShot(..., { carry: ['k'] })`). `hold: 2` posterises the dive on twos.
 - **`reframeChain(shots, { start, frames, gap, ease, rollEase, pulse, residual })`**: a camera that tours a product or
-  a board. Between moves the frame drifts `residual` along the move it just made. Land each move as the cursor or the
+  a board. Between moves the frame rests (`residual` 0; a creep of at most 0.2 px/f@60 along the last move when given). Land each move as the cursor or the
   next element reaches its target.
 - **`reversal({ from, start, pull, rest, push })`**: anticipation for the last cut before the end.
 - **`punchOut({ wide, cut, crop, dir, drift, carry })`**: open on a detail; `.v(f)` is the content's screen speed.
@@ -189,31 +191,35 @@ the cut hides in the speed.
 - `declares(props)`: each join is a `velocity` seam. Put the cut sound on the join. Plain footage on the film's clock
   is `fx/Footage` (`references/imagery.md`).
 
-## 7. Holds stay alive; speed carries through cuts
+## 7. Holds may be still; moves have a purpose; speed carries through cuts
 
-A frame locked off for seconds reads as a stalled player in a muted feed; a camera that never stops reads as a
-screensaver. The ground breathes; the camera may stop: it moves on about 83–95 % of the body and **locks for 0.5–1 s
-on each type read**, while life continues in the type build, the light or a counter. Nothing is frozen for more than
-0.8 s outside the end lock, 1 s for a read lock (`forensics.py hold-drift`; `look-audit.py camera-lock` warns when the
-camera never locks on a read).
+The camera is still unless a shot declares a move. A held shot is not a stalled player when something in it changes:
+the product changes state (a value, a row, a toggle, a cursor's click), a line builds, a counter lands. What reads as
+cheap is the opposite: a camera floating and panning back and forth with no reason, cards bobbing while they are held,
+a panel swaying. The stage has no float (`lib/drift`: `stageAt` is still without `moves`; `stageMove(at, 'push' |
+'pull' | 'track')` declares one), Lit panels and devices have no sway, holds have no drift.
 
-| Hold | Life | Number |
+| Hold | What moves | Number |
 |---|---|---|
-| any near-hold | creep or drift | `creep()` house 6 %/s (2-15 %/s), or `drift()` house 30 px/s (6-90) |
-| text being read | a camera lock with the type building, light moving under it, or a slow drift | lock 0.5-1 s, else under 90 px/s and 15 %/s; a re-centre jump is a decisive move, not drift |
-| typing or reading | background parallax under a sharp foreground | background −16 px and +2.5 % while the foreground pushes |
-| logo / lockup | a creep of ≤ 6 % for a still hold up to 1.3 s; 10-20 % over about 2 s for a longer one | then the one still hold of the film |
+| any hold | nothing but the product's own change; the camera rests | a sub-pixel creep at most (≤ 0.2 px/f@60, 12 px/s; `holdDrift`, house 0), one way |
+| text being read | the type's own build; the camera rests | under 90 px/s and 15 %/s (`forensics.py read-move`) |
+| a declared move | a push, pull or track from rest to rest | `stageMove` house push x1.06 / pull x0.94 / track 120 px over 72 f on `E.strongInOut` |
+| logo / lockup | the mark assembling, then still | a creep of ≤ 6 % at most |
 
-- **A hold turns into its exit.** Over the last 12-20 f before the cut the creep accelerates into it (`intoCut()`): the
-  cut lands on the fastest frame and the speed carries across.
+- **The gates** (`references/checks.md`): `forensics.py dead-stretch` / `motion-frozen` fail only a stretch over 2.5 s
+  where nothing changes at all; `camera-wander` fails a camera that pans or pushes one way and back at slow speed inside
+  a shot (the old float) and warns on a camera that never rests; `lint-film` fails `camera-float`, `idle-bob` and
+  `card-tilt`.
+- **A move that ends a shot may run into its exit.** A push or track that carries the cut accelerates over its last
+  12-20 f (`intoCut()`): the cut lands on the fastest frame and the speed carries across.
 - **Speed carries through cuts** (`lib/handoff.ts`, `references/motion-tokens.md` §6): `launch()` into the cut,
-  `carry()` out of it at 0.4-1.4× the outgoing speed (house 0.7), decaying ×0.78-0.93 a frame to a living residual;
+  `carry()` out of it at 0.4-1.4× the outgoing speed (house 0.7), decaying ×0.78-0.93 a frame to rest (residual 0);
   `handoffShot(A, B, cut, { carry: ['x', 'y', 'k', 'roll'] })` does it for a camera. Declare velocity seams.
 - **Chained moves never stall.** When one move hands over to another, start the second on a zero-slope curve while
   the first is still moving (about 20 f of overlap for moves of similar speed, more when the first is slow); the
   secondary starts before the primary is 90 % home (`overlapAt`).
-- Stillness is still allowed: a read lock of 0.5-1 s, a designed freeze of ≤ 15 f on a silence, and the one still hold
-  at the end lock.
+- Stillness is the default between moves: a held read, a held product state, a held lockup. A stretch over 2.5 s where
+  nothing at all changes is dead (cut sooner, or let the product change in it).
 
 ## 8. Depth: three planes, parallax, occlusion
 
@@ -260,13 +266,15 @@ The floor against a flat film asks for two depth planes moving at different rate
   ```
 - **Place moving elements with transforms**, never with left/top: a fractional left/top snaps to whole pixels at full
   size and jumps a pixel at a time; `place()` and the fx primitives move everything by translate3d.
-- **Each act gets its own axis:** the film's one turn in one act, tilted lit panels (`fx/Lit`) or a tabletop (pitch)
-  in another, a roll or pull-back in a third. The same tilted-card angle three times in 15 s is a template tell.
+- **Cards face the camera.** A lit panel (`fx/Lit`), a device (kit `Phone`, `Laptop`) or a depth item rests face-on
+  (house tilt 0 / 0); a card tilted diagonally at rest reads as cheap (`lint-film card-tilt`). A 3D turn is a declared
+  object move: the film's one turn that lands face-on, an entry that settles from a turned pose (`enter.from.tilt`), a
+  flip the shot is about. At most one such turn an act.
 - **Keep roll rigid and outside the tilt:** `perspective(P) rotateZ(roll) rotateX(tilt)`. The reverse order shears type
   into a faux italic.
 - **Limits:** roll ≤ 11°, total visible shear ≤ 7° (for example pitch 42° with roll ≤ 12°).
-- **Real 3D only.** Tilted screenshot cards floating in space are a tell; tilt the live product, with its own shadow
-  from the key on its own ground.
+- **Real 3D only.** Tilted screenshot cards floating in space are a tell; when the product turns, turn the live
+  product, with its own shadow from the key on its own ground, and land it face-on.
 - **Chromium caps the raster scale under `perspective`**, so text scaled up in 3D goes soft. Lay the product out at
   shot scale with CSS `zoom: Z` and scale the camera by `scale3d(k/Z, k/Z, 1/Z)`, switching Z only on a whole frame at
   a velocity peak (`references/chromium-rendering.md`).
@@ -276,7 +284,7 @@ The floor against a flat film asks for two depth planes moving at different rate
 | Beat | Move | Note |
 |---|---|---|
 | opening on a detail | `punchOut` | the first cut carries the world's speed into the wide shot |
-| touring a product or a board | `reframeChain` | one move per idea, near-holds that drift, roll small |
+| touring a product or a board | `reframeChain` | one move per idea, near-holds at rest, roll small |
 | changing the subject in one breath | `whip` + `swapAt(whip.peak)` | swap copy on the peak, whoosh on the peak |
 | a hit, a reveal, a punchline | `SnapZoom` | one jump frame, defocus on it, sound on it |
 | going inside (an app, a letter, a card) | `zoomThrough` + `handoffShot(carry: ['k'])` | cut at 99 % cover, open still zooming |
@@ -319,12 +327,12 @@ Six camera ideas in about 9.5 s, one per beat, every cut carried.
 - **Readable text** is at least 36 px on screen after camera scale whenever it is in focus for more than 6 f
   (`TEXT_MIN`): `k ≥ 36 / fontPx` for the smallest text that carries meaning. Smaller text is texture, out of focus or
   gone within 6 f.
-- **Overscan** moving layers by 5-8 % so a drift, dip or punch never reveals an edge.
+- **Overscan** a layer under a declared track or pull (`bleedFor`) so the move never reveals an edge.
 
 | Move | Speed or length | Note |
 |---|---|---|
-| hold drift | 6-90 px/s (house 30); under 90 px/s while text is read | visible life, not motion |
-| creep in a hold | 2-15 %/s (house 6) | faster than about 15 %/s reads as a move |
+| hold | still (house); a creep under 12 px/s (0.2 px/f@60) at most, one way | no float, no drift, no bob |
+| declared stage move | push x1.06, pull x0.94, track 120 px over 72 f on `E.strongInOut` | starts, travels, lands; never back the way it went |
 | camera move | calm 0.5 s + 1.6 ms/px, 0.9-3.0 s; crisp 0.35 s + 1.35 ms/px, 0.6-2.4 s | `durFor(px, true)` |
 | whip | 17-94 f (house 32), peak 1600 px/s (up to 3700) | beside stillness, never while text is read |
 | a crisp film's frame | over 3000 px/s for more than 14 f warns (`speed-ceiling`) | cut frames are not moves |

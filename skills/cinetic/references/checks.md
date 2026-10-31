@@ -178,8 +178,11 @@ over more than 8 f@60; a UI dissolve carries `data-ui`), `shutter` (outside 120-
 **Continuous motion** (warnings, outside `fx/` and `lib/`; `references/motion-tokens.md` §6): `snap-step` (a one-frame
 snap primitive, `HardStep`, `stepValue`, `snapBox`, `SnapZoom`, `LineSnap`, `Chain` `snapLast` or `recentre: 'room'`,
 that `src/sync.ts` does not declare through its `declares()`; and a second snap device in the film: glide it with
-`fx/GlideStep`, `glideValue` or `glideBox`), `hold-drift` (an act with two or more tweens and nothing continuous under
-them: no creep, drift, `holdDrift`, camera path, light field or footage move), `unmount-moving` (a layer unmounted by
+`fx/GlideStep`, `glideValue` or `glideBox`), `camera-float` (errors: the removed float's options, `withLocks`, `lockOn`,
+`dipAmp`, `settleAmp`, a `FloatOpts` with seed / amp / omega / push / locks, or a creep over 0.2 px/f@60), `idle-bob`
+(errors: a sine or cosine of the frame, or `breathe`, driving a translate, rotate or scale; a lit panel's sway object),
+`card-tilt` (errors: a constant `tilt={{ x, y }}` or `tilt: { x, y }` outside an entry's `from`, a constant
+`rotateX(..deg)` / `rotateY(..deg)`, a depth item's constant `rot`), `unmount-moving` (a layer unmounted by
 `F < X &&` or a `<Sequence>` end while a tween inside it, timed off the same frame, still runs above 10 % of its peak
 speed: `landBeforeCut`), `move-queue` (three moves timed off the same frame queued one after another inside 3 s).
 
@@ -213,7 +216,7 @@ evaluate (what `grammar-score.mjs` reads for curve roles, durations, staggers an
   not an asset set in the line) as a ui warning for `look-audit.py --layout` to confirm on the pixels; `text-edge` fails
   text cut by the frame or within 4 % of its edge where it shows, outside a declared crop, on 2 audited frames: product
   text sliced by a closer frame or a punch-in (a declared bleed lets a pushed statement cross the edge, never a card's
-  label), or carried to the edge by the camera float. A crop that cuts text on purpose says so with `data-audit-crop`.
+  label), or carried to the edge by a camera move. A crop that cuts text on purpose says so with `data-audit-crop`.
   Run alone on a report: `node scripts/ui-layout.cjs out/qa/layout-Film.json`.
 - `--bundle out/render/film/bundle` audits from a bundle render.sh (or `npx remotion bundle`) already built: seconds
   instead of minutes for the frames of a few closer shots (rebuild it after an edit).
@@ -259,26 +262,24 @@ cues file that carries the declarations:
 | Check | Rule | Level |
 |---|---|---|
 | declared | a spike or stall on a declared step, flash or hard seam | info |
-| hold-drift | a run over 0.8 s outside `END` where nothing drifts 6 px/s or creeps 1 %/s and the ground does not change | fail |
-| | while text is read: faster than 90 px/s or 15 %/s | warn |
-| static-share | more than 15 % of the body stands still | warn |
-| motion-energy | a stretch outside `END` where under 30 % of the picture's structure moves 15 px/s or more (one small thing moving in a still frame) lasts over 1.5 s (a cut ends it); the house holds that at most 1.5 s (a slow explainer 1.8 s) | warn |
-| | the same stretch over 2.0 s | fail |
-| | under 30 % on more than a quarter of the body | warn |
-| still-cut | more than 30 % of the cuts go from a still frame to a still frame | warn |
+| dead-stretch | a run over 2.5 s outside `END` where nothing changes at all (the camera, the layers, the ground and the content all still); a still hold shorter than that passes | fail |
+| read-move | the camera moves faster than 90 px/s or 15 %/s while text is read | warn |
+| camera-wander | inside one shot most of the picture pans (or pushes) one way and then back, both runs slow (under 60 px/s or 4 %/s at their peak, each 0.4 s or longer, 1 s or less apart): the old camera float | warn; in two shots or more, fail |
+| | a camera faster than a sub-pixel creep (15 px/s, 1.5 %/s) on more than 90 % of the body: it never rests | warn |
+| static-share, motion-energy, still-cut | the share of the body standing still, of the structure moving 15 px/s or more, of cuts from still to still | info |
 | hold-into-exit | fewer than half of the continuity cuts accelerate into the cut | warn |
 | carried-cut | a declared velocity seam: direction cosine ≥ 0.7, incoming speed 0.4-1.4× the outgoing (widened by the read's own spread), then decaying | fail |
 | carried-cut | the same, but the picture repeats along the move (stripes, tiles, a list) or its moving pixels disagree on the direction: the read is not trusted | warn |
 | dissolve-detect | ≥ 4 f@60 that are a rising mix of two different images, or a fade to black before the last 2 s, unless declared (`dissolveUi`, `light`, `fadeEnd`) | fail |
 | end-card | with `END` declared: nothing assembles in the 1.5 s before the lock, or the card fades in | warn |
 | motion-snap | more than 0.6 one-frame changes per 3 s outside a declared snap (a change of 2+ values with both neighbours under 35 % of it, not a declared cut), or more than one declared snap device | fail |
-| motion-frozen | 6 f@30 in a row where the mean change is under 0.05 and fewer than 8 px change by 4+ values, after the first 0.5 s and outside the end lock and declared freezes (a film without declarations may hold still 1 s in all) | fail |
+| motion-frozen | 75 f@30 (2.5 s) in a row where the mean change is under 0.05 and fewer than 8 px change by 4+ values (a dead stretch), after the first 0.5 s and outside the end lock and declared freezes; a still hold shorter than that passes | fail |
 | motion-decay | moves fall from their peak to 20 % of their speed in a median under 3.5 f@30 (3+ moves) | fail |
 | motion-density | more than 2 primary moves (peaks at 25 % of the film's 90th-percentile move or more) per 3 s | fail |
 | motion-stop | a move goes still in one frame from above 15 % of its peak speed | fail |
 | motion-cut | a visible cut while a braking move is above 10 % of its peak, unless a whip, velocity or zoomThrough seam or a camera-blur range carries it (fail over 0.25 per 3 s) | warn |
 
-Motion energy is read on the same 0.4 s windows as `hold-drift` (optical flow at 480 wide, speeds at 1080p): the share of the textured pixels moving 15 px/s or more. A 6 px/s creep keeps a hold alive; it does not make a shot move. The fix is the stage: every act on the film's camera float (`fx/Float` `ActStage`, on by default in every template), planes that part under it (`Depth`), lists that scroll (`scrollBy`), landings that settle on a tail (`tail`) and light that breathes (`BreathLight`); `lib/drift.ts` holds the numbers. The summary line under the verdict prints the film's median, its low share and its longest low stretch.
+The camera checks read the same 0.4 s windows (optical flow at 480 wide, speeds at 1080p, the camera as the similarity fit of the structure). A still hold passes: the camera is still unless a shot declares a move (`lib/drift` `stageMove`, `lib/camera` `camPath`), and what changes in a hold is the product. The fix for `dead-stretch` is a product change in the hold or a sooner cut, never a float; the fix for `camera-wander` is a still camera or one declared move that starts, travels and lands. Motion energy is still printed under the verdict (the film's median, its low share, its longest low stretch) for reading, not as a gate.
 
 The motion gates read mean luma change at 160x90, one sample per 1/30 s (landings also at the film's own rate), so a
 60 fps film and a 24 fps one are judged alike. In a declared film every jump that is not a declared cut counts as a
@@ -380,7 +381,7 @@ from the timeline. `--format update` reads the update band; `--print-target` pri
 | staggers | runs of 3+ starts with gaps in the house range; a run of 6+ irregular (CV ≥ 0.15); starts within 1.5 f@60 are one start, a run on the beat grid is the track's | 80 % of runs | 50 % |
 | shots | median in the format's band; q75/q25 spread 1.9-3.1 | inside | 2× / 2.6× past an edge |
 | density | starts per second; regions moving at once; idle frames | 1.9-2.8; 1.6-2.5; ≤ 15 % | 1.3-3.2; 1.05-4.4; 45 % |
-| holds | hold frames that live (drift ≥ 6 px/s, creep ≥ 1 %/s, or light on the ground) | ≥ 95 % | 82 % |
+| holds | dead stretches (forensics `dead-stretch`: over 2.5 s where nothing changes); a still hold is fine | 0 | 1 (60) |
 | seams | carried share; no kind more than 3 times (the signature excepted; a refrain scores 50); the mix distance is reported | ≥ 40 % | 30 % |
 | cut-sync | hard cuts within 1 f of a sound (the picture may lead by up to 3 f) / within 100 ms; from 3 hard cuts | ≥ 50 % / ≥ 80 % | 14 % / 28 % |
 | velocity-seams | declared velocity seams that carry speed and direction | 100 % | 50 % |

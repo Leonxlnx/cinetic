@@ -1370,10 +1370,6 @@
    "file": "fx/Float.tsx",
    "status": "built"
   },
-  "BreathLight": {
-   "file": "fx/Float.tsx",
-   "status": "built"
-  },
   "ReadBack": {
    "file": "fx/ReadBack.tsx",
    "status": "built"

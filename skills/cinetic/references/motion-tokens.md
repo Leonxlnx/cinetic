@@ -6,7 +6,7 @@ oversized landings, stepped time, the pace knob and the `hitPulse` envelope. Rea
 whenever motion looks floaty, bouncy, uniform or mechanical.
 
 Everything lives in `src/lib/anim.ts` (curves, springs, tables), `src/lib/pace.ts` (the pace), `src/lib/handoff.ts`
-(carry, creep, overlap), `src/lib/continuity.ts` (glides, hold drift, landing before a cut) and `src/lib/cadence.ts`
+(carry, creep, overlap), `src/lib/continuity.ts` (glides, the optional hold creep, landing before a cut) and `src/lib/cadence.ts`
 (stepped and irregular time); HyperFrames carries the same numbers in
 `motion.js` (`scripts/test/mirror.test.mjs` keeps them equal). Numbers are house defaults with normal ranges at 60 fps
 (`f@60`); every helper takes the film's fps from the film context, so the same numbers give the same motion in
@@ -202,46 +202,43 @@ cut); `carryChain()` strings shots; `carryShot()` and `handoffShot()` carry a ca
 through a cut. Declare the seam (`SEAMS`, kind `velocity`): forensics then fails it if direction or speed breaks
 (direction cosine ≥ 0.7, incoming 0.4-1.4× the outgoing, then decaying).
 
-**Holds live.** Nothing on screen is frozen for more than 0.8 s outside the end lock. A hold creeps (`creep(f, from,
-{ pctPerSec })`, house 6 %/s, range 2-15 %/s) or drifts (`drift(f, from, pxPerSec)`, house 30 px/s, range 6-90),
-or sits over moving light, and turns into its exit over the last 12-20 f with `intoCut(f, cut, lead = 16)`, which
-starts flat so the hold speeds up into the cut with no step. While text is read the hold stays under 90 px/s and
-15 %/s. A statement held on a card counter-creeps (`counterCreep(f, from)`: the line +2 %/s, the card and its grid
--1.6 %/s), which reads as depth rather than a zoom. The ground breathes; the camera may stop: lock it for 0.5-1 s on each type read (a carried camera with
-`settle`), while the type build, the light or a counter keeps the frame alive, so the camera moves in about 85-95 % of
-the film's frames rather than all of them.
+**Holds rest.** The camera is still unless a shot declares a move; a hold may be completely still while the product
+changes in it (a value lands, a row fills, a cursor clicks, a line builds). No float, no drift, no idle push, no bobbing
+or breathing UI: those read as aimless and cheap. A creep, when a hold wants one, is sub-pixel and one way (`holdDrift`
+at most 0.2 px/f@60, 12 px/s; `creep()` at most about 1.5 %/s). A move that carries the cut speeds up into it over the
+last 12-20 f with `intoCut(f, cut, lead = 16)`. While text is read the frame stays under 90 px/s and 15 %/s. The gate is
+a dead stretch: 2.5 s outside the end lock where nothing at all changes (`forensics.py dead-stretch`, `motion-frozen`).
 
 **Overlap and anticipation** (`OVERLAP`): a secondary move starts before its primary is 90 % home (`overlapAt(primary,
 0.9)`); the foreground lands about 20 f before the background (`leadBy(at, 20)`); the next element enters 0-1 f
 before the previous one leaves. Without overlap, two moves that each ease to rest read as stall-then-lurch.
 
-### Continuous motion: glide, drift, land before the cut
+### Continuous motion: glide, land, rest, land before the cut
 
-Generated motion has a measurable signature: many short events that start and stop in one frame, dead holds between
-them, settles that fall from full speed to rest in a frame or two, and moves cut while they are still fast. Crafted
-motion is one long carrying move per few seconds with secondaries riding it, holds that keep drifting, and every move
-landing with a tail. `lib/continuity.ts` holds the fixes; `forensics.py` measures the result on the render (mean luma
-change at 160x90, one sample per 1/30 s) and `lint-film.mjs` catches the source patterns.
+Generated motion has a measurable signature: many short events that start and stop in one frame, settles that fall from
+full speed to rest in a frame or two, moves cut while they are still fast, and a camera or a card that floats with no
+purpose. Crafted motion is one carrying move per few seconds with secondaries riding it, every move landing with a tail,
+and holds that rest while the product changes. `lib/continuity.ts` holds the fixes; `forensics.py` measures the result
+on the render (mean luma change at 160x90, one sample per 1/30 s) and `lint-film.mjs` catches the source patterns.
 
 | Rule | Number | Helper | Gate |
 |---|---|---|---|
 | No state change in one frame | a list step, a selection box, a counter's roll or a field's width glides 16 f@60 on `E.glideOut` (8 f at 30 fps), smeared along its motion by a 180° shutter; a step that starts before the last has landed blends out of it | `fx/GlideStep` (a list: `HardStep`'s props), `glideValue`, `glideBox` | `motion-snap`: at most 0.6 undeclared one-frame changes per 3 s; lint `snap-step` |
 | One snap per film | a stepped list, a snap zoom or a line snap is the film's one snap device, declared through its `declares()` in `src/sync.ts` (declarations named alike, `tick-0` ... `tick-9`, are one device) | `fx/HardStep`, `fx/SnapZoom`, `fx/LineSnap` | `motion-snap`: more than 1 declared device fails; lint `snap-step` |
-| No hold freezes | every hold drifts 0.3-1 px a 60 fps frame at 1080p (house 0.5 = 30 px/s): a line, a card, the camera or the ground; at 0.3 px/f even one line on a clean field moves its edges enough to read as alive. When the camera locks for a read, the type build, the light or the drift of one layer keeps the frame moving | `holdDrift(f, from, { px, angle })`, `creep`, `drift`, a light that crosses | `motion-frozen`: 6 f@30 in a row where the mean change is under 0.05 and fewer than 8 px change by 4 values fails (the opening 0.5 s, the end lock and declared freezes aside); lint `hold-drift` |
+| Holds rest, nothing dies | a hold may be completely still (house: no drift; a creep at most 0.2 px a 60 fps frame, one way); what changes in it is the product (a value, a row, a cursor, a line building). 2.5 s where nothing at all changes is a dead stretch | `holdDrift(f, from, { px, angle })` (house 0) | `motion-frozen` / `dead-stretch`: 2.5 s in a row where nothing changes fails (the opening 0.5 s, the end lock and declared freezes aside); lint `camera-float` (a drift over 0.2 px/f@60) |
 | Moves land with a tail | arrivals settle from their peak to 20 % of their speed over 4-6 f@30: `E.glideOut` over 16 f@60 or more, `E.settleOut` for UI cards. The 1.1 `E.out` over 16 f settles in 3 f@30 and the film's median drops under the gate | arrive tokens (§2) | `motion-decay`: a median under 3.5 f@30 fails |
 | One carrying move per 3 s | at most 2 primary moves per 3 s, each 48 f@60 or longer; secondaries overlap the primary by 30-50 % instead of queueing after it | `overlapAt`, `leadBy`, `camPath` | `motion-density`: more than 2 primary moves per 3 s fails; lint `move-queue` |
-| Every shot moves | the picture never sits while one small thing moves: every act sits on one continuous camera float (sideways up to 31 px/s at 1080p, a push of up to 3 % carrying the turns, about 1.025 of bleed so no edge shows), seeded by the film and eased to rest for one read where it drifts fastest, never beside a turn (`withLocks`); under it the planes part (`Depth z`: a back layer 0.6, a near plane 1.35, the ground held at 0), a held list creeps on (`scrollBy`, 12-40 px/s), a landing drifts on along its arrival (`tail`, 36 px/s decaying over 0.45 s) and the light breathes over the ground (`BreathLight`, `breathe`) | `ActStage` / `Float` (`fx/Float`), `Depth`, `floatAt`, `withLocks`, `lockOn`, `settleAmp`, `dipAmp`, `scrollBy`, `tail`, `breathe` (`lib/drift.ts`) | `motion-energy`: under 30 % of the picture's structure moving 15 px/s or more for over 1.5 s warns, over 2 s fails, on over a quarter of the body warns (the house band) |
+| The camera moves with a purpose | the stage camera is still; an act declares a move only where it shows something: a push that closes on the control that changes, a track that follows what travels, a pull that reveals the whole (house push x1.06, pull x0.94, track 120 px, 72 f on `E.strongInOut`, from rest to rest); under a move the planes part (`Depth z`: a back layer 0.6, a near plane 1.35, the ground held at 0). A list scrolls when the product scrolls it (`scrollBy`), a landing settles on a short tail (`tail`, 16 px) and rests. No float, no sway, no bob, no breathing UI | `ActStage` `moves` / `stageMove`, `stageAt` (`lib/drift.ts`, `fx/Float`), `Depth`, `scrollBy`, `tail` | `camera-wander`: a slow pan or push one way and back inside a shot warns, in two shots fails; a camera that never rests warns; lint `camera-float`, `idle-bob`, `card-tilt` |
 | Land before the cut | a cut or an unmount waits until the move is under 10 % of its peak speed, unless a declared whip or velocity seam carries it across | `landBeforeCut(move, cut)` (throws at import with the frame it lands on), `latestStart(cut, dur, ease)`, `landedAt(move)` | `motion-stop`: a move going still in one frame from above 15 % of its peak fails; `motion-cut`: a cut into a braking move warns; lint `unmount-moving` |
 
 ```ts
 const rows = <GlideStep frame={F} jump={ROW} at={[CUE.a, CUE.b, CUE.c]} width={W} height={H}>{list}</GlideStep>;
 const box = glideBox(F, [{ at: CUE.pick, value: picked }], resting);          // a selection box glides to its row
-const d = holdDrift(F, CUE.settle, { px: 0.5, angle: -90 });                  // the card keeps rising 30 px/s
 const exitAt = landBeforeCut({ from: CUE.slide, dur: f60(34), ease: E.glideOut }, ACT.next.from); // fails at import if early
-<ActStage from={ACT.feed.from} o={FLOAT}><Feed /></ActStage>                      // Film.tsx: the act on the film's float
-const y = scrollBy(F, CUE.feed, { pxS: 24 }).y;                              // the held feed creeps up 24 px/s
-const t = tail(F, CUE.land, { angle: 0 });                                   // the card drifts on 16 px after it lands
-<Depth z={DRIFT.depth.back}>{backCards}</Depth>                              // the back layer lags the float: parallax
+<ActStage from={ACT.feed.from} moves={[stageMove(CUE.focus, 'push')]}><Feed /></ActStage> // Film.tsx: a declared push that lands
+const y = scrollBy(F, CUE.scroll, { pxS: 24, to: CUE.found }).y;             // the product scrolls its feed, then rests
+const t = tail(F, CUE.land, { angle: 0 });                                   // the card settles 16 px after it lands, then rests
+<Depth z={DRIFT.depth.back}>{backCards}</Depth>                              // the back layer lags the declared push: parallax
 ```
 
 ## 7. Scale: log space, oversized landings, breath
@@ -340,10 +337,10 @@ use (`deprecated-token`):
 
 - `lint-film.mjs`: `raw-easing`, `spring-config`, `ease-family`, `token-drift`, `whip-shape`, `spring-budget`,
   `spring-range`, `scale-from-zero`, `fade-exit`, `linear-opacity`, `deprecated-token`, `interpolate-clamp`, and the
-  continuous-motion rules `snap-step`, `hold-drift`, `unmount-moving`, `move-queue`.
+  continuous-motion rules `snap-step`, `camera-float`, `idle-bob`, `card-tilt`, `unmount-moving`, `move-queue`.
 - `grammar-score.mjs`: `role-mix`, `front-loaded`, `into-cuts`, `durations`, `staggers`, `holds`, `velocity-seams`,
   `overlap` (`references/checks.md`).
-- `forensics.py`: `hold-drift`, `carried-cut`, stalls between two moving stretches (a hand-over eased to rest), spikes
+- `forensics.py`: `dead-stretch`, `camera-wander`, `carried-cut`, stalls between two moving stretches (a hand-over eased to rest), spikes
   on fades, and the motion gates `motion-snap`, `motion-frozen`, `motion-decay`, `motion-density`, `motion-stop`,
   `motion-cut` (§6 "Continuous motion").
 - Contact sheets at `--every 1` across every landing: the contact frame shows the squash, the frame before shows
