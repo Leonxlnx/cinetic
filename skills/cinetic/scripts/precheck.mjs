@@ -24,7 +24,11 @@
  *                truncated title) is an error. The measure leaves out kerning and the display optical size, so it
  *                reads a little wide: a string within 6 % over its box is a warning (fit-edge), not an error.
  *
- * Usage (from the film project):  node scripts/precheck.mjs [<film dir>] [--ship] [--json] [--no-import] [--no-fit]
+ * Progress goes to stderr as it runs: each step, the first module tsx imports and every slow one, and a line every 15 s
+ * while one is slow (a loaded machine may take minutes on the first import); --quiet leaves it out. The report stays on
+ * stdout.
+ *
+ * Usage (from the film project):  node scripts/precheck.mjs [<film dir>] [--ship] [--json] [--no-import] [--no-fit] [--quiet]
  *   --ship        the ship gate: timing asserts and empty kit parts throw at import (CINETIC_GATE=ship)
  *   --json        machine-readable findings
  *   --no-import   only the static checks (kit usage in the source)
@@ -32,7 +36,7 @@
  *   --font FILE   measure with this .woff2 (default: the film's FONT.text face in src/brand/fonts or node_modules)
  * Exit codes: 0 no errors, 1 errors (or, with --ship, warnings that the gate fails), 2 bad arguments or no project.
  */
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -51,6 +55,12 @@ const opt = (k) => {
   return i >= 0 ? argv[i + 1] : undefined;
 };
 const SHIP = flag('--ship');
+const QUIET = flag('--quiet');
+/** A progress line on stderr (the report stays on stdout, so --json still parses). */
+const progress = (msg) => {
+  if (!QUIET) process.stderr.write(`precheck: ${msg}
+`);
+};
 const JSON_OUT = flag('--json');
 const positional = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--font');
 const ROOT = path.resolve(positional[0] ?? '.');
@@ -60,6 +70,7 @@ if (!fs.existsSync(SRC)) {
   process.exit(2);
 }
 const t0 = Date.now();
+const since = () => `${((Date.now() - t0) / 1000).toFixed(1)} s`;
 const findings = [];
 const add = (rule, severity, message, where = '') => findings.push({ rule, severity, message, where });
 const rel = (p) => path.relative(ROOT, p).split(path.sep).join('/');
@@ -236,9 +247,11 @@ const visit = (v: unknown, where: string, depth: number, key: string) => {
 const out: any = { imports: [], strings, copy: null, size: null, tokens: null };
 for (const m of mods as any[]) {
   const t = Date.now();
+  process.stderr.write('@@P@@ start ' + m.rel + '\\n');
   try {
     const ns: any = await import(m.path);
     out.imports.push({ file: m.rel, ok: true, ms: Date.now() - t });
+    process.stderr.write('@@P@@ done ' + m.rel + ' ' + (Date.now() - t) + '\\n');
     if (m.content) for (const [k, v] of Object.entries(ns)) visit(v, m.rel + ':' + k, 0, k);
     if (m.rel === 'src/timeline.ts') {
       out.copy = (ns.COPY ?? []).map((c: any) => ({ id: c.id, text: c.text, kind: c.kind ?? 'copy' }));
@@ -261,14 +274,50 @@ process.stdout.write('\\n@@PRECHECK@@' + JSON.stringify(out) + '\\n');
       if (!SHIP) delete env.CINETIC_GATE;
       // plain tsx first: a loader hook runs every module through an extra thread (5x slower); only a film whose acts import
       // css, fonts or media needs the stub hook, and gets a second run with it
-      const once = (hooked) => {
-        const r = spawnSync(process.execPath, [tsx, ...(hooked ? ['--import', pathToFileURL(reg).href] : []), child], { cwd: ROOT, env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 300000 }); // 30 s on a quiet machine; a loaded one may take minutes
+      // the probe runs as a child with its progress streamed: each module as it starts and lands, a line every 15 s while
+      // one is slow (tsx compiles the first imports cold: 30 s on a quiet machine, minutes on a loaded one)
+      const run = (args) =>
+        new Promise((resolve) => {
+          const p = spawn(process.execPath, args, { cwd: ROOT, env });
+          let stdout = '', stderr = '', at = null, n = 0, err = null, buf = '';
+          const beat = setInterval(() => progress(`  ... still importing (${since()}${at ? `, at ${at}` : ', starting tsx'})`), 15000);
+          const kill = setTimeout(() => {
+            err = new Error('timed out after 300 s');
+            p.kill();
+          }, 300000);
+          p.stdout.on('data', (d) => (stdout += d));
+          p.stderr.on('data', (d) => {
+            buf += d;
+            let k;
+            while ((k = buf.indexOf('\n')) >= 0) {
+              const line = buf.slice(0, k).replace(/\r$/, '');
+              buf = buf.slice(k + 1);
+              const m = /^@@P@@ (start|done) (\S+)(?: (\d+))?/.exec(line);
+              if (!m) stderr += `${line}\n`;
+              else if (m[1] === 'start') at = m[2];
+              else if (++n === 1 || Number(m[3]) >= 2000) progress(`  imported ${m[2]} (${(Number(m[3]) / 1000).toFixed(1)} s; ${n} of ${importList.length})`);
+            }
+          });
+          p.on('error', (e) => (err = e));
+          p.on('close', (status) => {
+            clearInterval(beat);
+            clearTimeout(kill);
+            resolve({ stdout, stderr: stderr + buf, status, error: err });
+          });
+        });
+      const once = async (hooked) => {
+        const r = await run([tsx, ...(hooked ? ['--import', pathToFileURL(reg).href] : []), child]);
         const at = (r.stdout ?? '').lastIndexOf('@@PRECHECK@@');
         if (at < 0) return { fail: `the import probe did not finish: ${((r.stderr || r.stdout || '') + (r.error ? ` ${r.error.message}` : '')).trim().split('\n').slice(-6).join(' | ')}` };
         return { probe: JSON.parse(r.stdout.slice(at + 12).trim().split('\n')[0]) };
       };
-      let res = once(false);
-      if (res.probe?.imports.some((x) => !x.ok && /Unknown file extension|ERR_UNKNOWN_FILE_EXTENSION|Cannot parse|unexpected token|Unexpected character/i.test(x.error))) res = once(true);
+      progress(`1-2/4 importing ${importList.length} modules with tsx (the acts, the timeline, the content)...`);
+      let res = await once(false);
+      if (res.probe?.imports.some((x) => !x.ok && /Unknown file extension|ERR_UNKNOWN_FILE_EXTENSION|Cannot parse|unexpected token|Unexpected character/i.test(x.error))) {
+        progress('  again with stubs for css, fonts and media (an act imports one)...');
+        res = await once(true);
+      }
+      progress(`  imports done (${since()})`);
       if (res.fail) add('imports', 'error', res.fail);
       else probe = res.probe;
     } finally {
@@ -289,6 +338,7 @@ if (probe) {
 }
 
 // ------------------------------------------------------------------------------------------------ 4. fit
+if (!flag('--no-fit')) progress(`4/4 measuring the on-screen strings with the film's font (${since()})...`);
 /** Advance widths of a woff2 (cmap + hmtx; the default instance), or null. */
 const readWoff2 = (file) => {
   const b = fs.readFileSync(file);

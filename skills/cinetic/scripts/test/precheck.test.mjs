@@ -12,7 +12,9 @@
  *      is an error either way (it crashes every render).
  *   4. Fit: a content string with "..." fails (truncated); a string wider than the safe width at the kit's label size
  *      fails (fit), one wider than a card's column warns (fit-long); the starter's own COPY lines fit.
- *   5. --json carries the findings; the run stays under 60 s here (30 s is the budget on a quiet machine); an act that
+ *   5. Progress on stderr while it runs (the import step, the first module imported, the fit step), the report alone on
+ *      stdout (--json parses); --quiet leaves the progress out.
+ *   6. --json carries the findings; the run stays under 60 s here (30 s is the budget on a quiet machine); an act that
  *      imports a stylesheet or a picture still imports (stubbed on a second run).
  *
  * It copies the starter's src into a temporary folder with its node_modules linked (npm install in
@@ -52,7 +54,7 @@ const run = (args = [], env = {}) => {
   } catch {
     rep = { findings: [], error: (r.stderr || r.stdout).slice(0, 400) };
   }
-  return { code: r.status, rep, ms: Date.now() - t };
+  return { code: r.status, rep, ms: Date.now() - t, stderr: r.stderr ?? '' };
 };
 const has = (rep, rule, sev, re) => rep.findings.some((f) => f.rule === rule && (!sev || f.severity === sev) && (!re || re.test(`${f.where} ${f.message}`)));
 try {
@@ -66,6 +68,11 @@ try {
   result(clean.code === 0 && clean.rep.imports?.length > 0 && clean.rep.imports.every((x) => x.ok) && !clean.rep.findings.filter((f) => f.severity === 'error').length,
     "the starter as shipped: every module imports, no error", JSON.stringify(clean.rep.findings ?? clean.rep.error).slice(0, 300));
   result(!has(clean.rep, 'fit', 'error', /COPY/), "fit: the starter's own COPY lines fit the safe width", JSON.stringify(clean.rep.findings).slice(0, 200));
+  // 5. progress on stderr, the report alone on stdout
+  result(/precheck: 1-2\/4 importing \d+ modules/.test(clean.stderr) && /precheck:   imported \S+ \(\d+\.\d s; 1 of \d+\)/.test(clean.stderr) && /precheck:   imports done/.test(clean.stderr) && /precheck: 4\/4 measuring/.test(clean.stderr),
+    'progress: each step and the first module imported go to stderr while --json stays parseable on stdout', clean.stderr.slice(0, 300));
+  const quiet = run(['--quiet']);
+  result(quiet.code === 0 && !/precheck: 1-2\/4/.test(quiet.stderr), '--quiet leaves the progress out', quiet.stderr.slice(0, 200));
 
   // 2-4. an act with every fault, a content module with long and cut strings
   const ACT = path.join(film, 'src', 'acts', 'Faulty.tsx');
