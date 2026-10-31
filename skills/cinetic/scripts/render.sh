@@ -66,6 +66,17 @@
 # passed, cleans them (--clean does it by hand); --keep keeps them always.
 # --single renders the whole range in one Remotion call instead (the 1.1 route).
 #
+# Two paths at once (a slow machine): the parts are shared work. Each worker claims a part before it renders it (an
+# atomic folder beside the parts, holding the worker's pid; a claim whose worker is gone is cleared), so two workers
+# never render one part, and both write the same encode from the same bundle: the join stays a lossless stream copy,
+# never a hand splice. --split runs a software-GL worker (--gl=swangle, on the CPU, from the last part backward) beside
+# the GPU worker (the picked backend, from the first part forward) inside this one run. Without --split, a master whose
+# first part shows the rest would take more than --split-after minutes (default 4; CINETIC_SPLIT_MIN) starts that CPU
+# worker by itself (--no-split never does). --worker gpu|cpu runs one worker only (the GPU path forward, or software GL
+# backward), so two jobs on a shared machine (one holding the GPU, one the CPU) split one master; whichever finishes
+# the last part joins, muxes and gates. --cpu-concurrency N sets the software-GL worker's concurrency (default half the
+# cores).
+#
 # Every mode then muxes the WAV with ffmpeg (AAC 320k, 48 kHz, +faststart; the audio is padded or
 # trimmed to the picture) because Remotion's own AAC mux leaves ~2048 samples of encoder priming,
 # i.e. audio 2-3 frames late. Then check-sync.py (lag <= 48 samples, true peak <= -1 dBTP after
@@ -103,6 +114,11 @@
 #   --parts DIR         where the bundle and the parts live (default out/render/<out name>)
 #   --bundle DIR        render from this pre-built bundle (npx remotion bundle src/index.ts --out-dir DIR)
 #   --single            the whole range in one Remotion render (no parts)
+#   --split             render the parts on two paths at once: the GPU forward, software GL (CPU) backward
+#   --no-split          never start the software-GL worker by itself on a slow machine
+#   --split-after M     start it by itself when the parts left would take more than M minutes (default 4)
+#   --worker gpu|cpu    run one worker only (the GPU path forward, or software GL backward); a second job runs the other
+#   --cpu-concurrency N the software-GL worker's Remotion concurrency (default half the cores)
 #   --clean             every gate has passed: remove the bundle and the parts of <out.mp4> (out/render/<name>,
 #                       or --parts DIR) and exit; deliver.sh does this when its checks pass
 #   --crf N             override the final CRF (preview 20, master 14, blur 14)
@@ -155,6 +171,7 @@ COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF
 ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
 SPEC=""; NOCHECK=0; KEEP=0; CLEAN=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0; ACCEPT_FAST=""; ACCEPT_CUT=""
 CHUNK=240; MAXMIN=0; ONLY_PART=""; PARTS=""; PREBUILT=""; SINGLE=0; REDO=""; JOIN_ONLY=0
+SPLIT=auto; SPLIT_MIN=${CINETIC_SPLIT_MIN:-4}; WORKER=""; CPU_CONC=""
 POS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -181,6 +198,11 @@ while [[ $# -gt 0 ]]; do
     --parts) PARTS=${2:?--parts needs a folder}; shift ;;
     --bundle) PREBUILT=${2:?--bundle needs a folder}; shift ;;
     --single) SINGLE=1 ;;
+    --split) SPLIT=on ;;
+    --no-split) SPLIT=off ;;
+    --split-after) SPLIT_MIN=${2:?--split-after needs minutes}; shift ;;
+    --worker) WORKER=${2:?--worker needs gpu or cpu}; shift ;;
+    --cpu-concurrency) CPU_CONC=${2:?--cpu-concurrency needs a number}; shift ;;
     --crf) CRF=${2:?}; shift ;;
     --10bit) TENBIT=1 ;;
     --concurrency) CONC=${2:?}; shift ;;
@@ -206,6 +228,9 @@ COMP=${POS[0]}; OUT=${POS[1]}
 [[ "$CHUNK" =~ ^[0-9]+$ ]] || die "--chunk-frames wants a whole number of frames"
 [[ "$MAXMIN" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "--max-min wants minutes"
 [[ -z "$ONLY_PART" || "$ONLY_PART" =~ ^[0-9]+$ ]] || die "--part wants a 0-based index"
+[[ -z "$WORKER" || "$WORKER" == gpu || "$WORKER" == cpu ]] || die "--worker takes gpu or cpu"
+[[ -z "$WORKER" || ( $MODE != blur && $SINGLE -eq 0 && -z "$ONLY_PART" && $JOIN_ONLY -eq 0 ) ]] || die "--worker renders the parts of a preview or a master (not --blur, --single, --part or --join-only)"
+[[ -z "$CPU_CONC" || "$CPU_CONC" =~ ^[0-9]+$ ]] || die "--cpu-concurrency wants a number"
 [[ "$CHUNK" -eq 0 ]] && SINGLE=1
 [[ $JOIN_ONLY -eq 0 || ( $MODE != blur && $SINGLE -eq 0 && -z "$ONLY_PART" ) ]] || die "--join-only joins the parts of a preview or a master (not --blur, --single or --part)"
 
@@ -301,10 +326,16 @@ PARTS=${PARTS:-out/render/$NAME}
 SRC_KEY=""; KEYS="$PARTS/parts.keys"; KEPT_LIST="$PARTS/redo.kept"
 part_key() { if [[ -f "$KEYS" ]]; then awk -v f="$(basename "$1")" '$1 == f { print $2; exit }' "$KEYS"; fi; return 0; }
 set_part_key() {
-  local f; f=$(basename "$1")
+  # two workers (--split, --worker) write it: one at a time under an atomic lock (a lock older than 30 s is a dead writer's)
+  local f i=0; f=$(basename "$1")
+  while ! mkdir "$KEYS.lock" 2>/dev/null; do
+    i=$((i + 1)); if [[ $i -ge 300 ]]; then rmdir "$KEYS.lock" 2>/dev/null || true; i=0; fi
+    sleep 0.1
+  done
   if [[ -f "$KEYS" ]]; then awk -v f="$f" '$1 != f' "$KEYS" > "$KEYS.tmp"; else : > "$KEYS.tmp"; fi
   if [[ -n "$2" ]]; then echo "$f $2" >> "$KEYS.tmp"; fi
   mv -f "$KEYS.tmp" "$KEYS"
+  rmdir "$KEYS.lock" 2>/dev/null || true
 }
 # a part is current when it was rendered from this source (a pre-built --bundle or --join-only trusts the folder)
 part_current() { if [[ -z "$SRC_KEY" ]]; then return 0; fi; [[ "$(part_key "$1")" == "$SRC_KEY" ]]; }
@@ -569,21 +600,34 @@ console.log(out.join(" "));' "$FROM" "$TO" "$CHUNK" "$PARTS")" || die "could not
       part_file() { echo "$PARTS/part-$(printf %06d "${STARTS[$1]}")-$(printf %06d "$(part_end "$1")").mp4"; }
       LAST_S=0; left=0; MISSING=""
       step "$N frames in $NP part(s) of <= $CHUNK in $PARTS$([[ "$MAXMIN" != 0 ]] && echo ", stopping before ${MAXMIN} min")"
-      for ((k = 0; k < NP; k++)); do
-        [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue
-        a=${STARTS[$k]}; b=$(part_end "$k")
-        f=$(part_file "$k")
-        if [[ -f "$f" && "$(frames_of "$f")" -eq $((b - a + 1)) ]] && part_current "$f"; then continue; fi
-        if [[ $JOIN_ONLY -eq 1 ]]; then MISSING="$MISSING --part $k (frames $a-$b);"; continue; fi
-        # under a time limit: start a part only if it fits, judged by the last part's pace
-        if [[ "$MAXMIN" != 0 ]] && node -e "const [e,l,m]=process.argv.slice(1).map(Number);process.exit(e + 1.15 * l > m * 60 ? 0 : 1)" "$(( $(date +%s) - T0 ))" "$LAST_S" "$MAXMIN"; then
-          left=$((left + 1)); continue
-        fi
+      part_done() { local f a b; f=$(part_file "$1"); a=${STARTS[$1]}; b=$(part_end "$1"); [[ -f "$f" && "$(frames_of "$f")" -eq $((b - a + 1)) ]] && part_current "$f"; }
+      # a claim: an atomic folder beside the parts holding the claiming worker's pid; a claim whose worker is gone is cleared
+      claim() { mkdir "$PARTS/.claim-$1" 2>/dev/null && echo "$2" > "$PARTS/.claim-$1/pid"; }
+      unclaim() { rm -f "$PARTS/.claim-$1/pid"; rmdir "$PARTS/.claim-$1" 2>/dev/null || true; }
+      for c in "$PARTS"/.claim-*; do
+        [[ -d "$c" ]] || continue
+        cp_=$(cat "$c/pid" 2>/dev/null || echo 0)
+        if ! kill -0 "$cp_" 2>/dev/null; then rm -f "$c/pid"; rmdir "$c" 2>/dev/null || true; fi
+      done
+      # render_part K PATH: one part on the GPU path (rrender, its swangle fallback) or software GL (--gl=swangle on the
+      # CPU, at its own concurrency); the same bundle, encode and tags, so the parts join as one stream
+      CARGS=()
+      for x in ${RARGS[@]+"${RARGS[@]}"}; do [[ "$x" == --gl=* || "$x" == --concurrency=* ]] || CARGS+=("$x"); done
+      CC=${CPU_CONC:-$(node -e "const o=require('os');console.log(Math.max(1,Math.floor((o.availableParallelism?o.availableParallelism():o.cpus().length)/2)))")}
+      CARGS+=(--gl=swangle --concurrency="$CC")
+      render_part() {
+        local k=$1 path=$2 a b f t1 rc msg
+        a=${STARTS[$k]}; b=$(part_end "$k"); f=$(part_file "$k")
         t1=$(date +%s)
-        step "part $((k + 1))/$NP: frames $a-$b"
+        step "part $((k + 1))/$NP: frames $a-$b$([[ $path == cpu ]] && echo ' (software GL, CPU)')"
         rm -f "$f.tmp.mp4"
-        rrender "$B" "$COMP" "$f.tmp.mp4" --frames="$a-$b" ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
-          || die "remotion render failed on part $((k + 1)) (frames $a-$b); the finished parts are kept in $PARTS: rerun to resume"
+        if [[ $path == cpu ]]; then
+          remotion render "$B" "$COMP" "$f.tmp.mp4" --frames="$a-$b" ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 "${CARGS[@]}" \
+            || { rm -f "$f.tmp.mp4"; echo "render.sh: software GL failed on part $((k + 1)) (frames $a-$b); the GPU path takes it" >&2; return 1; }
+        else
+          rrender "$B" "$COMP" "$f.tmp.mp4" --frames="$a-$b" ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
+            || die "remotion render failed on part $((k + 1)) (frames $a-$b); the finished parts are kept in $PARTS: rerun to resume"
+        fi
         mv -f "$f.tmp.mp4" "$f"
         [[ -n "$SRC_KEY" ]] && set_part_key "$f" "$SRC_KEY"
         if [[ -f "${f%.mp4}.old.mp4" ]]; then  # a --redo part: outside the frames named it must match the part it replaces
@@ -597,7 +641,83 @@ console.log(out.join(" "));' "$FROM" "$TO" "$CHUNK" "$PARTS")" || die "could not
           rm -f "${f%.mp4}.old.mp4"
         fi
         LAST_S=$(( $(date +%s) - t1 ))
+        return 0
+      }
+      # the software-GL worker: from the last part backward, a part at a time, each claimed first; it stops at a part
+      # the GPU worker holds or has done (the two meet in the middle) and under the time limit like the GPU worker
+      cpu_worker() {
+        local k me=$1
+        for ((k = NP - 1; k >= 0; k--)); do
+          [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue
+          part_done "$k" && continue
+          if [[ "$MAXMIN" != 0 ]] && node -e "const [e,l,m]=process.argv.slice(1).map(Number);process.exit(e + 1.15 * l > m * 60 ? 0 : 1)" "$(( $(date +%s) - T0 ))" "$LAST_S" "$MAXMIN"; then break; fi
+          claim "$k" "$me" || { [[ -n "$WORKER" ]] && continue || break; }
+          render_part "$k" cpu || { unclaim "$k"; break; }
+          unclaim "$k"
+        done
+      }
+      CPU_PID=""
+      trap 'if [[ -n "$CPU_PID" ]]; then kill "$CPU_PID" 2>/dev/null || true; fi; if [[ $KEEP -ne 1 ]]; then rm -rf "$WORK"; fi' EXIT
+      start_cpu() {
+        [[ -z "$CPU_PID" ]] || return 0
+        step "software-GL worker on the CPU from the last part backward (concurrency $CC), beside the GPU worker"
+        ( cpu_worker "$(exec sh -c 'echo "$PPID"')" ) &
+        CPU_PID=$!
+      }
+      if [[ $JOIN_ONLY -eq 0 && "$WORKER" == cpu ]]; then
+        cpu_worker "$$"
+      elif [[ $JOIN_ONLY -eq 0 ]]; then
+        [[ $SPLIT == on && -z "$ONLY_PART" && -z "$WORKER" ]] && start_cpu
+        for ((k = 0; k < NP; k++)); do
+          [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue
+          part_done "$k" && continue
+          # under a time limit: start a part only if it fits, judged by the last part's pace
+          if [[ "$MAXMIN" != 0 ]] && node -e "const [e,l,m]=process.argv.slice(1).map(Number);process.exit(e + 1.15 * l > m * 60 ? 0 : 1)" "$(( $(date +%s) - T0 ))" "$LAST_S" "$MAXMIN"; then
+            left=$((left + 1)); continue
+          fi
+          claim "$k" "$$" || continue  # the software-GL worker has it
+          render_part "$k" gpu
+          unclaim "$k"
+          # a slow machine: after the first part, the parts left at this pace would take more than SPLIT_MIN minutes
+          if [[ $SPLIT == auto && -z "$CPU_PID" && -z "$ONLY_PART" && -z "$WORKER" && $MODE == master ]]; then
+            todo=0; for ((q = k + 1; q < NP; q++)); do part_done "$q" || todo=$((todo + $(part_end "$q") - STARTS[q] + 1)); done
+            if node -e "const [s,n,t,m]=process.argv.slice(1).map(Number);process.exit(n > 0 && (m <= 0 || s / Math.max(1,t) * n > m * 60) ? 0 : 1)" "$LAST_S" "$todo" "$(( $(part_end "$k") - STARTS[k] + 1 ))" "$SPLIT_MIN"; then
+              step "slow here: the $todo frames left would take over ${SPLIT_MIN} min at this pace (--no-split keeps one path)"
+              start_cpu
+            fi
+          fi
+        done
+        if [[ -n "$CPU_PID" ]]; then
+          step "the GPU worker is done; waiting for the software-GL worker"
+          wait "$CPU_PID" || true
+          # a part the software-GL worker could not render (or left): the GPU path takes it now
+          for ((k = 0; k < NP; k++)); do
+            [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue
+            part_done "$k" && continue
+            if [[ "$MAXMIN" != 0 ]] && node -e "const [e,l,m]=process.argv.slice(1).map(Number);process.exit(e + 1.15 * l > m * 60 ? 0 : 1)" "$(( $(date +%s) - T0 ))" "$LAST_S" "$MAXMIN"; then
+              left=$((left + 1)); continue
+            fi
+            claim "$k" "$$" || continue
+            render_part "$k" gpu
+            unclaim "$k"
+          done
+        fi
+      fi
+      for ((k = 0; k < NP; k++)); do
+        [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue
+        part_done "$k" && continue
+        if [[ $JOIN_ONLY -eq 1 ]]; then MISSING="$MISSING --part $k (frames ${STARTS[$k]}-$(part_end "$k"));"; continue; fi
+        [[ -n "$WORKER" ]] && left=$((left + 1))
       done
+      if [[ -n "$WORKER" && $left -gt 0 ]]; then
+        step "the $WORKER worker is done: $left part(s) are another worker's (or left); the last worker to finish joins"
+        exit 0
+      fi
+      if [[ -n "$WORKER" ]]; then  # two worker jobs done at once: one joins (a join claim left by a gone worker was cleared above)
+        if ! claim join "$$"; then step "every part is there; the other worker joins"; exit 0; fi
+        trap 'if [[ $KEEP -ne 1 ]]; then rm -rf "$WORK"; fi; unclaim join' EXIT
+      fi
+      if [[ $left -eq 0 ]]; then left=0; for ((k = 0; k < NP; k++)); do [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue; part_done "$k" || left=$((left + 1)); done; fi
       [[ -z "$MISSING" ]] || die "--join-only: missing or out-of-date part(s) in $PARTS:$MISSING render each with the same command and --part K (or rerun without --join-only)"
       if [[ -f "$KEPT_LIST" && -z "$(find "$PARTS" -maxdepth 1 -name '*.old.mp4' 2>/dev/null | head -1)" ]]; then rm -f "$KEPT_LIST"; fi
       if [[ -n "$ONLY_PART" ]]; then step "part $ONLY_PART done: $(part_file "$ONLY_PART")"; exit 0; fi

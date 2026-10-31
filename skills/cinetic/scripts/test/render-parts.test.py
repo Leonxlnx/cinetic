@@ -13,12 +13,16 @@ render that encodes a test pattern with ffmpeg), so the parts route runs end to 
   6. --redo A-B keeps the parts outside A..B and re-renders the others, checked against the old ones outside A..B;
      a change outside them stops the run and the kept parts re-render on the next one.
   7. --join-only joins the parts there without Remotion; a missing part stops it with its --part K.
+  8. Two paths: --split renders the parts on the GPU path forward and software GL (--gl=swangle) backward, no part
+     twice, and joins them into one stream of every frame; --split-after 0 starts the software-GL worker by itself
+     after the first part; --worker cpu alone renders every part on software GL and joins (the last worker joins);
+     a claim left by a worker that is gone is cleared.
   8. Part boundaries move back onto the latest cut in their part's last half (out/cues.json act lines), so a part's
      first frame, an I-frame, lands on a cut.
 Needs bash (Git for Windows' on Windows), node, ffmpeg and ffprobe, and this Python with numpy (render.sh checks it); no network.
 
-Usage (from the skill root):  python3 scripts/test/render-parts.test.py [--verbose] [--part keep|key]
-(--part runs 1-4 or 5-7 alone, so a shared machine's job limit holds each run.)
+Usage (from the skill root):  python3 scripts/test/render-parts.test.py [--verbose] [--part keep|key|split]
+(--part runs 1-4, 5-7 or 8 alone, so a shared machine's job limit holds each run.)
 Exit codes: 0 all pass, 1 a test failed.
 """
 import json
@@ -188,6 +192,32 @@ def main():
             cut_parts = sorted(n for n in os.listdir(os.path.join(proj, 'out', 'render', 'cut')) if n.startswith('part-'))
             result(code == 0 and cut_parts == ['part-000000-000006.mp4', 'part-000007-000013.mp4', 'part-000014-000019.mp4'],
                    'part boundaries land on the act lines in the last half of their parts (7 and 14 for parts of up to 10)', ' '.join(cut_parts))
+        if PART in ('all', 'split'):
+            def renders_of(out_dir_name):
+                rows = [l for l in open(log) if l.startswith('remotion render') and f'/render/{out_dir_name}/' in l.replace(os.sep, '/')] if os.path.exists(log) else []
+                return [('swangle' if '--gl=swangle' in l else 'gpu', l.split('--frames=')[1].split()[0]) for l in rows]
+
+            def frames_in(p):
+                r = subprocess.run(['ffprobe', '-v', 'error', '-count_packets', '-select_streams', 'v:0', '-show_entries', 'stream=nb_read_packets',
+                                    '-of', 'csv=p=0', p], capture_output=True, text=True)
+                return int((r.stdout or '0').strip() or 0)
+            code, err = sh(RENDER, 'Film', 'out/split.mp4', '--no-audio', '--no-check', '--chunk-frames', '5', '--split')
+            rs = renders_of('split')
+            ranges = [x[1] for x in rs]
+            result(code == 0 and len(rs) == 4 and len(set(ranges)) == 4 and {k for k, _ in rs} == {'gpu', 'swangle'} and frames_in(os.path.join(proj, 'out', 'split.mp4')) == 20,
+                   '--split: the GPU path forward and software GL backward, no part twice, one joined stream of every frame', f'exit {code}, {frames_in(os.path.join(proj, "out", "split.mp4"))} frames, {rs}; {err[-300:]}')
+            code, err = sh(RENDER, 'Film', 'out/auto.mp4', '--no-audio', '--no-check', '--chunk-frames', '5', '--split-after', '0')
+            rs = renders_of('auto')
+            result(code == 0 and len(rs) == 4 and len({x[1] for x in rs}) == 4 and rs[0][0] == 'gpu' and any(k == 'swangle' for k, _ in rs) and 'slow here' in err,
+                   '--split-after 0: the software-GL worker starts by itself after the first part', f'exit {code}, slow said: {"slow here" in err}, {rs}; {err[-300:]}')
+            wdir = os.path.join(proj, 'out', 'render', 'worker')
+            os.makedirs(os.path.join(wdir, '.claim-1'))
+            open(os.path.join(wdir, '.claim-1', 'pid'), 'w').write('999999')  # a worker that is gone
+            code, err = sh(RENDER, 'Film', 'out/worker.mp4', '--no-audio', '--no-check', '--chunk-frames', '5', '--worker', 'cpu')
+            rs = renders_of('worker')
+            result(code == 0 and len(rs) == 4 and all(k == 'swangle' for k, _ in rs) and os.path.isfile(os.path.join(proj, 'out', 'worker.mp4'))
+                   and not any(n.startswith('.claim-') for n in os.listdir(wdir)), '--worker cpu alone renders every part on software GL, clears the claim of a gone worker and joins',
+                   f'{rs}; {err[-300:]}')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print('render-parts tests: ' + ('all pass' if not failed else f'{failed} failed'))
