@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "about": "The face set: free faces whose licence allows commercial use in video (SIL Open Font License 1.1, checked in each package's LICENSE and metadata), grouped by look, each with its display and text pairing, weights, optical size and the setting that reads premium. scripts/add-font.mjs fetches one from @fontsource-variable (npm pack into a temp folder, nothing installed) into the film's src/brand/fonts/; deck.py deals a face from the dealt type option's look; font-match.mjs ranks these first. TYPE's house numbers (src/brand/tokens.ts, lib/look.ts TYPE_LOOK) are written for the default face, Inter, at its display cut. Every other face carries weight_offset (add it to every TYPE weight so the stems match Inter's) and offset_em (add it to every TYPE tracking so a line sets to Inter's width at the same x-height): both measured with node scripts/font-match.mjs --like <Inter opsz file> --like-weight 500 --text \"ask three models at once\".",
+  "about": "The face set: free faces whose licence allows commercial use in video (SIL Open Font License 1.1, checked in each package's LICENSE and metadata), grouped by look, each with its display and text pairing, weights, optical size and the setting that reads premium. scripts/add-font.mjs fetches one from @fontsource-variable (npm pack into a temp folder, nothing installed) into the film's src/brand/fonts/; deck.py deals a face from the dealt type option's look; font-match.mjs ranks these first. TYPE's house numbers (src/brand/tokens.ts, lib/look.ts TYPE_LOOK) are written for the default face, Inter, at its display cut. Every other face carries weight_offset (add it to every TYPE weight so the stems match Inter's) and offset_em (add it to every TYPE tracking so a line sets to Inter's width at the same x-height): both measured with node scripts/font-match.mjs --like <Inter opsz file> --like-weight 500 --text \"ask three models at once\". The starter also BUNDLES the faces of the type pairings (assets/remotion-starter/public/fonts, licences in its fonts.json): `pairs` lists them; scripts/type-deal.ts deals one per film from the product's name (src/fx/TypePairs.ts holds the weights, optical tracking and leads) and writes FONT.text (the voice), FONT.ui (the text face) and the TYPE roles; no fetch, no add-font step.",
   "default": "inter",
   "default_mono": "geist-mono",
   "looks": [
@@ -73,12 +73,12 @@
       "notes": "Inter's display cut spaced tight for headlines, the whole film's family in the tight look. It sets 6 % narrower than Inter at the same x-height, so every TYPE tracking takes +0.03 em."
     },
     "geist": {
-      "family": "Geist Variable", "package": "@fontsource-variable/geist", "css": "index.css", "licence": "OFL-1.1", "category": "sans",
+      "bundled": "public/fonts/geist", "family": "Geist Variable", "package": "@fontsource-variable/geist", "css": "index.css", "licence": "OFL-1.1", "category": "sans",
       "axes": { "wght": [100, 900] }, "offset_em": -0.01, "weight_offset": 0,
       "notes": "a crisper, more technical grotesk; sets 2 % wider than Inter. The technical look, with Geist Mono."
     },
     "dm-sans": {
-      "family": "DM Sans Variable", "package": "@fontsource-variable/dm-sans", "css": "opsz.css", "licence": "OFL-1.1", "category": "sans",
+      "bundled": "public/fonts/dm-sans", "family": "DM Sans Variable", "package": "@fontsource-variable/dm-sans", "css": "opsz.css", "licence": "OFL-1.1", "category": "sans",
       "axes": { "wght": [100, 1000], "opsz": [9, 40] }, "offset_em": 0, "weight_offset": 10,
       "notes": "low-contrast geometric with round bowls and open apertures; load opsz.css so 40 px and up take the display cut. Sets to Inter's width at the same tracking."
     },
@@ -94,7 +94,7 @@
       "notes": "geometric with a single-storey a and round, open letters; runs light (stems match Inter's 90 units heavier)."
     },
     "manrope": {
-      "family": "Manrope Variable", "package": "@fontsource-variable/manrope", "css": "index.css", "licence": "OFL-1.1", "category": "sans",
+      "bundled": "public/fonts/manrope", "family": "Manrope Variable", "package": "@fontsource-variable/manrope", "css": "index.css", "licence": "OFL-1.1", "category": "sans",
       "axes": { "wght": [200, 800] }, "offset_em": -0.005, "weight_offset": 110,
       "notes": "a warm, open grotesk with a semi-geometric skeleton; runs light (stems match Inter's 110 units heavier): set text at 500 and display at 600-700."
     },
@@ -117,6 +117,30 @@
       "family": "JetBrains Mono Variable", "package": "@fontsource-variable/jetbrains-mono", "css": "index.css", "licence": "OFL-1.1", "category": "mono",
       "axes": { "wght": [100, 800] }, "offset_em": 0, "weight_offset": 0,
       "notes": "a mono built for reading code on screen for long: an editor or a terminal held for seconds."
+    },
+    "instrument-sans": {
+      "offset_em": 0, "weight_offset": 0, "set_by": "its pairing in src/fx/TypePairs.ts (weights and optical tracking per role)", "family": "Instrument Sans Variable", "package": "@fontsource-variable/instrument-sans", "css": "standard.css", "licence": "OFL-1.1", "category": "sans", "axes": { "wght": [400, 700], "wdth": [75, 100] }, "bundled": "public/fonts/instrument-sans", "notes": "crisp Swiss editorial grotesk, a little narrow; the swiss pairing voice"
+    },
+    "schibsted-grotesk": {
+      "offset_em": 0, "weight_offset": 0, "set_by": "its pairing in src/fx/TypePairs.ts (weights and optical tracking per role)", "family": "Schibsted Grotesk Variable", "package": "@fontsource-variable/schibsted-grotesk", "css": "index.css", "licence": "OFL-1.1", "category": "sans", "axes": { "wght": [400, 900] }, "bundled": "public/fonts/schibsted-grotesk", "notes": "a sturdy newsroom grotesk; its tabular set spaces punctuation like figures (numeralStyle sets proportional)"
+    },
+    "host-grotesk": {
+      "offset_em": 0, "weight_offset": 0, "set_by": "its pairing in src/fx/TypePairs.ts (weights and optical tracking per role)", "family": "Host Grotesk Variable", "package": "@fontsource-variable/host-grotesk", "css": "index.css", "licence": "OFL-1.1", "category": "sans", "axes": { "wght": [300, 800] }, "bundled": "public/fonts/host-grotesk", "notes": "contemporary studio grotesk with soft terminals"
+    },
+    "funnel-display": {
+      "offset_em": 0, "weight_offset": 0, "set_by": "its pairing in src/fx/TypePairs.ts (weights and optical tracking per role)", "family": "Funnel Display Variable", "package": "@fontsource-variable/funnel-display", "css": "index.css", "licence": "OFL-1.1", "category": "sans", "axes": { "wght": [300, 800] }, "bundled": "public/fonts/funnel-display", "notes": "a display grotesk with cut details; pairs with Funnel Sans"
+    },
+    "funnel-sans": {
+      "offset_em": 0, "weight_offset": 0, "set_by": "its pairing in src/fx/TypePairs.ts (weights and optical tracking per role)", "family": "Funnel Sans Variable", "package": "@fontsource-variable/funnel-sans", "css": "index.css", "licence": "OFL-1.1", "category": "sans", "axes": { "wght": [300, 800] }, "bundled": "public/fonts/funnel-sans", "notes": "the text cut of Funnel"
+    },
+    "mona-sans": {
+      "offset_em": 0, "weight_offset": 0, "set_by": "its pairing in src/fx/TypePairs.ts (weights and optical tracking per role)", "family": "Mona Sans Variable", "package": "@fontsource-variable/mona-sans", "css": "standard.css", "licence": "OFL-1.1", "category": "sans", "axes": { "wght": [200, 900], "wdth": [75, 125] }, "bundled": "public/fonts/mona-sans", "notes": "registered twice: Mona Sans (wdth 75-125) and Mona Sans Wide (fixed 112.5 %), the wide pairing voice"
+    },
+    "hanken-grotesk": {
+      "offset_em": 0, "weight_offset": 0, "set_by": "its pairing in src/fx/TypePairs.ts (weights and optical tracking per role)", "family": "Hanken Grotesk Variable", "package": "@fontsource-variable/hanken-grotesk", "css": "index.css", "licence": "OFL-1.1", "category": "sans", "axes": { "wght": [100, 900] }, "bundled": "public/fonts/hanken-grotesk", "notes": "a neat neo-grotesk, light on its feet"
+    },
+    "bricolage-grotesque": {
+      "offset_em": 0, "weight_offset": 0, "set_by": "its pairing in src/fx/TypePairs.ts (weights and optical tracking per role)", "family": "Bricolage Grotesque Variable", "package": "@fontsource-variable/bricolage-grotesque", "css": "standard.css", "licence": "OFL-1.1", "category": "sans", "axes": { "wght": [200, 800], "wdth": [75, 100], "opsz": [12, 96] }, "bundled": "public/fonts/bricolage-grotesque", "notes": "ink traps and character at display sizes (optical sizes); the expressive pairing voice"
     }
   },
   "match": {
@@ -124,8 +148,21 @@
     "mono": ["geist-mono", "jetbrains-mono", "ibm-plex-mono", "martian-mono"],
     "serif": ["literata", "newsreader", "source-serif-4"]
   },
+  "pairs": [
+    { "id": "swiss", "voice": "instrument-sans", "text": "inter", "mono": "geist-mono", "moods": ["calm", "editorial", "finance", "creative"] },
+    { "id": "newsroom", "voice": "schibsted-grotesk", "text": "inter", "mono": "geist-mono", "moods": ["editorial", "bold", "finance", "consumer"] },
+    { "id": "studio", "voice": "host-grotesk", "text": "host-grotesk", "mono": "geist-mono", "moods": ["creative", "consumer", "calm", "ai"] },
+    { "id": "funnel", "voice": "funnel-display", "text": "funnel-sans", "mono": "geist-mono", "moods": ["bold", "creative", "ai", "technical"] },
+    { "id": "wide", "voice": "mona-sans (Wide, 112.5 %)", "text": "mona-sans", "mono": "geist-mono", "moods": ["bold", "technical", "ai", "finance"] },
+    { "id": "precise", "voice": "hanken-grotesk", "text": "inter", "mono": "geist-mono", "moods": ["calm", "finance", "consumer", "editorial"] },
+    { "id": "technical", "voice": "geist", "text": "geist", "mono": "geist-mono", "moods": ["technical", "ai"] },
+    { "id": "geometric", "voice": "dm-sans", "text": "dm-sans", "mono": "geist-mono", "moods": ["consumer", "friendly", "ai", "calm"] },
+    { "id": "friendly", "voice": "manrope", "text": "manrope", "mono": "geist-mono", "moods": ["friendly", "consumer", "calm"] },
+    { "id": "expressive", "voice": "bricolage-grotesque", "text": "inter", "mono": "geist-mono", "moods": ["creative", "consumer", "bold"] },
+    { "id": "product", "voice": "inter", "text": "inter", "mono": "geist-mono", "moods": ["calm", "technical", "finance"] }
+  ],
   "setting": [
-    "One family per film, two weights from its axis (text and display), plus the mono only for code, logs and aligned data.",
+    "One PAIRING per film (scripts/type-deal.ts deals it, src/fx/TypePairs.ts sets it): the voice for every statement, the claim and the wordmark (FONT.text), the text face for product UI and captions (FONT.ui), two or three weights each, plus the mono only for code, logs and aligned data. Never the same voice two films in a row.",
     "Statements regular to medium (Inter 450-500, the bold family 600); 650 and up only for a wordmark or one claim on the accent. A sentence at 700 reads heavy and generated.",
     "Tracking: the calm family keeps the face's own fit (in Inter: UI and captions +0.01 em, the line 0, display and hero -0.01, a whole giant word +0.02); the bold family tightens as size grows (-0.03 for the line to -0.045 for the giant); small capitals labels +0.04 to +0.08. Another face adds its offset_em to every role.",
     "Optical size: load the opsz file of a face that has one (Inter, DM Sans, Google Sans Flex) and leave font-optical-sizing on auto, so display sizes take the display cut; measure with the same settings (lib/measure.ts measures the DOM, so it does).",

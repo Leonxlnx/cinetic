@@ -40,10 +40,14 @@ export const C = {
  */
 export const MASK = '#000000';
 
-// cinetic:placeholder - the family is the face set's default, Inter (fonts.ts says how to choose): vendor the
-// film's face with add-font.mjs, which sets FONT and FACES, or keep Inter on purpose; then delete these lines.
+// cinetic:placeholder - the family is the starter's stand-in, Inter (fonts.ts says how to choose): deal the film's
+// pairing with scripts/type-deal.mjs (it sets FONT, FACES and TYPE), or vendor the brand's face with add-font.mjs.
+// FONT.text is the film's voice (every statement, the claim, the wordmark: typeStyle's line, display, hero and giant
+// roles and every act that sets FONT.text); FONT.ui is the pairing's text face (product UI in the kit, captions, the
+// tagline: typeStyle's ui and caption roles); a single-family film gives both the same stack.
 export const FONT = {
-  text: '"Inter Variable", "Inter", system-ui, sans-serif', // the film's one sans, for every role; typeStyle and measure.ts read it
+  text: '"Inter Variable", "Inter", system-ui, sans-serif', // the film's voice; typeStyle and measure.ts read it
+  ui: '"Inter Variable", "Inter", system-ui, sans-serif', // the text face: kit UI, captions (fx/TypePairs)
   mono: '"Geist Mono Variable", "Geist Mono", ui-monospace, monospace',
 };
 
@@ -91,14 +95,20 @@ export const uiFilm = (webPx: number, text = true) => (text ? Math.max(TEXT_MIN,
 /** Type roles that replace a 1.1 role. */
 export const TYPE_DEPRECATED: Partial<Record<keyof typeof TYPE, keyof typeof TYPE>> = { secondary: 'caption' };
 
-/** CSS for a type role at a size (px). Tabular figures always, so numbers never jitter in width. */
+/**
+ * CSS for a type role at a size (px): the voice (FONT.text) for statements, the text face (FONT.ui) for ui and
+ * caption. Tabular lining figures always, so numbers never jitter in width; kerning and contextual forms on.
+ */
 export const typeStyle = (role: keyof typeof TYPE, size = TYPE[role].size * U): React.CSSProperties => ({
-  fontFamily: FONT.text,
+  fontFamily: role === 'ui' || role === 'caption' || role === 'secondary' ? FONT.ui ?? FONT.text : FONT.text,
   fontSize: size,
   fontWeight: TYPE[role].weight,
   letterSpacing: `${TYPE[role].track}em`,
   lineHeight: TYPE[role].lead,
-  fontVariantNumeric: 'tabular-nums',
+  fontVariantNumeric: 'tabular-nums lining-nums',
+  fontKerning: 'normal',
+  fontFeatureSettings: '"kern" 1, "liga" 1, "calt" 1',
+  fontSynthesis: 'none',
   whiteSpace: 'pre',
 });
 

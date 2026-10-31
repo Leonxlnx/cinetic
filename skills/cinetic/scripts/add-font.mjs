@@ -250,6 +250,12 @@ try {
     const old = /"([^"]+)"/.exec(cur[2])?.[1];
     const stack = role === 'mono' ? `"${family}", ui-monospace, monospace` : `"${family}", system-ui, sans-serif`;
     tk = tk.replace(line, `$1'${stack}'`);
+    // the text face (FONT.ui) follows the voice when it was the same family (a one-family film stays one family)
+    if (role === 'text') {
+      const uiLine = /^(s*ui:s*)'([^']*)'/m;
+      const um = uiLine.exec(tk);
+      if (um && /"([^"]+)"/.exec(um[2])?.[1] === old) tk = tk.replace(uiLine, `$1'${stack}'`);
+    }
     const clampW = (w) => Math.min(axis[1], Math.max(axis[0], w));
     const clamped = [];
     tk = tk.replace(/^(export const FACES\s*=\s*\[)([^\]]*)\]/m, (all, head, body) => {

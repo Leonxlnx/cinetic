@@ -1,0 +1,322 @@
+{
+  "about": "Open-licence faces bundled with the starter (SIL Open Font License 1.1, each folder holds its OFL.txt), copied from the @fontsource-variable packages named here: upright only, the latin and latin-ext subsets, one variable file per subset carrying the axes listed. src/brand/fonts.ts registers them (@font-face from these files); fx/TypePairs.ts deals the pairings; scripts/type-deal.mjs writes a film's pairing into src/brand/tokens.ts. Inter and Geist Mono come from their npm packages (package.json).",
+  "faces": [
+    {
+      "id": "instrument-sans",
+      "family": "Instrument Sans Variable",
+      "name": "Instrument Sans",
+      "package": "@fontsource-variable/instrument-sans@5.3.0",
+      "licence": "OFL-1.1",
+      "copyright": "Copyright 2022 The Instrument Sans Project Authors (https://github.com/Instrument/instrument-sans) InstrumentSans-Italic[wdth,wght].ttf: Copyright 2022 The Instrument Sans Project Authors (https://github.com/Instrument/instrument-sans)",
+      "axisFile": "standard",
+      "axes": {
+        "wdth": [
+          75,
+          100
+        ],
+        "wght": [
+          400,
+          700
+        ]
+      },
+      "subsets": [
+        {
+          "subset": "latin-ext",
+          "file": "instrument-sans/instrument-sans-latin-ext-standard-normal.woff2",
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+        },
+        {
+          "subset": "latin",
+          "file": "instrument-sans/instrument-sans-latin-standard-normal.woff2",
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+        }
+      ]
+    },
+    {
+      "id": "mona-sans",
+      "family": "Mona Sans Variable",
+      "name": "Mona Sans",
+      "package": "@fontsource-variable/mona-sans@5.3.0",
+      "licence": "OFL-1.1",
+      "copyright": "Copyright 2022 The Mona Sans Project Authors (https://github.com/github/mona-sans), with Reserved Font Name \"Mona\" MonaSans-Italic[wdth,wght].ttf: Copyright 2022 The Mona Sans Project Authors (https://github.com/github/mona-sans), with Reserved Font Name \"Mona\"",
+      "axisFile": "standard",
+      "axes": {
+        "wdth": [
+          75,
+          125
+        ],
+        "wght": [
+          200,
+          900
+        ]
+      },
+      "subsets": [
+        {
+          "subset": "latin-ext",
+          "file": "mona-sans/mona-sans-latin-ext-standard-normal.woff2",
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+        },
+        {
+          "subset": "latin",
+          "file": "mona-sans/mona-sans-latin-standard-normal.woff2",
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+        }
+      ]
+    },
+    {
+      "id": "schibsted-grotesk",
+      "family": "Schibsted Grotesk Variable",
+      "name": "Schibsted Grotesk",
+      "package": "@fontsource-variable/schibsted-grotesk@5.3.0",
+      "licence": "OFL-1.1",
+      "copyright": "Copyright 2023 The Schibsted-Grotesk Project Authors (https://github.com/schibsted/schibsted-grotesk) SchibstedGrotesk-Italic[wght].ttf: Copyright 2023 The Schibsted-Grotesk Project Authors (https://github.com/schibsted/schibsted-grotesk)",
+      "axisFile": "wght",
+      "axes": {
+        "wght": [
+          400,
+          900
+        ]
+      },
+      "subsets": [
+        {
+          "subset": "latin-ext",
+          "file": "schibsted-grotesk/schibsted-grotesk-latin-ext-wght-normal.woff2",
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+        },
+        {
+          "subset": "latin",
+          "file": "schibsted-grotesk/schibsted-grotesk-latin-wght-normal.woff2",
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+        }
+      ]
+    },
+    {
+      "id": "host-grotesk",
+      "family": "Host Grotesk Variable",
+      "name": "Host Grotesk",
+      "package": "@fontsource-variable/host-grotesk@5.3.0",
+      "licence": "OFL-1.1",
+      "copyright": "Copyright 2023 The Host Grotesk Project Authors (https://github.com/Element-Type/HostGrotesk) HostGrotesk-Italic[wght].ttf: Copyright 2023 The Host Grotesk Project Authors (https://github.com/Element-Type/HostGrotesk)",
+      "axisFile": "wght",
+      "axes": {
+        "wght": [
+          300,
+          800
+        ]
+      },
+      "subsets": [
+        {
+          "subset": "latin-ext",
+          "file": "host-grotesk/host-grotesk-latin-ext-wght-normal.woff2",
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+        },
+        {
+          "subset": "latin",
+          "file": "host-grotesk/host-grotesk-latin-wght-normal.woff2",
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+        }
+      ]
+    },
+    {
+      "id": "funnel-display",
+      "family": "Funnel Display Variable",
+      "name": "Funnel Display",
+      "package": "@fontsource-variable/funnel-display@5.3.0",
+      "licence": "OFL-1.1",
+      "copyright": "Copyright 2023 The Funnel Project Authors (https://github.com/Dicotype/Funnel)",
+      "axisFile": "wght",
+      "axes": {
+        "wght": [
+          300,
+          800
+        ]
+      },
+      "subsets": [
+        {
+          "subset": "latin-ext",
+          "file": "funnel-display/funnel-display-latin-ext-wght-normal.woff2",
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+        },
+        {
+          "subset": "latin",
+          "file": "funnel-display/funnel-display-latin-wght-normal.woff2",
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+        }
+      ]
+    },
+    {
+      "id": "funnel-sans",
+      "family": "Funnel Sans Variable",
+      "name": "Funnel Sans",
+      "package": "@fontsource-variable/funnel-sans@5.3.0",
+      "licence": "OFL-1.1",
+      "copyright": "Copyright 2023 The Funnel Project Authors (https://github.com/Dicotype/Funnel) FunnelSans-Italic[wght].ttf: Copyright 2023 The Funnel Project Authors (https://github.com/Dicotype/Funnel)",
+      "axisFile": "wght",
+      "axes": {
+        "wght": [
+          300,
+          800
+        ]
+      },
+      "subsets": [
+        {
+          "subset": "latin-ext",
+          "file": "funnel-sans/funnel-sans-latin-ext-wght-normal.woff2",
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+        },
+        {
+          "subset": "latin",
+          "file": "funnel-sans/funnel-sans-latin-wght-normal.woff2",
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+        }
+      ]
+    },
+    {
+      "id": "hanken-grotesk",
+      "family": "Hanken Grotesk Variable",
+      "name": "Hanken Grotesk",
+      "package": "@fontsource-variable/hanken-grotesk@5.3.0",
+      "licence": "OFL-1.1",
+      "copyright": "Copyright 2021 The Hanken Grotesk Project Authors (https://github.com/marcologous/hanken-grotesk) HankenGrotesk-Italic[wght].ttf: Copyright 2021 The Hanken Grotesk Project Authors (https://github.com/marcologous/hanken-grotesk)",
+      "axisFile": "wght",
+      "axes": {
+        "wght": [
+          100,
+          900
+        ]
+      },
+      "subsets": [
+        {
+          "subset": "latin-ext",
+          "file": "hanken-grotesk/hanken-grotesk-latin-ext-wght-normal.woff2",
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+        },
+        {
+          "subset": "latin",
+          "file": "hanken-grotesk/hanken-grotesk-latin-wght-normal.woff2",
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+        }
+      ]
+    },
+    {
+      "id": "geist",
+      "family": "Geist Variable",
+      "name": "Geist",
+      "package": "@fontsource-variable/geist@5.3.0",
+      "licence": "OFL-1.1",
+      "copyright": "Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font) Geist-Italic[wght].ttf: Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font)",
+      "axisFile": "wght",
+      "axes": {
+        "wght": [
+          100,
+          900
+        ]
+      },
+      "subsets": [
+        {
+          "subset": "latin-ext",
+          "file": "geist/geist-latin-ext-wght-normal.woff2",
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+        },
+        {
+          "subset": "latin",
+          "file": "geist/geist-latin-wght-normal.woff2",
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+        }
+      ]
+    },
+    {
+      "id": "dm-sans",
+      "family": "DM Sans Variable",
+      "name": "DM Sans",
+      "package": "@fontsource-variable/dm-sans@5.3.0",
+      "licence": "OFL-1.1",
+      "copyright": "Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts) DMSans-Italic[opsz,wght].ttf: Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts)",
+      "axisFile": "opsz",
+      "axes": {
+        "opsz": [
+          9,
+          40
+        ],
+        "wght": [
+          100,
+          1000
+        ]
+      },
+      "subsets": [
+        {
+          "subset": "latin-ext",
+          "file": "dm-sans/dm-sans-latin-ext-opsz-normal.woff2",
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+        },
+        {
+          "subset": "latin",
+          "file": "dm-sans/dm-sans-latin-opsz-normal.woff2",
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+        }
+      ]
+    },
+    {
+      "id": "manrope",
+      "family": "Manrope Variable",
+      "name": "Manrope",
+      "package": "@fontsource-variable/manrope@5.3.0",
+      "licence": "OFL-1.1",
+      "copyright": "Copyright 2019 The Manrope Project Authors (https://github.com/sharanda/manrope)",
+      "axisFile": "wght",
+      "axes": {
+        "wght": [
+          200,
+          800
+        ]
+      },
+      "subsets": [
+        {
+          "subset": "latin-ext",
+          "file": "manrope/manrope-latin-ext-wght-normal.woff2",
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+        },
+        {
+          "subset": "latin",
+          "file": "manrope/manrope-latin-wght-normal.woff2",
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+        }
+      ]
+    },
+    {
+      "id": "bricolage-grotesque",
+      "family": "Bricolage Grotesque Variable",
+      "name": "Bricolage Grotesque",
+      "package": "@fontsource-variable/bricolage-grotesque@5.3.0",
+      "licence": "OFL-1.1",
+      "copyright": "Copyright 2022 The Bricolage Grotesque Project Authors (https://github.com/ateliertriay/bricolage)",
+      "axisFile": "standard",
+      "axes": {
+        "opsz": [
+          12,
+          96
+        ],
+        "wdth": [
+          75,
+          100
+        ],
+        "wght": [
+          200,
+          800
+        ]
+      },
+      "subsets": [
+        {
+          "subset": "latin-ext",
+          "file": "bricolage-grotesque/bricolage-grotesque-latin-ext-standard-normal.woff2",
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+        },
+        {
+          "subset": "latin",
+          "file": "bricolage-grotesque/bricolage-grotesque-latin-standard-normal.woff2",
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+        }
+      ]
+    }
+  ]
+}
