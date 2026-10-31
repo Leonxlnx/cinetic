@@ -74,9 +74,11 @@ These are the rules every film is held to, with their numbers. The gates named i
    25 % with each of them; a film made from a template plays another device than its floor in half its slots or more.
    (`film-diff.mjs`; `deck.py` and the template deals leave the last films' choices out.)
 10. **Premium, not just clean.** Depth and motivated light on the ground and the product (one key light, a rim, a
-    contact shadow, two planes moving at different rates), the hero type large, the one signature move landing, and
-    nothing static for more than about 0.8 s outside the end hold (holds creep or drift 0.3-1 px/f). A flat field with
-    small type and a still card fails even when every gate passes.
+    contact shadow, depth from the light and the planes), the hero type large, the one signature move landing. The
+    camera is still unless a shot declares a move that starts, travels and lands (no float, no drift, no panning back
+    and forth); held UI never bobs or sways; cards face the camera (a 3D turn lands face-on); a hold may be still while
+    the product changes in it (only 2.5 s where nothing changes is dead). A flat field with small type and a still card
+    fails even when every gate passes.
 11. **Simple.** The path below, one review round, about 90 minutes from the scaffold to the master and 120 at most;
     a gate that costs more than 5 minutes on a 30 s film is advisory.
 
@@ -195,7 +197,8 @@ the picture leading by up to 3 f; a 0.2-0.5 s stop or dip before the biggest rev
 `linear` for colour and drifts); one spring class a film, never an overshoot on type; never scale from zero (start at
 1.28-1.9x and settle); speed carried through cuts (out at about 0.7, decaying); nothing
 changes state in one frame (a 16 f@60 glide, `glideValue`), every move lands under 10 % of its peak speed before its
-cut (`landBeforeCut`), every hold drifts (`holdDrift`) ([motion-tokens.md](references/motion-tokens.md),
+cut (`landBeforeCut`), the camera moves only with a purpose and holds may rest (`stageMove`; no float, no bob, no
+resting tilt) ([motion-tokens.md](references/motion-tokens.md),
 [camera.md](references/camera.md)).
 
 **Engine.** Everything is a pure function of the frame: no CSS transitions or keyframes, no `Math.random`, `Date.now`
