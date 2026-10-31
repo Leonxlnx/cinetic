@@ -1968,7 +1968,7 @@ def main(argv=None):
                                             kit=song.kit_path, takes='', notes=[], warnings=[])
             events, cues = [], dict(cues, events=[])
             song.warnings.append('--bed-only: the edited track alone, no effects (the actions stay silent until the kit is '
-                                 'rendered: npm run kit, then npm run audio)')
+                                 'rendered: npm run sound)')
         elif song.engine == 'synth' and not a.draft:
             raise ScoreError('sfx.engine "synth" plays placeholder voices: that is a --draft build only (never delivered). '
                              'Render the earshot kit (npm run kit) and use "engine": "auto"')
