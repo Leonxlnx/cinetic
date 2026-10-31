@@ -23,7 +23,9 @@ clicks and tones, never music, never files in the repo) and checks:
     premix), stopdown (depth and length, a top-up over the bed's own dip, back on the hit), no_duck, width_kept,
     over_bed (the plan's gain measured within 0.5 dB on a steady bed), on_beat_over_bed (pops on a strong kick read
     hot with the bed, each take alone within 0.5 dB of its level, no warning), carried_by_track (a strong track accent
-    carries a hit; force keeps it), music_synth_refused, the -14 LUFS default
+    carries a hit; force keeps it), music_synth_refused, the -14 LUFS default; moments_arc (a salient hit read as earshot
+    reads one, a moment's breath making its frame one, the moments' order, the arc ride lifting a body under its opening
+    and leaving the break before the reveal and a body already over it alone)
   - mixkeys parity with earshot 0.4 (when earshot is importable: EARSHOT_PYTHON or this interpreter):
     loud_lufs, bed_level, over_bed, gain_db within 0.05 dB, place and space_run within 0.1 ms, corr
   - credits_gate: a valid record writes CREDITS.md and the description; a CC BY record without its credit, a
@@ -42,6 +44,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import types
 
 import numpy as np
 import soundfile as sf
@@ -943,6 +946,42 @@ def on_beat_over_bed(d):
           f"the mix median {pr.get('median')} and the kick {pr.get('bed_accent_median')} dB")
 
 
+def moments_arc(d):
+    """the hits the ear marks (score.salient_hits: a 100 ms block 6 dB over the 200 ms before), the moments' breaths and
+    the arc ride (plan.arc_ride: the body never under its opening once the product starts), on signals made in code"""
+    import plan as PL  # noqa: E402
+    import score as SC  # noqa: E402
+    rng = np.random.default_rng(3)
+    n = int(8 * SR)
+    bed = rng.standard_normal((n, 2)) * 0.05
+    hit = bed.copy()
+    k = int(4.0 * SR)
+    hit[k:k + int(0.08 * SR)] += rng.standard_normal((int(0.08 * SR), 2)) * 0.4
+    h = SC.salient_hits(hit)
+    check(any(abs(t - 4.0) <= 0.1 for t in h) and not SC.salient_hits(bed), f'a burst 18 dB over a steady bed is a salient hit, the bed alone none ({h})')
+    dip = bed.copy()
+    dip[int(3.75 * SR):k] *= 10 ** (-7 / 20)
+    h2 = SC.salient_hits(dip)
+    check(any(abs(t - 4.0) <= 0.1 for t in h2), f'a 7 dB breath of 0.25 s before the frame makes the return a hit the ear marks ({h2})')
+    check(PL.MOMENT_ACTIONS.index('jump-cut') < PL.MOMENT_ACTIONS.index('card-land') < PL.MOMENT_ACTIONS.index('touch')
+          and 'text' not in PL.MOMENT_ACTIONS, 'moments in order: the seams before the landings before a touch; a text sound is never one')
+    song = types.SimpleNamespace(dur=24.0)
+    m = int(24 * SR)
+    t = np.arange(m) / SR
+    tone = np.sin(2 * np.pi * 220 * t)[:, None] * np.ones((1, 2))
+    sag = tone * np.where(t < 6.0, 0.3, 0.3 * 10 ** (-4 / 20))[:, None]  # the body 4 dB under the opening
+    pts, rep = PL.arc_ride(sag, song, 6.0, 18.0, 22.0, 2.0, keep=[(14.0, 18.0)])
+    check(pts is not None and rep['opening_db'] < 0 and rep['lift_max_db'] > 0,
+          f"a body 4 dB under its opening: the opening steps down and the body is lifted ({rep})")
+    song.ride = pts
+    g = PL.ride_envelope(song, m)
+    check(abs(20 * np.log10(g[int(10 * SR)]) - (rep['lift_max_db'])) < 1.5 and abs(20 * np.log10(g[int(16 * SR)])) < 1.5,
+          f'the lift holds in the body and the break before the reveal is left as it is ({20 * np.log10(g[int(10 * SR)]):.1f}, {20 * np.log10(g[int(16 * SR)]):.1f} dB)')
+    rise = tone * np.where(t < 6.0, 0.3, 0.45)[:, None]
+    pts2, rep2 = PL.arc_ride(rise, song, 6.0, 18.0, 22.0, 2.0)
+    check(pts2 is None, f"a body over its opening is left alone ({rep2.get('why')})")
+
+
 def carried_by_track(d):
     """A hit on a frame where the track has a strong low accent is carried by the track (no take, no stop-down);
     "force": true sounds it anyway."""
@@ -1226,7 +1265,7 @@ def main():
     tests = [('effects_only_baseline', lambda d: effects_only_baseline(d, baseline))] + [(fn.__name__, fn) for fn in (
         kit_engine, kit_only, vendored, tuned_budget, stack_guard, music_none, music_synth_refused, typing_word_kit,
         progress_kit, text_chord_kit, typing_bright_kit, land_light_and_levels, kit_tools, bed_edit, stopdown,
-        stop_payoff, masked_hero, light_swell, width_and_bed_levels, on_beat_over_bed, carried_by_track, mixkeys_parity, credits_gate, av_audit, real_earshot)]
+        stop_payoff, masked_hero, light_swell, width_and_bed_levels, on_beat_over_bed, carried_by_track, moments_arc, mixkeys_parity, credits_gate, av_audit, real_earshot)]
     for name, fn in tests:
         if only and name not in only:
             continue
