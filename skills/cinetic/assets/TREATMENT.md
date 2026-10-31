@@ -61,7 +61,7 @@ T = a line alone, centred, on the clean ground (0.5-2.3 s); A = the product acti
 - [ ] every statement centred in the middle band; none flush left at the top or bottom; at most one text-top split (a line
   above a picture that fills the rest of the frame)
 - [ ] two or more type-only beats; T+A at most 40 % of the beats; the first line by 1 s; every A shows the product doing the thing
-- [ ] one text voice; emphasis on at most 60 % of the lines, colour by default; no box or marker unless it is the signature
+- [ ] one text voice; emphasis on at most two lines, colour by default; no box or marker unless it is the signature
 - [ ] every hard cut carries a device; at most two ground flips; one exit-then-enter, text-swap or match-cut
 - [ ] clean UI, real words, current marks in one presentation; the end card centred, built from the last element, held 2-3 s
 - [ ] ground, voice, signature and end card apart from the last three films (`film-diff.mjs`)
