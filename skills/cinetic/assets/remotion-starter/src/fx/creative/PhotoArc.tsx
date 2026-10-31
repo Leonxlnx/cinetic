@@ -10,12 +10,12 @@ import { type Box, face, frameOf, k60, mixBox, momentAt, type PictureProps, type
 
 /** House numbers (f@60, px@1080): the arc (centre below the frame, radius), the cards, the stream's speed decaying to a
  * cruise, the chosen card opening and the others falling away. */
-export const ARC = { cy: 2.05, r: 1.55, card: 430, aspect: 0.62, gap: 34, fast: 70, cruise: 6, tau: 22, at: 0.55, open: 30, fall: 26, radius: 24 } as const;
+export const ARC = { cy: 1.95, r: 1.45, card: 470, aspect: 0.62, gap: 34, fast: 70, cruise: 6, tau: 22, at: 0.55, open: 30, fall: 26, radius: 24 } as const;
 
 export const RECIPE: Recipe = {
   id: 'photo-arc',
   recipe:
-    'Pictures flow along an arc and one becomes the shot: upright cards (the film\'s photos, else the product at other moments) stream along a wide arc rising through the frame (centre 2.05 H below the top, radius 1.55 H), 70 px a frame decaying to a 6 px cruise; on the moment (55 %) the card at the top opens to the whole frame (card-expand, 30 f) and the others fall away along the arc (26 f). Cards stay upright: never tilted.',
+    'Pictures flow along an arc and one becomes the shot: upright cards (the film\'s photos, else the product at other moments) stream along a wide arc rising through the frame (centre 1.95 H below the top, radius 1.45 H), 70 px a frame decaying to a 6 px cruise; on the moment (55 %) the card at the top opens to the whole frame (card-expand, 30 f) and the others fall away along the arc (26 f). Cards stay upright: never tilted.',
   params: { ...ARC },
 };
 

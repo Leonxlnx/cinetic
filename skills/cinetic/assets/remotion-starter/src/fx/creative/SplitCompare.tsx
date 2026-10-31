@@ -38,8 +38,8 @@ const Spinner: React.FC<{ s: number; t: number; color: string; track: string; k:
 
 /** The old way: a muted card, its rows the steps done by hand, each waiting. */
 const OldCard: React.FC<{ rows: string[]; box: Box; t: number; pal: Pal; u: number; k: number }> = ({ rows, box, t, pal, u, k }) => {
-  const bg = pal.dark ? mixColor(pal.ground, '#ffffff', 0.07) : mixColor(pal.surface, pal.ground, 0.5);
-  const ink = mixColor(pal.type, bg, 0.45);
+  const bg = pal.dark ? mixColor(pal.ground, '#ffffff', 0.12) : mixColor(pal.surface, pal.ground, 0.5);
+  const ink = mixColor(pal.type, bg, pal.dark ? 0.3 : 0.45);
   const rowH = SPLIT.row * u;
   const pad = SPLIT.pad * u;
   return (
