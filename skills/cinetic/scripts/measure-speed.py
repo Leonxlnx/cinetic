@@ -57,8 +57,8 @@ frames the flow cannot explain are not moves). A fast plateau
 
 Pace. Every run also reports how fast the film moves (the `pace` block, from the per-pair flow
 speed before the shutter and max filters): the median and 90th percentile speed of moving frames,
-the share of frames over 12, 25 and 40 px/f, the longest run under 2 px/f, and how many moves pass
-40 px/f. --pace calm warns when the 90th percentile passes 25 px/f or more than 6% of frames pass
+the share of frames over 12, 25 and 40 px/f, the longest run under 2 px/f (a still hold is fine: the camera is still
+unless a shot declares a move, and a still frame renders from one sample), and how many moves pass 40 px/f. --pace calm warns when the 90th percentile passes 25 px/f or more than 6% of frames pass
 40 px/f (crisp: 45 px/f, 15%): calm films keep ordinary moves under 25 px/f and save speed for one
 or two moments. --copy out/cues.json (or a --cues file that has a copy block) adds the speed inside
 each copy entry's reading windows (its `read`: the timeline's READ, so a chain's picture beat is
@@ -859,7 +859,8 @@ def main():
     pr = out['pace']
     log(f'  pace{" (" + pace + ")" if pace else ""}: moving p50 {pr["p50"]} / p90 {pr["p90"]} px/f@60; frames over 12/25/40 px/f@60 '
         f'{100 * pr["over12"]:.0f}/{100 * pr["over25"]:.0f}/{100 * pr["over40"]:.1f}%, {pr["moves_over40"]} moves over 40; '
-        f'longest run under 2 px/f@60 {pr["longest_under2_f"]} f ({pr["longest_under2_s"]} s)')
+        f'longest run under 2 px/f@60 {pr["longest_under2_f"]} f ({pr["longest_under2_s"]} s; a still hold is fine, the camera moves only '
+        'with a purpose: forensics.py dead-stretch fails only 2.5 s where nothing changes)')
     for row in out.get('copy_speed', []):
         log(f'  read "{row["text"]}" f{row["frames"][0]}-{row["frames"][1]}: median {row["median"]}, peak {row["peak"]} px/f@60')
     for w in warns:

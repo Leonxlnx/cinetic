@@ -1,5 +1,6 @@
-// Fixture for scripts/test/lint-film.test.mjs. expect: hold-drift:warn=1
-// An act whose tweens are separated by holds where nothing moves: no creep, no drift, no carried camera (warns once).
+// Fixture for scripts/test/lint-film.test.mjs. expect: camera-float=0
+// An act whose tweens are separated by still holds: no creep, no drift, no float. Silent: a hold may be completely
+// still (the camera moves only with a purpose; the old hold-drift rule is gone).
 import React from 'react';
 import { E, prog } from './anim';
 

@@ -94,12 +94,18 @@
  *                     'room') that src/sync.ts does not declare (its declares()) and the timeline's code
  *                     does not name (comments do not count): glide it (fx/GlideStep, lib/continuity glideValue, glideBox); and more than one
  *                     snap device in the film, declared or not (a film keeps one)
- *   hold-drift        an act with 2+ tweens and nothing continuous (no E.linear creep, drift, holdDrift,
- *                     breath, camera path, gliding list, flick, light field, photo or footage move, no
- *                     frame-linear term): its holds freeze between the tweens
- *   drift-toggle      a living drift (fx/Lit sway, a float, a breath) switched on a condition (`sway={c ? false :
- *                     undefined}`, `sway={c && {...}}`): its offset is not zero on that frame, so the layer jumps; fade
- *                     its amount (fx/Lit swayFade) instead
+ *   camera-float      an always-on float or drift (errors): the removed float's options (withLocks, lockOn,
+ *                     dipAmp, settleAmp, a FloatOpts with seed / amp / omega / push / locks), or a creep over
+ *                     0.2 px/f@60 (holdDrift px, glideList drift): the camera is still unless a shot declares a
+ *                     move that starts, travels and lands (lib/drift stageMove, lib/camera camPath)
+ *   idle-bob          an idle loop on a position, scale or turn (errors): a sine or cosine of the frame (or
+ *                     lib/drift breathe) driving a translate, rotate or scale, or a lit panel's sway given as
+ *                     an object (fx/Lit, kit devices): UI moves only when it enters, changes state or leaves
+ *   card-tilt         a card tilted at rest (errors): a constant tilt={{ x, y }} or tilt: { x, y } (outside an
+ *                     entry's from), a constant rotateX(..deg) / rotateY(..deg), a depth item's constant rot:
+ *                     cards face the camera; a 3D turn is a declared object move (animated, landing face-on)
+ *   drift-toggle      an old sway switched on a condition (`sway={c && {...}}`, `sway={c ? {...} : false}`): its
+ *                     offset is not zero on that frame, so the layer jumps; better, drop the sway (idle-bob)
  *   unmount-moving    a layer unmounted (`F < X &&`, `F >= A && F < X &&`, a <Sequence> end) while a tween
  *                     inside it, timed off the same frame, still runs above 10 % of its peak speed (lib/continuity
  *                     landBeforeCut; the curve's speed is read from lib/anim.ts)
@@ -644,9 +650,6 @@ const SNAP_DEVICES = [
   { name: 'LineSnap', mods: ['Chain'], re: /\bsnapLast\s*[:=]\s*(?!\{?\s*false\b)|\brecentre\s*[:=]\s*\{?\s*['"]room['"]/g, fix: "Chain recentre 'glide'" },
 ];
 const snapUses = []; // uses of snap primitives across the film, for the one-device rule
-/** Anything in an act that keeps moving through its holds (hold-drift). */
-const CONTINUOUS_RE =
-  /\bE\.linear\b|\(?\s*\bt\s*\)?\s*=>\s*t\s*[,)]|(?<![\w$.])(?:holdDrift|drift|creep|counterCreep|expoTail|breathK|breath|breathe|camPath|glideList|flickState|keyLightState|masonryState|plateMove|photoMove)\s*\(|<(?:GlideStep|Scroll|Conveyor|KeyLight|LightField|Photo|Footage|DepthStack|Ground\w*)\b|\bbreathe\s*:|\b(?:F|frame)\s*\*\s*[\d.]|[\d.]\s*\*\s*\(?\s*(?:F|frame)\b|\b(?:F|frame)\s*\/\s*(?:FPS|fps)\b|\bPLATE_MOVE\b/;
 /** A frame expression as { base, off } (off in film frames): CUE.x, CUE.x + 12, ACT.a.from - f60x(6), 120; else null. */
 const frameTerm = (expr) => {
   if (expr === undefined || expr === null) return null;
@@ -2185,12 +2188,85 @@ for (const file of files) {
       }
     }
 
-    // hold-drift: an act whose tweens are separated by holds where nothing moves
-    if (isScript && isActFile && !house) {
-      const tws = tweensIn(code).filter((t) => !/^(E\.linear|\(?\s*t\s*\)?\s*=>\s*t)$/.test(String(t.ease).trim()));
-      const sps = callsIn(code, ['spr', 'spring']);
-      if (tws.length + sps.length >= 2 && !CONTINUOUS_RE.test(code))
-        report((tws[0] ?? sps[0]).index, 'hold-drift', 'warn', `nothing in this act keeps moving between its ${tws.length + sps.length} tweens (no creep, drift, carried camera or light): every hold keeps a drift of 0.3-1 px/f (lib/continuity holdDrift, a camera creep on E.linear, a light crossing), or the picture freezes between the moves (forensics motion-frozen)`);
+    // camera-float: an always-on float or drift. The camera is still unless a shot declares a move that starts,
+    // travels and lands; the removed float's options do nothing, and a creep over 0.2 px/f@60 is a drift
+    if (isScript && !house) {
+      each(/(?<![\w$.])(withLocks|lockOn|dipAmp|settleAmp)\s*\(/g, (m, i) =>
+        report(i, 'camera-float', 'error', `${m[1]}() belongs to the removed camera float (it does nothing now): delete it. The camera is still unless a shot declares a move that starts, travels and lands (lib/drift stageMove, lib/camera camPath)`));
+      each(/:\s*FloatOpts\s*=\s*\{([^{}]*)\}/g, (m, i) => {
+        if (/\b(seed|amp|omega|push|locks)\s*:/.test(m[1]))
+          report(i, 'camera-float', 'error', 'a FloatOpts with the old float options (seed, amp, omega, push, locks): there is no float; give the stage { moves: [stageMove(at, ...)] } for a declared move, or {} for a still camera');
+      });
+      const creepMax = 0.2;
+      each(/(?<![\w$.])holdDrift\s*\(([^;]*?)\)/g, (m, i) => {
+        const px = m[1].match(/\bpx\s*:\s*([\d.]+)/);
+        if (px && Number(px[1]) > creepMax)
+          report(i, 'camera-float', 'error', `holdDrift at ${px[1]} px/f@60 is a drift, not a creep: a hold may be completely still, a creep stays under ${creepMax} px/f@60 (12 px/s) and goes one way`);
+      });
+      each(/(?<![\w$.])glideList\s*\(([^;]*?)\)/g, (m, i) => {
+        const d = m[1].match(/\bdrift\s*:\s*([\d.]+)/);
+        if (d && Number(d[1]) > creepMax) report(i, 'camera-float', 'error', `a list drifting ${d[1]} px/f@60 between its steps: the list rests between its steps (a creep under ${creepMax} px/f@60 at most)`);
+      });
+    }
+
+    // idle-bob: an idle loop on a position, scale or turn (a card bobbing, a panel swaying, a chip breathing)
+    if (isScript && !house) {
+      const FRAME_ARG = /\b(F|frame|f|time|sec|seconds|absFrame)\b|\/\s*\(?\s*(fps|FPS)\b|useCurrentFrame/;
+      const MOVE_WORDS = /translate|rotate|scale\(|skew|\b(top|left)\s*:/;
+      // the name inside a translate / rotate / scale call's ${...}, or as a position property's value
+      const POS_USE = (name) => new RegExp(`(translate|rotate|scale|skew)\\w*\\([^)\\n]*\\$\\{[^}]*\\b${name}\\b|\\b(x|y|dx|dy|top|left|rot|tilt|lift)\\s*[:=][^,;}\\n]*\\b${name}\\b`);
+      const argAt = (k) => {
+        let depth = 1;
+        let j = k;
+        for (; j < code.length && depth; j++) depth += code[j] === '(' ? 1 : code[j] === ')' ? -1 : 0;
+        return code.slice(k, j - 1);
+      };
+      const stmtOf = (i) => {
+        const a = Math.max(code.lastIndexOf(';', i), code.lastIndexOf('\n', i));
+        let b = code.indexOf(';', i);
+        const nl = code.indexOf('\n', i);
+        if (b < 0 || (nl >= 0 && nl < b)) b = nl < 0 ? code.length : nl;
+        return code.slice(a + 1, b);
+      };
+      const loopMsg = 'an idle loop on a position, scale or turn (a periodic function of the frame): UI moves only when it enters, changes state or leaves, never bobbing, breathing or floating while it is held; drop the loop (a hold may be completely still)';
+      each(/Math\.(sin|cos)\s*\(|(?<![\w$.])breathe\s*\(/g, (m, i) => {
+        const arg = argAt(i + m[0].length);
+        if (m[1] && !FRAME_ARG.test(arg)) return; // a one-shot arc (sin(PI * p)) or a geometry angle
+        const st = stmtOf(i);
+        const named = st.match(/^\s*(?:export\s+)?(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=/);
+        if (MOVE_WORDS.test(st) || (named && POS_USE(named[1]).test(code))) report(i, 'idle-bob', 'error', loopMsg);
+      });
+      const swayMsg = 'a sway given as an object (fx/Lit, kit Phone and Laptop): an idle tilt-and-float loop on a held panel; drop it (panels face the camera and hold still between their moves)';
+      each(/\bsway\s*=\s*\{/g, (m, i) => {
+        const k = i + m[0].length;
+        let depth = 1;
+        let j = k;
+        for (; j < code.length && depth; j++) depth += code[j] === '{' ? 1 : code[j] === '}' ? -1 : 0;
+        if (code.slice(k, j - 1).includes('{')) report(i, 'idle-bob', 'error', swayMsg);
+      });
+      each(/\bsway\s*:\s*\{/g, (m, i) => report(i, 'idle-bob', 'error', swayMsg));
+    }
+
+    // card-tilt: a card tilted at rest. Cards face the camera; a 3D tilt is a declared object move (animated from the
+    // frame and landing face-on, or an entry's from)
+    if (isScript && !house) {
+      const lit = (v) => Math.abs(Number(v)) >= 2;
+      const tiltMsg = 'a card tilted at rest (a constant tilt): cards face the camera; a 3D turn is a declared object move (animate it from the frame, landing face-on, or turn it in an entry\'s from)';
+      each(/\btilt\s*=\s*\{\{\s*x\s*:\s*(-?[\d.]+)\s*,\s*y\s*:\s*(-?[\d.]+)\s*(?:,\s*z\s*:\s*-?[\d.]+\s*)?\}\}/g, (m, i) => {
+        if (lit(m[1]) || lit(m[2])) report(i, 'card-tilt', 'error', tiltMsg);
+      });
+      each(/\btilt\s*:\s*\{\s*x\s*:\s*(-?[\d.]+)\s*,\s*y\s*:\s*(-?[\d.]+)\s*(?:,\s*z\s*:\s*-?[\d.]+\s*)?\}/g, (m, i) => {
+        if (!lit(m[1]) && !lit(m[2])) return;
+        if (/\b(from|enterFrom)\s*:\s*\{[^{}]*$/.test(code.slice(Math.max(0, i - 120), i))) return; // an entry's starting pose
+        report(i, 'card-tilt', 'error', tiltMsg);
+      });
+      each(/rotate([XY])\(\s*(-?[\d.]+)\s*deg\s*\)/g, (m, i) => {
+        if (lit(m[2])) report(i, 'card-tilt', 'error', `a constant rotate${m[1]}(${m[2]}deg): ${tiltMsg}`);
+      });
+      each(/\{[^{}]*\bplane\s*:\s*['"](?:far|mid|near)['"][^{}]*\}/g, (m, i) => {
+        const r = m[0].match(/\brot\s*:\s*(-?[\d.]+)\s*[,}]/);
+        if (r && lit(r[1])) report(i + m[0].indexOf(r[0]), 'card-tilt', 'error', `a depth item rolled ${r[1]} degrees at rest: ${tiltMsg}`);
+      });
     }
 
     // drift-toggle: a living drift (fx/Lit sway, a float, a breath) switched off or on by a condition: its offset is
@@ -2205,7 +2281,7 @@ for (const file of files) {
         const ternaryOff = /\?/.test(e) && /[?:]\s*(false|null)\b/.test(e);
         const andOff = /&&/.test(e) && !/\?/.test(e);
         if (ternaryOff || andOff)
-          report(i, 'drift-toggle', 'warn', `${m[1]}={${e.slice(0, 60)}} switches a living drift on a condition: on that frame its offset is not zero (fx/Lit's float sits up to 26 px off centre, its tilt 1.4 degrees), so the layer jumps in one frame (forensics jump); fade it instead (fx/Lit sway={{ amount: swayFade(F, from, to) }}, over 24 f or more)`);
+          report(i, 'drift-toggle', 'warn', `${m[1]}={${e.slice(0, 60)}} switches an old sway on a condition: on that frame its offset is not zero, so the layer jumps in one frame (forensics jump); drop the sway (a panel holds still between its moves)`);
       });
     }
 

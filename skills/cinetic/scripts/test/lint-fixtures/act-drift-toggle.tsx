@@ -1,6 +1,6 @@
-// Fixture for scripts/test/lint-film.test.mjs. expect: drift-toggle:warn=2
-// A lit panel whose sway is switched off once the camera starts to flatten (warns: the float sits off centre on that
-// frame and the panel jumps), one switched on a guard (warns), and one whose sway fades to rest (silent).
+// Fixture for scripts/test/lint-film.test.mjs. expect: drift-toggle:warn=2 idle-bob=2
+// An old lit-panel sway switched off once the camera starts to flatten (drift-toggle warns), one switched on a guard (warns), and one
+// fading to rest (silent for drift-toggle). The two sway objects are idle loops (idle-bob errors).
 import React from 'react';
 import { E, prog } from './anim';
 import { CUE } from './timeline';

@@ -28,16 +28,16 @@ Frames are 0-based and absolute (frame = t * fps). Defaults (every number is a f
                  busy: a region spike while the whole frame changes > 0.15x as much   info
                  pop: any other 1-2 frame change that motion does not explain         fail
   stall        d < 0.05 while d[f-1] > 0.8 and d[f+1] > 0.8 (a repeated frame)         fail
-  hold         d < 0.1 for > 48 f (calm: 72 f): frozen (90% of its frames change < 16 px by > 24)  fail
-                                   quiet (only small elements move)                   warn
-               (the run in 60 fps frames: 0.8 s, calm 1.2 s, at any rate)
+  hold         d < 0.1 for > 150 f@60 (2.5 s at any rate, either pace): a dead stretch, nothing changes
+               (90% of its frames change < 16 px by > 24)                                     fail
+               the same run where small elements move (a cursor, a counter): a still hold    info
+               (a hold may be completely still: the camera moves only with a purpose)
                a static end tail <= 2 s + 1 f is allowed (the audio decays there); a run inside a
                reading window (the cues copy block: an on-screen string's `read` windows, which leave a
                chain's picture beat out; [resolved, out) in an older cues.json) whose
-               mean d >= 0.02 is a read: a line held while it is read, alive with a slow drift  info
-  quiet        60-frame mean d < 0.15 (calm: 0.10) outside holds (nearly locked-off)   warn
+               mean d >= 0.02 is a read: a line held while it is read                       info
+  quiet        60-frame mean d < 0.15 (calm: 0.10) outside holds: a still stretch          info
                (the window in 60 fps frames: 1 s at any rate)
-               (inside a reading window with mean d >= 0.02: a read, info)
   hook         the first 2 s move less than max(0.5 at 60 fps (x 60/fps), 0.5x the film's median 2 s window)
                (films that start at frame 0, not loops; for films of 6 s or less, the first
                1 s under 0.5x the median 1 s): a muted feed decides in second one      warn
@@ -73,20 +73,21 @@ an older cues file they are info, so its verdict does not change). Speeds are px
 over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), so a slow creep reads:
   declared     a spike or stall on a declared stepped range, flash or hard seam (cues `declared`,
                including what each primitive declares) is craft                            info
-  hold-drift   a run > 0.8 s (1 s inside a reading window: the read lock) outside the end lock
-               (cues END; a film without declarations: its last 2 s, as look-audit.py) where the
-               camera neither drifts 6 px/s nor creeps 1 %/s, no layer moves 6 px/s, the ground
-               does not change and no content changes (typing, a counter: 0.2 % of the frame)  fail
-               inside a reading window: faster than 90 px/s or 15 %/s                       warn
-  static-share more than 15 % of the body stands still (camera, layers and ground)          warn
-  motion-energy  a stretch outside the end lock where under 30 % of the picture's structure moves 15 px/s or more
-               (the camera drift, the planes, the content): one small thing moving in a still frame. The house
-               holds that at most 1.5 s (a cut ends the stretch)                                     warn
-               longer than 2.0 s                                                            fail
-               a stretch that opens on a landing (the frame before it moves) counts 0.25 s less: the rest
-               after a landing is a held beat, a stretch that opens dead (on a cut, from a still) counts whole
-               under 30 % on more than a quarter of the body                                warn
-  still-cut    more than 30 % of the cuts go from a still frame to a still frame            warn
+  dead-stretch a run > 2.5 s (DEAD_S) outside the end lock (cues END; a film without declarations: its
+               last 2 s, as look-audit.py) where nothing changes at all: the camera neither moves 6 px/s
+               nor creeps 1 %/s, no layer moves 6 px/s, the ground does not change and no content
+               changes (typing, a counter: 0.2 % of the frame). A still hold shorter than that passes:
+               the camera is still unless a shot declares a move                             fail
+  read-move    the camera moves faster than 90 px/s or 15 %/s while text is read           warn
+  camera-wander  an aimless camera: inside one shot the camera pans (or pushes) one way and then back
+               (two runs of opposite sign on one axis, each 0.4 s or longer, both slow: under 60 px/s
+               or 4 %/s at their peak, 1 s or less apart): the old float / drift. A designed move
+               starts, travels and lands; a reversal device moves fast. Per shot that wanders  warn
+               in two shots or more                                                         fail
+               and a camera that never rests: moving on more than 90 % of the body (3 s or longer)  warn
+  static-share the share of the body standing still (camera, layers and ground)            info
+  motion-energy  the share of the picture's structure moving 15 px/s or more (the old life gate) info
+  still-cut    the share of cuts from a still frame to a still frame                        info
   hold-into-exit  fewer than half of the continuity cuts accelerate into the cut (the last two
                frames run x1.15 faster than the two before them, or end at 3x the hold)     warn
   carried-cut  a declared velocity seam: direction cosine >= 0.7, incoming first-frame speed
@@ -127,18 +128,19 @@ at 160x90, one sample per 1/30 s (landings also at the film's own rate), outside
   motion-rest  (info) a deliberate rest: a still run of up to 16 f@60 starting within 0.5 s of a move's landing passes
                motion-frozen (a real rest after a landing, 8-15 f); reported with the film's longest rest (mean change under
                0.3), its rests of 8 f@60 or more per 10 s and its dynamic range (p90 / p25 of the change curve)
-  motion-frozen  6 f@30 or more in a row where the mean change is under 0.05 and fewer than 8 px change by
-               4 values or more (a 0.3 px/f drift keeps even a sparse frame alive), after the first 0.5 s
-               and outside declared freezes; without declarations 1 s of still in all is allowed       fail
+  motion-frozen  75 f@30 (2.5 s, DEAD_S) or more in a row where the mean change is under 0.05 and fewer than
+               8 px change by 4 values or more: a dead stretch, nothing at all changes (a still hold that
+               short of it passes), after the first 0.5 s and outside declared freezes          fail
   motion-decay the median move falls from its peak to 20 % of its speed in under 3.5 f@30 (3+ moves)   fail
   motion-density more than 2 primary moves (peaks >= 25 % of the film's 90th-percentile move) per 3 s  fail
   motion-stop  a move goes still in one frame from above 15 % of its peak speed (cut off mid-ease)    fail
   motion-cut   a visible cut while a braking move is still above 10 % of its peak speed               warn
                (fail over 0.25 per 3 s), unless a whip, velocity or zoomThrough seam or a camera-blur
                range carries it into the cut
-  What machine-made motion looks like here: many short events that start and stop in one frame, dead holds
-  between them, and moves cut while still fast. The fixes: fx/GlideStep and lib/continuity (glideValue,
-  holdDrift, landBeforeCut); references/motion-tokens.md "Continuous motion".
+  What machine-made motion looks like here: many short events that start and stop in one frame, a camera that
+  floats with no purpose, and moves cut while still fast. The fixes: fx/GlideStep and lib/continuity
+  (glideValue, landBeforeCut), a declared camera move that lands (lib/drift stageMove, lib/camera camPath);
+  references/motion-tokens.md "Continuous motion".
 --no-grammar skips them.
   determinism  (--against) frames whose change between two renders > max(0.3, 5*median) fail
 
@@ -190,9 +192,12 @@ except ModuleNotFoundError:
 CV2_INSTALL = f'{sys.executable} -m pip install opencv-python-headless'
 
 SW, SH = 480, 270  # MAD analysis size; the thresholds are calibrated at this size
-# Hold and quiet limits per pace: a calm film holds its reads longer (a drifting line is alive). The runs are in 60 fps
-# frames, scaled to the same seconds at the film's rate (scaled60); the stillness floors are per frame (the noise floor).
-PACE_LIMITS = {'calm': dict(max_hold=72, quiet_mad=0.10), 'crisp': dict(max_hold=48, quiet_mad=0.15)}
+# The dead stretch: the longest run (s) where nothing at all may change (lib/drift DRIFT.dead.s). A still hold shorter
+# than that passes: the camera is still unless a shot declares a move.
+DEAD_S = 2.5
+# Hold and quiet limits per pace. The runs are in 60 fps frames, scaled to the same seconds at the film's rate
+# (scaled60); the stillness floors are per frame (the noise floor). Either pace: a hold fails only past DEAD_S.
+PACE_LIMITS = {'calm': dict(max_hold=int(DEAD_S * 60), quiet_mad=0.10), 'crisp': dict(max_hold=int(DEAD_S * 60), quiet_mad=0.15)}
 HOLD_MAD = 0.1  # a frame whose mean change is under this holds still (near stillness d is the encoder's noise: per frame)
 QUIET_WINDOW60 = 60  # 60 fps frames the quiet check averages over (1 s)
 READ_MAD = 0.02  # inside a reading window, a run with at least this mean change is a read, not a stall
@@ -214,7 +219,6 @@ def scaled60(args, fps):
     if getattr(args, 'quiet_window', None) is None:
         args.quiet_window = max(2, int(round(QUIET_WINDOW60 * k60)))
     return k60
-READ_LOCK_S = 1.0  # hold-drift: a frozen run inside a reading window may last this long (the camera locks on a read)
 APEX_KINDS = ('whoosh', 'sweep', 'suck')  # the loudest point of the sound sits on f
 END_KINDS = ('riser', 'swell')  # the sound builds and ends on f
 
@@ -795,8 +799,13 @@ CHANGE_LIVE = 0.002  # share of the frame whose content changes over a window (t
 # motion energy: the share of the picture's structure moving `px` px/s or more over a window. The house band, measured
 # (0.4 s windows at 480 wide): the median runs 0.65-0.98; a stretch under `low` lasts at most 1.5 s in three quarters
 # of the band and 1.8 s in all but a slow explainer; under `low` on more than a quarter of the body is beyond all
-# but two. A 6 px/s drift keeps a hold from freezing (hold-drift); it does not make a shot move.
-ENERGY = dict(px=15.0, low=0.3, warn_s=1.5, fail_s=2.0, share=0.25, rest_s=0.25)  # rest_s: a stretch opening on a landing counts this much less
+# but two. It is reported (info): a still hold passes, the camera moves only with a purpose.
+ENERGY = dict(px=15.0, low=0.3, warn_s=1.5, fail_s=2.0, share=0.25, rest_s=0.25)  # info only now (a still hold passes); rest_s: a stretch opening on a landing counts this much less
+# camera-wander: an aimless camera inside one shot (the old float). A run: the camera's speed on one axis at least
+# `min` (px/s at 1080p; %/s for the push) with one sign for `run_s` or longer; two runs of opposite sign at most
+# `gap_s` apart, both peaking under `slow` (px/s; `slow_pct` %/s), are a wander. A camera that moves on more than
+# `busy` of the body (3 s or longer) never rests.
+WANDER = dict(min=6.0, min_pct=0.5, run_s=0.4, gap_s=1.0, slow=60.0, slow_pct=4.0, busy=0.9, busy_s=3.0)
 # carried-cut: the house band, a direction read needs this coherence, a repeat reaching this autocorrelation makes the
 # step ambiguous, and the read's spread widens the ratio band by at most this much
 CARRY = dict(cos=0.7, ratio=(0.4, 1.4), coherence=0.5, period_ac=0.5, spread_max=0.5)
@@ -1111,6 +1120,58 @@ def window_at(win, f, wstride):
         if g in win:
             return win[g]
     return None
+
+
+def camera_wander(frames, state, breaks, fps, P=WANDER):
+    """An aimless camera over the body frames (state: frame -> its window, with cam_vec px/s and cam_k %/s): inside one
+    shot (a break ends it), per axis (x, y, push), runs of one sign at least P['min'] fast for P['run_s'] or longer;
+    two runs of opposite sign at most P['gap_s'] apart, both peaking under P['slow'] (px/s) or P['slow_pct'] (%/s), are a
+    wander (one event per shot). Also the share of the body where the camera moves (a camera that never rests)."""
+    shots, cur, prev = [], [], None
+    for f in frames:
+        w = state.get(f)
+        if prev is not None and (f != prev + 1 or f in breaks):
+            if cur:
+                shots.append(cur)
+            cur = []
+        if w is not None:
+            cur.append((f, w))
+        prev = f
+    if cur:
+        shots.append(cur)
+    events, moving, measured = [], 0, 0
+    need, gap = max(2, int(round(P['run_s'] * fps))), int(round(P['gap_s'] * fps))
+    for shot in shots:
+        for f, w in shot:
+            measured += 1
+            moving += int(w.get('cam_pxs', 0) >= P['min'] or abs(w.get('cam_k', 0)) >= P['min_pct'])
+        axes = (('pans', 'x', [w.get('cam_vec', [0, 0])[0] for _, w in shot], P['min'], P['slow'], 'px/s'),
+                ('pans', 'y', [w.get('cam_vec', [0, 0])[1] for _, w in shot], P['min'], P['slow'], 'px/s'),
+                ('pushes', 'push', [w.get('cam_k', 0.0) for _, w in shot], P['min_pct'], P['slow_pct'], '%/s'))
+        hit = None
+        for what, axis, v, lo, slow, unit in axes:
+            runs_, start = [], None
+            for i, x in enumerate(v + [0.0]):
+                sg = 1 if x >= lo else -1 if x <= -lo else 0
+                if start is not None and sg != start[1]:
+                    a, s_ = start
+                    if i - a >= need:
+                        runs_.append((a, i - 1, s_, max(abs(y) for y in v[a:i])))
+                    start = None
+                if start is None and sg:
+                    start = (i, sg)
+            for r1, r2 in zip(runs_, runs_[1:]):
+                if r1[2] != r2[2] and r2[0] - r1[1] <= gap and max(r1[3], r2[3]) < slow:
+                    hit = dict(**{'from': shot[r1[0]][0], 'to': shot[r2[1]][0]}, axis=axis, what=what,
+                               first=f'{r1[3]:.0f} {unit} {"+" if r1[2] > 0 else "-"}', second=f'{r2[3]:.0f} {unit} {"+" if r2[2] > 0 else "-"}')
+                    break
+            if hit:
+                break
+        if hit:
+            events.append(hit)
+    share = moving / max(1, measured)
+    return dict(events=events, moving_share=round(share, 3), shots=len(shots),
+                busy=bool(measured >= P['busy_s'] * fps and share > P['busy']))
 
 
 def energy_runs(frames, state, breaks, fps, P=ENERGY):
@@ -1524,13 +1585,13 @@ def evaluate(args, info, M, decl):
         if kind == 'end':
             if length > args.max_end_hold:
                 add('hold', 'fail', f'{fa}-{fb}', f'static end tail of {length} f ({length / fps:.1f} s); keep it <= '
-                    f'{args.max_end_hold} f (the audio decay) or give it a visible build (a slow push or drift)')
+                    f'{args.max_end_hold} f (the audio decay): end the film sooner')
         elif kind == 'frozen':
-            add('hold', 'fail', f'{fa}-{fb}', f'{length} f ({length / fps:.1f} s) frozen: reads as a stalled player; '
-                'add a build (push, drift, breath) or declare it with --freeze-ok')
+            add('hold', 'fail', f'{fa}-{fb}', f'{length} f ({length / fps:.1f} s) where nothing changes (a dead stretch, over '
+                f'{DEAD_S:g} s): let the product change state in it, cut sooner, or declare it with --freeze-ok')
         else:
-            add('hold', 'warn', f'{fa}-{fb}', f'{length} f ({length / fps:.1f} s) where only small elements move '
-                f'(mean change {holds[-1]["mean_mad"]}): the frame reads locked-off; add a push or drift')
+            add('hold', 'info', f'{fa}-{fb}', f'{length} f ({length / fps:.1f} s) of still hold where small elements move '
+                f'(mean change {holds[-1]["mean_mad"]}): fine, a hold may be still')
 
     # --- quiet stretches that are not already holds
     quiet = []
@@ -1548,8 +1609,8 @@ def evaluate(args, info, M, decl):
             q['kind'] = 'read' if read_run(fa, fb, q['mean_mad']) else 'quiet'
             quiet.append(q)
             if q['kind'] == 'quiet':
-                add('quiet', 'warn', f'{fa}-{fb}', f'{fb - fa + 1} f of near-stillness (mean change {q["mean_mad"]}); '
-                    'fine for a read, otherwise add drift or a push')
+                add('quiet', 'info', f'{fa}-{fb}', f'{fb - fa + 1} f of near-stillness (mean change {q["mean_mad"]}): a still '
+                    'stretch (fine: the camera moves only with a purpose)')
 
     # --- hook: the opening carries at least the film's typical energy (a muted feed decides in second one)
     hook = None
@@ -1867,9 +1928,8 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
                   and state[f].get('change', 0) < CHANGE_LIVE]
         fz = set(frozen)
 
-        def too_long(r):  # 0.8 s; a read lock may hold 1 s inside a reading window (lib/look.ts GRAMMAR.hold.readLockS)
-            lock = any(min(r[-1] + 1, y) - max(r[0], x) >= 0.5 * len(r) for x, y in reading)
-            return len(r) > (READ_LOCK_S if lock else 0.8) * fps
+        def too_long(r):  # a dead stretch: nothing changes for more than DEAD_S (a still hold shorter than that passes)
+            return len(r) > DEAD_S * fps
 
         runs_f, run = [], []
         for f in body:
@@ -1882,22 +1942,22 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
         if run and too_long(run):
             runs_f.append((run[0], run[-1]))
         for a, b in runs_f:
-            add('hold-drift', sev('fail'), f'{a}-{b}', f'{b - a + 1} f ({(b - a + 1) / fps:.1f} s) frozen outside the end lock: nothing drifts '
-                f'{LIVE_PXS:g} px/s or creeps {LIVE_PCT:g} %/s, and the ground does not change. Give the hold life (a creep of 2-15 %/s, a drift '
-                'of 6-90 px/s, light moving over the ground) and turn it into the exit in its last 12-20 f@60')
+            add('dead-stretch', sev('fail'), f'{a}-{b}', f'{b - a + 1} f ({(b - a + 1) / fps:.1f} s) outside the end lock where nothing changes '
+                f'at all (over {DEAD_S:g} s): let the product change state in it (a value, a row, a cursor), cut sooner or give the shot a '
+                'declared move that lands; never a float or a drift to fake life')
         fast_read = [f for f in body if state[f] is not None and any(x <= f < y for x, y in reading)
                      and (state[f]['cam_pxs'] > 90 or state[f]['cam_pct'] > 15)]
         if fast_read:
-            add('hold-drift', 'warn', fast_read[0], f'{len(fast_read)} frame(s) move faster than 90 px/s or 15 %/s while text is read '
-                f'(from f{fast_read[0]}): a read holds near still (drift 6-90 px/s, creep 2-15 %/s)')
+            add('read-move', 'warn', fast_read[0], f'{len(fast_read)} frame(s) move faster than 90 px/s or 15 %/s while text is read '
+                f'(from f{fast_read[0]}): a read holds still')
         measured = [f for f in body if state[f] is not None]
         still = [f for f in measured if not state[f]['moving']]
         share = len(still) / max(1, len(measured))
         out['holds'] = dict(frozen_runs=[list(r) for r in runs_f], static_share=round(share, 3), body_frames=len(measured),
                             live_share=round(sum(1 for f in measured if state[f]['live']) / max(1, len(measured)), 3))
         if share > 0.15:
-            add('static-share', sev('warn'), f'{f0}-{last}', f'{share * 100:.0f} % of the body stands still (camera, layers and ground '
-                'all under 6 px/s): keep it under 15 % (a premium film is dense in time and calm in space)')
+            add('static-share', 'info', f'{f0}-{last}', f'{share * 100:.0f} % of the body stands still (camera, layers and ground '
+                'all under 6 px/s): fine, holds may be still')
 
         cuts_all = [c for c in cut_frames(extra, acts, cuts, k_) if f0 + k < c < last - 1]
         seam_at = {vf(s['at']): s for s in extra.get('seams', [])}
@@ -1920,8 +1980,8 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
         out['cuts'] = rows
         dead = [r for r in rows if not r['before_moving'] and not r['after_moving']]
         if rows and len(dead) / len(rows) > 0.3:
-            add('still-cut', sev('warn'), dead[0]['frame'], f'{len(dead)} of {len(rows)} cuts go from a still frame to a still frame: a shot '
-                'never starts from rest; carry the speed across (velocity-matched cut, a breath, a whip)')
+            add('still-cut', 'info', dead[0]['frame'], f'{len(dead)} of {len(rows)} cuts go from a still frame to a still frame '
+                '(fine for a calm film; a carried cut flows better where a move runs into the seam)')
         cont = [r for r in rows if 'into' in r and r['kind'] not in PUNCH]
         if cont:
             up = sum(1 for r in cont if r['into']['rising'])
@@ -1930,18 +1990,16 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
                 add('hold-into-exit', sev('warn'), cont[0]['frame'], f'only {up} of {len(cont)} cuts accelerate into the cut: the last 12-20 f@60 '
                     'of a hold turn into the exit (speed growing about x1.11-1.16 a frame), and the cut falls on the fastest frame')
         breaks = set(cuts_all) | {f for f, p in probe_m.pair.items() if p.get('cut')}
-        out['energy'] = en = energy_runs(body, state, breaks, fps)
-        for r in en['runs']:
-            if r['s'] > ENERGY['warn_s']:
-                add('motion-energy', sev('fail' if r['s'] > ENERGY['fail_s'] else 'warn'), f"{r['from']}-{r['to']}",
-                    f"{r['s']:.1f} s where only {r['energy'] * 100:.0f} % of the picture moves {ENERGY['px']:g} px/s or more (under "
-                    f"{ENERGY['low'] * 100:.0f} %: the house holds that at most {ENERGY['warn_s']:g} s, {ENERGY['fail_s']:g} s fails): one small "
-                    'thing moving is a still shot. Keep the act on the camera float (fx/Float ActStage), part the planes (Depth), '
-                    'scroll what lists, let what lands settle on a tail (lib/drift)')
-        if en['measured'] and en['low_share'] > ENERGY['share']:
-            add('motion-energy', sev('warn'), f'{f0}-{last}', f"under {ENERGY['low'] * 100:.0f} % of the picture moves on "
-                f"{en['low_share'] * 100:.0f} % of the body (the house: at most {ENERGY['share'] * 100:.0f} %): drift the camera through "
-                'every shot and give the background its own life')
+        out['energy'] = energy_runs(body, state, breaks, fps)  # info: a still hold passes (dead-stretch fails only nothing changing)
+        out['wander'] = wd = camera_wander(body, state, breaks, fps)
+        for e in wd['events']:
+            add('camera-wander', sev('fail' if len(wd['events']) >= 2 else 'warn'), f"{e['from']}-{e['to']}",
+                f"the camera {e['what']} one way and back inside one shot ({e['axis']}: {e['first']} then {e['second']}, both slow): an "
+                'aimless float. Hold the camera still, or give the shot one declared move that starts, travels and lands (lib/drift '
+                'stageMove, lib/camera camPath)')
+        if wd['busy']:
+            add('camera-wander', sev('warn'), f'{f0}-{last}', f"the camera moves on {wd['moving_share'] * 100:.0f} % of the body and never "
+                'rests: an always-on drift. Let it rest between declared moves (holds may be still)')
         car = []
         decay = 0.97 ** (60 / fps)
         for s in extra.get('seams', []):
@@ -2048,7 +2106,7 @@ MOTION = dict(
     floor=0.05,  # a sample whose mean luma change (code values) is under this, ...
     live_delta=4,  # ... and on which fewer than `live_px` pixels change by this many code values or more, is still
     live_px=8,  # (a slow drift moves its edges by that much: 0.3 px/f@60 shifts a line's edge 5-10 values at 160x90)
-    run=6,  # a frozen run: this many still samples at 30 fps
+    run=int(DEAD_S * 30),  # a frozen run: this many still samples at 30 fps (DEAD_S: a dead stretch; a still hold shorter passes)
     snap_min=2.0,  # a one-sample change at least this large, ...
     snap_side=0.35,  # ... both neighbours under this share of it, is a snap
     snaps_per3=0.6,  # undeclared snaps per 3 s of body
@@ -2346,10 +2404,9 @@ def motion_failures(m, P=MOTION):
         total = m['frozen_frames30']
         if m['declared'] or total > P['frozen_s'] * 30:
             for s, e in m['frozen']:
-                add('motion-frozen', 'fail', f'{s}-{e + m["step"] - 1}', f'{(e - s) / m["step"] / k30 + 1:.0f} f@30 frozen (luma change under '
-                    f"{P['floor']:g}, under {P['live_px']} px changing by {P['live_delta']:g}+): every hold keeps a drift of 0.3-1 px/f (lib/continuity "
-                    'holdDrift); the end lock (END) is the one held stop' + ('' if m['declared'] else f' (this film holds still {total:.0f} f@30 in all; one held stop of up to '
-                                      f"{P['frozen_s'] * 30:.0f} f is the allowance)"))
+                add('motion-frozen', 'fail', f'{s}-{e + m["step"] - 1}', f'{(e - s) / m["step"] / k30 + 1:.0f} f@30 where nothing changes (luma change '
+                    f"under {P['floor']:g}, under {P['live_px']} px changing by {P['live_delta']:g}+; over {DEAD_S:g} s): a dead stretch. Let the product "
+                    'change state in it or cut sooner; a still hold shorter than that is fine')
     if m['decay_median'] is not None and m['decay_median'] < P['decay_min']:
         add('motion-decay', 'fail', m['events'][0]['frame'], f"moves fall from their peak to 20 % of it in a median {m['decay_median']:.1f} "
             f"f@30 (at least {P['decay_min']:g}): land every move on an arrive curve over 16 f@60 or more, with a 4-6 f@30 tail")
@@ -2826,18 +2883,16 @@ def motion_self_test(check):
     one = [(a, a + 1, ('stepped', 'list')) for a in steps]
     m, fl = gates(film(jumps), snaps_ok=one)
     ok('motion-snap' not in fl, 'declared as one stepped device, its jumps pass motion-snap', f"{m['snap_runs']} device(s)")
-    ok('motion-frozen' in fl, '... but its dead holds between the jumps fail motion-frozen', f"{m['frozen_frames30']} f@30 frozen")
-    m, fl = gates(film(lambda f: (jumps(f)[0], drift * f)), snaps_ok=one)
-    ok('motion-frozen' not in fl, 'the same holds drifting 0.5 px/f (holdDrift) are alive', f"{m['frozen_frames30']} f@30 frozen")
+    ok('motion-frozen' not in fl, '... and its still holds between the jumps (0.7 s each) pass: a hold may be still', f"{m['frozen_frames30']} f@30 frozen")
     two = [(a, a + 1, ('stepped', f'tick{a}')) for a in steps[:2]] + [(a, a + 1, ('flash', f'f{a}')) for a in steps[2:]]
     m, fl = gates(film(jumps), snaps_ok=two)
     ok('motion-snap' in fl, 'two or more declared snap devices fail motion-snap (a film keeps one)', f"{m['snap_runs']} devices")
     line = np.full((h * 3, w, 3), 236, np.uint8)
     cv2.rectangle(line, (150, 250), (330, 270), (40, 40, 40), -1)  # one line of type on a clean field
     m, fl = gates(film(lambda f: (0.0, 0.075 * f), img=line))
-    ok('motion-frozen' not in fl, 'a sparse frame drifting 0.3 px/f is not frozen', f"{m['frozen_frames30']} f@30 frozen")
+    ok('motion-frozen' not in fl, 'a sparse frame creeping 0.3 px/f is not frozen', f"{m['frozen_frames30']} f@30 frozen")
     m, fl = gates(film(lambda f: (0.0, 0.0), img=line))
-    ok('motion-frozen' in fl, 'the same frame locked off is frozen', f"{m['frozen_frames30']} f@30 frozen")
+    ok('motion-frozen' in fl, 'the same frame locked off for 3.5 s (nothing changes past DEAD_S) is a dead stretch', f"{m['frozen_frames30']} f@30 frozen")
 
     # a real rest: a move lands on E.glideOut, the picture holds still 16 f, then drifts on: a held beat, not a freeze;
     # the same landing followed by a 40 f still is a dead stretch (frozen)
@@ -2848,12 +2903,13 @@ def motion_self_test(check):
         return pos
 
     m, fl = gates(film(landed(16), smear=True))
-    ok('motion-frozen' not in fl and m['rests_after_landing'] and m['longest_rest60'] >= 8,
-       'a move that lands and rests 16 f@60 before drifting on is a rest after a landing (motion-rest), not motion-frozen',
+    ok('motion-frozen' not in fl and m['longest_rest60'] >= 8,
+       'a move that lands and rests 16 f@60 before moving on is a rest (reported), not motion-frozen',
        f"rests {m['rests_after_landing']}, longest {m['longest_rest60']} f@60, frozen {m['frozen']}")
     m, fl = gates(film(landed(40), smear=True))
-    ok('motion-frozen' in fl and not m['rests_after_landing'], 'the same landing followed by a 40 f still is a dead stretch (fails motion-frozen)',
-       f"frozen {m['frozen']}, rests {m['rests_after_landing']}")
+    ok('motion-frozen' not in fl, 'the same landing followed by a 40 f still hold passes (a hold may be still)', f"frozen {m['frozen']}")
+    m, fl = gates(film(landed(400), smear=True))
+    ok('motion-frozen' in fl, 'the same landing followed by 3.1 s where nothing changes is a dead stretch (fails motion-frozen)', f"frozen {m['frozen']}")
 
     def glide(f):
         return sum(24.0 * glide_out((f - a) / 16) for a in steps), drift * f
@@ -3084,36 +3140,44 @@ def self_test():
 
     A, B = texture(1, w, h), texture(2, w, h)
     n = 90
-    rep = run('frozen', [A] * n, cues(n))
-    check(bool(flags(rep, 'hold-drift', 'fail')), 'a frozen 3 s hold fails hold-drift', f"{len(flags(rep, 'hold-drift', 'fail'))} fail")
-    check(bool(flags(rep, 'static-share', 'warn')), 'a frozen film warns static-share', f"static share {gram(rep).get('holds', {}).get('static_share')}")
+    rep = run('frozen', [A] * 120, cues(120))
+    check(bool(flags(rep, 'dead-stretch', 'fail')), 'a 4 s hold where nothing changes fails dead-stretch', f"{len(flags(rep, 'dead-stretch', 'fail'))} fail")
+    check(not flags(rep, 'static-share', 'warn') and not flags(rep, 'motion-energy'), 'static-share and motion-energy are info only (a still hold passes)')
+    rep = run('still2', [A] * 60 + [warp(A, dx=-6.0 * i) for i in range(30)], cues(90))
+    check(not flags(rep, 'dead-stretch') and not flags(rep, 'hold', 'fail') and not flags(rep, 'hold', 'warn'), 'a 2 s still hold before a move passes (the camera is still unless a shot moves)',
+          str([(x['check'], x['severity']) for x in rep['flags'] if x['check'] in ('hold', 'dead-stretch', 'quiet')]))
     rep = run('creep', [warp(A, k=1 + 0.03 * i / fps) for i in range(n)], cues(n))
-    check(not flags(rep, 'hold-drift', 'fail'), 'a 3 %/s creep keeps the hold alive', f"live share {gram(rep).get('holds', {}).get('live_share')}")
-    check(not flags(rep, 'static-share'), 'a creeping film does not warn static-share', f"static share {gram(rep).get('holds', {}).get('static_share')}")
+    check(not flags(rep, 'dead-stretch', 'fail'), 'a 3 %/s creep is not a dead stretch', f"live share {gram(rep).get('holds', {}).get('live_share')}")
     rep = run('drift', [warp(A, dx=12 * i / fps / 4) for i in range(n)], cues(n))
-    check(not flags(rep, 'hold-drift', 'fail'), 'a 12 px/s drift (at 1080p) keeps the hold alive', f"live share {gram(rep).get('holds', {}).get('live_share')}")
-    check(bool(flags(rep, 'motion-energy', 'fail')), 'the same 12 px/s drift for 3 s is a still shot (motion-energy fails)', json.dumps(gram(rep).get('energy', {}).get('runs', [])[:1]))
-    rep = run('float', [warp(A, dx=24 * i / fps / 4, dy=-10 * i / fps / 4) for i in range(n)], cues(n))
-    check(not flags(rep, 'motion-energy'), 'a 26 px/s camera drift keeps the shot moving (no motion-energy)', f"median {gram(rep).get('energy', {}).get('median')}")
+    check(not flags(rep, 'dead-stretch', 'fail') and not flags(rep, 'camera-wander', 'fail'), 'a 12 px/s one-way creep (at 1080p) is neither dead nor a wander', json.dumps(gram(rep).get('wander', {})))
+    # the old camera float: +-24 px at 1080p sideways at 1.3 rad/s, the push breathing 3 %: it pans one way and back
+    fl6 = [warp(A, dx=24 * math.cos(1.3 * i / fps) / 4, k=1 + 0.015 * (1 + math.sin(1.3 * i / fps))) for i in range(180)]
+    rep = run('float', fl6, cues(180))
+    check(bool(flags(rep, 'camera-wander')), 'the old camera float (24 px sideways, 1.3 rad/s) is an aimless camera (camera-wander)', json.dumps(gram(rep).get('wander', {})))
+    # a designed track: one way, eased from rest to rest, then a still hold
+    trk = [warp(A, dx=-160 / 4 * (lambda t: t * t * (3 - 2 * t))(min(1.0, i / 48))) for i in range(110)]
+    rep = run('track', trk, cues(110))
+    check(not flags(rep, 'camera-wander') and not flags(rep, 'dead-stretch'), 'a declared track that starts, travels and lands, then a still hold, passes', json.dumps(gram(rep).get('wander', {})))
 
     def blob(i):  # a still card with one small chip sliding across it: one small thing moves
         out = A.copy()
         x = int(40 + 3 * i)
         cv2.rectangle(out, (x, 120), (x + 24, 140), (250, 250, 250), -1)
         return out
-    rep = run('onething', [blob(i) for i in range(n)], cues(n))
-    check(bool(flags(rep, 'motion-energy', 'fail')) and not flags(rep, 'hold-drift', 'fail'),
-          'one small chip moving on a still frame for 3 s fails motion-energy (and is not a frozen hold)', json.dumps(gram(rep).get('energy', {}).get('runs', [])[:1]))
-    rep = run('shortstill', [blob(i) for i in range(30)] + [warp(A, dx=40 * i / fps / 4) for i in range(120)], cues(150))
-    check(not flags(rep, 'motion-energy'), 'a 1 s still stretch before a drift is inside the band', json.dumps(gram(rep).get('energy', {}).get('runs', [])[:1]))
-    rep = run('frozen11', [A] * n, cues(n, look=False))
-    check(not flags(rep, 'hold-drift', 'fail') and not flags(rep, 'hold-drift', 'warn'), 'without 1.2 declarations hold-drift is info only')
+    rep = run('onething', [blob(i) for i in range(120)], cues(120))
+    check(not flags(rep, 'motion-energy') and not flags(rep, 'dead-stretch'), 'one small chip moving on a still frame for 4 s passes: the product changes, the camera rests',
+          json.dumps(gram(rep).get('energy', {}).get('runs', [])[:1]))
+    rep = run('frozen11', [A] * 120, cues(120, look=False))
+    check(not flags(rep, 'dead-stretch', 'fail') and not flags(rep, 'dead-stretch', 'warn'), 'without 1.2 declarations dead-stretch is info only')
     # an undeclared film checked with --grammar: its last 2 s are the end lock (a closing card may lock off)
     lock = [warp(A, dx=12 * i / fps / 4) for i in range(60)] + [warp(A, dx=12 * 59 / fps / 4)] * 60
     rep = run('endlock', lock, cues(120, look=False), ['--grammar'])
-    check(not flags(rep, 'hold-drift', 'fail'), 'an undeclared film (--grammar) may lock off in its last 2 s')
+    check(not flags(rep, 'dead-stretch', 'fail'), 'an undeclared film (--grammar) may lock off in its last 2 s')
     rep = run('midlock', lock[60:] + lock[:60], cues(120, look=False), ['--grammar'])
-    check(bool(flags(rep, 'hold-drift', 'fail')), 'the same 2 s lock mid-film fails hold-drift')
+    check(not flags(rep, 'dead-stretch', 'fail'), 'the same 2 s lock mid-film passes (a still hold under 2.5 s)')
+    dead = [warp(A, dx=12 * i / fps / 4) for i in range(30)] + [warp(A, dx=12 * 29 / fps / 4)] * 90 + [warp(A, dx=12 * (29 + i) / fps / 4) for i in range(90)]
+    rep = run('midlock3', dead, cues(210, look=False), ['--grammar'])
+    check(bool(flags(rep, 'dead-stretch', 'fail')), 'a 3 s lock mid-film where nothing changes fails dead-stretch')
     fa, fb = A.astype(np.float32), B.astype(np.float32)
     mix = [A] * 30 + [((1 - t) * fa + t * fb).astype(np.uint8) for t in np.linspace(0, 1, 10)] + [warp(B, dx=i * 0.5) for i in range(50)]
     rep = run('dissolve', mix, cues(90))
@@ -3165,7 +3229,7 @@ def self_test():
     check(not flags(rep, 'spike', 'fail') and not flags(rep, 'ghost') and not flags(rep, 'hold-into-exit'),
           'a declared breath (a hard cut through one empty frame) is craft: no pop, no ghost, no continuity cut', str([x['check'] for x in rep['flags']]))
     rep = run('stillcut', [A] * 45 + [B] * 45, cues(90, seams=[dict(at=45, kind='hard', id='cut')]))
-    check(bool(flags(rep, 'still-cut', 'warn')), 'a cut from a still frame to a still frame warns')
+    check(bool(flags(rep, 'still-cut', 'info')) and not flags(rep, 'still-cut', 'warn'), 'a cut from a still frame to a still frame is reported (info): holds may be still')
     # end-card: with END declared, a lock that arrives after 1.5 s of nothing warns; one that assembles into the lock does not
     lockup = [warp(A, dx=-2.0 * i) for i in range(45)] + [warp(A, dx=-88.0)] * 75
     rep = run('deadend', lockup, cues(120, end={'from': 90, 'to': 120}))
@@ -3204,11 +3268,11 @@ def self_test():
     race[46] = np.full_like(A, 250)  # mid-pose: a pose held 3 frames never makes a one-frame image
     rep = run('stepghost', race, cues(n, stepped=[{'from': 0, 'to': n, 'fps': 10, 'id': 'steps'}]))
     check(bool(flags(rep, 'ghost', 'fail')), 'a one-frame image inside a stepped range of 3-frame poses is still a ghost', f"{len(flags(rep, 'ghost'))} ghost")
-    # the motion gates through the CLI: a list that jumps a row in one frame fails motion-snap and its dead holds motion-frozen
+    # the motion gates through the CLI: a list that jumps a row in one frame fails motion-snap; its short still holds pass
     L = ui_list(w, h * 2)
     hard = [warp(L, dy=-12.0 * sum(1 for a in (12, 27, 42, 57, 72) if i >= a)) for i in range(n)]
     rep = run('hardlist', hard, cues(n))
-    check(bool(flags(rep, 'motion-snap', 'fail')) and bool(flags(rep, 'motion-frozen', 'fail')), 'a list that jumps rows in one frame fails motion-snap and motion-frozen',
+    check(bool(flags(rep, 'motion-snap', 'fail')) and not flags(rep, 'motion-frozen', 'fail'), 'a list that jumps rows in one frame fails motion-snap (its 0.5 s still holds pass)',
           f"{len(flags(rep, 'motion-snap'))} snap, {len(flags(rep, 'motion-frozen'))} frozen")
     # a declared flash is designed: no ghost, no pop (it declares itself through the cues, no --cuts)
     flash = [warp(A, dx=0.25 * i) for i in range(45)] + [np.full_like(A, 250)] + [warp(A, dx=0.25 * (46 + i)) for i in range(44)]
@@ -3257,8 +3321,8 @@ def self_test():
         except (OSError, ValueError):
             rep = {'flags': [], 'thresholds': {}}
         verdict[r] = (sorted({(x['check'], x['severity']) for x in rep['flags'] if x['check'] in ('hold', 'quiet')}), rep.get('thresholds', {}))
-    check(bool(verdict[60][0]) and verdict[60][0] == verdict[30][0] and verdict[30][1].get('quiet_window') == 30 and verdict[30][1].get('max_hold') == 24,
-          'a near-still hold reads the same at 60 and at 30 fps (the quiet window 1 s, the hold run 0.8 s at either rate)',
+    check(verdict[60][0] == verdict[30][0] and all(sv == 'info' for _, sv in verdict[60][0]) and verdict[30][1].get('quiet_window') == 30 and verdict[30][1].get('max_hold') == 75,
+          'a near-still hold reads the same at 60 and at 30 fps, and passes (info; the quiet window 1 s, the dead-stretch run 2.5 s at either rate)',
           f"{verdict[60][0]} / {verdict[30][0]}; at 30 fps window {verdict[30][1].get('quiet_window')} f, hold {verdict[30][1].get('max_hold')} f")
     shutil.rmtree(tmp, ignore_errors=True)
     print('forensics self-test: ' + ('all pass' if not bad else f'{bad} failed'))
