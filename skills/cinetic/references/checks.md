@@ -206,8 +206,13 @@ evaluate (what `grammar-score.mjs` reads for curve roles, durations, staggers an
   `ui-align` fails two rows stacked in one card whose left edges miss by more than 2 px and at most 12 px at 1080 on 2
   audited frames (one frame warns; centred rows, rows flush right together, indents of 16 px or more, a headline over a
   card are fine); `text-on-asset` lists a text box crossing a mark's or a picture's edge (not a caption wholly on a photo,
-  not an asset set in the line) as a ui warning for `look-audit.py --layout` to confirm on the pixels. Run alone on a
-  report: `node scripts/ui-layout.cjs out/qa/layout-Film.json`.
+  not an asset set in the line) as a ui warning for `look-audit.py --layout` to confirm on the pixels; `text-edge` fails
+  text cut by the frame or within 4 % of its edge where it shows, outside a declared crop, on 2 audited frames: product
+  text sliced by a closer frame or a punch-in (a declared bleed lets a pushed statement cross the edge, never a card's
+  label), or carried to the edge by the camera float. A crop that cuts text on purpose says so with `data-audit-crop`.
+  Run alone on a report: `node scripts/ui-layout.cjs out/qa/layout-Film.json`.
+- `--bundle out/render/film/bundle` audits from a bundle render.sh (or `npx remotion bundle`) already built: seconds
+  instead of minutes for the frames of a few closer shots (rebuild it after an edit).
 - Type roles (warnings; `--strict` fails): cap height against bands that hold both type families (caption 2.3-4 %,
   line 4-9 %, display 9-14 %, hero 14-26 %, giant 26-90 % of the frame height; over 90 % warns), readable text under
   the ui size, more than 2 non-UI sizes at once, a line wider than 61 % of the frame (a calm sentence under a 6.5 % cap

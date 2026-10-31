@@ -26,7 +26,9 @@
 # card whose left edges miss by more than 2 px and at most 12 px at 1080, on 2 or more audited frames (one frame warns;
 # rows centred on each other or set flush right together are fine); `text-on-asset` lists text crossing the edge of a mark
 # or a picture (not a caption wholly on a photo, not an asset set in the line) as a ui warning, which look-audit.py
-# --layout confirms on the pixels and fails when the asset is in view there.
+# --layout confirms on the pixels and fails when the asset is in view there; `text-edge` fails text cut by the frame
+# or within 4 % of its edge where it shows, outside a declared crop (data-audit-crop), on 2 audited frames: product
+# text a closer frame or a punch-in slices (a declared bleed lets a pushed statement cross, never a card's label).
 # Placement (on whenever src/timeline.ts gives the COPY): every statement (a COPY entry that is not 'ui' or 'name') is
 # measured where it stands, its boxes merged by id: horizontally centred when its centre is within 10 % of the frame's
 # width of the middle (a line parted round a picture counts by its whole span), in the middle band when its centre sits
@@ -48,7 +50,7 @@
 #                                [--safe feed9x16 | --safe 270,120,420,64 | --safe 96,64]
 #                                [--entry src/index.ts] [--json out/qa/layout-<Comp>.json]
 #                                [--out out/qa/layout-<Comp>] [--concurrency 2] [--strict]
-#                                [--scale 0.5] [--no-placement] [--log render.log]
+#                                [--scale 0.5] [--no-placement] [--log render.log] [--bundle DIR]
 #   frames   --copy (default): each COPY entry's resolved frame, mid-hold and last frame before it leaves
 #            --cues: every CUE frame plus each COPY resolved frame
 #            --frames: an explicit comma list
@@ -75,6 +77,9 @@
 #            aspect (9:16 -> feed9x16). The audit also fails text painted under a data-mover.
 #   scale    renders the stills at this share of the frame (0.25-1; the boxes stay in the composition's px):
 #            a quick placement or layout pass at half size.
+#   bundle   render the stills from a bundle already built (render.sh keeps one in out/render/<name>/bundle,
+#            frames.mjs in its cache) instead of bundling the project again: minutes saved per audit. The bundle
+#            holds the source as it was built: rebuild it after an edit. The timeline is still read from the entry.
 #   log      no render: read the CINETIC_AUDIT lines from this file (a log another renderer kept of the
 #            page's console for the same frames, e.g. renderStill's onBrowserLog with props {"audit":true}).
 # Exit codes: 0 no issues, 1 issues found or the audit did not run, 2 bad arguments.
@@ -85,7 +90,7 @@ usage() { sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; }
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && { pwd -W 2>/dev/null || pwd; })
 die() { echo "layout-audit: $*" >&2; exit 2; }
 
-COMP=""; MODE=copy; FRAMES=""; PROPS="{}"; SAFE=""; ENTRY=src/index.ts; JSON=""; OUTDIR=""; CONC="${CONCURRENCY:-2}"; EVERY=0; STRICT=0
+COMP=""; MODE=copy; FRAMES=""; PROPS="{}"; SAFE=""; ENTRY=src/index.ts; BUNDLE=""; JSON=""; OUTDIR=""; CONC="${CONCURRENCY:-2}"; EVERY=0; STRICT=0
 SCALE=1; PLACE=1; LOGIN=""
 SPEED=""; MAXV=20; MAXR=3
 while [[ $# -gt 0 ]]; do
@@ -106,6 +111,7 @@ while [[ $# -gt 0 ]]; do
     --props) PROPS="${2:?--props needs JSON}"; shift 2 ;;
     --safe) SAFE="${2:?--safe needs a preset, insets or JSON}"; shift 2 ;;
     --entry) ENTRY="${2:?}"; shift 2 ;;
+    --bundle) BUNDLE="${2:?--bundle needs a bundle folder}"; shift 2 ;;
     --json) JSON="${2:?}"; shift 2 ;;
     --out) OUTDIR="${2:?}"; shift 2 ;;
     --concurrency) CONC="${2:?}"; shift 2 ;;
@@ -122,6 +128,7 @@ node -e "const v=Number(process.argv[1]);process.exit(v>=0.25&&v<=1?0:1)" "$SCAL
 # Run from the project root: the current directory if it holds the entry, else this script's parent.
 if [[ ! -f "$ENTRY" ]]; then cd "$(dirname "${BASH_SOURCE[0]}")/.."; fi
 [[ -f "$ENTRY" ]] || die "entry $ENTRY not found (run from the project root or pass --entry)"
+[[ -z "$BUNDLE" || -f "$BUNDLE/index.html" ]] || die "--bundle $BUNDLE holds no index.html (a folder npx remotion bundle or render.sh wrote)"
 JSON="${JSON:-out/qa/layout-$COMP.json}"
 OUTDIR="${OUTDIR:-out/qa/layout-$COMP}"
 mkdir -p "$(dirname "$JSON")"
@@ -253,7 +260,7 @@ echo "layout-audit: $COMP frames $FRAMES$([[ "$SPEED" == 1 ]] && echo " (+ f+1 o
 if [[ -n "$LOGIN" ]]; then
   [[ -f "$LOGIN" ]] || die "--log $LOGIN not found"
   cp "$LOGIN" "$TMP/render.log"
-elif ! { rm -rf "$OUTDIR"; mkdir -p "$OUTDIR"; } || ! FORCE_COLOR=0 NO_COLOR=1 npx remotion render "$ENTRY" "$COMP" "$OUTDIR" --sequence --frames="$RENDER" --props="$ALLPROPS" \
+elif ! { rm -rf "$OUTDIR"; mkdir -p "$OUTDIR"; } || ! FORCE_COLOR=0 NO_COLOR=1 npx remotion render "${BUNDLE:-$ENTRY}" "$COMP" "$OUTDIR" --sequence --frames="$RENDER" --props="$ALLPROPS" \
      --image-format=jpeg --concurrency="$CONC" --scale="$SCALE" --log=verbose > "$TMP/render.log" 2>&1; then
   grep -m1 -E "safe: (unknown preset|[a-z]+ must be)" "$TMP/render.log" >&2 || tail -30 "$TMP/render.log" >&2
   echo "layout-audit: render failed" >&2; exit 1

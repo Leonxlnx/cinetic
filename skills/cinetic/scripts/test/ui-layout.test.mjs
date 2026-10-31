@@ -14,6 +14,10 @@
  *      tagged text (an inline glyph, a button's icon), a line whose words the audit found not drawn over the icon (`over`:
  *      the glyph in the gap the line leaves, a card behind the icon's card); nor an icon under a card (visible < 0.5,
  *      covered) or a faint one.
+ *   3b. text-edge: product text cut by the frame inside a declared bleed (a closer frame) or 30 px from its edge fails on
+ *      2 audited frames and warns on one; text clear of the edge, a statement pushed through, a declared crop
+ *      (data-audit-crop), a scrolling feed, text in flight and faint text pass; a box the camera float carries past the
+ *      edge fails where it shows; a box laid out in the margin is the audit's own safe-area finding; 9:16 keeps 4 % too.
  *   4. The CLI on a report: exit 1 on a ui-align failure, 0 when clean, 2 without a readable report; --help; --ship (and
  *      CINETIC_GATE=ship) fails a text over an icon that dev only warns about.
  *
@@ -29,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CJS = resolve(HERE, '..', 'ui-layout.cjs');
-const { uiLayout, alignFrame, assetFrame } = createRequire(import.meta.url)(CJS);
+const { uiLayout, alignFrame, assetFrame, edgeFrame } = createRequire(import.meta.url)(CJS);
 
 let failed = 0;
 const result = (ok, name, detail = '') => {
@@ -115,6 +119,37 @@ r = uiLayout([over(10, icon({ over: ['headline'] })), over(20, icon({ over: ['he
 result(r.issues.length === 1, "a text the audit found drawn over the icon fails as before");
 r = uiLayout([over(10, icon({ over: [] })), over(20, icon({ over: [] }))], { ship: true });
 result(!r.issues.length && !r.warnings.length, 'a line whose box spans an icon set in its gap, or a card behind the icon (over: []), is no crossing');
+
+// 3b. text-edge: the safe area where the camera crops
+{
+  // a closer frame (a declared bleed) slices a card's label at the right edge; its value sits 30 px inside the edge
+  const cut = (f) => frame(f, [row('pr', 1700, 420, { push: 'bleed', crosses: true, w: 260 }), row('live', 1590, 480, { push: 'bleed', w: 300 })]);
+  r = uiLayout([cut(330), cut(340)]);
+  const ids = r.issues.filter((x) => x.kind === 'text-edge').map((x) => x.id).sort();
+  result(JSON.stringify(ids) === '["live","pr"]' && /cut by the frame's right edge/.test(r.issues.find((x) => x.id === 'pr')?.detail ?? '') && /30 px from the frame's right edge/.test(r.issues.find((x) => x.id === 'live')?.detail ?? ''),
+    'text-edge: product text cut by the frame in a closer frame, and text 30 px from its edge, fail on 2 audited frames', JSON.stringify(r.issues.map((x) => [x.id, x.gap])));
+  r = uiLayout([cut(330)]);
+  result(!r.issues.some((x) => x.kind === 'text-edge') && r.warnings.filter((x) => x.kind === 'text-edge').length === 2, 'text-edge: on one audited frame it warns (mid-move)');
+  const fine = (f) => frame(f, [
+    row('inside', 1400, 420, { push: 'bleed', w: 300 }), // 220 px clear of the edge in the crop
+    row('stmt', 1700, 420, { push: 'bleed', crosses: true, ui: false, px: 140, h: 150 }), // a statement pushed through: the push's
+    row('wall', 1800, 600, { crop: true, crosses: true }), // a declared crop
+    row('feed', 1700, 1000, { scroll: true, crosses: true }), // a list scrolling through
+    row('flying', 1800, 300, { push: 'bleed', crosses: true, speed: 14 }), // in flight
+    row('faint', 1800, 700, { push: 'bleed', crosses: true, opacity: 0.3 }),
+  ]);
+  r = uiLayout([fine(330), fine(340)]);
+  result(!r.issues.some((x) => x.kind === 'text-edge') && !r.warnings.some((x) => x.kind === 'text-edge'),
+    'text-edge: text clear of the edge, a statement pushed through, a declared crop, a scrolling feed, text in flight and faint text pass', JSON.stringify(r.issues.concat(r.warnings).filter((x) => x.kind === 'text-edge').map((x) => x.id)));
+  // the camera float carries a box laid out inside the frame to its edge (x1.3 about the centre): on screen it is cut
+  const floated = (f) => frame(f, [row('card', 1500, 500, { float: [0, 0, 1.3] }), row('mid', 800, 500, { float: [0, 0, 1.3] })]);
+  r = uiLayout([floated(10), floated(20)]);
+  result(r.issues.filter((x) => x.kind === 'text-edge').map((x) => x.id).join() === 'card', 'text-edge: a box the camera float carries past the edge fails where it shows; one it keeps inside passes', JSON.stringify(r.issues.map((x) => x.id)));
+  // the layout itself past the margin is the audit's safe-area finding, not counted twice here
+  result(!edgeFrame(frame(1, [row('margin', 20, 500)])).length, 'text-edge: a box laid out in the margin is left to the audit\'s safe-area (no double count)');
+  // 9:16: the margin is 4 % of that frame
+  result(edgeFrame(frame(1, [row('v', 1080 - 300 - 30, 900, { push: 'bleed' })], { width: 1080, height: 1920 })).length === 1, 'text-edge: in 9:16 the margin is 4 % of that frame (43 px at the sides)');
+}
 
 // 4. the CLI
 const tmp = mkdtempSync(join(tmpdir(), 'cinetic-ui-layout-'));

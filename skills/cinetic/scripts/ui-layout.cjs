@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ui-layout.cjs: product UI is simple and aligned. Two reads on the layout audit's boxes (scripts/layout-audit.sh runs
+ * ui-layout.cjs: product UI is simple, aligned and whole in the frame. Three reads on the layout audit's boxes (scripts/layout-audit.sh runs
  * them on every audit and adds what they find to its report; run alone on a report it already wrote):
  *
  *   ui-align       text rows stacked in one card or panel share their left edge: two readable rows, one right under the
@@ -24,6 +24,15 @@
  *                  behind the icon's card are not over it). An icon beside its label or above it (they touch: a quarter or less on one axis), an icon
  *                  inside its own tagged text and text wholly on a tile are by design. The audit sees whether the icon is in view, so under the ship
  *                  gate (CINETIC_GATE=ship, or --ship) a crossing on 2 or more audited frames fails; in dev it warns.
+ *   text-edge      the safe area where the camera crops: a readable text box cut by the frame or within 4 % of its edge
+ *                  (77 px at the sides, 43 px top and bottom at 1920x1080) where it shows, outside a declared crop. The
+ *                  audit's own safe-area check judges the layout (the camera float taken out) and lets a declared bleed
+ *                  ([data-audit-push="bleed"]: a type push, a closer frame that bleeds past the edges) cross the edge;
+ *                  this read covers what that leaves: product text (data-ui) cut by the frame inside a bleed (a card's
+ *                  label sliced by a punch-in), and any text the camera float carries to the edge. A crop that cuts
+ *                  text on purpose (a wall of words as texture, a giant word cropped) declares it with [data-audit-crop],
+ *                  a scrolling list with [data-audit-scroll]; a statement pushed through the frame stays the push's.
+ *                  On 2 or more audited frames it fails, on one it warns (a frame caught mid-move).
  *
  * Readable: effective opacity >= 0.5, not inside a type push in flight or an active smear, and moving at most 3 px/f
  * (layout-audit --speed, else measured here between audited frames up to 12 frames apart). Each finding is grouped by its pair of ids: ui-align on 2 or more audited frames fails
@@ -41,6 +50,7 @@ const UI_LAYOUT = {
   asset: { cross: 2 }, // px at 1080 each way
   icon: { visible: 0.5, touch: 0.25 }, // an icon in view: this share of it uncovered; text and icon only touch while one axis overlaps by this share of the icon or less
   read: { opacity: 0.5, speed: 3 }, // effective opacity; px/f at 1080 (layout-audit --max-read-speed)
+  edge: { margin: 0.04 }, // the share of the frame's width (sides) and height (top, bottom) text keeps clear where it shows
   persist: 2, // audited frames on which a finding fails
 };
 
@@ -135,6 +145,34 @@ function assetFrame(d) {
   return out;
 }
 
+/** Text cut by the frame or within the edge margin where it shows, outside a declared crop, on one frame:
+ * [{ b, cut, sides, gap }] (gap: px at 1080 to the nearest edge, negative when cut). Inside a declared bleed only product
+ * text (data-ui) is held here (a statement pushed through the frame is the type push's); outside one, only a box the
+ * camera float carries past the margin while its layout sits inside (the audit's safe-area judges the layout). */
+function edgeFrame(d) {
+  const cw = d.width || 1920, ch = d.height || 1080;
+  const k = 1080 / ch;
+  const m = UI_LAYOUT.edge.margin;
+  const out = [];
+  for (const b of (d.boxes || []).filter(readable)) {
+    if (b.scroll || b.crop) continue;
+    const s = onScreen(b, cw, ch);
+    const cut = !!b.crosses || s.x < -1 || s.y < -1 || s.x + s.w > cw + 1 || s.y + s.h > ch + 1;
+    const sides = [s.x < m * cw && 'left', s.x + s.w > (1 - m) * cw && 'right', s.y < m * ch && 'top', s.y + s.h > (1 - m) * ch && 'bottom'].filter(Boolean);
+    if (!cut && !sides.length) continue;
+    if (b.push === 'bleed') {
+      if (!b.ui) continue; // a statement landed as a declared bleed: the audit holds it to crossing the edge
+    } else {
+      // the layout itself: the audit's safe-area judges it; here only what the float adds
+      const inLayout = b.x >= m * cw && b.y >= m * ch && b.x + b.w <= (1 - m) * cw && b.y + b.h <= (1 - m) * ch;
+      if (!inLayout || !b.float) continue;
+    }
+    const gap = Math.min(s.x, s.y, cw - (s.x + s.w), ch - (s.y + s.h)) * k;
+    out.push({ b, cut, sides: sides.length ? sides : ['edge'], gap: r1(gap) });
+  }
+  return out;
+}
+
 /** Each box's speed (px/f at 1080, its centre) from the audited frames on either side when the audit did not measure it
  * (layout-audit without --speed): the slower of the two moves, neighbours up to 12 frames away. A card still flying in
  * or settling is not a resting state, even on 2 audited frames. */
@@ -160,7 +198,7 @@ function withSpeed(frames) {
 
 /** Under the ship gate (CINETIC_GATE=ship, as precheck --ship and the kit gate read it) a text over an icon in view fails. */
 const shipGate = () => (process.env.CINETIC_GATE || '').toLowerCase() === 'ship';
-/** Both reads over the audited frames ([{ frame, width, height, boxes, logos?, imagery?, icons? }]): { issues, warnings }.
+/** The three reads over the audited frames ([{ frame, width, height, boxes, logos?, imagery?, icons? }]): { issues, warnings }.
  * opts.ship: the ship gate (default: CINETIC_GATE=ship). */
 function uiLayout(frames, opts = {}) {
   const ship = opts.ship ?? shipGate();
@@ -173,13 +211,17 @@ function uiLayout(frames, opts = {}) {
   for (const d of withSpeed(frames)) {
     for (const x of alignFrame(d)) add(`ui-align|${x.a.id}|${x.b.id}`, d.frame, { kind: 'ui-align', frame: d.frame, ...x });
     for (const x of assetFrame(d)) add(`text-on-asset|${x.t.id}|${x.kind}|${x.asset.name ?? x.kind}`, d.frame, { kind: 'text-on-asset', frame: d.frame, ...x });
+    for (const x of edgeFrame(d)) add(`text-edge|${x.b.id}|${x.b.text ?? ''}`, d.frame, { kind: 'text-edge', frame: d.frame, ...x, w: d.width || 1920, h: d.height || 1080 });
   }
   const issues = [], warnings = [];
   for (const g of groups.values()) {
     const x = g.first;
     const n = g.frames.length;
     const on = n > 1 ? ` (on ${n} audited frames: ${g.frames.slice(0, 6).join(', ')}${n > 6 ? ', ...' : ''})` : ' (on one audited frame: mid-move?)';
-    const item = x.kind === 'ui-align'
+    const item = x.kind === 'text-edge'
+      ? { frame: x.frame, kind: 'text-edge', id: x.b.id, sides: x.sides, gap: x.gap, frames: g.frames,
+          detail: `"${x.b.text ?? x.b.id}" is ${x.cut ? `cut by the frame's ${x.sides.join(' and ')} edge` : `${x.gap} px from the frame's ${x.sides.join(' and ')} edge`}${x.b.push === 'bleed' ? ' in a crop that bleeds past the frame' : ' where the camera float carries it'}${on}: text stays whole and ${Math.round(UI_LAYOUT.edge.margin * 100)} % inside the frame (${Math.round(UI_LAYOUT.edge.margin * x.w)} px at the sides, ${Math.round(UI_LAYOUT.edge.margin * x.h)} px top and bottom); frame the crop on the text's card, or declare a crop that cuts text on purpose (data-audit-crop)` }
+      : x.kind === 'ui-align'
       ? { frame: x.frame, kind: 'ui-align', id: `${x.a.id}+${x.b.id}`, d: x.d, frames: g.frames,
           detail: `"${x.a.text ?? x.a.id}" and "${x.b.text ?? x.b.id}" stack in one card but their left edges miss by ${x.d} px${on}: rows of a card share one left edge (within 2 px), or sit centred on purpose; an indent is a step of 16 px or more` }
       : x.kind === 'icon'
@@ -187,14 +229,14 @@ function uiLayout(frames, opts = {}) {
             detail: `"${x.t.text ?? x.t.id}" runs ${x.ix}x${x.iy} px over the ${x.asset.name ?? ''} icon in view${on}: an icon sits beside its label with clear space, or in the line as a word (kit/inline.tsx), never under or on text${ship ? '' : ' (the ship gate fails it on 2 audited frames)'}` }
         : { frame: x.frame, kind: 'text-on-asset', id: `${x.t.id}+${x.asset.name ?? x.kind}`, cross: [x.ix, x.iy], frames: g.frames,
             detail: `"${x.t.text ?? x.t.id}" cuts ${x.ix}x${x.iy} px into ${x.kind === 'mark' ? `the ${x.asset.name ?? ''} mark` : 'a picture'}${on}: text sits beside a mark or a picture with clear space, or wholly on a photo as its caption, never across its edge (look-audit.py --layout fails it when the asset is in view there)` };
-    const fails = n >= UI_LAYOUT.persist && (x.kind === 'ui-align' || (x.kind === 'icon' && ship)); // x.kind: ui-align, or the asset's kind
+    const fails = n >= UI_LAYOUT.persist && (x.kind === 'ui-align' || x.kind === 'text-edge' || (x.kind === 'icon' && ship)); // x.kind: ui-align, text-edge, or the asset's kind
     (fails ? issues : warnings).push(item);
   }
   const by = (p, q) => p.frame - q.frame;
   return { issues: issues.sort(by), warnings: warnings.sort(by) };
 }
 
-module.exports = { UI_LAYOUT, uiLayout, alignFrame, assetFrame, shipGate };
+module.exports = { UI_LAYOUT, uiLayout, alignFrame, assetFrame, edgeFrame, shipGate };
 
 if (require.main === module) {
   const fs = require('fs');

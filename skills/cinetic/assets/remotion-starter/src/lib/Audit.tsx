@@ -62,6 +62,9 @@ import { Insets, SafeSpec, presetFor, safeInsets } from './safe';
 // under its colour copy, a smear): it is measured once, at its most opaque copy, never as text overlapping itself.
 // The rows of a list scrolling through the frame ([data-audit-scroll], a feed) cross the frame's edges and pass under
 // the UI that floats over the list: they are not held to the safe zone or to overlap with what is outside the list.
+// A crop that cuts text on purpose (a wall of words as texture, a giant word cropped) declares it with [data-audit-crop]:
+// its text is not held to the safe zone. Product text (data-ui) cut by the frame inside a declared bleed (a closer frame,
+// a punch-in) is no such crop: scripts/ui-layout.cjs text-edge fails it, with text the camera float carries to the edge.
 // Placeholders fail too (lib/placeholder.ts, the lists of scripts/placeholders.json), on every visible element, tagged
 // or not: `placeholder`, text that marks itself unfinished (lorem ipsum, "Placeholder", "Label text", a generic label
 // alone, "Item 1", a template slot left in brackets); `bar-text`, two or more grey bars standing in for lines of text in
@@ -99,7 +102,7 @@ export const CLAIM_MARGIN = 0.025;
 /** The smallest picture the audit logs, as a share of the frame's area (a chip or an icon is not a picture beside a line). */
 export const PICTURE_MIN = 0.02;
 
-type Box = { id: string; text: string; words: number; ui: boolean; smear?: boolean; scroll?: boolean; push?: 'moving' | 'bleed'; claim?: boolean; crosses?: boolean; x: number; y: number; w: number; h: number; px: number; opacity: number; role?: string; cap?: number; float?: [number, number, number] };
+type Box = { id: string; text: string; words: number; ui: boolean; smear?: boolean; scroll?: boolean; push?: 'moving' | 'bleed'; claim?: boolean; crop?: boolean; crosses?: boolean; x: number; y: number; w: number; h: number; px: number; opacity: number; role?: string; cap?: number; float?: [number, number, number] };
 type Issue = { kind: 'safe-area' | 'overlap' | 'small-text' | 'covered' | 'words' | 'placeholder' | 'bar-text' | 'drawn-figure'; id: string; detail: string };
 type Warning = { kind: 'type-size'; id: string; detail: string };
 
@@ -331,6 +334,7 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         smear: el.closest('[data-audit-smear]') !== null || undefined, // drawn inside an active smear (fx/Defocus DirBlur): blurred along its motion
         push: push === 'moving' || push === 'bleed' ? push : undefined, // inside a type push (fx/TypePush): in flight, or landed as a declared bleed
         claim: el.closest('[data-audit-claim]') !== null || undefined, // a claim on the accent (fx/TypeClaim): 2.5 % side margins
+        crop: el.closest('[data-audit-crop]') !== null || undefined, // a declared crop that cuts text on purpose (a wall of words as texture): no safe zone
         crosses: fl < -1 || ft < -1 || fl + full.width / zoom > width + 1 || ft + full.height / zoom > height + 1 || undefined, // the unclipped box runs past the frame's edge
         x: round(ux((r.left - origin.left) / zoom)),
         y: round(uy((r.top - origin.top) / zoom)),
@@ -360,7 +364,7 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         b.y + b.h > height - SAFE.bottom && `bottom ${round(b.y + b.h)}px > ${height - SAFE.bottom}`,
       ].filter(Boolean);
       // resting states only: a push in flight is a camera move; a landed push is a declared bleed that must cross the frame's edge
-      if (out.length && !b.scroll && b.push !== 'moving' && !(b.push === 'bleed' && b.crosses))
+      if (out.length && !b.scroll && !b.crop && b.push !== 'moving' && !(b.push === 'bleed' && b.crosses))
         issues.push({ kind: 'safe-area', id: b.id, detail: `${out.join(', ')} (${zone})${b.push === 'bleed' ? ': a pushed line rests half in the margin; push it on until it crosses the frame edge, or land it inside the safe zone' : ''}` });
       if (b.px < minPx) issues.push({ kind: 'small-text', id: b.id, detail: `${b.px}px < ${round(minPx)}px` });
       const cov = coverOf(b.el);
