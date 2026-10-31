@@ -37,13 +37,13 @@ node scripts/film-diff.mjs --record                           # after the ship g
 shots and two a film, a line over a picture on at most 40 % of the beats, the first line by 1 s, in a film that
 declares its beat plan); precheck `--ship`; layout-audit passing with its placeholder floor and its placement gate
 (statements centred 80 % of their time, in the middle band 85 %, none flush left at the top or bottom, one text-top
-picture-below at most, one split layout per 30 s); forensics passing on the master (its seam checks: every hard cut
-carries a device, at most two ground flips, no seam kind over 45 % of five or more changes); `logos.mjs check` (current
-marks, every brand verified on its own page within 12 months); `film-diff.mjs` (ground, voice, signature and end card
-apart from the last three films, the move set at most 25 % shared, a template film half its slots off the floor); the
-end card centred, built from the last element and held 2-3 s (grid-check reads the template's `end_hold`); the
-ground family's tokens from `palette.py --family`; the sound gates (`references/sound.md`); probe and check-sync
-(`references/finishing.md`); and the director pass with no open P0.
+split at most (a line above a picture filling the rest of the frame), one split layout per 30 s); forensics passing on
+the master (its seam checks: every hard cut carries a device, at most two ground flips, no seam kind over 45 % of five
+or more changes); `logos.mjs check` (current marks, every brand verified on its own page within 12 months);
+`film-diff.mjs` (ground, voice, signature and end card apart from the last three films, the move set at most 25 %
+shared, a template film half its slots off the floor); the end card centred, built from the last element and held 2-3
+s (grid-check reads the template's `end_hold`); the ground family's tokens from `palette.py --family`; the sound gates
+(`references/sound.md`); probe and check-sync (`references/finishing.md`); and the director pass with no open P0.
 
 **Advisory (read them, never a ship gate by default):** `look-audit.py` (the floors against a flat film),
 `grammar-score.mjs` (closeness to the house grammar; it rewards the template, not this film), `measure-speed.py`,

@@ -35,8 +35,10 @@
 # at 35-65 % of the height. Over the statement time (each entry's span shared among its audited frames) at least 80 %
 # centred and 85 % in the middle band, or fail; a statement or a name flush left at the top or the bottom (left of
 # centre and outside the middle band for most of its time) fails; against the pictures the audit logs (lib/Audit.tsx
-# "pictures"): one statement in the top band over a picture below it warns, two fail; split layouts (a line beside a
-# picture, above or below it, in any band) past one per 30 s warn (fail with --strict). --no-placement turns it off.
+# "pictures"): a text-top split (a line above a picture that fills the rest of the frame under it, in any band, or a
+# line in the top band over a picture; a product string set at headline size counts too) warns, two fail; split
+# layouts (a line beside a picture, above or below it, in any band) past one per 30 s warn (fail with --strict).
+# --no-placement turns it off.
 # Placeholders fail on every visible element, tagged or not (src/lib/placeholder.ts, the lists of
 # scripts/placeholders.json): `placeholder` (lorem ipsum, "Placeholder", "Label text", a generic label alone,
 # "Item 1", a template slot left in brackets), `bar-text` (two or more grey bars standing in for lines of text
@@ -380,15 +382,15 @@ const placement = (() => {
     }
     return null;
   };
-  const samples = []; // { id, frame, h, v, layout }
+  const samples = []; // { id, frame, h, v, layout, headline }
   for (const d of audited) {
     const W = d.width, H = d.height;
     const spans = new Map();
     for (const b of d.boxes) {
       const id = idOf(b);
       if (!id || b.ui || b.opacity < 0.5 || b.px < (d.minPx ?? 0) || b.push) continue; // a type push (in flight or landed as a bleed) is a camera move through a line read centred
-      const s = spans.get(id) ?? { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
-      spans.set(id, { x0: Math.min(s.x0, b.x), y0: Math.min(s.y0, b.y), x1: Math.max(s.x1, b.x + b.w), y1: Math.max(s.y1, b.y + b.h) });
+      const s = spans.get(id) ?? { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity, px: 0 };
+      spans.set(id, { x0: Math.min(s.x0, b.x), y0: Math.min(s.y0, b.y), x1: Math.max(s.x1, b.x + b.w), y1: Math.max(s.y1, b.y + b.h), px: Math.max(s.px, b.px ?? 0) });
     }
     const pics = Array.isArray(d.pictures) ? d.pictures : null;
     for (const [id, s] of spans) {
@@ -400,7 +402,16 @@ const placement = (() => {
         const sa = Math.max(1, (s.x1 - s.x0) * (s.y1 - s.y0));
         const ov = (p) => Math.max(0, Math.min(s.x1, p.x + p.w) - Math.max(s.x0, p.x)) * Math.max(0, Math.min(s.y1, p.y + p.h) - Math.max(s.y0, p.y));
         const inFrame = (p) => Math.max(0, Math.min(W, p.x + p.w) - Math.max(0, p.x)) * Math.max(0, Math.min(H, p.y + p.h) - Math.max(0, p.y));
+        // text-top split: the line above a picture that fills the rest of the frame under it (the pictures whose top is
+        // past the line's centre and that share its span across: together at least 40 % of the width and 8 % of the
+        // frame, starting within 12 % of the height under the line), in any band
+        const mid0 = (s.y0 + s.y1) / 2;
+        const under = pics.filter((p) => inFrame(p) >= 0.01 * W * H && p.y >= mid0 && Math.min(s.x1, p.x + p.w) - Math.max(s.x0, p.x) > 0);
+        const ux0 = Math.min(...under.map((p) => Math.max(0, p.x))), ux1 = Math.max(...under.map((p) => Math.min(W, p.x + p.w)));
+        const uy0 = Math.min(...under.map((p) => p.y));
+        const fills = under.length > 0 && ux1 - ux0 >= 0.4 * W && under.reduce((a, p) => a + inFrame(p), 0) >= 0.08 * W * H && uy0 - s.y1 <= 0.12 * H;
         if (pics.some((p) => ov(p) > 0.5 * sa || inFrame(p) >= 0.7 * W * H)) layout = 'over';
+        else if (fills) layout = 'text-top-split';
         else {
           const big = pics.filter((p) => inFrame(p) >= 0.04 * W * H).sort((a, b) => inFrame(b) - inFrame(a))[0];
           if (big) {
@@ -414,7 +425,7 @@ const placement = (() => {
           }
         }
       }
-      samples.push({ id, frame: d.frame, h, v, layout });
+      samples.push({ id, frame: d.frame, h, v, layout, headline: s.px >= 0.045 * H });
     }
   }
   const count = new Map();
@@ -437,8 +448,16 @@ const placement = (() => {
   });
   const stmIds = ids.filter(isStatement);
   const layouts = Object.fromEntries(stmIds.map((id) => [id, major(id, 'layout')]));
-  const textTop = stmIds.filter((id) => layouts[id] === 'text-top/picture-below');
-  const split = stmIds.filter((id) => ['text-top/picture-below', 'text-bottom/picture-above', 'above-picture', 'below-picture', 'beside'].includes(layouts[id]));
+  // a product string set as a headline (a page title at statement size, outside any picture) reads as a line of the film
+  // here: it counts toward the text-top splits by its headline-size samples
+  const headlineUi = ids.filter((id) => byId.get(id).kind === 'ui').filter((id) => {
+    const xs = samples.filter((x) => x.id === id && x.headline);
+    return xs.length && xs.filter((x) => x.layout === 'text-top-split').length * 2 >= xs.length;
+  });
+  const TOP = ['text-top-split', 'text-top/picture-below'];
+  const textTop = [...stmIds.filter((id) => TOP.includes(layouts[id])), ...headlineUi];
+  for (const id of headlineUi) layouts[id] = 'text-top-split';
+  const split = stmIds.filter((id) => [...TOP, 'text-bottom/picture-above', 'above-picture', 'below-picture', 'beside'].includes(layouts[id]));
   const durS = Number(lenArg) > 0 ? Number(lenArg) / (Number(fpsArg) || 60) : 0;
   const splitMax = Math.max(1, Math.ceil(durS / 30));
   const out = {
@@ -453,8 +472,8 @@ const placement = (() => {
     if (out.middle < 85) issues.push({ frame: -1, kind: 'placement', id: 'film', detail: `statements in the middle band ${out.middle} % of their time < 85 %: set the line at 35-65 % of the height (centred top or bottom only over a full-bleed picture)` });
   }
   for (const id of leftTB) issues.push({ frame: -1, kind: 'placement', id, detail: `flush left at the ${major(id, 'v')} of the frame: never; centre it` });
-  if (textTop.length >= 2) issues.push({ frame: -1, kind: 'placement', id: textTop.join('+'), detail: `${textTop.length} statements in the top band over a picture below them (at most 1 a film): give the line its own beat, centred, and the picture the next` });
-  else if (textTop.length === 1) warnings.push({ frame: -1, kind: 'placement', id: textTop[0], detail: "a statement in the top band over a picture below it: the film's one (a second fails)" });
+  if (textTop.length >= 2) issues.push({ frame: -1, kind: 'placement', id: textTop.join('+'), detail: `${textTop.length} text-top splits (a line above a picture filling the rest of the frame, or in the top band over one; at most 1 a film): give the line its own beat, centred, and the picture the next` });
+  else if (textTop.length === 1) warnings.push({ frame: -1, kind: 'placement', id: textTop[0], detail: "a text-top split (a line above a picture filling the rest of the frame): the film's one (a second fails)" });
   if (split.length > splitMax) (strict ? issues : warnings).push({ frame: -1, kind: 'placement', id: split.join('+'), detail: `${split.length} split layouts (a line beside, above or below a picture) > ${splitMax} (1 per 30 s)` });
   return out;
 })();
@@ -481,7 +500,7 @@ if (!byFrame.size) console.log(`  no CINETIC_AUDIT output: does ${comp} accept t
 else if (missing.length) console.log(`  no audit line for frames ${missing.join(',')}`);
 if (placement && placement.samples) {
   const p = placement;
-  console.log(`  placement: centred ${p.centred} % of statement time (>= 80), middle band ${p.middle} % (>= 85), flush left top/bottom ${p.leftTopBottom.length}, text top/picture below ${p.textTopPictureBelow.length} (<= 1), split ${p.split.length} (<= ${p.splitMax}); ${p.statements} statements`);
+  console.log(`  placement: centred ${p.centred} % of statement time (>= 80), middle band ${p.middle} % (>= 85), flush left top/bottom ${p.leftTopBottom.length}, text-top splits ${p.textTopPictureBelow.length} (<= 1), split ${p.split.length} (<= ${p.splitMax}); ${p.statements} statements`);
 }
 const n = audited.reduce((s, d) => s + d.boxes.length, 0);
 const z = report.safe ? ` in ${report.zone} (top ${report.safe.top}, right ${report.safe.right}, bottom ${report.safe.bottom}, left ${report.safe.left})` : '';
