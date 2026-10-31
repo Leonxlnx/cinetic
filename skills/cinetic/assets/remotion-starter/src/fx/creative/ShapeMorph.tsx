@@ -66,7 +66,7 @@ export const ShapeMorph: React.FC<PictureProps & { params?: Params<typeof MORPH>
   const r = mix(st.r, 0, st.open);
   return (
     <div style={{ position: 'absolute', inset: 0, opacity: st.appear }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, width: st.box.w, height: st.box.h, borderRadius: st.r, ...face(st.fill, pal, u), opacity: 1 - st.open, transform: `translate3d(${st.box.x.toFixed(2)}px, ${st.box.y.toFixed(2)}px, 0) scale(${mix(0.6, 1, st.appear).toFixed(4)})`, transformOrigin: '50% 50%' }} />
+      <div style={{ position: 'absolute', left: 0, top: 0, width: st.box.w, height: st.box.h, borderRadius: st.r, ...face(st.fill, pal, u), opacity: 1 - E.softOut(clamp(st.open * 2.5)), transform: `translate3d(${st.box.x.toFixed(2)}px, ${st.box.y.toFixed(2)}px, 0) scale(${mix(0.6, 1, st.appear).toFixed(4)})`, transformOrigin: '50% 50%' }} />
       {st.show > 0 && (
         <div style={{ position: 'absolute', inset: 0, opacity: st.show }}>
           <SceneView node={node} box={box} view={{ s: 1, tx: 0, ty: 0 }} radius={r} W={W} H={H} />

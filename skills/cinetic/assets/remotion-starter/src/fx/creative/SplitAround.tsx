@@ -68,7 +68,7 @@ export const SplitAround: React.FC<LineProps> = ({ f, words, id, size, weight, t
       })}
       {node && grow > 0 && (
         <div style={{ position: 'absolute', inset: 0 }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, width: box.w, height: box.h, borderRadius: r, ...face(pal.surface, pal, u), opacity: 1 - st.open, transform: `translate3d(${box.x.toFixed(2)}px, ${box.y.toFixed(2)}px, 0) scale(${mix(0.6, 1, grow).toFixed(4)})`, transformOrigin: '50% 50%' }} />
+          <div style={{ position: 'absolute', left: 0, top: 0, width: box.w, height: box.h, borderRadius: r, ...face(pal.surface, pal, u), opacity: 1 - E.softOut(clamp(st.open * 2.5)), transform: `translate3d(${box.x.toFixed(2)}px, ${box.y.toFixed(2)}px, 0) scale(${mix(0.6, 1, grow).toFixed(4)})`, transformOrigin: '50% 50%' }} />
           <div style={{ position: 'absolute', inset: 0, transformOrigin: `${W / 2}px ${yc}px`, transform: `scale(${mix(0.6, 1, Math.max(grow, st.open)).toFixed(4)})` }}>
             <SceneView node={node} box={box} focus={mixBox(fb, { x: 0, y: 0, w: W, h: H }, st.open)} radius={r} fit="cover" W={W} H={H} />
           </div>

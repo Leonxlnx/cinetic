@@ -68,7 +68,7 @@ export const TypeObject: React.FC<LineProps> = ({ f, words, id, size, weight, tr
         return <WordAt key={i} id={id} text={w.word} x={row.xs[i] + off + dir * st.away * size * 1.2} y={y + bi.rise} f={base} color={pal.type} opacity={bi.opacity * (1 - st.away)} />;
       })}
       {st.pill > 0 && (
-        <div style={{ position: 'absolute', left: 0, top: 0, width: frame.w, height: frame.h, borderRadius: r, ...face(fill, { ...pal, dark: pal.dark || st.morph < 0.5 }, u, { lift: 0.4 }), opacity: st.pill * (1 - st.open), transformOrigin: '50% 50%', transform: `translate3d(${frame.x.toFixed(2)}px, ${frame.y.toFixed(2)}px, 0) scale(${mix(0.86, 1, st.pill).toFixed(4)})` }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, width: frame.w, height: frame.h, borderRadius: r, ...face(fill, { ...pal, dark: pal.dark || st.morph < 0.5 }, u, { lift: 0.4 }), opacity: st.pill * (1 - E.softOut(clamp(st.open * 2.5))), transformOrigin: '50% 50%', transform: `translate3d(${frame.x.toFixed(2)}px, ${frame.y.toFixed(2)}px, 0) scale(${mix(0.86, 1, st.pill).toFixed(4)})` }} />
       )}
       {node && st.morph > 0 && (
         <div style={{ position: 'absolute', inset: 0, opacity: E.softOut(clamp(st.morph * 1.6)) }}>

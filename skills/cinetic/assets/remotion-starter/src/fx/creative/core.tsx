@@ -9,7 +9,8 @@
 // px@1080), converted with the film's fps and size.
 import React from 'react';
 import { clamp, E, mix } from '../../lib/anim';
-import { mixColor, toOklch } from '../../lib/color';
+import { CARD, type CardInks, cardInks, cardShadow } from '../../kit/card';
+import { mixColor, oklch, toOklch } from '../../lib/color';
 import { type FilmCtx, fpsOf, sizeOf, uOf } from '../../lib/film';
 
 /** The inks a device draws in (a ground family's inks fit: fx/Grounds FamilyInks). */
@@ -111,28 +112,28 @@ export const isLightColour = (c: string) => toOklch(c)[0] > 0.8;
 export const inkFor = (fill: string, pal: Pal) => (toOklch(fill)[0] < 0.66 ? (pal.dark ? pal.type : mixColor(pal.ground, '#ffffff', 0.92)) : pal.dark ? pal.ground : pal.type);
 
 /**
- * The lit face of a card facing the camera (CSS): its fill lit from the key at the top left, a rim on the edges facing
- * it, a tight contact shadow and a wide soft one. Never a flat slab, never an outline.
+ * The lit face of a card facing the camera (CSS), in the film's one card material (kit/card, the light every other card
+ * has): an opaque face with a quiet vertical sheen (lit from above, 1-2 L* top to bottom, never a diagonal wash), a
+ * hairline and an inner top highlight, a tight contact shadow and a broad ambient one under the key, and a third layer
+ * while it is lifted toward the lens (`lift` 0..1: a designed move, never an idle bob). The palette's surface (or white)
+ * takes the house card for the ground it sits on; a coloured fill (the accent dot, a pill) keeps its colour in the same
+ * light. `flat`: the edge light without the shadow (a card inside a card). Never a flat slab, an outline or translucent.
  */
 export const face = (bg: string, pal: Pal, u: number, o: { lift?: number; flat?: boolean } = {}): React.CSSProperties => {
-  const lift = o.lift ?? 0;
-  const e = (1.5 * u).toFixed(2);
-  const light = isLightColour(bg);
-  if (pal.dark && light) {
-    return {
-      background: `linear-gradient(158deg, ${bg} 0%, ${bg} 46%, ${mixColor(bg, pal.ground, 0.08)} 100%)`,
-      boxShadow: o.flat ? 'none' : `inset 0 ${(-2.5 * u).toFixed(2)}px 0 ${mixColor(bg, pal.ground, 0.16)}, inset 0 ${e}px 0 #ffffff, 0 ${(8 * u).toFixed(1)}px ${(18 * u).toFixed(1)}px rgba(0, 0, 0, ${(0.26 + 0.06 * lift).toFixed(3)}), 0 ${(40 * u + lift * 12 * u).toFixed(1)}px ${(96 * u).toFixed(1)}px rgba(0, 0, 0, ${(0.36 + 0.08 * lift).toFixed(3)})`,
-    };
+  const lift = clamp(o.lift ?? 0);
+  const [L, Cc, h] = toOklch(bg);
+  const dark = L < 0.5;
+  const base = cardInks(dark ? 'dark' : 'light', pal.ground, pal.accent);
+  let inks: CardInks = base;
+  if (!(Cc < 0.02 && (bg === pal.surface || /^#f{6}$/i.test(bg)))) {
+    const sheen = dark ? CARD.sheen.dark : Math.max(CARD.sheen.light, 0.018);
+    inks = { ...base, face: bg, faceTop: oklch(Math.min(0.995, L + sheen * 0.5), Cc, h), faceBottom: oklch(Math.max(0, L - sheen * 0.5), Cc, h), dark };
   }
-  if (pal.dark || !light) {
-    return {
-      background: `linear-gradient(152deg, ${mixColor(bg, '#ffffff', 0.09)} 0%, ${bg} 42%, ${mixColor(bg, '#000000', 0.09)} 100%)`,
-      boxShadow: o.flat ? 'none' : `inset 0 ${e}px 0 ${mixColor(bg, '#ffffff', 0.32)}, inset ${e}px 0 0 ${mixColor(bg, '#ffffff', 0.18)}, 0 ${(10 * u).toFixed(1)}px ${(22 * u).toFixed(1)}px rgba(0, 0, 0, ${(0.22 + 0.06 * lift).toFixed(3)}), 0 ${(34 * u + lift * 10 * u).toFixed(1)}px ${(80 * u).toFixed(1)}px rgba(0, 0, 0, ${(0.3 + 0.08 * lift).toFixed(3)})`,
-    };
-  }
+  const shadow = cardShadow(inks, toOklch(pal.ground)[0], lift, u);
   return {
-    background: `linear-gradient(160deg, ${bg} 0%, ${bg} 55%, ${mixColor(bg, pal.type, 0.03)} 100%)`,
-    boxShadow: o.flat ? 'none' : `inset 0 ${e}px 0 ${mixColor(bg, '#ffffff', 0.9)}, 0 ${(3 * u).toFixed(1)}px ${(8 * u).toFixed(1)}px rgba(0, 0, 0, 0.05), 0 ${(26 * u + lift * 8 * u).toFixed(1)}px ${(64 * u).toFixed(1)}px rgba(0, 0, 0, ${(0.1 + 0.04 * lift).toFixed(3)})`,
+    background: `linear-gradient(180deg, ${inks.faceTop} 0%, ${inks.faceBottom} 100%)`,
+    // the layers split at top-level commas (an rgba() holds commas of its own)
+    boxShadow: o.flat ? shadow.split(/,\s*(?![^()]*\))/).filter((x) => x.startsWith('inset')).join(', ') : shadow,
   };
 };
 
