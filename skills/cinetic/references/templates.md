@@ -91,7 +91,7 @@ dense table; an approve change's `photos`, the real pictures its review approves
 
 The UI tells the story, so the viewer always knows what the product does; six short lines say what each step
 means. Ten acts on whole bars at 120 BPM (37 s): `open` (the promise, its last word snapping the line x2.2 in one frame), `card`
-(the user's input as one tilted card rising while the ground turns; ONE hidden-cut frame of scale, tilt and a tinted
+(the user's input as one tilted card rising; ONE hidden-cut frame of scale, tilt and a tinted
 swell makes the same card the output, which then builds its three steps), `proof` (notices piling up, `fx/Stack`),
 `claim` (its first word giant, then a one-frame snap out to the line), `field` (a held backspace, the value typed in
 bursts, the hand rising onto the button, results developing, a pull-back about the upper third), `feed` (a hard flick
@@ -101,13 +101,14 @@ builds), `page` (the output flies up and flattens), `end`. Slots: `src/walk.ts`;
 the product the input lives on (the card's tile and the field's lead; `scripts/logos.mjs`); `photos.people` are real
 portraits of the feed's people (the rows, the pill, the quotes, the two beside the card), `photos.results` the found
 items' pictures, `photos.input` the input's own picture when its source has no mark: empty, people show as initials.
-The first of proof, pick or field stands on the tilted tint (`fx/Grounds` `tint`).
+The first of proof, pick or field stands on the tilted tint (`fx/Grounds` `tint`). The stage flips paper <-> slate at
+most twice, both at the claim (`mixed`: paper until the claim, the slate from it on).
 
 ## capability-reel
 
 Breadth, then one real proof, then the claim and the name; state changes are hard steps, only the camera and the
-containers ease. Seven acts on whole bars at 120 BPM (21 s): `sources` (one line inside a ring of sources; the page darkens as the
-inner ring closes into a disc), `record` (the disc grows into one real record; a whip pan opens its fields; the page
+containers ease. Seven acts on whole bars at 120 BPM (21 s): `sources` (one line inside a ring of sources; the ring tightens on
+the paper as the inner ring closes into a disc), `record` (the disc grows into one real record, a lit card on the same paper; a whip pan opens its fields; the page
 grid is the card's own and two accent cells hop on the kicks), `statement` (a hard cut on a kick to a light card that
 squashes round its line, `Resize` carry, and counter-creeps into a zoom-out), `ticker` (`MaskList` and an icon tile,
 a hard step every 10 f), `claim` (the film's one colour event: two fragments, the first pushing up and dimming as the
@@ -186,7 +187,7 @@ or built word by word; it leaves right at full ink into a cut at speed), `pain` 
 push through it, `fx/TypePush`, or in front of the real marks of the tools it names in a `DepthStack`), `promise` (the
 product opening in the line as a pill that looks into its screen, after a roll through the real marks of what it works
 with, or with the camera pushing through the line into it; the second half appended; the pill grows into the cut),
-`picture` (the product's own `DenseScreen` as a `Lit` panel on the film's one 3D turn or in a depth stack; it recedes
+`picture` (the product's own `DenseScreen` as a `Lit` panel on the mid stone, a deeper place in the page's light, on the film's one 3D turn or in a depth stack; it recedes
 out of focus as the mark and the name arrive), `system` (the one wipe: the feathered `Wipe`, the push-wipe parked by
 the mark until the second half, or a lit sheet; the mark between the halves, a push in on it, the words folding into
 it on the cut), `grid` (the product's parts as content tiles round the mark: a radial wave, a ring or three planes;

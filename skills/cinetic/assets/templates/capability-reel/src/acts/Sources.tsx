@@ -9,14 +9,14 @@ import { mixColor } from '../lib/color';
 import { creep } from '../lib/handoff';
 import { ACT, copy, CUE, f60x, FPS, H, W } from '../timeline';
 import { REEL } from '../reel';
-import { INK, LIGHT, lineSize, useAbs } from './stage';
+import { LIGHT, lineSize, useAbs } from './stage';
 
 /** The sources' chips pop on in groups with a breath between them (lib/cadence; sync.ts sounds the same onsets), the span of a 6 f stagger. */
 export const CHIP_AT = phraseOnsets(CUE.chips, REEL.sources.length, f60x(6), { shape: 'group', seed: 'sources' });
 
 // SOURCES - one line in the middle of a ring of sources: the line arrives word by word, the sources pop in round it
-// on a stagger and orbit slowly. Then the page darkens fast (most of the way in a few frames), the sources shrink
-// out one by one, the outer ring stretches into a stadium and the inner ring closes into a disc: the record grows
+// on a stagger and orbit slowly. Then the ring tightens fast (most of the way in a few frames) on the same paper (the
+// film keeps one ground until the claim: at most two colour events a film), the sources shrink out one by one, the outer ring stretches into a stadium and the inner ring closes into a disc: the record grows
 // out of that disc in the next act. The sources are their real marks: app-icon tiles when every source has one
 // (scripts/logos.mjs), a mark and its name on a pill for one that has, the text pill for one that has not.
 
@@ -42,20 +42,20 @@ export const Sources: React.FC = () => {
   const t = LIGHT;
   const c = copy('sources');
   const size = lineSize(c.text, 'line', 0.8);
-  const dark = prog(F, CUE.darken, CUE.darken + f60x(12), E.softOut); // the page darkens: most of it in the first frames
+  const dark = prog(F, CUE.darken, CUE.darken + f60x(12), E.softOut); // the ring tightens: most of it in the first frames (the paper stays)
   const close = prog(F, CUE.disc - f60x(8), ACT.record.from, E.buildIn); // the inner ring closes into the disc
   const k = creep(F, 0, { pctPerSec: 0.03 }, FPS);
   const orbit = ((F - CUE.chips) / FPS) * 0.035; // radians a second: a slow orbit
   const n = REEL.sources.length;
-  const ground = mixColor(t.ground, INK.ground, dark);
-  const ringColour = mixColor(t.line, INK.raised, dark);
+  const ground = t.ground;
+  const ringColour = mixColor(t.line, t.mute, 0.35 * dark); // the ring firms as it tightens
   return (
     <AbsoluteFill style={{ background: ground, overflow: 'hidden' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: '50% 50%', transform: `scale(${k.toFixed(5)})` }}>
-        {/* the outer ring stretching into a stadium as the page darkens; the inner ring closing into the disc */}
+        {/* the outer ring stretching into a stadium as it tightens; the inner ring closing into the disc (the record card's own fill) */}
         <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0 }} aria-hidden>
           <rect x={W / 2 - RING.rx * mix(1, 1.5, dark)} y={H / 2 - RING.ry * mix(1, 0.42, dark)} width={2 * RING.rx * mix(1, 1.5, dark)} height={2 * RING.ry * mix(1, 0.42, dark)} rx={RING.ry * mix(1, 0.42, dark)} fill="none" stroke={ringColour} strokeWidth={2 * U} opacity={1 - clamp((dark - 0.6) / 0.4)} />
-          <ellipse cx={W / 2} cy={H / 2} rx={mix(RING.inner.rx, RING.disc, close)} ry={mix(RING.inner.ry, RING.disc, close)} fill={INK.raised} fillOpacity={close} stroke={ringColour} strokeWidth={2 * U} />
+          <ellipse cx={W / 2} cy={H / 2} rx={mix(RING.inner.rx, RING.disc, close)} ry={mix(RING.inner.ry, RING.disc, close)} fill={t.raised} fillOpacity={close} stroke={ringColour} strokeWidth={2 * U} />
         </svg>
         {REEL.sources.map((s, i) => {
           const at = CHIP_AT[i];

@@ -66,9 +66,9 @@
  },
  "slots": {
   "stage": {
-   "mixed": "statements on paper, the product on the slate",
-   "light": "every act on paper, the claim on the slate",
-   "dark": "every act on the slate, the claim on paper"
+   "mixed": "paper until the claim, the slate from the claim on (the claim turns the film once)",
+   "light": "every act on paper, the claim on the slate (out and back: the film's two flips)",
+   "dark": "every act on the slate, the claim on paper (out and back: the film's two flips)"
   },
   "open": {
    "line": "the promise with the source's mark inside it (acts/type.tsx MarkLine, on its dealt move) in a slow push",

@@ -2,7 +2,7 @@ import React from 'react';
 import { AbsoluteFill, staticFile } from 'remotion';
 import { U } from '../brand/tokens';
 import { stepValue } from '../fx/HardStep';
-import { Chip, DataRow, face, FileThumb, KIT_TYPE, Meter, Photo } from '../kit';
+import { Chip, DataRow, face, FileThumb, KIT_TYPE, Meter, Photo, surfaceShadow } from '../kit';
 import { E, mix, prog, track } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { phraseOnsets } from '../lib/cadence';
@@ -10,9 +10,9 @@ import { creep } from '../lib/handoff';
 import { ACT, CUE, f60x, FPS, H, HOPS, W } from '../timeline';
 import { REEL } from '../reel';
 import { RING } from './Sources';
-import { INK, useAbs } from './stage';
+import { LIGHT, useAbs } from './stage';
 
-// RECORD - one real record on the ink stage. The disc grows into a rounded card (width and height lead, the
+// RECORD - one real record on the paper (the sources' own ground: no flip before the claim), a lit card. The disc grows into a rounded card (width and height lead, the
 // height overshooting once and landing, the corners tightening, the fill catching up a few frames late); the accent
 // rises through its picture; a whip pan to the left opens the card into the record's fields, which arrive one per
 // two or three frames, top down. The page's grid is the card's own (its pitch a quarter of the picture's width, its
@@ -46,7 +46,7 @@ const CELLS: [number, number][][] = [
 
 export const RecordCard: React.FC = () => {
   const F = useAbs('record');
-  const t = INK;
+  const t = LIGHT;
   const b = cardBox(F);
   const fill = mixColor(t.raised, t.surface, prog(F, ACT.record.from + f60x(4), ACT.record.from + f60x(14), E.snapOut)); // the fill lags the shape
   const grad = prog(F, CUE.grad, CUE.grad + f60x(22), E.snapOut);
@@ -69,7 +69,7 @@ export const RecordCard: React.FC = () => {
           ))}
           {F >= ACT.record.from + f60x(12) && cells.map(([c, r], i) => <rect key={i} x={b.x + c * pitch} y={b.y + r * pitch} width={pitch} height={pitch} fill={t.accent} opacity={0.85} />)}
         </svg>
-        <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: b.w, height: b.h, borderRadius: b.r, overflow: 'hidden', background: fill, transform: `translate3d(${b.x.toFixed(2)}px, ${b.y.toFixed(2)}px, 0)` }}>
+        <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: b.w, height: b.h, borderRadius: b.r, overflow: 'hidden', background: fill, boxShadow: surfaceShadow(t, 30, U), transform: `translate3d(${b.x.toFixed(2)}px, ${b.y.toFixed(2)}px, 0)` }}>
           {/* the picture, the accent rising through it */}
           <div style={{ position: 'absolute', left: 0, top: 0, width: CARD.media, height: CARD.h, opacity: prog(F, ACT.record.from + f60x(6), ACT.record.from + f60x(16), E.snapOut) }}>
             {REEL.record.photo ? <Photo theme={t} w={CARD.media} h={CARD.h} src={staticFile(REEL.record.photo)} push={prog(F, ACT.record.from, ACT.record.from + ACT.record.dur, E.linear) * 0.5} /> : <FileThumb theme={t} w={CARD.media} h={CARD.h} name={REEL.record.file.name} size={REEL.record.file.size} seed={41} />}

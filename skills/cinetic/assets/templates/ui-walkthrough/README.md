@@ -23,7 +23,8 @@ play one fixed sequence. Print the deal: `npx tsx -e "import { DEAL, LINES } fro
 | 9 | `page` | the output, live, lit and tilted | `lit`, `stack` | `page` |
 | 10 | `end` | the mark's parts, the name on a confident move, the payoff line; it holds about a second and a half | `side` (the output live beside the lockup), `centre` | `lines.payoff`, the name |
 
-The stage (`mixed`, `light`, `dark`) says which acts stand on paper and which on the slate; each act gets a clean ground
+The stage (`mixed`, `light`, `dark`) says which acts stand on paper and which on the slate, with at most two ground flips
+a film, both at the claim (`mixed` turns from paper to the slate there once); each act gets a clean ground
 of its own (`acts/stage.tsx` GROUNDS: the flat base or the key gradient on one of two bases, never one ground for more
 than two acts in a row; no plates, no pools, no haze). Each line of the script arrives on one confident move dealt per
 line (`LINES`: mask, land, fall or glide, never the same twice in a row; the payoff takes a quick one) and leaves at

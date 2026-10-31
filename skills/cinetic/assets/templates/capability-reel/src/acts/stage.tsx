@@ -1,5 +1,6 @@
-// What every act of the reel shares: three grounds (a light paper, a deep ink stage for the record, the accent for the
-// claim), the absolute frame, a line of the script set on one line and sized to fit, and placement helpers.
+// What every act of the reel shares: three grounds (the paper from the sources to the ticker and in the rings, the accent
+// for the claim, the ink of the end card: two colour events), the absolute frame, a line of the script set on one line
+// and sized to fit, and placement helpers.
 // Retell it in the dealt direction's world (out/DIRECTION.md): its grounds, light and type replace this floor; the
 // product's own record replaces the kit parts the record act uses.
 import React from 'react';
@@ -11,7 +12,7 @@ import { type FloatOpts, withLocks } from '../lib/drift';
 import { IDENTITY } from '../brand/identity';
 import { ACT, type ActName, copy, FPS, H, W } from '../timeline';
 
-/** The paper, the ink stage (a tinted near-black, never #000) and the theme on the accent. */
+/** The paper, the ink stage of the end card (a tinted near-black, never #000) and the theme on the accent. */
 export const LIGHT = kitTheme('tintedPaper', C.accent);
 export const INK = kitTheme('inkStage', C.accent);
 

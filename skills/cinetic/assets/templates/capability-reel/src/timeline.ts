@@ -1,5 +1,5 @@
 // The single source of truth for time, for a capability reel: the close of a launch film. A ring of sources around
-// one line, the page darkening as one ring becomes a disc that grows into a real record, a statement on a light card
+// one line, the ring tightening as one ring becomes a disc that grows into a real record, a statement on a light card
 // that squashes round its line, a ticker through what the product returns, the big claim on the accent, a graphic
 // transition out of its full stop, and the end card. Picture (src/acts), sound (src/sync.ts -> out/cues.json) and
 // QA (scripts/grid-check.ts) all import this file. The facts live in src/reel.ts. Think in beats, never in seconds.
@@ -101,7 +101,7 @@ const TAGLINE_AT = beatAfter(bt(TITLE_AT) + f60(TITLE_LEAD + TITLE_TYPE + holdFo
 // Named sync points (absolute frames), all on the 16th grid. Picture code reads these; src/sync.ts turns them into
 // sound events. Salience below says what each asks of the eye.
 export const CUE: Record<string, number> = {
-  // sources: the line, the sources popping in round it, a slow orbit; the page darkens and the inner ring becomes a disc
+  // sources: the line, the sources popping in round it, a slow orbit; the ring tightens and the inner ring becomes a disc
   line: bt(0.25),
   chips: bt(0),
   chipsIn: bt(2),
@@ -217,7 +217,6 @@ export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'launch', oneTake: false, whiteWorld: false };
 /** Every seam: one container carried into the next, a hard cut on a kick, zooms and momentum carried, a zoom through the claim's full stop. */
 export const SEAMS: Seam[] = [
-  { at: CUE.darken, kind: 'colour', carry: 'colour', id: 'page-darkens' },
   { at: ACT.record.from, kind: 'morph', carry: 'shape', id: 'ring-becomes-record' },
   { at: CUE.pan, kind: 'whip', carry: 'x', dir: -1, id: 'pan-opens-the-record' },
   { at: ACT.statement.from, kind: 'hard', id: 'cut-on-the-kick' },

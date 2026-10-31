@@ -39,9 +39,13 @@ export const keysFor = (id: string, text: string) => keysOf(text, (EXPLAIN.keys 
 import { type FloatOpts, withLocks } from '../lib/drift';
 import { ACT, type ActName, copy, CUE, f60x, FPS, H, W } from '../timeline';
 
-/** The page: a tinted white, ink type, the one accent. The product's own stage is the mid slate (white type reads on it). */
+/**
+ * The page: a tinted white, ink type, the one accent. The product's own stage is the mid stone, a deeper place in the
+ * same light family (ink type reads on it), so the film never flips paper <-> slate: its one colour event is the
+ * accent's (the end's claim), at most two a film.
+ */
 export const PAGE = kitTheme('tintedPaper', C.accent);
-export const SHOT = kitTheme('slateMid', C.accent);
+export const SHOT = kitTheme('stoneMid', C.accent);
 
 /** The absolute film frame inside an act (acts are Sequences: their own frame starts at 0). */
 export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;
@@ -59,7 +63,7 @@ export const FLOAT: FloatOpts = withLocks({ seed: SEED }, [copy('what')], { fps:
  * The page's grounds, one per act, dealt from the film's seed (fx/Grounds dealGrounds, the clean kinds): two paper
  * tones, each a flat field or a very subtle wash lit from the film's one key (you feel the key, you never see a glow),
  * never the same ground on more than two consecutive shots. No beams, no pools, no haze: the ground stays clean behind
- * the words. The product's act sits on the mid slate's key (fx/Grounds 'key': the key side lifted, the far side falling
+ * the words. The product's act sits on the mid stone's key (fx/Grounds 'key': the key side lifted, the far side falling
  * deep) or on a plate of the film's own picture (PLATE_SRC): its own place, never a flat grey field. The grid of the
  * product's parts stands on the tilted tint (fx/Grounds 'tint'), the film's one colour ground.
  */
@@ -119,11 +123,11 @@ export const ActGround: React.FC<{ F: number; act: ActName; from?: ActName; cam?
   return (
     <>
       {from && fade < 1 && <Ground frame={F} spec={GROUNDS[from]} cam={cam} />}
-      {from && fade < 1 && <LightEvent F={F} act={from} dark={GROUNDS[from].base === SHOT.ground} fade={1 - fade} />}
+      {from && fade < 1 && <LightEvent F={F} act={from} dark={SHOT.dark && GROUNDS[from].base === SHOT.ground} fade={1 - fade} />}
       <div style={{ position: 'absolute', inset: 0, opacity: fade }}>
         <Ground frame={F} spec={GROUNDS[act]} cam={cam} />
       </div>
-      <LightEvent F={F} act={act} dark={GROUNDS[act].base === SHOT.ground} />
+      <LightEvent F={F} act={act} dark={SHOT.dark && GROUNDS[act].base === SHOT.ground} />
     </>
   );
 };

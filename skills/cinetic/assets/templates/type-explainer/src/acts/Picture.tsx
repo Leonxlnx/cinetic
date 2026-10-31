@@ -11,12 +11,13 @@ import { capOf, MarkWord, SHOT, useAbs, useCrisp } from './stage';
 
 // PICTURE - the product the promise opened, full bleed: the same world (acts/product.tsx), so the pill's last frame
 // is this shot's first, and the growth carries on as a zoom that settles (it never stops on the cut). The screen is
-// texture here: as the name arrives the screen recedes (out of focus, a little darker), the mark pops and the name rises in on the crisp
+// texture here: as the name arrives the screen recedes (out of focus, a little quieter), the mark pops and the name rises in on the crisp
 // entry in front of it, the one line read. The next act wipes this shot away (PictureShot draws it there too).
 
 /** The name's size over the product (px at 1080p). */
 const TITLE = { size: 132, veil: 0.3, defocus: 5 } as const;
-const VEIL = `rgb(${SHOT.shade.join(', ')})`;
+/** The veil the screen recedes into as the name arrives: toward the ground's shade on a dark stage, toward its raised tone on a light one (the name's ink keeps its contrast). */
+const VEIL = SHOT.dark ? `rgb(${SHOT.shade.join(', ')})` : SHOT.raised;
 
 /** The picture shot at absolute frame F: the system act draws it under its wipe, so the shot runs on unbroken. */
 export const PictureShot: React.FC<{ F: number }> = ({ F }) => {

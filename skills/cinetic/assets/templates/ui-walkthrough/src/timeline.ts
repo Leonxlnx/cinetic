@@ -203,14 +203,16 @@ export type Declares = { stepped?: SteppedRange[]; flashes?: Flash[]; cameraBlur
 export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 
 /**
- * Where each act stands, by the dealt stage: 'mixed' (statements on paper, the product on the slate), 'light' (all
- * paper, the claim on the slate) or 'dark' (all slate, the claim on paper). The feed and the insight share one ground:
- * the found item morphs into the pill across that act line.
+ * Where each act stands, by the dealt stage: 'mixed' (paper until the claim, the slate from the claim on: the claim
+ * turns the film once), 'light' (all paper, the claim on the slate) or 'dark' (all slate, the claim on paper). At most
+ * two ground flips a film (paper <-> slate), each a declared colour event (COLOUR, or a 'colour' seam): the claim is the
+ * film's one turn; the page and the end keep the stage. The feed and the insight share one ground: the found item
+ * morphs into the pill across that act line.
  */
 const PLAN: Record<(typeof DEAL)['stage'], Record<ActName, 'light' | 'dark'>> = {
-  mixed: { open: 'light', card: 'dark', proof: 'dark', claim: 'light', field: 'dark', feed: 'dark', insight: 'dark', pick: 'light', page: 'dark', end: 'dark' },
-  light: { open: 'light', card: 'light', proof: 'light', claim: 'dark', field: 'light', feed: 'light', insight: 'light', pick: 'light', page: 'dark', end: 'light' },
-  dark: { open: 'dark', card: 'dark', proof: 'dark', claim: 'light', field: 'dark', feed: 'dark', insight: 'dark', pick: 'dark', page: 'light', end: 'dark' },
+  mixed: { open: 'light', card: 'light', proof: 'light', claim: 'dark', field: 'dark', feed: 'dark', insight: 'dark', pick: 'dark', page: 'dark', end: 'dark' },
+  light: { open: 'light', card: 'light', proof: 'light', claim: 'dark', field: 'light', feed: 'light', insight: 'light', pick: 'light', page: 'light', end: 'light' },
+  dark: { open: 'dark', card: 'dark', proof: 'dark', claim: 'light', field: 'dark', feed: 'dark', insight: 'dark', pick: 'dark', page: 'dark', end: 'dark' },
 };
 export const TONE: Record<ActName, 'light' | 'dark'> = PLAN[DEAL.stage];
 /** A cut into act `a`: a colour cut where the stage turns between paper and slate, else a hard cut (the moves still run into it at speed). */
@@ -242,8 +244,14 @@ export const STEPPED: SteppedRange[] = [];
 export const FLASHES: Flash[] = [];
 /** The flick's fast travel smears through DirBlur: declared as camera blur (the lens and the ticker glide and flow). */
 export const CAMERA_BLUR: CameraBlurRange[] = DEAL.read === 'flick' ? [{ from: CUE.flick, to: CUE.brake, id: 'read-flick' }] : [];
-/** The colour event: the claim on the accent (claim device 'accent'), up to 2 s past its build; none otherwise. */
-export const COLOUR: ColourRange[] = DEAL.claim === 'accent' ? [{ from: ACT.claim.from, to: Math.min(ACT.field.from, ACT.claim.from + 2 * FPS + f60(54)), id: 'claim-on-the-accent' }] : [];
+/**
+ * The colour events: the claim on the accent (claim device 'accent'), up to 2 s past its build; else the claim's turn of
+ * the stage (paper <-> slate) where it stands on the other one. The flip back (or on) at the field is its 'colour' seam.
+ */
+export const COLOUR: ColourRange[] =
+  DEAL.claim === 'accent' ? [{ from: ACT.claim.from, to: Math.min(ACT.field.from, ACT.claim.from + 2 * FPS + f60(54)), id: 'claim-on-the-accent' }]
+  : TONE.claim !== TONE.proof ? [{ from: ACT.claim.from, to: ACT.field.from, id: 'claim-turns-the-stage' }]
+  : [];
 /** The one lock: the mark, the name and the payoff line hold to the end. */
 export const END: EndLock = { from: CUE.lockup, to: TOTAL };
 /** The biggest reveal: the lockup. */

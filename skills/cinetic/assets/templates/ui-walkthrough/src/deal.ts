@@ -8,7 +8,7 @@ import { compositionApart } from './fx/TypeSystem';
 
 /** Each slot and the devices it can take (the first is no more the default than the others). */
 export const SLOTS = {
-  /** where the film stands: statements on paper and the product on the slate, all paper, or all slate */
+  /** where the film stands: paper until the claim and the slate from it on, all paper (the claim on the slate), or all slate (the claim on paper) */
   stage: ['mixed', 'light', 'dark'],
   /** the promise: the sentence with the input's mark inside it in a slow push; the same line pushed through by the camera onto the mark; the line over the input's own card rising into the frame from below */
   open: ['line', 'push', 'card'],
