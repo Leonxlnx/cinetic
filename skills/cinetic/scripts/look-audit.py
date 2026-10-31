@@ -46,6 +46,12 @@ Look checks (warn unless marked fail):
                   the camera may stop for 0.5-1 s on each read
   clean-finish    grain on flat ground over 0.6 L* (full-resolution samples) or a vignette over 2 %
                   unless LOOK.texture is not 'clean'
+  small-subject   fail: a solid subject (a card, a panel, a device: a filled shape of 2 % of the frame or more) stands
+                  in an otherwise empty frame while everything off the ground spans under half the frame's height
+                  and a quarter of its area, on 2 or more samples (one warns): a small card in an empty field. On a
+                  product beat the subject fills the frame (50 % of its height or more) or the shot is a macro crop
+                  of the moment that matters. Type alone (letters, not a filled shape) and the lockup's small mark
+                  pass. `--surfaces` reads it too
   type-size       (--layout) cap height off the role bands layout-audit.sh wrote (both type families: caption 2.3-4 %,
                   line 4-9 %, display 9-14 %, hero 14-26 %, giant 26-90 % of the frame height: calm line 84 px is 5.6 %,
                   bold line 120 8 %), more than 2 non-UI sizes at once, a line wider than 61 % of the frame (a calm
@@ -779,8 +785,67 @@ def cheap_cards(rgb, keep=None, P=CHEAP):
     return dict(panels=panels, ground=round(gL, 1), cheap=out)
 
 
-def surface_scan(paths_or_video, info=None):
-    """banding and cheap_cards over a film (two samples a second, full resolution) or stills: (band hits, cheap hits, samples)."""
+SUBJECT = dict(
+    width=480,  # analysis width
+    border=0.035,  # the frame's edge band the ground is fitted on (share of the short side)
+    de=7.0,  # Lab units off the fitted ground: content
+    min_part=0.003,  # a part of the content this share of the frame or more counts
+    solid=0.02, fill=0.8,  # a solid subject: a part of this share of the frame or more filling this share of its box
+    height=0.5, area=0.25,  # everything off the ground spans less than this share of the height and of the frame
+    samples=2,  # samples with a small subject before it fails (one warns)
+)
+
+
+def small_subject(rgb, P=SUBJECT):
+    """small-subject: a solid shape (a card, a panel, a device) in an otherwise empty frame, the whole content spanning
+    under P['height'] of the frame's height and P['area'] of its area. The ground is fitted as a smooth surface (a
+    quadratic in x and y per Lab channel) on the frame's edge band, so a lit ground's fall is not content; content is
+    every pixel P['de'] or more off it. Returns {small, height, area, solid: [box], box} (shares of the frame)."""
+    h0, w0 = rgb.shape[:2]
+    w = min(P['width'], w0)
+    h = max(2, int(round(h0 * w / w0)))
+    im = cv2.resize(rgb, (w, h), interpolation=cv2.INTER_AREA) if w != w0 else rgb
+    lab = cv2.cvtColor(np.ascontiguousarray(im), cv2.COLOR_RGB2LAB).astype(np.float32)
+    lab[..., 0] *= 100.0 / 255.0
+    lab[..., 1:] -= 128.0
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    xn, yn = xx / w - 0.5, yy / h - 0.5
+    bd = max(2, int(round(P['border'] * min(h, w))))
+    edge = np.zeros((h, w), bool)
+    edge[:bd], edge[-bd:], edge[:, :bd], edge[:, -bd:] = True, True, True, True
+    A = np.stack([np.ones_like(xn), xn, yn, xn * xn, yn * yn, xn * yn], -1)
+    Ae = A[edge]
+    fit = np.zeros_like(lab)
+    resid = np.zeros(int(edge.sum()), np.float32)
+    for c in range(3):
+        coef, *_ = np.linalg.lstsq(Ae, lab[..., c][edge], rcond=None)
+        fit[..., c] = A @ coef
+        resid += (lab[..., c][edge] - fit[..., c][edge]) ** 2
+    # an edge band that is not ground (a full-bleed picture, a frame-filling product) is no empty frame
+    if float(np.median(np.sqrt(resid))) > P['de'] * 0.6:
+        return dict(small=False, height=1.0, area=1.0, solid=[], box=None, ground=False)
+    de = np.sqrt(((lab - fit) ** 2).sum(-1))
+    mask = (de >= P['de']).astype(np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
+    n, _lab, stats, _c = cv2.connectedComponentsWithStats(mask, 8)
+    parts = [stats[i] for i in range(1, n) if stats[i][4] >= P['min_part'] * h * w]
+    if not parts:
+        return dict(small=False, height=0.0, area=0.0, solid=[], box=None, ground=True)
+    x0 = min(q[0] for q in parts)
+    y0 = min(q[1] for q in parts)
+    x1 = max(q[0] + q[2] for q in parts)
+    y1 = max(q[1] + q[3] for q in parts)
+    solid = [q for q in parts if q[4] >= P['solid'] * h * w and q[4] / max(1, q[2] * q[3]) >= P['fill']]
+    H_, A_ = (y1 - y0) / h, (y1 - y0) * (x1 - x0) / (h * w)
+    k = w0 / w
+    return dict(small=bool(solid) and H_ < P['height'] and A_ < P['area'], height=round(float(H_), 3), area=round(float(A_), 3), ground=True,
+                solid=[[int(q[0] * k), int(q[1] * k), int(q[2] * k), int(q[3] * k)] for q in solid],
+                box=[int(x0 * k), int(y0 * k), int((x1 - x0) * k), int((y1 - y0) * k)])
+
+
+def surface_scan(paths_or_video, info=None, small=None):
+    """banding and cheap_cards over a film (two samples a second, full resolution) or stills: (band hits, cheap hits,
+    samples); a list passed as `small` collects the small-subject hits."""
     bands, cheap, n = [], [], 0
 
     def one(rgb, tag):
@@ -792,6 +857,10 @@ def surface_scan(paths_or_video, info=None):
         cc = cheap_cards(rgb)
         if cc['cheap']:
             cheap.append(dict(tag, cards=cc['cheap']))
+        if small is not None:
+            ss = small_subject(rgb)
+            if ss['small']:
+                small.append(dict(tag, **ss))
 
     if info is not None:
         for f, rgb in ui_frames(paths_or_video, info):
@@ -802,6 +871,18 @@ def surface_scan(paths_or_video, info=None):
             if im is not None:
                 one(cv2.cvtColor(im, cv2.COLOR_BGR2RGB), dict(file=p))
     return bands, cheap, n
+
+
+def subject_flags(small, n, add, fps):
+    """small-subject: fail on SUBJECT['samples'] or more samples with a small subject in an empty frame, warn on one."""
+    if not small:
+        return
+    sev = 'fail' if len(small) >= SUBJECT['samples'] else 'warn'
+    x = small[0]
+    at = x.get('f', 0)
+    add('small-subject', sev, at, f"a small subject in an empty frame on {len(small)} of {n} sample(s) (first {x.get('file') or f'{at / fps:.1f} s'}: the content spans "
+        f"{x['height'] * 100:.0f} % of the height and {x['area'] * 100:.0f} % of the frame, a solid shape at {x['solid'][0]}): on a product beat the subject fills the frame "
+        '(50 % of its height or more: the device or the card at film size, the scene framed on its focus box) or a macro crop of the moment that matters, never a small card in an empty field')
 
 
 def surface_flags(bands, cheap, n, add, fps):
@@ -2300,8 +2381,10 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     if not args.no_finish and not args.no_ui:
         ui_hits, _ = ui_scan(args.video, info)
         ui_bar_flags(ui_hits, add, fps)
-        bands_, cheap_, ns_ = surface_scan(args.video, info)
+        small_ = []
+        bands_, cheap_, ns_ = surface_scan(args.video, info, small_)
         surface_flags(bands_, cheap_, ns_, add, fps)
+        subject_flags(small_, ns_, add, fps)
     if layout and not args.no_ui:
         text_asset_flags(text_on_asset(args.video, info, layout, fps / (cues.get('fps') or fps) if cues else 1.0), add, fps)
     # luminance flips: the stage turns light <-> dark
@@ -2759,6 +2842,7 @@ def self_test(F, part='all'):
     self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part)
     if part in ('all', 'c'):
         surface_self_test(check)
+        subject_self_test(check)
     shutil.rmtree(tmp, ignore_errors=True)
     print('look-audit self-test: ' + ('all pass' if not bad else f'{bad} failed'))
     return 1 if bad else 0
@@ -2799,6 +2883,32 @@ def surface_self_test(check):
     c3, c4 = cheap_cards(frame_with(light, flat)), cheap_cards(frame_with(light, shadowed))
     check(any('no shadow' in c['why'] for c in c3['cheap']) and not c4['cheap'], 'cheap-card: a card a few L* off a light ground reads cheap without a shadow, not with one',
           f"{json.dumps(c3['cheap'])[:120]} vs {json.dumps(c4['cheap'])[:120]}")
+
+
+def subject_self_test(check):
+    """small-subject on synthetic frames: a small card on a lit ground fails; the same card at frame size, a line of
+    type alone and a frame-filling picture pass."""
+    H_, W_ = 540, 960
+    rng = np.random.default_rng(5)
+    yy = np.linspace(0, 1, H_, dtype=np.float32)[:, None]
+    xx = np.linspace(0, 1, W_, dtype=np.float32)[None, :]
+    g = 236 - 22 * yy - 6 * xx
+    g = np.clip(np.round(g + rng.random((H_, W_)) + rng.random((H_, W_)) - 1), 0, 255)
+
+    def rgb(a):
+        return np.repeat(np.clip(a, 0, 255)[..., None], 3, -1).astype(np.uint8)
+    small = g.copy()
+    small[200:340, 380:580] = 252
+    small[340:346, 390:570] -= 20
+    big = g.copy()
+    big[60:480, 180:780] = 252
+    words = np.ascontiguousarray(rgb(g.copy()))
+    for k, wd in enumerate(['Plans', 'that', 'fit']):
+        cv2.putText(words, wd, (250 + k * 170, 290), cv2.FONT_HERSHEY_SIMPLEX, 2.2, (24, 26, 30), 5, cv2.LINE_AA)
+    pic = rgb(rng.integers(0, 255, (H_, W_)).astype(np.float32))
+    a, b, c, d = small_subject(rgb(small)), small_subject(rgb(big)), small_subject(words), small_subject(pic)
+    check(a['small'] and not b['small'] and not c['small'] and not d['small'], 'small-subject: a small card in an empty lit frame fails; the card at frame size, type alone and a full picture pass',
+          f"{a['height']},{a['area']} / {b['height']} / {c['solid']} / {d['ground']}")
 
 
 def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='all'):
@@ -3405,9 +3515,10 @@ def main():
         elif args.video.lower().endswith(('.png', '.jpg', '.jpeg')):
             stills = [args.video]
         info_ = None if stills is not None else F.probe(args.video)
-        bands, cheap, n = surface_scan(stills if stills is not None else args.video, info_)
-        bad = len(bands) >= (1 if stills is not None else BAND['samples'])
-        res = dict(tool='look-audit', mode='surfaces', file=args.video, samples=n, banding=bands, cheap_cards=cheap, **{'pass': not bad})
+        small = []
+        bands, cheap, n = surface_scan(stills if stills is not None else args.video, info_, small)
+        bad = len(bands) >= (1 if stills is not None else BAND['samples']) or len(small) >= SUBJECT['samples']
+        res = dict(tool='look-audit', mode='surfaces', file=args.video, samples=n, banding=bands, cheap_cards=cheap, small_subject=small, **{'pass': not bad})
         if args.json:
             os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
             json.dump(res, open(args.json, 'w'), indent=1, default=lambda o: o.item() if hasattr(o, 'item') else str(o))
@@ -3416,7 +3527,9 @@ def main():
         for x in cheap[:20]:
             for c in x['cards'][:3]:
                 print(f"  cheap-card {x.get('file') or 'f' + str(x['f'])} {c['box']}: {c['why']}")
-        print(f"look-audit surfaces: {args.video}  {n} samples, {len(bands)} banded, {len(cheap)} with a cheap card -> {'pass' if res['pass'] else 'FAIL'}")
+        for x in small[:20]:
+            print(f"  small-subject {x.get('file') or 'f' + str(x['f'])}: the content spans {x['height'] * 100:.0f} % of the height, {x['area'] * 100:.0f} % of the frame (solid {x['solid'][:2]})")
+        print(f"look-audit surfaces: {args.video}  {n} samples, {len(bands)} banded, {len(cheap)} with a cheap card, {len(small)} with a small subject in an empty frame -> {'pass' if res['pass'] else 'FAIL'}")
         sys.exit(0 if res['pass'] else 1)
     if args.ui_only:
         stills = None
