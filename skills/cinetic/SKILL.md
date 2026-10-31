@@ -1,6 +1,6 @@
 ---
 name: cinetic
-description: Direct, build and render premium motion films from code - launch films, update films ("vX is out"), product and feature videos, looping feature animations, logo stings, UI walkthroughs, teasers and promo clips. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion, HyperFrames, HTML/GSAP or React, or asks to storyboard, time, score, render, polish or critique one - even if they only say "make a video about X", "animate this feature" or "we need a launch clip". It supplies a simple default path one agent finishes in one to two hours (a centred line alone, then the product doing what it said, in turn, then a centred lockup built from the last picture), plain-word copy checked by script, one text voice, seams that flow, devices that differ from the last films, real product UI and footage of the core action, current official logos, a licensed track cut to the picture, film-grade finishing and one measured review round.
+description: Direct, build and render premium motion films from code - launch films, update films ("vX is out"), product and feature videos, looping feature animations, logo stings, UI walkthroughs, teasers and promo clips. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion, HyperFrames, HTML/GSAP or React, or asks to storyboard, time, score, render, polish or critique one - even if they only say "make a video about X", "animate this feature" or "we need a launch clip". It supplies a simple default path one agent finishes in one to two hours (centred lines mixed with the product doing what they say, every change carrying something, then a centred lockup built from the last picture), plain-word copy checked by script, one text voice, seams that flow, devices that differ from the last films, real product UI and footage of the core action, current official logos, a licensed track cut to the picture, film-grade finishing and one measured review round.
 license: MIT
 compatibility: Needs Node 22+, ffmpeg 6+ with libx264, Python 3.11+ with numpy, scipy, soundfile, pyloudnorm, opencv-python and librosa (librosa and ffmpeg analyse the licensed track; fonttools, brotli and uharfbuzz for outlined logos; pillow for gradient plates), and Chromium or Chrome Headless Shell for rendering; earshot 0.4+ (in its own virtualenv) renders the effects kit and listens to the soundtrack. Works with Remotion 4 (React) or HyperFrames (HTML and GSAP).
 ---
@@ -28,10 +28,10 @@ These are the rules every film is held to, with their numbers. The gates named i
    the height): centred for 80 % of the statement time or more, in the middle band for 85 % or more. Centred top or
    bottom only over a full-bleed picture. Never flush left at the top or the bottom. "Text on top, big picture below"
    at most once a film; a line beside, above or below a picture at most once per 30 s. (`layout-audit.sh` placement.)
-2. **Line, then picture.** A line alone on a clean ground (0.5-2.3 s, about 1.3), then the product or the picture
-   acting, full frame, with no statement over it (1-3.5 s), in turn, then the centred lockup. Type-only beats are 15 %
-   of the shots or more and at least two a film; a line over a picture on at most 40 % of the beats, only where it
-   names what the picture is doing; the first line on screen by 1 s. (`grid-check.ts` beats.)
+2. **Text and picture, mixed.** A line alone on a clean ground (0.5-2.3 s), the product acting (1-3.5 s)
+   and a line arriving with the picture it names, mixed, never a line-card-line-card loop; no empty frame between
+   scenes. Type-only beats two or more; a line over a picture on at most 40 % of beats; first line by 1 s.
+   (`grid-check.ts` beats.)
 3. **The picture tells what the product does.** Each picture beat shows the visible change that proves the line before
    it (input -> output, before -> after, a count rising); a line no picture proves is cut. The first picture beat shows
    the core action literally, with a real person giving the input where the input is human (real footage or a photo:
