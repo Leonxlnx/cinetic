@@ -94,8 +94,8 @@ for (const [name, [pos, neg]] of Object.entries({ house: P.launchHouse, ratios: 
 {
   const [pos, neg, byCut] = P.carry;
   result(mirrored(pos, neg), 'carry: v0 < 0 is the mirror image of v0 > 0');
-  result(close(neg[1].v, -40) && close(neg[140].v, -0.75, 0.01), 'carry: a leftward carry opens at v0 and drifts on to the left (-0.75 px/f)', `${neg[140].v.toFixed(3)}`);
-  result(neg.slice(1).every((s) => s.v < 0) && byCut.slice(1).every((s) => s.v < 0), 'carry: the residual never drifts back against the carried move');
+  result(close(neg[1].v, -40) && Math.abs(neg[140].v) < 0.01, 'carry: a leftward carry opens at v0 and comes to rest (no residual drift: CARRY.residual60 0)', `${neg[140].v.toFixed(4)}`);
+  result(neg.slice(1).every((s) => s.v <= 0) && byCut.slice(1).every((s) => s.v <= 0), 'carry: it never drifts back against the carried move');
   result(close(byCut[1].v, -35), 'carry: ratio x a negative vCut opens leftward', byCut[1].v.toFixed(2));
   const xs = P.cut.map((s) => s.x);
   const d = xs.slice(1).map((x, i) => x - xs[i]);

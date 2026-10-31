@@ -6,10 +6,10 @@
  *   1. glideValue(): still before its step, the first frame of motion on `at`, no frame moves more than a quarter of
  *      the step (a hard step moves all of it in one), home after 16 f at 60 fps (8 at 30); steps closer than a glide
  *      blend without a jump (their speeds add: at most 1.5x one glide's fastest frame).
- *   2. glideList(): rows glide, the list drifts 0.5 px a 60 fps frame between steps (the same px/s at 30 fps), its
- *      speed v is the frame-to-frame travel, index counts the steps started; drift: 0 leaves it still between steps.
- *   3. holdDrift(): 0.5 px a 60 fps frame at 1080p by default, clamped into 0.3-1, along its angle, scaled with the
- *      frame, ended by `to`.
+ *   2. glideList(): rows glide, the list rests between steps by default (a creep only when given, at most 0.2 px a
+ *      60 fps frame, the same px/s at 30 fps), its speed v is the frame-to-frame travel, index counts the steps started.
+ *   3. holdDrift(): still by default (0), a creep clamped into 0-0.2 px a 60 fps frame at 1080p (sub-pixel), along its
+ *      angle, scaled with the frame, ended by `to`.
  *   4. landedAt() / landBeforeCut() / latestStart(): an arrival lands inside its span, a leave curve ends at speed; a
  *      cut mid-ease throws under the ship gate (CINETIC_GATE=ship or REMOTION_CINETIC_GATE=ship) and only warns in dev
  *      (the cut is returned, the problem recorded in gateIssues() once), a landed cut or a declared whip passes,
@@ -81,15 +81,17 @@ console.log(JSON.stringify({
   glide30: range(97, 110).map((f) => C.glideValue(f, steps, 0, {}, film30)),
   chained: range(98, 140).map((f) => C.glideValue(f, [{ at: 100, value: 96 }, { at: 106, value: 192 }, { at: 112, value: 288 }], 0, {}, film60)),
   list60: range(90, 230).map((f) => C.glideList(f, list, film60)),
-  list30: range(45, 115).map((f) => C.glideList(f, { at: [50, 70, 90], jump: 96 }, film30)),
-  still: range(130, 139).map((f) => C.glideList(f, { ...list, drift: 0 }, film60).y),
-  listHalf: [C.glideList(170, list, half60).y, C.glideList(170, list, film60).y],
+  list30: range(45, 115).map((f) => C.glideList(f, { at: [50, 70, 90], jump: 96, drift: 0.2 }, film30)),
+  creep60: range(130, 139).map((f) => C.glideList(f, { ...list, drift: 0.2 }, film60).y),
+  over: [C.glideList(135, { ...list, drift: 0.5 }, film60).y, C.glideList(134, { ...list, drift: 0.5 }, film60).y],
+  listHalf: [C.glideList(170, { ...list, drift: 0.2 }, half60).y, C.glideList(170, { ...list, drift: 0.2 }, film60).y],
   drift: {
-    d60: [C.holdDrift(10, 0, {}, film60), C.holdDrift(11, 0, {}, film60)],
-    d30: [C.holdDrift(10, 0, {}, film30), C.holdDrift(11, 0, {}, film30)],
+    still: [C.holdDrift(10, 0, {}, film60), C.holdDrift(500, 0, {}, film30)],
+    d60: [C.holdDrift(10, 0, { px: 0.2 }, film60), C.holdDrift(11, 0, { px: 0.2 }, film60)],
+    d30: [C.holdDrift(10, 0, { px: 0.2 }, film30), C.holdDrift(11, 0, { px: 0.2 }, film30)],
     fast: C.holdDrift(10, 0, { px: 2 }, film60).x, slow: C.holdDrift(10, 0, { px: 0.1 }, film60).x,
-    down: C.holdDrift(10, 0, { angle: 90 }, film60), half: C.holdDrift(10, 0, {}, half60).x,
-    ended: [C.holdDrift(50, 0, { to: 20 }, film60).x, C.holdDrift(20, 0, { to: 20 }, film60).x], before: C.holdDrift(-5, 0, {}, film60).x,
+    down: C.holdDrift(10, 0, { px: 0.2, angle: 90 }, film60), half: C.holdDrift(10, 0, { px: 0.2 }, half60).x,
+    ended: [C.holdDrift(50, 0, { px: 0.2, to: 20 }, film60).x, C.holdDrift(20, 0, { px: 0.2, to: 20 }, film60).x], before: C.holdDrift(-5, 0, { px: 0.2 }, film60).x,
   },
   land: {
     glide: C.landedAt({ from: 100, dur: 34, ease: A.E.glideOut }), build: C.landedAt({ from: 100, dur: 26, ease: A.E.buildIn }),
@@ -148,21 +150,23 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   const y = L.map((s) => s.y);
   const at = (f) => L[f - 90];
   const drift = at(135).y - at(134).y;
-  result(monotone(y) && close(drift, 0.5, 1e-6), 'glideList: rows glide, and the list drifts 0.5 px a 60 fps frame between steps', `drift ${drift}`);
+  result(monotone(y) && close(drift, 0, 1e-9), 'glideList: rows glide, and the list rests between steps (house creep 0)', `drift ${drift}`);
   result(L.every((s, i) => i === 0 || close(s.v, s.y - L[i - 1].y)), 'glideList: v is the frame-to-frame travel (for DirBlur)');
-  result(at(99).index === 0 && at(100).index === 1 && at(185).index === 3 && close(at(229).y - at(99).y - 3 * 96, 0.5 * 130, 1e-6), 'glideList: index counts the steps started; three rows plus the drift travelled', `${at(229).y.toFixed(2)}`);
+  result(at(99).index === 0 && at(100).index === 1 && at(185).index === 3 && close(at(229).y - at(99).y - 3 * 96, 0, 1e-6), 'glideList: index counts the steps started; three rows travelled, nothing more', `${at(229).y.toFixed(2)}`);
   const L3 = P.list30;
   const d3 = L3[(80 - 45)].y - L3[(79 - 45)].y;
-  result(close(d3, 1, 1e-6), 'glideList: the same drift at 30 fps (1 px a frame, the same px/s)', `${d3}`);
-  result(P.still.every((v) => close(v, P.still[0])), 'glideList: drift 0 leaves the list still between steps (the camera drifts instead)');
-  result(close((P.listHalf[0] - 192) * 2, P.listHalf[1] - 192), 'glideList: the drift scales with the frame (jump is in frame px as given)', JSON.stringify(P.listHalf));
+  result(close(d3, 0.4, 1e-6), 'glideList: a given creep is the same px/s at 30 fps (0.4 px a frame for 0.2 at 60)', `${d3}`);
+  result(close(P.creep60[1] - P.creep60[0], 0.2, 1e-6), 'glideList: a creep of 0.2 px a 60 fps frame between steps when given', JSON.stringify(P.creep60.slice(0, 2)));
+  result(close(P.over[0] - P.over[1], 0.2, 1e-6), 'glideList: a creep over the band is clamped to 0.2 px a 60 fps frame (sub-pixel)', JSON.stringify(P.over));
+  result(close((P.listHalf[0] - 192) * 2, P.listHalf[1] - 192), 'glideList: the creep scales with the frame (jump is in frame px as given)', JSON.stringify(P.listHalf));
 }
 // 3. holdDrift
 {
   const D = P.drift;
-  result(close(D.d60[1].x - D.d60[0].x, 0.5) && close(D.d30[1].x - D.d30[0].x, 1) && close(D.d60[0].y, 0), 'holdDrift: 0.5 px a 60 fps frame at 1080p (30 px/s), 1 px a frame at 30 fps', JSON.stringify(D.d60));
-  result(close(D.fast, 10) && close(D.slow, 3), 'holdDrift: clamped into 0.3-1 px a 60 fps frame', `${D.fast} ${D.slow}`);
-  result(close(D.down.y, 5) && Math.abs(D.down.x) < 1e-9 && close(D.half, 2.5), 'holdDrift: along its angle, scaled with the frame', JSON.stringify(D.down));
+  result(D.still.every((s) => s.x === 0 && s.y === 0), 'holdDrift: still by default (a hold may be completely still)', JSON.stringify(D.still));
+  result(close(D.d60[1].x - D.d60[0].x, 0.2) && close(D.d30[1].x - D.d30[0].x, 0.4) && close(D.d60[0].y, 0), 'holdDrift: a creep of 0.2 px a 60 fps frame at 1080p (12 px/s), 0.4 px a frame at 30 fps', JSON.stringify(D.d60));
+  result(close(D.fast, 2) && close(D.slow, 1), 'holdDrift: clamped into 0-0.2 px a 60 fps frame (sub-pixel)', `${D.fast} ${D.slow}`);
+  result(close(D.down.y, 2) && Math.abs(D.down.x) < 1e-9 && close(D.half, 1), 'holdDrift: along its angle, scaled with the frame', JSON.stringify(D.down));
   result(close(D.ended[0], D.ended[1]) && D.before === 0, 'holdDrift: `to` ends it (the offset stays); nothing before `from`');
 }
 // 4. landing before the cut
@@ -182,7 +186,7 @@ const monotone = (xs) => xs.every((x, i) => i === 0 || x >= xs[i - 1] - 1e-9);
   result(B[0].y === 0 && close(B[118 - 98].y, 60) && close(B[199 - 98].y, 120) && Math.max(...dy) <= 0.25 * 60 + 1e-9, 'glideBox: glides between states (never a quarter of a step in one frame) and lands on each', `max ${Math.max(...dy).toFixed(2)}`);
   const d = P.decl;
   result(!d.stepped.length && !d.flashes.length && !d.cameraBlur.length && !d.seams.length, 'GlideStep declares nothing: it is continuous');
-  result(P.house.frames60 === 16 && P.house.drift === 0.5 && P.house.band[0] === 0.3 && P.house.band[1] === 1 && P.house.same, 'GLIDE: 16 f at 60 fps, 0.5 px drift in the 0.3-1 band');
+  result(P.house.frames60 === 16 && P.house.drift === 0 && P.house.band[0] === 0 && P.house.band[1] === 0.2 && P.house.same, 'GLIDE: 16 f at 60 fps; holds still (creep 0, at most 0.2 px a 60 fps frame)');
 }
 // 6. the curve forensics.py's self-test measures
 result(P.curve.every(([a, b]) => Math.abs(a - b) < 2e-3), 'E.glideOut is cubic-bezier(.172, .687, .393, .943), the glide forensics.py measures', JSON.stringify(P.curve.map(([a]) => +a.toFixed(3))));

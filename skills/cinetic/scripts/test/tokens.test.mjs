@@ -137,7 +137,7 @@ if (mode === 'strict') {
   const launchExp = Array.from({ length: 10 }, (_, i) => H.launch(100 - i, 100, { vCut: 50, a: 0.8, p: 0.8, fps: 24, fpsRef: 24 }).v);
   const carryX = Array.from({ length: 100 }, (_, n) => H.carry(100 + n, 100, { v0: 40, decay: 0.89, fast: { share: 0.6, decay: 0.4 }, residual: 0.75, fps: 60 }));
   const carryFrac = H.carry(103.5, 100, { v0: 40, fps: 60 });
-  const carry30 = Array.from({ length: 60 }, (_, n) => H.carry(100 + n, 100, { v0: 40, fps: 30 }).v);
+  const carry30 = Array.from({ length: 60 }, (_, n) => H.carry(100 + n, 100, { v0: 40, residual: 0.75, fps: 30 }).v); // a residual given explicitly (the house lands: CARRY.residual60 0)
   console.log(JSON.stringify({
     E: tok(A.E), M: tok(A.M), E_DEPRECATED: A.E_DEPRECATED, legacyRef,
     SPR: A.SPR, SPR_META: A.SPR_META, SPR_DEPRECATED: A.SPR_DEPRECATED, springs,
@@ -284,7 +284,7 @@ result(P.PRESS.squeeze === 9 && P.PRESS.hold === 3 && P.PRESS.release === 10, 'P
 result(P.TAU.marker === 3 && P.TAU.element === 8 && P.TAU.hero === 17 && P.TAU.world === 30 && P.TAU.exitUi === 6 && P.TAU.exitCamera === 19, 'TAU 3 / 8 / 17 / 30 / 6 / 19');
 result(P.STAG.word[2] === 10 && P.STAG.letter[2] === 4 && P.ACCEL.rows.join() === '18,18,14,10,8,6,6' && P.ACCEL.typing.join() === '5,2,2,1,1,1', 'STAG and ACCEL');
 result(P.CPS.human.house === 30 && P.CPS.prompt.start === 5 && P.CPS.prompt.end === 19 && P.CPS.stream.max === 150, 'CPS: human 30, prompt 5 -> 19, stream <= 150');
-result(P.CARRY.ratio[1] === 0.7 && P.CARRY.decay60[1] === 0.89 && P.SPEED.residualAfterCut === 45 && P.OVERSIZE.from[0] === 1.28, 'CARRY, SPEED, OVERSIZE');
+result(P.CARRY.ratio[1] === 0.7 && P.CARRY.decay60[1] === 0.89 && P.CARRY.residual60 === 0 && P.SPEED.residualAfterCut === 45 && P.OVERSIZE.from[0] === 1.28, 'CARRY (a carry lands: residual 0), SPEED, OVERSIZE');
 {
   const c = P.PACE.calm;
   const k = P.PACE.crisp;

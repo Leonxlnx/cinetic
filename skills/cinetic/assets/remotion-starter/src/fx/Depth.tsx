@@ -1,5 +1,5 @@
-// The float's context and the planes under it (fx/Float.tsx puts the float on each act): split out so fx/Grounds can
-// hold a ground still on screen under the float without importing the stage.
+// The stage camera's context and the planes under it (fx/Float.tsx puts each act on its stage): split out so
+// fx/Grounds can hold a ground still on screen under a declared move without importing the stage.
 import React, { createContext, useContext } from 'react';
 import { useFilm } from '../lib/film';
 import { bleedFor, type FloatOpts, type FloatState, planeOf } from '../lib/drift';
@@ -7,15 +7,16 @@ import { bleedFor, type FloatOpts, type FloatState, planeOf } from '../lib/drift
 export type FloatCtxT = { s: FloatState; o: FloatOpts; bleed: number } | null;
 export const FloatCtx = createContext<FloatCtxT>(null);
 
-/** The float the current subtree sits on (null outside a Float): an act that tracks an overlay to the screen reads it. */
+/** The stage camera the current subtree sits on (null outside a Float): an act that tracks an overlay to the screen reads it. */
 export const useFloat = () => useContext(FloatCtx);
 
 export const T = (x: number, y: number, k: number) => `translate3d(${x.toFixed(3)}px, ${y.toFixed(3)}px, 0) scale(${k.toFixed(6)})`;
 
 /**
- * A plane at depth z under the float (lib/drift DRIFT.depth): z < 1 lags (the ground 0.25, a back layer 0.6), z > 1
- * leads (a near plane 1.35). `bleed` scales the plane so its edges never show (a ground or a wall drawn to the
- * frame). Outside a Float it renders its children as they are.
+ * A plane at depth z under the stage camera (lib/drift DRIFT.depth): while a declared move runs, z < 1 lags (the
+ * ground 0.25, a back layer 0.6), z > 1 leads (a near plane 1.35); on a still camera every plane is still. `bleed`
+ * scales the plane so its edges never show under the move (a ground or a wall drawn to the frame). Outside a Float
+ * it renders its children as they are.
  */
 export const Depth: React.FC<{ z: number; bleed?: boolean; children: React.ReactNode; style?: React.CSSProperties }> = ({ z, bleed = false, children, style }) => {
   const film = useFilm();

@@ -328,10 +328,11 @@ export const SPEED = {
 /**
  * Speed carried through a cut (lib/handoff.ts): the incoming speed as a share of the outgoing one
  * [low, house, high], the slow decay per 60 fps frame, the fast first drop (share and decay), the
- * residual drift (px per 60 fps frame), the approach into the cut and the settle after it (f@60).
+ * residual drift it settles to (px per 60 fps frame; 0: the carry lands at rest, no drift on after it), the approach
+ * into the cut and the settle after it (f@60).
  */
 export const CARRY = {
-  ratio: [0.4, 0.7, 1.4], decay60: [0.78, 0.89, 0.93], fast: { share: 0.6, decay60: 0.4 }, residual60: 0.75,
+  ratio: [0.4, 0.7, 1.4], decay60: [0.78, 0.89, 0.93], fast: { share: 0.6, decay60: 0.4 }, residual60: 0,
   approach60: [16, 46], settle60: [16, 50],
 } as const;
 /** Scale breath around a cut: push 1-8 % into it over 10-20 f; the next shot opens 5-12 % off and settles in 8-50 f. */

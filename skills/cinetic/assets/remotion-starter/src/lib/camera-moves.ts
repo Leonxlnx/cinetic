@@ -40,7 +40,7 @@ export const MOVES = {
   whip60: DUR.whip[2], // 32 f
   swap: { first: 0.4 }, // the new copy is already 40 % on its first frame
   zoomThrough: { factor: 8, frames60: DUR.zoomThrough[1], cover: 0.99 }, // x8 in 24 f, cut once the shape covers 99 % of the frame
-  reframe: { frames60: DUR.pan[2], gap60: 8, pulse: 0.05, residual60: 0.5 }, // a move of 48 f, near-holds of 8 f drifting 0.5 px/f (30 px/s)
+  reframe: { frames60: DUR.pan[2], gap60: 8, pulse: 0.05, residual60: 0 }, // a move of 48 f, near-holds of 8 f at rest (residual: an optional creep, at most 0.2 px/f@60)
   reversal: { pull: 0.85, pull60: DUR.pull[3], push: 1.04, push60: 24 }, // pull back to 0.85 over 70 f, push 4 % over 24 f into the cut
   punch: { crop: 3, ratio: 1 }, // the tight shot is 3x the wide one; the wide shot keeps the world's speed
 } as const;
@@ -375,7 +375,7 @@ export type ReframeOpts = {
   rollEase?: Ease; // roll (default `ease`); an arrive curve that overshoots gives the roll its lean
   /** Scale pulse riding each move: rises on `rise` to `peak` at `at` (default the move's fastest moment), falls on `fall` by the end. */
   pulse?: number | { peak?: number; at?: number; rise?: Ease; fall?: Ease }; // house 0.05; 0 = none
-  residual?: number; // drift in the near-holds, screen px per 60 fps frame along the last move (house 0.5 = 30 px/s): the frame never stops
+  residual?: number; // drift in the near-holds, screen px per 60 fps frame along the last move (house 0: the near-hold rests; at most 0.2 = 12 px/s)
   fps?: number;
 };
 

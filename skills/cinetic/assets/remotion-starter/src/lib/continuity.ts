@@ -48,10 +48,11 @@ export const timingFail = (rule: string, message: string): void => {
 
 /**
  * House numbers (frames at 60 fps, px at 1080p): a glide's length, the share of peak speed under which a move has
- * landed, the hold drift and its band. A 16 f glide on E.glideOut settles from its peak to 20 % of its speed in
- * about 4 f at 30 fps (forensics motion-decay asks 3.5 or more); the 1.1 E.out over the same 16 f settles in 3.
+ * landed, the hold creep (0: a hold is still) and its band (at most 0.2 px per 60 fps frame at 1080p, 12 px/s:
+ * sub-pixel at any rate; lib/drift DRIFT.creep). A 16 f glide on E.glideOut settles from its peak to 20 % of its
+ * speed in about 4 f at 30 fps (forensics motion-decay asks 3.5 or more); the 1.1 E.out over the same 16 f settles in 3.
  */
-export const GLIDE = { frames60: 16, landShare: 0.1, driftPx60: 0.5, driftBand: [0.3, 1] as const } as const;
+export const GLIDE = { frames60: 16, landShare: 0.1, driftPx60: 0, driftBand: [0, 0.2] as const } as const;
 
 /** One state of a gliding value: from frame `at` on it heads for `value` (the first frame of motion is `at`). */
 export type GlideAt<T> = { at: number; value: T };
@@ -86,25 +87,25 @@ export const glideFrames = (p: GlideListProps): number[] =>
   p.at ?? Array.from({ length: Math.max(0, p.count ?? 0) }, (_, i) => Math.round((p.start ?? 0) + i * (p.every ?? 1)));
 
 /**
- * Where a gliding list is at frame f: `y` px moved (the glides plus the hold drift, `drift` px per 60 fps frame at
- * 1080p, house GLIDE.driftPx60, 0 to leave the drift to a camera), `v` its speed in film px per film frame (for
- * fx/Defocus DirBlur, divided by u), and `index`, the steps started.
+ * Where a gliding list is at frame f: `y` px moved (the glides plus an optional creep, `drift` px per 60 fps frame
+ * at 1080p, house GLIDE.driftPx60 = 0: the list rests between its steps; at most GLIDE.driftBand[1]), `v` its speed
+ * in film px per film frame (for fx/Defocus DirBlur, divided by u), and `index`, the steps started.
  */
 export const glideList = (f: number, p: GlideListProps, film?: Partial<FilmCtx>): { y: number; v: number; index: number } => {
   const fr = glideFrames(p);
   const fps = fpsOf(film);
   const u = uOf(film); // like fpsOf: the timeline's frame when no film is given
-  const d = p.drift ?? GLIDE.driftPx60;
+  const d = clamp(p.drift ?? GLIDE.driftPx60, GLIDE.driftBand[0], GLIDE.driftBand[1]);
   const from = fr.length ? fr[0] - 1 : 0;
   const at = (g: number) => glideValue(g, fr.map((a, i) => ({ at: a, value: (i + 1) * p.jump })), 0, p, film) + (d * u * Math.max(0, g - from) * 60) / fps;
   return { y: at(f), v: at(f) - at(f - 1), index: fr.filter((a) => f >= a).length };
 };
 
 /**
- * Hold life: the offset of a layer drifting `px` per 60 fps frame at 1080p (house 0.5 = 30 px/s; clamped into the
- * 0.3-1 band, 18-60 px/s, the speed that keeps even a sparse frame alive at 30 fps) along `angle` degrees (0 right,
- * 90 down) from frame `from`, scaled with the frame; `to` ends the drift (the offset stays). Linear, so the first frame
- * of the hold already moves and a landing's tail runs into it. { x, y } in film px.
+ * A hold's creep (optional: a hold may be completely still): the offset of a layer creeping `px` per 60 fps frame at
+ * 1080p (house GLIDE.driftPx60 = 0; clamped into GLIDE.driftBand 0-0.2, at most 12 px/s: sub-pixel at any rate)
+ * along `angle` degrees (0 right, 90 down) from frame `from`, scaled with the frame; `to` ends it (the offset stays).
+ * A creep goes one way: never a float that turns back, never a bob. { x, y } in film px.
  */
 export const holdDrift = (f: number, from: number, o: { px?: number; angle?: number; to?: number } = {}, film?: Partial<FilmCtx>): { x: number; y: number } => {
   const fps = fpsOf(film);

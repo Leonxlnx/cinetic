@@ -1,4 +1,4 @@
-// Speed carried through cuts, and holds that never freeze. All closed form: every value is a pure
+// Speed carried through cuts, and moves that land. All closed form: every value is a pure
 // function of the frame (fractional frames too), so sub-frames, scrubbing and any render order agree.
 //
 // A velocity-carried cut is two halves:
@@ -6,15 +6,15 @@
 //             frame) the fastest. Cut on it. x = 0 on the cut frame. Either sign: vCut < 0 moves left
 //             or up, the mirror image of the same build.
 //   carry()   a move that opens at speed v0 and decays in two stages, a fast first drop then a slow
-//             tail, to a living residual drift in the same direction (with `settle`, to rest: the
-//             camera locks for a read). x = 0 on its `start` frame; the step into start + 1
+//             tail, to rest (CARRY.residual60 0: a carried shot lands; a residual creep in the same
+//             direction only when given, at most 0.2 px/f@60; with `settle`, to rest by a frame). x = 0 on its `start` frame; the step into start + 1
 //             is v0. For an incoming shot, start = its FIRST frame (cut + 1): v0 is then the first
 //             step a viewer sees in it, the speed the house ratio talks about (CARRY.ratio x the cut
 //             step, 0.4-1.4). For a hold that continues a move without a cut, start = the hold's
 //             first frame.
 //   carriedCut(f, cut, out, in)   both halves on one continuous coordinate (the step across the cut,
 //             which nobody sees, is `jump`, default v0).
-// A whole shot between two cuts is shotMove(): it opens carried, lives on its residual drift and
+// A whole shot between two cuts is shotMove(): it opens carried, comes to rest and
 // launches into its own cut (the speeds add). carryChain() strings shots into one coordinate, each
 // opening at a share of the previous cut's speed. carryShot() holds a camera alive after a move
 // (x, y, log scale and roll each decay to a creep). A hold also keeps moving with creep() (scale)
@@ -150,7 +150,7 @@ export type CarryOpts = {
   ratio?: number; // v0 / vCut (default CARRY.ratio house 0.7; 0.4-1.4 is the normal range)
   decay?: number; // the slow tail's decay per 60 fps frame (default 0.89; 0.78-0.93)
   fast?: { share: number; decay: number }; // the fast first drop: its share of (v0 - residual) and its decay per 60 fps frame (default 0.6, 0.4); share 0 = one stage
-  residual?: number; // the drift it settles to, units per 60 fps frame, always in v0's direction (default 0.75: 45 px/s at 1080p)
+  residual?: number; // the creep it settles to, units per 60 fps frame, always in v0's direction (default 0: it lands at rest)
   /**
    * 60 fps frames after `cut` by which the move is at rest, so the camera can lock for a read: the move
    * eases out over the last `settleOver` frames (default 24, 0.4 s) and x stays put from then on.

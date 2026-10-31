@@ -19,15 +19,15 @@ export const SOUNDTRACK = 'audio/soundtrack.wav';
 export type FilmProps = { audit?: boolean; safe?: SafeSpec };
 
 /**
- * The camera float every act sits on (lib/drift, fx/Float): one continuous drift through the whole film (sideways up
- * to 31 px/s, a push of up to 3 % carrying the turns), so no shot ever sits still while one small thing moves
- * (forensics.py motion-energy). Seed it with the film's name; a lock eases it to rest for one read, where its drift
- * runs fastest (withLocks({ seed }, [copy(id)], { fps: FPS }): one or two a film).
+ * The stage every act stands on (lib/drift, fx/Float): the camera is still unless an act declares a move. Give an act
+ * a move only where it shows something (a push that closes on the control that changes, a track that follows what
+ * travels, a pull that reveals the whole), from rest to rest: STAGE.<act> = { moves: [stageMove(at, 'push')] }. No
+ * float, no drift, no idle loop: holds may be still (lint-film camera-float, forensics.py camera-wander).
  */
-export const FLOAT: FloatOpts = { seed: 'starter' };
+export const FLOAT: FloatOpts = {};
 
 // The film: one Sequence per act, handing off on exact frames (each seam is designed inside the
-// acts, not a crossfade here), each act on the float. The soundtrack plays in the Studio once it exists.
+// acts, not a crossfade here), each act on its stage (still unless it declares a move). The soundtrack plays in the Studio once it exists.
 export const Film: React.FC<FilmProps> = ({ audit = false, safe }) => {
   const hasScore = getStaticFiles().some((s) => s.name === SOUNDTRACK);
   return (

@@ -274,7 +274,7 @@
     cutExitTypical: [900, 2700], holdDrift: [6, 30, 90], residualAfterCut: 45, blurThreshold: [900, 1200], crispFlatMax: 10000,
   };
   const CARRY = {
-    ratio: [0.4, 0.7, 1.4], decay60: [0.78, 0.89, 0.93], fast: { share: 0.6, decay60: 0.4 }, residual60: 0.75,
+    ratio: [0.4, 0.7, 1.4], decay60: [0.78, 0.89, 0.93], fast: { share: 0.6, decay60: 0.4 }, residual60: 0,
     approach60: [16, 46], settle60: [16, 50],
   };
   const BREATH = { into: [0.01, 0.08], intoDur60: [10, 20], open: [0.05, 0.12], settleDur60: [8, 50] };
