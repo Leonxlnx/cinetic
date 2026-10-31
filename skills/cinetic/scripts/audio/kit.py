@@ -37,8 +37,11 @@ Options for every command: --kit audio/kit.json, --takes DIR (default: the kit p
 audio/kit), --score audio/score.json, --cues out/cues.json, --python PY (the earshot interpreter).
 
 Finding earshot, first that works: --python, score.json "sfx.python", $EARSHOT_PYTHON, this
-interpreter (import earshot), `earshot` on PATH. It must have sound kits (earshot 0.3 or later; the
-launch preset and the mix keys need 0.4).
+interpreter (import earshot), the interpreter an earlier run found (~/.cinetic/tools.json, or $CINETIC_HOME),
+the usual places (~/earshot/.venv; on Windows X:\\earshot\\.venv at a drive's root), `earshot` on PATH. It
+must have sound kits (earshot 0.3 or later; the launch preset and the mix keys need 0.4); an interpreter whose
+earshot is older runs a 0.4+ source checkout found beside its own (a clone or worktree named earshot*), with
+PYTHONPATH set for the run. What worked is remembered in tools.json, so later films need no setting.
 EARSHOT_PYTHON=none turns earshot off (score.py then plays the rendered takes as they are).
 earshot in its own virtualenv: EARSHOT_PYTHON=/path/to/venv/bin/python. earshot from a source
 checkout run by another venv: also PYTHONPATH=/path/to/checkout (it is passed through).
@@ -253,7 +256,9 @@ def sha1_file(path):
 # ------------------------------------------------------------------------------------------
 # finding earshot
 # ------------------------------------------------------------------------------------------
-PROBE = 'import earshot, earshot.forge.kit; print(earshot.__version__)'
+PROBE = ('import os, earshot, earshot.forge.kit; print(os.path.dirname(os.path.dirname(os.path.abspath(earshot.__file__)))); '
+         'print(earshot.__version__)')
+PROBED = {}  # interpreter -> the folder its earshot package is imported from (a source checkout on PYTHONPATH, or site-packages)
 
 
 class Earshot:
@@ -290,19 +295,117 @@ def _probe_python(py):
     if p.returncode != 0:
         last = (p.stderr.strip().splitlines() or ['no output'])[-1]
         return None, last
-    return p.stdout.strip().splitlines()[-1], None
+    lines = p.stdout.strip().splitlines()
+    if len(lines) >= 2:
+        PROBED[py] = lines[-2]
+    return lines[-1], None
+
+
+def cinetic_home():
+    return os.environ.get('CINETIC_HOME') or os.path.join(os.path.expanduser('~'), '.cinetic')
+
+
+TOOLS = 'tools.json'  # in cinetic_home(): the interpreters a run found, so the next film finds them with no setting
+
+
+def read_tools():
+    try:
+        with open(os.path.join(cinetic_home(), TOOLS), encoding='utf-8') as fh:
+            d = json.load(fh)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def remember_tool(key, value):
+    """Record a working interpreter in cinetic_home()/tools.json (best effort: a read-only home is fine)."""
+    d = read_tools()
+    if d.get(key) == value:
+        return
+    d[key] = value
+    try:
+        os.makedirs(cinetic_home(), exist_ok=True)
+        write_json(os.path.join(cinetic_home(), TOOLS), d)
+    except OSError:
+        pass
+
+
+def _venv_python(root):
+    return os.path.join(root, '.venv', 'Scripts', 'python.exe') if os.name == 'nt' else os.path.join(root, '.venv', 'bin', 'python')
+
+
+def usual_earshot_pythons():
+    """The virtualenv of an earshot clone where docs/setup.md puts it (~/earshot/.venv), and on Windows an
+    earshot folder at the root of a drive (X:\\earshot\\.venv)."""
+    roots = [os.path.join(os.path.expanduser('~'), 'earshot')]
+    if os.name == 'nt':
+        roots += [f'{d}:\\earshot' for d in 'CDEFGHIJKLMNOPQRSTUVWXYZ' if os.path.isdir(f'{d}:\\earshot')]
+    return [p for p in dict.fromkeys(_venv_python(r) for r in roots) if os.path.isfile(p)]
+
+
+def _checkout_version(d):
+    try:
+        with open(os.path.join(d, 'earshot', '__init__.py'), encoding='utf-8') as fh:
+            m = re.search(r"__version__\s*=\s*['\"]([\d.]+)", fh.read())
+    except OSError:
+        return None
+    if not m or not os.path.isfile(os.path.join(d, 'earshot', 'forge', 'kit.py')):
+        return None
+    return tuple(int(x) for x in m.group(1).split('.')[:3])
+
+
+def newer_checkouts(py):
+    """Source checkouts of earshot with sound kits (0.4+) beside the one this interpreter imports (a clone or git
+    worktree next to it: <parent>/earshot*, <parent>/earshot*/*), newest first: [(version, dir)]."""
+    try:
+        p = subprocess.run([py, '-c', 'import earshot, os; print(os.path.dirname(os.path.dirname(os.path.abspath(earshot.__file__))))'],
+                           capture_output=True, text=True, timeout=180)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    repo = (p.stdout.strip().splitlines() or [''])[-1]
+    if p.returncode != 0 or not os.path.isdir(repo):
+        return []
+    parent = os.path.dirname(os.path.abspath(repo))
+    dirs = []
+    for n in sorted(os.listdir(parent)):
+        d = os.path.join(parent, n)
+        if not n.lower().startswith('earshot') or not os.path.isdir(d):
+            continue
+        dirs.append(d)
+        try:
+            dirs += [os.path.join(d, m) for m in sorted(os.listdir(d)) if os.path.isdir(os.path.join(d, m))]
+        except OSError:
+            pass
+    out = [(v, d) for d in dirs if os.path.abspath(d) != os.path.abspath(repo) for v in [_checkout_version(d)]
+           if v and v >= LAUNCH_MIN]
+    return sorted(out, reverse=True)
+
+
+def _with_pythonpath(d):
+    """Run earshot from the source checkout d: PYTHONPATH (this process and every command it starts)."""
+    cur = os.environ.get('PYTHONPATH', '')
+    if d not in cur.split(os.pathsep):
+        os.environ['PYTHONPATH'] = d + (os.pathsep + cur if cur else '')
 
 
 def find_earshot(python=None, score_python=None):
     """The first earshot that has sound kits: --python, score.json sfx.python, $EARSHOT_PYTHON, this
-    interpreter, `earshot` on PATH. Returns (Earshot or None, [what was tried and why it failed])."""
+    interpreter, the interpreter an earlier run found (cinetic_home()/tools.json), the usual places
+    (~/earshot/.venv; on Windows X:\\earshot\\.venv), `earshot` on PATH. An interpreter whose earshot is
+    older than 0.4 runs a 0.4+ source checkout found beside its own (PYTHONPATH is set for this run). What
+    works is remembered in tools.json, so the next film needs no setting. Returns (Earshot or None, [what was
+    tried and why it failed])."""
     tried = []
     env = os.environ.get('EARSHOT_PYTHON')
     off = bool(env) and env.strip().lower() in ('none', 'off')
+    mem = read_tools().get('earshot') or {}
     cands = [('--python', python)] + ([] if off else [('score.json sfx.python', score_python), ('EARSHOT_PYTHON', env),
                                                       ('this interpreter', sys.executable)])
+    if not off:
+        cands += [('found before (tools.json)', mem.get('python'))] + [('the usual place', p) for p in usual_earshot_pythons()]
     if off:
         tried.append('EARSHOT_PYTHON=none: earshot is not used')
+    seen = set()
     for how, py in cands:
         if not py:
             continue
@@ -310,9 +413,30 @@ def find_earshot(python=None, score_python=None):
         if how != 'this interpreter' and not os.path.exists(exe):
             tried.append(f'{how}: {py} does not exist')
             continue
+        key = os.path.normcase(os.path.abspath(exe))
+        if key in seen:
+            continue
+        seen.add(key)
+        if how == 'found before (tools.json)' and mem.get('pythonpath') and os.path.isdir(mem['pythonpath']):
+            _with_pythonpath(mem['pythonpath'])
         ver, why = _probe_python(exe)
         if ver:
+            src = PROBED.get(exe)
+            on_path = [q for q in os.environ.get('PYTHONPATH', '').split(os.pathsep) if q]
+            remember_tool('earshot', dict(python=exe, pythonpath=src if src and any(
+                os.path.normcase(os.path.abspath(q)) == os.path.normcase(os.path.abspath(src)) for q in on_path) else None))
             return Earshot(how, [exe, '-m', 'earshot'], exe, ver), tried
+        for v, d in newer_checkouts(exe):
+            saved = os.environ.get('PYTHONPATH')
+            _with_pythonpath(d)
+            ver, why2 = _probe_python(exe)
+            if ver:
+                remember_tool('earshot', dict(python=exe, pythonpath=d))
+                return Earshot(f'{how} with the earshot {".".join(map(str, v))} checkout {d}', [exe, '-m', 'earshot'], exe, ver), tried
+            if saved is None:
+                os.environ.pop('PYTHONPATH', None)
+            else:
+                os.environ['PYTHONPATH'] = saved
         tried.append(f'{how} ({py}): ' + ('no earshot with sound kits: ' + why if why else 'no earshot'))
     exe = None if off else shutil.which('earshot')
     if exe:

@@ -39,8 +39,17 @@ Step by step:
              dip or stop the track already has there counts, and only the missing depth is added): the length
              nearest 0.4 s among 1 beat, 3/16 and 1/8 of a bar (0.3-0.5 s), depth 6 + 4 (weight - 0.5) dB
              within the kit lock's mix.stop_down range, at most 3 in any 10 s and 2 s apart, back on the hit
-             (a 40 ms step down, a hold, 5 ms back up ending on the hit's sync time); a hit ending is its
-             own stop-down (the bed is released under the hit); nothing ever ducks under an effect
+             (a 40 ms step down, a hold, 5 ms back up ending on the hit's sync time); a hit ending's lockup
+             takes the deepest of the range, and the bed's last downbeat comes back 6 dB under its level for the
+             hit and the release (score.py rings that chord out through the hall): the hit lands clear and the
+             music resolves under it;
+             nothing ever ducks under an effect
+  moments    the picture's landings (a card, a device, a seam through a shape or a cut, a tap that does the
+             thing, a success; weight 0.45 or more, never a key, a text sound or a tick) take a breath of the
+             music before them inside the same spacing (2 s apart, 3 in any 10 s), after the stop-downs and in
+             order of importance (the lock, the reveal, the thud, a seam, a landing ... a touch): 7 dB (8 at
+             weight 0.8+), the musical length nearest 0.4 s within 0.22-0.32 s, back on the frame, so the effect
+             lands as a hit the ear marks; the rest play over the bed (never every event: never a click track)
   gains      with a track: bed_db over the bed as played (the median 50 ms K-weighted level of the second
              before the sync point; a stop-down target reads the bed before its own stop-down), plus
              20 log10(weight) within -12..+6 dB, never past a -1 dBFS sample peak; with no bed under a cue
@@ -81,6 +90,17 @@ CARRY_DB = 6.0              # a track accent this strong carries a hit or drop o
 GESTURE_S = 0.030           # a heavy designed effect this close to a strong accent doubles it
 HEAVY_GESTURE = ('hit', 'drop', 'land', 'whoosh.long')
 STOP_ROLES = ('hit', 'drop', 'swell')   # gain stop-downs only before these
+# moments: what the picture lands (a card or device landing, a seam through a shape or a cut, a tap that does the
+# thing, the claim, the lockup). Each takes a short breath of the music before it (a stop-down of 1/8-3/16 bar,
+# MOMENT_DB deep, back on the frame), so the effect lands as a hit the ear marks, within the same spacing as the
+# stop-downs (2 s apart, 3 in any 10 s): the most important moments first, never every event (never a click track)
+MOMENT_ACTIONS = ('logo-lock', 'reveal', 'thud', 'jump-cut', 'shape', 'pass', 'whip', 'shutter', 'card-land', 'land',
+                  'lock', 'success', 'touch', 'toggle')  # in order of importance: the lock, the claim, the seams (where the
+                                                         # whole picture changes), the landings, then what a tap does
+MOMENT_W = 0.45             # a lighter event is never a moment
+MOMENT_DB = 7.0             # a moment's breath: the music this far down for MOMENT_LEN before the frame
+MOMENT_LEN = (0.22, 0.32)   # s: the breath covers the 200 ms the ear compares the hit with
+END_UNDER_DB = 6.0          # a hit ending: the bed's last downbeat this far under its level, under the lockup's hit
 STOP_MAX_PER_10S, STOP_MIN_GAP_S = 3, 2.0
 STOP_EDGE_DOWN_S, STOP_EDGE_UP_S = 0.040, 0.005
 STOP_ADD_MAX = 18.0         # dB of gain a stop-down may add (over a build that rises into the hit, more than its depth)
@@ -233,6 +253,8 @@ def stop_envelope(n, stops, skip=None):
         down = 0.5 - 0.5 * np.cos(np.pi * np.clip((u - a) / STOP_EDGE_DOWN_S, 0, 1))
         up = 0.5 - 0.5 * np.cos(np.pi * np.clip((t - u) / STOP_EDGE_UP_S, 0, 1))
         g[i0:i1] = np.minimum(g[i0:i1], 1 - (1 - d) * np.minimum(down, up))
+        if s.get('through'):  # a hit ending: the bed's last downbeat comes back only part way, under the hit and its release
+            g[i1:] = np.minimum(g[i1:], 10 ** (-float(s['through']) / 20))
     return g
 
 
@@ -255,10 +277,80 @@ def end_fade(song, n):
     return np.clip((song.dur - 0.03 - t) / song.fade, 0, 1) ** 2
 
 
+def ride_envelope(song, n):
+    """the arc ride as a gain (n,), 1 when the plan made none (song.ride: [(t, dB), ...] breakpoints)"""
+    pts = getattr(song, 'ride', None)
+    if not pts:
+        return np.ones(n)
+    t = np.arange(n) / SR
+    tt, gg = zip(*pts)
+    return 10 ** (np.interp(t, tt, gg) / 20)
+
+
+RIDE_OPEN_MAX, RIDE_LIFT_MAX = 3.0, 4.0   # dB: how far the arc ride may lower the opening / lift the body
+RIDE_BUILD_LU = 1.0                       # the body rises this much from the product's first moment to the reveal
+RIDE_SLEW = 3.0                           # dB per bar at most
+
+
+def arc_ride(bed, song, product_s, reveal_s, end_s, bar_s, keep=()):
+    """The arc: the music never plays under its opening once the product starts, and builds into the product's
+    moments. Short-term (3 s) loudness of the bed: the opening is the bed before the product's first moment; from there
+    to the reveal the target rises RIDE_BUILD_LU over the opening, and holds to the end. Where the body sits under its
+    target, the opening steps down first (up to RIDE_OPEN_MAX, back to unity over a bar into the product) and the body's
+    dips are lifted (up to RIDE_LIFT_MAX, slewed at RIDE_SLEW dB a bar); `keep` spans (the break before the reveal,
+    stops) are left as the edit made them. Returns (breakpoints [(t, dB)], report) or (None, report)."""
+    rep = dict(product_s=None if product_s is None else round(product_s, 2))
+    if product_s is None or end_s is None or end_s - product_s < 3.0:
+        rep['why'] = 'no product moment or too short a body to read'
+        return None, rep
+    import master as MA
+    ts, S = MA.blocks(bed[:int(end_s * SR)], 3.0, 0.25)
+    if len(S) < 4:
+        rep['why'] = 'too short'
+        return None, rep
+    p_lin = lambda v: 10 * np.log10(np.mean(10 ** (np.asarray(v) / 10))) if len(v) else None
+    o_end = max(product_s, 1.5)
+    op = S[ts <= o_end]
+    if not len(op):
+        op = S[:1]
+    L_open = float(p_lin(op))
+    rv = reveal_s if reveal_s is not None and product_s < reveal_s <= end_s else end_s
+    body = (ts >= product_s + 1.5) & (ts <= end_s - 0.5)
+    for a, b in keep:
+        body &= ~((ts >= a - 1.5) & (ts <= b + 1.5))
+    if body.sum() < 2:
+        rep['why'] = 'the body is all kept spans'
+        return None, rep
+    target = L_open + RIDE_BUILD_LU * np.clip((ts - product_s) / max(rv - product_s, 1e-6), 0, 1)
+    deficit = np.where(body, target - S, 0.0)
+    rep.update(opening_lufs=round(L_open, 2), body_lufs=round(float(p_lin(S[body])), 2),
+               body_min_lufs=round(float(S[body].min()), 2))
+    if deficit.max() <= 0.5:
+        rep['why'] = 'the body already plays at or over its opening'
+        return None, rep
+    open_db = -float(np.clip(np.median(deficit[body]), 0, RIDE_OPEN_MAX))
+    lift = np.clip(deficit + open_db, 0, RIDE_LIFT_MAX) * body
+    # slew: at most RIDE_SLEW dB a bar, both ways (a lift arrives over the bar before the dip it fills)
+    step = RIDE_SLEW * 0.25 / max(bar_s, 0.5)
+    for k in range(1, len(lift)):
+        lift[k] = max(lift[k], lift[k - 1] - step)
+    for k in range(len(lift) - 2, -1, -1):
+        lift[k] = max(lift[k], lift[k + 1] - step)
+    pts = [(0.0, open_db), (max(0.0, product_s - bar_s), open_db), (product_s, 0.0)] if open_db < -0.25 else [(0.0, 0.0)]
+    for t, g in zip(ts, lift):
+        if t > product_s:
+            pts.append((float(t), round(float(g), 2)))
+    pts.append((end_s, 0.0))
+    pts = sorted(dict(pts).items())
+    rep.update(opening_db=round(open_db, 2), lift_max_db=round(float(lift.max()), 2),
+               why='the body sat under its opening' if deficit.max() > 0.5 else '')
+    return pts, rep
+
+
 def bed_as_played(bed, song, stops, skip=None):
-    """the staged bed times its automation: stop-downs, silences and the end fade"""
+    """the staged bed times its automation: the arc ride, stop-downs, silences and the end fade"""
     n = len(bed)
-    return bed * (stop_envelope(n, stops, skip) * hold_envelope(song, n) * end_fade(song, n))[:, None]
+    return bed * (ride_envelope(song, n) * stop_envelope(n, stops, skip) * hold_envelope(song, n) * end_fade(song, n))[:, None]
 
 
 def safe_bed_level(bed, t):
@@ -480,17 +572,35 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
             row['align'] = spec.get('align') or 'onset'
             row['start_s'] = MK.place(row['tk'], sp, cue_t)
 
+    # ---- the arc ride: the body never under its opening once the product starts, building into the reveal
+    ride_rep = None
+    if music and getattr(song, 'arc_ride', True):
+        firsts = [r['cue_s'] for r in rows if r.get('status') in ('placed', 'carried') and r.get('action') in MOMENT_ACTIONS + (
+            'press', 'appear', 'type', 'detent', 'swipe', 'slide')]
+        p0 = min(firsts) if firsts else None
+        end_t = ending.get('bed_stops_film_s') or lockup_t or song.dur
+        keep = list(stop_spans)
+        if payoff_t is not None:
+            keep.append((payoff_t - 2 * 4 * beat_s, payoff_t))  # the break before the reveal stays as the edit made it
+        song.ride, ride_rep = arc_ride(bed, song, p0, payoff_t, end_t, 4 * beat_s, keep)
+
     # ---- stop-downs
     stops = []
     if music:
         targets = []
         for row in rows:
-            if row.get('status') in ('placed', 'carried') and row.get('for') in sd['before']:
-                spec = special(row['cue_s']) or bool(events[row['i']].get('structural'))
+            if row.get('status') not in ('placed', 'carried'):
+                continue
+            spec = special(row['cue_s']) or bool(events[row['i']].get('structural'))
+            if row.get('for') in sd['before']:
                 if row['for'] == 'swell' and row['weight'] < 1.0 and not spec:
                     continue  # a light swell blooms over the bed: no stop-down before it
                 targets.append(dict(t=row['sync_s'], w=row['weight'], id=f"{row['kind']}:{row['id'] or row['i']}",
                                     row=row, special=spec))
+            elif row['weight'] >= MOMENT_W and (row.get('action') in MOMENT_ACTIONS or spec) and row['kind'] not in ('key', 'text', 'tick'):
+                rank = MOMENT_ACTIONS.index(row['action']) if row.get('action') in MOMENT_ACTIONS else 0
+                targets.append(dict(t=row['sync_s'], w=row['weight'], id=f"{row['kind']}:{row['id'] or row['i']}",
+                                    row=row, special=spec, moment=rank))
         for a in song.stopdowns.get('add', []):
             targets.append(dict(t=song.T(a['at'] if isinstance(a, dict) else a), w=float((a or {}).get('weight', 1.0))
                                 if isinstance(a, dict) else 1.0, id=f'add:{a}', row=None, special=True,
@@ -499,14 +609,16 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
         targets = [x for x in targets if x['id'] not in skip and (x['row'] is None or str(x['row']['id']) not in skip)]
         if not song.stopdowns.get('auto', True):
             targets = [x for x in targets if x['row'] is None]
-        targets.sort(key=lambda x: (not x['special'], -x['w'], x['t']))
+        # the stop-downs first (hits, drops, swells, the payoff and the lockup), then the moments by importance
+        targets.sort(key=lambda x: (not x['special'], 'moment' in x, x.get('moment', 0), -x['w'], x['t']))
         L = stop_length(beat_s, sd['length'])
+        Lm = stop_length(beat_s, MOMENT_LEN)
         accepted = []
         for x in targets:
             t = x['t']
             rec = dict(**{'for': x['id']}, t=r4(t))
-            if ending.get('mode') in ('hit', 'stop') and t >= ending['bed_stops_film_s'] - 0.05:
-                rec.update(status='ending', why='the hit ending is the stop-down (the bed is released under the hit; it is not dipped)')
+            if ending.get('mode') in ('hit', 'stop') and t > ending['bed_stops_film_s'] + 0.05:
+                rec.update(status='ending', why='after the hit ending the bed is released: nothing to step down')
                 stops.append(rec)
                 continue
             if any(a - 1e-9 <= t < b for a, b, _, sc in song.silences):
@@ -525,12 +637,20 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
             Lx = L
             depth = 6.0 + 4.0 * float(np.clip(x['w'] - 0.5, 0, 1.5))
             depth = float(np.clip(depth, *sd['depth']))
+            if 'moment' in x and not x['special']:
+                Lx, depth = Lm, MOMENT_DB + (1.0 if x['w'] >= 0.8 else 0.0)
+                rec['moment'] = x['row'].get('action') or x['row']['kind']
             if x.get('stop'):
                 depth, Lx = 60.0, float(np.clip(song.stopdowns.get('stop_len', 0.4), 0.2, 0.7))
             d0 = track_dip(bed, t, Lx)
             added = round(float(np.clip(depth - d0, 0.0, STOP_ADD_MAX)), 2)
             rec.update(status='arrangement' if added == 0 else 'added', **{'from': r4(t - Lx)}, length_s=r4(Lx),
                        depth_db=round(depth, 2), track_dip_db=round(d0, 2), added_db=added)
+            if ending.get('mode') in ('hit', 'stop') and abs(t - ending['bed_stops_film_s']) <= 0.05:
+                # the lockup on a hit ending: the music breathes, its last downbeat stays under the hit while it is
+                # released, and its chord rings out through the hall (score.py ring_bed): the hit lands clear, the music resolves
+                depth = float(sd['depth'][1])
+                rec.update(through=END_UNDER_DB, added_db=round(max(added, depth), 2), depth_db=round(depth, 2), status='added')
             accepted.append(rec)
             stops.append(rec)
         stops.sort(key=lambda s: s['t'])
@@ -695,6 +815,7 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
                          ref_bed_lufs=None if ref_bed is None else round(ref_bed, 2), quiet_db=quiet_db,
                          ending=ending.get('mode')) if music else dict(source='none')),
             'events': out_events, 'silent': silent, 'stopdowns': stops, 'runs': runs,
+            'ride': dict(ride_rep or {}, points=[[round(a, 3), b] for a, b in (getattr(song, 'ride', None) or [])]) if music else None,
             'stop_down': dict(length=list(sd['length']), depth=list(sd['depth']), before=sd['before']),
             'density_per_10s': density, 'one_gesture': gesture, 'warnings': warnings,
             'restraint': dict(target=target, silenced=hushed), 'repeats': repeats, 'cast': cast_rep,

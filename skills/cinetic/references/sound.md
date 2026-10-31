@@ -115,6 +115,8 @@ The calm kit's fitted roles are public-domain recordings that earshot fitted as 
 
 ## 2. Pipeline and gate
 
+**One command: `npm run sound`** (`node scripts/sound.mjs`). It needs no setting: it finds a Python with the mix's packages (scripts/py.mjs first, then the interpreter an earlier run found and the earshot virtualenv) and earshot (kit.py: the interpreter an earlier run found, `~/earshot/.venv`, a 0.4 checkout beside an older one; what works is remembered in `~/.cinetic/tools.json`). It analyses and fits a licensed track that is not cut yet (never an edit already there), exports the cues, writes the kit from the launch preset when there is none, casts it when this film's actions are not cast (`--recast` casts again), renders it (cached), plans and mixes. A hero sound the track buries is cast once more without it. A step that cannot run says why and falls back: a timeline that does not import keeps the last cues; no earshot and no rendered takes play the bed alone (`PARTIAL`). Its last line: `PASS` / `FAIL` / `PARTIAL`, the loudness, how many of the picture's events land as hits, and the ending. `npm run sound -- --bed-only` is the edited track alone, before any cue exists. The steps it runs, one by one:
+
 ```bash
 # Step 3 (references/music.md): music.mjs search / sheet / get, then track.py analyze / edit / grid / check  (npm run music)
 npx tsx scripts/export-cues.ts                       # src/sync.ts -> out/cues.json        (npm run cues)
@@ -123,7 +125,7 @@ python3 scripts/audio/kit.py render                  # audio/kit.json -> audio/k
 python3 scripts/audio/plan.py                        # out/qa/sfx_plan.json + out/qa/cues_sounded.json (npm run plan)
 python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json \
     --out public/audio/soundtrack.wav --stems out/stems --json out/qa/score.json   # (npm run audio: plan, then score)
-python3 scripts/audio/score.py ... --bed-only        # a track whose effects are not made yet: the edited track alone
+python3 scripts/audio/score.py ... --bed-only        # the edited track alone (no out/cues.json needed: the edit gives the length)
 python3 scripts/audio/listen.py                      # earshot's ears: out/qa/listen.json + sound_sheet.png (npm run listen)
 python3 scripts/audio/kit.py check                   # the kit against the film's cues + earshot's audit of every take
 python3 scripts/audio/master.py --measure public/audio/soundtrack.wav   # loudness, true peak, LRA, PLR of any WAV
@@ -133,6 +135,22 @@ python3 scripts/audio/credits.py                     # Step 8: CREDITS.md + CRED
 `plan.py` decides every effect before anything is mixed (role, take, start, gain over the bed, width, runs, the hits the track carries, the stop-downs) and `score.py` renders exactly that plan over the staged, edited track (an effects-only film renders its kit at `level_db`). It writes a 48 kHz, 24-bit stereo WAV exactly `TOTAL / FPS` seconds long, the stems (`bed.wav` as played and `sfx.wav`, which sum to the premix) and the report. `render.sh --audio` muxes it (`references/finishing.md` §6); never let Remotion encode the audio. `render.sh --build-audio` runs cues, kit, plan and score first.
 
 **The track only ever plays through `score.py`.** The timeline cut every act to the edit's film-time grid, and the edit puts bar 1's downbeat at its `film_t0` (0.25 s by default), its joins on their attacks and its ending on the track's own decay. A film whose effects are not made yet renders the edited track alone with `score.py --bed-only` (the same bed, staging and master as the full mix, no kit read). Never cut the track by hand with ffmpeg: a cut from the first segment's `src_from` at 0 s drops `film_t0` and puts every downbeat 250 ms early against the cuts, and an intermediate lossy encode can add its priming pad on top (2048 samples at 44.1 kHz is 46 ms of silence); the mux lag gate passes it anyway, because the WAV and the MP4 agree with each other.
+
+**Hits on the picture, the arc and the end (with a track).** The track carries the film; the moments the picture lands
+are where the ear must mark a hit. `plan.py` gives each moment (a seam through a shape or a cut, a card or device
+landing, the claim, a tap that does the thing, the lockup; weight 0.45 or more) a breath of the music before it: 7 dB
+(8 at weight 0.8+) for the musical length nearest 0.4 s within 0.22-0.32 s, back on the frame, inside the stop-down
+spacing (2 s apart, 3 in any 10 s), the most important first: the effect then lands as a salient hit (a 100 ms block
+6 dB over the 200 ms before it, as earshot reads a film against its picture). The rest play over the bed: never every
+event, never a click track. `score.py` reports `accents` (the share of events with a salient hit within 100 ms; under
+30 % warns) and warns on a click track (over 85 % evenly spaced). The arc ride: once the product's first moment comes,
+the music never plays under its opening; where the edit's body sits lower, the opening steps down (up to 3 dB) and the
+body's dips are lifted (up to 4 dB, slewed 3 dB a bar), building 1 LU into the reveal, the break before the reveal kept
+(`ride` in the plan and the report; it is the arrangement's level, not a duck). The end: a hit ending's lockup takes
+the deepest stop-down, the bed's last downbeat comes back 6 dB under its level for the hit and its release, and that
+chord rings out through a hall as long as the end card holds (2.8-6 s): the lockup lands and the music resolves under
+it, never a fade under nothing, never a stop. When the edit's last bar line comes after the lockup with nothing on it,
+the bed's last beat moves onto the lockup (reported; `track.py fit` can end the body there).
 
 **Gate (Step 8):**
 - loudness: the target ±0.5 LUFS integrated (§9), true peak ≤ −1.5 dBTP on the WAV, last 480 samples digital zero;

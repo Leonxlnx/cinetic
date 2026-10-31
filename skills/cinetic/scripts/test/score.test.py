@@ -1217,6 +1217,8 @@ def real_earshot(d):
 
 
 def main():
+    # kit.py remembers the earshot it finds in $CINETIC_HOME/tools.json: a test never writes the user's own home
+    os.environ['CINETIC_HOME'] = tempfile.mkdtemp(prefix='cinetic-home-')
     baseline = sys.argv[sys.argv.index('--baseline') + 1] if '--baseline' in sys.argv else None
     only = sys.argv[sys.argv.index('--only') + 1].split(',') if '--only' in sys.argv else None
     if not only or 'kit_helpers' in only:

@@ -7,6 +7,7 @@
     "studio": "remotion studio",
     "stills": "remotion still Mark16 out/stills/mark-16.png --log=error && remotion still MarkSizes out/stills/mark-sizes.png --log=error && remotion still MarkLarge out/stills/mark-large.png --log=error",
     "check": "tsc --noEmit && node scripts/lint-film.mjs src && tsx scripts/grid-check.ts src/timeline.ts",
+    "sound": "node scripts/sound.mjs",
     "cues": "tsx scripts/export-cues.ts",
     "music": "node scripts/py.mjs scripts/audio/track.py music",
     "kit": "node scripts/py.mjs scripts/audio/kit.py render",

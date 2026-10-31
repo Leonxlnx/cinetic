@@ -44,6 +44,8 @@ Usage (from the project root):
 --bed-only (a film with a track whose effects are not made yet): the edited track alone, exactly as the film
 plays it (track.py build_bed: bar 1 at the edit's film_t0, the joins, the ending, the stop-downs score.json adds),
 staged and mastered like the full mix; no kit is read and no effect plays (the report says "bed_only": true).
+It needs no out/cues.json: without one, the film's length, tempo and reveal come from the edit (edit.json's ending and
+hold) and its fps from src/music.ts.
 Never cut the track by hand for the picture: a hand cut that drops film_t0 or carries an encoder's priming pad
 puts every downbeat early or late against the cuts the timeline made on it (check-sync.py measures the music
 against the edit and fails it).
@@ -152,6 +154,42 @@ def read_json(path, what):
         raise ScoreError(f'{what} not found: {path}') from None
     except json.JSONDecodeError as e:
         raise ScoreError(f'{what} {path} is not valid JSON ({e})') from None
+
+
+def film_fps(root):
+    """The film's fps from src/music.ts (track.py grid writes it) or src/timeline.ts (FPS), else 30."""
+    for rel, pat in (('src/music.ts', r'\bfps:\s*(\d+(?:\.\d+)?)'), ('src/timeline.ts', r'\bFPS\s*=\s*(\d+(?:\.\d+)?)'),
+                     ('music.js', r'\bfps:\s*(\d+(?:\.\d+)?)')):
+        try:
+            with open(os.path.join(root, rel), encoding='utf-8') as fh:
+                m = re.search(pat, fh.read())
+            if m:
+                return float(m.group(1))
+        except OSError:
+            pass
+    return 30.0
+
+
+def bed_cues(score, score_path):
+    """--bed-only with no out/cues.json: the film's length, tempo and reveal from the edit (audio/music/edit.json),
+    so the edited bed renders before the timeline exports anything."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(score_path)))
+    music = score.get('music') if isinstance(score.get('music'), dict) else {}
+    if not music.get('edit'):
+        raise ScoreError('--bed-only with no cues needs the edit (audio/score.json music.edit; track.py fit writes it)')
+    edit = read_json(locate(music['edit'], os.path.dirname(os.path.abspath(score_path))), 'edit')
+    fps = film_fps(root)
+    end = edit.get('ending') or {}
+    beat = float(edit.get('beat_s') or 60.0 / float(edit['bpm']))
+    last = float(end.get('end_s') or edit.get('film_t0', 0) + int(edit.get('film_bars', 8)) * 4 * beat)
+    tail = float(end.get('hold_s') or end.get('ring_s') or 2.0)
+    total = int(math.ceil((last + tail) * fps))
+    cue = {}
+    if (edit.get('reveal') or {}).get('film_s') is not None:
+        cue['reveal'] = int(round(float(edit['reveal']['film_s']) * fps))
+    if end.get('hit_film_s') is not None or end.get('end_s') is not None:
+        cue['lockup'] = cue['end'] = int(round(float(end.get('hit_film_s') or end['end_s']) * fps))
+    return dict(fps=fps, bpm=float(edit['bpm']), total=total, acts={}, cue=cue, copy=[], events=[], from_edit=True)
 
 
 # ------------------------------------------------------------------------------------------
@@ -1292,7 +1330,7 @@ def load_music(song, base_dir, n):
     root = os.path.dirname(base_dir) if os.path.basename(base_dir) == 'audio' else base_dir  # the project root
     cache = os.path.join(root, 'out', 'cache', 'music')
     if cfg.get('edit'):
-        edit = read_json(locate(cfg['edit'], base_dir), 'edit')
+        edit = settle_ending(song, read_json(locate(cfg['edit'], base_dir), 'edit'))
         try:
             bed, _ = TR.build_bed(edit, base_dir, n=n, cache_dir=cache)
         except TR.TrackError as e:
@@ -1309,6 +1347,36 @@ def load_music(song, base_dir, n):
         D.place(bed, x.astype(np.float64), song.T(cfg.get('at', 0)), 1.0, tail=0.05)
     bed = M.stage(bed, STAGE_LUFS) * 10 ** (float(cfg.get('gain_db') or 0.0) / 20)
     return bed, edit
+
+
+def settle_ending(song, edit):
+    """A hit ending whose bar line comes after the lockup with nothing on it (a template that holds the end card past
+    the body's last bar): the bed's last beat moves onto the lockup, so the lockup is the music's final hit and the end
+    card holds on its ring, never a bed playing on at full level under the end card and released on nothing. The edit
+    on disk is unchanged (track.py fit can end the body on the lockup's bar); the moved ending is reported."""
+    end = dict((edit or {}).get('ending') or {})
+    lock = (song.cues.get('cue') or {}).get('lockup')
+    if end.get('mode') not in ('hit', 'stop') or lock is None or not edit.get('segments'):
+        return edit
+    lt, t = float(lock) / song.fps, float(end.get('bed_stops_film_s', end.get('hit_film_s', 0.0)))
+    bar = 4.0 * float(edit.get('beat_s') or song.beat)
+    if not (0.3 <= t - lt <= 2.0 * bar) or any(abs(float(e['f']) / song.fps - t) <= 3.0 / song.fps for e in song.cues.get('events', [])):
+        return edit
+    segs = []
+    for sg in edit['segments']:
+        if sg['film_s'] >= lt - 0.05:
+            break
+        sg = dict(sg)
+        if sg['film_s'] + (sg['src_to'] - sg['src_from']) > lt:
+            sg['src_to'] = round(sg['src_from'] + (lt - sg['film_s']), 4)
+        segs.append(sg)
+    if not segs:
+        return edit
+    end.update(bed_stops_film_s=round(lt, 4), hit_film_s=round(lt, 4), end_s=round(lt, 4), moved_from_s=round(t, 4))
+    song.warnings.append(f"the hit ending's bar line ({t:.2f} s) comes {t - lt:.1f} s after the lockup ({lt:.2f} s) with nothing on "
+                         "it: the bed's last beat lands with the lockup instead and rings out under the end card (track.py fit "
+                         "can end the body on the lockup's bar)")
+    return dict(edit, segments=segs, ending=end, joins=[j for j in edit.get('joins') or [] if float(j.get('film_s', 0)) < lt])
 
 
 def ring_hit(song, edit, placed, sfx):
@@ -1331,6 +1399,90 @@ def ring_hit(song, edit, placed, sfx):
     D.place(sfx, wet, p['start'], 1.0, 0.0, tail=0.05)
     p['ring'] = dict(send=HIT_RING_SEND, room='hall')
     return p
+
+
+BED_RING_SEND = 0.6  # a hit ending: the bed's last downbeat through the hall, so the music itself rings out under the hit
+
+
+def ring_bed(edit, bed_played, source=None, until_s=None):
+    """A hit ending: the bed's last downbeat (its attack and the 0.5 s release under the hit, as the track plays it before
+    the lockup's breath: `source`) is sent through the hall (2.8 s) into the bed, so the music's own last chord rings out
+    with the lockup instead of stopping under it."""
+    source = bed_played if source is None else source
+    end = (edit or {}).get('ending') or {}
+    if end.get('mode') not in ('hit', 'stop'):
+        return None
+    t = float(end.get('bed_stops_film_s', end.get('hit_film_s', end.get('end_s', 0.0))))
+    rel = float(end.get('release_s', 0.5))
+    i0, i1 = max(0, int((t - 0.02) * SR)), min(len(bed_played), int((t + 0.06 + rel) * SR))
+    if i1 - i0 < int(0.05 * SR):
+        return None
+    # the ring lasts to the end card's last frame: a hall of 2.8 s, longer (up to 6 s) when the picture holds longer
+    rt = float(np.clip(1.1 * ((until_s or t + 2.8) - t), 2.8, 6.0))
+    x = np.concatenate([source[i0:i1].mean(axis=1), np.zeros(int((rt * 1.2 + 0.4) * SR))])
+    room = 'hall' if rt <= 2.81 else D.make_ir(rt, 0.025, 5500, 1.0, 3)
+    wet = D.filt(D.reverb(x * BED_RING_SEND, room), D.hp(120, 2))
+    D.place(bed_played, wet, i0 / SR, 1.0, 0.0, tail=0.3)
+    return dict(t=round(t, 3), send=BED_RING_SEND, rt60_s=round(rt, 2))
+
+
+SALIENT_JUMP_DB, SALIENT_REL_LU = 6.0, -8.0  # earshot's salient hit: a 100 ms block 6 dB over the 200 ms before, near the level
+ACCENT_SHARE = 0.30      # the share of the picture's events that should land as hits the ear marks
+CLICK_TRACK_SHARE = 0.85  # more than this, evenly spaced: a click track
+
+
+def salient_hits(y):
+    """The times the ear marks as hits (earshot's rule, model-free): a 100 ms K-weighted block (every 20 ms) that rises
+    6 dB or more within 80 ms over the quietest block of the 200 ms before and lands within 8 LU of the integrated
+    loudness; one hit per run of such blocks, at its biggest rise."""
+    tb, L = M.blocks(y, 0.1, 0.02)
+    if len(L) < 20:
+        return []
+    try:
+        I = M.integrated(y)
+    except ValueError:
+        return []
+    from numpy.lib.stride_tricks import sliding_window_view as sw
+    a, b = 10, 4
+    pre = sw(np.concatenate([np.full(a, L[0]), L]), a).min(axis=1)[:len(L)]
+    post = sw(np.concatenate([L, np.full(b - 1, L[-1])]), b).max(axis=1)[:len(L)]
+    rise = post - pre
+    idx = np.flatnonzero((rise >= SALIENT_JUMP_DB) & (post >= I + SALIENT_REL_LU))
+    out = []
+    for run in (np.split(idx, np.flatnonzero(np.diff(idx) > 2) + 1) if len(idx) else []):
+        k = run[int(np.argmax(rise[run]))]
+        t = float(tb[k]) - 0.02
+        if not out or t - out[-1] > 0.1:
+            out.append(t)
+    return out
+
+
+def accent_read(y, events, song, plan=None):
+    """How many of the picture's events land as hits the ear marks (a salient hit within 100 ms, as earshot reads a film
+    against its picture), which ones, and whether it reads as a click track (nearly every event hit, evenly spaced)."""
+    hits = np.array(salient_hits(y))
+    evs = [e for e in events if e['f'] / song.fps < song.dur]
+    on = [bool(len(hits)) and float(np.min(np.abs(hits - e['f'] / song.fps))) <= 0.1 for e in evs]
+    moments = set()
+    for s in (plan or {}).get('stopdowns', []):
+        if s.get('status') in ('added', 'arrangement'):
+            moments.add(round(float(s['t']), 2))
+    share = sum(on) / len(evs) if evs else None
+    ioi = np.diff(hits) if len(hits) > 2 else np.array([])
+    cv = float(np.std(ioi) / np.mean(ioi)) if len(ioi) else None
+    rep = dict(events=len(evs), salient=int(sum(on)), share=None if share is None else round(share, 3),
+               moments=len(moments), hits=len(hits), hits_per_10s=round(10 * len(hits) / max(song.dur, 1e-6), 2),
+               hit_spacing_cv=None if cv is None else round(cv, 2),
+               missed=[dict(f=e['f'], kind=e['kind'], id=e.get('id', '')) for e, h in zip(evs, on) if not h
+                       and (e.get('structural') or e['kind'] in ('hit', 'drop', 'land') or 'lockup' in str(e.get('id', '')))][:8])
+    if share is not None and len(evs) >= 4 and share < ACCENT_SHARE:
+        song.warnings.append(f"few events land as hits: {sum(on)} of {len(evs)} ({share:.0%}; want {ACCENT_SHARE:.0%}+): the moments "
+                             "(a landing, a seam, the lockup) take a breath of the music before them; give the events that matter "
+                             "an action (src/sync.ts) and a weight of 0.45+, or cut the picture on the track's accents")
+    if share is not None and share > CLICK_TRACK_SHARE and cv is not None and cv < 0.25:
+        song.warnings.append(f'{share:.0%} of the events land as evenly spaced hits (spacing CV {cv:.2f}): a click track; let the '
+                             'music carry the lighter ones (lower their weight under 0.45)')
+    return rep
 
 
 def plan_voice(kit, p, song):
@@ -1366,8 +1518,10 @@ def render_music(song, events, cues, kit, bed, edit, stems_dir=None, draft=False
         PL.write_json(plan_path, plan)
         PL.write_json(os.path.join(os.path.dirname(os.path.abspath(plan_path)), 'cues_sounded.json'), PL.sounded_cues(cues, plan))
     active = [s for s in plan['stopdowns'] if s.get('status') in ('added', 'arrangement')]
-    auto = PL.stop_envelope(n, active) * PL.hold_envelope(song, n) * PL.end_fade(song, n)
+    auto = PL.ride_envelope(song, n) * PL.stop_envelope(n, active) * PL.hold_envelope(song, n) * PL.end_fade(song, n)
     bed_played = bed * auto[:, None] * song.mix['music']
+    bed_ring = ring_bed(edit, bed_played, bed * (PL.ride_envelope(song, n) * PL.hold_envelope(song, n))[:, None] * song.mix['music'],
+                        until_s=song.dur)
     sfx = np.zeros((n, 2))
     placed = []
     for p in plan['events']:
@@ -1426,7 +1580,7 @@ def render_music(song, events, cues, kit, bed, edit, stems_dir=None, draft=False
             masked.append(dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), band_hz=r[0], snr_db=round(r[1], 1), margin_db=thr,
                                role=p.get('role'), hero=hero))
     return y, info, dict(placed=placed, skipped=skipped, missing=missing, masked=masked, masked_read=read, tuned=tuned,
-                         typing=None, sfx_levels={}, plan=plan, gates=gates)
+                         typing=None, sfx_levels={}, plan=plan, gates=gates, bed_ring=bed_ring)
 
 
 def effect_levels(bed_played, p, n):
@@ -1504,8 +1658,8 @@ def music_gates(song, plan, bed, bed_played, sfx, auto, edit, base_dir, placed):
         if lvs is None:
             continue
         own = next((k for k, s in enumerate(active) if s['for'].endswith(f":{pl['id'] or pl['i']}") and abs(s['t'] - pl['sync_s']) < 1e-3), None)
-        ref = bed_played if own is None else bed * (PL.stop_envelope(n, active, own) * PL.hold_envelope(song, n)
-                                                     * PL.end_fade(song, n))[:, None] * song.mix['music']
+        ref = bed_played if own is None else bed * (PL.ride_envelope(song, n) * PL.stop_envelope(n, active, own)
+                                                     * PL.hold_envelope(song, n) * PL.end_fade(song, n))[:, None] * song.mix['music']
         try:
             lv = MK.bed_level(ref, pl['sync_s'])
         except MK.BedError:
@@ -1571,12 +1725,12 @@ def music_gates(song, plan, bed, bed_played, sfx, auto, edit, base_dir, placed):
         bt, lv = MK.block_levels(bed_played[max(0, int((t - 1.5) * SR)):min(n, int((t + 0.3) * SR))])
         tt = bt + max(0.0, t - 1.5)
         pre = lv[(tt >= t - 1.5) & (tt < t - 0.5)]
-        win = lv[(tt >= t - 0.5) & (tt < t)]
+        win = lv[(tt >= max(t - 0.5, float(s.get('from', t - 0.5)))) & (tt < t)]  # the stop-down's own span (a moment's breath is shorter)
         aft = lv[(tt >= t) & (tt < t + 0.25)]
         dip = float(np.median(pre) - np.percentile(win, 25)) if len(pre) and len(win) else 0.0
         back = float(np.median(pre) - np.median(aft)) if len(pre) and len(aft) else 0.0
         ok = dip >= STOP_MIN_DIP_DB - 0.25
-        returned = back <= STOP_RETURN_DB
+        returned = back <= STOP_RETURN_DB or bool(s.get('through'))
         row = dict(s, measured_dip_db=round(dip, 2), back_within_db=round(back, 2), ok=bool(ok), returned=bool(returned))
         sd_rows.append(row)
         at_payoff = payoff is not None and abs(t - payoff) <= 3 / song.fps
@@ -1591,11 +1745,13 @@ def music_gates(song, plan, bed, bed_played, sfx, auto, edit, base_dir, placed):
                                    f"{STOP_RETURN_DB:g}, unless the track breaks there)")
     out['stop_downs'] = sd_rows
     # 10. no ducking: the automation is 0 dB outside the stop-downs, silences and the end fade; and the bed's
-    # gain never dips under a bright effect
+    # gain never dips under a bright effect. The arc ride (plan.py: the opening and the body's dips, slewed by the bar,
+    # whatever the effects do) is the arrangement's level, not a duck: it is read apart
+    auto = auto / PL.ride_envelope(song, n)
     t = np.arange(n) / SR
     allowed = np.zeros(n, bool)
     for s in active:
-        allowed |= (t >= s['from'] - 0.001) & (t <= s['t'] + 0.001)
+        allowed |= (t >= s['from'] - 0.001) & ((t <= s['t'] + 0.001) | bool(s.get('through')))
     for a, b, _, _ in song.silences:
         allowed |= (t >= a - 0.05) & (t <= b + 0.01)
     allowed |= t >= song.dur - 0.03 - song.fade
@@ -1794,8 +1950,8 @@ def main(argv=None):
     ap.add_argument('--quiet', action='store_true')
     a = ap.parse_args(argv)
     try:
-        cues = read_json(a.cues, 'cues')
         score = read_json(a.score, 'score')
+        cues = read_json(a.cues, 'cues') if (os.path.isfile(a.cues) or not a.bed_only) else bed_cues(score, a.score)
         song = Song(score, cues)
         if a.lufs is not None:
             song.lufs, song.lufs_from = a.lufs, '--lufs'
@@ -1979,6 +2135,10 @@ def main(argv=None):
                                  "effect against the bed, so the over-bed and masking reads no longer describe the master: with a "
                                  "track set each role's bed_db in audio/kit.json (music.gain_db for headroom) and leave mix at 1")
         rep['lockup'] = lockup_after_stop(song, plan, y, rep)
+        rep['bed_ring'] = ev.get('bed_ring')
+        rep['ride'] = plan.get('ride')
+        if events and not a.bed_only:
+            rep['accents'] = accent_read(y, events, song, plan)
         if not rec:
             song.warnings.append('score.json music names no licence record: credits.py and deliver.sh refuse the film until it does')
     if ev['missing']:
@@ -2028,6 +2188,14 @@ def main(argv=None):
                   + (', '.join(f"{s['t']:.2f}s {s['status']}" + (f" {s['measured_dip_db']:.1f} dB" if 'measured_dip_db' in s else '')
                                for s in sdn) or 'none')
                   + f"; density {rep['density']['median']}/10 s; no duck {'ok' if rep['no_duck']['ok'] else 'FAIL'}")
+        if rep.get('accents'):
+            ac = rep['accents']
+            print(f"  hits: {ac['salient']} of {ac['events']} events land as hits the ear marks ({100 * (ac['share'] or 0):.0f} %, want "
+                  f"{100 * ACCENT_SHARE:.0f} %+), {ac['moments']} breaths before moments, {ac['hits_per_10s']} hits per 10 s")
+        if rep.get('ride') and rep['ride'].get('points'):
+            rd = rep['ride']
+            print(f"  arc ride: opening {rd.get('opening_db', 0):+.1f} dB, body lifted up to {rd.get('lift_max_db', 0):.1f} dB "
+                  f"(the body sat at {rd.get('body_lufs')} vs the opening's {rd.get('opening_lufs')} LUFS short-term)")
         for s_ in rep['stacks']:
             print(f"  stack: {s_['t']}s (f={s_['f']:g}{', ' + s_['at'] if s_['at'] else ''}): {', '.join(s_['layers'] + s_['lead_ins'])}")
         if progress and progress.get('events'):
