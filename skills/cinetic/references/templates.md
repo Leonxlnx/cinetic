@@ -34,7 +34,7 @@ stop`) adds the gap to its one element and 1 s rings out after it.
 
 | Template | Length | Use it when | Shape |
 |---|---|---|---|
-| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing, line by line | a line alone in the middle of a clean ground, the product doing what it said, the next line, the product again, the centred lockup built from the last picture; the name deals the voice, the ground family, the seams, the end card and the camera, never the last films' (`src/recent.ts`) |
+| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing, line by line | a line alone in the middle of a clean ground, the product doing what it said, the next line, the product again, the centred lockup built from the last picture; the deck's direction sets the voice, the ground family, the seams, the end card and the camera (`deck.py` writes `src/dealt.ts`, the one deal the film plays; with no direction dealt, the name deals them), never the last films' (`src/recent.ts`) |
 | none (the starter, `--template none`) | 15-45 s | a launch film whose idea is its own device | the dealt direction's skeleton |
 | `update` | 15-23 s | "vX is out": 2-4 changes to show | the version as the set, one lit product moment per change on one camera strip with the film's one 3D turn, the version whole at the payoff, the end card with the version; each slot deals one of two devices |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
@@ -56,6 +56,9 @@ film may end on the reel's close (rebuild its acts after your own) or open on th
 The default launch, and simple is never flat: one thing a frame, every frame lit and alive. You write `src/launch.ts`
 (each line, its picture, the strings that picture shows, the one fact under the lockup) and `src/product.tsx` (each
 picture as the product's real screen); the template's `README.md` walks through both. What it carries for you:
+- **One deal.** Run `deck.py` in the project after `new-film.sh`: it maps the dealt direction onto the template's
+  slots (voice, ground, seams, end card, camera) and writes `src/dealt.ts`, which `src/deal.ts` plays; DIRECTION.md
+  section 0 prints the same deal, so the sheet and the film never disagree (`pin` in `src/launch.ts` fixes a slot).
 - **Ground.** The dealt family under a key light (a soft pool from the top left, lagging the camera float, the far side
   falling off), and the film's one colour event from the claim, where the key light takes the accent's hue.
 - **The core action.** The first picture is real footage of the input (`node scripts/assets.mjs recipe "<input>"`, then

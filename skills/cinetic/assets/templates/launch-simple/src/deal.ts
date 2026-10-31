@@ -1,8 +1,9 @@
 // The choices this film is dealt. The structure never changes (a line alone, the product acting, the next line, the
 // product again, the lockup); how each part looks does: the text voice, the ground family, the seams, the end card and
-// the camera on the picture beats. The seed is the product's name (the same name, the same deal, on any machine);
-// launch.ts `seed` re-deals and `pin` fixes a slot by hand. Keep this file free of React and CSS imports: the timeline
-// and the sound import it.
+// the camera on the picture beats. ONE source: when scripts/deck.py has dealt a direction in this project it writes
+// src/dealt.ts, and the film plays that deal (out/DIRECTION.md section 0 says why each); with none dealt, the seed is
+// the product's name (the same name, the same deal, on any machine) and launch.ts `seed` re-deals. launch.ts `pin`
+// fixes a slot by hand over either. Keep this file free of React and CSS imports: the timeline and the sound import it.
 //
 //   slot     choices        what each does
 //   voice    build          every line built word by word (20 f fades, 6 f apart), re-centring as it grows (15 f expo)
@@ -25,6 +26,7 @@
 //            rise           every picture beat rising (1.5 % of the height a second)
 //                           (the camera only travels; the closer frame is a cut)
 // The seams alternate between the two dealt kinds and their next choice, so no kind passes 45 % of the scene changes.
+import { DEALT } from './dealt';
 import { LAUNCH } from './launch';
 import { RECENT } from './recent';
 
@@ -83,7 +85,20 @@ export const dealOf = (name: string): Deal => {
 };
 
 const NAME = LAUNCH.seed ?? LAUNCH.name;
-/** The unnamed scaffold keeps the floor; a named film is dealt; launch.ts `pin` fixes slots by hand. */
-export const DEAL: Deal = { ...(/^\[.*\]$/.test(NAME.trim()) ? FLOOR : dealOf(NAME)), ...(LAUNCH.pin ?? {}) } as Deal;
+/** The deck's deal (src/dealt.ts) when deck.py dealt one, its slots checked against DEVICES; else null. */
+const deckDeal = (): Deal | null => {
+  if (!DEALT?.deal) return null;
+  const d = DEALT.deal;
+  const slots = Object.keys(DEVICES) as Slot[];
+  const bad = slots.filter((s) => !(DEVICES[s] as readonly string[]).includes(d[s]));
+  if (bad.length) throw new Error(`deal: src/dealt.ts names ${bad.map((s) => `${s} "${d[s]}"`).join(', ')}, not a choice of this template (re-deal with scripts/deck.py)`);
+  return Object.fromEntries(slots.map((s) => [s, d[s]])) as Deal;
+};
+const DECK = deckDeal();
+/** The deck's deal when deck.py dealt one; else the unnamed scaffold keeps the floor and a named film is dealt from its
+ * name; launch.ts `pin` fixes slots by hand over either. */
+export const DEAL: Deal = { ...(DECK ?? (/^\[.*\]$/.test(NAME.trim()) ? FLOOR : dealOf(NAME))), ...(LAUNCH.pin ?? {}) } as Deal;
+/** Where the deal came from, for the print: the deck's direction, the name, or the floor (and the slots pinned by hand). */
+export const DEAL_SOURCE = `${DECK ? `deck.py (${DEALT?.direction})` : /^\[.*\]$/.test(NAME.trim()) ? 'the floor (unnamed scaffold)' : `the name "${NAME}"`}${LAUNCH.pin && Object.keys(LAUNCH.pin).length ? `, pinned: ${Object.keys(LAUNCH.pin).join(', ')}` : ''}`;
 /** The film's seed as a number (floats, grounds and the small variations inside the acts). */
 export const SEED = hash(NAME) % 100000;

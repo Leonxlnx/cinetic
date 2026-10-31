@@ -1587,6 +1587,14 @@ def render_sheet(sh, data, library):
     if sh.get('waits_for'):
         out += [f'(This direction\'s signature waits for planned {", ".join(sh["waits_for"])}: build them inside the film '
                 'from the description below, or deal another direction.)', '']
+    td = sh.get('template_deal')
+    if td:
+        out += [f"## 0. The template's deal ({td['file']}: the template plays exactly this)", '',
+                'The template draws its devices from this sheet, never from a second deal of its own: '
+                + ', '.join(f"**{k}** {v}" for k, v in td['deal'].items()) + '. Why: '
+                + '; '.join(f"{k}: {td['why'][k]}" for k in td['deal']) + '. Re-deal with `deck.py --redraw`; '
+                '`pin` in src/launch.ts fixes one slot by hand. What plays: `npx tsx -e "import { DEAL, DEAL_SOURCE } '
+                "from './src/deal'; console.log(DEAL_SOURCE, DEAL)\"`.", '']
     out += ['## 1. The idea sentence (write it before anything else)', '',
             '> In this film, **[something only this product has]** becomes **[the device this direction calls for]**.', '',
             'Templates for this direction:']
@@ -1806,9 +1814,129 @@ def guard_out(outdir):
              'or pass --out <film>/out')
 
 
+# --------------------------------------------------------------------------------- the template's deal (one source)
+# A template that deals its own devices (launch-simple's src/deal.ts: voice, ground, seamTA, seamAT, end, camera) plays
+# the deck's direction instead of a second deal from the product's name: deck.py maps the dealt direction onto the
+# template's slots and writes src/dealt.ts, which deal.ts reads first (launch.ts `pin` still fixes a slot by hand).
+# The vocabularies are read from the project's own deal.ts, so the deck and the template never name different devices.
+SEAM_TA = {'morph': 'matchCut', 'mask': 'matchCut', 'hard': 'matchCut', 'stepped': 'matchCut', 'snapZoom': 'matchCut',
+           'zoomThrough': 'matchCut', 'velocity': 'velocityCut', 'whip': 'velocityCut', 'wipe': 'velocityCut',
+           'defocus': 'blurThrough', 'breath': 'blurThrough', 'light': 'blurThrough', 'dissolveUi': 'blurThrough',
+           'colour': 'blurThrough'}
+PUSH_SEAMS = ('zoomThrough', 'snapZoom')
+BADGE_LOCKUPS = ('world-object', 'pull-back', 'light-finds', 'resolve')  # the hero object turns as it becomes the mark
+RISE_MOTIONS = ('crane', 'dolly')
+
+
+def _ts_lists(src, name):
+    """{slot: [choices]} of a `const NAME = { slot: ['a', 'b'], ... }` (or `{ slot: 'a', ... }`) block in a TS file."""
+    m = re.search(r'\b' + re.escape(name) + r'\b[^=]*=\s*\{(.*?)\}', src, re.S)
+    if not m:
+        return {}
+    out = {}
+    for k, v in re.findall(r"(\w+)\s*:\s*(\[[^\]]*\]|'[^']*'|\"[^\"]*\")", m.group(1)):
+        vals = re.findall(r"['\"]([^'\"]+)['\"]", v)
+        out[k] = vals if v.startswith('[') else (vals[0] if vals else None)
+    return out
+
+
+def template_slots(root):
+    """(devices, floor) from the project's src/deal.ts when it reads the deck's deal (imports ./dealt), else (None, None)."""
+    p = os.path.join(root, 'src', 'deal.ts')
+    if not os.path.isfile(p):
+        return None, None
+    with open(p, encoding='utf-8') as fh:
+        src = fh.read()
+    if not re.search(r'''from\s+['"]\./dealt['"]''', src):  # a template that deals but does not read the deck's deal
+        return None, None
+    dev = {k: v for k, v in _ts_lists(src, 'DEVICES').items() if isinstance(v, list) and v}
+    floor = {k: v for k, v in _ts_lists(src, 'FLOOR').items() if isinstance(v, str)}
+    return (dev or None), floor
+
+
+def recent_template(history_on):
+    """{slot: [choices of the last three films]} from the film history (each film's deal and devices)."""
+    out = {}
+    for f in film_history(history_on):
+        pick = dict(f.get('devices') or {}, **(f.get('deal') or {}))
+        for k, v in pick.items():
+            if isinstance(v, str) and v:
+                out.setdefault(k, []).append(v)
+    return out
+
+
+def template_deal(sh, devices, floor, recent=None):
+    """The direction mapped onto the template's slots: {slot: choice}, and {slot: why}. Each slot takes the first of the
+    direction's own preferences that the last three films did not play (else the first), and at least half the slots
+    differ from the template's floor (the scaffold's own look), the least telling slots giving way first."""
+    d = sh['direction']
+    seams = list(d['cuts'].get('seams') or [])
+    modes = d['type'].get('modes') or ['build']
+    motion = str(d['camera'].get('motion') or 'drift')
+    lk = d['lockup']['kind']
+    fam = (sh.get('ground_family') or {}).get('id')
+    ta = list(dict.fromkeys(SEAM_TA[x] for x in seams if x in SEAM_TA))
+    push = any(x in seams for x in PUSH_SEAMS)
+    if modes[0] == 'build':
+        voice = (['build', 'ink', 'blur'], 'type mode build')
+    elif 'defocus' in seams:
+        voice = (['blur', 'ink', 'build'], f'type mode {modes[0]} with defocus seams')
+    else:
+        voice = (['ink', 'blur', 'build'], f'type mode {modes[0]}')
+    pref = {
+        'voice': voice,
+        'ground': ([fam] if fam else [], f'ground family {fam}' if fam else 'no ground family dealt'),
+        'seamTA': (ta, 'seams ' + ', '.join(seams[:4])),
+        'seamAT': ((['zoomThrough', 'blurThrough'] if push else ['blurThrough', 'zoomThrough']),
+                   'a push seam: the camera goes through the picture' if push else 'no push seam: the picture blurs away'),
+        'end': ((['badge', 'element'] if lk in BADGE_LOCKUPS else ['element', 'badge']), f'lockup {lk}'),
+        'camera': ((['rise', 'drift'] if motion in RISE_MOTIONS else ['drift', 'rise']), f'camera {motion}'),
+    }
+    recent = recent or {}
+    deal, why, order = {}, {}, {}
+    for slot, choices in devices.items():
+        p, reason = pref.get(slot, ([], 'nothing in the direction'))
+        ranked = [c for c in p if c in choices] + [c for c in choices if c not in p]
+        order[slot] = ranked
+        fresh = [c for c in ranked if c not in recent.get(slot, [])]
+        deal[slot] = (fresh or ranked)[0]
+        why[slot] = reason + ('' if deal[slot] == ranked[0] else f" (its first choice, {ranked[0]}, was a recent film's)")
+    if floor:
+        slots = [x for x in devices if x in floor]
+        for slot in ('camera', 'seamAT', 'end', 'voice', 'seamTA', 'ground'):
+            if 2 * sum(deal[x] != floor[x] for x in slots) >= len(slots):
+                break
+            if slot in slots and deal[slot] == floor[slot]:
+                alt = next((c for c in order[slot] if c != floor[slot]), None)
+                if alt:
+                    deal[slot] = alt
+                    why[slot] += f" (moved off the template's own {floor[slot]}: half the slots differ from the scaffold)"
+    return deal, why
+
+
+def write_template_deal(sh, outdir):
+    """Map the sheet onto a template that deals (src/deal.ts beside out/) and write src/dealt.ts; sh['template_deal']."""
+    root = os.path.dirname(os.path.abspath(outdir))
+    devices, floor = template_slots(root)
+    if not devices:
+        sh.pop('template_deal', None)
+        return
+    deal, why = template_deal(sh, devices, floor, recent_template(sh.get('history', True)))
+    rel = 'src/dealt.ts'
+    body = ('// What the deck dealt for this film (scripts/deck.py writes this file with out/DIRECTION.md): src/deal.ts plays it\n'
+            '// instead of a deal of its own, so the sheet and the template never disagree. Re-deal with deck.py (--redraw),\n'
+            '// never by hand; launch.ts `pin` still fixes a slot.\n'
+            'export const DEALT: { direction: string; deal: Record<string, string> } | null = '
+            + json.dumps({'direction': sh['direction']['id'], 'deal': deal}, ensure_ascii=False) + ';\n')
+    with open(os.path.join(root, 'src', 'dealt.ts'), 'w', encoding='utf-8', newline='\n') as fh:
+        fh.write(body)
+    sh['template_deal'] = {'file': rel, 'deal': deal, 'why': why}
+
+
 def write_sheet(sh, outdir, data, library):
     guard_out(outdir)
     os.makedirs(outdir, exist_ok=True)
+    write_template_deal(sh, outdir)
     with open(os.path.join(outdir, 'direction.json'), 'w', encoding='utf-8', newline='\n') as fh:
         json.dump(sh, fh, indent=1, ensure_ascii=False)
         fh.write('\n')

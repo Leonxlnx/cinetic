@@ -14,8 +14,8 @@
  },
  "deal": {
   "file": "src/deal.ts",
-  "seed": "the product's name (IDENTITY.name), or launch.ts seed; launch.ts pin fixes a slot by hand",
-  "print": "npx tsx -e \"import { DEAL } from './src/deal'; import { SEAM_PLAN, BEAT_PLAN } from './src/timeline'; console.log(DEAL, SEAM_PLAN.map((s) => s.recipe), BEAT_PLAN.map((b) => b.kind + ' ' + ((b.to - b.from) / 60).toFixed(2)))\"",
+  "seed": "the deck's direction when scripts/deck.py dealt one in this project (it writes src/dealt.ts: one source), else the product's name (IDENTITY.name) or launch.ts seed; launch.ts pin fixes a slot by hand",
+  "print": "npx tsx -e \"import { DEAL, DEAL_SOURCE } from './src/deal'; console.log(DEAL_SOURCE); import { SEAM_PLAN, BEAT_PLAN } from './src/timeline'; console.log(DEAL, SEAM_PLAN.map((s) => s.recipe), BEAT_PLAN.map((b) => b.kind + ' ' + ((b.to - b.from) / 60).toFixed(2)))\"",
   "slots": {
    "voice": ["build", "blur", "ink"],
    "ground": ["nearWhite", "blackField", "whiteBand", "deepPool", "softSky", "lightDark", "gradientField"],
@@ -41,13 +41,14 @@
  "next": [
   "simple launch: write the script in src/launch.ts (3-4 pairs: a line of 2-7 words and the picture that proves it; line 1 says what the product does by name; the strings each picture shows; the one fact for the end card) and the product's name in src/brand/identity.ts,",
   "  build each picture in src/product.tsx from the product's real screens (the first one shows its core change literally: input -> output), the last one with its hero element,",
-  "  see what the name deals: npx tsx -e \"import { DEAL } from './src/deal'; console.log(DEAL)\" (launch.ts pin fixes a slot),",
+  "  see the deal: run deck.py here once (its direction becomes src/dealt.ts, the one deal the film plays; with none, the name deals), then npx tsx -e \"import { DEAL, DEAL_SOURCE } from './src/deal'; console.log(DEAL_SOURCE, DEAL)\" (launch.ts pin fixes a slot),",
   "  then the music (below), npm run check, and a contact sheet of out/preview.mp4 against references/checks.md (the placement, beat and seam gates)"
  ],
  "copy": [
   "src/launch.ts",
   "src/product.tsx",
   "src/deal.ts",
+  "src/dealt.ts",
   "src/recent.ts",
   "src/timeline.ts",
   "src/Film.tsx",
