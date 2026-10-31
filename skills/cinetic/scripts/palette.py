@@ -41,15 +41,21 @@ Ground families (--family NAME; --list-families prints them): the one field and 
 prints a `// family: NAME` line and the family's field tokens (field, fieldFar) at the field hue (the accent's own
 for a blue, teal or green, else a cool 230; --stage-hue H sets it, and every hue the family names, for every family),
 with the type's contrast on the field:
-  nearWhite      tintedPaper                   a clean near-white page under pictures and UI
-  blackField     inkStage at L .11             a near-black field under one soft key light, white type
-  whiteBand      whiteWorld + the accent band  white with one band of the brand colour; the band floods once
-  deepPool       a deep field L .25 C .055     the accent's hue at depth (a colour, never a charcoal), a light pool; white type
-  softSky        a pale sky L .965 C .018      a cool sky gradient (to L .915), ink type
+  nearWhite      tintedPaper                   a paper sweep lit from the top left under pictures and UI
+  lightStudio    tintedPaper at L .945         a light grey studio sweep: a top key over a floor falling to L .80, ink type
+  softSky        a pale sky L .965 C .018      a lit sky, deeper at the top (L .885 C .05), a pale horizon low, ink type
+  gradientField  a pale tinted field           a pale mesh: two lobes of the field hue from opposite corners, ink type
+  whiteBand      whiteWorld + the accent band  white with one lit band of the brand colour; the band floods once
+  blackField     inkStage at L .11             studio black under one soft key from above left, white type
+  studio         slateMid at L .33             a mid slate cyclorama: a broad top key over a slate floor, white type
+  deepPool       a deep field L .25 C .055     the accent's hue at depth with a glow rising from the bottom edge; white type
+  duskMesh       inkStage at L .17 C .026      a deep tinted night: two lobes of the field hue from opposite corners; white type
+  floorGlow      inkStage at L .10             near-black with one glow of the field hue rising from the floor; white type
   lightDark      tintedPaper, then a dark stage  the problem on light, the product on dark: one declared turn
-  gradientField  a pale tinted field           L .965 C .022 to L .90 C .05 at the field hue, ink type
---check-tokens honours a `// family: NAME` line: the family's own ground chroma (deepPool .07, softSky .04,
-gradientField .06) replaces the neutral cap for the grounds it tints; the bans stay.
+Every family is a still, lit field (fx/Grounds litFieldPixels: lights entering from an edge, gaussian falloff, dithered),
+never a two-stop linear and never drifting.
+--check-tokens honours a `// family: NAME` line: the family's own ground chroma (deepPool .07, duskMesh .04, softSky
+.04, gradientField .06) replaces the neutral cap for the grounds it tints; the bans stay.
 
 Token check (--check-tokens src/brand/tokens.ts, or an HTML file whose :root holds the palette): the
 bans and bands on every colour that is not brand-supplied (a line or the leading comment marked
@@ -231,19 +237,29 @@ RECIPES = {
 # the palette's own hue, or a number), the field stops (field: the colour field a line may sit on; fieldFar: its far
 # end), the ground chroma the family allows on the grounds it tints, and those tokens.
 FAMILIES = {
-    'nearWhite': dict(recipe='tintedPaper', about='a clean near-white page under real pictures and UI'),
+    'nearWhite': dict(recipe='tintedPaper', about='a paper sweep lit from the top left under real pictures and UI'),
+    'lightStudio': dict(recipe='tintedPaper', stage={'paper': (0.945, 0.006, None), 'mist': (0.96, 0.005, None)},
+                        about='a light grey studio sweep: a top key over a falling floor, ink type'),
     'blackField': dict(recipe='inkStage', stage={'ink': (0.11, 0.004, None), 'ink2': (0.17, 0.006, None)},
-                       about='a near-black field, white type, a soft light along the rims'),
+                       about='studio black under one soft key from above left, white type'),
+    'studio': dict(recipe='slateMid', stage={'slate': (0.33, 0.008, None), 'slateRaised': (0.42, 0.008, None)},
+                   about='a mid slate cyclorama: a broad top key over a slate floor, white type'),
+    'duskMesh': dict(recipe='inkStage', stage={'ink': (0.17, 0.026, 'field'), 'ink2': (0.24, 0.03, 'field')},
+                     field={'field': (0.34, 0.09, 'field'), 'fieldFar': (0.12, 0.014, 'field')}, ground_c=0.04, tints=('ink', 'ink2'),
+                     about='a deep tinted night: two lobes of the field hue from opposite corners, white type'),
+    'floorGlow': dict(recipe='inkStage', stage={'ink': (0.10, 0.006, None), 'ink2': (0.17, 0.008, None)},
+                      field={'field': (0.42, 0.10, 'field')},
+                      about='near-black with one glow of the field hue rising from the floor, white type'),
     'whiteBand': dict(recipe='whiteWorld', field={'field': 'accent'}, about='white with one band of the brand colour; it floods the frame once'),
     'deepPool': dict(recipe='inkStage', stage={'ink': (0.25, 0.055, 'field'), 'ink2': (0.30, 0.055, 'field'), 'line': (0.38, 0.045, 'field')},
                      field={'field': (0.25, 0.055, 'field'), 'fieldFar': (0.20, 0.048, 'field')}, ground_c=0.07, tints=('ink', 'ink2', 'line'),
-                     about='a deep field at the accent hue with a light pool drifting behind the subject'),
+                     about='a deep field at the accent hue with a glow rising from the bottom edge'),
     'softSky': dict(recipe='tintedPaper', stage={'paper': (0.965, 0.018, 232.0), 'mist': (0.985, 0.008, 232.0)},
                     field={'field': (0.94, 0.026, 232.0), 'fieldFar': (0.915, 0.034, 232.0)}, ground_c=0.04, tints=('paper', 'mist'),
-                    about='a pale sky gradient, ink type'),
+                    about='a lit pale sky, deeper at the top, a pale horizon low, ink type'),
     'lightDark': dict(recipe='tintedPaper', field={'darkStage': (0.17, 0.008, None)}, about='the problem on light, the product on dark: one declared turn'),
     'gradientField': dict(recipe='tintedPaper', stage={'paper': (0.965, 0.022, 'field')}, field={'field': (0.93, 0.036, 'field'), 'fieldFar': (0.90, 0.05, 'field')},
-                          ground_c=0.06, tints=('paper',), about='one pale tinted gradient field, drifting'),
+                          ground_c=0.06, tints=('paper',), about='a pale tinted mesh: two lobes of the field hue from opposite corners'),
 }
 
 

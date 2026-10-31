@@ -11,7 +11,7 @@ import { shadowTone } from './KeyLight';
 import { Depth } from './Depth';
 import { bakePixels, bakePlate } from './Gradients';
 import { Wash, WASH } from './Washes';
-import { hash01 } from './plates';
+import { hash01, srgbOf } from './plates';
 
 /**
  * cinetic:light lit grounds: the place a product sits in, built in code (no photograph). A ground is clean: the flat
@@ -594,32 +594,52 @@ export const Planes: React.FC<{ base: Shot; shot: Shot; bg?: React.ReactNode; mi
 
 /**
  * Ground families: the whole film stands on one of these, dealt per film (scripts/deck.py, a template's deal), so two
- * films never share the same paper and slate. A family is one field and its light for the whole film, never cut, with
- * at most one colour event (the band flooding the frame for one line, the turn to dark); the bans stay (no orange, no
- * purple, no neon). Fields take the accent's hue only when it is a blue, teal or green (else a cool 230).
+ * films never share the same paper and slate. A family is one designed, lit field for the whole film, never cut, with
+ * at most one colour event; the bans stay (no orange, no purple, no neon). Fields take the accent's hue only when it is
+ * a blue, teal or green (else a cool 230).
  *
- *   family         what it is                                                    tone   colour field
- *   nearWhite      98 % light, a clean near-white page under real pictures and UI  light  no
- *   blackField     a near-black field (L .11) under one soft key light from a top    dark   no
- *                  corner (12 L* across the frame), white type
- *   whiteBand      white with one band of the brand colour across the top; once a   light  the band (one line on it)
- *                  film the band floods the frame for one line
- *   deepPool       a deep field at the accent's hue (L .25, C .055: a colour, never   dark   yes (the whole field)
- *                  a charcoal, never a wash) with a soft light pool drifting behind the subject
- *   softSky        a pale sky gradient (L .965 to .915 at a cool hue), type in ink  light  yes (pale)
- *   lightDark      the problem on a light page, then the product on a dark stage:   turn   no
- *                  one turn, declared, on a seam
- *   gradientField  one pale tinted gradient field (L .965 to .90 at the hue), drifting light  yes (pale)
+ * Every family is a LIT field, not a two-stop linear: a base colour and two or three lights (a key, a fill or floor,
+ * a tinted lobe), each with a position (most sit outside the frame, so the light enters from an edge or a corner and
+ * the frame never holds a pool or a haze), an elliptical extent and a gaussian falloff, mixed in OKLab, with a soft
+ * optical vignette on the dark families. It is computed in float on a 4 px grid, interpolated per pixel and rounded
+ * with triangular dither (+-1.5 levels on a dark field, where an 8-bit ramp bands first), baked once per recipe at the
+ * film's size. The field is STILL: the light does not drift or breathe (the camera and the content carry the motion;
+ * an aimless drift reads as the frame wandering). The one colour event is a second baked state cross-faded in
+ * (`event` 0..1): the key taking the accent's hue, the glow rising, an accent lobe opening; whiteBand floods.
+ *
+ *   family         what it is                                                        tone   colour field
+ *   nearWhite      a paper sweep: near-white (L .99) lit from the top left, falling    light  no
+ *                  to L .93 in the far corner
+ *   lightStudio    a light grey studio sweep: a top key (L .96) over a floor that      light  no
+ *                  falls to L .80 (16 L* across: a lit place, never a flat grey)
+ *   softSky        a pale sky: deeper at the top (L .885 C .05), a pale horizon low     light  yes (pale)
+ *   gradientField  a pale tinted mesh: two lobes of the field hue from opposite         light  yes (pale)
+ *                  corners over paper, white light from the top left
+ *   whiteBand      white with one lit band of the brand colour across the top, fading  light  the band; floods once
+ *   blackField     studio black: L .10, one soft key from above left (to L .23 at the   dark   no
+ *                  top edge), a faint floor, an optical vignette
+ *   studio         a mid slate cyclorama: a broad top key (L .47) over a slate floor     dark   no
+ *                  (L .24): the product stage for cards on a dark-mid ground
+ *   deepPool       a deep field at the accent's hue (L .20 C .05) with a glow rising     dark   yes (the whole field)
+ *                  from the bottom edge (L .37 C .085)
+ *   duskMesh       a deep tinted night: two lobes of the field hue (L .34 and .25)       dark   yes (the lobes)
+ *                  from opposite corners over L .135, a neutral key from the top
+ *   floorGlow      near-black with one glow of the field hue rising from the floor       dark   yes (the glow)
+ *   lightDark      the problem on nearWhite, then the product on blackField: one turn    turn   no
  */
-export type GroundFamily = 'nearWhite' | 'blackField' | 'whiteBand' | 'deepPool' | 'softSky' | 'lightDark' | 'gradientField';
+export type GroundFamily = 'nearWhite' | 'lightStudio' | 'softSky' | 'gradientField' | 'whiteBand' | 'blackField' | 'studio' | 'deepPool' | 'duskMesh' | 'floorGlow' | 'lightDark';
 export const GROUND_FAMILIES: Record<GroundFamily, { about: string; tone: 'light' | 'dark' | 'turn'; field: boolean; event: string }> = {
-  nearWhite: { about: 'a clean near-white page under real pictures and UI', tone: 'light', field: false, event: 'none' },
-  blackField: { about: 'a near-black field, white type, a soft light along the rims', tone: 'dark', field: false, event: 'none' },
-  whiteBand: { about: 'white with one band of the brand colour across the top', tone: 'light', field: true, event: 'the band floods the frame for one line' },
-  deepPool: { about: 'a deep field at the accent hue with a light pool drifting behind the subject', tone: 'dark', field: true, event: 'none (the field is the colour)' },
-  softSky: { about: 'a pale sky gradient, type in ink', tone: 'light', field: true, event: 'none' },
+  nearWhite: { about: 'a paper sweep lit from the top left, near-white falling to L .93', tone: 'light', field: false, event: 'an accent lobe opens from the top right' },
+  lightStudio: { about: 'a light grey studio sweep: a top key over a falling floor', tone: 'light', field: false, event: 'an accent lobe opens from the top right' },
+  softSky: { about: 'a pale sky, deeper at the top, a pale horizon low', tone: 'light', field: true, event: 'an accent lobe opens from the top right' },
+  gradientField: { about: 'a pale tinted mesh: two lobes of the field hue from opposite corners', tone: 'light', field: true, event: 'an accent lobe opens from the top right' },
+  whiteBand: { about: 'white with one lit band of the brand colour across the top', tone: 'light', field: true, event: 'the band floods the frame for one line' },
+  blackField: { about: 'studio black under one soft key from above left', tone: 'dark', field: false, event: 'the key takes the accent hue' },
+  studio: { about: 'a mid slate cyclorama: a broad top key over a slate floor', tone: 'dark', field: false, event: 'the key takes the accent hue' },
+  deepPool: { about: 'a deep field at the accent hue with a glow rising from the bottom edge', tone: 'dark', field: true, event: 'the glow rises' },
+  duskMesh: { about: 'a deep tinted night: two lobes of the field hue from opposite corners', tone: 'dark', field: true, event: 'the lobes rise and open' },
+  floorGlow: { about: 'near-black with one glow of the field hue rising from the floor', tone: 'dark', field: true, event: 'the glow rises' },
   lightDark: { about: 'the problem on a light page, the product on a dark stage', tone: 'turn', field: false, event: 'the turn to dark, once, on a seam' },
-  gradientField: { about: 'one pale tinted gradient field, drifting', tone: 'light', field: true, event: 'none' },
 };
 export const FAMILY_NAMES = Object.keys(GROUND_FAMILIES) as GroundFamily[];
 
@@ -631,6 +651,15 @@ export const fieldHue = (accent: string = C.accent) => {
   const h = toOklch(accent)[2];
   return h >= 150 && h <= 265 ? h : 230;
 };
+/** A hue offset from the field hue, held inside the cool band (150-262: never toward purple, never toward yellow). */
+const fieldShift = (h: number, d: number) => Math.min(262, Math.max(150, h + d));
+/** The hue of the film's neutrals: the paper's own when it is tinted, else the ink's, else the field's (at a grey's chroma it rounds to grey). */
+const neutralHue = (paper: string, ink: string, hf: number) => {
+  const [, pc, ph] = toOklch(paper);
+  if (pc > 0.002) return ph;
+  const [, ic, ih] = toOklch(ink);
+  return ic > 0.002 ? ih : hf;
+};
 
 /** The family's inks from the film's tokens (paper, ink, accent): grounds, type, the UI surface, the colour field. */
 export const familyInks = (family: GroundFamily, o: { dark?: boolean; paper?: string; ink?: string; accent?: string; white?: string } = {}): FamilyInks => {
@@ -640,20 +669,29 @@ export const familyInks = (family: GroundFamily, o: { dark?: boolean; paper?: st
   const white = o.white ?? C.white;
   const hf = fieldHue(accent);
   const h = toOklch(ink)[2];
+  const nh = neutralHue(paper, ink, hf);
   const lightSet = (ground: string, far: string, extra: Partial<FamilyInks> = {}): FamilyInks => ({ ground, far, type: ink, mute: mixColor(ink, ground, 0.42), accent, surface: white, line: mixColor(ink, ground, 0.84), dark: false, ...extra });
   const darkSet = (ground: string, far: string, extra: Partial<FamilyInks> = {}): FamilyInks => ({ ground, far, type: white, mute: mixColor(white, ground, 0.4), accent: mixColor(accent, white, 0.28), surface: mixColor(ground, white, 0.15), line: mixColor(white, ground, 0.8), dark: true, ...extra });
   // cinetic:device-palette the ground families' fields and their type, derived from the film's tokens at each family's lightness
   switch (family) {
     case 'blackField':
       return darkSet(oklch(0.11, 0.004, h), oklch(0.09, 0.003, h));
+    case 'studio':
+      return darkSet(oklch(0.33, 0.008, nh), oklch(0.25, 0.008, nh), { surface: oklch(0.42, 0.008, nh) });
     case 'deepPool':
-      return darkSet(oklch(0.25, 0.055, hf), oklch(0.2, 0.048, hf), { field: oklch(0.25, 0.055, hf), onField: white });
+      return darkSet(oklch(0.22, 0.052, hf), oklch(0.17, 0.042, hf), { field: oklch(0.25, 0.055, hf), onField: white });
+    case 'duskMesh':
+      return darkSet(oklch(0.17, 0.026, hf), oklch(0.12, 0.014, hf), { field: oklch(0.34, 0.09, fieldShift(hf, 10)), onField: white });
+    case 'floorGlow':
+      return darkSet(oklch(0.1, 0.006, nh), oklch(0.085, 0.005, nh), { field: oklch(0.42, 0.1, hf), onField: white });
     case 'whiteBand':
       return lightSet(mixColor(white, paper, 0.25), paper, { field: accent, onField: contrastOn(accent, white, ink) });
     case 'softSky':
-      return lightSet(oklch(0.965, 0.018, 232), oklch(0.915, 0.034, 232), { field: oklch(0.94, 0.026, 232), onField: ink });
+      return lightSet(oklch(0.955, 0.02, 234), oklch(0.9, 0.045, 236), { field: oklch(0.93, 0.03, 234), onField: ink });
     case 'gradientField':
-      return lightSet(oklch(0.965, 0.022, hf), oklch(0.9, 0.05, hf), { field: oklch(0.93, 0.036, hf), onField: ink });
+      return lightSet(oklch(0.955, 0.02, hf), oklch(0.9, 0.055, hf), { field: oklch(0.92, 0.045, hf), onField: ink });
+    case 'lightStudio':
+      return lightSet(oklch(0.9, 0.006, nh), oklch(0.82, 0.008, nh));
     case 'lightDark':
       return o.dark ? darkSet(oklch(0.11, 0.006, h), oklch(0.09, 0.005, h)) : lightSet(paper, mixColor(paper, ink, 0.06));
     default:
@@ -664,55 +702,211 @@ const lum = (c: string) => toOklch(c)[0];
 /** White or ink on a colour field, whichever reads (the field's lightness decides). */
 const contrastOn = (field: string, white: string, ink: string) => (lum(field) < 0.66 ? white : ink);
 
+// ------------------------------------------------------------------------------------------------ lit fields
+
 /**
- * The family's ground at frame `frame`, full frame and never cut: draw it once under every shot (outside the camera
- * float, so the content drifts over it). `dark` (lightDark): after the turn. `flood` (whiteBand): 0..1, the band
- * covering the frame for the film's one colour event. Every plate is baked once, dithered, and moved by transform
- * only; the light drifts on 9-16 s loops, so a held ground is never dead and never pulses.
+ * One light of a lit field: centre (x, y) in shares of the frame (outside 0..1 is outside the frame), extent rx, ry in
+ * frame widths (so a circle stays round), its colour in OKLCH and its strength `a` (0..1, the mix at its centre);
+ * the falloff is gaussian, 11 % of `a` at one extent. `rot` turns the ellipse (degrees).
  */
-export const FamilyGround: React.FC<{ family: GroundFamily; frame: number; dark?: boolean; flood?: number; seed?: number; style?: React.CSSProperties }> = ({ family, frame, dark = false, flood = 0, seed = 1, style }) => {
+export type FieldLight = { x: number; y: number; rx: number; ry: number; L: number; C: number; h: number; a: number; rot?: number };
+/** A lit field: the base colour (OKLCH), its lights in order, an optical vignette (0..0.3: the corners' L falls by up to this share) and the dither (levels, +-). */
+export type LitField = { L: number; C: number; h: number; lights: FieldLight[]; vignette?: number; dither?: number };
+
+export const LIT_FIELD = {
+  grid: 4, // px between computed nodes (the field is smooth: interpolated in float between them)
+  falloff: 2.2, // gaussian k: exp(-k d^2), 11 % at one extent
+  dither: { light: 1, dark: 1.5 }, // triangular dither amplitude in levels (+-): a dark ramp bands first
+} as const;
+
+const labOf = (L: number, Cc: number, h: number): [number, number, number] => [L, Cc * Math.cos((h * Math.PI) / 180), Cc * Math.sin((h * Math.PI) / 180)];
+
+/** The field's colour at (u, v) (shares of a W x H frame) in OKLab. Pure. */
+export const litFieldAt = (f: LitField, u: number, v: number, W: number, H: number): [number, number, number] => {
+  let [L, A, B] = labOf(f.L, f.C, f.h);
+  for (const l of f.lights) {
+    let dx = u - l.x;
+    let dy = ((v - l.y) * H) / W;
+    if (l.rot) {
+      const r = (l.rot * Math.PI) / 180;
+      [dx, dy] = [dx * Math.cos(r) + dy * Math.sin(r), -dx * Math.sin(r) + dy * Math.cos(r)];
+    }
+    const d2 = (dx / l.rx) ** 2 + (dy / l.ry) ** 2;
+    const w = l.a * Math.exp(-LIT_FIELD.falloff * d2);
+    const [lL, lA, lB] = labOf(l.L, l.C, l.h);
+    L += (lL - L) * w;
+    A += (lA - A) * w;
+    B += (lB - B) * w;
+  }
+  if (f.vignette) {
+    const r = Math.hypot((u - 0.5) * 2, ((v - 0.5) * 2 * H) / W);
+    const t = clamp((r - 0.55) / 0.85);
+    const k = 1 - f.vignette * t * t * (3 - 2 * t);
+    L *= k;
+    A *= k;
+    B *= k;
+  }
+  return [L, A, B];
+};
+
+/** A lit field as RGBA bytes (W x H), computed on the node grid, interpolated in float and dithered per pixel. Pure. */
+export const litFieldPixels = (f: LitField, W: number, H: number, seed = 0) => {
+  const g = LIT_FIELD.grid;
+  const nx = Math.ceil(W / g) + 1;
+  const ny = Math.ceil(H / g) + 1;
+  const nodes = new Float32Array(nx * ny * 3);
+  for (let j = 0; j < ny; j++)
+    for (let i = 0; i < nx; i++) {
+      const c = srgbOf(litFieldAt(f, Math.min(1, (i * g) / W), Math.min(1, (j * g) / H), W, H));
+      const k = (j * nx + i) * 3;
+      nodes[k] = c[0];
+      nodes[k + 1] = c[1];
+      nodes[k + 2] = c[2];
+    }
+  const amp = f.dither ?? (f.L < 0.5 ? LIT_FIELD.dither.dark : LIT_FIELD.dither.light);
+  const px = new Uint8ClampedArray(W * H * 4);
+  for (let y = 0; y < H; y++) {
+    const fy = y / g;
+    const j = Math.min(ny - 2, Math.floor(fy));
+    const ty = fy - j;
+    for (let x = 0; x < W; x++) {
+      const fx = x / g;
+      const i = Math.min(nx - 2, Math.floor(fx));
+      const tx = fx - i;
+      const k00 = (j * nx + i) * 3;
+      const k10 = k00 + 3;
+      const k01 = k00 + nx * 3;
+      const k11 = k01 + 3;
+      const o = (y * W + x) * 4;
+      for (let c = 0; c < 3; c++) {
+        const a = nodes[k00 + c] + (nodes[k10 + c] - nodes[k00 + c]) * tx;
+        const b = nodes[k01 + c] + (nodes[k11 + c] - nodes[k01 + c]) * tx;
+        const vv = (a + (b - a) * ty) * 255 + (hash01(x, y, seed + 2 * c) + hash01(x + 7919, y + 104729, seed + 2 * c + 1) - 1) * amp;
+        px[o + c] = vv < 0 ? 0 : vv > 255 ? 255 : Math.round(vv);
+      }
+      px[o + 3] = 255;
+    }
+  }
+  return px;
+};
+
+/** The lightness range (L*, 0-100) a field spans over the frame, sampled on a 24 x 14 grid: a lit place spans 12 or more. */
+export const litFieldRange = (f: LitField, W = 1920, H = 1080) => {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (let j = 0; j <= 14; j++)
+    for (let i = 0; i <= 24; i++) {
+      const c = srgbOf(litFieldAt(f, i / 24, j / 14, W, H));
+      const Ls = lstarOf(c);
+      lo = Math.min(lo, Ls);
+      hi = Math.max(hi, Ls);
+    }
+  return { lo: Math.round(lo * 10) / 10, hi: Math.round(hi * 10) / 10, range: Math.round((hi - lo) * 10) / 10 };
+};
+const lstarOf = ([r, g, b]: [number, number, number]) => {
+  const lin = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  const Y = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return Y > 0.008856 ? 116 * Math.cbrt(Y) - 16 : 903.3 * Y;
+};
+
+/**
+ * Whether a field lights from an edge: its lightest point on the frame's border is at least as light as anything
+ * inside (a pool or a dome inside the frame reads as haze: look-audit ground-haze). Sampled on a 24 x 14 grid.
+ */
+export const litFromEdge = (f: LitField, W = 1920, H = 1080) => {
+  let edge = -Infinity;
+  let inner = -Infinity;
+  for (let j = 0; j <= 14; j++)
+    for (let i = 0; i <= 24; i++) {
+      const L = litFieldAt(f, i / 24, j / 14, W, H)[0];
+      if (i === 0 || j === 0 || i === 24 || j === 14) edge = Math.max(edge, L);
+      else inner = Math.max(inner, L);
+    }
+  return inner <= edge + 0.005;
+};
+
+/** A family's field from the film's tokens (paper, ink, accent), at rest or in its colour event (`event`). Pure. */
+export const familyField = (family: GroundFamily, o: { dark?: boolean; event?: boolean; paper?: string; ink?: string; accent?: string } = {}): LitField => {
+  const paper = o.paper ?? C.paper;
+  const ink = o.ink ?? C.ink;
+  const accent = o.accent ?? C.accent;
+  const hf = fieldHue(accent);
+  const nh = neutralHue(paper, ink, hf);
+  const [aL, aC, ah] = toOklch(accent);
+  const pc = Math.min(0.006, toOklch(paper)[1]);
+  const ev = !!o.event;
+  // light families' event: an accent lobe opens from the top right
+  const lobe: FieldLight = { x: 1.02, y: -0.12, rx: 0.86, ry: 0.78, L: 0.86, C: 0.075, h: hf, a: 0.92 };
+  const fam = family === 'lightDark' ? (o.dark ? 'blackField' : 'nearWhite') : family;
+  switch (fam) {
+    case 'nearWhite':
+      return { L: 0.958, C: pc, h: nh, lights: [{ x: -0.08, y: -0.3, rx: 1.05, ry: 0.95, L: 0.995, C: 0.002, h: nh, a: 0.95 }, { x: 1.12, y: 1.3, rx: 0.75, ry: 0.7, L: 0.925, C: 0.008, h: nh, a: 0.55 }, ...(ev ? [lobe] : [])] };
+    case 'lightStudio':
+      return { L: 0.86, C: 0.006, h: nh, vignette: 0.05, lights: [{ x: 0.5, y: -0.55, rx: 1.2, ry: 0.95, L: 0.968, C: 0.004, h: nh, a: 1 }, { x: 0.5, y: 1.45, rx: 1.3, ry: 0.65, L: 0.79, C: 0.008, h: nh, a: 0.8 }, ...(ev ? [lobe] : [])] };
+    case 'softSky':
+      return { L: 0.975, C: 0.008, h: 232, lights: [{ x: 0.5, y: -0.95, rx: 1.7, ry: 1.15, L: 0.885, C: 0.05, h: 236, a: 1 }, { x: 0.5, y: 1.35, rx: 1.5, ry: 0.55, L: 0.99, C: 0.004, h: 220, a: 0.7 }, ...(ev ? [{ ...lobe, h: fieldShift(hf, 0) }] : [])] };
+    case 'gradientField':
+      return {
+        L: 0.962, C: 0.014, h: hf,
+        lights: [
+          { x: 1.04, y: -0.12, rx: 0.78, ry: 0.72, L: ev ? 0.84 : 0.885, C: ev ? 0.085 : 0.062, h: fieldShift(hf, 8), a: 0.92 },
+          { x: -0.1, y: 1.12, rx: 0.7, ry: 0.62, L: 0.925, C: 0.045, h: fieldShift(hf, -10), a: 0.8 },
+          { x: 0.08, y: -0.2, rx: 0.55, ry: 0.45, L: 0.99, C: 0.004, h: hf, a: 0.55 },
+        ],
+      };
+    case 'whiteBand':
+      return { L: 0.985, C: 0.003, h: nh, lights: [{ x: 0.5, y: -0.3, rx: 2.4, ry: 0.34, L: aL, C: aC * 0.92, h: ah, a: 0.97 }, { x: 0.5, y: 1.4, rx: 1.4, ry: 0.6, L: 0.955, C: 0.004, h: nh, a: 0.5 }] };
+    case 'blackField':
+      return { L: 0.1, C: 0.004, h: nh, vignette: 0.22, lights: [{ x: 0.36, y: -0.5, rx: 1.0, ry: 0.85, L: ev ? 0.31 : 0.27, C: ev ? 0.07 : 0.006, h: ev ? hf : nh, a: 1 }, { x: 0.5, y: 1.5, rx: 1.1, ry: 0.55, L: 0.15, C: 0.004, h: nh, a: 0.6 }] };
+    case 'studio':
+      return { L: 0.3, C: 0.008, h: nh, vignette: 0.16, lights: [{ x: 0.5, y: -0.6, rx: 1.25, ry: 0.95, L: ev ? 0.5 : 0.47, C: ev ? 0.06 : 0.006, h: ev ? hf : nh, a: 1 }, { x: 0.5, y: 1.45, rx: 1.3, ry: 0.65, L: 0.235, C: 0.008, h: nh, a: 0.75 }] };
+    case 'deepPool':
+      return { L: 0.2, C: 0.05, h: hf, vignette: 0.15, lights: [{ x: 0.5, y: ev ? 1.2 : 1.38, rx: 1.25, ry: 0.72, L: ev ? 0.43 : 0.37, C: ev ? 0.1 : 0.085, h: hf, a: 1 }, { x: 0.5, y: -0.55, rx: 1.5, ry: 0.62, L: 0.145, C: 0.04, h: hf, a: 0.75 }] };
+    case 'duskMesh':
+      return {
+        L: 0.135, C: 0.014, h: hf, vignette: 0.12,
+        lights: [
+          { x: 1.06, y: ev ? -0.04 : -0.16, rx: 0.84, ry: 0.8, L: ev ? 0.46 : 0.4, C: ev ? 0.11 : 0.1, h: fieldShift(hf, 10), a: 0.92 },
+          { x: -0.16, y: ev ? 1.04 : 1.16, rx: 0.74, ry: 0.64, L: ev ? 0.35 : 0.3, C: 0.08, h: fieldShift(hf, -12), a: 0.84 },
+          { x: 0.12, y: -0.45, rx: 0.8, ry: 0.6, L: 0.21, C: 0.012, h: nh, a: 0.5 },
+        ],
+      };
+    case 'floorGlow':
+      return { L: 0.085, C: 0.006, h: nh, vignette: 0.2, lights: [{ x: 0.5, y: ev ? 1.12 : 1.28, rx: 1.05, ry: 0.5, L: ev ? 0.5 : 0.44, C: ev ? 0.12 : 0.11, h: hf, a: 1 }] };
+    default:
+      return { L: 0.958, C: pc, h: nh, lights: [] };
+  }
+};
+
+/** A family field baked at w x h as a cached data URL (browser; '' in Node). */
+export const bakeFamily = (family: GroundFamily, w: number, h: number, o: { dark?: boolean; event?: boolean; seed?: number } = {}) => {
+  const W = Math.max(2, Math.round(w));
+  const H = Math.max(2, Math.round(h));
+  const f = familyField(family, o);
+  return bakePixels(`family|${JSON.stringify(f)}|${W}|${H}|${o.seed ?? 0}`, W, H, () => litFieldPixels(f, W, H, o.seed ?? 0));
+};
+
+/**
+ * The family's ground at frame `frame`, full frame and never cut: draw it once under every shot, outside the camera,
+ * so the content moves over a still, lit place. `dark` (lightDark): after the turn. `event` 0..1: the family's one
+ * colour event cross-faded in (GROUND_FAMILIES[family].event). `flood` (whiteBand): 0..1, the band covering the frame
+ * from the top for the film's one colour line. `res` the bake's share of the frame (1: full size, the default; 0.5 for a
+ * quick look). The field is baked once per recipe (litFieldPixels) and never animates its stops.
+ */
+export const FamilyGround: React.FC<{ family: GroundFamily; frame: number; dark?: boolean; flood?: number; event?: number; seed?: number; res?: number; style?: React.CSSProperties }> = ({ family, dark = false, flood = 0, event = 0, seed = 1, res = 1, style }) => {
   const film = useFilm();
   const { width: W, height: H } = sizeOf(film);
-  const t = frame / fpsOf(film);
   const k = inksCache(family, dark);
-  const abs: React.CSSProperties = { position: 'absolute', left: 0, top: 0 };
-  const ph = (seed % 97) / 97;
-  const wave = (period: number, phase = 0) => Math.sin(2 * Math.PI * (t / period + ph + phase));
-  const b = GROUND.bake;
-  const Plate: React.FC<{ src: string; x?: number; y?: number; w: number; h: number; rot?: number; o?: number }> = ({ src, x = 0, y = 0, w, h, rot = 0, o = 1 }) =>
-    src ? <Img src={src} style={{ ...abs, width: w, height: h, opacity: o, transformOrigin: '50% 50%', transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${rot.toFixed(3)}deg)` }} /> : null;
-  let body: React.ReactNode = null;
-  if (family === 'nearWhite' || (family === 'lightDark' && !dark)) {
-    return <LitGround frame={frame} spec={{ kind: 'wash', base: k.ground, lift: 0.035, seed }} style={style} />;
-  } else if (family === 'blackField' || (family === 'lightDark' && dark)) {
-    // one soft key light from the top left, drifting slowly: a black void on its far side, about 12 L* brighter where
-    // it falls (never a flat charcoal, never a fade to black on an empty frame); the plate is far larger than the frame
-    const key = bakePlate('radial', [{ at: 0, color: C.white, alpha: 0.105 }, { at: 0.35, color: C.white, alpha: 0.05 }, { at: 0.75, color: C.white, alpha: 0.008 }, { at: 1, color: C.white, alpha: 0 }], W * b * 0.5, W * b * 0.5, { seed: 5 });
-    const R = W * 2.2;
-    body = <Plate src={key} x={W * 0.16 - R / 2 + W * 0.05 * wave(14)} y={-H * 0.22 - R / 2 + H * 0.04 * wave(11, 0.3)} w={R} h={R} />;
-  } else if (family === 'whiteBand') {
-    const bandH = H * (0.24 + 0.015 * wave(12));
-    const f = clamp(flood);
-    const band = bakePlate('linear', [{ at: 0, color: k.accent, alpha: 0.92 }, { at: 0.55, color: k.accent, alpha: 0.42 }, { at: 1, color: k.accent, alpha: 0 }], W * b * 0.25, H * 0.5 * b * 0.5, { vertical: true, seed: 7 });
-    body = (
-      <>
-        <Plate src={band} x={-W * 0.05} y={-bandH * 0.08} w={W * 1.1} h={bandH * 1.6} />
-        {f > 0 && <div style={{ ...abs, width: W, height: H, background: k.accent, clipPath: `inset(0px 0px ${((1 - f) * H).toFixed(2)}px 0px)` }} />}
-      </>
-    );
-  } else if (family === 'deepPool') {
-    const pool = bakePlate('radial', [{ at: 0, color: mixColor(k.ground, C.white, 0.07), alpha: 1 }, { at: 0.5, color: mixColor(k.ground, C.white, 0.03), alpha: 0.6 }, { at: 1, color: k.ground, alpha: 0 }], W * b * 0.4, W * b * 0.4, { seed: 9 });
-    const R = W * 0.95;
-    body = <Plate src={pool} x={W / 2 - R / 2 + W * 0.06 * wave(15)} y={H * 0.58 - R / 2 + H * 0.04 * wave(11, 0.25)} w={R} h={R} />;
-  } else if (family === 'softSky' || family === 'gradientField') {
-    const size = Math.hypot(W, H) * 1.2;
-    const sky = bakePlate('linear', [{ at: 0, color: k.ground }, { at: 0.55, color: mixColor(k.ground, k.far, 0.5) }, { at: 1, color: k.far }], size * b * 0.5, size * b * 0.5, { seed: 11 });
-    const rot = family === 'softSky' ? 90 : 62;
-    body = <Plate src={sky} x={(W - size) / 2 + W * 0.03 * wave(16)} y={(H - size) / 2 + H * 0.03 * wave(13, 0.3)} w={size} h={size} rot={rot} />;
-  }
+  const abs: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: W, height: H, display: 'block' };
+  const rest = bakeFamily(family, W * res, H * res, { dark, seed: seed % 97 });
+  const e = clamp(event);
+  const evSrc = e > 0 && family !== 'whiteBand' && family !== 'lightDark' ? bakeFamily(family, W * res, H * res, { dark, event: true, seed: (seed % 97) + 1 }) : '';
+  const f = clamp(flood);
   return (
-    <div data-ground={family} style={{ ...abs, width: W, height: H, overflow: 'hidden', background: k.ground, ...style }}>
-      {body}
+    <div data-ground={family} style={{ ...abs, overflow: 'hidden', background: k.ground, ...style }}>
+      {rest && <Img src={rest} style={abs} />}
+      {evSrc && <Img src={evSrc} style={{ ...abs, opacity: e }} />}
+      {family === 'whiteBand' && f > 0 && <div style={{ ...abs, background: k.accent, clipPath: `inset(0px 0px ${((1 - f) * H).toFixed(2)}px 0px)` }} />}
     </div>
   );
 };
@@ -724,5 +918,5 @@ const inksCache = (family: GroundFamily, dark: boolean) => {
   return v;
 };
 
-/** Grounds are continuous light (drift loops, no steps): nothing to declare. */
+/** Grounds are still or continuous light (no steps): nothing to declare. */
 export const declares =(_p?: Partial<GroundSpec>, _film?: Partial<FilmCtx>): Declares => ({ stepped: [], flashes: [], cameraBlur: [], seams: [] });
