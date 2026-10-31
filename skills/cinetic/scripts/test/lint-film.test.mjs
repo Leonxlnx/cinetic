@@ -48,7 +48,7 @@ if (!['all', 'static', 'rendered', ...RENDERED_PARTS].includes(part)) {
 const STATIC = part === 'all' || part === 'static';
 const RENDERED = part !== 'static';
 const runs = (k) => part === 'all' || part === 'rendered' || part === k; // one clip-making self-test of section 4
-const HARD = ['banned-color', 'serif', 'italic', 'glass', 'glow', 'gradient-multihue', 'emoji', 'stock-decoration', 'brand-supplied'];
+const HARD = ['banned-color', 'serif', 'italic', 'glass', 'glow', 'gradient-multihue', 'emoji', 'stock-decoration', 'star-mark', 'brand-supplied'];
 const TEXT = ['copy-literal', 'text-spring', 'text-pace', 'typing-rate', 'per-letter'];
 // the grammar rules: silent unless a fixture names them
 const GRAMMAR = ['ease-family', 'token-drift', 'whip-shape', 'spring-budget', 'spring-range', 'scale-from-zero', 'fade-exit', 'linear-opacity',
@@ -174,6 +174,31 @@ for (const [args, want, why] of [
   const r = py([PALETTE, ...args], { encoding: 'utf8' });
   result(r.status === want, `palette.py ${why}`, `exit ${r.status}, want ${want}`);
   if (verbose || r.status !== want) console.log((r.stderr || '').split('\n').slice(0, 3).map((l) => '      ' + l).join('\n'));
+}
+// --stage-hue sets every hue a ground family names (its field, its stage, a fixed sky hue), and the field tokens
+// pass the bans like the rest: a teal accent on a deep pool at an ink-navy 245, a soft sky at 200, a warm field refused
+for (const [args, want, why] of [
+  [['--accent', '#34C3B0', '--family', 'deepPool', '--stage', 'dark', '--stage-hue', '245'], { ink: 245, field: 245, fieldFar: 245 }, 'deepPool takes --stage-hue for its stage and field'],
+  [['--accent', '#0E8F80', '--family', 'softSky', '--stage-hue', '200'], { paper: 200, field: 200 }, 'softSky takes --stage-hue over its fixed sky hue'],
+  [['--accent', '#0E8F80', '--family', 'lightDark', '--stage-hue', '160'], { darkStage: 160 }, 'lightDark takes --stage-hue for its dark stage'],
+  [['--accent', '#0E8F80', '--family', 'blackField', '--stage', 'dark', '--stage-hue', '160'], { ink: 160 }, 'blackField takes --stage-hue'],
+].filter(() => STATIC)) {
+  const tmp = mkdtempSync(join(tmpdir(), 'cinetic-pal-'));
+  const out = join(tmp, 'p.json');
+  const r = py([PALETTE, ...args, '--json', out], { encoding: 'utf8' });
+  let j = null;
+  try {
+    j = JSON.parse(readFileSync(out, 'utf8'));
+  } catch {}
+  const got = Object.fromEntries(Object.keys(want).map((k) => [k, Math.round((j?.tokens?.[k] ?? j?.field?.[k])?.oklch?.[2] ?? -1)]));
+  const ok = Object.entries(want).every(([k, h]) => got[k] === h);
+  result(ok, `palette.py ${why}`, JSON.stringify(got));
+  if (!ok) console.log((r.stderr || '').split('\n').slice(0, 3).map((l) => '      ' + l).join('\n'));
+  rmSync(tmp, { recursive: true, force: true });
+}
+if (STATIC) {
+  const r = py([PALETTE, '--accent', '#0E8F80', '--family', 'gradientField', '--stage-hue', '80'], { encoding: 'utf8' });
+  result(r.status === 1 && /hard ban: field\b/.test(r.stderr || ''), 'palette.py a family field at a warm stage hue is refused as beige', `exit ${r.status}`);
 }
 
 // 4. the rendered checks' own fixtures (synthetic clips made in code; needs numpy, opencv and ffmpeg)

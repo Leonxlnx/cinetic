@@ -186,6 +186,8 @@
  *   gradient-multihue gradients across several hues (the generated look)
  *   emoji             emoji and sparkle glyphs in strings or markup
  *   stock-decoration  icon, confetti and particle libraries (stock icons, sparkles, confetti)
+ *   star-mark         the film's own mark (src/brand/logo*, mark*, Mark.tsx) drawn as a star or a sparkle (4-8
+ *                     even tips over inward dips): a stand-in glyph, never a logo; the brand's own SVG passes
  *
  * Brand-supplied escape: when the user's brand supplies a banned thing (their orange, their serif
  * wordmark), write `cinetic:brand-supplied <what>` in a comment and record it in BRIEF.md.
@@ -403,7 +405,7 @@ const serifIn = (list) =>
     .map((x) => x.trim().replace(/^["']|["']$/g, ''))
     .filter((x) => isSerifFamily(x));
 const ICON_LIBS = /^(lucide(-react|-static)?|react-icons(\/.*)?|@heroicons\/.*|@tabler\/icons.*|@phosphor-icons\/.*|phosphor-react|@mui\/icons-material.*|@fortawesome\/.*|react-feather|feather-icons|@radix-ui\/react-icons|ionicons|@iconify\/.*|canvas-confetti|react-confetti|react-canvas-confetti|js-confetti|party-js|tsparticles.*|@tsparticles\/.*|react-tsparticles|particles\.js)$/;
-const HARD_BANS = new Set(['banned-color', 'serif', 'italic', 'glass', 'glow', 'gradient-multihue', 'emoji', 'stock-decoration']);
+const HARD_BANS = new Set(['banned-color', 'serif', 'italic', 'glass', 'glow', 'gradient-multihue', 'emoji', 'stock-decoration', 'star-mark']);
 
 // ---------------------------------------------------------------------------------- source masking
 /**
@@ -1068,6 +1070,152 @@ const placeholderIn = (s) => {
   return null;
 };
 
+/**
+ * A whole-string all-digit '#NNN' at quote index `q` read as a number label (a pull request, an order, a ticket)
+ * rather than a colour: its key names copy (ui, label, text, title, id, number ...), or its array literal holds a
+ * string with words in it. A key that names a colour, or no key, keeps it a colour.
+ */
+const LABEL_KEY = /^(ui|labels?|texts?|titles?|copy|lines?|strings?|names?|ids?|numbers?|nums?|counts?|tags?|prs?|issues?|tickets?|refs?|orders?|items?|rows?|words?|chips?|captions?|status|values?)$/i;
+const COLOUR_KEY = /(colou?r|bg|background|fill|stroke|ink|accent|paper|ground|tint|shade|hue|border|shadow|gr[ae]y|black|white|dark|light)/i;
+const numberLabel = (code, q) => {
+  const before = code.slice(Math.max(0, q - 400), q);
+  const key = before.match(/([A-Za-z_$][\w$]*)['"]?\s*[:=]\s*(\[[^\]]*)?$/)?.[1];
+  if (key && COLOUR_KEY.test(key)) return false;
+  if (key && LABEL_KEY.test(key)) return true;
+  // the enclosing array literal, if any: a sibling string with a space or a letter outside hex is copy
+  let depth = 0;
+  let open = -1;
+  for (let k = q - 1; k >= Math.max(0, q - 2000); k--) {
+    const c = code[k];
+    if (c === ']' || c === ')' || c === '}') depth++;
+    else if (c === '[' || c === '(' || c === '{') {
+      if (depth === 0) {
+        open = c === '[' ? k : -1;
+        break;
+      }
+      depth--;
+    }
+  }
+  if (open < 0) return false;
+  const close = code.indexOf(']', q);
+  if (close < 0) return false;
+  const sibs = [...code.slice(open, close).matchAll(/(['"`])((?:(?!\1)[^\\\n]|\\.)*)\1/g)].map((x) => x[2]);
+  return sibs.some((s) => /\s/.test(s.trim()) || /[g-z]/i.test(s.replace(/^#/, '')));
+};
+
+/** The points of an SVG path's subpaths (curves sampled at quarter steps), for shape tests. */
+const pathPoints = (d) => {
+  const toks = String(d).match(/[MmLlHhVvCcSsQqTtAaZz]|-?(?:\d+\.?\d*|\.\d+)(?:e-?\d+)?/g) ?? [];
+  const subs = [];
+  let pts = [];
+  let x = 0, y = 0, sx = 0, sy = 0, cmd = '', k = 0, lc = null;
+  const num = () => Number(toks[k++]);
+  // a straight edge is sampled too, so a flat end (a plus's arm) reads as two corners, not one tip
+  const line = (nx, ny) => {
+    for (const t of [0.25, 0.5, 0.75]) pts.push([x + (nx - x) * t, y + (ny - y) * t]);
+    pts.push([nx, ny]);
+    x = nx;
+    y = ny;
+  };
+  const isNum = () => k < toks.length && !/^[A-Za-z]$/.test(toks[k]);
+  const bez = (p) => {
+    for (const t of [0.25, 0.5, 0.75, 1]) {
+      const u = 1 - t;
+      const b = p.length === 4
+        ? [u * u * u * p[0][0] + 3 * u * u * t * p[1][0] + 3 * u * t * t * p[2][0] + t * t * t * p[3][0], u * u * u * p[0][1] + 3 * u * u * t * p[1][1] + 3 * u * t * t * p[2][1] + t * t * t * p[3][1]]
+        : [u * u * p[0][0] + 2 * u * t * p[1][0] + t * t * p[2][0], u * u * p[0][1] + 2 * u * t * p[1][1] + t * t * p[2][1]];
+      pts.push(b);
+    }
+  };
+  while (k < toks.length) {
+    if (/^[A-Za-z]$/.test(toks[k])) cmd = toks[k++];
+    else if (!cmd) return subs;
+    const rel = cmd === cmd.toLowerCase();
+    const C = cmd.toUpperCase();
+    const ox = rel ? x : 0, oy = rel ? y : 0;
+    if (C === 'Z') {
+      if (pts.length > 1) {
+        line(sx, sy);
+        pts.pop(); // the start point is already the first
+      }
+      if (pts.length) subs.push(pts);
+      pts = [];
+      x = sx; y = sy; lc = null;
+      continue;
+    }
+    if (!isNum()) { k++; continue; }
+    if (C === 'M') {
+      if (pts.length) subs.push(pts);
+      x = ox + num(); y = oy + num(); sx = x; sy = y; pts = [[x, y]]; lc = null;
+      cmd = rel ? 'l' : 'L';
+    } else if (C === 'L' || C === 'T') {
+      line(ox + num(), oy + num());
+      lc = null;
+    } else if (C === 'H') {
+      line((rel ? x : 0) + num(), y);
+      lc = null;
+    } else if (C === 'V') {
+      line(x, (rel ? y : 0) + num());
+      lc = null;
+    }
+    else if (C === 'C') {
+      const p1 = [ox + num(), oy + num()], p2 = [ox + num(), oy + num()], p3 = [ox + num(), oy + num()];
+      bez([[x, y], p1, p2, p3]); lc = p2; [x, y] = p3;
+    } else if (C === 'S') {
+      const p1 = lc ? [2 * x - lc[0], 2 * y - lc[1]] : [x, y];
+      const p2 = [ox + num(), oy + num()], p3 = [ox + num(), oy + num()];
+      bez([[x, y], p1, p2, p3]); lc = p2; [x, y] = p3;
+    } else if (C === 'Q') {
+      const p1 = [ox + num(), oy + num()], p2 = [ox + num(), oy + num()];
+      bez([[x, y], p1, p2]); lc = null; [x, y] = p2;
+    } else if (C === 'A') {
+      for (let j = 0; j < 5; j++) num();
+      line(ox + num(), oy + num());
+      lc = null;
+    } else k++;
+    if ([x, y].some((v) => !Number.isFinite(v))) return subs;
+  }
+  if (pts.length) subs.push(pts);
+  return subs;
+};
+
+/**
+ * A star or sparkle outline: 4-8 tips at one radius, evenly spaced round the centre, with the outline falling to
+ * under 0.6 of that radius between them (a five-point star, a four-point "AI" sparkle with its inward curves).
+ * A plus, a letter, a regular polygon or a gear does not pass all three.
+ */
+const isStarOutline = (pts) => {
+  if (pts.length < 8) return false;
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const r = pts.map(([px, py]) => Math.hypot(px - cx, py - cy));
+  const R = Math.max(...r);
+  if (!(R > 0)) return false;
+  const n = r.length;
+  const tips = [];
+  for (let j = 0; j < n; j++) {
+    const a = r[(j - 1 + n) % n], b = r[(j + 1) % n];
+    if (r[j] >= 0.8 * R && r[j] >= a && r[j] > b) tips.push(j);
+  }
+  if (tips.length < 4 || tips.length > 8) return false;
+  const tr = tips.map((j) => r[j]);
+  const mean = tr.reduce((s, v) => s + v, 0) / tr.length;
+  if (Math.sqrt(tr.reduce((s, v) => s + (v - mean) ** 2, 0) / tr.length) > 0.12 * mean) return false;
+  const ang = tips.map((j) => Math.atan2(pts[j][1] - cy, pts[j][0] - cx)).sort((p, q) => p - q);
+  const gaps = ang.map((v, j) => (j + 1 < ang.length ? ang[j + 1] - v : ang[0] + 2 * Math.PI - v));
+  const g = (2 * Math.PI) / gaps.length;
+  if (gaps.some((v) => Math.abs(v - g) > 0.2 * g)) return false;
+  // between each pair of tips (in path order) the outline dips under 0.6 R
+  const order = [...tips].sort((p, q) => p - q);
+  for (let t = 0; t < order.length; t++) {
+    const a = order[t], b = order[(t + 1) % order.length];
+    let lo = Infinity;
+    for (let j = (a + 1) % n; j !== b; j = (j + 1) % n) lo = Math.min(lo, r[j]);
+    if (!(lo < 0.6 * R)) return false;
+  }
+  return true;
+};
+
 const BRAND_RE = /cinetic:brand-supplied\b/;
 const BRAND_REASON_RE = /cinetic:brand-supplied\b[\s:,.;–—-]*[\w"'#(]/;
 // house palette rules a supplied brand also overrides (its colours are checked only for contrast and the one-accent rule)
@@ -1254,6 +1402,10 @@ for (const file of files) {
       const alone = /['"`]/.test(q) && /['"`]/.test(code[i + m[0].length] ?? '');
       const prop = /(colou?r|background|fill|stroke|border|outline|shadow)[\w-]*['"]?\s*[:=][^;\n]{0,40}$/i.test(code.slice(Math.max(0, i - 60), i));
       if (!alone && !prop) return;
+      // ui: ['Add order history export', '#482', 'Ferry'], { text: '#482' }: a whole-string number label is
+      // the product's own copy (a pull request, an order, a ticket) when its key names copy or its array
+      // holds words; a key that names a colour, or none, keeps it a colour
+      if (alone && !prop && numberLabel(code, i - 1)) return;
     }
     banColor(i, m[0], colorOf(m[0])); // every colour, the tokens file and the :root palette included
     if (isTokens || rootSpans.some(([a, b]) => i >= a && i < b)) return;
@@ -1440,6 +1592,14 @@ for (const file of files) {
   each(/\p{Extended_Pictographic}️|\p{Emoji_Presentation}|[✦✧]/gu, (m, i) =>
     report(i, 'emoji', 'error', `${m[0]} is an emoji or sparkle glyph (a hard ban): every image comes from the product's own objects`),
   );
+  // --- star-mark: the film's own mark (src/brand/logo*, mark*, Mark.tsx) drawn as a star or a sparkle: a stand-in
+  // glyph, never a logo. The brand's own SVG (brand.py writes logo.ts under cinetic:brand-supplied) passes.
+  if (/(^|\/)brand\/[^/]*$/.test(norm) && /^(logo|mark)/i.test(basename(file)))
+    each(/\bd\s*[:=]\s*\{?\s*(['"`])([MmZzLlHhVvCcSsQqTtAa0-9eE.,\s-]{12,})\1|\bpoints\s*[:=]\s*\{?\s*(['"`])([0-9eE.,\s-]{12,})\3/g, (m, i) => {
+      const subs = pathPoints(m[2] != null ? m[2] : `M${m[4]}Z`); // polygon points: a closed path
+      if (subs.some((p) => isStarOutline(p.filter((q) => q.length === 2 && q.every(Number.isFinite)))))
+        report(i, 'star-mark', 'error', "this mark is a star or a sparkle: a stand-in glyph reads as generic AI, never a logo. Use the brand's own SVG (scripts/brand.py), a mark built from the film's last element, or keep the template's letter mark");
+    });
   each(/(?:\bfrom\s+|\bimport\s+|\brequire\s*\(\s*|\bimport\s*\(\s*)(['"])([^'"]+)\1|<script[^>]*\bsrc\s*=\s*(['"])([^'"]+)\3/g, (m, i) => {
     const mod = m[2] ?? m[4];
     if (ICON_LIBS.test(mod) || (m[4] && /confetti|particles|lucide|font-?awesome|feather|ionicons|heroicons|tabler-icons|phosphor/i.test(mod)))

@@ -128,10 +128,11 @@ from the timeline in `fx/` or `lib/`; read them from `useFilm()`), `gpu-cost` (b
 layers in a file, an SVG filter animated by the frame, `backdrop-filter`, a chain holding more than 24 sharp word
 layers: bake a plate instead).
 
-**Look and bans:** `placeholder` (a `cinetic:placeholder` marker left), `off-token-color`, `gradient-low-span`,
+**Look and bans:** `placeholder` (a `cinetic:placeholder` marker left), `off-token-color` (an all-digit `#482` in copy, in a `ui`/`text`/`label` slot or an array of words, is a number label, not a colour), `gradient-low-span`,
 `banned-color`, `serif`, `italic`, `glass` (`backdrop-filter`), `glow` (a light box-, text- or drop-shadow with blur,
 or a coloured radial falloff in an act: build light with the device primitives, which declare it), `emoji`,
-`stock-decoration`, `pure-ink` (error on a `#000` token; warn on a `#FFF` ground without `LOOK.whiteWorld`),
+`stock-decoration`, `star-mark` (the film's own mark in `src/brand/logo*` or `Mark.tsx` drawn as a star or a sparkle: 4-8
+even tips over inward dips; the brand's own SVG passes), `pure-ink` (error on a `#000` token; warn on a `#FFF` ground without `LOOK.whiteWorld`),
 `accent-count` (error: a second saturated hue outside a 30° band; `imagery` and `ui-state` comments leave a token
 out), `gradient-shape` (stops more than 7° of hue apart outside a declared device), `end-card-template` (a mark, a
 wordmark and a tagline centred over a radial gradient). `cinetic:brand-supplied <what>` covers supplied colours and

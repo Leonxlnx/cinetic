@@ -39,7 +39,8 @@ C <= .025 (house .004-.012), so the accent is the colour in the frame.
 Ground families (--family NAME; --list-families prints them): the one field and its light a whole film stands on
 (references/brand-and-color.md §9b, fx/Grounds FamilyGround). --family builds the palette from the family's base recipe,
 prints a `// family: NAME` line and the family's field tokens (field, fieldFar) at the field hue (the accent's own
-for a blue, teal or green, else a cool 230), with the type's contrast on the field:
+for a blue, teal or green, else a cool 230; --stage-hue H sets it, and every hue the family names, for every family),
+with the type's contrast on the field:
   nearWhite      tintedPaper                   a clean near-white page under pictures and UI
   blackField     inkStage at L .11             a near-black field under one soft key light, white type
   whiteBand      whiteWorld + the accent band  white with one band of the brand colour; the band floods once
@@ -534,10 +535,15 @@ def main():
             C = min(C, 0.003 if L >= 0.7 else 0.004)
         hx, c_used = oklch_hex(L, C, h_use)
         tokens[name] = dict(hex=hx, oklch=[round(L, 3), round(c_used, 4), round(h_use, 1)], job=job)
+    def fam_hue(h_):
+        # a family's hue: --stage-hue sets every one it names (the field hue, the palette's own, a fixed sky hue)
+        if stage_hue is not None:
+            return stage_hue
+        return field_hue(ah) if h_ == 'field' else (hue if h_ is None else h_)
+
     if a.family:
-        fh = field_hue(ah)
         for name, (L_, C_, h_) in (FAMILIES[a.family].get('stage') or {}).items():
-            hh = fh if h_ == 'field' else (hue if h_ is None else h_)
+            hh = fam_hue(h_)
             hx, c_used = oklch_hex(L_, C_, hh)
             tokens[name] = dict(hex=hx, oklch=[round(L_, 3), round(c_used, 4), round(hh, 1)], job=(tokens.get(name) or {}).get('job', '') + f' ({a.family})')
     if paper_in:
@@ -573,6 +579,19 @@ def main():
         why = banned(*h_)
         if why and not a.brand_supplied:
             check(f'hard ban: {k}', False, f"{tokens[k]['hex']} reads as {why}")
+    field_rows = []
+    if a.family:
+        for name, spec_ in (FAMILIES[a.family].get('field') or {}).items():
+            if spec_ == 'accent':
+                field_rows.append((name, acc_hex, aL, aC, ah))
+                continue
+            L_, C_, h_ = spec_
+            h_ = fam_hue(h_)
+            hx, C_ = oklch_hex(L_, C_, h_)
+            field_rows.append((name, hx, L_, C_, h_))
+            why = banned(*parse_colour(hx))
+            if why and not a.brand_supplied:
+                check(f'hard ban: {name}', False, f'{hx} reads as {why} ({name} at the stage hue {h_:.0f})')
     in_band = band[0] <= aL <= band[1] or a.brand_supplied
     fix = ''
     if not in_band:
@@ -595,7 +614,8 @@ def main():
         v['contrast_on_stage'] = round(r, 2) if r else None
     width = max(len(k) for k in tokens)
     sh_arg = f' --stage-hue {a.stage_hue:g}' if a.stage_hue is not None else ''
-    print(f'// palette.py --accent {a.accent} --stage {a.stage} --temp {a.temp}{sh_arg}' + (f' --recipe {a.recipe}' if recipe else ''))
+    print(f'// palette.py --accent {a.accent} --stage {a.stage} --temp {a.temp}{sh_arg}' + (f' --recipe {a.recipe}' if recipe else '')
+          + (f' --family {a.family}' if a.family else ''))
     print('export const C = {')
     if stage_key == 'slate':
         print('  // stage: slate (the film stands on the slate: type is paper, the accent on it accentLift; --check-tokens reads this line)')
@@ -609,16 +629,10 @@ def main():
         print(f"  {k}: '{v['hex']}',{' ' * (width - len(k))} // {v['job']} (OKLCH {L} {C} {h:.0f}{r})")
     print('};')
     if a.family:
-        fh = field_hue(ah)
-        print(f'// family: {a.family} ({FAMILIES[a.family]["about"]}); fx/Grounds <FamilyGround family="{a.family}"> draws it')
+        print(f'// family: {a.family} ({FAMILIES[a.family]["about"]}); fx/Grounds <FamilyGround family="{a.family}"> draws it'
+              + (f'; stage hue {stage_hue:.0f}' if stage_hue is not None else ''))
         print('export const FIELD = {')
-        for name, spec in (FAMILIES[a.family].get('field') or {}).items():
-            if spec == 'accent':
-                hx, L_, C_, h_ = acc_hex, aL, aC, ah
-            else:
-                L_, C_, h_ = spec
-                h_ = fh if h_ == 'field' else (hue if h_ is None else h_)
-                hx, C_ = oklch_hex(L_, C_, h_)
+        for name, hx, L_, C_, h_ in field_rows:
             on = tokens['paper']['hex'] if L_ < 0.66 else tokens['ink']['hex']
             what = 'colour field' if name == 'field' else name
             print(f"  {name}: '{hx}', // the family's {what} (OKLCH {L_:.3f} {C_:.3f} {h_:.0f}); type on it {on}, {contrast(on, hx):.1f}:1")
@@ -626,7 +640,8 @@ def main():
     for c in checks:
         print(f"  {'ok  ' if c['pass_'] else 'FAIL'} {c['check']}: {c['detail']}", file=sys.stderr)
     if a.json:
-        json.dump(dict(stage=a.stage, temp=a.temp, tokens=tokens,
+        json.dump(dict(stage=a.stage, temp=a.temp, tokens=tokens, family=a.family, stage_hue=stage_hue,
+                       field={n: dict(hex=hx, oklch=[round(L_, 3), round(C_, 4), round(h_, 1)]) for n, hx, L_, C_, h_ in field_rows},
                        checks=[dict(check=c['check'], ok=c['pass_'], detail=c['detail']) for c in checks]),
                   open(a.json, 'w'), indent=1)
     return 0 if all(c['pass_'] for c in checks) else 1
