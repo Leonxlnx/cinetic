@@ -1,105 +1,112 @@
-// The update film's facts: the version, the changes and the product moment that shows each one. The
-// timeline, the acts and the sound all read this file; nothing else holds the film's content.
+// The update film's facts: the version, the version before it and the changes, each with the product screen that shows
+// it working. The timeline, the acts and the sound all read this file; it is the one file a film fills.
 //
-// cinetic:placeholder - an invented release of an invented product: write the real version, 2-4 real
-// changes (each one plain sentence of 2-6 words that says the result the user sees, never a feature name
-// or a fancy word: scripts/copy-check.py) and the product moment each one uses (rebuild the product's own
-// UI for it, src/kit is the floor), then delete these four lines.
+// cinetic:placeholder - an invented release of an invented product: write the real version, 2-4 real changes (each one
+// plain sentence of 2-6 words that says the result the user sees, never a feature name: scripts/copy-check.py) and,
+// for each, the screen that shows it and the moment it plays (below), in the product's own words; then delete these lines.
 import { IDENTITY } from './brand/identity';
-import type { BudgetData, ReviewData, WorldSpec } from './kit';
 
 /**
- * How a change is shown: a product surface doing the new thing, on its beat. The five kit moments are the
- * floor until the product's own screens are rebuilt: a review that gets approved, a thread whose answer
- * lands, a figure that starts to climb, a budget that takes a new entry, a dense table whose readable row
- * travels to the row the change touched (kit DenseScreen).
+ * One line of a product screen: its words, a quiet detail beside it, and optionally a person's initials, a real photo
+ * (a public/ path from `node scripts/assets.mjs get`: every photo in the film gets the same grade, radius and frame) or
+ * the accent (the row the change is about).
  */
-export type Moment = 'approve' | 'chat' | 'count' | 'budget' | 'table';
+export type Row = { label: string; meta?: string; initials?: string; photo?: string; accent?: boolean };
+/** A block on a week grid: its day (0-based column), its start and length in rows of the grid (fractions allowed). */
+export type Slot = { day: number; at: number; len: number; label: string; accent?: boolean };
+
 /**
- * One change. `words`: one plain sentence (2-6 words as read). A change that works with another product names it
- * with "[]" where its real mark sits inside the sentence: `logo` is the slug of that mark (node scripts/logos.mjs get
- * <name> --film .), `logoName` how the product's name is written (read in the mark's place; shown as a chip with the
- * name until the mark is fetched).
+ * How a change is shown working (pick the one the change really is; each plays 1-3.5 s on the screen):
+ *   tap    a tap on the screen's one action and the state it changes to: the button pressed, its new label, and what
+ *          appears (`result`: the people in the call, the room booked, the file shared)
+ *   fill   a list, a grid or a week that fills: the rows, tiles or blocks land one by one, the last (`accent`) lands
+ *          in the accent (the free hour, the found note, the new photo)
+ *   swap   before -> after: the screen as it was (`before`), a wipe, the screen as it is now (`after`), its tag
+ *          turning from tag[0] to tag[1] (a messy note tidied, a list sorted, a draft made final)
+ *   count  a figure that rises from `from` to `to` (with `unit`), the bars under it growing (hours saved, files synced)
  */
-/** photos: the real pictures the moment shows (public/ paths): the four selects an 'approve' review approves. Empty, they show as the files they are. */
-/** key: the change's key words as they read in it (the line's emphasis lands on them; else its last word). */
-export type Change = { id: string; words: string; moment: Moment; logo?: string; logoName?: string; photos?: string[]; key?: string };
+export type Show =
+  | { kind: 'tap'; rows?: Row[]; action: string; done: string; result?: Row[] }
+  | { kind: 'fill'; layout: 'list'; items: Row[]; noun?: [one: string, many: string] }
+  | { kind: 'fill'; layout: 'grid'; items: Row[]; cols?: number; noun?: [one: string, many: string] }
+  | { kind: 'fill'; layout: 'week'; days: string[]; hours?: string[]; items: Slot[] }
+  | { kind: 'swap'; before: Row[]; after: Row[]; tag: [before: string, after: string] }
+  | { kind: 'count'; label: string; from: number; to: number; unit?: string; bars?: number[]; sub?: string };
+
+/**
+ * One change. `words`: one plain sentence, 2-6 words as read, the result the user sees. `title` and `sub`: the screen's
+ * own header (the event, the note, the list it is). `show`: the moment that proves the line. `key`: the words the
+ * line's accent lands on (else none). `recap`: the few words the change's card shows in the recap (default: the state
+ * it ends in). A change that works with another product names it with "[]" where its real mark sits in the sentence:
+ * `logo` is the mark's slug (node scripts/logos.mjs get <name> --film .), `logoName` the product's name as written.
+ */
+export type Change = { id: string; words: string; key?: string; title: string; sub?: string; show: Show; recap?: string; logo?: string; logoName?: string };
 
 export const UPDATE: { name: string; from: string; version: string; changes: Change[] } = {
   name: IDENTITY.name,
-  from: '2.3', // the version the film starts on: its last numeral rolls to the new one (hook device 'roll')
-  version: '2.4',
+  from: '[2.3]', // the version before this one: the hook may roll its changed numerals to the new one
+  version: '[2.4]',
   changes: [
-    { id: 'approve', words: 'Approvals take one tap', moment: 'approve', key: 'one tap' },
-    { id: 'threads', words: 'Replies land in []', moment: 'chat', logo: '[source-slug]', logoName: '[Source]', key: 'Replies' },
-    { id: 'live', words: 'View counts run live', moment: 'table', key: 'live' },
-  ],
-};
-
-/**
- * What each product moment shows, in the product's own words (every bracket is a slot): the review a change approves
- * or replies in ('approve', 'chat'), the figure a 'count' counts, the rows of a 'table' (kit/data.ts filmWorld: the
- * counts derive from the rows) and the categories of a 'budget'. The kit draws only what is given here; a moment given
- * nothing draws an empty box and fails precheck. The numbers are stand-ins too: the product's own before the first still.
- */
-export const MOMENTS: { review: ReviewData; count: { label: string; from: number; perSec: number }; table: WorldSpec; budget: BudgetData } = {
-  review: {
-    team: [{ initials: '[AB]', name: '[Name]' }, { initials: '[CD]', name: '[Name]' }, { initials: '[EF]', name: '[Name]' }],
-    project: {
-      title: '[Project]',
-      meta: '[what it is]',
-      shots: 4,
-      approved: 0,
-      status: { open: '[In review]', done: '[Approved]' },
-      label: '[Selects]',
-      files: [{ name: '[file one]', size: '[size]' }, { name: '[file two]', size: '[size]' }, { name: '[file three]', size: '[size]' }, { name: '[file four]', size: '[size]' }],
+    {
+      id: 'first',
+      words: '[First change in plain words]',
+      title: '[Screen title]',
+      sub: '[detail]',
+      show: { kind: 'tap', rows: [{ label: '[Row]', meta: '[detail]' }, { label: '[Row]', meta: '[detail]' }], action: '[Action]', done: '[Done]', result: [{ label: '[Result]', initials: '[AB]' }, { label: '[Result]', initials: '[CD]' }] },
     },
-    actions: { approve: '[Approve]', done: '[Approved]', count: (n: number, of: number) => `${n} / ${of}` },
-    chat: { title: '[Thread]', draft: '[Reply]', lines: [{ text: '[A question]', side: 'in' }, { text: '[The answer]', side: 'out' }, { text: '[A thank-you]', side: 'in' }] },
-    feed: { title: '[Comments]', count: 0, rows: [] },
-    stats: { approved: { label: '[Approved]', value: 0, of: 4 }, saves: { label: '[Saves]', from: 0, perSec: 0 }, views: { label: '[Views]', from: 0, perSec: 0, since: '[since]' } },
-  },
-  count: { label: '[What it counts]', from: 18240, perSec: 140 },
-  table: {
-    workspace: '[Workspace]',
-    screen: '[Screen]',
-    noun: ['[row]', '[rows]'],
-    statuses: [{ label: '[Live]', tone: 'accent' }, { label: '[Updated]', tone: 'done' }, { label: '[Draft]', tone: 'quiet' }],
-    records: [
-      { title: '[Row one]', sub: '[detail]', status: 1 },
-      { title: '[Row two]', sub: '[detail]', status: 1 },
-      { title: '[Row three]', sub: '[detail]', status: 2 },
-      { title: '[Row four]', sub: '[detail]', status: 1 },
-      { title: '[Row five]', sub: '[detail]', status: 2 },
-      { title: '[Row six]', sub: '[detail]', status: 0 },
-      { title: '[Row seven]', sub: '[detail]', status: 1 },
-    ],
-  },
-  budget: {
-    team: '[Team]',
-    period: '[Month]',
-    categories: [
-      { name: '[Category one]', glyph: 'cart', budget: 1200, spent: 640 },
-      { name: '[Category two]', glyph: 'doc', budget: 800, spent: 310 },
-      { name: '[Category three]', glyph: 'team', budget: 500, spent: 420 },
-    ],
-    weeks: [],
-    toast: { amount: 86, category: '[Category one]', when: '[when]' },
-    report: { title: '[Report]', meta: '[period]' },
-    people: [],
-  },
+    {
+      id: 'second',
+      words: '[Second change in plain words]',
+      title: '[Screen title]',
+      show: { kind: 'fill', layout: 'list', items: [{ label: '[Item]', meta: '[detail]' }, { label: '[Item]', meta: '[detail]' }, { label: '[Item]', meta: '[detail]' }, { label: '[Item]', meta: '[detail]', accent: true }], noun: ['[item]', '[items]'] },
+    },
+    {
+      id: 'third',
+      words: '[Third change in plain words]',
+      title: '[Screen title]',
+      show: { kind: 'swap', before: [{ label: '[Before]' }, { label: '[Before]' }, { label: '[Before]' }], after: [{ label: '[After]' }, { label: '[After]' }, { label: '[After]' }], tag: ['[Draft]', '[Done]'] },
+    },
+  ],
 };
 
 /** A change's sentence as it is read: its mark read as the product's name. */
 export const spokenChange = (c: Change): string => c.words.replace(/\s*\[\]\s*/g, ` ${c.logoName ?? ''} `).replace(/\s+/g, ' ').trim();
 
+/** The few words a change's card shows in the recap: `recap`, else the state the moment ends in. */
+export const recapOf = (c: Change): string => {
+  if (c.recap) return c.recap;
+  const s = c.show;
+  if (s.kind === 'tap') return s.done;
+  if (s.kind === 'swap') return s.tag[1];
+  if (s.kind === 'count') return `${s.to.toLocaleString('en-US')}${s.unit ?? ''}`;
+  const items = s.items as { label: string; accent?: boolean }[];
+  const hit = items.find((x) => x.accent) ?? items[items.length - 1];
+  return hit?.label ?? '';
+};
+
+// ---- checks: the scaffold fails loudly on a content file a moment cannot draw
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
-if (UPDATE.changes.length < 2 || UPDATE.changes.length > 4) throw new Error(`update.ts: an update film shows 2-4 changes (it has ${UPDATE.changes.length})`);
-// one short sentence per change: at the template's 120 BPM a change is two bars, the product moment and then its words read
-// in full under the push (a longer sentence needs a slower track or a longer change)
+const need = (ok: boolean, msg: string) => {
+  if (!ok) throw new Error(`update.ts: ${msg}`);
+};
+need(UPDATE.changes.length >= 2 && UPDATE.changes.length <= 4, `an update film shows 2-4 changes (it has ${UPDATE.changes.length})`);
+need(!!UPDATE.version.trim() && !!UPDATE.from.trim(), 'give the version and the version before it');
 for (const c of UPDATE.changes) {
   const n = words(spokenChange(c));
-  if (n < 2 || n > 6) throw new Error(`update.ts: "${spokenChange(c)}" is ${n} words; a change is one short sentence of 2-6 words`);
-  if (c.words.includes('[]') && !c.logoName) throw new Error(`update.ts: "${c.words}" holds a mark ([]): give its logoName (and its logo slug once fetched)`);
+  need(n >= 2 && n <= 6, `"${spokenChange(c)}" is ${n} words; a change is one short sentence of 2-6 words`);
+  need(!c.words.includes('[]') || !!c.logoName, `"${c.words}" holds a mark ([]): give its logoName (and its logo slug once fetched)`);
+  need(!!c.title.trim(), `${c.id}: the screen needs its title (the product's own header)`);
+  const s = c.show;
+  if (s.kind === 'tap') {
+    need(!!s.action.trim() && !!s.done.trim(), `${c.id}: a tap needs the action's label and the label it changes to`);
+    need((s.rows ?? []).length <= 3 && (s.result ?? []).length <= 4, `${c.id}: a tap screen shows at most 3 rows and 4 results`);
+  } else if (s.kind === 'fill') {
+    const max = s.layout === 'week' ? 14 : s.layout === 'grid' ? 9 : 6;
+    need(s.items.length >= 3 && s.items.length <= max, `${c.id}: a ${s.layout} that fills shows 3-${max} items (it has ${s.items.length})`);
+    if (s.layout === 'week') need(s.days.length >= 3 && s.days.length <= 7 && s.items.every((x) => x.day >= 0 && x.day < s.days.length && x.len > 0), `${c.id}: a week needs 3-7 days and every block on one of them`);
+  } else if (s.kind === 'swap') {
+    need(s.before.length >= 2 && s.before.length <= 4 && s.after.length >= 2 && s.after.length <= 4, `${c.id}: before and after show 2-4 rows each`);
+  } else if (s.kind === 'count') {
+    need(Number.isFinite(s.from) && Number.isFinite(s.to) && s.to !== s.from, `${c.id}: a count rises from one number to another`);
+  }
 }
-if (UPDATE.from.length !== UPDATE.version.length) throw new Error('update.ts: from and version need the same number of characters (pad the old one, e.g. 1.9 -> 2.0)');

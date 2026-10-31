@@ -1,342 +1,562 @@
-// The update film's world: one strip the camera travels. The name and the version open it (the name over giant
-// numerals cropped by the frame, the version arriving by the dealt hook); each change is a product surface on the
-// strip, lit and tilted in the film's one light (fx/Lit), that does the new thing on its beat while one sentence names
-// it on its dealt move (acts/type.tsx); the film makes one 3D camera move (the dealt turn); the payoff gathers every
-// change behind the version; the end card sets the mark and the name with it. Every act renders this world at its
-// own frames, so the camera's speed carries across each act line by construction. The ground is clean (fx/Grounds:
-// the key gradient alone, riding the camera at the background's weight): no near plane of soft shapes, no haze.
-//
-// Retell it in the dealt direction's world (out/DIRECTION.md): its space, light and signature replace this floor.
-// The product surfaces come from src/kit until the product's own UI is rebuilt for film.
+// The update film's world: one stage on the dealt ground family (fx/Grounds FamilyGround), its light still, never cut.
+// The name and the version open it, centred; then ONE card, the product's own screen, is carried through the film, and
+// each change has its own beat shape (src/deal.ts SHAPES):
+//   after  the change works on the card (acts/moments.tsx), then the element that changed grows into the frame's colour
+//          field, the line reads on it, and the field closes into the next card (the film's one colour event)
+//   split  the line arrives parted round the card, which sits small in the gap between its words; the words leave and
+//          the card grows out of the gap to full size and works
+//   with   the card works in the upper half while its line reads centred under it
+// At the end the card shrinks into the recap row beside the other changes, which gather into the mark; the name slides
+// out of the mark and the version lands on the last bar line. The camera never floats and nothing bobs or sways: every
+// move starts, travels and lands, and a hold is still while the product acts. No card is tilted. Lines never sit over a
+// sharp card, never travel sideways and leave as one (the dealt exit). Every act renders this world at its own frames,
+// so every act line is continuous by construction.
 import React from 'react';
-import { AbsoluteFill, staticFile, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
-import { C, TYPE, typeStyle, U } from '../brand/tokens';
-import { DEAL, DEAL_SEED, LINES, NAME_MOVE } from '../deal';
-import { LitGround } from '../fx/Grounds';
-import { Lit } from '../fx/Lit';
-import { RackFocus } from '../fx/RackFocus';
-import { BudgetCard, ChatCard, DenseScreen, filmWorld, hasLogo, kitTheme, ProjectPanel, StatCard } from '../kit';
+import { C, FONT, TYPE, typeStyle, U } from '../brand/tokens';
+import { CARD_TONE, DEAL, DEAL_SEED, LINES, SHAPES } from '../deal';
+import { CreativeLine, CreativePicture, type Pal } from '../fx/creative';
+import { FamilyGround, familyInks, type GroundFamily } from '../fx/Grounds';
+import { hasLogo, kitTheme, type KitTheme } from '../kit';
+import { cardInks } from '../kit/card';
 import type { InlineRef } from '../kit/inline';
 import { clamp, E, hitPulse, lmix, mix, prog } from '../lib/anim';
 import { phrase } from '../lib/cadence';
-import { creep as creepK } from '../lib/handoff';
-import { camera, lc, type Shot } from '../lib/camera';
-import { mixColor } from '../lib/color';
+import { mixColor, toOklch } from '../lib/color';
 import { measureTracked } from '../lib/measure';
-import { type FloatOpts, withLocks } from '../lib/drift';
-import { ACT, beat, BEATS, changeOut, copy, CUE, f60, f60x, FPS, H, moveOf, N, ROLL, TOTAL, W } from '../timeline';
-import { type Change, MOMENTS, spokenChange, UPDATE } from '../update';
-import { HeroLine, MarkLine } from './type';
+import { ACT, ARRIVE_S, BEAT, CLOSE, copy, EXIT_F, f60, H, heroWord, HOOK, N, ROLL, scaled, TIMES, W } from '../timeline';
+import { type Change, spokenChange, UPDATE } from '../update';
+import { cardMaterial, cardRadius, cardSize, changedRect, Moment, RecapCard } from './moments';
+import { gapLine, HeroLine, MarkLine } from './type';
 
-/** The mark's parts rise phrased, the last after a held beat (lib/cadence), the span of a 5 f stagger. */
-const PART_ON = phrase(LOGO.parts.length, f60(5), { shape: 'settle', seed: 'mark-parts' }).onsets;
-
+// ---------------------------------------------------------------------------------------------- the look
+/** The dealt ground family and its inks (type, accent, the colour field). */
+export const FAMILY = DEAL.ground as GroundFamily;
+export const INK = familyInks(FAMILY);
 /**
- * The camera float every act sits on (Film.tsx ActStage; lib/drift, fx/Float): one continuous drift through the whole
- * film (sideways up to 31 px/s, a push of up to 3 % carrying the turns), seeded by the film, so no shot sits still
- * while one small thing moves (forensics.py motion-energy). It eases to rest once, on the name's read (withLocks:
- * where the drift runs fastest inside the read, never beside a turn). The grounds hold still under it (LitGround), the
- * content moves over them.
+ * The product's cards (kit/card): light, or on a dark family dealt dark (src/deal.ts CARD_TONE); the screen inside writes
+ * with the card's own inks and the brand's accent on what changed.
  */
-export const FLOAT: FloatOpts = withLocks({ seed: DEAL_SEED }, [copy('product')], { fps: FPS });
-
-/** The film's kit colours: the mid slate or the tinted paper (the dealt stage), the accent the brand's. */
-export const THEME = DEAL.stage === 'paper' ? kitTheme('tintedPaper', C.accent) : kitTheme('slateMid', C.accent);
-const T = THEME;
-
-// ---------------------------------------------------------------------------------------------- layout
-/** The version numerals: giant, cropped by the frame (the set), in the hook and again from the payoff on. */
-export const NUM = { size: 1500 * U, x: 150 * U, lead: 0.92, weight: TYPE.giant.weight, track: TYPE.giant.track } as const;
-/** The product's name over the version in the hook: line size, centred at the top over the giant numerals (the set); the numerals drop to make room for it. */
-export const NAME_HOOK = { y: 80 * U, drop: 300 * U } as const;
-/**
- * The version's landing in the payoff: at most `size`, never wider than `fill` of the frame, centred, so it reads whole
- * (the hook's numerals are the cropped set; the release is not). Its size on the 'set' end card is a share of `size`.
- */
-export const NUM_LAND = { size: 1180 * U, fill: 0.8 } as const;
-const SET_K = 0.5;
-/**
- * The strip: change i's surface is centred at x0 + i * gap (world px), alternating above and below. x0 sets the move out
- * of the hook: the strip arrives at the speed the version leaves (the numerals leave 2700 px, the strip 2600 on screen).
- */
-export const STRIP = { x0: 3900 * U, gap: 2300 * U, y: 560 * U, alt: 120 * U } as const;
-/** How each moment's surface is scaled from its kit size: centred in the frame, it steps back behind its centred words while they are read. */
-const SURFACE: Record<Change['moment'], { k: number; w: number; h: number }> = {
-  approve: { k: 1.25, w: 1160, h: 740 },
-  chat: { k: 1.7, w: 640, h: 600 },
-  count: { k: 1.7, w: 640, h: 560 },
-  budget: { k: 1.5, w: 900, h: 440 },
-  table: { k: 0.95, w: 1640, h: 940 },
-};
-const boxOf = (c: Change) => ({ w: SURFACE[c.moment].w * SURFACE[c.moment].k * U, h: SURFACE[c.moment].h * SURFACE[c.moment].k * U });
-const centreOf = (i: number) => ({ x: STRIP.x0 + i * STRIP.gap, y: STRIP.y + (i % 2 ? STRIP.alt : -STRIP.alt) });
-
-// ---------------------------------------------------------------------------------------------- camera
-/** Change i framed in the middle of the frame: its surface does the new thing, then steps back behind its words, which read centred (wordsBack). */
-const shotOf = (i: number): Shot => ({ ax: centreOf(i).x, ay: centreOf(i).y, sx: W / 2, sy: H / 2, k: 1 });
-/**
- * How far the strip steps back behind change i's words (0..1): from just before its sentence rises in until just after
- * it leaves, so the surface plays its new thing sharp on the hit, then softens and clears while the centred words are
- * read: each change line gets its own clean beat on the ground, never over busy UI. The strip comes back on the move
- * to the next change (or on the 'pull' payoff's carried pull), once the words have left: their exit ends 2/60 s before
- * that act line, so the strip starts back 8/60 s before it, still faint and soft under the last of the exit, and is
- * whole 14/60 s after it (coming back from the words' own exit, it showed sharp under the half-gone line for a third of
- * a second); after the last change on a 'rise' payoff it stays clear, so the version rises and the end card sets on
- * the clean ground (no fade back: nothing on screen would carry it).
- */
-const wordsBack = (F: number) => {
-  let b = 0;
-  UPDATE.changes.forEach((_, i) => {
-    const c = copy(`change${i + 1}`);
-    const stays = i === N - 1 && DEAL.payoff === 'rise';
-    const next = beat(BEATS.change(i + 1)); // the act line of the move to the next surface (changeOut + the exit + 2/60 s)
-    b = Math.max(b, prog(F, c.in - f60(4), c.in + f60(16), E.stdInOut) * (stays ? 1 : 1 - prog(F, next - f60(8), next + f60(14), E.stdInOut)));
-  });
-  return b;
-};
-const HOOK: Shot = { ax: 0, ay: H / 2, sx: 0, sy: H / 2, k: 1 };
-const WIDE: Shot = (() => {
-  const a = centreOf(0).x - 1000 * U;
-  const z = centreOf(N - 1).x + 1000 * U;
-  return { ax: (a + z) / 2, ay: STRIP.y, sx: W * 0.62, sy: H * 0.46, k: W / ((z - a) * 0.92) };
+const CARD_INKS = cardInks(CARD_TONE, INK.ground, C.accent);
+export const THEME: KitTheme = (() => {
+  const base = kitTheme(CARD_TONE === 'dark' ? 'inkStage' : 'tintedPaper', C.accent);
+  const f = CARD_INKS.face;
+  return { ...base, ground: INK.ground, surface: f, raised: mixColor(f, '#FFFFFF', CARD_TONE === 'dark' ? 0.05 : 0.6), well: CARD_TONE === 'dark' ? mixColor(f, INK.ground, 0.55) : base.well, text: CARD_INKS.text, mute: CARD_INKS.mute, line: CARD_INKS.line };
 })();
-/** A move centred on an act line, so the camera is at its fastest as the act changes (a velocity seam). */
-const MOVE = f60(40);
-const across = (F: number, at: number, dur = MOVE) => prog(F, at - dur / 2, at + dur / 2, E.strongInOut);
-/** Creep inside a hold: 4 % over the hold, plus a 24 px/s drift (a living hold). */
-const creep = (s: Shot, F: number, from: number, to: number): Shot => {
-  const t = clamp((F - from) / Math.max(1, to - from));
-  return { ...s, ax: s.ax + ((F - from) * 24 * U) / 60, k: s.k * mix(1, 1.04, t) };
-};
-/** A change's second picture beat (CUE.push<i>): a 6 % push in on its surface over 36 f while its words are read. */
-const PUSH = { k: 1.06, frames: 36 } as const;
-const pushIn = (s: Shot, F: number, at: number): Shot => ({ ...s, k: s.k * lmix(1, PUSH.k, prog(F, at, at + f60(PUSH.frames), E.stdInOut)) });
+const T = THEME;
+const MATERIAL = cardMaterial(CARD_TONE, INK.ground, C.accent);
+/** The film's one colour event: the field the 'after' change's line stands on (the brand's accent, the type that reads on it). */
+export const FIELD = C.accent;
+const ON_FIELD = toOklch(FIELD)[0] < 0.66 ? '#FFFFFF' : C.ink;
 
-/**
- * A carried move's progress (0..1) through the act line `at`: it accelerates for `lead` frames (60 fps) into the line,
- * is at its fastest on it, then opens at `ratio` of that speed and decays by `r` a frame (60 fps) (lib/handoff.ts
- * carriedCut's shape): the speed carries across the seam and dies away, never stopping dead. The pull back reads
- * faster on screen than the push it leaves (the zoom out widens every step), so it opens at 0.55 of the progress speed:
- * measured on screen it opens at 0.5-1.3x (60 and 30 fps; 0.4-1.4x passes).
- */
-const carriedProg = (F: number, at: number, lead = 36, r60 = 0.9, ratio = 0.55): number => {
-  const L = f60x(lead);
-  const r = r60 ** (60 / FPS);
-  const A = 1 / (1 + (3 * ratio * r) / (L * (1 - r))); // the share run before the line; the decay's sum is the rest
-  const v = (3 * A) / L; // the speed on the line (progress a frame)
-  if (F <= at - L) return 0;
-  if (F <= at) return A * ((F - at + L) / L) ** 3;
-  return Math.min(1, A + (ratio * v * r * (1 - r ** (F - at))) / (1 - r));
+// ---------------------------------------------------------------------------------------------- the lines' layout
+/** A change line's size: the line role's (TYPE.line), smaller only when the line (with its gap) would pass 62 % of the frame width. */
+const lineSize = (text: string, extra = 0) => {
+  const base = TYPE.line.size * U;
+  const w = measureTracked(text.replace('[]', 'MM'), base, TYPE.line.weight, TYPE.line.track, FONT.text) + extra;
+  return Math.min(base, (base * 0.62 * W) / Math.max(1, w));
 };
-
-/**
- * The film's one 3D camera move (degrees), by the dealt turn: 'yaw' swings the strip 18 degrees round as the camera
- * travels into the second change and eases most of the way back over that change; 'pitch' tips the camera 20 degrees
- * down over the strip as it pulls back (a 'rise' payoff takes the pitch on its recede).
- */
-export const turnAt = (F: number): { yaw: number; pitch: number } => {
-  if (DEAL.turn === 'yaw') {
-    const at = beat(BEATS.change(Math.min(1, N - 1)));
-    return { yaw: mix(0, -18, prog(F, at - MOVE, at + MOVE / 2, E.strongInOut)) + mix(0, 12, prog(F, at + MOVE / 2, at + f60(150), E.glideOut)), pitch: 0 };
+/** The split shape's gap: the card in it stands this share of the line's size tall, with this margin to the words each side. */
+const GAP = { h: 0.98, margin: 0.18 } as const;
+const SIZES = UPDATE.changes.map(cardSize);
+/** Where a split line parts: the word boundary nearest its middle by width, never inside the change's key words. */
+const splitAt = (c: Change, size: number): [string, string] => {
+  const words = spokenChange(c).split(/\s+/);
+  const key = (c.key ?? '').toLowerCase().split(/\s+/).filter(Boolean);
+  const k0 = key.length ? words.findIndex((_, j) => key.every((kw, m) => words[j + m]?.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '') === kw.replace(/[^\p{L}\p{N}]/gu, ''))) : -1;
+  const width = (s: string) => measureTracked(s, size, TYPE.line.weight, TYPE.line.track, FONT.text);
+  let best = 1;
+  let score = Infinity;
+  for (let j = 1; j < words.length; j++) {
+    if (k0 >= 0 && j > k0 && j < k0 + key.length) continue;
+    const d = Math.abs(width(words.slice(0, j).join(' ')) - width(words.slice(j).join(' ')));
+    if (d < score) [best, score] = [j, d];
   }
-  // on a 'pull' payoff the tip rides the pull's carried move (one move across the act line); on a 'rise' it eases on its own
-  return { yaw: 0, pitch: 20 * (DEAL.payoff === 'pull' ? carriedProg(F, CUE.gather) : prog(F, CUE.gather - f60(12), CUE.gather + f60(66), E.strongInOut)) };
+  return [words.slice(0, best).join(' '), words.slice(best).join(' ')];
 };
-
-/** The camera at absolute frame F: the hook's creep, a move across every act line, the payoff, a slow push to the end. */
-export const shotAt = (F: number): Shot => {
-  let s = creep(HOOK, F, 0, beat(BEATS.change(0)));
-  for (let i = 0; i < N; i++) {
-    const at = beat(BEATS.change(i));
-    const next = beat(BEATS.change(i + 1));
-    s = lc(s, pushIn(creep(shotOf(i), F, at, next), F, CUE[`push${i}`]), across(F, at));
-  }
-  // 'pull': back over every change; 'rise': the camera keeps the last change's frame and recedes (a slow pull of 12 %) on the clean ground
-  if (DEAL.payoff === 'pull') s = lc(s, WIDE, carriedProg(F, CUE.gather)); // a carried move: fastest on the act line, then decaying
-  else s = { ...s, k: s.k * lmix(1, 0.88, prog(F, CUE.gather - f60(10), CUE.land + f60(30), E.strongInOut)) };
-  const t3 = turnAt(F);
-  return { ...s, k: s.k * lmix(1, 1.05, prog(F, CUE.gather + f60(36), TOTAL, E.linear)), yaw: t3.yaw, pitch: t3.pitch };
+/** A value measured from the real face: built on first use, inside a render (FontGate has loaded the fonts by then; Node never builds it). */
+const lazy = <V,>(make: () => V): (() => V) => {
+  let v: V | undefined;
+  return () => (v === undefined ? (v = make()) : v);
 };
-
-// ---------------------------------------------------------------------------------------------- pieces
 /**
- * The version as giant numerals; changed characters roll on a masked drum (old above, new below). `rise` (0..1) lifts
- * the whole version out of a mask on its baseline (the 'mask' hook and the 'rise' payoff: near-linear, stopping dead).
+ * The screen a split line holds in its gap: the change before it as it ended (the carried card shrinks into the line and
+ * grows out of it as the new screen), or, opening the film, the change's own first state.
  */
-const Numerals: React.FC<{ F: number; size: number; color: string; shade: string; rollAt: number; rise?: number }> = ({ F, size, color, shade, rollAt, rise = 1 }) => {
-  const p = prog(F, rollAt, rollAt + f60(ROLL), E.snapOut);
-  const box = size * NUM.lead;
-  // lint-ok: digits and points have no descenders, and the drum's box is the numeral's own height (clipText's padding would break the roll)
-  const fill: React.CSSProperties = { backgroundImage: `linear-gradient(180deg, ${color} 0%, ${color} 46%, ${shade} 100%)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' };
-  if (rise <= 0) return null;
+const gapFace = (i: number) => (i > 0 ? i - 1 : i);
+/** Each split change's line, laid out once: its text with the gap, its size, the gap's centre and the card's scale in it. */
+const SPLIT = lazy(() => UPDATE.changes.map((c, i) => {
+  if (SHAPES[i] !== 'split') return null;
+  const face = SIZES[gapFace(i)];
+  const aspect = face.w / face.h;
+  const gapW = (s: number) => GAP.h * s * aspect + 2 * GAP.margin * s;
+  const size0 = lineSize(spokenChange(c), gapW(TYPE.line.size * U));
+  const [a, b] = splitAt(c, size0);
+  const id = `change${i + 1}`;
+  const g = gapLine({ id, text: `${a} [] ${b}`, at: 0, move: LINES.move[id], role: 'line', size: size0, x: W / 2, y: H / 2, color: INK.type, gapW: gapW(size0) });
+  return { ...g, k: (GAP.h * g.size) / face.h, cy: H / 2 - 0.06 * g.size };
+}));
+
+// ---------------------------------------------------------------------------------------------- the card
+/** The 'with' shape: the card in the upper 60 % of the frame, its line centred under it. */
+const WITH = { top: 56 * U, bottom: 0.6 * H, line: 0.705 * H } as const;
+const withK = (i: number) => Math.min(0.8, (WITH.bottom - WITH.top) / SIZES[i].h, (0.8 * W) / SIZES[i].w);
+
+/**
+ * The card's state: where it is, its box, scale, opacity, how far it has opened (1 whole; under 1 a hairline growing
+ * across, then opening down: the 'open' arrival and the first split card), and which change's screen it shows (a -> b
+ * by mix; recap: the recap face).
+ */
+type CS = { cx: number; cy: number; w: number; h: number; k: number; o: number; open: number; a: number; b: number; mix: number; recap: number };
+const placed = (i: number): CS => {
+  const w = SHAPES[i] === 'with';
+  return { cx: W / 2, cy: w ? (WITH.top + WITH.bottom) / 2 : H / 2 + 6 * U, w: SIZES[i].w, h: SIZES[i].h, k: w ? withK(i) : 1, o: 1, open: 1, a: i, b: i, mix: 1, recap: 0 };
+};
+/** The 'rise' arrival's start: low and clear, facing the lens (never tilted); it is whole within the move's first fifth. */
+const below = (i: number): CS => ({ ...placed(i), cy: placed(i).cy + 0.2 * H, o: 0 });
+/** The split shape's card, small in its line's gap, showing the gap's screen (gapFace). */
+const inGap = (i: number): CS => {
+  const g = SPLIT()[i]!;
+  const f = gapFace(i);
+  return { ...placed(i), w: SIZES[f].w, h: SIZES[f].h, a: f, b: f, cx: g.x, cy: g.cy, k: g.k };
+};
+
+/** The recap row: each change's card at its slot (one row; 2 x 2 for four changes). */
+const RECAP = (() => {
+  const cols = N === 4 ? 2 : N;
+  const gap = 44 * U;
+  const cw = Math.min(540 * U, (W - 2 * 120 * U - (cols - 1) * gap) / cols);
+  const ch = N === 4 ? 300 * U : Math.round(cw * 0.64);
+  const slot = (j: number) => {
+    const c = j % cols;
+    const r = Math.floor(j / cols);
+    const rows = Math.ceil(N / cols);
+    return { x: W / 2 + (c - (cols - 1) / 2) * (cw + gap), y: H / 2 + (r - (rows - 1) / 2) * (ch + gap) };
+  };
+  return { cw, ch, slot };
+})();
+const recapState = (j: number): CS => ({ cx: RECAP.slot(j).x, cy: RECAP.slot(j).y, w: RECAP.cw, h: RECAP.ch, k: 1, o: 1, open: 1, a: j, b: j, mix: 1, recap: 1 });
+
+/** One move of the card; `fade`: its opacity reaches the end state this many times faster than the move (an entrance is whole early). */
+type Key = { f0: number; f1: number; A: CS; B: CS; ease: (t: number) => number; fade?: number };
+const lerpCS = (A: CS, B: CS, p: number, mixP: number): CS => ({
+  cx: mix(A.cx, B.cx, p), cy: mix(A.cy, B.cy, p), w: mix(A.w, B.w, p), h: mix(A.h, B.h, p), k: lmix(A.k, B.k, p), o: mix(A.o, B.o, p), open: mix(A.open, B.open, p),
+  a: A.a === B.a ? A.a : A.b, b: B.b, mix: A.b === B.b ? 1 : mixP, recap: mix(A.recap, B.recap, mixP),
+});
+/** The card's whole path through the film: one keyframe per arrival, gap, expansion and reshape (built once). */
+const KEYS = lazy((): Key[] => {
+  const keys: Key[] = [];
+  let state: CS = below(0);
+  TIMES.forEach((t, i) => {
+    const prevField = i > 0 ? TIMES[i - 1].field : undefined;
+    if (t.gap) {
+      const g = inGap(i);
+      if (i === 0) keys.push({ f0: t.gap[0], f1: t.gap[1], A: { ...g, open: 0 }, B: g, ease: E.linear });
+      else keys.push({ f0: t.gap[0], f1: t.gap[1], A: state, B: g, ease: E.strongInOut });
+      keys.push({ f0: t.card[0], f1: t.card[1], A: g, B: placed(i), ease: E.strongInOut });
+    } else if (prevField) {
+      // under the closing field the card is already the next screen: the field closes onto it
+      keys.push({ f0: prevField.close[0], f1: prevField.close[0] + 1, A: placed(i), B: placed(i), ease: E.linear });
+    } else if (i === 0 && ARRIVE_S) {
+      keys.push({ f0: t.card[0], f1: t.card[1], A: placed(0), B: placed(0), ease: E.linear }); // the library device brings it in (Arrival)
+    } else if (i === 0) {
+      keys.push(DEAL.arrive === 'open' ? { f0: t.card[0], f1: t.card[1], A: { ...placed(0), open: 0 }, B: placed(0), ease: E.linear } : { f0: t.card[0], f1: t.card[1], A: below(0), B: placed(0), ease: E.glideOut, fade: 5 });
+    } else {
+      keys.push({ f0: t.card[0], f1: t.card[1], A: state, B: placed(i), ease: E.strongInOut });
+    }
+    state = placed(i);
+  });
+  const last = TIMES[N - 1];
+  if (last.field) keys.push({ f0: CLOSE.gather, f1: CLOSE.gather + 1, A: recapState(N - 1), B: recapState(N - 1), ease: E.linear });
+  else keys.push({ f0: CLOSE.gather, f1: CLOSE.gather + Math.round(BEAT), A: state, B: recapState(N - 1), ease: E.strongInOut });
+  return keys;
+});
+const cardAt = (F: number): CS => {
+  const keys = KEYS();
+  if (F < keys[0].f0) return { ...keys[0].A, o: 0 }; // nothing of the card shows before its first move
+  let s = keys[0].A;
+  for (const k of keys) {
+    if (F < k.f0) break;
+    if (F >= k.f1) {
+      s = { ...k.B, a: k.B.b, mix: 1 };
+      continue;
+    }
+    const p = k.ease(clamp((F - k.f0) / Math.max(1, k.f1 - k.f0)));
+    const m = prog(F, k.f0 + (k.f1 - k.f0) * 0.3, k.f0 + (k.f1 - k.f0) * 0.7, E.stdInOut); // the screens cross mid-move
+    s = lerpCS(k.A, k.B, p, m);
+    if (k.fade) s.o = mix(k.A.o, k.B.o, clamp(((F - k.f0) / Math.max(1, k.f1 - k.f0)) * k.fade));
+  }
+  return s;
+};
+
+/**
+ * The card: the film's one material (moments.tsx cardMaterial), facing the lens. While it opens (open < 1) its box grows
+ * from a hairline across its width, then opens down from the middle; the screen inside stays put, so it is revealed,
+ * never squashed.
+ */
+const Card: React.FC<{ s: CS; id: string; children: React.ReactNode }> = ({ s, id, children }) => {
+  if (s.o <= 0.003) return null;
+  const across = s.open >= 1 ? 1 : E.strongInOut(clamp(s.open / 0.45));
+  const down = s.open >= 1 ? 1 : E.strongInOut(clamp((s.open - 0.4) / 0.6));
+  const bw = s.w * mix(0.04, 1, across);
+  const bh = Math.max(3 * U / Math.max(0.05, s.k), s.h * down);
+  const r = Math.min(cardRadius(s.w), bh / 2);
   return (
-    <div style={{ height: box, overflow: rise < 1 ? 'hidden' : 'visible' }}>
-    <div data-text="version" style={{ display: 'flex', ...typeStyle('giant', size), lineHeight: NUM.lead, transform: rise < 1 ? `translate3d(0, ${((1 - rise) * box * 1.05).toFixed(2)}px, 0)` : undefined }}>
-      {[...UPDATE.version].map((ch, i) => {
-        const old = DEAL.hook === 'roll' ? (UPDATE.from[i] ?? ch) : ch;
-        if (old === ch) return <span key={i} style={fill}>{ch}</span>;
+    <div style={{ position: 'absolute', left: 0, top: 0, width: s.w, height: s.h, opacity: clamp(s.o), transform: `translate(${(s.cx - s.w / 2).toFixed(2)}px, ${(s.cy - s.h / 2).toFixed(2)}px) scale(${s.k.toFixed(5)})`, transformOrigin: '50% 50%' }}>
+      <div data-ui data-mover={id} style={{ position: 'absolute', left: 0, top: 0, width: bw, height: bh, transform: `translate(${((s.w - bw) / 2).toFixed(2)}px, ${((s.h - bh) / 2).toFixed(2)}px)`, borderRadius: r, ...MATERIAL, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: s.w, height: s.h, transform: `translate(${(-(s.w - bw) / 2).toFixed(2)}px, ${(-(s.h - bh) / 2).toFixed(2)}px)`, opacity: clamp((down - 0.15) / 0.5) }}>{children}</div>
+      </div>
+    </div>
+  );
+};
+
+/** The screens inside the carried card: the one it leaves and the one it becomes, crossing mid-move; the recap face at the end. */
+const CardFaces: React.FC<{ s: CS; F: number }> = ({ s, F }) => {
+  const faces: { i: number; o: number }[] = s.a === s.b ? [{ i: s.b, o: 1 }] : [{ i: s.a, o: 1 - s.mix }, { i: s.b, o: s.mix }];
+  return (
+    <>
+      {faces.filter((x) => x.o > 0.01 && s.recap < 0.99).map((x) => (
+        <div key={x.i} style={{ position: 'absolute', left: 0, top: 0, width: SIZES[x.i].w, height: SIZES[x.i].h, opacity: x.o * (1 - s.recap), transform: `translate(${((s.w - SIZES[x.i].w) / 2).toFixed(2)}px, ${((s.h - SIZES[x.i].h) / 2).toFixed(2)}px)` }}>
+          <Moment c={UPDATE.changes[x.i]} T={TIMES[x.i]} F={F} theme={T} w={SIZES[x.i].w} h={SIZES[x.i].h} />
+        </div>
+      ))}
+      {s.recap > 0.01 && (
+        <div style={{ position: 'absolute', inset: 0, opacity: s.recap }}>
+          <RecapCard c={UPDATE.changes[s.b]} theme={T} w={s.w} h={s.h} />
+        </div>
+      )}
+    </>
+  );
+};
+
+// ---------------------------------------------------------------------------------------------- type
+/** The film's one whole-line exit at frame F (0 before `out`): the wrapper's style. */
+const exitStyle = (F: number, out: number, size: number, down = false, voice: string = LINES.exitVoice): React.CSSProperties => {
+  const raw = clamp((F - out) / Math.max(1, EXIT_F));
+  const q = E.buildIn(raw);
+  if (q <= 0) return {};
+  const lift = voice === 'lift';
+  const move = lift ? `translateY(${((down ? 1 : -1) * 0.3 * size * q).toFixed(2)}px)` : `scale(${(1 - 0.06 * q).toFixed(4)})`;
+  // gone before the travel ends: the line never stops dead in view or vanishes mid-flight
+  return { opacity: 1 - E.softOut(clamp(raw / 0.8)), transform: move, transformOrigin: '50% 50%', filter: `blur(${((lift ? 0.1 : 0.12) * size * q).toFixed(2)}px)` };
+};
+/** Another product's mark inside a line: its official mark set in the line's own ink (one colour, so it never fights the palette). */
+const objectOf = (c: Change): InlineRef => (c.logo && hasLogo(c.logo) ? { kind: 'logo', logo: c.logo, mono: true } : { kind: 'chip', label: c.logoName ?? '' });
+
+/** Change i's sentence, centred: in the middle (after: on the field; split: parted round the card) or under its card (with), leaving on the film's exit. */
+const ChangeLine: React.FC<{ i: number; F: number }> = ({ i, F }) => {
+  const t = TIMES[i];
+  const ch = UPDATE.changes[i];
+  const c = copy(`change${i + 1}`);
+  if (F < c.in || F >= c.out + EXIT_F) return null;
+  const onField = t.shape === 'after';
+  const split = SPLIT()[i];
+  const size = split ? split.size : lineSize(ch.words);
+  const y = t.shape === 'with' ? WITH.line : H / 2;
+  const color = onField ? ON_FIELD : INK.type;
+  const accent = onField ? ON_FIELD : INK.accent;
+  const p = { id: `change${i + 1}`, at: c.in, frame: F, move: LINES.move[`change${i + 1}`], role: 'line' as const, size, x: W / 2, y, color, accent, mute: mixColor(color, onField ? FIELD : INK.ground, 0.55) };
+  if (scaled(i)) {
+    // the library's scale-contrast on the field (src/deal.ts FIELD_TYPE): the key word huge, the rest small above and under
+    const words = spokenChange(ch).split(/\s+/).map((word, j) => ({ word, key: j === heroWord(i) }));
+    const pal: Pal = { ground: FIELD, type: ON_FIELD, mute: mixColor(ON_FIELD, FIELD, 0.22), accent: ON_FIELD, surface: FIELD, line: mixColor(ON_FIELD, FIELD, 0.6), dark: ON_FIELD === '#FFFFFF' };
+    return (
+      <div style={{ position: 'absolute', inset: 0, ...exitStyle(F, c.out, size) }}>
+        <CreativeLine cid="scale-contrast" cut={c.out} f={F - c.in} dur={c.out + EXIT_F - c.in} words={words} id={`change${i + 1}`} size={size} weight={TYPE.line.weight} track={TYPE.line.track} font={FONT.text} pal={pal} resolved={c.resolved - c.in} out={c.out - c.in} seed={DEAL_SEED % 997} />
+      </div>
+    );
+  }
+  return (
+    <div style={{ position: 'absolute', inset: 0, ...exitStyle(F, c.out, size, t.shape === 'with') }}>
+      {split ? <HeroLine {...p} text={split.text} /> : ch.words.includes('[]') ? <MarkLine {...p} text={ch.words} objects={[objectOf(ch)]} ground={onField || INK.dark ? 'dark' : 'light'} theme={T} /> : <HeroLine {...p} text={spokenChange(ch)} />}
+    </div>
+  );
+};
+
+/** A rectangle on the frame (px) with its corner radius. */
+type Rect = { x: number; y: number; w: number; h: number; r: number };
+const lerpRect = (a: Rect, b: Rect, p: number): Rect => ({ x: mix(a.x, b.x, p), y: mix(a.y, b.y, p), w: mix(a.w, b.w, p), h: mix(a.h, b.h, p), r: mix(a.r, b.r, p) });
+/** A card state's face on the frame. */
+const rectOf = (s: CS): Rect => ({ x: s.cx - (s.w * s.k) / 2, y: s.cy - (s.h * s.k) / 2, w: s.w * s.k, h: s.h * s.k, r: cardRadius(s.w) * s.k });
+/** The element that changed on change i's card (moments.tsx changedRect), on the frame while the card is placed. */
+const changedOnFrame = (i: number): Rect => {
+  const s = placed(i);
+  const e = changedRect(UPDATE.changes[i], s.w, s.h);
+  return { x: s.cx + (e.x - s.w / 2) * s.k, y: s.cy + (e.y - s.h / 2) * s.k, w: e.w * s.k, h: e.h * s.k, r: e.r * s.k };
+};
+const FULL: Rect = { x: -24 * U, y: -24 * U, w: W + 48 * U, h: H + 48 * U, r: 0 };
+
+/**
+ * The colour field of the 'after' change: the changed element (the pressed button, the block, the row, the bar) turns to
+ * the accent and grows into the whole frame; the line reads on it; then it closes into the next card (or the recap's
+ * slot), turning to the card's face as it lands there and giving way to it.
+ */
+const Field: React.FC<{ F: number }> = ({ F }) => {
+  const t = TIMES.find((x) => x.field && F >= x.field.in && F < x.field.close[1]);
+  if (!t || !t.field) return null;
+  const [c0, c1] = t.field.close;
+  const grow = prog(F, t.field.in, t.field.in + t.field.grow, E.strongInOut);
+  const shut = prog(F, c0, c1, E.strongInOut);
+  const tint = prog(F, t.field.in - f60(4), t.field.in + f60(4), E.stdInOut); // the element takes the accent as it starts to grow
+  const target = rectOf(t.i < N - 1 ? placed(t.i + 1) : recapState(N - 1));
+  const r = shut > 0 ? lerpRect(FULL, target, shut) : lerpRect(changedOnFrame(t.i), FULL, grow);
+  const colour = shut > 0 ? mixColor(FIELD, CARD_INKS.faceTop, E.stdInOut(clamp((shut - 0.45) / 0.45))) : FIELD;
+  const o = shut > 0 ? 1 - clamp((shut - 0.7) / 0.3) : clamp(tint);
+  return <div data-ground="field" style={{ position: 'absolute', left: 0, top: 0, width: r.w, height: r.h, transform: `translate(${r.x.toFixed(2)}px, ${r.y.toFixed(2)}px)`, borderRadius: r.r, background: colour, opacity: o }} />;
+};
+
+// ---------------------------------------------------------------------------------------------- the name and the version
+const NAME = { size: TYPE.display.size * U, gap: 0.42 } as const;
+const tab: React.CSSProperties = { fontVariantNumeric: 'tabular-nums' };
+/** A string that rolls from `from` to `to` on a drum: each changed character in its own column, whole glyphs (never squashed). */
+const Drum: React.FC<{ from: string; to: string; p: number; size: number; color: string; id: string }> = ({ from, to, p, size, color, id }) => {
+  const box = size * 1.18;
+  const style: React.CSSProperties = { ...typeStyle('display', size), ...tab, color, lineHeight: `${box}px`, height: box, display: 'block', whiteSpace: 'pre' };
+  const col = (a: string, b: string, k: number) =>
+    a === b ? (
+      <span key={k} style={style}>{b}</span>
+    ) : (
+      <span key={k} style={{ display: 'inline-block', height: box, overflow: 'hidden', verticalAlign: 'top' }}>
+        <span style={{ display: 'flex', flexDirection: 'column', transform: `translateY(${(-p * box).toFixed(2)}px)` }}>
+          <span style={style}>{a}</span>
+          <span style={style}>{b}</span>
+        </span>
+      </span>
+    );
+  const same = from.length === to.length;
+  return (
+    <span data-text={id} style={{ display: 'flex', height: box }}>
+      {same ? [...to].map((ch, k) => col(from[k], ch, k)) : col(from, to, 0)}
+    </span>
+  );
+};
+/** A word rising out of a mask on its baseline (p 0..1). */
+const MaskUp: React.FC<{ p: number; size: number; children: React.ReactNode }> = ({ p, size, children }) => (
+  <div style={{ height: size * 1.18, overflow: 'hidden' }}>
+    <div style={{ transform: `translateY(${((1 - p) * size * 1.25).toFixed(2)}px)` }}>{children}</div>
+  </div>
+);
+/** The 'badge' hook's pill: the version set smaller in the accent pill, its metrics at a name size. */
+const badgeOf = (size: number) => {
+  const vs = 0.5 * size;
+  const h = vs * 1.62;
+  const w = measureTracked(UPDATE.version, vs, 640, -0.01, FONT.text, { tabular: true }) + 1.1 * vs;
+  return { vs, h, w };
+};
+/** The version in its pill: a dot that lands and widens into the pill on one move, the numerals rising in it. */
+const Badge: React.FC<{ p: number; size: number; id: string }> = ({ p, size, id }) => {
+  const b = badgeOf(size);
+  // one move: the dot lands already widening into the pill (no separate pop), the numerals rising in it as it opens
+  const dot = E.glideOut(clamp(p / 0.3));
+  const wide = E.strongInOut(clamp((p - 0.08) / 0.62));
+  const txt = E.snapOut(clamp((p - 0.45) / 0.5));
+  const d = 0.42 * b.h;
+  const w = mix(d, b.w, wide);
+  const h = mix(d, b.h, wide);
+  const onPill = toOklch(INK.accent)[0] < 0.66 ? '#FFFFFF' : C.ink;
+  return (
+    <div style={{ position: 'relative', width: b.w, height: size * 1.18 }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: h / 2, background: INK.accent, transform: `translateY(${((size * 1.18 - h) / 2 + 0.04 * size).toFixed(2)}px) scale(${dot.toFixed(4)})`, transformOrigin: `${(d / 2).toFixed(2)}px 50%`, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: b.w, height: b.h, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: txt, transform: `translateY(${((1 - txt) * 0.5 * b.h).toFixed(2)}px)` }}>
+          <span data-text={id} style={{ fontFamily: FONT.text, fontSize: b.vs, fontWeight: 640, letterSpacing: '-0.01em', lineHeight: 1, color: onPill, whiteSpace: 'pre', ...tab }}>{UPDATE.version}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Hook: React.FC<{ F: number }> = ({ F }) => {
+  if (F >= HOOK.out + EXIT_F) return null;
+  const size = NAME.size;
+  const nameW = measureTracked(UPDATE.name, size, TYPE.display.weight, TYPE.display.track, FONT.text);
+  const verW = (s: string) => measureTracked(s, size, TYPE.display.weight, TYPE.display.track, FONT.text, { tabular: true });
+  const roll = DEAL.hook === 'roll';
+  const badge = DEAL.hook === 'badge';
+  const gap = (badge ? 0.3 : NAME.gap) * size;
+  const rollP = prog(F, HOOK.roll, HOOK.roll + f60(ROLL), E.snapOut);
+  const vIn = roll ? prog(F, 0, f60(22), E.snapOut) : badge ? prog(F, HOOK.version - f60(4), HOOK.version + f60(34), E.linear) : prog(F, HOOK.version, HOOK.version + f60(24), E.snapOut);
+  const vw = roll ? mix(verW(UPDATE.from), verW(UPDATE.version), rollP) : badge ? badgeOf(size).w : verW(UPDATE.version);
+  const groupW = nameW + gap + vw; // the pair is laid out centred from the first frame: the name never slides while it is read
+  const left = (W - groupW) / 2;
+  const nameIn = prog(F, 0, f60(22), E.snapOut);
+  const y = H / 2 - (size * 1.18) / 2;
+  const accentFlash = roll ? hitPulse(F - (HOOK.roll + f60(ROLL)), 2, 14) : 0;
+  return (
+    <div style={{ position: 'absolute', inset: 0, ...exitStyle(F, HOOK.out, size, false, 'recede') }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${left.toFixed(2)}px, ${y.toFixed(2)}px)` }}>
+        <MaskUp p={nameIn} size={size}>
+          <span data-text="hook-name" style={{ ...typeStyle('display', size), color: INK.type, lineHeight: `${size * 1.18}px`, whiteSpace: 'pre', display: 'block' }}>{UPDATE.name}</span>
+        </MaskUp>
+      </div>
+      {vIn > 0 && (
+        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(left + nameW + gap).toFixed(2)}px, ${y.toFixed(2)}px)` }}>
+          {badge ? (
+            <Badge p={vIn} size={size} id="hook-version" />
+          ) : (
+            <MaskUp p={vIn} size={size}>
+              <Drum from={roll ? UPDATE.from : UPDATE.version} to={UPDATE.version} p={roll ? rollP : 1} size={size} color={mixColor(INK.accent, INK.type, 0.15 - 0.15 * accentFlash)} id="hook-version" />
+            </MaskUp>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------------------------- recap and lockup
+/** The recap's other cards land phrased (lib/cadence), settling into the last. */
+const RECAP_ON = phrase(N, f60(5), { shape: 'settle', seed: 'recap' }).onsets;
+const MARK = 140 * U;
+/** The fold and the shrink into the mark are one gesture: the cards pile as they start to shrink, landing as the mark. */
+const SHRINK: [number, number] = [CLOSE.fold + Math.round(0.15 * BEAT), CLOSE.markIn + Math.round(0.25 * BEAT)];
+/** Where the fold leaves recap card j (stack: piled at the centre; fold: tucked behind the last card at the centre). */
+const foldState = (j: number, F: number): CS => {
+  const base = recapState(j);
+  const last = j === N - 1;
+  const stagger = DEAL.end === 'stack' ? j * f60(4) : (N - 1 - j) * f60(3);
+  const p = prog(F, CLOSE.fold + stagger, CLOSE.fold + stagger + Math.round(0.6 * BEAT), E.strongInOut);
+  const off = j - (N - 1) / 2;
+  const pile: CS = DEAL.end === 'stack'
+    ? { ...base, cx: W / 2 + off * 10 * U, cy: H / 2 + off * 8 * U, k: 0.9 }
+    : { ...base, cx: W / 2, cy: H / 2, k: last ? 1.06 : 0.9, o: last ? 1 : 0.0 };
+  const s = lerpCS(base, pile, p, 1);
+  // the pile shrinks into the mark: the top card becomes it, the others fade under it
+  const q = prog(F, SHRINK[0], SHRINK[1], E.strongInOut);
+  if (q <= 0) return s;
+  return { ...s, cx: mix(s.cx, W / 2, q), cy: mix(s.cy, H / 2, q), w: lmix(s.w, MARK, q), h: lmix(s.h, MARK, q), k: mix(s.k, 1, q), o: last ? s.o : s.o * (1 - q) };
+};
+
+/** The other changes' cards joining the carried one in the row: sliding out from behind it (deal) or rising into place (rise). */
+const recapEntry = (j: number, F: number): CS => {
+  const at = CLOSE.gather + Math.round((DEAL.recap === 'deal' ? 0.25 : 0.3) * BEAT) + RECAP_ON[j]; // inside the carried card's own move: one gesture
+  const p = prog(F, at, at + Math.round(0.9 * BEAT), DEAL.recap === 'deal' ? E.strongInOut : E.glideOut);
+  const to = recapState(j);
+  if (DEAL.recap === 'deal') {
+    const from = recapState(N - 1);
+    return { ...to, cx: mix(from.cx, to.cx, p), cy: mix(from.cy, to.cy, p), o: clamp(p * 4) };
+  }
+  return { ...to, cy: to.cy + (1 - p) * 90 * U, o: clamp(p * 4) }; // whole within its first quarter: never a see-through slab
+};
+
+const RecapRow: React.FC<{ F: number; top: boolean }> = ({ F, top }) => {
+  if (F < CLOSE.gather || F >= SHRINK[1] + f60(4)) return null;
+  return (
+    <>
+      {UPDATE.changes.map((c, j) => {
+        const carried = j === N - 1;
+        if (carried !== top) return null; // the carried card is drawn over the others: they slide out from behind it
+        if (carried && F < CLOSE.recapIn) return null; // the carried card is still on its way into this slot
+        const s = F < CLOSE.fold ? (carried ? recapState(j) : recapEntry(j, F)) : foldState(j, F);
+        const q = prog(F, SHRINK[0], SHRINK[1], E.strongInOut);
         return (
-          <span key={i} style={{ display: 'inline-block', height: box, overflow: 'hidden' }}>
-            <span style={{ display: 'flex', flexDirection: 'column', transform: `translateY(${(-p * box).toFixed(2)}px)` }}>
-              <span style={{ ...fill, height: box }}>{old}</span>
-              <span style={{ ...fill, height: box }}>{ch}</span>
-            </span>
-          </span>
+          <Card key={c.id} s={{ ...s, recap: 1 }} id={`recap-${j}`}>
+            <div style={{ position: 'absolute', inset: 0, opacity: 1 - clamp(q * 2) }}>
+              <RecapCard c={c} theme={T} w={recapState(j).w} h={recapState(j).h} glow={hitPulse(F - (CLOSE.recapGlint + RECAP_ON[j]), 3, 12)} />
+            </div>
+          </Card>
         );
       })}
-    </div>
-    </div>
+    </>
   );
 };
 
-/** The mask's rise (fx/TypePresets mask, one word): 20 f that stop dead. */
-const riseAt = (F: number, at: number) => prog(F, at, at + f60(20), E.snapOut);
-
-/** The table moment's world: the product's own rows (update.ts MOMENTS.table). */
-const TABLE_WORLD = filmWorld(MOMENTS.table);
-
-/** One change's product surface, lit and tilted in the film's light, doing the new thing on its hit frame. */
-const Surface: React.FC<{ c: Change; i: number; F: number }> = ({ c, i, F }) => {
-  const hit = CUE[`hit${i}`];
-  const { w, h } = boxOf(c);
-  const { x, y } = centreOf(i);
-  const k = SURFACE[c.moment].k * U;
-  const body =
-    c.moment === 'approve' ? (
-      <ProjectPanel frame={F} theme={T} scale={k} x={0} y={0} data={MOMENTS.review} doneAt={hit} photos={(c.photos ?? []).map((p) => staticFile(p))} />
-    ) : c.moment === 'chat' ? (
-      <ChatCard frame={F} theme={T} scale={k} x={0} y={0} data={MOMENTS.review.chat} people={MOMENTS.review.team} at={[hit - f60(70), hit - f60(34), hit]} />
-    ) : c.moment === 'count' ? (
-      <StatCard frame={F} theme={T} scale={k} x={0} y={0} label={MOMENTS.count.label} count={{ from: MOMENTS.count.from, perSec: MOMENTS.count.perSec, start: hit }} drawAt={hit - f60(12)} />
-    ) : c.moment === 'table' ? (
-      // the readable row glides down the table to the row the change touched, landing on the hit
-      <DenseScreen frame={F} theme={T} world={TABLE_WORLD} layout="table" w={w} h={h} focus={[{ at: hit - f60(80), row: 1 }, { at: hit - f60(40), row: 3 }, { at: hit, row: 5 }]} lift={0} />
-    ) : (
-      <BudgetCard frame={F} theme={T} scale={k} x={0} y={0} data={MOMENTS.budget} add={MOMENTS.budget.toast.amount} addAt={hit} />
-    );
+const Lockup: React.FC<{ F: number }> = ({ F }) => {
+  if (F < SHRINK[0]) return null;
+  const size = NAME.size * 0.9;
+  const badge = DEAL.hook === 'badge';
+  const nameW = measureTracked(UPDATE.name, size, TYPE.display.weight, TYPE.display.track, FONT.text);
+  const verW = badge ? badgeOf(size).w : measureTracked(UPDATE.version, size, TYPE.display.weight, TYPE.display.track, FONT.text, { tabular: true });
+  const gapMN = 0.34 * size;
+  const gapNV = (badge ? 0.3 : NAME.gap) * size;
+  const markP = prog(F, SHRINK[0] + Math.round(0.3 * (SHRINK[1] - SHRINK[0])), SHRINK[1], E.strongInOut);
+  const pB = prog(F, CLOSE.nameIn, CLOSE.named, E.strongInOut);
+  const pC = badge ? prog(F, CLOSE.versionIn, CLOSE.lockup, E.linear) : prog(F, CLOSE.versionIn, CLOSE.lockup, E.settleOut);
+  const pW = badge ? E.strongInOut(clamp(pC / 0.7)) : pC; // the pair re-centres as the version comes
+  const groupW = MARK + pB * (gapMN + nameW) + pW * (gapNV + verW);
+  const left = (W - groupW) / 2;
+  const box = size * 1.18;
+  const y = H / 2 - box / 2;
+  const nameX = left + MARK + gapMN;
   return (
-    <Lit frame={F} x={x} y={y} w={w} h={h} r={28 * U} tilt={{ x: 9, y: i % 2 ? 11 : -11 }} ground={T.ground} vanish={[x, y]} id={`surface-${i}`}>
-      {body}
-    </Lit>
+    <div style={{ position: 'absolute', inset: 0 }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${left.toFixed(2)}px, ${(H / 2 - MARK / 2).toFixed(2)}px)`, opacity: clamp(markP * 1.6 - 0.4) }}>
+        <LogoMark logo={LOGO} size={MARK} fill={(part) => (INK.dark && part.items.some((it) => it.fill?.toLowerCase() === C.ink.toLowerCase()) ? INK.type : undefined)} poses={(_, j) => (j === LOGO.parts.length - 1 ? { s: 1 + 0.06 * hitPulse(F - CLOSE.lockup, 2, 9) } : undefined)} />
+      </div>
+      {pB > 0 && (
+        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${nameX.toFixed(2)}px, ${y.toFixed(2)}px)`, width: nameW + 20 * U, height: box, overflow: 'hidden' }}>
+          <span data-text="wordmark" style={{ ...typeStyle('display', size), color: INK.type, lineHeight: `${box}px`, whiteSpace: 'pre', display: 'block', transform: `translateX(${(-(1 - pB) * (nameW * 0.6 + gapMN)).toFixed(2)}px)` }}>{UPDATE.name}</span>
+        </div>
+      )}
+      {pC > 0 && (
+        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(nameX + nameW + gapNV).toFixed(2)}px, ${y.toFixed(2)}px)`, opacity: badge ? 1 : clamp(pC * 2) }}>
+          {badge ? (
+            <Badge p={pC} size={size} id="release" />
+          ) : (
+            <MaskUp p={pC} size={size}>
+              <span data-text="release" style={{ ...typeStyle('display', size), ...tab, color: INK.accent, lineHeight: `${box}px`, whiteSpace: 'pre', display: 'block' }}>{UPDATE.version}</span>
+            </MaskUp>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
-/** The object inside a change's sentence: the product's real mark, or a chip with its name until it is fetched. */
-const objectOf = (c: Change): InlineRef => (c.logo && hasLogo(c.logo) ? c.logo : { kind: 'chip', label: c.logoName ?? '' });
+// ---------------------------------------------------------------------------------------------- the first arrival
+/** The inks a creative library device draws in: the ground family's, with the cards' own face. */
+const PAL: Pal = { ground: INK.ground, type: INK.type, mute: INK.mute, accent: INK.accent, surface: T.surface, line: T.line, dark: INK.dark };
+/** The colour field covers the whole frame (grown, not yet closing): the card under it is not drawn. */
+const underField = (F: number) => TIMES.some((t) => t.field && F >= t.field.in + t.field.grow && F < t.field.close[0]);
+/** A library device is drawing the first card in (src/deal.ts arrive: pixel-assemble, shape-morph, object-turn). */
+const arriving = (F: number) => !!ARRIVE_S && SHAPES[0] !== 'split' && F >= TIMES[0].card[0] && F < TIMES[0].card[1];
+/**
+ * The first card brought in by the dealt creative device (fx/creative): the device draws the product's scene (the card
+ * at rest in its place, its screen at that frame) its own way and ends on exactly that scene, so the carried card takes
+ * over with no seam.
+ */
+const Arrival: React.FC<{ F: number }> = ({ F }) => {
+  const t = TIMES[0];
+  const at = placed(0);
+  const box = rectOf(at);
+  const scene = (f: number) => (
+    <div style={{ position: 'absolute', inset: 0 }}>
+      <Card s={at} id="card">
+        <CardFaces s={at} F={t.card[0] + f} />
+      </Card>
+    </div>
+  );
+  return <CreativePicture id={DEAL.arrive} f={F - t.card[0]} dur={t.card[1] - t.card[0]} start={0} pal={PAL} seed={DEAL_SEED % 997} scene={scene} focus={{ x: box.x, y: box.y, w: box.w, h: box.h }} radius={cardRadius(at.w) / U} uid="arrive" />;
+};
 
 // ---------------------------------------------------------------------------------------------- the world
 export const World: React.FC<{ from: number }> = ({ from }) => {
   const F = useCurrentFrame() + from;
-  const s = shotAt(F);
-  // the strip falls out of focus behind the version: on a 'pull' once the carried pull has crossed the act line (the
-  // version swings in on the decay), on a 'rise' as the last change recedes
-  const pull = DEAL.payoff === 'pull';
-  const stepBack = wordsBack(F); // the strip steps back behind each change's centred words
-  const soft = Math.max(stepBack * 0.75, pull ? prog(F, CUE.gather + f60(12), CUE.gather + f60(46), E.stdInOut) : prog(F, CUE.gather - f60(10), CUE.gather + f60(34), E.stdInOut));
-  // the version: in the hook it leaves left ahead of the camera; from the payoff it swings (or rises) back in front
-  const leave = prog(F, beat(BEATS.change(0)) - MOVE / 2, beat(BEATS.change(0)) + MOVE / 2, E.strongInOut);
-  // 'pull': the version swings in from the right with the pull, already moving on the act line (one carried move);
-  // 'rise': it rises out of its mask from CUE.swing
-  const swingFrom = pull ? CUE.gather + f60(12) : CUE.swing; // 'pull': in from the right on the pull's decay, landing on CUE.land; 'rise': out of its mask from CUE.swing
-  const early = F < swingFrom;
-  const back = prog(F, swingFrom, CUE.land, pull ? E.glideOut : E.snapOut);
-  const rest = prog(F, beat(BEATS.end) - f60(20), beat(BEATS.end) + f60(20), E.strongInOut); // the move to the end card, at its fastest on the act line
-  const hookDrift = (F * 0.45 * U * 60) / FPS; // the set drifts left under the hook's read (a living hold)
-  const beside = DEAL.end === 'beside';
-  const name = copy('wordmark');
-  const nameSize = TYPE.display.size * U;
-  const nameW = measureTracked(name.text, nameSize, TYPE.display.weight, TYPE.display.track);
-  // 'beside': the version settles at the name's size, after the name, as one lockup centred on the frame
-  const besideSize = nameSize * 1.02;
-  const markSize = 150 * U;
-  const lockW = markSize + 40 * U + nameW + 0.3 * nameSize + measureTracked(UPDATE.version, besideSize, NUM.weight, NUM.track);
-  const lockX = (W - lockW) / 2;
-  const rise = DEAL.payoff === 'rise';
-  const landW0 = measureTracked(UPDATE.version, NUM_LAND.size, NUM.weight, NUM.track);
-  const landFit = NUM_LAND.size * Math.min(1, (W * NUM_LAND.fill) / landW0);
-  const landX = (W - (landW0 * landFit) / NUM_LAND.size) / 2;
-  const landSize = rise ? landFit : lmix(NUM.size * 1.2, landFit, back);
-  // 'set': the version steps back, smaller and quieter, to the upper right, whole and readable, above the lockup
-  const setSize = NUM_LAND.size * SET_K;
-  const numSize = early ? NUM.size : lmix(landSize, beside ? besideSize : setSize, rest);
-  const restX = beside ? lockX + lockW - measureTracked(UPDATE.version, besideSize, NUM.weight, NUM.track) : (W - measureTracked(UPDATE.version, setSize, NUM.weight, NUM.track)) / 2;
-  const numX = early ? NUM.x - hookDrift - leave * 2700 * U : (rise ? landX : mix(W + 200 * U, landX, back)) + rest * (restX - landX);
-  // the 'mask' hook lifts the new version out of its mask; the 'rise' payoff lifts it in front of the receding change
-  const numRise = early ? (DEAL.hook === 'mask' ? riseAt(F, CUE.rise) : 1) : rise ? riseAt(F, CUE.swing) : 1;
-  const numTone = beside ? T.text : mixColor(T.text, mixColor(T.text, T.ground, 0.45), prog(F, beat(BEATS.end), beat(BEATS.end) + f60(30), E.softOut)); // 'set': the version steps back to a quiet solid tone behind the lockup
-  const numW = measureTracked(UPDATE.version, numSize, NUM.weight, NUM.track);
-  const showNum = F < beat(BEATS.change(0)) + MOVE || !early;
-  const numY = F >= beat(BEATS.end) - f60(20) ? mix((H - numSize * NUM.lead) / 2 - 40 * U, beside ? H / 2 - (numSize * NUM.lead) / 2 : 90 * U, rest) : (H - numSize * NUM.lead) / 2 - 40 * U + (early ? NAME_HOOK.drop : 0);
-  // the words of the change on screen now
-  const cur = UPDATE.changes.findIndex((_, i) => F >= copy(`change${i + 1}`).in - 1 && F < beat(BEATS.change(i + 1)) + 2);
-  const product = copy('product');
-  const lockRow = beside ? { x: lockX, y: H / 2 } : { x: (W - (markSize + 40 * U + nameW)) / 2, y: 0.66 * H }; // 'set': the lockup centred under the version
-  // from the landing on, the version and then the lockup creep in, each about its own centre: the holds never freeze
-  const lockK = creepK(F, CUE.land, { pctPerSec: 0.02 }, FPS);
-  const strip = (
-    <div style={camera(s)}>
-      {UPDATE.changes.map((c, i) => <Surface key={c.id} c={c} i={i} F={F} />)}
-    </div>
-  );
+  const s = cardAt(F);
   return (
-    <AbsoluteFill style={{ background: T.ground, overflow: 'hidden' }}>
-      <LitGround frame={F} spec={{ kind: 'key', base: T.ground, seed: 7, drift: 12 }} cam={{ shot: s, base: HOOK }} />
-      {/* the strip of product moments, sharp until the payoff, then softening into a far plane behind the version; it
-          clears under each change's words (their own clean beat on the ground) and comes back for the next surface */}
-      <div style={{ position: 'absolute', inset: 0, opacity: (1 - (beside ? 0.7 : 0.6) * rest) * (1 - stepBack) }}>
-        <RackFocus t={soft} blur={10 * U} render={() => strip} />
-      </div>
-      {showNum && (
-        <div style={{ position: 'absolute', inset: 0, transformOrigin: `${(numX + numW / 2).toFixed(1)}px ${(numY + (numSize * NUM.lead) / 2).toFixed(1)}px`, transform: `scale(${lockK.toFixed(5)})` }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, width: numW + 40, transform: `translate3d(${numX.toFixed(2)}px, ${numY.toFixed(2)}px, 0)` }}>
-            <Numerals F={F} size={numSize} color={numTone} shade={mixColor(numTone, T.ground, 0.38)} rollAt={CUE.roll} rise={numRise} />
-          </div>
-        </div>
+    <AbsoluteFill style={{ background: INK.ground, overflow: 'hidden' }}>
+      {/* the ground is lit once and holds still (fx/Grounds): nothing in the frame drifts without a reason */}
+      <FamilyGround family={FAMILY} frame={0} seed={DEAL_SEED % 97} />
+      <RecapRow F={F} top={false} />
+      {arriving(F) ? (
+        <Arrival F={F} />
+      ) : (
+        F < CLOSE.recapIn && !underField(F) && (
+          <Card s={s} id="card">
+            <CardFaces s={s} F={F} />
+          </Card>
+        )
       )}
-      {/* the name over the version: "[Name] [version]" from frame 0 (the set's subject, read while the version arrives), leaving left with the numerals */}
-      {showNum && early && (
-        <div style={{ position: 'absolute', left: 0, top: 0, width: W, display: 'flex', justifyContent: 'center', transform: `translate3d(${(-hookDrift - leave * 2700 * U).toFixed(2)}px, ${NAME_HOOK.y.toFixed(2)}px, 0)` }}>
-          <span data-text="product" style={{ ...typeStyle('line', TYPE.line.size * U), color: T.text, whiteSpace: 'nowrap' }}>
-            {product.text}
-          </span>
-        </div>
-      )}
-      {cur >= 0 && <ChangeWords i={cur} F={F} />}
-      {F >= Math.min(CUE.markIn, name.in) && ( // the mark rises first; a long name at a fast track may start just before it
-        <div style={{ position: 'absolute', inset: 0, transformOrigin: beside ? '50% 50%' : `${(lockRow.x + (markSize + 40 * U + nameW) / 2).toFixed(1)}px ${lockRow.y.toFixed(1)}px`, transform: `scale(${lockK.toFixed(5)})` }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${lockRow.x.toFixed(2)}px, ${(lockRow.y - markSize / 2).toFixed(2)}px, 0)` }}>
-            <LogoMark
-              logo={LOGO}
-              size={markSize}
-              fill={(part) => (T.dark && part.items.some((it) => it.fill?.toLowerCase() === C.ink.toLowerCase()) ? T.text : undefined)} // the mark's ink parts read on the slate
-              poses={(_, j) => {
-                const t = prog(F, CUE.markIn + PART_ON[j], CUE.markIn + f60(32) + PART_ON[j], E.glideOut); // the parts rise first (phrased: lib/cadence), the name lands after them
-                const glint = j === LOGO.parts.length - 1 ? 0.08 * hitPulse(F - CUE.glint, 2, 9) : 0; // the last part catches the light
-                return { y: (1 - t) * 40, o: Math.min(1, t * 2), s: 1 + glint };
-              }}
-            />
-          </div>
-          <HeroLine id="wordmark" text={name.text} at={name.in} frame={F} move={NAME_MOVE} role="display" size={nameSize} x={lockRow.x + markSize + 40 * U + nameW / 2} y={lockRow.y} color={T.text} accent={T.accent} mute={T.mute} />
-        </div>
-      )}
+      <RecapRow F={F} top />
+      <Field F={F} />
+      <Hook F={F} />
+      {UPDATE.changes.map((_, i) => <ChangeLine key={i} i={i} F={F} />)}
+      <Lockup F={F} />
     </AbsoluteFill>
   );
 };
 
-/** The sentence that says change i: display size when short, centred in the middle of the frame over its softened surface, leaving on the film's exit before the move. */
-const ChangeWords: React.FC<{ i: number; F: number }> = ({ i, F }) => {
-  const ch = UPDATE.changes[i];
-  const c = copy(`change${i + 1}`);
-  const role = c.text.length <= 12 ? 'display' : 'line';
-  const size = TYPE[role].size * U;
-  const x = W / 2;
-  const y = H / 2;
-  const p = { id: `change${i + 1}`, at: c.in, frame: F, move: moveOf(`change${i + 1}`), out: changeOut(i), exit: LINES.exit[`change${i + 1}`], role, size, x, y, color: T.text, accent: T.accent, mute: T.mute } as const;
-  return ch.words.includes('[]') ? <MarkLine {...p} text={ch.words} objects={[objectOf(ch)]} ground={T.dark ? 'dark' : 'light'} theme={T} /> : <HeroLine {...p} text={c.text} />;
-};
-
-/** The surface frames of each change (for src/sync.ts and the acts): its hit and its words. */
-export const CHANGE_FRAMES = UPDATE.changes.map((c, i) => ({ id: c.id, moment: c.moment, hit: CUE[`hit${i}`], resolved: copy(`change${i + 1}`).resolved, out: changeOut(i), words: spokenChange(c) }));
+/** Each change's frames, for src/sync.ts and the acts. */
+export const CHANGE_FRAMES = TIMES.map((t) => ({ id: UPDATE.changes[t.i].id, kind: UPDATE.changes[t.i].show.kind, ...t }));
 export { ACT };

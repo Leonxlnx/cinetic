@@ -4,8 +4,7 @@ import { Change } from './acts/Change';
 import { EndCard } from './acts/EndCard';
 import { Hook } from './acts/Hook';
 import { Payoff } from './acts/Payoff';
-import { FLOAT, THEME } from './acts/World';
-import { ActStage } from './fx/Float';
+import { THEME } from './acts/World';
 import { Audit } from './lib/Audit';
 import { FontGate } from './lib/FontGate';
 import type { SafeSpec } from './lib/safe';
@@ -27,7 +26,8 @@ export const actComponent = (name: string): React.FC => {
   return C;
 };
 
-// The film: one Sequence per act, handing off on exact frames (one camera carries across every act line).
+// The film: one Sequence per act, handing off on exact frames. No camera float: the stage holds still and only the
+// story moves it (a card arriving, reshaping, growing), so a hold is a hold.
 export const Film: React.FC<FilmProps> = ({ audit = false, safe }) => {
   const hasScore = getStaticFiles().some((s) => s.name === SOUNDTRACK);
   return (
@@ -37,9 +37,7 @@ export const Film: React.FC<FilmProps> = ({ audit = false, safe }) => {
           const Act = actComponent(name);
           return (
             <Sequence key={name} from={a.from} durationInFrames={a.dur} name={`${k + 1} ${name}`}>
-              <ActStage from={a.from} o={FLOAT}>
-                <Act />
-              </ActStage>
+              <Act />
             </Sequence>
           );
         })}

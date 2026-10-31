@@ -1,6 +1,6 @@
 {
  "name": "update",
- "about": "A 15-23 s update film (\"vX is out\"): a hook on the version, 2-4 changes each shown as a lit product moment on one camera strip with the film's one 3D turn, one payoff, the end card with the version. Every slot deals one of two devices per film (src/deal.ts) and every line one confident move. new-film.sh --format update lays these files over the Remotion starter.",
+ "about": "A 15-25 s update film (\"vX is out\"): the name and the version centred, 2-4 changes each on its own beat shape (the changed element growing into the colour field the line stands on, the card small in its line's gap, or the card above its line), the card carried from change to change, a recap of every change, the version mark built from it. The camera never floats and nothing bobs or tilts. The film fills src/update.ts only; every slot deals one of its devices per film (src/deal.ts), creative library devices (fx/creative) among them. new-film.sh --format update lays these files over the Remotion starter.",
  "engine": "remotion",
  "pace": "crisp",
  "type_family": "bold",
@@ -8,23 +8,24 @@
  "music": {
   "required": true,
   "slot": "audio/music/",
-  "about": "Every update film is cut to a licensed, human-made, instrumental track (references/music.md): the track carries the film and earshot effects mark its hits; never effects only.",
-  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 118-132 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); 118-132 BPM suits the template's two bars a change",
+  "about": "Every update film is cut to a licensed, human-made, instrumental track (references/music.md): the track carries the film, its biggest entry on the recap and its final hit on the version mark; earshot effects mark the UI (taps, highlights, state changes); never effects only.",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 112-128 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track)",
   "add": "bash scripts/new-film.sh <dir> --format update --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
   "then": [
-   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end auto  (its own ending, else a fade: never a cut)",
-   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py fit --end auto  (once update.ts is written: the edit is fitted to the film's bars, the track's entry on the recap's bar, its own ending, else one ringing hit, on the version mark)",
    "python3 scripts/audio/track.py check"
   ]
  },
  "copy": [
   "src/update.ts",
   "src/deal.ts",
+  "src/recent.ts",
   "src/timeline.ts",
   "src/Film.tsx",
   "src/Root.tsx",
   "src/sync.ts",
   "src/acts/World.tsx",
+  "src/acts/moments.tsx",
   "src/acts/type.tsx",
   "src/acts/Hook.tsx",
   "src/acts/Change.tsx",
@@ -46,40 +47,58 @@
   "src/acts/plate.tsx"
  ],
  "next": [
-  "update film: fill src/update.ts (the version, the one before it, 2-4 changes: one plain sentence each, 2-6 words, the result the user sees; \"[]\" where a product it works with sits, its logo slug and logoName),",
-  "  fetch the real mark of each product a change names: node scripts/logos.mjs get <name> --film .,",
-  "  see the devices this film was dealt: npx tsx -e \"import { DEAL, LINES } from './src/deal'; console.log(DEAL, LINES)\" (src/deal.ts: PIN a slot, or SEED to re-deal),",
-  "  an approve change's four real pictures (update.ts changes[].photos) when the review is of pictures: node scripts/assets.mjs search \"<subject>\" --kind photo --fit 1:1, get '#n' --to public/assets, grade,",
-  "  rebuild the product's own screens for each change where the kit stands in, then deal its direction: python3 scripts/deck.py --brief \"<one line>\" --format update --changes N"
+  "update film: write src/update.ts, the one file the film fills: the version and the one before it, 2-4 changes, each one plain sentence (2-6 words, a result the user sees), its screen's title and the moment that proves it:",
+  "  tap (an action and the state it changes to), fill (a list, grid or week that fills), swap (before -> after) or count (a figure that rises), in the product's own words; real photos: node scripts/assets.mjs get,",
+  "  the deal follows the name: the command in template.json deal.print (PIN a slot, or SEED to re-deal),",
+  "  the type pairing: npx tsx scripts/type-deal.ts --seed \"<name>\" (fx/TypePairs), unless the brand brings its own face,",
+  "  then the track: track.py fit --end auto cuts it to these bars (template.json music)"
  ],
  "deal": {
   "file": "src/deal.ts",
-  "seed": "the product's name (IDENTITY.name), or SEED in src/deal.ts; PIN chooses a slot by hand, MOVE_PIN and EXIT_PIN a line's move and exit",
-  "print": "npx tsx -e \"import { DEAL, LINES } from './src/deal'; console.log(DEAL, LINES)\""
+  "seed": "the product's name (IDENTITY.name), or SEED in src/deal.ts; PIN chooses a slot by hand",
+  "scaffold": true,
+  "print": "npx tsx -e \"import { DEAL, DEAL_SOURCE, LINES, CARD_TONE } from './src/deal'; console.log(DEAL_SOURCE, JSON.stringify(DEAL), 'cards', CARD_TONE, 'voice', LINES.voice, 'exit', LINES.exitVoice)\""
  },
  "slots": {
-  "stage": {
-   "slate": "the strip on the mid slate",
-   "paper": "the strip on the tinted paper"
+  "ground": {
+   "nearWhite": "a paper sweep lit from the top left",
+   "lightStudio": "a light grey studio sweep: a top key over a falling floor",
+   "softSky": "a pale sky, deeper at the top",
+   "gradientField": "a pale tinted mesh: two lobes of the field hue from opposite corners",
+   "blackField": "studio black under one soft key from above left",
+   "studio": "a mid slate cyclorama: a broad top key over a slate floor",
+   "deepPool": "a deep field at the accent hue with a glow rising from the bottom edge",
+   "duskMesh": "a deep tinted night: two lobes of the field hue",
+   "floorGlow": "near-black with one glow of the field hue rising from the floor"
   },
   "hook": {
-   "roll": "the name over giant numerals cropped by the frame; the old version's last numeral rolls to the new one",
-   "mask": "the name, then, once it is read, the new version rises whole out of a mask on its baseline, giant and cropped"
+   "roll": "\"[Name] [old version]\" centred; the changed numerals roll on a drum to the new version once the name is read",
+   "rise": "the name, then the version rising out of a mask in its place beside it (the pair centred from the first frame)",
+   "badge": "the name alone, centred; a dot lands after it and grows into the pill that carries the version (the end card keeps the pill)"
   },
-  "turn": {
-   "yaw": "the strip yaws 18 degrees round as the camera travels into the second change, easing most of the way back",
-   "pitch": "the camera tips 20 degrees down over the strip as the payoff gathers it"
-  },
-  "payoff": {
-   "pull": "the camera pulls back over every change, softened into a far plane, as the version swings in from the right",
-   "rise": "the last change's words leave a clean ground and the version rises out of a mask on it, alone (the strip stays clear to the end)"
+  "order": {
+   "after": "the change works, then the element that changed (the pressed button, the block, the row, the last bar) grows into the frame's colour field, the line reads on it, and the field closes into the next card (the film's one colour event)",
+   "split": "the line arrives parted round the card, which sits small in the gap between its words (the change before it as it ended); the words leave and the card grows out of the gap as the new screen and works",
+   "with": "the card works in the upper 60 % of the frame while its line reads centred under it"
   },
   "end": {
-   "set": "the version steps back, smaller and quieter, to the upper right; the mark and the name are set lower left",
-   "beside": "the version settles at the name's size after it: mark, name and version as one centred lockup (the name rises in place out of its mask)"
+   "stack": "the recap's cards slide onto each other at the centre and the pile shrinks into the mark; the name slides out of it, the version lands on the last bar line",
+   "fold": "the other cards tuck behind the last one at the centre, which shrinks into the mark; then the name and the version"
   },
   "lines": {
-   "moves": "each line (the name, each change) arrives on mask, land, fall or glide (fx/TypePresets), never the same move twice in a row, and leaves on slide, spread, collapse, push or drop"
+   "moves": "every line on one move (mask, fall or crisp) and one whole-line exit (lift or recede), dealt per film: no line travels sideways or leaves word by word"
+  },
+  "arrive": {
+   "rise": "the first card rises into place as the name lifts away, whole within the move's first fifth",
+   "open": "a hairline at the centre grows across and opens down into the first card"
+  },
+  "recap": {
+   "deal": "the carried card lands in the recap row and the other changes slide out from behind it",
+   "rise": "the carried card lands in the recap row as the other changes rise into their places"
+  },
+  "cards": {
+   "light": "kit/card light material on any ground",
+   "dark": "on a dark ground only, dealt: kit/card dark material, 8-12 L* over the ground (src/deal.ts CARD_TONE)"
   }
  }
 }

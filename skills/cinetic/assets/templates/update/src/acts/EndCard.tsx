@@ -2,8 +2,7 @@ import React from 'react';
 import { ACT } from '../timeline';
 import { World } from './World';
 
-// END CARD - by the dealt end: the version steps back, smaller and quieter, above the lockup while the mark's parts
-// and the name are set centred under it; or the version settles at the name's size after it, one centred lockup.
-// The film's own device makes the lockup (never one faded in from nowhere over a radial plate). It holds about a
-// second and a half with the tail.
+// END CARD - built from the last element: the recap's cards gather (stack or fold, dealt) and shrink into the mark; the
+// name slides out of the mark and the version lands after it, apart from it, on the last bar line (the track's final
+// hit). Centred, held still through the tail.
 export const EndCard: React.FC = () => <World from={ACT.end.from} />;

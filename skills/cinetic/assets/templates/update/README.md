@@ -1,45 +1,56 @@
 # The update template
 
-A 15-23 s update film ("vX is out"; 2-4 changes at 120 BPM, shorter on a faster track), laid over the Remotion starter by
-`bash scripts/new-film.sh <dir> --format update` (template.json lists the files it copies and the starter
-acts it removes).
+A 15-25 s update film ("vX is out", 2-4 changes) laid over the Remotion starter by
+`bash scripts/new-film.sh <dir> --format update` (template.json lists the files it copies and the starter acts it
+removes). The film fills one file, `src/update.ts`; everything else is dealt from the product's name.
 
-**The shape.** The name and the version first (the name over giant numerals cropped by the frame: "[Name] [version]"
-by 3 s), one act per change (2-4), each a product moment: the camera arrives on the product's surface, lit and tilted in
-the film's one light (`fx/Lit`), the product does the new thing on its beat, and one plain sentence of 2-6 words says
-the result the user sees, on its own confident move (`acts/type.tsx`). Then the payoff, with the version whole, and the
-end card with the version, the mark and the name. One camera carries the whole film along one strip, so every act line
-is a velocity seam; the film makes one 3D camera move. Each slot deals one of two devices per film from the name
-(`src/deal.ts`, template.json "slots"): the stage (slate or paper), the hook (the last numeral rolling from the old
-value, or the new version rising out of a mask once the name is read), the turn (a yaw into the second change, or a
-pitch over the payoff), the payoff (a pull back over every change as the version swings in, or the version rising
-alone on the clean ground the last change's words leave) and the end (the version stepping back to the upper right over the lockup, or
-settling after the name as one lockup); every line is dealt a move and an exit.
+**The shape.** The name and the version, centred, as one pair from the first frame. Then ONE card, the product's own
+screen, carried through the film: each change shows working on it (a tap and the state it changes to, a list, grid or
+week that fills, a before -> after, a figure that rises: `acts/moments.tsx`), and each change has its own beat shape,
+never the same twice in a row:
+
+- `after`: the change works, then the element that changed (the pressed button, the block that landed, the row, the last
+  bar) grows into the frame's colour field, the line reads on it, and the field closes into the next card. The film's
+  one colour event.
+- `split`: the line arrives parted round the card, which sits small in the gap between its words (the change before it,
+  as it ended); the words leave and the card grows out of the gap as the new screen and works.
+- `with`: the card works in the upper 60 % of the frame while its line reads centred under it (once a film).
+
+Then the recap (every change's card in a row, readable for over a second), and the end card built from it: the cards
+pile and shrink into the mark in one gesture, the name slides out of the mark, the version lands on the last bar line,
+apart from the name.
+
+**The rules it keeps.** The camera never floats: it moves only with the story (a card arriving, reshaping, growing) and
+every hold is still. Nothing bobs or breathes, no card rests tilted (the one turn is the dealt `object-turn` arrival,
+which lands facing the lens). Lines never sit over a sharp card, never travel sideways (so no line is cut by the frame
+as it enters) and leave whole, fading before their travel ends. Another product's mark in a line is its official mark
+in the line's own ink.
+
+**The deal** (`src/deal.ts`, seeded by the name; `PIN` a slot or `SEED` to re-deal; the last three films' choices are
+left out through `src/recent.ts`): the ground (nine lit, still families from `fx/Grounds`), the hook (`roll`, `rise`
+or `badge`), the first card's arrival (`rise`, `open`, or a creative library device from `fx/creative`:
+`pixel-assemble`, `shape-morph`, `object-turn`), the order of beat shapes, the recap (`deal` or `rise`), the end
+(`stack` or `fold`), the cards' tone (`kit/card`: light, or dealt dark on a dark ground), the field line's setting (the
+voice, or the library's `scale-contrast`: its key word huge) and the lines' voice (one move and one whole-line exit).
+Print it: the command in template.json `deal.print`.
 
 **What to write.**
-- `src/update.ts`: the version, the version before it and the changes (`words`: one plain sentence, 2-6
-  words, a result the user sees; `moment`: how it is shown; a change that works with another product puts "[]" where
-  its real mark sits in the sentence, with `logo`, the mark's slug from `node scripts/logos.mjs get <name> --film .`,
-  and `logoName`; an `approve` change's `photos` are the four real pictures its review approves, public/ paths from
-  `node scripts/assets.mjs get`, else they show as the files they are). Delete its placeholder lines.
-- The product moments: `src/kit` is the floor (a review approved, a reply landing, a figure climbing, a
-  budget entry, a dense table whose readable row travels to the row that changed). Rebuild the product's own screens for film (every size x1.9, nothing under 36 px) and
-  give each change its real state change on its hit frame.
-- The brand: `--brand <kit>` writes the tokens, the logo's parts (`src/brand/logo.ts`) and the name
-  (`src/brand/identity.ts`); without a kit, replace the placeholders by hand.
-- The direction: deal it with `python3 scripts/deck.py --brief "..." --format update --changes N` and
-  retell this floor in its world: its space, light, camera and signature replace the strip.
+- `src/update.ts`: the version and the one before it, and 2-4 changes. Each: `words`, one plain sentence of 2-6 words
+  saying the result the user sees (copy-check fails a feature name); `key`, the words its accent lands on (the
+  scale-contrast sets the last of them huge); `title` and `sub`, the screen's own header; `show`, the moment that
+  proves it (`tap`, `fill` as list, grid or week, `swap`, `count`), in the product's own words; `recap`, the few words
+  its recap card shows. A change that works with another product writes "[]" where its mark sits, with `logo` (the
+  slug from `node scripts/logos.mjs get <name> --film .`) and `logoName`. Real photos: `node scripts/assets.mjs get`.
+- The brand: `--brand <kit>` writes the tokens, the logo's parts (`src/brand/logo.ts`) and the name; the type pairing
+  comes from `npx tsx scripts/type-deal.ts --seed "<name>"`. Without a kit, replace the placeholders by hand.
 
-**Music (the slot every film fills).** An update film is cut to a licensed, human-made, instrumental
-track, never effects only (`template.json` → `music`, references/music.md). Find it first, for this
-film: `node scripts/music.mjs search --mood "<the film's mood words>" --bpm 118-132 --length <s>` (118-132
-BPM suits two bars a change), `sheet --measure`, then `get '#n' --to audio/music` (its licence record
-beside it; never the last film's track). Bring it in with `--music <file> --record <licence.json>` (a track
-found elsewhere: its licence flags, or later `python3 scripts/audio/track.py add`), then `track.py edit --bars N --reveal-bar K` (its own ending, else a fade),
-`track.py grid` and `track.py check`: `src/music.ts` then carries the track and `b()` follows its bars.
+**Music (the slot every film fills).** Cut to a licensed, human-made, instrumental track, never effects only
+(template.json `music`). Find it (`node scripts/music.mjs search --mood "<words>" --bpm 112-128`), bring it in with
+`--music <file> --record <licence.json>`, and once `update.ts` is written `python3 scripts/audio/track.py fit --end
+auto` cuts it to the film's bars (its entry on the recap, its final hit on the version mark).
 
-**Timing.** Two bars per change at the template's 120 BPM (crisp), every act line on a bar line (with the
-track, on a downbeat): 2 changes 14 s, 3 changes 18 s, 4 changes 22 s, each plus a 1.5 s tail (the music's ending can ask for more: MUSIC.end.hold); with the track, its own bars. The name lands on the last bar line (with a track, its downbeat or the track's own final hit, where av-audit holds a lockup) and the tail is the end card's hold. Sound: `src/sync.ts` places the
-effects from the picture's own frames (the numeral locking, each product moment's contact frame, one
-text sound per fragment, the moves between acts, the version landing, the lockup); the track carries
-the film.
+**Timing.** Every change starts on a downbeat and takes the whole bars its content asks (two at least): its line's read
+at the pace, the moment's 1-3.5 s, the result held at least 1.6 s; the slack is shared so no part outstays its read (a
+slower field, a longer result, a card working on alone). The recap holds one bar, the version lands on the next bar
+line, the tail is the end card's hold. `src/sync.ts` places the sounds on the picture's own frames: every tap, landing,
+state change and line, the field's swell, the card's moves as quiet air, the lockup's hit.

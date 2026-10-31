@@ -2,7 +2,7 @@ import React from 'react';
 import { ACT } from '../timeline';
 import { World } from './World';
 
-// PAYOFF - by the dealt payoff: the camera pulls back over every change at once (softened into a far plane) while
-// the version swings back in front and lands on the beat; or the version rises out of a mask alone on the clean
-// ground the last change's words leave: the release, whole.
+// RECAP - the carried card shrinks into its place in a row while the other changes' cards join it (sliding out from
+// behind it, or rising into place: src/deal.ts recap): every change
+// at once, each in a few words (its title and the state it ends in), readable for at least a second before the fold.
 export const Payoff: React.FC = () => <World from={ACT.payoff.from} />;

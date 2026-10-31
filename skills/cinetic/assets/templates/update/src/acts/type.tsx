@@ -193,3 +193,23 @@ export const fitLineSize = (text: string, share: number, role: keyof typeof TYPE
   const w = measureTracked(text.replace('[]', 'MM'), base, r.weight, r.track, FONT.text);
   return Math.min(base, (base * share * width) / Math.max(1, w));
 };
+
+/**
+ * A line with a gap for an object the act draws itself (the split shape's card): the text as laid out (the gap is a
+ * run of figure spaces at least `gapW` px wide, in place of "[]"), its size, and where the gap sits once the line has
+ * landed (its centre x and width, px). Pass the same props to HeroLine with the returned text and size. Browser.
+ */
+export const gapLine = (p: Omit<LineProps, 'text' | 'frame'> & { text: string; size: number; gapW: number }): { text: string; size: number; x: number; w: number } => {
+  const role = TYPE[p.role ?? 'line'];
+  const text = slotText(p.text, p.gapW, p.size, role.weight, role.track);
+  const spec = typeLineSpec(specOf({ ...p, frame: 0, text }, text));
+  const size = emphasisFitSize(spec, p.size, role.weight, role.track, FONT.text, p.role ?? 'line');
+  const m = measureLine(spec, size, role.weight, role.track, FONT.text);
+  const Wm = wordMap(text);
+  const slot = Wm.words.findIndex((w) => w.includes(FIG));
+  const chars = [...Wm.words[slot]];
+  const f0 = Wm.starts[slot] + chars.indexOf(FIG);
+  const f1 = Wm.starts[slot] + chars.lastIndexOf(FIG);
+  const w = m.xs[f1] + m.ws[f1] - m.xs[f0];
+  return { text, size, x: (p.x ?? 960) - m.width / 2 + m.xs[f0] + w / 2, w };
+};
