@@ -34,7 +34,9 @@
 #                  six roles of TYPE and the FACES weights into src/brand/tokens.ts; run it later to switch.
 #                  Remotion only.
 #   --size         WxH, e.g. 1920x1080, 1080x1920 (9:16), 1080x1080. The demo lays out from the short side.
-#   --engine       remotion (default): sets FPS/BPM/W/H in src/timeline.ts. hyperframes: sets them in
+#   --name         the product's name as it is written: the package name, and in a template the name slot
+#                  (src/brand/identity.ts, which deals the film and sets its name), with or without --brand.
+#   --engine      remotion (default): sets FPS/BPM/W/H in src/timeline.ts. hyperframes: sets them in
 #                  motion.js and rewrites index.html's root data-fps/-width/-height/-duration (TOTAL/FPS),
 #                  viewport and html/body size to match. Either way the starter's brand (palette,
 #                  typeface, mark, name) is marked cinetic:placeholder and lint-film.mjs fails
@@ -421,6 +423,11 @@ if [[ ${#BRANDS[@]} -gt 0 ]]; then
   if [[ -n "$GF" ]]; then
     node "$DIR/scripts/add-font.mjs" "$GF" --dir "$DIR" --brand-supplied || echo "new-film: warning: could not vendor the brand's font $GF (node scripts/add-font.mjs \"$GF\" --brand-supplied)" >&2
   fi
+elif [[ "$NAME_SET" == 1 && -f "$DIR/src/brand/identity.ts" ]]; then
+  # --name without a kit: the name goes into the template's name slot, so the film is dealt and set with the product's
+  # own name from the first still (the slot otherwise stays '[Product]', marked cinetic:placeholder).
+  node -e 'require("fs").writeFileSync(process.argv[1], "// The product name as it is written (new-film.sh --name; scripts/brand.py --name writes it from a brand kit).\nexport const IDENTITY = { name: " + JSON.stringify(process.argv[2]) + ", supplied: false } as const;\n")' "$DIR/src/brand/identity.ts" "$NAME" \
+    || die "could not write the name into $DIR/src/brand/identity.ts"
 fi
 
 # A clip to borrow grammar from: its measured grammar and the rules (scripts/like.py).
