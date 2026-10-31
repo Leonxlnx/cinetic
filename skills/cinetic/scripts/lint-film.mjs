@@ -130,6 +130,9 @@
  *   filler-plate      every element in frame has a job: a map or Array.from callback that draws only a
  *                     filled, childless box, defocused or faint (plates floating at depth, faint cards round
  *                     a line), or a depth-stack item ({ id, plane }) with no `carries` (fx/DepthStack)
+ *   text-estimate     error: a text width guessed from the letter count (`label.length * size * 0.55`, outside kit/,
+ *                     lib/ and fx/): the dot, badge or icon placed beside it lands on an edge or under a neighbour;
+ *                     flex with a gap (launch-simple acts/ui.tsx Pill, SwapLabel) or lib/measure measureTracked
  *   ui-accent-bar     error: a vertical accent line or bar on a card's edge: a side border (borderLeft, border-left,
  *                     borderInlineStart ...) 2 px or wider or in a saturated colour, an inset shadow painting one side
  *                     (inset 3px 0 0 <colour>), a 1.5-16 px wide bar element 2.5x as tall (or stretched top to bottom)
@@ -2402,6 +2405,12 @@ for (const file of files) {
 
     // ui-accent-bar: product UI is simple and aligned: no vertical accent line or bar on a card's edge
     if (!isTokens) uiAccentBars(code, report, { isScript, house: /(^|\/)(fx|lib)\//.test(norm) });
+
+    // text-estimate: a text width guessed from the letter count (`label.length * size * 0.55`) places whatever sits
+    // beside the text: a status dot lands on a pill's edge, a badge under its neighbour, an icon off its label
+    if (isScript && !isTokens && !/(^|\/)(fx|lib|kit)\//.test(norm))
+      each(/\.length\s*\*\s*\(?[\w.]+(?:\([^()]*\))?\)?\s*\*\s*0?\.[3-7]\d*\b/g, (m, i) =>
+        report(i, 'text-estimate', 'error', "a text width guessed from its letter count: the real width differs by 10-30 % (letters differ, the face's tracking), so whatever stands beside the text lands wrong (a dot on a pill's edge, a label under its neighbour); let the browser lay it out (flex with a gap, acts/ui.tsx Pill and SwapLabel) or measure it (lib/measure measureTracked)"));
 
     // small-text: text held in focus is 36 px or more at 1080p (UI rebuilt for film: x1.8-2, brand/tokens.ts uiFilm)
     if (isScript && !house && !isTokens) {
