@@ -2,9 +2,10 @@
 // new place for one frame. A seam moves a layer (transform, opacity) and softens it with copies at fixed blur levels
 // (lib/defocus: no radius ever animates); the sharp copy is always mounted, the soft copies only while they show.
 // Text inside a sharp layer sits on its own composited layer (usePromote in acts/ui.tsx and acts/line.tsx), so slow
-// vertical moves (the camera's push, the float, a row's rise) travel sub-pixel instead of in whole-pixel ticks; while a
-// layer is soft its text is not promoted (a promoted layer under an animating blur leaves stale frames), and the switch
-// happens only while the blur hides it. Keep promotion (will-change) out of this file: it animates blur.
+// vertical moves (the camera's push, the float, a row's rise) travel sub-pixel instead of in whole-pixel ticks; the
+// blurred copies' text is never promoted (a promoted layer under a blur leaves stale frames), the sharp copy's stays
+// promoted for as long as the sharp copy shows (it has no filter), so the start of a blur never re-draws its glyphs on
+// whole pixels in one frame. Keep promotion (will-change) out of this file: it animates blur.
 import React from 'react';
 import { defocusMix } from '../lib/defocus';
 import { uOf, useFilm } from '../lib/film';
@@ -14,8 +15,10 @@ import type { SeamLayer } from '../fx/Seam';
 export const PromoteCtx = React.createContext(true);
 export const usePromote = () => React.useContext(PromoteCtx);
 
-/** Under this blur (px at 1080p) a layer is drawn sharp: one copy, its text promoted. */
-export const SOFT_MIN = 1.5;
+/** Under this blur (px at 1080p) a layer is drawn sharp: one copy, its text promoted. Low, so a blur ramp starts as a
+ * cross-fade of the sharp copy and the first level (0.75 px) instead of jumping from sharp to 2-3 px in one frame (a
+ * spike on a light, high-contrast surface such as a phone's light screen). */
+export const SOFT_MIN = 0.2;
 
 const fill: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' };
 
@@ -30,7 +33,9 @@ export const Soft: React.FC<{ sigma: number; children: React.ReactNode }> = ({ s
   return (
     <div style={{ ...fill, isolation: 'isolate' }}>
       <div key="sharp" style={{ ...fill, opacity: sharpOn ? 1 : 0 }}>
-        <PromoteCtx.Provider value={parent && !soft}>{children}</PromoteCtx.Provider>
+        {/* the sharp copy carries no filter, so its text stays promoted while it shows: un-promoting it as the blur
+            starts re-draws every glyph on whole pixels in one frame, a pop on a light, high-contrast surface */}
+        <PromoteCtx.Provider value={parent && sharpOn}>{children}</PromoteCtx.Provider>
       </div>
       {blurred.map((c, i) => (
         <div key={`soft${i}`} data-audit-copy="" style={{ ...fill, opacity: sharpOn || i > 0 ? c.weight : 1, filter: `blur(${c.level}px)` }}>
