@@ -16,6 +16,9 @@
  *      stdout (--json parses); --quiet leaves the progress out.
  *   6. --json carries the findings; the run stays under 60 s here (30 s is the budget on a quiet machine); an act that
  *      imports a stylesheet or a picture still imports (stubbed on a second run).
+ *   7. Frames: the starter renders every act at its first, middle and last frame without an error; a planted runtime
+ *      TypeError (a status the film never gave) fails with the act, the frames it throws on and the file:line; a browser
+ *      global read while rendering is a warning (frames-env); --no-frames renders nothing.
  *
  * It copies the starter's src into a temporary folder with its node_modules linked (npm install in
  * assets/remotion-starter first).
@@ -73,6 +76,32 @@ try {
     'progress: each step and the first module imported go to stderr while --json stays parseable on stdout', clean.stderr.slice(0, 300));
   const quiet = run(['--quiet']);
   result(quiet.code === 0 && !/precheck: 1-2\/4/.test(quiet.stderr), '--quiet leaves the progress out', quiet.stderr.slice(0, 200));
+
+  // frames: every act rendered at its first, middle and last frame; the starter renders clean
+  result(clean.rep.frames?.acts === 4 && clean.rep.frames?.evaluated >= 10 && clean.rep.frames?.failed === 0 && !has(clean.rep, 'frames') && /precheck:   rendering every act at its first, middle and last frame \(\d+ frames of 4 acts/.test(clean.stderr),
+    'frames: the starter renders every act at its first, middle and last frame without an error', JSON.stringify(clean.rep.frames));
+  // a planted runtime error (a status the film never gave, read past frame 0 of the act) fails with the act, its frames and
+  // the file:line; a browser global read on the act's first frame is a warning (precheck cannot evaluate it, a render can)
+  const ACT2 = path.join(film, 'src', 'acts', 'Act2.tsx');
+  const act2 = fs.readFileSync(ACT2, 'utf8');
+  fs.writeFileSync(ACT2, `import React from 'react';
+import { useCurrentFrame } from 'remotion';
+
+const STATUSES: { label: string }[] = [];
+export const Act2: React.FC = () => {
+  const f = useCurrentFrame();
+  if (f === 0) return <div style={{ width: (window as any).innerWidth }} />;
+  return <div>{STATUSES[(f % 3) - 3].label}</div>;
+};
+`);
+  const planted = run();
+  result(planted.code === 1 && has(planted.rep, 'frames', 'error', /Act2\.tsx:8 act "plate" at f\d+, f\d+ \(\d+\.\d s\) throws while it renders: TypeError: Cannot read properties of undefined \(reading 'label'\)/) && planted.rep.frames?.failed === 3,
+    'frames: a planted TypeError fails with the act, the two frames it throws on and the file:line', JSON.stringify(planted.rep.findings.filter((f) => /frames/.test(f.rule)).map((f) => `${f.rule} ${f.where} ${f.message.slice(0, 120)}`)));
+  result(has(planted.rep, 'frames-env', 'warn', /Act2\.tsx:7 act "plate" at f\d+ \(.*reaches for window/) && !has(planted.rep, 'frames', 'error', /window/),
+    'frames: a browser global read while rendering is a warning (frames-env), not an error', JSON.stringify(planted.rep.findings.filter((f) => /frames/.test(f.rule)).map((f) => `${f.rule} ${f.where}`)));
+  const skipped = run(['--no-frames']);
+  result(skipped.code === 0 && skipped.rep.frames === null && !has(skipped.rep, 'frames'), '--no-frames renders no act', JSON.stringify(skipped.rep.frames));
+  fs.writeFileSync(ACT2, act2);
 
   // 2-4. an act with every fault, a content module with long and cut strings
   const ACT = path.join(film, 'src', 'acts', 'Faulty.tsx');

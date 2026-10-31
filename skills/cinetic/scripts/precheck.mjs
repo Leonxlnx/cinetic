@@ -9,6 +9,14 @@
  *                cut): warnings in dev, errors under the ship gate (--ship sets CINETIC_GATE=ship, so they throw); a
  *                bare `throw` in a timing assert is an error either way (it crashes every render: route it through
  *                timingFail)
+ *   frames       every act of src/timeline.ts ACT is rendered (react-dom/server, the film's own Film.tsx inside
+ *                Remotion's contexts) at its first, middle and last frame (--frames N: N frames an act, spread evenly),
+ *                in the same process: any error a render would throw there (a TypeError on data the film never gave,
+ *                an empty kit part under --ship) fails with the act, the frames and the file:line. Text measurement
+ *                gets a stand-in (a film module that reaches for the DOM sees a measuring document and takes its
+ *                browser path) and FontGate lets the frame through; an act that needs a real browser (window, a canvas
+ *                read) is a warning, not an error. Kit parts that drew an empty state in those frames are warnings in
+ *                dev. --no-frames skips it.
  *   3. kit       kit parts with no content of the film's own (they draw an empty state, data-kit-empty): a kit part
  *                used without its content prop (DenseScreen without world, a panel without data, a StatCard without
  *                label and value, a FileThumb without name, a kit Photo without src, KitFallback), the retired
@@ -28,10 +36,12 @@
  * while one is slow (a loaded machine may take minutes on the first import); --quiet leaves it out. The report stays on
  * stdout.
  *
- * Usage (from the film project):  node scripts/precheck.mjs [<film dir>] [--ship] [--json] [--no-import] [--no-fit] [--quiet]
+ * Usage (from the film project):  node scripts/precheck.mjs [<film dir>] [--ship] [--json] [--no-import] [--no-frames] [--frames N] [--no-fit] [--quiet]
  *   --ship        the ship gate: timing asserts and empty kit parts throw at import (CINETIC_GATE=ship)
  *   --json        machine-readable findings
- *   --no-import   only the static checks (kit usage in the source)
+ *   --no-import   only the static checks (kit usage in the source; no frames either)
+ *   --no-frames   import the modules but render no act
+ *   --frames N    frames rendered per act, spread from its first to its last (default 3: first, middle, last)
  *   --no-fit      skip the text measure
  *   --font FILE   measure with this .woff2 (default: the film's FONT.text face in src/brand/fonts or node_modules)
  * Exit codes: 0 no errors, 1 errors (or, with --ship, warnings that the gate fails), 2 bad arguments or no project.
@@ -62,7 +72,8 @@ const progress = (msg) => {
 `);
 };
 const JSON_OUT = flag('--json');
-const positional = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--font');
+const positional = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--font' && argv[i - 1] !== '--frames');
+const PER_ACT = opt('--frames') !== undefined ? Math.max(1, Math.min(60, Math.round(Number(opt('--frames'))) || 3)) : 3;
 const ROOT = path.resolve(positional[0] ?? '.');
 const SRC = path.join(ROOT, 'src');
 if (!fs.existsSync(SRC)) {
@@ -230,7 +241,89 @@ if (!flag('--no-import') && importList.length) {
       const STUB = ['.css', '.woff', '.woff2', '.ttf', '.otf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.mp4', '.webm', '.mov', '.wav', '.mp3', '.m4a', '.json5'];
       fs.writeFileSync(reg, `import Module, { register } from 'node:module';\nregister(${JSON.stringify(pathToFileURL(hooks).href)});\nfor (const ext of ${JSON.stringify(STUB)}) Module._extensions[ext] = (m) => { m.exports = { __esModule: true, default: '' }; };\n`);
       const child = path.join(TMP, 'probe.mts');
+      // frames: the film's own Film.tsx rendered at every act's first, middle and last frame, after the imports
+      const filmTsx = path.join(SRC, 'Film.tsx');
+      const FRAMES = !flag('--no-frames') && fs.existsSync(filmTsx) && fs.existsSync(path.join(SRC, 'timeline.ts'))
+        ? { src: SRC, filmPath: filmTsx, film: pathToFileURL(filmTsx).href, timeline: pathToFileURL(path.join(SRC, 'timeline.ts')).href, fontGate: path.join(SRC, 'lib', 'FontGate.tsx'), per: PER_ACT }
+        : null;
       fs.writeFileSync(child, `
+import Module, { createRequire } from 'node:module';
+import fs from 'node:fs';
+const M: any = Module;
+// a CommonJS module's non-code imports (css, fonts, pictures, sounds) load as empty modules here (cheap); the ESM hook of
+// the second run covers ES modules
+for (const ext of ${JSON.stringify(STUB)}) M._extensions[ext] = (m: any) => { m.exports = { __esModule: true, default: '' }; };
+const FRAMES: any = ${JSON.stringify(FRAMES)};
+const SRC_DIR = FRAMES ? String(FRAMES.src).toLowerCase() : '';
+const inSrc = (f: unknown) => typeof f === 'string' && !!SRC_DIR && f.toLowerCase().startsWith(SRC_DIR) && !/[\\\\/]node_modules[\\\\/]/.test(f);
+/** A document stand-in for rendering outside a browser: text widths from a per-letter estimate, a 2D context that measures and no-ops. */
+const makeDom = () => {
+  const em = (ch: string) => (ch === ' ' ? 0.28 : /[iljtfrI.,:;'!|]/.test(ch) ? 0.3 : /[mwMW@%]/.test(ch) ? 0.86 : /[A-Z0-9#$&]/.test(ch) ? 0.66 : 0.55);
+  const width = (text: unknown, px: number, track = 0) => {
+    let u = 0;
+    let n = 0;
+    for (const ch of String(text ?? '')) { u += em(ch); n++; }
+    return (u + track * n) * px;
+  };
+  const num = (v: unknown, d: number) => { const x = parseFloat(String(v ?? '')); return Number.isFinite(x) ? x : d; };
+  const ctx2d = () => {
+    const base: any = {
+      font: '16px sans-serif',
+      measureText(text: string) {
+        const px = num((/([\\d.]+)px/.exec(String(base.font)) ?? [])[1], 16);
+        const w = width(text, px);
+        return { width: w, actualBoundingBoxAscent: px * 0.73, actualBoundingBoxDescent: /[gjpqy,]/.test(String(text)) ? px * 0.21 : 0, actualBoundingBoxLeft: 0, actualBoundingBoxRight: w, fontBoundingBoxAscent: px * 0.97, fontBoundingBoxDescent: px * 0.24 };
+      },
+      createImageData: (w: number, h: number) => ({ width: w, height: h, data: new Uint8ClampedArray(Math.max(0, Math.round(w) * Math.round(h) * 4)) }),
+      getImageData: (_x: number, _y: number, w: number, h: number) => ({ width: w, height: h, data: new Uint8ClampedArray(Math.max(0, Math.round(w) * Math.round(h) * 4)) }),
+      createLinearGradient: () => ({ addColorStop() {} }),
+      createRadialGradient: () => ({ addColorStop() {} }),
+      createPattern: () => ({}),
+    };
+    return new Proxy(base, { get: (t: any, k: any) => (k in t ? t[k] : () => undefined) });
+  };
+  const el = (tag: string): any => {
+    const style: any = {};
+    const node: any = {
+      tagName: String(tag).toUpperCase(), style, textContent: '', width: 300, height: 150, children: [],
+      appendChild: (c: any) => c, removeChild: (c: any) => c, setAttribute() {}, getAttribute: () => null, addEventListener() {}, removeEventListener() {},
+      getBoundingClientRect() {
+        const px = num(style.fontSize, 16);
+        const ls = String(style.letterSpacing ?? '');
+        const w = width(node.textContent, px, /em$/.test(ls) ? num(ls, 0) : num(ls, 0) / px);
+        const h = px * num(style.lineHeight, 1.2);
+        return { x: 0, y: 0, left: 0, top: 0, width: w, height: h, right: w, bottom: h };
+      },
+      getContext: () => ctx2d(),
+      toDataURL: () => 'data:image/png;base64,',
+    };
+    return node;
+  };
+  return { createElement: el, createElementNS: (_ns: string, tag: string) => el(tag), body: el('body'), head: el('head'), documentElement: el('html'), fonts: { check: () => true, load: async () => [], ready: Promise.resolve(), add() {} }, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [] };
+};
+if (FRAMES) {
+  // a film module that reaches for the DOM (text measured with a span or a canvas, a plate baked to a data URL) sees the
+  // stand-in, so it takes its browser path as in a render; node_modules (Remotion) still see no document and keep their
+  // server paths
+  const compile0 = M.prototype._compile;
+  M.prototype._compile = function (code: string, filename: string) {
+    if (inSrc(filename) && /\\bdocument\\b/.test(code)) {
+      const head = /^\\s*(['"])use strict\\1;?/.exec(code);
+      const at = head ? head[0].length : 0;
+      code = code.slice(0, at) + 'var document = globalThis.__cineticPrecheckDom;' + code.slice(at);
+    }
+    return compile0.call(this, code, filename);
+  };
+  (globalThis as any).__cineticPrecheckDom = makeDom();
+  // FontGate holds every frame until the fonts load in an effect, and effects never run here: it lets the frame through
+  if (fs.existsSync(FRAMES.fontGate)) {
+    const m = new M.Module(FRAMES.fontGate);
+    m.filename = FRAMES.fontGate;
+    m.loaded = true;
+    m.exports = { FontGate: ({ children }: any) => children };
+    M._cache[FRAMES.fontGate] = m;
+  }
+}
 const mods: { path: string; content: boolean }[] = ${JSON.stringify(importList.map((m) => ({ path: pathToFileURL(m.path).href, rel: rel(m.path), content: m.content })))};
 const SKIP = new Set(['src', 'photo', 'photos', 'file', 'files', 'logo', 'logos', 'glyph', 'kind', 'url', 'href', 'id', 'seed', 'ease', 'layout', 'world', 'preview', 'tone', 'source', 'ground', 'recipe', 'font', 'family', 'look', 'path', 'audio', 'music', 'track', 'template', 'engine', 'mode', 'role', 'theme', 'stage', 'transition', 'move', 'anchor', 'side', 'variant', 'fit', 'easing']);
 const strings: { where: string; text: string }[] = [];
@@ -266,8 +359,77 @@ try {
   out.tokens = { font: tk.FONT?.text, type: tk.TYPE, safe: tk.SAFE, textMin: tk.TEXT_MIN };
 } catch (e: any) { out.tokensError = String(e?.message ?? e).split('\\n')[0]; }
 const g: any = globalThis;
-out.issues = g.__cineticGateIssues ?? [];
-out.empties = g.__cineticKitEmpty ?? [];
+out.issues = [...(g.__cineticGateIssues ?? [])];
+out.empties = [...(g.__cineticKitEmpty ?? [])];
+if (FRAMES) {
+  const fr: any = { acts: 0, evaluated: 0, blank: 0, errors: [], fps: 30 };
+  out.frames = fr;
+  const t0 = Date.now();
+  const nameOf = (e: any) => (e && typeof e.name === 'string' && e.name) || 'Error';
+  let stage = 'import';
+  try {
+    const tl: any = await import(FRAMES.timeline);
+    const fm: any = await import(FRAMES.film);
+    stage = 'setup';
+    const req = createRequire(FRAMES.filmPath);
+    const React: any = req('react');
+    const { renderToStaticMarkup } = req('react-dom/server');
+    const I: any = req('remotion').Internals;
+    const Film = fm.Film ?? fm.default;
+    const acts = Object.entries((tl.ACT ?? {}) as Record<string, any>).filter(([, a]) => a && Number.isFinite(a.from) && a.dur > 0);
+    if (typeof Film !== 'function') fr.skip = 'src/Film.tsx exports no Film component';
+    else if (!acts.length) fr.skip = 'src/timeline.ts exports no ACT';
+    else {
+      stage = 'render';
+      const total = Math.max(Number(tl.TOTAL) || 0, ...acts.map(([, a]) => a.from + a.dur));
+      const fps = Number(tl.FPS) || 30;
+      const W = Number(tl.W) || 1920;
+      const H = Number(tl.H) || 1080;
+      fr.fps = fps;
+      const comp = { component: Film, durationInFrames: total, width: W, height: H, fps, id: 'Film', order: null, folderName: null, parentFolderName: null, schema: null, calculateMetadata: null, stack: null, defaultProps: {} };
+      const cm = { compositions: [comp], folders: [], currentAssetMetadata: null, currentCompositionMetadata: { defaultCodec: null, defaultOutName: null, defaultPixelFormat: null, defaultProResProfile: null, defaultSampleRate: null, defaultVideoImageFormat: null, durationInFrames: total, fps, width: W, height: H, props: {} }, canvasContent: { type: 'composition', compositionId: 'Film' } };
+      const env = { isPlayer: false, isRendering: true, isStudio: false, isClientSideRendering: false, isReadOnlyStudio: false };
+      const rate = { playbackRate: 1, setPlaybackRate: () => {} };
+      const h = React.createElement;
+      const at = (f: number) => {
+        const t = { frame: { Film: f }, isPlaying: () => false, isInsideFreeze: false, audioAndVideoTags: { current: [] } };
+        return h(I.RemotionEnvironmentContext.Provider, { value: env }, h(I.CanUseRemotionHooksProvider, null, h(I.AbsoluteTimeContext.Provider, { value: t }, h(I.PlaybackRateContext.Provider, { value: rate }, h(I.TimelineContext.Provider, { value: t }, h(I.CompositionManager.Provider, { value: cm }, h(Film, {})))))));
+      };
+      const plan = acts.map(([name, a]) => {
+        const n = Math.min(FRAMES.per, a.dur);
+        return [name, [...new Set(Array.from({ length: n }, (_, i) => a.from + (n === 1 ? 0 : Math.round(((a.dur - 1) * i) / (n - 1)))))].filter((f) => f < total)] as [string, number[]];
+      });
+      process.stderr.write('@@P@@ note frames ' + plan.reduce((s, [, l]) => s + l.length, 0) + ' ' + plan.length + '\\n');
+      // React's dev notes and Remotion's server notes stay out of the report (an empty kit part is read from its record)
+      const quiet = { error: console.error, warn: console.warn };
+      console.error = () => {};
+      console.warn = () => {};
+      try {
+        for (const [name, list] of plan) {
+          fr.acts++;
+          for (const f of list) {
+            process.stderr.write('@@P@@ start f' + f + ':' + name + '\\n');
+            fr.evaluated++;
+            try {
+              if (!renderToStaticMarkup(at(f))) fr.blank++;
+            } catch (e: any) {
+              const hit = String(e?.stack ?? '').split('\\n').map((s) => /\\(?([A-Za-z]:[\\\\/][^()]*?|\\/[^()]*?):(\\d+):\\d+\\)?\\s*$/.exec(s)).find((x) => x && inSrc(x[1]));
+              fr.errors.push({ act: name, f, name: nameOf(e), message: String(e?.message ?? e).split('\\n')[0].slice(0, 300), file: hit ? hit[1] : '', line: hit ? Number(hit[2]) : 0 });
+            }
+          }
+        }
+      } finally {
+        console.error = quiet.error;
+        console.warn = quiet.warn;
+      }
+    }
+  } catch (e: any) {
+    fr.fail = { stage, message: nameOf(e) + ': ' + String(e?.message ?? e).split('\\n').slice(0, 2).join(' | ') };
+  }
+  fr.ms = Date.now() - t0;
+  fr.issues = (g.__cineticGateIssues ?? []).slice(out.issues.length);
+  fr.empties = (g.__cineticKitEmpty ?? []).slice(out.empties.length);
+}
 process.stdout.write('\\n@@PRECHECK@@' + JSON.stringify(out) + '\\n');
 `);
       const env = { ...process.env, ...(SHIP ? { CINETIC_GATE: 'ship' } : {}) };
@@ -280,7 +442,7 @@ process.stdout.write('\\n@@PRECHECK@@' + JSON.stringify(out) + '\\n');
         new Promise((resolve) => {
           const p = spawn(process.execPath, args, { cwd: ROOT, env });
           let stdout = '', stderr = '', at = null, n = 0, err = null, buf = '';
-          const beat = setInterval(() => progress(`  ... still importing (${since()}${at ? `, at ${at}` : ', starting tsx'})`), 15000);
+          const beat = setInterval(() => progress(`  ... still ${/^f\d+:/.test(at ?? '') ? 'rendering' : 'importing'} (${since()}${at ? `, at ${at}` : ', starting tsx'})`), 15000);
           const kill = setTimeout(() => {
             err = new Error('timed out after 300 s');
             p.kill();
@@ -292,9 +454,10 @@ process.stdout.write('\\n@@PRECHECK@@' + JSON.stringify(out) + '\\n');
             while ((k = buf.indexOf('\n')) >= 0) {
               const line = buf.slice(0, k).replace(/\r$/, '');
               buf = buf.slice(k + 1);
-              const m = /^@@P@@ (start|done) (\S+)(?: (\d+))?/.exec(line);
+              const m = /^@@P@@ (start|done|note) (\S+)(?: (\d+))?(?: (\d+))?/.exec(line);
               if (!m) stderr += `${line}\n`;
               else if (m[1] === 'start') at = m[2];
+              else if (m[1] === 'note') progress(`  rendering every act at ${PER_ACT === 3 ? 'its first, middle and last frame' : `${PER_ACT} frames`} (${m[3]} frames of ${m[4]} acts, ${since()})...`);
               else if (++n === 1 || Number(m[3]) >= 2000) progress(`  imported ${m[2]} (${(Number(m[3]) / 1000).toFixed(1)} s; ${n} of ${importList.length})`);
             }
           });
@@ -313,7 +476,8 @@ process.stdout.write('\\n@@PRECHECK@@' + JSON.stringify(out) + '\\n');
       };
       progress(`1-2/4 importing ${importList.length} modules with tsx (the acts, the timeline, the content)...`);
       let res = await once(false);
-      if (res.probe?.imports.some((x) => !x.ok && /Unknown file extension|ERR_UNKNOWN_FILE_EXTENSION|Cannot parse|unexpected token|Unexpected character/i.test(x.error))) {
+      const MEDIA = /Unknown file extension|ERR_UNKNOWN_FILE_EXTENSION|Cannot parse|unexpected token|Unexpected character/i;
+      if (res.probe?.imports.some((x) => !x.ok && MEDIA.test(x.error)) || MEDIA.test(res.probe?.frames?.fail?.message ?? '')) {
         progress('  again with stubs for css, fonts and media (an act imports one)...');
         res = await once(true);
       }
@@ -335,6 +499,45 @@ if (probe) {
   }
   for (const x of probe.issues) add('timing', SHIP ? 'error' : 'warn', x.message, x.rule);
   for (const x of probe.empties) add(/^kit-sample:/.test(x.message) ? 'kit-sample' : 'kit-empty', 'error', x.message, x.part);
+  const fr = probe.frames;
+  if (fr?.fail) {
+    if (fr.fail.stage === 'import') add('imports', 'error', `src/Film.tsx does not import: ${fr.fail.message}`, 'src/Film.tsx');
+    else add('frames', fr.fail.stage === 'render' ? 'error' : 'warn', `no act was rendered (${fr.fail.stage}): ${fr.fail.message}`, 'src/Film.tsx');
+  } else if (fr?.skip) add('frames', 'warn', `no act was rendered: ${fr.skip}`, 'src/Film.tsx');
+  if (fr && !fr.fail && !fr.skip) {
+    // a browser global the act reaches for while it renders: precheck cannot evaluate it, the render can (a warning)
+    const ENV = /^(window|self|navigator|location|Image|HTMLElement|HTMLCanvasElement|OffscreenCanvas|requestAnimationFrame|cancelAnimationFrame|ResizeObserver|IntersectionObserver|getComputedStyle|matchMedia|localStorage|sessionStorage|AudioContext|FontFace|DOMMatrix|Path2D|CSS) is not defined/;
+    // every frame failing on Remotion's own contexts: the film loads a second copy of remotion (ES modules), not the film's fault
+    const CTX = /can only be called inside|TimelineContext is not available|No video config found|useVideoConfig\(\) can only/i;
+    if (fr.errors.length && fr.errors.length === fr.evaluated && fr.errors.every((e) => CTX.test(e.message)))
+      add('frames', 'warn', `no act could be evaluated: ${fr.errors[0].message} (the film's modules load another copy of remotion); check the acts in stills`, 'src/Film.tsx');
+    else {
+      const groups = new Map();
+      for (const e of fr.errors) {
+        const k = `${e.act}\u0000${e.message}`;
+        if (!groups.has(k)) groups.set(k, { ...e, frames: [] });
+        groups.get(k).frames.push(e.f);
+      }
+      for (const e of groups.values()) {
+        const where = e.file ? `${rel(e.file)}:${e.line}` : `ACT ${e.act}`;
+        const at = `act "${e.act}" at f${e.frames.join(', f')} (${(e.frames[0] / (fr.fps || 30)).toFixed(1)} s)`;
+        const env = ENV.exec(e.message);
+        if (env) add('frames-env', 'warn', `${at} reaches for ${env[1]} while it renders, which precheck cannot evaluate outside a browser: check that act in a still`, where);
+        else if (/kit-(empty|sample):/.test(e.message)) add(/kit-sample:/.test(e.message) ? 'kit-sample' : 'kit-empty', 'error', `${at} throws under the ship gate: ${e.message}`, where);
+        else if (TIMING.test(e.message)) add('timing', 'error', `${at} throws a timing assert while it renders: ${e.message}`, where);
+        else add('frames', 'error', `${at} throws while it renders: ${e.name}: ${e.message}. A render crashes on those frames: read the film's own content there, never data it does not give`, where);
+      }
+    }
+    if (fr.evaluated && fr.blank === fr.evaluated) add('frames', 'warn', 'every rendered frame came out empty (a gate that waits for an effect, such as an older lib/FontGate): the acts were not evaluated; check them in stills', 'src/Film.tsx');
+    for (const x of fr.issues ?? []) add('timing', SHIP ? 'error' : 'warn', `while rendering: ${x.message}`, x.rule);
+    // one line per kit part that drew its empty state in those frames (a warning in dev; under --ship it throws above)
+    const parts = new Map();
+    for (const x of fr.empties ?? []) {
+      if (/^kit-sample:/.test(x.message)) add('kit-sample', 'error', `while rendering: ${x.message}`, x.part);
+      else parts.set(x.part, [...(parts.get(x.part) ?? []), x.need]);
+    }
+    for (const [part, needs] of parts) add('kit-empty', 'warn', `while rendering: ${part} drew its empty state (pass ${needs.join('; ')}): the film's own content, never sample data`, part);
+  }
 }
 
 // ------------------------------------------------------------------------------------------------ 4. fit
@@ -539,10 +742,14 @@ const warns = findings.filter((f) => f.severity === 'warn');
 const ok = !errors.length;
 const secs = (Date.now() - t0) / 1000;
 if (JSON_OUT) {
-  console.log(JSON.stringify({ ok, gate: SHIP ? 'ship' : 'dev', seconds: +secs.toFixed(1), imports: probe?.imports ?? [], measured, findings, summary: { errors: errors.length, warnings: warns.length } }, null, 1));
+  const fr = probe?.frames;
+  const frames = fr ? { acts: fr.acts, evaluated: fr.evaluated, failed: fr.errors?.length ?? 0, seconds: +((fr.ms ?? 0) / 1000).toFixed(1), ...(fr.skip ? { skip: fr.skip } : {}) } : null;
+  console.log(JSON.stringify({ ok, gate: SHIP ? 'ship' : 'dev', seconds: +secs.toFixed(1), imports: probe?.imports ?? [], frames, measured, findings, summary: { errors: errors.length, warnings: warns.length } }, null, 1));
 } else {
   const im = probe?.imports ?? [];
-  console.log(`precheck: ${rel(SRC) || 'src'} (${SHIP ? 'ship gate' : 'dev'}): ${im.filter((x) => x.ok).length} of ${importList.length} modules imported, ${filmFiles.length} files scanned for kit parts, ${measured} strings measured, ${secs.toFixed(1)} s`);
+  const fr = probe?.frames;
+  const frames = fr && !fr.fail && !fr.skip ? `${fr.evaluated} frames of ${fr.acts} acts rendered (${fr.errors.length} failed), ` : '';
+  console.log(`precheck: ${rel(SRC) || 'src'} (${SHIP ? 'ship gate' : 'dev'}): ${im.filter((x) => x.ok).length} of ${importList.length} modules imported, ${frames}${filmFiles.length} files scanned for kit parts, ${measured} strings measured, ${secs.toFixed(1)} s`);
   for (const f of findings) console.log(`${f.severity.padStart(5)}  ${f.rule}${f.where ? ` (${f.where})` : ''}: ${f.message}`);
   console.log(`precheck: ${errors.length} error${errors.length === 1 ? '' : 's'}, ${warns.length} warning${warns.length === 1 ? '' : 's'}${ok ? '' : ': fix them before any still or render'}`);
 }

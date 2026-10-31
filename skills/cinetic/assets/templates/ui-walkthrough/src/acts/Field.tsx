@@ -112,17 +112,21 @@ export const Field: React.FC = () => {
                     {/* the workspace's recent items under the field (texture: the product in use), clearing as the results arrive */}
                     {prog(F, CUE.develop - f60x(10), CUE.develop + f60x(16), E.stdInOut) < 1 && (
                       <div style={{ position: 'absolute', left: 0, top: 0, opacity: 1 - prog(F, CUE.develop - f60x(10), CUE.develop + f60x(16), E.stdInOut), transform: `translate3d(${(m.x + pad).toFixed(2)}px, ${(m.y + GRID.top).toFixed(2)}px, 0)` }}>
-                        <Micro px={13 * U} weight={600} color={t.mute} upper>
-                          {world.screen}
-                        </Micro>
+                        {world.screen && (
+                          <Micro px={13 * U} weight={600} color={t.mute} upper>
+                            {world.screen}
+                          </Micro>
+                        )}
+                        {/* each cell only where the film gives it (walk.ts results: a title and its meta; no id, date, value or status unless the film adds them) */}
                         {world.records.slice(0, 9).map((r, i) => (
-                          <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 24 * U, width: fieldW, height: 54 * U, boxShadow: `inset 0 -${(1 * U).toFixed(2)}px 0 ${t.line}`, transform: `translate3d(0, ${(10 * U).toFixed(2)}px, 0)` }}>
-                            <Micro px={14 * U} color={t.mute} mono>{r.id}</Micro>
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 24 * U, width: fieldW, height: 54 * U, boxShadow: `inset 0 -${(1 * U).toFixed(2)}px 0 ${t.line}`, transform: `translate3d(0, ${(10 * U).toFixed(2)}px, 0)` }}>
+                            {r.id && <Micro px={14 * U} color={t.mute} mono>{r.id}</Micro>}
                             <Micro px={15 * U} weight={600} color={i === 0 ? t.text : mixColor(t.text, t.mute, 0.35)}>{r.title}</Micro>
                             <span style={{ flex: 1 }} />
-                            <Micro px={14 * U} color={t.mute}>{r.date}</Micro>
-                            <Micro px={14 * U} color={t.text}>{r.value}</Micro>
-                            <Micro px={13 * U} color={i === 0 ? t.accent : t.mute}>{world.statuses[r.status].label}</Micro>
+                            {r.sub && <Micro px={14 * U} color={t.mute}>{r.sub}</Micro>}
+                            {r.date && <Micro px={14 * U} color={t.mute}>{r.date}</Micro>}
+                            {r.value && <Micro px={14 * U} color={t.text}>{r.value}</Micro>}
+                            {world.statuses[r.status] && <Micro px={13 * U} color={i === 0 ? t.accent : t.mute}>{world.statuses[r.status].label}</Micro>}
                           </div>
                         ))}
                       </div>

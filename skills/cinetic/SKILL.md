@@ -142,8 +142,9 @@ element). The kit shows only the film's own content: a `DenseScreen` takes `worl
 ([product-ui.md](references/product-ui.md)). Real people, places and objects are real photos or clips with a studio
 finish, never drawn (`node scripts/assets.mjs recipe "<product>"`, then `search`, `sheet`, `get`, `grade`;
 [imagery.md](references/imagery.md)). Other products' marks: `node scripts/logos.mjs get <name> --film .`. Before every
-still: `node scripts/precheck.mjs` (seconds: every act imports, timing asserts, empty kit parts, text that does not
-fit). Look with `node scripts/frames.mjs still <frame>` (half size, several frames in one call).
+still: `node scripts/precheck.mjs` (seconds: every act imports and renders at its first, middle and last frame, timing
+asserts, empty kit parts, text that does not fit). Look with `node scripts/frames.mjs still <frame>` (half size, several
+frames in one call).
 
 **6. Assemble, sound and check (15 min).** `npm run check` (tsc, `lint-film.mjs`, `grid-check.ts`) clean; `npm run cues`;
 the effects kit cast for this film's actions (`kit.py init --preset launch` unless `--music` did it, then `python3
@@ -247,7 +248,7 @@ camera films with shutter samples on fast frames); never upscale a final ([finis
 | is the script clear; are the UI strings real words; OCR of held stills | `scripts/copy-check.py` (`--ui src`, `--final`, `--ocr`) |
 | the grid, the beats, the script, the seams, the declarations | `scripts/grid-check.ts` |
 | static bans, tokens, placeholders, emphasis | `scripts/lint-film.mjs` |
-| imports, timing asserts, empty kit parts, text fit, in seconds | `scripts/precheck.mjs` |
+| imports, every act rendered at three frames, timing asserts, empty kit parts, text fit, in seconds | `scripts/precheck.mjs` |
 | stills and contact sheets from one cached bundle | `scripts/frames.mjs` (`still`, `sheet`) |
 | placement, safe area, overlaps, covered text, kit icons, stand-ins | `scripts/layout-audit.sh` |
 | pixel QA: pops, holds, seams, ground flips, motion gates | `scripts/forensics.py` (`--grammar-only`, `--seams`, `--loop`) |

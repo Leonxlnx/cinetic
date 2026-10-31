@@ -19,7 +19,7 @@ python3 scripts/copy-check.py TREATMENT.md                    # the script, befo
 node scripts/film-diff.mjs                                    # film.json: the picks differ from the last three films
 npx tsx scripts/grid-check.ts src/timeline.ts                 # after every timeline edit (beats, seams, the grid)
 node scripts/lint-film.mjs src [--strict]                     # every build step
-node scripts/precheck.mjs [--ship]                            # before every still or render: imports, timing, kit, fit
+node scripts/precheck.mjs [--ship]                            # before every still or render: imports, frames, timing, kit, fit
 python3 scripts/copy-check.py --ui src                        # the product's UI strings: real words, no slot, no sample
 npm run cues                                                  # out/cues.json (declarations, copy, events)
 bash scripts/render.sh Film out/preview.mp4 --preview         # muted render, mux, probe.py and check-sync.py
