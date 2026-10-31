@@ -30,7 +30,9 @@ frame is never empty between two scenes. 15-30 s, one text voice, one ground fam
    - `input`: the core action in plain words ("a hiker walking a mountain trail"), for the input shot.
    - The name goes in `src/brand/identity.ts`.
 2. **The input shot, the first step after the scaffold: `node tools/input.mjs`.** The core action as real footage: a
-   person giving the input (speaking into the phone, typing, paying). It reads launch.ts `input`, takes the matching
+   person giving the input (speaking into the phone, paying, cooking). An input that happens on a screen (typing code, a
+   pull request, a click) is not filmed: the product's own screen taking it is the shot, and the tool says so (`--force`
+   fetches all the same); a clip in the banned hues warns with its share. It reads launch.ts `input`, takes the matching
    footage recipe's first fitting clip (a search of the free footage sources in the same words when no recipe has
    one), downloads 3 s of it with its licence record into `public/assets/input.mp4` and writes `src/input.ts` (its size,
    rate and source), which `INPUT` in `src/product.tsx` reads; `--pick <n>` after a look at the results' sheet

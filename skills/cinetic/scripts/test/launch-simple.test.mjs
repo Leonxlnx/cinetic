@@ -19,6 +19,10 @@
  *   8. field      the claim sits on its colour field even when the scene before it names no `field`: a disc of the
  *                 accent at that scene's focus.
  *   9. layer      a velocity seam's smear runs along the layer's travel (Layer draws it as a directional blur).
+ *  10. input      tools/input.mjs films no input that happens on a screen (a developer typing: the product's own screen
+ *                 is the shot, status none with that reason; --force fetches); a fetched clip always lands as the file
+ *                 src/input.ts names (the old one steps aside, never a second file beside it); a clip in the house's
+ *                 banned hues warns with its share (a stand-in assets.mjs hands over an orange clip; needs ffmpeg).
  *
  * It lays the template over the Remotion starter in a temp folder (as new-film.sh does) and imports the modules through
  * the starter's tsx (npm install in assets/remotion-starter first).
@@ -156,6 +160,51 @@ try {
   writeLaunch([P.steps(), P.input('Tern turns notes into plans.'), P.result('Start your week.')]);
   const g = probe();
   result(/first pair and the last/.test(g.error ?? ''), 'lines: the first pair keeps its line', g.error ?? 'imported');
+
+  // 10. the input shot: a stand-in scripts/assets.mjs (a recipe of one clip; get writes an orange clip with ffmpeg)
+  const IN = path.join(TMP, 'input');
+  fs.mkdirSync(path.join(IN, 'src'), { recursive: true });
+  fs.mkdirSync(path.join(IN, 'scripts'), { recursive: true });
+  fs.mkdirSync(path.join(IN, 'public', 'assets'), { recursive: true });
+  fs.writeFileSync(path.join(IN, 'scripts', 'assets.mjs'), `import fs from 'node:fs';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+const a = process.argv.slice(2);
+const at = (k) => a[a.indexOf(k) + 1];
+if (a[0] === 'recipe') {
+  fs.mkdirSync(path.dirname(at('--out')), { recursive: true });
+  fs.writeFileSync(at('--out'), JSON.stringify({ recipe: 'stand-in', items: [{ n: 1, kind: 'video', ref: 'stand-in:1', width: 1920, height: 1080, duration: 8, screen: 'cut' }] }));
+  process.exit(0);
+}
+if (a[0] === 'get') {
+  const r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'color=c=0xE8792B:s=320x180:d=1:r=30', '-pix_fmt', 'yuv420p', path.join(at('--to'), 'input.mp4')]);
+  process.exit(r.status ?? 1);
+}
+process.exit(1);
+`);
+  const runInput = (words, ...args) => {
+    fs.writeFileSync(path.join(IN, 'src', 'launch.ts'), `export const LAUNCH = { name: 'Tern', pairs: [], close: 'Out now', input: '${words}' };\n`);
+    const r = spawnSync(process.execPath, [path.join(DIR, 'tools', 'input.mjs'), ...args], { cwd: IN, encoding: 'utf8' });
+    const ts = fs.existsSync(path.join(IN, 'src', 'input.ts')) ? fs.readFileSync(path.join(IN, 'src', 'input.ts'), 'utf8') : '';
+    const shot = /INPUT_SHOT: InputShot = (\{.*\});/.exec(ts);
+    return { out: `${r.stdout}${r.stderr}`, shot: shot ? JSON.parse(shot[1]) : null };
+  };
+  const dev = runInput('a developer typing code at a desk');
+  result(dev.shot?.status === 'none' && /happens on a screen/.test(dev.shot?.reason ?? ''), 'input: an input that happens on a screen is not filmed (the product\'s own screen is the shot)', JSON.stringify(dev.shot));
+  const ffmpeg = spawnSync('ffmpeg', ['-version']).status === 0;
+  if (!ffmpeg) console.log('skip  input: the clip checks need ffmpeg');
+  else {
+    // a clip from an earlier pick is already there: the new one replaces it in place
+    spawnSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'color=c=0x2B6CE8:s=320x180:d=1:r=30', '-pix_fmt', 'yuv420p', path.join(IN, 'public', 'assets', 'input.mp4')]);
+    const before = fs.statSync(path.join(IN, 'public', 'assets', 'input.mp4')).size;
+    const forced = runInput('a developer typing code at a desk', '--force');
+    const files = fs.readdirSync(path.join(IN, 'public', 'assets')).sort();
+    result(forced.shot?.status === 'fetched' && forced.shot.clip === 'assets/input.mp4' && files.join(',') === 'input.mp4',
+      'input: --force fetches; the clip lands as the file src/input.ts names, the old one gone, no second file beside it', JSON.stringify({ files, before, status: forced.shot?.status }));
+    result(/off-palette colour/.test(forced.out) && /\d+\.\d % of the clip's pixels/.test(forced.out), 'input: a clip in the banned hues (an orange field) warns with its share', forced.out.split('\n').filter((l) => /warn/.test(l)).join(' | ').slice(0, 200));
+    const talk = runInput('a person speaking into a phone');
+    result(talk.shot?.status === 'fetched' && !/happens on a screen/.test(talk.out), 'input: a human input is filmed (no screen refusal)', JSON.stringify(talk.shot));
+  }
 } finally {
   // the link to the starter's node_modules goes first (the folder it points at stays)
   try {

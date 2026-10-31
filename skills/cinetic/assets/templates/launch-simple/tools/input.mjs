@@ -4,12 +4,17 @@
  *
  * The first picture of a launch shows the product's core action literally, with a real person giving the input where
  * the input is human: real footage, never a drawing. This reads launch.ts `input` (the core action in the brief's
- * words: "a person speaking into a phone", "a developer typing at a desk", "a hiker on a trail"), finds the closest
+ * words: "a person speaking into a phone", "a cook reading a recipe", "a hiker on a trail"), finds the closest
  * footage recipe (scripts/assets.mjs recipe: inputs already looked at on a contact sheet, licences that need no
  * credit; with none for these words, assets.mjs search in the same words, people in shot), downloads its first fitting clip (a clip the cut leaves for the product's own screen first, then one with
  * a screen in shot) trimmed to `--seconds` into public/assets/input.mp4 with its licence record (assets/licences.json),
  * probes it and writes src/input.ts, which the first scene reads. With no recipe or no clip that fits, src/input.ts
  * says status 'none' and why, and the first scene plays its code-built fallback (the device alone).
+ * An input that happens on a screen (typing code, a pull request, a click in an app, a query) is not filmed: footage of
+ * a person at a desk shows the back of a head and a blur of someone else's screen, nothing of the product, so the
+ * product's own screen taking the input is the first picture (a typed field, a cursor, the pull request): status 'none'
+ * with that reason, unless --force. A clip whose pixels carry an off-palette colour (orange, amber, salmon, purple:
+ * the house bans) over 2 % of the frame warns with its share, so it is picked again before it reaches the film.
  *
  *   node tools/input.mjs ["<the input in your words>"] [--pick N] [--start S] [--seconds 3] [--none "<why>"] [--dry-run]
  *     words      default: launch.ts `input`
@@ -17,12 +22,29 @@
  *     --start S  the source second the shot starts at (default 1, or 0 for a clip under 5 s)
  *     --seconds  how long a piece to keep (default 3)
  *     --none     no footage fits this product (say why): writes status 'none', the fallback plays
+ *     --force    fetch footage for an input that happens on a screen all the same
  *     --dry-run  print the pick, download nothing
  * Exit codes: 0 written (fetched or none), 1 a step failed (src/input.ts unchanged), 2 bad arguments.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+
+/** The share (%) of rgb24 pixels in the house colour bans: orange, amber and salmon (hue 8-50 deg) and purple (270-320),
+ * saturated (0.35+) and lit (0.3+). */
+const offPalette = (b) => {
+  let banned = 0;
+  let n = 0;
+  for (let i = 0; i + 2 < b.length; i += 3) {
+    const r = b[i] / 255, g = b[i + 1] / 255, bl = b[i + 2] / 255;
+    const mx = Math.max(r, g, bl), mn = Math.min(r, g, bl), d = mx - mn;
+    n++;
+    if (mx < 0.3 || d / (mx || 1) < 0.35) continue;
+    const hue = ((mx === r ? ((g - bl) / d) % 6 : mx === g ? (bl - r) / d + 2 : (r - g) / d + 4) * 60 + 360) % 360;
+    if ((hue >= 8 && hue <= 50) || (hue >= 270 && hue <= 320)) banned++;
+  }
+  return n ? (100 * banned) / n : 0;
+};
 
 const argv = process.argv.slice(2);
 if (argv.includes('-h') || argv.includes('--help')) {
@@ -73,7 +95,15 @@ export const INPUT_SHOT: InputShot = ${JSON.stringify(shot)};
   console.log(`input: src/input.ts ${shot.status}${shot.status === 'fetched' ? ` (${shot.source}, ${shot.w}x${shot.h} @ ${shot.fps} fps, from the ${shot.recipe} recipe)` : ` (${shot.reason})`}`);
 };
 
+// an input that happens on a screen: the product's own screen is the shot, never a stock clip of someone at a desk
+const SCREEN = /\b(typ(e|es|ed|ing)|keyboard|laptop|desk|computer|screen|monitor|developers?|coders?|coding|code|programmers?|click(s|ed|ing)?|pull requests?|commits?|terminal|browser|spreadsheets?|dashboards?|inbox|email|query|queries|prompt)\b/i;
+const BODY = /\b(speak|speaks|speaking|talk|talks|talking|says|saying|walk|walks|walking|run|runs|running|hik(e|es|ing)|cook|cooks|cooking|pay|pays|paying|photograph\w*|shoot\w*|film(s|ing)?|draw(s|ing)?|paint\w*|sing\w*|ride|rides|riding|shop\w*|scan(s|ning)?|hold(s|ing)?|record(s|ing)?)\b/i;
+const screenOnly = SCREEN.test(words) && !BODY.test(words);
 const none = opt('--none');
+if (none === null && screenOnly && !argv.includes('--force')) {
+  write({ status: 'none', clip: 'assets/input.mp4', w: 1920, h: 1080, fps: 30, from: 0, words, reason: `"${words}" happens on a screen: the first scene shows the product's own screen taking it (a typed field, a cursor, the pull request), never a stock clip of a person at a desk (the back of a head, someone else's screen); --force fetches footage all the same` });
+  process.exit(0);
+}
 if (none !== null) {
   write({ status: 'none', clip: 'assets/input.mp4', w: 1920, h: 1080, fps: 30, from: 0, words, reason: none || 'no footage fits this product' });
   process.exit(0);
@@ -124,11 +154,25 @@ const dur = Number(pick.duration ?? 8);
 const start = Number(opt('--start', dur >= secs + 2 ? 1 : 0));
 console.log(`input: #${pick.n} ${pick.ref} · ${pick.title || ''} · ${pick.shows || ''}`);
 if (argv.includes('--dry-run')) process.exit(0);
-const got = node(['get', `#${pick.n}`, '--from', results, '--to', path.join('public', 'assets'), '--name', 'input', '--trim', `${start},${secs}`, '--res', '1080']);
+// the clip always lands as public/assets/input.mp4, the file src/input.ts names: a clip already there steps aside first
+// (a download beside it would land as input-2.mp4 while the film went on playing the old one), and comes back when the
+// new one fails
 const file = path.join(ROOT, 'public', 'assets', 'input.mp4');
+const prev = path.join(ROOT, 'public', 'assets', 'input.prev.mp4');
+if (fs.existsSync(file)) fs.renameSync(file, prev);
+const got = node(['get', `#${pick.n}`, '--from', results, '--to', path.join('public', 'assets'), '--name', 'input', '--trim', `${start},${secs}`, '--res', '1080']);
 if (!got.ok || !fs.existsSync(file)) {
+  if (fs.existsSync(prev) && !fs.existsSync(file)) fs.renameSync(prev, file);
   console.error(got.out.split('\n').slice(-8).join('\n'));
   die(`could not download ${pick.ref} (src/input.ts unchanged): try --pick <n>, or --none "<why>"`);
+}
+if (fs.existsSync(prev)) fs.unlinkSync(prev);
+// the house colour bans in the clip's pixels (two frames a second at 160 px): orange, amber and salmon (hue 8-50 deg)
+// and purple (270-320 deg), saturated and lit; over 2 % of the frame it warns with the share
+const px = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-vf', 'fps=2,scale=160:-2', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 1 << 26 });
+if (px.status === 0 && px.stdout?.length) {
+  const share = offPalette(px.stdout);
+  if (share > 2) console.warn(`input: warn: ${share.toFixed(1)} % of the clip's pixels are an off-palette colour (orange, amber, salmon or purple): pick another (--pick <n> after assets.mjs sheet ${results}) or crop and grade it so none shows`);
 }
 // its size and rate (the trimmed piece starts at its own second 0)
 const pr = spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,r_frame_rate', '-of', 'json', file], { encoding: 'utf8' });
