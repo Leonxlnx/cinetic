@@ -21,7 +21,7 @@ export type Slot = { day: number; at: number; len: number; label: string; accent
  *          appears (`result`: the people in the call, the room booked, the file shared); `you`: the viewer's own entry
  *          that the tap adds to the result (the state changes because of the viewer's action: two here, then you)
  *   fill   a list, a grid or a week that fills: the rows, tiles or blocks land one by one, the last (`accent`) lands
- *          in the accent (the free hour, the found note, the new photo)
+ *          in the accent (the free hour, the found note, the new photo); a grid's tiles are real photos
  *   swap   before -> after: the screen as it was (`before`), a wipe, the screen as it is now (`after`), its tag
  *          turning from tag[0] to tag[1] (a messy note tidied, a list sorted, a draft made final)
  *   count  a figure that rises from `from` to `to` (with `unit`), the bars under it growing (hours saved, files synced)
@@ -150,6 +150,7 @@ for (const c of UPDATE.changes) {
     const max = s.layout === 'week' ? 14 : s.layout === 'grid' ? 9 : 6;
     need(s.items.length >= 3 && s.items.length <= max, `${c.id}: a ${s.layout} that fills shows 3-${max} items (it has ${s.items.length})`);
     if (s.layout === 'week') need(s.days.length >= 3 && s.days.length <= 7 && s.items.every((x) => x.day >= 0 && x.day < s.days.length && x.len > 0), `${c.id}: a week needs 3-7 days and every block on one of them`);
+    if (s.layout === 'grid') need(s.items.every((x) => !!x.photo), `${c.id}: a grid shows pictures: every tile its real photo (a list holds items without one)`);
   } else if (s.kind === 'swap') {
     need(s.before.length >= 2 && s.before.length <= 4 && s.after.length >= 2 && s.after.length <= 4, `${c.id}: before and after show 2-4 rows each`);
   } else if (s.kind === 'count') {

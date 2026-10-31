@@ -56,7 +56,7 @@ device (`PICTURE`) and line device (`LINE_DEVICE`). `PIN` fixes a slot, `SEED` r
 | `words` | one plain sentence of 2-6 words, the result the user sees ("Book a desk in one tap"), never a feature name |
 | `key` | the words set apart: the accent, or the line device's emphasis (every line names one) |
 | `title`, `sub` | the screen's own header, in the product's words |
-| `show` | `tap` (rows, `action`, `done`, `result`, and `you`: the viewer the tap adds), `fill` (`list`, `grid` or `week`, the `accent` item landing last), `swap` (before, after, a tag), `count` (from, to, unit, bars) |
+| `show` | `tap` (rows, `action`, `done`, `result`, and `you`: the viewer the tap adds), `fill` (`list`, `grid` of photos or `week`, the `accent` item landing last), `swap` (before, after, a tag), `count` (from, to, unit, bars) |
 | `recap` | the few words its recap card shows |
 | `before` | the old way, when the change has one: 2-4 hand steps (split-compare) or 4-7 pings and questions it ends (bubble-swarm) |
 | `photos` | 5 or more pictures the change is about (photo-arc; a grid of 5+ photos gives its own) |
