@@ -51,6 +51,23 @@ walkthrough when the user does the steps); the same story as a dark, fast tease 
 camera teaser. When none fits, use `launch-simple` (the default launch), or `--template none` for the starter's own acts. A launch
 film may end on the reel's close (rebuild its acts after your own) or open on the walkthrough's first three acts.
 
+## launch-simple
+
+The default launch, and simple is never flat: one thing a frame, every frame lit and alive. You write `src/launch.ts`
+(each line, its picture, the strings that picture shows, the one fact under the lockup) and `src/product.tsx` (each
+picture as the product's real screen); the template's `README.md` walks through both. What it carries for you:
+- **Ground.** The dealt family under a key light (a soft pool from the top left, lagging the camera float, the far side
+  falling off), and the film's one colour event from the claim, where the key light takes the accent's hue.
+- **The core action.** The first picture is real footage of the input (`node scripts/assets.mjs recipe "<input>"`, then
+  `public/assets/input.mp4` and `INPUT` in `src/product.tsx`), cut on the action to the lit phone with the product's UI
+  receiving it; with no clip that fits, a code-built fallback plays.
+- **The product as a lit object.** The kit's `Phone` or `Laptop`, or a lit `Card` (a face lit from the key, a rim, a
+  contact shadow, a glare), its parts moving in two planes under the camera.
+- **Type.** Statements at a 7.4 % cap height, the claim (the last line) at 8.6 %, never under 6 %.
+- **One signature** from [catalogue.md](catalogue.md), built in its scene and named in `SIGNATURE` (`src/product.tsx`),
+  and the end mark: the brand's SVG (`scripts/brand.py`), or the stand-in the template builds from the film's own element
+  until then (lint flags its marker), never a sparkle, a star or an AI glyph.
+
 ## update
 
 "vX is out", told by the product itself. One camera carries the whole film along one strip, so every act line is a
