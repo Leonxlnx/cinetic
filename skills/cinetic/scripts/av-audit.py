@@ -80,6 +80,13 @@ Checks (defaults are proven starting points, not dogma):
              boundary within +-1 f of a downbeat attack, an entry, a stop's end or the ending (the reveal,
              the payoff and the lockup fail when off); a hard cut 2-4 f off a strong accent (>= 6 dB) is a
              near miss                                                                         warn/fail
+  level      (a film with a track) the music's level never steps mid-shot: a rise of 8 dB or a fall of 10 dB (the second
+             after against the second before, on the music stem with --stems, else the mix) that lands on no picture
+             event (an act change, a declared seam, a cut cue, the reveal or lockup, within 0.15 s of where the louder
+             or quieter part begins) fails; 5-8 dB warns.
+             A section of the track entering mid-shot reads as a mistake: fit the edit to the shots (track.py fit),
+             so its level changes ride the cuts. The opening second, the stops the grid declares and the ending after
+             the body's last bar line are left out                                             fail/warn
   draft      a soundtrack score.py rendered with --draft (placeholder voices) is never delivered     fail
 
 Writes JSON (--json) and a short summary. Exit: 0 no failing check, 1 a failing check, 2 usage or
@@ -374,6 +381,79 @@ def music_sync(raw, fps):
                     near.append(dict(f=float(e['f']), accent_f=a, off_f=round(float(e['f']) - a, 2)))
                     break
     return dict(rows=rows, near_misses=near, grid_bpm=m.get('bpm'))
+
+
+LEVEL_FAIL_DB, LEVEL_FALL_FAIL_DB, LEVEL_WARN_DB, LEVEL_TOL_S = 8.0, 10.0, 5.0, 0.15
+
+
+def level_severity(step_db):
+    """a mid-shot level step: a rise of 8 dB or a fall of 10 dB fails (a section jumping in, a hole), 5 dB or more warns"""
+    if step_db >= LEVEL_FAIL_DB or step_db <= -LEVEL_FALL_FAIL_DB:
+        return 'fail'
+    return 'warn' if abs(step_db) >= LEVEL_WARN_DB else None
+
+
+def picture_events(raw):
+    """film frames where the picture changes on purpose: act changes, declared seams, cut cues, the reveal/lockup"""
+    ev = [float(a['from']) for a in (raw.get('acts') or {}).values() if isinstance(a, dict) and float(a.get('from', 0)) > 0]
+    ev += [float(x['at']) for x in ((raw.get('declared') or {}).get('seams') or []) if isinstance(x, dict) and x.get('at') is not None]
+    sal = raw.get('salience') or {}
+    cue = raw.get('cue') or {}
+    ev += [float(cue[k]) for k, v in sal.items() if v == 'cut' and k in cue]
+    ev += [float(cue[k]) for k in ('reveal', 'payoff', 'lockup', 'end') if k in cue]
+    d = raw.get('declared') or {}
+    if d.get('reveal') is not None:
+        try:
+            ev.append(float(d['reveal']))
+        except (TypeError, ValueError):
+            pass
+    return sorted(set(ev))
+
+
+def level_steps(sig, sr, raw, fps):
+    """the music's level steps (dB, the second after against the second before) that land on no picture event:
+    [{t, f, step_db, nearest_event_f}], strongest first; None for a film without a track grid"""
+    m = raw.get('music') or {}
+    if not m.get('downbeats') or sig is None or not len(sig):
+        return None
+    hop = int(0.02 * sr)
+    w = int(0.05 * sr)
+    n = (len(sig) - w) // hop
+    if n < 10:
+        return []
+    e = np.array([np.mean(sig[i * hop:i * hop + w] ** 2) for i in range(n)]) + 1e-12
+    k1, k0 = int(1.0 / 0.02), int(0.1 / 0.02)
+    c = np.concatenate([[0.0], np.cumsum(e)])
+    step = np.full(n, 0.0)
+    for i in range(k1, n - k1):
+        before = (c[i - k0] - c[i - k1]) / (k1 - k0)
+        after = (c[i + k1] - c[i + k0]) / (k1 - k0)
+        step[i] = 10 * np.log10(after / before)
+    t = (np.arange(n) * hop + w / 2) / sr
+    body_end = float(m['downbeats'][-1]) / fps
+    stops = [(float(x['from']) / fps - 0.3, float(x['to']) / fps + 0.3) for x in m.get('stops') or [] if 'from' in x and 'to' in x]
+    ev = np.array(picture_events(raw)) / fps
+    out = []
+    a = np.abs(step)
+    peaks, _ = signal.find_peaks(a, height=LEVEL_WARN_DB, distance=int(1.0 / 0.02))  # a section changes at most once a second
+    h2, w2, k2 = int(0.005 * sr), int(0.02 * sr), 20  # where it begins: 20 ms windows every 5 ms, 100 ms either side
+    for p0 in peaks:
+        c0 = int(t[p0] * sr)
+        i0, i1 = max(0, c0 - int(0.7 * sr)), min(len(sig) - w2, c0 + int(0.7 * sr))
+        e2 = np.array([np.mean(sig[i:i + w2] ** 2) for i in range(i0, i1, h2)]) + 1e-12
+        tp = float(t[p0])
+        if len(e2) > 2 * k2 + 1:
+            fine = np.array([10 * np.log10(e2[i:i + k2].mean() / e2[i - k2:i].mean()) for i in range(k2, len(e2) - k2)])
+            j = int(np.argmax(fine) if step[p0] > 0 else np.argmin(fine)) + k2
+            tp = (i0 + j * h2) / sr
+        if tp < 1.0 or tp > body_end - 0.05 or any(a_ <= tp <= b_ for a_, b_ in stops):
+            continue
+        near = float(ev[np.argmin(np.abs(ev - tp))]) if len(ev) else None
+        if near is not None and abs(near - tp) <= LEVEL_TOL_S:
+            continue
+        out.append(dict(t=round(tp, 2), f=int(round(tp * fps)), step_db=round(float(step[p0]), 1),
+                        nearest_event_f=int(round(near * fps)) if near is not None else None))
+    return sorted(out, key=lambda r: -abs(r['step_db']))
 
 
 def film_lufs(args):
@@ -965,6 +1045,15 @@ def main():
                 f'own band (worst {masking["worst"][0]["margin_db"]} dB at f{masking["worst"][0]["f"]}): move the effect off '
                 'the busy band, raise its weight, or cut to a sparser bar under it (track.py edit); the music never ducks')
 
+    # ---- the music's level never steps mid-shot (a film with a track)
+    lv = level_steps(music_sig if music_sig is not None else mono, sr, raw_cues, fps)
+    if lv:
+        for r in lv[:6]:
+            add('level', level_severity(r['step_db']), r['f'],
+                f"the music {'rises' if r['step_db'] > 0 else 'falls'} {abs(r['step_db']):.1f} dB at {r['t']:.2f} s on no picture event "
+                f"(the nearest cut or seam is f{r['nearest_event_f']}): a section entering mid-shot reads as a mistake; fit the "
+                "edit to the shots (track.py fit) so its level changes ride the cuts, or cut the picture on it")
+
     # ---- music_sync (a film with a track) and score.py's music figures
     msync = music_sync(raw_cues, fps)
     if msync:
@@ -987,7 +1076,7 @@ def main():
                warnings=len(flags) - fails, notes=notes, flags=flags, sync=sync,
                apex=dict(checked=len(apex_rows), off=[r for r in apex_rows if not r['ok']], rows=apex_rows),
                visual=visual, loudness=loud, clipping_samples=clip, clicks=clicks[:40], tail=tail, head=head, masking=masking,
-               music_sync=msync, intended=sp, ending=ending)
+               music_sync=msync, intended=sp, ending=ending, level=lv)
     res['pass'] = res.pop('pass_')
     if args.json:
         os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)

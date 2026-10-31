@@ -266,6 +266,7 @@ jobs:
           python3 "skills/$SKILL/scripts/test/detail-pair.test.py"
           python3 "skills/$SKILL/scripts/test/sheet.test.py"
           python3 "skills/$SKILL/scripts/test/check-sync.test.py"
+          python3 "skills/$SKILL/scripts/test/av-level.test.py"
 
       - name: Real marks and music finder tests (logos.mjs, music.mjs; offline fixtures, no network)
         run: |
