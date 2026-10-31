@@ -41,7 +41,10 @@
  *           brief's words name them: "precise" is driving, "premium" elegant, "bright" uplifting ...). Ranked by
  *           mood (its own mood first, a second mood next), length (never shorter than the film plus its ending),
  *           tempo (--bpm; double or half time counts), the lift for the reveal and the library's quality mark;
- *           a second track by one artist, or an artist a recent film used, loses ground; a track any earlier
+ *           a second track by one artist, or an artist a recent film used, loses ground; a track earshot hears as
+ *           generic corporate stock (its nearest descriptions) loses 4 (1.5 when it is only third or fourth); the dealt
+ *           direction (out/direction.json: its feel joins the moods, its tempo is the range without --bpm, a track
+ *           ending the way it asks gains; --no-direction leaves it out) steers the character; a track any earlier
  *           film used is held back, the previous first offer is never first again. A launch (--format launch, or a
  *           film.json here whose template is launch-simple) prefers 115-136 BPM when --bpm is not given, and a tempo
  *           outside it loses more than the brief's own range would (146 BPM drum and bass under calm cards is the
@@ -57,7 +60,9 @@
  *           track), the intro, breaks with their entries, the ending, the contrast. --measure downloads the
  *           picked ones (default the first three) into a temporary folder, measures a quick tempo (and, for a
  *           catalog without waveform data, the energy curve) from the audio (ffmpeg decodes it), keeps the
- *           tempo (~/.cinetic/music-tempo.json) and deletes the file.
+ *           tempo (~/.cinetic/music-tempo.json), has earshot listen to it (what it hears it nearest to; a track it
+ *           hears as generic corporate stock loses 4, --no-listen skips it; earshot is the one kit.py found) and
+ *           deletes the file.
  *           The full analysis is still `track.py analyze` on the track you keep.
  * get       downloads the full file (never a preview, except an Openverse effect whose origin serves only
  *           one: noted; a library track: the library's copy while its sha256 still matches) into the film's audio/music/ (audio/sfx/ for an effect), reads the item's licence
@@ -724,6 +729,10 @@ export function scoreItem(it, want = {}) {
     } else why.push('tempo unknown');
   }
   if (it.kind === 'music' && want.shortlist?.has(it.ref)) { s -= 1.5; why.push('a shortlist track the example films used'); }
+  if (it.kind === 'music' && !(want.words || []).some((w) => STOCK_RE.test(w))) {
+    const st = stockPenalty({ tags: it.tags, genre: it.genre, listen: it.listen });
+    if (st.penalty) { s -= st.penalty; why.push(st.why); }
+  }
   const e = it.energy;
   if (e && it.kind === 'music') {
     const entry = (e.breaks || []).find((x) => x.entry_s != null && x.entry_s > 0.15 * e.seconds && x.entry_s < 0.8 * e.seconds);
@@ -876,6 +885,34 @@ export const trackEnergy = (t) => {
   return e;
 };
 
+/** Generic stock: what earshot names a track nearest to when it hears corporate background music, and the catalog tags
+ *  that sell a track as such (corporate, business, motivational, inspirational presentation). */
+export const STOCK_RE = /corporate|business|presentation|stock background/i;
+/** {penalty, why} of a track that sounds like generic corporate stock: earshot's nearest descriptions (listen.near, the
+ *  first two cost 4, the next two 1.5), else a catalog tag that sells it as such (corporate music, business: 2). */
+export function stockPenalty(t) {
+  const near = (t.listen?.near || []).map(String);
+  const k = near.findIndex((d) => STOCK_RE.test(d));
+  if (k >= 0 && k < 2) return { penalty: 4, why: `earshot hears generic corporate stock ("${near[k]}")` };
+  if (k >= 2 && k < 4) return { penalty: 1.5, why: `earshot hears a touch of corporate stock ("${near[k]}")` };
+  const tags = [...(t.tags?.genre || []), ...(t.tags?.mood || []), ...(t.tags?.tag || []), ...(t.tags?.category || []), t.genre].filter(Boolean).map(String);
+  const tg = tags.find((x) => STOCK_RE.test(x.replace(/-/g, ' ')));
+  return tg ? { penalty: 2, why: `tagged ${tg}: generic stock` } : { penalty: 0, why: null };
+}
+
+/** The dealt direction's music (out/direction.json from deck.py: music.bpm, music.feel, music.ending), or null. */
+export function dealtMusic(dir = '.') {
+  try {
+    const d = JSON.parse(fs.readFileSync(path.join(dir, 'out', 'direction.json'), 'utf8'));
+    const m = d?.direction?.music;
+    if (!m || typeof m !== 'object') return null;
+    return { id: d.direction.id || null, bpm: Array.isArray(m.bpm) && m.bpm.length === 2 ? m.bpm.map(Number) : null, feel: String(m.feel || ''),
+      ending: m.ending || null };
+  } catch {
+    return null;
+  }
+}
+
 export function scoreLibraryTrack(t, want = {}) {
   const why = []; let s = 0;
   const L = want.length;
@@ -923,6 +960,11 @@ export function scoreLibraryTrack(t, want = {}) {
   } else if (en?.kind === 'fade' || en?.kind === 'loop') { s -= 2.5; why.push(`no ending of its own (${en.kind}): the film would fade it out under the end card`); }
   if (Number.isFinite(t.quality)) s += 0.5 * t.quality;
   if (want.shortlist?.has(t.ref)) { s -= 1.5; why.push('a shortlist track the example films used'); }
+  const st = stockPenalty(t);
+  if (st.penalty) { s -= st.penalty; why.push(st.why); }
+  if (want.dealt?.ending && en?.kind && (en.kind === want.dealt.ending || (want.dealt.ending === 'ring' && en.kind === 'button'))) {
+    s += 1; why.push(`ends the way the dealt direction asks (${want.dealt.ending})`);
+  }
   return { score: Math.round(s * 100) / 100, why };
 }
 
@@ -1092,7 +1134,7 @@ async function download(url, dest, minBytes, referer = null) {
 export class Usage extends Error {}
 export function parseArgs(argv) {
   const VALUED = new Set(['mood', 'query', 'bpm', 'length', 'kind', 'limit', 'pages', 'out', 'pick', 'to', 'from', 'name', 'film', 'source', 'library', 'format', 'energy']);
-  const FLAGS = new Set(['json', 'measure', 'no-history', 'help']);
+  const FLAGS = new Set(['json', 'measure', 'no-history', 'no-direction', 'no-listen', 'help']);
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -1249,6 +1291,31 @@ function decode(file, sr = 11025, maxS = 120) {
   const b = r.stdout; return new Float32Array(b.buffer, b.byteOffset, Math.floor(b.length / 4));
 }
 
+/** The earshot interpreter kit.py found and remembered ($CINETIC_HOME/tools.json earshot: python, pythonpath), else
+ *  $EARSHOT_PYTHON: {python, env} or null. */
+export function earshotOf(env = process.env) {
+  const t = readJson(path.join(homeDir(env), 'tools.json'), {}).earshot || {};
+  const py = (env.EARSHOT_PYTHON && !/^(none|off)$/i.test(env.EARSHOT_PYTHON) && env.EARSHOT_PYTHON) || t.python;
+  if (!py || !fs.existsSync(py)) return null;
+  const e = { ...env, PYTHONUTF8: '1' };
+  if (t.pythonpath && py === t.python && fs.existsSync(t.pythonpath)) e.PYTHONPATH = [t.pythonpath, env.PYTHONPATH].filter(Boolean).join(path.delimiter);
+  if (t.home && py === t.python && !env.EARSHOT_HOME && fs.existsSync(t.home)) e.EARSHOT_HOME = t.home;  // its models' cache
+  return { python: py, env: e };
+}
+
+/** earshot's nearest music descriptions of each file (describe: music_hints, 30 s from the first third), one process
+ *  for all: {file: [terms]} ({} without earshot). */
+export function listenFiles(files, env = process.env) {
+  const es = earshotOf(env);
+  if (!es || !files.length) return {};
+  const code = ['import json, sys', 'from earshot.describe import describe', 'out = {}', 'for f in sys.argv[1:]:', '    try:',
+    '        import soundfile as sf', '        d = sf.info(f).duration', '        a = max(0.0, min(d / 3, d - 30))',
+    '        r = describe(f, start=a, end=min(d, a + 30), top=4)', "        out[f] = [h['term'] for h in (r.get('music_hints') or [])[:4]]",
+    '    except Exception as e:', "        out[f] = {'error': str(e)[:200]}", 'print(json.dumps(out))'].join('\n');
+  const r = spawnSync(es.python, ['-c', code, ...files], { encoding: 'utf8', env: es.env, timeout: 600000, maxBuffer: 16 * 1024 * 1024 });
+  try { return JSON.parse(String(r.stdout || '').trim().split(/\r?\n/).pop()); } catch { return {}; }
+}
+
 async function cmdSheet(args, env = process.env) {
   const file = args._[0] || path.join('out', 'music', 'search.json');
   const r = readJson(file, null);
@@ -1258,6 +1325,7 @@ async function cmdSheet(args, env = process.env) {
   if (args.measure) {
     const tc = readJson(tempoPath(env), {});
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-music-'));
+    const heard = [];  // [k, file]: earshot listens to these in one process before the files go
     try {
       for (const [k, it] of chosen.slice(0, args.pick ? chosen.length : 3)) {
         if (it.kind !== 'music' || it.library) continue; // a library track is measured already (track.py)
@@ -1268,9 +1336,15 @@ async function cmdSheet(args, env = process.env) {
           const bpm = quickTempo(pcm.subarray(0, 11025 * 120), 11025);
           if (bpm) { it.tempo = { value: bpm, kind: 'quick' }; tc[it.ref] = { bpm, kind: 'quick', date: new Date().toISOString().slice(0, 10) }; }
           if (!it.energy) it.energy = energyFromPcm(pcm, 11025);
-        } catch (e) { it.notes = [...(it.notes || []), `measure: ${e.message}`]; }
-        finally { fs.rmSync(f, { force: true }); }
+          heard.push([k, f]);
+        } catch (e) { it.notes = [...(it.notes || []), `measure: ${e.message}`]; fs.rmSync(f, { force: true }); }
         r.items[k] = it;
+      }
+      // earshot's ears on the downloaded candidates: what it hears them nearest to (a generic corporate bed loses ground)
+      if (heard.length && !args['no-listen']) {
+        const near = listenFiles(heard.map(([, f]) => f), env);
+        if (!Object.keys(near).length) console.log('note: earshot not found (python3 scripts/audio/kit.py where): the candidates are not listened to');
+        for (const [k, f] of heard) if (Array.isArray(near[f])) r.items[k].listen = { near: near[f] };
       }
     } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
     writeJson(tempoPath(env), tc);
@@ -1364,14 +1438,21 @@ async function cmdPick(args, env = process.env) {
   const top = Object.entries(moodsOfWords(ws)).sort((x, y) => y[1] - x[1])[0]?.[0];
   const en = args.energy || (top ? ENERGIES[trackEnergy({ mood: top })] : launch ? 'crisp' : null);
   if (en && !ENERGIES.includes(en)) throw new Usage(`--energy is one of ${ENERGIES.join(', ')}`);
-  const want = { words: ws, moods: moodsOfWords(ws), bpm: bpmRange(args.bpm) || (launch ? LAUNCH_BPM : null), launch, launchBpm: launch && !args.bpm,
-    energy: en ? ENERGIES.indexOf(en) : null, length: num(args.length, null, 1, 3600, 'length'), shortlist: shortlistRefs() };
+  // the dealt direction (deck.py, out/direction.json): its feel joins the brief's moods at a lower weight, its tempo is
+  // the range when --bpm names none, and a track that ends the way it asks (ring, button) gains
+  const dealt = args['no-direction'] ? null : dealtMusic();
+  const moods = moodsOfWords(ws);
+  if (dealt?.feel) for (const [m, w] of Object.entries(moodsOfWords(words(dealt.feel)))) moods[m] = (moods[m] || 0) + 0.6 * w;
+  const dealtBpm = !args.bpm && dealt?.bpm && dealt.bpm.every(Number.isFinite) ? dealt.bpm : null;
+  const want = { words: ws, moods, bpm: bpmRange(args.bpm) || dealtBpm || (launch ? LAUNCH_BPM : null), launch, launchBpm: launch && !args.bpm && !dealtBpm,
+    energy: en ? ENERGIES.indexOf(en) : null, length: num(args.length, null, 1, 3600, 'length'), shortlist: shortlistRefs(), dealt };
   const limit = num(args.limit, 8, 1, 40, 'limit');
   const hist = readHistory(env);
   const { items, held } = rankLibrary(tracks, want, args['no-history'] ? {} : hist);
   const out = items.slice(0, limit);
   const notes = Object.keys(want.moods).length ? [] : [`no library mood in "${q}": the library's moods are ${LIB_MOODS.join(', ')} (and their words)`];
   if (want.launchBpm) notes.push(`a launch: ${LAUNCH_BPM.join('-')} BPM preferred (--bpm sets another range)`);
+  if (dealt) notes.push(`the dealt direction${dealt.id ? ` (${dealt.id})` : ''}: "${dealt.feel}"${dealtBpm ? `, ${dealtBpm.join('-')} BPM` : ''}${dealt.ending ? `, ends on a ${dealt.ending}` : ''} (--no-direction leaves it out)`);
   const r = { query: { mood: q, kind: 'music', bpm: want.bpm, length: want.length, moods: want.moods, format: fmt || null, energy: en }, library: p, sources: ['library'], items: out, held, notes };
   if (!args['no-history'] && out.length) {
     hist.searches.push({ date: new Date().toISOString().slice(0, 10), kind: 'music', query: { mood: q, bpm: args.bpm || null, length: want.length, sources: ['library'] }, first: out[0].ref, offered: out.slice(0, 5).map((x) => x.ref) });

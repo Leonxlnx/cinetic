@@ -356,7 +356,8 @@ def _checkout_version(d):
 
 def newer_checkouts(py):
     """Source checkouts of earshot with sound kits (0.4+) beside the one this interpreter imports (a clone or git
-    worktree next to it: <parent>/earshot*, <parent>/earshot*/*), newest first: [(version, dir)]."""
+    worktree next to it: <parent>/earshot*, <parent>/earshot*/*), newest first: [(version, dir, the interpreter's own
+    checkout)]."""
     try:
         p = subprocess.run([py, '-c', 'import earshot, os; print(os.path.dirname(os.path.dirname(os.path.abspath(earshot.__file__))))'],
                            capture_output=True, text=True, timeout=180)
@@ -376,9 +377,28 @@ def newer_checkouts(py):
             dirs += [os.path.join(d, m) for m in sorted(os.listdir(d)) if os.path.isdir(os.path.join(d, m))]
         except OSError:
             pass
-    out = [(v, d) for d in dirs if os.path.abspath(d) != os.path.abspath(repo) for v in [_checkout_version(d)]
+    out = [(v, d, repo) for d in dirs if os.path.abspath(d) != os.path.abspath(repo) for v in [_checkout_version(d)]
            if v and v >= LAUNCH_MIN]
     return sorted(out, reverse=True)
+
+
+def _models_home(d, repo):
+    """earshot's model cache for a checkout d run beside the installed one: unset EARSHOT_HOME reads <d>/.cache, which a
+    fresh worktree lacks or holds in part; the installed checkout's own cache (<repo>/.cache, where its models were
+    downloaded) serves when it holds more."""
+    def blobs(root):  # bytes of downloaded model files in an earshot cache
+        n = 0
+        for dp, _, fs in os.walk(os.path.join(root, 'hf')):
+            for f in fs:
+                try:
+                    n += os.path.getsize(os.path.join(dp, f)) if not os.path.islink(os.path.join(dp, f)) else 0
+                except OSError:
+                    pass
+        return n
+    if os.environ.get('EARSHOT_HOME'):
+        return None
+    home = os.path.join(repo, '.cache')
+    return home if blobs(home) > blobs(os.path.join(d, '.cache')) else None
 
 
 def _with_pythonpath(d):
@@ -419,19 +439,25 @@ def find_earshot(python=None, score_python=None):
         seen.add(key)
         if how == 'found before (tools.json)' and mem.get('pythonpath') and os.path.isdir(mem['pythonpath']):
             _with_pythonpath(mem['pythonpath'])
+            if mem.get('home') and not os.environ.get('EARSHOT_HOME') and os.path.isdir(mem['home']):
+                os.environ['EARSHOT_HOME'] = mem['home']
         ver, why = _probe_python(exe)
         if ver:
             src = PROBED.get(exe)
             on_path = [q for q in os.environ.get('PYTHONPATH', '').split(os.pathsep) if q]
             remember_tool('earshot', dict(python=exe, pythonpath=src if src and any(
-                os.path.normcase(os.path.abspath(q)) == os.path.normcase(os.path.abspath(src)) for q in on_path) else None))
+                os.path.normcase(os.path.abspath(q)) == os.path.normcase(os.path.abspath(src)) for q in on_path) else None,
+                home=os.environ.get('EARSHOT_HOME') or None))
             return Earshot(how, [exe, '-m', 'earshot'], exe, ver), tried
-        for v, d in newer_checkouts(exe):
+        for v, d, repo in newer_checkouts(exe):
             saved = os.environ.get('PYTHONPATH')
             _with_pythonpath(d)
             ver, why2 = _probe_python(exe)
             if ver:
-                remember_tool('earshot', dict(python=exe, pythonpath=d))
+                home = _models_home(d, repo)
+                if home:
+                    os.environ['EARSHOT_HOME'] = home
+                remember_tool('earshot', dict(python=exe, pythonpath=d, home=home or os.environ.get('EARSHOT_HOME') or None))
                 return Earshot(f'{how} with the earshot {".".join(map(str, v))} checkout {d}', [exe, '-m', 'earshot'], exe, ver), tried
             if saved is None:
                 os.environ.pop('PYTHONPATH', None)
