@@ -51,7 +51,7 @@ export const bt = (x: number) => {
  * After the last bar the picture holds while the music ends, never on a cut: at least 1 s, or the ending's own hold
  * (track.py grid writes it); a grid that only names a stop's element (end.f) holds that element and 1 s after it.
  */
-export const TAIL = Math.max(FPS, MUSIC ? Math.ceil(MUSIC.end.hold ?? 0) : 0, MUSIC && MUSIC.end.hold === undefined ? Math.ceil(MUSIC.end.f - bar(MUSIC.bars + 1)) + FPS : 0);
+export const TAIL = Math.max(FPS, MUSIC ? Math.ceil(MUSIC.end.hold ?? 0) : 0, MUSIC && MUSIC.end.hold === undefined ? Math.ceil(MUSIC.end.f) - b(MUSIC.bars + 1) + FPS : 0); // whole frames as the body ends (b rounds)
 
 // ---- The text voice (deal.ts voice): when a line of n words is whole, in 60 fps frames from its first frame.
 /** The voice's house numbers (f@60): word fade, stagger, re-centre (a glide); the blur-in; the ink-in. */

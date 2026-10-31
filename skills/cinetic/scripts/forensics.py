@@ -15,7 +15,7 @@ Frames are 0-based and absolute (frame = t * fps). Defaults (every number is a f
   spike        d > 1.0 and d > 2.5 * median(d[f-4..f+4] without f) + 0.3 on the whole frame, or the
                same rule with a 1.5 floor inside one of 9 regions (small pops), then classified:
                  cut: overlaps a declared cut                                           info
-                 burst: the change is spread over >= 3 frames (whip, flood, landing)   info
+                 burst: the change is spread over >= 3 f@60 (whip, flood, landing)      info
                  jump: optical flow explains it, but it is >= 8x the frames around it
                        (>= 3.0) and no seam is there: the picture moved in one step     fail
                        (within 2 f of a cue: warn)
@@ -1303,8 +1303,11 @@ def evaluate(args, info, M, decl):
             events.append(dict(ev, region=rg, series=x))
     events.sort(key=lambda ev: (ev['k'], -1 if ev['region'] is None else ev['region']))
 
-    need = sorted({f0 + ev['k'] for ev in events if ev['z'] - ev['a'] + 1 < args.burst_frames}
-                  | {f0 + ev['k'] - 1 for ev in events if ev['z'] - ev['a'] + 1 < args.burst_frames})
+    # a burst is a change spread over --burst-frames frames at 60 fps: 50 ms whatever the rate (2 frames at 30 fps), never
+    # under 2 frames, so a 3-frame flood at 60 fps that folds into 2 frames at 30 is still a burst, not a seam-pop
+    burst_n = max(2, int(round(args.burst_frames * fps / 60)))
+    need = sorted({f0 + ev['k'] for ev in events if ev['z'] - ev['a'] + 1 < burst_n}
+                  | {f0 + ev['k'] - 1 for ev in events if ev['z'] - ev['a'] + 1 < burst_n})
     smalls, spans = {}, []
     for f in need:  # re-decode the frames of short events for the flow test, in merged spans
         if spans and f - spans[-1][1] <= 30:
@@ -1332,7 +1335,7 @@ def evaluate(args, info, M, decl):
         on_cue = next((m for m in moments if fa - 2 <= m <= fz + 2), None)
         if any(a - 1 <= fz and fa <= b + 1 for a, b in cuts):
             it['class'] = 'cut'
-        elif L >= args.burst_frames:
+        elif L >= burst_n:
             it['class'] = 'burst'
         else:
             if fk - 1 in smalls and fk in smalls:
@@ -3292,7 +3295,7 @@ def main():
     g.add_argument('--region-spike-min', type=float, default=1.5, help='spike floor inside one of 9 regions')
     g.add_argument('--region-busy', type=float, default=0.15,
                    help='a region spike is part of a larger move when the whole-frame change exceeds this share')
-    g.add_argument('--burst-frames', type=int, default=3, help='a change spread over this many frames is a burst')
+    g.add_argument('--burst-frames', type=int, default=3, help='a change spread over this many frames at 60 fps is a burst (scaled to the frame rate, never under 2)')
     g.add_argument('--flow-explained', type=float, default=0.5, help='flow residual below this = motion')
     g.add_argument('--jump-ratio', type=float, default=8.0, help='a flow-explained spike this many times its neighbours = a jump')
     g.add_argument('--jump-min', type=float, default=3.0, help='... and at least this large (mean abs change, 0-255)')

@@ -6,7 +6,7 @@
 # its own, then installs dependencies (or symlinks an existing node_modules with --link-modules).
 #
 # Usage:
-#   bash scripts/new-film.sh <dir> [--engine remotion|hyperframes] [--fps 60] [--bpm N]
+#   bash scripts/new-film.sh <dir> [--engine remotion|hyperframes] [--fps 30] [--bpm N]
 #                            [--pace calm|crisp] [--type calm|bold] [--size 1920x1080] [--name my-film]
 #                            [--link-modules <node_modules>]
 #                            [--font <name>]... [--browser <chromium path>] [--no-install] [--force]
@@ -16,7 +16,10 @@
 #                             [--file-url URL] [--content-id X] [--certificate C] [--modifications M]
 #                             [--profile calm|crisp|punchy] | --music <file> --record <licence.json>]
 #
-#   --fps, --bpm   one beat must be a whole number of frames (60*fps/bpm). At 60 fps:
+#   --fps, --bpm   30 fps by default (half the frames of 60 to render; keep sharp moves under about
+#                  25 px a frame at 1080p, or render the master with --blur); --fps 60 for a film of
+#                  fast camera travel or scrolling UI. One beat must be a whole number of frames
+#                  (60*fps/bpm). At 30 fps: 90 -> 20 f, 100 -> 18, 120 -> 15, 150 -> 12; at 60 fps
 #                  90 -> 40 f, 100 -> 36, 120 -> 30, 144 -> 25, 150 -> 24. Without --bpm the
 #                  starter keeps its own 120 BPM, a placeholder until track.py grid writes the
 #                  track's grid; at an fps where 120 gives no whole beat (25 fps) the nearest tempo
@@ -115,7 +118,7 @@ MUSIC=""; RECORD=""; PROFILE=""; ADD=()
 # nothing): every Python step goes through py(), and the printed commands show the same form.
 py() { if [[ -n "${PYTHON:-}" ]]; then "$PYTHON" "$@"; else node "$SKILL/scripts/py.mjs" "$@"; fi; }
 if [[ -n "${PYTHON:-}" ]]; then PYS="$PYTHON"; [[ "$PYTHON" == *" "* ]] && PYS="\"$PYTHON\""; else PYS="node scripts/py.mjs"; fi
-DIR=""; ENGINE=remotion; FPS=60; BPM=""; PACE=""; SIZE=1920x1080; NAME=""; LINK=""; BROWSER="${CHROMIUM_PATH:-}"; INSTALL=1; FORCE=0
+DIR=""; ENGINE=remotion; FPS=30; BPM=""; PACE=""; SIZE=1920x1080; NAME=""; LINK=""; BROWSER="${CHROMIUM_PATH:-}"; INSTALL=1; FORCE=0
 FORMAT=launch; TEMPLATE=""; BRANDS=(); LIKE=""; NAME_SET=0; BPM_SET=0; ANALYZE=1; TYPEFAM=""
 
 while [[ $# -gt 0 ]]; do

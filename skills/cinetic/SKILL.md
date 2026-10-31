@@ -101,7 +101,7 @@ job, with one dominant accent over the film's ground family ([lighting.md](refer
 
 Eight steps, each with its time in the budget. Read a reference only when its step needs it.
 
-**1. Brief and scaffold (5 min).** Write `BRIEF.md`: the spec line (`1920x1080@60, 25s, format: launch, audio:
+**1. Brief and scaffold (5 min).** Write `BRIEF.md`: the spec line (`1920x1080@30, 25s, format: launch, audio:
 licensed track + launch kit`), what is supplied (a brand kit, a clip to feel like, footage, the products it works
 with), the hard bans. Ask at most three questions, and only when the product, the format or the length is missing.
 Then scaffold:
@@ -176,7 +176,7 @@ with the format's variants (it runs `credits.py`: credits go into `CREDITS.md`, 
 | Logo sting | 3-8 s | `--template none` | the name and at most one line | MP4, ProRes 4444 alphas, poster |
 
 Recipes per format in [formats.md](references/formats.md); update films in [update-films.md](references/update-films.md).
-Films render at 60 fps by default (`--fps 30` halves the render: keep sharp moves under about 25 px a frame at 1080p);
+Films render at 30 fps by default (keep sharp moves under about 25 px a frame at 1080p; `--fps 60` for fast camera travel);
 a loop's last frame flows into frame 0 (`forensics.py --loop`, `render.sh --loop`). A sting or loop runs steps 1-3 as
 one page and builds as one act.
 
