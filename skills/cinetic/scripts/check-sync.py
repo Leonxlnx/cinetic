@@ -27,7 +27,9 @@ Two gates on the decoded audio of the rendered file (after AAC, exactly what a v
             and whoosh peaks land after) widens the window on its side only (--strict: no widening). A take
             heard (-20 dB) more than 45 ms before its picture, a recording's pre-roll ahead of the onset the plan
             aligned, warns. A ringing take (a kalimba's tine, a bell: its waveform matches itself all along the ring) is
-            placed by its attack, never by the best waveform match a few hundred ms into its own ring. An effect the music still covers so that it cannot be found is listed; when most of
+            placed by its attack, never by the best waveform match a few hundred ms into its own ring; so is a short
+            take whose weak best match (under 0.7) lands off the plan on no attack (a detent's second click, an air
+            tick the encoder smears) while a clear transient where the take has its attack plays nearer the plan. An effect the music still covers so that it cannot be found is listed; when most of
             them cannot be found, the audio is not this film's mix (fail).
    music    with a track (audio/music/edit.json): the edited bed is rebuilt from the edit (track.py
             build_bed: bar 1 at the edit's film_t0) and found in the decoded audio at every act change,
@@ -230,6 +232,8 @@ PLAN_CORR_FRAC = 0.75  # ... unless the plan's own position matches under this s
 LOW_FRAC = 0.5         # a take with this much of its energy under 150 Hz (a thump) is matched with its lows (40 Hz high-pass)
 BED_CORR = 0.5         # a bed window located at this correlation or more is gated
 EFFECT_SEARCH_S = 0.35  # +- search around the planned start (~10 f at 30 fps)
+REPEAT_FRAC = 0.85     # a lag with an attack nearer the plan that matches this share of the best one places a take whose
+#                        waveform repeats (a detent's two clicks): the encoder can tip the best match one repeat away
 TONAL_SELF = 0.8       # a template this alike to the take a few ms later (a ringing tine, a held chord) is tonal: the
 #                        waveform matches all along its ring, so the attack places it, not the best waveform match
 ONSET_DB = 4.0         # cut-onsets: a rise this big (the 15 ms after vs the 20 ms before) marks an onset in the audio
@@ -395,6 +399,31 @@ def locate_tonal(hay, h0, tpl, expect, search, att):
     return h0 + (lo + k) / SR, float(c[k])
 
 
+def locate_attack(hay, h0, tpl, expect, search, att, got):
+    """For a weak match that lands on no attack: (time, corr) of the lag nearest `expect` whose correlation is at least
+    REPEAT_FRAC x the best one's, or half of it with a clear transient (a 6x rise where the template has its attack)
+    while the best lag (`got`) has none (under 1.5x); None when there is no such lag."""
+    s0 = int(round((expect - search - h0) * SR))
+    lo = max(0, s0)
+    seg = hay[lo:min(len(hay), int(round((expect + search - h0) * SR)) + len(tpl))]
+    if len(seg) < len(tpl) + 2 or np.linalg.norm(tpl) <= 0:
+        return None, 0.0
+    c = ncc(seg, tpl)
+    best = float(c.max())
+    kb = int(round((got - h0) * SR)) - lo
+    best_att = attack_ratio(seg, kb + att) if 0 <= kb < len(seg) else 0.0
+    peaks, _ = signal.find_peaks(c, height=0.5 * best)
+    cand = []
+    for k in peaks:
+        r = attack_ratio(seg, int(k) + att)
+        if c[k] >= REPEAT_FRAC * best and r >= 1.5 or (r >= 6.0 and best_att < 1.5):
+            cand.append(int(k))
+    if not cand:
+        return None, 0.0
+    k = min(cand, key=lambda k: abs(h0 + (lo + k) / SR - expect))
+    return h0 + (lo + k) / SR, float(c[k])
+
+
 def effect_rows(plan, root, takes_dir, dec_hp, dec_lo, fps_v, ref_offset, tol_s, strict, sos, sos_lo):
     """each placed effect: where its sync point plays in the delivered audio against its cue frame"""
     sys.path.insert(0, os.path.join(HERE, 'audio'))
@@ -492,21 +521,31 @@ def effect_rows(plan, root, takes_dir, dec_hp, dec_lo, fps_v, ref_offset, tol_s,
                     local, removed = local - g_o * others, True
             got, corr = locate(local, w0 / SR, tpl, expect, search)
             ring = tonal(mb, i0, i1)
+            att = int(round((sp - i0 / SR) * SR))
             if ring:  # a ringing take matches all along its ring: the attack places it
-                g2, c2 = locate_tonal(local, w0 / SR, tpl, expect, search, int(round((sp - i0 / SR) * SR)))
+                g2, c2 = locate_tonal(local, w0 / SR, tpl, expect, search, att)
                 if g2 is not None:
                     got, corr = g2, c2
+            elif got is not None and abs(got - expect) > 0.5 * tol_s and corr < FAR_CORR:
+                # a short take whose waveform repeats itself (a detent's two clicks, a double tap) or whose air the
+                # encoder smears: a weak best match can sit in its own tail, on no attack, while the take's transient
+                # plays on the plan; a clear attack where the template has its own, nearer the plan, places it
+                g2, c2 = locate_attack(local, w0 / SR, tpl, expect, search, att, got)
+                if g2 is not None and abs(g2 - expect) < abs(got - expect):
+                    got, corr, ring = g2, c2, 'repeat'
             k = int(round((expect - w0 / SR) * SR))  # the take where the plan put it
             at_plan = float(ncc(local[k:k + len(tpl)], tpl)[0]) if 0 <= k and k + len(tpl) <= len(local) and len(tpl) > 64 else 0.0
             if best is None or corr > best[1]:
                 best = (got, corr, at_plan, band, removed, ring)
         got, corr, at_plan, band, removed, ring = best
         row.update(corr=round(corr, 3), corr_at_plan=round(at_plan, 3), search_ms=round(search * 1000, 1), band=band)
-        if ring:
+        if ring == 'repeat':
+            row['repeat'] = True  # placed by its attack: its waveform repeats itself, a lag one repeat away matched as well
+        elif ring:
             row['tonal'] = True  # placed by its attack: its waveform matches all along the ring
         if removed:
             row['others_removed'] = True
-        if got is None or corr < FOUND_CORR:
+        if got is None or corr < (0.8 * FOUND_CORR if ring == 'repeat' else FOUND_CORR):  # a clear attack on the plan counts too
             row['status'] = 'not found'
             row['why'] = f'best correlation {corr:.2f} (< {FOUND_CORR}): the music covers it here, or it is not in this mix'
             rows.append(row)

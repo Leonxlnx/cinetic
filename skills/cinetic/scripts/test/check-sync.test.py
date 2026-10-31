@@ -4,7 +4,8 @@
   1. A ringing take (a kalimba-like tine: an attack and a 1.8 s ring) reads as tonal and a click does not.
   2. The ringing take on its cue is found on its cue by its attack (the waveform match alone can land a few hundred ms
      into its own ring, which read as a false OFF); the same take 180 ms early is still found early (a real slip is
-     never excused); a click keeps the plain waveform match.
+     never excused); a click keeps the plain waveform match. A short take whose weak best match sits in its own tail is
+     placed by its attack on the plan; the same take 180 ms early stays early.
   3. cut_frames() takes the act changes, the declared seams and the cues marked as cuts (one within 2 frames), and the
      cues marked as hits as the key state changes.
   4. cut_onsets(): of four cuts, the three with a hit in the audio within a frame count (75 %), the silent one is
@@ -74,6 +75,22 @@ cl = mix(click, 1.0)
 ctpl = cb[:int(0.23 * SR)]
 got_c, _ = CS.locate(cl, 0.0, ctpl, 1.0, 0.35)
 check(abs(got_c - 1.0) < 0.002, 'a click keeps the plain waveform match', f'{got_c:.4f} s')
+
+# 2b. a short take whose weak best match sits in its own tail (a detent's second click, an air tick the encoder smears):
+# a clear attack on the plan places it; a real slip (the take's attack early, the best match on it) stays where it is
+det = np.zeros(int(0.04 * SR))
+for at_s, amp in ((0.0, 1.0), (0.02, 0.8)):
+    k = int(at_s * SR)
+    det[k:k + int(0.003 * SR)] += amp * rng.standard_normal(int(0.003 * SR)) * np.linspace(1, 0, int(0.003 * SR))
+dtpl = signal.sosfiltfilt(sos, det)
+on_d = mix(det, 1.0)
+g_d, _ = CS.locate_attack(on_d, 0.0, dtpl, 1.0, 0.35, 0, 1.0225)
+check(g_d is not None and abs(g_d - 1.0) < 0.002, 'a weak match in its own tail gives way to the take attack on the plan',
+      f'{g_d if g_d is None else round(g_d, 4)} s')
+slip = mix(det, 0.82)
+g_s, _ = CS.locate_attack(slip, 0.0, dtpl, 1.0, 0.35, 0, 0.82)
+check(g_s is None or abs(g_s - 0.82) < 0.002, 'the same take 180 ms early is still found early (a real slip stays OFF)',
+      f'{g_s if g_s is None else round(g_s, 4)} s')
 
 # 3. the cuts and the key state changes of a cue list
 cues = {'fps': 60, 'total': 600, 'acts': {'p1': {'from': 0, 'dur': 300}, 'end': {'from': 300, 'dur': 300}},
