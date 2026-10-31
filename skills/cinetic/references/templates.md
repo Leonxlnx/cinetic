@@ -36,7 +36,7 @@ stop`) adds the gap to its one element and 1 s rings out after it.
 |---|---|---|---|
 | `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing, line by line | a line alone in the middle of a clean ground, the product doing what it said, the next line, the product again, the centred lockup built from the last picture; the direction you pick from the deck's three sets the voice, the ground family, the seams, the end card, the camera, the type pairing and the creative elements (`deck.py --direction <id> --why` writes `src/dealt.ts`, the one deal the film plays; with no direction dealt, the name deals them), never the last films' (`src/recent.ts`) |
 | none (the starter, `--template none`) | 15-45 s | a launch film whose idea is its own device | the dealt direction's skeleton |
-| `update` | 15-23 s | "vX is out": 2-4 changes to show | the version as the set, one lit product moment per change on one camera strip with the film's one 3D turn, the version whole at the payoff, the end card with the version; each slot deals one of two devices |
+| `update` | 20-27 s | "vX is out": 2-4 changes to show | the name and the version centred; each change a picture and a line in its own shape (the card working, then its line from the bar the card folds into or on the colour field; or the line first, round the card in its gap or alone), each card brought in or played by the creative device that shows that change (cursor-follow on a tap, bubble-swarm on the pings it ends, split-compare on a before -> after, photo-arc on photos), kit cards filling the frame on one of the eleven lit grounds, the recap with each change's picture, the mark, the wordmark and the version; the deck's devices (`src/dealt.ts`) or the name's |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | only when the brief asks for a wall of the product's breadth (sources, formats, integrations); never the default | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
 | `camera-teaser` | 20-25 s | a dark, fast teaser of a product's screens where the motion is the camera's: whips, pushes, one 3D turn over one layout per shot | the request box arriving tilted in the light, a whip into its close-up and the send button, the window streaming code under the one 3D turn, the proof in depth with the real marks of what it works with, the page with a modal toast, the stages, the mark; each act deals one of two or three devices |
@@ -80,19 +80,23 @@ picture as the product's real screen); the template's `README.md` walks through 
 
 ## update
 
-"vX is out", told by the product itself. One camera carries the whole film along one strip, so every act line is a
-velocity seam. Acts on whole bars at 120 BPM (2-4 changes: 14-22 s plus a 1.5 s tail; the name lands on the last bar line and the tail holds it): `hook` (the name over the version
-as giant numerals cropped by the frame: the last numeral rolls from the old value, or the new version rises out of a
-mask once the name is read), one `change` per change (the camera whips onto the product's surface, lit and tilted in
-the film's light, `Lit`; the product does the new thing on its contact frame; one plain sentence of 2-6 words on its
-dealt move and exit, `acts/type.tsx`, with the real mark inside it where the change names another product: `"[]"`,
-`logo`, `logoName`), `payoff` (the camera pulls back over every change as the version swings in, or the last change
-recedes out of focus as the version rises in front of it; the version fitted and centred so it reads whole), `end`
-(the version steps back to the upper right over the mark and the name, or settles after the name as one lockup). The
-film makes one 3D camera move (a yaw into the second change or a pitch over the payoff); the ground is the key wash
-alone. Each slot deals one of two devices per film from the name (`src/deal.ts`, template.json "slots"). Slots:
-`src/update.ts` (the version, the one before it, the changes and their moments: approve, chat, count, budget or a
-dense table; an approve change's `photos`, the real pictures its review approves, else they show as files).
+"vX is out", told by the product itself (`references/update-films.md`). The name and the version centred (`hook`:
+roll, rise or badge), then one `change` act per change, each a picture and a line in its own shape: `show` (the card
+comes in and works, then folds into a bar of light its line rises from), `after` (once: the changed element grows
+into the lit colour field the line reads on, the ground taking its own colour event under it), `split` (the line
+parted round the small card, which grows out of the gap) or `lead` (the line alone, then the card); a line never
+follows a line, and one picture hands over to the next by the element that changed growing into the next card. Each
+card is brought in or played by the creative device that shows that change (`src/deal.ts` PICTURE: cursor-follow,
+bubble-swarm, split-compare, photo-arc, logo-orbit, pixel-assemble, shape-morph, object-turn), the field line is
+scale-contrast and a dealt letter-swing or word-swap takes a line of its own. `payoff` is the recap (every card in a
+row with its own picture), `end` piles the cards into the mark, the name in the pairing's wordmark weight and the
+version apart from it, held to the end. Cards are kit/card `Card` at two thirds of the frame's height; the ground is
+one of the eleven FamilyGround families; people are photos, never initials. Acts on half bars at 120 BPM, the last
+squaring them to a bar line (two changes about 20 s, three about 25 s). The deal (`src/deal.ts`, template.json
+"slots"): ground, hook, arrive, order, recap, end, the cards' tone, the creative devices (the deck's `src/dealt.ts`,
+else the name's) and the lines' voice. Slots: `src/update.ts` (the version, the one before it, the changes: `words`,
+`key`, the screen and its moment `tap` / `fill` / `swap` / `count`, and `before`, `photos`, `logos`, `swap`
+when the change has them).
 
 ## ui-walkthrough
 
