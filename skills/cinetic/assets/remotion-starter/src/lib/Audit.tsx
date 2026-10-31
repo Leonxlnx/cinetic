@@ -376,6 +376,9 @@ export const Audit: React.FC<{ safe?: SafeSpec }> = ({ safe }) => {
         const b = boxes[j];
         if (a.el.contains(b.el) || b.el.contains(a.el)) continue; // nested tags describe the same text
         if (a.scroll !== b.scroll) continue; // a scrolling list's rows pass under the UI floating over the list
+        // an inline chip (kit/inline.tsx, tagged `<line>-chip`) sits in its own line's slot, often drawn as a layer over
+        // the line's slot run rather than inside its element: that is the line's word, not a box laid over the line
+        if (b.id === `${a.id}-chip` || a.id === `${b.id}-chip`) continue;
         const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) - 2; // 2 px tolerance
         const iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) - 2;
         if (ix > 0 && iy > 0) issues.push({ kind: 'overlap', id: `${a.id}+${b.id}`, detail: `${round(ix)}x${round(iy)}px` });
