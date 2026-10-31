@@ -345,6 +345,25 @@ result(r.returncode == 1 and json.loads(r.stdout).get('final') is True, 'CINETIC
 code, rep = run([script(['0 | Tern turns voice memos into to-dos.', '3 | Your list is ready in seconds.', '6 | Tide · Spring lookbook is ready.', '9 | Tern is out now.'], 'kit-script.txt'), '--name', 'Tern'])
 result(code == 1 and any(f['rule'] == 'kit-sample' and 'Tide' in f['text'] for f in rep.get('findings', [])), "kit-sample: a script line naming the kit's sample project fails", ', '.join(rules(rep)))
 
+# repeats: a line whose words are its own picture's strings (line<k> against ui<k>.*); line 1 (what it is) is left out.
+# quantity: "every" claims many, which one example on screen never proves.
+doc = {'fps': 30, 'total': 600, 'name': 'Ferry', 'copy': [
+    {'id': 'line1', 'text': 'Ferry gives every PR a database.', 'in': 8, 'resolved': 30, 'out': 66},
+    {'id': 'ui1.1', 'text': 'Preview database', 'kind': 'ui', 'in': 71, 'resolved': 81, 'out': 170},
+    {'id': 'line2', 'text': 'Reviewers test it before they merge.', 'in': 170, 'resolved': 190, 'out': 230},
+    {'id': 'ui2.1', 'text': 'All tests passed', 'kind': 'ui', 'in': 236, 'resolved': 246, 'out': 330},
+    {'id': 'ui2.2', 'text': 'Merge pull request', 'kind': 'ui', 'in': 236, 'resolved': 246, 'out': 330},
+    {'id': 'line3', 'text': 'Nothing to clean up after.', 'in': 330, 'resolved': 350, 'out': 390},
+    {'id': 'ui3.1', 'text': 'Preview database closed', 'kind': 'ui', 'in': 396, 'resolved': 406, 'out': 500},
+    {'id': 'line4', 'text': 'Ship what you actually tested.', 'in': 500, 'resolved': 520, 'out': 560},
+]}
+code, rep = run(['--stdin', '--format', 'launch'], json.dumps(doc))
+rep_lines = sorted(f['line'] for f in rep.get('findings', []) if f['rule'] == 'repeats')
+q_lines = sorted(f['line'] for f in rep.get('findings', []) if f['rule'] == 'quantity')
+result(rep_lines == [2] and q_lines == [1] and all(f['severity'] == 'warn' for f in rep.get('findings', []) if f['rule'] in ('repeats', 'quantity')),
+       'repeats: a line made of the words its own picture shows warns (line 1 and a line saying what the picture cannot pass); quantity: "every" warns',
+       f'repeats {rep_lines}, quantity {q_lines}')
+
 # --ocr on stills under 1600 px wide: a screen's small strings are unreadable there, so it warns (ocr_small, no OCR needed)
 import importlib.util
 _spec = importlib.util.spec_from_file_location('copy_check_mod', CC)

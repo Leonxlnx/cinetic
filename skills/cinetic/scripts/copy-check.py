@@ -39,6 +39,11 @@ Checks (error unless marked):
   placeholder a line or a UI string that marks itself unfinished: lorem ipsum, "Placeholder", "Label text", "Your
               text here", a generic label alone ("Button", "Caption") or a generic noun and a number ("Item 1");
               the lists are scripts/placeholders.json, which lint-film.mjs reads too
+  repeats     (warning; COPY with ids: out/cues.json, grid-check's --stdin) a line that says what its own picture shows:
+              two of its words (or half of them) are the strings its picture puts on screen (line<k> against ui<k>.*); the
+              picture tells it, the line says what the picture cannot, or the pair keeps no line
+  quantity    (warning) "every", "each", "all", "always", "automatically": a claim about many or every time, which one
+              example on screen never proves: the picture shows three or more at once or the whole lifecycle
   scaffold    (out/cues.json) the script is still a template's sample: a content module of the film (src/*.ts: the
               file a template keeps its script and product strings in, the timeline) still carries its
               cinetic:placeholder marker, so its lines are stand-ins (a sample product, a sample domain, a slot), never
@@ -753,7 +758,7 @@ def from_copy(doc, fps_flag=None):
         out = c.get('out') if c.get('out') is not None else total
         is_end = out >= total - 1 or (end is not None and c.get('resolved', 0) >= end)
         if kind == 'ui':
-            ui.append({'text': text, 'at': c.get('in', 0) / fps, 'end': is_end})
+            ui.append({'text': text, 'at': c.get('in', 0) / fps, 'end': is_end, 'id': c.get('id')})
             continue
         if kind == 'name':
             names.append({'text': text, 'at': c.get('in', 0) / fps, 'end': is_end})
@@ -770,6 +775,69 @@ def from_copy(doc, fps_flag=None):
         lines.append({'text': text, 'at': c.get('in', 0) / fps, 'out': out / fps, 'id': ch or c.get('id'),
                       'swap': c.get('swap'), 'end': is_end})
     return lines, names, ui
+
+
+_PLAIN = {'your', 'their', 'with', 'from', 'into', 'that', 'this', 'what', 'when', 'they', 'them', 'have', 'every', 'each',
+          'before', 'after', 'just', 'only', 'more', 'less', 'than', 'over', 'under', 'about', 'there', 'here', 'make', 'makes'}
+
+
+def _stem(w):
+    """A word's crude stem: lower case, a plural or tense ending off (tests -> test, merged -> merg, merge -> merg)."""
+    w = re.sub(r'[^a-z0-9]', '', w.lower())
+    for suf in ('ing', 'ed', 'es', 's', 'e'):
+        if len(w) > len(suf) + 3 and w.endswith(suf):
+            return w[:-len(suf)]
+    return w
+
+
+def check_repeats(lines, ui, name):
+    """repeats: a line that says what its own picture already shows (its words are the picture's strings: "Reviewers
+    test it before they merge." over a card reading "All tests passed" and "Merge pull request"); line 1 is left out (it
+    says what the product is, and its picture shows exactly that). The picture tells it;
+    the line says what the picture cannot (who it is for, why it matters, what it saves), or the pair keeps no line.
+    COPY ids pair them: line<k> and its picture's ui<k>.<j>."""
+    out = []
+    by = {}
+    for u in ui:
+        m = re.match(r'ui(\d+)\.', str(u.get('id') or ''))
+        if m:
+            by.setdefault(m.group(1), []).append(u['text'])
+    nm = {_stem(w) for w in words_of(name or '')}
+    for i, l in enumerate(lines):
+        m = re.match(r'line(\d+)$', str(l.get('id') or ''))
+        # line 1 says what the product is and its picture shows exactly that, literally: the one pair meant to agree
+        if not m or m.group(1) not in by or i == 0:
+            continue
+        mine = {_stem(w) for w in words_of(l['text']) if len(_stem(w)) >= 4 and re.sub(r'[^a-z]', '', w.lower()) not in _PLAIN} - nm
+        shown = {_stem(w) for t in by[m.group(1)] for w in words_of(t) if len(_stem(w)) >= 4}
+        both = sorted(mine & shown)
+        said = [re.sub(r'[^\w]', '', w) for w in words_of(l['text']) if _stem(w) in both]
+        if mine and (len(both) >= 2 or (len(both) >= 1 and len(both) * 2 >= len(mine))):
+            out.append({'rule': 'repeats', 'severity': 'warn', 'line': i + 1, 'text': l['text'],
+                        'message': f'it says what its own picture shows ({", ".join(said)}: words its picture shows): the picture '
+                                   'tells it; give the line what the picture cannot (who it is for, why it matters), or leave the line '
+                                   'out of that pair (launch-simple: a pair with no line plays its picture alone)'})
+    return out
+
+
+_QUANT = re.compile(r"\b(every|each|all|any|always|automatically|whenever|never)\b", re.I)
+
+
+def check_quantity(lines):
+    """quantity: "every PR", "each order", "always": a claim about many or about every time. One PR on screen proves one;
+    the picture shows the many (three or more at once, each with its result) or the lifecycle (it opens, works, and is
+    gone when done), or the word lives only in text and the picture never tells it."""
+    out = []
+    for i, l in enumerate(lines):
+        if l.get('end'):
+            continue
+        m = _QUANT.search(l['text'])
+        if m:
+            out.append({'rule': 'quantity', 'severity': 'warn', 'line': i + 1, 'text': l['text'],
+                        'message': f'"{m.group(1)}" claims many (or every time): draw it, not one: three or more at once, each with '
+                                   'its own result (every PR its own database, side by side), or the whole lifecycle (made, used, gone '
+                                   'on merge); one example on screen proves one'})
+    return out
 
 
 def estimate_times(lines):
@@ -1180,6 +1248,7 @@ def main(argv):
                                         'film\'s own lines and strings there (references/copy-and-type.md), then delete the marker'})
     keys = [{'line': i + 1, 'key': k or suggest_key(l['text'], name), 'marked': k is not None} for i, (l, k) in enumerate(zip(lines, marked))]
     findings += ui_findings()
+    findings += check_repeats(lines, ui, name) + check_quantity(lines)
     script_strings = [(l['text'], f'line {i + 1}') for i, l in enumerate(lines)] + [(u['text'], 'COPY ui') for u in ui] + [(n['text'], 'COPY name') for n in names]
     findings += check_samples(script_strings, phrases, set())
     findings += check_cut([(u['text'], 'COPY ui') for u in ui], final)
