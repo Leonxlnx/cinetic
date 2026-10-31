@@ -466,13 +466,25 @@ type WallCommon = {
   stagger?: number;
   dur?: number;
   /** px a second the near tiles drift (far ones take DEPTH.drift of it): off by default (0); give it only for a designed
-   *  move that starts, travels and lands, never as an idle wander */
+   *  move that starts, travels and lands, never as an idle wander: it slows to a stop over `travel` */
   drift?: number;
+  /** seconds a drift (or a ring's orbit) travels from the layer's start before it lands at rest (default TRAVEL_S) */
+  travel?: number;
   tone?: Ground;
   theme?: KitTheme;
   seed?: string | number;
   /** depth softening on (the far bands take DEPTH.blur) */
   blur?: boolean;
+};
+
+/** How long a designed drift or orbit travels before it lands (s): the tiles land, then the layer holds still. */
+export const TRAVEL_S = 1.8;
+/** The distance (in seconds of full speed) a move starting at full speed covers by `t` s when it slows evenly to rest
+ * over `travel` s: t - t^2 / 2T, then T / 2 for good. Pure. */
+export const landedTravel = (t: number, travel = TRAVEL_S) => {
+  const T = Math.max(1e-3, travel);
+  const u = Math.min(Math.max(0, t), T);
+  return u - (u * u) / (2 * T);
 };
 
 const Tile: React.FC<{ slot: TileSlot; logo: LogoRef | null; frame: number; at: number; o: WallCommon; x: number; y: number; size: number; blank?: boolean }> = ({ slot, logo, frame, at, o, x, y, size, blank }) => {
@@ -497,15 +509,16 @@ const BlankTile: React.FC<{ size: number; o: WallCommon }> = ({ size: s, o }) =>
 /**
  * A wall of app-icon tiles: the marks take the slots nearest the centre, blank tiles fill the grid round them; each
  * tile arrives tumbling (20-60 deg) out from the centre and lands flat, facing the camera, on its depth band (smaller
- * and softer further back); it holds still unless `drift` is given for a designed move. 12-30 marks; `clear` keeps a box free for a line or a hub.
+ * and softer further back); it holds still unless `drift` is given for a designed move, which lands over `travel` s. 12-30 marks; `clear` keeps a box free for a line or a hub.
  */
 export const LogoWall: React.FC<WallCommon & { cols?: number; rows?: number; clear?: { w: number; h: number }; blanks?: boolean }> = (props) => {
-  const { logos, frame, start = 0, w = 1920 * U, h = 1080 * U, tile = 150 * U, stagger = 2, drift = 0, seed = 'wall', blanks = true } = props;
+  const { logos, frame, start = 0, w = 1920 * U, h = 1080 * U, tile = 150 * U, stagger = 2, drift = 0, seed = 'wall', blanks = true, travel = TRAVEL_S } = props;
   const fps = fpsOf();
   const cols = props.cols ?? Math.max(4, Math.round(w / (tile * 1.55)));
   const rows = props.rows ?? Math.max(3, Math.round(h / (tile * 1.5)));
   const slots = wallSlots(logos.length, { cols, rows, cell: tile * 1.55, w, h, seed, clear: props.clear });
-  const t = Math.max(0, frame - start) / fps;
+  // a designed drift slows to rest over `travel`: the wall lands and holds still
+  const t = landedTravel(Math.max(0, frame - start) / fps, travel);
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, perspective: `${(1900 * U).toFixed(0)}px`, transformStyle: 'preserve-3d' }}>
       {slots.filter((s) => blanks || s.logo !== null).map((s, i) => {
@@ -520,12 +533,13 @@ export const LogoWall: React.FC<WallCommon & { cols?: number; rows?: number; cle
 /**
  * A ring of app-icon tiles round a centre kept free (a line, the product's own mark): the tiles arrive tumbling in
  * turn and land flat; the ring holds still unless `orbit` (degrees a second) is given for a designed turn; the far side
- * of the ring is smaller and softer.
+ * of the ring is smaller and softer; a turn slows to rest over `travel` s (TRAVEL_S) and the ring holds.
  */
 export const LogoRing: React.FC<WallCommon & { rx?: number; ry?: number; orbit?: number }> = (props) => {
-  const { logos, frame, start = 0, w = 1920 * U, h = 1080 * U, tile = 132 * U, stagger = 3, rx = 640 * U, ry = 330 * U, orbit = 0, seed = 'ring' } = props;
+  const { logos, frame, start = 0, w = 1920 * U, h = 1080 * U, tile = 132 * U, stagger = 3, rx = 640 * U, ry = 330 * U, orbit = 0, seed = 'ring', travel = TRAVEL_S } = props;
   const fps = fpsOf();
-  const t = Math.max(0, frame - start) / fps;
+  // a designed turn slows to rest over `travel`: the ring lands and holds still
+  const t = landedTravel(Math.max(0, frame - start) / fps, travel);
   const slots = ringSlots(logos.length, { rx, ry, w, h, turn: (orbit * Math.PI * t) / 180, seed });
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, perspective: `${(1900 * U).toFixed(0)}px`, transformStyle: 'preserve-3d' }}>

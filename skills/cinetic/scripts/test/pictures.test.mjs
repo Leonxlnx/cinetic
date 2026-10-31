@@ -13,6 +13,7 @@
  *   4. arcRiverState(): cards evenly spaced along the curve (the spacing follows the curve, so they part on the
  *      straight and close on the bend), the conveyor's travel, the same travel at 30 and 60 fps, sharp near the focus
  *      and soft far from it, the smear from the speed, neighbours never the same photo, the lower card on top.
+ *   4b. the level river (ArcRiver's default): one y, one card size, one way, slowing until it lands and holds.
  *   5. wallLayout(): columns that never overlap, heights from the photos' shapes (held to 0.66-1.5), a depth and lag
  *      per tile. pictureTrack(): look-audit --imagery-track rows with the box and the next box.
  *   6. washStops(), washField(): a rise is paper to 32 % then gathers the tint at the bottom edge; the radial kinds
@@ -86,6 +87,7 @@ console.log(JSON.stringify({
   tiles,
   track: P.pictureTrack(0, 12, (f) => [[f, 0, 100, 50]], 6),
   washRise: W.washStops('rise', '#ffffff', '#8899fe'),
+  level: [0, 30, 60, 96, 140].map((f) => { const r = P.arcRiverState(f, { ...river, level: true }, film60); return { s: r.s, v: r.v, ys: [...new Set(r.cards.map((c) => Math.round(c.y * 100) / 100))], hs: [...new Set(r.cards.map((c) => Math.round(c.h)))] }; }),
   focused: (() => { const c = st60.cards[0]; return P.arcRiverState(90, { ...river, focus: [c.x, c.y] }, film60).cards[0].sigma; })(),
   halo: W.washStops('halo', '#0d0e10', '#22303a'),
   fields: [W.washField('rise', { tint: '#8899fe' }), W.washField('corner', { tint: '#8899fe' }), W.washField('sky', { tint: '#8899fe', deep: '#2e5264' }), W.washField('side', { tint: '#8899fe', drift: 0.02 })],
@@ -149,6 +151,13 @@ const close = (a, b, tol = 1e-6) => Math.abs(a - b) <= tol;
   const [a, b, c, d, e, one] = X.photoFor;
   result(a !== b && b !== c && d !== e && one === 0, 'photoFor: neighbours never show the same photo (a step coprime with the set)');
 }
+// 4b. the level river (ArcRiver's default): one y, one card size, one way, slowing to rest and holding
+{
+  const L = X.level;
+  result(L.every((x) => x.ys.length === 1 && x.hs.length === 1) && L.every((x, i) => i === 0 || x.s >= L[i - 1].s) && Math.abs(L[3].v) < 1e-9 && Math.abs(L[4].s - L[3].s) < 1e-6 && L[0].v > L[1].v,
+    'level river: one y and one card size, travels one way, slows and lands at rest (then holds)', JSON.stringify(L.map((x) => [Math.round(x.s), Math.round(x.v * 100) / 100, x.ys.length])));
+}
+
 // 5. wall, imagery track
 {
   const T = X.tiles;

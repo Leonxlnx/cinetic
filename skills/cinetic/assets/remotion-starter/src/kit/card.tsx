@@ -92,6 +92,9 @@ export const cardShadow = (inks: CardInks, groundL: number, lift = 0, u = 1, o: 
   return [...hl, top, ...layers].join(', ');
 };
 
+/** A box-shadow value split into its layers at the top-level commas (an rgba() holds commas of its own). Pure. */
+export const shadowLayers = (v: string) => v.split(/,\s*(?![^()]*\))/).map((x) => x.trim()).filter(Boolean);
+
 export type CardProps = {
   tone?: CardTone;
   w: number;
@@ -150,7 +153,7 @@ export const Card: React.FC<CardProps> = ({ tone = 'light', w, h, x = 0, y = 0, 
       )}
       <div style={{ position: 'absolute', inset: 0 }}>{children}</div>
       {/* the hairline and the top highlight sit over the content, so a photo filling the card still has its edge */}
-      <div style={{ position: 'absolute', inset: 0, borderRadius: R, boxShadow: cardShadow(inks, gL, 0, u).split(', ').filter((s) => s.startsWith('inset')).join(', '), pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, borderRadius: R, boxShadow: shadowLayers(cardShadow(inks, gL, 0, u)).filter((s) => s.startsWith('inset')).join(', '), pointerEvents: 'none' }} />
     </div>
   );
 };

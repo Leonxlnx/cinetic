@@ -20,11 +20,12 @@ import { type MasonryTile, masonryState } from './Scroll';
  *                  hairline in a muted accent around the card), a tilt in 3D (perspective, lean, turn), a push or
  *                  drift inside the card (fx/Photo moves), a grade (kit/theme photoGrade), an appear, a defocus at
  *                  fixed levels and a smear along any direction
- *   ArcRiver       a stream of photo cards along a curve: spacing measured along the curve (so cards part on the
- *                  straight and overlap on the bend), sizes x0.85-1.18, cards upright, the travel of a conveyor
- *                  (fast in, a cruise, an acceleration out), a smear along the tangent from the speed, and a defocus
- *                  that grows with the distance from the focus (the word the stream frames). Two streams on
- *                  mirrored paths (mirrorPath) pass each other like the two arms of an S
+ *   ArcRiver       a stream of photo cards: by default a LEVEL row (one y, the path's height at the focus), one
+ *                  way, arriving fast and slowing until it lands at rest (PICTURES.river.land), cards upright and
+ *                  facing the camera, sizes x0.85-1.18, a smear along the travel from the speed and a defocus that
+ *                  grows with the distance from the focus; never cards rising and sinking on a curve while the
+ *                  stream pans back and forth. `level={false}` runs it along the curve (spacing measured along it)
+ *                  for a designed move; `outAt` sends a landed row off at speed into a cut
  *   PhotoWall      a masonry wall of photos that scrolls up into place, each tile on its own settle (fx/Scroll
  *                  masonryState), smeared by its own speed; wallLayout() builds the columns from the photos' shapes
  *   InlinePhoto    a photo card set inside a line of type, the words on either side at its middle; it settles as the
@@ -54,7 +55,7 @@ export const PICTURES = {
   card: { radius: 0.085, rim: 0.16, contact: [0, 2, 5, 0.14], lift: [0, 14, 36, 0.16] },
   mat: { gap: 10, line: 2.5, shadow: 0.2 }, // a matted card sits nearly flat: its paper ring is the edge
   tilt: { perspective: 1800 },
-  river: { pitch: 300, card: [280, 345], size: [0.85, 1.18], across: 40, along: 30, shutter: 300, blur: { max: 9, near: 0.3, far: 0.95 } },
+  river: { pitch: 300, card: [280, 345], size: [0.85, 1.18], across: 40, along: 30, shutter: 300, blur: { max: 9, near: 0.3, far: 0.95 }, land: 96 },
   wall: { gap: 28, cols: 4, aspect: [0.66, 1.5] },
   appear: {
     settle: { dur60: 24, from: 1.16, blur: 6 },
@@ -350,6 +351,9 @@ export type ArcRiverProps = {
   blur?: { max?: number; near?: number; far?: number }; // defocus px at 1080p, from `near` to `far` shares of the half-diagonal
   shutter?: number; // the smear's shutter, degrees (0 = no smear)
   stack?: 'y' | 'along'; // which card is on top where they overlap: the lower one on screen (house), or the one further on
+  level?: boolean; // one y for the whole row (the component's default: true): the path's height where it passes the focus
+  y?: number; // px at 1080p: the level row's height (default: the path at the focus's x, held inside the frame)
+  land?: number | false; // 60 fps frames the row takes to slow from its in speed to rest (default PICTURES.river.land; false: the conveyor's cruise)
 };
 export type RiverCard = { i: number; photo: number; x: number; y: number; w: number; h: number; along: number; angle: number; v: number; sigma: number; smear: number; z: number };
 
@@ -374,8 +378,22 @@ export const arcRiverState = (f: number, p: ArcRiverProps, film?: Partial<FilmCt
   const u = film?.width !== undefined && film?.height !== undefined ? uOf(film) : 1;
   const { width: W, height: H } = film?.width !== undefined && film?.height !== undefined ? sizeOf(film) : { width: 1920, height: 1080 };
   const R = PICTURES.river;
-  const path = cachedPath(p.points ?? ARC_PATHS.rise, u);
-  const { s, v } = conveyorTravel(f, { start: p.start, n: 1, pitch: 1, speed: p.speed, inFrames: p.inFrames, outAt: p.outAt, outFrames: p.outFrames }, film);
+  const pts = p.points ?? ARC_PATHS.rise;
+  const fpsK = 60 / (film?.fps ?? 60); // 60 fps frames per film frame
+  // a level row lands: from its in speed it slows evenly to rest over `land` (then holds still); `outAt` sends it off
+  const landing = p.level && p.land !== false;
+  const { s, v } = landing ? landedRiver(f, p, u, fpsK) : conveyorTravel(f, { start: p.start, n: 1, pitch: 1, speed: p.speed, inFrames: p.inFrames, outAt: p.outAt, outFrames: p.outFrames }, film);
+  // a level row runs on one straight line across the path's span, at one y
+  const xs = pts.map(([x]) => x);
+  const fx0 = (p.focus?.[0] ?? W / 2) / u;
+  const yAt = (() => {
+    const c = cachedPath(pts, 1);
+    let best = c.pts[0];
+    for (const q of c.pts) if (Math.abs(q[0] - fx0) < Math.abs(best[0] - fx0)) best = q;
+    return best[1];
+  })();
+  const ly = clamp(p.y ?? yAt, 1080 * 0.16, 1080 * 0.84);
+  const path = p.level ? cachedPath([[Math.min(...xs, -400), ly], [Math.max(...xs, 2320), ly]], u) : cachedPath(pts, u);
   const L = path.length;
   const n = Math.max(1, Math.round(L / ((p.pitch ?? R.pitch) * u)));
   const pitch = L / n;
@@ -391,14 +409,15 @@ export const arcRiverState = (f: number, p: ArcRiverProps, film?: Partial<FilmCt
   const seed = p.seed ?? 0;
   const cards: RiverCard[] = [];
   for (let i = 0; i < n; i++) {
-    const jit = ((rnd01(i, seed + 3) - 0.5) * 2 * (p.along ?? R.along)) * u;
+    const jit = p.level ? 0 : ((rnd01(i, seed + 3) - 0.5) * 2 * (p.along ?? R.along)) * u;
     const along = ((((i * pitch + dir * s + jit) % L) + L) % L);
     const q = pathAt(path, along);
-    const off = (rnd01(i, seed + 7) - 0.5) * 2 * (p.across ?? R.across) * u;
+    // a level row keeps one y and one card size (tops and bottoms aligned); a curve takes the jitter across it
+    const off = p.level ? 0 : (rnd01(i, seed + 7) - 0.5) * 2 * (p.across ?? R.across) * u;
     const a = (q.angle * Math.PI) / 180;
     const x = q.x - Math.sin(a) * off;
     const y = q.y + Math.cos(a) * off;
-    const k = mix(lo, hi, rnd01(i, seed + 11));
+    const k = p.level ? 1 : mix(lo, hi, rnd01(i, seed + 11));
     const d = Math.hypot(x - focus[0], y - focus[1]) / half;
     const tt = clamp((d - near) / Math.max(1e-6, far - near));
     const sigma = bmax * tt * tt * (3 - 2 * tt);
@@ -408,10 +427,33 @@ export const arcRiverState = (f: number, p: ArcRiverProps, film?: Partial<FilmCt
   return { s, v, cards, length: L };
 };
 
-/** A river of photo cards along a curve; draw two on mirrored paths for the S of two streams passing. */
-export const ArcRiver: React.FC<ArcRiverProps & { frame: number; radius?: number; rim?: number; shadow?: number; grade?: PhotoGrade; mat?: CardMat; style?: React.CSSProperties }> = (p) => {
+/** The level row's travel (film px) and speed (film px a film frame): its in speed until `start`, slowing evenly to
+ * rest over `land` 60 fps frames, at rest after; from `outAt` it accelerates off at its out speed over `outFrames`. */
+const landedRiver = (f: number, p: ArcRiverProps, u: number, fpsK: number): { s: number; v: number } => {
+  const vi = (p.speed?.in ?? 65) * u; // px per 60 fps frame
+  const vo = (p.speed?.out ?? 110) * u;
+  const T = Math.max(1, typeof p.land === 'number' ? p.land : PICTURES.river.land);
+  const t = (f - p.start) * fpsK;
+  if (t <= 0) return { s: vi * t, v: vi / fpsK };
+  const x = Math.min(t, T);
+  let s = vi * (x - (x * x) / (2 * T));
+  let v = t < T ? vi * (1 - t / T) : 0;
+  if (p.outAt !== undefined && f > p.outAt) {
+    const To = Math.max(1, p.outFrames ?? 28);
+    const y = (f - p.outAt) * fpsK;
+    const a = Math.min(y, To);
+    s += (vo * a * a) / (2 * To) + vo * Math.max(0, y - To);
+    v = y < To ? (vo * y) / To : vo;
+  }
+  return { s, v: v / fpsK };
+};
+
+/** A river of photo cards: a level row that arrives one way and lands (the default), or, with `level={false}`, a
+ * stream along a curve (two on mirrored paths pass like the arms of an S) for a designed move. */
+export const ArcRiver: React.FC<ArcRiverProps & { frame: number; radius?: number; rim?: number; shadow?: number; grade?: PhotoGrade; mat?: CardMat; style?: React.CSSProperties }> = (q) => {
   const film = useFilm();
   const { width: W, height: H } = sizeOf(film);
+  const p = { ...q, level: q.level ?? true };
   const st = arcRiverState(p.frame, p, film);
   const pad = 400 * uOf(film);
   return (

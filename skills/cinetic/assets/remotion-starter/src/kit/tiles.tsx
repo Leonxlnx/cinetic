@@ -3,11 +3,11 @@
 // gives, a label, a sub line and a tiny preview of what it holds (a document, a chart, a list, a person, a table, code),
 // drawn from the node's own lines, rows, values or code: a preview without its content draws nothing and reports
 // kit-empty, never sample lines; a tile given no node (an index past the end of an empty list) is the empty state. Tiles arrive tumbling in 3D (20-60 degrees, the house tileArrival), settle on depth
-// bands (smaller and softer further back) and drift with parallax:
+// bands (smaller and softer further back) and, given a designed drift or turn, travel with parallax and land (then hold):
 //   ContentTile    one tile at a size (px), any aspect
 //   ContentWall    a wall: the given nodes take the slots nearest the centre, the rest is filled from `fill` (the
 //                  film's own further items) or by repeating the nodes; no nodes at all: the empty state
-//   ContentRing    a ring round a kept-free centre, orbiting slowly
+//   ContentRing    a ring round a kept-free centre, a turn that slows to rest
 //   ContentTicker  rows of tiles flowing past at constant speeds on two depths, curved toward the camera
 //   worldNodes     tile nodes from the film's world (kit/data.ts filmWorld): its records and its people
 // Labels are texture (data-texture) unless a tile is large enough to read (>= TEXT_MIN): then data-text.
@@ -20,7 +20,7 @@ import { mixColor } from '../lib/color';
 import { f60x, uOf, useFilm } from '../lib/film';
 import type { SampleWorld } from './data';
 import { kitEmpty, KitEmpty } from './gate';
-import { AppIcon, DEPTH, depthBlur, hasLogo, type LogoRef, ringSlots, type TileSlot, tileArrival, wallSlots } from './logos';
+import { AppIcon, DEPTH, depthBlur, hasLogo, landedTravel, type LogoRef, ringSlots, type TileSlot, tileArrival, TRAVEL_S, wallSlots } from './logos';
 import { face, fitTitle, GlyphTile, keyFace, Sparkline, surfaceShadow, useKitScale } from './parts';
 import type { GlyphName } from './sample';
 import { type KitTheme, kitTheme } from './theme';
@@ -283,6 +283,8 @@ type FieldCommon = {
   stagger?: number;
   dur?: number;
   drift?: number;
+  /** seconds a drift or turn travels before it lands at rest (kit/logos TRAVEL_S) */
+  travel?: number;
   theme?: KitTheme;
   seed?: string | number;
   blur?: boolean;
@@ -316,12 +318,12 @@ const fillFor = (o: FieldCommon) => {
 /**
  * A wall of content tiles: `nodes` take the slots nearest the centre on the near bands, the rest are filled with the
  * world's own content (never blank); each tile arrives tumbling out from the centre, settles on its depth band and
- * the wall drifts with parallax. `clear` keeps a box free for a line or a hub (px about the centre).
+ * the wall travels with parallax, slowing to rest over `travel` s (then it holds still). `clear` keeps a box free for a line or a hub (px about the centre).
  */
 export const ContentWall: React.FC<FieldCommon & { cols?: number; rows?: number; clear?: { w: number; h: number } }> = (props) => {
   const film = useFilm(); // the composition's size and rate, never the timeline's (a variant cut)
   const u = uOf(film);
-  const { frame, start = 0, w = film.width, h = film.height, tile = 230 * u, stagger = 2, drift = 14 * u, seed = 'wall' } = props;
+  const { frame, start = 0, w = film.width, h = film.height, tile = 230 * u, stagger = 2, drift = 14 * u, seed = 'wall', travel = TRAVEL_S } = props;
   const nodes = ownNodes(props.nodes);
   const fps = film.fps;
   const cell = tile * 1.24;
@@ -330,7 +332,7 @@ export const ContentWall: React.FC<FieldCommon & { cols?: number; rows?: number;
   const filler = fillFor(props);
   if (!filler) return <KitEmpty part="ContentWall" need="nodes (the film's own items)" theme={props.theme} w={w} h={h} />;
   const slots = wallSlots(nodes.length, { cols, rows, cell, w, h, seed, clear: props.clear });
-  const t = Math.max(0, frame - start) / fps;
+  const t = landedTravel(Math.max(0, frame - start) / fps, travel);
   let k = 0;
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, perspective: `${(1900 * u).toFixed(0)}px`, transformStyle: 'preserve-3d' }}>
@@ -343,17 +345,17 @@ export const ContentWall: React.FC<FieldCommon & { cols?: number; rows?: number;
   );
 };
 
-/** A ring of content tiles round a centre kept free: they arrive tumbling in turn, then orbit (`orbit` deg a second); the far side is smaller and softer. */
+/** A ring of content tiles round a centre kept free: they arrive tumbling in turn while the ring turns (`orbit` deg a second), slowing to rest over `travel` s; the far side is smaller and softer. */
 export const ContentRing: React.FC<FieldCommon & { count?: number; rx?: number; ry?: number; orbit?: number }> = (props) => {
   const film = useFilm();
   const u = uOf(film);
-  const { frame, start = 0, w = film.width, h = film.height, tile = 200 * u, stagger = 3, rx = 680 * u, ry = 350 * u, orbit = 4, seed = 'ring' } = props;
+  const { frame, start = 0, w = film.width, h = film.height, tile = 200 * u, stagger = 3, rx = 680 * u, ry = 350 * u, orbit = 4, seed = 'ring', travel = TRAVEL_S } = props;
   const nodes = ownNodes(props.nodes);
   const fps = film.fps;
   const n = Math.max(nodes.length, props.count ?? 14);
   const filler = fillFor(props);
   if (!filler) return <KitEmpty part="ContentRing" need="nodes (the film's own items)" theme={props.theme} w={w} h={h} />;
-  const t = Math.max(0, frame - start) / fps;
+  const t = landedTravel(Math.max(0, frame - start) / fps, travel);
   const slots = ringSlots(n, { rx, ry, w, h, turn: (orbit * Math.PI * t) / 180, seed });
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, perspective: `${(1900 * u).toFixed(0)}px`, transformStyle: 'preserve-3d' }}>

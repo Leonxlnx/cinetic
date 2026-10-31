@@ -600,8 +600,5 @@ export const Photo: React.FC<{ theme: KitTheme; w: number; h: number; seed?: num
   );
 };
 
-/** A slow, closed-form drift for a living hold inside a part (px), so a held panel is never frozen. */
-export const drift = (frame: number, fps: number, pxPerSec = 14, seed = 0) => ({ x: (pxPerSec * frame) / fps, y: 0.35 * pxPerSec * Math.sin(frame / (fps * 2.2) + seed) });
-
 /** The frame-progress of a reveal (0 before `at`, 1 after `at + dur`) on the house arrive curve. */
 export const reveal = (frame: number, at: number, dur = 14) => prog(frame, at, at + dur, E.snapOut);

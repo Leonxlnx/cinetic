@@ -10,7 +10,7 @@ import { type FilmCtx, useFilm } from '../../lib/film';
 import { type Box, face, fitInto, frameOf, k60, mixBox, momentAt, type Pal, type PictureProps, type Recipe, SceneView, type Params } from './core';
 
 /** House numbers (f@60, px@1080): the divider's travel in and out, the old card, its rows and their spinners. */
-export const SPLIT = { enter: 38, leave: 26, at: 0.68, card: 0.36, row: 92, text: 40, pad: 40, gap: 18, knob: 44, line: 2.5, spin: 5 } as const;
+export const SPLIT = { enter: 38, leave: 26, at: 0.68, card: 0.4, row: 104, text: 46, pad: 44, gap: 18, knob: 44, line: 2.5, spin: 5, veilDark: 0.34, veilLight: 0.05 } as const;
 
 export const RECIPE: Recipe = {
   id: 'split-compare',
@@ -82,10 +82,11 @@ export const SplitCompare: React.FC<PictureProps & { before: string[]; params?: 
   const v0 = fitInto(fb, half, 'contain');
   const fit = mixBox({ x: v0.tx, y: v0.ty, w: W * v0.s, h: H * v0.s }, { x: 0, y: 0, w: W, h: H }, st.leave);
   const view = { s: fit.w / W, tx: fit.x, ty: fit.y };
-  const veil = pal.dark ? mixColor(pal.ground, '#000000', 0.18) : mixColor(pal.ground, pal.type, 0.045);
+  // the veil darkens the lit ground it lies on (a translucent shade, never a flat slab over the family's light)
+  const veil = pal.dark ? `rgba(0, 0, 0, ${P.veilDark})` : `rgba(0, 0, 0, ${P.veilLight})`;
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
-      {/* the old side: a veil in the ground's own darker tone left of the divider, the old card on it */}
+      {/* the old side: the ground in shade left of the divider (its light still showing through), the old card on it */}
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, clipPath: `inset(0px ${(W - dx).toFixed(2)}px 0px 0px)` }}>
         <div style={{ position: 'absolute', inset: 0, background: veil }} />
         <OldCard rows={rows} box={card} t={t} pal={pal} u={u} k={k} />
