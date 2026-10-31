@@ -23,7 +23,7 @@
  *                  Film.tsx without a Float).
  *   8. deck.py     reads the same library from meta.ts, deals two or three with a line and a picture device, never a
  *                  recent set, the needs-gated devices only with --have (or the brief's words), and writes src/dealt.ts;
- *                  eight deals in a row walk the library (recency-weighted), each deal holding a device the last four lacked.
+ *                  eight deals in a row walk the library (recency-weighted), each holding a device the last four lacked.
  *
  * It lays the template over the Remotion starter in a temp folder and imports through the starter's tsx (npm install in
  * assets/remotion-starter first). Usage (from the skill root): node scripts/test/creative.test.mjs [--verbose]
@@ -356,7 +356,7 @@ opened = set()
 for n in range(60):
     opened |= set(m.deal_creative(lib, 'film%d' % n, 'it works with Slack and GitHub, 3x faster', [], [])['deal'])
 out['opened'] = sorted(x for x in opened if x in ('logo-orbit', 'data-sculpture'))
-# eight deals in a row, each one's deal the next one's history: the recency weighting walks the library
+# eight deals in a row, each one the next one's history: the recency weighting walks the library
 recent, seen = [], []
 for i in range(8):
     d = m.deal_creative(lib, 'run%d' % i, 'a calm app', [], recent)['deal']
@@ -381,7 +381,7 @@ print('@@' + json.dumps(out))
     result(o.shape && new Set(o.deals.map((x) => [...x].sort().join())).size >= 5, 'deck.py: deals two or three, a line and a picture device, different sets for different films', JSON.stringify(o.deals));
     result(!o.recent.same && o.recent.shared <= 1, 'deck.py: never a recent set, at most one device shared with the last film', JSON.stringify(o.recent));
     result(!o.gated.length && o.opened.length === 2, 'deck.py: logo-orbit and data-sculpture only when the film has logos and a figure (--have or the brief\'s words)', JSON.stringify(o));
-    result(o.walk >= Math.min(o.open_n, 13) && o.fresh, `deck.py: eight deals in a row play ${o.walk} of the ${o.open_n} devices open to them, each deal with a device the last four films did not play`, JSON.stringify(o.walk));
+    result(o.walk >= Math.min(o.open_n, 13) && o.fresh, `deck.py: eight deals in a row play ${o.walk} of the ${o.open_n} devices open to them, each with a device the last four deals did not play`, JSON.stringify(o.walk));
     result(o.photo[0] && !o.photo[1], 'deck.py: photo-arc only for a film with photos (--have photos or the brief\'s words)', JSON.stringify(o.photo));
   }
 } finally {
